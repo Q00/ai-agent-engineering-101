@@ -1,0 +1,64 @@
+EXE001 Shebang is present but file is not executable
+ --> tests/manual_public_restart.py:1:1
+  |
+1 | #!/usr/bin/env -S uv run --script
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 | # /// script
+3 | # requires-python = ">=3.12"
+  |
+
+E501 Line too long (92 > 88)
+ --> tests/manual_public_restart.py:4:89
+  |
+2 | # /// script
+3 | # requires-python = ">=3.12"
+4 | # dependencies = ["anyio", "httpx2[http2,brotli,zstd]", "cryptography", "pydantic", "typer"]
+  |                                                                                         ^^^^
+5 | # ///
+6 | # How to run (from the week-07 project root):
+  |
+
+TC002 Move third-party import `pydantic.JsonValue` into a type-checking block
+  --> tests/manual_public_restart.py:26:22
+   |
+24 | import typer
+25 | from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+26 | from pydantic import JsonValue
+   |                      ^^^^^^^^^
+27 |
+28 | from market_a2a.receipts import SignedReceipt
+   |
+help: Move into type-checking block
+   |
+25 | from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+   - from pydantic import JsonValue
+26 |
+--------------------------------------------------------------------------------
+31 | if TYPE_CHECKING:
+32 +     from pydantic import JsonValue
+33 |     from pathlib import Path
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+PT018 Assertion should be broken down into multiple parts
+   --> tests/manual_public_restart.py:196:21
+    |
+194 |                     task = opened.result.task
+195 |                     assert task.status.state == "TASK_STATE_INPUT_REQUIRED"
+196 |                     assert task.id and task.context_id
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+197 |                     assert not task.artifacts
+198 |                     checkpoint = Checkpoint(
+    |
+help: Break down assertion into multiple parts
+    |
+195 |                     assert task.status.state == "TASK_STATE_INPUT_REQUIRED"
+    -                     assert task.id and task.context_id
+196 +                     assert task.id
+197 +                     assert task.context_id
+198 |                     assert not task.artifacts
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 4 errors.
+2 unsafe fixes available with `--fix --unsafe-fixes`.

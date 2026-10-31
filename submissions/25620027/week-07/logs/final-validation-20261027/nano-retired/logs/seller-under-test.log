@@ -1,0 +1,840 @@
+Downloading pydantic-core (2.1MiB)
+Downloading cryptography (4.5MiB)
+Downloading pygments (1.2MiB)
+Downloading brotli (1.4MiB)
+Downloading openai (1.7MiB)
+ Downloading brotli
+ Downloading pydantic-core
+ Downloading cryptography
+ Downloading pygments
+ Downloading openai
+Installed 54 packages in 189ms
+HARNESS model=gpt-4.1-nano-2025-04-14 source=week05-tool-loop directory=False
+seller.summary task=76e7630f-4a43-49cf-93b1-94e792558b26 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=1068 tools=1
+OPENAI_ATTEMPT day_kst=2026-10-27 used=1/5000
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 404 Not Found"
+HTTP POST /v1/chat/completions -> 404
+seller.turn_elapsed task=76e7630f-4a43-49cf-93b1-94e792558b26 seconds=2.055
+Producer[76e7630f-4a43-49cf-93b1-94e792558b26]: Execution failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Consumer[76e7630f-4a43-49cf-93b1-94e792558b26]: Failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Unhandled exception
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Request Error (ID: 0efa628e): Code=-32603, Message='Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}'
+Dispatcher task was cancelled or finished. Events may be lost.
+seller.summary task=442f0ec5-e38d-4017-86e7-fc331b875d24 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=1068 tools=1
+OPENAI_ATTEMPT day_kst=2026-10-27 used=2/5000
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 404 Not Found"
+HTTP POST /v1/chat/completions -> 404
+seller.turn_elapsed task=442f0ec5-e38d-4017-86e7-fc331b875d24 seconds=0.408
+Producer[442f0ec5-e38d-4017-86e7-fc331b875d24]: Execution failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Consumer[442f0ec5-e38d-4017-86e7-fc331b875d24]: Failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Unhandled exception
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Request Error (ID: b7490969): Code=-32603, Message='Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}'
+Dispatcher task was cancelled or finished. Events may be lost.
+seller.summary task=d55198b1-afcd-440c-8531-f6fb45f42963 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=1068 tools=1
+OPENAI_ATTEMPT day_kst=2026-10-27 used=3/5000
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 404 Not Found"
+HTTP POST /v1/chat/completions -> 404
+seller.turn_elapsed task=d55198b1-afcd-440c-8531-f6fb45f42963 seconds=0.392
+Producer[d55198b1-afcd-440c-8531-f6fb45f42963]: Execution failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Consumer[d55198b1-afcd-440c-8531-f6fb45f42963]: Failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Unhandled exception
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Request Error (ID: cf0fcb65): Code=-32603, Message='Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}'
+Dispatcher task was cancelled or finished. Events may be lost.
+seller.summary task=9804697d-317b-408e-b672-67a2db434e25 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=1112 tools=1
+OPENAI_ATTEMPT day_kst=2026-10-27 used=4/5000
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 404 Not Found"
+HTTP POST /v1/chat/completions -> 404
+seller.turn_elapsed task=9804697d-317b-408e-b672-67a2db434e25 seconds=0.397
+Producer[9804697d-317b-408e-b672-67a2db434e25]: Execution failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Consumer[9804697d-317b-408e-b672-67a2db434e25]: Failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Unhandled exception
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Request Error (ID: 30134ebb): Code=-32603, Message='Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}'
+Dispatcher task was cancelled or finished. Events may be lost.
+seller.summary task=531b19b3-dbbe-42f8-bddf-3a40890d4391 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=1112 tools=1
+OPENAI_ATTEMPT day_kst=2026-10-27 used=5/5000
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 404 Not Found"
+HTTP POST /v1/chat/completions -> 404
+seller.turn_elapsed task=531b19b3-dbbe-42f8-bddf-3a40890d4391 seconds=0.404
+Producer[531b19b3-dbbe-42f8-bddf-3a40890d4391]: Execution failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Consumer[531b19b3-dbbe-42f8-bddf-3a40890d4391]: Failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Unhandled exception
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Request Error (ID: f66e1ced): Code=-32603, Message='Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}'
+Dispatcher task was cancelled or finished. Events may be lost.
+seller.summary task=ce5ef430-a0fc-4f64-8455-b961f05501f3 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=1112 tools=1
+OPENAI_ATTEMPT day_kst=2026-10-27 used=6/5000
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 404 Not Found"
+HTTP POST /v1/chat/completions -> 404
+seller.turn_elapsed task=ce5ef430-a0fc-4f64-8455-b961f05501f3 seconds=0.227
+Producer[ce5ef430-a0fc-4f64-8455-b961f05501f3]: Execution failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Consumer[ce5ef430-a0fc-4f64-8455-b961f05501f3]: Failed
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Unhandled exception
+Traceback (most recent call last):
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/workspace/market_a2a/seller.py", line 80, in execute
+    await self.negotiator.negotiate(task, context.get_user_input(), event_queue)
+  File "/workspace/market_a2a/seller_turn.py", line 218, in negotiate
+    _ = await self.harness.run(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 146, in run
+    reply = await self.complete(messages, advertised)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 192, in complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/harness.py", line 236, in _complete_once
+    return await self.fallback.complete(messages, tools, self.emit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/market_a2a/paid_fallback.py", line 103, in complete
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 2907, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1979, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-packages/openai/_base_client.py", line 1764, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.NotFoundError: Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+Request Error (ID: 8dd17850): Code=-32603, Message='Error code: 404 - {'error': {'message': 'The model `gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}'
+Dispatcher task was cancelled or finished. Events may be lost.

@@ -1,0 +1,60 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> market_a2a/market_buyer.py:3:1
+   |
+ 1 |   """Market selection and review through the existing Week 05 buyer harness."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | from dataclasses import dataclass
+ 6 | | from typing import TYPE_CHECKING, Final
+ 7 | |
+ 8 | | import anyio
+ 9 | | import httpx2
+10 | | from openai import OpenAIError
+11 | | from pydantic import Field, JsonValue, TypeAdapter, ValidationError
+12 | |
+13 | | from market_a2a.buyer import BuyerHarness, BuyerOrder, buy_order
+14 | | from market_a2a.memory import Memory, Review, Trade
+15 | | from market_a2a.models import (
+16 | |     FrozenModel,
+17 | |     HarnessError,
+18 | |     Purchase,
+19 | |     ToolResult,
+20 | |     ToolSpec,
+21 | |     json_value,
+22 | | )
+23 | | from market_a2a.security import SecurityEvents
+24 | | from market_a2a.security_review import public_review_signals
+25 | | from market_a2a.strict_review import REVIEW_PROMPT, rating_evidence, trade_facts
+26 | | from market_a2a.strict_review import grounded_review
+   | |____________________________________________________^
+27 |
+28 |   __all__ = ["grounded_review"]
+   |
+help: Organize imports
+   |
+24 | from market_a2a.security_review import public_review_signals
+   - from market_a2a.strict_review import REVIEW_PROMPT, rating_evidence, trade_facts
+   - from market_a2a.strict_review import grounded_review
+25 + from market_a2a.strict_review import (
+26 +     REVIEW_PROMPT,
+27 +     grounded_review,
+28 +     rating_evidence,
+29 +     trade_facts,
+30 + )
+31 |
+   |
+
+E501 Line too long (94 > 88)
+   --> market_a2a/strict_review.py:109:89
+    |
+107 |             f"{benchmark if benchmark is not None else 'unknown'}. "
+108 |             "Strict 5-star threshold "
+109 |             f"{'met' if evidence.maximum_stars == EXCEPTIONAL_STARS else 'not established'}: "
+    |                                                                                         ^^^^^^
+110 |             "price at or below that prior benchmark, at most 90% of budget, "
+111 |             "and 1-2 measured offers. No adverse transaction facts recorded."
+    |
+
+Found 2 errors.
+[*] 1 fixable with `--fix`.

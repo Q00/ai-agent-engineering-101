@@ -1,0 +1,88 @@
+F..F.......                                                              [100%]
+=================================== FAILURES ===================================
+_______ test_comparison_script_behavior[fresh_rows_and_scoped_relations] _______
+
+scenario = 'fresh_rows_and_scoped_relations'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(  # noqa: S603 — fixed local fixture, no external input
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:56
+E               assert.match(own(), /≤ 110/); assert.match(own(), /Lower than lowest
+E                                                                 ^
+E         
+E         SyntaxError: Invalid regular expression: missing /
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+__________ test_comparison_script_behavior[expiry_without_next_fetch] __________
+
+scenario = 'expiry_without_next_fetch'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(  # noqa: S603 — fixed local fixture, no external input
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:57
+E               assert.doesNotMatch(own(),/than lowest/);assert.match(text(),/Expired \/
+E                                                                            ^
+E         
+E         SyntaxError: Invalid regular expression: missing /
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_price_page.py::test_comparison_script_behavior[fresh_rows_and_scoped_relations]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[expiry_without_next_fetch]
+2 failed, 9 passed in 0.46s

@@ -1,0 +1,189 @@
+CONTEXT chars=201 tools=1
+OPENAI_ATTEMPT day_kst=2026-10-27 used=9/5000
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 404 Not Found"
+HTTP POST /v1/chat/completions -> 404
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /workspace/harness_app.py:199 in market_buyer                                │
+│                                                                              │
+│   196 │   │   │   )                                                          │
+│   197 │   │   typer.echo(result.model_dump_json())                           │
+│   198 │                                                                      │
+│ ❱ 199 │   isolated(run)                                                      │
+│   200                                                                        │
+│   201                                                                        │
+│   202 @app.command()                                                         │
+│                                                                              │
+│ /workspace/harness_app.py:75 in isolated                                     │
+│                                                                              │
+│    72 │   with TemporaryDirectory(prefix="ax06-harness-") as directory:      │
+│    73 │   │   try:                                                           │
+│    74 │   │   │   os.chdir(directory)                                        │
+│ ❱  75 │   │   │   anyio.run(run)                                             │
+│    76 │   │   finally:                                                       │
+│    77 │   │   │   os.chdir(previous)                                         │
+│    78                                                                        │
+│                                                                              │
+│ /uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-p │
+│ ackages/anyio/_core/_eventloop.py:83 in run                                  │
+│                                                                              │
+│    80 │                                                                      │
+│    81 │   try:                                                               │
+│    82 │   │   backend_options = backend_options or {}                        │
+│ ❱  83 │   │   return async_backend.run(func, args, {}, backend_options)      │
+│    84 │   finally:                                                           │
+│    85 │   │   reset_current_async_library(token)                             │
+│    86                                                                        │
+│                                                                              │
+│ /uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-p │
+│ ackages/anyio/_backends/_asyncio.py:2548 in run                              │
+│                                                                              │
+│   2545 │   │   │   │   loop_factory = winloop.new_event_loop                 │
+│   2546 │   │                                                                 │
+│   2547 │   │   with Runner(debug=debug, loop_factory=loop_factory) as        │
+│        runner:                                                               │
+│ ❱ 2548 │   │   │   return runner.run(wrapper())                              │
+│   2549 │                                                                     │
+│   2550 │   @classmethod                                                      │
+│   2551 │   def current_token(cls) -> object:                                 │
+│                                                                              │
+│ /usr/local/lib/python3.12/asyncio/runners.py:118 in run                      │
+│                                                                              │
+│   115 │   │                                                                  │
+│   116 │   │   self._interrupt_count = 0                                      │
+│   117 │   │   try:                                                           │
+│ ❱ 118 │   │   │   return self._loop.run_until_complete(task)                 │
+│   119 │   │   except exceptions.CancelledError:                              │
+│   120 │   │   │   if self._interrupt_count > 0:                              │
+│   121 │   │   │   │   uncancel = getattr(task, "uncancel", None)             │
+│                                                                              │
+│ /usr/local/lib/python3.12/asyncio/base_events.py:691 in run_until_complete   │
+│                                                                              │
+│    688 │   │   if not future.done():                                         │
+│    689 │   │   │   raise RuntimeError('Event loop stopped before Future      │
+│        completed.')                                                          │
+│    690 │   │                                                                 │
+│ ❱  691 │   │   return future.result()                                        │
+│    692 │                                                                     │
+│    693 │   def stop(self):                                                   │
+│    694 │   │   """Stop running the event loop.                               │
+│                                                                              │
+│ /uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-p │
+│ ackages/anyio/_backends/_asyncio.py:2531 in wrapper                          │
+│                                                                              │
+│   2528 │   │   │   _task_states[task] = TaskState(None, None)                │
+│   2529 │   │   │                                                             │
+│   2530 │   │   │   try:                                                      │
+│ ❱ 2531 │   │   │   │   return await func(*args)                              │
+│   2532 │   │   │   finally:                                                  │
+│   2533 │   │   │   │   del _task_states[task]                                │
+│   2534                                                                       │
+│                                                                              │
+│ /workspace/harness_app.py:186 in run                                         │
+│                                                                              │
+│   183 │                                                                      │
+│   184 │   async def run() -> None:                                           │
+│   185 │   │   async with harness_session(emit) as harness:                   │
+│ ❱ 186 │   │   │   result = await market_buy(                                 │
+│   187 │   │   │   │   harness,                                               │
+│   188 │   │   │   │   MarketRequest(                                         │
+│   189 │   │   │   │   │   shops_path=shops_path,                             │
+│                                                                              │
+│ /workspace/market_a2a/market_buyer.py:108 in market_buy                      │
+│                                                                              │
+│   105 │   │   if any(trade.purchase.safety.operator_directive_observed for   │
+│       trade in trades)                                                       │
+│   106 │   )                                                                  │
+│   107 │   decision = Decision(shops, blocked_names)                          │
+│ ❱ 108 │   _ = await harness.run(                                             │
+│   109 │   │   SELECT_PROMPT,                                                 │
+│   110 │   │   {                                                              │
+│   111 │   │   │   "item": item,                                              │
+│                                                                              │
+│ /workspace/market_a2a/harness.py:146 in run                                  │
+│                                                                              │
+│   143 │   │   ]                                                              │
+│   144 │   │   self.emit(f"CONTEXT chars={len(json.dumps(state))}             │
+│       tools={len(tools)}")                                                   │
+│   145 │   │   for round_number in range(MAX_MODEL_ROUNDS):                   │
+│ ❱ 146 │   │   │   reply = await self.complete(messages, advertised)          │
+│   147 │   │   │   messages.append(assistant_message(reply))                  │
+│   148 │   │   │   for call in reply.tool_calls or []:                        │
+│   149 │   │   │   │   match call.type:                                       │
+│                                                                              │
+│ /workspace/market_a2a/harness.py:192 in complete                             │
+│                                                                              │
+│   189 │   │   route = request_model(self.model, self.clock())                │
+│   190 │   │   for attempt, delay in enumerate(RETRY_DELAYS):                 │
+│   191 │   │   │   try:                                                       │
+│ ❱ 192 │   │   │   │   completion = await self._complete_once(messages,       │
+│       tools, route)                                                          │
+│   193 │   │   │   except APIStatusError as exc:                              │
+│   194 │   │   │   │   if exc.status_code == NOT_FOUND and route ==           │
+│       FREE_MODEL:                                                            │
+│   195 │   │   │   │   │   route = FREE_ROUTER                                │
+│                                                                              │
+│ /workspace/market_a2a/harness.py:236 in _complete_once                       │
+│                                                                              │
+│   233 │   │   │   │   │   },                                                 │
+│   234 │   │   │   │   )                                                      │
+│   235 │   │   │   if self.fallback is not None:                              │
+│ ❱ 236 │   │   │   │   return await self.fallback.complete(messages, tools,   │
+│       self.emit)                                                             │
+│   237 │   │   │   return await self.client.chat.completions.create(          │
+│   238 │   │   │   │   model=self.model, temperature=0, messages=messages,    │
+│       tools=tools,                                                           │
+│   239 │   │   │   │   tool_choice="required", parallel_tool_calls=False,     │
+│                                                                              │
+│ /workspace/market_a2a/paid_fallback.py:103 in complete                       │
+│                                                                              │
+│   100 │   │   │   raise HarnessError(message)                                │
+│   101 │   │   used = self.quota.reserve()                                    │
+│   102 │   │   emit(f"OPENAI_ATTEMPT day_kst={datetime.now(KST).date()}       │
+│       used={used}/5000")                                                     │
+│ ❱ 103 │   │   return await self.client.chat.completions.create(              │
+│   104 │   │   │   model=DEFAULT_MODEL, temperature=0, messages=messages,     │
+│       tools=tools,                                                           │
+│   105 │   │   │   tool_choice="required", parallel_tool_calls=False,         │
+│   106 │   │   │   max_completion_tokens=450,                                 │
+│                                                                              │
+│ /uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-p │
+│ ackages/openai/resources/chat/completions/completions.py:2907 in create      │
+│                                                                              │
+│   2904 │   │   timeout: float | httpx2.Timeout | None | NotGiven =           │
+│        not_given,                                                            │
+│   2905 │   ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:           │
+│   2906 │   │   validate_response_format(response_format)                     │
+│ ❱ 2907 │   │   return await self._post(                                      │
+│   2908 │   │   │   "/chat/completions",                                      │
+│   2909 │   │   │   body=await async_maybe_transform(                         │
+│   2910 │   │   │   │   {                                                     │
+│                                                                              │
+│ /uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-p │
+│ ackages/openai/_base_client.py:1979 in post                                  │
+│                                                                              │
+│   1976 │   │   opts = FinalRequestOptions.construct(                         │
+│   1977 │   │   │   method="post", url=path, json_data=body, content=content, │
+│        files=await async_to_httpx_files(files), **options                    │
+│   1978 │   │   )                                                             │
+│ ❱ 1979 │   │   return await self.request(cast_to, opts, stream=stream,       │
+│        stream_cls=stream_cls)                                                │
+│   1980 │                                                                     │
+│   1981 │   async def patch(                                                  │
+│   1982 │   │   self,                                                         │
+│                                                                              │
+│ /uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-p │
+│ ackages/openai/_base_client.py:1764 in request                               │
+│                                                                              │
+│   1761 │   │   │   │   │   await err.response.aread()                        │
+│   1762 │   │   │   │                                                         │
+│   1763 │   │   │   │   log.debug("Re-raising status error")                  │
+│ ❱ 1764 │   │   │   │   raise                                                 │
+│        self._make_status_error_from_response(err.response) from None         │
+│   1765 │   │   │                                                             │
+│   1766 │   │   │   break                                                     │
+│   1767                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+NotFoundError: Error code: 404 - {'error': {'message': 'The model 
+`gpt-4.1-nano-2025-04-14` has been deprecated, learn more here: 
+https://platform.openai.com/docs/deprecations', 'type': 'invalid_request_error',
+'param': None, 'code': 'model_not_found'}}

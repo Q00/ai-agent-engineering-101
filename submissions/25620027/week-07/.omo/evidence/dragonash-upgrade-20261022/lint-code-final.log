@@ -1,0 +1,97 @@
+warning: Invalid `# noqa` directive on market_a2a/seller_turn.py:3: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+D101 Missing docstring in public class
+  --> tests/manual_public_quick_checkout.py:24:7
+   |
+24 | class ListedCard(Wire):
+   |       ^^^^^^^^^^
+25 |     version: str
+   |
+
+D101 Missing docstring in public class
+  --> tests/manual_public_quick_checkout.py:28:7
+   |
+28 | class Owner(Wire):
+   |       ^^^^^
+29 |     login: str
+   |
+
+D101 Missing docstring in public class
+  --> tests/manual_public_quick_checkout.py:32:7
+   |
+32 | class ListedShop(Wire):
+   |       ^^^^^^^^^^
+33 |     name: str
+34 |     card: ListedCard
+   |
+
+D101 Missing docstring in public class
+  --> tests/manual_public_quick_checkout.py:42:7
+   |
+42 | class Board(Wire):
+   |       ^^^^^
+43 |     round: int
+44 |     shops: tuple[ListedShop, ...]
+   |
+
+ISC004 Unparenthesized implicit string concatenation in collection
+   --> tests/manual_public_quick_checkout.py:105:29
+    |
+103 |               ("basic_chair", "Hello, I'd like to buy a chair, please.",
+104 |                "chair", "OK", 180, 198),
+105 |               ("descriptive", "I want a small black dimmable reading lamp with a "
+    |  _____________________________^
+106 | |              "flexible neck, no taller than 30 cm.", "lamp-nocturne", "I accept", 120, 132),
+    | |___________________________________________________^
+107 |           ]
+108 |           with (EVIDENCE / "public-trades.log").open("x") as trace:
+    |
+help: Did you forget a comma?
+help: Wrap implicitly concatenated strings in parentheses
+    |
+104 |              "chair", "OK", 180, 198),
+    -             ("descriptive", "I want a small black dimmable reading lamp with a "
+    -              "flexible neck, no taller than 30 cm.", "lamp-nocturne", "I accept", 120, 132),
+105 +             ("descriptive", ("I want a small black dimmable reading lamp with a "
+106 +              "flexible neck, no taller than 30 cm."), "lamp-nocturne", "I accept", 120, 132),
+107 |         ]
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+E501 Line too long (92 > 88)
+   --> tests/manual_public_quick_checkout.py:106:89
+    |
+104 |              "chair", "OK", 180, 198),
+105 |             ("descriptive", "I want a small black dimmable reading lamp with a "
+106 |              "flexible neck, no taller than 30 cm.", "lamp-nocturne", "I accept", 120, 132),
+    |                                                                                         ^^^^
+107 |         ]
+108 |         with (EVIDENCE / "public-trades.log").open("x") as trace:
+    |
+
+FLY002 Consider f-string instead of string join
+  --> tests/test_quick_checkout.py:23:19
+   |
+21 |   from tests.test_signed_seller import send, task_from
+22 |
+23 |   SERVICE_REQUEST = " ".join((
+   |  ___________________^
+24 | |     "I want to buy a lamp. Quality and trouble-free use matter:",
+25 | |     "do you provide after-sales service, a quality warranty,",
+26 | |     "or a flexible refund policy?",
+27 | | ))
+   | |__^
+help: Replace with f-string
+   |
+22 |
+   - SERVICE_REQUEST = " ".join((
+   -     "I want to buy a lamp. Quality and trouble-free use matter:",
+   -     "do you provide after-sales service, a quality warranty,",
+   -     "or a flexible refund policy?",
+   - ))
+23 + SERVICE_REQUEST = "I want to buy a lamp. Quality and trouble-free use matter: do you provide after-sales service, a quality warranty, or a flexible refund policy?"
+24 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 7 errors.
+2 unsafe fixes available with `--fix --unsafe-fixes`.

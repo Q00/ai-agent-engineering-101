@@ -1,0 +1,791 @@
+{
+  "timestamp": "2026-10-20T19:00:02.472131+09:00",
+  "scope": "Update five existing Week07 academic records; no new Vault note",
+  "invocation": "python3 inline record update and readback assertions (2026-10-20)",
+  "scenarios": [
+    {
+      "scenario": "Official first-run source verification",
+      "invocation": "Parse test-report.json; compare validation-attempt-1 byte snapshots; sum MODEL_USAGE lines",
+      "binary_observable": "25 results all pass; report/log byte equality; 116 calls; 75005 input and 3980 output",
+      "artifacts": [
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/test-report.json",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-test.log",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/validation-attempt-1"
+      ]
+    },
+    {
+      "scenario": "Five records updated without unrelated-line changes",
+      "invocation": "Read latest files; exact replacement/append; compare before-write freshness; readback exact equality",
+      "binary_observable": "All five files match intended edits; original source hash table identical; existing initial setup entries retained",
+      "artifacts": [
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/source_manifest.md",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Study_Raw/10_Courses/11_AX이해와활용/source_manifest.md"
+      ]
+    },
+    {
+      "scenario": "New source links resolve and incomplete submission status preserved",
+      "invocation": "Path.exists for 10 newly referenced artifacts; assert 25/25 plus incomplete status on all five records",
+      "binary_observable": "11/11 references exist; five records include bounded completion status and one structural failure",
+      "artifacts": [
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/source_manifest.md",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Study_Raw/10_Courses/11_AX이해와활용/source_manifest.md"
+      ]
+    },
+    {
+      "scenario": "Current structural submission status",
+      "invocation": "Read logs/structural-after-25.log; count FAIL lines and verify terminal summary",
+      "binary_observable": "Exactly one failure: logs/market-kit.log absent or missing ledger entry; all other printed structural checks pass",
+      "artifacts": [
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/structural-after-25.log"
+      ]
+    }
+  ],
+  "records": [
+    {
+      "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+      "exists_nonempty": true,
+      "sha256": "70de671eaf3652c4b762458e3d76c0e14e7dfff0923be8cdac13b5a71e6f0864",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    },
+    {
+      "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+      "exists_nonempty": true,
+      "sha256": "8b9d93fec6517e6c16ae51fa7c2c72fe291ceecd1753b8c6adade7ae1e5e35fb",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    },
+    {
+      "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+      "exists_nonempty": true,
+      "sha256": "09dd5853e429e9ba5f940319c1c663051bf09e573d980e31715bbb5e35b6d4e1",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    },
+    {
+      "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/source_manifest.md",
+      "exists_nonempty": true,
+      "sha256": "49dda47b0e5d84c0c26795baf559d2bdbb5495e9a006ef375d6af28c598bc6f6",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Study_Raw/10_Courses/11_AX이해와활용/source_manifest.md",
+      "exists_nonempty": true,
+      "sha256": "b3d6015f46c0e1318145e84ce9250abb92f162f6836690d1bba29e8a160004a3",
+      "implementation_record_present": true,
+      "final_structural_pending_count": 1
+    }
+  ],
+  "source_artifacts": [
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/REPORT.md",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/test-report.json",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-test.log",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/validation-attempt-1",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/offline-tests-20261020.log",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/lint-20261020.log",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/typecheck-20261020.log",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-code-review.md",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-validation.md",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/SETUP.md",
+      "exists": true
+    },
+    {
+      "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/structural-after-25.log",
+      "exists": true
+    }
+  ],
+  "usage": {
+    "calls": 116,
+    "input_tokens": 75005,
+    "output_tokens": 3980
+  },
+  "private_key_values_recorded": false,
+  "source_hash_table_preserved": true,
+  "connection_preparation_update": {
+    "timestamp": "2026-10-20T19:38:07.270324+09:00",
+    "observation_source": "Parent executor Chrome observation relayed in task: market.ourolabs.ai/join; @SungJinho signed in; Your agents 0/6 none yet; Round 0. Record agent did not independently open browser.",
+    "scope": "Three existing Vault records only; previous URL-unknown observation retained as historical context; no manifest modification",
+    "invocation": "python3 inline exact text replacement, freshness checks, readback equality and state assertions",
+    "binary_observable": "3/3 records contain confirmed market URL, 0/6, Round 0, preparation-only boundary, preserved 25/25 and 36/36 results and one structural failure",
+    "artifacts": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "c2bf6dd3d269d1e8a199a704692881a42fe9e472a4c131a7a3b2a7d81b529ca9"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "2e410167bca405c58522592168c1d98553b56f71a132e7783067beb94d6a74ca"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "e0fe39a0f15d6c7b0ebeb1fec986aa8f77794495c80f16676ae502e998f1860e"
+      }
+    ],
+    "links_verified": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/SETUP.md"
+    ],
+    "external_actions_performed": false,
+    "secret_values_accessed_or_recorded": false
+  },
+  "first_live_buyer_update": {
+    "timestamp": "2026-10-20T19:53:10.931857+09:00",
+    "scenario": "Existing records reflect first real R0 buyer deal while seller registration and remaining coursework stay pending",
+    "invocation": "Read logs/market-kit.log; assert four exact status lines; update three existing files with freshness guard; readback and state assertions",
+    "binary_observable": "Buyer 25620027 registered, order o-7fd35793 lamp budget125, both signatures, ledger796 verified True; 3/3 records preserve 25/25 and36/36 and pending seller/R1/R2/challenges/PR",
+    "source_artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log",
+    "source_sha256": "c971774ce5fa886541165090555f324d5f2643be5f7b29fd447130845bb69625",
+    "verified_log_lines": [
+      "19:49:12 [market] buyer registered as 25620027, round 0",
+      "19:49:13 [order o-7fd35793] lamp, budget 125, round 0",
+      "19:49:19 [sign] sig_seller ok, sig_buyer added",
+      "19:49:19 [market] ledger #796: lamp at 125, stars None, verified True, review not shown"
+    ],
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "f799c761cb52fa2b5d3ae2e6625bf998b6f293dd3e0bbb30f9dc5e0f7df66db5"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "fdae872c056ca0e84191cffe70367b8fcb309549c37801aa60b9d129d93d4768"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "c540910d3db2ea2c61e5cd2a15e7d9313cf5080e2d0827da8d9cb32734e3a1b4"
+      }
+    ],
+    "limitations": "Seller network failures and fixed tunnel approval state relayed from parent executor, not independently repeated. No external actions or credential access by record agent."
+  },
+  "mid_transcript_ingest": {
+    "timestamp": "2026-10-20T20:02:00.580717+09:00",
+    "source": "/Users/sungjinho/Downloads/1020 AX 속기록 (중간).txt",
+    "raw_copy": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Study_Raw/10_Courses/11_AX이해와활용/02_강의자료_수업노트/261020_AX이해와활용_7주차_속기록_중간.txt",
+    "sha256": "25fdc8ac573d76b331591d71cf5a6b29a8a027435b65e228955a5e8154f373e3",
+    "bytes": 36252,
+    "lines": 474,
+    "source_retained": true,
+    "invocation": "Read complete user transcript; copy2 to existing RAW transcript folder; byte/hash equality; guarded exact updates; readback and source-link assertions",
+    "binary_observable": "Original and RAW bytes equal; all five existing records link to same existing note section; original six-source hash table unchanged; no new Vault note",
+    "source_hash_table_preserved": true,
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "8fa459bb7437b64abcfdfa156e633b71caa60158ec7087445d41d1d4b0b906ea"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "e78922e7ca921e792e1d0faae8621e8a3d0bd3d4d6ecbccb944da765760cd7c0"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "d9c5d70a7090ce6522287e16b1f37b89bb7c22c7697bd6ad79a8ffcb428c220e"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/source_manifest.md",
+        "sha256": "49dda47b0e5d84c0c26795baf559d2bdbb5495e9a006ef375d6af28c598bc6f6"
+      },
+      {
+        "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Study_Raw/10_Courses/11_AX이해와활용/source_manifest.md",
+        "sha256": "b3d6015f46c0e1318145e84ce9250abb92f162f6836690d1bba29e8a160004a3"
+      }
+    ],
+    "runtime_scope": "Registration verified directly from existing market-kit log. Supervision limits and user approval relayed from parent. No external action or secret file access by record agent."
+  },
+  "one_hour_supervision_update": {
+    "timestamp": "2026-10-20T20:19:47.656590+09:00",
+    "scenario": "Current one-hour supervised limits replace current half-hour limits while initial half-hour remains history",
+    "invocation": "Read current three records and existing market-kit log; exact replacement with freshness check; readback assertions",
+    "binary_observable": "All 3 records state20:59:21 deadline,120 cumulative buys,1000 observed calls and preserved25/25,36/36; note preserves30min historical cap; no new source manifest entry",
+    "source_artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log",
+    "observed_registration_lines": [
+      "20:18:19 [market] shop registered as 25620027, round 0",
+      "20:18:19 [market] buyer registered as 25620027, round 0"
+    ],
+    "limits_source": "Parent executor relayed explicit user extension and active supervision config; not independently executing or reading credentials",
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "9d735025672859f69c9fabb50a36e79adaa9e459c83d603a962264eec5ed27fd"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "4c2b74161b32bcc32c9af42fbbbebdaf0750cf1ad55806fa7125546bd99b0050"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "8c133b4f20cec5da42d4331aec95e2cc8ec600261a371791d88f3cc8f21b1361"
+      }
+    ]
+  },
+  "r1_opening_policy_promotion": {
+    "timestamp": "2026-10-20T20:39:46.120336+09:00",
+    "scenario": "Existing records distinguish approved tested policy promotion and R1 buyer success from unobserved seller/rank effect",
+    "invocation": "Read live log exact registration/ledger lines; compare two live source bytes with candidate; parse candidate test-report and offline/lint/type/review artifacts; guarded replacements; readback",
+    "binary_observable": "4 expected live log lines present;2 source files byte-identical;25 result rows allpass;45passed/lintpass/typeszero/APPROVE observed;3 records updated with unchanged deadline/caps and bounded outcome",
+    "log_lines": [
+      "20:36:41 [market] shop registered as 25620027, round 1",
+      "20:36:42 [market] buyer registered as 25620027, round 1",
+      "20:36:48 [market] ledger #5373: bookshelf at 270, stars 5, verified True, review accepted",
+      "20:37:10 [market] ledger #5417: lamp at 105, stars 5, verified True, review accepted"
+    ],
+    "source_hashes": {
+      "market_a2a/seller_policy.py": "b82bc6b463bff168ce3e24d621b6344f4241add06c1cdd0445daa27d67d8d631",
+      "market_a2a/seller_turn.py": "3ecf93712fcba63eeab3578b37fed3ba60cac581ddb7162694ac89a2daf3c4bf"
+    },
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07-opening-ask/submissions/25620027/week-07/logs/opening-policy-attempt-1/test-report.json",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07-opening-ask/submissions/25620027/week-07/.omo/evidence/opening-ask-offline-final.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07-opening-ask/submissions/25620027/week-07/.omo/evidence/opening-ask-lint-pass.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07-opening-ask/submissions/25620027/week-07/.omo/evidence/opening-ask-types-final.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07-opening-ask/submissions/25620027/week-07/.omo/evidence/opening-ask-code-review.md"
+    ],
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "4c3e8bc6ea57e1c5ca5f4b2eeb79559e8a67c0e5cf25fef5e407c38abe8924c1"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "665092598677b3ad1c42b3c7cdaf1ff05aeda68405ca46eb4508dda8a5ffd4af"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "9cbfaefd271f7bbc51949ff8a565781209febb7c03dccddf2302738dfd46401b"
+      }
+    ],
+    "limits": "20:34 dashboard rank and authorization/promotion timestamp relayed by parent executor; record agent did not independently open UI or invoke live services.",
+    "seller_followup": {
+      "scenario": "New policy first live seller quote to receipt, distinct from market verification",
+      "invocation": "Read20:37:21..33 live seller lines and both structural-opening-policy-attempt-2.log files; exact existing record replacement/readback",
+      "binary_observable": "taskb54c7859-7a82-45fc-a9a7-b071bb1e0833 quote105, incomingoffer105, receipt105, accept105; bothstructural logs end all checks passed; no claim seller-market verified or improved rank",
+      "artifacts": [
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/structural-opening-policy-attempt-2.log",
+        "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07-opening-ask/submissions/25620027/week-07/logs/structural-opening-policy-attempt-2.log"
+      ]
+    }
+  },
+  "ended_r1_audit_strategy": {
+    "timestamp": "2026-10-20T20:59:13.225570+09:00",
+    "scenario": "Document ended supervised execution and verified R1 audit with analysis-only next goal",
+    "invocation": "Read fixed market log; SHA256 and11306line assertion; parse order blocks, actual numeric A2A REQUEST parts, model tool attempts, ledger rows and final review JSON; guarded record update and exact readback",
+    "binary_observable": "120orders/843usage in supervised interval;R1unique66,ledger65,verified48,unverifiedpriced1,nodeal16,missing1,reviewsaccepted65;65actualofferorders allfixed;53budgetfirst/12initialask;actualoverbudget0,modeloverbudget21;48meanpaidratio98.282208994709%,36fullbudget;3records show stopped/analysis-only",
+    "source_artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/price-strategy-baseline-20261020/market-kit-through-205206.log",
+    "source_sha256": "5e33136236a97d3452cd93898fe93c47331d02e97928f351e8938fc376fcb759",
+    "source_lines": 11306,
+    "review_fact_error_lines": [
+      6854,
+      8123,
+      8665
+    ],
+    "unsupported_trust_review_line": 10481,
+    "limits": "Do not infer injection causality, net profit, final rank, permanent seller uptime or tunnel status. No new code/deployment/trading/review editing by this agent.",
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "2b557a0f041bd559e7f6b06c4920153f5193e6a4405149e267f5e888007ebe21"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "bea1c679e42677c7599d90bf76e9c38de84b6fb2ea9ae95482c575c678ec2460"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "cf7688c1d0e24734d55a9119917783ecf78e9942b42d279cbf661c0842512896"
+      }
+    ],
+    "memory_count_omitted": "Mutable live memory count differs from earlier audit snapshot; do not assert74 or a duplicate bug.",
+    "live_log_later_appended": true
+  },
+  "extension_to_2150": {
+    "timestamp": "2026-10-20T21:04:42.307129+09:00",
+    "scenario": "Current resumed same-policy run is distinct from immutable earlier audit",
+    "invocation": "Read expected3registration/ledger lines; SHA256 and11306line validation of baseline; confirm nonempty strategy plan; guarded3record update/readback",
+    "binary_observable": "SameidentityR1 shop/buyer registered20:59:28; ledger7576nodealstars5verifiedFalseaccepted;3records now21:50/cumulative360orders3000calls/rejoinmax3; earlier120/843and65review audit retained",
+    "live_observed_lines": [
+      "20:59:28 [market] shop registered as 25620027, round 1",
+      "20:59:28 [market] buyer registered as 25620027, round 1",
+      "20:59:40 [market] ledger #7576: no deal, stars 5, verified False, review accepted"
+    ],
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/price-strategy-baseline-20261020/market-kit-through-205206.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-price-strategy-plan.md"
+    ],
+    "baseline_sha256": "5e33136236a97d3452cd93898fe93c47331d02e97928f351e8938fc376fcb759",
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "4382e9710e3b899c456014703acc3389b4df6292fd8adbb280b82856c4be1e76"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "4ad62b84cb652e49107d8549b9bc5dbaf3e112ba8a04a713e200bfb53c276e2a"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "bcd85a2c7ba7e5467d87e693bc4efccc2a7fbb5d017d965278df8df49faa32a0"
+      }
+    ],
+    "limitations": "Code and policies unchanged; no execution by record agent; AgentCard HTTP200 and supervisor start time attributed to parent executor."
+  },
+  "urgent_core_deployment": {
+    "timestamp": "2026-10-20T21:14:28.787830+09:00",
+    "scenario": "Urgent deployed implementation recorded without transferring previous-version test success",
+    "invocation": "Read live registration/ledger lines; inspect seller_policy.py,buyer.py,market_buyer.py and r2-review-hotfix.txt; exact guarded record update/readback",
+    "binary_observable": "R1registration2lines andledger8729verified accepted present;3notes currentac10710,syntax-only,no fresh25/fullregression claim,R2unconfirmed; deadline/caps retained",
+    "events": [
+      "21:11:12 [market] shop registered as 25620027, round 1",
+      "21:11:13 [market] buyer registered as 25620027, round 1",
+      "21:11:18 [market] ledger #8729: lamp at 120, stars 5, verified True, review accepted"
+    ],
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/r2-review-hotfix.txt"
+    ],
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "b3e3128874ed9bf63ecde8f21c4cc21c40864b98a8fc838069518ea45d136918"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "97ef2210b1b61978da3ad2069c0bc48f3c79efa9883caf9cee83e75dc1e82d59"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "8a44755d20bb576e73981fa9495cdf963aec961329c10061315ce0e499851794"
+      }
+    ],
+    "limits": "No live actions, modifications to code/raw logs/root reports, or secret access by records agent. Pending seller-history enhancement excluded."
+  },
+  "coupon_history_followup": {
+    "timestamp": "2026-10-20T21:21:19.102995+09:00",
+    "scenario": "Record deployed coupon/history followup with syntax-only and missing reciprocal identity limitations",
+    "invocation": "Read3expected live lines; inspect seller_policy/seller_turn/seller_history/buyer source; confirm duplicate hard rejection absent; guarded existing-note update/readback",
+    "binary_observable": "R1shop/buyer21:18:51 and9556verifiedaccepted; codehascoupon and boundedcanonical history; sameamount hardrejection absent;3notes distinguish syntax-only from older25/45",
+    "events": [
+      "21:18:51 [market] shop registered as 25620027, round 1",
+      "21:18:51 [market] buyer registered as 25620027, round 1",
+      "21:18:58 [market] ledger #9556: lamp at 108, stars 5, verified True, review accepted"
+    ],
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/market_a2a/seller_policy.py",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/market_a2a/seller_turn.py",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/market_a2a/seller_history.py",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/market_a2a/buyer.py"
+    ],
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "39a489d5938537d76ed99f946d1c11b0295b113735115ec69d15d9aa3cb153d0"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "cfe87d4636703e26b3815b3c10b83b53f9fbda1654cf49f818f2497d765b7259"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "accd92978c7f3e484929112b3a9371f572e68a32a67fb166011a8104c4f9f5b1"
+      }
+    ],
+    "limits": "No live execution or code mutation by record agent; supervisor start and176orders1281usage checkpoint from parent; no R2 or actualcoupon receipt claim."
+  },
+  "r2_registration_seller_visits_priority": {
+    "timestamp": "2026-10-20T21:29:47.978128+09:00",
+    "scenario": "Current R2 registration, extended caps and visits-first user goal recorded without claiming seller sales or fresh testpass",
+    "invocation": "Read exact2registration lines from market log; freshly read3notes; guarded exact updates and readback assertions",
+    "binary_observable": "Both roles25620027round2at21:22:59;3notes nowe4e0188/22:30/600starts5000calls/visits-first diagnosticpending/syntax-only validation",
+    "events": [
+      "21:22:59 [market] shop registered as 25620027, round 2",
+      "21:22:59 [market] buyer registered as 25620027, round 2"
+    ],
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log"
+    ],
+    "parent_ui_observation": {
+      "time": "2026-10-20 about21:24KST",
+      "seller_row": 35,
+      "seller_online": true,
+      "seller_deals": 0,
+      "seller_visits": 0,
+      "seller_reviews": 0,
+      "buyer_row": 3,
+      "buyer_deals": 7,
+      "buyer_orders": 10,
+      "buyer_paid_display": "93%",
+      "root_http_status": 200,
+      "content_type": "text/html",
+      "ad_text": "R2WELCOME"
+    },
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "2700dbbf02150280e0cdac4949175c0a2cb8cc66adc7a33064e64f3ab6e03155"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "473260043148263db7d83ed5b74594089e77ad12a9003efeee09c250fefe8ccd"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "b26a9b4dc435feff67a40a603b53b98a251351e584aab46b7b3b10105a38f8e9"
+      }
+    ],
+    "limits": "UI/HTTP/commit/deadline observations attributed to parent executor; no independent external request, deployment, trading or new feature changes by records agent."
+  },
+  "name_ad_acquisition_diagnosis": {
+    "timestamp": "2026-10-20T21:32:28.512448+09:00",
+    "scenario": "Append bounded rename/acquisition diagnosis only to existing class note",
+    "invocation": "Read market_kit.py lines328-334 and taskd6791bef seller log; append existing-note section with freshness guard and exact readback",
+    "binary_observable": "Standard selector fields name/url/reviews only; task quote216/incoming114/quote211 observed; rename and intro-price/short-negotiation proposal explicitly unimplemented",
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/scripts/market_kit.py",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log",
+      "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md"
+    ],
+    "source_task": "d6791bef-e44e-423b-88d8-9d81190624f7",
+    "ui_observation_source": "Parent executor about21:29 seller0deals0visits/buyer13deals23orders; dragonash registry name vs GRAND SALE display. Not independently browsed by record agent.",
+    "note_sha256": "714d9fcc26a57844bd44ced8c576513a64d92980cbadf4928b77f8487f0dbc26",
+    "scope": "Class note and own JSON only; no state/hub/source/log/report/setup edits; no external actions."
+  },
+  "main_share_by_shop_sales_observation": {
+    "timestamp": "2026-10-20T21:40:11.716241+09:00",
+    "scenario": "Append main-market Share by shop point-in-time sales observation without cache/rename causal claim",
+    "invocation": "Fresh read existing note; append parent UI observation with explicit attribution; freshness guard and exact readback",
+    "binary_observable": "Note contains Share by shop main URL,25620027 share1%,3deals/receipts/withorder/reviews,stars4.67;11655chair198verified;11678nodeal2/5; earlierboard0preserved; no cache/renameeffectclaim",
+    "observation_source": "Parent executor main market UI inspection, not independently browsed by records agent",
+    "artifact": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+    "note_sha256": "ccc1baa6f559733876ac48a4ea41b290734e94427bedb5b10f0682d1fc42b629",
+    "scope": "ExistingclassnoteandownJSONonly; no state/hub/code/report/rawlog changes."
+  },
+  "overnight_seller_injection_cost": {
+    "timestamp": "2026-10-20T23:49:59.834417+09:00",
+    "scenario": "Record same-identity seller-only overnight operation with capped deadline, bounded injection patch checks and snapshot cost scope",
+    "invocation": "Read overnight registration/shop-only lines; inspect buyer/remote structured observation path; read13check raw output andparent3pytest report; parse canonicalusage cutoff21:44:27 and recompute tokens/cost; fresh exact3note update/readback",
+    "binary_observable": "2overnightlines present;2322calls/3728555input/84087output=>0.4064903USD;canonicalofficial2tests=>0.4229907;3records selleronly09:00orcapfirst/13+3butnot25/fullimmunitynotclaimed",
+    "events": [
+      "23:44:30 [market] shop registered as 25620027, round 2",
+      "23:44:30 [kit] shop only; Ctrl-C to leave the market"
+    ],
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/overnight-launch.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/logs/market-kit.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/injection-boundary/checks.txt",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/injection-boundary/parent-validation.md",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-api-cost-20261020.json"
+    ],
+    "cost_cutoff": "2026-10-20T21:44:27+09:00",
+    "records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "70de671eaf3652c4b762458e3d76c0e14e7dfff0923be8cdac13b5a71e6f0864"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "8b9d93fec6517e6c16ae51fa7c2c72fe291ceecd1753b8c6adade7ae1e5e35fb"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "09dd5853e429e9ba5f940319c1c663051bf09e573d980e31715bbb5e35b6d4e1"
+      }
+    ],
+    "limits": "Overnight supervisor, tunnel/caffeinate and cumulative start baseline from parent executor; no independent process mutation or credential access. Source commit pending; not guessed.",
+    "final_commits": [
+      "4624440",
+      "dd79020"
+    ],
+    "seller_accept_observations": [
+      {
+        "time": "23:46:01",
+        "sku": "lamp",
+        "price": 120
+      },
+      {
+        "time": "23:46:09",
+        "sku": "chair",
+        "price": 187
+      },
+      {
+        "time": "23:46:22",
+        "sku": "bookshelf",
+        "price": 312
+      }
+    ]
+  },
+  "public_reviews_rating_security_20261021": {
+    "scope": "Existing Week07 note, academic current_state, AX hub, owned review-analysis.md and this evidence only; no code/runtime/root REPORT or SETUP mutation.",
+    "scenario": "Compare own latest reviews #3 and #9 plus all 10 numeric cases; distinguish sample mean from earlier board; record security source vs running seller and verified artifact limits.",
+    "invocation": "python3 pathlib/json/hashlib read-assert-update-readback; git show --stat --oneline 899116c; no test/model/market execution by recorder.",
+    "binary_observables": {
+      "raw_reviews_sha256": "64f30cfce1bd72947e8f129c8efc85eb5cd34185637d0ec40d255082207a99b5",
+      "reviews_total": 90,
+      "own_latest10_mean": 4.5,
+      "earlier_board_mean": 4.88,
+      "own_stars": [
+        4,
+        4,
+        5,
+        4,
+        5,
+        5,
+        5,
+        5,
+        3,
+        5
+      ],
+      "same_chair210_stars": [
+        5,
+        3
+      ],
+      "security_source": "899116c",
+      "running_seller_policy": "e4e0188",
+      "parent_validation_34_pass_text_found": true,
+      "independent_approve_text_found": true,
+      "ruff_and_types_success_text_found": true,
+      "vault_readback_equal": true,
+      "links_and_anchors_verified": true
+    },
+    "limits": [
+      "Security tests reviewed from parent captured execution, not rerun by recorder; initial tests.txt has24, parent-validation has34.",
+      "No actual post-patch buyer avoidance/public warning receipt verified; no external report submitted.",
+      "Rating proposals are analysis only; no universal rating formula or price-effect causality claimed."
+    ],
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/top10-strategies/review-analysis.md",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/top10-strategies/own-public-reviews.json",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/security-review/parent-validation.md",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/security-boundary-code-review.md",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/security-review/incident-report.md"
+    ],
+    "vault_records": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256_after": "f195a80abcb5765705a1d82329a9a23c23e3d2424fdbda73fe1438168253ab01"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256_after": "3aee0e989f89fcb58ecbd16ddf2cf677f3b0eb57ef158c4300c284a8675c30e1"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256_after": "96613644d3cb87d47153b4395888776443af7103e4a417df8e4ea02de866c56d"
+      }
+    ]
+  },
+  "review_strategy_live_20261021": {
+    "scenario": "Record user-approved strategy rollout and completed public-path negotiation, distinguishing latest tests from prior tests and smoke from market outcomes.",
+    "invocation": "python3 pathlib/json/hashlib assertions of captured result files; git show --format --no-patch a3b10af/b63fc53; fresh-read minimal note edits and exact readback. Recorder did not run tests, API, trading or process actions.",
+    "source_commits": [
+      "a3b10af",
+      "b63fc53"
+    ],
+    "agent_card_version": "1.1.0",
+    "parent_confirmed_rejoin_kst": "2026-10-21T00:26:33+09:00",
+    "mode": "shop-only",
+    "deadline_kst": "2026-10-21T09:00:00+09:00",
+    "observed_model_usage_cap": 5000,
+    "binary_observables": {
+      "official_25_pass_text": true,
+      "offline_97_pass_text": true,
+      "ruff_pass_text": true,
+      "strict_types_zero_errors_warnings_text": true,
+      "independent_approve_text": true,
+      "structural_all_pass_text": true,
+      "smoke_sequence": [
+        110,
+        1,
+        110,
+        100
+      ],
+      "receipt_price": 100,
+      "registered_public_key_signature_verified": true,
+      "market_result_submitted": false,
+      "public_review_submitted": false,
+      "three_notes_readback_equal": true,
+      "links_anchors_valid": true
+    },
+    "limits": [
+      "Smoke is not a market order/result/review or counted market outcome.",
+      "Price/rating/share effects unmeasured.",
+      "Initial failed expectations preserved in parent artifacts; official API pass is current strategy test not full assignment submission."
+    ],
+    "artifact_paths": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/review-strategy-deploy/parent-validation.md",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/review-strategy-deploy/official-attempt-1.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/review-strategy-deploy/full-suite-final.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/review-strategy-deploy/ruff.txt",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/review-strategy-deploy/types.txt",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/review-strategy-deploy/structural-check.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/review-strategy-deploy/code-review.md",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/review-strategy-deploy/public-smoke.json"
+    ],
+    "notes": [
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256": "313dd9fca9f511e95494bd5a44f046209f31a2384239f44e4c12d482cf8a259c"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256": "22967150692dfbd93325857091174cca5170a2c9fd7eac39d343c1d5c08979c8"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256": "ffa399d7a5796a305df91ba1c8a82266b08412b5a81793b29d5e198b7c3a3a3c"
+      }
+    ]
+  },
+  "price_comparison_rollout_20261021": {
+    "scenario": "Update REPORT15 and SETUP current state plus three existing Vault notes from verified deployment/test/public-smoke artifacts; retain old narrative as dated history.",
+    "invocation": "python3 pathlib/json assertions, fresh-read compare, minimal edits and exact readback; no runtime/API/source edits by recorder.",
+    "commits": [
+      "3d7b1d1",
+      "46e668e",
+      "efc0925"
+    ],
+    "registered_at_kst": "2026-10-21T01:00:59+09:00",
+    "version": "1.2.0",
+    "official_configuration": "AX_PRICE_COMPARISON=0; 25/25 before supplemental parser; no paid rerun after parser",
+    "offline_final": 167,
+    "public_smoke_sequence": [
+      100,
+      1,
+      100,
+      100
+    ],
+    "initial_known_shop_count": 3,
+    "price_kind": "observed_initial_ask",
+    "market_result_submitted": false,
+    "public_review_submitted": false,
+    "deadline_kst": "2026-10-21T09:00:00+09:00",
+    "observed_model_usage_cap": 5000,
+    "artifacts": [
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/parent-validation.md",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/initial-snapshot.json",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/public-smoke.json",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/full-suite-post-parser.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/official-attempt-1.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/ruff-final.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/types-final.log",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/public-page.json",
+      "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/activated-ui-routes.log"
+    ],
+    "records": [
+      {
+        "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/REPORT.md",
+        "sha256_after": "52cc08e2695a32cfc4c95a4069673dae4736ee225ec09377179479f246c833ea"
+      },
+      {
+        "path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/SETUP.md",
+        "sha256_after": "e333fda4541326c9aa4d1f6980a2dfa42c2bc0c44b9511c3839e8d6b9abaf153"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md",
+        "sha256_after": "f45dcc7c5fc09ff5778661f64f27419b207c705ca6939767fc3e6c855e0b1468"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md",
+        "sha256_after": "e5eb9034a611255be9eb7336e0c6bf430f38a4abb5103f215fef442d44b483b2"
+      },
+      {
+        "path": "/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md",
+        "sha256_after": "ecf80b63c40ab95e18832b9a2aa11e143471d815a2092be1506e4c9e7138ce33"
+      }
+    ],
+    "binary_observables": {
+      "exact_readback": true,
+      "three_anchors": true,
+      "artifact_files_nonempty": true,
+      "old_report_setup_intro_preserved": true
+    },
+    "limits": [
+      "Initial external observations known3/5 only.",
+      "Probe opens A2A tasks and attempts cancellation; may affect peer calls/visits.",
+      "No market-wide lowest/quality/settled-price guarantee; live business effects unmeasured."
+    ],
+    "automatic_refresh": {
+      "snapshot_observed_at": "2026-10-20T16:02:11.332049Z",
+      "expires_at": "2026-10-20T16:17:11.332049Z",
+      "public_observed_at": "2026-10-20T16:02:43.362444+00:00",
+      "shops": {
+        "11im": [
+          110,
+          195,
+          290
+        ],
+        "lee-sungsoo": [
+          100,
+          180,
+          260
+        ],
+        "corner-store": [
+          130,
+          234,
+          338
+        ],
+        "dragonash": [
+          102,
+          185,
+          268
+        ],
+        "JangSeongWoong": [
+          115,
+          195,
+          275
+        ]
+      },
+      "own_ceiling": [
+        100,
+        180,
+        260
+      ],
+      "known_shop_count": 5,
+      "all_three_items_each": true,
+      "html_js_json_http200": true,
+      "browser_auto_refresh_without_reload": "Parent directly confirmed; not independently rendered by recorder",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/price-comparison-rollout/public-page.json",
+      "effect_on_sales_ratings_share": "unmeasured"
+    },
+    "activated_ui_routes_pass": 12,
+    "public_a2a_comparison_fields_observed": true,
+    "evidence_commit": "f8dbcc5",
+    "new_pr_or_push": false
+  }
+}

@@ -1,0 +1,87 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 8 items / 5 deselected / 3 selected
+
+tests/test_seller_persistence.py::test_startup_when_open_journal_corrupt_fails_closed[None] PASSED [ 33%]
+tests/test_seller_persistence.py::test_startup_when_open_journal_corrupt_fails_closed[{"product":{}}] PASSED [ 66%]
+tests/test_seller_persistence.py::test_startup_when_open_journal_corrupt_fails_closed[{"product": {"sku": "lamp", "name": "lamp", "description": "", "kind": "lamp", "reserve": 100}, "ask": 99}] FAILED [100%]
+
+=================================== FAILURES ===================================
+_ test_startup_when_open_journal_corrupt_fails_closed[{"product": {"sku": "lamp", "name": "lamp", "description": "", "kind": "lamp", "reserve": 100}, "ask": 99}] _
+
+database = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-57/test_startup_when_open_journal2/seller.sqlite3')
+payload = '{"product": {"sku": "lamp", "name": "lamp", "description": "", "kind": "lamp", "reserve": 100}, "ask": 99}'
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            None,
+            '{"product":{}}',
+            json.dumps(
+                {
+                    "product": {
+                        "sku": "lamp",
+                        "name": "lamp",
+                        "description": "",
+                        "kind": "lamp",
+                        "reserve": 100,
+                    },
+                    "ask": 99,
+                }
+            ),
+        ],
+    )
+    def test_startup_when_open_journal_corrupt_fails_closed(
+        database: Path, payload: str | None
+    ) -> None:
+        # Given: a real database contains an incomplete or malformed open summary.
+        _ = PersistentSellerStore(database)
+        with closing(sqlite3.connect(database)) as connection, connection:
+            _ = connection.execute(
+                "INSERT INTO negotiations VALUES (?, ?, 0)", ("broken", payload)
+            )
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                # When: normal app startup reads the corrupt journal.
+                with pytest.raises((HarnessError, ValidationError)):
+                    _ = fresh_client(Harness(model, print))
+                # Then: no running app or negotiation is exposed.
+                print(json.dumps({"corrupt_payload": payload, "startup_rejected": True}))
+    
+>       anyio.run(scenario)
+
+tests/test_seller_persistence.py:286: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            # When: normal app startup reads the corrupt journal.
+>           with pytest.raises((HarnessError, ValidationError)):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE any of (HarnessError, ValidationError)
+
+tests/test_seller_persistence.py:281: Failed
+=========================== short test summary info ============================
+FAILED tests/test_seller_persistence.py::test_startup_when_open_journal_corrupt_fails_closed[{"product": {"sku": "lamp", "name": "lamp", "description": "", "kind": "lamp", "reserve": 100}, "ask": 99}]
+================== 1 failed, 2 passed, 5 deselected in 1.15s ===================

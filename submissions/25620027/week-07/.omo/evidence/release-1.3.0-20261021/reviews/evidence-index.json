@@ -1,0 +1,128 @@
+{
+  "final_policy": "User steering superseded the earlier five-star eligibility experiment. Public ordinary/good completed reviews are integer3 (cap3.5); no-deal3; observed operator directive1.",
+  "scope": "Offline unit/HTTP-transport boundary scenarios only. No API, SSH, deployment, real buyer activation or review posting performed by this worker. Actual live model shop selection and deployment remain parent responsibilities.",
+  "workdir": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07",
+  "final_scenarios": [
+    {
+      "criterion": "Public cap independent of shop identity",
+      "scenario": "test_completed_purchase_when_seller_identity_changes_keeps_public_cap",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py tests/test_buyer_order.py tests/test_selection_arithmetic.py tests/test_security_boundary.py tests/test_receipt_transport.py tests/test_receipts.py tests/test_cli_market.py -v -s",
+      "binary_observable": "our-shop and competitor-shop both stars == 3",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-scenarios-final.txt"
+    },
+    {
+      "criterion": "Good completed trades remain below3.5",
+      "scenario": "test_completed_rating_when_value_is_good_remains_below_three_point_five",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py tests/test_buyer_order.py tests/test_selection_arithmetic.py tests/test_security_boundary.py tests/test_receipt_transport.py tests/test_receipts.py tests/test_cli_market.py -v -s",
+      "binary_observable": "proposed stars1..5 all produce integer3",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-scenarios-final.txt"
+    },
+    {
+      "criterion": "No fabricated punitive rating",
+      "scenario": "test_success_without_adverse_facts_cannot_support_punitive_rating",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py tests/test_buyer_order.py tests/test_selection_arithmetic.py tests/test_security_boundary.py tests/test_receipt_transport.py tests/test_receipts.py tests/test_cli_market.py -v -s",
+      "binary_observable": "successful below-budget transaction returns3 and review contains no fraud claim",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-scenarios-final.txt"
+    },
+    {
+      "criterion": "Historical unknown telemetry",
+      "scenario": "test_old_purchase_when_metrics_absent_keeps_unknown",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py tests/test_buyer_order.py tests/test_selection_arithmetic.py tests/test_security_boundary.py tests/test_receipt_transport.py tests/test_receipts.py tests/test_cli_market.py -v -s",
+      "binary_observable": "offer_count is None and initial_ask is None",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-scenarios-final.txt"
+    },
+    {
+      "criterion": "Actual negotiation telemetry and same-item pricing",
+      "scenario": "test_market_review_when_actual_offer_and_prior_item_are_measured",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py tests/test_buyer_order.py tests/test_selection_arithmetic.py tests/test_security_boundary.py tests/test_receipt_transport.py tests/test_receipts.py tests/test_cli_market.py -v -s",
+      "binary_observable": "actual offers1, ask140, same-item prior120 or other-itemNone, result3, saved evaluation matches result, prior records preserved",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-scenarios-final.txt"
+    },
+    {
+      "criterion": "Purchase selection avoids public score feedback",
+      "scenario": "test_market_review_when_actual_offer_and_prior_item_are_measured",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py tests/test_buyer_order.py tests/test_selection_arithmetic.py tests/test_security_boundary.py tests/test_receipt_transport.py tests/test_receipts.py tests/test_cli_market.py -v -s",
+      "binary_observable": "selection review has no stars key; overcharge allegation remains True",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-scenarios-final.txt"
+    },
+    {
+      "criterion": "Own rating does not drive purchase choice",
+      "scenario": "test_selection_facts_when_own_public_rating_changes_are_identical",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py tests/test_buyer_order.py tests/test_selection_arithmetic.py tests/test_security_boundary.py tests/test_receipt_transport.py tests/test_receipts.py tests/test_cli_market.py -v -s",
+      "binary_observable": "trade_facts identical when historical rating changes1to5",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-scenarios-final.txt"
+    },
+    {
+      "criterion": "No-deal and observed injection preserved",
+      "scenario": "test_review_when_own_incident_is_distinct_from_ordinary_no_deal",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py tests/test_buyer_order.py tests/test_selection_arithmetic.py tests/test_security_boundary.py tests/test_receipt_transport.py tests/test_receipts.py tests/test_cli_market.py -v -s",
+      "binary_observable": "no-deal3, actual operator-directive incident1, ordinary successful3",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-scenarios-final.txt"
+    },
+    {
+      "criterion": "Budget, receipt and CLI compatibility",
+      "scenario": "tests/test_market_buyer.py; tests/test_buyer_order.py; tests/test_selection_arithmetic.py; tests/test_security_boundary.py; tests/test_receipt_transport.py; tests/test_receipts.py; tests/test_cli_market.py",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py tests/test_buyer_order.py tests/test_selection_arithmetic.py tests/test_security_boundary.py tests/test_receipt_transport.py tests/test_receipts.py tests/test_cli_market.py -v -s",
+      "binary_observable": "all cases PASSED in final78-test run",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-scenarios-final.txt"
+    }
+  ],
+  "quality_checks": [
+    {
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/ruff check market_a2a/market_buyer.py market_a2a/market_decision.py market_a2a/strict_review.py market_a2a/models.py market_a2a/buyer.py tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py",
+      "observable": "All checks passed!",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-lint-final.txt"
+    },
+    {
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/basedpyright --pythonpath /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python market_a2a/market_buyer.py market_a2a/market_decision.py market_a2a/strict_review.py market_a2a/models.py market_a2a/buyer.py tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py",
+      "observable": "0 errors, 0 warnings, 0 notes",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-types-final.txt"
+    },
+    {
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python /Users/sungjinho/.codex/plugins/cache/sisyphuslabs/omo/5.1.40/skills/programming/scripts/python/check-no-excuse-rules.py market_a2a/market_buyer.py market_a2a/market_decision.py market_a2a/strict_review.py market_a2a/models.py market_a2a/buyer.py tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py",
+      "observable": "no violations in 8 file(s)",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-no-excuse-final.txt"
+    },
+    {
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/ruff format --check market_a2a/market_buyer.py market_a2a/market_decision.py market_a2a/strict_review.py market_a2a/models.py market_a2a/buyer.py tests/test_strict_review.py tests/test_market_buyer.py tests/test_security_review_policy.py",
+      "observable": "8 files already formatted",
+      "artifact": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/reviews/public-cap-format-final.txt"
+    }
+  ],
+  "source_files": {
+    "market_a2a/market_buyer.py": {
+      "sha256": "9bfd87552f0e8eba73d3c3dac096072fd834a5507738f55090a1fd869894c49d",
+      "pure_loc": 226
+    },
+    "market_a2a/market_decision.py": {
+      "sha256": "6b7abee961b0c310e9e14316d3aa9e92130ad9b452519f96f95d76b2328e826d",
+      "pure_loc": 54
+    },
+    "market_a2a/strict_review.py": {
+      "sha256": "3a811e80a842fe9d9dd1779699f267dd7dd5c8780bf5eed23584920aee87c4fc",
+      "pure_loc": 66
+    },
+    "market_a2a/models.py": {
+      "sha256": "54dc4dc6bb170a256a5263f7bcfb95789653c87a7b86ea50d16f456b0c873c99",
+      "pure_loc": 72
+    },
+    "market_a2a/buyer.py": {
+      "sha256": "6e8697173bd62c54cfb9fd032617a6e711916bd39b4efa86356d56b8e15af1b8",
+      "pure_loc": 214
+    },
+    "tests/test_strict_review.py": {
+      "sha256": "eca00091e3bf17426001dc53d7909dacb65511fe89125bf256d40f25fa8d2096",
+      "pure_loc": 171
+    },
+    "tests/test_market_buyer.py": {
+      "sha256": "def98babebe86c964fd38baa64eb868832405c91a91c2cbd624d75780e61d61b",
+      "pure_loc": 239
+    },
+    "tests/test_security_review_policy.py": {
+      "sha256": "69244abc5aa13799967a4e9e60fb4ae367bf597983adb3974414f29a598e03ea",
+      "pure_loc": 83
+    }
+  },
+  "self_review": "Each touched production module has one role: market orchestration, typed model actions, review grounding, negotiation or shared outcomes. Telemetry originates at buyer protocol boundary; optional typed fields preserve historical unknowns. No new type escape, broad catch or variant-dispatch branch. Existing module extraction keeps imports compatible. New regressions observe public scores, wire-derived telemetry and selection facts, not prompt prose. Programming/refactor skills are provider-managed; no reusable local skill correction identified.",
+  "earlier_attempts": "All earlier logs retained. baseline.txt/regression-before.txt capture original behavior. initial-after/scenarios/final-scenarios and pre-public-cap quality logs concern the superseded5star experiment and are NOT final evidence."
+}

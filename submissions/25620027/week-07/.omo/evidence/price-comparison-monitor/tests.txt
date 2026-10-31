@@ -1,0 +1,39 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 29 items
+
+tests/test_price_monitor.py::test_refresh_when_ranked_shops_exist_opens_only_fifteen_and_cancels PASSED [  3%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[http://a.workers.dev] PASSED [  6%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://localhost] PASSED [ 10%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://127.0.0.1] PASSED [ 13%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://10.0.0.2] PASSED [ 17%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://[::1]] PASSED [ 20%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://server.internal] PASSED [ 24%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://evilworkers.dev] PASSED [ 27%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://workers.dev.evil.example] PASSED [ 31%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://custom.example] PASSED [ 34%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://name:secret@a.workers.dev] PASSED [ 37%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://a.workers.dev:8443] PASSED [ 41%]
+tests/test_price_monitor.py::test_host_when_not_supported_rejects_before_requests[https://a.workers.dev/?token=x] PASSED [ 44%]
+tests/test_price_monitor.py::test_refresh_when_custom_domain_is_ranked_keeps_three_unavailable_items PASSED [ 48%]
+tests/test_price_monitor.py::test_refresh_when_card_advertises_other_host_never_posts PASSED [ 51%]
+tests/test_price_monitor.py::test_refresh_when_asks_missing_and_cancel_unsupported_records_no_prices PASSED [ 55%]
+tests/test_price_monitor.py::test_refresh_when_registry_fails_preserves_old_snapshot PASSED [ 58%]
+tests/test_price_monitor.py::test_run_when_cache_is_fresh_waits_before_any_request PASSED [ 62%]
+tests/test_price_monitor.py::test_refresh_when_card_redirects_never_follows_location PASSED [ 65%]
+tests/test_price_monitor.py::test_refresh_when_opening_is_completed_discards_ask_and_cancels PASSED [ 68%]
+tests/test_price_monitor.py::test_refresh_when_one_peer_times_out_other_quotes_survive PASSED [ 72%]
+tests/test_price_monitor.py::test_refresh_when_no_cache_and_registry_fails_returns_expired_empty PASSED [ 75%]
+tests/test_price_monitor.py::test_run_when_registry_stays_down_stops_after_sixty_refreshes PASSED [ 79%]
+tests/test_price_monitor.py::test_production_client_has_redirects_disabled_and_twenty_second_timeout PASSED [ 82%]
+tests/test_price_monitor.py::test_refresh_when_explicit_product_differs_discards_that_quote[identity0-task] PASSED [ 86%]
+tests/test_price_monitor.py::test_refresh_when_explicit_product_differs_discards_that_quote[identity0-message] PASSED [ 89%]
+tests/test_price_monitor.py::test_refresh_when_explicit_product_differs_discards_that_quote[identity1-task] PASSED [ 93%]
+tests/test_price_monitor.py::test_refresh_when_explicit_product_differs_discards_that_quote[identity1-message] PASSED [ 96%]
+tests/test_price_monitor.py::test_selection_when_duplicates_exist_refills_unique_ranked_slots PASSED [100%]
+
+============================== 29 passed in 0.25s ==============================

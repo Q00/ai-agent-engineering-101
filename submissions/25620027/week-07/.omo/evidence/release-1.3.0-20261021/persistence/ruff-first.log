@@ -1,0 +1,116 @@
+E501 Line too long (94 > 88)
+  --> tests/test_seller_persistence.py:43:89
+   |
+43 | def fresh_client(harness: Harness, signer: ReceiptSigner | None = None) -> httpx2.AsyncClient:
+   |                                                                                         ^^^^^^
+44 |     catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+45 |     app = create_app("http://seller/", harness, catalog, "Test", signer=signer)
+   |
+
+E501 Line too long (90 > 88)
+  --> tests/test_seller_persistence.py:87:89
+   |
+85 |             assert raw["sku"] == "lamp"
+86 |             receipt = SignedReceipt.model_validate({
+87 |                 **{field: raw[field] for field in ("shop", "item", "task", "sig_seller")},
+   |                                                                                         ^^
+88 |                 "price": 105,
+89 |             })
+   |
+
+E501 Line too long (94 > 88)
+  --> tests/test_seller_persistence.py:91:89
+   |
+89 |             })
+90 |             assert receipt.task == opened.id
+91 |             key.public_key().verify(base64.b64decode(receipt.sig_seller), receipt.canonical())
+   |                                                                                         ^^^^^^
+92 |             assert isinstance(replay, dict)
+93 |             assert "error" in replay
+   |
+
+E501 Line too long (98 > 88)
+  --> tests/test_seller_persistence.py:96:89
+   |
+94 |             assert len(calls) == count_before_replay == 5
+95 |             assert PersistentSellerStore(database).restore() == ({}, {opened.id})
+96 |             print(json.dumps({"accepted": accepted, "replay": replay, "model_calls": len(calls)}))
+   |                                                                                         ^^^^^^^^^^
+97 |
+98 |     anyio.run(scenario)
+   |
+
+E501 Line too long (94 > 88)
+   --> tests/test_seller_persistence.py:124:89
+    |
+122 |             states, closed = PersistentSellerStore(database).restore()
+123 |             state = states[opened.id]
+124 |             assert (state.product.sku, state.product.reserve, state.ask) == ("lamp", 100, 105)
+    |                                                                                         ^^^^^^
+125 |             assert state.incoming_offers == 1
+126 |             assert not closed
+    |
+
+E501 Line too long (97 > 88)
+   --> tests/test_seller_persistence.py:151:89
+    |
+151 | def test_task_get_list_delete_when_reopened_preserve_sdk_owner_isolation(database: Path) -> None:
+    |                                                                                         ^^^^^^^^^
+152 |     # Given: distinct owners share an ID and each has a private task.
+153 |     alice = ServerCallContext(user=NamedUser("alice"))
+    |
+
+E501 Line too long (118 > 88)
+   --> tests/test_seller_persistence.py:170:89
+    |
+168 |             assert shared is not None
+169 |             assert shared.context_id == owner
+170 |             assert {task.id for task in (await restored.list(ListTasksRequest(), context)).tasks} == {"shared", owner}
+    |                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+171 |         assert await restored.get("bob", alice) is None
+172 |         assert await restored.get("alice", bob) is None
+    |
+
+E501 Line too long (101 > 88)
+   --> tests/test_seller_persistence.py:178:89
+    |
+176 |         assert await final.get("shared", alice) is None
+177 |         assert await final.get("shared", bob) is not None
+178 |         assert [task.id for task in (await final.list(ListTasksRequest(), alice)).tasks] == ["alice"]
+    |                                                                                         ^^^^^^^^^^^^^
+179 |         print(json.dumps({"owner_isolation": True, "durable_owner_delete": True}))
+    |
+
+E501 Line too long (101 > 88)
+   --> tests/test_seller_persistence.py:206:89
+    |
+205 | @pytest.mark.parametrize("payload", [None, '{"product":{}}'])
+206 | def test_startup_when_open_journal_corrupt_fails_closed(database: Path, payload: str | None) -> None:
+    |                                                                                         ^^^^^^^^^^^^^
+207 |     # Given: a real database contains an incomplete or malformed open summary.
+208 |     _ = PersistentSellerStore(database)
+    |
+
+E501 Line too long (96 > 88)
+   --> tests/test_seller_persistence.py:210:89
+    |
+208 |     _ = PersistentSellerStore(database)
+209 |     with closing(sqlite3.connect(database)) as connection, connection:
+210 |         _ = connection.execute("INSERT INTO negotiations VALUES (?, ?, 0)", ("broken", payload))
+    |                                                                                         ^^^^^^^^
+211 |
+212 |     async def scenario() -> None:
+    |
+
+E501 Line too long (96 > 88)
+   --> tests/test_seller_persistence.py:227:89
+    |
+225 | ) -> None:
+226 |     # Given: the pre-persistence operating mode has an open task only in memory.
+227 |     calls = scripted(monkeypatch, [("search_catalog", {"query": "lamp"}), action("quote", 105)])
+    |                                                                                         ^^^^^^^^
+228 |
+229 |     async def scenario() -> None:
+    |
+
+Found 11 errors.

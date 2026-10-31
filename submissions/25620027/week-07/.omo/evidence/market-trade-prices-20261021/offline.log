@@ -1,0 +1,69 @@
+........................................................................ [ 27%]
+..........F....F........................................................ [ 54%]
+........................................................................ [ 81%]
+.................................................                        [100%]
+=================================== FAILURES ===================================
+____________ test_run_when_cache_is_fresh_waits_before_any_request _____________
+
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-11/test_run_when_cache_is_fresh_w0')
+wire = <test_price_monitor.MarketTransport object at 0x10d4bbe90>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d4b85c0>
+
+    def test_run_when_cache_is_fresh_waits_before_any_request(
+        tmp_path: Path, wire: MarketTransport, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Given: a recently refreshed cache from the previous process.
+        now = dt.datetime.now(dt.UTC)
+        snapshot = ComparisonSnapshot(
+            observed_at=now, expires_at=now + dt.timedelta(seconds=900), shops=()
+        )
+        path = tmp_path / "cache"
+        _ = path.write_text(snapshot.model_dump_json())
+        feed = ComparisonFeed()
+        waits: list[float] = []
+    
+        async def sleep(delay: float) -> None:
+            waits.append(delay)
+            raise StopWaitingError
+    
+        monkeypatch.setattr("market_a2a.price_monitor.anyio.sleep", sleep)
+        # When: a restarted monitor loads its cache.
+        with pytest.raises(StopWaitingError):
+            anyio.run(PriceMonitor(feed, path).run)
+        # Then: it publishes the cache and waits, avoiding duplicate opening requests.
+>       assert feed.snapshot == snapshot
+E       assert ComparisonSna...ade_prices={}) == ComparisonSna...ade_prices={})
+E         
+E         Use -v to get more diff
+
+tests/test_price_monitor.py:345: AssertionError
+________ test_run_when_registry_stays_down_stops_after_sixty_refreshes _________
+
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-11/test_run_when_registry_stays_d0')
+wire = <test_price_monitor.MarketTransport object at 0x111cdc500>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111ea8560>
+
+    def test_run_when_registry_stays_down_stops_after_sixty_refreshes(
+        tmp_path: Path, wire: MarketTransport, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Given: the registry remains unavailable throughout a monitor lifetime.
+        wire.registry_failure = True
+        waits: list[float] = []
+    
+        async def sleep(delay: float) -> None:
+            waits.append(delay)
+    
+        monkeypatch.setattr("market_a2a.price_monitor.anyio.sleep", sleep)
+        # When: the complete bounded loop runs without real waiting or network I/O.
+        anyio.run(PriceMonitor(ComparisonFeed(), tmp_path / "cache").run)
+        # Then: it survives all failures, keeps ten-minute spacing and stops at 60.
+>       assert len(wire.requests) == 60
+E       AssertionError: assert 1008 == 60
+E        +  where 1008 = len([<Request('GET', 'https://market.ourolabs.ai/api/board')>, <Request('GET', 'https://market.ourolabs.ai/api/board')>, <...Request('GET', 'https://market.ourolabs.ai/api/board')>, <Request('GET', 'https://market.ourolabs.ai/api/board')>, ...])
+E        +    where [<Request('GET', 'https://market.ourolabs.ai/api/board')>, <Request('GET', 'https://market.ourolabs.ai/api/board')>, <...Request('GET', 'https://market.ourolabs.ai/api/board')>, <Request('GET', 'https://market.ourolabs.ai/api/board')>, ...] = <test_price_monitor.MarketTransport object at 0x111cdc500>.requests
+
+tests/test_price_monitor.py:425: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_price_monitor.py::test_run_when_cache_is_fresh_waits_before_any_request
+FAILED tests/test_price_monitor.py::test_run_when_registry_stays_down_stops_after_sixty_refreshes
+2 failed, 263 passed in 10.81s

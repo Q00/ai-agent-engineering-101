@@ -1,0 +1,433 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+___ test_first_offer_when_explicit_completes_signed_sale[offer lamp 100-100] ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ac0c740>
+text = 'offer lamp 100', price = 100
+
+    @pytest.mark.parametrize(
+        ("text", "price"),
+        [("offer lamp 100", 100), ("buy lamp for 100", 100), ("offer lamp 125", 125)],
+    )
+    def test_first_offer_when_explicit_completes_signed_sale(
+        monkeypatch: pytest.MonkeyPatch,
+        text: str,
+        price: int,
+    ) -> None:
+        # Given: a model must retrieve, preserve SKU and amount, and correct bad actions.
+        _ = scripted(
+            monkeypatch,
+            [
+                action("reject", price),
+                action("accept", price),
+                ("search_catalog", {"query": "lamp"}),
+                action("quote", 100),
+                action("accept", price, "chair"),
+                action("accept", price + 1),
+                action("accept", price),
+            ],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        key = Ed25519PrivateKey.generate()
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, print),
+                    catalog,
+                    "Test",
+                    signer=ReceiptSigner(key),
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                ) as client:
+                    # When: one explicit offer reaches the real A2A route.
+                    wire = await send(client, text)
+                    task = task_from(wire)
+                    replay = await send(client, str(price), task.id)
+                    # Then: exact amount is signed once and terminal replay is rejected.
+                    assert task.status.state == TaskState.TASK_STATE_COMPLETED
+                    raw = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(task.artifacts[0].parts[0].data)
+                    )
+                    assert isinstance(raw, dict)
+                    assert raw["price"] == price
+                    receipt = SignedReceipt.model_validate(
+                        {
+                            **{
+                                field: raw[field]
+                                for field in ("shop", "item", "task", "sig_seller")
+                            },
+                            "price": price,
+                        }
+                    )
+                    assert receipt.price == price
+                    assert raw["sku"] == "lamp"
+                    assert receipt.task == task.id
+                    key.public_key().verify(
+                        base64.b64decode(receipt.sig_seller), receipt.canonical()
+                    )
+                    assert isinstance(replay, dict)
+                    assert "error" in replay
+                    print(json.dumps({"scenario": text, "wire": wire, "replay": replay}))
+    
+>       anyio.run(scenario)
+
+tests/test_seller_offer_release.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, print),
+                catalog,
+                "Test",
+                signer=ReceiptSigner(key),
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+            ) as client:
+                # When: one explicit offer reaches the real A2A route.
+                wire = await send(client, text)
+                task = task_from(wire)
+                replay = await send(client, str(price), task.id)
+                # Then: exact amount is signed once and terminal replay is rejected.
+>               assert task.status.state == TaskState.TASK_STATE_COMPLETED
+E               assert 6 == 3
+E                +  where 6 = state: TASK_STATE_INPUT_REQUIRED\nmessage {\n  message_id: "12da61f5-d0d2-404c-be46-5714157be589"\n  context_id: "acfc7b4...sk"\n      value {\n        number_value: 100\n      }\n    }\n  }\n}\ntimestamp {\n  seconds: 1792544765\n  nanos: 970252000\n}\n.state
+E                +    where state: TASK_STATE_INPUT_REQUIRED\nmessage {\n  message_id: "12da61f5-d0d2-404c-be46-5714157be589"\n  context_id: "acfc7b4...sk"\n      value {\n        number_value: 100\n      }\n    }\n  }\n}\ntimestamp {\n  seconds: 1792544765\n  nanos: 970252000\n}\n = id: "5e37596a-fc04-4688-b6a4-08c6d700e7b0"\ncontext_id: "acfc7b4d-a20f-4dc0-bb0c-ca4b83df7455"\nstatus {\n  state: TASK_S...df7455"\n  task_id: "5e37596a-fc04-4688-b6a4-08c6d700e7b0"\n  role: ROLE_USER\n  parts {\n    text: "offer lamp 100"\n  }\n}\n.status
+E                +  and   3 = <google.protobuf.internal.enum_type_wrapper.EnumTypeWrapper object at 0x1078cd820>.TASK_STATE_COMPLETED
+
+tests/test_seller_offer_release.py:134: AssertionError
+----------------------------- Captured stdout call -----------------------------
+seller.summary task=5e37596a-fc04-4688-b6a4-08c6d700e7b0 selected=- rounds=0 offer=100 history_replayed=0
+CONTEXT chars=396 tools=2
+MODEL_TOOL round=1 decide {"action": "reject", "price": 100, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "Available item; accept the offer or quote."}
+MODEL_TOOL round=2 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=3 search_catalog {"query": "lamp"}
+seller.search task=5e37596a-fc04-4688-b6a4-08c6d700e7b0 candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "lamp", "name": "lamp", "description": "Basic white task lamp.", "kind": "lamp", "material": "steel", "color": "white", "height_cm": 45, "capacity": 0, "reserve": 100}, "opening_max": 110, "allowed_quote_min": 100, "allowed_quote_max": 110, "comparison": {"item": "lamp", "ceiling": 110, "baseline_ceiling": 110, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable"}, "own_price_history": {"quote_actions": 61, "accepted_sales": 14, "recent_accepted_prices": [100, 106, 106, 106, 105]}}]
+MODEL_TOOL round=4 decide {"action": "quote", "price": 100, "sku": "lamp", "reason": "Test"}
+seller.action task=5e37596a-fc04-4688-b6a4-08c6d700e7b0 action=quote sku=lamp price=100
+TOOL_RESULT decide {"action": "quote", "price": 100}
+seller.summary task=5e37596a-fc04-4688-b6a4-08c6d700e7b0 selected=lamp rounds=0 offer=100 history_replayed=0
+CONTEXT chars=641 tools=1
+MODEL_TOOL round=1 decide {"action": "accept", "price": 100, "sku": "chair", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=2 decide {"action": "accept", "price": 101, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "No matching offer. Use quote to state a price."}
+MODEL_TOOL round=3 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Test"}
+seller.receipt task=5e37596a-fc04-4688-b6a4-08c6d700e7b0 sku=lamp price=100
+seller.action task=5e37596a-fc04-4688-b6a4-08c6d700e7b0 action=accept sku=lamp price=100
+TOOL_RESULT decide {"action": "accept", "price": 100}
+__ test_first_offer_when_explicit_completes_signed_sale[buy lamp for 100-100] __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10af61e20>
+text = 'buy lamp for 100', price = 100
+
+    @pytest.mark.parametrize(
+        ("text", "price"),
+        [("offer lamp 100", 100), ("buy lamp for 100", 100), ("offer lamp 125", 125)],
+    )
+    def test_first_offer_when_explicit_completes_signed_sale(
+        monkeypatch: pytest.MonkeyPatch,
+        text: str,
+        price: int,
+    ) -> None:
+        # Given: a model must retrieve, preserve SKU and amount, and correct bad actions.
+        _ = scripted(
+            monkeypatch,
+            [
+                action("reject", price),
+                action("accept", price),
+                ("search_catalog", {"query": "lamp"}),
+                action("quote", 100),
+                action("accept", price, "chair"),
+                action("accept", price + 1),
+                action("accept", price),
+            ],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        key = Ed25519PrivateKey.generate()
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, print),
+                    catalog,
+                    "Test",
+                    signer=ReceiptSigner(key),
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                ) as client:
+                    # When: one explicit offer reaches the real A2A route.
+                    wire = await send(client, text)
+                    task = task_from(wire)
+                    replay = await send(client, str(price), task.id)
+                    # Then: exact amount is signed once and terminal replay is rejected.
+                    assert task.status.state == TaskState.TASK_STATE_COMPLETED
+                    raw = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(task.artifacts[0].parts[0].data)
+                    )
+                    assert isinstance(raw, dict)
+                    assert raw["price"] == price
+                    receipt = SignedReceipt.model_validate(
+                        {
+                            **{
+                                field: raw[field]
+                                for field in ("shop", "item", "task", "sig_seller")
+                            },
+                            "price": price,
+                        }
+                    )
+                    assert receipt.price == price
+                    assert raw["sku"] == "lamp"
+                    assert receipt.task == task.id
+                    key.public_key().verify(
+                        base64.b64decode(receipt.sig_seller), receipt.canonical()
+                    )
+                    assert isinstance(replay, dict)
+                    assert "error" in replay
+                    print(json.dumps({"scenario": text, "wire": wire, "replay": replay}))
+    
+>       anyio.run(scenario)
+
+tests/test_seller_offer_release.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, print),
+                catalog,
+                "Test",
+                signer=ReceiptSigner(key),
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+            ) as client:
+                # When: one explicit offer reaches the real A2A route.
+                wire = await send(client, text)
+                task = task_from(wire)
+                replay = await send(client, str(price), task.id)
+                # Then: exact amount is signed once and terminal replay is rejected.
+>               assert task.status.state == TaskState.TASK_STATE_COMPLETED
+E               assert 6 == 3
+E                +  where 6 = state: TASK_STATE_INPUT_REQUIRED\nmessage {\n  message_id: "e3644667-3cae-40ee-b27a-dc579bd3f380"\n  context_id: "271f1fd...sk"\n      value {\n        number_value: 100\n      }\n    }\n  }\n}\ntimestamp {\n  seconds: 1792544766\n  nanos: 127054000\n}\n.state
+E                +    where state: TASK_STATE_INPUT_REQUIRED\nmessage {\n  message_id: "e3644667-3cae-40ee-b27a-dc579bd3f380"\n  context_id: "271f1fd...sk"\n      value {\n        number_value: 100\n      }\n    }\n  }\n}\ntimestamp {\n  seconds: 1792544766\n  nanos: 127054000\n}\n = id: "8d1e16b8-7c04-4b7e-9a90-4b624f6bb12f"\ncontext_id: "271f1fda-f336-477e-be91-6155ea39e134"\nstatus {\n  state: TASK_S...e134"\n  task_id: "8d1e16b8-7c04-4b7e-9a90-4b624f6bb12f"\n  role: ROLE_USER\n  parts {\n    text: "buy lamp for 100"\n  }\n}\n.status
+E                +  and   3 = <google.protobuf.internal.enum_type_wrapper.EnumTypeWrapper object at 0x1078cd820>.TASK_STATE_COMPLETED
+
+tests/test_seller_offer_release.py:134: AssertionError
+----------------------------- Captured stdout call -----------------------------
+seller.summary task=8d1e16b8-7c04-4b7e-9a90-4b624f6bb12f selected=- rounds=0 offer=100 history_replayed=0
+CONTEXT chars=398 tools=2
+MODEL_TOOL round=1 decide {"action": "reject", "price": 100, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "Available item; accept the offer or quote."}
+MODEL_TOOL round=2 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=3 search_catalog {"query": "lamp"}
+seller.search task=8d1e16b8-7c04-4b7e-9a90-4b624f6bb12f candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "lamp", "name": "lamp", "description": "Basic white task lamp.", "kind": "lamp", "material": "steel", "color": "white", "height_cm": 45, "capacity": 0, "reserve": 100}, "opening_max": 110, "allowed_quote_min": 100, "allowed_quote_max": 110, "comparison": {"item": "lamp", "ceiling": 110, "baseline_ceiling": 110, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable"}, "own_price_history": {"quote_actions": 61, "accepted_sales": 14, "recent_accepted_prices": [100, 106, 106, 106, 105]}}]
+MODEL_TOOL round=4 decide {"action": "quote", "price": 100, "sku": "lamp", "reason": "Test"}
+seller.action task=8d1e16b8-7c04-4b7e-9a90-4b624f6bb12f action=quote sku=lamp price=100
+TOOL_RESULT decide {"action": "quote", "price": 100}
+seller.summary task=8d1e16b8-7c04-4b7e-9a90-4b624f6bb12f selected=lamp rounds=0 offer=100 history_replayed=0
+CONTEXT chars=641 tools=1
+MODEL_TOOL round=1 decide {"action": "accept", "price": 100, "sku": "chair", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=2 decide {"action": "accept", "price": 101, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "No matching offer. Use quote to state a price."}
+MODEL_TOOL round=3 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Test"}
+seller.receipt task=8d1e16b8-7c04-4b7e-9a90-4b624f6bb12f sku=lamp price=100
+seller.action task=8d1e16b8-7c04-4b7e-9a90-4b624f6bb12f action=accept sku=lamp price=100
+TOOL_RESULT decide {"action": "accept", "price": 100}
+___ test_first_offer_when_explicit_completes_signed_sale[offer lamp 125-125] ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f9e4560>
+text = 'offer lamp 125', price = 125
+
+    @pytest.mark.parametrize(
+        ("text", "price"),
+        [("offer lamp 100", 100), ("buy lamp for 100", 100), ("offer lamp 125", 125)],
+    )
+    def test_first_offer_when_explicit_completes_signed_sale(
+        monkeypatch: pytest.MonkeyPatch,
+        text: str,
+        price: int,
+    ) -> None:
+        # Given: a model must retrieve, preserve SKU and amount, and correct bad actions.
+        _ = scripted(
+            monkeypatch,
+            [
+                action("reject", price),
+                action("accept", price),
+                ("search_catalog", {"query": "lamp"}),
+                action("quote", 100),
+                action("accept", price, "chair"),
+                action("accept", price + 1),
+                action("accept", price),
+            ],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        key = Ed25519PrivateKey.generate()
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, print),
+                    catalog,
+                    "Test",
+                    signer=ReceiptSigner(key),
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                ) as client:
+                    # When: one explicit offer reaches the real A2A route.
+                    wire = await send(client, text)
+                    task = task_from(wire)
+                    replay = await send(client, str(price), task.id)
+                    # Then: exact amount is signed once and terminal replay is rejected.
+                    assert task.status.state == TaskState.TASK_STATE_COMPLETED
+                    raw = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(task.artifacts[0].parts[0].data)
+                    )
+                    assert isinstance(raw, dict)
+                    assert raw["price"] == price
+                    receipt = SignedReceipt.model_validate(
+                        {
+                            **{
+                                field: raw[field]
+                                for field in ("shop", "item", "task", "sig_seller")
+                            },
+                            "price": price,
+                        }
+                    )
+                    assert receipt.price == price
+                    assert raw["sku"] == "lamp"
+                    assert receipt.task == task.id
+                    key.public_key().verify(
+                        base64.b64decode(receipt.sig_seller), receipt.canonical()
+                    )
+                    assert isinstance(replay, dict)
+                    assert "error" in replay
+                    print(json.dumps({"scenario": text, "wire": wire, "replay": replay}))
+    
+>       anyio.run(scenario)
+
+tests/test_seller_offer_release.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, print),
+                catalog,
+                "Test",
+                signer=ReceiptSigner(key),
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+            ) as client:
+                # When: one explicit offer reaches the real A2A route.
+                wire = await send(client, text)
+                task = task_from(wire)
+                replay = await send(client, str(price), task.id)
+                # Then: exact amount is signed once and terminal replay is rejected.
+>               assert task.status.state == TaskState.TASK_STATE_COMPLETED
+E               assert 6 == 3
+E                +  where 6 = state: TASK_STATE_INPUT_REQUIRED\nmessage {\n  message_id: "ef0da0e0-4a92-42e6-9159-6d19ca345a18"\n  context_id: "35873af...sk"\n      value {\n        number_value: 100\n      }\n    }\n  }\n}\ntimestamp {\n  seconds: 1792544766\n  nanos: 201979000\n}\n.state
+E                +    where state: TASK_STATE_INPUT_REQUIRED\nmessage {\n  message_id: "ef0da0e0-4a92-42e6-9159-6d19ca345a18"\n  context_id: "35873af...sk"\n      value {\n        number_value: 100\n      }\n    }\n  }\n}\ntimestamp {\n  seconds: 1792544766\n  nanos: 201979000\n}\n = id: "78f2586d-fa08-4bbc-938d-9e2adf045fd2"\ncontext_id: "35873afc-8b53-43e4-b6cb-206d6ed0ddea"\nstatus {\n  state: TASK_S...d0ddea"\n  task_id: "78f2586d-fa08-4bbc-938d-9e2adf045fd2"\n  role: ROLE_USER\n  parts {\n    text: "offer lamp 125"\n  }\n}\n.status
+E                +  and   3 = <google.protobuf.internal.enum_type_wrapper.EnumTypeWrapper object at 0x1078cd820>.TASK_STATE_COMPLETED
+
+tests/test_seller_offer_release.py:134: AssertionError
+----------------------------- Captured stdout call -----------------------------
+seller.summary task=78f2586d-fa08-4bbc-938d-9e2adf045fd2 selected=- rounds=0 offer=125 history_replayed=0
+CONTEXT chars=396 tools=2
+MODEL_TOOL round=1 decide {"action": "reject", "price": 125, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "Available item; accept the offer or quote."}
+MODEL_TOOL round=2 decide {"action": "accept", "price": 125, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=3 search_catalog {"query": "lamp"}
+seller.search task=78f2586d-fa08-4bbc-938d-9e2adf045fd2 candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "lamp", "name": "lamp", "description": "Basic white task lamp.", "kind": "lamp", "material": "steel", "color": "white", "height_cm": 45, "capacity": 0, "reserve": 100}, "opening_max": 110, "allowed_quote_min": 100, "allowed_quote_max": 110, "comparison": {"item": "lamp", "ceiling": 110, "baseline_ceiling": 110, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable"}, "own_price_history": {"quote_actions": 61, "accepted_sales": 14, "recent_accepted_prices": [100, 106, 106, 106, 105]}}]
+MODEL_TOOL round=4 decide {"action": "quote", "price": 100, "sku": "lamp", "reason": "Test"}
+seller.action task=78f2586d-fa08-4bbc-938d-9e2adf045fd2 action=quote sku=lamp price=100
+TOOL_RESULT decide {"action": "quote", "price": 100}
+seller.summary task=78f2586d-fa08-4bbc-938d-9e2adf045fd2 selected=lamp rounds=0 offer=125 history_replayed=0
+CONTEXT chars=641 tools=1
+MODEL_TOOL round=1 decide {"action": "accept", "price": 125, "sku": "chair", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=2 decide {"action": "accept", "price": 126, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "No matching offer. Use quote to state a price."}
+MODEL_TOOL round=3 decide {"action": "accept", "price": 125, "sku": "lamp", "reason": "Test"}
+seller.receipt task=78f2586d-fa08-4bbc-938d-9e2adf045fd2 sku=lamp price=125
+seller.action task=78f2586d-fa08-4bbc-938d-9e2adf045fd2 action=accept sku=lamp price=125
+TOOL_RESULT decide {"action": "accept", "price": 125}
+=========================== short test summary info ============================
+FAILED tests/test_seller_offer_release.py::test_first_offer_when_explicit_completes_signed_sale[offer lamp 100-100]
+FAILED tests/test_seller_offer_release.py::test_first_offer_when_explicit_completes_signed_sale[buy lamp for 100-100]
+FAILED tests/test_seller_offer_release.py::test_first_offer_when_explicit_completes_signed_sale[offer lamp 125-125]
+3 failed, 11 deselected in 1.13s

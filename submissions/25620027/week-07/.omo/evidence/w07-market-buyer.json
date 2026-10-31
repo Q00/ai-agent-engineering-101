@@ -1,0 +1,181 @@
+{
+  "scope": "offline market buyer and receipt transport validation",
+  "cwd": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07",
+  "results": [
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_market_buyer.py",
+        "tests/test_receipt_transport.py",
+        "-vv"
+      ],
+      "exit_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python\ncachedir: .pytest_cache\nrootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07\nconfigfile: pyproject.toml\nplugins: anyio-4.15.1\ncollecting ... collected 15 items\n\ntests/test_market_buyer.py::test_trade_when_model_selects_shop_preserves_receipt_and_budget PASSED [  6%]\ntests/test_market_buyer.py::test_memory_when_url_changes_retains_failed_trade_for_selection PASSED [ 13%]\ntests/test_market_buyer.py::test_failure_when_review_model_fails_still_persists_trade PASSED [ 20%]\ntests/test_market_buyer.py::test_registry_when_schema_invalid_surfaces_error[{}] PASSED [ 26%]\ntests/test_market_buyer.py::test_registry_when_schema_invalid_surfaces_error[[{\"name\":\"x\",\"url\":\"u\",\"reviews\":[{}]}]] PASSED [ 33%]\ntests/test_market_buyer.py::test_memory_when_corrupt_surfaces_error PASSED [ 40%]\ntests/test_market_buyer.py::test_trade_when_transport_fails_records_failure_and_review PASSED [ 46%]\ntests/test_market_buyer.py::test_memory_when_atomic_replace_fails_preserves_previous_file PASSED [ 53%]\ntests/test_receipt_transport.py::test_receipt_when_valid_preserves_signature_extensions_and_numeric_type[120] PASSED [ 60%]\ntests/test_receipt_transport.py::test_receipt_when_valid_preserves_signature_extensions_and_numeric_type[120.0] PASSED [ 66%]\ntests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[121] PASSED [ 73%]\ntests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[120.5] PASSED [ 80%]\ntests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[120] PASSED [ 86%]\ntests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[True] PASSED [ 93%]\ntests/test_receipt_transport.py::test_receipt_when_task_identity_differs_rejects_checkout PASSED [100%]\n\n============================== 15 passed in 0.61s ==============================\n",
+      "stderr": ""
+    },
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/ruff",
+        "check",
+        "market_a2a/market_buyer.py",
+        "market_a2a/memory.py",
+        "market_a2a/models.py",
+        "market_a2a/remote.py",
+        "tests/test_market_buyer.py",
+        "tests/test_receipt_transport.py",
+        "tests/market_fakes.py"
+      ],
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/ruff",
+        "format",
+        "--check",
+        "market_a2a/market_buyer.py",
+        "market_a2a/memory.py",
+        "market_a2a/models.py",
+        "market_a2a/remote.py",
+        "tests/test_market_buyer.py",
+        "tests/test_receipt_transport.py",
+        "tests/market_fakes.py"
+      ],
+      "exit_code": 0,
+      "stdout": "7 files already formatted\n",
+      "stderr": ""
+    },
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/basedpyright",
+        "--pythonpath",
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python",
+        "market_a2a/market_buyer.py",
+        "market_a2a/memory.py",
+        "market_a2a/models.py",
+        "market_a2a/remote.py",
+        "tests/test_market_buyer.py",
+        "tests/test_receipt_transport.py",
+        "tests/market_fakes.py"
+      ],
+      "exit_code": 0,
+      "stdout": "0 errors, 0 warnings, 0 notes\n",
+      "stderr": ""
+    },
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python",
+        "/Users/sungjinho/.codex/plugins/cache/sisyphuslabs/omo/5.1.35/skills/programming/scripts/python/check-no-excuse-rules.py",
+        "market_a2a/market_buyer.py",
+        "market_a2a/memory.py",
+        "market_a2a/models.py",
+        "market_a2a/remote.py",
+        "tests/test_market_buyer.py",
+        "tests/test_receipt_transport.py",
+        "tests/market_fakes.py"
+      ],
+      "exit_code": 0,
+      "stdout": "no violations in 7 file(s)\n",
+      "stderr": ""
+    }
+  ],
+  "limitations": [
+    "Model judgment is scripted in offline tests; no real model/network or official market test is claimed."
+  ],
+  "skill_reflection": "Applied strict Python boundaries and tests. No reusable user-owned skill change identified; managed skill files unchanged.",
+  "scenarios": [
+    {
+      "scenario": "tests/test_market_buyer.py::test_trade_when_model_selects_shop_preserves_receipt_and_budget",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_market_buyer.py::test_memory_when_url_changes_retains_failed_trade_for_selection",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_market_buyer.py::test_failure_when_review_model_fails_still_persists_trade",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_market_buyer.py::test_registry_when_schema_invalid_surfaces_error[{}]",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_market_buyer.py::test_registry_when_schema_invalid_surfaces_error[[{\"name\":\"x\",\"url\":\"u\",\"reviews\":[{}]}]]",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_market_buyer.py::test_memory_when_corrupt_surfaces_error",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_market_buyer.py::test_trade_when_transport_fails_records_failure_and_review",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_market_buyer.py::test_memory_when_atomic_replace_fails_preserves_previous_file",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_receipt_transport.py::test_receipt_when_valid_preserves_signature_extensions_and_numeric_type[120]",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_receipt_transport.py::test_receipt_when_valid_preserves_signature_extensions_and_numeric_type[120.0]",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[121]",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[120.5]",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[120]",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[True]",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    },
+    {
+      "scenario": "tests/test_receipt_transport.py::test_receipt_when_task_identity_differs_rejects_checkout",
+      "invocation_result": "results[0]",
+      "binary_observable": "PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer.json"
+    }
+  ]
+}

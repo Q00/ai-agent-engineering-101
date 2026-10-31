@@ -1,0 +1,129 @@
+CONTEXT chars=1046 tools=1
+HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/2 429 Too Many Requests"
+HTTP POST /api/v1/chat/completions -> 429
+MODEL_RETRY status=429 attempt=1
+HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/2 429 Too Many Requests"
+HTTP POST /api/v1/chat/completions -> 429
+MODEL_RETRY status=429 attempt=2
+HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/2 429 Too Many Requests"
+HTTP POST /api/v1/chat/completions -> 429
+MODEL_RETRY status=429 attempt=3
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /workspace/harness_app.py:199 in market_buyer                                │
+│                                                                              │
+│   196 │   │   │   )                                                          │
+│   197 │   │   typer.echo(result.model_dump_json())                           │
+│   198 │                                                                      │
+│ ❱ 199 │   isolated(run)                                                      │
+│   200                                                                        │
+│   201                                                                        │
+│   202 @app.command()                                                         │
+│                                                                              │
+│ /workspace/harness_app.py:75 in isolated                                     │
+│                                                                              │
+│    72 │   with TemporaryDirectory(prefix="ax06-harness-") as directory:      │
+│    73 │   │   try:                                                           │
+│    74 │   │   │   os.chdir(directory)                                        │
+│ ❱  75 │   │   │   anyio.run(run)                                             │
+│    76 │   │   finally:                                                       │
+│    77 │   │   │   os.chdir(previous)                                         │
+│    78                                                                        │
+│                                                                              │
+│ /uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-p │
+│ ackages/anyio/_core/_eventloop.py:83 in run                                  │
+│                                                                              │
+│    80 │                                                                      │
+│    81 │   try:                                                               │
+│    82 │   │   backend_options = backend_options or {}                        │
+│ ❱  83 │   │   return async_backend.run(func, args, {}, backend_options)      │
+│    84 │   finally:                                                           │
+│    85 │   │   reset_current_async_library(token)                             │
+│    86                                                                        │
+│                                                                              │
+│ /uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-p │
+│ ackages/anyio/_backends/_asyncio.py:2548 in run                              │
+│                                                                              │
+│   2545 │   │   │   │   loop_factory = winloop.new_event_loop                 │
+│   2546 │   │                                                                 │
+│   2547 │   │   with Runner(debug=debug, loop_factory=loop_factory) as        │
+│        runner:                                                               │
+│ ❱ 2548 │   │   │   return runner.run(wrapper())                              │
+│   2549 │                                                                     │
+│   2550 │   @classmethod                                                      │
+│   2551 │   def current_token(cls) -> object:                                 │
+│                                                                              │
+│ /usr/local/lib/python3.12/asyncio/runners.py:118 in run                      │
+│                                                                              │
+│   115 │   │                                                                  │
+│   116 │   │   self._interrupt_count = 0                                      │
+│   117 │   │   try:                                                           │
+│ ❱ 118 │   │   │   return self._loop.run_until_complete(task)                 │
+│   119 │   │   except exceptions.CancelledError:                              │
+│   120 │   │   │   if self._interrupt_count > 0:                              │
+│   121 │   │   │   │   uncancel = getattr(task, "uncancel", None)             │
+│                                                                              │
+│ /usr/local/lib/python3.12/asyncio/base_events.py:691 in run_until_complete   │
+│                                                                              │
+│    688 │   │   if not future.done():                                         │
+│    689 │   │   │   raise RuntimeError('Event loop stopped before Future      │
+│        completed.')                                                          │
+│    690 │   │                                                                 │
+│ ❱  691 │   │   return future.result()                                        │
+│    692 │                                                                     │
+│    693 │   def stop(self):                                                   │
+│    694 │   │   """Stop running the event loop.                               │
+│                                                                              │
+│ /uv-cache/environments-v2/harness-app-893237c650739911/lib/python3.12/site-p │
+│ ackages/anyio/_backends/_asyncio.py:2531 in wrapper                          │
+│                                                                              │
+│   2528 │   │   │   _task_states[task] = TaskState(None, None)                │
+│   2529 │   │   │                                                             │
+│   2530 │   │   │   try:                                                      │
+│ ❱ 2531 │   │   │   │   return await func(*args)                              │
+│   2532 │   │   │   finally:                                                  │
+│   2533 │   │   │   │   del _task_states[task]                                │
+│   2534                                                                       │
+│                                                                              │
+│ /workspace/harness_app.py:186 in run                                         │
+│                                                                              │
+│   183 │                                                                      │
+│   184 │   async def run() -> None:                                           │
+│   185 │   │   async with harness_session(emit) as harness:                   │
+│ ❱ 186 │   │   │   result = await market_buy(                                 │
+│   187 │   │   │   │   harness,                                               │
+│   188 │   │   │   │   MarketRequest(                                         │
+│   189 │   │   │   │   │   shops_path=shops_path,                             │
+│                                                                              │
+│ /workspace/market_a2a/market_buyer.py:108 in market_buy                      │
+│                                                                              │
+│   105 │   │   if any(trade.purchase.safety.operator_directive_observed for   │
+│       trade in trades)                                                       │
+│   106 │   )                                                                  │
+│   107 │   decision = Decision(shops, blocked_names)                          │
+│ ❱ 108 │   _ = await harness.run(                                             │
+│   109 │   │   SELECT_PROMPT,                                                 │
+│   110 │   │   {                                                              │
+│   111 │   │   │   "item": item,                                              │
+│                                                                              │
+│ /workspace/market_a2a/harness.py:146 in run                                  │
+│                                                                              │
+│   143 │   │   ]                                                              │
+│   144 │   │   self.emit(f"CONTEXT chars={len(json.dumps(state))}             │
+│       tools={len(tools)}")                                                   │
+│   145 │   │   for round_number in range(MAX_MODEL_ROUNDS):                   │
+│ ❱ 146 │   │   │   reply = await self.complete(messages, advertised)          │
+│   147 │   │   │   messages.append(assistant_message(reply))                  │
+│   148 │   │   │   for call in reply.tool_calls or []:                        │
+│   149 │   │   │   │   match call.type:                                       │
+│                                                                              │
+│ /workspace/market_a2a/harness.py:215 in complete                             │
+│                                                                              │
+│   212 │   │   if self.fallback is not None and self.model in FREE_MODELS:    │
+│   213 │   │   │   return await self._paid_complete(messages, tools)          │
+│   214 │   │   message = "Transient API retries exhausted"                    │
+│ ❱ 215 │   │   raise HarnessError(message)                                    │
+│   216 │                                                                      │
+│   217 │   async def _complete_once(                                          │
+│   218 │   │   self, messages: list[ChatCompletionMessageParam],              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+HarnessError: Transient API retries exhausted

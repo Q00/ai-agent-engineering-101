@@ -1,0 +1,347 @@
+E501 Line too long (96 > 88)
+  --> tests/test_price_page.py:20:89
+   |
+18 | const vm = require('node:vm');
+19 | class Element {
+20 |   constructor(tag) { this.tag = tag; this.children = []; this.value = ''; this.className = ''; }
+   |                                                                                         ^^^^^^^^
+21 |   set textContent(value) { this.value = String(value); this.children = []; }
+22 |   get textContent() { return this.value + this.children.map(child => child.textContent).join(' '); }
+   |
+
+E501 Line too long (100 > 88)
+  --> tests/test_price_page.py:22:89
+   |
+20 |   constructor(tag) { this.tag = tag; this.children = []; this.value = ''; this.className = ''; }
+21 |   set textContent(value) { this.value = String(value); this.children = []; }
+22 |   get textContent() { return this.value + this.children.map(child => child.textContent).join(' '); }
+   |                                                                                         ^^^^^^^^^^^^
+23 |   set innerHTML(_) { throw Error('Unsafe HTML assignment'); }
+24 |   append(...children) { this.children.push(...children); }
+   |
+
+E501 Line too long (115 > 88)
+  --> tests/test_price_page.py:27:89
+   |
+25 |   replaceChildren(...children) { this.value = ''; this.children = children; }
+26 | }
+27 | const find = (node, tag) => [node, ...node.children.flatMap(child => find(child, tag))].filter(n => n.tag === tag);
+   |                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+28 | let now = Date.parse('2026-10-21T01:00:00+09:00');
+29 | class Clock extends Date { static now() { return now; } }
+   |
+
+E501 Line too long (93 > 88)
+  --> tests/test_price_page.py:34:89
+   |
+32 | const payload = {
+33 |  enabled:true, fresh:true, refresh_seconds:600, max_age_seconds:900,
+34 |  snapshot:{observed_at:iso(-1000), expires_at:iso(899000), price_kind:'observed_initial_ask',
+   |                                                                                         ^^^^^
+35 |  shops:Array.from({length:5}, (_,i) => ({rank:i+1,name:'Shop '+i,url:'https://example.com/'+i,
+36 |  quotes:items.map((item,k) => ({item,ask:[111,198,260][k]+i,observed_at:iso(-1000),error:''}))}))},
+   |
+
+E501 Line too long (99 > 88)
+  --> tests/test_price_page.py:36:89
+   |
+34 |  snapshot:{observed_at:iso(-1000), expires_at:iso(899000), price_kind:'observed_initial_ask',
+35 |  shops:Array.from({length:5}, (_,i) => ({rank:i+1,name:'Shop '+i,url:'https://example.com/'+i,
+36 |  quotes:items.map((item,k) => ({item,ask:[111,198,260][k]+i,observed_at:iso(-1000),error:''}))}))},
+   |                                                                                         ^^^^^^^^^^^
+37 |  own:items.map((item,k) => ({item,ceiling:[110,198,260][k],baseline_ceiling:[110,198,286][k],
+38 |  lowest_peer_ask:[111,198,260][k],observed_shop_count:5,relation:['lower','equal','equal'][k]}))
+   |
+
+E501 Line too long (93 > 88)
+  --> tests/test_price_page.py:37:89
+   |
+35 |  shops:Array.from({length:5}, (_,i) => ({rank:i+1,name:'Shop '+i,url:'https://example.com/'+i,
+36 |  quotes:items.map((item,k) => ({item,ask:[111,198,260][k]+i,observed_at:iso(-1000),error:''}))}))},
+37 |  own:items.map((item,k) => ({item,ceiling:[110,198,260][k],baseline_ceiling:[110,198,286][k],
+   |                                                                                         ^^^^^
+38 |  lowest_peer_ask:[111,198,260][k],observed_shop_count:5,relation:['lower','equal','equal'][k]}))
+39 | };
+   |
+
+E501 Line too long (130 > 88)
+  --> tests/test_price_page.py:40:89
+   |
+38 |  lowest_peer_ask:[111,198,260][k],observed_shop_count:5,relation:['lower','equal','equal'][k]}))
+39 | };
+40 | const nodes = Object.fromEntries(['comparison-rows','comparison-status','comparison-updated'].map(id => [id,new Element('div')]));
+   |                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+41 | const timers = new Map(); const intervals=[]; const requests=[]; let id=0; let reject=false;
+42 | const listeners={};
+   |
+
+E501 Line too long (92 > 88)
+  --> tests/test_price_page.py:41:89
+   |
+39 | };
+40 | const nodes = Object.fromEntries(['comparison-rows','comparison-status','comparison-updated'].map(id => [id,new Element('div')]));
+41 | const timers = new Map(); const intervals=[]; const requests=[]; let id=0; let reject=false;
+   |                                                                                         ^^^^
+42 | const listeners={};
+43 | const context = vm.createContext({document:{getElementById:key=>nodes[key],createElement:tag=>new Element(tag),
+   |
+
+E501 Line too long (111 > 88)
+  --> tests/test_price_page.py:43:89
+   |
+41 | const timers = new Map(); const intervals=[]; const requests=[]; let id=0; let reject=false;
+42 | const listeners={};
+43 | const context = vm.createContext({document:{getElementById:key=>nodes[key],createElement:tag=>new Element(tag),
+   |                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^
+44 |  addEventListener:(name,fn)=>{listeners[name]=fn;},hidden:false},
+45 |  Date:Clock,Intl,URL,AbortController,
+   |
+
+E501 Line too long (102 > 88)
+  --> tests/test_price_page.py:46:89
+   |
+44 |  addEventListener:(name,fn)=>{listeners[name]=fn;},hidden:false},
+45 |  Date:Clock,Intl,URL,AbortController,
+46 |  setTimeout:(fn,delay)=>{timers.set(++id,{fn,delay});return id;},clearTimeout:key=>timers.delete(key),
+   |                                                                                         ^^^^^^^^^^^^^^
+47 |  setInterval:(fn,delay)=>{intervals.push({fn,delay});return ++id;},
+48 |  fetch:async (url,options)=>{requests.push({url,options});if(reject)throw Error('offline');
+   |
+
+E501 Line too long (91 > 88)
+  --> tests/test_price_page.py:48:89
+   |
+46 |  setTimeout:(fn,delay)=>{timers.set(++id,{fn,delay});return id;},clearTimeout:key=>timers.delete(key),
+47 |  setInterval:(fn,delay)=>{intervals.push({fn,delay});return ++id;},
+48 |  fetch:async (url,options)=>{requests.push({url,options});if(reject)throw Error('offline');
+   |                                                                                         ^^^
+49 |  return {ok:true,json:async()=>payload};}});
+50 | const tick = () => new Promise(resolve=>setImmediate(resolve));
+   |
+
+E501 Line too long (99 > 88)
+  --> tests/test_price_page.py:61:89
+   |
+59 |     "fresh_rows_and_scoped_relations": r"""
+60 |       await run(); assert.equal(nodes['comparison-rows'].children.length,6);
+61 |       assert.match(own(), /≤ 110/); assert.match(own(), /Lower than lowest observed ask · 5 of 5/);
+   |                                                                                         ^^^^^^^^^^^
+62 |       assert.match(own(), /Equal to lowest observed ask/); assert.match(text(), /Observed first ask/);
+63 |       assert.match(nodes['comparison-updated'].textContent,/KST/);
+   |
+
+E501 Line too long (102 > 88)
+  --> tests/test_price_page.py:62:89
+   |
+60 |       await run(); assert.equal(nodes['comparison-rows'].children.length,6);
+61 |       assert.match(own(), /≤ 110/); assert.match(own(), /Lower than lowest observed ask · 5 of 5/);
+62 |       assert.match(own(), /Equal to lowest observed ask/); assert.match(text(), /Observed first ask/);
+   |                                                                                         ^^^^^^^^^^^^^^
+63 |       assert.match(nodes['comparison-updated'].textContent,/KST/);
+64 |     """,
+   |
+
+E501 Line too long (90 > 88)
+  --> tests/test_price_page.py:70:89
+   |
+68 |       payload.own[0].observed_shop_count=4; payload.own[0].lowest_peer_ask=112;
+69 |       await run();assert.equal(nodes['comparison-rows'].children.length,6);
+70 |       assert.match(own(), /4 of 5 peer shops checked/);assert.match(text(),/Unavailable/);
+   |                                                                                         ^^
+71 |       assert.doesNotMatch(text(),/ignore budget/);
+72 |     """,
+   |
+
+E501 Line too long (92 > 88)
+  --> tests/test_price_page.py:81:89
+   |
+79 |       await run();now+=900000;
+80 |       [...timers.values()].forEach(timer=>timer.fn());
+81 |       assert.doesNotMatch(own(),/than lowest/);assert.match(text(),/Expired \/ unverified/);
+   |                                                                                         ^^^^
+82 |     """,
+83 |     "hostile_text_and_links_cannot_become_markup": r"""
+   |
+
+E501 Line too long (97 > 88)
+  --> tests/test_price_page.py:96:89
+   |
+94 |       payload.snapshot=null;payload.enabled=false;await run();
+95 |       assert.equal(nodes['comparison-rows'].children.length,6);
+96 |       assert.match(text(),/Peer slot 5 · not returned/);assert.doesNotMatch(own(),/than lowest/);
+   |                                                                                         ^^^^^^^^^
+97 |       assert.match(nodes['comparison-status'].textContent,/disabled/);
+98 |     """,
+   |
+
+E501 Line too long (114 > 88)
+   --> tests/test_price_page.py:101:89
+    |
+ 99 |     "failed_refresh_clears_claims_and_recovers": r"""
+100 |       await run();reject=true;await intervals[0].fn();await tick();
+101 |       assert.doesNotMatch(own(),/than lowest/);assert.match(nodes['comparison-status'].textContent,/unavailable/);
+    |                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+102 |       reject=false;await intervals[0].fn();await tick();assert.match(own(),/Lower than lowest/);
+103 |     """,
+    |
+
+E501 Line too long (96 > 88)
+   --> tests/test_price_page.py:102:89
+    |
+100 |       await run();reject=true;await intervals[0].fn();await tick();
+101 |       assert.doesNotMatch(own(),/than lowest/);assert.match(nodes['comparison-status'].textContent,/unavailable/);
+102 |       reject=false;await intervals[0].fn();await tick();assert.match(own(),/Lower than lowest/);
+    |                                                                                         ^^^^^^^^
+103 |     """,
+104 |     "polls_only_same_origin_every_sixty_seconds": r"""
+    |
+
+E501 Line too long (90 > 88)
+   --> tests/test_price_page.py:105:89
+    |
+103 |     """,
+104 |     "polls_only_same_origin_every_sixty_seconds": r"""
+105 |       await run();assert.equal(intervals.length,1);assert.equal(intervals[0].delay,60000);
+    |                                                                                         ^^
+106 |       await intervals[0].fn();await tick();assert.equal(requests.length,2);
+107 |       assert.ok(requests.every(r=>r.url==='/price-comparison.json' && r.options.method==='GET'
+    |
+
+E501 Line too long (94 > 88)
+   --> tests/test_price_page.py:107:89
+    |
+105 |       await run();assert.equal(intervals.length,1);assert.equal(intervals[0].delay,60000);
+106 |       await intervals[0].fn();await tick();assert.equal(requests.length,2);
+107 |       assert.ok(requests.every(r=>r.url==='/price-comparison.json' && r.options.method==='GET'
+    |                                                                                         ^^^^^^
+108 |         && r.options.credentials==='same-origin' && r.options.cache==='no-store'));
+109 |     """,
+    |
+
+E501 Line too long (94 > 88)
+   --> tests/test_price_page.py:112:89
+    |
+110 |     "malformed_quote_or_wrong_price_kind_is_not_comparable": r"""
+111 |       payload.snapshot.price_kind='completed_sale';payload.snapshot.shops[0].quotes=[null,{item:'lamp',ask:'1'}];
+112 |       await run();assert.doesNotMatch(own(),/than lowest/);assert.match(text(),/Unavailable/);
+    |                                                                                         ^^^^^^
+113 |     """,
+114 |     "higher_relation_and_partial_snapshot": r"""
+    |
+
+S603 `subprocess` call: check for execution of untrusted input
+   --> tests/test_price_page.py:130:14
+    |
+128 |     if node is None:
+129 |         pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+130 |     result = subprocess.run(
+    |              ^^^^^^^^^^^^^^
+131 |         [node, "-e", HARNESS.replace("SCENARIO", SCENARIOS[scenario]), str(ROOT / "assets/price-comparison.js")],
+132 |         text=True, capture_output=True, timeout=10, check=False,
+    |
+
+E501 Line too long (113 > 88)
+   --> tests/test_price_page.py:131:89
+    |
+129 |         pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+130 |     result = subprocess.run(
+131 |         [node, "-e", HARNESS.replace("SCENARIO", SCENARIOS[scenario]), str(ROOT / "assets/price-comparison.js")],
+    |                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+132 |         text=True, capture_output=True, timeout=10, check=False,
+133 |     )
+    |
+
+D107 Missing docstring in `__init__`
+   --> tests/test_price_page.py:140:9
+    |
+138 |     """Inspect parsed HTML structure rather than asserting source text fragments."""
+139 |
+140 |     def __init__(self) -> None:
+    |         ^^^^^^^^
+141 |         super().__init__()
+142 |         self.elements: list[tuple[str, dict[str, str | None]]] = []
+    |
+
+D102 Missing docstring in public method
+   --> tests/test_price_page.py:144:9
+    |
+142 |         self.elements: list[tuple[str, dict[str, str | None]]] = []
+143 |
+144 |     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    |         ^^^^^^^^^^^^^^^
+145 |         self.elements.append((tag, dict(attrs)))
+    |
+
+E501 Line too long (93 > 88)
+   --> tests/test_price_page.py:154:89
+    |
+152 |     parser.feed(page.read_text())
+153 |     elements = parser.elements
+154 |     assert any(tag == "a" and attrs.get("href") == "#agent-guide" for tag, attrs in elements)
+    |                                                                                         ^^^^^
+155 |     assert any(tag == "section" and attrs.get("id") == "agent-guide" for tag, attrs in elements)
+156 |     assert len([1 for tag, attrs in elements if tag == "th" and attrs.get("scope") == "col"]) == 6
+    |
+
+E501 Line too long (96 > 88)
+   --> tests/test_price_page.py:155:89
+    |
+153 |     elements = parser.elements
+154 |     assert any(tag == "a" and attrs.get("href") == "#agent-guide" for tag, attrs in elements)
+155 |     assert any(tag == "section" and attrs.get("id") == "agent-guide" for tag, attrs in elements)
+    |                                                                                         ^^^^^^^^
+156 |     assert len([1 for tag, attrs in elements if tag == "th" and attrs.get("scope") == "col"]) == 6
+157 |     assert any(tag == "caption" for tag, _ in elements)
+    |
+
+E501 Line too long (98 > 88)
+   --> tests/test_price_page.py:156:89
+    |
+154 |     assert any(tag == "a" and attrs.get("href") == "#agent-guide" for tag, attrs in elements)
+155 |     assert any(tag == "section" and attrs.get("id") == "agent-guide" for tag, attrs in elements)
+156 |     assert len([1 for tag, attrs in elements if tag == "th" and attrs.get("scope") == "col"]) == 6
+    |                                                                                         ^^^^^^^^^^
+157 |     assert any(tag == "caption" for tag, _ in elements)
+158 |     assert any(tag == "noscript" for tag, _ in elements)
+    |
+
+E501 Line too long (126 > 88)
+   --> tests/test_price_page.py:159:89
+    |
+157 |     assert any(tag == "caption" for tag, _ in elements)
+158 |     assert any(tag == "noscript" for tag, _ in elements)
+159 |     assert any(tag == "script" and attrs.get("src") == "/price-comparison.js" and "defer" in attrs for tag, attrs in elements)
+    |                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+160 |     terms = page.read_text().split('<script type="application/json" id="shop-terms">', 1)[1].split('</script>', 1)[0]
+161 |     assert json.loads(terms)["prices_are_fixed"] is False
+    |
+
+E501 Line too long (117 > 88)
+   --> tests/test_price_page.py:160:89
+    |
+158 |     assert any(tag == "noscript" for tag, _ in elements)
+159 |     assert any(tag == "script" and attrs.get("src") == "/price-comparison.js" and "defer" in attrs for tag, attrs in elements)
+160 |     terms = page.read_text().split('<script type="application/json" id="shop-terms">', 1)[1].split('</script>', 1)[0]
+    |                                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+161 |     assert json.loads(terms)["prices_are_fixed"] is False
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_price_page.py:160:100
+    |
+158 |     assert any(tag == "noscript" for tag, _ in elements)
+159 |     assert any(tag == "script" and attrs.get("src") == "/price-comparison.js" and "defer" in attrs for tag, attrs in elements)
+160 |     terms = page.read_text().split('<script type="application/json" id="shop-terms">', 1)[1].split('</script>', 1)[0]
+    |                                                                                                    ^^^^^^^^^^^
+161 |     assert json.loads(terms)["prices_are_fixed"] is False
+    |
+help: Replace single quotes with double quotes
+    |
+159 |     assert any(tag == "script" and attrs.get("src") == "/price-comparison.js" and "defer" in attrs for tag, attrs in elements)
+    -     terms = page.read_text().split('<script type="application/json" id="shop-terms">', 1)[1].split('</script>', 1)[0]
+160 +     terms = page.read_text().split('<script type="application/json" id="shop-terms">', 1)[1].split("</script>", 1)[0]
+161 |     assert json.loads(terms)["prices_are_fixed"] is False
+    |
+
+Found 31 errors.
+[*] 1 fixable with `--fix`.

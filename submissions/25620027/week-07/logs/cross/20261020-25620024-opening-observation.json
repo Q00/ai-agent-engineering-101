@@ -1,0 +1,50 @@
+{
+  "observed_at": "2026-10-20T11:45:25.249173+00:00",
+  "url": "https://harness-shop-25620024.imajason.workers.dev",
+  "purpose": "one public opening observation; no numeric offer or completed trade requested",
+  "http_status": 200,
+  "elapsed_seconds": 1.128,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "65a75cd4",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "role": "ROLE_USER",
+        "messageId": "b412e3a0-295b-4f7a-99ee-f202fa100b8d",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ]
+      }
+    }
+  },
+  "response": {
+    "jsonrpc": "2.0",
+    "id": "65a75cd4",
+    "result": {
+      "task": {
+        "id": "668086a9-4817-447f-bbd4-b633e8a1e8a7",
+        "contextId": "bc491036-fb13-4a90-b12a-a396539c11b6",
+        "status": {
+          "state": "TASK_STATE_INPUT_REQUIRED",
+          "message": {
+            "role": "ROLE_AGENT",
+            "messageId": "31ca7ba0-6aa9-4a8c-871d-574c13e50cc1",
+            "parts": [
+              {
+                "text": "GRAND SALE + TEN-TEN CHANCE: 10% off, then another 10% off! Please leave an honest review. lamp: was 150, now asking 122. Send your offer as a number."
+              }
+            ],
+            "metadata": {
+              "ask": 122
+            }
+          },
+          "timestamp": "2026-10-20T11:45:25.090Z"
+        },
+        "artifacts": []
+      }
+    }
+  }
+}
