@@ -6,6 +6,7 @@
 #
 # Settings from the environment or the secrets file: META_TERRA_MODEL, META_ASTRA_MODEL, META_PUSH=1 to push after Astra.
 set -u
+export PATH="$HOME/.local/bin:$PATH"     # the market account's own codex
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
 ENV_FILE="$HERE/../.env"

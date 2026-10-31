@@ -10,6 +10,7 @@
 # ANTHROPIC_API_KEY in the same file is left out on purpose: with it, a `claude -p` harness
 # would bill the API instead of using the Claude Code login.
 set -u
+export PATH="$HOME/.local/bin:$PATH"     # the market account's own cloudflared, codex and uv
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
 ENV_FILE="$HERE/../.env"
@@ -27,7 +28,7 @@ export SHOP_MARKET_NAME="$NAME"
 
 mkdir -p "$HERE/.market"
 echo $$ > "$HERE/.market/run_market.pid"
-caffeinate -dimsu -w $$ &          # no sleep while this loop runs
+caffeinate -ims -w $$ &            # no sleep while this loop runs
 CAF=$!
 
 # A background job in a script ignores SIGINT, so the kit gets TERM. Its children are collected
