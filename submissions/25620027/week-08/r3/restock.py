@@ -53,10 +53,17 @@ class RestockState(FrozenModel):
 
 @dataclass(frozen=True, slots=True)
 class DemandSignal:
-    """Settled-deal counts from the public ledger, when the collector has them."""
+    """Settled-deal counts from the public ledger, when the collector has them.
+
+    ``hot_categories`` and ``cold_categories`` come from the scout's picture: the
+    model read forum requests and settlement counts and named categories from the
+    market's own demand list (anything else was dropped before it got here).
+    """
 
     by_category: Mapping[str, int]
     by_sku: Mapping[str, int]
+    hot_categories: frozenset[str] = frozenset()
+    cold_categories: frozenset[str] = frozenset()
 
 
 def load_state(path: Path) -> RestockState:
@@ -105,6 +112,10 @@ def category_scores(
         base = 1.0 if row.kind == "goods" else 1.5
         if signal is not None:
             base += 2.0 * signal.by_category.get(row.category, 0)
+            if row.category in signal.hot_categories:
+                base += 1.5
+            if row.category in signal.cold_categories:
+                base *= 0.5
         scored.append((base * min(1.0, candidates / 5.0), row))
     scored.sort(key=lambda pair: -pair[0])
     return scored

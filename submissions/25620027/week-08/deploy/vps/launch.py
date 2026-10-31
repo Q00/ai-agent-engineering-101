@@ -18,6 +18,7 @@ from deploy.vps.settings import LaunchSettings, verify_kit
 from market_a2a.anthropic_fallback import HAIKU_MODEL
 from market_a2a.models import HarnessError
 from market_a2a.paid_fallback import DailyQuota, configured_paid_provider
+from r3.model_client import APPROVED_MODELS
 
 if TYPE_CHECKING:
     from anyio.abc import Process
@@ -119,8 +120,31 @@ async def stop(process: Process) -> None:
             _ = await process.wait()
 
 
+def validate_model_roles() -> None:
+    """Allow only approved Claude models for the slow loops and a sane dollar cap."""
+    for env in ("AX_R3_STRATEGY_MODEL", "AX_R3_TACTICAL_MODEL"):
+        chosen = os.environ.get(env)
+        if chosen and chosen not in APPROVED_MODELS:
+            message = f"{env} must be one of the approved Claude models"
+            raise HarnessError(message)
+    raw = os.environ.get("AX_R3_DAILY_USD")
+    if raw is not None:
+        try:
+            cap = float(raw)
+        except ValueError as exc:
+            message = "AX_R3_DAILY_USD must be a number"
+            raise HarnessError(message) from exc
+        if not 0.1 <= cap <= 50.0:  # noqa: PLR2004 - a day of the promotional credit
+            message = "AX_R3_DAILY_USD must be between 0.1 and 50"
+            raise HarnessError(message)
+
+
 def validate_paid_launch(settings: LaunchSettings) -> None:
-    """Permit only the authorized Haiku route with one existing shared ledger."""
+    """Permit only the authorized Claude routes with one existing shared ledger.
+
+    ``ANTHROPIC_MODEL`` stays pinned to Haiku: it is the in-trade reader and the
+    legacy fallback. The slow loops pick their models from their own variables.
+    """
     provider = configured_paid_provider()
     match provider:
         case "none":
@@ -132,6 +156,7 @@ def validate_paid_launch(settings: LaunchSettings) -> None:
             ):
                 message = "Approved Haiku API key and model configuration are required"
                 raise HarnessError(message)
+            validate_model_roles()
             quota = settings.run_directory / "paid-quota.sqlite3"
             if (
                 os.environ.get("AX_PAID_QUOTA_PATH") != str(quota)
@@ -139,9 +164,7 @@ def validate_paid_launch(settings: LaunchSettings) -> None:
             ):
                 message = "Existing shared R3 paid quota ledger is required"
                 raise HarnessError(message)
-            _ = DailyQuota(
-                quota, int(os.environ.get("AX_PAID_DAILY_LIMIT", "5000"))
-            )
+            _ = DailyQuota(quota, int(os.environ.get("AX_PAID_DAILY_LIMIT", "5000")))
         case "openai":
             message = "This deployment authorizes Haiku fallback only"
             raise HarnessError(message)
@@ -180,6 +203,7 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
         "AX_R3_POLICY": str(settings.run_directory / "r3-policy.json"),
         "AX_R3_EVENTS": str(settings.run_directory / "r3-events.sqlite"),
         "AX_R3_LEDGER": str(settings.run_directory / "r3-ledger.sqlite"),
+        "AX_R3_PICTURE": str(settings.run_directory / "r3-picture.json"),
         "PYTHONPATH": str(app),
     }
     manager = (
@@ -210,18 +234,21 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
         "AX_META_FEEDBACK": str(settings.private_directory / "human-feedback.json"),
         "AX_META_PROFILE": str(settings.run_directory / "meta-profile.json"),
     }
-    async with await anyio.open_process(
-        recorder,
-        stdout=None,
-        stderr=None,
-        env=recorder_environment,
-    ) as worker, await anyio.open_process(
-        manager,
-        cwd=settings.run_directory,
-        stdout=None,
-        stderr=None,
-        env=environment,
-    ) as policy_loop:
+    async with (
+        await anyio.open_process(
+            recorder,
+            stdout=None,
+            stderr=None,
+            env=recorder_environment,
+        ) as worker,
+        await anyio.open_process(
+            manager,
+            cwd=settings.run_directory,
+            stdout=None,
+            stderr=None,
+            env=environment,
+        ) as policy_loop,
+    ):
         try:
             async with await anyio.open_process(
                 settings.command(app),

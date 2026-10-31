@@ -25,6 +25,8 @@ from market_a2a.models import HarnessError
 from market_a2a.remote import Remote, Task
 from market_a2a.security import SecurityEvents
 from r3.events import EventLedger, events_path
+from r3.guard import suspicious
+from r3.interpreter import read_seller_message
 from r3.market_files import (
     Order,
     ShopEntry,
@@ -34,6 +36,8 @@ from r3.market_files import (
     read_payments,
     read_shops,
 )
+from r3.model_client import ModelClient
+from r3.picture import Picture, load_picture, picture_path, trust_factor
 from r3.policy import BuyerPolicy, load_policy, policy_path
 
 if TYPE_CHECKING:
@@ -44,6 +48,11 @@ if TYPE_CHECKING:
 
 MAX_STARS: Final = 5
 NUMBER: Final = re.compile(r"(?<![0-9A-Za-z])([0-9]{2,9})(?![0-9A-Za-z])")
+TRADE_GATE: Final = "AX_R3_TRADE_MODEL"
+
+
+class SuspiciousCounterpartError(HarnessError):
+    """The seller's text tripped an injection or scam screen; walk away."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +89,7 @@ def shop_factor(
     refused = counts.get("refused", 0)
     no_deal = counts.get("no_deal", 0)
     factor = 1.0 + min(0.3, 0.03 * paid) - min(0.5, 0.15 * no_deal)
+    factor *= 0.5 ** min(2, counts.get("suspicious", 0))
     reason = reasons.get(url.rstrip("/"), "").lower()
     if refused:
         if "certificate" in reason:
@@ -109,14 +119,21 @@ def choose(  # noqa: PLR0913 - ranking needs every evidence source
     reasons: dict[str, str],
     *,
     blocked: frozenset[str] = frozenset(),
+    picture: Picture | None = None,
 ) -> Choice | None:
-    """Pick the shop and SKU with the best expected surplus; None when no stock fits."""
+    """Pick the shop and SKU with the best expected surplus; None when no stock fits.
+
+    The scout's trust score (from reviews and forum text the model read) weighs a
+    shop between 0.6 and 1.2; our own payment evidence still dominates.
+    """
     acceptable = set(order.acceptable)
     best: Choice | None = None
     for shop in shops:
         if shop.name in blocked or shop.url.rstrip("/") in blocked:
             continue
         weight = shop_factor(shop.url, outcomes, reasons) * review_factor(shop)
+        if picture is not None:
+            weight *= trust_factor(picture.trust_of(shop.url))
         candidates = [
             o
             for o in shop.offers
@@ -197,7 +214,7 @@ def accept_policy(order: Order, policy: BuyerPolicy) -> dict[str, object] | None
     return accept
 
 
-async def negotiate(  # noqa: PLR0913 - one negotiation, explicit inputs
+async def negotiate(  # noqa: PLR0913, C901 - one negotiation, explicit inputs
     remote: Remote,
     endpoint: str,
     choice: Choice,
@@ -206,12 +223,15 @@ async def negotiate(  # noqa: PLR0913 - one negotiation, explicit inputs
     policy: BuyerPolicy,
     emit: Callable[[str], None],
     clock: Callable[[], float] = time.monotonic,
+    reader: ModelClient | None = None,
 ) -> tuple[Task, int | None]:
     """Two to four turns: open, read the ask, accept or counter, never above cap.
 
     Slow sellers (a model per turn) can spend most of the order budget on one
     reply, so once ``late_accept_share`` of the budget is gone any ask within the
     cap is taken rather than countered: the next order arrives in ~20 s anyway.
+    When a seller writes prose instead of a number, one model read (Haiku, 2.5 s)
+    extracts the ask; a message that trips the injection screen ends the talk.
     """
     cap = price_cap(choice, budget, policy)
     if cap < 1:
@@ -220,13 +240,23 @@ async def negotiate(  # noqa: PLR0913 - one negotiation, explicit inputs
     started = clock()
     task = await remote.send(endpoint, choice.request)
     my_offer: int | None = None
+    reads = 0
     for round_number in range(policy.max_rounds + 1):
         state = task.status.state
         if state == "TASK_STATE_COMPLETED":
             return task, my_offer
         if state != "TASK_STATE_INPUT_REQUIRED":
             return task, None
+        # Screen before parsing: a number inside an injection is not an ask.
+        flag = suspicious(task.observation())
+        if flag is not None:
+            raise SuspiciousCounterpartError(flag)
         ask = seller_ask(task)
+        if ask is None and reads < 1:
+            reads += 1
+            ask, stop = await prose_ask(reader, task, choice, emit)
+            if stop:
+                return task, None
         reference = choice.list_price if choice.list_price > 0 else budget
         quick = int(reference * policy.quick_accept_ratio)
         last_round = round_number >= policy.max_rounds - 1
@@ -252,6 +282,21 @@ async def negotiate(  # noqa: PLR0913 - one negotiation, explicit inputs
         )
         task = await remote.send(endpoint, str(my_offer), task)
     return task, my_offer if task.status.state == "TASK_STATE_COMPLETED" else None
+
+
+async def prose_ask(
+    reader: ModelClient | None, task: Task, choice: Choice, emit: Callable[[str], None]
+) -> tuple[int | None, bool]:
+    """Read a seller's prose once; return (ask, stop). Screened text raises."""
+    read = await read_seller_message(
+        reader, task.observation(), item=choice.name, list_price=choice.list_price
+    )
+    if read is None:
+        return None, False
+    emit(f"[R3 BUYER] read intent={read.intent} ask={read.ask}")
+    if read.intent == "suspicious":
+        raise SuspiciousCounterpartError(read.screened)
+    return read.ask, read.intent == "reject"
 
 
 def price_cap(choice: Choice, budget: int, policy: BuyerPolicy) -> int:
@@ -336,7 +381,10 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         reasons = events.refusal_reasons(policy.buyer.refusal_memory_hours)
     except OSError:
         emit("[R3 BUYER] events ledger unavailable; choosing without own history")
-    choice = choose(order, shops, catalog, outcomes, reasons, blocked=blocked)
+    picture = load_picture(picture_path(state))
+    choice = choose(
+        order, shops, catalog, outcomes, reasons, blocked=blocked, picture=picture
+    )
     if choice is None:
         fallback = shops[0].url if shops else ""
         return Outcome(
@@ -353,7 +401,9 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         f"list={choice.list_price} score={choice.score:.0f}"
     )
     security = SecurityEvents()
+    reader = ModelClient.from_env(events, gate=TRADE_GATE)
     reason, price, receipt, task_state = "", None, None, "none"
+    suspicious = False
     try:
         with anyio.fail_after(policy.buyer.order_seconds):
             async with create_client() as client:
@@ -367,6 +417,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
                     policy=policy.buyer,
                     emit=emit,
                     clock=time.monotonic,
+                    reader=reader,
                 )
                 task_state = task.status.state
                 if task_state == "TASK_STATE_COMPLETED":
@@ -387,10 +438,13 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
                     reason = f"{task_state}: {task.observation()[:120]}"
     except TimeoutError:
         reason = "timed out"
+    except SuspiciousCounterpartError as exc:
+        reason, suspicious = f"suspicious seller text: {exc}"[:200], True
     except (HarnessError, httpx2.HTTPError, ValidationError) as exc:
         reason = f"{type(exc).__name__}: {exc}"[:200]
     if security.snapshot().operator_directive_observed:
         reason, receipt = "operator directive observed in seller text", None
+        suspicious = True
     elapsed = time.monotonic() - started
     if receipt is not None and price is not None:
         outcome = "agreed"
@@ -402,7 +456,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         )
         stars = 4
     else:
-        outcome = "no_deal"
+        outcome = "suspicious" if suspicious else "no_deal"
         review = f"No deal with this shop: {reason or 'no agreement'}."
         stars = 3
     emit(

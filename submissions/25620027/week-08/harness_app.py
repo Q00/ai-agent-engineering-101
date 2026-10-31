@@ -48,6 +48,7 @@ from r3 import restock as r3_restock
 from r3 import review as r3_review
 from r3.ledger_db import LedgerDB, ledger_path
 from r3.market_files import read_catalog
+from r3.picture import load_picture, picture_path
 from r3.seller import create_r3_app
 
 if TYPE_CHECKING:
@@ -257,13 +258,22 @@ def restock(
     """Print the restock plan for the kit: breadth first, then what sells."""
     folder = state.resolve()
     signal = None
+    picture = load_picture(picture_path(folder))
     try:
         ledger_file = ledger_path(folder)
+        by_category: dict[str, int] = {}
+        by_sku: dict[str, int] = {}
         if ledger_file.exists():
             by_category, by_sku = LedgerDB(ledger_file).demand_counts(
                 read_catalog(folder), 24
             )
-            signal = r3_restock.DemandSignal(by_category, by_sku)
+        if ledger_file.exists() or picture.hot_categories:
+            signal = r3_restock.DemandSignal(
+                by_category,
+                by_sku,
+                frozenset(picture.hot_categories),
+                frozenset(picture.cold_categories),
+            )
     except (OSError, ValueError) as exc:
         emit(f"RESTOCK ledger signal unavailable: {type(exc).__name__}")
     typer.echo(r3_restock.run(folder, signal=signal))

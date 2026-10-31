@@ -37,6 +37,8 @@ from google.protobuf.struct_pb2 import Value
 
 from market_a2a.seller_offer import opening_offer
 from r3.events import EventLedger, events_path
+from r3.guard import suspicious
+from r3.interpreter import read_buyer_message
 from r3.market_files import (
     CatalogItem,
     Inventory,
@@ -46,6 +48,7 @@ from r3.market_files import (
     read_catalog,
     read_inventory,
 )
+from r3.model_client import ModelClient
 from r3.policy import SellerPolicy, load_policy, policy_path
 from r3.pricing import Quote, claimed_grade, decide, quote
 
@@ -58,6 +61,9 @@ if TYPE_CHECKING:
     from market_a2a.receipts import ReceiptSigner
 
 ECON_ROUND: Final = 3
+MAX_READS_PER_TASK: Final = 2  # model reads of prose per negotiation
+SUSPICIOUS_LIMIT: Final = 2  # screened messages before the talk is closed
+TRADE_GATE: Final = "AX_R3_TRADE_MODEL"
 HOLD_SECONDS: Final = 900.0  # a buyer that stops answering frees its unit
 COMMIT_SECONDS: Final = 600.0  # a signed unit stays reserved until the kit ships it
 LEGACY_RESERVE: Final = {"lamp": 100, "chair": 180, "bookshelf": 260}
@@ -217,6 +223,7 @@ class R3Seller(AgentExecutor):
         policy_file: Path,
         events: EventLedger | None,
         emit: Callable[[str], None],
+        reader: ModelClient | None = None,
     ) -> None:
         """Keep per-task state in memory; the kit owns the durable ledger."""
         self.name: str = name
@@ -225,6 +232,9 @@ class R3Seller(AgentExecutor):
         self.policy_file: Path = policy_file
         self.events: EventLedger | None = events
         self.emit: Callable[[str], None] = emit
+        self.reader: ModelClient | None = reader
+        self.reads: dict[str, int] = {}
+        self.suspicious: dict[str, int] = {}
         self.open: dict[str, Deal] = {}
         self.committed: dict[str, float] = {}
         self.closed: set[str] = set()
@@ -282,9 +292,14 @@ class R3Seller(AgentExecutor):
         now = time.time()
         policy = self.policy()
         deal = self.open.get(task_id)
+        # Screen before parsing: a number inside an injection is not an offer.
+        flag = suspicious(text)
         if deal is None:
-            deal = self.opening(task_id, text, now, policy)
+            deal = (
+                None if flag is not None else self.opening(task_id, text, now, policy)
+            )
             if deal is None:
+                self.emit(f"seller.refused task={task_id} reason={flag or 'no_stock'}")
                 self.closed.add(task_id)
                 await updater.reject(
                     updater.new_agent_message(
@@ -298,9 +313,23 @@ class R3Seller(AgentExecutor):
                 await self.publish_ask(task_id, deal, updater, opening=True)
                 return
         else:
-            offer = bargaining_offer(text, deal.ask)
+            offer = None if flag is not None else bargaining_offer(text, deal.ask)
             deal.rounds += 1
+        hint = ""
+        if deal.rounds > 0 and flag is not None:
+            hint = self.screened(task_id, flag)
+        elif offer is None and deal.rounds > 0:
+            offer, hint = await self.read_prose(task_id, text, deal)
         deal.last_offer = offer
+        if hint == "restate" and deal.rounds < policy.max_rounds:
+            # A question or unreadable prose never lowers the ask.
+            await self.publish_ask(task_id, deal, updater, opening=False, facts=True)
+            return
+        if hint == "reject":
+            _ = self.open.pop(task_id, None)
+            self.closed.add(task_id)
+            await updater.reject(updater.new_agent_message([Part(text="No deal.")]))
+            return
         action, price = decide(
             offer, deal.ask, deal.quote.accept_at, deal.rounds, policy
         )
@@ -314,6 +343,43 @@ class R3Seller(AgentExecutor):
             case _:
                 deal.ask = min(deal.ask, price)
                 await self.publish_ask(task_id, deal, updater, opening=deal.rounds == 0)
+
+    def screened(self, task_id: str, flag: str) -> str:
+        """Count a screened message; restate once, close the talk on the second."""
+        count = self.suspicious.get(task_id, 0) + 1
+        self.suspicious[task_id] = count
+        self.emit(f"seller.screened task={task_id} reason={flag} count={count}")
+        return "reject" if count >= SUSPICIOUS_LIMIT else "restate"
+
+    async def read_prose(
+        self, task_id: str, text: str, deal: Deal
+    ) -> tuple[int | None, str]:
+        """Read a non-numeric buyer message; return (offer, hint).
+
+        Hints: ``""`` act on the offer, ``restate`` repeat the ask with facts,
+        ``concede`` make one policy concession, ``reject`` close the talk. Without a
+        model, prose is restated, never discounted (a question is not an offer).
+        """
+        if self.reads.get(task_id, 0) >= MAX_READS_PER_TASK:
+            return None, "restate"
+        self.reads[task_id] = self.reads.get(task_id, 0) + 1
+        name = deal.unit.name if deal.unit is not None else str(deal.legacy_item)
+        read = await read_buyer_message(self.reader, text, item=name, ask=deal.ask)
+        if read is None:
+            return None, "restate"
+        self.emit(
+            f"seller.read task={task_id} intent={read.intent} offer={read.offer} "
+            f"screened={read.screened or '-'}"
+        )
+        if read.intent == "suspicious":
+            count = self.suspicious.get(task_id, 0) + 1
+            self.suspicious[task_id] = count
+            return None, "reject" if count >= SUSPICIOUS_LIMIT else "restate"
+        if read.intent in ("offer", "accept") and read.offer is not None:
+            return read.offer, ""
+        return None, {"reject": "reject", "ask_discount": "concede"}.get(
+            read.intent, "restate"
+        )
 
     @staticmethod
     def opening_offer(text: str, deal: Deal) -> int | None:
@@ -352,9 +418,19 @@ class R3Seller(AgentExecutor):
         return Deal(unit, None, priced, priced.ask)
 
     async def publish_ask(
-        self, task_id: str, deal: Deal, updater: TaskUpdater, *, opening: bool
+        self,
+        task_id: str,
+        deal: Deal,
+        updater: TaskUpdater,
+        *,
+        opening: bool,
+        facts: bool = False,
     ) -> None:
-        """Quote in the starter's wording plus machine-readable metadata."""
+        """Quote in the starter's wording plus machine-readable metadata.
+
+        ``facts`` restates the same ask with the certified grade and warranty, the
+        answer to a question; it never discloses cost, margin or policy.
+        """
         name = deal.unit.name if deal.unit is not None else str(deal.legacy_item)
         sku = deal.unit.sku if deal.unit is not None else str(deal.legacy_item)
         text = (
@@ -362,6 +438,18 @@ class R3Seller(AgentExecutor):
             if opening
             else f"Counteroffer: {deal.ask}."
         )
+        if facts and deal.unit is not None:
+            warranty = (
+                self.policy().warranty(deal.quote.grade_now)
+                if deal.unit.kind == "goods"
+                else 0
+            )
+            text = (
+                f"Counteroffer: {deal.ask}. Grade {deal.quote.grade_now} with the "
+                "market's certificate attached"
+                + (f", {warranty} h warranty" if warranty else "")
+                + ". Send your offer as a number."
+            )
         metadata: dict[str, object] = {
             "ask": deal.ask,
             "sku": sku,
@@ -470,6 +558,7 @@ def create_r3_app(  # noqa: PLR0913 - explicit wiring
         events: EventLedger | None = EventLedger(events_file)
     except OSError:
         events = None
+    reader = ModelClient.from_env(events, gate=TRADE_GATE)
     card = AgentCard(
         name=name,
         description=(
@@ -509,6 +598,7 @@ def create_r3_app(  # noqa: PLR0913 - explicit wiring
         policy_file=policy_file,
         events=events,
         emit=emit,
+        reader=reader,
     )
     handler = DefaultRequestHandler(executor, InMemoryTaskStore(), card)
     app = FastAPI(title=name)
