@@ -93,3 +93,12 @@ private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 �
 - VPS `/etc/cron.d/ax-week08-r3`(UTC): `5 15 2 11 * root switch-r3.sh a6a64bb10282` → **2026-11-03 00:05 KST**에 [switch-r3.sh](switch-r3.sh)가 `model-market.env`의 `AX_R3_MANAGER_MODEL=1`, `runtime.json`의 `stop_at=2026-11-17T23:59:59+09:00`(창 15.0일)로 바꾸고 `launch-r3.sh`로 재기동한 뒤 cron.d에서 자기 줄을 지운다. 로그 `switch-r3.log`.
 - `*/10 * * * * root health-r3.sh a6a64bb10282` → [health-r3.sh](health-r3.sh)가 전환 뒤(`r3-active` 표식) 거래 컨테이너가 내려가 있으면 같은 release로 재기동한다. 키가 같으므로 같은 가게·buyer로 다시 등록된다. 11/17 23:59 KST가 지나면 표식을 지우고 멈춘다. 로그 `health-r3.log`.
 - 전환 전(11/3 00:05 이전)에는 현재 라운드2 시험 설정(모델 OFF, 11/3 23:59 종료)이 그대로 돈다. 라운드가 3으로 바뀌면 재시작 없이도 재고 판매·restock으로 넘어간다.
+
+### 2026-10-31 하이브리드 release 573394c8fc50 (네 모델 역할·방어층)
+
+- 설치: 같은 `stage_server.py` 절차(tarball 해시·MANIFEST 80개·키트 v4 해시 검증 → `ax-week08-25620027:573394c-prepared` 빌드 → 네트워크 없는 QA 컨테이너에서 회귀 **438개 PASS** → 프리플라이트). 결과 `releases/573394c8fc50/evidence/result.json`. 번들은 `git archive HEAD`로 추적 파일만 묶어 만들었다(Codex의 미추적 `deploy/observer_hourly/`는 이미지에 들어가지 않음).
+- `private/model-market.env`에 추가한 키(값은 적지 않음): `AX_R3_STRATEGY_MODEL`(claude-sonnet-5-5), `AX_R3_TACTICAL_MODEL`(claude-haiku-5-5), `AX_R3_DAILY_USD`(3), `AX_R3_TRADE_MODEL`(1). `ANTHROPIC_MODEL`은 Haiku 고정이며 런처 `validate_model_roles`가 두 역할 모델이 승인 목록(haiku/sonnet/opus 5.5) 안인지, 상한이 0.1~50달러인지 검사한다.
+- 역할별 게이트: 느린 루프(정찰 5분·전술 10분·전략 60분+경고)는 `AX_R3_MANAGER_MODEL=1`일 때만, 거래 안 통역은 `AX_R3_TRADE_MODEL=1`일 때만 모델을 부른다. 라운드2 시험 중에는 관리자 OFF·통역 ON으로 실측을 모은다. 11/3 00:05 KST `switch-r3.sh 573394c8fc50`이 관리자를 켠다.
+- 모델 호출 기록: `/data/r3/r3-events.sqlite`의 `model_decisions`(역할·모델·지연·토큰·USD·채택·입력 해시)·`model_spend`(KST 일별 USD)·`policy_changes`(누가·어느 층·필드·전후·사유·만료·채택). 상황판은 `/data/r3/r3-picture.json`. 모두 보존 대상.
+- 런처가 넣는 경로에 `AX_R3_PICTURE=/data/r3/r3-picture.json`이 추가됐다. 크론은 `/etc/cron.d/ax-week08-r3`의 두 줄을 `573394c8fc50`으로 갱신했다(switch·health).
+- 교체: `launch-r3.sh 573394c8fc50`으로 라운드2 시험 컨테이너를 새 이미지로 재기동했다. 같은 키라 같은 가게·buyer로 재등록된다.
