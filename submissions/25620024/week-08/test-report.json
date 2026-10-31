@@ -1,23 +1,23 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-31T15:10:01+00:00",
+  "started": "2026-10-31T15:40:42+00:00",
   "harness": "OpenRouter free models via the chat-completions API, temperature 0, JSON answer (harness.py: a listed model that is busy or missing is skipped, then OpenRouter's current free list); most Round 3 decisions are made by code",
-  "seller_cmd": "python seller.py --port {port}",
+  "seller_cmd": "python shop_r3.py --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}",
   "seller_card": {
-    "name": "dragonash's GRAND SALE - TEN-TEN CHANCE",
-    "description": "Token-saver shop for lamps, chairs and bookshelves: one message closes the deal. Our ask is below the market average, we match a lower quote down to our floor, and from your second offer any offer at or above our floor is accepted. Every receipt is signed, so the deal counts. Prices by a model harness, floor enforced in code.",
+    "name": "dragonash",
+    "description": "Receipts signed with Ed25519 (shop_fp=208e42d8); every unit ships with the market-signed certificate; the grade claimed is the unit's true grade; an ask never goes up. Ask for a SKU: 'I want to buy <name> (<sku>)'. Quote a member code from an earlier deal.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:52609/",
+        "url": "http://127.0.0.1:53682/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
     ],
-    "version": "1.0.0",
+    "version": "3.0.0",
     "capabilities": {
-      "streaming": true
+      "streaming": false
     },
     "defaultInputModes": [
       "text/plain"
@@ -29,15 +29,17 @@
     "skills": [
       {
         "id": "negotiate",
-        "name": "Negotiate a purchase",
-        "description": "Name an item (lamp, chair, bookshelf), then send one offer as a number. Our ask is the last number in each reply; offer it to close at once.",
+        "name": "Buy a unit from stock",
+        "description": "Ask for a SKU, then send a price. Replies state sku, unit, grade, certificate, shelf life, list price and ask; a deal returns a signed receipt.",
         "tags": [
           "shopping",
-          "negotiation"
+          "negotiation",
+          "signed-receipt",
+          "certificate"
         ],
         "examples": [
-          "I want to buy a lamp",
-          "90"
+          "I want to buy 종가 포기김치 10kg (G0530c024)",
+          "34000"
         ]
       }
     ]
@@ -47,19 +49,19 @@
       "test": "seller_card",
       "run": 1,
       "pass": true,
-      "detail": "name=\"dragonash's GRAND SALE - TEN-TEN CHANCE\" binding=JSONRPC version=1.0 skills=1"
+      "detail": "name='dragonash' binding=JSONRPC version=1.0 skills=1"
     },
     {
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 102"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 107"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 102.0, asks [102]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 107.0, asks [107]"
     },
     {
       "test": "seller_signed_receipt",
@@ -77,7 +79,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 102.0, asks [102]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [123, 115]"
     },
     {
       "test": "seller_signed_receipt",
@@ -89,7 +91,7 @@
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 102.0, asks [102]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 117.0, asks [117]"
     },
     {
       "test": "seller_signed_receipt",
@@ -101,19 +103,19 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [266, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [304, 285, 285, 285, 285]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [266, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [321, 301, 301, 301, 301]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [266, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [304, 285, 285, 285, 285]"
     },
     {
       "test": "buyer_deal",
@@ -155,13 +157,13 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [226], stars 4, receipt null"
+      "detail": "offers [226, 230, 230], stars 4, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
@@ -179,13 +181,13 @@
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [226], stars 4, receipt null"
+      "detail": "offers [226, 230], stars 4, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
     },
     {
       "test": "buyer_reads_reviews",

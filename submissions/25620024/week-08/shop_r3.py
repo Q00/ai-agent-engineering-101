@@ -39,6 +39,7 @@ FP = hashlib.sha256(KEY.public_key().public_bytes(serialization.Encoding.Raw, se
 MAX_TURNS = 5
 SKU_RE = re.compile(r"\b(G[0-9a-f]{8})\b")
 CODE_RE = re.compile(r"\b(DRG-[0-9a-f]{6})\b", re.I)
+R2_RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}   # before Round 3 the market still sends these, no stock
 
 
 def log(msg):
@@ -63,10 +64,17 @@ def find_unit(text, taken=()):
     """The in-stock unit for what the buyer asked (SKU first, then name or category) that expires first."""
     want = text.lower()
     try:
-        units = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8")).get("units", [])
+        inv = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        units = []
+        inv = {}
     cat = market_model.catalog(MARKET_DIR)
+    if inv.get("round", 0) < 3:                       # Round 2 orders until Round 3 opens: the week-07 items
+        item = next((k for k in R2_RESERVE if k in want), None)
+        if not item:
+            return None, None, cat
+        return {"sku": item, "name": item, "list_price": int(R2_RESERVE[item] * 1.3), "cost": R2_RESERVE[item] - 1,
+                "unit": None, "grade": "-", "kind": "r2"}, None, cat
+    units = inv.get("units", [])
     m = SKU_RE.search(text)
     fit = [u for u in units if u.get("grade") != "expired" and u["unit"] not in taken]
     named = [u for u in fit if m and u["sku"] == m.group(1)]
@@ -130,8 +138,9 @@ class Shop(AgentExecutor):
         deal["turns"] += 1
         if offer is not None and offer >= q["least"]:
             price = min(offer, deal["ask"])
-            receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id, "unit": u["unit"],
-                       "claim": u.get("grade")}
+            receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id}
+            if u["unit"]:
+                receipt.update(unit=u["unit"], claim=u.get("grade"))
             if u.get("kind") == "goods" and promo.theta()["warranty_goods_h"]:
                 receipt["warranty_hours"] = promo.theta()["warranty_goods_h"]
             code = deal["code"] or promo.new_code(task.id)
