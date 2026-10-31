@@ -138,6 +138,19 @@ def memory_line(item_name):
     return f"From your memory: {n}.\n" if n else ""
 
 
+def briefing_line(sku):
+    """What the ledger says about this SKU, refreshed each minute by restock.py. A talk cannot wait for tool calls."""
+    try:
+        with open(os.path.join(os.environ.get("MARKET_DIR", ".market"), "briefing.json"), encoding="utf-8") as f:
+            m = json.load(f)["skus"].get(sku)
+    except (OSError, ValueError, KeyError, AttributeError):
+        return ""
+    if not m:
+        return ""
+    return (f"The ledger on this item: buyers paid a median {m['price_ratio']:.0%} of list price, about {m['rate']:.1f} deals an hour, "
+            f"{m['sellers']} other shops sell it.\n")
+
+
 def decide_open(item):
     prompt = (f"A buyer wants: {item['name']} ({item['description']}). Your reserve is {item['reserve']}.\n"
               + memory_line(item["name"]) + "Choose your opening asking price.")
@@ -166,6 +179,7 @@ def decide_turn(deal, text):
               f"Round {deal['rounds']} of at most {MAX_ROUNDS}.\n"
               f"Prices so far, oldest first:\n{history_text(deal)}\n"
               + memory_line(deal.get("key") or deal["name"])
+              + (briefing_line(deal["id"]) if deal.get("unit") else "")
               + ("You are already at your reserve, which is your lowest price. Do not say you can come down or "
                  "lower the price; explain politely and in your own words that this is your best and final price.\n"
                  if deal["ask"] <= deal["reserve"] else "")

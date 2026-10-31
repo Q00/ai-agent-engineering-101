@@ -60,7 +60,8 @@ def compact(e):
     base = {"k": e["kind"], "seq": e["seq"], "ts": e.get("ts"), "buyer": d.get("buyer"), "order": d.get("order")}
     if e["kind"] == "settle":
         return {**base, "sku": d.get("item"), "amount": d.get("amount"), "grade": d.get("grade"),
-                "honest": d.get("claim_honest"), "shop": d.get("shop") or d.get("payee")}
+                "honest": d.get("claim_honest"), "shop": d.get("shop") or d.get("payee"),
+                "warranty": d.get("warranty_hours")}
     if e["kind"] == "broken":
         return {**base, "sku": d.get("item")}
     if e["kind"] == "result" and d.get("shop"):       # names the shop by order, in case a settle entry does not
@@ -140,6 +141,49 @@ def captive_buyers(settles, me_shops, cfg):
         if total >= cfg["captive_min_deals"] and n / total >= cfg["captive_share"] and top not in me_shops:
             out[buyer] = top
     return out
+
+
+BREAK_WINDOW = 7 * 3600       # goods break up to 6 h after the sale; an hour more for late ledger entries
+
+
+def link_broken(rows):
+    """[(broken row, the settle it belongs to)]. A broken entry names only the buyer and the SKU, so it belongs to that
+    buyer's latest purchase of that SKU within the window, each purchase once. An unmatched entry is left out."""
+    by_key = {}
+    for r in rows:
+        if r["k"] == "settle" and r.get("ts"):
+            by_key.setdefault((r.get("buyer"), r.get("sku")), []).append(r)
+    used, out = set(), []
+    for b in (r for r in rows if r["k"] == "broken" and r.get("ts")):
+        fit = [s for s in by_key.get((b.get("buyer"), b.get("sku")), []) if 0 <= b["ts"] - s["ts"] <= BREAK_WINDOW and s["seq"] not in used]
+        if fit:
+            s = max(fit, key=lambda x: x["ts"])
+            used.add(s["seq"])
+            out.append((b, s))
+    return out
+
+
+def break_stats(rows, catalog):
+    """How often goods break, measured from the ledger: overall and by SKU, grade and shop. The market does not publish it."""
+    sold = [r for r in rows if r["k"] == "settle" and (catalog.get(r.get("sku")) or {}).get("kind") == "goods"]
+    broke = [s for _, s in link_broken(rows) if (catalog.get(s.get("sku")) or {}).get("kind") == "goods"]
+    def table(field):
+        t = {}
+        for r in sold:
+            t.setdefault(str(r.get(field)), {"sold": 0, "broke": 0})["sold"] += 1
+        for r in broke:
+            t.setdefault(str(r.get(field)), {"sold": 0, "broke": 0})["broke"] += 1
+        return t
+    return {"sold": len(sold), "broke": len(broke), "rate": len(broke) / len(sold) if sold else None,
+            "by_sku": table("sku"), "by_grade": table("grade"), "by_shop": table("shop")}
+
+
+def break_chance(stats, sku, min_sold=50, strength=20):
+    """This SKU's chance of breaking, leaning on the overall rate. None until enough goods have sold to say anything."""
+    if stats["sold"] < min_sold:
+        return None
+    s = stats["by_sku"].get(sku) or {"sold": 0, "broke": 0}
+    return (s["broke"] + strength * stats["rate"]) / (s["sold"] + strength)
 
 
 def estimate(rows, catalog, me_buyers=(), me_shops=(), now=None, cfg=None):

@@ -125,6 +125,10 @@ def read_model(state, catalog, cfg):
           + ", ".join(f"{k} {v['rate']:.2f}/h" for k, v in top), file=sys.stderr, flush=True)
     with open(os.path.join(state, "demand_model.json"), "w", encoding="utf-8") as f:
         json.dump({**model, "skus": dict(top)}, f, ensure_ascii=False)
+    tmp = os.path.join(state, "briefing.json.tmp")     # what the seller reads at each turn of a talk, when it cannot wait for tools
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"at": int(time.time()), "skus": model["skus"]}, f, ensure_ascii=False)
+    os.replace(tmp, os.path.join(state, "briefing.json"))
     return model
 
 

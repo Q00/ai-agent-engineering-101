@@ -25,6 +25,9 @@ What the code does and what the harness does:
   that fits (offers), asks for the SKU worth the most within the budget, never pays over its list price (a
   buyer's value), and tells the kit to pay only for food that will last (accept). Memory is by SKU there.
   A receipt that does not hold up is not passed to the kit, because the kit would pay it.
+  The shop is chosen by a Luna agent that may look things up through the tools (agent_loop.py) and cites what it used;
+  the old single question remains as the fallback. Goods are worth less by how often that SKU breaks in the ledger.
+  What broke after I bought it is linked back to the shop (broken.jsonl + settled.jsonl) and shows in my history of it.
 """
 import argparse
 import json
@@ -35,6 +38,8 @@ import time
 
 import httpx
 
+import agent_loop
+import market_model
 from buyer import log, negotiate
 from harness import HarnessError, ask
 
@@ -48,6 +53,10 @@ REVIEW_CHARS = 160     # characters per review that reach the prompt
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
 ACP_TRIES = 3          # Round 3: shops checked for an ACP checkout before trading anyway
 SHELF_MARGIN = 0.1     # hours of shelf life asked for beyond use_within_hours: the deal settles after the check
+BREAK_WINDOW = 7 * 3600   # goods break up to 6 h after the sale
+CHOOSE_STEPS = 3       # Round 3: the shop-choosing agent's steps, tool calls included
+AGENT_DIR = None       # Round 3: the .market folder, when the shop is chosen by the tool-using agent
+SETTLED = os.environ.get("BUYER_SETTLED", "memory/settled.jsonl")
 
 
 def market_round():
@@ -163,6 +172,13 @@ def history_line(trades, item=None):
         parts.append("no deal on the shop's side: " + ", ".join(
             f"{t['result']}" + (f" (lowest ask {min(t['asks'])}, budget {t['budget']})" if t.get("asks") else "")
             for t in on_shop[-3:]))
+    broke = [t for t in deals if t.get("broke")]
+    if broke:
+        covered = sum(1 for t in broke if t.get("covered"))
+        parts.append(f"{len(broke)} of your {len(deals)} purchases broke after the sale, {covered} under warranty")
+    unpaid = [t for t in trades if t["result"] == "unpaid"]
+    if unpaid:
+        parts.append(f"{len(unpaid)} deal(s) not paid: {unpaid[-1].get('unpaid_reason')}")
     warns = [w for t in trades for w in t.get("warnings") or []]
     if warns:
         parts.append(f"receipt warnings: {warns[-1]}")
@@ -286,6 +302,16 @@ def choose(shops, memory, item, budget):
     summaries = "\n\n".join(shop_summary(s, my_history(memory, s["name"]), item) for s in by_name.values())
     prompt = (f"You need to buy: {item}. Your budget: {budget}.\n{task}\n\nShops:\n\n{summaries}\n\n"
               f"Pick one shop by name and give a one-sentence reason.")
+    if AGENT_DIR:
+        try:
+            final = agent_loop.decide(
+                f"Choose the shop for this order: {item}, budget {budget}. {task} {PICK_SYSTEM}\nc0 is what you know of the candidates. "
+                "Look up more through the tools if it would change your choice; each step takes time.",
+                pick_schema(list(by_name)), AGENT_DIR, "buyer", {"c0": summaries}, max_steps=CHOOSE_STEPS)
+            if final is not None:
+                return by_name[final["shop"]], f"{mode} agent: {final['reason']}"
+        except HarnessError as e:
+            log(f"[choose] agent failed: {e}")
     d = ask(prompt, pick_schema(list(by_name)), PICK_SYSTEM, tag="buyer-choose")
     return by_name[d["shop"]], f"{mode}: {d['reason']}"
 
@@ -346,6 +372,55 @@ def sync_payments(memory, path):
             if not t["paid"]:
                 t["result"], t["unpaid_reason"] = "unpaid", p.get("reason")
                 log(f"[payments] {t['shop']}: {t['item']} not paid: {p.get('reason')}")
+
+
+def sync_broken(memory, md, settled_path):
+    """.market/broken.jsonl says only an item's name and when it broke. Which purchase it was comes from what review.py kept
+    at settlement: the latest purchase of that name before it broke, each once. Marked on the trade, so it counts for the shop."""
+    broken = [x for x in map(load_line, read_lines(os.path.join(md, "broken.jsonl"))) if x]
+    seen = {tuple(x) for x in memory.setdefault("broken_seen", [])}
+    fresh = [b for b in broken if (b.get("name"), b.get("broke_at")) not in seen]
+    if not fresh:
+        return
+    settled = [x for x in map(load_line, read_lines(settled_path)) if x]
+    by_order = {t["order"]: t for t in memory["trades"] if t.get("order")}
+    taken = {t["order"] for t in memory["trades"] if t.get("broke") and t.get("order")}
+    for b in fresh:
+        memory["broken_seen"].append([b.get("name"), b.get("broke_at")])
+        fit = [s for s in settled if s.get("name") == b.get("name") and s.get("order") not in taken
+               and 0 <= (b.get("broke_at") or 0) - (s.get("time") or 0) <= BREAK_WINDOW]
+        if not fit:
+            log(f"[broken] {b.get('name')}: no purchase of mine matches")
+            continue
+        s = max(fit, key=lambda x: x["time"])
+        taken.add(s.get("order"))
+        t = by_order.get(s.get("order"))
+        if t is not None:
+            hours = (b["broke_at"] - s["time"]) / 3600
+            t["broke"], t["covered"] = True, (s.get("warranty_hours") or 0) >= hours
+            log(f"[broken] {b.get('name')} from {t['shop']} broke after {hours:.1f} h, warranty {s.get('warranty_hours') or 0} h")
+
+
+def read_lines(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.readlines()
+    except OSError:
+        return []
+
+
+def load_line(line):
+    try:
+        x = json.loads(line)
+        return x if isinstance(x, dict) else None
+    except ValueError:
+        return None
+
+
+def value_limit(offer, budget, chance):
+    """The most this offer is worth paying: list price, less the chance that goods break and leave me nothing."""
+    worth = offer["list_price"] * (1 - chance) if chance else offer["list_price"]
+    return min(budget, int(worth))
 
 
 # --- after the trade
@@ -423,6 +498,8 @@ def main():
         for s in shops:
             s["usable"] = usable_offers(s, order, catalog)
         shops = [s for s in shops if s["usable"]]
+        global AGENT_DIR
+        AGENT_DIR = md
     if not shops:
         log("[choose] no shops with this order in stock" if r3 else "[choose] no shops in the list")
         print(json.dumps({"shop": "", "receipt": None, **({} if r3 else {"stars": 1, "review": "No shops to trade with."})}))
@@ -430,6 +507,7 @@ def main():
     memory = load_memory()
     if r3:
         sync_payments(memory, os.path.join(md, "payments.jsonl"))
+        sync_broken(memory, md, SETTLED)
     log(f"order: {args.item}, budget {args.budget}; {len(shops)} shops; {len(memory['trades'])} trades in memory")
 
     rnd = market_round()
@@ -449,7 +527,10 @@ def main():
     offer = pick_offer(shop["usable"], args.budget) if r3 else None
     key = offer["sku"] if r3 else args.item     # prices are comparable within a SKU, not within a category
     label = offer["name"] if r3 else args.item
-    limit = min(args.budget, offer["list_price"]) if r3 else args.budget
+    chance = None
+    if r3 and order.get("kind") == "goods":
+        chance = market_model.break_chance(market_model.break_stats(market_model.load_rows(md), catalog), key)
+    limit = value_limit(offer, args.budget, chance) if r3 else args.budget
     mine = my_history(memory, shop["name"])
     deals, low = item_stats(mine, key)
     note = "; ".join(x for x in (
@@ -458,7 +539,8 @@ def main():
     if note:
         log(f"memory note for the harness: {note}")
     if r3:
-        log(f"[offer] {offer['sku']} {offer['name']}: list {offer['list_price']}, limit {limit}, {len(shop['usable'])} fit")
+        log(f"[offer] {offer['sku']} {offer['name']}: list {offer['list_price']}, limit {limit}, {len(shop['usable'])} fit"
+            + (f", breaks {chance:.1%} of the time in the ledger" if chance else ""))
     try:
         out = negotiate(shop["url"], label, limit, note, f"I want to buy {label} ({key})" if r3 else None)
         out["asked"] = key if r3 else None
