@@ -145,12 +145,19 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
     if os.environ.get("AX_R3_ACTIVATE") != "1":
         message = "Set AX_R3_ACTIVATE=1 only after approving the R3 cutover"
         raise HarnessError(message)
-    if os.environ.get("AX_MODEL_PROVIDER") != "openrouter-free":
-        message = "Prepared deployment requires the explicit free OpenRouter route"
+    legacy_model = (
+        os.environ.get("AX_BUYER_MODE") == "model"
+        or os.environ.get("AX_SELLER_MODE") == "legacy"
+    )
+    if legacy_model and os.environ.get("AX_MODEL_PROVIDER") != "openrouter-free":
+        message = "Legacy model agents require the explicit free OpenRouter route"
         raise HarnessError(message)
     validate_paid_launch(settings)
-    if not os.environ.get("MARKET_OWNER") or not os.environ.get("OPENROUTER_API_KEY"):
-        message = "Private market owner and OpenRouter environment are required"
+    if not os.environ.get("MARKET_OWNER"):
+        message = "Private market owner environment is required"
+        raise HarnessError(message)
+    if legacy_model and not os.environ.get("OPENROUTER_API_KEY"):
+        message = "Legacy model agents require the OpenRouter environment"
         raise HarnessError(message)
     _ = settings.seconds_remaining(datetime.now(UTC))
     await anyio.to_thread.run_sync(prepare, settings, app)

@@ -1,27 +1,23 @@
-# 8주차 요구사항과 구현 증거
+# 8주차 중간평가 요구사항과 구현 증거
 
-기준: [교수 week-08.html, commit 5b398056](https://github.com/Q00/ai-agent-engineering-101/blob/5b398056d0b11d3fbd0b943ff6080f388832d8ec/week-08.html), 2026-10-30 확인. 중간평가 30%, **R3 11월 2일~16일 / 제출 11월 16일 23:59**. 현행 Git에 W08 전용 README/공식 검사기는 없다. 로컬 회귀 수를 공식 합격 점수로 부르지 않는다. 공고 개정 전 기록은 [이전 보고서 원문](REPORT_HISTORY.md)에 보존했다.
+기준: [교수 week-08.html, commit d4b4d53](https://github.com/Q00/ai-agent-engineering-101/blob/d4b4d53e0fc2b30c4d44f7c89e24791dfbcba66b/week-08.html)과 [시장 agent.md](https://market.ourolabs.ai/agent.md), 2026-10-31 확인. 중간평가는 성적 30%, **Round 3 11월 3일(화)~11월 17일(화) 23:59, 제출 마감 11월 17일 23:59(PR 생성 시각)**. 내부 배점 부품 40%·구조 30%·Players 백분위 30%. 이전 공고(11/2~16)에 맞춘 기록은 [REPORT_HISTORY.md](REPORT_HISTORY.md)에 보존했다.
 
-| 구분 | 요구사항·교수 설명 | 구현·검증 또는 남은 증거 |
+| 구분 | 요구사항 | 구현·검증 또는 남은 증거 |
 |---|---|---|
-| 필수: 컴포넌트 | 모델·컨텍스트·툴을 최종 에이전트에 구현하고 설명 | 자체 function-tool loop, 제한 기억·원문 조회, A2A·서명·ACP. [보고서 2절](REPORT.md#2-모델컨텍스트도구), [소스](market_a2a/harness.py) |
-| 필수: 구조·독창성 | 기본 kit와 차이, 구조도, 개선 과정 | 별도 recorder·관측 journal·제한된 외부 피드백 profile·ACP 입력 경계. [보고서 3절](REPORT.md#3-구조와-기본-kit에서-확장한-부분) |
-| 필수: 배포·정산 | 직접 배포는 acp.json·checkout·실제 /api/settle 통과 | 공식 Proxy/AcpShop 경로와 입력 guard 검증, Linux 설치 54개 PASS. 실제 시장 정산은 개시 후 수집 |
-| 필수: 구매 상한 | open mandate cap 초과로 checkout 완료 금지 | 실제 payer 거부와 잘못된 wallet에 대한 로컬 market 거부를 별도 검사. [증거](logs/meta-defense-attempt-1.log) |
-| 필수: 판매·구매 실적 | 현행 표시 각각 20건, 수치에 TODO-confirm 있음 | 실제 R3 실적 없음. 로컬 receipt를 정산 20건으로 계산하지 않음 |
-| 필수: 가격 변경 분석 | 예산 비공개 전후 첫 호가·평균 거래가 | 품목·품질·기간·버전별 관측 설계. R3 시작 후 실측 필요 |
-| 필수: 남은 실패 분석 | R3가 못 막은 W07 사건과 이유 | 정상 서명의 반복 거래 허용 사례. 기술적 유효성으로 담합 의도를 판정하지 않음 |
-| 필수: 제출물 | 코드, 배포 머신 logs/market-kit.log, REPORT | 코드·REPORT·실패/회귀·Linux 로그 제출. 실제 정산 로그는 개시 후 추가 |
-| 구두: 기억·증거 | compact뿐 아니라 원자료를 찾을 수 있어야 함 | 최근 3건·짧은 prior와 원문 조회 도구. 128곳 노트·상세 만료 후 집계 유지 |
-| 구두: 기록 병렬화 | 거래 중 기록 작업 지연 억제 | 실제 별도 recorder·SQLite WAL. 100곳·재시작·중복 및 producer 측정. 디스크 장애 무손실 보장 아님 |
-| 구두: 외부 피드백 | 인간 피드백·도구 결과로 버전별 행동 prior 변경 | event ID/해시 검증·3개 focus·버전 보관. [실행 예제](examples/operator_feedback_demo.py), [출력](logs/meta-demo-20261030/result.json) |
-| 구현 한계 | 자동 후보 실험·승격·성과 복구·보고 | 미구현. 해시 오류 시 직전 profile 유지와 성과 기반 rollback을 구분 |
-| 선택 도전 | acp.json에서 동적 도구 생성 | 미구현. 고정·typed ACP 경계 사용 |
-| 개시 전 재확인 | 공급·식품 품질·게시판 새 계약 | 명세 공지 후 반영·검증. 삭제된 판매 하한 조건을 현행 필수로 주장하지 않음 |
+| 부품 40% · 모델 | 어떤 모델을 어디에 썼는가 | claude-haiku-5-5를 5분 주기 정책 관리자에만. [r3/manager.py](r3/manager.py), 범위 검증 [r3/policy.py](r3/policy.py). 거래 경로 모델 0회. [REPORT 1-1](REPORT.md#1-1-모델) |
+| 부품 40% · 컨텍스트 | 지난 거래·평판을 다음 결정에 넣는 방식(meta-harness, 메모리) | 공개 원장 미러·자기 장부·정책표 세 층과 네 가지 분기. [REPORT 1-2](REPORT.md#1-2-컨텍스트와-메모리-신뢰도가-다른-세-층), [tests/test_r3_fast_buyer.py](tests/test_r3_fast_buyer.py), [tests/test_r3_ledger_forum.py](tests/test_r3_ledger_forum.py) |
+| 부품 40% · 툴 | 무엇을 툴로 만들었고 어떻게 | 판매·구매·재입고·후기·게시·원장·정책 도구 표. [REPORT 1-3](REPORT.md#1-3-툴) |
+| 구조 30% | 키트 기본형과 다른 구조, LaTeX 1쪽 figure | [architecture.tex](architecture.tex) → [architecture.pdf](architecture.pdf), 비교표 [REPORT 2](REPORT.md#2-구조-키트-기본형과의-차이--architecturetex--architecturepdf) |
+| 순위 30% | 종료 시각 board Players 백분위 | 개시 전. 종료 시 스냅숏을 REPORT §5에 |
+| 기본 조건 · 가게 | R3 정산 20건 이상 | 개시 전. `[acp] settled` 줄과 역할별 고유 ledger 번호로 집계 |
+| 기본 조건 · buyer | R3 정산 20건 이상, open mandate 상한 초과 checkout 미완료 | 개시 전. 상한은 kit `acp_pay`가 강제하며 우리 상한은 그 아래(min(예산, 0.95×정가)). [tests/test_r3_checkout.py](tests/test_r3_checkout.py) |
+| 키트 v4 호환 | offers·acceptable·훅 3종 | [r3/models.py](r3/models.py), [market_a2a/market_decision.py](market_a2a/market_decision.py), [deploy/vps/launch.py](deploy/vps/launch.py), [agent.json](agent.json). [tests/test_r3_v4_compat.py](tests/test_r3_v4_compat.py) |
+| 결제 전 확인 | `accept`(증명서·잔여시간·등급·보증) | 주문 종류별 정책. 원본 kit `check_accept`로 통합 검증 [tests/test_r3_kit_integration.py](tests/test_r3_kit_integration.py) |
+| 재고·공급 | restock 훅, 최대 10줄, 파산 회피 | [r3/restock.py](r3/restock.py), 유보 현금·시드 예산. [tests/test_r3_hooks.py](tests/test_r3_hooks.py) |
+| 식품·비식품 품질 | 등급 claim·보증·cert | 정직 claim(경계는 한 등급 아래), A등급 보증 6h, cert 항상. [tests/test_r3_seller.py](tests/test_r3_seller.py) |
+| 게시판 | outbox.jsonl, 역할별 5분 1건 | buyer 사실 글(원장 refs), shop 재고 글. [r3/forum.py](r3/forum.py) |
+| 제출물 | 배포 머신 `logs/market-kit.log`(정산 줄), 바꾼 코드, REPORT.md, architecture.tex/pdf | 코드·REPORT·tex/pdf 있음. 실제 R3 로그는 개시 뒤 추가 |
+| 형식 | squash 금지, 로그 커밋, 키 미커밋 | 커밋 단위 보존. `*.pem`·env 미커밋 |
+| 선택 | acp.json에서 동적 도구 생성 | 미구현. kit의 고정 checkout 사용 |
 
-웹 공고와 구두 설명을 서로 다른 시점의 기준으로 섞지 않는다. 10월 27일 중간·중간2·최종 속기록의 기억/피드백/동시성 설명은 구현 설계의 근거이고, 현행 마감과 시장 계약은 위 교수 공고를 따른다. 접근성 지원 에이전트 연구 기획은 별도 자료로 보존한다.
-
-현재 증거: [전체 회귀412개](logs/claude-fallback-20261030/summary.json), [VPS 핵심115검사·Haiku 실호출1회](logs/claude-fallback-20261030/vps/result.json), [변경 이력](REPORT_HISTORY.md). 최종 과제 충족에는 실제 R3 정산·가격 분석·순위/거부 증거가 추가되어야 한다.
-
-
-2026-10-30 신뢰성 보완은 기존 호가의 모델 없는 안전 집행·공유 대기 예산·리뷰 장애 뒤 결과 보존이다. 아이디어 출처와 직접 구현을 REPORT7절에 명시했다. 실제 R3 성과, 동적 도구 생성, 자동 후보 실험/승격/성과 복귀의 상태는 위와 같다.
+현재 증거: 전체 회귀 PASS([REPORT 3](REPORT.md#3-검증-2026-10-31-로컬)), 키트 v4 통합 검사, 공개 원장 읽기 전용 수집 1회. 실제 R3 정산·순위·거부 사유는 개시 뒤 수집한다.

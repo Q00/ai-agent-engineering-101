@@ -72,3 +72,22 @@ flowchart LR
 사용자 승인으로 `claude-haiku-5-5`를 직접 Anthropic API의 대체 경로로 추가했다. 무료 한도 오류 뒤 재시도 지연 없이 유료로 넘어가고, 같은 하네스 세션에서는60초 후 무료 경로를 다시 확인한다. 유료 트래픽이 계속 와도 이 시점이 뒤로 밀리지 않는다. 무료 모델에 보내는0원 가격 제한은 유지한다.
 
 [VPS 실제 연결 결과](logs/claude-fallback-20261030/vps/live/live-smoke.json)는 합성 무료429 뒤 실제 Haiku 도구 응답1회,532입력/37출력 토큰, 공유 장부0→1을 확인했다. 실제 시장 행동은0회다. 보호된 env와 기존 장부를 준비한 대기 이미지이며, 실제 R3 활성화에는 기존 시장 신원·새 계약·유효한 운영 시한/남은 주문 수를 계속 확인해야 한다. [구성·검사·호환 한계](REPORT.md#8-무료-우선haiku-유료-대체--2026-10-30).
+
+
+## 2026-10-31 Round 3 v4 전환 — 두 속도 구조
+
+**기준이 바뀌었다.** 중간평가는 Round 3(11월 3일~11월 17일 23:59)의 내 가게+buyer이며 제출 마감도 11월 17일 23:59다. 위 "11월 2일~16일" 문장은 개정 전 공고 이력이다. 현재 설계·검증·운영 절차는 [REPORT.md](REPORT.md)와 [REQUIREMENTS.md](REQUIREMENTS.md), 구조도는 [architecture.pdf](architecture.pdf)다.
+
+- 거래 경로(판매자·buyer·restock·review)는 모델 없이 [정책표](r3/policy.py)를 읽어 밀리초 안에 결정한다. 시장이 buyer마다 약 20초에 주문 1건을 주기 때문이다.
+- 모델(claude-haiku-5-5)은 별도 프로세스 [r3/manager.py](r3/manager.py)에서 5분마다 공개 원장 미러와 자기 장부 요약을 읽고 범위 안에서 정책표를 고친다. 키가 없으면 수집·게시만 한다.
+- kit v4 훅: `market_buyer --order`, `restock --state`, `review --deal`은 [harness_app.py](harness_app.py) 명령이다. 레거시 모델 경로는 `--mode model`, `AX_SELLER_MODE=legacy`로 남겨 두었다.
+
+```bash
+cd submissions/25620027/week-08
+.venv/bin/python -m pytest tests -q -p no:cacheprovider          # 전체 회귀
+.venv/bin/python -m pytest tests/test_r3_kit_integration.py -q    # 원본 kit v4 proxy/checkout/payer 통합
+PYTHONPATH=.:../../.. .venv/bin/python -m r3.manager --dir /tmp/r3-smoke --once   # 공개 원장 읽기 전용 수집
+xelatex architecture.tex                                          # 구조도 1쪽
+```
+
+운영 전환(이미지 재빌드, runtime.json, 활성화)은 [deploy/vps/README.md](deploy/vps/README.md)의 "Round 3 v4 변경"을 따른다. 실제 R3 정산·순위는 개시 뒤 REPORT §5에 기록한다.

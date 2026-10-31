@@ -1,138 +1,111 @@
-# 8주차 중간평가 — 증거를 조회하는 구매자와 별도 기록 프로세스
+# 8주차 중간평가 — 두 속도의 시장 에이전트 (Round 3, kit v4)
 
-학번: 25620027 · 작성 기준: 2026-10-30 · [제출 PR #372](https://github.com/Q00/ai-agent-engineering-101/pull/372)
+학번 25620027 · 작성 기준 2026-10-31 · [제출 PR #372](https://github.com/Q00/ai-agent-engineering-101/pull/372) · 브랜치 `week-08-r3-prep`
 
-자체 하네스에 **가게별 기억·원문 조회·별도 기록 프로세스·운영자 피드백 프로필·ACP 결제 경계**를 연결했다. 코드, 오프라인 실행 예제, 회귀 검사, VPS 설치 증거를 제출한다. **R3는 11월 2일 시작 예정이므로 실제 R3 정산 실적과 가격 전후 분석은 아직 없다.** 이 보고서의 구현 검증과 이후 시장 성과를 구분한다.
+Round 3(11월 3일~11월 17일 23:59)에 올릴 가게와 buyer를 kit v4 위에서 다시 설계했다. **거래 경로(초 단위)에는 모델이 없다.** 판매자·구매자·재입고·후기는 모두 범위가 정해진 **정책표**를 읽어 밀리초 안에 결정한다. **모델(claude-haiku-5-5)은 5분마다** 공개 원장과 자기 장부의 요약을 읽고 그 정책표를 고친다. 이 보고서는 2026-10-31 로컬 검증 시점의 구현을 설명한다. 실제 R3 정산 수·Players 순위·거부 사유는 개시 뒤 §5에 로그를 인용해 채운다. 이전 제출본(v3 기준, 10/30)은 [REPORT_HISTORY.md](REPORT_HISTORY.md)에 그대로 보존했다.
 
-[교수 공고 고정 소스](https://github.com/Q00/ai-agent-engineering-101/blob/5b398056d0b11d3fbd0b943ff6080f388832d8ec/week-08.html) 기준 중간평가는 성적 30%, R3 기간은 11월 2일~16일, 마감은 **11월 16일 23:59(PR 생성 시각)**다. 세부 배점·정산 20건·순위 환산에는 TODO-confirm 주석이 남아 있다. [요건별 대응](REQUIREMENTS.md)에 현행 기준을 모았다. 이전 공고와 시도별 설명은 [기존 보고서 원문](REPORT_HISTORY.md)에 보존했다.
+## 0. 왜 구조를 바꿨나
 
-## 1. 문제와 설계 목표
+| 관측·근거 | 설계 결정 |
+|---|---|
+| 2026-10-31 공개 원장 최근 500행: 시장은 buyer마다 **약 20초에 주문 1건**(최소 간격 20.0초). 상위 buyer는 주문→결과 1.5~16초 | 주문당 처리 시간을 15초 이내로. 모델 호출을 거래 경로에서 제거 |
+| 기존 우리 buyer: 선택 40초 + 협상 + 후기 15초, 상한 240초. 라운드2 거래 수 24백분위, 절약 26백분위 | 코드가 가게·SKU를 고르고 2~4턴에 끝낸다 |
+| 순위: 가게 ALL = 0.5P(순이익)+0.3P(매출)+0.2P(별점), buyer ALL = 0.5P(잉여)+0.3P(게시판)+0.2P(정산 수). buyer 지표의 0.7이 거래 **양**에 묶임 | 속도, 재고 폭, 게시판을 1차 목표로 |
+| 교재 ECONOMY: 잘 팔리는 상품은 비공개이며 정산 기록·내 기록·게시판에서 알아낸다 | 공개 /api/ledger를 30초 증분으로 미러링해 수요·고장률·경쟁가를 메모리로 |
+| 8주차 수업: 기억은 증거가 아니라 prior, 외부 루프가 버전별 프로필을 만든다, 하네스가 다시 두꺼워진다 | 모델은 매 턴이 아니라 정책 버전을 만든다 |
 
-거래 기록을 무한히 프롬프트에 붙이면 비용이 늘고, 압축한 기억만 믿으면 원래 영수증·가격과 다른 결론을 낼 수 있다. 또한 협상 성공과 시장 정산 성공은 다른 사건이다. 따라서 다음을 분리했다.
+## 1. 부품별 설계
 
-- **선택과 권한:** 모델은 가게와 협상 행동을 선택한다. 예산 상한·서명·checkout 입력 검사는 코드가 강제한다.
-- **기억과 증거:** 짧은 가게별 요약으로 후보를 좁히고, 필요할 때 자기 관측 원문을 도구로 조회한다. 기억상의 거래 완료를 정산 증명으로 사용하지 않는다.
-- **거래와 기록:** 구매자는 작은 관측을 journal에 commit하고 별도 recorder가 요약·만료 정리를 수행한다. 기록 장애가 이미 얻은 거래 결과를 지우지 않게 한다.
+### 1-1 모델
 
-## 2. 모델·컨텍스트·도구
-
-| 구성 | 구현과 범위 | 소스 |
+| 어디에 | 무엇을 | 경계 |
 |---|---|---|
-| 모델 실행 | 자체 Python function-tool loop. 모델 응답 최대 6회, API 시도 최대 3회. 모델 대기30초·결정별 모델 대기 예산60초 | [harness.py](market_a2a/harness.py), [model_session.py](market_a2a/model_session.py) |
-| 모델 경로 | OpenRouter 무료 우선·명시적 Haiku5.5 대체. 기존 MiniMax 행사 만료 후 `openrouter/free`, 유료 시도는 판매자/구매자 합산 KST 하루5000회 | [model_provider.py](market_a2a/model_provider.py), [paid_fallback.py](market_a2a/paid_fallback.py), [anthropic_fallback.py](market_a2a/anthropic_fallback.py) |
-| 선택 입력 | 고정 지시문과 주문 상태를 분리. 짧은 관측 prior·최근 3건·증거 포인터·유효한 전략 프로필 제공 | [context_snapshot.py](market_a2a/context_snapshot.py), [market_decision.py](market_a2a/market_decision.py) |
-| 기억 저장·조회 | 최대 128곳의 노트, 자기 관측 원문을 registry/snapshot index로 조회. 임의 파일 경로와 외부 광고를 지시문으로 받지 않음 | [memory_selection.py](market_a2a/memory_selection.py), [memory_repository.py](market_a2a/memory_repository.py) |
-| 기록 담당 | SQLite WAL과 별도 프로세스. 모델/API 호출 없이 관측을 정리 | [memory_journal.py](market_a2a/memory_journal.py), [recorder.py](r3/recorder.py) |
-| 피드백 프로필 | 운영자 파일의 event ID·관측 해시를 검증하고 제한된 행동 우선순위 갱신 | [meta_profile.py](market_a2a/meta_profile.py) |
-| 거래·결제 | A2A 협상·Ed25519 영수증 뒤 공식 kit v3 wallet/ACP checkout. 명시된 HTTP method·품목·수량 1 검사 | [kit_entry.py](r3/kit_entry.py), [boundary.py](r3/boundary.py) |
+| [r3/manager.py](r3/manager.py) 정책 관리자 (별도 프로세스) | 5분마다 요약(공개 원장 6시간·자기 결과 24시간·현재 정책과 필드 범위)을 받아 `set_policy` 도구를 **한 번** 호출한다. 최대 6개 변경과 이유 | 모든 필드는 pydantic `ge/le` 범위. 범위 밖·미지 필드·도구 미호출·API 오류는 **정책 유지**. 유료 호출은 기존 공유 quota 장부(KST 하루 5,000회)에서 차감. 키 없으면 수집·게시만 수행 |
+| 레거시 경로 (`--mode model`, `AX_SELLER_MODE=legacy`) | 10/30까지의 function-tool loop 판매자·구매자 | 비교·회귀용으로 유지. 운영 기본값 아님 |
 
-이번 검증은 모델 응답 fixture를 사용했다. 무료 라우터가 실제 선택할 모델·응답 품질·실시간 API 지연은 측정하지 않았다. `openrouter/free`는 고정 모델명이 아니며 무료 provider 가격 조건을 요청하더라도 실제 운영 오류 가능성을 없애지는 않는다.
+모델이 **하지 않는 일**: 가게 선택, 가격 제안, 수락, 후기 문장, 재입고 라인. 그 결정들은 정책표의 숫자와 코드 규칙이 한다. 이유는 §0의 20초 주문 간격과 7주차 EP5(모델 429로 1점 6,837건)다.
 
-가게별 집계는 최대 128곳, 상세 관측은 14일·가게별 200건·전체 2,048건·snapshot 2MiB로 제한한다. 상세가 만료돼도 가게별 관측 집계와 마지막 관측일은 남긴다. 조회 출력은 8KiB, 대기 journal은 4,096건·건당 16KiB다. 정산 증거 로그는 이 캐시 정리 대상이 아니다.
+### 1-2 컨텍스트와 메모리: 신뢰도가 다른 세 층
 
-### 피드백은 어떻게 다음 결정에 반영되는가
+| 층 | 저장 | 신뢰 | 다음 결정에 들어가는 방식 |
+|---|---|---|---|
+| **공개 원장 미러** [r3/ledger_db.py](r3/ledger_db.py) | `GET /api/ledger?after=seq` 30초 증분, SQLite. settle 행의 카테고리·SKU·금액·등급·claim, broken 행 | 시장이 검증한 사실 | restock의 수요 신호(카테고리·SKU 체결 수), 관리자 요약(가격/정가 비율·등급별 고장률·우리 정산 수), 게시글의 시장 한 줄 |
+| **자기 사건 장부** [r3/events.py](r3/events.py) | buyer 시도·결과, `payments.jsonl` 동기화(paid/refused/사유), 판매자 서명 영수증 | 우리가 관측한 것 | 거절 사유별 가게 가중치: 증명서 없음 ×0.25, 잔여수명·등급 ×0.5, 보증 ×0.6, 그 외 ×0.7 (24시간) |
+| **정책표** [r3/policy.py](r3/policy.py) | 버전·사유·시각, 이전 2개 보관 | 파생(모델이 고침) | 판매자 마크업·수락선·양보폭·청산·보증, buyer 첫 제안·즉시 수락선·상한·accept 조건, restock 유보·시드 예산·가격대·보충 |
 
-운영자가 자기 관측의 event ID와 해시를 지정하고 `good` 또는 `bad` 평가 및 세 가지 focus 중 하나를 기록한다. 각 배치에서 good 1·bad 2의 고정 가중치로 **기억 조회·관측 가격 비교·불필요한 협상 회피** 순서를 정한다. 누적 모델 학습이 아니며 자유 텍스트를 새 시스템 지시문으로 붙이지 않는다. 현재 프로필과 이전 2개 버전을 남기고, 16KiB·7일 범위를 적용한다. 예산·서명·결제 권한은 변경하지 못한다.
+기존 가게별 기억(SQLite journal, 별도 recorder, 128곳 노트)과 운영자 피드백 프로필은 그대로 두었고 레거시 경로가 읽는다. 5,629개 상품을 프롬프트에 넣지 않는다. 관리자가 모델에 주는 것은 요약 한 장(상위 카테고리 12개, SKU 20개, 등급별 고장률, 자기 결과 수치, 정책 한 벌)이다.
 
-[실행 예제](examples/operator_feedback_demo.py)는 가상 관측을 만든 뒤 가격 비교 우선 v1→협상 횟수 우선 v2와 구매자 컨텍스트 반영을 실제 journal/profile 코드로 재현한다. 변조한 증거 해시는 거부하고 직전 프로필을 유지한다. [출력 원본](logs/meta-demo-20261030/result.json)은 모델/시장 호출 0, 가상 관측, 수익 효과 미평가임을 명시한다.
+증거가 다음 결정을 바꾸는 구체 분기 네 개:
 
-**자동 후보 검증·성과 기준 승격·수익 악화 시 자동 복구·사용자 알림은 구현하지 않았다.** 이전 버전 보관과 입력 검증 실패 시 유지가 성과 기반 rollback 전체를 뜻하지는 않는다. 실제 인간 평가·모델 행동·수익의 변화는 이후 실험 항목이다.
+1. 지급 거절 "no certificate" → 그 가게는 24시간 동안 점수 1/4 → 같은 SKU를 가진 다른 가게로 간다 ([r3/buyer.py](r3/buyer.py) `shop_factor`).
+2. 우리 가게에서 unit이 사라짐(판매) → 60초 뒤 restock이 같은 SKU를 보충한다 (`stale_hours` 안에서만).
+3. 식품 잔여수명이 등급 경계 2% 안 → 한 등급 낮게 claim한다 (checkout·정산 둘 중 하나와 맞으면 참인 규칙에 맞춤).
+4. 식품 잔여수명 20% 미만 → 원가의 60%까지 청산 호가를 낮춘다(폐기 손실보다 회수).
 
-## 3. 구조와 기본 kit에서 확장한 부분
+### 1-3 툴
 
-```mermaid
-flowchart LR
-  B[Buyer: model + guarded tools] --> S[Seller: model + guarded tools]
-  B --> J[(Own observations: SQLite WAL)]
-  J --> R[Separate recorder process]
-  R --> N[Bounded notebooks + evidence lookup]
-  N --> B
-  O[Operator feedback + observation hash] --> P[Versioned strategy prior]
-  J --> P
-  P --> B
-  B --> W[Official kit v3 wallet]
-  W --> C[ACP checkout]
-  C --> M[Market verification + settlement]
-```
+| 도구 | 누가 정하나 | 입력 | 출력 | 코드가 강제하는 것 |
+|---|---|---|---|---|
+| `pick_unit` ([r3/seller.py](r3/seller.py)) | 코드 | 요청 문장, `inventory.json` | SKU·이름·카테고리로 맞는 unit (식품은 먼저 만료, 비식품은 오래된 것) | 다른 협상에 묶인 unit·방금 판 unit·만료 임박 제외 |
+| `quote`/`counter`/`decide` ([r3/pricing.py](r3/pricing.py)) | 정책표 | 원가·등급·나이·잔여수명 | 호가, 수락선, 바닥 | 호가 ≤ 정가, 청산 외엔 원가·(1+마진) 이상, 양보는 수락선까지만 |
+| 서명 영수증 | 코드 | 합의가·unit·claim·보증 | `{shop,item,price,task,unit,claim,warranty_hours,sig_seller}` | 정확한 합의가만 서명; cert는 항상 포함 |
+| `choose` ([r3/buyer.py](r3/buyer.py)) | 코드 | `order.json` acceptable, `shops.json` offers, `catalog.json`, 자기 장부 | 가게×SKU | 점수 = 정가 × 증거 가중치 × 공개 별점 보정 |
+| `negotiate` | 정책표 | 상대 호가 | 2~4턴, 즉시 수락 또는 역제안 | 상한 = min(예산, 0.95×정가); 역제안은 상한 안에서만 증가 |
+| `accept_policy` | 정책표 | 주문 종류 | 식품 `cert`+`min_hours_left`(사용시간+1h), 비식품 `cert`+`grades`(A,B) | kit가 결제 전에 검사하고 미충족이면 지급 안 함 |
+| `restock.plan` ([r3/restock.py](r3/restock.py)) | 정책표+원장 신호 | 재고·카탈로그·demand·수요 신호 | 최대 10줄 `{sku, qty}` | 유보 현금 아래로 안 내려감, 재고 원가 합 ≤ 시드 예산, 720h 식품·중저가 비식품만 |
+| `review.stars_for` ([r3/review.py](r3/review.py)) | 코드 | `deal.json` (시장 영수증) | 1~5점·사실 문장 | 허위 claim 1점, 사용시간 미달 ≤2점, 예산 문구 없음 |
+| `forum` ([r3/forum.py](r3/forum.py)) | 코드 | 자기 정산 기록·시장 요약 | buyer 글 5분 1건(원장 refs), shop 글 30분 1건 | 검증 가능한 사실만, 비방·광고 삽입·투표 요청 없음 |
+| `set_policy` (모델 도구) | 모델 | 요약 | 변경 집합+이유 | 범위·개수·필드 검증 뒤 버전 저장 |
 
-교수의 v3 checkout/payer를 재사용하고 원본 kit는 수정하지 않았다. 등록 경로는 `r3.kit_entry`→공식 `cmd_join --public-url`→Proxy/AcpShop이다. `--deployed`로 주소만 등록하면 ACP가 자동 제공된다고 가정하지 않는다. 직접 제공하는 gateway는 별도 진단 경로다.
+## 2. 구조: 키트 기본형과의 차이 — [architecture.tex](architecture.tex) · [architecture.pdf](architecture.pdf)
 
-자체 확장은 모델 tool loop, 가게별 제한 기억·원문 조회, 별도 recorder, 해시가 검증된 피드백 프로필, ACP 입력 경계, 협상 정책이다. W05의 function-tool loop→W06 A2A·실패 후 재계획→W07 시장 선택·후기·서명 영수증→W08 ACP·기억·외부 피드백으로 이어진다. W07 기준은 `e75e769da16d1b23240f23316df3b35728c64821`, [PR #358](https://github.com/Q00/ai-agent-engineering-101/pull/358)이다. W03 Contract Net과 W04 이중경매는 별도 과제로 검증했으며 현재 시장 하네스에 넣었다고 주장하지 않는다. 다른 학생의 코드를 복제하지 않았다.
-
-교수 kit 기준은 [commit c89c58d6](https://github.com/Q00/ai-agent-engineering-101/blob/c89c58d652ef63a85307f82bb793e54fb6969272/scripts/market_kit.py), SHA256 `d348544868f38443d45b718bd4496033c73035e393200211ad095e3e5484cc04`다. 새 시장 계약이 나오면 이 pin도 다시 대조한다.
-
-## 4. 실행 검증과 실패 기록
-
-| 검증 | 결과·해석 | 증거 |
+| | 키트 기본형 (`starter_round3/seller.py`, 기본 buyer, 기본 restock) | 이 제출 |
 |---|---|---|
-| Mac 전체 회귀 | 412개 PASS, 실패/오류/건너뜀0. 외부 모델·시장 호출0, loopback49회 | [로그](logs/claude-fallback-20261030/final.log), [JUnit](logs/claude-fallback-20261030/final-junit.xml), [집계](logs/claude-fallback-20261030/summary.json) |
-| 피드백 실행 예제 | v1/v2 생성·컨텍스트 반영·변조 거부·직전 버전 유지 | [결과](logs/meta-demo-20261030/result.json) |
-| Linux VPS 핵심 검사 | 115개 PASS, 실패/오류/건너뜀0. 기존 결제·기억·집행과 새 대체 경로·쿼터·기동 경계 검사 | [전체 로그](logs/claude-fallback-20261030/vps/server-core-final.log), [JUnit](logs/claude-fallback-20261030/vps/qa/core-final-junit.xml) |
-| 실제 Haiku 대체 | 합성 무료429 뒤 실제 도구 응답1회,532입력/37출력 토큰·공유 장부0→1. 실제 시장 행동0 | [VPS 연결 결과](logs/claude-fallback-20261030/vps/live/live-smoke.json) |
-| 실제 R3 시장 | 개시 전, 정산/순위/수익 효과 미측정 | 아래 후속 수집 항목 |
+| 모델 위치 | 매 협상 턴마다 전사(transcript)를 모델에 보냄 | 거래 경로에 없음. 5분 주기 정책 관리자 |
+| 가격 | 원가 하한, 그 위는 모델 자유 | 등급별 마크업 → 수락선 → 양보 → 청산. 모두 표에서 조회 |
+| 영수증 | unit만 | unit·정직 claim·A등급 보증·cert |
+| 가게 선택 | 재고 있는 가게 중 무작위 | 정가 × 자기 증거 가중치. 거절 이력이 선택을 바꿈 |
+| 결제 전 확인 | 없음 | 주문 종류별 accept 정책 |
+| 재입고 | 20개 미만일 때 무작위 3카테고리 | 폭 우선(720h 식품·중저가 A 비식품) → 판매 보충 → 원장 수요 추종, 유보 현금 보장 |
+| 기억 | 없음 | 공개 원장 미러·자기 장부·정책표 세 층 |
+| 게시판 | 없음 | 원장 refs가 붙은 사실 글, 역할별 간격 |
 
-프로젝트 전체 strict 타입 검사는 오류·경고·메모 0, 이번 변경 소스·직접 검사는 Ruff 통과다. [새 타입](logs/claude-fallback-20261030/types-final.log), [새 린트](logs/claude-fallback-20261030/lint-final.log). 이전 예제 제출 검수도 보존한다. [타입 원본](logs/submission-review-20261030-types.log), [린트 원본](logs/submission-review-20261030-lint.log). 도구 캐시 접근이 막힌 첫 sandbox 시도도 [별도 원본](logs/submission-review-20261030-types-sandbox.log)에 보존했다.
+그림은 두 속도의 루프(초/분), 세 기억층과 신뢰 차이, 키트가 맡는 경계(점선), 증거가 다음 결정으로 돌아가는 화살표를 한 장에 그렸다. 새 알고리즘을 발명했다고 주장하지 않는다. 기여는 **검증된 사실(공개 원장) → 관측(자기 장부) → 정책(모델이 고치는 표) → 결정(코드)**의 연결과, 그 연결이 20초 주문 간격 안에서 돌아가게 만든 점이다. 공식 starter의 `find_unit`·A2A 흐름을 참고해 직접 다시 썼고, 빠른 수락 원리의 출처는 REPORT_HISTORY 7절에 있다.
 
-정상 결제 fixture는 lamp 100·mandate budget 120으로 공식 payer와 closed mandates 서명을 거쳐 로컬 장부 잔액 900/100을 확인한다. budget 90의 실제 payer 거부와, 잘못된 wallet이 유효한 서명으로 상한을 넘겨도 로컬 시장이 거부하는 층을 구분했다. 금액·품목·수취인·해시·주문·서명·만료·수량 오류와 재사용, 두 동시 complete에서 한 번만 차감되는 경우도 검사한다. [정상 경로](logs/r3-third-attempt.log), [경계](logs/r3-payer-boundaries.log), [다층 방어](logs/meta-defense-attempt-1.log).
+## 3. 검증 (2026-10-31, 로컬)
 
-100곳 노트가 상세 만료·재시작 뒤에도 남고 중복 이벤트가 집계를 늘리지 않는지 검사했다. 실제 별도 recorder와 producer를 사용한 과거 로컬 기록 100회는 중앙값 0.918ms·p95 1.642ms였다. 이는 VPS·전체 거래·모델 응답 속도의 측정이 아니다. [측정 원본](logs/parallel-memory-attempt-2.log).
-
-localhost bind가 금지된 첫 sandbox 실행은 29개 실패였다. 원인을 보존하고 외부 연결 차단을 유지한 채 로컬 소켓이 허용된 환경에서 재검사했다. [첫 실패](logs/public-prep-20261030-sandbox.log), [당시 재검사](logs/public-prep-20261030-summary.json). 이전 379개 회귀·수정·실패 원본도 삭제하지 않았다. 전체 과목 검사 수를 합쳐 공식 W08 통과 수로 표현하지 않는다.
-
-로컬 정산 서버는 불변조건 검사용 fixture다. 실제 시장 구현 검증이나 완전한 AP2 표준 인증을 뜻하지 않는다. 서명이 정상인 서로 다른 반복 구매 2건을 허용하는 검사는 담합 의도 판별을 증명하지 않는다. [이전 시도와 한계](REPORT_HISTORY.md).
-
-## 5. 실제 R3에서 추가할 제출 증거
-
-현행 공고의 판매·구매 정산 각각 20건을 목표로 한다. 협상 영수증·로컬 완료만으로 시장 정산 건수를 채우지 않는다. 실제 배포 머신의 `logs/market-kit.log`와 dashboard/ledger를 보존해 다음을 채운다.
-
-| 항목 | 수집·판정 방법 | 현재 상태 |
+| 검증 | 결과 | 근거 |
 |---|---|---|
-| 판매 정산 | kit의 `[acp] settled ... ledger #...`와 실제 장부 대조·ledger 중복 제거 | R3 개시 전 |
-| 구매 정산 | `[acp] paid ... settled at ledger #...`와 장부 대조. mandate 상한 거부 별도 기록 | R3 개시 전 |
-| 가격 전후 | 버전·시각·품목·품질별 첫 호가와 실제 정산 평균·표본 수·방문/체결률 비교 | 관측 설계 완료, 실측 없음 |
-| 순위·거부 사유 | 같은 라운드 dashboard 시각과 실제 거부 로그, 종료 시 순위 보존 | 실측 없음 |
-| R3가 막지 못한 사건 | 정상 서명의 반복 거래 등에서 기술적 유효성과 의도 판별을 구분 | 로컬 사례만 검증 |
+| 전체 회귀 | 438개 → 신규 포함 전체 PASS, 실패·건너뜀 0 | `.venv/bin/python -m pytest tests -q` |
+| **키트 v4 통합** | 우리 판매자 → **원본 kit `Proxy`**(영수증 terms 관측) → 우리 fast buyer → **원본 kit `acp_pay`**(`check_accept`가 시장 키로 cert 서명 검증) → **원본 `AcpShop.create`**(`pick_unit`이 재고에서 우리 unit 선택) → 로컬 정산. 세션에 unit·claim A·cert 전달 확인. accept 미충족(잔여수명)이면 지급 0 | [tests/test_r3_kit_integration.py](tests/test_r3_kit_integration.py) |
+| 판매자 | SKU 요청→정책 호가, 수락선 이상 제안→서명 영수증(unit/claim/warranty), 낮은 제안→감소하는 역제안→거절, 없는 상품 거절, 같은 unit 이중 약속 금지, 라운드2 이하에서 7주차 품목 판매 | [tests/test_r3_seller.py](tests/test_r3_seller.py) |
+| 바이어 | 정가 높은 acceptable SKU 가게 선택, 2~4턴 체결, 거절 이력 가게 회피·저가 즉시 수락, 재고 없으면 네트워크 없이 종료, 영수증 검증 | [tests/test_r3_fast_buyer.py](tests/test_r3_fast_buyer.py) |
+| 가격·정책 | 등급별 호가·수락선, 청산, 경계 claim, 버전·이전 2개 보관, 범위 밖 거부 | [tests/test_r3_policy_pricing.py](tests/test_r3_policy_pricing.py) |
+| 훅 | 48h 식품·고가 비식품 제외, 현금 유보, 판매 보충, 라운드2 무매입, 후기 별점·예산 미노출 | [tests/test_r3_hooks.py](tests/test_r3_hooks.py) |
+| 원장·게시판 | 수요·고장률·우리 정산 집계, refs 있는 글, 역할별 간격 | [tests/test_r3_ledger_forum.py](tests/test_r3_ledger_forum.py) |
+| CLI·런처·관리자 | `--order` 경로 해석, restock/review JSON, agent.json 훅 3종, 모델 없는 관리자 tick | [tests/test_r3_cli_manager.py](tests/test_r3_cli_manager.py), [tests/test_r3_v4_compat.py](tests/test_r3_v4_compat.py) |
+| 라이브 읽기 전용 | `r3.manager --once`가 공개 원장 1,509행을 5초에 수집(라운드2 행이라 settle 0) | 등록·주문·게시·모델 호출 0 |
 
-가격 비교에서는 라운드가 다른 누적값을 직접 빼지 않고 동일 기간·품목·품질을 맞춘다. 방문 0이면 체결률을 계산하지 않는다. 공급 원가가 도입되면 매출과 이익을 분리한다. 공개 첫 호가는 정산 가격·시장 전체 최저가와 구분하고, 표본/경쟁자 차이만으로 개선의 인과효과를 확정하지 않는다. [전략 검토](STRATEGY_REVIEW.md).
+하지 않은 것: 실제 R3 거래, VPS 이미지 재빌드·배포, 관리자의 Haiku 실호출, Linux 재검증. 기존 412개 PASS와 이번 438개 PASS는 회귀 증거이며 R3 성과 증거가 아니다.
 
-공급·식품 품질·게시판 계약은 개시 전 공지 예정이다. 현행 공고에서 판매자 하한 조건은 삭제됐으며 현재 reserve guard는 자체 정책이다. 새 명세 확정 뒤 품목·원가·가격 정책을 재검증한다. acp.json에서 동적으로 도구를 생성하는 선택 도전은 아직 구현하지 않았다. 실제 시장 로그를 가상 정산 로그로 대체하지 않는다.
+## 4. 운영 전환 (사용자 승인 뒤 실행)
 
-## 6. 재현과 VPS 상태
+1. 11/2: `deploy.vps.bundle`로 이미지 재빌드. `runtime.json`에 `stop_at` 11/17 23:59 KST, `remaining_orders` 0(무제한). 환경에 `AX_R3_MANAGER_MODEL=1`, Anthropic env, `AX_PAID_QUOTA_PATH`. fast 경로는 OpenRouter 키가 필요 없다. 라운드2 시장에 kit v4로 join해 A2A·영수증·결과 전송을 확인한다(라운드2에는 결제가 없다).
+2. 11/3: 개장 공지·agent.md 해시 재확인 뒤 `AX_R3_ACTIVATE=1`. 첫 시간은 재고 폭 매입과 첫 정산 ID를 확인한다.
+3. 운영 중: 정책 버전 로그, 역할별 고유 settle ID, 거부 사유, 고장·환불을 §5에 기록한다. 초기 매입 한도(기본 250만)·유보(150만)·후기 정책은 정책표의 사용자 결정 항목이다.
 
-[README](README.md)에 Python 3.12.11·Node 22.23.4·lock 설치·검사·예제 실행 명령을 적었다. API 키 없이 재현할 수 있으며, 실제 모델 명령인 `run_harness.sh`는 private env를 읽을 수 있어 오프라인 검사에 사용하지 않는다.
+## 5. Round 3 결과 (개시 뒤 채움)
 
-VPS의 현재 대기 release는 `20763f685bb9`, runtime65개·Linux amd64·UID10001이다. 운영 소스 `20763f685bb9938a2aa98f9743dc9e805f327a90`, 이미지ID `sha256:bc9748458f119ba38a5f031503ac801e0cc37195a074556b1f37a5051db4064a`로 `prepared`와 `current`를 갱신했다. 상태는 **Haiku 대체 준비·시장 비활성**이다. Anthropic API 키는 전용 비공개 env에0600으로 설치하고 기존 유료 호출 장부를 복사해 누적값을 보존했다. 실제 API 연결 검증1회·시장 등록/주문0회, 기존 서비스 재시작0회다. [새 서버 결과](logs/claude-fallback-20261030/vps/result.json). 이전 b619818/d7ed271 이미지와 검증 기록은 복구용으로 보존했다.
+| 항목 | 값 | 로그 인용 |
+|---|---|---|
+| 제출 시점 가게 정산 수 | 개시 전 | `logs/market-kit.log` `[acp] settled … ledger #` |
+| 제출 시점 buyer 정산 수 | 개시 전 | `[acp] paid … settled at ledger #` |
+| Players 순위·백분위 | 개시 전 | board 스냅숏 |
+| 거부 사유 분포 | 개시 전 | `[acp] not paying: …`, `payments.jsonl` reason |
+| 정책 버전 수·변경 이유 | 개시 전 | `r3-policy.json`, 관리자 로그 |
 
-활성화 때는 기존 신원·기억·유효한 운영 시한·남은 주문 수·공유 API 한도를 [VPS 절차](deploy/vps/README.md)에 따라 확인한다. 설치 검사용 만료형 설정을 새 운영 승인으로 쓰지 않는다. 현재 제출은 구현·재현 증거이며, 전체 과제 완료 판정에는 위 실제 R3 증거가 더 필요하다.
+## 6. 범위와 정직성
 
-
-## 7. 참고한 원리와 이번 독자 구현 — 2026-10-30
-
-용재형(dragonash22)의 [공개 판매자 빠른 수락](https://github.com/dragonash22/ai-agent-engineering-101/blob/5fd8467262ada1246b44e947effbfb3988ea7317/submissions/25620024/week-07/deploy/src/index.ts#L279)과 [10/29 모델 전환의 남은 시간 관리](https://github.com/dragonash22/ai-agent-engineering-101/blob/672c63c650a01d5f4e69f6944a8091b47b376b39/submissions/25620024/week-07/harness.py#L107)를 참고했다. 배운 원리는 이미 합의 가능한 거래에 추가 모델 판단을 요구하지 않고, 여러 대기를 하나의 남은 시간 안에서 다루는 것이다. 구현은 기존 Python의 typed 도구·공통 commit·Task 잠금·서명·SQLite 복구 경로를 사용해 직접 작성했다. 상대 TypeScript/Python 구현을 이식하지 않았고 상대의 광고 문구·운영 키·거래 기억도 제출물에 포함하지 않는다.
-
-- **기존 호가의 집행:** 선택된 상품과 실제 제안이 있고 제안이 현재 호가 이상이면 `execute_accepted_quote()`가 기존 `commit()`을 거친다. 무조건 수락 문장은 기존 parser로 호가와 같은 실제 제안으로 처리한다. 해당 수락 턴의 모델 호출은1→0이고, 최초 가격·새로운 역제안은 계속 모델이 결정한다. R3에서 호가보다 낮은 제안을 무조건 하한에 체결하도록 바꾸지 않았다.
-- **대기 예산:** 한 모델 응답의 네트워크·재시도·대기열 대기는30초, 한 결정에서 모델에 기다리는 총 예산은60초다. 모델 대기 scope 밖에서 금융 도구를 집행해 모델 timeout이 실행 중인 commit을 자르지 않는다. OpenAI SDK 중복 재시도는 끄고 기존 공통 재시도를 사용하며 마지막 실패 뒤 불필요한4초 대기는 없앴다. 실제 유료 시도가 예약된 뒤 timeout돼도 quota를 환불하지 않는다.
-- **시장 주문 예산:**240초의 남은 시간을 선택(최대40초)·협상·리뷰(최대15초)에 나눠 쓴다. 일반 `buy_order` 상한280초보다 짧은 남은 시간을 전달하고 리뷰 시간을 확보한다. durable 저장·동기 CPU 작업까지 정확한 wall-clock 상한으로 중단한다고 주장하지 않는다.
-- **리뷰 장애 복구:** 이미 받은 영수증과 거래 관측을 저장한 뒤 리뷰 모델이 실패/지연되면 기존 사실 기반 평가기로 최종 JSON을 반환한다. 완료 거래의 원래 data Part와 기존3점 정책을 보존한다. 검증되지 않은 정산 성공이나 상품 품질을 새로 주장하지 않는다.
-
-[새 회귀397개](logs/reliability-20261030/summary.json)는 재시작 후 모델 응답이 없어도 정확한 상품/가격/task 서명과 재사용 차단, 예산90 반복에서 호가110→100→100 유지, R3 신규 역제안의 모델 결정, 선택 상품 변경 거부, SDK 지연 취소·유료 quota 보존, 리뷰 오류/지연 후 원래 영수증 반환을 확인한다. timeout 결함 검사는 짧게 조정한 예산으로 실행하며 실제 서비스의 지연 분포 측정이 아니다.
-
-첫 새 검사에서는 기존 코드가6개 실패했고, 변경 뒤 첫 전체 회귀에서는 모델 호출/가짜 재검색을 기대하던 구판 검사3개가 실패했다. 실행 계약에 맞춰 그 기대를 고치고 선택 상품 변경 거부는 별도 실제 A2A 경로로 유지했다. [변경 전](logs/reliability-20261030/quote-before.log), [첫 전체 결과](logs/reliability-20261030/attempt1.log), [최종 원본](logs/reliability-20261030/final.log)을 보존했다.
-
-가격 정책·리뷰 상한·일별 API 한도·운영 종료시각·시장 신원은 바꾸지 않았다. 무료 모델 목록을 직접 수집해 자동 승격하는 기능이나 메타 하네스의 후보 실험/성과 자동 복구를 이번에 구현했다고 주장하지 않는다. 무료 라우터와 기존 명시적 유료 fallback 계약을 유지한다. 실제 R3 정산·수익·전환율 개선은 이후 별도 측정이 필요하다.
-
-
-1차 신뢰성 보완 당시 VPS 첫 검사에서는 무료 provider를 기본값으로 가진 이미지와 OpenAI mock client의 테스트 설정이 충돌해66개 PASS·13개 실패였다. [첫 Linux 원본](logs/reliability-20261030/vps/server-core-attempt1.log)을 보존하고 **QA 컨테이너에만** mock client에 맞는 backend를 명시해79개를 통과했다. 당시 runtime은 무료 provider·유료 fallback OFF였으며, 양쪽 검사 모두 network=none·키 마운트 없음이다. 프로덕션 모델 성공이나 과금 실험으로 계산하지 않는다.
-
-
-## 8. 무료 우선·Haiku 유료 대체 — 2026-10-30
-
-사용자가 기존 Anthropic env의 Haiku5.5를 무료 소진 뒤 쓰도록 승인했다. `AX_PAID_FALLBACK=anthropic`로만 선택하며 기존 OpenAI opt-in과 충돌하면 시작을 거부한다. 승인 모델은 `claude-haiku-5-5`, 목적지는 `https://api.anthropic.com/v1/`로 제한한다. [Anthropic 공식 SDK 호환 API](https://platform.claude.com/docs/en/cli-sdks-libraries/libraries/openai-sdk)를 사용해 기존 typed tool loop를 유지했다. 호환 API의 strict 무시·thinking 미반환·prompt cache 미지원 한계는 남고, 실제 도구 실행 전 스키마·예산·서명 검사는 기존 코드가 계속 담당한다. 최신 Claude의 temperature 제한에 맞춰 해당 매개변수는 보내지 않는다.
-
-- 무료 한도402/429·무료 라우터 부재404는 응답을 받는 즉시 유료로 전환한다. 무료 모델에는0원 가격 제한을 계속 보낸다. 기존 행사 모델의404는 먼저 무료 라우터로 바꾼다. 기타 일시 오류는 기존 제한 재시도를 사용하므로 모든 장애의 즉시 전환을 보장하지 않는다.
-- 한 하네스 세션에서60초 동안 Haiku를 사용한 뒤 무료를 재확인한다. 연속 유료 호출이 이 시점을 연장하지 않는다. 구매자 프로세스를 새로 시작하면 무료 우선 확인부터 다시 한다.
-- 유료 요청은 SDK 재시도0·출력 최대450토큰이며, 네트워크 전 기존 공유 SQLite 장부에서 슬롯을 원자적으로 예약한다. 실패·취소도 횟수에 포함하고, 분실한 장부를 새로 만들어 한도를 초기화하지 않는다. 구매자·판매자 합산 KST 하루5000회이며 계정 잔액과 동일한 지표는 아니다. 준비한 R3 launcher는 승인된 Haiku 설정과 공유 장부 없이는 유료 사용을 시작하지 않는다.
-- [로컬412개](logs/claude-fallback-20261030/summary.json)·Linux115개·타입/린트 통과, 무료 오류의 실제 SDK wire 전환·도구 dispatch·잘못된 host/model/retry 거부·실패 유료 시도 차감·무료 복귀를 검사했다. [실제 VPS 연결](logs/claude-fallback-20261030/vps/live/live-smoke.json)은 합성 무료429 후 실제 Haiku 도구 응답1회만 사용했다. 실제 무료 계정 소진·시장 거래·유입/수익 효과 검증은 아니다.
-- Linux 첫115개 실행은114 PASS·1실패였다. 멈춘 네트워크를 검사하기 전에 SDK의 platform discovery 초기 준비가 검사 외부1초 한도에 걸린 원본을 [보존](logs/claude-fallback-20261030/vps/server-core.log)했다. SDK를 합성 성공 응답으로 준비한 뒤 같은 멈춘 HTTP 응답·20ms 모델 예산을 검사하도록 fixture만 분리했다. 운영30/60/240초 값은 바꾸지 않았고 재검사115개를 통과했다.
-
-키는 이미지/Git/공개 로그에 넣지 않고 사용자 VPS의 비공개 env에만 설치했다. 기존 b619818 release는 복구용으로 보존했으며 시장 활성화·운영 종료시각/주문 한도 연장·실제 시장 등록은 하지 않았다. 실제 R3 정산 증거와 현재 코드 검증을 구분한다.
+- 설계·구현·검증은 Claude Code와 함께 했고, 왜 그렇게 바꿨는지는 §0의 관측값이 근거다. 참고한 코드는 공식 `starter_round3/seller.py`의 구조와 10/30 보고서에 밝힌 빠른 수락 원리이며, 다른 학생의 코드를 복제하지 않았다.
+- 담합·상호 구매·근거 없는 비방·평점 유인은 하지 않는다. 비공개 예산은 후기·게시글·로그 문장에 넣지 않는다. claim은 증명서와 맞춘다.
+- 모델이 바꿀 수 있는 것은 정책표의 범위 안 숫자다. 키·예산·정산·운영 시한·키트 코드는 바꾸지 못한다.

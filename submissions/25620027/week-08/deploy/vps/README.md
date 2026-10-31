@@ -68,3 +68,13 @@ private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 �
 기록 담당은1초마다 변경을 확인하고 별도로 export한다. 구매자는 export를 기다리지 않는다. SQLite busy 대기는0.05초로 제한하고 저장 장애를 경고한다. 정상 로컬 측정과 실제 VPS의 지연/가용성을 동일시하지 않는다.
 
 이번 준비 구성은 무료 우선·`AX_PAID_FALLBACK=anthropic`·`AX_OPENAI_FALLBACK=0`이다. Compose는 전용 `anthropic-fallback.env`를 읽고 `/data/r3/paid-quota.sqlite3`를 공유한다. 기존 W07 장부를 SQLite backup으로 보존했으며 새 provider로 바꿔도 KST 하루5000회를 초기화하지 않는다. 무료만 쓸 때는 `AX_PAID_FALLBACK=none`을 명시한다. 유효한 새 운영 시한·시장 신원·주문/실제 R3 계약은 활성화 전에 계속 확인한다.
+
+
+## Round 3 v4 변경 (2026-10-31)
+
+- 키트 pin은 **v4** (`r3/kit_pin.py`, SHA256 `4a0f48b3…`). `verify_kit`·bundle이 이 해시를 요구한다. 레포 루트의 `scripts/market_kit.py`는 upstream d4b4d53 merge로 받았다.
+- 런처가 만드는 `agent.json`에 `market_buyer … --order {order}`, `restock --state {state}`, `review --deal {deal}`가 들어간다. 런처는 recorder 외에 **정책 관리자** `python -m r3.manager --dir /data/r3 --market … --shop-url <public_url> --buyer-name 25620027`를 함께 띄운다.
+- `runtime.json`: `remaining_orders`는 **0 = 무제한**(0~200,000), `stop_at`은 최대 **16일** 뒤. R3 전체(11/3~11/17 23:59 KST)를 한 구간으로 승인할 때 `stop_at`을 `2026-11-17T23:59:59+09:00`으로 둔다. 종료 승인은 사용자가 한다.
+- 환경: fast 경로는 모델 키가 필요 없다. 관리자의 모델 호출은 `AX_R3_MANAGER_MODEL=1`(기본)과 `ANTHROPIC_API_KEY`·`ANTHROPIC_MODEL=claude-haiku-5-5`가 있을 때만 하고, `AX_PAID_QUOTA_PATH`가 있으면 기존 공유 장부에서 차감한다. `OPENROUTER_API_KEY`·`AX_MODEL_PROVIDER=openrouter-free`는 `AX_BUYER_MODE=model` 또는 `AX_SELLER_MODE=legacy`일 때만 요구한다.
+- 런처가 넣는 경로: `AX_R3_POLICY=/data/r3/r3-policy.json`, `AX_R3_EVENTS=/data/r3/r3-events.sqlite`, `AX_R3_LEDGER=/data/r3/r3-ledger.sqlite`. 훅·관리자가 `.market/` 옆에 `r3-deals.jsonl`, `r3-forum-state.json`, `r3-restock-state.json`을 쓴다. 모두 기억 캐시 정리 대상이 아니며 로그와 함께 보존한다.
+- 전환 전 확인: 11/2에 새 이미지로 라운드2 시장에 join해 `[kit] market_kit 4` 첫 줄, A2A 카드·영수증·결과 전송을 확인한다(라운드2에는 결제가 없다). 11/3 개장 공지와 `agent.md` 해시를 다시 확인한 뒤 `AX_R3_ACTIVATE=1`로 활성화한다. 초기 매입 한도(정책 `restock.seed_budget` 기본 250만)·유보(`reserve_cash` 150만)는 사용자 결정 값이다.
