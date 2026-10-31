@@ -95,7 +95,11 @@ class BuyerPolicy(FrozenModel):
     goods_warranty_hours: int = Field(default=0, ge=0, le=24)
     # Shops whose checkout refused payment are avoided for this long.
     refusal_memory_hours: float = Field(default=24.0, ge=0.0, le=336.0)
-    order_seconds: float = Field(default=14.0, ge=3.0, le=120.0)
+    # The market hands out one order about every 20 s, so waiting up to 18 s for a
+    # slow seller costs no throughput.
+    order_seconds: float = Field(default=18.0, ge=3.0, le=120.0)
+    # After this share of the budget is spent, accept any ask within the cap.
+    late_accept_share: float = Field(default=0.45, ge=0.1, le=1.0)
 
 
 class RestockPolicy(FrozenModel):

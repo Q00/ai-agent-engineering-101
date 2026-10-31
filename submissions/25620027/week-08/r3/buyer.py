@@ -205,8 +205,14 @@ async def negotiate(  # noqa: PLR0913 - one negotiation, explicit inputs
     *,
     policy: BuyerPolicy,
     emit: Callable[[str], None],
+    clock: Callable[[], float] = time.monotonic,
 ) -> tuple[Task, int | None]:
-    """Two to four turns: open, read the ask, accept or counter, never above cap."""
+    """Two to four turns: open, read the ask, accept or counter, never above cap.
+
+    Slow sellers (a model per turn) can spend most of the order budget on one
+    reply, so once ``late_accept_share`` of the budget is gone any ask within the
+    cap is taken rather than countered: the next order arrives in ~20 s anyway.
+    """
     cap = (
         budget
         if choice.list_price <= 0
@@ -215,6 +221,7 @@ async def negotiate(  # noqa: PLR0913 - one negotiation, explicit inputs
     if cap < 1:
         message = "No affordable price under this order's cap"
         raise HarnessError(message)
+    started = clock()
     task = await remote.send(endpoint, choice.request)
     my_offer: int | None = None
     for round_number in range(policy.max_rounds + 1):
@@ -227,7 +234,8 @@ async def negotiate(  # noqa: PLR0913 - one negotiation, explicit inputs
         reference = choice.list_price if choice.list_price > 0 else budget
         quick = int(reference * policy.quick_accept_ratio)
         last_round = round_number >= policy.max_rounds - 1
-        if ask is not None and ask <= cap and (ask <= quick or last_round):
+        late = clock() - started >= policy.order_seconds * policy.late_accept_share
+        if ask is not None and ask <= cap and (ask <= quick or last_round or late):
             my_offer = ask
         else:
             target = (
@@ -346,6 +354,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
                     order.budget,
                     policy=policy.buyer,
                     emit=emit,
+                    clock=time.monotonic,
                 )
                 task_state = task.status.state
                 if task_state == "TASK_STATE_COMPLETED":

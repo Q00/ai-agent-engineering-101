@@ -277,3 +277,34 @@ def test_receipt_validation_rejects_wrong_item_price_or_missing_signature() -> N
     assert fast.valid_receipt({"item": KIMCHI, "price": 50}, order, choice, 50)
     assert fast.valid_receipt({**signed, "price": 50.5}, order, choice, 50)
     assert fast.valid_receipt(signed, order, choice, 50) is None
+
+
+def test_late_in_the_order_budget_any_ask_within_the_cap_is_accepted(
+    market: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Given: a seller whose ask stays above the quick-accept line but under the cap,
+    # and a clock that says most of the order budget is already gone.
+    peer = SellerPeer(ask=45000, accept_at=45000, sku=KIMCHI)
+    monkeypatch.setattr(
+        fast,
+        "create_client",
+        lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(peer.handle)),
+    )
+    ticks = iter([0.0, 0.0])  # buy() and negotiate() start; later reads are late
+    monkeypatch.setattr(fast.time, "monotonic", lambda: next(ticks, 100.0))
+    outcome = anyio.run(
+        partial(
+            fast.buy,
+            market / "shops.json",
+            "김치",
+            60000,
+            market / "order.json",
+            lambda _m: None,
+            folder=market,
+            policy_file=market.parent / "p.json",
+            events_file=market.parent / "e.sqlite",
+        )
+    )
+    # Then: one turn, the ask taken as offered, still under the 0.95*list cap.
+    assert peer.offers == [45000]
+    assert outcome.agreed_price == 45000
