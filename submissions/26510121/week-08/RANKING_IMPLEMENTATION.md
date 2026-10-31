@@ -33,5 +33,5 @@ Final verification: the latest official legacy market test passed **25/25**
 (`logs/market-test-20261031T091019Z/console.log`). At the deployment check both
 roles were alive in Round 2, public ACP returned HTTP 200, and the journal held
 30 Buyer Critic updates and 31 Shop Critic updates. The machine-readable record
-is `logs/critic-deployment-20261031T091538Z.json` (or the matching timestamped
-`critic-deployment-*` file). These are live R2/pilot facts, not v4 settlement proof.
+is `logs/critic-deployment-20261031T091537Z.json`.
+These are live R2/pilot facts, not v4 settlement proof.
