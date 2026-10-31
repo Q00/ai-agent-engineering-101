@@ -45,16 +45,20 @@ def test_default_activation_refuses_before_files_or_network(
 
 
 def test_haiku_launch_requires_shared_ledger_and_preserves_existing_attempts(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Given: explicitly approved Haiku fallback and the R3 shared volume.
     config = settings(tmp_path)
     quota = DailyQuota(config.run_directory / "paid-quota.sqlite3", 1)
     _ = quota.reserve()
     for key, value in {
-        "AX_OPENAI_FALLBACK": "0", "AX_PAID_FALLBACK": "anthropic",
-        "ANTHROPIC_API_KEY": "offline", "ANTHROPIC_MODEL": "claude-haiku-5-5",
-        "AX_PAID_QUOTA_PATH": str(quota.path), "AX_PAID_DAILY_LIMIT": "1",
+        "AX_OPENAI_FALLBACK": "0",
+        "AX_PAID_FALLBACK": "anthropic",
+        "ANTHROPIC_API_KEY": "offline",
+        "ANTHROPIC_MODEL": "claude-haiku-5-5",
+        "AX_PAID_QUOTA_PATH": str(quota.path),
+        "AX_PAID_DAILY_LIMIT": "1",
     }.items():
         monkeypatch.setenv(key, value)
     # When: validate deployment without activating or contacting a service.
@@ -65,7 +69,8 @@ def test_haiku_launch_requires_shared_ledger_and_preserves_existing_attempts(
 
 
 def test_haiku_launch_refuses_missing_ledger_before_activation(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Given: a key but no approved persistent quota mount.
     config = settings(tmp_path)

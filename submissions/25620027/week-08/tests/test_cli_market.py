@@ -58,6 +58,8 @@ def test_cli_resolves_paths_before_isolation_and_prints_final_json(
             "120",
             "--memory",
             "state/memory.json",
+            "--mode",
+            "model",
             *(["--promote-shop"] if promote_shop else []),
         ],
     )

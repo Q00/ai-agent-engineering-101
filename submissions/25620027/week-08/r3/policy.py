@@ -58,7 +58,7 @@ class SellerPolicy(FrozenModel):
     claim_boundary_margin: float = Field(default=0.02, ge=0.0, le=0.10)
 
     def markup(self, grade: str) -> float:
-        """Return the opening markup for a certified grade; unknown grades price as C."""
+        """Return the opening markup for a grade; unknown grades price as C."""
         match grade:
             case "A":
                 return self.markup_a
@@ -141,8 +141,10 @@ def policy_path(market_dir: Path | None = None) -> Path:
     configured = os.environ.get(POLICY_ENV)
     if configured:
         return Path(configured)
-    base = market_dir if market_dir is not None else Path(
-        os.environ.get("MARKET_DIR", ".market")
+    base = (
+        market_dir
+        if market_dir is not None
+        else Path(os.environ.get("MARKET_DIR", ".market"))
     )
     return base.resolve().parent / POLICY_FILE
 
@@ -196,17 +198,17 @@ def rollback_policy(path: Path, reason: str) -> Policy | None:
     history = load_history(path)
     if not history.previous:
         return None
-    restored, *rest = history.previous
-    return save_policy(
-        path,
-        restored.model_copy(update={"seller": restored.seller}),
-        f"rollback: {reason}",
-    ) if rest is not None else None
+    restored = history.previous[0]
+    return save_policy(path, restored, f"rollback: {reason}")
 
 
 def apply_changes(policy: Policy, changes: dict[str, JsonValue]) -> Policy:
     """Merge a flat ``section.field`` change set into a policy, validating bounds."""
-    sections: dict[str, dict[str, JsonValue]] = {"seller": {}, "buyer": {}, "restock": {}}
+    sections: dict[str, dict[str, JsonValue]] = {
+        "seller": {},
+        "buyer": {},
+        "restock": {},
+    }
     for key, value in changes.items():
         section, _, field = key.partition(".")
         if section not in sections or not field:

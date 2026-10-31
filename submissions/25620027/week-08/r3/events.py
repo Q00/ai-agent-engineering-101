@@ -30,8 +30,10 @@ def events_path(market_dir: Path | None = None) -> Path:
     configured = os.environ.get(EVENTS_ENV)
     if configured:
         return Path(configured)
-    base = market_dir if market_dir is not None else Path(
-        os.environ.get("MARKET_DIR", ".market")
+    base = (
+        market_dir
+        if market_dir is not None
+        else Path(os.environ.get("MARKET_DIR", ".market"))
     )
     return base.resolve().parent / EVENTS_FILE
 
@@ -61,7 +63,8 @@ class EventLedger:
             _ = db.execute(
                 """CREATE TABLE IF NOT EXISTS payments (
                     order_id TEXT PRIMARY KEY, ts REAL NOT NULL, shop TEXT, item TEXT,
-                    price INTEGER, paid INTEGER NOT NULL, ledger INTEGER, reason TEXT)"""
+                    price INTEGER, paid INTEGER NOT NULL, ledger INTEGER,
+                    reason TEXT)"""
             )
             _ = db.execute(
                 "CREATE INDEX IF NOT EXISTS attempts_shop ON buyer_attempts(shop, ts)"
@@ -88,8 +91,18 @@ class EventLedger:
                 """INSERT INTO buyer_attempts
                 (ts, order_id, shop, shop_name, sku, list_price, price, outcome,
                  reason, elapsed) VALUES (?,?,?,?,?,?,?,?,?,?)""",
-                (time.time(), order, shop, shop_name, sku, list_price, price,
-                 outcome, reason[:300], elapsed),
+                (
+                    time.time(),
+                    order,
+                    shop,
+                    shop_name,
+                    sku,
+                    list_price,
+                    price,
+                    outcome,
+                    reason[:300],
+                    elapsed,
+                ),
             )
 
     def record_receipt(  # noqa: PLR0913 - one row, explicit columns
@@ -111,8 +124,18 @@ class EventLedger:
                 """INSERT OR IGNORE INTO seller_receipts
                 (task, ts, unit, sku, price, cost, grade, claim, warranty_hours, rounds)
                 VALUES (?,?,?,?,?,?,?,?,?,?)""",
-                (task, time.time(), unit, sku, price, cost, grade, claim,
-                 warranty_hours, rounds),
+                (
+                    task,
+                    time.time(),
+                    unit,
+                    sku,
+                    price,
+                    cost,
+                    grade,
+                    claim,
+                    warranty_hours,
+                    rounds,
+                ),
             )
 
     def sync_payments(self, lines: Iterable[PaymentLine]) -> int:
@@ -126,8 +149,16 @@ class EventLedger:
                     """INSERT OR IGNORE INTO payments
                     (order_id, ts, shop, item, price, paid, ledger, reason)
                     VALUES (?,?,?,?,?,?,?,?)""",
-                    (line.order, time.time(), line.shop, line.item, line.price,
-                     int(line.paid), line.ledger, line.reason),
+                    (
+                        line.order,
+                        time.time(),
+                        line.shop,
+                        line.item,
+                        line.price,
+                        int(line.paid),
+                        line.ledger,
+                        line.reason,
+                    ),
                 )
                 added += cursor.rowcount
         return added
@@ -139,12 +170,14 @@ class EventLedger:
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
             for shop, outcome, n in db.execute(
                 """SELECT shop, outcome, count(*) FROM buyer_attempts
-                WHERE ts >= ? GROUP BY shop, outcome""", (since,),
+                WHERE ts >= ? GROUP BY shop, outcome""",
+                (since,),
             ):
                 counts.setdefault(str(shop), {})[str(outcome)] = int(n)
             for shop, paid, n in db.execute(
                 """SELECT shop, paid, count(*) FROM payments
-                WHERE ts >= ? GROUP BY shop, paid""", (since,),
+                WHERE ts >= ? GROUP BY shop, paid""",
+                (since,),
             ):
                 key = "paid" if paid else "refused"
                 bucket = counts.setdefault(str(shop), {})
@@ -152,26 +185,28 @@ class EventLedger:
         return counts
 
     def refusal_reasons(self, hours: float) -> dict[str, str]:
-        """The latest refusal reason per shop URL within the window."""
+        """Return the latest refusal reason per shop URL within the window."""
         since = time.time() - hours * 3600
         reasons: dict[str, str] = {}
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
             for shop, reason in db.execute(
                 """SELECT shop, reason FROM payments
-                WHERE ts >= ? AND paid = 0 ORDER BY ts""", (since,),
+                WHERE ts >= ? AND paid = 0 ORDER BY ts""",
+                (since,),
             ):
                 reasons[str(shop)] = str(reason or "")
         return reasons
 
     def summary(self, hours: float) -> dict[str, int]:
-        """Counts for the manager: attempts, agreed, paid, refused, receipts."""
+        """Count attempts, agreed, paid, refused and receipts for the manager."""
         since = time.time() - hours * 3600
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
             attempts = db.execute(
                 "SELECT count(*) FROM buyer_attempts WHERE ts >= ?", (since,)
             ).fetchone()[0]
             agreed = db.execute(
-                "SELECT count(*) FROM buyer_attempts WHERE ts >= ? AND outcome='agreed'",
+                "SELECT count(*) FROM buyer_attempts "
+                "WHERE ts >= ? AND outcome='agreed'",
                 (since,),
             ).fetchone()[0]
             paid = db.execute(

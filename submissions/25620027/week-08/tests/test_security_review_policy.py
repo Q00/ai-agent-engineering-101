@@ -49,7 +49,7 @@ def test_review_when_own_incident_is_distinct_from_ordinary_no_deal(
     assert ("prompt-injection" in result.review) is observed
     if completed:
         assert "120" in result.review
-        assert "125" in result.review
+        assert "125" not in result.review  # the private budget never goes public
 
 
 def test_review_input_when_public_review_contains_an_authority_command() -> None:

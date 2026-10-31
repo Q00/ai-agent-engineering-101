@@ -64,7 +64,7 @@ def test_missing_shared_paid_ledger_blocks_market_buyer(
 
     result = CliRunner().invoke(harness_app.app, [
         "market-buyer", "--shops", str(registry), "--item", "lamp",
-        "--budget", "120", "--promote-shop",
+        "--budget", "120", "--promote-shop", "--mode", "model",
     ])
 
     assert result.exit_code != 0

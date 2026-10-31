@@ -63,8 +63,8 @@ def grounded_review(
     return Review(
         stars=3,
         review=(
-            f"Purchase completed at {price}; budget was {trade.budget}. "
-            "A receipt was received and the recorded price was within budget. "
+            f"Purchase completed at {price}. "
+            "A receipt was received and the recorded price was within the order. "
             f"Actual offers: {offers if offers is not None else 'unknown'}. "
             f"Best own prior same-item paid price: "
             f"{benchmark if benchmark is not None else 'unknown'}. "

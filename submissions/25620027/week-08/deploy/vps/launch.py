@@ -77,10 +77,22 @@ def prepare(settings: LaunchSettings, app: Path) -> None:
                     "{item}",
                     "--budget",
                     "{budget}",
+                    "--order",
+                    "{order}",
                     "--memory",
                     str(settings.run_directory / "buyer-memory.json"),
                 ]
             ),
+        },
+        "restock": {
+            "cmd": shlex.join(
+                ["python", str(app / "harness_app.py"), "restock", "--state", "{state}"]
+            )
+        },
+        "review": {
+            "cmd": shlex.join(
+                ["python", str(app / "harness_app.py"), "review", "--deal", "{deal}"]
+            )
         },
     }
     _ = (settings.run_directory / "agent.json").write_text(json.dumps(commands))
@@ -149,8 +161,24 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
         "AX_MEMORY_JOURNAL": str(journal),
         "AX_META_PROFILE": str(settings.run_directory / "meta-profile.json"),
         "AX_MARKET_ROUND": "3",
+        "AX_R3_POLICY": str(settings.run_directory / "r3-policy.json"),
+        "AX_R3_EVENTS": str(settings.run_directory / "r3-events.sqlite"),
+        "AX_R3_LEDGER": str(settings.run_directory / "r3-ledger.sqlite"),
         "PYTHONPATH": str(app),
     }
+    manager = (
+        sys.executable,
+        "-m",
+        "r3.manager",
+        "--dir",
+        str(settings.run_directory),
+        "--market",
+        settings.market_url,
+        "--shop-url",
+        settings.public_url,
+        "--buyer-name",
+        "25620027",
+    )
     recorder = (
         sys.executable,
         str(app / "r3" / "recorder.py"),
@@ -171,7 +199,13 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
         stdout=None,
         stderr=None,
         env=recorder_environment,
-    ) as worker:
+    ) as worker, await anyio.open_process(
+        manager,
+        cwd=settings.run_directory,
+        stdout=None,
+        stderr=None,
+        env=environment,
+    ) as policy_loop:
         try:
             async with await anyio.open_process(
                 settings.command(app),
@@ -188,6 +222,7 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
                 finally:
                     await stop(process)
         finally:
+            await stop(policy_loop)
             await stop(worker)
 
 

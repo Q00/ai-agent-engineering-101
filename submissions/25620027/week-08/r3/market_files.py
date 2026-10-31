@@ -45,7 +45,7 @@ class Unit(KitFile):
         return max(0.0, (self.expires_at - now) / 3600.0) / shelf_hours
 
     def current_food_grade(self, now: float, shelf_hours: float | None) -> str:
-        """The grade the market would certify now; falls back to the stored grade."""
+        """Return the grade the market would certify now, else the stored grade."""
         ratio = self.shelf_left_ratio(now, shelf_hours)
         if ratio is None:
             return self.grade
@@ -171,7 +171,7 @@ class BrokenLine(KitFile):
 
 
 def market_dir(explicit: Path | None = None) -> Path:
-    """The kit's state folder: explicit, else MARKET_DIR, else ./.market."""
+    """Resolve the kit's state folder: explicit, else MARKET_DIR, else ./.market."""
     if explicit is not None:
         return explicit
     return Path(os.environ.get("MARKET_DIR", ".market"))
@@ -256,8 +256,8 @@ def read_jsonl_tail(path: Path, max_bytes: int = 2_000_000) -> list[dict[str, ob
     except OSError:
         return []
     rows: list[dict[str, object]] = []
-    for line in raw.splitlines():
-        line = line.strip()
+    for raw_line in raw.splitlines():
+        line = raw_line.strip()
         if not line:
             continue
         try:
@@ -292,5 +292,5 @@ def read_broken(folder: Path) -> tuple[BrokenLine, ...]:
 
 
 def category_leaf(category: str) -> str:
-    """The last segment of ``a>b>c``; orders name categories by this leaf."""
-    return category.split(">")[-1].strip()
+    """Return the last segment of ``a>b>c``; orders name categories by this leaf."""
+    return category.rsplit(">", maxsplit=1)[-1].strip()

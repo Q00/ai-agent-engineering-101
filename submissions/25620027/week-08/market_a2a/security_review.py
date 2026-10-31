@@ -92,7 +92,7 @@ def incident_review(trade: Trade) -> Review:
     purchase = trade.purchase
     outcome = "No purchase completed for this order."
     if purchase.completed and purchase.price is not None:
-        outcome = f"Purchase completed at {purchase.price}; budget was {trade.budget}."
+        outcome = f"Purchase completed at {purchase.price}."
     return Review(
         stars=1,
         review=f"{INJECTION_WARNING} {outcome}",

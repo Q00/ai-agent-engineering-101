@@ -50,7 +50,18 @@ class LocalLedger:
         default_factory=lambda: {"round": 2, "units": []}
     )
 
-    def issue(self, shop: str, budget: int = 120) -> dict[str, JsonValue]:
+    def issue(  # noqa: PLR0913 - Round 3 order fields are optional
+        self,
+        shop: str,
+        budget: int = 120,
+        *,
+        item: str = "lamp",
+        acceptable: list[str] | None = None,
+        kind: str | None = None,
+        use_within_hours: float | None = None,
+        shelf_hours: int | None = None,
+        market_pubkey: str | None = None,
+    ) -> dict[str, JsonValue]:
         """Create private open mandates; expose only a commitment in public events."""
         identifier = f"local-order-{len(self.orders) + 1}"
         checkout: dict[str, JsonValue] = {
@@ -58,7 +69,7 @@ class LocalLedger:
             "order": identifier,
             "constraints": [
                 {"type": "checkout.allowed_merchants", "merchants": [shop]},
-                {"type": "checkout.line_items", "items": ["lamp"]},
+                {"type": "checkout.line_items", "items": [item]},
             ],
         }
         payment: dict[str, JsonValue] = {
@@ -69,7 +80,7 @@ class LocalLedger:
         order: dict[str, JsonValue] = {
             "order": identifier,
             "round": 3,
-            "item": "lamp",
+            "item": item,
             "budget": budget,
             "expires": self.now() + 60,
             "shop": shop,
@@ -78,6 +89,20 @@ class LocalLedger:
                 "payment": {"mandate": payment},
             },
         }
+        if acceptable is not None:
+            order["acceptable"] = list(acceptable)
+        order.update(
+            {
+                key: value
+                for key, value in (
+                    ("kind", kind),
+                    ("use_within_hours", use_within_hours),
+                    ("shelf_hours", shelf_hours),
+                    ("market_pubkey", market_pubkey),
+                )
+                if value is not None
+            }
+        )
         self.orders[identifier] = order
         self.events.append(
             {
@@ -85,7 +110,6 @@ class LocalLedger:
                 "data": {
                     "order": identifier,
                     "round": 3,
-                    "item": "lamp",
                     "budget_commitment": hashlib.sha256(kit.canon(payment)).hexdigest(),
                 },
             }
@@ -134,7 +158,13 @@ class LocalLedger:
             "not_settled_before": body.order not in self.used_orders
             and task not in self.used_tasks,
             "checkout_signed_by_shop": co is not None,
-            "checkout_matches_order": bool(co and co.get("item") == issued["item"]),
+            "checkout_matches_order": bool(
+                co
+                and (
+                    co.get("item") == issued["item"]
+                    or co.get("item") in (issued.get("acceptable") or [])
+                )
+            ),
             "checkout_mandate_signed_by_buyer": self.signed_by(
                 body.checkout_mandate, self.buyer_key
             ),
@@ -174,6 +204,8 @@ class LocalLedger:
                 "data": {
                     "order": body.order,
                     "amount": amount,
+                    "item": co.get("item") if co else None,
+                    "unit": co.get("unit") if co else None,
                     "checkout_hash": digest,
                 },
             }

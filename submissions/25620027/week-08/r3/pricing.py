@@ -80,8 +80,9 @@ def counter(ask: int, accept_at: int, policy: SellerPolicy) -> int:
     return max(accept_at, ask - step)
 
 
-def decide(offer: int | None, ask: int, accept_at: int, rounds: int,
-           policy: SellerPolicy) -> tuple[str, int]:
+def decide(
+    offer: int | None, ask: int, accept_at: int, rounds: int, policy: SellerPolicy
+) -> tuple[str, int]:
     """Return ``("accept", price)``, ``("counter", new_ask)`` or ``("reject", 0)``."""
     if offer is not None and offer >= accept_at:
         return "accept", offer
