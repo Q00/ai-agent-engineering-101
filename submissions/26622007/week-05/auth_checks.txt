@@ -1,0 +1,4 @@
+(1) no token: POST /mcp tools/list -> HTTP 401, WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8765/.well-known/oauth-protected-resource/mcp"
+(2) buyer token of neg_9c28a18b4e77 on neg_627b285f9132: get_negotiation -> isError=True, Error executing tool get_negotiation: your token is not bound to negotiation 'neg_627b285f9132'
+(3) seller moves first on neg_9c28a18b4e77: propose 140 -> isError=True, Error executing tool propose: it is the buyer's turn, not yours
+(4) server_inject neg_1764df5febbd, buyer token limit 150: propose 170 -> isError=True, Error executing tool propose: refused: 170 is above the limit carried in your token. Make a move within your limit.
