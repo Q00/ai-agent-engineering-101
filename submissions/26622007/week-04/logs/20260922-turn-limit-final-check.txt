@@ -1,0 +1,199 @@
+$ /opt/homebrew/opt/python@3.14/bin/python3.14 -m unittest discover -s submissions/26622007/week-04/lab -p test_*.py -v
+test_eighth_turn_acceptance_precedes_limit (test_experiment.LabTests.test_eighth_turn_acceptance_precedes_limit) ... ok
+test_html_lamp_misread_is_not_repaired (test_experiment.LabTests.test_html_lamp_misread_is_not_repaired) ... ok
+test_infeasible_refusal_and_limit_violation_are_scored (test_experiment.LabTests.test_infeasible_refusal_and_limit_violation_are_scored) ... ok
+test_resume_preserves_failed_rows_and_rejects_duplicates (test_experiment.LabTests.test_resume_preserves_failed_rows_and_rejects_duplicates) ... ok
+test_role_prompts_differ_only_in_format_between_conditions (test_experiment.LabTests.test_role_prompts_differ_only_in_format_between_conditions) ... ok
+test_structured_ignores_natural_language_price_and_never_calls_reader (test_experiment.LabTests.test_structured_ignores_natural_language_price_and_never_calls_reader) ... ok
+test_tagged_reader_supplies_only_price (test_experiment.LabTests.test_tagged_reader_supplies_only_price) ... ok
+test_tagged_rejection_does_not_register_counteroffer (test_experiment.LabTests.test_tagged_rejection_does_not_register_counteroffer) ... ok
+test_visible_html_prompts_are_preserved (test_experiment.LabTests.test_visible_html_prompts_are_preserved) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.002s
+
+OK
+$ /opt/homebrew/opt/python@3.14/bin/python3.14 -m unittest discover -s submissions/26622007/week-04/turn_limit -p test_*.py -v
+test_existing_terminal_episodes_replay_identically (test_unlimited.UnlimitedTests.test_existing_terminal_episodes_replay_identically) ... ok
+test_ninth_turn_can_close_with_full_history (test_unlimited.UnlimitedTests.test_ninth_turn_can_close_with_full_history) ... ok
+test_request_budget_disabled_and_wire_format_preserved (test_unlimited.UnlimitedTests.test_request_budget_disabled_and_wire_format_preserved) ... ok
+test_time_censoring_is_neither_refusal_nor_turn_limit_open (test_unlimited.UnlimitedTests.test_time_censoring_is_neither_refusal_nor_turn_limit_open) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.029s
+
+OK
+$ /opt/homebrew/opt/python@3.14/bin/python3.14 submissions/26622007/week-04/turn_limit/compare.py --suite unlimited-deepseek-20260922
+{
+  "summary": [
+    {
+      "mode": "8-turn",
+      "condition": "free",
+      "episodes": 12,
+      "correct": 7,
+      "deal": 6,
+      "no_deal": 4,
+      "open": 2,
+      "censored": 0,
+      "crashed": 0,
+      "violations": 1,
+      "mean_turns": 4.33,
+      "max_turns": 8,
+      "format_errors": 12,
+      "reader_calls": 52
+    },
+    {
+      "mode": "8-turn",
+      "condition": "tagged",
+      "episodes": 12,
+      "correct": 5,
+      "deal": 4,
+      "no_deal": 1,
+      "open": 7,
+      "censored": 0,
+      "crashed": 0,
+      "violations": 0,
+      "mean_turns": 7.58,
+      "max_turns": 8,
+      "format_errors": 24,
+      "reader_calls": 32
+    },
+    {
+      "mode": "8-turn",
+      "condition": "structured",
+      "episodes": 12,
+      "correct": 10,
+      "deal": 8,
+      "no_deal": 2,
+      "open": 2,
+      "censored": 0,
+      "crashed": 0,
+      "violations": 0,
+      "mean_turns": 6.75,
+      "max_turns": 8,
+      "format_errors": 0,
+      "reader_calls": 0
+    },
+    {
+      "mode": "no-turn-limit",
+      "condition": "free",
+      "episodes": 12,
+      "correct": 4,
+      "deal": 4,
+      "no_deal": 8,
+      "open": 0,
+      "censored": 0,
+      "crashed": 0,
+      "violations": 2,
+      "mean_turns": 4.92,
+      "max_turns": 10,
+      "format_errors": 2,
+      "reader_calls": 59
+    },
+    {
+      "mode": "no-turn-limit",
+      "condition": "tagged",
+      "episodes": 12,
+      "correct": 8,
+      "deal": 7,
+      "no_deal": 4,
+      "open": 0,
+      "censored": 1,
+      "crashed": 0,
+      "violations": 2,
+      "mean_turns": 14.42,
+      "max_turns": 81,
+      "format_errors": 100,
+      "reader_calls": 28
+    },
+    {
+      "mode": "no-turn-limit",
+      "condition": "structured",
+      "episodes": 12,
+      "correct": 11,
+      "deal": 8,
+      "no_deal": 4,
+      "open": 0,
+      "censored": 0,
+      "crashed": 0,
+      "violations": 0,
+      "mean_turns": 7.5,
+      "max_turns": 11,
+      "format_errors": 2,
+      "reader_calls": 0
+    }
+  ],
+  "prefix_summary": [
+    {
+      "mode": "same-transcript-first-eight",
+      "condition": "free",
+      "episodes": 12,
+      "correct": 4,
+      "deal": 4,
+      "no_deal": 7,
+      "open": 1,
+      "censored": 0,
+      "crashed": 0,
+      "violations": 2,
+      "mean_turns": 4.75,
+      "max_turns": 8,
+      "format_errors": 2,
+      "reader_calls": 57
+    },
+    {
+      "mode": "same-transcript-first-eight",
+      "condition": "tagged",
+      "episodes": 12,
+      "correct": 5,
+      "deal": 6,
+      "no_deal": 1,
+      "open": 5,
+      "censored": 0,
+      "crashed": 0,
+      "violations": 2,
+      "mean_turns": 7.17,
+      "max_turns": 8,
+      "format_errors": 26,
+      "reader_calls": 24
+    },
+    {
+      "mode": "same-transcript-first-eight",
+      "condition": "structured",
+      "episodes": 12,
+      "correct": 7,
+      "deal": 6,
+      "no_deal": 1,
+      "open": 5,
+      "censored": 0,
+      "crashed": 0,
+      "violations": 0,
+      "mean_turns": 6.42,
+      "max_turns": 8,
+      "format_errors": 2,
+      "reader_calls": 0
+    }
+  ],
+  "requests": {
+    "free": 119,
+    "structured": 90,
+    "tagged": 203
+  },
+  "errors": {
+    "429": 3
+  }
+}
+$ /opt/homebrew/opt/python@3.14/bin/python3.14 submissions/26622007/week-04/turn_limit/run_unlimited.py --suite unlimited-deepseek-20260922 --env-file submissions/26622007/.env --jobs 3 --observation-seconds 180
+Completed observation suite unlimited-deepseek-20260922: 36 episodes
+$ /opt/homebrew/opt/python@3.14/bin/python3.14 submissions/26622007/course_checks/check_week04_51c09f4.py submissions/26622007/week-04
+ok    9 .py file(s) parse
+ok    scenarios.json has 4 scenarios, 3 with a deal possible
+ok    results.csv has 12 episode(s) for free, 3+ per scenario
+ok    results.csv has 12 episode(s) for tagged, 3+ per scenario
+ok    results.csv has 12 episode(s) for structured, 3+ per scenario
+ok    logs/ contains 48 file(s)
+ok    REPORT.md present with a table
+
+all checks passed
+Baseline preserved: 20 artifact hashes match.
+Unlimited resume: 20 artifact hashes unchanged; no new requests.
+Credential scan: 90 files passed.

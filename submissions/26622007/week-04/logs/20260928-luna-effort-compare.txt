@@ -1,0 +1,45 @@
+| 묶음 | 조건 | 에피소드 | 정답 | deal | no_deal | open | API 중단 | 위반 | 평균 턴 | 최대 턴 | 형식 오류 | reader 호출 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| deepseek-v4.1-flash · reasoning off · 8 | free | 12 | 7 | 6 | 4 | 2 | 0 | 1 | 4.33 | 8 | 12 | 52 |
+| deepseek-v4.1-flash · reasoning off · 8 | tagged | 12 | 5 | 4 | 1 | 7 | 0 | 0 | 7.58 | 8 | 24 | 32 |
+| deepseek-v4.1-flash · reasoning off · 8 | structured | 12 | 10 | 8 | 2 | 2 | 0 | 0 | 6.75 | 8 | 0 | 0 |
+| gpt-6-luna · low · 첫 8턴 재판정 | free | 12 | 10 | 9 | 1 | 2 | 0 | 0 | 3.83 | 8 | 0 | 46 |
+| gpt-6-luna · low · 첫 8턴 재판정 | tagged | 12 | 12 | 9 | 3 | 0 | 0 | 0 | 3.5 | 7 | 0 | 24 |
+| gpt-6-luna · low · 첫 8턴 재판정 | structured | 12 | 10 | 9 | 1 | 2 | 0 | 0 | 4.08 | 8 | 0 | 0 |
+| gpt-6-luna · max · 첫 8턴 재판정 | free | 12 | 10 | 9 | 1 | 2 | 0 | 0 | 4.17 | 8 | 0 | 50 |
+| gpt-6-luna · max · 첫 8턴 재판정 | tagged | 12 | 10 | 9 | 1 | 2 | 0 | 0 | 4 | 8 | 0 | 32 |
+| gpt-6-luna · max · 첫 8턴 재판정 | structured | 12 | 10 | 9 | 1 | 2 | 0 | 0 | 3.92 | 8 | 0 | 0 |
+| gpt-6-luna · low · 30 | free | 12 | 12 | 9 | 3 | 0 | 0 | 0 | 4 | 9 | 0 | 48 |
+| gpt-6-luna · low · 30 | tagged | 12 | 12 | 9 | 3 | 0 | 0 | 0 | 3.5 | 7 | 0 | 24 |
+| gpt-6-luna · low · 30 | structured | 12 | 12 | 9 | 3 | 0 | 0 | 0 | 4.75 | 13 | 0 | 0 |
+| gpt-6-luna · max · 30 | free | 12 | 12 | 9 | 3 | 0 | 0 | 0 | 4.5 | 11 | 0 | 54 |
+| gpt-6-luna · max · 30 | tagged | 12 | 12 | 9 | 3 | 0 | 0 | 0 | 4.25 | 10 | 0 | 32 |
+| gpt-6-luna · max · 30 | structured | 12 | 12 | 9 | 3 | 0 | 0 | 0 | 4.75 | 15 | 0 | 0 |
+
+| effort | role | calls | mean_prompt_tokens | mean_completion_tokens | mean_reasoning_tokens | max_reasoning_tokens | median_latency_s | p90_latency_s | cost_usd | non_stop_finishes |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| low | buyer | 84 | 200.5 | 55.1 | 33.5 | 96 | 2.61 | 3.43 | 0.003996 | 0 |
+| low | seller | 63 | 192.7 | 50.1 | 27.4 | 73 | 2.5 | 3.25 | 0.002791 | 0 |
+| low | reader | 72 | 197.9 | 42.2 | 19.4 | 104 | 1.64 | 2.94 | 0.002946 | 0 |
+| max | buyer | 92 | 203.8 | 108.2 | 87.4 | 398 | 3.1 | 3.93 | 0.006854 | 0 |
+| max | seller | 70 | 199.1 | 122.0 | 99.6 | 408 | 3.09 | 4.22 | 0.005663 | 0 |
+| max | reader | 86 | 206.5 | 50.7 | 27.6 | 220 | 2.49 | 3.28 | 0.003957 | 0 |
+
+| effort | condition | mean_reasoning_tokens | mean_completion_tokens | mean_elapsed_s | cost_usd |
+|---|---:|---:|---:|---:|---:|
+| low | free | 209.8 | 377.9 | 17.97 | 0.004005 |
+| low | tagged | 130.2 | 249.3 | 11.82 | 0.002605 |
+| low | structured | 154.9 | 274.5 | 12.65 | 0.003123 |
+| max | free | 575.2 | 763.3 | 26.18 | 0.006570 |
+| max | tagged | 427.4 | 575.8 | 18.11 | 0.004998 |
+| max | structured | 446.2 | 565.8 | 16.92 | 0.004906 |
+{
+  "episodes": 72,
+  "requests": 467,
+  "usage_records": 467,
+  "http_errors": {},
+  "json_schema_responses_checked": 272,
+  "json_schema_invalid": [],
+  "total_cost_usd": "0.026207",
+  "ended_after_eighth_message": 10
+}
