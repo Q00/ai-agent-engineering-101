@@ -54,6 +54,11 @@ MODELS_URL = "https://openrouter.ai/api/v1/models"
 CACHE = Path(__file__).parent / ".market" / "openrouter_free.json"   # .market/ is gitignored
 NOT_CHAT = re.compile(r"safety|guard|code|laguna|omni|-vl|vision|embed|reasoning|preview|\b[0-9.]+b:free$", re.I)
 ROUNDS = 3                            # passes over the whole model list; waits 2, 4 s between passes
+# A model that failed rests before it is tried again (the state is in CACHE, shared by every buyer run).
+# OpenRouter's 429 on :free models is "temporarily rate-limited upstream" (limit_source
+# upstream_provider_shared_pool, checked 2026-11-01): every user's free calls share the provider's pool,
+# so hitting it again at once only costs time. The model that answered last is tried first.
+REST = {429: 120, 404: 6 * 3600, 403: 6 * 3600, "error": 60}
 
 HARNESS = "claude -p --model haiku" if HARNESS_KIND == "claude" else f"OpenRouter {MODELS[0]}"
 
@@ -90,6 +95,27 @@ def _remember(**kv):
         pass
 
 
+def _rest(model, why):
+    h = _cache().get("health", {})
+    h[model] = {"until": time.time() + REST.get(why, REST["error"]), "why": str(why)}
+    _remember(health=h)
+
+
+def _ok(model):
+    h = _cache().get("health", {})
+    h.pop(model, None)
+    _remember(health=h, last_ok=model)
+
+
+def _order(models):
+    """Models not resting, the last one that answered first; if all rest, the one whose rest ends first."""
+    c, now = _cache(), time.time()
+    h = c.get("health", {})
+    first = ([c["last_ok"]] if c.get("last_ok") in models else []) + [m for m in models if m != c.get("last_ok")]
+    ready = [m for m in first if h.get(m, {}).get("until", 0) <= now]
+    return ready or sorted(first, key=lambda m: h.get(m, {}).get("until", 0))[:1]
+
+
 def _free_models():
     """OpenRouter's current :free chat models (cached for an hour)."""
     c = _cache()
@@ -105,7 +131,7 @@ def _free_models():
 
 
 def _try(models, prompt, headers, errors, end):
-    for model in models:
+    for model in _order(models):
         left = end - time.time()
         if left < 5:
             errors.append(f"{model}: out of time")
@@ -115,16 +141,19 @@ def _try(models, prompt, headers, errors, end):
             r = httpx.post(OPENROUTER_URL, json=body, headers=headers, timeout=min(TIMEOUT, left))
         except httpx.HTTPError as e:
             errors.append(f"{model}: {type(e).__name__}")
+            _rest(model, "error")
             continue
         if r.status_code != 200:
             # 429 (busy), 404 (no endpoint), 403 (not allowed), 5xx: the next model is tried at once
             errors.append(f"{model}: HTTP {r.status_code}")
+            _rest(model, r.status_code)
             continue
         data = r.json()
         content = (data.get("choices") or [{}])[0].get("message", {}).get("content")
         if not content:
             errors.append(f"{model}: empty answer {str(data)[:120]}")
             continue
+        _ok(model)
         return model, data.get("model", model), content
     return None
 

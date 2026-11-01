@@ -1,16 +1,11 @@
-[choose] Kit Shop http://127.0.0.1:53711: the only shop left after my memory filter
-card: Kit Shop | JSONRPC http://127.0.0.1:53711/ | buying lamp with budget 120
+[choose] Kit Shop http://127.0.0.1:55881: the only shop left after my memory filter
+card: Kit Shop | JSONRPC http://127.0.0.1:55881/ | buying lamp with budget 120
 -> I want to buy a lamp
 <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] listed models failed; trying OpenRouter's current free models ['xingchen-agi/xing4.0-29b-a4b:free', 'thinkingmachines/inkling-small:free', 'thinkingmachines/inkling:free']
-   harness error (all OpenRouter models failed: google/gemma-4-26b-a4b-it:free: HTTP 429; nvidia/nemotron-3-ultra-550b-a55b:free: HTTP 429; recursive/flint-v1.0:free: HTTP 429; nvidia/nemotron-3.5-lightning:free: HTTP 429; google/gemma-4-31b-it:free: HTTP 429; google/gemma-4-26b-a4b-it:free: HTTP 429)
-   harness: {"action": "walk_away", "price": 0} (ask 130, budget 120)
-   GUARD no offer made yet: offering 100 before walking away
--> 100  (taskId 21bf12a0)
+   harness: {"action": "offer", "price": 100} (ask 130, budget 120)
+-> 100  (taskId 072d29f3)
 <- TASK_STATE_COMPLETED | Deal: lamp at 100.
-[receipt] {'item': 'lamp', 'price': 100.0, 'task': '21bf12a0-5a0c-4396-99a0-3a0bb6289e3a', 'shop': 'Kit Shop', 'sig_seller': 'pfFm/HUUNmw7giBvkhTMulKxO8HlPS6sJgmJqkwyokmoTUT/Yy4QhWTUDq9wTOKLeNQbW0Z0gwyOf53vf5QXCA=='}  agreed 100: matches the deal
-[harness] listed models failed; trying OpenRouter's current free models ['xingchen-agi/xing4.0-29b-a4b:free', 'thinkingmachines/inkling-small:free', 'thinkingmachines/inkling:free']
-[harness] answered by xingchen-agi/xing4.0-29b-a4b:free
-[review] 5 stars: Bought a lamp after it asked 130; paid 100. The receipt shows exactly the agreed price and is signed by the shop.
-result: deal, 27 s
-{"shop": "http://127.0.0.1:53711", "receipt": {"item": "lamp", "price": 100.0, "task": "21bf12a0-5a0c-4396-99a0-3a0bb6289e3a", "shop": "Kit Shop", "sig_seller": "pfFm/HUUNmw7giBvkhTMulKxO8HlPS6sJgmJqkwyokmoTUT/Yy4QhWTUDq9wTOKLeNQbW0Z0gwyOf53vf5QXCA=="}, "stars": 5, "review": "Bought a lamp after it asked 130; paid 100. The receipt shows exactly the agreed price and is signed by the shop."}
+[receipt] {'shop': 'Kit Shop', 'sig_seller': 'c6B7gKTig362f9VMDu4CFdOssKd4t3GyRuIRNUJOvz9gK+8zfl8C2aLCa0WM5lIUnIW8fRrfZpZ8Tx/X+2qpDA==', 'price': 100.0, 'item': 'lamp', 'task': '072d29f3-03b7-4e64-b739-69d6e3857879'}  agreed 100: matches the deal
+[review] 5 stars: The lamp was listed at 130 but I paid 100; the signed receipt matches the agreed price exactly.
+result: deal, 21 s
+{"shop": "http://127.0.0.1:55881", "receipt": {"shop": "Kit Shop", "sig_seller": "c6B7gKTig362f9VMDu4CFdOssKd4t3GyRuIRNUJOvz9gK+8zfl8C2aLCa0WM5lIUnIW8fRrfZpZ8Tx/X+2qpDA==", "price": 100.0, "item": "lamp", "task": "072d29f3-03b7-4e64-b739-69d6e3857879"}, "stars": 5, "review": "The lamp was listed at 130 but I paid 100; the signed receipt matches the agreed price exactly."}

@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-10-31T15:40:42+00:00",
+  "started": "2026-11-01T01:15:01+00:00",
   "harness": "OpenRouter free models via the chat-completions API, temperature 0, JSON answer (harness.py: a listed model that is busy or missing is skipped, then OpenRouter's current free list); most Round 3 decisions are made by code",
   "seller_cmd": "python shop_r3.py --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}",
@@ -10,7 +10,7 @@
     "description": "Receipts signed with Ed25519 (shop_fp=208e42d8); every unit ships with the market-signed certificate; the grade claimed is the unit's true grade; an ask never goes up. Ask for a SKU: 'I want to buy <name> (<sku>)'. Quote a member code from an earlier deal.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:53682/",
+        "url": "http://127.0.0.1:55853/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -55,13 +55,13 @@
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 107"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 117"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 107.0, asks [107]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 117.0, asks [117]"
     },
     {
       "test": "seller_signed_receipt",
@@ -79,7 +79,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [123, 115]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 107.0, asks [107]"
     },
     {
       "test": "seller_signed_receipt",
@@ -109,7 +109,7 @@
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [321, 301, 301, 301, 301]"
+      "detail": "TASK_STATE_REJECTED, asks [304, 285, 285, 285, 285]"
     },
     {
       "test": "seller_holds_reserve",
@@ -157,31 +157,31 @@
       "test": "buyer_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "offers [226, 230, 230], stars 4, receipt null"
+      "detail": "offers [210], stars 4, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
       "pass": true,
-      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "offers [226], stars 4, receipt null"
+      "detail": "offers [220, 225, 230], stars 4, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
       "pass": true,
-      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 1"
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
       "pass": true,
-      "detail": "offers [226, 230], stars 4, receipt null"
+      "detail": "offers [220, 230], stars 4, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",

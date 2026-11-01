@@ -36,6 +36,7 @@ The kit runs this for every order from Round 1 on. {shops} is a JSON list of
 """
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -176,7 +177,10 @@ def score(shop, prof):
     s -= sum(1 for r in revs if BAD_WORDS.search(r.get("review", "")))
     p = prof.get(shop["name"]) or buyer_memory._empty()
     # recent defect rate, not offenses ever (Amazon's order defect rate): 10% defects costs 2 points
-    return s + 0.2 * p["deals"] + 0.5 * p["signed"] - 0.5 * (p["deals"] - p["signed"]) - 20 * buyer_memory.defect_rate(p)
+    # deals on a log scale: 0.2 x deals let the shop with the most past deals win every time the harness failed
+    # (corner-store got 82% of Round 2 picks on 2026-11-01)
+    return s + math.log1p(p["deals"]) + (1.0 if p["deals"] and p["signed"] == p["deals"] else -1.0 if p["deals"] else 0) \
+        - 20 * buyer_memory.defect_rate(p)
 
 
 def unsigned_only(prof, name):
@@ -213,7 +217,17 @@ def choose(shops, item, budget, prof):
 
 # --- trading
 
-def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None):
+def code_decide(item, budget, history, ask_price):
+    """Round 3 moves without a model call: always ask for the most, and let the guards below bring it down to a
+    safe step (the market low first, then a fixed share of the gap, then the ask once enough low offers were
+    made). The free models were rate-limited upstream on about 45% of calls (2026-10-31), and every failed call
+    cost a turn; the guards were already deciding most moves."""
+    if ask_price <= budget and history and re.search(r"\bfinal\b", history[-1], re.I):
+        return "accept", ask_price          # a shop's last word within budget: more offers only risk the deal
+    return ("offer", ask_price) if ask_price <= budget else ("offer", budget)
+
+
+def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None, decide_fn=None):
     """Week-06 buyer loop with two more guards. Returns (task, asks, offers): every ask the shop made and
     every price we sent, oldest first. low is the lowest price I agreed for this item lately at any shop
     (the market floor): an ask at or below it is taken at once, and my first offer is that price, not a
@@ -255,8 +269,9 @@ def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None
             action, price = ("accept", ask_price) if ask_price <= budget else ("walk_away", 0)
             log(f"   time limit: {action}")
         else:
-            action, price = decide(item, budget, history, ask_price)
-            log(f"   harness: {json.dumps({'action': action, 'price': price})} (ask {ask_price}, budget {budget})")
+            action, price = (decide_fn or decide)(item, budget, history, ask_price)
+            log(f"   {'code' if decide_fn else 'harness'}: {json.dumps({'action': action, 'price': price})}"
+                f" (ask {ask_price}, budget {budget})")
 
         # week-06 guards
         if action == "accept" and ask_price > budget:
@@ -407,8 +422,10 @@ def facts_and_stars(outcome, item, asks, offers, rec, problem, issues=(), worst=
     return 3, f"Item {item}. No deal; the shop ended the talk."
 
 
-def review_for(outcome, item, asks, offers, rec, problem, issues=(), worst=None):
+def review_for(outcome, item, asks, offers, rec, problem, issues=(), worst=None, use_model=True):
     stars, facts = facts_and_stars(outcome, item, asks, offers, rec, problem, issues, worst)
+    if not use_model:          # Round 3: review_r3.py writes the review that counts, from the settled facts
+        return stars, facts
     allowed = set(re.findall(r"\d+", facts))
     try:
         text = str(ask(REVIEW_PROMPT.format(facts=facts)).get("review", "")).strip()
@@ -527,7 +544,8 @@ def round3(a, order, shops, mem, started):
     try:
         task, asks, offers, texts, notes = negotiate(shop["url"], offer["name"], cap, started,
                                                      low=int(lp * T["r3_first_offer"]),
-                                                     opened=(pick["url"], pick["task"], pick["opening"]))
+                                                     opened=(pick["url"], pick["task"], pick["opening"]),
+                                                     decide_fn=code_decide)
         outcome = "deal" if state(task) == "TASK_STATE_COMPLETED" else "no deal"
     except Exception as e:
         log(f"buyer error: {type(e).__name__}: {e}")
@@ -546,7 +564,7 @@ def round3(a, order, shops, mem, started):
     issues += notes
     if notes:
         worst = worst or "hallucination"
-    stars, review = review_for(outcome, offer["name"], asks, offers, rec, problem, issues, worst)
+    stars, review = review_for(outcome, offer["name"], asks, offers, rec, problem, issues, worst, use_model=False)
     agreed = offers[-1] if outcome == "deal" and offers else None
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": sku, "category": order.get("item"),
               "kind": order.get("kind"), "list_price": lp, "budget": order["budget"],
