@@ -60,13 +60,13 @@ def stop(proc):
     try:
         os.killpg(proc.pid, signal.SIGTERM)
         proc.wait(timeout=10)
-    except ProcessLookupError:
-        pass
+    except (ProcessLookupError, PermissionError):
+        pass  # macOS answers EPERM for a group whose leader already exited.
     except subprocess.TimeoutExpired:
         try:
             os.killpg(proc.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
+        except (ProcessLookupError, PermissionError):
+            proc.kill()
         proc.wait()
 
 
@@ -79,7 +79,10 @@ def forward_lines(proc, messages):
 
 
 def default_kit_path(source):
-    """Find the course kit without assuming a repository directory depth."""
+    """Prefer the patched kit copy beside this file, then the course kit."""
+    local = Path(source).resolve().parent / 'market_kit.py'
+    if local.is_file():
+        return local
     for parent in Path(source).resolve().parents:
         candidate = parent / 'scripts' / 'market_kit.py'
         if candidate.is_file():
@@ -175,7 +178,7 @@ def main():
                 threading.Thread(target=forward_lines, args=(tunnel, messages), daemon=True).start()
                 current_url = None
                 retry_kit_at = 0.0
-                from fixed_address_runtime import public_card_healthy
+                from fixed_address_runtime import kit_env, public_card_healthy
                 watchdog = TunnelWatchdog(time.monotonic(),
                                           lambda url: public_card_healthy(url, args.name))
                 # Preserve raw tunnel output, including failures, without editing it.
@@ -204,7 +207,7 @@ def main():
                                        "--name", args.name, "--port", str(args.port), "--public-url", current_url]
                             kit = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=kit_output,
                                                    stderr=subprocess.STDOUT, start_new_session=True,
-                                                   env=kit_environment(private))
+                                                   env=kit_env(private, current_url))
                             (private / "kit.pid").write_text(str(kit.pid) + "\n")
                             retry_kit_at = time.monotonic() + 30
                             log(f"kit started, pid {kit.pid}")

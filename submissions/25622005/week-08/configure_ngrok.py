@@ -1,7 +1,7 @@
 """One-time local setup; the authtoken is masked and stored only in .market/.
 
 Run from the repository root:
-    .venv/bin/python submissions/25622005/week-07/configure_ngrok.py
+    .venv/bin/python submissions/25622005/week-08/configure_ngrok.py
 
 Get the assigned public domain and agent authtoken from your own ngrok
 dashboard. Nothing is submitted to the market by this setup command.

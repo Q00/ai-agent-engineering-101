@@ -14,6 +14,8 @@ from urllib.parse import urlsplit
 
 import httpx
 
+from configure_market_owner import kit_environment
+
 
 def load_fixed_config(path):
     data = json.loads(Path(path).read_text())
@@ -28,6 +30,13 @@ def load_fixed_config(path):
             or any(not isinstance(arg, str) or not arg for arg in command)):
         raise ValueError("tunnel_command must be a nonempty JSON array of arguments")
     return url.rstrip("/"), command
+
+
+def kit_env(private, url):
+    """The claim code and our own URL reach the kit and, through it, every hook."""
+    environment = kit_environment(private)
+    environment["OWN_SHOP_URL"] = url
+    return environment
 
 
 def public_card_healthy(url, name):
@@ -66,7 +75,8 @@ class FixedAddressRuntime:
         if (self.kit is None or self.kit.poll() is not None) and now >= self.next_kit:
             self.kit = subprocess.Popen(
                 self.kit_command, stdin=subprocess.DEVNULL, stdout=self.kit_output,
-                stderr=subprocess.STDOUT, start_new_session=True)
+                stderr=subprocess.STDOUT, start_new_session=True,
+                env=kit_env(self.private, self.url))
             (self.private / "kit.pid").write_text(str(self.kit.pid) + "\n")
             self.next_kit = now + 30
             self.next_probe = now + 20  # Allow tunnel startup and registration.
