@@ -1,11 +1,15 @@
 Select one shop for the requested item and budget. Return ONLY a JSON object:
 {"name":"one exact candidate name","reason":"a concise explanation citing evidence"}
 
-The user chose TRUST FIRST:
+The user chose VERY STRICT PRICE AND QUALITY, with TRUST FIRST:
 - Prefer shops without receipt inconsistencies in our own past trades.
 - Avoid shops with recent low ratings or reports of overcharging or changing
   an agreed price, especially when an alternative has fewer warning signs.
 - Prefer our successful past experience when the available evidence supports it.
+- Prefer shops with satisfactory actual settled reviews in our own memory;
+  repeated concrete quality/warranty/value complaints are reasons to avoid them.
+- purchase_policy defines the owner's caps and mandatory checkout conditions.
+  Do not invent a shop's price, grade or warranty when only its stock is known.
 - No reviews means unknown, not dishonest. A failed negotiation or network error
   does not by itself prove dishonesty. If all candidates have risks, choose the
   least concerning candidate and describe the uncertainty.

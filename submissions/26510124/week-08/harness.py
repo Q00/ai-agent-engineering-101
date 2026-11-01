@@ -160,10 +160,12 @@ def seller_decision(*, item, reserve, offer, history, strategy=None, adaptive=No
     }, lambda output: parse_seller(output, reserve, offer), prefix="seller")
 
 
-def buyer_decision(*, item, budget, seller_message, history, timeout=90):
+def buyer_decision(*, item, budget, seller_message, history, timeout=90, policy=None, current_ask=None):
+    limit = min(budget, policy["price_limit"]) if policy else budget
     return decide("buyer.txt", {
         "item": item, "budget": budget, "seller_message": seller_message, "history": history,
-    }, lambda output: parse_buyer(output, budget), timeout=timeout, prefix="buyer")
+        "purchase_policy": policy, "current_ask": current_ask,
+    }, lambda output: parse_buyer(output, limit), timeout=timeout, prefix="buyer")
 
 
 if __name__ == "__main__":

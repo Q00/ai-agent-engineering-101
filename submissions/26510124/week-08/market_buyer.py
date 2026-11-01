@@ -20,6 +20,7 @@ import httpx
 from harness import HarnessError, buyer_decision, decide, parse_object
 from inventory import read_json
 from payment_memory import recent_jsonl, reconcile
+from buyer_policy import buying_terms, checkout_policy, load_policy
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -39,6 +40,10 @@ class BuyerError(RuntimeError):
 
 class ReceiptMismatch(BuyerError):
     """The completed receipt does not match the authorized purchase."""
+
+
+class PolicyRefusal(BuyerError):
+    """A model choice violates the owner's purchasing limits; no fallback bid."""
 
 
 def read_shops(path):
@@ -84,14 +89,7 @@ def stocked_shops(shops, order):
 
 
 def acceptance(order):
-    policy = {"cert": True}
-    if order.get("kind") == "food":
-        hours = order.get("use_within_hours")
-        if type(hours) not in (int, float) or not math.isfinite(hours) or hours < 0:
-            raise BuyerError("Invalid food use_within_hours")
-        # Small checkout-time margin; grade/warranty preferences remain future experiments.
-        policy["min_hours_left"] = hours + 1 / 60
-    return policy
+    return checkout_policy(order)
 
 
 def shop_evidence(shop, memory):
@@ -131,7 +129,7 @@ def shop_evidence(shop, memory):
     }
 
 
-def choose_shop(shops, memory, *, item, budget, deadline):
+def choose_shop(shops, memory, *, item, budget, deadline, policy=None):
     candidates = [shop_evidence(s, memory) for s in shops]
     choice = None
     while True:
@@ -154,6 +152,7 @@ def choose_shop(shops, memory, *, item, budget, deadline):
                 raise BuyerError("Shop selection deadline exceeded")
             choice = decide("market_select.txt", {
                 "item": item, "budget": budget, "candidates": batch,
+                "purchase_policy": policy,
             }, validate, timeout=min(45, remaining), prefix="market-select")
             log("SHOP SELECTION", choice)
             finalists.append(next(s for s in batch if s["name"] == choice["name"]))
@@ -187,12 +186,15 @@ def last_asking_price(text):
 
 
 class Buyer:
-    def __init__(self, client, *, url, item, budget, seconds=RUN_SECONDS):
+    def __init__(self, client, *, url, item, budget, seconds=RUN_SECONDS, policy=None):
         self.client = client
         self.base_url = url.rstrip("/")
         self.endpoint = None
         self.item = item
         self.budget = budget
+        self.policy = policy or buying_terms(budget)
+        self.price_limit = min(budget, self.policy["price_limit"])
+        self.no_deal_reason = ""
         self.deadline = time.monotonic() + seconds
         self.task_id = None
         self.terminal = False
@@ -285,6 +287,11 @@ class Buyer:
         price = decision.get("price")
         if type(price) is not int or not 0 < price <= self.budget:
             raise BuyerError("Harness price must be a positive integer within the budget")
+        if price > self.price_limit:
+            raise PolicyRefusal("Model price exceeds the owner's purchasing limit")
+        if (self.authorized_price is not None
+                and price > self.authorized_price + self.policy["max_concession"]):
+            raise PolicyRefusal("Model concession exceeds the per-turn limit")
         if action == "accept" and price != last_asking_price(seller_message):
             raise BuyerError("Harness acceptance price does not match the seller's ask")
 
@@ -301,6 +308,7 @@ class Buyer:
         price = self.observed_receipt["price"]
         if (type(price) not in (int, float) or not math.isfinite(price)
                 or not float(price).is_integer() or not 0 < price <= self.budget
+                or price > self.price_limit
                 or price != self.authorized_price):
             raise ReceiptMismatch(
                 f"Authorized {self.authorized_price}, receipt price {price!r}, budget {self.budget}")
@@ -316,6 +324,15 @@ class Buyer:
     def run(self):
         try:
             return self.negotiate()
+        except PolicyRefusal as exc:
+            self.no_deal_reason = str(exc)
+            if self.task_id is not None and not self.terminal:
+                try:
+                    self.cancel(cleanup=True)
+                except BuyerError as cleanup:
+                    log("CLEANUP ERROR", str(cleanup))
+            log("POLICY WALK AWAY", self.no_deal_reason)
+            return "no_deal"
         except (BuyerError, HarnessError):
             # Ending on an error is not a model's walk-away decision. Report the
             # failure and release a pending Task, but never choose another price.
@@ -348,18 +365,20 @@ class Buyer:
                 continue
             if state != "TASK_STATE_INPUT_REQUIRED":
                 raise BuyerError(f"Cannot negotiate in seller state {state}: {text}")
-            if decisions >= MAX_DECISIONS:
-                raise BuyerError("Operational decision limit reached; no invented fallback")
+            if decisions >= min(MAX_DECISIONS, self.policy["max_decisions"]):
+                raise PolicyRefusal("Negotiation ended at the owner's turn limit without a satisfactory agreement")
             compact = self.history[:1] + self.history[-6:] if len(self.history) > 7 else self.history
             decision = buyer_decision(item=self.item, budget=self.budget,
                                       seller_message=text[:1600],
                                       history=[{"role": h["role"], "text": h["text"][-400:]} for h in compact],
-                                      timeout=min(90, self.remaining()))
+                                      timeout=min(90, self.remaining()), policy=self.policy,
+                                      current_ask=last_asking_price(text))
             decisions += 1
             log("BUYER DECISION", decision)
             self.validate_decision(decision, text)
             self.remaining()
             if decision["action"] == "walk_away":
+                self.no_deal_reason = decision["reason"]
                 self.cancel()
                 log("NO DEAL", {"reason": decision["reason"], "taskId": self.task_id})
                 return "no_deal"
@@ -369,8 +388,9 @@ class Buyer:
             task = self.send(str(self.authorized_price))
 
 
-def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client, order=None):
-    buyer = Buyer(client, url=shop["url"], item=item, budget=budget, seconds=seconds)
+def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client, order=None, policy=None):
+    policy = policy or buying_terms(budget, order=order)
+    buyer = Buyer(client, url=shop["url"], item=item, budget=budget, seconds=seconds, policy=policy)
     detail = ""
     try:
         outcome = buyer.run()
@@ -381,6 +401,7 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
     if outcome == "receipt_issued":
         stars, review = 3, f"Agreed {item} at {buyer.receipt['price']}; receipt matched. Payment checked by kit afterwards."
     elif outcome == "no_deal":
+        detail = buyer.no_deal_reason
         stars, review = 3, f"No deal for {item}; no completed purchase."
     elif outcome == "receipt_mismatch":
         stars, review = 1, f"Receipt mismatch: {detail}"
@@ -393,6 +414,7 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
         "result": outcome, "detail": detail, "selection_reason": reason,
         "authorized_price": buyer.authorized_price,
         "order": (order or {}).get("order"), "round": (order or {}).get("round", 2),
+        "purchase_policy": policy,
         "observed_receipt": buyer.observed_receipt,
         "stars": stars, "review": review,
     }
@@ -400,7 +422,7 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
     with memory_path.open("a", encoding="utf-8") as out:
         out.write(json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n")
     return {"shop": shop["url"], "receipt": buyer.receipt, "stars": stars, "review": review,
-            **({"accept": acceptance(order)} if order and order.get("round", 0) >= 3 else {})}
+            **({"accept": policy["accept"]} if order and order.get("round", 0) >= 3 else {})}
 
 
 def main(argv=None):
@@ -421,16 +443,25 @@ def main(argv=None):
         if order and (order.get("item") != args.item or order.get("budget") != args.budget):
             raise BuyerError("Order file and command arguments disagree")
         shops, memory = read_shops(args.shops), read_memory(args.memory, args.shops.parent / "payments.jsonl")
+        config = load_policy()
+        catalog = None
         if order.get("round", 0) >= 3:
-            acceptance(order)  # validate food policy BEFORE negotiating
+            checkout_policy(order, config)
+            catalog = read_json(args.shops.parent / "catalog.json")
+            if not isinstance(catalog, dict):
+                raise BuyerError("Market catalog must be a SKU mapping")
             shops = stocked_shops(shops, order)
         shop, reason = choose_shop(shops, memory, item=args.item, budget=args.budget,
-                                   deadline=min(deadline, time.monotonic() + 90))
+                                   deadline=min(deadline, time.monotonic() + 90), policy=config)
         result["shop"] = shop["url"]
+        sku = shop.get("selected_sku") or args.item
+        product = catalog.get(sku) if catalog is not None else None
+        policy = buying_terms(args.budget, product=product, order=order, config=config)
+        log("PURCHASE POLICY", policy)  # local evidence only; never sent to the shop
         with httpx.Client(trust_env=False) as client:
-            result = trade_and_record(shop, item=shop.get("selected_sku") or args.item, budget=args.budget,
+            result = trade_and_record(shop, item=sku, budget=args.budget,
                                       memory_path=args.memory, reason=reason,
-                                      seconds=deadline - time.monotonic(), client=client, order=order)
+                                      seconds=deadline - time.monotonic(), client=client, order=order, policy=policy)
     except (BuyerError, HarnessError, OSError, ValueError) as exc:
         result["review"] = f"Buyer could not complete the order: {exc}"
         exit_code = 1

@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from starlette.testclient import TestClient
 
 from feedback import atomic_json
+from buyer_policy import buying_terms
 from market_buyer import (BuyerError, acceptance, choose_shop, last_asking_price,
                           stocked_shops, trade_and_record)
 from payment_memory import recent_jsonl, reconcile
@@ -45,7 +46,7 @@ class BuyerContractTests(unittest.TestCase):
 
     def test_food_policy_matches_real_v4_certificate_checker(self):
         key = Ed25519PrivateKey.generate()
-        body = {"unit": "u1", "sku": "G00001", "expires_at": time.time() + 3600}
+        body = {"unit": "u1", "sku": "G00001", "grade": "A", "expires_at": time.time() + 7200}
         cert = {"cert": body, "sig": base64.b64encode(key.sign(kit.canon(body))).decode()}
         order = {"kind": "food", "use_within_hours": 2, "market_pubkey": kit.pub_b64(key)}
         checkout = {"unit": "u1", "item": "G00001", "cert": cert}
@@ -77,20 +78,22 @@ class BuyerContractTests(unittest.TestCase):
         (ROOT / ".market").mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / ".market") as d:
             folder = Path(d)
-            atomic_json(folder / "inventory.json", {"round": 3, "units": [unit()]})
+            atomic_json(folder / "inventory.json", {"round": 3, "units": [unit(cost=50000, grade="A")]})
             with patch("seller_agent.load_shop_key", return_value=Ed25519PrivateKey.generate()):
                 seller = InventorySeller({**DEFAULT, "name": "shop", "market_dir": folder})
             seller.events = folder / "seller.jsonl"
             with patch("seller_r3.inventory_decision", side_effect=[
-                    {"action": "counter", "price": 90000}, {"action": "accept", "price": 85000}]), \
-                    patch("market_buyer.buyer_decision", return_value={"action": "offer", "price": 85000, "reason": "test"}), \
+                    {"action": "counter", "price": 65000}, {"action": "accept", "price": 60000}]), \
+                    patch("market_buyer.buyer_decision", return_value={"action": "offer", "price": 60000, "reason": "test"}), \
                     TestClient(build(DEFAULT, seller)) as client:
                 result = trade_and_record({"name": "shop", "url": "http://testserver"}, item="G00001", budget=99000,
                                           memory_path=folder / "memory.jsonl", reason="fixture", seconds=10, client=client,
-                                          order={"order": "o1", "round": 3, "kind": "goods"})
+                                          order={"order": "o1", "round": 3, "kind": "goods"},
+                                          policy=buying_terms(99000, product={"list_price": 100000},
+                                                             order={"round": 3, "kind": "goods"}))
             self.assertIsNotNone(result["receipt"])
             self.assertEqual(result["receipt"]["unit"], "u1")
-            self.assertEqual(result["accept"], {"cert": True})
+            self.assertEqual(result["accept"], {"cert": True, "grades": ["A"], "warranty_hours": 6})
             record = recent_jsonl(folder / "memory.jsonl")[0]
             self.assertEqual(record["result"], "receipt_issued")
             self.assertNotIn("99000", result["review"])
