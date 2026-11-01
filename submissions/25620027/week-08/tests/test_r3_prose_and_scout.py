@@ -613,7 +613,7 @@ def test_buyer_answers_a_sellers_question_and_still_leads_with_its_offer(
             {
                 "intent": "question",
                 "ask": None,
-                "reply": "One unit of the large pack with the market certificate, please.",
+                "reply": "One unit of the large pack, with the certificate.",
             }
         ),
     )
