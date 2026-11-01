@@ -19,7 +19,7 @@ import httpx
 
 from harness import HarnessError, buyer_decision, decide, parse_object
 from inventory import read_json
-from payment_memory import recent_jsonl, reconcile
+from payment_memory import recent_jsonl, reconcile, attach_reviews
 from buyer_policy import buying_terms, checkout_policy, load_policy
 
 
@@ -65,11 +65,13 @@ def read_shops(path):
     return shops
 
 
-def read_memory(path, payments=None):
+def read_memory(path, payments=None, reviews=None):
     records = recent_jsonl(path)
     if any(not isinstance(r.get("name"), str) for r in records):
         raise BuyerError("Invalid shop name in memory")
-    return reconcile(records, recent_jsonl(payments)) if payments else records
+    if payments:
+        records = reconcile(records, recent_jsonl(payments))
+    return attach_reviews(records, recent_jsonl(reviews)) if reviews else records
 
 
 def stocked_shops(shops, order):
@@ -114,6 +116,8 @@ def shop_evidence(shop, memory):
             "trades": len(own),
             "scope": "recent 2000 records / 2 MB, not lifetime",
             "settled": sum(r.get("result") == "settled" for r in own),
+            "unsatisfactory_settlements": sum(r.get("result") == "settled" and bool(r.get("review_reasons"))
+                                              and r.get("stars", 3) <= 2 for r in own),
             "payment_refused": sum(r.get("result") == "payment_refused" for r in own),
             "pending_receipts": sum(r.get("result") == "receipt_issued" for r in own),
             "round2_agreements": sum(r.get("result") == "purchased" for r in own),
@@ -122,7 +126,7 @@ def shop_evidence(shop, memory):
             "errors": sum(r.get("result") == "error" for r in own),
             "recent_newest_first": [
                 {key: (str(r.get(key, ""))[:400] if key == "detail" else r.get(key))
-                 for key in ("item", "price", "result", "detail")}
+                 for key in ("item", "price", "result", "detail", "stars", "review_reasons")}
                 for r in reversed(own[-3:])
             ],
         },
@@ -442,7 +446,8 @@ def main(argv=None):
         order = read_json(args.order) if args.order else {}
         if order and (order.get("item") != args.item or order.get("budget") != args.budget):
             raise BuyerError("Order file and command arguments disagree")
-        shops, memory = read_shops(args.shops), read_memory(args.memory, args.shops.parent / "payments.jsonl")
+        shops, memory = read_shops(args.shops), read_memory(args.memory, args.shops.parent / "payments.jsonl",
+                                                         ROOT / "logs" / "settled-deals.jsonl")
         config = load_policy()
         catalog = None
         if order.get("round", 0) >= 3:

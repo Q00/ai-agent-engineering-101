@@ -40,3 +40,21 @@ def reconcile(records, payments):
                     record.update(result="payment_refused", detail=str(p.get("reason", "unknown"))[:400])
         result.append(record)
     return result
+
+
+def attach_reviews(records, reviews):
+    indexed = {r.get("order"): r for r in reviews if isinstance(r.get("order"), str)}
+    result = []
+    for raw in records:
+        record = dict(raw)
+        row = indexed.get(record.get("order"), {})
+        receipt, assessment = row.get("receipt", {}), row.get("assessment", {})
+        observed = record.get("observed_receipt") or {}
+        if (record.get("result") == "settled" and observed.get("task")
+                and receipt.get("task") == observed["task"] and receipt.get("price") == record.get("price")
+                and receipt.get("item") == record.get("item")
+                and type(assessment.get("stars")) is int and 1 <= assessment["stars"] <= 5):
+            record.update(stars=assessment["stars"], review=assessment.get("review", ""),
+                          review_reasons=assessment.get("reasons", []))
+        result.append(record)
+    return result
