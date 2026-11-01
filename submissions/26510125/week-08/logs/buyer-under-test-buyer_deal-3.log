@@ -1,13 +1,13 @@
-market_buyer · lamp budget 120 · 1 shops · memory buyer_memory.json (1 shops remembered) · harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
-[choose] http://127.0.0.1:35183: Kit Shop is the only shop without a warning (reviews 0, avg None; 2 past trade(s), 2 deal(s); paid 110.0, 105.0)
+market_buyer · lamp budget 120 · 1 shops · memory buyer_memory.json (2 shops remembered) · harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
+[choose] http://127.0.0.1:50833: Kit Shop is the only shop without a warning (reviews 0, avg None; 8 past trade(s), 5 deal(s); paid 110.0, 105.0, 105.0)
 [lamp @ Kit Shop] card ok, budget 120
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
     [harness] -> '```json\n{"action": "offer", "price": 110}\n```'
-  -> '110' (task f1ba8179)
+  -> '110' (task fe43de3b)
   <- TASK_STATE_COMPLETED | Deal: lamp at 110.
 [lamp @ Kit Shop] bought at 110.0 after 1 offers
-    [harness] -> '```json\n{"stars": 5, "review": "Kit Shop honored my negotiated offer of 110 for the lamp, well below the asking price of 130 and their receipt matched exactly."}\n```'
-[memory] Kit Shop: 3 past trade(s), 3 deal(s); paid 110.0, 105.0, 110.0
+    [harness] -> '```json\n{\n  "stars": 5,\n  "review": "Kit Shop negotiated fairly on this lamp, honored the agreed price of 110, and the receipt matched exactly."\n}\n```'
+[memory] Kit Shop: 9 past trade(s), 6 deal(s); paid 105.0, 105.0, 110.0
 [done] bought harness calls 2 fallbacks 0
-{"shop": "http://127.0.0.1:35183", "receipt": {"task": "f1ba8179-8d08-4282-bbb5-b58b24d076b8", "sig_seller": "TtuKY3lPzJEfnAIC7cwgakd2PAFLkAF1IGlBPT63SZlqyrEliU5lg1IcUgiHEoCl03B6Oc74tYaHQs7plDxiDg==", "price": 110.0, "item": "lamp", "shop": "Kit Shop"}, "stars": 5, "review": "Kit Shop honored my negotiated offer of 110 for the lamp, well below the asking price of 130 and their receipt matched exactly."}
+{"shop": "http://127.0.0.1:50833", "receipt": {"sig_seller": "HH+FhPckEJkv1OZukONCHsH8ZmTN7j3mSRdYFabvd437tOjtLiGQ3fujYh3V8P4RPu+Oi1szImSlzGoDVKj/Cw==", "item": "lamp", "task": "fe43de3b-e8b0-4853-9ef2-b2af9aa89ad0", "shop": "Kit Shop", "price": 110.0}, "stars": 5, "review": "Kit Shop negotiated fairly on this lamp, honored the agreed price of 110, and the receipt matched exactly."}

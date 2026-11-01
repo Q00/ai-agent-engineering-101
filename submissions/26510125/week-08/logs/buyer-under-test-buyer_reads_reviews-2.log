@@ -1,14 +1,16 @@
 market_buyer · lamp budget 120 · 2 shops · memory buyer_memory.json (2 shops remembered) · harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
-[skip] Kit Shop North (http://127.0.0.1:40733): reviews average 1.3 over 3
-[choose] http://127.0.0.1:32831: Kit Shop South is the only shop without a warning (reviews 3, avg 4.7; 1 past trade(s), 1 deal(s); paid 100.0)
+[skip] Kit Shop North (http://127.0.0.1:39157): reviews average 1.3 over 3
+[choose] http://127.0.0.1:34441: Kit Shop South is the only shop without a warning (reviews 3, avg 4.7; 4 past trade(s), 4 deal(s); paid 105.0, 105.0, 105.0)
 [lamp @ Kit Shop South] card ok, budget 120
   -> 'I want to buy a lamp'
   <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
     [harness] -> '```json\n{"action": "offer", "price": 105}\n```'
-  -> '105' (task 9a71e55b)
+  -> '105' (task 5f7439d0)
   <- TASK_STATE_COMPLETED | Deal: lamp at 105.
 [lamp @ Kit Shop South] bought at 105.0 after 1 offers
-    [harness] -> '```json\n{\n  "stars": 5,\n  "review": "Excellent negotiation experience—successfully got the lamp for 105 after the shop asked 130, receipt matched the agreed price perfectly, and it came in well under '
-[memory] Kit Shop South: 2 past trade(s), 2 deal(s); paid 100.0, 105.0
-[done] bought harness calls 2 fallbacks 0
-{"shop": "http://127.0.0.1:32831", "receipt": {"task": "9a71e55b-1468-4dd7-9144-05c1e60d3437", "sig_seller": "3f+jAtVY0p40oU1aIaz3ex9IhbgYrQg4qVt4EbSpnrIdreHPpunAZstakzzF/TX0/dSAoec+N5U7yzj4C4ZQDA==", "price": 105.0, "item": "lamp", "shop": "Kit Shop South"}, "stars": 5, "review": "Excellent negotiation experience—successfully got the lamp for 105 after the shop asked 130, receipt matched the agreed price perfectly, and it came in well under budget."}
+    [harness] -> '```json\n{\n  "stars": 5,\n  "review": "Successfully negotiated lamp from asking price of 130 down to 105, with receipt matching agreed price exactly."\n}\n```'
+    [harness] -> '```json\n{"note": "Shop negotiates 120→100-105 (17% discount), receipts and ratings perfectly honest; open with 105."}\n```'
+[memory] note for Kit Shop South: Shop negotiates 120→100-105 (17% discount), receipts and ratings perfectly honest; open with 105.
+[memory] Kit Shop South: 5 past trade(s), 5 deal(s); my note: Shop negotiates 120→100-105 (17% discount), receipts and ratings perfectly honest; open with 105.; paid 105.0, 105.0, 105.0
+[done] bought harness calls 3 fallbacks 0
+{"shop": "http://127.0.0.1:34441", "receipt": {"sig_seller": "zcx1ByQ9VXW97ZUxmwXLX0fpWRQ+J02N4BxnpuQadSIZe7TYMjF/Cw0OcbXGUHyDouWM6ZPeGBPfLuQYE6eNAA==", "item": "lamp", "task": "5f7439d0-987c-4323-8cd0-5f5bdc00d8e6", "shop": "Kit Shop South", "price": 105.0}, "stars": 5, "review": "Successfully negotiated lamp from asking price of 130 down to 105, with receipt matching agreed price exactly."}
