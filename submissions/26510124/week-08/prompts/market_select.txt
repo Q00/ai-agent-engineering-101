@@ -12,8 +12,9 @@ The user chose TRUST FIRST:
 
 Each candidate includes counts from up to ten market reviews, the newest three
 review texts (each capped at 400 characters), and our own history keyed by shop
-NAME. URLs can change and are not identities. Our lifetime receipt-mismatch
-count must not be forgotten just because recent trades were successful.
+NAME. URLs can change and are not identities. Receipt mismatches are stronger
+negative evidence than an ordinary failed negotiation. Counts are windowed,
+so zero mismatches does not prove an entirely clean lifetime history.
 Own memory includes recent-window result counts and the newest three trades. Use the
 ordered item and previous prices only as supporting evidence; trust comes first.
 For large markets, candidates are compared in batches, then batch winners are

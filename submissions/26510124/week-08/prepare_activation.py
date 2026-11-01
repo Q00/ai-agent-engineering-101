@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parent
 
 
 def main():
+    raise SystemExit("Legacy Round 2 activation is retired. Use run_round3.py for the week-08 runtime; see README.md.")
+    # Retained below as historical reference; never replace the week-07 agent.json.
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--week07", type=Path, default=ROOT.parent / "week-07")
     args = parser.parse_args()
