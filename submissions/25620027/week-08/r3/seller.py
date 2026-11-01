@@ -78,6 +78,33 @@ BARE_OFFER: Final = re.compile(
     re.IGNORECASE,
 )
 STANDALONE_NUMBER: Final = re.compile(r"(?<![0-9A-Za-z.])([0-9]{1,9})(?![0-9A-Za-z])")
+HOUR_WORDS: Final = (
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven",
+    "twelve",
+    "thirteen",
+    "fourteen",
+    "fifteen",
+    "sixteen",
+    "seventeen",
+    "eighteen",
+    "nineteen",
+    "twenty",
+    "twenty-one",
+    "twenty-two",
+    "twenty-three",
+    "twenty-four",
+)
 ASSENT: Final = re.compile(
     r"^\s*(?:ok|okay|yes|agreed|deal|accept|accepted|i accept|i agree|"
     r"i accept (?:your|the) (?:offer|quote|price|ask))\s*[.!]?\s*$",
@@ -461,10 +488,12 @@ class R3Seller(AgentExecutor):
     ) -> None:
         """Quote in the starter's wording plus machine-readable metadata.
 
-        The first line is always the starter's template, so every counterpart's
-        parser keeps working. ``facts`` adds a second line with the certified grade
-        and warranty; ``answer`` (a screened, digit-free model sentence) replaces
-        that line. Neither discloses cost, margin or policy.
+        The ask is written three ways so any counterpart parser reads it: the
+        starter's template on the first line, a data part ``{"ask": N}`` beside the
+        text, and the ask again as the last number of the message. Everything in
+        between is digit-free: ``facts`` adds the certified grade and the warranty
+        in words; ``answer`` (a screened, digit-free model sentence) replaces that
+        line. Neither discloses cost, margin or policy.
         """
         name = deal.unit.name if deal.unit is not None else str(deal.legacy_item)
         sku = deal.unit.sku if deal.unit is not None else str(deal.legacy_item)
@@ -474,19 +503,19 @@ class R3Seller(AgentExecutor):
             else f"Counteroffer: {deal.ask}."
         )
         if answer:
-            text += f"\n{answer} Send your offer as a number."
+            text += f"\n{answer}"
         elif facts and deal.unit is not None:
             warranty = (
                 self.policy().warranty(deal.quote.grade_now)
                 if deal.unit.kind == "goods"
                 else 0
             )
+            hours = HOUR_WORDS[min(warranty, len(HOUR_WORDS) - 1)]
             text += (
                 f"\nGrade {deal.quote.grade_now} with the market's certificate "
-                "attached"
-                + (f", {warranty} h warranty" if warranty else "")
-                + ". Send your offer as a number."
+                "attached" + (f", a {hours}-hour warranty" if warranty else "") + "."
             )
+        text += f"\nReply with a number, or ok to take the ask: {deal.ask}"
         metadata: dict[str, object] = {
             "ask": deal.ask,
             "sku": sku,
@@ -498,8 +527,12 @@ class R3Seller(AgentExecutor):
         if deal.unit is not None and deal.unit.kind == "goods":
             metadata["warranty_hours"] = self.policy().warranty(deal.quote.grade_now)
         self.emit(f"seller.ask task={task_id} ask={deal.ask} rounds={deal.rounds}")
+        ask_part = Part(
+            data=Parse(json.dumps({"ask": deal.ask, "sku": sku}), Value()),
+            media_type="application/json",
+        )
         await updater.requires_input(
-            updater.new_agent_message([Part(text=text)], metadata=metadata)
+            updater.new_agent_message([Part(text=text), ask_part], metadata=metadata)
         )
 
     async def accept(  # noqa: PLR0913, PLR0917 - the sale needs every fact at once
@@ -600,9 +633,12 @@ def create_r3_app(  # noqa: PLR0913 - explicit wiring
         name=name,
         description=(
             "Sells from real market stock with the market's unit certificate "
-            "attached. Grade claims match the certificate; A-grade goods carry a "
-            "warranty. Ask for an item by SKU or name, then send a whole-number "
-            "offer. Prices read metadata.ask; matching the ask closes the deal."
+            "attached to every unit; the grade claimed is the certified grade and "
+            "A-grade goods carry a warranty. Receipts are Ed25519-signed. Ask for an "
+            "item by SKU or name; the shop quotes at once from code. The ask is in "
+            'message metadata, in a data part {"ask": N} and is the last number of '
+            "every reply. Reply with a whole number to offer, or 'ok' to take the "
+            "ask; matching the ask closes the deal in one message."
         ),
         version="2.0.0-r3",
         capabilities=AgentCapabilities(streaming=False),
@@ -621,9 +657,14 @@ def create_r3_app(  # noqa: PLR0913 - explicit wiring
                 name="Negotiate a purchase",
                 description=(
                     "Name a SKU or product; the shop quotes from its certified stock. "
-                    "Send a number to offer; the receipt names the exact unit."
+                    "Send a number to offer, or 'ok' to take the ask; the receipt "
+                    "names the exact unit, its grade claim and warranty."
                 ),
-                examples=["I want to buy 종가 알뜰맘 포기김치 10kg (G00001)", "52000"],
+                examples=[
+                    "I want to buy 종가 알뜰맘 포기김치 10kg (G00001)",
+                    "52000",
+                    "ok",
+                ],
                 tags=["shopping", "negotiation", "round-3"],
             )
         ],

@@ -376,11 +376,11 @@ class EventLedger:
         return str(row[0]) if row else None
 
     def set_value(self, key: str, value: str) -> None:
-        """Write one small shared setting."""
+        """Write one shared setting or a cached public document (bounded)."""
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db, db:
             _ = db.execute(
                 "INSERT OR REPLACE INTO kv(key, value) VALUES (?, ?)",
-                (key, value[:200]),
+                (key, value[:200_000]),
             )
 
     def summary(self, hours: float) -> dict[str, int]:

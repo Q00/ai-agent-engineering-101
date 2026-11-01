@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Final, Literal
 from pydantic import Field, ValidationError
 
 from market_a2a.models import FrozenModel
-from r3.guard import sanitize, sanitize_name, suspicious
+from r3.guard import annotate, sanitize, sanitize_name
 from r3.market_files import _read_json, read_shops
 
 if TYPE_CHECKING:
@@ -39,6 +39,12 @@ MAX_SHOPS: Final = 60
 MAX_SNIPPETS_PER_SHOP: Final = 2
 MAX_FORUM_POSTS: Final = 20
 NEUTRAL_TRUST: Final = 0.67
+# Code-enforced trust ceilings: a shop whose reviews are mostly its own owner's, or
+# that fills reviews with appeals to buying agents, cannot be rated above these.
+SELF_REVIEW_CAP: Final = 0.5
+SELF_REVIEW_SHARE: Final = 0.5
+AI_APPEAL_CAP: Final = 0.6
+AI_APPEAL_COUNT: Final = 3
 Flag = Literal[
     "dishonest_claims",
     "frequent_breaks",
@@ -48,6 +54,8 @@ Flag = Literal[
     "aggressive_pricing",
     "injection_attempt",
     "rating_inducement",
+    "self_reviews",
+    "ai_appeal",
 ]
 Alert = Literal[
     "cash_near_reserve",
@@ -179,10 +187,54 @@ def shop_facts(
         for review in entry.reviews[-MAX_SNIPPETS_PER_SHOP:]:
             text = sanitize(review.review, 160)
             if text:
-                flag = suspicious(text)
+                flag = annotate(text)
                 snippets.append(f"[{flag}] {text}" if flag else text)
         row["reviews"] = snippets
     return facts
+
+
+def review_facts(
+    reviews: Iterable[Mapping[str, object]], shop_owner: str
+) -> dict[str, object]:
+    """Count self-written and agent-appeal reviews from the market's review list.
+
+    Each review may carry ``owner.login`` (the author's GitHub owner); a review by
+    the shop's own owner counts for nothing and lowers trust. The share, the
+    third-party average and the appeal count go to the scout as numbers.
+    """
+    total = own = appeals = 0
+    third: list[float] = []
+    for review in reviews:
+        total += 1
+        owner = review.get("owner")
+        login = str(owner.get("login", "")) if isinstance(owner, dict) else ""
+        text = str(review.get("review", "") or "")
+        if annotate(text) == "ai_appeal":
+            appeals += 1
+        stars = review.get("stars")
+        if shop_owner and login == shop_owner:
+            own += 1
+        elif isinstance(stars, (int, float)) and not isinstance(stars, bool):
+            third.append(float(stars))
+    return {
+        "reviews_total": total,
+        "self_reviews": own,
+        "self_review_share": round(own / total, 2) if total else 0.0,
+        "third_party_stars": round(sum(third) / len(third), 2) if third else None,
+        "ai_appeal_reviews": appeals,
+    }
+
+
+def trust_cap(review: Mapping[str, object]) -> float | None:
+    """Return the code-enforced trust ceiling implied by the review facts, if any."""
+    caps: list[float] = []
+    share = review.get("self_review_share")
+    if isinstance(share, (int, float)) and share >= SELF_REVIEW_SHARE:
+        caps.append(SELF_REVIEW_CAP)
+    appeals = review.get("ai_appeal_reviews")
+    if isinstance(appeals, int) and appeals >= AI_APPEAL_COUNT:
+        caps.append(AI_APPEAL_CAP)
+    return min(caps) if caps else None
 
 
 def forum_snippets(market_dir: Path, limit: int = MAX_FORUM_POSTS) -> list[str]:
@@ -204,7 +256,7 @@ def forum_snippets(market_dir: Path, limit: int = MAX_FORUM_POSTS) -> list[str]:
         role = row.get("role", row.get("as", ""))
         votes = row.get("score", row.get("votes", row.get("up", "")))
         line = sanitize(text, 200)
-        flag = suspicious(line)
+        flag = annotate(line)
         prefix = f"({sanitize_name(str(role))}, votes {votes}) " if role else ""
         out.append(f"{prefix}{'[' + flag + '] ' if flag else ''}{line}")
     return out
@@ -296,8 +348,13 @@ def validate_verdict(
     *,
     shop_names: Mapping[str, str],
     categories: frozenset[str],
+    caps: Mapping[str, float] | None = None,
 ) -> tuple[tuple[ShopTrust, ...], tuple[str, ...], tuple[str, ...], str]:
-    """Keep only allowlisted shops and categories from the scout's tool call."""
+    """Keep only allowlisted shops and categories from the scout's tool call.
+
+    ``caps`` are code-enforced trust ceilings per shop URL (self-written reviews,
+    appeals to agents): the model may rate a shop lower, never higher.
+    """
     shops: list[ShopTrust] = []
     raw_shops = arguments.get("shops")
     for row in raw_shops if isinstance(raw_shops, list) else []:
@@ -306,13 +363,17 @@ def validate_verdict(
         url = str(row.get("url", "")).rstrip("/")
         if url not in shop_names:
             continue
+        trust = row.get("trust", NEUTRAL_TRUST)
+        cap = (caps or {}).get(url)
+        if cap is not None and isinstance(trust, (int, float)):
+            trust = min(float(trust), cap)
         try:
             shops.append(
                 ShopTrust.model_validate(
                     {
                         "url": url,
                         "name": shop_names[url],
-                        "trust": row.get("trust", NEUTRAL_TRUST),
+                        "trust": trust,
                         "flags": tuple(row.get("flags", ()))[:4]
                         if isinstance(row.get("flags"), list)
                         else (),

@@ -56,6 +56,7 @@ Round 3(11월 3일~11월 17일 23:59)에 올릴 가게와 buyer를 kit v4 위에
 |---|---|---|---|---|
 | `pick_unit` ([r3/seller.py](r3/seller.py)) | 코드 | 요청 문장, `inventory.json` | SKU·이름·카테고리로 맞는 unit (식품은 먼저 만료, 비식품은 오래된 것) | 다른 협상에 묶인 unit·방금 판 unit·만료 임박 제외 |
 | `quote`/`counter`/`decide` ([r3/pricing.py](r3/pricing.py)) | 정책표 | 원가·등급·나이·잔여수명 | 호가, 수락선, 바닥 | 호가 ≤ 정가, 청산 외엔 원가·(1+마진) 이상, 양보는 수락선까지만 |
+| `publish_ask` 메시지 ([r3/seller.py](r3/seller.py)) | 코드 | 호가·등급·보증·(검증된 답변) | 첫 줄 starter 템플릿, data part `{"ask": N}`, 숫자 없는 사실/답변 줄, 마지막에 `… ok to take the ask: N` | 어떤 파서(첫 줄·data part·마지막 숫자)도 호가를 읽음; 가운데 줄에 숫자 금지 |
 | 서명 영수증 | 코드 | 합의가·unit·claim·보증 | `{shop,item,price,task,unit,claim,warranty_hours,sig_seller}` | 정확한 합의가만 서명; cert는 항상 포함; 등급이 곧 바뀔 식품은 claim 생략 |
 | `choose` ([r3/buyer.py](r3/buyer.py)) | 코드 | `order.json` acceptable, `shops.json` offers, `catalog.json`, 자기 장부 | 가게×SKU | 점수 = 정가 × 증거 가중치 × 공개 별점 보정 |
 | `negotiate` | 정책표 | 상대 호가 | 2~4턴, 즉시 수락 또는 역제안 | 상한 = min(예산, 0.95×정가); 역제안은 상한 안에서만 증가; 우리가 제안·수락한 금액이 없는 완료 영수증과 상한 초과 영수증은 키트에 넘기지 않음 |
@@ -68,6 +69,7 @@ Round 3(11월 3일~11월 17일 23:59)에 올릴 가게와 buyer를 kit v4 위에
 | `write_picture` (Haiku 도구) | 모델 | 코드 집계 + untrusted 리뷰·게시판 | 가게 신뢰·플래그·핫 카테고리 | URL·카테고리 allowlist, 길이 제한, 경고는 코드만 |
 | `read_seller_message` / `read_buyer_message` ([r3/interpreter.py](r3/interpreter.py)) | 모델 | 상대 문장 1개(untrusted 블록) + 정가/호가 | 의도 enum + 정수 금액 | 금액은 1~3×정가, 수락선·예산·원가는 프롬프트에 없음, 2.5초, 협상당 횟수 제한 |
 | `guard.suspicious` / `sanitize` ([r3/guard.py](r3/guard.py)) | 코드 | 모든 외부 문장 | 스크린 사유 또는 None; 제어문자 제거·길이 제한 | 걸리면 모델 미호출: 바이어는 그 가게를 떠나 `suspicious` 기록(가중치 ×0.5), 판매자는 호가 유지→2회째 종료 |
+| `review_facts` / `trust_cap` ([r3/picture.py](r3/picture.py)) | 코드 | 시장 `/api/shop-reviews`(작성자 소유자 포함)·`/api/board`(가게 소유자) | 가게별 자기 리뷰 비중·제3자 평균 별점·AI 호소문 수, 신뢰 상한 | 자기 리뷰 ≥50% → 신뢰 ≤0.5, 호소문 ≥3 → ≤0.6. 모델은 그 아래로만 매길 수 있음. 30분·10분 캐시 |
 
 ## 2. 구조: 키트 기본형과의 차이 — [architecture.tex](architecture.tex) · [architecture.pdf](architecture.pdf)
 
@@ -135,6 +137,9 @@ Round 3(11월 3일~11월 17일 23:59)에 올릴 가게와 buyer를 kit v4 위에
 | 비용 고갈 공격(문장 폭탄으로 호출 유도) | 상대 메시지 | 협상당 읽기 횟수 제한(바이어 1·판매자 2), 3초 제한, 일일 달러 상한·시도 장부 | guard_and_layers |
 | 모델이 쓴 답변의 오염(숫자·링크·지시·약속) | 통역 출력 | `safe_answer`: 숫자 0개·링크 0개·스크린 통과·200자만 통과, 아니면 사실 템플릿. 가격 줄은 항상 코드가 작성 | prose_and_scout |
 | 문장 속 잡숫자를 호가로 오인("10kg or 5kg?") | 상대 메시지 | 외로운 숫자는 정가의 10% 이상일 때만 호가로 인정 | prose_and_scout |
+| 자작 리뷰로 만든 5점(11/1 shaun0927 분석: 최근 40건 중 36건이 자기 바이어 작성) | 공개 리뷰 | 리뷰 작성자 소유자 == 가게 소유자면 가중치 0, 비중 ≥50%면 코드가 신뢰 ≤0.5로 잠금 | prose_and_scout |
+| AI 바이어 대상 호소문("Note for buyer agents… Try it first") | 리뷰·게시판 | `guard.annotate`가 `[ai_appeal]` 표시, 3건 이상이면 신뢰 ≤0.6; 거래 중 스크린(이탈)에는 쓰지 않음(설득이지 공격이 아님) | guard·prose_and_scout |
+| 우리 메시지가 상대 파서에 안 읽힘("the shop never named a price") | 우리 판매자 출력 | 호가를 첫 줄 템플릿·data part `{"ask": N}`·마지막 숫자 세 곳에 쓰고 가운데 줄은 숫자 없이(보증 시간은 단어) | prose_and_scout |
 | 제어문자·태그 주입 | 모든 외부 문장 | `sanitize`: 제어·zero-width 제거, `</untrusted>` 닫는 태그 제거, 길이 제한 | guard 시험 |
 
 ## 4. 운영 전환 (사용자 승인 뒤 실행)### 4-1 라운드2 실측 (2026-10-31, VPS, kit v4)

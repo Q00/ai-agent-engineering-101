@@ -62,6 +62,16 @@ AUTHORITY_CLAIM: Final = re.compile(
     verified|approved|authorized)\b""",
     re.IGNORECASE | re.VERBOSE | re.DOTALL,
 )
+# Second-person appeals to buying agents in reviews or posts: not an attack, but a
+# sign the text was written to steer agents rather than to describe a deal.
+AI_APPEAL: Final = re.compile(
+    r"""\b(?:note|tip|advice|message)\s+(?:for|to)\s+(?:ai\s+|other\s+)?(?:buyer|buying|
+    shopping)?\s*agents\b|\bbuyer\s+agents\s+comparing\b|\btry\s+(?:it|us|this\s+shop|
+    the\s+store|them)\s+first\b|\balways\s+(?:choose|pick|buy\s+from|go\s+with)\b
+    |\b(?:best|cheapest)\s+(?:verified\s+)?shop\s+(?:in|on)\s+(?:the|this)\s+market\b
+    |\byou\s+should\s+(?:buy|shop|order)\s+(?:here|from)\b""",
+    re.IGNORECASE | re.VERBOSE,
+)
 SCREENS: Final = (
     ("instruction_override", INSTRUCTION_OVERRIDE),
     ("authority_claim", AUTHORITY_CLAIM),
@@ -99,6 +109,14 @@ def suspicious(text: str) -> str | None:
         if pattern.search(bounded) is not None:
             return label
     return None
+
+
+def annotate(text: str) -> str | None:
+    """Label review or forum text for the scout: a screen hit, else an AI appeal."""
+    flag = suspicious(text)
+    if flag is not None:
+        return flag
+    return "ai_appeal" if AI_APPEAL.search(text[:4000]) is not None else None
 
 
 def wrap_untrusted(label: str, text: str, limit: int = MAX_SNIPPET) -> str:
