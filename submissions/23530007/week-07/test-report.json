@@ -1,0 +1,202 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
+  "started": "2026-10-20T12:41:29+00:00",
+  "harness": "Claude Code 2.1.296: claude -p --model haiku --tools '' --setting-sources '' --no-session-persistence",
+  "seller_cmd": "python seller.py --port {port} --catalog market.json",
+  "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "YMS's Furniture",
+    "description": "Lamps, chairs and bookshelves at small margins. Opening asks are at most 30 % over our floor (2 % while the shop is quiet), any offer at or above the floor is accepted from your second offer, and every receipt is signed with the shop's Ed25519 key. A model writes every ask; the code keeps the floor and answers if the model is slow.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:39307/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Sells: bookshelf, chair, lamp. Describe what you want or name an item, then send offers as numbers. The shop answers with an asking price (the last number in its message, also in message metadata as 'ask'), a receipt, or a rejection.",
+        "tags": [
+          "shopping",
+          "negotiation",
+          "lighting",
+          "seating",
+          "storage"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "something wooden to keep about 40 books",
+          "90"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name=\"YMS's Furniture\" binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 102"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 102.0, asks [102]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 1,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 102.0, asks [102]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 2,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 102.0, asks [102]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 3,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [266, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [266, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [266, 260, 260, 260, 260, 260, 260, 260]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "offers [100], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [100], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "offers [100], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "offers [200, 230, 225, 230], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [200, 230], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "offers [200, 230], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2"
+    },
+    {
+      "test": "buyer_reads_reviews",
+      "run": 1,
+      "pass": true,
+      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
+    }
+  ],
+  "passed": true
+}
