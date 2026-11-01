@@ -39,7 +39,8 @@
 \draw[d] (rs.north) to[out=90,in=0] (market.east) ;
 \draw[d] (fb) -- (h); \draw[d] (fs) -- (h);
 \begin{scope}[on background layer]
-\node[fit=(mb)(rv)(sl)(rs),draw=blue!40,rounded corners,inner sep=5pt,label={[blue!60!black,font=\scriptsize]above left:my agents (week-08)}] {};
+\node[fit=(mb)(rv)(sl)(rs),draw=blue!40,rounded corners,inner sep=5pt] (frame) {};
+\node[blue!60!black,font=\scriptsize,below=2mm of h] {my agents (week-08): blue = mine, grey = kit v4 unchanged, dashed = files};
 \end{scope}
 \end{tikzpicture}
 \end{document}
