@@ -18,6 +18,8 @@ from urllib.parse import urlsplit
 import httpx
 
 from harness import HarnessError, buyer_decision, decide, parse_object
+from inventory import read_json
+from payment_memory import recent_jsonl, reconcile
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -58,27 +60,49 @@ def read_shops(path):
     return shops
 
 
-def read_memory(path):
-    if not path.exists():
-        return []
-    records = []
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        if not line.strip():
-            continue
-        record = json.loads(line)
-        if not isinstance(record, dict) or not isinstance(record.get("name"), str):
-            raise BuyerError(f"Invalid memory record on line {number}")
-        records.append(record)
-    return records
+def read_memory(path, payments=None):
+    records = recent_jsonl(path)
+    if any(not isinstance(r.get("name"), str) for r in records):
+        raise BuyerError("Invalid shop name in memory")
+    return reconcile(records, recent_jsonl(payments)) if payments else records
+
+
+def stocked_shops(shops, order):
+    """Keep only offered SKUs allowed by THIS order; never infer stock from prose."""
+    acceptable = set(order.get("acceptable") or [])
+    if not acceptable:
+        raise BuyerError("Round 3 order has no acceptable SKUs")
+    result = []
+    for shop in shops:
+        offers = [o for o in shop.get("offers", []) if isinstance(o, dict)
+                  and o.get("sku") in acceptable and type(o.get("qty")) is int and o["qty"] > 0]
+        if offers:
+            result.append({**shop, "offers": offers[:5]})
+    if not result:
+        raise BuyerError("No shop offers an acceptable SKU in stock")
+    return result
+
+
+def acceptance(order):
+    policy = {"cert": True}
+    if order.get("kind") == "food":
+        hours = order.get("use_within_hours")
+        if type(hours) not in (int, float) or not math.isfinite(hours) or hours < 0:
+            raise BuyerError("Invalid food use_within_hours")
+        # Small checkout-time margin; grade/warranty preferences remain future experiments.
+        policy["min_hours_left"] = hours + 1 / 60
+    return policy
 
 
 def shop_evidence(shop, memory):
-    """Bound prompt size while keeping counts of older negative experiences."""
+    """Bound prompt size; counts cover the recent local memory window only."""
     reviews = [r for r in shop.get("reviews", [])[:10] if isinstance(r, dict)]
     own = [r for r in memory if r["name"] == shop["name"]]
     stars = [r["stars"] for r in reviews if type(r.get("stars")) is int and 1 <= r["stars"] <= 5]
     return {
         "name": shop["name"],
+        "offers": [{"sku": o["sku"], "name": str(o.get("name", ""))[:160], "qty": o["qty"]}
+                   for o in shop.get("offers", [])[:5]],
         "reviews": {
             "count": len(reviews),
             "low_star_count": sum(s <= 2 for s in stars),
@@ -90,7 +114,11 @@ def shop_evidence(shop, memory):
         },
         "own_memory": {
             "trades": len(own),
-            "purchased": sum(r.get("result") == "purchased" for r in own),
+            "scope": "recent 2000 records / 2 MB, not lifetime",
+            "settled": sum(r.get("result") == "settled" for r in own),
+            "payment_refused": sum(r.get("result") == "payment_refused" for r in own),
+            "pending_receipts": sum(r.get("result") == "receipt_issued" for r in own),
+            "round2_agreements": sum(r.get("result") == "purchased" for r in own),
             "receipt_mismatches": sum(r.get("result") == "receipt_mismatch" for r in own),
             "no_deal": sum(r.get("result") == "no_deal" for r in own),
             "errors": sum(r.get("result") == "error" for r in own),
@@ -116,6 +144,9 @@ def choose_shop(shops, memory, *, item, budget, deadline):
                 decision = parse_object(output)
                 if not isinstance(decision.get("name"), str) or decision["name"] not in names:
                     raise HarnessError("Choose one exact name from the supplied candidates")
+                selected = next(s for s in batch if s["name"] == decision["name"])
+                if selected["offers"] and decision.get("sku") not in {o["sku"] for o in selected["offers"]}:
+                    raise HarnessError("Choose a SKU from this shop's offered items")
                 return decision
 
             remaining = deadline - time.monotonic()
@@ -127,7 +158,8 @@ def choose_shop(shops, memory, *, item, budget, deadline):
             log("SHOP SELECTION", choice)
             finalists.append(next(s for s in batch if s["name"] == choice["name"]))
         if len(finalists) == 1:
-            return next(s for s in shops if s["name"] == finalists[0]["name"]), choice["reason"]
+            shop = next(s for s in shops if s["name"] == finalists[0]["name"])
+            return {**shop, "selected_sku": choice.get("sku")}, choice["reason"]
         candidates = finalists
 
 
@@ -143,9 +175,15 @@ def message_text(task):
 
 
 def last_asking_price(text):
-    """Our text contract writes the seller's asking price as the last number."""
-    numbers = re.findall(r"-?\d+(?:\.\d+)?", text)
-    return float(numbers[-1]) if numbers else None
+    """Read a labelled quote, never a SKU, warranty duration or expiry timestamp."""
+    matches = re.findall(r"(?:asking(?: price)?|counteroffer|price|quote)\s*(?:is\s*)?[:=]?\s*"
+                         r"[₩$]?\s*([0-9][0-9,]*(?:\.[0-9]+)?)", text, re.IGNORECASE)
+    values = {float(value.replace(",", "")) for value in matches}
+    if len(values) == 1:
+        return values.pop()
+    if not matches and re.fullmatch(r"\s*[0-9]+\s*", text):
+        return float(text)
+    return None
 
 
 class Buyer:
@@ -272,7 +310,7 @@ class Buyer:
             raise ReceiptMismatch("Receipt task differs from the negotiation taskId")
         # Keep the exact data Part, including sig_seller and unknown extra fields.
         self.receipt = self.observed_receipt
-        log("PURCHASE", {"item": self.item, "price": price,
+        log("RECEIPT RECEIVED — NOT PAYMENT", {"item": self.item, "price": price,
                          "budget": self.budget, "taskId": self.task_id})
 
     def run(self):
@@ -300,7 +338,7 @@ class Buyer:
                 self.history.append({"role": "seller", "text": text})
             if state == "TASK_STATE_COMPLETED":
                 self.verify_receipt(task)
-                return "purchased"
+                return "receipt_issued"
             if state in {"TASK_STATE_REJECTED", "TASK_STATE_CANCELED"}:
                 log("NO DEAL", {"state": state, "taskId": self.task_id})
                 return "no_deal"
@@ -312,8 +350,10 @@ class Buyer:
                 raise BuyerError(f"Cannot negotiate in seller state {state}: {text}")
             if decisions >= MAX_DECISIONS:
                 raise BuyerError("Operational decision limit reached; no invented fallback")
+            compact = self.history[:1] + self.history[-6:] if len(self.history) > 7 else self.history
             decision = buyer_decision(item=self.item, budget=self.budget,
-                                      seller_message=text, history=list(self.history),
+                                      seller_message=text[:1600],
+                                      history=[{"role": h["role"], "text": h["text"][-400:]} for h in compact],
                                       timeout=min(90, self.remaining()))
             decisions += 1
             log("BUYER DECISION", decision)
@@ -329,7 +369,7 @@ class Buyer:
             task = self.send(str(self.authorized_price))
 
 
-def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client):
+def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client, order=None):
     buyer = Buyer(client, url=shop["url"], item=item, budget=budget, seconds=seconds)
     detail = ""
     try:
@@ -338,10 +378,10 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
         outcome, detail = "receipt_mismatch", str(exc)
     except (BuyerError, HarnessError) as exc:
         outcome, detail = "error", str(exc)
-    if outcome == "purchased":
-        stars, review = 5, f"Bought {item} at {buyer.receipt['price']}; receipt matched my authorized offer within budget {budget}."
+    if outcome == "receipt_issued":
+        stars, review = 3, f"Agreed {item} at {buyer.receipt['price']}; receipt matched. Payment checked by kit afterwards."
     elif outcome == "no_deal":
-        stars, review = 3, f"No deal for {item} within budget {budget}; no completed purchase."
+        stars, review = 3, f"No deal for {item}; no completed purchase."
     elif outcome == "receipt_mismatch":
         stars, review = 1, f"Receipt mismatch: {detail}"
     else:
@@ -352,13 +392,15 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
         "price": buyer.receipt["price"] if buyer.receipt else None,
         "result": outcome, "detail": detail, "selection_reason": reason,
         "authorized_price": buyer.authorized_price,
+        "order": (order or {}).get("order"), "round": (order or {}).get("round", 2),
         "observed_receipt": buyer.observed_receipt,
         "stars": stars, "review": review,
     }
     memory_path.parent.mkdir(parents=True, exist_ok=True)
     with memory_path.open("a", encoding="utf-8") as out:
         out.write(json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n")
-    return {"shop": shop["url"], "receipt": buyer.receipt, "stars": stars, "review": review}
+    return {"shop": shop["url"], "receipt": buyer.receipt, "stars": stars, "review": review,
+            **({"accept": acceptance(order)} if order and order.get("round", 0) >= 3 else {})}
 
 
 def main(argv=None):
@@ -366,6 +408,7 @@ def main(argv=None):
     parser.add_argument("--shops", type=Path, required=True)
     parser.add_argument("--item", required=True)
     parser.add_argument("--budget", type=int, required=True)
+    parser.add_argument("--order", type=Path)
     parser.add_argument("--memory", type=Path, default=ROOT / "data" / "market-memory.jsonl")
     args = parser.parse_args(argv)
     if args.budget <= 0:
@@ -374,14 +417,20 @@ def main(argv=None):
     exit_code = 0
     try:
         deadline = time.monotonic() + RUN_SECONDS
-        shops, memory = read_shops(args.shops), read_memory(args.memory)
+        order = read_json(args.order) if args.order else {}
+        if order and (order.get("item") != args.item or order.get("budget") != args.budget):
+            raise BuyerError("Order file and command arguments disagree")
+        shops, memory = read_shops(args.shops), read_memory(args.memory, args.shops.parent / "payments.jsonl")
+        if order.get("round", 0) >= 3:
+            acceptance(order)  # validate food policy BEFORE negotiating
+            shops = stocked_shops(shops, order)
         shop, reason = choose_shop(shops, memory, item=args.item, budget=args.budget,
                                    deadline=min(deadline, time.monotonic() + 90))
         result["shop"] = shop["url"]
         with httpx.Client(trust_env=False) as client:
-            result = trade_and_record(shop, item=args.item, budget=args.budget,
+            result = trade_and_record(shop, item=shop.get("selected_sku") or args.item, budget=args.budget,
                                       memory_path=args.memory, reason=reason,
-                                      seconds=deadline - time.monotonic(), client=client)
+                                      seconds=deadline - time.monotonic(), client=client, order=order)
     except (BuyerError, HarnessError, OSError, ValueError) as exc:
         result["review"] = f"Buyer could not complete the order: {exc}"
         exit_code = 1
