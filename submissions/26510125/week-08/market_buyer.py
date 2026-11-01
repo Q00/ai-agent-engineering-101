@@ -226,7 +226,7 @@ def main():
     log(f"market_buyer · {args.item} budget {args.budget} · {len(shops)} shops · memory {MEMORY} "
         f"({len(mem['shops'])} shops remembered) · harness: {harness.COMMAND}")
     order, md, request, offer = {}, None, None, None
-    if args.order:
+    if args.order and Path(args.order).is_file():      # the week-07 test passes the literal '{order}'
         order = json.loads(Path(args.order).read_text(encoding="utf-8"))
         md = Path(args.order).parent
     if order.get("acceptable"):
