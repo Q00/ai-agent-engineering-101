@@ -36,8 +36,8 @@ if TYPE_CHECKING:
 PICTURE_ENV: Final = "AX_R3_PICTURE"
 PICTURE_FILE: Final = "r3-picture.json"
 MAX_SHOPS: Final = 60
-MAX_SNIPPETS_PER_SHOP: Final = 4
-MAX_FORUM_POSTS: Final = 30
+MAX_SNIPPETS_PER_SHOP: Final = 2
+MAX_FORUM_POSTS: Final = 20
 NEUTRAL_TRUST: Final = 0.67
 Flag = Literal[
     "dishonest_claims",
@@ -177,7 +177,7 @@ def shop_facts(
         row["stars"] = stars[:50]
         snippets: list[str] = []
         for review in entry.reviews[-MAX_SNIPPETS_PER_SHOP:]:
-            text = sanitize(review.review, 200)
+            text = sanitize(review.review, 160)
             if text:
                 flag = suspicious(text)
                 snippets.append(f"[{flag}] {text}" if flag else text)
@@ -203,7 +203,7 @@ def forum_snippets(market_dir: Path, limit: int = MAX_FORUM_POSTS) -> list[str]:
             continue
         role = row.get("role", row.get("as", ""))
         votes = row.get("score", row.get("votes", row.get("up", "")))
-        line = sanitize(text, 240)
+        line = sanitize(text, 200)
         flag = suspicious(line)
         prefix = f"({sanitize_name(str(role))}, votes {votes}) " if role else ""
         out.append(f"{prefix}{'[' + flag + '] ' if flag else ''}{line}")

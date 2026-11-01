@@ -82,6 +82,9 @@ if TYPE_CHECKING:
 LOGGER: Final = logging.getLogger("r3.manager")
 PULL_EVERY: Final = 30.0
 SCOUT_EVERY: Final = 300.0
+# Numbers and alerts refresh every scout tick; the model reads reviews and forum text
+# every other tick (they change slowly, and the call is the largest cost item).
+SCOUT_MODEL_EVERY: Final = 600.0
 TACTICAL_EVERY: Final = 600.0
 STRATEGY_EVERY: Final = 3600.0
 STRATEGY_MIN_GAP: Final = 600.0
@@ -486,11 +489,11 @@ class Manager:
         )
         return picture, facts
 
-    async def scout(self) -> Picture:
+    async def scout(self, *, use_model: bool = True) -> Picture:
         """Write the picture: code facts always, model verdicts when a key exists."""
         previous = load_picture(self.picture_file)
         picture, facts = self.code_picture(previous)
-        client = self.client()
+        client = self.client() if use_model else None
         if client is None or not facts:
             save_picture(self.picture_file, picture)
             return picture
@@ -536,8 +539,10 @@ class Manager:
                     "Record shop trust verdicts and hot categories.",
                     picture_schema(names, categories),
                 ),
-                max_tokens=3000,
-                deadline_seconds=60,
+                # thinking shares this budget with the tool JSON; 3,000 truncated
+                # 12 of 14 calls in the 2026-11-01 trial (output stopped at the cap).
+                max_tokens=8000,
+                deadline_seconds=90,
                 effort="low",
                 summary="scout picture",
             )
@@ -876,7 +881,10 @@ class Manager:
             posted = await anyio.to_thread.run_sync(self.post_forum)
             if posted:
                 LOGGER.info("forum_queued=%s", ",".join(posted))
-            picture = await self.scout()
+            use_model = now - self.stamp("scout_model_last_at") >= SCOUT_MODEL_EVERY
+            if use_model:
+                self.mark("scout_model_last_at", now)
+            picture = await self.scout(use_model=use_model)
         if now - self.stamp("tactical_last_at") >= TACTICAL_EVERY:
             self.mark("tactical_last_at", now)
             _ = await self.tactical()

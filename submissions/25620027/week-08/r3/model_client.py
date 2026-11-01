@@ -217,10 +217,18 @@ class ModelClient:
             int(usage.completion_tokens) if usage else 0,
         )
         arguments: str | None = None
-        for call in completion.choices[0].message.tool_calls or []:
+        choice = completion.choices[0]
+        for call in choice.message.tool_calls or []:
             if call.type == "function" and call.function.name == request.tool_name:
                 arguments = call.function.arguments
                 break
+        if arguments is None:
+            LOGGER.info(
+                "model_no_tool_call role=%s finish=%s output_tokens=%s",
+                request.role,
+                getattr(choice, "finish_reason", None),
+                tokens[1],
+            )
         self._log(
             request, chosen, started, tokens, digest, accepted=arguments is not None
         )
