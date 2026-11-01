@@ -98,7 +98,7 @@ private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 �
 
 - 설치: 같은 `stage_server.py` 절차(tarball 해시·MANIFEST 80개·키트 v4 해시 검증 → `ax-week08-25620027:573394c-prepared` 빌드 → 네트워크 없는 QA 컨테이너에서 회귀 **438개 PASS** → 프리플라이트). 결과 `releases/573394c8fc50/evidence/result.json`. 번들은 `git archive HEAD`로 추적 파일만 묶어 만들었다(Codex의 미추적 `deploy/observer_hourly/`는 이미지에 들어가지 않음).
 - `private/model-market.env`에 추가한 키(값은 적지 않음): `AX_R3_STRATEGY_MODEL`(claude-sonnet-5-5), `AX_R3_TACTICAL_MODEL`(claude-haiku-5-5), `AX_R3_DAILY_USD`(3), `AX_R3_TRADE_MODEL`(1). `ANTHROPIC_MODEL`은 Haiku 고정이며 런처 `validate_model_roles`가 두 역할 모델이 승인 목록(haiku/sonnet/opus 5.5) 안인지, 상한이 0.1~50달러인지 검사한다.
-- 역할별 게이트: 느린 루프(정찰 5분·전술 10분·전략 60분+경고)는 `AX_R3_MANAGER_MODEL=1`일 때만, 거래 안 통역은 `AX_R3_TRADE_MODEL=1`일 때만 모델을 부른다. 라운드2 시험 중에는 관리자 OFF·통역 ON으로 실측을 모은다. 11/3 00:05 KST `switch-r3.sh 573394c8fc50`이 관리자를 켠다.
+- 역할별 게이트: 느린 루프(정찰 5분·전술 15분·전략 30분+경고; 11/1 사용자 결정)는 `AX_R3_MANAGER_MODEL=1`일 때만, 거래 안 통역은 `AX_R3_TRADE_MODEL=1`일 때만 모델을 부른다. 라운드2 시험 중에는 관리자 OFF·통역 ON으로 실측을 모은다. 11/3 00:05 KST `switch-r3.sh 573394c8fc50`이 관리자를 켠다.
 - 모델 호출 기록: `/data/r3/r3-events.sqlite`의 `model_decisions`(역할·모델·지연·토큰·USD·채택·입력 해시)·`model_spend`(KST 일별 USD)·`policy_changes`(누가·어느 층·필드·전후·사유·만료·채택). 상황판은 `/data/r3/r3-picture.json`. 모두 보존 대상.
 - 런처가 넣는 경로에 `AX_R3_PICTURE=/data/r3/r3-picture.json`이 추가됐다. 크론은 `/etc/cron.d/ax-week08-r3`의 두 줄을 `573394c8fc50`으로 갱신했다(switch·health).
 - 교체: `launch-r3.sh 573394c8fc50`으로 라운드2 시험 컨테이너를 새 이미지로 재기동했다. 같은 키라 같은 가게·buyer로 재등록된다.

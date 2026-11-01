@@ -4,7 +4,7 @@ One process beside the kit. Every 30 s it pulls the public ledger forward. Every
 5 minutes the **scout** (Haiku) turns code-computed shop facts plus untrusted review
 and forum text into a validated market picture and posts our forum lines. Every
 10 minutes the **tactical** layer (Haiku) may move at most three tactical policy
-fields inside the bands the strategy set, for one hour. Every 60 minutes, or when
+fields inside the bands the strategy set, for one hour. Every 30 minutes, or when
 the numbers raise an alert (at most two extra calls an hour), the **strategy**
 layer (Sonnet) reviews a day of results and rewrites the strategy fields and the
 bands. One owner per field, every change logged with its reason and whether code
@@ -82,11 +82,11 @@ if TYPE_CHECKING:
 LOGGER: Final = logging.getLogger("r3.manager")
 PULL_EVERY: Final = 30.0
 SCOUT_EVERY: Final = 300.0
-# Numbers and alerts refresh every scout tick; the model reads reviews and forum text
-# every other tick (they change slowly, and the call is the largest cost item).
-SCOUT_MODEL_EVERY: Final = 600.0
-TACTICAL_EVERY: Final = 600.0
-STRATEGY_EVERY: Final = 3600.0
+# Cadences set by the user on 2026-11-01 after the live trial: scout model every
+# 5 min, tactical every 15 min, strategy every 30 min (~$1.5 a day at trial prices).
+SCOUT_MODEL_EVERY: Final = 300.0
+TACTICAL_EVERY: Final = 900.0
+STRATEGY_EVERY: Final = 1800.0
 STRATEGY_MIN_GAP: Final = 600.0
 ALERT_CALLS_PER_HOUR: Final = 2
 OSCILLATION_WINDOW: Final = 1800.0
@@ -113,8 +113,8 @@ PROMPT: Final = (
     "appears. Use the set_strategy tool once; an empty change map keeps the policy."
 )
 TACTICAL_PROMPT: Final = (
-    "You run the ten-minute tactical adjustment for one shop and one buyer agent in "
-    "a simulated market. You may change at most three tactical fields, each inside "
+    "You run the fifteen-minute tactical adjustment for one shop and one buyer agent "
+    "in a simulated market. You may change at most three tactical fields, each inside "
     "the band shown for it, and the change lasts one hour. Read the last hour: our "
     "receipts and settlements, refusals, negotiation rounds, the scout picture. "
     "Typical moves: raise concession or lower accept_margin when buyers walk away; "

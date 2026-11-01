@@ -10,7 +10,7 @@
 \begin{document}
 \begin{center}
 {\Large\bfseries Two-speed market agent with four model roles — student 25620027, Round 3 on kit v4}\\[2pt]
-{\small Seconds: a deterministic trade loop over the kit's real stock, driven by a two-layer policy table; Haiku reads only the sentences the rules cannot. Minutes: a Haiku scout and a Haiku tactical layer. Hour: a Sonnet strategy layer. Dashed = kit v4, unchanged. Solid = this submission. Every counterpart sentence is data behind a guard.}
+{\small Seconds: a deterministic trade loop over the kit's real stock, driven by a two-layer policy table; Haiku reads only the sentences the rules cannot. Minutes: a Haiku scout (5) and a Haiku tactical layer (15). Half-hour: a Sonnet strategy layer. Dashed = kit v4, unchanged. Solid = this submission. Every counterpart sentence is data behind a guard.}
 \end{center}
 \begin{center}
 \begin{tikzpicture}[
@@ -35,15 +35,15 @@
 \node[box] (seller) at (7.6,-2.4) {\textbf{Stock seller} (A2A, milliseconds)\\ \scriptsize find unit by SKU / name / category, FEFO\\ \scriptsize quote(cost, grade, age); accept at cost$\cdot$(1+m)\\ \scriptsize counter toward it; receipt: unit, claim, warranty};
 \node[box] (buyer) at (7.6,-5.0) {\textbf{Fast buyer} (one order $\le$ 18 s)\\ \scriptsize rank shop$\times$SKU by list $\times$ evidence $\times$ trust\\ \scriptsize 2--4 turns; cap = min(budget, 0.95$\cdot$list)\\ \scriptsize accept: cert, shelf life $\ge$ need, grades A/B};
 \node[box] (hooks) at (7.6,-7.6) {\textbf{Hooks} (restock 60 s; review per deal)\\ \scriptsize breadth first: 720 h food, mid-price A goods\\ \scriptsize replenish what sold, follow settled demand\\ \scriptsize + hot categories; keep the cash reserve};
-\node[guard] (guard) at (7.6,-9.9) {\textbf{Guard + prose readers}\\ \scriptsize claude-haiku-5-5, 2.5 s, once or twice per talk\\ \scriptsize screens before parsing: injection, authority,\\ \scriptsize payment redirect, fake settlement, rating bait\\ \scriptsize prose $\to$ intent + number; replies are templates};
+\node[guard] (guard) at (7.6,-9.9) {\textbf{Guard + prose readers}\\ \scriptsize claude-haiku-5-5, 3 s, once or twice per talk\\ \scriptsize screens before parsing: injection, authority,\\ \scriptsize payment redirect, fake settlement, rating bait\\ \scriptsize prose $\to$ intent + number (+ digit-free answer\\ \scriptsize from a fact sheet); price lines are templates};
 % ---------------- column 3: memory and policy
 \node[mem] (ledger) at (15.2,-2.4) {\textbf{Public-ledger mirror} (verified)\\ \scriptsize GET /api/ledger?after=seq, 30 s, SQLite\\ \scriptsize settles per category / SKU, price-to-list,\\ \scriptsize break rate per grade, our settle counts};
 \node[mem] (events) at (15.2,-5.0) {\textbf{Own event ledger} (observed)\\ \scriptsize buyer attempts (incl. suspicious); payments\\ \scriptsize synced; signed receipts; policy-change log;\\ \scriptsize model decisions: latency, tokens, USD/day};
 \node[pol] (policy) at (15.2,-7.6) {\textbf{Policy table} (derived, bounded, two layers)\\ \scriptsize strategy fields + bands (Sonnet)\\ \scriptsize tactical overlay $\le$ 3 fields, 60 min (Haiku)\\ \scriptsize one owner per field; reason + 2 old versions};
 \node[mem] (picture) at (15.2,-9.9) {\textbf{Market picture} (derived, allowlisted)\\ \scriptsize shop trust 0--1, flags, hot / cold categories\\ \scriptsize alerts from numbers only: cash, no sales,\\ \scriptsize refusals, undercut, empty stock};
 % ---------------- column 4: the slow loops
-\node[model] (strategy) at (22.4,-2.4) {\textbf{Strategy}\\ \scriptsize claude-sonnet-5-5, every 60 min + alerts\\ \scriptsize 6 h / 24 h summaries, picture, tactical results\\ \scriptsize set\_strategy: $\le$ 6 owned fields + bands\\ \scriptsize code refuses tactical fields, versions, rolls back};
-\node[model] (tactical) at (22.4,-5.0) {\textbf{Tactical}\\ \scriptsize claude-haiku-5-5, every 10 min\\ \scriptsize 1 h results + picture\\ \scriptsize set\_tactical: $\le$ 3 of 9 fields inside bands,\\ \scriptsize valid 60 min; no reversal within 30 min};
+\node[model] (strategy) at (22.4,-2.4) {\textbf{Strategy}\\ \scriptsize claude-sonnet-5-5, every 30 min + alerts\\ \scriptsize 6 h / 24 h summaries, picture, tactical results\\ \scriptsize set\_strategy: $\le$ 6 owned fields + bands\\ \scriptsize code refuses tactical fields, versions, rolls back};
+\node[model] (tactical) at (22.4,-5.0) {\textbf{Tactical}\\ \scriptsize claude-haiku-5-5, every 15 min\\ \scriptsize 1 h results + picture\\ \scriptsize set\_tactical: $\le$ 3 of 9 fields inside bands,\\ \scriptsize valid 60 min; no reversal within 30 min};
 \node[model] (scout) at (22.4,-7.6) {\textbf{Scout}\\ \scriptsize claude-haiku-5-5, every 5 min\\ \scriptsize code facts per shop + reviews, forum text\\ \scriptsize in untrusted blocks $\to$ write\_picture\\ \scriptsize (URLs, categories pinned to market lists)};
 % ---------------- market <-> kit / ledger
 \draw[dashed,<->] (market.south-|kit.north) -- node[lbl,right]{orders, settle, supply} (kit.north);

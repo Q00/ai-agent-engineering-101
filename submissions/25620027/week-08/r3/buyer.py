@@ -167,8 +167,12 @@ def choose(  # noqa: PLR0913 - ranking needs every evidence source
     return best
 
 
-def seller_ask(task: Task) -> int | None:
-    """Read the seller's ask from metadata or text; None when it named none."""
+def seller_ask(task: Task, floor: int = 0) -> int | None:
+    """Read the seller's ask from metadata or text; None when it named none.
+
+    A lone number in prose counts only when it is at least ``floor`` (a tenth of
+    the list price): "10kg or 5kg?" is a question, not an ask of 10.
+    """
     known = task.asking_price()
     if known is not None:
         return known
@@ -182,7 +186,9 @@ def seller_ask(task: Task) -> int | None:
         if matched is not None:
             return int(matched[1])
     numbers = NUMBER.findall(text.split("\n", 1)[0])
-    return int(numbers[0]) if len(numbers) == 1 else None
+    if len(numbers) != 1 or int(numbers[0]) < floor:
+        return None
+    return int(numbers[0])
 
 
 def receipt_from(task: Task) -> dict[str, object] | None:
@@ -224,6 +230,7 @@ async def negotiate(  # noqa: PLR0913, C901 - one negotiation, explicit inputs
     emit: Callable[[str], None],
     clock: Callable[[], float] = time.monotonic,
     reader: ModelClient | None = None,
+    order: Order | None = None,
 ) -> tuple[Task, int | None]:
     """Two to four turns: open, read the ask, accept or counter, never above cap.
 
@@ -241,6 +248,7 @@ async def negotiate(  # noqa: PLR0913, C901 - one negotiation, explicit inputs
     task = await remote.send(endpoint, choice.request)
     my_offer: int | None = None
     reads = 0
+    reply = ""
     for round_number in range(policy.max_rounds + 1):
         state = task.status.state
         if state == "TASK_STATE_COMPLETED":
@@ -251,10 +259,10 @@ async def negotiate(  # noqa: PLR0913, C901 - one negotiation, explicit inputs
         flag = suspicious(task.observation())
         if flag is not None:
             raise SuspiciousCounterpartError(flag)
-        ask = seller_ask(task)
+        ask = seller_ask(task, floor=int(choice.list_price * 0.1))
         if ask is None and reads < 1:
             reads += 1
-            ask, stop = await prose_ask(reader, task, choice, emit)
+            ask, stop, reply = await prose_ask(reader, task, choice, emit, order)
             if stop:
                 return task, None
         reference = choice.list_price if choice.list_price > 0 else budget
@@ -280,23 +288,55 @@ async def negotiate(  # noqa: PLR0913, C901 - one negotiation, explicit inputs
         emit(
             f"[R3 BUYER] round={round_number + 1} ask={ask} offer={my_offer} cap={cap}"
         )
-        task = await remote.send(endpoint, str(my_offer), task)
+        # A screened, digit-free answer to the seller's question rides in front of
+        # the offer; the offer keyword keeps every seller's number parser working.
+        message = f"{reply} My offer: {my_offer}" if reply else str(my_offer)
+        reply = ""
+        task = await remote.send(endpoint, message, task)
     return task, my_offer if task.status.state == "TASK_STATE_COMPLETED" else None
 
 
+def order_facts(choice: Choice, order: Order | None) -> dict[str, object]:
+    """Return the only facts a model may answer a seller from; never budget or cap."""
+    facts: dict[str, object] = {
+        "item": choice.name,
+        "sku": choice.sku,
+        "quantity": 1,
+        "needs": "the market certificate attached to the unit",
+    }
+    if order is not None:
+        if order.kind == "food" and order.use_within_hours is not None:
+            facts["needs_shelf_life"] = (
+                f"at least {order.use_within_hours:g} hours left at settlement"
+            )
+        if order.kind == "goods":
+            facts["accepts_grades"] = "A or B"
+    return facts
+
+
 async def prose_ask(
-    reader: ModelClient | None, task: Task, choice: Choice, emit: Callable[[str], None]
-) -> tuple[int | None, bool]:
-    """Read a seller's prose once; return (ask, stop). Screened text raises."""
+    reader: ModelClient | None,
+    task: Task,
+    choice: Choice,
+    emit: Callable[[str], None],
+    order: Order | None = None,
+) -> tuple[int | None, bool, str]:
+    """Read a seller's prose once; return (ask, stop, reply). Screened text raises."""
     read = await read_seller_message(
-        reader, task.observation(), item=choice.name, list_price=choice.list_price
+        reader,
+        task.observation(),
+        item=choice.name,
+        list_price=choice.list_price,
+        facts=order_facts(choice, order),
     )
     if read is None:
-        return None, False
-    emit(f"[R3 BUYER] read intent={read.intent} ask={read.ask}")
+        return None, False, ""
+    emit(
+        f"[R3 BUYER] read intent={read.intent} ask={read.ask} reply={bool(read.reply)}"
+    )
     if read.intent == "suspicious":
         raise SuspiciousCounterpartError(read.screened)
-    return read.ask, read.intent == "reject"
+    return read.ask, read.intent == "reject", read.reply
 
 
 def price_cap(choice: Choice, budget: int, policy: BuyerPolicy) -> int:
@@ -418,6 +458,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
                     emit=emit,
                     clock=time.monotonic,
                     reader=reader,
+                    order=order,
                 )
                 task_state = task.status.state
                 if task_state == "TASK_STATE_COMPLETED":

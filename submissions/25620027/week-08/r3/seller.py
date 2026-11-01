@@ -315,15 +315,18 @@ class R3Seller(AgentExecutor):
         else:
             offer = None if flag is not None else bargaining_offer(text, deal.ask)
             deal.rounds += 1
-        hint = ""
+        hint, answer = "", ""
         if deal.rounds > 0 and flag is not None:
             hint = self.screened(task_id, flag)
         elif offer is None and deal.rounds > 0:
-            offer, hint = await self.read_prose(task_id, text, deal)
+            offer, hint, answer = await self.read_prose(task_id, text, deal)
         deal.last_offer = offer
         if hint == "restate" and deal.rounds < policy.max_rounds:
-            # A question or unreadable prose never lowers the ask.
-            await self.publish_ask(task_id, deal, updater, opening=False, facts=True)
+            # A question or unreadable prose never lowers the ask; a question gets
+            # the model's screened answer (or the fact line) above the price line.
+            await self.publish_ask(
+                task_id, deal, updater, opening=False, facts=True, answer=answer
+            )
             return
         if hint == "reject":
             _ = self.open.pop(task_id, None)
@@ -351,35 +354,64 @@ class R3Seller(AgentExecutor):
         self.emit(f"seller.screened task={task_id} reason={flag} count={count}")
         return "reject" if count >= SUSPICIOUS_LIMIT else "restate"
 
+    def public_facts(self, deal: Deal, now: float) -> dict[str, object]:
+        """Return the only facts a model may answer a buyer from; nothing about cost."""
+        unit = deal.unit
+        if unit is None:
+            return {"item": str(deal.legacy_item), "quantity": 1}
+        facts: dict[str, object] = {
+            "item": unit.name,
+            "sku": unit.sku,
+            "kind": unit.kind,
+            "quantity": 1,
+            "grade": deal.quote.grade_now,
+            "certificate": "attached, issued by the market",
+            "warranty_hours": self.policy().warranty(deal.quote.grade_now)
+            if unit.kind == "goods"
+            else "none (food)",
+            "current_ask": deal.ask,
+        }
+        if unit.kind == "food" and unit.expires_at is not None:
+            facts["shelf_life_left_hours"] = round((unit.expires_at - now) / 3600, 1)
+        return facts
+
     async def read_prose(
         self, task_id: str, text: str, deal: Deal
-    ) -> tuple[int | None, str]:
-        """Read a non-numeric buyer message; return (offer, hint).
+    ) -> tuple[int | None, str, str]:
+        """Read a non-numeric buyer message; return (offer, hint, answer).
 
-        Hints: ``""`` act on the offer, ``restate`` repeat the ask with facts,
-        ``concede`` make one policy concession, ``reject`` close the talk. Without a
-        model, prose is restated, never discounted (a question is not an offer).
+        Hints: ``""`` act on the offer, ``restate`` repeat the ask with facts (and
+        the model's screened answer when the buyer asked something), ``concede``
+        make one policy concession, ``reject`` close the talk. Without a model,
+        prose is restated, never discounted (a question is not an offer).
         """
         if self.reads.get(task_id, 0) >= MAX_READS_PER_TASK:
-            return None, "restate"
+            return None, "restate", ""
         self.reads[task_id] = self.reads.get(task_id, 0) + 1
         name = deal.unit.name if deal.unit is not None else str(deal.legacy_item)
-        read = await read_buyer_message(self.reader, text, item=name, ask=deal.ask)
+        read = await read_buyer_message(
+            self.reader,
+            text,
+            item=name,
+            ask=deal.ask,
+            facts=self.public_facts(deal, time.time()),
+        )
         if read is None:
-            return None, "restate"
+            return None, "restate", ""
         self.emit(
             f"seller.read task={task_id} intent={read.intent} offer={read.offer} "
-            f"screened={read.screened or '-'}"
+            f"answer={bool(read.answer)} screened={read.screened or '-'}"
         )
         if read.intent == "suspicious":
             count = self.suspicious.get(task_id, 0) + 1
             self.suspicious[task_id] = count
-            return None, "reject" if count >= SUSPICIOUS_LIMIT else "restate"
+            return None, "reject" if count >= SUSPICIOUS_LIMIT else "restate", ""
         if read.intent in ("offer", "accept") and read.offer is not None:
-            return read.offer, ""
-        return None, {"reject": "reject", "ask_discount": "concede"}.get(
+            return read.offer, "", ""
+        hint = {"reject": "reject", "ask_discount": "concede"}.get(
             read.intent, "restate"
         )
+        return None, hint, read.answer
 
     @staticmethod
     def opening_offer(text: str, deal: Deal) -> int | None:
@@ -417,7 +449,7 @@ class R3Seller(AgentExecutor):
         )
         return Deal(unit, None, priced, priced.ask)
 
-    async def publish_ask(
+    async def publish_ask(  # noqa: PLR0913 - one message, explicit flags
         self,
         task_id: str,
         deal: Deal,
@@ -425,11 +457,14 @@ class R3Seller(AgentExecutor):
         *,
         opening: bool,
         facts: bool = False,
+        answer: str = "",
     ) -> None:
         """Quote in the starter's wording plus machine-readable metadata.
 
-        ``facts`` restates the same ask with the certified grade and warranty, the
-        answer to a question; it never discloses cost, margin or policy.
+        The first line is always the starter's template, so every counterpart's
+        parser keeps working. ``facts`` adds a second line with the certified grade
+        and warranty; ``answer`` (a screened, digit-free model sentence) replaces
+        that line. Neither discloses cost, margin or policy.
         """
         name = deal.unit.name if deal.unit is not None else str(deal.legacy_item)
         sku = deal.unit.sku if deal.unit is not None else str(deal.legacy_item)
@@ -438,15 +473,17 @@ class R3Seller(AgentExecutor):
             if opening
             else f"Counteroffer: {deal.ask}."
         )
-        if facts and deal.unit is not None:
+        if answer:
+            text += f"\n{answer} Send your offer as a number."
+        elif facts and deal.unit is not None:
             warranty = (
                 self.policy().warranty(deal.quote.grade_now)
                 if deal.unit.kind == "goods"
                 else 0
             )
-            text = (
-                f"Counteroffer: {deal.ask}. Grade {deal.quote.grade_now} with the "
-                "market's certificate attached"
+            text += (
+                f"\nGrade {deal.quote.grade_now} with the market's certificate "
+                "attached"
                 + (f", {warranty} h warranty" if warranty else "")
                 + ". Send your offer as a number."
             )
