@@ -7,6 +7,7 @@ import os
 import shlex
 import shutil
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Final, assert_never
@@ -25,6 +26,12 @@ if TYPE_CHECKING:
 
 APP: Final = Path(__file__).resolve().parents[2]
 KEYS: Final = ("shop_key.pem", "buyer_key.pem")
+# The kit exits when its market join fails (the market could not fetch our card
+# through a just-registered tunnel, 2026-11-01 09:00 KST). A quick non-zero exit is
+# retried a few times before the container gives up; the host cron covers the rest.
+KIT_JOIN_ATTEMPTS: Final = 6
+KIT_JOIN_WINDOW: Final = 180.0
+KIT_JOIN_PAUSE: Final = 20.0
 
 
 def prepare(settings: LaunchSettings, app: Path) -> None:
@@ -250,20 +257,29 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
         ) as policy_loop,
     ):
         try:
-            async with await anyio.open_process(
-                settings.command(app),
-                cwd=settings.run_directory,
-                stdout=None,
-                stderr=None,
-                env=environment,
-            ) as process:
-                try:
-                    code = 0
-                    with anyio.move_on_after(seconds) as deadline:
-                        code = await process.wait()
-                    return 0 if deadline.cancel_called else code
-                finally:
-                    await stop(process)
+            code = 0
+            for attempt in range(KIT_JOIN_ATTEMPTS):
+                launched = time.monotonic()
+                async with await anyio.open_process(
+                    settings.command(app),
+                    cwd=settings.run_directory,
+                    stdout=None,
+                    stderr=None,
+                    env=environment,
+                ) as process:
+                    try:
+                        with anyio.move_on_after(seconds) as deadline:
+                            code = await process.wait()
+                        if deadline.cancel_called:
+                            return 0
+                    finally:
+                        await stop(process)
+                quick = time.monotonic() - launched < KIT_JOIN_WINDOW
+                if code == 0 or not quick or attempt == KIT_JOIN_ATTEMPTS - 1:
+                    return code
+                await anyio.sleep(KIT_JOIN_PAUSE)
+                seconds = settings.seconds_remaining(datetime.now(UTC))
+            return code
         finally:
             await stop(policy_loop)
             await stop(worker)

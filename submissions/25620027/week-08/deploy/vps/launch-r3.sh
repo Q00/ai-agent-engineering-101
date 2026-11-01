@@ -10,16 +10,24 @@ docker image inspect "$IMAGE" >/dev/null
 docker tag "$IMAGE" ax-week08-25620027:prepared
 ln -sfn "$REL" "$BASE/current"
 # Tunnel: host network so it reaches the kit proxy on 127.0.0.1:18088; runs as the
-# private-file owner so it can read the 0600 config and credentials.
-docker rm -f ax-week08-25620027-tunnel >/dev/null 2>&1 || true
-docker run -d --name ax-week08-25620027-tunnel --network host --restart unless-stopped \
-  --user 10001:10001 --read-only --cap-drop ALL --security-opt no-new-privileges:true \
-  --memory 128m --pids-limit 64 --log-opt max-size=5m --log-opt max-file=2 \
-  -v "$BASE/private/cloudflared.yml:/etc/cloudflared/config.yml:ro" \
-  -v "$BASE/private/cloudflared.json:/etc/cloudflared/creds.json:ro" \
-  cloudflare/cloudflared:2026.10.1 tunnel --no-autoupdate --config /etc/cloudflared/config.yml run >/dev/null
+# private-file owner so it can read the 0600 config and credentials. A running tunnel
+# is kept: recreating it drops the edge connection for a while, and the kit's market
+# join then times out and exits (seen 2026-11-01 09:00 KST).
+if ! docker ps --format '{{.Names}}' | grep -qx ax-week08-25620027-tunnel; then
+  docker rm -f ax-week08-25620027-tunnel >/dev/null 2>&1 || true
+  docker run -d --name ax-week08-25620027-tunnel --network host --restart unless-stopped \
+    --user 10001:10001 --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+    --memory 128m --pids-limit 64 --log-opt max-size=5m --log-opt max-file=2 \
+    -v "$BASE/private/cloudflared.yml:/etc/cloudflared/config.yml:ro" \
+    -v "$BASE/private/cloudflared.json:/etc/cloudflared/creds.json:ro" \
+    cloudflare/cloudflared:2026.10.1 tunnel --no-autoupdate --config /etc/cloudflared/config.yml run >/dev/null
+  sleep 20   # let the tunnel register at the edge before the kit asks the market to fetch our card
+fi
 # Trading process: the release's compose file with the verified image, no rebuild.
 export AX_R3_BUNDLE="$REL/runtime" AX_R3_PRIVATE_DIR="$BASE/private" AX_R3_DATA_DIR="$BASE/data" \
        AX_R3_ACTIVATE=1 AX_PAID_FALLBACK=anthropic
 docker compose -p ax-week08-25620027-r3 -f "$REL/runtime/deploy/vps/compose.yml" --profile r3 up -d --no-build
+# Every launch is meant to stay up: the health cron relaunches a container that
+# exits (e.g. the kit's market join racing the fresh tunnel) while this marker exists.
+touch "$BASE/r3-active"
 docker ps --format "{{.Names}}\t{{.Status}}" | grep ax-week08

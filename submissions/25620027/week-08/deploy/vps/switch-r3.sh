@@ -6,7 +6,8 @@
 set -euo pipefail
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 BASE=/docker/ax-week08-25620027
-RELEASE="${1:-a6a64bb10282}"
+# Switch whatever release is current; the cron argument is only a fallback.
+RELEASE="$(basename "$(readlink -f "$BASE/current" 2>/dev/null || echo "${1:-a6a64bb10282}")")"
 LOG="$BASE/switch-r3.log"
 exec >>"$LOG" 2>&1
 echo "== $(date -u +%FT%TZ) switching to Round 3 settings (release $RELEASE)"

@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Cron, every 10 minutes: while the Round 3 run is active (marker r3-active) and the
-# round has not ended, relaunch the trading container if it is not running. The kit
-# re-joins with the same keys, so a restart keeps the shop and buyer identity.
+# Cron, every 3 minutes: while a launch is active (marker r3-active, set by launch-r3.sh
+# and switch-r3.sh, cleared by stop-r3.sh) and the round has not ended, relaunch the
+# trading container if it is not running. The kit re-joins with the same keys, so a
+# restart keeps the shop and buyer identity. First seen need: 2026-11-01 09:00 KST,
+# when the kit's market join timed out behind a just-recreated tunnel and exited.
 set -uo pipefail
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 BASE=/docker/ax-week08-25620027
-RELEASE="${1:-a6a64bb10282}"
+# The release to relaunch is whatever `current` points at; the cron argument is only
+# a fallback, so installing a new release never needs a cron edit.
+RELEASE="$(basename "$(readlink -f "$BASE/current" 2>/dev/null || echo "${1:-a6a64bb10282}")")"
 LOG="$BASE/health-r3.log"
 END_UTC="2026-11-17T14:59:59Z"   # 2026-11-17 23:59:59 KST
 [ -f "$BASE/r3-active" ] || exit 0
