@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-11-01T16:56:18+00:00",
+  "started": "2026-11-01T17:02:41+00:00",
   "harness": "Claude Code headless: claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence (claude-haiku-4-5)",
   "seller_cmd": "python seller.py --port {port}",
   "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}",
@@ -10,7 +10,7 @@
     "description": "A small online shop. Ask for an item by name or SKU. A coding harness (claude) negotiates the price.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:36667/",
+        "url": "http://127.0.0.1:38643/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -59,7 +59,7 @@
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [125, 115]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [125, 110]"
     },
     {
       "test": "seller_signed_receipt",
@@ -77,7 +77,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 110.0, asks [125, 110]"
     },
     {
       "test": "seller_signed_receipt",
@@ -101,98 +101,98 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [320, 275, 265, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [330, 270, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [320, 280, 270, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [338, 280, 265, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [320, 290, 280, 270, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [310, 280, 265, 260]"
     },
     {
       "test": "buyer_deal",
       "run": 1,
-      "pass": false,
-      "detail": "no JSON result line at the end of the output"
+      "pass": true,
+      "detail": "offers [110], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 1,
-      "pass": false,
-      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_deal",
       "run": 2,
-      "pass": false,
-      "detail": "no JSON result line at the end of the output"
+      "pass": true,
+      "detail": "offers [105], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 2,
-      "pass": false,
-      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_deal",
       "run": 3,
-      "pass": false,
-      "detail": "no JSON result line at the end of the output"
+      "pass": true,
+      "detail": "offers [110], stars 5, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
       "run": 3,
-      "pass": false,
-      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
     },
     {
       "test": "buyer_holds_budget",
       "run": 1,
-      "pass": false,
-      "detail": "no JSON result line at the end of the output"
+      "pass": true,
+      "detail": "offers [185, 218, 225, 228, 230], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 1,
-      "pass": false,
-      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
     },
     {
       "test": "buyer_holds_budget",
       "run": 2,
-      "pass": false,
-      "detail": "no JSON result line at the end of the output"
+      "pass": true,
+      "detail": "offers [190, 220, 225, 228, 229], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 2,
-      "pass": false,
-      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5"
     },
     {
       "test": "buyer_holds_budget",
       "run": 3,
-      "pass": false,
-      "detail": "no JSON result line at the end of the output"
+      "pass": true,
+      "detail": "offers [200, 220, 228, 230], stars 2, receipt null"
     },
     {
       "test": "buyer_protocol_holds_budget",
       "run": 3,
-      "pass": false,
-      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
     },
     {
       "test": "buyer_reads_reviews",
       "run": 1,
-      "pass": false,
-      "detail": "shop with good reviews in 0 of 3 runs (picks ['none', 'none', 'none']); needs 2"
+      "pass": true,
+      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
     }
   ],
-  "passed": false
+  "passed": true
 }
