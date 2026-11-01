@@ -28,13 +28,20 @@ def ask(prompt: str, timeout: int = 180) -> str:
     return out.stdout.strip()
 
 
-def ask_json(prompt: str) -> tuple[dict | None, str]:
+def first_json_object(raw: str) -> dict | None:
+    """The first complete JSON object in the text, nested objects included."""
+    dec = json.JSONDecoder()
+    for m in re.finditer(r"\{", raw):
+        try:
+            obj, _ = dec.raw_decode(raw, m.start())
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict):
+            return obj
+    return None
+
+
+def ask_json(prompt: str, timeout: int = 180) -> tuple[dict | None, str]:
     """The first {...} object in the answer, and the raw answer for the log."""
-    raw = ask(prompt)
-    m = re.search(r"\{.*?\}", raw, re.S)
-    if not m:
-        return None, raw
-    try:
-        return json.loads(m.group()), raw
-    except json.JSONDecodeError:
-        return None, raw
+    raw = ask(prompt, timeout)
+    return first_json_object(raw), raw
