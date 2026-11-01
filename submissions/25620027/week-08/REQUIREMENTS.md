@@ -4,7 +4,7 @@
 
 | 구분 | 요구사항 | 구현·검증 또는 남은 증거 |
 |---|---|---|
-| 부품 40% · 모델 | 어떤 모델을 어디에 썼는가 | claude-haiku-5-5를 5분 주기 정책 관리자에만. [r3/manager.py](r3/manager.py), 범위 검증 [r3/policy.py](r3/policy.py). 거래 경로 모델 0회. [REPORT 1-1](REPORT.md#1-1-모델) |
+| 부품 40% · 모델 | 어떤 모델을 어디에 썼는가 | Haiku 통역(거래 중 제한 호출)·정찰5분·전술15분, Sonnet 전략30분+숫자 경고. [r3/interpreter.py](r3/interpreter.py), [r3/manager.py](r3/manager.py), 필드 소유권·범위 검증 [r3/policy.py](r3/policy.py). [REPORT 1-1](REPORT.md#1-1-모델) |
 | 부품 40% · 컨텍스트 | 지난 거래·평판을 다음 결정에 넣는 방식(meta-harness, 메모리) | 공개 원장 미러·자기 장부·정책표 세 층과 네 가지 분기. [REPORT 1-2](REPORT.md#1-2-컨텍스트와-메모리-신뢰도가-다른-세-층), [tests/test_r3_fast_buyer.py](tests/test_r3_fast_buyer.py), [tests/test_r3_ledger_forum.py](tests/test_r3_ledger_forum.py) |
 | 부품 40% · 툴 | 무엇을 툴로 만들었고 어떻게 | 판매·구매·재입고·후기·게시·원장·정책 도구 표. [REPORT 1-3](REPORT.md#1-3-툴) |
 | 구조 30% | 키트 기본형과 다른 구조, LaTeX 1쪽 figure | [architecture.tex](architecture.tex) → [architecture.pdf](architecture.pdf), 비교표 [REPORT 2](REPORT.md#2-구조-키트-기본형과의-차이--architecturetex--architecturepdf) |
@@ -14,10 +14,10 @@
 | 키트 v4 호환 | offers·acceptable·훅 3종 | [r3/models.py](r3/models.py), [market_a2a/market_decision.py](market_a2a/market_decision.py), [deploy/vps/launch.py](deploy/vps/launch.py), [agent.json](agent.json). [tests/test_r3_v4_compat.py](tests/test_r3_v4_compat.py) |
 | 결제 전 확인 | `accept`(증명서·잔여시간·등급·보증) | 주문 종류별 정책. 원본 kit `check_accept`로 통합 검증 [tests/test_r3_kit_integration.py](tests/test_r3_kit_integration.py) |
 | 재고·공급 | restock 훅, 최대 10줄, 파산 회피 | [r3/restock.py](r3/restock.py), 유보 현금·시드 예산. [tests/test_r3_hooks.py](tests/test_r3_hooks.py) |
-| 식품·비식품 품질 | 등급 claim·보증·cert | 정직 claim(경계는 한 등급 아래), A등급 보증 6h, cert 항상. [tests/test_r3_seller.py](tests/test_r3_seller.py) |
+| 식품·비식품 품질 | 등급 claim·보증·cert | 현재 등급 claim, 3분 안에 등급이 바뀔 때는 claim 생략, A등급 보증 6h, cert 항상. [tests/test_r3_seller.py](tests/test_r3_seller.py) |
 | 게시판 | outbox.jsonl, 역할별 5분 1건 | buyer 사실 글(원장 refs), shop 재고 글. [r3/forum.py](r3/forum.py) |
 | 제출물 | 배포 머신 `logs/market-kit.log`(정산 줄), 바꾼 코드, REPORT.md, architecture.tex/pdf | 코드·REPORT·tex/pdf 있음. 실제 R3 로그는 개시 뒤 추가 |
 | 형식 | squash 금지, 로그 커밋, 키 미커밋 | 커밋 단위 보존. `*.pem`·env 미커밋 |
 | 선택 | acp.json에서 동적 도구 생성 | 미구현. kit의 고정 checkout 사용 |
 
-현재 증거: 전체 회귀 PASS([REPORT 3](REPORT.md#3-검증-2026-10-31-로컬)), 키트 v4 통합 검사, 공개 원장 읽기 전용 수집 1회. 실제 R3 정산·순위·거부 사유는 개시 뒤 수집한다.
+현재 증거: 11/1 로컬 전체465개 PASS·배포판 Linux445개 PASS(합산하지 않음)([REPORT 3](REPORT.md#3-검증-2026-11-01-제출-점검)), 키트 v4 통합 검사, 공개 원장 읽기 전용 수집 1회. 실제 R3 정산·순위·거부 사유는 개시 뒤 수집한다.
