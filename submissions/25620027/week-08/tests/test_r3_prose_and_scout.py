@@ -504,9 +504,8 @@ def test_seller_answers_questions_from_the_fact_sheet_without_digits(
             prompt = str(FakeModel.requests[-1]["messages"][1]["content"])  # pyright: ignore[reportIndexIssue]
             assert "FACTS" in prompt
             assert "warranty_hours: 6" in prompt
-            assert (
-                "29900" not in prompt and "26000" not in prompt
-            )  # no accept line, no cost
+            assert "29900" not in prompt
+            assert "26000" not in prompt
             # When: the model's answer carries digits and a link; it is dropped and
             # the fact line speaks instead, still without lowering the ask.
             task = await remote.send(endpoint, "How fast do you ship?", task)
