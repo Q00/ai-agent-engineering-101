@@ -86,7 +86,8 @@ RESTOCK_EVERY = 60
 RESTOCK_LOW = 20                                    # the default restock buys when fewer units than this are left
 RECEIPT_KEYS = ("shop", "item", "price", "task")
 LOG_FILE = None
-LOG_MAX = 20_000_000                                # bytes; then market-kit.log moves to market-kit.log.1
+LOG_MAX = 20_000_000                                # bytes; then market-kit.log moves to market-kit.<time>.log (25622005)
+HOLD_TTL = 300                                      # 25622005: s an unpaid checkout holds its unit
 LOG_LOCK = threading.Lock()
 RETRY = (httpx.TransportError, ValueError)        # network trouble, or a body that is not JSON (e.g. a proxy's 502 page)
 
@@ -102,7 +103,8 @@ def log(line=""):
         if LOG_FILE:
             try:
                 if LOG_FILE.exists() and LOG_FILE.stat().st_size > LOG_MAX:
-                    os.replace(LOG_FILE, LOG_FILE.with_suffix(".log.1"))
+                    # 25622005: keep every full log (submitted evidence) instead of overwriting .log.1
+                    os.replace(LOG_FILE, LOG_FILE.with_name(f"market-kit.{datetime.now():%Y%m%d-%H%M%S}.log"))
                 with open(LOG_FILE, "a", encoding="utf-8") as f:
                     f.write(f"{stamp} {line}\n")
             except Exception:
@@ -326,6 +328,25 @@ class AcpShop:
         self.sessions = collections.OrderedDict()
         self.terms = collections.OrderedDict()           # task -> the receipt the seller sent (Proxy.observe)
 
+    def _log(self, event, s=None, **f):
+        """25622005: one row per checkout event in logs/acp-sessions.jsonl (create, refuse, cancel, complete,
+        settle_refused, expire). Never raises: a failed write must not break a checkout."""
+        if not LOG_FILE:
+            return
+        try:
+            row = {"ts": round(time.time(), 3), "event": event}
+            if s:
+                row.update(sid=s.get("id"), task=s.get("task"), sku=(s.get("line_items") or [{}])[0].get("id"),
+                           unit=s.get("unit"), price=(s.get("totals") or [{}])[0].get("amount"))
+            row.update({k: v for k, v in f.items() if v is not None})
+            fd = os.open(LOG_FILE.parent / "acp-sessions.jsonl", os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+            try:
+                os.write(fd, (json.dumps(row, ensure_ascii=False) + "\n").encode())
+            finally:
+                os.close(fd)
+        except Exception:
+            pass
+
     def card(self, public):
         tools = [("create_checkout_session", "POST", "/checkout_sessions",
                   {"line_items": "[{id: item, quantity: 1}]", "receipt": "the receipt the shop signed over A2A"}),
@@ -356,6 +377,7 @@ class AcpShop:
             return JSONResponse(s)
         if parts[2] == "cancel" and s["status"] != "completed":
             s["status"] = "canceled"
+            self._log("cancel", s)                       # 25622005
             return JSONResponse(s)
         if parts[2] == "complete" and s["status"] == "ready_for_payment":
             pay = b.get("payment_data") or {}
@@ -366,12 +388,15 @@ class AcpShop:
             res = r.json() if r.headers.get("content-type", "").startswith("application/json") else {"error": r.text[:200]}
             if r.status_code != 200:
                 log(f"[acp] settle refused: {[k for k, v in (res.get('checks') or {}).items() if not v] or res}")
+                self._log("settle_refused", s,                       # 25622005
+                          error=str([k for k, v in (res.get("checks") or {}).items() if not v] or res)[:300])
                 return JSONResponse({"error": "payment refused by the market", "market": res}, status_code=402)
             s["status"] = "completed"
             s["order"] = {"status": "confirmed", "mandate_receipt": res["mandate_receipt"]}
             if self.md:
                 await asyncio.to_thread(refresh_inventory, self.market, self.md)
             mr = res["mandate_receipt"]
+            self._log("complete", s, ledger=res.get("ledger"), grade=mr.get("grade"))   # 25622005
             log(f"[acp] settled {mr.get('name') or s['line_items'][0]['id']} at {s['totals'][0]['amount']}, "
                 f"ledger #{res['ledger']}" + (f", unit {mr['unit']} grade {mr.get('grade')}" if mr.get("unit") else ""))
             return JSONResponse(s)
@@ -386,7 +411,14 @@ class AcpShop:
         inv = r.json()
         if inv.get("round", 0) < ECON_ROUND:
             return False, None                          # no stock before Round 3
-        held = {s["unit"] for s in self.sessions.values() if s.get("unit") and s["status"] == "ready_for_payment"}
+        held = set()                                    # 25622005: an unpaid checkout holds its unit for HOLD_TTL s only
+        for s in list(self.sessions.values()):
+            if s.get("unit") and s["status"] == "ready_for_payment":
+                if time.time() - s.get("created", 0) < HOLD_TTL:
+                    held.add(s["unit"])
+                else:
+                    s["status"] = "expired"
+                    self._log("expire", s)
         units = [u for u in inv["units"] if u["unit"] not in held and u["grade"] != "expired"]
         want = rec.get("item")
         fits = lambda u: (u["sku"] in acceptable if acceptable else
@@ -402,12 +434,17 @@ class AcpShop:
         rec = b.get("receipt") if isinstance(b.get("receipt"), dict) else {}
         items = b.get("line_items") or [{}]
         acceptable = b.get("acceptable") if isinstance(b.get("acceptable"), list) else None
+
+        def refuse(error, code):                        # 25622005: log every refused checkout (L3)
+            self._log("refuse", task=rec.get("task"), sku=rec.get("item"), unit=rec.get("unit"),
+                      price=rec.get("price"), error=error)
+            return JSONResponse({"error": error}, status_code=code)
         if not (rec.get("sig_seller") and verify_seller(self.pub, rec)):
-            return JSONResponse({"error": "the receipt is not signed by this shop"}, status_code=400)
+            return refuse("the receipt is not signed by this shop", 400)
         if items[0].get("id") != rec.get("item") or type(rec.get("price")) is not int:
-            return JSONResponse({"error": "line_items do not match the receipt"}, status_code=400)
+            return refuse("line_items do not match the receipt", 400)
         if any(x.get("task") == rec["task"] for x in self.sessions.values()):
-            return JSONResponse({"error": "this receipt already has a checkout session"}, status_code=409)
+            return refuse("this receipt already has a checkout session", 409)
         # unit, cert, claim and warranty_hours are not under sig_seller: take them from what the seller sent,
         # never from the buyer's copy
         own = self.terms.get(rec["task"]) or {}
@@ -416,7 +453,7 @@ class AcpShop:
         u, problem = await asyncio.to_thread(self.pick_unit, rec, acceptable)
         if problem:
             log(f"[acp] checkout refused: {problem}")
-            return JSONResponse({"error": problem}, status_code=409)
+            return refuse(problem, 409)
         sid = "cs_" + os.urandom(8).hex()
         co = {"id": sid, "shop": rec["shop"], "shop_url": public, "item": u["sku"] if u else rec["item"],
               "price": rec["price"], "task": rec["task"], "currency": "credits", "iat": int(time.time())}
@@ -434,7 +471,10 @@ class AcpShop:
             "totals": [{"type": "total", "amount": rec["price"]}],
             "capabilities": {"payment_methods": ["ap2-mandate"]},
             "fulfillment": {k: co[k] for k in ("unit", "cert", "claim", "warranty_hours") if k in co},
-            "checkout_jwt": jwt_sign(self.key, co)}
+            "checkout_jwt": jwt_sign(self.key, co), "created": time.time()}     # 25622005: created, for HOLD_TTL
+        self._log("create", s, kind=(u or {}).get("kind"), grade=(u or {}).get("grade"),          # 25622005
+                  hours_left=round((u["expires_at"] - time.time()) / 3600, 2) if u and u.get("expires_at") else None,
+                  warranty_h=co.get("warranty_hours"), cert=bool(co.get("cert")), claim=co.get("claim"))
         while len(self.sessions) > 500:
             self.sessions.popitem(last=False)
         return JSONResponse(s, status_code=201)
@@ -480,6 +520,26 @@ def check_accept(o, co, accept):
     return None
 
 
+def check_binding(o, co, receipt, accept):
+    """25622005 (D12): the checkout against what the buyer negotiated. accept["bind"] may hold "sku", "unit" (only
+    when the shop named one) and "max_price_list"; a receipt for a catalog SKU or naming a unit binds those too.
+    No bind (or bind false): None. Returns the reason to refuse, starting "binding:", or None."""
+    bind = accept.get("bind") if isinstance(accept, dict) else None
+    if not isinstance(bind, dict):
+        return None
+    receipt = receipt if isinstance(receipt, dict) else {}
+    sku = bind.get("sku") or (receipt.get("item") if receipt.get("item") in CATALOG else None)
+    if sku and co.get("item") != sku:
+        return f"binding: shipped SKU {co.get('item')}, agreed {sku}"
+    unit = bind.get("unit") or receipt.get("unit")
+    if unit and co.get("unit") != unit:
+        return f"binding: shipped unit {co.get('unit')}, agreed {unit}"
+    ratio, lp = bind.get("max_price_list"), (CATALOG.get(co.get("item")) or {}).get("list_price")
+    if isinstance(ratio, (int, float)) and isinstance(lp, (int, float)) and co.get("price", 0) > lp * ratio:
+        return f"binding: price {co.get('price')} is above {ratio} x list price {lp} of {co.get('item')}"
+    return None
+
+
 def acp_pay(o, shop_url, shop_pub, receipt, buyer_key, accept=None, why=None):
     """Round 3, buyer side: open an ACP checkout on the shop, check it against the agreed receipt, the open
     mandates and the buyer's accept policy, sign the closed AP2 mandates, and complete.
@@ -511,11 +571,18 @@ def acp_pay(o, shop_url, shop_pub, receipt, buyer_key, accept=None, why=None):
         item_ok = co and (co.get("item") == receipt["item"] or co.get("item") in (o.get("acceptable") or []))
         if not item_ok or (co.get("price"), co.get("task")) != (receipt["price"], receipt["task"]):
             log("[acp] the checkout does not match the agreed receipt (or is not signed by the shop); not paying")
+            if s.get("id"):                             # 25622005: release the shop's unit
+                with contextlib.suppress(httpx.HTTPError):
+                    c.post(f"{base}/checkout_sessions/{s['id']}/cancel", json={})
             return None
         if co["price"] > budget:
             log(f"[acp] checkout total {co['price']} is above the mandate's limit; not paying")
+            if s.get("id"):                             # 25622005: release the shop's unit
+                with contextlib.suppress(httpx.HTTPError):
+                    c.post(f"{base}/checkout_sessions/{s['id']}/cancel", json={})
             return None
         refuse = check_accept(o, co, accept) if o.get("acceptable") else None
+        refuse = refuse or check_binding(o, co, receipt, accept)   # 25622005: D12 payment binding
         if refuse:
             log(f"[acp] not paying: {refuse}")
             with contextlib.suppress(httpx.HTTPError):
@@ -990,6 +1057,7 @@ def cmd_join(a):
     (d / "logs").mkdir(exist_ok=True)
     LOG_FILE = d / "logs" / "market-kit.log"
     log(f"[kit] market_kit {KIT_VERSION}, {d}")
+    log("[kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive")   # 25622005: local kit copy
     ignore_pem(d)
     keys = {"shop": load_key(d / "shop_key.pem"), "buyer": load_key(d / "buyer_key.pem")}
     market = Market(a.market, a.owner)
