@@ -1,0 +1,15 @@
+# keys and secrets: never commit
+*.pem
+.env
+.env.*
+# kit working files (exported to logs/ or memory/ when needed as evidence)
+.market/
+# derived state, rebuilt from events and the ledger
+memory/summary.json
+memory/cursor.json
+memory/plan.json
+memory/*.lock
+.venv/
+__pycache__/
+*.pyc
+memory/policy.lastgood.json
