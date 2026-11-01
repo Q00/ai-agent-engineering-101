@@ -1,0 +1,45 @@
+\documentclass[tikz,border=6pt]{standalone}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds}
+\begin{document}
+\begin{tikzpicture}[font=\small,
+  box/.style={draw,rounded corners,align=center,minimum height=8mm,inner sep=4pt},
+  kit/.style={box,fill=gray!15},
+  mine/.style={box,fill=blue!12,thick},
+  file/.style={box,dashed,fill=yellow!15},
+  ext/.style={box,fill=green!12},
+  a/.style={-{Stealth},thick}, d/.style={-{Stealth},dashed}]
+
+% ---------- market
+\node[ext] (market) {market.ourolabs.ai\\orders / ledger / settle / forum};
+
+% ---------- kit (unchanged, grey)
+\node[kit,below left=14mm and 2mm of market] (kitb) {kit v4 (buyer side)\\order.json, shops.json(offers)\\sign receipt, ACP checkout + AP2 mandates\\check \texttt{accept} $\rightarrow$ pay};
+\node[kit,below right=14mm and 2mm of market] (kits) {kit v4 (shop side)\\inventory.json / catalog.json\\ACP checkout: ships a unit, settles\\default restock: random SKUs};
+
+% ---------- my agents (blue)
+\node[mine,below=10mm of kitb] (mb) {market\_buyer.py\\drop shops refused twice (payments.jsonl)\\choose shop (reviews + memory, LLM)\\pick SKU: max list value $\le$ budget, not broken\\\texttt{accept}: cert, grade A/B, min\_hours\_left};
+\node[mine,left=4mm of mb,text width=27mm] (rv) {review.py\\stars from real grade /\\claim\_honest / shelf life};
+\node[mine,below=10mm of kits] (sl) {seller.py (A2A)\\grade- and shelf-aware ask\\floor = unit cost\\receipt + unit, claim, cert, warranty};
+\node[mine,right=4mm of sl,text width=30mm] (rs) {restock.py\\demand = \texttt{settle} entries\\of the ledger; cap 40 units,\\5\,\% balance per SKU;\\short-shelf food discounted};
+
+% ---------- files
+\node[file,below=8mm of mb] (fb) {.market/ (buyer): order.json, shops.json, catalog.json,\\payments.jsonl, broken.jsonl, deal.json, outbox.jsonl};
+\node[file,below=8mm of sl] (fs) {.market/ (shop): inventory.json, catalog.json,\\outbox.jsonl};
+\node[box,fill=orange!15,below=6mm of fb,xshift=38mm] (h) {harness.py: Claude Code headless (haiku), JSON out, fallback in code};
+
+% ---------- arrows
+\draw[a] (market) -- (kitb) node[midway,left,font=\scriptsize] {order};
+\draw[a] (market) -- (kits) node[midway,right,font=\scriptsize] {supply / settle};
+\draw[a] (kitb) -- (mb) node[midway,left,font=\scriptsize] {hook: --shops --order};
+\draw[a] (kitb.west) to[out=180,in=90] (rv.north) ;
+\draw[a] (kits) -- (sl) node[midway,right,font=\scriptsize] {A2A proxy};
+\draw[a] (kits.east) to[out=0,in=90] (rs.north);
+\draw[a,blue!60!black] (mb.east) -- (sl.west) node[midway,above,font=\scriptsize] {A2A negotiate (other shops)};
+\draw[d] (mb) -- (fb); \draw[d] (rv) |- (fb.west); \draw[d] (sl) -- (fs); \draw[d] (rs) |- (fs.east);
+\draw[d] (rs.north) to[out=90,in=0] (market.east) ;
+\draw[d] (fb) -- (h); \draw[d] (fs) -- (h);
+\begin{scope}[on background layer]
+\node[fit=(mb)(rv)(sl)(rs),draw=blue!40,rounded corners,inner sep=5pt,label={[blue!60!black,font=\scriptsize]above left:my agents (week-08)}] {};
+\end{scope}
+\end{tikzpicture}
+\end{document}
