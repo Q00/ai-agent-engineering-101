@@ -1,0 +1,91 @@
+# week-06 trade test, kit v1, 2026-10-26T15:23:44+00:00
+harness: Codex CLI 0.163.0, gpt-6.1-sol, reasoning effort low
+
+## seller tests: sh run_agent.sh seller.py --port 41761
+  PASS  seller_card #1: name='Atlas Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp asking price: 150
+    -> SendMessage "60" taskId=b7f86f7e
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 140
+    -> SendMessage "80" taskId=b7f86f7e
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 130
+    -> SendMessage "100" taskId=b7f86f7e
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 120
+    -> SendMessage "120" taskId=b7f86f7e
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 150
+  FAIL  seller_deal #1: TASK_STATE_REJECTED, receipt price None, asks [150, 140, 130, 120]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=b7f86f7e
+    <- error -32004 Task b7f86f7e-a6f5-4ccf-b358-72622447a182 is in terminal state: TASK_STATE_REJECTED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  FAIL  seller_deal #2: TASK_STATE_REJECTED, receipt price None, asks None
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  FAIL  seller_deal #3: TASK_STATE_REJECTED, receipt price None, asks None
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  FAIL  seller_holds_reserve #1: TASK_STATE_REJECTED, asks None
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf asking price: 340
+    -> SendMessage "140" taskId=d24cb314
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 320
+    -> SendMessage "170" taskId=d24cb314
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 300
+    -> SendMessage "200" taskId=d24cb314
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 280
+    -> SendMessage "230" taskId=d24cb314
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [340, 320, 300, 280]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_REJECTED | Negotiation decision failed safely.
+  FAIL  seller_holds_reserve #3: TASK_STATE_REJECTED, asks None
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: sh run_agent.sh buyer.py --url http://127.0.0.1:45315 --item lamp --budget 120
+    kit seller saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+  FAIL  buyer_deal #1: deals [] (budget 120)
+  FAIL  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #2: sh run_agent.sh buyer.py --url http://127.0.0.1:36445 --item lamp --budget 120
+    kit seller saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+  FAIL  buyer_deal #2: deals [] (budget 120)
+  FAIL  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #3: sh run_agent.sh buyer.py --url http://127.0.0.1:59513 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: sh run_agent.sh buyer.py --url http://127.0.0.1:39219 --item bookshelf --budget 230
+    kit seller saw: offers [180, 215, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #2: sh run_agent.sh buyer.py --url http://127.0.0.1:48399 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #3: sh run_agent.sh buyer.py --url http://127.0.0.1:52405 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 1, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+12/21 passed -> FAIL
