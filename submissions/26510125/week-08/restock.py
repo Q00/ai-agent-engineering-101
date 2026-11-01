@@ -6,10 +6,11 @@ Rules: keep stock under 40 units (storage is 1 %/day of cost), spend at most 5 %
 prefer goods and long-shelf food (short shelf life rots before a buyer asks), file for bankruptcy only
 when below the line with nothing left to sell. Also posts a shop notice to the forum at most every 10 min.
 """
-import argparse, collections, json, time, urllib.request
+import argparse, collections, json, time
 from pathlib import Path
 
-MARKET = "https://market.ourolabs.ai"
+from market_price import settled
+
 MAX_UNITS, PER_SKU_SHARE, TOP = 40, 0.05, 10
 
 
@@ -21,13 +22,7 @@ def load(p):
 
 
 def settled_counts():
-    try:
-        led = json.load(urllib.request.urlopen(f"{MARKET}/api/ledger?after=-500", timeout=15))
-    except Exception:
-        return collections.Counter()
-    entries = led if isinstance(led, list) else led.get("entries", [])
-    return collections.Counter(e["data"]["item"] for e in entries
-                               if e.get("kind") == "settle" and isinstance(e.get("data"), dict) and e["data"].get("item"))
+    return collections.Counter(d["item"] for d in settled() if d.get("item"))
 
 
 def main():

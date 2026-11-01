@@ -51,3 +51,61 @@ r = subprocess.run([sys.executable, "review.py", "--deal", str(md / "deal.json")
 rv = json.loads(r.stdout.strip().splitlines()[-1])
 assert 1 <= rv["stars"] <= 2 and rv["review"], (rv, r.stderr[-300:])
 print("ok: restock", buy, "| review", rv)
+
+# ---- acp_buyer: tools built from the kit's acp.json shape, against a mock shop (no market, no LLM)
+import base64, hashlib, httpx
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+import acp_buyer, harness
+
+shop_key, buyer_key = Ed25519PrivateKey.generate(), Ed25519PrivateKey.generate()
+shop_pub = base64.b64encode(shop_key.public_key().public_bytes_raw()).decode()
+card = {"protocol": "acp", "endpoint": "https://shop.test/acp", "tools": [
+    {"name": "create_checkout_session", "method": "POST", "path": "/checkout_sessions", "input": {"line_items": "...", "receipt": "..."}},
+    {"name": "get_checkout_session", "method": "GET", "path": "/checkout_sessions/{id}", "input": {}},
+    {"name": "complete_checkout_session", "method": "POST", "path": "/checkout_sessions/{id}/complete", "input": {"payment_data": "..."}},
+    {"name": "cancel_checkout_session", "method": "POST", "path": "/checkout_sessions/{id}/cancel", "input": {}}]}
+receipt = {"shop": "s", "item": "G1", "price": 250, "task": "t1", "sig_seller": "x"}
+seen = []
+def jwt(payload):
+    h = acp_buyer.b64url(b'{"alg":"EdDSA"}'); b = acp_buyer.b64url(json.dumps(payload).encode())
+    return f"{h}.{b}." + acp_buyer.b64url(shop_key.sign(f"{h}.{b}".encode()))
+def mock(req: httpx.Request):
+    seen.append((req.method, req.url.path))
+    if req.url.path == "/.well-known/acp.json":
+        return httpx.Response(200, json=card)
+    if req.url.path == "/acp/checkout_sessions":
+        return httpx.Response(201, json={"id": "cs1", "status": "ready_for_payment",
+                                         "checkout_jwt": jwt({"item": "G1", "price": 250, "task": "t1", "unit": "u9", "claim": mock.grade, "cert": True})})
+    if req.url.path.endswith("/complete"):
+        pd = json.loads(req.content)["payment_data"]
+        assert pd["checkout_mandate"]["mandate"]["order"] == "o1" and pd["payment_mandate"]["mandate"]["amount"] == 250
+        return httpx.Response(200, json={"order": {"mandate_receipt": {"ledger": 7, "name": "lamp", "grade": "A"}}})
+    if req.url.path.endswith("/cancel"):
+        return httpx.Response(200, json={"status": "canceled"})
+    return httpx.Response(404, json={})
+mock.grade = "A"
+_Client = httpx.Client
+acp_buyer.httpx.Client = lambda **kw: _Client(transport=httpx.MockTransport(mock))
+harness.ask_json = lambda *a, **k: {"plan": ["create_checkout_session", "get_checkout_session", "complete_checkout_session"]}
+payload = {"order": {"order": "o1", "acceptable": ["G1"], "kind": "goods", "mandates": {
+               "checkout": {"mandate": {"a": 1}}, "payment": {"mandate": {"constraints": [{"type": "payment.amount_range", "max": 300}]}}}},
+           "shop": "https://shop.test", "shop_pub": shop_pub, "receipt": receipt, "accept": {"cert": True, "grades": ["A", "B"]}}
+mr, why = acp_buyer.pay(payload, buyer_key)
+assert mr and mr["ledger"] == 7 and why is None, (mr, why)
+assert [p for _, p in seen][1:] == ["/acp/checkout_sessions", "/acp/checkout_sessions/cs1", "/acp/checkout_sessions/cs1/complete"], seen
+mock.grade = "C"; seen.clear()                      # accept policy refuses -> cancel, no complete
+mr, why = acp_buyer.pay(payload, buyer_key)
+assert mr is None and "grade C" in why and seen[-1][1].endswith("/cancel"), (why, seen)
+mock.grade = "A"
+mr, why = acp_buyer.pay(dict(payload, order=dict(payload["order"], mandates={"checkout": {"mandate": {}}, "payment": {"mandate": {"constraints": [{"type": "payment.amount_range", "max": 200}]}}})), buyer_key)
+assert mr is None and "above the mandate" in why, why
+harness.ask_json = lambda *a, **k: {"plan": ["cancel_checkout_session"]}      # bad plan -> code fallback
+mr, why = acp_buyer.pay(payload, buyer_key)
+assert mr and harness.CALLS["fallbacks"] >= 1
+# market_buyer additions
+import market_buyer as mb2
+mem = {"shops": {"liar": {"trades": [{"dishonest": True}]}}}
+mb2.median_price = lambda sku: (240, 12)
+txt = mb2.price_report("G1", "lamp", 250, "s", mem)
+assert "median 240" in txt and "liar" in txt, txt
+print("ok: acp_buyer mock checkout + refusal + mandate cap + plan fallback; price_report")

@@ -32,6 +32,16 @@ def main():
         stars = min(stars, 2)                     # a false grade claim is never a good review
     elif hours is not None and o.get("use_within_hours") and hours < o["use_within_hours"]:
         stars = min(stars, 2)                     # food that will not last the order's use window
+    if honest is False:                           # feed the buyer's memory: the shop's claim was false on me
+        md = Path(a.deal).parent
+        try:
+            names = {x["url"].rstrip("/"): x["name"] for x in json.loads((md / "shops.json").read_text(encoding="utf-8"))}
+            mem = json.loads(Path("buyer_memory.json").read_text(encoding="utf-8"))
+            trades = mem["shops"][names[str(s.get("shop", "")).rstrip("/")]]["trades"]
+            trades[-1]["dishonest"] = True
+            Path("buyer_memory.json").write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf-8")
+        except (OSError, ValueError, KeyError, IndexError) as e:
+            print(f"[memory] could not mark the shop dishonest: {type(e).__name__}", flush=True)
     print(json.dumps({"stars": stars, "review": review}, ensure_ascii=False), flush=True)
 
 

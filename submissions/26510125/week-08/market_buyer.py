@@ -32,6 +32,7 @@ from pathlib import Path
 
 import harness
 from buyer import negotiate
+from market_price import median_price, settled
 
 MEMORY = Path("buyer_memory.json")
 MISMATCH_WORDS = ("receipt said", "receipt says", "receipt price", "overcharg", "higher than", "charged more", "rip")
@@ -63,6 +64,23 @@ def remember(mem: dict, shop_name: str, record: dict) -> None:
         s["avoid"], s["avoid_reason"] = True, f"receipt {record['receipt_price']} != agreed {record['agreed']} ({record['when']})"
 
 
+def consolidate(mem: dict, shop_name: str) -> None:
+    """Meta step: every 5 trades, compress a shop's raw trade log into one note (what to expect, what to offer).
+    The note, not the log, is what later prompts see; the log stays for the record."""
+    s = mem["shops"].get(shop_name)
+    if not s or len(s["trades"]) % 5 or len(s["trades"]) == s.get("note_at"):
+        return
+    rows = "\n".join(f"- {x['when'][:16]} {x['item']} budget {x['budget']} -> {x['status']} agreed {x['agreed']} "
+                     f"receipt {x['receipt_price']} stars {x['stars']}" + (" HONEST-CLAIM:false" if x.get("dishonest") else "")
+                     for x in s["trades"][-10:])
+    data = harness.ask_json("Summarize this shop for my future self in ONE sentence (under 30 words): how far it comes down "
+                            "from its first ask, whether receipts and quality claims were honest, what to offer first.\n" + rows +
+                            '\nReply with exactly one JSON object: {"note": "<sentence>"}.', log)
+    if isinstance(data, dict) and data.get("note"):
+        s["note"], s["note_at"] = str(data["note"])[:200], len(s["trades"])
+        log(f"[memory] note for {shop_name}: {s['note']}")
+
+
 def my_history(mem: dict, shop_name: str) -> str:
     s = mem["shops"].get(shop_name)
     if not s:
@@ -70,6 +88,8 @@ def my_history(mem: dict, shop_name: str) -> str:
     t = s["trades"]
     bought = [x for x in t if x["status"] == "bought"]
     parts = [f"{len(t)} past trade(s), {len(bought)} deal(s)"]
+    if s.get("note"):
+        parts.append("my note: " + s["note"])
     if bought:
         parts.append("paid " + ", ".join(str(x["receipt_price"]) for x in bought[-3:]))
     if s.get("avoid"):
@@ -198,6 +218,14 @@ def accept_policy(order: dict):
     return acc                                   # shortcut: no warranty_hours, the starter seller never gives one
 
 
+def price_report(sku: str, name: str, paid, shop_name: str, mem: dict) -> str:
+    med, n = median_price(sku)
+    liars = sorted(k for k, v in mem["shops"].items() if any(x.get("dishonest") for x in v["trades"]))
+    return (f"[price report] {name} ({sku}): paid {paid} at {shop_name}; market median {med} over {n} settled deals. "
+            + (f"Shops whose grade claim was false on me: {', '.join(liars[:3])}. " if liars else "")
+            + "Set accept.cert=true and grades A/B, the kit refuses the rest before paying.")
+
+
 def forum_post(md: Path, text: str):
     """One buyer post per 5 minutes (the kit's limit); older lines would just queue up."""
     stamp = md / "last_buyer_post"
@@ -252,7 +280,13 @@ def main():
             log(f"[sku] {offer['sku']} {offer['name']!r} list {catalog.get(offer['sku'], {}).get('list_price')} "
                 f"of {len(shop.get('offers') or [])} offers; broken before: {sorted(broken)[:3]}")
 
-    st = negotiate(shop["url"], args.item, args.budget, request_text=request, shop=shop["name"])
+    hint = None
+    if offer:
+        med, n = median_price(offer["sku"])
+        if med:
+            hint = f"Other buyers recently paid about {med} for this exact item ({n} settled deals); offer below that first. "
+            log(f"[anchor] market median {med} over {n} deals")
+    st = negotiate(shop["url"], args.item, args.budget, request_text=request, shop=shop["name"], hint=hint)
     receipt = st.get("receipt")
     agreed = st["history"][-1][1] if st["history"] else None
     rprice = receipt.get("price") if isinstance(receipt, dict) else None
@@ -264,6 +298,7 @@ def main():
     remember(mem, shop["name"], {"when": time.strftime("%Y-%m-%dT%H:%M:%S"), "item": args.item, "budget": args.budget,
                                  "status": st["status"], "agreed": agreed, "receipt_price": rprice,
                                  "mismatch": mismatch, "stars": stars, "rounds": st["rounds"], "url": shop["url"]})
+    consolidate(mem, shop["name"])
     save_memory(mem)
     log(f"[memory] {shop['name']}: {my_history(mem, shop['name'])}")
     log(f"[done] {st['status']} harness calls {harness.CALLS['n']} fallbacks {harness.CALLS['fallbacks']}")
@@ -272,8 +307,8 @@ def main():
     if order.get("acceptable"):
         out["accept"] = accept_policy(order)
         if st["status"] == "bought":
-            forum_post(md, f"[yeonsong2 buyer] {offer['name'] if offer else args.item} at {rprice} from {shop['name']} "
-                           f"(budget {args.budget}); I only pay for certified grade A/B.")
+            forum_post(md, price_report(offer["sku"] if offer else args.item, offer["name"] if offer else args.item,
+                                        rprice, shop["name"], mem))
     print(json.dumps(out, ensure_ascii=False), flush=True)       # the last line: the kit reads this
 
 

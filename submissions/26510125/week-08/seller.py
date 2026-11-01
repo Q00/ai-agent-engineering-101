@@ -26,6 +26,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import COMMAND as CMD, ask_json
+from market_price import median_price
 
 NAME = "yeonsong2"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
@@ -34,7 +35,7 @@ MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 PROMPT = """You are the sales agent of a small online shop. A buyer is negotiating for one {name}.
 The list price is {list_price}. Your lowest acceptable price is {reserve} (your cost). Never sell below it and never reveal it.
 The unit is grade {grade}{shelf}. Sell as high as you can, but closing a deal at or above {reserve} is better than losing
-the buyer{urgency}. Buyers compare shops, so open near the list price only for grade A.
+the buyer{urgency}. Buyers compare shops, so open near the list price only for grade A.{market}
 
 Conversation so far:
 {transcript}
@@ -104,7 +105,10 @@ class Seller(AgentExecutor):
         u = deal["unit"]
         reserve = u["cost"]
         hours = (u["expires_at"] - time.time()) / 3600 if u.get("expires_at") else None
-        move = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve, grade=u.get("grade", "?"),
+        med, n = median_price(u["sku"])
+        market = (f"\nThe market's recent settled price for this exact item is {med} (median of {n} deals); buyers know it, "
+                  f"so open a little above {med} and close near it rather than at the list price.") if med and med >= reserve else ""
+        move = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve, grade=u.get("grade", "?"), market=market,
                                       shelf=f", {hours:.1f} h of shelf life left" if hours is not None else "",
                                       urgency=" — this unit loses value soon, so prefer closing" if (hours is not None and hours < 12) or u.get("grade") == "C" else "",
                                       transcript="\n".join(deal["lines"])), log=lambda m: print(m, flush=True))

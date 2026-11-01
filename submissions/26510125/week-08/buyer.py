@@ -111,7 +111,7 @@ def decide(st: dict):
     hist = "; ".join(f"ask {a} / my offer {o}" for a, o in st["history"]) or "none"
     data = harness.ask_json(
         f"You are buying a {st['item']} from the shop {st['shop']!r}. Your budget is {st['budget']}: "
-        f"never pay more than {st['budget']}, and try to pay clearly less. "
+        f"never pay more than {st['budget']}, and try to pay clearly less. {st.get('hint') or ''}"
         f"History (seller ask / your offer): {hist}. The seller now asks {st['ask']}. "
         f"Round {st['rounds'] + 1} of at most {MAX_MESSAGES - 1}. "
         'Decide: accept the ask, make a lower offer, or walk away if the seller cannot come within your budget. '
@@ -149,11 +149,11 @@ def _int(v):
 
 # ---------------------------------------------------------------- one negotiation
 
-def negotiate(base: str, item: str, budget: int, request_text=None, shop=None) -> dict:
+def negotiate(base: str, item: str, budget: int, request_text=None, shop=None, hint=None) -> dict:
     card = get_card(base)
     url = rpc_url(card, base)
     shop = shop or card.get("name")
-    st = {"shop": shop, "url": url, "item": item, "budget": budget, "ask": None, "history": [],
+    st = {"shop": shop, "url": url, "item": item, "budget": budget, "hint": hint, "ask": None, "history": [],
           "rounds": 0, "status": "opening", "task_id": None, "price": None}
     log(f"[{item} @ {shop}] card ok, budget {budget}")
     t, err = send(url, request_text or f"I want to buy a {item}")
