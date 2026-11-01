@@ -4,10 +4,13 @@ import os
 from pathlib import Path
 import tempfile
 import time
+from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from a2a.helpers import new_text_part
+from a2a.types import Message
 from starlette.testclient import TestClient
 
 from feedback import atomic_json
@@ -130,3 +133,45 @@ class InventoryTests(unittest.TestCase):
                 done = send(client, "85000", first["id"])
             self.assertEqual(done["status"]["state"], "TASK_STATE_FAILED")
             self.assertFalse(done.get("artifacts"))
+
+    def test_cancel_during_model_releases_reservation_without_late_receipt(self):
+        seller, _ = self.seller()
+        async def scenario():
+            entered, release = asyncio.Event(), asyncio.Event()
+            async def slow(*_):
+                entered.set()
+                await release.wait()
+                return {"action": "counter", "price": 90000}
+            seller.infer = slow
+            task = SimpleNamespace(id="t", context_id="c")
+            # A new task is enqueued by execute, as in the real A2A handler.
+            context = SimpleNamespace(current_task=None, message=Message(parts=[new_text_part("G00001")]))
+            queue = AsyncMock()
+            with patch("seller_r3.new_task_from_user_message", return_value=task), \
+                    patch("seller_r3.TaskUpdater") as updater:
+                up = updater.return_value
+                up.requires_input = AsyncMock()
+                up.cancel = AsyncMock()
+                up.add_artifact = AsyncMock()
+                job = asyncio.create_task(seller.execute(context, queue))
+                await entered.wait()
+                await seller.cancel(SimpleNamespace(current_task=task), queue)
+                release.set()
+                await job
+                up.add_artifact.assert_not_awaited()
+                up.requires_input.assert_not_awaited()
+            self.assertFalse(seller.inventory.active)
+            self.assertFalse(seller.r3)
+        asyncio.run(scenario())
+
+    def test_food_receipt_does_not_freeze_a_grade_claim(self):
+        self.write([unit(kind="food", expires_at=time.time()+3600)])
+        seller, _ = self.seller()
+        with patch("seller_r3.inventory_decision", side_effect=[
+                {"action": "counter", "price": 90000}, {"action": "accept", "price": 85000}]), \
+                TestClient(build(DEFAULT, seller)) as client:
+            first = send(client, "G00001")
+            done = send(client, "85000", first["id"])
+        receipt = done["artifacts"][0]["parts"][0]["data"]
+        self.assertNotIn("claim", receipt)
+        self.assertTrue(receipt["cert"])
