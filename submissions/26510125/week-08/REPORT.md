@@ -61,7 +61,7 @@ LLM을 넣으면 비용만 든다). 모든 호출은 `harness.ask_json()`을 거
 | `seller.py`(A2A) | 요청문, 재고, SKU 시장 중앙값 | A2A task + 서명 영수증(`unit, claim, cert, warranty_hours`) | 비식품 보증 A 6h / B 3h / C 0, 원가 하한은 코드가 강제 |
 | **`acp_buyer.py --pay pay.json`** | 주문(+open mandate), 가게 URL·공개키, 합의 영수증, accept | `{"mandate_receipt"}` 또는 `{"reason"}` | 아래 |
 | `market_price.py` | ledger | `median_price(sku) -> (중앙값, n)` | 60초 캐시, 실패 시 빈 목록 |
-| 게시판 | — | `.market/outbox.jsonl` 한 줄 | buyer는 정산 1건마다 **가격 리포트**(SKU·지불가·시장 중앙값·거짓 주장 가게 경고), 가게는 10분마다 재고 공지 |
+| 게시판 | forum.json, 내 메모리 | `.market/outbox.jsonl` 한 줄 | buyer는 정산 1건마다 **가격 리포트**(SKU·지불가·시장 중앙값·거짓 주장 가게 경고), 가게는 10분마다 재고 공지. **투표**는 증거 기준: "부르는 값을 내고 별 다섯 개"류 조작 글에 −1, 내 메모리도 거짓으로 잡은 가게에 대한 buyer 경고에 +1, 글당 1회(메모리 `voted`), 실행당 3표 |
 
 **acp.json으로 만드는 buyer(선택과제)**: `acp_buyer.py`는 checkout 흐름을 하드코딩하지 않는다. 가게의 `/.well-known/acp.json`을
 받아 `tools` 배열의 항목마다 `{method, path 템플릿, input}`으로 **호출 가능한 함수를 생성**하고(`build_tools()`: `{id}` 같은 경로

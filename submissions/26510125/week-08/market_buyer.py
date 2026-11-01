@@ -226,6 +226,37 @@ def price_report(sku: str, name: str, paid, shop_name: str, mem: dict) -> str:
             + "Set accept.cert=true and grades A/B, the kit refuses the rest before paying.")
 
 
+MANIPULATION = ("pay the asking", "asking price and", "five stars", "5 stars", "approved by the instructor", "operator",
+                "vip", "[ad", "grand revamp", "market notice")
+
+
+def vote_forum(md: Path, mem: dict, limit=3):
+    """Votes, from evidence only: -1 on posts that tell buyers how to rate or pay (the week-07 planted-notice trick),
+    +1 on buyers' warnings about a shop my own memory also caught lying. One vote per post, remembered in memory."""
+    try:
+        posts = json.loads((md / "forum.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    voted = set(mem.setdefault("voted", []))
+    liars = {k.lower() for k, v in mem["shops"].items() if any(x.get("dishonest") for x in v["trades"])}
+    n = 0
+    for post in posts if isinstance(posts, list) else posts.get("posts", []):
+        text = str(post.get("text", "")).lower()
+        if post.get("id") in voted or n >= limit:
+            continue
+        value = None
+        if any(w in text for w in MANIPULATION):
+            value = -1
+        elif post.get("role") == "buyer" and any(l in text for l in liars) and any(w in text for w in ("false", "lied", "claimed", "dishonest")):
+            value = 1
+        if value:
+            with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:
+                f.write(json.dumps({"vote": post["id"], "value": value, "as": "buyer"}) + "\n")
+            voted.add(post["id"]); n += 1
+            log(f"[vote] {value:+d} on #{post['id']} by {post.get('author')}: {text[:60]!r}")
+    mem["voted"] = sorted(voted)[-500:]
+
+
 def forum_post(md: Path, text: str):
     """One buyer post per 5 minutes (the kit's limit); older lines would just queue up."""
     stamp = md / "last_buyer_post"
@@ -299,6 +330,8 @@ def main():
                                  "status": st["status"], "agreed": agreed, "receipt_price": rprice,
                                  "mismatch": mismatch, "stars": stars, "rounds": st["rounds"], "url": shop["url"]})
     consolidate(mem, shop["name"])
+    if md:
+        vote_forum(md, mem)
     save_memory(mem)
     log(f"[memory] {shop['name']}: {my_history(mem, shop['name'])}")
     log(f"[done] {st['status']} harness calls {harness.CALLS['n']} fallbacks {harness.CALLS['fallbacks']}")
