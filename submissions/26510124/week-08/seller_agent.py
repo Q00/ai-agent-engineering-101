@@ -232,7 +232,7 @@ class Seller(AgentExecutor):
             await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
-def build(cfg):
+def build(cfg, executor=None):
     url = f"http://127.0.0.1:{cfg['port']}/"
     card = AgentCard(
         name=cfg["name"],
@@ -250,7 +250,7 @@ def build(cfg):
             examples=["I want to buy a lamp", "90"],
         )],
     )
-    handler = DefaultRequestHandler(agent_executor=Seller(cfg), task_store=InMemoryTaskStore(), agent_card=card)
+    handler = DefaultRequestHandler(agent_executor=executor or Seller(cfg), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
 
 
