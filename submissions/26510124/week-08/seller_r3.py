@@ -1,4 +1,4 @@
-"""Inventory adapter around the existing Haiku harness; no supply strategy yet."""
+"""Haiku inventory seller with pinned grade floors, guarantees and bounded advice."""
 import argparse
 import asyncio
 import json

@@ -46,7 +46,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--identity-from", type=Path, default=ROOT.parent / "week-07")
     parser.add_argument("--prepare-identity", action="store_true", help="Copy only existing matching keys, never generate keys")
-    parser.add_argument("--join", action="store_true", help="Start the seller, buyer and the kit's default stock purchasing")
+    parser.add_argument("--join", action="store_true", help="Start seller, buyer and the configured restock hook")
     parser.add_argument("--orders", type=int, default=0)
     args = parser.parse_args()
     try:
