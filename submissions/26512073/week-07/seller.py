@@ -17,9 +17,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from seller_strategy import decide_opening, decide_offer
-from seller_strategy import POLICY
-from seller_strategy import HISTORY_PATH
+from seller_strategy import HISTORY_PATH, POLICY, decide_opening, decide_offer
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 SHOP_NAME = "Afford Shop"

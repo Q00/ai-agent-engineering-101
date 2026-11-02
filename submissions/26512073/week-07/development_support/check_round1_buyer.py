@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import sys
 
-BASE = Path(__file__).resolve().parent
+BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / "course_support"))
 import market_test_week07 as kit
 

@@ -7,8 +7,6 @@ from seller_strategy import LEGACY_POLICY, POLICY, load_item_state, save_item_st
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 import seller_strategy
-import seller_strategy
-import seller_strategy
 from seller import Seller
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch

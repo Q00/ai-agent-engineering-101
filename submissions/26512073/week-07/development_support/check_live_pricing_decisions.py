@@ -5,12 +5,13 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-import seller_strategy
-import seller_strategy
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import seller_strategy
 
 
-BASE = Path(__file__).resolve().parent
+BASE = Path(__file__).resolve().parent.parent
 
 
 def digest(path):
