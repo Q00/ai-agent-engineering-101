@@ -36,11 +36,11 @@ def catalog(market_dir: Path = MARKET_DIR) -> dict:
     return read_json(market_dir / "catalog.json", {}) or {}
 
 
-def record(kind: str, **fields) -> None:
-    """Append one line to records/<kind>.jsonl."""
+def record(stream: str, **fields) -> None:
+    """Append one line to records/<stream>.jsonl. (Not `kind`: an order's fields include kind.)"""
     folder = MARKET_DIR / "records"
     folder.mkdir(parents=True, exist_ok=True)
-    with open(folder / f"{kind}.jsonl", "a", encoding="utf-8") as f:
+    with open(folder / f"{stream}.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(dict(ts=int(time.time()), **fields), ensure_ascii=False) + "\n")
 
 

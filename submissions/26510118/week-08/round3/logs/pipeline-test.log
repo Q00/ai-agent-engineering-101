@@ -1,0 +1,79 @@
+seller: http://127.0.0.1:53500  market dir: C:\Users\bubuj\AppData\Local\Temp\round3-test-qg5p_b1z\.market
+  PASS  seller serves its agent card
+
+[A] food deal: 포기김치 (list 20000), budget 22000, eat within 48 h; stock: one B unit, 100 h left
+    [buyer] 1 candidate(s); test-shop Gaaaa0001 list 20000, cap 20000
+    [buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001)'
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): asking 18000. Send your offer as a number.
+    [buyer] -> '14000'
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 16000.
+    [buyer] -> '16000'
+    [buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 포기김치 2kg (Gaaaa0001) at 16000.
+  PASS  buyer prints the kit's result line
+  PASS  deal agreed, at or under the list price  (16000.0)
+  PASS  receipt names the SKU and the unit
+  PASS  food accept asks for a certificate and 49 h  ({'cert': True, 'min_hours_left': 49})
+  PASS  kit: sig_seller verifies with the shop key
+  PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gaaaa0001 at 16000 of budget 22000)
+  PASS  kit: checkout session opens  (status 201)
+  PASS  kit: checkout ships unit u-k1-b at the agreed price  (u-k1-b at 16000)
+  PASS  kit: accept policy passes (B, 100 h left >= 49 h)  (None)
+
+[B] same order, but the unit that expires first has 30 h left (grade C)
+  PASS  deal agreed  (16000.0)
+  PASS  kit: sig_seller verifies with the shop key
+  PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gaaaa0001 at 16000 of budget 22000)
+  PASS  kit: checkout session opens  (status 201)
+  PASS  seller offered the unit that expires first (u-k1-c)  (u-k1-c)
+  PASS  kit: accept policy refuses it, so nothing is paid  (30.00 h of shelf life left, the policy asks for 49)
+
+[C] budget 9000 under the unit's cost 10000
+    [buyer] 1 candidate(s); test-shop Gaaaa0001 list 20000, cap 9000
+    [buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001)'
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): asking 18000. Send your offer as a number.
+    [buyer] -> '6300'
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 14000.
+    [buyer] -> '7200'
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 12000.
+    [buyer] -> '8100'
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 11000.
+    [buyer] -> '9000'
+    [buyer] <- TASK_STATE_REJECTED | No deal at 9000.
+  PASS  no deal and no receipt (the shop never goes below cost)  (No deal on 테스트 포기김치 2kg within 9000; the lowest ask was 11000.)
+
+[D] goods deal: 차렵이불 (list 39900), budget 30000; stock: one C unit
+  PASS  deal agreed within the budget  (26228.0)
+  PASS  kit: sig_seller verifies with the shop key
+  PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gbbbb0001 at 26228 of budget 30000)
+  PASS  kit: checkout session opens  (status 201)
+  PASS  kit: goods with no accept policy pass  (None)
+
+[E] no shop has the category in stock
+  PASS  buyer closes the order as no deal
+
+[F] shops.json lists a SKU the shop has already sold
+  PASS  the shop declines and the buyer records no deal  (No deal on 테스트 겉절이 2kg within 13400; the lowest ask was none.)
+
+[R] restock
+  PASS  empty stock: buys within the kit's limits (<= 10 lines, 1-20 each, known SKUs)  ([{'sku': 'Gbbbb0001', 'qty': 2}, {'sku': 'Gcccc0001', 'qty': 2}, {'sku': 'Gaaaa0001', 'qty': 2}])
+  PASS  largest categories first, median-priced SKU, no 48 h food, nothing over 60000  (['Gbbbb0001', 'Gcccc0001', 'Gaaaa0001'])
+  PASS  stock worth the cap: buys nothing
+  PASS  below the line with nothing to sell: files for bankruptcy
+  PASS  before Round 3: buys nothing
+
+[V] review
+  PASS  honest deal at 80% of list: 4 stars, facts only  ({'stars': 4, 'review': 'Paid 16000 for 테스트 포기김치 2kg (list 20000); grade B; the shop claimed B, which was true; 100 h of shelf life left.'})
+  PASS  false grade claim: 1 star  (Paid 16000 for 테스트 포기김치 2kg (list 20000); grade B; the shop claimed A, which was false; 100 h of shelf life left.)
+
+[records]
+  PASS  every step left a record  (negotiations 4, orders 6, restock 1, reviews 2)
+  PASS  no negotiation sold below cost  (Gaaaa0001 deal 16000/10000, Gaaaa0001 deal 16000/7000, Gaaaa0001 rejected None/10000, Gbbbb0001 deal 26228/14000)
+
+[seller log]
+    [seller] Kiro729 Shop on port 53500, stock from C:\Users\bubuj\AppData\Local\Temp\round3-test-qg5p_b1z\.market
+    [seller] Gaaaa0001 deal at 16000
+    [seller] Gaaaa0001 deal at 16000
+    [seller] Gaaaa0001 rejected
+    [seller] Gbbbb0001 deal at 26228
+
+33/33 checks passed
