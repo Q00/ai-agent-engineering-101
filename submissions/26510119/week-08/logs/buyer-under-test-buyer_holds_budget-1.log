@@ -1,0 +1,25 @@
+market buyer: bookshelf, budget 230, 1 shops, 3207 past trades in memory
+[choose] showing 1 of 1 shops: ['Kit Shop']
+  [harness 2.1s] '{"shop": "Kit Shop", "reason": "No warnings or negative reviews; unknown but not bad, and fits within budget."}'
+[choose] Kit Shop http://127.0.0.1:46805: No warnings or negative reviews; unknown but not bad, and fits within budget.
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:46805/
+  -> 'I want to buy a bookshelf'
+  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+  [harness 0.7s] '{"action": "offer", "price": 150}'
+  -> '150' (taskId 7689804a)
+  <- TASK_STATE_INPUT_REQUIRED | 150 is too low. Counteroffer: 260.
+  [harness 0.6s] '{"action": "offer", "price": 170}'
+  -> '170' (taskId 7689804a)
+  <- TASK_STATE_INPUT_REQUIRED | 170 is too low. Counteroffer: 260.
+  [harness 0.7s] '{"action": "offer", "price": 220}'
+  -> '220' (taskId 7689804a)
+  <- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 260.
+  [harness 0.9s] '{"action": "offer", "price": 230}'
+  -> '230' (taskId 7689804a)
+  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+  [harness 0.7s] '{"action": "offer", "price": 230}'
+  -> '230' (taskId 7689804a)
+  <- TASK_STATE_REJECTED | No deal at 230.
+  [harness 10.8s] '{"stars": 2, "review": "The shop refused my fair offer of 230 without negotiation, making the experience feel inflexible and disappointing."}'
+result: TASK_STATE_REJECTED, 17s
+{"shop": "http://127.0.0.1:46805", "receipt": null, "stars": 2, "review": "The shop refused my fair offer of 230 without negotiation, making the experience feel inflexible and disappointing."}
