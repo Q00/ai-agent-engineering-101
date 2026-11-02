@@ -198,6 +198,22 @@ def test_forum():
           rec["no_seller"] == ["침구", "사과"] and rec["no_seller_source"] == "shops' stock lists", rec["no_seller"])
     check("a grade's breakdown share waits for 10 sales of it (6 so far)", rec["breakage"] == {} and "Goods that broke" not in text)
     check("nothing private: no budget, cost or margin", not any(w in text.lower() for w in ("budget", "cost", "margin")))
+    s2 = json.loads(json.dumps(common.market_file("market_summary.json")))
+    s2["settles_24h"], s2["by_category"][KCAT]["sold_6h"] = 31, 27
+    reader = lambda said: (lambda prompt, model=None, timeout=None: said)
+    good = "Kimchi sales in 6 h rose from 20 to 27 while the average price held at 70% of list."
+    text2, _, rec2 = forum.index_post(s2, 2, ["침구"], "x", NOW + 3 * H, prev=rec, ask=reader(good))
+    lines2 = text2.splitlines()
+    print("\n".join("    | " + x for x in lines2[:3]))
+    check("the second index says what moved since the first", lines2[2] == "Since index #1 (3 h ago): settled deals in 24 h "
+          "26 -> 31; 김치 sold in 6 h 20 -> 27" and rec2["moved"]["sold_6h"] == {"김치": [20, 27]}, lines2[2])
+    check("...and opens with the model's reading when every number in it is one the index shows",
+          lines2[1] == "Reading: " + good and json.loads(lines2[-1])["n"] == 2)
+    for said, why in (("Kimchi sales jumped to 99 in 6 h.", "a number the index does not show"),
+                      ("Kiro Everyday has kimchi in stock at 70% of list.", "our shop named"),
+                      ("Buyers should avoid Beta, whose claims were true 3 of 8 times.", "a steer away from a shop")):
+        t, _, _ = forum.index_post(s2, 2, ["침구"], "x", NOW + 3 * H, prev=rec, ask=reader(said))
+        check(f"a reading with {why} is dropped; the numbers still go out", "Reading:" not in t and "Since index #1" in t)
     st = {}
     before = len(outbox())
     analysis.replies(NOW, st)
@@ -435,6 +451,32 @@ def test_runner():
           and "collect failed: RuntimeError" in analysis.LOG.read_text(encoding="utf-8"), done)
 
 
+def test_opening():
+    print("\n[opening] our shop's one opening post")
+    quiet = lambda messages, model, tools=None: answer({"report": "ok", "proposals": []})
+    units = [{"unit": f"u{i}", "sku": f"G{i:08x}", "name": f"item {i}", "category": f"cat>{i}", "kind": "food" if i % 2 else "goods",
+              "cost": 1000, "grade": "A", "list_price": 2000} for i in range(100)]
+    common.write_json(MD / "inventory.json", {"round": 3, "balance": 4_000_000, "units": units[:25]})
+    state = {"first_stock": time.time()}
+    check("25 categories just in: not yet", analysis.opening(time.time(), state) is None)
+    before = len(outbox())
+    note = analysis.opening(time.time() + 1900, state)
+    post = outbox()[before]
+    print("    | " + post["post"])
+    check("25 categories half an hour after the first stock: posted once, as our shop, from what the stock holds",
+          note and post["as"] == "shop" and post["post"].startswith("Kiro Everyday: Groceries & Goods is open: 25 units in "
+                                                                     "25 categories (12 food, 13 goods).") and state.get("opened"))
+    check("facts only: no prices, superlatives or words aimed at buyer models",
+          not any(w in post["post"].lower() for w in ("%", "best", "lowest", "cheapest", "ai buyer", "buying agent")))
+    common.write_json(MD / "inventory.json", {"round": 3, "balance": 4_000_000, "units": units})
+    t = time.time() + 60 * H
+    first = analysis.run_once(t, quiet, fake_ledger, fake_shops)
+    second = analysis.run_once(t + 700, quiet, fake_ledger, fake_shops)
+    shop_posts = [x for x in outbox() if x.get("as") == "shop" and "is open:" in x.get("post", "")]
+    check("through the runner: 100 categories in, posted on the first pass and never again",
+          "opening" in first and "opening" not in second and len(shop_posts) == 2, (first, second, len(shop_posts)))
+
+
 def test_restock_wanted():
     print("\n[restock] a wanted category")
     inv = {"round": 3, "balance": 5_000_000, "units": []}
@@ -462,6 +504,7 @@ def main() -> int:
         test_context()
         test_restock_wanted()                # before the runner's later passes age the unmet order out
         test_runner()
+        test_opening()
     finally:
         shutil.rmtree(ROOT, ignore_errors=True)
     print(f"\n{sum(results)}/{len(results)} checks passed")

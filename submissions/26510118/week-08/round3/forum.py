@@ -3,12 +3,18 @@
     market index   "[Kiro729 Market Index #n ...]": the whole market's public ledger, summed up by
                    code (ledger.py) into a few lines and one JSON line, posted as our buyer every
                    3 hours, with a few ledger references the market itself shows next to the post.
+                   Since the second index it says what moved since the last one, and it opens with
+                   two or three sentences of reading by the analysis model, kept only when every
+                   number in them is one the index shows and they name or steer to no shop.
                    It publishes only what anyone could compute from the public ledger; our
                    orders' budgets, our shop's costs and margins and our memos stay private, and
                    our own shop is left out of the shop table (same owner).
     data reply     to another agent's "wanted" post: who sold that category lately and at what
                    share of the list price, as our buyer, at most one every 30 minutes
     shop reply     to the same post, as our shop, when our shop has that category in stock
+    opening post   once, as our shop, when the first day's stock is in: what it holds and how to
+                   ask, in facts only (the buyer's posts never praise our shop; this one is the
+                   shop speaking for itself)
 
 A post carries data only, never an instruction, and every number comes from the summary.
 The kit sends what is appended to .market/outbox.jsonl (one post per 5 minutes per role).
@@ -19,11 +25,22 @@ import time
 from datetime import datetime
 
 import common
+import harness
 
 WANTED = re.compile(r"구합니다|구해요|찾습니다|찾아요|사고 싶|살 수 있|wanted|looking for|want to buy|\bneed\b|\bWTB\b", re.I)
 TOP = 5
 MIN_CLAIMS = 5
 MIN_GOODS = 10           # sales of a grade before its breakdown share is published
+MOVERS = 3               # categories whose 6-hour sales moved most, in the "since" line
+COMMENT_MAX = 420
+NUMBER = re.compile(r"\d+(?:\.\d+)?")
+STEERING = re.compile(r"\byou should\b|\bmust\b|\bbuy from\b|\bchoose\b|\bavoid\b|\brecommend", re.I)
+COMMENT_PROMPT = """Below is a market index for a market of AI shops and buyers, made by code from the public ledger.
+Write 2 or 3 short sentences in plain English on what changed and what it means for buyers and shops.
+Use only numbers that appear below. Do not name, recommend or warn against any shop, do not mention
+Kiro729, and do not tell anyone what to do. Reply with the sentences only.
+
+{facts}"""
 
 
 def outbox(**line) -> None:
@@ -39,8 +56,38 @@ def own(name: str | None) -> bool:
     return bool(name) and any(o.lower() in str(name).lower() for o in common.OWN_NAMES)
 
 
-def index_post(summary: dict, n: int, no_seller: list, source: str, now: float | None = None) -> tuple[str, list, dict]:
-    """(text, ledger refs, the JSON record) of market index number n."""
+def since(record: dict, prev: dict | None) -> tuple[str | None, dict]:
+    """The line on what moved since the last index, and its numbers; (None, {}) for the first."""
+    if not prev:
+        return None, {}
+    then, now_ = prev.get("top_6h") or {}, record["top_6h"]
+    moved = {c: [then.get(c, 0), now_.get(c, 0)] for c in set(then) | set(now_) if then.get(c, 0) != now_.get(c, 0)}
+    moved = dict(sorted(moved.items(), key=lambda kv: -abs(kv[1][1] - kv[1][0]))[:MOVERS])
+    prices = {c: [prev["price_share"][c], v] for c, v in record["price_share"].items()
+              if (prev.get("price_share") or {}).get(c) and round(prev["price_share"][c] * 100) != round(v * 100)}
+    parts = [f"settled deals in 24 h {prev.get('settled_24h', 0)} -> {record['settled_24h']}"]
+    parts += [f"{c} sold in 6 h {a} -> {b}" for c, (a, b) in moved.items()]
+    parts += [f"{c} price {a:.0%} -> {b:.0%}" for c, (a, b) in list(prices.items())[:2]]
+    hours = round((record["at"] - prev.get("at", record["at"])) / 3600, 1)
+    return (f"Since index #{prev.get('n')} ({hours:g} h ago): " + "; ".join(parts),
+            {"since": prev.get("n"), "settled_24h": [prev.get("settled_24h", 0), record["settled_24h"]],
+             "sold_6h": moved, "price_share": prices})
+
+
+def commentary(facts: str, ask) -> str | None:
+    """The analysis model's reading of the index, or None when it strays: a number the index does
+    not show, a shop of ours named, a steer to or from any shop, or too long."""
+    text = " ".join((ask(COMMENT_PROMPT.format(facts=facts), harness.MODEL_MID, 60) or "").split())
+    if not text or len(text) > COMMENT_MAX or own(text) or STEERING.search(text):
+        return None
+    shown = set(NUMBER.findall(facts.replace(",", "")))
+    return text if set(NUMBER.findall(text.replace(",", ""))) <= shown else None
+
+
+def index_post(summary: dict, n: int, no_seller: list, source: str, now: float | None = None,
+               prev: dict | None = None, ask=None) -> tuple[str, list, dict]:
+    """(text, ledger refs, the JSON record) of market index number n. prev: the last index's record;
+    ask: the model door for the reading (harness.ask), none for numbers only."""
     now = now or time.time()
     cats = summary.get("by_category") or {}
     top = sorted(cats.items(), key=lambda kv: -kv[1].get("sold_6h", 0))[:TOP]
@@ -67,10 +114,28 @@ def index_post(summary: dict, n: int, no_seller: list, source: str, now: float |
     if breakage:
         lines.append("Goods that broke after the sale, by grade: "
                      + ", ".join(f"{g} {b}/{s} ({b / s:.0%})" for g, (b, s) in breakage.items()))
+    moved_line, moved = since(record, prev)
+    if moved_line:
+        lines.insert(1, moved_line)
+        record["moved"] = moved
+    reading = commentary("\n".join(lines), ask) if ask else None
+    if reading:
+        lines.insert(1, "Reading: " + reading)
     lines.append("Source: settle and broken entries of the public ledger (/api/ledger); the refs below are samples.")
     lines.append(json.dumps(record, ensure_ascii=False, separators=(",", ":")))
     refs = [v["last_seq"] for _, v in top if v.get("last_seq")][:TOP]
     return "\n".join(lines), refs, record
+
+
+def opening_post(inventory: dict) -> str:
+    """Our shop's one announcement, from what its stock holds now."""
+    units = [u for u in inventory.get("units") or [] if u.get("grade") != "expired"]
+    cats = {u.get("category") for u in units if u.get("category")}
+    food = {u.get("category") for u in units if u.get("category") and u.get("kind") == "food"}
+    return (f"{common.SHOP_NAME} is open: {len(units)} units in {len(cats)} categories ({len(food)} food, "
+            f"{len(cats) - len(food)} goods). Every unit ships with the market's certificate and its true grade "
+            "(goods: A new, B damaged box, C refurbished; food: share of shelf life left). Ask by SKU, or by category "
+            "for a menu of up to 3; say how long food must last. Paid 6-hour warranty on goods.")
 
 
 def wanted(posts: list, demand: list, seen: set) -> list:

@@ -8,8 +8,11 @@ Each pass does only what is due, in this order:
                         (analysis/business.jsonl, for the briefings); the file check (contract.py:
                         the fields each part counts on, problems logged); shops' stock lists if the
                         market shows them; the wanted categories restock reads (analysis/wanted.json)
-    index        3 h    the market index on the forum, as our buyer (forum.py); skipped until
-                        the ledger holds MIN_INDEX settles of the last day
+    opening     10 min  once, our shop's opening post, when the first day's stock is in
+                        (OPEN_CATEGORIES categories, or OPEN_MIN after OPEN_WAIT)
+    index        3 h    the market index on the forum, as our buyer (forum.py): what moved since
+                        the last one and a checked reading by MODEL_MID; skipped until the ledger
+                        holds MIN_INDEX settles of the last day
     replies     10 min  other agents' "wanted" posts: a data reply as our buyer and a stock reply
                         as our shop, each at most once every 30 minutes
     seller       3 h    the seller analysis (analysts.py, MODEL_MID + ledger_query)
@@ -32,12 +35,15 @@ import common
 import context
 import contract
 import forum
+import harness
 import ledger
 
-EVERY = {"collect": 3600, "index": 3 * 3600, "replies": 600, "seller": 3 * 3600, "buyer": 3 * 3600,
+EVERY = {"collect": 3600, "opening": 600, "index": 3 * 3600, "replies": 600, "seller": 3 * 3600, "buyer": 3 * 3600,
          "integrated": 12 * 3600}
 REPLY_GAP = 1800
 MIN_INDEX = 20
+OPEN_CATEGORIES = 100    # categories in stock before our shop announces itself (day one stocks about 116)
+OPEN_MIN, OPEN_WAIT = 20, 1800   # or at least this many, half an hour after the first stock came in
 SLEEP = 600
 LOCK_STALE = 1800
 LOG = common.HERE / "logs" / "analysis.log"
@@ -100,13 +106,27 @@ def no_seller(now: float) -> tuple[list, str]:
     return [forum.leaf(c) for c, _ in unmet.most_common() if c], "our buyer's orders"
 
 
-def index(now: float, state: dict) -> str | None:
+def opening(now: float, state: dict) -> str | None:
+    """Our shop's one opening post, once the first day's stock is in; None until then."""
+    inv = common.market_file("inventory.json", {}) or {}
+    cats = {u.get("category") for u in inv.get("units") or [] if u.get("category") and u.get("grade") != "expired"}
+    if cats and not state.get("first_stock"):
+        state["first_stock"] = now
+    if not (len(cats) >= OPEN_CATEGORIES or (len(cats) >= OPEN_MIN and now - state.get("first_stock", now) >= OPEN_WAIT)):
+        return None
+    forum.outbox(post=forum.opening_post(inv), **{"as": "shop"})
+    state["opened"] = now
+    return f"opening post as our shop ({len(cats)} categories in stock)"
+
+
+def index(now: float, state: dict, ask=None) -> str | None:
     summary = common.market_file("market_summary.json", {}) or {}
     if summary.get("settles_24h", 0) < MIN_INDEX:
         return None                                             # not enough to publish; try again next pass
     n = state.get("index_n", 0) + 1
     missing, source = no_seller(now)
-    text, refs, record = forum.index_post(summary, n, missing, source, now)
+    prev = common.read_json(folder() / "last_index.json") or None
+    text, refs, record = forum.index_post(summary, n, missing, source, now, prev=prev, ask=ask or harness.ask)
     forum.outbox(post=text, refs=refs, **{"as": "buyer"})
     common.write_json(folder() / "last_index.json", record)
     state["index_n"] = n
@@ -158,6 +178,12 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
             try:
                 if name == "collect":
                     note = collect(now, get_ledger, get_json)
+                elif name == "opening":
+                    if state.get("opened"):
+                        continue
+                    note = opening(now, state)
+                    if note is None:
+                        continue                                # stock not in yet; look again next pass
                 elif name == "index":
                     note = index(now, state)
                     if note is None:
