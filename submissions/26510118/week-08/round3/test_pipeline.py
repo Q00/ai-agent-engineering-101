@@ -42,7 +42,8 @@ import pricing                                                                  
 import restock                                                                   # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location("market_kit", HERE.parents[3] / "scripts" / "market_kit.py")
+spec = importlib.util.spec_from_file_location("market_kit", os.environ.get("KIT_FILE")                 # the server keeps it elsewhere
+                                              or HERE.parents[3] / "scripts" / "market_kit.py")
 kit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(kit)
 
