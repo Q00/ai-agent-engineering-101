@@ -294,6 +294,14 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
     return r
 
 
+def category_of(order: dict, catalog: dict):
+    """The order's category as the catalog names it: the order's own field, else its acceptable SKUs'
+    category, else its item (restock matches wanted categories against the catalog's names)."""
+    found = next(((catalog.get(s) or {}).get("category") for s in order.get("acceptable") or []
+                  if (catalog.get(s) or {}).get("category")), None)
+    return order.get("category") or found or order.get("item")
+
+
 def median_list(order: dict, catalog: dict):
     ps = sorted((catalog.get(s) or {}).get("list_price") for s in order.get("acceptable", []) if catalog.get(s))
     return ps[len(ps) // 2] if ps else None
@@ -308,14 +316,14 @@ async def amain(a) -> dict:
     rules = common.rules()["buyer"]
     nb = memory.load()
     memory.sync(nb)                                                 # B4: what the kit wrote since the last order
-    base = {"order": order.get("order"), "category": order.get("item"), "budget": a.budget, "kind": order.get("kind"),
+    base = {"order": order.get("order"), "category": category_of(order, catalog), "budget": a.budget, "kind": order.get("kind"),
             "use_within_hours": order.get("use_within_hours"), "median_list": median_list(order, catalog)}
     cands = candidates(order, shops, catalog, nb, summary, rules) if order.get("acceptable") else []
     c, poor = choose(cands, nb) if cands else (None, "no shop has an acceptable product in stock")
     if c is None:
         common.record("orders", **base, candidates=len(cands), deal=False, left=poor)
         if not cands:
-            common.record("unmet", order=order.get("order"), category=order.get("item"), kind=order.get("kind"))
+            common.record("unmet", order=order.get("order"), category=base["category"], kind=order.get("kind"))
         memory.save(nb)
         return {"shop": "", "receipt": None, "stars": 3, "review": f"No deal on {a.item}: {poor}.", "accept": {}}
     print(f"[buyer] {len(cands)} candidate(s); {c['shop']['name']} {c['sku']} list {c['list']}, expected "

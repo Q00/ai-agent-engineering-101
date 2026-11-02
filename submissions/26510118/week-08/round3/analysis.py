@@ -5,7 +5,8 @@
 
 Each pass does only what is due, in this order:
     collect      1 h    the public ledger -> market_summary.json; a snapshot of our business
-                        (analysis/business.jsonl, for the briefings); shops' stock lists if the
+                        (analysis/business.jsonl, for the briefings); the file check (contract.py:
+                        the fields each part counts on, problems logged); shops' stock lists if the
                         market shows them; the wanted categories restock reads (analysis/wanted.json)
     index        3 h    the market index on the forum, as our buyer (forum.py); skipped until
                         the ledger holds MIN_INDEX settles of the last day
@@ -29,6 +30,7 @@ import httpx
 import analysts
 import common
 import context
+import contract
 import forum
 import ledger
 
@@ -65,6 +67,9 @@ def collect(now: float, get_ledger=None, get_json=None) -> str:
     summary = ledger.summarize(catalog, now)
     common.write_json(common.MARKET_DIR / "market_summary.json", summary)
     context.snapshot(now)                                       # what the next briefings compare against
+    problems = contract.check()["problems"]
+    for p in problems[:8]:
+        log(f"[contract] {p}")
     stock_note = "shops' stock not shown"
     try:
         shops = (get_json or market_get)("/api/shops")
@@ -80,7 +85,8 @@ def collect(now: float, get_ledger=None, get_json=None) -> str:
     for _, cat in forum.wanted(common.market_file("forum.json", []) or [], common.market_file("demand.json", []) or [], set()):
         wanted[cat] += 1
     common.write_json(folder() / "wanted.json", {"at": int(now), "categories": dict(wanted)})
-    return f"{n} new ledger entries, {summary.get('settles_24h', 0)} settles in 24 h, {stock_note}, {len(wanted)} wanted categories"
+    return (f"{n} new ledger entries, {summary.get('settles_24h', 0)} settles in 24 h, {stock_note}, {len(wanted)} wanted categories, "
+            f"file check: {len(problems)} problem(s)")
 
 
 def no_seller(now: float) -> tuple[list, str]:
@@ -91,7 +97,7 @@ def no_seller(now: float) -> tuple[list, str]:
         return [d["category"].split(">")[-1] for d in sorted(demand, key=lambda d: -d.get("skus", 0))
                 if d["category"] not in have], "shops' stock lists"
     unmet = Counter(u.get("category") for u in common.records("unmet") if (u.get("ts") or 0) >= now - 86400)
-    return [c for c, _ in unmet.most_common()], "our buyer's orders"
+    return [forum.leaf(c) for c, _ in unmet.most_common() if c], "our buyer's orders"
 
 
 def index(now: float, state: dict) -> str | None:
