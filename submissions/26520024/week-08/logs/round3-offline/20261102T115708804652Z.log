@@ -1,0 +1,115 @@
+test_bounded_candidates_retrieve_relevant_memory (test_r3_buyer.BuyerTests) ... ok
+test_changed_task_id_is_rejected_before_another_offer (test_r3_buyer.BuyerTests) ... ok
+test_exact_sku_private_budget_pending_full_receipt (test_r3_buyer.BuyerTests) ... ok
+test_expired_order_never_contacts_model_or_shop (test_r3_buyer.BuyerTests) ... ok
+test_fixed_order_cli_and_live_guard (test_r3_buyer.BuyerTests) ... ok
+test_goods_warranty_is_configurable (test_r3_buyer.BuyerTests) ... ok
+test_model_failure_has_no_negative_public_rating_or_retry (test_r3_buyer.BuyerTests) ... ok
+test_offer_guard_applies_even_if_injected_model_skips_validator (test_r3_buyer.BuyerTests) ... ok
+test_offer_limit_leaves_no_receipt_and_closes_wire (test_r3_buyer.BuyerTests) ... ok
+test_only_exact_acceptable_positive_stock (test_r3_buyer.BuyerTests) ... ok
+test_receipt_identity_signature_and_offer_guards (test_r3_buyer.BuyerTests) ... ok
+test_repeated_order_reuses_pending_receipt_without_negotiation (test_r3_buyer.BuyerTests) ... ok
+test_reused_order_id_with_changed_details_cannot_negotiate (test_r3_buyer.BuyerTests) ... ok
+test_unknown_numbers_are_not_prices (test_r3_buyer.BuyerTests) ... ok
+test_context_is_bounded_and_raw_evidence_unchanged (test_r3_context.ContextTests) ... ok
+test_default_projection_for_reflection_omits_private_order_and_prose (test_r3_context.ContextTests) ... ok
+test_pending_scopes_both_shop_and_sku (test_r3_context.ContextTests) ... ok
+test_seller_does_not_receive_buyer_budget_or_pending_records (test_r3_context.ContextTests) ... ok
+test_sql_scope_can_find_relevant_evidence_beyond_recent_global_window (test_r3_context.ContextTests) ... ok
+test_zero_limit_returns_no_model_records (test_r3_context.ContextTests) ... ok
+test_analysis_ttl_tracks_input_version_and_refreshes_after_expiry (test_r3_discovery.DiscoveryTests) ... ok
+test_demand_metadata_and_forum_are_not_sales (test_r3_discovery.DiscoveryTests) ... ok
+test_duplicate_order_is_one_category_observation (test_r3_discovery.DiscoveryTests) ... ok
+test_fabricated_evidence_and_unknown_sku_rejected (test_r3_discovery.DiscoveryTests) ... ok
+test_model_evidence_is_bounded_without_losing_numerical_counts (test_r3_discovery.DiscoveryTests) ... ok
+test_public_and_private_receipt_deduplicate (test_r3_discovery.DiscoveryTests) ... ok
+test_related_unseen_is_unknown_and_price_comparable (test_r3_discovery.DiscoveryTests) ... ok
+test_scalar_settlement_ledger_matches_public_sequence (test_r3_discovery.DiscoveryTests) ... ok
+test_time_decay_and_growth_need_evidence_in_both_windows (test_r3_discovery.DiscoveryTests) ... ok
+test_unavailable_model_records_failure_without_hypotheses (test_r3_discovery.DiscoveryTests) ... ok
+test_category_exposure_limit (test_r3_restock.RestockTests) ... ok
+test_cli_is_inert_without_explicit_live_enable (test_r3_restock.RestockTests) ... r3_restock: disabled; R3_ENABLE_LIVE=1 is required
+ok
+test_food_and_trading_horizon_guard (test_r3_restock.RestockTests) ... ok
+test_fresh_snapshot_cooldown_and_commitment_ttl (test_r3_restock.RestockTests) ... ok
+test_goods_charge_one_percent_of_cost_daily_but_food_has_no_storage_charge (test_r3_restock.RestockTests) ... ok
+test_initial_exploration_is_three_diverse_units_under_budget (test_r3_restock.RestockTests) ... ok
+test_inventory_change_during_model_invalidates_intent (test_r3_restock.RestockTests) ... r3_restock: Inventory changed during restock decision; retry from fresh state
+ok
+test_inventory_timestamp_refresh_during_model_preserves_intent (test_r3_restock.RestockTests) ... ok
+test_inventory_unit_change_during_model_invalidates_intent (test_r3_restock.RestockTests) ... r3_restock: Inventory changed during restock decision; retry from fresh state
+ok
+test_model_failure_or_invalid_result_does_not_fabricate_purchase (test_r3_restock.RestockTests) ... r3_restock: Discovery model unavailable: model unavailable
+ok
+test_one_order_does_not_purchase_all_substitutes_or_repeat_later (test_r3_restock.RestockTests) ... ok
+test_pending_budget_preserves_cash_reserve_and_stock_caps (test_r3_restock.RestockTests) ... ok
+test_reconciliation_preserves_fulfilled_units_before_matching_new_arrivals (test_r3_restock.RestockTests) ... ok
+test_simultaneous_hooks_emit_one_intent (test_r3_restock.RestockTests) ... ok
+test_stale_snapshot_blocks_model_and_intent (test_r3_restock.RestockTests) ... r3_restock: inventory snapshot is stale or from the future
+ok
+test_validation_cannot_raise_caps_add_skus_or_duplicate (test_r3_restock.RestockTests) ... ok
+test_actual_settlement_evidence_and_idempotent_ledger (test_r3_review.ReviewTests) ... ok
+test_cli_locked_before_reading_deal_or_recording_memory (test_r3_review.ReviewTests) ... ok
+test_false_quality_claim_is_evidence_not_automatic_four_stars (test_r3_review.ReviewTests) ... ok
+test_grade_b_fair_price_and_no_quality_claim (test_r3_review.ReviewTests) ... ok
+test_insufficient_shelf_life_and_zero_value (test_r3_review.ReviewTests) ... ok
+test_ledger_cannot_be_reused_for_another_unit (test_r3_review.ReviewTests) ... ok
+test_missing_quality_evidence_is_not_invented (test_r3_review.ReviewTests) ... ok
+test_payment_ledger_corroboration (test_r3_review.ReviewTests) ... ok
+test_unsettled_and_mismatched_callback_rejected (test_r3_review.ReviewTests) ... ok
+test_cli_refuses_before_building_without_enable_flag (test_r3_seller.InventorySellerTests) ... ok
+test_concurrent_sellers_never_promise_same_unit (test_r3_seller.InventorySellerTests) ... Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_deadline_during_decision_prevents_receipt (test_r3_seller.InventorySellerTests) ... ok
+test_expired_quote_releases_stock_but_old_task_cannot_sign (test_r3_seller.InventorySellerTests) ... Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_freshness_and_unit_expiry_are_rechecked_after_model (test_r3_seller.InventorySellerTests) ... ok
+test_import_has_no_inventory_key_model_or_sqlite_effects (test_r3_seller.InventorySellerTests) ... ok
+test_injection_and_game_text_never_become_offers (test_r3_seller.InventorySellerTests) ... ok
+test_invented_stock_grade_and_quote_raise_are_rejected (test_r3_seller.InventorySellerTests) ... ok
+test_korean_name_category_and_explicit_sku_retrieval (test_r3_seller.InventorySellerTests) ... ok
+test_missing_stale_wrong_round_inventory_fail_closed_before_decision (test_r3_seller.InventorySellerTests) ... ok
+test_no_certificate_or_expired_unit_cannot_be_quoted (test_r3_seller.InventorySellerTests) ... ok
+test_policy_allows_below_cost_only_near_expiry_or_terminal_deadline (test_r3_seller.InventorySellerTests) ... ok
+test_receipt_signs_exact_market_body_and_certified_unit (test_r3_seller.InventorySellerTests) ... ok
+test_restart_keeps_reservation_and_signed_unit_tombstone (test_r3_seller.InventorySellerTests) ... ok
+test_bad_lines_do_not_block_reconciliation (test_r3_shared.SharedTests) ... ok
+test_breakage_preserves_ambiguous_attribution (test_r3_shared.SharedTests) ... ok
+test_default_maintenance_never_enqueues (test_r3_shared.SharedTests) ... ok
+test_expired_food_cannot_be_revived (test_r3_shared.SharedTests) ... ok
+test_fake_reflection_reference_rejected (test_r3_shared.SharedTests) ... ok
+test_forum_is_not_a_fact_or_lesson (test_r3_shared.SharedTests) ... ok
+test_idempotent_events_and_independent_pending (test_r3_shared.SharedTests) ... ok
+test_incremental_partial_and_rotated_payments (test_r3_shared.SharedTests) ... ok
+test_observer_default_does_not_request_anything (test_r3_shared.SharedTests) ... ok
+test_observer_ingests_settlements_not_hidden_orders (test_r3_shared.SharedTests) ... ok
+test_optional_forum_enqueues_once_and_honors_kit (test_r3_shared.SharedTests) ... ok
+test_reflection_requires_real_references_and_is_cached (test_r3_shared.SharedTests) ... ok
+test_strict_numbers_json_and_policy (test_r3_shared.SharedTests) ... ok
+test_timezone_and_deadline (test_r3_shared.SharedTests) ... ok
+
+----------------------------------------------------------------------
+Ran 83 tests in 1.539s
+
+OK
+
+CLI lock r3_seller.py --port 12345
+usage: r3_seller.py [-h] --port PORT [--name NAME]
+r3_seller.py: error: Live operation is disabled; R3_ENABLE_LIVE=1 is required
+
+CLI lock r3_buyer.py --shops unused --order unused --item unused --budget 1
+usage: r3_buyer.py [-h] --shops SHOPS --item ITEM --budget BUDGET --order
+                   ORDER
+r3_buyer.py: error: R3_ENABLE_LIVE=1 is required for models or network access
+
+CLI lock r3_restock.py --state unused
+{"buy": []}
+r3_restock: disabled; R3_ENABLE_LIVE=1 is required
+
+CLI lock r3_review.py --deal unused
+Round 3 is locked. Deployment is not enabled; use offline tests or --dry-run.
+
+CLI lock r3_controller.py
+Round 3 is locked. Deployment is not enabled; use offline tests or --dry-run.
