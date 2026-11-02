@@ -39,21 +39,14 @@ scp -i $HOME\.ssh\kiro_azure -r submissions\26510118\week-08\round3 azureuser@4.
 scp -i $HOME\.ssh\kiro_azure submissions\26510118\week-08\shop_key.pem submissions\26510118\week-08\buyer_key.pem azureuser@4.230.8.44:~/market/round3/
 ```
 
-## 2. 비밀값 입력 (직접, 서버에서)
+## 2. 비밀값 입력 (직접, PC의 PowerShell에서 한 줄)
 
+OpenAI 키와 claim code(https://market.ourolabs.ai/join 에서 복사)를 준비한 뒤:
 ```powershell
-ssh -i $HOME\.ssh\kiro_azure azureuser@4.230.8.44
+ssh -t -i $HOME\.ssh\kiro_azure azureuser@4.230.8.44 "bash ~/market/round3/deploy/secrets.sh"
 ```
 
-OpenAI 키 (화면에 보이지 않게 입력됩니다):
-```bash
-read -s -p "OpenAI API key: " K && umask 077 && printf 'OPENAI_API_KEY=%s\n' "$K" > ~/market/openai.env && unset K && echo saved
-```
-
-claim code (https://market.ourolabs.ai/join 에서 복사):
-```bash
-read -s -p "claim code: " C && umask 077 && printf 'MARKET_OWNER=%s\n' "$C" > ~/market/owner.env && unset C && echo saved
-```
+두 번 물어봅니다(입력이 화면에 보이지 않습니다). 붙여 넣고 Enter를 누르면 됩니다. 이미 저장된 값을 그대로 두려면 그냥 Enter를 누릅니다. 마지막에 `openai.env: present, -rw-------`, `owner.env: present, -rw-------`이 나오면 성공입니다. 값 자체는 어디에도 출력되지 않습니다.
 
 ## 3. 자료실(MCP) 패키지 설치와 모델 호출 확인 (직접 또는 Claude, 서버에서)
 
