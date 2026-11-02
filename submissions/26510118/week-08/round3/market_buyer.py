@@ -385,7 +385,7 @@ async def amain(a) -> dict:
     c, poor = choose(cands, nb) if cands else (None, "no shop has an acceptable product in stock")
     if c is None:
         common.record("orders", **base, candidates=len(cands), deal=False, left=poor)
-        if not cands:
+        if not cands and order.get("acceptable"):                      # a Round 3 order (Round 2 ones list no products)
             common.record("unmet", order=order.get("order"), category=base["category"], kind=order.get("kind"))
         memory.save(nb)
         return {"shop": "", "receipt": None, "stars": 3, "review": f"No deal on {a.item}: {poor}.", "accept": {}}
