@@ -1,0 +1,96 @@
+OFFLINE TESTS — synthetic fixtures, no model or market trades
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python', '-m', 'unittest', 'discover', '-s', '/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08', '-p', 'test_*.py', '-v']
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_adaptive_seller.py:16: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_busy_shop_never_starts_a_third_model_call (test_adaptive_seller.ConcurrencyTests.test_busy_shop_never_starts_a_third_model_call) ... ok
+test_disconnect_keeps_slot_until_worker_finishes (test_adaptive_seller.ConcurrencyTests.test_disconnect_keeps_slot_until_worker_finishes) ... ok
+test_below_reserve_or_wrong_acceptance_cannot_issue_receipt (test_adaptive_seller.SellerTests.test_below_reserve_or_wrong_acceptance_cannot_issue_receipt) ... ok
+test_exact_quote_can_be_accepted_at_turn_limit (test_adaptive_seller.SellerTests.test_exact_quote_can_be_accepted_at_turn_limit) ... ok
+test_history_is_bounded_and_latest_price_survives (test_adaptive_seller.SellerTests.test_history_is_bounded_and_latest_price_survives) ... ok
+test_max_turns_end_bargaining_without_another_model_call (test_adaptive_seller.SellerTests.test_max_turns_end_bargaining_without_another_model_call) ... ok
+test_missing_snapshot_uses_baseline_without_network_or_extra_model_call (test_adaptive_seller.SellerTests.test_missing_snapshot_uses_baseline_without_network_or_extra_model_call) ... Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_model_output_must_stay_in_experimental_opening_band (test_adaptive_seller.SellerTests.test_model_output_must_stay_in_experimental_opening_band) ... ok
+test_policy_is_pinned_and_signed_receipt_is_not_called_settlement (test_adaptive_seller.SellerTests.test_policy_is_pinned_and_signed_receipt_is_not_called_settlement) ... Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_acp_requires_matching_endpoint_and_checkout_tools (test_deploy.DeploymentTests.test_acp_requires_matching_endpoint_and_checkout_tools) ... ok
+test_archive_paths_links_and_private_files_are_rejected (test_deploy.DeploymentTests.test_archive_paths_links_and_private_files_are_rejected) ... ok
+test_archive_round_trip_excludes_keys_auth_memory_logs_and_venv (test_deploy.DeploymentTests.test_archive_round_trip_excludes_keys_auth_memory_logs_and_venv) ... ok
+test_concurrent_deployment_is_rejected (test_deploy.DeploymentTests.test_concurrent_deployment_is_rejected) ... ok
+test_destination_symlink_cannot_overwrite_private_file (test_deploy.DeploymentTests.test_destination_symlink_cannot_overwrite_private_file) ... ok
+test_dropin_uses_week08_but_keeps_existing_auth_and_interpreter (test_deploy.DeploymentTests.test_dropin_uses_week08_but_keeps_existing_auth_and_interpreter) ... ok
+test_file_hash_mismatch_is_rejected_even_with_valid_archive_hash (test_deploy.DeploymentTests.test_file_hash_mismatch_is_rejected_even_with_valid_archive_hash) ... ok
+test_install_then_rollback_restores_source_and_preserves_live_data (test_deploy.DeploymentTests.test_install_then_rollback_restores_source_and_preserves_live_data) ... ok
+test_only_new_logs_and_latest_start_can_prove_readiness (test_deploy.DeploymentTests.test_only_new_logs_and_latest_start_can_prove_readiness) ... ok
+test_rollback_restores_previous_dropin_and_leaves_stopped_service_stopped (test_deploy.DeploymentTests.test_rollback_restores_previous_dropin_and_leaves_stopped_service_stopped) ... ok
+test_tampered_transport_archive_is_rejected_before_extracting (test_deploy.DeploymentTests.test_tampered_transport_archive_is_rejected_before_extracting) ... ok
+test_bad_configuration_cannot_poll_aggressively (test_feedback.PolicyTests.test_bad_configuration_cannot_poll_aggressively) ... ok
+test_duplicate_reviews_and_injection_do_not_become_evidence (test_feedback.PolicyTests.test_duplicate_reviews_and_injection_do_not_become_evidence) ... ok
+test_long_outage_does_not_compare_old_market_totals_with_new_events (test_feedback.PolicyTests.test_long_outage_does_not_compare_old_market_totals_with_new_events) ... ok
+test_model_errors_and_cancellations_do_not_lower_prices (test_feedback.PolicyTests.test_model_errors_and_cancellations_do_not_lower_prices) ... ok
+test_no_change_on_first_snapshot_or_same_events (test_feedback.PolicyTests.test_no_change_on_first_snapshot_or_same_events) ... ok
+test_price_complaints_need_own_rejections_and_competitor_context (test_feedback.PolicyTests.test_price_complaints_need_own_rejections_and_competitor_context) ... ok
+test_rank_uses_profit_not_registry_order_and_limits_three (test_feedback.PolicyTests.test_rank_uses_profit_not_registry_order_and_limits_three) ... ok
+test_receipts_alone_do_not_count_as_settled_sales (test_feedback.PolicyTests.test_receipts_alone_do_not_count_as_settled_sales) ... ok
+test_repeated_updates_are_bounded (test_feedback.PolicyTests.test_repeated_updates_are_bounded) ... ok
+test_round_transition_and_market_reset_start_new_baseline (test_feedback.PolicyTests.test_round_transition_and_market_reset_start_new_baseline) ... ok
+test_incremental_refresh_failure_keeps_good_snapshot (test_feedback.StorageTests.test_incremental_refresh_failure_keeps_good_snapshot) ... ok
+test_oversize_response_is_rejected_before_cache_write (test_feedback.StorageTests.test_oversize_response_is_rejected_before_cache_write) ... ok
+test_refresh_uses_only_two_fixed_public_endpoints (test_feedback.StorageTests.test_refresh_uses_only_two_fixed_public_endpoints) ... ok
+test_snapshot_expires_and_reader_never_forwards_external_text (test_feedback.StorageTests.test_snapshot_expires_and_reader_never_forwards_external_text) ... ok
+test_tail_ignores_incomplete_append_and_deduplicates_tasks (test_feedback.StorageTests.test_tail_ignores_incomplete_append_and_deduplicates_tasks) ... ok
+test_cancel_during_model_releases_reservation_without_late_receipt (test_inventory.InventoryTests.test_cancel_during_model_releases_reservation_without_late_receipt) ... ok
+test_earliest_expiry_then_release (test_inventory.InventoryTests.test_earliest_expiry_then_release) ... ok
+test_expired_and_stale_inventory_never_sells (test_inventory.InventoryTests.test_expired_and_stale_inventory_never_sells) ... ok
+test_expiry_during_model_call_prevents_receipt (test_inventory.InventoryTests.test_expiry_during_model_call_prevents_receipt) ... ok
+test_food_receipt_does_not_freeze_a_grade_claim (test_inventory.InventoryTests.test_food_receipt_does_not_freeze_a_grade_claim) ... ok
+test_real_a2a_receipt_opens_official_v4_checkout (test_inventory.InventoryTests.test_real_a2a_receipt_opens_official_v4_checkout) ... ok
+test_receipt_hold_survives_restart_until_inventory_removes_it (test_inventory.InventoryTests.test_receipt_hold_survives_restart_until_inventory_removes_it) ... ok
+test_unknown_explicit_sku_does_not_sell_different_item (test_inventory.InventoryTests.test_unknown_explicit_sku_does_not_sell_different_item) ... ok
+test_wrong_amount_and_below_cost_cannot_issue_receipt (test_inventory.InventoryTests.test_wrong_amount_and_below_cost_cannot_issue_receipt) ... ok
+test_agreement_is_pending_until_matching_payment (test_round3_buyer.BuyerContractTests.test_agreement_is_pending_until_matching_payment) ... ok
+test_buyer_and_inventory_seller_trade_without_model_or_network (test_round3_buyer.BuyerContractTests.test_buyer_and_inventory_seller_trade_without_model_or_network) ... HTTP REQUEST: {"method": "GET", "url": "http://testserver/.well-known/agent-card.json", "headers": {"A2A-Version": "1.0"}, "body": null}
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/market_buyer.py:221: StarletteDeprecationWarning: You should not use the 'timeout' argument with the TestClient. See https://github.com/Kludex/starlette/issues/1108 for more information.
+  response = self.client.request(method, url, headers=VERSION_HEADERS,
+HTTP RESPONSE: {"status": 200, "body": "{\"name\":\"Lamp Shop\",\"description\":\"Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.\",\"supportedInterfaces\":[{\"url\":\"http://127.0.0.1:9999/\",\"protocolBinding\":\"JSONRPC\",\"protocolVersion\":\"1.0\"}],\"version\":\"1.0.0\",\"capabilities\":{\"streaming\":true},\"defaultInputModes\":[\"text/plain\"],\"defaultOutputModes\":[\"application/json\",\"text/plain\"],\"skills\":[{\"id\":\"negotiate\",\"name\":\"Negotiate a purchase\",\"description\":\"Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.\",\"tags\":[\"shopping\",\"negotiation\"],\"examples\":[\"I want to buy a lamp\",\"90\"]}]}"}
+HTTP REQUEST: {"method": "POST", "url": "http://127.0.0.1:9999/", "headers": {"A2A-Version": "1.0"}, "body": {"jsonrpc": "2.0", "id": "489bd8ac-75f9-4552-a993-e48c4ffe79d9", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "6f88f763-2b02-4c1f-94be-5247809f9b90", "parts": [{"text": "I want to buy a G00001"}]}}}}
+HTTP RESPONSE: {"status": 200, "body": "{\"result\":{\"task\":{\"id\":\"2202892a-ddc4-494a-914a-d04a0597c825\",\"contextId\":\"c0a4a75a-058e-4ac1-9b41-f9eeb9f3eabf\",\"status\":{\"state\":\"TASK_STATE_INPUT_REQUIRED\",\"message\":{\"messageId\":\"a1c46bed-050d-40df-bdbc-154e55e96c33\",\"contextId\":\"c0a4a75a-058e-4ac1-9b41-f9eeb9f3eabf\",\"taskId\":\"2202892a-ddc4-494a-914a-d04a0597c825\",\"role\":\"ROLE_AGENT\",\"parts\":[{\"text\":\"테스트 의자 (G00001). Market certificate at checkout; no warranty offered. Asking price: 65000.\"}]},\"timestamp\":\"2026-11-02T05:51:31.275278Z\"},\"history\":[{\"messageId\":\"6f88f763-2b02-4c1f-94be-5247809f9b90\",\"contextId\":\"c0a4a75a-058e-4ac1-9b41-f9eeb9f3eabf\",\"taskId\":\"2202892a-ddc4-494a-914a-d04a0597c825\",\"role\":\"ROLE_USER\",\"parts\":[{\"text\":\"I want to buy a G00001\"}]}]}},\"id\":\"489bd8ac-75f9-4552-a993-e48c4ffe79d9\",\"jsonrpc\":\"2.0\"}"}
+BUYER DECISION: {"action": "offer", "price": 60000, "reason": "test"}
+HTTP REQUEST: {"method": "POST", "url": "http://127.0.0.1:9999/", "headers": {"A2A-Version": "1.0"}, "body": {"jsonrpc": "2.0", "id": "0506270b-c952-4e50-9d9d-b0118dd7f825", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "9f2dd041-a659-45cf-b152-5d3cd53134ba", "parts": [{"text": "60000"}], "taskId": "2202892a-ddc4-494a-914a-d04a0597c825"}}}}
+HTTP RESPONSE: {"status": 200, "body": "{\"result\":{\"task\":{\"id\":\"2202892a-ddc4-494a-914a-d04a0597c825\",\"contextId\":\"c0a4a75a-058e-4ac1-9b41-f9eeb9f3eabf\",\"status\":{\"state\":\"TASK_STATE_COMPLETED\",\"message\":{\"messageId\":\"b002e558-1515-4340-bceb-43310be90f1f\",\"contextId\":\"c0a4a75a-058e-4ac1-9b41-f9eeb9f3eabf\",\"taskId\":\"2202892a-ddc4-494a-914a-d04a0597c825\",\"role\":\"ROLE_AGENT\",\"parts\":[{\"text\":\"Agreed G00001 at 60000; checkout still required.\"}]},\"timestamp\":\"2026-11-02T05:51:31.278239Z\"},\"artifacts\":[{\"artifactId\":\"f4e3748e-c506-45d3-9f88-76e22a03b1a7\",\"name\":\"receipt\",\"parts\":[{\"data\":{\"price\":60000.0,\"claim\":\"A\",\"sig_seller\":\"/bw/lYfE+bGN7o6ArnD1S/SYWZbtP302yRiTJTTMVpV9WPk0qg9/NdIeDwDtYAtDAXUU27w9/f0b0kPPoVBaAA==\",\"task\":\"2202892a-ddc4-494a-914a-d04a0597c825\",\"item\":\"G00001\",\"cert\":true,\"shop\":\"shop\",\"unit\":\"u1\"}}]}],\"history\":[{\"messageId\":\"6f88f763-2b02-4c1f-94be-5247809f9b90\",\"contextId\":\"c0a4a75a-058e-4ac1-9b41-f9eeb9f3eabf\",\"taskId\":\"2202892a-ddc4-494a-914a-d04a0597c825\",\"role\":\"ROLE_USER\",\"parts\":[{\"text\":\"I want to buy a G00001\"}]},{\"messageId\":\"a1c46bed-050d-40df-bdbc-154e55e96c33\",\"contextId\":\"c0a4a75a-058e-4ac1-9b41-f9eeb9f3eabf\",\"taskId\":\"2202892a-ddc4-494a-914a-d04a0597c825\",\"role\":\"ROLE_AGENT\",\"parts\":[{\"text\":\"테스트 의자 (G00001). Market certificate at checkout; no warranty offered. Asking price: 65000.\"}]},{\"messageId\":\"9f2dd041-a659-45cf-b152-5d3cd53134ba\",\"contextId\":\"6cc439b2-3965-48b5-a45c-516247a9b6f8\",\"taskId\":\"2202892a-ddc4-494a-914a-d04a0597c825\",\"role\":\"ROLE_USER\",\"parts\":[{\"text\":\"60000\"}]}]}},\"id\":\"0506270b-c952-4e50-9d9d-b0118dd7f825\",\"jsonrpc\":\"2.0\"}"}
+RECEIPT RECEIVED — NOT PAYMENT: {"item": "G00001", "price": 60000.0, "budget": 99000, "taskId": "2202892a-ddc4-494a-914a-d04a0597c825"}
+ok
+test_food_policy_matches_real_v4_certificate_checker (test_round3_buyer.BuyerContractTests.test_food_policy_matches_real_v4_certificate_checker) ... ok
+test_memory_reader_ignores_partial_append (test_round3_buyer.BuyerContractTests.test_memory_reader_ignores_partial_append) ... ok
+test_only_stock_for_current_order_reaches_model (test_round3_buyer.BuyerContractTests.test_only_stock_for_current_order_reaches_model) ... SHOP SELECTION: {"name": "stocked", "sku": "G00001", "reason": "available"}
+ok
+test_quote_parser_does_not_accept_sku_or_warranty_as_price (test_round3_buyer.BuyerContractTests.test_quote_parser_does_not_accept_sku_or_warranty_as_price) ... ok
+test_settled_review_does_not_expose_budget (test_round3_buyer.BuyerContractTests.test_settled_review_does_not_expose_budget) ... ok
+test_identity_copy_preserves_existing_keys_and_never_overwrites_mismatch (test_runtime.RuntimeTests.test_identity_copy_preserves_existing_keys_and_never_overwrites_mismatch) ... ok
+test_missing_source_key_never_generates_an_identity (test_runtime.RuntimeTests.test_missing_source_key_never_generates_an_identity) ... ok
+test_pinned_kit_exactly_matches_upstream_blob (test_runtime.RuntimeTests.test_pinned_kit_exactly_matches_upstream_blob) ... ok
+test_both_caps_apply_with_integer_flooring (test_strict_buyer.StrictBuyerTests.test_both_caps_apply_with_integer_flooring) ... ok
+test_concessions_are_small_and_receipt_guard_uses_same_limit (test_strict_buyer.StrictBuyerTests.test_concessions_are_small_and_receipt_guard_uses_same_limit) ... ok
+test_four_rounds_end_with_cancellation_and_no_forced_acceptance (test_strict_buyer.StrictBuyerTests.test_four_rounds_end_with_cancellation_and_no_forced_acceptance) ... BUYER DECISION: {"action": "offer", "price": 50000, "reason": "firm"}
+BUYER DECISION: {"action": "offer", "price": 50000, "reason": "firm"}
+BUYER DECISION: {"action": "offer", "price": 50000, "reason": "firm"}
+BUYER DECISION: {"action": "offer", "price": 50000, "reason": "firm"}
+POLICY WALK AWAY: "Negotiation ended at the owner's turn limit without a satisfactory agreement"
+ok
+test_missing_catalog_never_silently_drops_price_condition (test_strict_buyer.StrictBuyerTests.test_missing_catalog_never_silently_drops_price_condition) ... ok
+test_model_cannot_bid_above_limit_even_inside_full_budget (test_strict_buyer.StrictBuyerTests.test_model_cannot_bid_above_limit_even_inside_full_budget) ... ok
+test_v4_rejects_grade_b_or_short_warranty_and_accepts_grade_a_six_hours (test_strict_buyer.StrictBuyerTests.test_v4_rejects_grade_b_or_short_warranty_and_accepts_grade_a_six_hours) ... ok
+test_absent_context_never_invents_a_price_complaint (test_strict_buyer.StrictReviewTests.test_absent_context_never_invents_a_price_complaint) ... ok
+test_any_actual_shortcoming_caps_review_at_two (test_strict_buyer.StrictReviewTests.test_any_actual_shortcoming_caps_review_at_two) ... ok
+test_false_claim_or_zero_value_is_one_even_at_a_low_price (test_strict_buyer.StrictReviewTests.test_false_claim_or_zero_value_is_one_even_at_a_low_price) ... ok
+test_food_assessment_identifies_review_time_not_unproven_payment_condition (test_strict_buyer.StrictReviewTests.test_food_assessment_identifies_review_time_not_unproven_payment_condition) ... ok
+test_good_deal_is_four_and_only_exceptional_value_is_five (test_strict_buyer.StrictReviewTests.test_good_deal_is_four_and_only_exceptional_value_is_five) ... ok
+test_original_policy_is_matched_to_order_shop_receipt_and_task (test_strict_buyer.StrictReviewTests.test_original_policy_is_matched_to_order_shop_receipt_and_task) ... ok
+test_review_never_publishes_private_budget_target_or_limit (test_strict_buyer.StrictReviewTests.test_review_never_publishes_private_budget_target_or_limit) ... ok
+test_reviews_enter_memory_only_after_verified_payment (test_strict_buyer.StrictReviewTests.test_reviews_enter_memory_only_after_verified_payment) ... ok
+
+----------------------------------------------------------------------
+Ran 68 tests in 0.691s
+
+OK
