@@ -6,6 +6,14 @@ BASE=/docker/ax-week08-25620027
 REL="$BASE/releases/${1:?release dir name}"
 IMAGE="ax-week08-25620027:$(echo "$1" | cut -c1-7)-prepared"
 test -f "$REL/evidence/result.json" || { echo "release not verified"; exit 1; }
+# The host's daily `docker image prune -af --filter until=24h` drops extra tags of
+# an image in use (seen 2026-11-02: the release tag vanished, only `prepared` was
+# left), which made this script stop before compose. Re-tag from the image id the
+# release recorded when it was verified.
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  ID=$(sed -n 's/.*"image_id": "\(sha256:[0-9a-f]*\)".*/\1/p' "$REL/evidence/result.json")
+  [ -n "$ID" ] && docker image inspect "$ID" >/dev/null 2>&1 && docker tag "$ID" "$IMAGE"
+fi
 docker image inspect "$IMAGE" >/dev/null
 docker tag "$IMAGE" ax-week08-25620027:prepared
 ln -sfn "$REL" "$BASE/current"

@@ -18,16 +18,25 @@ if [ "$(date -u +%FT%TZ)" \> "$END_UTC" ]; then
   rm -f "$BASE/r3-active"
   exit 0
 fi
-if docker ps --format '{{.Names}}' | grep -qx 'ax-week08-25620027-r3-r3-1'; then
-  # the policy manager runs beside the kit; if it died, restart the whole release
-  if docker top ax-week08-25620027-r3-r3-1 2>/dev/null | grep -q 'r3.manager'; then
-    exit 0
-  fi
-  started=$(docker inspect --format '{{.State.StartedAt}}' ax-week08-25620027-r3-r3-1 2>/dev/null)
+C=ax-week08-25620027-r3-r3-1
+# The manager runs beside the kit inside the container. `docker top` sometimes fails
+# with a daemon error and returned nothing, which logged 31 false "missing" relaunches
+# on 2026-11-01..02 while the manager was fine. Read /proc inside the container
+# instead (the bracket keeps this command from matching itself), twice.
+manager_running() {
+  docker exec "$C" sh -c 'grep -lsa "r3[.]manager" /proc/[0-9]*/cmdline' >/dev/null 2>&1
+}
+if docker ps --format '{{.Names}}' | grep -qx "$C"; then
+  manager_running && exit 0
+  started=$(docker inspect --format '{{.State.StartedAt}}' "$C" 2>/dev/null)
   age=$(( $(date -u +%s) - $(date -u -d "$started" +%s 2>/dev/null || echo 0) ))
   [ "$age" -lt 180 ] && exit 0   # just started; the manager may not be up yet
-  echo "== $(date -u +%FT%TZ) manager process missing (container age ${age}s); relaunching $RELEASE" >>"$LOG"
-  "$BASE/launch-r3.sh" "$RELEASE" >>"$LOG" 2>&1
+  sleep 20
+  manager_running && exit 0
+  # A running container is left alone by `compose up -d`, so restart it in place
+  # (same image, same tunnel) to bring the manager back.
+  echo "== $(date -u +%FT%TZ) manager process missing twice (container age ${age}s); restarting container" >>"$LOG"
+  docker restart -t 20 "$C" >>"$LOG" 2>&1
   exit 0
 fi
 echo "== $(date -u +%FT%TZ) trading container not running; relaunching $RELEASE" >>"$LOG"
