@@ -139,6 +139,24 @@ async def haggle(url):
     return mb.state(t), mb.said(t)
 
 
+def test_card():
+    print("\n[card] what buyers read about our shop")
+    seller, url, _ = start_seller("0.2")
+    try:
+        card = httpx.get(url + "/.well-known/agent-card.json", timeout=5).json()
+    finally:
+        seller.kill()
+    print("    " + card["name"] + " | " + card["description"])
+    check("the card's name and its description of at most 300 characters (the board cuts longer ones)",
+          card["name"] == common.SHOP_NAME == "Kiro Everyday: Groceries & Goods" and len(card["description"]) <= 300,
+          len(card["description"]))
+    check("three skills: buy a product, choose within a category, state what you need",
+          [s["id"] for s in card["skills"]] == ["buy", "browse", "terms"])
+    check("no claim the code does not back: no prices, no superlatives, no words aimed at buyer models",
+          not any(w in json.dumps(card).lower() for w in ("cheapest in", "lowest", "best", "official", "approved",
+                                                          "ai buyer", "buying agent", "75%", "halfway")))
+
+
 def last_negotiation(md):
     return common.read_jsonl(md / "records" / "negotiations.jsonl")[-1]
 
@@ -169,6 +187,7 @@ def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     try:
         test_buyer()
+        test_card()
         test_seller()
     finally:
         shutil.rmtree(ROOT, ignore_errors=True)

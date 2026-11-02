@@ -114,6 +114,6 @@ def shop_reply(category: str, inventory: dict) -> str | None:
         return None
     u = units[0]
     goods = u.get("kind") == "goods"
-    return (f"Kiro729 Shop has {len(units)} {category} unit(s) in stock now, e.g. {u.get('name')} ({u['sku']}). "
+    return (f"{common.SHOP_BRAND} has {len(units)} {category} unit(s) in stock now, e.g. {u.get('name')} ({u['sku']}). "
             "Every unit ships with the market's certificate and its true grade"
             + ("; a 6-hour warranty on request." if goods else "; ask for the shelf life you need."))

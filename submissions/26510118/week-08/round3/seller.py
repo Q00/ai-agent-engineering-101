@@ -41,7 +41,10 @@ import common
 import harness
 import pricing
 
-NAME = "Kiro729 Shop"
+NAME = common.SHOP_NAME              # the card's name and the receipt's shop field
+CARD_DESCRIPTION = ("Groceries and everyday goods from our stock. Every unit ships with the market's certificate and its "
+                    "true grade (goods: A new, B damaged box, C refurbished; food: share of shelf life left). Ask by SKU or "
+                    "by category (menu of up to 3); say how many hours food must last. Paid 6-hour warranty on goods.")
 HOLD = 300               # seconds a silent negotiation keeps its unit (the kit's buyer timeout)
 MENU = 3                # products shown for a category request
 NEED_MARGIN = 1          # hours food must outlast the buyer's stated need
@@ -369,23 +372,32 @@ class Seller(AgentExecutor):
 def build(port: int) -> Starlette:
     card = AgentCard(
         name=NAME,
-        description="A small shop selling food and household goods from its own stock, every unit with the "
-                    "market's certificate and its true grade. Name a SKU or a category, say how long food must "
-                    "last or ask for a warranty on goods, then send a price; every reply is a counteroffer or a "
-                    "signed receipt.",
-        version="3.1.0",
+        description=CARD_DESCRIPTION,
+        version="3.2.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
         supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=f"http://127.0.0.1:{port}/",
                                              protocol_version="1.0")],
-        skills=[AgentSkill(id="negotiate", name="Negotiate a purchase",
-                           description="Ask for an item by SKU or category, optionally with how many hours food "
-                                       "must last or a 6-hour warranty on goods, then send a price. The ask is the "
-                                       "last number in the reply and metadata.ask.",
-                           tags=["shopping", "negotiation"],
-                           examples=["I want to buy 비비고 포기배추김치 5kg x1개 (G29fc9227); it must last 72 hours",
-                                     "I want to buy a 김치", "42000"])],
+        skills=[AgentSkill(id="buy", name="Buy a product",
+                           description="Name a product by its SKU or its name. We reply with the unit we would sell: its "
+                                       "true grade, its shelf life left or its condition, and an asking price. Send a "
+                                       "price as a number to negotiate; a deal ends in a signed receipt, paid through the "
+                                       "market's ACP checkout. The current ask is in each reply's metadata (ask) and is "
+                                       "the last number in its text.",
+                           tags=["groceries", "household goods", "negotiation", "signed receipt"],
+                           examples=["I want to buy 비비고 포기배추김치 5kg x1개 (G29fc9227)", "14000"]),
+                AgentSkill(id="browse", name="Choose within a category",
+                           description="Name a category instead of a product (for example 김치 or 침구). We offer up to 3 "
+                                       "units of it, cheapest ask first, each with its grade and ask. Reply with a SKU to "
+                                       "choose one, or send a price for the first.",
+                           tags=["category", "menu"],
+                           examples=["I want to buy a 김치", "G29fc9227"]),
+                AgentSkill(id="terms", name="State what you need",
+                           description="Say how many hours food must last, or ask for a 6-hour warranty on goods (priced "
+                                       "extra). We offer only units that meet what you state.",
+                           tags=["shelf life", "warranty", "certificate"],
+                           examples=["It must last at least 72 hours.", "Please include a 6-hour warranty."])],
     )
     key = common.load_key("SHOP_KEY_FILE", "shop_key.pem")
     handler = DefaultRequestHandler(agent_executor=Seller(key), task_store=InMemoryTaskStore(), agent_card=card)
