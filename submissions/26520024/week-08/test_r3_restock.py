@@ -1,0 +1,191 @@
+"""Offline budget, inventory freshness, commitment, and purchase-boundary tests."""
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import redirect_stdout
+import io
+import os
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import patch
+
+from r3_common import DEFAULT_POLICY, atomic_json, read_json
+from r3_discovery import build_candidates
+from r3_memory import Memory
+from r3_restock import _pending, bounded_proposals, main, plan_restock, validate_intent
+from test_r3_discovery import CATALOG, NOW, choose_all, event
+
+
+def inventory(balance=1000, units=None):
+    return {'round': 3, 'balance': balance, 'units': units or [], 'storage_per_day': 1}
+
+
+def unit(sku='tea', name='held', cost=30):
+    return dict(CATALOG[sku], unit=name, sku=sku, cost=cost, grade='A', supplied_at=NOW - 60,
+                expires_at=None, cert='test-only')
+
+
+def analysis(events=None, catalog=None):
+    inputs = build_candidates(catalog or CATALOG, events or [], now=NOW)
+    return {'status': 'ok', 'inputs': inputs, 'current_inputs': inputs,
+            'hypotheses': [{'sku': row['sku'], 'evidence_ids': row['evidence_ids'], 'reason': 'Test evidence.'}
+                           for row in inputs['candidates']], 'input_version': 'offline'}
+
+
+def choose(system, state, validator, purpose, deadline, **kwargs):
+    if purpose == 'r3-discovery':
+        return choose_all(system, state, validator, purpose, deadline, **kwargs)
+    return validator({'buy': state['proposals']})
+
+
+class RestockTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.md = Path(self.directory.name)
+        atomic_json(self.md / 'catalog.json', CATALOG)
+        self.write_inventory(inventory())
+
+    def write_inventory(self, value, now=NOW):
+        atomic_json(self.md / 'inventory.json', value)
+        os.utime(self.md / 'inventory.json', (now, now))
+
+    def test_initial_exploration_is_three_diverse_units_under_budget(self):
+        result = bounded_proposals(CATALOG, inventory(), analysis(), [], DEFAULT_POLICY, NOW)
+        self.assertEqual(sum(row['qty'] for row in result), 3)
+        self.assertEqual(len({CATALOG[row['sku']]['category'] for row in result}), 3)
+        self.assertLessEqual(sum(.75 * CATALOG[row['sku']]['list_price'] * row['qty'] for row in result), 100)
+        self.assertEqual(bounded_proposals(CATALOG, inventory(units=[unit(), unit('cup', 'u2'),
+                                          unit('pen', 'u3')]), analysis(), [], DEFAULT_POLICY, NOW), [])
+
+    def test_pending_budget_preserves_cash_reserve_and_stock_caps(self):
+        pending = [{'sku': 'tea', 'qty': 3}, {'sku': 'cup', 'qty': 3}]
+        result = bounded_proposals(CATALOG, inventory(balance=240), analysis(), pending, DEFAULT_POLICY, NOW)
+        self.assertEqual(result, [])
+        events = [event('market_settle', str(i), {'seq': i, 'item': 'tea'}) for i in range(4)]
+        result = bounded_proposals(CATALOG, inventory(units=[unit(), unit(name='u2')]),
+                                   analysis(events), [], DEFAULT_POLICY, NOW)
+        self.assertEqual(next(row for row in result if row['sku'] == 'tea')['qty'], 1)
+        result = bounded_proposals(CATALOG, inventory(units=[unit(name=str(i)) for i in range(40)]),
+                                   analysis(events), [], DEFAULT_POLICY, NOW)
+        self.assertEqual(result, [])
+
+    def test_category_exposure_limit(self):
+        units = [unit(name=str(i), cost=200) for i in range(3)]
+        events = [event('market_settle', str(i), {'seq': i, 'item': 'tea'}) for i in range(4)]
+        result = bounded_proposals(CATALOG, inventory(units=units), analysis(events), [], DEFAULT_POLICY, NOW)
+        self.assertFalse(any(CATALOG[row['sku']]['category'] == 'drinks' for row in result))
+
+    def test_one_order_does_not_purchase_all_substitutes_or_repeat_later(self):
+        events = [event('order_seen', 'o1', {'order': 'o1', 'category': 'drinks', 'acceptable': ['tea', 'tea2']})]
+        result = bounded_proposals(CATALOG, inventory(), analysis(events), [], DEFAULT_POLICY, NOW)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['qty'], 1)
+        held = inventory(units=[unit(result[0]['sku'])])
+        self.assertEqual(bounded_proposals(CATALOG, held, analysis(events), [], DEFAULT_POLICY, NOW), [])
+
+    def test_food_and_trading_horizon_guard(self):
+        policy = dict(DEFAULT_POLICY, trading_deadline=NOW + 2 * 3600)
+        self.assertEqual(bounded_proposals(CATALOG, inventory(), analysis(), [], policy, NOW), [])
+        policy['trading_deadline'] = NOW + 12 * 3600
+        self.assertEqual(bounded_proposals(CATALOG, inventory(), analysis(), [], policy, NOW), [])
+        food = {'food': {'name': 'Fresh', 'category': 'fresh', 'kind': 'food', 'list_price': 40, 'shelf_hours': 2}}
+        self.assertEqual(bounded_proposals(food, inventory(), analysis(catalog=food), [], DEFAULT_POLICY, NOW), [])
+
+    def test_goods_charge_one_percent_of_cost_daily_but_food_has_no_storage_charge(self):
+        policy = dict(DEFAULT_POLICY, min_turnover_hours=34 * 24)
+        state = inventory()
+        state.pop('storage_per_day')
+        self.assertEqual(bounded_proposals(CATALOG, state, analysis(), [], policy, NOW), [])
+        food = {'food': {'name': 'Food', 'category': 'food', 'kind': 'food',
+                         'list_price': 40, 'shelf_hours': 1000}}
+        self.assertEqual(bounded_proposals(food, dict(state, storage_per_day=100),
+                                          analysis(catalog=food), [], policy, NOW),
+                         [{'sku': 'food', 'qty': 1}])
+
+    def test_reconciliation_preserves_fulfilled_units_before_matching_new_arrivals(self):
+        ledger = {'intents': [
+            {'expires_at': NOW + 1800, 'baseline_units': [],
+             'buy': [{'sku': 'tea', 'qty': 1}], 'fulfilled_units': ['z-old'],
+             'fulfilled_by_sku': {'tea': ['z-old']}},
+            {'expires_at': NOW + 1800, 'baseline_units': ['z-old'],
+             'buy': [{'sku': 'tea', 'qty': 1}], 'fulfilled_units': [], 'fulfilled_by_sku': {}},
+        ]}
+        state = inventory(units=[unit(name='z-old'), unit(name='a-new')])
+        self.assertEqual(_pending(ledger, state, NOW), [])
+        self.assertEqual(ledger['intents'][0]['fulfilled_by_sku']['tea'], ['z-old'])
+        self.assertEqual(ledger['intents'][1]['fulfilled_by_sku']['tea'], ['a-new'])
+        self.assertEqual(_pending(ledger, state, NOW), [])
+
+    def test_validation_cannot_raise_caps_add_skus_or_duplicate(self):
+        for rows in ([{'sku': 'tea', 'qty': 3}], [{'sku': 'cup', 'qty': 1}],
+                     [{'sku': 'tea', 'qty': True}], [{'sku': 'tea', 'qty': 1}, {'sku': 'tea', 'qty': 1}]):
+            with self.assertRaises(ValueError):
+                validate_intent({'buy': rows}, [{'sku': 'tea', 'qty': 2}])
+
+    def test_simultaneous_hooks_emit_one_intent(self):
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(plan_restock, self.md, now=NOW, decide_fn=choose) for _ in range(2)]
+            results = [future.result() for future in futures]
+        self.assertEqual(sum(bool(row['buy']) for row in results), 1)
+        ledger = read_json(self.md / 'restock_commitments.json')
+        self.assertEqual(len(ledger['intents']), 1)
+        self.assertEqual(plan_restock(self.md, now=NOW, decide_fn=choose), {'buy': []})
+
+    def test_stale_snapshot_blocks_model_and_intent(self):
+        def fail(*args, **kwargs):
+            self.fail('Stale inventory must not invoke a model')
+        self.assertEqual(plan_restock(self.md, now=NOW + 46, decide_fn=fail), {'buy': []})
+        self.assertEqual(len(Memory(self.md).events(kind='restock_error')), 1)
+
+    def test_fresh_snapshot_cooldown_and_commitment_ttl(self):
+        first = plan_restock(self.md, now=NOW, decide_fn=choose)
+        self.assertTrue(first['buy'])
+        self.write_inventory(inventory(), now=NOW + 100)
+        self.assertEqual(plan_restock(self.md, now=NOW + 100, decide_fn=choose), {'buy': []})
+        self.write_inventory(inventory(), now=NOW + 901)
+        self.assertEqual(plan_restock(self.md, now=NOW + 901, decide_fn=choose), {'buy': []})
+        self.write_inventory(inventory(), now=NOW + 1801)
+        self.assertTrue(plan_restock(self.md, now=NOW + 1801, decide_fn=choose)['buy'])
+
+    def test_model_failure_or_invalid_result_does_not_fabricate_purchase(self):
+        def fail(*args, **kwargs):
+            raise RuntimeError('model unavailable')
+        self.assertEqual(plan_restock(self.md, now=NOW, decide_fn=fail), {'buy': []})
+        self.assertEqual(len(Memory(self.md).events(kind='restock_error')), 1)
+
+    def test_inventory_change_during_model_invalidates_intent(self):
+        def changing(system, state, validator, purpose, deadline, **kwargs):
+            if purpose == 'r3-restock':
+                self.write_inventory(inventory(balance=10))
+            return choose(system, state, validator, purpose, deadline, **kwargs)
+        self.assertEqual(plan_restock(self.md, now=NOW, decide_fn=changing), {'buy': []})
+        self.assertFalse((self.md / 'restock_commitments.json').exists())
+
+    def test_inventory_timestamp_refresh_during_model_preserves_intent(self):
+        def refreshing(system, state, validator, purpose, deadline, **kwargs):
+            if purpose == 'r3-restock':
+                os.utime(self.md / 'inventory.json', (NOW + 10, NOW + 10))
+            return choose(system, state, validator, purpose, deadline, **kwargs)
+        result = plan_restock(self.md, now=NOW, decide_fn=refreshing)
+        self.assertTrue(result['buy'])
+        self.assertEqual(plan_restock(self.md, now=NOW + 10, decide_fn=choose), {'buy': []})
+
+    def test_inventory_unit_change_during_model_invalidates_intent(self):
+        def changing(system, state, validator, purpose, deadline, **kwargs):
+            if purpose == 'r3-restock':
+                self.write_inventory(inventory(units=[unit(name='new-unit')]))
+            return choose(system, state, validator, purpose, deadline, **kwargs)
+        self.assertEqual(plan_restock(self.md, now=NOW, decide_fn=changing), {'buy': []})
+        self.assertFalse((self.md / 'restock_commitments.json').exists())
+
+    def test_cli_is_inert_without_explicit_live_enable(self):
+        output = io.StringIO()
+        with patch.dict(os.environ, {'R3_ENABLE_LIVE': '0'}), redirect_stdout(output), \
+                patch('r3_restock.plan_restock') as planner:
+            self.assertEqual(main(['--state', str(self.md)]), 0)
+        planner.assert_not_called()
+        self.assertEqual(output.getvalue().strip(), '{"buy": []}')
+
+
+if __name__ == '__main__':
+    unittest.main()
