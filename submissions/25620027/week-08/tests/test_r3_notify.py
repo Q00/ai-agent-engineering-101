@@ -85,7 +85,7 @@ def test_daily_summary_once_at_nine_and_final_notice_at_the_end(monkeypatch) -> 
     messages, state = decide(healthy(nine), state)
     assert len(messages) == 1
     assert "아침 요약" in messages[0]
-    assert "순이익 순위 3/50" in messages[0]
+    assert "가게 3/50위" in messages[0]
     messages, state = decide(healthy(nine + 600), state)
     assert messages == []
     end = notify_r3.ROUND_END.timestamp() + 60

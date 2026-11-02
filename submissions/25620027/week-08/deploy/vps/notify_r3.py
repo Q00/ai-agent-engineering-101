@@ -143,7 +143,11 @@ def collect(base: Path = BASE, *, market: str = MARKET) -> Snapshot:  # noqa: C9
         for line in health.read_text(encoding="utf-8", errors="replace").splitlines()[
             -400:
         ]:
-            if not line.startswith("== "):
+            # real relaunches only; the pre-fix "manager process missing" lines were
+            # false positives of `docker top` (2026-11-01..02)
+            if not line.startswith("== ") or not (
+                "not running" in line or "restarting container" in line
+            ):
                 continue
             try:
                 stamp = datetime.fromisoformat(line[3:23]).timestamp()
@@ -273,29 +277,58 @@ def conditions(snap: Snapshot) -> set[str]:
     return active
 
 
+ROLE_NAMES = {"scout": "정찰", "tactical": "전술", "strategy": "전략", "trade": "통역"}
+
+
+def _n(value: object) -> str:
+    """Thousands separators for whole numbers; anything else as given."""
+    try:
+        number = float(str(value))
+    except ValueError:
+        return str(value)
+    return f"{number:,.0f}" if number == int(number) else f"{number:,.2f}"
+
+
 def summary(snap: Snapshot, title: str) -> str:
-    """Plain-text status for a phone."""
+    """Short labelled lines that read on a phone; R2-only fields are left out."""
     shop, buyer = snap.shop_row, snap.buyer_row
-    roles = (
-        ", ".join(
-            f"{role} {int(v[0])}회(채택 {int(v[1])}, {v[2] / 1000:.1f}초)"
-            for role, v in sorted(snap.roles_24h.items())
-        )
-        or "없음"
-    )
+    r3 = snap.market_round == 3
     lines = [
         f"[AX R3] {title}",
-        f"시각 {_kst(snap.now):%m/%d %H:%M} KST, 시장 라운드 {snap.market_round}",
-        f"가게: 순이익 순위 {snap.shop_rank}, 이익 {shop.get('profit', '?')}, 매출 {shop.get('revenue', '?')}, 별점 {shop.get('stars', '?')}, 누적 거래 {shop.get('deals', '?')}",
-        f"바이어: 잉여 순위 {snap.buyer_rank}, 잉여 {buyer.get('saved', '?')}, 누적 거래 {buyer.get('deals', '?')}",
-        f"24시간 정산: 가게 {snap.shop_settles_24h}건, 바이어 {snap.buyer_settles_24h}건, 지급 거절 {snap.refused_24h}건",
-        f"잔고 {snap.balance}, 재고 {snap.units}개"
-        if snap.balance is not None
-        else "잔고·재고: 아직 없음",
-        f"모델 24시간: {roles}",
-        f"오늘 모델 비용 ${snap.spend_today:.2f} / 상한 ${snap.daily_cap:.2f} ({snap.calls_today}회), 정책 변경 {snap.changes_24h}건, 자동 재기동 {snap.relaunches_24h}회",
-        f"관리자 모델 {'켜짐' if snap.manager_on else '꺼짐'}, 종료 시각 {snap.stop_at[:16]}",
+        f"{_kst(snap.now):%m/%d %H:%M} · 라운드 {snap.market_round}",
+        "",
     ]
+    lines += [
+        f"■ 가게 {snap.shop_rank}위",
+        f"이익 {_n(shop.get('profit', '?'))} · 매출 {_n(shop.get('revenue', '?'))}",
+        f"별점 {shop.get('stars', '?')} · 거래 {_n(shop.get('deals', '?'))}",
+        "",
+        f"■ 바이어 {snap.buyer_rank}위",
+        f"잉여 {_n(buyer.get('saved', '?'))} · 거래 {_n(buyer.get('deals', '?'))}",
+    ]
+    if r3:
+        lines += [
+            "",
+            "■ 24시간 정산",
+            f"가게 {snap.shop_settles_24h} · 바이어 {snap.buyer_settles_24h} · 지급거절 {snap.refused_24h}",
+        ]
+        if snap.balance is not None:
+            lines.append(f"잔고 {_n(snap.balance)} · 재고 {snap.units}개")
+    calls = " · ".join(
+        f"{ROLE_NAMES.get(role, role)} {int(v[0])}"
+        for role, v in sorted(snap.roles_24h.items())
+    )
+    lines += [
+        "",
+        "■ 모델",
+        f"오늘 ${snap.spend_today:.2f} / 상한 ${snap.daily_cap:.0f}",
+        f"24시간 호출: {calls or '없음'}",
+        f"관리자 {'켜짐' if snap.manager_on else '꺼짐(전환 전)'} · 종료 {snap.stop_at[5:10].replace('-', '/')}",
+    ]
+    if snap.relaunches_24h:
+        lines.append(f"자동 복구 {snap.relaunches_24h}회(24시간)")
+    if not r3:
+        lines += ["", "라운드2라 정산·잔고는 아직 없습니다."]
     return "\n".join(lines)
 
 
