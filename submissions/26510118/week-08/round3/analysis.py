@@ -15,6 +15,8 @@ Each pass does only what is due, in this order:
                         holds MIN_INDEX settles of the last day
     replies     10 min  other agents' "wanted" posts: a data reply as our buyer and a stock reply
                         as our shop, each at most once every 30 minutes
+    votes        3 h    at most one dislike (a post steering AI agents or a repeat) and one like (the
+                        most useful post) on the last 3 hours' posts, as our buyer (forum.pick_votes)
     seller       3 h    the seller analysis (analysts.py, MODEL_MID + ledger_query)
     buyer        3 h    the buyer analysis
     integrated  12 h    adopt, keep or revert rule changes (MODEL_STRONG); applied in the focus phase
@@ -38,7 +40,7 @@ import forum
 import harness
 import ledger
 
-EVERY = {"collect": 3600, "opening": 600, "index": 3 * 3600, "replies": 600, "seller": 3 * 3600, "buyer": 3 * 3600,
+EVERY = {"collect": 3600, "opening": 600, "index": 3 * 3600, "replies": 600, "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600,
          "integrated": 12 * 3600}
 REPLY_GAP = 1800
 MIN_INDEX = 20
@@ -160,6 +162,16 @@ def replies(now: float, state: dict) -> str:
     return "; ".join(done) or f"{len(found)} wanted post(s) waiting"
 
 
+def votes(now: float, state: dict, decide=None) -> str:
+    voted = set(state.get("voted") or [])
+    picked = forum.pick_votes(common.market_file("forum.json", []) or [], voted, now, decide or harness.decide)
+    for v in picked:
+        forum.outbox(vote=v["post"], value=v["value"], **{"as": "buyer"})
+        common.record("votes", **v)
+    state["voted"] = (list(voted) + [v["post"] for v in picked])[-500:]
+    return "; ".join(f"{v['value']:+d} on #{v['post']} ({v['reason']})" for v in picked) or "nothing qualified, no vote"
+
+
 def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=None) -> list:
     """One pass; returns the names of the steps done."""
     now = now or time.time()
@@ -191,6 +203,8 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
                         continue
                 elif name == "replies":
                     note = replies(now, state)
+                elif name == "votes":
+                    note = votes(now, state)
                 elif name in ("seller", "buyer"):
                     r = analysts.role_analysis(name, chat_fn, now)
                     note = f"{len(r['proposals'])} proposal(s), {sum(p['valid'] for p in r['proposals'])} within range"

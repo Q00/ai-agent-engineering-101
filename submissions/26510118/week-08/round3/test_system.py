@@ -210,7 +210,7 @@ def main() -> int:
 
         print("\n[2 analysis] one pass of the runner, focus phase, scripted model, data room over MCP")
         done = analysis.run_once(NOW + 60, model, fake_ledger, fake_shops)
-        check("every step ran", done == ["collect", "index", "replies", "seller", "buyer", "integrated"], done)
+        check("every step ran", done == ["collect", "index", "replies", "votes", "seller", "buyer", "integrated"], done)
         check("the seller analysis was offered the data room's four tools", SEEN.get("seller_tools") == ["ledger_query", "replay", "shop_credit", "leave_memo"],
               SEEN.get("seller_tools"))
         r = SEEN.get("replay") or {}

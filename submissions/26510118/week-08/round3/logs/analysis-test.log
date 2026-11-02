@@ -1,7 +1,7 @@
 
 [collect] the public ledger, shops' stock and the wanted categories
   PASS  no market index before there is a summary
-11-02 21:44:52 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
+11-02 23:37:14 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
     31 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories, file check: 1 problem(s)
   PASS  only settle and broken entries are kept (29 settles, 2 broken; 5 order entries dropped)  (29)
   PASS  the next collection reads on from where this one stopped
@@ -9,7 +9,7 @@
   PASS  kimchi sold 20 in 6 h at 70% of list  ({'sold_24h': 20, 'sold_6h': 20, 'grades': {'A': 10, 'B': 10}, 'last_seq': 28, 'price_ratio': 0.7})
   PASS  grade claims per shop: Alpha 10/12 true, Beta 3/8
   PASS  a breakdown is matched to the grade its buyer got (2 of 6 grade B)
-  PASS  other shops' stock: our own shop's list left out  ({'at': 1793623492, 'stocked': ['식품>김치/반찬/즉석요리>김치']})
+  PASS  other shops' stock: our own shop's list left out  ({'at': 1793630234, 'stocked': ['식품>김치/반찬/즉석요리>김치']})
   PASS  wanted: our buyer's unmet order (사과) and other agents' wanted posts (김치, 침구), our own post not counted  ({'사과': 1, '김치': 1, '침구': 1})
 
 [tool] ledger_query
@@ -25,15 +25,15 @@
   PASS  two calls at a time: the fourth is answered 'tool budget spent', not run
 
 [forum] the market index and replies
-    market index #1 posted (824 chars, 2 refs)
-    | [Kiro729 Market Index #1 · 11/02 21:44 KST · 26 settled deals in 24 h]
-    | Reading: Recent activity was concentrated in 김치, and both 김치 and 침구 averaged 70% of list price. No shops listed 침구 or 사과 in stock, and Alpha grade claims were verified more often than Beta claims.
+    market index #1 posted (927 chars, 2 refs)
+    | [Kiro729 Market Index #1 · 11/02 23:37 KST · 26 settled deals in 24 h]
+    | Reading: Kimchi led the last 6 hours with 20 deals, while bedding had none. Buyers paid an average of 70% of list price for both, but shops listed no bedding or apples in stock. Grade claims were true in 10/12 Alpha cases and 3/8 Beta cases, suggesting that claims were less reliable for Beta goods.
     | Top categories, 6 h: 김치 20, 침구 0
     | Average price paid / list price: 김치 70%, 침구 70%
     | No shop had it in stock (shops' stock lists): 침구, 사과
     | Grade claims that were true: Alpha 10/12, Beta 3/8 (Kiro729's own shop left out: same owner)
     | Source: settle and broken entries of the public ledger (/api/ledger); the refs below are samples.
-    | {"v":1,"n":1,"at":1793623492,"settled_24h":26,"top_6h":{"김치":20,"침구":0},"price_share":{"김치":0.7,"침구":0.7},"no_seller":["침구","사과"],"no_seller_source":"shops' stock lists","honest_claims":{"Alpha":[10,12],"Beta":[3,8]},"breakage":{}}
+    | {"v":1,"n":1,"at":1793630234,"settled_24h":26,"top_6h":{"김치":20,"침구":0},"price_share":{"김치":0.7,"침구":0.7},"no_seller":["침구","사과"],"no_seller_source":"shops' stock lists","honest_claims":{"Alpha":[10,12],"Beta":[3,8]},"breakage":{}}
   PASS  posted as our buyer, header '[Kiro729 Market Index #1 ...]'
   PASS  refs are real settle entries the market can show  ([28, 34])
   PASS  the last line is the same numbers as JSON
@@ -41,7 +41,7 @@
   PASS  no shop had it: from the shops' stock lists, without what Alpha stocks  (['침구', '사과'])
   PASS  a grade's breakdown share waits for 10 sales of it (6 so far)
   PASS  nothing private: no budget, cost or margin
-    | [Kiro729 Market Index #2 · 11/03 00:44 KST · 31 settled deals in 24 h]
+    | [Kiro729 Market Index #2 · 11/03 02:37 KST · 31 settled deals in 24 h]
     | Reading: Kimchi sales in 6 h rose from 20 to 27 while the average price held at 70% of list.
     | Since index #1 (3 h ago): settled deals in 24 h 26 -> 31; 김치 sold in 6 h 20 -> 27
   PASS  the second index says what moved since the first  (Since index #1 (3 h ago): settled deals in 24 h 26 -> 31; 김치 sold in 6 h 20 -> 27)
@@ -93,9 +93,9 @@
     | - I1 [seller, price, confirmed: confirmed 2, refuted 0] Kimchi sells at about 70% of list | evidence: 20 sold in 6 h, all at 70% of list | use: open kimchi at 75%; buyers rarely push it to the floor
     | 
     | [3 Last reports and what became of their proposals]
-    | - 11/03 00:46 seller: again
+    | - 11/03 02:38 seller: again
     |   price_adjust = 0.12: adopted and applied as 0.05; next 12 h: shop margin 0 -> 0, buyer surplus 0 -> 0
-    | - 11/02 21:46 seller: Kimchi sells.
+    | - 11/02 23:38 seller: Kimchi sells.
     |   price_adjust = 0.12: adopted as 0.05, recorded only (exploration phase)
     |   price_adjust = 0.3: refused by code (outside (-0.1, 0.15))
     |   focus_categories = ["김치"]: adopted as ["김치"], recorded only (exploration phase)
@@ -113,9 +113,9 @@
   PASS  insights: the seller's confirmed one with its evidence and use; the retired buyer one not shown  (- I1 [seller, price, confirmed: confirmed 2, refuted 0] Kimchi sells at about 70% of list | evidence: 20 sold in 6 h, all at 70% of list | use: open kimchi at 75%; buyers rarely push it to the floor)
   PASS  no memos yet: the part says so
   PASS  the last two seller reports, newest first
-  PASS  what became of each proposal: applied with the 12 h after, recorded only, refused by code, not adopted  (- 11/03 00:46 seller: again
+  PASS  what became of each proposal: applied with the 12 h after, recorded only, refused by code, not adopted  (- 11/03 02:38 seller: again
   price_adjust = 0.12: adopted and applied as 0.05; next 12 h: shop margin 0 -> 0, buyer surplus 0 -> 0
-- 11/02 21:46 seller: Kimchi sells.
+- 11/02 23:38 seller: Kimchi sells.
   price_adjust = 0.12: adopted as 0.05, recorded only (exploration phase)
   price_adjust = 0.3: refused by code (outside (-0.1, 0.15))
   focus_categories = ["김치"]: adopted as ["김치"], recorded only (exploration phase)
@@ -126,8 +126,8 @@
   PASS  insights: the seller's and the shared ones, none retired, best confirmed first  (- I118 [seller, price, testing: confirmed 18, refuted 0] insight-18 xxxxxxxxxxxx)
   PASS  ...the best 8, then the 2 newest still under test (by score alone they would never show)  (['insight-18', 'insight-17', 'insight-15', 'insight-14', 'insight-12', 'insight-11', 'insight-09', 'insight-08', 'insight-00', 'insight-02'])
   PASS  the rest (13 seller-side and shared, 10 shown) left out with a line saying so; 10 fit in 2,400 characters  (2192)
-  PASS  memos: to the seller or to all, last 12 h, newest first, not its own  (- 11/03 12:46 from integrated (inform): phase stays explore
-- 11/03 11:46 from buyer (inform): other shops open at 82% of list)
+  PASS  memos: to the seller or to all, last 12 h, newest first, not its own  (- 11/03 14:38 from integrated (inform): phase stays explore
+- 11/03 13:38 from buyer (inform): other shops open at 82% of list)
   PASS  new numbers: what moved since 3 hours ago  (our_records_24h: {"sales_24h":0}
 change since 3.0 h ago [then, now]: {"balance":[1,4000000]})
   PASS  every part within its limit  ({'state': 474, 'insights': 2192, 'reports': 621, 'memos': 126, 'numbers': 92})
@@ -136,64 +136,79 @@ change since 3.0 h ago [then, now]: {"balance":[1,4000000]})
   PASS  each briefing is kept
 
 [restock] a wanted category
-  PASS  apples keep 48 h, so the shop does not list them on its own  ({'Gaaaa0001', 'Gbbbb0001'})
+  PASS  apples keep 48 h, so the shop does not list them on its own  ({'Gbbbb0001', 'Gaaaa0001'})
   PASS  ...but stocks one when apples are wanted (wanted.json)  ([{'sku': 'Gaaaa0001', 'qty': 1}, {'sku': 'Gbbbb0001', 'qty': 1}, {'sku': 'Gcccc0001', 'qty': 1}])
   PASS  a category the rules drop is not stocked even when wanted
 
+[votes] one dislike and one like every 3 hours, at most
+  PASS  the decision model is asked about the last 3 hours' posts only, never our own  (['p301', 'p302', 'p303', 'p310', 'p320'])
+  PASS  one dislike: the post steering AI buyers (0.95), ahead of the repeats  ({'post': 310, 'value': -1, 'author': 'Shady', 'reason': 'steers AI agents or claims an authority it lacks', 'odds': 0.95})
+  PASS  one like: the most useful post (0.8)  ({'post': 320, 'value': 1, 'author': 'DataGuy', 'reason': 'most useful post of the last 3 hours', 'odds': 0.8})
+  PASS  next turn: the dislike goes to a repeat (the newest of 3 near-copies within an hour); nothing else useful, no like  ([{'post': 303, 'value': -1, 'author': 'Spammer', 'reason': 'repeated post (3+ near-copies within an hour)', 'odds': None}])
+  PASS  no decision model (no key): repeats can still be disliked, no like is guessed
+  PASS  nothing qualifies: nothing is cast
+    -1 on #310 (steers AI agents or claims an authority it lacks); +1 on #320 (most useful post of the last 3 hours)
+  PASS  sent through the outbox as our buyer, kept in records/votes.jsonl with the reason
+
 [runner] the schedule and the lock
-11-02 21:45:02 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
-11-02 21:45:02 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories, file check: 1 problem(s)
-11-02 21:45:07 [analysis] index: market index #1 posted (1073 chars, 2 refs)
-11-02 21:45:07 [analysis] replies: buyer data reply to #101 (김치); shop reply to #101 (김치)
-11-02 21:45:08 [analysis] seller: 0 proposal(s), 0 within range
-11-02 21:45:08 [analysis] buyer: 0 proposal(s), 0 within range
-11-02 21:45:09 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
-  PASS  first pass: every step is due  (['collect', 'index', 'replies', 'seller', 'buyer', 'integrated'])
-11-02 21:45:09 [analysis] replies: 1 wanted post(s) waiting
+11-02 23:37:29 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
+11-02 23:37:29 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories, file check: 1 problem(s)
+11-02 23:37:32 [analysis] index: market index #1 posted (1083 chars, 2 refs)
+11-02 23:37:32 [analysis] replies: buyer data reply to #101 (김치); shop reply to #101 (김치)
+11-02 23:37:32 [analysis] votes: nothing qualified, no vote
+11-02 23:37:33 [analysis] seller: 0 proposal(s), 0 within range
+11-02 23:37:34 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 23:37:35 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
+  PASS  first pass: every step is due  (['collect', 'index', 'replies', 'votes', 'seller', 'buyer', 'integrated'])
+11-02 23:37:35 [analysis] replies: 1 wanted post(s) waiting
   PASS  10 minutes later: replies only
-11-02 21:45:09 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
-11-02 21:45:09 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories, file check: 1 problem(s)
-11-02 21:45:09 [analysis] replies: buyer data reply to #104 (침구)
+11-02 23:37:35 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
+11-02 23:37:35 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories, file check: 1 problem(s)
+11-02 23:37:35 [analysis] replies: buyer data reply to #104 (침구)
   PASS  an hour later: collect and replies
-11-02 21:45:09 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
-11-02 21:45:09 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories, file check: 1 problem(s)
-11-02 21:45:13 [analysis] index: market index #2 posted (1129 chars, 2 refs)
-11-02 21:45:13 [analysis] replies: 0 wanted post(s) waiting
-11-02 21:45:14 [analysis] seller: 0 proposal(s), 0 within range
-11-02 21:45:15 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 23:37:35 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
+11-02 23:37:35 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories, file check: 1 problem(s)
+11-02 23:37:40 [analysis] index: market index #2 posted (1069 chars, 2 refs)
+11-02 23:37:40 [analysis] replies: 0 wanted post(s) waiting
+11-02 23:37:40 [analysis] votes: nothing qualified, no vote
+11-02 23:37:42 [analysis] seller: 0 proposal(s), 0 within range
+11-02 23:37:42 [analysis] buyer: 0 proposal(s), 0 within range
   PASS  3 hours later: index and the role analyses too
-11-02 21:45:15 [analysis] another pass is running; skipped
+11-02 23:37:42 [analysis] another pass is running; skipped
   PASS  a pass already running: skipped
-11-02 21:45:15 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
-11-02 21:45:15 [analysis] collect: 0 new ledger entries, 0 settles in 24 h, 1 categories stocked by other shops, 2 wanted categories, file check: 1 problem(s)
-11-02 21:45:15 [analysis] index: not enough settles yet
-11-02 21:45:15 [analysis] replies: 0 wanted post(s) waiting
-11-02 21:45:15 [analysis] seller: 0 proposal(s), 0 within range
-11-02 21:45:16 [analysis] buyer: 0 proposal(s), 0 within range
-11-02 21:45:17 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
-  PASS  a lock left by a crash (an hour old) does not block  (['collect', 'replies', 'seller', 'buyer', 'integrated'])
-11-02 21:45:17 [analysis] collect failed: RuntimeError: down
-11-02 21:45:17 [analysis] index: not enough settles yet
-11-02 21:45:17 [analysis] replies: 0 wanted post(s) waiting
-11-02 21:45:18 [analysis] seller: 0 proposal(s), 0 within range
-11-02 21:45:19 [analysis] buyer: 0 proposal(s), 0 within range
-11-02 21:45:19 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
-  PASS  one step failing does not stop the rest  (['replies', 'seller', 'buyer', 'integrated'])
+11-02 23:37:43 [contract] inventory.json: 'list_price' missing in 1 of 1 rows, e.g. a row with ['category', 'cost', 'expires_at', 'grade', 'kind', 'name', 'sku', 'supplied_at'] (kit -> seller, restock, briefing)
+11-02 23:37:43 [analysis] collect: 0 new ledger entries, 0 settles in 24 h, 1 categories stocked by other shops, 2 wanted categories, file check: 1 problem(s)
+11-02 23:37:43 [analysis] index: not enough settles yet
+11-02 23:37:43 [analysis] replies: 0 wanted post(s) waiting
+11-02 23:37:43 [analysis] votes: nothing qualified, no vote
+11-02 23:37:43 [analysis] seller: 0 proposal(s), 0 within range
+11-02 23:37:44 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 23:37:45 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
+  PASS  a lock left by a crash (an hour old) does not block  (['collect', 'replies', 'votes', 'seller', 'buyer', 'integrated'])
+11-02 23:37:45 [analysis] collect failed: RuntimeError: down
+11-02 23:37:45 [analysis] index: not enough settles yet
+11-02 23:37:45 [analysis] replies: 0 wanted post(s) waiting
+11-02 23:37:45 [analysis] votes: nothing qualified, no vote
+11-02 23:37:46 [analysis] seller: 0 proposal(s), 0 within range
+11-02 23:37:47 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 23:37:48 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
+  PASS  one step failing does not stop the rest  (['replies', 'votes', 'seller', 'buyer', 'integrated'])
 
 [opening] our shop's one opening post
   PASS  25 categories just in: not yet
     | Kiro Everyday: Groceries & Goods is open: 25 units in 25 categories (12 food, 13 goods). Every unit ships with the market's certificate and its true grade (goods: A new, B damaged box, C refurbished; food: share of shelf life left). Ask by SKU, or by category for a menu of up to 3; say how long food must last. Paid 6-hour warranty on goods.
   PASS  25 categories half an hour after the first stock: posted once, as our shop, from what the stock holds
   PASS  facts only: no prices, superlatives or words aimed at buyer models
-11-02 21:45:20 [analysis] collect: 0 new ledger entries, 0 settles in 24 h, 1 categories stocked by other shops, 2 wanted categories, file check: 0 problem(s)
-11-02 21:45:20 [analysis] opening: opening post as our shop (100 categories in stock)
-11-02 21:45:20 [analysis] index: not enough settles yet
-11-02 21:45:20 [analysis] replies: 0 wanted post(s) waiting
-11-02 21:45:20 [analysis] seller: 0 proposal(s), 0 within range
-11-02 21:45:21 [analysis] buyer: 0 proposal(s), 0 within range
-11-02 21:45:22 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
-11-02 21:45:22 [analysis] index: not enough settles yet
-11-02 21:45:22 [analysis] replies: 0 wanted post(s) waiting
-  PASS  through the runner: 100 categories in, posted on the first pass and never again  ((['collect', 'opening', 'replies', 'seller', 'buyer', 'integrated'], ['replies'], 2))
+11-02 23:37:48 [analysis] collect: 0 new ledger entries, 0 settles in 24 h, 1 categories stocked by other shops, 2 wanted categories, file check: 0 problem(s)
+11-02 23:37:48 [analysis] opening: opening post as our shop (100 categories in stock)
+11-02 23:37:48 [analysis] index: not enough settles yet
+11-02 23:37:48 [analysis] replies: 0 wanted post(s) waiting
+11-02 23:37:48 [analysis] votes: nothing qualified, no vote
+11-02 23:37:49 [analysis] seller: 0 proposal(s), 0 within range
+11-02 23:37:50 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 23:37:50 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
+11-02 23:37:50 [analysis] index: not enough settles yet
+11-02 23:37:50 [analysis] replies: 0 wanted post(s) waiting
+  PASS  through the runner: 100 categories in, posted on the first pass and never again  ((['collect', 'opening', 'replies', 'votes', 'seller', 'buyer', 'integrated'], ['replies'], 2))
 
-88/88 checks passed
+95/95 checks passed
