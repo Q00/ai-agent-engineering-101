@@ -1,17 +1,24 @@
-"""The one door to a model: OpenAI's Chat Completions API.
+"""The one door to a model: OpenAI's Responses API.
 
 ask() returns "" when there is no key, or the call fails or is slow, so every
 caller needs a rule to fall back on. Three models, placed by how often and how much
-a decision matters (prices per million tokens, input/output, OpenAI's table of 11/2):
+a decision matters (prices per million tokens, input/output, OpenAI's pricing page of 11/2):
 
     MODEL         gpt-6-luna     $0.10/$0.50  trading modules: a buyer's or shop's sentence
-                                              the code cannot read (many calls, small)
+                                              the code cannot read (many calls, small, within 20 s)
     MODEL_MID     gpt-6.1-terra  $1/$5        the seller and buyer analyses, every 3 hours
     MODEL_STRONG  gpt-6.1-sol    $2/$10       the integrated analysis that changes the rules,
                                               every 12 hours
 
+The Responses API, not Chat Completions: GPT-6.1 Sol calls tools only there, and GPT-6 Luna
+calls tools in Chat Completions only without reasoning (the models' pages of 11/2). Reasoning
+effort per model: none for the trading model (speed), low for the role analyses, medium for
+the integrated analysis. chat() still takes and gives Chat Completions-shaped messages, so the
+tool loop (run_tools) and the tests stay as they are; the translation is _items() and chat().
+
     OPENAI_API_KEY      the key (on the server from ~/market/openai.env, never in the repo)
     OPENAI_MODEL, OPENAI_MODEL_MID, OPENAI_MODEL_STRONG   override the three names
+    OPENAI_EFFORT, OPENAI_EFFORT_MID, OPENAI_EFFORT_STRONG override their reasoning effort
     HARNESS_FAKE_REPLY  tests only: every ask() returns this text and calls nothing
 """
 import json
@@ -23,20 +30,36 @@ import httpx
 MODEL = os.environ.get("OPENAI_MODEL", "gpt-6-luna")
 MODEL_MID = os.environ.get("OPENAI_MODEL_MID", "gpt-6.1-terra")
 MODEL_STRONG = os.environ.get("OPENAI_MODEL_STRONG", "gpt-6.1-sol")
-URL = "https://api.openai.com/v1/chat/completions"
+EFFORT = {MODEL: os.environ.get("OPENAI_EFFORT", "none"), MODEL_MID: os.environ.get("OPENAI_EFFORT_MID", "low"),
+          MODEL_STRONG: os.environ.get("OPENAI_EFFORT_STRONG", "medium")}
+URL = "https://api.openai.com/v1/responses"
+
+
+def _post(body: dict, timeout: float) -> dict:
+    r = httpx.post(URL, headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}, json=body, timeout=timeout)
+    r.raise_for_status()
+    return r.json()
+
+
+def _body(model: str, items) -> dict:
+    body = {"model": model, "input": items}
+    if model in EFFORT:
+        body["reasoning"] = {"effort": EFFORT[model]}
+    return body
+
+
+def _text(data: dict) -> str:
+    return "".join(c.get("text", "") for o in data.get("output") or [] if o.get("type") == "message"
+                   for c in o.get("content") or [] if c.get("type") == "output_text").strip()
 
 
 def ask(prompt: str, model: str | None = None, timeout: float = 20.0) -> str:
     if os.environ.get("HARNESS_FAKE_REPLY") is not None:
         return os.environ["HARNESS_FAKE_REPLY"]
-    key = os.environ.get("OPENAI_API_KEY")
-    if not key:
+    if not os.environ.get("OPENAI_API_KEY"):
         return ""
     try:
-        r = httpx.post(URL, headers={"Authorization": f"Bearer {key}"}, timeout=timeout,
-                       json={"model": model or MODEL, "messages": [{"role": "user", "content": prompt}]})
-        r.raise_for_status()
-        return (r.json()["choices"][0]["message"]["content"] or "").strip()
+        return _text(_post(_body(model or MODEL, prompt), timeout))
     except Exception as e:                                       # noqa: BLE001
         print(f"[harness] {type(e).__name__}; falling back to rules", flush=True)
         return ""
@@ -55,21 +78,52 @@ def first_json(text: str | None) -> dict | None:
         return None
 
 
+def _items(messages: list, flat: bool = False) -> list:
+    """Chat Completions-shaped messages as Responses API input items. An assistant turn the API gave
+    goes back as the API gave it (its reasoning and function calls). flat: no tools on this call
+    (the budget is spent), so earlier calls and their answers go in as plain text."""
+    out = []
+    for m in messages:
+        if m["role"] == "tool":
+            out.append({"role": "user", "content": f"(tool answer) {m['content']}"} if flat else
+                       {"type": "function_call_output", "call_id": m["tool_call_id"], "output": m["content"]})
+        elif m["role"] == "assistant":
+            if flat or not m.get("items"):
+                calls = [f"(called {c['function']['name']} {c['function'].get('arguments') or '{}'})" for c in m.get("tool_calls") or []]
+                text = " ".join([m.get("content") or ""] + calls).strip()
+                if flat:
+                    out.append({"role": "assistant", "content": text})
+                else:
+                    if m.get("content"):
+                        out.append({"role": "assistant", "content": m["content"]})
+                    out += [{"type": "function_call", "call_id": c["id"], "name": c["function"]["name"],
+                             "arguments": c["function"].get("arguments") or "{}"} for c in m.get("tool_calls") or []]
+            else:
+                out += m["items"]
+        else:
+            out.append({"role": m["role"], "content": m["content"]})
+    return out
+
+
 def chat(messages: list, model: str, tools: list | None = None, timeout: float = 90.0) -> dict | None:
-    """One Chat Completions turn with function tools; the assistant message, or None."""
-    key = os.environ.get("OPENAI_API_KEY")
-    if not key:
+    """One turn with function tools; the assistant message in Chat Completions shape (content,
+    tool_calls) plus the API's own output items, or None."""
+    if not os.environ.get("OPENAI_API_KEY"):
         return None
-    body = {"model": model, "messages": messages}
+    body = _body(model, _items(messages, flat=not tools))
     if tools:
-        body.update(tools=tools, parallel_tool_calls=False)
+        body.update(tools=[{"type": "function", "name": t["function"]["name"], "description": t["function"].get("description", ""),
+                            "parameters": t["function"].get("parameters") or {"type": "object", "properties": {}},
+                            "strict": False} for t in tools], parallel_tool_calls=False)
     try:
-        r = httpx.post(URL, headers={"Authorization": f"Bearer {key}"}, json=body, timeout=timeout)
-        r.raise_for_status()
-        return r.json()["choices"][0]["message"]
+        data = _post(body, timeout)
     except Exception as e:                                       # noqa: BLE001
         print(f"[harness] {model}: {type(e).__name__}: {str(e)[:200]}", flush=True)
         return None
+    calls = [o for o in data.get("output") or [] if o.get("type") == "function_call"]
+    return {"content": _text(data), "items": data.get("output") or [],
+            "tool_calls": [{"id": c["call_id"], "type": "function",
+                            "function": {"name": c["name"], "arguments": c.get("arguments") or "{}"}} for c in calls]}
 
 
 def run_tools(messages: list, model: str, tools: list, run, max_calls: int, chat_fn=None) -> str:
@@ -84,7 +138,8 @@ def run_tools(messages: list, model: str, tools: list, run, max_calls: int, chat
         wanted = msg.get("tool_calls") or []
         if not wanted or calls >= max_calls:
             return msg.get("content") or ""
-        messages.append({"role": "assistant", "content": msg.get("content"), "tool_calls": wanted})
+        messages.append({"role": "assistant", "content": msg.get("content"), "tool_calls": wanted,
+                         **({"items": msg["items"]} if msg.get("items") else {})})
         for call in wanted:
             calls += 1
             try:

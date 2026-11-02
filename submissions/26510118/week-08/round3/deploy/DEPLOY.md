@@ -67,13 +67,13 @@ read -s -p "claim code: " C && umask 077 && printf 'MARKET_OWNER=%s\n' "$C" > ~/
 cd ~/market/round3 && MARKET_DIR=~/market/round3/.market ~/market/.venv/bin/python -c "import mcp_host; r = mcp_host.DataRoom('integrated').__enter__(); print([t['name'] for t in r.tools]); r.__exit__(None, None, None)"
 ```
 
-모델 호출 확인:
+모델 호출 확인 (세 모델이 답하는지, 툴을 실제로 부르는지, 몇 초 걸리는지):
 
 ```bash
-cd ~/market/round3 && set -a && . ~/market/openai.env && set +a && ~/market/.venv/bin/python -c "import harness as h; print([h.ask('Reply with OK', m) for m in (h.MODEL, h.MODEL_MID, h.MODEL_STRONG)])"
+cd ~/market/round3 && set -a && . ~/market/openai.env && set +a && ~/market/.venv/bin/python check_models.py
 ```
 
-세 칸 모두 `OK`가 나오면 성공입니다. 빈 칸이 있으면 그 모델 이름이 API에서 안 되는 것이니 Claude에게 알려 주세요(`OPENAI_MODEL...` 환경 변수로 바꿀 수 있음).
+세 줄 모두 끝에 `OK`가 나오면 성공입니다. `FAIL`이 있으면 그 줄을 Claude에게 보여 주세요. 모델 이름은 `OPENAI_MODEL...`, 추론 강도는 `OPENAI_EFFORT...` 환경 변수로 바꿀 수 있습니다. 거래용 모델(첫 줄)의 ask 시간은 20초보다 훨씬 짧아야 합니다.
 
 ## 4. 설치와 시작 (직접 또는 Claude, 서버에서)
 
