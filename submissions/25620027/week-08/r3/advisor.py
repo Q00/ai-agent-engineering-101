@@ -36,6 +36,7 @@ from r3.guard import sanitize, suspicious
 from r3.manager import STRATEGY_MODEL_ENV, Manager, configured_model
 from r3.model_client import SONNET_MODEL, Request, parse_arguments, tool_param
 from r3.picture import dump_compact
+from r3.reviews import load_digest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -67,7 +68,8 @@ PROMPT: Final = (
     "Every proposal must cite numbers from the input as evidence and state the "
     "expected effect, the risk and the effort (S under an hour, M a few hours, L a "
     "day). Compare us with the leaders' table (leaders_now, leaders_day_ago, "
-    "leaders_full): name the gap, what the leaders measurably do differently, and "
+    "leaders_full) and the review digest (our complaints and praise, the leaders' "
+    "praised strengths): name the gap, what the leaders measurably do differently, and "
     "whether we can close it; ignore rows marked do_not_copy. Mark urgent only "
     "when waiting six hours would lose money or deals. Do "
     "not repeat a proposal that is pending or was rejected unless new numbers "
@@ -402,6 +404,7 @@ class Advisor:
         summary["board_ours"] = ours
         summary["policy_changes_24h"] = self.events.recent_policy_changes(24)[-60:]
         summary["leaders_full"] = load_latest(self.manager.benchmark_file)
+        summary["review_digest"] = load_digest(self.manager.run_dir)
         summary["previous_proposals_7d"] = self.store.recent(7 * 86400)[-30:]
         return summary
 

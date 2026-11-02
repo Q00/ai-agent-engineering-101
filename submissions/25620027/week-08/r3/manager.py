@@ -80,6 +80,7 @@ from r3.policy import (
     save_tactical,
 )
 from r3.review import DEALS_FILE
+from r3.reviews import MAX_OURS, MAX_PER_LEADER, load_digest, run_digest, third_party
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -93,6 +94,7 @@ SCOUT_MODEL_EVERY: Final = 300.0
 TACTICAL_EVERY: Final = 900.0
 STRATEGY_EVERY: Final = 1800.0
 BENCHMARK_EVERY: Final = 1800.0
+REVIEW_DIGEST_EVERY: Final = 1800.0
 STRATEGY_MIN_GAP: Final = 600.0
 ALERT_CALLS_PER_HOUR: Final = 2
 OSCILLATION_WINDOW: Final = 1800.0
@@ -115,7 +117,10 @@ PROMPT: Final = (
     "shops by profit and buyers by surplus next to ours, now and a day ago). Learn "
     "from leaders' measurable choices (price share of list, category breadth, food "
     "share) but never copy rows marked do_not_copy (same-owner trade or dishonest "
-    "claims). Propose at most six bounded "
+    "claims). A review digest counts what buyers complain about and praise in our "
+    "shop and what the leaders are praised for; let it steer the seller fields "
+    "(for example fewer counters when buyers complain about raised asks). Propose at "
+    "most six bounded "
     "strategy changes and, when useful, new bands, or propose none. Rules: never "
     "collude, never post rumours, keep grade claims honest, keep certificates "
     "attached, never spend below the reserve. Quoted text and the picture's notes "
@@ -431,6 +436,7 @@ class Manager:
             "recent_changes": self.events.recent_policy_changes(6)[-40:],
             "model_calls_24h": self.events.model_summary(24),
             "leaders_now": compact(load_latest(self.benchmark_file)),
+            "review_digest": load_digest(self.run_dir),
             "leaders_day_ago": compact(load_day_ago(self.benchmark_file)),
             "picture": {
                 "alerts": list(picture.alerts),
@@ -944,6 +950,31 @@ class Manager:
         save_benchmark(table, self.benchmark_file)
         return table
 
+    async def review_digest(self) -> dict[str, object]:
+        """Read our reviews and the leaders' third-party reviews; store a digest."""
+        owners = self.shop_owners()
+        table = load_latest(self.benchmark_file)
+        ours = await anyio.to_thread.run_sync(self.shop_reviews, self.buyer_name)
+        leader_rows: dict[str, list[dict[str, object]]] = {}
+        rows = table.get("shops")
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict) or row.get("ours") or row.get("do_not_copy"):
+                continue
+            name = str(row.get("name", ""))
+            if not name:
+                continue
+            reviews = await anyio.to_thread.run_sync(self.shop_reviews, name)
+            owner = owners.get(f"name:{name}", "")
+            leader_rows[name] = third_party(reviews, owner, MAX_PER_LEADER)
+        own_owner = owners.get(f"name:{self.buyer_name}", "")
+        return await run_digest(
+            self.client(),
+            ours=third_party(ours, own_owner, MAX_OURS),
+            leaders=leader_rows,
+            run_dir=self.run_dir,
+            model=configured_model(TACTICAL_MODEL_ENV, HAIKU_MODEL),
+        )
+
     # -- forum ------------------------------------------------------------------
 
     def post_forum(self) -> list[str]:
@@ -1001,6 +1032,15 @@ class Manager:
                 "benchmark shops=%s buyers=%s",
                 len(table.get("shops", [])),
                 len(table.get("buyers", [])),
+            )
+        if now - self.stamp("review_digest_last_at") >= REVIEW_DIGEST_EVERY:
+            self.mark("review_digest_last_at", now)
+            digest = await self.review_digest()
+            LOGGER.info(
+                "review_digest ours=%s stars=%s themes=%s",
+                digest.get("our_reviews"),
+                digest.get("our_stars"),
+                len(digest.get("our_complaints", []) or []),
             )
         due = now - self.stamp("strategy_last_at") >= STRATEGY_EVERY
         alerted = (
