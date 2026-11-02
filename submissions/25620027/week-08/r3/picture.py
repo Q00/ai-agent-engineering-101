@@ -12,6 +12,7 @@ the strategy model come only from the numbers.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import time
@@ -120,7 +121,14 @@ def load_picture(path: Path) -> Picture:
 
 
 def save_picture(path: Path, picture: Picture) -> None:
-    """Write the picture atomically."""
+    """Write the picture atomically and append it to ``*-history.jsonl`` beside it."""
+    with (
+        contextlib.suppress(OSError),
+        path.with_name(path.stem + "-history.jsonl").open(
+            "a", encoding="utf-8"
+        ) as stream,
+    ):
+        _ = stream.write(picture.model_dump_json() + "\n")
     path.parent.mkdir(parents=True, exist_ok=True)
     with NamedTemporaryFile(
         mode="w", encoding="utf-8", dir=path.parent, delete=False

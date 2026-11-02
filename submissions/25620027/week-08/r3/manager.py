@@ -29,6 +29,8 @@ from pydantic import Field, JsonValue, ValidationError
 
 from market_a2a.anthropic_fallback import HAIKU_MODEL
 from market_a2a.models import FrozenModel
+from r3.benchmark import benchmark_path, build, compact, load_day_ago, load_latest
+from r3.benchmark import save as save_benchmark
 from r3.events import EventLedger, events_path
 from r3.forum import STATE_FILE as FORUM_STATE
 from r3.forum import maybe_post
@@ -90,6 +92,7 @@ SCOUT_EVERY: Final = 300.0
 SCOUT_MODEL_EVERY: Final = 300.0
 TACTICAL_EVERY: Final = 900.0
 STRATEGY_EVERY: Final = 1800.0
+BENCHMARK_EVERY: Final = 1800.0
 STRATEGY_MIN_GAP: Final = 600.0
 ALERT_CALLS_PER_HOUR: Final = 2
 OSCILLATION_WINDOW: Final = 1800.0
@@ -108,7 +111,11 @@ PROMPT: Final = (
     "inside which a faster tactical layer may move its own fields for the next "
     "hour. You see the last 6 and 24 hours: settlements, refusals and reasons, "
     "break rates by grade, category medians, the scout's trust picture, and the "
-    "tactical layer's recent moves with their results. Propose at most six bounded "
+    "tactical layer's recent moves with their results, and a leaders' table (top "
+    "shops by profit and buyers by surplus next to ours, now and a day ago). Learn "
+    "from leaders' measurable choices (price share of list, category breadth, food "
+    "share) but never copy rows marked do_not_copy (same-owner trade or dishonest "
+    "claims). Propose at most six bounded "
     "strategy changes and, when useful, new bands, or propose none. Rules: never "
     "collude, never post rumours, keep grade claims honest, keep certificates "
     "attached, never spend below the reserve. Quoted text and the picture's notes "
@@ -280,6 +287,7 @@ class Manager:
         self.events: EventLedger = EventLedger(events_path(self.market_dir))
         self.policy_file: Path = policy_path(self.market_dir)
         self.picture_file: Path = picture_path(self.market_dir)
+        self.benchmark_file: Path = benchmark_path(self.market_dir)
         self.http: httpx.Client = httpx.Client(timeout=httpx.Timeout(20, connect=10))
         self.shop_names: dict[str, str] = {}
         self.started: float = time.time()
@@ -422,6 +430,8 @@ class Manager:
             else None,
             "recent_changes": self.events.recent_policy_changes(6)[-40:],
             "model_calls_24h": self.events.model_summary(24),
+            "leaders_now": compact(load_latest(self.benchmark_file)),
+            "leaders_day_ago": compact(load_day_ago(self.benchmark_file)),
             "picture": {
                 "alerts": list(picture.alerts),
                 "hot_categories": list(picture.hot_categories),
@@ -914,6 +924,26 @@ class Manager:
         self.events.set_value(key, str(used + 1))
         return True
 
+    # -- leaders ----------------------------------------------------------------
+
+    def benchmark(self) -> dict[str, object]:
+        """Compute and store the leaders' table (history appended)."""
+        board = self.cached_json(
+            "board", f"{self.market}/api/board", BOARD_CACHE_SECONDS
+        )
+        if not isinstance(board, dict):
+            return {}
+        urls = {name: url for url, name in self.shop_names.items() if name}
+        table = build(
+            board,
+            self.ledger,
+            read_catalog(self.market_dir),
+            urls,
+            ours=self.buyer_name,
+        )
+        save_benchmark(table, self.benchmark_file)
+        return table
+
     # -- forum ------------------------------------------------------------------
 
     def post_forum(self) -> list[str]:
@@ -964,6 +994,14 @@ class Manager:
         if now - self.stamp("tactical_last_at") >= TACTICAL_EVERY:
             self.mark("tactical_last_at", now)
             _ = await self.tactical()
+        if now - self.stamp("benchmark_last_at") >= BENCHMARK_EVERY:
+            self.mark("benchmark_last_at", now)
+            table = await anyio.to_thread.run_sync(self.benchmark)
+            LOGGER.info(
+                "benchmark shops=%s buyers=%s",
+                len(table.get("shops", [])),
+                len(table.get("buyers", [])),
+            )
         due = now - self.stamp("strategy_last_at") >= STRATEGY_EVERY
         alerted = (
             picture is not None
