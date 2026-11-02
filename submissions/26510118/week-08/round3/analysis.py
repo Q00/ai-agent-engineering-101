@@ -1,6 +1,6 @@
 """The analysis runner: the analysis side of the agents, apart from the kit's trading hooks.
 
-    python analysis.py --loop      (a server service; wakes every 10 minutes)
+    python analysis.py             (a server service; wakes every 10 minutes)
     python analysis.py --once      (one pass, for a test or by hand)
 
 Each pass does only what is due, in this order:

@@ -1,0 +1,20 @@
+# The analysis runner on the Azure VM (analysis.py --loop): ledger collection, the market index and replies
+# on the forum, the 3-hour seller and buyer analyses and the 12-hour integrated analysis. Separate from the
+# kit, so either can restart without the other.
+[Unit]
+Description=Kiro729 analysis runner
+After=network-online.target kiro-kit.service
+Wants=network-online.target
+
+[Service]
+User=azureuser
+WorkingDirectory=/home/azureuser/market/round3
+EnvironmentFile=/home/azureuser/market/openai.env
+Environment=MARKET_DIR=/home/azureuser/market/round3/.market
+Environment=PYTHONUTF8=1
+ExecStart=/home/azureuser/market/.venv/bin/python /home/azureuser/market/round3/analysis.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

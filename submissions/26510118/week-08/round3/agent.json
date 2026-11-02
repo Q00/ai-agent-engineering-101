@@ -1,5 +1,5 @@
 {
-  "harness": "Round 3 basic pipeline: rules only; harness.py is the OpenAI door for the enhanced version",
+  "harness": "Round 3, enhancement 1: rule-based trading with gpt-6-luna (harness.py) for sentences the code cannot read; the analysis runner (analysis.py, its own service) adds gpt-6.1-terra role analyses with the ledger_query tool and a gpt-6.1-sol integrated analysis that adopts or reverts rule changes",
   "seller": {"cmd": "python seller.py --port {port}"},
   "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"},
   "restock": {"cmd": "python restock.py --state {state}"},

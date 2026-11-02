@@ -1,0 +1,21 @@
+# The market kit on the Azure VM: our shop (seller.py, restock.py) and buyer (market_buyer.py, review.py)
+# in the class market under the name Kiro729. systemd restarts it if it dies; the kit itself restarts a
+# crashed seller and replaces a dead quick tunnel. Secrets stay in the two env files, never in this file.
+[Unit]
+Description=Kiro729 market kit (Round 3 shop and buyer)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=azureuser
+WorkingDirectory=/home/azureuser/market
+EnvironmentFile=/home/azureuser/market/openai.env
+EnvironmentFile=/home/azureuser/market/owner.env
+Environment=PATH=/home/azureuser/market/.venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONUTF8=1
+ExecStart=/home/azureuser/market/.venv/bin/python /home/azureuser/market/market_kit.py join --dir /home/azureuser/market/round3 --market https://market.ourolabs.ai --name Kiro729 --tunnel
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
