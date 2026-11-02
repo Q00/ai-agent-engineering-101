@@ -1,0 +1,18 @@
+# Waits for Round 3 on the Azure VM and then starts kiro-kit and kiro-analysis (deploy/wait_round3.sh).
+# Enable it only once the names and the agent card are final:
+#   sudo cp ~/market/round3/deploy/kiro-wait-r3.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#   sudo systemctl enable --now kiro-wait-r3.service
+# Follow it with: journalctl -u kiro-wait-r3 -f
+[Unit]
+Description=Kiro729: start the kit and the analysis runner when Round 3 opens
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /home/azureuser/market/round3/deploy/wait_round3.sh
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
