@@ -97,3 +97,5 @@ python submissions/24522014/week-08/compare_reputation.py
 ```
 
 기준 실행 출력은 `logs/reputation-comparison-20261102.json`이다. 별도의 week-06 Python 가상환경에서 같은 명령을 실행한 결과는 `logs/reproduction-week06-python-20261102.json`에 보존했고, 두 파일의 JSON 10행이 일치했다. 이는 다른 인터프리터 환경에서의 재현이며 다른 컴퓨터에서 실행했다는 뜻은 아니다. W07 기존 단위 검사 16개 실행 기록은 `logs/baseline-unit-test-20261102.log`에 있다. 원래 시장 사건의 구매자 응답과 원장 감사 근거는 `../week-07/logs/challenge-2/20261023T025813161183Z/`에 보존돼 있다.
+
+추가로 두 소스 파일만 새 임시 폴더에 복사하고 Python의 격리 모드(`-I`)와 외부 패키지를 로드하지 않는 옵션(`-S`)으로 실행했다. 기존 결과 10행과 모두 일치했다. 이 검사는 운영 로그나 설치 패키지에 대한 숨은 의존성이 있는지 확인하는 범위이며 같은 컴퓨터에서 수행했다. [검증 기록](logs/submission-validation-20261102T052153Z.json)에 실행 환경, 결과 일치 여부, 소스와 기준 출력의 SHA-256 해시를 남겼다. 이후 코드가 바뀌면 이 기록의 해시와 비교하고 결과를 재검증해야 한다.
