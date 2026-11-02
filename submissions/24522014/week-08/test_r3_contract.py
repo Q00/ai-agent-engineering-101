@@ -14,6 +14,11 @@ import seller_r3
 
 
 class R3Contract(unittest.TestCase):
+    def test_questions_and_conditional_messages_are_not_purchase_offers(self):
+        self.assertIsNone(seller_r3.purchase_offer("My budget is 100; is a warranty included?", "G00001", 90))
+        self.assertIsNone(seller_r3.purchase_offer("I will pay 90 if you add a warranty", "G00001", 90))
+        self.assertEqual(seller_r3.purchase_offer("90", "G00001", 90), 90)
+        self.assertEqual(seller_r3.purchase_offer("I accept the quoted price", "G00001", 90), 90)
     def test_buyer_accepts_sku_but_still_rejects_over_budget_offer(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(buyer, "ROOT", Path(tmp)):
             with buyer.BuyerTransport("https://example.test", "G00001", 100) as client:

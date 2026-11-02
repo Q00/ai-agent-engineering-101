@@ -13,7 +13,6 @@ import asyncio
 import base64
 import json
 import os
-import re
 from pathlib import Path
 
 import uvicorn
@@ -29,6 +28,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from r3_harness import CMD, ask_json
 from harness import HarnessError
+from seller import purchase_offer
 
 NAME = "kcwarni Inventory Shop"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
@@ -100,8 +100,11 @@ class Seller(AgentExecutor):
             deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"]}
         else:
             deal["lines"].append(f"buyer: {text}")
-            m = re.search(r"\d+", text)
-            deal["offer"] = int(m.group()) if m else deal["offer"]
+            deal["offer"] = purchase_offer(text, deal["unit"]["sku"], deal["ask"])
+            if deal["offer"] is None:
+                await up.requires_input(say(
+                    f"To confirm, send an unconditional numeric offer. Current quote: {deal['ask']}"))
+                return
 
         u = deal["unit"]
         reserve = u["cost"]
