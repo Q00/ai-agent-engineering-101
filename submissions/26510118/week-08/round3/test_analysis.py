@@ -363,10 +363,10 @@ def test_context():
     check("insights: the seller's and the shared ones, none retired, best confirmed first",
           "insight-18" in lines[0] and "insight-13" not in ins and "retired insight" not in ins, lines[0][:80])
     check("...the best 8, then the 2 newest still under test (by score alone they would never show)",
-          [x.split()[2] for x in lines[:10]] == [f"insight-{i:02d}" for i in (18, 17, 15, 14, 12, 11, 9, 8, 0, 2)]
-          and "insight-03" not in ins, [x.split()[2] for x in lines[:10]])
-    check("the rest left out with a line saying so; 10 insights fit in 2,400 characters",
-          lines[10] == "(4 weaker insight(s) left out)" and len(lines) == 11 and len(ins) <= context.LIMITS["insights"], len(ins))
+          [x.split("] ")[1][:10] for x in lines[:10]] == [f"insight-{i:02d}" for i in (18, 17, 15, 14, 12, 11, 9, 8, 0, 2)]
+          and "insight-03" not in ins, [x.split("] ")[1][:10] for x in lines[:10]])
+    check("the rest (13 seller-side and shared, 10 shown) left out with a line saying so; 10 fit in 2,400 characters",
+          lines[10] == "(3 weaker insight(s) left out)" and len(lines) == 11 and len(ins) <= context.LIMITS["insights"], len(ins))
     mem = p[t["memos"]]
     check("memos: to the seller or to all, last 12 h, newest first, not its own",
           0 <= mem.find("phase stays explore") < mem.find("82% of list") and not any(s in mem for s in ("old memo", "note to self", "my own memo")), mem)
