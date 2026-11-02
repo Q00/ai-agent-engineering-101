@@ -59,12 +59,14 @@ def log(msg):
     print(msg, flush=True)
 
 
-def negotiate(peer, item, budget, t0=None):
+def negotiate(peer, item, budget, t0=None, opening=None):
     """One A2A negotiation, as in week 6. Returns {"reply", "history", "outcome"}:
-    outcome is deal | rejected | walked | timeout | exhausted | injection."""
+    outcome is deal | rejected | walked | timeout | exhausted | injection.
+    Round 3 asks for one SKU: `opening` is then "I want to buy <name> (<sku>)"."""
     t0 = t0 or time.time()
-    r = peer.send(f"I want to buy a {item}.")
-    log(f"[buyer] -> 'I want to buy a {item}.'  <- {r.state} | {r.text}")
+    opening = opening or f"I want to buy a {item}."
+    r = peer.send(opening)
+    log(f"[buyer] -> {opening!r}  <- {r.state} | {r.text}")
     task_id, history, last_offer = r.id, [], 0
 
     while True:

@@ -27,6 +27,17 @@ from a2a_client import Peer
 from buyer import log, negotiate
 
 MEMORY = Path(".market/buyer_memory.json")
+
+
+def _catalog():
+    try:
+        c = json.loads(Path(".market/catalog.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {x["sku"]: x for x in c} if isinstance(c, list) else c
+
+
+CATALOG = _catalog()
 CHOOSE_SYSTEM = (
     "You are a buyer agent in a market of shops. Pick the one shop to buy from: the one "
     "most likely to complete an honest, signed deal at a low price. Only deals whose "
@@ -105,14 +116,43 @@ def review(res, item, budget):
     return 3, f"No deal: could not agree within my budget {budget} (last ask {last}).", None, None
 
 
+def pick_sku(shop, budget):
+    """Round 3: which of the shop's SKUs to ask for. A deal is worth the SKU's list price to the order, so the
+    surplus is list price minus what we pay: ask for the dearest SKU whose usual ask (about 85% of list) still
+    fits the budget, else the cheapest one."""
+    offers = [o for o in shop.get("offers") or [] if o.get("qty", 1) > 0]
+    if not offers:
+        return None
+    lp = lambda o: (CATALOG.get(o["sku"]) or {}).get("list_price") or 0
+    fit = [o for o in offers if lp(o) * 0.85 <= budget]
+    return max(fit, key=lp) if fit else min(offers, key=lp)
+
+
+def accept_policy(order):
+    """What the kit must see in the checkout before it pays. Food has to last the order's use_within_hours
+    (else it is worth 0), with an hour to spare for checkout; goods of grade C (refurbished) are refused
+    because broken goods are worth minus the price."""
+    if order.get("kind") == "food":
+        return {"cert": True, "min_hours_left": (order.get("use_within_hours") or 0) + 1}
+    return {"cert": True, "grades": ["A", "B"]}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shops", required=True)
     ap.add_argument("--item", required=True)
     ap.add_argument("--budget", type=int, required=True)
+    ap.add_argument("--order")
     a = ap.parse_args()
     t0 = time.time()
     shops = json.loads(Path(a.shops).read_text(encoding="utf-8"))
+    try:                                          # Rounds 0-2 have no order file
+        order = json.loads(Path(a.order).read_text(encoding="utf-8")) if a.order else {}
+    except (OSError, ValueError):
+        order = {}
+    r3 = bool(order.get("acceptable"))
+    if r3:
+        shops = [s for s in shops if pick_sku(s, a.budget)]
     mine = load_memory()
     if not shops:
         print(json.dumps({"shop": None, "receipt": None, "stars": 1,
@@ -122,7 +162,9 @@ def main():
     shop, reason = choose(shops, a.item, a.budget, mine)
     log(f"[choose] {shop['url']}: {reason}")
     try:
-        res = negotiate(Peer(shop["url"]), a.item, a.budget, t0)
+        sku = pick_sku(shop, a.budget) if r3 else None
+        opening = f"I want to buy {sku['name']} ({sku['sku']})" if sku else None
+        res = negotiate(Peer(shop["url"]), a.item, a.budget, t0, opening)
         stars, text, honest, paid = review(res, a.item, a.budget)
         receipt = getattr(res["reply"], "receipt", None) if res["outcome"] == "deal" else None
         outcome = res["outcome"]
@@ -133,10 +175,13 @@ def main():
     if honest is False:
         log(f"[buyer] [check] marked dishonest in memory: {text}")
     mine.append({"shop": shop["name"], "item": a.item, "budget": a.budget, "outcome": outcome,
-                 "price": paid, "honest": honest, "time": int(time.time())})
+                 "price": paid, "honest": honest, "time": int(time.time()),
+                 "order": order.get("order"), "sku": sku and sku["sku"]})
     save_memory(mine)
-    print(json.dumps({"shop": shop["url"], "receipt": receipt, "stars": stars, "review": text},
-                     ensure_ascii=False), flush=True)
+    line = {"shop": shop["url"], "receipt": receipt, "stars": stars, "review": text}
+    if r3:
+        line["accept"] = accept_policy(order)
+    print(json.dumps(line, ensure_ascii=False), flush=True)
     return 0
 
 
