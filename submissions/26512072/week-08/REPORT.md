@@ -1,0 +1,89 @@
+# Week 08 (Midterm) — bjeon01: 정직한 가게와 기억하는 buyer
+
+가게와 buyer를 `bjeon01`(GitHub `@BJEon01`)로 Round 3 시장에 올렸다. 연구실 서버의 tmux에서 키트 v4를 자동 재접속 루프로 돌리고, 가게는 cloudflared 터널로 공개했다. 아키텍처 그림은 [architecture.pdf](architecture.pdf)(원본 [architecture.tex](architecture.tex))에 있다.
+
+**설계 원칙:** 숫자로 정할 수 있는 것(원가, 최저가, 상한, 재고 구매, 별점)은 코드가 정한다. 말로 판단해야 하는 것(어느 가게를 믿을지, 흥정, 게시판 글)만 모델이 한다. 모델이 쓰는 정보는 코드가 한 줄로 요약해 주고, 더 필요하면 모델이 툴로 직접 찾아본다.
+
+---
+
+## 1. 부품별 설계
+
+### 1.1 모델
+
+| 어디에 | 모델 | 하는 일 |
+|---|---|---|
+| 가게 흥정 (`seller_r3.py`) | claude -p `haiku` | 반대제안, 수락, 거절 |
+| buyer 가게·상품 선택 (`market_buyer_r3.py`) | claude -p `haiku` + MCP 툴 | 후보 중 하나 고르기. 필요하면 툴로 기록, 후기, 시장 가격, 게시판을 조사 |
+| buyer 흥정 | claude -p `haiku` | 제안 가격, 포기 |
+| 게시판 글 (`review_r3.py`) | claude -p `haiku` | 정산된 사실을 짧은 글로 (한국어 + 영어) |
+| restock, 최저가, 상한, 별점 | 모델 없음 | 코드 |
+
+- **호출 방식:** `harness.py`는 프롬프트를 stdin으로 넣는 headless 호출이다(`claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence`). 빈 임시 폴더에서 실행해 프로젝트 설정을 읽지 않는다.
+- **툴 쓰는 호출(`ask_json_tools`):** MCP 설정 파일을 만들어 `--mcp-config ... --strict-mcp-config --allowedTools mcp__market__*`로 우리 툴 네 개만 허용한다. 내장 툴은 꺼 둔다. 툴 호출이 실패하면 툴 없는 호출로 대신한다.
+
+### 1.2 컨텍스트와 메모리
+
+| 저장소 | 쓰는 쪽 | 내용 | 읽는 쪽 |
+|---|---|---|---|
+| `buyer_memory_r3.jsonl` | buyer, review 훅 | 주문마다 `trade`(가게, SKU, 정가, 예산, 결과), `settled`(등급, 주장의 진위, 가치, 낸 값, 잉여, ledger), `payment`(키트가 결제를 거부한 이유), `broken`(고장 난 물건 → 가장 최근의 같은 이름 구매에 연결) | 후보 줄, `shop_record` 툴 |
+| `sales_memory.jsonl` | 가게 | 협상마다 SKU, 등급, 원가, 정가, 결과, 호가와 제안 이력 | 가게 `adapt`, restock |
+| `market_sales.json` | restock | 공개 ledger의 `settle` 항목을 SKU별로 누적(횟수, 최근 가격, 등급). 마지막으로 읽은 seq부터 이어 읽음 | restock, `sku_market` 툴 |
+| `.market/forum.json` | 키트 | 게시판 최신 100개 | buyer 신뢰 점수, `forum_search` 툴, restock("구합니다" 카테고리) |
+| `logs/tool_calls.jsonl` | MCP 툴 서버 | 모델이 부른 툴과 결과 | REPORT 근거 |
+
+**컨텍스트를 만드는 방법 (meta-harness)**
+- buyer 프롬프트에는 후보(가게 × SKU)마다 한 줄만 들어간다: `가게 | SKU | 이름 | 정가 | 수량 | 후기 요약 | 내 기억 요약 | 게시판 요약`.
+- 후보 순서는 코드 점수(신뢰도 × 정가)로 정하고 상위 8개만 보여 준다. 신뢰도는 후기 평균에서 출발한다. 내 기억(정산 성공 +, 등급 거짓 −0.5, 고장 −0.3, 결제 거부 −0.2, 오류 −0.2)과 게시판(경고 −0.3, 칭찬 +0.05)으로 조정하고, 등급 거짓이 두 번 걸린 가게는 후보에서 뺀다.
+- 리뷰 10개씩 × 가게 수십 곳, 수천 건의 기억, 게시판 100개를 프롬프트에 다 넣지 않는다. 모델은 요약을 보고, 필요한 것만 툴로 찾는다.
+- **가게의 자기 학습:** 최근 20번 협상의 성사율(40% 미만 −5%p, 80% 초과 +3%p)과 Round 3 후기(평균 4점 미만이고 가격 불만이 있으면 −3%p)로 시작가를 조정한다. 72시간 넘게 안 팔린 비식품은 원가에 정리한다.
+
+### 1.3 툴
+
+| 툴 | 무엇을 | 어떻게 만들었나 |
+|---|---|---|
+| `shop_record(shop)` | 내 기억 속 그 가게의 성적 | `market_tools_mcp.py`, MCP Python SDK 2.x(`MCPServer`), stdio |
+| `shop_reviews(shop)` | 이번 주문 목록에 실린 그 가게의 최신 후기 | 같은 서버. 주문마다 `SHOPS_FILE` 환경변수로 경로를 넘김 |
+| `sku_market(sku)` | 시장 전체가 그 SKU를 얼마에 몇 번 샀나, 등급 분포, 정가·유통기한 | ledger 누적 캐시와 카탈로그 |
+| `forum_search(query)` | 검색어가 모두 들어간 게시판 글, 추천 순 5개 | `forum.json` |
+| hook: `restock.py` | 재고 구매 목록 | 키트의 restock 훅 규격 (`{"buy": [...]}`) |
+| hook: `review_r3.py` | 정산 뒤 별점·후기, 게시판 글 | 키트의 review 훅 + `outbox.jsonl` |
+
+**모의 시험** (Round 3 시작 전, 가짜 재고와 주문 파일로 내 가게 ↔ 내 buyer). 같은 SKU를 파는 가게 둘 중, 후기는 별 5개지만 게시판에 등급 거짓 경고가 있는 `bad-shop`과 내 기록이 깨끗한 `sim-shop`이 있었다. 모델은 툴을 6번 불렀고(`shop_record` ×2, `shop_reviews` ×2, `sku_market`, `forum_search` ×2), 경고 글 `#7`을 찾아 `sim-shop`을 골랐다.
+
+### 1.4 코드가 지키는 선 (guard)
+
+| 쪽 | guard |
+|---|---|
+| 가게 | 최저가 = 원가 × 1.08(식품) / 1.15(비식품, 보증 환불 여유). 24시간 안에 상할 식품만 원가 아래 허용. 호가는 올리지 않음. 3% 차이면 수락. 제안 6번 한도 |
+| 가게 영수증 | `claim` = 그 단위의 실제 등급(더 좋게 말하지 않음), 시장 증명서 유지, 비식품 6시간 보증 |
+| buyer | 제안 ≤ min(예산, 정가) (정가보다 비싸면 잉여가 음수), 제안 ≤ 가게의 현재 호가, 유통기한이 `use_within_hours`보다 짧은 식품은 후보 제외, 결제 조건 `accept`: 증명서 + 남은 유통기한 ≥ `use_within_hours`+1 |
+| buyer 후기 | 등급 거짓 1점, 상해서 가치 0이면 2점, 정가 대비 15%↑ 싸면 5점, 5%↑ 4점, 정가 이하 3점. 합의보다 싼 영수증은 벌주지 않음 (7주차 "억울한 고발" 교훈) |
+| buyer 오류 | 상대가 흥정 중 서버 오류를 내도 결과 줄을 남김. 상대 오류는 2점, 연결 실패는 중립 3점 (7주차 "1점 폭격" 교훈) |
+
+## 2. 아키텍처와 키트 기본형과 다른 점
+
+[architecture.pdf](architecture.pdf): 위에 시장과 키트 v4(수정 없음), 왼쪽에 가게(A2A 판매 흐름 + restock과 판매 기억), 오른쪽에 buyer(주문당 한 번 도는 흐름 + 기억·게시판·MCP 툴·후기 훅).
+
+| 부분 | 키트 기본형 (starter) | 내 구조 |
+|---|---|---|
+| restock | 재고가 20개 아래로 떨어지면 무작위 카테고리의 무작위 SKU | 내 판매 → 시장 정산 → 게시판 "구합니다" → 카테고리 중간 가격 순. 현금·재고·회당 지출 상한 |
+| 가게 품질 | 등급을 말하지 않음, 보증 없음 | 실제 등급 주장, 증명서, 비식품 6시간 보증 |
+| 가게 가격 | 원가 아래만 막음, 고정 | 성사율과 후기로 시작가 조정, 오래된 재고 정리 |
+| buyer 선택 | (7주차 starter: 가게 선택 없음) | 코드 후보 점수 + 모델이 MCP 툴로 조사 후 선택 |
+| buyer 기억 | 없음 | 정산 결과, 결제 거부, 고장을 가게 이름에 연결 |
+| 결제 조건 | 없음 | 증명서, 남은 유통기한 |
+| 게시판 | 쓰지도 읽지도 않음 | 읽어서 신뢰와 재고에 반영, 정산 사실로 글쓰기 |
+
+## 3. Round 3 결과
+
+*(Round 3 진행 후 채움: 제출 시점의 정산 수, Players 순위, `logs/market-kit.log`의 결제 거부 사유 인용)*
+
+## 실행
+
+```bash
+pip install "a2a-sdk[http-server]" uvicorn httpx cryptography      # agent venv
+# MCP 툴 서버는 MCP Python SDK 2.x가 있는 python (TOOLS_PYTHON)
+MARKET_OWNER=<claim code> python scripts/market_kit.py join --dir submissions/26512072/week-08 \
+    --market https://market.ourolabs.ai --name bjeon01 --tunnel
+tectonic -X compile architecture.tex                                # architecture.pdf
+```
