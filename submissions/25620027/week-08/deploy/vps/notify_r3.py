@@ -30,6 +30,11 @@ BASE = Path("/docker/ax-week08-25620027")
 CONTAINER = "ax-week08-25620027-r3-r3-1"
 HERMES = "hermes-agent-ztmz-hermes-agent-1"
 MARKET = "https://market.ourolabs.ai"
+# Obsidian through the Hermes job queue: the Mac worker applies typed
+# MAC_WORKER_APPROVED_OBSIDIAN jobs to the vault on the MacBook (contract:
+# Codex_Obsidian_Bootstrap/JARVIS_JOB_REQUEST_CONTRACT.md).
+JOBS = Path("/srv/hermes-jobs")
+VAULT_NOTE = "20_학업/01_강의자료/AX이해와활용/261102_AX_R3_자문보고.md"
 BUYER = "25620027"
 SWITCH_AT = datetime(
     2026, 11, 2, 15, 12, tzinfo=UTC
@@ -422,6 +427,63 @@ def send(text: str, *, dry_run: bool) -> bool:
     return result.returncode == 0
 
 
+def vault_job(
+    heading: str, body: str, key: str, *, dry_run: bool, jobs: Path = JOBS
+) -> Path | None:
+    """Queue one append for the Mac worker; the same key is applied only once."""
+    if not body.strip():
+        return None
+    now = datetime.now(UTC).astimezone(KST)
+    safe = "".join(ch if ch.isalnum() else "_" for ch in key)[-60:]
+    name = f"job_{now:%Y%m%d_%H%M%S}_KST_MAC_WORKER_APPROVED_OBSIDIAN_AX_R3_{safe}.md"
+    content = "\n".join("  " + line for line in body.splitlines())
+    text = (
+        "---\n"
+        "type: obsidian_update_request\n"
+        "status: pending\n"
+        "approval_source: user_request_2026-11-02_ax_r3_advisor_vault_log\n"
+        "vault_write_by_hermes: false\n"
+        "worker_route: mac_local_worker\n"
+        "approved_worker_tag: MAC_WORKER_APPROVED_OBSIDIAN\n"
+        "---\n\n"
+        "## jarvis_apply\n"
+        "```yaml\n"
+        "version: 1\n"
+        "operation: append_after_heading\n"
+        f'target: "{VAULT_NOTE}"\n'
+        f'heading: "{heading}"\n'
+        "content: |\n"
+        f"{content}\n"
+        f'idempotency_key: "{key}"\n'
+        "```\n\n"
+        "## evidence\n"
+        "- AX R3 VPS watcher (notify_r3.py), source /docker/ax-week08-25620027/data/r3/\n"
+    )
+    path = jobs / name
+    if dry_run:
+        print(text)
+        return path
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def as_markdown(message: str, stamp: str) -> str:
+    """Turn a phone message into a dated Markdown block for the vault note."""
+    lines = [line for line in message.splitlines() if line.strip()]
+    if not lines:
+        return ""
+    head = lines[0].replace("[AX R3] ", "")
+    out = [f"### {stamp} {head} (Claude Code 자동 기록)"]
+    for line in lines[1:]:
+        if line.startswith("■ "):
+            out.append(f"**{line[2:]}**")
+        elif line.startswith("#"):
+            out.append(f"- **{line}**")
+        else:
+            out.append(f"  - {line}")
+    return "\n".join(out) + "\n"
+
+
 def advisor(slot: str, state_path: Path, *, dry_run: bool) -> str:
     """Run the advisor inside the trading container and send what it reports.
 
@@ -460,6 +522,14 @@ def advisor(slot: str, state_path: Path, *, dry_run: bool) -> str:
     except (ValueError, IndexError):
         report = {"message": "", "skipped": f"advisor exit {result.returncode}"}
     message = str(report.get("message", ""))
+    if message:
+        day = _kst(time.time()).date().isoformat()
+        _ = vault_job(
+            "## 자문 보고",
+            as_markdown(message, f"{day} {slot}시"),
+            f"ax-r3-advisor-{day}-{slot}",
+            dry_run=dry_run,
+        )
     if slot == f"{SUMMARY_HOUR_KST:02d}":
         snap = collect()
         body = summary(snap, "아침 요약") + ("\n\n" + message if message else "")
@@ -485,12 +555,24 @@ def main() -> None:
     _ = parser.add_argument("--test", default="")
     _ = parser.add_argument("--summary", action="store_true")
     _ = parser.add_argument("--advisor", default="")
+    _ = parser.add_argument("--vault-change", default="")
     args = parser.parse_args()
     if time.time() >= STOP_SENDING.timestamp() and not (args.test or args.summary):
         return
     if args.test:
         ok = send(args.test, dry_run=args.dry_run)
         print("sent" if ok else "send failed")
+        return
+    if args.vault_change:
+        day = _kst(time.time())
+        key = f"ax-r3-change-{day:%Y%m%d-%H%M%S}"
+        path = vault_job(
+            "## 반영 기록",
+            f"- {day:%Y-%m-%d %H:%M} {args.vault_change} (Claude Code)",
+            key,
+            dry_run=args.dry_run,
+        )
+        print(f"queued {path}")
         return
     if args.advisor:
         print(advisor(args.advisor, args.state, dry_run=args.dry_run))

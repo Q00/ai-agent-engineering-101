@@ -92,3 +92,32 @@ def test_daily_summary_once_at_nine_and_final_notice_at_the_end(monkeypatch) -> 
     messages, _ = decide(healthy(end), state)
     assert any("라운드3 종료" in m for m in messages)
     _ = monkeypatch
+
+
+def test_vault_job_matches_the_worker_contract(tmp_path) -> None:  # noqa: ANN001
+    body = notify_r3.as_markdown(
+        "[AX R3] 자문 보고 21시\n\n■ 결정 필요 1건\n\n#3 [재입고 · 작업 S] 주기 단축\n근거: 품절 8회",
+        "2026-11-03 21시",
+    )
+    assert body.startswith("### 2026-11-03 21시 자문 보고 21시")
+    assert "- **#3 [재입고 · 작업 S] 주기 단축**" in body
+    path = notify_r3.vault_job(
+        "## 자문 보고",
+        body,
+        "ax-r3-advisor-2026-11-03-21",
+        dry_run=False,
+        jobs=tmp_path,
+    )
+    assert path is not None
+    assert "MAC_WORKER_APPROVED_OBSIDIAN" in path.name
+    text = path.read_text(encoding="utf-8")
+    assert "type: obsidian_update_request" in text
+    assert "operation: append_after_heading" in text
+    assert f'target: "{notify_r3.VAULT_NOTE}"' in text
+    assert 'heading: "## 자문 보고"' in text
+    assert "  - 근거: 품절 8회" in text  # block literal stays indented
+    assert 'idempotency_key: "ax-r3-advisor-2026-11-03-21"' in text
+    assert (
+        notify_r3.vault_job("## 자문 보고", "  ", "k", dry_run=False, jobs=tmp_path)
+        is None
+    )
