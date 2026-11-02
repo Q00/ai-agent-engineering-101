@@ -484,7 +484,7 @@ def as_markdown(message: str, stamp: str) -> str:
     return "\n".join(out) + "\n"
 
 
-def advisor(slot: str, state_path: Path, *, dry_run: bool, force: bool = False) -> str:
+def advisor(slot: str, state_path: Path, *, dry_run: bool, force: bool = False) -> str:  # noqa: C901 - one scheduled pass
     """Run the advisor inside the trading container and send what it reports.
 
     The 09 KST run always sends (morning summary plus any proposals) and marks the
