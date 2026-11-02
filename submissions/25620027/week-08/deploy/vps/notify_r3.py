@@ -484,12 +484,23 @@ def as_markdown(message: str, stamp: str) -> str:
     return "\n".join(out) + "\n"
 
 
-def advisor(slot: str, state_path: Path, *, dry_run: bool) -> str:
+def advisor(slot: str, state_path: Path, *, dry_run: bool, force: bool = False) -> str:
     """Run the advisor inside the trading container and send what it reports.
 
     The 09 KST run always sends (morning summary plus any proposals) and marks the
     day's summary as sent; other runs send only when there are new proposals.
     """
+    # Before Round 3 the market has no payments and no stock, and the advisor reads
+    # that as an emergency (2026-11-02 21:45: two false "urgent" proposals). Scheduled
+    # runs skip until the board says round 3; a manual run passes --force.
+    if not force:
+        try:
+            with urlopen(f"{MARKET}/api/board", timeout=20) as reply:  # noqa: S310
+                market_round = int(json.loads(reply.read()).get("round") or 0)
+        except (OSError, ValueError, TypeError):
+            market_round = 0
+        if market_round != 3:
+            return f"advisor slot={slot} skipped: market round {market_round}"
     try:
         runtime = json.loads(
             (BASE / "private/runtime.json").read_text(encoding="utf-8")
@@ -501,6 +512,10 @@ def advisor(slot: str, state_path: Path, *, dry_run: bool) -> str:
         [
             "docker",
             "exec",
+            # the advisor only writes proposals, so it may run before the 00:05 switch
+            # turns the policy loops on; this opens the model gate for this process only
+            "-e",
+            "AX_R3_MANAGER_MODEL=1",
             CONTAINER,
             "python",
             "-m",
@@ -555,6 +570,7 @@ def main() -> None:
     _ = parser.add_argument("--test", default="")
     _ = parser.add_argument("--summary", action="store_true")
     _ = parser.add_argument("--advisor", default="")
+    _ = parser.add_argument("--force", action="store_true")
     _ = parser.add_argument("--vault-change", default="")
     args = parser.parse_args()
     if time.time() >= STOP_SENDING.timestamp() and not (args.test or args.summary):
@@ -575,7 +591,7 @@ def main() -> None:
         print(f"queued {path}")
         return
     if args.advisor:
-        print(advisor(args.advisor, args.state, dry_run=args.dry_run))
+        print(advisor(args.advisor, args.state, dry_run=args.dry_run, force=args.force))
         return
     snap = collect()
     if args.summary:
