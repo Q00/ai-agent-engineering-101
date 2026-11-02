@@ -87,6 +87,7 @@ def test_replay():
 
 def test_credit_and_memos():
     print("\n[shop_credit, leave_memo]")
+    ledger.folder().mkdir(parents=True, exist_ok=True)
     with open(ledger.folder() / "settles.jsonl", "w", encoding="utf-8") as f:
         for i in range(3):
             f.write(json.dumps({"ts": NOW, "shop": "Alpha", "item": "Gaaaa0001", "amount": 14000, "claim": "A" if i < 2 else None,

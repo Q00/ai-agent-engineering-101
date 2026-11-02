@@ -1,4 +1,4 @@
-seller: http://127.0.0.1:59135  market dir: C:\Users\bubuj\AppData\Local\Temp\round3-test-flyjzmcj\.market
+seller: http://127.0.0.1:53085  market dir: C:\Users\bubuj\AppData\Local\Temp\round3-test-vu8987iu\.market
   PASS  seller serves its agent card
 
 [A] food deal through market_buyer: 포기김치 (list 20000), budget 22000, eat within 48 h; stock: A with 150 h left, C with 30 h left
@@ -40,7 +40,7 @@ seller: http://127.0.0.1:59135  market dir: C:\Users\bubuj\AppData\Local\Temp\ro
 [buyer] -> '31920'
 [buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 차렵이불 SS (Gbbbb0001) at 31920.
   PASS  quoted with the warranty at 80% of list  (테스트 차렵이불 SS (Gbbbb0001): grade C (refurbished), certificate attached, with a 6-hour warranty. Asking 31920. Send your offer as a number.)
-  PASS  the receipt carries the 6 h warranty  ({'task': '5904cc9a-b1e4-40b5-906c-b809775104aa', 'item': 'Gbbbb0001', 'sig_seller': 'o13ZO1QkB9twr/h3A6gqI3dnsXqPzSpoOYgp6pNHzKbrOG1sG05sVRFT2NFBZ4ckCr0NM7jw0QbWea22wlIRDQ==', 'shop': 'Kiro729 Shop', 'unit': 'u-b1-c', 'warranty_hours': 6.0, 'price': 31920.0, 'claim': 'C'})
+  PASS  the receipt carries the 6 h warranty  ({'task': '47dd8ccf-d9ce-49a2-b7b3-33c2873e0dcd', 'item': 'Gbbbb0001', 'sig_seller': 'hQm9MKwqEjZFl09W8k/AXcstk0r2qIHu/FFBRsqGRiwpPiR47fGvQjHSOL3S0QwFzckOw58MI05l4Wpx0h+7Aw==', 'shop': 'Kiro729 Shop', 'unit': 'u-b1-c', 'warranty_hours': 6.0, 'price': 31920.0, 'claim': 'C'})
   PASS  kit: sig_seller verifies with the shop key
   PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gbbbb0001 at 31920 of budget 35000)
   PASS  kit: checkout session opens  (status 201)
@@ -67,8 +67,8 @@ seller: http://127.0.0.1:59135  market dir: C:\Users\bubuj\AppData\Local\Temp\ro
 [buyer] -> 'I want to buy 테스트 딸기 1kg (Gdddd0001)'
 [buyer] <- TASK_STATE_REJECTED | Sorry, we have none of that in stock right now.
   PASS  nothing of that category: declined  (Sorry, we have none of that in stock right now.)
-  PASS  turned-away buyers are recorded (held, out)  ({('Gaaaa0002', 'held'), ('Gdddd0001', 'out')})
-  PASS  how each buyer asked is recorded  ({'sku', 'category', 'model'})
+  PASS  turned-away buyers are recorded (held, out)  ({('Gdddd0001', 'out'), ('Gaaaa0002', 'held')})
+  PASS  how each buyer asked is recorded  ({'sku', 'model', 'category'})
 
 [S3] negotiating: the floor and its reason, quick close, a plain yes
 [buyer] -> 'I want to buy 테스트 차렵이불 SS (Gbbbb0001)'
@@ -127,7 +127,7 @@ seller: http://127.0.0.1:59135  market dir: C:\Users\bubuj\AppData\Local\Temp\ro
   PASS  the hook prints the kit's line (<= 10 lines, 1-20 each, known SKUs)  (["[restock] {'stage1': 15, 'gate': '5/10', 'targets': 18, 'gaps': 18, 'stock': 0, 'wind_down': False}, buying 10 line(s)"])
 
 [S1] which agreed deals settled
-  PASS  a unit that left the inventory is a sale  (['a9bcdc56-2e73-4409-8d25-4537d218c3c1', '569b8c71-1e7f-40cf-afb7-a0a054af8750', '5904cc9a-b1e4-40b5-906c-b809775104aa', '66edbee6-87c5-4d5b-8f38-dae2420f2c1f', 'f1282abd-757e-46ab-9804-21cf4fea4e0e', 'a9bcdc56-2e73-4409-8d25-4537d218c3c1', '569b8c71-1e7f-40cf-afb7-a0a054af8750', '5904cc9a-b1e4-40b5-906c-b809775104aa', '66edbee6-87c5-4d5b-8f38-dae2420f2c1f', 'f1282abd-757e-46ab-9804-21cf4fea4e0e', 't-sold'])
+  PASS  a unit that left the inventory is a sale  (['fab1f07f-89fb-4dfa-83be-37093d9bef37', '822d5504-9f02-4f78-bd53-b9fd79b53da8', '47dd8ccf-d9ce-49a2-b7b3-33c2873e0dcd', 'f41d6007-9202-48cc-9047-7c3ae036f93b', '68314337-739a-45b1-93bb-a51bb4222f98', 'fab1f07f-89fb-4dfa-83be-37093d9bef37', '822d5504-9f02-4f78-bd53-b9fd79b53da8', '47dd8ccf-d9ce-49a2-b7b3-33c2873e0dcd', 'f41d6007-9202-48cc-9047-7c3ae036f93b', '68314337-739a-45b1-93bb-a51bb4222f98', 't-sold'])
   PASS  a unit still in stock 10 minutes after the deal is unpaid  (['t-unpaid'])
 
 [ledger] collection and summary (ledger.py)
@@ -142,7 +142,7 @@ seller: http://127.0.0.1:59135  market dir: C:\Users\bubuj\AppData\Local\Temp\ro
   PASS  no negotiation sold below its floor  (Gaaaa0001 deal 13800/12600, Gbbbb0001 deal 27930/22680, Gbbbb0001 deal 31920/22680, Gaaaa0001 walked None/10500, Gaaaa0003 walked None/12600, Gaaaa0001 walked None/10500, Gaaaa0001 walked None/12600, Gaaaa0002 walked None/8400, Gbbbb0001 walked None/30450, Gaaaa0001 deal 14300/12600, Gaaaa0001 deal 15000/12600)
 
 [seller log]
-    [seller] Kiro729 Shop on port 59135, stock from C:\Users\bubuj\AppData\Local\Temp\round3-test-flyjzmcj\.market
+    [seller] Kiro729 Shop on port 53085, stock from C:\Users\bubuj\AppData\Local\Temp\round3-test-vu8987iu\.market
     [seller] Gaaaa0001 deal at 13800
     [seller] Gbbbb0001 deal at 27930
     [seller] Gbbbb0001 deal at 31920
