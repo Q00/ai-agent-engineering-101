@@ -9,7 +9,8 @@ the new numbers confirm or refute. The code holds the rest:
     evidence with a number in it; a repeat of an active insight is refused
     testing -> confirmed after CONFIRM confirmations, when they outnumber the refutations
     retired when the refutations outnumber the confirmations by RETIRE, and beyond ACTIVE_MAX
-    active insights the weakest is retired; retired insights stay in the file with the reason
+    active insights the weakest older one is retired (never one added in the same decision);
+    retired insights stay in the file with the reason
 
 Every briefing shows the active ones in part 2 (context.py). Out: analysis/insights.json.
 """
@@ -104,7 +105,8 @@ def update(got: dict, now: float) -> dict:
         seen.add(_norm(text))
         log["added"].append(f"I{n}")
     live = active(rows)
-    for x in sorted(live, key=lambda x: (score(x), x.get("checked", 0)))[:max(0, len(live) - ACTIVE_MAX)]:
+    older = [x for x in live if x["id"] not in log["added"]]           # a new insight gets its chance to be checked
+    for x in sorted(older, key=lambda x: (score(x), x.get("checked", 0)))[:max(0, len(live) - ACTIVE_MAX)]:
         _retire(x, f"more than {ACTIVE_MAX} active insights; this was the weakest", now, log)
     common.write_json(path(), rows)
     return log
