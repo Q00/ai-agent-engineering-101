@@ -39,12 +39,13 @@ scp -i $HOME\.ssh\kiro_azure -r submissions\26510118\week-08\round3 azureuser@4.
 scp -i $HOME\.ssh\kiro_azure submissions\26510118\week-08\shop_key.pem submissions\26510118\week-08\buyer_key.pem azureuser@4.230.8.44:~/market/round3/
 ```
 
-## 2. 비밀값 입력 (직접, PC의 PowerShell에서 한 줄)
+## 2. 비밀값 입력 (직접, PC의 **Git Bash**에서 한 줄)
 
-OpenAI 키와 claim code(https://market.ourolabs.ai/join 에서 복사)를 준비한 뒤:
-```powershell
-ssh -t -i $HOME\.ssh\kiro_azure azureuser@4.230.8.44 "bash ~/market/round3/deploy/secrets.sh"
+Windows 기본 ssh(PowerShell의 `ssh`)는 Git Bash로 만든 키 파일을 "권한이 너무 열려 있다"(`bad permissions`)며 거부하므로 **Git Bash**(시작 메뉴 → Git Bash)에서 실행합니다. OpenAI 키와 claim code(https://market.ourolabs.ai/join 에서 복사)를 준비한 뒤:
+```bash
+ssh -t -i ~/.ssh/kiro_azure azureuser@4.230.8.44 "bash ~/market/round3/deploy/secrets.sh"
 ```
+Git Bash에서 붙여 넣기는 Shift+Insert 또는 마우스 오른쪽 → Paste입니다.
 
 두 번 물어봅니다(입력이 화면에 보이지 않습니다). 붙여 넣고 Enter를 누르면 됩니다. 이미 저장된 값을 그대로 두려면 그냥 Enter를 누릅니다. 마지막에 `openai.env: present, -rw-------`, `owner.env: present, -rw-------`이 나오면 성공입니다. 값 자체는 어디에도 출력되지 않습니다.
 
