@@ -15,6 +15,7 @@ from buyer import BuyerError, BuyerTransport, run_autonomous
 from buyer_memory import choose_shop, load_memory, remember, RECENT_COUNT
 from shop_catalog import load_shops
 from r3_policy import buyer_accept
+from settlement_memory import payment_outcomes, reconcile
 
 ROOT = Path(__file__).resolve().parent
 
@@ -138,6 +139,7 @@ def main():
         if r3:
             if order.get("item") != args.item or order.get("budget") != args.budget:
                 raise ValueError("Order and command arguments disagree")
+            memory = reconcile(memory, payment_outcomes(args.order.parent / "payments.jsonl"))
             shops = [dict(s, offers=[o for o in s.get("offers", [])
                                     if o.get("sku") in acceptable and o.get("qty", 0) > 0]) for s in shops]
             shops = [s for s in shops if s["offers"]]
