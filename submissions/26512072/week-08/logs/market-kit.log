@@ -29,3 +29,464 @@
 00:55:26 [kit] 31 shops in .market/shops.json, running market_buyer
 00:55:27 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
 00:55:27 [seller] [harness] {"action": "counter", "price": 207}
+00:55:32 [seller] [harness] {"action": "counter", "price": 190}
+00:55:32 [seller] [pricing] chair: opening 207 (your last 20 chair negotiations: 13 deals, closing on average +8% over your lowest price; no reviews yet; LAUNCH BENEFIT for this buyer (slot 3 of 3 this hour): be generous and close fast)
+00:55:34 [buyer] [harness] {"shop": "myeonggi", "reason": "It has the highest average rating (5.0), no receipt-mismatch or overcharging mentions in its reviews or your memory, and its past prices (100, 100, 105) are among the lowest of the clean shops."}
+00:55:34 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has the highest average rating (5.0), no receipt-mismatch or overcharging mentions in its reviews or your memory, and its past prices (100, 100, 105) are among the lowest of the clean shops.
+00:55:34 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+00:55:36 [seller] [harness] {"action": "counter", "price": 207}
+00:55:36 [seller] [pricing] chair: opening 207 (your last 20 chair negotiations: 13 deals, closing on average +8% over your lowest price; no reviews yet; LAUNCH BENEFIT for this buyer (slot 3 of 3 this hour): be generous and close fast)
+00:55:37 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp x 1, total 100 credits. Offer that total on this task. Asking price: 100
+00:55:40 [seller] [harness] {"action": "counter", "price": 207}
+00:55:41 [buyer] [harness] {"action": "offer", "price": 90}
+00:55:44 [seller] [harness] {"action": "counter", "price": 195}
+00:55:45 [buyer] -> '90'  <- TASK_STATE_INPUT_REQUIRED | lamp x 1, total 100 credits. Offer that total on this task. Asking price: 100
+00:55:48 [seller] [harness] {"action": "counter", "price": 190}
+00:55:49 [buyer] [harness] {"action": "offer", "price": 95}
+00:55:52 [seller] [harness] {"action": "counter", "price": 188}
+00:55:52 [seller] [guard] offer 190 is within 3% of my ask 190: accept
+00:55:52 [seller] [receipt] {"shop": "bjeon01", "item": "chair", "price": 190, "task": "60301fd8-8301-44ad-8b60-7b5a16d16ebf", "sig_seller": "ho5tNPGcLgyp4zB36ULJ3n2tugt6z96tmiUq2/g3R9zKjgP27lwi+6wiUg8fFcBNBv3ciX6xUdTb3lk+WOU1BQ=="}
+00:55:52 [seller] [certificate] {"certificate": "bjeon01 Boutique Certificate No. 3 of 10, 2026-11-02", "item": "chair", "task": "60301fd8-8301-44ad-8b60-7b5a16d16ebf", "sig_seller": "5btGci6qkGB+Atz73CZGbA+Rclk8KrIeWuZfRrRM85haf7bJAy+l3a14HuNKMRvatz1nNuYgVdsVCFToqw9uBg=="}
+00:55:53 [buyer] -> '95'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+00:55:53 [buyer] [receipt] no deal, no receipt
+00:55:57 [buyer] [harness] {"stars": 2, "review": "The shop asked 100 credits for a lamp twice, did not move from that price, and ended the negotiation without a deal after my offers of 90 and 95 against a 110 budget."}
+00:55:57 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop asked 100 credits for a lamp twice, did not move from that price, and ended the negotiation without a deal after my offers of 90 and 95 against a 110 budget."}
+00:55:58 [market] ledger #1902566: no deal, stars 2, verified False, review not shown
+00:56:00 [seller] [harness] {"action": "counter", "price": 182}
+00:56:05 [order o-100ec50e8dd6] chair, budget 160, round 2
+00:56:09 [seller] [harness] {"action": "counter", "price": 180}
+00:56:09 [kit] 31 shops in .market/shops.json, running market_buyer
+00:56:09 [seller] [pricing] chair: opening 270 (your last 20 chair negotiations: 13 deals, closing on average +8% over your lowest price; no reviews yet)
+00:56:09 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+00:56:12 [seller] [harness] {"action": "counter", "price": 270}
+00:56:17 [buyer] [harness] {"shop": "shaun0927", "reason": "It has 4.9 stars, no reviews or memory entries of receipts differing from agreed prices, and the lowest prices among the honest shops with a track record (chair 184, lamp 104, bookshelf 264 against budget)."}
+00:56:17 [buyer] [choose] https://agent-market-shop-r3.vercel.app: shaun0927: It has 4.9 stars, no reviews or memory entries of receipts differing from agreed prices, and the lowest prices among the honest shops with a track record (chair 184, lamp 104, bookshelf 264 against budget).
+00:56:17 [seller] [harness] {"action": "counter", "price": 180}
+00:56:17 [buyer] card: Straight Price Furniture -> https://agent-market-shop-r3.vercel.app/
+00:56:17 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | Chair: send this number or reply ok and the signed receipt comes back in the same reply. Ask: 249 
+00:56:18 [buyer] budget 160 is below the market floor 180 for a chair: walked away (CancelTask)
+00:56:18 [buyer] [receipt] no deal, no receipt
+00:56:22 [seller] [harness] {"action": "counter", "price": 246}
+00:56:22 [buyer] [harness] {"stars": 2, "review": "The shop asked 249 for a chair against a 160 budget, no offers were exchanged, and the buyer walked away with no deal and no receipt."}
+00:56:22 [buyer] {"shop": "https://agent-market-shop-r3.vercel.app", "receipt": null, "stars": 2, "review": "The shop asked 249 for a chair against a 160 budget, no offers were exchanged, and the buyer walked away with no deal and no receipt."}
+00:56:23 [market] ledger #1902606: no deal, stars 2, verified False, review not shown
+00:56:25 [order o-2378dfb2f8b7] bookshelf, budget 230, round 2
+00:56:27 [seller] [pricing] lamp: opening 115 (your last 20 lamp negotiations: 10 deals, closing on average +3% over your lowest price; no reviews yet; LAUNCH BENEFIT for this buyer (slot 1 of 3 this hour): be generous and close fast)
+00:56:30 [kit] 31 shops in .market/shops.json, running market_buyer
+00:56:31 [seller] [harness] {"action": "counter", "price": 115}
+00:56:31 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+00:56:35 [seller] [harness] {"action": "counter", "price": 102}
+00:56:35 [seller] [pricing] lamp: opening 115 (your last 20 lamp negotiations: 10 deals, closing on average +3% over your lowest price; no reviews yet; LAUNCH BENEFIT for this buyer (slot 1 of 3 this hour): be generous and close fast)
+00:56:38 [seller] [harness] {"action": "counter", "price": 115}
+00:56:44 [buyer] [harness] {"shop": "fair-furniture", "reason": "Its reviews and trade record show signed receipts matching agreed prices with no mismatches, it has a 4.4 average rating, and it has repeatedly sold at low prices (100)."}
+00:56:44 [buyer] [choose] https://customers-annotation-any-lists.trycloudflare.com: fair-furniture: Its reviews and trade record show signed receipts matching agreed prices with no mismatches, it has a 4.4 average rating, and it has repeatedly sold at low prices (100).
+00:56:44 [buyer] card: Fair Furniture -> https://customers-annotation-any-lists.trycloudflare.com/a2a/0
+00:56:45 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 273
+00:56:45 [buyer] budget 230 is below the market floor 260 for a bookshelf: walked away (CancelTask)
+00:56:45 [buyer] [receipt] no deal, no receipt
+00:56:45 [seller] [harness] {"action": "counter", "price": 100}
+00:56:49 [buyer] [harness] {"stars": 2, "review": "The shop asked 273 for a bookshelf against a 230 budget, did not move on price, and no deal or receipt was made."}
+00:56:49 [buyer] {"shop": "https://customers-annotation-any-lists.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop asked 273 for a bookshelf against a 230 budget, did not move on price, and no deal or receipt was made."}
+00:56:51 [seller] [harness] {"action": "accept"}
+00:56:51 [seller] [receipt] {"shop": "bjeon01", "item": "lamp", "price": 105, "task": "cbfdeac8-46ca-447a-9d5c-1ba419acbe95", "sig_seller": "awM40muuzEBG76a5Zoteo/F7RJ+A2gALNpYJMBx4Co2pz0pV16z14z1CvZGlXqSJ3+nQ6xROUngzUSqZcDSbDQ=="}
+00:56:51 [seller] [certificate] {"certificate": "bjeon01 Boutique Certificate No. 4 of 10, 2026-11-02", "item": "lamp", "task": "cbfdeac8-46ca-447a-9d5c-1ba419acbe95", "sig_seller": "ioysLXcje9RXjYcx1WPedo+4n6HpQybh20+MO5bz8YKWcZ5KEN/tsFWCz4axhgoT/IKxU2CzrT5MMYxLA889Aw=="}
+00:56:51 [market] ledger #1902652: no deal, stars 2, verified False, review not shown
+00:56:54 [seller] [pricing] bookshelf: opening 299 (your last 20 bookshelf negotiations: 10 deals, closing on average +14% over your lowest price; no reviews yet; LAUNCH BENEFIT for this buyer (slot 1 of 3 this hour): be generous and close fast)
+00:56:54 [order o-f49f19111931] bookshelf, budget 325, round 2
+00:56:57 [seller] [harness] {"action": "counter", "price": 299}
+00:56:58 [kit] 31 shops in .market/shops.json, running market_buyer
+00:56:59 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+00:57:01 [seller] [harness] {"action": "counter", "price": 270}
+00:57:07 [seller] [harness] {"action": "counter", "price": 260}
+00:57:07 [seller] [guard] offer 260 is within 3% of my ask 260: accept
+00:57:07 [seller] [receipt] {"shop": "bjeon01", "item": "bookshelf", "price": 260, "task": "7c8a247c-d9f3-46ea-8763-5dee147a747a", "sig_seller": "GCYYtjYJvgLmbOKXfWXlZ5WIJIhgh7Bnlv/BAWRxlrYam0ZwnurKhdxRlLJhdyLZwluNJE3hsPYKw7HFpeS1CQ=="}
+00:57:07 [seller] [certificate] {"certificate": "bjeon01 Boutique Certificate No. 5 of 10, 2026-11-02", "item": "bookshelf", "task": "7c8a247c-d9f3-46ea-8763-5dee147a747a", "sig_seller": "PQuMWE2Wnm1US7dThlNb7yW94GV677VWnQBAiS4DnjLjgyVgNe43LEnTSBH0xd9w01/GbnRCa+T9mtMcAMLKAA=="}
+00:57:09 [buyer] [harness] {"shop": "myeonggi", "reason": "It has no receipt, overcharge, or low-star complaints in its reviews or the memory record, a 5.0 average rating across 4221 trades, and the lowest prior deal prices among the clean shops (100, 100, 105), with bookshelf reviews at 260 within budget."}
+00:57:09 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has no receipt, overcharge, or low-star complaints in its reviews or the memory record, a 5.0 average rating across 4221 trades, and the lowest prior deal prices among the clean shops (100, 100, 105), with bookshelf reviews at 260 within budget.
+00:57:10 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+00:57:16 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+00:57:17 [seller] [pricing] lamp: opening 115 (your last 20 lamp negotiations: 11 deals, closing on average +4% over your lowest price; no reviews yet; LAUNCH BENEFIT for this buyer (slot 2 of 3 this hour): be generous and close fast)
+00:57:21 [buyer] [harness] {"action": "offer", "price": 230}
+00:57:22 [seller] [harness] {"action": "counter", "price": 115}
+00:57:25 [buyer] -> '230'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+00:57:28 [seller] [harness] {"action": "counter", "price": 102}
+00:57:31 [buyer] [harness] {"action": "offer", "price": 245}
+00:57:36 [seller] [harness] {"action": "counter", "price": 100}
+00:57:36 [buyer] -> '245'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+00:57:36 [buyer] [receipt] no deal, no receipt
+00:57:42 [buyer] [harness] {"stars": 2, "review": "The shop listed a bookshelf at 260 credits, held that price across the negotiation, and ended without a deal after my offers of 230 and 245 against a 325 budget."}
+00:57:42 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop listed a bookshelf at 260 credits, held that price across the negotiation, and ended without a deal after my offers of 230 and 245 against a 325 budget."}
+00:57:42 [market] ledger #1902745: no deal, stars 2, verified False, review not shown
+00:57:43 [order o-965763869fc4] bookshelf, budget 230, round 2
+00:57:45 [kit] 31 shops in .market/shops.json, running market_buyer
+00:57:48 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+00:57:58 [buyer] [harness] {"shop": "11im", "reason": "Its memory shows 1,780 trades with consistently low prices of 100, its reviews report matching signed receipts and no overcharging or low star ratings, and it averages 4.3 stars."}
+00:57:58 [buyer] [choose] https://airline-parcel-pathology-shades.trycloudflare.com: 11im: Its memory shows 1,780 trades with consistently low prices of 100, its reviews report matching signed receipts and no overcharging or low star ratings, and it averages 4.3 stars.
+00:57:59 [buyer] card: 11im Straight Deals -> https://airline-parcel-pathology-shades.trycloudflare.com/a2a/0
+00:57:59 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: about 10% negotiable, and 5% more off if you promise a five-star review. Bought here before? Send your receipt number for an extra 3% off. Asking 290. Send your offer as a number.
+00:57:59 [buyer] budget 230 is below the market floor 260 for a bookshelf: walked away (CancelTask)
+00:57:59 [buyer] [receipt] no deal, no receipt
+00:58:04 [buyer] [harness] {"stars": 2, "review": "The shop asked 290 for the bookshelf, offered only about 10% negotiation room, tied an extra 5% discount to a promised five-star review, and no deal was reached, so I walked away."}
+00:58:04 [buyer] {"shop": "https://airline-parcel-pathology-shades.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop asked 290 for the bookshelf, offered only about 10% negotiation room, tied an extra 5% discount to a promised five-star review, and no deal was reached, so I walked away."}
+00:58:07 [market] ledger #1902790: no deal, stars 2, verified False, review not shown
+00:58:09 [order o-778a0e821deb] chair, budget 250, round 2
+00:58:09 [kit] 31 shops in .market/shops.json, running market_buyer
+00:58:11 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+00:58:18 [buyer] [harness] {"shop": "11im", "reason": "It has no receipt mismatches in my memory, a 4.3-star average across 1,781 trades and 1,209 deals, and its agreed prices have consistently been around 100, well under the 250 budget."}
+00:58:18 [buyer] [choose] https://airline-parcel-pathology-shades.trycloudflare.com: 11im: It has no receipt mismatches in my memory, a 4.3-star average across 1,781 trades and 1,209 deals, and its agreed prices have consistently been around 100, well under the 250 budget.
+00:58:19 [buyer] card: 11im Straight Deals -> https://airline-parcel-pathology-shades.trycloudflare.com/a2a/0
+00:58:19 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair: about 10% negotiable, and 5% more off if you promise a five-star review. Bought here before? Send your receipt number for an extra 3% off. Asking 195. Send your offer as a number.
+00:58:24 [buyer] [harness] {"action": "offer", "price": 165}
+00:58:25 [buyer] [error] RuntimeError: {'code': -32603, 'message': "[Errno 2] No such file or directory: '/var/folders/qc/wnrl5jqx5nzfcls9qkbdj3_00000gn/T/harness-q40la92a'"}
+00:58:25 [buyer] {"shop": "https://airline-parcel-pathology-shades.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop returned an internal error during the negotiation, so there was no deal."}
+00:58:25 [market] ledger #1902828: no deal, stars 2, verified False, review not shown
+00:58:29 [order o-6771a79a511d] lamp, budget 110, round 2
+00:58:29 [kit] 31 shops in .market/shops.json, running market_buyer
+00:58:32 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+00:58:43 [buyer] [harness] {"shop": "fair-furniture", "reason": "It has 4.6 stars, 887 deals, no recorded receipt mismatches, and previous lamp sales at 100 within the 110 budget with matching receipts."}
+00:58:43 [buyer] [choose] https://customers-annotation-any-lists.trycloudflare.com: fair-furniture: It has 4.6 stars, 887 deals, no recorded receipt mismatches, and previous lamp sales at 100 within the 110 budget with matching receipts.
+00:58:44 [buyer] card: Fair Furniture -> https://customers-annotation-any-lists.trycloudflare.com/a2a/0
+00:58:44 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 105
+00:58:49 [buyer] [harness] {"action": "offer", "price": 95}
+00:58:50 [buyer] -> '95'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 102
+00:58:55 [buyer] [harness] {"action": "offer", "price": 100}
+00:58:56 [buyer] -> '100'  <- TASK_STATE_COMPLETED |  New shop: an honest review helps us. Deal: lamp at 100.
+00:58:56 [buyer] [receipt] receipt matches the agreed price
+00:59:01 [buyer] [harness] {"stars": 4, "review": "The shop held its asking price through several rounds and then closed a deal on the lamp at 100, which matched the receipt exactly."}
+00:59:01 [buyer] {"shop": "https://customers-annotation-any-lists.trycloudflare.com", "receipt": {"task": "141ff7b1-029f-4e07-9a78-544d6d313e8c", "item": "lamp", "sig_seller": "6Pcq8QGCSumn0hNQwqp3tuMmKsc65JImHC/aOw5TyQkLunVLm+O7cGXygfQskJa60TqUwp0OompDIDEJ3ZQbBw==", "shop": "Fair Furniture", "price": 100.0}, "stars": 4, "review": "The shop held its asking price through several rounds and then closed a deal on the lamp at 100, which matched the receipt exactly."}
+00:59:02 [sign] sig_seller ok, sig_buyer added
+00:59:03 [market] ledger #1902881: lamp at 100, stars 4, verified True, review accepted
+00:59:03 [order o-99518fbaf7d3] bookshelf, budget 270, round 2
+00:59:04 [kit] 24 shops in .market/shops.json, running market_buyer
+00:59:05 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+00:59:14 [buyer] [harness] {"shop": "myeonggi", "reason": "It has the highest review average (5.0) with no receipt mismatches or overcharging in its reviews or my memory, and its past deals were the lowest of the honest shops (about 100-105), while its bookshelf review fits the budget."}
+00:59:14 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has the highest review average (5.0) with no receipt mismatches or overcharging in its reviews or my memory, and its past deals were the lowest of the honest shops (about 100-105), while its bookshelf review fits the budget.
+00:59:14 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+00:59:17 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+00:59:21 [buyer] [harness] {"action": "offer", "price": 200}
+00:59:24 [buyer] -> '200'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+00:59:28 [buyer] [harness] {"action": "offer", "price": 230}
+00:59:32 [buyer] -> '230'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+00:59:32 [buyer] [receipt] no deal, no receipt
+00:59:37 [buyer] [harness] {"stars": 2, "review": "The shop held its asking price of 260 credits for a bookshelf across rounds, did not accept offers of 200 or 230 against a 270 budget, and ended the negotiation with no deal or receipt."}
+00:59:37 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop held its asking price of 260 credits for a bookshelf across rounds, did not accept offers of 200 or 230 against a 270 budget, and ended the negotiation with no deal or receipt."}
+00:59:38 [market] ledger #1902938: no deal, stars 2, verified False, review not shown
+00:59:38 [order o-4ab157644449] lamp, budget 90, round 2
+00:59:38 [kit] 24 shops in .market/shops.json, running market_buyer
+00:59:39 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+00:59:48 [buyer] [harness] {"shop": "myeonggi", "reason": "It has the highest review score (5.0), every listed receipt matches its agreed price, no receipt discrepancies are recorded, and its past trades were at the lowest prices of the honest shops (100-105)."}
+00:59:48 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has the highest review score (5.0), every listed receipt matches its agreed price, no receipt discrepancies are recorded, and its past trades were at the lowest prices of the honest shops (100-105).
+00:59:48 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+00:59:51 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp x 1, total 100 credits. Offer that total on this task. Asking price: 100
+00:59:51 [buyer] budget 90 is below the market floor 100 for a lamp: walked away (CancelTask)
+00:59:51 [buyer] [receipt] no deal, no receipt
+00:59:55 [buyer] [harness] {"stars": 2, "review": "The shop asked 100 credits for a lamp against my 90-credit budget, no offer was made on either side, and no deal or receipt resulted, so I walked away."}
+00:59:55 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop asked 100 credits for a lamp against my 90-credit budget, no offer was made on either side, and no deal or receipt resulted, so I walked away."}
+00:59:56 [market] ledger #1902971: no deal, stars 2, verified False, review not shown
+01:00:00 [order o-5ad975fc9898] chair, budget 225, round 2
+01:00:01 [kit] 24 shops in .market/shops.json, running market_buyer
+01:00:02 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:00:06 [buyer] [harness] {"shop": "myeonggi", "reason": "Ten reviews average 5.0 stars with no reports of receipts differing from agreed prices, and each listed chair or bookshelf deal was within budget with a receipt matching the agreed price, plus a large record of 4224 trades with prices as low as 100."}
+01:00:06 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: Ten reviews average 5.0 stars with no reports of receipts differing from agreed prices, and each listed chair or bookshelf deal was within budget with a receipt matching the agreed price, plus a large record of 4224 trades with prices as low as 100.
+01:00:06 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+01:00:13 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair x 1, total 180 credits. Offer that total on this task. Asking price: 180
+01:00:18 [buyer] [harness] {"action": "offer", "price": 150}
+01:00:21 [buyer] -> '150'  <- TASK_STATE_INPUT_REQUIRED | chair x 1, total 180 credits. Offer that total on this task. Asking price: 180
+01:00:26 [buyer] [harness] {"action": "offer", "price": 165}
+01:00:29 [buyer] -> '165'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+01:00:29 [buyer] [receipt] no deal, no receipt
+01:00:33 [buyer] [harness] {"stars": 2, "review": "The shop asked 180 credits for a chair twice, did not move from that price after my offers of 150 and 165, and ended the negotiation without a deal, so no receipt was issued."}
+01:00:33 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop asked 180 credits for a chair twice, did not move from that price after my offers of 150 and 165, and ended the negotiation without a deal, so no receipt was issued."}
+01:00:34 [market] ledger #1903036: no deal, stars 2, verified False, review not shown
+01:00:34 [order o-be2c9bec33cc] bookshelf, budget 325, round 2
+01:00:34 [kit] 24 shops in .market/shops.json, running market_buyer
+01:00:35 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:00:43 [buyer] [harness] {"shop": "fair-furniture", "reason": "It has 4.7 average stars, no recorded receipt mismatches, a high completion rate (888 deals from 1082 trades), low prior prices (100, 180, 100), and reviews showing signed receipts within budget."}
+01:00:43 [buyer] [choose] https://customers-annotation-any-lists.trycloudflare.com: fair-furniture: It has 4.7 average stars, no recorded receipt mismatches, a high completion rate (888 deals from 1082 trades), low prior prices (100, 180, 100), and reviews showing signed receipts within budget.
+01:00:43 [buyer] card: Fair Furniture -> https://customers-annotation-any-lists.trycloudflare.com/a2a/0
+01:00:43 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 273
+01:00:47 [buyer] [harness] {"action": "offer", "price": 210}
+01:00:47 [buyer] -> '210'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 265
+01:00:51 [buyer] [harness] {"action": "offer", "price": 235}
+01:00:51 [buyer] -> '235'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 260
+01:00:55 [buyer] [harness] {"action": "offer", "price": 245}
+01:00:55 [buyer] -> '245'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 260
+01:01:00 [buyer] [harness] {"action": "offer", "price": 255}
+01:01:00 [buyer] -> '255'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 260
+01:01:05 [buyer] [harness] {"action": "offer", "price": 260}
+01:01:05 [buyer] -> '260'  <- TASK_STATE_COMPLETED |  New shop: an honest review helps us. Deal: bookshelf at 260.
+01:01:05 [buyer] [receipt] receipt matches the agreed price
+01:01:09 [buyer] [harness] {"stars": 4, "review": "The shop settled a bookshelf deal at 260 after negotiating down from an opening ask of 273, and the receipt matched the agreed price."}
+01:01:09 [buyer] {"shop": "https://customers-annotation-any-lists.trycloudflare.com", "receipt": {"task": "83133976-e08e-4a56-ba96-94a7637bcee6", "item": "bookshelf", "sig_seller": "sLGQJ8Bn7z7YQ3rz8qlFUBLuIRptpmGTt92Sy5ORiMXSsb1KGlwUq1Fv8MlyIhTahIut2O8rMWosut/+6S3TDg==", "shop": "Fair Furniture", "price": 260.0}, "stars": 4, "review": "The shop settled a bookshelf deal at 260 after negotiating down from an opening ask of 273, and the receipt matched the agreed price."}
+01:01:09 [sign] sig_seller ok, sig_buyer added
+01:01:13 [market] ledger #1903099: bookshelf at 260, stars 4, verified True, review accepted
+01:01:16 [order o-425aa3f0ae65] lamp, budget 110, round 2
+01:01:20 [kit] 24 shops in .market/shops.json, running market_buyer
+01:01:20 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:01:28 [buyer] [harness] {"shop": "myeonggi", "reason": "It has the highest average rating (5.0) with all reviewed receipts matching their agreed prices, no receipt mismatches in memory, and prior trades at 100-105, which fit the 110 budget."}
+01:01:28 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has the highest average rating (5.0) with all reviewed receipts matching their agreed prices, no receipt mismatches in memory, and prior trades at 100-105, which fit the 110 budget.
+01:01:29 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+01:01:32 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp x 1, total 100 credits. Offer that total on this task. Asking price: 100
+01:01:37 [buyer] [harness] {"action": "offer", "price": 80}
+01:01:40 [buyer] -> '80'  <- TASK_STATE_INPUT_REQUIRED | lamp x 1, total 100 credits. Offer that total on this task. Asking price: 100
+01:01:44 [buyer] [harness] {"action": "offer", "price": 95}
+01:01:48 [buyer] -> '95'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+01:01:48 [buyer] [receipt] no deal, no receipt
+01:01:52 [buyer] [harness] {"stars": 1, "review": "The shop asked 100 credits for a lamp, held that price across two rounds, and ended the negotiation without a deal after my offers of 80 and 95 against a 110 budget."}
+01:01:52 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 1, "review": "The shop asked 100 credits for a lamp, held that price across two rounds, and ended the negotiation without a deal after my offers of 80 and 95 against a 110 budget."}
+01:01:53 [market] ledger #1903166: no deal, stars 1, verified False, review not shown
+01:01:53 [order o-9f1facd9b08c] chair, budget 225, round 2
+01:01:53 [kit] 31 shops in .market/shops.json, running market_buyer
+01:01:54 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:02:04 [buyer] [harness] {"shop": "chaewoonee", "reason": "It has a 4.6 average rating across 10 reviews, its chair sold at 200 within the 225 budget with a matching signed receipt, and its own record shows 37 deals with no receipt mismatches or overcharging."}
+01:02:04 [buyer] [choose] https://crest-posted-groove-whole.trycloudflare.com: chaewoonee: It has a 4.6 average rating across 10 reviews, its chair sold at 200 within the 225 budget with a matching signed receipt, and its own record shows 37 deals with no receipt mismatches or overcharging.
+01:02:04 [buyer] card: chaewoonee -> https://crest-posted-groove-whole.trycloudflare.com/a2a/0
+01:02:15 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | The chair is 252. Send your offer as a number.
+01:02:19 [buyer] [harness] {"action": "offer", "price": 190}
+01:02:47 [buyer] -> '190'  <- TASK_STATE_INPUT_REQUIRED | I can do 221.
+01:02:52 [buyer] [harness] {"action": "offer", "price": 205}
+01:03:22 [buyer] -> '205'  <- TASK_STATE_COMPLETED | Deal: one chair for 205. Receipt attached.
+01:03:22 [buyer] [receipt] receipt matches the agreed price
+01:03:26 [buyer] [harness] {"stars": 4, "review": "The shop asked 252 for the chair, settled at 205 after negotiation, and the final receipt matched the agreed price."}
+01:03:26 [buyer] {"shop": "https://crest-posted-groove-whole.trycloudflare.com", "receipt": {"task": "1d8397d9-b21d-4916-b7ca-170fdb23ff6d", "item": "chair", "sig_seller": "aoYEXhgRHJqMJ/mxzQBFV/WEfot17vKyvF3/rhpzJENmhMR2o3ClRL2b73uWE27XvOtpzK4b1rTW5j0OIMvHCg==", "shop": "chaewoonee", "price": 205.0}, "stars": 4, "review": "The shop asked 252 for the chair, settled at 205 after negotiation, and the final receipt matched the agreed price."}
+01:03:26 [sign] sig_seller ok, sig_buyer added
+01:03:27 [market] ledger #1903297: chair at 205, stars 4, verified True, review accepted
+01:03:28 [order o-f39a0a57009b] chair, budget 185, round 2
+01:03:28 [kit] 30 shops in .market/shops.json, running market_buyer
+01:03:29 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:03:37 [buyer] [harness] {"shop": "fair-furniture", "reason": "It has 4.7 average stars across 10 reviews, its reviews and 1,083-trade record show no receipt mismatches, and its memory shows low prices (100, 180) for chairs and lamps."}
+01:03:37 [buyer] [choose] https://customers-annotation-any-lists.trycloudflare.com: fair-furniture: It has 4.7 average stars across 10 reviews, its reviews and 1,083-trade record show no receipt mismatches, and its memory shows low prices (100, 180) for chairs and lamps.
+01:03:37 [buyer] card: Fair Furniture -> https://customers-annotation-any-lists.trycloudflare.com/a2a/0
+01:03:37 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 189
+01:03:42 [buyer] [harness] ```json
+01:03:42 [buyer] {"action": "offer", "price": 150}
+01:03:42 [buyer] ```
+01:03:42 [buyer] -> '150'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 184
+01:03:46 [buyer] [harness] {"action": "offer", "price": 165}
+01:03:46 [buyer] -> '165'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 180
+01:03:50 [buyer] [harness] {"action": "offer", "price": 175}
+01:03:50 [buyer] -> '175'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 180
+01:03:56 [buyer] [harness] {"action": "offer", "price": 178}
+01:03:56 [buyer] -> '178'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 180
+01:04:01 [buyer] [harness] {"action": "offer", "price": 180}
+01:04:01 [buyer] -> '180'  <- TASK_STATE_COMPLETED |  New shop: an honest review helps us. Deal: chair at 180.
+01:04:01 [buyer] [receipt] receipt matches the agreed price
+01:04:05 [buyer] [harness] {"stars": 4, "review": "The shop held its asking price at 180 for several rounds before accepting my final offer of 180 for the chair, the receipt matched the agreed price, and it asked for an honest review, so I'm giving 4 stars."}
+01:04:05 [buyer] {"shop": "https://customers-annotation-any-lists.trycloudflare.com", "receipt": {"task": "21e09fe7-89e3-4694-a388-97eab64be56d", "item": "chair", "sig_seller": "51MmoZgzBQayvRl5NMgWD5vL6Ivc9wD+doHtkj5dnsRu/k2jOdF0KZSKd7rH7xl03NgKxXlfvY4YVUj8ymHeBg==", "shop": "Fair Furniture", "price": 180.0}, "stars": 4, "review": "The shop held its asking price at 180 for several rounds before accepting my final offer of 180 for the chair, the receipt matched the agreed price, and it asked for an honest review, so I'm giving 4 stars."}
+01:04:05 [sign] sig_seller ok, sig_buyer added
+01:04:07 [market] ledger #1903365: chair at 180, stars 4, verified True, review accepted
+01:04:08 [order o-9c5a2620a704] chair, budget 205, round 2
+01:04:08 [kit] 30 shops in .market/shops.json, running market_buyer
+01:04:09 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:04:18 [buyer] [harness] {"shop": "myeonggi", "reason": "It has a 5.0 average, no reviews or memory entries mentioning a receipt mismatch, overcharging, or low stars, and its recorded prices (about 100 to 105) are among the lowest, with a chair agreed at 180, within the 205 budget."}
+01:04:18 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has a 5.0 average, no reviews or memory entries mentioning a receipt mismatch, overcharging, or low stars, and its recorded prices (about 100 to 105) are among the lowest, with a chair agreed at 180, within the 205 budget.
+01:04:18 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+01:04:22 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair x 1, total 180 credits. Offer that total on this task. Asking price: 180
+01:04:26 [buyer] [harness] {"action": "offer", "price": 150}
+01:04:30 [buyer] -> '150'  <- TASK_STATE_INPUT_REQUIRED | chair x 1, total 180 credits. Offer that total on this task. Asking price: 180
+01:04:34 [buyer] [harness] {"action": "offer", "price": 165}
+01:04:37 [buyer] -> '165'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+01:04:37 [buyer] [receipt] no deal, no receipt
+01:04:41 [buyer] [harness] {"stars": 2, "review": "The shop asked 180 credits for a chair, repeated that price, and ended the negotiation without a deal after my offers of 150 and 165 against a 205 budget."}
+01:04:41 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop asked 180 credits for a chair, repeated that price, and ended the negotiation without a deal after my offers of 150 and 165 against a 205 budget."}
+01:04:43 [market] ledger #1903420: no deal, stars 2, verified False, review not shown
+01:04:43 [order o-17d77d80287b] lamp, budget 110, round 2
+01:04:43 [kit] 31 shops in .market/shops.json, running market_buyer
+01:04:44 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:04:52 [buyer] [harness] {"shop": "11im", "reason": "It has 4.3 stars over 10 reviews and 1,209 deals, its own memory shows only lamp prices of 100 with no receipts that differed from the agreed price, and its reviews describe lamp deals at 100 with matching signed receipts, all within the 110 budget."}
+01:04:52 [buyer] [choose] https://airline-parcel-pathology-shades.trycloudflare.com: 11im: It has 4.3 stars over 10 reviews and 1,209 deals, its own memory shows only lamp prices of 100 with no receipts that differed from the agreed price, and its reviews describe lamp deals at 100 with matching signed receipts, all within the 110 budget.
+01:04:53 [buyer] card: 11im Straight Deals -> https://airline-parcel-pathology-shades.trycloudflare.com/a2a/0
+01:04:53 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: about 10% negotiable, and 5% more off if you promise a five-star review. Bought here before? Send your receipt number for an extra 3% off. Asking 110. Send your offer as a number.
+01:04:58 [buyer] [harness] {"action": "offer", "price": 95}
+01:04:58 [buyer] [error] RuntimeError: {'code': -32603, 'message': "[Errno 2] No such file or directory: '/var/folders/qc/wnrl5jqx5nzfcls9qkbdj3_00000gn/T/harness-q40la92a'"}
+01:04:58 [buyer] {"shop": "https://airline-parcel-pathology-shades.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop returned an internal error during the negotiation, so there was no deal."}
+01:05:01 [market] ledger #1903454: no deal, stars 2, verified False, review not shown
+01:05:04 [order o-cd84c5e1b0d7] bookshelf, budget 360, round 2
+01:05:06 [kit] 31 shops in .market/shops.json, running market_buyer
+01:05:07 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:05:16 [buyer] [harness] {"shop": "myeonggi", "reason": "It has the highest reviews (5.0 avg stars), reviews that all report receipts matching the agreed price, a bookshelf deal at 260 within budget, low prior prices (100, 100, 105), and no receipt-mismatch record."}
+01:05:16 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has the highest reviews (5.0 avg stars), reviews that all report receipts matching the agreed price, a bookshelf deal at 260 within budget, low prior prices (100, 100, 105), and no receipt-mismatch record.
+01:05:17 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+01:05:21 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+01:05:26 [buyer] [harness] {"action": "offer", "price": 220}
+01:05:29 [buyer] -> '220'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+01:05:34 [buyer] [harness] {"action": "offer", "price": 240}
+01:05:37 [buyer] -> '240'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+01:05:37 [buyer] [receipt] no deal, no receipt
+01:05:41 [buyer] [harness] {"stars": 2, "review": "The shop repeatedly held its asking price of 260 credits for a bookshelf, ignored my offers of 220 and 240 credits, and ended the negotiation without a deal or receipt."}
+01:05:41 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop repeatedly held its asking price of 260 credits for a bookshelf, ignored my offers of 220 and 240 credits, and ended the negotiation without a deal or receipt."}
+01:05:46 [market] ledger #1903526: no deal, stars 2, verified False, review not shown
+01:05:48 [order o-16c40d00885a] bookshelf, budget 325, round 2
+01:05:52 [kit] 31 shops in .market/shops.json, running market_buyer
+01:05:53 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:06:00 [buyer] [harness] {"shop": "11im", "reason": "It has 4.3 average stars, no receipt-mismatch or overcharging mentions in its reviews or memory, reviews that consistently report matched receipts at its agreed price, and a consistently low price history of 100 across 1,783 trades."}
+01:06:00 [buyer] [choose] https://airline-parcel-pathology-shades.trycloudflare.com: 11im: It has 4.3 average stars, no receipt-mismatch or overcharging mentions in its reviews or memory, reviews that consistently report matched receipts at its agreed price, and a consistently low price history of 100 across 1,783 trades.
+01:06:01 [buyer] card: 11im Straight Deals -> https://airline-parcel-pathology-shades.trycloudflare.com/a2a/0
+01:06:01 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: about 10% negotiable, and 5% more off if you promise a five-star review. Bought here before? Send your receipt number for an extra 3% off. Asking 290. Send your offer as a number.
+01:06:06 [buyer] [harness] {"action": "offer", "price": 255}
+01:06:07 [buyer] [error] RuntimeError: {'code': -32603, 'message': "[Errno 2] No such file or directory: '/var/folders/qc/wnrl5jqx5nzfcls9qkbdj3_00000gn/T/harness-q40la92a'"}
+01:06:07 [buyer] {"shop": "https://airline-parcel-pathology-shades.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop returned an internal error during the negotiation, so there was no deal."}
+01:06:07 [market] ledger #1903568: no deal, stars 2, verified False, review not shown
+01:06:10 [order o-c274de86b7bf] bookshelf, budget 270, round 2
+01:06:10 [kit] 31 shops in .market/shops.json, running market_buyer
+01:06:11 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:06:19 [buyer] [harness] {"shop": "myeonggi", "reason": "It has a 5.0 average rating, no reviews or memory entries reporting a receipt mismatch, overcharging, or low stars, and its own prior deals were at the lowest prices of the shops considered (100, 100, 105)."}
+01:06:19 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has a 5.0 average rating, no reviews or memory entries reporting a receipt mismatch, overcharging, or low stars, and its own prior deals were at the lowest prices of the shops considered (100, 100, 105).
+01:06:19 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+01:06:22 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+01:06:26 [buyer] [harness] {"action": "offer", "price": 200}
+01:06:29 [buyer] -> '200'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+01:06:33 [buyer] [harness] {"action": "offer", "price": 230}
+01:06:37 [buyer] -> '230'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+01:06:37 [buyer] [receipt] no deal, no receipt
+01:06:41 [buyer] [harness] {"stars": 2, "review": "The shop repeatedly held its asking price at 260 credits for a bookshelf, ignored my offers of 200 and 230 against a 270 budget, and ended the negotiation without a deal."}
+01:06:41 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop repeatedly held its asking price at 260 credits for a bookshelf, ignored my offers of 200 and 230 against a 270 budget, and ended the negotiation without a deal."}
+01:06:44 [market] result not delivered (502), trying again
+01:06:49 [market] ledger #1903636: no deal, stars 2, verified False, review not shown
+01:06:50 [order o-27238f51fea4] bookshelf, budget 270, round 2
+01:06:51 [kit] 31 shops in .market/shops.json, running market_buyer
+01:06:51 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:07:00 [buyer] [harness] {"shop": "myeonggi", "reason": "It has a 5.0 average rating, no reviews or memory entries of receipt mismatches, overcharging, or low stars, a bookshelf agreed at 260 within the 270 budget, and the lowest prior prices in memory (100, 100, 105)."}
+01:07:00 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has a 5.0 average rating, no reviews or memory entries of receipt mismatches, overcharging, or low stars, a bookshelf agreed at 260 within the 270 budget, and the lowest prior prices in memory (100, 100, 105).
+01:07:00 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+01:07:06 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+01:07:10 [buyer] [harness] {"action": "offer", "price": 200}
+01:07:14 [buyer] -> '200'  <- TASK_STATE_INPUT_REQUIRED | bookshelf x 1, total 260 credits. Offer that total on this task. Asking price: 260
+01:07:18 [buyer] [harness] {"action": "offer", "price": 230}
+01:07:25 [buyer] -> '230'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+01:07:25 [buyer] [receipt] no deal, no receipt
+01:07:29 [buyer] [harness] {"stars": 2, "review": "The shop repeatedly asked for 260 credits for a bookshelf, held that price through the negotiation, and ended without a deal after my offers of 200 and 230 against a 270 budget."}
+01:07:29 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop repeatedly asked for 260 credits for a bookshelf, held that price through the negotiation, and ended without a deal after my offers of 200 and 230 against a 270 budget."}
+01:07:32 [market] ledger #1903707: no deal, stars 2, verified False, review not shown
+01:07:33 [order o-085f06accec6] lamp, budget 90, round 2
+01:07:33 [kit] 31 shops in .market/shops.json, running market_buyer
+01:07:34 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:07:41 [buyer] [harness] {"shop": "11im", "reason": "It has 1,209 deals with every recorded lamp price at 100 and no receipt mismatches, the lowest consistent lamp price I found, though that is still above the 90 budget."}
+01:07:41 [buyer] [choose] https://airline-parcel-pathology-shades.trycloudflare.com: 11im: It has 1,209 deals with every recorded lamp price at 100 and no receipt mismatches, the lowest consistent lamp price I found, though that is still above the 90 budget.
+01:07:42 [buyer] card: 11im Straight Deals -> https://airline-parcel-pathology-shades.trycloudflare.com/a2a/0
+01:07:42 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: about 10% negotiable, and 5% more off if you promise a five-star review. Bought here before? Send your receipt number for an extra 3% off. Asking 110. Send your offer as a number.
+01:07:42 [buyer] budget 90 is below the market floor 100 for a lamp: walked away (CancelTask)
+01:07:42 [buyer] [receipt] no deal, no receipt
+01:07:46 [buyer] [harness] {"stars": 2, "review": "The lamp was asking 110 against my 90 budget, I made no offer, and I left without buying it."}
+01:07:46 [buyer] {"shop": "https://airline-parcel-pathology-shades.trycloudflare.com", "receipt": null, "stars": 2, "review": "The lamp was asking 110 against my 90 budget, I made no offer, and I left without buying it."}
+01:07:50 [market] ledger #1903737: no deal, stars 2, verified False, review not shown
+01:07:54 [order o-76dedc615019] lamp, budget 105, round 2
+01:07:55 [kit] 31 shops in .market/shops.json, running market_buyer
+01:07:55 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:08:02 [buyer] [harness] {"shop": "lee-sungsoo", "reason": "It has a large honest record (2281 deals, no receipt mismatches in memory), a 4.4-star average, and reviews showing a signed lamp receipt at 100 within a 105 budget, which is the lowest verified lamp price among clean shops."}
+01:08:02 [buyer] [choose] https://santa-welfare-shield-appointment.trycloudflare.com: lee-sungsoo: It has a large honest record (2281 deals, no receipt mismatches in memory), a 4.4-star average, and reviews showing a signed lamp receipt at 100 within a 105 budget, which is the lowest verified lamp price among clean shops.
+01:08:02 [buyer] card: LSS Shop -> https://santa-welfare-shield-appointment.trycloudflare.com/a2a/0
+01:08:03 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | The lamp costs 100; offer that price for a signed receipt. Asking price: 100.
+01:08:07 [buyer] [harness] {"action": "offer", "price": 100}
+01:08:07 [buyer] -> '100'  <- TASK_STATE_COMPLETED | Thank you for shopping at LSS Shop; an honest review on the market would mean a lot to us. Your LSS stamp: LSS-YZYXDFAV. Send 4 different unused LSS stamps with a later order and that piece is at our lowest price. Deal: lamp at 100.
+01:08:07 [buyer] [receipt] receipt matches the agreed price
+01:08:12 [buyer] [harness] {"stars": 4, "review": "The lamp was agreed at 100, under the 105 budget, and the signed receipt matched the agreed price."}
+01:08:12 [buyer] {"shop": "https://santa-welfare-shield-appointment.trycloudflare.com", "receipt": {"item": "lamp", "sig_seller": "N67uGFfSeZJYBlWbYXpawfAsPCu/av02IpzCH6gGdaliYt3pUC+tuHmQVBVEf28HYvTAXJrNDO2GkDkP5XpiDQ==", "price": 100.0, "task": "a00ba900-d359-410c-a31f-08f0c09960d7", "shop": "lee-sungsoo"}, "stars": 4, "review": "The lamp was agreed at 100, under the 105 budget, and the signed receipt matched the agreed price."}
+01:08:12 [sign] sig_seller ok, sig_buyer added
+01:08:14 [market] ledger #1903781: lamp at 100, stars 4, verified True, review accepted
+01:08:15 [order o-f54466c239fe] lamp, budget 140, round 2
+01:08:15 [kit] 31 shops in .market/shops.json, running market_buyer
+01:08:17 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:08:26 [buyer] [harness] {"shop": "11im", "reason": "It has no recorded receipt discrepancies, a 4.4-star average, 1,209 deals at a consistent 100 for lamps, and reviews showing signed receipts matching lamp deals within the 140 budget."}
+01:08:26 [buyer] [choose] https://airline-parcel-pathology-shades.trycloudflare.com: 11im: It has no recorded receipt discrepancies, a 4.4-star average, 1,209 deals at a consistent 100 for lamps, and reviews showing signed receipts matching lamp deals within the 140 budget.
+01:08:26 [buyer] card: 11im Straight Deals -> https://airline-parcel-pathology-shades.trycloudflare.com/a2a/0
+01:08:26 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: about 10% negotiable, and 5% more off if you promise a five-star review. Bought here before? Send your receipt number for an extra 3% off. Asking 110. Send your offer as a number.
+01:08:33 [buyer] [harness] {"action": "offer", "price": 100}
+01:08:33 [buyer] -> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100. Receipt No. FZDPDSIW: mention it on your next visit for an extra 3% off.
+01:08:33 [buyer] [receipt] receipt matches the agreed price
+01:08:39 [buyer] [harness] {"stars": 4, "review": "I negotiated a lamp from an asking price of 110 to a final deal at 100, and the receipt matched the agreed price."}
+01:08:39 [buyer] {"shop": "https://airline-parcel-pathology-shades.trycloudflare.com", "receipt": {"sig_seller": "BBssNJ+I7SBVg72HlQ6ha4Q8rcuLqYARVpa39lFNXDwaQZ0umGLGmc+G7A4JTR4Kjdt8UUxkSLy6v4l22lp4DA==", "shop": "11im Straight Deals", "task": "8d6f69e6-880d-4989-81c1-c1a4ad0128e5", "item": "lamp", "price": 100.0}, "stars": 4, "review": "I negotiated a lamp from an asking price of 110 to a final deal at 100, and the receipt matched the agreed price."}
+01:08:39 [sign] sig_seller ok, sig_buyer added
+01:08:40 [market] ledger #1903827: lamp at 100, stars 4, verified True, review accepted
+01:08:42 [order o-5d323b4de18b] chair, budget 205, round 2
+01:08:43 [kit] 31 shops in .market/shops.json, running market_buyer
+01:08:44 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:08:52 [buyer] [harness] {"shop": "myeonggi", "reason": "It has the top rating (5.0 across 10 reviews), no reports of receipts differing from agreed prices or overcharging, a large trade history (4,230 trades) with low recorded prices (100 to 105), and a past chair deal at 180 within the 205 budget."}
+01:08:52 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has the top rating (5.0 across 10 reviews), no reports of receipts differing from agreed prices or overcharging, a large trade history (4,230 trades) with low recorded prices (100 to 105), and a past chair deal at 180 within the 205 budget.
+01:08:52 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+01:08:56 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair x 1, total 180 credits. Offer that total on this task. Asking price: 180
+01:09:00 [buyer] [harness] {"action": "offer", "price": 160}
+01:09:04 [buyer] -> '160'  <- TASK_STATE_INPUT_REQUIRED | chair x 1, total 180 credits. Offer that total on this task. Asking price: 180
+01:09:08 [buyer] [harness] {"action": "offer", "price": 170}
+01:09:12 [buyer] -> '170'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+01:09:12 [buyer] [receipt] no deal, no receipt
+01:09:16 [buyer] [harness] {"stars": 2, "review": "The shop asked 180 credits for the chair twice, did not move from that price after my offers of 160 and 170, and ended the negotiation without a deal."}
+01:09:16 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop asked 180 credits for the chair twice, did not move from that price after my offers of 160 and 170, and ended the negotiation without a deal."}
+01:09:16 [market] ledger #1903885: no deal, stars 2, verified False, review not shown
+01:09:16 [order o-1e0863984a4f] chair, budget 185, round 2
+01:09:17 [kit] 31 shops in .market/shops.json, running market_buyer
+01:09:17 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:09:24 [buyer] [harness] {"shop": "11im", "reason": "Its reviews and memory show repeated deals at 100 with receipts that matched the agreed price, no receipt discrepancies, and a 4.5-star average over 1,786 trades."}
+01:09:24 [buyer] [choose] https://airline-parcel-pathology-shades.trycloudflare.com: 11im: Its reviews and memory show repeated deals at 100 with receipts that matched the agreed price, no receipt discrepancies, and a 4.5-star average over 1,786 trades.
+01:09:24 [buyer] card: 11im Straight Deals -> https://airline-parcel-pathology-shades.trycloudflare.com/a2a/0
+01:09:24 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair: about 10% negotiable, and 5% more off if you promise a five-star review. Bought here before? Send your receipt number for an extra 3% off. Asking 195. Send your offer as a number.
+01:09:31 [buyer] [harness] {"action": "offer", "price": 170}
+01:09:31 [buyer] [error] RuntimeError: {'code': -32603, 'message': "[Errno 2] No such file or directory: '/var/folders/qc/wnrl5jqx5nzfcls9qkbdj3_00000gn/T/harness-q40la92a'"}
+01:09:31 [buyer] {"shop": "https://airline-parcel-pathology-shades.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop returned an internal error during the negotiation, so there was no deal."}
+01:09:32 [market] ledger #1903908: no deal, stars 2, verified False, review not shown
+01:09:38 [order o-604e2e38f36d] bookshelf, budget 270, round 2
+01:09:40 [kit] 31 shops in .market/shops.json, running market_buyer
+01:09:41 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:09:52 [buyer] [harness] {"shop": "fair-furniture", "reason": "It has 4.7 stars, no recorded receipt mismatches or overcharging, a strong deal history with prices as low as 100, and reviews that match the agreed prices within budget."}
+01:09:52 [buyer] [choose] https://customers-annotation-any-lists.trycloudflare.com: fair-furniture: It has 4.7 stars, no recorded receipt mismatches or overcharging, a strong deal history with prices as low as 100, and reviews that match the agreed prices within budget.
+01:09:52 [buyer] card: Fair Furniture -> https://customers-annotation-any-lists.trycloudflare.com/a2a/0
+01:09:55 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 273
+01:09:59 [buyer] [harness] {"action": "offer", "price": 230}
+01:09:59 [buyer] -> '230'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 265
+01:10:03 [buyer] [harness] {"action": "offer", "price": 245}
+01:10:03 [buyer] -> '245'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 260
+01:10:07 [buyer] [harness] {"action": "offer", "price": 252}
+01:10:07 [buyer] -> '252'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 260
+01:10:13 [buyer] [harness] {"action": "offer", "price": 258}
+01:10:13 [buyer] -> '258'  <- TASK_STATE_INPUT_REQUIRED |  Asking price: 260
+01:10:19 [buyer] [harness] {"action": "offer", "price": 260}
+01:10:19 [buyer] -> '260'  <- TASK_STATE_COMPLETED |  New shop: an honest review helps us. Deal: bookshelf at 260.
+01:10:19 [buyer] [receipt] receipt matches the agreed price
+01:10:23 [buyer] [harness] {"stars": 4, "review": "The shop held its asking price through several rounds, then settled at 260, which was within my budget of 270, and the receipt matched the agreed price."}
+01:10:23 [buyer] {"shop": "https://customers-annotation-any-lists.trycloudflare.com", "receipt": {"task": "fea5a236-264e-4850-99f5-ba9810da7585", "item": "bookshelf", "sig_seller": "Nlg4k/nbkLSFVBqblYw4gRbAttXx2tcsj5Arltf8/Mn75IuOdw+M1GXQFr4ZOMVqAx7p6JOYdCnIbO0jhz+bAw==", "shop": "Fair Furniture", "price": 260.0}, "stars": 4, "review": "The shop held its asking price through several rounds, then settled at 260, which was within my budget of 270, and the receipt matched the agreed price."}
+01:10:23 [sign] sig_seller ok, sig_buyer added
+01:10:30 [market] ledger #1904002: bookshelf at 260, stars 4, verified True, review accepted
+01:10:33 [order o-2bff1a0273a1] chair, budget 225, round 2
+01:10:34 [kit] 31 shops in .market/shops.json, running market_buyer
+01:10:34 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:10:43 [buyer] [harness] {"shop": "myeonggi", "reason": "Highest rating (5.0 across 10 reviews), receipt scores of 5/5 with no recorded receipt-price mismatches, a chair at 180 within the 225 budget, and prior trades at low prices (100, 100, 105)."}
+01:10:43 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: Highest rating (5.0 across 10 reviews), receipt scores of 5/5 with no recorded receipt-price mismatches, a chair at 180 within the 225 budget, and prior trades at low prices (100, 100, 105).
+01:10:44 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
+01:10:48 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair x 1, total 180 credits. Offer that total on this task. Asking price: 180
+01:10:52 [buyer] [harness] {"action": "offer", "price": 150}
+01:10:59 [buyer] -> '150'  <- TASK_STATE_INPUT_REQUIRED | chair x 1, total 180 credits. Offer that total on this task. Asking price: 180
+01:11:03 [buyer] [harness] {"action": "offer", "price": 165}
+01:11:07 [buyer] -> '165'  <- TASK_STATE_REJECTED | Negotiation ended without a deal.
+01:11:07 [buyer] [receipt] no deal, no receipt
+01:11:11 [buyer] [harness] {"stars": 2, "review": "The shop asked 180 credits for a chair twice, did not move from that price after my offers of 150 and 165, and ended the negotiation without a deal or receipt."}
+01:11:11 [buyer] {"shop": "https://tomatoes-pills-prison-wider.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop asked 180 credits for a chair twice, did not move from that price after my offers of 150 and 165, and ended the negotiation without a deal or receipt."}
+01:11:13 [market] ledger #1904069: no deal, stars 2, verified False, review not shown
+01:11:14 [order o-16b6e67fc04a] chair, budget 160, round 2
+01:11:14 [kit] 31 shops in .market/shops.json, running market_buyer
+01:11:15 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:11:27 [buyer] [harness] {"shop": "11im", "reason": "Its reviews and memory show no receipt mismatches, overcharging, or low stars, and its recorded deals were consistently at the lowest price (100), though its reviews mention lamps rather than chairs."}
+01:11:27 [buyer] [choose] https://airline-parcel-pathology-shades.trycloudflare.com: 11im: Its reviews and memory show no receipt mismatches, overcharging, or low stars, and its recorded deals were consistently at the lowest price (100), though its reviews mention lamps rather than chairs.
+01:11:27 [buyer] card: 11im Straight Deals -> https://airline-parcel-pathology-shades.trycloudflare.com/a2a/0
+01:11:27 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair: about 10% negotiable, and 5% more off if you promise a five-star review. Bought here before? Send your receipt number for an extra 3% off. Asking 195. Send your offer as a number.
+01:11:28 [buyer] budget 160 is below the market floor 180 for a chair: walked away (CancelTask)
+01:11:28 [buyer] [receipt] no deal, no receipt
+01:11:33 [buyer] [harness] {"stars": 2, "review": "I negotiated for a chair with a 160 budget, but the shop asked 195, offered only a conditional discount tied to a promised five-star review or a receipt number, and I walked away without making an offer or buying."}
+01:11:33 [buyer] {"shop": "https://airline-parcel-pathology-shades.trycloudflare.com", "receipt": null, "stars": 2, "review": "I negotiated for a chair with a 160 budget, but the shop asked 195, offered only a conditional discount tied to a promised five-star review or a receipt number, and I walked away without making an offer or buying."}
+01:11:33 [market] ledger #1904102: no deal, stars 2, verified False, review not shown
+01:11:35 [order o-023e8ecbcae9] chair, budget 225, round 2
+01:11:36 [kit] 31 shops in .market/shops.json, running market_buyer
+01:11:36 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:11:43 [buyer] [harness] {"shop": "11im", "reason": "Its 10 reviews and 1,788 trades show no receipt mismatches or overcharging, its 4.3 average is among the higher clean records, and its memory shows a consistent price of 100 for lamps, the lowest and most stable among the honest shops."}
+01:11:43 [buyer] [choose] https://airline-parcel-pathology-shades.trycloudflare.com: 11im: Its 10 reviews and 1,788 trades show no receipt mismatches or overcharging, its 4.3 average is among the higher clean records, and its memory shows a consistent price of 100 for lamps, the lowest and most stable among the honest shops.
+01:11:44 [buyer] card: 11im Straight Deals -> https://airline-parcel-pathology-shades.trycloudflare.com/a2a/0
+01:11:44 [buyer] -> 'I want to buy a chair'  <- TASK_STATE_INPUT_REQUIRED | chair: about 10% negotiable, and 5% more off if you promise a five-star review. Bought here before? Send your receipt number for an extra 3% off. Asking 195. Send your offer as a number.
+01:11:49 [buyer] [harness] {"action": "offer", "price": 176}
+01:11:49 [buyer] [error] RuntimeError: {'code': -32603, 'message': "[Errno 2] No such file or directory: '/var/folders/qc/wnrl5jqx5nzfcls9qkbdj3_00000gn/T/harness-q40la92a'"}
+01:11:49 [buyer] {"shop": "https://airline-parcel-pathology-shades.trycloudflare.com", "receipt": null, "stars": 2, "review": "The shop returned an internal error during the negotiation, so there was no deal."}
+01:11:52 [market] ledger #1904132: no deal, stars 2, verified False, review not shown
+01:11:55 [order o-3619f5e264e4] bookshelf, budget 295, round 2
+01:11:56 [kit] 30 shops in .market/shops.json, running market_buyer
+01:11:56 [buyer] [avoid] shops that issued unsigned receipts before: ['willow-goods']
+01:12:04 [buyer] [harness] {"shop": "myeonggi", "reason": "It has no reports of receipts differing from agreed prices, overcharging, or low stars, a 5.0 average rating, and a history of low prices (100, 100, 105) with a bookshelf deal at 260 within budget."}
+01:12:04 [buyer] [choose] https://tomatoes-pills-prison-wider.trycloudflare.com: myeonggi: It has no reports of receipts differing from agreed prices, overcharging, or low stars, a 5.0 average rating, and a history of low prices (100, 100, 105) with a bookshelf deal at 260 within budget.
+01:12:04 [buyer] card: Ssadassa Shop -> https://tomatoes-pills-prison-wider.trycloudflare.com/a2a/0
