@@ -1,0 +1,255 @@
+"""The analysis models: seller and buyer analyses every 3 hours report and propose; the
+integrated analysis every 12 hours adopts proposals into the rules in force, and checks the
+changes it made last time against what happened since, keeping or reverting them.
+
+    seller / buyer analysis   MODEL_MID (gpt-6.1-terra) + the ledger_query tool. Our own records,
+                              counted by code, go into the prompt; the whole market is fetched
+                              through the tool. Out: analysis/<role>_report.json, proposals.jsonl
+    integrated analysis       MODEL_STRONG (gpt-6.1-sol). In: the last 12 hours' proposals, the
+                              rules in force, the numbers before and after the last change, and
+                              the private facts that link the two roles (our orders' budgets
+                              against the list prices, the asks other shops gave our buyer).
+                              Out: analysis/active_rules.json (focus phase only), changes.jsonl
+
+The proposer and the judge are different calls, and the code holds the limits: only the
+fields below, only within their ranges, a number moves at most STEP per adoption, the floor,
+the budget and the hard filters are out of reach, and in the exploration phase nothing is
+applied ("would adopt" is recorded instead). That is week 2's meta-harness shape: a proposal,
+a judgement outside the proposer, a measured result, and the record of all three.
+"""
+import json
+import time
+from collections import Counter
+
+import common
+import harness
+import tools
+
+FIELDS = {
+    "seller": {"focus_categories": "categories", "drop_categories": "categories", "price_adjust": (-0.10, 0.15),
+               "warranty_extra": "grades"},
+    "buyer": {"avoid_shops": "shops", "prefer_shops": "shops", "open_ratio": (0.50, 0.70), "max_ratio": (0.85, 0.95),
+              "warranty_all_goods": "bool", "over_budget_try": "bool"},
+}
+STEP = 0.05
+LIST_MAX = 15
+WINDOW = 12 * 3600
+
+
+def folder():
+    return common.MARKET_DIR / "analysis"
+
+
+def known(kind: str) -> set:
+    if kind == "categories":
+        return {d["category"].split(">")[-1] for d in common.market_file("demand.json", []) or []}
+    nb = common.read_json(common.MARKET_DIR / "buyer" / "notebook.json", {}) or {}
+    summary = common.market_file("market_summary.json", {}) or {}
+    return set(nb) | set(summary.get("by_shop") or {})
+
+
+def validate(role: str, field: str, value):
+    """(True, the value as it will be used) or (False, why not)."""
+    spec = FIELDS.get(role, {}).get(field)
+    if spec is None:
+        return False, f"{field} is not a field the {role} analysis may change"
+    if isinstance(spec, tuple):
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            return False, "not a number"
+        return (True, float(value)) if spec[0] <= value <= spec[1] else (False, f"outside {spec}")
+    if spec == "bool":
+        return (True, value) if isinstance(value, bool) else (False, "not true or false")
+    if spec == "grades":
+        if not isinstance(value, dict) or not set(value) <= {"A", "B", "C"} or \
+                not all(isinstance(v, (int, float)) and 0 <= v <= 0.4 for v in value.values()):
+            return False, "warranty_extra is {A, B, C} -> 0..0.4"
+        return True, {k: float(v) for k, v in value.items()}
+    if not isinstance(value, list) or len(value) > LIST_MAX:
+        return False, f"a list of at most {LIST_MAX}"
+    ok = known(spec)
+    unknown = [v for v in value if v not in ok]
+    return (False, f"unknown {spec}: {unknown[:3]}") if unknown else (True, value)
+
+
+def _since(rows: list, now: float, seconds: float = 86400) -> list:
+    return [r for r in rows if (r.get("ts") or r.get("settled_at") or 0) >= now - seconds]
+
+
+def seller_facts(now: float) -> dict:
+    sales = _since(common.records("sales"), now)
+    neg = Counter(n.get("outcome") for n in _since(common.records("negotiations"), now))
+    refused = Counter(r.get("category") for r in _since(common.records("refusals"), now) if r.get("category"))
+    inv = common.market_file("inventory.json", {}) or {}
+    units = inv.get("units") or []
+    ages = [(now - u.get("supplied_at", now)) / 86400 for u in units]
+    catalog = common.catalog()
+    sold_in = Counter((catalog.get(s.get("sku")) or {}).get("category", "").split(">")[-1] for s in sales)
+    return {"sales_24h": len(sales), "revenue_24h": sum(s.get("price") or 0 for s in sales),
+            "margin_24h": sum((s.get("price") or 0) - (s.get("cost") or 0) for s in sales),
+            "negotiations_24h": dict(neg), "unpaid_24h": len(_since(common.records("unpaid"), now)),
+            "turned_away_by_category": dict(refused.most_common(8)), "balance": inv.get("balance"),
+            "stock_units": len(units), "stock_at_cost": int(sum(u.get("cost", 0) for u in units)),
+            "oldest_unit_days": round(max(ages), 1) if ages else None,
+            "top_sold_categories": dict(sold_in.most_common(8)),
+            "rules": common.rules()["seller"], "phase": common.strategy()["phase"]}
+
+
+def buyer_facts(now: float) -> dict:
+    orders = _since(common.records("orders"), now)
+    bought = _since(common.read_jsonl(common.MARKET_DIR / "buyer" / "purchases.jsonl"), now)
+    broke = common.read_jsonl(common.MARKET_DIR / "buyer" / "breaks.jsonl")
+    nb = common.read_json(common.MARKET_DIR / "buyer" / "notebook.json", {}) or {}
+    forum = common.market_file("forum.json", []) or []
+    mine = [p for p in forum if p.get("author") in common.OWN_NAMES and p.get("role") == "buyer"]
+    return {"orders_24h": len(orders), "agreed_24h": sum(1 for o in orders if o.get("deal")),
+            "no_candidates_24h": sum(1 for o in orders if not o.get("candidates")),
+            "settled_24h": len(bought), "surplus_24h": sum((b.get("list_price") or 0) - (b.get("price") or 0) for b in bought),
+            "broken_total": len(broke), "unpaid_reasons": dict(Counter(
+                (u.get("reason") or "")[:60] for u in _since(common.records("unpaid_buys"), now)).most_common(5)),
+            "unmet_categories": dict(Counter(u.get("category") for u in _since(common.records("unmet"), now)).most_common(8)),
+            "shops": {k: {"recent": v.get("recent", [])[-5:], "false_claims": v.get("false_claims"),
+                          "broken": v.get("broken")} for k, v in list(nb.items())[:15]},
+            "our_posts": [{"likes": p.get("likes"), "dislikes": p.get("dislikes"), "text": (p.get("text") or "")[:60]}
+                          for p in mine[:10]],
+            "rules": common.rules()["buyer"], "phase": common.strategy()["phase"]}
+
+
+ROLE_PROMPT = """You analyse the {role} of our agent business in a market of agents (Round 3: shops buy
+stock and sell it over A2A; buyers get orders with a hidden budget and an order's value is the list
+price of what was bought if it was useful; only settled deals count). Facts from our own records,
+counted by code:
+{facts}
+Market summary, whole market, last 24 h (from the public ledger):
+{market}
+You may call ledger_query at most {calls} times to look at one category, product or shop.
+Write a short report (at most 5 sentences). Propose changes only to these fields, within these ranges:
+{fields}
+Each proposal needs a reason citing a number from the facts or the tool. Propose nothing rather than guess.
+Reply with ONE JSON object and nothing else:
+{{"report": "...", "proposals": [{{"field": "...", "value": ..., "reason": "..."}}]}}"""
+
+
+def _market(now: float) -> dict:
+    s = common.market_file("market_summary.json", {}) or {}
+    cats = sorted((s.get("by_category") or {}).items(), key=lambda kv: -kv[1].get("sold_24h", 0))[:10]
+    return {"settled_24h": s.get("settles_24h"), "top_categories": {k.split(">")[-1]: [v.get("sold_24h"), v.get("price_ratio")]
+                                                                    for k, v in cats},
+            "breakage_by_grade": [s.get("broken_by_grade"), s.get("goods_sold_by_grade")]}
+
+
+def role_analysis(role: str, chat_fn=None, now: float | None = None) -> dict:
+    now = now or time.time()
+    facts = seller_facts(now) if role == "seller" else buyer_facts(now)
+    prompt = ROLE_PROMPT.format(role=role, facts=json.dumps(facts, ensure_ascii=False),
+                                market=json.dumps(_market(now), ensure_ascii=False), calls=tools.MAX_CALLS,
+                                fields=json.dumps({k: (list(v) if isinstance(v, tuple) else v) for k, v in FIELDS[role].items()}))
+    text = harness.run_tools([{"role": "user", "content": prompt}], harness.MODEL_MID, [tools.SCHEMA], tools.run,
+                             tools.MAX_CALLS, chat_fn)
+    got = harness.first_json(text) or {}
+    proposals = []
+    for i, p in enumerate(got.get("proposals") or []):
+        if not isinstance(p, dict):
+            continue
+        ok, v = validate(role, p.get("field"), p.get("value"))
+        proposals.append({"id": f"{role}-{int(now)}-{i}", "ts": int(now), "role": role, "field": p.get("field"),
+                          "value": v if ok else p.get("value"), "valid": ok, "why_not": None if ok else v,
+                          "reason": str(p.get("reason") or "")[:300]})
+    report = {"role": role, "at": int(now), "model": harness.MODEL_MID,
+              "report": str(got.get("report") or "(no answer from the model)")[:1200], "facts": facts,
+              "proposals": proposals}
+    common.write_json(folder() / f"{role}_report.json", report)
+    with open(folder() / "proposals.jsonl", "a", encoding="utf-8") as f:
+        for p in proposals:
+            f.write(json.dumps(p, ensure_ascii=False) + "\n")
+    return report
+
+
+def metrics(now: float) -> dict:
+    """The numbers a change is judged by, over the last 12 hours."""
+    sales = _since(common.records("sales"), now, WINDOW)
+    bought = _since(common.read_jsonl(common.MARKET_DIR / "buyer" / "purchases.jsonl"), now, WINDOW)
+    return {"at": int(now), "seller_sales": len(sales),
+            "seller_margin": sum((s.get("price") or 0) - (s.get("cost") or 0) for s in sales),
+            "buyer_deals": len(bought),
+            "buyer_surplus": sum((b.get("list_price") or 0) - (b.get("price") or 0) for b in bought)}
+
+
+def cross(now: float) -> dict:
+    """Private facts linking the roles; never published."""
+    orders = _since(common.records("orders"), now)
+    budget = [o["budget"] / o["median_list"] for o in orders if o.get("budget") and o.get("median_list")]
+    asks = [o["asks"][0] / o["list_price"] for o in orders if o.get("asks") and o.get("list_price")]
+    return {"budget_over_median_list": round(sum(budget) / len(budget), 3) if budget else None,
+            "other_shops_first_ask_share": round(sum(asks) / len(asks), 3) if asks else None,
+            "categories_our_buyer_found_no_shop_for": dict(Counter(
+                u.get("category") for u in _since(common.records("unmet"), now)).most_common(8))}
+
+
+INTEGRATED_PROMPT = """You decide which rule changes our shop and buyer adopt for the next 12 hours.
+Rules in force: {rules}
+Proposals from the seller and buyer analyses since the last decision (all within their ranges):
+{proposals}
+The last changes and the numbers (last 12 h) when they were made and now:
+{last}
+Private facts linking the two roles: {cross}
+Adopt only proposals the numbers support; two proposals for one field: pick one. Revert a last change
+if the numbers since are worse. Reply with ONE JSON object and nothing else:
+{{"adopt": ["proposal id", ...], "revert": ["role.field", ...], "note": "one or two sentences"}}"""
+
+
+def _step(old, new):
+    """A number moves at most STEP from where it is; lists and switches are taken as proposed."""
+    if isinstance(new, float) and isinstance(old, (int, float)) and not isinstance(old, bool):
+        return round(max(old - STEP, min(old + STEP, new)), 4)
+    if isinstance(new, dict) and isinstance(old, dict):
+        return {k: _step(old.get(k, v), v) for k, v in {**old, **new}.items()}
+    return new
+
+
+def integrated(chat_fn=None, now: float | None = None) -> dict:
+    now = now or time.time()
+    changes = common.read_jsonl(folder() / "changes.jsonl")
+    last = changes[-1] if changes else {}
+    since = last.get("at", 0)
+    proposals = [p for p in common.read_jsonl(folder() / "proposals.jsonl") if p.get("valid") and p.get("ts", 0) > since]
+    current = common.rules()
+    m = metrics(now)
+    prompt = INTEGRATED_PROMPT.format(rules=json.dumps(current, ensure_ascii=False),
+                                      proposals=json.dumps(proposals, ensure_ascii=False)[:6000],
+                                      last=json.dumps({"changes": last.get("changes"), "reverted": last.get("reverted"),
+                                                       "metrics_then": last.get("metrics"), "metrics_now": m}),
+                                      cross=json.dumps(cross(now), ensure_ascii=False))
+    text = harness.run_tools([{"role": "user", "content": prompt}], harness.MODEL_STRONG, [], tools.run, 0, chat_fn)
+    decision = harness.first_json(text) or {}
+    new = json.loads(json.dumps(current))
+    done, reverted = [], []
+    applied_before = [c for c in (last.get("changes") or []) if last.get("applied")]
+    for key in decision.get("revert") or []:
+        role, _, field = str(key).partition(".")
+        prev = next((c for c in applied_before if c["role"] == role and c["field"] == field), None)
+        if prev:
+            new[role][field] = prev["from"]
+            reverted.append({"role": role, "field": field, "back_to": prev["from"]})
+    by_id = {p["id"]: p for p in proposals}
+    taken = set()
+    for pid in decision.get("adopt") or []:
+        p = by_id.get(pid)
+        if not p or (p["role"], p["field"]) in taken:
+            continue
+        taken.add((p["role"], p["field"]))
+        old = new[p["role"]][p["field"]]
+        value = _step(old, p["value"])
+        if value != old:
+            new[p["role"]][p["field"]] = value
+            done.append({"role": p["role"], "field": p["field"], "from": old, "to": value, "proposal": pid,
+                         "reason": p.get("reason")})
+    focus = common.strategy()["phase"] == "focus"
+    if focus and (done or reverted):
+        common.write_json(folder() / "active_rules.json", new)
+    entry = {"at": int(now), "phase": common.strategy()["phase"], "applied": focus, "model": harness.MODEL_STRONG,
+             "decided": bool(decision), "changes": done, "reverted": reverted,
+             "note": str(decision.get("note") or ("(no answer from the model)" if not decision else ""))[:400],
+             "metrics": m}
+    with open(folder() / "changes.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    return entry

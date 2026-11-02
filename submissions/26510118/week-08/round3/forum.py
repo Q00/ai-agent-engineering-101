@@ -1,0 +1,119 @@
+"""B5, the forum: what the analysis runner posts. Trading modules never post.
+
+    market index   "[Kiro729 Market Index #n ...]": the whole market's public ledger, summed up by
+                   code (ledger.py) into a few lines and one JSON line, posted as our buyer every
+                   3 hours, with a few ledger references the market itself shows next to the post.
+                   It publishes only what anyone could compute from the public ledger; our
+                   orders' budgets, our shop's costs and margins and our memos stay private, and
+                   our own shop is left out of the shop table (same owner).
+    data reply     to another agent's "wanted" post: who sold that category lately and at what
+                   share of the list price, as our buyer, at most one every 30 minutes
+    shop reply     to the same post, as our shop, when our shop has that category in stock
+
+A post carries data only, never an instruction, and every number comes from the summary.
+The kit sends what is appended to .market/outbox.jsonl (one post per 5 minutes per role).
+"""
+import json
+import re
+import time
+from datetime import datetime
+
+import common
+
+WANTED = re.compile(r"구합니다|구해요|찾습니다|찾아요|사고 싶|살 수 있|wanted|looking for|want to buy|\bneed\b|\bWTB\b", re.I)
+TOP = 5
+MIN_CLAIMS = 5
+MIN_GOODS = 10           # sales of a grade before its breakdown share is published
+
+
+def outbox(**line) -> None:
+    with open(common.MARKET_DIR / "outbox.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(line, ensure_ascii=False) + "\n")
+
+
+def leaf(category: str | None) -> str:
+    return (category or "").split(">")[-1]
+
+
+def own(name: str | None) -> bool:
+    return bool(name) and any(o.lower() in str(name).lower() for o in common.OWN_NAMES)
+
+
+def index_post(summary: dict, n: int, no_seller: list, source: str, now: float | None = None) -> tuple[str, list, dict]:
+    """(text, ledger refs, the JSON record) of market index number n."""
+    now = now or time.time()
+    cats = summary.get("by_category") or {}
+    top = sorted(cats.items(), key=lambda kv: -kv[1].get("sold_6h", 0))[:TOP]
+    busy = sorted(cats.items(), key=lambda kv: -kv[1].get("sold_24h", 0))[:TOP]
+    honest = {k: [v["honest"], v["claims"]] for k, v in (summary.get("by_shop") or {}).items()
+              if v.get("claims", 0) >= MIN_CLAIMS and not own(k)}
+    honest = dict(sorted(honest.items(), key=lambda kv: -kv[1][1])[:TOP])
+    sold, broke = summary.get("goods_sold_by_grade") or {}, summary.get("broken_by_grade") or {}
+    breakage = {g: [broke.get(g, 0), sold[g]] for g in "ABC" if sold.get(g, 0) >= MIN_GOODS}
+    record = {"v": 1, "n": n, "at": int(now), "settled_24h": summary.get("settles_24h", 0),
+              "top_6h": {leaf(k): v.get("sold_6h", 0) for k, v in top},
+              "price_share": {leaf(k): v.get("price_ratio") for k, v in busy if v.get("price_ratio")},
+              "no_seller": no_seller[:TOP], "no_seller_source": source, "honest_claims": honest, "breakage": breakage}
+    when = datetime.fromtimestamp(now, common.KST).strftime("%m/%d %H:%M KST")
+    lines = [f"[Kiro729 Market Index #{n} · {when} · {record['settled_24h']} settled deals in 24 h]",
+             "Top categories, 6 h: " + (", ".join(f"{k} {v}" for k, v in record["top_6h"].items()) or "none yet")]
+    if record["price_share"]:
+        lines.append("Average price paid / list price: " + ", ".join(f"{k} {v:.0%}" for k, v in record["price_share"].items()))
+    if no_seller:
+        lines.append(f"No shop had it in stock ({source}): " + ", ".join(no_seller[:TOP]))
+    if honest:
+        lines.append("Grade claims that were true: " + ", ".join(f"{k} {h}/{c}" for k, (h, c) in honest.items())
+                     + " (Kiro729's own shop left out: same owner)")
+    if breakage:
+        lines.append("Goods that broke after the sale, by grade: "
+                     + ", ".join(f"{g} {b}/{s} ({b / s:.0%})" for g, (b, s) in breakage.items()))
+    lines.append("Source: settle and broken entries of the public ledger (/api/ledger); the refs below are samples.")
+    lines.append(json.dumps(record, ensure_ascii=False, separators=(",", ":")))
+    refs = [v["last_seq"] for _, v in top if v.get("last_seq")][:TOP]
+    return "\n".join(lines), refs, record
+
+
+def wanted(posts: list, demand: list, seen: set) -> list:
+    """(post id, category) for other agents' posts asking for something we can name."""
+    leaves = {}
+    for d in demand:
+        for part in [leaf(d["category"])] + leaf(d["category"]).split("/"):
+            if len(part) >= 2:
+                leaves.setdefault(part.lower(), leaf(d["category"]))
+    out = []
+    for p in posts:
+        if p.get("id") in seen or own(p.get("author")) or p.get("thread") or not WANTED.search(p.get("text") or ""):
+            continue
+        text = (p.get("text") or "").lower()
+        hit = max((k for k in leaves if k in text), key=len, default=None)
+        if hit:
+            out.append((p["id"], leaves[hit]))
+    return out
+
+
+def data_reply(category: str, summary: dict, settles: list, catalog: dict, now: float) -> str | None:
+    """Who sold this category in the last 24 h and at what share of the list price, or None."""
+    rows = [s for s in settles if (s.get("ts") or 0) >= now - 86400
+            and leaf((catalog.get(s.get("item")) or {}).get("category")) == category]
+    if not rows:
+        return None
+    shops = {}
+    for s in rows:
+        if s.get("shop") and not own(s["shop"]):
+            shops[s["shop"]] = shops.get(s["shop"], 0) + 1
+    share = (summary.get("by_category") or {})
+    ratio = next((v.get("price_ratio") for k, v in share.items() if leaf(k) == category), None)
+    who = ", ".join(f"{k} ({v})" for k, v in sorted(shops.items(), key=lambda kv: -kv[1])[:TOP])
+    return (f"Ledger data for {category}, last 24 h: {len(rows)} settled deals"
+            + (f"; sold by {who}" if who else "") + (f"; average price {ratio:.0%} of list" if ratio else "") + ".")
+
+
+def shop_reply(category: str, inventory: dict) -> str | None:
+    units = [u for u in inventory.get("units") or [] if leaf(u.get("category")) == category and u.get("grade") != "expired"]
+    if not units:
+        return None
+    u = units[0]
+    goods = u.get("kind") == "goods"
+    return (f"Kiro729 Shop has {len(units)} {category} unit(s) in stock now, e.g. {u.get('name')} ({u['sku']}). "
+            "Every unit ships with the market's certificate and its true grade"
+            + ("; a 6-hour warranty on request." if goods else "; ask for the shelf life you need."))

@@ -1,0 +1,103 @@
+
+[collect] the public ledger, shops' stock and the wanted categories
+  PASS  no market index before there is a summary
+    31 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+  PASS  only settle and broken entries are kept (29 settles, 2 broken; 5 order entries dropped)  (29)
+  PASS  the next collection reads on from where this one stopped
+  PASS  summary: 26 settles in the last 24 h (Gamma's three from 30 h ago left out)  (26)
+  PASS  kimchi sold 20 in 6 h at 70% of list  ({'sold_24h': 20, 'sold_6h': 20, 'grades': {'A': 10, 'B': 10}, 'last_seq': 28, 'price_ratio': 0.7})
+  PASS  grade claims per shop: Alpha 10/12 true, Beta 3/8
+  PASS  a breakdown is matched to the grade its buyer got (2 of 6 grade B)
+  PASS  other shops' stock: our own shop's list left out  ({'at': 1793611091, 'stocked': ['식품>김치/반찬/즉석요리>김치']})
+  PASS  wanted: our buyer's unmet order (사과) and other agents' wanted posts (김치, 침구), our own post not counted  ({'사과': 1, '김치': 1, '침구': 1})
+
+[tool] ledger_query
+  PASS  by category name: 20 deals, 70% of list, 13 of 20 claims true, Alpha and Beta  ({'hours': 24.0, 'of': {'category': '김치', 'sku': None, 'shop': None}, 'settled': 20, 'avg_price_share': 0.7, 'grades': {'A': 10, 'B': 10}, 'claims': 20, 'claims_true': 13, 'broken': 0, 'top_shops': {'Alpha': 12, 'Beta': 8}})
+  PASS  the full category path works too
+  PASS  by SKU, with the breakdowns  ({'hours': 24.0, 'of': {'category': None, 'sku': 'Gbbbb0001', 'shop': None}, 'settled': 6, 'avg_price_share': 0.7, 'grades': {'B': 6}, 'claims': 6, 'claims_true': 6, 'broken': 2, 'top_shops': {'Kiro729 Shop': 6}})
+  PASS  by shop and window: Gamma 0 in 24 h, 3 in 48 h
+  PASS  the window is held to 1..72 hours
+  PASS  a tool the model made up is refused
+  PASS  a bad argument comes back as an error, not a crash
+  PASS  arguments outside the schema are dropped; the answer fits in 1,500 characters
+  PASS  a model that keeps calling gets 3 calls, then is asked without tools  ((3, 4))
+  PASS  two calls at a time: the fourth is answered 'tool budget spent', not run
+
+[forum] the market index and replies
+    market index #1 posted (627 chars, 2 refs)
+    | [Kiro729 Market Index #1 · 11/02 18:18 KST · 26 settled deals in 24 h]
+    | Top categories, 6 h: 김치 20, 침구 0
+    | Average price paid / list price: 김치 70%, 침구 70%
+    | No shop had it in stock (shops' stock lists): 침구, 사과
+    | Grade claims that were true: Alpha 10/12, Beta 3/8 (Kiro729's own shop left out: same owner)
+    | Source: settle and broken entries of the public ledger (/api/ledger); the refs below are samples.
+    | {"v":1,"n":1,"at":1793611091,"settled_24h":26,"top_6h":{"김치":20,"침구":0},"price_share":{"김치":0.7,"침구":0.7},"no_seller":["침구","사과"],"no_seller_source":"shops' stock lists","honest_claims":{"Alpha":[10,12],"Beta":[3,8]},"breakage":{}}
+  PASS  posted as our buyer, header '[Kiro729 Market Index #1 ...]'
+  PASS  refs are real settle entries the market can show  ([28, 34])
+  PASS  the last line is the same numbers as JSON
+  PASS  the honesty table leaves our own shop out  ({'Alpha': [10, 12], 'Beta': [3, 8]})
+  PASS  no shop had it: from the shops' stock lists, without what Alpha stocks  (['침구', '사과'])
+  FAIL  a grade's breakdown share waits for 10 sales of it (6 so far)
+  PASS  nothing private: no budget, cost or margin
+  PASS  a 'wanted' post gets a data reply as our buyer and a stock reply as our shop, in its thread  ([('buyer', 101), ('shop', 101)])
+  PASS  the data reply names who sold it and at what share  (Ledger data for 김치, last 24 h: 20 settled deals; sold by Alpha (12), Beta (8); average price 70% of list.)
+    | Ledger data for 김치, last 24 h: 20 settled deals; sold by Alpha (12), Beta (8); average price 70% of list.
+    | Kiro729 Shop has 1 김치 unit(s) in stock now, e.g. 테스트 포기김치 2kg (Gaaaa0001). Every unit ships with the market's certificate and its true grade; ask for the shelf life you need.
+  PASS  10 minutes later: the next post waits (30 minutes between replies per role)  (1 wanted post(s) waiting)
+  PASS  after 30 minutes: 침구 answered by our buyer only (our shop has none in stock)  ([{'post': 'Ledger data for 침구, last 24 h: 6 settled deals; average price 70% of list.', 'thread': 104, 'as': 'buyer'}])
+  PASS  our buyer's data reply does not name our own shop  (Ledger data for 침구, last 24 h: 6 settled deals; average price 70% of list.)
+  PASS  our own post and replies in a thread are never answered; each post once
+
+[analysts] role analyses and the integrated analysis
+  PASS  the seller analysis called ledger_query and saw its answer
+  PASS  its prompt carries our own records and the market summary
+  PASS  proposals checked by code: out of range, unknown category and a field it may not touch are marked invalid  ([True, False, True, False, False, True, True])
+  PASS  report and proposals saved
+  PASS  buyer: 0.55 and a shop in the ledger accepted; 0.99 and an unknown shop refused  ([None, 'outside (0.85, 0.95)', None, "unknown shops: ['Nobody']"])
+  PASS  no answer from the model: a report saying so, nothing proposed
+  PASS  the judge sees only valid proposals, and the private cross-role facts
+  PASS  adopted: price +0.12 moves only 0.05; one proposal per field; the made-up id ignored  ({('seller', 'price_adjust'): 0.05, ('seller', 'focus_categories'): ['김치'], ('buyer', 'open_ratio'): 0.55})
+  PASS  exploration phase: recorded, not applied
+  PASS  no answer from the judge: nothing changes and the entry says so
+  PASS  focus phase: applied to the rules in force (price 0.0 -> 0.05)  ({'focus_categories': [], 'drop_categories': [], 'price_adjust': 0.05, 'warranty_extra': {'A': 0.05, 'B': 0.1, 'C': 0.2}})
+  PASS  a proposal from before the last decision is not adopted again
+  PASS  revert: the last applied change goes back; one that was never applied is ignored  ([{'role': 'seller', 'field': 'price_adjust', 'back_to': 0.0}])
+  PASS  every decision is kept with its numbers
+
+[runner] the schedule and the lock
+11-02 18:18:12 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+11-02 18:18:12 [analysis] index: market index #1 posted (627 chars, 2 refs)
+11-02 18:18:12 [analysis] replies: buyer data reply to #101 (김치); shop reply to #101 (김치)
+11-02 18:18:12 [analysis] seller: 0 proposal(s), 0 within range
+11-02 18:18:12 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 18:18:12 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase)
+  PASS  first pass: every step is due  (['collect', 'index', 'replies', 'seller', 'buyer', 'integrated'])
+11-02 18:18:12 [analysis] replies: 1 wanted post(s) waiting
+  PASS  10 minutes later: replies only
+11-02 18:18:12 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+11-02 18:18:12 [analysis] replies: buyer data reply to #104 (침구)
+  PASS  an hour later: collect and replies
+11-02 18:18:12 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+11-02 18:18:12 [analysis] index: market index #2 posted (625 chars, 2 refs)
+11-02 18:18:12 [analysis] replies: 0 wanted post(s) waiting
+11-02 18:18:12 [analysis] seller: 0 proposal(s), 0 within range
+11-02 18:18:12 [analysis] buyer: 0 proposal(s), 0 within range
+  PASS  3 hours later: index and the role analyses too
+11-02 18:18:12 [analysis] collect: 0 new ledger entries, 0 settles in 24 h, 1 categories stocked by other shops, 2 wanted categories
+11-02 18:18:12 [analysis] index: not enough settles yet
+11-02 18:18:12 [analysis] replies: 0 wanted post(s) waiting
+11-02 18:18:12 [analysis] seller: 0 proposal(s), 0 within range
+11-02 18:18:12 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 18:18:12 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase)
+  FAIL  a pass already running: skipped
+Traceback (most recent call last):
+  File "C:\Users\bubuj\Documents\ai-agent-engineering-101\submissions\26510118\week-08\round3\test_analysis.py", line 342, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\bubuj\Documents\ai-agent-engineering-101\submissions\26510118\week-08\round3\test_analysis.py", line 333, in main
+    test_runner()
+    ~~~~~~~~~~~^^
+  File "C:\Users\bubuj\Documents\ai-agent-engineering-101\submissions\26510118\week-08\round3\test_analysis.py", line 300, in test_runner
+    os.utime(lock, (time.time() - 3600, time.time() - 3600))
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] 지정된 파일을 찾을 수 없습니다: 'C:\\Users\\bubuj\\AppData\\Local\\Temp\\round3-analysis-test-8l0_myxu\\.market\\analysis\\lock'
