@@ -36,9 +36,11 @@ MARKET = "https://market.ourolabs.ai"
 JOBS = Path("/srv/hermes-jobs")
 VAULT_NOTE = "20_학업/01_강의자료/AX이해와활용/261102_AX_R3_자문보고.md"
 BUYER = "25620027"
-SWITCH_AT = datetime(
-    2026, 11, 2, 15, 12, tzinfo=UTC
-)  # 00:12 KST, after the 00:05 switch
+# The switch now waits for the market to say round 3 (arm-r3.sh, every 2 min); an
+# alert fires only if round 3 has been open this long without the switch.
+SWITCH_GRACE = 600.0
+# If round 3 has not opened by this time, the stop time must already be extended.
+STOP_AT_CHECK = datetime(2026, 11, 3, 13, 30, tzinfo=UTC)  # 22:30 KST
 ROUND_END = datetime(2026, 11, 17, 14, 59, 59, tzinfo=UTC)
 STOP_SENDING = ROUND_END + timedelta(hours=1)
 REPEAT_SECONDS = 7200.0
@@ -51,7 +53,8 @@ TITLES = {
     "container_down": "거래 컨테이너가 내려가 있습니다 (자동 복구가 3분마다 시도 중).",
     "kit_stale": "키트 로그가 15분 넘게 멈췄습니다. 거래가 멈췄을 수 있습니다.",
     "relaunch_loop": "지난 1시간에 자동 재기동이 3회 이상입니다. 재기동이 반복 실패하는 중일 수 있습니다.",
-    "switch_missing": "00:05 라운드3 전환이 확인되지 않습니다. 이대로면 11/3 23:59에 거래가 멈춥니다.",
+    "switch_missing": "라운드3가 열렸는데 10분 넘게 전환(관리자 켜기·종료 시각 연장)이 확인되지 않습니다.",
+    "stop_at_risk": "종료 시각이 아직 11/3 23:59입니다. 이대로면 오늘 밤 거래가 멈춥니다.",
     "billing": "모델 API가 결제·크레딧 거절을 돌려 30분 휴지 중입니다. 거래는 규칙으로 계속됩니다.",
     "spend_cap": "오늘 모델 비용이 일일 상한에 닿았습니다. 전략이 Haiku로 강등됩니다.",
     "no_sales": "라운드3인데 지난 1시간 우리 가게·바이어 정산이 0건입니다(시장은 거래 중).",
@@ -267,10 +270,13 @@ def conditions(snap: Snapshot) -> set[str]:
         active.add("kit_stale")
     if snap.relaunches_1h >= 3:
         active.add("relaunch_loop")
-    if snap.now >= SWITCH_AT.timestamp() and not (
+    switched = (
         snap.manager_on and snap.stop_at.startswith("2026-11-17") and snap.switch_done
-    ):
+    )
+    if snap.market_round == 3 and not switched:
         active.add("switch_missing")
+    if snap.now >= STOP_AT_CHECK.timestamp() and snap.stop_at.startswith("2026-11-03"):
+        active.add("stop_at_risk")
     if snap.cooldown:
         active.add("billing")
     if snap.spend_today >= snap.daily_cap:
@@ -348,6 +354,11 @@ def decide(
     new = dict(state)
     sent = dict(new.get("alerts", {})) if isinstance(new.get("alerts"), dict) else {}
     active = conditions(snap)
+    if snap.market_round == 3 and "round3_seen_at" not in new:
+        new["round3_seen_at"] = snap.now
+    seen = float(str(new.get("round3_seen_at", snap.now)))
+    if "switch_missing" in active and snap.now - seen < SWITCH_GRACE:
+        active.discard("switch_missing")
     for key in sorted(active):
         last = float(sent.get(key, 0))
         if snap.now - last >= REPEAT_SECONDS:
@@ -376,7 +387,7 @@ def decide(
         and "switch" not in once
     ):
         messages.append(
-            summary(snap, "00:05 전환 완료: 관리자 모델 켜짐, 종료 시각 11/17 23:59.")
+            summary(snap, "라운드3 전환 완료: 관리자 모델 켜짐, 종료 시각 11/17 23:59.")
         )
         once.add("switch")
     local = _kst(snap.now)
@@ -512,7 +523,7 @@ def advisor(slot: str, state_path: Path, *, dry_run: bool, force: bool = False) 
         [
             "docker",
             "exec",
-            # the advisor only writes proposals, so it may run before the 00:05 switch
+            # the advisor only writes proposals, so it may run before the switch
             # turns the policy loops on; this opens the model gate for this process only
             "-e",
             "AX_R3_MANAGER_MODEL=1",

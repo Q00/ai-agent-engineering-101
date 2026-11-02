@@ -124,3 +124,9 @@ private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 �
 - `notify_r3.py --advisor HH`가 보고를 텔레그램으로 보낼 때 같은 내용을 `/srv/hermes-jobs/job_…_MAC_WORKER_APPROVED_OBSIDIAN_AX_R3_….md`(헤르메스 `JARVIS_JOB_REQUEST_CONTRACT.md`의 Worker-Owned Obsidian Lane 형식: `append_after_heading`, 대상 1개, `idempotency_key`)로도 넣는다. Mac의 `com.sungjinho.hermes-mac-local-worker-obsidian-update`(5분)가 볼트 노트 `20_학업/01_강의자료/AX이해와활용/261102_AX_R3_자문보고.md`의 `## 자문 보고` 아래에 붙인다.
 - 승인 건을 반영한 뒤에는 `python3 notify_r3.py --vault-change "<번호·바꾼 것·release·커밋>"`으로 같은 노트의 `## 반영 기록`에 한 줄을 남긴다(VPS `data/r3/r3-advisor-changes.md`와 함께).
 - 2026-11-02 21:38 시험: 작업 생성 → Mac 워커 반영, VPS 상태 `DONE`(“Jarvis apply block applied successfully”). 주의: Mac의 가져오기 작업(30분)이 워커(5분)보다 먼저 돌면 작업 파일을 `_pulled/`로 옮겨 워커가 못 본다. 평소 주기에서는 워커가 먼저 처리한다.
+
+### 2026-11-03 00:01 KST 시계 전환 취소 → 라운드3 감지 전환
+
+- 공지는 "11월 3일(화) 시작"만 있고 시각이 없다. 00:05 시계 전환은 관리자(정찰·전술·전략)를 라운드2 수치로 켜게 되므로 사용자 결정으로 취소했다(`/etc/cron.d/ax-week08-r3`에서 switch 줄 삭제, 백업 `ax-week08-r3.cron.bak-20261103`).
+- 대신 [arm-r3.sh](arm-r3.sh)가 `/etc/cron.d/ax-week08-r3-arm`(사용자 승인)으로 2분마다 공개 보드의 `round`를 보고, 3이 되면 `switch-r3.sh`(관리자 켜기·종료 11/17 23:59·재기동)를 실행하고 `r3-switched` 표식을 남긴다. 11/3 22:00 KST까지 열리지 않으면 종료 시각만 늘린다(관리자는 계속 꺼짐). 로그 `arm-r3.log`.
+- 감시 스크립트는 라운드3가 열린 뒤 10분 넘게 전환이 안 되면, 또는 22:30에도 종료 시각이 11/3이면 경고한다.

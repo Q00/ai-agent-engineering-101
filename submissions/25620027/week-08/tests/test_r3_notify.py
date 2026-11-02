@@ -60,13 +60,30 @@ def test_alerts_repeat_every_two_hours_and_recover_once() -> None:
     assert state["alerts"] == {}
 
 
-def test_switch_missing_fires_only_after_the_switch_time() -> None:
-    before = datetime(2026, 11, 2, 15, 0, tzinfo=UTC).timestamp()
-    snap = healthy(before)
+def test_switch_alerts_wait_for_round_three_and_a_grace_period() -> None:
+    snap = healthy(datetime(2026, 11, 3, 1, 0, tzinfo=UTC).timestamp())
     snap.manager_on, snap.switch_done, snap.stop_at = False, False, "2026-11-03T23:59"
+    snap.market_round = 2
     assert "switch_missing" not in conditions(snap)
-    snap.now = datetime(2026, 11, 2, 15, 20, tzinfo=UTC).timestamp()
-    assert "switch_missing" in conditions(snap)
+    snap.market_round = 3
+    messages, state = decide(snap, {"once": ["round3"]})
+    assert not any("10분 넘게 전환" in m for m in messages)  # inside the grace period
+    later = healthy(snap.now + 700)
+    later.manager_on, later.switch_done, later.stop_at = (
+        False,
+        False,
+        "2026-11-03T23:59",
+    )
+    messages, _ = decide(later, state)
+    assert any("10분 넘게 전환" in m for m in messages)
+
+
+def test_stop_time_risk_after_ten_thirty_pm() -> None:
+    snap = healthy(datetime(2026, 11, 3, 13, 40, tzinfo=UTC).timestamp())
+    snap.market_round, snap.stop_at = 2, "2026-11-03T23:59:00+09:00"
+    assert "stop_at_risk" in conditions(snap)
+    snap.stop_at = "2026-11-17T23:59:59+09:00"
+    assert "stop_at_risk" not in conditions(snap)
 
 
 def test_no_sales_cost_and_billing_conditions() -> None:
