@@ -39,10 +39,13 @@ NAME = os.environ.get("SHOP_NAME", "kimauve")
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2: the week-7 items
 
-# ask as a share of the list price, by kind and grade; the buyer's value is the list price, so a lower ask
-# is the buyer's surplus
-ASK_SHARE = {("goods", "A"): 0.85, ("goods", "B"): 0.78, ("goods", "C"): 0.68,
-             ("food", "A"): 0.85, ("food", "B"): 0.80, ("food", "C"): 0.65}
+# the opening ask as a share of the list price for a grade-A unit: the shop manager (planner.py) sets it per
+# category in .market/prices.json, else DEFAULT_SHARE. The buyer's value is the list price, so a lower ask is
+# the buyer's surplus. Lower grades open lower, and stock held over a day is marked down; both stay in code.
+DEFAULT_SHARE = 0.85
+GRADE_FACTOR = {"A": 1.0, "B": 0.92, "C": 0.80}
+STALE_MARKDOWN = 0.05     # per day in stock, up to 3 days
+_prices = {"t": 0, "rules": {}}
 FLOOR_MARGIN = float(os.environ.get("SHOP_FLOOR_MARGIN", "0.05"))
 CLOSE_GAP = 0.03          # an offer within 3% of the ask closes at the offer
 MAX_DISCOUNT = 0.10       # haggling never takes the ask more than 10% below the opening ask
@@ -99,12 +102,24 @@ def find_unit(text, taken=()):
     return None
 
 
+def share_for(category):
+    if time.time() - _prices["t"] > 30:
+        try:
+            _prices["rules"] = json.loads((MARKET_DIR / "prices.json").read_text(encoding="utf-8")).get("rules", {})
+        except (OSError, ValueError):
+            pass
+        _prices["t"] = time.time()
+    return _prices["rules"].get(category, DEFAULT_SHARE)
+
+
 def terms(u):
     """(ask, floor, warranty hours) for one unit."""
     if u["unit"] is None:
         return u["cost"], u["cost"], 0
     floor = math.ceil(u["cost"] * (1 + FLOOR_MARGIN))
-    ask = max(floor, int(round(u["list_price"] * ASK_SHARE.get((u["kind"], u["grade"]), 0.85), -1)))
+    days = min(3, int((time.time() - u.get("supplied_at", time.time())) // 86400))
+    share = share_for(u.get("category")) * GRADE_FACTOR.get(u["grade"], 0.8) * (1 - STALE_MARKDOWN * days)
+    ask = max(floor, int(round(u["list_price"] * share, -1)))
     warranty = WARRANTY.get(u["grade"], 0) if u["kind"] == "goods" else 0
     return ask, floor, warranty
 

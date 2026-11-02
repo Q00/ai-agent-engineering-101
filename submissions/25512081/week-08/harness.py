@@ -10,7 +10,10 @@
 - ANTHROPIC_API_KEY is removed from its environment, so the call always uses
   the claude.ai subscription login, never metered API billing.
 
-HARNESS_MODEL overrides the model (default: opus).
+HARNESS_MODEL overrides the model (default: opus). ask(..., model=) picks one per call: the fast model for
+per-message work a buyer waits on, opus for the shop manager's planning.
+ask(..., tools=) is the same call with tools: MCP servers from a config file, only the named tools allowed,
+several turns, the structured answer at the end.
 """
 import json
 import os
@@ -25,11 +28,17 @@ _ENV = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
 CALLS = {"n": 0, "seconds": 0.0}
 
 
-def ask(system, prompt, schema, log=None, timeout=150, retries=2):
-    """One harness call -> dict matching `schema`. Raises after `retries` failures."""
-    cmd = ["claude", "-p", "--model", MODEL, "--tools", "", "--setting-sources", "",
+FAST = os.environ.get("HARNESS_FAST_MODEL", "sonnet")
+
+
+def ask(system, prompt, schema, log=None, timeout=150, retries=2, model=None, tools=None):
+    """One harness call -> dict matching `schema`. Raises after `retries` failures.
+    tools = (mcp config path, [allowed tool names]) lets the model call those MCP tools before answering."""
+    cmd = ["claude", "-p", "--model", model or MODEL, "--tools", "", "--setting-sources", "",
            "--no-session-persistence", "--output-format", "json",
            "--json-schema", json.dumps(schema), "--system-prompt", system]
+    if tools:
+        cmd += ["--mcp-config", tools[0], "--strict-mcp-config", "--allowedTools", ",".join(tools[1])]
     err = None
     for attempt in range(retries + 1):
         t0 = time.time()
@@ -43,7 +52,8 @@ def ask(system, prompt, schema, log=None, timeout=150, retries=2):
             answer = out.get("structured_output")
             if p.returncode == 0 and isinstance(answer, dict):
                 if log:
-                    log(f"    [harness {dt:.1f}s] {json.dumps(answer)}")
+                    turns = f", {out.get('num_turns')} turns" if tools else ""
+                    log(f"    [harness {dt:.1f}s{turns}] {json.dumps(answer, ensure_ascii=False)}")
                 return answer
             err = f"exit={p.returncode} is_error={out.get('is_error')} " \
                   f"{(out.get('result') or p.stderr or '')[:200]!r}"
