@@ -1,0 +1,11 @@
+[strategy] {"chosen": "Kit Shop South", "event": "buyer_route", "features": {"attempts": 7, "concession": 0.1538, "exploration": 0.3536, "integrity": 0.91, "mean_price": 105.0, "recent_visits": 1, "score": 0.739322, "shop": "Kit Shop South", "success": 0.8889, "value": 0.75}, "item": "lamp", "mode": "exploit", "top": [{"attempts": 7, "concession": 0.1538, "exploration": 0.3536, "integrity": 0.91, "mean_price": 105.0, "recent_visits": 1, "score": 0.739322, "shop": "Kit Shop South", "success": 0.8889, "value": 0.75}, {"attempts": 0, "concession": null, "exploration": 1.0, "integrity": 0.5467, "mean_price": null, "recent_visits": 0, "score": 0.611667, "shop": "Kit Shop North", "success": 0.5, "value": 0.5}]}
+[choose] http://127.0.0.1:48823: Kit Shop South. portfolio exploit, score 0.739322
+[buyer] card: 'Kit Shop South', skills ['negotiate'], rpc http://127.0.0.1:48823/
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[buyer] first ask 130, private ceiling sealed, personal reference 105. My past record with this shop: 1 deal(s) after a low first offer, closed on average 15% below its first ask. First offer: about 15% below the ask.
+[harness] 8.3s exit 0 in=834ch -> '```json\n{"action":"offer","price":111}\n```\n\n**Reasoning:** The shop\'s ask is 130. Based on my past record here (1 deal closed ~15% below their ask), I\'m opening at roughly 15% below: 130 × 0.85 ≈ 111.'
+[strategy] {"action": "offer", "ask": null, "decision": "approved", "event": "buyer_guard", "item": "lamp", "price": 111, "proposal": 111, "reference": 105, "round": 1, "task": "6f8b7a6d"}
+[buyer] -> '111' (taskId 6f8b7a6d)
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 111.
+{"shop": "http://127.0.0.1:48823", "receipt": {"price": 111.0, "item": "lamp", "task": "6f8b7a6d-f1af-4326-85f4-32dddd5054fe", "shop": "Kit Shop South", "sig_seller": "Ohq/qnAdrqYlmUq5p0Vh5B0JW9tz19+lbLMTC+GDsEF3NK969jJ/TRB1aGTcug2QxX/fWBgaGrEVVooEEtvNCg=="}, "stars": 3, "review": "Agreed lamp at 111; receipt matched. Personal reference was 105."}

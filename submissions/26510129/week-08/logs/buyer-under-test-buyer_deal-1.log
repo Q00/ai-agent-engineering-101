@@ -1,0 +1,11 @@
+[strategy] {"chosen": "Kit Shop", "event": "buyer_route", "features": {"attempts": 6, "concession": null, "exploration": 0.378, "integrity": 0.8022, "mean_price": 103.33, "recent_visits": 0, "score": 0.683039, "shop": "Kit Shop", "success": 0.875, "value": 0.5032}, "item": "lamp", "mode": "exploit", "top": [{"attempts": 6, "concession": null, "exploration": 0.378, "integrity": 0.8022, "mean_price": 103.33, "recent_visits": 0, "score": 0.683039, "shop": "Kit Shop", "success": 0.875, "value": 0.5032}]}
+[choose] http://127.0.0.1:37325: Kit Shop. portfolio exploit, score 0.683039
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:37325/
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[buyer] first ask 130, private ceiling sealed, personal reference 104. My past record with this shop: none on how it bargains. First offer: about 15% below the ask.
+[harness] 7.0s exit 0 in=781ch -> '```json\n{"action":"offer","price":110}\n```\n\n**Reasoning:** First offer, 15% below the shop\'s ask of 130 gives ~110. This is a reasonable opening position between my reference price (104) and their ask'
+[strategy] {"action": "offer", "ask": null, "decision": "approved", "event": "buyer_guard", "item": "lamp", "price": 110, "proposal": 110, "reference": 104, "round": 1, "task": "102274da"}
+[buyer] -> '110' (taskId 102274da)
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+{"shop": "http://127.0.0.1:37325", "receipt": {"price": 110.0, "item": "lamp", "task": "102274da-dee6-4ee4-a94d-4362cc86a992", "shop": "Kit Shop", "sig_seller": "uHhE4pR5/zR7VyXl2rZvk6AmoE/H1M+NX8CRlSOdKo2tXrf7E9tS7BFFDEirDVYerd0GaCJaRAJDL/BKQRUZBw=="}, "stars": 3, "review": "Agreed lamp at 110; receipt matched. Personal reference was 104."}

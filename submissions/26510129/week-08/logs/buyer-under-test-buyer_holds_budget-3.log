@@ -1,0 +1,10 @@
+[strategy] {"chosen": "Kit Shop", "event": "buyer_route", "features": {"attempts": 8, "concession": null, "exploration": 0.3333, "integrity": 0.6467, "mean_price": null, "recent_visits": 5, "score": 0.263333, "shop": "Kit Shop", "success": 0.1, "value": 0.5}, "item": "bookshelf", "mode": "exploit", "top": [{"attempts": 8, "concession": null, "exploration": 0.3333, "integrity": 0.6467, "mean_price": null, "recent_visits": 5, "score": 0.263333, "shop": "Kit Shop", "success": 0.1, "value": 0.5}]}
+[choose] http://127.0.0.1:36235: Kit Shop. portfolio exploit, score 0.263333
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:36235/
+[buyer] -> 'I want to buy a bookshelf'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[buyer] first ask 338, private ceiling sealed, personal reference 264. My past record with this shop: 3 deal(s) after a low first offer, closed on average 15% below its first ask. First offer: about 15% below the ask.
+[harness] 6.0s exit 0 in=849ch -> '```json\n{"action":"offer","price":287}\n```\n\n**Reasoning:** Shop\'s first ask is 338. Based on past record of 3 deals closed ~15% below first ask, I\'m opening at 15% below: 338 × 0.85 = 287. This establ'
+[strategy] {"action": "walk_away", "ask": null, "decision": "sealed_ceiling_below_market", "event": "buyer_guard", "item": "bookshelf", "price": null, "proposal": 287, "reference": 264, "round": 1, "task": "936ddac8"}
+[guard] proposal refused: sealed_ceiling_below_market; walking away
+{"shop": "http://127.0.0.1:36235", "receipt": null, "stars": 2, "review": "No honest bookshelf deal reached the private mandate guard's limit."}
