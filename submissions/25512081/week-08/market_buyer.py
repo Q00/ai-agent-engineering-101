@@ -3,11 +3,15 @@
     python market_buyer.py --shops .market/shops.json --item lamp --budget 120
 
 The kit writes the shop list for each order: every shop's name, card URL and
-its latest reviews. This buyer
-  1. picks one shop with the harness, from a short summary per shop: the reviews
+its latest reviews (and, in Round 3, the SKUs it has that fit the order). This buyer
+  1. ranks shops with the harness, from a short summary per shop: the reviews
      others left (count, average stars, the latest three) and its own memory of
      that shop; shops it caught cheating are left out in code;
-  2. negotiates with it exactly as the week-6 buyer does (buyer.negotiate), so the
+     Round 3 runs a Contract Net (week 3-4): it asks the top SHORTLIST shops for a
+     price at once, ranks the quotes by surplus (list price minus first ask), and
+     negotiates with the best, the next-best quote being its walk-away option; if
+     that fails and time is left it moves to the next quote;
+  2. negotiates exactly as the week-6 buyer does (buyer.negotiate), so the
      budget is enforced in code, not in the prompt;
   3. checks the receipt against the price it agreed (its own last offer), and
      writes the review from those facts -- no harness call, nothing invented;
@@ -20,15 +24,20 @@ import json
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import TimeoutError as FuturesTimeout
 from pathlib import Path
 
 import forum
 import harness
 import memory
 from a2a_client import Peer
-from buyer import log, negotiate
+from buyer import injected, log, negotiate, walk
 
 MEMORY = Path(".market/buyer_memory.json")
+SHORTLIST = 3          # shops asked for a quote at once
+QUOTE_WAIT = 40        # seconds to wait for their first asks
+FALLBACK_LEFT = 110    # seconds the next quote needs to be worth a try (the kit stops us at 300)
 
 
 def _catalog():
@@ -82,19 +91,67 @@ def summary(shop, mine):
             f"my trades: {seen or 'none'}{r3}")
 
 
-def choose(shops, item, budget, mine):
+def choose(shops, item, budget, mine, k=1):
+    """The model ranks the shops it trusts; returns up to k of them, best first, and its reason."""
     cheats = {m["shop"] for m in mine if m.get("honest") is False} | memory.avoid()
     pool = [s for s in shops if s["name"] not in cheats] or shops
-    if len(pool) == 1:
-        return pool[0], "the only shop in the list I have not caught cheating"
+    if len(pool) <= k:
+        return pool, "every shop in the list I have not caught cheating"
+    names = [s["name"] for s in pool]
     ans = harness.ask(CHOOSE_SYSTEM, (
         f"I need to buy: {item} (my budget: {budget}).\nShops:\n"
         + "\n".join(summary(s, mine) for s in pool)
-        + "\nPick one shop by name and give the reason in one sentence."),
+        + f"\nList the {k} shop{'s' * (k > 1)} to ask for a price, best first, by name, and give the reason "
+        "in one sentence."),
         {"type": "object", "properties": {
-            "shop": {"type": "string", "enum": [s["name"] for s in pool]},
-            "reason": {"type": "string"}}, "required": ["shop", "reason"]}, log=log, model=harness.FAST)
-    return next(s for s in pool if s["name"] == ans["shop"]), ans["reason"]
+            "shops": {"type": "array", "items": {"type": "string", "enum": names}},
+            "reason": {"type": "string"}}, "required": ["shops", "reason"]}, log=log, model=harness.FAST)
+    picked = [n for i, n in enumerate(ans["shops"]) if n in names and n not in ans["shops"][:i]][:k]
+    return [next(s for s in pool if s["name"] == n) for n in picked] or pool[:1], ans["reason"]
+
+
+def quote(shop, budget):
+    """Contract Net, the call for proposals: ask one shop for its SKU and read its first ask."""
+    sku = pick_sku(shop, budget)
+    opening = f"I want to buy {sku['name']} ({sku['sku']})"
+    peer = Peer(shop["url"], timeout=60)
+    r = peer.send(opening)
+    log(f"[quote] {shop['name']} -> {opening!r}  <- {r.state} | {r.text[:200]}")
+    value = (CATALOG.get(sku["sku"]) or {}).get("list_price") or 0
+    return {"shop": shop, "peer": peer, "sku": sku, "reply": r, "value": value}
+
+
+def collect_quotes(shops, budget):
+    """Ask every shortlisted shop at once; keep the quotes a deal can come from, best surplus first
+    (list price, what the order is worth, minus the shop's first ask)."""
+    out = []
+    with ThreadPoolExecutor(len(shops)) as ex:
+        futs = {ex.submit(quote, s, budget): s for s in shops}
+        try:
+            for f in as_completed(futs, timeout=QUOTE_WAIT):
+                try:
+                    q = f.result()
+                except Exception as e:
+                    log(f"[quote] {futs[f]['name']} failed: {type(e).__name__}: {str(e)[:120]}")
+                    continue
+                r = q["reply"]
+                if injected(r):
+                    log(f"[quote] {q['shop']['name']} gives orders to buying agents; left out")
+                    walk(q["peer"], r.id)
+                elif r.done or r.ask is None:
+                    log(f"[quote] {q['shop']['name']} gave no price ({r.state})")
+                else:
+                    q["surplus"] = q["value"] - r.ask
+                    out.append(q)
+        except FuturesTimeout:
+            log(f"[quote] some shops did not answer within {QUOTE_WAIT} s")
+    # a first ask far over the budget rarely comes down to it: those go last
+    return sorted(out, key=lambda q: (q["reply"].ask > budget * 1.15, -q["surplus"]))
+
+
+def describe(q):
+    return (f"{q['shop']['name']} asks {q['reply'].ask} for {q['sku']['name'][:40]} "
+            f"(list price {q['value']})")
 
 
 def review(res, item, budget):
@@ -143,6 +200,23 @@ def accept_policy(order):
     return {"cert": True, "grades": ["A", "B"]}
 
 
+def trade(run, item, budget):
+    """One negotiation and its review: (stars, text, honest, paid, receipt, outcome)."""
+    try:
+        res = run()
+        stars, text, honest, paid = review(res, item, budget)
+        receipt = getattr(res["reply"], "receipt", None) if res["outcome"] == "deal" else None
+        return stars, text, honest, paid, receipt, res["outcome"]
+    except Exception as e:                        # unreachable shop, protocol error
+        log(f"[buyer] trade failed: {type(e).__name__}: {e}")
+        return 2, "Could not complete a trade: the shop did not answer properly.", None, None, None, "error"
+
+
+def memo(shop, sku, a, order, attempt):
+    return {"shop": shop["name"], "item": a.item, "budget": a.budget, "outcome": attempt[5], "price": attempt[3],
+            "honest": attempt[2], "time": int(time.time()), "order": order.get("order"), "sku": sku and sku["sku"]}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shops", required=True)
@@ -167,24 +241,43 @@ def main():
                           "review": "No shops in the list."}))
         return 0
 
-    shop, reason = choose(shops, a.item, a.budget, mine)
-    log(f"[choose] {shop['url']}: {reason}")
-    try:
-        sku = pick_sku(shop, a.budget) if r3 else None
-        opening = f"I want to buy {sku['name']} ({sku['sku']})" if sku else None
-        res = negotiate(Peer(shop["url"]), a.item, a.budget, t0, opening)
-        stars, text, honest, paid = review(res, a.item, a.budget)
-        receipt = getattr(res["reply"], "receipt", None) if res["outcome"] == "deal" else None
-        outcome = res["outcome"]
-    except Exception as e:                        # unreachable shop, protocol error
-        log(f"[buyer] trade failed: {type(e).__name__}: {e}")
-        stars, text, honest, paid, receipt, outcome = 2, "Could not complete a trade: the shop " \
-            "did not answer properly.", None, None, None, "error"
+    if not r3:                                    # rounds 1-2: one shop, as in week 7
+        picked, reason = choose(shops, a.item, a.budget, mine)
+        shop, sku = picked[0], None
+        log(f"[choose] {shop['url']}: {reason}")
+        attempt = trade(lambda: negotiate(Peer(shop["url"]), a.item, a.budget, t0), a.item, a.budget)
+    else:                                         # round 3: Contract Net over a shortlist
+        picked, reason = choose(shops, a.item, a.budget, mine, SHORTLIST)
+        log(f"[choose] shortlist {[s['name'] for s in picked]}: {reason}")
+        quotes = collect_quotes(picked, a.budget)
+        log("[quote] ranked: " + ("; ".join(f"{describe(q)}, surplus {q['surplus']}" for q in quotes) or "none"))
+        shop, sku, attempt, tried = picked[0], pick_sku(picked[0], a.budget), None, set()
+        for i, q in enumerate(quotes):
+            if attempt and time.time() - t0 > 300 - FALLBACK_LEFT:
+                log("[quote] no time left for the next quote")
+                break
+            if attempt and q["reply"].ask > a.budget * 1.15:
+                log(f"[quote] the other quotes start far above my budget {a.budget}; stopping")
+                break
+            if attempt:
+                log(f"[quote] no deal with {shop['name']} ({attempt[5]}); trying {q['shop']['name']}")
+                mine.append(memo(shop, sku, a, order, attempt))
+            shop, sku = q["shop"], q["sku"]
+            tried.add(id(q))
+            alt = describe(quotes[i + 1]) if i + 1 < len(quotes) else None
+            attempt = trade(lambda: negotiate(q["peer"], a.item, a.budget, t0, first=q["reply"], alternative=alt),
+                            a.item, a.budget)
+            if attempt[5] == "deal":
+                break
+        for q in quotes:                          # close the other shops' open tasks
+            if id(q) not in tried and not q["reply"].done:
+                walk(q["peer"], q["reply"].id)
+        if attempt is None:
+            attempt = (2, "Could not get a price from any shop I asked.", None, None, None, "no_quote")
+    stars, text, honest, paid, receipt, outcome = attempt
     if honest is False:
         log(f"[buyer] [check] marked dishonest in memory: {text}")
-    mine.append({"shop": shop["name"], "item": a.item, "budget": a.budget, "outcome": outcome,
-                 "price": paid, "honest": honest, "time": int(time.time()),
-                 "order": order.get("order"), "sku": sku and sku["sku"]})
+    mine.append(memo(shop, sku, a, order, attempt))
     save_memory(mine)
     line = {"shop": shop["url"], "receipt": receipt, "stars": stars, "review": text}
     if r3:

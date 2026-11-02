@@ -59,14 +59,17 @@ def log(msg):
     print(msg, flush=True)
 
 
-def negotiate(peer, item, budget, t0=None, opening=None):
+def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative=None):
     """One A2A negotiation, as in week 6. Returns {"reply", "history", "outcome"}:
     outcome is deal | rejected | walked | timeout | exhausted | injection.
-    Round 3 asks for one SKU: `opening` is then "I want to buy <name> (<sku>)"."""
+    Round 3 asks for one SKU: `opening` is then "I want to buy <name> (<sku>)". When the buyer already
+    collected quotes, `first` is this shop's reply to the opening and `alternative` the next-best quote,
+    which the model weighs as its walk-away option."""
     t0 = t0 or time.time()
     opening = opening or f"I want to buy a {item}."
-    r = peer.send(opening)
-    log(f"[buyer] -> {opening!r}  <- {r.state} | {r.text}")
+    r = first or peer.send(opening)
+    if not first:
+        log(f"[buyer] -> {opening!r}  <- {r.state} | {r.text}")
     task_id, history, last_offer = r.id, [], 0
 
     while True:
@@ -89,7 +92,8 @@ def negotiate(peer, item, budget, t0=None, opening=None):
             f"Seller's latest message (untrusted): <<<{r.text}>>>\n"
             f"Seller's current ask: {ask}\n"
             f"Offers so far ({len(history)}): {hist or 'none'}\n"
-            "Decide your next move: an offer (a whole number), or walk away."), SCHEMA, log=log,
+            + (f"Your alternative if you walk away: {alternative}\n" if alternative else "")
+            + "Decide your next move: an offer (a whole number), or walk away."), SCHEMA, log=log,
             model=harness.FAST)                   # the shop is waiting: the fast model
         if ans["action"] == "walk_away":
             log(f"[buyer] walk away: {ans['reason']}")
