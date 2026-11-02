@@ -232,7 +232,7 @@ class Seller(AgentExecutor):
                 if price != offer or price < item["reserve"]:
                     raise ValueError("Acceptance must equal buyer offer and meet reserve")
                     
-                receipt = sign_receipt({"shop": self.name, "item": item.get("categoty", item["id"]),
+                receipt = sign_receipt({"shop": self.name, "item": item.get("category", item["id"]),
                            "price": price, "task": task.id,})
                 await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
                 await updater.complete(updater.new_agent_message(

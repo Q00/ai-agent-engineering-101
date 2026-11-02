@@ -21,6 +21,7 @@ export type TradeRecord = {
     price: number | null;
     result: string;
     receiptMismatch: boolean | null;
+    occurredAt?: number;
 }
 
 export const MEMORY_PATH = "buyer_memory.json";
@@ -121,10 +122,23 @@ export function chooseShop(
             (trade) => trade.receiptMismatch === true,
         ).length;
 
+        const recentTrades = ownTrades.slice(-2);
+        const lastTrade = recentTrades[recentTrades.length - 1];
+
+        const cooldownMs = 5 * 60 * 1000;
+        const now = Date.now();
+
+        const onCooldown =
+            recentTrades.length === 2 &&
+            recentTrades.every((trade) => trade.result === "remote_error") &&
+            typeof lastTrade?.occurredAt === "number" &&
+            now >= lastTrade.occurredAt &&
+            now - lastTrade.occurredAt < cooldownMs;
+
         const score = reviewScore - mismatches * 2;
 
         return {
-            shop, reviewScore, reviewCount: stars.length, ownTradeCount: ownTrades.length, mismatches, score,
+            shop, reviewScore, reviewCount: stars.length, ownTradeCount: ownTrades.length, mismatches, score, onCooldown,
         };
     });
 
@@ -136,7 +150,20 @@ export function chooseShop(
         return a.shop.name.localeCompare(b.shop.name);
     });
 
-    const selected = scored[0]!;
+    const avail = scored.filter((entry) => !entry.onCooldown);
+
+    for (const entry of scored) {
+        if (entry.onCooldown) {
+            console.error(
+                `[cooldown] temporarily avoiding shop=${entry.shop.name}`,);
+        }
+    }
+
+    if (avail.length === 0) {
+        console.error("[cooldown] all shops excluded; using score fallback");
+    }
+
+    const selected = (avail.length > 0 ? avail : scored)[0]!;
 
     const reason =
         `shop=${selected.shop.name},` +

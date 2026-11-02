@@ -15,6 +15,8 @@ import type { Task } from "@a2a-js/sdk"
 import { askPythonHarness } from "./harnessBridge.js"
 import { chooseShop, loadMemory, loadShops, MEMORY_PATH, saveMemory } from "./marketSelection.js";
 
+class RemoteShopError extends Error {}
+
 function arg(name: string): string {
     const i = process.argv.indexOf(name);
     if (i < 0 || !process.argv[i + 1]) throw new Error(`Missing ${name}`);
@@ -257,7 +259,7 @@ async function main(): Promise<void> {
 
 
     if (json.error) {
-      throw new Error(json.error.message ?? "SendMessage failed");
+      throw new RemoteShopError(json.error.message ?? "SendMessage failed",);
     }
 
     const task = taskOf(json.result);
@@ -341,7 +343,7 @@ async function main(): Promise<void> {
         isState(state, "CANCELED") ||
         isState(state, "FAILED")
       ) {
-        resultState = state.toLowerCase();
+        resultState = isState(state, "FAILED") ? "remote_error" : state.toLowerCase();
         review = `The negotiation ended with state ${state}.`;
         break;
       }
@@ -437,7 +439,8 @@ async function main(): Promise<void> {
       }
     }
   } catch (error) {
-    resultState = "error";
+    resultState = error instanceof RemoteShopError 
+        ? "remote_error" : "error";
 
     const message =
       error instanceof Error ? error.message : String(error);
@@ -458,6 +461,7 @@ async function main(): Promise<void> {
     price,
     result: resultState,
     receiptMismatch,
+    occurredAt: Date.now(),
   });
 
   try {
