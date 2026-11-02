@@ -1,19 +1,19 @@
 """Offline tests for persistence, pricing, seller lifecycle, and receipt signing."""
+import base64
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import tempfile
-import unittest
-from seller_strategy import LEGACY_POLICY, POLICY, load_item_state, save_item_state
-from concurrent.futures import ThreadPoolExecutor
-from unittest.mock import patch
-import seller_strategy
-from seller import Seller
 from types import SimpleNamespace
+import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
-import base64
+
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
-from seller import canon, sign_receipt
+
+from seller import Seller, canon, sign_receipt
+import seller_strategy
+from seller_strategy import LEGACY_POLICY, POLICY, load_item_state, save_item_state
 
 
 class PricingStateTests(unittest.TestCase):

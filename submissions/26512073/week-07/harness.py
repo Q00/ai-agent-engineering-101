@@ -1,4 +1,4 @@
-"""Small transport adapter: prompt in, JSON object out; no trading rules yet."""
+"""Call the coding harness and preserve each attempt's raw output."""
 import argparse
 from datetime import datetime, timezone
 import json

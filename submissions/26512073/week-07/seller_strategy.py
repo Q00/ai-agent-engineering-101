@@ -1,11 +1,11 @@
 """Seller pricing, persistent state, and negotiation memory in one module."""
 import json
+import os
 from pathlib import Path
 import tempfile
-from threading import RLock
-import os
+from threading import Lock, RLock
+
 from harness import call_harness
-from threading import Lock
 
 
 # Pricing State
@@ -18,14 +18,8 @@ DATA_DIR = Path(
 
 
 STATE_PATH = DATA_DIR / "pricing_state.json"
-
-
 LEGACY_POLICY = "adaptive-15-percent-six-results-v1"
-
-
 POLICY = "adaptive-15-percent-six-results-capped-v2"
-
-
 _lock = RLock()
 
 
@@ -69,8 +63,8 @@ def load_item_state(item, reserve, path=None):
 def save_item_state(item, reserve, state, path=None):
     """Replace the state file atomically, preserving the other items' state.
 
-    This lock protects file operations in one seller process. The later pricing
-    integration must also serialize each item's load/decide/save transaction.
+    This lock protects file operations in one seller process. decide_opening
+    also serializes the complete load/decide/save transaction.
     """
     _validate(state, reserve)
     path = Path(path) if path is not None else STATE_PATH
@@ -99,26 +93,6 @@ REVIEWS_PATH = (
     / "challenge-1"
     / "before-reviews-20261025T083209Z.json"
 )
-
-
-def load_recent_results(item, limit=20):
-    if not HISTORY_PATH.exists():
-        return []
-
-    results = []
-    with HISTORY_PATH.open(encoding="utf-8") as history:
-        for line in history:
-            if not line.strip():
-                continue
-
-            event = json.loads(line)
-            if (
-                event["item"] == item
-                and event["event"] in {"deal", "rejected", "canceled"}
-            ):
-                results.append(event)
-
-    return results[-limit:]
 
 
 def load_shop_reviews(limit=10):
@@ -222,8 +196,7 @@ def decide_price_adjustment(item, reserve, current_ask, results, reviews):
         "complaints about an older higher ask may no longer apply.\n"
         "Canceled negotiations count toward the review, but cancellation "
         "alone does not prove the ask was too high. Examine recorded offers "
-        "and reasons. A missing reason is unknown evidence. Offers below "
-        "reserve do not justify lowering the opening ask.\n"
+        "and reasons. A missing reason is unknown evidence.\n"
         "Return only JSON with action and a short, specific reason.\n"
         "Evidence:\n"
         + json.dumps({
