@@ -1,0 +1,8 @@
+The first local package validation command exited with status 1.
+Its runpy.run_path call imported staged run_round3.py from the repository root
+without adding the staged source directory to sys.path.
+Terminal error: ModuleNotFoundError: No module named 'receipt_signing'
+The source file is in the archive. This is a validation-command setup error;
+the native script invocation used by deployment has the script directory on
+sys.path. local-validation.log preserves the completed checks before the error.
+No SSH, model invocation, or market write was performed.

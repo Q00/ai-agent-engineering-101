@@ -227,7 +227,7 @@ def tick(root=ROOT, *, client=None, model=analyse, clock=time.time, observe_only
     if observe_only:
         return "observed_without_model"
     attempts = state.get("attempts", [])
-    if not isinstance(attempts, list) or any(not number(t) for t in attempts):
+    if not isinstance(attempts, list) or len(attempts) > 6 or any(not number(t) for t in attempts):
         raise ValueError("Invalid model-call budget state")
     attempts = [t for t in attempts if now - t < 86400]
     if (len(attempts) >= cfg["max_calls_per_day"]
@@ -237,7 +237,10 @@ def tick(root=ROOT, *, client=None, model=analyse, clock=time.time, observe_only
         return "unchanged_evidence"
     if not any(e["kind"] == "review" for e in context["evidence"]) and context["own_metrics"].get("deals", 0) < 3:
         return "insufficient_evidence"
-    history = [h for h in state.get("history", []) if isinstance(h, dict) and h.get("round") == context["round"]][-4:]
+    history = [h for h in state.get("history", []) if isinstance(h, dict) and h.get("round") == context["round"]
+               and number(h.get("time")) and 0 <= now - h["time"] <= 86400][-4:]
+    if history and context["own_metrics"].get("deals", 0) < history[-1].get("own_metrics", {}).get("deals", 0):
+        history = []  # A same-round market reset is not a failed pricing experiment.
     context["past_advice_observations"] = history
     state["attempts"] = attempts + [now]  # A failed/timed-out call consumes the slot too.
     atomic_json(control_path, state)

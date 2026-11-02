@@ -31,6 +31,7 @@ class AdvisorTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(dir=ROOT / ".market")
         self.addCleanup(self.temp.cleanup)
         self.root, self.now = Path(self.temp.name), time.time()
+        self.review_time = self.now
         atomic_json(self.root / "advisor-config.json", advisor.config_at())
         atomic_json(self.root / "shop-adaptive.json", {"name": "ours"})
         atomic_json(self.root / ".market/inventory.json", {"round": 3, "units": [unit()]})
@@ -51,7 +52,7 @@ class AdvisorTests(unittest.TestCase):
             return httpx.Response(200, json=self.board)
         self.assertEqual(req.url.path, "/api/shop-reviews")
         self.assertEqual(req.url.params["round"], str(self.board["round"]))
-        return httpx.Response(200, json=[{"stars": 2 if i % 2 else 5, "ts": self.now - i,
+        return httpx.Response(200, json=[{"stars": 2 if i % 2 else 5, "ts": self.review_time - i,
                 "author": "repeat-author", "review": "review " + str(i)} for i in range(15)])
 
     def proposal(self, context):
@@ -136,6 +137,19 @@ class AdvisorTests(unittest.TestCase):
         self.now += 3601
         self.assertEqual(self.tick(model), "unchanged_evidence")
         self.assertEqual(model.call_count, 1)
+
+    def test_memory_does_not_cross_rounds_or_count_reset(self):
+        model = Mock(side_effect=self.proposal)
+        self.assertEqual(self.tick(model), "published")
+        self.now += 3601
+        self.board["shops"][0]["deals"] = 0
+        self.assertEqual(self.tick(model), "published")
+        self.assertEqual(model.call_args.args[0]["past_advice_observations"], [])
+        self.now += 3601
+        self.board["round"] = 4
+        atomic_json(self.root / ".market/inventory.json", {"round": 4, "units": [unit()]})
+        self.assertEqual(self.tick(model), "published")
+        self.assertEqual(model.call_args.args[0]["past_advice_observations"], [])
 
     def test_malformed_control_state_cannot_reset_model_budget(self):
         path = self.root / ".market" / advisor.CONTROL_FILE
