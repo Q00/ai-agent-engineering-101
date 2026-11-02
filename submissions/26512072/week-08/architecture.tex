@@ -1,0 +1,119 @@
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=8mm]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,shapes.geometric,calc}
+\pagestyle{empty}
+
+% model = the harness (claude -p --model haiku); code = deterministic Python; mem = files the agent keeps
+\tikzset{
+  box/.style={draw,rounded corners=2pt,align=center,font=\footnotesize,inner sep=3.5pt,text width=#1},
+  model/.style={box=#1,fill=orange!22,draw=orange!70!black},
+  code/.style={box=#1,fill=blue!8,draw=blue!60!black},
+  tool/.style={box=#1,fill=green!12,draw=green!50!black},
+  ext/.style={box=#1,fill=gray!12,draw=gray!60!black},
+  mem/.style={cylinder,shape border rotate=90,aspect=0.16,draw=violet!70!black,fill=violet!10,
+              align=center,font=\footnotesize,minimum height=1.1cm,text width=#1},
+  flow/.style={-{Stealth[length=2mm]},thick},
+  read/.style={-{Stealth[length=1.8mm]},densely dashed,violet!70!black},
+  lab/.style={font=\scriptsize,fill=white,inner sep=1pt},
+  diff/.style={font=\scriptsize\itshape,text=red!65!black,align=left},
+  group/.style={draw,rounded corners=5pt,inner sep=7pt,thick},
+  node distance=4mm,
+}
+
+\begin{document}
+\centering
+{\large\bfseries bjeon01: an honest shop and a remembering buyer in the Round 3 market}\\[1.2mm]
+{\footnotesize \colorbox{orange!22}{model: claude -p haiku via harness.py}\quad
+\colorbox{blue!8}{code: plain Python}\quad \colorbox{green!12}{tools: MCP tools the model calls}\quad
+\colorbox{violet!10}{memory: files the agent keeps}\quad \textcolor{red!65!black}{\textit{red: what the kit's default does not do}}}
+\vspace{3mm}
+
+\begin{tikzpicture}
+% column centres (cm)
+\coordinate (A) at (2.8,0); \coordinate (B) at (9.4,0); \coordinate (C) at (15.9,0); \coordinate (D) at (22.6,0);
+\coordinate (gap) at (6.25,0);
+
+% ---------------- top: market and kit
+\node[ext=5.0cm] (market) at (2.8,0) {\textbf{Market} (instructor)\\ registry, orders with AP2 mandates,\\
+  hash-chained ledger, forum, \texttt{/api/settle}};
+\node[ext=18.6cm] (kit) at (15.75,0) {\textbf{market\_kit.py v4} (unchanged): writes \texttt{.market/}
+  (inventory, catalog, demand, forum, order, shops with offers, payments, broken, deal), runs the hooks
+  (\texttt{seller}, \texttt{restock}, \texttt{market\_buyer}, \texttt{review}), opens the tunnel and the ACP checkout,
+  signs the closed mandates and pays, sends \texttt{outbox.jsonl} to the forum};
+\draw[flow,<->] (market) -- (kit);
+
+% ---------------- SHOP, column A: the A2A seller
+\node[code=4.9cm,anchor=north] (find) at (2.8,-2.3) {\textbf{seller\_r3.py} (A2A)\\ find the unit the buyer names
+  (SKU, name); the one that expires first};
+\node[code=4.9cm,below=of find] (terms) {\textbf{terms} per unit: floor = cost$\times$1.08 (food), $\times$1.15 (goods);
+  food under 24 h may go below cost; goods unsold 72 h go at cost};
+\node[code=4.9cm,below=of terms] (adapt) {\textbf{adapt}: opening $-5$/$+3$ points from my last 20 negotiations,
+  $-3$ if my Round 3 reviews complain about price};
+\node[model=4.9cm,below=of adapt] (sneg) {\textbf{negotiate}: counter / accept / reject\\
+  \scriptsize guards: never below the floor, within 3\% = accept, 6 offers};
+\node[code=4.9cm,below=of sneg] (receipt) {\textbf{signed receipt} + \texttt{unit}, \texttt{claim} = the real grade,
+  market certificate kept, 6 h warranty on goods};
+\draw[flow] (find) -- (terms); \draw[flow] (terms) -- (adapt); \draw[flow] (adapt) -- (sneg); \draw[flow] (sneg) -- (receipt);
+
+% ---------------- SHOP, column B: restock and memory
+\node[code=4.3cm,anchor=north] (restock) at (9.4,-2.3) {\textbf{restock.py} (every 60 s, no model)\\
+  1 SKUs I sold\quad 2 SKUs the market settled\\ 3 categories ``wanted'' on the forum\\ 4 middle SKU of each category\\
+  \scriptsize keep 2M cash, $\le$1M stock at cost, $\le$5\% of the balance a run};
+\node[mem=3.4cm,below=7mm of restock] (msales) {market\_sales.json\\ \scriptsize ledger settle entries per SKU};
+\node[mem=3.4cm,below=5mm of msales] (sales) {sales\_memory.jsonl\\ \scriptsize my negotiations and deals};
+\draw[read] (msales) -- (restock);
+\draw[read] (sales.east) to[bend right=35] (restock.east);
+\draw[read] (sales.west) -- (adapt.east);
+\draw[read] (receipt.east) to[bend right=12] node[lab,pos=0.55]{append} (sales.south);
+
+\node[diff,anchor=north west,text width=10.5cm] at ($(receipt.south west)+(0,-0.35)$)
+  {kit default: random restock; the starter seller states no grade, gives no warranty, never adapts};
+\begin{scope}[on background layer]
+  \node[group,draw=blue!50!black,fit=(find)(receipt)(restock)(sales),label={[font=\bfseries]above:SHOP (sells from its own stock)}] {};
+\end{scope}
+
+% ---------------- BUYER, column C: per order
+\node[code=5.3cm,anchor=north] (fold) at (15.9,-2.3) {\textbf{market\_buyer\_r3.py}: fold in news\\
+  refused payments (payments.jsonl), goods that broke (broken.jsonl $\rightarrow$ my newest purchase of that name)};
+\node[code=5.3cm,below=of fold] (cands) {\textbf{candidates} = shop $\times$ SKU: in stock, acceptable, food that lasts
+  \texttt{use\_within\_hours}; code score = trust $\times$ list price; one line each: reviews, my memory, forum};
+\node[model=5.3cm,below=of cands] (choose) {\textbf{choose} shop + SKU\\ \scriptsize looks things up with the tools first};
+\node[model=5.3cm,below=of choose] (bneg) {\textbf{negotiate} offers\\
+  \scriptsize guards: $\le$ min(budget, list price) and $\le$ the shop's current ask};
+\node[code=5.3cm,below=of bneg] (accept) {\textbf{result line} + \texttt{accept}: the market certificate, shelf life
+  $\ge$ \texttt{use\_within\_hours}+1};
+\draw[flow] (fold) -- (cands); \draw[flow] (cands) -- (choose); \draw[flow] (choose) -- (bneg); \draw[flow] (bneg) -- (accept);
+
+% ---------------- BUYER, column D: memory, tools, after the deal
+\node[mem=3.6cm,anchor=north] (forum) at (22.6,-2.3) {forum.json\\ \scriptsize newest 100 posts};
+\node[mem=3.6cm,below=4mm of forum] (bmem) {buyer\_memory\_r3.jsonl\\ \scriptsize trades, settles, payments, broken};
+\node[tool=4.6cm] (tools) at ($(choose -| D)+(0,-0.9)$) {\textbf{market\_tools\_mcp.py} (stdio)\\
+  shop\_record(shop)\quad shop\_reviews(shop)\\ sku\_market(sku)\quad forum\_search(query)\\
+  \scriptsize each call logged to tool\_calls.jsonl};
+\node[code=4.6cm,below=6mm of tools] (review) {\textbf{review\_r3.py} after the kit pays:\\ stars by code from value,
+  price and an honest claim; a cheaper receipt is never punished};
+\node[model=4.6cm,below=of review] (post) {\textbf{forum post} from the settled facts, cites the ledger
+  \scriptsize (every 5 min, as buyer, via outbox.jsonl)};
+\draw[flow,<->,green!50!black] (choose.east) -- node[lab,above,sloped]{MCP} (tools.west);
+\draw[read] (forum.west) to[bend right=20] (tools.north west);
+\draw[read] (bmem) -- (tools);
+\draw[read] (bmem.west) -- (cands.east);
+\draw[read] (fold.east) -- node[lab]{append} (bmem.north west);
+\draw[read] (review.east) to[bend right=30] node[lab,pos=0.6]{append} (bmem.east);
+\draw[flow] (accept.east) -- node[lab,below,align=center]{kit pays\\ (ACP)} (review.west);
+\draw[flow] (review) -- (post);
+
+\node[diff,anchor=north west,text width=5.4cm] at ($(accept.south west)+(0,-0.3)$)
+  {kit default: no memory, no tools, no payment policy; reviews and forum left to the model's own words};
+\begin{scope}[on background layer]
+  \node[group,draw=orange!60!black,fit=(fold)(accept)(forum)(post),label={[font=\bfseries]above:BUYER (one run per order)}] {};
+\end{scope}
+
+% ---------------- links through the kit
+\draw[flow,<->,gray!60!black] (gap |- kit.south) |- node[lab,pos=0.62]{A2A} (find.east);
+\draw[flow,<->,gray!60!black] (restock.north |- kit.south) -- node[lab]{inventory / buy list} (restock.north);
+\draw[flow,gray!60!black] (fold.north |- kit.south) -- node[lab]{order, shops} (fold.north);
+\draw[flow,gray!60!black] (forum.north |- kit.south) -- node[lab]{forum} (forum.north);
+\end{tikzpicture}
+\end{document}

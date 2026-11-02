@@ -27,7 +27,9 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import CMD, ask_json
-from r3lib import SALES, SHOP_NAME, append_jsonl, hours_left, inventory
+import httpx
+
+from r3lib import MARKET, SALES, SHOP_NAME, append_jsonl, hours_left, inventory, read_jsonl
 
 KEY_FILE = Path(__file__).resolve().parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}      # Rounds 0-2: the week-07 items, no stock
@@ -62,9 +64,40 @@ def sign(receipt):
     return dict(receipt, price=int(receipt["price"]), sig_seller=base64.b64encode(key.sign(canon(body))).decode())
 
 
+_adapt = {"at": 0.0, "delta": 0.0, "why": "no data yet"}
+
+
+def adapt():
+    """The shop learns from its own Round 3 record: how often its recent negotiations closed, and what its Round 3
+    reviews say. Returns a change to the opening ask (share of list price) and why. Cached for 60 s."""
+    if time.time() - _adapt["at"] < 60:
+        return _adapt["delta"], _adapt["why"]
+    rows = [r for r in read_jsonl(SALES) if r.get("kind") in ("food", "goods")][-20:]
+    delta, why = 0.0, []
+    if len(rows) >= 5:
+        rate = sum(r["outcome"] == "deal" for r in rows) / len(rows)
+        why.append(f"{rate:.0%} of my last {len(rows)} negotiations closed")
+        delta += -0.05 if rate < 0.4 else 0.03 if rate > 0.8 else 0.0
+    try:
+        me = next((x for x in httpx.get(f"{MARKET}/api/shops", timeout=10).json()["shops"] if x["name"] == SHOP_NAME), {})
+        rv = [r for r in me.get("reviews") or [] if r.get("round") == 3 and isinstance(r.get("stars"), (int, float))]
+        if rv:
+            avg = sum(r["stars"] for r in rv) / len(rv)
+            price = sum(bool(re.search(r"price|expensive|비싸|가격", str(r.get("review", "")), re.I)) for r in rv)
+            why.append(f"{len(rv)} Round 3 reviews, avg {avg:.1f}")
+            if avg < 4 and price:
+                delta -= 0.03
+    except (httpx.HTTPError, ValueError, KeyError):
+        pass
+    delta = max(-0.15, min(0.05, delta))
+    _adapt.update(at=time.time(), delta=delta, why="; ".join(why) or "no data yet")
+    return delta, _adapt["why"]
+
+
 def terms(u):
     """Floor, opening ask and the honest quality line for one unit."""
     lp, cost = u["list_price"], u["cost"]
+    delta, _ = adapt()
     if u.get("kind") == "food":
         left = hours_left(u)
         if left is not None and left < 24:          # sell it rather than throw it away at cost
@@ -72,11 +105,13 @@ def terms(u):
         else:
             floor = round(cost * 1.08)
         quality = GRADE_WORDS.get(u["grade"], u["grade"]) + (f", about {left:.0f} h of shelf life left" if left else "")
-        opening = round(lp * (0.85 if u["grade"] == "C" else 0.95))
+        opening = round(lp * ((0.85 if u["grade"] == "C" else 0.95) + delta))
     else:
         floor = round(cost * 1.15)                  # room for the warranty refunds
         quality = GOODS_WORDS.get(u["grade"], u["grade"]) + f", {WARRANTY_HOURS} h warranty"
-        opening = round(lp * {"A": 0.95, "B": 0.88, "C": 0.8}.get(u["grade"], 0.9))
+        opening = round(lp * ({"A": 0.95, "B": 0.88, "C": 0.8}.get(u["grade"], 0.9) + delta))
+        if time.time() - (u.get("supplied_at") or time.time()) > 72 * 3600:   # 3 days unsold: storage eats it
+            floor, opening = round(cost), round(opening * 0.9)
     floor = max(1, floor)
     return floor, max(opening, floor), quality + ", market certificate included"
 
@@ -131,7 +166,7 @@ class Seller(AgentExecutor):
             deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"],
                                          "asks": [], "offers": [], "floor": floor, "opening": opening, "quality": quality}
             print(f"[unit] {unit['sku']} {unit['name'][:40]} grade {unit.get('grade')} cost {unit.get('cost')} "
-                  f"list {unit.get('list_price')} floor {floor} opening {opening}", flush=True)
+                  f"list {unit.get('list_price')} floor {floor} opening {opening} (adapt: {adapt()[1]})", flush=True)
         else:
             deal["lines"].append(f"buyer: {text}")
             m = re.search(r"\d+", text.replace(",", ""))

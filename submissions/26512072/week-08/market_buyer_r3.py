@@ -15,6 +15,7 @@ the kit refused, goods that broke).
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import uuid
@@ -22,8 +23,8 @@ from pathlib import Path
 
 import httpx
 
-from harness import ask_json
-from r3lib import BUYER_MEM, HERE, MD, append_jsonl, catalog, read_json, read_jsonl
+from harness import ask_json, ask_json_tools
+from r3lib import BUYER_MEM, HERE, MD, append_jsonl, catalog, forum_about, forum_posts, read_json, read_jsonl
 
 MAX_OFFERS = 6
 TOP = 8
@@ -33,8 +34,12 @@ A settled deal is worth the item's list price to your user, so the gain is list 
 item that spoils before it is used, or goods that break, are worth nothing. Some shops lie about grades or break their
 promises; trust what your own memory says about a shop more than anything else, then its reviews.
 
-Candidates (shop | sku | name | list price | units | reviews | my memory of the shop):
+Candidates (shop | sku | name | list price | units | reviews | my memory of the shop | what the forum says):
 {lines}
+
+You have tools to look deeper before you decide: shop_record(shop) is my full record of a shop, shop_reviews(shop)
+its newest reviews, sku_market(sku) what the whole market paid for that SKU, forum_search(query) what other agents
+posted (try a shop name, or an item word with 거짓 / lie). Check the two or three most promising shops, then pick.
 
 Pick one candidate. Answer with JSON only: {{"shop": "<shop name>", "sku": "<sku>", "reason": "<one sentence>"}}"""
 
@@ -112,10 +117,19 @@ def mem_text(x):
     return ", ".join(parts)
 
 
-def trust(x, reviews):
+def forum_text(f):
+    if not f["posts"]:
+        return "not mentioned"
+    return (f"{f['posts']} posts ({f['warn']} warn, {f['good']} praise, votes {f['score']})"
+            + (f": {' / '.join(f['quotes'])}" if f["quotes"] else ""))
+
+
+def trust(x, reviews, f=None):
     """A code score to order the candidates before the model sees them (higher is better)."""
     st = [r["stars"] for r in reviews or [] if isinstance(r.get("stars"), (int, float))]
     t = (sum(st) / len(st) if st else 3.0) / 5
+    if f:
+        t += 0.05 * min(f["good"], 3) - 0.3 * min(f["warn"], 3)
     if x:
         t += 0.1 * min(x["settled"], 5) - 0.5 * x["lied"] - 0.3 * x["broken"] - 0.2 * x["refused"] - 0.2 * x["errors"]
     return t
@@ -137,6 +151,8 @@ def main():
     cat = catalog()
     shops = json.loads(Path(a.shops).read_text(encoding="utf-8"))
     mem = shop_memory()
+    posts = forum_posts()
+    forum = {s["name"]: forum_about(s["name"], posts) for s in shops}
     use_h = order.get("use_within_hours")
     acceptable = set(order["acceptable"])
     cands = []
@@ -152,7 +168,8 @@ def main():
             if c["kind"] == "food" and use_h and (c.get("shelf_hours") or 0) < use_h:
                 continue                                # cannot last as long as the user needs it
             cands.append({"shop": s, "sku": sku, "name": c["name"], "list": c["list_price"], "qty": off["qty"],
-                          "kind": c["kind"], "score": trust(x, s.get("reviews")) * min(c["list_price"], a.budget * 1.5)})
+                          "kind": c["kind"],
+                          "score": trust(x, s.get("reviews"), forum[s["name"]]) * min(c["list_price"], a.budget * 1.5)})
     if not cands:
         print("no shop has a fitting SKU in stock for this order", flush=True)
         append_jsonl(BUYER_MEM, {"kind": "trade", "time": time.strftime("%Y-%m-%d %H:%M:%S"), "order": order.get("order"),
@@ -167,9 +184,11 @@ def main():
         newest = " / ".join(str(r.get("review", ""))[:70] for r in (s.get("reviews") or [])[:2])
         return f"{len(st)} reviews, avg {sum(st) / len(st):.1f}: {newest}" if st else "no reviews"
     lines = "\n".join(f"{c['shop']['name']} | {c['sku']} | {c['name'][:50]} | {c['list']} | {c['qty']} | "
-                      f"{rv(c['shop'])} | {mem_text(mem.get(c['shop']['name']))}" for c in top)
+                      f"{rv(c['shop'])} | {mem_text(mem.get(c['shop']['name']))} | {forum_text(forum[c['shop']['name']])}"
+                      for c in top)
     food = f", the food must last {use_h} h" if use_h else ""
-    move, raw = ask_json(CHOOSE.format(item=a.item, budget=a.budget, food=food, lines=lines))
+    move, raw = ask_json_tools(CHOOSE.format(item=a.item, budget=a.budget, food=food, lines=lines),
+                               {"SHOPS_FILE": Path(a.shops).resolve(), "MARKET_DIR": MD, "BUYER_MEMORY_R3": BUYER_MEM})
     print(f"[harness] {raw}", flush=True)
     pick = next((c for c in top if move and c["shop"]["name"] == move.get("shop") and c["sku"] == move.get("sku")), None)
     reason = (move or {}).get("reason", "")
@@ -225,6 +244,11 @@ def main():
             if offer > cap:                             # the model may forget the cap; the code does not
                 print(f"[guard] offer {offer} above cap {cap} -> {cap}", flush=True)
                 offer = cap
+            nums = re.findall(r"\d+", said.replace(",", ""))
+            ask = int(nums[-1]) if nums else None       # the shop's current ask is the last number it said
+            if ask is not None and offer > ask:
+                print(f"[guard] offer {offer} above the shop's ask {ask} -> {ask}", flush=True)
+                offer = ask
             if offers and offer == cap and offers[-1] == cap:
                 rpc("CancelTask", {"id": t["id"]})
                 print("cap already offered and refused: walked away (CancelTask)", flush=True)

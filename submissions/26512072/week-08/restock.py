@@ -6,6 +6,7 @@ Plain code, no model: the numbers decide.
 Demand signal, best first:
   1. SKUs I sold myself (sales_memory.jsonl), restocked to 2 units;
   2. SKUs the whole market settled recently (the public ledger's settle entries, market_sales.json);
+  2b. categories other agents ask for on the forum ("구합니다", "looking for"), the middle SKU of each;
   3. cold start: per category, the SKU whose list price is closest to the category's median (orders accept SKUs
      priced 0.5-1.5 x a reference price, so the middle of the category fits the most orders).
 Money: keep 2,000,000 in cash, hold at most 1,000,000 of stock at cost, spend at most 5% of the balance a run.
@@ -17,7 +18,7 @@ import time
 from collections import Counter
 from pathlib import Path
 
-from r3lib import HERE, SALES, append_jsonl, catalog, read_json, read_jsonl, refresh_market_sales
+from r3lib import HERE, SALES, append_jsonl, catalog, forum_wants, read_json, read_jsonl, refresh_market_sales
 
 CASH_FLOOR = 2_000_000
 STOCK_CAP = 1_000_000
@@ -63,6 +64,12 @@ def main():
         if keeps(sku) or sku in mine:
             wants.append(("sold in the market", sku, 2 if hot[sku] >= 3 else 1))
     demand = read_json(md / "demand.json", []) or []
+    medians = {d["category"]: d.get("median_price") for d in demand}
+    for c, n in sorted(forum_wants(cat).items(), key=lambda kv: -kv[1]):   # what agents ask for on the forum
+        skus = [s for s, x in cat.items() if x["category"] == c and keeps(s)]
+        if skus and medians.get(c):
+            mid = min(skus, key=lambda s: abs(cat[s]["list_price"] - medians[c]))
+            wants.append((f"asked for on the forum ({n} posts)", mid, 1))
     for d in sorted(demand, key=lambda d: d.get("median_price") or 0):   # cheap categories first: more units per credit
         skus = [s for s, x in cat.items() if x["category"] == d["category"] and keeps(s)]
         if skus and d.get("median_price"):
