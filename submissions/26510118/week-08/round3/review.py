@@ -1,16 +1,19 @@
-"""Round 3 basic review hook: the kit runs it after each settled deal and posts what it prints.
+"""Round 3 review hook (B4): the kit runs it after each settled deal and posts what it prints.
 
     python review.py --deal .market/deal.json
     {"stars": 4, "review": "Paid 16000 for ... (list 20000); grade B; ..."}
 
 Facts only, written by code: in week 7 a model asked to word reviews wrote "the
 receipt did not match" into deals that had no receipt. A false grade claim is
-1 star; otherwise the stars follow the price against the list price.
+1 star; otherwise the stars follow the price against the list price. The deal also
+goes into the buyer's purchase book and shop notebook (buyer_memory.py), where a
+breakdown hours later is matched to it.
 """
 import argparse
 import time
 from pathlib import Path
 
+import buyer_memory
 import common
 
 
@@ -44,6 +47,7 @@ def main() -> int:
     path = Path(ap.parse_args().deal)
     deal = common.read_json(path, {}) or {}
     out = judge(deal, common.catalog(path.parent))
+    buyer_memory.on_settled(deal)
     common.record("reviews", order=(deal.get("order") or {}).get("order"), **out)
     common.last_line(out)
     return 0

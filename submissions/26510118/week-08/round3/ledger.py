@@ -1,12 +1,12 @@
 """Ledger collection: the market's public ledger, read on from where the last run stopped,
 kept as compact rows and summed up into market_summary.json.
 
-    python ledger.py            (the restock hook also runs it, once an hour)
+    python ledger.py            (the analysis runner, analysis.py, runs it once an hour)
 
 Code only, no model. The summary says what sells in the whole market, at what share of the
 list price and in which grades, which shops' grade claims were true, and what broke. The
-seller's restock reads it to pick each category's representative product; the analysis
-modules read it, and later query the rows through the ledger tool.
+seller's restock reads it to pick each category's representative product; the market index
+on the forum is written from it; the analysis models query the rows through the ledger tool.
 
 Only settle and broken entries are kept: a Round 3 order entry carries no item or budget.
 The first run starts from the newest 500 entries, not from the beginning of the ledger.
@@ -87,8 +87,9 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
         for key, table in ((s.get("item"), by_sku), (c.get("category"), by_cat)):
             if not key:
                 continue
-            t = table.setdefault(key, {"sold_24h": 0, "sold_6h": 0, "ratios": [], "grades": {}})
+            t = table.setdefault(key, {"sold_24h": 0, "sold_6h": 0, "ratios": [], "grades": {}, "last_seq": 0})
             t["sold_24h"] += 1
+            t["last_seq"] = max(t["last_seq"], s.get("seq") or 0)        # a sample the forum can show
             t["sold_6h"] += ts >= now - 6 * 3600
             if lp and isinstance(s.get("amount"), (int, float)):
                 t["ratios"].append(s["amount"] / lp)

@@ -21,7 +21,16 @@ RECEIPT_KEYS = ("shop", "item", "price", "task")      # what sig_seller covers
 KST = timezone(timedelta(hours=9))
 # Round 3 ends 2026-11-17 23:59 KST (week-08 notice); ROUND_END_TS moves it for tests.
 ROUND_END = float(os.environ.get("ROUND_END_TS") or datetime(2026, 11, 17, 23, 59, 59, tzinfo=KST).timestamp())
-STRATEGY = {"phase": "explore", "focus_categories": [], "drop_categories": [], "price_adjust": 0.0}
+STRATEGY = {"phase": "explore"}
+OWN_NAMES = {"Kiro729", "Kiro729 Shop"}          # our shop and buyer: left out of what we publish about shops
+# The rules the trading modules follow. The integrated analysis rewrites analysis/active_rules.json
+# (only in the focus phase, within its limits); a missing file or key keeps these defaults.
+RULES = {
+    "seller": {"focus_categories": [], "drop_categories": [], "price_adjust": 0.0,
+               "warranty_extra": {"A": 0.05, "B": 0.10, "C": 0.20}},
+    "buyer": {"avoid_shops": [], "prefer_shops": [], "open_ratio": 0.60, "max_ratio": 0.90,
+              "warranty_all_goods": False, "over_budget_try": True},
+}
 
 
 def read_json(path, default=None):
@@ -69,9 +78,19 @@ def write_json(path, data) -> None:
 
 
 def strategy() -> dict:
-    """strategy.json next to the code: the phase (explore, focus) and, from the focus phase on,
-    what the analysis memo or a person set. Missing keys keep the exploration defaults."""
-    return dict(STRATEGY, **(read_json(HERE / "strategy.json", {}) or {}))
+    """strategy.json next to the code: the phase, switched by a person at the second enhancement
+    (explore -> focus). The integrated analysis adopts rule changes only in the focus phase.
+    STRATEGY_FILE points elsewhere (tests)."""
+    return dict(STRATEGY, **(read_json(os.environ.get("STRATEGY_FILE") or HERE / "strategy.json", {}) or {}))
+
+
+def rules() -> dict:
+    """The rules in force: the defaults above, overridden key by key by analysis/active_rules.json."""
+    got = read_json(MARKET_DIR / "analysis" / "active_rules.json", {}) or {}
+    out = json.loads(json.dumps(RULES))
+    for role, fields in out.items():
+        fields.update({k: v for k, v in (got.get(role) or {}).items() if k in fields})
+    return out
 
 
 def record(stream: str, **fields) -> None:

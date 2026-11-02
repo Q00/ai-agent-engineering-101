@@ -17,13 +17,16 @@ does not count as on the shelf; S5 sells it off). Exploration phase:
             lack of it in the last day; at most 4
   limits    stock at cost up to 2,500,000 and the balance kept at 2,500,000 or more,
             planning as if every unit came in at the dearest cost (75% of list)
-Focus phase (strategy.json, switched by a person at the second enhancement): focus
-categories +1, drop categories 0. Wind-down, by the clock: from 3 days before the end only
-products selling 2 a day or more are refilled and nothing new is listed; nothing is bought
-in the last 6 hours.
+  wanted    a category the analysis found wanted (another agent's "wanted" post on the
+            forum, or one our buyer found no shop for) gets its representative product
+Rules in force (analysis/active_rules.json, which the integrated analysis writes only in
+the focus phase): focus categories +1, drop categories 0. Wind-down, by the clock: from 3
+days before the end only products selling 2 a day or more are refilled and nothing new is
+listed; nothing is bought in the last 6 hours.
 
 Each run also checks which agreed deals settled (their unit left the inventory) or stayed
-unpaid (still there 10 minutes later), and once an hour collects the ledger (ledger.py).
+unpaid (still there 10 minutes later). The ledger is collected by the analysis runner
+(analysis.py); this hook only reads its market_summary.json.
 """
 import argparse
 import time
@@ -31,7 +34,6 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import common
-import ledger
 import pricing
 
 CAP = 2_500_000          # stock at cost
@@ -94,9 +96,22 @@ def stages(catalog: dict, demand: list, summary: dict) -> tuple[list, list]:
     return one, two
 
 
+def wanted_skus(catalog: dict, demand: list, wanted: dict, listed: set) -> list:
+    """The representative product of each wanted category we do not list yet."""
+    out = []
+    for d in demand:
+        leaf = d["category"].split(">")[-1]
+        if d["category"] not in wanted and leaf not in wanted:
+            continue
+        fit = [s for s in catalog.values() if s["category"] == d["category"] and s["list_price"] <= PRICEY_MAX]
+        if fit and not any(s["sku"] in listed for s in fit):
+            out.append(min(fit, key=lambda s: abs(s["list_price"] - d["median_price"]))["sku"])
+    return out
+
+
 def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, refusals: list,
-         strat: dict, now: float) -> tuple[dict, dict]:
-    """({"buy": [...]} or bankruptcy, a few numbers for the log)."""
+         rules: dict, now: float, wanted: dict | None = None) -> tuple[dict, dict]:
+    """({"buy": [...]} or bankruptcy, a few numbers for the log). rules: the seller's rules in force."""
     units = inv.get("units") or []
     if inv.get("round", 0) < 3:
         return {"buy": []}, {"note": "before Round 3"}
@@ -119,13 +134,15 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
             targets[s] = max(targets.get(s, 0), 2)
     for s, n in refused.items():
         targets[s] = targets.get(s, 1) + 1
-    if strat.get("phase") == "focus":
-        for s in list(targets):
-            cat = catalog[s]["category"]
-            if cat in strat.get("drop_categories", []) or cat.split(">")[-1] in strat.get("drop_categories", []):
-                targets[s] = 0
-            elif cat in strat.get("focus_categories", []) or cat.split(">")[-1] in strat.get("focus_categories", []):
-                targets[s] += 1
+    for s in wanted_skus(catalog, demand, wanted or {}, set(targets)):
+        targets.setdefault(s, 1)
+    drop, focus = set(rules.get("drop_categories") or []), set(rules.get("focus_categories") or [])
+    for s in list(targets):
+        cat = catalog[s]["category"]
+        if cat in drop or cat.split(">")[-1] in drop:
+            targets[s] = 0
+        elif cat in focus or cat.split(">")[-1] in focus:
+            targets[s] += 1
     targets = {s: min(MAX_TARGET, t) for s, t in targets.items()}
     wind_down = to_end < WIND_DOWN
     if wind_down:
@@ -163,15 +180,12 @@ def main() -> int:
     state = common.read_json(path, {}) or {}
     if inv.get("round", 0) >= 3:
         state.setdefault("round_start", now)
-        try:
-            ledger.collect_if_due(catalog, now)
-        except Exception as e:                                   # noqa: BLE001  (the market can wait an hour)
-            print(f"[restock] ledger collection failed: {type(e).__name__}: {e}", flush=True)
         check_deals(inv, state, now)
     sales = common.records("sales")
+    wanted = (common.read_json(common.MARKET_DIR / "analysis" / "wanted.json", {}) or {}).get("categories") or {}
     out, info = plan(inv, catalog, common.read_json(state_dir / "demand.json", []) or [],
                      common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {},
-                     sales, common.records("refusals"), common.strategy(), now)
+                     sales, common.records("refusals"), common.rules()["seller"], now, wanted)
     print(f"[restock] {info}, buying {len(out['buy'])} line(s)", flush=True)
     if state.get("round_start") and now - state["round_start"] > WARN_AFTER and len(sales) < WARN_BELOW \
             and now - state.get("warned", 0) > 3600:

@@ -15,7 +15,10 @@ analysis memos may move them (strategy.json's price_adjust).
                   the last 6 h                    floor 10% of list
     markdown    after 3 days unsold the ask drops 5% of list a day
     warranty    goods only, on request, 6 h (goods break within 6 h of the sale, so it
-                covers every breakdown): ask and floor + 5% of list for A and B, + 10% for C
+                covers every breakdown): ask and floor + 5% of list for A, + 10% for B,
+                + 20% for C. A warranty must cost more than the refunds it is expected to
+                pay (breakdown share x price): about 20% for refurbished goods sold near
+                60% of list if a quarter of them break. With one, every grade starts at 80%.
 """
 import math
 import time
@@ -27,7 +30,7 @@ ORDER = "ABC"                                  # best first
 MARGIN = 0.05
 FOOD_CUTS = (0.8, 0.45)                        # share of shelf life left for food grades A and B (the market's)
 WARRANTY_HOURS = 6
-WARRANTY_EXTRA = {"A": 0.05, "B": 0.05, "C": 0.10}
+WARRANTY_EXTRA = {"A": 0.05, "B": 0.10, "C": 0.20}
 MARKDOWN_AFTER, MARKDOWN_STEP = 3, 0.05        # days unsold, share of list per further day
 DUD_DAYS, DUD_FLOOR = 7, 0.25
 NEAR_HOURS, NEAR_ASK, NEAR_FLOOR = 24, 0.45, 0.25
@@ -62,9 +65,11 @@ def near_expiry(unit: dict, now: float) -> bool:
 
 
 def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: float = 0.0,
-         catalog: dict | None = None) -> dict:
+         catalog: dict | None = None, extra: dict | None = None) -> dict:
     """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours} for one unit.
-    at_cost: the floor is cost + 5% (no clearance), which is what the seller may say."""
+    at_cost: the floor is cost + 5% (no clearance), which is what the seller may say.
+    adjust and extra come from the rules in force (price_adjust, warranty_extra)."""
+    extra = extra or WARRANTY_EXTRA
     now = now or time.time()
     lp, cost = unit["list_price"], unit["cost"]
     g = grade(unit, now, catalog)
@@ -88,8 +93,8 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         floor = min(floor, round(lp * clearance))
     w = bool(warranty) and unit.get("kind") == "goods"
     if w:
-        start += WARRANTY_EXTRA[g]
-        floor += round(lp * WARRANTY_EXTRA[g])
+        start += extra[g]
+        floor += round(lp * extra[g])
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
             "at_cost": clearance is None, "warranty_hours": WARRANTY_HOURS if w else None}

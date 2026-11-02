@@ -218,8 +218,10 @@ def test_pricing():
     p = pricing.plan(goods_a, now, warranty=True)
     check("warranty on grade A goods: +5% of list on ask and floor", (p["ask"], p["floor"], p["warranty_hours"]) == (31920, 29295, 6), p)
     p = pricing.plan(goods_c, now, warranty=True)
-    check("warranty on refurbished goods: +10%, still under new goods without one",
-          (p["ask"], p["floor"]) == (27930, 18690) and p["ask"] < pricing.plan(goods_a, now)["ask"] + 1, p)
+    check("warranty on refurbished goods: +20% of list on ask and floor", (p["ask"], p["floor"]) == (31920, 22680), p)
+    goods_b = dict(goods_c, cost=20000, grade="B")
+    check("with a warranty every grade starts at 80% of list",
+          {pricing.plan(u, now, warranty=True)["ask"] for u in (goods_a, goods_b, goods_c)} == {31920})
     check("no warranty on food", pricing.plan(food, now, warranty=True, catalog=CATALOG)["warranty_hours"] is None)
     edge = dict(food, expires_at=now + 76 * H)
     check("food about to drop to C is claimed C (true at checkout and at settle)",
@@ -238,48 +240,48 @@ def test_restock(fake: Fake):
     print("\n[S1] restock (restock.py)")
     inv = lambda units, balance=4_900_000: {"round": 3, "balance": balance, "bankrupt_line": 500_000,
                                             "bankruptcies_left": 2, "units": units}
-    strat = dict(common.STRATEGY)
+    rules = dict(common.RULES["seller"])
     one, two = restock.stages(CATALOG, DEMAND, {})
     check("stage 1: a product per category, median-priced, no 48 h food, nothing over 60,000",
           PAKIMCHI in one and BEDDING in one and WATER in one and BERRY not in one + two and BED not in one, one)
     check("stage 2: cheaper second products and the dear-only categories", PAD in two and BED in two and KIMCHI in two, two)
     one2, _ = restock.stages(CATALOG, DEMAND, {"by_sku": {GEOTJEORI: {"sold_24h": 5}}})
     check("the market's best seller in a category becomes its representative", GEOTJEORI in one2 and PAKIMCHI not in one2)
-    out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, [], [], strat, NOW)
+    out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, [], [], rules, NOW)
     buy = out["buy"]
     check("empty shelf: 10 lines of one unit each, stage 1 only", len(buy) == 10 and all(b["qty"] == 1 and b["sku"] in one for b in buy),
           [b["sku"] for b in buy])
     shelf = [unit_row(f"u-{s}", s, CATALOG[s]["list_price"] // 2, 500 if CATALOG[s]["kind"] == "food" else None) for s in one]
-    out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], [], strat, NOW)
+    out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("full stage 1 shelf, gate closed: buys nothing", out["buy"] == [], out)
     sales = [{"sku": PAKIMCHI, "ts": NOW - H}] * 10
-    out, info = restock.plan(inv(shelf), CATALOG, DEMAND, {}, sales, [], strat, NOW)
+    out, info = restock.plan(inv(shelf), CATALOG, DEMAND, {}, sales, [], rules, NOW)
     skus = [b["sku"] for b in out["buy"]]
     check("10 sales open the gate: the sold product first (target 2), then stage 2", skus[:1] == [PAKIMCHI]
           and {PAD, BED, KIMCHI} <= set(skus), f"{skus} {info['gate']}")
-    out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], strat, NOW)
+    out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW)
     check("a buyer turned away for lack of it: one more", out["buy"] == [{"sku": WATER, "qty": 1}], out)
     old = [u for u in shelf if u["sku"] != PAKIMCHI] + [unit_row("u-near", PAKIMCHI, 9000, 10)]
-    out, _ = restock.plan(inv(old), CATALOG, DEMAND, {}, [], [], strat, NOW)
+    out, _ = restock.plan(inv(old), CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("food with under a day left does not count: a fresh one is bought", out["buy"] == [{"sku": PAKIMCHI, "qty": 1}], out)
     heavy = shelf + [unit_row(f"u-h{i}", BED, 200_000) for i in range(12)]
-    out, _ = restock.plan(inv(heavy), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], strat, NOW)
+    out, _ = restock.plan(inv(heavy), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW)
     check("stock at the 2,500,000 cap: buys nothing", out["buy"] == [], out)
     end = common.ROUND_END
     late = [{"sku": PAKIMCHI, "ts": end - 2 * DAY - H}] * 3 + [{"sku": WATER, "ts": end - 2 * DAY - H}]
     empty_now = [u for u in shelf if u["sku"] not in (PAKIMCHI, WATER)]
-    out, _ = restock.plan(inv(empty_now), CATALOG, DEMAND, {}, late, [], strat, end - 2 * DAY)
+    out, _ = restock.plan(inv(empty_now), CATALOG, DEMAND, {}, late, [], rules, end - 2 * DAY)
     check("wind-down (3 days left): only products selling 2 a day are refilled", out["buy"] == [{"sku": PAKIMCHI, "qty": 2}], out)
-    out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, [], [], strat, end - 3 * H)
+    out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, [], [], rules, end - 3 * H)
     check("last 6 h: buys nothing", out["buy"] == [], info)
-    focus = dict(strat, phase="focus", drop_categories=["김치"], focus_categories=["주스/코코아/생수"])
+    focus = dict(rules, drop_categories=["김치"], focus_categories=["주스/코코아/생수"])
     out, _ = restock.plan(inv([u for u in shelf if u["sku"] not in (PAKIMCHI,)]), CATALOG, DEMAND, {}, [], [], focus, NOW)
-    check("focus phase: a dropped category is not refilled, a focus category gets one more",
+    check("rules in force: a dropped category is not refilled, a focus category gets one more",
           out["buy"] == [{"sku": WATER, "qty": 1}], out)
     out, _ = restock.plan({"round": 3, "balance": 400_000, "bankrupt_line": 500_000, "bankruptcies_left": 1, "units": []},
-                          CATALOG, DEMAND, {}, [], [], strat, NOW)
+                          CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("below the line with nothing to sell: files for bankruptcy", out.get("bankrupt") is True)
-    check("before Round 3: buys nothing", restock.plan({"round": 2}, CATALOG, DEMAND, {}, [], [], strat, NOW)[0] == {"buy": []})
+    check("before Round 3: buys nothing", restock.plan({"round": 2}, CATALOG, DEMAND, {}, [], [], rules, NOW)[0] == {"buy": []})
     fake.inventory([])
     out, lines = fake.run("restock.py", "--state", str(fake.md))
     check("the hook prints the kit's line (<= 10 lines, 1-20 each, known SKUs)",
@@ -349,40 +351,49 @@ def main() -> int:
         print("\n".join("    " + line for line in log if line.startswith("[buyer]")))
         rec = (out or {}).get("receipt") or {}
         check("deal agreed", bool(rec), out and out.get("review"))
-        check("S2: no need stated, so the freshest unit (u-k1-a), not the one expiring first", rec.get("unit") == "u-k1-a")
-        check("S3: first ask 75% of list for grade A, deal between it and the floor",
+        check("B2 states the need first (49 h) and S2 ships the unit that meets it (u-k1-a, not the 30 h one)",
+              "must last at least 49 hours" in "\n".join(log) and rec.get("unit") == "u-k1-a")
+        check("S3: first ask 75% of list for grade A, deal between the floor and it",
               "Asking 15000" in "\n".join(log) and 12600 <= rec.get("price", 0) <= 15000, rec.get("price"))
+        check("B2: the buyer opened at 60% of list and took the ask once it fit", "-> '12000'" in "\n".join(log))
         check("S4: the receipt claims the true grade", rec.get("claim") == "A", rec.get("claim"))
         co, refuse = kit_checks(fake, rec, order, inv, out["accept"])
         check("kit: checkout ships u-k1-a with its certificate and the claim", co.get("unit") == "u-k1-a" and co.get("cert")
               and co.get("claim") == "A", f"{co.get('unit')} claim {co.get('claim')}")
         check("kit: the buyer's quality check passes (150 h >= 49 h)", refuse is None, refuse)
 
-        print("\n[C] budget 12000 under the floor 12600 (cost 12000 + 5%)")
+        print("\n[C] budget 12000: under the expected price (70% of list) and the floor 12600")
         order = fake.order("o-c", "김치", 12000, [KIMCHI], "food", 48)
         out, log = buyer(order, shop([offer(KIMCHI, 2)]))
-        check("no deal and no receipt below the floor", out is not None and out["receipt"] is None, out and out["review"])
+        check("B1 does not even try, and nothing sells below the floor", out is not None and out["receipt"] is None,
+              out and out["review"])
 
-        print("\n[D] goods deal through market_buyer: 차렵이불 (list 39900), budget 30000; stock: one refurbished unit")
+        print("\n[D] goods deal through market_buyer: 차렵이불 (list 39900, above the budget 30000); stock: one refurbished unit")
         inv = fake.inventory([fake.unit("u-b1-c", BEDDING, "C", 14000)])
         order = fake.order("o-d", "침구", 30000, [BEDDING], "goods")
         out, log = buyer(order, shop([offer(BEDDING)]))
         rec = (out or {}).get("receipt") or {}
-        check("refurbished starts at 60% (23940) and sells at or under it", "Asking 23940" in "\n".join(log)
-              and 0 < rec.get("price", 0) <= 23940, rec.get("price"))
-        co, refuse = kit_checks(fake, rec, order, inv, {})
-        check("kit: no warranty asked, none given; the claim is C", refuse is None and not co.get("warranty_hours")
-              and co.get("claim") == "C")
-        check("kit: a buyer requiring a 6 h warranty would not pay for it",
-              kit.check_accept(order, co, {"warranty_hours": 6}) is not None)
+        check("B1 tries a product listed above the budget; S3 quotes refurbished at 60% (23940)",
+              "Asking 23940" in "\n".join(log), rec.get("price"))
+        check("B3: the shop said refurbished, so the buyer asked for the 6 h warranty (+20%: 31920)",
+              "Please include a 6-hour warranty." in "\n".join(log) and "With a 6-hour warranty: 31920" in "\n".join(log))
+        check("deal within the budget, with the warranty on the receipt", rec.get("warranty_hours") == 6
+              and 0 < rec.get("price", 0) <= 30000, rec.get("price"))
+        check("B3: the buyer's terms ask for the warranty", out["accept"] == {"cert": True, "warranty_hours": 6}, out["accept"])
+        co, refuse = kit_checks(fake, rec, order, inv, out["accept"])
+        check("kit: the warranty and the claim C reach the checkout; the buyer's check passes",
+              refuse is None and co.get("warranty_hours") == 6 and co.get("claim") == "C", refuse)
+        check("kit: refurbished goods without a warranty would not be paid for (grades A and B only)",
+              kit.check_accept(order, dict(co, warranty_hours=None), {"cert": True, "grades": ["A", "B"]}) is not None)
 
-        print("\n[W] warranty asked for: the same refurbished unit")
-        t = run([f"I want to buy {CATALOG[BEDDING]['name']} ({BEDDING}) with a 6-hour warranty", "27930"])
-        check("quoted with the warranty at 70% of list", meta(t[0]).get("ask") == 27930 and meta(t[0]).get("warranty_hours") == 6,
+        print("\n[W] warranty asked for in the first message: the same refurbished unit, budget 35000")
+        order = fake.order("o-w", "침구", 35000, [BEDDING], "goods")
+        t = run([f"I want to buy {CATALOG[BEDDING]['name']} ({BEDDING}) with a 6-hour warranty", "31920"])
+        check("quoted with the warranty at 80% of list", meta(t[0]).get("ask") == 31920 and meta(t[0]).get("warranty_hours") == 6,
               said(t[0]))
         rec = next((p["data"] for a in t[-1].get("artifacts") or [] for p in a.get("parts") or [] if "data" in p), {})
-        check("the receipt carries the 6 h warranty", rec.get("warranty_hours") == 6 and rec.get("price") == 27930, rec)
-        co, refuse = kit_checks(fake, rec, dict(order, order="o-w"), inv, {"warranty_hours": 6})
+        check("the receipt carries the 6 h warranty", rec.get("warranty_hours") == 6 and rec.get("price") == 31920, rec)
+        co, refuse = kit_checks(fake, rec, order, inv, {"warranty_hours": 6})
         check("kit: a buyer requiring a 6 h warranty pays", refuse is None and co.get("warranty_hours") == 6, refuse)
 
         print("\n[S2] serving: needs, categories, the model, held and missing products")

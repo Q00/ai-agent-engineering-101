@@ -48,7 +48,7 @@ MODEL_LINES = 80         # stock lines shown to the model
 CONDITION = {"A": "new", "B": "damaged box", "C": "refurbished"}
 SKU = re.compile(r"\bG[0-9a-f]{8}\b")
 NUMBER = re.compile(r"(?<!\w)\d[\d,]*(?:\.\d+)?(?!\d)")       # not the digits inside a SKU
-NEED = re.compile(r"(\d+(?:\.\d+)?)\s*(hours?\b|hrs?\b|h\b|시간|days?\b|d\b|일)", re.I)
+NEED = re.compile(r"(\d+(?:\.\d+)?)\s*-?\s*(hours?\b|hrs?\b|h\b|시간|days?\b|d\b|일)", re.I)   # "72 hours", "6-hour", "3일"
 WARRANTY = re.compile(r"warrant|보증", re.I)
 GRADE = re.compile(r"\b[Gg]rade\s*([ABC])\b|\b([ABC])\s*(?:[Gg]rade|등급)")
 YES = re.compile(r"\b(accept|accepted|deal|agreed?|ok|okay)\b|좋아요|살게요|구매할게요", re.I)
@@ -167,9 +167,11 @@ def describe(u: dict, p: dict) -> str:
     return f"{u.get('name')} ({u['sku']}): grade {p['grade']}, {p['hours_left']:.0f} h of shelf life left, certificate attached"
 
 
-def adjust() -> float:
-    s = common.strategy()
-    return float(s.get("price_adjust") or 0) if s.get("phase") == "focus" else 0.0
+def priced(u: dict, now: float, warranty: bool) -> dict:
+    """pricing.plan under the rules in force (price_adjust, warranty_extra from active_rules.json)."""
+    r = common.rules()["seller"]
+    return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
+                        extra=r["warranty_extra"])
 
 
 class Seller(AgentExecutor):
@@ -195,7 +197,7 @@ class Seller(AgentExecutor):
 
     def quote(self, d: dict, now: float) -> dict:
         """(Re)price the deal's current unit and start its asks."""
-        d["plan"] = pricing.plan(d["unit"], now, warranty=d["warranty"], adjust=adjust(), catalog=catalog())
+        d["plan"] = priced(d["unit"], now, d["warranty"])
         d["asks"], d["offers"] = [d["plan"]["ask"]], []
         return d["plan"]
 
@@ -234,7 +236,7 @@ class Seller(AgentExecutor):
         if WARRANTY.search(text) and d["unit"].get("kind") == "goods" and not d["warranty"]:
             before = d["plan"]
             d["warranty"] = True
-            p = pricing.plan(d["unit"], now, warranty=True, adjust=adjust(), catalog=catalog())
+            p = priced(d["unit"], now, True)
             d["plan"] = p
             d["asks"].append(max(p["floor"], d["asks"][-1] + p["ask"] - before["ask"]))
             if not numbers(text):
@@ -308,9 +310,8 @@ class Seller(AgentExecutor):
                               need_hours=req["need_hours"], warranty=req["warranty"], offered=[])
                 await up.reject(say("Sorry, we have none of that in stock right now."))
                 return
-            priced = sorted(((u, pricing.plan(u, now, warranty=req["warranty"], adjust=adjust(), catalog=catalog()))
-                             for u in menu), key=lambda x: x[1]["ask"])[:MENU]
-            d["unit"], d["menu"] = priced[0][0], priced
+            options = sorted(((u, priced(u, now, req["warranty"])) for u in menu), key=lambda x: x[1]["ask"])[:MENU]
+            d["unit"], d["menu"] = options[0][0], options
         p = self.quote(d, now)
         self.open[task_id] = d
         common.record("requests", task=task_id, how=req["how"], wanted=req["wanted"], category=cat,
