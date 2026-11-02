@@ -64,7 +64,10 @@ def ask_json_tools(prompt: str, env: dict, timeout: int = 240) -> tuple[dict | N
         raw = out.stdout.strip()
     except (RuntimeError, subprocess.TimeoutExpired) as e:
         print(f"[harness] tool run failed ({type(e).__name__}), asking without tools", flush=True)
-        return ask_json(prompt)
+        try:
+            return ask_json(prompt)
+        except Exception as e2:                  # noqa: BLE001
+            return None, f"[harness failed] {type(e2).__name__}: {str(e2)[:150]}"
     finally:
         os.unlink(path)
     m = re.search(r"\{.*?\}", raw, re.S)
@@ -72,3 +75,12 @@ def ask_json_tools(prompt: str, env: dict, timeout: int = 240) -> tuple[dict | N
         return (json.loads(m.group()) if m else None), raw
     except json.JSONDecodeError:
         return None, raw
+
+
+def safe_ask_json(prompt: str, tools_env: dict | None = None) -> tuple[dict | None, str]:
+    """Never raises: a failed harness run (rate limit, login, timeout) returns (None, "[harness failed] ...") so the
+    caller falls back to a code decision instead of passing our own error on to the other agent."""
+    try:
+        return ask_json_tools(prompt, tools_env) if tools_env is not None else ask_json(prompt)
+    except Exception as e:                       # noqa: BLE001 - any failure of our own model call
+        return None, f"[harness failed] {type(e).__name__}: {str(e)[:150]}"

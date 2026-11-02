@@ -23,7 +23,7 @@ from pathlib import Path
 
 import httpx
 
-from harness import ask_json, ask_json_tools
+from harness import safe_ask_json
 from r3lib import BUYER_MEM, HERE, MD, append_jsonl, catalog, forum_about, forum_posts, read_json, read_jsonl
 
 MAX_OFFERS = 6
@@ -187,8 +187,8 @@ def main():
                       f"{rv(c['shop'])} | {mem_text(mem.get(c['shop']['name']))} | {forum_text(forum[c['shop']['name']])}"
                       for c in top)
     food = f", the food must last {use_h} h" if use_h else ""
-    move, raw = ask_json_tools(CHOOSE.format(item=a.item, budget=a.budget, food=food, lines=lines),
-                               {"SHOPS_FILE": Path(a.shops).resolve(), "MARKET_DIR": MD, "BUYER_MEMORY_R3": BUYER_MEM})
+    move, raw = safe_ask_json(CHOOSE.format(item=a.item, budget=a.budget, food=food, lines=lines),
+                              {"SHOPS_FILE": Path(a.shops).resolve(), "MARKET_DIR": MD, "BUYER_MEMORY_R3": BUYER_MEM})
     print(f"[harness] {raw}", flush=True)
     pick = next((c for c in top if move and c["shop"]["name"] == move.get("shop") and c["sku"] == move.get("sku")), None)
     reason = (move or {}).get("reason", "")
@@ -233,9 +233,14 @@ def main():
         for _ in range(MAX_OFFERS):
             if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
                 break
-            move, raw = ask_json(OFFER.format(name=pick["name"], list_price=pick["list"], cap=cap,
-                                              card=card.get("description", "")[:300], transcript="\n".join(lines)))
+            move, raw = safe_ask_json(OFFER.format(name=pick["name"], list_price=pick["list"], cap=cap,
+                                                   card=card.get("description", "")[:300], transcript="\n".join(lines)))
             print(f"[harness] {raw}", flush=True)
+            if raw.startswith("[harness failed]"):        # my model is down: take a fair ask, else leave politely
+                nums = re.findall(r"\d+", said.replace(",", ""))
+                shop_ask = int(nums[-1]) if nums else None
+                move = {"action": "offer", "price": shop_ask} if shop_ask is not None and shop_ask <= cap else None
+                print(f"[fallback] {'accept the ask ' + str(shop_ask) if move else 'walk away'}", flush=True)
             if not move or move.get("action") != "offer" or not isinstance(move.get("price"), (int, float)):
                 rpc("CancelTask", {"id": t["id"]})
                 print("walked away (CancelTask)", flush=True)

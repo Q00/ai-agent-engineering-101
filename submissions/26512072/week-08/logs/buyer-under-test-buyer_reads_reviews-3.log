@@ -1,11 +1,11 @@
-[harness] {"shop": "Kit Shop South", "reason": "Its reviews (avg 4.7 stars) and your memory both show honest receipts matching agreed prices, with prior trades at 100 and 105, well within the 120 budget, while Kit Shop North has 1.3 stars and a review of an overcharging receipt."}
-[choose] http://127.0.0.1:60027: Kit Shop South: Its reviews (avg 4.7 stars) and your memory both show honest receipts matching agreed prices, with prior trades at 100 and 105, well within the 120 budget, while Kit Shop North has 1.3 stars and a review of an overcharging receipt.
-card: Kit Shop South -> http://127.0.0.1:60027/
+[harness] {"shop": "Kit Shop South", "reason": "It has a 4.7-star average with reviews reporting matched receipts and fair prices, and my own memory shows two honest trades at 100 and 104, while Kit Shop North has bad reviews for a receipt higher than the agreed price."}
+[choose] http://127.0.0.1:46921: Kit Shop South: It has a 4.7-star average with reviews reporting matched receipts and fair prices, and my own memory shows two honest trades at 100 and 104, while Kit Shop North has bad reviews for a receipt higher than the agreed price.
+card: Kit Shop South -> http://127.0.0.1:46921/
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[harness] {"action": "offer", "price": 95}
--> '95'  <- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
-[harness] {"action": "offer", "price": 104}
--> '104'  <- TASK_STATE_COMPLETED | Deal: lamp at 104.
+[harness] {"action": "offer", "price": 90}
+-> '90'  <- TASK_STATE_INPUT_REQUIRED | 90 is too low. Counteroffer: 110.
+[harness] {"action": "offer", "price": 110}
+-> '110'  <- TASK_STATE_COMPLETED | Deal: lamp at 110.
 [receipt] receipt matches the agreed price
-[harness] {"stars": 4, "review": "The shop countered my 95 offer at 112, then agreed to a final price of 104 for the lamp, and the receipt matched the agreed price."}
-{"shop": "http://127.0.0.1:60027", "receipt": {"price": 104.0, "sig_seller": "A80VpLmpJbJc2An86NaJhivxF29SkMfiIJ+mTN2pyMAeEC0d78k4gq63A9emz8pHxNFAP5WosjA17Lu7d7u2Ag==", "task": "d0474562-5606-4906-9b57-fa0809c82989", "shop": "Kit Shop South", "item": "lamp"}, "stars": 4, "review": "The shop countered my 95 offer at 112, then agreed to a final price of 104 for the lamp, and the receipt matched the agreed price."}
+[harness] {"stars": 4, "review": "The shop agreed to sell the lamp at 110 after negotiating from an initial asking price of 130, and the receipt matched the agreed price."}
+{"shop": "http://127.0.0.1:46921", "receipt": {"shop": "Kit Shop South", "sig_seller": "v2ndaOnPpa9V+0hsHHxmKb9XptEji8sGCj1BR1trX2AYHeOeWwFCeLKuoD0WuwHTSMkQWl4dpDD464us6CxLAg==", "price": 110.0, "task": "8911f424-f004-4313-8a46-ce99981b26e8", "item": "lamp"}, "stars": 4, "review": "The shop agreed to sell the lamp at 110 after negotiating from an initial asking price of 130, and the receipt matched the agreed price."}

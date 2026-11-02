@@ -26,7 +26,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from harness import CMD, ask_json
+from harness import CMD, safe_ask_json
 import httpx
 
 from r3lib import MARKET, SALES, SHOP_NAME, append_jsonl, hours_left, inventory, read_jsonl
@@ -183,11 +183,19 @@ class Seller(AgentExecutor):
             action, move = "accept", {}
             print(f"[guard] last allowed offer {o} is at or above my floor {floor}: accept", flush=True)
         else:
-            move, raw = ask_json(PROMPT.format(shop=SHOP_NAME, name=u["name"], quality=deal["quality"],
-                                               list_price=u["list_price"], floor=floor, opening=deal["opening"],
-                                               transcript="\n".join(deal["lines"])))
+            move, raw = safe_ask_json(PROMPT.format(shop=SHOP_NAME, name=u["name"], quality=deal["quality"],
+                                                    list_price=u["list_price"], floor=floor, opening=deal["opening"],
+                                                    transcript="\n".join(deal["lines"])))
             print(f"[harness] {raw}", flush=True)
             action = (move or {}).get("action")
+            if raw.startswith("[harness failed]"):        # my model is down: decide by code, never pass the error on
+                if o is not None and o >= floor:
+                    action, move = "accept", {}
+                else:
+                    start = ask if ask is not None else deal["opening"]
+                    target = o if o is not None else floor
+                    action, move = "counter", {"price": max(floor, round(start - 0.3 * max(0, start - target)))}
+                print(f"[fallback] {action} {move.get('price', o)}", flush=True)
         if action == "accept" and (o is None or o < floor):
             print(f"[guard] accept of {o} below floor {floor} -> counter", flush=True)
             action, move = "counter", {"price": ask or deal["opening"]}

@@ -11,7 +11,7 @@ import argparse
 import json
 import time
 
-from harness import ask_json
+from harness import safe_ask_json
 from r3lib import BUYER_MEM, HERE, MD, append_jsonl, catalog, read_json, read_jsonl
 
 FORUM_STATE = MD / "forum_state.json"
@@ -75,7 +75,7 @@ def main():
                  + (f"shelf life left {left:.0f} h; " if left is not None else "")
                  + (f"warranty {st.get('warranty_hours')} h; " if st.get("warranty_hours") else "no warranty; ")
                  + f"ledger #{st.get('ledger')}")
-        move, raw = ask_json(POST.format(facts=facts))
+        move, raw = safe_ask_json(POST.format(facts=facts))
         text = (move or {}).get("post") if isinstance((move or {}).get("post"), str) else None
         if text:
             append_jsonl(MD / "outbox.jsonl", {"post": text[:300], "refs": [st["ledger"]] if st.get("ledger") else [],

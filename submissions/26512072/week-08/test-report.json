@@ -1,7 +1,7 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-11-02T01:42:23+00:00",
+  "started": "2026-11-02T01:55:05+00:00",
   "harness": "harness.py: claude -p --model haiku (Claude Code), no tools; numbers (floors, caps, restock, stars) by code",
   "seller_cmd": "/data/jj275/venvs/a2a/bin/python seller_r3.py --port {port}",
   "market_buyer_cmd": "/data/jj275/venvs/a2a/bin/python market_buyer_r3.py --shops {shops} --item {item} --budget {budget} --order {order}",
@@ -10,7 +10,7 @@
     "description": "An honest online shop. Ask for an item by name and SKU, e.g. 'I want to buy <name> (<sku>)'. We state each unit's real grade, keep the market certificate, give a 6 h warranty on goods, and our signed receipt always shows the agreed price. A negotiation closes after 6 offers. A coding harness (claude) negotiates.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:37015/",
+        "url": "http://127.0.0.1:41479/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -107,7 +107,7 @@
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [312, 277, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [312, 278, 260, 260, 260, 260]"
     },
     {
       "test": "seller_holds_reserve",
@@ -119,7 +119,7 @@
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
-      "detail": "offers [90, 110], stars 4, receipt yes"
+      "detail": "offers [95, 108], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -131,7 +131,7 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "offers [90, 100], stars 4, receipt yes"
+      "detail": "offers [95, 105], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -143,7 +143,7 @@
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "offers [95, 104], stars 4, receipt yes"
+      "detail": "offers [90, 100], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
