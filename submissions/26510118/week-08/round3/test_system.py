@@ -73,6 +73,7 @@ def unit(u, sku, cost):
 def setup():
     MD.mkdir(parents=True)
     (ROOT / "strategy.json").write_text('{"phase": "focus"}', encoding="utf-8")
+    analysis.LOG = ROOT / "analysis.log"                  # the real logs/analysis.log is for the server's runs
     key = Ed25519PrivateKey.generate()
     (ROOT / "shop_key.pem").write_bytes(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
                                                           serialization.NoEncryption()))
