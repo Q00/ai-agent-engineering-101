@@ -214,7 +214,7 @@ class AdvisorTests(unittest.TestCase):
         advice = {"version": "abc", "price_bias_percent": -5, "pace": "quick", "focus": "value"}
         def check(prompt, context, validate, **kw):
             self.assertEqual(context["sales_advisor"], advice)
-            self.assertEqual(context["price_floor"], 70000)
+            self.assertEqual(context["price_floor"], 73500)
             return validate('{"action":"counter","price":85000,"reason":"bounded guidance"}')
         with patch("seller_r3.decide", side_effect=check):
             self.assertEqual(inventory_decision(unit(), None, [], None, advice)["price"], 85000)

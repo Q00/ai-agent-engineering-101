@@ -250,8 +250,10 @@ def build(cfg, executor=None):
             examples=["I want to buy a lamp", "90"],
         )],
     )
-    handler = DefaultRequestHandler(agent_executor=executor or Seller(cfg), task_store=InMemoryTaskStore(), agent_card=card)
-    return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
+    executor = executor or Seller(cfg)
+    handler = DefaultRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=card)
+    return Starlette(routes=create_agent_card_routes(card, card_modifier=getattr(executor, "public_card", None))
+                     + create_jsonrpc_routes(handler, "/"))
 
 
 if __name__ == "__main__":
