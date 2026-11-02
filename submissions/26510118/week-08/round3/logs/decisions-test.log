@@ -11,7 +11,7 @@
   PASS  no decision (no key, or the API failed): no odds, the numbers decide as before
 
 [card] what buyers read about our shop
-    Kiro Everyday: Groceries & Goods | Groceries and everyday goods from our stock. Every unit ships with the market's certificate and its true grade (goods: A new, B damaged box, C refurbished; food: share of shelf life left). Ask by SKU or by category (menu of up to 3); say how many hours food must last. Paid 6-hour warranty on goods.
+    Kiro Everyday: Groceries & Goods | Everyday groceries and goods from our stock. Every unit ships with the market's certificate and its true grade (goods: A new, B damaged box, C refurbished; food: share of shelf life left). Ask by SKU or by category (menu of up to 3); say how many hours food must last. Paid 6-hour warranty on goods.
   PASS  the card's name and its description of at most 300 characters (the board cuts longer ones)  (299)
   PASS  three skills: buy a product, choose within a category, state what you need
   PASS  no claim the code does not back: no prices, no superlatives, no words aimed at buyer models
@@ -23,7 +23,7 @@
 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 13800.
 [buyer] -> '13000 is my final offer. If not, I will buy elsewhere.'
 [buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 포기김치 2kg (Gaaaa0001) at 13000.
-  PASS  odds 0.9, threshold 0.7: 13,000 (over the floor of 12,600, under 95% of the 13,800 ask) is taken now  (('Deal: 테스트 포기김치 2kg (Gaaaa0001) at 13000.', {'ts': 1793621191, 'task': 'e828c4d4-6efe-47c9-8191-bd018ab61c40', 'sku': 'Gaaaa0001', 'unit': 'u-0', 'grade': 'A', 'cost': 12000, 'list_price': 20000, 'floor': 12600, 'at_cost': True, 'warranty': False, 'how': 'sku', 'asks': [15000, 13800], 'offers': [12000, 13000], 'walk_odds': [0.9], 'taken_early': True, 'outcome': 'deal', 'price': 13000}))
+  PASS  odds 0.9, threshold 0.7: 13,000 (over the floor of 12,600, under 95% of the 13,800 ask) is taken now  (('Deal: 테스트 포기김치 2kg (Gaaaa0001) at 13000.', {'ts': 1793621683, 'task': '84290d82-c1cf-4049-a328-008794d58528', 'sku': 'Gaaaa0001', 'unit': 'u-0', 'grade': 'A', 'cost': 12000, 'list_price': 20000, 'floor': 12600, 'at_cost': True, 'warranty': False, 'how': 'sku', 'asks': [15000, 13800], 'offers': [12000, 13000], 'walk_odds': [0.9], 'taken_early': True, 'outcome': 'deal', 'price': 13000}))
   PASS  odds 0.9, threshold 0.7: asked only once, for the offer over the floor (12,000 was under it)
 [buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001)'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): grade A, 150 h of shelf life left, certificate attached. Asking 15000. Send your offer as a nu
