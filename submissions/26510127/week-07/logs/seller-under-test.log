@@ -1,0 +1,163 @@
+[a4de85cf] buyer: I want to buy a lamp
+[a4de85cf] [harness] {"action": "counter", "price": 150}
+[a4de85cf] ASK 150
+[a4de85cf] buyer: 60
+[a4de85cf] [harness] {"action": "counter", "price": 125}
+[a4de85cf] ASK 125
+[a4de85cf] buyer: 80
+[a4de85cf] [harness] {"action": "counter", "price": 110}
+[a4de85cf] ASK 110
+[a4de85cf] buyer: 110
+[a4de85cf] [rule] offer 110 meets our ask 110 -> accept
+[a4de85cf] DEAL lamp at 110
+[04638645] buyer: I want to buy a lamp
+Failed to detach context
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/usr/local/lib/python3.11/dist-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7f8aebc6fa10> at 0x7f8aeabb3580> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-60' coro=<EventQueueSource._dispatch_loop() done, defined at /usr/local/lib/python3.11/dist-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/usr/local/lib/python3.11/dist-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/usr/local/lib/python3.11/dist-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7f8aebc6fa10> at 0x7f8aeabb0ec0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-61' coro=<EventQueueSource._dispatch_loop() done, defined at /usr/local/lib/python3.11/dist-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[04638645] [harness] {"action": "counter", "price": 150}
+[04638645] ASK 150
+[04638645] buyer: 60
+[04638645] [harness] {"action": "counter", "price": 130}
+[04638645] ASK 130
+[04638645] buyer: 80
+[04638645] [harness] {"action": "counter", "price": 115}
+[04638645] ASK 115
+[04638645] buyer: 115
+[04638645] [rule] offer 115 meets our ask 115 -> accept
+[04638645] DEAL lamp at 115
+[88e75d99] buyer: I want to buy a lamp
+[88e75d99] [harness] {"action": "counter", "price": 180}
+[88e75d99] ASK 180
+[88e75d99] buyer: 60
+[88e75d99] [harness] {"action": "counter", "price": 160}
+[88e75d99] ASK 160
+[88e75d99] buyer: 80
+[88e75d99] [harness] {"action": "counter", "price": 120}
+[88e75d99] ASK 120
+[88e75d99] buyer: 120
+[88e75d99] [rule] offer 120 meets our ask 120 -> accept
+[88e75d99] DEAL lamp at 120
+[2194e140] buyer: I want to buy a bookshelf
+[2194e140] [harness] {"action": "counter", "price": 400}
+[2194e140] ASK 400
+[2194e140] buyer: 140
+[2194e140] [harness] {"action": "counter", "price": 360}
+[2194e140] ASK 360
+[2194e140] buyer: 170
+[2194e140] [harness] {"action": "counter", "price": 320}
+[2194e140] ASK 320
+[2194e140] buyer: 200
+[2194e140] [harness] {"action": "counter", "price": 290}
+[2194e140] ASK 290
+[2194e140] buyer: 230
+[2194e140] [harness] {"action": "counter", "price": 270}
+[2194e140] ASK 270
+[2194e140] buyer: 230
+[2194e140] [harness] {"action": "counter", "price": 265}
+[2194e140] ASK 265
+[2194e140] buyer: 230
+[2194e140] [harness] {"action": "counter", "price": 260}
+[2194e140] ASK 260
+[2194e140] buyer: 230
+[2194e140] [harness] {"action": "counter", "price": 260}
+[2194e140] ASK 260
+[2194e140] buyer: 230
+[2194e140] [harness] {"action": "counter", "price": 260}
+[2194e140] ASK 260
+[71567653] buyer: I want to buy a bookshelf
+[71567653] [harness] {"action": "counter", "price": 350}
+[71567653] ASK 350
+[71567653] buyer: 140
+[71567653] [harness] {"action": "counter", "price": 300}
+[71567653] ASK 300
+[71567653] buyer: 170
+[71567653] [harness] {"action": "counter", "price": 280}
+[71567653] ASK 280
+[71567653] buyer: 200
+[71567653] [harness] {"action": "counter", "price": 265}
+[71567653] ASK 265
+[71567653] buyer: 230
+[71567653] [harness] {"action": "counter", "price": 260}
+[71567653] ASK 260
+[71567653] buyer: 230
+[71567653] [harness] {"action": "counter", "price": 260}
+[71567653] ASK 260
+[71567653] buyer: 230
+[71567653] [harness] {"action": "counter", "price": 260}
+[71567653] ASK 260
+[71567653] buyer: 230
+[71567653] [harness] {"action": "counter", "price": 260}
+[71567653] ASK 260
+[71567653] buyer: 230
+[71567653] [harness] {"action": "counter", "price": 260}
+[71567653] ASK 260
+[6c44e225] buyer: I want to buy a bookshelf
+[6c44e225] [harness] {"action": "counter", "price": 340}
+[6c44e225] ASK 340
+[6c44e225] buyer: 140
+[6c44e225] [harness] {"action": "counter", "price": 300}
+[6c44e225] ASK 300
+[6c44e225] buyer: 170
+[6c44e225] [harness] {"action": "counter", "price": 280}
+[6c44e225] ASK 280
+[6c44e225] buyer: 200
+[6c44e225] [harness] {"action": "counter", "price": 265}
+[6c44e225] ASK 265
+[6c44e225] buyer: 230
+[6c44e225] [harness] {"action": "counter", "price": 262}
+[6c44e225] ASK 262
+[6c44e225] buyer: 230
+[6c44e225] [harness] {"action": "counter", "price": 261}
+[6c44e225] ASK 261
+[6c44e225] buyer: 230
+[6c44e225] [harness] {"action": "counter", "price": 260}
+[6c44e225] ASK 260
+[6c44e225] buyer: 230
+[6c44e225] [harness] {"action": "counter", "price": 260}
+[6c44e225] ASK 260
+[6c44e225] buyer: 230
+[6c44e225] [harness] {"action": "counter", "price": 260}
+[6c44e225] ASK 260
