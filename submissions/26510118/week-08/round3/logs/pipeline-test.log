@@ -1,79 +1,154 @@
-seller: http://127.0.0.1:53500  market dir: C:\Users\bubuj\AppData\Local\Temp\round3-test-qg5p_b1z\.market
+seller: http://127.0.0.1:60670  market dir: C:\Users\bubuj\AppData\Local\Temp\round3-test-l6v16v8g\.market
   PASS  seller serves its agent card
 
-[A] food deal: 포기김치 (list 20000), budget 22000, eat within 48 h; stock: one B unit, 100 h left
+[A] food deal through market_buyer: 포기김치 (list 20000), budget 22000, eat within 48 h; stock: A with 150 h left, C with 30 h left
     [buyer] 1 candidate(s); test-shop Gaaaa0001 list 20000, cap 20000
     [buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001)'
-    [buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): asking 18000. Send your offer as a number.
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): grade A, 150 h of shelf life left, certificate attached. Asking 15000. Send your offer as a nu
     [buyer] -> '14000'
-    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 16000.
-    [buyer] -> '16000'
-    [buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 포기김치 2kg (Gaaaa0001) at 16000.
-  PASS  buyer prints the kit's result line
-  PASS  deal agreed, at or under the list price  (16000.0)
-  PASS  receipt names the SKU and the unit
-  PASS  food accept asks for a certificate and 49 h  ({'cert': True, 'min_hours_left': 49})
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 14500.
+    [buyer] -> '14500'
+    [buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 포기김치 2kg (Gaaaa0001) at 14500.
+  PASS  deal agreed  (Agreed 14500 for 테스트 포기김치 2kg (list 20000) after 2 offer(s).)
+  PASS  S2: no need stated, so the freshest unit (u-k1-a), not the one expiring first
+  PASS  S3: first ask 75% of list for grade A, deal between it and the floor  (14500.0)
+  PASS  S4: the receipt claims the true grade  (A)
   PASS  kit: sig_seller verifies with the shop key
-  PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gaaaa0001 at 16000 of budget 22000)
+  PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gaaaa0001 at 14500 of budget 22000)
   PASS  kit: checkout session opens  (status 201)
-  PASS  kit: checkout ships unit u-k1-b at the agreed price  (u-k1-b at 16000)
-  PASS  kit: accept policy passes (B, 100 h left >= 49 h)  (None)
+  PASS  kit: checkout ships u-k1-a with its certificate and the claim  (u-k1-a claim A)
+  PASS  kit: the buyer's quality check passes (150 h >= 49 h)  (None)
 
-[B] same order, but the unit that expires first has 30 h left (grade C)
-  PASS  deal agreed  (16000.0)
+[C] budget 12000 under the floor 12600 (cost 12000 + 5%)
+  PASS  no deal and no receipt below the floor  (No deal on 테스트 포기김치 2kg within 12000; the lowest ask was 12900.)
+
+[D] goods deal through market_buyer: 차렵이불 (list 39900), budget 30000; stock: one refurbished unit
+  PASS  refurbished starts at 60% (23940) and sells at or under it  (22470.0)
   PASS  kit: sig_seller verifies with the shop key
-  PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gaaaa0001 at 16000 of budget 22000)
+  PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gbbbb0001 at 22470 of budget 30000)
   PASS  kit: checkout session opens  (status 201)
-  PASS  seller offered the unit that expires first (u-k1-c)  (u-k1-c)
-  PASS  kit: accept policy refuses it, so nothing is paid  (30.00 h of shelf life left, the policy asks for 49)
+  PASS  kit: no warranty asked, none given; the claim is C
+  PASS  kit: a buyer requiring a 6 h warranty would not pay for it
 
-[C] budget 9000 under the unit's cost 10000
-    [buyer] 1 candidate(s); test-shop Gaaaa0001 list 20000, cap 9000
-    [buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001)'
-    [buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): asking 18000. Send your offer as a number.
-    [buyer] -> '6300'
-    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 14000.
-    [buyer] -> '7200'
-    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 12000.
-    [buyer] -> '8100'
-    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 11000.
-    [buyer] -> '9000'
-    [buyer] <- TASK_STATE_REJECTED | No deal at 9000.
-  PASS  no deal and no receipt (the shop never goes below cost)  (No deal on 테스트 포기김치 2kg within 9000; the lowest ask was 11000.)
-
-[D] goods deal: 차렵이불 (list 39900), budget 30000; stock: one C unit
-  PASS  deal agreed within the budget  (26228.0)
+[W] warranty asked for: the same refurbished unit
+[buyer] -> 'I want to buy 테스트 차렵이불 SS (Gbbbb0001) with a 6-hour warranty'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 차렵이불 SS (Gbbbb0001): grade C (refurbished), certificate attached, with a 6-hour warranty. Asking 27930. Send your of
+[buyer] -> '27930'
+[buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 차렵이불 SS (Gbbbb0001) at 27930.
+  PASS  quoted with the warranty at 70% of list  (테스트 차렵이불 SS (Gbbbb0001): grade C (refurbished), certificate attached, with a 6-hour warranty. Asking 27930. Send your offer as a number.)
+  PASS  the receipt carries the 6 h warranty  ({'task': '5869b248-7d30-495c-a456-6dfce24e2f09', 'item': 'Gbbbb0001', 'sig_seller': 'TF9d137lg4CBA80t3pZFUUvVNnNZEag691JaUT5fnbMWi5Q4nTgMENK5y4BIYbwd67CYm1H8MrZWcitRDFOOAg==', 'shop': 'Kiro729 Shop', 'unit': 'u-b1-c', 'warranty_hours': 6.0, 'price': 27930.0, 'claim': 'C'})
   PASS  kit: sig_seller verifies with the shop key
-  PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gbbbb0001 at 26228 of budget 30000)
+  PASS  kit: receipt fits the order (acceptable SKU, whole price within budget)  (Gbbbb0001 at 27930 of budget 30000)
   PASS  kit: checkout session opens  (status 201)
-  PASS  kit: goods with no accept policy pass  (None)
+  PASS  kit: a buyer requiring a 6 h warranty pays  (None)
+
+[S2] serving: needs, categories, the model, held and missing products
+[buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001). It must last 72 hours.'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): grade B, 90 h of shelf life left, certificate attached. Asking 14000. Send your offer as a num
+  PASS  a stated need gets the unit that just meets it (90 h, not 150 h)  (테스트 포기김치 2kg (Gaaaa0001): grade B, 90 h of shelf life left, certificate attached. Asking 14000. Send your offer as a number.)
+[buyer] -> 'I want to buy a 김치'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | We have 3 김치 option(s): 1) 테스트 겉절이 2kg (Gaaaa0002): grade A, 150 h of shelf life left, certificate attached, asking 1005
+[buyer] -> 'Gaaaa0003'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 파김치 2kg (Gaaaa0003): grade B, 100 h of shelf life left, certificate attached. Asking 17892. Send your offer as a num
+  PASS  a category request gets up to 3 products, cheapest ask first  (['Gaaaa0002', 'Gaaaa0001', 'Gaaaa0003'])
+  PASS  a SKU from the menu switches the product  (테스트 파김치 2kg (Gaaaa0003): grade B, 100 h of shelf life left, certificate attached. Asking 17892. Send your offer as a number.)
+[buyer] -> 'Looking for kimchi that lasts 3 days'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): grade B, 90 h of shelf life left, certificate attached. Asking 14000. Send your offer as a num
+  PASS  words the code cannot place go to the cheap model, checked against the stock  (테스트 포기김치 2kg (Gaaaa0001): grade B, 90 h of shelf life left, certificate attached. Asking 14000. Send your offer as a number.)
+[buyer] -> 'I want to buy 테스트 겉절이 2kg (Gaaaa0002)'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 겉절이 2kg (Gaaaa0002): grade A, 150 h of shelf life left, certificate attached. Asking 10050. Send your offer as a num
+[buyer] -> 'I want to buy 테스트 겉절이 2kg (Gaaaa0002)'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | That one is not available right now. We have 2 김치 option(s): 1) 테스트 포기김치 2kg (Gaaaa0001): grade A, 150 h of shelf life l
+  PASS  a product promised to another buyer: other products of its category instead  (That one is not available right now. We have 2 김치 option(s): 1) 테스트 포기김치 2kg (Gaaaa0001): grade A, 150 h of shelf life left, certificate attached, asking 15000; 2) 테스트 파김치 2kg (Gaaaa0003): grade B, 100 h of shelf life left, certificate attached, asking 17892. Reply with a SKU to choose, or send an offer for option 1.)
+[buyer] -> 'I want to buy 테스트 딸기 1kg (Gdddd0001)'
+[buyer] <- TASK_STATE_REJECTED | Sorry, we have none of that in stock right now.
+  PASS  nothing of that category: declined  (Sorry, we have none of that in stock right now.)
+  PASS  turned-away buyers are recorded (held, out)  ({('Gaaaa0002', 'held'), ('Gdddd0001', 'out')})
+  PASS  how each buyer asked is recorded  ({'sku', 'category', 'model'})
+
+[S3] negotiating: the floor and its reason, quick close, a plain yes
+[buyer] -> 'I want to buy 테스트 차렵이불 SS (Gbbbb0001)'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 차렵이불 SS (Gbbbb0001): grade A (new), certificate attached. Asking 30450. A 6-hour warranty is available on request. S
+[buyer] -> '25000'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 30450 is our lowest: it is top grade (A), with its certificate, and this price is only about 5% over what this unit cost
+  PASS  a unit whose floor is above 75% starts at the floor (30450)  (테스트 차렵이불 SS (Gbbbb0001): grade A (new), certificate attached. Asking 30450. A 6-hour warranty is available on request. Send your offer as a number.)
+  PASS  at the floor the shop says why, truthfully  (30450 is our lowest: it is top grade (A), with its certificate, and this price is only about 5% over what this unit cost us.)
+[buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001)'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): grade A, 150 h of shelf life left, certificate attached. Asking 15000. Send your offer as a nu
+[buyer] -> '14300'
+[buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 포기김치 2kg (Gaaaa0001) at 14300.
+  PASS  an offer within 5% of the ask is taken at once  (Deal: 테스트 포기김치 2kg (Gaaaa0001) at 14300.)
+[buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001)'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): grade A, 150 h of shelf life left, certificate attached. Asking 15000. Send your offer as a nu
+[buyer] -> 'OK, deal'
+[buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 포기김치 2kg (Gaaaa0001) at 15000.
+  PASS  a plain yes buys at the ask  (Deal: 테스트 포기김치 2kg (Gaaaa0001) at 15000.)
 
 [E] no shop has the category in stock
   PASS  buyer closes the order as no deal
 
-[F] shops.json lists a SKU the shop has already sold
-  PASS  the shop declines and the buyer records no deal  (No deal on 테스트 겉절이 2kg within 13400; the lowest ask was none.)
+[V] review
+  PASS  honest deal at 72.5% of list: 4 stars, facts only  ({'stars': 4, 'review': 'Paid 14500 for 테스트 포기김치 2kg (list 20000); grade A; the shop claimed A, which was true; 100 h of shelf life left.'})
+  PASS  false grade claim: 1 star  (Paid 14500 for 테스트 포기김치 2kg (list 20000); grade B; the shop claimed A, which was false; 100 h of shelf life left.)
 
-[R] restock
-  PASS  empty stock: buys within the kit's limits (<= 10 lines, 1-20 each, known SKUs)  ([{'sku': 'Gbbbb0001', 'qty': 2}, {'sku': 'Gcccc0001', 'qty': 2}, {'sku': 'Gaaaa0001', 'qty': 2}])
-  PASS  largest categories first, median-priced SKU, no 48 h food, nothing over 60000  (['Gbbbb0001', 'Gcccc0001', 'Gaaaa0001'])
-  PASS  stock worth the cap: buys nothing
+[S3 S4 S5] prices (pricing.py)
+  PASS  fresh food, grade A: ask 75% of list, floor cost + 5%  ({'ask': 15000, 'floor': 12600, 'grade': 'A', 'hours_left': 150.0, 'age_days': 0.5, 'at_cost': True, 'warranty_hours': None})
+  PASS  refurbished goods start at 60%  (23940)
+  PASS  3.5 days unsold: 5% of list lower
+  PASS  8 days unsold: the floor may go to 25% of list (below cost)  ({'ask': 13965, 'floor': 9975, 'grade': 'C', 'hours_left': None, 'age_days': 8.0, 'at_cost': False, 'warranty_hours': None})
+  PASS  food with 10 h left: ask 45%, floor 25% of list  ({'ask': 9000, 'floor': 5000, 'grade': 'C', 'hours_left': 10.0, 'age_days': 0.5, 'at_cost': False, 'warranty_hours': None})
+  PASS  last day: ask 15% lower, floor 25% of list  ({'ask': 12000, 'floor': 5000, 'grade': 'A', 'hours_left': 150.0, 'age_days': 0.5, 'at_cost': False, 'warranty_hours': None})
+  PASS  last 6 h: floor 10% of list  ({'ask': 12000, 'floor': 2000, 'grade': 'A', 'hours_left': 143.0, 'age_days': 0.5, 'at_cost': False, 'warranty_hours': None})
+  PASS  warranty on grade A goods: +5% of list on ask and floor  ({'ask': 31920, 'floor': 29295, 'grade': 'A', 'hours_left': None, 'age_days': 1.0, 'at_cost': True, 'warranty_hours': 6})
+  PASS  warranty on refurbished goods: +10%, still under new goods without one  ({'ask': 27930, 'floor': 18690, 'grade': 'C', 'hours_left': None, 'age_days': 1.0, 'at_cost': True, 'warranty_hours': 6})
+  PASS  no warranty on food
+  PASS  food about to drop to C is claimed C (true at checkout and at settle)
+
+[S1] restock (restock.py)
+  PASS  stage 1: a product per category, median-priced, no 48 h food, nothing over 60,000  (['Gbbbb0001', 'Gcccc0001', 'Gaaaa0003', 'Gf0000000', 'Gf0000001', 'Gf0000002', 'Gf0000003', 'Gf0000004', 'Gf0000005', 'Gf0000006', 'Gf0000007', 'Gf0000008', 'Gf0000009', 'Gf000000a', 'Gf000000b'])
+  PASS  stage 2: cheaper second products and the dear-only categories  (['Geeee0002', 'Gbbbb0002', 'Gaaaa0001'])
+  PASS  the market's best seller in a category becomes its representative
+  PASS  empty shelf: 10 lines of one unit each, stage 1 only  (['Gbbbb0001', 'Gcccc0001', 'Gaaaa0003', 'Gf0000000', 'Gf0000001', 'Gf0000002', 'Gf0000003', 'Gf0000004', 'Gf0000005', 'Gf0000006'])
+  PASS  full stage 1 shelf, gate closed: buys nothing  ({'buy': []})
+  PASS  10 sales open the gate: the sold product first (target 2), then stage 2  (['Gaaaa0003', 'Geeee0002', 'Gbbbb0002', 'Gaaaa0001'] 10/10 open)
+  PASS  a buyer turned away for lack of it: one more  ({'buy': [{'sku': 'Gcccc0001', 'qty': 1}]})
+  PASS  food with under a day left does not count: a fresh one is bought  ({'buy': [{'sku': 'Gaaaa0003', 'qty': 1}]})
+  PASS  stock at the 2,500,000 cap: buys nothing  ({'buy': []})
+  PASS  wind-down (3 days left): only products selling 2 a day are refilled  ({'buy': [{'sku': 'Gaaaa0003', 'qty': 2}]})
+  PASS  last 6 h: buys nothing  ({'note': 'last 6 h: no buying'})
+  PASS  focus phase: a dropped category is not refilled, a focus category gets one more  ({'buy': [{'sku': 'Gcccc0001', 'qty': 1}]})
   PASS  below the line with nothing to sell: files for bankruptcy
   PASS  before Round 3: buys nothing
+  PASS  the hook prints the kit's line (<= 10 lines, 1-20 each, known SKUs)  (["[restock] {'stage1': 15, 'gate': '5/10', 'targets': 18, 'gaps': 18, 'stock': 0, 'wind_down': False}, buying 10 line(s)"])
 
-[V] review
-  PASS  honest deal at 80% of list: 4 stars, facts only  ({'stars': 4, 'review': 'Paid 16000 for 테스트 포기김치 2kg (list 20000); grade B; the shop claimed B, which was true; 100 h of shelf life left.'})
-  PASS  false grade claim: 1 star  (Paid 16000 for 테스트 포기김치 2kg (list 20000); grade B; the shop claimed A, which was false; 100 h of shelf life left.)
+[S1] which agreed deals settled
+  PASS  a unit that left the inventory is a sale  (['3fe0c701-e82f-4aaf-877e-42883ce8bc01', '2798ed3a-8aab-4a88-8c46-5c48300e676a', '5869b248-7d30-495c-a456-6dfce24e2f09', 'a3f16d05-89ad-4fe8-9412-cd7e26162f93', '5daeb3ab-0d66-4091-ad71-e71b59343727', '3fe0c701-e82f-4aaf-877e-42883ce8bc01', '2798ed3a-8aab-4a88-8c46-5c48300e676a', '5869b248-7d30-495c-a456-6dfce24e2f09', 'a3f16d05-89ad-4fe8-9412-cd7e26162f93', '5daeb3ab-0d66-4091-ad71-e71b59343727', 't-sold'])
+  PASS  a unit still in stock 10 minutes after the deal is unpaid  (['t-unpaid'])
+
+[ledger] collection and summary (ledger.py)
+  PASS  a collection keeps settle and broken entries only  ([0])
+  PASS  summary: sales by SKU with the share of list price  ({'sold_24h': 1, 'sold_6h': 1, 'grades': {'A': 1}, 'price_ratio': 0.75})
+  PASS  summary: shops' grade claims, true and false
+  PASS  summary: a breakdown is matched to the grade that was sold  ({'C': 1})
+  PASS  collects at most once an hour
 
 [records]
-  PASS  every step left a record  (negotiations 4, orders 6, restock 1, reviews 2)
-  PASS  no negotiation sold below cost  (Gaaaa0001 deal 16000/10000, Gaaaa0001 deal 16000/7000, Gaaaa0001 rejected None/10000, Gbbbb0001 deal 26228/14000)
+  PASS  every step left a record  ({'negotiations': 12, 'requests': 13, 'refusals': 2, 'deals': 7, 'orders': 4, 'restock': 1, 'reviews': 2, 'sales': 11, 'unpaid': 1})
+  PASS  no negotiation sold below its floor  (Gaaaa0001 deal 14500/12600, Gaaaa0001 rejected None/12600, Gbbbb0001 deal 22470/14700, Gbbbb0001 deal 27930/18690, Gaaaa0001 walked None/10500, Gaaaa0003 walked None/12600, Gaaaa0001 walked None/10500, Gaaaa0001 walked None/12600, Gaaaa0002 walked None/8400, Gbbbb0001 walked None/30450, Gaaaa0001 deal 14300/12600, Gaaaa0001 deal 15000/12600)
 
 [seller log]
-    [seller] Kiro729 Shop on port 53500, stock from C:\Users\bubuj\AppData\Local\Temp\round3-test-qg5p_b1z\.market
-    [seller] Gaaaa0001 deal at 16000
-    [seller] Gaaaa0001 deal at 16000
+    [seller] Kiro729 Shop on port 60670, stock from C:\Users\bubuj\AppData\Local\Temp\round3-test-l6v16v8g\.market
+    [seller] Gaaaa0001 deal at 14500
     [seller] Gaaaa0001 rejected
-    [seller] Gbbbb0001 deal at 26228
+    [seller] Gbbbb0001 deal at 22470
+    [seller] Gbbbb0001 deal at 27930
+    [seller] Gaaaa0001 walked
+    [seller] Gaaaa0003 walked
+    [seller] Gaaaa0001 walked
+    [seller] Gaaaa0001 walked
+    [seller] Gaaaa0002 walked
+    [seller] Gbbbb0001 walked
+    [seller] Gaaaa0001 deal at 14300
+    [seller] Gaaaa0001 deal at 15000
 
-33/33 checks passed
+73/73 checks passed

@@ -317,14 +317,14 @@ class Seller(AgentExecutor):
                       need_hours=req["need_hours"], warranty=req["warranty"],
                       offered=[o["sku"] for o, _ in d["menu"]] if d["menu"] else [d["unit"]["sku"]])
         offer_warranty = d["unit"].get("kind") == "goods" and not d["warranty"]
-        tail = (" A 6-hour warranty is available on request." if offer_warranty else "") + " Send your offer as a number."
+        note = " A 6-hour warranty is available on request." if offer_warranty else ""
         if d["menu"]:
             lines = "; ".join(f"{i}) {describe(u, op)}, asking {op['ask']}" for i, (u, op) in enumerate(d["menu"], 1))
             head = "That one is not available right now. " if req["how"] != "category" else ""
             await up.requires_input(say(f"{head}We have {len(d['menu'])} {cat} option(s): {lines}. "
-                                        f"Reply with a SKU to choose, or send an offer for option 1.{tail}", d))
+                                        f"Reply with a SKU to choose, or send an offer for option 1.{note}", d))
         else:
-            await up.requires_input(say(f"{describe(d['unit'], p)}. Asking {p['ask']}.{tail}", d))
+            await up.requires_input(say(f"{describe(d['unit'], p)}. Asking {p['ask']}.{note} Send your offer as a number.", d))
 
     async def sell(self, up, say, task_id: str, price: int, now: float) -> None:
         d = self.open[task_id]

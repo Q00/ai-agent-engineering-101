@@ -351,7 +351,7 @@ def main() -> int:
         check("deal agreed", bool(rec), out and out.get("review"))
         check("S2: no need stated, so the freshest unit (u-k1-a), not the one expiring first", rec.get("unit") == "u-k1-a")
         check("S3: first ask 75% of list for grade A, deal between it and the floor",
-              "asking 15000" in "\n".join(log) and 12600 <= rec.get("price", 0) <= 15000, rec.get("price"))
+              "Asking 15000" in "\n".join(log) and 12600 <= rec.get("price", 0) <= 15000, rec.get("price"))
         check("S4: the receipt claims the true grade", rec.get("claim") == "A", rec.get("claim"))
         co, refuse = kit_checks(fake, rec, order, inv, out["accept"])
         check("kit: checkout ships u-k1-a with its certificate and the claim", co.get("unit") == "u-k1-a" and co.get("cert")
@@ -368,7 +368,7 @@ def main() -> int:
         order = fake.order("o-d", "침구", 30000, [BEDDING], "goods")
         out, log = buyer(order, shop([offer(BEDDING)]))
         rec = (out or {}).get("receipt") or {}
-        check("refurbished starts at 60% (23940) and sells at or under it", "asking 23940" in "\n".join(log)
+        check("refurbished starts at 60% (23940) and sells at or under it", "Asking 23940" in "\n".join(log)
               and 0 < rec.get("price", 0) <= 23940, rec.get("price"))
         co, refuse = kit_checks(fake, rec, order, inv, {})
         check("kit: no warranty asked, none given; the claim is C", refuse is None and not co.get("warranty_hours")
