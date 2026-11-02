@@ -10,6 +10,7 @@ import base64
 import json
 import os
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
@@ -17,6 +18,10 @@ from cryptography.hazmat.primitives import serialization
 HERE = Path(__file__).resolve().parent
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", HERE / ".market"))
 RECEIPT_KEYS = ("shop", "item", "price", "task")      # what sig_seller covers
+KST = timezone(timedelta(hours=9))
+# Round 3 ends 2026-11-17 23:59 KST (week-08 notice); ROUND_END_TS moves it for tests.
+ROUND_END = float(os.environ.get("ROUND_END_TS") or datetime(2026, 11, 17, 23, 59, 59, tzinfo=KST).timestamp())
+STRATEGY = {"phase": "explore", "focus_categories": [], "drop_categories": [], "price_adjust": 0.0}
 
 
 def read_json(path, default=None):
@@ -34,6 +39,39 @@ def market_file(name: str, default=None):
 def catalog(market_dir: Path = MARKET_DIR) -> dict:
     """sku -> {sku, name, category, list_price, kind, shelf_hours}."""
     return read_json(market_dir / "catalog.json", {}) or {}
+
+
+def read_jsonl(path) -> list:
+    """Every whole line of a .jsonl file; a missing file or a half-written last line is skipped."""
+    rows = []
+    try:
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            try:
+                rows.append(json.loads(line))
+            except ValueError:
+                pass
+    except OSError:
+        pass
+    return rows
+
+
+def records(stream: str) -> list:
+    return read_jsonl(MARKET_DIR / "records" / f"{stream}.jsonl")
+
+
+def write_json(path, data) -> None:
+    """Replace a file whole, so a reader never sees half of it."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(f".{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def strategy() -> dict:
+    """strategy.json next to the code: the phase (explore, focus) and, from the focus phase on,
+    what the analysis memo or a person set. Missing keys keep the exploration defaults."""
+    return dict(STRATEGY, **(read_json(HERE / "strategy.json", {}) or {}))
 
 
 def record(stream: str, **fields) -> None:
