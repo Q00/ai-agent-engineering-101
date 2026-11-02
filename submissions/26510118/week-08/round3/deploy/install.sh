@@ -8,7 +8,7 @@ for f in "$M/market_kit.py" "$M/round3/agent.json" "$M/round3/shop_key.pem" "$M/
   [ -e "$f" ] || { echo "missing: $f"; exit 1; }
 done
 chmod 600 "$M/round3/"*.pem "$M/openai.env" "$M/owner.env"
-"$M/.venv/bin/python" -c "import a2a, httpx, uvicorn, cryptography" || { echo "the venv lacks a package"; exit 1; }
+"$M/.venv/bin/python" -c "import a2a, httpx, uvicorn, cryptography, mcp" || { echo "the venv lacks a package (mcp: pip install mcp==1.30.0)"; exit 1; }
 command -v cloudflared >/dev/null || { echo "cloudflared is not installed"; exit 1; }
 sudo cp "$M/round3/deploy/kiro-kit.service" "$M/round3/deploy/kiro-analysis.service" /etc/systemd/system/
 sudo systemctl daemon-reload

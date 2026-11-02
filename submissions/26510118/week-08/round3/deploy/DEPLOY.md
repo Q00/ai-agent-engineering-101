@@ -11,7 +11,7 @@ Azure 서버(`4.230.8.44`, 사용자 `azureuser`)에서 키트와 분석 실행�
 서버의 폴더 구조:
 ```
 /home/azureuser/market/
-  .venv/              이미 있음 (a2a-sdk, uvicorn, httpx, cryptography)
+  .venv/              이미 있음 (a2a-sdk, uvicorn, httpx, cryptography). 자료실용 mcp==1.30.0은 3번 단계에서 추가
   market_kit.py       키트 v4 (저장소의 scripts/market_kit.py)
   round3/             우리 코드 (저장소의 submissions/26510118/week-08/round3)
     shop_key.pem, buyer_key.pem   시장에 Kiro729로 등록된 키 (커밋하지 않음)
@@ -55,7 +55,19 @@ claim code (https://market.ourolabs.ai/join 에서 복사):
 read -s -p "claim code: " C && umask 077 && printf 'MARKET_OWNER=%s\n' "$C" > ~/market/owner.env && unset C && echo saved
 ```
 
-## 3. 모델 호출 확인 (직접 또는 Claude, 서버에서)
+## 3. 자료실(MCP) 패키지 설치와 모델 호출 확인 (직접 또는 Claude, 서버에서)
+
+자료실 서버(`data_room.py`)가 쓰는 MCP 공식 패키지입니다. PC 시험과 같은 판으로 고정합니다:
+```bash
+~/market/.venv/bin/pip install "mcp==1.30.0"
+```
+
+자료실이 켜지는지 확인합니다. 툴 4개 이름이 나오면 성공입니다:
+```bash
+cd ~/market/round3 && MARKET_DIR=~/market/round3/.market ~/market/.venv/bin/python -c "import mcp_host; r = mcp_host.DataRoom('integrated').__enter__(); print([t['name'] for t in r.tools]); r.__exit__(None, None, None)"
+```
+
+모델 호출 확인:
 
 ```bash
 cd ~/market/round3 && set -a && . ~/market/openai.env && set +a && ~/market/.venv/bin/python -c "import harness as h; print([h.ask('Reply with OK', m) for m in (h.MODEL, h.MODEL_MID, h.MODEL_STRONG)])"
@@ -90,7 +102,7 @@ bash ~/market/round3/deploy/check.sh
 |---|---|
 | `market_buyer.py`, `restock.py`, `review.py`, `pricing.py`, `buyer_memory.py` | 복사만 하면 다음 실행부터 반영 (키트가 훅을 매번 새로 실행) |
 | `seller.py` | 복사 뒤 서버에서 `pkill -f seller.py` → 키트가 60초 안에 다시 띄움 |
-| `analysis.py`, `analysts.py`, `forum.py`, `tools.py`, `ledger.py` | 복사 뒤 `sudo systemctl restart kiro-analysis` |
+| `analysis.py`, `analysts.py`, `context.py`, `insights.py`, `forum.py`, `tools.py`, `data_room.py`, `mcp_host.py`, `ledger.py` | 복사 뒤 `sudo systemctl restart kiro-analysis` (자료실은 분석마다 새로 켜지므로 따로 재시작할 것 없음) |
 | `agent.json` | 복사 뒤 `sudo systemctl restart kiro-kit` (터널 주소가 바뀌어도 시장이 기록을 옮겨 줌) |
 
 파일 하나만 복사하는 예:
@@ -98,10 +110,18 @@ bash ~/market/round3/deploy/check.sh
 scp -i $HOME\.ssh\kiro_azure submissions\26510118\week-08\round3\market_buyer.py azureuser@4.230.8.44:~/market/round3/
 ```
 
-## 7. 2차 고도화 때 (하루 뒤)
+## 7. (선택) Claude Code에서 자료실 쓰기
+
+자료실은 표준 MCP 서버라 Claude Code도 붙일 수 있습니다. PC에서 한 번 등록하면, Round 3 중에 "어제 김치가 얼마에 팔렸지?", "Beta 가게 믿을 만해?"를 Claude Code에게 바로 물어볼 수 있습니다(ssh로 서버의 자료실을 켭니다):
+```powershell
+claude mcp add kiro-data-room -- ssh -i $HOME\.ssh\kiro_azure azureuser@4.230.8.44 "cd ~/market/round3 && MARKET_DIR=~/market/round3/.market ~/market/.venv/bin/python data_room.py --as integrated"
+```
+이렇게 연결하면 메모는 "통합 분석"의 이름으로 남으니, 메모 남기기는 쓰지 않는 게 좋습니다.
+
+## 8. 2차 고도화 때 (하루 뒤)
 `round3/strategy.json`의 `"phase"`를 `"focus"`로 바꾸면 통합 분석이 12시간마다 규칙을 실제로 바꾸기 시작합니다(그 전에는 "채택했을 것"만 기록). 숫자 조정은 데이터를 보고 함께 정합니다.
 
-## 8. 끝나면 (11/18)
+## 9. 끝나면 (11/18)
 1. (직접) 로그를 PC로 가져오기:
 ```powershell
 scp -i $HOME\.ssh\kiro_azure azureuser@4.230.8.44:~/market/round3/logs/market-kit.log submissions\26510118\week-08\logs\market-kit.log
