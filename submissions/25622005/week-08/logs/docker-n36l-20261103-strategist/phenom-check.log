@@ -1,0 +1,29 @@
+Subdirectories of glibc-hwcaps directories, in priority order:
+  x86-64-v4
+  x86-64-v3
+  x86-64-v2
+
+python 3.12.11 executable /phenom/python
+control sse4.2 crc32: exit -4 (rejected)
+control ssse3 pshufb: exit -4 (rejected)
+control baseline add: exit 0 (ran)
+cryptography ed25519 sign/verify, pem, sha256: ok
+ssl OpenSSL 3.0.17 1 Jul 2025: ok
+pydantic 2.13.5 (pydantic_core native): ok
+protobuf upb: ok
+cffi, charset_normalizer, wrapt: ok
+a2a, uvicorn, starlette, sse_starlette, httpx import: ok
+CONTROLS OK
+phenom_check exit 0
+v22.23.4
+node exit 0
+2.1.112 (Claude Code)
+claude exit 0
+  --model <model>                                   Model for the current session. Provide an alias for the latest model (e.g. 'sonnet' or 'opus') or a model's full name (e.g. 'claude-sonnet-4-6').
+  --no-session-persistence                          Disable session persistence - sessions will not be saved to disk and cannot be resumed (only works with --print)
+  --setting-sources <sources>                       Comma-separated list of setting sources to load (user, project, local).
+  --tools <tools...>                                Specify the list of available tools from the built-in set. Use "" to disable all tools, "default" to use all tools, or specify tool names (e.g. "Bash,Edit,Read").
+claude help exit 0
+Ran 97 tests in 32.501s
+
+OK
