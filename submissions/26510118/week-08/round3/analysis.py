@@ -14,6 +14,7 @@ Each pass does only what is due, in this order:
     seller       3 h    the seller analysis (analysts.py, MODEL_MID + ledger_query)
     buyer        3 h    the buyer analysis
     integrated  12 h    adopt, keep or revert rule changes (MODEL_STRONG); applied in the focus phase
+                        and keep the insights (both phases)
 Trading modules only read what this writes. A lock keeps two passes from overlapping; every
 step is logged to logs/analysis.log, which goes with the submission.
 """
@@ -163,8 +164,11 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
                     note = f"{len(r['proposals'])} proposal(s), {sum(p['valid'] for p in r['proposals'])} within range"
                 else:
                     e = analysts.integrated(chat_fn, now)
+                    k = e["insights"]
                     note = (f"{len(e['changes'])} change(s), {len(e['reverted'])} revert(s), "
-                            + ("applied" if e["applied"] else "recorded only (exploration phase)"))
+                            + ("applied" if e["applied"] else "recorded only (exploration phase)")
+                            + f"; insights: {len(k['added'])} new, {len(k['confirmed'])} confirmed, "
+                              f"{len(k['refuted'])} refuted, {len(k['retired'])} retired, {len(k['refused'])} refused")
                 state[name] = now
                 done.append(name)
                 log(f"[analysis] {name}: {note}")

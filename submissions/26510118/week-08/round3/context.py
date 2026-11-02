@@ -1,9 +1,9 @@
 """The briefing an analysis model reads: five parts, assembled by code right before each call.
 
     1 state     the business now: phase, balance, stock, 24 h sales and purchases, the rules in force
-    2 lessons   what the judge has learned so far (analysis/lessons.json), best confirmed first
-    3 reports   the role's last two reports and what became of their proposals (the judge: the
-                latest report of each role)
+    2 insights  what the integrated analysis has learned so far (insights.py), best confirmed first
+    3 reports   the role's last two reports and what became of their proposals (the integrated
+                analysis: the latest report of each role)
     4 memos     what the other analyses left for this role in the last 12 hours (analysis/memos.jsonl)
     5 numbers   the new numbers: our own records and the whole market, and the change since about
                 3 hours ago (analysis/business.jsonl, a snapshot the runner writes every hour)
@@ -18,11 +18,11 @@ from datetime import datetime
 
 import common
 
-LIMITS = {"state": 800, "lessons": 1200, "reports": 1000, "memos": 800, "numbers": 2000}
-TITLES = {"state": "1 The business now", "lessons": "2 Lessons learned so far (kept by the judge)",
+LIMITS = {"state": 800, "insights": 1200, "reports": 1000, "memos": 800, "numbers": 2000}
+TITLES = {"state": "1 The business now", "insights": "2 Insights so far (kept by the integrated analysis)",
           "reports": "3 Last reports and what became of their proposals", "memos": "4 Memos from the other analyses",
           "numbers": "5 New numbers"}
-LESSONS = 10
+INSIGHTS = 10
 REPORTS = 2
 MEMOS = 5
 MEMO_HOURS = 12
@@ -78,21 +78,23 @@ def change(state: dict, now: float) -> dict | None:
     return {"hours_ago": round((now - then["at"]) / 3600, 1), **moved}
 
 
-def lessons(role: str) -> list:
-    rows = [x for x in common.read_json(folder() / "lessons.json", []) or []
-            if x.get("status", "active") == "active" and (role == "judge" or x.get("role") in (role, "both"))]
-    rows.sort(key=lambda x: (x.get("refuted", 0) - x.get("confirmed", 0), -(x.get("updated") or 0)))
-    return [f"- [{x.get('role')}] {x.get('text')} (confirmed {x.get('confirmed', 0)}, refuted {x.get('refuted', 0)})"
-            for x in rows[:LESSONS]] + ([f"({len(rows) - LESSONS} weaker lesson(s) left out)"] if len(rows) > LESSONS else [])
+def insights(role: str) -> list:
+    """Active insights for this role (the integrated analysis: all), with the id it marks them by."""
+    rows = [x for x in common.read_json(folder() / "insights.json", []) or []
+            if x.get("status") in ("testing", "confirmed") and (role == "integrated" or x.get("role") in (role, "both"))]
+    rows.sort(key=lambda x: (x.get("refuted", 0) - x.get("confirmed", 0), -(x.get("checked") or 0)))
+    return [f"- {x.get('id')} [{x.get('role')}, {x.get('topic')}, {x.get('status')}: confirmed {x.get('confirmed', 0)}, "
+            f"refuted {x.get('refuted', 0)}] {x.get('text')} | evidence: {x.get('evidence')} | use: {x.get('use')}"
+            for x in rows[:INSIGHTS]] + ([f"({len(rows) - INSIGHTS} weaker insight(s) left out)"] if len(rows) > INSIGHTS else [])
 
 
 def fate(p: dict, changes: list) -> str:
-    """What the judge's next decision did with a proposal, and the 12 hours after it if it was applied."""
+    """What the integrated analysis's next decision did with a proposal, and the 12 hours after it if it was applied."""
     if not p.get("valid"):
         return f"refused by code ({p.get('why_not')})"
     later = [c for c in changes if c.get("at", 0) >= p.get("ts", 0)]
     if not later:
-        return "waiting for the judge"
+        return "waiting for the integrated analysis"
     done = next((x for x in later[0].get("changes") or [] if x.get("proposal") == p.get("id")), None)
     if not done:
         return "not adopted"
@@ -108,7 +110,7 @@ def fate(p: dict, changes: list) -> str:
 
 def reports(role: str) -> list:
     rows = common.read_jsonl(folder() / "reports.jsonl")
-    if role == "judge":
+    if role == "integrated":
         picked = [r for r in (next((x for x in reversed(rows) if x.get("role") == k), None) for k in ("seller", "buyer")) if r]
     else:
         picked = [r for r in rows if r.get("role") == role][-REPORTS:][::-1]          # newest first
@@ -123,7 +125,7 @@ def reports(role: str) -> list:
 
 def memos(role: str, now: float) -> list:
     rows = [m for m in common.read_jsonl(folder() / "memos.jsonl") if (m.get("ts") or 0) >= now - MEMO_HOURS * 3600
-            and m.get("from") != role and (role == "judge" or m.get("to") in (role, "all"))]
+            and m.get("from") != role and (role == "integrated" or m.get("to") in (role, "all"))]
     return [f"- {stamp(m.get('ts'))} from {m.get('from')} ({m.get('act')}): {m.get('text')}" for m in rows[::-1][:MEMOS]]
 
 
@@ -146,13 +148,13 @@ def fit(items: list, limit: int) -> str:
 
 
 def form(role: str, now: float, numbers: dict) -> str:
-    """The briefing for 'seller', 'buyer' or 'judge'; numbers: part 5's named blocks, made by the caller."""
+    """The briefing for 'seller', 'buyer' or 'integrated'; numbers: part 5's named blocks, made by the caller."""
     state = business(now)
     moved = change(state, now)
     blocks = [f"{k}: {compact(v)}" for k, v in numbers.items()]
     if moved and len(moved) > 1:                                # something besides hours_ago moved
         blocks.insert(1, f"change since {moved.pop('hours_ago')} h ago [then, now]: {compact(moved)}")
-    parts = {"state": [compact({k: v for k, v in state.items() if k != "at"})], "lessons": lessons(role),
+    parts = {"state": [compact({k: v for k, v in state.items() if k != "at"})], "insights": insights(role),
              "reports": reports(role), "memos": memos(role, now), "numbers": blocks}
     text = "\n\n".join(f"[{TITLES[k]}]\n{fit(v, LIMITS[k])}" for k, v in parts.items())
     folder().mkdir(parents=True, exist_ok=True)

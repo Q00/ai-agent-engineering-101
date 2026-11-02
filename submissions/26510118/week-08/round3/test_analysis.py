@@ -25,6 +25,7 @@ import common     # noqa: E402
 import context    # noqa: E402
 import forum      # noqa: E402
 import harness    # noqa: E402
+import insights   # noqa: E402
 import restock    # noqa: E402
 import tools      # noqa: E402
 
@@ -224,6 +225,14 @@ SELLER_PROPOSALS = [{"field": "price_adjust", "value": 0.12, "reason": "kimchi s
                     {"field": "floor", "value": 0, "reason": "sell below cost"},
                     {"field": "warranty_extra", "value": {"C": 0.25}, "reason": "C breaks"},
                     {"field": "price_adjust", "value": -0.05, "reason": "a second one for the same field"}]
+def insight(role, topic, text, evidence, use):
+    return {"role": role, "topic": topic, "text": text, "evidence": evidence, "use": use}
+
+
+I_KIMCHI = insight("seller", "price", "Kimchi sells at about 70% of list", "20 sold in 6 h, all at 70% of list",
+                   "open kimchi at 75%; buyers rarely push it to the floor")
+I_BETA = insight("buyer", "shops", "Beta's grade claims are mostly false", "3 of 8 claims true in 24 h",
+                 "ask Beta for a warranty, or buy the same product elsewhere")
 BUYER_PROPOSALS = [{"field": "open_ratio", "value": 0.55, "reason": "asks fall to 70%"},
                    {"field": "max_ratio", "value": 0.99, "reason": "pay anything"},
                    {"field": "avoid_shops", "value": ["Beta"], "reason": "3 of 8 claims true"},
@@ -252,10 +261,12 @@ def test_analysts():
           r["report"] == "(no answer from the model)" and r["proposals"] == [])
 
     m = Model(answer({"adopt": [f"seller-{t1}-0", f"seller-{t1}-6", f"seller-{t1}-2", f"buyer-{t1}-0", "made-up-id"],
-                      "revert": [], "note": "kimchi"}))
+                      "revert": [], "note": "kimchi",
+                      "insights": {"new": [I_KIMCHI, insight("both", "demand", "No number here", "many sold", "x"), I_BETA,
+                                           insight("seller", "stock", "A third one", "5 units", "y")], "confirm": ["I9"]}}))
     e = analysts.integrated(m, t1 + 10)
     prompt = m.seen[0]["messages"][0]["content"]
-    check("the judge sees only valid proposals, and the private cross-role facts",
+    check("the integrated analysis sees only valid proposals, and the private cross-role facts",
           f"seller-{t1}-1" not in prompt and f"seller-{t1}-0" in prompt and "budget_over_median_list" in prompt
           and m.seen[0]["model"] == harness.MODEL_STRONG)
     got = {(c["role"], c["field"]): c["to"] for c in e["changes"]}
@@ -263,18 +274,35 @@ def test_analysts():
           got == {("seller", "price_adjust"): 0.05, ("seller", "focus_categories"): ["김치"], ("buyer", "open_ratio"): 0.55}, got)
     check("exploration phase: recorded, not applied", e["applied"] is False and not (MD / "analysis" / "active_rules.json").exists()
           and common.rules()["seller"]["price_adjust"] == 0.0)
+    why = [r["why"] for r in e["insights"]["refused"]]
+    check("insights kept while exploring: 2 new (I1, I2); no number in the evidence, a third new one and an unknown id refused",
+          e["insights"]["added"] == ["I1", "I2"] and why == ["no active insight with this id", "evidence has no number",
+                                                              "only 2 new insights per decision"], why)
+    check("a new insight starts as testing, with its evidence and use", [(x["id"], x["status"], x["use"][:10]) for x in insights.load()]
+          == [("I1", "testing", "open kimch"), ("I2", "testing", "ask Beta f")])
     e = analysts.integrated(Model(), t1 + 20)
-    check("no answer from the judge: nothing changes and the entry says so",
+    check("no answer from the integrated analysis: nothing changes and the entry says so",
           e["decided"] is False and e["changes"] == [] and "no answer" in e["note"])
 
     (ROOT / "strategy.json").write_text('{"phase": "focus"}', encoding="utf-8")
     t2 = t1 + 3 * H
     analysts.role_analysis("seller", Model(answer({"report": "again", "proposals": SELLER_PROPOSALS[:1]})), t2)
-    e = analysts.integrated(Model(answer({"adopt": [f"seller-{t2}-0", f"seller-{t1}-2"], "revert": []})), t2 + 10)
+    m = Model(answer({"adopt": [f"seller-{t2}-0", f"seller-{t1}-2"], "revert": [], "insights": {"confirm": ["I1"], "refute": ["I2"]}}))
+    e = analysts.integrated(m, t2 + 10)
+    check("its briefing shows the insights by id, to be marked", "I1 [seller, price, testing: confirmed 0, refuted 0]"
+          in m.seen[0]["messages"][0]["content"])
     check("focus phase: applied to the rules in force (price 0.0 -> 0.05)", e["applied"] is True
           and common.rules()["seller"]["price_adjust"] == 0.05, common.rules()["seller"])
     check("a proposal from before the last decision is not adopted again", common.rules()["seller"]["focus_categories"] == [])
-    e = analysts.integrated(Model(answer({"adopt": [], "revert": ["seller.price_adjust", "buyer.open_ratio"]})), t2 + 12 * H)
+    e = analysts.integrated(Model(answer({"adopt": [], "revert": ["seller.price_adjust", "buyer.open_ratio"],
+                                          "insights": {"confirm": ["I1"], "refute": ["I2"],
+                                                       "new": [dict(I_KIMCHI, text="kimchi sells at about 70% of list!")]}})), t2 + 12 * H)
+    got = {x["id"]: x for x in insights.load()}
+    check("confirmed twice: I1 is confirmed; refuted twice: I2 retired with the reason, kept in the file",
+          got["I1"]["status"] == "confirmed" and got["I2"]["status"] == "retired" and "refuted 2" in got["I2"]["retired_why"],
+          {k: v["status"] for k, v in got.items()})
+    check("an insight that repeats an active one is refused", e["insights"]["refused"] == [
+        {"text": "kimchi sells at about 70% of list!", "why": "repeats an active insight"}], e["insights"]["refused"])
     check("revert: the last applied change goes back; one that was never applied is ignored",
           e["reverted"] == [{"role": "seller", "field": "price_adjust", "back_to": 0.0}]
           and common.rules()["seller"]["price_adjust"] == 0.0, e["reverted"])
@@ -304,31 +332,37 @@ def test_context():
     p = parts_of(text)
     print("\n".join("    | " + x for x in text.splitlines()))
     check("five parts in order", list(p) == [t[k] for k in context.LIMITS], list(p))
-    check("no lessons or memos yet: the part says so", p[t["lessons"]] == context.NONE and p[t["memos"]] == context.NONE)
+    ins = p[t["insights"]]
+    check("insights: the seller's confirmed one with its evidence and use; the retired buyer one not shown",
+          "I1 [seller, price, confirmed: confirmed 2, refuted 0]" in ins and "| use: open kimchi" in ins and "I2" not in ins, ins)
+    check("no memos yet: the part says so", p[t["memos"]] == context.NONE)
     rep = p[t["reports"]]
     check("the last two seller reports, newest first", 0 <= rep.find("again") < rep.find("Kimchi sells."))
     check("what became of each proposal: applied with the 12 h after, recorded only, refused by code, not adopted",
           all(s in rep for s in ("adopted and applied as 0.05; next 12 h", "recorded only (exploration phase)",
                                  "refused by code", "not adopted")), rep)
 
-    lessons = [{"id": f"L{i}", "role": ["seller", "buyer", "both"][i % 3], "text": f"lesson-{i:02d} " + "x" * 100,
-                "confirmed": i, "refuted": 0, "updated": tc} for i in range(15)]
-    lessons.append({"id": "L-old", "role": "seller", "text": "retired lesson", "status": "retired", "confirmed": 99})
-    common.write_json(MD / "analysis" / "lessons.json", lessons)
+    fake = [{"id": f"I{100 + i}", "role": ["seller", "buyer", "both"][i % 3], "topic": "price", "text": f"insight-{i:02d} " + "x" * 60,
+             "evidence": f"{i} sales", "use": "y" * 20, "status": "testing", "confirmed": i, "refuted": 0, "checked": tc}
+            for i in range(15)]
+    fake.append({"id": "I999", "role": "seller", "topic": "price", "text": "retired insight", "evidence": "1", "use": "z",
+                 "status": "retired", "confirmed": 99})
+    common.write_json(MD / "analysis" / "insights.json", fake)
     memo = lambda ago, frm, to, text: {"ts": tc - ago, "from": frm, "to": to, "act": "inform", "text": text}
     with open(MD / "analysis" / "memos.jsonl", "a", encoding="utf-8") as f:
         for m in (memo(13 * H, "buyer", "seller", "old memo"), memo(2 * H, "buyer", "seller", "other shops open at 82% of list"),
-                  memo(H, "buyer", "buyer", "note to self"), memo(H, "judge", "all", "phase stays explore"),
+                  memo(H, "buyer", "buyer", "note to self"), memo(H, "integrated", "all", "phase stays explore"),
                   memo(600, "seller", "all", "my own memo")):
             f.write(json.dumps(m) + "\n")
     with open(MD / "analysis" / "business.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(dict(context.business(tc - 3 * H), at=tc - 3 * H, balance=1)) + "\n")
     text = context.form("seller", tc, {"our_records_24h": {"sales_24h": 0}})
     p = parts_of(text)
-    les = p[t["lessons"]]
-    check("lessons: the seller's and the shared ones, best confirmed first, none retired",
-          les.startswith("- [both] lesson-14") and "lesson-13" not in les and "retired" not in les, les[:80])
-    check("lessons that do not fit are left out with a line saying so", "more left out" in les and len(les) <= context.LIMITS["lessons"])
+    ins = p[t["insights"]]
+    check("insights: the seller's and the shared ones, best confirmed first, none retired",
+          "insight-14" in ins.splitlines()[0] and "[both" in ins.splitlines()[0] and "insight-13" not in ins
+          and "retired insight" not in ins, ins[:80])
+    check("insights that do not fit are left out with a line saying so", "more left out" in ins and len(ins) <= context.LIMITS["insights"])
     mem = p[t["memos"]]
     check("memos: to the seller or to all, last 12 h, newest first, not its own",
           0 <= mem.find("phase stays explore") < mem.find("82% of list") and not any(s in mem for s in ("old memo", "note to self", "my own memo")), mem)
@@ -336,13 +370,35 @@ def test_context():
           p[t["numbers"]][:160])
     check("every part within its limit", all(len(p[t[k]]) <= n for k, n in context.LIMITS.items()),
           {k: len(p[t[k]]) for k in context.LIMITS})
-    text = context.form("judge", tc, {"last_decisions": []})
+    text = context.form("integrated", tc, {"last_decisions": []})
     p = parts_of(text)
-    check("the judge: the latest report of each role", "seller: again" in p[t["reports"]] and "buyer:" in p[t["reports"]])
-    check("the judge: all lessons (buyer's too) and all memos but its own",
-          "lesson-13" in p[t["lessons"]] and "note to self" in p[t["memos"]] and "phase stays explore" not in p[t["memos"]])
-    check("each briefing is kept", (MD / "analysis" / "last_context_judge.txt").read_text(encoding="utf-8") == text
-          and common.read_jsonl(MD / "analysis" / "contexts.jsonl")[-1]["role"] == "judge")
+    check("the integrated analysis: the latest report of each role", "seller: again" in p[t["reports"]] and "buyer:" in p[t["reports"]])
+    check("the integrated analysis: all insights (buyer's too) and all memos but its own",
+          "insight-13" in p[t["insights"]] and "note to self" in p[t["memos"]] and "phase stays explore" not in p[t["memos"]])
+    check("each briefing is kept", (MD / "analysis" / "last_context_integrated.txt").read_text(encoding="utf-8") == text
+          and common.read_jsonl(MD / "analysis" / "contexts.jsonl")[-1]["role"] == "integrated")
+
+
+def test_insights():
+    print("\n[insights] the limits the code holds")
+    saved = insights.load()
+    now = int(NOW) + 20 * H
+    log = insights.update({"confirm": ["I1"], "refute": ["I1"], "new": [
+        insight("shop", "price", "Wrong role", "1 sale", "x"), insight("seller", "price", "y" * 201, "1 sale", "x"),
+        insight("seller", "price", "No use given", "1 sale", "")]}, now)
+    check("marked both ways, an unknown role, a finding over 200 characters, no use: all refused",
+          [r["why"] for r in log["refused"]] == ["both confirmed and refuted", "role must be seller, buyer or both",
+                                                 "text must be 1 to 200 characters", "use must be 1 to 200 characters"],
+          [r["why"] for r in log["refused"]])
+    common.write_json(insights.path(), [{"id": f"I{i}", "role": "seller", "topic": "price", "text": f"old {i}", "evidence": "1",
+                                         "use": "u", "status": "testing", "confirmed": i, "refuted": 0, "checked": now - H}
+                                        for i in range(1, 21)])
+    log = insights.update({"new": [insight("buyer", "shops", "New one", "2 deals", "u"),
+                                   insight("buyer", "demand", "Another", "3 deals", "u")]}, now)
+    live = [x["id"] for x in insights.active(insights.load())]
+    check("21st and 22nd insight: the two weakest retire, so 20 stay active", log["added"] == ["I21", "I22"]
+          and log["retired"] == ["I1", "I2"] and len(live) == 20 and "I22" in live, log)
+    common.write_json(insights.path(), saved)
 
 
 def test_runner():
@@ -393,6 +449,7 @@ def main() -> int:
         test_tool()
         test_forum()
         test_analysts()
+        test_insights()
         test_context()
         test_restock_wanted()                # before the runner's later passes age the unmet order out
         test_runner()

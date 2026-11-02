@@ -3,18 +3,19 @@ integrated analysis every 12 hours adopts proposals into the rules in force, and
 changes it made last time against what happened since, keeping or reverting them.
 
     seller / buyer analysis   MODEL_MID (gpt-6.1-terra) + the ledger_query tool. The five-part
-                              briefing (context.py: the business now, lessons, its last reports and
+                              briefing (context.py: the business now, insights, its last reports and
                               their fate, memos, our own records and the market summary) goes into
                               the prompt; more of the market is fetched through the tool.
                               Out: analysis/<role>_report.json, reports.jsonl, proposals.jsonl
     integrated analysis       MODEL_STRONG (gpt-6.1-sol). In: its briefing (the latest report of each
-                              role, all lessons and memos, the last decisions with the numbers then
+                              role, all insights and memos, the last decisions with the numbers then
                               and now), the last 12 hours' proposals, and the private facts that
                               link the two roles (our orders' budgets against the list prices, the
                               asks other shops gave our buyer).
-                              Out: analysis/active_rules.json (focus phase only), changes.jsonl
+                              Out: analysis/active_rules.json (focus phase only), changes.jsonl,
+                              and the insights it keeps (insights.py, both phases)
 
-The proposer and the judge are different calls, and the code holds the limits: only the
+The proposer and the integrated analysis are different calls, and the code holds the limits: only the
 fields below, only within their ranges, a number moves at most STEP per adoption, the floor,
 the budget and the hard filters are out of reach, and in the exploration phase nothing is
 applied ("would adopt" is recorded instead). That is week 2's meta-harness shape: a proposal,
@@ -27,6 +28,7 @@ from collections import Counter
 import common
 import context
 import harness
+import insights
 import tools
 
 FIELDS = {
@@ -121,7 +123,7 @@ def buyer_facts(now: float) -> dict:
 ROLE_PROMPT = """You analyse the {role} of our agent business in a market of agents (Round 3: shops buy
 stock and sell it over A2A; buyers get orders with a hidden budget and an order's value is the list
 price of what was bought if it was useful; only settled deals count). Your briefing, assembled by code:
-the business now, the lessons so far, your last reports and what became of their proposals, memos from
+the business now, the insights so far, your last reports and what became of their proposals, memos from
 the other analyses, and the new numbers (our own records counted by code; the whole market from the
 public ledger).
 
@@ -205,8 +207,16 @@ Proposals from the seller and buyer analyses since the last decision (all within
 {proposals}
 Private facts linking the two roles: {cross}
 Adopt only proposals the numbers support; two proposals for one field: pick one. Revert a last change
-if the numbers since are worse. Reply with ONE JSON object and nothing else:
-{{"adopt": ["proposal id", ...], "revert": ["role.field", ...], "note": "one or two sentences"}}"""
+if the numbers since are worse.
+Keep the insights too (part 2), in either phase. An insight is not a rule change; it has three parts:
+what was found ("grade B bedding sells at about 60% of list"), the numbers behind it, and how later
+decisions should use it ("open grade B bedding at 65%, not 70%"). Mark by id the ones the new numbers
+confirm or refute, and add at most {new_max} new ones the numbers support. Reply with ONE JSON object and nothing else:
+{{"adopt": ["proposal id", ...], "revert": ["role.field", ...],
+ "insights": {{"confirm": ["I1", ...], "refute": ["I2", ...],
+              "new": [{{"role": "seller|buyer|both", "topic": "price|stock|shops|demand|quality|other",
+                       "text": "what was found", "evidence": "the numbers", "use": "how to use it"}}]}},
+ "note": "one or two sentences"}}"""
 
 
 def _step(old, new):
@@ -230,9 +240,9 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
                   "changes": [f"{x['role']}.{x['field']}: {x['from']} -> {x['to']}" for x in c.get("changes") or []],
                   "reverted": [f"{x['role']}.{x['field']} back to {x['back_to']}" for x in c.get("reverted") or []],
                   "metrics_12h_then": c.get("metrics")} for c in changes[-2:]]
-    brief = context.form("judge", now, {"last_decisions": decisions, "metrics_12h_now": m})
+    brief = context.form("integrated", now, {"last_decisions": decisions, "metrics_12h_now": m})
     prompt = INTEGRATED_PROMPT.format(context=brief, proposals=json.dumps(proposals, ensure_ascii=False)[:6000],
-                                      cross=json.dumps(cross(now), ensure_ascii=False))
+                                      cross=json.dumps(cross(now), ensure_ascii=False), new_max=insights.NEW_MAX)
     text = harness.run_tools([{"role": "user", "content": prompt}], harness.MODEL_STRONG, [], tools.run, 0, chat_fn)
     decision = harness.first_json(text) or {}
     new = json.loads(json.dumps(current))
@@ -260,8 +270,9 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
     focus = common.strategy()["phase"] == "focus"
     if focus and (done or reverted):
         common.write_json(folder() / "active_rules.json", new)
+    kept = insights.update(decision.get("insights") if isinstance(decision.get("insights"), dict) else {}, now)
     entry = {"at": int(now), "phase": common.strategy()["phase"], "applied": focus, "model": harness.MODEL_STRONG,
-             "decided": bool(decision), "changes": done, "reverted": reverted,
+             "decided": bool(decision), "changes": done, "reverted": reverted, "insights": kept,
              "note": str(decision.get("note") or ("(no answer from the model)" if not decision else ""))[:400],
              "metrics": m}
     with open(folder() / "changes.jsonl", "a", encoding="utf-8") as f:
