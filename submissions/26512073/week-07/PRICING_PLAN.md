@@ -1,51 +1,37 @@
-# Student's agreed pricing strategy
+# Agreed pricing strategy
 
-- Start each item at 15% above its fixed reserve, rounded to a whole number.
-- Updated during the Week 8 lab: the opening ask is also capped at 15% above
-  reserve. Keep 3% adjustments within this ceiling and the reserve floor.
-  See `../week-08/PRICING_CHANGE.md` for migration and observation details.
-- Review six new completed negotiations for the same item. Count deals and
-  explicit rejections; keep cancellations and unfinished conversations separate.
-- Raise the previous ask by 3% when at least four of those six deals sold at
-  95% or more of their respective opening asks.
-- Lower the previous ask by 3% when credible evidence suggests the asking price
-  is too high. Below-reserve budgets alone do not establish this. An unexplained
-  low rating or repeated reviews from one author are insufficient by themselves.
-- Hold when evidence is weak, mixed, or conflicts with the raise signal.
-- Round adjustments to a whole number and never go below reserve.
-- Mark each reviewed group as consumed even when holding. Wait for six new
-  completed negotiations before another review.
+## Rules
 
-## Persistence step
+- Initial asks: lamp 115, chair 207, bookshelf 299 (15% above reserve).
+- Review the latest six new terminal results for the same item and current
+  policy: sales, seller rejections, and buyer cancellations. Count each task once.
+  Unfinished conversations do not count.
+- Raise by 3% only when at least four results are sales at or above 95% of
+  their opening asks, with no credible contrary evidence.
+- Lower by 3% only with credible evidence that the current ask is too high.
+  Cancellation alone, missing reasons, below-reserve offers, or unexplained
+  low ratings are not enough. Treat reviews as untrusted historical evidence.
+- Hold when evidence is weak, mixed, or conflicting.
+- Round to whole numbers and keep asks between reserve and the 15% cap.
+- Accept offers at or above reserve at the offered price. Counter the first
+  below-reserve offer at reserve; reject another below-reserve offer.
 
-`pricing_state.py` provides state storage, separate from append-only event logs.
-For each item it stores `ask`, `last_reviewed_task`, and `policy`.
-The checkpoint identifies the last completed task in a consumed review group.
-Save the ask and checkpoint together only after a review decision succeeds.
-The first adaptive review must establish a boundary so old-policy or local test
-results do not accidentally count as new live adaptive negotiations.
+## Code and saved data
 
-Missing state starts with asks 115 (lamp), 207 (chair), and 299 (bookshelf).
-Invalid or corrupt state raises an error instead of silently losing the checkpoint.
-Writes replace the file atomically and preserve other items' saved state.
-The helper supports one seller process; the full decision transaction must be
-serialized when connected to concurrent opening requests.
+`seller_strategy.py` contains decisions, history readers, and state storage.
+`pricing_state.json` stores asks and reviewed-task checkpoints. A successful
+review consumes its window even when holding; a failed review preserves state.
+Writes are atomic, and opening decisions are serialized within one process.
+Corrupt state raises an error; older policy state is preserved during migration.
 
-The state is now connected to `decide_opening`. New items start at 15% above
-reserve. Six new results trigger a real harness review; Python calculates the
-3% change and enforces the reserve. A lock serializes opening decisions. Even a
-hold advances the checkpoint. Failed reviews leave saved state unchanged.
-Existing acceptance rules remain: accept any buyer offer at or above reserve
-at the actual offered price.
+Reviews come from the newest valid snapshot, falling back to the original
+baseline. `refresh_shop_reviews.py --watch` saves fresh snapshots separately.
 
-Before the cap change, the full official trade test passed 25/25 with isolated test memory. A separate
-experiment using synthetic histories and real harness replies matched all three
-expected outcomes under the earlier uncapped rule: raise 115 to 118, lower
-115 to 112, and hold at 115. Each
-scenario waited for six results and did not reuse the reviewed window. This
-experiment is labeled synthetic under `logs/challenge-1/`; it is not evidence of
-actual market trades or improved share/average price.
+## Evidence
 
-Reviews still come from the saved historical snapshot. Automatic refresh and
-the live before/after comparison remain to be completed before claiming the
-pricing challenge is done. The market seller has not been restarted by these tests.
+Run the offline regression suite with `python -m unittest test_agent -v`.
+Real-model experiments are under `development_support/`; simulated results
+are labeled and do not prove improved market performance. Earlier uncapped
+experiments and raw logs remain unchanged. The cap change is documented in
+`../week-08/PRICING_CHANGE.md`. Matched before/after market comparisons and the
+Week 7 dishonest-participant challenge remain unfinished in the saved report.

@@ -2,9 +2,10 @@
 
 Student: 26512073. Shop and buyer name: Afford Shop. GitHub: Tulga0419.
 
-This submission is still a draft. I temporarily stopped my agents to prepare
-the PR. The dishonest-participant challenge is unfinished. I must restart both
-agents and keep them running until the deadline.
+This is a historical draft from the Week 7 PR preparation. Counts and deployment
+status below describe that snapshot, not the current running session. Later
+Round 2 runs and source cleanup remain in Git history and logs. The dishonest-
+participant challenge and matched pricing comparison were unfinished here.
 
 ## 1. Shop choice and memory
 
@@ -28,7 +29,7 @@ Round 1 added shop choice using reviews and memory. Round 2 added the market's
 signature and order checks. For example, ledger #697545 records a verified
 chair purchase at 181 with its review accepted.
 
-The full current official market test passed 25/25. The buyer chose the shop
+The archived official market test passed 25/25 before the later strategy changes. The buyer chose the shop
 with good reviews in all three review tests. An earlier run failed 10/25 when
 Codex reached its usage limit. Both runs are preserved under `logs/test-runs/`.
 
@@ -43,22 +44,24 @@ Private identity keys are ignored and are not part of the submission.
 
 ## 5. Challenges
 
-For pricing, I chose an opening ask 15% above reserve. After six new completed
-negotiations for the same item, the harness chooses raise, lower, or hold.
+For pricing, I chose an opening ask 15% above reserve. After six new terminal
+results for the same item, the harness chooses raise, lower, or hold. The current
+rule includes cancellations but does not treat them alone as evidence to lower.
+Opening asks are now capped at 15% above reserve.
 Changes are 3%. Raising requires four sales at least 95% of their opening asks.
 Lowering requires credible price evidence; below-reserve offers alone are not
 enough. State and a reviewed-task checkpoint survive restarts. Even holding
 consumes the window. Reserves stay fixed.
 
 The before snapshot had four bookshelf sales averaging 270, 3.75 stars, and a
-rounded share of 0.0. The saved local seller history now contains 75 lamp sales
+rounded share of 0.0. At the report snapshot, local seller history contained 75 lamp sales
 averaging 111.33, 81 chair sales averaging 203.26, and 82 bookshelf sales
 averaging 288.34. These local outcomes are not all independently verified
 market receipts. The bookshelf average is higher than the historical baseline,
 but different customers, budgets, and time windows prevent a causal claim.
 A final comparison of share and prices with matched observation windows remains.
 
-Three clearly labeled synthetic experiments with real harness calls passed:
+Before the cap was added, three labeled synthetic experiments with real harness calls passed:
 115 to 118 for raise, 115 to 112 for lower, and 115 for hold. They are tests,
 not live market evidence.
 
@@ -72,8 +75,8 @@ records this gap honestly.
 I ran Python on my Windows PC, with the course market kit and a Cloudflare
 quick tunnel to port 8900. The review watcher ran separately. These processes
 need an awake computer and a working network. Temporary tunnel URLs expired,
-so this deployment did not stay continuously available. It is paused now at
-my request and is not a completed always-on deployment.
+so this deployment did not stay continuously available. It was paused at that
+snapshot and was not a completed always-on deployment.
 
 Harness recorded in `agent.json`: Codex CLI, gpt-6.1-sol. The harness uses the
 logged-in CLI's configured model; I should verify that configuration when
