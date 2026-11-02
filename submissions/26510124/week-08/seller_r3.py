@@ -102,6 +102,7 @@ class InventorySeller(Seller):
                                       "sku": (product or {}).get("sku"), "price": price,
                                       "category": (product or {}).get("category"),
                                       "cost": (product or {}).get("cost"),
+                                      **{k: product.get(k) for k in ("kind", "grade", "supplied_at", "expires_at")},
                                       "warranty_hours": ((deal or {}).get("terms") or {}).get("warranty_hours"),
                                       "round": deal.get("round"),
                                       "stage": negotiation.get("stage"),
@@ -157,7 +158,8 @@ class InventorySeller(Seller):
                 # Pin even absent advice; a background update cannot alter this negotiation.
                 deal = self.r3[task.id] = {"history": [], "ask": None, "offers": [], "touched": now,
                                           "round": rnd, "advice": advice,
-                                          "product": {k: product[k] for k in ("unit", "sku", "category", "cost")},
+                                          "product": {k: product.get(k) for k in
+                                                      ("unit", "sku", "category", "cost", "kind", "grade", "supplied_at", "expires_at")},
                                           "terms": selling_terms(product, self.policy)}
                 self.event(task.id, "opened", product, deal=deal)
             else:
@@ -171,6 +173,7 @@ class InventorySeller(Seller):
             deal["negotiation"] = closing_context(product, deal, now)
             history = bounded_history(deal["history"] + [{"role": "buyer", "text": text}])
         except (StockError, OSError) as exc:
+            self.event(task.id, "stock_unavailable", deal=deal)
             self.discard(task.id)
             await up.reject(say(str(exc)))
             return

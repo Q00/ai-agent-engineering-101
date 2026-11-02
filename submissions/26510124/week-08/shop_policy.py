@@ -49,7 +49,8 @@ def policy_at(root=ROOT):
     for key, low, high in (("cash_reserve_percent", 25, 80), ("max_units_per_run", 1, 10),
                            ("max_stock_units", 1, 50), ("max_units_per_sku", 1, 5),
                            ("max_food_units_per_sku", 1, 2), ("interval_seconds", 900, 86400),
-                           ("exploration_units", 0, 2)):
+                           ("exploration_units", 0, 2), ("min_mature_sales", 3, 10),
+                           ("slow_stock_hours", 12, 72)):
         n = stock.get(key)
         if type(n) is not int or not low <= n <= high:
             raise ValueError("Invalid restock policy: " + key)

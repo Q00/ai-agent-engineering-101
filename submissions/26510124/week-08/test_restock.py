@@ -41,6 +41,9 @@ class RestockTests(unittest.TestCase):
         atomic_json(self.md / "catalog.json", self.catalog)
         atomic_json(self.md / "demand.json", self.demand)
         self.memory = {"schema": 1, "round": 3, "updated_at": self.now, "sales": []}
+        network = patch("restock.refresh_market", return_value=None)
+        network.start()
+        self.addCleanup(network.stop)
 
     def receipt(self, **updates):
         return {"round": 3, "time": self.now - 60, "outcome": "receipt_issued", "unit": "u1",
@@ -73,7 +76,9 @@ class RestockTests(unittest.TestCase):
         second = sales_performance.update(self.root, 3, self.now + 100)
         self.assertEqual(second["sales"], first["sales"])
         summary = sales_performance.summary(second, 3, self.now + 100)
-        self.assertEqual(summary["top_skus"], [{"sku": "G00001", "settled": 1}])
+        self.assertEqual(summary["top_skus"][0]["sku"], "G00001")
+        self.assertEqual(summary["top_skus"][0]["settled"], 1)
+        self.assertEqual(summary["top_skus"][0]["unknown"], 1)
         self.assertIn("refunds", summary["window"])
         self.assertEqual(sales_performance.update(self.root, 4, self.now)["sales"], [])
 
@@ -95,12 +100,12 @@ class RestockTests(unittest.TestCase):
         rows = [json.loads(x) for x in (self.logs / "restock-decisions.jsonl").read_text().splitlines()]
         self.assertGreaterEqual(rows[-1]["projected_min_balance"], 2000000)
 
-    def test_confirmed_sales_drive_sku_restock_with_only_one_exploration_unit(self):
+    def test_sales_with_unknown_costs_are_restocked_only_one_at_a_time(self):
         self.memory["sales"] = [{"sku": "G00001", "category": "furniture"}] * 4
         decision, detail = self.plan()
         counts = {b["sku"]: b["qty"] for b in decision["buy"]}
-        self.assertEqual(counts["G00001"], 3)
-        self.assertEqual(sum(counts.values()), 5)
+        self.assertEqual(counts["G00001"], 1)
+        self.assertLessEqual(sum(counts.values()), 5)
         self.assertEqual(sum(c["reason"] == "small_exploration" for c in detail["choices"]), 1)
 
     def test_cash_floor_is_starting_capital_and_worst_cost_rounds_up(self):
