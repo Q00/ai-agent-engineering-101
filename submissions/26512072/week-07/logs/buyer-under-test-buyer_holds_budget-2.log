@@ -1,0 +1,8 @@
+[harness] {"shop": "Kit Shop", "reason": "Kit Shop has no reviews, which is better than bad reviews, and my memory shows 3 completed deals at prices of 100 to 104 with no recorded receipt mismatches or overcharging, though the 104 price suggests it sometimes sells slightly above the agreed price."}
+[choose] http://127.0.0.1:34625: Kit Shop: Kit Shop has no reviews, which is better than bad reviews, and my memory shows 3 completed deals at prices of 100 to 104 with no recorded receipt mismatches or overcharging, though the 104 price suggests it sometimes sells slightly above the agreed price.
+card: Kit Shop -> http://127.0.0.1:34625/
+-> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+budget 230 is below the market floor 260 for a bookshelf: walked away (CancelTask)
+[receipt] no deal, no receipt
+[harness] {"stars": 2, "review": "The shop asked 338 for a bookshelf against a 230 budget, I made no offer, and I walked away without a deal or receipt."}
+{"shop": "http://127.0.0.1:34625", "receipt": null, "stars": 2, "review": "The shop asked 338 for a bookshelf against a 230 budget, I made no offer, and I walked away without a deal or receipt."}

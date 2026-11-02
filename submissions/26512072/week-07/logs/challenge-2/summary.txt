@@ -1,0 +1,40 @@
+# Challenge 2: dishonest participants my buyer met, and how it stopped trading with them
+
+buyer memory: 3674 trades, 2026-10-20 11:39:47 .. 2026-10-26 02:12:53
+
+shop | house? | what happened | when flagged | trades with it afterwards
+maple-home | house | agreed 100, receipt 115.0 (lamp) | 2026-10-20 12:06:42 | 0
+ggari-shop | student | agreed 110, receipt 103 (lamp) | 2026-10-20 12:23:15 | 0
+willow-goods | house | unsigned receipt (lamp at 125.0) | 2026-10-21 14:27:18 | 0
+elm-street | house | agreed 280, receipt 320.0 (bookshelf) | 2026-10-22 04:23:20 | 0
+moss-and-oak | student | agreed 280, receipt 272.0 (bookshelf) | 2026-10-22 05:10:57 | 0
+
+Round 0 shops whose receipts had no sig_seller (from market-kit.log, before the buyer kept memory):
+  thisjonghoon: 2 unsigned receipt(s); now 7457 counted deals in the market
+  kcwarni: 2 unsigned receipt(s); now 3475 counted deals in the market
+  psyoung82: 2 unsigned receipt(s); now 3235 counted deals in the market
+  mjforge: 1 unsigned receipt(s); now 20711 counted deals in the market
+  seochanit: 1 unsigned receipt(s); now 1 counted deals in the market
+[avoid] lines in market-kit.log: 4199 (first: 11:49:57 [buyer] [avoid] shops that issued unsigned receipts before: ['kcwarni', 'psyoung82', 'thisjonghoon'])
+
+## The episodes, verbatim from logs/market-kit.log
+12:06:12 [order o-bbdcb126] lamp, budget 105, round 1
+12:06:22 [buyer] [choose] https://market.ourolabs.ai/shop/maple-home: maple-home: Its own memory records an honest receipt and the best lamp price it found (ask 100, within the 105 budget), and its reviews raise no receipt mismatch, overcharging, or fraud conc
+12:06:24 [buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+12:06:28 [buyer] -> '85'  <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 118.
+12:06:32 [buyer] -> '95'  <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 106.
+12:06:37 [buyer] -> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+12:06:37 [buyer] [receipt] agreed 100, receipt says 115.0; receipt price 115.0 is above the budget 105
+12:06:42 [buyer] [harness] {"stars": 1, "review": "I agreed to buy a lamp for 100 after negotiating down from the asking price of 130, but the receipt charged 115, which is above my 105 budget."}
+12:06:43 [market] ledger #7321: lamp at 115, stars 1, verified False (failed: price_within_budget, sig_buyer_ok), review accepted
+12:06:43 [order o-3d4fd419] chair, budget 205, round 1
+
+04:22:58 [order o-a394dfa1] bookshelf, budget 360, round 2
+04:23:05 [buyer] [choose] https://market.ourolabs.ai/shop/elm-street: elm-street: Its 4.8-star reviews mention no receipt mismatches, overcharging, or low stars, and its reviews show a low price (106 against a 125 ask) within budget.
+04:23:06 [buyer] -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+04:23:11 [buyer] -> '250'  <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 306.
+04:23:15 [buyer] -> '280'  <- TASK_STATE_COMPLETED | Deal: bookshelf at 280.
+04:23:15 [buyer] [receipt] agreed 280, receipt says 320.0
+04:23:20 [buyer] [harness] {"stars": 2, "review": "The shop agreed to a bookshelf deal at 280 after negotiation, but the receipt listed 320.0, a 40 difference from the agreed price."}
+04:23:21 [market] ledger #220860: bookshelf at 320, stars 1, verified True, review accepted
+
