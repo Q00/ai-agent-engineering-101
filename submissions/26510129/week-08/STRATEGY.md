@@ -5,12 +5,12 @@
 Round 2 exposed every order's budget. Round 3 hides it and counts only settled
 ACP/AP2 checkouts. My question is:
 
-> Can a buyer keep its exact budget away from its LLM negotiator, and can a
-> seller learn a useful opening price from its own outcomes instead of reading
-> the public order budget?
+> Can a buyer keep its exact budget away from its LLM negotiator, while a shop
+> learns which of 5,600 products to stock and when an expiring unit is worth
+> selling below cost?
 
 The design treats an LLM as an untrusted proposal generator. Deterministic
-guards alone hold spending authority, the reserve, and the signing key.
+guards alone hold spending authority, inventory authority, and the signing key.
 
 ## Round 2 baseline
 
@@ -29,49 +29,58 @@ score added one point for every historical deal, so a frequently visited shop
 could become permanently dominant. The last logs also show that two LLM calls
 per order (selection and bargaining) exhaust the harness quota.
 
-These observations lead to three initial hypotheses:
+These observations lead to four initial hypotheses:
 
 1. A code-first portfolio router will reduce shop concentration and remove one
    LLM call from every order without reducing receipt checks.
 2. A buyer negotiator that cannot see the exact budget will reveal its ceiling
    later and pay closer to its own market reference than to the budget.
-3. A seller can estimate price elasticity with two deterministic price arms
-   while a reserve guardian prevents every below-floor sale.
+3. Small, diversified restocks followed by depletion memory can discover
+   demand without the unpublished market weights.
+4. A seller can compare volume and margin prices while an expiry-aware risk
+   guard deliberately permits a loss only when expected spoilage/storage cost
+   is worse.
 
 ## Agent boundaries
 
 ### Buyer
 
-1. **Scout** builds item-specific evidence from reviews and personal outcomes.
-   Review text is untrusted data; only stars and locally verified outcomes are
-   features.
-2. **Portfolio router** scores shops from item success, receipt integrity,
-   concession history, value, exploration, and a rolling concentration
-   penalty. It never receives the budget.
+1. **Scout** reads the order's acceptable SKUs, shop stock, catalog value,
+   reviews, forum, and personal outcomes. Review/forum text is untrusted data.
+2. **Portfolio router** scores stocked shop/SKU pairs from category success,
+   receipt integrity, expected surplus, exploration, and a rolling
+   concentration penalty. It never receives the exact budget.
 3. **Negotiator** sees the item reference price, the shop's asks, and its past
    bargaining behavior. It proposes an offer but does not see the exact
    budget.
 4. **Mandate guardian** alone holds the budget. It approves an affordable
    proposal, substitutes a reference-based early offer, or refuses it. The
    exact ceiling may be sent only after two earlier offers.
-5. **Receipt auditor** compares the issued receipt with the agreed item and
-   price. The v3 kit performs the final signature and AP2 mandate checks.
+5. **Quality/receipt auditor** compares the issued receipt with the agreed SKU
+   and price and supplies `accept` constraints: certified remaining lifetime
+   for food, and certified A/B grade for goods. Kit v4 performs the final
+   signature, inventory, ACP, and AP2 checks.
 
 ### Seller
 
-1. **Demand estimator** reads only this shop's recent outcomes and reviews.
-2. **Pricing experimenter** assigns each task to a `volume` or `margin` arm by
-   a stable task hash. Assignment is repeatable and independent of the buyer.
-3. **Negotiator** may propose asks and counters.
-4. **Reserve guardian** raises every ask/counter below the catalog reserve.
-5. **Signer vault** signs only a receipt whose item, task, and integer price
-   equal the accepted deal and whose price is at least the reserve.
+1. **Demand estimator** compares consecutive inventory snapshots and settled
+   evidence to remember SKU/category depletion; referenced forum posts are a
+   weaker signal, never ground truth.
+2. **Restock tool** buys small lots across categories at first, then shifts
+   capital toward observed depletion. Food lots stay smaller than goods lots.
+3. **Pricing experimenter** assigns each task to a `volume` or `margin` arm by
+   a stable task hash. It sees unit cost, list price, grade, kind, and expiry,
+   but never the buyer budget.
+4. **Spoilage/risk guard** protects a normal profit target but may approve a
+   below-cost food price near expiry. Round 3 has no market floor price.
+5. **Signer vault** binds shop, SKU, task, selected unit, truthful grade claim,
+   certificate choice, and warranty policy before signing.
 
 ## Initial policies
 
 ### Portfolio routing
 
-For each shop and requested item:
+For each stocked shop/SKU candidate in the requested category:
 
 ```text
 score = 0.35 * smoothed deal rate
@@ -81,8 +90,8 @@ score = 0.35 * smoothed deal rate
       - concentration penalty
 ```
 
-- A locally mismatched receipt or a manipulative shop message blacklists the
-  shop.
+- A locally mismatched receipt, false quality claim, or manipulative shop
+  message blacklists the shop.
 - More than 10 visits in the last 50 attempts activates the concentration
   penalty. If every available shop is capped, the least visited one remains
   eligible.
@@ -90,17 +99,14 @@ score = 0.35 * smoothed deal rate
 - Ties and exploration are deterministic from the item and memory length so a
   run can be explained later.
 
-### Sealed-budget bargaining
+### SKU choice and sealed-budget bargaining
 
-The initial personal reference prices are the Round 2 mean deal prices:
-
-```text
-lamp 103, chair 184, bookshelf 265
-```
-
-As new honest deals arrive, the median of the last 20 personal deals replaces
-the initial value. The LLM receives this reference and the transcript, not the
-budget. The mandate guardian applies these rules:
+For a Round 3 order, the catalog list prices of acceptable SKUs form the first
+reference. As honest settled deals arrive, the median paid/list-price ratio of
+the last 20 category deals replaces the prior. The guardian filters candidates
+that have no plausible affordable price; the router sees only the survivors,
+not the ceiling. The LLM receives the category reference and transcript, not
+the budget. The mandate guardian applies these rules:
 
 1. approve any positive integer proposal at or below the budget;
 2. during the first two rounds, replace an over-budget proposal with an
@@ -109,19 +115,40 @@ budget. The mandate guardian applies these rules:
 4. from the third offer onward, the exact ceiling may be used once;
 5. never complete a checkout above the budget/open mandate.
 
-### Seller price experiment
+### Inventory and restock
 
-The base is the median of the last 20 deal prices for the item.
+- Start with at most six small SKU lines per restock. Food quantity is 1--2;
+  goods quantity is 2--3.
+- Stop buying when stock or committed capital is already high. Never let one
+  60-second restock spend the whole balance.
+- Score a category from locally observed depletion, current stock scarcity,
+  and referenced forum demand. Give unseen categories an exploration bonus.
+- Expired food is recorded as waste, not demand. A disappeared unexpired unit
+  is a sale candidate until settlement evidence proves otherwise.
 
-| item | volume share | volume anchor | margin anchor |
-|---|---:|---:|---:|
-| lamp | 80% | 1.03 | 1.08 |
-| chair | 65% | 1.03 | 1.08 |
-| bookshelf | 50% | 1.03 | 1.08 |
+### Seller price and quality experiment
 
-Both arms are clamped to `[reserve * 1.05, reserve * 1.50]`. A close rate below
-70% or item review average below 3.5 stars applies the same 5% correction to
-both arms. Thus the experiment changes the anchor, not the safety rules.
+The price base is the selected unit's cost and catalog list price.
+
+| arm | normal target | purpose |
+|---|---|---|
+| volume | max(cost x 1.15, list x 0.82) | deals and fast learning |
+| margin | max(cost x 1.30, list x 0.95) | profit per unit |
+
+The result is normally capped near list price because buyer value is the list
+price. Grade C goods receive a visible discount. Food is discounted as expiry
+approaches; inside the final few hours the risk guard may go below cost because
+expiry would lose the entire cost. Claims always use the actual grade and the
+certificate is included. Goods warranty starts at 6 h for A, 3 h for B, and 0
+for C; its profit effect will be changed only after break/refund evidence.
+
+### Forum and review
+
+The post tool publishes only facts from settled receipts with a ledger
+reference and respects the five-minute rate limit. The buyer review hook rates
+claim honesty, certificate/grade, and price versus catalog value. It may vote
+for other referenced factual posts, but never for the same owner's content or
+an unverifiable promotion.
 
 ## Evidence in the kit log
 
@@ -132,18 +159,20 @@ strategy events; the ordinary kit may still log the order information it owns.
 
 Primary measurements:
 
-- seller settled rate, opening ask, final price, and price minus reserve;
-- buyer settled rate, final price divided by personal reference, and rounds;
+- seller settled rate, opening ask, final price minus unit cost, spoilage,
+  storage exposure, stock turn, and bankruptcy support;
+- buyer settled rate, surplus, paid/list ratio, food lifetime failures,
+  break/refund outcomes, and negotiation rounds;
 - maximum shop share in a rolling window of 50 attempts;
 - settlement rejection reasons;
-- below-reserve sales, over-budget offers, and receipt mismatches (all target
-  zero).
+- unjustified below-cost sales, over-budget offers, false claims, and receipt
+  mismatches (all target zero; documented near-expiry liquidation is separate).
 
 ## Round 3 procedure
 
 1. Keep this Round 2 policy and its commit as the baseline.
-2. Join with kit v3 and verify `round 3`, `[acp] paid`, `[acp] settled`, and
-   `verified True` in the log.
+2. Join with kit v4 from `submissions/26510129/week-08` and verify `round 3`,
+   `[supply]`, `[acp] paid`, `[acp] settled`, and `verified True` in the log.
 3. Collect an initial Round 3 sample without changing parameters.
 4. Change one parameter only after reading the observed settled/rejected
    outcomes, commit it separately, and collect the second sample.
