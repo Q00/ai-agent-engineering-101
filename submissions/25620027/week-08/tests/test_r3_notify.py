@@ -80,7 +80,7 @@ def test_no_sales_cost_and_billing_conditions() -> None:
 
 
 def test_daily_summary_once_at_nine_and_final_notice_at_the_end(monkeypatch) -> None:  # noqa: ANN001
-    nine = datetime(2026, 11, 6, 0, 5, tzinfo=UTC).timestamp()  # 09:05 KST
+    nine = datetime(2026, 11, 6, 0, 25, tzinfo=UTC).timestamp()  # 09:25 KST (fallback)
     state: dict[str, object] = {"once": ["round3", "switch"]}
     messages, state = decide(healthy(nine), state)
     assert len(messages) == 1

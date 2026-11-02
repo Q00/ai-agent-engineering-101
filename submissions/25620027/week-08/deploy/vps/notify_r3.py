@@ -39,6 +39,9 @@ STOP_SENDING = ROUND_END + timedelta(hours=1)
 REPEAT_SECONDS = 7200.0
 KIT_STALE_SECONDS = 900.0
 SUMMARY_HOUR_KST = 9
+# The 09 KST advisor run sends the morning summary together with its proposals;
+# the five-minute pass only covers the summary if that run has not by 09:20.
+SUMMARY_FALLBACK_MINUTE = 20
 TITLES = {
     "container_down": "거래 컨테이너가 내려가 있습니다 (자동 복구가 3분마다 시도 중).",
     "kit_stale": "키트 로그가 15분 넘게 멈췄습니다. 거래가 멈췄을 수 있습니다.",
@@ -373,7 +376,11 @@ def decide(
         once.add("switch")
     local = _kst(snap.now)
     today = local.date().isoformat()
-    if local.hour == SUMMARY_HOUR_KST and new.get("summary_day") != today:
+    if (
+        local.hour == SUMMARY_HOUR_KST
+        and local.minute >= SUMMARY_FALLBACK_MINUTE
+        and new.get("summary_day") != today
+    ):
         messages.append(summary(snap, "아침 요약"))
         new["summary_day"] = today
     if snap.now >= ROUND_END.timestamp() and "final" not in once:
@@ -415,19 +422,78 @@ def send(text: str, *, dry_run: bool) -> bool:
     return result.returncode == 0
 
 
+def advisor(slot: str, state_path: Path, *, dry_run: bool) -> str:
+    """Run the advisor inside the trading container and send what it reports.
+
+    The 09 KST run always sends (morning summary plus any proposals) and marks the
+    day's summary as sent; other runs send only when there are new proposals.
+    """
+    try:
+        runtime = json.loads(
+            (BASE / "private/runtime.json").read_text(encoding="utf-8")
+        )
+        shop_url = str(runtime.get("public_url", ""))
+    except (OSError, ValueError):
+        shop_url = ""
+    result = subprocess.run(
+        [
+            "docker",
+            "exec",
+            CONTAINER,
+            "python",
+            "-m",
+            "r3.advisor",
+            "--dir",
+            "/data/r3",
+            "--shop-url",
+            shop_url,
+            "--slot",
+            slot,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=240,
+    )
+    try:
+        report = json.loads(result.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        report = {"message": "", "skipped": f"advisor exit {result.returncode}"}
+    message = str(report.get("message", ""))
+    if slot == f"{SUMMARY_HOUR_KST:02d}":
+        snap = collect()
+        body = summary(snap, "아침 요약") + ("\n\n" + message if message else "")
+        if send(body, dry_run=dry_run) and not dry_run:
+            try:
+                state = json.loads(state_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                state = {}
+            state["summary_day"] = _kst(snap.now).date().isoformat()
+            state_path.write_text(
+                json.dumps(state, ensure_ascii=False), encoding="utf-8"
+            )
+    elif message:
+        _ = send(message, dry_run=dry_run)
+    return f"advisor slot={slot} reported={report.get('reported', [])} skipped={report.get('skipped', '')}"
+
+
 def main() -> None:
-    """CLI: --state FILE [--dry-run] [--test MESSAGE] [--summary]."""
+    """CLI: --state FILE [--dry-run] [--test MESSAGE] [--summary] [--advisor HH]."""
     parser = argparse.ArgumentParser(description=__doc__)
     _ = parser.add_argument("--state", type=Path, default=BASE / "notify-state.json")
     _ = parser.add_argument("--dry-run", action="store_true")
     _ = parser.add_argument("--test", default="")
     _ = parser.add_argument("--summary", action="store_true")
+    _ = parser.add_argument("--advisor", default="")
     args = parser.parse_args()
     if time.time() >= STOP_SENDING.timestamp() and not (args.test or args.summary):
         return
     if args.test:
         ok = send(args.test, dry_run=args.dry_run)
         print("sent" if ok else "send failed")
+        return
+    if args.advisor:
+        print(advisor(args.advisor, args.state, dry_run=args.dry_run))
         return
     snap = collect()
     if args.summary:
