@@ -32,3 +32,41 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  strategist:
+    image: week08-strategist:n36l
+    platform: linux/amd64
+    build:
+      context: ../../..
+      dockerfile: submissions/25622005/week-08/Dockerfile.strategist
+    init: true
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Seoul
+      NAS_UID: "${NAS_UID:-1000}"
+      NAS_GID: "${NAS_GID:-1000}"
+      MARKET_URL: https://market.ourolabs.ai
+      STRATEGIST_MODE: "${STRATEGIST_MODE:-apply}"
+      STRATEGIST_INTERVAL_S: "3600"
+      HARNESS_CMD: 'claude -p --model sonnet --tools "" --setting-sources "" --no-session-persistence'
+      R3_HOME: /data
+    # Only the parts of the shop's data the strategist reads (memory/, logs/) and strategy/, where
+    # SKILL.md is rewritten in place. Not the shop's keys or claim code (shop_key.pem, .market/).
+    # Log in once with: docker compose run --rm -it strategist claude
+    volumes:
+      - ./.market/n36l-data/memory:/shop/memory:ro
+      - ./.market/n36l-data/logs:/shop/logs:ro
+      - ./.market/n36l-data/strategy:/shop/strategy
+      - ./.market/strategist-data:/data
+      - ./.market/strategist-claude:/home/agent
+    healthcheck:
+      test: ["CMD", "python", "-m", "strategist", "health"]
+      interval: 60s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
