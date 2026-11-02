@@ -79,7 +79,9 @@ def parse_buyer(output, budget):
     return decision
 
 
-def decide(prompt_name, context, validate, *, timeout=90, prefix="decision"):
+def decide(prompt_name, context, validate, *, timeout=90, prefix="decision", max_attempts=2):
+    if type(max_attempts) is not int or not 1 <= max_attempts <= 2:
+        raise ValueError("max_attempts must be 1 or 2")
     prompt = (ROOT / "prompts" / prompt_name).read_text(encoding="utf-8")
     prompt += "\n" + json.dumps(context, ensure_ascii=False)
     # Each challenge run keeps its own original calls beside its wire logs.
@@ -90,7 +92,7 @@ def decide(prompt_name, context, validate, *, timeout=90, prefix="decision"):
     deadline = time.monotonic() + timeout
     # One correction request is allowed for invalid output, within one deadline.
     # Authentication/process errors fail immediately; no substitute policy runs.
-    for attempt in range(2):
+    for attempt in range(max_attempts):
         log_path = logs / f"{prefix}-{uuid.uuid4().hex}.log"
         with log_path.open("x", encoding="utf-8") as log:
             log.write(f"COMMAND: {shlex.join(COMMAND)}\nPROMPT:\n{prompt}\n")
@@ -124,7 +126,7 @@ def decide(prompt_name, context, validate, *, timeout=90, prefix="decision"):
                 decision = validate(result.stdout)
             except HarnessError as exc:
                 log.write(f"VALIDATION ERROR: {exc}\n")
-                if attempt == 1:
+                if attempt == max_attempts - 1:
                     raise HarnessError(f"{exc}; see {log_path.name}") from exc
                 prompt += "\nYour last output failed validation: " + str(exc)
                 prompt += "\nReturn a corrected decision. Previous output as JSON string: " + json.dumps(result.stdout)

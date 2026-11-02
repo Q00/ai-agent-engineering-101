@@ -38,7 +38,7 @@ def allowed_source(name):
     if len(p.parts) == 1:
         return p.suffix == ".py" or name in (
             "README.md", "requirements.txt", "requirements-lock.txt", "agent.json", "buyer-policy.json",
-            "feedback-config.json", "shop-adaptive.json", "shop-round2.json", "release-manifest.json")
+            "feedback-config.json", "advisor-config.json", "shop-adaptive.json", "shop-round2.json", "release-manifest.json")
     return ((p.parts[0] == "prompts" and p.suffix == ".txt")
             or (p.parts[0] == "deploy" and p.suffix == ".py")
             or name in ("vendor/market_kit_v4.py", "vendor/SOURCE.json"))

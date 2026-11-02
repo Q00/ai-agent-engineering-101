@@ -15,12 +15,13 @@ from feedback import append_event
 from harness import HarnessError, decide, parse_seller
 from inventory import Inventory, StockError
 from receipt_signing import sign_receipt
+from sales_advisor import AdviceReader, config_at
 from seller_agent import DEFAULT, Seller, bounded_history, build
 
 ROOT = Path(__file__).resolve().parent
 
 
-def inventory_decision(product, offer, history, last_ask):
+def inventory_decision(product, offer, history, last_ask, advice=None):
     def validate(raw):
         choice = parse_seller(raw, product["cost"], offer)
         if offer is None and choice["action"] != "counter":
@@ -33,6 +34,7 @@ def inventory_decision(product, offer, history, last_ask):
     return decide("seller_inventory.txt", {
         "product": facts, "observed_at": time.time(), "price_floor": product["cost"],
         "buyer_offer": offer, "last_ask": last_ask, "history": bounded_history(history),
+        "sales_advisor": advice,
     }, validate, prefix="inventory-seller")
 
 
@@ -42,12 +44,16 @@ class InventorySeller(Seller):
         self.inventory = Inventory(cfg.get("market_dir", os.environ.get("MARKET_DIR", ROOT / ".market")))
         self.events = ROOT / "logs" / "inventory-seller-events.jsonl"
         self.r3 = {}
+        self.advisor = AdviceReader(self.inventory.folder) if cfg.get("advisor_enabled") else None
 
-    def event(self, task, outcome, product=None, price=None):
+    def event(self, task, outcome, product=None, price=None, *, deal=None):
         try:
             append_event(self.events, {"time": time.time(), "task": task, "outcome": outcome,
                                       "unit": (product or {}).get("unit"),
-                                      "sku": (product or {}).get("sku"), "price": price})
+                                      "sku": (product or {}).get("sku"), "price": price,
+                                      "category": (product or {}).get("category"),
+                                      "round": (deal or {}).get("round"),
+                                      "advisor_version": ((deal or {}).get("advice") or {}).get("version")})
         except OSError:
             print("[inventory] Could not append seller event", flush=True)
 
@@ -89,7 +95,11 @@ class InventorySeller(Seller):
                 if len(self.r3) >= 64:
                     raise StockError("Shop has too many open negotiations")
                 product = self.inventory.reserve(task.id, text)
-                deal = self.r3[task.id] = {"history": [], "ask": None, "turns": 0, "touched": now}
+                rnd = self.inventory.state["round"]
+                advice = self.advisor.for_product(product["category"], rnd) if self.advisor else None
+                # Pin even absent advice; a background update cannot alter this negotiation.
+                deal = self.r3[task.id] = {"history": [], "ask": None, "turns": 0, "touched": now,
+                                          "round": rnd, "advice": advice}
             else:
                 if re.fullmatch(r"[0-9]{1,12}", text.strip()) is None:
                     await up.requires_input(say(f"Send an integer offer. Current asking price: {deal['ask']}"))
@@ -108,7 +118,7 @@ class InventorySeller(Seller):
         self.pending[task.id] = canceled
         lock = self.locks.setdefault(task.id, asyncio.Lock())
         try:
-            choice = await self.infer(inventory_decision, product, offer, history, deal["ask"])
+            choice = await self.infer(inventory_decision, product, offer, history, deal["ask"], deal["advice"])
             async with lock:
                 if canceled.is_set():
                     return
@@ -140,16 +150,16 @@ class InventorySeller(Seller):
                     self.r3.pop(task.id, None)
                     await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
                     await up.complete(say(f"Agreed {product['sku']} at {price}; checkout still required."))
-                    self.event(task.id, "receipt_issued", product, price)
+                    self.event(task.id, "receipt_issued", product, price, deal=deal)
                 else:
                     self.discard(task.id)
                     await up.reject(say("No deal."))
-                    self.event(task.id, "rejected", product)
+                    self.event(task.id, "rejected", product, deal=deal)
         except (HarnessError, StockError, OSError) as exc:
             self.discard(task.id)
             if not canceled.is_set():
                 await up.failed(say(str(exc)))
-                self.event(task.id, "error", product)
+                self.event(task.id, "error", product, deal=deal)
         except asyncio.CancelledError:
             canceled.set()
             self.discard(task.id)
@@ -179,7 +189,7 @@ def main():
     args = parser.parse_args()
     cfg = {**DEFAULT, **json.loads((ROOT / "shop-adaptive.json").read_text()),
            "description": "Inventory shop with market certificates and signed receipts. Ask by SKU.",
-           "port": args.port, "shop_key": args.shop_key}
+           "port": args.port, "shop_key": args.shop_key, "advisor_enabled": config_at()["enabled"]}
     uvicorn.run(build(cfg, InventorySeller(cfg)), host="127.0.0.1", port=args.port, log_level="warning")
 
 
