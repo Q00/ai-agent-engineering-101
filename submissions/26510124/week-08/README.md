@@ -159,6 +159,30 @@ READY: market_kit 4; week-08; shop and buyer registered; ACP verified.
 71개 통과**: `logs/offline-20261102T055202Z-4a77f7cf.log`.
 SSH와 systemd는 테스트 대역을 사용했으며 실제 서버에서 성공했다는 의미는 아니다.
 
+### 첫 서버 배포 실패와 설정 수정 (2026-11-02)
+
+`logs/deployment-20261102T055518Z-f6332a52/server-deployment.log`는 사용자가 실제로
+실행한 첫 배포 출력이다. 서버의 오프라인 검사는 통과했지만 서비스 설정 확인에서
+실패했고 이전 소스·서비스 설정으로 복구됐다. 시장 등록을 시작하기 전의 실패이므로
+Round 3 개장 대기 메시지가 아니다. v4 전환이나 현재 서버 동작 성공을 의미하지 않는다.
+
+생성한 `WorkingDirectory="/home/..."`의 따옴표가 잘못됐음을 확인해
+`WorkingDirectory=/home/...`로 고쳤다. systemd의 WorkingDirectory는 ExecStart처럼
+셸 단어를 분리해 따옴표를 제거하는 설정이 아니다.
+[systemd v245의 경로 파서](https://github.com/systemd/systemd/blob/v245/src/core/load-fragment.c#L1958)를
+확인했다. 첫 실패 로그에는 실제 적용된 속성이 없어서 다른 override의 존재 여부까지
+확정할 수 없다. 따라서 원인을 무조건 다른 override라고 단정하던 오류 문구도 바꿨다.
+
+재배포 시에는 기존 서비스를 중지하기 전에 서버의 `systemd-analyze --user verify`로
+후보 설정을 검사한다. 적용 뒤에는 LoadState, WorkingDirectory, 설정 파일 경로,
+새 실행 명령의 일치 여부를 `service-configuration.json`에 남긴다. 환경 변수나 실제
+ExecStart 인자는 기록하지 않는다. 불일치 시에는 이 진단도 맥의 설치 출력에 표시한다.
+
+회귀 검사 포함 73개 통과: `logs/offline-20261102T055829Z-bfe7fa6a.log`.
+맥에는 systemd가 없어 네이티브 파서 실행은 재배포 시 서버에서 수행한다.
+사용자는 같은 배포 명령을 다시 실행할 수 있으며, 아직 성공적으로 재배포됐다고
+주장하지 않는다. 실제 정산 검증은 서비스 전환 성공 후 별도 단계다.
+
 ## 다음 설계 단위
 
 1. 원가·등급·재고 체류 시간별 목표가와 할인 기준을 사용자가 설명할 수 있는 정책으로 정하기.

@@ -183,6 +183,39 @@ class DeploymentTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             server.dropin_text(Path('/home/"invalid'), python)
 
+    def test_working_directory_is_an_absolute_path_without_shell_quotes(self):
+        root = Path("/home/student/agent-market-week07/repo/submissions/26510124/week-08")
+        config = server.dropin_text(root, Path("/home/student/week07/.venv/bin/python"))
+        value = next(line.partition("=")[2] for line in config.splitlines()
+                     if line.startswith("WorkingDirectory="))
+        # The real systemd parser validates the whole path without shell unquoting.
+        self.assertTrue(Path(value).is_absolute())
+        self.assertEqual(value, str(root))
+
+    def test_configuration_failure_records_actual_fields_without_secret_args(self):
+        for reason in ("directory", "load", "command"):
+            with self.subTest(reason=reason):
+                evidence = self.folder / reason
+                evidence.mkdir()
+                root = Path("/home/student/week08")
+                fields = {"LoadState": "bad-setting" if reason == "load" else "loaded",
+                          "WorkingDirectory": "/home/student/week07" if reason == "directory" else str(root),
+                          "FragmentPath": "/home/student/market.service",
+                          "DropInPaths": "/home/student/market.service.d/90-week08.conf",
+                          "ExecStart": ("/old/runner.py" if reason == "command" else str(root / "run_round3.py"))
+                                       + " --owner secret-sentinel"}
+                def fake_systemctl(*args, **kwargs):
+                    name = next(arg.split("=", 1)[1] for arg in args if arg.startswith("--property="))
+                    return subprocess.CompletedProcess(args, 0, stdout=fields[name])
+                console = io.StringIO()
+                with patch.object(server, "systemctl", side_effect=fake_systemctl), redirect_stdout(console):
+                    with self.assertRaisesRegex(ValueError, "Service configuration check failed"):
+                        server.verify_service_configuration(root, evidence)
+                report = (evidence / "service-configuration.json").read_text()
+                self.assertNotIn("secret-sentinel", report + console.getvalue())
+                self.assertNotIn("Another systemd override", console.getvalue())
+                self.assertEqual(json.loads(report)["WorkingDirectory"], fields["WorkingDirectory"])
+
     def simulate_deployment(self, *, fail_preflight=False, fail_startup=False):
         _, run, archive, digest, _ = self.fixture()
         fake_home = self.folder / "home"
@@ -200,8 +233,20 @@ class DeploymentTests(unittest.TestCase):
         dropin = fake_home / (".config/systemd/user/" + server.UNIT + ".d/90-week08.conf")
         dropin.parent.mkdir(parents=True)
         dropin.write_text("PREVIOUS SERVICE CONFIG")
+        checked_by_systemd = False
+
+        def fake_capture(command, log, env):
+            nonlocal checked_by_systemd
+            if fail_preflight:
+                raise RuntimeError("preflight failed")
+            if command[0] == "systemd-analyze":
+                self.assertEqual(command[1:3], ["--user", "verify"])
+                self.assertTrue(Path(command[-1]).is_file())
+                checked_by_systemd = True
 
         def fake_systemctl(*args, **kwargs):
+            if args[0] == "stop":
+                self.assertTrue(checked_by_systemd, "Native syntax verification must precede service stop")
             outputs = {"--property=LoadState": "loaded", "--property=EnvironmentFiles": str(env_path),
                        "--property=ExecStart": str(root / "run_round3.py"),
                        "--property=WorkingDirectory": str(root)}
@@ -214,7 +259,7 @@ class DeploymentTests(unittest.TestCase):
         with patch.object(server.Path, "home", return_value=fake_home), \
              patch.object(server.shutil, "which", return_value="/synthetic/cli"), \
              patch.object(server, "systemctl", side_effect=fake_systemctl) as system, \
-             patch.object(server, "capture", side_effect=RuntimeError("preflight failed") if fail_preflight else None), \
+             patch.object(server, "capture", side_effect=fake_capture), \
              patch.object(server, "wait_ready", return_value="https://sample.trycloudflare.com",
                           side_effect=RuntimeError("startup failed") if fail_startup else None), \
              redirect_stdout(io.StringIO()):

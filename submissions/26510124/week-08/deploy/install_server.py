@@ -89,10 +89,14 @@ def checked_path(root, relative):
 
 def dropin_text(root, python):
     # Concrete absolute server paths contain no user-provided shell fragments.
-    if any(c in str(root) + str(python) for c in ('"', '\n', '%')):
+    if not root.is_absolute() or not python.is_absolute():
+        raise ValueError("Systemd paths must be absolute")
+    if any(c in str(root) + str(python) for c in ('"', '\n', '\r', '\0', '\\', '%', '$')):
         raise ValueError("Unexpected systemd path characters")
+    # WorkingDirectory is a path value, not the shell-word syntax of ExecStart.
+    # systemd's config_parse_working_directory does not strip surrounding quotes.
     return ('[Unit]\nDescription=Week 08 dyishappy seller and buyer (kit v4)\n\n[Service]\n'
-            f'WorkingDirectory="{root}"\nExecStart=\n'
+            f'WorkingDirectory={root}\nExecStart=\n'
             f'ExecStart="{python}" "{root / "run_round3.py"}" --join\n')
 
 
@@ -156,6 +160,22 @@ def restore_sources(root, backup, state):
 
 def systemctl(*args, check=True):
     return subprocess.run(["systemctl", "--user", *args], text=True, capture_output=True, check=check)
+
+
+def verify_service_configuration(root, evidence):
+    # Record selected non-secret fields, never Environment or raw ExecStart args.
+    fields = {name: systemctl("show", UNIT, "--property=" + name, "--value").stdout.strip()
+              for name in ("LoadState", "WorkingDirectory", "FragmentPath", "DropInPaths")}
+    effective = systemctl("show", UNIT, "--property=ExecStart", "--value").stdout
+    fields["week08_exec_matches"] = str(root / "run_round3.py") in effective
+    fields["expected_working_directory"] = str(root)
+    report = evidence / "service-configuration.json"
+    with report.open("x") as out:
+        out.write(json.dumps(fields, indent=2) + "\n")
+    if (fields["LoadState"] != "loaded" or fields["WorkingDirectory"] != str(root)
+            or not fields["week08_exec_matches"]):
+        say("SERVICE DIAGNOSTIC: " + json.dumps(fields))
+        raise ValueError("Service configuration check failed; details saved at " + str(report))
 
 
 def capture(command, path, env):
@@ -279,13 +299,19 @@ def deploy_locked(root, archive, digest, run):
         raise ValueError("Existing service does not use the expected private EnvironmentFile")
     env = {**os.environ, "PATH": os.pathsep.join([str(python.parent), str(deployment_root / "bin"),
                                                 str(Path.home() / ".local/bin"), os.environ.get("PATH", "")])}
-    for executable in ("claude", "cloudflared"):
+    for executable in ("claude", "cloudflared", "systemd-analyze"):
         if shutil.which(executable, path=env["PATH"]) is None:
             raise ValueError(executable + " is not available in the deployment PATH")
     for name in manifest["files"]:
         checked_path(root, name)
     if dropin.is_symlink() or dropin.parent.is_symlink():
         raise ValueError("Refusing a symlinked systemd drop-in")
+    config = dropin_text(root, python)
+    candidate = incoming / "week08-preflight.service"
+    candidate.write_text(config)
+    # Use the server's real systemd parser before stopping any existing service.
+    # verify only checks configuration; it does not start the candidate unit.
+    capture(["systemd-analyze", "--user", "verify", candidate], evidence / "systemd-preflight.log", env)
     say("Checking staged source and existing identities before stopping the old service...")
     check_identity = ("import sys; from pathlib import Path; sys.path.insert(0,sys.argv[1]); "
                       "from run_round3 import identity,verify_kit; verify_kit(Path(sys.argv[1])); "
@@ -304,12 +330,9 @@ def deploy_locked(root, archive, digest, run):
         systemctl("stop", UNIT)
         install_sources(root, stage, manifest, backup, state)
         capture([python, root / "run_round3.py", "--prepare-identity"], evidence / "identity-prepared.log", env)
-        atomic_write(dropin, dropin_text(root, python).encode())
+        atomic_write(dropin, config.encode())
         systemctl("daemon-reload")
-        effective = systemctl("show", UNIT, "--property=ExecStart", "--value").stdout
-        workdir = systemctl("show", UNIT, "--property=WorkingDirectory", "--value").stdout.strip()
-        if str(root / "run_round3.py") not in effective or workdir != str(root):
-            raise ValueError("Another systemd override is preventing the week-08 configuration")
+        verify_service_configuration(root, evidence)
         before = log_start(root / "logs/market-kit.log")
         systemctl("start", UNIT)
         name = json.loads((root / "shop-adaptive.json").read_text())["name"]
