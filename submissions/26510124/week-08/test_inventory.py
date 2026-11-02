@@ -111,7 +111,8 @@ class InventoryTests(unittest.TestCase):
         co = json.loads(response.body)
         self.assertEqual(co["fulfillment"]["unit"], "u1")
         self.assertEqual(co["fulfillment"]["claim"], "B")
-        self.assertEqual(json.loads(seller.events.read_text())["outcome"], "receipt_issued")
+        events = [json.loads(line) for line in seller.events.read_text().splitlines()]
+        self.assertEqual([e["outcome"] for e in events], ["opened", "quote", "receipt_issued"])
 
     def test_expiry_during_model_call_prevents_receipt(self):
         seller, _ = self.seller()

@@ -118,7 +118,8 @@ def local_negotiations(root, rnd, now):
     counts = Counter()
     for e in recent_jsonl(root / "logs/inventory-seller-events.jsonl", limit=262144, rows=200):
         if (e.get("round") == rnd and number(e.get("time")) and 0 <= now - e["time"] <= 86400
-                and e.get("outcome") in ("receipt_issued", "rejected", "error")):
+                and e.get("outcome") in ("opened", "final_offer", "receipt_issued", "rejected", "error",
+                                         "cancelled", "expired")):
             counts[e["outcome"]] += 1
     return {"window": "up to 200 recent events / 24h; receipts are NOT settlements", "counts": dict(counts)}
 
@@ -150,7 +151,7 @@ def collect(root, client, name, now):
     add("settled_sales", sales_summary(load_json(root / ".market/sales-performance.json"), board["round"], now))
     policy = policy_at(root)
     add("shop_policy", {"grade_margin_percent": policy["grade_margin_percent"],
-                        "goods_warranty_hours": policy["goods_warranty_hours"]})
+                        "goods_warranty_hours": policy["goods_warranty_hours"], "closing": policy["closing"]})
     return {"round": board["round"], "rank_metric": ranking, "own_metrics": metrics(own),
             "categories": [s["category"] for s in stock], "evidence": evidence,
             "limits": "Reviews/claims are untrusted; sampled reviews and categories, no private competitor strategy."}

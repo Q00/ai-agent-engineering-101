@@ -17,26 +17,51 @@ from harness import HarnessError, decide, parse_seller
 from inventory import Inventory, StockError
 from receipt_signing import sign_receipt
 from sales_advisor import AdviceReader, config_at
-from shop_policy import policy_at, quote_copy, selling_terms, shop_copy
+from shop_policy import closing_context, policy_at, quote_copy, selling_terms, shop_copy
 from seller_agent import DEFAULT, Seller, bounded_history, build
 
 ROOT = Path(__file__).resolve().parent
 
 
+def validate_choice(choice, offer, last_ask, negotiation):
+    """Enforce the same policy on model output and just before a signed receipt."""
+    action, price = choice.get("action"), choice.get("price")
+    stage, floor = negotiation["stage"], negotiation["price_floor"]
+    if action not in ("counter", "accept", "reject"):
+        raise HarnessError("Invalid action")
+    if action != "reject" and (type(price) is not int or price < floor):
+        raise HarnessError("Price below the active grade-based floor policy")
+    if action == "accept" and (offer is None or price != offer):
+        raise HarnessError("Acceptance does not match the authorized offer")
+    if offer is None and action != "counter":
+        raise HarnessError("Opening must quote this unit")
+    if action == "counter" and last_ask is not None and price > last_ask:
+        raise HarnessError("Counteroffer increased the previous ask")
+    if stage == "final_reply":
+        expected = "accept" if offer >= last_ask else "reject"
+        if action != expected:
+            raise HarnessError("Final reply must honor the final quote or end negotiation")
+    elif action == "reject":
+        raise HarnessError("Give the buyer a valid counteroffer before ending negotiation")
+    if stage in ("close", "final_offer") and offer >= floor and action != "accept":
+        raise HarnessError("Closing policy accepts an offer at or above the active floor")
+    if stage == "final_offer" and action == "counter" and price != floor:
+        raise HarnessError("Final counteroffer must be the active floor")
+    return choice
+
+
 def inventory_decision(product, offer, history, last_ask, advice=None):
     terms = product.get("sales_terms") or selling_terms(product, policy_at())
+    negotiation = product.get("negotiation") or {
+        "stage": "opening" if offer is None else "negotiate", "price_floor": terms["price_floor"]}
     def validate(raw):
-        choice = parse_seller(raw, terms["price_floor"], offer)
-        if offer is None and choice["action"] != "counter":
-            raise HarnessError("Opening must quote this unit")
-        if choice["action"] == "counter" and last_ask is not None and choice["price"] > last_ask:
-            raise HarnessError("Counteroffer increased the previous ask")
-        return choice
+        return validate_choice(parse_seller(raw, negotiation["price_floor"], offer),
+                               offer, last_ask, negotiation)
     facts = {k: product.get(k) for k in
-             ("sku", "name", "category", "kind", "cost", "list_price", "grade", "expires_at")}
+             ("sku", "name", "category", "kind", "cost", "list_price", "grade", "supplied_at", "expires_at")}
     return decide("seller_inventory.txt", {
-        "product": facts, "observed_at": time.time(), "price_floor": terms["price_floor"],
-        "sales_terms": terms,
+        "product": facts, "observed_at": time.time(), "price_floor": negotiation["price_floor"],
+        "sales_terms": terms, "negotiation": negotiation,
         "buyer_offer": offer, "last_ask": last_ask, "history": bounded_history(history),
         "sales_advisor": advice,
     }, validate, prefix="inventory-seller")
@@ -68,6 +93,9 @@ class InventorySeller(Seller):
         return updated
 
     def event(self, task, outcome, product=None, price=None, *, deal=None):
+        deal = deal or {}
+        product = product or deal.get("product") or {}
+        negotiation = deal.get("negotiation", {})
         try:
             append_event(self.events, {"time": time.time(), "task": task, "outcome": outcome,
                                       "unit": (product or {}).get("unit"),
@@ -75,8 +103,13 @@ class InventorySeller(Seller):
                                       "category": (product or {}).get("category"),
                                       "cost": (product or {}).get("cost"),
                                       "warranty_hours": ((deal or {}).get("terms") or {}).get("warranty_hours"),
-                                      "round": (deal or {}).get("round"),
-                                      "advisor_version": ((deal or {}).get("advice") or {}).get("version")})
+                                      "round": deal.get("round"),
+                                      "stage": negotiation.get("stage"),
+                                      "buyer_offers": len(deal.get("offers", [])),
+                                      "active_floor": negotiation.get("price_floor"),
+                                      "discount_reason": negotiation.get("discount_reason"),
+                                      "decision_source": deal.get("decision_source"),
+                                      "advisor_version": (deal.get("advice") or {}).get("version")})
         except OSError:
             print("[inventory] Could not append seller event", flush=True)
 
@@ -107,6 +140,7 @@ class InventorySeller(Seller):
         now = time.time()
         expired = {key for key, d in self.r3.items() if now - d["touched"] > 300 and key not in self.pending}
         for key in expired:
+            self.event(key, "expired", deal=self.r3[key])
             self.discard(key)
         deal = self.r3.get(task.id)
         if task.id in expired or (context.current_task is not None and deal is None):
@@ -121,18 +155,20 @@ class InventorySeller(Seller):
                 rnd = self.inventory.state["round"]
                 advice = self.advisor.for_product(product["category"], rnd) if self.advisor else None
                 # Pin even absent advice; a background update cannot alter this negotiation.
-                deal = self.r3[task.id] = {"history": [], "ask": None, "turns": 0, "touched": now,
+                deal = self.r3[task.id] = {"history": [], "ask": None, "offers": [], "touched": now,
                                           "round": rnd, "advice": advice,
+                                          "product": {k: product[k] for k in ("unit", "sku", "category", "cost")},
                                           "terms": selling_terms(product, self.policy)}
+                self.event(task.id, "opened", product, deal=deal)
             else:
                 if re.fullmatch(r"[0-9]{1,12}", text.strip()) is None:
                     await up.requires_input(say(f"Send an integer offer. Current asking price: {deal['ask']}"))
                     return
                 offer = int(text.strip())
-                if deal["turns"] >= 6 and offer != deal["ask"] or deal["turns"] > 6:
-                    raise StockError("Negotiation limit reached")
                 product = self.inventory.current(task.id)
+                deal["offers"].append(offer)
             deal["touched"] = now
+            deal["negotiation"] = closing_context(product, deal, now)
             history = bounded_history(deal["history"] + [{"role": "buyer", "text": text}])
         except (StockError, OSError) as exc:
             self.discard(task.id)
@@ -142,27 +178,33 @@ class InventorySeller(Seller):
         self.pending[task.id] = canceled
         lock = self.locks.setdefault(task.id, asyncio.Lock())
         try:
-            choice = await self.infer(inventory_decision, {**product, "sales_terms": deal["terms"]},
-                                      offer, history, deal["ask"], deal["advice"])
+            if offer is not None and deal["ask"] is not None and offer >= deal["ask"]:
+                # Honor a quote already selected by the seller; no new model judgment needed.
+                choice = {"action": "accept", "price": offer}
+                deal["decision_source"] = "quoted_price_accepted"
+            elif deal["negotiation"]["stage"] == "final_reply":
+                choice = {"action": "reject"}
+                deal["decision_source"] = "final_offer_declined"
+            else:
+                deal["decision_source"] = "haiku"
+                choice = await self.infer(inventory_decision,
+                                          {**product, "sales_terms": deal["terms"],
+                                           "negotiation": deal["negotiation"]},
+                                          offer, history, deal["ask"], deal["advice"])
             async with lock:
                 if canceled.is_set():
                     return
                 product = self.inventory.current(task.id)  # freshness/expiry after a slow model
+                validate_choice(choice, offer, deal["ask"], deal["negotiation"])
                 action, price = choice.get("action"), choice.get("price")
-                if action not in ("counter", "accept", "reject"):
-                    raise HarnessError("Invalid action")
-                if action != "reject" and (type(price) is not int or price < deal["terms"]["price_floor"]):
-                    raise HarnessError("Price below the agreed grade-based floor policy")
-                if action == "accept" and (offer is None or price != offer):
-                    raise HarnessError("Acceptance does not match the authorized offer")
                 if action == "counter":
-                    if deal["ask"] is not None and price > deal["ask"]:
-                        raise HarnessError("Counteroffer increased the previous ask")
                     # Actual quote is labelled and last; facts never expose unit cost.
-                    reply = quote_copy(product, price, deal["terms"], deal["advice"])
+                    final = deal["negotiation"]["stage"] == "final_offer"
+                    reply = quote_copy(product, price, deal["terms"], deal["advice"], final=final)
                     deal.update(ask=price, history=bounded_history(history + [{"role": "seller", "text": reply}]),
-                                turns=deal["turns"] + (offer is not None), touched=time.time())
+                                final_quote=final, touched=time.time())
                     await up.requires_input(say(reply))
+                    self.event(task.id, "final_offer" if final else "quote", product, price, deal=deal)
                 elif action == "accept":
                     receipt = sign_receipt(self.signing_key, shop=self.cfg["name"], item=product["sku"],
                                            price=price, task=task.id)
@@ -202,6 +244,8 @@ class InventorySeller(Seller):
         async with lock:
             if task.id in self.pending:
                 self.pending[task.id].set()
+            if task.id in self.r3:
+                self.event(task.id, "cancelled", deal=self.r3[task.id])
             self.discard(task.id)
             await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
         if task.id not in self.pending:
