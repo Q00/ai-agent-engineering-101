@@ -10,12 +10,10 @@ schema, turns the buyer's words into a query, the code searches, and the harness
 """
 import argparse
 import asyncio
-import base64
 import json
 import re
 
 import uvicorn
-from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
@@ -29,25 +27,12 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 import catalog
 import harness
 import pricing
+from seller_guard import ReserveSigner
 
 DEFAULT = {"name": "GPT Lamp Shop", "catalog": "catalog/basic.json", "categories": None, "sample": 1.0, "seed": 0,
            "price_factor": 1.0}
 SHOW_ALL = 20
 SHOP_KEY = "shop_key.pem"   # Ed25519 private key the kit made at join; its public key is registered with the market. Never committed.
-
-
-def canon(d):
-    """The bytes both sides sign and verify: keys sorted, no spaces, UTF-8. Same JSON content -> same bytes."""
-    return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
-
-
-def sign_receipt(receipt, key_path=SHOP_KEY):
-    """Adds sig_seller over {shop, item, price, task}. The price is signed as an integer: data Parts carry numbers as
-    floats (120 arrives as 120.0), so the kit and the market turn it back into an integer before verifying."""
-    key = serialization.load_pem_private_key(open(key_path, "rb").read(), password=None)
-    body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
-    receipt["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
-    return receipt
 K = 8
 
 PRICE_SYSTEM = (
@@ -73,14 +58,6 @@ QUERY_SYSTEM = (
     'Answer with ONE line of JSON and nothing else: {{"category":"<category or none>","types":["..."],"materials":["..."],'
     '"min":{{"<attr>":<number>}},"max":{{"<attr>":<number>}},"flags":{{"<flag>":true}},"keywords":"<a few words>"}}'
 )
-
-
-def guard(item, price, what):
-    """Code-side floor: the harness is told the reserve, but trade test attempt 1 showed it countering 255 on a 260 bookshelf."""
-    if price < item["reserve"]:
-        print(f"[guard] harness {what} {price} below the reserve {item['reserve']} of {item['id']}; raised to the reserve", flush=True)
-        return item["reserve"]
-    return price
 
 
 async def decide(system, situation, need="action"):
@@ -127,14 +104,17 @@ class Seller(AgentExecutor):
                 print(f"[seller] NONE task={tid} answer={d}", flush=True)
                 await up.reject(say("We have nothing that fits that. We sell: " + ", ".join(cats) + "."))
                 return
-            ask = guard(item, d["price"], "opening ask")
-            suggested, why = pricing.suggest(item)   # challenge 1: enough own history -> the data sets the opening ask
+            signer = ReserveSigner(self.cfg["name"], item["name"], item["reserve"], task.id, SHOP_KEY)
+            ask = signer.protect(d["price"], "opening ask")
+            policy = pricing.policy_arm(item, task.id)
+            suggested, why = pricing.suggest(item, task.id)   # task hash selects a reproducible experiment arm
             print(f"[pricing] {why}" + (f"; the harness wanted {ask}" if suggested is not None else ""), flush=True)
             if suggested is not None:
-                ask = guard(item, suggested, "pricing")
-            self.open[task.id] = {"item": item, "ask": ask, "log": [("buyer", text), ("shop", f"asking {ask}")]}
-            pricing.record(kind="open", task=tid, item=item["id"], ask=ask)
-            print(f"[seller] OPEN task={tid} item={item['id']} reserve={item['reserve']} ask={ask}", flush=True)
+                ask = signer.protect(suggested, "pricing")
+            self.open[task.id] = {"item": item, "ask": ask, "opening_ask": ask, "policy": policy, "signer": signer,
+                                  "log": [("buyer", text), ("shop", f"asking {ask}")]}
+            pricing.record(kind="open", task=tid, item=item["id"], ask=ask, policy=policy)
+            print(f"[seller] OPEN task={tid} item={item['id']} reserve={item['reserve']} ask={ask} policy={policy}", flush=True)
             if item["name"] == item["id"]:  # the trade test's three items keep the lab's wording
                 opening = f"{item['name']}: asking {ask}. Send your offer as a number."
             else:  # the description comes first so that the ask stays the last number
@@ -178,20 +158,22 @@ class Seller(AgentExecutor):
             print(f"[guard] harness accepted {offer} below the reserve {item['reserve']} of {item['id']}; countering at the reserve", flush=True)
             action, d = "counter", {"action": "counter", "price": item["reserve"]}
         if action == "accept":
-            receipt = sign_receipt({"shop": self.cfg["name"], "item": item["name"], "price": int(offer), "task": task.id})
+            receipt = deal["signer"].sign(int(offer))
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {item['name']} at {offer}.", {"offer": offer, "item": item["id"]}))
-            print(f"[seller] DEAL task={tid} item={item['id']} reserve={item['reserve']} price={offer}", flush=True)
-            pricing.record(kind="deal", task=tid, item=item["id"], price=int(offer))
+            print(f"[seller] DEAL task={tid} item={item['id']} reserve={item['reserve']} price={offer} policy={deal['policy']}", flush=True)
+            pricing.record(kind="deal", task=tid, item=item["id"], price=int(offer), policy=deal["policy"],
+                           opening_ask=deal["opening_ask"], offers=len(offers))
             del self.open[task.id]
         elif action == "reject":
             await up.reject(say(f"No deal at {offer}.", {"offer": offer, "item": item["id"]}))
-            print(f"[seller] REJECT task={tid} item={item['id']} last_offer={offer}", flush=True)
-            pricing.record(kind="reject", task=tid, item=item["id"], price=int(offer))
+            print(f"[seller] REJECT task={tid} item={item['id']} last_offer={offer} policy={deal['policy']}", flush=True)
+            pricing.record(kind="reject", task=tid, item=item["id"], price=int(offer), policy=deal["policy"],
+                           opening_ask=deal["opening_ask"], offers=len(offers))
             del self.open[task.id]
         else:  # counter, or no usable answer: hold the current ask
             if action == "counter" and "price" in d:
-                deal["ask"] = guard(item, d["price"], "counter")
+                deal["ask"] = deal["signer"].protect(d["price"], "counter")
             deal["log"].append(("shop", f"counter {deal['ask']}"))
             print(f"[seller] ASK task={tid} item={item['id']} ask={deal['ask']}", flush=True)
             await up.requires_input(say(f"{offer} is too low. Counteroffer: {deal['ask']}.",
@@ -202,7 +184,8 @@ class Seller(AgentExecutor):
         deal = self.open.pop(task.id, None)
         print(f"[seller] CANCEL task={task.id[:8]}", flush=True)
         if deal:
-            pricing.record(kind="cancel", task=task.id[:8], item=deal["item"]["id"], ask=deal["ask"])
+            pricing.record(kind="cancel", task=task.id[:8], item=deal["item"]["id"], ask=deal["ask"],
+                           policy=deal["policy"], opening_ask=deal["opening_ask"])
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 

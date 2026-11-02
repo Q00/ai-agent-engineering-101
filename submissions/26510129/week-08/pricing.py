@@ -1,4 +1,4 @@
-"""Challenge 1: the shop's own trades and reviews decide its opening asks. The reserves never move.
+"""Round 3 seller policy: own outcomes choose a safe volume or margin opening ask.
 
     suggest(item) -> (ask or None, why)   None when there is too little history for that item; the harness opens as before
 
@@ -8,7 +8,7 @@ skipped silently when the market is unreachable (the market test runs the shop o
 
 The rule, in code so that it can be read back from the logs:
     base      = median of the last RECENT deal prices for the item
-    ask       = base * ANCHOR                 buyers come up from their first offer, so open a little above what they paid
+    ask       = base * 1.03 (volume) or 1.08 (margin), selected by stable task hash
     * 0.95    when fewer than CLOSE_FLOOR of the last WINDOW opens for the item ended in a deal (buyers walk: too high)
     * 0.95    when my reviews that name the item average under 3.5 stars (the buyers who did buy felt squeezed)
     clamped to [reserve * 1.05, reserve * 1.5], whole number
@@ -21,6 +21,7 @@ said "Lamp at 110, above the 105 I usually pay". The old close-rate rule never f
 deals, not revenue, so the ask opens closer to what buyers actually pay.
 """
 import base64
+import hashlib
 import json
 import os
 import re
@@ -35,12 +36,21 @@ MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
 SHOP_KEY = "shop_key.pem"
 RECENT = 20          # deal prices per item that count; 10 swung with one busy hour (lamp median 118 over 10, 110 over 20)
 MIN_DEALS = 3        # below this the harness opens as before
-ANCHOR = 1.06        # day 1 ran at 1.12; see the docstring
+ANCHORS = {"volume": 1.03, "margin": 1.08}
+VOLUME_SHARE = {"lamp": 0.80, "chair": 0.65, "bookshelf": 0.50}
 WINDOW = 40          # the close rate is measured over the last WINDOW opens of the item, so it reacts within hours
 CLOSE_FLOOR = 0.70   # below this the ask drops 5%; the shops at the top of the board close 77-79% of their visits
 REVIEW_TTL = 600
 
 _reviews = {"at": 0.0, "list": []}
+
+
+def policy_arm(item, task):
+    """Repeatable A/B assignment that cannot depend on buyer identity or budget."""
+    iid = item["id"]
+    digest = hashlib.sha256(f"{iid}:{task or 'baseline'}".encode()).digest()
+    bucket = int.from_bytes(digest[:8], "big") / 2**64
+    return "volume" if bucket < VOLUME_SHARE.get(iid, 0.65) else "margin"
 
 
 def load():
@@ -80,17 +90,19 @@ def reviews():
     return _reviews["list"]
 
 
-def suggest(item):
-    """Opening ask for the item from history, or None. Returns (ask, why)."""
+def suggest(item, task=None):
+    """Opening ask for the task's experiment arm, or None. Returns (ask, why)."""
     iid, reserve = item["id"], item["reserve"]
+    arm = policy_arm(item, task)
+    anchor = ANCHORS[arm]
     rows = [r for r in load() if r.get("item") == iid]
     deals = [r["price"] for r in rows if r.get("kind") == "deal" and isinstance(r.get("price"), (int, float))][-RECENT:]
     opens = [r for r in rows if r.get("kind") == "open"][-WINDOW:]
     if len(deals) < MIN_DEALS:
-        return None, f"{iid}: {len(deals)} deal(s) on record, need {MIN_DEALS}; the harness opens"
+        return None, f"{iid} [{arm}]: {len(deals)} deal(s) on record, need {MIN_DEALS}; the harness opens"
     base = statistics.median(deals)
-    ask = base * ANCHOR
-    why = [f"median of last {len(deals)} deals {base:.0f} x {ANCHOR}"]
+    ask = base * anchor
+    why = [f"{arm} arm", f"median of last {len(deals)} deals {base:.0f} x {anchor}"]
     tasks = {r.get("task") for r in opens}
     closed = sum(1 for r in rows if r.get("kind") == "deal" and r.get("task") in tasks)
     close_rate = closed / len(opens) if opens else 1.0
@@ -105,6 +117,9 @@ def suggest(item):
     lo, hi = reserve * 1.05, reserve * 1.5
     ask = int(round(min(max(ask, lo), hi)))
     why.append(f"clamped to [{lo:.0f}, {hi:.0f}]")
+    print("[strategy] " + json.dumps({"event": "seller_price", "item": iid, "task": str(task)[:8],
+                                      "arm": arm, "base": base, "anchor": anchor,
+                                      "close_rate": round(close_rate, 4), "ask": ask}, sort_keys=True), flush=True)
     return ask, f"{iid}: " + ", ".join(why) + f" -> opening ask {ask}"
 
 
@@ -131,4 +146,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         print(f"backfilled {history_from_log(sys.argv[1])} event(s) into {TRADES}")
     for it in json.loads(open("catalog/basic.json", encoding="utf-8").read()):
-        print(suggest(it)[1])
+        print(suggest(it, f"preview-{it['id']}")[1])
