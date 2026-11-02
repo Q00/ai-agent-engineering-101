@@ -193,7 +193,7 @@ def test_forum():
     check("the honesty table leaves our own shop out", set(rec["honest_claims"]) == {"Alpha", "Beta"}, rec["honest_claims"])
     check("no shop had it: from the shops' stock lists, without what Alpha stocks",
           rec["no_seller"] == ["침구", "사과"] and rec["no_seller_source"] == "shops' stock lists", rec["no_seller"])
-    check("a grade's breakdown share waits for 10 sales of it (6 so far)", rec["breakage"] == {} and "broke" not in text)
+    check("a grade's breakdown share waits for 10 sales of it (6 so far)", rec["breakage"] == {} and "Goods that broke" not in text)
     check("nothing private: no budget, cost or margin", not any(w in text.lower() for w in ("budget", "cost", "margin")))
     st = {}
     before = len(outbox())

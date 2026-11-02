@@ -135,7 +135,7 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
     now = now or time.time()
     folder().mkdir(parents=True, exist_ok=True)
     lock = folder() / "lock"
-    if lock.exists() and now - lock.stat().st_mtime < LOCK_STALE:
+    if lock.exists() and time.time() - lock.stat().st_mtime < LOCK_STALE:     # the lock's age is wall-clock time
         log("[analysis] another pass is running; skipped")
         return []
     lock.write_text(str(os.getpid()), encoding="utf-8")

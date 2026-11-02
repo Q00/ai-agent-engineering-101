@@ -8,7 +8,7 @@
   PASS  kimchi sold 20 in 6 h at 70% of list  ({'sold_24h': 20, 'sold_6h': 20, 'grades': {'A': 10, 'B': 10}, 'last_seq': 28, 'price_ratio': 0.7})
   PASS  grade claims per shop: Alpha 10/12 true, Beta 3/8
   PASS  a breakdown is matched to the grade its buyer got (2 of 6 grade B)
-  PASS  other shops' stock: our own shop's list left out  ({'at': 1793611091, 'stocked': ['식품>김치/반찬/즉석요리>김치']})
+  PASS  other shops' stock: our own shop's list left out  ({'at': 1793611144, 'stocked': ['식품>김치/반찬/즉석요리>김치']})
   PASS  wanted: our buyer's unmet order (사과) and other agents' wanted posts (김치, 침구), our own post not counted  ({'사과': 1, '김치': 1, '침구': 1})
 
 [tool] ledger_query
@@ -25,19 +25,19 @@
 
 [forum] the market index and replies
     market index #1 posted (627 chars, 2 refs)
-    | [Kiro729 Market Index #1 · 11/02 18:18 KST · 26 settled deals in 24 h]
+    | [Kiro729 Market Index #1 · 11/02 18:19 KST · 26 settled deals in 24 h]
     | Top categories, 6 h: 김치 20, 침구 0
     | Average price paid / list price: 김치 70%, 침구 70%
     | No shop had it in stock (shops' stock lists): 침구, 사과
     | Grade claims that were true: Alpha 10/12, Beta 3/8 (Kiro729's own shop left out: same owner)
     | Source: settle and broken entries of the public ledger (/api/ledger); the refs below are samples.
-    | {"v":1,"n":1,"at":1793611091,"settled_24h":26,"top_6h":{"김치":20,"침구":0},"price_share":{"김치":0.7,"침구":0.7},"no_seller":["침구","사과"],"no_seller_source":"shops' stock lists","honest_claims":{"Alpha":[10,12],"Beta":[3,8]},"breakage":{}}
+    | {"v":1,"n":1,"at":1793611144,"settled_24h":26,"top_6h":{"김치":20,"침구":0},"price_share":{"김치":0.7,"침구":0.7},"no_seller":["침구","사과"],"no_seller_source":"shops' stock lists","honest_claims":{"Alpha":[10,12],"Beta":[3,8]},"breakage":{}}
   PASS  posted as our buyer, header '[Kiro729 Market Index #1 ...]'
   PASS  refs are real settle entries the market can show  ([28, 34])
   PASS  the last line is the same numbers as JSON
   PASS  the honesty table leaves our own shop out  ({'Alpha': [10, 12], 'Beta': [3, 8]})
   PASS  no shop had it: from the shops' stock lists, without what Alpha stocks  (['침구', '사과'])
-  FAIL  a grade's breakdown share waits for 10 sales of it (6 so far)
+  PASS  a grade's breakdown share waits for 10 sales of it (6 so far)
   PASS  nothing private: no budget, cost or margin
   PASS  a 'wanted' post gets a data reply as our buyer and a stock reply as our shop, in its thread  ([('buyer', 101), ('shop', 101)])
   PASS  the data reply names who sold it and at what share  (Ledger data for 김치, last 24 h: 20 settled deals; sold by Alpha (12), Beta (8); average price 70% of list.)
@@ -65,39 +65,44 @@
   PASS  every decision is kept with its numbers
 
 [runner] the schedule and the lock
-11-02 18:18:12 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
-11-02 18:18:12 [analysis] index: market index #1 posted (627 chars, 2 refs)
-11-02 18:18:12 [analysis] replies: buyer data reply to #101 (김치); shop reply to #101 (김치)
-11-02 18:18:12 [analysis] seller: 0 proposal(s), 0 within range
-11-02 18:18:12 [analysis] buyer: 0 proposal(s), 0 within range
-11-02 18:18:12 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase)
+11-02 18:19:05 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+11-02 18:19:05 [analysis] index: market index #1 posted (627 chars, 2 refs)
+11-02 18:19:05 [analysis] replies: buyer data reply to #101 (김치); shop reply to #101 (김치)
+11-02 18:19:05 [analysis] seller: 0 proposal(s), 0 within range
+11-02 18:19:05 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 18:19:05 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase)
   PASS  first pass: every step is due  (['collect', 'index', 'replies', 'seller', 'buyer', 'integrated'])
-11-02 18:18:12 [analysis] replies: 1 wanted post(s) waiting
+11-02 18:19:05 [analysis] replies: 1 wanted post(s) waiting
   PASS  10 minutes later: replies only
-11-02 18:18:12 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
-11-02 18:18:12 [analysis] replies: buyer data reply to #104 (침구)
+11-02 18:19:05 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+11-02 18:19:05 [analysis] replies: buyer data reply to #104 (침구)
   PASS  an hour later: collect and replies
-11-02 18:18:12 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
-11-02 18:18:12 [analysis] index: market index #2 posted (625 chars, 2 refs)
-11-02 18:18:12 [analysis] replies: 0 wanted post(s) waiting
-11-02 18:18:12 [analysis] seller: 0 proposal(s), 0 within range
-11-02 18:18:12 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 18:19:05 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+11-02 18:19:05 [analysis] index: market index #2 posted (625 chars, 2 refs)
+11-02 18:19:05 [analysis] replies: 0 wanted post(s) waiting
+11-02 18:19:05 [analysis] seller: 0 proposal(s), 0 within range
+11-02 18:19:05 [analysis] buyer: 0 proposal(s), 0 within range
   PASS  3 hours later: index and the role analyses too
-11-02 18:18:12 [analysis] collect: 0 new ledger entries, 0 settles in 24 h, 1 categories stocked by other shops, 2 wanted categories
-11-02 18:18:12 [analysis] index: not enough settles yet
-11-02 18:18:12 [analysis] replies: 0 wanted post(s) waiting
-11-02 18:18:12 [analysis] seller: 0 proposal(s), 0 within range
-11-02 18:18:12 [analysis] buyer: 0 proposal(s), 0 within range
-11-02 18:18:12 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase)
-  FAIL  a pass already running: skipped
-Traceback (most recent call last):
-  File "C:\Users\bubuj\Documents\ai-agent-engineering-101\submissions\26510118\week-08\round3\test_analysis.py", line 342, in <module>
-    raise SystemExit(main())
-                     ~~~~^^
-  File "C:\Users\bubuj\Documents\ai-agent-engineering-101\submissions\26510118\week-08\round3\test_analysis.py", line 333, in main
-    test_runner()
-    ~~~~~~~~~~~^^
-  File "C:\Users\bubuj\Documents\ai-agent-engineering-101\submissions\26510118\week-08\round3\test_analysis.py", line 300, in test_runner
-    os.utime(lock, (time.time() - 3600, time.time() - 3600))
-    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [WinError 2] 지정된 파일을 찾을 수 없습니다: 'C:\\Users\\bubuj\\AppData\\Local\\Temp\\round3-analysis-test-8l0_myxu\\.market\\analysis\\lock'
+11-02 18:19:05 [analysis] another pass is running; skipped
+  PASS  a pass already running: skipped
+11-02 18:19:05 [analysis] collect: 0 new ledger entries, 0 settles in 24 h, 1 categories stocked by other shops, 2 wanted categories
+11-02 18:19:05 [analysis] index: not enough settles yet
+11-02 18:19:05 [analysis] replies: 0 wanted post(s) waiting
+11-02 18:19:05 [analysis] seller: 0 proposal(s), 0 within range
+11-02 18:19:05 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 18:19:05 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase)
+  FAIL  a lock left by a crash (an hour old) does not block
+11-02 18:19:05 [analysis] collect failed: RuntimeError: down
+11-02 18:19:05 [analysis] index: not enough settles yet
+11-02 18:19:05 [analysis] replies: 0 wanted post(s) waiting
+11-02 18:19:05 [analysis] seller: 0 proposal(s), 0 within range
+11-02 18:19:05 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 18:19:05 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase)
+  PASS  one step failing does not stop the rest  (['replies', 'seller', 'buyer', 'integrated'])
+
+[restock] a wanted category
+  PASS  apples keep 48 h, so the shop does not list them on its own  ({'Gbbbb0001', 'Gaaaa0001'})
+  FAIL  ...but stocks one when apples are wanted (wanted.json)  ([{'sku': 'Gaaaa0001', 'qty': 1}, {'sku': 'Gbbbb0001', 'qty': 1}])
+  PASS  a category the rules drop is not stocked even when wanted
+
+54/56 checks passed
