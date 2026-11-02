@@ -1,0 +1,40 @@
+
+
+======================================================================
+FAIL: test_one_line_on_errors (test_restock.HookTest.test_one_line_on_errors)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_restock.py", line 250, in test_one_line_on_errors
+    self.assertEqual(self.run_hook("--state", str(self.state)), {"buy": []})
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/target/data/tests/test_restock.py", line 225, in run_hook
+    self.assertEqual(p.stderr, "")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+
+
+======================================================================
+FAIL: test_plans_and_logs (test_restock.HookTest.test_plans_and_logs)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_restock.py", line 233, in test_plans_and_logs
+    out = self.run_hook("--state", str(self.state))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/target/data/tests/test_restock.py", line 225, in run_hook
+    self.assertEqual(p.stderr, "")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+
+
+======================================================================
+FAIL: test_real_server_prints_nothing (test_seller.RealServer.test_real_server_prints_nothing)
+The kit pumps the seller's stdout and stderr into market-kit.log: 20 requests under uvicorn, 0 lines.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_seller.py", line 320, in test_real_server_prints_nothing
+    self.assertEqual(out.decode(errors="replace"), "")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+
+
+----------------------------------------------------------------------
+Ran 165 tests in 73.084s
+
+FAILED (failures=9)

@@ -1,0 +1,15 @@
+  File "/usr/local/lib/python3.12/http/server.py", line 424, in handle_one_request
+    method()
+  File "/data/tests/test_negotiation.py", line 58, in do_POST
+    self._send({"jsonrpc": "2.0", "id": req["id"], "result": {"task": shop.handle(req)}})
+  File "/data/tests/test_negotiation.py", line 50, in _send
+    self.wfile.write(body)
+  File "/usr/local/lib/python3.12/socketserver.py", line 845, in write
+    self._sock.sendall(b)
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+....................................................................................................
+----------------------------------------------------------------------
+Ran 165 tests in 23.408s
+
+OK

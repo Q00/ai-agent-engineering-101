@@ -1,0 +1,28 @@
+{
+  "target_cpu": "HP N36L, AMD Athlon II Neo N36L, K10 family 16 (same family as the week-07 N40L)",
+  "features_absent": ["ssse3", "sse4_1", "sse4_2", "avx", "avx2"],
+  "reference": "week-07 Dockerfile, docker/, compose.yaml and logs/nas-cpu-20261024-1 (commit e9554a8)",
+  "image": {
+    "tag": "week08-agent:n36l",
+    "platform": "linux/amd64",
+    "base": "python:3.12.11-slim-bookworm (same Python as the Mac .venv)",
+    "pip": "wheels only, every version pinned to the tested Mac .venv",
+    "cloudflared": "2026.10.2 from cloudflare/cloudflared",
+    "node_and_claude_code": "not included: week-08 calls no model (llm.* off in SKILL.md)",
+    "contents_check": "image-contents.log: code, tests and strategy/SKILL.md only; no *.pem, strategy.md, market-owner or logs"
+  },
+  "checks": {
+    "build": "build.log",
+    "unit_tests_amd64_no_network": "container-unit-tests.log: 165 OK",
+    "cpu_model": "qemu-x86_64 -cpu phenom,-fxsr-opt under arm64 (Docker Desktop's Rosetta ignores QEMU_CPU)",
+    "emulator_controls": "phenom-check-2.log, phenom-check-3.log: glibc reports x86-64-v2 unsupported; SSE4.2 crc32 and SSSE3 pshufb rejected with SIGILL; baseline code runs",
+    "native_modules_under_phenom": "cryptography (Ed25519, PEM, SHA-256), ssl/OpenSSL 3.0.17, pydantic_core, protobuf upb, cffi, charset_normalizer, wrapt, a2a/uvicorn/starlette/httpx: ok",
+    "cloudflared_under_phenom": "version printed, exit 0",
+    "unit_tests_under_phenom": "phenom-check-3.log: 165 OK, child Python processes also under the phenom model",
+    "first_phenom_runs": "phenom-check.log: loader symlink was absolute, fixed in Emulator.Dockerfile; phenom-unit-tests*.log: 9 failures, all the qemu fxsr-opt warning on child stderr, fixed with -fxsr-opt",
+    "startup_no_network_synthetic_keys": "missing key refused; policy 1/b5a2ade5 loaded; runtime started and retried the tunnel; docker stop exit 0",
+    "strategy_staging": "a live edit of /data/strategy/SKILL.md survived a restart with the same image; a different image replaced it and kept SKILL.md.<time>.bak",
+    "ownership": "on a Linux-backed Docker volume, root-owned files became NAS_UID:NAS_GID (1026:100); NAS_UID=0 refused"
+  },
+  "scope": "No N36L access, real keys, claim code, market registration, tunnel to the internet or image push. Phenom emulation does not reproduce every hardware or OS condition of the N36L. Startup and staging outputs were read from the console, not saved as raw logs. No commits."
+}
