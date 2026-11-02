@@ -1,6 +1,7 @@
 {
   "harness": "Claude Code Haiku; bounded local inventory context; kit v4 handles ACP/AP2",
   "seller": {"cmd": "python shop_runtime.py --port {port}"},
+  "restock": {"cmd": "python restock.py --state {state}"},
   "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"},
   "review": {"cmd": "python review_settled.py --deal {deal}"}
 }

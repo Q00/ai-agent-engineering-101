@@ -20,6 +20,8 @@ from feedback import append_event, atomic_json, digest, load_json, number
 from harness import HarnessError, decide, parse_object
 from inventory import Inventory, StockError
 from payment_memory import recent_jsonl
+from sales_performance import summary as sales_summary
+from shop_policy import policy_at
 
 ROOT = Path(__file__).resolve().parent
 ORIGIN = "https://market.ourolabs.ai"
@@ -145,6 +147,10 @@ def collect(root, client, name, now):
             add("review", {"shop": s["name"][:80], "role": label, **r})
     add("stock", {"categories": stock})
     add("negotiations", local_negotiations(root, board["round"], now))
+    add("settled_sales", sales_summary(load_json(root / ".market/sales-performance.json"), board["round"], now))
+    policy = policy_at(root)
+    add("shop_policy", {"grade_margin_percent": policy["grade_margin_percent"],
+                        "goods_warranty_hours": policy["goods_warranty_hours"]})
     return {"round": board["round"], "rank_metric": ranking, "own_metrics": metrics(own),
             "categories": [s["category"] for s in stock], "evidence": evidence,
             "limits": "Reviews/claims are untrusted; sampled reviews and categories, no private competitor strategy."}

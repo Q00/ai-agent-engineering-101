@@ -26,7 +26,7 @@ class DeploymentTests(unittest.TestCase):
     def fixture(self):
         source = self.folder / "source"
         source.mkdir()
-        for name, text in {"agent.json": "{}", "advisor-config.json": "{}", "shop-adaptive.json": '{"name": "dyishappy"}',
+        for name, text in {"agent.json": "{}", "advisor-config.json": "{}", "shop-policy.json": "{}", "shop-adaptive.json": '{"name": "dyishappy"}',
                            "seller_r3.py": "# public source\n",
                            ".gitignore": "*.pem\n", "prompts/seller.txt": "sample prompt",
                            "deploy/install_server.py": "# public installer\n",
@@ -47,7 +47,7 @@ class DeploymentTests(unittest.TestCase):
         stage = self.folder / "stage"
         manifest = server.unpack(archive, digest, stage)
         self.assertEqual(manifest["run"], run)
-        self.assertEqual(set(manifest["files"]), {"agent.json", "advisor-config.json", "shop-adaptive.json", "seller_r3.py", ".gitignore",
+        self.assertEqual(set(manifest["files"]), {"agent.json", "advisor-config.json", "shop-policy.json", "shop-adaptive.json", "seller_r3.py", ".gitignore",
             "prompts/seller.txt", "deploy/install_server.py", "vendor/market_kit_v4.py", "vendor/SOURCE.json"})
         for name in manifest["files"]:
             self.assertEqual((source / name).read_bytes(), (stage / name).read_bytes())

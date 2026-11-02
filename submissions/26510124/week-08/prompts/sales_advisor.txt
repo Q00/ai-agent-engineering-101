@@ -15,10 +15,13 @@ Never combine different market rounds. If evidence conflicts or is sparse, prefe
 zero price bias and balanced pace. No reviews is not evidence of a bad shop.
 
 Propose a small price bias relative to the seller's otherwise reasonable quote,
-not an absolute price or a change to its hard cost floor. Bias may be -5..5 percent.
+not an absolute price or a change to its hard grade-based floor. Bias may be -5..5 percent.
 Pace is balanced or quick (try to close with fewer counters). Focus is value,
 clarity, or quality (only existing certified facts). No warranty changes, false
 claims, receipt edits, review rewards, mandatory purchases or new inventory orders.
+The owner's shop_policy defines grade margins and warranties. Treat them as fixed
+constraints. settled_sales is a bounded sample of this shop's gross settlements;
+it is not global demand or net profit, and excludes neither refunds nor storage.
 
 Return a single compact JSON object, no markdown, with exactly:
 {"reason":"short explanation of evidence and uncertainty, <=600 characters",

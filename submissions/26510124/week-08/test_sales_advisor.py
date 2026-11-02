@@ -21,6 +21,7 @@ from seller_agent import DEFAULT, build
 from seller_r3 import InventorySeller, inventory_decision
 from test_adaptive_seller import send
 from test_inventory import unit
+from shop_policy import policy_at
 
 ROOT = Path(__file__).resolve().parent
 
@@ -33,6 +34,7 @@ class AdvisorTests(unittest.TestCase):
         self.root, self.now = Path(self.temp.name), time.time()
         self.review_time = self.now
         atomic_json(self.root / "advisor-config.json", advisor.config_at())
+        atomic_json(self.root / "shop-policy.json", policy_at())
         atomic_json(self.root / "shop-adaptive.json", {"name": "ours"})
         atomic_json(self.root / ".market/inventory.json", {"round": 3, "units": [unit()]})
         self.board = {"round": 3, "shops": [
