@@ -18,11 +18,13 @@ from datetime import datetime
 
 import common
 
-LIMITS = {"state": 800, "insights": 1200, "reports": 1000, "memos": 800, "numbers": 2000}
+LIMITS = {"state": 800, "insights": 2400, "reports": 1000, "memos": 800, "numbers": 2000}
+INTEGRATED_LIMITS = {"insights": 4800}          # it marks every active insight, so it sees all 20
 TITLES = {"state": "1 The business now", "insights": "2 Insights so far (kept by the integrated analysis)",
           "reports": "3 Last reports and what became of their proposals", "memos": "4 Memos from the other analyses",
           "numbers": "5 New numbers"}
-INSIGHTS = 10
+INSIGHTS = 10            # a role analysis sees the best 8 and the 2 newest still under test
+NEWEST = 2
 REPORTS = 2
 MEMOS = 5
 MEMO_HOURS = 12
@@ -79,13 +81,20 @@ def change(state: dict, now: float) -> dict | None:
 
 
 def insights(role: str) -> list:
-    """Active insights for this role (the integrated analysis: all), with the id it marks them by."""
+    """Active insights, best first, with the id the integrated analysis marks them by. It sees them all; a
+    role analysis sees its own and the shared ones, the best 8 and the 2 newest still under test (a new
+    insight scores 0, so by score alone it would never be shown, checked or used)."""
     rows = [x for x in common.read_json(folder() / "insights.json", []) or []
             if x.get("status") in ("testing", "confirmed") and (role == "integrated" or x.get("role") in (role, "both"))]
     rows.sort(key=lambda x: (x.get("refuted", 0) - x.get("confirmed", 0), -(x.get("checked") or 0)))
+    shown = rows
+    if role != "integrated" and len(rows) > INSIGHTS:
+        best, rest = rows[:INSIGHTS - NEWEST], rows[INSIGHTS - NEWEST:]
+        new = sorted((x for x in rest if x.get("status") == "testing"), key=lambda x: -(x.get("created") or 0))[:NEWEST]
+        shown = best + [x for x in rest if x not in new][:NEWEST - len(new)] + new
     return [f"- {x.get('id')} [{x.get('role')}, {x.get('topic')}, {x.get('status')}: confirmed {x.get('confirmed', 0)}, "
             f"refuted {x.get('refuted', 0)}] {x.get('text')} | evidence: {x.get('evidence')} | use: {x.get('use')}"
-            for x in rows[:INSIGHTS]] + ([f"({len(rows) - INSIGHTS} weaker insight(s) left out)"] if len(rows) > INSIGHTS else [])
+            for x in shown] + ([f"({len(rows) - len(shown)} weaker insight(s) left out)"] if len(rows) > len(shown) else [])
 
 
 def fate(p: dict, changes: list) -> str:
@@ -156,7 +165,8 @@ def form(role: str, now: float, numbers: dict) -> str:
         blocks.insert(1, f"change since {moved.pop('hours_ago')} h ago [then, now]: {compact(moved)}")
     parts = {"state": [compact({k: v for k, v in state.items() if k != "at"})], "insights": insights(role),
              "reports": reports(role), "memos": memos(role, now), "numbers": blocks}
-    text = "\n\n".join(f"[{TITLES[k]}]\n{fit(v, LIMITS[k])}" for k, v in parts.items())
+    limits = dict(LIMITS, **(INTEGRATED_LIMITS if role == "integrated" else {}))
+    text = "\n\n".join(f"[{TITLES[k]}]\n{fit(v, limits[k])}" for k, v in parts.items())
     folder().mkdir(parents=True, exist_ok=True)
     (folder() / f"last_context_{role}.txt").write_text(text, encoding="utf-8")
     with open(folder() / "contexts.jsonl", "a", encoding="utf-8") as f:

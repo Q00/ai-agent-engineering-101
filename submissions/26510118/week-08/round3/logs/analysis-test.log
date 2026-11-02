@@ -8,7 +8,7 @@
   PASS  kimchi sold 20 in 6 h at 70% of list  ({'sold_24h': 20, 'sold_6h': 20, 'grades': {'A': 10, 'B': 10}, 'last_seq': 28, 'price_ratio': 0.7})
   PASS  grade claims per shop: Alpha 10/12 true, Beta 3/8
   PASS  a breakdown is matched to the grade its buyer got (2 of 6 grade B)
-  PASS  other shops' stock: our own shop's list left out  ({'at': 1793615541, 'stocked': ['식품>김치/반찬/즉석요리>김치']})
+  PASS  other shops' stock: our own shop's list left out  ({'at': 1793615803, 'stocked': ['식품>김치/반찬/즉석요리>김치']})
   PASS  wanted: our buyer's unmet order (사과) and other agents' wanted posts (김치, 침구), our own post not counted  ({'사과': 1, '김치': 1, '침구': 1})
 
 [tool] ledger_query
@@ -25,13 +25,13 @@
 
 [forum] the market index and replies
     market index #1 posted (627 chars, 2 refs)
-    | [Kiro729 Market Index #1 · 11/02 19:32 KST · 26 settled deals in 24 h]
+    | [Kiro729 Market Index #1 · 11/02 19:36 KST · 26 settled deals in 24 h]
     | Top categories, 6 h: 김치 20, 침구 0
     | Average price paid / list price: 김치 70%, 침구 70%
     | No shop had it in stock (shops' stock lists): 침구, 사과
     | Grade claims that were true: Alpha 10/12, Beta 3/8 (Kiro729's own shop left out: same owner)
     | Source: settle and broken entries of the public ledger (/api/ledger); the refs below are samples.
-    | {"v":1,"n":1,"at":1793615541,"settled_24h":26,"top_6h":{"김치":20,"침구":0},"price_share":{"김치":0.7,"침구":0.7},"no_seller":["침구","사과"],"no_seller_source":"shops' stock lists","honest_claims":{"Alpha":[10,12],"Beta":[3,8]},"breakage":{}}
+    | {"v":1,"n":1,"at":1793615803,"settled_24h":26,"top_6h":{"김치":20,"침구":0},"price_share":{"김치":0.7,"침구":0.7},"no_seller":["침구","사과"],"no_seller_source":"shops' stock lists","honest_claims":{"Alpha":[10,12],"Beta":[3,8]},"breakage":{}}
   PASS  posted as our buyer, header '[Kiro729 Market Index #1 ...]'
   PASS  refs are real settle entries the market can show  ([28, 34])
   PASS  the last line is the same numbers as JSON
@@ -82,9 +82,9 @@
     | - I1 [seller, price, confirmed: confirmed 2, refuted 0] Kimchi sells at about 70% of list | evidence: 20 sold in 6 h, all at 70% of list | use: open kimchi at 75%; buyers rarely push it to the floor
     | 
     | [3 Last reports and what became of their proposals]
-    | - 11/02 22:34 seller: again
+    | - 11/02 22:38 seller: again
     |   price_adjust = 0.12: adopted and applied as 0.05; next 12 h: shop margin 0 -> 0, buyer surplus 0 -> 0
-    | - 11/02 19:34 seller: Kimchi sells.
+    | - 11/02 19:38 seller: Kimchi sells.
     |   price_adjust = 0.12: adopted as 0.05, recorded only (exploration phase)
     |   price_adjust = 0.3: refused by code (outside (-0.1, 0.15))
     |   focus_categories = ["김치"]: adopted as ["김치"], recorded only (exploration phase)
@@ -102,9 +102,9 @@
   PASS  insights: the seller's confirmed one with its evidence and use; the retired buyer one not shown  (- I1 [seller, price, confirmed: confirmed 2, refuted 0] Kimchi sells at about 70% of list | evidence: 20 sold in 6 h, all at 70% of list | use: open kimchi at 75%; buyers rarely push it to the floor)
   PASS  no memos yet: the part says so
   PASS  the last two seller reports, newest first
-  PASS  what became of each proposal: applied with the 12 h after, recorded only, refused by code, not adopted  (- 11/02 22:34 seller: again
+  PASS  what became of each proposal: applied with the 12 h after, recorded only, refused by code, not adopted  (- 11/02 22:38 seller: again
   price_adjust = 0.12: adopted and applied as 0.05; next 12 h: shop margin 0 -> 0, buyer surplus 0 -> 0
-- 11/02 19:34 seller: Kimchi sells.
+- 11/02 19:38 seller: Kimchi sells.
   price_adjust = 0.12: adopted as 0.05, recorded only (exploration phase)
   price_adjust = 0.3: refused by code (outside (-0.1, 0.15))
   focus_categories = ["김치"]: adopted as ["김치"], recorded only (exploration phase)
@@ -112,15 +112,16 @@
   floor = 0: refused by code (floor is not a field the seller analysis may change)
   warranty_extra = {"C":0.25}: not adopted
   price_adjust = -0.05: not adopted)
-  PASS  insights: the seller's and the shared ones, best confirmed first, none retired  (- I114 [both, price, testing: confirmed 14, refuted 0] insight-14 xxxxxxxxxxxxxx)
-  PASS  insights that do not fit are left out with a line saying so
-  PASS  memos: to the seller or to all, last 12 h, newest first, not its own  (- 11/03 10:34 from integrated (inform): phase stays explore
-- 11/03 09:34 from buyer (inform): other shops open at 82% of list)
+  PASS  insights: the seller's and the shared ones, none retired, best confirmed first  (- I118 [seller, price, testing: confirmed 18, refuted 0] insight-18 xxxxxxxxxxxx)
+  FAIL  ...the best 8, then the 2 newest still under test (by score alone they would never show)  (['[seller,', '[both,', '[seller,', '[both,', '[seller,', '[both,', '[seller,', '[both,', '[seller,', '[both,'])
+  FAIL  the rest left out with a line saying so; 10 insights fit in 2,400 characters  (2192)
+  PASS  memos: to the seller or to all, last 12 h, newest first, not its own  (- 11/03 10:38 from integrated (inform): phase stays explore
+- 11/03 09:38 from buyer (inform): other shops open at 82% of list)
   PASS  new numbers: what moved since 3 hours ago  (our_records_24h: {"sales_24h":0}
 change since 3.0 h ago [then, now]: {"balance":[1,4000000]})
-  PASS  every part within its limit  ({'state': 453, 'insights': 1073, 'reports': 621, 'memos': 126, 'numbers': 92})
+  PASS  every part within its limit  ({'state': 453, 'insights': 2192, 'reports': 621, 'memos': 126, 'numbers': 92})
   PASS  the integrated analysis: the latest report of each role
-  PASS  the integrated analysis: all insights (buyer's too) and all memos but its own
+  PASS  the integrated analysis: every active insight (all 20, buyer's too) and all memos but its own  (4320)
   PASS  each briefing is kept
 
 [restock] a wanted category
@@ -129,39 +130,39 @@ change since 3.0 h ago [then, now]: {"balance":[1,4000000]})
   PASS  a category the rules drop is not stocked even when wanted
 
 [runner] the schedule and the lock
-11-02 19:32:22 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
-11-02 19:32:22 [analysis] index: market index #1 posted (627 chars, 2 refs)
-11-02 19:32:22 [analysis] replies: buyer data reply to #101 (김치); shop reply to #101 (김치)
-11-02 19:32:22 [analysis] seller: 0 proposal(s), 0 within range
-11-02 19:32:22 [analysis] buyer: 0 proposal(s), 0 within range
-11-02 19:32:22 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
+11-02 19:36:43 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+11-02 19:36:43 [analysis] index: market index #1 posted (627 chars, 2 refs)
+11-02 19:36:43 [analysis] replies: buyer data reply to #101 (김치); shop reply to #101 (김치)
+11-02 19:36:43 [analysis] seller: 0 proposal(s), 0 within range
+11-02 19:36:43 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 19:36:43 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
   PASS  first pass: every step is due  (['collect', 'index', 'replies', 'seller', 'buyer', 'integrated'])
-11-02 19:32:22 [analysis] replies: 1 wanted post(s) waiting
+11-02 19:36:43 [analysis] replies: 1 wanted post(s) waiting
   PASS  10 minutes later: replies only
-11-02 19:32:22 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
-11-02 19:32:22 [analysis] replies: buyer data reply to #104 (침구)
+11-02 19:36:43 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+11-02 19:36:43 [analysis] replies: buyer data reply to #104 (침구)
   PASS  an hour later: collect and replies
-11-02 19:32:22 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
-11-02 19:32:22 [analysis] index: market index #2 posted (625 chars, 2 refs)
-11-02 19:32:22 [analysis] replies: 0 wanted post(s) waiting
-11-02 19:32:22 [analysis] seller: 0 proposal(s), 0 within range
-11-02 19:32:22 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 19:36:44 [analysis] collect: 0 new ledger entries, 26 settles in 24 h, 1 categories stocked by other shops, 3 wanted categories
+11-02 19:36:44 [analysis] index: market index #2 posted (625 chars, 2 refs)
+11-02 19:36:44 [analysis] replies: 0 wanted post(s) waiting
+11-02 19:36:44 [analysis] seller: 0 proposal(s), 0 within range
+11-02 19:36:44 [analysis] buyer: 0 proposal(s), 0 within range
   PASS  3 hours later: index and the role analyses too
-11-02 19:32:22 [analysis] another pass is running; skipped
+11-02 19:36:44 [analysis] another pass is running; skipped
   PASS  a pass already running: skipped
-11-02 19:32:22 [analysis] collect: 0 new ledger entries, 0 settles in 24 h, 1 categories stocked by other shops, 2 wanted categories
-11-02 19:32:22 [analysis] index: not enough settles yet
-11-02 19:32:22 [analysis] replies: 0 wanted post(s) waiting
-11-02 19:32:22 [analysis] seller: 0 proposal(s), 0 within range
-11-02 19:32:22 [analysis] buyer: 0 proposal(s), 0 within range
-11-02 19:32:22 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
+11-02 19:36:44 [analysis] collect: 0 new ledger entries, 0 settles in 24 h, 1 categories stocked by other shops, 2 wanted categories
+11-02 19:36:44 [analysis] index: not enough settles yet
+11-02 19:36:44 [analysis] replies: 0 wanted post(s) waiting
+11-02 19:36:44 [analysis] seller: 0 proposal(s), 0 within range
+11-02 19:36:44 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 19:36:44 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
   PASS  a lock left by a crash (an hour old) does not block  (['collect', 'replies', 'seller', 'buyer', 'integrated'])
-11-02 19:32:22 [analysis] collect failed: RuntimeError: down
-11-02 19:32:22 [analysis] index: not enough settles yet
-11-02 19:32:22 [analysis] replies: 0 wanted post(s) waiting
-11-02 19:32:22 [analysis] seller: 0 proposal(s), 0 within range
-11-02 19:32:22 [analysis] buyer: 0 proposal(s), 0 within range
-11-02 19:32:22 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
+11-02 19:36:44 [analysis] collect failed: RuntimeError: down
+11-02 19:36:44 [analysis] index: not enough settles yet
+11-02 19:36:44 [analysis] replies: 0 wanted post(s) waiting
+11-02 19:36:44 [analysis] seller: 0 proposal(s), 0 within range
+11-02 19:36:44 [analysis] buyer: 0 proposal(s), 0 within range
+11-02 19:36:44 [analysis] integrated: 0 change(s), 0 revert(s), recorded only (exploration phase); insights: 0 new, 0 confirmed, 0 refuted, 0 retired, 0 refused
   PASS  one step failing does not stop the rest  (['replies', 'seller', 'buyer', 'integrated'])
 
-77/77 checks passed
+76/78 checks passed

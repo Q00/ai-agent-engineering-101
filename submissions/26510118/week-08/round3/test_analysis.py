@@ -343,8 +343,8 @@ def test_context():
                                  "refused by code", "not adopted")), rep)
 
     fake = [{"id": f"I{100 + i}", "role": ["seller", "buyer", "both"][i % 3], "topic": "price", "text": f"insight-{i:02d} " + "x" * 60,
-             "evidence": f"{i} sales", "use": "y" * 20, "status": "testing", "confirmed": i, "refuted": 0, "checked": tc}
-            for i in range(15)]
+             "evidence": f"{i} sales", "use": "y" * 60, "status": "testing", "confirmed": i, "refuted": 0, "checked": tc,
+             "created": tc - i * 600} for i in range(20)]                  # the weakest are the newest
     fake.append({"id": "I999", "role": "seller", "topic": "price", "text": "retired insight", "evidence": "1", "use": "z",
                  "status": "retired", "confirmed": 99})
     common.write_json(MD / "analysis" / "insights.json", fake)
@@ -359,10 +359,14 @@ def test_context():
     text = context.form("seller", tc, {"our_records_24h": {"sales_24h": 0}})
     p = parts_of(text)
     ins = p[t["insights"]]
-    check("insights: the seller's and the shared ones, best confirmed first, none retired",
-          "insight-14" in ins.splitlines()[0] and "[both" in ins.splitlines()[0] and "insight-13" not in ins
-          and "retired insight" not in ins, ins[:80])
-    check("insights that do not fit are left out with a line saying so", "more left out" in ins and len(ins) <= context.LIMITS["insights"])
+    lines = ins.splitlines()
+    check("insights: the seller's and the shared ones, none retired, best confirmed first",
+          "insight-18" in lines[0] and "insight-13" not in ins and "retired insight" not in ins, lines[0][:80])
+    check("...the best 8, then the 2 newest still under test (by score alone they would never show)",
+          [x.split()[2] for x in lines[:10]] == [f"insight-{i:02d}" for i in (18, 17, 15, 14, 12, 11, 9, 8, 0, 2)]
+          and "insight-03" not in ins, [x.split()[2] for x in lines[:10]])
+    check("the rest left out with a line saying so; 10 insights fit in 2,400 characters",
+          lines[10] == "(4 weaker insight(s) left out)" and len(lines) == 11 and len(ins) <= context.LIMITS["insights"], len(ins))
     mem = p[t["memos"]]
     check("memos: to the seller or to all, last 12 h, newest first, not its own",
           0 <= mem.find("phase stays explore") < mem.find("82% of list") and not any(s in mem for s in ("old memo", "note to self", "my own memo")), mem)
@@ -373,8 +377,9 @@ def test_context():
     text = context.form("integrated", tc, {"last_decisions": []})
     p = parts_of(text)
     check("the integrated analysis: the latest report of each role", "seller: again" in p[t["reports"]] and "buyer:" in p[t["reports"]])
-    check("the integrated analysis: all insights (buyer's too) and all memos but its own",
-          "insight-13" in p[t["insights"]] and "note to self" in p[t["memos"]] and "phase stays explore" not in p[t["memos"]])
+    check("the integrated analysis: every active insight (all 20, buyer's too) and all memos but its own",
+          len(p[t["insights"]].splitlines()) == 20 and "insight-13" in p[t["insights"]] and "left out" not in p[t["insights"]]
+          and "note to self" in p[t["memos"]] and "phase stays explore" not in p[t["memos"]], len(p[t["insights"]]))
     check("each briefing is kept", (MD / "analysis" / "last_context_integrated.txt").read_text(encoding="utf-8") == text
           and common.read_jsonl(MD / "analysis" / "contexts.jsonl")[-1]["role"] == "integrated")
 
