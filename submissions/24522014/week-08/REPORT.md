@@ -8,6 +8,8 @@
 
 ## 1. 부품별 설계
 
+계약 전환의 첫 구현은 `seller_r3.py`, `r3_harness.py`, SKU·order 대응 buyer에 준비했고 설정 후보는 `agent-r3.json`이다. 상세 출처와 한계는 [R3-CONTRACT-ADAPTATION.md](R3-CONTRACT-ADAPTATION.md)를 본다. 오프라인 검사 19개가 통과했지만 실제 R3 모델 호출과 정산은 아직 검증하지 않았다. 활성 `agent.json`은 기존 운영 설정이다.
+
 ### 모델
 
 복사한 활성 설정은 Codex gpt-6-luna다. 기존 seller는 첫 가격과 제시가 확인을 코드로 처리하고 그 밖의 협상에서 모델을 호출한다. buyer는 예산 안에서 협상한다. 이는 이전 세 품목 구현 기준이며 새 SKU·재고·인증서에 대한 입력과 검증은 전환 후 기록한다.

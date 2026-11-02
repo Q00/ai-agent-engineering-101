@@ -24,8 +24,8 @@ class BuyerError(RuntimeError):
 
 class BuyerTransport:
     def __init__(self, url, item, budget, *, timeout=290, transport=None, verify=True):
-        if item not in ("lamp", "chair", "bookshelf"):
-            raise ValueError("Unsupported item")
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError("Item must be a nonempty name or SKU")
         if type(budget) is not int or budget <= 0:
             raise ValueError("Budget must be a positive integer")
         if not math.isfinite(timeout) or not 0 < timeout < 300:
@@ -272,7 +272,7 @@ def run_autonomous(client, provider, *, max_turns=12):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", required=True)
-    parser.add_argument("--item", choices=["lamp", "chair", "bookshelf"], required=True)
+    parser.add_argument("--item", required=True)
     parser.add_argument("--budget", type=int, required=True)
     parser.add_argument("--manual", action="store_true",
                         help="Exercise transport using explicit offers, without a model")

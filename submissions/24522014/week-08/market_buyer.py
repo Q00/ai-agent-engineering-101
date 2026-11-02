@@ -120,7 +120,8 @@ def trade(shop, item, budget, *, mode="claude", transport=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--shops", type=Path, required=True)
-    parser.add_argument("--item", choices=("lamp", "chair", "bookshelf"), required=True)
+    parser.add_argument("--item", required=True)
+    parser.add_argument("--order", type=Path)
     parser.add_argument("--budget", type=int, required=True)
     parser.add_argument("--memory", type=Path, default=ROOT / ".market/buyer-memory.jsonl")
     parser.add_argument("--memory-window", type=int, choices=(3, 5, 10, 20), default=RECENT_COUNT)
@@ -130,16 +131,39 @@ def main():
         parser.error("Budget must be a positive integer")
     try:
         shops, memory = load_shops(args.shops), load_memory(args.memory)
-        shop, reason, evidence = choose_shop(shops, memory, args.item, args.budget,
+        order = json.loads(args.order.read_text(encoding="utf-8")) if args.order else {}
+        acceptable = order.get("acceptable") or []
+        r3 = bool(acceptable)
+        if r3:
+            if order.get("item") != args.item or order.get("budget") != args.budget:
+                raise ValueError("Order and command arguments disagree")
+            shops = [dict(s, offers=[o for o in s.get("offers", [])
+                                    if o.get("sku") in acceptable and o.get("qty", 0) > 0]) for s in shops]
+            shops = [s for s in shops if s["offers"]]
+            # Bootstrap selection only: do not compare historical prices across different SKUs.
+            selection_memory = [dict(r, item="__past_sku__") for r in memory]
+        else:
+            selection_memory = memory
+        shop, reason, evidence = choose_shop(shops, selection_memory, args.item, args.budget,
                                               recent_count=args.memory_window)
     except (OSError, ValueError) as error:
         parser.exit(1, f"Cannot load selection inputs: {error}\n")
     print(f"[choose] {reason}", flush=True)
     if shop:
-        result, record = trade(shop, args.item, args.budget, mode=args.mode)
+        item = min(shop["offers"], key=lambda o: o["sku"])["sku"] if r3 else args.item
+        result, record = trade(shop, item, args.budget, mode=args.mode)
+        if r3:
+            record["order"] = order.get("order")
+            record["category"] = order.get("category", args.item)
+            # Certificate and food-use constraints are enforced by the kit before payment.
+            result["accept"] = {"cert": True}
+            if order.get("kind") == "food":
+                result["accept"]["min_hours_left"] = order["use_within_hours"]
         record["selection_reason"] = reason
         remember(args.memory, record)
     else:
+        if r3 and not shops:
+            reason = "No registered shop offers an acceptable in-stock SKU."
         result = {"shop": "", "receipt": None, "stars": 3, "review": reason}
         record = {"outcome": "no_eligible_shop", "selection_reason": reason}
     log_dir = ROOT / "logs/market-buyer"

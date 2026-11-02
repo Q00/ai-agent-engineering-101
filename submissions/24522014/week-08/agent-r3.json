@@ -1,0 +1,17 @@
+{
+  "profile": "codex",
+  "harness": "R3 course inventory seller with logged Codex gpt-6-luna adapter; SKU buyer with certificate and food-use constraints; strategy pending",
+  "seller": {
+    "harness": "codex",
+    "model": "gpt-6-luna",
+    "cmd": "python seller_r3.py --port {port}"
+  },
+  "buyer": {
+    "harness": "codex",
+    "model": "gpt-6-luna",
+    "cmd": "python buyer.py --mode codex --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --mode codex --shops {shops} --item {item} --budget {budget} --order {order}"
+  }
+}
