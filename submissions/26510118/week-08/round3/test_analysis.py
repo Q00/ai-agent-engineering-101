@@ -298,7 +298,8 @@ def test_runner():
     check("a pass already running: skipped", analysis.run_once(t0 + 24 * H, quiet, fake_ledger, fake_shops) == []
           and "another pass is running" in analysis.LOG.read_text(encoding="utf-8"))
     os.utime(lock, (time.time() - 3600, time.time() - 3600))
-    check("a lock left by a crash (an hour old) does not block", len(analysis.run_once(time.time() + 24 * H, quiet, fake_ledger, fake_shops)) == 6)
+    done = analysis.run_once(time.time() + 24 * H, quiet, fake_ledger, fake_shops)
+    check("a lock left by a crash (an hour old) does not block", "collect" in done and not lock.exists(), done)
 
     def broken(path):
         raise RuntimeError("market down")
@@ -330,8 +331,8 @@ def main() -> int:
         test_tool()
         test_forum()
         test_analysts()
+        test_restock_wanted()                 # before the runner's later passes age the unmet order out
         test_runner()
-        test_restock_wanted()
     finally:
         shutil.rmtree(ROOT, ignore_errors=True)
     print(f"\n{sum(results)}/{len(results)} checks passed")
