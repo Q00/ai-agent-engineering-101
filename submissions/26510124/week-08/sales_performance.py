@@ -86,6 +86,10 @@ def update(root, rnd, now, *, public=None, inventory=None):
                                 "receipt_time": receipt["time"], "observed_at": now}
             seqs.add(e["seq"])
     by_seq = {e["seq"]: e for e in public_rows if e["kind"] == "settle"}
+    broken_by_sku = {}
+    for e in public_rows:
+        if e["kind"] == "broken":
+            broken_by_sku.setdefault(e["sku"], []).append(e)
     for u, s in sales.items():
         r = receipts.get(u, {})
         for k in ("cost", "kind", "grade", "supplied_at", "warranty_hours"):
@@ -96,9 +100,8 @@ def update(root, rnd, now, *, public=None, inventory=None):
                 and e.get("unit") in (None, u) and e.get("ts", 0) >= s["receipt_time"]):
             s.update(settled_at=e["ts"], shop=e["shop"])
         refunds = {e["seq"]: e for e in s.get("refunds", [])}
-        for e in public_rows:
-            if (e["kind"] != "broken" or e["sku"] != s["sku"]
-                    or e["ts"] < s["receipt_time"] or e.get("refunded", 0) <= 0):
+        for e in broken_by_sku.get(s["sku"], []):
+            if e["ts"] < s["receipt_time"] or e.get("refunded", 0) <= 0:
                 continue
             if e.get("unit") == u:
                 refunds[e["seq"]] = {"seq": e["seq"], "amount": e["refunded"], "ts": e["ts"]}
@@ -107,7 +110,8 @@ def update(root, rnd, now, *, public=None, inventory=None):
         s["refunds"] = sorted(refunds.values(), key=lambda e: e["seq"])[-10:]
     result = {"schema": 1, "round": rnd, "updated_at": now,
               "sales": sorted(sales.values(), key=lambda s: s["receipt_time"])[-MAX_SALES:],
-              "funnel": funnel(events, sales, rnd, now)}
+              "funnel": funnel([e for e in events if not number(reset_at) or e.get("time", 0) >= reset_at],
+                               sales, rnd, now)}
     inv = inventory or {}
     if all(number(inv.get(k)) for k in ("balance", "start", "injected")):
         result["wallet_profit"] = inv["balance"] - inv["start"] - inv["injected"]

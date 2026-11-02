@@ -4,6 +4,7 @@ This is deliberately a sample, not a complete ledger or proof of no refunds.
 Only structured settlement/breakage facts survive; order budgets and prose do not.
 """
 from collections import Counter
+import json
 from statistics import median
 
 import httpx
@@ -89,9 +90,15 @@ def refresh(root, rnd, now, *, client=None):
         events = {} if reset else {e["seq"]: e for e in previous.get("events", [])
                                   if number(e.get("ts")) and 0 <= now - e["ts"] <= WINDOW}
         events.update({e["seq"]: e for e in incoming})
+        kept, size = [], 0
+        for e in sorted(events.values(), key=lambda e: e["seq"], reverse=True)[:LIMIT]:
+            size += len(json.dumps(e, ensure_ascii=False).encode()) + 2
+            if size > 800_000:
+                break  # Stay below load_json's byte limit, including long UTF-8 fields.
+            kept.append(e)
         state = {"schema": 1, "round": rnd, "updated_at": now, "newest_seq": newest,
                  "reset_at": now if reset else previous.get("reset_at"),
-                 "events": sorted(events.values(), key=lambda e: e["seq"])[-LIMIT:],
+                 "events": list(reversed(kept)),
                  "coverage": "sampled_latest_500_per_poll; gaps and unobserved refunds are possible"}
         atomic_json(md / "market-evidence.json", state)
         append_event(root / "logs/market-evidence.jsonl", {"time": now, "round": rnd,

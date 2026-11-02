@@ -55,6 +55,13 @@ class OpeningTests(unittest.TestCase):
         self.group.update(rejected=0, unknown_exit=10, errors=30)
         self.assertEqual(self.update()["entries"]["G00001:B:0"]["target"], 90000)
 
+    def test_temporary_market_outage_does_not_erase_reset_epoch_or_rebase_price(self):
+        state = self.update({"round": 3, "reset_at": self.now - 100, "events": []})
+        self.now += 3601
+        again = self.update(None)
+        self.assertEqual(again["reset_at"], state["reset_at"])
+        self.assertEqual(again["entries"], state["entries"])
+
     def test_market_change_moves_target_at_most_two_percent_per_hour(self):
         def public(price):
             return {"round": 3, "events": [{"seq": i, "kind": "settle", "ts": self.now - 10,

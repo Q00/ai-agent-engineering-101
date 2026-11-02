@@ -21,7 +21,8 @@ def update(root, inventory, memory, public, policy, now):
     old = load_json(path) if path.exists() else {}
     if not isinstance(old, dict):
         raise ValueError("Invalid opening strategy memory")
-    if old.get("round") != inventory["round"] or (public or {}).get("reset_at") != old.get("reset_at"):
+    if (old.get("round") != inventory["round"]
+            or public is not None and public.get("reset_at") != old.get("reset_at")):
         old = {}
     previous = old.get("entries", {})
     if not isinstance(previous, dict) or len(previous) > 100:
@@ -79,7 +80,7 @@ def update(root, inventory, memory, public, policy, now):
                         "created_at": now, "tasks": tasks, "completed": complete,
                         "comparables": reference, "reason": "bounded_market_and_own_observations"}
     result = {"schema": 1, "round": inventory["round"], "updated_at": now,
-              "reset_at": (public or {}).get("reset_at"), "entries": entries}
+              "reset_at": public.get("reset_at") if public is not None else old.get("reset_at"), "entries": entries}
     atomic_json(path, result)
     changed = {k: {a: v for a, v in e.items() if a != "tasks"} for k, e in entries.items() if e != previous.get(k)}
     if changed:

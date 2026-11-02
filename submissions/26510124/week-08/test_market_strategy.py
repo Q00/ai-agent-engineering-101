@@ -80,6 +80,28 @@ class MarketStrategyTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 market.normalize(rows, 3, self.now)
 
+    def test_utf8_cache_stays_readable_under_byte_limit(self):
+        for page in range(5):
+            rows = [self.raw(page * 100 + i + 1, item="가" * 500, shop="나" * 500,
+                             buyer="다" * 200, unit=str(i)) for i in range(100)]
+            with patch("market_evidence.fetch_json", return_value=rows):
+                state = market.refresh(self.root, 3, self.now + page * 901, client=object())
+            self.assertIsNotNone(market.read(self.md, 3, self.now + page * 901))
+            self.assertLess((self.md / "market-evidence.json").stat().st_size, 900000)
+            self.assertEqual(state["events"][-1]["seq"], (page + 1) * 100)
+
+    def test_confirmed_ledger_reset_excludes_previous_sales_and_funnel(self):
+        r = self.receipt()
+        start = {**r, "outcome": "opened"}
+        with (self.logs / "inventory-seller-events.jsonl").open("a") as f:
+            f.write(json.dumps(start) + "\n")
+        first = perf.update(self.root, 3, self.now, public=self.public([self.raw()]))
+        self.assertEqual(len(first["sales"]), 1)
+        reset = {"round": 3, "reset_at": self.now, "events": []}
+        later = perf.update(self.root, 3, self.now + 1, public=reset)
+        self.assertEqual(later["sales"], [])
+        self.assertEqual(later["funnel"]["counts"], {})
+
     def test_popularity_needs_multiple_shops_and_comparables_need_exact_terms(self):
         rows = [self.raw(i + 1, shop="shop-a", amount=80000) for i in range(5)]
         state = self.public(rows)
