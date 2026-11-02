@@ -27,6 +27,9 @@ from a2a.utils.errors import UnsupportedOperationError
 from catalog import load, search
 from storage import stores
 
+import base64
+from cryptography.hazmat.primitives import serialization
+
 LOG = logging.getLogger("seller")
 TERMINAL_STATES = {
     TaskState.TASK_STATE_COMPLETED,
