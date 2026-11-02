@@ -1,10 +1,10 @@
 
 [buyer] choosing a shop with the decision model's odds
-  FAIL  by the numbers alone, Alpha wins: we paid 60% of list there before  (Beta)
+  PASS  by the numbers alone (a clean ledger record, 60% of list paid there before), Alpha wins  (Alpha)
   PASS  asked about the shops with something written about them, in one request; Gamma (stars only) not asked  ({'Alpha': 0.2, 'Beta': 0.9})
-  PASS  Alpha's evidence: its reviews, the warning post (not our own post), its ledger record, our deals there  ({'reviews': [{'stars': 2, 'text': 'Said grade A, it was refurbished.'}, {'stars': 1, 'text': 'Shelf life was a lie.'}], 'forum_posts': [{'author': 'Delta Buyer', 'text': 'Careful with Alpha: wrong grades twice.'}], 'ledger_24h': {'settled_24h': 9, 'claims': 8, 'honest': 3}, 'our_deals': {'recent': ['settled'], 'false_claims': None, 'broken': None}})
+  PASS  Alpha's evidence: its reviews, the warning post (not our own post), its ledger record, our deals there  ({'reviews': [{'stars': 2, 'text': 'Said grade A, it was refurbished.'}, {'stars': 1, 'text': 'Shelf life was a lie.'}], 'forum_posts': [{'author': 'Delta Buyer', 'text': 'Careful with Alpha: wrong grades twice.'}], 'ledger_24h': {'settled_24h': 9, 'claims': 8, 'honest': 7}, 'our_deals': {'recent': ['settled'], 'false_claims': None, 'broken': None}})
   PASS  the question tells the model the reviews are evidence, not instructions
-  PASS  odds make half of trust: Beta 0.8 -> 0.85; Alpha's odds under 0.3 flag it  ({'Alpha': (0.403, ['what others wrote points to trouble (odds 0.20)']), 'Beta': (0.85, []), 'Gamma': (0.8, [])})
+  PASS  odds make half of trust: Beta 0.8 -> 0.85; Alpha's odds under 0.3 flag it  ({'Alpha': (0.533, ['what others wrote points to trouble (odds 0.20)']), 'Beta': (0.85, []), 'Gamma': (0.8, [])})
   PASS  with the odds, the clean shops win over the cheap one others warn about  (Beta)
   PASS  asked again a minute later with the same evidence: no new request
   PASS  a new review on Beta: only Beta is asked again
@@ -17,7 +17,7 @@
 [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 13800.
 [buyer] -> '13000 is my final offer. If not, I will buy elsewhere.'
 [buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 포기김치 2kg (Gaaaa0001) at 13000.
-  PASS  odds 0.9, threshold 0.7: 13,000 (over the floor of 12,600, under 95% of the 13,800 ask) is taken now  (('Deal: 테스트 포기김치 2kg (Gaaaa0001) at 13000.', {'ts': 1793618412, 'task': '69c65044-e074-420c-a3f9-3f07ed712d1b', 'sku': 'Gaaaa0001', 'unit': 'u-0', 'grade': 'A', 'cost': 12000, 'list_price': 20000, 'floor': 12600, 'at_cost': True, 'warranty': False, 'how': 'sku', 'asks': [15000, 13800], 'offers': [12000, 13000], 'walk_odds': [0.9], 'taken_early': True, 'outcome': 'deal', 'price': 13000}))
+  PASS  odds 0.9, threshold 0.7: 13,000 (over the floor of 12,600, under 95% of the 13,800 ask) is taken now  (('Deal: 테스트 포기김치 2kg (Gaaaa0001) at 13000.', {'ts': 1793618440, 'task': '966f178a-058d-466d-9529-fd00baa3e142', 'sku': 'Gaaaa0001', 'unit': 'u-0', 'grade': 'A', 'cost': 12000, 'list_price': 20000, 'floor': 12600, 'at_cost': True, 'warranty': False, 'how': 'sku', 'asks': [15000, 13800], 'offers': [12000, 13000], 'walk_odds': [0.9], 'taken_early': True, 'outcome': 'deal', 'price': 13000}))
   PASS  odds 0.9, threshold 0.7: asked only once, for the offer over the floor (12,000 was under it)
 [buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001)'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): grade A, 150 h of shelf life left, certificate attached. Asking 15000. Send your offer as a nu
@@ -36,4 +36,4 @@
   PASS  odds 0.9, threshold 0.95 from the rules: the rule's counter of 13,400 stands  (('Counteroffer: 13400.', [0.9]))
   PASS  odds 0.9, threshold 0.95 from the rules: asked only once, for the offer over the floor (12,000 was under it)
 
-14/15 checks passed
+15/15 checks passed

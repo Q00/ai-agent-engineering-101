@@ -3,8 +3,10 @@
     python check_models.py          (OPENAI_API_KEY in the environment)
 
 For each model, a plain answer (ask) and one tool round trip through run_tools with a small add
-tool: OK when the model calls add(2, 3) and then answers 5. Prints the reasoning effort and the
-time each took (the trading model must answer within ask()'s 20 seconds). Costs under a cent.
+tool: OK when the model calls add(2, 3) and then answers 5. Then the Decisions API: OK when a
+buyer's "final offer" reads as likely to walk and as no warranty request. Prints the reasoning
+effort and the time each took (the trading model must answer within ask()'s 20 seconds, a
+decision well within the seller's 8). Costs under a cent.
 """
 import json
 import sys
@@ -36,6 +38,15 @@ def main() -> int:
         good &= ok
         print(f"{model:15} effort {harness.EFFORT.get(model):6}  ask {said[:12]!r:14} {plain:5.1f} s   "
               f"tool {used} -> {text[:12]!r:14} {tooled:5.1f} s   {'OK' if ok else 'FAIL'}", flush=True)
+    t = time.time()
+    got = harness.decide("One negotiation at a shop: the buyer's own messages.",
+                         {"buyer_messages": ["13000 is my final offer. If not, I will buy elsewhere."]},
+                         ["If the shop counters instead of accepting, the buyer will leave without buying.",
+                          "The buyer asked for a warranty."])
+    ok = bool(got) and None not in got and got[0] > 0.5 > got[1]
+    good &= ok
+    print(f"{'decisions':15} {harness.DECIDE_MODEL:13}  walks {got and got[0]}  warranty {got and got[1]}  "
+          f"{time.time() - t:5.1f} s   {'OK' if ok else 'FAIL'}", flush=True)
     return 0 if good else 1
 
 

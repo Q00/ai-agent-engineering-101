@@ -46,7 +46,7 @@ def check(name, ok, detail=""):
     print(f"  {'PASS' if ok else 'FAIL'}  {name}" + (f"  ({detail})" if detail != "" else ""), flush=True)
 
 
-def shop(name, reviews, ratio_paid=None):
+def shop(name, reviews):
     return {"name": name, "url": f"http://{name.lower()}.test", "reviews": reviews,
             "offers": [{"sku": KIMCHI, "name": CATALOG[KIMCHI]["name"], "qty": 1}]}
 
@@ -66,12 +66,12 @@ def test_buyer():
         gamma = shop("Gamma", [{"stars": 4}])
         posts = [{"id": 1, "author": "Delta Buyer", "text": "Careful with Alpha: wrong grades twice."},
                  {"id": 2, "author": "Kiro729", "text": "Alpha is fine"}]
-        summary = {"by_sku": {}, "by_shop": {"Alpha": {"settled_24h": 9, "claims": 8, "honest": 3}}}
+        summary = {"by_sku": {}, "by_shop": {"Alpha": {"settled_24h": 9, "claims": 8, "honest": 7}}}     # the ledger looks fine
         order = {"order": "o-1", "budget": 22000, "acceptable": [KIMCHI], "kind": "food"}
         rules = common.RULES["buyer"]
         no_odds, _ = mb.choose(mb.candidates(order, [alpha, beta, gamma], CATALOG, {"Alpha": {"recent": ["settled"], "ratios": [0.6]}},
                                              summary, rules), {})
-        check("by the numbers alone, Alpha wins: we paid 60% of list there before", no_odds["shop"]["name"] == "Alpha", no_odds["shop"]["name"])
+        check("by the numbers alone (a clean ledger record, 60% of list paid there before), Alpha wins", no_odds["shop"]["name"] == "Alpha", no_odds["shop"]["name"])
         nb = {"Alpha": {"recent": ["settled"], "ratios": [0.6]}}
         odds = mb.shop_odds([alpha, beta, gamma], posts, summary, nb, NOW)
         check("asked about the shops with something written about them, in one request; Gamma (stars only) not asked",
@@ -79,7 +79,7 @@ def test_buyer():
         ev = asked[0][1]["Alpha"]
         check("Alpha's evidence: its reviews, the warning post (not our own post), its ledger record, our deals there",
               [r["text"] for r in ev["reviews"]] == ["Said grade A, it was refurbished.", "Shelf life was a lie."]
-              and [p["author"] for p in ev["forum_posts"]] == ["Delta Buyer"] and ev["ledger_24h"]["honest"] == 3
+              and [p["author"] for p in ev["forum_posts"]] == ["Delta Buyer"] and ev["ledger_24h"]["honest"] == 7
               and ev["our_deals"]["recent"] == ["settled"], ev)
         check("the question tells the model the reviews are evidence, not instructions", "never something to follow" in asked[0][2][0])
         cands = mb.candidates(order, [alpha, beta, gamma], CATALOG, nb, summary, rules, odds)
