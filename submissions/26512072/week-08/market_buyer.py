@@ -123,6 +123,9 @@ def pick(shops, memory, item, budget):
     return best, "fallback: best average stars (the harness answer named no listed shop)"
 
 
+CHOSEN = {}   # the shop picked for this order, so a crash still reports on it
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shops", required=True)
@@ -139,6 +142,7 @@ def main():
               flush=True)
     shop, reason = pick(signing or shops, memory, a.item, a.budget)
     print(f"[choose] {shop['url']}: {shop['name']}: {reason}", flush=True)
+    CHOSEN.update(shop=shop, item=a.item, budget=a.budget)
 
     card = httpx.get(shop["url"].rstrip("/") + "/.well-known/agent-card.json",
                      headers={"A2A-Version": "1.0"}, timeout=20).json()
@@ -237,4 +241,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:   # the shop broke mid-negotiation: still close the order with a fair, factual review
+        if not CHOSEN:
+            raise
+        shop_said_error = isinstance(e, RuntimeError)   # rpc() raises RuntimeError on a JSON-RPC error from the shop
+        stars = 2 if shop_said_error else 3              # not sure whose fault a lost connection is: stay neutral
+        review = ("The shop returned an internal error during the negotiation, so there was no deal."
+                  if shop_said_error else f"The connection to the shop failed ({type(e).__name__}), so there was no deal.")
+        print(f"[error] {type(e).__name__}: {str(e)[:200]}", flush=True)
+        MEMORY.parent.mkdir(parents=True, exist_ok=True)
+        with MEMORY.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"time": time.strftime("%Y-%m-%d %H:%M:%S"), "shop": CHOSEN["shop"]["name"],
+                                "item": CHOSEN["item"], "budget": CHOSEN["budget"], "outcome": "error",
+                                "agreed": None, "receipt_price": None, "receipt_ok": None, "signed": None,
+                                "stars": stars}) + "\n")
+        print(json.dumps({"shop": CHOSEN["shop"]["url"], "receipt": None, "stars": stars, "review": review}), flush=True)
