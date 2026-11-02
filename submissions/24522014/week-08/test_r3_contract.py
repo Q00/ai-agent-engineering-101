@@ -63,7 +63,7 @@ class R3Contract(unittest.TestCase):
                 market_buyer.main()
             self.assertEqual(trade.call_args.args[1], "G00001")
             result = json.loads(output.getvalue().splitlines()[-1])
-            self.assertEqual(result["accept"], {"cert": True, "grades": ["A", "B"], "min_hours_left": 3})
+            self.assertEqual(result["accept"], {"cert": True, "grades": ["A", "B"], "min_hours_left": 5})
 
 
 if __name__ == "__main__":

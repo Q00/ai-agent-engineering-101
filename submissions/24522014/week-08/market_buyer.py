@@ -14,6 +14,7 @@ import httpx
 from buyer import BuyerError, BuyerTransport, run_autonomous
 from buyer_memory import choose_shop, load_memory, remember, RECENT_COUNT
 from shop_catalog import load_shops
+from r3_policy import buyer_accept
 
 ROOT = Path(__file__).resolve().parent
 
@@ -156,9 +157,7 @@ def main():
             record["order"] = order.get("order")
             record["category"] = order.get("category", args.item)
             # Certificate and food-use constraints are enforced by the kit before payment.
-            result["accept"] = {"cert": True, "grades": ["A", "B"]}
-            if order.get("kind") == "food":
-                result["accept"]["min_hours_left"] = order["use_within_hours"]
+            result["accept"] = buyer_accept(order)
         record["selection_reason"] = reason
         remember(args.memory, record)
     else:

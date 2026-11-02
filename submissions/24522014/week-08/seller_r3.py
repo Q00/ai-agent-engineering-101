@@ -4,9 +4,8 @@ Round 3 starter seller: sells from the stock the kit keeps in $MARKET_DIR/invent
 
     python seller.py --port 9301
 
-The harness decides every move; this file only speaks A2A, finds a unit for what the buyer asks, and signs the
-receipt with shop_key.pem (the kit makes it). It ships the unit that expires first, says nothing about quality,
-never offers a warranty, and never goes below the unit's cost. All of that is yours to change.
+The course inventory seller is adapted to our logged model harness, explicit purchase confirmation,
+condition disclosure and approved clearance policy. No product warranty is promised.
 """
 import argparse
 import asyncio
@@ -14,6 +13,7 @@ import base64
 import json
 import os
 from datetime import datetime, timezone
+from uuid import uuid4
 from pathlib import Path
 
 import uvicorn
@@ -30,6 +30,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from r3_harness import CMD, ask_json
 from harness import HarnessError
 from seller import purchase_offer
+from r3_policy import selling_terms
 
 NAME = "kcwarni Inventory Shop"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
@@ -58,7 +59,7 @@ def sign(receipt):
     return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(body))).decode())
 
 
-def condition_notice(unit):
+def condition_notice(unit, terms=None):
     """Disclose observed inventory state without promising an inspection or warranty."""
     if not unit.get("unit"):
         return "", {}
@@ -68,10 +69,14 @@ def condition_notice(unit):
     supplied = unit.get("supplied_at")
     details = {"kind": "product_condition", "unit": unit["unit"], "sku": unit["sku"],
                "grade_observed": grade, "expires_at": expires, "supplied_at": supplied,
-               "certificate_available": bool(unit.get("cert")), "discount_reason": None}
+               "certificate_available": bool(unit.get("cert")),
+               "discount_reason": (terms or {}).get("discount_reason"),
+               "discount_stage": (terms or {}).get("discount_stage", 0)}
     notice = f"Inventory condition: {grade}."
     if expires:
         notice += f" Expires at {expires}."
+    if terms and terms["discount_stage"]:
+        notice += f" Clearance reason: {terms['discount_reason']}; stage {terms['discount_stage']}."
     notice += " Confirm the certificate at checkout; condition can change while negotiating."
     return notice, details
 
@@ -100,6 +105,7 @@ def find_unit(text, taken=()):
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"unit", "ask", "offer", "lines"}
+        self.committed_units = set()
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -112,7 +118,7 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:
-            unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]})
+            unit = find_unit(text, self.committed_units | {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]})
             if unit is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
@@ -126,10 +132,29 @@ class Seller(AgentExecutor):
                 return
 
         u = deal["unit"]
-        reserve = u["cost"]
+        catalog = {}
+        try:
+            if u.get("unit"):
+                inventory = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
+                u = next(x for x in inventory["units"] if x["unit"] == u["unit"])
+                deal["unit"] = u
+                catalog = json.loads((MARKET_DIR / "catalog.json").read_text(encoding="utf-8"))
+            terms = selling_terms(u, catalog)
+        except (OSError, ValueError, KeyError, StopIteration):
+            self.open.pop(task.id, None)
+            await up.reject(say("This unit is unavailable or its current condition cannot be verified."))
+            return
+        reserve = terms["floor"]
+        log_dir = Path(__file__).resolve().parent / "logs" / "pricing"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        (log_dir / (uuid4().hex + ".json")).write_text(json.dumps(
+            {"at": datetime.now(timezone.utc).isoformat(), "task": task.id,
+             "unit": u.get("unit"), "sku": u["sku"], "cost": u["cost"],
+             "grade_observed": u.get("grade"), "expires_at": u.get("expires_at"), **terms},
+            ensure_ascii=False, indent=2), encoding="utf-8")
         try:
             move, raw = await asyncio.to_thread(ask_json, PROMPT.format(
-                name=u["name"], list_price=u["list_price"], reserve=reserve,
+                name=u["name"], list_price=terms["quote"], reserve=reserve,
                 transcript="\n".join(deal["lines"])))
         except (HarnessError, ValueError) as error:
             self.open.pop(task.id, None)
@@ -138,6 +163,13 @@ class Seller(AgentExecutor):
             return
         print(f"[harness] {raw}", flush=True)
         action = (move or {}).get("action")
+        # A new unit always receives an explicit quote before purchase confirmation.
+        if terms["discount_stage"] and deal["ask"] is None:
+            action, move = "counter", {"price": terms["quote"]}
+        if terms["discount_stage"] and deal["ask"] != terms["quote"]:
+            action, move = "counter", {"price": terms["quote"]}
+        if deal["offer"] is not None and deal["ask"] is not None and deal["offer"] > deal["ask"]:
+            action, move = "counter", {"price": deal["ask"]}
         if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
             print(f"[guard] accept of {deal['offer']} below cost {reserve} -> counter", flush=True)
             action, move = "counter", {"price": deal["ask"] or u["list_price"]}
@@ -147,6 +179,8 @@ class Seller(AgentExecutor):
             if u["unit"]:
                 receipt["unit"] = u["unit"]
             receipt = sign(receipt)
+            if u.get("unit"):
+                self.committed_units.add(u["unit"])
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             del self.open[task.id]
@@ -161,8 +195,10 @@ class Seller(AgentExecutor):
         if price < reserve:                             # the harness may forget the cost; the code does not
             print(f"[guard] ask {price} below cost {reserve} -> {reserve}", flush=True)
             price = reserve
+        if terms["discount_stage"]:
+            price = terms["quote"]
         deal["ask"] = int(price)
-        notice, details = condition_notice(u)
+        notice, details = condition_notice(u, terms)
         reply = (f"{u['name']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
                  else f"Counteroffer: {deal['ask']}.")
         if notice:

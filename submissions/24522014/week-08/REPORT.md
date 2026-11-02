@@ -8,6 +8,8 @@
 
 ## 1. 부품별 설계
 
+승인된 단계 할인과 인증 A/B 구매 조건을 구현하고 R3 설정을 `agent.json`에 선택했다. 기존 운영 설정은 `agent-r2.json`이다. 실행 중인 키트에는 재시작 후 반영된다. 최신 정책·적용 범위와 미검증 항목은 [APPROVED-R3-POLICY.md](APPROVED-R3-POLICY.md)를 기준으로 한다. 29개 오프라인 검사가 통과했으며, 식품 재고 매입은 판매 대기·최소 잔여수명 근거가 없어 보류했다. 아래 이전 단계의 준비 기록은 실제 운영 적용 증거로 해석하지 않는다.
+
 계약 전환의 첫 구현은 `seller_r3.py`, `r3_harness.py`, SKU·order 대응 buyer에 준비했고 설정 후보는 `agent-r3.json`이다. 상세 출처와 한계는 [R3-CONTRACT-ADAPTATION.md](R3-CONTRACT-ADAPTATION.md)를 본다. 오프라인 검사 19개가 통과했지만 실제 R3 모델 호출과 정산은 아직 검증하지 않았다. 활성 `agent.json`은 기존 운영 설정이다.
 
 ### 모델

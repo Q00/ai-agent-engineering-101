@@ -1,7 +1,9 @@
 {
   "profile": "codex",
-  "restock": {"cmd": "python restock_policy.py --state {state}"},
-  "harness": "R3 course inventory seller with logged Codex gpt-6-luna adapter; SKU buyer with certificate and food-use constraints; strategy pending",
+  "restock": {
+    "cmd": "python restock_policy.py --state {state}"
+  },
+  "harness": "R3 inventory seller with staged clearance, condition disclosure and logged Codex gpt-6-luna; certified A/B SKU buyer with food time margin; bounded goods restock",
   "seller": {
     "harness": "codex",
     "model": "gpt-6-luna",

@@ -1,5 +1,7 @@
 # 소량 공급 실험
 
+업데이트: 새 사용자 품질 정책에 따라 식품 재고 매입은 보류했다. 현재는 비식품만 공급하며, restock 훅은 agent.json에 선택했다. 아래 최초 실험의 식품 상한 2개는 현재 식품 매입을 허용한다는 뜻이 아니다. 최신 적용 범위는 APPROVED-R3-POLICY.md를 본다.
+
 `restock_policy.py --state {state}`를 `agent-r3.json`의 restock 훅에 연결했다. 활성 agent.json과 실행 중인 키트에는 아직 적용하지 않았다. 초기 상한은 최적화 결과가 아닌 실험 설정이다.
 
 - R3 이전에는 구매 목록을 비운다.

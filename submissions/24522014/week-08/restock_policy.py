@@ -31,6 +31,9 @@ def plan(inventory, catalog, demand, sales, cursor=0):
     buys = []
     estimated = 0
     for sku, value in candidates:
+        # Supply draws the grade on arrival; shelf_hours is not a minimum remaining lifetime.
+        if value.get("kind") == "food":
+            continue
         if value.get("kind") == "food" and food_count >= 2:
             continue
         worst_cost = value["list_price"] * 0.75
@@ -42,7 +45,8 @@ def plan(inventory, catalog, demand, sales, cursor=0):
         if len(buys) >= min(2, 8 - len(units)):
             break
     return buys, {"reason": "bounded_experiment", "budget": budget,
-                  "estimated_max_cost": estimated, "cash_reserve": reserve}
+                  "estimated_max_cost": estimated, "cash_reserve": reserve,
+                  "food_supply": "deferred: no guaranteed shelf life or supported sales-window estimate"}
 
 
 def main():
