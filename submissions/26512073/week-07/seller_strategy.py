@@ -1,11 +1,198 @@
-"""The student's seller strategy, before wiring it into A2A."""
+"""Seller pricing, persistent state, and negotiation memory in one module."""
 import json
-
+from pathlib import Path
+import tempfile
+from threading import RLock
+import os
 from harness import call_harness
-from seller_memory import load_review_window, load_shop_reviews
-from pricing_state import asking_cap, load_item_state, save_item_state
 from threading import Lock
+
+
+# Pricing State
+DATA_DIR = Path(
+    os.environ.get(
+        "SELLER_DATA_DIR",
+        str(Path(__file__).resolve().parent),
+    )
+).resolve()
+
+
+STATE_PATH = DATA_DIR / "pricing_state.json"
+
+
+LEGACY_POLICY = "adaptive-15-percent-six-results-v1"
+
+
+POLICY = "adaptive-15-percent-six-results-capped-v2"
+
+
+_lock = RLock()
+
+
+def asking_cap(reserve):
+    return (reserve * 115 + 50) // 100
+
+
+def _validate(state, reserve, legacy=False):
+    if (type(state.get("ask")) is not int or state["ask"] < reserve
+            or state.get("policy") != (LEGACY_POLICY if legacy else POLICY)):
+        raise ValueError("Invalid saved asking price or pricing policy")
+    if not legacy and state["ask"] > asking_cap(reserve):
+        raise ValueError("Saved asking price exceeds the 15 percent cap")
+    checkpoint = state.get("last_reviewed_task")
+    if checkpoint is not None and (not isinstance(checkpoint, str) or not checkpoint):
+        raise ValueError("Review checkpoint must be a task ID or null")
+
+
+def load_item_state(item, reserve, path=None):
+    """Missing state starts at 15% above reserve; corrupt state is not reset."""
+    path = Path(path) if path is not None else STATE_PATH
+    with _lock:
+        states = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        state = states.get(item, {
+            "ask": asking_cap(reserve),
+            "last_reviewed_task": None,
+            "policy": POLICY,
+        })
+        if state.get("policy") == LEGACY_POLICY:
+            _validate(state, reserve, legacy=True)
+            state = {
+                "ask": min(state["ask"], asking_cap(reserve)),
+                "last_reviewed_task": None,
+                "policy": POLICY,
+                "previous_policy_state": dict(state),
+            }
+        _validate(state, reserve)
+        return dict(state)
+
+
+def save_item_state(item, reserve, state, path=None):
+    """Replace the state file atomically, preserving the other items' state.
+
+    This lock protects file operations in one seller process. The later pricing
+    integration must also serialize each item's load/decide/save transaction.
+    """
+    _validate(state, reserve)
+    path = Path(path) if path is not None else STATE_PATH
+    with _lock:
+        states = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        states[item] = dict(state)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                         prefix="pricing-", suffix=".tmp", delete=False) as stream:
+            temporary = Path(stream.name)
+            json.dump(states, stream, indent=2, ensure_ascii=False)
+            stream.write("\n")
+        try:
+            temporary.replace(path)
+        finally:
+            temporary.unlink(missing_ok=True)
+
+
+# Seller Memory
+HISTORY_PATH = DATA_DIR / "logs" / "seller-history.jsonl"
+
+
+REVIEWS_PATH = (
+    Path(__file__).resolve().parent
+    / "logs"
+    / "challenge-1"
+    / "before-reviews-20261025T083209Z.json"
+)
+
+
+def load_recent_results(item, limit=20):
+    if not HISTORY_PATH.exists():
+        return []
+
+    results = []
+    with HISTORY_PATH.open(encoding="utf-8") as history:
+        for line in history:
+            if not line.strip():
+                continue
+
+            event = json.loads(line)
+            if (
+                event["item"] == item
+                and event["event"] in {"deal", "rejected", "canceled"}
+            ):
+                results.append(event)
+
+    return results[-limit:]
+
+
+def load_shop_reviews(limit=10):
+    folder = DATA_DIR / "logs" / "challenge-1" / "reviews"
+    snapshots = sorted(folder.glob("reviews-*.json"), reverse=True)
+
+    # Try fresh snapshots first, then the original baseline.
+    candidates = snapshots + [REVIEWS_PATH]
+
+    for path in candidates:
+        if not path.exists():
+            continue
+
+        try:
+            snapshot = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            # A refresh may still be writing this file.
+            continue
+
+        reviews = sorted(
+            snapshot["data"],
+            key=lambda review: review["ts"],
+            reverse=True,
+        )
+
+        return [
+            {
+                "author": review["author"],
+                "stars": review["stars"],
+                "review": review["review"],
+                "timestamp": review["ts"],
+            }
+            for review in reviews[:limit]
+        ]
+
+    return []
+
+
+def load_review_window(item, last_reviewed_task=None):
+    results = []
+    seen_tasks = set()
+
+    if HISTORY_PATH.exists():
+        with HISTORY_PATH.open(encoding="utf-8") as history:
+            for line in history:
+                if not line.strip():
+                    continue
+
+                event = json.loads(line)
+                if (
+                    event["item"] == item
+                    and event["event"] in {"deal", "rejected", "canceled"}
+                    and event.get("policy") == POLICY
+                    and event["task"] not in seen_tasks
+                ):
+                    results.append(event)
+                    seen_tasks.add(event["task"])
+
+    if last_reviewed_task is not None:
+        task_ids = [event["task"] for event in results]
+        if last_reviewed_task not in task_ids:
+            raise ValueError("Pricing checkpoint is missing from history")
+
+        checkpoint = task_ids.index(last_reviewed_task)
+        results = results[checkpoint + 1:]
+
+    if len(results) < 6:
+        return []
+
+    return results[-6:]
+
+# Seller Decision
 _opening_lock = Lock()
+
 
 def decide_price_adjustment(item, reserve, current_ask, results, reviews):
     if len(results) != 6:
@@ -71,6 +258,7 @@ def decide_price_adjustment(item, reserve, current_ask, results, reviews):
         action = "hold"
 
     return {"action": action, "price": price, "reason": reason}
+
 
 def decide_opening(item, reserve):
     with _opening_lock:
@@ -153,3 +341,4 @@ if __name__ == "__main__":
                           "expected": expected, "decision": answer}), flush=True)
         if answer["action"] != expected:
             raise RuntimeError("Model decision did not follow the chosen strategy")
+

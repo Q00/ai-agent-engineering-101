@@ -6,7 +6,7 @@ import httpx
 import argparse
 import time
 
-from pricing_state import DATA_DIR
+from seller_strategy import DATA_DIR
 
 
 def refresh_shop_reviews(shop_name="Afford Shop"):

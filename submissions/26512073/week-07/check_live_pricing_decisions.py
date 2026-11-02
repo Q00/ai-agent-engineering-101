@@ -5,9 +5,9 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-import pricing_state
-import seller_decision
-import seller_memory
+import seller_strategy
+import seller_strategy
+import seller_strategy
 
 
 BASE = Path(__file__).resolve().parent
@@ -21,7 +21,7 @@ def main():
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
     run = BASE / "logs" / "challenge-1" / ("synthetic-real-harness-" + stamp)
     run.mkdir(parents=True)
-    live = [pricing_state.STATE_PATH, seller_memory.HISTORY_PATH, BASE / "buyer_memory.jsonl"]
+    live = [seller_strategy.STATE_PATH, seller_strategy.HISTORY_PATH, BASE / "buyer_memory.jsonl"]
     before = {str(path): digest(path) for path in live}
     outcomes = []
     print(f"SYNTHETIC evidence, REAL model replies. Directory: {run}", flush=True)
@@ -36,7 +36,7 @@ def main():
             rows = []
             for i in range(6):
                 row = {"task": f"SYNTHETIC-{action}-{i}", "item": "lamp",
-                       "source": "synthetic_experiment", "policy": pricing_state.POLICY,
+                       "source": "synthetic_experiment", "policy": seller_strategy.POLICY,
                        "opening_ask": 115, "ask": 115,
                        "time": datetime.now(timezone.utc).isoformat()}
                 if action == "hold":
@@ -54,20 +54,20 @@ def main():
                                "I found the lamp's 115 opening price too high relative to other 105 offers; bought at 100.",
                            ])]
             reviews_path.write_text(json.dumps({"synthetic": True, "data": reviews}, indent=2), encoding="utf-8")
-            with patch.object(pricing_state, "STATE_PATH", state_path), \
-                    patch.object(seller_memory, "DATA_DIR", folder), \
-                    patch.object(seller_memory, "HISTORY_PATH", history_path), \
-                    patch.object(seller_memory, "REVIEWS_PATH", reviews_path):
+            with patch.object(seller_strategy, "STATE_PATH", state_path), \
+                    patch.object(seller_strategy, "DATA_DIR", folder), \
+                    patch.object(seller_strategy, "HISTORY_PATH", history_path), \
+                    patch.object(seller_strategy, "REVIEWS_PATH", reviews_path):
                 history_path.write_text("\n".join(json.dumps(row) for row in rows[:5]) + "\n", encoding="utf-8")
                 logs_before = set((BASE / "development_logs").glob("harness_*.txt"))
-                assert seller_decision.decide_opening("lamp", 100)["price"] == 115
+                assert seller_strategy.decide_opening("lamp", 100)["price"] == 115
                 assert logs_before == set((BASE / "development_logs").glob("harness_*.txt"))
                 with history_path.open("a", encoding="utf-8") as stream:
                     stream.write(json.dumps(rows[5]) + "\n")
-                first = seller_decision.decide_opening("lamp", 100)
-                state = pricing_state.load_item_state("lamp", 100)
+                first = seller_strategy.decide_opening("lamp", 100)
+                state = seller_strategy.load_item_state("lamp", 100)
                 logs_after_review = set((BASE / "development_logs").glob("harness_*.txt"))
-                again = seller_decision.decide_opening("lamp", 100)
+                again = seller_strategy.decide_opening("lamp", 100)
                 no_reuse = (again["price"] == first["price"] and
                             logs_after_review == set((BASE / "development_logs").glob("harness_*.txt")))
                 outcome = {"scenario": action, "synthetic_evidence": True,
