@@ -42,9 +42,9 @@ import harness
 import pricing
 
 NAME = common.SHOP_NAME              # the card's name and the receipt's shop field
-CARD_DESCRIPTION = ("Everyday groceries and goods from our stock. Every unit ships with the market's certificate and its "
-                    "true grade (goods: A new, B damaged box, C refurbished; food: share of shelf life left). Ask by SKU or "
-                    "by category (menu of up to 3); say how many hours food must last. Paid 6-hour warranty on goods.")
+CARD_DESCRIPTION = ("Everyday groceries and goods. Every unit ships with the market's certificate and its true grade "
+                    "(goods: A new, B damaged box, C refurbished; food: share of shelf life left). Ask by SKU or by "
+                    "category (menu of up to 3); say how long food must last. Paid 6-hour warranty on goods.")
 HOLD = 300               # seconds a silent negotiation keeps its unit (the kit's buyer timeout)
 MENU = 3                # products shown for a category request
 NEED_MARGIN = 1          # hours food must outlast the buyer's stated need
