@@ -2,12 +2,14 @@
 integrated analysis every 12 hours adopts proposals into the rules in force, and checks the
 changes it made last time against what happened since, keeping or reverting them.
 
-    seller / buyer analysis   MODEL_MID (gpt-6.1-terra) + the ledger_query tool. The five-part
-                              briefing (context.py: the business now, insights, its last reports and
-                              their fate, memos, our own records and the market summary) goes into
-                              the prompt; more of the market is fetched through the tool.
+    seller / buyer analysis   MODEL_MID (gpt-6.1-terra) + the data room's tools over MCP (data_room.py:
+                              ledger_query, replay, shop_credit, leave_memo; at most tools.MAX_CALLS).
+                              The five-part briefing (context.py: the business now, insights, its
+                              last reports and their fate, memos, our own records and the market
+                              summary) goes into the prompt; more is fetched through the tools.
                               Out: analysis/<role>_report.json, reports.jsonl, proposals.jsonl
-    integrated analysis       MODEL_STRONG (gpt-6.1-sol). In: its briefing (the latest report of each
+    integrated analysis       MODEL_STRONG (gpt-6.1-sol) + the same tools (at most INTEGRATED_CALLS,
+                              e.g. replay a proposal before adopting it). In: its briefing (the latest report of each
                               role, all insights and memos, the last decisions with the numbers then
                               and now), the last 12 hours' proposals, and the private facts that
                               link the two roles (our orders' budgets against the list prices, the
@@ -29,6 +31,7 @@ import common
 import context
 import harness
 import insights
+import mcp_host
 import tools
 
 FIELDS = {
@@ -130,12 +133,23 @@ public ledger).
 {context}
 
 Build on your last reports: do not propose again what was not adopted unless the numbers have changed.
-You may call ledger_query at most {calls} times to look at one category, product or shop.
+{tools}
 Write a short report (at most 5 sentences). Propose changes only to these fields, within these ranges:
 {fields}
 Each proposal needs a reason citing a number from the facts or the tool. Propose nothing rather than guess.
 Reply with ONE JSON object and nothing else:
 {{"report": "...", "proposals": [{{"field": "...", "value": ..., "reason": "..."}}]}}"""
+
+
+ROLE_TOOLS = ("Before proposing a change to price_adjust, warranty_extra or max_ratio, replay it and cite the "
+              "replayed numbers. Leave a memo for another analysis when you found something it should know.")
+INTEGRATED_TOOLS = "Replay a proposal before adopting it when its field can be replayed."
+
+
+def _tools_note(room, calls: int, how: str) -> str:
+    if not room:
+        return "No tools this time (the data room did not start): work from the briefing."
+    return f"You have the data room's tools ({', '.join(t['name'] for t in room.tools)}), at most {calls} calls in all. {how}"
 
 
 def _market(now: float) -> dict:
@@ -151,10 +165,11 @@ def role_analysis(role: str, chat_fn=None, now: float | None = None) -> dict:
     facts = seller_facts(now) if role == "seller" else buyer_facts(now)
     brief = context.form(role, now, {"our_records_24h": {k: v for k, v in facts.items() if k not in ("rules", "phase")},
                                      "market_24h": _market(now)})
-    prompt = ROLE_PROMPT.format(role=role, context=brief, calls=tools.MAX_CALLS,
-                                fields=json.dumps({k: (list(v) if isinstance(v, tuple) else v) for k, v in FIELDS[role].items()}))
-    text = harness.run_tools([{"role": "user", "content": prompt}], harness.MODEL_MID, [tools.SCHEMA], tools.run,
-                             tools.MAX_CALLS, chat_fn)
+    with mcp_host.open_room(role) as room:
+        prompt = ROLE_PROMPT.format(role=role, context=brief, tools=_tools_note(room, tools.MAX_CALLS, ROLE_TOOLS),
+                                    fields=json.dumps({k: (list(v) if isinstance(v, tuple) else v) for k, v in FIELDS[role].items()}))
+        text = harness.run_tools([{"role": "user", "content": prompt}], harness.MODEL_MID, room.schemas() if room else [],
+                                 room.run if room else tools.run, tools.MAX_CALLS if room else 0, chat_fn)
     got = harness.first_json(text) or {}
     proposals = []
     for i, p in enumerate(got.get("proposals") or []):
@@ -164,7 +179,7 @@ def role_analysis(role: str, chat_fn=None, now: float | None = None) -> dict:
         proposals.append({"id": f"{role}-{int(now)}-{i}", "ts": int(now), "role": role, "field": p.get("field"),
                           "value": v if ok else p.get("value"), "valid": ok, "why_not": None if ok else v,
                           "reason": str(p.get("reason") or "")[:300]})
-    report = {"role": role, "at": int(now), "model": harness.MODEL_MID,
+    report = {"role": role, "at": int(now), "model": harness.MODEL_MID, "tools": "data room (MCP)" if room else "none",
               "report": str(got.get("report") or "(no answer from the model)")[:1200], "facts": facts,
               "proposals": proposals}
     common.write_json(folder() / f"{role}_report.json", report)
@@ -206,6 +221,7 @@ the 12-hour numbers when they were made, and the numbers now):
 Proposals from the seller and buyer analyses since the last decision (all within their ranges):
 {proposals}
 Private facts linking the two roles: {cross}
+{tools}
 Adopt only proposals the numbers support; two proposals for one field: pick one. Revert a last change
 if the numbers since are worse.
 Keep the insights too (part 2), in either phase. An insight is not a rule change; it has three parts:
@@ -241,9 +257,12 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
                   "reverted": [f"{x['role']}.{x['field']} back to {x['back_to']}" for x in c.get("reverted") or []],
                   "metrics_12h_then": c.get("metrics")} for c in changes[-2:]]
     brief = context.form("integrated", now, {"last_decisions": decisions, "metrics_12h_now": m})
-    prompt = INTEGRATED_PROMPT.format(context=brief, proposals=json.dumps(proposals, ensure_ascii=False)[:6000],
-                                      cross=json.dumps(cross(now), ensure_ascii=False), new_max=insights.NEW_MAX)
-    text = harness.run_tools([{"role": "user", "content": prompt}], harness.MODEL_STRONG, [], tools.run, 0, chat_fn)
+    with mcp_host.open_room("integrated") as room:
+        prompt = INTEGRATED_PROMPT.format(context=brief, proposals=json.dumps(proposals, ensure_ascii=False)[:6000],
+                                          cross=json.dumps(cross(now), ensure_ascii=False), new_max=insights.NEW_MAX,
+                                          tools=_tools_note(room, tools.INTEGRATED_CALLS, INTEGRATED_TOOLS))
+        text = harness.run_tools([{"role": "user", "content": prompt}], harness.MODEL_STRONG, room.schemas() if room else [],
+                                 room.run if room else tools.run, tools.INTEGRATED_CALLS if room else 0, chat_fn)
     decision = harness.first_json(text) or {}
     new = json.loads(json.dumps(current))
     done, reverted = [], []
@@ -272,6 +291,7 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
         common.write_json(folder() / "active_rules.json", new)
     kept = insights.update(decision.get("insights") if isinstance(decision.get("insights"), dict) else {}, now)
     entry = {"at": int(now), "phase": common.strategy()["phase"], "applied": focus, "model": harness.MODEL_STRONG,
+             "tools": "data room (MCP)" if room else "none",
              "decided": bool(decision), "changes": done, "reverted": reverted, "insights": kept,
              "note": str(decision.get("note") or ("(no answer from the model)" if not decision else ""))[:400],
              "metrics": m}

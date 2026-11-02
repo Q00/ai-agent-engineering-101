@@ -39,10 +39,8 @@ import harness
 import pricing
 
 NAME = "Kiro729 Shop"
-MAX_ROUNDS = 4           # offers before the shop closes: take one at or above the floor, else no deal
 HOLD = 300               # seconds a silent negotiation keeps its unit (the kit's buyer timeout)
-QUICK = 0.95             # an offer this close to the ask is taken at once
-MENU = 3                 # products shown for a category request
+MENU = 3                # products shown for a category request
 NEED_MARGIN = 1          # hours food must outlast the buyer's stated need
 MODEL_LINES = 80         # stock lines shown to the model
 CONDITION = {"A": "new", "B": "damaged box", "C": "refurbished"}
@@ -252,16 +250,13 @@ class Seller(AgentExecutor):
                 await up.requires_input(say(f"Send your offer as a number. Asking {ask}.", d))
             return
         d["offers"].append(offer)
-        last = len(d["offers"]) >= MAX_ROUNDS
-        if offer >= ask:
-            await self.sell(up, say, task.id, ask, now)
-        elif offer >= floor and (offer >= QUICK * ask or last):
-            await self.sell(up, say, task.id, offer, now)
-        elif last:
+        what, new = pricing.respond(ask, floor, offer, len(d["offers"]))
+        if what == "sell":
+            await self.sell(up, say, task.id, new, now)
+        elif what == "reject":
             self.close(task.id, "rejected")
             await up.reject(say(f"No deal at {offer}; our lowest is {floor}."))
         else:
-            new = max(floor, ask - (ask - max(offer, floor)) // 2)
             d["asks"].append(new)
             await up.requires_input(say(f"{new} is our lowest: {self.reason(d)}." if new == floor
                                         else f"Counteroffer: {new}.", d))

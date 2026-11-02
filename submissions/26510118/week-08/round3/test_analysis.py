@@ -47,6 +47,7 @@ POSTS = [{"id": 101, "author": "Alpha Buyer", "role": "buyer", "text": "포기�
          {"id": 104, "author": "Gamma", "role": "buyer", "text": "looking for 침구, anyone?", "thread": None}]
 ENTRIES = []
 results = []
+SCHEMA = {"type": "function", "function": {"name": "ledger_query", "parameters": {"type": "object", "properties": {}}}}
 
 
 def check(name, ok, detail=""):
@@ -168,13 +169,13 @@ def test_tool():
         return tools.run(name, args)
     m = Model(*[tool_call(f"c{i}", category="김치") for i in range(6)])
     m.answers.append({"content": "done"})
-    harness.run_tools([{"role": "user", "content": "go"}], "m", [tools.SCHEMA], counting, 3, m)
+    harness.run_tools([{"role": "user", "content": "go"}], "m", [SCHEMA], counting, 3, m)
     check("a model that keeps calling gets 3 calls, then is asked without tools",
           len(ran) == 3 and m.seen[-1]["tools"] is None and len(m.seen) == 4, (len(ran), len(m.seen)))
     two = {"content": None, "tool_calls": tool_call("x", category="김치")["tool_calls"] + tool_call("y", sku=BEDDING)["tool_calls"]}
     ran.clear()
     m = Model(two, json.loads(json.dumps(two)), {"content": "done"})
-    harness.run_tools([{"role": "user", "content": "go"}], "m", [tools.SCHEMA], counting, 3, m)
+    harness.run_tools([{"role": "user", "content": "go"}], "m", [SCHEMA], counting, 3, m)
     spent = [x for x in m.seen[-1]["messages"] if x["role"] == "tool" and "tool budget spent" in x["content"]]
     check("two calls at a time: the fourth is answered 'tool budget spent', not run", len(ran) == 3 and len(spent) == 1)
 
@@ -246,6 +247,9 @@ def test_analysts():
     r = analysts.role_analysis("seller", m, t1)
     shown = m.seen[1]["messages"][-1]
     check("the seller analysis called ledger_query and saw its answer", shown["role"] == "tool" and '"settled": 20' in shown["content"])
+    check("its tools came from the data room over MCP: the four tools, and the report says so",
+          [x["function"]["name"] for x in m.seen[0]["tools"]] == ["ledger_query", "replay", "shop_credit", "leave_memo"]
+          and r["tools"] == "data room (MCP)", [x["function"]["name"] for x in m.seen[0]["tools"] or []])
     check("its prompt carries our own records and the market summary", "stock_units" in m.seen[0]["messages"][0]["content"]
           and "top_categories" in m.seen[0]["messages"][0]["content"] and m.seen[0]["model"] == harness.MODEL_MID)
     valid = [p["valid"] for p in r["proposals"]]

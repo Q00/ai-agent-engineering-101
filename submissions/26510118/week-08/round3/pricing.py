@@ -36,6 +36,8 @@ DUD_DAYS, DUD_FLOOR = 7, 0.25
 NEAR_HOURS, NEAR_ASK, NEAR_FLOOR = 24, 0.45, 0.25
 LAST_DAY, LAST_DAY_CUT, LAST_DAY_FLOOR = 24, 0.15, 0.25
 LAST_HOURS, LAST_FLOOR = 6, 0.10
+MAX_ROUNDS = 4           # offers before the shop closes: take one at or above the floor, else no deal
+QUICK = 0.95             # an offer this close to the ask is taken at once
 
 
 def hours_left(unit: dict, now: float):
@@ -62,6 +64,20 @@ def claim(unit: dict, now: float, catalog: dict | None = None) -> str:
 def near_expiry(unit: dict, now: float) -> bool:
     h = hours_left(unit, now)
     return h is not None and h < NEAR_HOURS
+
+
+def respond(ask: int, floor: int, offer: int, rounds: int) -> tuple[str, int]:
+    """S3, the shop's answer to the buyer's offer number `rounds`: ("sell", price), ("reject", 0) or
+    ("counter", the new ask, halfway to the offer and never below the floor). The seller answers with
+    it, and the replay tool (tools.py) runs the same rule over past negotiations."""
+    last = rounds >= MAX_ROUNDS
+    if offer >= ask:
+        return "sell", ask
+    if offer >= floor and (offer >= QUICK * ask or last):
+        return "sell", offer
+    if last:
+        return "reject", 0
+    return "counter", max(floor, ask - (ask - max(offer, floor)) // 2)
 
 
 def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: float = 0.0,

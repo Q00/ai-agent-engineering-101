@@ -1,0 +1,26 @@
+
+[replay] our own negotiations under another rule
+    {"field": "seller.price_adjust", "from": 0.0, "to": 0.05, "hours": 24.0, "assumption": "each buyer makes the same offers in the same order and leaves where it left; the shop answers with its own rule (pricing.respond)", "negotiations": 6, "check": "with the rules in force the replay gives back 6 of 6 recorded outcomes", "recorded": {"deals": 4, "revenue": 72800, "margin": 24800}, "replayed": {"dea
+  PASS  the replay with the rules in force gives back every recorded outcome
+  PASS  recorded: 4 deals, 72,800 taken, 24,800 over cost  ({'deals': 4, 'revenue': 72800, 'margin': 24800})
+  PASS  asks 5% of list higher: the 12,000-then-14,000 buyer pays 14,000; the three who took the ask leave  ({'deals': 1, 'revenue': 14000, 'margin': 2000})
+  PASS  4 deals is weak evidence, and the answer says so
+  PASS  asks 5% lower: four deals still, each closing lower  ({'deals': 4, 'revenue': 70228, 'margin': 22228})
+  PASS  the warranty for grade C at 25%: the refurbished deal is lost  ({'deals': 3, 'revenue': 43800, 'margin': 7800})
+  PASS  our buyer's ceiling at 85%: the 17,500 deal is lost (surplus 8,500 -> 6,000)  ({'field': 'buyer.max_ratio', 'from': 0.9, 'to': 0.85, 'hours': 24.0, 'assumption': "each shop asks what it asked; a deal above the new ceiling is lost; an order we left with the shop's last ask under the new ceiling would have closed at that ask", 'orders': 3, 'recorded': {'deals': 2, 'spent': 31500, 'surplus': 8500}, 'replayed': {'deals': 1, 'spent': 14000, 'surplus': 6000}, 'weak': 'only 2 recorded deals in 24 h: weak evidence'})
+  PASS  at 95%: the order we left at an ask of 18,800 closes too (surplus 9,700)  ({'deals': 3, 'spent': 50300, 'surplus': 9700})
+  PASS  open_ratio cannot be replayed, and the answer says why
+  PASS  out of range or not a field: refused
+
+[shop_credit, leave_memo]
+Traceback (most recent call last):
+  File "C:\Users\bubuj\Documents\ai-agent-engineering-101\submissions\26510118\week-08\round3\test_data_room.py", line 190, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\bubuj\Documents\ai-agent-engineering-101\submissions\26510118\week-08\round3\test_data_room.py", line 180, in main
+    test_credit_and_memos()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\bubuj\Documents\ai-agent-engineering-101\submissions\26510118\week-08\round3\test_data_room.py", line 90, in test_credit_and_memos
+    with open(ledger.folder() / "settles.jsonl", "w", encoding="utf-8") as f:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\bubuj\\AppData\\Local\\Temp\\round3-room-test-gfaa_d87\\.market\\ledger\\settles.jsonl'
