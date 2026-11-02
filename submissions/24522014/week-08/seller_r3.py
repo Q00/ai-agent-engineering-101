@@ -13,6 +13,7 @@ import asyncio
 import base64
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 import uvicorn
@@ -55,6 +56,24 @@ def sign(receipt):
     key = serialization.load_pem_private_key(Path("shop_key.pem").read_bytes(), password=None)
     body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
     return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(body))).decode())
+
+
+def condition_notice(unit):
+    """Disclose observed inventory state without promising an inspection or warranty."""
+    if not unit.get("unit"):
+        return "", {}
+    grade = unit.get("grade", "unknown")
+    expiry = unit.get("expires_at")
+    expires = datetime.fromtimestamp(expiry, timezone.utc).isoformat() if expiry is not None else None
+    supplied = unit.get("supplied_at")
+    details = {"kind": "product_condition", "unit": unit["unit"], "sku": unit["sku"],
+               "grade_observed": grade, "expires_at": expires, "supplied_at": supplied,
+               "certificate_available": bool(unit.get("cert")), "discount_reason": None}
+    notice = f"Inventory condition: {grade}."
+    if expires:
+        notice += f" Expires at {expires}."
+    notice += " Confirm the certificate at checkout; condition can change while negotiating."
+    return notice, details
 
 
 def find_unit(text, taken=()):
@@ -143,10 +162,16 @@ class Seller(AgentExecutor):
             print(f"[guard] ask {price} below cost {reserve} -> {reserve}", flush=True)
             price = reserve
         deal["ask"] = int(price)
+        notice, details = condition_notice(u)
         reply = (f"{u['name']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
                  else f"Counteroffer: {deal['ask']}.")
+        if notice:
+            reply = notice + "\n" + reply
         deal["lines"].append(f"you: {reply}")
-        await up.requires_input(say(reply))
+        parts = [new_text_part(reply)]
+        if details:
+            parts.append(new_data_part(details))
+        await up.requires_input(up.new_agent_message(parts=parts))
 
     async def cancel(self, context, event_queue):
         task = context.current_task

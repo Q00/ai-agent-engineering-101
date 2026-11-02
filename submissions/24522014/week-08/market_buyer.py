@@ -156,7 +156,7 @@ def main():
             record["order"] = order.get("order")
             record["category"] = order.get("category", args.item)
             # Certificate and food-use constraints are enforced by the kit before payment.
-            result["accept"] = {"cert": True}
+            result["accept"] = {"cert": True, "grades": ["A", "B"]}
             if order.get("kind") == "food":
                 result["accept"]["min_hours_left"] = order["use_within_hours"]
         record["selection_reason"] = reason

@@ -14,6 +14,13 @@ import seller_r3
 
 
 class R3Contract(unittest.TestCase):
+    def test_condition_is_disclosed_before_final_price(self):
+        notice, details = seller_r3.condition_notice({"unit": "u1", "sku": "G00001", "grade": "B",
+                                                    "expires_at": 2000000000, "supplied_at": 0, "cert": {"x": 1}})
+        self.assertIn("Expires at", notice)
+        self.assertEqual(details["grade_observed"], "B")
+        self.assertTrue(details["certificate_available"])
+        self.assertIsNone(details["discount_reason"])
     def test_questions_and_conditional_messages_are_not_purchase_offers(self):
         self.assertIsNone(seller_r3.purchase_offer("My budget is 100; is a warranty included?", "G00001", 90))
         self.assertIsNone(seller_r3.purchase_offer("I will pay 90 if you add a warranty", "G00001", 90))
@@ -56,7 +63,7 @@ class R3Contract(unittest.TestCase):
                 market_buyer.main()
             self.assertEqual(trade.call_args.args[1], "G00001")
             result = json.loads(output.getvalue().splitlines()[-1])
-            self.assertEqual(result["accept"], {"cert": True, "min_hours_left": 3})
+            self.assertEqual(result["accept"], {"cert": True, "grades": ["A", "B"], "min_hours_left": 3})
 
 
 if __name__ == "__main__":
