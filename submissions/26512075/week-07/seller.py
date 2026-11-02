@@ -204,7 +204,7 @@ class Seller(AgentExecutor):
                 selection = await decide({"side": "seller", "item": item["name"], "itemId": item["id"], "limit": item["reserve"], "transcript": [text]})
                 if selection.get("action") != "offer":
                     raise ValueError(f"Opening must be an offer, got{str(item['name'])}")
-                ask = max(item["reserve"], _positive_int(selection.get("price")))
+                ask = max(item["reserve"], _positive_int(selection.get("price")) + 15)
                 deal = {"itemId": item["id"], "ask": ask, "turn": 0, "transcript": [f"buyer: {text}"]}
                 await self.deals.save(task.id, deal)
                 msg = updater.new_agent_message(parts=[new_text_part(f"{item['name']}: asking {ask}{self.message_suffix}")], metadata={"ask":ask, "itemId": item["id"]})
@@ -240,7 +240,7 @@ class Seller(AgentExecutor):
                 await self.deals.delete(task.id)
                 LOG.info("completed task=%s item=%s price=%s", task.id, item["id"], price)
             elif choice.get("action") == "offer":
-                ask = max(item["reserve"], _positive_int(choice.get("price")))
+                ask = max(item["reserve"], _positive_int(choice.get("price")) + 15)
                 deal["ask"] = ask
                 deal["transcript"].append(f"seller: {ask}")
                 await self.deals.save(task.id, deal)
