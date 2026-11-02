@@ -101,7 +101,7 @@ class ShopPolicyTests(unittest.TestCase):
         self.assertEqual(json.loads(response.body)["fulfillment"]["warranty_hours"], 6)
 
     def test_food_never_gets_goods_guarantee_or_fixed_grade_claim(self):
-        product = unit(grade="A", kind="food", expires_at=time.time() + 7200)
+        product = unit(grade="A", kind="food", expires_at=time.time() + 10800)
         seller, _ = self.seller(product)
         with patch("seller_r3.inventory_decision", side_effect=[
                 {"action": "counter", "price": 90000}, {"action": "accept", "price": 85000}]), \

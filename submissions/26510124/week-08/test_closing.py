@@ -120,8 +120,8 @@ class ClosingTests(unittest.TestCase):
 
     def test_final_quote_for_aged_b_stock_uses_71400_without_loss(self):
         seller, key = self.seller(unit(supplied_at=time.time() - 90000))
-        with patch("seller_r3.inventory_decision", side_effect=[counter(90000), counter(85000),
-                    counter(78000), counter(71400)]), TestClient(build(DEFAULT, seller)) as client:
+        with patch("seller_r3.inventory_decision", side_effect=[counter(75000), counter(74500),
+                    counter(74000), counter(71400)]), TestClient(build(DEFAULT, seller)) as client:
             first = send(client, "G00001")
             for price in (60000, 60000, 60000):
                 send(client, str(price), first["id"])
@@ -130,8 +130,8 @@ class ClosingTests(unittest.TestCase):
 
     def test_a_warranty_and_floor_stay_pinned_when_policy_changes_mid_deal(self):
         seller, key = self.seller(unit(grade="A", supplied_at=time.time() - 90000))
-        with patch("seller_r3.inventory_decision", side_effect=[counter(90000), counter(85000),
-                    counter(80000), counter(77000)]), TestClient(build(DEFAULT, seller)) as client:
+        with patch("seller_r3.inventory_decision", side_effect=[counter(79300), counter(79000),
+                    counter(78500), counter(77000)]), TestClient(build(DEFAULT, seller)) as client:
             first = send(client, "G00001")
             seller.policy["closing"]["grade_margin_percent"]["A"] = 0
             seller.policy["closing"]["final_offer"] = 5
@@ -143,7 +143,7 @@ class ClosingTests(unittest.TestCase):
         self.assertEqual(self.receipt(done, key, 77000)["warranty_hours"], 6)
 
     def test_fast_accept_still_rejects_stale_or_expired_inventory(self):
-        seller, _ = self.seller(unit(kind="food", expires_at=time.time() + 7200))
+        seller, _ = self.seller(unit(kind="food", expires_at=time.time() + 10800))
         with patch("seller_r3.inventory_decision", return_value=counter(90000)) as model, \
                 TestClient(build(DEFAULT, seller)) as client:
             first = send(client, "G00001")
@@ -211,8 +211,8 @@ class ClosingTests(unittest.TestCase):
     def test_runtime_never_signs_below_closing_floor_or_counter_above_final_floor(self):
         for bad in ({"action": "accept", "price": 71000}, counter(72000)):
             seller, _ = self.seller(unit(supplied_at=time.time() - 90000))
-            with patch("seller_r3.inventory_decision", side_effect=[counter(90000), counter(85000),
-                        counter(80000), bad]), TestClient(build(DEFAULT, seller)) as client:
+            with patch("seller_r3.inventory_decision", side_effect=[counter(75000), counter(74500),
+                        counter(74000), bad]), TestClient(build(DEFAULT, seller)) as client:
                 first = send(client, "G00001")
                 for price in (60000, 60000, 71000):
                     done = send(client, str(price), first["id"])

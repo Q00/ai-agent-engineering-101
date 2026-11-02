@@ -27,6 +27,15 @@ def policy_at(root=ROOT):
     margins = cfg["grade_margin_percent"]
     if not margins["A"] >= margins["B"] >= margins["C"]:
         raise ValueError("Higher grades must not have lower floor margins")
+    opening = cfg.get("opening")
+    if not isinstance(opening, dict):
+        raise ValueError("Missing opening policy")
+    for key, low, high in (("update_seconds", 3600, 86400), ("max_change_percent", 1, 3),
+                           ("band_percent", 1, 5), ("min_completed_tasks", 10, 50),
+                           ("min_new_tasks", 5, 20), ("aged_markup_percent", 0, 5)):
+        n = opening.get(key)
+        if type(n) is not int or not low <= n <= high:
+            raise ValueError("Invalid opening policy: " + key)
     closing = cfg.get("closing")
     if not isinstance(closing, dict):
         raise ValueError("Missing closing policy")

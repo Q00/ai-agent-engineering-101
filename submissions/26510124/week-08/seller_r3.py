@@ -15,6 +15,7 @@ from a2a.server.tasks import TaskUpdater
 from feedback import append_event
 from harness import HarnessError, decide, parse_seller
 from inventory import Inventory, StockError
+from opening_strategy import OpeningReader, bounds as opening_bounds
 from receipt_signing import sign_receipt
 from sales_advisor import AdviceReader, config_at
 from shop_policy import closing_context, policy_at, quote_copy, selling_terms, shop_copy
@@ -35,6 +36,9 @@ def validate_choice(choice, offer, last_ask, negotiation):
         raise HarnessError("Acceptance does not match the authorized offer")
     if offer is None and action != "counter":
         raise HarnessError("Opening must quote this unit")
+    band = negotiation.get("opening_bounds")
+    if offer is None and band and not band["minimum"] <= price <= band["maximum"]:
+        raise HarnessError("Opening quote is outside the pinned evidence/stock-age bounds")
     if action == "counter" and last_ask is not None and price > last_ask:
         raise HarnessError("Counteroffer increased the previous ask")
     if stage == "final_reply":
@@ -74,6 +78,7 @@ class InventorySeller(Seller):
         self.events = ROOT / "logs" / "inventory-seller-events.jsonl"
         self.r3 = {}
         self.policy = cfg.get("shop_policy") or policy_at()
+        self.openings = OpeningReader(self.inventory.folder)
         self.advisor = AdviceReader(self.inventory.folder) if cfg.get("advisor_enabled") else None
 
     async def public_card(self, card):
@@ -161,6 +166,8 @@ class InventorySeller(Seller):
                                           "product": {k: product.get(k) for k in
                                                       ("unit", "sku", "category", "cost", "kind", "grade", "supplied_at", "expires_at")},
                                           "terms": selling_terms(product, self.policy)}
+                reference = self.openings.for_product(product, deal["terms"]["warranty_hours"], rnd)
+                deal["opening_bounds"] = opening_bounds(product, deal["terms"], reference, self.policy, now)
                 self.event(task.id, "opened", product, deal=deal)
             else:
                 if re.fullmatch(r"[0-9]{1,12}", text.strip()) is None:
@@ -171,6 +178,8 @@ class InventorySeller(Seller):
                 deal["offers"].append(offer)
             deal["touched"] = now
             deal["negotiation"] = closing_context(product, deal, now)
+            if offer is None:
+                deal["negotiation"]["opening_bounds"] = deal["opening_bounds"]
             history = bounded_history(deal["history"] + [{"role": "buyer", "text": text}])
         except (StockError, OSError) as exc:
             self.event(task.id, "stock_unavailable", deal=deal)

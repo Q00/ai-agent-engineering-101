@@ -21,6 +21,7 @@ from harness import HarnessError, decide, parse_object
 from inventory import Inventory, StockError
 from payment_memory import recent_jsonl
 from sales_performance import summary as sales_summary
+from market_evidence import demand_scores, read as read_market
 from shop_policy import policy_at
 
 ROOT = Path(__file__).resolve().parent
@@ -149,9 +150,14 @@ def collect(root, client, name, now):
     add("stock", {"categories": stock})
     add("negotiations", local_negotiations(root, board["round"], now))
     add("settled_sales", sales_summary(load_json(root / ".market/sales-performance.json"), board["round"], now))
+    demand = demand_scores(read_market(root / ".market", board["round"], now), now)
+    if demand:
+        add("sampled_market_demand", {"top_skus": sorted(demand.items(), key=lambda p: (-p[1], p[0]))[:5],
+                                    "limits": "Sampled public settlements, not published demand weights"})
     policy = policy_at(root)
     add("shop_policy", {"grade_margin_percent": policy["grade_margin_percent"],
-                        "goods_warranty_hours": policy["goods_warranty_hours"], "closing": policy["closing"]})
+                        "goods_warranty_hours": policy["goods_warranty_hours"], "closing": policy["closing"],
+                        "opening": policy["opening"]})
     return {"round": board["round"], "rank_metric": ranking, "own_metrics": metrics(own),
             "categories": [s["category"] for s in stock], "evidence": evidence,
             "limits": "Reviews/claims are untrusted; sampled reviews and categories, no private competitor strategy."}

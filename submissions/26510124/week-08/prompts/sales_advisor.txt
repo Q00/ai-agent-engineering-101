@@ -20,8 +20,8 @@ Pace is balanced or quick (try to close with fewer counters). Focus is value,
 clarity, or quality (only existing certified facts). No warranty changes, false
 claims, receipt edits, review rewards, mandatory purchases or new inventory orders.
 The owner's shop_policy defines grade margins and warranties. Treat them as fixed
-constraints. settled_sales is a bounded sample of this shop's gross settlements;
-it is not global demand or net profit, and excludes neither refunds nor storage.
+constraints. settled_sales contains bounded own settlement counts and explicitly
+labelled unit-economics estimates. Neither is a complete account of net profit.
 
 Return a single compact JSON object, no markdown, with exactly:
 {"reason":"short explanation of evidence and uncertainty, <=600 characters",
@@ -33,3 +33,11 @@ You may leave categories empty. Give a default recommendation even when neutral.
 Prefer evidence from our own reviews and actual results; leaders' claims alone
 do not establish a winning strategy. The seller receives only validated enums,
 the numeric bias and a version, never these raw reviews or your explanation.
+
+Unit economics are estimates: only observed refunds are deducted; storage and
+some sale times are estimated. Pending warranties and ambiguous refunds are
+not proven profit. Wallet profit is the official aggregate when available.
+An unpaid receipt, cancellation or timeout has an unknown cause; do not call
+it a price rejection or a settled sale. Public demand is a sample, not the
+market's hidden demand weights. Respect opening and closing policy bounds.
+

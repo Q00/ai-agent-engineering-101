@@ -166,7 +166,7 @@ class InventoryTests(unittest.TestCase):
         asyncio.run(scenario())
 
     def test_food_receipt_does_not_freeze_a_grade_claim(self):
-        self.write([unit(kind="food", expires_at=time.time()+3600)])
+        self.write([unit(kind="food", expires_at=time.time()+10800)])
         seller, _ = self.seller()
         with patch("seller_r3.inventory_decision", side_effect=[
                 {"action": "counter", "price": 90000}, {"action": "accept", "price": 85000}]), \

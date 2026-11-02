@@ -1,8 +1,7 @@
-"""No-LLM stock planner for the official v4 restock hook. Prints buys, never buys directly.
+"""No-LLM stock planner: local economics plus one bounded public ledger GET.
 
-Keep 40% of starting capital in cash (user setting), budget at the documented
-worst supply cost, and count every stock unit against inventory caps. Restock
-from our confirmed sales; reserve a small exploration allocation for new SKUs.
+Keep 40% of starting capital in cash, budget worst-case supply cost and count
+all inventory against caps. Print instructions; the official kit buys stock.
 """
 import argparse
 from collections import Counter
@@ -16,6 +15,7 @@ from feedback import append_event, atomic_json, digest, load_json, number
 from inventory import Inventory, read_json
 from sales_performance import sku_metrics, update as update_sales
 from market_evidence import demand_scores, refresh as refresh_market
+from opening_strategy import update as update_openings
 from shop_policy import policy_at
 
 ROOT = Path(__file__).resolve().parent
@@ -112,7 +112,8 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None):
 
 def run_once(root=ROOT, now=None):
     now = time.time() if now is None else now
-    cfg = policy_at(root)["restock"]
+    policy = policy_at(root)
+    cfg = policy["restock"]
     if not cfg["enabled"]:
         return {"buy": []}
     md = root / ".market"
@@ -150,6 +151,11 @@ def run_once(root=ROOT, now=None):
         if public and public.get("round") != inv["round"]:
             public = None
         memory = update_sales(root, inv["round"], now, public=public, inventory=inv)
+        try:
+            update_openings(root, inv, memory, public, policy, now)
+        except (ValueError, OSError, KeyError, TypeError) as exc:
+            append_event(root / "logs/opening-strategy.jsonl", {"time": now, "status": "unavailable",
+                         "error": type(exc).__name__})
         attempts = []
         for row in state["attempts"]:
             if not isinstance(row, dict) or not number(row.get("time")) or not isinstance(row.get("sku"), str):

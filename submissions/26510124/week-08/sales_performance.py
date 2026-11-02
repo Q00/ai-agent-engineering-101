@@ -1,8 +1,7 @@
-"""Bounded own-shop settlement memory from official kit confirmations.
+"""Bounded settlement memory, observed refunds and explicitly estimated costs.
 
-Match an ACP confirmation to our receipt's unit AND price AND round. A missing
-unit or a receipt alone is not a sale. Never change the original logs. This is
-a sampled view of gross settlements, not net profit after refunds/storage.
+Only matched kit/ledger confirmations count as sales. Unit-level estimates
+can miss public refunds; only the official wallet supplies aggregate profit.
 """
 from collections import Counter
 import math
