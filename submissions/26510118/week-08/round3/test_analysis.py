@@ -22,6 +22,7 @@ os.environ.update(MARKET_DIR=str(ROOT / ".market"), ROUND_END_TS=str(NOW + 10 * 
 import analysis   # noqa: E402
 import analysts   # noqa: E402
 import common     # noqa: E402
+import context    # noqa: E402
 import forum      # noqa: E402
 import harness    # noqa: E402
 import restock    # noqa: E402
@@ -283,6 +284,67 @@ def test_analysts():
     (ROOT / "strategy.json").write_text('{"phase": "explore"}', encoding="utf-8")
 
 
+def parts_of(text):
+    """{part title: body} of a briefing."""
+    out = {}
+    for block in ("\n\n" + text).split("\n\n[")[1:]:
+        title, _, body = block.partition("]\n")
+        out[title] = body
+    return out
+
+
+def test_context():
+    print("\n[context] the five-part briefing")
+    t = context.TITLES
+    tc = int(NOW) + 100 + 16 * H
+    kept = common.read_jsonl(MD / "analysis" / "contexts.jsonl")
+    later = next((c for c in kept if c["role"] == "seller" and c["at"] == int(NOW) + 100 + 3 * H), {})
+    check("the seller analysis 3 hours later read its earlier report", "Kimchi sells." in later.get("text", ""))
+    text = context.form("seller", tc, {"our_records_24h": {"sales_24h": 0}})
+    p = parts_of(text)
+    print("\n".join("    | " + x for x in text.splitlines()))
+    check("five parts in order", list(p) == [t[k] for k in context.LIMITS], list(p))
+    check("no lessons or memos yet: the part says so", p[t["lessons"]] == context.NONE and p[t["memos"]] == context.NONE)
+    rep = p[t["reports"]]
+    check("the last two seller reports, newest first", 0 <= rep.find("again") < rep.find("Kimchi sells."))
+    check("what became of each proposal: applied with the 12 h after, recorded only, refused by code, not adopted",
+          all(s in rep for s in ("adopted and applied as 0.05; next 12 h", "recorded only (exploration phase)",
+                                 "refused by code", "not adopted")), rep)
+
+    lessons = [{"id": f"L{i}", "role": ["seller", "buyer", "both"][i % 3], "text": f"lesson-{i:02d} " + "x" * 100,
+                "confirmed": i, "refuted": 0, "updated": tc} for i in range(15)]
+    lessons.append({"id": "L-old", "role": "seller", "text": "retired lesson", "status": "retired", "confirmed": 99})
+    common.write_json(MD / "analysis" / "lessons.json", lessons)
+    memo = lambda ago, frm, to, text: {"ts": tc - ago, "from": frm, "to": to, "act": "inform", "text": text}
+    with open(MD / "analysis" / "memos.jsonl", "a", encoding="utf-8") as f:
+        for m in (memo(13 * H, "buyer", "seller", "old memo"), memo(2 * H, "buyer", "seller", "other shops open at 82% of list"),
+                  memo(H, "buyer", "buyer", "note to self"), memo(H, "judge", "all", "phase stays explore"),
+                  memo(600, "seller", "all", "my own memo")):
+            f.write(json.dumps(m) + "\n")
+    with open(MD / "analysis" / "business.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(dict(context.business(tc - 3 * H), at=tc - 3 * H, balance=1)) + "\n")
+    text = context.form("seller", tc, {"our_records_24h": {"sales_24h": 0}})
+    p = parts_of(text)
+    les = p[t["lessons"]]
+    check("lessons: the seller's and the shared ones, best confirmed first, none retired",
+          les.startswith("- [both] lesson-14") and "lesson-13" not in les and "retired" not in les, les[:80])
+    check("lessons that do not fit are left out with a line saying so", "more left out" in les and len(les) <= context.LIMITS["lessons"])
+    mem = p[t["memos"]]
+    check("memos: to the seller or to all, last 12 h, newest first, not its own",
+          0 <= mem.find("phase stays explore") < mem.find("82% of list") and not any(s in mem for s in ("old memo", "note to self", "my own memo")), mem)
+    check("new numbers: what moved since 3 hours ago", 'change since 3.0 h ago' in p[t["numbers"]] and '"balance":[1,4000000]' in p[t["numbers"]],
+          p[t["numbers"]][:160])
+    check("every part within its limit", all(len(p[t[k]]) <= n for k, n in context.LIMITS.items()),
+          {k: len(p[t[k]]) for k in context.LIMITS})
+    text = context.form("judge", tc, {"last_decisions": []})
+    p = parts_of(text)
+    check("the judge: the latest report of each role", "seller: again" in p[t["reports"]] and "buyer:" in p[t["reports"]])
+    check("the judge: all lessons (buyer's too) and all memos but its own",
+          "lesson-13" in p[t["lessons"]] and "note to self" in p[t["memos"]] and "phase stays explore" not in p[t["memos"]])
+    check("each briefing is kept", (MD / "analysis" / "last_context_judge.txt").read_text(encoding="utf-8") == text
+          and common.read_jsonl(MD / "analysis" / "contexts.jsonl")[-1]["role"] == "judge")
+
+
 def test_runner():
     print("\n[runner] the schedule and the lock")
     quiet = lambda messages, model, tools=None: answer({"report": "ok", "proposals": []})
@@ -331,7 +393,8 @@ def main() -> int:
         test_tool()
         test_forum()
         test_analysts()
-        test_restock_wanted()                 # before the runner's later passes age the unmet order out
+        test_context()
+        test_restock_wanted()                # before the runner's later passes age the unmet order out
         test_runner()
     finally:
         shutil.rmtree(ROOT, ignore_errors=True)

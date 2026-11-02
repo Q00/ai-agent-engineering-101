@@ -4,7 +4,8 @@
     python analysis.py --once      (one pass, for a test or by hand)
 
 Each pass does only what is due, in this order:
-    collect      1 h    the public ledger -> market_summary.json; shops' stock lists if the
+    collect      1 h    the public ledger -> market_summary.json; a snapshot of our business
+                        (analysis/business.jsonl, for the briefings); shops' stock lists if the
                         market shows them; the wanted categories restock reads (analysis/wanted.json)
     index        3 h    the market index on the forum, as our buyer (forum.py); skipped until
                         the ledger holds MIN_INDEX settles of the last day
@@ -26,6 +27,7 @@ import httpx
 
 import analysts
 import common
+import context
 import forum
 import ledger
 
@@ -61,6 +63,7 @@ def collect(now: float, get_ledger=None, get_json=None) -> str:
     catalog = common.catalog()
     summary = ledger.summarize(catalog, now)
     common.write_json(common.MARKET_DIR / "market_summary.json", summary)
+    context.snapshot(now)                                       # what the next briefings compare against
     stock_note = "shops' stock not shown"
     try:
         shops = (get_json or market_get)("/api/shops")

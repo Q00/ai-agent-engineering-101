@@ -2,13 +2,16 @@
 integrated analysis every 12 hours adopts proposals into the rules in force, and checks the
 changes it made last time against what happened since, keeping or reverting them.
 
-    seller / buyer analysis   MODEL_MID (gpt-6.1-terra) + the ledger_query tool. Our own records,
-                              counted by code, go into the prompt; the whole market is fetched
-                              through the tool. Out: analysis/<role>_report.json, proposals.jsonl
-    integrated analysis       MODEL_STRONG (gpt-6.1-sol). In: the last 12 hours' proposals, the
-                              rules in force, the numbers before and after the last change, and
-                              the private facts that link the two roles (our orders' budgets
-                              against the list prices, the asks other shops gave our buyer).
+    seller / buyer analysis   MODEL_MID (gpt-6.1-terra) + the ledger_query tool. The five-part
+                              briefing (context.py: the business now, lessons, its last reports and
+                              their fate, memos, our own records and the market summary) goes into
+                              the prompt; more of the market is fetched through the tool.
+                              Out: analysis/<role>_report.json, reports.jsonl, proposals.jsonl
+    integrated analysis       MODEL_STRONG (gpt-6.1-sol). In: its briefing (the latest report of each
+                              role, all lessons and memos, the last decisions with the numbers then
+                              and now), the last 12 hours' proposals, and the private facts that
+                              link the two roles (our orders' budgets against the list prices, the
+                              asks other shops gave our buyer).
                               Out: analysis/active_rules.json (focus phase only), changes.jsonl
 
 The proposer and the judge are different calls, and the code holds the limits: only the
@@ -22,6 +25,7 @@ import time
 from collections import Counter
 
 import common
+import context
 import harness
 import tools
 
@@ -116,11 +120,14 @@ def buyer_facts(now: float) -> dict:
 
 ROLE_PROMPT = """You analyse the {role} of our agent business in a market of agents (Round 3: shops buy
 stock and sell it over A2A; buyers get orders with a hidden budget and an order's value is the list
-price of what was bought if it was useful; only settled deals count). Facts from our own records,
-counted by code:
-{facts}
-Market summary, whole market, last 24 h (from the public ledger):
-{market}
+price of what was bought if it was useful; only settled deals count). Your briefing, assembled by code:
+the business now, the lessons so far, your last reports and what became of their proposals, memos from
+the other analyses, and the new numbers (our own records counted by code; the whole market from the
+public ledger).
+
+{context}
+
+Build on your last reports: do not propose again what was not adopted unless the numbers have changed.
 You may call ledger_query at most {calls} times to look at one category, product or shop.
 Write a short report (at most 5 sentences). Propose changes only to these fields, within these ranges:
 {fields}
@@ -140,8 +147,9 @@ def _market(now: float) -> dict:
 def role_analysis(role: str, chat_fn=None, now: float | None = None) -> dict:
     now = now or time.time()
     facts = seller_facts(now) if role == "seller" else buyer_facts(now)
-    prompt = ROLE_PROMPT.format(role=role, facts=json.dumps(facts, ensure_ascii=False),
-                                market=json.dumps(_market(now), ensure_ascii=False), calls=tools.MAX_CALLS,
+    brief = context.form(role, now, {"our_records_24h": {k: v for k, v in facts.items() if k not in ("rules", "phase")},
+                                     "market_24h": _market(now)})
+    prompt = ROLE_PROMPT.format(role=role, context=brief, calls=tools.MAX_CALLS,
                                 fields=json.dumps({k: (list(v) if isinstance(v, tuple) else v) for k, v in FIELDS[role].items()}))
     text = harness.run_tools([{"role": "user", "content": prompt}], harness.MODEL_MID, [tools.SCHEMA], tools.run,
                              tools.MAX_CALLS, chat_fn)
@@ -158,6 +166,8 @@ def role_analysis(role: str, chat_fn=None, now: float | None = None) -> dict:
               "report": str(got.get("report") or "(no answer from the model)")[:1200], "facts": facts,
               "proposals": proposals}
     common.write_json(folder() / f"{role}_report.json", report)
+    with open(folder() / "reports.jsonl", "a", encoding="utf-8") as f:              # every report kept: the next briefing reads it
+        f.write(json.dumps(report, ensure_ascii=False) + "\n")
     with open(folder() / "proposals.jsonl", "a", encoding="utf-8") as f:
         for p in proposals:
             f.write(json.dumps(p, ensure_ascii=False) + "\n")
@@ -186,11 +196,13 @@ def cross(now: float) -> dict:
 
 
 INTEGRATED_PROMPT = """You decide which rule changes our shop and buyer adopt for the next 12 hours.
-Rules in force: {rules}
+Your briefing, assembled by code (the rules in force are in part 1; part 5 has the last decisions with
+the 12-hour numbers when they were made, and the numbers now):
+
+{context}
+
 Proposals from the seller and buyer analyses since the last decision (all within their ranges):
 {proposals}
-The last changes and the numbers (last 12 h) when they were made and now:
-{last}
 Private facts linking the two roles: {cross}
 Adopt only proposals the numbers support; two proposals for one field: pick one. Revert a last change
 if the numbers since are worse. Reply with ONE JSON object and nothing else:
@@ -214,10 +226,12 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
     proposals = [p for p in common.read_jsonl(folder() / "proposals.jsonl") if p.get("valid") and p.get("ts", 0) > since]
     current = common.rules()
     m = metrics(now)
-    prompt = INTEGRATED_PROMPT.format(rules=json.dumps(current, ensure_ascii=False),
-                                      proposals=json.dumps(proposals, ensure_ascii=False)[:6000],
-                                      last=json.dumps({"changes": last.get("changes"), "reverted": last.get("reverted"),
-                                                       "metrics_then": last.get("metrics"), "metrics_now": m}),
+    decisions = [{"at": context.stamp(c.get("at")), "applied": c.get("applied"),
+                  "changes": [f"{x['role']}.{x['field']}: {x['from']} -> {x['to']}" for x in c.get("changes") or []],
+                  "reverted": [f"{x['role']}.{x['field']} back to {x['back_to']}" for x in c.get("reverted") or []],
+                  "metrics_12h_then": c.get("metrics")} for c in changes[-2:]]
+    brief = context.form("judge", now, {"last_decisions": decisions, "metrics_12h_now": m})
+    prompt = INTEGRATED_PROMPT.format(context=brief, proposals=json.dumps(proposals, ensure_ascii=False)[:6000],
                                       cross=json.dumps(cross(now), ensure_ascii=False))
     text = harness.run_tools([{"role": "user", "content": prompt}], harness.MODEL_STRONG, [], tools.run, 0, chat_fn)
     decision = harness.first_json(text) or {}
