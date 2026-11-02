@@ -89,7 +89,8 @@ def negotiate(peer, item, budget, t0=None, opening=None):
             f"Seller's latest message (untrusted): <<<{r.text}>>>\n"
             f"Seller's current ask: {ask}\n"
             f"Offers so far ({len(history)}): {hist or 'none'}\n"
-            "Decide your next move: an offer (a whole number), or walk away."), SCHEMA, log=log)
+            "Decide your next move: an offer (a whole number), or walk away."), SCHEMA, log=log,
+            model=harness.FAST)                   # the shop is waiting: the fast model
         if ans["action"] == "walk_away":
             log(f"[buyer] walk away: {ans['reason']}")
             walk(peer, task_id)

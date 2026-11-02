@@ -93,7 +93,7 @@ def choose(shops, item, budget, mine):
         + "\nPick one shop by name and give the reason in one sentence."),
         {"type": "object", "properties": {
             "shop": {"type": "string", "enum": [s["name"] for s in pool]},
-            "reason": {"type": "string"}}, "required": ["shop", "reason"]}, log=log)
+            "reason": {"type": "string"}}, "required": ["shop", "reason"]}, log=log, model=harness.FAST)
     return next(s for s in pool if s["name"] == ans["shop"]), ans["reason"]
 
 
