@@ -212,7 +212,7 @@ class Seller(AgentExecutor):
                 LOG.info("open task=%s item=%s ask=%s", task.id, item["id"], ask)
             except Exception as e:
                 LOG.exception("opening decision failed")
-                await updater.failed(updater.new_agent_message(parts=[new_text_part(str(e))]))
+                await updater.failed(updater.new_agent_message(parts=[new_text_part("Seller could not process the request.")]))
             return
 
         item = self.by_id[deal["itemId"]]
@@ -256,7 +256,7 @@ class Seller(AgentExecutor):
                 raise ValueError("Unknown seller action")
         except Exception as exc:
             LOG.exception("follow-up decision failed")
-            await updater.failed(updater.new_agent_message(parts=[new_text_part(str(exc))]))
+            await updater.failed(updater.new_agent_message(parts=[new_text_part("Seller could not process the request.")]))
             await self.deals.delete(task.id)
 
     async def cancel(self, context, event_queue) -> None:
