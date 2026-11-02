@@ -29,7 +29,8 @@ from storage import stores
 
 import base64
 from cryptography.hazmat.primitives import serialization
-
+import math
+from statistics import mean
 
 
 def canonical_json(data: dict) -> bytes:
@@ -78,6 +79,149 @@ TERMINAL_STATES = {
     TaskState.TASK_STATE_FAILED,
 }
 
+PRICING_HISTORY_PATH = Path(
+    os.getenv(
+        "PRICING_HISTORY_PATH",
+        str(Path(__file__).resolve().parent / "pricing_history.json"),
+    )
+)
+
+
+MAX_RECENT_SALES = 20
+MAX_RECENT_REVIEWS = 20
+
+MIN_SALES = 3
+MIN_REVIEWS = 3
+
+
+def load_pricing_history() -> dict:
+    try:
+        with PRICING_HISTORY_PATH.open("r", encoding="utf-8") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        LOG.info(
+            "[pricing] history file not found: %s; using base ask",
+            PRICING_HISTORY_PATH,
+        )
+        return {}
+    except (OSError, json.JSONDecodeError) as exc:
+        LOG.warning(
+            "[pricing] cannot read history: %s; using base ask",
+            exc,
+        )
+        return {}
+
+    if not isinstance(data, dict):
+        LOG.warning("[pricing] invalid history format; using base ask")
+        return {}
+
+    return data
+
+
+def adjust_ask(
+    category: str,
+    base_ask: int,
+    reserve: int,
+    shop_name: str,
+) -> tuple[int, str, dict]:
+    base_ask = max(reserve, base_ask)
+    history = load_pricing_history()
+
+    if history.get("shop") != shop_name:
+        return base_ask, "shop_mismatch_or_no_history", {
+            "sales_count": 0,
+            "review_count": 0,
+            "recent_avg": None,
+            "review_avg": None,
+        }
+
+    sales = history.get("sales", [])
+    reviews = history.get("reviews", [])
+
+    if not isinstance(sales, list) or not isinstance(reviews, list):
+        LOG.warning("[pricing] sales or reviews is not a list")
+        return base_ask, "invalid_history", {
+            "sales_count": 0,
+            "review_count": 0,
+            "recent_avg": None,
+            "review_avg": None,
+        }
+
+    prices: list[int] = []
+    seen_tasks: set[str] = set()
+
+    for sale in sales:
+        if not isinstance(sale, dict):
+            continue
+
+        task = sale.get("task")
+        price = sale.get("price")
+
+        if (
+            sale.get("verified") is True
+            and sale.get("item") == category
+            and isinstance(task, str)
+            and task
+            and task not in seen_tasks
+            and isinstance(price, int)
+            and not isinstance(price, bool)
+            and price > 0
+        ):
+            seen_tasks.add(task)
+            prices.append(price)
+
+    stars_list: list[float] = []
+
+    for review in reviews:
+        if not isinstance(review, dict):
+            continue
+
+        stars = review.get("stars")
+
+        if (
+            review.get("accepted") is True
+            and isinstance(stars, (int, float))
+            and not isinstance(stars, bool)
+            and math.isfinite(stars)
+            and 1 <= stars <= 5
+        ):
+            stars_list.append(float(stars))
+
+    prices = prices[-MAX_RECENT_SALES:]
+    stars_list = stars_list[-MAX_RECENT_REVIEWS:]
+
+    recent_avg = mean(prices) if prices else None
+    review_avg = mean(stars_list) if stars_list else None
+
+    stats = {
+        "sales_count": len(prices),
+        "review_count": len(stars_list),
+        "recent_avg": recent_avg,
+        "review_avg": review_avg,
+    }
+
+    if len(prices) < MIN_SALES or len(stars_list) < MIN_REVIEWS:
+        return base_ask, "insufficient_data", stats
+
+    new_ask = base_ask
+    reason = "keep"
+
+
+    if recent_avg < base_ask * 0.88 and review_avg < 4.3:
+        reduction = min(12, int(base_ask * 0.08))
+        new_ask = base_ask - reduction
+        reason = "lower_high_ask"
+    elif review_avg >= 4.4 and recent_avg >= base_ask * 0.85:
+        increase = min(8, int(base_ask * 0.04))
+        new_ask = base_ask + increase
+        reason = "slight_raise"
+
+    new_ask = max(reserve, new_ask)
+
+    if new_ask == base_ask and reason != "keep":
+        reason = f"{reason}_no_change"
+
+    return new_ask, reason, stats
 
 class ExistingTaskContextBuilder(SimpleRequestContextBuilder):
     """Keep the stored context when a client continues by taskId alone."""
@@ -204,7 +348,32 @@ class Seller(AgentExecutor):
                 selection = await decide({"side": "seller", "item": item["name"], "itemId": item["id"], "limit": item["reserve"], "transcript": [text]})
                 if selection.get("action") != "offer":
                     raise ValueError(f"Opening must be an offer, got{str(item['name'])}")
-                ask = max(item["reserve"], _positive_int(selection.get("price")) + 15)
+                base_ask = max(item["reserve"], _positive_int(selection.get("price")) + 15)
+                category = item.get("category", item["id"])
+
+                ask, reason, stats = adjust_ask(
+                    category=category,
+                    base_ask=base_ask,
+                    reserve=item["reserve"],
+                    shop_name=self.name,
+                )
+
+                LOG.info(
+                    "[pricing] shop=%s item_id=%s category=%s "
+                    "base_ask=%s sales_count=%s recent_avg=%s "
+                    "review_count=%s review_avg=%s ask=%s reason=%s",
+                    self.name,
+                    item["id"],
+                    category,
+                    base_ask,
+                    stats["sales_count"],
+                    stats["recent_avg"],
+                    stats["review_count"],
+                    stats["review_avg"],
+                    ask,
+                    reason,
+                )
+                
                 deal = {"itemId": item["id"], "ask": ask, "turn": 0, "transcript": [f"buyer: {text}"]}
                 await self.deals.save(task.id, deal)
                 msg = updater.new_agent_message(parts=[new_text_part(f"{item['name']}: asking {ask}{self.message_suffix}")], metadata={"ask":ask, "itemId": item["id"]})
