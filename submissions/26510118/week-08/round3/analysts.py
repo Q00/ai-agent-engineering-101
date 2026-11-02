@@ -36,7 +36,7 @@ import tools
 
 FIELDS = {
     "seller": {"focus_categories": "categories", "drop_categories": "categories", "price_adjust": (-0.10, 0.15),
-               "warranty_extra": "grades"},
+               "warranty_extra": "grades", "walk_threshold": (0.5, 0.95)},
     "buyer": {"avoid_shops": "shops", "prefer_shops": "shops", "open_ratio": (0.50, 0.70), "max_ratio": (0.85, 0.95),
               "warranty_all_goods": "bool", "over_budget_try": "bool"},
 }

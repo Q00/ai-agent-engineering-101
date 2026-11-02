@@ -16,10 +16,17 @@ effort per model: none for the trading model (speed), low for the role analyses,
 the integrated analysis. chat() still takes and gives Chat Completions-shaped messages, so the
 tool loop (run_tools) and the tests stay as they are; the translation is _items() and chat().
 
+decide() is the fourth door, the Decisions API (POST /v1/decisions, gpt-6-luna only, GA since
+October 2026): it returns typed answers, here the probability that a statement is true, about ten
+times faster than a Responses call, and bills no output. The trading modules use it where a
+judgement rests on words the code cannot read: our buyer's odds that a shop delivers as described
+(its reviews and forum posts), and our shop's odds that a buyer walks away if countered.
+
     OPENAI_API_KEY      the key (on the server from ~/market/openai.env, never in the repo)
     OPENAI_MODEL, OPENAI_MODEL_MID, OPENAI_MODEL_STRONG   override the three names
     OPENAI_EFFORT, OPENAI_EFFORT_MID, OPENAI_EFFORT_STRONG override their reasoning effort
     HARNESS_FAKE_REPLY  tests only: every ask() returns this text and calls nothing
+    HARNESS_FAKE_DECISION  tests only: every decide() question gets this probability
 """
 import json
 import os
@@ -33,12 +40,35 @@ MODEL_STRONG = os.environ.get("OPENAI_MODEL_STRONG", "gpt-6.1-sol")
 EFFORT = {MODEL: os.environ.get("OPENAI_EFFORT", "none"), MODEL_MID: os.environ.get("OPENAI_EFFORT_MID", "low"),
           MODEL_STRONG: os.environ.get("OPENAI_EFFORT_STRONG", "medium")}
 URL = "https://api.openai.com/v1/responses"
+DECIDE_URL = "https://api.openai.com/v1/decisions"
+DECIDE_MODEL = "gpt-6-luna"              # the only model the Decisions API takes (11/2)
 
 
-def _post(body: dict, timeout: float) -> dict:
-    r = httpx.post(URL, headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}, json=body, timeout=timeout)
+def _post(body: dict, timeout: float, url: str = URL) -> dict:
+    r = httpx.post(url, headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}, json=body, timeout=timeout)
     r.raise_for_status()
     return r.json()
+
+
+def decide(note: str, evidence, questions: list, timeout: float = 10.0) -> list | None:
+    """Probabilities, in order, that each statement in `questions` (instruction strings) is true of
+    `evidence` (a JSON-able object, sent as data with `note` saying what it is); None when there is
+    no key, or the call fails. A None or a missing answer means: decide by the rules alone."""
+    if os.environ.get("HARNESS_FAKE_DECISION") is not None:
+        return [float(os.environ["HARNESS_FAKE_DECISION"])] * len(questions)
+    if not os.environ.get("OPENAI_API_KEY") or not questions:
+        return None
+    body = {"model": DECIDE_MODEL,
+            "input": [{"role": "user", "content": [{"type": "input_text", "text": note},
+                                                   {"type": "input_json", "data": evidence}]}],
+            "questions": [{"type": "predicate", "name": f"q{i}", "instructions": q} for i, q in enumerate(questions)]}
+    try:
+        answers = _post(body, timeout, DECIDE_URL).get("answers") or []
+    except Exception as e:                                       # noqa: BLE001
+        print(f"[harness] decisions: {type(e).__name__}: {str(e)[:200]}; deciding by the rules", flush=True)
+        return None
+    by_name = {a.get("name"): a.get("probability") for a in answers}
+    return [by_name.get(f"q{i}") if isinstance(by_name.get(f"q{i}"), (int, float)) else None for i in range(len(questions))]
 
 
 def _body(model: str, items) -> dict:

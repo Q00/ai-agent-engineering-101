@@ -53,6 +53,19 @@ class FakeAPI:
         return Answer(out, {}) if isinstance(out, int) else Answer(200, {"id": f"resp_{len(self.bodies)}", "output": out})
 
 
+class DecisionsAPI(FakeAPI):
+    """Answers a decisions request with the given probabilities by question name."""
+    def __init__(self, probs):
+        super().__init__()
+        self.probs = probs
+
+    def __call__(self, url, headers=None, json=None, timeout=None):
+        self.urls.append(url)
+        self.bodies.append(json)
+        return Answer(200, {"model": json["model"], "answers": [{"type": "predicate", "name": q["name"], "probability": self.probs[q["name"]]}
+                                                               for q in json["questions"] if q["name"] in self.probs]})
+
+
 def text(t):
     return {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": t}]}
 
@@ -107,8 +120,26 @@ def main() -> int:
         harness.httpx.post = FakeAPI(400)
         check("an API error inside the loop: no answer, the analysis records that", harness.run_tools(
             [{"role": "user", "content": "go"}], harness.MODEL_MID, [SCHEMA], lambda n, a: "{}", 3) == "")
+
+        print("\n[decide] the Decisions API")
+        api = harness.httpx.post = DecisionsAPI({"q0": 0.85, "q1": 0.1})
+        got = harness.decide("One negotiation.", {"buyer_messages": ["13000 is my final offer"]},
+                             ["The buyer leaves if countered.", "The buyer is a person."])
+        b = api.bodies[0]
+        check("POST /v1/decisions with gpt-6-luna, the note as text and the evidence as JSON data, one predicate per statement",
+              api.urls[0].endswith("/v1/decisions") and b["model"] == "gpt-6-luna"
+              and b["input"] == [{"role": "user", "content": [{"type": "input_text", "text": "One negotiation."},
+                                                              {"type": "input_json", "data": {"buyer_messages": ["13000 is my final offer"]}}]}]
+              and b["questions"] == [{"type": "predicate", "name": "q0", "instructions": "The buyer leaves if countered."},
+                                     {"type": "predicate", "name": "q1", "instructions": "The buyer is a person."}], b)
+        check("the probabilities come back in the order asked", got == [0.85, 0.1], got)
+        harness.httpx.post = DecisionsAPI({"q0": 0.5})
+        check("a question left unanswered is None (decide by the rule)", harness.decide("n", {}, ["a", "b"]) == [0.5, None])
+        harness.httpx.post = FakeAPI(503)
+        check("an API error: None, so the caller decides by its rule", harness.decide("n", {}, ["a"]) is None)
         os.environ.pop("OPENAI_API_KEY")
-        check("no key: no call at all", harness.chat([{"role": "user", "content": "x"}], harness.MODEL) is None and harness.ask("x") == "")
+        check("no key: no call at all", harness.chat([{"role": "user", "content": "x"}], harness.MODEL) is None
+              and harness.ask("x") == "" and harness.decide("n", {}, ["a"]) is None)
     finally:
         harness.httpx.post = real
     print(f"\n{sum(results)}/{len(results)} checks passed")
