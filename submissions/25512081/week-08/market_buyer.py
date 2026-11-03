@@ -271,11 +271,17 @@ def collect_quotes(shops, budget, order=None):
                     q["expect"] = int(price)
                     q["surplus"] = int((1 - pg) * (q["value"] - price) if q["warranty"] >= 6
                                        else (1 - pg) * q["value"] - price)
+                    # the quote names no shelf life, but our kit refused this shop's unit of this SKU in the last
+                    # hour for being too short: likely the same unit again, so try the other shops first
+                    q["short"] = need and memory.short_shelf(q["shop"]["name"], q["sku"]["sku"], need)
+                    if q["short"]:
+                        log(f"[quote] {q['shop']['name']}'s last {q['sku']['sku']} had about {q['short']:.0f} h "
+                            f"left, the order needs {need}: tried last")
                     out.append(q)
         except FuturesTimeout:
             log(f"[quote] some shops did not answer within {QUOTE_WAIT} s")
     # a first ask far over the budget rarely comes down to it: those go last
-    return sorted(out, key=lambda q: (q["reply"].ask > budget * 1.15, -q["surplus"]))
+    return sorted(out, key=lambda q: (q["reply"].ask > budget * 1.15, bool(q["short"]), -q["surplus"]))
 
 
 def describe(q):

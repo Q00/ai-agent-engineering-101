@@ -9,6 +9,7 @@
 notes(shop) turns all of it into one line for the shop-choosing prompt.
 """
 import json
+import re
 import time
 from pathlib import Path
 
@@ -89,8 +90,10 @@ def sync():
     pays, cur["payments"] = _lines(MD / "payments.jsonl", cur["payments"])
     for x in pays:
         if not x.get("paid"):
+            m = re.search(r"([\d.]+) h of shelf life left", x.get("reason") or "")
             cur["refusals"].append({"shop": shop_name(x.get("shop")), "reason": x.get("reason"),
-                                    "ts": int(time.time())})
+                                    "ts": int(time.time()), "item": x.get("item"),
+                                    "hours": float(m.group(1)) if m else None})
             events.append(f"refused to pay {x.get('shop')}: {x.get('reason')}")
     cur["refusals"] = cur["refusals"][-300:]
     _save(PURCHASES, rows)
@@ -138,6 +141,24 @@ def avoid():
         if "no certificate" in (r.get("reason") or "") and time.time() - r.get("ts", 0) < 12 * 3600:
             nocert[r["shop"]] = nocert.get(r["shop"], 0) + 1
     return out | {s for s, n in by.items() if n >= 2} | {s for s, n in nocert.items() if n >= 2}
+
+
+SHORT_SHELF_WINDOW = 3600     # Nov 4 00:40-02:17: 24 of 216 orders agreed a deal the kit refused for short shelf
+                              # life, often the same shop and SKU again (one shop 7 times); replaying the payments
+                              # log, a refusal under 1 h old predicted 20 of 56 such refusals, but 5 paid deals too
+
+
+def short_shelf(shop, item, need):
+    """Hours left on the unit `shop` last offered of `item`, aged since, when our kit refused it for short shelf
+    life within the last hour and it would not last `need` hours now; else None."""
+    now = time.time()
+    for r in reversed(_load(CURSOR, {}).get("refusals", [])):
+        if r.get("shop") == shop and r.get("item") == item and r.get("hours") is not None:
+            if now - r["ts"] > SHORT_SHELF_WINDOW:
+                return None
+            left = r["hours"] - (now - r["ts"]) / 3600
+            return left if left < need else None
+    return None
 
 
 def break_rate(grade=None):
