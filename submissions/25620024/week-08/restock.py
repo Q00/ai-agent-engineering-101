@@ -127,8 +127,11 @@ def plan(md, c, t, now=None):
         mk = {}
     general = cash
     cash = min((inv.get("balance") or 0) - t["cash_reserve"] * start, t["pick_window_budget"] * start - spent)
+    for x in promo.hq_orders():                               # 1b. headquarters' direct orders: first, never vetoed
+        add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "HQ order", any_price=True)
     for x in mk.get("skus") or []:
-        add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "marketing pick", any_price=True)
+        add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0) - buy.get(x.get("sku"), 0),
+            "marketing pick", any_price=True)
     try:                                                      # the SCM team's orders (Codex, hourly)
         import scm_agent
         veto = set((mk.get("_veto") or {}).get("cancel_orders") or [])

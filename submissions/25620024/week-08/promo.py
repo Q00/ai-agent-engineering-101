@@ -47,14 +47,29 @@ DEFAULTS = {
 
 OVERRIDE = Path(os.environ.get("OWNER_OVERRIDE", Path(__file__).parent / "private" / "owner_override.json"))
 PLAN = Path(os.environ.get("MARKETING_PLAN", Path(__file__).parent / "private" / "marketing_plan.json"))
+HQ_ORDERS = Path(__file__).parent / "private" / "hq_orders.json"
+
+
+def hq_orders():
+    """Headquarters' (the owner's) direct orders, above every team and never vetoed: {"until", "skus": [{sku, qty,
+    follow}]}; [] once "until" has passed."""
+    try:
+        h = json.loads(HQ_ORDERS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return h.get("skus") or [] if h.get("until", 0) > time.time() else []
 
 
 def plan():
     """The marketing team's current plan (marketing_agent.py writes it after its gate), or {}."""
     try:
-        return json.loads(PLAN.read_text(encoding="utf-8"))
+        p = json.loads(PLAN.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return {}
+        p = {}
+    hq = {x["sku"]: x["follow"] for x in hq_orders() if x.get("follow") is not None}
+    if hq:                                     # HQ's follow prices win over the plan's
+        p["follow_skus"] = {**(p.get("follow_skus") or {}), **hq}
+    return p
 
 
 def theta():
