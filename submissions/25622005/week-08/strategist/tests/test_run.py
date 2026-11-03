@@ -338,13 +338,13 @@ class InventoryFocusTest(Base):
 
     def setUp(self):
         super().setUp()
-        self.ledger = []
+        self.ledger, self.ledger_down = [], False
         self.catalog = [{"sku": s, "name": s, "category": "goods>x", "list_price": 10000, "kind": "goods"}
                         for s in ("G1", "G2", "G3")]
 
     def handler(self, request):
         if request.url.path == "/api/ledger":
-            return httpx.Response(200, json=self.ledger)
+            return httpx.Response(500) if self.ledger_down else httpx.Response(200, json=self.ledger)
         if request.url.path == "/api/catalog":
             return httpx.Response(200, json=self.catalog)
         return market_handler(request)
@@ -375,7 +375,7 @@ class InventoryFocusTest(Base):
         self.answer_with([])
         self.inventory(("u1", 1000), ("u2", 2000), ("u3", 3000))
         self.assertEqual(self.run_at(NOW, self.handler)["status"], "no change")
-        self.inventory(("u2", 2000), ("u4", 4000))              # u1 sold, u3 gone unsold, u4 in
+        self.inventory(("u2", 2000), ("u4", 4000))              # u1 sold, u3 gone (unsold next run), u4 in
         self.settle("G1", "u1")
         self.run_at(NOW + 1800, self.handler)
         self.inventory(("u2", 2000), ("u4", 4000))              # u4 settles before it leaves the file
@@ -385,7 +385,7 @@ class InventoryFocusTest(Base):
         rec = self.run_at(NOW + 5400, self.handler)
         rows = self.lines("inventory.jsonl")
         self.assertEqual([(r["in"], r["sold"], r["gone_unsold"], r["gone_cost"]) for r in rows],
-                         [(None, None, None, None), (1, 1, 1, 3000), (0, 0, 0, 0), (0, 1, 0, 0)])
+                         [(None, None, None, None), (1, 1, 0, 0), (0, 0, 1, 3000), (0, 1, 0, 0)])
         self.assertEqual({k: rows[1][k] for k in ("ts", "balance", "inv_cost", "units", "skus", "focus")},
                          {"ts": NOW + 1800, "balance": 3000000, "inv_cost": 6000, "units": 2, "skus": 1, "focus": []})
         brief = json.loads((self.home / "briefs" / f"{rec['run_id']}.json").read_text(encoding="utf-8"))
@@ -393,6 +393,23 @@ class InventoryFocusTest(Base):
         report = (self.home / "reports" / "latest.md").read_text(encoding="utf-8")
         self.assertIn("## 재고", report)
         self.assertIn("판매 1", report)
+
+    def test_unit_gone_before_its_settle_row_waits_one_run(self):
+        self.answer_with([])
+        self.inventory(("u1", 1000), ("u2", 2000), ("u3", 3000))
+        self.run_at(NOW, self.handler)
+        self.inventory(("u3", 3000))                            # u1 and u2 leave before any settle row
+        self.run_at(NOW + 1800, self.handler)
+        self.settle("G1", "u1")                                 # u1 settles late, u2 never does
+        self.inventory()                                        # u3 leaves too
+        self.run_at(NOW + 3600, self.handler)
+        self.ledger_down = True                                 # u3 is not called unsold while the ledger fails
+        self.run_at(NOW + 5400, self.handler)
+        self.ledger_down = False
+        self.settle("G1", "u3")
+        self.run_at(NOW + 7200, self.handler)
+        self.assertEqual([(r["in"], r["sold"], r["gone_unsold"], r["gone_cost"]) for r in self.lines("inventory.jsonl")],
+                         [(None, None, None, None), (0, 0, 0, 0), (0, 1, 1, 2000), (0, 0, 0, 0), (0, 1, 0, 0)])
 
     def test_missing_inventory_file(self):
         self.answer_with([])
@@ -486,6 +503,8 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(run.Config(shop_home=W, home=W).interval_s, 1800)
         self.assertEqual(self.config({"STRATEGIST_INTERVAL_S": "900"}).interval_s, 900)
         self.assertEqual(self.config({"STRATEGIST_INTERVAL_S": "900"}, interval=60).interval_s, 60)
+        if not (W / "compose.yaml").exists():           # the image stages the code without compose.yaml
+            self.skipTest("no compose.yaml")
         compose = (W / "compose.yaml").read_text(encoding="utf-8")
         self.assertIn('STRATEGIST_INTERVAL_S: "1800"', compose)
 

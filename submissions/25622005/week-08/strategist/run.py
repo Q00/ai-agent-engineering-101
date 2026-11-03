@@ -198,7 +198,8 @@ def _steps(cfg, now, client, state, rec):
             errors.append(e)
             raw["errors"] = errors
     rec["errors"] += errors
-    flows, known = _inventory_flows(state, own.get("inventory"), raw.get("ledger"))
+    ledger_bad = bool(raw.get("ledger_gap")) or any(str(e).startswith("ledger:") for e in errors)
+    flows, known = _inventory_flows(state, own.get("inventory"), raw.get("ledger"), now, ledger_bad)
     focus_part = _focus(state, raw, None if skill_errors else pol, now, cfg.me, rec)
     brief = analyze.brief(raw, own, state.get("last_brief"), pol, now, me=cfg.me, window_h=window_h,
                           flows=flows, known=known, focus=focus_part)
@@ -227,12 +228,14 @@ def _check_version(version, state, rec):
         state["skill_version"] = version
 
 
-def _inventory_flows(state, inv, ledger):
+def _inventory_flows(state, inv, ledger, now, ledger_bad=False):
     """Units in, sold and gone unsold (expired food, seized) since the last run, from the last run's snapshot
     (state["inventory"]["units"]: unit id -> [sku, cost, kind]) and this run's settle rows. A unit can leave
     the inventory file before or after its settle row is read: settled units still held wait in "pending"
-    for the next run. Returns (flows, unit ids held at the last run); flows is None on the first run, and
-    without an inventory file nothing changes. A ledger gap can count a sold unit as gone unsold."""
+    for the next run, and a unit gone without a settle row waits in "vanished" (unit id -> [sku, cost,
+    since_ts]): sold if a later run's settle rows name it, gone unsold once a full run has read none. With a
+    ledger error or gap (ledger_bad) nothing is called gone unsold this run. Returns (flows, unit ids held at
+    the last run); flows is None on the first run, and without an inventory file nothing changes."""
     prev = state.get("inventory") if isinstance(state.get("inventory"), dict) else {}
     old = prev.get("units") if isinstance(prev.get("units"), dict) else None
     if not isinstance((inv or {}).get("units"), list):
@@ -242,13 +245,17 @@ def _inventory_flows(state, inv, ledger):
     settled = {str(r["data"].get("unit")) for r in ledger or []
                if isinstance(r, dict) and r.get("kind") == "settle" and isinstance(r.get("data"), dict)}
     settled |= set(prev.get("pending") or [])
-    state["inventory"] = {"units": cur, "pending": sorted(settled & cur.keys())}
+    late = prev.get("vanished") if isinstance(prev.get("vanished"), dict) else {}
+    late = {u: v for u, v in late.items() if u not in cur}      # gone at an earlier run, no settle row then
+    gone = old.keys() - cur.keys() if old is not None else set()
+    unsold = set() if ledger_bad else late.keys() - settled
+    vanished = {u: v for u, v in late.items() if u not in settled and u not in unsold}
+    vanished.update({u: [old[u][0], old[u][1], now] for u in gone - settled})
+    state["inventory"] = {"units": cur, "pending": sorted(settled & cur.keys()), "vanished": vanished}
     if old is None:
         return None, set()
-    gone = old.keys() - cur.keys()
-    unsold = gone - settled
-    return {"in": len(cur.keys() - old.keys()), "sold": len(gone & settled), "gone_unsold": len(unsold),
-            "gone_cost": round(sum(old[u][1] for u in unsold))}, set(old)
+    return {"in": len(cur.keys() - old.keys()), "sold": len((gone | late.keys()) & settled),
+            "gone_unsold": len(unsold), "gone_cost": round(sum(late[u][1] for u in unsold))}, set(old)
 
 
 def _focus(state, raw, pol, now, me, rec):

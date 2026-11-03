@@ -127,6 +127,7 @@ class MentionsTest(unittest.TestCase):
                  "junk", {"text": None}]
         self.assertEqual(focus.mentions(posts), {"Ga1b2c3d4": 1, "GFFFFFFFF": 1})
         self.assertEqual(focus.mentions(None), {})
+        self.assertEqual(focus.mentions([{"text": "G1234abcd를 사요, xG1234abcd 아님"}]), {"G1234abcd": 1})
         fs = focus.update({}, settles("Ga1b2c3d4", 3), NOW)               # mentioned, but too few settles
         self.assertEqual(focus.choose(focus.select(fs, catalog("Ga1b2c3d4"), POL, NOW), [], POL), [])
 

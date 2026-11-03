@@ -20,7 +20,7 @@ KEEP_RANK = 2
 MAX_SWAPS = 3
 REFS = 3                    # recent settle seqs kept per SKU as evidence
 SKU = re.compile(r"[A-Za-z0-9_-]{1,40}")       # what policy.validate accepts in stock.focus_skus
-MENTION = re.compile(r"\bG[0-9a-fA-F]{8}\b")
+MENTION = re.compile(r"(?<![A-Za-z0-9])G[0-9a-fA-F]{8}(?![A-Za-z0-9])")     # ASCII bounds: "G…를" counts
 
 
 def _num(x):
