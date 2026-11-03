@@ -1,10 +1,24 @@
 # Week 08: Round 3 lifecycle actors
 
+> 2026-11-03 공개 연결 점검: week-07에서 Shop 등록에 성공했던 Pinggy SDK 0.3.1 경로를 복구해 기본값으로 설정했다. 실제 seller → 키트 Proxy → 임시 Pinggy 터널을 통한 공개 A2A·ACP discovery가 모두 HTTP 200으로 검증됐다. 근거: `logs/shop-transport-20261103T082440055660Z.json`. 이 점검은 시장 등록·거래를 하지 않았으며 임시 터널은 종료됐다. 앞선 Cloudflare 45초 점검 실패 기록도 보존했다. 실제 양쪽 참가 완료 여부는 별도로 확인해야 한다.
+
+시장에 등록하거나 거래하지 않고 가게 접속만 점검하려면 다음을 실행한다. 임시 터널은 점검 후 종료되며 거래 요청은 차단된다.
+
+```powershell
+./submissions/26510121/week-08/.venv/Scripts/python.exe submissions/26510121/week-08/check_shop_transport.py
+# Cloudflare HTTP/2 경로를 별도로 진단할 때:
+./submissions/26510121/week-08/.venv/Scripts/python.exe submissions/26510121/week-08/check_shop_transport.py --provider cloudflare --protocol http2
+```
+
+이 명령은 진단용이다. 실제 참가 명령은 아래 `join.ps1`이며, `shop registered`와 `buyer registered` 두 줄을 모두 확인해야 한다.
+
+`join.ps1`의 터널 기본값은 `pinggy`다. `-TunnelProvider cloudflare`로 대체 경로를 선택할 수 있으며 Cloudflare는 기존 week-07과 같은 HTTP/2·IPv4 설정을 사용한다. 터널 프로세스에는 API 키와 MARKET_OWNER를 넘기지 않는다. 키트의 기존 watchdog이 운영 중 가게 서버·터널을 감시하고 죽은 터널의 URL을 교체해 재등록한다. 아직 성공하지 않은 최초 공개 연결은 참가 완료로 표시하지 않는다.
+
 이 폴더는 키트 v4의 SKU·재고 계약을 사용하는 새로운 구현이다. 기존 week-07 구현과 week-08의 이전 전략·로그는 보존했다. 과거 `readiness.py`, `STRATEGY.md`, `RANKING_STRATEGY.md`의 구형 계약 판단 대신 이 문서와 `runtime_readiness.py`를 사용한다.
 
 ## 현재 확인한 범위
 
-- 로컬 계약·A2A·암호서명·합성 정산 테스트 19개 통과.
+- 로컬 계약·A2A·암호서명·합성 정산 및 터널 경계 테스트 23개 통과.
 - Luna/Terra의 소량 구조화 판단 사례 6개 통과.
 - 실제 Luna가 shop·buyer 결정을 내리는 로컬 합성 정산 통과. 결제는 한 번만 적용되고 재사용은 거부됨.
 - 기존 가게·buyer 키 및 owner 설정을 Git-ignored 경로로 복사했고 API 키는 기존 week-06 파일에서 메모리로 읽는다.

@@ -4,6 +4,7 @@ import sys
 from r3.state import ROOT
 from r3.model import api_key
 from r3.adapter import install, load_kit
+from r3.transport import open_tunnel
 
 if __name__ == "__main__":
     if "--dir" in sys.argv:
@@ -18,4 +19,6 @@ if __name__ == "__main__":
         os.environ["OPENAI_API_KEY"] = key
     # Each child uses the verified interpreter rather than a stale global `python`.
     os.environ["PATH"] = str(ROOT / ".market" / "bin") + os.pathsep + str(__import__("pathlib").Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
-    install(load_kit()).main()
+    kit = install(load_kit())
+    kit.open_tunnel = lambda port: open_tunnel(kit, port)
+    kit.main()

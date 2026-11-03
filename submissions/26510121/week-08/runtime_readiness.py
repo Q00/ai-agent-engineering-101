@@ -15,6 +15,7 @@ def inspect():
                'run_market.py', 'shop_key.pem', 'buyer_key.pem', '.market/owner.env']}
     checks['api_credential_present'] = bool(api_key())
     checks['a2a_dependency'] = importlib.util.find_spec('a2a') is not None
+    checks['pinggy_dependency'] = importlib.util.find_spec('pinggy') is not None
     checks['tunnel_binary'] = (ROOT / '.market/bin/cloudflared.exe').is_file() or bool(shutil.which('cloudflared'))
     report = {'checked_utc': datetime.now(timezone.utc).isoformat(), 'checks': checks,
               'locally_prepared_for_both_roles': all(checks.values()),

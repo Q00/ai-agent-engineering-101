@@ -1,7 +1,8 @@
 param(
     [switch]$BuyerOnly,
     [string]$PublicUrl,
-    [int]$Port = 0
+    [int]$Port = 0,
+    [ValidateSet('pinggy','cloudflare')][string]$TunnelProvider = 'pinggy'
 )
 $ErrorActionPreference = 'Stop'
 $agentRoot = $PSScriptRoot
@@ -12,6 +13,7 @@ if ($PublicUrl -and $Port -le 0) { throw 'PublicUrl needs the dedicated proxy Po
 $claimFile = Join-Path $agentRoot '.market/owner.env'
 $oldClaim = $env:MARKET_OWNER
 $oldUtf8 = $env:PYTHONUTF8
+$oldProvider = $env:MARKET_TUNNEL_PROVIDER
 try {
     if (-not $env:MARKET_OWNER -and (Test-Path -LiteralPath $claimFile)) {
         foreach ($line in [IO.File]::ReadAllLines($claimFile)) {
@@ -22,6 +24,7 @@ try {
     }
     if (-not $env:MARKET_OWNER) { throw 'Existing market owner credential is missing; run prepare_runtime.py.' }
     $env:PYTHONUTF8 = '1'
+    $env:MARKET_TUNNEL_PROVIDER = $TunnelProvider
     $runnerPath = Join-Path $agentRoot 'run_market.py'
     $argsList = @($runnerPath, 'join', '--dir', $agentRoot, '--market', 'https://market.ourolabs.ai', '--name', 'seochanit')
     if ($BuyerOnly) { $argsList += '--buyer-only' }
@@ -32,4 +35,5 @@ try {
 } finally {
     $env:MARKET_OWNER = $oldClaim
     $env:PYTHONUTF8 = $oldUtf8
+    $env:MARKET_TUNNEL_PROVIDER = $oldProvider
 }

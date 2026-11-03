@@ -6,10 +6,7 @@ this cannot negotiate, buy inventory, settle, or publish market messages.
 import argparse
 from datetime import datetime, timezone
 import json
-import os
 from pathlib import Path
-import re
-import subprocess
 import tempfile
 import threading
 import time
@@ -21,20 +18,20 @@ from starlette.responses import JSONResponse
 
 from r3.adapter import load_kit
 from r3.state import ROOT, Journal
+from r3.transport import open_tunnel
 from seller_r3 import Seller, build, NAME
 
 
-def check(protocol=None):
+def check(provider='pinggy', protocol='http2'):
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     log = ROOT / 'logs' / f'shop-transport-{stamp}.txt'
     report_path = log.with_suffix('.json')
-    report = dict(checked_utc=stamp, protocol=protocol or 'cloudflared-default',
+    report = dict(checked_utc=stamp, provider=provider, protocol=protocol if provider == 'cloudflare' else 'pinggy-sdk',
                   public_discovery_verified=False, market_joined=False,
                   public_settlement_verified=False, log=str(log))
     kit = load_kit()
     proc = proxy = server = None
-    reader = seller_thread = None
-    found = []
+    seller_thread = None
 
     class ReadOnlyProxy(kit.Proxy):
         async def handle(self, req):
@@ -60,38 +57,13 @@ def check(protocol=None):
             proxy = ReadOnlyProxy(pport)
             proxy.target(f'http://127.0.0.1:{sport}')
             proxy.acp = kit.AcpShop(Ed25519PrivateKey.generate(), NoMarket())
-            binary = ROOT / '.market/bin/cloudflared.exe'
-            argv = [str(binary), 'tunnel', '--no-autoupdate', '--url', f'http://127.0.0.1:{pport}']
-            if protocol:
-                argv += ['--protocol', protocol, '--edge-ip-version', '4']
-            # The tunnel process does not need model or market credentials.
-            env = {k: v for k, v in os.environ.items()
-                   if k.upper() not in ('OPENAI_API_KEY', 'MARKET_OWNER')}
-            proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, text=True, encoding='utf-8',
-                                    errors='replace', env=env,
-                                    creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
-
-            def capture():
-                with log.open('x', encoding='utf-8') as out:
-                    for line in proc.stdout:
-                        out.write(line)
-                        out.flush()
-                        match = re.search(r'https://[a-z0-9-]+\.trycloudflare\.com', line)
-                        if match and not found:
-                            found.append(match.group())
-
-            reader = threading.Thread(target=capture, daemon=True)
-            reader.start()
-            deadline = time.monotonic() + 60
-            while not found and proc.poll() is None and time.monotonic() < deadline:
-                time.sleep(.2)
-            if not found:
-                raise RuntimeError('No public tunnel URL within 60 seconds; see tunnel log')
-            public = proxy.public = found[0]
+            proc, public = open_tunnel(kit, pport, provider, log, protocol)
+            proxy.public = public
             report['temporary_public_url'] = public
             print(json.dumps({'checking_public_url': public}), flush=True)
-            deadline = time.monotonic() + 45
+            # Match the kit's discovery allowance: a fresh DNS record may lag
+            # the quick-tunnel URL printed by cloudflared.
+            deadline = time.monotonic() + 120
             with httpx.Client(timeout=8, follow_redirects=False) as client:
                 while time.monotonic() < deadline and proc.poll() is None:
                     try:
@@ -108,7 +80,7 @@ def check(protocol=None):
                             if report['public_discovery_verified']:
                                 break
                     except (httpx.HTTPError, ValueError, KeyError) as exc:
-                        report['last_probe_error'] = type(exc).__name__
+                        report['last_probe_error'] = f'{type(exc).__name__}: {exc}'
                     time.sleep(2)
             if not report['public_discovery_verified']:
                 report['error'] = 'Public discovery did not pass before the deadline'
@@ -117,10 +89,6 @@ def check(protocol=None):
         finally:
             if proc is not None:
                 kit.stop(proc)
-                if reader:
-                    reader.join(timeout=5)
-                if proc.stdout:
-                    proc.stdout.close()
             if proxy is not None:
                 proxy.server.should_exit = True
             if server is not None:
@@ -136,6 +104,7 @@ def check(protocol=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--provider', choices=['pinggy', 'cloudflare'], default='pinggy')
     parser.add_argument('--protocol', choices=['http2', 'quic'])
     args = parser.parse_args()
-    raise SystemExit(0 if check(args.protocol) else 1)
+    raise SystemExit(0 if check(args.provider, args.protocol or 'http2') else 1)
