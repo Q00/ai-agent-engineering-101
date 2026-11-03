@@ -95,7 +95,7 @@ class SellerDelay(unittest.IsolatedAsyncioTestCase):
                 return {"action": "accept"}, "fixture"
             context = SimpleNamespace(current_task=SimpleNamespace(id="t1", context_id="c1"), message=None)
             with patch.object(seller_r3, "MARKET_DIR", root), patch.object(seller_r3, "__file__", str(root / "seller_r3.py")), \
-                    patch.object(seller_r3, "get_message_text", return_value="120"), \
+                    patch.object(seller_r3, "get_message_text", return_value="119"), \
                     patch.object(seller_r3, "TaskUpdater", return_value=updater), \
                     patch.object(seller_r3, "ask_json", side_effect=model), patch.object(seller_r3, "sign") as sign:
                 await seller.execute(context, MagicMock())

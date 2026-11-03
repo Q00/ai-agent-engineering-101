@@ -12,6 +12,7 @@ import asyncio
 import base64
 import json
 import os
+import time
 from datetime import datetime, timezone
 from uuid import uuid4
 from pathlib import Path
@@ -31,6 +32,8 @@ from r3_harness import CMD, ask_json
 from harness import HarnessError
 from seller import purchase_offer
 from r3_policy import selling_terms
+from market_state import read, write, task_file
+from kit_runtime import OFFER_SECONDS
 
 NAME = "kcwarni Inventory Shop"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
@@ -108,12 +111,50 @@ class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"unit", "ask", "offer", "lines"}
         self.committed_units = set()
+        self.busy = set()
+        self.locks = {}
+
+    def prune(self, now=None):
+        now = time.time() if now is None else now
+        for task, deal in list(self.open.items()):
+            if task not in self.busy and now - deal.get("touched", now) > 180:
+                self.open.pop(task, None)
+        # Restore signed holds after seller restarts. Never free an uncertain payment.
+        for path in (MARKET_DIR / "signed-offers").glob("*.json"):
+            offer = read(path)
+            event = read(task_file(MARKET_DIR, "checkout-events", offer["task"]), {})
+            status = event.get("status")
+            released = status in ("canceled", "refused", "expired")
+            if (os.environ.get("MARKET_LEASE_GUARD") == "1" and now >= offer["expires_at"] + 90
+                    and status not in ("processing", "uncertain", "completed")):
+                released = True
+            if released:
+                self.committed_units.discard(offer["unit"])
+            else:
+                self.committed_units.add(offer["unit"])
 
     async def execute(self, context, event_queue):
+        self.prune()
+        task_id = context.current_task.id if context.current_task else uuid4().hex
+        lock = self.locks.setdefault(task_id, asyncio.Lock())
+        async with lock:
+            self.busy.add(task_id)
+            busy_ids = [task_id]
+            try:
+                return await self._execute(context, event_queue, busy_ids)
+            finally:
+                for identity in busy_ids:
+                    self.busy.discard(identity)
+                    if identity in self.open:
+                        self.open[identity]["touched"] = time.time()
+
+    async def _execute(self, context, event_queue, busy_ids):
         task = context.current_task
         if task is None:
             task = new_task_from_user_message(context.message)
             await event_queue.enqueue_event(task)
+        self.busy.add(task.id)
+        busy_ids.append(task.id)
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
         text = get_message_text(context.message) or ""
@@ -124,7 +165,8 @@ class Seller(AgentExecutor):
             if unit is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
-            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"]}
+            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None,
+                                       "touched": time.time(), "lines": [f"buyer: {text}"]}
         else:
             deal["lines"].append(f"buyer: {text}")
             deal["offer"] = purchase_offer(text, deal["unit"]["sku"], deal["ask"])
@@ -134,6 +176,10 @@ class Seller(AgentExecutor):
                 return
 
         u = deal["unit"]
+        if u.get("unit") in self.committed_units:
+            self.open.pop(task.id, None)
+            await up.reject(say("Unit is already reserved for checkout. Please request a new quote."))
+            return
         catalog = {}
         try:
             if u.get("unit"):
@@ -155,7 +201,10 @@ class Seller(AgentExecutor):
              "grade_observed": u.get("grade"), "expires_at": u.get("expires_at"), **terms},
             ensure_ascii=False, indent=2), encoding="utf-8")
         try:
-            move, raw = await asyncio.to_thread(ask_json, PROMPT.format(
+            if deal["ask"] is not None and deal["offer"] == deal["ask"] and deal["offer"] >= reserve:
+                move, raw = {"action": "accept"}, "deterministic acceptance of the disclosed quote"
+            else:
+                move, raw = await asyncio.to_thread(ask_json, PROMPT.format(
                 name=u["name"], list_price=terms["quote"], reserve=reserve,
                 transcript="\n".join(deal["lines"])))
         except (HarnessError, ValueError) as error:
@@ -201,6 +250,9 @@ class Seller(AgentExecutor):
                 receipt["unit"] = u["unit"]
             receipt = sign(receipt)
             if u.get("unit"):
+                write(task_file(MARKET_DIR, "signed-offers", task.id),
+                      {"task": task.id, "unit": u["unit"], "sku": u["sku"], "price": price,
+                       "issued_at": time.time(), "expires_at": time.time() + OFFER_SECONDS})
                 self.committed_units.add(u["unit"])
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))

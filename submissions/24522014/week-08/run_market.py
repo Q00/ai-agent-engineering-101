@@ -5,6 +5,7 @@ from pathlib import Path
 import runpy
 import ssl
 import sys
+from kit_runtime import install
 
 import certifi
 
@@ -47,7 +48,9 @@ def main():
                 *sys.argv[1:]]
     power_request = prevent_automatic_sleep()
     try:
-        runpy.run_path(str(kit), run_name="__main__")
+        namespace = runpy.run_path(str(kit), run_name="course_market_kit")
+        install(namespace)
+        namespace["main"]()
     finally:
         if power_request is not None:
             power_request.SetThreadExecutionState(0x80000000)
