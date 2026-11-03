@@ -401,12 +401,128 @@ class Round3BuyerTests(unittest.TestCase):
             self.assertIsNone(json.loads(output.getvalue())["receipt"])
 
     def test_restock_guard_requests_no_purchases(self):
-        import io
-        from contextlib import redirect_stdout
-        output = io.StringIO()
-        with redirect_stdout(output):
-            seller_strategy.restock_preview(Path("unused-sample-path"))
-        self.assertEqual(json.loads(output.getvalue())["buy"], [])
+        with patch("seller_strategy.load_round3_rules", return_value={"enabled": False}):
+            self.assertEqual(seller_strategy.plan_restock(Path("unused-sample-path"))["buy"], [])
+
+    def test_food_policy_follows_order_and_goods_need_no_warranty(self):
+        import market_buyer
+        food = market_buyer.acceptance_policy({"kind": "food", "use_within_hours": 8})
+        self.assertEqual(food, {"cert": True, "grades": ["A", "B", "C"], "min_hours_left": 8})
+        goods = market_buyer.acceptance_policy({"kind": "goods"})
+        self.assertTrue(goods["cert"])
+        self.assertEqual(goods["warranty_hours"], 0)
+
+    def test_payment_memory_does_not_confuse_agreement_with_settlement(self):
+        import market_buyer
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
+            path = Path(folder) / "payments.jsonl"
+            memory = [{"order": "one", "result": "agreed_pending_payment"},
+                      {"order": "two", "result": "agreed_pending_payment"}]
+            path.write_text(json.dumps({"order": "one", "paid": True, "ledger": 10}) + "\n"
+                            + json.dumps({"order": "two", "paid": False, "reason": "No certificate"}) + "\n")
+            enriched = market_buyer.settlement_memory(memory, path)
+            self.assertEqual(enriched[0]["result"], "settled")
+            self.assertEqual(enriched[1]["result"], "payment_refused")
+            self.assertEqual(memory[0]["result"], "agreed_pending_payment")
+
+
+class StockPricingTests(unittest.TestCase):
+    def test_two_counters_before_lower_minimum(self):
+        unit = {"sku": "S1", "cost": 10000}
+        for counters, expected in [(0, 10500), (1, 10500), (2, 10300), (5, 10300)]:
+            self.assertEqual(seller_strategy.stock_minimum(unit, counters), expected)
+        with patch("seller_strategy.call_harness", return_value={
+                "action": "accept", "price": 10300, "reason": "Simulated"}):
+            with self.assertRaises(ValueError):
+                seller_strategy.decide_stock_offer(unit, 10300, 1)
+            self.assertEqual(seller_strategy.decide_stock_offer(unit, 10300, 2)["action"], "accept")
+
+
+class StockSellerTests(unittest.IsolatedAsyncioTestCase):
+    context = SellerHistoryTests.context
+    rows = SellerHistoryTests.rows
+
+    async def asyncSetUp(self):
+        await SellerHistoryTests.asyncSetUp(self)
+        import time
+        self.unit = {"unit": "sample-unit", "sku": "S1", "name": "Sample",
+                     "cost": 10000, "kind": "food", "grade": "A",
+                     "expires_at": time.time() + 3600}
+        for target, value in [("seller.round3_inventory", True),
+                              ("seller.load_round3_rules", {"enabled": True})]:
+            patcher = patch(target, return_value=value)
+            patcher.start(); self.addCleanup(patcher.stop)
+        patcher = patch("seller.available_units", side_effect=lambda text, reserved=():
+                        [] if self.unit["unit"] in reserved else [self.unit])
+        self.candidates = patcher.start(); self.addCleanup(patcher.stop)
+
+    async def test_sku_counter_sequence_and_specific_unit_receipt(self):
+        await self.seller.execute(self.context("Buy S1"), self.queue)
+        self.assertEqual(self.rows()[-1]["ask"], 10500)
+        signed = []
+        decisions = [{"action": "counter", "price": 10500},
+                     {"action": "counter", "price": 10500},
+                     {"action": "accept", "price": 10300}]
+        with patch("seller.decide_stock_offer", side_effect=decisions), \
+                patch("seller.sign_receipt", side_effect=lambda r: signed.append(dict(r)) or r):
+            for _ in range(3):
+                await self.seller.execute(self.context("10300"), self.queue)
+        self.assertEqual(signed[0]["unit"], "sample-unit")
+        self.assertEqual(signed[0]["item"], "S1")
+        self.assertTrue(signed[0]["cert"])
+        self.assertEqual(self.rows()[-1]["event"], "agreement")
+        self.assertNotIn("simulated-task", self.seller.open)
+        self.assertIn("sample-unit", self.seller.held)
+
+    async def test_same_stock_cannot_be_promised_twice(self):
+        await self.seller.execute(self.context("Buy S1", "one"), self.queue)
+        await self.seller.execute(self.context("Buy S1", "two"), self.queue)
+        self.updater.reject.assert_awaited_once()
+        self.assertEqual(len(self.seller.open), 1)
+
+    async def test_cancellation_releases_unit(self):
+        await self.seller.execute(self.context("Buy S1"), self.queue)
+        await self.seller.cancel(self.context(""), self.queue)
+        self.assertEqual(self.seller.held, {})
+
+
+class RestockTests(unittest.TestCase):
+    def test_initial_allowance_survives_repeated_hook_calls(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
+            folder = Path(folder)
+            (folder / "inventory.json").write_text(json.dumps({"round": 3, "balance": 5000000, "units": []}))
+            catalog = {"F1": {"name": "Food", "kind": "food", "category": "Food", "list_price": 1000000},
+                       "G1": {"name": "Goods", "kind": "goods", "category": "Goods", "list_price": 1000000},
+                       "G2": {"name": "More", "kind": "goods", "category": "Goods", "list_price": 1000000}}
+            (folder / "catalog.json").write_text(json.dumps(catalog))
+            rules = {"enabled": True, "stock_budget": 2000000, "units_per_sku": 1}
+            with patch("seller_strategy.load_round3_rules", return_value=rules), \
+                    patch("seller_strategy.DATA_DIR", folder), \
+                    patch("seller_strategy.call_harness", return_value={
+                        "buy": [{"sku": "F1", "qty": 1}, {"sku": "G1", "qty": 1}],
+                        "reason": "Simulated diversified selection"}):
+                self.assertEqual(len(seller_strategy.plan_restock(folder)["buy"]), 2)
+            before = (folder / "restock-reservations.jsonl").read_bytes()
+            with patch("seller_strategy.load_round3_rules", return_value=rules), \
+                    patch("seller_strategy.DATA_DIR", folder), \
+                    patch("seller_strategy.call_harness") as harness:
+                self.assertEqual(seller_strategy.plan_restock(folder)["buy"], [])
+                harness.assert_not_called()
+            self.assertEqual((folder / "restock-reservations.jsonl").read_bytes(), before)
+
+    def test_over_budget_plan_creates_no_reservation(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
+            folder = Path(folder)
+            (folder / "inventory.json").write_text(json.dumps({"round": 3, "balance": 5000000, "units": []}))
+            (folder / "catalog.json").write_text(json.dumps({
+                sku: {"kind": "goods", "category": "Goods", "list_price": 2000000}
+                for sku in ["G1", "G2"]}))
+            with patch("seller_strategy.load_round3_rules", return_value={"enabled": True, "stock_budget": 2000000}), \
+                    patch("seller_strategy.call_harness", return_value={
+                        "buy": [{"sku": "G1", "qty": 1}, {"sku": "G2", "qty": 1}]}):
+                with self.assertRaises(ValueError):
+                    seller_strategy.plan_restock(folder)
+            self.assertFalse((folder / "restock-reservations.jsonl").exists())
 
 
 if __name__ == "__main__":

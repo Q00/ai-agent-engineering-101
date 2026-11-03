@@ -97,7 +97,9 @@ def buy(url, item, budget, time_budget=270):
                 break
             text = " ".join(p.get("text", "") for p in
                 task["status"].get("message", {}).get("parts", []))
-            numbers = re.findall(r"\d+(?:\.\d+)?", text)
+            asking = re.search(r"(?:asking(?:\s+price)?|counteroffer)\s*:?\s*(\d+(?:\.\d+)?)",
+                               text, re.IGNORECASE)
+            numbers = [asking.group(1)] if asking else re.findall(r"\d+(?:\.\d+)?", text)
             if not numbers:
                 raise ValueError("Seller response has no asking price")
             ask = float(numbers[-1])

@@ -3,6 +3,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
+import time
 from pathlib import Path
 
 from buyer import buy
@@ -18,6 +19,39 @@ def load_memory(path):
         return []
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
             if line.strip()]
+
+
+def settlement_memory(memory, payments_path):
+    """Enrich prompt evidence from kit payments without rewriting past attempts."""
+    if not payments_path.exists():
+        return memory
+    payments = {}
+    for line in payments_path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            row = json.loads(line)
+            payments[row["order"]] = row
+    enriched = []
+    for original in memory:
+        entry = dict(original)
+        payment = payments.get(entry.get("order"))
+        if payment is not None:
+            entry.update(result="settled" if payment["paid"] else "payment_refused",
+                         ledger=payment.get("ledger"), payment_reason=payment.get("reason"))
+        enriched.append(entry)
+    return enriched
+
+
+def acceptance_policy(order):
+    rules = load_round3_rules()
+    if order["kind"] not in {"food", "goods"}:
+        raise ValueError("Unknown product kind")
+    policy = dict(rules[order["kind"] + "_accept"])
+    if order["kind"] == "food":
+        hours = order["use_within_hours"]
+        if type(hours) not in (int, float) or hours < 0:
+            raise ValueError("Invalid required food shelf life")
+        policy["min_hours_left"] = hours
+    return policy
 
 
 def choose_shop(shops, memory, item, budget, order=None):
@@ -72,7 +106,13 @@ def market_buy(shops_path, item, budget, memory_path, order_path=None):
         print(json.dumps({"shop": "", "receipt": None, "stars": 3,
                           "review": "Round 3 rules pending student choice."}), flush=True)
         return
+    policy = acceptance_policy(order) if round3 else None
     if round3:
+        if order.get("expires") is not None and order["expires"] <= time.time():
+            print(json.dumps({"shop": "", "receipt": None, "stars": 3,
+                              "review": "Order expired before negotiation."}), flush=True)
+            return
+        memory = settlement_memory(memory, order_path.parent / "payments.jsonl")
         shops = [dict(shop, offers=[offer for offer in shop.get("offers", [])
                                    if offer["sku"] in order["acceptable"]
                                    and offer.get("qty", 0) > 0]) for shop in shops]
@@ -114,8 +154,10 @@ def market_buy(shops_path, item, budget, memory_path, order_path=None):
     with memory_path.open("a", encoding="utf-8") as memory_file:
         memory_file.write(json.dumps(entry, ensure_ascii=False) + "\n")
     # The kit reads the last JSON line. No output follows this line.
-    print(json.dumps({"shop": shop["url"], "receipt": receipt,
-                      "stars": stars, "review": review}, ensure_ascii=False), flush=True)
+    output = {"shop": shop["url"], "receipt": receipt, "stars": stars, "review": review}
+    if policy is not None:
+        output["accept"] = policy
+    print(json.dumps(output, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":

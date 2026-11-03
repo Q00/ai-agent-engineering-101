@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
+import time
 
 from cryptography.hazmat.primitives import serialization
 import uvicorn
@@ -18,13 +19,14 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from seller_strategy import (HISTORY_PATH, POLICY, decide_opening, decide_offer,
-                             round3_inventory)
+                             round3_inventory, available_units, load_round3_rules,
+                             stock_opening_ask, decide_stock_offer)
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 SHOP_NAME = "Afford Shop"
 SHOP_DESCRIPTION = (
-    "Lamps, chairs, and bookshelves at affordable prices. "
-    "Clear offers and fair negotiation and will never scam my customers."
+    "Food and goods from available stock. Ask for a SKU, then negotiate a price. "
+    "Checkout includes the market's product certificate."
 )
 
 
@@ -45,6 +47,8 @@ def sign_receipt(receipt):
 class Seller(AgentExecutor):
     def __init__(self, history_path=None):
         self.open = {}
+        self.held = {}  # unit id -> monotonic expiry; includes checkout handoff
+        self.task_locks = {}
         self.history_path = (
             Path(history_path) if history_path is not None else HISTORY_PATH
         )
@@ -60,7 +64,7 @@ class Seller(AgentExecutor):
             "source": "local_seller", "shop": SHOP_NAME, "task": task_id,
             "event": event, "item": deal["item"],
             "opening_ask": deal["opening_ask"], "ask": deal["ask"],
-            "policy": POLICY, **details,
+            "policy": deal.get("policy", POLICY), **details,
         }
         self.history_path.parent.mkdir(parents=True, exist_ok=True)
         with self.history_path.open("a", encoding="utf-8") as stream:
@@ -78,9 +82,10 @@ class Seller(AgentExecutor):
 
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
-        if round3_inventory():
-            # Do not sell a fixed Round 2 item when the market requires a stock unit.
-            await up.reject(say("Round 3 inventory seller is being prepared; no offer made."))
+        if round3_inventory() or (deal and "unit" in deal):
+            lock = self.task_locks.setdefault(task.id, asyncio.Lock())
+            async with lock:
+                await self.execute_stock(task.id, text, up, say)
             return
         if deal is None:
             item = next((item for item in RESERVES
@@ -125,6 +130,65 @@ class Seller(AgentExecutor):
             self.record(task.id, "countered", deal, offer=offer,
                         reason=decision.get("reason"))
 
+    async def execute_stock(self, task_id, text, up, say):
+        if not load_round3_rules().get("enabled"):
+            await up.reject(say("Round 3 trading is not enabled yet."))
+            return
+        now = time.monotonic()
+        self.held = {unit: expiry for unit, expiry in self.held.items() if expiry > now}
+        for old_task, old in list(self.open.items()):
+            if "unit" in old and now - old["last_seen"] > 300:
+                self.open.pop(old_task)
+        deal = self.open.get(task_id)
+        if deal is None:
+            units = available_units(text, self.held)
+            if not units:
+                await up.reject(say("No matching unexpired unit is available in stock."))
+                return
+            # Dispatch the earliest-expiring unit first; no quality claim is made.
+            unit = min(units, key=lambda u: (u.get("expires_at") or float("inf"),
+                                             u.get("supplied_at", 0)))
+            ask = stock_opening_ask(unit)
+            deal = {"item": unit["sku"], "unit": unit, "ask": ask,
+                    "opening_ask": ask, "counters": 0, "last_seen": now,
+                    "policy": "round3-cost5-floor3-two-counters-v1"}
+            self.open[task_id] = deal
+            self.held[unit["unit"]] = now + 300
+            self.record(task_id, "opened", deal, unit=unit["unit"])
+            await up.requires_input(say(f"{unit['sku']}: asking {ask}"))
+            return
+        unit = deal["unit"]
+        if not any(u["unit"] == unit["unit"] for u in available_units(unit["sku"])):
+            self.open.pop(task_id, None)
+            self.held.pop(unit["unit"], None)
+            await up.reject(say("The selected unit is no longer available."))
+            return
+        deal["last_seen"] = now
+        self.held[unit["unit"]] = now + 300
+        if not re.fullmatch(r"\s*\d+\s*", text):
+            await up.requires_input(say(f"Send a whole-number offer. Asking {deal['ask']}"))
+            return
+        offer = int(text)
+        self.record(task_id, "offer_received", deal, offer=offer, unit=unit["unit"])
+        decision = await asyncio.to_thread(decide_stock_offer, unit, offer, deal["counters"])
+        if decision["action"] == "accept":
+            receipt = sign_receipt({"shop": SHOP_NAME, "item": unit["sku"],
+                                    "unit": unit["unit"], "cert": True,
+                                    "price": offer, "task": task_id})
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            await up.complete(say(f"Deal: {unit['sku']} at {offer}. Checkout confirms availability."))
+            self.record(task_id, "agreement", deal, price=offer, unit=unit["unit"],
+                        reason=decision.get("reason"))
+            self.open.pop(task_id, None)
+            # Retain the hold while the buyer completes checkout. A receipt is
+            # not proof of payment; the kit updates inventory after settlement.
+        else:
+            deal["counters"] += 1
+            deal["ask"] = decision["price"]
+            self.record(task_id, "countered", deal, offer=offer, unit=unit["unit"],
+                        reason=decision.get("reason"))
+            await up.requires_input(say(f"Counteroffer: {decision['price']}"))
+
     async def cancel(self, context, event_queue):
         task = context.current_task
         deal = self.open.get(task.id)
@@ -133,6 +197,8 @@ class Seller(AgentExecutor):
         if deal is not None:
             self.record(task.id, "canceled", deal)
             self.open.pop(task.id, None)
+            if "unit" in deal:
+                self.held.pop(deal["unit"]["unit"], None)
 
 
 def build(port, history_path=None):
