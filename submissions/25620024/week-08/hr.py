@@ -69,6 +69,10 @@ def measure(board):
         stock[u["sku"]] = stock.get(u["sku"], 0) + 1
     since = time.time() - 6 * 3600
     ours = [a for (a,) in c.execute(f"select amount from settles where ts>? and seq in ({market_model.ours(c)})", (since,))]
+    rev_1h = c.execute(f"select coalesce(sum(amount), 0) from settles where ts>? and seq in ({market_model.ours(c)})",
+                       (time.time() - 3600,)).fetchone()[0]
+    by_rev = sorted(board.get("shops", []), key=lambda s: -(s.get("revenue") or 0))
+    rev_rank = next((i + 1 for i, s in enumerate(by_rev) if s.get("name") == kpi.NAME), None)
     rank = kpi.rank(board)
     hits = market_hits(c)
     top5 = [s for s, _ in hits[:5]]
@@ -89,7 +93,9 @@ def measure(board):
         hrs = max(0.1, (time.time() - last["ts"]) / 3600)
         profit_h = round((me_s["profit"] - last["profit"]) / hrs)
     return {
-        "sales": [kpi_row("shop rank", rank.get("shop_rank"), 10, higher=False, near=0.5),
+        "sales": [kpi_row("revenue rank", rev_rank, 10, higher=False, near=0.5),
+                  kpi_row("revenue last 1h (ledger)", rev_1h, 3_000_000, near=0.34, unit="원"),
+                  kpi_row("shop rank", rank.get("shop_rank"), 10, higher=False, near=0.5),
                   kpi_row("shop ALL", me_s.get("all"), 0.75, near=0.1),
                   kpi_row("avg sale 6h", round(statistics.mean(ours)) if ours else None, 60000, unit="원"),
                   kpi_row("VIP quotes (recent)", kpi.vip().get("vip_quotes_recent"), 10, near=0.5)],
