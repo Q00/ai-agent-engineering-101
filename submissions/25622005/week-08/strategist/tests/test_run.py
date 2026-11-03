@@ -189,11 +189,11 @@ class ApplyTest(Base):
         self.answer_with([{"key": "seller.first_ask_list", "value": 0.8}])
         self.assertEqual(self.run_at(NOW)["status"], "applied")
         self.answer_with([{"key": "seller.first_ask_list", "value": 0.75}])
-        rec = self.run_at(NOW + 3600)
+        rec = self.run_at(NOW + 1800)                                   # the next 30-minute run
         self.assertEqual(rec["status"], "no change")
         self.assertEqual(rec["rejected"][0]["why"], "cooldown")
         self.assertEqual(policy.get(skillfile.read(self.skill)[1]["policy"], "seller.first_ask_list"), 0.8)
-        rec = self.run_at(NOW + 3 * 3600)
+        rec = self.run_at(NOW + 3600)                                   # two runs later
         self.assertEqual(rec["status"], "applied", rec)
         self.assertEqual(policy.get(skillfile.read(self.skill)[1]["policy"], "seller.first_ask_list"), 0.75)
         self.assertEqual(len(self.lines("changes.jsonl")), 2)
@@ -216,6 +216,23 @@ class NoWriteTest(Base):
         self.assertEqual([a["key"] for a in rec["proposed"]], ["seller.first_ask_list"])
         self.assert_untouched()
         self.assertFalse(json.loads((self.home / "state.json").read_text()).get("last_change_ts"))
+
+    def test_kit_log_and_forum_rows_reach_the_brief(self):
+        stamp = lambda t: time.strftime("%H:%M:%S", time.localtime(t))
+        kit = self.shop / "logs" / "market-kit.log"
+        kit.write_text(f"{stamp(NOW - 600)} [supply] 4 x 김치 for 40000, balance 1\n"
+                       f"{stamp(NOW - 500)} [supply] {{'sku': 'G1'}} refused: 429 {{}}\n", encoding="utf-8")
+        os.utime(kit, (NOW, NOW))
+        (self.shop / "logs" / "decisions" / "forum.jsonl").write_text(json.dumps(
+            {"ts": NOW - 50, "kind": "post", "choice": {"posted": False}, "why": "skipped: gap"}) + "\n",
+            encoding="utf-8")
+        self.answer_with([])
+        rec = self.run_at(mode="propose")
+        ops = json.loads((self.home / "briefs" / f"{rec['run_id']}.json").read_text(encoding="utf-8"))["ops"]
+        self.assertEqual((ops["kit"]["supply_bought"], ops["kit"]["supply_units"]), (1, 4))
+        self.assertEqual(ops["kit"]["supply_refused"]["429_window"], 1)
+        self.assertEqual(ops["forum"]["skipped"], {"skipped: gap": 1})
+        self.assertIn('"supply_refused"', (self.home / "prompts" / f"{rec['run_id']}.txt").read_text(encoding="utf-8"))
 
     def test_pause_file(self):
         (self.shop / "strategy" / "STRATEGIST_PAUSE").write_text("", encoding="utf-8")
@@ -316,6 +333,134 @@ class SharedShopTest(Base):
         self.assertTrue(any("version went back from 2 to 1" in e for e in rec["errors"]), rec["errors"])
 
 
+class InventoryFocusTest(Base):
+    """Inventory moves between runs (inventory.jsonl) and the focus list written from the ledger's settles."""
+
+    def setUp(self):
+        super().setUp()
+        self.ledger = []
+        self.catalog = [{"sku": s, "name": s, "category": "goods>x", "list_price": 10000, "kind": "goods"}
+                        for s in ("G1", "G2", "G3")]
+
+    def handler(self, request):
+        if request.url.path == "/api/ledger":
+            return httpx.Response(200, json=self.ledger)
+        if request.url.path == "/api/catalog":
+            return httpx.Response(200, json=self.catalog)
+        return market_handler(request)
+
+    def settle(self, sku, unit, ts=NOW - 60):
+        self.ledger.append({"seq": len(self.ledger) + 1, "ts": ts, "kind": "settle", "round": 3,
+                            "data": {"shop": "https://shop.psyoung82.test", "sku": sku, "unit": unit}})
+
+    def supply(self, sku, shop, ts=NOW - 60):
+        self.ledger.append({"seq": len(self.ledger) + 1, "ts": ts, "kind": "supply", "round": 3,
+                            "data": {"shop": shop, "sku": sku, "qty": 1, "units": []}})
+
+    def inventory(self, *units, balance=3000000):
+        (self.shop / ".market").mkdir(exist_ok=True)
+        (self.shop / ".market" / "inventory.json").write_text(json.dumps({"balance": balance, "units": [
+            {"unit": u, "sku": "G1", "kind": "goods", "cost": c, "grade": "A", "supplied_at": NOW - 600, "cert": "x"}
+            for u, c in units]}), encoding="utf-8")
+
+    def trend(self):
+        for i in range(12):
+            self.settle("G1", f"m{i}")
+        for i in range(15):
+            self.settle("G2", f"n{i}")
+        for shop in ("s1", "s2", "psyoung82"):
+            self.supply("G2", shop)
+
+    def test_inventory_moves_between_runs(self):
+        self.answer_with([])
+        self.inventory(("u1", 1000), ("u2", 2000), ("u3", 3000))
+        self.assertEqual(self.run_at(NOW, self.handler)["status"], "no change")
+        self.inventory(("u2", 2000), ("u4", 4000))              # u1 sold, u3 gone unsold, u4 in
+        self.settle("G1", "u1")
+        self.run_at(NOW + 1800, self.handler)
+        self.inventory(("u2", 2000), ("u4", 4000))              # u4 settles before it leaves the file
+        self.settle("G1", "u4")
+        self.run_at(NOW + 3600, self.handler)
+        self.inventory(("u2", 2000))
+        rec = self.run_at(NOW + 5400, self.handler)
+        rows = self.lines("inventory.jsonl")
+        self.assertEqual([(r["in"], r["sold"], r["gone_unsold"], r["gone_cost"]) for r in rows],
+                         [(None, None, None, None), (1, 1, 1, 3000), (0, 0, 0, 0), (0, 1, 0, 0)])
+        self.assertEqual({k: rows[1][k] for k in ("ts", "balance", "inv_cost", "units", "skus", "focus")},
+                         {"ts": NOW + 1800, "balance": 3000000, "inv_cost": 6000, "units": 2, "skus": 1, "focus": []})
+        brief = json.loads((self.home / "briefs" / f"{rec['run_id']}.json").read_text(encoding="utf-8"))
+        self.assertEqual(brief["inventory"]["since_last_run"], {"in": 0, "sold": 1, "gone_unsold": 0, "gone_cost": 0})
+        report = (self.home / "reports" / "latest.md").read_text(encoding="utf-8")
+        self.assertIn("## 재고", report)
+        self.assertIn("판매 1", report)
+
+    def test_missing_inventory_file(self):
+        self.answer_with([])
+        rec = self.run_at(NOW, self.handler)
+        self.assertEqual(rec["status"], "no change")
+        self.assertTrue(any(e.startswith("inventory:") for e in rec["errors"]), rec["errors"])
+        self.assertEqual(self.lines("inventory.jsonl"), [])
+        self.assertNotIn("inventory", json.loads((self.home / "state.json").read_text(encoding="utf-8")))
+        self.assertIn("inventory.json 없음", (self.home / "reports" / "latest.md").read_text(encoding="utf-8"))
+
+    def test_focus_and_model_change_in_one_edit_with_evidence(self):
+        self.trend()
+        self.inventory(("u1", 1000))
+        self.answer_with([{"key": "seller.first_ask_list", "value": 0.8, "reason": "x"}])
+        rec = self.run_at(NOW, self.handler)
+        self.assertEqual((rec["status"], rec["focus"]["status"]), ("applied", "applied"), rec["errors"])
+        new = self.skill.read_text(encoding="utf-8")
+        self.assertEqual(len(self.changed_lines(new)), 3)          # first_ask_list, focus_skus, version
+        text, front, _, errors = skillfile.read(self.skill)
+        self.assertEqual((errors, front["version"]), ([], 2))
+        self.assertEqual(front["policy"]["stock"]["focus_skus"], ["G1", "G2"])     # 12/1 before 15/(2+1)
+        ch = self.lines("changes.jsonl")
+        self.assertEqual(len(ch), 1)
+        self.assertEqual(ch[0]["diff"], {"seller.first_ask_list": [0.85, 0.8], "stock.focus_skus": [[], ["G1", "G2"]]})
+        self.assertEqual(ch[0]["evidence"]["stock.focus_skus"]["G2"],
+                         {"settles_6h": 15, "suppliers_6h": 2, "score": 5.0, "refs": [25, 26, 27]})
+        self.assertEqual(rec["policy_ver_after"], skillfile.ver(new))
+        self.assertEqual(self.lines("inventory.jsonl")[0]["focus"], ["G1", "G2"])
+        brief = json.loads((self.home / "briefs" / f"{rec['run_id']}.json").read_text(encoding="utf-8"))
+        self.assertEqual(([c["sku"] for c in brief["focus"]["candidates"]], brief["focus"]["next"]),
+                         (["G1", "G2"], ["G1", "G2"]))
+        self.assertIn('"focus"', (self.home / "prompts" / f"{rec['run_id']}.txt").read_text(encoding="utf-8"))
+        self.assertIn("추가 `G2`: 6 h 체결 15", (self.home / "reports" / "latest.md").read_text(encoding="utf-8"))
+        # the next run keeps the list: nothing written
+        rec = self.run_at(NOW + 1800, self.handler)
+        self.assertEqual(rec["focus"]["status"], "unchanged")
+        self.assertEqual(len(self.lines("changes.jsonl")), 1)
+
+    def test_focus_written_when_the_model_fails(self):
+        self.trend()
+        self.answer_with(None, text="no json here")
+        rec = self.run_at(NOW, self.handler)
+        self.assertEqual((rec["status"], rec["focus"]["status"]), ("llm error", "applied"))
+        self.assertEqual(skillfile.read(self.skill)[1]["policy"]["stock"]["focus_skus"], ["G1", "G2"])
+        ch = self.lines("changes.jsonl")
+        self.assertEqual(list(ch[0]["diff"]), ["stock.focus_skus"])
+        self.assertTrue(ch[0]["reason"].startswith("stock.focus_skus: ledger trend"))
+        self.assertFalse((self.shop / "strategy" / ".strategist-cooldown.json").exists())
+
+    def test_propose_mode_does_not_write_the_focus_list(self):
+        self.trend()
+        self.answer_with([])
+        rec = self.run_at(NOW, self.handler, mode="propose")
+        self.assertEqual((rec["status"], rec["focus"]["status"], rec["focus"]["new"]), ("no change", "proposed",
+                                                                                        ["G1", "G2"]))
+        self.assertEqual(self.skill.read_text(encoding="utf-8"), self.orig)
+        self.assertEqual(self.lines("changes.jsonl"), [])
+
+    def test_focus_conflict_writes_nothing(self):
+        self.trend()
+        self.harness(self.skill)                    # the fake model appends a line to SKILL.md
+        self.answer_with([])
+        rec = self.run_at(NOW, self.handler)
+        self.assertEqual((rec["status"], rec["focus"]["status"]), ("no change", "conflict"))
+        self.assertEqual(self.skill.read_text(encoding="utf-8"), self.orig + "\nedited by hand during the run\n")
+        self.assertEqual(self.lines("changes.jsonl"), [])
+
+
 class ConfigTest(unittest.TestCase):
     def config(self, env, **kw):
         keep = {k: v for k, v in os.environ.items()
@@ -334,6 +479,15 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(self.config({"SHOP_HOME": "/shop", "STRATEGIST_MODE": "propose"}).mode, "propose")
         with self.assertRaises(ValueError):
             self.config({"STRATEGIST_MODE": "yolo"})
+
+    def test_every_30_minutes_with_a_one_hour_cooldown(self):
+        c = self.config({})
+        self.assertEqual((c.interval_s, c.cooldown_h), (1800, 1))
+        self.assertEqual(run.Config(shop_home=W, home=W).interval_s, 1800)
+        self.assertEqual(self.config({"STRATEGIST_INTERVAL_S": "900"}).interval_s, 900)
+        self.assertEqual(self.config({"STRATEGIST_INTERVAL_S": "900"}, interval=60).interval_s, 60)
+        compose = (W / "compose.yaml").read_text(encoding="utf-8")
+        self.assertIn('STRATEGIST_INTERVAL_S: "1800"', compose)
 
 
 class ProcessTest(Base):

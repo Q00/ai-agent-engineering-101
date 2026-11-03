@@ -6,6 +6,7 @@ import sys
 import tempfile
 import time
 import unittest
+from datetime import datetime
 from pathlib import Path
 
 os.environ.setdefault("R3_HOME", tempfile.mkdtemp(prefix="r3-collect-"))
@@ -162,7 +163,7 @@ class EndpointTest(unittest.TestCase):
             raw, _ = collect.fetch_public(c, {}, NOW, cache_dir=self.cache)
         self.assertEqual(raw["stats"], {"round": 3, "deals": 1, "results": 2})
         self.assertEqual(raw["forum"], [{"id": 7, "author": "x", "text": "t", "score": 3}])
-        self.assertEqual(raw["catalog"], {"G1": ["김치", "식품>김치", 10000, "food"]})
+        self.assertEqual(raw["catalog"], {"G1": ["김치", "식품>김치", 10000, "food", 720]})
         self.assertEqual(("/api/shop-reviews", {"shop": "psyoung82"}), next(c for c in m.calls if c[0] == "/api/shop-reviews"))
         self.assertEqual(("/api/forum", {"limit": "100"}), next(c for c in m.calls if c[0] == "/api/forum"))
 
@@ -186,9 +187,17 @@ class EndpointTest(unittest.TestCase):
         m = FakeMarket(fail={"/api/catalog": 500})
         with m.client() as c:
             raw, errors = collect.fetch_public(c, {}, NOW + 48 * 3600, cache_dir=self.cache)
-        self.assertEqual(raw["catalog"], {"G1": ["김치", "식품>김치", 10000, "food"]})
+        self.assertEqual(raw["catalog"], {"G1": ["김치", "식품>김치", 10000, "food", 720]})
         self.assertEqual(len(errors), 1)
         self.assertTrue(errors[0].startswith("catalog: HTTPStatusError") and "using the cache from 48 h ago" in errors[0])
+
+    def test_catalog_cached_without_shelf_hours_is_fetched_again(self):
+        from memory.store import atomic_write_json
+        atomic_write_json(Path(self.cache) / "catalog.json", {"ts": NOW, "data": {"G1": ["김치", "c", 10000, "food"]}})
+        m = FakeMarket()
+        with m.client() as c:
+            raw, errors = collect.fetch_public(c, {}, NOW + 60, cache_dir=self.cache)
+        self.assertEqual((m.count("/api/catalog"), raw["catalog"]["G1"][4]), (1, 720))
 
     def test_without_cache_dir_the_process_remembers(self):
         collect._memo.clear()
@@ -214,6 +223,8 @@ class ReadOwnTest(unittest.TestCase):
         self.write("logs/decisions/seller.jsonl", [{"id": "old", "ts": now - 7200, "kind": "quote"},
                                                    {"id": "new", "ts": now - 60, "kind": "sign"}, "not a row"])
         self.write("logs/decisions/buyer.jsonl", [{"id": "b", "ts": now - 10, "kind": "order"}])
+        self.write("logs/decisions/forum.jsonl", [{"id": "f", "ts": now - 10, "kind": "post",
+                                                   "choice": {"posted": True}, "why": "posted"}])
         self.write("logs/acp-sessions.jsonl", [{"ts": now - 5000, "event": "create"},
                                                {"ts": now - 5, "event": "refuse", "reason": "stale"}])
         self.write("logs/policy-changes.jsonl", [{"ts": now - i, "reason": f"r{i}"} for i in range(8)])
@@ -227,6 +238,7 @@ class ReadOwnTest(unittest.TestCase):
         self.assertEqual([r["id"] for r in own["decisions"]["seller"]], ["new"])
         self.assertEqual([r["id"] for r in own["decisions"]["buyer"]], ["b"])
         self.assertEqual(own["decisions"]["restock"], [])
+        self.assertEqual([r["id"] for r in own["decisions"]["forum"]], ["f"])
         self.assertEqual([r["event"] for r in own["acp"]], ["refuse"])
         self.assertEqual(len(own["policy_changes"]), 5)
         s = own["summary"]
@@ -259,6 +271,134 @@ class ReadOwnTest(unittest.TestCase):
         own = collect.read_own(self.home, time.time())
         self.assertEqual(own["summary"]["market_categories"], {})
         self.assertNotIn("error", own)
+
+
+    def test_inventory_read_and_reduced(self):
+        market = self.home / ".market"
+        market.mkdir()
+        (market / "inventory.json").write_text(json.dumps(
+            {"balance": 5000000, "bankrupt_line": 500000, "restock": {"open": False},
+             "units": [{"unit": "u1", "sku": "G1", "name": "김치", "kind": "food", "cost": 7000, "grade": "A",
+                        "supplied_at": 1, "expires_at": 2, "cert": "x" * 500}, "junk"]}), encoding="utf-8")
+        (market / "keys.json").write_text("{not even read", encoding="utf-8")
+        own = collect.read_own(self.home, time.time())
+        self.assertEqual(own["inventory"], {"balance": 5000000, "units": [
+            {"unit": "u1", "sku": "G1", "kind": "food", "cost": 7000, "grade": "A", "supplied_at": 1, "expires_at": 2}]})
+        self.assertNotIn("inventory_error", own)
+
+    def test_missing_or_broken_inventory(self):
+        own = collect.read_own(self.home, time.time())
+        self.assertEqual(own["inventory"], {})
+        self.assertIn(".market/inventory.json", own["inventory_error"])
+        (self.home / ".market").mkdir()
+        for text in ("{broken", "[1, 2]", '{"balance": 1}'):
+            (self.home / ".market" / "inventory.json").write_text(text, encoding="utf-8")
+            own = collect.read_own(self.home, time.time())
+            self.assertEqual(own["inventory"], {}, text)
+            self.assertIn("inventory_error", own)
+            self.assertNotIn("error", own)
+
+
+def stamp(ts):
+    return datetime.fromtimestamp(ts).strftime("%H:%M:%S")
+
+
+class KitLogTest(unittest.TestCase):
+    """logs/market-kit.log: lines stamped HH:MM:SS without a date, reduced to counts."""
+
+    def setUp(self):
+        self.home = Path(tempfile.mkdtemp(prefix="strat-kit-"))
+        self.log = self.home / "logs" / "market-kit.log"
+        self.log.parent.mkdir(parents=True)
+
+    def write(self, lines, mtime):
+        self.log.write_text("".join(f"{x}\n" for x in lines), encoding="utf-8")
+        os.utime(self.log, (mtime, mtime))
+
+    def test_counts_over_the_window(self):
+        now = time.time()
+        lines = [(now - 7200, "[supply] 9 x Old for 999, balance 1"),               # before the window
+                 (now - 3000, "[kit] market_kit 4, /data"),
+                 (now - 2900, "[supply] 3 x 김치 for 30000, balance 900000"),
+                 (now - 2800, "[supply] 2 x Lamp for sale for 1500, balance 898500"),
+                 (now - 2700, "[supply] {'sku': 'G1', 'qty': 2} refused: 429 {\"wait\": 40}"),
+                 (now - 2600, "[supply] {'sku': 'G1', 'qty': 2} refused: 429 {\"wait\": 30}"),
+                 (now - 2500, "[supply] {'sku': 'G2', 'qty': 2} refused: 402 {}"),
+                 (now - 2400, "[supply] {'sku': 'G3', 'qty': 2} refused: 500 boom"),
+                 (now - 2000, "[order 7] lamp, budget 100, round 3"),
+                 (now - 1900, "[acp] paid 9000 through https://s1.example/acp, settled at ledger #5"),
+                 (now - 1800, "[acp] checkout ships unit u1, warranty 6 h"),
+                 (now - 1700, "[acp] checkout refused: 409 {\"error\": \"sold out\"}"),
+                 (now - 1600, "[acp] https://s2.example serves no /.well-known/acp.json (404); this deal cannot settle"),
+                 (now - 1500, "[acp] checkout refused: no G1 in stock"),                 # our shop's side
+                 (now - 1400, "[acp] settled 김치 at 9000, ledger 9"),
+                 (now - 1300, "[acp] settle refused: ['line_items']"),
+                 (now - 1200, "[buyer] Traceback (most recent call last):"),
+                 (now - 1100, "[buyer] {\"error\": \"HTTPStatusError: 530\"}"),             # hook output: not an error
+                 (now - 1000, "[kit] order failed: ConnectError: refused"),
+                 (now - 900, "[kit] market_kit 4, /data")]
+        self.write([f"{stamp(t)} {x}" for t, x in lines], now - 60)
+        own = collect.read_own(self.home, now, window_h=1)
+        k = own["kit"]
+        self.assertEqual((k["lines"], k["starts"], k["orders"]), (len(lines) - 1, 2, 1))
+        self.assertEqual((k["supply_bought"], k["supply_units"], k["supply_cost"]), (2, 5, 31500))
+        self.assertEqual(k["supply_refused"], {"429_window": 2, "402_balance": 1, "other": 1})
+        self.assertEqual((k["paid"], k["paid_total"], k["pay_refused"]), (1, 9000, 2))
+        self.assertEqual(k["pay_refused_why"], {'checkout refused: 409 {"error": "sold out"}': 1,
+                                                "URL serves no /.well-known/acp.json (404); this deal cannot settle": 1})
+        self.assertEqual((k["tracebacks"], k["errors"]), (1, 1))
+        self.assertEqual(own["truncated"], [])
+        self.assertNotIn("error", own)
+
+    def test_midnight(self):
+        now = datetime(2026, 11, 3, 0, 5, 0).timestamp()
+        lines = ["22:30:00 [order 1] old", "23:50:00 [order 2] a", "23:59:59 [order 3] b",
+                 "00:01:00 [order 4] c", "00:04:59 [order 5] d"]
+        self.write(lines, now)
+        got = collect._kit_lines(self.log, now, now - 3600, [])
+        self.assertEqual(got, ["[order 2] a", "[order 3] b", "[order 4] c", "[order 5] d"])
+
+    def test_a_stale_file_is_placed_from_its_mtime(self):
+        now = datetime(2026, 11, 3, 0, 5, 0).timestamp()
+        self.write(["00:04:00 [order 1] two days ago"], now - 2 * 86400)
+        self.assertEqual(collect._kit_lines(self.log, now, now - 3600, []), [])
+
+    def test_missing_file_never_raises(self):
+        own = collect.read_own(self.home, time.time())
+        self.assertEqual(own["kit"]["lines"], 0)
+        self.assertEqual(own["kit"]["pay_refused_why"], {})
+        self.assertNotIn("error", own)
+        self.assertEqual(collect._kit_lines(self.home / "nope.log", time.time(), 0, []), [])
+
+    def test_garbage_lines_are_skipped(self):
+        now = time.time()
+        self.write(["no stamp at all", "99:99:99 [order 1] bad stamp", "\x00\xff binary",
+                    f"{stamp(now - 10)} [order 2] good", "  Traceback without a stamp"], now)
+        self.log.write_bytes(self.log.read_bytes() + b"\xff\xfe not utf-8\n")
+        os.utime(self.log, (now, now))
+        self.assertEqual(collect._kit_lines(self.log, now, now - 3600, []), ["[order 2] good"])
+
+    def test_rotated_tail_inside_the_window_is_flagged(self):
+        now = time.time()
+        pad = "x" * 500
+        n = collect.KIT_TAIL_BYTES // 500 + 200                         # more than the tail holds
+        self.write([f"{stamp(now - 1800 + i * 1800 / n)} [order {i}] {pad}" for i in range(n)], now)
+        truncated = []
+        got = collect._kit_lines(self.log, now, now - 3600, truncated)
+        self.assertEqual(truncated, ["kit"])
+        self.assertLess(len(got), n)
+        self.assertTrue(all(x.startswith("[order ") and x.endswith(pad) for x in got))   # no cut first line
+        self.log.write_text(f"{stamp(now - 5)} [kit] market_kit 4, /data\n", encoding="utf-8")   # rotated: fresh file
+        own = collect.read_own(self.home, now)
+        self.assertEqual((own["kit"]["lines"], own["kit"]["starts"], own["truncated"]), (1, 1, []))
+        (self.log.parent / "market-kit.20261103-230000.log").write_text("old\n", encoding="utf-8")
+        self.assertEqual(collect.read_own(self.home, now)["truncated"], ["kit"])   # its earlier lines are there
+
+    def test_an_out_of_order_stamp_does_not_end_the_window(self):
+        now = time.time()
+        self.write([f"{stamp(now - 600)} [order 1] a", f"{stamp(now - 7200)} [order 2] odd",
+                    f"{stamp(now - 60)} [order 3] b"], now)
+        self.assertEqual(collect._kit_lines(self.log, now, now - 3600, []), ["[order 1] a", "[order 3] b"])
 
 
 if __name__ == "__main__":

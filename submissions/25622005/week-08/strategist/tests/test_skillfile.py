@@ -159,6 +159,32 @@ class Apply(Base):
         self.assertNotEqual(sf.ver(self.orig), ver)
 
 
+class ListValue(Base):
+    def test_focus_list_round_trip_through_policy_load(self):
+        skus = ["Ga1b2c3d4", "G00ff00ff"]
+        new = sf.apply(self.path, self.orig, {"stock.focus_skus": skus, "stock.focus_cover_mult": 2.5})
+        i = self.line_of(new, "stock.focus_skus")
+        self.assertEqual(new.splitlines()[i], "    focus_skus: [Ga1b2c3d4, G00ff00ff]"
+                         + self.orig.splitlines()[i][len("    focus_skus: []"):])     # spacing and comment kept
+        with mock.patch.object(policy, "LASTGOOD", self.dir / "memory" / "policy.lastgood.json"):
+            pol, ver, errors = policy.load(self.path)
+        self.assertEqual(errors, [])
+        self.assertEqual(pol["stock"]["focus_skus"], skus)
+        self.assertEqual(ver, sf.ver(new))
+        back = sf.apply(self.path, new, {"stock.focus_skus": []})
+        self.assertEqual(back.splitlines()[i], self.orig.splitlines()[i])
+        self.assertEqual(policy.split_skill(back)[0]["version"], policy.split_skill(self.orig)[0]["version"] + 2)
+
+    def test_bad_lists_leave_the_file(self):
+        for skus in (["a b"], ["G1", "G1"], [f"G{i}" for i in range(9)], ["123"], ["true"], [1], "G1"):
+            with self.subTest(skus=skus), self.assertRaises(ValueError):
+                sf.apply(self.path, self.orig, {"stock.focus_skus": skus})
+            self.assert_untouched()
+
+    def test_fmt_list(self):
+        self.assertEqual((sf.fmt([]), sf.fmt(["A", "b_2"])), ("[]", "[A, b_2]"))
+
+
 class Fmt(unittest.TestCase):
     def test_numbers(self):
         self.assertEqual([sf.fmt(v) for v in (0.8, 0.82, 0.123456, 1.0, 3, 500000, 0.1 + 0.2)],

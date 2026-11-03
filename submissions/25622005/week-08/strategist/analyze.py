@@ -1,4 +1,5 @@
-"""One hour of raw market data and our own logs, turned into a compact brief for the model.
+"""The last hour of raw market data and our own logs (seller, buyer, restock, forum, the kit's log),
+turned into a compact brief for the model.
 
 The model sees the brief, never the raw data, so the brief has to fit in a prompt (< 12 KB as JSON)
 and carry numbers a change can be argued from: our rank among real shops and buyers, what moved since
@@ -8,6 +9,7 @@ brackets replaced, so decide.py can fence it off as data. Other shops' names and
 not catalog SKUs are untrusted too: leaders carry a neutral id (L1, L2, ...) and the name only under
 untrusted_name. Round 3 boards replace some Round 2 fields (ALL, surplus, forum, honest claims, refunds,
 the players table); both sets are read. Any source may be missing; the brief then just lacks that part.
+Our stock (inventory) and the focus SKUs (focus, chosen by strategist/focus.py) come from run.py.
 """
 import json
 import math
@@ -21,6 +23,9 @@ LIMIT = 12000               # bytes of compact UTF-8 JSON
 SHOP_F = ("deals", "share", "visits", "stars", "reviews", "revenue", "profit",
           "all", "stars_rank", "claims", "honest_claims", "broken", "refunds")
 BUYER_F = ("orders", "deals", "paid", "saved", "held", "hopeless", "all", "surplus", "forum", "served", "posts")
+INV_TOP = 8                 # SKUs listed by cost tied up
+FOOD_RISK_H = 24            # food with fewer hours left is at risk
+FOCUS_TOP = 12
 
 
 # --- small helpers: every input may be missing or of the wrong type
@@ -184,7 +189,7 @@ def _market(board, stats):
                                               if _num(st.get(k)) is not None}}
 
 
-# --- the last hour
+# --- the window
 
 def _prices(trades, ledger, catalog, since, me, our_url):
     """Deal prices per item: trades plus ledger results (the same deals share an id; counted once)."""
@@ -276,7 +281,7 @@ def _choice_key(r):
     return _clip(k, 40)
 
 
-def _ops(own):
+def _ops(own, posts, since, me):
     dec = _dict(own.get("decisions"))
     ms = lambda rows: _median([r["elapsed_ms"] for r in rows if _num(r.get("elapsed_ms")) is not None])
     seller = _rows(dec.get("seller"))
@@ -292,33 +297,71 @@ def _ops(own):
     if restock:
         last = restock[-1]
         inp, buy = _dict(last.get("inputs")), last.get("choice") if isinstance(last.get("choice"), list) else []
-        out["restock"] = {"ts": last.get("ts"), "lines": len(buy),
+        win, held = _dict(inp.get("window")), _dict(inp.get("stock"))
+        out["restock"] = {"runs": len(restock),
+                          # restock.py buys nothing while the supply window is closed (stock.window_lead_s)
+                          "window_closed_runs": sum(1 for r in restock if isinstance(r.get("rules"), list)
+                                                    and "stock.window_lead_s" in r["rules"]),
+                          "ts": last.get("ts"), "lines": len(buy),
                           "buy": [{"sku": _name(_dict(b).get("sku")), "qty": _num(_dict(b).get("qty"))} for b in buy[:5]],
                           "balance": _num(inp.get("balance")), "units": _num(inp.get("units")),
-                          "headroom": _num(inp.get("headroom")), "why": _clip(last.get("why"), 120)}
+                          "headroom": _num(inp.get("headroom")), "why": _clip(last.get("why"), 120),
+                          "window": {"open": win.get("open") if isinstance(win.get("open"), bool) else None,
+                                     "in_s": _num(win.get("in_s"))},
+                          "stock": {k: _num(held.get(k)) for k in ("skus", "units", "empty_picks")}}
     acp = _rows(own.get("acp"))
     # the kit logs the cause under "error" (refuse: the message; settle_refused: the failed checks)
     refused = Counter(_clip(r.get("error") or r.get("reason"), 60)
                       for r in acp if r.get("event") in ("refuse", "settle_refused"))
     out["acp"] = {"events": dict(Counter(_name(r.get("event")) for r in acp)), "refusals": dict(refused.most_common(5))}
+    out["kit"] = _kit(_dict(own.get("kit")))
+    out["forum"] = _our_forum(posts, _rows(dec.get("forum")), since, me)
     # logs whose window did not fit in what collect.read_own reads: their counts above are too low
     out["truncated_logs"] = [_name(x) for x in own.get("truncated") or [] if isinstance(x, str)]
     return out
 
 
+def _kit(k):
+    """collect._kit's counts; why our buyer did not pay quotes shops' answers, so it is untrusted."""
+    nums = {f: _num(k.get(f)) for f in ("lines", "starts", "orders", "errors", "tracebacks", "supply_bought",
+                                        "supply_units", "supply_cost", "paid", "paid_total", "pay_refused")}
+    refused = {_clip(f, 20): _num(n) for f, n in _dict(k.get("supply_refused")).items()}
+    why = sorted(((_num(n) or 0, w) for w, n in _dict(k.get("pay_refused_why")).items()), key=lambda x: -x[0])
+    return {**nums, "supply_refused": refused,
+            "untrusted_pay_refused_why": [{"n": n, "why": _clip(w, 80)} for n, w in why[:5]]}
+
+
+def _votes(p):
+    if _num(p.get("score")) is not None:
+        return p["score"]
+    if _num(p.get("likes")) is not None:
+        return p["likes"] - (_num(p.get("dislikes")) or 0)
+    return _num(p.get("votes")) or 0
+
+
+def _our_forum(posts, rows, since, me):
+    """Our buyer's posts on the public forum (each one counts toward buyer ALL, unless hidden) and the
+    forum hook's decisions: posted, or skipped and why. The forum API returns only the newest 100 posts:
+    sample_covered_s is the time they span, so posts_window is a lower bound when it is under the window."""
+    posts = _rows(posts)
+    ours = [p for p in posts if (p.get("author") == me or _login(p) == me) and p.get("role") == "buyer"]
+    recent = [p for p in ours if (_num(p.get("ts")) or 0) >= since]
+    skipped = Counter(_clip(r.get("why"), 40) for r in rows if _dict(r.get("choice")).get("posted") is False)
+    ts = [p["ts"] for p in posts if _num(p.get("ts")) is not None]
+    return {"sample_covered_s": int(max(ts) - min(ts)) if ts else None,
+            "posts": len(ours), "posts_window": len(recent),
+            "mean_score": round(sum(map(_votes, ours)) / len(ours), 2) if ours else None,
+            "likes": sum(_num(p.get("likes")) or 0 for p in ours),
+            "dislikes": sum(_num(p.get("dislikes")) or 0 for p in ours),
+            "posted": sum(1 for r in rows if _dict(r.get("choice")).get("posted") is True),
+            "skipped": dict(skipped.most_common(5))}
+
+
 def _forum(posts, since):
     posts = _rows(posts)
-
-    def votes(p):
-        if _num(p.get("score")) is not None:
-            return p["score"]
-        if _num(p.get("likes")) is not None:
-            return p["likes"] - (_num(p.get("dislikes")) or 0)
-        return _num(p.get("votes")) or 0
-
-    top = sorted(posts, key=lambda p: -votes(p))[:5]
+    top = sorted(posts, key=lambda p: -_votes(p))[:5]
     return {"n": len(posts), "n_window": sum(1 for p in posts if (_num(p.get("ts")) or 0) >= since),
-            "untrusted_top": [{"author": _clip(p.get("author"), 40), "votes": votes(p), "ts": _num(p.get("ts")),
+            "untrusted_top": [{"author": _clip(p.get("author"), 40), "votes": _votes(p), "ts": _num(p.get("ts")),
                                "text": _clip(p.get("text") or p.get("body") or p.get("title"), 200)} for p in top]}
 
 
@@ -330,6 +373,60 @@ def _reviews(rows):
             "stars_hist": {k: hist.get(k, 0) for k in ("1", "2", "3", "4", "5")},
             "untrusted_last": [{"stars": _num(r.get("stars")), "ts": _num(r.get("ts")),
                                 "text": _clip(r.get("review"), 120)} for r in rows[:5]]}
+
+
+def _inventory(inv, ledger, our_url, me, pol, now, window_h, flows, known):
+    """Our stock from .market/inventory.json: cost against the D1 cap, the SKUs that tie up the most money (how
+    old, food hours left, our sales per hour in the window, hours of cover at that rate), stale goods, food near
+    expiry, expired units, and the units in / sold / gone unsold since the last run (None on the first run).
+    Our settles are those to our shop URL or of a unit we hold or held at the last run (known)."""
+    if "units" not in _dict(inv):
+        return None
+    units = _rows(inv["units"])
+    st, se = _dict(_dict(pol).get("stock")), _dict(_dict(pol).get("seller"))
+    live = [u for u in units if u.get("grade") != "expired"]
+    cost = lambda us: round(sum(_num(u.get("cost")) or 0 for u in us))
+    known = set(known) | {str(u.get("unit")) for u in units}
+    sold = Counter(d.get("sku") for d in (_dict(r.get("data")) for r in ledger if r.get("kind") == "settle")
+                   if _ours(d.get("shop"), me, our_url) or str(d.get("unit")) in known)
+    by = {}
+    for u in live:
+        by.setdefault(u.get("sku"), []).append(u)
+
+    def row(sku, us):
+        rate = sold[sku] / window_h
+        ages = [now - t for t in (_num(u.get("supplied_at")) for u in us) if t is not None]
+        left = [(t - now) / 3600 for t in (_num(u.get("expires_at")) for u in us if u.get("kind") == "food")
+                if t is not None]
+        return {"sku": _name(sku), "qty": len(us), "cost": cost(us),
+                "age_h": round(max(ages) / 3600, 1) if ages else None,
+                "food_left_h": round(min(left), 1) if left else None, "sales_per_h": _r(rate, 2),
+                "cover_h": round(len(us) / rate, 1) if rate else None}
+
+    stale_s = (_num(se.get("goods_stale_days")) or math.inf) * 86400
+    stale = [u for u in live if u.get("kind") == "goods" and now - (_num(u.get("supplied_at")) or now) > stale_s]
+    risk = [u for u in live if u.get("kind") == "food"
+            and (_num(u.get("expires_at")) or math.inf) - now < FOOD_RISK_H * 3600]
+    expired = [u for u in units if u.get("grade") == "expired"]
+    balance, inv_cost, share = _num(_dict(inv).get("balance")), cost(live), _num(st.get("inventory_cap_share"))
+    return {"balance": balance, "inv_cost": inv_cost,
+            "cap": round(share * (balance + inv_cost)) if balance is not None and share is not None else None,
+            "units": len(live), "skus": len(by),
+            "top": [row(k, us) for k, us in sorted(by.items(), key=lambda kv: -cost(kv[1]))[:INV_TOP]],
+            "stale_goods": {"n": len(stale), "cost": cost(stale)}, "food_at_risk": {"n": len(risk), "cost": cost(risk)},
+            "expired": {"n": len(expired), "cost": cost(expired)}, "since_last_run": flows}
+
+
+def _focus(f, inv):
+    """The focus list now and as this run chose it, the top candidates (with the units we hold of each) and
+    forum mentions per SKU (a hint only: the choice never reads them)."""
+    held = Counter(u.get("sku") for u in _rows(_dict(inv).get("units")) if u.get("grade") != "expired")
+    return {"current": [_name(s) for s in f.get("current") or []], "next": [_name(s) for s in f.get("next") or []],
+            "covered_h": _num(f.get("covered_h")),
+            "candidates": [{k: r.get(k) for k in ("settles_6h", "suppliers_6h", "score")}
+                           | {"sku": _name(r.get("sku")), "held": held[r.get("sku")]}
+                           for r in _rows(f.get("candidates"))[:FOCUS_TOP]],
+            "forum_mentions": {_name(k): _num(v) for k, v in _dict(f.get("forum_mentions")).items()}}
 
 
 # --- size
@@ -350,16 +447,21 @@ def _fit(b):
     def cut(path, n):
         d = b
         for k in path[:-1]:
-            d = d[k]
-        d[path[-1]] = d[path[-1]][:n]
+            d = _dict(d.get(k))
+        if isinstance(d.get(path[-1]), list):
+            d[path[-1]] = d[path[-1]][:n]
 
     steps = [lambda: cut(("prices",), 10), lambda: pitches(80), lambda: cut(("forum", "untrusted_top"), 3),
+             lambda: cut(("ops", "kit", "untrusted_pay_refused_why"), 2), lambda: cut(("ops", "restock", "buy"), 2),
              lambda: cut(("reviews_of_us", "untrusted_last"), 3), lambda: cut(("demand", "top"), 5),
              lambda: cut(("prices",), 6), lambda: pitches(0),
              lambda: [r.pop("name", None) for r in b["prices"]],
              lambda: cut(("leaders", "by_profit"), 3), lambda: cut(("leaders", "by_deals"), 3),
              lambda: b["leaders"].get("by_all") and cut(("leaders", "by_all"), 3),
-             lambda: cut(("forum", "untrusted_top"), 0), lambda: cut(("reviews_of_us", "untrusted_last"), 0)]
+             lambda: cut(("forum", "untrusted_top"), 0), lambda: cut(("reviews_of_us", "untrusted_last"), 0),
+             lambda: cut(("ops", "kit", "untrusted_pay_refused_why"), 0), lambda: cut(("ops", "restock", "buy"), 0),
+             lambda: cut(("inventory", "top"), 5), lambda: cut(("focus", "candidates"), 6),
+             lambda: cut(("inventory", "top"), 3), lambda: cut(("focus", "candidates"), 3)]
     b["trimmed"] = 0
     for step in steps:
         if size(b) < LIMIT:
@@ -369,9 +471,11 @@ def _fit(b):
     return b
 
 
-def brief(raw, own, prev, pol, now, me=ME, window_h=1):
+def brief(raw, own, prev, pol, now, me=ME, window_h=1, flows=None, known=(), focus=None):
     """The brief for this run. raw from collect.fetch_public, own from collect.read_own, prev the last brief
-    (or None), pol the policy dict on disk. JSON-serialisable, under LIMIT bytes."""
+    (or None), pol the policy dict on disk. From run.py: flows, the inventory moves since the last run; known,
+    the unit ids held at the last run; focus, {current, next, covered_h, candidates, forum_mentions}.
+    JSON-serialisable, under LIMIT bytes."""
     raw, own = _dict(raw), _dict(own)
     board = _dict(raw.get("board"))
     shops, buyers, players = _rows(board.get("shops")), _rows(board.get("buyers")), _rows(board.get("players"))
@@ -389,8 +493,11 @@ def brief(raw, own, prev, pol, now, me=ME, window_h=1):
     b["prices"] = _prices(raw.get("trades"), ledger, catalog, since, me, our_url)
     b["market_window"] = _window(ledger, me, our_url, raw.get("ledger_gap"), raw.get("ledger_first"))
     b["demand"] = _demand(own.get("summary"), raw.get("demand"))
-    b["ops"] = _ops(own)
+    b["ops"] = _ops(own, raw.get("forum"), since, me)
     b["forum"] = _forum(raw.get("forum"), since)
     b["reviews_of_us"] = _reviews(raw.get("shop_reviews"))
+    b["inventory"] = _inventory(own.get("inventory"), ledger, our_url, me, pol, now, window_h, flows, known)
+    if focus:
+        b["focus"] = _focus(focus, own.get("inventory"))
     b["errors"] = [_clip(e, 200) for e in raw.get("errors") or [] if isinstance(e, str)][:20]
     return _fit(b)

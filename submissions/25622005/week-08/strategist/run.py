@@ -1,9 +1,11 @@
-"""One strategist run per hour: collect, brief, ask, guard, rewrite SKILL.md, record.
+"""One strategist run every 30 minutes: collect, brief, ask, guard, rewrite SKILL.md, record.
 
 The shop reads strategy/SKILL.md on every call, so the only thing this process changes in the
-shop is a few numbers in that file. Everything else it does is for the user to check later:
-each run leaves its brief, prompt, raw model answer and a Markdown report, one runs.jsonl row,
-and one changes.jsonl row per rewrite. A run never raises and never retries a write: a SKILL.md
+shop is a few numbers in that file and the focus SKU list (stock.focus_skus, chosen from the ledger
+by strategist/focus.py, not by the model; written with the model's numbers in the same edit).
+Everything else it does is for the user to check later: each run leaves its brief, prompt, raw model
+answer and a Markdown report, one runs.jsonl row, one inventory.jsonl row (our stock and what came
+in, sold or left unsold since the last run), and one changes.jsonl row per rewrite. A run never raises and never retries a write: a SKILL.md
 that is invalid, paused (strategy/STRATEGIST_PAUSE) or edited during the run is left as it is,
 and the reason is recorded. One process at a time holds home/lock. Two strategists with different
 homes may still point at the same shop, so what protects SKILL.md lives next to it: the rewrite
@@ -27,7 +29,7 @@ from pathlib import Path
 import httpx
 
 from memory.store import append_jsonl, atomic_write_json, read_json, tail_jsonl
-from strategist import analyze, collect, decide, guard, skillfile
+from strategist import analyze, collect, decide, focus, guard, publish, skillfile
 
 W = Path(__file__).resolve().parents[1]
 HEALTH_MAX_AGE_S = 300
@@ -40,14 +42,17 @@ class Config:
     shop_home: Path
     home: Path
     mode: str = "apply"                 # "apply" | "propose" (never writes SKILL.md)
-    interval_s: int = 3600
+    interval_s: int = 1800
     first_delay_s: int = 60
     market_url: str = "https://market.ourolabs.ai"
     min_confidence: float = 0.6
     max_changes: int = 3
-    cooldown_h: float = 3
+    cooldown_h: float = 1               # a changed key can move again two runs later
     llm_timeout: int = 300
     me: str = "psyoung82"
+    log_repo: str = ""                  # strategist/publish.py: empty disables publishing
+    log_branch: str = "main"
+    log_key: str = ""
 
     @property
     def skill(self):
@@ -76,8 +81,11 @@ def config(shop=None, home=None, mode=None, interval=None):
     return Config(shop_home=Path(shop or W),
                   home=Path(home or os.environ.get("STRATEGIST_HOME", W / ".market" / "strategist")),
                   mode=mode,
-                  interval_s=int(interval or os.environ.get("STRATEGIST_INTERVAL_S", 3600)),
-                  market_url=os.environ.get("MARKET_URL", "https://market.ourolabs.ai"))
+                  interval_s=int(interval or os.environ.get("STRATEGIST_INTERVAL_S", 1800)),
+                  market_url=os.environ.get("MARKET_URL", "https://market.ourolabs.ai"),
+                  log_repo=os.environ.get("STRATEGIST_LOG_REPO", ""),
+                  log_branch=os.environ.get("STRATEGIST_LOG_BRANCH") or "main",
+                  log_key=os.environ.get("STRATEGIST_LOG_KEY", ""))
 
 
 # --- small file helpers
@@ -143,7 +151,8 @@ def _run(cfg, now, client=None):
     paused = cfg.pause_file.exists()
     rec = {"run_id": _run_id(home, now), "ts": now, "mode": cfg.mode, "paused": paused, "status": None,
            "policy_ver_before": None, "policy_ver_after": None, "applied": [], "proposed": [], "rejected": [],
-           "confidence": None, "assessment": "", "watch": [], "errors": [], "me": None, "elapsed_ms": None}
+           "confidence": None, "assessment": "", "watch": [], "focus": None, "errors": [], "me": None,
+           "elapsed_ms": None}
     state = read_json(home / "state.json", {})
     state = state if isinstance(state, dict) else {}
     try:
@@ -174,7 +183,7 @@ def _steps(cfg, now, client, state, rec):
         rec["policy_ver_before"] = rec["policy_ver_after"] = skillfile.ver(text)
         _check_version(front.get("version"), state, rec)
 
-    # 2 collect and brief
+    # 2 collect, inventory moves and focus SKUs, brief
     own_client = client is None
     client = client or httpx.Client(base_url=cfg.market_url, timeout=20)
     try:
@@ -184,38 +193,106 @@ def _steps(cfg, now, client, state, rec):
             client.close()
     window_h = max(1, math.ceil(cfg.interval_s / 3600))
     own = collect.read_own(cfg.shop_home, now, window_h=window_h)
-    if own.get("error"):
-        errors.append(own["error"])
-        raw["errors"] = errors
+    for e in (own.get("error"), own.get("inventory_error")):
+        if e:
+            errors.append(e)
+            raw["errors"] = errors
     rec["errors"] += errors
-    brief = analyze.brief(raw, own, state.get("last_brief"), pol, now, me=cfg.me, window_h=window_h)
+    flows, known = _inventory_flows(state, own.get("inventory"), raw.get("ledger"))
+    focus_part = _focus(state, raw, None if skill_errors else pol, now, cfg.me, rec)
+    brief = analyze.brief(raw, own, state.get("last_brief"), pol, now, me=cfg.me, window_h=window_h,
+                          flows=flows, known=known, focus=focus_part)
     rec["me"] = brief.get("me")
     atomic_write_json(home / "briefs" / f"{rid}.json", brief)
     state["last_brief"] = brief
+
+    # 3-6 ask the model, guard, write; the focus list is written even when the model gives nothing
     if skill_errors:
         rec["status"] = "skill invalid"
-        _report(cfg, rec, brief)
-        return
+    else:
+        accepted = _decide(cfg, now, body, pol, brief, state, rec)
+        _write(cfg, now, text, accepted, state, rec)
+    _inventory_row(cfg, now, brief, rec)
+    _report(cfg, rec, brief)
 
-    # 3-4 ask the model
-    prompt = decide.build_prompt(body, pol, guard.tunable_view(pol), brief, _history(home))
-    _write_text(home / "prompts" / f"{rid}.txt", prompt)
+
+def _check_version(version, state, rec):
+    """A version lower than the last one seen means the file was replaced (e.g. a git checkout or pull of
+    the shared strategy/ folder): the strategist's earlier changes are gone. Recorded, not undone."""
+    last = state.get("skill_version")
+    if isinstance(version, int) and isinstance(last, int) and version < last:
+        rec["errors"].append(f"SKILL.md version went back from {last} to {version}: the file was replaced "
+                             "(git checkout or pull?), so earlier strategist changes are no longer in it")
+    if isinstance(version, int):
+        state["skill_version"] = version
+
+
+def _inventory_flows(state, inv, ledger):
+    """Units in, sold and gone unsold (expired food, seized) since the last run, from the last run's snapshot
+    (state["inventory"]["units"]: unit id -> [sku, cost, kind]) and this run's settle rows. A unit can leave
+    the inventory file before or after its settle row is read: settled units still held wait in "pending"
+    for the next run. Returns (flows, unit ids held at the last run); flows is None on the first run, and
+    without an inventory file nothing changes. A ledger gap can count a sold unit as gone unsold."""
+    prev = state.get("inventory") if isinstance(state.get("inventory"), dict) else {}
+    old = prev.get("units") if isinstance(prev.get("units"), dict) else None
+    if not isinstance((inv or {}).get("units"), list):
+        return None, set(old or ())
+    cur = {str(u["unit"]): [u.get("sku"), analyze._num(u.get("cost")) or 0, u.get("kind")]
+           for u in inv["units"] if u.get("unit") is not None}
+    settled = {str(r["data"].get("unit")) for r in ledger or []
+               if isinstance(r, dict) and r.get("kind") == "settle" and isinstance(r.get("data"), dict)}
+    settled |= set(prev.get("pending") or [])
+    state["inventory"] = {"units": cur, "pending": sorted(settled & cur.keys())}
+    if old is None:
+        return None, set()
+    gone = old.keys() - cur.keys()
+    unsold = gone - settled
+    return {"in": len(cur.keys() - old.keys()), "sold": len(gone & settled), "gone_unsold": len(unsold),
+            "gone_cost": round(sum(old[u][1] for u in unsold))}, set(old)
+
+
+def _focus(state, raw, pol, now, me, rec):
+    """Add this run's ledger rows to the 6 h counts and choose the focus list (strategist/focus.py).
+    rec["focus"]: old and new list, added, removed, their counts as evidence, and a status ("unchanged",
+    or after _write how the change went). Returns the brief's focus part; None without a valid policy."""
+    fs = state.get("focus") if isinstance(state.get("focus"), dict) else {}
+    state["focus"] = focus.update(fs, raw.get("ledger"), now, me)
+    if pol is None:
+        return None
+    st = pol["stock"]
+    catalog = raw.get("catalog") if isinstance(raw.get("catalog"), dict) else {}
+    rows = focus.select(fs, catalog, pol, now)
+    old = list(st["focus_skus"])
+    # without a catalog every SKU would look ineligible: keep the list
+    new = focus.choose(rows, old, pol, now - fs["since"] >= focus.WINDOW_S) if catalog else old
+    added, removed = [s for s in new if s not in old], [s for s in old if s not in new]
+    rec["focus"] = {"old": old, "new": new, "added": added, "removed": removed,
+                    "status": "unchanged" if new == old else None,
+                    "evidence": {s: {k: v for k, v in focus.stats(fs, s).items() if k != "sku"}
+                                 for s in added + removed}}
+    return {"current": old, "next": new, "covered_h": focus.covered_h(fs, now),
+            "candidates": [r for r in rows if r["settles_6h"] >= st["focus_min_settles"]][:analyze.FOCUS_TOP],
+            "forum_mentions": focus.mentions(raw.get("forum"))}
+
+
+def _decide(cfg, now, body, pol, brief, state, rec):
+    """Ask the model and guard its answer. Returns the accepted changes; rec["status"] says why there are none."""
+    rid = rec["run_id"]
+    prompt = decide.build_prompt(body, pol, guard.tunable_view(pol), brief, _history(cfg.home))
+    _write_text(cfg.home / "prompts" / f"{rid}.txt", prompt)
     obj, raw_answer, err = decide.ask(prompt, cfg.llm_timeout)
-    _write_text(home / "raw" / f"{rid}.txt", raw_answer or "")
+    _write_text(cfg.home / "raw" / f"{rid}.txt", raw_answer or "")
     if err:
         rec["status"] = "llm error"
         rec["errors"].append(f"llm: {err}")
-        _report(cfg, rec, brief)
-        return
+        return []
     rec.update(confidence=obj["confidence"], assessment=obj["assessment"], watch=obj["watch"])
     if obj["confidence"] < cfg.min_confidence:
         rec["status"] = "low confidence"
         why = f"confidence {obj['confidence']} < {cfg.min_confidence}"
         rec["rejected"] = [{"key": c.get("key"), "requested": c.get("value"), "why": why} for c in obj["changes"]]
-        _report(cfg, rec, brief)
-        return
-
-    # 5 guard, then write. The cooldown is this home's and every other strategist's on this shop.
+        return []
+    # the cooldown is this home's and every other strategist's on this shop
     last_ts = state.setdefault("last_change_ts", {})
     shared = read_json(cfg.cooldown_file, {})
     for k, t in (shared.items() if isinstance(shared, dict) else ()):
@@ -223,65 +300,92 @@ def _steps(cfg, now, client, state, rec):
             last_ts[k] = t
     accepted, rejected = guard.guard(obj["changes"], pol, last_ts, now, cfg.max_changes, cfg.cooldown_h)
     rec["rejected"] = rejected
-    rec["paused"] = rec["paused"] or cfg.pause_file.exists()      # created during the model call
     if not accepted:
         rec["status"] = "no change"
-    elif cfg.mode != "apply" or rec["paused"]:
-        rec["status"] = "paused" if rec["paused"] else "proposed"
-        rec["proposed"] = accepted
-    else:
-        _apply(cfg, now, text, accepted, last_ts, rec)
-        if rec["applied"] and isinstance(state.get("skill_version"), int):
-            state["skill_version"] += 1                 # skillfile.apply bumps version by one
-    _report(cfg, rec, brief)
+    return accepted
 
 
-def _check_version(version, state, rec):
-    """A version lower than the last one seen means the file was replaced (a new shop image stages its
-    own SKILL.md): the strategist's earlier changes are gone. Recorded, not undone."""
-    last = state.get("skill_version")
-    if isinstance(version, int) and isinstance(last, int) and version < last:
-        rec["errors"].append(f"SKILL.md version went back from {last} to {version}: the file was replaced "
-                             "(new shop image?), so earlier strategist changes are no longer in it")
-    if isinstance(version, int):
-        state["skill_version"] = version
+def _write(cfg, now, text, accepted, state, rec):
+    """The accepted numbers and a changed focus list go into SKILL.md in one edit, in apply mode without a
+    pause file. rec["status"] follows the model's changes; the focus list's outcome is rec["focus"]["status"]."""
+    fc = rec["focus"] if rec["focus"] and rec["focus"]["status"] is None else None
+    rec["paused"] = rec["paused"] or cfg.pause_file.exists()      # created during the model call
+    if not accepted and not fc:
+        return
+    if cfg.mode != "apply" or rec["paused"]:
+        held = "paused" if rec["paused"] else "proposed"
+        if accepted:
+            rec["status"], rec["proposed"] = held, accepted
+        if fc:
+            fc["status"] = held
+        return
+    _apply(cfg, now, text, accepted, fc, state.setdefault("last_change_ts", {}), rec)
+    if rec["policy_ver_after"] != rec["policy_ver_before"] and isinstance(state.get("skill_version"), int):
+        state["skill_version"] += 1                     # skillfile.apply bumps version by one
 
 
-def _apply(cfg, now, text, accepted, last_ts, rec):
+def _apply(cfg, now, text, accepted, fc, last_ts, rec):
+    changes = {a["key"]: a["new"] for a in accepted} | ({"stock.focus_skus": fc["new"]} if fc else {})
+
+    def held_back(status, why):
+        if accepted:
+            rec["status"], rec["proposed"] = status, accepted
+        if fc:
+            fc["status"] = status
+        rec["errors"].append(why)
+
     lock = None
     try:
         lock = _flock(cfg.skill_lock)
         if lock is None:
-            rec["status"], rec["proposed"] = "locked", accepted
-            rec["errors"].append(f"another strategist is writing {cfg.skill.name}; nothing written")
+            held_back("locked", f"another strategist is writing {cfg.skill.name}; nothing written")
             return
-        new_text = skillfile.apply(cfg.skill, text, {a["key"]: a["new"] for a in accepted})
+        new_text = skillfile.apply(cfg.skill, text, changes)
     except skillfile.Conflict as e:
-        rec["status"], rec["proposed"] = "conflict", accepted
-        rec["errors"].append(f"conflict: {e}; nothing written")
+        held_back("conflict", f"conflict: {e}; nothing written")
         return
     except (ValueError, OSError) as e:
-        rec["status"], rec["proposed"] = "apply failed", accepted
-        rec["errors"].append(f"apply: {type(e).__name__}: {str(e)[:300]}")
+        held_back("apply failed", f"apply: {type(e).__name__}: {str(e)[:300]}")
         return
     finally:
         if lock is not None:
             lock.close()
-    rec["status"], rec["applied"] = "applied", accepted
+    if accepted:
+        rec["status"], rec["applied"] = "applied", accepted
+    if fc:
+        fc["status"] = "applied"
     rec["policy_ver_after"] = skillfile.ver(new_text)
     for a in accepted:
         last_ts[a["key"]] = now
-    try:                                                # first, so a crash right after keeps the cooldown
-        shared = read_json(cfg.cooldown_file, {})
-        shared = shared if isinstance(shared, dict) else {}
-        atomic_write_json(cfg.cooldown_file, shared | {a["key"]: now for a in accepted})
-    except OSError as e:
-        rec["errors"].append(f"cooldown file: {type(e).__name__}: {e}")
-    append_jsonl(cfg.home / "changes.jsonl", {
-        "ts": now, "old_ver": rec["policy_ver_before"], "new_ver": rec["policy_ver_after"],
-        "diff": {a["key"]: [a["old"], a["new"]] for a in accepted},
-        "reason": "; ".join(f"{a['key']}: {a['reason']}" for a in accepted),
-        "source": "strategist", "run_id": rec["run_id"]})
+    if accepted:                                        # first, so a crash right after keeps the cooldown
+        try:
+            shared = read_json(cfg.cooldown_file, {})
+            shared = shared if isinstance(shared, dict) else {}
+            atomic_write_json(cfg.cooldown_file, shared | {a["key"]: now for a in accepted})
+        except OSError as e:
+            rec["errors"].append(f"cooldown file: {type(e).__name__}: {e}")
+    row = {"ts": now, "old_ver": rec["policy_ver_before"], "new_ver": rec["policy_ver_after"],
+           "diff": {a["key"]: [a["old"], a["new"]] for a in accepted},
+           "reason": "; ".join(f"{a['key']}: {a['reason']}" for a in accepted),
+           "source": "strategist", "run_id": rec["run_id"]}
+    if fc:
+        row["diff"]["stock.focus_skus"] = [fc["old"], fc["new"]]
+        trend = f"stock.focus_skus: ledger trend, added {fc['added']}, removed {fc['removed']}"
+        row["reason"] = "; ".join(x for x in (row["reason"], trend) if x)
+        row["evidence"] = {"stock.focus_skus": fc["evidence"]}
+    append_jsonl(cfg.home / "changes.jsonl", row)
+
+
+def _inventory_row(cfg, now, brief, rec):
+    """One inventory.jsonl row per run with an inventory file: stock, moves since the last run, focus list."""
+    inv = brief.get("inventory")
+    if not inv:
+        return
+    flows, f = inv.get("since_last_run") or {}, rec.get("focus") or {}
+    append_jsonl(cfg.home / "inventory.jsonl", {
+        "ts": now, **{k: inv.get(k) for k in ("balance", "inv_cost", "units", "skus")},
+        **{k: flows.get(k) for k in ("in", "sold", "gone_unsold", "gone_cost")},
+        "focus": f.get("new") if f.get("status") == "applied" else f.get("old")})
 
 
 # --- 6 the report the user reads
@@ -303,6 +407,43 @@ def _metrics(brief):
     return lines or ["(보드에서 우리 행을 찾지 못함)"]
 
 
+def _inventory_lines(brief):
+    inv = brief.get("inventory")
+    if not inv:
+        return ["(.market/inventory.json 없음)"]
+    fl = inv.get("since_last_run") or {}
+    n_cost = lambda d: f"{_cell(d.get('n'))}개 (원가 {_cell(d.get('cost'))})"
+    out = [f"- 잔액 {_cell(inv['balance'])}, 재고 원가 {_cell(inv['inv_cost'])} (D1 상한 {_cell(inv['cap'])}), "
+           f"{inv['units']}개, SKU {inv['skus']}개",
+           f"- 지난 실행 이후: 입고 {_cell(fl.get('in'))}, 판매 {_cell(fl.get('sold'))}, "
+           f"팔리지 않고 빠짐 {_cell(fl.get('gone_unsold'))} (원가 {_cell(fl.get('gone_cost'))})",
+           f"- 오래된 상품 {n_cost(inv['stale_goods'])}, 24 h 안에 만료될 식품 {n_cost(inv['food_at_risk'])}, "
+           f"만료 {n_cost(inv['expired'])}"]
+    if inv["top"]:
+        out += ["", "| SKU | 수량 | 원가 | 가장 오래된 h | 식품 남은 h | 시간당 판매 | 버틸 h |", "|---|---|---|---|---|---|---|"]
+        out += [f"| {_cell(r['sku'])} | {r['qty']} | {r['cost']} | {_cell(r['age_h'])} | {_cell(r['food_left_h'])} "
+                f"| {_cell(r['sales_per_h'])} | {_cell(r['cover_h'])} |" for r in inv["top"]]
+    return out
+
+
+def _focus_lines(rec, brief):
+    f = rec.get("focus")
+    if not f:
+        return ["(없음)"]
+    out = [f"- 지금: {', '.join(f['old']) or '(없음)'}",
+           f"- 이번 선택: {', '.join(f['new']) or '(없음)'} — **{f['status']}**"]
+    for s in f["added"] + f["removed"]:
+        ev = f["evidence"][s]
+        out.append(f"  - {'추가' if s in f['added'] else '제외'} `{s}`: 6 h 체결 {ev['settles_6h']}, "
+                   f"공급 상점 {ev['suppliers_6h']}, ledger seq {ev['refs']}")
+    bf = brief.get("focus") or {}
+    out.append(f"- 집계 기간: {_cell(bf.get('covered_h'))} h")
+    if bf.get("forum_mentions"):
+        out.append("- 포럼 언급 (참고만, 선택에 쓰지 않음): "
+                   + ", ".join(f"{_cell(k)} {_cell(v)}" for k, v in bf["forum_mentions"].items()))
+    return out
+
+
 def _report(cfg, rec, brief):
     when = time.strftime("%Y-%m-%d %H:%M %Z", time.localtime(rec["ts"]))
     mode = rec["mode"] + (" (일시정지: STRATEGIST_PAUSE)" if rec["paused"] else "")
@@ -320,6 +461,8 @@ def _report(cfg, rec, brief):
         out += [f"- `{a['key']}`: {a['old']} → {a['new']} — {_cell(a['reason'])}" for a in rec["proposed"]]
     out += ["", "## 거절한 제안", ""]
     out += [f"- `{_cell(r['key'])}` = {_cell(r['requested'])}: {_cell(r['why'])}" for r in rec["rejected"]] or ["(없음)"]
+    out += ["", "## 재고", ""] + _inventory_lines(brief)
+    out += ["", "## 집중 SKU (stock.focus_skus)", ""] + _focus_lines(rec, brief)
     out += ["", "## 다음에 볼 것", ""] + ([f"- {_cell(w)}" for w in rec["watch"]] or ["(없음)"])
     out += ["", "## 오류", ""] + ([f"- {_cell(e)}" for e in rec["errors"]] or ["(없음)"])
     text = "\n".join(out) + "\n"
@@ -341,6 +484,7 @@ def summary(rec):
     return json.dumps({k: rec.get(k) for k in ("run_id", "status", "mode", "paused", "policy_ver_after",
                                                 "confidence", "elapsed_ms")}
                       | {"applied": [f"{a['key']} {a['old']}->{a['new']}" for a in rec.get("applied") or []],
+                         "focus": (rec.get("focus") or {}).get("status"),
                          "rejected": len(rec.get("rejected") or []), "errors": len(rec.get("errors") or [])},
                       ensure_ascii=False)
 
@@ -368,7 +512,14 @@ def loop(cfg):
         while not stop.is_set():
             if time.time() >= next_run:
                 start = time.time()
-                print(summary(_run(cfg, start)), flush=True)
+                rec = _run(cfg, start)
+                print(summary(rec), flush=True)
+                try:
+                    pub = publish.publish(cfg, rec)
+                except Exception as e:                  # publishing must never end the loop
+                    pub = {"error": f"{type(e).__name__}: {e}"[:400]}
+                if pub and pub.get("error"):
+                    print(json.dumps({"publish": pub}, ensure_ascii=False), flush=True)
                 next_run = start + cfg.interval_s
             else:
                 stop.wait(1)

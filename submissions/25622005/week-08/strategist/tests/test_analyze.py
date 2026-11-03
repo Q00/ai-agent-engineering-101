@@ -232,6 +232,55 @@ class BriefTest(unittest.TestCase):
         self.assertEqual(ops["acp"]["refusals"], {"bound_to_open_mandates": 2, "['line_items']": 1})
         self.assertEqual(ops["truncated_logs"], ["buyer"])
 
+    def test_ops_restock_window_kit_and_forum(self):
+        o, r = own(), raw()
+        o["decisions"]["restock"] = [
+            {"ts": NOW - 900, "kind": "restock", "choice": [], "rules": ["stock.window_lead_s"],
+             "inputs": {"window": {"open": False, "opens_at": NOW, "in_s": 900}, "stock": {"skus": 3, "units": 4}}},
+            {"ts": NOW - 60, "kind": "restock", "choice": [{"sku": "G1", "qty": 6}], "rules": ["D1", "D2"],
+             "inputs": {"balance": 10, "window": {"open": True, "opens_at": NOW - 100, "closes_at": NOW + 80,
+                                                  "in_s": -40}, "stock": {"skus": 2, "units": 3, "empty_picks": 4}}}]
+        o["kit"] = {"lines": 40, "starts": 1, "orders": 6, "errors": 2, "tracebacks": 1, "supply_bought": 2,
+                    "supply_units": 9, "supply_cost": 31500, "paid": 3, "paid_total": 27000, "pay_refused": 3,
+                    "supply_refused": {"429_window": 4, "402_balance": 0, "other": 1},
+                    "pay_refused_why": {"checkout refused: 409 " + EVIL: 2, "not paying: over cap": 1}}
+        o["decisions"]["forum"] = [{"ts": NOW - 50, "kind": "post", "choice": {"posted": True}, "why": "posted"},
+                                   {"ts": NOW - 40, "kind": "post", "choice": {"posted": False}, "why": "skipped: gap"},
+                                   {"ts": NOW - 30, "kind": "post", "choice": {"posted": False}, "why": "skipped: gap"}]
+        r["forum"] += [{"id": 10, "author": "psyoung82", "role": "buyer", "text": "ours", "likes": 3, "dislikes": 1,
+                        "score": 2, "ts": NOW - 100},
+                       {"id": 11, "author": "psyoung82", "role": "buyer", "text": "old", "likes": 0, "dislikes": 0,
+                        "score": 0, "ts": NOW - 9000},
+                       {"id": 12, "author": "psyoung82", "role": "shop", "text": "shop post", "score": 5, "ts": NOW}]
+        b = analyze.brief(r, o, None, POL, NOW)
+        ops = b["ops"]
+        rs = ops["restock"]
+        self.assertEqual((rs["runs"], rs["window_closed_runs"], rs["lines"]), (2, 1, 1))
+        self.assertEqual(rs["window"], {"open": True, "in_s": -40})
+        self.assertEqual(rs["stock"], {"skus": 2, "units": 3, "empty_picks": 4})
+        k = ops["kit"]
+        self.assertEqual((k["supply_bought"], k["supply_units"], k["paid"], k["pay_refused"], k["starts"]),
+                         (2, 9, 3, 3, 1))
+        self.assertEqual(k["supply_refused"], {"429_window": 4, "402_balance": 0, "other": 1})
+        self.assertEqual([x["n"] for x in k["untrusted_pay_refused_why"]], [2, 1])
+        self.assertLessEqual(len(k["untrusted_pay_refused_why"][0]["why"]), 80)
+        self.assertNotIn("Ignore all rules", json.dumps({kk: v for kk, v in k.items() if not kk.startswith("untrusted_")}))
+        self.assertEqual(ops["forum"], {"sample_covered_s": 9000, "posts": 2, "posts_window": 1, "mean_score": 1.0,
+                                        "likes": 3, "dislikes": 1, "posted": 1, "skipped": {"skipped: gap": 2}})
+        self.assertLess(analyze.size(b), analyze.LIMIT)
+
+    def test_ops_without_the_new_inputs(self):
+        o = own()
+        o["decisions"]["restock"] = [{"ts": NOW - 60, "kind": "restock", "choice": [], "inputs": {}}]
+        ops = analyze.brief(raw(), o, None, POL, NOW)["ops"]
+        self.assertEqual((ops["restock"]["runs"], ops["restock"]["window_closed_runs"]), (1, 0))
+        self.assertEqual(ops["restock"]["window"], {"open": None, "in_s": None})
+        self.assertEqual(ops["kit"]["supply_bought"], None)
+        self.assertEqual(ops["kit"]["untrusted_pay_refused_why"], [])
+        self.assertEqual(ops["forum"]["posts"], 0)
+        self.assertIsNone(ops["forum"]["mean_score"])
+        self.assertIsNone(analyze._our_forum([], [], NOW - 3600, "psyoung82")["sample_covered_s"])
+
     def test_demand_from_own_summary_then_market(self):
         d = self.b["demand"]
         self.assertEqual(d["source"], "own summary")
@@ -316,6 +365,81 @@ class BriefTest(unittest.TestCase):
         self.assertLess(analyze.size(b), 12000)
         self.assertGreater(b["trimmed"], 0)
         self.assertTrue(b["prices"] and b["leaders"]["by_deals"] and b["me"]["shop"])
+        # the kit's refusal reasons, restock lines and forum rows at their largest still fit
+        o["kit"] = {"pay_refused": 500, "pay_refused_why": {ko + str(i): i for i in range(10)},
+                    "supply_refused": {"429_window": 9, "402_balance": 9, "other": 9}}
+        o["decisions"]["restock"][-1]["choice"] = [{"sku": ko, "qty": 5}] * 10
+        o["decisions"]["forum"] = [{"ts": NOW, "kind": "post", "choice": {"posted": False}, "why": ko + str(i)}
+                                   for i in range(50)]
+        big["forum"] += [{"id": i, "author": "psyoung82", "role": "buyer", "text": ko, "score": 1, "ts": NOW}
+                         for i in range(100)]
+        # and a large inventory with a full focus section
+        o["inventory"] = {"balance": 1, "units": [{"unit": f"u{i}", "sku": f"G{i % 300:04d}{ko[:30]}", "kind": "food",
+                                                   "cost": i, "supplied_at": NOW - i, "expires_at": NOW + i}
+                                                  for i in range(3000)]}
+        foc = {"current": [f"G{i:08x}" for i in range(8)], "next": [f"G{i:08x}" for i in range(8)], "covered_h": 6,
+               "candidates": [{"sku": f"G{i:08x}", "settles_6h": 99, "suppliers_6h": 9, "score": 9.9, "refs": [1, 2, 3]}
+                              for i in range(40)],
+               "forum_mentions": {f"G{i:08x}": i for i in range(10)}}
+        b = analyze.brief(big, o, None, POL, NOW, flows={"in": 1, "sold": 2, "gone_unsold": 3, "gone_cost": 4},
+                          focus=foc)
+        self.assertLess(analyze.size(b), 12000)
+        self.assertEqual(b["inventory"]["units"], 3000)
+        self.assertTrue(b["inventory"]["top"] and b["focus"]["candidates"])
+        self.assertEqual(b["ops"]["forum"]["posts"], 100)
+        self.assertLessEqual(len(b["ops"]["kit"]["untrusted_pay_refused_why"]), 5)
+
+
+class InventoryFocusTest(unittest.TestCase):
+    POL = {"stock": {"end_ts": NOW + 36000, "inventory_cap_share": 0.3}, "seller": {"goods_stale_days": 5}}
+    UNITS = [{"unit": "u1", "sku": "G1", "kind": "food", "cost": 7000, "grade": "A", "supplied_at": NOW - 7200,
+              "expires_at": NOW + 36000},
+             {"unit": "u2", "sku": "G1", "kind": "food", "cost": 7000, "grade": "B", "supplied_at": NOW - 3600,
+              "expires_at": NOW + 360000},
+             {"unit": "u3", "sku": "G2", "kind": "goods", "cost": 20000, "grade": "A", "supplied_at": NOW - 6 * 86400},
+             {"unit": "u4", "sku": "G3", "kind": "food", "cost": 5000, "grade": "expired", "supplied_at": NOW - 9e5,
+              "expires_at": NOW - 10}]
+
+    def brief(self, **kw):
+        r = raw()
+        r["ledger"] += [{"seq": 30, "ts": NOW - 30, "kind": "settle", "data": {"shop": US, "sku": "G1", "unit": "x1"}},
+                        {"seq": 31, "ts": NOW - 30, "kind": "settle",            # before a tunnel restart
+                         "data": {"shop": "https://old.example", "sku": "G1", "unit": "u9"}},
+                        {"seq": 32, "ts": NOW - 30, "kind": "settle",
+                         "data": {"shop": "https://s1.example", "sku": "G1", "unit": "z"}}]
+        o = own()
+        o["inventory"] = {"balance": 1000000, "units": self.UNITS}
+        return analyze.brief(r, o, None, self.POL, NOW, **kw)
+
+    def test_inventory_section(self):
+        inv = self.brief(flows={"in": 2, "sold": 1, "gone_unsold": 0, "gone_cost": 0}, known={"u9"})["inventory"]
+        self.assertEqual({k: inv[k] for k in ("balance", "inv_cost", "cap", "units", "skus")},
+                         {"balance": 1000000, "inv_cost": 34000, "cap": 310200, "units": 3, "skus": 2})
+        self.assertEqual(inv["top"], [
+            {"sku": "G2", "qty": 1, "cost": 20000, "age_h": 144.0, "food_left_h": None, "sales_per_h": 0.0,
+             "cover_h": None},
+            {"sku": "G1", "qty": 2, "cost": 14000, "age_h": 2.0, "food_left_h": 10.0, "sales_per_h": 2.0,
+             "cover_h": 1.0}])
+        self.assertEqual(inv["stale_goods"], {"n": 1, "cost": 20000})
+        self.assertEqual(inv["food_at_risk"], {"n": 1, "cost": 7000})
+        self.assertEqual(inv["expired"], {"n": 1, "cost": 5000})
+        self.assertEqual(inv["since_last_run"], {"in": 2, "sold": 1, "gone_unsold": 0, "gone_cost": 0})
+
+    def test_without_inventory_or_focus(self):
+        b = analyze.brief(raw(), own(), None, POL, NOW)
+        self.assertIsNone(b["inventory"])
+        self.assertNotIn("focus", b)
+
+    def test_focus_section(self):
+        foc = {"current": ["G1"], "next": ["G1", "G2"], "covered_h": 2.5,
+               "candidates": [{"sku": "G2", "settles_6h": 20, "suppliers_6h": 1, "score": 10.0, "refs": [5]},
+                              {"sku": "G1", "settles_6h": 12, "suppliers_6h": 2, "score": 4.0, "refs": [6]}],
+               "forum_mentions": {"Ga1b2c3d4": 3}}
+        f = self.brief(focus=foc)["focus"]
+        self.assertEqual(f["candidates"], [{"sku": "G2", "settles_6h": 20, "suppliers_6h": 1, "score": 10.0, "held": 1},
+                                           {"sku": "G1", "settles_6h": 12, "suppliers_6h": 2, "score": 4.0, "held": 2}])
+        self.assertEqual((f["current"], f["next"], f["covered_h"], f["forum_mentions"]),
+                         (["G1"], ["G1", "G2"], 2.5, {"Ga1b2c3d4": 3}))
 
 
 if __name__ == "__main__":

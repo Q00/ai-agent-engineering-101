@@ -2,13 +2,15 @@
 
 The file is the user's: its comments, alignment and prose body carry the reasoning, and the
 user may edit it at any time. So the strategist never re-serialises the front matter. It
-swaps only the value bytes of the targeted lines and bumps `version`, refuses to write when
+swaps only the value bytes of the targeted lines (a number, or a flow list of SKUs such as
+`focus_skus: [A, B]`) and bumps `version`, refuses to write when
 the file changed since it was read (Conflict), checks the result with the same parser and
 validator the shop uses, and replaces the file atomically so the shop's hot reload never
 sees a half-written file.
 """
 import math
 import os
+import re
 import stat
 from pathlib import Path
 
@@ -39,6 +41,11 @@ def ver(text):
 
 
 def fmt(v):
+    """A finite number, or a list of SKU strings as a flow list "[A, B]"."""
+    if isinstance(v, list):
+        if not all(isinstance(x, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,40}", x) for x in v):
+            raise ValueError(f"not a list of SKUs: {v!r}")
+        return "[" + ", ".join(v) + "]"
     if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
         raise ValueError(f"not a finite number: {v!r}")
     return str(v) if isinstance(v, int) else repr(float(round(v, 4)))
@@ -102,7 +109,7 @@ def _check(new_text, changes):
     if errors:
         raise ValueError("validate: " + "; ".join(errors))
     for k, v in changes.items():
-        if policy.get(front["policy"], k) != float(fmt(v)):
+        if policy.get(front["policy"], k) != (v if isinstance(v, list) else float(fmt(v))):
             raise ValueError(f"{k}: reads back as {policy.get(front['policy'], k)!r}, wanted {v!r}")
 
 
@@ -126,7 +133,7 @@ def _atomic_write(path, text, expected_text):
 
 
 def apply(path, expected_text, changes):
-    """Write changes {"seller.floor_list": 0.55, ...} into the file and return the new text.
+    """Write changes {"seller.floor_list": 0.55, "stock.focus_skus": ["G1"], ...} into the file and return the new text.
     Conflict when the file is not expected_text; ValueError when the result would not validate.
     In both cases the file is left as it was."""
     path = Path(path)
