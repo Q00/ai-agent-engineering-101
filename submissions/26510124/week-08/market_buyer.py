@@ -21,7 +21,8 @@ from harness import HarnessError, buyer_decision, decide, parse_object
 from inventory import read_json
 from payment_memory import recent_jsonl, reconcile, attach_reviews
 from buyer_policy import buying_terms, checkout_policy, load_policy
-from buyer_selection import shortlist, shop_evidence
+from buyer_selection import shortlist, offer_fingerprint, reuse_failures
+from buyer_context import compact_dialogue
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -94,8 +95,10 @@ def acceptance(order):
     return checkout_policy(order)
 
 
-def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=None):
+def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=None, catalog=None):
     order = order or {}
+    shops, cooldown = reuse_failures(shops, memory, item=item, budget=budget,
+                                     config=policy or load_policy(), order=order, catalog=catalog)
     candidates = shortlist(shops, memory, seed=order.get("order") or f"{item}:{int(time.time() // 900)}",
                            limit=(policy or {}).get("selection_max_candidates", 6),
                            round_number=order.get("round"))
@@ -118,6 +121,7 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     context = {"item": item, "budget": budget, "candidates": candidates, "purchase_policy": policy}
     log("SELECTION CONTEXT", {"eligible_shops": len(shops), "candidates": len(candidates),
                               "context_chars": len(json.dumps(context, ensure_ascii=False)),
+                              **cooldown,
                               "exploration": [c["name"] for c in candidates if c["selection_role"] == "exploration"]})
     choice = decide("market_select.txt", context, validate, timeout=min(45, remaining), prefix="market-select")
     log("SHOP SELECTION", choice)
@@ -314,7 +318,7 @@ class Buyer:
             self.remaining()
             state = task["status"].get("state")
             text = message_text(task)
-            if text:
+            if text and state == "TASK_STATE_INPUT_REQUIRED":
                 self.history.append({"role": "seller", "text": text})
             if state == "TASK_STATE_COMPLETED":
                 self.verify_receipt(task)
@@ -330,10 +334,11 @@ class Buyer:
                 raise BuyerError(f"Cannot negotiate in seller state {state}: {text}")
             if decisions >= min(MAX_DECISIONS, self.policy["max_decisions"]):
                 raise PolicyRefusal("Negotiation ended at the owner's turn limit without a satisfactory agreement")
-            compact = self.history[:1] + self.history[-6:] if len(self.history) > 7 else self.history
+            compact = compact_dialogue(self.history, text, last_asking_price)
+            log("NEGOTIATION CONTEXT", {"decision": decisions + 1,
+                                        "context_chars": len(json.dumps(compact, ensure_ascii=False))})
             decision = buyer_decision(item=self.item, budget=self.budget,
-                                      seller_message=text[:1600],
-                                      history=[{"role": h["role"], "text": h["text"][-400:]} for h in compact],
+                                      **compact,
                                       timeout=min(90, self.remaining()), policy=self.policy,
                                       current_ask=last_asking_price(text))
             decisions += 1
@@ -378,6 +383,7 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
         "authorized_price": buyer.authorized_price,
         "order": (order or {}).get("order"), "round": (order or {}).get("round", 2),
         "purchase_policy": policy,
+        "selection_fingerprint": offer_fingerprint(shop, item, policy, (order or {}).get("round", 2)),
         "observed_receipt": buyer.observed_receipt,
         "stars": stars, "review": review,
     }
@@ -416,7 +422,7 @@ def main(argv=None):
                 raise BuyerError("Market catalog must be a SKU mapping")
             shops = stocked_shops(shops, order)
         shop, reason = choose_shop(shops, memory, item=args.item, budget=args.budget,
-                                   deadline=min(deadline, time.monotonic() + 90), policy=config, order=order)
+                                   deadline=min(deadline, time.monotonic() + 90), policy=config, order=order, catalog=catalog)
         result["shop"] = shop["url"]
         sku = shop.get("selected_sku") or args.item
         product = catalog.get(sku) if catalog is not None else None

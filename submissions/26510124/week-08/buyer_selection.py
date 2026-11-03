@@ -1,5 +1,10 @@
 """Small, evidence-based candidate sets. No model calls or purchase decisions."""
 import hashlib
+import json
+import time
+from datetime import datetime
+
+from buyer_policy import buying_terms
 
 
 def shop_evidence(shop, memory):
@@ -82,3 +87,65 @@ def shortlist(shops, memory, *, seed, limit=6, round_number=None):
     for candidate in selected:
         candidate["selection_role"] = "exploration" if candidate is explorer else "evidence"
     return sorted(selected, key=rotation)
+
+
+def offer_fingerprint(shop, sku, terms, round_number):
+    """Detect observable stock/review/policy changes, never infer hidden grades."""
+    offer = next((o for o in shop.get("offers", []) if o.get("sku") == sku), {})
+    snapshot = {
+        "round": round_number, "sku": sku, "qty": offer.get("qty"), "terms": terms,
+        "reviews": [{"stars": r.get("stars"), "round": r.get("round"),
+                     "review": str(r.get("review", ""))[:400]}
+                    for r in shop.get("reviews", [])[:3] if isinstance(r, dict)],
+    }
+    return hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False,
+                                     separators=(",", ":"), allow_nan=False).encode()).hexdigest()
+
+
+def reuse_failures(shops, memory, *, item, budget, config, order, catalog=None, now=None):
+    """Prefer alternatives to a recent same-SKU, same-terms no-deal.
+
+    Only explicit no-deal outcomes qualify. Network/model failures and an
+    unconfirmed receipt are not evidence of incompatible terms or dishonesty.
+    If every offer is cooling, reconsider them rather than block all shopping.
+    """
+    now = time.time() if now is None else now
+    seconds = config.get("failure_cooldown_seconds", 900)
+    round_number = order.get("round", 2)
+    latest = {}
+    for row in memory:
+        if row.get("round", 2) != round_number:
+            continue
+        try:
+            stamp = datetime.fromisoformat(row["time"])
+            if stamp.tzinfo is None:
+                continue
+            timestamp = stamp.timestamp()
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+        if not now - seconds <= timestamp <= now:
+            continue
+        key = (row["name"], row.get("item"))
+        if key not in latest or timestamp >= latest[key][0]:
+            latest[key] = (timestamp, row)
+    ready, skipped = [], 0
+    for shop in shops:
+        offers = shop.get("offers", [])
+        usable = []
+        for offer in offers or [{"sku": item}]:
+            sku = offer["sku"]
+            previous = latest.get((shop["name"], sku))
+            cooling = False
+            if (previous and previous[1].get("result") == "no_deal" and seconds > 0
+                    and isinstance(previous[1].get("selection_fingerprint"), str)):
+                product = catalog.get(sku) if catalog is not None else None
+                terms = buying_terms(budget, product=product, order=order, config=config)
+                cooling = previous[1].get("selection_fingerprint") == offer_fingerprint(shop, sku, terms, round_number)
+            if cooling:
+                skipped += 1
+            else:
+                usable.append(offer)
+        if usable:
+            ready.append({**shop, "offers": usable} if offers else shop)
+    return ready or shops, {"cooldown_skipped_offers": skipped if ready else 0,
+                            "all_cooling_reconsidered": bool(shops and not ready)}

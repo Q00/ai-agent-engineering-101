@@ -18,6 +18,9 @@ def load_policy():
     limit = config.get("selection_max_candidates", 6)
     if type(limit) is not int or not 2 <= limit <= 6:
         raise ValueError("Invalid buyer policy: selection_max_candidates")
+    cooldown = config.get("failure_cooldown_seconds", 900)
+    if type(cooldown) is not int or not 0 <= cooldown <= 3600:
+        raise ValueError("Invalid buyer policy: failure_cooldown_seconds")
     if (not isinstance(config.get("grades"), list) or not config["grades"]
             or any(g not in ("A", "B", "C") for g in config["grades"])):
         raise ValueError("Invalid buyer policy: grades")
