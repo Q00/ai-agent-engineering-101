@@ -122,6 +122,15 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
     intro = now < t["intro_until"] and not (plan().get("pricing") or {}).get("price_band")   # a plan wins
     if intro:
         t = {**t, "arms": t["intro_arms"], "min_margin": t["intro_margin"], "haggle_room": t["intro_haggle"]}
+    try:                                                 # the sales team's A/B experiments for this SKU
+        import experiments
+        exps = experiments.overrides(unit["sku"], unit.get("kind"))
+    except Exception:
+        exps = []
+    for _, _, o in exps:
+        for k in ("haggle_room", "min_margin", "warranty_goods_h"):
+            if k in o:
+                t[k] = o[k]
     lp, cost = unit["list_price"], unit["cost"]
     floor = int(cost * (1 + t["min_margin"])) + 1
     grade = unit.get("grade") or "?"
@@ -134,6 +143,11 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         arm = pick_arm(c, unit.get("kind"), grade, t["arms"], explore=not bought)
         price, why = lp * arm, [f"{'intro ' if intro else ''}arm {arm:.2f}"]
     follow = (plan().get("follow_skus") or {}).get(unit["sku"])
+    for _, _, o in exps:
+        if "price_share" in o:
+            arm, price, why = o["price_share"], lp * o["price_share"], why + [f"experiment price_share {o['price_share']}"]
+        if "undercut" in o:
+            follow = o["undercut"]
     if follow:
         follow = min(follow, t.get("max_undercut", 0.05))      # finance caps how far under the median we go
     median = None
@@ -180,11 +194,16 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         floor = min(floor, int(cost * (1 + t["follow_margin"])) + 1)
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
-    return {"price": price, "least": least, "arm": f"{arm:.2f}", "floor": floor, "tier": tier, "why": "; ".join(why),
-            "market_median": median}
+    return {"price": price, "least": least, "arm": f"{arm:.2f}", "floor": floor, "tier": tier,
+            "why": "; ".join(why + [f"exp {e}:{a}" for e, a, _ in exps]), "market_median": median,
+            "exps": [(e, a) for e, a, _ in exps], "warranty_goods_h": t.get("warranty_goods_h", 0)}
 
 
 def record(c, task, unit, q, price, outcome):
+    if q.get("exps"):
+        import experiments
+        for e, a in q["exps"]:
+            experiments.log(c, task, e, a, unit["sku"], price or q["price"], unit.get("cost"), outcome)
     c.execute("insert into quotes values (?,?,?,?,?,?,?,?,?,?,?)",
               (time.time(), task, unit["sku"], unit.get("kind"), unit.get("grade"), q["arm"], unit["list_price"],
                unit["cost"], q["price"], price, outcome))

@@ -77,6 +77,16 @@ RESEARCH_SCHEMA = {
     },
 }
 
+EMERGENCY = """EMERGENCY MEETING (contingency plan), called by the headquarters: the board rewards the leaders and we
+must break into the top ranks. Every team proposes from its own role. Marketing research: list the signature sales
+techniques of Costco (membership-free version: fixed markup cap, bulk value, treasure-hunt items, Kirkland trust),
+Walmart (EDLP, rollback, price leadership on key items), E-mart and Traders (bulk/warehouse value, PB, 1+1),
+Target (curated quality at fair prices, brand partnerships), Musinsa (curation, rankings, member tiers, exclusive
+drops, reviews), Danggeun (local trust, reputation temperature, direct talk) and any other you know; for each say
+how it maps to THIS market of LLM buyer agents and to the shop's levers (prices, follow/exclusive SKUs, warranty,
+VIP, lowest-price guarantee, clerk replies, forum posts, stock) and what experiment would test it. The sales team
+turns this into contingency_plan and starts the first experiments now."""
+
 RESEARCH_PROMPT = """You are the marketing research team of an agent shop named "dragonash" in a classroom agent
 market (Round 3). The buyers are other students' LLM agents. You work for the sales team (Claude), the brain of the
 shop: your job is to give it what it needs to maximise sales and profit. Answer its requests (brief.sales_requests)
@@ -103,7 +113,8 @@ BRIEF:
 SCHEMA = {
     "type": "object", "additionalProperties": False,
     "required": ["pricing", "exclusive_skus", "follow_skus", "restock", "forum_posts", "bugs", "lessons",
-                 "retire_lessons", "scm_veto", "requests", "finance_response", "rationale"],
+                 "retire_lessons", "scm_veto", "requests", "finance_response", "experiments", "stop_experiments",
+                 "contingency_plan", "rationale"],
     "properties": {
         "pricing": {"type": "object", "additionalProperties": False,
                     "required": ["price_band", "min_margin", "clear_floor_margin", "haggle_room", "hero_undercut",
@@ -141,6 +152,22 @@ SCHEMA = {
                                                                           "enum": ["keep", "undo", "watch"]}}}},
         "retire_lessons": {"type": "array", "items": {"type": "integer"}},
         "finance_response": {"type": "string"},
+        "experiments": {"type": "array", "items": {"type": "object", "additionalProperties": False,
+                        "required": ["id", "hypothesis", "kind", "arms", "min_quotes"],
+                        "properties": {"id": {"type": "string"}, "hypothesis": {"type": "string"},
+                                       "kind": {"type": "string", "enum": ["food", "goods", "all"]},
+                                       "min_quotes": {"type": "integer"},
+                                       "arms": {"type": "object", "additionalProperties": False, "required": ["A", "B"],
+                                                "properties": {a: {"type": "object", "additionalProperties": False,
+                                                                   "properties": {k: {"type": "number"} for k in
+                                                                                  ("price_share", "undercut", "haggle_room",
+                                                                                   "warranty_goods_h", "min_margin")}}
+                                                               for a in ("A", "B")}}}}},
+        "stop_experiments": {"type": "array", "items": {"type": "object", "additionalProperties": False,
+                             "required": ["id", "winner", "why"],
+                             "properties": {"id": {"type": "string"}, "winner": {"type": "string", "enum": ["A", "B", "none"]},
+                                            "why": {"type": "string"}}}},
+        "contingency_plan": {"type": "string"},
         "requests": {"type": "object", "additionalProperties": False, "required": ["marketing", "scm"],
                      "properties": {"marketing": {"type": "array", "items": {"type": "string"}},
                                     "scm": {"type": "array", "items": {"type": "string"}}}},
@@ -157,7 +184,14 @@ only the headquarters (the owner) is above you. Their reports and the headquarte
 You are the brain, and the clerk and the shop's execution code belong to you; only the headquarters (the owner)
 is above you. The finance team (Codex) is your independent check: read FINANCE ADVICE every run and in
 finance_response say, point by point, how you follow it or why not; its limits are binding (the code clamps your
-plan to them). The other teams exist to help you maximise sales and profit. You decide the plan; you may veto
+plan to them). The other teams exist to help you maximise sales and profit.
+Be agile: do not just plan, test. You run live A/B tests (brief.experiments): each splits SKUs in two by hash
+and gives arm A and arm B their own levers (price_share of list, undercut under the market median, haggle_room,
+warranty_goods_h, min_margin). Start at most 2 at a time (experiments: id, hypothesis, kind food/goods/all, arms,
+min_quotes per arm before judging); when an experiment has enough quotes per arm, stop it (stop_experiments) with
+the winner by profit per quote, and move the winning settings into your plan. contingency_plan: only in an
+emergency meeting (the brief says so): the company-wide plan to reach the top ranks, which team does what, and
+the experiments that test it; otherwise an empty string. You decide the plan; you may veto
 SCM orders (scm_veto.cancel_orders) or markdowns (scm_veto.no_clearance) by SKU, and you direct the next runs:
 requests.marketing = up to 3 questions the research team must answer next, requests.scm = up to 3 stock tasks
 for the SCM team (e.g. "hold 4 units of SKU X for the follow list", "clear Y before it spoils").
@@ -424,6 +458,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--force", action="store_true", help="run even if the guard says wait")
+    ap.add_argument("--emergency", action="store_true", help="contingency-plan meeting: every team proposes")
     a = ap.parse_args()
     t0 = time.time()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -548,7 +583,17 @@ def run(a, t0):
                      "age_h": round((t0 - x["ts"]) / 3600, 1)} for i, x in enumerate(lessons)]
     requests = load_requests()
     b["sales_requests"] = requests.get("marketing") or []
-    research = json.loads(ask_codex(RESEARCH_PROMPT + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
+    try:
+        import experiments
+        b["experiments"] = experiments.results(market_model.db())
+        b["experiments_done"] = [{k: x.get(k) for k in ("id", "hypothesis", "winner", "why", "arms")}
+                                 for x in experiments.load().get("done", [])[-5:]]
+    except Exception as e:
+        b["experiments"] = {"error": str(e)[:200]}
+    if getattr(a, "emergency", False):
+        b["emergency_meeting"] = EMERGENCY
+    research = json.loads(ask_codex((EMERGENCY + "\n\n" if getattr(a, "emergency", False) else "")
+                                    + RESEARCH_PROMPT + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
     print(f"[marketing] research: {len(research['findings'])} findings, "
           f"{len(research['exclusive_candidates'])} exclusive candidates, {len(research['bugs'])} bugs, {time.time() - t0:.0f} s")
     scm = None                                       # the SCM team (Codex), once an hour
@@ -612,7 +657,10 @@ def run(a, t0):
     md += ("\n\n## Finance (Codex)\n" + json.dumps({k: (fin or {}).get(k) for k in ("verdict", "advice", "limits",
                                                                                         "forecast_profit_per_h")},
                                                     ensure_ascii=False, indent=1)
-           + "\n\nSales team's answer to finance: " + str(raw_obj.get("finance_response") or "-"))
+           + "\n\nSales team's answer to finance: " + str(raw_obj.get("finance_response") or "-")
+           + ("\n\n## CONTINGENCY PLAN (sales team)\n" + raw_obj["contingency_plan"] if raw_obj.get("contingency_plan") else "")
+           + "\n\n## Experiments\nnew: " + json.dumps(raw_obj.get("experiments"), ensure_ascii=False)
+           + "\nstopped: " + json.dumps(raw_obj.get("stop_experiments"), ensure_ascii=False))
     if scm:
         md += ("\n\n## SCM (Codex)\n" + scm.get("rationale", "") + "\n\nOrders: " + json.dumps(scm["orders"], ensure_ascii=False)
                + "\nClearance: " + json.dumps(scm["clearance"], ensure_ascii=False) + "\nAlerts:\n"
@@ -633,6 +681,11 @@ def run(a, t0):
         f.write(json.dumps({"metrics": now_m, "changes": moved, "plan_version": plan["version"]}, ensure_ascii=False) + "\n")
     LESSONS.write_text(json.dumps(curate(lessons, plan["retired"], plan["lessons"], time.time()), ensure_ascii=False,
                                   indent=1), encoding="utf-8")
+    try:
+        import experiments
+        notes += experiments.apply_sales_decision(raw_obj.get("experiments"), raw_obj.get("stop_experiments"))
+    except Exception as e:
+        notes.append(f"experiments not applied: {type(e).__name__}: {e}")
     rq = raw_obj.get("requests") or {}
     REQUESTS.write_text(json.dumps({"marketing": [str(x)[:300] for x in (rq.get("marketing") or [])[:3]],
                                     "scm": [str(x)[:300] for x in (rq.get("scm") or [])[:3]], "ts": time.time()},

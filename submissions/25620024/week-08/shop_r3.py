@@ -267,8 +267,9 @@ class Shop(AgentExecutor):
             receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id}
             if u["unit"]:
                 receipt.update(unit=u["unit"], claim=u.get("grade"))
-            if u.get("kind") == "goods" and promo.theta()["warranty_goods_h"]:
-                receipt["warranty_hours"] = promo.theta()["warranty_goods_h"]
+            w = q.get("warranty_goods_h", promo.theta()["warranty_goods_h"])   # an experiment may set it per SKU
+            if u.get("kind") == "goods" and w:
+                receipt["warranty_hours"] = w
             code = deal["code"] or promo.new_code(task.id)
             promo.count_purchase(self.c, code, price)
             promo.record(self.c, task.id, u, q, price, "deal")
