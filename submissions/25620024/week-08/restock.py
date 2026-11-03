@@ -9,6 +9,10 @@ Order of buying, each line only while cash stays above the reserve:
      (selling fastest) get a deeper target, they are the ones sold lowest in the market
   3. display: one unit in categories with demand but no stock, so buyers see us in shops.json; long shelf life only
 Food that lasts 48 h or less is bought only once its demand is proven.
+Supply opens for 3 minutes every 20 (inventory.json "restock": open, opens_at, closes_at; rule added 2026-11-03).
+Outside a window the run prints no lines (the kit would wait up to 90 s per line, then skip it); a minute before
+a window opens it plans, so the kit's first line goes out as the window opens. What a window buys has to last to
+the next one, so reservations wait for it and are kept an hour.
 Prints {"buy": [{"sku": ..., "qty": ...}]}; the kit buys at most 10 lines a run.
 """
 import argparse
@@ -73,7 +77,7 @@ def plan(md, c, t, now=None):
                 rsv = json.loads(line)
             except ValueError:
                 continue
-            if now - rsv.get("ts", 0) < 1800 and not stock.get(rsv.get("sku")) and rsv.get("sku") not in buy:
+            if now - rsv.get("ts", 0) < 3600 and not stock.get(rsv.get("sku")) and rsv.get("sku") not in buy:
                 add(rsv["sku"], 1, "reserved")
     for sku, rate in sorted(by_sku.items(), key=lambda kv: -kv[1]):   # 2. demand
         r = cat.get(sku)
@@ -98,6 +102,20 @@ def plan(md, c, t, now=None):
     return [{"sku": k, "qty": v} for k, v in buy.items()], why, cash
 
 
+def window(md, now=None):
+    """(buy now?, why): the supply window from inventory.json; no "restock" field means no windows."""
+    now = now or time.time()
+    w = load(md, "inventory.json", {}).get("restock")
+    if not isinstance(w, dict):
+        return True, "no supply windows announced"
+    if w.get("open"):
+        return True, f"window open until {time.strftime('%H:%M:%S', time.localtime(w.get('closes_at') or now))}"
+    opens = w.get("opens_at") or 0
+    if opens - now <= 60:
+        return True, f"window opens in {max(0, opens - now):.0f} s"
+    return False, f"window closed, opens at {time.strftime('%H:%M:%S', time.localtime(opens))} (in {(opens - now) / 60:.0f} min)"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", default=".market")
@@ -108,6 +126,11 @@ def main():
     except Exception as e:
         print(f"[restock] ledger sync failed: {type(e).__name__}: {e}", flush=True)
     buy, why, cash = plan(md, c, theta())
+    go, when = window(md)
+    if not go:
+        buy, why = [], [f"waiting: {when}"]
+    else:
+        why = [when] + why
     try:                                   # speak first: the forum runs here too, with no order behind it
         import forum
         said = forum.tick(md, c)
