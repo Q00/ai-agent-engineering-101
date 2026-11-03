@@ -124,7 +124,7 @@ def my_history(memory, name):
 # no-answer ever (the first version) blocked ggari-shop for good after two timeouts in 1,866 deals.
 # Cheating is graded (buyer_memory.sanction): an inflated receipt blocks for good, a raised ask pauses the
 # shop and blocks it only the second time. Before this, one raised ask blocked ggari-shop for good again.
-NO_ANSWER_LAST, NO_ANSWER_MIN, NO_ANSWER_HOURS = 5, 2, 6
+NO_ANSWER_LAST, NO_ANSWER_MIN, NO_ANSWER_HOURS = 5, 3, 1   # 2 of 5 within 6 h paused 13+ big shops (11-04)
 
 
 def blocked(prof, name, now=None):
@@ -643,9 +643,11 @@ def round3(a, order, shops, mem, started):
         stars, review = 1, f"No quote for {q['c'][2]['sku']}: {q.get('error') or 'no price in the reply'}."
         # a unit that will not last is the shop answering, not silence: it must not count toward the no-answer pause
         # (2 of 5 within 6 h blocks the shop, often the big one that heads the list)
-        shelf = (q.get("error") or "").startswith("offered unit has")
+        # only a failed connection is silence; a shop that answered (no unit that lasts, no stated shelf life, out
+        # of stock, no price) did answer. Counting those as "no answer" paused 13+ big shops for 6 h (11-04 05:50)
+        silent = bool(re.match(r"[A-Z]\w*(Error|Timeout|Exception)\b", q.get("error") or ""))
         remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": q["c"][2]["sku"], "budget": order["budget"],
-                  "outcome": "no deal" if shelf else "no answer", "problem": None if shelf else "no answer (no quote)",
+                  "outcome": "no answer" if silent else "no deal", "problem": "no answer (no quote)" if silent else None,
                   "enuri_first": adv["ranked"][0]["shop"] if adv else None})
         print(json.dumps({"shop": shop["url"], "receipt": None, "stars": stars, "review": review}, ensure_ascii=False),
               flush=True)

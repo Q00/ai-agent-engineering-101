@@ -198,7 +198,11 @@ def test_buyer(c, shops):
         check("big-shop" not in [x[1]["name"] for x in small + big], "sanction pause skips big-shop for small and big orders alike")
         p["recent"] = [[now - 60, "no answer", None]] * 2
         p["offenses"] = []
-        check(mb.blocked({"big-shop": p}, "big-shop") is not None, "2 no-answers in 6 h pause a shop (big orders included)")
+        check(mb.blocked({"big-shop": p}, "big-shop") is None, "2 no-answers no longer pause a shop (11-04: it paused 13+)")
+        p["recent"] = [[now - 60, "no answer", None]] * 3
+        check(mb.blocked({"big-shop": p}, "big-shop") is not None, "3 no-answers within 1 h pause a shop")
+        p["recent"] = [[now - 2 * 3600, "no answer", None]] * 3
+        check(mb.blocked({"big-shop": p}, "big-shop") is None, "the pause ends after 1 h")
         cands, adv, rows = mb.follow_enuri(order, shops, cat, {}, enuri.book())
         check(adv and cands[0][1]["name"] == adv["ranked"][0]["shop"] and any("[enuri] advice" in x for x in logs),
               "round3 follows Enuri's ranking and logs the advice")
