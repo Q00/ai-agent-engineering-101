@@ -80,10 +80,10 @@ def plan(md, c, t, now=None):
     heroes = [k for k, _ in sorted(by_sku.items(), key=lambda kv: -kv[1])[:t["heroes"]]]
     buy, why = {}, []
 
-    def add(sku, qty, reason):
+    def add(sku, qty, reason, any_price=False):
         nonlocal cash
         r = cat.get(sku)
-        if not r or qty <= 0 or r["list_price"] > t["max_list"]:
+        if not r or qty <= 0 or (r["list_price"] > t["max_list"] and not any_price):
             return
         qty = min(qty, t["max_qty"] - buy.get(sku, 0))
         cost = r["list_price"] * t["cost_guess"] * qty
@@ -118,7 +118,7 @@ def plan(md, c, t, now=None):
     general = cash
     cash = min((inv.get("balance") or 0) - t["cash_reserve"] * start, t["pick_window_budget"] * start - spent)
     for x in mk.get("skus") or []:
-        add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "marketing pick")
+        add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "marketing pick", any_price=True)
     cash = min(cash, general)                                 # the rest of the run keeps the general cap
     if mk.get("mode") == "focus":                             # marketing: only regulars and its picks for now
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"], cash, \

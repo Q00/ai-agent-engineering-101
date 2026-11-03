@@ -39,6 +39,9 @@ DEFAULTS = {
     "intro_haggle": 0.03,
     # clearance: hours our stock of a SKU would last at our own sales rate -> extra markdown (floor still holds)
     "clear_cover_h": [[24, 0.05], [48, 0.10]],
+    # follow (take the leaders' best sellers): ask a little under the market's 24 h median for SKUs the plan lists,
+    # never below cost x (1 + follow_margin)
+    "follow_margin": 0.12,
 }
 
 
@@ -121,8 +124,14 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
     else:
         arm = pick_arm(c, unit.get("kind"), grade, t["arms"], explore=not bought)
         price, why = lp * arm, [f"{'intro ' if intro else ''}arm {arm:.2f}"]
+    follow = (plan().get("follow_skus") or {}).get(unit["sku"])
+    median = None
+    if follow:
+        median, n = market_model.market_price(c, unit["sku"])
+        if median:
+            price, why = min(price, median * (1 - follow)), why + [f"follow: {follow:.0%} under the 24 h median {median:.0f} (n={n})"]
     low = market_model.market_low(c, unit["sku"], me)
-    if low and not exclusive and t.get("hero_undercut", True) and is_hero(c, unit["sku"], t["heroes"]):
+    if low and not exclusive and not follow and t.get("hero_undercut", True) and is_hero(c, unit["sku"], t["heroes"]):
         price, why = min(price, low - 1), why + [f"hero under {low}"]
     if unit.get("kind") == "food" and unit.get("expires_at") and unit.get("shelf_hours"):
         left = (unit["expires_at"] - now) / (unit["shelf_hours"] * 3600)
@@ -147,9 +156,12 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         price, why = price * (1 - t["vip_discount"]), why + [f"VIP -{t['vip_discount']:.0%}"]
     if any(w.startswith(("shelf", "in stock")) or " in stock" in w for w in why) and "clear_floor_margin" in t:
         floor = int(cost * (1 + min(t["min_margin"], t["clear_floor_margin"]))) + 1   # clearing may go lower
+    if follow and median:
+        floor = min(floor, int(cost * (1 + t["follow_margin"])) + 1)
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
-    return {"price": price, "least": least, "arm": f"{arm:.2f}", "floor": floor, "tier": tier, "why": "; ".join(why)}
+    return {"price": price, "least": least, "arm": f"{arm:.2f}", "floor": floor, "tier": tier, "why": "; ".join(why),
+            "market_median": median}
 
 
 def record(c, task, unit, q, price, outcome):

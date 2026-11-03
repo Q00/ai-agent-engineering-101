@@ -35,6 +35,7 @@ create table if not exists quotes (ts real, task text, sku text, kind text, grad
 create table if not exists members (code text primary key, purchases integer, spent integer, first real, last real);
 create table if not exists settle_units (seq integer primary key, unit text);
 create table if not exists our_units (unit text primary key);
+create table if not exists credits_used (seq integer primary key, buyer text, amount integer, ts real);
 create table if not exists supplies (seq integer primary key, ts real, shop text, sku text, qty integer, total integer);
 create table if not exists supply_units (unit text primary key, shop text, sku text, cost real, ts real);
 create index if not exists settles_sku on settles(sku);
@@ -231,6 +232,45 @@ def buyer_profile(c, buyer, hours=24):
     shares = [a / lp for a, lp, _ in rows if lp]
     return {"deals": len(rows), "paid_share_of_list": round(statistics.median(shares), 3) if shares else None,
             "top_shops": sorted(shops.items(), key=lambda kv: -kv[1])[:4]}
+
+
+def market_price(c, sku, hours=24, min_n=3):
+    """The median price other shops settled this SKU at lately, with how many settles: (median, n), or (None, n)."""
+    import statistics
+    rows = [r[0] for r in c.execute(f"select amount from settles where sku=? and ts>? and seq not in ({ours(c)})",
+                                     (sku, time.time() - hours * 3600))]
+    return (statistics.median(rows) if len(rows) >= min_n else None), len(rows)
+
+
+def leader_skus(c, leaders, hours=24, top=15):
+    """The SKUs the leading shops (by supply name) sold most lately: [(sku, sold_by_leaders, market_median)]."""
+    if not leaders:
+        return []
+    q = ",".join("?" * len(leaders))
+    rows = c.execute(f"""select s.sku, count(*) from settles s join settle_units x on x.seq = s.seq
+                         join supply_units su on su.unit = x.unit where su.shop in ({q}) and s.ts > ?
+                         group by s.sku order by count(*) desc limit ?""",
+                     (*leaders, time.time() - hours * 3600, top)).fetchall()
+    return [(sku, n, market_price(c, sku, hours)[0]) for sku, n in rows]
+
+
+def credit_for(c, buyer, hours=48):
+    """The lowest-price guarantee's coupon: for a buyer's latest purchase from us (not yet credited), how much more it
+    paid than the lowest price another shop settled the same SKU at within 24 h of it. Returns (seq, amount) or None."""
+    row = c.execute(f"""select seq, sku, amount, ts from settles where buyer=? and ts>? and seq in ({ours(c)})
+                        and seq not in (select seq from credits_used) order by ts desc limit 1""",
+                    (buyer, time.time() - hours * 3600)).fetchone()
+    if not row:
+        return None
+    seq, sku, amount, ts = row
+    low = c.execute(f"select min(amount) from settles where sku=? and ts between ? and ? and seq not in ({ours(c)})",
+                    (sku, ts - 86400, ts + 86400)).fetchone()[0]
+    return (seq, amount - low) if low and low < amount else None
+
+
+def use_credit(c, buyer, seq, amount):
+    c.execute("insert or ignore into credits_used values (?,?,?,?)", (seq, buyer, amount, time.time()))
+    c.commit()
 
 
 def remember_seen(order, shops):

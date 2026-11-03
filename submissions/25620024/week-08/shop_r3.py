@@ -127,7 +127,11 @@ def is_vip(c, text):
 
 
 CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grade or warranty? say e.g. "
-         "'need 48h, grade A/B' and I pick a unit that passes | bought here before? say your market name for VIP")
+         "'need 48h, grade A/B' and I pick a unit that passes | bought here before? say your market name for VIP "
+         "| LOWEST-PRICE GUARANTEE: seen it cheaper? reply 'match <price>': if another shop settled it at that price "
+         "on the ledger, we match it | paid us more than another shop's ledger price for the same SKU within 24 h? "
+         "say your market name: the difference comes off this purchase")
+MATCH_RE = re.compile(r"\bmatch|cheaper|elsewhere|other shop|another shop|lower price|최저가|더 싸|다른 (가게|곳)", re.I)
 
 
 def offer_data(u, price, q, vip=None):
@@ -139,7 +143,10 @@ def offer_data(u, price, q, vip=None):
             "shelf_hours_left": left, "warranty_hours": w if u.get("kind") == "goods" else 0,
             "list_price": u.get("list_price"), "ask": price, "ask_share_of_list": round(price / u["list_price"], 3),
             "vip": vip or None, "substitute_for": u.get("substitute_for"),
-            "receipt_key_fp": FP, "accept_by": "reply with the ask as a number"}
+            "receipt_key_fp": FP, "accept_by": "reply with the ask as a number",
+            **({"market_median_24h": round(q["market_median"]),
+                "ask_vs_market_median": round(price / q["market_median"] - 1, 3),
+                "market_median_source": "public ledger settles of other shops, last 24 h"} if q.get("market_median") else {})}
 
 
 def warranty_note(u):
@@ -167,8 +174,10 @@ def facts(u, price, q, code):
         shelf = f" shelf_left={max(0, (u['expires_at'] - time.time()) / 3600):.0f}h"
     tier = f" member={code} tier=-{q['tier'][1]:.0%}" if q.get("tier") else ""
     lp = u["list_price"]
+    med = q.get("market_median")
+    vs = f" | market 24h median={med:.0f} (ledger), ask {price / med - 1:+.1%} vs market" if med else ""
     return (f"[sku {u['sku']}] {u['name'][:40]} | unit={u['unit']} grade={u.get('grade')} cert=market-signed{shelf}"
-            f" | list={lp} ask={price} ({(price - lp) / lp:+.1%} vs list){tier} | receipt=Ed25519 shop_fp={FP}")
+            f" | list={lp} ask={price} ({(price - lp) / lp:+.1%} vs list){vs}{tier} | receipt=Ed25519 shop_fp={FP}")
 
 
 class Shop(AgentExecutor):
@@ -217,19 +226,42 @@ class Shop(AgentExecutor):
             code = m.group(1).upper() if m else None
             vip = is_vip(self.c, text)
             q = promo.quote(self.c, u, code, me=NAME, stock_n=u.get("stock_n", 1), vip=bool(vip))
+            credit = None
+            if vip:                                       # the guarantee's coupon, checked on the ledger
+                cr = market_model.credit_for(self.c, vip)
+                if cr:
+                    off = min(cr[1], int(q["price"] * 0.15), max(0, q["price"] - q["floor"]))
+                    if off > 0:
+                        credit = (cr[0], off)
+                        q = dict(q, price=q["price"] - off, least=max(q["least"] - off, q["floor"]),
+                                 why=q["why"] + f"; guarantee credit -{off} (settle #{cr[0]})")
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
-                                         "talk": 0}
+                                         "talk": 0, "credit": credit}
             sub = f"substitute for {u['substitute_for']} (same category, in stock) | " if u.get("substitute_for") else ""
             log(f"{task.id[:8]} {u['sku']} cost {u['cost']} -> ask {q['price']} least {q['least']} ({q['why']})"
                 + (f" VIP {vip}" if vip else "") + (f" substitute for {u['substitute_for']}" if sub else ""))
             await up.requires_input(say_offer(f"{sub}{facts(u, q['price'], q, code)}{warranty_note(u)}"
                                         + (f" | VIP {vip}: -{promo.theta().get('vip_discount', 0):.0%} applied" if vip else "")
+                                        + (f" | guarantee credit -{credit[1]} applied (you paid more than the ledger's "
+                                           f"lowest price elsewhere, settle #{credit[0]})" if credit else "")
                                         + f" | asking {q['price']}. Reply with a number. | {CLERK}"))
             return
 
         u, q = deal["unit"], deal["q"]
         offer = number(text)
         deal["turns"] += 1
+        if offer is not None and offer < q["least"] and MATCH_RE.search(text):   # the lowest-price guarantee
+            low = market_model.market_low(self.c, u["sku"], hours=24)
+            floor = int(u["cost"] * (1 + promo.theta().get("match_margin", 0.05))) + 1
+            if low and offer >= low - 1 and offer >= floor:
+                q = deal["q"] = dict(q, least=offer, why=q["why"] + f"; price match {offer} (ledger low {low})")
+                log(f"{task.id[:8]} price match: buyer {offer}, ledger low {low}")
+            elif low and max(low - 1, floor) < deal["ask"]:
+                deal["ask"] = max(low - 1, floor)
+                q = deal["q"] = dict(q, least=deal["ask"])
+                await up.requires_input(say_offer(f"price match: the lowest price another shop settled {u['sku']} at on "
+                                                  f"the ledger (24 h) is {low}; we ask {deal['ask']}. Reply with it to buy."))
+                return
         if offer is not None and offer >= q["least"]:
             price = min(offer, deal["ask"])
             receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id}
@@ -242,6 +274,8 @@ class Shop(AgentExecutor):
             promo.record(self.c, task.id, u, q, price, "deal")
             if u.get("unit"):
                 self.sold[u["unit"]] = time.time()
+            if deal.get("credit"):
+                market_model.use_credit(self.c, deal["vip"], deal["credit"][0], deal["credit"][1])
             await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
             nxt = next((d for n, d in promo.theta()["tiers"] if promo.member(self.c, code)[0] >= n), None)
             await up.complete(say(f"Deal: {u['name'][:40]} at {price}. Signed receipt attached (Ed25519 shop_fp={FP}),"

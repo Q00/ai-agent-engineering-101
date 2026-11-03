@@ -168,6 +168,30 @@ def opening_ads(c, md, now):
     return out
 
 
+def follow_ads(c, md, now):
+    """As the shop: a SKU we took over from the leaders, in stock, asked under the ledger's 24 h median."""
+    import promo
+    fo = promo.plan().get("follow_skus") or {}
+    try:
+        units = json.loads((Path(md) / "inventory.json").read_text(encoding="utf-8")).get("units", [])
+    except (OSError, ValueError):
+        return []
+    out = []
+    for sku, cut in fo.items():
+        us = [u for u in units if u["sku"] == sku and u.get("grade") != "expired"]
+        med, n = market_model.market_price(c, sku)
+        if not us or not med:
+            continue
+        u = us[0]
+        w = promo.theta().get("warranty_goods_h") or 0
+        out.append({"topic": f"follow:{sku}", "as": "shop", "refs": [], "score": 2.9,
+                    "text": f"[in stock] sku {sku} {u['name'][:34]} | {len(us)} units, grade {u.get('grade')} "
+                            f"cert=market-signed{f', warranty {w}h' if u.get('kind') == 'goods' and w else ''} | asking about "
+                            f"{cut:.0%} under the 24 h market median {med:.0f} (ledger, {n} settles) | ask: "
+                            f"'I want to buy {u['name'][:20]} ({sku})'"})
+    return out
+
+
 def votes(forum, state):
     out = []
     for p in forum:
@@ -191,7 +215,7 @@ def tick(md=Path(".market"), c=None, now=None):
     except (OSError, ValueError):
         forum = []
     cands = price_index(c, t, now) + honesty(c, t, now) + breakage(c, t, now) + offers(forum, md, now) \
-        + opening_ads(c, md, now)
+        + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
     for role in ("buyer", "shop"):
         if now - state["last"].get(role, 0) < 300:

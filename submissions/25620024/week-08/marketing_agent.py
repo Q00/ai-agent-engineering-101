@@ -100,7 +100,7 @@ BRIEF:
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
-    "required": ["pricing", "exclusive_skus", "restock", "forum_posts", "bugs", "rationale"],
+    "required": ["pricing", "exclusive_skus", "follow_skus", "restock", "forum_posts", "bugs", "rationale"],
     "properties": {
         "pricing": {"type": "object", "additionalProperties": False,
                     "required": ["price_band", "min_margin", "clear_floor_margin", "haggle_room", "hero_undercut",
@@ -114,6 +114,11 @@ SCHEMA = {
                                                       "properties": {"sku": {"type": "string"},
                                                                      "price_share": {"type": "number"},
                                                                      "why": {"type": "string"}}}},
+        "follow_skus": {"type": "array", "items": {"type": "object", "additionalProperties": False,
+                                                   "required": ["sku", "undercut", "why"],
+                                                   "properties": {"sku": {"type": "string"},
+                                                                  "undercut": {"type": "number"},
+                                                                  "why": {"type": "string"}}}},
         "restock": {"type": "object", "additionalProperties": False, "required": ["mode", "skus"],
                     "properties": {"mode": {"type": "string", "enum": ["normal", "focus"]},
                                    "skus": {"type": "array", "items": {"type": "object", "additionalProperties": False,
@@ -146,6 +151,9 @@ Your job, every hour, from the brief below:
    market low on hot SKUs: usually false when chasing profit), warranty_goods_h (0, 3 or 6; refunds come from our
    balance, the brief shows how often goods broke), vip_discount for named regulars (0-0.10).
 2. exclusive_skus: hot SKUs few competitors hold; set a high price_share (0.80-0.98).
+2b. follow_skus: the leaders' best sellers (brief.leader_skus) we take over: stock them (restock picks, high-ticket
+   allowed) and ask a little under the market's 24 h median: undercut 0.01-0.05. Our replies show the median and
+   our ask against it, with the warranty and true grade on top, so buyer agents comparing quotes pick us.
 3. restock: mode "focus" (buy only regulars' categories and your picks) or "normal"; picks = SKUs to hold and
    qty (1-10). Buy what sells fast with few competitors; avoid stock that ties up cash.
 4. forum_posts: 0-2 short posts AS THE SHOP, plain facts a buyer agent can check (SKU, grade, shelf life,
@@ -193,6 +201,7 @@ def brief():
     arms = c.execute("select kind, arm, count(*), sum(outcome='deal') from quotes where ts>? group by kind, arm",
                      (time.time() - 12 * 3600,)).fetchall()
     regular, wants = market_model.regulars(c)
+    comp_all = market_model.competitor_stock(c)
     reviews = [r for s in httpx.get(f"{market_model.MARKET}/api/shops", timeout=30).json()["shops"]
                if s["name"] == NAME for r in (s.get("reviews") or [])]
     try:
@@ -223,6 +232,12 @@ def brief():
             "our_buyer": next(({k: x.get(k) for k in ("all", "surplus", "forum", "posts", "deals", "paid")}
                                for x in b["buyers"] if x["name"] == NAME), None),
         },
+        "leader_skus": [{"sku": sku, "name": (cat.get(sku) or {}).get("name", "")[:40],
+                         "list": (cat.get(sku) or {}).get("list_price"), "sold_by_leaders_24h": n,
+                         "market_median_24h": round(med) if med else None,
+                         "competitor_units": comp_all.get(sku, 0), "our_units": (stock.get(sku) or {}).get("units", 0)}
+                        for sku, n, med in market_model.leader_skus(
+                            c, [x["name"] for x in sorted(shops, key=lambda s: -(s.get("all") or 0))[:6]], top=15)],
         "our_stock": stock, "cash": {"balance": inv.get("balance"), "start": inv.get("start")},
         "quotes_12h_by_arm": [{"kind": k, "arm": a, "quotes": n, "deals": d} for k, a, n, d in arms],
         "regulars": regular, "regular_categories": {k: sum(v.values()) for k, v in wants.items()},
@@ -264,7 +279,7 @@ def report_md(b, research, plan, notes):
     lines += ["", "Exclusive candidates:"] + [f"- {x['sku']}: {x['evidence']}" for x in research.get("exclusive_candidates", [])]
     lines += ["", "Risks:"] + [f"- {x}" for x in research.get("risks", [])]
     lines += ["", "## Strategy (Claude)", plan.get("rationale", ""), "", "```json",
-              json.dumps({k: plan[k] for k in ("pricing", "exclusive_skus", "restock", "forum_posts")}, ensure_ascii=False, indent=1),
+              json.dumps({k: plan[k] for k in ("pricing", "exclusive_skus", "follow_skus", "restock", "forum_posts")}, ensure_ascii=False, indent=1),
               "```", "", "## Bugs reported"] + [f"- {x['what']} | {x['evidence']} | fix: {x['fix']}" for x in plan.get("bugs", [])]
     lines += ["", f"Gate notes: {notes}"]
     return "\n".join(lines)
@@ -293,6 +308,11 @@ def gate(raw, cat):
         else:
             notes.append(f"unknown exclusive SKU dropped: {x.get('sku')}")
     plan["exclusive_skus"] = ex
+    fo = {}
+    for x in (p.get("follow_skus") or [])[:15]:
+        if x.get("sku") in cat:
+            fo[x["sku"]] = round(clamp(x.get("undercut", 0.02), 0.01, 0.05), 3)
+    plan["follow_skus"] = fo
     rs = p.get("restock") or {}
     picks = [{"sku": x["sku"], "qty": int(clamp(x.get("qty", 1), 1, 10))} for x in (rs.get("skus") or [])[:10]
              if x.get("sku") in cat]
