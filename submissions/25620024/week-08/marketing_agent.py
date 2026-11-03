@@ -234,7 +234,7 @@ Your job, every hour, from the brief below:
    brief.plan_history (earlier plans and their outcomes): write 1-3 lessons, each with a verdict: keep (it worked),
    undo (it hurt; reverse it now) or watch (too early). brief.lessons are the standing lessons with their index;
    follow them unless the scorecard contradicts them, and list in retire_lessons the indexes of any that are
-   stale or proved wrong. Change at most 2 levers against brief.current_plan per run, so each outcome can be
+   stale or proved wrong. Change at most brief.accountability.hr_grade.levers_per_run levers (2 if absent) against brief.current_plan per run, so each outcome can be
    traced to its cause.
 7. rationale: 3-6 sentences on why, naming which lessons you followed.
 brief.accountability comes first: what headquarters holds you responsible for, with the numbers now. Answer it in
@@ -718,6 +718,13 @@ def run(a, t0):
     (OUT / f"{stamp}.json").write_text(json.dumps({"brief": b, "research": research, "raw": raw, "plan": plan,
                                                    "gate": notes}, ensure_ascii=False, indent=1), encoding="utf-8")
     md = report_md(b, research, plan, notes)
+    try:                                             # the HR team grades every team after each run (code, no tokens)
+        import hr
+        _, hr_md = hr.run(LAST.get("board"))
+        md += "\n\n" + hr_md
+        print("[hr] graded: " + ", ".join(f"{t} {(hr.grade_of(t) or {}).get('score')}" for t in hr.TEAMS))
+    except Exception as e:
+        print(f"[hr] skipped: {type(e).__name__}: {e}")
     md += ("\n\n## Finance (Codex)\n" + json.dumps({k: (fin or {}).get(k) for k in ("verdict", "advice", "limits",
                                                                                         "forecast_profit_per_h")},
                                                     ensure_ascii=False, indent=1)

@@ -93,6 +93,13 @@ def accountability(team, c=None, shop=None, board=None):
     except Exception as e:
         data = {"error": f"{type(e).__name__}: {e}"}
     out = {"you_answer_for": f"headquarters holds you responsible if {WHO[team]}", "now": data}
+    try:
+        import hr
+        g = hr.grade_of({"sales": "sales", "scm": "scm", "marketing": "marketing", "finance": "finance"}[team])
+        if g:
+            out["hr_grade"] = g        # the HR team's score, KPIs, rewards and the levers you may change per run
+    except Exception:
+        pass
     h = handoff()
     if h:
         out["handoff"] = h          # read it before anything else: what the team before you learned and got wrong

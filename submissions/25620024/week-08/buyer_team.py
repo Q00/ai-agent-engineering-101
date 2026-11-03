@@ -251,7 +251,12 @@ def brief(board=None, now=None):
     snap = {"ts": now, **{k: me.get(k) for k in BOARD_KEYS},
             "accountability": {k: (summ.get("enuri_accountability") or {}).get(k) for k in ("missed", "wrong", "lost")}}
     import kpi
-    b = {"accountability": dict(accountability(me, top, summ), handoff=kpi.handoff()), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
+    try:
+        import hr
+        grades = {"buyer_team": hr.grade_of("buyer"), "enuri": hr.grade_of("enuri")}
+    except Exception:
+        grades = None
+    b = {"accountability": dict(accountability(me, top, summ), handoff=kpi.handoff(), hr_grade=grades), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
          "enuri": summ, "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
          "current": current(), "plan_now": {k: load(PLAN, {}).get(k) for k in ("changed", "forum_advice", "rationale")},
          "scorecard": scorecard(snap, history[-1] if history else None),
