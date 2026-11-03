@@ -76,6 +76,9 @@ buyers: ALL = 0.5 surplus + 0.3 forum + 0.2 deals (percentiles). surplus is ABSO
 over deals: one 250k order kept at half price is worth more than fifty 5k orders. The leaders have about 3x our
 surplus mostly because they close the expensive orders. The Enuri team (price scouts, never buys) keeps the book the
 buyer follows; it answers for every missed opportunity and wrong purchase (brief.enuri.enuri_accountability, first).
+brief.accountability.hq_warning: headquarters has given the buyer team a FIRST WARNING -- one more error left running
+(see brief.internal_audit and brief.diagnosis: red findings in the buyer area) and the team is dismissed. Read the
+audit first every run and say in the rationale what you do about each buyer finding.
 brief.accountability comes first: what headquarters holds you responsible for, with the numbers now. Answer it in
 your rationale.
 From the brief:
@@ -322,7 +325,8 @@ def brief(board=None, now=None):
     b = {"accountability": dict(accountability(me, top, summ), handoff=kpi.handoff(), hr_grade=grades,
                                 **({"hr_demand": kpi.HR_DEMAND} if low else {}),
                                 leaders_plan=__import__("leaders_meeting").summary(),
-                                private_from_hq=__import__("hr").contest_for("buyer")), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
+                                private_from_hq=__import__("hr").contest_for("buyer"),
+                                hq_warning=__import__("hr").hq_warning("buyer")), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
          "enuri": summ, "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
          "diagnosis": diagnosis(board, now), "internal_audit": __import__("qa").summary(),
          "current": current(), "plan_now": {k: load(PLAN, {}).get(k) for k in ("changed", "forum_advice", "rationale")},

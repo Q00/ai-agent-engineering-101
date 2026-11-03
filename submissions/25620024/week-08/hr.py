@@ -279,6 +279,12 @@ def auto_rewards(teams, history):
     return out
 
 
+def hq_warning(team):
+    """An HQ warning on record for the team (kind 'warning'), the latest one, or None."""
+    w = [x for x in rewards()["log"] if x["team"] == team and x["kind"] == "warning"]
+    return w[-1] if w else None
+
+
 def buyer_alarms(board):
     """Andon for the Buyer unit (11-04: 13+ shops paused for hours and nobody was told): any of these goes to the top
     of the HR report and to Drive (week08-reports/buyer_alarm.md) for headquarters."""
@@ -352,6 +358,15 @@ def run(board=None):
     raised, given = challenge(teams, history), auto_rewards(teams, history)
     md = report(teams, m["_board"], history, raised, given, m.get("_diag"))
     alarms = buyer_alarms(board)
+    w = hq_warning("buyer")
+    if w:                                      # HQ 11-04: on a first warning, the next red buyer finding goes to HQ
+        try:
+            import qa
+            reds = [x for x in (qa.summary() or {}).get("findings", []) if x["severity"] == "red" and x["area"] == "buyer"]
+            if reds:
+                alarms = [f"⚠️ 바이어팀은 1차 경고 상태: 새 빨강 경보 → 해고 여부 본부 결정 필요 ({reds[0]['what']})"] + alarms
+        except Exception:
+            pass
     if alarms:
         md = "## 🚨 바이어 경보\n" + "\n".join(f"- {a}" for a in alarms) + "\n\n" + md
     try:                                       # the review team's internal audit, on top of everything
