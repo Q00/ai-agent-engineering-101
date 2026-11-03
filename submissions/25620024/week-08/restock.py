@@ -188,6 +188,26 @@ def window(md, now=None):
     return False, f"window closed, opens at {time.strftime('%H:%M:%S', time.localtime(opens))} (in {(opens - now) / 60:.0f} min)"
 
 
+HARD_FLOOR = 1_000_000       # HQ 11-04: never go bankrupt (the line is 500,000): even at the worst cost a supply
+WORST_COST = 0.75            # draw (grade A: 75% of list) leaves at least 1,000,000
+
+
+def never_bankrupt(md, buy):
+    """Drop lines from the end until the run, at the worst cost the market can draw, leaves HARD_FLOOR."""
+    try:
+        inv = json.loads((Path(md) / "inventory.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return [], len(buy)
+    cat = market_model.catalog(md)
+    bal, kept = inv.get("balance") or 0, []
+    for x in buy:
+        worst = (cat.get(x["sku"]) or {}).get("list_price", 0) * WORST_COST * x["qty"]
+        if bal - worst >= HARD_FLOOR:
+            kept.append(x)
+            bal -= worst
+    return kept, len(buy) - len(kept)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", default=".market")
@@ -198,6 +218,9 @@ def main():
     except Exception as e:
         print(f"[restock] ledger sync failed: {type(e).__name__}: {e}", flush=True)
     buy, why, cash, st = plan(md, c, theta())
+    buy, cut = never_bankrupt(md, buy)
+    if cut:
+        why = [f"bankruptcy guard dropped {cut}"] + why
     go, when = window(md)
     if not go:
         buy, why = [], [f"waiting: {when}"]
