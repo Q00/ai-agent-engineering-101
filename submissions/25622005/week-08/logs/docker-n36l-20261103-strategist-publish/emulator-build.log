@@ -1,0 +1,71 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Emulator.Dockerfile
+#1 transferring dockerfile: 1.83kB done
+#1 WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/amd64" (line 5)
+#1 WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/arm64" (line 6)
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/week08-strategist:n36l
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#3 ...
+
+#4 [auth] library/debian:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#3 DONE 1.3s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [stage-1 1/7] FROM docker.io/library/debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3
+#6 resolve docker.io/library/debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 3.19kB done
+#7 DONE 0.0s
+
+#8 [candidate 1/1] FROM docker.io/library/week08-strategist:n36l@sha256:91191c524f31d3e1a287ecd95db24da69cacd7d11eadb0d82ee309707579c59c
+#8 resolve docker.io/library/week08-strategist:n36l@sha256:91191c524f31d3e1a287ecd95db24da69cacd7d11eadb0d82ee309707579c59c 0.0s done
+#8 DONE 0.0s
+
+#9 [stage-1 2/7] RUN apt-get update     && apt-get install -y --no-install-recommends qemu-user     && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#10 [stage-1 3/7] COPY --from=candidate / /target/
+#10 DONE 0.9s
+
+#11 [stage-1 4/7] RUN cp --remove-destination /target/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /target/usr/lib64/ld-linux-x86-64.so.2
+#11 DONE 0.1s
+
+#12 [stage-1 5/7] RUN mkdir -p /phenom/bin     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target -0 /phenom/python /target/usr/local/bin/python3.12 "$@"\n' > /phenom/python     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target /target/usr/local/bin/node "$@"\n' > /phenom/node     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target "$@"\n' > /phenom/run     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target /target/usr/bin/git "$@"\n' > /phenom/bin/git     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target /target/usr/bin/ssh "$@"\n' > /phenom/bin/ssh     && chmod 755 /phenom/python /phenom/node /phenom/run /phenom/bin/git /phenom/bin/ssh
+#12 DONE 0.1s
+
+#13 [stage-1 6/7] COPY phenom_check.py /phenom/phenom_check.py
+#13 DONE 0.0s
+
+#14 [stage-1 7/7] WORKDIR /target/opt/strategist
+#14 DONE 0.0s
+
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 8.7s done
+#15 exporting manifest sha256:ccd7c0cfd0d8f51cc3963b8e7d8f8df96b2bf577a40b244935b7e7ae7f4dda65 done
+#15 exporting config sha256:cc9811ec085dfceaa8d6522a3da7e9ef69430b9ca2adffc68c9b23a15b38eb39 done
+#15 exporting attestation manifest sha256:a38b1cb390679e02f19c596d19fed7f206d88709eeac73d005a7ed42e2feb4ec done
+#15 exporting manifest list sha256:a5f3ab500300abd5cc04f000abf8104333adbe054a6c660b9065cb7095c406a1 done
+#15 naming to docker.io/library/week08-strategist:phenom-check done
+#15 unpacking to docker.io/library/week08-strategist:phenom-check
+#15 unpacking to docker.io/library/week08-strategist:phenom-check 1.7s done
+#15 DONE 10.5s
+
+ [33m2 warnings found (use docker --debug to expand):
+[0m - FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/amd64" (line 5)
+ - FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/arm64" (line 6)
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/34egbemw8cma3nyg0yiv9q1bp
