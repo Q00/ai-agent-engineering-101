@@ -21,6 +21,7 @@ from harness import HarnessError, buyer_decision, decide, parse_object
 from inventory import read_json
 from payment_memory import recent_jsonl, reconcile, attach_reviews
 from buyer_policy import buying_terms, checkout_policy, load_policy
+from buyer_selection import shortlist, shop_evidence
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -31,7 +32,6 @@ TERMINAL_STATES = {
 MAX_DECISIONS = 12
 RUN_SECONDS = 270
 ROOT = Path(__file__).resolve().parent
-SELECTION_BATCH = 12
 
 
 class BuyerError(RuntimeError):
@@ -94,76 +94,35 @@ def acceptance(order):
     return checkout_policy(order)
 
 
-def shop_evidence(shop, memory):
-    """Bound prompt size; counts cover the recent local memory window only."""
-    reviews = [r for r in shop.get("reviews", [])[:10] if isinstance(r, dict)]
-    own = [r for r in memory if r["name"] == shop["name"]]
-    stars = [r["stars"] for r in reviews if type(r.get("stars")) is int and 1 <= r["stars"] <= 5]
-    return {
-        "name": shop["name"],
-        "offers": [{"sku": o["sku"], "name": str(o.get("name", ""))[:160], "qty": o["qty"]}
-                   for o in shop.get("offers", [])[:5]],
-        "reviews": {
-            "count": len(reviews),
-            "low_star_count": sum(s <= 2 for s in stars),
-            "average_stars": sum(stars) / len(stars) if stars else None,
-            "recent_newest_first": [
-                {"stars": r.get("stars"), "round": r.get("round"),
-                 "review": str(r.get("review", ""))[:400]} for r in reviews[:3]
-            ],
-        },
-        "own_memory": {
-            "trades": len(own),
-            "scope": "recent 2000 records / 2 MB, not lifetime",
-            "settled": sum(r.get("result") == "settled" for r in own),
-            "unsatisfactory_settlements": sum(r.get("result") == "settled" and bool(r.get("review_reasons"))
-                                              and r.get("stars", 3) <= 2 for r in own),
-            "payment_refused": sum(r.get("result") == "payment_refused" for r in own),
-            "pending_receipts": sum(r.get("result") == "receipt_issued" for r in own),
-            "round2_agreements": sum(r.get("result") == "purchased" for r in own),
-            "receipt_mismatches": sum(r.get("result") == "receipt_mismatch" for r in own),
-            "no_deal": sum(r.get("result") == "no_deal" for r in own),
-            "errors": sum(r.get("result") == "error" for r in own),
-            "recent_newest_first": [
-                {key: (str(r.get(key, ""))[:400] if key == "detail" else r.get(key))
-                 for key in ("item", "price", "result", "detail", "stars", "review_reasons")}
-                for r in reversed(own[-3:])
-            ],
-        },
-    }
+def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=None):
+    order = order or {}
+    candidates = shortlist(shops, memory, seed=order.get("order") or f"{item}:{int(time.time() // 900)}",
+                           limit=(policy or {}).get("selection_max_candidates", 6),
+                           round_number=order.get("round"))
+    if not candidates:
+        raise BuyerError("No candidate shops")
+    names = {s["name"] for s in candidates}
 
+    def validate(output):
+        decision = parse_object(output)
+        if not isinstance(decision.get("name"), str) or decision["name"] not in names:
+            raise HarnessError("Choose one exact name from the supplied candidates")
+        selected = next(s for s in candidates if s["name"] == decision["name"])
+        if selected["offers"] and decision.get("sku") not in {o["sku"] for o in selected["offers"]}:
+            raise HarnessError("Choose a SKU from this shop's offered items")
+        return decision
 
-def choose_shop(shops, memory, *, item, budget, deadline, policy=None):
-    candidates = [shop_evidence(s, memory) for s in shops]
-    choice = None
-    while True:
-        finalists = []
-        for offset in range(0, len(candidates), SELECTION_BATCH):
-            batch = candidates[offset:offset + SELECTION_BATCH]
-            names = {s["name"] for s in batch}
-
-            def validate(output):
-                decision = parse_object(output)
-                if not isinstance(decision.get("name"), str) or decision["name"] not in names:
-                    raise HarnessError("Choose one exact name from the supplied candidates")
-                selected = next(s for s in batch if s["name"] == decision["name"])
-                if selected["offers"] and decision.get("sku") not in {o["sku"] for o in selected["offers"]}:
-                    raise HarnessError("Choose a SKU from this shop's offered items")
-                return decision
-
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise BuyerError("Shop selection deadline exceeded")
-            choice = decide("market_select.txt", {
-                "item": item, "budget": budget, "candidates": batch,
-                "purchase_policy": policy,
-            }, validate, timeout=min(45, remaining), prefix="market-select")
-            log("SHOP SELECTION", choice)
-            finalists.append(next(s for s in batch if s["name"] == choice["name"]))
-        if len(finalists) == 1:
-            shop = next(s for s in shops if s["name"] == finalists[0]["name"])
-            return {**shop, "selected_sku": choice.get("sku")}, choice["reason"]
-        candidates = finalists
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise BuyerError("Shop selection deadline exceeded")
+    context = {"item": item, "budget": budget, "candidates": candidates, "purchase_policy": policy}
+    log("SELECTION CONTEXT", {"eligible_shops": len(shops), "candidates": len(candidates),
+                              "context_chars": len(json.dumps(context, ensure_ascii=False)),
+                              "exploration": [c["name"] for c in candidates if c["selection_role"] == "exploration"]})
+    choice = decide("market_select.txt", context, validate, timeout=min(45, remaining), prefix="market-select")
+    log("SHOP SELECTION", choice)
+    shop = next(s for s in shops if s["name"] == choice["name"])
+    return {**shop, "selected_sku": choice.get("sku")}, choice["reason"]
 
 
 def log(label, value):
@@ -457,7 +416,7 @@ def main(argv=None):
                 raise BuyerError("Market catalog must be a SKU mapping")
             shops = stocked_shops(shops, order)
         shop, reason = choose_shop(shops, memory, item=args.item, budget=args.budget,
-                                   deadline=min(deadline, time.monotonic() + 90), policy=config)
+                                   deadline=min(deadline, time.monotonic() + 90), policy=config, order=order)
         result["shop"] = shop["url"]
         sku = shop.get("selected_sku") or args.item
         product = catalog.get(sku) if catalog is not None else None

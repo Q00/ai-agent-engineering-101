@@ -15,6 +15,9 @@ def load_policy():
             raise ValueError(f"Invalid buyer policy: {key}")
     if type(config.get("max_decisions")) is not int or not 1 <= config["max_decisions"] <= 12:
         raise ValueError("Invalid buyer policy: max_decisions")
+    limit = config.get("selection_max_candidates", 6)
+    if type(limit) is not int or not 2 <= limit <= 6:
+        raise ValueError("Invalid buyer policy: selection_max_candidates")
     if (not isinstance(config.get("grades"), list) or not config["grades"]
             or any(g not in ("A", "B", "C") for g in config["grades"])):
         raise ValueError("Invalid buyer policy: grades")
