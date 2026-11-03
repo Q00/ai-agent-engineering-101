@@ -1,0 +1,51 @@
+\documentclass[landscape,10pt]{article}
+\usepackage{tikz}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1cm]{geometry}
+\usetikzlibrary{shapes,arrows,positioning,calc,fit}
+
+\begin{document}
+\section*{Week 08: 11-Layer Economic \& Financial Engineering Architecture}
+\noindent\textbf{Agent:} Jaehoonang (ID: 25512090) \quad \textbf{Market:} \texttt{https://market.ourolabs.ai}
+
+\begin{center}
+\begin{tikzpicture}[
+    scale=0.85, transform shape,
+    layer box/.style={rectangle, draw=black, thick, rounded corners, minimum width=24cm, minimum height=2.2cm, align=left, fill=blue!5},
+    component/.style={rectangle, draw=blue!50, fill=white, rounded corners, minimum width=4.5cm, minimum height=1.2cm, align=center, font=\small}
+]
+
+% Layer 1
+\node[layer box, fill=red!5] (l1) at (0, 6) {};
+\node[anchor=north west, font=\bfseries] at (l1.north west) {Layer 1: Macro Strategic \& M\&A Orchestrator (Gemini 3.1 Pro)};
+\node[component] (c1) at (-7, 6) {Memory Manager\\Sliding Window O(1)};
+\node[component] (c2) at (-2, 6) {Strategy Daemon\\30-min Async Loop};
+\node[component] (c3) at (3, 6) {M\&A Target Evaluator\\Crisis Balance $\le$ 650k};
+\node[component] (c4) at (8, 6) {Atomic State Syncer\\strategy.json / store};
+
+% Layer 2
+\node[layer box, fill=green!5] (l2) at (0, 3) {};
+\node[anchor=north west, font=\bfseries] at (l2.north west) {Layer 2: Micro Execution \& Restructuring Engine (Gemini 3.5 Flash Lite)};
+\node[component] (c5) at (-7, 3) {Debt-to-Equity Swap\\50\% Asset Acquisition};
+\node[component] (c6) at (-2, 3) {Commodity Sweeper\\SKU\_HARDWARE\_TOOL\_01};
+\node[component] (c7) at (3, 3) {A2A Negotiation\\Ed25519 Signing};
+\node[component] (c8) at (8, 3) {Repo \& Lending Engine\\LTV 20\%, 15\% Interest};
+
+% Layer 3
+\node[layer box, fill=yellow!5] (l3) at (0, 0) {};
+\node[anchor=north west, font=\bfseries] at (l3.north west) {Layer 3: Hardcoded Economic Guardrails};
+\node[component] (c9) at (-7, 0) {Cost Price Floor\\No Selling Under Cost};
+\node[component] (c10) at (-2, 0) {Bankruptcy Hard Guard\\Balance $\le$ 700k Lock};
+\node[component] (c11) at (3, 0) {Perishable Spoilage Short\\Holding Prohibited};
+\node[component] (c12) at (8, 0) {Dutch Auction Decay\\Hourly Price Decay};
+
+% Layer 4
+\node[layer box, fill=purple!5] (l4) at (0, -3) {};
+\node[anchor=north west, font=\bfseries] at (l4.north west) {Layer 4: Hegemonic Agenda \& M\&A Publicity Layer};
+\node[component] (c13) at (-4, -3) {Forum Influencer Agent\\outbox.jsonl Sync};
+\node[component] (c14) at (4, -3) {Subsidiary Filing \& FUD\\Campaign Orchestrator};
+
+\end{tikzpicture}
+\end{center}
+
+\end{document}
