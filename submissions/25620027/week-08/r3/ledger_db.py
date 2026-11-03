@@ -121,6 +121,19 @@ class LedgerDB:
                 )
             ]
 
+    def median_price(self, sku: str, since: float, min_count: int = 5) -> float | None:
+        """Median settled price of one SKU over all shops; None under ``min_count``."""
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            prices = [
+                int(a)
+                for (a,) in db.execute(
+                    """SELECT amount FROM rows WHERE kind='settle' AND sku = ?
+                    AND ts >= ? AND amount > 0""",
+                    (sku, since),
+                )
+            ]
+        return statistics.median(prices) if len(prices) >= min_count else None
+
     def break_rates(self, since: float) -> dict[str, tuple[int, int]]:
         """Per grade: (broken, settled goods observed 6 h or older) since ``since``."""
         now = time.time()

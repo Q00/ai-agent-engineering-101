@@ -168,3 +168,43 @@ def test_before_round_three_the_seller_sells_the_week07_items(tmp_path: Path) ->
             assert "unit" not in receipt
 
     anyio.run(run)
+
+
+def test_below_market_line_only_when_the_public_ledger_backs_it(
+    tmp_path: Path,
+) -> None:
+    import sqlite3  # noqa: PLC0415 - test only
+    from contextlib import closing  # noqa: PLC0415 - test only
+
+    from r3.ledger_db import LedgerDB, ledger_path  # noqa: PLC0415 - test only
+
+    def seed(folder: Path, price: int) -> None:
+        path = ledger_path(folder.resolve())
+        _ = LedgerDB(path)
+        with closing(sqlite3.connect(path)) as db, db:
+            for seq in range(5):
+                _ = db.execute(
+                    "INSERT INTO rows (seq, ts, kind, sku, amount) VALUES (?,?,?,?,?)",
+                    (seq + 1, time.time() - 60, "settle", LAMP, price),
+                )
+
+    async def opening(folder_root: Path, price: int) -> str:
+        units = [unit(LAMP, 1, grade="A", now=time.time())]
+        seed(write_market(folder_root / ".market", units), price)
+        async with (
+            shop(folder_root, units) as url,
+            httpx2.AsyncClient(timeout=10) as client,
+        ):
+            remote = Remote(client, lambda _m: None)
+            endpoint = (await remote.card(url)).endpoint()
+            task = await remote.send(endpoint, f"I want to buy {LAMP}")
+            return task.observation()
+
+    # Given: five recent settlements well above our ask; the line appears, digit-free.
+    above = anyio.run(opening, tmp_path / "a", 90000)
+    assert "Priced below this item's recent market median." in above
+    middle = above.splitlines()[1:-1]
+    assert not any(ch.isdigit() for line in middle for ch in line)
+    # And: when the market settles below our ask, no claim is made.
+    below = anyio.run(opening, tmp_path / "b", 1000)
+    assert "market median" not in below

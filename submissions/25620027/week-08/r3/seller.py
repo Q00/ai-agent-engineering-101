@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+import sqlite3
 import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final, override
@@ -39,6 +40,7 @@ from market_a2a.seller_offer import opening_offer
 from r3.events import EventLedger, events_path
 from r3.guard import suspicious
 from r3.interpreter import read_buyer_message
+from r3.ledger_db import LedgerDB, ledger_path
 from r3.market_files import (
     CatalogItem,
     Inventory,
@@ -78,6 +80,11 @@ BARE_OFFER: Final = re.compile(
     re.IGNORECASE,
 )
 STANDALONE_NUMBER: Final = re.compile(r"(?<![0-9A-Za-z.])([0-9]{1,9})(?![0-9A-Za-z])")
+# A digit-free promotion line, written only when the public ledger backs it (the
+# middle lines must stay digit-free so no parser mistakes them for the ask).
+BELOW_MARKET_LINE: Final = "Priced below this item's recent market median."
+MEDIAN_WINDOW_SECONDS: Final = 6 * 3600.0
+MEDIAN_CACHE_SECONDS: Final = 60.0
 HOUR_WORDS: Final = (
     "zero",
     "one",
@@ -251,6 +258,7 @@ class R3Seller(AgentExecutor):
         events: EventLedger | None,
         emit: Callable[[str], None],
         reader: ModelClient | None = None,
+        ledger: LedgerDB | None = None,
     ) -> None:
         """Keep per-task state in memory; the kit owns the durable ledger."""
         self.name: str = name
@@ -260,6 +268,8 @@ class R3Seller(AgentExecutor):
         self.events: EventLedger | None = events
         self.emit: Callable[[str], None] = emit
         self.reader: ModelClient | None = reader
+        self.ledger: LedgerDB | None = ledger
+        self.medians: dict[str, tuple[float, float | None]] = {}
         self.reads: dict[str, int] = {}
         self.suspicious: dict[str, int] = {}
         self.open: dict[str, Deal] = {}
@@ -270,6 +280,25 @@ class R3Seller(AgentExecutor):
     def policy(self) -> SellerPolicy:
         """Read the active seller policy (cheap; the file is small)."""
         return load_policy(self.policy_file).seller
+
+    def below_market(self, sku: str, ask: int) -> bool:
+        """Say whether the public ledger shows our ask under the SKU's median.
+
+        The median covers every shop's settlements of the last six hours and needs
+        at least five of them; it is cached for a minute per SKU. Any read failure
+        means no claim, so the line is never written without evidence.
+        """
+        if self.ledger is None:
+            return False
+        now = time.time()
+        stamp, median = self.medians.get(sku, (0.0, None))
+        if now - stamp > MEDIAN_CACHE_SECONDS:
+            try:
+                median = self.ledger.median_price(sku, now - MEDIAN_WINDOW_SECONDS)
+            except (OSError, sqlite3.Error):
+                median = None
+            self.medians[sku] = (now, median)
+        return median is not None and ask < median
 
     def excluded_units(self, now: float) -> set[str]:
         """Units promised to another open task or just sold and awaiting checkout."""
@@ -515,6 +544,8 @@ class R3Seller(AgentExecutor):
                 f"\nGrade {deal.quote.grade_now} with the market's certificate "
                 "attached" + (f", a {hours}-hour warranty" if warranty else "") + "."
             )
+        if opening and self.below_market(sku, deal.ask):
+            text += f"\n{BELOW_MARKET_LINE}"
         text += f"\nReply with a number, or ok to take the ask: {deal.ask}"
         metadata: dict[str, object] = {
             "ask": deal.ask,
@@ -629,6 +660,10 @@ def create_r3_app(  # noqa: PLR0913 - explicit wiring
     except OSError:
         events = None
     reader = ModelClient.from_env(events, gate=TRADE_GATE)
+    try:
+        ledger: LedgerDB | None = LedgerDB(ledger_path(state))
+    except (OSError, sqlite3.Error):
+        ledger = None
     card = AgentCard(
         name=name,
         description=(
@@ -677,6 +712,7 @@ def create_r3_app(  # noqa: PLR0913 - explicit wiring
         events=events,
         emit=emit,
         reader=reader,
+        ledger=ledger,
     )
     handler = DefaultRequestHandler(executor, InMemoryTaskStore(), card)
     app = FastAPI(title=name)
