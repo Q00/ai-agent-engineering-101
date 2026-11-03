@@ -9,6 +9,11 @@ For each category:
   target = ceil(rate * share * HORIZON_H) units, capped for short-life food by half its shelf life
 Categories without evidence get one unit for coverage (long-life food, cheap goods), within EXPLORE_SHARE of the
 stock budget, so orders can find us while the ledger fills. No buying in the last STOP_BUYING_HOURS.
+
+The plan itself is rule-based and answers within the hook's time. A background ReAct review
+(restock_review_r3.py, every RESTOCK_REVIEW_EVERY_MIN) may scale a category's demand target by a clamped factor
+(0 = skip it, also for coverage), e.g. after poor sell-through or near-expiry stock; factors expire after
+ADJUST_TTL_H, so the rules take over again if the review stops.
 """
 import argparse
 import base64
@@ -28,6 +33,13 @@ from r3lib.memory import Memory
 FORUM_EVERY = 10 * 60
 
 
+def active_adjustments(mem, now=None):
+    a = mem.get("restock_adjust") or {}
+    if (now or time.time()) - (a.get("ts") or 0) > config.ADJUST_TTL_H * 3600:
+        return {}
+    return a.get("items") or {}
+
+
 def my_pubkey():
     try:
         key = serialization.load_pem_private_key((config.ROOT / "shop_key.pem").read_bytes(), password=None)
@@ -37,13 +49,18 @@ def my_pubkey():
         return None
 
 
-def kick_forum(mem):
-    if time.time() - (mem.get("forum_kick") or 0) < FORUM_EVERY:
+def kick(mem, script, key, every_s):
+    """Start a background job (forum agent, restock review) at most once per every_s."""
+    if time.time() - (mem.get(key) or 0) < every_s:
         return
-    mem.put("forum_kick", time.time())
-    log = open(config.STATE_DIR / "forum-run.log", "a")
-    subprocess.Popen([sys.executable, str(config.ROOT / "forum_r3.py")], cwd=config.ROOT, stdout=log, stderr=log,
+    mem.put(key, time.time())
+    log = open(config.STATE_DIR / f"{Path(script).stem}-run.log", "a")
+    subprocess.Popen([sys.executable, str(config.ROOT / script)], cwd=config.ROOT, stdout=log, stderr=log,
                      start_new_session=True, env={k: v for k, v in os.environ.items() if k != "MARKET_OWNER"})
+
+
+def kick_forum(mem):
+    kick(mem, "forum_r3.py", "forum_kick", FORUM_EVERY)
 
 
 def unit_cost_estimate(info):
@@ -66,8 +83,9 @@ def pick_sku(category, info_by_cat, mem, median_price, explore):
     return min(pool, key=lambda x: abs(x[1]["list_price"] - (median_price or x[1]["list_price"])))[0]
 
 
-def plan(inv, demand_rows, mem, now=None):
+def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     now = now or time.time()
+    adjust = active_adjustments(mem, now) if adjust is None else adjust
     cat = market.catalog()
     info_by_cat = {}
     for s, i in cat.items():
@@ -95,15 +113,18 @@ def plan(inv, demand_rows, mem, now=None):
             continue
         share = 1 / (1 + (d.get("shops") or 0))
         exp_h = rate * share
-        target = math.ceil(exp_h * config.HORIZON_H)
+        factor = (adjust.get(k) or {}).get("factor", 1.0)
+        target = math.ceil(exp_h * config.HORIZON_H * factor)
         shelf = [i.get("shelf_hours") for _, i in info_by_cat.get(k, []) if i.get("shelf_hours")]
         if row.get("kind") == "food" and shelf and min(shelf) < 720:
-            target = min(target, math.ceil(exp_h * min(shelf) * 0.5))
+            target = min(target, math.ceil(exp_h * min(shelf) * 0.5 * factor))
         ratio, n = mem.price_ratio(category=k)
         if ratio is not None and ratio < 0.65:
             why.append({"category": k, "skip": f"market pays {ratio:.2f} of list, no margin over cost"})
             continue
         need = target - have.get(k, 0)
+        if factor != 1.0:
+            why.append({"category": k, "review_factor": factor, "target": target})
         if need > 0:
             needs.append((exp_h * row.get("median_price", 0), k, need, row))
     needs.sort(reverse=True)
@@ -126,7 +147,8 @@ def plan(inv, demand_rows, mem, now=None):
     spent = 0
     for row in sorted(demand_rows, key=lambda r: -r.get("skus", 0)):
         k = row["category"]
-        if len(lines) >= 10 or have.get(k) or (dem.get(k) or {}).get("n"):
+        if len(lines) >= 10 or have.get(k) or (dem.get(k) or {}).get("n") or \
+                (adjust.get(k) or {}).get("factor", 1.0) == 0:
             continue
         sku = pick_sku(k, info_by_cat, mem, row.get("median_price"), explore=True)
         if not sku:
@@ -138,7 +160,7 @@ def plan(inv, demand_rows, mem, now=None):
         budget -= est
         lines.append({"sku": sku, "qty": 1})
         why.append({"category": k, "sku": sku, "qty": 1, "reason": "coverage"})
-    if spent:
+    if spent and not dry_run:
         mem.put("explore_spent", (mem.get("explore_spent") or 0) + spent)
     return lines, why, {"balance": balance, "stock_cost": stock_cost, "units": len(units)}
 
@@ -156,6 +178,8 @@ def main():
         print(json.dumps({"event": "memory_sync_error", "error": str(e)[:200]}), flush=True)
     try:
         kick_forum(mem)
+        if (market.read_json("inventory.json", {}, md) or {}).get("round", 0) >= 3:
+            kick(mem, "restock_review_r3.py", "review_kick", config.RESTOCK_REVIEW_EVERY_MIN * 60)
     except Exception as e:
         print(json.dumps({"event": "forum_kick_error", "error": str(e)[:200]}), flush=True)
     inv = market.read_json("inventory.json", {}, md) or {}
@@ -168,6 +192,7 @@ def main():
             lines, why, state = plan(inv, market.read_json("demand.json", [], md) or [], mem)
             out["buy"] = lines
             if lines:
+                mem.record_restock(lines, why)
                 config.LOG_DIR.mkdir(parents=True, exist_ok=True)
                 with open(config.LOG_DIR / "restock.jsonl", "a", encoding="utf-8") as f:
                     f.write(json.dumps({"ts": round(time.time()), **state, "buy": lines, "why": why},
