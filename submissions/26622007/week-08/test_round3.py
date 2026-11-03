@@ -380,6 +380,8 @@ class BuyerTest(unittest.TestCase):
         self.assertEqual((memory["trades"][1]["result"], memory["trades"][1]["paid"]), ("deal", True))
         self.assertTrue(market_buyer.unreachable([{"result": "unpaid"}, {"result": "unpaid"}]))
 
+    BUYER_CFG = {}      # the buyer's spending limits (pricing.json "buyer"): none here, a test sets them
+
     def run_main(self, shops, order=None):
         printed = []
         with tempfile.TemporaryDirectory() as d:
@@ -401,6 +403,7 @@ class BuyerTest(unittest.TestCase):
             with mock.patch.object(market_buyer, "MEMORY", os.path.join(d, "m.json")), \
                     mock.patch.object(market_buyer, "market_round", lambda: 3), \
                     mock.patch.object(market_buyer, "serves_acp", lambda u: True), \
+                    mock.patch.object(market_buyer, "buyer_cfg", lambda: dict(self.BUYER_CFG)), \
                     mock.patch.object(market_buyer, "choose", lambda s, m, i, b: (s[0], "t")), \
                     mock.patch.object(market_buyer, "negotiate", neg), \
                     mock.patch("builtins.print", lambda *a, **k: printed.append(a[0])), \
@@ -416,6 +419,13 @@ class BuyerTest(unittest.TestCase):
         self.assertIsNone(out["receipt"])                          # price over the list price: the kit must not pay
         self.assertEqual(out["stars"], 1)
         self.assertEqual(out["accept"], {"cert": True, "min_hours_left": 48.1})
+
+    def test_the_spending_limits_cut_the_price_it_will_pay(self):
+        shops = [dict(self.offers("G1"), name="s", url="https://s.example", reviews=[])]
+        self.BUYER_CFG = {"max_price_share": 0.9, "max_spend_per_deal": 8500}
+        self.assertEqual(self.run_main(shops)[1][0][1:3], ("G1", 8500))
+        self.BUYER_CFG = {"max_price_share": 0.9}
+        self.assertEqual(self.run_main(shops)[1][0][1:3], ("G1", 9000))
 
     def test_main_with_no_stock_anywhere_closes_the_order_without_stars(self):
         out, calls = self.run_main([dict(self.offers("G4"), name="s", url="https://s.example")])

@@ -34,26 +34,29 @@ def expired(u, now=None):
     return u.get("grade") == "expired" or bool(u.get("expires_at") and u["expires_at"] <= (now or time.time()))
 
 
-MARKDOWN = {"clear_hours": 24, "min_floor_share": 0.1, "stale_days": 3, "stale_per_day": 0.1, "end_hours": 48}
+MARKDOWN = {"clear_hours": 24, "min_floor_share": 0.1, "stale_days": 3, "stale_per_day": 0.1, "end_hours": 48,
+            "below_cost": ["food_expiry", "stale_goods", "round_end"]}
 
 
 def markdown(u, cfg=None, ends_at=None, now=None):
     """(lowest price for this unit, share of cost it keeps, why). Selling below cost beats what waiting brings: food past
     its date is lost at cost, and stock left when the round ends counts as a loss. The numbers are starting values in
-    pricing.json "markdown"; Round 3's own data has to judge them."""
+    pricing.json "markdown"; Round 3's own data has to judge them. "below_cost" lists the reasons allowed to go under
+    cost (food_expiry, stale_goods, round_end): the shop starts with food near its date only."""
     cfg, now = {**MARKDOWN, **(cfg or {})}, now or time.time()
+    allowed = set(cfg["below_cost"])
     cost, factors = math.ceil(u["cost"]), [(1.0, "")]
     supplied = u.get("supplied_at") or now
-    if u.get("expires_at"):
+    if u.get("expires_at") and "food_expiry" in allowed:
         left, life = (u["expires_at"] - now) / 3600, (u["expires_at"] - supplied) / 3600
         clear = min(cfg["clear_hours"], max(life, 1) * 0.5)
         if left < clear:
             factors.append((max(0.0, left / clear), f"{left:.1f} h of shelf life left"))
-    else:
+    elif not u.get("expires_at") and "stale_goods" in allowed:
         over = (now - supplied) / 86400 - cfg["stale_days"]
         if over > 0:
             factors.append((max(0.0, 1 - over * cfg["stale_per_day"]), f"{over + cfg['stale_days']:.1f} days in stock"))
-    if ends_at:
+    if ends_at and "round_end" in allowed:
         left = (ends_at - now) / 3600
         if left < cfg["end_hours"]:
             factors.append((max(0.0, left / cfg["end_hours"]), f"{left:.1f} h to the end of the round"))

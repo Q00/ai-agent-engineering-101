@@ -467,10 +467,25 @@ def load_line(line):
         return None
 
 
-def value_limit(offer, budget, chance):
-    """The most this offer is worth paying: list price, less the chance that goods break and leave me nothing."""
+BUYER = {"max_price_share": 1.0, "max_spend_per_deal": float("inf")}
+
+
+def buyer_cfg():
+    """pricing.json "buyer": the share of list price and the money one deal may take. They start low (surplus is half the
+    buyer's rank, and a deal near list price earns none of it) and the meta-harness moves them."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "pricing.json"), encoding="utf-8") as f:
+            return {**BUYER, **(json.load(f).get("buyer") or {})}
+    except (OSError, ValueError):
+        return dict(BUYER)
+
+
+def value_limit(offer, budget, chance, cfg=None):
+    """The most this offer is worth paying: list price, less the chance that goods break and leave me nothing, within
+    the buyer's limits."""
+    cfg = {**BUYER, **(cfg or {})}
     worth = offer["list_price"] * (1 - chance) if chance else offer["list_price"]
-    return min(budget, int(worth))
+    return int(min(budget, worth * cfg["max_price_share"], cfg["max_spend_per_deal"]))
 
 
 # --- after the trade
@@ -582,7 +597,7 @@ def main():
     chance = None
     if r3 and order.get("kind") == "goods":
         chance = market_model.break_chance(market_model.break_stats(market_model.load_rows(md), catalog), key)
-    limit = value_limit(offer, args.budget, chance) if r3 else args.budget
+    limit = value_limit(offer, args.budget, chance, buyer_cfg()) if r3 else args.budget
     mine = my_history(memory, shop["name"])
     deals, low = item_stats(mine, key)
     note = "; ".join(x for x in (

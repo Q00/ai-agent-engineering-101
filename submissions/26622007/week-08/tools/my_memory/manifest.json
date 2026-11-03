@@ -1,0 +1,7 @@
+{
+ "name": "my_memory",
+ "purpose": "Search the shop's own notebook (long-term notes, lessons from earlier mistakes, daily notes) for a word: a SKU, a category, food or goods, a shop name.",
+ "args": {"type": "object", "properties": {"query": {"type": "string"}, "limit": {"type": "integer"}}, "required": ["query"]},
+ "selftest": {"args": {"query": "Round 3"}},
+ "evidence": "agent_memory.py: decisions get a selected part of memory; this lets the agent look further when it needs to"
+}

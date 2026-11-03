@@ -18,6 +18,39 @@ COUNTERS = {"settled_as_shop": "[acp] settled", "paid_as_buyer": "[acp] paid", "
             "supply_refused": "refused:", "tracebacks": "Traceback", "harness_failed": "harness failed",
             "no_stock": "REJECTED (not in stock)", "bankrupt": "[bankrupt]", "broken": "[broken]", "forum": "[forum]"}
 SOURCES = ("logs", "memory", ".market", "meta")
+# The midterm's Round 3 rank (week 9, FIG. 07): each part a percentile among shops or buyers, Players = shop ALL + buyer ALL.
+OBJECTIVE = {"shops": [(("profit",), 0.5), (("revenue",), 0.3), (("stars",), 0.2)],
+             "buyers": [(("surplus", "saved"), 0.5), (("forum", "forum_score", "votes", "score"), 0.3), (("deals",), 0.2)]}
+
+
+def percentile(rows, field, mine):
+    vals = [r[field] for r in rows if isinstance(r.get(field), (int, float)) and not isinstance(r.get(field), bool)]
+    if not vals or not isinstance(mine.get(field), (int, float)):
+        return None
+    return round(sum(v <= mine[field] for v in vals) / len(vals), 3)
+
+
+def objective(b):
+    """My estimated shop ALL, buyer ALL and Players from the board's rows: what every change is meant to raise. A part the
+    board does not show yet is None and left out of the sum (the weights of the parts shown are kept as they are)."""
+    out = {}
+    for k, parts in OBJECTIVE.items():
+        rows = [r for r in b.get(k) or [] if r.get("deals")]
+        mine = next((r for r in b.get(k) or [] if r.get("name") == ME or ((r.get("owner") or {}).get("login") or "").lower() == "nocha12"), None)
+        if not mine:
+            out[k] = {"all": None, "why": "not on the board yet (no deal)"}
+            continue
+        got = {}
+        for names, w in parts:
+            field = next((n for n in names if n in mine), names[0])
+            got[field] = {"weight": w, "percentile": percentile(rows, field, mine), "value": mine.get(field)}
+        out[k] = {"all": round(sum(x["weight"] * x["percentile"] for x in got.values() if x["percentile"] is not None), 3),
+                  "parts": got, "of": len(rows)}
+    shop, buyer = out["shops"].get("all"), out["buyers"].get("all")
+    out["players"] = None if shop is None and buyer is None else round((shop or 0) + (buyer or 0), 3)
+    out["weakest"] = min(((k, f, x["percentile"]) for k in OBJECTIVE for f, x in (out[k].get("parts") or {}).items()
+                          if x["percentile"] is not None), key=lambda t: t[2], default=None)
+    return out
 
 
 def jsonl(path):
@@ -34,7 +67,7 @@ def board():
         b = httpx.get(f"{MARKET}/api/board", timeout=20).json()
     except (httpx.HTTPError, ValueError) as e:
         return {"error": f"{type(e).__name__}: {e}"}
-    out = {"round": b.get("round"), "totals": b.get("totals")}
+    out = {"round": b.get("round"), "totals": b.get("totals"), "objective": objective(b)}
     for k in ("shops", "buyers", "players"):
         rows = b.get(k) or []
         mine = next((r for r in rows if r.get("name") == ME or (r.get("login") or "").lower() == "nocha12"), None)

@@ -11,6 +11,7 @@ import sys
 import time
 
 import agent_loop
+import agent_memory
 import market_model
 from harness import HarnessError
 
@@ -82,7 +83,7 @@ def maybe_run(md, decide=agent_loop.decide):
         scored = {p.get("text"): {"likes": p.get("likes"), "dislikes": p.get("dislikes")} for p in posts if isinstance(posts, list) and p.get("author") == ME}
         mine = [{"text": t, **scored.get(t, {})} for t in state["posts"][-5:]]
         final = decide(GOAL.format(me=ME, mine=json.dumps(mine, ensure_ascii=False), voted=state["voted"][-50:]),
-                       FINAL, md, "forum")
+                       FINAL, md, "forum", {"c0": agent_memory.select(md, ["forum", "buyer"], 1500)})
         if final is None:
             print("[forum] no evidenced decision", file=sys.stderr, flush=True)
             return None
@@ -91,6 +92,8 @@ def maybe_run(md, decide=agent_loop.decide):
         with open(os.path.join(md, "outbox.jsonl"), "a", encoding="utf-8") as f:
             for line in lines:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")
+        if lines:
+            agent_memory.daily(md, "forum", f"{sum('post' in x for x in lines)} post, {len(voted)} votes: {(final.get('post') or '')[:200]}")
         state["voted"] += voted
         state["posts"] += [x["post"] for x in lines if "post" in x]
         with open(path, "w", encoding="utf-8") as f:

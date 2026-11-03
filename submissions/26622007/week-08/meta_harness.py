@@ -1,4 +1,9 @@
-"""The meta-harness: Terra improves Luna every hour, Astra grades and improves the whole system every twelve.
+"""The meta-harness: Terra tunes and repairs every hour, Astra explores and grades every twelve.
+
+Terra adjusts: pricing.json's settings a bounded step at a time, the shop's memory (memory/agent/), broken tools, and the
+numbers against the Players objective. Astra explores: new strategies, tools and data sources (ledger, forum, own sales)
+as hypotheses with small experiments, and grades what Terra did. Both answer to hard_limits.py: a change that moves a
+setting out of its bounds or by more than one step, touches a protected file or drops a hard_limits line is undone.
 
     python meta_harness.py terra | astra     one cycle
     python meta_harness.py run               the loop (run_meta.sh keeps it alive)
@@ -20,6 +25,7 @@ import time
 
 import httpx
 
+import hard_limits
 import scorecard
 
 ROOT = os.path.abspath(os.environ.get("META_DIR") or os.path.dirname(os.path.abspath(__file__)))
@@ -235,6 +241,37 @@ def archive_logs():
             shutil.copy2(rot, keep)
 
 
+def pricing_at_head():
+    try:
+        return json.loads(git("show", "HEAD:./pricing.json"))
+    except (RuntimeError, ValueError):
+        return {}
+
+
+def pricing_now():
+    try:
+        with open(os.path.join(ROOT, "pricing.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError) as e:
+        return {"_unreadable": str(e)}
+
+
+def limit_problems(code):
+    """What hard_limits says about the staged change: settings out of bounds or moved too far, protected files."""
+    new = pricing_now()
+    if "_unreadable" in new:
+        return [f"pricing.json is not valid JSON: {new['_unreadable']}"]
+    return hard_limits.check_policy_change(pricing_at_head(), new) + \
+        hard_limits.guard_problems(code, git("diff", "--cached", "--no-color", "--", *code) if code else "")
+
+
+def push():
+    if os.environ.get("META_PUSH") == "1":
+        log(git("push", "origin", f"HEAD:{os.environ.get('META_PUSH_BRANCH', 'week-08')}", check=False) or "pushed")
+
+
 def cycle(kind):
     cid = f"{kind}-{time.strftime('%m%d-%H%M%S')}"
     os.makedirs(os.path.join(ROOT, "meta", "evidence"), exist_ok=True)
@@ -263,6 +300,10 @@ def cycle(kind):
     problems = [err] if err else []
     if answer is not None:
         problems += verify_evidence(answer.get("evidence"))
+    problems += limit_problems(code)
+    moved = hard_limits.policy_diff(pricing_at_head(), pricing_now())
+    if moved:
+        log(f"{cid}: settings moved: {'; '.join(moved)}")
     if code and not problems:
         ok, output = run_tests()
         if not ok:
@@ -286,8 +327,11 @@ def cycle(kind):
         record(rec)
         return rec
 
-    sha = commit(f"feat(week-08): [{cid}] {title}"[:300])
-    rec.update(commit=sha, files=code)
+    why = (answer or {}).get("hypothesis") or ""
+    body = "\n".join(x for x in (f"이유: {why}" if why else "", ("설정: " + "; ".join(moved)) if moved else "",
+                                 f"기대: {(answer or {}).get('target_metric', '')} {(answer or {}).get('expected', '')}".strip()) if x)
+    sha = commit(f"feat(week-08): [{cid}] {title}"[:300] + (f"\n\n{body}" if body else ""))
+    rec.update(commit=sha, files=code, settings=moved)
     log(f"{cid}: applied {sha[:8]}: {title}")
     restart_seller(code)
     bad = canary()
@@ -327,8 +371,7 @@ def run():
                 log(f"{kind} cycle failed: {type(e).__name__}: {e}")
             if kind == "astra":
                 last_astra = time.time()
-                if os.environ.get("META_PUSH") == "1":
-                    log(git("push", "origin", "HEAD", check=False) or "pushed")
+            push()
         time.sleep(RUN_SECONDS)
 
 

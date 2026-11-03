@@ -55,18 +55,19 @@
   ],
   "warranty_hours": 0,
   "warranty": {
-    "on_request_hours": 6,
-    "prior_break": 0.1,
-    "max_break": 0.3
+    "on_request_hours": 3,
+    "max_hours": 6,
+    "prior_break": 0.15,
+    "max_break": 0.25
   },
   "restock": {
-    "keep_cash": 1500000,
-    "target_per_category": 2,
+    "keep_cash": 3000000,
+    "target_per_category": 1,
     "min_shelf_hours": 720,
-    "goods_max_price": 50000,
-    "max_lines": 10,
-    "cover_hours": 12,
-    "max_units_per_sku": 20,
+    "goods_max_price": 30000,
+    "max_lines": 5,
+    "cover_hours": 6,
+    "max_units_per_sku": 5,
     "max_sku_share": 0.1,
     "explore_lines": 2,
     "min_expected": 1.0,
@@ -80,18 +81,40 @@
     "no_explore_hours": 48,
     "end_cover": 0.5,
     "agent_every_minutes": 10,
-    "agent_max_lines": 30
+    "agent_max_lines": 30,
+    "max_stock_cost": 1000000,
+    "food_explore_qty": 0,
+    "food_max_qty": 2,
+    "max_break": 0.15
   },
   "markdown": {
     "clear_hours": 24,
     "min_floor_share": 0.1,
     "stale_days": 3,
     "stale_per_day": 0.1,
-    "end_hours": 48
+    "end_hours": 48,
+    "below_cost": [
+      "food_expiry"
+    ]
   },
   "forum": {
-    "every_minutes": 10,
-    "max_votes": 10,
+    "every_minutes": 15,
+    "max_votes": 5,
     "max_chars": 600
+  },
+  "buyer": {
+    "max_price_share": 0.9,
+    "max_spend_per_deal": 200000
+  },
+  "memory": {
+    "long_term_chars": 4000,
+    "daily_keep_days": 3,
+    "select_chars": 2500,
+    "consolidate_hours": 6
+  },
+  "tools": {
+    "forge_every_hours": 6,
+    "disable_fail_share": 0.6,
+    "disable_min_calls": 5
   }
 }

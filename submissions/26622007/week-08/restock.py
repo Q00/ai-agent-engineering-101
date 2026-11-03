@@ -10,7 +10,10 @@ Once market_model.py has seen enough deals: SKUs ranked by the profit they shoul
 deals per hour x my share x margin), stocked for cover_hours of expected sales, less for food that would not last.
 A few lines still go to categories that sell where I have nothing, so a change in demand can be noticed.
 If the ledger cannot be read, the shop keeps using what it has, or the first-stock rule.
-pricing.json "restock" holds the numbers.
+pricing.json "restock" holds the numbers. They start cautious (one unit per new category, no food until the ledger
+shows it sells, a cap on the stock held, goods that break often left out) and the meta-harness widens them as Round 3's
+own numbers allow. guard() applies them to every line, the agent's too; hard_limits.py keeps the balance clear of the
+bankruptcy line whatever the settings say.
 
 That formula is a proposal. With a harness set, a Luna agent decides every agent_every_minutes: it gets the proposal,
 looks at what it wants through the tools (agent_loop.py), and answers with what to buy and the calls it relied on. Its
@@ -26,9 +29,12 @@ import sys
 import time
 
 import agent_loop
+import agent_memory
 import decision_memory
 import forum
+import hard_limits
 import market_model
+import tool_forge
 from harness import HarnessError
 
 WORST_COST = 0.75      # a unit's cost is at most this share of its list price (A 55-75%)
@@ -71,7 +77,7 @@ def wanted(model, catalog, have_sku, balance, cfg, hours_left=float("inf")):
     return sorted(out, reverse=True)
 
 
-def plan(inv, catalog, demand, cfg, model=None):
+def plan(inv, catalog, demand, cfg, model=None, breaks=None):
     """The hook's answer for this state."""
     balance, units = inv.get("balance") or 0, inv.get("units") or []
     if balance < inv.get("bankrupt_line", 0) and not units and (inv.get("bankruptcies_left") or 0) > 0:
@@ -94,20 +100,55 @@ def plan(inv, catalog, demand, cfg, model=None):
     rows = [d for d in demand if skus.get(d["category"]) and have[d["category"]] < cfg["target_per_category"]]
     if active:      # demand is known: only categories that really sell and where I have nothing at all
         rows = [d for d in rows if d["category"] in model["cats"] and not have[d["category"]]]
+    if cfg.get("food_explore_qty") == 0:       # cautious start: food is bought only once the ledger shows it sells
+        rows = [d for d in rows if d.get("kind") != "food"]
     random.shuffle(rows)
     rows.sort(key=lambda d: have[d["category"]])       # the emptiest categories first
     room = 0 if hours_left < cfg["no_explore_hours"] else cfg["explore_lines"] if active else cfg["max_lines"]
     for d in rows[:room]:
         sku, x = min(skus[d["category"]], key=lambda s: abs(s[1]["list_price"] - d.get("median_price", 0)))
         if sku not in picked:
-            picks.append((0, sku, cfg["target_per_category"] - have[d["category"]]))
-    spare, buy = balance - cfg["keep_cash"], []
-    for _, sku, qty in picks:
-        cost = catalog[sku]["list_price"] * WORST_COST * qty
-        if cost <= spare:
-            buy.append({"sku": sku, "qty": qty})
-            spare -= cost
-    return {"buy": buy}
+            qty = cfg["target_per_category"] - have[d["category"]]
+            if x.get("kind") == "food" and cfg.get("food_explore_qty") is not None:
+                qty = min(qty, cfg["food_explore_qty"])
+            if qty > 0:
+                picks.append((0, sku, qty))
+    return {"buy": guard([{"sku": sku, "qty": qty} for _, sku, qty in picks], inv, catalog, cfg, breaks)}
+
+
+def guard(buy, inv, catalog, cfg, breaks=None):
+    """The lines that keep to the settings, whoever proposed them: food per line, goods that break too often, the cost of
+    the stock held, the cash kept, and hard_limits' line above bankruptcy. A line that does not fit is shrunk or dropped."""
+    balance, units = inv.get("balance") or 0, inv.get("units") or []
+    now = time.time()
+    held = sum(u.get("cost") or 0 for u in units if not (u.get("expires_at") and u["expires_at"] <= now))
+    room = cfg.get("max_stock_cost", float("inf")) - held
+    spare = min(balance - cfg["keep_cash"], hard_limits.spendable(balance))
+    out = []
+    for b in buy:
+        x = catalog.get(b["sku"]) or {}
+        qty = min(b["qty"], MAX_LOT)
+        if x.get("kind") == "food" and cfg.get("food_max_qty") is not None:
+            qty = min(qty, cfg["food_max_qty"])
+        if x.get("kind") == "goods" and breaks and cfg.get("max_break") is not None:
+            chance = market_model.break_chance(breaks, b["sku"])
+            if chance is not None and chance > cfg["max_break"]:
+                print(f"[restock] guard: {b['sku']} breaks {chance:.0%} > {cfg['max_break']:.0%}, left out", file=sys.stderr)
+                continue
+        unit = (x.get("list_price") or float("inf")) * WORST_COST
+        qty = min(qty, int(min(spare, room) // unit) if unit < float("inf") else 0)
+        if qty < 1:
+            continue
+        out.append({"sku": b["sku"], "qty": qty})
+        spare, room = spare - unit * qty, room - unit * qty
+    return out
+
+
+def read_breaks(state, catalog):
+    try:
+        return market_model.break_stats(market_model.load_rows(state), catalog)
+    except Exception:   # noqa: BLE001 - without break rates the guard simply does not use them
+        return None
 
 
 def read_model(state, catalog, cfg):
@@ -138,7 +179,19 @@ revenue and stars are what count. Round ends at unix time {ends}, now is {now}. 
 food past its date is thrown away at cost; goods in stock cost 1% of cost per day. A shop with no stock cannot sell at all,
 and other shops' deals show in the ledger whether you stock or not. Up to {lines} lines, qty 1-20 each.
 c0 is the formula's proposal for this state; follow it, change it or ignore it, as the evidence says. c1 is how your own earlier
-stock decisions turned out: what sold, what is left, what is gone unsold. Learn from it: a judgment that failed should not repeat."""
+stock decisions turned out: what sold, what is left, what is gone unsold. Learn from it: a judgment that failed should not repeat.
+c2 is the shop's own memory: long-term notes, lessons from earlier mistakes that match this state, and recent days. The
+code keeps every line inside the shop's current limits (pricing.json), which start cautious and widen as results earn it."""
+
+
+def keys_for(proposal, inv, catalog):
+    """What this decision is about, for picking memories: the SKUs and categories proposed or held, and food/goods."""
+    skus = {b["sku"] for b in proposal.get("buy", [])} | {u.get("sku") for u in inv.get("units") or []}
+    out = set()
+    for sku in skus:
+        x = catalog.get(sku) or {}
+        out |= {sku, x.get("category") or "", x.get("kind") or ""}
+    return sorted(k for k in out if k)
 
 FINAL = {"type": "object", "additionalProperties": False, "required": ["buy", "why"],
          "properties": {"why": {"type": "string"},
@@ -163,10 +216,13 @@ def agent_turn(state, inv, catalog, demand, cfg, model, decide=agent_loop.decide
     q = load(path, {"at": 0, "lines": []})
     if time.time() - q["at"] >= cfg["agent_every_minutes"] * 60:
         proposal = plan(inv, catalog, demand, {**cfg, "max_lines": cfg["agent_max_lines"]}, model)
+        results = decision_memory.outcomes(state, inv)
+        agent_memory.learn_from_outcomes(state, results, catalog)
         try:
             final = decide(GOAL.format(ends=cfg.get("round_ends_at"), now=int(time.time()), lines=cfg["agent_max_lines"]), FINAL,
                            state, "restock", {"c0": json.dumps(proposal, ensure_ascii=False),
-                                       "c1": json.dumps(decision_memory.outcomes(state, inv), ensure_ascii=False)})
+                                       "c1": json.dumps(results, ensure_ascii=False),
+                                       "c2": agent_memory.select(state, keys_for(proposal, inv, catalog))})
         except HarnessError as e:
             print(f"[restock] agent failed: {e}", file=sys.stderr, flush=True)
             return None
@@ -174,6 +230,7 @@ def agent_turn(state, inv, catalog, demand, cfg, model, decide=agent_loop.decide
             print("[restock] agent gave no evidenced decision", file=sys.stderr, flush=True)
             return None
         q = {"at": time.time(), "lines": clean_lines(final["buy"], catalog, cfg["agent_max_lines"])}
+        agent_memory.daily(state, "restock", f"bought {q['lines']} because {final.get('why', '')[:300]}")
     now, q["lines"] = q["lines"][:cfg["max_lines"]], q["lines"][cfg["max_lines"]:]
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -190,13 +247,16 @@ def main():
     cfg = {**DEFAULTS, **load("pricing.json", {}).get("restock", {})}
     catalog = load(os.path.join(args.state, "catalog.json"), {})
     demand, model = load(os.path.join(args.state, "demand.json"), []), read_model(args.state, catalog, cfg)
-    out = plan(inv, catalog, demand, cfg, model)
+    breaks = read_breaks(args.state, catalog)
+    out = plan(inv, catalog, demand, cfg, model, breaks)
     if os.environ.get("HARNESS") and not out.get("bankrupt"):
         lines = agent_turn(args.state, inv, catalog, demand, cfg, model)
         if lines is not None:
-            out = {"buy": lines}
+            out = {"buy": guard(lines, inv, catalog, cfg, breaks)}
+    agent_memory.maybe_consolidate(args.state)
     if os.environ.get("HARNESS"):
         forum.maybe_run(args.state)     # the kit runs this hook once a minute in Round 3; forum.py keeps its own pace
+        tool_forge.maybe_run(args.state)
     print(json.dumps(out, ensure_ascii=False), flush=True)
     return 0
 

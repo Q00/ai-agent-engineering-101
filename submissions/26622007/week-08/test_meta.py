@@ -372,7 +372,7 @@ class ForumTest(unittest.TestCase):
     def run_it(self, d, final):
         calls = []
 
-        def decide(goal, schema, md, agent):
+        def decide(goal, schema, md, agent, given=None):
             calls.append(goal)
             return final
         with mock.patch("builtins.print"):

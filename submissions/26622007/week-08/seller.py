@@ -50,6 +50,7 @@ from cryptography.hazmat.primitives import serialization
 from acp_shop import AcpCheckout
 from catalog import NUMERIC, Catalog
 from harness import HarnessError, ask
+import agent_memory
 import market_model
 import shop_memory
 from shop_stock import StockBook, last_segment, markdown
@@ -59,8 +60,9 @@ CANDIDATES = 15
 MAX_TEXT = 500    # characters of a buyer message that reach the prompts
 # Round 3 goods: a buyer's kit may refuse to pay without a warranty (accept.warranty_hours), so the shop offers one when
 # asked, priced in: the reserve rises to cost / (1 - chance it breaks), the price at which a refund is paid for on average.
-WARRANTY = {"on_request_hours": 6, "prior_break": 0.1, "max_break": 0.3}
+WARRANTY = {"on_request_hours": 3, "max_hours": 6, "prior_break": 0.15, "max_break": 0.25}
 WARRANTY_WORDS = re.compile(r"warrant|guarantee|보증|보장", re.I)
+WARRANTY_HOURS = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h\b|hours?|시간)", re.I)
 _breaks = {"at": 0.0, "stats": None}
 
 SYSTEM = """You are the owner of a small shop, negotiating the price of one item with a buyer.
@@ -186,6 +188,7 @@ def decide_turn(deal, text):
               f"Prices so far, oldest first:\n{history_text(deal)}\n"
               + memory_line(deal.get("key") or deal["name"])
               + (briefing_line(deal["id"]) if deal.get("unit") else "")
+              + lessons_line(deal)
               + ("You are already at your reserve, which is your lowest price. Do not say you can come down or "
                  "lower the price; explain politely and in your own words that this is your best and final price.\n"
                  if deal["ask"] <= deal["reserve"] else "")
@@ -193,6 +196,12 @@ def decide_turn(deal, text):
               f"buyer_offer: the price the buyer offers now (0 if none). action: accept (sell at buyer_offer), "
               f"counter (price = your new asking price), or reject (end the talk).")
     return ask(prompt, TURN_SCHEMA, SYSTEM, tag="seller-harness")
+
+
+def lessons_line(deal):
+    """The shop's own lessons about this SKU or category (memory/agent/strategies), if any."""
+    text = agent_memory.lessons_for([deal.get("id"), deal.get("key"), deal.get("kind")]) if deal.get("unit") else ""
+    return f"Lessons from this shop's own records:\n{text}\n" if text else ""
 
 
 FINAL_LINES = [
@@ -276,7 +285,9 @@ class Seller(AgentExecutor):
             deal["warranty"] = 0
             log(f"WARRANTY declined for {deal['id']}: break chance {chance:.1%} (max {cfg['max_break']:.0%})")
             return "Sorry, this item is sold without a warranty."
-        hours, before = cfg["on_request_hours"], deal["reserve"]
+        asked = [float(h) for h in WARRANTY_HOURS.findall(text or "")]
+        hours = min(max(asked), cfg["max_hours"]) if asked else cfg["on_request_hours"]
+        hours, before = (int(hours) if float(hours).is_integer() else hours), deal["reserve"]
         deal["warranty"] = hours
         deal["reserve"] = max(before, math.ceil(before / (1 - chance)))
         deal["ask"] = max(deal["ask"], deal["reserve"])
@@ -476,6 +487,9 @@ class Seller(AgentExecutor):
                                 "warranty": deal.get("warranty"), "result": result, "price": price})
         except OSError as e:
             log(f"memory write failed: {e}")
+        if deal.get("unit") and result == "deal":
+            agent_memory.daily(None, "sale", f"{deal['id']} {deal.get('name', '')[:40]} sold at {price}, cost {deal.get('cost')}"
+                               + (f", warranty {deal['warranty']} h" if deal.get("warranty") else ""))
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task

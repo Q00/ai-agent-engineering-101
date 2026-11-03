@@ -34,7 +34,7 @@ def decide(goal, final_schema, md, agent, given=None, ask_fn=None, max_steps=MAX
     """The validated final answer, or None if no evidenced decision came within max_steps. given: {call id: result}
     already known, such as a formula's proposal, which may be cited like a tool call."""
     ask_fn = ask_fn or ask
-    tools = agent_tools.discover()
+    tools = agent_tools.discover(md=md)
     calls = dict(given or {})
     lines, used = [f"{k}: {v}" for k, v in calls.items()], []
     for n in range(1, max_steps + 1):
