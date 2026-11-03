@@ -65,6 +65,23 @@ class ReviewHookTests(unittest.TestCase):
         out = json.loads(self.run_hook(dict(SETTLED, grade="B", claim_honest=False))[0])
         self.assertEqual(out["stars"], 2)
 
+    def test_queues_one_buyer_post(self):
+        self.run_hook()
+        self.run_hook()                           # the kit never reruns a ledger, but if it did: one post
+        lines = (self.home / ".market" / "outbox.jsonl").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), 1)
+        post = json.loads(lines[0])
+        self.assertEqual((post["as"], post["refs"], post["thread"]), ("buyer", [812], None))
+        self.assertIn("ledger #812", post["post"])
+        self.assertNotIn("41234", post["post"])
+
+    def test_forum_error_keeps_stars(self):
+        (self.home / ".market" / "outbox.jsonl").mkdir()    # appending to the outbox raises
+        lines = self.run_hook()
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(json.loads(lines[0])["stars"], 5)
+        self.assertIn("forum error", (self.home / "logs" / "hooks" / "review.log").read_text(encoding="utf-8"))
+
     def test_error_prints_nothing(self):
         self.assertEqual(self.run_hook(raw="{broken"), [])
         self.assertIn("JSONDecodeError", (self.home / "logs" / "hooks" / "review.log").read_text(encoding="utf-8"))

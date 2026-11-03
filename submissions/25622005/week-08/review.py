@@ -4,15 +4,17 @@
 
 Prints {"stars": 1-5, "review": "..."} on stdout. Keeps a copy of the deal in memory/deals/<order>.json
 and a decision row in logs/decisions/review.jsonl. On any error it prints nothing, so the kit keeps
-market_buyer's provisional stars.
+market_buyer's provisional stars. Then queues one buyer forum post for the deal (tools/forum.py).
 """
 import argparse
 import json
+import time
 from pathlib import Path
 
 import policy
 from memory.decisions import decision
 from memory.store import LOGS, MEM, atomic_write_json, hook_log, tail_jsonl
+from tools import forum
 from tools.buyer_policy import rate_deal
 
 
@@ -49,6 +51,10 @@ def main(argv=None):
         hook_log("review", f"error {type(e).__name__}: {e}")
         return 1
     print(json.dumps({"stars": stars, "review": review}, ensure_ascii=False), flush=True)
+    try:                                   # D11: a forum error never changes the stars or the exit code
+        forum.maybe_post(args.deal.parent, deal, pol, time.time(), policy_ver=ver)
+    except Exception as e:
+        hook_log("review", f"forum error {type(e).__name__}: {e}")
     return 0
 
 

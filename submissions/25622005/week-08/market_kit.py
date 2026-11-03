@@ -95,6 +95,8 @@ RETRY = (httpx.TransportError, ValueError)        # network trouble, or a body t
 def log(line=""):
     """Never raises: a failed write must not stop the thread that drains a process's output."""
     stamp = datetime.now().strftime("%H:%M:%S")
+    # 25622005: one record per line; text quoted from other agents cannot start a stamped line of its own
+    line = str(line).replace("\r", "\\r").replace("\n", "\\n")
     with LOG_LOCK:
         try:
             print(f"{stamp} {line}", flush=True)
@@ -1057,7 +1059,7 @@ def cmd_join(a):
     (d / "logs").mkdir(exist_ok=True)
     LOG_FILE = d / "logs" / "market-kit.log"
     log(f"[kit] market_kit {KIT_VERSION}, {d}")
-    log("[kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive")   # 25622005: local kit copy
+    log("[kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive, log-oneline")   # 25622005: local kit copy
     ignore_pem(d)
     keys = {"shop": load_key(d / "shop_key.pem"), "buyer": load_key(d / "buyer_key.pem")}
     market = Market(a.market, a.owner)

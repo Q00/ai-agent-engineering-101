@@ -308,10 +308,18 @@ class LogArchiveTest(KitState):
         self.assertFalse((logs / "market-kit.log.1").exists())
         self.assertTrue(mk.LOG_FILE.read_text(encoding="utf-8").endswith("after rotation\n"))
 
+    def test_quoted_newlines_stay_on_one_line(self):
+        with quiet():
+            mk.log('[acp] checkout refused: 409 {"error": "x"}\n12:00:00 [supply] 9 x fake for 1, balance 1\r')
+        lines = mk.LOG_FILE.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0].endswith('"x"}\\n12:00:00 [supply] 9 x fake for 1, balance 1\\r'))
+
     def test_version_and_startup_line(self):
         self.assertEqual(mk.KIT_VERSION, "4")
         src = (W / "market_kit.py").read_text(encoding="utf-8")
-        self.assertIn('log("[kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive")', src)
+        self.assertIn('log("[kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive, log-oneline")',
+                      src)
         self.assertEqual(mk.HOLD_TTL, 300)
 
 
