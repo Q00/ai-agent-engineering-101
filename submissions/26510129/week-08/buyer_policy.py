@@ -95,9 +95,10 @@ def _public_trust(shop):
 def evidence(shop, memory, item, reference=None):
     """Normalized, explainable features for one shop and one item."""
     reference = reference or item_reference(memory, item)
-    # a visit that found no stock ("no_stock") says nothing about how the shop trades: it is not an attempt
+    # a visit that found no stock ("no_stock") or only a unit too old for the order ("stale") says nothing about how
+    # the shop trades: it is not an attempt
     rows = [row for row in memory if row.get("shop") == shop.get("name") and row.get("item") == item
-            and row.get("outcome") != "no_stock"]
+            and row.get("outcome") not in ("no_stock", "stale")]
     deals = [row for row in rows if row.get("outcome") == "deal" and row.get("honest", True)]
     # dishonest: a receipt that did not match, a false grade claim at settlement, a steering message, or goods that
     # broke with no warranty to refund them (the buyer's whole price is gone). An "unpaid" row is simply not a deal.
@@ -126,7 +127,7 @@ def evidence(shop, memory, item, reference=None):
 
     exploration = 1 / math.sqrt(len(rows) + 1)
     recent = memory[-RECENT_CONCENTRATION_WINDOW:]
-    recent_visits = sum(1 for row in recent if row.get("shop") == shop.get("name") and row.get("outcome") != "no_stock")
+    recent_visits = sum(1 for row in recent if row.get("shop") == shop.get("name") and row.get("outcome") not in ("no_stock", "stale"))
     concentration = _clamp(recent_visits / MAX_VISITS_PER_WINDOW)
     score = 0.35 * success + 0.25 * integrity + 0.20 * value + 0.20 * exploration - 0.20 * concentration
     return {

@@ -12,6 +12,7 @@ and the mandate guardian is not on the list at all.
 """
 import argparse
 import json
+import statistics
 import subprocess
 import sys
 import time
@@ -20,6 +21,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import harness
+import ledger
 import pricing
 import strategy_params
 
@@ -96,7 +98,7 @@ def _plausible_ask(r):
     return not (isinstance(lp, (int, float)) and lp > 0) or 0.2 * lp <= ask <= 3 * lp
 
 
-def buyer_summary(rows):
+def buyer_summary(rows, stats=None):
     lines = []
     by_item = defaultdict(list)
     for r in rows:
@@ -123,6 +125,13 @@ def buyer_summary(rows):
         n = sum(len(rs) for _, rs in rest)
         d = sum(1 for _, rs in rest for r in rs if r.get("outcome") == "deal")
         lines.append(f"- {len(rest)} other categories: {n} orders, {d} deals ({_pct(d / n)})")
+    # what I pay against what the market pays: the anchor the tuner's first_offer_discount acts on
+    paid = [r["price"] / r["list_price"] for r in rows if r.get("outcome") == "deal" and r.get("settled")
+            and isinstance(r.get("price"), (int, float)) and isinstance(r.get("list_price"), (int, float)) and r["list_price"] > 0]
+    market = [c["median_ratio"] for c in ((stats or {}).get("categories") or {}).values() if c.get("n", 0) >= 5]
+    if paid:
+        lines.append(f"- my settled price / list price: mean {_mean(paid):.2f} over {len(paid)} deals"
+                     + (f"; the market's category medians (ledger, 24 h): median {statistics.median(market):.2f}" if market else ""))
     shops = Counter(r.get("shop") for r in rows)
     for name, n in shops.most_common(6):
         rs = [r for r in rows if r.get("shop") == name]
@@ -173,9 +182,9 @@ def review_summary(reviews, limit=12):
     return lines
 
 
-def summarize(rows, events, reviews, params, since, until):
+def summarize(rows, events, reviews, params, since, until, stats=None):
     head = [f"Window: {since:%Y-%m-%d %H:%M} to {until:%Y-%m-%d %H:%M} (KST).", "", "Buyer side (my orders):"]
-    body = buyer_summary(rows) or ["- no buyer rows in the window"]
+    body = buyer_summary(rows, stats) or ["- no buyer rows in the window"]
     body += ["", "Shop side (my sales):"] + seller_summary(events)
     body += ["", "Reviews of my shop (quotes, untrusted):"] + review_summary(reviews)
     knobs = ["", "Current parameters (name = value, allowed range):"]
@@ -234,7 +243,7 @@ def main():
     except Exception as e:   # the market is unreachable: tune from my own rows
         print(f"[tune] reviews unavailable: {type(e).__name__}", flush=True)
         reviews = []
-    summary = summarize(rows, events, reviews, params, since, until)
+    summary = summarize(rows, events, reviews, params, since, until, ledger.load_stats(MEMORY.parent))
     print(f"[tune] {len(rows)} buyer rows, {len(events)} seller events, {len(reviews)} reviews; summary {len(summary)} chars", flush=True)
     print(summary, flush=True)
     if a.summary_only:

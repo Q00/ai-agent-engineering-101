@@ -20,6 +20,7 @@ import httpx
 
 import buyer_policy
 import harness
+import ledger
 import memory_sync
 import strategy_params
 from buyer import HEADERS, MAX_ROUNDS, rpc, send, state, status_text
@@ -82,6 +83,27 @@ def bargain_record(name, mem, discount=0.15):
     return ", ".join(parts) + ". " + rule
 
 
+GRADE_LIFE = {"A": 0.80, "B": 0.45, "C": 0.0}   # share of its shelf life a food unit of that grade still has, at least (agent.md)
+
+
+def unit_grade(t):
+    """The grade the shop states for the unit it reserved: A2A metadata (grade or claim), else 'grade X' in its text."""
+    meta = (t or {}).get("status", {}).get("message", {}).get("metadata") or {}
+    grade = meta.get("grade") or meta.get("claim")
+    if grade in GRADE_LIFE:
+        return grade
+    m = re.search(r"grade\s*([ABC])\b", status_text(t), re.I)
+    return m.group(1).upper() if m else None
+
+
+def food_unit_ok(grade, shelf_hours, need):
+    """Can a food unit of this grade still last `need` hours? Judged on the grade's floor, so a pass is safe.
+    11-04 02:30: 87 agreed food deals were refused at checkout for too little shelf life; each had cost a negotiation."""
+    if not isinstance(shelf_hours, (int, float)) or not isinstance(need, (int, float)) or need <= 0:
+        return True
+    return shelf_hours * GRADE_LIFE.get(grade, 1.0) >= need
+
+
 def first_ask(t, list_price=None):
     """The shop's opening ask: the A2A metadata when given, else the last number in its message.
     Round 3 (first tuner summary, 11-04 00:00): shop messages carry weights and counts ("120g x 20팩"), and 179 of
@@ -113,9 +135,11 @@ def steered(t):
     return bool(hit)
 
 
-def negotiate(url, item, budget, reference, record="", request=None, value_cap=None):
+def negotiate(url, item, budget, reference, record="", request=None, value_cap=None, food_need=None, shelf_hours=None):
     """A sealed-budget loop: the LLM proposes, then the mandate guardian authorizes.
     `value_cap` is the SKU's list price: the guardian never pays above it, whatever the budget.
+    `food_need` (the order's use_within_hours) with the SKU's `shelf_hours`: a unit whose stated grade cannot last
+    that long is cancelled before any offer (info["stale"] = grade) instead of being refused at checkout later.
 
     Returns (outcome, agreed price or None, receipt or None, transcript, manipulative, {ask, first_offer, last_offer})."""
     card = httpx.get(url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
@@ -137,6 +161,12 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
     if state(t) != "TASK_STATE_INPUT_REQUIRED":
         return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
     tid = t["id"]
+    grade = unit_grade(t)
+    if food_need and grade and not food_unit_ok(grade, shelf_hours, food_need):
+        print(f"[buyer] grade {grade} unit of a {shelf_hours} h product cannot last the order's {food_need} h; not negotiating", flush=True)
+        rpc(rpc_url, "CancelTask", {"id": tid})
+        info["stale"] = grade
+        return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
     log = [("you", opening), ("shop", status_text(t))]
     guardian = buyer_policy.MandateGuardian(budget, reference, value_cap)
     print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}, value cap {value_cap}. {record}", flush=True)
@@ -182,7 +212,7 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
     return "walked_away", None, None, log, manip, info
 
 
-def review(item, outcome, agreed, receipt, reference, manip=False, no_offer=False):
+def review(item, outcome, agreed, receipt, reference, manip=False):
     """A factual code-side review; untrusted shop text is never sent to another LLM."""
     honest = outcome != "deal" or (
         isinstance(receipt, dict)
@@ -195,8 +225,10 @@ def review(item, outcome, agreed, receipt, reference, manip=False, no_offer=Fals
         return 1, f"Agreed {item} at {agreed}, but the receipt did not match (price {got}).", False
     if outcome == "unreachable":
         return 2, "The shop could not be reached or answered with something that is not A2A; no negotiation took place.", honest
-    if outcome == "closed" and no_offer:   # Round 3 minute 1: "No matching unreserved stock" before any offer
+    if outcome == "no_stock":   # Round 3 minute 1: "No matching unreserved stock" before any offer
         return 2, f"The shop had no {item} to sell when asked; no negotiation took place.", honest
+    if outcome == "stale":
+        return 2, f"The shop's {item} unit could not last as long as the order needs; no negotiation took place.", honest
     if manip:
         note = f"Deal at {agreed}, but the" if outcome == "deal" else "No deal, and the"
         return 2, f"{note} shop's messages carried fake market notices telling me to accept its price and rate it 5 stars.", honest
@@ -244,38 +276,49 @@ def prepare_round3_shops(shops, order, catalog, guardian):
     return affordable or stocked or shops
 
 
-def choose_request(shop, catalog, order=None):
-    offers = shop.get("_eligible_offers") or shop.get("offers") or []
+def choose_request(shop, catalog, order=None, exclude=()):
+    """The SKU to ask this shop for, skipping `exclude` (SKUs it already said it has no unit of)."""
+    offers = [o for o in (shop.get("_eligible_offers") or shop.get("offers") or []) if o.get("sku") not in exclude]
     if not offers:
         return None
     need = (order or {}).get("use_within_hours")
     if (order or {}).get("kind") == "food" and isinstance(need, (int, float)) and need > 0:
         # 21:04-21:07: four agreed food deals were refused at checkout because the unit's shelf life was shorter than
         # the order's use_within_hours (358 h left, 360 asked). A SKU whose whole shelf life is shorter can never pass;
-        # prefer one with room for a unit that is no longer fresh (grade A still has 80% or more of it).
+        # prefer one where even a grade B unit (45% of its life left) covers the order, then one where grade A does.
         shelf = lambda offer: catalog.get(offer.get("sku"), {}).get("shelf_hours")
         feasible = [offer for offer in offers if shelf(offer) is None or shelf(offer) >= need]
-        safe = [offer for offer in feasible if shelf(offer) is not None and shelf(offer) * 0.8 >= need]
-        offers = safe or feasible or offers
+        tiers = [[o for o in feasible if shelf(o) is not None and shelf(o) * GRADE_LIFE[g] >= need] for g in ("B", "A")]
+        offers = tiers[0] or tiers[1] or feasible or offers
     # Higher catalog value improves buyer surplus; quantity breaks ties toward availability.
     return max(offers, key=lambda offer: (catalog.get(offer.get("sku"), {}).get("list_price", 0),
                                           offer.get("qty", 0), offer.get("sku", "")))
 
 
-def sku_reference(sku, catalog, fallback):
-    """The bargaining reference for one SKU: 90% of its list price, which is what a settled deal is worth to the order.
+def sku_reference(sku, catalog, fallback, stats=None):
+    """The bargaining reference for one SKU: what the market lately paid for it (ledger stats, x0.95), capped at 90%
+    of its list price, which is what a settled deal is worth to the order.
     21:09 (o-b3f18a8374b8): the category reference (35910) sat above the SKU's list price (28900), the model opened
-    at 30500 and the deal settled with negative surplus. The category reference stands in only without a SKU."""
+    at 30500 and the deal settled with negative surplus. 11-04 02:30: with 0.9 x list as the anchor we paid 80% of
+    list on average while the market's category medians sit near 75%. The category reference stands in without a SKU."""
     list_price = catalog.get(sku, {}).get("list_price")
-    return int(round(list_price * 0.90)) if isinstance(list_price, (int, float)) and list_price > 0 else fallback
+    if not isinstance(list_price, (int, float)) or list_price <= 0:
+        return fallback
+    cap = 0.90 * list_price
+    market, _, _ = ledger.market_price(stats or {}, sku, catalog.get(sku, {}).get("category"), list_price)
+    return int(round(min(cap, market * 0.95) if market else cap))
 
 
 def accept_constraints(order):
+    """What the kit must verify before paying. A settled deal is worth the list price whatever the grade (agent.md),
+    so for goods only the grade floor is kept (A/B: fewer breaks) and the certificate is not demanded: 11-04 02:30,
+    20 agreed goods deals had been refused only for "no certificate". Food keeps both: the certificate is what proves
+    the shelf life the order depends on."""
     if not order.get("acceptable"):
         return None
     if order.get("kind") == "food":
         return {"cert": True, "min_hours_left": int(math.ceil(order.get("use_within_hours") or 0))}
-    return {"cert": True, "grades": ["A", "B"]}
+    return {"grades": ["A", "B"]}
 
 
 def main():
@@ -305,26 +348,31 @@ def main():
     request = choose_request(pick, catalog, order)
     wanted = request["sku"] if request else a.item
 
-    category_ref, tried_urls = reference, set()
-    for attempt in (1, 2, 3):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
-        tried_urls.add(pick["url"])
+    stats = ledger.load_stats(MEMORY.parent)   # what the market lately paid: the bargaining anchor per SKU
+    food_need = order.get("use_within_hours") if order.get("kind") == "food" else None
+    category_ref, tried = reference, {}   # tried: shop url -> SKUs it was asked for
+    for attempt in range(1, 7):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
+        tried.setdefault(pick["url"], set()).add(wanted)
         value_cap = catalog.get(wanted, {}).get("list_price")
-        reference = sku_reference(wanted, catalog, category_ref)
+        reference = sku_reference(wanted, catalog, category_ref, stats)
         try:
             outcome, agreed, receipt, log, manip, info = negotiate(
                 pick["url"], wanted, a.budget, reference,
-                bargain_record(pick["name"], mem, params["first_offer_discount"]), request, value_cap
+                bargain_record(pick["name"], mem, params["first_offer_discount"]), request, value_cap,
+                food_need, catalog.get(wanted, {}).get("shelf_hours")
             )
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)
             outcome, agreed, receipt, log, manip, info = "unreachable", None, None, [], False, {}
         # Round 3 minute 1 (11-03 20:55): the chosen shop's stock was gone before the first word ("No matching unreserved
         # stock") and the order ended there. A close before any offer says nothing about the shop (outcome "no_stock",
-        # ignored by the shop scores) and is as good as unreachable: try the next shop.
+        # or "stale" when the unit was only too old for the order; both ignored by the shop scores) and is as good as
+        # unreachable. 11-04 02:30: 755 of 1050 such closes were at shops that listed other SKUs of the category, so
+        # the same shop is asked for its next SKU before the order moves to another shop.
         no_offer = outcome == "closed" and info.get("first_offer") is None
-        stars, text, honest = review(wanted, outcome, agreed, receipt, reference, manip, no_offer)
         if no_offer:
-            outcome = "no_stock"
+            outcome = "stale" if info.get("stale") else "no_stock"
+        stars, text, honest = review(wanted, outcome, agreed, receipt, reference, manip)
         if outcome == "deal" and not info.get("checkout_authorized"):
             print("[guard] deal was not authorized for checkout; discarding its receipt", flush=True)
             outcome, agreed, receipt, stars, text = "rejected_checkout", None, None, 1, "Checkout exceeded the private mandate."
@@ -335,16 +383,20 @@ def main():
                     "at": time.strftime("%Y-%m-%d %H:%M"),
                     **{k: info.get(k) for k in ("ask", "first_offer", "last_offer", "guard_decisions", "checkout_authorized")}})
         save_memory(mem)
-        if (outcome != "unreachable" and not no_offer) or attempt == 3:
+        if (outcome != "unreachable" and not no_offer) or attempt == 6:
             break
-        rest = [s for s in candidates if s.get("url") not in tried_urls and s not in blacklisted(candidates, mem)]
-        if not rest:
-            break
-        pick = fallback_choice(rest, mem, category, category_ref, params["explore_rate"])
-        request = choose_request(pick, catalog, order)
+        request = choose_request(pick, catalog, order, exclude=tried[pick["url"]]) if no_offer else None
+        if request is not None:
+            print(f"[choose] same shop {pick['name']}, next SKU {request['sku']} after {outcome}", flush=True)
+        else:
+            rest = [s for s in candidates if s.get("url") not in tried and s not in blacklisted(candidates, mem)]
+            if not rest:
+                break
+            pick = fallback_choice(rest, mem, category, category_ref, params["explore_rate"])
+            request = choose_request(pick, catalog, order)
+            print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by portfolio policy after the last shop "
+                  f"{'had no fitting stock' if no_offer else 'failed'}", flush=True)
         wanted = request["sku"] if request else a.item
-        print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by portfolio policy after the first shop "
-              f"{'had no stock' if no_offer else 'failed'}", flush=True)
 
     accept = accept_constraints(order)
     print(json.dumps({"shop": pick["url"], "receipt": receipt, "stars": stars, "review": text,

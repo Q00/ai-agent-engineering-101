@@ -30,9 +30,31 @@ class Round3BuyerContextTest(unittest.TestCase):
         accept = market_buyer.accept_constraints({"acceptable": ["f"], "kind": "food", "use_within_hours": 2.2})
         self.assertEqual(accept, {"cert": True, "min_hours_left": 3})
 
-    def test_goods_acceptance_rejects_grade_c(self):
+    def test_goods_acceptance_rejects_grade_c_but_needs_no_certificate(self):
         accept = market_buyer.accept_constraints(self.order)
-        self.assertEqual(accept, {"cert": True, "grades": ["A", "B"]})
+        self.assertEqual(accept, {"grades": ["A", "B"]})
+
+    def test_request_skips_skus_the_shop_already_turned_down(self):
+        shop = {"offers": [{"sku": "cheap", "qty": 4}, {"sku": "valuable", "qty": 1}]}
+        self.assertEqual("cheap", market_buyer.choose_request(shop, self.catalog, exclude={"valuable"})["sku"])
+        self.assertIsNone(market_buyer.choose_request(shop, self.catalog, exclude={"valuable", "cheap"}))
+
+    def test_food_unit_grade_decides_before_negotiating(self):
+        self.assertTrue(market_buyer.food_unit_ok("A", 600, 360))     # 480 h at least
+        self.assertFalse(market_buyer.food_unit_ok("B", 600, 360))    # 270 h at least
+        self.assertFalse(market_buyer.food_unit_ok("C", 600, 1))
+        self.assertTrue(market_buyer.food_unit_ok(None, 600, 360))    # unknown grade: let the kit's check decide
+        self.assertTrue(market_buyer.food_unit_ok("C", None, 360))
+        task = {"status": {"message": {"metadata": {"ask": 10}, "parts": [{"text": "kimchi (F1), certified grade B: asking 10."}]}}}
+        self.assertEqual("B", market_buyer.unit_grade(task))
+        task["status"]["message"]["metadata"]["grade"] = "A"
+        self.assertEqual("A", market_buyer.unit_grade(task))
+
+    def test_sku_reference_follows_the_market_below_the_list_cap(self):
+        stats = {"skus": {"valuable": {"n": 5, "median": 150}}, "categories": {}}
+        self.assertEqual(142, market_buyer.sku_reference("valuable", self.catalog, 999, stats))   # 150 x 0.95
+        stats["skus"]["valuable"]["median"] = 195
+        self.assertEqual(180, market_buyer.sku_reference("valuable", self.catalog, 999, stats))   # capped at 0.9 x list
 
     def test_catalog_reference_is_discounted_median(self):
         self.assertEqual(market_buyer.category_reference(self.order, self.catalog), 180)
