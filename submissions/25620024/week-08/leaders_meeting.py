@@ -79,10 +79,15 @@ def brief():
             "sales_kpi": kpi.accountability("sales", c, board=board).get("now"),
             "winning_skus": enuri.winning(c)[:10], "enuri": enuri.summary(),
             "demand_gaps": market_model.gap_demand(c)[:8],
+            "internal_audit": __import__("qa").audit(board),            # the review team's findings (11-04)
+            "buyer_diagnosis": __import__("buyer_team").diagnosis(board),
+            "review_team_experiment": __import__("review_team").report(),
             "hq_decisions": (HERE / "private" / "hq_decisions.md").read_text(encoding="utf-8")[:4000]}
 
 
-def meet(ask_codex, ask_claude):
+def meet(ask_codex, ask_claude, goal=None):
+    global GOAL
+    GOAL = goal or GOAL
     b = brief()
     buyer = json.loads(ask_codex(BUYER_PROMPT.format(goal=GOAL) + json.dumps(b, ensure_ascii=False), BUYER_SCHEMA))
     raw = ask_claude(SALES_PROMPT.format(goal=GOAL, keys=", ".join(PLAN_KEYS)) + json.dumps(b, ensure_ascii=False)
@@ -104,5 +109,7 @@ def summary():
 
 
 if __name__ == "__main__":
+    import sys
     import marketing_agent
-    print(json.dumps(meet(marketing_agent.ask_codex, marketing_agent.ask_claude), ensure_ascii=False, indent=1))
+    goal = sys.argv[sys.argv.index("--goal") + 1] if "--goal" in sys.argv else None
+    print(json.dumps(meet(marketing_agent.ask_codex, marketing_agent.ask_claude, goal), ensure_ascii=False, indent=1))
