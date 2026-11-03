@@ -26,8 +26,8 @@ _CWD = tempfile.mkdtemp(prefix="harness-")
 def ask(prompt: str, timeout: int = 180, cmd: str | None = None) -> str:
     out = subprocess.run(cmd or CMD, shell=True, input=prompt, capture_output=True, text=True,
                          cwd=_CWD, timeout=timeout, env=dict(os.environ, MAX_THINKING_TOKENS="0"))
-    if out.returncode != 0:
-        raise RuntimeError(f"harness exit {out.returncode}: {out.stderr.strip()[:200]}")
+    if out.returncode != 0:          # Claude Code prints its errors (login, model access) on stdout
+        raise RuntimeError(f"harness exit {out.returncode}: {(out.stderr.strip() or out.stdout.strip())[:200]}")
     return out.stdout.strip()
 
 
