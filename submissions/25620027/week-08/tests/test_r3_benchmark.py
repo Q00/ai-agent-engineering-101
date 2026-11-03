@@ -35,7 +35,16 @@ def test_leaders_table_measures_prices_breadth_and_flags_self_trade(
     _ = ledger.ingest(
         [
             settle(1, "b-honest", "http://good", KIMCHI, 41600, grade="A", claim="A"),
-            settle(2, "b-other", "http://good", LAMP, 32000, grade="A", claim="A"),
+            settle(
+                2,
+                "b-other",
+                "http://good",
+                LAMP,
+                32000,
+                grade="A",
+                claim="A",
+                warranty_hours=6,
+            ),
             settle(3, "self-buyer", "http://self", LAMP, 40000, grade="A", claim="A"),
             settle(4, "self-buyer", "http://self", LAMP, 40000, grade="A", claim="A"),
             settle(5, "b-honest", "http://self", LAMP, 36000, grade="B", claim="A"),
@@ -68,11 +77,18 @@ def test_leaders_table_measures_prices_breadth_and_flags_self_trade(
     assert shops["Good"]["categories"] == 2
     assert shops["Good"]["food_share"] == 0.33
     assert shops["Good"]["median_price_to_list"] == 0.8
+    # And: ticket size, grade mix, warranty share and repeat buyers are measured.
+    assert shops["Good"]["median_list_price"] == 40000
+    assert shops["Good"]["grade_mix"] == {"A": 1.0, "B": 0.0, "C": 0.0}
+    assert shops["Good"]["warranty_share"] == 0.33  # one of three goods sales
+    assert len(shops["Good"]["top_categories"]) == 2
+    assert shops["Self"]["repeat_buyer_share"] == 0.0  # nobody reached five deals
     assert shops["25620027"]["ours"] is True
     buyers = {r["name"]: r for r in table["buyers"]}
     assert buyers["self-buyer"]["do_not_copy"] is True
     assert buyers["b-honest"]["shops_used"] == 2
     assert buyers["25620027"]["median_paid_to_list"] == 0.75
+    assert buyers["b-honest"]["median_list_price"] == 46000
     # And: history accumulates and the day-ago lookup finds the closest entry.
     latest = tmp_path / "r3-benchmark.json"
     old = {**table, "ts": time.time() - 86400}

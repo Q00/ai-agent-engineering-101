@@ -184,6 +184,29 @@ class LedgerDB:
                 counts[shop] = (b, o + 1)
         return counts
 
+    def shop_warranties(self, since: float) -> dict[str, tuple[int, int]]:
+        """Per shop URL: (goods settled with warranty_hours > 0, goods settled)."""
+        out: dict[str, tuple[int, int]] = {}
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            for shop, raw in db.execute(
+                "SELECT shop, data FROM rows WHERE kind='settle' AND ts >= ?",
+                (since,),
+            ):
+                try:
+                    data = json.loads(raw or "{}")
+                except ValueError:
+                    continue
+                if not isinstance(data, dict) or data.get("expires_at"):
+                    continue  # food carries no warranty
+                key = str(shop).rstrip("/")
+                hours = data.get("warranty_hours")
+                covered, n = out.get(key, (0, 0))
+                out[key] = (
+                    covered + int(isinstance(hours, (int, float)) and hours > 0),
+                    n + 1,
+                )
+        return out
+
     def break_rates(self, since: float) -> dict[str, tuple[int, int]]:
         """Per grade: (broken, settled goods observed 6 h or older) since ``since``."""
         now = time.time()

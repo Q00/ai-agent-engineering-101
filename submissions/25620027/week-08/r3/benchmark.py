@@ -76,7 +76,11 @@ def leaders(
     return picked
 
 
-def build(  # noqa: PLR0913 - one explicit pass
+# A buyer with this many settlements at one shop in the window counts as repeat.
+REPEAT_DEALS: Final = 5
+
+
+def build(  # noqa: PLR0913, C901, PLR0915 - one explicit pass
     board: Mapping[str, object],
     ledger: LedgerDB,
     catalog: Mapping[str, CatalogItem],
@@ -92,6 +96,7 @@ def build(  # noqa: PLR0913 - one explicit pass
     """
     stamp = now if now is not None else time.time()
     settles = ledger.settles(stamp - hours * 3600)
+    warranties = ledger.shop_warranties(stamp - hours * 3600)
     shops = leaders(board, "shops", "profit", ours)
     buyers = leaders(board, "buyers", "saved", ours)
     owner_of_buyer = {
@@ -138,6 +143,18 @@ def build(  # noqa: PLR0913 - one explicit pass
         n = len(sold)
         self_share = round(self_trade / n, 2) if n else 0.0
         dishonest_share = round(dishonest / n, 2) if n else 0.0
+        lists = [catalog[s].list_price for _b, s, _a, _g, _c in sold if s in catalog]
+        grades = {g: sum(1 for *_x, gg, _c in sold if gg == g) for g in "ABC"}
+        buyers_n = {}
+        for b, *_x in sold:
+            buyers_n[b] = buyers_n.get(b, 0) + 1
+        repeat = sum(c for c in buyers_n.values() if c >= REPEAT_DEALS)
+        leaf = {}
+        for _b, s, _a, _g, _c in sold:
+            if s in catalog:
+                key = catalog[s].category.rsplit(">", 1)[-1]
+                leaf[key] = leaf.get(key, 0) + 1
+        covered, goods_n = warranties.get(url, (0, 0))
         shop_rows.append(
             {
                 "rank": row.get("_rank"),
@@ -152,6 +169,13 @@ def build(  # noqa: PLR0913 - one explicit pass
                 if ratios
                 else None,
                 "categories": len(cats),
+                "top_categories": sorted(leaf, key=lambda k: -leaf[k])[:4],
+                "median_list_price": int(statistics.median(lists)) if lists else None,
+                "grade_mix": {g: round(c / n, 2) for g, c in grades.items()}
+                if n
+                else None,
+                "warranty_share": round(covered / goods_n, 2) if goods_n else None,
+                "repeat_buyer_share": round(repeat / n, 2) if n else None,
                 "food_share": round(food / n, 2) if n else None,
                 "dishonest_share": dishonest_share,
                 "self_trade_share": self_share,
@@ -170,6 +194,7 @@ def build(  # noqa: PLR0913 - one explicit pass
         )
         n = len(bought)
         self_share = round(self_trade / n, 2) if n else 0.0
+        blists = [catalog[s].list_price for _u, s, _a, _g, _c in bought if s in catalog]
         buyer_rows.append(
             {
                 "rank": row.get("_rank"),
@@ -181,6 +206,7 @@ def build(  # noqa: PLR0913 - one explicit pass
                 "median_paid_to_list": round(statistics.median(ratios), 3)
                 if ratios
                 else None,
+                "median_list_price": int(statistics.median(blists)) if blists else None,
                 "shops_used": len({u for u, *_x in bought}),
                 "self_trade_share": self_share,
                 "do_not_copy": self_share >= SELF_TRADE_LIMIT,
