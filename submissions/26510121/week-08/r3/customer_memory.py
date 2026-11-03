@@ -6,12 +6,48 @@ import re
 import statistics
 import time
 from cryptography.exceptions import InvalidSignature
+from google.protobuf.json_format import MessageToDict
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from .protocol import canon
 from .state import identity
 
 SCOPE = 'shopper-memory-v1:Seochanit Shop'
 LIMIT = 2000
+MAX_VISITS = 1000
+MAX_EVENTS = 8000
+MAX_PROOFS = 4000
+
+
+def metadata_dict(value):
+    if isinstance(value, dict):
+        return value
+    try:
+        result = MessageToDict(value)
+        return result if isinstance(result, dict) else {}
+    except (AttributeError, TypeError):
+        return {}
+
+
+def retain(journal, max_visits=MAX_VISITS, max_events=MAX_EVENTS):
+    """FIFO only for customer working memory; never touch payment liabilities."""
+    with journal.connect() as connection:
+        connection.execute('BEGIN IMMEDIATE')
+        old = connection.execute(
+            "SELECT data FROM events WHERE kind='customer_visit' ORDER BY ts DESC,rowid DESC LIMIT -1 OFFSET ?",
+            (max_visits,)).fetchall()
+        for (data,) in old:
+            task = json.loads(data)['task']
+            connection.execute("DELETE FROM events WHERE kind LIKE 'customer_%' AND json_extract(data,'$.task')=?", (task,))
+            connection.execute('DELETE FROM kv WHERE key IN (?,?)', ('customer-visit:' + task, 'customer-payer:' + task))
+            connection.execute("DELETE FROM kv WHERE key LIKE 'customer-ledger:%' AND value=?", (json.dumps(task),))
+        # Actions/turns can also be numerous within one visit; enforce a total cap.
+        connection.execute("DELETE FROM events WHERE rowid IN (SELECT rowid FROM events "
+                           "WHERE kind LIKE 'customer_%' AND kind!='customer_visit' "
+                           "ORDER BY ts DESC,rowid DESC LIMIT -1 OFFSET ?)",
+                           (max(0, max_events - max_visits),))
+        # Never evict an unexpired replay guard to make room for a new one.
+        connection.execute("DELETE FROM kv WHERE key LIKE 'customer-proof:%' "
+                           "AND json_type(value)='object' AND json_extract(value,'$.expires') < ?", (time.time(),))
 
 
 def signed_visitor(journal, task, message_id, text, metadata, now=None, expected_shop=None):
@@ -20,6 +56,8 @@ def signed_visitor(journal, task, message_id, text, metadata, now=None, expected
     try:
         proof = metadata.get('buyer_memory_proof', {})
         ts = proof['ts']
+        if type(ts) is float and ts.is_integer():
+            ts = int(ts)  # A2A protobuf Struct decodes JSON numbers as floats.
         if type(ts) is not int or abs(now - ts) > 300 or not message_id or not expected_shop:
             return None
         raw = base64.b64decode(proof['pubkey'], validate=True)
@@ -30,10 +68,19 @@ def signed_visitor(journal, task, message_id, text, metadata, now=None, expected
         replay_key = 'customer-proof:' + identity([subject, message_id])
         with journal.connect() as connection:
             connection.execute('BEGIN IMMEDIATE')
+            connection.execute("DELETE FROM kv WHERE key LIKE 'customer-proof:%' "
+                               "AND json_type(value)='object' AND json_extract(value,'$.expires') < ?", (now,))
             row = connection.execute('SELECT value FROM kv WHERE key=?', (replay_key,)).fetchone()
-            if row and json.loads(row[0]) != task:
-                return None
-            connection.execute('INSERT OR IGNORE INTO kv VALUES(?,?)', (replay_key, json.dumps(task)))
+            if row:
+                previous = json.loads(row[0])
+                if (previous.get('task') if isinstance(previous, dict) else previous) != task:
+                    return None
+            else:
+                count = connection.execute("SELECT count(*) FROM kv WHERE key LIKE 'customer-proof:%'").fetchone()[0]
+                if count >= MAX_PROOFS:
+                    return None
+                connection.execute('INSERT INTO kv VALUES(?,?)',
+                                   (replay_key, json.dumps({'task': task, 'expires': ts + 300})))
         return subject
     except (InvalidSignature, KeyError, ValueError, TypeError, AttributeError):
         # Invalid signatures and arbitrary peer metadata never authenticate a name.
@@ -59,6 +106,7 @@ def visit(journal, task, text, unit=None, strategy_version=0, signer=None):
               'strategy_version': strategy_version, 'signer': signer}
     journal.add('customer_visit', record, eid='customer-visit:' + task, role='shop')
     journal.put(key, record)
+    retain(journal)
     return record
 
 
@@ -74,6 +122,7 @@ def incoming(journal, task, message_id, text, last_ask=None, turn=0):
               'mentions_freshness': bool(re.search(r'fresh|expire|유통기한|신선', text, re.I))}
     dedup = identity([task, message_id]) if message_id else identity([task, turn, text])
     journal.add('customer_turn', record, eid='customer-turn:' + dedup, role='shop')
+    retain(journal)
 
 
 def action(journal, task, message_id, turn, chosen, version):

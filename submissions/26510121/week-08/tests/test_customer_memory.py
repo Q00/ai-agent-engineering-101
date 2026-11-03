@@ -140,3 +140,48 @@ def test_stockout_category_is_observed_without_inventing_product(tmp_path):
     j, u = setup(tmp_path)
     result = memory.visit(j, 't', 'I want appliance but it is unavailable')
     assert result['category'] == u['category'] and result['sku'] is None
+
+
+def test_fifo_removes_old_visit_behavior_and_identity_but_keeps_liabilities(tmp_path):
+    j, u = setup(tmp_path)
+    for n in range(4):
+        task = f'visit-{n}'
+        memory.visit(j, task, 'G111', u)
+        memory.incoming(j, task, task, '8000', last_ask=9000)
+        memory.paid(j, task, 8000, 'G111', n, {'buyer': 'buyer-' + str(n)})
+    j.add('shop_settled', {'task': 'visit-0', 'pending_warranty': 8000}, eid='liability')
+    # A late turn does not move the oldest visit to the back of the FIFO.
+    memory.incoming(j, 'visit-0', 'late-turn', '8100')
+    memory.retain(j, max_visits=2, max_events=20)
+    assert {e['task'] for e in j.events('customer_visit')} == {'visit-2', 'visit-3'}
+    assert not j.get('customer-visit:visit-0') and not j.get('customer-payer:visit-0')
+    assert not j.get('customer-ledger:0')
+    assert memory.profile(j, 'market-round3:buyer-0')['paid_visits'] == 0
+    assert len(j.events('shop_settled')) == 1
+    with j.connect() as connection:
+        assert connection.execute("SELECT count(*) FROM events WHERE kind LIKE 'customer_%' "
+                                  "AND json_extract(data,'$.task')='visit-0'").fetchone()[0] == 0
+
+
+def test_fifo_limits_turns_inside_one_long_visit(tmp_path):
+    j, u = setup(tmp_path)
+    memory.visit(j, 't', 'G111', u)
+    for n in range(10):
+        memory.incoming(j, 't', str(n), str(8000 + n), turn=n)
+    memory.retain(j, max_visits=1, max_events=5)
+    assert {e['turn'] for e in j.events('customer_turn')} == {6, 7, 8, 9}
+    assert len(j.events('customer_visit')) == 1
+
+
+def test_proof_capacity_preserves_valid_replay_guards(monkeypatch, tmp_path):
+    j, _ = setup(tmp_path)
+    monkeypatch.setattr(memory, 'MAX_PROOFS', 1)
+    key, now = Ed25519PrivateKey.generate(), int(time.time())
+    first = proof(key, 'shop', 'one', 'G111', now)
+    second = proof(key, 'shop', 'two', 'G111', now)
+    assert memory.signed_visitor(j, 't1', 'one', 'G111', first, now, 'shop')
+    assert memory.signed_visitor(j, 't2', 'two', 'G111', second, now, 'shop') is None
+    memory.retain(j)
+    assert memory.signed_visitor(j, 'replay', 'one', 'G111', first, now, 'shop') is None
+    fresh = proof(key, 'shop', 'two', 'G111', now + 301)
+    assert memory.signed_visitor(j, 't2', 'two', 'G111', fresh, now + 301, 'shop')

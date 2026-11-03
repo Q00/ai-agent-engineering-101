@@ -66,7 +66,7 @@ class Seller(AgentExecutor):
         if deal is None:
             unit = self.select_unit(text, task.id)
             message_id = getattr(context.message, 'message_id', '')
-            metadata = getattr(context.message, 'metadata', None) or {}
+            metadata = customer_memory.metadata_dict(getattr(context.message, 'metadata', None))
             shop_pubkey = None
             if metadata.get('buyer_memory_proof'):
                 try:
