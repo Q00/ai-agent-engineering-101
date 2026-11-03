@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCK_FILE = ROOT / "harness" / "lock.json"
-PINNED = ("harness/judge.py", "harness/bounds.py", "experiments/decide.py")
+PINNED = ("harness/judge.py", "harness/bounds.py", "experiments/decide.py", "taste/judge.py")
 
 
 class JudgeTampered(RuntimeError):
