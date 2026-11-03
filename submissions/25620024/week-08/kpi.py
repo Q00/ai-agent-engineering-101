@@ -63,6 +63,23 @@ def sell_through(c, hours=6, old_h=12):
             "expired_units": sum(1 for u in inv.get("units", []) if u.get("grade") == "expired")}
 
 
+def cash_flow(c, hours=3):
+    """Net cash flow per hour, newest last: cash in (our settles) minus cash out (our supply), and what the shop is
+    worth (balance + stock at cost). HQ 11-04: the cash flow has to keep improving."""
+    now, out = time.time(), []
+    for h in range(hours, 0, -1):
+        a, b = now - h * 3600, now - (h - 1) * 3600
+        cin = c.execute(f"select coalesce(sum(amount),0) from settles where ts between ? and ? and seq in ({market_model.ours(c)})",
+                        (a, b)).fetchone()[0]
+        cout = c.execute("select coalesce(sum(total),0) from supplies where shop=? and ts between ? and ?",
+                         (NAME, a, b)).fetchone()[0]
+        out.append({"hours_ago": h, "in": round(cin), "out": round(cout), "net": round(cin - cout)})
+    inv = _inv()
+    stock = sum(u.get("cost") or 0 for u in inv.get("units", []) if u.get("grade") != "expired")
+    return {"by_hour": out, "balance": inv.get("balance"), "stock_at_cost": round(stock),
+            "worth": round((inv.get("balance") or 0) + stock)}
+
+
 def health(shop):
     inv = _inv()
     start, bal, profit = inv.get("start") or 5_000_000, inv.get("balance"), (shop or {}).get("profit")
@@ -111,7 +128,7 @@ def accountability(team, c=None, shop=None, board=None):
     """The line a team's brief starts with: what it answers for, and the numbers now."""
     c = c or market_model.db()
     try:
-        data = {"scm": lambda: stockouts(c), "finance": lambda: health(shop),
+        data = {"scm": lambda: stockouts(c), "finance": lambda: {**health(shop), "cash_flow": cash_flow(c)},
                 "marketing": lambda: sell_through(c), "sales": lambda: {**rank(board), **vip()}}[team]()
     except Exception as e:
         data = {"error": f"{type(e).__name__}: {e}"}
