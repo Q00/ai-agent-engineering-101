@@ -93,8 +93,10 @@ def price_index(c, t, now):
              "paid_share": {"median": round(statistics.median(ratios), 3), "q25": round(q(0.25), 3), "q75": round(q(0.75), 3)},
              "best_sellers": [{"sku": k, "name": ((cat_rows.get(k) or {}).get("name") or k)[:22], "sold": n} for k, n in top],
              "lowest": {"sku": low[2], "price": low[3], "share": round(low[3] / low[4], 3)},
-             "refs": [r[0] for r in rs][-8:]}, ensure_ascii=False, separators=(",", ":")) + \
-            f"\n[시세] {leaf(cat)} 시장 요약 / market summary"                        # HQ: JSON on top
+             "refs": [r[0] for r in rs][-8:]}, ensure_ascii=False, separators=(",", ":")) + (   # JSON on top (HQ)
+            f"\n{HUMAN}\n[시세] {leaf(cat)}: 정산 {len(rs)}건, 체결가/정가 중앙값 {statistics.median(ratios):.0%}, "
+            f"최다 판매 {top[0][0] if top else '-'}\n[Market] {leaf(cat)}: {len(rs)} settles, paid/list median "
+            f"{statistics.median(ratios):.0%}, best seller {top[0][0] if top else '-'}")
         out.append({"topic": f"price:{cat}", "as": "buyer", "text": ko, "texts": {"ko": ko, "en": en, "json": js},
                     "kind": "summary",
                     "refs": [r[0] for r in rs][-8:], "score": math.log(len(rs))})
@@ -121,7 +123,9 @@ def purchase_records(c, t, now, top=3):
         {"type": "purchase_records", "records": [{"sku": sku, "name": nm(sku)[:22], "paid": a, "list": lp,
                                                   "kept": round(1 - a / lp, 3), "grade": g, "claim_true": bool(h),
                                                   "ledger": seq} for seq, sku, a, lp, g, h in rows]},
-        ensure_ascii=False, separators=(",", ":")) + "\n[구매 기록] 최근 정산된 구매 / our settled buys"   # JSON on top
+        ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + "\n".join(
+        f"- {nm(sku)[:18]} {a:,}원/정가 {lp:,}원 ({1 - a / lp:.0%} 절약, {1 - a / lp:.0%} kept), 등급/grade {g}"
+        for seq, sku, a, lp, g, h in rows[:3])                                           # JSON on top, then people
     return [{"topic": f"records:{rows[0][0]}", "as": "buyer", "refs": [r[0] for r in rows], "score": 3.5,
              "text": ko, "texts": {"ko": ko, "en": en, "json": js}, "kind": "records"}]
 
@@ -250,6 +254,7 @@ def follow_ads(c, md, now):
     return out
 
 
+HUMAN = "-- 사람용 요약 (에이전트는 건너뛰어도 됨) / for people, agents can skip --"   # HQ 11-04: JSON first; this marks the part for people
 WANT_BUDGET = re.compile(r"(\d[\d,\.]*)\s*(만\s*원|만원|KRW|원)", re.I)
 
 

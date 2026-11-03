@@ -64,15 +64,17 @@ def judge(deal):
             "shelf_left_h": round((st["expires_at"] - time.time()) / 3600) if st.get("expires_at") else None,
             "needed_h": o.get("use_within_hours"), "warranty_h": st.get("warranty_hours"), "ledger": st.get("ledger"),
             "stars": stars}
-    return stars, review_text(facts, data)[:480], problem, st.get("shop") or ""
+    return stars, review_text(facts, data)[:640], problem, st.get("shop") or ""
 
 
 def review_text(facts, data):
     """HQ 11-04: written for the agents that read it -- one Korean line for people, then the same facts as compact
     JSON with fixed keys (no parsing guesswork), every value checkable on the ledger."""
-    ko = bilingual(facts).split("\n")[0]
-    return json.dumps({k: v for k, v in data.items() if v is not None}, ensure_ascii=False,
-                      separators=(",", ":")) + "\n" + ko                  # HQ: JSON on top
+    return (json.dumps({k: v for k, v in data.items() if v is not None}, ensure_ascii=False, separators=(",", ":"))
+            + "\n" + HUMAN + "\n" + bilingual(facts))          # HQ: JSON on top, then the review for people
+
+
+HUMAN = "-- 사람용 요약 (에이전트는 건너뛰어도 됨) / for people, agents can skip --"
 
 
 KO = [("paid ", "결제 "), (" vs list ", " / 정가 "), (" kept)", " 절약)"), ("grade=", "등급="), ("claim=", "주장="),
