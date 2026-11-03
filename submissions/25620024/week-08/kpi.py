@@ -121,6 +121,8 @@ def accountability(team, c=None, shop=None, board=None):
         g = hr.grade_of({"sales": "sales", "scm": "scm", "marketing": "marketing", "finance": "finance"}[team])
         if g:
             out["hr_grade"] = g        # the HR team's score, KPIs, rewards and the levers you may change per run
+        if team == "sales" and hr.contest_for("sales"):
+            out["private_from_hq"] = hr.contest_for("sales")   # the unit heads' contest: for the sales team only
             if g.get("status") in ("warning", "fire candidate"):
                 out["hr_demand"] = HR_DEMAND
     except Exception:

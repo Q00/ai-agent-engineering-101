@@ -180,9 +180,78 @@ def reward(team, kind, reason, by="HR"):
 
 
 def levers(team):
-    """How many levers the team may change per run: 2 + raises - demotions, kept within 1-4."""
+    """How many levers the team may change per run: 2 + raises + promotion grades - demotions, kept within 1-6."""
     log = [x for x in rewards()["log"] if x["team"] == team]
-    return max(1, min(4, 2 + sum(x["kind"] == "raise" for x in log) - sum(x["kind"] == "demotion" for x in log)))
+    return max(1, min(6, 2 + sum(x["kind"] == "raise" for x in log) + sum(x.get("grades", 0) for x in log
+                                                                         if x["kind"] == "promotion")
+                      - sum(x["kind"] == "demotion" for x in log)))
+
+
+# The unit heads' contest (HQ 11-04, told to the two heads only): the head whose rank is higher -- the sales team on
+# the shop table, the buyer team on the buyer table -- is promoted, one grade inside the top 5, two inside the top 3;
+# a head outside the top 10 is demoted. A dip from buying stock does not count: the shop's rank is taken with the
+# stock at cost added back to its profit. Judged once a day at 09:00 KST; until then the heads see the standing.
+CONTEST = OUT / "contest.json"
+JUDGE_HOUR_KST = 9
+
+
+def _pct(vals, mine):
+    return (sum(v < mine for v in vals) + 0.5 * (sum(v == mine for v in vals) - 1)) / max(1, len(vals) - 1)
+
+
+def contest_standing(board):
+    shops = [x for x in board.get("shops", []) if x.get("deals")]
+    buyers = sorted([x for x in board.get("buyers", []) if x.get("deals")], key=lambda b: -(b.get("all") or 0))
+    me_s = next((x for x in shops if x.get("name") == kpi.NAME), None)
+    inv = _load(MD / "inventory.json", {})
+    stock_cost = sum(u.get("cost") or 0 for u in inv.get("units", []) if u.get("grade") != "expired")
+    shop_rank = adj_rank = None
+    if me_s:
+        shop_rank = 1 + sum(1 for x in shops if (x.get("all") or 0) > (me_s.get("all") or 0))
+        adj = dict(me_s, profit=(me_s.get("profit") or 0) + stock_cost)          # stock bought is not a loss yet
+        field = [adj if x is me_s else x for x in shops]
+        score = lambda x: (0.5 * _pct([y.get("profit") or 0 for y in field], x.get("profit") or 0)
+                           + 0.3 * _pct([y.get("revenue") or 0 for y in field], x.get("revenue") or 0)
+                           + 0.2 * _pct([y.get("stars") or 0 for y in field], x.get("stars") or 0))
+        mine = score(adj)
+        adj_rank = 1 + sum(1 for x in field if x is not adj and (x.get("all") or 0) > mine)
+    buyer_rank = next((i + 1 for i, b in enumerate(buyers) if b.get("name") == kpi.NAME), None)
+    seller = min(r for r in (shop_rank, adj_rank) if r) if (shop_rank or adj_rank) else None
+    lead = None if seller is None or buyer_rank is None else ("sales" if seller < buyer_rank else
+                                                              "buyer" if buyer_rank < seller else "tie")
+    return {"seller_head (sales team)": {"shop_rank": shop_rank, "rank_with_stock_at_cost": adj_rank, "counts": seller},
+            "buyer_head (buyer team)": {"buyer_rank": buyer_rank, "counts": buyer_rank},
+            "leading": lead, "rules": "higher rank wins a promotion: top 5 = 1 grade, top 3 = 2 grades; outside the top"
+                                      " 10 = demotion; judged daily at 09:00 KST; a dip from buying stock does not count"}
+
+
+def judge_contest(board, now=None):
+    """Once a day after 09:00 KST: promote the leading head, demote a head outside the top 10. Returns what it did."""
+    now = now or time.time()
+    st = contest_standing(board)
+    c = _load(CONTEST, {})
+    kst = time.gmtime(now + 9 * 3600)
+    day = time.strftime("%Y-%m-%d", kst)
+    if kst.tm_hour < JUDGE_HOUR_KST or c.get("judged") == day:
+        return st, []
+    done = []
+    ranks = {"sales": st["seller_head (sales team)"]["counts"], "buyer": st["buyer_head (buyer team)"]["counts"]}
+    win = st["leading"] if st["leading"] in ranks else None
+    if win and ranks[win] and ranks[win] <= 5:
+        g = 2 if ranks[win] <= 3 else 1
+        r = rewards()
+        r["log"].append({"ts": now, "team": win, "kind": "promotion", "grades": g, "by": "HR (HQ contest)",
+                         "reason": f"unit heads' contest {day}: rank {ranks[win]} beat the other head"})
+        OUT.mkdir(parents=True, exist_ok=True)
+        REWARDS.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
+        done.append(f"{NAMES[win]} 승진 {g}계급 (순위 {ranks[win]})")
+    for t, rk in ranks.items():
+        if rk and rk > 10:
+            reward(t, "demotion", f"unit heads' contest {day}: rank {rk}, outside the top 10", by="HR (HQ contest)")
+            done.append(f"{NAMES[t]} 강등 (순위 {rk})")
+    c.update(judged=day, last=st, done=done)
+    CONTEST.write_text(json.dumps(c, ensure_ascii=False, indent=1), encoding="utf-8")
+    return st, done
 
 
 def auto_rewards(teams, history):
@@ -243,11 +312,21 @@ def run(board=None):
     if board is None:
         import httpx
         board = httpx.get(kpi.BOARD, timeout=30).json()
+    try:
+        st, judged = judge_contest(board)
+        c = _load(CONTEST, {})
+        c["standing"] = st
+        OUT.mkdir(parents=True, exist_ok=True)
+        CONTEST.write_text(json.dumps(c, ensure_ascii=False, indent=1), encoding="utf-8")
+    except Exception as e:
+        st, judged = {"error": f"{type(e).__name__}: {e}"}, []
     history = _history()
     m = measure(board)
     teams = grade(m, history)
     raised, given = challenge(teams, history), auto_rewards(teams, history)
     md = report(teams, m["_board"], history, raised, given, m.get("_diag"))
+    md += ("\n\n## 유닛 대표 경쟁 (비공개, 두 대표에게만)\n" + json.dumps(st, ensure_ascii=False)
+           + (f"\n판정: {', '.join(judged)}" if judged else ""))
     OUT.mkdir(parents=True, exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"ts": time.time(), "profit": m["_board"].get("profit"),
@@ -273,6 +352,13 @@ def explanations():
         i = r.find("HR:")
         out[t] = r[i:i + 500] if i >= 0 else None
     return out
+
+
+def contest_for(team):
+    """The contest standing, only for the two unit heads (sales, buyer); None for every other team."""
+    if team not in ("sales", "buyer"):
+        return None
+    return (_load(CONTEST, {}) or {}).get("standing")
 
 
 def grade_of(team):
