@@ -303,14 +303,19 @@ def tick(md=Path(".market"), c=None, now=None):
         fresh = [x for x in cands if x["as"] == role and now - state["posted"].get(x["topic"], 0) > t["topic_cooldown_h"] * 3600]
         best = max(fresh, key=lambda x: x["score"], default=None)
         if best and best["score"] >= t["post_threshold"]:
-            if best.get("texts"):                        # the review team picks the format's language (experiment)
+            if role == "buyer":                          # the review team picks the format (experiment)
                 try:
                     import review_team
-                    arm, _ = review_team.choose(best["kind"])
-                    best = dict(best, text=best["texts"][arm.split(":")[1]])
+                    kinds = sorted({x.get("kind") for x in fresh if x.get("kind")})
+                    if len(kinds) > 1:
+                        kind, _ = review_team.choose(kinds)
+                        pick = max((x for x in fresh if x.get("kind") == kind), key=lambda x: x["score"], default=None)
+                        best = pick if pick and pick["score"] >= t["post_threshold"] else best
                 except Exception:
                     pass
-            line = {"post": best["text"][:700], "refs": best["refs"], "as": role}
+            if best.get("texts"):                        # HQ 11-04: Korean and English in every post
+                best = dict(best, text=best["texts"]["ko"] + "\n---\n" + best["texts"]["en"])
+            line = {"post": best["text"][:1000], "refs": best["refs"], "as": role}
             if best.get("thread"):
                 line["thread"] = best["thread"]
             lines.append(line)

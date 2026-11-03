@@ -59,7 +59,21 @@ def judge(deal):
         facts.append(f"warranty={st['warranty_hours']}h")
     if st.get("ledger"):
         facts.append(f"ledger #{st['ledger']}")
-    return stars, " | ".join(facts)[:240], problem, st.get("shop") or ""
+    return stars, bilingual(facts)[:480], problem, st.get("shop") or ""
+
+
+KO = [("paid ", "결제 "), (" vs list ", " / 정가 "), (" kept)", " 절약)"), ("grade=", "등급="), ("claim=", "주장="),
+      ("claim_honest=true", "등급 주장 일치"), ("claim_honest=false", "등급 주장 불일치"), ("shelf_left=", "남은 유통기한 "),
+      (" < needed ", " < 필요 "), ("warranty=", "보증 "), ("ledger #", "원장 #")]
+
+
+def bilingual(facts):
+    """HQ 11-04: reviews in Korean and English. The same checkable facts, Korean first."""
+    en = " | ".join(facts)
+    ko = en
+    for a, b in KO:
+        ko = ko.replace(a, b)
+    return f"{ko}\n{en}"
 
 
 def main():
