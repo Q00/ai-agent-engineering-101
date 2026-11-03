@@ -247,7 +247,8 @@ def negotiate(candidate, order, accept, policy, decision=decide, wire_factory=Wi
                 raise ValueError('Seller changed task ID')
             status = task.get('status', {}).get('state')
             if status == 'TASK_STATE_COMPLETED':
-                original = receipt(task, sku, budget, last_offer)
+                original = receipt(task, sku, budget, last_offer,
+                                   allowed_items=[order['item'], *order['acceptable']])
                 if original.get('task') != task_id:
                     raise ReceiptError('Receipt must identify the exact task', original)
                 if not isinstance(original.get('shop'), str) or not original['shop']:
@@ -311,7 +312,8 @@ def _previous_negotiation(memory, order):
             raise ValueError('Invalid stored pending receipt')
         amount = _money(original.get('price'))
         if (data.get('budget') != _money(order['budget']) or data.get('sku') not in order['acceptable'] or
-                original.get('item') != data['sku'] or amount is None or amount > _money(order['budget']) or
+                original.get('item') not in [order['item'], *order['acceptable']] or
+                amount is None or amount > _money(order['budget']) or
                 original.get('task') != data.get('task_id') or
                 not isinstance(original.get('sig_seller'), str) or not original['sig_seller'].strip()):
             raise ValueError('Stored receipt does not match this immutable order')

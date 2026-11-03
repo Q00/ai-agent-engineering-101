@@ -10,8 +10,9 @@ import unittest
 from unittest.mock import patch
 
 from r3_buyer import (acceptance, candidates_for, explicit_ask, load_order,
-                      run, validate_choice)
+                      run, sanitized_order, validate_choice)
 from r3_memory import Memory
+from wire import ReceiptError, receipt as validate_receipt
 
 
 def task(state, text='', data=None, task_id='task-1'):
@@ -110,6 +111,66 @@ class BuyerTests(unittest.TestCase):
         self.assertIsNone(final['receipt'])
         self.assertEqual(self.states, [])
         self.assertEqual(self.inputs, [])
+
+    def test_category_receipt_is_preserved_and_reused_without_rewriting_signature(self):
+        self.received['item'] = self.order['item']
+        original = copy.deepcopy(self.received)
+        first = self.execute()
+        self.assertIs(first['receipt'], self.received)
+        self.assertEqual(first['receipt'], original)
+        requests, decisions = list(self.inputs), len(self.states)
+        self.assertEqual(self.execute(), first)
+        self.assertEqual(self.inputs, requests)
+        self.assertEqual(len(self.states), decisions)
+        with Memory(self.md) as memory:
+            self.assertEqual(memory.get('negotiation', self.order['order'])['data']['receipt'], original)
+
+    def test_other_order_acceptable_sku_receipt_is_preserved_on_live_and_replay_paths(self):
+        self.order['acceptable'].append('F002')
+        self.received['item'] = 'F002'
+        self.write()
+        first = self.execute()
+        self.assertIs(first['receipt'], self.received)
+        requests = list(self.inputs)
+        self.assertEqual(self.execute(), first)
+        self.assertEqual(self.inputs, requests)
+
+    def test_category_receipt_does_not_bypass_price_task_or_signature_guards(self):
+        self.received['item'] = self.order['item']
+        original = copy.deepcopy(self.received)
+        for index, (field, value) in enumerate([('price', 101), ('price', 121),
+                                               ('task', 'other'), ('sig_seller', '')]):
+            with self.subTest(field=field, value=value):
+                self.order['order'] = 'category-guard-%s' % index
+                self.write()
+                self.received = copy.deepcopy(original)
+                self.received[field] = value
+                self.assertIsNone(self.execute()['receipt'])
+
+    def test_replay_rejects_unallowed_selected_sku_or_receipt_item(self):
+        for index, (selected_sku, signed_item) in enumerate([('F002', 'milk'), ('F001', 'F002'),
+                                                            ('F001', 'food>milk')]):
+            with self.subTest(selected_sku=selected_sku, signed_item=signed_item):
+                self.order['order'] = 'replay-guard-%s' % index
+                self.write()
+                original = dict(self.received, item=signed_item)
+                with Memory(self.md) as memory:
+                    memory.record('order_seen', self.order['order'], sanitized_order(self.order))
+                    memory.record('negotiation', self.order['order'],
+                        dict(order=self.order['order'], shop='Example', shop_url=self.shops[0]['url'],
+                             sku=selected_sku, budget=120, outcome='receipt_pending',
+                             receipt=original, task_id='task-1'))
+                self.assertIsNone(self.execute()['receipt'])
+        self.assertEqual(self.inputs, [])
+        self.assertEqual(self.states, [])
+
+    def test_wire_legacy_exact_item_default_remains_strict(self):
+        original = dict(self.received, item='milk')
+        completed = task('TASK_STATE_COMPLETED', data=original)
+        with self.assertRaises(ReceiptError):
+            validate_receipt(completed, 'F001', 120, 100)
+        self.assertIs(validate_receipt(completed, 'F001', 120, 100,
+                                       allowed_items=['milk', 'F001']), original)
 
     def test_repeated_order_reuses_pending_receipt_without_negotiation(self):
         first = self.execute()

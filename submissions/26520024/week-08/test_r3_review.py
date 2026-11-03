@@ -123,6 +123,48 @@ class ReviewTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.execute()
 
+    def test_category_receipt_and_payment_item_keep_original_signed_category(self):
+        self.deal['receipt']['item'] = 'milk'
+        original = copy.deepcopy(self.deal['receipt'])
+        payment = dict(order='o1', shop=self.deal['settled']['shop'], item='milk',
+                       price=100, paid=True, ledger=7)
+        (self.md / 'payments.jsonl').write_text(json.dumps(payment) + '\n', encoding='utf-8')
+        self.assertEqual(self.execute()['stars'], 5)
+        with Memory(self.md) as memory:
+            saved = memory.get('settlement', '7')['data']
+        self.assertEqual(saved['sku'], 'F001')
+        self.assertEqual(saved['receipt'], original)
+        self.assertEqual(self.deal['receipt'], original)
+
+    def test_category_receipt_cannot_settle_an_unacceptable_sku(self):
+        self.deal['receipt']['item'] = 'milk'
+        self.deal['settled']['sku'] = 'F002'
+        with self.assertRaises(ValueError):
+            validate_deal(self.deal)
+
+    def test_explicit_sku_receipt_must_match_actual_sku_even_if_both_are_acceptable(self):
+        self.deal['order']['acceptable'].append('F002')
+        self.deal['settled']['sku'] = 'F002'
+        with self.assertRaises(ValueError):
+            validate_deal(self.deal)
+        self.deal['receipt']['item'] = 'F002'
+        self.assertEqual(validate_deal(self.deal)[2]['sku'], 'F002')
+
+    def test_category_receipt_payment_cannot_be_silently_normalized_to_sku(self):
+        self.deal['receipt']['item'] = 'milk'
+        payment = dict(order='o1', shop=self.deal['settled']['shop'], item='F001',
+                       price=100, paid=True, ledger=7)
+        (self.md / 'payments.jsonl').write_text(json.dumps(payment) + '\n', encoding='utf-8')
+        with self.assertRaises(ValueError):
+            self.execute()
+
+    def test_unrelated_category_or_item_cannot_pass_review(self):
+        for signed_item in ('food>milk', 'juice', 'F999', None):
+            with self.subTest(signed_item=signed_item):
+                self.deal['receipt']['item'] = signed_item
+                with self.assertRaises(ValueError):
+                    validate_deal(self.deal)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

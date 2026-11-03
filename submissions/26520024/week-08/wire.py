@@ -109,7 +109,7 @@ class ReceiptError(ValueError):
         self.received = received
 
 
-def receipt(task, item, budget, last_offer):
+def receipt(task, item, budget, last_offer, *, allowed_items=None):
     receipts = [p['data'] for a in task.get('artifacts', []) for p in a.get('parts', []) if 'data' in p]
     if len(receipts) != 1:
         raise ReceiptError('Seller marked completed but supplied %d receipt data Parts; expected exactly one.' % len(receipts))
@@ -125,7 +125,8 @@ def receipt(task, item, budget, last_offer):
             problems.append('Receipt price %s exceeds budget %s.' % (price, budget))
         if last_offer is None or price != last_offer:
             problems.append('Receipt price %s differs from my last offer %s.' % (price, last_offer))
-    if result.get('item') != item:
+    permitted = (item,) if allowed_items is None else allowed_items
+    if not isinstance(result.get('item'), str) or result['item'] not in permitted:
         problems.append('Receipt item %r differs from requested %r.' % (result.get('item'), item))
     if 'task' in result and result['task'] != task.get('id'):
         problems.append('Receipt task differs from the negotiation task.')

@@ -34,7 +34,9 @@ def validate_deal(deal):
         raise ValueError('Settlement requires an order ID')
     market_url(settled.get('shop', ''))
     sku = settled.get('sku')
-    if not isinstance(sku, str) or not sku or receipt.get('item') != sku or sku not in order.get('acceptable', []):
+    signed_item = receipt.get('item')
+    if (not isinstance(sku, str) or not sku or sku not in order.get('acceptable', []) or
+            not isinstance(signed_item, str) or signed_item not in (order.get('item'), sku)):
         raise ValueError('Settled SKU does not match receipt and order')
     price, budget = _money(receipt.get('price')), _money(order.get('budget'))
     if price is None or budget is None or price > budget:
@@ -128,7 +130,7 @@ def _check_payment(md, order, receipt, settled):
         if payment.get('ledger') != settled['ledger']:
             continue
         if (payment.get('paid') is not True or payment.get('shop', '').rstrip('/') != settled['shop'].rstrip('/') or
-                payment.get('item') != settled['sku'] or _money(payment.get('price')) != _money(receipt['price'])):
+                payment.get('item') != receipt['item'] or _money(payment.get('price')) != _money(receipt['price'])):
             raise ValueError('Payment evidence disagrees with settlement')
         found = True
     if not found:
