@@ -63,6 +63,11 @@ STEPS = (0.4, 0.25, 0.2, 0.15)   # each counter gives up this share of the room 
 # weighted by POOL. Counts live in .market/price_bandit.json.
 ARMS = (0.88, 0.94, 1.0, 1.06)
 POOL = 0.2
+# Exploring costs reviews too: a buyer who leaves rates us, and stars are a fifth of the shop's score. So the
+# test starts from the manager's price (arm 1.0 begins as if it had closed PRIOR_DEALS deals; the others must earn
+# their turn), and no arm opens above MAX_SHARE of list, so even a deal at our first ask stays well below list.
+PRIOR_DEALS = {"1.0": 2}
+MAX_SHARE = 0.92
 TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask, after haggling
 SHARE_BOUNDS = (0.55, 0.97)
 CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
@@ -144,8 +149,8 @@ def pick_arm(u, base, floor):
         k = str(arm)
         s_, f_ = cat.get(k, [0, 0])
         gs, gf = BANDIT["all"].get(k, [0, 0])
-        theta = random.betavariate(1 + s_ + POOL * gs, 1 + f_ + POOL * gf)
-        ask = max(floor, int(round(u["list_price"] * min(max(base * arm, SHARE_BOUNDS[0]), SHARE_BOUNDS[1]), -1)))
+        theta = random.betavariate(1 + PRIOR_DEALS.get(k, 0) + s_ + POOL * gs, 1 + f_ + POOL * gf)
+        ask = max(floor, int(round(u["list_price"] * min(max(base * arm, SHARE_BOUNDS[0]), MAX_SHARE), -1)))
         score = theta * (ask * TYPICAL_CLOSE - u["cost"])
         if best is None or score > best[0]:
             best = (score, arm, ask, theta)
@@ -181,7 +186,7 @@ def terms(u):
         arm, theta = pick_arm(u, share, floor)
         log(f"[bandit] {u['category'].split('>')[-1]}: opening with arm {arm} (sampled deal chance {theta:.2f})")
         share *= arm
-    ask = max(floor, int(round(u["list_price"] * min(max(share, SHARE_BOUNDS[0]), SHARE_BOUNDS[1]), -1)))
+    ask = max(floor, int(round(u["list_price"] * min(max(share, SHARE_BOUNDS[0]), MAX_SHARE), -1)))
     warranty = WARRANTY.get(u["grade"], 0) if u["kind"] == "goods" else 0
     return ask, floor, warranty, arm
 
