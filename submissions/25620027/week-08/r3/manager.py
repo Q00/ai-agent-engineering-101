@@ -807,7 +807,9 @@ class Manager:
         history = load_history(self.policy_file)
         base = history.base()
         kept: dict[str, JsonValue] = {}
-        for key, value in list(changes.items())[:MAX_TACTICAL]:
+        for key, value in changes.items():
+            if len(kept) >= MAX_TACTICAL:
+                break
             before = (
                 field_value(history.current, key) if key in TACTICAL_FIELDS else None
             )
@@ -883,7 +885,7 @@ class Manager:
                 failure = "invalid proposal"
         actor = reply.model if reply is not None else model
         kept = self.filter_tactical(proposal.changes, actor, proposal.reason)
-        if not kept and triggers:
+        if not failure and not kept and triggers:
             nudge, why = self.trigger_moves(triggers)
             actor, proposal = "code", TacticalProposal(changes=nudge, reason=why)
             kept = self.filter_tactical(nudge, actor, why)
