@@ -266,6 +266,24 @@ class EndToEnd(unittest.TestCase):
             self.assertEqual(rec["warranty_hours"], 6)
             self.assertNotIn("warranty_hours", self.deal("G1")["receipt"])
 
+    def test_warranty_on_request_is_granted_with_the_break_chance_priced_in(self):
+        with mock.patch.object(seller, "break_chance", lambda sku: 0.1):
+            out = buyer.negotiate(self.url, "청소기", 10000, "", "I want to buy (G2) with a 6 h warranty")
+        rec = out["receipt"]
+        self.assertEqual(rec["warranty_hours"], 6)
+        self.assertGreaterEqual(int(rec["price"]), 6667)      # cost 6000 / (1 - 0.1)
+        self.assertEqual(shop_memory.load()["negotiations"][-1]["warranty"], 6)
+
+    def test_warranty_is_declined_when_the_sku_breaks_too_often(self):
+        with mock.patch.object(seller, "break_chance", lambda sku: 0.5):
+            out = buyer.negotiate(self.url, "청소기", 10000, "", "I want to buy (G2) with a warranty")
+        self.assertEqual(out["state"], "TASK_STATE_COMPLETED")
+        self.assertNotIn("warranty_hours", out["receipt"])
+
+    def test_food_never_gets_a_warranty(self):
+        out = buyer.negotiate(self.url, "포기김치", 10000, "", "I want to buy (G1) with a warranty")
+        self.assertNotIn("warranty_hours", out["receipt"])
+
     def test_a_unit_near_its_date_sells_below_cost_and_stays_out_of_the_bandit(self):
         self.units[0] = dict(unit("u-food", "G1", hours=6), supplied_at=time.time() - 500 * 3600)
         out = buyer.negotiate(self.url, "포기김치", 4000, "", "I want to buy (G1)")
@@ -309,6 +327,9 @@ class RoundTwoStillWorks(EndToEnd):
     test_terms_come_from_the_seller_not_the_buyers_copy = None
     test_kit_refuses_food_that_will_not_last_and_the_unit_comes_back = None
     test_warranty_only_on_goods_and_only_when_configured = None
+    test_warranty_on_request_is_granted_with_the_break_chance_priced_in = None
+    test_warranty_is_declined_when_the_sku_breaks_too_often = None
+    test_food_never_gets_a_warranty = None
     test_unit_is_not_promised_twice_and_out_of_stock_is_refused = None
     test_a_unit_near_its_date_sells_below_cost_and_stays_out_of_the_bandit = None
 

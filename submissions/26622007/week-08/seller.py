@@ -50,12 +50,18 @@ from cryptography.hazmat.primitives import serialization
 from acp_shop import AcpCheckout
 from catalog import NUMERIC, Catalog
 from harness import HarnessError, ask
+import market_model
 import shop_memory
 from shop_stock import StockBook, last_segment, markdown
 
 MAX_ROUNDS = 10   # hard stop in code; the harness normally ends the talk earlier
 CANDIDATES = 15
 MAX_TEXT = 500    # characters of a buyer message that reach the prompts
+# Round 3 goods: a buyer's kit may refuse to pay without a warranty (accept.warranty_hours), so the shop offers one when
+# asked, priced in: the reserve rises to cost / (1 - chance it breaks), the price at which a refund is paid for on average.
+WARRANTY = {"on_request_hours": 6, "prior_break": 0.1, "max_break": 0.3}
+WARRANTY_WORDS = re.compile(r"warrant|guarantee|보증|보장", re.I)
+_breaks = {"at": 0.0, "stats": None}
 
 SYSTEM = """You are the owner of a small shop, negotiating the price of one item with a buyer.
 Your goal is to sell at a good price. Rules:
@@ -205,6 +211,20 @@ def stock_line(u):
     return line
 
 
+def break_chance(sku):
+    """The chance this goods SKU breaks after the sale, from the ledger rows restock.py keeps (read every 10 min), or None."""
+    if time.time() - _breaks["at"] > 600:
+        _breaks["at"] = time.time()
+        md = os.environ.get("MARKET_DIR", ".market")
+        try:
+            with open(os.path.join(md, "catalog.json"), encoding="utf-8") as f:
+                _breaks["stats"] = market_model.break_stats(market_model.load_rows(md), json.load(f))
+        except (OSError, ValueError, KeyError, TypeError) as e:
+            log(f"break rates unavailable: {type(e).__name__}: {e}")
+            _breaks["stats"] = None
+    return market_model.break_chance(_breaks["stats"], sku) if _breaks["stats"] else None
+
+
 class Seller(AgentExecutor):
     def __init__(self, catalog, name, stock=None, acp=None):
         self.catalog = catalog
@@ -229,12 +249,40 @@ class Seller(AgentExecutor):
             ask_price, arm = max(reserve, round(ask_price * keep)), None
             log(f"MARKDOWN {u['sku']} unit {u['unit']}: {cause}, floor {reserve} instead of cost {cost}")
         log(f"PRICE {u['sku']} unit {u['unit']} cost {cost} list {u['list_price']}: opening ask {ask_price} ({why})")
-        self.open[task.id] = {"id": u["sku"], "name": u["name"], "key": key, "unit": u["unit"], "kind": u.get("kind"),
-                              "cost": cost, "reserve": reserve, "ask": ask_price, "open": ask_price, "arm": arm, "rounds": 0,
-                              "history": [("you asked", ask_price)]}
+        deal = self.open[task.id] = {"id": u["sku"], "name": u["name"], "key": key, "unit": u["unit"], "kind": u.get("kind"),
+                                     "cost": cost, "reserve": reserve, "ask": ask_price, "open": ask_price, "arm": arm,
+                                     "rounds": 0, "history": [("you asked", ask_price)]}
+        note = self.warranty_terms(deal, text)
+        if note is None and u.get("kind") == "goods" and self.warranty_cfg()["on_request_hours"] > 0:
+            note = f"A {self.warranty_cfg()['on_request_hours']} h warranty is available on request."
+        ask_price = deal["ask"]
         await up.requires_input(say(f"{stock_line(u)}. Every deal comes with a signed receipt and the market's "
-                                    f"certificate of the unit. My price: {ask_price}.", ask_price))
+                                    f"certificate of the unit.{' ' + note if note else ''} My price: {ask_price}.", ask_price))
         log(f"task {task.id[:8]} -> INPUT_REQUIRED {u['sku']} ask {ask_price}")
+
+    @staticmethod
+    def warranty_cfg():
+        return {**WARRANTY, **(shop_memory.load_pricing().get("warranty") or {})}
+
+    def warranty_terms(self, deal, text):
+        """Goods, the first time the buyer asks for a warranty: grant it with the reserve raised by the break chance, or
+        decline when the SKU breaks too often. Returns the sentence for the buyer, or None when nothing was asked."""
+        if deal.get("kind") != "goods" or "warranty" in deal or not WARRANTY_WORDS.search(text or ""):
+            return None
+        cfg = self.warranty_cfg()
+        measured = break_chance(deal["id"])
+        chance = cfg["prior_break"] if measured is None else measured
+        if cfg["on_request_hours"] <= 0 or chance > cfg["max_break"]:
+            deal["warranty"] = 0
+            log(f"WARRANTY declined for {deal['id']}: break chance {chance:.1%} (max {cfg['max_break']:.0%})")
+            return "Sorry, this item is sold without a warranty."
+        hours, before = cfg["on_request_hours"], deal["reserve"]
+        deal["warranty"] = hours
+        deal["reserve"] = max(before, math.ceil(before / (1 - chance)))
+        deal["ask"] = max(deal["ask"], deal["reserve"])
+        log(f"WARRANTY {hours} h for {deal['id']}: break chance {chance:.1%}"
+            f" ({'ledger' if measured is not None else 'prior'}), reserve {before} -> {deal['reserve']}")
+        return f"This unit comes with a {hours} h warranty: if it breaks within {hours} h, you get the full price back."
 
     def stock_receipt(self, task_id, deal, price):
         """Round 3: the receipt names the SKU and carries the terms the checkout ships under."""
@@ -242,7 +290,7 @@ class Seller(AgentExecutor):
         grade = self.stock.grade(deal["unit"])
         if grade in ("A", "B", "C"):
             receipt["claim"] = grade
-        hours = shop_memory.load_pricing().get("warranty_hours", 0)
+        hours = deal["warranty"] if "warranty" in deal else shop_memory.load_pricing().get("warranty_hours", 0)
         if deal.get("kind") == "goods" and hours:
             receipt["warranty_hours"] = hours
         return receipt
@@ -318,6 +366,10 @@ class Seller(AgentExecutor):
             return
 
         deal["rounds"] += 1
+        note = self.warranty_terms(deal, text)
+        if note:
+            plain = say
+            say = lambda text, ask=None: plain(f"{note} {text}", ask)
         try:
             d = await asyncio.to_thread(decide_turn, deal, text)
         except HarnessError as e:
@@ -421,7 +473,7 @@ class Seller(AgentExecutor):
                                 "open": deal.get("open"), "arm": deal.get("arm"),
                                 "asks": [p for who, p in deal["history"] if who == "you asked"],
                                 "offers": [p for who, p in deal["history"] if who == "buyer offered"],
-                                "result": result, "price": price})
+                                "warranty": deal.get("warranty"), "result": result, "price": price})
         except OSError as e:
             log(f"memory write failed: {e}")
 
