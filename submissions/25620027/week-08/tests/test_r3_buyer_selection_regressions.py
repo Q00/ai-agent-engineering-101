@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import random
+import sqlite3
 from typing import TYPE_CHECKING
 
 import pytest
 
 from r3 import buyer
+from r3 import events as events_module
 from r3.events import EventLedger
 from r3.market_files import Order, PaymentLine, ShopEntry, ShopOffer
 from r3.picture import Picture, ShopTrust
@@ -16,11 +18,13 @@ from r3.policy import BuyerPolicy
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from r3.events import Outcome
+
 
 SHOP = "http://shop.test"
 
 
-def attempt(events: EventLedger, order: str, *, outcome: str = "agreed") -> None:
+def attempt(events: EventLedger, order: str, *, outcome: Outcome = "agreed") -> None:
     """Record one R3 negotiation without assuming it was paid."""
     events.record_attempt(
         order=order,
@@ -29,7 +33,8 @@ def attempt(events: EventLedger, order: str, *, outcome: str = "agreed") -> None
         sku="sku",
         list_price=100,
         price=80 if outcome == "agreed" else None,
-        outcome=outcome,  # pyright: ignore[reportArgumentType]
+        outcome=outcome,
+        market_round=3,
     )
 
 
@@ -85,7 +90,9 @@ def test_price_memory_requires_our_paid_order_and_matching_shop(tmp_path: Path) 
 @pytest.mark.parametrize("stocked", [False, True])
 @pytest.mark.parametrize("bad_evidence", ["refused", "no_deal", "suspicious", "trust"])
 def test_exploration_excludes_penalized_shops_even_with_many_prior_payments(
-    stocked: bool, bad_evidence: str,
+    *,
+    stocked: bool,
+    bad_evidence: str,
 ) -> None:
     offers = (ShopOffer(sku="sku", qty=1),) if stocked else ()
     shops = tuple(
@@ -103,18 +110,25 @@ def test_exploration_excludes_penalized_shops_even_with_many_prior_payments(
     outcomes = {bad_url: counts}
     rng = random.Random(7)  # noqa: S311 - seeded selection, not cryptography
     picks = [
-        buyer.choose(order, shops, {}, outcomes, {}, explore=1, rng=rng, picture=picture)
+        buyer.choose(
+            order, shops, {}, outcomes, {}, explore=1, rng=rng, picture=picture
+        )
         for _ in range(50)
     ]
     assert {p.shop.url for p in picks if p is not None} == {
-        "http://a.test", "http://b.test",
+        "http://a.test",
+        "http://b.test",
     }
     assert all(p is not None and p.explored for p in picks)
 
 
 def test_round2_stock_advertisement_does_not_hide_shops_without_offers() -> None:
     shops = (
-        ShopEntry(name="willow", url="http://willow.test", offers=(ShopOffer(sku="lamp", qty=1),)),
+        ShopEntry(
+            name="willow",
+            url="http://willow.test",
+            offers=(ShopOffer(sku="lamp", qty=1),),
+        ),
         ShopEntry(name="good", url="http://good.test"),
     )
     rng = random.Random(7)  # noqa: S311
@@ -123,5 +137,94 @@ def test_round2_stock_advertisement_does_not_hide_shops_without_offers() -> None
         for _ in range(50)
     ]
     assert {p.shop.url for p in picks if p is not None} == {
-        "http://willow.test", "http://good.test",
+        "http://willow.test",
+        "http://good.test",
     }
+
+
+def test_cooldown_expires_then_one_failed_probe_restarts_it(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = [100_000.0]
+    monkeypatch.setattr(events_module.time, "time", lambda: now[0])
+    events = EventLedger(tmp_path / "events.sqlite")
+    for n in range(3):
+        attempt(events, f"o{n}", outcome="no_deal")
+    now[0] += 1800
+    assert not buyer.cooling_shops(events.failure_streaks(24), BuyerPolicy())
+    attempt(events, "probe", outcome="no_deal")
+    assert SHOP in buyer.cooling_shops(events.failure_streaks(24), BuyerPolicy())
+
+
+def test_round2_signed_success_clears_streak_without_payments(tmp_path: Path) -> None:
+    events = EventLedger(tmp_path / "events.sqlite")
+    attempt(events, "failed", outcome="no_deal")
+    events.record_attempt(
+        order="r2",
+        shop=SHOP,
+        shop_name="shop",
+        sku="lamp",
+        list_price=0,
+        price=100,
+        outcome="agreed",
+        market_round=2,
+    )
+    assert not events.failure_streaks(24)
+    assert not events.price_ratios(24)
+
+
+def test_missing_r3_catalog_price_does_not_make_agreement_an_r2_success(
+    tmp_path: Path,
+) -> None:
+    events = EventLedger(tmp_path / "events.sqlite")
+    attempt(events, "failed", outcome="no_deal")
+    events.record_attempt(
+        order="r3",
+        shop=SHOP,
+        shop_name="shop",
+        sku="sku",
+        list_price=0,
+        price=100,
+        outcome="agreed",
+        market_round=3,
+    )
+    assert events.failure_streaks(24)[SHOP][0] == 1
+
+
+def test_exploration_uses_sole_safe_shop_instead_of_penalized_best() -> None:
+    shops = tuple(ShopEntry(name=n, url=f"http://{n}.test") for n in ("bad", "good"))
+    choice = buyer.choose(
+        Order(item="lamp"),
+        shops,
+        {},
+        {"http://bad.test": {"paid": 100, "refused": 1}},
+        {},
+        explore=1,
+        rng=random.Random(1),  # noqa: S311
+    )
+    assert choice is not None
+    assert choice.shop.name == "good"
+    assert choice.explored
+
+
+def test_events_upgrade_preserves_old_attempts_and_leaves_round_unknown(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "legacy.sqlite"
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "CREATE TABLE buyer_attempts (id INTEGER PRIMARY KEY, ts REAL, "
+            "order_id TEXT, shop TEXT, outcome TEXT)"
+        )
+        db.execute(
+            "INSERT INTO buyer_attempts VALUES (1, 1, 'old', ?, 'agreed')",
+            (SHOP,),
+        )
+    EventLedger(path)
+    with sqlite3.connect(path) as db:
+        assert db.execute(
+            "SELECT order_id, market_round FROM buyer_attempts"
+        ).fetchall() == [
+            ("old", 0),
+        ]

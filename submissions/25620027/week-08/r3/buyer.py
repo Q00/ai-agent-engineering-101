@@ -1,11 +1,12 @@
 """Round 3 buyer: one order in seconds, chosen from evidence, bounded by policy.
 
-The market hands a buyer a new order about every 20 seconds, so the per-order path
-is deterministic: code ranks the shops that actually stock an acceptable SKU by the
+The market hands a buyer a new order about every 20 seconds, so code ranks the
+shops that actually stock an acceptable SKU by the
 surplus they can give (list price of the SKU minus what we expect to pay) and by what
 happened with them before (our own payments and settlements), negotiates in two or
 three turns, and prints the receipt with an ``accept`` policy the kit enforces before
-paying. The model shapes this behaviour only through the policy table.
+paying. Bounded exploration samples eligible shops; a limited interpreter reads
+otherwise unrecognized prose without changing the code's price or payment limits.
 """
 
 from __future__ import annotations
@@ -54,6 +55,7 @@ MAX_STARS: Final = 5
 # Shops below this evidence weight (refusals, failed deals, low trust) are never
 # picked by exploration; price memory moves a shop by at most this share.
 EXPLORE_MIN_EVIDENCE: Final = 0.6
+EXPLORE_MIN_TRUST: Final = 0.6
 PRICE_FACTOR_SPAN: Final = 0.2
 NUMBER: Final = re.compile(r"(?<![0-9A-Za-z])([0-9]{2,9})(?![0-9A-Za-z])")
 TRADE_GATE: Final = "AX_R3_TRADE_MODEL"
@@ -144,6 +146,29 @@ def cooling_shops(
     )
 
 
+def exploration_allowed(
+    shop: ShopEntry,
+    outcomes: dict[str, dict[str, int]],
+    reasons: dict[str, str],
+    picture: Picture | None,
+) -> bool:
+    """Past successes cannot cancel failure evidence for random exploration."""
+    key = shop.url.rstrip("/")
+    counts = outcomes.get(key, {})
+    if any(
+        counts.get(kind, 0) for kind in ("no_deal", "refused", "suspicious", "error")
+    ):
+        return False
+    if reasons.get(key):
+        return False
+    if picture is not None and picture.trust_of(key) < EXPLORE_MIN_TRUST:
+        return False
+    return (
+        shop_factor(key, outcomes, reasons) * review_factor(shop)
+        >= EXPLORE_MIN_EVIDENCE
+    )
+
+
 def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     order: Order,
     shops: tuple[ShopEntry, ...],
@@ -176,6 +201,23 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
         if picture is not None:
             evidence *= trust_factor(picture.trust_of(shop.url))
         weight = evidence * price_factor(shop.url, ratios or {})
+        eligible = exploration_allowed(shop, outcomes, reasons, picture)
+        if not acceptable:
+            # R2 shops need not publish stock. A lone stock advertisement must not
+            # hide all other shops from ranking or random exploration.
+            choice = Choice(
+                shop,
+                order.item,
+                order.item,
+                0,
+                f"I want to buy {order.item}",
+                weight,
+            )
+            if best is None or choice.score > best.score:
+                best = choice
+            if eligible:
+                by_shop[shop.url.rstrip("/")] = choice
+            continue
         candidates = [
             o
             for o in shop.offers
@@ -196,36 +238,11 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
             )
             if best is None or score > best.score:
                 best = choice
-            kept = by_shop.get(shop.url)
-            if evidence >= EXPLORE_MIN_EVIDENCE and (
-                kept is None or score > kept.score
-            ):
-                by_shop[shop.url] = choice
-    if best is None and not acceptable and shops:
-        # Rounds 0-2: no stock lists; choose by evidence and ask for the item itself.
-        ranked = sorted(
-            (
-                s
-                for s in shops
-                if s.name not in blocked and s.url.rstrip("/") not in blocked
-            ),
-            key=lambda s: -(shop_factor(s.url, outcomes, reasons) * review_factor(s)),
-        )
-        if ranked:
-            best = Choice(
-                ranked[0],
-                order.item,
-                order.item,
-                0,
-                f"I want to buy {order.item}",
-                1.0,
-            )
-            for s in ranked:
-                if shop_factor(s.url, outcomes, reasons) >= EXPLORE_MIN_EVIDENCE:
-                    by_shop[s.url] = Choice(
-                        s, order.item, order.item, 0, f"I want to buy {order.item}", 1.0
-                    )
-    if draw and best is not None and len(by_shop) > 1:
+            key = shop.url.rstrip("/")
+            kept = by_shop.get(key)
+            if eligible and (kept is None or score > kept.score):
+                by_shop[key] = choice
+    if draw and by_shop:
         pick = (rng or random).choice(sorted(by_shop))
         return dataclasses.replace(by_shop[pick], explored=True)
     return best
@@ -597,6 +614,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
                 outcome=outcome,
                 reason=reason,
                 elapsed=elapsed,
+                market_round=3 if order.acceptable else 2,
             )
         except OSError:
             emit("[R3 BUYER] events write failed")

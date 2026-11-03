@@ -346,7 +346,7 @@ def test_failing_shops_cool_down_and_exploration_spreads_orders(
     assert fast.cooling_shops(streaks, policy) == {"http://willow.test"}
     no_wait = policy.model_copy(update={"fail_cooldown_minutes": 0.0})
     assert fast.cooling_shops(streaks, no_wait) == frozenset()
-    # And: a success resets the streak.
+    # And: a paid R3 success resets the streak; a mere agreement does not.
     events.record_attempt(
         order="o9",
         shop="http://willow.test",
@@ -357,6 +357,12 @@ def test_failing_shops_cool_down_and_exploration_spreads_orders(
         outcome="agreed",
         reason="",
         elapsed=1.0,
+    )
+    from r3.market_files import PaymentLine  # noqa: PLC0415 - test only
+
+    assert fast.cooling_shops(events.failure_streaks(24), policy)
+    events.sync_payments(
+        [PaymentLine(order="o9", shop="http://willow.test", price=80, paid=True)]
     )
     assert events.failure_streaks(24) == {}
     assert events.price_ratios(24) == {"http://willow.test": 0.8}

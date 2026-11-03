@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
 EVENTS_ENV: Final = "AX_R3_EVENTS"
 EVENTS_FILE: Final = "r3-events.sqlite"
+ROUND_TWO: Final = 2
 Outcome = Literal[
     "agreed", "no_deal", "paid", "refused", "unknown", "error", "suspicious"
 ]
@@ -56,8 +57,24 @@ class EventLedger:
                     id INTEGER PRIMARY KEY, ts REAL NOT NULL, order_id TEXT NOT NULL,
                     shop TEXT NOT NULL, shop_name TEXT, sku TEXT, list_price INTEGER,
                     price INTEGER, outcome TEXT NOT NULL, reason TEXT, ledger INTEGER,
-                    elapsed REAL)"""
+                    elapsed REAL, market_round INTEGER NOT NULL DEFAULT 0)"""
             )
+            # Retain old evidence; unknown rounds must not be guessed from a
+            # missing catalog price. Older releases did not store this column.
+            columns = {
+                row[1] for row in db.execute("PRAGMA table_info(buyer_attempts)")
+            }
+            if "market_round" not in columns:
+                # Buyer and manager can start together against an old database.
+                _ = db.execute("BEGIN IMMEDIATE")
+                columns = {
+                    row[1] for row in db.execute("PRAGMA table_info(buyer_attempts)")
+                }
+                if "market_round" not in columns:
+                    _ = db.execute(
+                        "ALTER TABLE buyer_attempts ADD COLUMN "
+                        "market_round INTEGER NOT NULL DEFAULT 0"
+                    )
             _ = db.execute(
                 """CREATE TABLE IF NOT EXISTS seller_receipts (
                     task TEXT PRIMARY KEY, ts REAL NOT NULL, unit TEXT, sku TEXT,
@@ -117,13 +134,14 @@ class EventLedger:
         outcome: Outcome,
         reason: str = "",
         elapsed: float = 0.0,
+        market_round: int = 0,
     ) -> None:
         """Append what the buyer did for one order."""
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db, db:
             _ = db.execute(
                 """INSERT INTO buyer_attempts
                 (ts, order_id, shop, shop_name, sku, list_price, price, outcome,
-                 reason, elapsed) VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                 reason, elapsed, market_round) VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     time.time(),
                     order,
@@ -135,6 +153,7 @@ class EventLedger:
                     outcome,
                     reason[:300],
                     elapsed,
+                    market_round,
                 ),
             )
 
@@ -206,42 +225,59 @@ class EventLedger:
                 WHERE ts >= ? GROUP BY shop, outcome""",
                 (since,),
             ):
-                counts.setdefault(str(shop), {})[str(outcome)] = int(n)
+                bucket = counts.setdefault(str(shop).rstrip("/"), {})
+                bucket[str(outcome)] = bucket.get(str(outcome), 0) + int(n)
             for shop, paid, n in db.execute(
                 """SELECT shop, paid, count(*) FROM payments
                 WHERE ts >= ? GROUP BY shop, paid""",
                 (since,),
             ):
                 key = "paid" if paid else "refused"
-                bucket = counts.setdefault(str(shop), {})
+                bucket = counts.setdefault(str(shop).rstrip("/"), {})
                 bucket[key] = bucket.get(key, 0) + int(n)
         return counts
 
     def failure_streaks(self, hours: float) -> dict[str, tuple[int, float]]:
-        """Per shop URL: consecutive no-deal attempts up to now and seconds since."""
+        """Count failed orders; only a completed payment clears an R3 streak.
+
+        Pending R3 agreements are unknown, so neither clear nor extend a streak.
+        R2 has no payment step; its explicitly marked signed agreements still clear
+        failures. Payment rows must match both our order and the selected shop.
+        """
         now = time.time()
         since = now - hours * 3600
         streaks: dict[str, tuple[int, float]] = {}
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
-            for shop, outcome, ts in db.execute(
-                """SELECT shop, outcome, ts FROM buyer_attempts
-                WHERE ts >= ? ORDER BY ts""",
+            for shop, outcome, ts, market_round, paid in db.execute(
+                """SELECT a.shop, a.outcome, a.ts, a.market_round, p.paid
+                FROM buyer_attempts a LEFT JOIN payments p
+                ON p.order_id = a.order_id
+                AND rtrim(p.shop, '/') = rtrim(a.shop, '/')
+                WHERE a.ts >= ? ORDER BY a.ts, a.id""",
                 (since,),
             ):
                 key = str(shop).rstrip("/")
                 count, _ = streaks.get(key, (0, 0.0))
-                streaks[key] = (count + 1 if outcome == "no_deal" else 0, float(ts))
+                if (
+                    outcome in {"no_deal", "suspicious", "error", "refused"}
+                    or paid == 0
+                ):
+                    streaks[key] = (count + 1, float(ts))
+                elif paid == 1 or (outcome == "agreed" and market_round == ROUND_TWO):
+                    streaks[key] = (0, float(ts))
         return {k: (n, now - last) for k, (n, last) in streaks.items() if n > 0}
 
     def price_ratios(self, hours: float) -> dict[str, float]:
-        """Per shop URL: median price/list share of our agreed buys (R3 lists only)."""
+        """Median actual paid/list share, excluding pending and refused agreements."""
         since = time.time() - hours * 3600
         ratios: dict[str, list[float]] = {}
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
             for shop, price, list_price in db.execute(
-                """SELECT shop, price, list_price FROM buyer_attempts
-                WHERE ts >= ? AND outcome = 'agreed' AND price > 0
-                AND list_price > 0""",
+                """SELECT a.shop, p.price, a.list_price FROM buyer_attempts a
+                JOIN payments p ON p.order_id = a.order_id
+                AND rtrim(p.shop, '/') = rtrim(a.shop, '/')
+                WHERE a.ts >= ? AND a.outcome = 'agreed' AND p.paid = 1
+                AND p.price > 0 AND a.list_price > 0""",
                 (since,),
             ):
                 key = str(shop).rstrip("/")
@@ -258,7 +294,7 @@ class EventLedger:
                 WHERE ts >= ? AND paid = 0 ORDER BY ts""",
                 (since,),
             ):
-                reasons[str(shop)] = str(reason or "")
+                reasons[str(shop).rstrip("/")] = str(reason or "")
         return reasons
 
     def record_policy_change(  # noqa: PLR0913 - one row, explicit columns
