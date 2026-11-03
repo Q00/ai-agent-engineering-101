@@ -101,7 +101,6 @@ def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative
         first_ask = first_ask or ask
         if NEGOTIATOR == "code" and ask is not None:
             ans = code_move(ask, budget, history, first_ask)
-            log(f"[buyer] [code] {ans['reason']}")
         else:
             ans = harness.ask(SYSTEM, (
                 f"Item: {item}\nYour budget (private, never exceed): {budget}\n"
@@ -139,7 +138,8 @@ def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative
         history.append({"ask": ask, "offer": price})
         last_offer = price
         r = peer.send(str(price), task_id)
-        log(f"[buyer] -> {price}  <- {r.state} | {r.text}")
+        why = f" [code: {ans['reason']}]" if NEGOTIATOR == "code" and ask is not None else ""
+        log(f"[buyer] -> {price}{why}  <- {r.state} | {r.text[:240]}")
 
     if r.state == "TASK_STATE_COMPLETED":
         log(f"[buyer] DEAL {item} at {r.price} (budget {budget}) after {len(history)} offers, "

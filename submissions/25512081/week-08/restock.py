@@ -17,6 +17,7 @@ Prints {"buy": [{"sku", "qty"}, ...]} as its last line.
 """
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -149,6 +150,18 @@ def pick_sku(cat, catalog, st, median):
     return min(skus, key=lambda s: abs(catalog[s]["list_price"] - median))
 
 
+def keep_rotated_log():
+    """The kit moves market-kit.log to market-kit.log.1 at 20 MB and overwrites .1 at the next turn, which
+    would lose the early Round 3 settle lines. Copy each .1 once, under the time it was rotated."""
+    rot = Path("logs") / "market-kit.log.1"
+    if not rot.exists():
+        return
+    dest = Path("logs") / time.strftime("market-kit-%m%d-%H%M.log", time.localtime(rot.stat().st_mtime))
+    if not dest.exists():
+        shutil.copy2(rot, dest)
+        log(f"rotated kit log kept as {dest}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", default=".market")
@@ -162,6 +175,10 @@ def main():
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
 
+    try:
+        keep_rotated_log()
+    except OSError as e:
+        log(f"keeping the rotated log failed: {e}")
     read_ledger(st, catalog)
     track_my_sales(st, inv)
 

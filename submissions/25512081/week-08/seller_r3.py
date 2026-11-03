@@ -222,10 +222,9 @@ class Seller(AgentExecutor):
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         text = get_message_text(context.message) or ""
         tid = task.id[:8]
-        log(f"[{tid}] <- {text[:160]!r}")
 
         def say(t):
-            log(f"[{tid}] -> {t}")
+            log(f"[{tid}] {text[:60]!r} -> {t[:240]}")      # one line per message: two weeks of logs must fit
             return up.new_agent_message(parts=[new_text_part(t)])
 
         deal = self.open.get(task.id)
