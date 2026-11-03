@@ -1,0 +1,8 @@
+tunnel: e5d5da34-e42a-4514-8f5a-3b2c2704e169
+credentials-file: /run/secrets/tunnel_credentials
+ingress:
+  - hostname: ax-week06.treasuresky.xyz
+    service: http://ingress:8080
+    originRequest:
+      connectTimeout: 10s
+  - service: http_status:404

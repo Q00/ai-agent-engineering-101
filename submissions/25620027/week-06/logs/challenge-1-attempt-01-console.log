@@ -1,0 +1,223 @@
+Installed 54 packages in 133ms
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/contextlib.py:158 in __exit__                                  │
+│                                                                              │
+│   155 │   │   │   │   # tell if we get the same exception back               │
+│   156 │   │   │   │   value = typ()                                          │
+│   157 │   │   │   try:                                                       │
+│ ❱ 158 │   │   │   │   self.gen.throw(value)                                  │
+│   159 │   │   │   except StopIteration as exc:                               │
+│   160 │   │   │   │   # Suppress StopIteration *unless* it's the same        │
+│       exception that                                                         │
+│   161 │   │   │   │   # was passed to throw().  This prevents a              │
+│       StopIteration                                                          │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/challenge-run-4d93856d91ac1fb5/li │
+│ b/python3.12/site-packages/anyio/_core/_tasks.py:152 in fail_at              │
+│                                                                              │
+│   149 │   with get_async_backend().create_cancel_scope(                      │
+│   150 │   │   deadline=effective_deadline, shield=shield                     │
+│   151 │   ) as cancel_scope:                                                 │
+│ ❱ 152 │   │   yield cancel_scope                                             │
+│   153 │                                                                      │
+│   154 │   if cancel_scope.cancelled_caught and current_time() >=             │
+│       cancel_scope.deadline:                                                 │
+│   155 │   │   raise TimeoutError(reason) if reason else TimeoutError         │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/challenge-run-4d93856d91ac1fb5/li │
+│ b/python3.12/site-packages/anyio/_core/_tasks.py:179 in fail_after           │
+│                                                                              │
+│   176 │   current_time = get_async_backend().current_time                    │
+│   177 │   deadline = (current_time() + delay) if delay is not None else      │
+│       math.inf                                                               │
+│   178 │   with fail_at(deadline, shield=shield, reason=reason) as scope:     │
+│ ❱ 179 │   │   yield scope                                                    │
+│   180                                                                        │
+│   181                                                                        │
+│   182 def move_on_at(deadline: float | None, shield: bool = False) ->        │
+│       CancelScope:                                                           │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/challenge_run.py:262 in run                  │
+│                                                                              │
+│   259 │   │   async with owned(command, directory / "server.log") as server: │
+│   260 │   │   │   await ready(base if challenge == 1 else base +             │
+│       "shops/00/", server)                                                   │
+│   261 │   │   │   with anyio.fail_after(1200):                               │
+│ ❱ 262 │   │   │   │   summary = await (                                      │
+│   263 │   │   │   │   │   catalog_challenge(base, directory)                 │
+│   264 │   │   │   │   │   if challenge == 1                                  │
+│   265 │   │   │   │   │   else shopping_challenge(base, directory)           │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/challenge_run.py:154 in catalog_challenge    │
+│                                                                              │
+│   151 │   │   │   │   )                                                      │
+│   152 │   │   │   │   quotes.append(quote(task, product))                    │
+│   153 │   │   │   │   task = await remote.send(card.endpoint(),              │
+│       str(product.reserve), task)                                            │
+│ ❱ 154 │   │   │   │   sold = receipt(task, product, base)                    │
+│   155 │   │   │   │   require(                                               │
+│   156 │   │   │   │   │   sold.price == product.reserve, "Receipt differs    │
+│       from offered price"                                                    │
+│   157 │   │   │   │   )                                                      │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/market_a2a/challenges.py:142 in receipt      │
+│                                                                              │
+│   139                                                                        │
+│   140 def receipt(task: Task, product: Product, shop: str) -> Purchase:      │
+│   141 │   """Verify the final artifact without manufacturing seller          │
+│       decisions."""                                                          │
+│ ❱ 142 │   require(task.status.state == "TASK_STATE_COMPLETED", "Purchase did │
+│       not complete")                                                         │
+│   143 │   parts = [part.data for art in task.artifacts for part in art.parts │
+│       if part.data]                                                          │
+│   144 │   require(len(parts) == 1, "Expected exactly one receipt")           │
+│   145 │   sold = parts[0]                                                    │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/market_a2a/challenges.py:116 in require      │
+│                                                                              │
+│   113 def require(condition: bool, message: str) -> None:  # noqa: FBT001 —  │
+│       assertion-style evaluator                                              │
+│   114 │   """Fail the attempt instead of turning an invalid result into a    │
+│       pass."""                                                               │
+│   115 │   if not condition:                                                  │
+│ ❱ 116 │   │   raise HarnessError(message)                                    │
+│   117                                                                        │
+│   118                                                                        │
+│   119 def events(log: str, marker: str) -> tuple[str, ...]:                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+HarnessError: Purchase did not complete
+
+During handling of the above exception, another exception occurred:
+
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/challenge_run.py:286 in challenge_one        │
+│                                                                              │
+│   283 @app.command("challenge-1")                                            │
+│   284 def challenge_one(attempt: Annotated[int, typer.Option(min=1)]) ->     │
+│       None:                                                                  │
+│   285 │   """Run descriptive catalog matching, quote floors and receipts.""" │
+│ ❱ 286 │   anyio.run(run, 1, attempt)                                         │
+│   287                                                                        │
+│   288                                                                        │
+│   289 @app.command("challenge-2")                                            │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/challenge-run-4d93856d91ac1fb5/li │
+│ b/python3.12/site-packages/anyio/_core/_eventloop.py:83 in run               │
+│                                                                              │
+│    80 │                                                                      │
+│    81 │   try:                                                               │
+│    82 │   │   backend_options = backend_options or {}                        │
+│ ❱  83 │   │   return async_backend.run(func, args, {}, backend_options)      │
+│    84 │   finally:                                                           │
+│    85 │   │   reset_current_async_library(token)                             │
+│    86                                                                        │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/challenge-run-4d93856d91ac1fb5/li │
+│ b/python3.12/site-packages/anyio/_backends/_asyncio.py:2548 in run           │
+│                                                                              │
+│   2545 │   │   │   │   loop_factory = winloop.new_event_loop                 │
+│   2546 │   │                                                                 │
+│   2547 │   │   with Runner(debug=debug, loop_factory=loop_factory) as        │
+│        runner:                                                               │
+│ ❱ 2548 │   │   │   return runner.run(wrapper())                              │
+│   2549 │                                                                     │
+│   2550 │   @classmethod                                                      │
+│   2551 │   def current_token(cls) -> object:                                 │
+│                                                                              │
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/asyncio/runners.py:118 in run                                  │
+│                                                                              │
+│   115 │   │                                                                  │
+│   116 │   │   self._interrupt_count = 0                                      │
+│   117 │   │   try:                                                           │
+│ ❱ 118 │   │   │   return self._loop.run_until_complete(task)                 │
+│   119 │   │   except exceptions.CancelledError:                              │
+│   120 │   │   │   if self._interrupt_count > 0:                              │
+│   121 │   │   │   │   uncancel = getattr(task, "uncancel", None)             │
+│                                                                              │
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/asyncio/base_events.py:691 in run_until_complete               │
+│                                                                              │
+│    688 │   │   if not future.done():                                         │
+│    689 │   │   │   raise RuntimeError('Event loop stopped before Future      │
+│        completed.')                                                          │
+│    690 │   │                                                                 │
+│ ❱  691 │   │   return future.result()                                        │
+│    692 │                                                                     │
+│    693 │   def stop(self):                                                   │
+│    694 │   │   """Stop running the event loop.                               │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/challenge-run-4d93856d91ac1fb5/li │
+│ b/python3.12/site-packages/anyio/_backends/_asyncio.py:2531 in wrapper       │
+│                                                                              │
+│   2528 │   │   │   _task_states[task] = TaskState(None, None)                │
+│   2529 │   │   │                                                             │
+│   2530 │   │   │   try:                                                      │
+│ ❱ 2531 │   │   │   │   return await func(*args)                              │
+│   2532 │   │   │   finally:                                                  │
+│   2533 │   │   │   │   del _task_states[task]                                │
+│   2534                                                                       │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/challenge_run.py:261 in run                  │
+│                                                                              │
+│   258 │   try:                                                               │
+│   259 │   │   async with owned(command, directory / "server.log") as server: │
+│   260 │   │   │   await ready(base if challenge == 1 else base +             │
+│       "shops/00/", server)                                                   │
+│ ❱ 261 │   │   │   with anyio.fail_after(1200):                               │
+│   262 │   │   │   │   summary = await (                                      │
+│   263 │   │   │   │   │   catalog_challenge(base, directory)                 │
+│   264 │   │   │   │   │   if challenge == 1                                  │
+│                                                                              │
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/contextlib.py:158 in __exit__                                  │
+│                                                                              │
+│   155 │   │   │   │   # tell if we get the same exception back               │
+│   156 │   │   │   │   value = typ()                                          │
+│   157 │   │   │   try:                                                       │
+│ ❱ 158 │   │   │   │   self.gen.throw(value)                                  │
+│   159 │   │   │   except StopIteration as exc:                               │
+│   160 │   │   │   │   # Suppress StopIteration *unless* it's the same        │
+│       exception that                                                         │
+│   161 │   │   │   │   # was passed to throw().  This prevents a              │
+│       StopIteration                                                          │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/challenge-run-4d93856d91ac1fb5/li │
+│ b/python3.12/site-packages/anyio/_core/_tasks.py:178 in fail_after           │
+│                                                                              │
+│   175 │   """                                                                │
+│   176 │   current_time = get_async_backend().current_time                    │
+│   177 │   deadline = (current_time() + delay) if delay is not None else      │
+│       math.inf                                                               │
+│ ❱ 178 │   with fail_at(deadline, shield=shield, reason=reason) as scope:     │
+│   179 │   │   yield scope                                                    │
+│   180                                                                        │
+│   181                                                                        │
+│                                                                              │
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/contextlib.py:167 in __exit__                                  │
+│                                                                              │
+│   164 │   │   │   except RuntimeError as exc:                                │
+│   165 │   │   │   │   # Don't re-raise the passed in exception. (issue27122) │
+│   166 │   │   │   │   if exc is value:                                       │
+│ ❱ 167 │   │   │   │   │   exc.__traceback__ = traceback                      │
+│   168 │   │   │   │   │   return False                                       │
+│   169 │   │   │   │   # Avoid suppressing if a StopIteration exception       │
+│   170 │   │   │   │   # was passed to throw() and later wrapped into a       │
+│       RuntimeError                                                           │
+│ in __setattr__:5                                                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+TypeError: super(type, obj): obj must be an instance or subtype of type

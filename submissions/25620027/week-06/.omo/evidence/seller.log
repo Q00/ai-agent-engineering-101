@@ -1,0 +1,1139 @@
+Installed 49 packages in 86ms
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/-N5BArbVJHEDgyvjARgjh/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+plugins: anyio-4.15.1
+collecting ... ERROR: file or directory not found: tests/test_seller.py
+
+collected 0 items
+
+============================ no tests ran in 0.01s =============================
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/-N5BArbVJHEDgyvjARgjh/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+plugins: anyio-4.15.1
+collecting ... collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+____________________ ERROR collecting tests/test_seller.py _____________________
+ImportError while importing test module '/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/tests/test_seller.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Users/sungjinho/.local/share/uv/python/cpython-3.13.5-macos-aarch64-none/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_seller.py:12: in <module>
+    from seller import create_app
+seller.py:21: in <module>
+    import uvicorn
+E   ModuleNotFoundError: No module named 'uvicorn'
+=========================== short test summary info ============================
+ERROR tests/test_seller.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 1.10s ===============================
+Installed 51 packages in 82ms
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+plugins: anyio-4.15.1
+collecting ... collected 10 items
+
+tests/test_seller.py::test_reserve_boundary[99-TASK_STATE_INPUT_REQUIRED] {"error":{"code":-32006,"message":"Agent should enqueue Task before TaskStatusUpdateEvent event","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_AGENT_RESPONSE","domain":"a2a-protocol.org","metadata":{}}]},"id":"257b9976-7f58-49c8-b61d-33a494e6ca28","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_reserve_boundary[100-TASK_STATE_COMPLETED] {"error":{"code":-32006,"message":"Agent should enqueue Task before TaskStatusUpdateEvent event","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_AGENT_RESPONSE","domain":"a2a-protocol.org","metadata":{}}]},"id":"5c158e7b-85cb-4b4e-928b-ce869f4ddb47","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_reserve_boundary[101-TASK_STATE_COMPLETED] {"error":{"code":-32006,"message":"Agent should enqueue Task before TaskStatusUpdateEvent event","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_AGENT_RESPONSE","domain":"a2a-protocol.org","metadata":{}}]},"id":"3a7dcfce-d151-4e24-b37f-cdd2df968305","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_fifth_low_offer_rejects {"error":{"code":-32006,"message":"Agent should enqueue Task before TaskStatusUpdateEvent event","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_AGENT_RESPONSE","domain":"a2a-protocol.org","metadata":{}}]},"id":"437cac5d-1b91-46eb-8df5-3b0b544881f0","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_completed_task_contains_receipt {"error":{"code":-32006,"message":"Agent should enqueue Task before TaskStatusUpdateEvent event","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_AGENT_RESPONSE","domain":"a2a-protocol.org","metadata":{}}]},"id":"065465bd-aca8-483f-912f-cb89b60f9755","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_completed_task_rejects_new_messages {"error":{"code":-32006,"message":"Agent should enqueue Task before TaskStatusUpdateEvent event","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_AGENT_RESPONSE","domain":"a2a-protocol.org","metadata":{}}]},"id":"a606fe09-08f9-4084-9d08-d87f17da6ffe","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_task_methods[GetTask-TASK_STATE_INPUT_REQUIRED] {"error":{"code":-32006,"message":"Agent should enqueue Task before TaskStatusUpdateEvent event","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_AGENT_RESPONSE","domain":"a2a-protocol.org","metadata":{}}]},"id":"ed4c1006-e896-4e45-8310-6da2019fc075","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_task_methods[CancelTask-TASK_STATE_CANCELED] {"error":{"code":-32006,"message":"Agent should enqueue Task before TaskStatusUpdateEvent event","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_AGENT_RESPONSE","domain":"a2a-protocol.org","metadata":{}}]},"id":"c63406cd-dd9f-41f0-8d5f-f534222072c7","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_missing_version_rejected {"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]},"id":"ff42c74c-e730-4f40-8b2d-39597d0d0b0a","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_unavailable_item_rejected {"error":{"code":-32006,"message":"Agent should enqueue Task before TaskStatusUpdateEvent event","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_AGENT_RESPONSE","domain":"a2a-protocol.org","metadata":{}}]},"id":"dfb03052-2194-4ffd-8a63-2310ed57acff","jsonrpc":"2.0"}
+FAILED
+
+=================================== FAILURES ===================================
+_____________ test_reserve_boundary[99-TASK_STATE_INPUT_REQUIRED] ______________
+
+client = <httpx2.AsyncClient object at 0x1085a02f0>, offer = 99
+state = 'TASK_STATE_INPUT_REQUIRED'
+
+    @pytest.mark.anyio
+    @pytest.mark.parametrize(("offer", "state"), [(99, "TASK_STATE_INPUT_REQUIRED"), (100, "TASK_STATE_COMPLETED"), (101, "TASK_STATE_COMPLETED")])
+    async def test_reserve_boundary(client: httpx2.AsyncClient, offer: int, state: str) -> None:
+        # Given an open negotiation with reserve 100.
+>       task = await open_task(client)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x1085a02f0>
+
+    async def open_task(client: httpx2.AsyncClient) -> Task:
+        reply = await send(client, "lamp")
+>       assert isinstance(reply.result, Sent)
+E       assert False
+E        +  where False = isinstance(None, Sent)
+E        +    where None = Reply(result=None, error=Error(code=-32006)).result
+
+tests/test_seller.py:87: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[9ce67191-8617-4865-8792-442301ecae20]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 297, in _handle_task_modification_event
+    raise InvalidAgentResponseError(
+        f'Agent should enqueue Task before {type(event).__name__} event'
+    )
+a2a.utils.errors.InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent event
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+_______________ test_reserve_boundary[100-TASK_STATE_COMPLETED] ________________
+
+client = <httpx2.AsyncClient object at 0x108644190>, offer = 100
+state = 'TASK_STATE_COMPLETED'
+
+    @pytest.mark.anyio
+    @pytest.mark.parametrize(("offer", "state"), [(99, "TASK_STATE_INPUT_REQUIRED"), (100, "TASK_STATE_COMPLETED"), (101, "TASK_STATE_COMPLETED")])
+    async def test_reserve_boundary(client: httpx2.AsyncClient, offer: int, state: str) -> None:
+        # Given an open negotiation with reserve 100.
+>       task = await open_task(client)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x108644190>
+
+    async def open_task(client: httpx2.AsyncClient) -> Task:
+        reply = await send(client, "lamp")
+>       assert isinstance(reply.result, Sent)
+E       assert False
+E        +  where False = isinstance(None, Sent)
+E        +    where None = Reply(result=None, error=Error(code=-32006)).result
+
+tests/test_seller.py:87: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[2995c1a7-4f04-4729-b4a8-a100b7648b3a]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 297, in _handle_task_modification_event
+    raise InvalidAgentResponseError(
+        f'Agent should enqueue Task before {type(event).__name__} event'
+    )
+a2a.utils.errors.InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent event
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+_______________ test_reserve_boundary[101-TASK_STATE_COMPLETED] ________________
+
+client = <httpx2.AsyncClient object at 0x108670910>, offer = 101
+state = 'TASK_STATE_COMPLETED'
+
+    @pytest.mark.anyio
+    @pytest.mark.parametrize(("offer", "state"), [(99, "TASK_STATE_INPUT_REQUIRED"), (100, "TASK_STATE_COMPLETED"), (101, "TASK_STATE_COMPLETED")])
+    async def test_reserve_boundary(client: httpx2.AsyncClient, offer: int, state: str) -> None:
+        # Given an open negotiation with reserve 100.
+>       task = await open_task(client)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x108670910>
+
+    async def open_task(client: httpx2.AsyncClient) -> Task:
+        reply = await send(client, "lamp")
+>       assert isinstance(reply.result, Sent)
+E       assert False
+E        +  where False = isinstance(None, Sent)
+E        +    where None = Reply(result=None, error=Error(code=-32006)).result
+
+tests/test_seller.py:87: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[10e8a134-d587-4bc2-b214-582eed937307]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 297, in _handle_task_modification_event
+    raise InvalidAgentResponseError(
+        f'Agent should enqueue Task before {type(event).__name__} event'
+    )
+a2a.utils.errors.InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent event
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+_________________________ test_fifth_low_offer_rejects _________________________
+
+client = <httpx2.AsyncClient object at 0x10867e190>
+
+    @pytest.mark.anyio
+    async def test_fifth_low_offer_rejects(client: httpx2.AsyncClient) -> None:
+        # Given four low offers in one task.
+>       task = await open_task(client)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x10867e190>
+
+    async def open_task(client: httpx2.AsyncClient) -> Task:
+        reply = await send(client, "lamp")
+>       assert isinstance(reply.result, Sent)
+E       assert False
+E        +  where False = isinstance(None, Sent)
+E        +    where None = Reply(result=None, error=Error(code=-32006)).result
+
+tests/test_seller.py:87: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[53813766-6b7d-4753-a708-fd95c45d993e]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 297, in _handle_task_modification_event
+    raise InvalidAgentResponseError(
+        f'Agent should enqueue Task before {type(event).__name__} event'
+    )
+a2a.utils.errors.InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent event
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+_____________________ test_completed_task_contains_receipt _____________________
+
+client = <httpx2.AsyncClient object at 0x1086868b0>
+
+    @pytest.mark.anyio
+    async def test_completed_task_contains_receipt(client: httpx2.AsyncClient) -> None:
+        # Given a selected inventory item.
+>       task = await open_task(client)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:121: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x1086868b0>
+
+    async def open_task(client: httpx2.AsyncClient) -> Task:
+        reply = await send(client, "lamp")
+>       assert isinstance(reply.result, Sent)
+E       assert False
+E        +  where False = isinstance(None, Sent)
+E        +    where None = Reply(result=None, error=Error(code=-32006)).result
+
+tests/test_seller.py:87: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[374a6cf2-0bae-40f0-a35a-0726f553ce1f]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 297, in _handle_task_modification_event
+    raise InvalidAgentResponseError(
+        f'Agent should enqueue Task before {type(event).__name__} event'
+    )
+a2a.utils.errors.InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent event
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+___________________ test_completed_task_rejects_new_messages ___________________
+
+client = <httpx2.AsyncClient object at 0x1086b1c70>
+
+    @pytest.mark.anyio
+    async def test_completed_task_rejects_new_messages(client: httpx2.AsyncClient) -> None:
+        # Given a completed purchase.
+>       task = await open_task(client)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x1086b1c70>
+
+    async def open_task(client: httpx2.AsyncClient) -> Task:
+        reply = await send(client, "lamp")
+>       assert isinstance(reply.result, Sent)
+E       assert False
+E        +  where False = isinstance(None, Sent)
+E        +    where None = Reply(result=None, error=Error(code=-32006)).result
+
+tests/test_seller.py:87: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[2b4113f4-5871-47c9-8803-cda5d714bac5]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 297, in _handle_task_modification_event
+    raise InvalidAgentResponseError(
+        f'Agent should enqueue Task before {type(event).__name__} event'
+    )
+a2a.utils.errors.InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent event
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+_____________ test_task_methods[GetTask-TASK_STATE_INPUT_REQUIRED] _____________
+
+client = <httpx2.AsyncClient object at 0x10869f240>, method = 'GetTask'
+state = 'TASK_STATE_INPUT_REQUIRED'
+
+    @pytest.mark.anyio
+    @pytest.mark.parametrize(("method", "state"), [("GetTask", "TASK_STATE_INPUT_REQUIRED"), ("CancelTask", "TASK_STATE_CANCELED")])
+    async def test_task_methods(client: httpx2.AsyncClient, method: Literal["GetTask", "CancelTask"], state: str) -> None:
+        # Given one open task.
+>       task = await open_task(client)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x10869f240>
+
+    async def open_task(client: httpx2.AsyncClient) -> Task:
+        reply = await send(client, "lamp")
+>       assert isinstance(reply.result, Sent)
+E       assert False
+E        +  where False = isinstance(None, Sent)
+E        +    where None = Reply(result=None, error=Error(code=-32006)).result
+
+tests/test_seller.py:87: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[d19e7034-ebe2-47e3-8ba1-6662974f07d2]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 297, in _handle_task_modification_event
+    raise InvalidAgentResponseError(
+        f'Agent should enqueue Task before {type(event).__name__} event'
+    )
+a2a.utils.errors.InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent event
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+______________ test_task_methods[CancelTask-TASK_STATE_CANCELED] _______________
+
+client = <httpx2.AsyncClient object at 0x1086df240>, method = 'CancelTask'
+state = 'TASK_STATE_CANCELED'
+
+    @pytest.mark.anyio
+    @pytest.mark.parametrize(("method", "state"), [("GetTask", "TASK_STATE_INPUT_REQUIRED"), ("CancelTask", "TASK_STATE_CANCELED")])
+    async def test_task_methods(client: httpx2.AsyncClient, method: Literal["GetTask", "CancelTask"], state: str) -> None:
+        # Given one open task.
+>       task = await open_task(client)
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x1086df240>
+
+    async def open_task(client: httpx2.AsyncClient) -> Task:
+        reply = await send(client, "lamp")
+>       assert isinstance(reply.result, Sent)
+E       assert False
+E        +  where False = isinstance(None, Sent)
+E        +    where None = Reply(result=None, error=Error(code=-32006)).result
+
+tests/test_seller.py:87: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[7ff09f7d-68d2-47e5-b8fc-42f7b2485765]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 297, in _handle_task_modification_event
+    raise InvalidAgentResponseError(
+        f'Agent should enqueue Task before {type(event).__name__} event'
+    )
+a2a.utils.errors.InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent event
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+________________________ test_unavailable_item_rejected ________________________
+
+client = <httpx2.AsyncClient object at 0x108722250>
+
+    @pytest.mark.anyio
+    async def test_unavailable_item_rejected(client: httpx2.AsyncClient) -> None:
+        # Given the three-item inventory.
+        # When the buyer requests an unavailable item.
+        reply = await send(client, "sofa")
+        # Then the task ends without a receipt.
+>       assert isinstance(reply.result, Sent)
+E       assert False
+E        +  where False = isinstance(None, Sent)
+E        +    where None = Reply(result=None, error=Error(code=-32006)).result
+
+tests/test_seller.py:171: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[98b08c16-b5aa-4452-a44d-aa52853533c0]: Failed
+Traceback (most recent call last):
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 297, in _handle_task_modification_event
+    raise InvalidAgentResponseError(
+        f'Agent should enqueue Task before {type(event).__name__} event'
+    )
+a2a.utils.errors.InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent event
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+=========================== short test summary info ============================
+FAILED tests/test_seller.py::test_reserve_boundary[99-TASK_STATE_INPUT_REQUIRED]
+FAILED tests/test_seller.py::test_reserve_boundary[100-TASK_STATE_COMPLETED]
+FAILED tests/test_seller.py::test_reserve_boundary[101-TASK_STATE_COMPLETED]
+FAILED tests/test_seller.py::test_fifth_low_offer_rejects - assert False
+FAILED tests/test_seller.py::test_completed_task_contains_receipt - assert False
+FAILED tests/test_seller.py::test_completed_task_rejects_new_messages - asser...
+FAILED tests/test_seller.py::test_task_methods[GetTask-TASK_STATE_INPUT_REQUIRED]
+FAILED tests/test_seller.py::test_task_methods[CancelTask-TASK_STATE_CANCELED]
+FAILED tests/test_seller.py::test_unavailable_item_rejected - assert False
+========================= 9 failed, 1 passed in 2.08s ==========================
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+plugins: anyio-4.15.1
+collecting ... collected 10 items
+
+tests/test_seller.py::test_reserve_boundary[99-TASK_STATE_INPUT_REQUIRED] {"result":{"task":{"id":"fa19a48f-abc4-4568-99af-18ff76a7be14","contextId":"d816e3f4-b028-4dad-9430-791a768861fa","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"26544d71-584a-490a-95d4-aa1833760bfd","contextId":"d816e3f4-b028-4dad-9430-791a768861fa","taskId":"fa19a48f-abc4-4568-99af-18ff76a7be14","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:50:54.840077Z"},"history":[{"messageId":"9e98a29b-80f4-4ee8-b384-ad6c438e0fba","contextId":"d816e3f4-b028-4dad-9430-791a768861fa","taskId":"fa19a48f-abc4-4568-99af-18ff76a7be14","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"c9efddc5-1cd8-47db-a9c9-11ff24c352ae","jsonrpc":"2.0"}
+{"result":{"task":{"id":"fa19a48f-abc4-4568-99af-18ff76a7be14","contextId":"d816e3f4-b028-4dad-9430-791a768861fa","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"1f1d92f2-8971-44ca-9981-92b9ac43515f","contextId":"d816e3f4-b028-4dad-9430-791a768861fa","taskId":"fa19a48f-abc4-4568-99af-18ff76a7be14","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:50:54.843191Z"},"history":[{"messageId":"9e98a29b-80f4-4ee8-b384-ad6c438e0fba","contextId":"d816e3f4-b028-4dad-9430-791a768861fa","taskId":"fa19a48f-abc4-4568-99af-18ff76a7be14","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"26544d71-584a-490a-95d4-aa1833760bfd","contextId":"d816e3f4-b028-4dad-9430-791a768861fa","taskId":"fa19a48f-abc4-4568-99af-18ff76a7be14","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"234cf3a9-dd10-4cb2-9d36-18ebbed63748","contextId":"d816e3f4-b028-4dad-9430-791a768861fa","taskId":"fa19a48f-abc4-4568-99af-18ff76a7be14","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"2ac6e0a8-ed83-4640-b5fa-3ba0c0b2432b","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_reserve_boundary[100-TASK_STATE_COMPLETED] {"result":{"task":{"id":"4994b07d-195e-4e9a-81ab-5628f1353c9d","contextId":"b914771c-f97c-450c-a360-7347da32ad09","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"b9ee914d-cd35-46df-ab70-62b1c028c79e","contextId":"b914771c-f97c-450c-a360-7347da32ad09","taskId":"4994b07d-195e-4e9a-81ab-5628f1353c9d","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:50:54.845893Z"},"history":[{"messageId":"b607b30d-be51-45b7-9011-f814e1a8f2b4","contextId":"b914771c-f97c-450c-a360-7347da32ad09","taskId":"4994b07d-195e-4e9a-81ab-5628f1353c9d","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"be1dd725-cb66-4532-8516-9647b70de0c9","jsonrpc":"2.0"}
+{"result":{"task":{"id":"4994b07d-195e-4e9a-81ab-5628f1353c9d","contextId":"b914771c-f97c-450c-a360-7347da32ad09","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"d92e6478-addf-42b4-abe5-567f69430ad7","contextId":"b914771c-f97c-450c-a360-7347da32ad09","taskId":"4994b07d-195e-4e9a-81ab-5628f1353c9d","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:50:54.847238Z"},"artifacts":[{"artifactId":"12186044-b42f-41a2-b8d7-5ad78786dd6a","name":"receipt","parts":[{"data":{"item":"lamp","price":100.0,"seller":"Birch"},"mediaType":"application/json"}]}],"history":[{"messageId":"b607b30d-be51-45b7-9011-f814e1a8f2b4","contextId":"b914771c-f97c-450c-a360-7347da32ad09","taskId":"4994b07d-195e-4e9a-81ab-5628f1353c9d","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"b9ee914d-cd35-46df-ab70-62b1c028c79e","contextId":"b914771c-f97c-450c-a360-7347da32ad09","taskId":"4994b07d-195e-4e9a-81ab-5628f1353c9d","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"a6f0f36e-3bb6-4d25-aef5-cc4f0369aecd","contextId":"b914771c-f97c-450c-a360-7347da32ad09","taskId":"4994b07d-195e-4e9a-81ab-5628f1353c9d","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"a0e44931-4699-45d5-aa85-f37f9adeb8dc","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_reserve_boundary[101-TASK_STATE_COMPLETED] {"result":{"task":{"id":"cfc9a8e4-a521-486a-af15-0a25d4d5e699","contextId":"4a5c5bf3-3510-4654-9b71-4d14db88ead4","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"c1d664b2-4744-4fb1-b399-ee71a0520afb","contextId":"4a5c5bf3-3510-4654-9b71-4d14db88ead4","taskId":"cfc9a8e4-a521-486a-af15-0a25d4d5e699","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:50:54.870771Z"},"history":[{"messageId":"89c05593-6520-490f-954f-c36f6309c029","contextId":"4a5c5bf3-3510-4654-9b71-4d14db88ead4","taskId":"cfc9a8e4-a521-486a-af15-0a25d4d5e699","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"137cace7-11b4-4a25-afe5-6069ec20d95a","jsonrpc":"2.0"}
+{"result":{"task":{"id":"cfc9a8e4-a521-486a-af15-0a25d4d5e699","contextId":"4a5c5bf3-3510-4654-9b71-4d14db88ead4","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"245061b4-f0f2-459e-9d02-25b78f0cce4e","contextId":"4a5c5bf3-3510-4654-9b71-4d14db88ead4","taskId":"cfc9a8e4-a521-486a-af15-0a25d4d5e699","role":"ROLE_AGENT","parts":[{"text":"Sold for 101."}]},"timestamp":"2026-10-13T05:50:54.871693Z"},"artifacts":[{"artifactId":"80019095-4f80-4fb6-a577-f3feb05fb872","name":"receipt","parts":[{"data":{"item":"lamp","price":101.0,"seller":"Birch"},"mediaType":"application/json"}]}],"history":[{"messageId":"89c05593-6520-490f-954f-c36f6309c029","contextId":"4a5c5bf3-3510-4654-9b71-4d14db88ead4","taskId":"cfc9a8e4-a521-486a-af15-0a25d4d5e699","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"c1d664b2-4744-4fb1-b399-ee71a0520afb","contextId":"4a5c5bf3-3510-4654-9b71-4d14db88ead4","taskId":"cfc9a8e4-a521-486a-af15-0a25d4d5e699","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"2b66b780-fa97-4361-b2bf-7ee268491c6d","contextId":"4a5c5bf3-3510-4654-9b71-4d14db88ead4","taskId":"cfc9a8e4-a521-486a-af15-0a25d4d5e699","role":"ROLE_USER","parts":[{"text":"101"}]}]}},"id":"7ca53188-d4d1-4a44-9565-40bd54e0ecd9","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_fifth_low_offer_rejects {"result":{"task":{"id":"f3dcc3a2-803c-425f-bf49-f66a63770eba","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"de1ee2d8-7845-4934-bfe6-6ca2c5bb25cc","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:50:54.876757Z"},"history":[{"messageId":"e5347763-c8dd-4048-ba97-fb2fab095f14","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"468e9179-b256-488d-8c7a-981b4f891833","jsonrpc":"2.0"}
+{"result":{"task":{"id":"f3dcc3a2-803c-425f-bf49-f66a63770eba","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"93423535-8135-402a-a8c9-590609ce74ff","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:50:54.877642Z"},"history":[{"messageId":"e5347763-c8dd-4048-ba97-fb2fab095f14","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"de1ee2d8-7845-4934-bfe6-6ca2c5bb25cc","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"515aad3a-7a5e-4d0a-ad8a-04efdd9dbb2b","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"2e7fbdb3-1ee4-421f-9fd2-bdd7d0da0b72","jsonrpc":"2.0"}
+{"result":{"task":{"id":"f3dcc3a2-803c-425f-bf49-f66a63770eba","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"d9cea713-476b-4b70-89f9-d7a99ba7967d","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:50:54.878432Z"},"history":[{"messageId":"e5347763-c8dd-4048-ba97-fb2fab095f14","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"de1ee2d8-7845-4934-bfe6-6ca2c5bb25cc","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"515aad3a-7a5e-4d0a-ad8a-04efdd9dbb2b","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"93423535-8135-402a-a8c9-590609ce74ff","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"ffe6c5fd-7230-476a-bdf6-e0ac93da7685","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"54eb19be-b48d-4935-a0b7-752f223a9f95","jsonrpc":"2.0"}
+{"result":{"task":{"id":"f3dcc3a2-803c-425f-bf49-f66a63770eba","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"36633f97-a65a-4922-94ac-649cee8380e0","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:50:54.879215Z"},"history":[{"messageId":"e5347763-c8dd-4048-ba97-fb2fab095f14","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"de1ee2d8-7845-4934-bfe6-6ca2c5bb25cc","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"515aad3a-7a5e-4d0a-ad8a-04efdd9dbb2b","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"93423535-8135-402a-a8c9-590609ce74ff","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"ffe6c5fd-7230-476a-bdf6-e0ac93da7685","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"d9cea713-476b-4b70-89f9-d7a99ba7967d","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"2e10dd67-3fb6-4e47-b2d0-de54603ff8a7","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"0d113c7a-71a8-4037-90c8-8f76835ca893","jsonrpc":"2.0"}
+{"result":{"task":{"id":"f3dcc3a2-803c-425f-bf49-f66a63770eba","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"077e0cf6-d8cc-4d9d-8419-c4f8703ea572","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:50:54.879993Z"},"history":[{"messageId":"e5347763-c8dd-4048-ba97-fb2fab095f14","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"de1ee2d8-7845-4934-bfe6-6ca2c5bb25cc","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"515aad3a-7a5e-4d0a-ad8a-04efdd9dbb2b","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"93423535-8135-402a-a8c9-590609ce74ff","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"ffe6c5fd-7230-476a-bdf6-e0ac93da7685","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"d9cea713-476b-4b70-89f9-d7a99ba7967d","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"2e10dd67-3fb6-4e47-b2d0-de54603ff8a7","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"36633f97-a65a-4922-94ac-649cee8380e0","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"006f7a88-4753-4494-b9d2-e2b38efe7495","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"50077752-aed4-432c-8619-fd20e730024f","jsonrpc":"2.0"}
+{"result":{"task":{"id":"f3dcc3a2-803c-425f-bf49-f66a63770eba","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"d704d153-e5d9-432b-b792-39244c54c10d","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"Too many low offers. Negotiation closed."}]},"timestamp":"2026-10-13T05:50:54.880788Z"},"history":[{"messageId":"e5347763-c8dd-4048-ba97-fb2fab095f14","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"de1ee2d8-7845-4934-bfe6-6ca2c5bb25cc","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"515aad3a-7a5e-4d0a-ad8a-04efdd9dbb2b","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"93423535-8135-402a-a8c9-590609ce74ff","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"ffe6c5fd-7230-476a-bdf6-e0ac93da7685","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"d9cea713-476b-4b70-89f9-d7a99ba7967d","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"2e10dd67-3fb6-4e47-b2d0-de54603ff8a7","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"36633f97-a65a-4922-94ac-649cee8380e0","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"006f7a88-4753-4494-b9d2-e2b38efe7495","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"077e0cf6-d8cc-4d9d-8419-c4f8703ea572","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"518881db-c0c7-4eba-85f2-0bf8de9471cc","contextId":"179c16c4-7c99-4ad1-bdc0-750e88b13d69","taskId":"f3dcc3a2-803c-425f-bf49-f66a63770eba","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"52e6fe30-6579-4e24-b731-1536a273158a","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_completed_task_contains_receipt {"result":{"task":{"id":"7671496c-ff47-4373-8432-b332e85549b1","contextId":"12a84a68-34e0-4a0c-afa0-1e8a1fcb4cd6","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"0474d39d-c5be-4315-8000-67388d4b3416","contextId":"12a84a68-34e0-4a0c-afa0-1e8a1fcb4cd6","taskId":"7671496c-ff47-4373-8432-b332e85549b1","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:50:54.882803Z"},"history":[{"messageId":"9a8c5dcc-cc88-4e91-89e7-30b6cb6e7cfc","contextId":"12a84a68-34e0-4a0c-afa0-1e8a1fcb4cd6","taskId":"7671496c-ff47-4373-8432-b332e85549b1","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"ec4410e6-058d-4999-aacf-cceb36690379","jsonrpc":"2.0"}
+{"result":{"task":{"id":"7671496c-ff47-4373-8432-b332e85549b1","contextId":"12a84a68-34e0-4a0c-afa0-1e8a1fcb4cd6","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"8856211b-6d2b-4390-a9e3-c98cd93ddf22","contextId":"12a84a68-34e0-4a0c-afa0-1e8a1fcb4cd6","taskId":"7671496c-ff47-4373-8432-b332e85549b1","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:50:54.883673Z"},"artifacts":[{"artifactId":"46d946af-14bb-4c1d-a3bf-1f99e66b2ba9","name":"receipt","parts":[{"data":{"item":"lamp","price":100.0,"seller":"Birch"},"mediaType":"application/json"}]}],"history":[{"messageId":"9a8c5dcc-cc88-4e91-89e7-30b6cb6e7cfc","contextId":"12a84a68-34e0-4a0c-afa0-1e8a1fcb4cd6","taskId":"7671496c-ff47-4373-8432-b332e85549b1","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"0474d39d-c5be-4315-8000-67388d4b3416","contextId":"12a84a68-34e0-4a0c-afa0-1e8a1fcb4cd6","taskId":"7671496c-ff47-4373-8432-b332e85549b1","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"71aef582-4c54-4e53-abe8-c57bbd12ca88","contextId":"12a84a68-34e0-4a0c-afa0-1e8a1fcb4cd6","taskId":"7671496c-ff47-4373-8432-b332e85549b1","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"0cbbea4e-a706-4643-b04c-73f2b1713d1f","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_completed_task_rejects_new_messages {"result":{"task":{"id":"cba5b8aa-0b6f-48a2-82a7-d68b830a6747","contextId":"80cd7f37-c258-4b9d-87a8-0add3997981a","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"a97b340e-2cd6-4829-aa01-d5eb0afa48f0","contextId":"80cd7f37-c258-4b9d-87a8-0add3997981a","taskId":"cba5b8aa-0b6f-48a2-82a7-d68b830a6747","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:50:54.888426Z"},"history":[{"messageId":"19663c6b-98a5-4ca4-8fe9-2c870890debf","contextId":"80cd7f37-c258-4b9d-87a8-0add3997981a","taskId":"cba5b8aa-0b6f-48a2-82a7-d68b830a6747","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"33ac8a88-c654-4ff6-9522-fdf51be4b64b","jsonrpc":"2.0"}
+{"result":{"task":{"id":"cba5b8aa-0b6f-48a2-82a7-d68b830a6747","contextId":"80cd7f37-c258-4b9d-87a8-0add3997981a","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"fca429c7-25eb-4693-8764-ba52a185aa7b","contextId":"80cd7f37-c258-4b9d-87a8-0add3997981a","taskId":"cba5b8aa-0b6f-48a2-82a7-d68b830a6747","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:50:54.889323Z"},"artifacts":[{"artifactId":"19b40ee9-b374-4013-9aaf-0ecdc2cd725d","name":"receipt","parts":[{"data":{"item":"lamp","price":100.0,"seller":"Birch"},"mediaType":"application/json"}]}],"history":[{"messageId":"19663c6b-98a5-4ca4-8fe9-2c870890debf","contextId":"80cd7f37-c258-4b9d-87a8-0add3997981a","taskId":"cba5b8aa-0b6f-48a2-82a7-d68b830a6747","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"a97b340e-2cd6-4829-aa01-d5eb0afa48f0","contextId":"80cd7f37-c258-4b9d-87a8-0add3997981a","taskId":"cba5b8aa-0b6f-48a2-82a7-d68b830a6747","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"bd93613b-25e2-47d1-8b1d-fabb319408a3","contextId":"80cd7f37-c258-4b9d-87a8-0add3997981a","taskId":"cba5b8aa-0b6f-48a2-82a7-d68b830a6747","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"ea3bf65f-5431-477e-8796-508f3cfcb5ca","jsonrpc":"2.0"}
+FAILED
+tests/test_seller.py::test_task_methods[GetTask-TASK_STATE_INPUT_REQUIRED] {"result":{"task":{"id":"f9976e4d-ebdd-43c3-9b0e-01a5aea428fd","contextId":"1619b98a-42f2-47c5-95f5-2bb0a13832d1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"4805e531-663d-45b9-bf93-29a45f33cee4","contextId":"1619b98a-42f2-47c5-95f5-2bb0a13832d1","taskId":"f9976e4d-ebdd-43c3-9b0e-01a5aea428fd","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:50:54.896637Z"},"history":[{"messageId":"a0dd5b99-83a3-4633-b856-a9b0b0ab90da","contextId":"1619b98a-42f2-47c5-95f5-2bb0a13832d1","taskId":"f9976e4d-ebdd-43c3-9b0e-01a5aea428fd","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"d31e8391-d789-4aab-81fa-f7d59851f0ad","jsonrpc":"2.0"}
+{"result":{"id":"f9976e4d-ebdd-43c3-9b0e-01a5aea428fd","contextId":"1619b98a-42f2-47c5-95f5-2bb0a13832d1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"4805e531-663d-45b9-bf93-29a45f33cee4","contextId":"1619b98a-42f2-47c5-95f5-2bb0a13832d1","taskId":"f9976e4d-ebdd-43c3-9b0e-01a5aea428fd","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:50:54.896637Z"},"history":[{"messageId":"a0dd5b99-83a3-4633-b856-a9b0b0ab90da","contextId":"1619b98a-42f2-47c5-95f5-2bb0a13832d1","taskId":"f9976e4d-ebdd-43c3-9b0e-01a5aea428fd","role":"ROLE_USER","parts":[{"text":"lamp"}]}]},"id":"task-method","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_task_methods[CancelTask-TASK_STATE_CANCELED] {"result":{"task":{"id":"16e281bc-1cd1-48b3-92d4-73f0634febb7","contextId":"4150a984-0757-4183-a7df-dc37354d7877","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"2f129e5a-c2e3-4a29-a6c2-965d198e364d","contextId":"4150a984-0757-4183-a7df-dc37354d7877","taskId":"16e281bc-1cd1-48b3-92d4-73f0634febb7","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:50:54.899206Z"},"history":[{"messageId":"ff8e08d3-ca3c-4d52-afde-cc5b600a8d64","contextId":"4150a984-0757-4183-a7df-dc37354d7877","taskId":"16e281bc-1cd1-48b3-92d4-73f0634febb7","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"bd3deb79-ebd6-46a5-a71d-98e35f0bf4a1","jsonrpc":"2.0"}
+{"result":{"id":"16e281bc-1cd1-48b3-92d4-73f0634febb7","contextId":"4150a984-0757-4183-a7df-dc37354d7877","status":{"state":"TASK_STATE_CANCELED","message":{"messageId":"d078b2b6-6b00-4ad2-b3f4-bf603582e1b3","contextId":"4150a984-0757-4183-a7df-dc37354d7877","taskId":"16e281bc-1cd1-48b3-92d4-73f0634febb7","role":"ROLE_AGENT","parts":[{"text":"Purchase canceled."}]},"timestamp":"2026-10-13T05:50:54.900026Z"},"history":[{"messageId":"ff8e08d3-ca3c-4d52-afde-cc5b600a8d64","contextId":"4150a984-0757-4183-a7df-dc37354d7877","taskId":"16e281bc-1cd1-48b3-92d4-73f0634febb7","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"2f129e5a-c2e3-4a29-a6c2-965d198e364d","contextId":"4150a984-0757-4183-a7df-dc37354d7877","taskId":"16e281bc-1cd1-48b3-92d4-73f0634febb7","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]}]},"id":"task-method","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_missing_version_rejected {"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]},"id":"59558c84-b537-4581-aa40-df6f2e288a3b","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_unavailable_item_rejected {"result":{"task":{"id":"8b7a0646-2d3d-416c-a1d4-5b92b343baa5","contextId":"f566464f-c1d2-4e97-9066-612b73573908","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"0ae442b7-07cc-45fa-8a56-67fa12de549e","contextId":"f566464f-c1d2-4e97-9066-612b73573908","taskId":"8b7a0646-2d3d-416c-a1d4-5b92b343baa5","role":"ROLE_AGENT","parts":[{"text":"That item is unavailable."}]},"timestamp":"2026-10-13T05:50:54.903292Z"},"history":[{"messageId":"c90831eb-29d2-4006-b42b-01581bb61cd2","contextId":"f566464f-c1d2-4e97-9066-612b73573908","taskId":"8b7a0646-2d3d-416c-a1d4-5b92b343baa5","role":"ROLE_USER","parts":[{"text":"sofa"}]}]}},"id":"8db7f09f-67b5-422b-8fdc-622076b5c2f0","jsonrpc":"2.0"}
+PASSED
+
+=================================== FAILURES ===================================
+_______________ test_reserve_boundary[100-TASK_STATE_COMPLETED] ________________
+
+client = <httpx2.AsyncClient object at 0x10a7b0b90>, offer = 100
+state = 'TASK_STATE_COMPLETED'
+
+    @pytest.mark.anyio
+    @pytest.mark.parametrize(("offer", "state"), [(99, "TASK_STATE_INPUT_REQUIRED"), (100, "TASK_STATE_COMPLETED"), (101, "TASK_STATE_COMPLETED")])
+    async def test_reserve_boundary(client: httpx2.AsyncClient, offer: int, state: str) -> None:
+        # Given an open negotiation with reserve 100.
+        task = await open_task(client)
+        # When the boundary offer is sent.
+>       reply = await send(client, str(offer), task)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x10a7b0b90>, text = '100'
+task = Task(id='4994b07d-195e-4e9a-81ab-5628f1353c9d', context_id='b914771c-f97c-450c-a360-7347da32ad09', status=Status(state...essage(parts=[Part(text='The opening price for lamp is 130. Send an integer price offer.', data=None)])), artifacts=[])
+
+    async def send(client: httpx2.AsyncClient, text: str, task: Task | None = None) -> Reply:
+        body = {"jsonrpc": "2.0", "id": str(uuid4()), "method": "SendMessage", "params": {
+            "message": {"messageId": str(uuid4()), "role": "ROLE_USER", "parts": [{"text": text}],
+                        "taskId": task.id if task else "", "contextId": task.context_id if task else ""},
+        }}
+        response = await client.post("/", content=json.dumps(body), headers={"Content-Type": "application/json"})
+        print(response.text)
+>       return Reply.model_validate_json(response.content)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 4 validation errors for Reply
+E       result.Sent.task.artifacts.0.parts.0.data.price
+E         Input should be a valid integer [type=int_type, input_value=100.0, input_type=float]
+E           For further information visit https://errors.pydantic.dev/2.14/v/int_type
+E       result.Task.id
+E         Field required [type=missing, input_value={'task': {'id': '4994b07d...': [{'text': '100'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+E       result.Task.contextId
+E         Field required [type=missing, input_value={'task': {'id': '4994b07d...': [{'text': '100'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+E       result.Task.status
+E         Field required [type=missing, input_value={'task': {'id': '4994b07d...': [{'text': '100'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+
+tests/test_seller.py:82: ValidationError
+_______________ test_reserve_boundary[101-TASK_STATE_COMPLETED] ________________
+
+client = <httpx2.AsyncClient object at 0x10a7b1e50>, offer = 101
+state = 'TASK_STATE_COMPLETED'
+
+    @pytest.mark.anyio
+    @pytest.mark.parametrize(("offer", "state"), [(99, "TASK_STATE_INPUT_REQUIRED"), (100, "TASK_STATE_COMPLETED"), (101, "TASK_STATE_COMPLETED")])
+    async def test_reserve_boundary(client: httpx2.AsyncClient, offer: int, state: str) -> None:
+        # Given an open negotiation with reserve 100.
+        task = await open_task(client)
+        # When the boundary offer is sent.
+>       reply = await send(client, str(offer), task)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x10a7b1e50>, text = '101'
+task = Task(id='cfc9a8e4-a521-486a-af15-0a25d4d5e699', context_id='4a5c5bf3-3510-4654-9b71-4d14db88ead4', status=Status(state...essage(parts=[Part(text='The opening price for lamp is 130. Send an integer price offer.', data=None)])), artifacts=[])
+
+    async def send(client: httpx2.AsyncClient, text: str, task: Task | None = None) -> Reply:
+        body = {"jsonrpc": "2.0", "id": str(uuid4()), "method": "SendMessage", "params": {
+            "message": {"messageId": str(uuid4()), "role": "ROLE_USER", "parts": [{"text": text}],
+                        "taskId": task.id if task else "", "contextId": task.context_id if task else ""},
+        }}
+        response = await client.post("/", content=json.dumps(body), headers={"Content-Type": "application/json"})
+        print(response.text)
+>       return Reply.model_validate_json(response.content)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 4 validation errors for Reply
+E       result.Sent.task.artifacts.0.parts.0.data.price
+E         Input should be a valid integer [type=int_type, input_value=101.0, input_type=float]
+E           For further information visit https://errors.pydantic.dev/2.14/v/int_type
+E       result.Task.id
+E         Field required [type=missing, input_value={'task': {'id': 'cfc9a8e4...': [{'text': '101'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+E       result.Task.contextId
+E         Field required [type=missing, input_value={'task': {'id': 'cfc9a8e4...': [{'text': '101'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+E       result.Task.status
+E         Field required [type=missing, input_value={'task': {'id': 'cfc9a8e4...': [{'text': '101'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+
+tests/test_seller.py:82: ValidationError
+_____________________ test_completed_task_contains_receipt _____________________
+
+client = <httpx2.AsyncClient object at 0x10a80ad70>
+
+    @pytest.mark.anyio
+    async def test_completed_task_contains_receipt(client: httpx2.AsyncClient) -> None:
+        # Given a selected inventory item.
+        task = await open_task(client)
+        # When the buyer accepts at reserve.
+>       reply = await send(client, "100", task)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_seller.py:123: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x10a80ad70>, text = '100'
+task = Task(id='7671496c-ff47-4373-8432-b332e85549b1', context_id='12a84a68-34e0-4a0c-afa0-1e8a1fcb4cd6', status=Status(state...essage(parts=[Part(text='The opening price for lamp is 130. Send an integer price offer.', data=None)])), artifacts=[])
+
+    async def send(client: httpx2.AsyncClient, text: str, task: Task | None = None) -> Reply:
+        body = {"jsonrpc": "2.0", "id": str(uuid4()), "method": "SendMessage", "params": {
+            "message": {"messageId": str(uuid4()), "role": "ROLE_USER", "parts": [{"text": text}],
+                        "taskId": task.id if task else "", "contextId": task.context_id if task else ""},
+        }}
+        response = await client.post("/", content=json.dumps(body), headers={"Content-Type": "application/json"})
+        print(response.text)
+>       return Reply.model_validate_json(response.content)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 4 validation errors for Reply
+E       result.Sent.task.artifacts.0.parts.0.data.price
+E         Input should be a valid integer [type=int_type, input_value=100.0, input_type=float]
+E           For further information visit https://errors.pydantic.dev/2.14/v/int_type
+E       result.Task.id
+E         Field required [type=missing, input_value={'task': {'id': '7671496c...': [{'text': '100'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+E       result.Task.contextId
+E         Field required [type=missing, input_value={'task': {'id': '7671496c...': [{'text': '100'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+E       result.Task.status
+E         Field required [type=missing, input_value={'task': {'id': '7671496c...': [{'text': '100'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+
+tests/test_seller.py:82: ValidationError
+___________________ test_completed_task_rejects_new_messages ___________________
+
+client = <httpx2.AsyncClient object at 0x10a82d5b0>
+
+    @pytest.mark.anyio
+    async def test_completed_task_rejects_new_messages(client: httpx2.AsyncClient) -> None:
+        # Given a completed purchase.
+        task = await open_task(client)
+>       await send(client, "100", task)
+
+tests/test_seller.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx2.AsyncClient object at 0x10a82d5b0>, text = '100'
+task = Task(id='cba5b8aa-0b6f-48a2-82a7-d68b830a6747', context_id='80cd7f37-c258-4b9d-87a8-0add3997981a', status=Status(state...essage(parts=[Part(text='The opening price for lamp is 130. Send an integer price offer.', data=None)])), artifacts=[])
+
+    async def send(client: httpx2.AsyncClient, text: str, task: Task | None = None) -> Reply:
+        body = {"jsonrpc": "2.0", "id": str(uuid4()), "method": "SendMessage", "params": {
+            "message": {"messageId": str(uuid4()), "role": "ROLE_USER", "parts": [{"text": text}],
+                        "taskId": task.id if task else "", "contextId": task.context_id if task else ""},
+        }}
+        response = await client.post("/", content=json.dumps(body), headers={"Content-Type": "application/json"})
+        print(response.text)
+>       return Reply.model_validate_json(response.content)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 4 validation errors for Reply
+E       result.Sent.task.artifacts.0.parts.0.data.price
+E         Input should be a valid integer [type=int_type, input_value=100.0, input_type=float]
+E           For further information visit https://errors.pydantic.dev/2.14/v/int_type
+E       result.Task.id
+E         Field required [type=missing, input_value={'task': {'id': 'cba5b8aa...': [{'text': '100'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+E       result.Task.contextId
+E         Field required [type=missing, input_value={'task': {'id': 'cba5b8aa...': [{'text': '100'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+E       result.Task.status
+E         Field required [type=missing, input_value={'task': {'id': 'cba5b8aa...': [{'text': '100'}]}]}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.14/v/missing
+
+tests/test_seller.py:82: ValidationError
+=========================== short test summary info ============================
+FAILED tests/test_seller.py::test_reserve_boundary[100-TASK_STATE_COMPLETED]
+FAILED tests/test_seller.py::test_reserve_boundary[101-TASK_STATE_COMPLETED]
+FAILED tests/test_seller.py::test_completed_task_contains_receipt - pydantic_...
+FAILED tests/test_seller.py::test_completed_task_rejects_new_messages - pydan...
+========================= 4 failed, 6 passed in 0.36s ==========================
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+plugins: anyio-4.15.1
+collecting ... collected 10 items
+
+tests/test_seller.py::test_reserve_boundary[99-TASK_STATE_INPUT_REQUIRED] {"result":{"task":{"id":"c610c134-5be8-4cda-8ab3-e1e63145c073","contextId":"a334b1b6-87b5-4a60-85be-6be377bfc437","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"958fad93-53aa-42c9-86cf-1b6e938ec777","contextId":"a334b1b6-87b5-4a60-85be-6be377bfc437","taskId":"c610c134-5be8-4cda-8ab3-e1e63145c073","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:51:29.975490Z"},"history":[{"messageId":"b4011a38-df39-4bd5-ac1f-8559de3e9ebf","contextId":"a334b1b6-87b5-4a60-85be-6be377bfc437","taskId":"c610c134-5be8-4cda-8ab3-e1e63145c073","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"e97352cb-c0a0-4273-8608-a5c09a0c06e8","jsonrpc":"2.0"}
+{"result":{"task":{"id":"c610c134-5be8-4cda-8ab3-e1e63145c073","contextId":"a334b1b6-87b5-4a60-85be-6be377bfc437","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"b49208d4-293f-4926-83a9-4c1fb6a9e32b","contextId":"a334b1b6-87b5-4a60-85be-6be377bfc437","taskId":"c610c134-5be8-4cda-8ab3-e1e63145c073","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:51:29.977440Z"},"history":[{"messageId":"b4011a38-df39-4bd5-ac1f-8559de3e9ebf","contextId":"a334b1b6-87b5-4a60-85be-6be377bfc437","taskId":"c610c134-5be8-4cda-8ab3-e1e63145c073","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"958fad93-53aa-42c9-86cf-1b6e938ec777","contextId":"a334b1b6-87b5-4a60-85be-6be377bfc437","taskId":"c610c134-5be8-4cda-8ab3-e1e63145c073","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"57856886-4a0c-41d8-b7da-368382ff0450","contextId":"a334b1b6-87b5-4a60-85be-6be377bfc437","taskId":"c610c134-5be8-4cda-8ab3-e1e63145c073","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"ce187e69-6d40-4061-9de1-460475d52ac2","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_reserve_boundary[100-TASK_STATE_COMPLETED] {"result":{"task":{"id":"72cbc127-246f-42e3-a29a-bb234c17295e","contextId":"4ac7dafc-6f5b-42fb-a5ff-54fbdd3c2593","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"bff178e6-156e-4780-9bc5-2e91a0bbbc4d","contextId":"4ac7dafc-6f5b-42fb-a5ff-54fbdd3c2593","taskId":"72cbc127-246f-42e3-a29a-bb234c17295e","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:51:29.979902Z"},"history":[{"messageId":"03e258f4-70ed-4925-99ff-d03d686b5d58","contextId":"4ac7dafc-6f5b-42fb-a5ff-54fbdd3c2593","taskId":"72cbc127-246f-42e3-a29a-bb234c17295e","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"d6b9fff1-3520-48b8-bf76-bd59c5030628","jsonrpc":"2.0"}
+{"result":{"task":{"id":"72cbc127-246f-42e3-a29a-bb234c17295e","contextId":"4ac7dafc-6f5b-42fb-a5ff-54fbdd3c2593","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"53665929-59ee-4cb7-ae9d-4dd509e34371","contextId":"4ac7dafc-6f5b-42fb-a5ff-54fbdd3c2593","taskId":"72cbc127-246f-42e3-a29a-bb234c17295e","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:51:29.981086Z"},"artifacts":[{"artifactId":"1af58fbe-c1ab-4544-a550-c6b8d2ade4ce","name":"receipt","parts":[{"data":{"price":100.0,"seller":"Birch","item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"03e258f4-70ed-4925-99ff-d03d686b5d58","contextId":"4ac7dafc-6f5b-42fb-a5ff-54fbdd3c2593","taskId":"72cbc127-246f-42e3-a29a-bb234c17295e","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"bff178e6-156e-4780-9bc5-2e91a0bbbc4d","contextId":"4ac7dafc-6f5b-42fb-a5ff-54fbdd3c2593","taskId":"72cbc127-246f-42e3-a29a-bb234c17295e","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"28a0713d-68b0-4983-ac91-4408a0ef391d","contextId":"4ac7dafc-6f5b-42fb-a5ff-54fbdd3c2593","taskId":"72cbc127-246f-42e3-a29a-bb234c17295e","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"cb947432-8a83-4904-9b64-6f9e22c1dcd0","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_reserve_boundary[101-TASK_STATE_COMPLETED] {"result":{"task":{"id":"9673d940-3e7f-433b-b5f0-dea3c5430d25","contextId":"608b6091-eebc-427d-9f71-ebb468ce4e40","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"f8ad053c-6d95-4b32-8c69-e3b632b5b6dc","contextId":"608b6091-eebc-427d-9f71-ebb468ce4e40","taskId":"9673d940-3e7f-433b-b5f0-dea3c5430d25","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:51:29.983348Z"},"history":[{"messageId":"8a04ca97-deaa-436b-99c7-7832ebfb3d43","contextId":"608b6091-eebc-427d-9f71-ebb468ce4e40","taskId":"9673d940-3e7f-433b-b5f0-dea3c5430d25","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"5f4aa8b5-9a15-48e0-8cee-0235d8eaece6","jsonrpc":"2.0"}
+{"result":{"task":{"id":"9673d940-3e7f-433b-b5f0-dea3c5430d25","contextId":"608b6091-eebc-427d-9f71-ebb468ce4e40","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"10328f53-1ce0-4eba-bdb4-6a8f1fc45da5","contextId":"608b6091-eebc-427d-9f71-ebb468ce4e40","taskId":"9673d940-3e7f-433b-b5f0-dea3c5430d25","role":"ROLE_AGENT","parts":[{"text":"Sold for 101."}]},"timestamp":"2026-10-13T05:51:29.984210Z"},"artifacts":[{"artifactId":"9dcbd6f0-ced0-4569-8868-963e9344e912","name":"receipt","parts":[{"data":{"price":101.0,"seller":"Birch","item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"8a04ca97-deaa-436b-99c7-7832ebfb3d43","contextId":"608b6091-eebc-427d-9f71-ebb468ce4e40","taskId":"9673d940-3e7f-433b-b5f0-dea3c5430d25","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"f8ad053c-6d95-4b32-8c69-e3b632b5b6dc","contextId":"608b6091-eebc-427d-9f71-ebb468ce4e40","taskId":"9673d940-3e7f-433b-b5f0-dea3c5430d25","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"9318ee62-431a-4827-9704-e2d04266bc1d","contextId":"608b6091-eebc-427d-9f71-ebb468ce4e40","taskId":"9673d940-3e7f-433b-b5f0-dea3c5430d25","role":"ROLE_USER","parts":[{"text":"101"}]}]}},"id":"4deaa535-5f9e-4da1-9828-f5c490bca2a8","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_fifth_low_offer_rejects {"result":{"task":{"id":"c34d1d26-de48-40a0-ba49-018e47447890","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"7b6df92f-92ea-45d7-a44c-90968c317b63","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:51:29.986214Z"},"history":[{"messageId":"88e1e00f-1ddc-42cb-99c9-cad8b34d66aa","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"9b520134-e05e-47a7-8455-9b2a35b0bd72","jsonrpc":"2.0"}
+{"result":{"task":{"id":"c34d1d26-de48-40a0-ba49-018e47447890","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"4055c634-7da1-4514-9c49-9c46f941b172","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:51:29.987012Z"},"history":[{"messageId":"88e1e00f-1ddc-42cb-99c9-cad8b34d66aa","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"7b6df92f-92ea-45d7-a44c-90968c317b63","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"2cb5eab1-622a-41c5-967b-e2a855128de3","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"9d4af40e-fbb6-4d34-9252-b8603a393970","jsonrpc":"2.0"}
+{"result":{"task":{"id":"c34d1d26-de48-40a0-ba49-018e47447890","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"b73c5277-aff8-4c68-8d62-7f9780e514bb","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:51:29.987750Z"},"history":[{"messageId":"88e1e00f-1ddc-42cb-99c9-cad8b34d66aa","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"7b6df92f-92ea-45d7-a44c-90968c317b63","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"2cb5eab1-622a-41c5-967b-e2a855128de3","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"4055c634-7da1-4514-9c49-9c46f941b172","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"00b50dc4-d10a-4a45-be8f-be4913dff0f5","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"bee8af8e-d2e8-4178-9800-1c5147835e24","jsonrpc":"2.0"}
+{"result":{"task":{"id":"c34d1d26-de48-40a0-ba49-018e47447890","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"41461df3-dbd7-415b-a520-0eea983d322f","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:51:29.988486Z"},"history":[{"messageId":"88e1e00f-1ddc-42cb-99c9-cad8b34d66aa","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"7b6df92f-92ea-45d7-a44c-90968c317b63","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"2cb5eab1-622a-41c5-967b-e2a855128de3","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"4055c634-7da1-4514-9c49-9c46f941b172","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"00b50dc4-d10a-4a45-be8f-be4913dff0f5","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"b73c5277-aff8-4c68-8d62-7f9780e514bb","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"bde0fe70-c73e-45eb-b661-ab6547311768","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"3d863505-5111-4dda-ab9b-903f4bbee1fa","jsonrpc":"2.0"}
+{"result":{"task":{"id":"c34d1d26-de48-40a0-ba49-018e47447890","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"73c4bdb1-35ec-48a1-a48f-a084a49ff449","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:51:29.989238Z"},"history":[{"messageId":"88e1e00f-1ddc-42cb-99c9-cad8b34d66aa","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"7b6df92f-92ea-45d7-a44c-90968c317b63","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"2cb5eab1-622a-41c5-967b-e2a855128de3","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"4055c634-7da1-4514-9c49-9c46f941b172","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"00b50dc4-d10a-4a45-be8f-be4913dff0f5","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"b73c5277-aff8-4c68-8d62-7f9780e514bb","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"bde0fe70-c73e-45eb-b661-ab6547311768","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"41461df3-dbd7-415b-a520-0eea983d322f","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"1086d6e4-cf9f-4011-a42e-8fb5f32c9923","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"b2bf3091-661b-407b-bda2-1f2630bd85bd","jsonrpc":"2.0"}
+{"result":{"task":{"id":"c34d1d26-de48-40a0-ba49-018e47447890","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"5cc5540c-3892-4fa3-a61d-da9966fe127c","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"Too many low offers. Negotiation closed."}]},"timestamp":"2026-10-13T05:51:29.990023Z"},"history":[{"messageId":"88e1e00f-1ddc-42cb-99c9-cad8b34d66aa","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"7b6df92f-92ea-45d7-a44c-90968c317b63","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"2cb5eab1-622a-41c5-967b-e2a855128de3","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"4055c634-7da1-4514-9c49-9c46f941b172","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"00b50dc4-d10a-4a45-be8f-be4913dff0f5","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"b73c5277-aff8-4c68-8d62-7f9780e514bb","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"bde0fe70-c73e-45eb-b661-ab6547311768","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"41461df3-dbd7-415b-a520-0eea983d322f","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"1086d6e4-cf9f-4011-a42e-8fb5f32c9923","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"73c4bdb1-35ec-48a1-a48f-a084a49ff449","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"eec25363-6351-42aa-863a-47b35b058ce8","contextId":"b488ca96-954e-46e0-b7df-87a8b548e692","taskId":"c34d1d26-de48-40a0-ba49-018e47447890","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"27adf372-0d80-48cd-aaca-4c5b8c1d6b81","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_completed_task_contains_receipt {"result":{"task":{"id":"bfa4fff3-11d9-4975-b0e2-4dea89963730","contextId":"0b620ba4-c90d-4413-aa05-b83ee5a1d85e","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"ff83b046-e53c-48e5-9984-2989e3dd9722","contextId":"0b620ba4-c90d-4413-aa05-b83ee5a1d85e","taskId":"bfa4fff3-11d9-4975-b0e2-4dea89963730","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:51:29.992348Z"},"history":[{"messageId":"bbbb798d-1359-49bf-a451-89daef0eaa99","contextId":"0b620ba4-c90d-4413-aa05-b83ee5a1d85e","taskId":"bfa4fff3-11d9-4975-b0e2-4dea89963730","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"2ae60ff3-f1dd-43f4-9a1b-bd00c00576a9","jsonrpc":"2.0"}
+{"result":{"task":{"id":"bfa4fff3-11d9-4975-b0e2-4dea89963730","contextId":"0b620ba4-c90d-4413-aa05-b83ee5a1d85e","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"637c58f0-a571-469e-96a6-c9b35ab30077","contextId":"0b620ba4-c90d-4413-aa05-b83ee5a1d85e","taskId":"bfa4fff3-11d9-4975-b0e2-4dea89963730","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:51:29.993229Z"},"artifacts":[{"artifactId":"0dd1b977-359d-40ab-8aee-c0f177320068","name":"receipt","parts":[{"data":{"price":100.0,"seller":"Birch","item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"bbbb798d-1359-49bf-a451-89daef0eaa99","contextId":"0b620ba4-c90d-4413-aa05-b83ee5a1d85e","taskId":"bfa4fff3-11d9-4975-b0e2-4dea89963730","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"ff83b046-e53c-48e5-9984-2989e3dd9722","contextId":"0b620ba4-c90d-4413-aa05-b83ee5a1d85e","taskId":"bfa4fff3-11d9-4975-b0e2-4dea89963730","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"f2dfffaa-3d9d-40a6-9157-6b9b26821a00","contextId":"0b620ba4-c90d-4413-aa05-b83ee5a1d85e","taskId":"bfa4fff3-11d9-4975-b0e2-4dea89963730","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"6762b7f9-898a-4b96-a7f1-813919fa423c","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_completed_task_rejects_new_messages {"result":{"task":{"id":"71f87249-f343-488e-a07c-cdfb26af0d77","contextId":"2c5ead6d-bfef-4e86-98c7-834e737209e3","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"9799072e-8885-4b03-8d72-8b4b54d13d1a","contextId":"2c5ead6d-bfef-4e86-98c7-834e737209e3","taskId":"71f87249-f343-488e-a07c-cdfb26af0d77","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:51:29.995271Z"},"history":[{"messageId":"20b23cd7-32cd-4872-b272-8382a0723987","contextId":"2c5ead6d-bfef-4e86-98c7-834e737209e3","taskId":"71f87249-f343-488e-a07c-cdfb26af0d77","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"f2751991-fb95-47be-803a-d5cc3c58700a","jsonrpc":"2.0"}
+{"result":{"task":{"id":"71f87249-f343-488e-a07c-cdfb26af0d77","contextId":"2c5ead6d-bfef-4e86-98c7-834e737209e3","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"68a2cb4c-cc50-400c-a562-5bf30024da95","contextId":"2c5ead6d-bfef-4e86-98c7-834e737209e3","taskId":"71f87249-f343-488e-a07c-cdfb26af0d77","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:51:29.996112Z"},"artifacts":[{"artifactId":"a34116ad-692e-4fdf-8eb5-6e681d65e72f","name":"receipt","parts":[{"data":{"price":100.0,"seller":"Birch","item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"20b23cd7-32cd-4872-b272-8382a0723987","contextId":"2c5ead6d-bfef-4e86-98c7-834e737209e3","taskId":"71f87249-f343-488e-a07c-cdfb26af0d77","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"9799072e-8885-4b03-8d72-8b4b54d13d1a","contextId":"2c5ead6d-bfef-4e86-98c7-834e737209e3","taskId":"71f87249-f343-488e-a07c-cdfb26af0d77","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"f43de5cc-8862-4a43-83a0-1e81c0a0bce6","contextId":"2c5ead6d-bfef-4e86-98c7-834e737209e3","taskId":"71f87249-f343-488e-a07c-cdfb26af0d77","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"d69ca111-b025-4472-8aed-cffb96480a86","jsonrpc":"2.0"}
+{"error":{"code":-32004,"message":"Task 71f87249-f343-488e-a07c-cdfb26af0d77 is already completed.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"UNSUPPORTED_OPERATION","domain":"a2a-protocol.org","metadata":{}}]},"id":"44d3c363-0331-440e-ab4e-492ef4686133","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_task_methods[GetTask-TASK_STATE_INPUT_REQUIRED] {"result":{"task":{"id":"04cad086-53f2-4b7f-ae2f-5a4d55c4f36e","contextId":"ccd5bfa2-bd0e-4b84-8ac8-d57194d05d19","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"914a5ce9-e9c9-4949-aadc-a40a4149a0c2","contextId":"ccd5bfa2-bd0e-4b84-8ac8-d57194d05d19","taskId":"04cad086-53f2-4b7f-ae2f-5a4d55c4f36e","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:51:30.000756Z"},"history":[{"messageId":"1fe6ac85-5654-430c-aaeb-af0e03ba400d","contextId":"ccd5bfa2-bd0e-4b84-8ac8-d57194d05d19","taskId":"04cad086-53f2-4b7f-ae2f-5a4d55c4f36e","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"fdc74dc0-9b8b-45d8-ab0c-1da61455a690","jsonrpc":"2.0"}
+{"result":{"id":"04cad086-53f2-4b7f-ae2f-5a4d55c4f36e","contextId":"ccd5bfa2-bd0e-4b84-8ac8-d57194d05d19","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"914a5ce9-e9c9-4949-aadc-a40a4149a0c2","contextId":"ccd5bfa2-bd0e-4b84-8ac8-d57194d05d19","taskId":"04cad086-53f2-4b7f-ae2f-5a4d55c4f36e","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:51:30.000756Z"},"history":[{"messageId":"1fe6ac85-5654-430c-aaeb-af0e03ba400d","contextId":"ccd5bfa2-bd0e-4b84-8ac8-d57194d05d19","taskId":"04cad086-53f2-4b7f-ae2f-5a4d55c4f36e","role":"ROLE_USER","parts":[{"text":"lamp"}]}]},"id":"task-method","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_task_methods[CancelTask-TASK_STATE_CANCELED] {"result":{"task":{"id":"11279d37-99fc-459a-9d0f-9a499a28547f","contextId":"af0548a5-9718-4594-9d9f-e3dde03e6a2b","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"d59c23f3-2d3e-475b-b2f6-31fcd90dc38f","contextId":"af0548a5-9718-4594-9d9f-e3dde03e6a2b","taskId":"11279d37-99fc-459a-9d0f-9a499a28547f","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:51:30.003255Z"},"history":[{"messageId":"61fb2e85-5731-4732-813f-e4cb5277e9a9","contextId":"af0548a5-9718-4594-9d9f-e3dde03e6a2b","taskId":"11279d37-99fc-459a-9d0f-9a499a28547f","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"144accab-3bae-4571-813e-0748c6337430","jsonrpc":"2.0"}
+{"result":{"id":"11279d37-99fc-459a-9d0f-9a499a28547f","contextId":"af0548a5-9718-4594-9d9f-e3dde03e6a2b","status":{"state":"TASK_STATE_CANCELED","message":{"messageId":"5c4ae8c4-efbb-48eb-a104-303fe59b1449","contextId":"af0548a5-9718-4594-9d9f-e3dde03e6a2b","taskId":"11279d37-99fc-459a-9d0f-9a499a28547f","role":"ROLE_AGENT","parts":[{"text":"Purchase canceled."}]},"timestamp":"2026-10-13T05:51:30.004004Z"},"history":[{"messageId":"61fb2e85-5731-4732-813f-e4cb5277e9a9","contextId":"af0548a5-9718-4594-9d9f-e3dde03e6a2b","taskId":"11279d37-99fc-459a-9d0f-9a499a28547f","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"d59c23f3-2d3e-475b-b2f6-31fcd90dc38f","contextId":"af0548a5-9718-4594-9d9f-e3dde03e6a2b","taskId":"11279d37-99fc-459a-9d0f-9a499a28547f","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]}]},"id":"task-method","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_missing_version_rejected {"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]},"id":"6b479855-ddae-4651-a6dd-adca633d77bd","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_unavailable_item_rejected {"result":{"task":{"id":"ee3027f6-b65c-4548-94ff-8649e9f75c15","contextId":"64206095-5cc8-4834-8838-5e7ec98a8b35","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"e034ab1a-a5b5-49cb-8cfd-089c5e4a2481","contextId":"64206095-5cc8-4834-8838-5e7ec98a8b35","taskId":"ee3027f6-b65c-4548-94ff-8649e9f75c15","role":"ROLE_AGENT","parts":[{"text":"That item is unavailable."}]},"timestamp":"2026-10-13T05:51:30.007114Z"},"history":[{"messageId":"a23ca20d-9019-49cd-99dd-6760c2b93877","contextId":"64206095-5cc8-4834-8838-5e7ec98a8b35","taskId":"ee3027f6-b65c-4548-94ff-8649e9f75c15","role":"ROLE_USER","parts":[{"text":"sofa"}]}]}},"id":"8bfb0c65-f6ec-4979-82a1-bb5d8514f3b7","jsonrpc":"2.0"}
+PASSED
+
+============================== 10 passed in 0.31s ==============================
+Installed 53 packages in 383ms
+/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/seller.py
+  /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/seller.py:126:9 - warning: Result of call expression is of type "Negotiation | None" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/seller_state.py
+  /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/seller_state.py:14:5 - warning: Type annotation for attribute `model_config` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/seller_state.py:27:5 - warning: Type annotation for attribute `model_config` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/seller_state.py:38:5 - warning: Type annotation for attribute `model_config` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/tests/test_seller.py
+  /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/tests/test_seller.py:17:5 - warning: Type annotation for attribute `model_config` is required because this class is not decorated with `@final` (reportUnannotatedClassAttribute)
+  /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/tests/test_seller.py:139:5 - warning: Result of call expression is of type "Reply" and is not used; assign to variable "_" if this is intentional (reportUnusedCallResult)
+0 errors, 6 warnings, 0 notes
+Installed 40 packages in 34ms
+                                                                                
+ Usage: seller.py [OPTIONS]                                                     
+                                                                                
+ Run one seller; the runner supplies the same options to both shops.            
+                                                                                
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ *  --name                                <str>  [required]                   │
+│ *  --port                                <int>  [required]                   │
+│ *  --reserve-json                        <str>  [required]                   │
+│    --low-offer-limit                     <int>  [default: 5]                 │
+│    --inflated           --no-inflated           [default: no-inflated]       │
+│    --help                                       Show this message and exit.  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+WARN Ignoring project discovery error due to `--no-project`: No `project` table found in: `/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/pyproject.toml`
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/n_yF3dF-ERpqfAHhPra6e/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 10 items
+
+tests/test_seller.py::test_reserve_boundary[99-TASK_STATE_INPUT_REQUIRED] {"result":{"task":{"id":"6d64e92a-24f7-4a3f-a3ca-dda44ced9fbb","contextId":"e9bb7936-bb14-49b7-b46b-cf0ee222ef58","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"f4dd95e6-6238-4fde-b0ba-d372401c80d3","contextId":"e9bb7936-bb14-49b7-b46b-cf0ee222ef58","taskId":"6d64e92a-24f7-4a3f-a3ca-dda44ced9fbb","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:03.500698Z"},"history":[{"messageId":"2c2eae94-1579-44d0-9c36-8308c8b351f4","contextId":"e9bb7936-bb14-49b7-b46b-cf0ee222ef58","taskId":"6d64e92a-24f7-4a3f-a3ca-dda44ced9fbb","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"2aefd6c3-b19e-48b1-9e73-7c38e3b8b533","jsonrpc":"2.0"}
+{"result":{"task":{"id":"6d64e92a-24f7-4a3f-a3ca-dda44ced9fbb","contextId":"e9bb7936-bb14-49b7-b46b-cf0ee222ef58","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"bece7bc0-d439-49ac-a450-82cd16c7a689","contextId":"e9bb7936-bb14-49b7-b46b-cf0ee222ef58","taskId":"6d64e92a-24f7-4a3f-a3ca-dda44ced9fbb","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:54:03.502637Z"},"history":[{"messageId":"2c2eae94-1579-44d0-9c36-8308c8b351f4","contextId":"e9bb7936-bb14-49b7-b46b-cf0ee222ef58","taskId":"6d64e92a-24f7-4a3f-a3ca-dda44ced9fbb","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"f4dd95e6-6238-4fde-b0ba-d372401c80d3","contextId":"e9bb7936-bb14-49b7-b46b-cf0ee222ef58","taskId":"6d64e92a-24f7-4a3f-a3ca-dda44ced9fbb","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"13b704c2-3ba1-40f7-82e4-d47caa471c2a","contextId":"e9bb7936-bb14-49b7-b46b-cf0ee222ef58","taskId":"6d64e92a-24f7-4a3f-a3ca-dda44ced9fbb","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"ebdb1428-abcf-4ff4-b711-3dcf9030f3e6","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_reserve_boundary[100-TASK_STATE_COMPLETED] {"result":{"task":{"id":"28f8ed7b-40b8-4acb-9ae1-549324b43787","contextId":"bb155052-caa0-4a0e-86da-713c18ce87d9","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"ddd6608b-ed9a-4655-86e2-5029f721b427","contextId":"bb155052-caa0-4a0e-86da-713c18ce87d9","taskId":"28f8ed7b-40b8-4acb-9ae1-549324b43787","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:03.505631Z"},"history":[{"messageId":"7b30ec5a-108e-415c-b997-18eef8ad7e3c","contextId":"bb155052-caa0-4a0e-86da-713c18ce87d9","taskId":"28f8ed7b-40b8-4acb-9ae1-549324b43787","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"e466626f-39a2-40e4-ac7b-4ce1cc0e0219","jsonrpc":"2.0"}
+{"result":{"task":{"id":"28f8ed7b-40b8-4acb-9ae1-549324b43787","contextId":"bb155052-caa0-4a0e-86da-713c18ce87d9","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"9f19cb3c-588b-48c1-a884-813f9ead6bbe","contextId":"bb155052-caa0-4a0e-86da-713c18ce87d9","taskId":"28f8ed7b-40b8-4acb-9ae1-549324b43787","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:54:03.506562Z"},"artifacts":[{"artifactId":"42f1f726-5982-4bf8-a288-a0f3bd670394","name":"receipt","parts":[{"data":{"seller":"Birch","price":100.0,"item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"7b30ec5a-108e-415c-b997-18eef8ad7e3c","contextId":"bb155052-caa0-4a0e-86da-713c18ce87d9","taskId":"28f8ed7b-40b8-4acb-9ae1-549324b43787","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"ddd6608b-ed9a-4655-86e2-5029f721b427","contextId":"bb155052-caa0-4a0e-86da-713c18ce87d9","taskId":"28f8ed7b-40b8-4acb-9ae1-549324b43787","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"78ec094c-5227-4155-b751-320573323940","contextId":"bb155052-caa0-4a0e-86da-713c18ce87d9","taskId":"28f8ed7b-40b8-4acb-9ae1-549324b43787","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"16be1fec-eb8d-43ed-ad0e-5a1fde4eeb61","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_reserve_boundary[101-TASK_STATE_COMPLETED] {"result":{"task":{"id":"79c70e31-0b3e-4f71-a7d0-ba837f553b9b","contextId":"9e90e7b9-568c-47aa-93de-19cea1492c03","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"37937c7f-1d95-4e22-b6e8-f835b8a9590f","contextId":"9e90e7b9-568c-47aa-93de-19cea1492c03","taskId":"79c70e31-0b3e-4f71-a7d0-ba837f553b9b","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:03.508736Z"},"history":[{"messageId":"bb57f4e7-ed2f-4bb9-879b-61428ec98ad9","contextId":"9e90e7b9-568c-47aa-93de-19cea1492c03","taskId":"79c70e31-0b3e-4f71-a7d0-ba837f553b9b","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"20748291-0322-4209-ba3d-50a7b6707933","jsonrpc":"2.0"}
+{"result":{"task":{"id":"79c70e31-0b3e-4f71-a7d0-ba837f553b9b","contextId":"9e90e7b9-568c-47aa-93de-19cea1492c03","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"187a821c-44b7-4996-a292-b7d4933ec6b7","contextId":"9e90e7b9-568c-47aa-93de-19cea1492c03","taskId":"79c70e31-0b3e-4f71-a7d0-ba837f553b9b","role":"ROLE_AGENT","parts":[{"text":"Sold for 101."}]},"timestamp":"2026-10-13T05:54:03.509572Z"},"artifacts":[{"artifactId":"257d96f7-b50a-4a4f-b19c-3c70f081a828","name":"receipt","parts":[{"data":{"seller":"Birch","price":101.0,"item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"bb57f4e7-ed2f-4bb9-879b-61428ec98ad9","contextId":"9e90e7b9-568c-47aa-93de-19cea1492c03","taskId":"79c70e31-0b3e-4f71-a7d0-ba837f553b9b","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"37937c7f-1d95-4e22-b6e8-f835b8a9590f","contextId":"9e90e7b9-568c-47aa-93de-19cea1492c03","taskId":"79c70e31-0b3e-4f71-a7d0-ba837f553b9b","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"e4d27c9a-f0e0-4e20-aa63-06f52f4d5e19","contextId":"9e90e7b9-568c-47aa-93de-19cea1492c03","taskId":"79c70e31-0b3e-4f71-a7d0-ba837f553b9b","role":"ROLE_USER","parts":[{"text":"101"}]}]}},"id":"cef99f7f-6a37-4b0f-9ccb-e8a917545003","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_fifth_low_offer_rejects {"result":{"task":{"id":"fef1bd2f-b60c-4faa-be49-c85f05b47893","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"9dae1bde-18d1-43b2-8e63-9d8e84745bcb","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:03.511542Z"},"history":[{"messageId":"eb31d6eb-248b-4746-be32-e354a5503e28","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"66d39045-632e-4d8d-b207-bba8c62d5d4f","jsonrpc":"2.0"}
+{"result":{"task":{"id":"fef1bd2f-b60c-4faa-be49-c85f05b47893","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"ddae63fe-d0e5-4c98-9ca0-ffb8468310db","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:54:03.512317Z"},"history":[{"messageId":"eb31d6eb-248b-4746-be32-e354a5503e28","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"9dae1bde-18d1-43b2-8e63-9d8e84745bcb","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"c2abd590-d726-4576-9970-940d617817d2","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"aa3c1d84-6a3b-4caa-a887-aa26e9d5e7dd","jsonrpc":"2.0"}
+{"result":{"task":{"id":"fef1bd2f-b60c-4faa-be49-c85f05b47893","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"9f02f099-ffba-4f47-a684-bc36e49a2ea2","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:54:03.513014Z"},"history":[{"messageId":"eb31d6eb-248b-4746-be32-e354a5503e28","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"9dae1bde-18d1-43b2-8e63-9d8e84745bcb","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"c2abd590-d726-4576-9970-940d617817d2","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"ddae63fe-d0e5-4c98-9ca0-ffb8468310db","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"1c634b6e-bd3c-41ed-8257-6dbe49f99111","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"af6e6e9c-5eaf-4901-bc06-4d9b515521ad","jsonrpc":"2.0"}
+{"result":{"task":{"id":"fef1bd2f-b60c-4faa-be49-c85f05b47893","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"5d06e7e1-b3de-4695-8182-1dddb23dccd7","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:54:03.513745Z"},"history":[{"messageId":"eb31d6eb-248b-4746-be32-e354a5503e28","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"9dae1bde-18d1-43b2-8e63-9d8e84745bcb","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"c2abd590-d726-4576-9970-940d617817d2","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"ddae63fe-d0e5-4c98-9ca0-ffb8468310db","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"1c634b6e-bd3c-41ed-8257-6dbe49f99111","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"9f02f099-ffba-4f47-a684-bc36e49a2ea2","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"e8123ddf-2aae-4de9-8edf-b5130ebfc080","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"ca082532-a459-4f9e-bb99-4493c6628a9c","jsonrpc":"2.0"}
+{"result":{"task":{"id":"fef1bd2f-b60c-4faa-be49-c85f05b47893","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"61005c3c-eeff-4dee-9fec-23eff4eb9227","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:54:03.514473Z"},"history":[{"messageId":"eb31d6eb-248b-4746-be32-e354a5503e28","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"9dae1bde-18d1-43b2-8e63-9d8e84745bcb","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"c2abd590-d726-4576-9970-940d617817d2","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"ddae63fe-d0e5-4c98-9ca0-ffb8468310db","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"1c634b6e-bd3c-41ed-8257-6dbe49f99111","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"9f02f099-ffba-4f47-a684-bc36e49a2ea2","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"e8123ddf-2aae-4de9-8edf-b5130ebfc080","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"5d06e7e1-b3de-4695-8182-1dddb23dccd7","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"d5e43fd5-61df-4387-b54d-b66aee3a7021","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"fa538d88-d1ef-4b11-8f5b-478fd7d275d5","jsonrpc":"2.0"}
+{"result":{"task":{"id":"fef1bd2f-b60c-4faa-be49-c85f05b47893","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"73f3b2b7-d1f0-4328-bd0b-ab339f0525ce","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"Too many low offers. Negotiation closed."}]},"timestamp":"2026-10-13T05:54:03.515211Z"},"history":[{"messageId":"eb31d6eb-248b-4746-be32-e354a5503e28","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"9dae1bde-18d1-43b2-8e63-9d8e84745bcb","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"c2abd590-d726-4576-9970-940d617817d2","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"ddae63fe-d0e5-4c98-9ca0-ffb8468310db","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"1c634b6e-bd3c-41ed-8257-6dbe49f99111","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"9f02f099-ffba-4f47-a684-bc36e49a2ea2","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"e8123ddf-2aae-4de9-8edf-b5130ebfc080","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"5d06e7e1-b3de-4695-8182-1dddb23dccd7","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"d5e43fd5-61df-4387-b54d-b66aee3a7021","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"61005c3c-eeff-4dee-9fec-23eff4eb9227","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"5a4b37aa-31f7-455b-913b-098b54652257","contextId":"9eaf4cc5-c290-4ccc-88a6-f2ebe2f3aa3f","taskId":"fef1bd2f-b60c-4faa-be49-c85f05b47893","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"189ec48f-6fd7-49e0-b126-bba1ec2cef62","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_completed_task_contains_receipt {"result":{"task":{"id":"8111d2b4-4e52-4df8-9ca6-b8ae316d04b1","contextId":"171d5089-e08d-427c-838b-5c02b240ba45","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"cf6a6343-c43b-4cb9-92c5-bdcdf40d9146","contextId":"171d5089-e08d-427c-838b-5c02b240ba45","taskId":"8111d2b4-4e52-4df8-9ca6-b8ae316d04b1","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:03.517148Z"},"history":[{"messageId":"ad1035a4-1beb-4eee-8252-eb429e8588e9","contextId":"171d5089-e08d-427c-838b-5c02b240ba45","taskId":"8111d2b4-4e52-4df8-9ca6-b8ae316d04b1","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"d07c7daa-97c4-44a2-a02e-8c59e9688ed4","jsonrpc":"2.0"}
+{"result":{"task":{"id":"8111d2b4-4e52-4df8-9ca6-b8ae316d04b1","contextId":"171d5089-e08d-427c-838b-5c02b240ba45","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"fd4ecc73-af69-41a6-8db4-283f9a44b4fb","contextId":"171d5089-e08d-427c-838b-5c02b240ba45","taskId":"8111d2b4-4e52-4df8-9ca6-b8ae316d04b1","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:54:03.517984Z"},"artifacts":[{"artifactId":"fa7f48ab-bcda-4486-a8b3-32b16b40f09e","name":"receipt","parts":[{"data":{"seller":"Birch","price":100.0,"item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"ad1035a4-1beb-4eee-8252-eb429e8588e9","contextId":"171d5089-e08d-427c-838b-5c02b240ba45","taskId":"8111d2b4-4e52-4df8-9ca6-b8ae316d04b1","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"cf6a6343-c43b-4cb9-92c5-bdcdf40d9146","contextId":"171d5089-e08d-427c-838b-5c02b240ba45","taskId":"8111d2b4-4e52-4df8-9ca6-b8ae316d04b1","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"02fdfef4-10ae-4191-a39c-4dcaa5023c4c","contextId":"171d5089-e08d-427c-838b-5c02b240ba45","taskId":"8111d2b4-4e52-4df8-9ca6-b8ae316d04b1","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"9e3fcaa3-6f2e-45bb-8541-627ffab9fdf9","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_completed_task_rejects_new_messages {"result":{"task":{"id":"120e97e2-3f6e-41e8-bd3b-1ff106e1c3a2","contextId":"60665fab-3b0c-4774-a47b-7e2d5ffc17d2","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"c92dc388-784a-464b-9f2f-08221c9f86a1","contextId":"60665fab-3b0c-4774-a47b-7e2d5ffc17d2","taskId":"120e97e2-3f6e-41e8-bd3b-1ff106e1c3a2","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:03.520025Z"},"history":[{"messageId":"c949fd5c-0b16-420a-a1a3-d430649fc9c3","contextId":"60665fab-3b0c-4774-a47b-7e2d5ffc17d2","taskId":"120e97e2-3f6e-41e8-bd3b-1ff106e1c3a2","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"0ecf9c42-08f7-41a9-9559-f49340813be2","jsonrpc":"2.0"}
+{"result":{"task":{"id":"120e97e2-3f6e-41e8-bd3b-1ff106e1c3a2","contextId":"60665fab-3b0c-4774-a47b-7e2d5ffc17d2","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"5b906c6f-7e0b-4203-8f24-98dd7553515b","contextId":"60665fab-3b0c-4774-a47b-7e2d5ffc17d2","taskId":"120e97e2-3f6e-41e8-bd3b-1ff106e1c3a2","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:54:03.520957Z"},"artifacts":[{"artifactId":"92d2e651-0e0e-4426-b394-9c6300545b35","name":"receipt","parts":[{"data":{"seller":"Birch","price":100.0,"item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"c949fd5c-0b16-420a-a1a3-d430649fc9c3","contextId":"60665fab-3b0c-4774-a47b-7e2d5ffc17d2","taskId":"120e97e2-3f6e-41e8-bd3b-1ff106e1c3a2","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"c92dc388-784a-464b-9f2f-08221c9f86a1","contextId":"60665fab-3b0c-4774-a47b-7e2d5ffc17d2","taskId":"120e97e2-3f6e-41e8-bd3b-1ff106e1c3a2","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"277373f1-e9b0-4dea-b876-6923410d4d14","contextId":"60665fab-3b0c-4774-a47b-7e2d5ffc17d2","taskId":"120e97e2-3f6e-41e8-bd3b-1ff106e1c3a2","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"6a5066a9-6122-427a-95e5-ebcf670d6ae1","jsonrpc":"2.0"}
+{"error":{"code":-32004,"message":"Task 120e97e2-3f6e-41e8-bd3b-1ff106e1c3a2 is already completed.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"UNSUPPORTED_OPERATION","domain":"a2a-protocol.org","metadata":{}}]},"id":"2f200533-8bf4-4cbf-84ca-abc3256a3962","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_task_methods[GetTask-TASK_STATE_INPUT_REQUIRED] {"result":{"task":{"id":"5384b45e-8548-4751-a317-e134f0fc46d2","contextId":"f81bcd3f-6c79-41c0-aacb-a17b07d05369","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"ff448671-bd57-4a15-baad-69c502a7ab2d","contextId":"f81bcd3f-6c79-41c0-aacb-a17b07d05369","taskId":"5384b45e-8548-4751-a317-e134f0fc46d2","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:03.525288Z"},"history":[{"messageId":"86bcc47e-81f8-4225-8a33-bdd37b6188e3","contextId":"f81bcd3f-6c79-41c0-aacb-a17b07d05369","taskId":"5384b45e-8548-4751-a317-e134f0fc46d2","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"8b790c95-a0a7-4ba6-bbbd-8c5167c45ff1","jsonrpc":"2.0"}
+{"result":{"id":"5384b45e-8548-4751-a317-e134f0fc46d2","contextId":"f81bcd3f-6c79-41c0-aacb-a17b07d05369","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"ff448671-bd57-4a15-baad-69c502a7ab2d","contextId":"f81bcd3f-6c79-41c0-aacb-a17b07d05369","taskId":"5384b45e-8548-4751-a317-e134f0fc46d2","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:03.525288Z"},"history":[{"messageId":"86bcc47e-81f8-4225-8a33-bdd37b6188e3","contextId":"f81bcd3f-6c79-41c0-aacb-a17b07d05369","taskId":"5384b45e-8548-4751-a317-e134f0fc46d2","role":"ROLE_USER","parts":[{"text":"lamp"}]}]},"id":"task-method","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_task_methods[CancelTask-TASK_STATE_CANCELED] {"result":{"task":{"id":"27f559b9-6077-4876-ae1b-061521054ccb","contextId":"791e05c1-4961-4a86-b8bd-2ea4d7ebfba8","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"892648e9-594c-4157-b403-c5d031c4c4e4","contextId":"791e05c1-4961-4a86-b8bd-2ea4d7ebfba8","taskId":"27f559b9-6077-4876-ae1b-061521054ccb","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:03.527635Z"},"history":[{"messageId":"e6346464-d451-4eb3-b5a8-e66198ab99d5","contextId":"791e05c1-4961-4a86-b8bd-2ea4d7ebfba8","taskId":"27f559b9-6077-4876-ae1b-061521054ccb","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"097bd708-1548-45e0-b5fe-dbb04babd7c7","jsonrpc":"2.0"}
+{"result":{"id":"27f559b9-6077-4876-ae1b-061521054ccb","contextId":"791e05c1-4961-4a86-b8bd-2ea4d7ebfba8","status":{"state":"TASK_STATE_CANCELED","message":{"messageId":"fa64d35c-dab9-465b-b0d0-ab6b17a1a6d2","contextId":"791e05c1-4961-4a86-b8bd-2ea4d7ebfba8","taskId":"27f559b9-6077-4876-ae1b-061521054ccb","role":"ROLE_AGENT","parts":[{"text":"Purchase canceled."}]},"timestamp":"2026-10-13T05:54:03.528337Z"},"history":[{"messageId":"e6346464-d451-4eb3-b5a8-e66198ab99d5","contextId":"791e05c1-4961-4a86-b8bd-2ea4d7ebfba8","taskId":"27f559b9-6077-4876-ae1b-061521054ccb","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"892648e9-594c-4157-b403-c5d031c4c4e4","contextId":"791e05c1-4961-4a86-b8bd-2ea4d7ebfba8","taskId":"27f559b9-6077-4876-ae1b-061521054ccb","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]}]},"id":"task-method","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_missing_version_rejected {"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]},"id":"350605e4-8bd9-4faf-b20f-c131317fb4b6","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_unavailable_item_rejected {"result":{"task":{"id":"310c064c-c5bd-4304-95a6-f167320ed457","contextId":"314657e3-46bb-4f11-9120-de0f40f04450","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"809d9229-3789-4f0d-b121-c2d336151989","contextId":"314657e3-46bb-4f11-9120-de0f40f04450","taskId":"310c064c-c5bd-4304-95a6-f167320ed457","role":"ROLE_AGENT","parts":[{"text":"That item is unavailable."}]},"timestamp":"2026-10-13T05:54:03.531093Z"},"history":[{"messageId":"8b5301c4-67dc-473b-83ea-4ce929b6dcde","contextId":"314657e3-46bb-4f11-9120-de0f40f04450","taskId":"310c064c-c5bd-4304-95a6-f167320ed457","role":"ROLE_USER","parts":[{"text":"sofa"}]}]}},"id":"bdbe502b-903d-4905-aa23-29c5c317f6d1","jsonrpc":"2.0"}
+PASSED
+
+============================== 10 passed in 0.30s ==============================
+no violations in 3 file(s)
+WARN Ignoring project discovery error due to `--no-project`: No `project` table found in: `/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/pyproject.toml`
+0 errors, 0 warnings, 0 notes
+WARN Ignoring project discovery error due to `--no-project`: No `project` table found in: `/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/pyproject.toml`
+Installed 12 packages in 6ms
+REAL_CLI_HTTP_SCENARIO ['uv', 'run', '--script', 'seller.py', '--name', 'Birch', '--port', '54016', '--reserve-json', '{"lamp":100,"chair":180,"bookshelf":260}', '--low-offer-limit', '5']
+GET card 200 {"name":"Birch","description":"Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.","supportedInterfaces":[{"url":"http://127.0.0.1:54016/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{"streaming":false,"pushNotifications":false},"defaultInputModes":["text/plain"],"defaultOutputModes":["text/plain","application/json"],"skills":[{"id":"negotiate","name":"Negotiate a purchase","description":"Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.","tags":["shopping","negotiation"],"examples":["lamp","100"]}]}
+POST request {"jsonrpc": "2.0", "id": "open", "method": "SendMessage", "params": {"message": {"messageId": "open", "role": "ROLE_USER", "parts": [{"text": "lamp"}]}}}
+POST response {"result":{"task":{"id":"8a436cc9-142b-4f56-9e62-389e63b13fd5","contextId":"82efb5d7-f8fd-4ecc-b893-aab0b5e452ee","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"312d233e-4861-49e7-acc9-af42096a4af3","contextId":"82efb5d7-f8fd-4ecc-b893-aab0b5e452ee","taskId":"8a436cc9-142b-4f56-9e62-389e63b13fd5","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:54:47.959534Z"},"history":[{"messageId":"open","contextId":"82efb5d7-f8fd-4ecc-b893-aab0b5e452ee","taskId":"8a436cc9-142b-4f56-9e62-389e63b13fd5","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"open","jsonrpc":"2.0"}
+POST request {"jsonrpc": "2.0", "id": "buy", "method": "SendMessage", "params": {"message": {"messageId": "buy", "role": "ROLE_USER", "taskId": "8a436cc9-142b-4f56-9e62-389e63b13fd5", "contextId": "82efb5d7-f8fd-4ecc-b893-aab0b5e452ee", "parts": [{"text": "100"}]}}}
+POST response {"result":{"task":{"id":"8a436cc9-142b-4f56-9e62-389e63b13fd5","contextId":"82efb5d7-f8fd-4ecc-b893-aab0b5e452ee","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"79f9a5b8-83cc-4840-bec1-0f12d4977f13","contextId":"82efb5d7-f8fd-4ecc-b893-aab0b5e452ee","taskId":"8a436cc9-142b-4f56-9e62-389e63b13fd5","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:54:47.963459Z"},"artifacts":[{"artifactId":"5f4d8938-d422-49e6-97ca-0d7d8db72b50","name":"receipt","parts":[{"data":{"seller":"Birch","price":100.0,"item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"open","contextId":"82efb5d7-f8fd-4ecc-b893-aab0b5e452ee","taskId":"8a436cc9-142b-4f56-9e62-389e63b13fd5","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"312d233e-4861-49e7-acc9-af42096a4af3","contextId":"82efb5d7-f8fd-4ecc-b893-aab0b5e452ee","taskId":"8a436cc9-142b-4f56-9e62-389e63b13fd5","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"buy","contextId":"82efb5d7-f8fd-4ecc-b893-aab0b5e452ee","taskId":"8a436cc9-142b-4f56-9e62-389e63b13fd5","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"buy","jsonrpc":"2.0"}
+REAL_CLI_HTTP_SCENARIO PASS: card v1, same task, completed receipt at reserve
+WARN Ignoring project discovery error due to `--no-project`: No `project` table found in: `/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/pyproject.toml`
+Installed 57 packages in 246ms
+0 errors, 0 warnings, 0 notes
+WARN Ignoring project discovery error due to `--no-project`: No `project` table found in: `/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/pyproject.toml`
+Installed 55 packages in 82ms
+============================= test session starts ==============================
+platform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/9IYJU-7uEFwmuRdYLtikS/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 10 items
+
+tests/test_seller.py::test_reserve_boundary[99-TASK_STATE_INPUT_REQUIRED] {"result":{"task":{"id":"a959b6f3-c221-41c5-b6b7-09b3f19c2a88","contextId":"2ecbb19c-ac30-49da-8f17-274c91d1d201","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"598a5ebf-a6ed-4645-aabc-a6f5c6b3281a","contextId":"2ecbb19c-ac30-49da-8f17-274c91d1d201","taskId":"a959b6f3-c221-41c5-b6b7-09b3f19c2a88","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:55:16.522567Z"},"history":[{"messageId":"a1ae4eb0-5927-4060-ad76-a3a5798935ec","contextId":"2ecbb19c-ac30-49da-8f17-274c91d1d201","taskId":"a959b6f3-c221-41c5-b6b7-09b3f19c2a88","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"8047caec-68b5-4f74-9f35-1bfaffdc06f2","jsonrpc":"2.0"}
+{"result":{"task":{"id":"a959b6f3-c221-41c5-b6b7-09b3f19c2a88","contextId":"2ecbb19c-ac30-49da-8f17-274c91d1d201","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"7fde7096-008e-4481-8810-f2e8ae74c4ec","contextId":"2ecbb19c-ac30-49da-8f17-274c91d1d201","taskId":"a959b6f3-c221-41c5-b6b7-09b3f19c2a88","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:55:16.524208Z"},"history":[{"messageId":"a1ae4eb0-5927-4060-ad76-a3a5798935ec","contextId":"2ecbb19c-ac30-49da-8f17-274c91d1d201","taskId":"a959b6f3-c221-41c5-b6b7-09b3f19c2a88","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"598a5ebf-a6ed-4645-aabc-a6f5c6b3281a","contextId":"2ecbb19c-ac30-49da-8f17-274c91d1d201","taskId":"a959b6f3-c221-41c5-b6b7-09b3f19c2a88","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"e31d8486-4fa6-4c4b-ad1d-ce27517d9ec2","contextId":"2ecbb19c-ac30-49da-8f17-274c91d1d201","taskId":"a959b6f3-c221-41c5-b6b7-09b3f19c2a88","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"201f39e8-befe-42d4-b510-6e55a24ea950","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_reserve_boundary[100-TASK_STATE_COMPLETED] {"result":{"task":{"id":"36356c7c-66eb-49c1-80ca-626a09e7a6ec","contextId":"91c248c9-3a85-4d73-af55-518fd50af220","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"063677f7-c1ea-40c8-b5f5-51e78b0ab465","contextId":"91c248c9-3a85-4d73-af55-518fd50af220","taskId":"36356c7c-66eb-49c1-80ca-626a09e7a6ec","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:55:16.526754Z"},"history":[{"messageId":"eca4e7ba-a169-40ef-a5a7-2bbc33858bb1","contextId":"91c248c9-3a85-4d73-af55-518fd50af220","taskId":"36356c7c-66eb-49c1-80ca-626a09e7a6ec","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"fdb8a29b-f010-4697-bd4d-bb0c9b30c22d","jsonrpc":"2.0"}
+{"result":{"task":{"id":"36356c7c-66eb-49c1-80ca-626a09e7a6ec","contextId":"91c248c9-3a85-4d73-af55-518fd50af220","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"d6a92714-ae52-428b-9ccf-7e42f01af2db","contextId":"91c248c9-3a85-4d73-af55-518fd50af220","taskId":"36356c7c-66eb-49c1-80ca-626a09e7a6ec","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:55:16.527695Z"},"artifacts":[{"artifactId":"53620ffa-70d4-4001-a98e-1c67b39f13c5","name":"receipt","parts":[{"data":{"price":100.0,"item":"lamp","seller":"Birch"},"mediaType":"application/json"}]}],"history":[{"messageId":"eca4e7ba-a169-40ef-a5a7-2bbc33858bb1","contextId":"91c248c9-3a85-4d73-af55-518fd50af220","taskId":"36356c7c-66eb-49c1-80ca-626a09e7a6ec","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"063677f7-c1ea-40c8-b5f5-51e78b0ab465","contextId":"91c248c9-3a85-4d73-af55-518fd50af220","taskId":"36356c7c-66eb-49c1-80ca-626a09e7a6ec","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"1fd6d55c-5f37-42e8-89e1-4d9ff4f7102c","contextId":"91c248c9-3a85-4d73-af55-518fd50af220","taskId":"36356c7c-66eb-49c1-80ca-626a09e7a6ec","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"a2cb57a5-95e0-44d1-8f9b-1bf5f8121606","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_reserve_boundary[101-TASK_STATE_COMPLETED] {"result":{"task":{"id":"276b1697-2907-4029-88b3-7ea54a3af570","contextId":"a00a4b65-e90f-4a0b-a18e-b3d2c813758f","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"71ab668e-6b0b-4f10-a1c3-62133a374175","contextId":"a00a4b65-e90f-4a0b-a18e-b3d2c813758f","taskId":"276b1697-2907-4029-88b3-7ea54a3af570","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:55:16.529936Z"},"history":[{"messageId":"270c07a9-3988-49a8-9a91-912ad0c3b58d","contextId":"a00a4b65-e90f-4a0b-a18e-b3d2c813758f","taskId":"276b1697-2907-4029-88b3-7ea54a3af570","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"2e15aae4-fa93-402e-9b3e-7d06f4efbd07","jsonrpc":"2.0"}
+{"result":{"task":{"id":"276b1697-2907-4029-88b3-7ea54a3af570","contextId":"a00a4b65-e90f-4a0b-a18e-b3d2c813758f","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"03bda090-a0ce-4b50-a9fc-3a6fad0dfcd8","contextId":"a00a4b65-e90f-4a0b-a18e-b3d2c813758f","taskId":"276b1697-2907-4029-88b3-7ea54a3af570","role":"ROLE_AGENT","parts":[{"text":"Sold for 101."}]},"timestamp":"2026-10-13T05:55:16.530761Z"},"artifacts":[{"artifactId":"9fdb3add-c430-4464-abe7-53a09e4179ae","name":"receipt","parts":[{"data":{"price":101.0,"item":"lamp","seller":"Birch"},"mediaType":"application/json"}]}],"history":[{"messageId":"270c07a9-3988-49a8-9a91-912ad0c3b58d","contextId":"a00a4b65-e90f-4a0b-a18e-b3d2c813758f","taskId":"276b1697-2907-4029-88b3-7ea54a3af570","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"71ab668e-6b0b-4f10-a1c3-62133a374175","contextId":"a00a4b65-e90f-4a0b-a18e-b3d2c813758f","taskId":"276b1697-2907-4029-88b3-7ea54a3af570","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"99fdb55a-09ae-435c-8353-a9f88e0aa933","contextId":"a00a4b65-e90f-4a0b-a18e-b3d2c813758f","taskId":"276b1697-2907-4029-88b3-7ea54a3af570","role":"ROLE_USER","parts":[{"text":"101"}]}]}},"id":"5f5cd31a-6df1-44bd-a65d-92457549894f","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_fifth_low_offer_rejects {"result":{"task":{"id":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"4ed2c1e3-fb9a-4e86-b403-a5f73ebcdf52","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:55:16.532741Z"},"history":[{"messageId":"5dc00521-e002-4ecd-8ebb-68d5a36cd12f","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"e27b6ed9-89cb-4340-bdae-b38bfa4e08a6","jsonrpc":"2.0"}
+{"result":{"task":{"id":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"3703c729-7f43-42a1-bcac-5a3622f46a84","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:55:16.533655Z"},"history":[{"messageId":"5dc00521-e002-4ecd-8ebb-68d5a36cd12f","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"4ed2c1e3-fb9a-4e86-b403-a5f73ebcdf52","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"729111e6-d96b-45f5-b788-9de32b7ea016","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"a069d06b-afec-4e59-a31b-e01ab14f8a48","jsonrpc":"2.0"}
+{"result":{"task":{"id":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"fffd7b28-8527-4a3b-a540-0c3b51e17bda","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:55:16.534392Z"},"history":[{"messageId":"5dc00521-e002-4ecd-8ebb-68d5a36cd12f","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"4ed2c1e3-fb9a-4e86-b403-a5f73ebcdf52","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"729111e6-d96b-45f5-b788-9de32b7ea016","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"3703c729-7f43-42a1-bcac-5a3622f46a84","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"be54f19e-0224-4098-b593-c48a46ee6551","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"38926824-9dfd-475d-87b9-c3cb47be10bc","jsonrpc":"2.0"}
+{"result":{"task":{"id":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"7de87082-7d5e-4b1f-abcd-70ff21e2f73e","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:55:16.535132Z"},"history":[{"messageId":"5dc00521-e002-4ecd-8ebb-68d5a36cd12f","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"4ed2c1e3-fb9a-4e86-b403-a5f73ebcdf52","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"729111e6-d96b-45f5-b788-9de32b7ea016","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"3703c729-7f43-42a1-bcac-5a3622f46a84","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"be54f19e-0224-4098-b593-c48a46ee6551","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"fffd7b28-8527-4a3b-a540-0c3b51e17bda","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"776e79f0-de4b-45d9-a52c-9ef328d0e52a","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"02cf8d2f-9beb-4c41-86d1-a3f0a8fb9942","jsonrpc":"2.0"}
+{"result":{"task":{"id":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"36d6ec56-023f-4d6d-a6ae-8c1308aac58c","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},"timestamp":"2026-10-13T05:55:16.536052Z"},"history":[{"messageId":"5dc00521-e002-4ecd-8ebb-68d5a36cd12f","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"4ed2c1e3-fb9a-4e86-b403-a5f73ebcdf52","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"729111e6-d96b-45f5-b788-9de32b7ea016","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"3703c729-7f43-42a1-bcac-5a3622f46a84","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"be54f19e-0224-4098-b593-c48a46ee6551","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"fffd7b28-8527-4a3b-a540-0c3b51e17bda","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"776e79f0-de4b-45d9-a52c-9ef328d0e52a","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"7de87082-7d5e-4b1f-abcd-70ff21e2f73e","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"99621958-8b03-453c-8a74-5e55a2c71ad6","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"71de2b25-848a-4528-834d-527f555ff6b5","jsonrpc":"2.0"}
+{"result":{"task":{"id":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"24defca8-4081-40f4-9608-af874b455a22","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"Too many low offers. Negotiation closed."}]},"timestamp":"2026-10-13T05:55:16.537169Z"},"history":[{"messageId":"5dc00521-e002-4ecd-8ebb-68d5a36cd12f","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"4ed2c1e3-fb9a-4e86-b403-a5f73ebcdf52","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"729111e6-d96b-45f5-b788-9de32b7ea016","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"3703c729-7f43-42a1-bcac-5a3622f46a84","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"be54f19e-0224-4098-b593-c48a46ee6551","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"fffd7b28-8527-4a3b-a540-0c3b51e17bda","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"776e79f0-de4b-45d9-a52c-9ef328d0e52a","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"7de87082-7d5e-4b1f-abcd-70ff21e2f73e","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"99621958-8b03-453c-8a74-5e55a2c71ad6","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]},{"messageId":"36d6ec56-023f-4d6d-a6ae-8c1308aac58c","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_AGENT","parts":[{"text":"My counteroffer for lamp is 100."}]},{"messageId":"247f876c-652c-4fc1-83ec-ddd49b7748cc","contextId":"a9afaf07-ef8e-419a-b689-1a1451ccd822","taskId":"bedff475-fc0c-4fd2-a844-ff51e3f695aa","role":"ROLE_USER","parts":[{"text":"99"}]}]}},"id":"36ef32df-3132-4259-8de5-6ba6ea09e757","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_completed_task_contains_receipt {"result":{"task":{"id":"50c41728-2843-4b8b-923c-46b7af3606d0","contextId":"563039e4-9c32-45a3-95c9-1c2c890957b8","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"857c46c4-c454-4a95-9144-0f71fc132ea6","contextId":"563039e4-9c32-45a3-95c9-1c2c890957b8","taskId":"50c41728-2843-4b8b-923c-46b7af3606d0","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:55:16.539408Z"},"history":[{"messageId":"b0fb7db5-daf4-460c-8669-ec772951a097","contextId":"563039e4-9c32-45a3-95c9-1c2c890957b8","taskId":"50c41728-2843-4b8b-923c-46b7af3606d0","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"a61ff37a-159b-4583-85ad-39839fc2f465","jsonrpc":"2.0"}
+{"result":{"task":{"id":"50c41728-2843-4b8b-923c-46b7af3606d0","contextId":"563039e4-9c32-45a3-95c9-1c2c890957b8","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"daaf7efd-2f0e-4e90-9b2f-c7c9a184c819","contextId":"563039e4-9c32-45a3-95c9-1c2c890957b8","taskId":"50c41728-2843-4b8b-923c-46b7af3606d0","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:55:16.540237Z"},"artifacts":[{"artifactId":"da1dfe3f-572f-4bb3-a449-3c7cb86669d7","name":"receipt","parts":[{"data":{"price":100.0,"item":"lamp","seller":"Birch"},"mediaType":"application/json"}]}],"history":[{"messageId":"b0fb7db5-daf4-460c-8669-ec772951a097","contextId":"563039e4-9c32-45a3-95c9-1c2c890957b8","taskId":"50c41728-2843-4b8b-923c-46b7af3606d0","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"857c46c4-c454-4a95-9144-0f71fc132ea6","contextId":"563039e4-9c32-45a3-95c9-1c2c890957b8","taskId":"50c41728-2843-4b8b-923c-46b7af3606d0","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"ff61798f-1494-4e5b-8e83-7b5accfbc65f","contextId":"563039e4-9c32-45a3-95c9-1c2c890957b8","taskId":"50c41728-2843-4b8b-923c-46b7af3606d0","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"9ae0f3a8-147d-4d51-944d-faf3a8a8f5db","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_completed_task_rejects_new_messages {"result":{"task":{"id":"623ce011-c1ac-4fbd-8982-7fcb5305fb4e","contextId":"eef2fad1-32f5-4c0c-8768-98511264e2d3","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"daa0dba1-ec1d-4bbc-be73-85a5eae47537","contextId":"eef2fad1-32f5-4c0c-8768-98511264e2d3","taskId":"623ce011-c1ac-4fbd-8982-7fcb5305fb4e","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:55:16.542220Z"},"history":[{"messageId":"c156b708-2878-4dc3-aff4-19f89c1e5db8","contextId":"eef2fad1-32f5-4c0c-8768-98511264e2d3","taskId":"623ce011-c1ac-4fbd-8982-7fcb5305fb4e","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"179c38e0-b16f-4a07-9da3-f7f879ea2633","jsonrpc":"2.0"}
+{"result":{"task":{"id":"623ce011-c1ac-4fbd-8982-7fcb5305fb4e","contextId":"eef2fad1-32f5-4c0c-8768-98511264e2d3","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"6fdf2e7f-4ea2-4a14-9218-fb333ac65fd1","contextId":"eef2fad1-32f5-4c0c-8768-98511264e2d3","taskId":"623ce011-c1ac-4fbd-8982-7fcb5305fb4e","role":"ROLE_AGENT","parts":[{"text":"Sold for 100."}]},"timestamp":"2026-10-13T05:55:16.543979Z"},"artifacts":[{"artifactId":"5fb360fc-adf5-4b64-8af2-4ea6882203b5","name":"receipt","parts":[{"data":{"price":100.0,"item":"lamp","seller":"Birch"},"mediaType":"application/json"}]}],"history":[{"messageId":"c156b708-2878-4dc3-aff4-19f89c1e5db8","contextId":"eef2fad1-32f5-4c0c-8768-98511264e2d3","taskId":"623ce011-c1ac-4fbd-8982-7fcb5305fb4e","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"daa0dba1-ec1d-4bbc-be73-85a5eae47537","contextId":"eef2fad1-32f5-4c0c-8768-98511264e2d3","taskId":"623ce011-c1ac-4fbd-8982-7fcb5305fb4e","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},{"messageId":"4a4a1cd8-5d0d-46eb-96cf-4b0fdd5d46d2","contextId":"eef2fad1-32f5-4c0c-8768-98511264e2d3","taskId":"623ce011-c1ac-4fbd-8982-7fcb5305fb4e","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"def7c1c4-83fc-4988-a2c6-abb8b45dd1a8","jsonrpc":"2.0"}
+{"error":{"code":-32004,"message":"Task 623ce011-c1ac-4fbd-8982-7fcb5305fb4e is already completed.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"UNSUPPORTED_OPERATION","domain":"a2a-protocol.org","metadata":{}}]},"id":"1ae13140-3358-4ffd-89bb-774d99955002","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_task_methods[GetTask-TASK_STATE_INPUT_REQUIRED] {"result":{"task":{"id":"789d2b83-72c3-4e29-b855-7114dc8ca0cd","contextId":"1e5e586c-7351-4959-8572-8a658abc1d2f","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"3a245d9c-d9f7-43f5-a1d3-568cddf32b3d","contextId":"1e5e586c-7351-4959-8572-8a658abc1d2f","taskId":"789d2b83-72c3-4e29-b855-7114dc8ca0cd","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:55:16.546701Z"},"history":[{"messageId":"7d61dbe4-28ed-42d3-8952-a9d292c68df8","contextId":"1e5e586c-7351-4959-8572-8a658abc1d2f","taskId":"789d2b83-72c3-4e29-b855-7114dc8ca0cd","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"2159898e-6162-46df-bb4f-ac36948486b3","jsonrpc":"2.0"}
+{"result":{"id":"789d2b83-72c3-4e29-b855-7114dc8ca0cd","contextId":"1e5e586c-7351-4959-8572-8a658abc1d2f","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"3a245d9c-d9f7-43f5-a1d3-568cddf32b3d","contextId":"1e5e586c-7351-4959-8572-8a658abc1d2f","taskId":"789d2b83-72c3-4e29-b855-7114dc8ca0cd","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:55:16.546701Z"},"history":[{"messageId":"7d61dbe4-28ed-42d3-8952-a9d292c68df8","contextId":"1e5e586c-7351-4959-8572-8a658abc1d2f","taskId":"789d2b83-72c3-4e29-b855-7114dc8ca0cd","role":"ROLE_USER","parts":[{"text":"lamp"}]}]},"id":"task-method","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_task_methods[CancelTask-TASK_STATE_CANCELED] {"result":{"task":{"id":"0640a148-044f-4b76-bc92-408aab56f121","contextId":"7bff4bd7-f414-4465-ade0-20d57ef23f84","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"bde33577-6e26-4f44-a5f7-8d2cfb8ffff2","contextId":"7bff4bd7-f414-4465-ade0-20d57ef23f84","taskId":"0640a148-044f-4b76-bc92-408aab56f121","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]},"timestamp":"2026-10-13T05:55:16.549176Z"},"history":[{"messageId":"6807dc71-4bea-40af-83a3-471f483bb2fe","contextId":"7bff4bd7-f414-4465-ade0-20d57ef23f84","taskId":"0640a148-044f-4b76-bc92-408aab56f121","role":"ROLE_USER","parts":[{"text":"lamp"}]}]}},"id":"ac7ee733-1ea4-45db-9e70-993444a53047","jsonrpc":"2.0"}
+{"result":{"id":"0640a148-044f-4b76-bc92-408aab56f121","contextId":"7bff4bd7-f414-4465-ade0-20d57ef23f84","status":{"state":"TASK_STATE_CANCELED","message":{"messageId":"58763dbf-fddb-4f00-88cf-50c577b3f4e7","contextId":"7bff4bd7-f414-4465-ade0-20d57ef23f84","taskId":"0640a148-044f-4b76-bc92-408aab56f121","role":"ROLE_AGENT","parts":[{"text":"Purchase canceled."}]},"timestamp":"2026-10-13T05:55:16.550057Z"},"history":[{"messageId":"6807dc71-4bea-40af-83a3-471f483bb2fe","contextId":"7bff4bd7-f414-4465-ade0-20d57ef23f84","taskId":"0640a148-044f-4b76-bc92-408aab56f121","role":"ROLE_USER","parts":[{"text":"lamp"}]},{"messageId":"bde33577-6e26-4f44-a5f7-8d2cfb8ffff2","contextId":"7bff4bd7-f414-4465-ade0-20d57ef23f84","taskId":"0640a148-044f-4b76-bc92-408aab56f121","role":"ROLE_AGENT","parts":[{"text":"The opening price for lamp is 130. Send an integer price offer."}]}]},"id":"task-method","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_missing_version_rejected {"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]},"id":"ca460f2e-62c7-496a-bc90-43e8abeb26bd","jsonrpc":"2.0"}
+PASSED
+tests/test_seller.py::test_unavailable_item_rejected {"result":{"task":{"id":"ce094bf5-942a-41e1-a5c6-c09678e55515","contextId":"d3ab3d6b-ec73-4832-abde-44091a30835c","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"18e33d68-42ff-4c8b-8c92-6dfc0f9714bc","contextId":"d3ab3d6b-ec73-4832-abde-44091a30835c","taskId":"ce094bf5-942a-41e1-a5c6-c09678e55515","role":"ROLE_AGENT","parts":[{"text":"That item is unavailable."}]},"timestamp":"2026-10-13T05:55:16.553162Z"},"history":[{"messageId":"0291baa0-f392-4c42-a0d0-95fc60af93bb","contextId":"d3ab3d6b-ec73-4832-abde-44091a30835c","taskId":"ce094bf5-942a-41e1-a5c6-c09678e55515","role":"ROLE_USER","parts":[{"text":"sofa"}]}]}},"id":"03eb0c5d-c16b-49d7-b563-cf42528f960e","jsonrpc":"2.0"}
+PASSED
+
+============================== 10 passed in 2.35s ==============================
+D103 Missing docstring in public function
+  --> tests/test_seller.py:85:5
+   |
+84 | @pytest.fixture
+85 | def anyio_backend() -> str:
+   |     ^^^^^^^^^^^^^
+86 |     return "asyncio"
+   |
+
+D103 Missing docstring in public function
+  --> tests/test_seller.py:90:11
+   |
+89 | @pytest.fixture
+90 | async def client() -> AsyncIterator[httpx2.AsyncClient]:
+   |           ^^^^^^
+91 |     config = SellerConfig(
+92 |         name="Birch", port=9411, reserves=Reserves(lamp=100, chair=180, bookshelf=260)
+   |
+
+D103 Missing docstring in public function
+   --> tests/test_seller.py:105:11
+    |
+105 | async def send(
+    |           ^^^^
+106 |     client: httpx2.AsyncClient, text: str, task: Task | None = None
+107 | ) -> Reply:
+    |
+
+D103 Missing docstring in public function
+   --> tests/test_seller.py:129:11
+    |
+129 | async def open_task(client: httpx2.AsyncClient) -> Task:
+    |           ^^^^^^^^^
+130 |     reply = await send(client, "lamp")
+131 |     assert isinstance(reply.result, Sent)
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:131:5
+    |
+129 | async def open_task(client: httpx2.AsyncClient) -> Task:
+130 |     reply = await send(client, "lamp")
+131 |     assert isinstance(reply.result, Sent)
+    |     ^^^^^^
+132 |     return reply.result.task
+    |
+
+D103 Missing docstring in public function
+   --> tests/test_seller.py:144:11
+    |
+142 |     ],
+143 | )
+144 | async def test_reserve_boundary(
+    |           ^^^^^^^^^^^^^^^^^^^^^
+145 |     client: httpx2.AsyncClient, offer: int, state: str
+146 | ) -> None:
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:152:5
+    |
+150 |     reply = await send(client, str(offer), task)
+151 |     # Then the exact boundary controls acceptance and the task ID is stable.
+152 |     assert isinstance(reply.result, Sent)
+    |     ^^^^^^
+153 |     assert (reply.result.task.id, reply.result.task.status.state) == (task.id, state)
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:153:5
+    |
+151 |     # Then the exact boundary controls acceptance and the task ID is stable.
+152 |     assert isinstance(reply.result, Sent)
+153 |     assert (reply.result.task.id, reply.result.task.status.state) == (task.id, state)
+    |     ^^^^^^
+
+D103 Missing docstring in public function
+   --> tests/test_seller.py:157:11
+    |
+156 | @pytest.mark.anyio
+157 | async def test_fifth_low_offer_rejects(client: httpx2.AsyncClient) -> None:
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+158 |     # Given four low offers in one task.
+159 |     task = await open_task(client)
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:162:9
+    |
+160 |     for _ in range(4):
+161 |         reply = await send(client, "99", task)
+162 |         assert isinstance(reply.result, Sent)
+    |         ^^^^^^
+163 |         assert reply.result.task.status.state == "TASK_STATE_INPUT_REQUIRED"
+164 |     # When the fifth low offer arrives.
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:163:9
+    |
+161 |         reply = await send(client, "99", task)
+162 |         assert isinstance(reply.result, Sent)
+163 |         assert reply.result.task.status.state == "TASK_STATE_INPUT_REQUIRED"
+    |         ^^^^^^
+164 |     # When the fifth low offer arrives.
+165 |     reply = await send(client, "99", task)
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:167:5
+    |
+165 |     reply = await send(client, "99", task)
+166 |     # Then the seller walks away on exactly that offer.
+167 |     assert isinstance(reply.result, Sent)
+    |     ^^^^^^
+168 |     assert reply.result.task.status.state == "TASK_STATE_REJECTED"
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:168:5
+    |
+166 |     # Then the seller walks away on exactly that offer.
+167 |     assert isinstance(reply.result, Sent)
+168 |     assert reply.result.task.status.state == "TASK_STATE_REJECTED"
+    |     ^^^^^^
+
+D103 Missing docstring in public function
+   --> tests/test_seller.py:172:11
+    |
+171 | @pytest.mark.anyio
+172 | async def test_completed_task_contains_receipt(client: httpx2.AsyncClient) -> None:
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+173 |     # Given a selected inventory item.
+174 |     task = await open_task(client)
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:178:5
+    |
+176 |     reply = await send(client, "100", task)
+177 |     # Then the completion artifact records the actual transaction.
+178 |     assert isinstance(reply.result, Sent)
+    |     ^^^^^^
+179 |     assert reply.result.task.artifacts[0].parts[0].data == WireReceipt(
+180 |         seller="Birch", item="lamp", price=100
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:179:5
+    |
+177 |     # Then the completion artifact records the actual transaction.
+178 |     assert isinstance(reply.result, Sent)
+179 |     assert reply.result.task.artifacts[0].parts[0].data == WireReceipt(
+    |     ^^^^^^
+180 |         seller="Birch", item="lamp", price=100
+181 |     )
+    |
+
+D103 Missing docstring in public function
+   --> tests/test_seller.py:185:11
+    |
+184 | @pytest.mark.anyio
+185 | async def test_completed_task_rejects_new_messages(client: httpx2.AsyncClient) -> None:
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+186 |     # Given a completed purchase.
+187 |     task = await open_task(client)
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:192:5
+    |
+190 |     reply = await send(client, "101", task)
+191 |     # Then it cannot create a second transaction.
+192 |     assert reply.error is not None
+    |     ^^^^^^
+
+D103 Missing docstring in public function
+   --> tests/test_seller.py:200:11
+    |
+198 |     [("GetTask", "TASK_STATE_INPUT_REQUIRED"), ("CancelTask", "TASK_STATE_CANCELED")],
+199 | )
+200 | async def test_task_methods(
+    |           ^^^^^^^^^^^^^^^^^
+201 |     client: httpx2.AsyncClient, method: Literal["GetTask", "CancelTask"], state: str
+202 | ) -> None:
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:218:5
+    |
+216 |     reply = Reply.model_validate_json(response.content)
+217 |     # Then the method returns the same task in its expected state.
+218 |     assert isinstance(reply.result, Task)
+    |     ^^^^^^
+219 |     assert (reply.result.id, reply.result.status.state) == (task.id, state)
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:219:5
+    |
+217 |     # Then the method returns the same task in its expected state.
+218 |     assert isinstance(reply.result, Task)
+219 |     assert (reply.result.id, reply.result.status.state) == (task.id, state)
+    |     ^^^^^^
+
+D103 Missing docstring in public function
+   --> tests/test_seller.py:223:11
+    |
+222 | @pytest.mark.anyio
+223 | async def test_missing_version_rejected(client: httpx2.AsyncClient) -> None:
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+224 |     # Given an otherwise valid JSON-RPC client missing its version header.
+225 |     del client.headers["A2A-Version"]
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:229:5
+    |
+227 |     reply = await send(client, "lamp")
+228 |     # Then the SDK rejects the unsupported protocol version.
+229 |     assert reply.error is not None
+    |     ^^^^^^
+230 |     assert reply.error.code == -32009
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:230:5
+    |
+228 |     # Then the SDK rejects the unsupported protocol version.
+229 |     assert reply.error is not None
+230 |     assert reply.error.code == -32009
+    |     ^^^^^^
+
+PLR2004 Magic value used in comparison, consider replacing `-32009` with a constant variable
+   --> tests/test_seller.py:230:32
+    |
+228 |     # Then the SDK rejects the unsupported protocol version.
+229 |     assert reply.error is not None
+230 |     assert reply.error.code == -32009
+    |                                ^^^^^^
+
+D103 Missing docstring in public function
+   --> tests/test_seller.py:234:11
+    |
+233 | @pytest.mark.anyio
+234 | async def test_unavailable_item_rejected(client: httpx2.AsyncClient) -> None:
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+235 |     # Given the three-item inventory.
+236 |     # When the buyer requests an unavailable item.
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:239:5
+    |
+237 |     reply = await send(client, "sofa")
+238 |     # Then the task ends without a receipt.
+239 |     assert isinstance(reply.result, Sent)
+    |     ^^^^^^
+240 |     assert reply.result.task.status.state == "TASK_STATE_REJECTED"
+241 |     assert reply.result.task.artifacts == []
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:240:5
+    |
+238 |     # Then the task ends without a receipt.
+239 |     assert isinstance(reply.result, Sent)
+240 |     assert reply.result.task.status.state == "TASK_STATE_REJECTED"
+    |     ^^^^^^
+241 |     assert reply.result.task.artifacts == []
+    |
+
+S101 Use of `assert` detected
+   --> tests/test_seller.py:241:5
+    |
+239 |     assert isinstance(reply.result, Sent)
+240 |     assert reply.result.task.status.state == "TASK_STATE_REJECTED"
+241 |     assert reply.result.task.artifacts == []
+    |     ^^^^^^
+
+Found 29 errors.
+no violations in 3 file(s)
+seller.py pure_LOC= 200
+seller_state.py pure_LOC= 45
+tests/test_seller.py pure_LOC= 165
+
+FINAL SELLER EVIDENCE INDEX
+Artifact: submissions/25620027/week-06/.omo/evidence/seller.log (this append-only log)
+Invocation: uv run --no-project --python 3.12.11 --with 'a2a-sdk[http-server]==1.2.2' --with fastapi --with typer --with uvicorn --with 'httpx2[http2,brotli,zstd]' --with pytest python -m pytest -v -s tests/test_seller.py
+Binary observable: process exit 0, 10 passed; each test captures its actual SDK JSON-RPC response above.
+Scenarios: reserve 99/100/101 -> INPUT_REQUIRED/COMPLETED/COMPLETED with stable taskId; low offers 1-4 INPUT_REQUIRED and fifth REJECTED; receipt data has seller/item/price; completed re-message returns error -32004; GetTask returns current task; CancelTask returns CANCELED; missing A2A-Version returns -32009; unknown item is REJECTED without receipt.
+Invocation: uv run --script seller.py --help
+Binary observable: CLI exits 0 and lists --name, --port, --reserve-json, --low-offer-limit, --inflated options.
+Real network scenario: REAL_CLI_HTTP_SCENARIO above records exact subprocess argument array and ephemeral port, GET card response and open/buy JSON-RPC requests/responses.
+Binary observable: HTTP 200 card with supportedInterfaces protocolVersion 1.0, same task ID reaches COMPLETED, receipt equals Birch/lamp/100. Process handle terminated in finally.
+Type invocation: uv run --no-project --python 3.12.11 --with 'a2a-sdk[http-server]==1.2.2' --with fastapi --with typer --with uvicorn --with 'httpx2[http2,brotli,zstd]' --with pytest --with basedpyright basedpyright seller.py seller_state.py tests/test_seller.py
+Binary observable: 0 errors, 0 warnings under project's typeCheckingMode=all.
+Lint invocation: uvx ruff check --per-file-ignores 'seller.py:CPY001' --per-file-ignores 'seller_state.py:CPY001' --per-file-ignores 'tests/test_seller.py:CPY001' --per-file-ignores 'tests/test_seller.py:INP001' --per-file-ignores 'tests/test_seller.py:T201' seller.py seller_state.py tests/test_seller.py
+Binary observable: All checks passed. Narrow exceptions cover absent copyright policy, pytest standalone discovery, and deliberate captured wire logs.
+Architecture review: seller.py owns A2A seller transport; seller_state.py owns validated seller domain values; tests own HTTP contract observations. Pydantic parses CLI and integer offer boundaries, protobuf SDK parses protocol messages. No Any/cast/type-ignore/broad except/custom asyncio. State is immutable Negotiation snapshots keyed by branded TaskId. Five CLI options are the required external invocation contract. No unrelated files changed. Plugin-managed skill left unchanged after reflection because no reusable user-owned skill change was established.
+All checks passed!
+Correction to lint index: --per-file-ignores replaces pytest's configured assertion/docstring exemptions; that invocation failed (29 errors), so its preceding pass claim was premature. Actual passing invocation uses --extend-per-file-ignores with the same five arguments and preserves project pytest exemptions. Captured result immediately above: All checks passed. No source rules were disabled globally.

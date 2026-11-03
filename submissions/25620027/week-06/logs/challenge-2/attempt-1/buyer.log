@@ -1,0 +1,349 @@
+CONTEXT chars=3751 tools=1
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=1300 output=184
+MODEL_TOOL round=1 plan_purchases {"reservations":[{"request_id":"reading-light","shop_url":"http://127.0.0.1:53952/shops/00/","cap":400},{"request_id":"office-chair","shop_url":"http://127.0.0.1:53952/shops/01/","cap":600},{"request_id":"book-storage","shop_url":"http://127.0.0.1:53952/shops/02/","cap":500},{"request_id":"computer-desk","shop_url":"http://127.0.0.1:53952/shops/03/","cap":700},{"request_id":"secure-storage","shop_url":"http://127.0.0.1:53952/shops/04/","cap":500}],"reason":"Allocate budget across different shops for each item."}
+TOOL_RESULT plan_purchases "Reserved caps exceed total budget; revise all allocations"
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=1504 output=190
+MODEL_TOOL round=2 plan_purchases {"reservations":[{"request_id":"reading-light","shop_url":"http://127.0.0.1:53952/shops/00/","cap":300},{"request_id":"office-chair","shop_url":"http://127.0.0.1:53952/shops/01/","cap":500},{"request_id":"book-storage","shop_url":"http://127.0.0.1:53952/shops/02/","cap":400},{"request_id":"computer-desk","shop_url":"http://127.0.0.1:53952/shops/03/","cap":600},{"request_id":"secure-storage","shop_url":"http://127.0.0.1:53952/shops/04/","cap":400}],"reason":"Distribute the total budget of 2200 across items with realistic caps."}
+TOOL_RESULT plan_purchases {"reservations": [{"request_id": "reading-light", "shop_url": "http://127.0.0.1:53952/shops/00/", "cap": 300}, {"request_id": "office-chair", "shop_url": "http://127.0.0.1:53952/shops/01/", "cap": 500}, {"request_id": "book-storage", "shop_url": "http://127.0.0.1:53952/shops/02/", "cap": 400}, {"request_id": "computer-desk", "shop_url": "http://127.0.0.1:53952/shops/03/", "cap": 600}, {"request_id": "secure-storage", "shop_url": "http://127.0.0.1:53952/shops/04/", "cap": 400}], "reason": "Distribute the total budget of 2200 across items with realistic caps."}
+[SHOPPING PLAN] {"reservations":[{"request_id":"reading-light","shop_url":"http://127.0.0.1:53952/shops/00/","cap":300},{"request_id":"office-chair","shop_url":"http://127.0.0.1:53952/shops/01/","cap":500},{"request_id":"book-storage","shop_url":"http://127.0.0.1:53952/shops/02/","cap":400},{"request_id":"computer-desk","shop_url":"http://127.0.0.1:53952/shops/03/","cap":600},{"request_id":"secure-storage","shop_url":"http://127.0.0.1:53952/shops/04/","cap":400}],"reason":"Distribute the total budget of 2200 across items with realistic caps."}
+HTTP Request: GET http://127.0.0.1:53952/shops/00/.well-known/agent-card.json "HTTP/1.1 200 OK"
+HTTP GET /shops/00/.well-known/agent-card.json -> 200
+[A2A HTTP] {"method": "GET", "url": "http://127.0.0.1:53952/shops/00/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"shop-00-lamp","description":"Catalog shop: search and negotiate purchases.","supportedInterfaces":[{"url":"http://127.0.0.1:53952/shops/00/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{"streaming":false},"defaultInputModes":["text/plain"],"defaultOutputModes":["text/plain","application/json"],"skills":[{"id":"negotiate","name":"Catalog purchases","description":"Find and negotiate catalog products: lamp.","tags":["shopping","lamp"]}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "74c82167-c424-48aa-9994-b4e776f61a2c", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "ba7363b2-1e81-479d-92a9-010d988634ab", "parts": [{"text": "I want to buy Small black reading lamp with flexible neck and dimmable warm glow, no taller than 35 cm."}]}}}
+HTTP Request: GET http://127.0.0.1:53952/shops/01/.well-known/agent-card.json "HTTP/1.1 200 OK"
+HTTP GET /shops/01/.well-known/agent-card.json -> 200
+[A2A HTTP] {"method": "GET", "url": "http://127.0.0.1:53952/shops/01/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"shop-01-chair","description":"Catalog shop: search and negotiate purchases.","supportedInterfaces":[{"url":"http://127.0.0.1:53952/shops/01/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{"streaming":false},"defaultInputModes":["text/plain"],"defaultOutputModes":["text/plain","application/json"],"skills":[{"id":"negotiate","name":"Catalog purchases","description":"Find and negotiate catalog products: chair.","tags":["shopping","chair"]}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "15513474-aa89-41d5-9e38-428d372a95c6", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "ffa39c85-512c-4461-b994-4a3c918b3f23", "parts": [{"text": "I want to buy Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests."}]}}}
+HTTP Request: GET http://127.0.0.1:53952/shops/02/.well-known/agent-card.json "HTTP/1.1 200 OK"
+HTTP GET /shops/02/.well-known/agent-card.json -> 200
+[A2A HTTP] {"method": "GET", "url": "http://127.0.0.1:53952/shops/02/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"shop-02-bookshelf","description":"Catalog shop: search and negotiate purchases.","supportedInterfaces":[{"url":"http://127.0.0.1:53952/shops/02/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{"streaming":false},"defaultInputModes":["text/plain"],"defaultOutputModes":["text/plain","application/json"],"skills":[{"id":"negotiate","name":"Catalog purchases","description":"Find and negotiate catalog products: bookshelf.","tags":["shopping","bookshelf"]}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "bdb85393-6f34-465f-8152-97b6ae35950d", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "fe9f3169-93f4-42a4-a505-1193277b2e3a", "parts": [{"text": "I want to buy Wooden bookcase for about 40 books with rounded corners, not taller than my desk."}]}}}
+HTTP Request: GET http://127.0.0.1:53952/shops/03/.well-known/agent-card.json "HTTP/1.1 200 OK"
+HTTP GET /shops/03/.well-known/agent-card.json -> 200
+[A2A HTTP] {"method": "GET", "url": "http://127.0.0.1:53952/shops/03/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"shop-03-desk","description":"Catalog shop: search and negotiate purchases.","supportedInterfaces":[{"url":"http://127.0.0.1:53952/shops/03/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{"streaming":false},"defaultInputModes":["text/plain"],"defaultOutputModes":["text/plain","application/json"],"skills":[{"id":"negotiate","name":"Catalog purchases","description":"Find and negotiate catalog products: desk.","tags":["shopping","desk"]}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "3777b7b7-7e57-4399-b44e-ee47f77fd76e", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "398f86f5-d622-44c4-9ce5-97af07f2c19b", "parts": [{"text": "I want to buy Brown bamboo computer desk with integrated cable tray and dual monitor workspace, at most 75 cm tall."}]}}}
+HTTP Request: GET http://127.0.0.1:53952/shops/04/.well-known/agent-card.json "HTTP/1.1 200 OK"
+HTTP GET /shops/04/.well-known/agent-card.json -> 200
+[A2A HTTP] {"method": "GET", "url": "http://127.0.0.1:53952/shops/04/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"shop-04-storage","description":"Catalog shop: search and negotiate purchases.","supportedInterfaces":[{"url":"http://127.0.0.1:53952/shops/04/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{"streaming":false},"defaultInputModes":["text/plain"],"defaultOutputModes":["text/plain","application/json"],"skills":[{"id":"negotiate","name":"Catalog purchases","description":"Find and negotiate catalog products: storage.","tags":["shopping","storage"]}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "714bd937-7b23-43b5-8272-e1d1303ef33e", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "aee11301-c928-4555-9a39-821a8b75b2f4", "parts": [{"text": "I want to buy Blue steel storage cabinet with lockable doors and at least 60 litres, no taller than 65 cm."}]}}}
+HTTP Request: POST http://127.0.0.1:53952/shops/01/ "HTTP/1.1 200 OK"
+HTTP POST /shops/01/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/01/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"ba7bce1e-1a6d-42de-aae2-712667234253","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"928e6b05-4dca-422d-948c-3d262a324e19","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},"timestamp":"2026-10-13T22:39:44.885658Z"},"history":[{"messageId":"ffa39c85-512c-4461-b994-4a3c918b3f23","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"I want to buy Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests."}]}]}},"id":"15513474-aa89-41d5-9e38-428d372a95c6","jsonrpc":"2.0"}
+[NEGOTIATION SUMMARY] {"requested_item": "Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests.", "task_id": "ba7bce1e-1a6d-42de-aae2-712667234253", "item": "chair", "sku": "chair-stratus", "budget": 500, "rounds": 0, "last_offer": null, "recent_observations": ["Stratus Support. Asking price: 340"]}
+CONTEXT chars=314 tools=2
+HTTP Request: POST http://127.0.0.1:53952/shops/03/ "HTTP/1.1 200 OK"
+HTTP POST /shops/03/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/03/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"9dae6333-1634-4e10-bf0a-3d904aa87d35","contextId":"5514ff14-2298-4bc1-9cc1-940bd0d1a7fb","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"2aa18813-e199-4c68-bd5f-c8c991c5dc09","contextId":"5514ff14-2298-4bc1-9cc1-940bd0d1a7fb","taskId":"9dae6333-1634-4e10-bf0a-3d904aa87d35","role":"ROLE_AGENT","parts":[{"text":"Harbor Worktop. Asking price: 495"}],"metadata":{"sku":"desk-harbor","item":"desk","name":"Harbor Worktop"}},"timestamp":"2026-10-13T22:39:44.910773Z"},"history":[{"messageId":"398f86f5-d622-44c4-9ce5-97af07f2c19b","contextId":"5514ff14-2298-4bc1-9cc1-940bd0d1a7fb","taskId":"9dae6333-1634-4e10-bf0a-3d904aa87d35","role":"ROLE_USER","parts":[{"text":"I want to buy Brown bamboo computer desk with integrated cable tray and dual monitor workspace, at most 75 cm tall."}]}]}},"id":"3777b7b7-7e57-4399-b44e-ee47f77fd76e","jsonrpc":"2.0"}
+[NEGOTIATION SUMMARY] {"requested_item": "Brown bamboo computer desk with integrated cable tray and dual monitor workspace, at most 75 cm tall.", "task_id": "9dae6333-1634-4e10-bf0a-3d904aa87d35", "item": "desk", "sku": "desk-harbor", "budget": 600, "rounds": 0, "last_offer": null, "recent_observations": ["Harbor Worktop. Asking price: 495"]}
+CONTEXT chars=322 tools=2
+HTTP Request: POST http://127.0.0.1:53952/shops/04/ "HTTP/1.1 200 OK"
+HTTP POST /shops/04/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/04/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"80fd2529-f974-43c8-bbdb-b3871b0417ce","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_AGENT","parts":[{"text":"Cove Keeper. Asking price: 338"}],"metadata":{"sku":"storage-cove","item":"storage","name":"Cove Keeper"}},"timestamp":"2026-10-13T22:39:44.912770Z"},"history":[{"messageId":"aee11301-c928-4555-9a39-821a8b75b2f4","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_USER","parts":[{"text":"I want to buy Blue steel storage cabinet with lockable doors and at least 60 litres, no taller than 65 cm."}]}]}},"id":"714bd937-7b23-43b5-8272-e1d1303ef33e","jsonrpc":"2.0"}
+[NEGOTIATION SUMMARY] {"requested_item": "Blue steel storage cabinet with lockable doors and at least 60 litres, no taller than 65 cm.", "task_id": "12d6d54c-789c-4bf5-bceb-98cd8d898a1b", "item": "storage", "sku": "storage-cove", "budget": 400, "rounds": 0, "last_offer": null, "recent_observations": ["Cove Keeper. Asking price: 338"]}
+CONTEXT chars=314 tools=2
+HTTP Request: POST http://127.0.0.1:53952/shops/00/ "HTTP/1.1 200 OK"
+HTTP POST /shops/00/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/00/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be","contextId":"c9346767-9ac4-45ad-bd5d-96569a2be49c","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"5eb4eb1c-b0bf-4545-97d9-7f93a9d68da3","contextId":"c9346767-9ac4-45ad-bd5d-96569a2be49c","taskId":"c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be","role":"ROLE_AGENT","parts":[{"text":"Nocturne Mini. Asking price: 156"}],"metadata":{"sku":"lamp-nocturne","item":"lamp","name":"Nocturne Mini"}},"timestamp":"2026-10-13T22:39:44.914285Z"},"history":[{"messageId":"ba7363b2-1e81-479d-92a9-010d988634ab","contextId":"c9346767-9ac4-45ad-bd5d-96569a2be49c","taskId":"c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be","role":"ROLE_USER","parts":[{"text":"I want to buy Small black reading lamp with flexible neck and dimmable warm glow, no taller than 35 cm."}]}]}},"id":"74c82167-c424-48aa-9994-b4e776f61a2c","jsonrpc":"2.0"}
+[NEGOTIATION SUMMARY] {"requested_item": "Small black reading lamp with flexible neck and dimmable warm glow, no taller than 35 cm.", "task_id": "c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be", "item": "lamp", "sku": "lamp-nocturne", "budget": 300, "rounds": 0, "last_offer": null, "recent_observations": ["Nocturne Mini. Asking price: 156"]}
+CONTEXT chars=311 tools=2
+HTTP Request: POST http://127.0.0.1:53952/shops/02/ "HTTP/1.1 200 OK"
+HTTP POST /shops/02/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/02/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"efffaabf-32ad-499f-b4ee-665caecdad34","contextId":"6b224ffd-9983-4eb9-aee5-f4b41eb42bde","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"0445ca09-3fee-4efb-a221-b685c30e4373","contextId":"6b224ffd-9983-4eb9-aee5-f4b41eb42bde","taskId":"efffaabf-32ad-499f-b4ee-665caecdad34","role":"ROLE_AGENT","parts":[{"text":"Meadow Low. Asking price: 377"}],"metadata":{"sku":"bookshelf-meadow","item":"bookshelf","name":"Meadow Low"}},"timestamp":"2026-10-13T22:39:44.931202Z"},"history":[{"messageId":"fe9f3169-93f4-42a4-a505-1193277b2e3a","contextId":"6b224ffd-9983-4eb9-aee5-f4b41eb42bde","taskId":"efffaabf-32ad-499f-b4ee-665caecdad34","role":"ROLE_USER","parts":[{"text":"I want to buy Wooden bookcase for about 40 books with rounded corners, not taller than my desk."}]}]}},"id":"bdb85393-6f34-465f-8152-97b6ae35950d","jsonrpc":"2.0"}
+[NEGOTIATION SUMMARY] {"requested_item": "Wooden bookcase for about 40 books with rounded corners, not taller than my desk.", "task_id": "efffaabf-32ad-499f-b4ee-665caecdad34", "item": "bookshelf", "sku": "bookshelf-meadow", "budget": 400, "rounds": 0, "last_offer": null, "recent_observations": ["Meadow Low. Asking price: 377"]}
+CONTEXT chars=308 tools=2
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=329 output=29
+MODEL_TOOL round=1 offer {"price":495,"reason":"The Harbor Worktop is within my budget and meets the specifications."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "5465f098-151e-4c15-ab43-ade9f3d57802", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "3dc8462e-2d18-4665-b4c5-895e6a4e6659", "parts": [{"text": "495"}], "taskId": "9dae6333-1634-4e10-bf0a-3d904aa87d35", "contextId": "5514ff14-2298-4bc1-9cc1-940bd0d1a7fb"}}}
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=321 output=34
+MODEL_TOOL round=1 offer {"price":340,"reason":"The seller's asking price is 340, which is within my budget of 500."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "8b079ce5-a56f-469d-8e69-6a86e6e8042e", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "5cb9dd0f-efa5-4ba5-b2d8-85c47e09c225", "parts": [{"text": "340"}], "taskId": "ba7bce1e-1a6d-42de-aae2-712667234253", "contextId": "7ad892c3-4ecf-45a0-af26-946e593a7438"}}}
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=332 output=39
+MODEL_TOOL round=1 offer {"price":156,"reason":"The Nocturne Mini fits the description and is priced at 156, well within the budget of 300."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "a4bf5cd6-6d3d-4d88-9f45-ffd870cd9715", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "06132ec3-8713-4afa-990c-24fa9e1979be", "parts": [{"text": "156"}], "taskId": "c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be", "contextId": "c9346767-9ac4-45ad-bd5d-96569a2be49c"}}}
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=324 output=34
+MODEL_TOOL round=1 offer {"price":377,"reason":"The seller's asking price is 377, which is within my budget of 400."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "abfb34e9-38b7-4d49-b88b-ec0e1405d1cc", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "e39911ce-7362-4f8a-beb9-5dceef802293", "parts": [{"text": "377"}], "taskId": "efffaabf-32ad-499f-b4ee-665caecdad34", "contextId": "6b224ffd-9983-4eb9-aee5-f4b41eb42bde"}}}
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=330 output=28
+MODEL_TOOL round=1 offer {"price":338,"reason":"The Cove Keeper is within my budget and meets the specifications."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "9cdaf9a7-48a8-4bce-a566-10fdaa2ee5e0", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "adf9a2b9-bd23-403f-9f33-dc3b8b8b37bd", "parts": [{"text": "338"}], "taskId": "12d6d54c-789c-4bf5-bceb-98cd8d898a1b", "contextId": "183c3a8a-f20b-434e-847d-d46c7746f539"}}}
+HTTP Request: POST http://127.0.0.1:53952/shops/03/ "HTTP/1.1 200 OK"
+HTTP POST /shops/03/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/03/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"9dae6333-1634-4e10-bf0a-3d904aa87d35","contextId":"5514ff14-2298-4bc1-9cc1-940bd0d1a7fb","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"796df17e-c38a-4129-9d4d-b7b3016e46a3","contextId":"5514ff14-2298-4bc1-9cc1-940bd0d1a7fb","taskId":"9dae6333-1634-4e10-bf0a-3d904aa87d35","role":"ROLE_AGENT","parts":[{"text":"Deal: Harbor Worktop at 495."}]},"timestamp":"2026-10-13T22:39:46.209985Z"},"artifacts":[{"artifactId":"92679d45-96a3-4ce3-9a34-5fc02165cd9e","name":"receipt","parts":[{"data":{"seller":"shop-03-desk","sku":"desk-harbor","price":495.0,"item":"desk"},"mediaType":"application/json"}]}],"history":[{"messageId":"398f86f5-d622-44c4-9ce5-97af07f2c19b","contextId":"5514ff14-2298-4bc1-9cc1-940bd0d1a7fb","taskId":"9dae6333-1634-4e10-bf0a-3d904aa87d35","role":"ROLE_USER","parts":[{"text":"I want to buy Brown bamboo computer desk with integrated cable tray and dual monitor workspace, at most 75 cm tall."}]},{"messageId":"2aa18813-e199-4c68-bd5f-c8c991c5dc09","contextId":"5514ff14-2298-4bc1-9cc1-940bd0d1a7fb","taskId":"9dae6333-1634-4e10-bf0a-3d904aa87d35","role":"ROLE_AGENT","parts":[{"text":"Harbor Worktop. Asking price: 495"}],"metadata":{"sku":"desk-harbor","item":"desk","name":"Harbor Worktop"}},{"messageId":"3dc8462e-2d18-4665-b4c5-895e6a4e6659","contextId":"5514ff14-2298-4bc1-9cc1-940bd0d1a7fb","taskId":"9dae6333-1634-4e10-bf0a-3d904aa87d35","role":"ROLE_USER","parts":[{"text":"495"}]}]}},"id":"5465f098-151e-4c15-ab43-ade9f3d57802","jsonrpc":"2.0"}
+TOOL_RESULT offer "Deal: Harbor Worktop at 495."
+[NEGOTIATION RESULT] {"completed":true,"item":"desk","sku":"desk-harbor","price":495,"task_id":"9dae6333-1634-4e10-bf0a-3d904aa87d35","shop":"http://127.0.0.1:53952/shops/03/"}
+[BUDGET LEDGER] {"request_id": "computer-desk", "spent": 495, "released": 105, "reserved": 1600, "total_budget": 2200}
+HTTP Request: POST http://127.0.0.1:53952/shops/00/ "HTTP/1.1 200 OK"
+HTTP POST /shops/00/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/00/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be","contextId":"c9346767-9ac4-45ad-bd5d-96569a2be49c","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"8b1d936c-69d1-476e-a7d5-4c9375115d4d","contextId":"c9346767-9ac4-45ad-bd5d-96569a2be49c","taskId":"c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be","role":"ROLE_AGENT","parts":[{"text":"Deal: Nocturne Mini at 156."}]},"timestamp":"2026-10-13T22:39:46.343347Z"},"artifacts":[{"artifactId":"1dfc4f4a-6bad-4ce7-82ea-7da82f44a4ce","name":"receipt","parts":[{"data":{"seller":"shop-00-lamp","sku":"lamp-nocturne","price":156.0,"item":"lamp"},"mediaType":"application/json"}]}],"history":[{"messageId":"ba7363b2-1e81-479d-92a9-010d988634ab","contextId":"c9346767-9ac4-45ad-bd5d-96569a2be49c","taskId":"c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be","role":"ROLE_USER","parts":[{"text":"I want to buy Small black reading lamp with flexible neck and dimmable warm glow, no taller than 35 cm."}]},{"messageId":"5eb4eb1c-b0bf-4545-97d9-7f93a9d68da3","contextId":"c9346767-9ac4-45ad-bd5d-96569a2be49c","taskId":"c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be","role":"ROLE_AGENT","parts":[{"text":"Nocturne Mini. Asking price: 156"}],"metadata":{"sku":"lamp-nocturne","item":"lamp","name":"Nocturne Mini"}},{"messageId":"06132ec3-8713-4afa-990c-24fa9e1979be","contextId":"c9346767-9ac4-45ad-bd5d-96569a2be49c","taskId":"c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be","role":"ROLE_USER","parts":[{"text":"156"}]}]}},"id":"a4bf5cd6-6d3d-4d88-9f45-ffd870cd9715","jsonrpc":"2.0"}
+TOOL_RESULT offer "Deal: Nocturne Mini at 156."
+[NEGOTIATION RESULT] {"completed":true,"item":"lamp","sku":"lamp-nocturne","price":156,"task_id":"c678c7bc-c9d5-4d4a-b4fa-2f15fa2094be","shop":"http://127.0.0.1:53952/shops/00/"}
+[BUDGET LEDGER] {"request_id": "reading-light", "spent": 651, "released": 144, "reserved": 1300, "total_budget": 2200}
+HTTP Request: POST http://127.0.0.1:53952/shops/04/ "HTTP/1.1 200 OK"
+HTTP POST /shops/04/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/04/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"41b092d7-5a5d-4301-87a3-b6aad22a97d0","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_AGENT","parts":[{"text":"Cove Keeper. Asking price: 338"}],"metadata":{"sku":"storage-cove","item":"storage","name":"Cove Keeper"}},"timestamp":"2026-10-13T22:39:47.131285Z"},"history":[{"messageId":"aee11301-c928-4555-9a39-821a8b75b2f4","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_USER","parts":[{"text":"I want to buy Blue steel storage cabinet with lockable doors and at least 60 litres, no taller than 65 cm."}]},{"messageId":"80fd2529-f974-43c8-bbdb-b3871b0417ce","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_AGENT","parts":[{"text":"Cove Keeper. Asking price: 338"}],"metadata":{"sku":"storage-cove","item":"storage","name":"Cove Keeper"}},{"messageId":"adf9a2b9-bd23-403f-9f33-dc3b8b8b37bd","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_USER","parts":[{"text":"338"}]}]}},"id":"9cdaf9a7-48a8-4bce-a566-10fdaa2ee5e0","jsonrpc":"2.0"}
+TOOL_RESULT offer "Cove Keeper. Asking price: 338"
+[NEGOTIATION SUMMARY] {"requested_item": "Blue steel storage cabinet with lockable doors and at least 60 litres, no taller than 65 cm.", "task_id": "12d6d54c-789c-4bf5-bceb-98cd8d898a1b", "item": "storage", "sku": "storage-cove", "budget": 400, "rounds": 1, "last_offer": 338, "recent_observations": ["Cove Keeper. Asking price: 338", "Cove Keeper. Asking price: 338"]}
+CONTEXT chars=347 tools=2
+HTTP Request: POST http://127.0.0.1:53952/shops/01/ "HTTP/1.1 200 OK"
+HTTP POST /shops/01/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/01/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"ba7bce1e-1a6d-42de-aae2-712667234253","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"fba9e872-6328-41a6-b461-7af7c741b6bd","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},"timestamp":"2026-10-13T22:39:47.148145Z"},"history":[{"messageId":"ffa39c85-512c-4461-b994-4a3c918b3f23","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"I want to buy Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests."}]},{"messageId":"928e6b05-4dca-422d-948c-3d262a324e19","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"5cb9dd0f-efa5-4ba5-b2d8-85c47e09c225","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]}]}},"id":"8b079ce5-a56f-469d-8e69-6a86e6e8042e","jsonrpc":"2.0"}
+TOOL_RESULT offer "Stratus Support. Asking price: 340"
+[NEGOTIATION SUMMARY] {"requested_item": "Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests.", "task_id": "ba7bce1e-1a6d-42de-aae2-712667234253", "item": "chair", "sku": "chair-stratus", "budget": 500, "rounds": 1, "last_offer": 340, "recent_observations": ["Stratus Support. Asking price: 340", "Stratus Support. Asking price: 340"]}
+CONTEXT chars=351 tools=2
+HTTP Request: POST http://127.0.0.1:53952/shops/02/ "HTTP/1.1 200 OK"
+HTTP POST /shops/02/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/02/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"efffaabf-32ad-499f-b4ee-665caecdad34","contextId":"6b224ffd-9983-4eb9-aee5-f4b41eb42bde","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"1f576d48-ceac-410e-8618-13d4c585564f","contextId":"6b224ffd-9983-4eb9-aee5-f4b41eb42bde","taskId":"efffaabf-32ad-499f-b4ee-665caecdad34","role":"ROLE_AGENT","parts":[{"text":"Deal: Meadow Low at 377."}]},"timestamp":"2026-10-13T22:39:47.474837Z"},"artifacts":[{"artifactId":"2dfea3ec-8e7c-4128-9a78-4958cf9e6146","name":"receipt","parts":[{"data":{"seller":"shop-02-bookshelf","sku":"bookshelf-meadow","price":377.0,"item":"bookshelf"},"mediaType":"application/json"}]}],"history":[{"messageId":"fe9f3169-93f4-42a4-a505-1193277b2e3a","contextId":"6b224ffd-9983-4eb9-aee5-f4b41eb42bde","taskId":"efffaabf-32ad-499f-b4ee-665caecdad34","role":"ROLE_USER","parts":[{"text":"I want to buy Wooden bookcase for about 40 books with rounded corners, not taller than my desk."}]},{"messageId":"0445ca09-3fee-4efb-a221-b685c30e4373","contextId":"6b224ffd-9983-4eb9-aee5-f4b41eb42bde","taskId":"efffaabf-32ad-499f-b4ee-665caecdad34","role":"ROLE_AGENT","parts":[{"text":"Meadow Low. Asking price: 377"}],"metadata":{"sku":"bookshelf-meadow","item":"bookshelf","name":"Meadow Low"}},{"messageId":"e39911ce-7362-4f8a-beb9-5dceef802293","contextId":"6b224ffd-9983-4eb9-aee5-f4b41eb42bde","taskId":"efffaabf-32ad-499f-b4ee-665caecdad34","role":"ROLE_USER","parts":[{"text":"377"}]}]}},"id":"abfb34e9-38b7-4d49-b88b-ec0e1405d1cc","jsonrpc":"2.0"}
+TOOL_RESULT offer "Deal: Meadow Low at 377."
+[NEGOTIATION RESULT] {"completed":true,"item":"bookshelf","sku":"bookshelf-meadow","price":377,"task_id":"efffaabf-32ad-499f-b4ee-665caecdad34","shop":"http://127.0.0.1:53952/shops/02/"}
+[BUDGET LEDGER] {"request_id": "book-storage", "spent": 1028, "released": 23, "reserved": 900, "total_budget": 2200}
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=342 output=28
+MODEL_TOOL round=1 offer {"price":338,"reason":"Matching the asking price of Cove Keeper to close the deal."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "ffe9a992-ee3f-4dcb-8e01-74b5dd214e7a", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "e7038df6-dd86-48f5-b97d-fae4829f2e42", "parts": [{"text": "338"}], "taskId": "12d6d54c-789c-4bf5-bceb-98cd8d898a1b", "contextId": "183c3a8a-f20b-434e-847d-d46c7746f539"}}}
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=333 output=24
+MODEL_TOOL round=1 offer {"price":340,"reason":"Initial offer based on previous asking price."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "43dbf2ea-3371-48cd-8b7f-2f6189468e0e", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "e2e46029-0e91-4d7c-ac5a-ecaf4be35fba", "parts": [{"text": "340"}], "taskId": "ba7bce1e-1a6d-42de-aae2-712667234253", "contextId": "7ad892c3-4ecf-45a0-af26-946e593a7438"}}}
+HTTP Request: POST http://127.0.0.1:53952/shops/04/ "HTTP/1.1 200 OK"
+HTTP POST /shops/04/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/04/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"bee05e08-f0a6-4a39-b23f-c93fa7da0c3d","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_AGENT","parts":[{"text":"Deal: Cove Keeper at 338."}]},"timestamp":"2026-10-13T22:39:48.382039Z"},"artifacts":[{"artifactId":"c7312301-3e18-4c54-bc22-36411d004d49","name":"receipt","parts":[{"data":{"seller":"shop-04-storage","sku":"storage-cove","price":338.0,"item":"storage"},"mediaType":"application/json"}]}],"history":[{"messageId":"aee11301-c928-4555-9a39-821a8b75b2f4","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_USER","parts":[{"text":"I want to buy Blue steel storage cabinet with lockable doors and at least 60 litres, no taller than 65 cm."}]},{"messageId":"80fd2529-f974-43c8-bbdb-b3871b0417ce","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_AGENT","parts":[{"text":"Cove Keeper. Asking price: 338"}],"metadata":{"sku":"storage-cove","item":"storage","name":"Cove Keeper"}},{"messageId":"adf9a2b9-bd23-403f-9f33-dc3b8b8b37bd","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_USER","parts":[{"text":"338"}]},{"messageId":"41b092d7-5a5d-4301-87a3-b6aad22a97d0","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_AGENT","parts":[{"text":"Cove Keeper. Asking price: 338"}],"metadata":{"sku":"storage-cove","item":"storage","name":"Cove Keeper"}},{"messageId":"e7038df6-dd86-48f5-b97d-fae4829f2e42","contextId":"183c3a8a-f20b-434e-847d-d46c7746f539","taskId":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","role":"ROLE_USER","parts":[{"text":"338"}]}]}},"id":"ffe9a992-ee3f-4dcb-8e01-74b5dd214e7a","jsonrpc":"2.0"}
+TOOL_RESULT offer "Deal: Cove Keeper at 338."
+[NEGOTIATION RESULT] {"completed":true,"item":"storage","sku":"storage-cove","price":338,"task_id":"12d6d54c-789c-4bf5-bceb-98cd8d898a1b","shop":"http://127.0.0.1:53952/shops/04/"}
+[BUDGET LEDGER] {"request_id": "secure-storage", "spent": 1366, "released": 62, "reserved": 500, "total_budget": 2200}
+HTTP Request: POST http://127.0.0.1:53952/shops/01/ "HTTP/1.1 200 OK"
+HTTP POST /shops/01/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/01/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"ba7bce1e-1a6d-42de-aae2-712667234253","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"cf9308ad-cfdf-4278-af55-b5d45a1b7d87","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},"timestamp":"2026-10-13T22:39:50.037124Z"},"history":[{"messageId":"ffa39c85-512c-4461-b994-4a3c918b3f23","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"I want to buy Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests."}]},{"messageId":"928e6b05-4dca-422d-948c-3d262a324e19","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"5cb9dd0f-efa5-4ba5-b2d8-85c47e09c225","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"fba9e872-6328-41a6-b461-7af7c741b6bd","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"e2e46029-0e91-4d7c-ac5a-ecaf4be35fba","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]}]}},"id":"43dbf2ea-3371-48cd-8b7f-2f6189468e0e","jsonrpc":"2.0"}
+TOOL_RESULT offer "Stratus Support. Asking price: 340"
+[NEGOTIATION SUMMARY] {"requested_item": "Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests.", "task_id": "ba7bce1e-1a6d-42de-aae2-712667234253", "item": "chair", "sku": "chair-stratus", "budget": 500, "rounds": 2, "last_offer": 340, "recent_observations": ["Stratus Support. Asking price: 340", "Stratus Support. Asking price: 340"]}
+CONTEXT chars=351 tools=2
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=333 output=24
+MODEL_TOOL round=1 offer {"price":340,"reason":"Initial offer based on current asking price."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "86a1e461-d114-47b0-a0ad-59402e29b41e", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "7f223616-9164-4607-9a12-7ade6cd2097f", "parts": [{"text": "340"}], "taskId": "ba7bce1e-1a6d-42de-aae2-712667234253", "contextId": "7ad892c3-4ecf-45a0-af26-946e593a7438"}}}
+HTTP Request: POST http://127.0.0.1:53952/shops/01/ "HTTP/1.1 200 OK"
+HTTP POST /shops/01/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/01/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"ba7bce1e-1a6d-42de-aae2-712667234253","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"766cf3d9-efbb-4a68-9cc1-f7436d443a3f","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},"timestamp":"2026-10-13T22:39:52.115007Z"},"history":[{"messageId":"ffa39c85-512c-4461-b994-4a3c918b3f23","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"I want to buy Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests."}]},{"messageId":"928e6b05-4dca-422d-948c-3d262a324e19","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"5cb9dd0f-efa5-4ba5-b2d8-85c47e09c225","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"fba9e872-6328-41a6-b461-7af7c741b6bd","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"e2e46029-0e91-4d7c-ac5a-ecaf4be35fba","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"cf9308ad-cfdf-4278-af55-b5d45a1b7d87","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"7f223616-9164-4607-9a12-7ade6cd2097f","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]}]}},"id":"86a1e461-d114-47b0-a0ad-59402e29b41e","jsonrpc":"2.0"}
+TOOL_RESULT offer "Stratus Support. Asking price: 340"
+[NEGOTIATION SUMMARY] {"requested_item": "Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests.", "task_id": "ba7bce1e-1a6d-42de-aae2-712667234253", "item": "chair", "sku": "chair-stratus", "budget": 500, "rounds": 3, "last_offer": 340, "recent_observations": ["Stratus Support. Asking price: 340", "Stratus Support. Asking price: 340"]}
+CONTEXT chars=351 tools=2
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=333 output=24
+MODEL_TOOL round=1 offer {"price":340,"reason":"Initial offer based on recent asking price."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "20d0b411-9ec3-4ef4-94a5-d25a5e3c2f8e", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "68a507b5-78a8-4f1e-afba-a60e4023a8a5", "parts": [{"text": "340"}], "taskId": "ba7bce1e-1a6d-42de-aae2-712667234253", "contextId": "7ad892c3-4ecf-45a0-af26-946e593a7438"}}}
+HTTP Request: POST http://127.0.0.1:53952/shops/01/ "HTTP/1.1 200 OK"
+HTTP POST /shops/01/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/01/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"ba7bce1e-1a6d-42de-aae2-712667234253","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"9d1b02ff-61ff-4c9e-9141-98446d156951","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},"timestamp":"2026-10-13T22:39:54.407186Z"},"history":[{"messageId":"ffa39c85-512c-4461-b994-4a3c918b3f23","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"I want to buy Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests."}]},{"messageId":"928e6b05-4dca-422d-948c-3d262a324e19","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"5cb9dd0f-efa5-4ba5-b2d8-85c47e09c225","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"fba9e872-6328-41a6-b461-7af7c741b6bd","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"e2e46029-0e91-4d7c-ac5a-ecaf4be35fba","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"cf9308ad-cfdf-4278-af55-b5d45a1b7d87","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"7f223616-9164-4607-9a12-7ade6cd2097f","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"766cf3d9-efbb-4a68-9cc1-f7436d443a3f","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"68a507b5-78a8-4f1e-afba-a60e4023a8a5","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]}]}},"id":"20d0b411-9ec3-4ef4-94a5-d25a5e3c2f8e","jsonrpc":"2.0"}
+TOOL_RESULT offer "Stratus Support. Asking price: 340"
+[NEGOTIATION SUMMARY] {"requested_item": "Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests.", "task_id": "ba7bce1e-1a6d-42de-aae2-712667234253", "item": "chair", "sku": "chair-stratus", "budget": 500, "rounds": 4, "last_offer": 340, "recent_observations": ["Stratus Support. Asking price: 340", "Stratus Support. Asking price: 340"]}
+CONTEXT chars=351 tools=2
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=333 output=28
+MODEL_TOOL round=1 offer {"price":340,"reason":"Offering the last price to close the deal within the budget."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "a747298d-e91d-4ba3-92b0-616f39b9b244", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "2456013a-14c4-4d55-9f7d-f080f3fe77b7", "parts": [{"text": "340"}], "taskId": "ba7bce1e-1a6d-42de-aae2-712667234253", "contextId": "7ad892c3-4ecf-45a0-af26-946e593a7438"}}}
+HTTP Request: POST http://127.0.0.1:53952/shops/01/ "HTTP/1.1 200 OK"
+HTTP POST /shops/01/ -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:53952/shops/01/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"ba7bce1e-1a6d-42de-aae2-712667234253","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"2a1cacdf-5e5f-411d-9d2a-c71a19a0008d","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Offer below the reserve price of 255."}]},"timestamp":"2026-10-13T22:39:55.818815Z"},"history":[{"messageId":"ffa39c85-512c-4461-b994-4a3c918b3f23","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"I want to buy Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests."}]},{"messageId":"928e6b05-4dca-422d-948c-3d262a324e19","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"5cb9dd0f-efa5-4ba5-b2d8-85c47e09c225","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"fba9e872-6328-41a6-b461-7af7c741b6bd","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"e2e46029-0e91-4d7c-ac5a-ecaf4be35fba","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"cf9308ad-cfdf-4278-af55-b5d45a1b7d87","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"7f223616-9164-4607-9a12-7ade6cd2097f","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"766cf3d9-efbb-4a68-9cc1-f7436d443a3f","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"68a507b5-78a8-4f1e-afba-a60e4023a8a5","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]},{"messageId":"9d1b02ff-61ff-4c9e-9141-98446d156951","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_AGENT","parts":[{"text":"Stratus Support. Asking price: 340"}],"metadata":{"sku":"chair-stratus","item":"chair","name":"Stratus Support"}},{"messageId":"2456013a-14c4-4d55-9f7d-f080f3fe77b7","contextId":"7ad892c3-4ecf-45a0-af26-946e593a7438","taskId":"ba7bce1e-1a6d-42de-aae2-712667234253","role":"ROLE_USER","parts":[{"text":"340"}]}]}},"id":"a747298d-e91d-4ba3-92b0-616f39b9b244","jsonrpc":"2.0"}
+TOOL_RESULT offer "Offer below the reserve price of 255."
+[NEGOTIATION RESULT] {"completed":false,"item":"Grey ergonomic office chair with breathable mesh, adjustable lumbar support and armrests.","sku":"","price":null,"task_id":"ba7bce1e-1a6d-42de-aae2-712667234253","shop":"http://127.0.0.1:53952/shops/01/"}
+[BUDGET LEDGER] {"request_id": "office-chair", "spent": 1366, "released": 500, "reserved": 0, "total_budget": 2200}
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/harness_app.py:181 in shopping               │
+│                                                                              │
+│   178 │   │   │   │   ),                                                     │
+│   179 │   │   │   )                                                          │
+│   180 │                                                                      │
+│ ❱ 181 │   isolated(run)                                                      │
+│   182                                                                        │
+│   183                                                                        │
+│   184 if __name__ == "__main__":                                             │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/harness_app.py:69 in isolated                │
+│                                                                              │
+│    66 │   with TemporaryDirectory(prefix="ax06-harness-") as directory:      │
+│    67 │   │   try:                                                           │
+│    68 │   │   │   os.chdir(directory)                                        │
+│ ❱  69 │   │   │   anyio.run(run)                                             │
+│    70 │   │   finally:                                                       │
+│    71 │   │   │   os.chdir(previous)                                         │
+│    72                                                                        │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/anyio/_core/_eventloop.py:83 in run                 │
+│                                                                              │
+│    80 │                                                                      │
+│    81 │   try:                                                               │
+│    82 │   │   backend_options = backend_options or {}                        │
+│ ❱  83 │   │   return async_backend.run(func, args, {}, backend_options)      │
+│    84 │   finally:                                                           │
+│    85 │   │   reset_current_async_library(token)                             │
+│    86                                                                        │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/anyio/_backends/_asyncio.py:2548 in run             │
+│                                                                              │
+│   2545 │   │   │   │   loop_factory = winloop.new_event_loop                 │
+│   2546 │   │                                                                 │
+│   2547 │   │   with Runner(debug=debug, loop_factory=loop_factory) as        │
+│        runner:                                                               │
+│ ❱ 2548 │   │   │   return runner.run(wrapper())                              │
+│   2549 │                                                                     │
+│   2550 │   @classmethod                                                      │
+│   2551 │   def current_token(cls) -> object:                                 │
+│                                                                              │
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/asyncio/runners.py:118 in run                                  │
+│                                                                              │
+│   115 │   │                                                                  │
+│   116 │   │   self._interrupt_count = 0                                      │
+│   117 │   │   try:                                                           │
+│ ❱ 118 │   │   │   return self._loop.run_until_complete(task)                 │
+│   119 │   │   except exceptions.CancelledError:                              │
+│   120 │   │   │   if self._interrupt_count > 0:                              │
+│   121 │   │   │   │   uncancel = getattr(task, "uncancel", None)             │
+│                                                                              │
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/asyncio/base_events.py:691 in run_until_complete               │
+│                                                                              │
+│    688 │   │   if not future.done():                                         │
+│    689 │   │   │   raise RuntimeError('Event loop stopped before Future      │
+│        completed.')                                                          │
+│    690 │   │                                                                 │
+│ ❱  691 │   │   return future.result()                                        │
+│    692 │                                                                     │
+│    693 │   def stop(self):                                                   │
+│    694 │   │   """Stop running the event loop.                               │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/anyio/_backends/_asyncio.py:2531 in wrapper         │
+│                                                                              │
+│   2528 │   │   │   _task_states[task] = TaskState(None, None)                │
+│   2529 │   │   │                                                             │
+│   2530 │   │   │   try:                                                      │
+│ ❱ 2531 │   │   │   │   return await func(*args)                              │
+│   2532 │   │   │   finally:                                                  │
+│   2533 │   │   │   │   del _task_states[task]                                │
+│   2534                                                                       │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/harness_app.py:165 in run                    │
+│                                                                              │
+│   162 │   │   │   AsyncOpenAI(http_client=model_http) as model,              │
+│   163 │   │   ):                                                             │
+│   164 │   │   │   harness = Harness(model, emit)                             │
+│ ❱ 165 │   │   │   purchases = await shop(harness, cards, request.items,      │
+│       request.budget, emit)                                                  │
+│   166 │   │   │   emit(                                                      │
+│   167 │   │   │   │   "SHOPPING_RESULT "                                     │
+│   168 │   │   │   │   + TypeAdapter(tuple[Purchase,                          │
+│       ...]).dump_json(purchases).decode()                                    │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/market_a2a/shopping.py:170 in shop           │
+│                                                                              │
+│   167 │   result = tuple(outcomes[item.request_id] for item in items)        │
+│   168 │   if not all(outcome.completed for outcome in result):               │
+│   169 │   │   msg = "Shopping ended with unpurchased items; inspect          │
+│       negotiation results"                                                   │
+│ ❱ 170 │   │   raise HarnessError(msg)                                        │
+│   171 │   return result                                                      │
+│   172                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+HarnessError: Shopping ended with unpurchased items; inspect negotiation results
+
+During handling of the above exception, another exception occurred:
+
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 06/submissions/25620027/week-06/harness_app.py:186 in <module>               │
+│                                                                              │
+│   183                                                                        │
+│   184 if __name__ == "__main__":                                             │
+│   185 │   logging.basicConfig(stream=sys.stdout, level=logging.INFO,         │
+│       format="%(message)s")                                                  │
+│ ❱ 186 │   app()                                                              │
+│   187                                                                        │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/typer/main.py:1154 in __call__                      │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/typer/main.py:1137 in __call__                      │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/typer/_click/core.py:802 in __call__                │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/typer/core.py:1197 in main                          │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/typer/core.py:187 in _main                          │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/typer/core.py:1119 in invoke                        │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/typer/_click/core.py:741 in invoke                  │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/environments-v2/harness-app-379027e3cbcb2c28/lib/ │
+│ python3.12/site-packages/typer/_click/core.py:481 in invoke                  │
+│                                                                              │
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/contextlib.py:167 in __exit__                                  │
+│                                                                              │
+│   164 │   │   │   except RuntimeError as exc:                                │
+│   165 │   │   │   │   # Don't re-raise the passed in exception. (issue27122) │
+│   166 │   │   │   │   if exc is value:                                       │
+│ ❱ 167 │   │   │   │   │   exc.__traceback__ = traceback                      │
+│   168 │   │   │   │   │   return False                                       │
+│   169 │   │   │   │   # Avoid suppressing if a StopIteration exception       │
+│   170 │   │   │   │   # was passed to throw() and later wrapped into a       │
+│       RuntimeError                                                           │
+│ in __setattr__:5                                                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+TypeError: super(type, obj): obj must be an instance or subtype of type

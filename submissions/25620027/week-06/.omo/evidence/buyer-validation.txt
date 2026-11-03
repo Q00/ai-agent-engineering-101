@@ -1,0 +1,58 @@
+Buyer direct validation
+Date: 2026-10-13 Asia/Seoul
+Working directory: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+Scope: buyer.py and tests/test_buyer.py only. No paid calls performed.
+Each named pytest scenario below has binary observable PASSED/FAILED and its actual command capture in this artifact.
+Earlier attempts: root-directory pytest import failed before pythonpath config; default Anaconda Python 3.11 import failed due incompatible aiohttp. Isolated Python 3.13 fixes the execution environment.
+
+$ uv run --no-project --python 3.13 --isolated --with openai==3.8.0 --with pytest --with httpx2 --with pydantic --with anyio python -m pytest -vv tests/test_buyer.py
+WARN Ignoring project discovery error due to `--no-project`: No `project` table found in: `/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/pyproject.toml`
+Installed 19 packages in 30ms
+============================= test session starts ==============================
+platform darwin -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/D_zSTz1ZFah-OimOtfZrt/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 11 items
+
+tests/test_buyer.py::test_budget_is_system_only_when_episode_continues PASSED [  9%]
+tests/test_buyer.py::test_payload_keeps_same_controls_when_card_claim_changes PASSED [ 18%]
+tests/test_buyer.py::test_raw_cards_keep_order_without_metadata_when_selecting PASSED [ 27%]
+tests/test_buyer.py::test_prior_replies_and_observations_survive_when_offer_continues PASSED [ 36%]
+tests/test_buyer.py::test_over_budget_offer_is_unchanged_when_model_proposes_it PASSED [ 45%]
+tests/test_buyer.py::test_usage_accumulates_when_decisions_continue PASSED [ 54%]
+tests/test_buyer.py::test_parse_error_survives_when_choice_is_malformed[not json] PASSED [ 63%]
+tests/test_buyer.py::test_parse_error_survives_when_choice_is_malformed[{"seller":1,"reason":"bad type"}] PASSED [ 72%]
+tests/test_buyer.py::test_unknown_seller_is_error_when_name_is_outside_cards PASSED [ 81%]
+tests/test_buyer.py::test_sdk_error_propagates_when_api_returns_rate_limit PASSED [ 90%]
+tests/test_buyer.py::test_walk_away_survives_when_model_declines PASSED  [100%]
+
+============================== 11 passed in 1.91s ==============================
+EXIT_CODE=0
+
+$ uv run --no-project --python 3.13 --isolated --with ruff ruff check buyer.py tests/test_buyer.py
+WARN Ignoring project discovery error due to `--no-project`: No `project` table found in: `/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/pyproject.toml`
+Installed 1 package in 1ms
+All checks passed!
+EXIT_CODE=0
+
+$ uv run --no-project --python 3.13 --isolated --with ruff ruff format --check buyer.py tests/test_buyer.py
+WARN Ignoring project discovery error due to `--no-project`: No `project` table found in: `/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/pyproject.toml`
+Installed 1 package in 2ms
+2 files already formatted
+EXIT_CODE=0
+
+$ uv run --no-project --python 3.13 --isolated --with basedpyright --with openai==3.8.0 --with httpx2 --with pytest --with anyio basedpyright buyer.py tests/test_buyer.py
+WARN Ignoring project discovery error due to `--no-project`: No `project` table found in: `/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/pyproject.toml`
+Installed 21 packages in 240ms
+0 errors, 0 warnings, 0 notes
+EXIT_CODE=0
+
+$ uv run --no-project --python 3.13 /Users/sungjinho/.codex/plugins/cache/sisyphuslabs/omo/5.1.30/skills/programming/scripts/python/check-no-excuse-rules.py buyer.py tests/test_buyer.py
+no violations in 2 file(s)
+EXIT_CODE=0
+
+PURE_LOC buyer.py: 136 (limit 250)
+PURE_LOC tests/test_buyer.py: 183 (limit 250)
+Architecture review: buyer owns model decisions, tests own its HTTP boundary. Pydantic parses responses at the boundary; no Any/cast/ignore/broad except. Conversation/counters deliberately accumulate. The fixed six-argument constructor preserves the assigned runner interface and has targeted lint documentation. No price clipping or budget enforcement in code. No skill-file update: provider-managed skill; no reusable user-skill change established.

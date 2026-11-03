@@ -1,0 +1,58 @@
+Public seller implementation verification
+Working directory: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+
+COMMAND: /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_public_seller.py tests/test_current_seller.py -v
+============================= test session starts ==============================
+platform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 19 items
+
+tests/test_public_seller.py::test_public_discovery_when_configured PASSED [  5%]
+tests/test_public_seller.py::test_public_root_when_browser_or_rpc_client_connects PASSED [ 10%]
+tests/test_public_seller.py::test_settings_when_public_url_is_invalid[http://seller.example/] PASSED [ 15%]
+tests/test_public_seller.py::test_settings_when_public_url_is_invalid[https://user:pass@seller.example/] PASSED [ 21%]
+tests/test_public_seller.py::test_settings_when_public_url_is_invalid[https://x/?a=b] PASSED [ 26%]
+tests/test_public_seller.py::test_budget_when_concurrent_requests_exceed_allowance PASSED [ 31%]
+tests/test_public_seller.py::test_budget_when_process_restarts PASSED    [ 36%]
+tests/test_public_seller.py::test_budget_when_utc_day_changes PASSED     [ 42%]
+tests/test_public_seller.py::test_budget_when_upstream_fails PASSED      [ 47%]
+tests/test_current_seller.py::test_discovery_when_root_or_mounted[] PASSED [ 52%]
+tests/test_current_seller.py::test_discovery_when_root_or_mounted[/shop-01] PASSED [ 57%]
+tests/test_current_seller.py::test_guard_when_invalid_model_decision[quote-99-lamp] PASSED [ 63%]
+tests/test_current_seller.py::test_guard_when_invalid_model_decision[accept-99-lamp] PASSED [ 68%]
+tests/test_current_seller.py::test_guard_when_invalid_model_decision[accept-101-lamp] PASSED [ 73%]
+tests/test_current_seller.py::test_guard_when_invalid_model_decision[quote-300-bookshelf] PASSED [ 78%]
+tests/test_current_seller.py::test_receipt_when_model_accepts_actual_offer PASSED [ 84%]
+tests/test_current_seller.py::test_terminal_error_when_followup_after_finish[accept] PASSED [ 89%]
+tests/test_current_seller.py::test_terminal_error_when_followup_after_finish[cancel] PASSED [ 94%]
+tests/test_current_seller.py::test_unavailable_when_model_rejects_unknown_item PASSED [100%]
+
+============================== 19 passed in 1.88s ==============================
+
+EXIT_CODE: 0
+
+COMMAND: /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/ruff check public_seller.py tests/test_public_seller.py
+All checks passed!
+
+EXIT_CODE: 0
+
+COMMAND: /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/ruff format --check public_seller.py tests/test_public_seller.py
+2 files already formatted
+
+EXIT_CODE: 0
+
+COMMAND: /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/basedpyright --pythonpath /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python public_seller.py tests/test_public_seller.py
+0 errors, 0 warnings, 0 notes
+
+EXIT_CODE: 0
+
+COMMAND: /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python /Users/sungjinho/.codex/plugins/cache/sisyphuslabs/omo/5.1.35/skills/programming/scripts/python/check-no-excuse-rules.py public_seller.py tests/test_public_seller.py
+no violations in 2 file(s)
+
+EXIT_CODE: 0
+
+ASSESSMENT: PASS: 19 public-budget and existing seller scenarios passed; lint, formatting, strict type check and structural audit passed.
+LIMITATION: Docker build, container health, public HTTPS and real trades are assigned to the parent agent and are not claimed as verified by this receipt.

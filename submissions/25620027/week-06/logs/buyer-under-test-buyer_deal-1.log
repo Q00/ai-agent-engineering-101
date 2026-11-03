@@ -1,0 +1,23 @@
+HTTP Request: GET http://127.0.0.1:61711/.well-known/agent-card.json "HTTP/1.1 200 OK"
+HTTP GET /.well-known/agent-card.json -> 200
+[A2A HTTP] {"method": "GET", "url": "http://127.0.0.1:61711/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Kit Shop","description":"Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.","supportedInterfaces":[{"url":"http://127.0.0.1:61711/","protocolBinding":"JSONRPC","protocolVersion":"1.0"}],"version":"1.0.0","capabilities":{"streaming":false},"defaultInputModes":["text/plain"],"defaultOutputModes":["application/json","text/plain"],"skills":[{"id":"negotiate","name":"Negotiate a purchase","description":"Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.","tags":["shopping"],"examples":["I want to buy a lamp","90"]}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "2ff8ae4d-0159-4d3c-a870-c248f3a0047b", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "9c78ed07-e322-439a-b68e-8c34212dcc12", "parts": [{"text": "I want to buy lamp"}]}}}
+HTTP Request: POST http://127.0.0.1:61711/ "HTTP/1.1 200 OK"
+HTTP POST / -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:61711/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","contextId":"96a7530b-a998-4952-8005-e45ed9403105","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"efedef54-b956-4f5e-92ca-52b45f2dc102","contextId":"96a7530b-a998-4952-8005-e45ed9403105","taskId":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","role":"ROLE_AGENT","parts":[{"text":"lamp: asking 130. Send your offer as a number."}]},"timestamp":"2026-10-14T00:42:28.361669Z"},"history":[{"messageId":"9c78ed07-e322-439a-b68e-8c34212dcc12","contextId":"96a7530b-a998-4952-8005-e45ed9403105","taskId":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","role":"ROLE_USER","parts":[{"text":"I want to buy lamp"}]}]}},"id":"2ff8ae4d-0159-4d3c-a870-c248f3a0047b","jsonrpc":"2.0"}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "task_id": "39698a6b-b59a-4941-bcb4-4e82d65b6e71", "item": "lamp", "sku": "", "budget": 120, "rounds": 0, "last_offer": null, "recent_observations": ["lamp: asking 130. Send your offer as a number."]}
+CONTEXT chars=227 tools=2
+HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/2 200 OK"
+HTTP POST /v1/chat/completions -> 200
+MODEL_USAGE model=gpt-4.1-nano-2025-04-14 input=310 output=24
+MODEL_TOOL round=1 offer {"price":120,"reason":"Matching the budget to close the deal."}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "a903ff68-536c-45b3-8d77-1bd99e3adcff", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "5613ea42-0b6f-41b5-8fde-5914067312c4", "parts": [{"text": "120"}], "taskId": "39698a6b-b59a-4941-bcb4-4e82d65b6e71", "contextId": "96a7530b-a998-4952-8005-e45ed9403105"}}}
+HTTP Request: POST http://127.0.0.1:61711/ "HTTP/1.1 200 OK"
+HTTP POST / -> 200
+[A2A HTTP] {"method": "POST", "url": "http://127.0.0.1:61711/", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","contextId":"96a7530b-a998-4952-8005-e45ed9403105","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"84e71373-e572-4421-a125-505bc8ba3322","contextId":"96a7530b-a998-4952-8005-e45ed9403105","taskId":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","role":"ROLE_AGENT","parts":[{"text":"Deal: lamp at 120."}]},"timestamp":"2026-10-14T00:42:29.552630Z"},"artifacts":[{"artifactId":"e7db43d3-ff3c-43ab-9712-4a72da2f0dfb","name":"receipt","parts":[{"data":{"price":120.0,"item":"lamp","seller":"Kit Shop"}}]}],"history":[{"messageId":"9c78ed07-e322-439a-b68e-8c34212dcc12","contextId":"96a7530b-a998-4952-8005-e45ed9403105","taskId":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","role":"ROLE_USER","parts":[{"text":"I want to buy lamp"}]},{"messageId":"efedef54-b956-4f5e-92ca-52b45f2dc102","contextId":"96a7530b-a998-4952-8005-e45ed9403105","taskId":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","role":"ROLE_AGENT","parts":[{"text":"lamp: asking 130. Send your offer as a number."}]},{"messageId":"5613ea42-0b6f-41b5-8fde-5914067312c4","contextId":"96a7530b-a998-4952-8005-e45ed9403105","taskId":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","role":"ROLE_USER","parts":[{"text":"120"}]}]}},"id":"a903ff68-536c-45b3-8d77-1bd99e3adcff","jsonrpc":"2.0"}
+TOOL_RESULT offer "Deal: lamp at 120."
+[NEGOTIATION RESULT] {"completed":true,"item":"lamp","sku":"","price":120,"task_id":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","shop":"http://127.0.0.1:61711/","failure_observation":""}
+BUYER_RESULT {"completed":true,"item":"lamp","sku":"","price":120,"task_id":"39698a6b-b59a-4941-bcb4-4e82d65b6e71","shop":"http://127.0.0.1:61711/","failure_observation":""}

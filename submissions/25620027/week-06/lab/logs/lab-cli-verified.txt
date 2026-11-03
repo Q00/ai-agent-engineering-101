@@ -1,0 +1,727 @@
+$ 'a2a' 'card' 'get' 'http://127.0.0.1:9999'
+Name:         Lamp Shop
+Description:  Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.
+Version:      1.0.0
+Interfaces:
+  JSONRPC      http://127.0.0.1:9999/
+Streaming:    false
+Skills:
+  negotiate            Negotiate a purchase
+[EXIT] 0
+$ 'curl' '--silent' '--show-error' 'http://127.0.0.1:9999/' '-H' 'Content-Type: application/json' '-d' '{"jsonrpc":"2.0","id":1,"method":"SendMessage","params":{"message":{"role":"ROLE_USER","messageId":"m0","parts":[{"text":"I want to buy a lamp"}]}}}'
+{"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]},"id":1,"jsonrpc":"2.0"}[EXIT] 0
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' 'I want to buy a lamp' '-o' 'json'
+{
+  "task": {
+    "id": "c01089bc-3c91-441c-8ecf-5c3027326132",
+    "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+    "history": [
+      {
+        "messageId": "01a134d8-5aea-7728-8b49-011b66c40a93",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "76b67134-7e64-40c1-9878-62d346f60c43",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "lamp: asking 130. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "timestamp": "2026-10-13T10:39:16.720366Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' '--task-id' 'c01089bc-3c91-441c-8ecf-5c3027326132' '80' '-o' 'json'
+{
+  "task": {
+    "id": "c01089bc-3c91-441c-8ecf-5c3027326132",
+    "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+    "history": [
+      {
+        "messageId": "01a134d8-5aea-7728-8b49-011b66c40a93",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "76b67134-7e64-40c1-9878-62d346f60c43",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "lamp: asking 130. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "01a134d8-5b9e-727c-b45e-142cb07054af",
+        "contextId": "c3670da4-66d4-4cbf-8ada-dbb487989ec9",
+        "parts": [
+          {
+            "text": "80"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "02f1a054-47f6-4384-845c-88cee3b6355c",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "80 is too low. Counteroffer: 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "timestamp": "2026-10-13T10:39:16.898521Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' '--task-id' 'c01089bc-3c91-441c-8ecf-5c3027326132' '105' '-o' 'json'
+{
+  "task": {
+    "id": "c01089bc-3c91-441c-8ecf-5c3027326132",
+    "artifacts": [
+      {
+        "artifactId": "dcd5faca-5bb9-43dc-a49d-1fdb43feb178",
+        "name": "receipt",
+        "parts": [
+          {
+            "data": {
+              "item": "lamp",
+              "price": 105,
+              "seller": "Lamp Shop"
+            },
+            "mediaType": "application/json"
+          }
+        ]
+      }
+    ],
+    "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+    "history": [
+      {
+        "messageId": "01a134d8-5aea-7728-8b49-011b66c40a93",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "76b67134-7e64-40c1-9878-62d346f60c43",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "lamp: asking 130. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "01a134d8-5b9e-727c-b45e-142cb07054af",
+        "contextId": "c3670da4-66d4-4cbf-8ada-dbb487989ec9",
+        "parts": [
+          {
+            "text": "80"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "02f1a054-47f6-4384-845c-88cee3b6355c",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "80 is too low. Counteroffer: 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "01a134d8-5c50-7a93-9582-0515687d3c1b",
+        "contextId": "5dea873c-82e5-41e4-aaf9-5b1bd5feed58",
+        "parts": [
+          {
+            "text": "105"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "f13c54cd-df3c-4fb5-8e92-67338d082ff6",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "Deal: lamp at 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      "state": "TASK_STATE_COMPLETED",
+      "timestamp": "2026-10-13T10:39:17.07721Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'task' 'get' '-a' 'http://127.0.0.1:9999' 'c01089bc-3c91-441c-8ecf-5c3027326132' '-o' 'json'
+{
+  "task": {
+    "id": "c01089bc-3c91-441c-8ecf-5c3027326132",
+    "artifacts": [
+      {
+        "artifactId": "dcd5faca-5bb9-43dc-a49d-1fdb43feb178",
+        "name": "receipt",
+        "parts": [
+          {
+            "data": {
+              "item": "lamp",
+              "price": 105,
+              "seller": "Lamp Shop"
+            },
+            "mediaType": "application/json"
+          }
+        ]
+      }
+    ],
+    "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+    "history": [
+      {
+        "messageId": "01a134d8-5aea-7728-8b49-011b66c40a93",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "76b67134-7e64-40c1-9878-62d346f60c43",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "lamp: asking 130. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "01a134d8-5b9e-727c-b45e-142cb07054af",
+        "contextId": "c3670da4-66d4-4cbf-8ada-dbb487989ec9",
+        "parts": [
+          {
+            "text": "80"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "02f1a054-47f6-4384-845c-88cee3b6355c",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "80 is too low. Counteroffer: 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      {
+        "messageId": "01a134d8-5c50-7a93-9582-0515687d3c1b",
+        "contextId": "5dea873c-82e5-41e4-aaf9-5b1bd5feed58",
+        "parts": [
+          {
+            "text": "105"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "f13c54cd-df3c-4fb5-8e92-67338d082ff6",
+        "contextId": "dda21168-8dd8-4e01-bff6-3fe5181dd118",
+        "parts": [
+          {
+            "text": "Deal: lamp at 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "c01089bc-3c91-441c-8ecf-5c3027326132"
+      },
+      "state": "TASK_STATE_COMPLETED",
+      "timestamp": "2026-10-13T10:39:17.07721Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' '--task-id' 'c01089bc-3c91-441c-8ecf-5c3027326132' '110' '-o' 'json'
+{
+  "error": {
+    "code": "A2ACLI_ERR_PROTOCOL",
+    "message": "failed to send message: Task c01089bc-3c91-441c-8ecf-5c3027326132 is in terminal state: TASK_STATE_COMPLETED",
+    "a2aCode": "UNSUPPORTED_OPERATION"
+  }
+}
+[EXIT] 1
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' 'I want to buy a sofa' '-o' 'json'
+{
+  "task": {
+    "id": "a3720843-d4b3-4bdb-969b-f6c1a8b5ec58",
+    "contextId": "d31c0360-3a3b-4692-81cc-681bfe6ff493",
+    "history": [
+      {
+        "messageId": "01a134d8-5e6c-7b04-b9b2-ef1ec0692120",
+        "contextId": "d31c0360-3a3b-4692-81cc-681bfe6ff493",
+        "parts": [
+          {
+            "text": "I want to buy a sofa"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "a3720843-d4b3-4bdb-969b-f6c1a8b5ec58"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "22fcdb18-22dd-4711-a976-8788d63bf68c",
+        "contextId": "d31c0360-3a3b-4692-81cc-681bfe6ff493",
+        "parts": [
+          {
+            "text": "We only sell: lamp, chair, bookshelf."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "a3720843-d4b3-4bdb-969b-f6c1a8b5ec58"
+      },
+      "state": "TASK_STATE_REJECTED",
+      "timestamp": "2026-10-13T10:39:17.619616Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' 'I want to buy a chair' '-o' 'json'
+{
+  "task": {
+    "id": "b6eac731-8d31-4bc0-b240-efe254e00050",
+    "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+    "history": [
+      {
+        "messageId": "01a134d8-5f21-7887-b904-98333779e02d",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "I want to buy a chair"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "65ff1597-5bc8-433f-a715-8e5f744ab7c9",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "chair: asking 234. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "timestamp": "2026-10-13T10:39:17.797738Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' '--task-id' 'b6eac731-8d31-4bc0-b240-efe254e00050' '100' '-o' 'json'
+{
+  "task": {
+    "id": "b6eac731-8d31-4bc0-b240-efe254e00050",
+    "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+    "history": [
+      {
+        "messageId": "01a134d8-5f21-7887-b904-98333779e02d",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "I want to buy a chair"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "65ff1597-5bc8-433f-a715-8e5f744ab7c9",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "chair: asking 234. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "01a134d8-5fd1-7693-a6cc-4ae13b699d4e",
+        "contextId": "5ec7ea34-0562-4ae2-b647-f56f2911eb9b",
+        "parts": [
+          {
+            "text": "100"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "841b1adf-73c0-44ae-9e1d-89879cfdbdf6",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "100 is too low. Counteroffer: 180."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "timestamp": "2026-10-13T10:39:17.973631Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' '--task-id' 'b6eac731-8d31-4bc0-b240-efe254e00050' '100' '-o' 'json'
+{
+  "task": {
+    "id": "b6eac731-8d31-4bc0-b240-efe254e00050",
+    "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+    "history": [
+      {
+        "messageId": "01a134d8-5f21-7887-b904-98333779e02d",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "I want to buy a chair"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "65ff1597-5bc8-433f-a715-8e5f744ab7c9",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "chair: asking 234. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "01a134d8-5fd1-7693-a6cc-4ae13b699d4e",
+        "contextId": "5ec7ea34-0562-4ae2-b647-f56f2911eb9b",
+        "parts": [
+          {
+            "text": "100"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "841b1adf-73c0-44ae-9e1d-89879cfdbdf6",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "100 is too low. Counteroffer: 180."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "01a134d8-6091-70bb-9f43-e9f5e11efde4",
+        "contextId": "3a9659f0-bbe4-48de-b541-d2df2c8a9ab2",
+        "parts": [
+          {
+            "text": "100"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "f7d019f5-65e9-45db-8684-4a5ca7a54d18",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "100 is too low. Counteroffer: 180."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "timestamp": "2026-10-13T10:39:18.165131Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' '--task-id' 'b6eac731-8d31-4bc0-b240-efe254e00050' '100' '-o' 'json'
+{
+  "task": {
+    "id": "b6eac731-8d31-4bc0-b240-efe254e00050",
+    "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+    "history": [
+      {
+        "messageId": "01a134d8-5f21-7887-b904-98333779e02d",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "I want to buy a chair"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "65ff1597-5bc8-433f-a715-8e5f744ab7c9",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "chair: asking 234. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "01a134d8-5fd1-7693-a6cc-4ae13b699d4e",
+        "contextId": "5ec7ea34-0562-4ae2-b647-f56f2911eb9b",
+        "parts": [
+          {
+            "text": "100"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "841b1adf-73c0-44ae-9e1d-89879cfdbdf6",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "100 is too low. Counteroffer: 180."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "01a134d8-6091-70bb-9f43-e9f5e11efde4",
+        "contextId": "3a9659f0-bbe4-48de-b541-d2df2c8a9ab2",
+        "parts": [
+          {
+            "text": "100"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "f7d019f5-65e9-45db-8684-4a5ca7a54d18",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "100 is too low. Counteroffer: 180."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      {
+        "messageId": "01a134d8-614a-719e-af04-e4ef1b8755f1",
+        "contextId": "bf3ba9f4-aa4f-4fac-ab44-12523a8e7d6b",
+        "parts": [
+          {
+            "text": "100"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "ee9f8b9a-782e-4298-a66b-6530d7ba58e1",
+        "contextId": "b60457db-6c89-4a3f-8bc3-6c282f265314",
+        "parts": [
+          {
+            "text": "Three low offers. No deal."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "b6eac731-8d31-4bc0-b240-efe254e00050"
+      },
+      "state": "TASK_STATE_REJECTED",
+      "timestamp": "2026-10-13T10:39:18.350427Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'send' '-a' 'http://127.0.0.1:9999' 'I want to buy a bookshelf' '-o' 'json'
+{
+  "task": {
+    "id": "bb297218-7043-42af-8474-b61e1c0faa32",
+    "contextId": "490e321f-01e3-4e44-b905-aab34f07ff07",
+    "history": [
+      {
+        "messageId": "01a134d8-620a-7309-adc0-e71556d1de9f",
+        "contextId": "490e321f-01e3-4e44-b905-aab34f07ff07",
+        "parts": [
+          {
+            "text": "I want to buy a bookshelf"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "bb297218-7043-42af-8474-b61e1c0faa32"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "cfd07d1a-1c53-4419-9dea-8222b54ec0cc",
+        "contextId": "490e321f-01e3-4e44-b905-aab34f07ff07",
+        "parts": [
+          {
+            "text": "bookshelf: asking 338. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "bb297218-7043-42af-8474-b61e1c0faa32"
+      },
+      "state": "TASK_STATE_INPUT_REQUIRED",
+      "timestamp": "2026-10-13T10:39:18.542429Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'task' 'cancel' '-a' 'http://127.0.0.1:9999' 'bb297218-7043-42af-8474-b61e1c0faa32' '-o' 'json'
+{
+  "task": {
+    "id": "bb297218-7043-42af-8474-b61e1c0faa32",
+    "contextId": "490e321f-01e3-4e44-b905-aab34f07ff07",
+    "history": [
+      {
+        "messageId": "01a134d8-620a-7309-adc0-e71556d1de9f",
+        "contextId": "490e321f-01e3-4e44-b905-aab34f07ff07",
+        "parts": [
+          {
+            "text": "I want to buy a bookshelf"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "bb297218-7043-42af-8474-b61e1c0faa32"
+      },
+      {
+        "messageId": "cfd07d1a-1c53-4419-9dea-8222b54ec0cc",
+        "contextId": "490e321f-01e3-4e44-b905-aab34f07ff07",
+        "parts": [
+          {
+            "text": "bookshelf: asking 338. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "bb297218-7043-42af-8474-b61e1c0faa32"
+      }
+    ],
+    "status": {
+      "state": "TASK_STATE_CANCELED",
+      "timestamp": "2026-10-13T10:39:18.720765Z"
+    }
+  }
+}
+[EXIT] 0
+$ 'a2a' 'task' 'get' '-a' 'http://127.0.0.1:9999' 'bb297218-7043-42af-8474-b61e1c0faa32' '-o' 'json'
+{
+  "task": {
+    "id": "bb297218-7043-42af-8474-b61e1c0faa32",
+    "contextId": "490e321f-01e3-4e44-b905-aab34f07ff07",
+    "history": [
+      {
+        "messageId": "01a134d8-620a-7309-adc0-e71556d1de9f",
+        "contextId": "490e321f-01e3-4e44-b905-aab34f07ff07",
+        "parts": [
+          {
+            "text": "I want to buy a bookshelf"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "bb297218-7043-42af-8474-b61e1c0faa32"
+      },
+      {
+        "messageId": "cfd07d1a-1c53-4419-9dea-8222b54ec0cc",
+        "contextId": "490e321f-01e3-4e44-b905-aab34f07ff07",
+        "parts": [
+          {
+            "text": "bookshelf: asking 338. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "bb297218-7043-42af-8474-b61e1c0faa32"
+      }
+    ],
+    "status": {
+      "state": "TASK_STATE_CANCELED",
+      "timestamp": "2026-10-13T10:39:18.720765Z"
+    }
+  }
+}
+[EXIT] 0
