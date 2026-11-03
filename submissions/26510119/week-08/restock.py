@@ -9,6 +9,8 @@ The kit's default buys random SKUs in 3 random categories once fewer than 20 uni
      public signal of what sells) against supply (units other shops and we already hold);
   3. in a category picks the SKU that sold most often, else the one priced nearest the category median,
      skipping food with a short shelf life and goods too expensive to hold (storage 1%/day).
+Supply opens for everyone for 3 minutes every 20 minutes (inventory.json `restock`): outside a window the run
+only updates the intel and the forum and buys nothing, so the kit never waits on a closed window.
 Every number comes from policy.json.
 """
 import argparse
@@ -16,6 +18,7 @@ import json
 import os
 import random
 import sys
+import time
 from pathlib import Path
 
 
@@ -57,6 +60,13 @@ def main():
         out["forum"] = forum.tick(intel)
     except Exception as e:
         out["forum_error"] = f"{type(e).__name__}: {e}"
+    window = inv.get("restock") or {}
+    if window and not window.get("open"):    # supply opens for 3 min every 20 min; outside it the kit would wait
+        wait = (window.get("opens_at") or 0) - time.time()       # up to 90 s per line and then skip the line
+        if wait > 30:
+            out["why"].append(f"supply window closed, opens in {wait / 60:.1f} min")
+            print(json.dumps(out, ensure_ascii=False))
+            return
     if len(units) >= p["target_units"]:
         out["why"].append(f"{len(units)} units in stock, target {p['target_units']}")
         print(json.dumps(out, ensure_ascii=False))
