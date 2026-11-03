@@ -9,6 +9,7 @@ from pathlib import Path
 import time
 
 from r3_policy import buyer_accept
+from buyer_portfolio import save_deal
 
 ROOT = Path(__file__).resolve().parent
 
@@ -64,6 +65,8 @@ def main():
     parser.add_argument("--deal", type=Path, required=True)
     args = parser.parse_args()
     deal = json.loads(args.deal.read_text(encoding="utf-8"))
+    if evaluate(deal)["stars"] == 5:
+        save_deal(ROOT / ".market", deal)
     ledger = (deal.get("settled") or {}).get("ledger")
     identity = {"order": (deal.get("order") or {}).get("order"), "ledger": ledger,
                 "task": (deal.get("receipt") or {}).get("task")}

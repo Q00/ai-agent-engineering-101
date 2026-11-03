@@ -14,9 +14,11 @@ import httpx
 from buyer import BuyerError, BuyerTransport, run_autonomous
 from buyer_memory import choose_shop, load_memory, remember, RECENT_COUNT
 from shop_catalog import load_shops
-from r3_policy import buyer_accept
+from r3_policy import buyer_accept, load_policy
 from settlement_memory import payment_outcomes, reconcile
 from r3_selection import select as select_r3
+from buyer_portfolio import reconcile as reconcile_portfolio
+from market_intel import fresh
 
 ROOT = Path(__file__).resolve().parent
 
@@ -47,6 +49,20 @@ class MarketTransport(BuyerTransport):
     """Retain the original artifact even when the inherited validation rejects it."""
     last_offer = None
     raw_receipt = None
+    requirements = None
+
+    def open(self):
+        if not self.requirements:
+            return super().open()
+        if self.task is not None:
+            raise BuyerError("This buyer already has a task")
+        text = f"I want to buy {self.item}. Please include a market certificate. "
+        if self.requirements.get("warranty_hours"):
+            text += f"I require {self.requirements['warranty_hours']} hours of warranty in the checkout. "
+        else:
+            text += "If available, please offer a 6-hour goods warranty; no warranty is assumed. "
+        return self._rpc("SendMessage", {"message": {"role": "ROLE_USER", "messageId": str(uuid4()),
+                         "parts": [{"text": text}]}})
 
     def __init__(self, *args, **kwargs):
         # Use OS-trusted CAs explicitly: trust_env=False ignores SSL_CERT_FILE.
@@ -86,8 +102,9 @@ def error_kind(error):
     return "agent_error"
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport)
+    client.requirements = requirements
     error = None
     try:
         with client:
@@ -148,7 +165,14 @@ def main():
             shops = [s for s in shops if s["offers"]]
             catalog_path = args.order.parent / "catalog.json"
             catalog = json.loads(catalog_path.read_text(encoding="utf-8")) if catalog_path.exists() else {}
-            shop, selected_item, trade_budget, reason, evidence = select_r3(shops, memory, catalog, args.budget)
+            snapshot = fresh(args.order.parent)
+            portfolio = reconcile_portfolio(args.order.parent, snapshot.get("rows", []))
+            shop, selected_item, trade_budget, reason, evidence = select_r3(
+                shops, memory, catalog, args.budget, policy=load_policy()["buying"],
+                portfolio=portfolio, kind=order.get("kind"))
+            selected_evidence = next((e for e in evidence if shop and e["shop"] == shop["name"] and e["sku"] == selected_item), {})
+            if selected_evidence.get("warranty_required"):
+                accept_conditions["warranty_hours"] = selected_evidence["warranty_required"]
         else:
             shop, reason, evidence = choose_shop(shops, memory, args.item, args.budget,
                                                recent_count=args.memory_window)
@@ -157,11 +181,15 @@ def main():
         parser.exit(1, f"Cannot load selection inputs: {error}\n")
     print(f"[choose] {reason}", flush=True)
     if shop:
-        result, record = trade(shop, selected_item, trade_budget, mode=args.mode)
+        trade_options = {"mode": args.mode}
+        if r3 and order.get("kind") == "goods":
+            trade_options["requirements"] = accept_conditions
+        result, record = trade(shop, selected_item, trade_budget, **trade_options)
         if r3:
             record["order"] = order.get("order")
             record["order_budget"] = args.budget
             record["category"] = order.get("category", args.item)
+            record["accept_conditions"] = accept_conditions
             # Certificate and food-use constraints are enforced by the kit before payment.
             result["accept"] = accept_conditions
         record["selection_reason"] = reason

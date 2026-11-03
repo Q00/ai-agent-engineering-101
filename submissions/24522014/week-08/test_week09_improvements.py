@@ -56,7 +56,7 @@ class BuyerValue(unittest.TestCase):
                     patch.object(market_buyer, "trade", return_value=({"receipt": None}, {})) as trade, \
                     patch.object(market_buyer, "remember") as remember, redirect_stdout(io.StringIO()):
                 market_buyer.main()
-            self.assertEqual(trade.call_args.args[1:3], ("A", 100))
+            self.assertEqual(trade.call_args.args[1:3], ("A", 80))
             self.assertEqual(remember.call_args.args[1]["order_budget"], 200)
 
 
