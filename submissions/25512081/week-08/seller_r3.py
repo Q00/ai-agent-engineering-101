@@ -86,6 +86,12 @@ UNDERCUT, COMP_FRESH = 0.98, 6 * 3600
 # nowhere else to go, so we open higher. Both stay under MAX_SHARE.
 SHORTAGE_PREMIUM = 0.10    # times (no-deal share - 0.3), so 0.6 unmet opens 3% higher
 ALONE_PREMIUM = 0.06
+# Supply opens once every 20 minutes for 3 (agent.md): right after a window every shop is full, and as the cycle
+# runs on, rivals sell out while orders keep coming. So the opening share rises with the time since the last
+# window, by up to CYCLE_PREMIUM just before the next one: we sell more of our stock when buyers have fewest
+# alternatives, and keep some for then instead of selling all of it cheap in the first minutes.
+CYCLE_PREMIUM = 0.08
+CYCLE = 20 * 60
 # The last day of the round: stock left at the end is cost already paid, so selling it at any price raises the
 # final balance. Opening share and floor fall in two steps (share factor, floor as a share of cost).
 END_TS = 1794927540        # Tue Nov 17 23:59 KST
@@ -240,6 +246,10 @@ def terms(u):
 def scarcity(category):
     pulse = _load("pulse.json", {})
     f = 1.0
+    win = inventory().get("restock") or {}
+    if win and not win.get("open") and win.get("opens_at"):
+        phase = 1 - (win["opens_at"] - time.time()) / (CYCLE - 180)
+        f += CYCLE_PREMIUM * min(1.0, max(0.0, phase))
     if pulse.get("nodeal") is not None and time.time() - pulse.get("ts", 0) < 600:
         f += SHORTAGE_PREMIUM * max(0.0, pulse["nodeal"] - 0.3)
     c = _load("competitors.json", {}).get("cats", {}).get(category)

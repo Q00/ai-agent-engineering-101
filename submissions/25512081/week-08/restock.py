@@ -39,6 +39,12 @@ TOTAL_UNITS = 160          # the stock the targets add up to, once there is data
 MAX_PER_CAT = 8
 UNMET_FRESH = 6 * 3600     # a category our buyer found no shop for, this recently, gets UNMET_UNITS of stock
 UNMET_UNITS = 2
+# Supply opens for everyone once every 20 minutes for 3 (agent.md, Nov 3). Outside a window the kit waits up to
+# 90 s per line and then skips it, which kept one of our runs busy for 15 minutes: so we print no lines unless the
+# window is open or opens within WINDOW_LEAD, and keep the shop manager's plan for the window. Stock bought in a
+# window has to last 20 minutes, so the shop manager runs in the 10 minutes before a window.
+WINDOW_LEAD = 75
+PLANNER_LEAD = 10 * 60
 PULSE_DECAY = 0.97         # per run: the market's no-deal share over roughly the last half hour
 DECAY = 0.995              # per run (about one a minute): half-life about 2 hours
 MAX_LINES = 10
@@ -253,7 +259,13 @@ def main():
     if endgame:
         want, room = {}, 0
         log("last day of the round: no new stock, the seller is selling off")
-    if inv.get("round", 0) >= 3 and not endgame and time.time() - st.get("planner_ts", 0) > PLANNER_EVERY:
+    win = inv.get("restock") or {}
+    opens_in = (win.get("opens_at") or 0) - time.time()
+    closed = bool(win) and not win.get("open") and opens_in > WINDOW_LEAD
+    if closed:
+        room = 0
+    if inv.get("round", 0) >= 3 and not endgame and time.time() - st.get("planner_ts", 0) > PLANNER_EVERY \
+            and (not win or win.get("open") or opens_in < PLANNER_LEAD):
         st["planner_ts"] = time.time()
         subprocess.Popen([sys.executable, "planner.py"], start_new_session=True,
                          stdout=open(sd / "planner.out", "a"), stderr=subprocess.STDOUT)
@@ -269,7 +281,7 @@ def main():
         log(f"forum skipped: {e}")
     order = sorted(want, key=lambda c: (-(st["pop"].get(c, 0) + 5 * st["sold"].get(c, 0)), medians.get(c, 0)))
 
-    buy = plan_lines(sd, st, catalog, room) if not endgame else []
+    buy = plan_lines(sd, st, catalog, room) if not endgame and not closed else []
     room -= sum(catalog[b["sku"]]["list_price"] * 0.6 * b["qty"] for b in buy)
     for cat in order:
         gap = want[cat] - held.get(cat, 0)
@@ -289,7 +301,8 @@ def main():
     Path(sd / "restock_state.json").write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
     log(f"round {inv.get('round')} balance {inv.get('balance')} stock {len(units)} units / {stock_cost} cost, "
         f"market settles seen {st['settles']}, our sales {sum(st['sold'].values())}, "
-        f"targets {len(want)} categories, buying {len(buy)} lines")
+        f"targets {len(want)} categories, buying {len(buy)} lines"
+        + (f", supply window opens in {opens_in / 60:.1f} min" if closed else ", supply window open"))
     print(json.dumps({"buy": buy}, ensure_ascii=False))
     return 0
 
