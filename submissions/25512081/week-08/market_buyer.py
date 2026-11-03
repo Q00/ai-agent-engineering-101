@@ -367,7 +367,20 @@ def unsignable(receipt, item, order):
         return "no sig_seller"
     if receipt.get("item") != item and receipt.get("item") not in (order.get("acceptable") or []):
         return f"item {receipt.get('item')} is not one the order accepts"
+    if receipt.get("unit") and receipt["unit"] in gone_units():
+        return f"unit {receipt['unit']} was already refused at checkout as not in stock"
     return None
+
+
+def gone_units():
+    """Units the market refused at our checkout as "not in stock": a unit id is sold once, yet some shops kept
+    selling the same one (Nov 3 22:57 - Nov 4 08:17: 34 of 50 such refusals repeated a unit refused before, one
+    unit 20 times; none of them was ever paid)."""
+    try:
+        text = Path(".market/payments.jsonl").read_text(encoding="utf-8")
+    except OSError:
+        return set()
+    return set(re.findall(r"unit (u-[0-9a-f]+) is not in stock", text))
 
 
 def memo(shop, sku, a, order, attempt):
