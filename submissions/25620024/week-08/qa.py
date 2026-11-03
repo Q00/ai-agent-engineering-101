@@ -58,7 +58,7 @@ def audit(board=None):
     lines = _tail()
     last30, last60 = _recent(lines, 30), _recent(lines, 60)
     # 1. errors in the log
-    errs = [l for l in last30 if re.search(r"Traceback|buyer error|\] skipped: |no advice: |failed: ", l)]
+    errs = [l for l in last30 if "[market] ledger" not in l and re.search(r"Traceback|buyer error|\] skipped: |no advice: |failed: ", l)]
     if errs:
         add("red" if len(errs) >= 5 else "yellow", "code", f"{len(errs)} errors in the last 30 min", errs[-3:])
     # 2. quotes that came back without a price (phantom stock, refusals)

@@ -347,7 +347,7 @@ def misbehaviour(item, asks, offers, texts, outcome):
         issues.append(f"absurd price: asked {max(asks)} for a {item}")
         worst = "absurd"
     for x, y in zip(asks, asks[1:]):
-        if y > x:
+        if y > x * 1.01:                           # a rise of 1% or less is rounding (188 -> 189 banned ggari-shop)
             issues.append(f"raised its ask from {x} to {y} mid-negotiation")
             worst = "hallucination"
             break
@@ -787,8 +787,10 @@ def round3(a, order, shops, mem, started):
         else:
             agreed = offers[-1] if offers else None
             # the kit takes the order's category or the SKU on a receipt; another SKU is another product
-            problem = check_receipt(rec, task, rec.get("item") if rec.get("item") in (sku, order.get("item")) else sku,
-                                    agreed)
+            # any SKU the order accepts is the order's product: the kit settles it (yms979, jiseokkk and psyoung82 were
+            # banned for selling another acceptable SKU, 11-04)
+            ok_items = {sku, order.get("item"), *(order.get("acceptable") or [])}
+            problem = check_receipt(rec, task, rec.get("item") if rec.get("item") in ok_items else sku, agreed)
             log(f"[receipt] {rec}  agreed {agreed}: {problem or 'matches the deal'}")
     issues, worst = misbehaviour(sku, asks, offers, texts, outcome)
     issues += notes

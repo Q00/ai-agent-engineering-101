@@ -23,6 +23,7 @@ The numbers are defaults; theta.json (written by the meta-harness, the outer loo
     python buyer_memory.py              # rebuild and print the profiles
 """
 import json
+import re
 import os
 import statistics
 import time
@@ -82,8 +83,37 @@ def profile():
     return f"[buyer profile v{t.get('version', 0)}]\n" + "\n".join(f"- {r}" for r in rules) + "\n\n"
 
 
+def CATEGORY_OF(sku, _c={}):
+    """A SKU's catalog category (cached)."""
+    if not sku:
+        return None
+    if not _c:
+        try:
+            rows = json.loads((Path(".market") / "catalog.json").read_text(encoding="utf-8"))
+            _c.update({r["sku"]: r.get("category") for r in (rows if isinstance(rows, list) else rows.values())})
+        except (OSError, ValueError):
+            _c["_"] = None
+    return _c.get(sku)
+
+
+FALSE_OFFENSES = re.compile(
+    r"raised its ask from (\d+) to (\d+)|claimed grade ([ABC]), the market says ([ABC])|receipt for (G[0-9a-f]{8}), ordered")
+
+
 def severity(problem):
+    """How bad a recorded problem was. Three kinds the buyer used to count were not offenses (11-04): an ask raised
+    by 1% or less (rounding), a grade claim WORSE than the true grade, a receipt for another SKU of the order's
+    category (any acceptable SKU settles); they are judged again here, so the bans they caused lift."""
     if not problem:
+        return None
+    m = FALSE_OFFENSES.search(problem)
+    if m and m.group(1) and int(m.group(2)) <= int(m.group(1)) * 1.01 and problem.count("raised") == 1 and \
+            problem.startswith("misbehaved") and "; " not in problem:
+        return None
+    if m and m.group(3) and "ABC".find(m.group(3)) > "ABC".find(m.group(4)):
+        return None
+    if m and m.group(5) and CATEGORY_OF(m.group(5)) and CATEGORY_OF(m.group(5)) == CATEGORY_OF(
+            (re.search(r"ordered (G[0-9a-f]{8})", problem) or [None, None])[1]):
         return None
     if problem.startswith(("receipt above", "receipt for", "receipt names")):
         return "severe"
