@@ -51,6 +51,7 @@ class R3Contract(unittest.TestCase):
             shops = [{"name": "shop", "url": "https://example.test", "reviews": [],
                       "offers": [{"sku": "bad", "qty": 9}, {"sku": "G00001", "qty": 1}]}]
             (root / "shops.json").write_text(json.dumps(shops), encoding="utf-8")
+            (root / "catalog.json").write_text(json.dumps({"G00001": {"list_price": 100}}), encoding="utf-8")
             order = {"order": "o1", "item": "food", "budget": 100, "kind": "food",
                      "acceptable": ["G00001"], "use_within_hours": 3}
             (root / "order.json").write_text(json.dumps(order), encoding="utf-8")

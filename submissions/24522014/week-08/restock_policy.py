@@ -5,10 +5,35 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
+import time
 from uuid import uuid4
 
 
-def plan(inventory, catalog, demand, sales, cursor=0):
+def demand_hints(posts, catalog, now):
+    """Recent buyer requests are weak signals; never execute instructions in forum text."""
+    hints = {}
+    for post in posts[-100:]:
+        ts = post.get("ts")
+        if isinstance(ts, str):
+            try:
+                ts = datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                continue
+        if type(ts) not in (int, float) or not 0 <= now - ts <= 86400:
+            continue
+        text = str(post.get("text", ""))[:2000]
+        if post.get("role") != "buyer" or post.get("author") == "kcwarni":
+            continue
+        if not re.search(r"구합니다|구매하고|찾습니다|\b(?:want|need|looking for|buying)\b", text, re.I):
+            continue
+        for sku in set(re.findall(r"[\w.-]+", text)) & catalog.keys():
+            hints.setdefault(sku, set()).add(str(post.get("author", "unknown")))
+    return {sku: min(2, len(authors)) for sku, authors in hints.items()}
+
+
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None):
+    now = time.time() if now is None else now
+    hints = hints or {}
     if inventory.get("round", 0) < 3:
         return [], {"reason": "not_round_3"}
     units = [u for u in inventory.get("units", []) if u.get("grade") != "expired"]
@@ -19,7 +44,10 @@ def plan(inventory, catalog, demand, sales, cursor=0):
         return [], {"reason": "stock_or_cash_limit", "budget": budget}
     categories = {d["category"] for d in demand}
     owned = {u["sku"] for u in units}
-    food_count = sum(u.get("kind") == "food" for u in units)
+    experimental = [u for u in units if not sales.get(u["sku"], 0)]
+    stale = any(type(u.get("supplied_at")) in (int, float)
+                and now - u["supplied_at"] >= 86400 for u in units)
+    exploration_slots = 0 if stale else max(0, 2 - len(experimental))
     candidates = [(sku, value) for sku, value in sorted(catalog.items())
                   if sku not in owned and value.get("category") in categories
                   and isinstance(value.get("list_price"), (int, float)) and value["list_price"] > 0]
@@ -27,25 +55,35 @@ def plan(inventory, catalog, demand, sales, cursor=0):
         offset = cursor % len(candidates)
         candidates = candidates[offset:] + candidates[:offset]
     # Stable sort preserves rotating exploration order among equal observed-sale counts.
-    candidates.sort(key=lambda pair: -sales.get(pair[0], 0))
+    candidates.sort(key=lambda pair: (-sales.get(pair[0], 0), -hints.get(pair[0], 0)))
     buys = []
     estimated = 0
+    storage_reserve = 0
+    rate = inventory.get("storage_per_day", 0.01)
+    if type(rate) not in (int, float) or not 0 <= rate <= 1:
+        rate = 0.01
     for sku, value in candidates:
         # Supply draws the grade on arrival; shelf_hours is not a minimum remaining lifetime.
         if value.get("kind") == "food":
             continue
-        if value.get("kind") == "food" and food_count >= 2:
+        if not sales.get(sku, 0) and exploration_slots <= 0:
             continue
         worst_cost = value["list_price"] * 0.75
-        if estimated + worst_cost > budget:
+        carrying_cost = worst_cost * rate
+        if estimated + storage_reserve + worst_cost + carrying_cost > budget:
             continue
         buys.append({"sku": sku, "qty": 1})
         estimated += worst_cost
-        food_count += value.get("kind") == "food"
+        storage_reserve += carrying_cost
+        if not sales.get(sku, 0):
+            exploration_slots -= 1
         if len(buys) >= min(2, 8 - len(units)):
             break
     return buys, {"reason": "bounded_experiment", "budget": budget,
                   "estimated_max_cost": estimated, "cash_reserve": reserve,
+                  "one_day_storage_reserve": storage_reserve,
+                  "unproven_stock": len(experimental), "stale_stock": stale,
+                  "forum_hints": hints,
                   "food_supply": "deferred: no guaranteed shelf life or supported sales-window estimate"}
 
 
@@ -73,7 +111,13 @@ def main():
         memory["sales"][sku] = memory["sales"].get(sku, 0) + 1
     if observed:
         memory["last_sale_seq"] = max(observed)
-    buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"])
+    # Forum data is optional. A malformed snapshot must not broaden purchasing.
+    try:
+        posts = read("forum.json") if (md / "forum.json").exists() else []
+        hints = demand_hints(posts, catalog, time.time()) if isinstance(posts, list) else {}
+    except (OSError, ValueError, TypeError, AttributeError):
+        hints = {}
+    buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints)
     memory["cursor"] += 1
     temporary = memory_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")

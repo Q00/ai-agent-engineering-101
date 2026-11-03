@@ -22,7 +22,9 @@ class RestockLimits(unittest.TestCase):
 
     def test_food_and_unit_caps(self):
         units = [{"sku": str(i), "kind": "food", "grade": "A"} for i in range(2)]
-        buys, _ = plan({**self.inv, "units": units}, self.catalog, self.demand, {})
+        # Two unproven lots now exhaust exploration; proven goods may still replenish.
+        self.assertEqual(plan({**self.inv, "units": units}, self.catalog, self.demand, {})[0], [])
+        buys, _ = plan({**self.inv, "units": units}, self.catalog, self.demand, {"C": 1})
         self.assertEqual(buys, [{"sku": "C", "qty": 1}])
         self.assertEqual(plan({**self.inv, "units": units * 4}, self.catalog, self.demand, {})[0], [])
 

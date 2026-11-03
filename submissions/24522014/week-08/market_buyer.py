@@ -16,6 +16,7 @@ from buyer_memory import choose_shop, load_memory, remember, RECENT_COUNT
 from shop_catalog import load_shops
 from r3_policy import buyer_accept
 from settlement_memory import payment_outcomes, reconcile
+from r3_selection import select as select_r3
 
 ROOT = Path(__file__).resolve().parent
 
@@ -145,20 +146,21 @@ def main():
             shops = [dict(s, offers=[o for o in s.get("offers", [])
                                     if o.get("sku") in acceptable and o.get("qty", 0) > 0]) for s in shops]
             shops = [s for s in shops if s["offers"]]
-            # Bootstrap selection only: do not compare historical prices across different SKUs.
-            selection_memory = [dict(r, item="__past_sku__") for r in memory]
+            catalog_path = args.order.parent / "catalog.json"
+            catalog = json.loads(catalog_path.read_text(encoding="utf-8")) if catalog_path.exists() else {}
+            shop, selected_item, trade_budget, reason, evidence = select_r3(shops, memory, catalog, args.budget)
         else:
-            selection_memory = memory
-        shop, reason, evidence = choose_shop(shops, selection_memory, args.item, args.budget,
-                                              recent_count=args.memory_window)
+            shop, reason, evidence = choose_shop(shops, memory, args.item, args.budget,
+                                               recent_count=args.memory_window)
+            selected_item, trade_budget = args.item, args.budget
     except (OSError, ValueError) as error:
         parser.exit(1, f"Cannot load selection inputs: {error}\n")
     print(f"[choose] {reason}", flush=True)
     if shop:
-        item = min(shop["offers"], key=lambda o: o["sku"])["sku"] if r3 else args.item
-        result, record = trade(shop, item, args.budget, mode=args.mode)
+        result, record = trade(shop, selected_item, trade_budget, mode=args.mode)
         if r3:
             record["order"] = order.get("order")
+            record["order_budget"] = args.budget
             record["category"] = order.get("category", args.item)
             # Certificate and food-use constraints are enforced by the kit before payment.
             result["accept"] = accept_conditions
