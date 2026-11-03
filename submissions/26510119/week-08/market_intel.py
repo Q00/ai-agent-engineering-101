@@ -2,9 +2,10 @@
 
 No LLM. Each update() reads the ledger from where the last one stopped and keeps the recent events in
 $MARKET_DIR/intel.json:
-  orders:  [ts, category leaf, [acceptable SKUs]]      what buyers ask for (demand)
-  settles: [ts, sku, price, shop]                       what actually sold, at what price
+  settles: [ts, sku, price, shop, seq, data]            what actually sold, at what price (demand)
   stock:   {category leaf: units held by other shops}   what is already on offer (supply)
+Round 3 `order` entries on the ledger carry no item or budget (agent.md), so demand is read from `settle`
+entries: which SKUs sold, in which categories, at what share of the list price.
 """
 import json
 import os
@@ -35,7 +36,7 @@ def load():
     try:
         return json.loads(INTEL.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return {"seq": None, "orders": [], "settles": [], "stock": {}, "updated": 0}
+        return {"seq": None, "settles": [], "stock": {}, "updated": 0}
 
 
 def update(window_hours=6, me=None):
@@ -51,11 +52,10 @@ def update(window_hours=6, me=None):
                 if e.get("round", 0) < 3:
                     continue
                 d = e.get("data") or {}
-                if e["kind"] == "order":
-                    intel["orders"].append([e["ts"], d.get("item"), d.get("acceptable") or []])
-                elif e["kind"] in ("settle", "settled", "payment") and d.get("item"):
-                    intel["settles"].append([e["ts"], d.get("item"), d.get("price") or d.get("amount"),
-                                             d.get("shop")])
+                if e["kind"] == "settle" and d.get("item"):
+                    intel["settles"].append([e["ts"], d.get("item"), d.get("price"), d.get("shop"), e["seq"],
+                                             {k: d.get(k) for k in ("buyer", "grade", "claim", "claim_honest",
+                                                                    "warranty_hours", "unit") if k in d}])
             if rows:
                 after = intel["seq"] = rows[-1]["seq"]
             if len(rows) < 500:
@@ -71,7 +71,6 @@ def update(window_hours=6, me=None):
                     stock[k] = stock.get(k, 0) + n
             intel["stock"] = stock
     cut = time.time() - window_hours * 3600
-    intel["orders"] = [o for o in intel["orders"] if o[0] >= cut]
     intel["settles"] = [s for s in intel["settles"] if s[0] >= cut]
     intel["updated"] = time.time()
     tmp = INTEL.with_suffix(".tmp")
@@ -81,18 +80,31 @@ def update(window_hours=6, me=None):
 
 
 def demand(intel):
-    """Orders per category leaf, and how often each SKU was acceptable, in the window."""
+    """Settled sales per category leaf and per SKU in the window: the market's only public signal of what sells."""
+    cat = _catalog()
     by_cat, by_sku = {}, {}
-    for _, item, acceptable in intel["orders"]:
-        by_cat[item] = by_cat.get(item, 0) + 1
-        for s in acceptable:
-            by_sku[s] = by_sku.get(s, 0) + 1
+    for row in intel["settles"]:
+        sku = row[1]
+        k = leaf((cat.get(sku) or {}).get("category"))
+        by_cat[k] = by_cat.get(k, 0) + 1
+        by_sku[sku] = by_sku.get(sku, 0) + 1
     return by_cat, by_sku
+
+
+def price_share(intel):
+    """Median settled price as a share of list price, per category leaf (None where nothing sold)."""
+    cat = _catalog()
+    shares = {}
+    for row in intel["settles"]:
+        x = cat.get(row[1])
+        if x and row[2]:
+            shares.setdefault(leaf(x["category"]), []).append(row[2] / x["list_price"])
+    return {k: sorted(v)[len(v) // 2] for k, v in shares.items()}
 
 
 if __name__ == "__main__":
     i = update()
     by_cat, by_sku = demand(i)
-    print(json.dumps({"orders": len(i["orders"]), "settles": len(i["settles"]),
+    print(json.dumps({"settles": len(i["settles"]),
                       "top_categories": sorted(by_cat.items(), key=lambda x: -x[1])[:10],
                       "stock_categories": len(i["stock"])}, ensure_ascii=False))

@@ -5,10 +5,10 @@
 Prints one JSON line: {"buy": [{"sku", "qty"}], "why": [...]} and "bankrupt": true when stuck.
 The kit's default buys random SKUs in 3 random categories once fewer than 20 units are left. This one:
   1. keeps a cash reserve and spends at most a small share of the balance per run;
-  2. scores each category by demand (buyers' orders in the last hours, from market_intel) against supply
-     (units other shops and we already hold), so it stocks what is asked for and not already everywhere;
-  3. in a category picks the SKU buyers list as acceptable most often, else the one priced nearest the
-     category median, skipping food with a short shelf life and goods too expensive to hold (storage 1%/day).
+  2. scores each category by demand (settled sales in the last hours, from market_intel: the ledger's only
+     public signal of what sells) against supply (units other shops and we already hold);
+  3. in a category picks the SKU that sold most often, else the one priced nearest the category median,
+     skipping food with a short shelf life and goods too expensive to hold (storage 1%/day).
 Every number comes from policy.json.
 """
 import argparse
@@ -46,6 +46,17 @@ def main():
     if balance < inv.get("bankrupt_line", 0) and not units and (inv.get("bankruptcies_left") or 0) > 0:
         print(json.dumps({"buy": [], "bankrupt": True, "why": ["below the line with nothing to sell"]}))
         return
+    try:
+        intel = market_intel.load() if a.offline else market_intel.update(p["window_hours"],
+                                                                         me=os.environ.get("SHOP_NAME", "olstjr"))
+    except Exception as e:                   # market unreachable: decide from what was read last time
+        intel = market_intel.load()
+        out["why"].append(f"ledger not read ({type(e).__name__}); using the last intel")
+    try:                                     # the forum writer rides on this 60 s tick: no process of its own
+        import forum
+        out["forum"] = forum.tick(intel)
+    except Exception as e:
+        out["forum_error"] = f"{type(e).__name__}: {e}"
     if len(units) >= p["target_units"]:
         out["why"].append(f"{len(units)} units in stock, target {p['target_units']}")
         print(json.dumps(out, ensure_ascii=False))
@@ -56,7 +67,6 @@ def main():
         print(json.dumps(out, ensure_ascii=False))
         return
 
-    intel = market_intel.load() if a.offline else market_intel.update(p["window_hours"], me=os.environ.get("SHOP_NAME", "olstjr"))
     orders, wanted = market_intel.demand(intel)
     ours_cat, ours_sku = {}, {}
     for u in units:
@@ -93,9 +103,9 @@ def main():
             continue
         budget -= qty * unit_cost
         out["buy"].append({"sku": x["sku"], "qty": qty})
-        out["why"].append(f"{d['item']}: {orders.get(d['item'], 0)} orders, others hold "
+        out["why"].append(f"{d['item']}: {orders.get(d['item'], 0)} sales, others hold "
                           f"{intel['stock'].get(d['item'], 0)}, we hold {ours_cat.get(d['item'], 0)}; "
-                          f"{x['sku']} list {x['list_price']}, acceptable in {wanted.get(x['sku'], 0)} orders")
+                          f"{x['sku']} list {x['list_price']}, sold {wanted.get(x['sku'], 0)} times")
     print(json.dumps(out, ensure_ascii=False))
 
 
