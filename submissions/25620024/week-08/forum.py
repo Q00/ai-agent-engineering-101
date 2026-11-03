@@ -214,11 +214,16 @@ def follow_ads(c, md, now):
             continue
         u = us[0]
         w = promo.theta().get("warranty_goods_h") or 0
+        low = market_model.market_low(c, sku, hours=24)
+        # the lowest-price guarantee, spelled out on the hits the leading shops sell (HQ 11-04: take their buyers)
         out.append({"topic": f"follow:{sku}", "as": "shop", "refs": [], "score": 2.9,
-                    "text": f"[in stock] sku {sku} {u['name'][:34]} | {len(us)} units, grade {u.get('grade')} "
-                            f"cert=market-signed{f', warranty {w}h' if u.get('kind') == 'goods' and w else ''} | asking about "
-                            f"{cut:.0%} under the 24 h market median {med:.0f} (ledger, {n} settles) | ask: "
-                            f"'I want to buy {u['name'][:20]} ({sku})'"})
+                    "text": f"[최저가 보상] {u['name'][:30]} ({sku}) 재고 {len(us)}개, 등급 {u.get('grade')}, 시장 인증서"
+                            f"{f', 보증 {w}시간' if u.get('kind') == 'goods' and w else ''}\n"
+                            f"- 가격: 최근 24시간 시장 중간값 {med:,.0f}원(정산 {n}건)보다 약 {cut:.0%} 낮게\n"
+                            f"- 다른 가게가 장부에 더 싸게 판 기록이 있으면 'match <가격>'이라고 보내세요: 그 가격에 맞춰 드립니다"
+                            f"{f' (현재 장부 최저 {low:,}원)' if low else ''}\n"
+                            f"- 이미 더 비싸게 사셨다면 마켓 이름을 알려 주세요: 차액을 이번 구매에서 빼 드립니다\n"
+                            f"- 주문: 'I want to buy {u['name'][:20]} ({sku})'"})
     return out
 
 
