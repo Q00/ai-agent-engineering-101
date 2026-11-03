@@ -100,10 +100,11 @@ def evidence(shop, memory, item, reference=None):
     rows = [row for row in memory if row.get("shop") == shop.get("name") and row.get("item") == item
             and row.get("outcome") not in ("no_stock", "stale")]
     deals = [row for row in rows if row.get("outcome") == "deal" and row.get("honest", True)]
-    # dishonest: a receipt that did not match, a false grade claim at settlement, a steering message, or goods that
-    # broke with no warranty to refund them (the buyer's whole price is gone). An "unpaid" row is simply not a deal.
+    # bad for me: a receipt that did not match, a false grade claim at settlement, a steering message, goods that
+    # broke with no warranty to refund them (the buyer's whole price is gone), or a unit the kit refused to pay for
+    # (grade C, too little shelf life: 11-04 02:50, a third of agreed deals) - that shop's stock does not fit my orders.
     bad = [row for row in rows if row.get("honest") is False or row.get("manipulative")
-           or (row.get("broken") and not row.get("refunded"))]
+           or (row.get("broken") and not row.get("refunded")) or row.get("outcome") == "unpaid"]
 
     # Beta(1, 1): an unknown shop starts at 0.5 rather than zero.
     success = (len(deals) + 1) / (len(rows) + 2)

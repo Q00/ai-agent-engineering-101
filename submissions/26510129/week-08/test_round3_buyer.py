@@ -49,6 +49,16 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertEqual("B", market_buyer.unit_grade(task))
         task["status"]["message"]["metadata"]["grade"] = "A"
         self.assertEqual("A", market_buyer.unit_grade(task))
+        task["status"]["message"]["parts"][0]["text"] = "apples [G1], grade B, about 34 h of shelf life left. Send a price."
+        self.assertEqual(34.0, market_buyer.unit_hours_left(task))
+        self.assertIsNone(market_buyer.unit_hours_left({"status": {"message": {"parts": [{"text": "asking 10"}]}}}))
+
+    def test_a_refused_payment_counts_against_the_shop(self):
+        shop = {"name": "s", "reviews": []}
+        fine = [{"shop": "s", "item": "x", "outcome": "deal", "price": 100, "honest": True}]
+        refused = fine + [{"shop": "s", "item": "x", "outcome": "unpaid", "price": 100, "unpaid_reason": "grade C"}]
+        self.assertGreater(buyer_policy.evidence(shop, fine, "x", 100)["integrity"],
+                           buyer_policy.evidence(shop, refused, "x", 100)["integrity"])
 
     def test_sku_reference_follows_the_market_below_the_list_cap(self):
         stats = {"skus": {"valuable": {"n": 5, "median": 150}}, "categories": {}}

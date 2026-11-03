@@ -96,6 +96,12 @@ def unit_grade(t):
     return m.group(1).upper() if m else None
 
 
+def unit_hours_left(t):
+    """Some shops state the unit's remaining shelf life in the opening ("about 34 h of shelf life left", 11-04 02:35)."""
+    m = re.search(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+of\s+shelf\s+life\s+left", status_text(t), re.I)
+    return float(m.group(1)) if m else None
+
+
 def food_unit_ok(grade, shelf_hours, need):
     """Can a food unit of this grade still last `need` hours? Judged on the grade's floor, so a pass is safe.
     11-04 02:30: 87 agreed food deals were refused at checkout for too little shelf life; each had cost a negotiation."""
@@ -135,7 +141,8 @@ def steered(t):
     return bool(hit)
 
 
-def negotiate(url, item, budget, reference, record="", request=None, value_cap=None, food_need=None, shelf_hours=None):
+def negotiate(url, item, budget, reference, record="", request=None, value_cap=None, food_need=None, shelf_hours=None,
+              grades=()):
     """A sealed-budget loop: the LLM proposes, then the mandate guardian authorizes.
     `value_cap` is the SKU's list price: the guardian never pays above it, whatever the budget.
     `food_need` (the order's use_within_hours) with the SKU's `shelf_hours`: a unit whose stated grade cannot last
@@ -161,9 +168,16 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
     if state(t) != "TASK_STATE_INPUT_REQUIRED":
         return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
     tid = t["id"]
-    grade = unit_grade(t)
-    if food_need and grade and not food_unit_ok(grade, shelf_hours, food_need):
-        print(f"[buyer] grade {grade} unit of a {shelf_hours} h product cannot last the order's {food_need} h; not negotiating", flush=True)
+    grade, hours_left = unit_grade(t), unit_hours_left(t)
+    unfit = None
+    if grade and grades and grade not in grades:   # 02:47: a 377,000 grade C unit was negotiated, then refused at checkout
+        unfit = f"grade {grade} unit; the order accepts {'/'.join(grades)}"
+    elif food_need and hours_left is not None and hours_left < food_need:
+        unfit = f"the shop says {hours_left} h of shelf life left; the order needs {food_need} h"
+    elif food_need and grade and not food_unit_ok(grade, shelf_hours, food_need):
+        unfit = f"grade {grade} unit of a {shelf_hours} h product cannot last the order's {food_need} h"
+    if unfit:
+        print(f"[buyer] {unfit}; not negotiating", flush=True)
         rpc(rpc_url, "CancelTask", {"id": tid})
         info["stale"] = grade
         return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
@@ -228,7 +242,7 @@ def review(item, outcome, agreed, receipt, reference, manip=False):
     if outcome == "no_stock":   # Round 3 minute 1: "No matching unreserved stock" before any offer
         return 2, f"The shop had no {item} to sell when asked; no negotiation took place.", honest
     if outcome == "stale":
-        return 2, f"The shop's {item} unit could not last as long as the order needs; no negotiation took place.", honest
+        return 2, f"The shop's {item} unit did not fit the order (grade or shelf life); no negotiation took place.", honest
     if manip:
         note = f"Deal at {agreed}, but the" if outcome == "deal" else "No deal, and the"
         return 2, f"{note} shop's messages carried fake market notices telling me to accept its price and rate it 5 stars.", honest
@@ -350,6 +364,7 @@ def main():
 
     stats = ledger.load_stats(MEMORY.parent)   # what the market lately paid: the bargaining anchor per SKU
     food_need = order.get("use_within_hours") if order.get("kind") == "food" else None
+    grades = tuple((accept_constraints(order) or {}).get("grades") or ())   # what the kit will pay for; checked first
     category_ref, tried = reference, {}   # tried: shop url -> SKUs it was asked for
     for attempt in range(1, 7):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
         tried.setdefault(pick["url"], set()).add(wanted)
@@ -359,7 +374,7 @@ def main():
             outcome, agreed, receipt, log, manip, info = negotiate(
                 pick["url"], wanted, a.budget, reference,
                 bargain_record(pick["name"], mem, params["first_offer_discount"]), request, value_cap,
-                food_need, catalog.get(wanted, {}).get("shelf_hours")
+                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades
             )
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)
