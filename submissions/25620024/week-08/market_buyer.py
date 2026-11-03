@@ -138,7 +138,8 @@ def blocked(prof, name, now=None):
     recent = p["recent"][-NO_ANSWER_LAST:]
     silent = [r for r in recent if r[1] == "no answer"]
     now = now or time.time()
-    if len(silent) >= NO_ANSWER_MIN and now - (silent[-1][0] or 0) < NO_ANSWER_HOURS * 3600:
+    if len(silent) >= T.get("pause_no_answers", NO_ANSWER_MIN) and \
+            now - (silent[-1][0] or 0) < T.get("pause_h", NO_ANSWER_HOURS) * 3600:
         return f"my memory: no answer in {len(silent)} of my last {len(recent)} trades, latest {int((now - silent[-1][0]) / 60)} min ago"
     return None
 
@@ -629,7 +630,7 @@ def round3(a, order, shops, mem, started):
     NEED.clear()
     shelf = min(((cat.get(s) or {}).get("shelf_hours") or 1e9) for s in order.get("acceptable") or [""])
     NEED.update(hours=pol.get("min_hours_left"),            # strict: only a fresh grade A unit can pass
-                strict=bool(pol.get("min_hours_left") and pol["min_hours_left"] > 0.45 * shelf), text=", ".join(
+                strict=bool(pol.get("min_hours_left") and pol["min_hours_left"] > T.get("shelf_strict", 0.45) * shelf), text=", ".join(
         x for x in (f"shelf life {pol['min_hours_left']} h or more" if pol.get("min_hours_left") else "",
                     f"grade {'/'.join(pol['grades'])}" if pol.get("grades") else "", "market certificate") if x))
     with ThreadPoolExecutor(rfq) as ex:

@@ -279,6 +279,30 @@ def auto_rewards(teams, history):
     return out
 
 
+def buyer_alarms(board):
+    """Andon for the Buyer unit (11-04: 13+ shops paused for hours and nobody was told): any of these goes to the top
+    of the HR report and to Drive (week08-reports/buyer_alarm.md) for headquarters."""
+    out = []
+    try:
+        import buyer_team
+        d = buyer_team.diagnosis(board)
+        if d["shops_skipped_now"] >= 5:
+            out.append(f"the buyer skips {d['shops_skipped_now']} shops now: {list(d['skipped'].items())[:3]}")
+        now = time.time()
+        recent = buyer_team.load_memory(now - 3600)
+        before = [m for m in buyer_team.load_memory(now - 4 * 3600) if m.get("ts", 0) <= now - 3600]
+        rate = lambda rows: sum(m.get("outcome") == "deal" for m in rows) / len(rows) if rows else None
+        r1, r3 = rate(recent), rate(before)
+        if r1 is not None and r3 is not None and r1 < r3 - 0.10:
+            out.append(f"deal rate fell from {r3:.0%} (previous 3 h) to {r1:.0%} (last hour)")
+    except Exception as e:
+        out.append(f"buyer diagnosis failed: {type(e).__name__}: {e}"[:200])
+    cards = [c for c in ((_load(HERE / "private" / "enuri" / "state.json", {}) or {}).get("cards") or []) if c.get("lost") is not None]
+    if len(cards) >= 3 and cards[-1]["lost"] > cards[-2]["lost"] > cards[-3]["lost"]:
+        out.append(f"Enuri's losses rose twice in a row: {cards[-3]['lost']:,} -> {cards[-2]['lost']:,} -> {cards[-1]['lost']:,}")
+    return out
+
+
 def report(teams, board, history, raised=(), given=(), diag=None):
     icon = {"good": "🟢", "warning": "🟡", "fire candidate": "🔴", None: "⚪"}
     lines = [f"# 인사팀 보고 {time.strftime('%m-%d %H:%M')}", "",
@@ -327,6 +351,15 @@ def run(board=None):
     teams = grade(m, history)
     raised, given = challenge(teams, history), auto_rewards(teams, history)
     md = report(teams, m["_board"], history, raised, given, m.get("_diag"))
+    alarms = buyer_alarms(board)
+    if alarms:
+        md = "## 🚨 바이어 경보\n" + "\n".join(f"- {a}" for a in alarms) + "\n\n" + md
+    try:
+        (REPORTS / "buyer_alarm.md").write_text((f"# 바이어 경보 {time.strftime('%m-%d %H:%M')}\n" +
+                                                "\n".join(f"- {a}" for a in alarms)) if alarms else
+                                               f"# 바이어 경보 없음 {time.strftime('%m-%d %H:%M')}\n", encoding="utf-8")
+    except OSError:
+        pass
     md += ("\n\n## 유닛 대표 경쟁 (비공개, 두 대표에게만)\n" + json.dumps(st, ensure_ascii=False)
            + (f"\n판정: {', '.join(judged)}" if judged else ""))
     OUT.mkdir(parents=True, exist_ok=True)

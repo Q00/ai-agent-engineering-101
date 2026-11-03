@@ -40,7 +40,8 @@ MAX_MOVES = 2
 # knob: (low, high, integer?)
 THETA_KNOBS = {"rfq": (2, 6, True), "rfq_big": (3, 8, True), "big_budget": (20000, 200000, True),
                "r3_first_offer": (0.45, 0.80, False), "max_pay_ratio": (0.80, 1.00, False),
-               "min_reach": (0.35, 0.60, False)}
+               "min_reach": (0.35, 0.60, False), "pause_no_answers": (2, 5, True), "pause_h": (0.5, 6.0, False),
+               "shelf_strict": (0.30, 0.90, False)}
 ENURI_KNOBS = {"survey_quotes": (0, 8, True), "min_honest": (0.6, 0.95, False), "max_broken": (0.05, 0.30, False)}
 BANDS = [(0, 20000), (20000, 60000), (60000, 120000), (120000, 250000), (250000, None)]
 BOARD_KEYS = ("orders", "deals", "paid", "saved", "surplus", "served", "forum", "posts", "all")
@@ -237,6 +238,47 @@ def accountability(me, top, summ):
                     "enuri_lost_24h": acc.get("lost"), "enuri_by_type": acc.get("by_type")}}
 
 
+def diagnosis(board, now=None):
+    """Causes, not only outcomes (11-04: 13+ big shops paused for hours and nobody saw it): which shops the buyer
+    skips now and why, why orders found no shop, deal rate by category and by budget over the last 3 h."""
+    now = now or time.time()
+    import market_buyer as mb
+    prof = buyer_memory.load().get("profiles", {})
+    names = [s.get("name") for s in board.get("shops", []) if s.get("name")]
+    blocked = {n: mb.blocked(prof, n, now) for n in names}
+    blocked = {n: w for n, w in blocked.items() if w}
+    rows = [m for m in load_memory(now - 3 * 3600)]
+    cat, band = {}, {}
+    for m in rows:
+        for key, d in ((m.get("category") or "(no category: no shop had it)", cat),
+                       (next(f"{lo // 1000}k+" for lo, hi in reversed(BANDS) if (m.get("budget") or 0) >= lo), band)):
+            x = d.setdefault(key, [0, 0])
+            x[0] += 1
+            x[1] += m.get("outcome") == "deal"
+    fmt = lambda d: {k: {"orders": a, "deals": b, "rate": round(b / a, 2)} for k, (a, b) in
+                     sorted(d.items(), key=lambda kv: -kv[1][0])[:12]}
+    return {"shops_skipped_now": len(blocked), "skipped": dict(list(blocked.items())[:15]),
+            "outcomes_3h": {o: sum(1 for m in rows if m.get("outcome") == o) for o in
+                            ("deal", "no deal", "no answer", "no candidates")},
+            "deal_rate_by_category_3h": fmt(cat), "deal_rate_by_budget_3h": fmt(band)}
+
+
+def load_memory(since):
+    out = []
+    try:
+        with buyer_memory.MEMORY.open(encoding="utf-8") as f:
+            for line in f:
+                try:
+                    m = json.loads(line)
+                except ValueError:
+                    continue
+                if m.get("ts", 0) > since:
+                    out.append(m)
+    except OSError:
+        pass
+    return out
+
+
 def brief(board=None, now=None):
     now = now or time.time()
     if board is None:
@@ -262,6 +304,7 @@ def brief(board=None, now=None):
                                 leaders_plan=__import__("leaders_meeting").summary(),
                                 private_from_hq=__import__("hr").contest_for("buyer")), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
          "enuri": summ, "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
+         "diagnosis": diagnosis(board, now),
          "current": current(), "plan_now": {k: load(PLAN, {}).get(k) for k in ("changed", "forum_advice", "rationale")},
          "scorecard": scorecard(snap, history[-1] if history else None),
          "history": [{"at": time.strftime("%m-%d %H:%M", time.localtime(h["snapshot"]["ts"])), "changed": h.get("changed"),

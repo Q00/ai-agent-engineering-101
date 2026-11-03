@@ -498,8 +498,10 @@ def main():
         MODE["now"] = g.get("mode") or "overnight"
         b = run(a, t0)
         g["runs"].append({"ts": t0, "ran": True, "ok": True, "secs": int(time.time() - t0), "note": "plan written"})
-        me = b["our_shop"]
-        ok = (me.get("all") or 0) >= LIMITS["normal_when_all"] and (me.get("profit") or -1) >= 0
+        me, buy = b["our_shop"], (b.get("leaders") or {}).get("our_buyer") or {}
+        ok = ((me.get("all") or 0) >= LIMITS["normal_when_all"] and (me.get("profit") or -1) >= 0
+              and (buy.get("all") or 0) >= LIMITS["normal_when_all"])   # the buyer too: the shop alone put the
+                                                                         # buyer team to sleep 04:08-05:08 (11-04)
         g["mode"] = "normal" if ok else "overnight"  # back on its feet: rest; fallen back: overnight again
     except Exception as e:
         msg = f"{type(e).__name__}: {e}"
