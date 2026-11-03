@@ -122,6 +122,12 @@ class BuyerPolicy(FrozenModel):
     order_seconds: float = Field(default=18.0, ge=3.0, le=30.0)
     # After this share of the budget is spent, accept any ask within the cap.
     late_accept_share: float = Field(default=0.45, ge=0.1, le=1.0)
+    # e-greedy: this share of orders goes to a random eligible shop instead of the
+    # best-ranked one, so cheaper or newer shops get found (2026-11-03 user ask).
+    explore_rate: float = Field(default=0.10, ge=0.0, le=0.5)
+    # A shop whose last attempts all ended without a deal sits out this long.
+    fail_streak: int = Field(default=3, ge=1, le=20)
+    fail_cooldown_minutes: float = Field(default=30.0, ge=0.0, le=720.0)
 
 
 class RestockPolicy(FrozenModel):

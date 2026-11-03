@@ -316,3 +316,77 @@ def test_late_in_the_order_budget_any_ask_within_the_cap_is_accepted(
     # Then: one turn, the ask taken as offered, still under the 0.95*list cap.
     assert peer.offers == [45000]
     assert outcome.agreed_price == 45000
+
+
+def test_failing_shops_cool_down_and_exploration_spreads_orders(
+    tmp_path: Path,
+) -> None:
+    import random  # noqa: PLC0415 - test only
+
+    from r3.events import EventLedger  # noqa: PLC0415 - test only
+    from r3.policy import BuyerPolicy  # noqa: PLC0415 - test only
+
+    events = EventLedger(tmp_path / "events.sqlite")
+    # Given: a shop whose last three attempts all failed (unsigned receipts).
+    for n in range(3):
+        events.record_attempt(
+            order=f"o{n}",
+            shop="http://willow.test",
+            shop_name="willow",
+            sku=LAMP,
+            list_price=100,
+            price=None,
+            outcome="no_deal",
+            reason="receipt is not signed",
+            elapsed=1.0,
+        )
+    streaks = events.failure_streaks(24)
+    policy = BuyerPolicy()
+    # Then: it sits out the cooldown; with no cooldown it gets its retry.
+    assert fast.cooling_shops(streaks, policy) == {"http://willow.test"}
+    no_wait = policy.model_copy(update={"fail_cooldown_minutes": 0.0})
+    assert fast.cooling_shops(streaks, no_wait) == frozenset()
+    # And: a success resets the streak.
+    events.record_attempt(
+        order="o9",
+        shop="http://willow.test",
+        shop_name="willow",
+        sku=LAMP,
+        list_price=100,
+        price=80,
+        outcome="agreed",
+        reason="",
+        elapsed=1.0,
+    )
+    assert events.failure_streaks(24) == {}
+    assert events.price_ratios(24) == {"http://willow.test": 0.8}
+    # Given: three good shops in Round 2 (no stock lists); one sold to us cheaper.
+    shops = tuple(ShopEntry(name=n, url=f"http://{n}.test") for n in "abc")
+    order = Order(item="lamp", budget=150)
+    # When: exploration is off, the top-ranked shop always wins.
+    picks = {
+        fast.choose(order, shops, {}, {}, {}).shop.name  # pyright: ignore[reportOptionalMemberAccess]
+        for _ in range(20)
+    }
+    assert picks == {"a"}
+    # When: every order explores, all good shops get visited.
+    rng = random.Random(7)  # noqa: S311 - reproducible test draws
+    explored = [
+        fast.choose(order, shops, {}, {}, {}, explore=1.0, rng=rng) for _ in range(60)
+    ]
+    assert {c.shop.name for c in explored if c is not None} == {"a", "b", "c"}
+    assert all(c is not None and c.explored for c in explored)
+    # And: a shop that failed us is never an exploration target.
+    hurt = {"http://c.test": {"no_deal": 4}}
+    rng = random.Random(7)  # noqa: S311 - reproducible test draws
+    names = {
+        c.shop.name
+        for _ in range(60)
+        if (c := fast.choose(order, shops, {}, hurt, {}, explore=1.0, rng=rng))
+    }
+    assert names == {"a", "b"}
+    # And: price memory moves a shop by at most a fifth either way.
+    ratios = {"http://a.test": 0.9, "http://b.test": 0.7, "http://c.test": 0.8}
+    assert fast.price_factor("http://b.test", ratios) == pytest.approx(1.1)
+    assert fast.price_factor("http://a.test", ratios) == pytest.approx(0.9)
+    assert fast.price_factor("http://z.test", ratios) == 1.0

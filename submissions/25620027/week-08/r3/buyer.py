@@ -10,8 +10,12 @@ paying. The model shapes this behaviour only through the policy table.
 
 from __future__ import annotations
 
+import dataclasses
 import json
+import random
 import re
+import sqlite3
+import statistics
 import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
@@ -41,12 +45,16 @@ from r3.picture import Picture, load_picture, picture_path, trust_factor
 from r3.policy import BuyerPolicy, load_policy, policy_path
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
     from pathlib import Path
 
     from r3.market_files import CatalogItem
 
 MAX_STARS: Final = 5
+# Shops below this evidence weight (refusals, failed deals, low trust) are never
+# picked by exploration; price memory moves a shop by at most this share.
+EXPLORE_MIN_EVIDENCE: Final = 0.6
+PRICE_FACTOR_SPAN: Final = 0.2
 NUMBER: Final = re.compile(r"(?<![0-9A-Za-z])([0-9]{2,9})(?![0-9A-Za-z])")
 TRADE_GATE: Final = "AX_R3_TRADE_MODEL"
 
@@ -65,6 +73,7 @@ class Choice:
     list_price: int
     request: str
     score: float
+    explored: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,7 +120,31 @@ def review_factor(shop: ShopEntry) -> float:
     return 0.9 + 0.05 * (sum(stars) / len(stars) - 3.0)
 
 
-def choose(  # noqa: PLR0913 - ranking needs every evidence source
+def price_factor(url: str, ratios: Mapping[str, float]) -> float:
+    """Favour shops that sold to us below our usual share of list; +-20 %."""
+    mine = ratios.get(url.rstrip("/"))
+    if mine is None or not ratios:
+        return 1.0
+    usual = statistics.median(ratios.values())
+    return 1.0 + max(-PRICE_FACTOR_SPAN, min(PRICE_FACTOR_SPAN, usual - mine))
+
+
+def cooling_shops(
+    streaks: Mapping[str, tuple[int, float]], policy: BuyerPolicy
+) -> frozenset[str]:
+    """Shops whose last attempts all failed sit out a cooldown, then get one retry.
+
+    ``streaks`` maps a shop URL to (consecutive no-deals, seconds since the last).
+    """
+    cooldown = policy.fail_cooldown_minutes * 60
+    return frozenset(
+        url
+        for url, (count, age) in streaks.items()
+        if count >= policy.fail_streak and age < cooldown
+    )
+
+
+def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     order: Order,
     shops: tuple[ShopEntry, ...],
     catalog: dict[str, CatalogItem],
@@ -120,20 +153,29 @@ def choose(  # noqa: PLR0913 - ranking needs every evidence source
     *,
     blocked: frozenset[str] = frozenset(),
     picture: Picture | None = None,
+    ratios: Mapping[str, float] | None = None,
+    explore: float = 0.0,
+    rng: random.Random | None = None,
 ) -> Choice | None:
     """Pick the shop and SKU with the best expected surplus; None when no stock fits.
 
     The scout's trust score (from reviews and forum text the model read) weighs a
-    shop between 0.6 and 1.2; our own payment evidence still dominates.
+    shop between 0.6 and 1.2; our own payment evidence still dominates, and our own
+    past prices move it by up to 20 %. With probability ``explore`` the order goes
+    to a random shop among the unpenalized candidates instead (e-greedy), so a
+    cheaper or newer shop can be found; penalized shops are never explored.
     """
     acceptable = set(order.acceptable)
+    draw = (rng or random).random() < explore
     best: Choice | None = None
+    by_shop: dict[str, Choice] = {}
     for shop in shops:
         if shop.name in blocked or shop.url.rstrip("/") in blocked:
             continue
-        weight = shop_factor(shop.url, outcomes, reasons) * review_factor(shop)
+        evidence = shop_factor(shop.url, outcomes, reasons) * review_factor(shop)
         if picture is not None:
-            weight *= trust_factor(picture.trust_of(shop.url))
+            evidence *= trust_factor(picture.trust_of(shop.url))
+        weight = evidence * price_factor(shop.url, ratios or {})
         candidates = [
             o
             for o in shop.offers
@@ -144,26 +186,48 @@ def choose(  # noqa: PLR0913 - ranking needs every evidence source
             list_price = item.list_price if item is not None else 0
             name = (item.name if item is not None else "") or offer.name or offer.sku
             score = (list_price if list_price > 0 else 1) * weight
+            choice = Choice(
+                shop,
+                offer.sku,
+                name,
+                list_price,
+                f"I want to buy {name} ({offer.sku})",
+                score,
+            )
             if best is None or score > best.score:
-                best = Choice(
-                    shop,
-                    offer.sku,
-                    name,
-                    list_price,
-                    f"I want to buy {name} ({offer.sku})",
-                    score,
-                )
+                best = choice
+            kept = by_shop.get(shop.url)
+            if evidence >= EXPLORE_MIN_EVIDENCE and (
+                kept is None or score > kept.score
+            ):
+                by_shop[shop.url] = choice
     if best is None and not acceptable and shops:
         # Rounds 0-2: no stock lists; choose by evidence and ask for the item itself.
         ranked = sorted(
-            (s for s in shops if s.name not in blocked),
+            (
+                s
+                for s in shops
+                if s.name not in blocked and s.url.rstrip("/") not in blocked
+            ),
             key=lambda s: -(shop_factor(s.url, outcomes, reasons) * review_factor(s)),
         )
         if ranked:
-            shop = ranked[0]
             best = Choice(
-                shop, order.item, order.item, 0, f"I want to buy {order.item}", 1.0
+                ranked[0],
+                order.item,
+                order.item,
+                0,
+                f"I want to buy {order.item}",
+                1.0,
             )
+            for s in ranked:
+                if shop_factor(s.url, outcomes, reasons) >= EXPLORE_MIN_EVIDENCE:
+                    by_shop[s.url] = Choice(
+                        s, order.item, order.item, 0, f"I want to buy {order.item}", 1.0
+                    )
+    if draw and best is not None and len(by_shop) > 1:
+        pick = (rng or random).choice(sorted(by_shop))
+        return dataclasses.replace(by_shop[pick], explored=True)
     return best
 
 
@@ -412,6 +476,8 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
     events: EventLedger | None = None
     outcomes: dict[str, dict[str, int]] = {}
     reasons: dict[str, str] = {}
+    ratios: dict[str, float] = {}
+    cooling: frozenset[str] = frozenset()
     try:
         events = EventLedger(
             events_file if events_file is not None else events_path(state)
@@ -419,11 +485,24 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         _ = events.sync_payments(read_payments(state))
         outcomes = events.shop_outcomes(policy.buyer.refusal_memory_hours)
         reasons = events.refusal_reasons(policy.buyer.refusal_memory_hours)
-    except OSError:
+        ratios = events.price_ratios(policy.buyer.refusal_memory_hours)
+        cooling = cooling_shops(
+            events.failure_streaks(policy.buyer.refusal_memory_hours),
+            policy.buyer,
+        )
+    except (OSError, sqlite3.Error):
         emit("[R3 BUYER] events ledger unavailable; choosing without own history")
     picture = load_picture(picture_path(state))
     choice = choose(
-        order, shops, catalog, outcomes, reasons, blocked=blocked, picture=picture
+        order,
+        shops,
+        catalog,
+        outcomes,
+        reasons,
+        blocked=blocked | cooling,
+        picture=picture,
+        ratios=ratios,
+        explore=policy.buyer.explore_rate,
     )
     if choice is None:
         fallback = shops[0].url if shops else ""
@@ -439,6 +518,8 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
     emit(
         f"[R3 BUYER] choose shop={choice.shop.name} sku={choice.sku} "
         f"list={choice.list_price} score={choice.score:.0f}"
+        + (" explore=1" if choice.explored else "")
+        + (f" cooling={len(cooling)}" if cooling else "")
     )
     security = SecurityEvents()
     reader = ModelClient.from_env(events, gate=TRADE_GATE)

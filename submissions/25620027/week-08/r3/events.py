@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import statistics
 import time
 from contextlib import closing
 from pathlib import Path
@@ -215,6 +216,37 @@ class EventLedger:
                 bucket = counts.setdefault(str(shop), {})
                 bucket[key] = bucket.get(key, 0) + int(n)
         return counts
+
+    def failure_streaks(self, hours: float) -> dict[str, tuple[int, float]]:
+        """Per shop URL: consecutive no-deal attempts up to now and seconds since."""
+        now = time.time()
+        since = now - hours * 3600
+        streaks: dict[str, tuple[int, float]] = {}
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            for shop, outcome, ts in db.execute(
+                """SELECT shop, outcome, ts FROM buyer_attempts
+                WHERE ts >= ? ORDER BY ts""",
+                (since,),
+            ):
+                key = str(shop).rstrip("/")
+                count, _ = streaks.get(key, (0, 0.0))
+                streaks[key] = (count + 1 if outcome == "no_deal" else 0, float(ts))
+        return {k: (n, now - last) for k, (n, last) in streaks.items() if n > 0}
+
+    def price_ratios(self, hours: float) -> dict[str, float]:
+        """Per shop URL: median price/list share of our agreed buys (R3 lists only)."""
+        since = time.time() - hours * 3600
+        ratios: dict[str, list[float]] = {}
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            for shop, price, list_price in db.execute(
+                """SELECT shop, price, list_price FROM buyer_attempts
+                WHERE ts >= ? AND outcome = 'agreed' AND price > 0
+                AND list_price > 0""",
+                (since,),
+            ):
+                key = str(shop).rstrip("/")
+                ratios.setdefault(key, []).append(float(price) / float(list_price))
+        return {k: statistics.median(v) for k, v in ratios.items()}
 
     def refusal_reasons(self, hours: float) -> dict[str, str]:
         """Return the latest refusal reason per shop URL within the window."""
