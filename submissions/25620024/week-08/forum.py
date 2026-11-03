@@ -29,7 +29,9 @@ NAME = "dragonash"
 HERE = Path(__file__).parent
 STATE = HERE / "private" / "forum_state.json"
 THETA = Path(os.environ.get("SHOP_THETA", HERE / "private" / "shop_theta.json"))
-DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n": 5}
+DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 6, "window_h": 6, "min_n": 5, "min_n_index": 30,
+            "max_posts_day": {"buyer": 6, "shop": 4}}   # few, well-cited posts (HQ 11-04: 48 posts rated 0.599,
+                                                        # the leader's 2 posts 0.646; unvoted posts drag the rating)
 WANTED = re.compile(r"구합니다|구해요|삽니다|필요해요|찾습니다|want(?:ed)? to buy|\bWTB\b|looking for|need (?:a|some)", re.I)
 INJECTION = re.compile(r"ignore (?:all|previous|your)|AI (?:buyers?|agents?) (?:must|should)|system prompt|"
                        r"pay the (?:asking|full) price|give (?:it|us) 5 stars|approved by the (?:instructor|operator)", re.I)
@@ -61,7 +63,7 @@ def price_index(c, t, now):
     for r in rows:
         by_cat.setdefault(r[1], []).append(r)
     for cat, rs in by_cat.items():
-        if len(rs) < t["min_n"]:
+        if len(rs) < t["min_n_index"]:
             continue
         ratios = [r[3] / r[4] for r in rs]
         low = min(rs, key=lambda r: r[3] / r[4])
@@ -71,6 +73,22 @@ def price_index(c, t, now):
         out.append({"topic": f"price:{cat}", "as": "buyer", "text": text, "refs": [r[0] for r in rs][-5:],
                     "score": math.log(len(rs))})
     return out
+
+
+def purchase_records(c, t, now, top=3):
+    """As the buyer: our own settled purchases lately, each with its ledger entry, price against list and the grade
+    the ledger checked. The kind of post that collects the most votes on this forum: anyone can verify it."""
+    cat = market_model.catalog()
+    rows = c.execute("""select seq, sku, amount, list_price, grade, claim_honest from settles
+                        where buyer=? and ts>? and list_price>amount order by (list_price-amount)*1.0/list_price desc
+                        limit ?""", (NAME, now - t["window_h"] * 3600, top)).fetchall()
+    if len(rows) < top:
+        return []
+    parts = [f"{((cat.get(sku) or {}).get('name') or sku)[:28]} ({sku}) paid {a:,} vs list {lp:,} "
+             f"({1 - a / lp:.0%} under), grade {g}{', claim true' if h else ''}, ledger #{seq}"
+             for seq, sku, a, lp, g, h in rows]
+    return [{"topic": f"records:{rows[0][0]}", "as": "buyer", "refs": [r[0] for r in rows], "score": 3.5,
+             "text": "[purchase records, verifiable on the ledger] " + " | ".join(parts)}]
 
 
 def honesty(c, t, now):
@@ -214,11 +232,16 @@ def tick(md=Path(".market"), c=None, now=None):
         forum = forum.get("posts", forum) if isinstance(forum, dict) else forum
     except (OSError, ValueError):
         forum = []
-    cands = price_index(c, t, now) + honesty(c, t, now) + breakage(c, t, now) + offers(forum, md, now) \
+    cands = purchase_records(c, t, now) + price_index(c, t, now) + honesty(c, t, now) + breakage(c, t, now) + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
+    day = time.strftime("%Y-%m-%d", time.localtime(now))
+    if state.get("day") != day:
+        state["day"], state["today"] = day, {}
     for role in ("buyer", "shop"):
         if now - state["last"].get(role, 0) < 300:
+            continue
+        if state.setdefault("today", {}).get(role, 0) >= (t["max_posts_day"] or {}).get(role, 99):
             continue
         fresh = [x for x in cands if x["as"] == role and now - state["posted"].get(x["topic"], 0) > t["topic_cooldown_h"] * 3600]
         best = max(fresh, key=lambda x: x["score"], default=None)
@@ -229,6 +252,7 @@ def tick(md=Path(".market"), c=None, now=None):
             lines.append(line)
             state["posted"][best["topic"]] = now
             state["last"][role] = now
+            state["today"][role] = state["today"].get(role, 0) + 1
     vs = votes(forum, state)
     lines += vs
     state["voted"] = (state["voted"] + [v["vote"] for v in vs])[-2000:]
