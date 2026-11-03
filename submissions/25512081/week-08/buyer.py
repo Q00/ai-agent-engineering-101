@@ -193,8 +193,8 @@ def walk(peer, task_id):
     try:
         r = peer.cancel(task_id)
         log(f"[buyer] CancelTask -> {r.state}")
-    except A2AError as e:
-        log(f"[buyer] CancelTask failed: {e}")
+    except Exception as e:     # closing a task is best effort: a shop's non-JSON answer once crashed the run after a deal
+        log(f"[buyer] CancelTask failed: {type(e).__name__}: {str(e)[:120]}")
     return 0
 
 
