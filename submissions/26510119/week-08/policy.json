@@ -1,6 +1,6 @@
 {
  "version": 1,
- "note": "Every number the agents may tune. Agents read this file on each decision; tuner.py (the meta loop) is the only writer besides a human.",
+ "note": "Every number the agents may tune. Agents read this file on each decision; tuner.py (the meta loop) is the only writer besides a human. 2026-11-03: restock runs every 20 min (was 1 min, announced in class), so each run buys more.",
  "shop": {
   "margin": 0.05,
   "salvage_hours": 12,
@@ -17,11 +17,11 @@
  },
  "restock": {
   "cash_reserve": 1500000,
-  "max_spend_share": 0.05,
-  "target_units": 40,
-  "categories_per_run": 4,
-  "max_units_per_sku": 3,
-  "max_units_per_category": 6,
+  "max_spend_share": 0.15,
+  "target_units": 60,
+  "categories_per_run": 10,
+  "max_units_per_sku": 4,
+  "max_units_per_category": 8,
   "food_min_shelf_hours": 168,
   "max_list_price": 150000,
   "min_list_price": 3000,
