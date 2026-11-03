@@ -193,3 +193,19 @@ def test_silent_loops_wait_forty_minutes_after_the_switch() -> None:
     assert "loops_silent" not in conditions(snap)
     snap.switched_at = now - 3000
     assert "loops_silent" in conditions(snap)
+
+
+def test_engineer_notes_go_out_once() -> None:
+    now = datetime(2026, 11, 4, 3, 30, tzinfo=UTC).timestamp()
+    state: dict[str, object] = {"once": ["round3", "switch"]}
+    snap = healthy(now)
+    snap.engineer_notes = [
+        (now - 60, "buyer picks 39,900 list items while leaders pick 87,900")
+    ]
+    messages, state = decide(snap, state)
+    assert len(messages) == 1
+    assert "엔지니어 메모" in messages[0]
+    assert "87,900" in messages[0]
+    again = healthy(now + 300)
+    again.engineer_notes = snap.engineer_notes
+    assert decide(again, state)[0] == []

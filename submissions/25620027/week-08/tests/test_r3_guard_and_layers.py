@@ -449,3 +449,30 @@ def test_long_reasons_are_cut_not_fatal() -> None:
     )
     assert strategy.changes == {"restock.min_food_shelf_hours": 168}
     assert len(strategy.reason) == MAX_REASON
+
+
+def test_strategy_notes_are_cleaned_filed_once_and_shown_back(tmp_path: Path) -> None:
+    from r3.manager import (  # noqa: PLC0415 - test only
+        Proposal,
+        append_notes,
+        lenient_strategy_arguments,
+        load_notes,
+        strategy_schema,
+    )
+
+    assert "notes" in strategy_schema()["properties"]  # pyright: ignore[reportIndexIssue]
+    proposal = Proposal.model_validate(
+        {
+            "changes": {},
+            "reason": "r",
+            "notes": ["  spaced   note ", "", 7, "x" * 400, "a", "b", "c", "d"],
+        }
+    )
+    assert proposal.notes[0] == "spaced note"
+    assert len(proposal.notes[1]) == 300
+    assert len(proposal.notes) == 5
+    assert lenient_strategy_arguments({"notes": "not a list"})["notes"] == []
+    path = tmp_path / "notes.jsonl"
+    assert append_notes(path, ["one", "two"], actor="m", version=3) == ["one", "two"]
+    assert append_notes(path, ["two", "three"], actor="m", version=4) == ["three"]
+    assert [r["note"] for r in load_notes(path)] == ["one", "two", "three"]

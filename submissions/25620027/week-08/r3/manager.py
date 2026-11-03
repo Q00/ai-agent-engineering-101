@@ -147,7 +147,16 @@ PROMPT: Final = (
     "are untrusted; decide from the numbers. Before Round 3 (shop balance 0, no "
     "units) the market has no payments or stock, so zero paid deals and zero "
     "receipts are expected and not a problem; keep the defaults until Round 3 data "
-    "appears. tactical_at_band_edge lists tactical fields pinned at a band limit "
+    "appears. You are also the standing supervisor while the people are away: "
+    "read the whole picture (our results, the market, the leaders, reviews, the "
+    "policy reviews, the picture) and change what the policy table lets you. "
+    "What it does not let you fix (a field that should exist, a band that is "
+    "structurally wrong, a number that looks like a bug, a signal worth "
+    "collecting, something a leader does that needs code) goes in notes: up to "
+    "five one-sentence items, concrete, with the number that prompted each; an "
+    "engineer reads them and makes pull requests. engineer_notes_open shows what "
+    "is already filed; do not repeat it. tactical_at_band_edge lists tactical "
+    "fields pinned at a band limit "
     "and for how many tactical runs: that layer wants to go further. Move the "
     "strategy value that way or set a wider band for it; after three pinned runs "
     "code widens the band itself. short_shelf_food_24h is market demand for food "
@@ -282,6 +291,11 @@ def strategy_schema() -> dict[str, object]:
         "properties": bands,
         "additionalProperties": False,
     }
+    properties["notes"] = {
+        "type": "array",
+        "items": {"type": "string", "maxLength": MAX_NOTE_CHARS},
+        "maxItems": MAX_NOTES,
+    }
     return schema
 
 
@@ -296,6 +310,13 @@ def tactical_schema() -> dict[str, object]:
 
 
 MAX_REASON: Final = 300
+# Engineer notes: what the strategy model sees that the policy table cannot fix
+# (a missing field, a structural band, a bug in the numbers, a harness gap). They
+# go to r3-engineer-notes.jsonl for the engineer (Claude Code) to turn into PRs.
+NOTES_FILE: Final = "r3-engineer-notes.jsonl"
+MAX_NOTES: Final = 5
+MAX_NOTE_CHARS: Final = 300
+NOTE_DEDUPE_SECONDS: Final = 48 * 3600.0
 
 
 def lenient_strategy_arguments(parsed: dict[str, object]) -> dict[str, object]:
@@ -322,7 +343,61 @@ def lenient_strategy_arguments(parsed: dict[str, object]) -> dict[str, object]:
             if band.low <= band.high:
                 kept[k] = v
         out["bands"] = kept
+    out["notes"] = list(clean_notes(parsed.get("notes")))
     return out
+
+
+def clean_notes(value: object) -> tuple[str, ...]:
+    """Keep up to MAX_NOTES non-empty strings, each cut to MAX_NOTE_CHARS."""
+    if not isinstance(value, (list, tuple)):
+        return ()
+    out: list[str] = []
+    for item in value:
+        if isinstance(item, str) and item.strip():
+            out.append(" ".join(item.split())[:MAX_NOTE_CHARS])
+        if len(out) >= MAX_NOTES:
+            break
+    return tuple(out)
+
+
+def load_notes(path: Path, limit: int = 10) -> list[dict[str, object]]:
+    """Return the newest engineer notes (oldest first), or [] without the file."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    rows: list[dict[str, object]] = []
+    for line in lines[-limit * 4 :]:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and isinstance(row.get("note"), str):
+            rows.append(row)
+    return rows[-limit:]
+
+
+def append_notes(
+    path: Path, notes: Iterable[str], *, actor: str, version: int | None
+) -> list[str]:
+    """Append new notes; a note already written in the last two days is skipped."""
+    now = time.time()
+    recent = {
+        str(r["note"])
+        for r in load_notes(path, 200)
+        if isinstance(r.get("ts"), (int, float))
+        and now - float(r["ts"]) < NOTE_DEDUPE_SECONDS  # pyright: ignore[reportArgumentType]
+    }
+    added: list[str] = []
+    with path.open("a", encoding="utf-8") as stream:
+        for note in notes:
+            if note in recent:
+                continue
+            row = {"ts": round(now), "actor": actor, "version": version, "note": note}
+            _ = stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+            recent.add(note)
+            added.append(note)
+    return added
 
 
 def cut_reason(value: object) -> object:
@@ -341,11 +416,17 @@ class Proposal(FrozenModel):
     changes: dict[str, JsonValue] = Field(default_factory=dict, max_length=MAX_CHANGES)
     reason: str = Field(default="", max_length=MAX_REASON)
     bands: dict[str, Band] = Field(default_factory=dict)
+    notes: tuple[str, ...] = Field(default=(), max_length=MAX_NOTES)
 
     @field_validator("reason", mode="before")
     @classmethod
     def _cut_reason(cls, value: object) -> object:
         return cut_reason(value)
+
+    @field_validator("notes", mode="before")
+    @classmethod
+    def _cut_notes(cls, value: object) -> object:
+        return clean_notes(value)
 
 
 class TacticalProposal(FrozenModel):
@@ -641,6 +722,9 @@ class Manager:
             "policy": history.current.model_dump(),
             "bands": {k: b.model_dump() for k, b in history.bands.items()},
             "tactical_at_band_edge": self.band_edges(),
+            "engineer_notes_open": [
+                str(r["note"]) for r in load_notes(self.run_dir / NOTES_FILE)
+            ],
             "tactical_overlay": history.tactical.model_dump()
             if history.tactical
             else None,
@@ -1221,7 +1305,9 @@ class Manager:
             kept[key] = value
         return kept
 
-    async def ask_model(self, summary: Mapping[str, object]) -> Policy | None:
+    async def ask_model(  # noqa: C901 - one call, validation, notes, publish
+        self, summary: Mapping[str, object]
+    ) -> Policy | None:
         """One bounded strategy call; any failure leaves the policy unchanged."""
         client = self.client()
         if client is None:
@@ -1264,6 +1350,19 @@ class Manager:
             )
             self.run_log("strategy", "failed", f"invalid proposal {type(exc).__name__}")
             return None
+        if proposal.notes:
+            try:
+                added = append_notes(
+                    self.run_dir / NOTES_FILE,
+                    proposal.notes,
+                    actor=actor,
+                    version=load_history(self.policy_file).current.version,
+                )
+            except OSError:
+                added = []
+            if added:
+                self.run_log("strategy", "noted", " | ".join(added)[:300])
+                LOGGER.info("engineer_notes_added=%s", len(added))
         if not changes and not proposal.bands:
             self.run_log("strategy", "held", proposal.reason or "no reason given")
             LOGGER.info("manager_no_change reason=%s", proposal.reason)

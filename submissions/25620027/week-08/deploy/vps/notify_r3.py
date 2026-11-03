@@ -96,6 +96,8 @@ class Snapshot:
     # manager loop runs of the last 24 h: (ts, role, outcome, detail); None when the
     # release predates the loop_runs table, so the silence alert stays off
     loop_runs: list[tuple[float, str, str, str]] | None = None
+    # engineer notes the strategy model filed (ts, note), oldest first
+    engineer_notes: list[tuple[float, str]] = field(default_factory=list)
     refused_24h: int = 0
     balance: int | None = None
     units: int | None = None
@@ -227,6 +229,20 @@ def collect(base: Path = BASE, *, market: str = MARKET) -> Snapshot:  # noqa: C9
         (now - 86400,),
     )
     snap.changes_24h = int(str(changes[0][0])) if changes else 0
+    try:
+        for line in (
+            (base / "data/r3/r3-engineer-notes.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()[-200:]
+        ):
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict) and isinstance(row.get("note"), str):
+                snap.engineer_notes.append((float(row.get("ts") or 0), row["note"]))
+    except OSError:
+        pass
     if _sql(events, "SELECT name FROM sqlite_master WHERE name = 'loop_runs'"):
         snap.loop_runs = [
             (float(str(ts)), str(role), str(outcome), str(detail or ""))
@@ -332,6 +348,7 @@ OUTCOME_NAMES = {
     "held": "유지",
     "refused": "거부",
     "failed": "실패",
+    "noted": "메모",
 }
 LOOP_ORDER = ("scout", "tactical", "strategy")
 
@@ -512,10 +529,15 @@ def decide(
 
 
 def loop_messages(snap: Snapshot, state: dict[str, object]) -> list[str]:
-    """Policy changes since the last pass, and one loop digest per clock hour."""
-    if not snap.loop_runs:
-        return []
+    """Policy changes since the last pass, one loop digest per hour, new notes."""
     messages: list[str] = []
+    notes_cursor = float(str(state.get("notes_cursor", snap.now - 600)))
+    new_notes = [n for n in snap.engineer_notes if n[0] > notes_cursor]
+    if new_notes:
+        messages.append(notes_message(new_notes))
+        state["notes_cursor"] = max(n[0] for n in new_notes)
+    if not snap.loop_runs:
+        return messages
     cursor = float(str(state.get("loop_cursor", snap.now - 600)))
     fresh = [
         r for r in snap.loop_runs if r[0] > cursor and r[2] in {"changed", "nudged"}
@@ -530,6 +552,14 @@ def loop_messages(snap: Snapshot, state: dict[str, object]) -> list[str]:
             messages.append(loop_digest(snap))
         state["digest_hour"] = hour
     return messages
+
+
+def notes_message(notes: list[tuple[float, str]]) -> str:
+    """Engineer notes the strategy model filed: for Claude to turn into PRs."""
+    lines = ["[AX R3] 엔지니어 메모 (전략 모델 → Claude 작업 후보)"]
+    lines += [f"{_kst(ts):%m/%d %H:%M} · {note[:280]}" for ts, note in notes[-5:]]
+    lines.append("파일: data/r3/r3-engineer-notes.jsonl")
+    return "\n".join(lines)
 
 
 def send(text: str, *, dry_run: bool) -> bool:
