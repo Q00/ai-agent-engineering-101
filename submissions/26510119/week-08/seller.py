@@ -30,6 +30,7 @@ from cryptography.hazmat.primitives import serialization
 import harness
 import shop_memory
 import shop_r3
+import policy
 
 NAME = "Harness Shop"
 SHOP_KEY = Path(__file__).with_name("shop_key.pem")   # written by market_kit.py join; never committed
@@ -153,6 +154,12 @@ class Seller(AgentExecutor):
                              log) or {}
         action, price = answer.get("action"), to_int(answer.get("price"))
 
+        if deal.get("unit") and len(deal["offers"]) == 1:
+            first = policy.get("shop")["first_accept_share"]
+            if offer < deal["ask"] * first:          # the first offer is a probe: never take it far below the ask
+                price = max(reserve, (deal["ask"] + offer) // 2)
+                log(f"[policy] first offer {offer} is below {first:.0%} of the ask {deal['ask']}; countering {price}")
+                action = "counter"
         if GUARDS and action == "accept" and offer < reserve:
             log(f"[guard] harness accepted {offer}, below the reserve {reserve}; countering instead")
             action, price = "counter", deal["ask"]

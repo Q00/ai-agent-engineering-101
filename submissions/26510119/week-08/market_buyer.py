@@ -1,6 +1,11 @@
 """Market buyer: picks a shop from the market's list, trades over A2A, keeps a memory, writes a review.
 
-    python market_buyer.py --shops <shops.json> --item <item> --budget <budget>
+    python market_buyer.py --shops <shops.json> --item <item> --budget <budget> [--order <order.json>]
+
+Round 3 (the order lists acceptable SKUs): the code lists what each shop has that fits, caps every offer at
+min(budget, list price x policy share) since the score is list price minus what was paid, asks for the SKU
+by name, sets the checkout's accept policy (certificate, shelf life left, goods grades), and counts goods
+that broke after a purchase against that shop.
 
 The harness picks the shop (from reviews and this buyer's own memory), every offer, and the
 review. The code keeps the budget, checks the receipt against what was agreed, and appends
@@ -15,10 +20,13 @@ from pathlib import Path
 
 import httpx
 
+import os
+
 import harness
+import policy
 from buyer import HEADERS, PROMPT, rpc, says, send, state, to_int
 
-MEMORY = Path(__file__).with_name("buyer_memory.jsonl")
+MEMORY = Path(os.environ.get("BUYER_MEMORY") or Path(__file__).with_name("buyer_memory.jsonl"))
 DEADLINE = 240
 MAX_ROUNDS = 10
 
@@ -108,16 +116,32 @@ def choose(shops, item, budget, memory):
     return pick
 
 
-def negotiate(base, item, budget, started):
-    """The week-06 negotiation. Returns (task, last offer sent)."""
+PROMPT_R3 = """You are buying {item} from a shop. Its list price is {list_price}.
+What you gain is the list price minus what you pay, so every unit you save counts. You may pay at most {budget};
+never pay more and never reveal it. Buying within that limit is still better than not buying.
+So far:
+{history}
+The shop is now asking {ask}.
+Raise your offer in small steps; accept only when the shop has stopped coming down or the ask is a good deal.
+Choose one:
+- accept: pay {ask}
+- offer: propose a lower price
+- walk: leave without buying
+Reply with exactly one JSON object and nothing else:
+{{"action": "accept" | "offer" | "walk", "price": <integer, your offer if you offer>}}"""
+
+
+def negotiate(base, item, budget, started, request=None, list_price=None, first_offer=None):
+    """The week-06 negotiation. Returns (task, last offer sent). budget is the cap the code enforces."""
     card = httpx.get(base.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=30).json()
     url = next(i["url"] for i in card["supportedInterfaces"] if i.get("protocolBinding") == "JSONRPC")
     log(f"card: {card['name']!r}, JSONRPC at {url}")
-    task = send(url, f"I want to buy a {item}")
+    request = request or f"I want to buy a {item}"
+    task = send(url, request)
     if state(task) != "TASK_STATE_INPUT_REQUIRED":
         return task, None
     task_id, offered = task["id"], None
-    history = [f"you: I want to buy a {item}", f"shop: {says(task)}"]
+    history = [f"you: {request}", f"shop: {says(task)}"]
     for _ in range(MAX_ROUNDS):
         if state(task) != "TASK_STATE_INPUT_REQUIRED":
             break
@@ -127,8 +151,15 @@ def negotiate(base, item, budget, started):
             break
         numbers = re.findall(r"\d+", says(task))
         ask = int(numbers[-1]) if numbers else None
-        answer = harness.ask(PROMPT.format(item=item, budget=budget, ask=ask, history="\n".join(history)), log) or {}
-        action, price = answer.get("action"), to_int(answer.get("price"))
+        if first_offer and offered is None and ask is not None and ask > first_offer:
+            action, price = "offer", min(first_offer, budget)       # the opening offer comes from the policy
+            log(f"[policy] opening offer {price} ({first_offer} from the list price)")
+        else:
+            prompt = (PROMPT_R3.format(item=item, list_price=list_price, budget=budget, ask=ask,
+                                       history="\n".join(history)) if list_price else
+                      PROMPT.format(item=item, budget=budget, ask=ask, history="\n".join(history)))
+            answer = harness.ask(prompt, log) or {}
+            action, price = answer.get("action"), to_int(answer.get("price"))
         if action == "accept":
             price = ask
         if action in ("accept", "offer"):
@@ -164,16 +195,148 @@ def receipt_problem(receipt, task, item, offered, budget):
     return None
 
 
+MARKET_DIR = Path(os.environ.get("MARKET_DIR", Path(__file__).with_name(".market")))
+
+
+def catalog():
+    try:
+        c = json.loads((MARKET_DIR / "catalog.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return c if isinstance(c, dict) else {x["sku"]: x for x in c}
+
+
+def broken_by_shop(memory):
+    """Goods that broke after we bought them: .market/broken.jsonl gives only the name and when it broke;
+    our memory says which shop sold that name shortly before."""
+    f = MARKET_DIR / "broken.jsonl"
+    if not f.exists():
+        return {}
+    out = {}
+    for line in f.read_text(encoding="utf-8").splitlines():
+        try:
+            b = json.loads(line)
+        except ValueError:
+            continue
+        buys = [m for m in memory if m.get("result") == "deal" and m.get("name") == b.get("name")
+                and m.get("ts", 0) <= b.get("broke_at", 0) <= m.get("ts", 0) + 6 * 3600 + 600]
+        if buys:
+            shop = max(buys, key=lambda m: m["ts"])["shop"]
+            out[shop] = out.get(shop, 0) + 1
+    return out
+
+
+def choose_r3(shops, order, memory, cat):
+    """Each shop's best fitting offer (the acceptable SKU with the highest list price: the most to gain),
+    then the harness picks the shop from numbers about it."""
+    p = policy.get("buyer")
+    flagged = {m["shop"] for m in memory if m.get("receipt_problem")}
+    broken = broken_by_shop(memory)
+    rows = []
+    for s in shops:
+        offers = [o for o in s.get("offers") or [] if o.get("sku") in cat and (o.get("qty") or 0) > 0]
+        if not offers or s["name"] in flagged:
+            continue
+        o = max(offers, key=lambda o: cat[o["sku"]]["list_price"])
+        lp = cat[o["sku"]]["list_price"]
+        cap = min(order["budget"], int(lp * p["max_pay_share_of_list"]))
+        if cap < 1:
+            continue
+        score, line, unknown = summarize(s, o["sku"], memory)
+        score -= 1.0 * broken.get(s["name"], 0)
+        line += (f"; offers {o['name'][:40]} ({o['sku']}), list price {lp}, you may pay at most {cap}"
+                 + (f"; {broken[s['name']]} goods bought there broke" if broken.get(s["name"]) else ""))
+        rows.append((score + lp / max(1, order["budget"]) * 0.5, line, unknown, s, o, cap))
+    if not rows:
+        return None
+    rows.sort(key=lambda r: -r[0])
+    shown = rows[:SHOWN] + [r for r in rows[SHOWN:] if r[2]][:1]
+    log(f"[choose] {len(rows)} shops have a fitting SKU; showing {[r[3]['name'] for r in shown]}")
+    answer = harness.ask(CHOOSE_PROMPT.format(item=order["item"], budget=order["budget"],
+                                              shops="\n".join(r[1] for r in shown)), log) or {}
+    pick = next((r for r in shown if r[3]["name"] == answer.get("shop")), shown[0])
+    log(f"[choose] {pick[3]['name']}: {pick[4]['sku']} list {cat[pick[4]['sku']]['list_price']}, cap {pick[5]}; "
+        f"{answer.get('reason', '')}")
+    return pick
+
+
+def accept_policy(order, sku, cat):
+    """What the kit checks on the unit before it pays: the market's certificate always; food must last
+    the order's use window plus a margin; goods only in the grades the policy accepts."""
+    p = policy.get("buyer")
+    if cat.get(sku, {}).get("kind") == "food":
+        return {"cert": True, "min_hours_left": (order.get("use_within_hours") or 0) + p["hours_margin"]}
+    return {"cert": True, "grades": p["goods_grades"]}
+
+
+def main_r3(a, shops, order, memory, started):
+    cat = catalog()
+    acceptable = set(order.get("acceptable") or [])
+    pick = choose_r3(shops, order, memory, {k: v for k, v in cat.items() if k in acceptable})
+    if pick is None:
+        log("[choose] no shop has a fitting SKU; no deal")
+        print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
+        return
+    _, _, _, shop, offer, cap = pick
+    sku, name, lp = offer["sku"], cat[offer["sku"]]["name"], cat[offer["sku"]]["list_price"]
+    receipt, problem, facts, offered = None, None, [], None
+    try:
+        task, offered = negotiate(shop["url"], name, cap, started, request=f"I want to buy {name} ({sku})",
+                                   list_price=lp, first_offer=int(lp * policy.get("buyer")["first_offer_share"]))
+        final = state(task) or "error"
+        facts.append(f"final state {final}; the shop's last message: {says(task)!r}")
+        if final == "TASK_STATE_COMPLETED":
+            receipt = next((p["data"] for art in (task or {}).get("artifacts", []) for p in art.get("parts", [])
+                            if isinstance(p.get("data"), dict)), None)
+            if receipt is None:
+                problem = "deal closed without a receipt"
+            else:
+                problem = receipt_problem(receipt, task, sku, offered, cap)
+                if problem and receipt.get("item") in acceptable and "receipt item" in problem:
+                    problem = None                        # another acceptable SKU is fine for the order
+                facts.append(f"agreed {offered} (list price {lp}), receipt "
+                             f"{json.dumps({k: receipt.get(k) for k in ('shop', 'item', 'price', 'claim', 'warranty_hours')})}")
+        else:
+            facts.append(f"no deal; your last offer was {offered}")
+    except Exception as e:
+        final = "error"
+        facts.append(f"the trade failed: {type(e).__name__}: {str(e)[:120]}")
+    if problem:
+        log(f"[receipt] PROBLEM: {problem}")
+        facts.append(f"PROBLEM WITH THE RECEIPT: {problem}")
+    answer = harness.ask(REVIEW_PROMPT.format(item=name, budget=cap, shop=shop["name"], facts="\n".join(facts)),
+                         log) or {}
+    stars = to_int(answer.get("stars"))
+    stars = 1 if problem else (min(5, max(1, stars)) if stars is not None else 3)
+    review = str(answer.get("review") or "").strip() or ("Deal." if receipt else "No deal.")
+    remember({"time": datetime.now(timezone.utc).isoformat(timespec="seconds"), "ts": int(time.time()), "round": 3,
+              "shop": shop["name"], "item": sku, "name": name, "category": order["item"],
+              "kind": cat[sku].get("kind"), "list_price": lp, "budget": order["budget"], "cap": cap,
+              "result": "deal" if receipt else "no_deal", "price": to_int(receipt.get("price")) if receipt else None,
+              "offered": offered if receipt else None, "receipt_problem": problem, "stars": stars})
+    accept = accept_policy(order, sku, cat)
+    log(f"result: {final}, {time.time() - started:.0f}s, accept {accept}")
+    print(json.dumps({"shop": shop["url"], "receipt": receipt if not problem else None, "stars": stars,
+                      "review": review, "accept": accept}, ensure_ascii=False), flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shops", required=True)
     ap.add_argument("--item", required=True)
     ap.add_argument("--budget", required=True, type=int)
+    ap.add_argument("--order")
     a = ap.parse_args()
     started = time.time()
     shops = json.loads(Path(a.shops).read_text(encoding="utf-8"))
     memory = load_memory()
     log(f"market buyer: {a.item}, budget {a.budget}, {len(shops)} shops, {len(memory)} past trades in memory")
+    order = json.loads(Path(a.order).read_text(encoding="utf-8")) if a.order and Path(a.order).exists() else {}
+    if order.get("acceptable"):
+        order.setdefault("budget", a.budget)
+        order.setdefault("item", a.item)
+        main_r3(a, shops, order, memory, started)
+        return
 
     shop = choose(shops, a.item, a.budget, memory)
     receipt, problem, facts, offered = None, None, [], None

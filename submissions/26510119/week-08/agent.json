@@ -1,6 +1,15 @@
 {
   "harness": "OpenRouter chat completions, model qwen/qwen3.7-flash (reasoning off, temperature 0.7; chosen over nemotron-3-super-120b-a12b on 2026-11-03: 15/15 sensible seller decisions vs 12/15, about a third of the cost), via harness.py with HARNESS=openrouter; needs OPENAI_API_KEY in the environment. Before this: Claude Code haiku (HARNESS=claude, the default).",
-  "seller": {"cmd": "HARNESS=openrouter HARNESS_MODEL=qwen/qwen3.7-flash /root/miniconda3/bin/python seller.py --port {port}"},
-  "buyer": {"cmd": "HARNESS=openrouter HARNESS_MODEL=qwen/qwen3.7-flash /root/miniconda3/bin/python buyer.py {url} {item} {budget}"},
-  "market_buyer": {"cmd": "HARNESS=openrouter HARNESS_MODEL=qwen/qwen3.7-flash /root/miniconda3/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
+  "seller": {
+    "cmd": "HARNESS=openrouter HARNESS_MODEL=qwen/qwen3.7-flash /root/miniconda3/bin/python seller.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "HARNESS=openrouter HARNESS_MODEL=qwen/qwen3.7-flash /root/miniconda3/bin/python buyer.py {url} {item} {budget}"
+  },
+  "market_buyer": {
+    "cmd": "HARNESS=openrouter HARNESS_MODEL=qwen/qwen3.7-flash /root/miniconda3/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"
+  },
+  "restock": {
+    "cmd": "/root/miniconda3/bin/python restock.py --state {state}"
+  }
 }
