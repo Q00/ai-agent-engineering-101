@@ -115,6 +115,8 @@ logs/market-kit.log; read them, you cannot change them), report:
   scouts; they never buy) quotes them at other shops and puts the asks in their book; brief.enuri is that book:
   price gaps between shops per SKU (where we can undercut), shops to avoid, forum prices, and their own record of
   missed and wrong purchases. You are allies: use their findings, and ask for what you need. [] if nothing.
+brief.hq_directives are the headquarters' latest orders (the owner, above every team): research what they ask
+for first and say so in findings.
 Answer with the JSON object only.
 
 BRIEF:
@@ -614,6 +616,11 @@ def run(a, t0):
         b["enuri"] = enuri.summary()
     except Exception as e:
         b["enuri"] = {"error": f"{type(e).__name__}: {e}"[:200]}
+    try:                                             # the owner's latest numbered directives
+        b["hq_directives"] = [x for x in DIRECTIVES.read_text(encoding="utf-8").splitlines()
+                              if x[:3].rstrip(".").strip().isdigit()][-3:]
+    except OSError:
+        pass
     try:                                             # what headquarters holds the team responsible for, first
         import kpi
         b = {"accountability": kpi.accountability("marketing", c), **b}

@@ -105,12 +105,9 @@ def find_unit(text, taken=(), need=None):
     m = SKU_RE.search(text)
     fit = [u for u in units if u.get("grade") != "expired" and u["unit"] not in taken and passes(u, need)]
     named = [u for u in fit if m and u["sku"] == m.group(1)]
-    substitute = None
-    if not named and m and (cat.get(m.group(1)) or {}).get("category"):
-        same = [u for u in fit if u.get("category") == cat[m.group(1)]["category"]]
-        if same:
-            named, substitute = same, m.group(1)
-    fit = named or [u for u in fit if (u.get("name") or "").lower() in want
+    substitute = None    # no same-category substitutes: a buyer's kit reads another SKU as a forged receipt
+    # (1-star "SCAM" review, 2026-11-04); a named SKU is sold only as itself
+    fit = named if m else [u for u in fit if (u.get("name") or "").lower() in want
                     or (u.get("category") or "").split(">")[-1].lower() in want]
     u = min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
     if u:

@@ -56,7 +56,7 @@ end of the round (stock still unsold then is lost money; bankruptcy aid is subtr
 - advice: 2-5 concrete points for the sales team, with numbers (margins too thin, cash tied in slow stock, a
   promotion that costs more than it brings, warranty or guarantee exposure, ...)
 - limits (binding; the code enforces them over the sales plan): min_margin over cost (0.05-0.60),
-  window_spend as a share of the 5,000,000 start per supply window (0.0-0.10), cash_floor as a share of the start
+  window_spend as a share of the 5,000,000 start per supply window (0.0-0.25), cash_floor as a share of the start
   (0.30-0.80), max_warranty_h (0, 3 or 6), max_undercut under the market median for follow pricing (0.0-0.05)
 - forecast_profit_per_h: your forecast of the change in profit per hour over the next hour
 - lessons: score your last forecast and limits with brief.scorecard and brief.history (1-3 lessons, keep / undo /
@@ -132,6 +132,7 @@ def hq_directive():
 
 
 FATAL_CASH, FATAL_LOSS, MIN_SPEND, MAX_FLOOR = 0.45, 0.15, 0.03, 0.50
+MAX_SPEND = 0.25           # HQ 2026-11-04: up to 1,250,000 per window for a high-ticket assortment
 
 
 def fatal(snap):
@@ -147,7 +148,7 @@ def gate(raw, snap=None):
     lim = p.get("limits") or {}
     w = int(lim.get("max_warranty_h", 6))
     limits = {"min_margin": round(clamp(lim.get("min_margin", 0.2), 0.05, 0.60), 3),
-              "window_spend": round(clamp(lim.get("window_spend", 0.04), 0.0, 0.10), 3),
+              "window_spend": round(clamp(lim.get("window_spend", 0.04), 0.0, MAX_SPEND), 3),
               "cash_floor": round(clamp(lim.get("cash_floor", 0.5), 0.30, 0.80), 3),
               "max_warranty_h": w if w in (0, 3, 6) else 0,
               "max_undercut": round(clamp(lim.get("max_undercut", 0.03), 0.0, 0.05), 3)}
