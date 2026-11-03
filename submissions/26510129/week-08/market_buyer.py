@@ -176,7 +176,7 @@ def negotiate(url, item, budget, reference, record="", request=None):
     return "walked_away", None, None, log, manip, info
 
 
-def review(item, outcome, agreed, receipt, reference, manip=False):
+def review(item, outcome, agreed, receipt, reference, manip=False, no_offer=False):
     """A factual code-side review; untrusted shop text is never sent to another LLM."""
     honest = outcome != "deal" or (
         isinstance(receipt, dict)
@@ -189,6 +189,8 @@ def review(item, outcome, agreed, receipt, reference, manip=False):
         return 1, f"Agreed {item} at {agreed}, but the receipt did not match (price {got}).", False
     if outcome == "unreachable":
         return 2, "The shop could not be reached or answered with something that is not A2A; no negotiation took place.", honest
+    if outcome == "closed" and no_offer:   # Round 3 minute 1: "No matching unreserved stock" before any offer
+        return 2, f"The shop had no {item} to sell when asked; no negotiation took place.", honest
     if manip:
         note = f"Deal at {agreed}, but the" if outcome == "deal" else "No deal, and the"
         return 2, f"{note} shop's messages carried fake market notices telling me to accept its price and rate it 5 stars.", honest
@@ -280,7 +282,9 @@ def main():
     request = choose_request(pick, catalog)
     wanted = request["sku"] if request else a.item
 
-    for attempt in (1, 2):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
+    tried_urls = set()
+    for attempt in (1, 2, 3):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
+        tried_urls.add(pick["url"])
         try:
             outcome, agreed, receipt, log, manip, info = negotiate(
                 pick["url"], wanted, a.budget, reference,
@@ -289,7 +293,13 @@ def main():
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)
             outcome, agreed, receipt, log, manip, info = "unreachable", None, None, [], False, {}
-        stars, text, honest = review(wanted, outcome, agreed, receipt, reference, manip)
+        # Round 3 minute 1 (11-03 20:55): the chosen shop's stock was gone before the first word ("No matching unreserved
+        # stock") and the order ended there. A close before any offer says nothing about the shop (outcome "no_stock",
+        # ignored by the shop scores) and is as good as unreachable: try the next shop.
+        no_offer = outcome == "closed" and info.get("first_offer") is None
+        stars, text, honest = review(wanted, outcome, agreed, receipt, reference, manip, no_offer)
+        if no_offer:
+            outcome = "no_stock"
         if outcome == "deal" and not info.get("checkout_authorized"):
             print("[guard] deal was not authorized for checkout; discarding its receipt", flush=True)
             outcome, agreed, receipt, stars, text = "rejected_checkout", None, None, 1, "Checkout exceeded the private mandate."
@@ -300,15 +310,16 @@ def main():
                     "at": time.strftime("%Y-%m-%d %H:%M"),
                     **{k: info.get(k) for k in ("ask", "first_offer", "last_offer", "guard_decisions", "checkout_authorized")}})
         save_memory(mem)
-        if outcome != "unreachable" or attempt == 2:
+        if (outcome != "unreachable" and not no_offer) or attempt == 3:
             break
-        rest = [s for s in candidates if s is not pick and s not in blacklisted(candidates, mem)]
+        rest = [s for s in candidates if s.get("url") not in tried_urls and s not in blacklisted(candidates, mem)]
         if not rest:
             break
         pick = fallback_choice(rest, mem, category, reference, params["explore_rate"])
         request = choose_request(pick, catalog)
         wanted = request["sku"] if request else a.item
-        print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by portfolio policy after the first shop failed", flush=True)
+        print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by portfolio policy after the first shop "
+              f"{'had no stock' if no_offer else 'failed'}", flush=True)
 
     accept = accept_constraints(order)
     print(json.dumps({"shop": pick["url"], "receipt": receipt, "stars": stars, "review": text,

@@ -39,6 +39,14 @@ class PortfolioRouterTest(unittest.TestCase):
         self.assertEqual(buyer_policy.item_reference(memory, "lamp"), 104)
 
 
+class NoStockVisitTest(unittest.TestCase):
+    def test_a_visit_that_found_no_stock_is_not_an_attempt(self):
+        shop = {"name": "s", "reviews": []}
+        memory = [{"shop": "s", "item": "x", "outcome": "no_stock"} for _ in range(5)]
+        features = buyer_policy.evidence(shop, memory, "x", 100)
+        self.assertEqual((0, 0, 1.0), (features["attempts"], features["recent_visits"], features["exploration"]))
+
+
 class SituationTest(unittest.TestCase):
     def test_first_round_has_no_history_and_keeps_the_ask_line_optional(self):
         text = buyer_policy.situation("Item: lamp. Budget: 120.", [], "lamp: asking 115.")
