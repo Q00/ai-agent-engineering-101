@@ -82,6 +82,11 @@ def install(kit, journal=None, config=None):
         if path == "/api/shops" and method == "GET":
             registry = {s["url"].rstrip("/"): {k: s.get(k) for k in ("name", "pubkey", "owner")} for s in data["shops"]}
             atomic_json(j.md / "registry.json", registry)
+        elif path == "/api/inventory" and method == "GET":
+            accounting = {k: data.get(k) for k in ("balance", "start", "injected", "bankruptcies_left")}
+            if accounting != j.get("accounting_snapshot"):
+                j.add("accounting_snapshot", accounting, role="shop")
+                j.put("accounting_snapshot", accounting)
         elif path == "/api/settle" and method == "POST" and role == "shop":
             mr = data.get("mandate_receipt")
             if mr:
@@ -133,6 +138,14 @@ def install(kit, journal=None, config=None):
 
     def outbox(market, md):
         original_outbox(market, md)
+        if time.time() - j.get("board_checked_at", 0) > 60:
+            with contextlib.suppress(Exception):
+                response = market.c.get(f"{market.base}/api/board", timeout=5)
+                if response.status_code == 200:
+                    board = response.json()
+                    if board.get("round") == 3:
+                        atomic_json(j.md / "board.json", board)
+                    j.put("board_checked_at", time.time())
         for key, payload in j.pending_posts():
             role = payload.get("as", "buyer")
             if role not in market.token:

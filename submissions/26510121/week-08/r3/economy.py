@@ -70,9 +70,11 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     # Unknown break risk is an explicit stress scenario, not an empirical estimate.
     stress_refund = .15 if warranty else 0
     for p in sorted({min(ceiling, p) for p in prices}):
+        from .meta import quote_completion
+        completion = quote_completion(journal, unit["sku"], p)
         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
-                       "warranty_hours": warranty, "score": (1 - stress_refund) * p * stats["settlement_rate"],
-                       "evidence": stats, "recovery_floor": recovery_floor,
+                       "warranty_hours": warranty, "score": (1 - stress_refund) * p * completion["completion"],
+                       "evidence": dict(stats, quote_completion=completion), "recovery_floor": recovery_floor,
                        "risk": "goods refund stress 0.15; not observed break probability" if warranty else "food expiry"})
     if offer and offer >= recovery_floor:
         p = min(offer, previous_ask) if previous_ask else offer

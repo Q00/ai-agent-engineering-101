@@ -34,6 +34,16 @@ class Chooser:
         if not candidates:
             raise ModelError("no_candidates")
         best = max(candidates, key=lambda x: x.get("score", 0))
+        from .meta import rank_gain
+        board = self.j.snapshot("board.json", {})
+        for candidate in candidates:
+            if role == "shop" and "price" in candidate:
+                delta = {"profit": candidate["score"], "revenue": candidate["score"]}
+            elif role == "buyer":
+                delta = {"surplus": candidate["score"], "deals": 1}
+            else:
+                continue
+            candidate["rank_gain_approximation"] = rank_gain(board, role, "seochanit", delta)
         decision_id = __import__("uuid").uuid4().hex
         self.j.add("prediction", {"decision": decision_id, "role": role, "candidates": candidates,
                                   "context": context}, role=role)

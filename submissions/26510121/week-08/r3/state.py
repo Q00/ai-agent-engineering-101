@@ -7,6 +7,7 @@ from pathlib import Path
 import sqlite3
 import time
 import uuid
+from contextlib import contextmanager
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -52,11 +53,16 @@ class Journal:
             CREATE TABLE IF NOT EXISTS forum(id TEXT PRIMARY KEY,payload TEXT,status TEXT);
             """)
 
+    @contextmanager
     def connect(self):
         c = sqlite3.connect(self.db, timeout=15)
-        c.execute("PRAGMA journal_mode=WAL")
-        c.execute("PRAGMA busy_timeout=15000")
-        return c
+        try:
+            c.execute("PRAGMA journal_mode=WAL")
+            c.execute("PRAGMA busy_timeout=15000")
+            with c:
+                yield c
+        finally:
+            c.close()
 
     def add(self, kind, data, *, eid=None, role="system", ts=None):
         eid = eid or uuid.uuid4().hex

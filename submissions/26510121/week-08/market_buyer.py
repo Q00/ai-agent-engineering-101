@@ -67,8 +67,14 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                 if product.get("kind") == "goods":
                     required_warranty = 6 if terms.get("warranty_hours", 0) >= 6 else 0
                     if not required_warranty:
-                        # A disclosed stress scenario until comparable mature evidence exists.
-                        cap = min(cap, int(product["list_price"] * (1 - cfg["unknown_goods_failure_stress"])))
+                        from r3.meta import observed_breaks
+                        risk = observed_breaks(journal, c["sku"])
+                        stress = cfg["unknown_goods_failure_stress"]
+                        if risk["mature_samples"] >= 10:
+                            # Conservative posterior mean plus uncertainty buffer, not a guarantee.
+                            n = risk["mature_samples"]
+                            stress = min(1, (risk["broken"] + 1) / (n + 2) + 1 / (n + 2) ** .5)
+                        cap = min(cap, int(product["list_price"] * (1 - stress)))
                 actions = []
                 if ask <= cap:
                     actions.append({"id": "accept", "price": ask, "score": product["list_price"] - ask + 1})
