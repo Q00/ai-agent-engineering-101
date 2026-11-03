@@ -328,6 +328,24 @@ def test_deals():
     unpaid = [s["task"] for s in common.records("unpaid")]
     check("a unit that left the inventory is a sale", "t-sold" in sold, sold)
     check("a unit still in stock 10 minutes after the deal is unpaid", "t-unpaid" in unpaid, unpaid)
+    with open(folder / "deals.jsonl", "a", encoding="utf-8") as f:              # three buyers agree to one unit
+        for i, t in enumerate(("t-a", "t-b", "t-c")):
+            f.write(json.dumps({"ts": int(NOW - 300 + 60 * i), "task": t, "unit": "u-twice", "sku": WATER, "price": 10000 + i,
+                                "cost": 7000}) + "\n")
+    restock.check_deals({"units": [{"unit": "u-stays"}]}, state, NOW)
+    sold = [s for s in common.records("sales") if s["unit"] == "u-twice"]
+    gone = [s["task"] for s in common.records("unpaid") if s.get("superseded") and s["unit"] == "u-twice"]
+    check("one unit agreed three times then gone: one sale (the latest deal), two unpaid",
+          [s["task"] for s in sold] == ["t-c"] and sold[0]["price"] == 10002 and gone == ["t-a", "t-b"], (sold, gone))
+    spec = importlib.util.spec_from_file_location("repair_sales", HERE / "deploy" / "repair_sales.py")
+    repair = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(repair)
+    deals = [{"ts": NOW - 900, "task": "r1", "unit": "u1", "price": 9000}, {"ts": NOW - 800, "task": "r2", "unit": "u1", "price": 9500},
+             {"ts": NOW - 700, "task": "r3", "unit": "u2", "price": 5000}, {"ts": NOW - 100, "task": "r4", "unit": "u3", "price": 7000}]
+    s, u, p = repair.rebuild(deals, [{"ts": NOW - 790, "unit": "u1", "amount": 9500, "seq": 7}], NOW)
+    check("the repair: a settle matches its unit's deal at that price; older deals unpaid, a recent one still pending",
+          [x["task"] for x in s] == ["r2"] and s[0]["ledger"] == 7 and [x["task"] for x in u] == ["r1", "r3"] and list(p) == ["r4"],
+          (s, u, list(p)))
 
 
 def test_ledger():

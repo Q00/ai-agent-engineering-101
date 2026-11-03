@@ -46,6 +46,8 @@ CARD_DESCRIPTION = ("Everyday groceries and goods. Every unit ships with the mar
                     "(goods: A new, B damaged box, C refurbished; food: share of shelf life left). Ask by SKU or by "
                     "category (menu of up to 3); say how long food must last. Paid 6-hour warranty on goods.")
 HOLD = 300               # seconds a silent negotiation keeps its unit (the kit's buyer timeout)
+PAY_HOLD = 120           # seconds after a deal its unit is offered only when no other unit of the product is left:
+                         # most buyers who agree never pay (11/3: 57%), so the unit is not kept back from the next one
 MENU = 3                # products shown for a category request
 NEED_MARGIN = 1          # hours food must outlast the buyer's stated need
 MODEL_LINES = 80         # stock lines shown to the model
@@ -206,6 +208,7 @@ class Seller(AgentExecutor):
     def __init__(self, key):
         self.key = key
         self.open = {}   # task id -> {"options", "unit", "plan", "warranty", "asks", "offers", "t", "how"}
+        self.agreed = {}  # unit -> when a deal named it; the buyer's kit pays within seconds, or not at all
 
     def held(self) -> set:
         """Units promised to open negotiations; a buyer silent for HOLD seconds has left."""
@@ -312,9 +315,12 @@ class Seller(AgentExecutor):
         everything = stock(now)
         units = [u for u in everything if u["unit"] not in held]
         req = await read_request(text, units)
+        self.agreed = {u: t for u, t in self.agreed.items() if now - t < PAY_HOLD}
         by_sku = {}
         for u in units:
             by_sku.setdefault(u["sku"], []).append(u)
+        for s, v in by_sku.items():              # a unit agreed to moments ago: offered again only if it is the last one
+            by_sku[s] = [u for u in v if u["unit"] not in self.agreed] or v
         direct = [u for u in (pick(by_sku.get(s, []), req, now) for s in req["skus"]) if u] \
             if req["how"] != "category" else []
         if req["how"] == "category":
@@ -369,6 +375,7 @@ class Seller(AgentExecutor):
         common.record("deals", task=task_id, unit=u["unit"], sku=u["sku"], price=int(price), cost=u["cost"],
                       list_price=u["list_price"], grade=p["grade"], warranty=bool(p["warranty_hours"]))
         self.close(task_id, "deal", int(price))
+        self.agreed[u["unit"]] = now
         await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
         await up.complete(say(f"Deal: {u.get('name')} ({u['sku']}) at {price}."))
 

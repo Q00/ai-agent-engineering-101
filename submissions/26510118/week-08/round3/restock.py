@@ -75,17 +75,26 @@ WARN_AFTER, WARN_BELOW = 86400, 3
 
 def check_deals(inv: dict, state: dict, now: float) -> None:
     """Deals the seller agreed: settled once the unit left the inventory, unpaid if it is still
-    there UNPAID_AFTER seconds later (the buyer's kit refused to pay, or the buyer left)."""
+    there UNPAID_AFTER seconds later (the buyer's kit refused to pay, or the buyer left). A unit a
+    buyer agreed to and did not pay for is offered again, so several deals can name one unit: when
+    it leaves, only the latest of them is the sale (the earlier buyers went without paying)."""
     deals = common.records("deals")
     pending = state.setdefault("pending", {})
     for d in deals[state.get("deals_seen", 0):]:
         pending[d["task"]] = d
     state["deals_seen"] = len(deals)
     present = {u["unit"] for u in inv.get("units") or []}
+    latest = {}
+    for d in pending.values():
+        if d["unit"] not in present and (d.get("ts") or 0) >= (latest.get(d["unit"], {}).get("ts") or 0):
+            latest[d["unit"]] = d
     for task, d in list(pending.items()):
         fields = {k: d.get(k) for k in ("task", "unit", "sku", "price", "cost", "list_price", "grade", "warranty")}
         if d["unit"] not in present:
-            common.record("sales", deal_ts=d.get("ts"), **fields)
+            if latest[d["unit"]] is d:
+                common.record("sales", deal_ts=d.get("ts"), **fields)
+            else:
+                common.record("unpaid", deal_ts=d.get("ts"), superseded=True, **fields)
             del pending[task]
         elif now - (d.get("ts") or now) > UNPAID_AFTER:
             common.record("unpaid", deal_ts=d.get("ts"), **fields)
