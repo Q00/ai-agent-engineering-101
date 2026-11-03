@@ -12,6 +12,23 @@ scores its own forecasts so it gets better (self-improvement: forecast -> compar
            SKUs the marketing team asks about (private/enuri_requests.json) go first: the two teams are allies,
            marketing gets competitor asks it cannot see on the ledger, the Enuri team learns which SKUs matter.
 
+  where    a market-wide index from shops.json: every SKU any shop has in stock, who holds it, how many, its list
+           price, so an order is never short of candidates because the buyer only knew the shops it traded with
+
+advise(order, shops) is the buyer's shopping advice per order (round3 follows it): shops ranked by the surplus they
+should leave (budget - expected price, the board's measure) times quality, the first-offer target and the most to
+pay. Without a book the buyer falls back to its own ranking.
+
+Accountability (the owner's rule: the Enuri team answers for every missed opportunity and every wrong purchase).
+Every tick it judges the buyer's new memory lines against the book it gave, and the ledger since:
+  missed   an order with no deal although the book knew a shop with stock in reach (list x min_reach <= budget),
+           an order with no candidates whose SKU some shop held, a no-deal at the shop Enuri ranked first
+  wrong    a deal with a receipt problem (wrong price or SKU), a false grade claim or a broken unit (ledger), a deal
+           the kit never settled (food that would not last, grade or certificate refused), a deal at an avoid shop,
+           a price above 1.05 x the book's low
+  lost     the surplus those cost, in money. The book carries a 24 h line ("enuri_accountability"), every case
+           raises a penalty on that shop that advise() ranks by, and summary() puts them first for the teams.
+
 The book predicts what the buyer will pay at each shop: median ask x k[kind]. Every tick it scores the
 predictions against the buyer's deals since the last tick and moves k toward what happened (EMA). The
 buyer team (Codex, buyer_team.py) reads the scorecard and may change the bars and the survey size.
@@ -42,6 +59,9 @@ PLAN = HERE / "private" / "buyer_plan.json"
 REQUESTS = HERE / "private" / "enuri_requests.json"
 MEMORY = HERE / "memory.jsonl"
 DEFAULTS = {"min_honest": 0.8, "max_broken": 0.15, "min_n": 5, "survey_quotes": 4, "tick_s": 300, "alpha": 0.3}
+ME = "dragonash"
+KIT_LOG = HERE / "logs" / "market-kit.log"
+REFUSAL = re.compile(r"refus|declin|not paid|reject", re.I)
 PRICE_POST = re.compile(r"sku (G[0-9a-f]{8})\D{0,40}?(\d{3,7})", re.I)
 INJECTION = re.compile(r"ignore (?:all|previous|your)|AI (?:buyers?|agents?) (?:must|should)|system prompt|"
                        r"pay the (?:asking|full) price|give (?:it|us) 5 stars|approved by the (?:instructor|operator)", re.I)
@@ -71,7 +91,8 @@ def prices(c, hours=24):
     for sku, shops in by.items():
         allp = [a for v in shops.values() for a in v]
         out[sku] = {"low": min(allp), "median": statistics.median(allp), "n": len(allp),
-                    "shops": {s: {"n": len(v), "median": statistics.median(v), "last": v[-1]} for s, v in shops.items()}}
+                    "shops": {s: {"n": len(v), "median": statistics.median(v), "low": min(v), "last": v[-1]}
+                              for s, v in shops.items()}}
     return out
 
 
@@ -140,6 +161,42 @@ def trades_since(ts):
     return out
 
 
+def lines_since(ts):
+    """Every memory line after ts (any outcome), minus retracted ones."""
+    out = []
+    try:
+        with MEMORY.open(encoding="utf-8") as f:
+            for line in f:
+                try:
+                    m = json.loads(line)
+                except ValueError:
+                    continue
+                if (m.get("ts") or 0) > ts or "retracts" in m:
+                    out.append(m)
+    except OSError:
+        pass
+    gone = {m["retracts"] for m in out if "retracts" in m}
+    return [m for m in out if "retracts" not in m and (m.get("ts") or 0) > ts and m.get("ts") not in gone]
+
+
+def where(md):
+    """Market-wide index from shops.json and the catalog: {sku: {list, kind, shops: [{shop, qty, url, name}]}},
+    every SKU some shop has in stock (ours left out: the buyer does not buy from its own shop)."""
+    shops = load(Path(md) / "shops.json", []) or []
+    cat = market_model.catalog(md)
+    idx = {}
+    for s in shops if isinstance(shops, list) else []:
+        if not isinstance(s, dict) or s.get("name") == ME:
+            continue
+        for o in s.get("offers") or []:
+            if o.get("qty") and o.get("sku"):
+                r = cat.get(o["sku"]) or {}
+                e = idx.setdefault(o["sku"], {"list": r.get("list_price"), "kind": r.get("kind"), "shops": []})
+                e["shops"].append({"shop": s.get("name"), "qty": o["qty"], "url": s.get("url"),
+                                   "name": o.get("name") or r.get("name")})
+    return idx, len(cat), len(shops) if isinstance(shops, list) else 0
+
+
 def predict(book, shop, sku, kind=None, k=None):
     """What the buyer will pay at this shop for this SKU: the shop's own median (settles or asks), else the market's,
     times k[kind] (the calibration; the book's own k when none is given). None when the book knows nothing."""
@@ -169,10 +226,184 @@ def score(state, old_book, t):
             "mae": round(statistics.mean(abs(e) for e in errs), 4) if errs else None,
             "bias": round(statistics.median(errs), 4) if errs else None, "k": dict(k),
             # paid above the cheapest shop the book knew: surplus the buyer left on the table
-            "missed": sum(1 for m in deals if ((old_book.get("prices") or {}).get(m["item"]) or {}).get("low")
+            "overpaid": sum(1 for m in deals if ((old_book.get("prices") or {}).get(m["item"]) or {}).get("low")
                           and m["agreed"] > 1.05 * old_book["prices"][m["item"]]["low"])}
     state["cards"] = (state.get("cards", []) + [card])[-100:]
     return card
+
+
+def honest_low(book, sku):
+    """The SKU's 24 h low at shops the book does not avoid (a liar's price is no benchmark)."""
+    avoid = set(book.get("avoid") or [])
+    lows = [v.get("low", v.get("median")) for s, v in ((((book.get("prices") or {}).get(sku) or {}).get("shops"))
+                                                        or {}).items() if s not in avoid]
+    return min(lows) if lows else None
+
+
+def expected(book, shop, sku, kind, lp, t):
+    """predict(), else the market's 24 h median for the SKU, else the buyer's prior share of the list price."""
+    return predict(book, shop, sku, kind) or ((book.get("prices") or {}).get(sku) or {}).get("median") \
+        or (lp * t.get("prior_price_ratio", 0.85) if lp else None)
+
+
+def _case(cases, key, now, kind, typ, m, lost, why):
+    cases.setdefault(key, {"ts": now, "kind": kind, "type": typ, "shop": m.get("shop"), "sku": m.get("item"),
+                           "budget": m.get("budget"), "lost": round(max(0, lost or 0)), "why": why[:160]})
+
+
+def judge(state, old, c, now, t):
+    """Accountability: new memory lines judged against the book Enuri gave (old), plus the ledger's verdict on our
+    buyer's deals. Cases are keyed, so a tick never counts one twice; kept 24 h."""
+    bt = _buyer_theta()
+    cases = state.setdefault("cases", {})
+    new = lines_since(state.get("judged_to", now - 3600))
+    idx, avoid = old.get("where") or {}, set(old.get("avoid") or [])
+    low = lambda sku: honest_low(old, sku)
+    for m in new:
+        key, out, budget = f"m:{m.get('ts')}", m.get("outcome"), m.get("budget") or 0
+        if out == "deal" and m.get("agreed"):
+            a = m["agreed"]
+            if str(m.get("problem") or "").startswith("receipt"):
+                _case(cases, key, now, "wrong", "receipt problem", m, a, m["problem"])
+            elif m.get("shop") in avoid:
+                _case(cases, key, now, "wrong", "bought at an avoid shop", m, a - (low(m.get("item")) or a), m["shop"])
+            elif low(m.get("item")) and a > 1.05 * low(m["item"]):
+                _case(cases, key, now, "wrong", "overpaid", m, a - low(m["item"]), f"paid {a}, book low {low(m['item'])}")
+        elif out in ("no deal", "no answer", "no candidates") and budget:
+            skus = [m["item"]] if str(m.get("item", "")).startswith("G") else (m.get("acceptable") or [])
+            best = None
+            for sku in skus:
+                e = idx.get(sku) or {}
+                for h in e.get("shops") or []:
+                    if h["shop"] in avoid:
+                        continue
+                    x = expected(old, h["shop"], sku, e.get("kind"), e.get("list"), bt)
+                    reach = (e.get("list") and e["list"] * bt.get("min_reach", 0.45) <= budget) or (x and x <= budget)
+                    if reach and x and (best is None or x < best[0]):
+                        best = (x, h["shop"], sku)
+            if out == "no candidates" and best:
+                _case(cases, key, now, "missed", "no candidates, but stocked", m, budget - best[0],
+                      f"{best[1]} had {best[2]} at ~{best[0]:.0f}")
+            elif m.get("enuri_first") and m.get("enuri_first") == m.get("shop"):
+                _case(cases, key, now, "missed", "first pick failed", m, budget - (best[0] if best else budget),
+                      f"{out} at {m.get('shop')}: {m.get('problem') or ''}")
+            elif best:
+                _case(cases, key, now, "missed", "no deal, in reach", m, budget - best[0],
+                      f"{out}; {best[1]} had {best[2]} at ~{best[0]:.0f}")
+    if new:
+        state["judged_to"] = max(m.get("ts") or 0 for m in new)
+    since = now - 24 * 3600
+    for seq, ts, sku, amount, shop in c.execute(
+            """select s.seq, s.ts, s.sku, s.amount, su.shop from settles s left join settle_units x on x.seq = s.seq
+               left join supply_units su on su.unit = x.unit where s.buyer = ? and s.claim_honest = 0 and s.ts > ?""",
+            (ME, since)).fetchall():
+        _case(cases, f"g:{seq}", now, "wrong", "false grade claim", {"shop": shop, "item": sku}, 0, f"settle {seq}")
+    for seq, ts, sku in c.execute("select seq, ts, sku from broken where buyer = ? and ts > ?", (ME, since)).fetchall():
+        row = c.execute("""select s.amount, su.shop from settles s left join settle_units x on x.seq = s.seq
+                           left join supply_units su on su.unit = x.unit where s.buyer = ? and s.sku = ? and s.ts <= ?
+                           order by s.ts desc limit 1""", (ME, sku, ts)).fetchone() or (0, None)
+        _case(cases, f"b:{seq}", now, "wrong", "broken after sale", {"shop": row[1], "item": sku}, row[0], f"broken {seq}")
+    for m in lines_since(since):                       # deals the kit never paid for: no settle near the deal
+        if m.get("outcome") == "deal" and m.get("agreed") and str(m.get("item", "")).startswith("G") \
+                and now - m["ts"] > 1800 and f"u:{m['ts']}" not in cases and not c.execute(
+                    "select 1 from settles where buyer = ? and sku = ? and ts between ? and ?",
+                    (ME, m["item"], m["ts"] - 900, m["ts"] + 3600)).fetchone():
+            _case(cases, f"u:{m['ts']}", now, "wrong", "deal never settled", m, (m.get("budget") or 0) - m["agreed"],
+                  "kit refused to pay (shelf life, grade or certificate?)")
+    state["cases"] = cases = {k: v for k, v in cases.items() if v["ts"] > since}
+    pen = state.setdefault("penalty", {})              # every fresh case makes Enuri trust that shop less
+    for s in list(pen):
+        pen[s] = round(pen[s] * 0.95, 4)
+    for v in cases.values():
+        if v["ts"] == now and v.get("shop"):
+            pen[v["shop"]] = round(min(0.5, 0.8 * pen.get(v["shop"], 0) + 0.2), 4)
+    state["penalty"] = {s: x for s, x in pen.items() if x >= 0.01}
+    try:                                               # the kit's own words, as a hint only (format not fixed)
+        tail = KIT_LOG.read_text(encoding="utf-8", errors="ignore").splitlines()[-2000:]
+        refusals = sum(1 for x in tail if REFUSAL.search(x) and "buy" in x.lower())
+    except OSError:
+        refusals = None
+    acc = {"window_h": 24, "missed": 0, "wrong": 0, "lost": 0, "lost_missed": 0, "lost_wrong": 0, "by_type": {},
+           "kit_log_refusal_lines": refusals}
+    for v in cases.values():
+        acc[v["kind"]] += 1
+        acc["lost"] += v["lost"]
+        acc["lost_" + v["kind"]] += v["lost"]
+        bt_ = acc["by_type"].setdefault(v["type"], {"n": 0, "lost": 0})
+        bt_["n"] += 1
+        bt_["lost"] += v["lost"]
+    acc["cases"] = sorted(cases.values(), key=lambda v: -v["lost"])[:10]
+    return acc
+
+
+def _buyer_theta():
+    try:
+        import buyer_memory
+        return buyer_memory.theta()
+    except Exception:
+        return {"min_reach": 0.45, "r3_first_offer": 0.6, "max_pay_ratio": 0.95, "prior_price_ratio": 0.85}
+
+
+def advise(order, shops, b=None, t=None, cat=None):
+    """The buyer's shopping advice for one order: shops ranked by the surplus they should leave (budget minus
+    expected price; the board counts surplus in money) x quality x (1 - Enuri's penalty for that shop), the
+    first-offer target and the most to pay. Shops from the market-wide index fill in any the order's list lacks."""
+    b = book() if b is None else b
+    t = t or _buyer_theta()
+    budget, kind, ok = order["budget"], order.get("kind"), set(order.get("acceptable") or [])
+    avoid, q, pen = set(b.get("avoid") or []), b.get("quality") or {}, b.get("penalty") or {}
+    idx = b.get("where") or {}
+    held = {}                                                  # (shop, sku) -> (url, product name, list)
+    for s in shops:
+        for o in s.get("offers") or []:
+            if o.get("sku") in ok and o.get("qty") and s.get("name") != ME:
+                held[(s["name"], o["sku"])] = (s.get("url"), o.get("name"), (idx.get(o["sku"]) or {}).get("list"))
+    for sku in ok:
+        for h in (idx.get(sku) or {}).get("shops") or []:
+            held.setdefault((h["shop"], sku), (h.get("url"), h.get("name"), idx[sku].get("list")))
+    rows, warn, skipped = {}, [], {"avoid": 0, "reach": 0, "no list": 0}
+    for (shop, sku), (url, name, lp) in held.items():
+        lp = lp or ((cat or {}).get(sku) or {}).get("list_price")
+        if shop in avoid:
+            skipped["avoid"] += 1
+            continue
+        if not lp or not url:
+            skipped["no list"] += 1
+            continue
+        x = expected(b, shop, sku, kind, lp, t)
+        if lp * t["min_reach"] > budget and not (x and x <= budget):
+            skipped["reach"] += 1
+            continue
+        qa = q.get(shop) or {}
+        honest = qa.get("honest") if qa.get("honest") is not None else 0.9
+        keep = (budget - min(x, budget)) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
+        target = int(lp * t["r3_first_offer"])
+        p, hl = (b.get("prices") or {}).get(sku) or {}, honest_low(b, sku)
+        if hl:
+            target = int(max(0.45 * lp, min(target, hl)))
+        walk = min(budget, int(lp * t["max_pay_ratio"]))
+        meds = [v["median"] for s_, v in (p.get("shops") or {}).items() if s_ not in avoid]
+        if p.get("n", 0) >= 3 and meds:                        # well known price: do not pay far above the market
+            walk = min(walk, max(int(1.1 * statistics.median(meds)), int(1.05 * x), target))
+        target = min(target, int(0.9 * walk))
+        row = {"shop": shop, "sku": sku, "url": url, "name": name, "expected_price": round(x), "list_price": lp,
+               "reach_ok": True, "keep": round(keep), "target": target, "walk_away": walk,
+               "quality": {k: qa.get(k) for k in ("deals", "honest", "broken", "verdict")} if qa else None,
+               "why": f"expect {round(x)} ({'book' if predict(b, shop, sku, kind) else 'market/prior'}), "
+                      f"keep ~{round(budget - min(x, budget))}" + (f", penalty {pen[shop]}" if pen.get(shop) else "")}
+        if shop not in rows or row["keep"] > rows[shop]["keep"]:
+            rows[shop] = row
+    ranked = sorted(rows.values(), key=lambda r: -r["keep"])
+    if not held:
+        warn.append("no shop in the market has an acceptable SKU in stock")
+    if skipped["avoid"]:
+        warn.append(f"{skipped['avoid']} offers at avoid shops skipped")
+    if skipped["reach"]:
+        warn.append(f"{skipped['reach']} offers out of reach (list x {t['min_reach']} > budget {budget})")
+    if skipped["no list"]:
+        warn.append(f"{skipped['no list']} offers without a list price or url")
+    return {"ranked": ranked, "target": ranked[0]["target"] if ranked else None,
+            "walk_away": ranked[0]["walk_away"] if ranked else None, "warnings": warn}
 
 
 def tick(md=Path(".market"), c=None, now=None, force=False):
@@ -184,10 +415,19 @@ def tick(md=Path(".market"), c=None, now=None, force=False):
     c = c or market_model.db()
     old = load(BOOK, {})
     card = score(state, old, t) if old else None
+    acc = judge(state, old, c, now, t) if old else None
+    if card is not None:
+        card.update(missed=acc["missed"], wrong=acc["wrong"], lost=acc["lost"])
     q = quality(c, md, t)
+    idx, n_cat, n_shops = where(md)
     book = {"ts": now, "prices": prices(c), "quality": q, "forum": forum_notes(md, now),
             "asks": load(ASKS, {}).get("asks", {}), "k": state.get("k", {"goods": 1.0, "food": 1.0}),
-            "avoid": sorted(s for s, x in q.items() if x["verdict"] == "avoid")}
+            "avoid": sorted(s for s, x in q.items() if x["verdict"] == "avoid"), "where": idx,
+            "penalty": state.get("penalty", {}), "enuri_accountability": acc or old.get("enuri_accountability"),
+            "coverage": {"catalog_skus": n_cat, "shops": n_shops, "skus_in_stock": len(idx),
+                         "skus_priced_24h": 0, "stocked_and_priced": 0}}
+    book["coverage"].update(skus_priced_24h=len(book["prices"]),
+                            stocked_and_priced=len(set(idx) & set(book["prices"])))
     BOOK.parent.mkdir(exist_ok=True)
     BOOK.write_text(json.dumps(book, ensure_ascii=False), encoding="utf-8")
     state["last_tick"] = now
@@ -286,14 +526,18 @@ def summary(b=None, top=15):
     q = b.get("quality") or {}
     fo = b.get("forum") or {}
     cards = load(STATE, {}).get("cards", [])[-5:]
-    return {"book_age_min": round((time.time() - b.get("ts", 0)) / 60), "skus_priced": len(b.get("prices") or {}),
+    acc = dict(b.get("enuri_accountability") or {})
+    return {"enuri_accountability": acc, "coverage": b.get("coverage"),
+            "shop_penalties": dict(sorted((b.get("penalty") or {}).items(), key=lambda kv: -kv[1])[:10]),
+            "book_age_min": round((time.time() - b.get("ts", 0)) / 60), "skus_priced": len(b.get("prices") or {}),
             "shops_rated": len(q), "k": b.get("k"), "price_spreads": spreads[:top],
             "avoid": [{"shop": s, "why": (q.get(s) or {}).get("why")} for s in b.get("avoid") or []],
             "forum_cited_prices": dict(sorted((fo.get("cited_prices") or {}).items(),
                                               key=lambda kv: -kv[1].get("n", 0))[:top]),
             "forum_flagged_posts": len(fo.get("flagged") or []),
             "asks_by_sku": sum(len(d) for d in (b.get("asks") or {}).values()), "requests": requested(),
-            "scorecards": [{k: x.get(k) for k in ("ts", "deals", "predicted", "mae", "bias", "missed")} for x in cards]}
+            "scorecards": [{k: x.get(k) for k in ("ts", "deals", "predicted", "mae", "bias", "overpaid", "missed",
+                                                  "wrong", "lost")} for x in cards]}
 
 
 def _orders_seen(hours):

@@ -508,6 +508,32 @@ def candidates(shops, order, cat, prof, book=None):
     return sorted(best.values(), key=lambda c: -c[0])
 
 
+def follow_enuri(order, shops, cat, prof, book):
+    """Candidates in the order the Enuri team advises (enuri.advise), minus shops my own memory blocks.
+    Returns (cands, advice, {(shop, sku): row}); ([], None, {}) without a book or advice."""
+    if not book:
+        return [], None, {}
+    try:
+        import enuri
+        adv = enuri.advise(order, shops, book, T, cat)
+    except Exception as e:
+        log(f"[enuri] no advice: {type(e).__name__}: {e}")
+        return [], None, {}
+    cands, rows = [], {}
+    for r in adv["ranked"]:
+        why = blocked(prof, r["shop"])
+        if why:
+            log(f"[filter] skip {r['shop']}: {why}")
+            continue
+        rows[(r["shop"], r["sku"])] = r
+        cands.append((r["keep"], {"name": r["shop"], "url": r["url"]},
+                      {"sku": r["sku"], "name": r.get("name") or r["sku"], "qty": 1}, r["list_price"]))
+    log(f"[enuri] advice: {len(adv['ranked'])} ranked, {len(cands)} after my filter; "
+        + "; ".join(f"{r['shop']} {r['sku']} expect {r['expected_price']} open {r['target']} max {r['walk_away']}"
+                    for r in adv["ranked"][:3]) + (f" | {'; '.join(adv['warnings'])}" if adv["warnings"] else ""))
+    return cands, (adv if cands else None), rows
+
+
 def _predict(book, shop, sku, kind):
     if not book:
         return None
@@ -565,7 +591,9 @@ def accept_policy(order):
 def round3(a, order, shops, mem, started):
     from concurrent.futures import ThreadPoolExecutor
     prof, cat, book = mem["profiles"], catalog(), enuri_book()
-    cands = candidates(shops, order, cat, prof, book)
+    cands, adv, rows = follow_enuri(order, shops, cat, prof, book)
+    if not cands:                       # no book, or no advice: my own ranking (it logs why nothing fits)
+        cands, adv = candidates(shops, order, cat, prof, book), None
     rfq = T["rfq_big"] if order["budget"] >= T["big_budget"] else T["rfq"]      # big orders: ask more shops
     try:
         import market_model          # the buyer is the shop's sensor: what this order showed goes in the shared model
@@ -576,7 +604,10 @@ def round3(a, order, shops, mem, started):
         f"{len(order['acceptable'])} SKUs fit, {len(cands)} shop offers")
     for keep, s, o, lp in cands[:rfq]:
         log(f"[r3]   {s['name']}: {o['name']} ({o['sku']}) list {lp}, expect to keep {keep:.0f}")
-    if not cands:
+    if not cands:                       # remembered without a shop (profiles skip it), so Enuri can answer for it
+        remember({"ts": round(time.time(), 1), "shop": "", "item": order.get("item"), "category": order.get("item"),
+                  "kind": order.get("kind"), "budget": order["budget"], "acceptable": list(order["acceptable"])[:30],
+                  "outcome": "no candidates"})
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
         return
     pol = accept_policy(order)
@@ -597,11 +628,13 @@ def round3(a, order, shops, mem, started):
         # (2 of 5 within 6 h blocks the shop, often the big one that heads the list)
         shelf = (q.get("error") or "").startswith("offered unit has")
         remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": q["c"][2]["sku"], "budget": order["budget"],
-                  "outcome": "no deal" if shelf else "no answer", "problem": None if shelf else "no answer (no quote)"})
+                  "outcome": "no deal" if shelf else "no answer", "problem": None if shelf else "no answer (no quote)",
+                  "enuri_first": adv["ranked"][0]["shop"] if adv else None})
         print(json.dumps({"shop": shop["url"], "receipt": None, "stars": stars, "review": review}, ensure_ascii=False),
               flush=True)
         return
-    pick = max(good, key=lambda q: q["c"][3] - q["ask"])
+    # with Enuri's advice: the lowest ask (surplus is budget - paid), then its rank; without: list - ask
+    pick = min(good, key=lambda q: (q["ask"], cands.index(q["c"]))) if adv else max(good, key=lambda q: q["c"][3] - q["ask"])
     for q in good:
         if q is not pick:
             try:
@@ -611,12 +644,17 @@ def round3(a, order, shops, mem, started):
     keep, shop, offer, lp = pick["c"]
     sku = offer["sku"]
     cap = min(order["budget"], int(lp * T["max_pay_ratio"]))     # paying near the list price keeps nothing
+    row = rows.get((shop["name"], offer["sku"])) if adv else None
+    if row:
+        cap = min(cap, row["walk_away"])
     # first offer: the anchor share of the list, but under the cap (an anchor above it would be dropped and the
     # buyer would open at first_offer_max x ask); 0.9 x cap so an ask at the anchor still leaves surplus
     low = int(lp * T["r3_first_offer"])
     book_low = ((book.get("prices") or {}).get(sku) or {}).get("low")
     if book_low:                        # the market sold it lower lately: open there, never under 0.45 x list
         low = int(max(0.45 * lp, min(low, book_low)))
+    if row:
+        low = row["target"]
     low = min(low, int(0.9 * cap))
     log(f"[choose] {shop['name']} {offer['name']} ({sku}): ask {pick['ask']}, list {lp}, I pay at most {cap}, open {low}")
 
@@ -647,7 +685,9 @@ def round3(a, order, shops, mem, started):
     stars, review = review_for(outcome, offer["name"], asks, offers, rec, problem, issues, worst, use_model=False)
     agreed = offers[-1] if outcome == "deal" and offers else None
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": sku, "category": order.get("item"),
-              "kind": order.get("kind"), "list_price": lp, "budget": order["budget"],
+              "kind": order.get("kind"), "list_price": lp, "budget": order["budget"], "rfq": rfq,
+              "enuri_first": adv["ranked"][0]["shop"] if adv else None, "enuri_target": row and row["target"],
+              "enuri_walk": row and row["walk_away"],
               "first_ask": asks[0] if asks else None, "last_ask": asks[-1] if asks else None,
               "last_offer": offers[-1] if offers else None, "agreed": agreed,
               "receipt_price": rec.get("price") if rec else None, "outcome": outcome,
