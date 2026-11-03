@@ -75,7 +75,7 @@ def settles(cache: Path, timeout: float = 20) -> list:
     A market that does not answer leaves the cache as it was."""
     c = read_json(cache, {}) or {}
     rows, seq = c.get("rows", []), c.get("seq")
-    after = seq if seq is not None else -500
+    after = seq if seq is not None else -5000         # first run: the newest 5,000 entries (about 20 minutes)
     try:
         for _ in range(20):                         # at most 10,000 entries per call
             r = httpx.get(f"{MARKET}/api/ledger", params={"after": after}, timeout=timeout)
