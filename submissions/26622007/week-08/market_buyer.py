@@ -41,6 +41,7 @@ import time
 import httpx
 
 import agent_loop
+import hard_limits
 import market_model
 from buyer import log, negotiate
 from harness import HarnessError, ask
@@ -475,7 +476,7 @@ def buyer_cfg():
     buyer's rank, and a deal near list price earns none of it) and the meta-harness moves them."""
     try:
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "pricing.json"), encoding="utf-8") as f:
-            return {**BUYER, **(json.load(f).get("buyer") or {})}
+            return hard_limits.clamp_cfg("buyer", {**BUYER, **(json.load(f).get("buyer") or {})})
     except (OSError, ValueError):
         return dict(BUYER)
 

@@ -141,12 +141,13 @@ class SandboxTest(unittest.TestCase):
         self.tool("env", f"import json;print(json.dumps(open({secret!r}).read()))")
         self.tool("write", f"import json;open({os.path.join(HERE, 'x.txt')!r},'w');print(json.dumps({{}}))")
         self.tool("keys", "import os,json;print(json.dumps(sorted(k for k in os.environ if 'KEY' in k)))")
-        self.tool("ok", "import os,json;open(os.path.join(os.environ['MARKET_DIR'],'f'),'w').write('1');print(json.dumps({'ok':1}))")
+        self.tool("ok", "import os,json,tempfile;open(os.path.join(tempfile.gettempdir(),'f'),'w').write('1');"
+                        "print(json.dumps({'ok':len(os.listdir(os.environ['MARKET_DIR']))}))")
         with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "sk-test-value-123456"}):
             for name in ("net", "env", "write"):
                 self.assertIn("error", json.loads(agent_tools.run(name, {}, self.md, folder=self.tools)), name)
             self.assertEqual(json.loads(agent_tools.run("keys", {}, self.md, folder=self.tools)), [])
-        self.assertEqual(json.loads(agent_tools.run("ok", {}, self.md, folder=self.tools)), {"ok": 1})
+        self.assertIsInstance(json.loads(agent_tools.run("ok", {}, self.md, folder=self.tools))["ok"], int)   # reads .market, writes its temp
         self.assertFalse(os.path.exists(os.path.join(HERE, "x.txt")))
 
     def test_failing_tools_are_left_out(self):
@@ -168,7 +169,9 @@ class ForgeTest(unittest.TestCase):
         self.assertEqual(tool_forge.check_code(self.GOOD), [])
         for bad in ("import socket", "import subprocess", "from urllib import request", "eval('1')",
                     "import os\nos.environ['OPENROUTER_API_KEY']", "import os\nos.environ.get('HOME')", "import os\nos.remove('x')",
-                    "open('x', 'w')", "import os\ndict(os.environ)"):
+                    "open('x', 'w')", "import os\ndict(os.environ)", "open('x', mode='a')",
+                    "getattr(__builtins__, '__imp' + 'ort__')('ctypes')", "import os\nos.execl('/bin/sh', 'sh')",
+                    "import os\nos.posix_spawn('/bin/sh', [], {})", "x = ().__class__.__bases__"):
             self.assertTrue(tool_forge.check_code(bad), bad)
 
     def test_repeated_work_becomes_a_tool_or_is_rejected(self):

@@ -244,7 +244,7 @@ def main():
     ap.add_argument("--state", required=True)
     args = ap.parse_args()
     inv = load(os.path.join(args.state, "inventory.json"), {})
-    cfg = {**DEFAULTS, **load("pricing.json", {}).get("restock", {})}
+    cfg = hard_limits.clamp_cfg("restock", {**DEFAULTS, **load("pricing.json", {}).get("restock", {})})
     catalog = load(os.path.join(args.state, "catalog.json"), {})
     demand, model = load(os.path.join(args.state, "demand.json"), []), read_model(args.state, catalog, cfg)
     breaks = read_breaks(args.state, catalog)
@@ -257,6 +257,7 @@ def main():
     if os.environ.get("HARNESS"):
         forum.maybe_run(args.state)     # the kit runs this hook once a minute in Round 3; forum.py keeps its own pace
         tool_forge.maybe_run(args.state)
+    out["buy"] = hard_limits.final_buy(out.get("buy"), inv.get("balance"), catalog)     # the last word, whatever came before
     print(json.dumps(out, ensure_ascii=False), flush=True)
     return 0
 

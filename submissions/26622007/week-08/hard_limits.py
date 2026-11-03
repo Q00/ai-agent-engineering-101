@@ -11,10 +11,11 @@ meta_harness.py rejects a change that touches a PROTECTED file, removes a line n
 pricing.json number further than this file allows. Only a person changes this file.
 """
 import math
+import re
 
 BANKRUPT_LINE = 500000
 STOP_BUYING_BELOW = 1000000          # a supply that could leave less than this is not sent
-PROTECTED = ("hard_limits.py", "test_hard_limits.py")
+PROTECTED = ("hard_limits.py", "test_hard_limits.py", "run_market.sh", "run_meta.sh", "ensure_running.sh")
 MAX_STEP = 0.5                       # a number may change by at most half its value per cycle (and by 1 when it is small)
 
 # path in pricing.json -> (lowest, highest). Outside these the shop's own data has not earned the risk.
@@ -41,16 +42,33 @@ BOUNDS = {
     "forum.every_minutes": (5, 240),
 }
 MARKDOWN_REASONS = ("food_expiry", "stale_goods", "round_end")
+# The cautious start, used when a bounded setting is missing a number.
+SAFE = {"restock": {"keep_cash": 3000000, "max_stock_cost": 1000000, "target_per_category": 1, "max_lines": 5,
+                    "max_units_per_sku": 5, "cover_hours": 6, "food_explore_qty": 0, "food_max_qty": 2, "max_break": 0.15,
+                    "goods_max_price": 30000, "max_sku_share": 0.1},
+        "warranty": {"on_request_hours": 3, "max_hours": 6, "max_break": 0.25, "prior_break": 0.15},
+        "buyer": {"max_price_share": 0.9, "max_spend_per_deal": 200000},
+        "markdown": {"min_floor_share": 0.1, "below_cost": ["food_expiry"]},
+        "forum": {"max_votes": 5, "every_minutes": 15}}
 
-# What a tool may touch. Paths come from agent_tools.py at run time.
+# What a tool may touch. Paths come from agent_tools.py at run time: {work} is a fresh folder for this one call, {reads}
+# the repository and Python's own folders. Denials repeat the operation they override (file-read-data): a broader
+# "file-read*" deny does not win over a later, narrower allow. .market/ is read only: a tool cannot write the forum outbox, its own selftest
+# result or the files the kit reads. Other processes (the restock or seller that started it, with the keys in their
+# environment) are invisible to it, and it can start no program but Python.
 SANDBOX = """(version 1)
 (allow default)
 (deny network*)
 (allow network* (local unix))
+(deny process-info*)
+(allow process-info* (target self))
+(deny process-exec*)
+(allow process-exec* {exe})
 (deny file-write*)
-(allow file-write* (subpath "{market}") (subpath "{tmp}") (literal "/dev/null"))
-(deny file-read* (regex #"/\\.env$") (regex #"\\.pem$") (subpath "{home}/.codex") (subpath "{home}/.ssh")
-  (subpath "{home}/.config") (subpath "{home}/Library/Keychains"))
+(allow file-write* (subpath "{work}") (literal "/dev/null"))
+(deny file-read-data (subpath "{home}") (subpath "/Volumes"))
+(allow file-read-data {reads})
+(deny file-read-data (regex #"/\\.env") (regex #"\\.pem$") (regex #"/\\.git/") (subpath "{home}/.codex") (subpath "{home}/.ssh"))
 """
 ENV_KEEP = ("PATH", "LANG", "LC_ALL", "TZ", "TMPDIR", "HOME")
 ENV_PASS_PREFIX = ("BUYER_", "SHOP_", "AGENT_", "MARKET_")      # the agents' own settings (file paths, names)
@@ -89,10 +107,43 @@ def check_policy_change(old, new):
             problems.append(f"pricing.json {key} {was} -> {v} moves more than {MAX_STEP:.0%} in one cycle")
         if key == "markdown.below_cost" and (not isinstance(v, list) or any(r not in MARKDOWN_REASONS for r in v)):
             problems.append(f"pricing.json markdown.below_cost {v} is not a list of {MARKDOWN_REASONS}")
-    for key in BOUNDS:
+        if key in BOUNDS and not number(v):
+            problems.append(f"pricing.json {key}={v!r} must stay a number")
+    for key in (*BOUNDS, "markdown.below_cost"):
         if key in a and key not in b:
             problems.append(f"pricing.json {key} was removed (bounded settings stay)")
     return problems
+
+
+def clamp_cfg(section, cfg):
+    """A section of pricing.json as the code may use it: bounded numbers inside their bounds, and a value that is not a
+    number (null, text) replaced by the cautious start (SAFE). Applied at every run, so even a settings file edited
+    outside the meta-harness's checks cannot take the shop past these lines."""
+    out = dict(cfg)
+    for key, (lo, hi) in BOUNDS.items():
+        sec, _, name = key.partition(".")
+        if sec != section or (name not in out and name not in SAFE.get(section, {})):
+            continue
+        v = out.get(name)
+        out[name] = min(max(v, lo), hi) if number(v) else SAFE[section][name]
+    if section == "markdown":
+        r = out.get("below_cost")
+        out["below_cost"] = [x for x in r if x in MARKDOWN_REASONS] if isinstance(r, list) else list(SAFE["markdown"]["below_cost"])
+    return out
+
+
+def final_buy(buy, balance, catalog, worst=0.75):
+    """The last word on a restock's lines: none that could take the balance under STOP_BUYING_BELOW (at worst cost)."""
+    left, out = spendable(balance), []
+    for b in buy if isinstance(buy, list) else []:
+        if not isinstance(b, dict) or not isinstance(b.get("qty"), int) or isinstance(b.get("qty"), bool):
+            continue
+        unit = ((catalog.get(b.get("sku")) or {}).get("list_price") or 0) * worst
+        qty = min(b["qty"], 20, int(left // unit) if unit > 0 else 0)
+        if qty >= 1:
+            out.append({"sku": b["sku"], "qty": qty})
+            left -= unit * qty
+    return out
 
 
 def policy_diff(old, new):
@@ -107,4 +158,8 @@ def guard_problems(changed_paths, diff_text):
     removed = [ln for ln in diff_text.splitlines() if ln.startswith("-") and not ln.startswith("---") and "hard_limits" in ln]
     if removed:
         out.append(f"the change removes {len(removed)} line(s) using hard_limits: {removed[0][:120]}")
+    rebinding = [ln for ln in diff_text.splitlines() if re.match(r"\+(?!\+\+).*\b(hard_limits|hl)\.\w+\s*=(?!=)", ln)
+                 or re.match(r"\+(?!\+\+).*(setattr\(\s*(hard_limits|hl)\b|import hard_limits as (?!hl\b))", ln)]
+    if rebinding:
+        out.append(f"the change rebinds hard_limits: {rebinding[0][:120]}")
     return out

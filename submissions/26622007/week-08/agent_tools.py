@@ -1,7 +1,8 @@
 """The tool registry the market agents choose from. Tools live in tools/<name>/ and are read at every call.
 
-A tool runs in a box (hard_limits.SANDBOX, macOS sandbox-exec): no network, no writes outside .market/ and a temp folder,
-no reading keys, .env files or the Codex/SSH folders, and an environment without keys. So a tool the agents or the
+A tool runs in a box (hard_limits.SANDBOX, macOS sandbox-exec): no network, no writes but a fresh folder for the call
+(.market/ is read only), no reading the home folder beyond the repository and Python, nor keys or .env files, no view of
+other processes, no program but Python, and an environment without keys. Without sandbox-exec a tool does not run. So a tool the agents or the
 meta-harness write can read the market's files and compute, but cannot send anything, spend anything or see a secret.
 A tool that fails its selftest (manifest "selftest": {"args": ...}, run once per version of tool.py) or most of its
 recent calls is left out of discover() until it is fixed; .market/tools_status.json says which and why.
@@ -146,30 +147,43 @@ def discover(folder=None, md=None):
     return out
 
 
-def boxed(cmd, md):
-    """cmd inside the sandbox, with an environment that holds no keys."""
+def boxed(cmd, md, work):
+    """cmd inside the sandbox, with an environment that holds no keys. None when there is no sandbox here: a tool does
+    not run unboxed."""
+    sandbox = shutil.which("sandbox-exec")
+    if not sandbox:
+        return None, None
     home = os.path.realpath(os.path.expanduser("~"))
-    tmp = os.path.realpath(tempfile.gettempdir())
+    real = lambda p: os.path.realpath(p)
+    repo = real(os.path.join(HERE, "..", "..", ".."))
+    reads = {repo, real(HERE), real(md), real(work), real(sys.prefix), real(sys.base_prefix), real(tempfile.gettempdir()),
+             real(os.path.dirname(real(sys.executable)))}
+    if os.environ.get("AGENT_MEMORY_DIR"):
+        reads.add(real(os.environ["AGENT_MEMORY_DIR"]))
+    q = lambda p: '"' + p.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    profile = hard_limits.SANDBOX.format(
+        work=real(work), home=home,
+        exe=" ".join(f"(literal {q(p)})" for p in {sys.executable, real(sys.executable)}),
+        reads=" ".join(f"(subpath {q(p)})" for p in sorted(reads)))
     env = {k: v for k, v in os.environ.items()
            if k in hard_limits.ENV_KEEP or (k.startswith(hard_limits.ENV_PASS_PREFIX) and not re.search(hard_limits.ENV_SECRET, k))}
-    env.update(MARKET_DIR=md, PYTHONPATH=HERE, PYTHONDONTWRITEBYTECODE="1")
-    sandbox = shutil.which("sandbox-exec")
-    if sandbox and os.environ.get("AGENT_TOOLS_SANDBOX", "1") == "1":
-        profile = hard_limits.SANDBOX.format(market=os.path.realpath(md), tmp=tmp, home=home)
-        cmd = [sandbox, "-p", profile, *cmd]
-    return cmd, env
+    env.update(MARKET_DIR=md, PYTHONPATH=HERE, PYTHONDONTWRITEBYTECODE="1", TMPDIR=work)
+    return [sandbox, "-p", profile, *cmd], env
 
 
 def execute(name, args, md, folder=None):
     folder = folder or TOOLS
-    cmd, env = boxed([sys.executable, os.path.join(folder, name, "tool.py")], md)
-    try:
-        p = subprocess.run(cmd, input=json.dumps(args), text=True, capture_output=True, timeout=TOOL_TIMEOUT, env=env, cwd=HERE)
-        return json.loads(p.stdout) if p.returncode == 0 else {"error": f"exit {p.returncode}: {p.stderr[-500:]}"}
-    except subprocess.TimeoutExpired:
-        return {"error": f"no answer within {TOOL_TIMEOUT} s"}
-    except (OSError, ValueError) as e:
-        return {"error": f"{type(e).__name__}: {e}"}
+    with tempfile.TemporaryDirectory(prefix="tool-") as work:
+        cmd, env = boxed([sys.executable, os.path.join(folder, name, "tool.py")], md, work)
+        if cmd is None:
+            return {"error": "no sandbox-exec here: tools do not run without the sandbox"}
+        try:
+            p = subprocess.run(cmd, input=json.dumps(args), text=True, capture_output=True, timeout=TOOL_TIMEOUT, env=env, cwd=HERE)
+            return json.loads(p.stdout) if p.returncode == 0 else {"error": f"exit {p.returncode}: {p.stderr[-500:]}"}
+        except subprocess.TimeoutExpired:
+            return {"error": f"no answer within {TOOL_TIMEOUT} s"}
+        except (OSError, ValueError) as e:
+            return {"error": f"{type(e).__name__}: {e}"}
 
 
 def run(name, args, md, agent="agent", call_id="", folder=None):

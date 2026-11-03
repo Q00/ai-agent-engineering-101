@@ -26,9 +26,9 @@ from harness import HarnessError, ask
 
 ALLOWED = {"json", "os", "sys", "time", "math", "collections", "statistics", "itertools", "re", "datetime", "functools",
            "market_model", "agent_memory"}
-BANNED_NAMES = {"eval", "exec", "compile", "__import__", "globals", "breakpoint", "input"}
-BANNED_ATTRS = {"system", "popen", "spawnv", "execv", "fork", "kill", "remove", "unlink", "rmdir", "rmtree", "rename",
-                "replace", "chmod", "putenv", "environb"}
+BANNED_NAMES = {"eval", "exec", "compile", "__import__", "globals", "locals", "vars", "breakpoint", "input", "getattr",
+                "setattr", "delattr", "__builtins__", "memoryview", "type", "object"}
+OS_ALLOWED = {"path", "environ", "listdir", "sep", "scandir"}           # os.<anything else> is refused
 MIN_REPEAT = 6
 
 SYSTEM = """You write one small Python tool for an AI shop's agents. The tool reads JSON args from stdin, reads files in
@@ -91,16 +91,23 @@ def check_code(code):
         elif isinstance(node, ast.ImportFrom):
             if (node.module or "").split(".")[0] not in ALLOWED or node.level:
                 out.append(f"from {node.module} import")
-        elif isinstance(node, ast.Name) and node.id in BANNED_NAMES:
+            if node.module == "os":
+                out.append("from os import")
+        elif isinstance(node, ast.Name) and (node.id in BANNED_NAMES or node.id.startswith("__")):
             out.append(f"uses {node.id}")
-        elif isinstance(node, ast.Attribute) and node.attr in BANNED_ATTRS:
+        elif isinstance(node, ast.Attribute) and node.attr.startswith("_"):
             out.append(f"uses .{node.attr}")
-        elif isinstance(node, ast.Attribute) and node.attr == "environ":
-            pass
-        elif isinstance(node, ast.Call) and getattr(node.func, "id", "") == "open" and len(node.args) > 1:
-            mode = node.args[1].value if isinstance(node.args[1], ast.Constant) else "?"
-            if not (isinstance(mode, str) and set(mode) <= set("rbt")):
-                out.append(f"open(..., {mode!r}) writes")
+        elif isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "os" \
+                and node.attr not in OS_ALLOWED:
+            out.append(f"uses os.{node.attr}")
+        elif isinstance(node, ast.Attribute) and node.attr in ("write_text", "write_bytes", "unlink", "mkdir", "rmdir", "chmod", "touch", "symlink_to"):
+            out.append(f"uses .{node.attr}")
+        if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "open":
+            modes = [a for a in node.args[1:2]] + [k.value for k in node.keywords if k.arg == "mode"]
+            if any(not (isinstance(m, ast.Constant) and isinstance(m.value, str) and set(m.value) <= set("rbt")) for m in modes):
+                out.append("open() in a mode other than reading")
+            if any(k.arg not in ("mode", "encoding", "errors") for k in node.keywords):
+                out.append("open() with unusual arguments")
     for m in re.finditer(r"environ(?:\.get\(|\[)\s*['\"]?([A-Za-z_]*)", code):
         if m.group(1) != "MARKET_DIR":
             out.append(f"reads environment {m.group(1) or '?'}")

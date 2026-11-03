@@ -51,6 +51,7 @@ from acp_shop import AcpCheckout
 from catalog import NUMERIC, Catalog
 from harness import HarnessError, ask
 import agent_memory
+import hard_limits
 import market_model
 import shop_memory
 from shop_stock import StockBook, last_segment, markdown
@@ -253,7 +254,8 @@ class Seller(AgentExecutor):
         cost, key = math.ceil(u["cost"]), last_segment(u.get("category")) or u["sku"]
         ask_price, arm, why = await asyncio.to_thread(shop_memory.choose_opening, key, cost, u["list_price"])
         pricing = shop_memory.load_pricing()
-        reserve, keep, cause = markdown(u, pricing.get("markdown"), (pricing.get("restock") or {}).get("round_ends_at"))
+        reserve, keep, cause = markdown(u, hard_limits.clamp_cfg("markdown", pricing.get("markdown") or {}),
+                                        (pricing.get("restock") or {}).get("round_ends_at"))
         if keep < 1:          # a clearance price says nothing about which opening sells: it stays out of the bandit
             ask_price, arm = max(reserve, round(ask_price * keep)), None
             log(f"MARKDOWN {u['sku']} unit {u['unit']}: {cause}, floor {reserve} instead of cost {cost}")
@@ -271,12 +273,13 @@ class Seller(AgentExecutor):
 
     @staticmethod
     def warranty_cfg():
-        return {**WARRANTY, **(shop_memory.load_pricing().get("warranty") or {})}
+        return hard_limits.clamp_cfg("warranty", {**WARRANTY, **(shop_memory.load_pricing().get("warranty") or {})})
 
     def warranty_terms(self, deal, text):
         """Goods, the first time the buyer asks for a warranty: grant it with the reserve raised by the break chance, or
         decline when the SKU breaks too often. Returns the sentence for the buyer, or None when nothing was asked."""
-        if deal.get("kind") != "goods" or "warranty" in deal or not WARRANTY_WORDS.search(text or ""):
+        if deal.get("kind") != "goods" or "warranty" in deal or not WARRANTY_WORDS.search(text or "") \
+                or re.search(r"\b(no|without) (a )?(warranty|guarantee)|보증\s*(없이|필요\s*없)", text or "", re.I):
             return None
         cfg = self.warranty_cfg()
         measured = break_chance(deal["id"])

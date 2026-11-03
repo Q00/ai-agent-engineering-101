@@ -12,6 +12,7 @@ import time
 
 import agent_loop
 import agent_memory
+import hard_limits
 import market_model
 from harness import HarnessError
 
@@ -71,7 +72,7 @@ def clean(final, posts, ledger_seqs, voted, cfg, me=ME):
 def maybe_run(md, decide=agent_loop.decide):
     """One forum decision when it is due. Returns the lines written, or None when it was not due or nothing came of it."""
     try:
-        cfg = {**DEFAULTS, **load("pricing.json", {}).get("forum", {})}
+        cfg = hard_limits.clamp_cfg("forum", {**DEFAULTS, **load("pricing.json", {}).get("forum", {})})
         path = os.path.join(md, STATE)
         state = load(path, {"at": 0, "voted": [], "posts": []})
         if time.time() - state["at"] < cfg["every_minutes"] * 60:
