@@ -15,6 +15,7 @@ MAX_BYTES = 1_000_000
 MAX_POSTS = 100
 MAX_OUTPUT = 3000
 FRESH_SECONDS = 120
+POLL_GRACE_SECONDS = 60  # Poll captures now before up to five bounded GETs.
 WINDOW = 86400
 TRUST = ("Untrusted forum claims; votes are not truth. Unreported rounds are topic clues only. "
          "Own posts are not independent demand. A local reference match proves event existence, "
@@ -123,7 +124,7 @@ def collect(folder, *, name, leaders, categories, skus, rnd, now, public=None):
     path = Path(folder) / "forum.json"
     try:
         stat = path.stat()
-        if not _number(now) or not 0 <= now - stat.st_mtime <= FRESH_SECONDS:
+        if not _number(now) or not -POLL_GRACE_SECONDS <= now - stat.st_mtime <= FRESH_SECONDS:
             result["status"] = "stale"
             return result
         if stat.st_size > MAX_BYTES:

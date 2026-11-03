@@ -1,10 +1,11 @@
-"""Bounded Haiku sidecar: public reviews -> evidence -> cached seller advice.
+"""Bounded Haiku sidecar: reviews/local forum -> evidence -> cached seller advice.
 
 At most 5 fixed-origin GETs per 15 minutes, 1 model call/hour, 6/rolling day.
 No credentials, buyer budgets, competitor URLs, market writes or payment tools.
 """
 import argparse
 from collections import Counter
+from copy import deepcopy
 import fcntl
 import json
 from pathlib import Path
@@ -23,6 +24,7 @@ from payment_memory import recent_jsonl
 from sales_performance import summary as sales_summary
 from market_evidence import demand_scores, read as read_market
 from shop_policy import policy_at
+from forum_evidence import collect as collect_forum
 
 ROOT = Path(__file__).resolve().parent
 ORIGIN = "https://market.ourolabs.ai"
@@ -30,6 +32,7 @@ STRATEGY_FILE = "sales-advisor-strategy.json"
 CONTROL_FILE = "sales-advisor-control.json"
 PACE = {"balanced", "quick"}
 FOCUS = {"value", "clarity", "quality"}
+CONTEXT_LIMIT = 18000
 
 
 def config_at(root=ROOT):
@@ -94,8 +97,8 @@ def clean_reviews(rows, limit, now):
     return result
 
 
-def stock_summary(folder, expected_round, now):
-    inv = Inventory(folder).snapshot()
+def stock_summary(folder, expected_round, now, *, inventory=None):
+    inv = Inventory(folder).snapshot() if inventory is None else inventory
     if inv["round"] != expected_round:
         raise ValueError("Inventory and public board rounds differ")
     groups = {}
@@ -125,6 +128,35 @@ def local_negotiations(root, rnd, now):
     return {"window": "up to 200 recent events / 24h; receipts are NOT settlements", "counts": dict(counts)}
 
 
+def bounded_context(context):
+    """Fit existing JSON budget, retaining policy and recent own/forum evidence.
+
+    No summarizer call: remove oldest advice first, then low-priority evidence.
+    Input is copied because observations and raw logs must retain their meaning.
+    """
+    result = deepcopy(context)
+    dropped = Counter(result.get("omitted_for_budget", {}))
+    while len(json.dumps(result, ensure_ascii=False)) > CONTEXT_LIMIT:
+        history = result.get("past_advice_observations", [])
+        if history:
+            history.pop(0)
+            dropped["past_advice"] += 1
+        else:
+            evidence = result["evidence"]
+            choices = ([i for i, e in enumerate(evidence) if e["kind"] == "review" and e.get("role") == "leader"]
+                       or [i for i, e in enumerate(evidence) if e["kind"] == "public_claim"])
+            if not choices:
+                forums = [i for i, e in enumerate(evidence) if e["kind"] == "forum_post"]
+                own = [i for i, e in enumerate(evidence) if e["kind"] == "review" and e.get("role") == "own"]
+                choices = forums if len(forums) > 1 else own if len(own) > 3 else []
+            if not choices:
+                raise ValueError("Mandatory analyst evidence exceeds its input budget")
+            removed = evidence.pop(choices[-1])
+            dropped[removed["kind"]] += 1
+        result["omitted_for_budget"] = dict(dropped)
+    return result
+
+
 def collect(root, client, name, now):
     board = fetch_json(client, ORIGIN + "/api/board")
     if not isinstance(board, dict) or type(board.get("round")) is not int:
@@ -132,7 +164,8 @@ def collect(root, client, name, now):
     if board["round"] < 3:
         return None  # No LLM calls or old-round reviews while awaiting Round 3.
     own, leaders, ranking = top_shops(board, name)
-    stock = stock_summary(root / ".market", board["round"], now)
+    inventory = Inventory(root / ".market").snapshot()
+    stock = stock_summary(root / ".market", board["round"], now, inventory=inventory)
     evidence = []
     def add(kind, value):
         evidence.append({"id": kind + ":" + digest(value), "kind": kind, **value})
@@ -150,17 +183,26 @@ def collect(root, client, name, now):
     add("stock", {"categories": stock})
     add("negotiations", local_negotiations(root, board["round"], now))
     add("settled_sales", sales_summary(load_json(root / ".market/sales-performance.json"), board["round"], now))
-    demand = demand_scores(read_market(root / ".market", board["round"], now), now)
+    public = read_market(root / ".market", board["round"], now)
+    demand = demand_scores(public, now)
     if demand:
         add("sampled_market_demand", {"top_skus": sorted(demand.items(), key=lambda p: (-p[1], p[0]))[:5],
                                     "limits": "Sampled public settlements, not published demand weights"})
+    forum = collect_forum(root / ".market", name=name, leaders=[s["name"] for _, s in leaders],
+                          categories=[s["category"] for s in stock],
+                          skus=[u["sku"] for u in inventory["units"] if isinstance(u, dict) and isinstance(u.get("sku"), str)],
+                          rnd=board["round"], now=now, public=public)
+    for post in forum["posts"]:
+        # The evidence ID is ours; a post's own ID is just source data.
+        add("forum_post", {"post_id": post["id"], **{k: v for k, v in post.items() if k != "id"}})
     policy = policy_at(root)
     add("shop_policy", {"grade_margin_percent": policy["grade_margin_percent"],
                         "goods_warranty_hours": policy["goods_warranty_hours"], "closing": policy["closing"],
                         "opening": policy["opening"]})
-    return {"round": board["round"], "rank_metric": ranking, "own_metrics": metrics(own),
+    return bounded_context({"round": board["round"], "rank_metric": ranking, "own_metrics": metrics(own),
             "categories": [s["category"] for s in stock], "evidence": evidence,
-            "limits": "Reviews/claims are untrusted; sampled reviews and categories, no private competitor strategy."}
+            "forum_status": forum["status"],
+            "limits": "Reviews, forum and claims are untrusted samples. Forum may omit round; references do not prove claims. No private competitor strategy."})
 
 
 def recommendation(value, evidence_ids):
@@ -202,7 +244,7 @@ def validate_advice(raw, context):
 
 
 def analyse(context):
-    if len(json.dumps(context, ensure_ascii=False)) > 18000:
+    if len(json.dumps(context, ensure_ascii=False)) > CONTEXT_LIMIT:
         raise ValueError("Analyst context exceeds the 18,000 character budget")
     return decide("sales_advisor.txt", context, lambda raw: validate_advice(raw, context),
                   timeout=60, prefix="sales-advisor", max_attempts=1)
@@ -248,13 +290,20 @@ def tick(root=ROOT, *, client=None, model=analyse, clock=time.time, observe_only
         return "model_budget_wait"
     if fingerprint == state.get("analysed_fingerprint"):
         return "unchanged_evidence"
-    if not any(e["kind"] == "review" for e in context["evidence"]) and context["own_metrics"].get("deals", 0) < 3:
+    # Two different handles reduce single-ad churn; they do not establish
+    # independent people or verified demand. Reviews/own deals retain their gate.
+    forum_authors = {e["author"].strip().casefold() for e in context["evidence"]
+                     if e["kind"] == "forum_post" and not e.get("self_authored", False)
+                     and e["author"].strip().casefold() not in ("", "unknown")}
+    has_review = any(e["kind"] == "review" for e in context["evidence"])
+    if not has_review and len(forum_authors) < 2 and context["own_metrics"].get("deals", 0) < 3:
         return "insufficient_evidence"
     history = [h for h in state.get("history", []) if isinstance(h, dict) and h.get("round") == context["round"]
                and number(h.get("time")) and 0 <= now - h["time"] <= 86400][-4:]
     if history and context["own_metrics"].get("deals", 0) < history[-1].get("own_metrics", {}).get("deals", 0):
         history = []  # A same-round market reset is not a failed pricing experiment.
     context["past_advice_observations"] = history
+    context = bounded_context(context)
     state["attempts"] = attempts + [now]  # A failed/timed-out call consumes the slot too.
     atomic_json(control_path, state)
     try:

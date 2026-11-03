@@ -34,7 +34,10 @@ class ForumEvidenceTests(unittest.TestCase):
         self.write([self.post()])
         os.utime(self.path, (self.now - 121, self.now - 121))
         self.assertEqual(self.read()["status"], "stale")
-        os.utime(self.path, (self.now + 1, self.now + 1))
+        # The kit may refresh its file while the advisor fetches board/reviews.
+        os.utime(self.path, (self.now + 30, self.now + 30))
+        self.assertEqual(self.read()["status"], "ok")
+        os.utime(self.path, (self.now + 61, self.now + 61))
         self.assertEqual(self.read()["status"], "stale")
         for raw in (b"{broken", b"\xff", b"{}", b"[" * 2000):
             self.path.write_bytes(raw)
