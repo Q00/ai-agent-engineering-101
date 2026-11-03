@@ -50,6 +50,46 @@ def test_validate_keeps_known_leaders_and_screened_suggestions() -> None:
     assert validate({"our_complaints": [{"theme": "nonsense", "count": 1}]}, []) is None
 
 
+def test_digest_counts_cannot_exceed_the_reviews_given_to_the_model() -> None:
+    assert (
+        validate(
+            {"our_complaints": [{"theme": "price_high", "count": 2}]},
+            [],
+            our_count=1,
+        )
+        is None
+    )
+    assert (
+        validate(
+            {
+                "leader_strengths": [
+                    {"shop": "leader", "themes": [{"theme": "fair_price", "count": 9}]}
+                ]
+            },
+            ["leader"],
+            our_count=1,
+            leader_counts={"leader": 1},
+        )
+        is None
+    )
+
+
+def test_digest_rejects_duplicate_themes_that_would_double_count_reviews() -> None:
+    assert (
+        validate(
+            {
+                "our_complaints": [
+                    {"theme": "price_high", "count": 1},
+                    {"theme": "price_high", "count": 1},
+                ]
+            },
+            [],
+            our_count=1,
+        )
+        is None
+    )
+
+
 def test_run_digest_stores_latest_and_history(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -58,7 +98,7 @@ def test_run_digest_stores_latest_and_history(
         "AsyncOpenAI",
         FakeModel.script(
             {
-                "our_complaints": [{"theme": "unclear_quote", "count": 2}],
+                "our_complaints": [{"theme": "unclear_quote", "count": 1}],
                 "our_praise": [],
                 "leader_strengths": [],
                 "suggestions": ["첫 줄에 호가를 분명히"],
@@ -77,3 +117,31 @@ def test_run_digest_stores_latest_and_history(
     assert "[instruction_override]" in prompt
     assert json.loads((tmp_path / LATEST).read_text())["our_reviews"] == 1
     assert len((tmp_path / HISTORY).read_text().splitlines()) == 1
+
+
+def test_run_digest_drops_an_assessment_with_more_complaints_than_reviews(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        model_client,
+        "AsyncOpenAI",
+        FakeModel.script(
+            {
+                "our_complaints": [{"theme": "price_high", "count": 99}],
+                "suggestions": ["가격 정책 재검토"],
+            }
+        ),
+    )
+    client = ModelClient("k", events=None, quota=None)
+    record = anyio.run(
+        lambda: run_digest(
+            client,
+            ours=[{"stars": 3, "text": "Price high"}],
+            leaders={},
+            run_dir=tmp_path,
+        )
+    )
+    assert record["our_reviews"] == 1
+    assert "our_complaints" not in record
+    assert "suggestions" not in record
