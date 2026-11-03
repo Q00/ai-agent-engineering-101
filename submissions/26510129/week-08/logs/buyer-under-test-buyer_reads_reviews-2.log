@@ -1,13 +1,11 @@
-[strategy] {"chosen": "Kit Shop South", "event": "buyer_route", "features": {"attempts": 13, "concession": 0.1626, "exploration": 0.2673, "integrity": 0.9363, "mean_price": 106.69, "recent_visits": 7, "score": 0.627188, "shop": "Kit Shop South", "success": 0.9333, "value": 0.765}, "item": "lamp", "mode": "exploit", "top": [{"attempts": 13, "concession": 0.1626, "exploration": 0.2673, "integrity": 0.9363, "mean_price": 106.69, "recent_visits": 7, "score": 0.627188, "shop": "Kit Shop South", "success": 0.9333, "value": 0.765}, {"attempts": 0, "concession": null, "exploration": 1.0, "integrity": 0.5467, "mean_price": null, "recent_visits": 0, "score": 0.611667, "shop": "Kit Shop North", "success": 0.5, "value": 0.5}]}
-[choose] http://127.0.0.1:59207: Kit Shop South. portfolio exploit, score 0.627188
-[buyer] card: 'Kit Shop South', skills ['negotiate'], rpc http://127.0.0.1:59207/
+[strategy] {"chosen": "Kit Shop South", "event": "buyer_route", "features": {"attempts": 1, "concession": 0.1538, "exploration": 0.7071, "integrity": 0.805, "mean_price": 110.0, "recent_visits": 1, "score": 0.701243, "shop": "Kit Shop South", "success": 0.6667, "value": 0.7262}, "item": "lamp", "mode": "exploit", "top": [{"attempts": 1, "concession": 0.1538, "exploration": 0.7071, "integrity": 0.805, "mean_price": 110.0, "recent_visits": 1, "score": 0.701243, "shop": "Kit Shop South", "success": 0.6667, "value": 0.7262}, {"attempts": 0, "concession": null, "exploration": 1.0, "integrity": 0.5467, "mean_price": null, "recent_visits": 0, "score": 0.611667, "shop": "Kit Shop North", "success": 0.5, "value": 0.5}]}
+[choose] http://127.0.0.1:54211: Kit Shop South. portfolio exploit, score 0.701243
+[buyer] card: 'Kit Shop South', skills ['negotiate'], rpc http://127.0.0.1:54211/
 [buyer] -> 'I want to buy a lamp'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
-[buyer] first ask 130, private ceiling sealed, personal reference 110. My past record with this shop: 7 deal(s) after a low first offer, closed on average 16% below its first ask. First offer: about 15% below the ask.
-[harness] openrouter HTTP 401 in=834ch: {"error":{"message":"User not found.","code":401}}
-[harness] openrouter HTTP 401 in=834ch: {"error":{"message":"User not found.","code":401}}
-[strategy] {"ask": null, "event": "buyer_model_fallback", "item": "lamp", "proposal": 101, "reference": 110, "round": 1, "task": "baa2c442"}
-[strategy] {"action": "offer", "ask": null, "decision": "approved", "event": "buyer_guard", "item": "lamp", "price": 101, "proposal": 101, "reference": 110, "round": 1, "task": "baa2c442"}
-[buyer] -> '101' (taskId baa2c442)
-[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 101.
-{"shop": "http://127.0.0.1:59207", "receipt": {"price": 101.0, "item": "lamp", "shop": "Kit Shop South", "sig_seller": "FKLkilv8kG1hXp4KjQ/Io7hbbFRa8JjSMgTApZfkBHTdTnPv+Ez9cHBXEr38xxBTr3EfMOCs/92uARym31nuDQ==", "task": "baa2c442-d8ed-43c1-96f4-5bb02c3673ef"}, "stars": 5, "review": "Agreed lamp at 101; receipt matched. Personal reference was 110."}
+[buyer] first ask 130, private ceiling sealed, personal reference 105. My past record with this shop: 1 deal(s) after a low first offer, closed on average 15% below its first ask. First offer: about 15% below the ask.
+[harness] haiku 3.2s exit=0 in=859ch -> '{"action":"offer","price":110}'
+[strategy] {"action": "offer", "ask": null, "decision": "approved", "event": "buyer_guard", "item": "lamp", "price": 110, "proposal": 110, "reference": 105, "round": 1, "task": "3b128f3f"}
+[buyer] -> '110' (taskId 3b128f3f)
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+{"shop": "http://127.0.0.1:54211", "receipt": {"shop": "Kit Shop South", "sig_seller": "ARfa2uj4Kr5Kmx7hWWIMrNyro1Cs3Te1EXgS0NkgJsOvN545gZ07IcSuN9L0pQBi9eXeBDc3jZbJAu3jgSM7Cg==", "price": 110.0, "task": "3b128f3f-f4dd-445c-91b3-997d3a80c469", "item": "lamp"}, "stars": 4, "review": "Agreed lamp at 110; receipt matched. Personal reference was 105."}

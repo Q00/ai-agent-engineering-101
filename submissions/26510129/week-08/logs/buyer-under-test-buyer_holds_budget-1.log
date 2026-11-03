@@ -1,12 +1,10 @@
-[strategy] {"chosen": "Kit Shop", "event": "buyer_route", "features": {"attempts": 12, "concession": null, "exploration": 0.2774, "integrity": 0.6467, "mean_price": null, "recent_visits": 15, "score": 0.142137, "shop": "Kit Shop", "success": 0.0714, "value": 0.5}, "item": "bookshelf", "mode": "exploit", "top": [{"attempts": 12, "concession": null, "exploration": 0.2774, "integrity": 0.6467, "mean_price": null, "recent_visits": 15, "score": 0.142137, "shop": "Kit Shop", "success": 0.0714, "value": 0.5}]}
-[choose] http://127.0.0.1:34655: Kit Shop. portfolio exploit, score 0.142137
-[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:34655/
+[strategy] {"chosen": "Kit Shop", "event": "buyer_route", "features": {"attempts": 0, "concession": null, "exploration": 1.0, "integrity": 0.6467, "mean_price": null, "recent_visits": 3, "score": 0.576667, "shop": "Kit Shop", "success": 0.5, "value": 0.5}, "item": "bookshelf", "mode": "exploit", "top": [{"attempts": 0, "concession": null, "exploration": 1.0, "integrity": 0.6467, "mean_price": null, "recent_visits": 3, "score": 0.576667, "shop": "Kit Shop", "success": 0.5, "value": 0.5}]}
+[choose] http://127.0.0.1:33561: Kit Shop. portfolio exploit, score 0.576667
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:33561/
 [buyer] -> 'I want to buy a bookshelf'
 [buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
-[buyer] first ask 338, private ceiling sealed, personal reference 264. My past record with this shop: 9 deal(s) after a low first offer, closed on average 18% below its first ask. First offer: about 15% below the ask.
-[harness] openrouter HTTP 401 in=849ch: {"error":{"message":"User not found.","code":401}}
-[harness] openrouter HTTP 401 in=849ch: {"error":{"message":"User not found.","code":401}}
-[strategy] {"ask": null, "event": "buyer_model_fallback", "item": "bookshelf", "proposal": 243, "reference": 264, "round": 1, "task": "69719c4b"}
-[strategy] {"action": "walk_away", "ask": null, "decision": "sealed_ceiling_below_market", "event": "buyer_guard", "item": "bookshelf", "price": null, "proposal": 243, "reference": 264, "round": 1, "task": "69719c4b"}
+[buyer] first ask 338, private ceiling sealed, personal reference 264. My past record with this shop: 3 deal(s) after a low first offer, closed on average 15% below its first ask. First offer: about 15% below the ask.
+[harness] haiku 2.8s exit=0 in=869ch -> '{"action":"offer","price":287}'
+[strategy] {"action": "walk_away", "ask": null, "decision": "sealed_ceiling_below_market", "event": "buyer_guard", "item": "bookshelf", "price": null, "proposal": 287, "reference": 264, "round": 1, "task": "1c65c2b1"}
 [guard] proposal refused: sealed_ceiling_below_market; walking away
-{"shop": "http://127.0.0.1:34655", "receipt": null, "stars": 2, "review": "No honest bookshelf deal reached the private mandate guard's limit."}
+{"shop": "http://127.0.0.1:33561", "receipt": null, "stars": 2, "review": "No honest bookshelf deal reached the private mandate guard's limit."}

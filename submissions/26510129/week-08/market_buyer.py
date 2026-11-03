@@ -136,13 +136,12 @@ def negotiate(url, item, budget, reference, record="", request=None):
     guardian = buyer_policy.MandateGuardian(budget, reference)
     print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}. {record}", flush=True)
 
+    offers = []   # (my offer, the ask the shop answered with): the harness gets this instead of the whole transcript
     for round_index in range(MAX_ROUNDS):
-        transcript = "\n".join(f"{who}: {what}" for who, what in log)
         ask = ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")
-        meta = f"\nShop's current ask (A2A metadata): {ask}" if ask is not None else ""
         d = harness.decide(buyer_policy.NEGOTIATOR_SYSTEM,
-                           f"Item: {item}. Personal reference price: {reference}. {record}\n"
-                           f"Transcript so far:\n{transcript}{meta}\nDecide your next move.")
+                           buyer_policy.situation(f"Item: {item}. Personal reference price: {reference}. {record}",
+                                                  offers, status_text(t), ask))
         if d is None:
             fallback = buyer_policy.public_fallback_offer(reference, ask, round_index)
             d = {"action": "offer", "price": fallback}
@@ -167,6 +166,7 @@ def negotiate(url, item, budget, reference, record="", request=None):
         print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
         manip = steered(t) or manip
         log += [("you", str(d["price"])), ("shop", status_text(t))]
+        offers.append((d["price"], first_ask(t)))
         if state(t) == "TASK_STATE_COMPLETED":
             info["checkout_authorized"] = guardian.checkout_ok(d["price"])
             return "deal", d["price"], receipt_of(t), log, manip, info

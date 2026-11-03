@@ -9,6 +9,7 @@ import uuid
 
 import httpx
 
+import buyer_policy
 import harness
 
 MAX_ROUNDS = 8
@@ -77,11 +78,10 @@ def main():
     tid = t["id"]
     log = [("you", opening), ("shop", status_text(t))]
 
+    offers = []   # (my offer, the shop's metadata ask in reply); the harness no longer gets the growing transcript
     for _ in range(MAX_ROUNDS):
-        transcript = "\n".join(f"{who}: {what}" for who, what in log)
         ask = ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")
-        meta = f"\nShop's current ask (A2A metadata): {ask}" if ask is not None else ""
-        d = harness.decide(SYSTEM, f"Item: {a.item}. Budget: {a.budget}. Transcript so far:\n{transcript}{meta}\nDecide your next move.")
+        d = harness.decide(SYSTEM, buyer_policy.situation(f"Item: {a.item}. Budget: {a.budget}.", offers, status_text(t), ask))
         if d is None or d.get("action") == "walk_away" or "price" not in d:
             print("[buyer] walking away", flush=True)
             rpc(rpc_url, "CancelTask", {"id": tid})
@@ -92,6 +92,7 @@ def main():
         t = send(rpc_url, str(d["price"]), tid)
         print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
         log += [("you", str(d["price"])), ("shop", status_text(t))]
+        offers.append((d["price"], ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")))
         if state(t) != "TASK_STATE_INPUT_REQUIRED":
             for art in (t or {}).get("artifacts", []):
                 print(f"[buyer] artifact {art.get('name')}: {json.dumps([p.get('data', p.get('text')) for p in art.get('parts', [])])}", flush=True)

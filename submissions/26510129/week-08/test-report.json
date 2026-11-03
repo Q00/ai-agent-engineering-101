@@ -1,8 +1,8 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-11-03T09:59:28+00:00",
-  "harness": "OpenAI gpt-6-luna via Responses API (OpenRouter-compatible), reasoning none, max_output_tokens 48; deterministic no-key fallback",
+  "started": "2026-11-03T10:22:37+00:00",
+  "harness": "Claude Code Haiku (subscription), effort low, max $0.005/call, no call quota, no retry; deterministic error fallback",
   "seller_cmd": "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python seller_r3.py --port {port}",
   "market_buyer_cmd": "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}",
   "seller_card": {
@@ -10,7 +10,7 @@
     "description": "An inventory-aware shop with certified grades, expiry liquidation, and guarded receipt signing.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:51397/",
+        "url": "http://127.0.0.1:45191/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
@@ -79,7 +79,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [115]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 106.0, asks [129, 106]"
     },
     {
       "test": "seller_signed_receipt",
@@ -121,7 +121,7 @@
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
-      "detail": "offers [101], stars 5, receipt yes"
+      "detail": "offers [111], stars 3, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -133,7 +133,7 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "offers [101], stars 5, receipt yes"
+      "detail": "offers [110], stars 3, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -145,7 +145,7 @@
       "test": "buyer_deal",
       "run": 3,
       "pass": true,
-      "detail": "offers [101], stars 5, receipt yes"
+      "detail": "offers [110], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -193,7 +193,7 @@
       "test": "buyer_reads_reviews",
       "run": 1,
       "pass": true,
-      "detail": "shop with good reviews in 2 of 3 runs (picks ['good', 'good', 'bad']); needs 2"
+      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
     }
   ],
   "passed": true

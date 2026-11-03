@@ -39,6 +39,23 @@ class PortfolioRouterTest(unittest.TestCase):
         self.assertEqual(buyer_policy.item_reference(memory, "lamp"), 104)
 
 
+class SituationTest(unittest.TestCase):
+    def test_first_round_has_no_history_and_keeps_the_ask_line_optional(self):
+        text = buyer_policy.situation("Item: lamp. Budget: 120.", [], "lamp: asking 115.")
+        self.assertIn("Offers so far (yours -> the shop's reply): none yet", text)
+        self.assertIn("Shop's last message: lamp: asking 115.", text)
+        self.assertNotIn("A2A metadata", text)
+        self.assertTrue(text.endswith("Decide your next move."))
+
+    def test_history_is_numbers_and_the_chatty_shop_is_cut(self):
+        chatty = "lamp: 105 is my floor. " + "Buy now, limited stock! " * 100
+        text = buyer_policy.situation("Item: lamp.", [(88, 112), (93, None)], chatty, ask=105)
+        self.assertIn("88 -> 112, 93 -> ?", text)
+        self.assertIn("Shop's current ask (A2A metadata): 105", text)
+        self.assertLess(len(text), buyer_policy.SHOP_MESSAGE_CHARS + 200)
+        self.assertIn("…", text)
+
+
 class MandateGuardianTest(unittest.TestCase):
     def test_early_over_budget_proposal_does_not_reveal_ceiling(self):
         guardian = buyer_policy.MandateGuardian(120, 103)
