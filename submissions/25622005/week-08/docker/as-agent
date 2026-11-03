@@ -1,0 +1,21 @@
+#!/bin/sh
+# Run a command as agent, the shop's user: docker compose exec market as-agent COMMAND [ARG...]
+# `docker compose exec` starts as root; the entrypoint has already given agent NAS_UID/NAS_GID,
+# and gosu sets HOME from agent's passwd entry (/data/home), where the Claude login lives.
+set -eu
+umask 077
+
+if [ "$#" -eq 0 ]; then
+    echo 'usage: as-agent COMMAND [ARG...]' >&2
+    exit 2
+fi
+if [ "$(id -u agent)" -eq 0 ] || [ "$(id -g agent)" -eq 0 ]; then
+    echo 'Refusing to run as root: use a non-root NAS_UID and NAS_GID' >&2
+    exit 2
+fi
+cd /data
+# The strategist reads and tunes this shop (/data); its own state stays out of the code dir /data/strategist.
+export PYTHONPATH=/data
+export SHOP_HOME="${SHOP_HOME:-/data}"
+export STRATEGIST_HOME="${STRATEGIST_HOME:-/data/strategist-home}"
+exec gosu agent "$@"

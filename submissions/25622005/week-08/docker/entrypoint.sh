@@ -21,6 +21,7 @@ if [ "$(id -u agent)" != "$nas_uid" ] || [ "$(id -g agent)" != "$nas_gid" ]; the
     usermod --non-unique --uid "$nas_uid" --gid "$nas_gid" agent
 fi
 # Bind mounts created by Docker may initially belong to root.
-mkdir -p /data
+# /data/home is agent's HOME (passwd, set in the Dockerfile): the Claude login and the deploy key.
+mkdir -p /data /data/home
 chown -R agent:agent /data
 exec gosu agent python /opt/deploy/launch.py "$@"

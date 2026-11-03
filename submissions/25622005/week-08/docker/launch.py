@@ -3,16 +3,14 @@
 State is never seeded from the image. Existing keys, memory, logs and the
 claim code stay in /data. Startup requires both imported identity keys.
 
-strategy/SKILL.md is replaced only when the image brings a different version,
-so a live edit in /data survives restarts until the next image is deployed;
-the replaced file is kept beside it.
+strategy/ is its own volume (compose.yaml mounts week-08/strategy there), shared
+with the strategist. The image's SKILL.md only seeds an empty volume; a file that
+is already there is never replaced, so tuned values survive new images.
 """
-import hashlib
 import os
 from pathlib import Path
 import shutil
 import sys
-import time
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
@@ -20,7 +18,9 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 SOURCE = Path('/opt/agent')
 DATA = Path('/data')
 DEPLOY = Path('/opt/deploy')
-CODE_DIRS = ('memory', 'tools', 'model', 'dns_support', 'tests')
+# strategist/ runs from here too (as-agent), so it imports the same policy, memory and model code.
+# Its state is /data/strategist-home (STRATEGIST_HOME), never this code dir.
+CODE_DIRS = ('memory', 'tools', 'model', 'dns_support', 'tests', 'strategist', 'strategist/tests')
 
 
 def prepare():
@@ -29,8 +29,10 @@ def prepare():
         shutil.copyfile(source, DATA / source.name)
     for name in CODE_DIRS:
         (DATA / name).mkdir(exist_ok=True)
-        for source in (SOURCE / name).glob('*.py'):
-            shutil.copyfile(source, DATA / name / source.name)
+        # Every file the image has there: strategist/tests also needs its .md and .json fixtures.
+        for source in (SOURCE / name).iterdir():
+            if source.is_file():
+                shutil.copyfile(source, DATA / name / source.name)
     shutil.copyfile(DEPLOY / 'agent.container.json', DATA / 'agent.json')
     (DATA / 'logs').mkdir(exist_ok=True)
     (DATA / '.market').mkdir(mode=0o700, exist_ok=True)
@@ -40,20 +42,12 @@ def prepare():
 
 
 def stage_strategy():
-    image = (SOURCE / 'strategy' / 'SKILL.md').read_bytes()
     target = DATA / 'strategy' / 'SKILL.md'
-    stamp = DATA / '.market' / 'skill.image.sha256'
-    digest = hashlib.sha256(image).hexdigest()
-    if target.is_file() and stamp.is_file() and stamp.read_text().strip() == digest:
+    if target.is_file():
         return
     target.parent.mkdir(exist_ok=True)
-    if target.is_file() and target.read_bytes() != image:
-        backup = target.with_name(f'SKILL.md.{time.strftime("%Y%m%d-%H%M%S")}.bak')
-        os.replace(target, backup)
-        print(f'[container] strategy replaced by the new image; previous file kept as strategy/{backup.name}',
-              flush=True)
-    target.write_bytes(image)
-    stamp.write_text(digest + '\n')
+    shutil.copyfile(SOURCE / 'strategy' / 'SKILL.md', target)
+    print('[container] strategy/SKILL.md was missing; seeded from the image', flush=True)
 
 
 def require_identity():

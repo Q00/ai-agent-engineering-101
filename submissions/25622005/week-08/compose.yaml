@@ -16,11 +16,36 @@ services:
       NAS_UID: "${NAS_UID:-1000}"
       NAS_GID: "${NAS_GID:-1000}"
       MARKET_URL: https://market.ourolabs.ai
+      # Kit hooks: model call for a negotiation the rules do not cover (llm.exception_* in SKILL.md).
+      EXCEPTION_HARNESS_CMD: 'claude -p --model claude-haiku-5-5 --tools "" --setting-sources "" --no-session-persistence'
+      # The strategist runs in this container, started by hand (no service of its own):
+      #   docker compose exec market as-agent claude                      log in once (kept in /data/home)
+      #   docker compose exec market as-agent python -m strategist --once one run now
+      #   docker compose exec -d market as-agent python -m strategist     loop, a run every STRATEGIST_INTERVAL_S
+      #   docker compose exec -e STRATEGIST_HARNESS_CMD='claude -p --model ...' market as-agent python -m strategist --once
+      #                                                                    one run with another model
+      # exec runs as root, so as-agent drops to agent with HOME=/data/home, cwd /data, SHOP_HOME=/data
+      # and STRATEGIST_HOME=/data/strategist-home. A loop started with exec -d stops when the
+      # container restarts (a new image, a reboot, restart: unless-stopped): start it again by hand.
+      STRATEGIST_HARNESS_CMD: 'claude -p --model claude-opus-5-5 --tools "" --setting-sources "" --no-session-persistence'
+      STRATEGIST_MODE: "${STRATEGIST_MODE:-apply}"
+      STRATEGIST_INTERVAL_S: "1800"
+      # After each run, push the records to this private repository; empty disables it. The deploy
+      # key goes in .market/n36l-data/home/.ssh/ (seen as /data/home/.ssh/), never in the image.
+      STRATEGIST_LOG_REPO: "${STRATEGIST_LOG_REPO:-}"
+      STRATEGIST_LOG_BRANCH: main
+      STRATEGIST_LOG_KEY: /data/home/.ssh/strategist_logs
+    # strategy/ is the repository's folder, which the strategist rewrites in place: the live SKILL.md
+    # is the tracked one, so tuned values show up in git and a new image never replaces them.
     volumes:
       - ./.market/n36l-data:/data
+      - ./strategy:/data/strategy
     # cloudflared reaches the kit on localhost:8900 inside this container.
     # No host port or router port forwarding is required.
-    stop_grace_period: 45s
+    # Time for the shop (and any exec'd strategist) to finish before SIGKILL. Stop signals reach
+    # only the shop's processes: an exec'd strategist is killed when the shop exits, at worst
+    # mid-push (up to 60 s); publish.py clears the locks a killed git leaves on the next run.
+    stop_grace_period: 60s
     healthcheck:
       test: ["CMD", "python", "/opt/deploy/healthcheck.py"]
       interval: 30s
@@ -33,40 +58,3 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  strategist:
-    image: week08-strategist:n36l
-    platform: linux/amd64
-    build:
-      context: ../../..
-      dockerfile: submissions/25622005/week-08/Dockerfile.strategist
-    init: true
-    restart: unless-stopped
-    environment:
-      TZ: Asia/Seoul
-      NAS_UID: "${NAS_UID:-1000}"
-      NAS_GID: "${NAS_GID:-1000}"
-      MARKET_URL: https://market.ourolabs.ai
-      STRATEGIST_MODE: "${STRATEGIST_MODE:-apply}"
-      STRATEGIST_INTERVAL_S: "3600"
-      HARNESS_CMD: 'claude -p --model sonnet --tools "" --setting-sources "" --no-session-persistence'
-      R3_HOME: /data
-    # Only the parts of the shop's data the strategist reads (memory/, logs/) and strategy/, where
-    # SKILL.md is rewritten in place. Not the shop's keys or claim code (shop_key.pem, .market/).
-    # Log in once with: docker compose run --rm -it strategist claude
-    volumes:
-      - ./.market/n36l-data/memory:/shop/memory:ro
-      - ./.market/n36l-data/logs:/shop/logs:ro
-      - ./.market/n36l-data/strategy:/shop/strategy
-      - ./.market/strategist-data:/data
-      - ./.market/strategist-claude:/home/agent
-    healthcheck:
-      test: ["CMD", "python", "-m", "strategist", "health"]
-      interval: 60s
-      timeout: 10s
-      start_period: 120s
-      retries: 3
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
