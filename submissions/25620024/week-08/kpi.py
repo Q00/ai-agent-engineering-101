@@ -5,7 +5,7 @@ Each team answers for one component of the midterm's own scoring (Players = shop
 end of the round; hr.py grades them); the numbers below are what it acts on.
 
   scm        revenue percentile (shop ALL x0.3): hits out of stock, the market's top sellers and our units of each
-  finance    profit percentile (shop ALL x0.5): cash and profit against the fatal line (cash < 25% of start, loss > 15%)
+  finance    profit percentile (shop ALL x0.5): cash and profit against the fatal line (cash < 15% of start, loss > 15%)
   marketing  stars percentile (shop ALL x0.2): sell-through and stock older than 12 h
   sales      shop ALL percentile: the shop's rank, ALL and the Players rank, and VIP service
 """
@@ -66,7 +66,7 @@ def sell_through(c, hours=6, old_h=12):
 def health(shop):
     inv = _inv()
     start, bal, profit = inv.get("start") or 5_000_000, inv.get("balance"), (shop or {}).get("profit")
-    return {"balance": bal, "profit": profit, "cash_above_fatal": None if bal is None else round(bal - 0.25 * start),
+    return {"balance": bal, "profit": profit, "cash_above_fatal": None if bal is None else round(bal - 0.15 * start),
             "loss_room": None if profit is None else round(profit + 0.15 * start)}
 
 

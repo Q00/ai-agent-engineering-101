@@ -188,8 +188,8 @@ def window(md, now=None):
     return False, f"window closed, opens at {time.strftime('%H:%M:%S', time.localtime(opens))} (in {(opens - now) / 60:.0f} min)"
 
 
-HARD_FLOOR = 1_000_000       # HQ 11-04: never go bankrupt (the line is 500,000): even at the worst cost a supply
-WORST_COST = 0.75            # draw (grade A: 75% of list) leaves at least 1,000,000
+HARD_FLOOR = 700_000         # HQ 11-04: never go bankrupt (the line is 500,000): even at the worst cost a supply
+WORST_COST = 0.75            # draw (grade A: 75% of list) leaves at least 700,000
 
 
 def never_bankrupt(md, buy):
