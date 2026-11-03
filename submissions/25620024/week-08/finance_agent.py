@@ -66,6 +66,8 @@ brief.hq is the headquarters' latest directive (the owner; above every team): fo
 advice how. brief.proven_sellers are SKUs the ledger shows we sold lately, with margin and units left: buying back
 a proven seller that is sold out is not the slow stock you guard against; set window_spend so it can be restocked
 unless cash truly cannot carry it, and say which of them you would cut and why.
+brief.accountability comes first: what headquarters holds you responsible for, with the numbers now. Answer
+it in your rationale (what you do about it this run).
 Answer with the JSON object only.
 
 BRIEF:
@@ -196,7 +198,9 @@ def run(ask_codex, our_shop, dry=False):
         scm = scm_agent.scm_plan()
     except Exception:
         scm = {}
-    brief = {"time": time.strftime("%Y-%m-%d %H:%M"), "snapshot": snap, "hq": hq_directive(),
+    import kpi
+    brief = {"accountability": kpi.accountability("finance", c, our_shop), "time": time.strftime("%Y-%m-%d %H:%M"),
+             "snapshot": snap, "hq": hq_directive(),
              "proven_sellers": proven_sellers(c),
              "sales_plan": {k: promo.plan().get(k) for k in ("pricing", "exclusive_skus", "follow_skus", "restock")},
              "scm_plan": {k: scm.get(k) for k in ("orders", "clearance", "alerts")},

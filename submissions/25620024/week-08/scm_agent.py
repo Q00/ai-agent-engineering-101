@@ -62,6 +62,8 @@ the brain of the shop: you work for it, to maximise its sales and profit; it may
   them; list stale or wrong ones in retire_lessons. Change at most 3 orders/markdowns against brief.current_plan
   per run so each outcome can be traced.
 - rationale: 3-5 sentences.
+brief.accountability comes first: what headquarters holds you responsible for, with the numbers now. Answer
+it in your rationale (what you do about it this run).
 Answer with the JSON object only.
 
 BRIEF:
@@ -182,7 +184,8 @@ def run(ask_codex, dry=False):
     now_m = measure(c, inv, stock, history[-1]["metrics"]["ts"] if history else now - 3600)
     lessons = load(LESSONS, [])
     current = load(PLAN, {})
-    brief = {"time": time.strftime("%Y-%m-%d %H:%M"), "cash": {"balance": inv.get("balance"), "start": inv.get("start"),
+    import kpi
+    brief = {"accountability": kpi.accountability("scm"), "time": time.strftime("%Y-%m-%d %H:%M"), "cash": {"balance": inv.get("balance"), "start": inv.get("start"),
              "restock_window": inv.get("restock")}, "stock": stock,
              "sales_team_picks": (promo.plan().get("restock") or {}).get("skus"),
              "follow_skus": promo.plan().get("follow_skus"), "exclusive_skus": promo.plan().get("exclusive_skus"),
