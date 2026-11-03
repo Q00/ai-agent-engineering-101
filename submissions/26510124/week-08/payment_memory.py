@@ -56,5 +56,10 @@ def attach_reviews(records, reviews):
                 and type(assessment.get("stars")) is int and 1 <= assessment["stars"] <= 5):
             record.update(stars=assessment["stars"], review=assessment.get("review", ""),
                           review_reasons=assessment.get("reasons", []))
+            for source, target in (("issues", "review_issues"),
+                                   ("preference_shortfalls", "review_preference_shortfalls")):
+                codes = assessment.get(source)
+                if isinstance(codes, list) and all(isinstance(code, str) for code in codes):
+                    record[target] = list(codes)
         result.append(record)
     return result

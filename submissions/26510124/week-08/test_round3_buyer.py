@@ -93,7 +93,7 @@ class BuyerContractTests(unittest.TestCase):
                                                              order={"round": 3, "kind": "goods"}))
             self.assertIsNotNone(result["receipt"])
             self.assertEqual(result["receipt"]["unit"], "u1")
-            self.assertEqual(result["accept"], {"cert": True, "grades": ["A"], "warranty_hours": 6})
+            self.assertEqual(result["accept"], {"cert": True, "grades": ["A", "B"], "warranty_hours": 3})
             record = recent_jsonl(folder / "memory.jsonl")[0]
             self.assertEqual(record["result"], "receipt_issued")
             self.assertNotIn("99000", result["review"])

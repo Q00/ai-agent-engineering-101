@@ -20,7 +20,7 @@ import httpx
 from harness import HarnessError, buyer_decision, decide, parse_object
 from inventory import read_json
 from payment_memory import recent_jsonl, reconcile, attach_reviews
-from buyer_policy import buying_terms, checkout_policy, load_policy
+from buyer_policy import buying_terms, checkout_policy, load_policy, negotiation_policy
 from buyer_selection import shortlist, offer_fingerprint, reuse_failures
 from buyer_context import compact_dialogue
 
@@ -118,7 +118,7 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     remaining = deadline - time.monotonic()
     if remaining <= 0:
         raise BuyerError("Shop selection deadline exceeded")
-    context = {"item": item, "budget": budget, "candidates": candidates, "purchase_policy": policy}
+    context = {"item": item, "budget": budget, "candidates": candidates, "purchase_policy": negotiation_policy(policy)}
     log("SELECTION CONTEXT", {"eligible_shops": len(shops), "candidates": len(candidates),
                               "context_chars": len(json.dumps(context, ensure_ascii=False)),
                               **cooldown,
@@ -257,7 +257,8 @@ class Buyer:
         if price > self.price_limit:
             raise PolicyRefusal("Model price exceeds the owner's purchasing limit")
         if (self.authorized_price is not None
-                and price > self.authorized_price + self.policy["max_concession"]):
+                and price > self.authorized_price + self.policy["max_concession"]
+                and not (action == "accept" and self.policy.get("allow_accept_above_concession") is True)):
             raise PolicyRefusal("Model concession exceeds the per-turn limit")
         if action == "accept" and price != last_asking_price(seller_message):
             raise BuyerError("Harness acceptance price does not match the seller's ask")
@@ -340,7 +341,8 @@ class Buyer:
             decision = buyer_decision(item=self.item, budget=self.budget,
                                       **compact,
                                       timeout=min(90, self.remaining()), policy=self.policy,
-                                      current_ask=last_asking_price(text))
+                                      current_ask=last_asking_price(text),
+                                      decisions_left=min(MAX_DECISIONS, self.policy["max_decisions"]) - decisions)
             decisions += 1
             log("BUYER DECISION", decision)
             self.validate_decision(decision, text)

@@ -29,7 +29,27 @@ def load_policy():
             raise ValueError(f"Invalid buyer policy: {key}")
     if not isinstance(config.get("version"), str):
         raise ValueError("Buyer policy needs a version")
+    if type(config.get("allow_accept_above_concession", False)) is not bool:
+        raise ValueError("Invalid acceptance concession policy")
+    prefs = config.get("review_preferences")
+    if prefs is not None:
+        if not isinstance(prefs, dict):
+            raise ValueError("Review preferences must be an object")
+        for key in ("budget_cap_percent", "list_price_cap_percent", "excellent_percent_of_preferred"):
+            if type(prefs.get(key)) is not int or not 1 <= prefs[key] <= 100:
+                raise ValueError("Invalid review preference: " + key)
+        if (not isinstance(prefs.get("grades"), list) or not prefs["grades"]
+                or any(g not in ("A", "B", "C") for g in prefs["grades"])):
+            raise ValueError("Invalid review grade preferences")
+        for key in ("goods_warranty_hours", "food_buffer_hours"):
+            if type(prefs.get(key)) not in (int, float) or not math.isfinite(prefs[key]) or prefs[key] < 0:
+                raise ValueError("Invalid review preference: " + key)
     return config
+
+
+def negotiation_policy(policy):
+    """Rating preferences stay in local memory, outside the negotiation context."""
+    return {k: v for k, v in policy.items() if k != "review_preferences"} if policy else policy
 
 
 def checkout_policy(order, config=None):
@@ -62,7 +82,7 @@ def buying_terms(budget, *, product=None, order=None, config=None):
         raise ValueError("Round 3 requires the market catalog price; do not guess from seller text")
     if limit < 1:
         raise ValueError("No positive integer price meets this purchasing policy")
-    return {
+    terms = {
         "version": config["version"], "price_limit": limit,
         "target_price": max(1, limit * config["target_percent_of_cap"] // 100),
         "list_price": ref, "max_decisions": config["max_decisions"],
@@ -70,3 +90,18 @@ def buying_terms(budget, *, product=None, order=None, config=None):
         "accept": checkout_policy(order, config) if order and order.get("round", 0) >= 3 else {},
         "kind": (order or {}).get("kind"),
     }
+    if "allow_accept_above_concession" in config:
+        terms["allow_accept_above_concession"] = config["allow_accept_above_concession"]
+    prefs = config.get("review_preferences")
+    if prefs and ref is not None:
+        preferred = min(budget * prefs["budget_cap_percent"] // 100,
+                        ref * prefs["list_price_cap_percent"] // 100)
+        terms["review_preferences"] = {
+            "price_limit": preferred,
+            "excellent_price": preferred * prefs["excellent_percent_of_preferred"] // 100,
+            "grades": list(prefs["grades"]),
+            "goods_warranty_hours": prefs["goods_warranty_hours"],
+            **({"food_min_hours_left": order["use_within_hours"] + prefs["food_buffer_hours"]}
+               if order and order.get("kind") == "food" else {}),
+        }
+    return terms

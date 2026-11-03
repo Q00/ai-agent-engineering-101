@@ -13,8 +13,9 @@ def shop_evidence(shop, memory):
     own = [r for r in memory if r["name"] == shop["name"]]
     stars = [r["stars"] for r in reviews if type(r.get("stars")) is int and 1 <= r["stars"] <= 5]
     settled = [r for r in own if r.get("result") == "settled"]
-    bad = [r for r in settled if r.get("review_reasons") and r.get("stars", 3) <= 2]
+    bad = [r for r in settled if r.get("review_issues", r.get("review_reasons")) and r.get("stars", 3) <= 2]
     good = [r for r in settled if r.get("review_reasons") == [] and r.get("stars", 0) >= 3]
+    tradeoffs = [r for r in settled if r.get("review_issues") == [] and r.get("review_preference_shortfalls")]
     excerpts = reviews[:1]
     recent_bad = next((r for r in reviews if type(r.get("stars")) is int and 1 <= r["stars"] <= 2), None)
     if recent_bad is not None and recent_bad not in excerpts:
@@ -33,6 +34,7 @@ def shop_evidence(shop, memory):
         "own_memory": {
             "trades": len(own), "settled": len(settled), "satisfactory_settlements": len(good),
             "unsatisfactory_settlements": len(bad),
+            "accepted_tradeoffs": len(tradeoffs),
             **{label: sum(r.get("result") == result for r in own) for label, result in (
                 ("receipt_mismatches", "receipt_mismatch"), ("payment_refused", "payment_refused"),
                 ("pending_receipts", "receipt_issued"), ("no_deal", "no_deal"), ("errors", "error"))},
@@ -70,7 +72,7 @@ def shortlist(shops, memory, *, seed, limit=6, round_number=None):
         public_quality = ((reviews["average_stars"] or 3) - 3) * count / (count + 3)
         return (bool(own["receipt_mismatches"]),
                 own["unsatisfactory_settlements"] / max(1, own["settled"]),
-                -own["satisfactory_settlements"] / (own["settled"] + 2),
+                -(own["satisfactory_settlements"] + own["accepted_tradeoffs"]) / (own["settled"] + 2),
                 reviews["low_star_count"] / (count + 2), -public_quality, rotation(candidate))
 
     ranked = sorted(candidates, key=rank)

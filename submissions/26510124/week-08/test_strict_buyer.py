@@ -12,8 +12,19 @@ from payment_memory import attach_reviews
 from review_settled import review, purchase_terms
 from vendor import market_kit_v4 as kit
 
+# Historical purchasing policies must still evaluate their original trades.
+LEGACY_POLICY = {"version": "very-strict-v1", "budget_cap_percent": 70, "list_price_cap_percent": 65,
+                 "target_percent_of_cap": 90, "max_decisions": 4, "selection_max_candidates": 6,
+                 "failure_cooldown_seconds": 900, "max_concession_percent_of_cap": 5,
+                 "grades": ["A"], "goods_warranty_hours": 6, "food_buffer_hours": 1}
+
 
 class StrictBuyerTests(unittest.TestCase):
+    def setUp(self):
+        replacement = patch("buyer_policy.load_policy", return_value=LEGACY_POLICY)
+        replacement.start()
+        self.addCleanup(replacement.stop)
+
     def terms(self, budget=100000, list_price=100000):
         return buying_terms(budget, product={"list_price": list_price}, order={"round": 3, "kind": "goods"})
 
@@ -74,7 +85,8 @@ class StrictBuyerTests(unittest.TestCase):
 
 class StrictReviewTests(unittest.TestCase):
     def setUp(self):
-        self.terms = buying_terms(100000, product={"list_price": 100000}, order={"round": 3, "kind": "goods"})
+        self.terms = buying_terms(100000, product={"list_price": 100000}, order={"round": 3, "kind": "goods"},
+                                  config=LEGACY_POLICY)
         self.deal = {"order": {"order": "o1", "budget": 100000, "kind": "goods"},
                      "receipt": {"item": "G00001", "price": 58000, "task": "t1"},
                      "settled": {"ledger": 17, "sku": "G00001", "grade": "A", "warranty_hours": 6,
@@ -113,7 +125,7 @@ class StrictReviewTests(unittest.TestCase):
 
     def test_food_assessment_identifies_review_time_not_unproven_payment_condition(self):
         order = {"round": 3, "kind": "food", "use_within_hours": 2}
-        terms = buying_terms(100000, product={"list_price": 100000}, order=order)
+        terms = buying_terms(100000, product={"list_price": 100000}, order=order, config=LEGACY_POLICY)
         deal = {**self.deal, "order": {**self.deal["order"], **order},
                 "settled": {**self.deal["settled"], "expires_at": 1000 + 2.5 * 3600}}
         result = review(deal, terms=terms, now=1000)

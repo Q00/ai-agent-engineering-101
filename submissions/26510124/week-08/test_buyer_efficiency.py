@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from buyer_context import compact_dialogue
-from buyer_policy import buying_terms, load_policy
+from buyer_policy import buying_terms, load_policy, negotiation_policy
 from buyer_selection import offer_fingerprint, reuse_failures
 from market_buyer import Buyer, last_asking_price, trade_and_record
 from payment_memory import recent_jsonl
@@ -118,7 +118,7 @@ class DialogueCompressionTests(unittest.TestCase):
         for ask, bid in ((90000, 55000), (80000, 57000), (70000, 58000), (60000, 58000)):
             message = f"Grade A. Warranty 6 hours. Asking price: {ask}"
             history.append({"role": "seller", "text": message})
-            context = {"item": "G00001", "budget": 100000, "purchase_policy": terms, "current_ask": ask,
+            context = {"item": "G00001", "budget": 100000, "purchase_policy": negotiation_policy(terms), "current_ask": ask,
                        **compact_dialogue(history, message, last_asking_price)}
             prompt = (ROOT / "prompts/buyer.txt").read_text() + "\n" + json.dumps(context)
             # Application input characters, not the CLI's full input or tokens.
