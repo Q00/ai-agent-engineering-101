@@ -1,12 +1,18 @@
 {
-  "harness": "Codex CLI / gpt-6-luna / medium reasoning / real structured decisions / bounded role lanes",
+  "harness": "Round 3: deterministic money rules over a SQLite market memory; Codex CLI gpt-6-luna (low effort) only for language (unparsed shop replies, forum classification and posts)",
   "seller": {
-    "cmd": "python3 seller.py --port {port}"
+    "cmd": "python3 shop_r3.py --port {port}"
   },
   "buyer": {
     "cmd": "python3 buyer.py --url {url} --item {item} --budget {budget}"
   },
   "market_buyer": {
-    "cmd": "python3 market_buyer.py --shops {shops} --item {item} --budget {budget}"
+    "cmd": "python3 buyer_r3.py --shops {shops} --item {item} --budget {budget} --order {order}"
+  },
+  "restock": {
+    "cmd": "python3 restock_r3.py --state {state}"
+  },
+  "review": {
+    "cmd": "python3 review_r3.py --deal {deal}"
   }
 }
