@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "owner": {
   "github": "Lee-sungsoo",
   "own_shop_names": [
@@ -22,11 +22,11 @@
   "max_spend_per_run": 600000,
   "max_unit_cost": 400000,
   "max_lines_per_run": 10,
-  "max_total_units": 120,
+  "max_total_units": 250,
   "allow_bankrupt": false,
   "liquidation_line": 1500000,
   "liquidation_margin": 0.0,
-  "max_inventory_cost_frac": 0.12,
+  "max_inventory_cost_frac": 0.3,
   "food_sell_through": 0.5,
   "food_cold_units": 4,
   "food_min_units": 1,
@@ -48,7 +48,8 @@
   "goods_cold_units": 4,
   "restock_window_lead_s": 60,
   "restock_line_s": 10,
-  "_window_note": "v1.18: Round 3 supply windows (agent.md at the round start: every 20 min for 3 min, the first 10 min). restock plans only when the window is open or opens within restock_window_lead_s (the kit retries a line 3 times at most 30 s apart before skipping it) and buys at most (closes_at - now) / restock_line_s lines (measured: one supply about every 10 s)."
+  "_window_note": "v1.18: Round 3 supply windows (agent.md at the round start: every 20 min for 3 min, the first 10 min). restock plans only when the window is open or opens within restock_window_lead_s (the kit retries a line 3 times at most 30 s apart before skipping it) and buys at most (closes_at - now) / restock_line_s lines (measured: one supply about every 10 s).",
+  "_cap_note": "v1.18 2026-11-03 21:16 (성수님 결정): inventory cap 0.12 -> 0.30 x balance, max_total_units 120 -> 250. First 10 min of R3: 5 of 257 market settles were ours and the 0.12 cap was full at the end of the first window. Back to 0.12 / 120 if our share does not rise or inventory cost does not fall across two windows."
  },
  "defaults": {
   "food": {
