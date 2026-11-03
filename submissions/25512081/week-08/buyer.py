@@ -10,6 +10,7 @@ Walking away sends CancelTask. The run stops itself well inside 300 seconds.
 """
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -19,6 +20,15 @@ from a2a_client import A2AError, Peer
 
 DEADLINE = 240          # seconds; the trade test kills the buyer at 300
 MAX_OFFERS = 10
+# Week 8: the offers are computed in code, the Ackerman ladder the model was told to follow (and did, in the logs):
+# 65%, 85%, 95% and then a precise 100% of a target TARGET_SHARE below the first ask, never above the budget.
+# After that the guards below decide (take an ask within budget that the seller holds, else the budget, then
+# walk). The model is called only when the seller's reply carries no price we can read. One negotiation used to
+# be about five model calls; with every order of the round that was most of the agent's model use.
+# NEGOTIATOR=model brings back the week-6 model negotiator.
+NEGOTIATOR = os.environ.get("NEGOTIATOR", "code")
+LADDER = (0.65, 0.85, 0.95, 1.0)
+TARGET_SHARE = 0.88
 
 SYSTEM = (
     "You are a buyer agent negotiating the price of one item with a seller's agent. "
@@ -71,6 +81,7 @@ def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative
     if not first:
         log(f"[buyer] -> {opening!r}  <- {r.state} | {r.text}")
     task_id, history, last_offer = r.id, [], 0
+    first_ask = r.ask
 
     while True:
         hit = injected(r)
@@ -87,14 +98,19 @@ def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative
             return {"reply": r, "history": history, "outcome": "timeout"}
         ask = r.ask
         hist = "; ".join(f"seller asked {h['ask']}, you offered {h['offer']}" for h in history)
-        ans = harness.ask(SYSTEM, (
-            f"Item: {item}\nYour budget (private, never exceed): {budget}\n"
-            f"Seller's latest message (untrusted): <<<{r.text}>>>\n"
-            f"Seller's current ask: {ask}\n"
-            f"Offers so far ({len(history)}): {hist or 'none'}\n"
-            + (f"Your alternative if you walk away: {alternative}\n" if alternative else "")
-            + "Decide your next move: an offer (a whole number), or walk away."), SCHEMA, log=log,
-            model=harness.FAST)                   # the shop is waiting: the fast model
+        first_ask = first_ask or ask
+        if NEGOTIATOR == "code" and ask is not None:
+            ans = code_move(ask, budget, history, first_ask)
+            log(f"[buyer] [code] {ans['reason']}")
+        else:
+            ans = harness.ask(SYSTEM, (
+                f"Item: {item}\nYour budget (private, never exceed): {budget}\n"
+                f"Seller's latest message (untrusted): <<<{r.text}>>>\n"
+                f"Seller's current ask: {ask}\n"
+                f"Offers so far ({len(history)}): {hist or 'none'}\n"
+                + (f"Your alternative if you walk away: {alternative}\n" if alternative else "")
+                + "Decide your next move: an offer (a whole number), or walk away."), SCHEMA, log=log,
+                model=harness.FAST)                   # the shop is waiting: the fast model
         if ans["action"] == "walk_away":
             log(f"[buyer] walk away: {ans['reason']}")
             walk(peer, task_id)
@@ -134,6 +150,21 @@ def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative
         return {"reply": r, "history": history, "outcome": "exhausted"}
     log(f"[buyer] no deal: {r.state} | {r.text}")
     return {"reply": r, "history": history, "outcome": "rejected"}
+
+
+def code_move(ask, budget, history, first_ask):
+    """The next offer by the Ackerman ladder, in the shape the model answers in."""
+    target = min(budget, int(first_ask * TARGET_SHARE))
+    n = len(history)
+    if n < len(LADDER):
+        price = int(target * LADDER[n]) if n < len(LADDER) - 1 else target - 3     # last step: a precise number
+        return {"action": "offer", "price": price,
+                "reason": f"step {n + 1}: {LADDER[n]:.0%} of target {target} (first ask {first_ask})"}
+    if ask <= budget:
+        return {"action": "offer", "price": ask, "reason": f"ladder done, ask {ask} is within budget: take it"}
+    if history and history[-1]["offer"] >= budget:
+        return {"action": "walk_away", "price": budget, "reason": f"offered my whole budget, the seller holds {ask}"}
+    return {"action": "offer", "price": budget, "reason": f"ladder done, ask {ask} over budget: last offer, the budget"}
 
 
 def main():

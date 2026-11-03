@@ -1,4 +1,4 @@
-"""The shop manager: one model run with the MCP tools of market_tools.py. restock.py starts it every 20 minutes.
+"""The shop manager: one model run with the MCP tools of market_tools.py. restock.py starts it every hour.
 
     python planner.py
 

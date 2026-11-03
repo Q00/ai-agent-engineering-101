@@ -38,9 +38,9 @@ MAX_PER_CAT = 5
 DECAY = 0.995              # per run (about one a minute): half-life about 2 hours
 MAX_LINES = 10
 MAX_LINE_COST = 300_000    # one category's buy never ties up more than this (one unit always allowed)
-PLANNER_EVERY = 20 * 60
+PLANNER_EVERY = 60 * 60    # opus with tools: the costliest call; the code baseline restocks every minute between
 LESSONS_EVERY = 6 * 3600   # lessons.py: failures of the last day -> rules the manager and the buyer read
-PLAN_FRESH = 40 * 60       # plan lines older than this are dropped
+PLAN_FRESH = 90 * 60       # plan lines older than this are dropped
 
 
 def log(msg):

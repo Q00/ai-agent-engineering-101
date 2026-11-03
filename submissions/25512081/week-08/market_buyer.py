@@ -115,6 +115,18 @@ def choose(shops, item, budget, mine, k=1):
     return [next(s for s in pool if s["name"] == n) for n in picked] or pool[:1], ans["reason"]
 
 
+def pick_in_code(shops, mine):
+    """Rounds 1-2: the shop with the most honest deals of mine, then the best average stars; cheats left out."""
+    cheats = {m["shop"] for m in mine if m.get("honest") is False}
+    pool = [s for s in shops if s["name"] not in cheats] or shops
+
+    def score(s):
+        stars = [r.get("stars") for r in s.get("reviews") or [] if isinstance(r.get("stars"), (int, float))]
+        own = sum(1 for m in mine if m["shop"] == s["name"] and m["outcome"] == "deal" and m.get("honest"))
+        return own, sum(stars) / len(stars) if stars else 3.0
+    return max(pool, key=score)
+
+
 def quote(shop, budget):
     """Contract Net, the call for proposals: ask one shop for its SKU and read its first ask."""
     sku = pick_sku(shop, budget)
@@ -246,9 +258,9 @@ def main():
                           "review": "No shops in the list."}))
         return 0
 
-    if not r3:                                    # rounds 1-2: one shop, as in week 7
-        picked, reason = choose(shops, a.item, a.budget, mine)
-        shop, sku = picked[0], None
+    if not r3:                                    # rounds 1-2: one shop, picked in code (not graded: no model use)
+        shop, reason = pick_in_code(shops, mine), "code: most honest deals of mine, then average stars"
+        sku = None
         log(f"[choose] {shop['url']}: {reason}")
         attempt = trade(lambda: negotiate(Peer(shop["url"]), a.item, a.budget, t0), a.item, a.budget)
     else:                                         # round 3: Contract Net over a shortlist
