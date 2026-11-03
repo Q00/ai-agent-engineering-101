@@ -32,7 +32,7 @@ CALLER = {"role": "integrated", "memos": 0}
 
 @room.tool()
 def ledger_query(category: str | None = None, sku: str | None = None, shop: str | None = None, hours: float = 24) -> str:
-    """Counts from the market's public ledger over the last `hours` hours (1 to 72, default 24), for one
+    """Counts from the market's public ledger over the last `hours` hours (1 to 48, default 24), for one
     category (its name as in the catalog, e.g. 김치), one SKU, or one shop: settled deals, the average price
     paid as a share of the list price, grades sold, grade claims and how many were true, goods that broke
     after the sale, and the shops that sold the most. Give at most one of category, sku or shop; none

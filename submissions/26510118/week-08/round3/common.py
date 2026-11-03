@@ -7,6 +7,7 @@ records/ next to them is ours: one line per negotiation, order and restock, so
 the enhanced version has past deals to learn from.
 """
 import base64
+import gzip
 import json
 import os
 import time
@@ -72,6 +73,43 @@ def read_jsonl(path) -> list:
 
 def records(stream: str) -> list:
     return read_jsonl(MARKET_DIR / "records" / f"{stream}.jsonl")
+
+
+def archive_old(path, before: float, slack: float = 0) -> int:
+    """Move the lines of a .jsonl file whose ts is before `before` into archive/<name>-<YYYYMMDD>.jsonl.gz
+    next to it, and keep the rest: nothing is dropped, the file read every hour stays small. Skipped
+    while its oldest line is younger than before - slack (so it runs every few hours, not every pass).
+    Other processes append to these files; lines they add while this runs are read again just before
+    the swap and kept. Returns how many lines moved."""
+    path = Path(path)
+    try:
+        with open(path, encoding="utf-8") as f:
+            oldest = json.loads(f.readline()).get("ts") or 0
+    except (OSError, ValueError):
+        return 0
+    if oldest >= before - slack:
+        return 0
+    raw = path.read_bytes()
+    old, keep = [], []
+    for line in raw.decode("utf-8").splitlines(keepends=True):
+        try:
+            ts = json.loads(line).get("ts") or 0
+        except ValueError:
+            keep.append(line)                                    # a line still being written stays where it is
+            continue
+        (old if ts < before else keep).append(line)
+    if not old:
+        return 0
+    (path.parent / "archive").mkdir(exist_ok=True)
+    day = datetime.now(KST).strftime("%Y%m%d")
+    with gzip.open(path.parent / "archive" / f"{path.stem}-{day}.jsonl.gz", "at", encoding="utf-8", newline="") as g:
+        g.writelines(old)
+    tmp = path.with_suffix(f".{os.getpid()}.tmp")
+    with open(tmp, "w", encoding="utf-8", newline="") as f:
+        f.writelines(keep)
+        f.write(path.read_bytes()[len(raw):].decode("utf-8", errors="replace"))   # appended meanwhile
+    os.replace(tmp, path)
+    return len(old)
 
 
 def write_json(path, data) -> None:

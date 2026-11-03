@@ -49,6 +49,7 @@ unpaid (still there 10 minutes later). The ledger is collected by the analysis r
 (analysis.py); this hook only reads its market_summary.json.
 """
 import argparse
+import json
 import math
 import time
 from collections import Counter, defaultdict
@@ -89,11 +90,9 @@ def check_deals(inv: dict, state: dict, now: float) -> None:
     there UNPAID_AFTER seconds later (the buyer's kit refused to pay, or the buyer left). A unit a
     buyer agreed to and did not pay for is offered again, so several deals can name one unit: when
     it leaves, only the latest of them is the sale (the earlier buyers went without paying)."""
-    deals = common.records("deals")
     pending = state.setdefault("pending", {})
-    for d in deals[state.get("deals_seen", 0):]:
+    for d in new_deals(state):
         pending[d["task"]] = d
-    state["deals_seen"] = len(deals)
     present = {u["unit"] for u in inv.get("units") or []}
     latest = {}
     for d in pending.values():
@@ -110,6 +109,30 @@ def check_deals(inv: dict, state: dict, now: float) -> None:
         elif now - (d.get("ts") or now) > UNPAID_AFTER:
             common.record("unpaid", deal_ts=d.get("ts"), **fields)
             del pending[task]
+
+
+def new_deals(state: dict) -> list:
+    """The deals agreed since the last run: records/deals.jsonl read from the byte offset where the last
+    run stopped (state["deals_offset"]), so a file that grows all round is not read whole every minute.
+    A line still being written waits for the next run."""
+    path = common.MARKET_DIR / "records" / "deals.jsonl"
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return []
+    if "deals_offset" not in state:                      # before 11/4 the state counted lines
+        seen = state.pop("deals_seen", 0)
+        state["deals_offset"] = sum(len(x) for x in raw.splitlines(keepends=True)[:seen])
+    tail = raw[state["deals_offset"]:]
+    done = tail[:tail.rfind(b"\n") + 1]
+    state["deals_offset"] += len(done)
+    out = []
+    for line in done.decode("utf-8", errors="replace").splitlines():
+        try:
+            out.append(json.loads(line))
+        except ValueError:
+            pass
+    return out
 
 
 def stages(catalog: dict, demand: list, summary: dict) -> tuple[list, list]:
@@ -281,10 +304,13 @@ def main() -> int:
         check_deals(inv, state, now)
     sales = common.records("sales")
     wanted = (common.read_json(common.MARKET_DIR / "analysis" / "wanted.json", {}) or {}).get("categories") or {}
+    if "stocked" not in state:                           # every SKU bought so far; records/restock.jsonl is archived after 48 h
+        state["stocked"] = sorted({b.get("sku") for r in common.records("restock") for b in r.get("buy") or [] if b.get("sku")})
     out, info = plan(inv, catalog, common.read_json(state_dir / "demand.json", []) or [],
                      common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {},
                      sales, common.records("refusals"), common.rules()["seller"], now, wanted, common.records("orders"),
-                     {b.get("sku") for r in common.records("restock") for b in r.get("buy") or []}, common.strategy()["phase"])
+                     set(state["stocked"]), common.strategy()["phase"])
+    state["stocked"] = sorted(set(state["stocked"]) | {b["sku"] for b in out["buy"]})
     print(f"[restock] {info}, buying {len(out['buy'])} line(s)", flush=True)
     if state.get("round_start") and now - state["round_start"] > WARN_AFTER and len(sales) < WARN_BELOW \
             and now - state.get("warned", 0) > 3600:

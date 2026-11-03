@@ -157,7 +157,7 @@ def quality(data: dict, now: float, last: dict) -> dict | None:
                                                           for g in shown)]))
     return {"desk": "품질", "headline": head,
             "lede": f"최근 24시간 등급 주장을 가게별로 대조했다({MIN_CLAIMS}건 이상인 {len(table)}곳, 발행사와 주인이 같은 가게는 제외).",
-            "sections": sections, "method": "공개 원장 settle의 claim_honest(24시간)와 broken(수집 이후 전체)",
+            "sections": sections, "method": "공개 원장 settle의 claim_honest(24시간)와 broken(최근 48시간)",
             "refs": [], "key": f"{len(table)}:{len(low)}:{round(overall, 3)}", "remember": {"overall": round(overall, 3)}}
 
 

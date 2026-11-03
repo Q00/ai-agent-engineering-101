@@ -4,7 +4,8 @@
     python analysis.py --once      (one pass, for a test or by hand)
 
 Each pass does only what is due, in this order:
-    collect      1 h    the public ledger -> market_summary.json; a snapshot of our business
+    collect      1 h    the public ledger -> market_summary.json (rows and records over 48 h archived as
+                        .jsonl.gz every few hours, so the files read every hour stay small); a snapshot of our business
                         (analysis/business.jsonl, for the briefings); the file check (contract.py:
                         the fields each part counts on, problems logged); shops' stock lists if the
                         market shows them; the wanted categories restock reads (analysis/wanted.json)
@@ -45,6 +46,8 @@ import ledger
 EVERY = {"collect": 3600, "opening": 600, "journal": 3600, "replies": 600, "votes": 3 * 3600, "seller": 3 * 3600,
          "buyer": 3 * 3600, "integrated": 12 * 3600}
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
+ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
+            "sales", "restock")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
 MIN_INDEX = 20
 OPEN_CATEGORIES = 100    # categories in stock before our shop announces itself (day one stocks about 116)
 OPEN_MIN, OPEN_WAIT = 20, 1800   # or at least this many, half an hour after the first stock came in
@@ -73,6 +76,8 @@ def market_get(path: str):
 
 def collect(now: float, get_ledger=None, get_json=None) -> str:
     n = ledger.collect(get_ledger or ledger.fetch)
+    moved = ledger.archive(now) + sum(common.archive_old(common.MARKET_DIR / "records" / f"{s}.jsonl", now - ledger.KEEP,
+                                                         ledger.SLACK) for s in ARCHIVED)
     catalog = common.catalog()
     stock_note, shops = "shops' stock not shown", []
     try:
@@ -101,7 +106,7 @@ def collect(now: float, get_ledger=None, get_json=None) -> str:
         wanted[cat] += 1
     common.write_json(folder() / "wanted.json", {"at": int(now), "categories": dict(wanted)})
     return (f"{n} new ledger entries, {summary.get('settles_24h', 0)} settles in 24 h, {stock_note}, {len(wanted)} wanted categories, "
-            f"file check: {len(problems)} problem(s)")
+            f"file check: {len(problems)} problem(s)" + (f", {moved} rows over 48 h archived" if moved else ""))
 
 
 def no_seller(now: float) -> tuple[list, str]:
@@ -144,7 +149,8 @@ def index(now: float, state: dict, ask=None) -> str | None:
 
 def journal_step(now: float, state: dict, ask=None) -> str | None:
     """The next journal issue, posted as our buyer; None when no desk has anything new."""
-    got = journal.next_issue(journal.gather(now), now, state.setdefault("journal", {}), ask or harness.ask)
+    got = journal.next_issue(journal.gather(now), now, state.setdefault("journal_issues", {}), ask or harness.ask)
+                                                                # ("journal" in state is the step's own clock)
     if not got:
         return None
     text, refs, desk, n = got

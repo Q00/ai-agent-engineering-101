@@ -16,6 +16,7 @@ tested on purpose and never by the calendar.
 """
 import asyncio
 import base64
+import gzip
 import importlib.util
 import json
 import os
@@ -345,6 +346,18 @@ def test_deals():
     unpaid = [s["task"] for s in common.records("unpaid")]
     check("a unit that left the inventory is a sale", "t-sold" in sold, sold)
     check("a unit still in stock 10 minutes after the deal is unpaid", "t-unpaid" in unpaid, unpaid)
+    raw = (folder / "deals.jsonl").read_bytes()
+    legacy = {"deals_seen": len(raw.splitlines()) - 1}                       # every line but the last was seen
+    first = restock.new_deals(legacy)
+    check("the deals file is read from where the last run stopped (an old line count becomes a byte offset)",
+          [d["task"] for d in first] == ["t-unpaid"] and legacy["deals_offset"] == len(raw) and "deals_seen" not in legacy, first)
+    with open(folder / "deals.jsonl", "a", encoding="utf-8") as f:
+        f.write('{"ts": 1, "task": "t-half"')
+    check("a line still being written waits for the next run", restock.new_deals(legacy) == [] and legacy["deals_offset"] == len(raw))
+    with open(folder / "deals.jsonl", "a", encoding="utf-8") as f:
+        f.write(', "unit": "u-x"}\n')
+    check("...and is read once it is whole", [d["task"] for d in restock.new_deals(legacy)] == ["t-half"])
+    restock.check_deals({"units": [{"unit": "u-x"}]}, state, NOW)              # the shared state takes the finished line too
     with open(folder / "deals.jsonl", "a", encoding="utf-8") as f:              # three buyers agree to one unit
         for i, t in enumerate(("t-a", "t-b", "t-c")):
             f.write(json.dumps({"ts": int(NOW - 300 + 60 * i), "task": t, "unit": "u-twice", "sku": WATER, "price": 10000 + i,
@@ -404,6 +417,18 @@ def test_ledger():
     check("the ledger tool finds a shop by its name", q["settled"] == 1 and q["top_shops"] == {"Shop Two": 1}, q)
     common.write_json(ledger.folder() / "state.json", {"seq": 4, "at": NOW})
     check("collects at most once an hour", ledger.collect_if_due(CATALOG, NOW + 60, get=lambda a: []) is False)
+    moved = ledger.archive(NOW + 60 * H)                                         # 60 h later every row is over 48 h old
+    arch = sorted((ledger.folder() / "archive").glob("settles-*.jsonl.gz"))
+    with gzip.open(arch[0], "rt", encoding="utf-8") as g:
+        kept_away = [json.loads(x) for x in g]
+    check("rows over 48 h move to a compressed archive; nothing is lost; the hourly file is left small",
+          moved == 3 and len(kept_away) == 2 and common.read_jsonl(ledger.folder() / "settles.jsonl") == [], (moved, len(kept_away)))
+    f = ledger.folder() / "mixed.jsonl"
+    f.write_bytes((json.dumps({"ts": NOW - 50 * H, "a": 1}) + "\n" + json.dumps({"ts": NOW - H, "a": 2}) + "\n" + '{"ts": 1').encode())
+    check("archive_old: only the old line moves; a recent line and a line still being written stay",
+          common.archive_old(f, NOW - 48 * H) == 1
+          and f.read_bytes().decode() == json.dumps({"ts": NOW - H, "a": 2}) + "\n" + '{"ts": 1')
+    check("archive_old waits while the oldest line is within the slack", common.archive_old(f, NOW + 2 * H, 6 * H) == 0)
 
 
 def main() -> int:

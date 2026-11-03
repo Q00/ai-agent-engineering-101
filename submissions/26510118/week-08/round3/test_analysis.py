@@ -163,7 +163,7 @@ def test_tool():
     check("by SKU, with the breakdowns", (q["settled"], q["broken"]) == (6, 2), q)
     check("by shop and window: Gamma 0 in 24 h, 3 in 48 h",
           (tools.ledger_query(shop="Gamma")["settled"], tools.ledger_query(shop="Gamma", hours=48)["settled"]) == (0, 3))
-    check("the window is held to 1..72 hours", tools.ledger_query(hours=1000)["hours"] == 72)
+    check("the window is held to 1..48 hours (older rows are archived)", tools.ledger_query(hours=1000)["hours"] == 48)
     check("a tool the model made up is refused", "error" in json.loads(tools.run("delete_ledger", {})))
     check("a bad argument comes back as an error, not a crash", "error" in json.loads(tools.run("ledger_query", {"hours": "many"})))
     out = tools.run("ledger_query", {"category": "김치", "path": "../../.env"})
@@ -505,6 +505,9 @@ def test_runner():
     quiet = lambda messages, model, tools=None: answer({"report": "ok", "proposals": []})
     t0 = NOW + 5 * H
     done = analysis.run_once(t0, quiet, fake_ledger, fake_shops)
+    st = common.read_json(MD / "analysis" / "state.json")
+    check("the journal's own state is kept apart from its step's clock", isinstance(st.get("journal"), (int, float))
+          and "journal failed" not in analysis.LOG.read_text(encoding="utf-8"), st.get("journal"))
     check("first pass: every step is due", done == ["collect", "replies", "votes", "seller", "buyer", "integrated"], done)
     check("10 minutes later: replies only", analysis.run_once(t0 + 600, quiet, fake_ledger, fake_shops) == ["replies"])
     check("an hour later: collect and replies", analysis.run_once(t0 + 3600, quiet, fake_ledger, fake_shops) == ["collect", "replies"])

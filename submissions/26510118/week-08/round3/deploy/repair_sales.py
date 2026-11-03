@@ -76,6 +76,7 @@ def main() -> int:
         with open(folder / name, "w", encoding="utf-8") as f:
             f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in rows)
     state = common.read_json(folder / "restock_state.json", {}) or {}
+    state.pop("deals_offset", None)                 # restock reads deals.jsonl by offset since 11/4; it re-derives it
     state.update(pending=pending, deals_seen=len(deals))
     common.write_json(folder / "restock_state.json", state)
     print("written; the old files are kept as *.bak-1103")

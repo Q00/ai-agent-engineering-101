@@ -41,7 +41,7 @@ MEMO_TEXT = 300
 def ledger_query(category: str | None = None, sku: str | None = None, shop: str | None = None,
                  hours: float = 24, now: float | None = None) -> dict:
     now = now or time.time()
-    hours = max(1, min(72, float(hours or 24)))
+    hours = max(1, min(48, float(hours or 24)))      # rows over 48 h are archived (ledger.KEEP)
     catalog = common.catalog()
     since = now - hours * 3600
     leaf = lambda s: (catalog.get(s) or {}).get("category", "").split(">")[-1]
@@ -100,7 +100,7 @@ def _sums(rows: list) -> dict:
 def replay(field: str, value, hours: float = 24, now: float | None = None) -> dict:
     import analysts                                               # analysts imports this module
     now = now or time.time()
-    hours = max(1, min(72, float(hours or 24)))
+    hours = max(1, min(48, float(hours or 24)))      # rows over 48 h are archived (ledger.KEEP)
     since = now - hours * 3600
     if field == "buyer.open_ratio":
         return {"error": "buyer.open_ratio cannot be replayed: how shops answer a lower first offer is not in our records"}
