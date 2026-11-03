@@ -69,7 +69,7 @@ POST_KIND_Q = decide.choice("kind", "What is this marketplace forum post, judged
 def injection_probability(post):
     """Calibrated P(manipulation) from the decision model, or None when it is not configured or fails."""
     out = decide.decide({"author_role": post.get("role"), "text": (post.get("text") or "")[:1500]}, [POST_KIND_Q],
-                        purpose="forum_kind")
+                        purpose="forum_kind", subject=f"post {post.get('id')}")
     kind = (out or {}).get("kind")
     if not kind:
         return None
@@ -80,6 +80,7 @@ def injection_probability(post):
 
 
 def vote(mem, posts, labels, p_injection=injection_probability):
+    notes = []                                         # written after the transaction: a second connection would lock
     with mem.db() as c:
         known = {r["seq"] for r in c.execute("SELECT seq FROM ledger")}
         for p in posts:
@@ -88,7 +89,18 @@ def vote(mem, posts, labels, p_injection=injection_probability):
                 continue
             refs = [r for r in p.get("refs") or [] if isinstance(r, int)]
             value = None
-            p_inj = p_injection(p)                      # decision model first; the LLM label only without one
+            cached = c.execute("SELECT signals FROM forum WHERE id=?", (str(p["id"]),)).fetchone()
+            try:
+                sig = json.loads(cached["signals"]) if cached and cached["signals"] else {}
+            except ValueError:
+                sig = {}
+            if "p_manipulation" in sig:                 # judged once per post: 85 calls in one run before this
+                p_inj = sig["p_manipulation"]
+            else:
+                p_inj = p_injection(p)                  # decision model first; the LLM label only without one
+                if p_inj is not None:
+                    sig["p_manipulation"] = round(p_inj, 3)
+                    c.execute("UPDATE forum SET signals=? WHERE id=?", (json.dumps(sig, ensure_ascii=False), str(p["id"])))
             flagged = p_inj >= config.INJECTION_P if p_inj is not None else \
                 bool((labels.get(str(p["id"])) or {}).get("injection"))
             if flagged:
@@ -96,11 +108,13 @@ def vote(mem, posts, labels, p_injection=injection_probability):
             elif refs and all(r in known for r in refs):
                 value = 1
             if value == -1:
-                mem.note("downvote", p.get("author"), f"downvoted post {p['id']} as manipulation (p={p_inj}): "
-                         f"{(p.get('text') or '')[:200]}", 0.6)
+                notes.append(("downvote", p.get("author"), f"downvoted post {p['id']} as manipulation (p={p_inj}): "
+                              f"{(p.get('text') or '')[:200]}", 0.6))
             if value:
                 outbox({"vote": p["id"], "value": value, "as": "buyer"})
                 c.execute("UPDATE forum SET voted=? WHERE id=?", (value, str(p["id"])))
+    for n in notes:
+        mem.note(*n)
 
 
 def raw_breaks(mem):

@@ -118,10 +118,10 @@ def parse(raw, questions):
     return out
 
 
-def decide(state, questions, purpose, timeout=8.0, transport=None):
+def decide(state, questions, purpose, timeout=8.0, transport=None, subject=None):
     """One call for several questions about the same state. Returns parse() output or None (no key, error)."""
     be = backend()
-    if be is None:
+    if be is None or not _spend_budget():
         return None
     name, url, key, model = be
     started, err, out = time.time(), None, None
@@ -140,9 +140,29 @@ def decide(state, questions, purpose, timeout=8.0, transport=None):
             err = "unparsed answer"
     except (httpx.HTTPError, ValueError) as e:
         err = f"{type(e).__name__}: {str(e)[:200]}"
-    _log({"purpose": purpose, "backend": name, "model": model, "seconds": round(time.time() - started, 3),
+    _log({"purpose": purpose, "subject": subject, "backend": name, "model": model, "seconds": round(time.time() - started, 3),
           "questions": [q["name"] for q in questions], "answers": out, "error": err})
     return out
+
+
+def _spend_budget(now=None):
+    """At most config.DECISION_MAX_PER_HOUR calls per rolling hour across all our processes (pricing of the
+    Decisions API is not published). Over budget the caller falls back, as if no model were configured."""
+    now = now or time.time()
+    path = config.STATE_DIR / "decision-budget.json"
+    try:
+        calls = [t for t in json.loads(path.read_text()) if now - t < 3600]
+    except (OSError, ValueError):
+        calls = []
+    if len(calls) >= config.DECISION_MAX_PER_HOUR:
+        return False
+    calls.append(now)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(calls))
+    except OSError:
+        pass
+    return True
 
 
 def _log(row):

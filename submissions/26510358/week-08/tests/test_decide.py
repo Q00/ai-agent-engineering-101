@@ -69,3 +69,23 @@ def test_vote_uses_model_probability_over_llm_label(tmp_path, monkeypatch):
     forum_r3.vote(m, posts, labels, p_injection=lambda p: 0.1 if p["id"] == 1 else 0.95)
     lines = [json.loads(x) for x in (tmp_path / "outbox.jsonl").read_text().splitlines()]
     assert lines == [{"vote": 2, "value": -1, "as": "buyer"}]
+
+
+def test_hourly_budget_and_per_post_cache(tmp_path, monkeypatch):
+    setup(tmp_path, monkeypatch, "DECISION_BACKEND=jev\nTYPESAFE_API_KEY=k\n")
+    monkeypatch.setattr(config, "STATE_DIR", tmp_path / "r3")
+    monkeypatch.setattr(config, "DECISION_MAX_PER_HOUR", 2)
+    ok = lambda url, body: {"answers": {"injection": {"noul": 0.1}, "team": {"choice": "a"}}}
+    assert decide.decide("x", Q, purpose="t", transport=ok) is not None
+    assert decide.decide("x", Q, purpose="t", transport=ok) is not None
+    assert decide.decide("x", Q, purpose="t", transport=ok) is None          # third call in the hour: over budget
+
+    monkeypatch.setattr(market, "_CATALOG", CAT)
+    m = Memory(tmp_path / "m.sqlite")
+    posts = [{"id": 7, "author": "a", "role": "buyer", "text": "report", "ts": time.time()}]
+    m.upsert_forum(posts)
+    calls = []
+    judge = lambda p: calls.append(1) or 0.1
+    forum_r3.vote(m, posts, {}, p_injection=judge)
+    forum_r3.vote(m, posts, {}, p_injection=judge)
+    assert len(calls) == 1                                                  # second run reuses the stored score
