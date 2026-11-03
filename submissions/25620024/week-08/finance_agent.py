@@ -48,7 +48,9 @@ SCHEMA = {
 
 PROMPT = """You are the finance team of an agent shop named "dragonash" in a classroom agent market (Round 3).
 The sales team (Claude) is the brain and decides prices, promotions and what to stock; you are its independent
-check. Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000 at the
+check. You ADVISE: the headquarters wants the sales team to decide, and you may block it only when a risk is
+fatal (cash about to fall under 45% of the start, or losses over 15% of it); short of that a "stop" is read as
+"caution", window_spend keeps at least 0.03 and cash_floor is capped at 0.50. Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000 at the
 end of the round (stock still unsold then is lost money; bankruptcy aid is subtracted). From the brief:
 - verdict: ok, caution (advice must be followed) or stop (no new stock spend this hour)
 - advice: 2-5 concrete points for the sales team, with numbers (margins too thin, cash tied in slow stock, a
@@ -127,7 +129,17 @@ def hq_directive():
     return hq[-1] if hq else None
 
 
-def gate(raw):
+FATAL_CASH, FATAL_LOSS, MIN_SPEND, MAX_FLOOR = 0.45, 0.15, 0.03, 0.50
+
+
+def fatal(snap):
+    """The only cases the finance team may block in: cash near the bankruptcy line, or a loss spiral."""
+    start = snap.get("start") or 5_000_000
+    bal, profit = snap.get("balance"), snap.get("profit")
+    return bool((bal is not None and bal < FATAL_CASH * start) or (profit is not None and profit < -FATAL_LOSS * start))
+
+
+def gate(raw, snap=None):
     p = json.loads(raw)
     clamp = lambda x, lo, hi: max(lo, min(hi, float(x)))
     lim = p.get("limits") or {}
@@ -138,6 +150,11 @@ def gate(raw):
               "max_warranty_h": w if w in (0, 3, 6) else 0,
               "max_undercut": round(clamp(lim.get("max_undercut", 0.03), 0.0, 0.05), 3)}
     verdict = p.get("verdict") if p.get("verdict") in ("ok", "caution", "stop") else "caution"
+    if snap is not None and not fatal(snap):         # advise, do not block: HQ directive 2026-11-04
+        if verdict == "stop":
+            verdict = "caution"
+        limits["window_spend"] = max(limits["window_spend"], MIN_SPEND)
+        limits["cash_floor"] = min(limits["cash_floor"], MAX_FLOOR)
     if verdict == "stop":
         limits["window_spend"] = 0.0
     lessons = [x for x in (p.get("lessons") or []) if x.get("verdict") in ("keep", "undo", "watch") and x.get("text")][:3]
@@ -188,7 +205,7 @@ def run(ask_codex, our_shop, dry=False):
                           "forecast": h.get("forecast"), "outcome": h.get("outcome")} for h in history[-5:]],
              "lessons": [{"index": i, **{k: x[k] for k in ("text", "verdict")}, "age_h": round((now - x["ts"]) / 3600, 1)}
                          for i, x in enumerate(lessons)]}
-    out = gate(ask_codex(PROMPT + json.dumps(brief, ensure_ascii=False), SCHEMA))
+    out = gate(ask_codex(PROMPT + json.dumps(brief, ensure_ascii=False), SCHEMA), snap)
     out.update(written=time.strftime("%Y-%m-%d %H:%M:%S"), by="codex finance team")
     if dry:
         return out, brief
