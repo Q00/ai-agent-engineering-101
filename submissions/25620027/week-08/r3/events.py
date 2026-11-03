@@ -94,6 +94,11 @@ class EventLedger:
                 "CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)"
             )
             _ = db.execute(
+                """CREATE TABLE IF NOT EXISTS loop_runs (
+                    id INTEGER PRIMARY KEY, ts REAL NOT NULL, role TEXT NOT NULL,
+                    outcome TEXT NOT NULL, detail TEXT)"""
+            )
+            _ = db.execute(
                 "CREATE INDEX IF NOT EXISTS changes_field ON policy_changes(field, ts)"
             )
         if os.name != "nt":
@@ -258,6 +263,53 @@ class EventLedger:
                     note[:200],
                 ),
             )
+
+    def record_loop_run(self, role: str, outcome: str, detail: str = "") -> None:
+        """Append one manager loop run: what it did, or why it kept the policy."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db, db:
+            _ = db.execute(
+                "INSERT INTO loop_runs (ts, role, outcome, detail) VALUES (?,?,?,?)",
+                (time.time(), role[:16], outcome[:24], detail[:300]),
+            )
+
+    def loop_runs(self, since: float) -> list[dict[str, object]]:
+        """Return loop runs after ``since`` (epoch), oldest first."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = db.execute(
+                """SELECT ts, role, outcome, detail FROM loop_runs
+                WHERE ts > ? ORDER BY ts LIMIT 500""",
+                (since,),
+            ).fetchall()
+        return [
+            {
+                "ts": float(ts),
+                "role": str(role),
+                "outcome": str(outcome),
+                "detail": str(detail or ""),
+            }
+            for ts, role, outcome, detail in rows
+        ]
+
+    def tactical_signals(self, hours: float) -> dict[str, int]:
+        """Count what the tactical triggers read: buyer closes, seller first asks."""
+        since = time.time() - hours * 3600
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            attempts, agreed = db.execute(
+                """SELECT count(*), coalesce(sum(outcome='agreed'), 0)
+                FROM buyer_attempts WHERE ts >= ?""",
+                (since,),
+            ).fetchone()
+            receipts, first_ask = db.execute(
+                """SELECT count(*), coalesce(sum(coalesce(rounds, 0) <= 1), 0)
+                FROM seller_receipts WHERE ts >= ?""",
+                (since,),
+            ).fetchone()
+        return {
+            "buyer_attempts": int(attempts),
+            "buyer_agreed": int(agreed),
+            "seller_receipts": int(receipts),
+            "seller_first_ask": int(first_ask),
+        }
 
     def last_direction(self, field: str, within_seconds: float) -> int | None:
         """Return +1/-1 for the latest accepted move of a field inside the window."""

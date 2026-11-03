@@ -45,6 +45,7 @@ ROUND_END = datetime(2026, 11, 17, 14, 59, 59, tzinfo=UTC)
 STOP_SENDING = ROUND_END + timedelta(hours=1)
 REPEAT_SECONDS = 7200.0
 KIT_STALE_SECONDS = 900.0
+LOOP_SILENT_SECONDS = 2400.0
 SUMMARY_HOUR_KST = 9
 # The 09 KST advisor run sends the morning summary together with its proposals;
 # the five-minute pass only covers the summary if that run has not by 09:20.
@@ -58,6 +59,7 @@ TITLES = {
     "billing": "모델 API가 결제·크레딧 거절을 돌려 30분 휴지 중입니다. 거래는 규칙으로 계속됩니다.",
     "spend_cap": "오늘 모델 비용이 일일 상한에 닿았습니다. 전략이 Haiku로 강등됩니다.",
     "no_sales": "라운드3인데 지난 1시간 우리 가게·바이어 정산이 0건입니다(시장은 거래 중).",
+    "loops_silent": "관리자 루프(정찰·전술·전략)가 40분 넘게 한 번도 돌지 않았습니다.",
 }
 
 
@@ -89,6 +91,9 @@ class Snapshot:
     buyer_settles_24h: int = 0
     roles_24h: dict[str, list[float]] = field(default_factory=dict)
     changes_24h: int = 0
+    # manager loop runs of the last 24 h: (ts, role, outcome, detail); None when the
+    # release predates the loop_runs table, so the silence alert stays off
+    loop_runs: list[tuple[float, str, str, str]] | None = None
     refused_24h: int = 0
     balance: int | None = None
     units: int | None = None
@@ -217,6 +222,16 @@ def collect(base: Path = BASE, *, market: str = MARKET) -> Snapshot:  # noqa: C9
         (now - 86400,),
     )
     snap.changes_24h = int(str(changes[0][0])) if changes else 0
+    if _sql(events, "SELECT name FROM sqlite_master WHERE name = 'loop_runs'"):
+        snap.loop_runs = [
+            (float(str(ts)), str(role), str(outcome), str(detail or ""))
+            for ts, role, outcome, detail in _sql(
+                events,
+                "SELECT ts, role, outcome, detail FROM loop_runs "
+                "WHERE ts >= ? ORDER BY ts",
+                (now - 86400,),
+            )
+        ]
     refused = _sql(
         events,
         "SELECT count(*) FROM payments WHERE ts >= ? AND paid = 0",
@@ -288,10 +303,86 @@ def conditions(snap: Snapshot) -> set[str]:
         and snap.buyer_settles_1h == 0
     ):
         active.add("no_sales")
+    if (
+        snap.loop_runs is not None
+        and snap.market_round == 3
+        and snap.manager_on
+        and snap.switch_done
+        and not any(snap.now - run[0] <= LOOP_SILENT_SECONDS for run in snap.loop_runs)
+    ):
+        active.add("loops_silent")
     return active
 
 
 ROLE_NAMES = {"scout": "정찰", "tactical": "전술", "strategy": "전략", "trade": "통역"}
+OUTCOME_NAMES = {
+    "read": "판독",
+    "changed": "변경",
+    "nudged": "조건 발동 변경",
+    "held": "유지",
+    "refused": "거부",
+    "failed": "실패",
+}
+LOOP_ORDER = ("scout", "tactical", "strategy")
+
+
+def loop_counts(runs: list[tuple[float, str, str, str]]) -> list[str]:
+    """One line per loop: how often it ran and what it ended with."""
+    lines = []
+    for role in LOOP_ORDER:
+        mine = [run for run in runs if run[1] == role]
+        if not mine:
+            lines.append(f"{ROLE_NAMES[role]} 0회")
+            continue
+        tally: dict[str, int] = {}
+        for run in mine:
+            tally[run[2]] = tally.get(run[2], 0) + 1
+        parts = " · ".join(
+            f"{OUTCOME_NAMES.get(k, k)} {v}" for k, v in sorted(tally.items())
+        )
+        lines.append(f"{ROLE_NAMES[role]} {len(mine)}회 ({parts})")
+    return lines
+
+
+def loop_digest(snap: Snapshot) -> str:
+    """Hourly report: counts per loop, every change, and the latest hold reasons."""
+    runs = [r for r in snap.loop_runs or [] if snap.now - r[0] <= 3600]
+    lines = [
+        "[AX R3] 지난 1시간 관리자 루프",
+        f"{_kst(snap.now):%m/%d %H:%M} KST",
+        "",
+        *loop_counts(runs),
+    ]
+    moves = [r for r in runs if r[2] in {"changed", "nudged"}]
+    if moves:
+        lines += ["", "■ 바꾼 것"]
+        lines += [
+            f"{_kst(r[0]):%H:%M} {ROLE_NAMES.get(r[1], r[1])}: {r[3][:160]}"
+            for r in moves[-5:]
+        ]
+    holds = [r for r in runs if r[2] in {"held", "refused", "failed"}]
+    if holds:
+        lines += ["", "■ 안 바꾼 이유(최근)"]
+        lines += [
+            f"{_kst(r[0]):%H:%M} {ROLE_NAMES.get(r[1], r[1])} "
+            f"{OUTCOME_NAMES.get(r[2], r[2])}: {r[3][:160]}"
+            for r in holds[-3:]
+        ]
+    scouts = [r for r in runs if r[1] == "scout" and r[2] == "read"]
+    if scouts:
+        lines += ["", f"■ 정찰 최근: {scouts[-1][3][:160]}"]
+    return "\n".join(lines)
+
+
+def change_notice(runs: list[tuple[float, str, str, str]]) -> str:
+    """One message for policy changes made since the last pass."""
+    lines = ["[AX R3] 정책 변경"]
+    lines += [
+        f"{_kst(r[0]):%H:%M} {ROLE_NAMES.get(r[1], r[1])} "
+        f"{OUTCOME_NAMES.get(r[2], r[2])}: {r[3][:200]}"
+        for r in runs
+    ]
+    return "\n".join(lines)
 
 
 def _n(value: object) -> str:
@@ -339,6 +430,8 @@ def summary(snap: Snapshot, title: str) -> str:
         f"24시간 호출: {calls or '없음'}",
         f"관리자 {'켜짐' if snap.manager_on else '꺼짐(전환 전)'} · 종료 {snap.stop_at[5:10].replace('-', '/')}",
     ]
+    if snap.loop_runs:
+        lines += ["", "■ 관리자 루프 24시간", *loop_counts(snap.loop_runs)]
     if snap.relaunches_24h:
         lines.append(f"자동 복구 {snap.relaunches_24h}회(24시간)")
     if not r3:
@@ -405,7 +498,28 @@ def decide(
         )
         once.add("final")
     new["once"] = sorted(once)
-    return messages, new
+    return messages + loop_messages(snap, new), new
+
+
+def loop_messages(snap: Snapshot, state: dict[str, object]) -> list[str]:
+    """Policy changes since the last pass, and one loop digest per clock hour."""
+    if not snap.loop_runs:
+        return []
+    messages: list[str] = []
+    cursor = float(str(state.get("loop_cursor", snap.now - 600)))
+    fresh = [
+        r for r in snap.loop_runs if r[0] > cursor and r[2] in {"changed", "nudged"}
+    ]
+    if fresh:
+        messages.append(change_notice(fresh))
+    state["loop_cursor"] = max(cursor, snap.loop_runs[-1][0])
+    hour = f"{_kst(snap.now):%Y-%m-%d %H}"
+    recent = any(snap.now - r[0] <= 3600 for r in snap.loop_runs)
+    if state.get("digest_hour") != hour and recent:
+        if "digest_hour" in state:  # the first pass only sets the clock
+            messages.append(loop_digest(snap))
+        state["digest_hour"] = hour
+    return messages
 
 
 def send(text: str, *, dry_run: bool) -> bool:

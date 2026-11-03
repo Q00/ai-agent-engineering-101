@@ -14,6 +14,7 @@ from market_a2a.anthropic_fallback import HAIKU_MODEL
 from market_a2a.models import HarnessError
 from r3 import guard, model_client
 from r3.events import EventLedger
+from r3.manager import tactical_triggers, trigger_step
 from r3.model_client import SONNET_MODEL, ModelClient, Request, kst_day, tool_param
 from r3.policy import (
     TACTICAL_FIELDS,
@@ -285,3 +286,30 @@ def test_launcher_accepts_only_approved_models_and_a_sane_dollar_cap(
     monkeypatch.setenv("AX_R3_DAILY_USD", "500")
     with pytest.raises(HarnessError, match="between"):
         validate_model_roles()
+
+
+def test_tactical_triggers_name_moves_from_our_numbers_and_steps_stop_at_the_edge() -> (
+    None
+):
+    # Given: quiet numbers, nothing triggers (a hold stays legitimate).
+    quiet = {"buyer_attempts": 3, "buyer_agreed": 1, "seller_receipts": 2}
+    assert tactical_triggers(quiet, quiet, {"food_near_clearance": 1}) == []
+    # When: buyers walk away, every sale closes at the first ask and food ages.
+    hour = {
+        "buyer_attempts": 10,
+        "buyer_agreed": 4,
+        "seller_receipts": 5,
+        "seller_first_ask": 5,
+    }
+    names = [
+        t["name"] for t in tactical_triggers(hour, hour, {"food_near_clearance": 3})
+    ]
+    # Then: each signal names its own move.
+    assert names == ["buyer_walkaway", "seller_first_ask", "food_ageing"]
+    # And: a dry hour after a busy six hours asks the seller to concede more.
+    dry = tactical_triggers({}, {"seller_receipts": 4}, {})
+    assert [(t["field"], t["direction"]) for t in dry] == [("seller.concession", 1)]
+    # And: a step is a quarter band, clipped, and None at the edge.
+    assert trigger_step(0.30, 0.20, 0.40, 1) == 0.35
+    assert trigger_step(0.38, 0.20, 0.40, 1) == 0.40
+    assert trigger_step(0.40, 0.20, 0.40, 1) is None

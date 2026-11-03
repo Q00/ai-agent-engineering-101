@@ -113,7 +113,7 @@ def test_daily_summary_once_at_nine_and_final_notice_at_the_end(monkeypatch) -> 
 
 def test_vault_job_matches_the_worker_contract(tmp_path) -> None:  # noqa: ANN001
     body = notify_r3.as_markdown(
-        "[AX R3] 자문 보고 21시\n\n■ 결정 필요 1건\n\n#3 [재입고 · 작업 S] 주기 단축\n근거: 품절 8회",
+        "[AX R3] 자문 보고 21시\n\n■ 결정 필요 1건\n\n#3 [재입고 · 작업 S] 주기 단축\n근거: 품절 8회",  # noqa: E501
         "2026-11-03 21시",
     )
     assert body.startswith("### 2026-11-03 21시 자문 보고 21시")
@@ -138,3 +138,48 @@ def test_vault_job_matches_the_worker_contract(tmp_path) -> None:  # noqa: ANN00
         notify_r3.vault_job("## 자문 보고", "  ", "k", dry_run=False, jobs=tmp_path)
         is None
     )
+
+
+def runs_before(now: float) -> list[tuple[float, str, str, str]]:
+    return [
+        (now - 900, "scout", "read", "shops=12 low_trust=2 hot=식품 alerts=0"),
+        (now - 600, "tactical", "held", "close rate normal"),
+        (now - 60, "tactical", "nudged", '{"buyer.quick_accept_ratio": 0.756} trigger'),
+    ]
+
+
+def test_policy_changes_go_out_once_and_loops_report_every_hour() -> None:
+    now = datetime(2026, 11, 4, 3, 30, tzinfo=UTC).timestamp()  # 12:30 KST
+    state: dict[str, object] = {"once": ["round3", "switch"]}
+    snap = healthy(now)
+    snap.loop_runs = runs_before(now)
+    # When: the first pass after a change runs.
+    messages, state = decide(snap, state)
+    # Then: the change goes out once; the first pass only starts the hourly clock.
+    assert len(messages) == 1
+    assert "정책 변경" in messages[0]
+    assert "조건 발동 변경" in messages[0]
+    again = healthy(now + 300)
+    again.loop_runs = runs_before(now)
+    assert decide(again, state)[0] == []
+    # When: the next clock hour starts (13:02 KST) with the same runs in its hour.
+    later = healthy(now + 1920)
+    later.loop_runs = runs_before(now)
+    messages, state = decide(later, state)
+    # Then: one digest with counts, the change and the hold reason.
+    assert len(messages) == 1
+    digest = messages[0]
+    assert "전술 2회" in digest
+    assert "유지 1" in digest
+    assert "close rate normal" in digest
+    assert "정찰 최근" in digest
+
+
+def test_silent_loops_alert_only_after_the_switch() -> None:
+    now = datetime(2026, 11, 4, 3, 0, tzinfo=UTC).timestamp()
+    snap = healthy(now)
+    assert "loops_silent" not in conditions(snap)  # older release: no table
+    snap.loop_runs = [(now - 3000, "scout", "read", "")]
+    assert "loops_silent" in conditions(snap)
+    snap.manager_on = False
+    assert "loops_silent" not in conditions(snap)

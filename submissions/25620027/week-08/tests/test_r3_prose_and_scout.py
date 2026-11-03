@@ -288,7 +288,7 @@ def test_trust_picture_reweights_shops_and_feeds_restock_hot_categories(
     assert hot[0][1].kind == "goods"
 
 
-def test_manager_filters_tactical_and_strategy_proposals_and_validates_the_scout(
+def test_manager_filters_tactical_and_strategy_proposals_and_validates_the_scout(  # noqa: PLR0915 - one manager, layered steps
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     now = time.time()
@@ -452,6 +452,32 @@ def test_manager_filters_tactical_and_strategy_proposals_and_validates_the_scout
         }
         assert any("reverses" in c["note"] for c in refused)
         assert manager.events.model_summary(1)["strategy"]["calls"] == 1
+        # And: every loop run, a hold or refusal included, is on record for Telegram.
+        runs = [(r["role"], r["outcome"]) for r in manager.events.loop_runs(0)]
+        assert runs == [
+            ("scout", "read"),
+            ("strategy", "changed"),
+            ("tactical", "changed"),
+            ("tactical", "refused"),
+        ]
+        # Given: buyers walk away in the last hour, and the model proposes nothing.
+        walkaway = {"buyer_attempts": 10, "buyer_agreed": 3}
+        monkeypatch.setattr(manager.events, "tactical_signals", lambda _hours: walkaway)
+        monkeypatch.setattr(
+            model_client,
+            "AsyncOpenAI",
+            FakeModel.script({"changes": {}, "reason": "looks fine"}),
+        )
+        # When: the tactical step runs.
+        nudged = anyio.run(manager.tactical)
+        # Then: code moves the trigger's field one quarter-band step itself.
+        assert nudged is not None
+        assert round(nudged.buyer.quick_accept_ratio, 3) == 0.756
+        prompt = str(FakeModel.requests[-1]["messages"][1]["content"])  # pyright: ignore[reportIndexIssue]
+        assert "buyer_walkaway" in prompt
+        last = manager.events.loop_runs(0)[-1]
+        assert (last["role"], last["outcome"]) == ("tactical", "nudged")
+        assert "agreed 3/10" in str(last["detail"])
         # And: the strategy summary carries the picture and the recent changes.
         summary = manager.summary()
         assert summary["picture"]["low_trust_shops"][0]["name"] == "Bad"
