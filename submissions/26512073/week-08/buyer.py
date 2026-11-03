@@ -10,11 +10,18 @@ import httpx
 from harness import call_harness
 
 
-def decide_buy(item, budget, asking_price, offers, seconds_left):
+def decide_buy(item, budget, asking_price, offers, seconds_left, discount_attempted=False):
+    affordable = asking_price <= budget
+    request_discount = affordable and asking_price > 0 and not discount_attempted
     prompt = (
         "You are a buyer negotiating a purchase. Do not use tools.\n"
-        "Your goal is to buy within your private budget. Accept an asking "
-        "price within budget by offering that exact price. If it is above "
+        "Your goal is to buy within your private budget. When the asking price "
+        "is affordable and you have not yet requested an affordable-price "
+        "discount, offer a reasonable lower whole-number price once. You choose "
+        "the discount amount; the student has not specified a percentage. "
+        "After that one attempt, if the seller continues with an affordable "
+        "ask, offer that exact ask without another discount request. Accept "
+        "a free item at zero without asking for a negative price. If it is above "
         "budget, negotiate upward with offers within budget. Reach your "
         "budget by your fourth offer if necessary; do not repeat an offer "
         "that was already refused. If your budget offer was refused and "
@@ -22,14 +29,22 @@ def decide_buy(item, budget, asking_price, offers, seconds_left):
         "Return only JSON: action (offer or walk_away), price (integer for "
         "offer, null for walk_away), reason (one short sentence).\n"
         "State:\n" + json.dumps({"item": item, "private_budget": budget,
-            "asking_price": asking_price, "previous_offers": offers})
+            "asking_price": asking_price, "previous_offers": offers,
+            "affordable_discount_already_attempted": discount_attempted,
+            "request_one_discount_now": request_discount})
     )
     decision = call_harness(prompt, timeout=min(45, seconds_left))
     action, price = decision.get("action"), decision.get("price")
     if action == "walk_away" and price is None:
+        if affordable:
+            raise ValueError("An affordable ask requires the discount attempt or acceptance")
         return decision
     if action != "offer" or type(price) is not int or not 0 <= price <= budget:
         raise ValueError(f"Invalid buyer decision or price outside budget: {decision}")
+    if request_discount and price >= asking_price:
+        raise ValueError("The first affordable ask requires one lower offer")
+    if affordable and not request_discount and price != asking_price:
+        raise ValueError("After one discount attempt, accept the affordable ask exactly")
     return decision
 
 
@@ -37,6 +52,7 @@ def buy(url, item, budget, time_budget=270):
     # Leave time for HTTP cleanup before the assignment's 300-second deadline.
     deadline = time.monotonic() + time_budget
     offers = []
+    discount_attempted = False
     task_id = None
     with httpx.Client(headers={"A2A-Version": "1.0"}, timeout=30) as client:
         card_response = client.get(url.rstrip("/") + "/.well-known/agent-card.json")
@@ -103,10 +119,13 @@ def buy(url, item, budget, time_budget=270):
             if not numbers:
                 raise ValueError("Seller response has no asking price")
             ask = float(numbers[-1])
-            decision = decide_buy(item, budget, ask, offers, remaining - 30)
+            decision = decide_buy(item, budget, ask, offers, remaining - 30,
+                                  discount_attempted=discount_attempted)
             print(json.dumps({"buyer_decision": decision}), flush=True)
             if decision["action"] == "walk_away":
                 break
+            if ask <= budget and decision["price"] < ask:
+                discount_attempted = True
             offers.append(decision["price"])
             task = send(str(decision["price"]))
         # Stopping is permitted by the assignment; cancel also informs the seller.

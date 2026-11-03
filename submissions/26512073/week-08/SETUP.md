@@ -10,6 +10,10 @@
   A buyer offering the current minimum or more can close immediately.
 - Buyer requires a market certificate. Food must last at least the order's
   `use_within_hours`. Grades A/B/C are accepted; no goods warranty is required.
+- When an asking price becomes affordable, the buyer requests one discount.
+  The model selects the amount (no fixed discount percentage). If the seller
+  continues with an affordable counteroffer, the buyer accepts that price.
+  Above-budget asks still follow the original budget-limited negotiation rule.
 - Seller makes no grade or warranty promises; the kit attaches the certificate.
 - Dispatch matching available units by FIFO (earliest `supplied_at` first), for
   both food and goods. Expired and held units are excluded before FIFO selection.

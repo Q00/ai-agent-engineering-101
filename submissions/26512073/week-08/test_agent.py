@@ -568,5 +568,64 @@ class RestockTests(unittest.TestCase):
             self.assertFalse((folder / "restock-reservations.jsonl").exists())
 
 
+class BuyerDiscountTests(unittest.TestCase):
+    def test_first_affordable_ask_requires_lower_offer(self):
+        import buyer
+        with patch("buyer.call_harness", return_value={"action": "offer", "price": 90}):
+            self.assertEqual(buyer.decide_buy("S1", 100, 95, [], 30)["price"], 90)
+        with patch("buyer.call_harness", return_value={"action": "offer", "price": 95}):
+            with self.assertRaises(ValueError):
+                buyer.decide_buy("S1", 100, 95, [], 30)
+
+    def test_after_discount_accepts_affordable_counter_exactly(self):
+        import buyer
+        with patch("buyer.call_harness", return_value={"action": "offer", "price": 95}):
+            self.assertEqual(buyer.decide_buy("S1", 100, 95, [90], 30, True)["price"], 95)
+        with patch("buyer.call_harness", return_value={"action": "offer", "price": 92}):
+            with self.assertRaises(ValueError):
+                buyer.decide_buy("S1", 100, 95, [90], 30, True)
+
+    def test_budget_guard_still_blocks_over_budget_offer(self):
+        import buyer
+        with patch("buyer.call_harness", return_value={"action": "offer", "price": 101}):
+            with self.assertRaises(ValueError):
+                buyer.decide_buy("S1", 100, 120, [], 30)
+
+    def test_free_item_does_not_request_negative_discount(self):
+        import buyer
+        with patch("buyer.call_harness", return_value={"action": "offer", "price": 0}):
+            self.assertEqual(buyer.decide_buy("S1", 100, 0, [], 30)["price"], 0)
+
+    def test_refused_discount_is_followed_by_acceptance(self):
+        import buyer
+        import io
+        from contextlib import redirect_stdout
+        def response(data):
+            return SimpleNamespace(json=lambda: data, raise_for_status=lambda: None)
+        def task(state, text="", receipt=None):
+            body = {"id": "sample-task", "status": {"state": state,
+                    "message": {"parts": [{"text": text}]}}}
+            if receipt:
+                body["artifacts"] = [{"parts": [{"data": receipt}]}]
+            return response({"result": {"task": body}})
+        client = MagicMock()
+        client.__enter__.return_value = client
+        client.get.return_value = response({"supportedInterfaces": [{
+            "protocolBinding": "JSONRPC", "protocolVersion": "1.0", "url": "https://sample.invalid/"}]})
+        client.post.side_effect = [
+            task("TASK_STATE_INPUT_REQUIRED", "asking 95"),
+            task("TASK_STATE_INPUT_REQUIRED", "Counteroffer: 95"),
+            task("TASK_STATE_COMPLETED", receipt={"task": "sample-task", "item": "S1", "price": 95}),
+        ]
+        with patch("buyer.httpx.Client", return_value=client), \
+                patch("buyer.call_harness", side_effect=[{"action": "offer", "price": 90},
+                                                         {"action": "offer", "price": 95}]) as harness, \
+                redirect_stdout(io.StringIO()):
+            result = buyer.buy("https://sample.invalid", "S1", 100)
+        self.assertEqual(result["offers"], [90, 95])
+        self.assertEqual(result["receipt"]["price"], 95)
+        self.assertIn('"affordable_discount_already_attempted": true', harness.call_args.args[0])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
