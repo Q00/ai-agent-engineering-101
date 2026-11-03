@@ -63,11 +63,12 @@ def facts():
         lines = []
     why = Counter()
     for ln in lines:
-        try:
-            r = json.loads(json.loads(ln)["result"])
-        except (ValueError, KeyError, TypeError):
+        try:                       # "refused" is logged whole; "result" is cut at 1000 characters
+            row = json.loads(ln)
+            refused = row.get("refused") or (json.loads(row["result"]) or {}).get("refused") or []
+        except (ValueError, KeyError, TypeError, AttributeError):
             continue
-        for x in (r.get("refused") or []) if isinstance(r, dict) else []:
+        for x in refused:
             why[x.get("why", "")[:80]] += 1
     for w, n in why.most_common(5):
         add("T", f"the manager's write tools refused {n} lines: {w}")

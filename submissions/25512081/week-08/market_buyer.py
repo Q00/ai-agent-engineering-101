@@ -100,8 +100,11 @@ def choose(shops, item, budget, mine, k=1):
         return pool, "every shop in the list I have not caught cheating"
     names = [s["name"] for s in pool]
     learned = lessons.rules("buyer")[:5]
-    ans = harness.ask(CHOOSE_SYSTEM + (" Rules learned from my own past failures: " + " / ".join(learned) if learned else ""), (
-        f"I need to buy: {item} (my budget: {budget}).\nShops:\n"
+    # the rules are model-written from records that hold shop names other agents chose: data, not system prompt
+    ans = harness.ask(CHOOSE_SYSTEM, (
+        f"I need to buy: {item} (my budget: {budget}).\n"
+        + (f"Rules I learned from my own past failures: <<<{' / '.join(learned)}>>>\n" if learned else "")
+        + "Shops:\n"
         + "\n".join(summary(s, mine) for s in pool)
         + f"\nList the {k} shop{'s' * (k > 1)} to ask for a price, best first, by name, and give the reason "
         "in one sentence."),

@@ -60,8 +60,11 @@ def load(name, default):
 def audit(tool, args, result):
     (DIR / "logs").mkdir(exist_ok=True)
     with open(DIR / "logs" / "planner-tools.log", "a", encoding="utf-8") as f:
-        f.write(json.dumps({"ts": time.strftime("%m-%d %H:%M:%S"), "tool": tool, "args": args,
-                            "result": json.dumps(result, ensure_ascii=False)[:1000]}, ensure_ascii=False) + "\n")
+        row = {"ts": time.strftime("%m-%d %H:%M:%S"), "tool": tool, "args": args,
+               "result": json.dumps(result, ensure_ascii=False)[:1000]}
+        if isinstance(result, dict) and result.get("refused"):      # whole, so lessons.py can read them back
+            row["refused"] = result["refused"]
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
     return result
 
 
