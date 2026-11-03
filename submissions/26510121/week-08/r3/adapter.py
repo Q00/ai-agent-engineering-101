@@ -94,8 +94,11 @@ def install(kit, journal=None, config=None):
                 try:
                     key = kit.load_key(ROOT / "shop_key.pem")
                     co = kit.jwt_payload(token, kit.pub_b64(key)) or {}
+                    attribution = j.get('shop_strategy:' + str(co.get('task')), {})
                     record = {"task": co.get("task"), "unit": mr.get("unit"), "sku": mr.get("sku", co.get("item")),
-                              "price": co.get("price", 0), "warranty_hours": co.get("warranty_hours", 0), "paid_at": time.time()}
+                              "price": co.get("price", 0), "warranty_hours": co.get("warranty_hours", 0), "paid_at": time.time(),
+                              "strategy_version": attribution.get('strategy', {}).get('version', 0),
+                              "category": attribution.get('category'), "cost": attribution.get('cost')}
                     j.add("shop_settled", record, eid="settlement:" + str(data.get("ledger")), role="shop")
                     j.release(co.get("task"))
                 except (ValueError, OSError, KeyError):
@@ -146,6 +149,12 @@ def install(kit, journal=None, config=None):
                     if board.get("round") == 3:
                         atomic_json(j.md / "board.json", board)
                     j.put("board_checked_at", time.time())
+                    j.put('board_round', board.get('round'))
+        try:
+            from .adaptive import update
+            update(j)
+        except Exception as exc:
+            j.add('strategy_error', {'error_type': type(exc).__name__})
         for key, payload in j.pending_posts():
             role = payload.get("as", "buyer")
             if role not in market.token:

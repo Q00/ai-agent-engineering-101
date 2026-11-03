@@ -19,6 +19,7 @@ from r3.state import Journal, ROOT, policy
 from r3.protocol import canon, signed_body
 from r3.economy import grade, remaining, shop_candidates
 from r3.model import Chooser
+from r3.adaptive import effective
 
 NAME = "Seochanit Shop"
 
@@ -66,8 +67,14 @@ class Seller(AgentExecutor):
             if unit is None:
                 await up.reject(say("No matching available inventory unit."))
                 return
-            deal = self.deals[task.id] = {"unit": unit, "ask": None, "turns": 0, "until": time.time() + self.cfg["session_ttl_seconds"]}
-            self.j.add("shop_opportunity", {"task": task.id, "unit": unit["unit"], "sku": unit["sku"]},
+            config, strategy = effective(self.j, 'shop', self.cfg)
+            deal = self.deals[task.id] = {"unit": unit, "ask": None, "turns": 0,
+                                         "until": time.time() + self.cfg["session_ttl_seconds"],
+                                         "config": config, "strategy": strategy}
+            self.j.put('shop_strategy:' + task.id, {'strategy': strategy, 'category': unit.get('category'),
+                                                  'cost': unit['cost']})
+            self.j.add("shop_opportunity", {"task": task.id, "unit": unit["unit"], "sku": unit["sku"],
+                                            "strategy_version": strategy['version']},
                        eid="visit:" + task.id, role="shop")
         if deal.get("receipt"):
             await up.add_artifact(parts=[new_data_part(deal["receipt"])], name="receipt")
@@ -92,18 +99,20 @@ class Seller(AgentExecutor):
             match = re.fullmatch(r"\s*(?:I accept(?: at)?\s*)?([\d,]+)\s*", text, re.I)
             if match:
                 offer = int(match.group(1).replace(",", ""))
-        candidates = shop_candidates(unit, inv, cat, self.j, self.cfg, offer=offer, previous_ask=deal["ask"])
+        candidates = shop_candidates(unit, inv, cat, self.j, deal['config'], offer=offer, previous_ask=deal["ask"])
         if not candidates:
             await up.reject(say("No feasible inventory offer."))
             self.j.release(task.id)
             return
         selected = await asyncio.to_thread(self.chooser.choose, "shop", candidates,
                                           {"unit": unit, "turn": deal["turns"], "offer": offer,
-                                           "balance": inv.get("balance"), "previous_ask": deal["ask"]},
+                                           "balance": inv.get("balance"), "previous_ask": deal["ask"],
+                                           "strategy": deal['strategy']},
                                           critical=unit["cost"] > inv.get("balance", 1) * self.cfg["critic_cash_fraction"],
                                           deadline=deal["until"] - 5)
         price = selected["price"]
-        self.j.add("shop_quote", {"task": task.id, "sku": unit["sku"], "price": price, "action": selected["action"]}, role="shop")
+        self.j.add("shop_quote", {"task": task.id, "sku": unit["sku"], "price": price, "action": selected["action"],
+                                  "strategy_version": deal['strategy']['version']}, role="shop")
         if selected["action"] == "accept":
             rec = {"shop": NAME, "item": unit["sku"], "price": price, "task": task.id,
                    "unit": unit["unit"], "claim": grade(unit, cat), "cert": True,

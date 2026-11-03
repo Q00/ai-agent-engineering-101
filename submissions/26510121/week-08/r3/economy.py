@@ -149,10 +149,12 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         import hashlib
         draw = int(hashlib.sha256((str(probe) + sku).encode()).hexdigest()[:8], 16) / 2**32
         scarcity = 1 / (1 + count.get(sku, 0))
-        score = scarcity * (cat_signal + config["exploration_fraction"] * draw) / math.sqrt(max(1, p["list_price"]))
+        weight = config.get('category_weights', {}).get(p['category'], 1)
+        score = weight * scarcity * (cat_signal + config["exploration_fraction"] * draw) / math.sqrt(max(1, p["list_price"]))
         candidates.append({"id": sku, "sku": sku, "qty": 1, "score": score,
                            "max_cost": math.ceil(.75 * p["list_price"]), "category": p["category"],
-                           "evidence": {"observed_category_signal": cat_signal, "probe": cat_signal == 0}})
+                           "evidence": {"observed_category_signal": cat_signal, "probe": cat_signal == 0,
+                                        "adaptive_category_weight": weight}})
     chosen, covered = [], set()
     for c in sorted(candidates, key=lambda x: x["score"], reverse=True):
         if c["category"] in covered or c["max_cost"] > spendable:

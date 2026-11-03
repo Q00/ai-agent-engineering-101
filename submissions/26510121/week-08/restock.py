@@ -1,13 +1,14 @@
 """A standard v4 restock hook; only queues forum text through the journal."""
 import argparse
 import json
-from r3.state import Journal, policy
+from r3.state import Journal
 from r3.economy import restock_candidates
 from r3.model import Chooser
+from r3.adaptive import effective
 
 
 def plan(journal, chooser=None):
-    cfg = policy()
+    cfg, strategy = effective(journal, 'shop')
     journal.reconcile()
     inv = journal.snapshot("inventory.json", {})
     if inv.get("round", 0) < 3:
@@ -24,8 +25,9 @@ def plan(journal, chooser=None):
                            "score": sum(c["score"] for c in lines), "max_cost": sum(c["max_cost"] for c in lines),
                            "evidence": [c["evidence"] for c in lines]})
     selected = (chooser or Chooser(journal, cfg)).choose("shop", portfolios,
-               {"balance": inv["balance"], "stock_units": len(inv.get("units", []))},
+               {"balance": inv["balance"], "stock_units": len(inv.get("units", [])), "strategy": strategy},
                critical=portfolios[0]["max_cost"] > cfg["critic_cash_fraction"] * inv["balance"])
+    journal.add('restock_decision', {'strategy_version': strategy['version'], 'buy': selected['buy']}, role='shop')
     return {"buy": selected["buy"]}
 
 

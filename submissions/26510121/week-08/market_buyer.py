@@ -3,14 +3,15 @@ import argparse
 import json
 import os
 import time
-from r3.state import Journal, read_json, policy
+from r3.state import Journal, read_json
 from r3.economy import buyer_candidates
 from r3.model import Chooser
 from r3.protocol import Peer, quote, verify_receipt
+from r3.adaptive import begin_buyer
 
 
 def buy(order, shops, journal, chooser=None, peer_factory=Peer):
-    cfg = policy()
+    cfg, strategy = begin_buyer(journal, order)
     journal.reconcile()
     empty = {"shop": "", "receipt": None, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
     if time.time() + cfg["checkout_buffer_seconds"] >= order["expires"]:
@@ -23,7 +24,7 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
     for _ in range(cfg["max_shop_candidates"]):
         if not ranked or time.time() >= deadline:
             break
-        c = chooser.choose("buyer", ranked[:8], {"order": order}, deadline=deadline,
+        c = chooser.choose("buyer", ranked[:8], {"order": order, "strategy": strategy}, deadline=deadline,
                            critical=ranked[0]["reference_price"] > .8 * order["budget"])
         ranked = [x for x in ranked if x["shop"] != c["shop"]]
         peer = peer_factory()
@@ -55,7 +56,8 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                     else:
                         accept["warranty_hours"] = required_warranty
                     journal.add("agreement", {"order": order["order"], "sku": c["sku"], "shop": c["shop"],
-                                              "task": task["id"], "price": rec["price"], "accept": accept},
+                                              "task": task["id"], "price": rec["price"], "accept": accept,
+                                              "strategy_version": strategy['version']},
                                 eid="agreement:" + order["order"], role="buyer")
                     return {"shop": c["shop"], "receipt": rec, "stars": 3,
                             "review": "Pending checkout; settled quality will determine review.", "accept": accept}
@@ -79,7 +81,8 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                 actions = []
                 if ask <= cap:
                     actions.append({"id": "accept", "price": ask, "score": product["list_price"] - ask + 1})
-                counter = max(1, min(cap, int(min(ask * .92, c["reference_price"]))))
+                ratio = cfg['buyer_counter_ratio']
+                counter = max(1, min(cap, int(min(ask * ratio, c["reference_price"] * ratio / .92))))
                 if counter < ask and turn < cfg["max_negotiation_turns"] - 1:
                     actions.append({"id": "counter", "price": counter,
                                     "score": .75 * (product["list_price"] - counter),
@@ -87,13 +90,18 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                 if not actions:
                     break
                 move = chooser.choose("buyer", actions, {"ask": ask, "order": order, "turn": turn,
-                                       "product": product}, deadline=deadline)
+                                       "product": product, "strategy": strategy}, deadline=deadline)
                 agreed = move["price"]
+                if move['id'] == 'counter':
+                    journal.add('buyer_counter', {'order': order['order'], 'shop': c['shop'], 'ask': ask,
+                                'price': agreed, 'strategy_version': strategy['version']}, role='buyer')
                 task = peer.send(str(agreed), task["id"])
-            journal.add("attempt", {"shop": c["shop"], "sku": c["sku"], "success": False,
+            journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
+                                    "shop": c["shop"], "sku": c["sku"], "success": False,
                                     "kind": "no_agreement", "seconds": time.monotonic() - started}, role="buyer")
         except Exception as exc:
-            journal.add("attempt", {"shop": c["shop"], "sku": c["sku"], "success": False,
+            journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
+                                    "shop": c["shop"], "sku": c["sku"], "success": False,
                                     "kind": type(exc).__name__, "seconds": time.monotonic() - started}, role="buyer")
         finally:
             peer.close()
