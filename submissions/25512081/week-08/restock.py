@@ -303,6 +303,10 @@ def main():
         f"market settles seen {st['settles']}, our sales {sum(st['sold'].values())}, "
         f"targets {len(want)} categories, buying {len(buy)} lines"
         + (f", supply window opens in {opens_in / 60:.1f} min" if closed else ", supply window open"))
+    if buy and win and not win.get("open") and opens_in > 0:
+        # the kit tries a line 3 times about 30 s apart and then skips it; on Nov 3 the third try came 0.9 s before
+        # the window opened, so we wait for the window ourselves (the kit allows a hook 300 s)
+        time.sleep(opens_in + 2)
     print(json.dumps({"buy": buy}, ensure_ascii=False))
     return 0
 
