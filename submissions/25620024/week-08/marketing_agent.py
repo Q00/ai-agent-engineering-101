@@ -78,7 +78,9 @@ RESEARCH_SCHEMA = {
 }
 
 RESEARCH_PROMPT = """You are the marketing research team of an agent shop named "dragonash" in a classroom agent
-market (Round 3). The buyers are other students' LLM agents. You do research only; a separate seller team decides.
+market (Round 3). The buyers are other students' LLM agents. You work for the sales team (Claude), the brain of the
+shop: your job is to give it what it needs to maximise sales and profit. Answer its requests (brief.sales_requests)
+first. You do research only; the sales team decides.
 Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000; costs are
 only stock decay (goods storage 1%/day, food expiring, refunds of goods broken under our warranty).
 FOCUS: the board rewards the leaders (buyers choose shops they have bought from and shops with many reviews),
@@ -101,7 +103,7 @@ BRIEF:
 SCHEMA = {
     "type": "object", "additionalProperties": False,
     "required": ["pricing", "exclusive_skus", "follow_skus", "restock", "forum_posts", "bugs", "lessons",
-                 "retire_lessons", "scm_veto", "rationale"],
+                 "retire_lessons", "scm_veto", "requests", "rationale"],
     "properties": {
         "pricing": {"type": "object", "additionalProperties": False,
                     "required": ["price_band", "min_margin", "clear_floor_margin", "haggle_room", "hero_undercut",
@@ -138,6 +140,9 @@ SCHEMA = {
                                                               "verdict": {"type": "string",
                                                                           "enum": ["keep", "undo", "watch"]}}}},
         "retire_lessons": {"type": "array", "items": {"type": "integer"}},
+        "requests": {"type": "object", "additionalProperties": False, "required": ["marketing", "scm"],
+                     "properties": {"marketing": {"type": "array", "items": {"type": "string"}},
+                                    "scm": {"type": "array", "items": {"type": "string"}}}},
         "scm_veto": {"type": "object", "additionalProperties": False, "required": ["cancel_orders", "no_clearance"],
                      "properties": {"cancel_orders": {"type": "array", "items": {"type": "string"}},
                                     "no_clearance": {"type": "array", "items": {"type": "string"}}}},
@@ -148,7 +153,10 @@ SCHEMA = {
 PROMPT = """You are the seller (strategy) team of an agent shop named "dragonash" in a classroom agent market (Round 3).
 You are the top department: the marketing research team (Codex) and the SCM team (Codex) report to you, and
 only the headquarters (the owner) is above you. Their reports and the headquarters' directives follow the brief.
-You decide the plan; you may veto SCM orders (scm_veto.cancel_orders) or markdowns (scm_veto.no_clearance) by SKU.
+You are the brain: the other teams exist to help you maximise sales and profit. You decide the plan; you may veto
+SCM orders (scm_veto.cancel_orders) or markdowns (scm_veto.no_clearance) by SKU, and you direct the next runs:
+requests.marketing = up to 3 questions the research team must answer next, requests.scm = up to 3 stock tasks
+for the SCM team (e.g. "hold 4 units of SKU X for the follow list", "clear Y before it spoils").
 The buyers are other students' LLM agents, not people. Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars,
 each a percentile among shops; profit = balance - 5,000,000 (stock bought counts as spent until sold; no fixed
 costs, only stock decay: goods storage 1% of cost per day, food expiring, refunds for goods broken under warranty).
@@ -510,6 +518,16 @@ def changes(old, new):
     return out
 
 
+REQUESTS = OUT / "requests.json"
+
+
+def load_requests():
+    try:
+        return json.loads(REQUESTS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
 def run(a, t0):
     b = brief()
     c = market_model.db()
@@ -524,6 +542,8 @@ def run(a, t0):
                           "changes": h.get("changes"), "outcome": h.get("outcome")} for h in history[-5:]]
     b["lessons"] = [{"index": i, "text": x["text"], "verdict": x["verdict"],
                      "age_h": round((t0 - x["ts"]) / 3600, 1)} for i, x in enumerate(lessons)]
+    requests = load_requests()
+    b["sales_requests"] = requests.get("marketing") or []
     research = json.loads(ask_codex(RESEARCH_PROMPT + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
     print(f"[marketing] research: {len(research['findings'])} findings, "
           f"{len(research['exclusive_candidates'])} exclusive candidates, {len(research['bugs'])} bugs, {time.time() - t0:.0f} s")
@@ -590,6 +610,10 @@ def run(a, t0):
         f.write(json.dumps({"metrics": now_m, "changes": moved, "plan_version": plan["version"]}, ensure_ascii=False) + "\n")
     LESSONS.write_text(json.dumps(curate(lessons, plan["retired"], plan["lessons"], time.time()), ensure_ascii=False,
                                   indent=1), encoding="utf-8")
+    rq = raw_obj.get("requests") or {}
+    REQUESTS.write_text(json.dumps({"marketing": [str(x)[:300] for x in (rq.get("marketing") or [])[:3]],
+                                    "scm": [str(x)[:300] for x in (rq.get("scm") or [])[:3]], "ts": time.time()},
+                                   ensure_ascii=False, indent=1), encoding="utf-8")
     with (OUT / "issues.jsonl").open("a", encoding="utf-8") as f:
         for bug in plan["bugs"]:
             f.write(json.dumps({"ts": stamp, **bug}, ensure_ascii=False) + "\n")

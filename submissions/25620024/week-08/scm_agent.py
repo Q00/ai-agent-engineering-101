@@ -48,8 +48,9 @@ SCHEMA = {
 PROMPT = """You are the supply chain (SCM) team of an agent shop named "dragonash" in a classroom agent market.
 Profit = balance - 5,000,000: stock bought counts as spent until it sells; food spoils (cost lost) once past its
 shelf life and its grade drops while it waits; goods cost 1% of their cost per day in storage. Supply opens for
-3 minutes every 20 (the shop buys at most ~10 lines per window, up to 20 units per line). The sales team (Claude)
-sets prices; you own stock. From the brief:
+3 minutes every 20 (the shop buys at most ~10 lines per window, up to 20 units per line). The sales team (Claude) is
+the brain of the shop: you work for it, to maximise its sales and profit; it may veto your orders. Do its requests
+(brief.sales_requests) first. You own stock. From the brief:
 - orders: what to hold for the next hour (sku, qty 1-10): fast sellers that will sell before they decay, the sales
   team's picks and regulars' categories if they sell; never more than about 6-12 h of our own sales per SKU,
   and keep cash for high-ticket picks
@@ -192,7 +193,8 @@ def run(ask_codex, dry=False):
                           "changes": h.get("changes"), "outcome": h.get("outcome")} for h in history[-5:]],
              "lessons": [{"index": i, **{k: x[k] for k in ("text", "verdict")}, "age_h": round((now - x["ts"]) / 3600, 1)}
                          for i, x in enumerate(lessons)],
-             "current_plan": current}
+             "current_plan": current,
+             "sales_requests": load(OUT / "requests.json", {}).get("scm") or []}
     raw = ask_codex(PROMPT + json.dumps(brief, ensure_ascii=False), SCHEMA)
     plan, notes = gate(raw, market_model.catalog(MD))
     moved = changes(current, plan)
