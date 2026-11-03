@@ -100,7 +100,8 @@ BRIEF:
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
-    "required": ["pricing", "exclusive_skus", "follow_skus", "restock", "forum_posts", "bugs", "rationale"],
+    "required": ["pricing", "exclusive_skus", "follow_skus", "restock", "forum_posts", "bugs", "lessons",
+                 "retire_lessons", "rationale"],
     "properties": {
         "pricing": {"type": "object", "additionalProperties": False,
                     "required": ["price_band", "min_margin", "clear_floor_margin", "haggle_room", "hero_undercut",
@@ -131,6 +132,12 @@ SCHEMA = {
                                             "required": ["what", "evidence", "fix"],
                                             "properties": {"what": {"type": "string"}, "evidence": {"type": "string"},
                                                            "fix": {"type": "string"}}}},
+        "lessons": {"type": "array", "items": {"type": "object", "additionalProperties": False,
+                                               "required": ["text", "verdict"],
+                                               "properties": {"text": {"type": "string"},
+                                                              "verdict": {"type": "string",
+                                                                          "enum": ["keep", "undo", "watch"]}}}},
+        "retire_lessons": {"type": "array", "items": {"type": "integer"}},
         "rationale": {"type": "string"},
     },
 }
@@ -161,7 +168,13 @@ Your job, every hour, from the brief below:
 5. bugs: anything in the brief or in the code/log files here (shop_r3.py, promo.py, restock.py, forum.py,
    market_buyer.py, logs/market-kit.log) that loses sales or money, with evidence and a concrete fix. You may read
    files; you cannot change them.
-6. rationale: 3-6 sentences on why.
+6. lessons: judge the last plan with brief.scorecard (what changed since it was written, per hour) and
+   brief.plan_history (earlier plans and their outcomes): write 1-3 lessons, each with a verdict: keep (it worked),
+   undo (it hurt; reverse it now) or watch (too early). brief.lessons are the standing lessons with their index;
+   follow them unless the scorecard contradicts them, and list in retire_lessons the indexes of any that are
+   stale or proved wrong. Change at most 2 levers against brief.current_plan per run, so each outcome can be
+   traced to its cause.
+7. rationale: 3-6 sentences on why, naming which lessons you followed.
 Never plan anything deceptive. Answer with the JSON object only.
 
 BRIEF:
@@ -274,7 +287,10 @@ def report_md(b, research, plan, notes):
     me = b["our_shop"]
     lines = [f"# Agent team report {b['time']}", "",
              f"Shop: profit {me.get('profit')}, revenue {me.get('revenue')}, deals {me.get('deals')}, "
-             f"stars {me.get('stars')}, ALL {me.get('all')}", "", "## Research (Codex)"]
+             f"stars {me.get('stars')}, ALL {me.get('all')}", "", "## Scorecard of the last plan",
+             "```json", json.dumps(b.get("scorecard"), ensure_ascii=False, indent=1), "```", "",
+             "## Lessons (this run)"] + [f"- [{x['verdict']}] {x['text']}" for x in plan.get("lessons", [])] + [
+             f"(retired: {plan.get('retired')})", "", "## Research (Codex)"]
     lines += [f"- {x}" for x in research.get("findings", [])]
     lines += ["", "Exclusive candidates:"] + [f"- {x['sku']}: {x['evidence']}" for x in research.get("exclusive_candidates", [])]
     lines += ["", "Risks:"] + [f"- {x}" for x in research.get("risks", [])]
@@ -421,8 +437,86 @@ def main():
         publish_status(g, b)
 
 
+HISTORY = OUT / "history.jsonl"
+LESSONS = OUT / "lessons.json"
+
+
+def measure(c, me, since):
+    """Our shop now and our sales since `since` (by group: followed, exclusive, other SKUs)."""
+    pl = promo.plan()
+    fo, ex = set(pl.get("follow_skus") or {}), set(pl.get("exclusive_skus") or {})
+    rows = c.execute(f"""select s.sku, s.amount, su.cost from settles s join settle_units x on x.seq = s.seq
+                         join supply_units su on su.unit = x.unit where s.ts > ? and s.seq in ({market_model.ours(c)})""",
+                     (since,)).fetchall()
+    groups = {}
+    for sku, amount, cost in rows:
+        g = groups.setdefault("follow" if sku in fo else "exclusive" if sku in ex else "other",
+                              {"sold": 0, "revenue": 0, "margin": 0})
+        g["sold"] += 1
+        g["revenue"] += amount
+        g["margin"] += amount - (cost or 0)
+    return {"ts": time.time(), "profit": me.get("profit"), "revenue": me.get("revenue"), "deals": me.get("deals"),
+            "stars": me.get("stars"), "all": me.get("all"), "refunds": me.get("refunds"), "groups": groups,
+            "credits_used": c.execute("select count(*), coalesce(sum(amount), 0) from credits_used where ts>?",
+                                      (since,)).fetchone()}
+
+
+def scorecard(now_m, last):
+    """What changed since the last plan, per hour."""
+    if not last:
+        return {"note": "first plan with a scorecard"}
+    m0, hours = last["metrics"], max(0.1, (now_m["ts"] - last["metrics"]["ts"]) / 3600)
+    d = lambda k: None if now_m.get(k) is None or m0.get(k) is None else round((now_m[k] - m0[k]) / hours, 1)
+    return {"hours_since_last_plan": round(hours, 2), "last_plan_changes": last.get("changes"),
+            "profit_per_h": d("profit"), "revenue_per_h": d("revenue"), "deals_per_h": d("deals"),
+            "stars_now": now_m.get("stars"), "stars_then": m0.get("stars"), "all_now": now_m.get("all"),
+            "all_then": m0.get("all"), "refunds_added": (now_m.get("refunds") or 0) - (m0.get("refunds") or 0),
+            "our_sales_by_group_since": now_m["groups"], "guarantee_credits_since": now_m["credits_used"]}
+
+
+def load_lessons():
+    try:
+        return json.loads(LESSONS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+
+
+def curate(lessons, retire, new, now):
+    """The curator: drop lessons the seller team retired or older than 48 h, add the new ones, keep 20."""
+    keep = [x for i, x in enumerate(lessons) if i not in set(retire or []) and now - x.get("ts", now) < 48 * 3600]
+    keep += [{"ts": now, "text": x["text"][:300], "verdict": x["verdict"]} for x in (new or [])[:3]]
+    return keep[-20:]
+
+
+def changes(old, new):
+    """Which levers the new plan moved against the old one (for the history and the 2-lever rule)."""
+    out = []
+    for k, v in (new.get("pricing") or {}).items():
+        if (old.get("pricing") or {}).get(k) != v:
+            out.append(f"pricing.{k}: {(old.get('pricing') or {}).get(k)} -> {v}")
+    for k in ("exclusive_skus", "follow_skus"):
+        a, b = set(old.get(k) or {}), set(new.get(k) or {})
+        if a != b:
+            out.append(f"{k}: +{sorted(b - a)} -{sorted(a - b)}")
+    if (old.get("restock") or {}).get("mode") != (new.get("restock") or {}).get("mode"):
+        out.append(f"restock.mode -> {(new.get('restock') or {}).get('mode')}")
+    return out
+
+
 def run(a, t0):
     b = brief()
+    c = market_model.db()
+    try:
+        history = [json.loads(x) for x in HISTORY.read_text(encoding="utf-8").splitlines() if x.strip()]
+    except OSError:
+        history = []
+    now_m = measure(c, b["our_shop"], history[-1]["metrics"]["ts"] if history else t0 - 3600)
+    lessons = load_lessons()
+    b["scorecard"] = scorecard(now_m, history[-1] if history else None)
+    b["plan_history"] = [{"at": time.strftime("%m-%d %H:%M", time.localtime(h["metrics"]["ts"])),
+                          "changes": h.get("changes"), "outcome": h.get("outcome")} for h in history[-5:]]
+    b["lessons"] = [{"index": i, "text": x["text"], "verdict": x["verdict"],
+                     "age_h": round((t0 - x["ts"]) / 3600, 1)} for i, x in enumerate(lessons)]
     research = json.loads(ask_codex(RESEARCH_PROMPT + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
     print(f"[marketing] research: {len(research['findings'])} findings, "
           f"{len(research['exclusive_candidates'])} exclusive candidates, {len(research['bugs'])} bugs, {time.time() - t0:.0f} s")
@@ -436,7 +530,16 @@ def run(a, t0):
                      + json.dumps(list(SCHEMA["properties"])) + ", shaped as in this JSON Schema: " + json.dumps(SCHEMA))
     plan, notes = gate(raw, market_model.catalog(MD))
     plan["bugs"] = (research.get("bugs") or [])[:10] + plan["bugs"]
-    plan.update(version=int(time.time()), written=time.strftime("%Y-%m-%d %H:%M:%S"), by="codex marketing team")
+    plan.update(version=int(time.time()), written=time.strftime("%Y-%m-%d %H:%M:%S"), by="codex research + claude seller team")
+    try:
+        raw_obj = json.loads(raw)
+    except ValueError:
+        raw_obj = {}
+    new_lessons = [x for x in (raw_obj.get("lessons") or []) if x.get("verdict") in ("keep", "undo", "watch") and x.get("text")]
+    plan["lessons"], plan["retired"] = new_lessons[:3], [i for i in (raw_obj.get("retire_lessons") or []) if isinstance(i, int)]
+    moved = changes(promo.plan(), plan)
+    if len(moved) > 2:
+        notes.append(f"{len(moved)} levers moved (rule: at most 2): {moved}")
     print(json.dumps({k: plan[k] for k in ("pricing", "exclusive_skus", "restock", "forum_posts", "rationale")},
                      ensure_ascii=False, indent=1))
     print(f"[marketing] {len(plan['bugs'])} bugs, gate notes: {notes}, {time.time() - t0:.0f} s")
@@ -454,6 +557,13 @@ def run(a, t0):
         print(f"[marketing] report not copied to Drive: {e}")
     promo.PLAN.write_text(json.dumps({k: v for k, v in plan.items() if k not in ("bugs", "forum_posts")},
                                      ensure_ascii=False, indent=1), encoding="utf-8")
+    if history:                                     # the last plan's outcome, judged now
+        history[-1]["outcome"] = b["scorecard"]
+        HISTORY.write_text("".join(json.dumps(h, ensure_ascii=False) + "\n" for h in history[-200:]), encoding="utf-8")
+    with HISTORY.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"metrics": now_m, "changes": moved, "plan_version": plan["version"]}, ensure_ascii=False) + "\n")
+    LESSONS.write_text(json.dumps(curate(lessons, plan["retired"], plan["lessons"], time.time()), ensure_ascii=False,
+                                  indent=1), encoding="utf-8")
     with (OUT / "issues.jsonl").open("a", encoding="utf-8") as f:
         for bug in plan["bugs"]:
             f.write(json.dumps({"ts": stamp, **bug}, ensure_ascii=False) + "\n")
