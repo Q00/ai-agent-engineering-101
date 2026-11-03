@@ -5,8 +5,8 @@ Without --once it runs forever: the first run 60 s after start, then every inter
 Each run reads the shop's SKILL.md, logs and .market/inventory.json (no other .market file), and may
 rewrite tunable numbers and stock.focus_skus in SKILL.md.
 Environment: SHOP_HOME, STRATEGIST_HOME, STRATEGIST_MODE, STRATEGIST_INTERVAL_S, MARKET_URL,
-STRATEGIST_HARNESS_CMD (else HARNESS_CMD), STRATEGIST_LOG_REPO, STRATEGIST_LOG_BRANCH, STRATEGIST_LOG_KEY
-(after each run, push the records there).
+STRATEGIST_HARNESS_CMD (unset: model/harness.py's HARNESS_CMD or Haiku 5.5), STRATEGIST_LOG_REPO,
+STRATEGIST_LOG_BRANCH, STRATEGIST_LOG_KEY (after each run, push the records there).
 """
 import argparse
 import json
