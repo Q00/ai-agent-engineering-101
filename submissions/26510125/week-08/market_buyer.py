@@ -258,9 +258,9 @@ def vote_forum(md: Path, mem: dict, limit=3):
 
 
 def forum_post(md: Path, text: str):
-    """At most one buyer post per 30 minutes: a price report is news, a stream of them is spam."""
+    """One buyer post per 10 minutes: posts now count 0.1 of buyer ALL (week-09 rule), but a 5-min stream reads as spam."""
     stamp = md / "last_buyer_post"
-    if time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) < 1800:
+    if time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) < 600:
         return
     with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:
         f.write(json.dumps({"post": text, "refs": [], "as": "buyer"}, ensure_ascii=False) + "\n")
