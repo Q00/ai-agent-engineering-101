@@ -213,6 +213,15 @@ def main():
                   flush=True)
     except Exception as e:
         print(f"[forum] skipped: {type(e).__name__}: {e}", flush=True)
+    try:                                   # the Enuri team's book for the buyer: passive, rebuilt every tick_s
+        import enuri
+        card = enuri.tick(md, c)
+        if card is not None:
+            acc = enuri.book().get("enuri_accountability") or {}
+            print(f"[enuri] book rebuilt: {card.get('deals', 0)} deals scored, mae {card.get('mae')}, "
+                  f"missed {acc.get('missed', 0)}, wrong {acc.get('wrong', 0)}, lost {acc.get('lost', 0)} (24 h)", flush=True)
+    except Exception as e:
+        print(f"[enuri] skipped: {type(e).__name__}: {e}", flush=True)
     print(f"[restock] {len(buy)} lines, cash above reserve after: {cash:,.0f}; " + "; ".join(why[:10]), flush=True)
     print(json.dumps({"buy": buy}, ensure_ascii=False), flush=True)
 
