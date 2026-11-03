@@ -372,7 +372,7 @@ def main():
         return 0
 
     if not r3:                                    # rounds 1-2: one shop, picked in code (not graded: no model use)
-        shop, reason = pick_in_code(shops, mine), "code: most honest deals of mine, then average stars"
+        shop, reason = pick_in_code(shops, mine), "code: lowest share of budget paid there (20% of orders explore)"
         sku = None
         log(f"[choose] {shop['url']}: {reason}")
         attempt = trade(lambda: negotiate(Peer(shop["url"]), a.item, a.budget, t0), a.item, a.budget)
