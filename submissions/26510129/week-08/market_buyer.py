@@ -143,7 +143,12 @@ def negotiate(url, item, budget, reference, record="", request=None):
         d = harness.decide(buyer_policy.NEGOTIATOR_SYSTEM,
                            f"Item: {item}. Personal reference price: {reference}. {record}\n"
                            f"Transcript so far:\n{transcript}{meta}\nDecide your next move.")
-        if d is None or d.get("action") == "walk_away" or "price" not in d:
+        if d is None:
+            fallback = buyer_policy.public_fallback_offer(reference, ask, round_index)
+            d = {"action": "offer", "price": fallback}
+            buyer_policy.emit("buyer_model_fallback", item=item, task=tid[:8], round=round_index + 1,
+                              reference=reference, ask=ask, proposal=fallback)
+        if d.get("action") == "walk_away" or "price" not in d:
             print("[buyer] walking away", flush=True)
             rpc(rpc_url, "CancelTask", {"id": tid})
             return "walked_away", None, None, log, manip, info

@@ -4,6 +4,12 @@ import buyer_policy
 
 
 class PortfolioRouterTest(unittest.TestCase):
+    def test_public_fallback_is_budget_blind_and_moves_to_reference(self):
+        self.assertEqual(92, buyer_policy.public_fallback_offer(100, 120, 0))
+        self.assertEqual(96, buyer_policy.public_fallback_offer(100, 120, 1))
+        self.assertEqual(100, buyer_policy.public_fallback_offer(100, 120, 2))
+        self.assertEqual(80, buyer_policy.public_fallback_offer(100, 80, 2))
+
     def test_good_reviews_beat_bad_reviews_for_unknown_shops(self):
         bad = {"name": "bad", "reviews": [{"stars": 1}, {"stars": 2}]}
         good = {"name": "good", "reviews": [{"stars": 5}, {"stars": 4}]}

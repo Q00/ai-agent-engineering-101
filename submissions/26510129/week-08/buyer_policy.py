@@ -31,6 +31,15 @@ def emit(event, **fields):
     print("[strategy] " + json.dumps({"event": event, **fields}, ensure_ascii=False, sort_keys=True), flush=True)
 
 
+def public_fallback_offer(reference, ask, round_index):
+    """Budget-blind offer used only when the model/API is unavailable."""
+    progress = min(max(int(round_index), 0), 2)
+    anchor = max(1, int(round(float(reference) * (0.92 + 0.04 * progress))))
+    if _number(ask) and ask > 0:
+        return max(1, min(anchor, int(round(float(ask)))))
+    return anchor
+
+
 def _number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 

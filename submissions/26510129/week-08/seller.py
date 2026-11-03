@@ -194,12 +194,12 @@ def build(cfg, port):
     executor = Seller(cfg)
     cats = sorted({it["category"] for it in executor.items})
     if cfg["catalog"] == DEFAULT["catalog"]:
-        description = "Sells desk lamps, chairs and bookshelves. A Claude Code (haiku) harness sets every price."
+        description = "Sells desk lamps, chairs and bookshelves. A bounded GPT-6 Luna harness proposes prices."
         skill = "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt."
         examples = ["I want to buy a lamp", "90"]
     else:
         description = (f"{cfg['name']}: sells {', '.join(cats)} ({len(executor.items)} items). "
-                       "A Claude Code (haiku) harness picks the item and sets every price.")
+                       "A bounded GPT-6 Luna harness picks the item and proposes prices.")
         skill = (f"Describe what you need ({' / '.join(cats)}). The shop finds a fitting item, asks a price, "
                  "and answers each offer with a counteroffer or a receipt.")
         examples = ["a dimmable desk lamp for reading", "90"]

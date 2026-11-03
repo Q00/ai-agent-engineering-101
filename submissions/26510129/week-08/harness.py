@@ -1,44 +1,94 @@
-"""The one place that talks to the harness (Claude Code, haiku).
+"""The one place that talks to the OpenAI Responses API.
 
     decide(system, situation) -> dict    parsed from the one-line JSON the model answers
 
-The role and the rules go in --system-prompt (haiku refuses a "you are a shop" that
-arrives as the user message; see REPORT.md part 3). The current situation goes in on
-stdin. The command is the one from the week-06 notes, run in an empty directory so
-no CLAUDE.md or AGENTS.md is read.
+The model only proposes a small JSON decision.  Deterministic code still owns the
+budget, inventory, receipt checks, and signing authority.  OPENAI_API_KEY or
+OPENROUTER_API_KEY is read from the environment and never written to disk or logs.
 """
 import json
 import os
 import re
-import subprocess
 import sys
-import tempfile
 import time
+import urllib.error
+import urllib.request
 
-CMD = ["claude", "-p", "--model", "haiku", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
-TIMEOUT = 60          # seconds per harness call; the kit stops a buyer after 300 s, so 1 + RETRIES calls must fit
-RETRIES = 2           # extra attempts when the answer is not one JSON object
+OPENAI_API_URL = "https://api.openai.com/v1/responses"
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/responses"
+MODEL = os.environ.get("OPENAI_MODEL", "gpt-6-luna")
+MAX_OUTPUT_TOKENS = 48
+TIMEOUT = 30          # the kit stops a buyer after 300 s; fail closed instead of blocking it
+RETRIES = 1           # one malformed-output retry; keep token use bounded
 
-EMPTY_DIR = tempfile.mkdtemp(prefix="a2a-harness-")
+
+def _payload(system: str, situation: str) -> dict:
+    return {
+        "model": MODEL,
+        "reasoning": {"effort": "none"},
+        "instructions": system,
+        "input": situation,
+        "max_output_tokens": MAX_OUTPUT_TOKENS,
+    }
 
 
-def _env():
-    # Claude Code refuses to start inside another Claude Code session; the trade test may be run from one.
-    return {k: v for k, v in os.environ.items() if not k.startswith("CLAUDECODE") and k != "CLAUDE_CODE_ENTRYPOINT"}
+def _route() -> tuple[str, str, str, str] | None:
+    """Return provider, endpoint, model id, and key without logging the key."""
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openrouter_key:
+        model = MODEL if "/" in MODEL else f"openai/{MODEL}"
+        return "openrouter", OPENROUTER_API_URL, model, openrouter_key
+    if openai_key and openai_key.startswith("sk-or-v1"):
+        model = MODEL if "/" in MODEL else f"openai/{MODEL}"
+        return "openrouter", OPENROUTER_API_URL, model, openai_key
+    if openai_key:
+        return "openai", OPENAI_API_URL, MODEL.removeprefix("openai/"), openai_key
+    return None
+
+
+def _output_text(response: dict) -> str:
+    """Collect every output_text part; Responses may include non-message items."""
+    chunks = []
+    for item in response.get("output") or []:
+        for part in item.get("content") or []:
+            if part.get("type") == "output_text" and isinstance(part.get("text"), str):
+                chunks.append(part["text"])
+    return "\n".join(chunks).strip()
 
 
 def call(system: str, situation: str) -> str:
     t0, size = time.time(), len(system) + len(situation)
-    try:
-        r = subprocess.run(CMD + ["--system-prompt", system], input=situation, capture_output=True, text=True,
-                           timeout=TIMEOUT, cwd=EMPTY_DIR, env=_env())
-    except subprocess.TimeoutExpired:   # day 1 in the market: 6 buyer runs died of this with a traceback
-        print(f"[harness] no answer in {TIMEOUT}s (in={size}ch); treated as no answer", file=sys.stderr, flush=True)
+    route = _route()
+    if route is None:
+        print("[harness] no OpenAI/OpenRouter API key is set; treated as no answer", file=sys.stderr, flush=True)
         return ""
-    out = r.stdout.strip()
-    print(f"[harness] {time.time() - t0:.1f}s exit {r.returncode} in={size}ch -> {out[:200]!r}", file=sys.stderr, flush=True)
-    if r.returncode != 0:
-        print(f"[harness] stderr: {r.stderr.strip()[:300]}", file=sys.stderr, flush=True)
+    provider, api_url, model, api_key = route
+    payload = _payload(system, situation)
+    payload["model"] = model
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    request = urllib.request.Request(
+        api_url,
+        data=body,
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=TIMEOUT) as raw:
+            response = json.loads(raw.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read(300).decode("utf-8", errors="replace")
+        print(f"[harness] {provider} HTTP {exc.code} in={size}ch: {detail}", file=sys.stderr, flush=True)
+        return ""
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        print(f"[harness] {provider} request failed in={size}ch: {type(exc).__name__}: {exc}",
+              file=sys.stderr, flush=True)
+        return ""
+    out = _output_text(response)
+    usage = response.get("usage") or {}
+    print(f"[harness] {provider}/{model} {time.time() - t0:.1f}s in={usage.get('input_tokens', '?')}tok "
+          f"out={usage.get('output_tokens', '?')}tok chars={size} -> {out[:200]!r}",
+          file=sys.stderr, flush=True)
     return out
 
 
