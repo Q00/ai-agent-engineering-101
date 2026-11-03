@@ -11,9 +11,23 @@ from typer.testing import CliRunner
 
 import harness_app
 from r3 import buyer as fast
-from r3.manager import Manager, policy_schema
+from r3.manager import (
+    EDGE_RUNS_TO_WIDEN,
+    PROMPT,
+    Manager,
+    lenient_strategy_arguments,
+    policy_schema,
+)
 from r3.market_files import ShopEntry
-from r3.policy import Policy, load_policy, save_policy
+from r3.policy import (
+    Band,
+    Policy,
+    load_history,
+    load_policy,
+    save_policy,
+    save_tactical,
+    widen_band,
+)
 from tests.r3_stock import KIMCHI, LAMP, unit, write_market
 
 if TYPE_CHECKING:
@@ -162,3 +176,60 @@ def test_manager_summary_and_schema_work_without_network_or_model(
     # And: a saved policy version is what the next decision reads.
     _ = save_policy(manager.policy_file, Policy(), "test")
     assert manager.summary()["policy"]["version"] == 2
+
+
+def test_pinned_tactical_fields_are_reported_and_their_band_widened_by_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    now = time.time()
+    run_dir = tmp_path / "run"
+    _ = write_market(run_dir / ".market", [unit(KIMCHI, 1, now=now)])
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    manager = Manager(
+        run_dir,
+        "http://127.0.0.1:9",
+        shop_url="http://us.test",
+        buyer_name="25620027",
+        shop_name="S",
+    )
+    # Given: a strategy band on accept_margin and a tactical move pinned at its top.
+    _ = save_policy(
+        manager.policy_file,
+        Policy(),
+        "s",
+        bands={"seller.accept_margin": Band(low=0.1, high=0.165)},
+    )
+    _ = save_tactical(manager.policy_file, {"seller.accept_margin": 0.165}, "up")
+    assert manager.band_edges()["seller.accept_margin"]["side"] == "high"
+    assert "tactical_at_band_edge" in manager.summary()
+    assert "tactical_at_band_edge" in PROMPT
+    # When: the field stays pinned for three tactical runs.
+    for _ in range(EDGE_RUNS_TO_WIDEN - 1):
+        edges = manager.track_band_edges()
+        assert edges["seller.accept_margin"]["band"]["high"] == 0.165
+    edges = manager.track_band_edges()
+    # Then: code widens the band by half its span on that side, keeps the overlay,
+    # records the change as its own, and restarts the count.
+    assert edges["seller.accept_margin"]["band"] == {"low": 0.1, "high": 0.1975}
+    history = load_history(manager.policy_file)
+    assert history.tactical is not None
+    assert history.bands["seller.accept_margin"].high == 0.1975
+    rows = [c for c in manager.events.recent_policy_changes(1) if c["actor"] == "code"]
+    assert rows
+    assert rows[-1]["field"] == "band:seller.accept_margin"
+    assert manager.events.loop_runs(0)[-1]["outcome"] == "nudged"
+    assert "seller.accept_margin" not in manager.band_edges()  # room again
+    # And: widening never leaves the field's own bounds.
+    assert widen_band("seller.accept_margin", Band(low=0.9, high=1.0), "high") == Band(
+        low=0.9, high=1.0
+    )
+    # And: one bad band or a text change no longer sinks a strategy proposal.
+    lenient = lenient_strategy_arguments(
+        {
+            "changes": {"seller.markup_a": 0.9, "seller.markup_b": "high"},
+            "bands": {"seller.concession": {"low": 0.2, "high": 0.4}, "x": "bad"},
+            "reason": "r",
+        }
+    )
+    assert lenient["changes"] == {"seller.markup_a": 0.9}
+    assert list(lenient["bands"]) == ["seller.concession"]

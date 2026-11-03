@@ -366,6 +366,33 @@ def save_policy(
     return stamped
 
 
+def save_bands(path: Path, bands: Mapping[str, Band]) -> dict[str, Band]:
+    """Replace the tactical bands only: no new version, the overlay stays."""
+    history = load_history(path)
+    kept = validate_bands(bands, history.base())
+    _write(path, history.model_copy(update={"bands": kept}))
+    return kept
+
+
+def widen_band(key: str, band: Band, side: str, share: float = 0.5) -> Band:
+    """Extend ``band`` on ``side`` ("low" or "high") by ``share`` of its span.
+
+    Clipped to the field's own bounds; an already fully open side stays put.
+    """
+    span = max(band.high - band.low, 1e-6)
+    low, high = field_bounds(key)
+    new_low, new_high = band.low, band.high
+    if side == "low":
+        new_low = band.low - span * share
+        if low is not None:
+            new_low = max(new_low, low)
+    else:
+        new_high = band.high + span * share
+        if high is not None:
+            new_high = min(new_high, high)
+    return Band(low=round(new_low, 6), high=round(new_high, 6))
+
+
 def strategy_changes(changes: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
     """Refuse strategy changes that touch tactical fields (one owner per field)."""
     for key in changes:

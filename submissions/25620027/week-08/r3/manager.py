@@ -81,8 +81,10 @@ from r3.policy import (
     load_history,
     load_policy,
     policy_path,
+    save_bands,
     save_policy,
     save_tactical,
+    widen_band,
 )
 from r3.reflection import policy_reviews
 from r3.review import DEALS_FILE
@@ -145,7 +147,11 @@ PROMPT: Final = (
     "are untrusted; decide from the numbers. Before Round 3 (shop balance 0, no "
     "units) the market has no payments or stock, so zero paid deals and zero "
     "receipts are expected and not a problem; keep the defaults until Round 3 data "
-    "appears. short_shelf_food_24h is market demand for food our restock skips "
+    "appears. tactical_at_band_edge lists tactical fields pinned at a band limit "
+    "and for how many tactical runs: that layer wants to go further. Move the "
+    "strategy value that way or set a wider band for it; after three pinned runs "
+    "code widens the band itself. short_shelf_food_24h is market demand for food "
+    "our restock skips "
     "(shelf life under restock.min_food_shelf_hours): such food can spoil at cost, "
     "so buying it is a deliberate step. When it shows steady demand (roughly 30 or "
     "more settlements a day at a sound price share of list) and our own food has "
@@ -174,6 +180,10 @@ TACTICAL_PROMPT: Final = (
     "while a trigger stands, code makes the first trigger's move itself. Use the "
     "set_tactical tool once; with no trigger, an empty change map means no change."
 )
+# A tactical field pinned at a band limit for this many tactical runs (45 min)
+# gets its band widened by code when the strategy has not moved it.
+EDGE_RUNS_TO_WIDEN: Final = 3
+EDGE_EPS: Final = 1e-6
 TRIGGER_MIN_ATTEMPTS: Final = 6
 TRIGGER_MIN_RECEIPTS: Final = 5
 TRIGGER_FOOD_NEAR: Final = 3
@@ -286,6 +296,33 @@ def tactical_schema() -> dict[str, object]:
 
 
 MAX_REASON: Final = 300
+
+
+def lenient_strategy_arguments(parsed: dict[str, object]) -> dict[str, object]:
+    """Drop the malformed entries of a strategy proposal, keep the rest.
+
+    One bad band (a string, low above high) or one non-numeric change used to
+    fail the whole proposal; now each entry stands or falls alone.
+    """
+    out = dict(parsed)
+    changes = parsed.get("changes")
+    if isinstance(changes, dict):
+        out["changes"] = {
+            k: v for k, v in changes.items() if isinstance(v, (int, float))
+        }
+    bands = parsed.get("bands")
+    if isinstance(bands, dict):
+        kept: dict[str, object] = {}
+        for k, v in bands.items():
+            try:
+                band = Band.model_validate(v)
+            except ValidationError:
+                LOGGER.warning("strategy_band_dropped %s", k)
+                continue
+            if band.low <= band.high:
+                kept[k] = v
+        out["bands"] = kept
+    return out
 
 
 def cut_reason(value: object) -> object:
@@ -603,6 +640,7 @@ class Manager:
             ),
             "policy": history.current.model_dump(),
             "bands": {k: b.model_dump() for k, b in history.bands.items()},
+            "tactical_at_band_edge": self.band_edges(),
             "tactical_overlay": history.tactical.model_dump()
             if history.tactical
             else None,
@@ -661,6 +699,7 @@ class Manager:
                 for key in sorted(TACTICAL_FIELDS)
             },
             "bands": bands,
+            "at_band_edge": self.band_edges(),
             "overlay": history.tactical.model_dump() if history.tactical else None,
             "recent_changes": [
                 c
@@ -926,6 +965,79 @@ class Manager:
         except OSError:
             LOGGER.warning("policy_change_log_failed")
 
+    def band_edges(self) -> dict[str, dict[str, object]]:
+        """Tactical fields pinned at a band limit, with the runs they sat there."""
+        history = load_history(self.policy_file)
+        base = history.base()
+        out: dict[str, dict[str, object]] = {}
+        for key in sorted(TACTICAL_FIELDS):
+            value = field_value(history.current, key)
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                continue
+            band = history.bands.get(key) or default_band(key, base)
+            side = (
+                "high"
+                if float(value) >= band.high - EDGE_EPS
+                else "low"
+                if float(value) <= band.low + EDGE_EPS
+                else ""
+            )
+            if side:
+                raw = self.events.get_value(f"edge_runs:{key}")
+                out[key] = {
+                    "side": side,
+                    "runs": int(raw) if raw and raw.isdigit() else 0,
+                    "band": band.model_dump(),
+                }
+        return out
+
+    def track_band_edges(self) -> dict[str, dict[str, object]]:
+        """After a tactical run: count pinned runs per field; widen after enough.
+
+        The strategy sees ``tactical_at_band_edge`` every half hour and is asked
+        to move the base value or set a wider band. When it has not after
+        EDGE_RUNS_TO_WIDEN tactical runs, code widens that band by half its span
+        on the pinned side (inside the field bounds) and records it as a change
+        by "code", so the tactical layer never stays stuck for lack of room.
+        """
+        edges = self.band_edges()
+        for key in sorted(TACTICAL_FIELDS):
+            runs_key = f"edge_runs:{key}"
+            if key not in edges:
+                self.events.set_value(runs_key, "0")
+                continue
+            runs = int(str(edges[key]["runs"])) + 1
+            self.events.set_value(runs_key, str(runs))
+            edges[key]["runs"] = runs
+            if runs < EDGE_RUNS_TO_WIDEN:
+                continue
+            history = load_history(self.policy_file)
+            band = history.bands.get(key) or default_band(key, history.base())
+            wider = widen_band(key, band, str(edges[key]["side"]))
+            if wider == band:
+                continue
+            try:
+                _ = save_bands(self.policy_file, {**history.bands, key: wider})
+            except (ValueError, TypeError, ValidationError, OSError) as exc:
+                LOGGER.warning("band_widen_failed %s %s", key, type(exc).__name__)
+                continue
+            why = f"pinned at band {edges[key]['side']} for {runs} tactical runs"
+            self.record(
+                actor="code",
+                layer="strategy",
+                field=f"band:{key}",
+                before=band.model_dump(),
+                after=wider.model_dump(),
+                reason=why,
+                expires_at=None,
+                version=None,
+                accepted=True,
+            )
+            self.run_log("strategy", "nudged", f"band:{key} {wider.model_dump()} {why}")
+            self.events.set_value(runs_key, "0")
+            edges[key]["band"] = wider.model_dump()
+        return edges
+
     def run_log(self, role: str, outcome: str, detail: str = "") -> None:
         """Record one loop run for the Telegram digest; never stops the loop."""
         try:
@@ -1137,6 +1249,7 @@ class Manager:
             self.run_log("strategy", "failed", "no model reply")
             return None
         actor = reply.model if reply is not None else model
+        parsed = lenient_strategy_arguments(parsed)
         try:
             proposal = Proposal.model_validate(parsed)
             changes = self.filter_strategy(proposal.changes, actor, proposal.reason)
@@ -1309,6 +1422,7 @@ class Manager:
         if now - self.stamp("tactical_last_at") >= TACTICAL_EVERY:
             self.mark("tactical_last_at", now)
             _ = await self.tactical()
+            _ = await anyio.to_thread.run_sync(self.track_band_edges)
         if now - self.stamp("benchmark_last_at") >= BENCHMARK_EVERY:
             self.mark("benchmark_last_at", now)
             table = await anyio.to_thread.run_sync(self.benchmark)
