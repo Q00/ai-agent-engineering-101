@@ -3,6 +3,23 @@ import math
 import re
 
 
+STAGE_RULES = {
+    "opening": (
+        "Return counter with a competitive first quote. If opening_bounds exists, stay within "
+        "its minimum/maximum; target/source are limited evidence, not an optimal price. "
+        "Without bounds, use actual product facts, not invented competitor prices."),
+    "negotiate": (
+        "Seek a profitable sale quickly. Accept a reasonable buyer_offer at or above price_floor "
+        "rather than risk losing it for a small margin. Otherwise counter; never reject just for a low bid."),
+    "close": (
+        "You MUST accept buyer_offer exactly if it meets price_floor. Otherwise counter with a "
+        "modest concession toward price_floor. Never reject at this stage."),
+    "final_offer": (
+        "You MUST accept buyer_offer exactly if it meets price_floor. Otherwise counter at EXACTLY "
+        "price_floor. The buyer gets a separate chance to accept this final quote; do not reject now."),
+}
+
+
 def excerpt(text, limit):
     if len(text) <= limit:
         return text
@@ -35,6 +52,9 @@ def price_memory(history, offer):
 
 def inventory_context(product, offer, history, last_ask, terms, negotiation, advice, *, now):
     """Project a private snapshot; full terms and validation stay in the caller."""
+    stage = negotiation["stage"]
+    if stage not in STAGE_RULES:
+        raise ValueError("No model decision is allowed for seller stage: " + str(stage))
     facts = {k: product.get(k) for k in ("sku", "name", "category", "kind", "cost", "list_price", "grade")}
     facts["name"] = excerpt(str(facts["name"] or ""), 160)
     facts["category"] = excerpt(str(facts["category"] or ""), 100)
@@ -54,5 +74,6 @@ def inventory_context(product, offer, history, last_ask, terms, negotiation, adv
         "product": facts, "price_floor": negotiation["price_floor"],
         "sales_terms": {"price_floor": terms["price_floor"], "warranty_hours": terms["warranty_hours"]},
         "negotiation": plan, "buyer_offer": offer, "last_ask": last_ask,
+        "stage_rule": STAGE_RULES[stage],
         "history": price_memory(history, offer), "sales_advisor": advice,
     }

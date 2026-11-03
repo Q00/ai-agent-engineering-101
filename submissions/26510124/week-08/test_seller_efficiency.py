@@ -13,7 +13,7 @@ from starlette.testclient import TestClient
 from feedback import atomic_json
 from harness import HarnessError
 from seller_agent import DEFAULT, build
-from seller_context import inventory_context, price_memory
+from seller_context import STAGE_RULES, inventory_context, price_memory
 from seller_r3 import InventorySeller, inventory_decision
 from shop_policy import closing_context, policy_at, quote_copy, selling_terms
 from test_adaptive_seller import send
@@ -24,6 +24,55 @@ ROOT = Path(__file__).resolve().parent
 
 
 class SellerContextTests(unittest.TestCase):
+    def test_each_stage_sends_only_its_instruction_and_keeps_output_guards(self):
+        product = unit()
+        terms = selling_terms(product, policy_at())
+        cases = (
+            ("opening", None, None, {"action": "counter", "price": 85000}, {"action": "accept", "price": 85000}),
+            ("negotiate", 74000, 85000, {"action": "accept", "price": 74000}, {"action": "counter", "price": 86000}),
+            ("close", 74000, 85000, {"action": "accept", "price": 74000}, {"action": "counter", "price": 75000}),
+            ("final_offer", 70000, 80000, {"action": "counter", "price": 73500}, {"action": "counter", "price": 74000}),
+        )
+        for stage, offer, ask, valid, invalid in cases:
+            with self.subTest(stage=stage):
+                plan = {"stage": stage, "price_floor": terms["price_floor"]}
+                def model(prompt, context, validate, **kwargs):
+                    text = (ROOT / "prompts" / prompt).read_text() + "\n" + json.dumps(context)
+                    self.assertLess(len(text), 2800)
+                    self.assertIn(STAGE_RULES[stage], text)
+                    for other, rule in STAGE_RULES.items():
+                        if other != stage:
+                            self.assertNotIn(rule, text)
+                    with self.assertRaises(HarnessError):
+                        validate(json.dumps({**invalid, "reason": "invalid fixture"}))
+                    return validate(json.dumps({**valid, "reason": "valid fixture"}))
+                with patch("seller_r3.decide", side_effect=model) as model:
+                    result = inventory_decision({**product, "sales_terms": terms, "negotiation": plan}, offer, [], ask)
+                self.assertEqual(model.call_count, 1)
+                self.assertEqual(result["price"], valid["price"])
+
+    def test_model_cannot_change_original_floor_through_projected_context(self):
+        product = unit(grade="A")
+        terms = selling_terms(product, policy_at())
+        plan = {"stage": "negotiate", "price_floor": 77000}
+        def model(_, context, validate, **kwargs):
+            context["price_floor"] = 1
+            context["sales_terms"]["price_floor"] = 1
+            context["negotiation"]["stage"] = "final_offer"
+            return validate('{"action":"accept","price":76000,"reason":"tampered"}')
+        with patch("seller_r3.decide", side_effect=model), self.assertRaises(HarnessError):
+            inventory_decision({**product, "sales_terms": terms, "negotiation": plan}, 76000, [], 85000)
+        self.assertEqual(plan, {"stage": "negotiate", "price_floor": 77000})
+        self.assertEqual(terms["price_floor"], 77000)
+
+    def test_final_reply_and_invalid_stages_never_start_a_model(self):
+        for stage in ("final_reply", "unknown"):
+            product = unit()
+            product["negotiation"] = {"stage": stage, "price_floor": 73500}
+            with patch("seller_r3.decide") as model, self.assertRaises(HarnessError):
+                inventory_decision(product, 70000, [], 73500)
+            model.assert_not_called()
+
     def test_repeated_quote_copy_becomes_exact_prices_without_current_bid_duplication(self):
         product = unit(grade="A")
         terms = selling_terms(product, policy_at())

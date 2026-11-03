@@ -62,7 +62,10 @@ def inventory_decision(product, offer, history, last_ask, advice=None):
     def validate(raw):
         return validate_choice(parse_seller(raw, negotiation["price_floor"], offer),
                                offer, last_ask, negotiation)
-    context = inventory_context(product, offer, history, last_ask, terms, negotiation, advice, now=time.time())
+    try:
+        context = inventory_context(product, offer, history, last_ask, terms, negotiation, advice, now=time.time())
+    except ValueError as exc:
+        raise HarnessError(str(exc)) from exc
     print("[seller-context] " + json.dumps({"stage": negotiation["stage"],
           "context_chars": len(json.dumps(context, ensure_ascii=False))}), flush=True)
     return decide("seller_inventory.txt", context, validate, prefix="inventory-seller")
