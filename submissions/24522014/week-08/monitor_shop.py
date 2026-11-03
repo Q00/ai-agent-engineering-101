@@ -10,6 +10,7 @@ from uuid import uuid4
 
 import httpx
 from monitor_triage import prepare
+from market_intel import competition
 
 ROOT = Path(__file__).resolve().parent
 LOGS = ROOT / "logs" / "shop-monitor"
@@ -37,6 +38,8 @@ def main():
                       deals=shop.get("deals"), visits=shop.get("visits"),
                       stars=shop.get("stars"), reviews=shop.get("reviews"),
                       recent_reviews=listing.get("reviews", []))
+        record["competition"] = competition(board)
+        record["alerts"].extend(record["competition"]["alerts"])
         if shop.get("alive") is False:
             record["alerts"].append("Market reports shop is not alive; inspect connection and kit logs.")
         previous = None

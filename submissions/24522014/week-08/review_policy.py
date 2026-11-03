@@ -10,6 +10,7 @@ import time
 
 from r3_policy import buyer_accept
 from buyer_portfolio import save_deal
+from forum_policy import queue_report
 
 ROOT = Path(__file__).resolve().parent
 
@@ -83,6 +84,15 @@ def main():
         with path.open("x", encoding="utf-8") as stream:
             json.dump(record, stream, ensure_ascii=False, indent=2)
             stream.write("\n")
+    # Posting failure must not discard the review or invent a successful post.
+    try:
+        status = queue_report(ROOT / ".market", deal, result)
+    except (OSError, ValueError, TypeError) as error:
+        status = f"queue_error: {type(error).__name__}: {error}"
+    (ROOT / "logs" / "forum-policy").mkdir(parents=True, exist_ok=True)
+    attempt = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    (ROOT / "logs" / "forum-policy" / f"{attempt}-{key[:8]}.json").write_text(
+        json.dumps({"ledger": ledger, "status": status, "posted": "left to kit outbox"}) + "\n", encoding="utf8")
     print(json.dumps(result, ensure_ascii=False))
 
 

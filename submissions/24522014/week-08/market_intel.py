@@ -61,10 +61,35 @@ def competition(board, login="kcwarni"):
                       if me and finite(me.get(key)) and all(finite(r.get(key)) for r in players)), None)
     ranked = sorted(players, key=lambda r: -r[score_key]) if score_key else []
     rank = 1 + sum(r[score_key] > me[score_key] for r in players) if score_key else (me or {}).get("rank")
+    components = {}
+    weights = {"shops": {"profit": .5, "revenue": .3, "stars": .2},
+               "buyers": {"surplus": .5, "rating": .3, "deals": .2}}
+    if board.get("round") == 3:
+        for group, fields in weights.items():
+            mine_row = mine[group] or {}
+            eligible = [r for r in board.get(group, []) if r.get("deals", 0) > 0]
+            for field, weight in fields.items():
+                values = [r[field] for r in eligible if finite(r.get(field))]
+                value = mine_row.get(field)
+                components[f"{group}.{field}"] = {"weight": weight, "value": value,
+                    "observed_participants": len(values),
+                    "ahead_of_percent": 100*sum(v < value for v in values)/len(values)
+                        if finite(value) and values else None,
+                    "tied": sum(v == value for v in values) if finite(value) else None}
+    alerts = []
+    if board.get("round") == 3:
+        for group, row in mine.items():
+            if (row or {}).get("deals", 0) < 20:
+                alerts.append(f"{group}: fewer than 20 settled deals")
+        if not score_key:
+            alerts.append("Official player score unavailable; Top 3 gap is unknown.")
+        if any(r["ahead_of_percent"] is None for r in components.values()):
+            alerts.append("Some component fields unavailable; no synthetic ALL score calculated.")
     return {"round": board.get("round"), "official_player": me, "rank": rank,
             "player_count": len(players), "score_field": score_key,
             "gap_to_third": max(0, ranked[2][score_key] - me[score_key]) if len(ranked) >= 3 else None,
-            "own": mine, "top3": ranked[:3], "complete_score_available": bool(score_key)}
+            "own": mine, "top3": ranked[:3], "complete_score_available": bool(score_key),
+            "diagnostic_components": components, "alerts": alerts}
 
 
 def collect(root=ROOT, client=None, now=None):
@@ -105,6 +130,14 @@ def collect(root=ROOT, client=None, now=None):
         result = {"round": round_number, "observed_at": now, "cursor": cursor, "rows": rows,
                   "pages": pages, "catching_up": behind, "bounded_sample": True,
                   "skus": summarize(rows, catalog, now), "competition": competition(board)}
+        inventory = read(md / "inventory.json", {})
+        if inventory.get("round") == 3:
+            result["cash_risk"] = {"balance": inventory.get("balance"),
+                                   "bankrupt_line": inventory.get("bankrupt_line", 500000),
+                                   "bankruptcies_left": inventory.get("bankruptcies_left"),
+                                   "bankruptcy_requested": False}
+            if inventory.get("balance", 0) < 1000000:
+                result["competition"]["alerts"].append("Cash below emergency reserve; check storage/refunds. New buying is guarded separately.")
         write(md / "market-intel.json", result)
         write(root / "logs/market-intel" / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid4().hex[:8] + ".json"), result)
         return result
