@@ -49,15 +49,15 @@ SCHEMA = {
 PROMPT = """You are the finance team of an agent shop named "dragonash" in a classroom agent market (Round 3).
 The sales team (Claude) is the brain and decides prices, promotions and what to stock; you are its independent
 check. You ADVISE: the headquarters wants the sales team to decide, and you may block it only when a risk is
-fatal (cash about to fall under 15% of the start, or losses over 15% of it); short of that a "stop" is read as
-"caution", window_spend keeps at least 0.03 and cash_floor is capped at 0.20 (HQ: 1,000,000). Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000 at the
+fatal (cash about to fall under 10% of the start, or losses over 15% of it); short of that a "stop" is read as
+"caution", window_spend keeps at least 0.03 and cash_floor is capped at 0.12 (HQ: 600,000). Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000 at the
 end of the round (stock still unsold then is lost money; bankruptcy aid is subtracted). From the brief:
 - verdict: ok, caution (advice must be followed) or stop (no new stock spend this hour)
 - advice: 2-5 concrete points for the sales team, with numbers (margins too thin, cash tied in slow stock, a
   promotion that costs more than it brings, warranty or guarantee exposure, ...)
 - limits (binding; the code enforces them over the sales plan): min_margin over cost (0.05-0.60),
   window_spend as a share of the 5,000,000 start per supply window (0.0-1.0), cash_floor as a share of the start
-  (0.15-0.80), max_warranty_h (0, 3 or 6), max_undercut under the market median for follow pricing (0.0-0.05)
+  (0.10-0.80), max_warranty_h (0, 3 or 6), max_undercut under the market median for follow pricing (0.0-0.05)
 - forecast_profit_per_h: your forecast of the change in profit per hour over the next hour
 - lessons: score your last forecast and limits with brief.scorecard and brief.history (1-3 lessons, keep / undo /
   watch); brief.lessons are your standing lessons with their index; retire stale or wrong ones by index
@@ -131,7 +131,7 @@ def hq_directive():
     return hq[-1] if hq else None
 
 
-FATAL_CASH, FATAL_LOSS, MIN_SPEND, MAX_FLOOR = 0.15, 0.15, 0.03, 0.20   # HQ 11-04 02:40: floor 1.0M, fatal 0.75M
+FATAL_CASH, FATAL_LOSS, MIN_SPEND, MAX_FLOOR = 0.10, 0.15, 0.03, 0.12   # HQ 11-04 02:45: floor 0.6M, fatal 0.5M
 # (stock sells in 12 min, cash returns before the next window; the bankruptcy line is 500,000 with stock left)
 MAX_SPEND = 1.0            # HQ 11-04 02:40: no window cap, cash decides (stock turns in 12 min)
 
@@ -150,7 +150,7 @@ def gate(raw, snap=None):
     w = int(lim.get("max_warranty_h", 6))
     limits = {"min_margin": round(clamp(lim.get("min_margin", 0.2), 0.05, 0.60), 3),
               "window_spend": round(clamp(lim.get("window_spend", 0.04), 0.0, MAX_SPEND), 3),
-              "cash_floor": round(clamp(lim.get("cash_floor", 0.5), 0.15, 0.80), 3),
+              "cash_floor": round(clamp(lim.get("cash_floor", 0.5), 0.10, 0.80), 3),
               "max_warranty_h": w if w in (0, 3, 6) else 0,
               "max_undercut": round(clamp(lim.get("max_undercut", 0.03), 0.0, 0.05), 3)}
     verdict = p.get("verdict") if p.get("verdict") in ("ok", "caution", "stop") else "caution"
