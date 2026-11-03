@@ -53,7 +53,9 @@ GUARD = HERE / "private" / "team_guard.json"
 #   a usage/rate-limit error from Codex or Claude: cool down 3 h; 3 failures in a row: 1 h; at most 40 runs a day;
 #   headquarters can pause it by setting "paused": true
 LIMITS = {"overnight_min": 28, "normal_min": 118, "max_runs_day": 40, "limit_cooldown_h": 3, "fail_cooldown_h": 1,
-          "normal_when_all": 0.6}
+          "normal_when_all": 0.85}             # HQ 11-04: rest only near the top (0.6 put the team to sleep at rank 18)
+TEAM_GAP = {"overnight": 25 * 60, "normal": 55 * 60}   # how often SCM, finance and the buyer team meet
+MODE = {"now": "overnight"}
 LIMIT_RE = re.compile(r"usage limit|rate.?limit|quota|429|too many requests|limit reached|exceeded", re.I)
 REPORTS = Path(os.environ.get("TEAM_REPORTS", "/mnt/gdrive-imajason-kimdaehakwon/week08-reports"))
 NAME = "dragonash"
@@ -490,11 +492,12 @@ def main():
         print(f"[team] skipped: {why}")
         return
     try:
+        MODE["now"] = g.get("mode") or "overnight"
         b = run(a, t0)
         g["runs"].append({"ts": t0, "ran": True, "ok": True, "secs": int(time.time() - t0), "note": "plan written"})
         me = b["our_shop"]
-        if (me.get("all") or 0) >= LIMITS["normal_when_all"] and (me.get("profit") or -1) >= 0:
-            g["mode"] = "normal"                     # back on its feet: rest, spend fewer tokens
+        ok = (me.get("all") or 0) >= LIMITS["normal_when_all"] and (me.get("profit") or -1) >= 0
+        g["mode"] = "normal" if ok else "overnight"  # back on its feet: rest; fallen back: overnight again
     except Exception as e:
         msg = f"{type(e).__name__}: {e}"
         b = None
@@ -645,7 +648,7 @@ def run(a, t0):
         import scm_agent
         last = max((json.loads(x)["metrics"]["ts"] for x in scm_agent.HISTORY.read_text(encoding="utf-8").splitlines()
                     if x.strip()), default=0) if scm_agent.HISTORY.exists() else 0
-        if time.time() - last >= 55 * 60:
+        if time.time() - last >= TEAM_GAP[MODE["now"]]:
             scm, _ = scm_agent.run(ask_codex, dry=a.dry)
             print(f"[scm] {len(scm['orders'])} orders, {len(scm['clearance'])} markdowns, alerts {scm['alerts'][:2]}")
     except Exception as e:
@@ -655,7 +658,7 @@ def run(a, t0):
         import finance_agent
         last = max((json.loads(x)["snapshot"]["ts"] for x in finance_agent.HISTORY.read_text(encoding="utf-8").splitlines()
                     if x.strip()), default=0) if finance_agent.HISTORY.exists() else 0
-        if time.time() - last >= 55 * 60:
+        if time.time() - last >= TEAM_GAP[MODE["now"]]:
             fin, _ = finance_agent.run(ask_codex, b["our_shop"], dry=a.dry)
             print(f"[finance] {fin['verdict']}: {fin['limits']}, forecast {fin['forecast_profit_per_h']}/h")
         else:
@@ -667,7 +670,7 @@ def run(a, t0):
         import buyer_team
         last = max((json.loads(x)["snapshot"]["ts"] for x in buyer_team.HISTORY.read_text(encoding="utf-8").splitlines()
                     if x.strip()), default=0) if buyer_team.HISTORY.exists() else 0
-        if time.time() - last >= 55 * 60:
+        if time.time() - last >= TEAM_GAP[MODE["now"]]:
             buyer, _ = buyer_team.run(ask_codex, board=LAST.get("board"), dry=a.dry)
             print(f"[buyer] changed {buyer['changed']}, forecast {buyer['forecast_surplus_per_h']}/h, "
                   f"enuri {buyer.get('accountability')}")
