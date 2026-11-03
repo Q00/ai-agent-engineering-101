@@ -7,6 +7,7 @@ dir="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$dir/../../.." && pwd)"
 if [ -z "$MARKET_OWNER" ]; then echo "set MARKET_OWNER to the claim code from https://market.ourolabs.ai/join" >&2; exit 1; fi
 cd "$repo"
+[ -x "$repo/.venv/bin/python3" ] && export PATH="$repo/.venv/bin:$PATH"   # a2a-sdk, uvicorn, httpx live in the repo venv
 nohup python3 scripts/market_kit.py join --dir "$dir" --market https://market.ourolabs.ai --name winun1127 --tunnel \
   >"$dir/join.out" 2>"$dir/join.err" </dev/null &
 echo $! >"$dir/kit.pid"
