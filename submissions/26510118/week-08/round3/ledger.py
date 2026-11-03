@@ -70,17 +70,34 @@ def collect(get=fetch, pages: int = PAGES) -> int:
     return n
 
 
+def names() -> dict:
+    """Shop address -> shop name. A settle entry names its shop by address (a tunnel URL, or the market's
+    /shop/<name> for a house shop), while reviews, our buyer's notebook and the forum use names."""
+    return common.read_json(folder() / "shop_names.json", {}) or {}
+
+
+def learn_names(shops: list) -> dict:
+    """Add the market's shop list (GET /api/shops: name and url) to the names kept. Old addresses stay:
+    a shop that restarts gets a new tunnel URL, and its earlier settles still carry the old one."""
+    known = names()
+    known.update({s["url"]: s["name"] for s in shops if s.get("url") and s.get("name")})
+    folder().mkdir(parents=True, exist_ok=True)
+    common.write_json(folder() / "shop_names.json", known)
+    return known
+
+
 def _mean(xs):
     return round(sum(xs) / len(xs), 3) if xs else None
 
 
 def summarize(catalog: dict, now: float | None = None) -> dict:
-    """market_summary.json: the last 24 h (and 6 h) of settles by SKU, category and shop, and
-    breakdowns by grade over everything kept (a broken entry names the buyer and the item, so it
-    is matched to that buyer's last settle of the item before it)."""
+    """market_summary.json: the last 24 h (and 6 h) of settles by SKU, category and shop (by name,
+    where the shop list gave one), and breakdowns by grade over everything kept (a broken entry
+    names the buyer and the item, so it is matched to that buyer's last settle of the item before it)."""
     now = now or time.time()
     settles = common.read_jsonl(folder() / "settles.jsonl")
     broken = common.read_jsonl(folder() / "broken.jsonl")
+    named = names()
     by_sku, by_cat, by_shop = {}, {}, {}
     for s in settles:
         ts = s.get("ts") or 0
@@ -99,7 +116,7 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
                 t["ratios"].append(s["amount"] / lp)
             t["grades"][s.get("grade")] = t["grades"].get(s.get("grade"), 0) + 1
         if s.get("shop"):
-            sh = by_shop.setdefault(s["shop"], {"settled_24h": 0, "claims": 0, "honest": 0})
+            sh = by_shop.setdefault(named.get(s["shop"], s["shop"]), {"settled_24h": 0, "claims": 0, "honest": 0})
             sh["settled_24h"] += 1
             if s.get("claim"):
                 sh["claims"] += 1

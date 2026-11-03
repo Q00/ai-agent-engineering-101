@@ -36,10 +36,12 @@ from cryptography.hazmat.primitives import serialization                     # n
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey  # noqa: E402
 
 import common                                                                    # noqa: E402
+import forum                                                                     # noqa: E402
 import ledger                                                                    # noqa: E402
 import market_buyer as mb                                                        # noqa: E402
 import pricing                                                                   # noqa: E402
 import restock                                                                   # noqa: E402
+import tools                                                                     # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("market_kit", os.environ.get("KIT_FILE")                 # the server keeps it elsewhere
@@ -342,6 +344,18 @@ def test_ledger():
     check("summary: shops' grade claims, true and false", s["by_shop"]["s2"] == {"settled_24h": 1, "claims": 1, "honest": 0})
     check("summary: a breakdown is matched to the grade that was sold", s["broken_by_grade"] == {"C": 1}
           and s["goods_sold_by_grade"] == {"C": 1}, s["broken_by_grade"])
+    ledger.learn_names([{"name": "Kiro729", "url": "s1"}, {"name": "Shop Two", "url": "s2"}])
+    ledger.learn_names([{"name": "Shop Two", "url": "s2-new"}])                 # restarted: a new tunnel address
+    s = ledger.summarize(CATALOG, NOW)
+    check("the ledger names shops by address: the summary keys them by name; an old address keeps its name",
+          set(s["by_shop"]) == {"Kiro729", "Shop Two"} and s["by_shop"]["Shop Two"]["claims"] == 1
+          and ledger.names() == {"s1": "Kiro729", "s2": "Shop Two", "s2-new": "Shop Two"}, s["by_shop"])
+    rows = common.read_jsonl(ledger.folder() / "settles.jsonl")
+    reply = forum.data_reply("침구", s, rows, CATALOG, NOW, ledger.names())
+    check("a data reply names the seller, and leaves our own shop out", "sold by Shop Two (1)" in (reply or "")
+          and "sold by" not in (forum.data_reply("김치", s, rows, CATALOG, NOW, ledger.names()) or "x sold by"), reply)
+    q = tools.ledger_query(shop="Shop Two", now=NOW)
+    check("the ledger tool finds a shop by its name", q["settled"] == 1 and q["top_shops"] == {"Shop Two": 1}, q)
     common.write_json(ledger.folder() / "state.json", {"seq": 4, "at": NOW})
     check("collects at most once an hour", ledger.collect_if_due(CATALOG, NOW + 60, get=lambda a: []) is False)
 

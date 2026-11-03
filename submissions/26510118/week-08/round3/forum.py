@@ -223,16 +223,19 @@ def wanted(posts: list, demand: list, seen: set) -> list:
     return out
 
 
-def data_reply(category: str, summary: dict, settles: list, catalog: dict, now: float) -> str | None:
-    """Who sold this category in the last 24 h and at what share of the list price, or None."""
-    rows = [s for s in settles if (s.get("ts") or 0) >= now - 86400
+def data_reply(category: str, summary: dict, settles: list, catalog: dict, now: float, names: dict | None = None) -> str | None:
+    """Who sold this category in the last 24 h and at what share of the list price, or None.
+    names: shop address -> name (ledger.names); a settle names its shop by address."""
+    names = names or {}
+    rows =[s for s in settles if (s.get("ts") or 0) >= now - 86400
             and leaf((catalog.get(s.get("item")) or {}).get("category")) == category]
     if not rows:
         return None
     shops = {}
     for s in rows:
-        if s.get("shop") and not own(s["shop"]):
-            shops[s["shop"]] = shops.get(s["shop"], 0) + 1
+        name = names.get(s.get("shop"), s.get("shop"))
+        if name and not own(name):
+            shops[name] = shops.get(name, 0) + 1
     share = (summary.get("by_category") or {})
     ratio = next((v.get("price_ratio") for k, v in share.items() if leaf(k) == category), None)
     who = ", ".join(f"{k} ({v})" for k, v in sorted(shops.items(), key=lambda kv: -kv[1])[:TOP])

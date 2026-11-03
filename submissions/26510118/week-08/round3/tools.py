@@ -45,12 +45,14 @@ def ledger_query(category: str | None = None, sku: str | None = None, shop: str 
     catalog = common.catalog()
     since = now - hours * 3600
     leaf = lambda s: (catalog.get(s) or {}).get("category", "").split(">")[-1]
+    named = ledger.names()                                      # a settle names its shop by address
+    name_of = lambda row: named.get(row.get("shop"), row.get("shop"))
 
     def wanted(row):
         if sku:
             return row.get("item") == sku
         if shop:
-            return row.get("shop") == shop
+            return shop in (row.get("shop"), name_of(row))
         if category:
             full = (catalog.get(row.get("item")) or {}).get("category", "")
             return category in (full, leaf(row.get("item")))
@@ -63,7 +65,7 @@ def ledger_query(category: str | None = None, sku: str | None = None, shop: str 
     for s in settles:
         grades[s.get("grade")] = grades.get(s.get("grade"), 0) + 1
         if s.get("shop"):
-            shops[s["shop"]] = shops.get(s["shop"], 0) + 1
+            shops[name_of(s)] = shops.get(name_of(s), 0) + 1
     claims = [s for s in settles if s.get("claim")]
     return {"hours": hours, "of": {"category": category, "sku": sku, "shop": shop}, "settled": len(settles),
             "avg_price_share": round(sum(ratios) / len(ratios), 3) if ratios else None, "grades": grades,

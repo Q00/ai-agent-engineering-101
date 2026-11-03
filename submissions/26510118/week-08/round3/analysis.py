@@ -72,16 +72,20 @@ def market_get(path: str):
 def collect(now: float, get_ledger=None, get_json=None) -> str:
     n = ledger.collect(get_ledger or ledger.fetch)
     catalog = common.catalog()
+    stock_note, shops = "shops' stock not shown", []
+    try:
+        shops = (get_json or market_get)("/api/shops")
+        shops = shops.get("shops", shops) if isinstance(shops, dict) else shops
+        ledger.learn_names(shops)                               # the ledger names shops by address
+    except Exception as e:                                       # noqa: BLE001
+        stock_note = f"shops' stock unavailable ({type(e).__name__})"
     summary = ledger.summarize(catalog, now)
     common.write_json(common.MARKET_DIR / "market_summary.json", summary)
     context.snapshot(now)                                       # what the next briefings compare against
     problems = contract.check()["problems"]
     for p in problems[:8]:
         log(f"[contract] {p}")
-    stock_note = "shops' stock not shown"
     try:
-        shops = (get_json or market_get)("/api/shops")
-        shops = shops.get("shops", shops) if isinstance(shops, dict) else shops
         if any("stock" in s for s in shops):
             stocked = {(catalog.get(k) or {}).get("category") for s in shops if not forum.own(s.get("name"))
                        for k, q in (s.get("stock") or {}).items() if q}
@@ -144,7 +148,8 @@ def replies(now: float, state: dict) -> str:
         summary = common.market_file("market_summary.json", {}) or {}
         did_buyer = did_shop = False
         if now - state.get("buyer_reply", 0) >= REPLY_GAP:
-            text = forum.data_reply(cat, summary, common.read_jsonl(ledger.folder() / "settles.jsonl"), common.catalog(), now)
+            text = forum.data_reply(cat, summary, common.read_jsonl(ledger.folder() / "settles.jsonl"), common.catalog(), now,
+                                    ledger.names())
             if text:
                 forum.outbox(post=text, thread=pid, **{"as": "buyer"})
                 state["buyer_reply"] = now
