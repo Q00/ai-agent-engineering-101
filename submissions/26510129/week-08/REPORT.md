@@ -38,6 +38,18 @@ Claude Code의 Haiku(구독)를 제안 생성기로 사용한다. 호출 횟수 
 1.1k자/1,069 token으로 줄고 결정(103)은 같았다. 구독 한도 도달, timeout 또는 비정상 출력이면 exact budget을 모르는 결정론적 reference-price
 fallback이 제안한다. 따라서 모델 출력은 명령이 아니라 검증 전 후보다.
 
+전략 값 다섯 개(buyer 탐색률, 첫 제안 할인폭; seller 두 arm의 마진, B등급 상한)는
+자정에 한 번 `tune.py`가 조정한다. 코드가 전날 24시간의 buyer 기록, seller 이벤트,
+내 가게 리뷰를 약 1k자로 집계해 Opus(`effort high`)에 보내고, 모델은 허용 범위
+안의 변경만 JSON으로 제안한다. 코드가 범위를 검증해 `.market/strategy_params.json`에
+쓰고 buyer와 seller는 주문마다 그 파일을 읽는다(재시작 없음). 호출은 하루 1회
+약 1.3k 토큰이다. 예산을 쥔 MandateGuardian, 영수증 검사, 서명은 목록에 없어
+모델이 AP2 경계를 옮길 수 없다. 코드 편집은 시키지 않는다: 실행 중 깨질 위험과
+설명 불가능성이 비용보다 큰 문제다. 11-03 dry run(`logs/tune-dryrun-2026-11-03.txt`)에서
+모델은 10/31 구독 한도 소진으로 생긴 walk-away 80%를 보고 첫 제안 할인폭을
+0.15→0.10으로 줄이자고 했다. 원인은 전략이 아니라 harness 공백이었으므로, 요약에
+"제안 없이 walk-away한 수"를 넣고 그 경우는 조정 근거로 쓰지 말라고 명시했다.
+
 | 경계 | 구현 | 역할 |
 |---|---|---|
 | `seller` | `seller_r3.py` | 재고 단위 선택, 가격 실험, 협상, 영수증 서명 |
@@ -133,9 +145,10 @@ Round 3 시장 접속 전 로컬 검증 결과다.
 
 | 검증 | 결과 | 근거 |
 |---|---:|---|
-| Python 정책 단위 테스트 | 36/36 통과 | 7개 `test_*.py` |
+| Python 정책 단위 테스트 | 46/46 통과 | 9개 `test_*.py` |
 | 공식 `market_test_week07.py` | 25/25 통과 | `test-report.json`, `logs/market-test.log` |
 | v4 hook 계약 | 통과 | `agent.json`의 `{order}`, `{state}`, `{deal}` |
+| nightly tuner dry run | 통과 (2026-11-03) | `tune.py --dry-run --hours 96`: Opus 5.6s, 입력 1,020자, 범위 안 제안 1건, 파일은 쓰지 않음 (`logs/tune-dryrun-2026-11-03.txt`) |
 | bounded Haiku smoke test | 통과 (2026-11-03) | `haiku` = `claude-haiku-5-5`; CLI 고정 overhead 약 670 token(캐시됨), 흥정 1회 약 860자 입력, 출력 약 100-170 token(thinking 포함), 호출당 $0.0003-0.0006 |
 
 공식 테스트에는 seller card/open/deal/bargain/signature와 buyer deal,
