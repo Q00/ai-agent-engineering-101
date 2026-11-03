@@ -29,6 +29,7 @@ from concurrent.futures import TimeoutError as FuturesTimeout
 from pathlib import Path
 
 import forum
+import lessons
 import harness
 import memory
 from a2a_client import Peer
@@ -98,7 +99,8 @@ def choose(shops, item, budget, mine, k=1):
     if len(pool) <= k:
         return pool, "every shop in the list I have not caught cheating"
     names = [s["name"] for s in pool]
-    ans = harness.ask(CHOOSE_SYSTEM, (
+    learned = lessons.rules("buyer")[:5]
+    ans = harness.ask(CHOOSE_SYSTEM + (" Rules learned from my own past failures: " + " / ".join(learned) if learned else ""), (
         f"I need to buy: {item} (my budget: {budget}).\nShops:\n"
         + "\n".join(summary(s, mine) for s in pool)
         + f"\nList the {k} shop{'s' * (k > 1)} to ask for a price, best first, by name, and give the reason "

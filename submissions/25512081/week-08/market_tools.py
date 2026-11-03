@@ -7,6 +7,7 @@ Read tools pull context on demand instead of pasting every number into one promp
   category_detail   one category: its best-selling SKUs, the prices they settled at, our units in it
   my_shop           balance, money free to spend, stock by age, recent sales
   catalog_search    SKUs of a category, with list price, kind and shelf life
+  lessons           rules learned from our own failures (lessons.py), each with the facts it rests on
   forum_posts       the latest forum posts, as untrusted text, each marked with whether its ledger refs check out
 Write tools are where the limits live. As week 5 showed, a limit the server enforces holds even when the
 model is pushed past it, so the model proposes and this server decides:
@@ -149,6 +150,16 @@ def catalog_search(category: str, max_list_price: int = 0, limit: int = 10) -> l
     out = [{"sku": x["sku"], "name": x["name"][:50], "list_price": x["list_price"], "kind": x["kind"],
             "shelf_hours": x.get("shelf_hours")} for x in rows[:max(1, min(limit, 30))]]
     return audit("catalog_search", {"category": category, "max_list_price": max_list_price}, out)
+
+
+@mcp.tool()
+def lessons() -> list:
+    """Rules lessons.py wrote from our own failures of the last day (refused checkouts, broken goods, food thrown
+    away, refused tool calls, price learning, stock that does not sell), newest first, each with the facts it
+    cites. Read them before planning."""
+    out = [{"rule": x["rule"], "facts": x.get("facts", []), "written": time.strftime("%m-%d %H:%M", time.localtime(x["ts"]))}
+           for x in reversed(load("lessons.json", [])) if x.get("for") == "manager"]
+    return audit("lessons", {}, out)
 
 
 @mcp.tool()

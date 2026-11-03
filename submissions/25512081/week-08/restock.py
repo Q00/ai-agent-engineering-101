@@ -39,6 +39,7 @@ DECAY = 0.995              # per run (about one a minute): half-life about 2 hou
 MAX_LINES = 10
 MAX_LINE_COST = 300_000    # one category's buy never ties up more than this (one unit always allowed)
 PLANNER_EVERY = 20 * 60
+LESSONS_EVERY = 6 * 3600   # lessons.py: failures of the last day -> rules the manager and the buyer read
 PLAN_FRESH = 40 * 60       # plan lines older than this are dropped
 
 
@@ -176,6 +177,11 @@ def main():
         subprocess.Popen([sys.executable, "planner.py"], start_new_session=True,
                          stdout=open(sd / "planner.out", "a"), stderr=subprocess.STDOUT)
         log("shop manager (planner.py) started in the background")
+    if inv.get("round", 0) >= 3 and time.time() - st.get("lessons_ts", 0) > LESSONS_EVERY:
+        st["lessons_ts"] = time.time()
+        subprocess.Popen([sys.executable, "lessons.py"], start_new_session=True,
+                         stdout=open(sd / "lessons.out", "a"), stderr=subprocess.STDOUT)
+        log("lessons.py started in the background")
     try:
         forum.shop_turn(inv, log)
     except Exception as e:
