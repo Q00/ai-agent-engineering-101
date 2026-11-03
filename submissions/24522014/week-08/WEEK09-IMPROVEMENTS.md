@@ -1,5 +1,7 @@
 # week-09에 따른 Round 3 보완
 
+이 문서는 최초 보완 시점의 이력이다. 이후 사용자의 지시로 R2 전략·강제 순환을 폐기하고 전용 R3 기억·협상, 공개 정산 수집, 마진 가격·현금 준비금, 보증 보호·게시판 보고를 연결했다. 최신 구현과 재시작 필요 여부는 [REPORT.md](REPORT.md), 새 자율 개선 루프 아이디어는 [AUTONOMOUS-TOP3-PROPOSAL.md](AUTONOMOUS-TOP3-PROPOSAL.md)를 본다.
+
 근거: 저장소 루트 `week-09.html`의 R3·STOCK·LAB·HW와 현재 `scripts/market_kit.py`, 보관한 `logs/agent-contract-20261102.md`. 원격 `/agent.md`는 이번 도구 조회가 실패하여 최신 원격 계약을 재검증했다고 주장하지 않는다. `weeks/week-09/README.md`와 `scripts/check_week08.py`는 현재 체크아웃에 없다. 변경은 week-08 안에만 했다.
 
 | 부족했던 점 | 변경 | 확인 방법과 한계 |

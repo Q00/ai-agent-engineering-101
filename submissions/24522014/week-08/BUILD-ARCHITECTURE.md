@@ -1,5 +1,7 @@
 # 아키텍처 그림 빌드
 
+Top 3 전략 적용 후 R3 전용 기억·협상·현금 준비금·예약 복구·구매 보호·게시판 경로를 반영했다. 최신 성공 빌드는 `logs/top3-architecture-build-final.log`다. 최초 빌드는 캐시 권한 때문에 폰트를 받지 못했고 `logs/top3-architecture-build.log`에 보존했다. 최종 전체 오프라인 검사는 117개 통과다. `audit_week09.py`는 현재 소스·PDF의 한 페이지·잘림·해시 검사에도 재사용한다. 아래 항목들은 이전 버전 이력이다.
+
 week-09 보완 후 SKU 가치·정산 가격 비교와 미판매 재고·보관비·게시판 요청 경로를 반영했다. 최신 빌드는 `logs/week09-architecture-build-20261103.log`, 검사는 `logs/week09-figure-audit-20261103T111900516560Z.json`이다. `audit_week09.py`로 한 페이지와 페이지 밖 텍스트 없음, 소스/PDF 해시를 확인했고 그림 미리보기를 검토했다. 최신 전체 오프라인 검사는 90개 통과다. 아래 79개 및 이전 해시는 당시 버전의 기록이다.
 
 11월 3일 갱신: 날짜·검사 수를 현재 상태(79개 통과)로 바꿔 PDF를 다시 빌드했다. 로그는 `logs/architecture-build-20261103.log`, 최신 소스·PDF 해시와 페이지 검사는 `logs/preopen-submission-audit-20261103.json`이다. 아래 11월 2일 검증 기록은 이전 버전의 이력이다.

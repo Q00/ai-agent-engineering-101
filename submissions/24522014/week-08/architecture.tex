@@ -30,15 +30,15 @@ Reads \texttt{agent.json}; exposes order/state files and restock/review hooks.};
 \node[b] (seller) at (2.8,14.5) {\textbf{Inventory seller}\\
 \texttt{seller\_r3.py}\\
 Course starter adapted to our harness.\\
-Select unit; explicit offers; refresh stock; sign receipt.\\
+R3 only; reservation leases; refresh stock; sign receipt.\\
 \texttt{r3\_policy.py}: clearance stages and condition disclosure.};
 \node[b] (buyer) at (9,14.5) {\textbf{SKU buyer}\\
 \texttt{market\_buyer.py}, \texttt{buyer.py}\\
-\texttt{r3\_selection.py}: risk, SKU value, settled-price references and exploration.\\
-A2A negotiation; receipt match; budget checks. Certificate, A/B and food-time payment constraints.};
+\texttt{r3\_selection.py}: R3 risk, SKU value and settled-price references.\\
+A2A; value cap; observed warranty and A/B/time payment guards.};
 \node[b] (restock) at (15.2,14.5) {\textbf{Bounded restock tool}\\
 \texttt{restock\_policy.py}\\
-Own settled sales; weak forum requests; unsold-trial and storage-cost guards.\\
+R3 demand and return estimates; unsold-trial, storage and cash guards.\\
 Outputs \texttt{buy} plan to kit.\\
 Food supply deferred; no LLM.};
 \draw[arrow] (kit.south -| seller.north) -- (seller.north);
@@ -48,36 +48,36 @@ Food supply deferred; no LLM.};
 \node[b,text width=11.25cm,fill=guard,minimum height=2.15cm] (model) at (5.9,10.6) {\textbf{Model and deterministic guards}\\
 \texttt{harness.py} + \texttt{r3\_harness.py}: Codex \texttt{gpt-6-luna} in isolated calls.\\
 Prompts contain the current negotiation; JSON decisions are validated.\\
-Seller price floor/clearance and buyer budget are enforced by code.\\
+Margin/clearance and budget guards; \texttt{kit\_runtime.py} recovers failed checkouts.\\
 Raw prompts, stdout/stderr and decision metadata are logged.};
 \node[b,fill=guard,minimum height=2.15cm] (review) at (15.2,10.6) {\textbf{Post-settlement review tool}\\
 \texttt{review\_policy.py}\\
 Kit supplies \texttt{deal.json}.\\
 Evidence rules: 5 / 2 / 3 stars.\\
-Save first judgement per deal; return review to kit; no LLM.};
+Save first judgement; queue factual buyer posts (4/day); no LLM.};
 \draw[arrow] (seller.south) -- (model.north -| seller.south);
 \draw[arrow] (buyer.south) -- node[lab,right]{bounded context} (model.north -| buyer.south);
 \draw[arrow] (kit.east) -- (18.2,18.7) |- (review.east);
 \node[lab,align=center] at (15.2,12.35) {kit: settled deal / review hook};
 
 \node[wide,minimum height=2.1cm] (memory) at (9,6.6) {\textbf{Persistent evidence and feedback --- custom context management}\\
-\texttt{buyer-memory.jsonl}: local observations; \texttt{settlement\_memory.py} joins kit payment outcomes.\\
+\texttt{r3-buyer-memory.jsonl}: R3 observations; \texttt{settlement\_memory.py} joins payment outcomes.\\
 Only matching paid outcomes become confirmed settlement observations; no rewriting original history.\\
-\texttt{restock-memory.json}: observed SKU sales and exploration cursor.\\
-\texttt{logs/}: pricing reasons, reviews and model traces. Later breakage remains separate kit evidence.};
+\texttt{r3-restock-memory.json}: own sales; \texttt{market-intel.json}: bounded public evidence.\\
+\texttt{buyer\_portfolio.py}: unit-linked faults/refunds. Logs retain reviews, reasons and model traces.};
 \draw[feedback] (model.south) -- node[lab,right]{trade observations} (memory.north -| model.south);
 \draw[feedback] (review.south) -- node[lab,right]{settled evidence} (memory.north -| review.south);
 \draw[feedback] (memory.west) -- (-0.2,6.6) -- (-0.2,16.4)
  -- node[lab,above]{filtered history on next order} (6.05,16.4) -- (6.05,14.5) -- (buyer.west);
 
-\node[wide,minimum height=1.8cm,fill=guard] (monitor) at (9,3.1) {\textbf{Separate operational monitor --- not an automatic strategy optimizer}\\
-\texttt{monitor\_shop.py}: public state every 30 min. \texttt{monitor\_triage.py}: bounded summaries.\\
-No model calls, automatic price changes, forum posting or voting.\\
-Candidate cap: 2 per UTC day; at most 3 review examples, 160 characters each.};
+\node[wide,minimum height=1.8cm,fill=guard] (monitor) at (9,3.1) {\textbf{Market observation --- no automatic policy experimenter yet}\\
+\texttt{market\_intel.py}: bounded R3 ledger and official Players every 30 min; no model calls.\\
+Records missing metrics and skipped ranges; adaptive hooks use fresh signals.\\
+Separate \texttt{monitor\_shop.py}/triage remains available. Experiment/rollback loop is proposed.};
 \node[align=left,text width=18.1cm,font=\footnotesize] at (9,0.7) {
 \textbf{Legend:} grey = provided; blue = agent implementation/adaptation; green = rules/guards.\\
 Solid arrows = execution/data flow; dashed = retained evidence for later decisions.\\
-\textbf{Status:} hooks configured; R2 model calls verified. Offline tests: 90 passed.\\
+\textbf{Status:} R3-only strategy; runtime adapter needs restart. Offline suite logged under \texttt{top3-*}.\\
 R3 end-to-end settlement, ranking and profitability are not yet verified.};
 \end{tikzpicture}
 \end{document}
