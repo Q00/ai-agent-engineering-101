@@ -1,0 +1,72 @@
+FFFFFFFFFF                                                               [100%]
+=================================== FAILURES ===================================
+_______ test_restock_clips_each_batch_to_remaining_unit_capacity[False] ________
+tests/test_r3_policy_boundary_regressions.py:34: in test_restock_clips_each_batch_to_remaining_unit_capacity
+    assert sum(int(str(line["qty"])) for line in lines) == 1
+E   assert 4 == 1
+E    +  where 4 = sum(<generator object test_restock_clips_each_batch_to_remaining_unit_capacity.<locals>.<genexpr> at 0x10b11d030>)
+________ test_restock_clips_each_batch_to_remaining_unit_capacity[True] ________
+tests/test_r3_policy_boundary_regressions.py:34: in test_restock_clips_each_batch_to_remaining_unit_capacity
+    assert sum(int(str(line["qty"])) for line in lines) == 1
+E   assert 4 == 1
+E    +  where 4 = sum(<generator object test_restock_clips_each_batch_to_remaining_unit_capacity.<locals>.<genexpr> at 0x10b11cb80>)
+_ test_zero_food_allocation_applies_to_replenishment_and_demand_signals[False-False] _
+tests/test_r3_policy_boundary_regressions.py:52: in test_zero_food_allocation_applies_to_replenishment_and_demand_signals
+    assert all(line["sku"] != KIMCHI for line in lines)
+E   assert False
+E    +  where False = all(<generator object test_zero_food_allocation_applies_to_replenishment_and_demand_signals.<locals>.<genexpr> at 0x10b112a80>)
+_ test_zero_food_allocation_applies_to_replenishment_and_demand_signals[False-True] _
+tests/test_r3_policy_boundary_regressions.py:52: in test_zero_food_allocation_applies_to_replenishment_and_demand_signals
+    assert all(line["sku"] != KIMCHI for line in lines)
+E   assert False
+E    +  where False = all(<generator object test_zero_food_allocation_applies_to_replenishment_and_demand_signals.<locals>.<genexpr> at 0x10b113e00>)
+_ test_zero_food_allocation_applies_to_replenishment_and_demand_signals[True-False] _
+tests/test_r3_policy_boundary_regressions.py:52: in test_zero_food_allocation_applies_to_replenishment_and_demand_signals
+    assert all(line["sku"] != KIMCHI for line in lines)
+E   assert False
+E    +  where False = all(<generator object test_zero_food_allocation_applies_to_replenishment_and_demand_signals.<locals>.<genexpr> at 0x10b113b90>)
+_ test_zero_food_allocation_applies_to_replenishment_and_demand_signals[True-True] _
+tests/test_r3_policy_boundary_regressions.py:52: in test_zero_food_allocation_applies_to_replenishment_and_demand_signals
+    assert all(line["sku"] != KIMCHI for line in lines)
+E   assert False
+E    +  where False = all(<generator object test_zero_food_allocation_applies_to_replenishment_and_demand_signals.<locals>.<genexpr> at 0x10b1e0790>)
+________ test_hot_food_demand_does_not_override_the_food_line_allowance ________
+tests/test_r3_policy_boundary_regressions.py:70: in test_hot_food_demand_does_not_override_the_food_line_allowance
+    assert len(lines) == 1
+E   AssertionError: assert 3 == 1
+E    +  where 3 = len([{'sku': 'food-0', 'qty': 1}, {'sku': 'food-1', 'qty': 1}, {'sku': 'food-2', 'qty': 1}])
+_ test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move[None] _
+tests/test_r3_policy_boundary_regressions.py:87: in test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move
+    assert anyio.run(manager.tactical) is None
+E   AssertionError: assert Policy(version=2, updated_at='2026-11-03T07:05:04+00:00', reason='tactical: trigger buyer_walkaway: 4 of 10 orders agr...ist_price=8000, goods_max_list_price=150000, replenish_qty=1, stale_hours=48.0, categories_per_run=10, food_share=0.6)) is None
+E    +  where Policy(version=2, updated_at='2026-11-03T07:05:04+00:00', reason='tactical: trigger buyer_walkaway: 4 of 10 orders agr...ist_price=8000, goods_max_list_price=150000, replenish_qty=1, stale_hours=48.0, categories_per_run=10, food_share=0.6)) = <function run at 0x108d228e0>(tactical)
+E    +    where <function run at 0x108d228e0> = anyio.run
+E    +    and   tactical = <r3.manager.Manager object at 0x10b1cc3e0>.tactical
+_ test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move[{broken] _
+tests/test_r3_policy_boundary_regressions.py:87: in test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move
+    assert anyio.run(manager.tactical) is None
+E   AssertionError: assert Policy(version=2, updated_at='2026-11-03T07:05:04+00:00', reason='tactical: trigger buyer_walkaway: 4 of 10 orders agr...ist_price=8000, goods_max_list_price=150000, replenish_qty=1, stale_hours=48.0, categories_per_run=10, food_share=0.6)) is None
+E    +  where Policy(version=2, updated_at='2026-11-03T07:05:04+00:00', reason='tactical: trigger buyer_walkaway: 4 of 10 orders agr...ist_price=8000, goods_max_list_price=150000, replenish_qty=1, stale_hours=48.0, categories_per_run=10, food_share=0.6)) = <function run at 0x108d228e0>(tactical)
+E    +    where <function run at 0x108d228e0> = anyio.run
+E    +    and   tactical = <r3.manager.Manager object at 0x10b343dd0>.tactical
+_ test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move[reply2] _
+tests/test_r3_policy_boundary_regressions.py:87: in test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move
+    assert anyio.run(manager.tactical) is None
+E   AssertionError: assert Policy(version=2, updated_at='2026-11-03T07:05:04+00:00', reason='tactical: trigger buyer_walkaway: 4 of 10 orders agr...ist_price=8000, goods_max_list_price=150000, replenish_qty=1, stale_hours=48.0, categories_per_run=10, food_share=0.6)) is None
+E    +  where Policy(version=2, updated_at='2026-11-03T07:05:04+00:00', reason='tactical: trigger buyer_walkaway: 4 of 10 orders agr...ist_price=8000, goods_max_list_price=150000, replenish_qty=1, stale_hours=48.0, categories_per_run=10, food_share=0.6)) = <function run at 0x108d228e0>(tactical)
+E    +    where <function run at 0x108d228e0> = anyio.run
+E    +    and   tactical = <r3.manager.Manager object at 0x10b378110>.tactical
+------------------------------ Captured log call -------------------------------
+WARNING  r3.manager:manager.py:878 tactical_invalid_proposal 1 args={"changes":[]}
+=========================== short test summary info ============================
+FAILED tests/test_r3_policy_boundary_regressions.py::test_restock_clips_each_batch_to_remaining_unit_capacity[False]
+FAILED tests/test_r3_policy_boundary_regressions.py::test_restock_clips_each_batch_to_remaining_unit_capacity[True]
+FAILED tests/test_r3_policy_boundary_regressions.py::test_zero_food_allocation_applies_to_replenishment_and_demand_signals[False-False]
+FAILED tests/test_r3_policy_boundary_regressions.py::test_zero_food_allocation_applies_to_replenishment_and_demand_signals[False-True]
+FAILED tests/test_r3_policy_boundary_regressions.py::test_zero_food_allocation_applies_to_replenishment_and_demand_signals[True-False]
+FAILED tests/test_r3_policy_boundary_regressions.py::test_zero_food_allocation_applies_to_replenishment_and_demand_signals[True-True]
+FAILED tests/test_r3_policy_boundary_regressions.py::test_hot_food_demand_does_not_override_the_food_line_allowance
+FAILED tests/test_r3_policy_boundary_regressions.py::test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move[None]
+FAILED tests/test_r3_policy_boundary_regressions.py::test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move[{broken]
+FAILED tests/test_r3_policy_boundary_regressions.py::test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move[reply2]
+10 failed in 0.39s
