@@ -41,7 +41,10 @@ CREATE TABLE IF NOT EXISTS negotiations (
 CREATE TABLE IF NOT EXISTS forum (
     id TEXT PRIMARY KEY, ts REAL, author TEXT, role TEXT, thread TEXT, text TEXT, refs TEXT, score INTEGER,
     signals TEXT, voted INTEGER DEFAULT 0, mine INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS restocks (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, sku TEXT, category TEXT, qty INTEGER,
+    reason TEXT);
 """
+MIGRATIONS = ("ALTER TABLE forum ADD COLUMN likes INTEGER DEFAULT 0", "ALTER TABLE forum ADD COLUMN dislikes INTEGER DEFAULT 0")
 
 
 class Memory:
@@ -50,6 +53,10 @@ class Memory:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.db() as c:
             c.executescript(SCHEMA)
+            cols = {r["name"] for r in c.execute("PRAGMA table_info(forum)")}
+            for m in MIGRATIONS:
+                if m.split("ADD COLUMN ")[1].split()[0] not in cols:
+                    c.execute(m)
 
     @contextmanager
     def db(self):
@@ -333,10 +340,12 @@ class Memory:
             for p in posts or []:
                 pid = str(p.get("id"))
                 old = c.execute("SELECT id FROM forum WHERE id=?", (pid,)).fetchone()
-                c.execute("INSERT INTO forum (id, ts, author, role, thread, text, refs, score, mine) VALUES (?,?,?,?,?,?,?,?,?) "
-                          "ON CONFLICT(id) DO UPDATE SET score=excluded.score",
+                c.execute("INSERT INTO forum (id, ts, author, role, thread, text, refs, score, mine, likes, dislikes) "
+                          "VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET score=excluded.score, "
+                          "likes=excluded.likes, dislikes=excluded.dislikes",
                           (pid, p.get("ts"), p.get("author"), p.get("role"), p.get("thread"), (p.get("text") or "")[:2000],
-                           json.dumps(p.get("refs") or []), p.get("score") or 0, int(p.get("author") in my_names)))
+                           json.dumps(p.get("refs") or []), p.get("score") or 0, int(p.get("author") in my_names),
+                           p.get("likes") or 0, p.get("dislikes") or 0))
                 if not old:
                     new.append(p)
         return new
@@ -353,6 +362,50 @@ class Memory:
                     continue
                 for cat in sig.get("wanted_categories") or []:
                     out[cat] = out.get(cat, 0) + 1 + max(0, r["score"] or 0) * 0.5
+        return out
+
+
+    def my_post_reception(self, hours=48, role=None):
+        """Our recent posts and how they were received (counted votes only): the cost side of speaking first."""
+        q = "SELECT id, ts, role, text, likes, dislikes, score FROM forum WHERE mine=1 AND ts>?"
+        args = [time.time() - hours * 3600]
+        if role:
+            q += " AND role=?"
+            args.append(role)
+        with self.db() as c:
+            rows = [dict(r) for r in c.execute(q + " ORDER BY ts DESC", args)]
+        likes = sum(r["likes"] or 0 for r in rows)
+        dislikes = sum(r["dislikes"] or 0 for r in rows)
+        return {"posts": len(rows), "likes": likes, "dislikes": dislikes,
+                "dislike_share": (dislikes + 1) / (likes + dislikes + 4),            # prior: 1 in 4 votes is a dislike
+                "recent": [{**r, "text": (r["text"] or "")[:160]} for r in rows[:5]]}
+
+    # ------------------------------------------------------------------ restock evidence
+    def record_restock(self, lines, why):
+        reasons = {w.get("sku"): w.get("reason") for w in why if w.get("sku")}
+        cat = market.catalog()
+        with self.db() as c:
+            for ln in lines:
+                c.execute("INSERT INTO restocks (ts, sku, category, qty, reason) VALUES (?,?,?,?,?)",
+                          (time.time(), ln["sku"], cat.get(ln["sku"], {}).get("category"), ln["qty"],
+                           reasons.get(ln["sku"])))
+
+    def sell_through(self, hours=24):
+        """category -> {requested, sold, rate}: units our restock asked for vs units our shop settled, same window.
+        The kit may fill less than requested, so `rate` is a lower bound on the true sell-through."""
+        since = time.time() - hours * 3600
+        mine = self.my_shop_urls()
+        out = {}
+        with self.db() as c:
+            for r in c.execute("SELECT category, SUM(qty) q FROM restocks WHERE ts>? GROUP BY category", (since,)):
+                out[r["category"]] = {"requested": r["q"] or 0, "sold": 0}
+            if mine:
+                q = f"SELECT category, COUNT(*) n FROM settles WHERE ts>? AND shop IN ({','.join('?' * len(mine))}) " \
+                    "GROUP BY category"
+                for r in c.execute(q, (since, *mine)):
+                    out.setdefault(r["category"], {"requested": 0, "sold": 0})["sold"] = r["n"]
+        for d in out.values():
+            d["rate"] = round(d["sold"] / d["requested"], 2) if d["requested"] else None
         return out
 
 
