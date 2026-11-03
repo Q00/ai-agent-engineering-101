@@ -2,7 +2,7 @@
 
 기준: [교수 week-08.html](https://wpti.dev/ai-agent-engineering-101/week-08.html), 2026-11-03 원문 재확인(HTML SHA256 `b2d438c8cd83847b847a3e71baea942a599b0210a1fe8a111daec0e7f819c0a2`). 기존 규칙 원본은 [commit d4b4d53](https://github.com/Q00/ai-agent-engineering-101/blob/d4b4d53e0fc2b30c4d44f7c89e24791dfbcba66b/week-08.html)과 [시장 agent.md](https://market.ourolabs.ai/agent.md)다. **Round 3 11/3~11/17 23:59, PR 생성 마감11/17 23:59**. 과제는 전체 성적30%, 과제 안에서는 부품40%·구조30%·Players30%다. 이전 공고 이력은 [REPORT_HISTORY.md](REPORT_HISTORY.md)에 보존했다.
 
-**전수점검·배포 결론:** 795090a 선순환·승인 수정 배포 뒤 추가 탐색 수정8ca3d3b도 검토해 최종 VPS release `8ca3d3bbff62`와 같은 판의 알림 코드로 맞췄다. 최종 로컬533개·Linux513개·기동 전 검사와 승인 전달을 확인했으나 시장은R2다. R3 양역할20정산·Players 결과까지 완료한 판정은 아니다.
+**전수점검·배포 결론:** 9주차 손익 복기53b092a를 기존8ca3d3bbff62 위에 반영했다. 로컬550개·격리Linux530개·프리플라이트 PASS, 기록DB·양역할alive·카드/ACP200 확인. 변경 전후 한도/시한/예약·탐색6시간·새R3 감지를 보존했다. 확인 시점R2/R3 원장0이며 R3 기본 조건·성과는 미완료다.
 
 | 구분 | 요구사항 | 구현·검증 또는 남은 증거 |
 |---|---|---|
@@ -49,7 +49,7 @@ Telegram은 알림 채널이다. 사용자가 Codex/Claude 세션에 승인·거
 
 ## 남은 제출·운영 증거
 
-- 로컬 최신 전체532개 PASS(최종 원로그 [harness-audit-20261103-complete.log](logs/harness-audit-20261103-complete.log)); 11/1의465개와 배포판445개는 이전 시점/다른 범위 이력이다.
+- 이전 전수점검 전체532개 PASS(최종 원로그 [harness-audit-20261103-complete.log](logs/harness-audit-20261103-complete.log)); 11/1의465개와 배포판445개는 이전 시점/다른 범위 이력이다.
 - 서버는 조회 당시 R2, 통역 ON·관리자 OFF. 양역할 온라인 재확인, 공개 카드·ACP는 재확인200. 한 차례 판매자 오프라인/GET 오류도 관측했으므로 무중단으로 포장하지 않는다.
 - R3 원장 정산0건: 아직 가게20·buyer20 정산과 Players 결과가 충족된 것은 아니다. R2 누적 실적을 R3 실적으로 바꾸지 않는다.
 - PR #372는 OPEN/non-draft,10/30 생성으로 PR 생성 마감 조건은 충족한다. 최신 코드795090a를 기존 브랜치에 푸시하고 보고서에 실제 배포/검증 증거를 보완했다. [배포 시 주의](deploy/vps/README.md): 서비스 이미지와 host `notify_r3.py`를 같은795090a 판으로 맞췄다. [합성 요청 #3 검증](logs/deployment-20261103/approval-delivery-check.json)에서 실제 Telegram 전달·ack 후 승인 대기 유지를 확인했다.
@@ -58,3 +58,11 @@ Telegram은 알림 채널이다. 사용자가 Codex/Claude 세션에 승인·거
 배포 검사의 정정: 초기 `/acp.json`404·`kit_entry_process=false`는 검사 경로/탐지 범위의 오류였다. 공식 `/.well-known/acp.json`과 실제 실행 파일 경로를 사용한 [재검증](logs/deployment-20261103/protocol-recheck.json)을 판정 근거로 하고 원기록은 보존했다. 실제 비용 강등 기준6달러·공유5000회와 기존 예약/운영 시한을 유지했다.
 
 최종 추가판8ca3d3b: 일반 실패/오류의 탐색 기억6시간과 지급 거절·의심의24시간 기억을 구분했다. 기존 실패 휴식·서명/지급·예산·한도는 유지했다. [최종 검사](logs/deployment-20261103/final-8ca3d3b/result.json), [최종 로컬 원로그](logs/deployment-20261103/final-source-local-pytest.log). 795090a의 최초 배포·알림 시험 증거는 이력으로 보존했다.
+
+## 9주차 손익 기준 후속 보완 — 2026-11-03
+
+복기는 정산 총매출 대신 실제 매출−팔린 원가−보증 환불−식품 폐기−보관비의 운영 순손익으로 판단한다. 매입 지출은 재고 자산과 분리하며 공식 현금 순위 이익도 별도로 표시한다. 기존 별도 recorder가 kit 인벤토리 이력을 기록하고, 원장 고장/환불·unit 원가·기한 소멸·보유시간을 대조한다. 금액/관측이 부족하면 순손익 미확인, 소표본/원장 지연/여러 변경 혼재도 유지한다.
+
+강의 FIG.08 +15,000/−55,000/−13,000 세 예시와 매출·이익 방향 반전, 다른 가게 제외, 미판매 매입의 자산 처리, 과거 판매 환불·중복·원가 누락·소멸 미확인을 검사했다. 새17개, 전체550개 PASS. [방법과 한계](REPORT.md#3-0-1-9주차-손익-기준-복기-2026-11-03), [전체 원로그](logs/net-profit-20261103-full.log). 기존 8ca3d3b 탐색6시간과 ddee4a1 전환 보완을 보존한 53b092a 후속판이다.
+
+배포 확인: 19:51 KST, [source53b092a 운영 증거](logs/net-profit-deployment-20261103/summary.json). inventory round2·R3 원장0 상태에서 반영했다.

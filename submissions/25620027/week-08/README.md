@@ -1,9 +1,9 @@
 # Week08 — R3 하이브리드 시장 하네스
 
-현재 운영 코드는 `8ca3d3b`, VPS release `8ca3d3bbff62`다(2026-11-03). 선순환·승인 경로를 담은795090a를 먼저 배포·검증한 뒤 추가 탐색 수정을 로컬533개·Linux513개 검사 후 최종 반영했다. 서비스 이미지와 host 알림 코드는 같은 판이며 R2 통역ON·관리자OFF·기존 한도를 유지한다. R3 개장은 기존2분 arm이 감지한다.
+현재 운영 코드는 `53b092a`, VPS release `53b092a7ec2a`다(2026-11-03). 순손익 복기를 기존8ca3d3b 위에 로컬550개·Linux530개 검사 후 반영했다. 구매자 탐색6시간, ddee4a1 R3 감지, host 알림·한도·시한·예약을 보존했다. 확인 당시 R2 통역ON·관리자OFF, 실제 R3 개장은 기존2분 arm이 감지한다.
 
 - 현행 설명: [REPORT.md](REPORT.md), [요구사항 대응](REQUIREMENTS.md), [구조도](architecture.pdf), [VPS 절차](deploy/vps/README.md).
-- 제출 점검: [최신 전체 검사](logs/harness-audit-20261103-complete.log)와 [요구사항 전수표](REQUIREMENTS.md)를 기준으로 한다. 이전465개·배포판445개는 [11/1 이력](logs/pr-sync-20261101/summary.json)이며 합산하지 않는다. 최종 로컬533개·Linux513개·프리플라이트·실제 프로토콜/승인 전달은 [배포 증거](logs/deployment-20261103/)와 REPORT §4-4에 있다.
+- 제출 점검: [최신 전체 검사](logs/net-profit-20261103-full.log)와 [요구사항 전수표](REQUIREMENTS.md)를 기준으로 한다. 이전465개·배포판445개는 [11/1 이력](logs/pr-sync-20261101/summary.json)이며 합산하지 않는다. 최신 로컬550개·Linux530개·프리플라이트/공개 프로토콜은 [손익 배포 증거](logs/net-profit-deployment-20261103/)와 REPORT §4-6에 있다. 앞선 승인 전달 시험은 [이전 배포 증거](logs/deployment-20261103/)로 보존했다.
 - R3 양역할 정산20건·배포 머신 정산 로그·Players 결과는 개시 뒤 같은 PR에 추가한다. 아래의 10/30~31 설명은 이전 단계의 재현·설계 이력이며, 현행 구성은 위 문서를 기준으로 한다.
 
 ---
@@ -102,3 +102,7 @@ xelatex architecture.tex                                          # 구조도 1�
 ```
 
 운영 전환(이미지 재빌드, runtime.json, 활성화)은 [deploy/vps/README.md](deploy/vps/README.md)의 "Round 3 v4 변경"을 따른다. 실제 R3 정산·순위는 개시 뒤 REPORT §5에 기록한다.
+
+## 2026-11-03 순손익 복기 후속판
+
+현재 운영판은 `53b092a7ec2a`다. 매출 대신 팔린 원가·환불·폐기·보관비를 뺀 운영 순손익으로 정책 전후를 평가하고 현금·재고 자산·공식 현금 순위 이익은 분리한다. 비용 이력은 기존 별도 recorder가 kit 인벤토리에서 기록하며 거래 경로는 바꾸지 않는다. 자료 누락·대사 불일치는 미확인이다. 기존8ca 탐색6시간과ddee 전환/한도/예약을 보존했다. 로컬550개·Linux530개, 시장R2/R3 원장0일 때 배포. [방법/검증](REPORT.md#3-0-1-9주차-손익-기준-복기-2026-11-03), [운영 증거](logs/net-profit-deployment-20261103/summary.json).
