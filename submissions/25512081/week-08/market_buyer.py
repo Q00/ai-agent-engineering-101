@@ -209,15 +209,25 @@ def warranty_of(text):
     return float(m.group(1) or m.group(2)) if m else 0
 
 
+QUOTE_TRIES = 3        # SKUs asked per shop: shops.json lags, and 114 of our first asks on Nov 3 were refused
+                       # "none of that in stock", so a refused SKU is followed by the shop's next one
+
+
 def quote(shop, budget, order=None):
-    """Contract Net, the call for proposals: ask one shop for its SKU and read its first ask."""
-    sku = pick_sku(shop, budget)
-    opening = f"I want to buy {sku['name']} ({sku['sku']})"
-    if (order or {}).get("kind") == "food" and order.get("use_within_hours"):
-        opening += f", it must last {order['use_within_hours'] + 1} hours"
+    """Contract Net, the call for proposals: ask one shop for its SKU and read its first ask. If the shop has
+    sold that SKU since shops.json was written, ask for its next SKU of the order."""
     peer = Peer(shop["url"], timeout=60)
-    r = peer.send(opening)
-    log(f"[quote] {shop['name']} -> {opening!r}  <- {r.state} | {r.text[:200]}")
+    first = pick_sku(shop, budget)
+    rest = [o for o in shop.get("offers") or [] if o.get("qty", 1) > 0 and o["sku"] != first["sku"]]
+    rest.sort(key=lambda o: abs(((CATALOG.get(o["sku"]) or {}).get("list_price") or 0) * 0.85 - budget))
+    for sku in ([first] + rest)[:QUOTE_TRIES]:
+        opening = f"I want to buy {sku['name']} ({sku['sku']})"
+        if (order or {}).get("kind") == "food" and order.get("use_within_hours"):
+            opening += f", it must last {order['use_within_hours'] + 1} hours"
+        r = peer.send(opening)
+        log(f"[quote] {shop['name']} -> {opening!r}  <- {r.state} | {r.text[:200]}")
+        if not (r.state == "TASK_STATE_REJECTED" and re.search(r"(?i)none of that|no matching|not in stock|out of stock", r.text or "")):
+            break
     value = (CATALOG.get(sku["sku"]) or {}).get("list_price") or 0
     return {"shop": shop, "peer": peer, "sku": sku, "reply": r, "value": value}
 
@@ -408,7 +418,12 @@ def main():
             shop, sku, warranty = q["shop"], q["sku"], q.get("warranty", 0)
             # a refurbished unit is worth its full list price too unless it breaks: take it when the expected
             # surplus with grade C's own break rate is still positive
-            grade_c = q.get("grade") == "C" and q["surplus"] > 0
+            # grade C goods are worth the full list price too unless they break: the market's own count was 14
+            # broken of 181 C settles (7.7%) on Nov 3, and our kit refused 7 agreed C deals. Accept C whenever
+            # the expected surplus with C's break rate is positive, whatever grade the quote named
+            pc = memory.break_rate("C")
+            grade_c = (order.get("kind") == "goods" and (q.get("warranty", 0) >= 6 or
+                       (1 - pc) * q["value"] - (q.get("expect") or q["reply"].ask) > 0))
             tried.add(id(q))
             alt = describe(quotes[i + 1]) if i + 1 < len(quotes) else None
             rest = [x["reply"].ask for x in quotes[i + 1:] if x["reply"].ask <= a.budget]
