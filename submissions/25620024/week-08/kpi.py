@@ -1,10 +1,13 @@
 """Week 08 — kpi.py: what headquarters holds each team accountable for (owner, 2026-11-04). Every team brief carries
 its own line from here first, and the team must answer it.
 
-  scm        hits out of stock: SKUs we sold 2+ times in 6 h that have no unit left
-  finance    cash and profit, and how far they are from the fatal line (cash < 45% of start, loss > 15%)
-  marketing  sell-through: units sold in 6 h / (sold + in stock), and stock older than 12 h
-  sales      the shop's rank, ALL and the Players rank, and VIP service (VIP quotes in 6 h)
+Each team answers for one component of the midterm's own scoring (Players = shop ALL + buyer ALL, percentiles at the
+end of the round; hr.py grades them); the numbers below are what it acts on.
+
+  scm        revenue percentile (shop ALL x0.3): hits out of stock, the market's top sellers and our units of each
+  finance    profit percentile (shop ALL x0.5): cash and profit against the fatal line (cash < 25% of start, loss > 15%)
+  marketing  stars percentile (shop ALL x0.2): sell-through and stock older than 12 h
+  sales      shop ALL percentile: the shop's rank, ALL and the Players rank, and VIP service
 """
 import json
 import time
@@ -16,8 +19,10 @@ HERE = Path(__file__).parent
 MD = HERE / ".market"
 BOARD = "https://market.ourolabs.ai/api/board"
 NAME, OWNER = "dragonash", "dragonash22"
-WHO = {"scm": "the sales team has no stock of a hit to sell", "finance": "the sales team's finances get worse",
-       "marketing": "stock stops selling (sell-through falls)", "sales": "the shop's rank falls"}
+WHO = {"scm": "our revenue percentile falls (shop ALL x0.3): no stock of what sells means no revenue",
+       "finance": "our profit percentile falls (shop ALL x0.5): profit at the end of the round, stock left unsold is lost",
+       "marketing": "our stars percentile falls (shop ALL x0.2): reviews of paid deals",
+       "sales": "our shop ALL percentile falls (half of the Players score that is 30% of the midterm)"}
 
 
 def _inv():

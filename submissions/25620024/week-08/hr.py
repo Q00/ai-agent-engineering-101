@@ -60,62 +60,65 @@ def market_hits(c, top=10, hours=24, min_price=80000):
                         order by count(*) desc limit ?""", (time.time() - hours * 3600, min_price, top)).fetchall()
 
 
+def pct(rows, key, me):
+    """The board's percentile of one scored component: share of the field below us (ties count half)."""
+    vals = [r.get(key) for r in rows if r.get(key) is not None]
+    mine = (me or {}).get(key)
+    if mine is None or not vals:
+        return None
+    return round((sum(v < mine for v in vals) + 0.5 * (sum(v == mine for v in vals) - 1)) / max(1, len(vals) - 1), 3)
+
+
+TARGET = 0.8      # every scored component in the top 20% of the field
+
+
 def measure(board):
+    """KPIs are the midterm's own scoring (week-08 / agent.md): Players = shop ALL + buyer ALL; shop ALL = 0.5 profit
+    + 0.3 revenue + 0.2 stars, buyer ALL = 0.5 surplus + 0.3 forum votes + 0.1 deals + 0.1 posts, each a percentile
+    among shops with a deal (buyers with a deal), ranked at the end of the round. Each component has one owner team;
+    the drivers (ticket size, hits in stock, sell-through, Enuri's losses) are diagnostics, not scored."""
     c = market_model.db()
+    shops = [x for x in board.get("shops", []) if x.get("deals")]
+    buyers = [x for x in board.get("buyers", []) if x.get("deals")]
+    me_s = next((x for x in shops if x.get("name") == kpi.NAME), {})
+    me_b = next((x for x in buyers if x.get("name") == kpi.NAME), {})
+    players = board.get("players", [])
+    me_p = next((x for x in players if (x.get("owner") or {}).get("login") == kpi.OWNER), {})
+    k = lambda name, v: kpi_row(name, v, TARGET, near=0.25)
+    rank = kpi.rank(board)
+    # diagnostics: what drives the scored numbers
     inv = _load(MD / "inventory.json", {})
     units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
     stock = {}
     for u in units:
         stock[u["sku"]] = stock.get(u["sku"], 0) + 1
-    since = time.time() - 6 * 3600
-    ours = [a for (a,) in c.execute(f"select amount from settles where ts>? and seq in ({market_model.ours(c)})", (since,))]
+    ours = [a for (a,) in c.execute(f"select amount from settles where ts>? and seq in ({market_model.ours(c)})",
+                                    (time.time() - 6 * 3600,))]
     rev_1h = c.execute(f"select coalesce(sum(amount), 0) from settles where ts>? and seq in ({market_model.ours(c)})",
                        (time.time() - 3600,)).fetchone()[0]
-    by_rev = sorted(board.get("shops", []), key=lambda s: -(s.get("revenue") or 0))
-    rev_rank = next((i + 1 for i, s in enumerate(by_rev) if s.get("name") == kpi.NAME), None)
-    rank = kpi.rank(board)
     hits = market_hits(c)
-    top5 = [s for s, _ in hits[:5]]
-    proven = kpi.stockouts(c)
+    top5 = [x for x, _ in hits[:5]]
     st = kpi.sell_through(c)
-    stock_cost = sum(u.get("cost") or 0 for u in units)
-    h = kpi.health({"profit": rank.get("profit")})
-    me_s = next((s for s in board.get("shops", []) if s.get("name") == kpi.NAME), {})
-    buyers = sorted(board.get("buyers", []), key=lambda b: -(b.get("all") or 0))
-    me_b = next((b for b in buyers if b.get("name") == kpi.NAME), {})
-    b_rank = next((i + 1 for i, b in enumerate(buyers) if b.get("name") == kpi.NAME), None)
-    lead = max((b.get("surplus") or 0 for b in buyers), default=0)
-    book = _load(HERE / "private" / "enuri_book.json", {})
-    acc = book.get("enuri_accountability") or {}
-    last = _last()
-    profit_h = None
-    if last and last.get("profit") is not None and me_s.get("profit") is not None:
-        hrs = max(0.1, (time.time() - last["ts"]) / 3600)
-        profit_h = round((me_s["profit"] - last["profit"]) / hrs)
+    acc = (_load(HERE / "private" / "enuri_book.json", {}) or {}).get("enuri_accountability") or {}
     return {
-        "sales": [kpi_row("revenue rank", rev_rank, 10, higher=False, near=0.5),
-                  kpi_row("revenue last 1h (ledger)", rev_1h, 3_000_000, near=0.34, unit="원"),
-                  kpi_row("shop rank", rank.get("shop_rank"), 10, higher=False, near=0.5),
-                  kpi_row("shop ALL", me_s.get("all"), 0.75, near=0.1),
-                  kpi_row("avg sale 6h", round(statistics.mean(ours)) if ours else None, 60000, unit="원"),
-                  kpi_row("VIP quotes (recent)", kpi.vip().get("vip_quotes_recent"), 10, near=0.5)],
-        "scm": [kpi_row("market top-5 hits in stock", sum(1 for s in top5 if stock.get(s)), 3, near=0.34),
-                kpi_row("our hits out of stock", len(proven["out_of_stock"]), 0, higher=False, near=1.0)],
-        "marketing": [kpi_row("sell-through 6h", st.get("sell_through_6h"), 0.6, near=0.2),
-                      kpi_row("stock older than 12h (share of cost)",
-                              round(st["older_cost"] / stock_cost, 3) if stock_cost else 0, 0.2, higher=False, near=0.5)],
-        "finance": [kpi_row("cash above the fatal line", h.get("cash_above_fatal"), 0, near=0),
-                    kpi_row("profit per hour since last HR run", profit_h, 0, near=0),
-                    kpi_row("profit", me_s.get("profit"), 1_000_000, near=0.5, unit="원")],
-        "buyer": [kpi_row("buyer rank", b_rank, 10, higher=False, near=0.5),
-                  kpi_row("surplus share of the leader", round((me_b.get("surplus") or 0) / lead, 3) if lead else None,
-                          0.5, near=0.3)],
-        "enuri": [kpi_row("money lost to missed/wrong buys (24h)", acc.get("lost"), 300000, higher=False, near=0.5,
-                          unit="원"),
-                  kpi_row("wrong buys (24h)", acc.get("wrong"), 30, higher=False, near=0.5)],
+        "sales": [k("shop ALL percentile (Players: shop half)", pct(shops, "all", me_s))],
+        "finance": [k("profit percentile (shop ALL x0.5)", pct(shops, "profit", me_s))],
+        "scm": [k("revenue percentile (shop ALL x0.3)", pct(shops, "revenue", me_s))],
+        "marketing": [k("stars percentile (shop ALL x0.2)", pct(shops, "stars", me_s))],
+        "buyer": [k("surplus percentile (buyer ALL x0.5)", pct(buyers, "surplus", me_b)),
+                  k("deals percentile (buyer ALL x0.1)", pct(buyers, "deals", me_b))],
+        "enuri": [k("forum votes percentile (buyer ALL x0.3)", pct(buyers, "forum", me_b)),
+                  k("posts percentile (buyer ALL x0.1)", pct(buyers, "posts", me_b))],
         "_board": {"shop_rank": rank.get("shop_rank"), "players_rank": rank.get("players_rank"),
-                   "buyer_rank": b_rank, "profit": me_s.get("profit"), "revenue": me_s.get("revenue"),
-                   "market_hits": hits[:5], "our_stock_of_hits": {s: stock.get(s, 0) for s in top5}},
+                   "players_percentile": pct(players, "total", me_p),
+                   "buyer_rank": next((i + 1 for i, b in enumerate(sorted(buyers, key=lambda b: -(b.get("all") or 0)))
+                                       if b.get("name") == kpi.NAME), None),
+                   "profit": me_s.get("profit"), "revenue": me_s.get("revenue"),
+                   "market_hits": hits[:5], "our_stock_of_hits": {x: stock.get(x, 0) for x in top5}},
+        "_diag": {"avg sale 6h": round(statistics.mean(ours)) if ours else None, "revenue last 1h": rev_1h,
+                  "market top-5 hits in stock": sum(1 for x in top5 if stock.get(x)),
+                  "sell-through 6h": st.get("sell_through_6h"), "Enuri lost 24h": acc.get("lost"),
+                  "Enuri wrong buys 24h": acc.get("wrong"), "VIP quotes": kpi.vip().get("vip_quotes_recent")},
     }
 
 
@@ -155,7 +158,7 @@ def challenge(teams, history):
             if len(past) == 2 and all(past):
                 old = r["target"]
                 new = (old - 1 if "rank" in r["kpi"] else old * 0.9) if not r.get("higher", True) else \
-                      (round(old * 1.1, 3) if old else old)
+                      (min(0.99, round(old * 1.1, 3)) if old else old)
                 if new != old and not ("rank" in r["kpi"] and new < 1):
                     tg[r["kpi"]] = new
                     raised.append(f"{NAMES[t]} {r['kpi']}: {old} -> {new}")
@@ -205,10 +208,10 @@ def auto_rewards(teams, history):
     return out
 
 
-def report(teams, board, history, raised=(), given=()):
+def report(teams, board, history, raised=(), given=(), diag=None):
     icon = {"good": "🟢", "warning": "🟡", "fire candidate": "🔴", None: "⚪"}
     lines = [f"# 인사팀 보고 {time.strftime('%m-%d %H:%M')}", "",
-             f"가게 {board['shop_rank']}위 · Players {board['players_rank']}위 · 바이어 {board['buyer_rank']}위 · "
+             f"Players {board['players_rank']}위 (백분위 {board.get('players_percentile')}, 중간평가 30%) · 가게 {board['shop_rank']}위 · 바이어 {board['buyer_rank']}위 · "
              f"이익 {board['profit']:,} · 매출 {board['revenue']:,}" if board.get("profit") is not None else "", "",
              "| 팀 | 점수 | 상태 | 추세 |", "|---|---|---|---|"]
     for t in TEAMS:
@@ -231,7 +234,8 @@ def report(teams, board, history, raised=(), given=()):
         for t in TEAMS]
     lines += [f"- 이번 보상: {', '.join(given)}" if given else "- 이번 보상: 없음",
               f"- 목표 상향(챌린지): {'; '.join(raised)}" if raised else "- 목표 상향(챌린지): 없음"]
-    lines += ["", f"시장 고가 히트 top5 (24h 판매): {board['market_hits']}", f"우리 재고: {board['our_stock_of_hits']}"]
+    lines += ["", f"진단 지표 (점수 아님): {diag}", f"시장 고가 히트 top5 (24h 판매): {board['market_hits']}",
+              f"우리 재고: {board['our_stock_of_hits']}"]
     return "\n".join(x for x in lines if x is not None)
 
 
@@ -243,7 +247,7 @@ def run(board=None):
     m = measure(board)
     teams = grade(m, history)
     raised, given = challenge(teams, history), auto_rewards(teams, history)
-    md = report(teams, m["_board"], history, raised, given)
+    md = report(teams, m["_board"], history, raised, given, m.get("_diag"))
     OUT.mkdir(parents=True, exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"ts": time.time(), "profit": m["_board"].get("profit"),
