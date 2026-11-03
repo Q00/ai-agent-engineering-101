@@ -207,7 +207,8 @@ def test_buyer(c, shops):
         check(adv and cands[0][1]["name"] == adv["ranked"][0]["shop"] and any("[enuri] advice" in x for x in logs),
               "round3 follows Enuri's ranking and logs the advice")
         check(mb.follow_enuri(order, shops, cat, {}, {}) == ([], None, {}), "no book: falls back to my own ranking")
-        cands, adv, _ = mb.follow_enuri(order, shops, cat, {"big-shop": dict(p, recent=p["recent"])}, enuri.book())
+        cands, adv, _ = mb.follow_enuri(order, shops, cat, {"big-shop": dict(p, recent=[[now - 60, "no answer", None]] * 3)},
+                                        enuri.book())
         check("big-shop" not in [x[1]["name"] for x in cands], "my own memory still filters Enuri's list")
     finally:
         mb.log = old_log
