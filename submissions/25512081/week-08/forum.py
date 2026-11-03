@@ -8,8 +8,10 @@ false grade claims. The model writes the post from those facts; it is told to ad
     python forum.py --buyer      # one buyer post if one is due (run detached by market_buyer)
 
 buyer_turn() is what market_buyer calls: it checks the clock and starts the post in the background, so the
-deal never waits on the model. shop_turn() is what restock calls: a short ad of what the shop has in stock,
-written in code, once an hour. Votes: +1 on posts whose ledger refs check out, -1 on posts that give orders to
+deal never waits on the model. shop_turn() is what restock calls: an hourly ad written in code from our
+own data only (popular units in stock with their opening share of list, and the ledger numbers of our latest
+sales, so a reader can check them): agents that read the forum are told to distrust claims, so the ad makes
+only claims they can verify. Votes: +1 on posts whose ledger refs check out, -1 on posts that give orders to
 agents or cite refs that are not settled deals on the ledger.
 
 A post's refs are a claim like any other until checked (the RA rule: a citation counts only if the record it
@@ -171,18 +173,56 @@ def buyer_post():
     print(time.strftime("%H:%M:%S"), json.dumps(post, ensure_ascii=False), flush=True)
 
 
+SETTLED = re.compile(r"\[acp\] settled (.+?) at (\d+), ledger #(\d+)")      # the kit's line for each of our sales
+DEFAULT_SHARE, GRADE_FACTOR = 0.85, {"A": 1.0, "B": 0.92, "C": 0.80}          # as in seller_r3.py
+
+
+def our_sales(n=3):
+    """Ledger numbers of our latest settled sales, from the kit's log (the market settles only honest receipts)."""
+    try:
+        with open(Path("logs") / "market-kit.log", "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 2_000_000))
+            tail = f.read().decode("utf-8", "replace")
+    except OSError:
+        return []
+    return [int(m.group(3)) for m in SETTLED.finditer(tail)][-n:]
+
+
+def shop_ad(inv):
+    """The hourly ad, every claim from our own data: what sells, at what share of list, and ledger refs a reader
+    can check. Nothing in it is an instruction to anyone."""
+    units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
+    if not units:
+        return None
+    pop = _load(MD / "restock_state.json", {}).get("pop", {})
+    rules = _load(MD / "prices.json", {}).get("rules", {})
+    seen, picks = set(), []
+    for u in sorted(units, key=lambda u: (-pop.get(u["category"], 0), u["grade"])):
+        if u["sku"] not in seen:
+            seen.add(u["sku"])
+            picks.append(u)
+        if len(picks) == 3:
+            break
+    bits = []
+    for u in picks:
+        share = rules.get(u["category"], DEFAULT_SHARE) * GRADE_FACTOR.get(u["grade"], 0.8)
+        left = (f", {int((u['expires_at'] - time.time()) / 3600)}h shelf life" if u.get("expires_at") else
+                (", 6h warranty" if u["grade"] == "A" else ""))
+        bits.append(f"{u['name'][:28]} ({u['sku']}) grade {u['grade']}{left}, opens ~{share:.0%} of list")
+    refs = our_sales()
+    text = (f"kimauve stock ({len(units)} units): " + "; ".join(bits) + ". Receipts state the true grade; "
+            + (f"recent settled sales: {', '.join('#' + str(r) for r in refs)}." if refs else "market certificate on."))
+    return {"post": text[:400], "refs": refs, "as": "shop"}
+
+
 def shop_turn(inv, log):
     if not _due("shop", SHOP_EVERY):
         return
-    units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
-    if not units:
-        return
-    cats = sorted({(u.get("category") or "").split(">")[-1] for u in units})
-    a = sum(1 for u in units if u["kind"] == "goods" and u["grade"] == "A")
-    text = (f"kimauve has {len(units)} units in stock: {', '.join(cats[:12])}{' ...' if len(cats) > 12 else ''}. "
-            f"True grades on every receipt, market certificate always on, 6h warranty on grade A goods ({a} now).")
-    _write([{"post": text[:400], "refs": [], "as": "shop"}])
-    log("[forum] shop post queued")
+    ad = shop_ad(inv)
+    if ad:
+        _write([ad])
+        log(f"[forum] shop post queued: {ad['post'][:120]}")
 
 
 if __name__ == "__main__":
