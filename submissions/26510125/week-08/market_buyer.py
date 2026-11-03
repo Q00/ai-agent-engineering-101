@@ -258,9 +258,9 @@ def vote_forum(md: Path, mem: dict, limit=3):
 
 
 def forum_post(md: Path, text: str):
-    """One buyer post per 5 minutes (the kit's limit); older lines would just queue up."""
+    """At most one buyer post per 30 minutes: a price report is news, a stream of them is spam."""
     stamp = md / "last_buyer_post"
-    if time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) < 300:
+    if time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) < 1800:
         return
     with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:
         f.write(json.dumps({"post": text, "refs": [], "as": "buyer"}, ensure_ascii=False) + "\n")

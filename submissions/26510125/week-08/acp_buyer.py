@@ -85,19 +85,42 @@ def plan_with_harness(tools: dict):
     return plan
 
 
+FOOD_GRADE_CUTS = (0.8, 0.45)        # the market's: share of shelf life left for food grade A, B
+
+
 def check_accept(o, co, accept):
-    """The kit's accept check, same reasons: certificate, shelf life, grade, warranty."""
+    """The kit's accept check, same reasons. The unit's grade and expiry come from the market's certificate in the
+    checkout (signed with order.market_pubkey), never from what the shop claims."""
+    cert, body = co.get("cert"), {}
+    if cert is not None:
+        try:
+            Ed25519PublicKey.from_public_bytes(base64.b64decode(o["market_pubkey"])).verify(
+                base64.b64decode(cert["sig"]), canon(cert["cert"]))
+            if cert["cert"].get("unit") == co.get("unit") and cert["cert"].get("sku") == co.get("item"):
+                body = cert["cert"]
+        except (InvalidSignature, KeyError, ValueError, TypeError):
+            pass
+        if not body:
+            return "the unit certificate is not the market's certificate of this unit"
     if not isinstance(accept, dict) or not accept:
         return None
-    if accept.get("cert") and not co.get("cert"):
-        return "no certificate on the unit"
+    hours = (body["expires_at"] - time.time()) / 3600 if body.get("expires_at") else None
+    grade = body.get("grade")
+    if hours is not None and o.get("shelf_hours"):
+        left = hours / o["shelf_hours"]
+        grade = "A" if left >= FOOD_GRADE_CUTS[0] else "B" if left >= FOOD_GRADE_CUTS[1] else "C"
+    if accept.get("cert") and not body:
+        return "no certificate, and the policy asks for one"
     if isinstance(accept.get("min_hours_left"), (int, float)) and o.get("kind") == "food":
-        hours = ((co.get("expires_at") or 0) - time.time()) / 3600
+        if hours is None:
+            return "no certificate to show the shelf life"
         if hours < accept["min_hours_left"]:
             return f"{hours:.2f} h of shelf life left, the policy asks for {accept['min_hours_left']}"
     if isinstance(accept.get("grades"), list) and accept["grades"]:
-        if (co.get("claim") or co.get("grade")) not in accept["grades"]:
-            return f"grade {co.get('claim') or co.get('grade')}, the policy accepts {accept['grades']}"
+        if grade is None:
+            return "no certificate to show the grade"
+        if grade not in accept["grades"]:
+            return f"grade {grade}, the policy accepts {accept['grades']}"
     if isinstance(accept.get("warranty_hours"), (int, float)) and o.get("kind") == "goods":
         if (co.get("warranty_hours") or 0) < accept["warranty_hours"]:
             return f"warranty {co.get('warranty_hours') or 0} h, the policy asks for {accept['warranty_hours']}"

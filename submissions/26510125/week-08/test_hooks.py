@@ -24,8 +24,8 @@ with contextlib.redirect_stdout(buf):
 out = json.loads(buf.getvalue().strip().splitlines()[-1])
 buy = {b["sku"]: b["qty"] for b in out["buy"]}
 assert set(buy) <= set(cat) and "ZZ" not in buy, buy
-assert buy.get("G1", 0) == 4 - 1, buy          # int(20000*0.05/225)=4 affordable, minus the one in stock
-assert buy.get("F1", 0) == 5 and buy.get("G2") == 1, buy   # desk: int(1000/675) = 1 unit
+assert buy.get("G1", 0) == 7 - 1, buy          # int(20000*0.08/225)=7 affordable, minus the one in stock
+assert buy.get("F1", 0) == 8 and buy.get("G2") == 2, buy   # desk: int(1600/675) = 2 units
 assert "bankrupt" not in out
 assert (md / "outbox.jsonl").exists() and json.loads((md / "outbox.jsonl").read_text())["as"] == "shop"
 
@@ -57,8 +57,12 @@ import base64, hashlib, httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 import acp_buyer, harness
 
-shop_key, buyer_key = Ed25519PrivateKey.generate(), Ed25519PrivateKey.generate()
+shop_key, buyer_key, market_key = Ed25519PrivateKey.generate(), Ed25519PrivateKey.generate(), Ed25519PrivateKey.generate()
 shop_pub = base64.b64encode(shop_key.public_key().public_bytes_raw()).decode()
+market_pub = base64.b64encode(market_key.public_key().public_bytes_raw()).decode()
+def cert(unit, sku, grade):
+    body = {"unit": unit, "sku": sku, "grade": grade}
+    return {"cert": body, "sig": base64.b64encode(market_key.sign(acp_buyer.canon(body))).decode()}
 card = {"protocol": "acp", "endpoint": "https://shop.test/acp", "tools": [
     {"name": "create_checkout_session", "method": "POST", "path": "/checkout_sessions", "input": {"line_items": "...", "receipt": "..."}},
     {"name": "get_checkout_session", "method": "GET", "path": "/checkout_sessions/{id}", "input": {}},
@@ -75,7 +79,7 @@ def mock(req: httpx.Request):
         return httpx.Response(200, json=card)
     if req.url.path == "/acp/checkout_sessions":
         return httpx.Response(201, json={"id": "cs1", "status": "ready_for_payment",
-                                         "checkout_jwt": jwt({"item": "G1", "price": 250, "task": "t1", "unit": "u9", "claim": mock.grade, "cert": True})})
+                                         "checkout_jwt": jwt({"item": "G1", "price": 250, "task": "t1", "unit": "u9", "claim": "A", "cert": cert("u9", "G1", mock.grade)})})
     if req.url.path.endswith("/complete"):
         pd = json.loads(req.content)["payment_data"]
         assert pd["checkout_mandate"]["mandate"]["order"] == "o1" and pd["payment_mandate"]["mandate"]["amount"] == 250
@@ -87,7 +91,7 @@ mock.grade = "A"
 _Client = httpx.Client
 acp_buyer.httpx.Client = lambda **kw: _Client(transport=httpx.MockTransport(mock))
 harness.ask_json = lambda *a, **k: {"plan": ["create_checkout_session", "get_checkout_session", "complete_checkout_session"]}
-payload = {"order": {"order": "o1", "acceptable": ["G1"], "kind": "goods", "mandates": {
+payload = {"order": {"order": "o1", "acceptable": ["G1"], "kind": "goods", "market_pubkey": market_pub, "mandates": {
                "checkout": {"mandate": {"a": 1}}, "payment": {"mandate": {"constraints": [{"type": "payment.amount_range", "max": 300}]}}}},
            "shop": "https://shop.test", "shop_pub": shop_pub, "receipt": receipt, "accept": {"cert": True, "grades": ["A", "B"]}}
 mr, why = acp_buyer.pay(payload, buyer_key)

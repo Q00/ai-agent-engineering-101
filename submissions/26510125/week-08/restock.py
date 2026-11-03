@@ -2,16 +2,16 @@
 
 The kit's default buys random SKUs when stock is low. This one reads demand from the market's ledger
 (what actually settled, market-wide, newest 500 entries) and buys the SKUs that sell, within the balance.
-Rules: keep stock under 40 units (storage is 1 %/day of cost), spend at most 5 % of the balance per SKU,
+Rules: keep stock under 120 units (storage is 1 %/day of cost), spend at most 5 % of the balance per SKU,
 prefer goods and long-shelf food (short shelf life rots before a buyer asks), file for bankruptcy only
-when below the line with nothing left to sell. Also posts a shop notice to the forum at most every 10 min.
+when below the line with nothing left to sell. Also posts a shop notice to the forum at most every 60 min.
 """
 import argparse, collections, json, time
 from pathlib import Path
 
 from market_price import settled
 
-MAX_UNITS, PER_SKU_SHARE, TOP = 40, 0.05, 10
+MAX_UNITS, PER_SKU_SHARE, TOP = 120, 0.08, 15
 
 
 def load(p):
@@ -45,13 +45,13 @@ def main():
             if room <= 0:
                 break
             unit_cost = cat[sku]["list_price"] * 0.75                      # worst-case cost share
-            qty = min(5, room, int(balance * PER_SKU_SHARE / unit_cost)) - have[sku]
+            qty = min(8, room, int(balance * PER_SKU_SHARE / unit_cost)) - have[sku]
             if qty >= 1:
                 out["buy"].append({"sku": sku, "qty": qty}); room -= qty
         print(f"[restock] balance {balance} units {len(units)} hot={len(hot)} -> buy {out['buy']}", flush=True)
     # forum: one shop notice per 10 minutes about what we stock
     stamp = md / "last_shop_post"
-    if units and time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) > 600:
+    if units and time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) > 3600:
         cats = collections.Counter(u.get("category", "").split(">")[-1] for u in units).most_common(3)
         line = {"post": "yeonsong2 재고 있음: " + ", ".join(f"{c} {n}개" for c, n in cats) + " — 등급 정직 표기, 비식품 보증 A 6h/B 3h.",
                 "refs": [], "as": "shop"}

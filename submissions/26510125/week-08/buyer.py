@@ -150,7 +150,12 @@ def _int(v):
 # ---------------------------------------------------------------- one negotiation
 
 def negotiate(base: str, item: str, budget: int, request_text=None, shop=None, hint=None) -> dict:
-    card = get_card(base)
+    try:
+        card = get_card(base)
+    except httpx.HTTPError as e:                       # stale tunnel (530), timeout: no deal, not a crash
+        log(f"[{item} @ {shop}] unreachable: {type(e).__name__} {str(e)[:80]}")
+        return {"shop": shop, "url": base, "item": item, "budget": budget, "hint": hint, "ask": None, "history": [],
+                "rounds": 0, "status": "unreachable", "task_id": None, "price": None}
     url = rpc_url(card, base)
     shop = shop or card.get("name")
     st = {"shop": shop, "url": url, "item": item, "budget": budget, "hint": hint, "ask": None, "history": [],

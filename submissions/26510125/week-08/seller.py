@@ -103,14 +103,15 @@ class Seller(AgentExecutor):
             deal["offer"] = int(m.group()) if m else deal["offer"]
 
         u = deal["unit"]
-        reserve = u["cost"]
         hours = (u["expires_at"] - time.time()) / 3600 if u.get("expires_at") else None
+        urgent = (hours is not None and hours < 12) or u.get("grade") == "C"
+        reserve = u["cost"] if urgent else int(u["cost"] * 1.15)       # margin floor unless the unit must go
         med, n = median_price(u["sku"])
         market = (f"\nThe market's recent settled price for this exact item is {med} (median of {n} deals); buyers know it, "
                   f"so open a little above {med} and close near it rather than at the list price.") if med and med >= reserve else ""
         move = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve, grade=u.get("grade", "?"), market=market,
                                       shelf=f", {hours:.1f} h of shelf life left" if hours is not None else "",
-                                      urgency=" — this unit loses value soon, so prefer closing" if (hours is not None and hours < 12) or u.get("grade") == "C" else "",
+                                      urgency=" — this unit loses value soon, so prefer closing" if urgent else "",
                                       transcript="\n".join(deal["lines"])), log=lambda m: print(m, flush=True))
         action = (move or {}).get("action")
         if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
