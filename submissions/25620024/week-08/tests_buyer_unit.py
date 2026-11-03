@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import buyer_memory  # noqa: E402
 import enuri  # noqa: E402
+enuri.SHOPS_API = None   # offline: the market-wide stock comes from the toy shops.json
 import market_model  # noqa: E402
 
 MD = TMP / ".market"

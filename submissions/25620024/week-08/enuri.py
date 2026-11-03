@@ -60,6 +60,7 @@ REQUESTS = HERE / "private" / "enuri_requests.json"
 MEMORY = HERE / "memory.jsonl"
 DEFAULTS = {"min_honest": 0.8, "max_broken": 0.15, "min_n": 5, "survey_quotes": 4, "tick_s": 300, "alpha": 0.3}
 ME = "dragonash"
+SHOPS_API = "https://market.ourolabs.ai/api/shops"
 KIT_LOG = HERE / "logs" / "market-kit.log"
 REFUSAL = re.compile(r"refus|declin|not paid|reject", re.I)
 PRICE_POST = re.compile(r"sku (G[0-9a-f]{8})\D{0,40}?(\d{3,7})", re.I)
@@ -185,6 +186,21 @@ def where(md):
     shops = load(Path(md) / "shops.json", []) or []
     cat = market_model.catalog(md)
     idx = {}
+    try:      # shops.json holds only the current order's SKUs; the market's /api/shops lists every shop's stock
+        import httpx
+        market = httpx.get(SHOPS_API, timeout=10).json().get("shops") or [] if SHOPS_API else []
+    except Exception:
+        market = []
+    for s in market:
+        if not isinstance(s, dict) or s.get("name") == ME:
+            continue
+        for sku, qty in (s.get("stock") or {}).items():
+            if qty:
+                r = cat.get(sku) or {}
+                e = idx.setdefault(sku, {"list": r.get("list_price"), "kind": r.get("kind"), "shops": []})
+                e["shops"].append({"shop": s.get("name"), "qty": qty, "url": s.get("url"), "name": r.get("name")})
+    if market:
+        return idx, len(cat), len(market)
     for s in shops if isinstance(shops, list) else []:
         if not isinstance(s, dict) or s.get("name") == ME:
             continue
