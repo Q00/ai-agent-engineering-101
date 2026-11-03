@@ -30,10 +30,9 @@ LLM 호출을 각각 써서 harness 호출 한도도 자주 소진했다. Round 
 
 `agent.json`은 kit v4가 호출하는 여섯 개 경계를 정의한다. seller와 buyer의
 최종 권한 판단은 Python 규칙으로 수행한다. 기존 협상 대화가 필요한 경로만
-Claude Code의 Haiku를 제안 생성기로 사용한다. 호출은 `effort low`, 최대
-`$0.002/call`, 하루 200회, 재시도 0회로 제한하며 120자 이하의 JSON만 요구한다.
-호출 횟수는 `.market/llm_quota.json`에 buyer process 전체가 공유한다. 한도 초과,
-timeout 또는 비정상 출력이면 exact budget을 모르는 결정론적 reference-price
+Claude Code의 Haiku(구독)를 제안 생성기로 사용한다. 호출 횟수 제한은 두지 않고
+호출 하나를 작게 유지한다: `effort low`, 도구 없음, 최대 `$0.005/call`, 재시도
+0회, 120자 이하의 JSON만 요구한다. 구독 한도 도달, timeout 또는 비정상 출력이면 exact budget을 모르는 결정론적 reference-price
 fallback이 제안한다. 따라서 모델 출력은 명령이 아니라 검증 전 후보다.
 
 | 경계 | 구현 | 역할 |
@@ -131,17 +130,18 @@ Round 3 시장 접속 전 로컬 검증 결과다.
 
 | 검증 | 결과 | 근거 |
 |---|---:|---|
-| Python 정책 단위 테스트 | 38/38 통과 | 7개 `test_*.py` |
+| Python 정책 단위 테스트 | 36/36 통과 | 7개 `test_*.py` |
 | 공식 `market_test_week07.py` | 25/25 통과 | `test-report.json`, `logs/market-test.log` |
 | v4 hook 계약 | 통과 | `agent.json`의 `{order}`, `{state}`, `{deal}` |
-| bounded Haiku smoke test | TODO | 하루 quota와 per-call 예산 제한을 적용한 실제 1회 호출 |
+| bounded Haiku smoke test | 통과 (2026-11-03) | `haiku` = `claude-haiku-5-5`; 흥정 1회 약 770 in / 95 out token(thinking 80), 가게 선택 1회 약 4.7k in / 244 out token, $0.0016 |
 
 공식 테스트에는 seller card/open/deal/bargain/signature와 buyer deal,
 budget hold, review-based selection이 각각 세 번씩 포함된다. 이 검증은 프로토콜
 호환성 결과이며 Round 3의 실제 ACP/AP2 정산 실적을 대신하지 않는다.
 Codex CLI 경로도 비교했으나 한 줄 JSON에 13,448 token을 사용해 비용 목표와
 맞지 않아 폐기했다. OpenAI API 경로는 현재 key가 401이라 폐기하고, 기존 Haiku를
-작은 prompt와 명시적 호출 quota 안에서만 사용하는 쪽으로 되돌렸다.
+작은 prompt로 사용하는 쪽으로 되돌렸다. 하루 200회 quota는 자정 후 약 1시간 만에
+소진되어 나머지 시간이 fallback이 되므로 제거했다.
 
 재현 명령:
 

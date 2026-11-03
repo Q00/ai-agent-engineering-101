@@ -1,5 +1,5 @@
 {
-  "harness": "Claude Code Haiku, effort low, max $0.002/call, 200 calls/day, no retry; deterministic quota/error fallback",
+  "harness": "Claude Code Haiku (subscription), effort low, max $0.005/call, no call quota, no retry; deterministic error fallback",
   "seller": {"cmd": "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python seller_r3.py --port {port}"},
   "buyer": {"cmd": "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python buyer.py --url {url} --item {item} --budget {budget}"},
   "market_buyer": {"cmd": "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"},
