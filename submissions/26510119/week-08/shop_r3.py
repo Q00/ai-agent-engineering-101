@@ -80,6 +80,21 @@ def floor_price(unit, shelf_hours=None):
     return full
 
 
+def target_price(unit, floor, past, shelf_hours=None):
+    """The price at which the shop takes an offer at once, without asking the model (part C).
+    list price x a share: the policy's share until this category has enough of our own deals, then the share
+    our deals actually sold at. Food with little shelf life left aims lower, since waiting risks the whole cost."""
+    p = policy.get("shop")
+    share, source = p["target_share"], "policy"
+    if past and past["deals"] >= p["target_min_deals"] and past["price"]:
+        share, source = past["price"], f"our last {past['deals']} deals"
+    h = hours_left(unit)
+    if h is not None and shelf_hours and h / shelf_hours < 0.45:
+        share *= p["short_life_target_factor"]
+        source += ", short shelf life"
+    return max(floor, int(unit["list_price"] * share)), f"{share:.0%} of list ({source})"
+
+
 def record(row):
     row = {"time": datetime.now(timezone.utc).isoformat(timespec="seconds"), **row}
     with open(SALES, "a", encoding="utf-8") as f:

@@ -149,12 +149,17 @@ class Seller(AgentExecutor):
             sold = deal["context"]
         else:
             sold = (f"Your recent {item} sales averaged {deal['avg_price']:.0f}." if deal.get("avg_price") else "")
-        answer = harness.ask(OFFER_PROMPT.format(item=deal.get("name", item), reserve=reserve, offer=offer,
+        if deal.get("target") and offer >= deal["target"]:
+            log(f"[target] offer {offer} is at or above the target {deal['target']}; accepting without the model")
+            answer = {"action": "accept", "price": offer}
+        else:
+            answer = None
+        answer = answer or harness.ask(OFFER_PROMPT.format(item=deal.get("name", item), reserve=reserve, offer=offer,
                                                  ask=deal["ask"], history="\n".join(deal["history"]), sold=sold),
                              log) or {}
         action, price = answer.get("action"), to_int(answer.get("price"))
 
-        if deal.get("unit") and len(deal["offers"]) == 1:
+        if deal.get("unit") and len(deal["offers"]) == 1 and offer < deal.get("target", 0):
             first = policy.get("shop")["first_accept_share"]
             if offer < deal["ask"] * first:          # the first offer is a probe: never take it far below the ask
                 price = max(reserve, (deal["ask"] + offer) // 2)
@@ -212,7 +217,9 @@ class Seller(AgentExecutor):
         quality = shop_r3.quality_line(u, sh)
         past = shop_r3.stats(u.get("category"))
         history = shop_r3.describe(u.get("category"), past)
-        log(f"[pricing] {u['sku']} {u.get('category')} list {u['list_price']} cost {u['cost']} floor {floor}; {history}")
+        target, why = shop_r3.target_price(u, floor, past, sh)
+        log(f"[pricing] {u['sku']} {u.get('category')} list {u['list_price']} cost {u['cost']} floor {floor} "
+            f"target {target} ({why}); {history}")
         ask = to_int((harness.ask(OPEN_PROMPT_R3.format(name=u["name"], sku=u["sku"], list_price=u["list_price"],
                                                         quality=quality, floor=floor, history=history), log)
                       or {}).get("ask"))
@@ -224,11 +231,11 @@ class Seller(AgentExecutor):
             ask = floor
         context = (f"List price {u['list_price']}; buyers value it at the list price at most. {history}")
         self.open[task.id] = {"item": u["sku"], "name": u["name"], "unit": u, "category": u.get("category"),
-                              "ask": ask, "reserve": floor, "context": context,
+                              "ask": ask, "reserve": floor, "target": target, "context": context,
                               "history": [f"you asked {ask}"], "offers": []}
         shop_r3.record({"kind": "open", "task": task.id, "sku": u["sku"], "category": u.get("category"),
                         "list_price": u["list_price"], "cost": u["cost"], "grade": u.get("grade"),
-                        "floor": floor, "ask": ask})
+                        "floor": floor, "target": target, "ask": ask})
         log(f"[{tid}] {u['sku']} unit {u['unit']} ask {ask}")
         await up.requires_input(say(f"{u['name']} ({u['sku']}), {quality}. "
                                     f"Send your offer as a number. Asking {ask}."))
