@@ -1,5 +1,8 @@
 """The kit's restock hook (every 60 s in Round 3): ingest memory, plan the buy, decide bankruptcy.
 
+Supply opens about every 20 minutes for 3 minutes; while it is closed and not opening within
+stock.window_lead_s, the hook still ingests but buys nothing.
+
     python restock.py --state .market
 
 Prints exactly one JSON line, {"buy": [{"sku", "qty"}], "bankrupt": true?}, and {"buy": []} on any error,
@@ -61,16 +64,33 @@ def run(state, t0):
 
     url = ingest.own_url()
     card_ok = not policy.get(pol, "stock.require_own_card") or stock.own_card_ok(url)
+    plan = stock.plan_restock(inv, catalog, demand, summary, pol, now)
+    win = stock.supply_window(inv, now)
+    held = dict(stock.held(inv), empty_picks=plan["empty_picks"])
     if not card_ok:
-        decision("restock", "restock", policy_ver=ver, inputs={"card_ok": False, "url": url, "ingest": ing},
+        decision("restock", "restock", policy_ver=ver,
+                 inputs={"card_ok": False, "url": url, "ingest": ing, "window": win, "stock": held},
                  rules=["stock.require_own_card"], choice=[], why="our agent card does not answer; buy nothing")
         return out
+    if stock.window_closed(win, pol):
+        decision("restock", "restock", policy_ver=ver,
+                 inputs={"balance": inv.get("balance"), "ingest": ing, "card_ok": card_ok, "window": win,
+                         "stock": held},
+                 rules=["stock.window_lead_s"], choice=[], why=f"supply window closed; opens in {win['in_s']} s",
+                 elapsed_ms=int((time.time() - t0) * 1000))
+        return out
 
-    plan = stock.plan_restock(inv, catalog, demand, summary, pol, now)
+    fit = stock.lines_that_fit(win)
+    if fit is not None and fit < len(plan["buy"]):          # lines after the close would only wait and be skipped
+        plan["excluded"].update({b["sku"]: "window_closing" for b in plan["buy"][fit:]})
+        plan["buy"] = plan["buy"][:fit]
     out["buy"] = plan["buy"]
     reasons = {}
     for r in plan["excluded"].values():
         reasons[r] = reasons.get(r, 0) + 1
+    fskus, planned = policy.get(pol, "stock.focus_skus"), {b["sku"] for b in plan["buy"]}
+    focus = {"skus": len(fskus), "planned": len(planned & set(fskus)),
+             "excluded": dict([(s, plan["excluded"].get(s, "not_planned")) for s in fskus if s not in planned][:8])}
     leaf = {sku: str((catalog.get(sku) or {}).get("category") or "").split(">")[-1] for sku in
             [b["sku"] for b in plan["buy"]]}
     refs = [summary_ref("cat", leaf[b["sku"]]) for b in plan["buy"]] + \
@@ -78,7 +98,7 @@ def run(state, t0):
     decision("restock", "restock", policy_ver=ver,
              inputs={"balance": inv.get("balance"), "units": len(inv.get("units") or []),
                      "headroom": plan["headroom"], "excluded": reasons, "ingest": ing, "card_ok": card_ok,
-                     "summary_built_at": summary.get("built_at")},
+                     "summary_built_at": summary.get("built_at"), "window": win, "stock": held, "focus": focus},
              memory_refs=refs, rules=plan["rules"], choice=plan["buy"],
              why=f"{len(plan['buy'])} lines, worst cost {plan['worst_cost']} of headroom {plan['headroom']}",
              elapsed_ms=int((time.time() - t0) * 1000))
