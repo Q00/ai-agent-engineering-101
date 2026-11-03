@@ -505,6 +505,24 @@ class StockSellerTests(unittest.IsolatedAsyncioTestCase):
         self.updater.reject.assert_awaited_once()
         self.assertEqual(len(self.seller.open), 1)
 
+    async def test_fifo_uses_arrival_time_instead_of_expiry(self):
+        import time
+        now = time.time()
+        old = dict(self.unit, unit="older", supplied_at=now - 200, expires_at=now + 7200)
+        new = dict(self.unit, unit="newer", supplied_at=now - 100, expires_at=now + 3600)
+        self.candidates.side_effect = None
+        self.candidates.return_value = [new, old]
+        await self.seller.execute(self.context("Buy S1"), self.queue)
+        self.assertEqual(self.seller.open["simulated-task"]["unit"]["unit"], "older")
+
+    async def test_fifo_applies_to_goods_too(self):
+        old = dict(self.unit, unit="older", kind="goods", supplied_at=100, expires_at=None)
+        new = dict(self.unit, unit="newer", kind="goods", supplied_at=200, expires_at=None)
+        self.candidates.side_effect = None
+        self.candidates.return_value = [new, old]
+        await self.seller.execute(self.context("Buy S1"), self.queue)
+        self.assertEqual(self.seller.open["simulated-task"]["unit"]["unit"], "older")
+
     async def test_cancellation_releases_unit(self):
         await self.seller.execute(self.context("Buy S1"), self.queue)
         await self.seller.cancel(self.context(""), self.queue)

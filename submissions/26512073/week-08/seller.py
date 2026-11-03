@@ -145,9 +145,10 @@ class Seller(AgentExecutor):
             if not units:
                 await up.reject(say("No matching unexpired unit is available in stock."))
                 return
-            # Dispatch the earliest-expiring unit first; no quality claim is made.
-            unit = min(units, key=lambda u: (u.get("expires_at") or float("inf"),
-                                             u.get("supplied_at", 0)))
+            # FIFO among matching available units, including both food and goods.
+            # Missing supply times sort last rather than looking artificially old.
+            unit = min(units, key=lambda u: (u.get("supplied_at", float("inf")),
+                                             u["unit"]))
             ask = stock_opening_ask(unit)
             deal = {"item": unit["sku"], "unit": unit, "ask": ask,
                     "opening_ask": ask, "counters": 0, "last_seen": now,

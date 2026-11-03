@@ -11,6 +11,8 @@
 - Buyer requires a market certificate. Food must last at least the order's
   `use_within_hours`. Grades A/B/C are accepted; no goods warranty is required.
 - Seller makes no grade or warranty promises; the kit attaches the certificate.
+- Dispatch matching available units by FIFO (earliest `supplied_at` first), for
+  both food and goods. Expired and held units are excluded before FIFO selection.
 
 Configuration is in `round3_rules.json`. It is enabled for the first run.
 The old 15% fixed-reserve adaptation applies only to the retained Round 2 path.
