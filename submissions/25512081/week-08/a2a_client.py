@@ -31,6 +31,26 @@ def jsonrpc_url(card, base_url):
     return base_url.rstrip("/") + "/"
 
 
+NUM = re.compile(r"\d+(?:\.\d+)?")
+DURATION = re.compile(r"(?i)\s*-?\s*(?:h\b|hours?\b)")
+LABELED = re.compile(r"(?i)(?<!list )\b(?:asking|ask|counter(?:offer)?|price(?: is)?|at)\b[:\s]*(\d+(?:\.\d+)?)"
+                     r"(?!\s*-?\s*(?:h\b|hours?|%|\d))")
+
+
+def ask_in(text):
+    """The price in a seller's text: the last number, unless that number is a duration ("ask 225990. Certificate
+    attached; goods warranty 6h.", "asking 25060. 10 hours of shelf life left.": 205 replies in our Round 3 log
+    were read as asking 3-72), then the last number after asking / ask / counter / price / at."""
+    nums = list(NUM.finditer(text or ""))
+    if not nums:
+        return None
+    if DURATION.match(text, nums[-1].end()):
+        labeled = LABELED.findall(text)
+        if labeled:
+            return int(float(labeled[-1]))
+    return int(float(nums[-1].group()))
+
+
 class Peer:
     """One seller: its card and its JSON-RPC endpoint."""
 
@@ -69,10 +89,8 @@ class Reply:
         msg = st.get("message", {}) or {}
         self.text = " ".join(p.get("text", "") for p in msg.get("parts", []))
         meta = msg.get("metadata") or {}
-        nums = re.findall(r"\d+(?:\.\d+)?", self.text)
         # the seller's current ask: metadata {"ask": N} if present, else the last number
-        self.ask = meta.get("ask") if isinstance(meta.get("ask"), (int, float)) else (
-            int(float(nums[-1])) if nums else None)
+        self.ask = meta.get("ask") if isinstance(meta.get("ask"), (int, float)) else ask_in(self.text)
         self.price = None
         for a in task.get("artifacts", []):
             for p in a.get("parts", []):
