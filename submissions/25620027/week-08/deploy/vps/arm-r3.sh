@@ -12,6 +12,14 @@ DONE="$BASE/r3-switched"
 [ -f "$DONE" ] && exit 0
 ROUND=$(curl -sS -m 15 https://market.ourolabs.ai/api/board 2>/dev/null \
   | python3 -c 'import json,sys; print(json.load(sys.stdin).get("round") or 0)' 2>/dev/null || echo 0)
+# The board timed out for minutes on 2026-11-03 evening while the market was
+# reworked; the kit's own order lines carry the round too ("[order o-..] chair,
+# budget 225, round 3"), so read the latest one when the board gives nothing.
+if [ "$ROUND" = "0" ]; then
+  ROUND=$(tail -n 400 "$BASE/data/r3/logs/market-kit.log" 2>/dev/null \
+    | grep -a '^[0-9:]* \[order ' | tail -n 1 | sed -nE 's/.*, round ([0-9]+)(, .*)?$/\1/p')
+  ROUND=${ROUND:-0}
+fi
 if [ "$ROUND" = "3" ]; then
   echo "== $(date -u +%FT%TZ) market round 3 detected; switching" >>"$LOG"
   if "$BASE/switch-r3.sh"; then
