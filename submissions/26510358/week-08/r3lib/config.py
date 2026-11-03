@@ -51,12 +51,14 @@ RESTOCK_REVIEW_EVERY_MIN = 30       # background ReAct review of the restock pla
 ADJUST_TTL_H = 2                    # a review's scaling expires unless renewed
 ADJUST_MIN, ADJUST_MAX = 0.0, 1.5   # clamp on a category's demand target scaling
 
+BUYER_GRADES = ["A", "B", "C"]     # goods keep full value unless they break; max_pay already prices the break risk
+
 # --- buyer -----------------------------------------------------------------------------------------
 MIN_SURPLUS_RATIO = 0.05            # never pay more than 95% of list price
 FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
 MAX_OFFERS = 6
 SHOPS_TO_TRY = 3
-HOURS_MARGIN = 2                    # food must last use_within_hours + this
+HOURS_MARGIN = 0.25                 # food must last use_within_hours + this (2 h refused 8 deals worth paying)
 
 
 def hours_left_in_round(now=None):

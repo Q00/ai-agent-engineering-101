@@ -36,7 +36,7 @@ def decision_log(row):
 def accept_policy(order):
     if order.get("kind") == "food":
         return {"cert": True, "min_hours_left": float(order.get("use_within_hours") or 0) + config.HOURS_MARGIN}
-    return {"cert": True, "grades": ["A", "B"]}
+    return {"cert": True, "grades": list(config.BUYER_GRADES)}
 
 
 def candidates(order, shops, mem, my_urls):
