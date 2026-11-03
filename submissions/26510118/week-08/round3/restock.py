@@ -28,6 +28,11 @@ does not count as on the shelf; S5 sells it off). Exploration phase:
             planning as if every unit came in at the dearest cost (75% of list)
   wanted    a category the analysis found wanted (another agent's "wanted" post on the
             forum, or one our buyer found no shop for) gets its representative product
+Supply windows (the market's rule from the evening of 11/3): supply opens for everyone for 3 minutes
+every 20 (the first window 10 minutes); outside one the market refuses (429), and inventory.json
+carries restock {open, opens_at, closes_at}. A run with the window shut and not opening within
+SUPPLY_LEAD buys nothing; otherwise it plans only the lines the window leaves time for (one supply
+call per SUPPLY_GAP seconds), the most needed first.
 Rules in force (analysis/active_rules.json, which the integrated analysis writes only in
 the focus phase): focus categories +1, drop categories 0. Wind-down, by the clock: from 3
 days before the end only products selling 2 a day or more are refilled and nothing new is
@@ -53,6 +58,8 @@ SLOW = RUN_EVERY >= 600  # refills wait 10 minutes or more: keep one more unit o
 SOLD_TARGET = 2 + SLOW   # a product we have sold
 HOT, HOT_TARGET = 3, 1 + SLOW   # a category the market sold this many of in a day: its products start here
 WANTED_WEIGHT = 2        # a wanted category counts as this many sales when ordering what to buy first
+SUPPLY_LEAD = 90         # seconds: the kit waits up to this long for a window before it skips a line
+SUPPLY_GAP = 10          # seconds between the kit's supply calls
 MAX_TARGET = 4
 GATE = 10                # our settled sales before stage 2
 MAX_PRICE = 60_000       # stage 1 list prices
@@ -161,6 +168,13 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     to_end = common.ROUND_END - now
     if to_end < STOP:
         return {"buy": []}, {"note": "last 6 h: no buying"}
+    window = inv.get("restock") or {}
+    if window and not window.get("open") and (window.get("opens_at") or 0) - now > SUPPLY_LEAD:
+        return {"buy": []}, {"note": f"supply closed; the next window opens in {int(window['opens_at'] - now)} s"}
+    lines = LINES
+    if window.get("closes_at"):
+        left = window["closes_at"] - max(now, window.get("opens_at") or now)
+        lines = max(1, min(LINES, int(left // SUPPLY_GAP)))
     one, two = stages(catalog, demand, summary)
     sold = Counter(s["sku"] for s in sales)
     sold_day = Counter(s["sku"] for s in sales if s.get("ts", 0) >= now - 86400)
@@ -209,10 +223,10 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
         if qty:
             buy.append({"sku": sku, "qty": qty})
             spend += each * qty
-        if len(buy) >= LINES:
+        if len(buy) >= lines:
             break
     info = {"stage1": len(one), "gate": f"{len(sales)}/{GATE}" + (" open" if gate else ""),
-            "targets": len(targets), "gaps": len(gaps), "stock": int(value), "wind_down": wind_down}
+            "targets": len(targets), "gaps": len(gaps), "stock": int(value), "wind_down": wind_down, "lines": lines}
     return {"buy": buy}, info
 
 

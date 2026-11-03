@@ -256,6 +256,17 @@ def test_restock(fake: Fake):
     buy = out["buy"]
     check("empty shelf, no evidence yet: 10 lines of one unit each, stage 1 in its own order",
           [b["sku"] for b in buy] == one[:10] and all(b["qty"] == 1 for b in buy), [b["sku"] for b in buy])
+    shut = dict(inv([]), restock={"open": False, "opens_at": NOW + 600, "closes_at": NOW + 780})
+    out, info = restock.plan(shut, CATALOG, DEMAND, {}, [], [], rules, NOW)
+    check("supply window shut for 10 more minutes: buys nothing and says when it opens",
+          out["buy"] == [] and info["note"] == "supply closed; the next window opens in 600 s", info)
+    soon = dict(inv([]), restock={"open": False, "opens_at": NOW + 60, "closes_at": NOW + 240})
+    check("a window opening within 90 s: the run plans its 10 lines (the kit waits for it)",
+          len(restock.plan(soon, CATALOG, DEMAND, {}, [], [], rules, NOW)[0]["buy"]) == 10)
+    closing = dict(inv([]), restock={"open": True, "opens_at": NOW - 135, "closes_at": NOW + 45})
+    out, info = restock.plan(closing, CATALOG, DEMAND, {}, [], [], rules, NOW)
+    check("an open window with 45 s left: only the 4 lines it has time for, the most needed first",
+          [b["sku"] for b in out["buy"]] == one[:4] and info["lines"] == 4, out["buy"])
     check("the kit runs restock every 20 minutes: a product we sold is kept at 3, a hot category starts at 2",
           restock.RUN_EVERY == 1200 and restock.SOLD_TARGET == 3 and restock.HOT_TARGET == 2)
     hot = {"by_category": {CATALOG[FILLERS[11]]["category"]: {"sold_24h": 5}}}
