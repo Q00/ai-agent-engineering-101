@@ -867,3 +867,45 @@ def test_scout_reads_review_owners_from_the_market_and_caps_self_reviewed_shops(
         assert len(calls) == before
     finally:
         manager.http.close()
+
+
+def test_forum_wanted_posts_are_counted_by_code_and_lead_the_hot_list() -> None:
+    from r3.picture import forum_wants, merge_hot  # noqa: PLC0415 - test only
+
+    categories = ["식품>축산/계란>신선육류", "식품>계란/유제품>우유/두유", "가구>침대"]
+    now = 10_000.0
+    rows = [
+        {
+            "ts": now - 60,
+            "role": "buyer",
+            "author": "b1",
+            "text": "신선육류 구합니다. 18시간",
+        },
+        {"ts": now - 90, "role": "buyer", "author": "b2", "text": "신선육류 찾습니다"},
+        {
+            "ts": now - 30,
+            "role": "buyer",
+            "author": "b3",
+            "text": "Wanted: G1; category=식품>계란/유제품>우유/두유; certificate",
+        },
+        # Not requests, too old, a shop, or our own buyer: none count.
+        {
+            "ts": now - 10,
+            "role": "buyer",
+            "author": "b4",
+            "text": "[시세] 신선육류 71%",
+        },
+        {
+            "ts": now - 7200,
+            "role": "buyer",
+            "author": "b5",
+            "text": "가구>침대 구합니다",
+        },
+        {"ts": now - 10, "role": "shop", "author": "s", "text": "신선육류 구합니다"},
+        {"ts": now - 10, "role": "buyer", "author": "us", "text": "침대 구합니다"},
+        "not a post",
+    ]
+    wants = forum_wants(rows, categories, since=now - 3600, skip_author="us")
+    assert wants == {"식품>축산/계란>신선육류": 2, "식품>계란/유제품>우유/두유": 1}
+    # Then: a category asked twice leads the scout's hot list; one ask does not.
+    assert merge_hot(("가구>침대",), wants) == ("식품>축산/계란>신선육류", "가구>침대")

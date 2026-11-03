@@ -15,6 +15,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -39,6 +40,13 @@ PICTURE_FILE: Final = "r3-picture.json"
 MAX_SHOPS: Final = 60
 MAX_SNIPPETS_PER_SHOP: Final = 2
 MAX_FORUM_POSTS: Final = 20
+# Buyers' request posts, counted by code over the last hour of the forum.
+WANTED: Final = re.compile(
+    r"구합니다|구해요|구함|찾습니다|찾아요|wanted|looking for", re.IGNORECASE
+)
+WANTED_MIN_POSTS: Final = 2
+MAX_WANTS: Final = 10
+MAX_HOT: Final = 10
 NEUTRAL_TRUST: Final = 0.67
 # Code-enforced trust ceilings: a shop whose reviews are mostly its own owner's, or
 # that fills reviews with appeals to buying agents, cannot be rated above these.
@@ -458,6 +466,51 @@ def category_names(
     if not names:
         names = {item.category for item in catalog.values() if item.category}
     return frozenset(names)
+
+
+def forum_wants(
+    rows: Iterable[object],
+    categories: Iterable[str],
+    *,
+    since: float,
+    skip_author: str = "",
+) -> dict[str, int]:
+    """Count categories named in buyers' wanted posts since ``since``, by code.
+
+    The forum moves dozens of posts a minute, so the scout's 20-post window misses
+    most requests ("신선육류 구합니다", "Wanted: ...; category=식품>..."). Only
+    categories from the market's own list count, matched by their full path or
+    their last segment; the post text itself never reaches a decision.
+    """
+    leaves: dict[str, str] = {}
+    for category in categories:
+        leaves.setdefault(category, category)
+        leaves.setdefault(category.rsplit(">", 1)[-1], category)
+    counts: dict[str, int] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        ts, text = row.get("ts"), row.get("text")
+        if (
+            row.get("role") != "buyer"
+            or row.get("author") == skip_author
+            or not isinstance(ts, (int, float))
+            or ts < since
+            or not isinstance(text, str)
+            or not WANTED.search(text)
+        ):
+            continue
+        named = {full for key, full in leaves.items() if key and key in text}
+        for full in named:
+            counts[full] = counts.get(full, 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: -kv[1])[:MAX_WANTS])
+
+
+def merge_hot(hot: Iterable[str], wants: Mapping[str, int]) -> tuple[str, ...]:
+    """Put categories asked at least twice first, then the scout's own."""
+    asked = [c for c, n in wants.items() if n >= WANTED_MIN_POSTS]
+    merged = list(dict.fromkeys([*asked, *hot]))
+    return tuple(merged[:MAX_HOT])
 
 
 def dump_compact(value: object, limit: int) -> str:

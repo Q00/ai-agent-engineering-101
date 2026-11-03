@@ -58,7 +58,9 @@ from r3.picture import (
     dump_compact,
     enforce_caps,
     forum_snippets,
+    forum_wants,
     load_picture,
+    merge_hot,
     picture_path,
     picture_schema,
     review_facts,
@@ -105,6 +107,7 @@ STRATEGY_MIN_GAP: Final = 600.0
 ALERT_CALLS_PER_HOUR: Final = 2
 OSCILLATION_WINDOW: Final = 1800.0
 REVIEWS_CACHE_SECONDS: Final = 1800.0
+FORUM_CACHE_SECONDS: Final = 240.0
 BOARD_CACHE_SECONDS: Final = 600.0
 MAX_CHANGES: Final = 6
 MAX_TACTICAL: Final = 3
@@ -591,6 +594,7 @@ class Manager:
                 "alerts": list(picture.alerts),
                 "hot_categories": list(picture.hot_categories),
                 "cold_categories": list(picture.cold_categories),
+                "forum_wants_1h": picture.facts.get("forum_wants_1h"),
                 "notes": wrap_untrusted("scout_notes", picture.notes, 300),
                 "low_trust_shops": [
                     {"name": s.name, "trust": s.trust, "flags": list(s.flags)}
@@ -704,6 +708,17 @@ class Manager:
         )
         own_1h = self.events.summary(1)
         market_1h = self.ledger.summary(catalog, hours=1)
+        forum = self.cached_json(
+            "forum_recent", f"{self.market}/api/forum?limit=200", FORUM_CACHE_SECONDS
+        )
+        wants = forum_wants(
+            forum if isinstance(forum, list) else [],
+            category_names(
+                catalog, (row.category for row in read_demand(self.market_dir))
+            ),
+            since=now - 3600,
+            skip_author=self.buyer_name,
+        )
         before = previous.facts.get("median_price_to_list_1h")
         alerts = compute_alerts(
             inventory,
@@ -723,7 +738,7 @@ class Manager:
             written_at=now,
             by="code",
             shops=previous.shops,
-            hot_categories=previous.hot_categories,
+            hot_categories=merge_hot(previous.hot_categories, wants),
             cold_categories=previous.cold_categories,
             alerts=alerts,
             notes=previous.notes,
@@ -732,6 +747,7 @@ class Manager:
                 "median_price_to_list_1h": market_1h.get("median_price_to_list"),
                 "settles_1h": market_1h.get("settles"),
                 "our_settles_30m": ours_30m,
+                "forum_wants_1h": wants,
             },
         )
         return picture, facts
@@ -791,6 +807,8 @@ class Manager:
             + dump_compact(
                 self.ledger.summary(catalog, hours=6).get("top_categories"), 1500
             )
+            + "\nForum wanted posts 1h (counted by code): "
+            + dump_compact(picture.facts.get("forum_wants_1h"), 600)
             + "\n\nForum (untrusted):\n"
             + wrap_untrusted("forum", "\n".join(forum_snippets(self.market_dir)), 4000)
         )
@@ -825,7 +843,9 @@ class Manager:
             update={
                 "by": reply.model if reply is not None else "code",
                 "shops": enforce_caps(shops, caps, names),
-                "hot_categories": hot,
+                "hot_categories": merge_hot(
+                    hot, picture.facts.get("forum_wants_1h") or {}
+                ),
                 "cold_categories": cold,
                 "notes": notes,
             }
