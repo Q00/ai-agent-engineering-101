@@ -1,5 +1,6 @@
 """Deterministic money rules for both sides. Pure functions over a unit/SKU and evidence from memory, so they
 are easy to test and to explain in REPORT.md."""
+import math
 import time
 
 from . import config
@@ -99,3 +100,39 @@ def buyer_next_offer(list_price, max_pay, ask, last_offer, n):
     if nxt <= last_offer:
         nxt = last_offer + max(1, int(list_price * 0.02))
     return "offer", min(max_pay, nxt)
+
+
+# ------------------------------------------------------------------------------------------- restock (EV)
+def poisson_tail(mu, j):
+    """P(N >= j) for N ~ Poisson(mu): the chance the j-th unit we hold sells within the horizon."""
+    if j <= 0:
+        return 1.0
+    term = math.exp(-mu)
+    cdf = term
+    for k in range(1, j):
+        term *= mu / k
+        cdf += term
+    return max(0.0, 1.0 - cdf)
+
+
+def hold_loss(kind, cost, shelf_hours=None, horizon_h=None):
+    """Expected loss of a unit that does not sell within the horizon."""
+    h = horizon_h or config.HORIZON_H
+    if kind == "food":
+        if shelf_hours and shelf_hours < 2 * h:
+            return cost                                   # it will expire before the next chance: total loss
+        return config.FOOD_LEFTOVER_RISK * cost
+    return cost * (0.01 * h / 24 + config.GOODS_END_RISK)  # storage 1%/day plus clearance and round-end risk
+
+
+def ev_quantity(have, mu, price, cost, loss, cap=20):
+    """How many more units have positive expected profit. The (have + j)-th unit sells with P(N >= have + j);
+    EV_j = P * (price - cost) - (1 - P) * loss. Units are bought while EV_j > 0. Returns (qty, [EV_j ...])."""
+    evs = []
+    for j in range(1, cap + 1):
+        p = poisson_tail(mu, have + j)
+        ev = p * (price - cost) - (1 - p) * loss
+        if ev <= 0:
+            break
+        evs.append(round(ev))
+    return len(evs), evs

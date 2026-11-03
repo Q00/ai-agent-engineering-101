@@ -27,7 +27,7 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 
-from r3lib import config, market
+from r3lib import config, market, pricing
 from r3lib.memory import Memory
 
 FORUM_EVERY = 10 * 60
@@ -91,11 +91,13 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     for s, i in cat.items():
         info_by_cat.setdefault(i["category"], []).append((s, i))
     units = inv.get("units") or []
-    have, stock_cost = {}, 0
+    have, stock_cost, cat_cost = {}, 0, {}
     for u in units:
         if u.get("grade") != "expired":
             have[u["category"]] = have.get(u["category"], 0) + 1
             stock_cost += u["cost"]
+            cat_cost[u["category"]] = cat_cost.get(u["category"], 0) + u["cost"]
+    cat_cap = config.CATEGORY_MAX_SHARE * config.MAX_STOCK_COST
     balance = inv.get("balance") or 0
     budget = min(balance - config.CASH_RESERVE, config.MAX_STOCK_COST - stock_cost)
     explore_budget = min(budget, config.EXPLORE_SHARE * config.MAX_STOCK_COST - (mem.get("explore_spent") or 0))
@@ -126,13 +128,26 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         if factor != 1.0:
             why.append({"category": k, "review_factor": factor, "target": target})
         if need > 0:
-            needs.append((exp_h * row.get("median_price", 0), k, need, row))
-    needs.sort(reverse=True)
-    for score, k, need, row in needs:
+            margin = (ratio or config.EV_DEFAULT_PRICE_RATIO) - config.EV_COST_RATIO
+            needs.append((exp_h * row.get("median_price", 0) * margin, k, need, row, exp_h * factor, ratio))
+    needs.sort(key=lambda x: -x[0])                       # expected margin per hour, not revenue
+    for score, k, need, row, mu_h, ratio in needs:
         sku = pick_sku(k, info_by_cat, mem, row.get("median_price"), explore=False)
         if not sku:
             continue
-        qty = min(20, need)
+        info = cat[sku]
+        L = info["list_price"]
+        cost = L * config.EV_COST_RATIO
+        price = L * (ratio or config.EV_DEFAULT_PRICE_RATIO)
+        loss = pricing.hold_loss(info.get("kind"), cost, info.get("shelf_hours"))
+        ev_qty, evs = pricing.ev_quantity(have.get(k, 0), mu_h * config.HORIZON_H, price, cost, loss)
+        room = int(max(0, cat_cap - cat_cost.get(k, 0)) // unit_cost_estimate(info))
+        qty = min(20, need, ev_qty, room)
+        if qty <= 0:
+            why.append({"category": k, "sku": sku, "skip": "no unit with positive expected profit" if ev_qty <= 0
+                        else f"category stock cost {cat_cost.get(k, 0):.0f} at the {config.CATEGORY_MAX_SHARE:.0%} cap",
+                        "rule_need": need, "ev_qty": ev_qty})
+            continue
         est = unit_cost_estimate(cat[sku]) * qty
         while qty > 1 and est > budget:
             qty -= 1
@@ -141,7 +156,9 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
             continue
         budget -= est
         lines.append({"sku": sku, "qty": qty})
-        why.append({"category": k, "sku": sku, "qty": qty, "reason": "demand", "score": round(score)})
+        cat_cost[k] = cat_cost.get(k, 0) + est
+        why.append({"category": k, "sku": sku, "qty": qty, "reason": "demand", "score": round(score),
+                    "rule_need": need, "ev_qty": ev_qty, "ev_first_units": evs[:3], "cap_room": room})
 
     # 2) coverage: one unit where we have nothing and there is no evidence yet, most SKUs first
     spent = 0

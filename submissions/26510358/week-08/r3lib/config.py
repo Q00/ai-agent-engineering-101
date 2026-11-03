@@ -28,6 +28,13 @@ DEMAND_HALF_LIFE_H = 8              # recent settles weigh more
 HORIZON_H = 12                      # stock for the sales we expect in the next 12 h
 MIN_FOOD_SHELF_FOR_EXPLORE = 720    # coverage only with long-life food (no expiry inside the round)
 
+# --- shop: expected-value restock (pricing.ev_quantity) -------------------------------------------
+CATEGORY_MAX_SHARE = 0.25           # one category's stock cost stays under this share of MAX_STOCK_COST
+EV_COST_RATIO = 0.62                # expected unit cost / list price when the grade is not known yet (A-C mix)
+EV_DEFAULT_PRICE_RATIO = 0.75       # expected sale price / list price without market evidence
+GOODS_END_RISK = 0.10               # share of cost an unsold goods unit is expected to lose (clearance, round end)
+FOOD_LEFTOVER_RISK = 0.15           # same for long-life food that does not sell in the horizon
+
 # --- shop: pricing ---------------------------------------------------------------------------------
 START_ASK_RATIO = 0.90              # first ask as a share of list price, before memory has prices
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
