@@ -4,6 +4,23 @@ This folder starts from our consolidated Week 7 agents. The seller still handles
 only lamps, chairs, and bookshelves. It is not ready for Round 3 inventory yet.
 The student chose both food and goods; stock budgets and other rules remain open.
 
+## Round 3 preparation (November 3)
+
+- Inventory reader and SKU/name/category matching are implemented. Expired and
+  reserved units are excluded; expiry is checked against the clock.
+- The buyer accepts the kit's order file, filters stocked acceptable SKUs,
+  and validates the model's chosen SKU. An agreement is recorded as pending
+  payment, not a settled purchase. Task and agreed-price receipt checks are added.
+- The student selected a 5% opening markup on actual unit cost. Fractional
+  credit asks round up. This is separate from the minimum acceptable price.
+- `round3_rules.json` records choices. Trading is disabled pending the student's
+  minimum-price, stock-budget, and buyer-quality decisions. Merely setting
+  `enabled` to true is not sufficient: the stock seller and purchase planner
+  must still be completed and tested after these decisions.
+- The restock hook currently requests no purchases, avoiding the kit's random
+  default buying. The seller explicitly declines Round 3 until integration is
+  complete. Do not launch this preparation version as a ready Round 3 agent.
+
 ## Files
 
 - `seller.py`: A2A seller and signed receipts.

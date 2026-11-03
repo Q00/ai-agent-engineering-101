@@ -23,6 +23,15 @@ def round3_inventory():
     return path.exists() and json.loads(path.read_text(encoding="utf-8")).get("round", 0) >= 3
 
 
+def stock_opening_ask(unit):
+    """Apply the student's markup to actual unit cost, rounding up to credits."""
+    cost = unit["cost"]
+    markup = load_round3_rules()["seller_pricing"]["opening_markup_percent"]
+    if type(cost) is not int or cost <= 0 or type(markup) is not int or markup < 0:
+        raise ValueError("Cost must be a positive integer and markup nonnegative")
+    return (cost * (100 + markup) + 99) // 100
+
+
 def restock_preview(state_dir):
     """No purchases until the student has chosen and we implement the stock rules."""
     print(json.dumps({"buy": [], "reason": "Stock rules pending student choice."}))

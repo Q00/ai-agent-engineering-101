@@ -309,6 +309,14 @@ class ReceiptTests(unittest.TestCase):
 
 
 class InventoryTests(unittest.TestCase):
+    def test_opening_uses_five_percent_above_actual_cost(self):
+        with patch("seller_strategy.load_round3_rules", return_value={
+                "seller_pricing": {"opening_markup_percent": 5}}):
+            self.assertEqual(seller_strategy.stock_opening_ask({"cost": 10000}), 10500)
+            self.assertEqual(seller_strategy.stock_opening_ask({"cost": 10001}), 10502)
+            with self.assertRaises(ValueError):
+                seller_strategy.stock_opening_ask({"cost": -1})
+
     def setUp(self):
         self.units = [
             {"unit": "food-1", "sku": "F0001", "name": "Sample food",
