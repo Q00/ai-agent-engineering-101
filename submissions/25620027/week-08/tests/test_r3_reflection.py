@@ -78,7 +78,15 @@ def test_policy_review_compares_equal_r3_windows_without_claiming_causation(
         0
     ]
     assert row["status"] == "descriptive_only"
-    assert row["delta"] == {
+    assert {
+        key: row["delta"][key]
+        for key in (
+            "shop_settles",
+            "shop_gross_revenue",
+            "buyer_settles",
+            "buyer_paid",
+        )
+    } == {
         "shop_settles": 1,
         "shop_gross_revenue": 160,
         "buyer_settles": 0,
@@ -86,6 +94,8 @@ def test_policy_review_compares_equal_r3_windows_without_claiming_causation(
     }
     assert row["causal_effect_established"] is False
     assert row["small_sample"] is True
+    assert row["delta"]["shop_net_profit"] is None
+    assert row["assessment"] == "insufficient_evidence"
 
 
 def test_review_waits_for_a_complete_window_and_does_not_invent_zero(

@@ -12,6 +12,8 @@ import time
 from contextlib import closing
 from typing import TYPE_CHECKING, Final
 
+from r3.accounting import STOCK_FILE, financial_window
+
 if TYPE_CHECKING:
     from r3.events import EventLedger
     from r3.ledger_db import LedgerDB
@@ -75,6 +77,25 @@ def _reviews(
                 continue
             before = _window(db, start, changed_at, our_shop, our_buyer)
             after = _window(db, changed_at, end, our_shop, our_buyer)
+            stock_path = ledger.path.resolve().with_name(STOCK_FILE)
+            before.update(
+                financial_window(
+                    stock_path,
+                    db,
+                    start=start,
+                    end=changed_at,
+                    shop=our_shop,
+                )
+            )
+            after.update(
+                financial_window(
+                    stock_path,
+                    db,
+                    start=changed_at,
+                    end=end,
+                    shop=our_shop,
+                )
+            )
             row.update(before=before, after=after)
             if not before["r3_rows"] or not after["r3_rows"]:
                 row["status"] = "round_boundary_or_missing_r3_data"
@@ -105,6 +126,42 @@ def _reviews(
                     "buyer_paid",
                 )
             }
+            for key in (
+                "shop_cost_of_goods_sold",
+                "shop_refunds",
+                "shop_expired_food_cost",
+                "shop_storage_cost",
+                "shop_restock_spend",
+                "shop_net_profit",
+                "shop_cash_change",
+                "shop_inventory_asset_change",
+            ):
+                left, right = before.get(key), after.get(key)
+                row["delta"][key] = (
+                    round(right - left, 6)
+                    if isinstance(left, (int, float))
+                    and isinstance(right, (int, float))
+                    else None
+                )
+            profit = row["delta"].get("shop_net_profit")
+            row["assessment_basis"] = "shop_net_profit"
+            row["assessment"] = "insufficient_evidence"
+            row["financial_small_sample"] = (
+                min(before["shop_settles"], after["shop_settles"]) < MIN_SAMPLE
+            )
+            if (
+                profit is not None
+                and not overlap
+                and not row["small_sample"]
+                and not row["financial_small_sample"]
+            ):
+                row["assessment"] = (
+                    "improved"
+                    if profit > 0
+                    else "worsened"
+                    if profit < 0
+                    else "unchanged"
+                )
             reviews.append(row)
     return reviews
 
@@ -115,7 +172,7 @@ def _window(
     end: float,
     our_shop: str,
     our_buyer: str,
-) -> dict[str, int]:
+) -> dict[str, object]:
     rows = db.execute(
         """SELECT kind, shop, buyer, amount FROM rows
         WHERE round = 3 AND ts >= ? AND ts < ?""",
