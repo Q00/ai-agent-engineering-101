@@ -22,6 +22,7 @@ from pathlib import Path
 from ledger import state_dir
 
 from memory import source
+from taste import gate as taste_gate
 
 LAYERS = (
     ("graph", "memory.graph", "Graph"),
@@ -30,10 +31,10 @@ LAYERS = (
 )
 MAX_EVENTS = 200_000
 
-# Extension point (next wave: hourly taste forecast and its gate). Steps run after ingest and the graph sweep,
-# before anything is written: step(ctx) -> short note or None, ctx = {"now", "root", "md", "mem", "layers",
-# "events", "catalog"}. A step that raises is noted on the run line and the run goes on.
-POST_INGEST = []
+# Extension point. Steps run after ingest and the graph sweep, before anything is written: step(ctx) -> short
+# note or None, ctx = {"now", "root", "md", "mem", "layers", "events", "catalog"}. A step that raises is noted on
+# the run line and the run goes on. v1.19: the hourly taste forecast and its gate (taste/gate.py).
+POST_INGEST = [taste_gate.step]
 
 
 def market_dir(arg=None):
