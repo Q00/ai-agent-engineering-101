@@ -45,6 +45,15 @@ class Round3InventorySellerTest(unittest.TestCase):
         plan = seller_r3.price_plan(unit, "task")
         self.assertGreater(plan["floor"], unit["cost"])
 
+    def test_market_price_moves_the_ask_but_not_below_cost_or_above_the_cap(self):
+        unit = {"sku": "GOOD-1", "kind": "goods", "cost": 700, "list_price": 1000, "grade": "A", "expires_at": None}
+        plan = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"))
+        self.assertIn(plan["ask"], (873, 945))          # 0.97x on the volume arm, 1.05x on the margin arm
+        self.assertEqual((900, 5, "sku"), (plan["market"], plan["market_n"], plan["market_src"]))
+        self.assertEqual(721, seller_r3.price_plan(unit, "task", market=(500.0, 5, "sku"))["ask"])    # floor: cost x 1.03
+        self.assertEqual(990, seller_r3.price_plan(unit, "task", market=(2000.0, 5, "sku"))["ask"])   # cap: list x 0.99
+        self.assertIsNone(seller_r3.price_plan(unit, "task", market=(None, 0, "none"))["market"])
+
     def test_receipt_options_are_truthful_and_grade_sensitive(self):
         options = seller_r3.receipt_options({"unit": "u1", "kind": "goods", "grade": "A"})
         self.assertEqual(options, {"unit": "u1", "claim": "A", "cert": True, "warranty_hours": 6})

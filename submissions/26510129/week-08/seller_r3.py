@@ -24,6 +24,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+import ledger
 import strategy_params
 from seller_guard import ReserveSigner
 
@@ -100,9 +101,12 @@ def policy_arm(unit, task):
     return "volume" if int.from_bytes(digest[:8], "big") / 2**64 < share else "margin"
 
 
-def price_plan(unit, task, now=None, params=None):
+def price_plan(unit, task, now=None, params=None, market=None):
     """Return an explainable ask/floor. A floor is this agent's policy, not a market rule.
-    `params` are the tuner's knobs (margins per arm, grade B cap); defaults when not given."""
+    `params` are the tuner's knobs (margins per arm, grade B cap); defaults when not given.
+    `market` is ledger.market_price(): when the market paid a known price for this SKU (or its category) lately,
+    the ask follows that price (volume arm 0.97x, margin arm 1.05x) instead of the cost-based target. Either way
+    the ask stays inside [cost x 1.03, grade cap]: not below cost, not above what the grade is worth."""
     now = now or time.time()
     params = params or strategy_params.DEFAULTS
     cost = max(1, int(round(unit["cost"])))
@@ -110,6 +114,9 @@ def price_plan(unit, task, now=None, params=None):
     arm = policy_arm(unit, task)
     target = max(cost * (params["seller_margin_volume"] if arm == "volume" else params["seller_margin_margin"]),
                  list_price * (0.82 if arm == "volume" else 0.95))
+    market_price, market_n, market_src = market if market and market[0] else (None, 0, "none")
+    if market_price:
+        target = market_price * (0.97 if arm == "volume" else 1.05)
     cap = list_price * {"A": 0.99, "B": params["grade_cap_B"], "C": 0.65}.get(unit.get("grade"), 0.85)
     target = min(target, cap)
     floor = cost * 1.03
@@ -126,7 +133,8 @@ def price_plan(unit, task, now=None, params=None):
     floor = max(1, int(round(floor)))
     ask = max(floor, int(round(target)))
     return {"arm": arm, "ask": ask, "floor": floor, "cost": cost, "list_price": list_price,
-            "hours_left": round(hours_left, 2) if hours_left is not None else None}
+            "hours_left": round(hours_left, 2) if hours_left is not None else None,
+            "market": round(market_price) if market_price else None, "market_n": market_n, "market_src": market_src}
 
 
 def receipt_options(unit):
@@ -161,7 +169,8 @@ class Seller(AgentExecutor):
             if unit is None:
                 await up.reject(say("Sorry, no matching unit is in stock."))
                 return
-            plan = price_plan(unit, task.id, params=strategy_params.load())   # re-read per task: midnight changes apply live
+            market = ledger.market_price(ledger.load_stats(MARKET_DIR), unit["sku"], unit.get("category"), unit.get("list_price"))
+            plan = price_plan(unit, task.id, params=strategy_params.load(), market=market)   # both re-read per task: live without a restart
             signer = ReserveSigner(NAME, unit["sku"], plan["floor"], task.id, SHOP_KEY)
             deal = self.open[task.id] = {"unit": unit, "plan": plan, "ask": plan["ask"], "offers": [], "signer": signer}
             strategy("seller_open", task=tid, sku=unit["sku"], grade=unit.get("grade"), **plan)

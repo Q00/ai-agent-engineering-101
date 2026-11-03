@@ -36,6 +36,32 @@ class RestockMemoryTest(unittest.TestCase):
         self.assertLessEqual(len(buys), restock.MAX_LINES)
         self.assertEqual(buys, [])  # even one estimated lot exceeds 12% of this balance
 
+    def test_ledger_sales_raise_a_category(self):
+        inv = {"balance": 5_000_000, "units": []}
+        catalog = {
+            "A1": {"category": "c>a", "kind": "goods", "list_price": 100_000},
+            "B1": {"category": "c>b", "kind": "goods", "list_price": 100_000},
+        }
+        demand = [{"category": "c>a"}, {"category": "c>b"}]
+        stats = {"categories": {"c>b": {"n": 20, "median_ratio": 0.9}}, "skus": {"B1": {"n": 20, "median": 90_000}}}
+        self.assertEqual("A1", restock.plan(inv, catalog, demand, [], {})[0]["sku"])          # alphabetical without data
+        self.assertEqual("B1", restock.plan(inv, catalog, demand, [], {}, stats)[0]["sku"])   # the market says b sells
+
+    def test_market_price_below_expected_cost_skips_the_sku(self):
+        inv = {"balance": 5_000_000, "units": []}
+        catalog = {
+            "S1": {"category": "c>a", "kind": "goods", "list_price": 100_000},
+            "S2": {"category": "c>a", "kind": "goods", "list_price": 100_000},
+        }
+        demand = [{"category": "c>a"}]
+        stats = {"skus": {"S1": {"n": 5, "median": 40_000}, "S2": {"n": 3, "median": 80_000}}, "categories": {}}
+        report = {}
+        buys = restock.plan(inv, catalog, demand, [], {}, stats, report)
+        self.assertEqual("S2", buys[0]["sku"])
+        self.assertEqual([{"sku": "S1", "market": 40_000, "settles": 5, "expected_cost": 60_000}], report["skipped_below_cost"])
+        stats["skus"]["S2"]["median"] = 50_000
+        self.assertEqual([], restock.plan(inv, catalog, demand, [], {}, stats))   # nothing in the category sells above cost
+
     def test_forum_requires_ledger_reference(self):
         forum = [{"text": "kimchi wanted", "refs": []}, {"text": "kimchi bought", "refs": [10]}]
         self.assertEqual(restock.forum_scores(forum, ["food>kimchi"])["food>kimchi"], 1)
