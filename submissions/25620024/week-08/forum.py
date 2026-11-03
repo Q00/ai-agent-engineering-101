@@ -76,8 +76,9 @@ def price_index(c, t, now):
             sold[r[2]] = sold.get(r[2], 0) + 1
         top = sorted(sold.items(), key=lambda kv: -kv[1])[:2]
         best = " / ".join(f"{((cat_rows.get(k) or {}).get('name') or k)[:22]} ({k}) {n}건" for k, n in top)
+        best_en = " / ".join(f"{((cat_rows.get(k) or {}).get('name') or k)[:22]} ({k}) {n} sold" for k, n in top)
         low = min(rs, key=lambda r: r[3] / r[4])
-        seqs = ", ".join(str(r[0]) for r in rs[-8:])
+        seqs =", ".join(str(r[0]) for r in rs[-8:])
         ko = (f"[시세] {leaf(cat)}: 최근 {t['window_h']}시간 시장 정산 {len(rs)}건 (공개 원장 기준)\n"
               f"- 체결가/정가 중앙값 {statistics.median(ratios):.0%} (하위 25% {q(0.25):.0%}, 상위 25% {q(0.75):.0%})\n"
               f"- 가장 많이 팔린 상품: {best}\n"
@@ -85,7 +86,7 @@ def price_index(c, t, now):
               f"- 근거: 원장 seq {seqs}")
         en = (f"[Market] {leaf(cat)}: {len(rs)} settles in the last {t['window_h']} h (public ledger)\n"
               f"- paid/list median {statistics.median(ratios):.0%} (lower quartile {q(0.25):.0%}, upper {q(0.75):.0%})\n"
-              f"- best sellers: {best.replace('건', ' sold')}\n"
+              f"- best sellers: {best_en}\n"
               f"- lowest settle: {low[2]} {low[3]:,} ({low[3] / low[4]:.0%} of list)\n"
               f"- refs: ledger seq {seqs}")
         js = json.dumps(
@@ -264,10 +265,17 @@ def follow_ads(c, md, now):
     return out
 
 
-def agent_first(cand):
+def agent_first(cand, style="json"):
     """Every post leaves here: machine-readable JSON first, then the marked part for people (Korean, then English
-    where there is one). Buyer posts carry their own JSON-first text; others get their "data" dict on top."""
+    where there is one). Buyer posts carry their own JSON-first text; others get their "data" dict on top.
+    style "text" (the review team's other arm, 11-04: JSON-first posts drew 4 likes against 5-6) puts the Korean and
+    English text first and the JSON line after it, when both fit in 1,000 characters."""
     texts = cand.get("texts") or {}
+    if texts.get("json") and style == "text":
+        human = texts["ko"] + "\n" + texts["en"]
+        js = texts["json"].split("\n", 1)[0]
+        both = human + "\n-- JSON (for agents) --\n" + js
+        return both if len(both) <= 1000 else human
     if texts.get("json"):
         return texts["json"]
     human = cand["text"] if not texts else texts["ko"] + "\n" + texts["en"]
@@ -342,16 +350,18 @@ def tick(md=Path(".market"), c=None, now=None):
         fresh = [x for x in cands if x["as"] == role and now - state["posted"].get(x["topic"], 0) > t["topic_cooldown_h"] * 3600]
         best = max(fresh, key=lambda x: x["score"], default=None)
         if best and best["score"] >= t["post_threshold"]:
-            if role == "buyer":                          # the review team picks the format (experiment)
+            style = "json"
+            if role == "buyer":                          # the review team picks format and order (experiment)
                 try:
                     import review_team
                     kinds = sorted({x.get("kind") for x in fresh if x.get("kind")})
-                    kind, _ = review_team.choose(kinds)
+                    arm, _ = review_team.choose(kinds)
+                    kind, style = arm.split(":")
                     pick = max((x for x in fresh if x.get("kind") == kind), key=lambda x: x["score"], default=None)
                     best = pick if pick and pick["score"] >= t["post_threshold"] else best
                 except Exception:
                     pass
-            best = dict(best, text=agent_first(best))  # our customers are agents (HQ 11-04): JSON first
+            best = dict(best, text=agent_first(best, style))  # customers are agents (HQ 11-04); order is tested
             line = {"post": best["text"][:1000], "refs": best["refs"], "as": role}
             if best.get("thread"):
                 line["thread"] = best["thread"]
