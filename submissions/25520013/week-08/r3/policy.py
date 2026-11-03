@@ -481,10 +481,29 @@ def restock_gate(inv, pol, activity=None, now=None):
         market rule above decides (a sold-out shop has no own settles; using them would re-create the v1.7
         deadlock). "market" = v1.9 behaviour.
     (d) round end: within restock_stop_before_end_h of the round end (policy volume.round_end_ts or
-        R3_ROUND_END_TS) -> stop; unsold stock is a loss at the end (agent.md profit = balance - start)."""
+        R3_ROUND_END_TS) -> stop; unsold stock is a loss at the end (agent.md profit = balance - start).
+    (e) v1.18 supply windows (agent.md at the Round 3 start: supply opens every 20 min for 3 min, the first window
+        10 min; outside one the market answers 429 and the kit tries a line 3 times at most 30 s apart, then skips
+        it): plan only while inventory.json `restock` is open or opens within restock_window_lead_s, and say in
+        info["lines_fit"] how many lines fit before closes_at at restock_line_s per line (the market takes one
+        supply about every 10 s)."""
     sp = pol["shop"]
     now = now or time.time()
     act = activity or {}
+    win = {}
+    w = (inv or {}).get("restock") or {}
+    try:
+        opens, closes = float(w.get("opens_at") or 0), float(w.get("closes_at") or 0)
+    except (TypeError, ValueError):
+        opens = closes = 0
+    if opens:
+        if not w.get("open") and opens - now > float(sp.get("restock_window_lead_s", 60)):
+            return "window_closed", {"opens_in_s": round(opens - now)}
+        if closes:
+            fit = int((closes - max(now, opens)) // float(sp.get("restock_line_s", 10)))
+            if fit < 1:
+                return "window_closing", {"closes_in_s": round(closes - now)}
+            win = {"lines_fit": fit}
     pause = idle_pause_s(pol)
     if pause > 0:
         low, units, held = low_stock(inv, pol)
@@ -509,7 +528,7 @@ def restock_gate(inv, pol, activity=None, now=None):
         end = 0
     if stop_h and end and now > end - float(stop_h) * 3600:
         return "round_end", {"hours_left": round((end - now) / 3600, 1)}
-    return None, {}
+    return None, win
 
 
 def inventory_cost(inv):
@@ -719,8 +738,9 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     # tops the pass-1 lines up to qty_per_buy, in rank order. Without breadth_qty pass 1 buys the full quantity and
     # pass 2 does nothing (v1.5 behaviour).
     got, spent = {}, 0
+    max_lines = min(int(sp["max_lines_per_run"]), int(info.get("lines_fit") or sp["max_lines_per_run"]))
     for sku, x, qty, q1 in plan:
-        if len(got) >= sp["max_lines_per_run"]:
+        if len(got) >= max_lines:
             break
         worst = int(math.ceil(x["list_price"] * 0.75)) * q1      # cost is at most 75% of list (agent.md)
         if spent + worst > budget:
@@ -737,7 +757,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         spent += add * unit
     buy = [{"sku": sku, "qty": q} for sku, q in got.items()]
     out = {"budget": budget, "worst_spend": spent, "units": len(units), "inventory_cost": inv_cost,
-           "notes": notes[:5]}
+           "notes": notes[:5], **info}
     if warns:                                            # v1.14: one line per distinct reason (not per category)
         out["warnings"] = list(dict.fromkeys(warns))
     return buy, out

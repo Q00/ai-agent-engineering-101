@@ -1,5 +1,5 @@
 {
- "version": 5,
+ "version": 6,
  "owner": {
   "github": "Lee-sungsoo",
   "own_shop_names": [
@@ -45,7 +45,10 @@
   "_v114_note": "v1.14 (QA review_r3_01ac_v113 condition 1): inventory.json storage_per_day is parsed by policy.storage_rate; a value that is not clearly a per-day fraction (non-numeric or percent string such as '1%', NaN/inf, bool, negative, or above 0.1 = 10 %/day such as 1 meaning '1 %') turns the goods cap OFF with a warning (restock_plan info warnings, stderr WARNING) instead of crashing restock or collapsing the depth to 1. Decision values unchanged (goods_max_storage_frac 0.01, goods_min_units 1, goods_cold_units 4). First-hour check and cap-off revert: labpc_swap_checklist 3-0b.",
   "goods_max_storage_frac": 0.01,
   "goods_min_units": 1,
-  "goods_cold_units": 4
+  "goods_cold_units": 4,
+  "restock_window_lead_s": 60,
+  "restock_line_s": 10,
+  "_window_note": "v1.18: Round 3 supply windows (agent.md at the round start: every 20 min for 3 min, the first 10 min). restock plans only when the window is open or opens within restock_window_lead_s (the kit retries a line 3 times at most 30 s apart before skipping it) and buys at most (closes_at - now) / restock_line_s lines (measured: one supply about every 10 s)."
  },
  "defaults": {
   "food": {
@@ -213,14 +216,14 @@
  "volume": {
   "target_settled": 20,
   "margin": 5,
-  "round_start_ts": 1793631600,
+  "round_start_ts": 1793707306,
   "round_end_ts": 1794927540,
   "late_hours": 48,
   "pace_gain": 2.0,
   "relax_ask_cut": 0.1,
   "relax_max_pay_frac": 0.97,
   "relax_grade_c_at": 0.5,
-  "_note": "BASE: >= 20 settled Round 3 trades each for shop and buyer (week-08 HW). goal = target + margin. r from policy.volume_relax per side; shop: floor margin * (1-r), concession * (1+r), ask * (1 - relax_ask_cut * r), never below cost + 1; buyer: max_pay_frac -> relax_max_pay_frac, step * (1 + r/2), grade C accepted at r >= relax_grade_c_at; shelf life never relaxed; budget cap kept. round_start_ts = 2026-11-03 00:00 KST (start hour not published), round_end_ts = 2026-11-17 23:59 KST. v1.4: relax_cert_at removed (kit refuses a checkout without certificate whenever grades are set; CR v1.2 new issue 3)."
+  "_note": "BASE: >= 20 settled Round 3 trades each for shop and buyer (week-08 HW). goal = target + margin. r from policy.volume_relax per side; shop: floor margin * (1-r), concession * (1+r), ask * (1 - relax_ask_cut * r), never below cost + 1; buyer: max_pay_frac -> relax_max_pay_frac, step * (1 + r/2), grade C accepted at r >= relax_grade_c_at; shelf life never relaxed; budget cap kept. round_start_ts = 2026-11-03 21:01:46 KST (first supply window opens_at, v1.18), round_end_ts = 2026-11-17 23:59 KST. v1.4: relax_cert_at removed (kit refuses a checkout without certificate whenever grades are set; CR v1.2 new issue 3)."
  },
  "forum": {
   "enabled": true,
