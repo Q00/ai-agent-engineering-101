@@ -173,6 +173,7 @@ def test_symlink_to_live_or_repo_refused(sb, tmp_path):
     assert not E._live_ok(other, (sb["live"],))
 
 
+@H.needs_proc_fd
 def test_listed_tmp_copy_still_adopts(sb, tmp_path):
     r = cycle(sb, MockClient(json_reply(good())), tmp_path)            # allowed_live=(sb live,)
     assert r["status"] == "adopted"
@@ -187,6 +188,7 @@ def test_post_adopt_check_uses_allow_list(sb, tmp_path):
 
 
 # ---------------- M10-3
+@H.needs_proc_fd
 def test_huge_int_is_rejected_with_audit_row(sb, tmp_path):
     p = good()
     p["edits"][0]["value"] = "__BIG__"
@@ -197,6 +199,7 @@ def test_huge_int_is_rejected_with_audit_row(sb, tmp_path):
     assert json.loads(Path(sb["audit"]).read_text().splitlines()[-1])["status"] == "rejected_schema"
 
 
+@H.needs_proc_fd
 def test_broken_lesson_change_is_rejected_not_raised(sb, tmp_path):
     bad = [dict(x) for x in H.LESSONS]
     for x in bad:
@@ -238,5 +241,5 @@ def test_fake_cli_sees_empty_cwd_and_flags(tmp_path):
     assert cl.complete("p", max_tokens=5, timeout_s=10) == "ok"
     args = (tmp_path / "args.txt").read_text().split()
     cwd = (tmp_path / "cwd.txt").read_text().strip()
-    assert (tmp_path / "ls.txt").read_text() == "" and args[args.index("-C") + 1] == cwd
+    assert (tmp_path / "ls.txt").read_text() == "" and os.path.realpath(args[args.index("-C") + 1]) == os.path.realpath(cwd)
     assert "--ephemeral" in args and args[args.index("--sandbox") + 1] == "read-only"

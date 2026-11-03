@@ -11,6 +11,8 @@ from llm.budget import Budget
 from llm.client import MockClient, json_reply
 from tests import helpers as H
 
+pytestmark = H.needs_proc_fd
+
 
 def budget(tmp_path, **kw):
     a = dict(per_hour=E.EDITOR_MAX_CALLS_PER_HOUR, per_day=E.EDITOR_MAX_CALLS_PER_DAY,

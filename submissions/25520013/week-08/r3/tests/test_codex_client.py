@@ -45,6 +45,7 @@ def test_disabled_by_default_falls_back(tmp_path):
     assert not (tmp_path / "counter.json").exists()
 
 
+@H.needs_proc_fd
 def test_missing_cli_falls_back_and_editor_keeps_policy(sb, tmp_path):
     cl = C.CodexClient("editor", config_path=cfg(tmp_path, real_calls_enabled=True, cli=str(tmp_path / "nope")),
                        base=tmp_path)
@@ -54,6 +55,7 @@ def test_missing_cli_falls_back_and_editor_keeps_policy(sb, tmp_path):
     assert live_bytes(sb) == before and not (tmp_path / "counter.json").exists()
 
 
+@H.needs_proc_fd
 def test_fake_cli_reply_runs_full_editor_path(sb, tmp_path):
     reply = json.dumps(good())
     exe = fake_cli(tmp_path, f"cat > /dev/null; pwd > {tmp_path}/cwd.txt; printf '%s' '{reply}'")
@@ -69,6 +71,7 @@ def test_fake_cli_reply_runs_full_editor_path(sb, tmp_path):
     assert cwd.name.startswith("r3v117-codex-") and not cwd.exists()     # empty temp dir, removed after
 
 
+@H.needs_proc_fd
 def test_fake_cli_not_logged_in_exit1_falls_back(sb, tmp_path):
     exe = fake_cli(tmp_path, "echo 'Not logged in' >&2; exit 1")
     cl = C.CodexClient("editor", config_path=cfg(tmp_path, real_calls_enabled=True, cli=exe), base=tmp_path)
@@ -114,6 +117,7 @@ def test_hard_counter_unreadable_is_full(tmp_path):
         C.HardCounter(p).take("parse")
 
 
+@H.needs_proc_fd
 def test_counter_reached_falls_back_without_subprocess(sb, tmp_path):
     exe = fake_cli(tmp_path, f"touch {tmp_path}/ran; echo '{{}}'")
     p = cfg(tmp_path, real_calls_enabled=True, cli=exe)

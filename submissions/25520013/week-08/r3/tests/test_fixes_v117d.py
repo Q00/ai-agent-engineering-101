@@ -375,6 +375,7 @@ def _good(domain="food"):
             "rationale": "price rejects dominate", "evidence_seq": [39, 40], "kind_hint": domain}
 
 
+@H.needs_proc_fd
 def test_editor1_planted_symlink_at_old_tmp_name_is_not_followed(sb, tmp_path):
     outside = tmp_path / "outside.txt"
     outside.write_text("KEEP")
@@ -387,6 +388,7 @@ def test_editor1_planted_symlink_at_old_tmp_name_is_not_followed(sb, tmp_path):
     assert left == []
 
 
+@H.needs_proc_fd
 def test_editor1_tmp_is_unique_exclusive_and_cleaned_on_failure(sb, monkeypatch):
     live = Path(sb["live"])
     seen = []
@@ -404,6 +406,7 @@ def test_editor1_tmp_is_unique_exclusive_and_cleaned_on_failure(sb, monkeypatch)
     assert not [p for p in live.parent.iterdir() if p.name.startswith(f".{live.name}.")]
 
 
+@H.needs_proc_fd
 def test_editor1_run_cycle_and_rollback_use_pinned_writer(sb, tmp_path, monkeypatch):
     import harness.rollback as RB
     monkeypatch.setattr(RB, "_atomic", lambda *a: (_ for _ in ()).throw(AssertionError("old _atomic used")))

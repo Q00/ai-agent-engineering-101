@@ -101,6 +101,7 @@ class SwapClient(MockClient):
         return super().complete(prompt, max_tokens=max_tokens, timeout_s=timeout_s)
 
 
+@H.needs_proc_fd
 def test_toctou_dir_swap_is_refused_and_forbidden_root_untouched(tmp_path, monkeypatch):
     s, sbx, forb = _race_layout(tmp_path)
     monkeypatch.setattr(E, "FORBIDDEN_ROOTS", E.FORBIDDEN_ROOTS + (forb,))
@@ -113,6 +114,7 @@ def test_toctou_dir_swap_is_refused_and_forbidden_root_untouched(tmp_path, monke
     assert json.loads(Path(s["audit"]).read_text().splitlines()[-1])["status"] == "refused_live_moved"
 
 
+@H.needs_proc_fd
 def test_toctou_write_goes_to_pinned_dir_even_without_recheck(tmp_path, monkeypatch):
     """Second layer: with the re-check disabled, the write still lands in the directory that was checked."""
     s, sbx, forb = _race_layout(tmp_path)
@@ -137,6 +139,7 @@ def test_old_code_path_would_have_written_forbidden(tmp_path, monkeypatch):
     assert (forb / "live_policy.json").read_bytes() != before
 
 
+@H.needs_proc_fd
 def test_live_file_swapped_for_symlink_is_refused(tmp_path, monkeypatch):
     s, sbx, forb = _race_layout(tmp_path)
     monkeypatch.setattr(E, "FORBIDDEN_ROOTS", E.FORBIDDEN_ROOTS + (forb,))
@@ -152,6 +155,7 @@ def test_live_file_swapped_for_symlink_is_refused(tmp_path, monkeypatch):
     assert (forb / "live_policy.json").read_bytes() == before
 
 
+@H.needs_proc_fd
 def test_pin_refuses_symlinked_dir_at_start(tmp_path):
     real = tmp_path / "real"
     real.mkdir()
@@ -167,6 +171,7 @@ def test_pin_refuses_symlinked_dir_at_start(tmp_path):
             p.recheck()
 
 
+@H.needs_proc_fd
 def test_normal_adopt_and_rollback_still_work(sb, tmp_path):
     r = cycle(sb, MockClient(json_reply(good())), tmp_path)
     assert r["status"] == "adopted" and json.loads(live_bytes(sb))["defaults"]["food"]["price_mult"] == 0.95

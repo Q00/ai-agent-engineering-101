@@ -1,7 +1,10 @@
 """Shared synthetic fixtures for the v1.17 LLM tests (no network, tmp dirs only)."""
 import json
+import os
 import shutil
 from pathlib import Path
+
+import pytest
 
 from cards import LINE_W, LINES
 from harness.runs import PolicyRuns
@@ -10,6 +13,10 @@ R3 = Path(__file__).resolve().parents[1]
 BASE_POLICY = R3 / "experiments" / "state" / "policy_base.json"
 T0 = 1_800_000_000.0
 SHOP = "mock-shop-a"
+# The editor's pinned write needs Linux /proc/self/fd and refuses elsewhere (fail closed): tests that go through it
+# run on Linux (labpc) and are skipped with this reason on macOS.
+needs_proc_fd = pytest.mark.skipif(not os.path.isdir("/proc/self/fd"),
+                                   reason="editor pinned write needs Linux /proc/self/fd (refused elsewhere)")
 
 
 def card(extra=""):
