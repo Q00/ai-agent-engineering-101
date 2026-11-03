@@ -122,7 +122,9 @@ class Shop(AgentExecutor):
         adj = pricing.ask_adjustment(self.mem.seller_outcomes(u.get("category")) or self.mem.seller_outcomes())
         ask = pricing.unit_ask(u, ratio, adj)
         floor = pricing.unit_floor(u)
-        warranty = pricing.warranty_hours_for(u, ask, self.mem.break_rate(u.get("grade")))
+        p_break = self.mem.break_rate(u.get("grade"))
+        warranty = pricing.warranty_hours_for(u, ask, p_break)
+        floor = pricing.warranty_floor(floor, u, ask, warranty, p_break)
         log("terms", sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
             floor=floor, market_ratio=ratio, evidence=n, adjust=adj, warranty=warranty)
         return ask, floor, warranty

@@ -70,6 +70,14 @@ def warranty_hours_for(u, price, p_break):
     return config.WARRANTY_HOURS if p_break * price <= config.WARRANTY_MAX_EXPECTED_COST * margin else 0
 
 
+def warranty_floor(floor, u, price, warranty_hours, p_break):
+    """With a warranty the shop refunds the full price if the unit breaks, so the floor also carries that expected
+    refund (p_break * price). Without this a 190k mattress sold at a 7% margin carried a 190k refund risk."""
+    if not warranty_hours or u.get("kind") != "goods":
+        return floor
+    return max(floor, int(u["cost"] * (1 + config.MIN_MARGIN) + p_break * price))
+
+
 # ------------------------------------------------------------------------------------------- buyer
 def buyer_limits(list_price, budget, kind, p_break=0.1, warranty=False):
     """Most we will pay. Value to the order is the list price (0 if the goods break without a warranty), so

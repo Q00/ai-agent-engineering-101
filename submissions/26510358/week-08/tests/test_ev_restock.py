@@ -33,3 +33,11 @@ def test_category_cap_blocks_concentration(tmp_path, monkeypatch):
     assert lines and lines[0]["sku"] == "G1"
     lines, why, _ = restock_r3.plan({"balance": 5_000_000, "units": chairs}, demand, m, now=now)
     assert lines == [] and "cap" in why[-1]["skip"]                                    # 13 x 60k = 780k > 25% of 3M
+
+
+def test_warranty_floor_carries_expected_refund():
+    u = {"kind": "goods", "cost": 180000}
+    base = int(180000 * (1 + config.MIN_MARGIN))
+    assert pricing.warranty_floor(base, u, 210000, 6, 0.05) == base + int(0.05 * 210000)
+    assert pricing.warranty_floor(base, u, 210000, 0, 0.05) == base
+    assert pricing.warranty_floor(base, {"kind": "food", "cost": 1}, 210000, 6, 0.05) == base
