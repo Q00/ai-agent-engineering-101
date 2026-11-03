@@ -152,7 +152,7 @@ class Seller(AgentExecutor):
             ask = stock_opening_ask(unit)
             deal = {"item": unit["sku"], "unit": unit, "ask": ask,
                     "opening_ask": ask, "counters": 0, "last_seen": now,
-                    "policy": "round3-cost5-floor3-two-counters-v1"}
+                    "policy": "round3-cost5-floor3-fifo-halfway-v2"}
             self.open[task_id] = deal
             self.held[unit["unit"]] = now + 300
             self.record(task_id, "opened", deal, unit=unit["unit"])
@@ -172,6 +172,14 @@ class Seller(AgentExecutor):
         offer = int(text)
         self.record(task_id, "offer_received", deal, offer=offer, unit=unit["unit"])
         decision = await asyncio.to_thread(decide_stock_offer, unit, offer, deal["counters"])
+        if unit.get("kind") == "food" and unit.get("expires_at") is not None \
+                and unit["expires_at"] <= time.time():
+            self.record(task_id, "rejected", deal, unit=unit["unit"],
+                        reason="Unit expired while the model was deciding.")
+            self.open.pop(task_id, None)
+            self.held.pop(unit["unit"], None)
+            await up.reject(say("This food unit has expired; no sale made."))
+            return
         if decision["action"] == "accept":
             receipt = sign_receipt({"shop": SHOP_NAME, "item": unit["sku"],
                                     "unit": unit["unit"], "cert": True,

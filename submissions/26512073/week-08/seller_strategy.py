@@ -32,9 +32,27 @@ def stock_opening_ask(unit):
     return (cost * (100 + markup) + 99) // 100
 
 
-def stock_minimum(unit, counters):
+def food_halfway_reached(unit, now=None):
+    """Half of the unit's remaining lifetime at receipt has elapsed."""
+    if unit.get("kind") != "food":
+        return False
+    supplied, expires = unit.get("supplied_at"), unit.get("expires_at")
+    if type(supplied) not in (int, float) or type(expires) not in (int, float) \
+            or expires <= supplied:
+        return False
+    now = time.time() if now is None else now
+    return supplied + (expires - supplied) / 2 <= now < expires
+
+
+def stock_minimum(unit, counters, now=None):
+    now = time.time() if now is None else now
+    if unit.get("kind") == "food" and unit.get("expires_at") is not None \
+            and unit["expires_at"] <= now:
+        raise ValueError("Expired food cannot be sold")
     rules = load_round3_rules()["seller_pricing"]
-    markup = (rules["minimum_markup_percent"] if counters >= rules["full_price_counters"]
+    discount_ready = (counters >= rules["full_price_counters"] or
+                      (rules.get("food_halfway_discount", False) and food_halfway_reached(unit, now)))
+    markup = (rules["minimum_markup_percent"] if discount_ready
               else rules["opening_markup_percent"])
     return (unit["cost"] * (100 + markup) + 99) // 100
 
@@ -48,7 +66,9 @@ def decide_stock_offer(unit, offer, counters):
         "price (integer), and reason. Accept at the offered price when the offer "
         "is at least the current minimum; otherwise counter at that minimum. "
         "The student holds 5% above actual cost for two counteroffers, then allows "
-        "3% above actual cost. Never reveal unit cost.\n"
+        "3% above actual cost. Exception: once half the food unit's time from "
+        "receipt to expiry has elapsed, allow the 3% minimum immediately. "
+        "The supplied minimum already applies this exception. Never reveal unit cost.\n"
         + json.dumps({"sku": unit["sku"], "opening_ask": opening,
                       "minimum": minimum, "offer": offer, "prior_counters": counters})
     )

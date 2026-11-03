@@ -8,6 +8,9 @@
 - Hold the full 5% price for two counteroffers. After that, accept an offer
   at or above 3% above cost; otherwise counter at the 3% minimum.
   A buyer offering the current minimum or more can close immediately.
+- For food, once half the time between `supplied_at` and `expires_at` has elapsed,
+  allow the 3% minimum immediately, without two counteroffers. Opening ask stays
+  at 5%. Expired food remains unsellable. Goods keep the two-counteroffer rule.
 - Buyer requires a market certificate. Food must last at least the order's
   `use_within_hours`. Grades A/B/C are accepted; no goods warranty is required.
 - When an asking price becomes affordable, the buyer requests one discount.

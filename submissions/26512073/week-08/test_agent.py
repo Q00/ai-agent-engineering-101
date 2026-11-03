@@ -452,6 +452,35 @@ class Round3BuyerTests(unittest.TestCase):
 
 
 class StockPricingTests(unittest.TestCase):
+    def test_food_before_halfway_keeps_five_percent(self):
+        unit = {"cost": 10000, "kind": "food", "supplied_at": 0, "expires_at": 200}
+        self.assertEqual(seller_strategy.stock_minimum(unit, 0, now=99), 10500)
+
+    def test_food_at_halfway_allows_three_percent_immediately(self):
+        unit = {"cost": 10000, "kind": "food", "supplied_at": 0, "expires_at": 200}
+        self.assertEqual(seller_strategy.stock_minimum(unit, 0, now=100), 10300)
+        self.assertEqual(seller_strategy.stock_minimum(unit, 0, now=199), 10300)
+        self.assertEqual(seller_strategy.stock_opening_ask(unit), 10500)
+
+    def test_expired_food_never_gets_an_acceptable_minimum(self):
+        unit = {"cost": 10000, "kind": "food", "supplied_at": 0, "expires_at": 200}
+        with self.assertRaises(ValueError):
+            seller_strategy.stock_minimum(unit, 0, now=200)
+
+    def test_goods_do_not_receive_food_age_discount(self):
+        unit = {"cost": 10000, "kind": "goods", "supplied_at": 0, "expires_at": None}
+        self.assertEqual(seller_strategy.stock_minimum(unit, 0, now=150), 10500)
+
+    def test_missing_arrival_time_does_not_invent_food_age(self):
+        unit = {"cost": 10000, "kind": "food", "expires_at": 200}
+        self.assertEqual(seller_strategy.stock_minimum(unit, 0, now=150), 10500)
+
+    def test_model_can_accept_three_percent_without_prior_counters_for_older_food(self):
+        unit = {"sku": "F1", "cost": 10000, "kind": "food", "supplied_at": 0, "expires_at": 200}
+        with patch("seller_strategy.time.time", return_value=150), \
+                patch("seller_strategy.call_harness", return_value={"action": "accept", "price": 10300}):
+            self.assertEqual(seller_strategy.decide_stock_offer(unit, 10300, 0)["price"], 10300)
+
     def test_two_counters_before_lower_minimum(self):
         unit = {"sku": "S1", "cost": 10000}
         for counters, expected in [(0, 10500), (1, 10500), (2, 10300), (5, 10300)]:
