@@ -149,12 +149,21 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         cut = max([m for h, m in t["clear_cover_h"] if cover >= h], default=0)
         if cut:
             price, why = price * (1 - cut), why + [f"{stock_n} in stock, {cover:.0f} h of sales -{cut:.0%}"]
+    try:                                                 # the SCM team's clearance markdowns
+        import scm_agent
+        md = (scm_agent.scm_plan().get("clearance") or {}).get(unit["sku"])
+        if unit["sku"] in ((plan().get("scm_veto") or {}).get("no_clearance") or []):
+            md = None                                    # the sales team (top department) vetoed this markdown
+    except Exception:
+        md = None
+    if md:
+        price, why = price * (1 - md), why + [f"scm clear -{md:.0%}"]
     tier = next(((n, d) for n, d in t["tiers"] if bought >= n), None)
     if tier:
         price, why = price * (1 - tier[1]), why + [f"member {code} {bought} buys -{tier[1]:.0%}"]
     if vip and t.get("vip_discount"):
         price, why = price * (1 - t["vip_discount"]), why + [f"VIP -{t['vip_discount']:.0%}"]
-    if any(w.startswith(("shelf", "in stock")) or " in stock" in w for w in why) and "clear_floor_margin" in t:
+    if any(w.startswith(("shelf", "in stock", "scm clear")) or " in stock" in w for w in why) and "clear_floor_margin" in t:
         floor = int(cost * (1 + min(t["min_margin"], t["clear_floor_margin"]))) + 1   # clearing may go lower
     if follow and median:
         floor = min(floor, int(cost * (1 + t["follow_margin"])) + 1)

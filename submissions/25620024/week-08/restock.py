@@ -112,13 +112,21 @@ def plan(md, c, t, now=None):
         why.append(f"{len(regular)} regulars ({sum(regular.values())} buys)")
     try:                                                      # 1c. the marketing team's picks
         import promo
-        mk = promo.plan().get("restock") or {}
+        mk = dict(promo.plan().get("restock") or {}, _veto=promo.plan().get("scm_veto"))   # sales team is on top
     except Exception:
         mk = {}
     general = cash
     cash = min((inv.get("balance") or 0) - t["cash_reserve"] * start, t["pick_window_budget"] * start - spent)
     for x in mk.get("skus") or []:
         add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "marketing pick", any_price=True)
+    try:                                                      # the SCM team's orders (Codex, hourly)
+        import scm_agent
+        veto = set((mk.get("_veto") or {}).get("cancel_orders") or [])
+        for x in [x for x in scm_agent.scm_plan().get("orders") or [] if x.get("sku") not in veto]:
+            add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0) - buy.get(x.get("sku"), 0),
+                "scm order", any_price=True)
+    except Exception as e:
+        why.append(f"scm plan not read: {type(e).__name__}")
     cash = min(cash, general)                                 # the rest of the run keeps the general cap
     if mk.get("mode") == "focus":                             # marketing: only regulars and its picks for now
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"], cash, \

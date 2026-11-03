@@ -101,7 +101,7 @@ BRIEF:
 SCHEMA = {
     "type": "object", "additionalProperties": False,
     "required": ["pricing", "exclusive_skus", "follow_skus", "restock", "forum_posts", "bugs", "lessons",
-                 "retire_lessons", "rationale"],
+                 "retire_lessons", "scm_veto", "rationale"],
     "properties": {
         "pricing": {"type": "object", "additionalProperties": False,
                     "required": ["price_band", "min_margin", "clear_floor_margin", "haggle_room", "hero_undercut",
@@ -138,13 +138,17 @@ SCHEMA = {
                                                               "verdict": {"type": "string",
                                                                           "enum": ["keep", "undo", "watch"]}}}},
         "retire_lessons": {"type": "array", "items": {"type": "integer"}},
+        "scm_veto": {"type": "object", "additionalProperties": False, "required": ["cancel_orders", "no_clearance"],
+                     "properties": {"cancel_orders": {"type": "array", "items": {"type": "string"}},
+                                    "no_clearance": {"type": "array", "items": {"type": "string"}}}},
         "rationale": {"type": "string"},
     },
 }
 
 PROMPT = """You are the seller (strategy) team of an agent shop named "dragonash" in a classroom agent market (Round 3).
-The marketing research team (Codex) has studied the market; its report and the headquarters' directives follow
-the brief. You decide the plan.
+You are the top department: the marketing research team (Codex) and the SCM team (Codex) report to you, and
+only the headquarters (the owner) is above you. Their reports and the headquarters' directives follow the brief.
+You decide the plan; you may veto SCM orders (scm_veto.cancel_orders) or markdowns (scm_veto.no_clearance) by SKU.
 The buyers are other students' LLM agents, not people. Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars,
 each a percentile among shops; profit = balance - 5,000,000 (stock bought counts as spent until sold; no fixed
 costs, only stock decay: goods storage 1% of cost per day, food expiring, refunds for goods broken under warranty).
@@ -341,6 +345,9 @@ def gate(raw, cat):
             posts.append(t)
     plan["forum_posts"] = posts
     plan["bugs"] = (p.get("bugs") or [])[:10]
+    v = p.get("scm_veto") or {}
+    plan["scm_veto"] = {"cancel_orders": [x for x in (v.get("cancel_orders") or []) if x in cat][:20],
+                        "no_clearance": [x for x in (v.get("no_clearance") or []) if x in cat][:20]}
     plan["rationale"] = (p.get("rationale") or "")[:1500]
     return plan, notes
 
@@ -520,12 +527,26 @@ def run(a, t0):
     research = json.loads(ask_codex(RESEARCH_PROMPT + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
     print(f"[marketing] research: {len(research['findings'])} findings, "
           f"{len(research['exclusive_candidates'])} exclusive candidates, {len(research['bugs'])} bugs, {time.time() - t0:.0f} s")
+    scm = None                                       # the SCM team (Codex), once an hour
+    try:
+        import scm_agent
+        last = max((json.loads(x)["metrics"]["ts"] for x in scm_agent.HISTORY.read_text(encoding="utf-8").splitlines()
+                    if x.strip()), default=0) if scm_agent.HISTORY.exists() else 0
+        if time.time() - last >= 55 * 60:
+            scm, _ = scm_agent.run(ask_codex, dry=a.dry)
+            print(f"[scm] {len(scm['orders'])} orders, {len(scm['clearance'])} markdowns, alerts {scm['alerts'][:2]}")
+    except Exception as e:
+        print(f"[scm] skipped: {type(e).__name__}: {e}")
     try:
         directives = DIRECTIVES.read_text(encoding="utf-8")
     except OSError:
         directives = "(none)"
     raw = ask_claude(PROMPT + json.dumps(b, ensure_ascii=False) + "\n\nMARKETING RESEARCH (Codex):\n"
-                     + json.dumps(research, ensure_ascii=False) + "\n\nHEADQUARTERS DIRECTIVES (follow them):\n"
+                     + json.dumps(research, ensure_ascii=False)
+                     + "\n\nSCM TEAM PLAN (Codex owns stock; its orders and clearance run unless you have a strong "
+                       "reason: then say so in rationale and adjust restock picks):\n"
+                     + json.dumps(scm or __import__("scm_agent").scm_plan(), ensure_ascii=False)
+                     + "\n\nHEADQUARTERS DIRECTIVES (follow them):\n"
                      + directives + "\n\nAnswer with one JSON object with exactly these keys: "
                      + json.dumps(list(SCHEMA["properties"])) + ", shaped as in this JSON Schema: " + json.dumps(SCHEMA))
     plan, notes = gate(raw, market_model.catalog(MD))
@@ -549,6 +570,11 @@ def run(a, t0):
     (OUT / f"{stamp}.json").write_text(json.dumps({"brief": b, "research": research, "raw": raw, "plan": plan,
                                                    "gate": notes}, ensure_ascii=False, indent=1), encoding="utf-8")
     md = report_md(b, research, plan, notes)
+    if scm:
+        md += ("\n\n## SCM (Codex)\n" + scm.get("rationale", "") + "\n\nOrders: " + json.dumps(scm["orders"], ensure_ascii=False)
+               + "\nClearance: " + json.dumps(scm["clearance"], ensure_ascii=False) + "\nAlerts:\n"
+               + "\n".join(f"- {x}" for x in scm["alerts"]) + "\nLessons:\n"
+               + "\n".join(f"- [{x['verdict']}] {x['text']}" for x in scm["lessons"]))
     (OUT / "latest.md").write_text(md, encoding="utf-8")
     try:
         REPORTS.mkdir(parents=True, exist_ok=True)
