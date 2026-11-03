@@ -174,6 +174,8 @@ def facts(u, price, q, code):
 class Shop(AgentExecutor):
     def __init__(self):
         self.open = {}          # task id -> {"unit", "q", "ask", "turns", "code"}
+        self.sold = {}          # unit -> when we sold it: inventory.json lags up to 10 s, so a unit just sold must
+                                # not be offered again (the team found a checkout refused with 409, 2026-11-03)
         self.c = market_model.db()
 
     async def execute(self, context, event_queue):
@@ -197,7 +199,8 @@ class Shop(AgentExecutor):
 
         if deal is None:
             need = needs(text)
-            u, sku, cat = find_unit(text, {d["unit"]["unit"] for d in self.open.values()}, need)
+            self.sold = {k: v for k, v in self.sold.items() if time.time() - v < 120}
+            u, sku, cat = find_unit(text, {d["unit"]["unit"] for d in self.open.values()} | set(self.sold), need)
             if u is None:
                 category = (cat.get(sku) or {}).get("category") if sku else None
                 self.c.execute("insert into unmet values (?,?,?,?)", (time.time(), text[:200], sku, category))
@@ -237,6 +240,8 @@ class Shop(AgentExecutor):
             code = deal["code"] or promo.new_code(task.id)
             promo.count_purchase(self.c, code, price)
             promo.record(self.c, task.id, u, q, price, "deal")
+            if u.get("unit"):
+                self.sold[u["unit"]] = time.time()
             await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
             nxt = next((d for n, d in promo.theta()["tiers"] if promo.member(self.c, code)[0] >= n), None)
             await up.complete(say(f"Deal: {u['name'][:40]} at {price}. Signed receipt attached (Ed25519 shop_fp={FP}),"
@@ -251,7 +256,7 @@ class Shop(AgentExecutor):
             need = needs(text)
             vip = deal["vip"] or is_vip(self.c, text)
             if need["hours"] or need["grades"] or (vip and not deal["vip"]):
-                taken = {d["unit"]["unit"] for k, d in self.open.items() if k != task.id}
+                taken = {d["unit"]["unit"] for k, d in self.open.items() if k != task.id} | set(self.sold)
                 v, _, _ = find_unit(f"{text} {u['sku']}", taken, need)
                 if v is None:
                     await up.requires_input(say_offer(f"clerk: no unit of {u['sku']} or its category passes "

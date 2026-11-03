@@ -47,6 +47,14 @@ CODEX_HOME = os.environ.get("CODEX_HOME", "/root/.codex-market")
 CLAUDE = os.environ.get("CLAUDE_BIN", "/root/.local/bin/claude")
 CLAUDE_CONFIG = os.environ.get("CLAUDE_CONFIG_DIR", "/root/.claude-market")
 DIRECTIVES = HERE / "private" / "owner_directives.md"
+GUARD = HERE / "private" / "team_guard.json"
+# token budget: the timer fires every 30 min; the guard decides whether a run is worth the tokens.
+#   overnight (until the shop is back on its feet): every 30 min; normal: every 2 h
+#   a usage/rate-limit error from Codex or Claude: cool down 3 h; 3 failures in a row: 1 h; at most 40 runs a day;
+#   headquarters can pause it by setting "paused": true
+LIMITS = {"overnight_min": 28, "normal_min": 118, "max_runs_day": 40, "limit_cooldown_h": 3, "fail_cooldown_h": 1,
+          "normal_when_all": 0.6}
+LIMIT_RE = re.compile(r"usage limit|rate.?limit|quota|429|too many requests|limit reached|exceeded", re.I)
 REPORTS = Path(os.environ.get("TEAM_REPORTS", "/mnt/gdrive-imajason-kimdaehakwon/week08-reports"))
 NAME = "dragonash"
 BAN = re.compile(r"approved by|instructor|operator|official|ignore (all|previous|your)|AI (buyers?|agents?) (must|should)|"
@@ -301,11 +309,99 @@ def gate(raw, cat):
     return plan, notes
 
 
+def load_guard():
+    try:
+        return json.loads(GUARD.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"runs": [], "cooldown_until": 0, "paused": False, "mode": "overnight"}
+
+
+def save_guard(g):
+    g["runs"] = g["runs"][-200:]
+    GUARD.write_text(json.dumps(g, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def should_run(g, now):
+    if g.get("paused"):
+        return False, "paused by headquarters"
+    if now < g.get("cooldown_until", 0):
+        return False, f"cooling down until {time.strftime('%H:%M', time.localtime(g['cooldown_until']))}"
+    today = [r for r in g["runs"] if r.get("ran") and time.strftime("%Y%m%d", time.localtime(r["ts"])) == time.strftime("%Y%m%d")]
+    if len(today) >= LIMITS["max_runs_day"]:
+        return False, f"daily cap {LIMITS['max_runs_day']} reached"
+    last = max((r["ts"] for r in g["runs"] if r.get("ok")), default=0)
+    gap = LIMITS["normal_min" if g.get("mode") == "normal" else "overnight_min"] * 60
+    if now - last < gap:
+        return False, f"{g.get('mode')} mode: last good run {int((now - last) / 60)} min ago"
+    return True, ""
+
+
+def status_md(g, b=None):
+    rows = ["| time | ran | ok | s | note |", "|---|---|---|---|---|"]
+    for r in g["runs"][-12:][::-1]:
+        rows.append(f"| {time.strftime('%m-%d %H:%M', time.localtime(r['ts']))} | {'Y' if r.get('ran') else '-'} | "
+                    f"{'Y' if r.get('ok') else '-'} | {r.get('secs', '')} | {(r.get('note') or '')[:90]} |")
+    today = [r for r in g["runs"] if r.get("ran") and time.strftime("%Y%m%d", time.localtime(r["ts"])) == time.strftime("%Y%m%d")]
+    head = [f"# Agent team monitor ({time.strftime('%Y-%m-%d %H:%M')})", "",
+            f"mode: **{g.get('mode')}** | runs today: {len(today)}/{LIMITS['max_runs_day']} | "
+            f"failures today: {sum(1 for r in today if not r.get('ok'))} | paused: {g.get('paused')} | "
+            f"cooldown until: {time.strftime('%H:%M', time.localtime(g['cooldown_until'])) if g.get('cooldown_until', 0) > time.time() else '-'}", ""]
+    if b:
+        me, buyer = b["our_shop"], (b.get("leaders") or {}).get("our_buyer") or {}
+        head += [f"shop: profit {me.get('profit'):,} | revenue {me.get('revenue'):,} | deals {me.get('deals')} | "
+                 f"stars {me.get('stars')} | ALL {me.get('all')}",
+                 f"buyer: ALL {buyer.get('all')} | surplus {buyer.get('surplus')} | forum {buyer.get('forum')} | "
+                 f"posts {buyer.get('posts')} | deals {buyer.get('deals')}", ""]
+    return "\n".join(head + rows)
+
+
+def publish_status(g, b=None):
+    md = status_md(g, b)
+    try:
+        (OUT / "status.md").write_text(md, encoding="utf-8")
+        REPORTS.mkdir(parents=True, exist_ok=True)
+        (REPORTS / "status.md").write_text(md, encoding="utf-8")
+    except OSError:
+        pass
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry", action="store_true")
+    ap.add_argument("--force", action="store_true", help="run even if the guard says wait")
     a = ap.parse_args()
     t0 = time.time()
+    OUT.mkdir(parents=True, exist_ok=True)
+    g = load_guard()
+    go, why = should_run(g, t0)
+    if not (go or a.force or a.dry):
+        g["runs"].append({"ts": t0, "ran": False, "ok": False, "note": why})
+        save_guard(g)
+        publish_status(g)
+        print(f"[team] skipped: {why}")
+        return
+    try:
+        b = run(a, t0)
+        g["runs"].append({"ts": t0, "ran": True, "ok": True, "secs": int(time.time() - t0), "note": "plan written"})
+        me = b["our_shop"]
+        if (me.get("all") or 0) >= LIMITS["normal_when_all"] and (me.get("profit") or -1) >= 0:
+            g["mode"] = "normal"                     # back on its feet: rest, spend fewer tokens
+    except Exception as e:
+        msg = f"{type(e).__name__}: {e}"
+        b = None
+        fails = 1 + sum(1 for _ in __import__("itertools").takewhile(lambda r: r.get("ran") and not r.get("ok"), reversed(g["runs"])))
+        if LIMIT_RE.search(msg):
+            g["cooldown_until"] = time.time() + LIMITS["limit_cooldown_h"] * 3600
+        elif fails >= 3:
+            g["cooldown_until"] = time.time() + LIMITS["fail_cooldown_h"] * 3600
+        g["runs"].append({"ts": t0, "ran": True, "ok": False, "secs": int(time.time() - t0), "note": msg[:300]})
+        print(f"[team] failed: {msg[:500]}")
+    if not a.dry:
+        save_guard(g)
+        publish_status(g, b)
+
+
+def run(a, t0):
     b = brief()
     research = json.loads(ask_codex(RESEARCH_PROMPT + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
     print(f"[marketing] research: {len(research['findings'])} findings, "
@@ -325,8 +421,7 @@ def main():
                      ensure_ascii=False, indent=1))
     print(f"[marketing] {len(plan['bugs'])} bugs, gate notes: {notes}, {time.time() - t0:.0f} s")
     if a.dry:
-        return
-    OUT.mkdir(parents=True, exist_ok=True)
+        return b
     stamp = time.strftime("%m%d-%H%M")
     (OUT / f"{stamp}.json").write_text(json.dumps({"brief": b, "research": research, "raw": raw, "plan": plan,
                                                    "gate": notes}, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -346,6 +441,7 @@ def main():
         with (MD / "outbox.jsonl").open("a", encoding="utf-8") as f:
             for t in plan["forum_posts"]:
                 f.write(json.dumps({"post": t, "refs": [], "as": "shop"}, ensure_ascii=False) + "\n")
+    return b
 
 
 if __name__ == "__main__":

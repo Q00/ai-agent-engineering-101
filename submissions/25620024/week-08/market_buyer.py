@@ -473,16 +473,35 @@ def candidates(shops, order, cat, prof):
     return sorted(best.values(), key=lambda c: -c[0])
 
 
+def offer_of(task):
+    """A shop's structured offer, if it sent one as a data part (e.g. {"type": "offer", "shelf_hours_left": ...})."""
+    msg = (task.get("status") or {}).get("message") or {}
+    for part in msg.get("parts") or []:
+        d = part.get("data")
+        if isinstance(d, dict) and d.get("type") == "offer":
+            return d
+    return None
+
+
+NEED = {}          # set by round3: what this order needs, said to every shop up front
+
+
 def quote(c):
     """Open a task with one shop for one SKU and read its first ask (the quote round runs these in parallel,
-    like delegate_task: each one alone, only the result comes back)."""
+    like delegate_task: each one alone, only the result comes back). The opening says what the order needs
+    (shelf hours, grades, certificate): a shop that can pick a unit for it will, and the kit will not refuse
+    to pay later (the team found deals agreed, then refused: 145 h left, 541 h needed, 2026-11-03)."""
     keep, s, o, lp = c
     try:
         card = httpx.get(s["url"].rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
         url = next(i for i in card["supportedInterfaces"] if i.get("protocolBinding") == "JSONRPC")["url"]
-        opening = f"I want to buy {o['name']} ({o['sku']})"
+        opening = f"I want to buy {o['name']} ({o['sku']})" + (f" | need: {NEED['text']}" if NEED.get("text") else "")
         task = send(url, opening)
         ask = asking_price(task) if state(task) == "TASK_STATE_INPUT_REQUIRED" else None
+        off = offer_of(task)
+        if ask and off and NEED.get("hours") and (off.get("shelf_hours_left") or 1e9) < NEED["hours"]:
+            rpc(url, "CancelTask", {"id": task["id"]})
+            return {"c": c, "error": f"offered unit has {off['shelf_hours_left']} h left, need {NEED['hours']} h"}
         return {"c": c, "url": url, "task": task, "opening": opening, "ask": ask}
     except Exception as e:
         return {"c": c, "error": f"{type(e).__name__}: {e}"}
@@ -514,6 +533,11 @@ def round3(a, order, shops, mem, started):
     if not cands:
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
         return
+    pol = accept_policy(order)
+    NEED.clear()
+    NEED.update(hours=pol.get("min_hours_left"), text=", ".join(
+        x for x in (f"shelf life {pol['min_hours_left']} h or more" if pol.get("min_hours_left") else "",
+                    f"grade {'/'.join(pol['grades'])}" if pol.get("grades") else "", "market certificate") if x))
     with ThreadPoolExecutor(T["rfq"]) as ex:
         quotes = list(ex.map(quote, cands[:T["rfq"]]))
     for q in quotes:
