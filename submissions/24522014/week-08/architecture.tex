@@ -64,16 +64,17 @@ Save first judgement; queue factual buyer posts (4/day); no LLM.};
 \texttt{r3-buyer-memory.jsonl}: R3 observations; \texttt{settlement\_memory.py} joins payment outcomes.\\
 Only matching paid outcomes become confirmed settlement observations; no rewriting original history.\\
 \texttt{r3-restock-memory.json}: own sales; \texttt{market-intel.json}: bounded public evidence.\\
-\texttt{buyer\_portfolio.py}: unit-linked faults/refunds. Logs retain reviews, reasons and model traces.};
+\texttt{strategy-state.json}/\texttt{strategy-policy.json}: trial state, prior controls and leased versions.};
 \draw[feedback] (model.south) -- node[lab,right]{trade observations} (memory.north -| model.south);
 \draw[feedback] (review.south) -- node[lab,right]{settled evidence} (memory.north -| review.south);
 \draw[feedback] (memory.west) -- (-0.2,6.6) -- (-0.2,16.4)
  -- node[lab,above]{filtered history on next order} (6.05,16.4) -- (6.05,14.5) -- (buyer.west);
 
-\node[wide,minimum height=1.8cm,fill=guard] (monitor) at (9,3.1) {\textbf{Market observation --- no automatic policy experimenter yet}\\
+\node[wide,minimum height=1.8cm,fill=guard] (monitor) at (9,3.1) {\textbf{Market observation and bounded autonomous improvement}\\
 R3 ledger, forum and Players: \texttt{market\_intel.py}, \texttt{forum\_monitor.py}; no LLM.\\
 \texttt{purchase\_monitor.py}: buyer/SKU prices, grade/warranty groups and own-stock comparisons.\\
-Separate \texttt{monitor\_shop.py}/triage remains available. Experiment/rollback loop is proposed.};
+\texttt{strategy\_controller.py}: diagnose; one small trial; freeze; mature; keep or roll back.};
+\draw[feedback] (monitor.north) -- node[lab,right]{leased controls / trial state} (memory.south);
 \node[align=left,text width=18.1cm,font=\footnotesize] at (9,0.7) {
 \textbf{Legend:} grey = provided; blue = agent implementation/adaptation; green = rules/guards.\\
 Solid arrows = execution/data flow; dashed = retained evidence for later decisions.\\

@@ -12,6 +12,8 @@ from market_intel import fresh
 from r3_policy import load_policy
 from forum_monitor import observe as observe_forum, REQUEST
 from purchase_monitor import observe as observe_purchases
+from strategy_policy import effective
+from strategy_controller import run as improve_strategy
 
 
 def demand_hints(posts, catalog, now):
@@ -38,7 +40,7 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None):
     now = time.time() if now is None else now
     hints = hints or {}
     intelligence = intelligence or {}
@@ -46,6 +48,9 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         return [], {"reason": "not_round_3"}
     if (inventory.get("restock") or {}).get("open") is False:
         return [], {"reason": "market_restock_window_closed"}
+    runtime = effective(now=now) if runtime is None else runtime
+    if runtime["controls"]["restock_paused"]:
+        return [], {"reason": "strategy_cash_or_data_guard", "strategy_version": runtime["version"]}
     units = [u for u in inventory.get("units", []) if u.get("grade") != "expired"]
     balance = max(0, inventory.get("balance", 0))
     end = datetime.fromisoformat(load_policy()["selling"]["round_end"]).timestamp()
@@ -58,7 +63,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     # Our seller offers no warranties; retain any explicitly recorded future liability.
     refund_reserve = max(0, inventory.get("local_refund_reserve", 0))
     reserve = max(500000, inventory.get("start", 5000000) * 0.2) + existing_storage + refund_reserve
-    budget = max(0, min(balance * 0.05, balance - reserve))
+    budget = max(0, min(balance * runtime["controls"]["restock_budget_rate"], balance - reserve))
     if len(units) >= 8 or not budget:
         return [], {"reason": "stock_or_cash_limit", "budget": budget}
     categories = {d["category"] for d in demand}
@@ -113,6 +118,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         if len(buys) >= min(2, 8 - len(units)):
             break
     return buys, {"reason": "bounded_experiment", "budget": budget,
+                  "strategy_version": runtime["version"], "strategy_experiment": runtime.get("experiment"),
                   "estimated_max_cost": estimated, "cash_reserve": reserve,
                   "one_day_storage_reserve": storage_reserve,
                   "unproven_stock": len(experimental), "stale_stock": stale,
@@ -137,6 +143,10 @@ def main():
             observe_purchases(md)
         except (OSError, ValueError, TypeError):
             pass  # Forum observation must not stop inventory safety checks.
+        try:
+            improve_strategy(md)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print(f"[strategy] update deferred: {type(error).__name__}: {error}", flush=True)
     memory_path = md / "r3-restock-memory.json"
     memory = read("r3-restock-memory.json") if memory_path.exists() else {"round": 3, "cursor": 0, "last_sale_seq": 0, "sales": {}}
     # The local kit log contains our own settled sales. Read a bounded tail, never infer sales from disappearing stock.
@@ -181,7 +191,7 @@ def main():
             liabilities += offer["price"]
     inv["local_refund_reserve"] = liabilities
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
-                             intelligence=snapshot.get("skus", {}))
+                             intelligence=snapshot.get("skus", {}), runtime=effective(md))
     memory["cursor"] += 1
     temporary = memory_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")

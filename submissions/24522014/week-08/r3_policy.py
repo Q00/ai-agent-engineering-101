@@ -5,6 +5,7 @@ import math
 from pathlib import Path
 import time
 from datetime import datetime
+from strategy_policy import effective
 
 ROOT = Path(__file__).resolve().parent
 
@@ -13,7 +14,7 @@ def load_policy():
     return json.loads((ROOT / "r3_policy.json").read_text(encoding="utf-8"))
 
 
-def selling_terms(unit, catalog=None, now=None, signals=None):
+def selling_terms(unit, catalog=None, now=None, signals=None, runtime=None):
     now = time.time() if now is None else now
     cost = unit["cost"]
     stage = -1
@@ -66,7 +67,12 @@ def selling_terms(unit, catalog=None, now=None, signals=None):
             quote = floor
             reason = "round_end_clearance" if 0 <= hours_left <= 24 else "long_stock_loss_clearance"
             stage = 3 + loss_stage
+    runtime = effective(now=now) if runtime is None else runtime
+    multiplier = runtime["controls"]["quote_multipliers"].get(unit.get("sku"), 1)
+    if unit.get("kind") == "goods" and not (stage >= 0 and floor < cost):
+        quote = max(floor, min(max(floor, math.ceil(unit["list_price"])), math.ceil(quote*multiplier)))
     return {"floor": floor, "quote": quote, "discount_reason": reason,
+            "strategy_version": runtime["version"], "strategy_experiment": runtime.get("experiment"),
             "discount_stage": stage + 1, "below_cost_allowed": stage >= 0 and floor < cost}
 
 

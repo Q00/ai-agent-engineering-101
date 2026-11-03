@@ -36,6 +36,7 @@ from r3_policy import selling_terms
 from market_state import read, write, task_file
 from kit_runtime import OFFER_SECONDS
 from market_intel import fresh
+from strategy_policy import effective
 
 NAME = "kcwarni Inventory Shop"
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
@@ -152,6 +153,7 @@ class Seller(AgentExecutor):
                         self.open[identity]["touched"] = time.time()
 
     async def _execute(self, context, event_queue, busy_ids):
+        write(MARKET_DIR/"strategy-consumer.json", {"protocol": 1, "pid": os.getpid(), "heartbeat_at": time.time()})
         task = context.current_task
         if task is None:
             task = new_task_from_user_message(context.message)
@@ -191,7 +193,7 @@ class Seller(AgentExecutor):
                 deal["unit"] = u
                 catalog = json.loads((MARKET_DIR / "catalog.json").read_text(encoding="utf-8"))
             signals = fresh(MARKET_DIR).get("skus", {}).get(u["sku"], {})
-            terms = selling_terms(u, catalog, signals=signals)
+            terms = selling_terms(u, catalog, signals=signals, runtime=effective(MARKET_DIR))
         except (OSError, ValueError, KeyError, StopIteration):
             self.open.pop(task.id, None)
             await up.reject(say("This unit is unavailable or its current condition cannot be verified."))
@@ -226,7 +228,7 @@ class Seller(AgentExecutor):
                 u = next(x for x in inventory["units"] if x["unit"] == u["unit"])
                 if u["unit"] in self.committed_units:
                     raise ValueError("Unit already committed")
-                terms = selling_terms(u, catalog, signals=signals)
+                terms = selling_terms(u, catalog, signals=signals, runtime=effective(MARKET_DIR))
                 reserve = terms["floor"]
                 deal["unit"] = u
             except (OSError, ValueError, KeyError, StopIteration):
@@ -256,6 +258,8 @@ class Seller(AgentExecutor):
             if u.get("unit"):
                 write(task_file(MARKET_DIR, "signed-offers", task.id),
                       {"task": task.id, "unit": u["unit"], "sku": u["sku"], "price": price,
+                       "cost": u["cost"], "strategy_version": terms.get("strategy_version"),
+                       "strategy_experiment": terms.get("strategy_experiment"),
                        "issued_at": time.time(), "expires_at": time.time() + OFFER_SECONDS})
                 self.committed_units.add(u["unit"])
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
@@ -295,6 +299,7 @@ class Seller(AgentExecutor):
 
 
 def build(port):
+    write(MARKET_DIR/"strategy-consumer.json", {"protocol": 1, "pid": os.getpid(), "heartbeat_at": time.time()})
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=NAME,
