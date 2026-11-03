@@ -109,6 +109,14 @@ class LedgerDB:
                 added += cursor.rowcount
         return added
 
+    def first_round_ts(self, market_round: int) -> float | None:
+        """Epoch of the earliest stored row of that market round, if any."""
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            row = db.execute(
+                "SELECT min(ts) FROM rows WHERE round = ?", (market_round,)
+            ).fetchone()
+        return float(row[0]) if row and row[0] is not None else None
+
     def settles(self, since: float) -> list[tuple[float, str, str, str, int, str, str]]:
         """Settle rows since ``since``: (ts, buyer, shop, sku, amount, grade, claim)."""
         with closing(sqlite3.connect(self.path, timeout=2.0)) as db:

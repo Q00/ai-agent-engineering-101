@@ -130,7 +130,10 @@ PROMPT: Final = (
     "ticket size, top_categories, warranty_share, grade_mix, repeat_buyer_share, "
     "food share; on 2026-11-03 the profit leaders sold 199,000-279,000 bedding and "
     "mattresses at 0.75-0.83 of list, so restock.goods_max_list_price and the "
-    "category mix are yours to move) but never copy rows marked do_not_copy "
+    "category mix are yours to move; the owner wants no tight money limits, so "
+    "treat restock price caps and budgets as yours to set from net profit, "
+    "turnover and the leaders' ticket sizes, keeping only reserve_cash as the "
+    "floor) but never copy rows marked do_not_copy "
     "(same-owner trade or dishonest claims). A review digest counts what buyers "
     "complain about and praise in our shop and what the leaders are praised for; "
     "let it steer the seller fields "
@@ -192,6 +195,9 @@ TACTICAL_PROMPT: Final = (
 # A tactical field pinned at a band limit for this many tactical runs (45 min)
 # gets its band widened by code when the strategy has not moved it.
 EDGE_RUNS_TO_WIDEN: Final = 3
+# A tactical field moved the same way this many times in the window becomes base.
+FOLD_RUNS: Final = 3
+FOLD_WINDOW_HOURS: Final = 3.0
 EDGE_EPS: Final = 1e-6
 TRIGGER_MIN_ATTEMPTS: Final = 6
 TRIGGER_MIN_RECEIPTS: Final = 5
@@ -367,14 +373,36 @@ def load_notes(path: Path, limit: int = 10) -> list[dict[str, object]]:
     except OSError:
         return []
     rows: list[dict[str, object]] = []
-    for line in lines[-limit * 4 :]:
+    done: set[str] = set()
+    for line in reversed(lines[-limit * 8 :]):
         try:
             row = json.loads(line)
         except ValueError:
             continue
-        if isinstance(row, dict) and isinstance(row.get("note"), str):
+        if not isinstance(row, dict) or not isinstance(row.get("note"), str):
+            continue
+        if row.get("status") == "done":
+            done.add(str(row["note"]))
+        elif str(row["note"]) not in done:
             rows.append(row)
+    rows.reverse()
     return rows[-limit:]
+
+
+def resolve_notes(path: Path, notes: Iterable[str], *, by: str) -> int:
+    """Mark notes done (a later row with status done hides them from the open list)."""
+    count = 0
+    with path.open("a", encoding="utf-8") as stream:
+        for note in notes:
+            row = {
+                "ts": round(time.time()),
+                "actor": by,
+                "status": "done",
+                "note": note,
+            }
+            _ = stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+            count += 1
+    return count
 
 
 def append_notes(
@@ -705,8 +733,8 @@ class Manager:
                 "categories": len({u.category for u in inventory.units}),
                 "aging": aging,
             },
-            "own_results_24h": self.events.summary(24),
-            "own_results_6h": self.events.summary(6),
+            "own_results_24h": self.events.summary(24, self.r3_opened_at()),
+            "own_results_6h": self.events.summary(6, self.r3_opened_at()),
             "market_6h": self.ledger.summary(
                 catalog, hours=6, our_shop=self.shop_url, our_buyer=self.buyer_name
             ),
@@ -765,8 +793,8 @@ class Manager:
             for key in sorted(TACTICAL_FIELDS)
         }
         return {
-            "own_results_1h": self.events.summary(1),
-            "own_results_6h": self.events.summary(6),
+            "own_results_1h": self.events.summary(1, self.r3_opened_at()),
+            "own_results_6h": self.events.summary(6, self.r3_opened_at()),
             "policy_reviews": policy_reviews(
                 self.events,
                 self.ledger,
@@ -1049,6 +1077,19 @@ class Manager:
         except OSError:
             LOGGER.warning("policy_change_log_failed")
 
+    def r3_opened_at(self) -> float:
+        """Epoch of the first Round 3 ledger row (cached once seen), else 0."""
+        raw = self.events.get_value("r3_opened_at")
+        if raw:
+            with contextlib.suppress(ValueError):
+                return float(raw)
+        first = self.ledger.first_round_ts(3)
+        if first is not None:
+            with contextlib.suppress(OSError):
+                self.events.set_value("r3_opened_at", str(first))
+            return first
+        return 0.0
+
     def band_edges(self) -> dict[str, dict[str, object]]:
         """Tactical fields pinned at a band limit, with the runs they sat there."""
         history = load_history(self.policy_file)
@@ -1059,13 +1100,15 @@ class Manager:
             if not isinstance(value, (int, float)) or isinstance(value, bool):
                 continue
             band = history.bands.get(key) or default_band(key, base)
-            side = (
-                "high"
-                if float(value) >= band.high - EDGE_EPS
-                else "low"
-                if float(value) <= band.low + EDGE_EPS
-                else ""
+            low_bound, high_bound = field_bounds(key)
+            at_high = float(value) >= band.high - EDGE_EPS and not (
+                high_bound is not None and band.high >= high_bound - EDGE_EPS
             )
+            at_low = float(value) <= band.low + EDGE_EPS and not (
+                low_bound is not None and band.low <= low_bound + EDGE_EPS
+            )
+            # a band limit that is the field's own bound is not a wall to widen
+            side = "high" if at_high else "low" if at_low else ""
             if side:
                 raw = self.events.get_value(f"edge_runs:{key}")
                 out[key] = {
@@ -1121,6 +1164,74 @@ class Manager:
             self.events.set_value(runs_key, "0")
             edges[key]["band"] = wider.model_dump()
         return edges
+
+    def fold_recurring_moves(self) -> dict[str, JsonValue]:
+        """Make a tactical move the base when it keeps being re-applied.
+
+        The strategy layer owns no tactical field, so an overlay that expires
+        after an hour is re-proposed again and again (quick_accept_ratio 0.72 to
+        0.75 three times on the first night). After FOLD_RUNS accepted moves of
+        one field in the same direction within FOLD_WINDOW_HOURS, code writes
+        the latest value into the strategy base (new version, bands kept).
+        """
+        history = load_history(self.policy_file)
+        base = history.base()
+        folded: dict[str, JsonValue] = {}
+        rows = [
+            c
+            for c in self.events.recent_policy_changes(FOLD_WINDOW_HOURS)
+            if c["layer"] == "tactical" and c["accepted"]
+        ]
+        for key in sorted(TACTICAL_FIELDS):
+            mine = [c for c in rows if c["field"] == key]
+            if len(mine) < FOLD_RUNS:
+                continue
+            directions: set[int] = set()
+            latest: float | None = None
+            for row in mine:
+                try:
+                    before, after = (
+                        float(json.loads(str(row["before"]))),
+                        float(json.loads(str(row["after"]))),
+                    )
+                except (TypeError, ValueError):
+                    directions.add(0)
+                    continue
+                directions.add(1 if after > before else -1 if after < before else 0)
+                latest = after
+            current = field_value(base, key)
+            if (
+                len(directions) != 1
+                or 0 in directions
+                or latest is None
+                or not isinstance(current, (int, float))
+                or abs(float(current) - latest) < EDGE_EPS
+            ):
+                continue
+            value: JsonValue = int(latest) if isinstance(current, int) else latest
+            folded[key] = value
+        if not folded:
+            return {}
+        why = f"code: fold recurring tactical moves {json.dumps(folded)}"
+        try:
+            published = save_policy(self.policy_file, apply_changes(base, folded), why)
+        except (ValueError, TypeError, ValidationError, OSError) as exc:
+            LOGGER.warning("fold_failed %s", type(exc).__name__)
+            return {}
+        for key, value in folded.items():
+            self.record(
+                actor="code",
+                layer="strategy",
+                field=key,
+                before=field_value(base, key),
+                after=value,
+                reason=why,
+                expires_at=None,
+                version=published.version,
+                accepted=True,
+            )
+        self.run_log("strategy", "nudged", why[:300])
+        return folded
 
     def run_log(self, role: str, outcome: str, detail: str = "") -> None:
         """Record one loop run for the Telegram digest; never stops the loop."""
@@ -1522,6 +1633,7 @@ class Manager:
             self.mark("tactical_last_at", now)
             _ = await self.tactical()
             _ = await anyio.to_thread.run_sync(self.track_band_edges)
+            _ = await anyio.to_thread.run_sync(self.fold_recurring_moves)
         if now - self.stamp("benchmark_last_at") >= BENCHMARK_EVERY:
             self.mark("benchmark_last_at", now)
             table = await anyio.to_thread.run_sync(self.benchmark)

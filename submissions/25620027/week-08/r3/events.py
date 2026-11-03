@@ -514,9 +514,14 @@ class EventLedger:
                 (key, value[:200_000]),
             )
 
-    def summary(self, hours: float) -> dict[str, int]:
-        """Count attempts, agreed, paid, refused and receipts for the manager."""
-        since = time.time() - hours * 3600
+    def summary(self, hours: float, floor: float = 0.0) -> dict[str, int]:
+        """Count attempts, agreed, paid, refused and receipts for the manager.
+
+        ``floor`` cuts the window at an epoch (Round 3 open): a 24 h window on
+        the first night still held 1,582 Round 0-2 agreements that were never
+        paid, which the strategy read as an 8.7 % payment rate.
+        """
+        since = max(time.time() - hours * 3600, floor)
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
             attempts = db.execute(
                 "SELECT count(*) FROM buyer_attempts WHERE ts >= ?", (since,)

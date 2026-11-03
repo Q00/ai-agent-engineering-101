@@ -322,7 +322,11 @@ def _financial_window(  # noqa: C901, PLR0912, PLR0915 - reconcile explicit cost
     net = revenue - cogs - refunds - expired - storage_cost
     cash_change, assets_change = after[1] - before[1], after[4] - before[4]
     residual = cash_change + assets_change - (after[3] - before[3]) - net
-    if abs(residual) > 1:
+    # Storage is accrued here per second but the market charges it on its own
+    # schedule, so a residual that is exactly the accrued storage is explained
+    # (first night: every review carried gap == storage, net profit null).
+    unexplained = min(abs(residual), abs(residual - storage_cost))
+    if unexplained > 1:
         gaps.add("cash_asset_reconciliation_gap")
     return {
         "shop_cost_of_goods_sold": cogs,
@@ -336,6 +340,9 @@ def _financial_window(  # noqa: C901, PLR0912, PLR0915 - reconcile explicit cost
         "official_cash_profit_at_end": after[1] - after[2] - after[3],
         "balance_observed_at": [before[0], after[0]],
         "cash_asset_reconciliation_gap": round(residual, 6),
+        "storage_not_yet_charged": round(residual, 6)
+        if abs(residual - storage_cost) <= 1 and abs(residual) > 1
+        else 0.0,
         "storage_basis": "observed_unit_cost_times_stock_seconds_times_0.01_per_day",
         "financial_status": "complete" if not gaps else "incomplete",
         "financial_gaps": sorted(gaps),

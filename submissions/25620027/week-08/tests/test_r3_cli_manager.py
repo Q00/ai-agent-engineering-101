@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import time
 from typing import TYPE_CHECKING
 
@@ -13,10 +14,14 @@ import harness_app
 from r3 import buyer as fast
 from r3.manager import (
     EDGE_RUNS_TO_WIDEN,
+    FOLD_RUNS,
     PROMPT,
     Manager,
+    append_notes,
     lenient_strategy_arguments,
+    load_notes,
     policy_schema,
+    resolve_notes,
 )
 from r3.market_files import ShopEntry
 from r3.policy import (
@@ -233,3 +238,69 @@ def test_pinned_tactical_fields_are_reported_and_their_band_widened_by_code(
     )
     assert lenient["changes"] == {"seller.markup_a": 0.9}
     assert list(lenient["bands"]) == ["seller.concession"]
+
+
+def test_floor_bounds_fold_and_note_resolution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    now = time.time()
+    run_dir = tmp_path / "run"
+    _ = write_market(run_dir / ".market", [unit(KIMCHI, 1, now=now)])
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    manager = Manager(
+        run_dir,
+        "http://127.0.0.1:9",
+        shop_url="http://us.test",
+        buyer_name="25620027",
+        shop_name="S",
+    )
+    # Given: Round 2 agreements an hour ago and Round 3 rows from ten minutes ago.
+    for n in range(4):
+        manager.events.record_attempt(
+            order=f"r2-{n}",
+            shop="http://a",
+            shop_name="a",
+            sku=KIMCHI,
+            list_price=100,
+            price=80,
+            outcome="agreed",
+        )
+    manager.ledger.ingest(
+        [{"seq": 1, "ts": now - 600, "kind": "settle", "round": 3, "data": {}}]
+    )
+    with sqlite3.connect(manager.events.path) as db:
+        db.execute("UPDATE buyer_attempts SET ts = ?", (now - 3600,))
+    # Then: the 24 h window starts at Round 3, so the old agreements drop out.
+    assert manager.events.summary(24)["buyer_agreed"] == 4
+    assert manager.r3_opened_at() == now - 600
+    assert manager.summary()["own_results_24h"]["buyer_agreed"] == 0
+    # And: a band limit that is the field's own bound is no edge.
+    _ = save_policy(
+        manager.policy_file,
+        Policy(),
+        "s",
+        bands={"restock.replenish_qty": Band(low=1, high=3)},
+    )
+    assert "restock.replenish_qty" not in manager.band_edges()
+    # And: the same tactical move accepted three times becomes the base.
+    for _ in range(FOLD_RUNS):
+        manager.events.record_policy_change(
+            actor="m",
+            layer="tactical",
+            field="buyer.quick_accept_ratio",
+            before=0.72,
+            after=0.75,
+            reason="walkaway",
+            expires_at=None,
+            version=None,
+            accepted=True,
+        )
+    assert manager.fold_recurring_moves() == {"buyer.quick_accept_ratio": 0.75}
+    assert load_history(manager.policy_file).base().buyer.quick_accept_ratio == 0.75
+    assert manager.fold_recurring_moves() == {}  # already the base
+    assert manager.events.loop_runs(0)[-1]["outcome"] == "nudged"
+    # And: a resolved note leaves the open list.
+    path = tmp_path / "notes.jsonl"
+    _ = append_notes(path, ["fix a", "fix b"], actor="m", version=1)
+    assert resolve_notes(path, ["fix a"], by="claude") == 1
+    assert [r["note"] for r in load_notes(path)] == ["fix b"]

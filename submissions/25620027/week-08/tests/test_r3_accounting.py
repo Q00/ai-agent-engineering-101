@@ -392,3 +392,29 @@ def test_existing_recorder_captures_costs_off_the_trade_path(
         assert db.execute("SELECT cost FROM stock WHERE unit=?", ("g",)).fetchone() == (
             50_000,
         )
+
+
+def test_storage_not_yet_charged_by_the_market_is_not_a_reconciliation_gap(
+    tmp_path: Path,
+) -> None:
+    # Given: the lecture goods unit held ten days, sold, but the market has not
+    # taken the 5,000 storage from the balance yet (first-night live reviews).
+    start, end = 1000.0, 1000.0 + 10 * DAY + 1
+    stock, ledger = (
+        StockJournal(tmp_path / STOCK_FILE),
+        LedgerDB(tmp_path / "ledger.db"),
+    )
+    assert stock.observe(snapshot([unit("g", start)], 4_950_000), stamp=start)
+    ledger.ingest([event(1, end - 1, "settle", unit="g", amount=70_000)])
+    assert stock.observe(snapshot([], 4_950_000 + 70_000), stamp=end)
+    with sqlite3.connect(stock.path) as db:
+        db.execute(
+            "INSERT INTO snapshots VALUES(?,?,?,?,?,?)",
+            (start, 4_950_000, 5_000_000, 0, 50_000, 0.01),
+        )
+    cover(stock, start, end)
+    result = window(stock, ledger, start, end)
+    # Then: the residual equals the accrued storage, is named, and profit stands.
+    assert result["financial_status"] == "complete"
+    assert result["storage_not_yet_charged"] == 5000
+    assert result["shop_net_profit"] == 70_000 - 50_000 - 5000
