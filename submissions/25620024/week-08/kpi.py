@@ -76,6 +76,14 @@ def vip(hours=6):
     return {"vip_quotes_recent": n, "vip_buyers": sorted(who)[:20], "regulars": len(market_model.regulars(market_model.db())[0])}
 
 
+def handoff():
+    """The handover note headquarters wrote when it replaced the teams (private/handoff.md), or None."""
+    try:
+        return (HERE / "private" / "handoff.md").read_text(encoding="utf-8")[:6000]
+    except OSError:
+        return None
+
+
 def accountability(team, c=None, shop=None, board=None):
     """The line a team's brief starts with: what it answers for, and the numbers now."""
     c = c or market_model.db()
@@ -84,7 +92,11 @@ def accountability(team, c=None, shop=None, board=None):
                 "marketing": lambda: sell_through(c), "sales": lambda: {**rank(board), **vip()}}[team]()
     except Exception as e:
         data = {"error": f"{type(e).__name__}: {e}"}
-    return {"you_answer_for": f"headquarters holds you responsible if {WHO[team]}", "now": data}
+    out = {"you_answer_for": f"headquarters holds you responsible if {WHO[team]}", "now": data}
+    h = handoff()
+    if h:
+        out["handoff"] = h          # read it before anything else: what the team before you learned and got wrong
+    return out
 
 
 if __name__ == "__main__":
