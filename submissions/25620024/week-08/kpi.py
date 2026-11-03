@@ -76,6 +76,10 @@ def vip(hours=6):
     return {"vip_quotes_recent": n, "vip_buyers": sorted(who)[:20], "regulars": len(market_model.regulars(market_model.db())[0])}
 
 
+HR_DEMAND = ("HR: your grade is below standard. Start your rationale with 'HR:' and, for each KPI marked missed in "
+             "hr_grade.kpis, say in one line why it was missed and what you change this run to meet it.")
+
+
 def handoff():
     """The handover note headquarters wrote when it replaced the teams (private/handoff.md), or None."""
     try:
@@ -98,6 +102,8 @@ def accountability(team, c=None, shop=None, board=None):
         g = hr.grade_of({"sales": "sales", "scm": "scm", "marketing": "marketing", "finance": "finance"}[team])
         if g:
             out["hr_grade"] = g        # the HR team's score, KPIs, rewards and the levers you may change per run
+            if g.get("status") in ("warning", "fire candidate"):
+                out["hr_demand"] = HR_DEMAND
     except Exception:
         pass
     h = handoff()

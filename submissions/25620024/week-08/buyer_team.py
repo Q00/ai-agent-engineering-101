@@ -256,7 +256,9 @@ def brief(board=None, now=None):
         grades = {"buyer_team": hr.grade_of("buyer"), "enuri": hr.grade_of("enuri")}
     except Exception:
         grades = None
-    b = {"accountability": dict(accountability(me, top, summ), handoff=kpi.handoff(), hr_grade=grades), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
+    low = any((g or {}).get("status") in ("warning", "fire candidate") for g in (grades or {}).values())
+    b = {"accountability": dict(accountability(me, top, summ), handoff=kpi.handoff(), hr_grade=grades,
+                                **({"hr_demand": kpi.HR_DEMAND} if low else {})), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
          "enuri": summ, "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
          "current": current(), "plan_now": {k: load(PLAN, {}).get(k) for k in ("changed", "forum_advice", "rationale")},
          "scorecard": scorecard(snap, history[-1] if history else None),

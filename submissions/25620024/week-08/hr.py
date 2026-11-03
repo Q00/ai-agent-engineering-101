@@ -215,6 +215,10 @@ def report(teams, board, history, raised=(), given=()):
             f"{r['kpi']} {r['value'] if r['value'] is not None else '-'} (목표 {'≥' if r.get('higher', True) else '≤'}"
             f"{r['target']}) {'✅' if r['score'] == 100 else '⚠️' if r['score'] == 50 else '❌' if r['score'] == 0 else '·'}"
             for r in teams[t]["kpis"]))
+    lines += ["", "## 사유서 (KPI 미달 팀이 마지막 회의에 쓴 것)"]
+    for t, why in explanations().items():
+        if teams.get(t, {}).get("status") in ("warning", "fire candidate"):
+            lines.append(f"- **{NAMES[t]}**: {why or '(아직 사유서 없음: 다음 회의부터 작성)'}")
     lines += ["", "## 보상·챌린지"]
     lines += [f"- {NAMES[t]}: 자율권 레버 {levers(t)}개" + "".join(
         f" · {x['kind']} ({x['reason'][:60]})" for x in [y for y in rewards()["log"] if y["team"] == t][-2:])
@@ -247,6 +251,18 @@ def run(board=None):
     except OSError:
         pass
     return teams, md
+
+
+def explanations():
+    """What each team last wrote after 'HR:' in its rationale (the plan files the teams write)."""
+    src = {"sales": "marketing_plan.json", "scm": "scm_plan.json", "finance": "finance_limits.json",
+           "buyer": "buyer_plan.json", "marketing": "marketing_plan.json", "enuri": "buyer_plan.json"}
+    out = {}
+    for t, f in src.items():
+        r = str((_load(HERE / "private" / f, {}) or {}).get("rationale") or "")
+        i = r.find("HR:")
+        out[t] = r[i:i + 500] if i >= 0 else None
+    return out
 
 
 def grade_of(team):
