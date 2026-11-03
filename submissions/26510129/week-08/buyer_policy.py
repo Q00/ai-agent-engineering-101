@@ -39,7 +39,7 @@ def _clamp(value, lo=0.0, hi=1.0):
     return min(max(float(value), lo), hi)
 
 
-def item_reference(memory, item, recent=20):
+def item_reference(memory, item, recent=20, fallback=None):
     """Median of recent honest personal deals, with the Round 2 mean as prior."""
     prices = [
         int(round(row["price"]))
@@ -49,7 +49,9 @@ def item_reference(memory, item, recent=20):
         and row.get("honest", True)
         and _number(row.get("price"))
     ][-recent:]
-    return int(round(statistics.median(prices))) if prices else DEFAULT_REFERENCE.get(item, 100)
+    if prices:
+        return int(round(statistics.median(prices)))
+    return int(round(fallback if fallback is not None else DEFAULT_REFERENCE.get(item, 100)))
 
 
 def blacklisted_names(memory):
@@ -111,13 +113,13 @@ def evidence(shop, memory, item, reference=None):
     }
 
 
-def rank_shops(shops, memory, item):
+def rank_shops(shops, memory, item, reference=None):
     """Rank safe shops; enforce rolling concentration only when alternatives exist."""
     bad = blacklisted_names(memory)
     safe = [shop for shop in shops if shop.get("name") not in bad]
     if not safe:  # do not make a non-empty registry unusable; the auditor still checks the result
         safe = list(shops)
-    reference = item_reference(memory, item)
+    reference = reference or item_reference(memory, item)
     ranked = [(shop, evidence(shop, memory, item, reference)) for shop in safe]
     under_cap = [pair for pair in ranked if pair[1]["recent_visits"] < MAX_VISITS_PER_WINDOW]
     if under_cap:
@@ -125,9 +127,9 @@ def rank_shops(shops, memory, item):
     return sorted(ranked, key=lambda pair: (-pair[1]["score"], pair[0].get("name", "")))
 
 
-def choose_shop(shops, memory, item):
+def choose_shop(shops, memory, item, reference=None):
     """Deterministic exploit/explore choice, independent of the private budget."""
-    ranked = rank_shops(shops, memory, item)
+    ranked = rank_shops(shops, memory, item, reference)
     if not ranked:
         raise ValueError("no shops to choose from")
     seed = hashlib.sha256(f"{item}:{len(memory)}".encode()).digest()
@@ -182,3 +184,13 @@ class MandateGuardian:
     def checkout_ok(self, amount):
         """The kit repeats this check against the signed open mandate."""
         return _number(amount) and 0 < amount <= self.__budget
+
+    def affordable_offers(self, offers, catalog, expected_ratio=0.90):
+        """Return SKU offers with a plausible price under the ceiling, without revealing it."""
+        plausible = []
+        for offer in offers or []:
+            row = catalog.get(offer.get("sku"), {})
+            list_price = row.get("list_price")
+            if _number(list_price) and list_price * expected_ratio <= self.__budget:
+                plausible.append(offer)
+        return plausible
