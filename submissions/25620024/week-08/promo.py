@@ -31,6 +31,14 @@ DEFAULTS = {
     "food_markdown": [[0.45, 0.05], [0.25, 0.12], [0.10, 0.25]],   # shelf life share left -> markdown
     "goods_age_h": [[48, 0.05], [96, 0.10]],                        # hours in stock -> markdown
     "warranty_goods_h": 0,                   # warranty offered on goods (0 = none)
+    # opening offer (the owner's call, 2026-11-03 21:20): win buyers' memories and reviews while the market forms,
+    # at prices most shops will not match, but never below cost (cost x 1.03); ends by itself
+    "intro_until": 1793794500,               # 2026-11-04 21:15 KST
+    "intro_arms": [0.60, 0.65, 0.70, 0.75],
+    "intro_margin": 0.03,
+    "intro_haggle": 0.03,
+    # clearance: hours our stock of a SKU would last at our own sales rate -> extra markdown (floor still holds)
+    "clear_cover_h": [[24, 0.05], [48, 0.10]],
 }
 
 
@@ -69,15 +77,19 @@ def is_hero(c, sku, n):
     return sku in [k for k, _ in sorted(by_sku.items(), key=lambda kv: -kv[1])[:n]]
 
 
-def quote(c, unit, code=None, me=None, now=None):
-    """The price for this unit, the lowest price a counter may close at, and why (for the log, never the buyer)."""
+def quote(c, unit, code=None, me=None, now=None, stock_n=1):
+    """The price for this unit, the lowest price a counter may close at, and why (for the log, never the buyer).
+    stock_n is how many units of this SKU we hold (for clearance)."""
     t, now = theta(), now or time.time()
+    intro = now < t["intro_until"]
+    if intro:
+        t = {**t, "arms": t["intro_arms"], "min_margin": t["intro_margin"], "haggle_room": t["intro_haggle"]}
     lp, cost = unit["list_price"], unit["cost"]
     floor = int(cost * (1 + t["min_margin"])) + 1
     grade = unit.get("grade") or "?"
     bought = member(c, code)[0]
     arm = pick_arm(c, unit.get("kind"), grade, t["arms"], explore=not bought)
-    price, why = lp * arm, [f"arm {arm:.2f}"]
+    price, why = lp * arm, [f"{'intro ' if intro else ''}arm {arm:.2f}"]
     low = market_model.market_low(c, unit["sku"], me)
     if low and is_hero(c, unit["sku"], t["heroes"]):
         price, why = min(price, low - 1), why + [f"hero under {low}"]
@@ -91,6 +103,12 @@ def quote(c, unit, code=None, me=None, now=None):
         cut = max([m for h, m in t["goods_age_h"] if age >= h], default=0)
         if cut:
             price, why = price * (1 - cut), why + [f"{age:.0f} h in stock -{cut:.0%}"]
+    if stock_n > 1:
+        rate = market_model.our_sales(c, unit["sku"])
+        cover = stock_n / rate if rate > 0 else float("inf")
+        cut = max([m for h, m in t["clear_cover_h"] if cover >= h], default=0)
+        if cut:
+            price, why = price * (1 - cut), why + [f"{stock_n} in stock, {cover:.0f} h of sales -{cut:.0%}"]
     tier = next(((n, d) for n, d in t["tiers"] if bought >= n), None)
     if tier:
         price, why = price * (1 - tier[1]), why + [f"member {code} {bought} buys -{tier[1]:.0%}"]

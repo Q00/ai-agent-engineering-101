@@ -20,6 +20,7 @@ from pathlib import Path
 import httpx
 
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
+SHOP_NAME = "dragonash"     # supply entries name the shop; settle entries carry its (changing) tunnel URL
 DB = Path(os.environ.get("MARKET_MODEL", Path(__file__).parent / "private" / "market.db"))
 
 SCHEMA = """
@@ -32,6 +33,8 @@ create table if not exists unmet (ts real, text text, sku text, category text);
 create table if not exists quotes (ts real, task text, sku text, kind text, grade text, arm text, list_price integer,
     cost integer, ask integer, price integer, outcome text);
 create table if not exists members (code text primary key, purchases integer, spent integer, first real, last real);
+create table if not exists settle_units (seq integer primary key, unit text);
+create table if not exists our_units (unit text primary key);
 create index if not exists settles_sku on settles(sku);
 create index if not exists settles_cat on settles(category);
 """
@@ -58,6 +61,9 @@ def sync(c=None, md=Path(".market"), budget_s=20):
     cat = catalog(md)
     row = c.execute("select v from meta where k='ledger_seq'").fetchone()
     after = int(row[0]) if row else None
+    if after is not None and not c.execute("select 1 from settle_units limit 1").fetchone():
+        first = c.execute("select min(seq) from settles").fetchone()[0]
+        after = first - 1 if first else after       # once: read the settles again to learn their units
     t0, n = time.time(), 0
     with httpx.Client(timeout=20) as h:
         if after is None:
@@ -76,7 +82,10 @@ def sync(c=None, md=Path(".market"), budget_s=20):
                                (cat.get(sku) or {}).get("category"), d.get("amount"),
                                (cat.get(sku) or {}).get("list_price"), d.get("grade"), d.get("claim"),
                                None if d.get("claim_honest") is None else int(bool(d["claim_honest"]))))
+                    c.execute("insert or ignore into settle_units values (?,?)", (e["seq"], d.get("unit")))
                     n += 1
+                elif e.get("kind") == "supply" and d.get("shop") == SHOP_NAME:
+                    c.executemany("insert or ignore into our_units values (?)", [(u,) for u in d.get("units") or []])
                 elif e.get("kind") == "broken":
                     c.execute("insert or ignore into broken values (?,?,?,?)", (e["seq"], e["ts"], d.get("buyer"), d.get("item")))
             after = rows[-1]["seq"]
@@ -104,11 +113,28 @@ def rates(c, half_life_h=6.0, now=None):
     return by_sku, by_cat
 
 
+def ours(c):
+    """Seq numbers of settles that shipped a unit our shop bought. Settles name the shop by its tunnel URL,
+    which changes on every restart; the unit ids from our supply entries do not."""
+    return "select s.seq from settle_units s join our_units o on s.unit = o.unit"
+
+
 def market_low(c, sku, me=None, hours=12):
-    """The lowest price another shop settled this SKU at lately, or None."""
-    row = c.execute("select min(amount) from settles where sku=? and ts>? and (shop is null or shop!=?)",
-                    (sku, time.time() - hours * 3600, me or "")).fetchone()
+    """The lowest price another shop settled this SKU at lately, or None. Our own sales are left out: comparing
+    with the name 'dragonash' against settles that carry a URL counted them as a competitor's, so each of our
+    sales lowered our next hero price by one credit (found 2026-11-03)."""
+    row = c.execute(f"select min(amount) from settles where sku=? and ts>? and seq not in ({ours(c)})",
+                    (sku, time.time() - hours * 3600)).fetchone()
     return row[0] if row and row[0] else None
+
+
+def our_sales(c, sku=None, hours=6):
+    """Our settled sales lately: per SKU per hour (sku=None gives a dict for all SKUs)."""
+    q = (f"select sku, count(*) from settles where ts>? and seq in ({ours(c)})"
+         + (" and sku=?" if sku else "") + " group by sku")
+    rows = c.execute(q, (time.time() - hours * 3600,) + ((sku,) if sku else ())).fetchall()
+    rates = {k: n / hours for k, n in rows}
+    return rates.get(sku, 0.0) if sku else rates
 
 
 def remember_seen(order, shops):

@@ -82,7 +82,8 @@ def find_unit(text, taken=()):
                     or (u.get("category") or "").split(">")[-1].lower() in want]
     u = min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
     if u:
-        u = dict(u, shelf_hours=(cat.get(u["sku"]) or {}).get("shelf_hours"))
+        u = dict(u, shelf_hours=(cat.get(u["sku"]) or {}).get("shelf_hours"),
+                 stock_n=sum(1 for x in units if x["sku"] == u["sku"] and x.get("grade") != "expired"))
     return u, (m.group(1) if m else None), cat
 
 
@@ -141,7 +142,7 @@ class Shop(AgentExecutor):
                 return
             m = CODE_RE.search(text)
             code = m.group(1).upper() if m else None
-            q = promo.quote(self.c, u, code, me=NAME)
+            q = promo.quote(self.c, u, code, me=NAME, stock_n=u.get("stock_n", 1))
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code}
             log(f"{task.id[:8]} {u['sku']} cost {u['cost']} -> ask {q['price']} least {q['least']} ({q['why']})")
             await up.requires_input(say(f"{facts(u, q['price'], q, code)} | asking {q['price']}. Reply with a number."))
