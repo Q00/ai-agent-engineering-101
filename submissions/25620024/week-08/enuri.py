@@ -507,6 +507,39 @@ def requested(max_age_h=6):
     return [x for x in (r.get("skus") or []) if isinstance(x, str) and re.fullmatch(r"G[0-9a-f]{8}", x)][:10]
 
 
+SKU_ID = re.compile(r"\bG[0-9a-f]{8}\b")
+
+
+def forum_mentions(md=Path("."), hours=6):
+    """How often other agents' forum posts name each SKU (market summaries, purchase records, wants): {sku: n}."""
+    posts = load(Path(md) / "forum.json", [])
+    posts = posts.get("posts", posts) if isinstance(posts, dict) else posts
+    out, now = {}, time.time()
+    for p in posts or []:
+        if p.get("author") == ME or now - (p.get("ts") or 0) > hours * 3600:
+            continue
+        for s in set(SKU_ID.findall(p.get("text") or "")):
+            out[s] = out.get(s, 0) + 1
+    return out
+
+
+def winning(c=None, md=Path(".market"), top=15):
+    """What sells (HQ 11-04, research only what sells): market_model.winners on the ledger, with the other shops'
+    stock from the market-wide index, how often the forum names the SKU, and our stock."""
+    c = c or market_model.db()
+    b = book()
+    others = {s: sum(h.get("qty") or 0 for h in (v.get("shops") or [])) for s, v in (b.get("where") or {}).items()}
+    fm = forum_mentions(md)
+    have = {}
+    for u in load(Path(md) / "inventory.json", {}).get("units", []):
+        if u.get("grade") != "expired":
+            have[u["sku"]] = have.get(u["sku"], 0) + 1
+    w = market_model.winners(c, top=top, stock=others)
+    for x in w:
+        x["forum_mentions_6h"], x["our_stock"] = fm.get(x["sku"], 0), have.get(x["sku"], 0)
+    return w
+
+
 def survey(md=Path(".market"), n=None, per_sku=2):
     """Window-shop: for SKUs marketing asked about, then SKUs the buyer often needs and the book knows little
     about, ask a few shops for a quote, read the first ask, cancel. Nothing is bought; no order is used.
@@ -527,7 +560,12 @@ def survey(md=Path(".market"), n=None, per_sku=2):
     for m in trades_since(time.time() - 24 * 3600) + _orders_seen(24):
         want[m["item"]] = want.get(m["item"], 0) + 1
     known = lambda sku: ((b.get("prices") or {}).get(sku) or {}).get("n", 0)
-    targets = asked + [s for s in sorted(want, key=lambda s: (known(s), -want[s])) if s not in asked]
+    try:                                      # what sells first (HQ 11-04)
+        win = [x["sku"] for x in winning(md=md)]
+    except Exception:
+        win = []
+    targets = asked + [s for s in win if s not in asked] + \
+        [s for s in sorted(want, key=lambda s: (known(s), -want[s])) if s not in asked and s not in win]
     jobs, fresh = [], time.time() - 3 * 3600
     for sku in targets:
         lp = (cat.get(sku) or {}).get("list_price")

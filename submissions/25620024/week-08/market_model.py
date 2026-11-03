@@ -294,6 +294,36 @@ def remember_seen(order, shops):
     c.commit()
 
 
+def winners(c, hours=24, top=15, min_sold=5, cost_share=0.59, stock=None):
+    """The SKUs that sell (HQ 11-04: research only what sells): by ledger sales across all shops in `hours`,
+    the median price paid, the expected margin over the expected cost (cost_share of list: the market draws
+    55-75% for grade A, 40-60% B, 25-45% C, about 59% on average), and the competition's stock (`stock`:
+    {sku: units held by other shops}, e.g. from /api/shops). score = sold x margin / (1 + others' units / sold)."""
+    import statistics
+    cat = catalog()
+    rows = c.execute(f"""select sku, amount from settles where ts>? and seq not in ({ours(c)})""",
+                     (time.time() - hours * 3600,)).fetchall()
+    by = {}
+    for sku, a in rows:
+        by.setdefault(sku, []).append(a)
+    mine = dict(c.execute(f"select sku, count(*) from settles where ts>? and seq in ({ours(c)}) group by sku",
+                          (time.time() - hours * 3600,)).fetchall())
+    out = []
+    for sku, amounts in by.items():
+        lp = (cat.get(sku) or {}).get("list_price")
+        if len(amounts) < min_sold or not lp:
+            continue
+        med = statistics.median(amounts)
+        margin = med - cost_share * lp
+        others = (stock or {}).get(sku, 0)
+        out.append({"sku": sku, "name": ((cat.get(sku) or {}).get("name") or "")[:28], "kind": (cat.get(sku) or {}).get("kind"),
+                    "sold_24h": len(amounts), "our_sales_24h": mine.get(sku, 0), "list_price": lp,
+                    "median_paid": round(med), "paid_share": round(med / lp, 2), "exp_margin": round(margin),
+                    "others_in_stock": others,
+                    "score": round(len(amounts) * max(margin, 0) / (1 + others / len(amounts)))})
+    return sorted(out, key=lambda x: -x["score"])[:top]
+
+
 def gap_demand(c, hours=24, top=12):
     """SKUs buyers asked for that no shop had (our buyer's orders with no offer anywhere), by how often they were
     wanted: [{sku, name, list_price, wanted, max_budget, budget_to_list}]. A recurring gap is a sale nobody makes."""
