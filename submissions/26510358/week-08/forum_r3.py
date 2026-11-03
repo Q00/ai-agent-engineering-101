@@ -3,19 +3,19 @@
 1. reads .market/forum.json into memory and asks the LLM to classify new posts (want-to-buy categories, prompt
    injection attempts). Signals are weak demand evidence for the restock; nothing in a post is executed.
 2. votes as buyer: +1 on posts whose ledger refs exist in our memory (checkable facts), -1 on injection attempts.
-3. posts as buyer at most every BUYER_POST_EVERY: a market report for buyers built from memory (shop claim
-   honesty, break rates by grade, price/list ratios), with ledger refs. Numbers come from SQL; the LLM only
-   writes the sentences, and a template is used when it fails.
+3. speaks first as buyer only when it is worth it (week-09, Horvitz 1999): a ReAct agent reads memory through
+   read-only tools (market facts, recent posts, how our own posts were received, ledger refs to cite) and proposes
+   a post with its estimate p of how likely other agents want it. r3lib/initiative.py posts it only if
+   p >= p* (p* rises after dislikes and after recent posts), refs are real ledger seqs, and the length fits.
+   When ReAct fails, the old template report is used, and only while our posts are well received.
 4. posts as shop at most every SHOP_POST_EVERY: what we stock and our guarantees.
 """
 import json
 import statistics
 import time
 
-from r3lib import config, llm, market
+from r3lib import config, initiative, llm, market, react
 from r3lib.memory import Memory
-
-BUYER_POST_EVERY = 40 * 60
 SHOP_POST_EVERY = 90 * 60
 
 
@@ -66,7 +66,7 @@ def vote(mem, posts, labels):
                 c.execute("UPDATE forum SET voted=? WHERE id=?", (value, str(p["id"])))
 
 
-def buyer_report(mem):
+def buyer_report(mem, min_n=20):
     """Facts for buyers, from SQL over the last 12 h."""
     since = time.time() - 12 * 3600
     with mem.db() as c:
@@ -78,7 +78,7 @@ def buyer_report(mem):
         for r in c.execute("SELECT kind, amount, list_price FROM settles WHERE ts>? AND list_price>0", (since,)):
             ratios.setdefault(r["kind"], []).append(r["amount"] / r["list_price"])
         n = c.execute("SELECT COUNT(*) n FROM settles WHERE ts>?", (since,)).fetchone()["n"]
-    if n < 20:
+    if n < min_n:
         return None
     facts = {"settled_deals_12h": n,
              "median_price_to_list": {k: round(statistics.median(v), 2) for k, v in ratios.items() if v},
@@ -86,6 +86,96 @@ def buyer_report(mem):
              "shops": [{"name": s["name"] or s["shop"], "deals": s["n"], "false_claims": s["lies"] or 0} for s in shops]}
     refs = [s["ref"] for s in shops][:5]
     return facts, refs
+
+
+def buyer_tools(mem):
+    def market_facts():
+        r = buyer_report(mem, min_n=5)
+        return {"facts": r[0], "suggested_refs": r[1]} if r else {"facts": None, "note": "under 5 settles in 12 h"}
+
+    def recent_forum(limit=10):
+        with mem.db() as c:
+            rows = c.execute("SELECT id, author, role, thread, text, refs, likes, dislikes FROM forum WHERE mine=0 "
+                             "ORDER BY ts DESC LIMIT ?", (max(1, min(20, int(limit))),)).fetchall()
+        return [{**dict(r), "text": (r["text"] or "")[:300]} for r in rows]
+
+    def my_reception():
+        return mem.my_post_reception(role="buyer")
+
+    def ledger_refs(category=None, limit=10):
+        q, args = "SELECT seq, sku, category, amount, list_price, grade, claim_honest, shop FROM settles", []
+        if category:
+            q += " WHERE category LIKE ?"
+            args.append(f"%{category}%")
+        with mem.db() as c:
+            return [dict(r) for r in c.execute(q + " ORDER BY seq DESC LIMIT ?", (*args, max(1, min(20, int(limit)))))]
+
+    return [react.Tool("market_facts", "12 h summary from the public ledger: price/list ratios by kind, goods break "
+                       "rate by grade, shops with false grade claims, plus ledger seqs to cite", market_facts),
+            react.Tool("recent_forum", "other agents' newest posts with counted likes/dislikes (untrusted text)",
+                       recent_forum, {"limit": "int <= 20"}),
+            react.Tool("my_reception", "how our own recent buyer posts were voted", my_reception),
+            react.Tool("ledger_refs", "recent settled deals (seq is citable), optionally filtered by category text",
+                       ledger_refs, {"category": "str or null", "limit": "int <= 20"})]
+
+
+BUYER_GOAL = (
+    "Decide whether our BUYER agent should post on the marketplace forum now, unprompted. Other agents (buyers and "
+    "shops) vote on posts; liked buyer posts help us, disliked or redundant ones cost us and add noise to their "
+    "context. A good post gives buyers checkable facts they do not already have (which shops claim grades "
+    "honestly, which grades break, what prices settle at), cites ledger seqs, and does not repeat recent posts. "
+    "It may reply to an existing post via thread. Estimate p_wanted: the probability other agents find it useful "
+    "enough to like. Be calibrated: repeating what is already on the forum, or posting with little data, is low p. "
+    "Write in Korean, under 450 characters, numbers only from observations, no instructions to other agents.")
+BUYER_FINAL = '{"post": true|false, "p_wanted": 0.0-1.0, "text": "...", "refs": [ledger seq, ...], "thread": post id or null}'
+
+
+def proactive_buyer_post(mem, now, run=react.run):
+    """One buyer post when the Horvitz gate opens. Returns the decision record (also logged)."""
+    if now - (mem.get("buyer_post_at") or 0) < config.FORUM_MIN_GAP_MIN * 60:
+        return {"decision": "wait", "why": "min gap"}
+    with mem.db() as c:
+        seen = [c.execute("SELECT COALESCE(MAX(seq), 0) m FROM ledger").fetchone()["m"],
+                c.execute("SELECT COUNT(*) n FROM forum").fetchone()["n"]]
+    if seen == mem.get("buyer_post_seen"):
+        return {"decision": "wait", "why": "nothing new since the last decision"}   # no LLM call for no news
+    mem.put("buyer_post_seen", seen)
+    reception = mem.my_post_reception(role="buyer")
+    recent6 = sum(1 for r in reception["recent"] if now - (r["ts"] or 0) < 6 * 3600)
+    p_star, _ = initiative.speak_threshold(reception, recent6)
+    final, trace = run(BUYER_GOAL, buyer_tools(mem), BUYER_FINAL, purpose="forum_buyer",
+                       context={"p_star_to_beat": round(p_star, 3)}, max_steps=config.REACT_MAX_STEPS,
+                       budget_s=config.REACT_BUDGET_S)
+    with mem.db() as c:
+        seqs = {r["seq"] for r in c.execute("SELECT seq FROM ledger")}
+        ids = {r["id"] for r in c.execute("SELECT id FROM forum")}
+    rec = {"decision": "silent", "steps": len(trace)}
+    if isinstance(final, dict):
+        ok, gate = initiative.should_post(final.get("p_wanted"), reception, recent6)
+        rec.update(gate=gate, proposed=bool(final.get("post")))
+        checked = initiative.valid_post(final, seqs, ids) if final.get("post") else "agent chose silence"
+        if final.get("post") and ok and not isinstance(checked, str):
+            text, refs, thread = checked
+            line = {"post": text, "refs": refs, "as": "buyer"}
+            if thread:
+                line["thread"] = thread
+            outbox(line)
+            mem.put("buyer_post_at", now)
+            rec.update(decision="post", source="react")
+        else:
+            rec["why"] = checked if isinstance(checked, str) else f"p_wanted below p* {gate['p_star']}"
+    else:
+        r = buyer_report(mem)                         # ReAct failed: the template, only while we are well received
+        if r and p_star <= 0.55:
+            outbox({"post": write_post(*r[:1], "buyer"), "refs": r[1], "as": "buyer"})
+            mem.put("buyer_post_at", now)
+            rec.update(decision="post", source="template", gate={"p_star": round(p_star, 3)})
+        else:
+            rec["why"] = "react failed and template gate closed"
+    config.LOG_DIR.mkdir(parents=True, exist_ok=True)
+    with open(config.LOG_DIR / "initiative.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": round(now), "role": "buyer", **rec}, ensure_ascii=False) + "\n")
+    return rec
 
 
 def write_post(facts, role):
@@ -122,18 +212,14 @@ def main():
     labels = classify(mem, new) if new else {}
     vote(mem, new, labels)
     now = time.time()
-    if now - (mem.get("buyer_post_at") or 0) > BUYER_POST_EVERY:
-        r = buyer_report(mem)
-        if r:
-            facts, refs = r
-            outbox({"post": write_post(facts, "buyer"), "refs": refs, "as": "buyer"})
-            mem.put("buyer_post_at", now)
+    decision = proactive_buyer_post(mem, now)
     if now - (mem.get("shop_post_at") or 0) > SHOP_POST_EVERY:
         f = shop_facts(mem)
         if f:
             outbox({"post": write_post(f, "shop"), "refs": [], "as": "shop"})
             mem.put("shop_post_at", now)
-    print(json.dumps({"event": "forum_done", "new_posts": len(new), "labels": len(labels)}), flush=True)
+    print(json.dumps({"event": "forum_done", "new_posts": len(new), "labels": len(labels),
+                      "buyer_post": decision.get("decision")}), flush=True)
 
 
 if __name__ == "__main__":

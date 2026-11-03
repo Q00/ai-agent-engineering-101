@@ -35,6 +35,15 @@ GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B
 WARRANTY_HOURS = 6                  # goods break up to 6 h after the sale (agent.md)
 WARRANTY_MAX_EXPECTED_COST = 0.5    # offer a warranty while p_break * price stays under half the margin
 
+# --- forum (pro-activeness, see initiative.py) -----------------------------------------------------
+FORUM_MIN_GAP_MIN = 20              # never two buyer posts closer than this (the kit allows one per 5 min)
+FORUM_MAX_CHARS = 800
+REACT_MAX_STEPS = 6
+REACT_BUDGET_S = 240                # one ReAct run, all steps together
+RESTOCK_REVIEW_EVERY_MIN = 30       # background ReAct review of the restock plan
+ADJUST_TTL_H = 2                    # a review's scaling expires unless renewed
+ADJUST_MIN, ADJUST_MAX = 0.0, 1.5   # clamp on a category's demand target scaling
+
 # --- buyer -----------------------------------------------------------------------------------------
 MIN_SURPLUS_RATIO = 0.05            # never pay more than 95% of list price
 FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
