@@ -335,7 +335,7 @@ def test_audit_rows_have_hashes_not_prompt(sb, tmp_path):
 
 
 def test_trading_path_does_not_import_llm():
-    roots = [Path("/workspace/course/r3/hooks")] + [Path("/workspace/course/r3") / f for f in (
+    roots = [Path(__file__).resolve().parents[1] / "hooks"] + [Path(__file__).resolve().parents[1] / f for f in (
         "aggregates.py", "cards.py", "ledger.py", "metrics.py", "owner.py", "policy.py", "reputation.py",
         "volume.py")]
     files = [p for r in roots for p in ([r] if r.is_file() else r.rglob("*.py"))]

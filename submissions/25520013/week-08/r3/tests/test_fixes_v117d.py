@@ -646,6 +646,6 @@ def test_caps_async_parse_rule_first_then_llm_then_8s_fallback(tmp_path, monkeyp
 
 def test_caps_not_wired_into_deploy_or_hooks():
     import subprocess as sp
-    r = sp.run(["grep", "-rl", "caps_v4", str(HERE / "deploy_r3"), "/workspace/course/r3/hooks",
+    r = sp.run(["grep", "-rl", "caps_v4", str(HERE / "deploy_r3"), str(HERE / "hooks"),
                 "/workspace/course/r3_deploy"], capture_output=True, text=True)
     assert r.stdout.strip() == ""

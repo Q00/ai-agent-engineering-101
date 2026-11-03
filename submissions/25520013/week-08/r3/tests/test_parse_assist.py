@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-sys.path.insert(0, "/workspace/course/r3/hooks")
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1] / "hooks"))
 from hooks.seller import offer_in            # noqa: E402  (deployed v1.16.1 rule, byte-identical to the tar)
 
 from llm import parse_assist as PA            # noqa: E402

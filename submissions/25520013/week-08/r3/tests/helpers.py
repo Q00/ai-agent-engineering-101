@@ -6,7 +6,7 @@ from pathlib import Path
 from cards import LINE_W, LINES
 from harness.runs import PolicyRuns
 
-R3 = Path("/workspace/course/r3")
+R3 = Path(__file__).resolve().parents[1]
 BASE_POLICY = R3 / "experiments" / "state" / "policy_base.json"
 T0 = 1_800_000_000.0
 SHOP = "mock-shop-a"

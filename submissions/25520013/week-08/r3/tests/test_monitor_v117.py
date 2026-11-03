@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 HERE = Path(__file__).resolve().parents[1]
-R3 = Path("/workspace/course/r3")
+R3 = HERE
 NEW, OLD = HERE / "tools" / "monitor.py", R3 / "tools" / "monitor.py"
 NOW = 1_800_000_000.0
 GOODS = [{"unit": "g1", "sku": "G00001", "kind": "goods", "cost": 10000, "grade": "A"}]
