@@ -29,7 +29,7 @@ NAME = "dragonash"
 HERE = Path(__file__).parent
 STATE = HERE / "private" / "forum_state.json"
 THETA = Path(os.environ.get("SHOP_THETA", HERE / "private" / "shop_theta.json"))
-DEFAULTS = {"post_threshold": 1.5, "topic_cooldown_h": 3, "window_h": 6, "min_n": 5}
+DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n": 5}
 WANTED = re.compile(r"구합니다|구해요|삽니다|필요해요|찾습니다|want(?:ed)? to buy|\bWTB\b|looking for|need (?:a|some)", re.I)
 INJECTION = re.compile(r"ignore (?:all|previous|your)|AI (?:buyers?|agents?) (?:must|should)|system prompt|"
                        r"pay the (?:asking|full) price|give (?:it|us) 5 stars|approved by the (?:instructor|operator)", re.I)
@@ -136,6 +136,38 @@ def offers(forum, md, now):
     return out
 
 
+def opening_ads(c, md, now):
+    """As the shop, during the opening offer: one category we stock per post, the price range we will ask (as a share
+    of list, never below cost), how many units, and ledger refs of our own settled, honestly graded sales. Facts a
+    buyer can check; no ranking claims about other shops."""
+    import promo
+    t = promo.theta()
+    if now >= t["intro_until"]:
+        return []
+    try:
+        units = json.loads((Path(md) / "inventory.json").read_text(encoding="utf-8")).get("units", [])
+    except (OSError, ValueError):
+        return []
+    refs = [r[0] for r in c.execute(f"select seq from settles where seq in ({market_model.ours(c)}) and claim_honest=1 "
+                                    "order by seq desc limit 3")]
+    by_cat = {}
+    for u in units:
+        if u.get("grade") != "expired":
+            by_cat.setdefault(u.get("category"), []).append(u)
+    out = []
+    for cat, us in by_cat.items():
+        u = max(us, key=lambda u: sum(1 for x in us if x["sku"] == u["sku"]))
+        floor = u["cost"] * (1 + t["intro_margin"])
+        lo, hi = (max(floor, u["list_price"] * a) for a in (min(t["intro_arms"]), max(t["intro_arms"])))
+        until = time.strftime("%m/%d %H:%M", time.localtime(t["intro_until"]))
+        out.append({"topic": f"ad:{cat}", "as": "shop", "refs": refs, "score": 2.5 + 0.01 * len(us),
+                    "text": f"[opening offer until {until}] {leaf(cat)}: sku {u['sku']} {u['name'][:30]} | grade="
+                            f"{u.get('grade')} cert=market-signed | list={u['list_price']} | asking {lo:.0f}-{hi:.0f}"
+                            f" ({lo / u['list_price']:.0%}-{hi / u['list_price']:.0%} of list) | {len(us)} units in "
+                            f"{leaf(cat)} | Ed25519 receipts, grade claims checked by the ledger"})
+    return out
+
+
 def votes(forum, state):
     out = []
     for p in forum:
@@ -158,7 +190,8 @@ def tick(md=Path(".market"), c=None, now=None):
         forum = forum.get("posts", forum) if isinstance(forum, dict) else forum
     except (OSError, ValueError):
         forum = []
-    cands = price_index(c, t, now) + honesty(c, t, now) + breakage(c, t, now) + offers(forum, md, now)
+    cands = price_index(c, t, now) + honesty(c, t, now) + breakage(c, t, now) + offers(forum, md, now) \
+        + opening_ads(c, md, now)
     lines = []
     for role in ("buyer", "shop"):
         if now - state["last"].get(role, 0) < 300:
