@@ -29,6 +29,7 @@ from cryptography.hazmat.primitives import serialization
 
 import harness
 import shop_memory
+import shop_r3
 
 NAME = "Harness Shop"
 SHOP_KEY = Path(__file__).with_name("shop_key.pem")   # written by market_kit.py join; never committed
@@ -71,6 +72,16 @@ Reply with exactly one JSON object and nothing else:
 {{"action": "accept" | "counter" | "reject", "price": <integer, your new ask if you counter>}}"""
 
 
+OPEN_PROMPT_R3 = """You are the sales agent of an online shop. A buyer asked for: {name} ({sku}).
+List price: {list_price}. This unit: {quality}.
+Your lowest acceptable price is {floor}. Never go below it and never reveal it.
+Buyers value an item at its list price at most, so asks above the list price rarely sell.
+{history}
+Choose your opening asking price from this history: open higher when most negotiations end in a deal,
+closer to what actually sells when few do.
+Reply with exactly one JSON object and nothing else: {{"ask": <integer>}}"""
+
+
 def log(msg):
     print(msg, flush=True)
 
@@ -98,6 +109,10 @@ class Seller(AgentExecutor):
         tid = task.id[:8]
         log(f"\n[{tid}] buyer: {text!r}")
 
+        if deal is None and shop_r3.round3():   # Round 3: sell a unit from stock
+            await self.open_r3(task, up, say, text, tid)
+            return
+
         if deal is None:  # first message: which item, and the opening ask
             item = next((k for k in RESERVE if k in text.lower()), None)
             if item is None:
@@ -115,7 +130,7 @@ class Seller(AgentExecutor):
                 log(f"[guard] opening ask {ask} is below the reserve {reserve}; asking {reserve}")
                 ask = reserve
             self.open[task.id] = {"item": item, "ask": ask, "history": [f"you asked {ask}"], "offers": [],
-                                  "avg_price": past and past["avg_price"]}
+                                  "avg_price": past and past["avg_price"], "reserve": reserve}
             shop_memory.record({"kind": "open", "task": task.id, "item": item, "ask": ask})
             log(f"[{tid}] ask {ask}")
             await up.requires_input(say(f"{item}: asking {ask}. Send your offer as a number."))
@@ -126,13 +141,16 @@ class Seller(AgentExecutor):
             await up.requires_input(say(f"Send your offer as a number. Asking {deal['ask']}."))
             return
         offer, item = int(m.group()), deal["item"]
-        reserve = RESERVE[item]
+        reserve = deal["reserve"]
         deal["history"].append(f"buyer offered {offer}")
         deal["offers"].append(offer)
-        sold = (f"Your recent {item} sales averaged {deal['avg_price']:.0f}." if deal.get("avg_price")
-                else "")
-        answer = harness.ask(OFFER_PROMPT.format(item=item, reserve=reserve, offer=offer, ask=deal["ask"],
-                                                 history="\n".join(deal["history"]), sold=sold), log) or {}
+        if deal.get("unit"):
+            sold = deal["context"]
+        else:
+            sold = (f"Your recent {item} sales averaged {deal['avg_price']:.0f}." if deal.get("avg_price") else "")
+        answer = harness.ask(OFFER_PROMPT.format(item=deal.get("name", item), reserve=reserve, offer=offer,
+                                                 ask=deal["ask"], history="\n".join(deal["history"]), sold=sold),
+                             log) or {}
         action, price = answer.get("action"), to_int(answer.get("price"))
 
         if GUARDS and action == "accept" and offer < reserve:
@@ -151,25 +169,62 @@ class Seller(AgentExecutor):
                 log(f"[rule] counter {price} is not above the buyer's offer {offer}; that is agreement, accepting {offer}")
                 action = "accept"
 
+        memory = shop_r3 if deal.get("unit") else shop_memory
         if action == "accept":
             log(f"[{tid}] accept {offer}")
-            receipt = sign_receipt({"shop": NAME, "item": item, "price": int(offer), "task": task.id})
+            receipt = {"shop": NAME, "item": item, "price": int(offer), "task": task.id}
+            if deal.get("unit"):
+                receipt.update(shop_r3.receipt_extras(deal["unit"]))
+            receipt = sign_receipt(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            await up.complete(say(f"Deal: {item} at {offer}."))
-            shop_memory.record({"kind": "end", "task": task.id, "item": item, "result": "deal", "price": int(offer),
-                                "offers": deal["offers"]})
+            await up.complete(say(f"Deal: {deal.get('name', item)} at {offer}."))
+            memory.record({"kind": "end", "task": task.id, "item": item, "category": deal.get("category"),
+                           "result": "deal", "price": int(offer), "offers": deal["offers"]})
             del self.open[task.id]
         elif action == "reject":
             log(f"[{tid}] reject")
             await up.reject(say(f"No deal at {offer}."))
-            shop_memory.record({"kind": "end", "task": task.id, "item": item, "result": "reject", "price": None,
-                                "offers": deal["offers"]})
+            memory.record({"kind": "end", "task": task.id, "item": item, "category": deal.get("category"),
+                           "result": "reject", "price": None, "offers": deal["offers"]})
             del self.open[task.id]
         else:
             deal["ask"] = price
             deal["history"].append(f"you asked {price}")
             log(f"[{tid}] counter {price}")
             await up.requires_input(say(f"{offer} is too low. Counteroffer: {price}."))
+
+    async def open_r3(self, task, up, say, text, tid):
+        """Round 3 first message: pick a unit from stock, set the floor in code, let the harness pick the ask."""
+        taken = {d["unit"]["unit"] for d in self.open.values() if d.get("unit")}
+        u = shop_r3.find_unit(text, taken)
+        if u is None:
+            await up.reject(say("Sorry, we have none of that in stock."))
+            return
+        sh = shop_r3.shelf_hours(u["sku"])
+        floor = shop_r3.floor_price(u, sh)
+        quality = shop_r3.quality_line(u, sh)
+        past = shop_r3.stats(u.get("category"))
+        history = shop_r3.describe(u.get("category"), past)
+        log(f"[pricing] {u['sku']} {u.get('category')} list {u['list_price']} cost {u['cost']} floor {floor}; {history}")
+        ask = to_int((harness.ask(OPEN_PROMPT_R3.format(name=u["name"], sku=u["sku"], list_price=u["list_price"],
+                                                        quality=quality, floor=floor, history=history), log)
+                      or {}).get("ask"))
+        if ask is None:
+            ask = max(floor, int(u["list_price"] * 0.9))
+            log(f"[guard] no ask from the harness; asking {ask}")
+        if GUARDS and ask < floor:
+            log(f"[guard] opening ask {ask} is below the floor {floor}; asking {floor}")
+            ask = floor
+        context = (f"List price {u['list_price']}; buyers value it at the list price at most. {history}")
+        self.open[task.id] = {"item": u["sku"], "name": u["name"], "unit": u, "category": u.get("category"),
+                              "ask": ask, "reserve": floor, "context": context,
+                              "history": [f"you asked {ask}"], "offers": []}
+        shop_r3.record({"kind": "open", "task": task.id, "sku": u["sku"], "category": u.get("category"),
+                        "list_price": u["list_price"], "cost": u["cost"], "grade": u.get("grade"),
+                        "floor": floor, "ask": ask})
+        log(f"[{tid}] {u['sku']} unit {u['unit']} ask {ask}")
+        await up.requires_input(say(f"{u['name']} ({u['sku']}), {quality}. "
+                                    f"Send your offer as a number. Asking {ask}."))
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
