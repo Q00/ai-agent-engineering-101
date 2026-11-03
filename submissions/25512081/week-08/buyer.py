@@ -69,12 +69,15 @@ def log(msg):
     print(msg, flush=True)
 
 
-def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative=None):
+def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative=None, target_share=None,
+              alt_price=None):
     """One A2A negotiation, as in week 6. Returns {"reply", "history", "outcome"}:
     outcome is deal | rejected | walked | timeout | exhausted | injection.
     Round 3 asks for one SKU: `opening` is then "I want to buy <name> (<sku>)". When the buyer already
     collected quotes, `first` is this shop's reply to the opening and `alternative` the next-best quote,
-    which the model weighs as its walk-away option."""
+    which the model weighs as its walk-away option. `target_share` replaces TARGET_SHARE for this shop when we
+    have learned how far it comes down (market_buyer.shop_model). `alt_price` is another shop's standing ask for
+    the same order: once the ladder is done, an ask above it is not taken (we walk and go there instead)."""
     t0 = t0 or time.time()
     opening = opening or f"I want to buy a {item}."
     r = first or peer.send(opening)
@@ -100,7 +103,7 @@ def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative
         hist = "; ".join(f"seller asked {h['ask']}, you offered {h['offer']}" for h in history)
         first_ask = first_ask or ask
         if NEGOTIATOR == "code" and ask is not None:
-            ans = code_move(ask, budget, history, first_ask)
+            ans = code_move(ask, budget, history, first_ask, target_share or TARGET_SHARE, alt_price)
         else:
             ans = harness.ask(SYSTEM, (
                 f"Item: {item}\nYour budget (private, never exceed): {budget}\n"
@@ -144,7 +147,7 @@ def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative
     if r.state == "TASK_STATE_COMPLETED":
         log(f"[buyer] DEAL {item} at {r.price} (budget {budget}) after {len(history)} offers, "
             f"{harness.CALLS['n']} harness calls, {time.time() - t0:.0f}s")
-        return {"reply": r, "history": history, "outcome": "deal"}
+        return {"reply": r, "history": history, "outcome": "deal", "first_ask": first_ask}
     if not r.done:
         walk(peer, task_id)
         return {"reply": r, "history": history, "outcome": "exhausted"}
@@ -152,14 +155,19 @@ def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative
     return {"reply": r, "history": history, "outcome": "rejected"}
 
 
-def code_move(ask, budget, history, first_ask):
-    """The next offer by the Ackerman ladder, in the shape the model answers in."""
-    target = min(budget, int(first_ask * TARGET_SHARE))
+def code_move(ask, budget, history, first_ask, share=TARGET_SHARE, alt_price=None):
+    """The next offer by the Ackerman ladder, in the shape the model answers in. A shop known never to come down
+    (share 0.98 or more) is taken at its ask at once: haggling there only costs time."""
     n = len(history)
+    if share >= 0.98 and ask <= budget:
+        return {"action": "offer", "price": ask, "reason": f"this shop never comes down: take {ask}"}
+    target = min(budget, int(first_ask * share))
     if n < len(LADDER):
         price = int(target * LADDER[n]) if n < len(LADDER) - 1 else target - 3     # last step: a precise number
         return {"action": "offer", "price": price,
                 "reason": f"step {n + 1}: {LADDER[n]:.0%} of target {target} (first ask {first_ask})"}
+    if alt_price and ask > alt_price:
+        return {"action": "walk_away", "price": 0, "reason": f"ladder done, ask {ask} is above another shop's {alt_price}"}
     if ask <= budget:
         return {"action": "offer", "price": ask, "reason": f"ladder done, ask {ask} is within budget: take it"}
     if history and history[-1]["offer"] >= budget:

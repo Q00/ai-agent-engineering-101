@@ -21,6 +21,7 @@ its latest reviews (and, in Round 3, the SKUs it has that fit the order). This b
 """
 import argparse
 import json
+import random
 import re
 import sys
 import time
@@ -36,7 +37,11 @@ from a2a_client import Peer
 from buyer import injected, log, negotiate, walk
 
 MEMORY = Path(".market/buyer_memory.json")
-SHORTLIST = 3          # shops asked for a quote at once
+SHORTLIST = 6          # shops asked for a quote at once: every candidate up to this many (the model picks
+                       # which when there are more); in Round 2 logs the shop chosen moved the price 3-7% of the
+                       # budget, the haggling style only about 0.6%, so asking more shops pays
+CONCESSION_PRIOR = (0.93, 3)   # final / first ask before we know a shop: the Round 2 average, worth 3 deals
+EXPLORE = 0.2          # rounds 1-2: share of orders sent to a random shop, so every shop gets measured
 QUOTE_WAIT = 40        # seconds to wait for their first asks
 FALLBACK_LEFT = 110    # seconds the next quote needs to be worth a try (the kit stops us at 300)
 
@@ -75,7 +80,7 @@ def load_memory():
 
 def save_memory(mem):
     MEMORY.parent.mkdir(exist_ok=True)
-    MEMORY.write_text(json.dumps(mem[-500:], indent=1), encoding="utf-8")
+    MEMORY.write_text(json.dumps(mem[-3000:], indent=1), encoding="utf-8")
 
 
 def summary(shop, mine):
@@ -126,16 +131,34 @@ def remember_need(order):
         f.write_text(json.dumps((seen + [order["use_within_hours"]])[-300:]), encoding="utf-8")
 
 
+def shop_model(name, mine):
+    """What our own talks with this shop showed (the last 30 with a first ask): how far it comes down, as final
+    price over its first ask (shrunk toward CONCESSION_PRIOR), its deal rate, whether it never moves, and the
+    target share our ladder should aim for with it."""
+    rows = [m for m in mine if m["shop"] == name and m.get("first_ask")][-30:]
+    deals = [m["price"] / m["first_ask"] for m in rows if m["outcome"] == "deal" and m.get("price")]
+    prior, w = CONCESSION_PRIOR
+    conc = (sum(deals) + prior * w) / (len(deals) + w)
+    fixed = len(deals) >= 5 and min(deals) >= 0.98
+    return {"concession": round(conc, 3), "talks": len(rows), "deals": len(deals),
+            "deal_rate": round(len(deals) / len(rows), 2) if rows else None, "fixed": fixed,
+            "target": 0.99 if fixed else round(max(0.6, min(0.88, conc - 0.03)), 3)}
+
+
 def pick_in_code(shops, mine):
-    """Rounds 1-2: the shop with the most honest deals of mine, then the best average stars; cheats left out."""
+    """Rounds 1-2: the shop whose deals cost us the least share of the budget, with EXPLORE of the orders sent
+    to a random shop so the others get measured too (the old rule, most past deals first, sent 97% of orders
+    to one shop that was among the dearest); cheats left out."""
     cheats = {m["shop"] for m in mine if m.get("honest") is False}
     pool = [s for s in shops if s["name"] not in cheats] or shops
+    if random.random() < EXPLORE:
+        return random.choice(pool)
 
-    def score(s):
-        stars = [r.get("stars") for r in s.get("reviews") or [] if isinstance(r.get("stars"), (int, float))]
-        own = sum(1 for m in mine if m["shop"] == s["name"] and m["outcome"] == "deal" and m.get("honest"))
-        return own, sum(stars) / len(stars) if stars else 3.0
-    return max(pool, key=score)
+    def cost(s):
+        xs = [m["price"] / m["budget"] for m in mine[-2000:] if m["shop"] == s["name"] and m["outcome"] == "deal"
+              and m.get("price") and m.get("budget")][-30:]
+        return (sum(xs) + 0.86 * 2) / (len(xs) + 2)            # unknown shops start at the Round 2 average
+    return min(pool, key=cost)
 
 
 WARRANTY = re.compile(r"(?i)(\d+(?:\.\d+)?)\s*h(?:ours?)?\b[^.;]{0,30}?warrant|warrant[^.;]{0,30}?(\d+(?:\.\d+)?)\s*h")
@@ -229,8 +252,13 @@ def collect_quotes(shops, budget, order=None):
                     q["warranty"] = warranty_of(r.text) if goods else 0
                     q["grade"] = grade_of(r.text)
                     pg = memory.break_rate(q["grade"]) if goods and q["grade"] else p
-                    q["surplus"] = int((1 - pg) * (q["value"] - r.ask) if q["warranty"] >= 6
-                                       else (1 - pg) * q["value"] - r.ask)
+                    # rank on the price we expect to end at, not the first ask: some shops open high and come
+                    # down 20%, others never move (Round 2 logs)
+                    q["model"] = shop_model(q["shop"]["name"], MINE)
+                    price = min(r.ask, q["reply"].ask * q["model"]["concession"])
+                    q["expect"] = int(price)
+                    q["surplus"] = int((1 - pg) * (q["value"] - price) if q["warranty"] >= 6
+                                       else (1 - pg) * q["value"] - price)
                     out.append(q)
         except FuturesTimeout:
             log(f"[quote] some shops did not answer within {QUOTE_WAIT} s")
@@ -239,7 +267,7 @@ def collect_quotes(shops, budget, order=None):
 
 
 def describe(q):
-    return (f"{q['shop']['name']} asks {q['reply'].ask} for {q['sku']['name'][:40]} "
+    return (f"{q['shop']['name']} asks {q['reply'].ask} (expect {q.get('expect')}) for {q['sku']['name'][:40]} "
             f"(list price {q['value']}{', warranty %gh' % q['warranty'] if q.get('warranty') else ''})")
 
 
@@ -292,10 +320,18 @@ def accept_policy(order, warranty=0, grade_c=False):
     return acc
 
 
+LAST = {}
+MINE = []          # this run's memory rows, for shop_model inside the quote threads
+
+
 def trade(run, item, budget):
-    """One negotiation and its review: (stars, text, honest, paid, receipt, outcome)."""
+    """One negotiation and its review: (stars, text, honest, paid, receipt, outcome). The shop's first ask goes to
+    LAST for the memory row, so shop_model can learn how far each shop comes down."""
+    LAST.clear()
     try:
         res = run()
+        h = res.get("history") or []
+        LAST["first_ask"] = h[0]["ask"] if h and h[0].get("ask") else getattr(res["reply"], "ask", None)
         stars, text, honest, paid = review(res, item, budget)
         receipt = getattr(res["reply"], "receipt", None) if res["outcome"] == "deal" else None
         return stars, text, honest, paid, receipt, res["outcome"]
@@ -306,7 +342,8 @@ def trade(run, item, budget):
 
 def memo(shop, sku, a, order, attempt):
     return {"shop": shop["name"], "item": a.item, "budget": a.budget, "outcome": attempt[5], "price": attempt[3],
-            "honest": attempt[2], "time": int(time.time()), "order": order.get("order"), "sku": sku and sku["sku"]}
+            "honest": attempt[2], "time": int(time.time()), "order": order.get("order"), "sku": sku and sku["sku"],
+            "first_ask": LAST.get("first_ask"), "round": 3 if order.get("acceptable") else 2}
 
 
 def main():
@@ -328,6 +365,7 @@ def main():
         for e in memory.sync():
             log(f"[memory] {e}")
     mine = load_memory()
+    MINE[:] = mine
     if not shops:
         print(json.dumps({"shop": None, "receipt": None, "stars": 1,
                           "review": "No shops in the list."}))
@@ -366,7 +404,9 @@ def main():
             grade_c = q.get("grade") == "C" and q["surplus"] > 0
             tried.add(id(q))
             alt = describe(quotes[i + 1]) if i + 1 < len(quotes) else None
-            attempt = trade(lambda: negotiate(q["peer"], a.item, a.budget, t0, first=q["reply"], alternative=alt),
+            rest = [x["reply"].ask for x in quotes[i + 1:] if x["reply"].ask <= a.budget]
+            attempt = trade(lambda: negotiate(q["peer"], a.item, a.budget, t0, first=q["reply"], alternative=alt,
+                                              target_share=q["model"]["target"], alt_price=min(rest) if rest else None),
                             a.item, a.budget)
             if attempt[5] == "deal":
                 break
