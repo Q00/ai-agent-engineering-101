@@ -20,6 +20,7 @@ from receipt_signing import sign_receipt
 from sales_advisor import AdviceReader, config_at
 from shop_policy import closing_context, policy_at, quote_copy, selling_terms, shop_copy
 from seller_agent import DEFAULT, Seller, bounded_history, build
+from seller_context import inventory_context
 
 ROOT = Path(__file__).resolve().parent
 
@@ -61,14 +62,10 @@ def inventory_decision(product, offer, history, last_ask, advice=None):
     def validate(raw):
         return validate_choice(parse_seller(raw, negotiation["price_floor"], offer),
                                offer, last_ask, negotiation)
-    facts = {k: product.get(k) for k in
-             ("sku", "name", "category", "kind", "cost", "list_price", "grade", "supplied_at", "expires_at")}
-    return decide("seller_inventory.txt", {
-        "product": facts, "observed_at": time.time(), "price_floor": negotiation["price_floor"],
-        "sales_terms": terms, "negotiation": negotiation,
-        "buyer_offer": offer, "last_ask": last_ask, "history": bounded_history(history),
-        "sales_advisor": advice,
-    }, validate, prefix="inventory-seller")
+    context = inventory_context(product, offer, history, last_ask, terms, negotiation, advice, now=time.time())
+    print("[seller-context] " + json.dumps({"stage": negotiation["stage"],
+          "context_chars": len(json.dumps(context, ensure_ascii=False))}), flush=True)
+    return decide("seller_inventory.txt", context, validate, prefix="inventory-seller")
 
 
 class InventorySeller(Seller):
