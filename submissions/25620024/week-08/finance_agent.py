@@ -60,6 +60,10 @@ end of the round (stock still unsold then is lost money; bankruptcy aid is subtr
 - lessons: score your last forecast and limits with brief.scorecard and brief.history (1-3 lessons, keep / undo /
   watch); brief.lessons are your standing lessons with their index; retire stale or wrong ones by index
 - rationale: 3-5 sentences.
+brief.hq is the headquarters' latest directive (the owner; above every team): follow it within your role and say in
+advice how. brief.proven_sellers are SKUs the ledger shows we sold lately, with margin and units left: buying back
+a proven seller that is sold out is not the slow stock you guard against; set window_spend so it can be restocked
+unless cash truly cannot carry it, and say which of them you would cut and why.
 Answer with the JSON object only.
 
 BRIEF:
@@ -96,6 +100,31 @@ def snapshot(c, our_shop):
                          "goods_revenue_under_warranty_risk": goods_rev},
             "guarantee_credits_6h": c.execute("select count(*), coalesce(sum(amount), 0) from credits_used where ts>?",
                                               (since,)).fetchone()}
+
+
+def proven_sellers(c, hours=6, min_n=2):
+    """SKUs we sold at least min_n times lately: deals, mean price, mean cost, margin, units still in stock."""
+    inv = load(MD / "inventory.json", {})
+    left = {}
+    for u in inv.get("units", []):
+        if u.get("grade") != "expired":
+            left[u["sku"]] = left.get(u["sku"], 0) + 1
+    rows = c.execute(f"""select s.sku, count(*), avg(s.amount), avg(su.cost) from settles s
+                          join settle_units x on x.seq = s.seq join supply_units su on su.unit = x.unit
+                          where s.ts > ? and s.seq in ({market_model.ours(c)}) group by s.sku having count(*) >= ?
+                          order by count(*) * avg(s.amount) desc""", (time.time() - hours * 3600, min_n)).fetchall()
+    return [{"sku": k, "sold": n, "mean_price": round(p), "mean_cost": round(co or 0),
+             "margin": round(p / co - 1, 3) if co else None, "units_left": left.get(k, 0)} for k, n, p, co in rows][:20]
+
+
+def hq_directive():
+    """The last numbered headquarters directive in private/owner_directives.md."""
+    try:
+        lines = (HERE / "private" / "owner_directives.md").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    hq = [x for x in lines if x[:3].rstrip(".").strip().isdigit()]
+    return hq[-1] if hq else None
 
 
 def gate(raw):
@@ -150,7 +179,8 @@ def run(ask_codex, our_shop, dry=False):
         scm = scm_agent.scm_plan()
     except Exception:
         scm = {}
-    brief = {"time": time.strftime("%Y-%m-%d %H:%M"), "snapshot": snap,
+    brief = {"time": time.strftime("%Y-%m-%d %H:%M"), "snapshot": snap, "hq": hq_directive(),
+             "proven_sellers": proven_sellers(c),
              "sales_plan": {k: promo.plan().get(k) for k in ("pricing", "exclusive_skus", "follow_skus", "restock")},
              "scm_plan": {k: scm.get(k) for k in ("orders", "clearance", "alerts")},
              "current_limits": load(LIMITS, {}), "scorecard": scorecard(snap, history[-1] if history else None),
