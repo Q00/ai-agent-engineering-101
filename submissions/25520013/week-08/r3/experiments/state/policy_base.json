@@ -1,0 +1,234 @@
+{
+ "version": 5,
+ "owner": {
+  "github": "Lee-sungsoo",
+  "own_shop_names": [
+   "lee-sungsoo",
+   "LSS Shop"
+  ],
+  "own_buyer_names": [
+   "lee-sungsoo"
+  ],
+  "shops_api_ttl_s": 300,
+  "shops_api_timeout_s": 5,
+  "_note": "v1.4: own-shop exclusion = (0) shop public key: own_shop_pubkeys (lee-sungsoo's key in mock/api_shops_snapshot_20261101T2357KST.json) + the kit's shop_key.pem public half + keys learned from rows matched by name, (1) own_shop_names after owner.norm_name (NFKC, zero-width dropped, dash variants, separators - _ . space equal), (2) /api/shops owner login == github (no owner field as of 2026-11-01 23:57 KST), (3) URLs of those rows read at runtime (owner.norm_url: http == https, trailing / dropped) and cached in <R3_STATE>/own_shops.json. No URL is stored here. v1.7.1 (owner via CoS, 2026-11-02): real market shop name is \"LSS Shop\" (norm_name -> lss-shop; 'LSS Shop' == 'lss_shop' == 'lss.shop', not 'lss' or 'lssshop'); lss-annex is NOT ours (mock fake row only, matched there by its fake owner login).",
+  "own_shop_pubkeys": [
+   "Tn4LL1RfwiHcttuydXxxyGn2wWXDA/MItkahALdG190="
+  ]
+ },
+ "shop": {
+  "balance_floor": 3000000,
+  "_restock_note": "v1.6 (CR v1.5 item 6): max_spend_per_run 300000 -> 600000; food stock_target/qty_per_buy 3/2 -> 5/4, goods 2/1 -> 4/3; breadth_qty (food 2, goods 1 = the v1.5 quantities): policy.restock_plan buys breadth first (every ranked category up to breadth_qty), then tops the same lines up to qty_per_buy with the leftover budget. SKU choice inside a category: aggregates sku() settles_all first (revealed allowlist demand), then the v1.4 rule. Diagnosis (tools/diag_orders_v16.py on the mock orders log, seeds 7/11, v1.6 base): every 'no candidate' order came after mock-shop-a had sold out (27/40, 20/40; allowlist misses 0 and 2): the mock issues all 40 orders within ~10 s of the first restock, so stock depth capped volume. Tuned on seeds 7/11 only (settled; balance+inventory_at_cost-5M): base 13/17 (73,013; 79,716), d1 22/27, d2 31/30, d3 27/30, chosen two-pass 31/30 (169,980; 144,914). balance_floor, liquidation_line, max_total_units unchanged. Risk: standing food stock up to 5 per category (expiry is not exercised by a 3-minute mock). See mock/RUNS.md v1.6.",
+  "max_spend_per_run": 600000,
+  "max_unit_cost": 400000,
+  "max_lines_per_run": 10,
+  "max_total_units": 120,
+  "allow_bankrupt": false,
+  "liquidation_line": 1500000,
+  "liquidation_margin": 0.0,
+  "max_inventory_cost_frac": 0.12,
+  "food_sell_through": 0.5,
+  "food_cold_units": 4,
+  "food_min_units": 1,
+  "idle_pause_s": 21600,
+  "idle_low_stock_units": 0,
+  "idle_ref_scope": "own",
+  "idle_low_stock_frac": 0.25,
+  "_v110_note": "v1.10 (QA review_r3_01ac_v19). (c) live limitation: in the live market other shops' orders/results keep coming, so the v1.9 market reference (demand_ref) never goes stale and the idle pause is effectively OFF in live; the binding inventory bound in live is (a) max_inventory_cost_frac. idle_ref_scope 'own': while our sellable stock is above low_stock, restock pauses when OUR shop had no demand evidence (own settle matched by owner.own_shop_keys: norm_name over own_shop_names + cached/R3_SHOP_NAME names, our shop URL or <market>/shop/<name>, pubkey; a buyer asking us for stock we lack = seller no_stock in metrics.jsonl; manual resume) for idle_pause_s (before the first own sale: since our first stock). At or below low_stock the v1.9 market rule decides (a sold-out shop has no own settles). idle_low_stock_frac 0.25: low_stock also when sellable cost <= 0.25 x the (a) cap, so one unsellable unit no longer deadlocks the no-signal branch. Resume-file mtime is clamped to now (a future mtime counts as 'now' once, then ages). Decision evidence (tools/sim_idle_scope.py, 72 h real-time, other shops' orders always fresh, tuning catalogs seeds 7/11/212, mock/sim_v110/): own vs market: no own demand S1 cash +35,760..+68,160 (2-3 buys vs 4), demand stops after 24 h S3 0..+73,320, steady/on-off/half-category demand S2/S4/S5 identical (no lost sales); frac 0 vs 0.25 identical in all scenarios (the deadlock case is a unit test). Kept 'own' + 0.25. It does not stop the 1-2 refills right after demand ends (6 h window); the (a) cap bounds that. R3_IDLE_REF_SCOPE overrides (mock A/B only).",
+  "_v111_note": "v1.11 (QA review_r3_01ac_v110). Own demand also = our seller hook's accept rows in metrics.jsonl (restock.market_activity own_accepts / last_own_accept_ts, policy.own_demand_ref 'own_accept'): independent of the ledger settle shop format and of the own_shops.json tunnel-URL cache, so a changed tunnel URL or an unmatched settle shop field no longer starves the own gate while buyers buy from us; first_stock counts only before any own settle or accept. <market>/shop/<name> is percent-decoded (LSS%20Shop). Monitor (v1.12 rule; this sentence corrected in v1.14, it described the v1.11 rule): ACT when our own ledger settles >= 3 but our seller accepts = 0, i.e. the accept signal is broken (revert idle_ref_scope=market in the first hour after deploy: labpc_swap_checklist 3-0); WATCH partial accept loss when accepts >= 1 and own settles >= accepts + 3; the own-gap line is ACT only above low_stock (WATCH 'does NOT pause' at or below it); WATCH at >= 80% of the (a) cap. (a) max_inventory_cost_frac 0.12 x balance (about 550k-600k won at a 4.6M-5M balance) is the real end-inventory risk ceiling: when demand ends the shop is sold out (low_stock), the market rule refills up to (a) (1-2 refills after the first stock), and only then the own 6 h window starts (QA 211 real ratio: 533,484 = 96% of 553,902). No change to the decision (own, frac 0.25).",
+  "velocity_include_own": true,
+  "own_velocity_tau_h": 24,
+  "_v19_note": "v1.9 (QA review_r3_01ac_v17). (c) deadlock fix: the idle reference is the newest market demand evidence (policy.demand_ref): market order/result rows of any buyer (GET /api/ledger, kept in the ledger cursor), market settles of any shop, or a manual resume (touch <R3_STATE>/restock_resume). Orders keep coming while buyers exist, with or without our stock, so a sold-out shop keeps restocking while there is demand and pauses only when the whole market is quiet for idle_pause_s. With no order/result seen at all (no R3_MARKET, cursor lost) the v1.7 settle/first-stock reference is used, and the gate does not pause at idle_low_stock_units (0 = sold out) or fewer sellable units. (b) velocity_include_own: restock_plan adds our own shop's sales rate (decayed settle count by SKU, own_velocity_tau_h, aggregates' estimator; aggregates' velocity_per_h excludes our shop) to the category velocity for ranking and the food cap: our sales are demand too. Tuned on 7, 11 (40) and 212 (120, 600 orders) (mock/RUNS.md v1.9): include_own on/off and idle_low_stock_units 0/2; same settled and gpc, cash within run-to-run spread; kept on and 0.",
+  "restock_stop_before_end_h": 24,
+  "_v17_note": "v1.7 inventory risk limits (QA v1.6 review major: unsold stock is a loss, agent.md profit = balance - start). (a) max_inventory_cost_frac: inventory at cost + the run's worst spend <= frac x balance. (b) food per category <= floor(category velocity_per_h x SKU shelf_hours x food_sell_through), at least food_min_units; no demand data -> food_cold_units. (c) idle_pause_s: no market settle (any shop) for this long since the last settle (before the first settle: since our first stock) -> restock pauses, in v1.7 also when sold out [v1.9 correction: the v1.7 text said holding stock; v1.7 code paused sold-out shops too, see _v19_note] (R3_IDLE_PAUSE_S overrides, mock only). restock_stop_before_end_h: no restock in the last hours of the round. Near-expiry food is sold at cost+1 (defaults.food.liquidate_hours, unchanged). Tuned 11/2 on seeds 7, 11 (40 orders) and 212 (120 orders) for balance + inventory at cost - start with settled >= 20 (mock/RUNS.md v1.7): variants b 0.10/2, c 0.12/3, d 0.14/4, e 0.12/4 (frac/food_cold_units); 0.12 + 4 kept v1.6's gpc and ended with 0-7 units.",
+  "_v113_note": "v1.13 (M13, R3-M13): goods depth capped by the storage fee (agent.md: goods in stock pay 1 % of cost per day). policy.goods_cap: cap = max(goods_min_units, floor((category velocity_per_h + own) x 24 x goods_max_storage_frac / storage_per_day)), no demand data -> goods_cold_units (= goods stock_target 4, the pre-v1.13 behaviour); no cap when inventory.json storage_per_day is 0/missing. Tuned 11/3 on seeds 7, 11 (40 orders) and 212 (120 orders) only, mock storage off and on (--storage-scale 1440), round window pinned: frac 0.01 / 0.02 / 0.05 vs none; only 0.01 changed a decision (212: second restock 55 -> 54 units, -11,444 cost; gpc net of storage +502 with the fee, equal without; 7/11 unchanged). Held-out on fresh seeds: mock/RUNS.md v1.13. The cap is a risk bound, not break-even (margin ~25-45 % of cost = 25-45 days of fee). Real-market storage row format unconfirmed: ledger.py ingests kind 'storage' {shop, amount}; aggregates use charged rows when present, else the 1 %/day estimate.",
+  "_v114_note": "v1.14 (QA review_r3_01ac_v113 condition 1): inventory.json storage_per_day is parsed by policy.storage_rate; a value that is not clearly a per-day fraction (non-numeric or percent string such as '1%', NaN/inf, bool, negative, or above 0.1 = 10 %/day such as 1 meaning '1 %') turns the goods cap OFF with a warning (restock_plan info warnings, stderr WARNING) instead of crashing restock or collapsing the depth to 1. Decision values unchanged (goods_max_storage_frac 0.01, goods_min_units 1, goods_cold_units 4). First-hour check and cap-off revert: labpc_swap_checklist 3-0b.",
+  "goods_max_storage_frac": 0.01,
+  "goods_min_units": 1,
+  "goods_cold_units": 4
+ },
+ "defaults": {
+  "food": {
+   "price_mult": 0.92,
+   "min_margin": 0.12,
+   "concession": 0.03,
+   "max_rounds": 4,
+   "stock_target": 5,
+   "qty_per_buy": 4,
+   "breadth_qty": 2,
+   "warranty_hours": {
+    "A": 0,
+    "B": 0,
+    "C": 0
+   },
+   "fresh_discount": {
+    "B": 0.06,
+    "C": 0.3
+   },
+   "min_shelf_hours": 48,
+   "liquidate_hours": 12,
+   "dispose_hours": 2,
+   "liquidate_discount": 0.35,
+   "claim_window_s": 10,
+   "_claim_note": "v1.2: claim = grade at the receipt; omitted when the grade would change within claim_window_s (the market counts a claim true when it matches the grade at checkout or at settle; measured receipt->settle delay in the mock 0.0-0.1 s, QA review sec 6-5). Food with no shelf_hours: no claim, priced as grade C. The v1 claim_lead_s=60 under-claimed for 60 s at every grade cut.",
+   "_grade_c_note": "v1.4 (G): fresh_discount C 0.15 -> 0.30 (goods 0.20 -> 0.30). C cost is 25-45% of list (agent.md), so ask = list x price_mult x 0.7 stays above floor = cost x (1 + min_margin); floor_price/guard_price still forbid any price <= cost.",
+   "endgame_margin": 0.05,
+   "endgame_round": 4,
+   "_endgame_note": "v1.6 (CR v1.5 major 3, narrowed): from round endgame_round an offer in [cost x (1 + endgame_margin), normal floor) is accepted ONLY when (a) the buyer's offer stalled (<= its previous offer), (b) its raise shrank (a buyer at its cap, who would otherwise walk), or (c) the seller would otherwise reject (past max_rounds and not rising, or patience_rounds used up); a buyer still raising at its usual pace is countered at the normal floor (policy.respond; guard_price still forbids <= cost). Tuned on seeds 7 and 11 only (tools/price_gap_sim.py + tools/endgame_pair_v16.py, real haggle vs real respond, 2000 draws/seed): same deals as v1.5 (1857/1867), never cheaper, dearer in 81/49 negotiations, profit +73,843 / +21,792 vs v1.5. Kept 0.05/4/6 (0.03/0.01 add <0.15% at a thinner margin). See mock/RUNS.md v1.6.",
+   "patience_rounds": 6
+  },
+  "goods": {
+   "price_mult": 0.9,
+   "min_margin": 0.15,
+   "concession": 0.03,
+   "max_rounds": 4,
+   "stock_target": 4,
+   "qty_per_buy": 3,
+   "breadth_qty": 1,
+   "warranty_hours": {
+    "A": 6,
+    "B": 6,
+    "C": 6
+   },
+   "fresh_discount": {
+    "B": 0.08,
+    "C": 0.3
+   },
+   "min_shelf_hours": 0,
+   "prior_fail_rate": 0.05,
+   "warranty_uplift": 0.03,
+   "max_warranty_hours": 6,
+   "endgame_margin": 0.05,
+   "endgame_round": 4,
+   "_endgame_note": "v1.6 (CR v1.5 major 3, narrowed): from round endgame_round an offer in [cost x (1 + endgame_margin), normal floor) is accepted ONLY when (a) the buyer's offer stalled (<= its previous offer), (b) its raise shrank (a buyer at its cap, who would otherwise walk), or (c) the seller would otherwise reject (past max_rounds and not rising, or patience_rounds used up); a buyer still raising at its usual pace is countered at the normal floor (policy.respond; guard_price still forbids <= cost). Tuned on seeds 7 and 11 only (tools/price_gap_sim.py + tools/endgame_pair_v16.py, real haggle vs real respond, 2000 draws/seed): same deals as v1.5 (1857/1867), never cheaper, dearer in 81/49 negotiations, profit +73,843 / +21,792 vs v1.5. Kept 0.05/4/6 (0.03/0.01 add <0.15% at a thinner margin). See mock/RUNS.md v1.6.",
+   "patience_rounds": 6
+  }
+ },
+ "categories": {},
+ "buyer": {
+  "defaults": {
+   "food": {
+    "open_frac": 0.55,
+    "max_pay_frac": 0.85,
+    "step_frac": 0.07,
+    "max_rounds": 5,
+    "accept": {
+     "cert": true,
+     "grades": [],
+     "hours_margin": 2,
+     "_note": "v1.17 (2026-11-03): no grade filter for food. Buyer value is the list price if the food lasts use_within_hours (agent.md Buyer value), whatever its grade; min_hours_left (use_within_hours + hours_margin, needs the certificate) already guards that."
+    },
+    "accept_c": {
+     "max_pay_frac": 0.6,
+     "open_frac": 0.35
+    }
+   },
+   "goods": {
+    "open_frac": 0.55,
+    "max_pay_frac": 0.85,
+    "step_frac": 0.07,
+    "max_rounds": 5,
+    "accept": {
+     "cert": true,
+     "grades": [
+      "A",
+      "B"
+     ],
+     "warranty_hours": 0,
+     "_note": "0 = not required. Our seller's warranty rule (prior fail 0.05 > uplift 0.03) offers none, so requiring 6 h made us refuse every goods unit in the mock (run_7, 4/4 'warranty' rejects). Break risk is priced in choose_offers via the shop's broken rate."
+    },
+    "accept_c": {
+     "max_pay_frac": 0.55,
+     "open_frac": 0.35,
+     "_note": "v1.4 (G): a shop that states grade C (or claims C on the receipt) is no longer walked away from: we haggle on with cap = min(cap, list x max_pay_frac) and pass accept.grades + C for that deal only. Buyer value = list price unless food did not last use_within_hours (min_hours_left unchanged) or goods broke (break rate unpublished): at 0.55 x list the deal has positive expected surplus while P(break) < 45%."
+    }
+   }
+  },
+  "categories": {},
+  "min_claim_honest_rate": 0.7,
+  "reputation_prior": 2
+ },
+ "bounds": {
+  "price_mult": [
+   0.5,
+   1.5
+  ],
+  "min_margin": [
+   0.0,
+   1.0
+  ],
+  "concession": [
+   0.0,
+   0.2
+  ],
+  "max_rounds": [
+   1,
+   10
+  ],
+  "stock_target": [
+   0,
+   20
+  ],
+  "qty_per_buy": [
+   1,
+   20
+  ],
+  "open_frac": [
+   0.3,
+   1.0
+  ],
+  "max_pay_frac": [
+   0.3,
+   1.0
+  ],
+  "step_frac": [
+   0.0,
+   0.3
+  ],
+  "min_shelf_hours": [
+   0,
+   720
+  ],
+  "liquidate_hours": [
+   0,
+   720
+  ],
+  "dispose_hours": [
+   0,
+   48
+  ],
+  "liquidate_discount": [
+   0,
+   0.9
+  ],
+  "prior_fail_rate": [
+   0,
+   1
+  ],
+  "warranty_uplift": [
+   0,
+   0.5
+  ]
+ },
+ "volume": {
+  "target_settled": 20,
+  "margin": 5,
+  "round_start_ts": 1793631600,
+  "round_end_ts": 1794927540,
+  "late_hours": 48,
+  "pace_gain": 2.0,
+  "relax_ask_cut": 0.1,
+  "relax_max_pay_frac": 0.97,
+  "relax_grade_c_at": 0.5,
+  "_note": "BASE: >= 20 settled Round 3 trades each for shop and buyer (week-08 HW). goal = target + margin. r from policy.volume_relax per side; shop: floor margin * (1-r), concession * (1+r), ask * (1 - relax_ask_cut * r), never below cost + 1; buyer: max_pay_frac -> relax_max_pay_frac, step * (1 + r/2), grade C accepted at r >= relax_grade_c_at; shelf life never relaxed; budget cap kept. round_start_ts = 2026-11-03 00:00 KST (start hour not published), round_end_ts = 2026-11-17 23:59 KST. v1.4: relax_cert_at removed (kit refuses a checkout without certificate whenever grades are set; CR v1.2 new issue 3)."
+ },
+ "forum": {
+  "enabled": true,
+  "interval_s": 900,
+  "window_h": 3,
+  "min_settles": 3,
+  "max_refs": 8,
+  "rotate": 4,
+  "_note": "v1.17 (2026-11-03): hooks/forum.py posts one ledger price summary as the buyer every interval_s (kit limit: one post per 5 min per role). Buyer ALL counts votes on buyer posts from voters with >= 5 settled deals and another GitHub owner."
+ }
+}
