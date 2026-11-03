@@ -324,7 +324,7 @@ def brief(board=None, now=None):
                                 leaders_plan=__import__("leaders_meeting").summary(),
                                 private_from_hq=__import__("hr").contest_for("buyer")), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
          "enuri": summ, "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
-         "diagnosis": diagnosis(board, now),
+         "diagnosis": diagnosis(board, now), "internal_audit": __import__("qa").summary(),
          "current": current(), "plan_now": {k: load(PLAN, {}).get(k) for k in ("changed", "forum_advice", "rationale")},
          "scorecard": scorecard(snap, history[-1] if history else None),
          "history": [{"at": time.strftime("%m-%d %H:%M", time.localtime(h["snapshot"]["ts"])), "changed": h.get("changed"),

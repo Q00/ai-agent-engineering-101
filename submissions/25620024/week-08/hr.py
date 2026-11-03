@@ -354,6 +354,13 @@ def run(board=None):
     alarms = buyer_alarms(board)
     if alarms:
         md = "## 🚨 바이어 경보\n" + "\n".join(f"- {a}" for a in alarms) + "\n\n" + md
+    try:                                       # the review team's internal audit, on top of everything
+        import qa
+        audit = qa.audit(board)
+        md = qa.markdown(audit) + "\n" + md
+        (REPORTS / "ALERTS.md").write_text(qa.markdown(audit), encoding="utf-8")
+    except Exception as e:
+        md = f"# 내부 점검 실패: {type(e).__name__}: {e}\n\n" + md
     try:
         (REPORTS / "buyer_alarm.md").write_text((f"# 바이어 경보 {time.strftime('%m-%d %H:%M')}\n" +
                                                 "\n".join(f"- {a}" for a in alarms)) if alarms else
