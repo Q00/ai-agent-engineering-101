@@ -50,6 +50,15 @@ FLOOR_MARGIN = float(os.environ.get("SHOP_FLOOR_MARGIN", "0.05"))
 CLOSE_GAP = 0.03          # an offer within 3% of the ask closes at the offer
 MAX_DISCOUNT = 0.10       # haggling never takes the ask more than 10% below the opening ask
 MAX_ROUNDS = 6
+STEPS = (0.4, 0.25, 0.2, 0.15)   # each counter gives up this share of the room between opening ask and floor
+# Learning from our own talks, per category, on top of the manager's share (.market/price_adj.json):
+# a buyer who takes the opening ask at once says we were cheap; a buyer who leaves without an offer (it took
+# another shop's quote) or walks after haggling says we were dear. Small steps, kept within ADJ_RANGE.
+LEARN = {"took_opening": 0.02, "lost_quote": -0.01, "walked": -0.02}
+ADJ_RANGE = (-0.15, 0.10)
+SHARE_BOUNDS = (0.55, 0.97)
+CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
+CLEARANCE_FLOOR = 0.6     # share of cost
 WARRANTY = {"A": 6}       # goods grade -> warranty hours; B and C goods carry none
 MIN_FOOD_HOURS = 2        # never ship food with less shelf life left than this
 ACCEPT = re.compile(r"\b(ok|okay|yes|deal|accept|accepted|agree|agreed|take it|buy it|sold)\b", re.I)
@@ -102,14 +111,36 @@ def find_unit(text, taken=()):
     return None
 
 
+def _load(name, default):
+    try:
+        return json.loads((MARKET_DIR / name).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return default
+
+
+ADJ = _load("price_adj.json", {})          # category -> {"adj", "took_opening", "lost_quote", "walked", "deals"}
+
+
 def share_for(category):
     if time.time() - _prices["t"] > 30:
-        try:
-            _prices["rules"] = json.loads((MARKET_DIR / "prices.json").read_text(encoding="utf-8")).get("rules", {})
-        except (OSError, ValueError):
-            pass
+        _prices["rules"] = _load("prices.json", {}).get("rules", _prices["rules"])
         _prices["t"] = time.time()
-    return _prices["rules"].get(category, DEFAULT_SHARE)
+    base = _prices["rules"].get(category, DEFAULT_SHARE)
+    return min(max(base + ADJ.get(category, {}).get("adj", 0), SHARE_BOUNDS[0]), SHARE_BOUNDS[1])
+
+
+def learn(category, what):
+    """Count one outcome for the category; outcomes in LEARN also move its price adjustment."""
+    if not category:
+        return
+    a = ADJ.setdefault(category, {"adj": 0.0})
+    a[what] = a.get(what, 0) + 1
+    if what in LEARN:
+        a["adj"] = round(min(max(a["adj"] + LEARN[what], ADJ_RANGE[0]), ADJ_RANGE[1]), 3)
+    tmp = MARKET_DIR / "price_adj.tmp"
+    tmp.write_text(json.dumps(ADJ, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(MARKET_DIR / "price_adj.json")
+    log(f"[learn] {category.split('>')[-1]}: {what}, adjustment now {a['adj']:+.2f}")
 
 
 def terms(u):
@@ -119,6 +150,9 @@ def terms(u):
     floor = math.ceil(u["cost"] * (1 + FLOOR_MARGIN))
     days = min(3, int((time.time() - u.get("supplied_at", time.time())) // 86400))
     share = share_for(u.get("category")) * GRADE_FACTOR.get(u["grade"], 0.8) * (1 - STALE_MARKDOWN * days)
+    if u["kind"] == "food" and (hours_left(u) or 0) < CLEARANCE_HOURS:
+        share *= 0.8
+        floor = math.ceil(u["cost"] * CLEARANCE_FLOOR)
     ask = max(floor, int(round(u["list_price"] * share, -1)))
     warranty = WARRANTY.get(u["grade"], 0) if u["kind"] == "goods" else 0
     return ask, floor, warranty
@@ -171,8 +205,8 @@ class Seller(AgentExecutor):
             ask, floor, warranty = terms(u)
             # profit is half the shop's score: concede at most MAX_DISCOUNT, and never below cost
             floor = max(floor, int(ask * (1 - MAX_DISCOUNT)))
-            deal = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "warranty": warranty,
-                                         "rounds": 0}
+            deal = self.open[task.id] = {"unit": u, "ask": ask, "opening": ask, "floor": floor,
+                                         "warranty": warranty, "rounds": 0}
             await up.requires_input(say(f"{facts(u, warranty)}. Send the ask or say ok to buy. "
                                         f"Our ask: {ask}"))
             return
@@ -188,10 +222,13 @@ class Seller(AgentExecutor):
             await self._close(task, up, say, deal, offer)
         elif deal["rounds"] >= MAX_ROUNDS:
             del self.open[task.id]
+            if deal["unit"]["unit"]:
+                learn(deal["unit"].get("category"), "walked")
             await up.reject(say(f"No deal. Our last ask was {ask}."))
         else:
-            if offer is not None:
-                deal["ask"] = max(floor, int(round(ask - (ask - offer) / 3, -1)))   # a third of the gap
+            if offer is not None:            # a third of the gap, but never more than this round's step
+                step = STEPS[min(deal["rounds"], len(STEPS)) - 1] * (deal["opening"] - floor)
+                deal["ask"] = max(floor, int(round(ask - min((ask - offer) / 3, step), -1)))
             await up.requires_input(say(f"Counteroffer: {deal['ask']}"))
 
     async def _close(self, task, up, say, deal, price):
@@ -201,13 +238,17 @@ class Seller(AgentExecutor):
             receipt.update(unit=u["unit"], claim=u["grade"], cert=True, warranty_hours=deal["warranty"])
         await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
         await up.complete(say(f"Deal: {u['name']} at {int(price)}."))
+        if u["unit"]:
+            learn(u.get("category"), "took_opening" if deal["rounds"] == 1 and price >= deal["opening"] else "deals")
         log(f"DEAL {u['sku']} {u['name'][:30]} grade {u['grade']} at {int(price)} "
             f"(cost {u['cost']}, list {u['list_price']}, warranty {deal['warranty']}h)")
         del self.open[task.id]
 
     async def cancel(self, context, event_queue):
         task = context.current_task
-        self.open.pop(task.id, None)
+        deal = self.open.pop(task.id, None)
+        if deal and deal["unit"]["unit"]:
+            learn(deal["unit"].get("category"), "lost_quote" if deal["rounds"] == 0 else "walked")
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 

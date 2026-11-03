@@ -112,7 +112,10 @@ def category_detail(category: str) -> dict:
 @mcp.tool()
 def my_shop() -> dict:
     """Our balance, the money free for stock (above the cash floor and under the stock cap), stock value,
-    units held longer than a day, and our sales in the last 6 hours."""
+    units held longer than a day, our sales in the last 6 hours, the opening-ask shares set so far, and what
+    the seller learned per category from its own talks: adj is added to the share you set; took_opening =
+    buyers who took our first ask at once (we were cheap), lost_quote = buyers who asked and went elsewhere,
+    walked = buyers who left after haggling, deals = deals after haggling."""
     inv, st = load("inventory.json", {}), load("restock_state.json", {})
     units, now = live_units(), time.time()
     stock_cost = sum(u["cost"] for u in units)
@@ -123,7 +126,9 @@ def my_shop() -> dict:
         "units": len(units), "stock_cost": stock_cost,
         "stale_units": sum(1 for u in units if now - u["supplied_at"] > 86400),
         "sales_6h": len(recent), "sales_6h_by_category": Counter(s["category"] for s in recent).most_common(10),
-        "prices_now": load("prices.json", {}).get("rules", {})})
+        "prices_now": load("prices.json", {}).get("rules", {}),
+        "price_learning": {c: a for c, a in sorted(
+            load("price_adj.json", {}).items(), key=lambda x: -sum(v for k, v in x[1].items() if k != "adj"))[:15]}})
 
 
 @mcp.tool()
