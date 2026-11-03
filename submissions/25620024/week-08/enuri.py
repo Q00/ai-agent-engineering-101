@@ -471,6 +471,10 @@ def tick(md=Path(".market"), c=None, now=None, force=False):
     if not force and now - state.get("last_tick", 0) < t["tick_s"]:
         return None
     c = c or market_model.db()
+    try:
+        track_forum(md, now)
+    except Exception:
+        pass
     old = load(BOOK, {})
     card = score(state, old, t) if old else None
     acc = judge(state, old, c, now, t) if old else None
@@ -520,6 +524,61 @@ def forum_mentions(md=Path("."), hours=6):
             continue
         for s in set(SKU_ID.findall(p.get("text") or "")):
             out[s] = out.get(s, 0) + 1
+    return out
+
+
+FORUM_TRACK = HERE / "private" / "enuri" / "forum_track.json"
+AGES = (15, 30, 60)          # minutes after posting at which a buyer post's likes are recorded
+
+
+def post_format(text):
+    """The kind of post, for comparing what the forum votes up: its tag, its language, its length."""
+    tag = (re.match(r"\s*(\[[^\]]{1,20}\])", text or "") or [None, "(no tag)"])[1]
+    ko = len(re.findall("[가-힣]", text or "")) > 0.15 * max(1, len(text or ""))
+    return {"tag": tag, "lang": "ko" if ko else "en", "long": len(text or "") >= 200}
+
+
+def track_forum(md=Path(".market"), now=None):
+    """Measure, don't guess (HQ 11-04): every buyer post's likes at 15, 30 and 60 minutes, ours and the others'.
+    forum.json holds only the newest 100 posts, so an age is recorded at the first tick past it."""
+    now = now or time.time()
+    posts = load(Path(md) / "forum.json", [])
+    posts = posts.get("posts", posts) if isinstance(posts, dict) else posts
+    tr = load(FORUM_TRACK, {})
+    for p in posts or []:
+        if p.get("role") != "buyer" or not p.get("id"):
+            continue
+        age = (now - (p.get("ts") or now)) / 60
+        e = tr.setdefault(str(p["id"]), {"author": p.get("author"), "ts": p.get("ts"), "refs": len(p.get("refs") or []),
+                                          **post_format(p.get("text")), "likes": {}})
+        for a in AGES:
+            if age >= a and str(a) not in e["likes"]:
+                e["likes"][str(a)] = p.get("likes") or 0
+    cut = now - 24 * 3600
+    tr = {k: v for k, v in tr.items() if (v.get("ts") or 0) > cut}
+    FORUM_TRACK.parent.mkdir(parents=True, exist_ok=True)
+    FORUM_TRACK.write_text(json.dumps(tr, ensure_ascii=False), encoding="utf-8")
+    return tr
+
+
+def forum_votes(tr=None):
+    """Likes at each age: ours against the others, and by tag / language / refs over all buyer posts."""
+    tr = tr if tr is not None else load(FORUM_TRACK, {})
+    def stat(rows, a):
+        v = [r["likes"][str(a)] for r in rows if str(a) in r["likes"]]
+        return {"n": len(v), "mean": round(statistics.mean(v), 2) if v else None,
+                "7+": sum(1 for x in v if x >= 7)} if v else None
+    rows = list(tr.values())
+    ours, others = [r for r in rows if r["author"] == ME], [r for r in rows if r["author"] != ME]
+    out = {"ours": {a: stat(ours, a) for a in AGES}, "others": {a: stat(others, a) for a in AGES}}
+    groups = {}
+    for r in rows:
+        for k in (f"tag {r['tag']}", f"lang {r['lang']}", f"refs {'0' if not r['refs'] else '1-4' if r['refs'] < 5 else '5+'}",
+                  f"{'long' if r['long'] else 'short'}"):
+            groups.setdefault(k, []).append(r)
+    out["by_feature_at_30min"] = {k: stat(v, 30) for k, v in groups.items() if stat(v, 30)}
+    out["our_tags_at_30min"] = {t: stat([r for r in ours if r["tag"] == t], 30)
+                                for t in {r["tag"] for r in ours} if stat([r for r in ours if r["tag"] == t], 30)}
     return out
 
 
@@ -624,7 +683,7 @@ def summary(b=None, top=15):
     fo = b.get("forum") or {}
     cards = load(STATE, {}).get("cards", [])[-5:]
     acc = dict(b.get("enuri_accountability") or {})
-    return {"enuri_accountability": acc, "coverage": b.get("coverage"),
+    return {"enuri_accountability": acc, "forum_votes": forum_votes(), "coverage": b.get("coverage"),
             "shop_penalties": dict(sorted((b.get("penalty") or {}).items(), key=lambda kv: -kv[1])[:10]),
             "book_age_min": round((time.time() - b.get("ts", 0)) / 60), "skus_priced": len(b.get("prices") or {}),
             "shops_rated": len(q), "k": b.get("k"), "price_spreads": spreads[:top],
