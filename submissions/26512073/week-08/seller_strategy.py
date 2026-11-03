@@ -7,6 +7,25 @@ from threading import Lock, RLock
 
 from harness import call_harness
 
+def load_inventory():
+    """Read the stock file maintained by market kit v4."""
+    market_dir = Path(
+        os.environ.get(
+            "MARKET_DIR",
+            str(Path(__file__).resolve().parent / ".market"),
+        )
+    )
+
+    inventory_path = market_dir / "inventory.json"
+
+    if not inventory_path.exists():
+        return []
+
+    inventory = json.loads(
+        inventory_path.read_text(encoding="utf-8")
+    )
+
+    return inventory["units"]
 
 # Pricing State
 DATA_DIR = Path(
