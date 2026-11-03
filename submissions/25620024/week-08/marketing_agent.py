@@ -105,8 +105,6 @@ logs/market-kit.log; read them, you cannot change them), report:
 - exclusive_candidates: hot SKUs that few competitors hold, with the evidence (sold, competitor units, our units)
 - risks: what could lose money or stars soon
 - bugs: anything in code or logs that loses sales or money, with evidence and a concrete fix
-Write every text field (findings, evidence, risks, bugs) in Korean, for the headquarters; keep SKU ids, numbers,
-file names and code as they are.
 Answer with the JSON object only.
 
 BRIEF:
@@ -342,10 +340,10 @@ def report_md(b, research, plan, notes):
              f"stars {me.get('stars')}, ALL {me.get('all')}", "", "## Scorecard of the last plan",
              "```json", json.dumps(b.get("scorecard"), ensure_ascii=False, indent=1), "```", "",
              "## Lessons (this run)"] + [f"- [{x['verdict']}] {x['text']}" for x in plan.get("lessons", [])] + [
-             f"(retired: {plan.get('retired')})", "", "## 마케팅팀 조사 (Codex)"]
+             f"(retired: {plan.get('retired')})", "", "## Research (Codex)"]
     lines += [f"- {x}" for x in research.get("findings", [])]
-    lines += ["", "독점 후보:"] + [f"- {x['sku']}: {x['evidence']}" for x in research.get("exclusive_candidates", [])]
-    lines += ["", "위험 요소:"] + [f"- {x}" for x in research.get("risks", [])]
+    lines += ["", "Exclusive candidates:"] + [f"- {x['sku']}: {x['evidence']}" for x in research.get("exclusive_candidates", [])]
+    lines += ["", "Risks:"] + [f"- {x}" for x in research.get("risks", [])]
     lines += ["", "## Strategy (Claude)", plan.get("rationale", ""), "", "```json",
               json.dumps({k: plan[k] for k in ("pricing", "exclusive_skus", "follow_skus", "restock", "forum_posts")}, ensure_ascii=False, indent=1),
               "```", "", "## Bugs reported"] + [f"- {x['what']} | {x['evidence']} | fix: {x['fix']}" for x in plan.get("bugs", [])]
