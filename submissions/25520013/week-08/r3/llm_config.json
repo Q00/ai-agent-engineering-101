@@ -1,0 +1,11 @@
+{
+  "_note": "v1.17 candidate. Real calls are OFF unless real_calls_enabled is true AND the CLI exists AND approval is on record (17:13/17:14 rows, 20 calls max). Model name is a setting. --ephemeral, --sandbox read-only, -C <empty temp dir> and the tool-off flags are fixed in llm/codex_client.py (file-read blocking [미확인]); extra_args may not change sandbox / cwd / approvals. parse_timeout_s mirrors llm/parse_assist.PARSE_TIMEOUT_S (8 s, CoS 17:48); the code constant is used.",
+  "real_calls_enabled": false,
+  "model": "gpt-6.1-terra",
+  "reasoning_effort": "medium",
+  "parse_timeout_s": 8,
+  "cli": "/home/box/.local/bin/codex",
+  "counter_path": "state/real_call_counter.json",
+  "call_log_path": "state/real_calls.jsonl",
+  "extra_args": []
+}
