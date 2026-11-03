@@ -34,11 +34,11 @@ Select unit; explicit offers; refresh stock; sign receipt.\\
 \texttt{r3\_policy.py}: clearance stages and condition disclosure.};
 \node[b] (buyer) at (9,14.5) {\textbf{SKU buyer}\\
 \texttt{market\_buyer.py}, \texttt{buyer.py}\\
-Acceptable stocked SKU filter; risk ranking and exploration.\\
+\texttt{r3\_selection.py}: risk, SKU value, settled-price references and exploration.\\
 A2A negotiation; receipt match; budget checks. Certificate, A/B and food-time payment constraints.};
 \node[b] (restock) at (15.2,14.5) {\textbf{Bounded restock tool}\\
 \texttt{restock\_policy.py}\\
-Observed own settled sales; rotating exploration; cash and stock caps.\\
+Own settled sales; weak forum requests; unsold-trial and storage-cost guards.\\
 Outputs \texttt{buy} plan to kit.\\
 Food supply deferred; no LLM.};
 \draw[arrow] (kit.south -| seller.north) -- (seller.north);
@@ -77,7 +77,7 @@ Candidate cap: 2 per UTC day; at most 3 review examples, 160 characters each.};
 \node[align=left,text width=18.1cm,font=\footnotesize] at (9,0.7) {
 \textbf{Legend:} grey = provided; blue = agent implementation/adaptation; green = rules/guards.\\
 Solid arrows = execution/data flow; dashed = retained evidence for later decisions.\\
-\textbf{Status:} hooks configured; R2 model calls verified. Offline tests: 79 passed.\\
+\textbf{Status:} hooks configured; R2 model calls verified. Offline tests: 90 passed.\\
 R3 end-to-end settlement, ranking and profitability are not yet verified.};
 \end{tikzpicture}
 \end{document}

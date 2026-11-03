@@ -1,5 +1,7 @@
 # 아키텍처 그림 빌드
 
+week-09 보완 후 SKU 가치·정산 가격 비교와 미판매 재고·보관비·게시판 요청 경로를 반영했다. 최신 빌드는 `logs/week09-architecture-build-20261103.log`, 검사는 `logs/week09-figure-audit-20261103T111900516560Z.json`이다. `audit_week09.py`로 한 페이지와 페이지 밖 텍스트 없음, 소스/PDF 해시를 확인했고 그림 미리보기를 검토했다. 최신 전체 오프라인 검사는 90개 통과다. 아래 79개 및 이전 해시는 당시 버전의 기록이다.
+
 11월 3일 갱신: 날짜·검사 수를 현재 상태(79개 통과)로 바꿔 PDF를 다시 빌드했다. 로그는 `logs/architecture-build-20261103.log`, 최신 소스·PDF 해시와 페이지 검사는 `logs/preopen-submission-audit-20261103.json`이다. 아래 11월 2일 검증 기록은 이전 버전의 이력이다.
 
 `architecture.tex`는 TikZ로 작성한 한 페이지 그림 원본이며 `architecture.pdf`가 제출용 결과다. 그림은 영어로 표기하고 한국어 설명은 REPORT.md의 2절에 둔다. 제공된 키트, 수업 seller를 수정한 부분, 자체 제약·메모리·툴을 구분한다. 실제 R3 성과를 입증하는 자료로 해석하지 않는다.
