@@ -19,6 +19,7 @@ sys.path.insert(0, str(W))
 import policy  # noqa: E402
 import memory.store  # noqa: E402
 from model import harness  # noqa: E402
+from tools import buyer_policy as bp  # noqa: E402
 from tools import negotiation as ng  # noqa: E402
 from tools.negotiation import Deadline, negotiate, parse_ask  # noqa: E402
 
@@ -283,10 +284,15 @@ class ModelReadingTests(unittest.TestCase):
         shop = WordsShop(first_ask=65000, floor=99999)
         r = self.go(shop, {"kind": "quote", "price": 65000, "sku": None, "unit": "ua"})
         self.assertEqual(r["receipt"]["price"], 65000)
-        self.assertEqual((r["llm_reads"], r["asks"], r["unit"]), (1, [65000], "ua"))
+        self.assertEqual((r["llm_reads"], r["asks"], r["unit"]), (1, [65000], None))   # unit only by rule
         self.assertIn("<untrusted>\nSixty-five thousand", self.prompts[0])
         self.assertNotIn(str(ORDER["budget"]), self.prompts[0])
         self.assertNotIn("70000", self.prompts[0])                       # nor the cap
+
+    def test_model_unit_is_not_a_promise(self):
+        shop = WordsShop(first_ask=65000, floor=99999, receipt_unit=False)
+        r = self.go(shop, {"kind": "quote", "price": 65000, "sku": None, "unit": "ua"})
+        self.assertIsNone(bp.verify_receipt(ORDER, r["receipt"], cand(shop), {}, pol(), r["unit"], r["warranty_h"]))
 
     def test_reading_above_cap_is_still_refused(self):
         shop = WordsShop(first_ask=90000, floor=85000)

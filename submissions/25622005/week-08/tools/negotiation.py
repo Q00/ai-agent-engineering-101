@@ -106,8 +106,8 @@ def signed_receipt(task):
 
 
 def model_ask(task, cand, r, pol, deadline, ver=None):
-    """D9: the shop's price as a small model reads the reply, or None. A unit it names is kept only when
-    we have none yet (the receipt check and the binding then hold the shop to it)."""
+    """D9: the shop's price as a small model reads the reply, or None. A unit it names stays in the
+    decision row only: the promised unit comes from the rules (quote_data), never from the model."""
     ctx = {"items": [{"sku": cand["sku"], "name": cand["name"], "list_price": cand["V"]}],
            "unit": r["unit"], "last_offer": r["offers"][-1] if r["offers"] else None}
     reading = llm_fallback.read("buyer", text_of(task), ctx, pol, time.monotonic() + deadline.left(), ver,
@@ -115,8 +115,6 @@ def model_ask(task, cand, r, pol, deadline, ver=None):
     if not reading:
         return None
     r["llm_reads"] += 1
-    if reading["unit"] and not r["unit"]:
-        r["unit"] = reading["unit"]
     return reading["price"] if reading["kind"] in ("quote", "counter", "accept") else None
 
 

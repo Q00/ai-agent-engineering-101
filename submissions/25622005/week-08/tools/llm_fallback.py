@@ -104,7 +104,9 @@ def prompt(role, text, context):
             f"Our side (trusted): {json.dumps(context, ensure_ascii=False)}\n"
             f"Answer with exactly one JSON object and nothing else: {{{schema}}}\n"
             f"kind: {MEANING[role]}.\n"
-            "price: the price the message states, in whole won, or null. sku: the SKU of our side the message "
+            "price: the price the message states, in whole won, or null" +
+            ("; a budget, limit, quantity or hours figure is not a price (null)" if role == "seller" else "") +
+            ". sku: the SKU of our side the message "
             "is about, or null." + (" unit: the unit id as written in the message, or null." if role == "buyer"
                                     else "") + "\n"
             f"<untrusted>\n{said}\n</untrusted>")

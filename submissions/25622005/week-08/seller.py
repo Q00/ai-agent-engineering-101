@@ -49,6 +49,7 @@ OFFER_RE = re.compile(r"(?:offer|bid|pay|counter(?:offer)?|propose|final|accept|
                       r"(?:\s+(?:is|of|at|your\s+(?:offer|price)|the\s+price))?\s*[:=]?\s*(?:₩|krw|\$)?\s*" + NUM + NOT_PRICE)
 BARE_RE = re.compile(r"(?:₩|krw|\$)?\s*" + NUM + r"\s*(?:won|원|krw|credits)?[.!\s]*")
 YES_RE = re.compile(r"\b(?:i\s+accept|accept(?:ed)?|deal|agreed?|yes|ok(?:ay)?|i(?:'ll|\s+will)\s+take\s+it)\b")
+BUDGET_RE = re.compile(r"\bbudget\b\D{0,20}" + NUM)
 NO_RE = re.compile(r"\b(?:not|no|don't|cannot|can't|reject|decline)\b")
 NEED_RE = re.compile(r"(?:use[_ ]within[_ ]hours|min[_ ]hours[_ ]left)\s*[:=]?\s*(\d+(?:\.\d+)?)"
                      r"|(?:use[_ ]within|within|last(?:s|ing)?|at\s+least|need(?:s|ed)?|shelf[- ]life"
@@ -74,7 +75,7 @@ def parse_offer(text, ask=None, strip=(), explicit_only=False):
         if s:
             t = re.sub(re.escape(str(s)), " ", t, flags=re.I)
     low = SKU_RE.sub(" ", t).lower().strip()
-    low = re.sub(r"\bbudget\b\D{0,20}" + NUM, " ", low)
+    low = BUDGET_RE.sub(" ", low)
     m = OFFER_RE.search(low)
     if m:
         return int(m.group(1).replace(",", ""))
@@ -86,6 +87,14 @@ def parse_offer(text, ask=None, strip=(), explicit_only=False):
     if ask is not None and YES_RE.search(low) and not NO_RE.search(low):
         return ask
     return None
+
+
+def budget_only(text, price):
+    """True when price is written in text only as a budget ("budget 50000"), which is not an offer."""
+    def said(s):
+        return price in {int(n.replace(",", "")) for n in re.findall(NUM, s)}
+    low = text.lower()
+    return said(low) and not said(BUDGET_RE.sub(" ", low))
 
 
 def parse_need_hours(text, meta):
@@ -428,8 +437,11 @@ class Shop(AgentExecutor):
         wait about as long for a reply as ours does (buyer.msg_timeout_s)."""
         if not ctx["items"] or not text.strip():
             return None
-        return await asyncio.to_thread(llm_fallback.read, "seller", text, ctx, pol,
-                                       t0 + pol["buyer"]["msg_timeout_s"], ver, {"task": task_id})
+        reading = await asyncio.to_thread(llm_fallback.read, "seller", text, ctx, pol,
+                                          t0 + pol["buyer"]["msg_timeout_s"], ver, {"task": task_id})
+        if reading and reading["price"] is not None and budget_only(text, reading["price"]):
+            reading = dict(reading, kind="other", price=None)  # the buyer's budget, not an offer
+        return reading
 
     def _strip(self, unit):
         return (unit.get("name"), unit.get("sku"), unit.get("unit"))

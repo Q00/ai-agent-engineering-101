@@ -304,6 +304,15 @@ class SellerA2A(unittest.TestCase):
         self.assertEqual(self.rows("llm_exception")[-1]["why"], "invalid")
         self.assertIn("ask 85000", self.said(steps[1][0]))
 
+    def test_model_offer_that_is_only_the_budget_is_dropped(self):
+        self.write_inventory([self.goods("u-1"), self.goods("u-2")])
+        for price, key in ((50000, "a"), (80000, "b")):                # 80000 would sell below the ask
+            self.answer = {"kind": "offer", "price": price, "sku": "G000f6cda"}
+            steps = self.talk(("I want to buy G000f6cda", key), (f"my budget is {price}, what can you do?", key))
+            self.assertEqual(steps[1][0]["status"]["state"], "TASK_STATE_INPUT_REQUIRED")
+            self.assertIn("ask 85000", self.said(steps[1][0]))
+        self.assertIn("a budget, limit, quantity or hours figure is not a price", self.prompts[0])
+
     def test_model_names_the_sku_of_a_vague_first_message(self):
         self.answer = {"kind": "ask_price", "price": None, "sku": "G000f6cda"}
         (task, _, _), = self.talk(("something to hang over my window, how much?", "a"))
