@@ -1,0 +1,69 @@
+GET Agent Card
+{
+  "name": "Hello Agent",
+  "description": "Says hello back.",
+  "supportedInterfaces": [
+    {
+      "url": "http://127.0.0.1:9000/",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "version": "1.0.0",
+  "capabilities": {},
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "hello",
+      "name": "Say hello",
+      "description": "Replies to any message.",
+      "tags": [
+        "demo"
+      ]
+    }
+  ]
+}
+POST SendMessage
+{
+  "result": {
+    "task": {
+      "id": "143baf13-9570-4774-9b3c-262b613196b5",
+      "contextId": "08318ecc-a5ed-4014-905b-2f0228fd2445",
+      "status": {
+        "state": "TASK_STATE_COMPLETED",
+        "message": {
+          "messageId": "480885d9-6eb5-45c7-9a3b-27cc01e4bbbc",
+          "contextId": "08318ecc-a5ed-4014-905b-2f0228fd2445",
+          "taskId": "143baf13-9570-4774-9b3c-262b613196b5",
+          "role": "ROLE_AGENT",
+          "parts": [
+            {
+              "text": "Hello! You said: hi there"
+            }
+          ]
+        },
+        "timestamp": "2026-10-13T10:22:36.367819Z"
+      },
+      "history": [
+        {
+          "messageId": "hello-lab-1",
+          "contextId": "08318ecc-a5ed-4014-905b-2f0228fd2445",
+          "taskId": "143baf13-9570-4774-9b3c-262b613196b5",
+          "role": "ROLE_USER",
+          "parts": [
+            {
+              "text": "hi there"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "id": 1,
+  "jsonrpc": "2.0"
+}
