@@ -192,6 +192,37 @@ HARD_FLOOR = 300_000         # HQ 11-04: never go bankrupt (< 500,000 is bankrup
 WORST_COST = 0.75            # a supply leaves stock): even at the worst cost (75% of list) keep 300,000
 
 
+def only_sellers(c, buy, hours=24):
+    """HQ 11-04: buy only what sells. A line stays when the SKU sold 3+ times on the market lately, or once here, or
+    buyers asked for it twice where nobody had it (gaps), or a customer asked us for it (reservations)."""
+    since = time.time() - hours * 3600
+    market = dict(c.execute("select sku, count(*) from settles where ts>? group by sku", (since,)).fetchall())
+    ours = dict(c.execute(f"select sku, count(*) from settles where ts>? and seq in ({market_model.ours(c)}) group by sku",
+                          (since,)).fetchall())
+    wanted = {}
+    try:
+        for (skus,) in c.execute("select skus from gaps where ts>?", (since,)):
+            for x in json.loads(skus or "[]"):
+                wanted[x] = wanted.get(x, 0) + 1
+    except Exception:
+        pass
+    asked = set()
+    if RESERVE.exists():
+        for line in RESERVE.read_text(encoding="utf-8").splitlines()[-50:]:
+            try:
+                asked.add(json.loads(line).get("sku"))
+            except ValueError:
+                pass
+    kept, dropped = [], []
+    for x in buy:
+        k = x["sku"]
+        if market.get(k, 0) >= 3 or ours.get(k) or wanted.get(k, 0) >= 2 or k in asked:
+            kept.append(x)
+        else:
+            dropped.append(k)
+    return kept, dropped
+
+
 def never_bankrupt(md, buy):
     """Drop lines from the end until the run, at the worst cost the market can draw, leaves HARD_FLOOR."""
     try:
@@ -218,6 +249,9 @@ def main():
     except Exception as e:
         print(f"[restock] ledger sync failed: {type(e).__name__}: {e}", flush=True)
     buy, why, cash, st = plan(md, c, theta())
+    buy, unsold = only_sellers(c, buy)
+    if unsold:
+        why = [f"not selling, not bought: {', '.join(unsold)}"] + why
     buy, cut = never_bankrupt(md, buy)
     if cut:
         why = [f"bankruptcy guard dropped {cut}"] + why
