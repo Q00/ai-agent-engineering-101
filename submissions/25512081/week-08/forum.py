@@ -36,7 +36,9 @@ REFS = MD / "ledger_refs.json"
 MARKET = "https://market.ourolabs.ai"
 LOOKUPS = 30               # ledger lookups per background check (one takes several seconds)
 CHECK_EVERY = 2 * 60
-BUYER_EVERY = 6 * 60       # the market allows one buyer post per 5 minutes; votes on them are 30% of buyer ALL
+BUYER_EVERY = 5 * 60 + 15  # the market allows one buyer post per 5 minutes; votes on them are 30% of buyer ALL.
+                           # Round 3's first hour: 30 buyer posts with ledger refs averaged 5.5 likes, the 13
+                           # without refs got none, so every slot goes to a post with refs
 SHOP_EVERY = 60 * 60
 INJECTION = re.compile(r"(?i)(for (ai|llm) (buying )?agents|ignore (all |any |your )?(previous|prior) instructions|"
                        r"system prompt|you must (accept|pay|rate|buy)|give (this|the|our) shop \d+ stars?)")
@@ -173,7 +175,8 @@ def price_watch():
 def buyer_post():
     """Alternates two kinds of buyer post: a price watch from the ledger, and what our own purchases showed."""
     st = _load(STATE, {})
-    if st.get("last_post") != "watch":
+    enough = len(_load(MD / "purchases.json", [])) >= 2
+    if st.get("last_post") != "watch" or not enough:      # never waste a slot: fall back to the other kind
         post = price_watch()
         if post:
             _write([post])
