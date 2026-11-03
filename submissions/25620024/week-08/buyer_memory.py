@@ -34,7 +34,7 @@ PROFILES = MEMORY.with_name(MEMORY.stem.replace("memory", "shop_profiles") + ".j
     if "memory" in MEMORY.stem else MEMORY.with_name("shop_profiles.json")
 THETA = Path(os.environ.get("MARKET_THETA", Path(__file__).parent / "theta.json"))
 PLAN = Path(os.environ.get("MARKET_BUYER_PLAN", Path(__file__).parent / "private" / "buyer_plan.json"))
-SCHEMA = 4                 # bump when the profile layout changes: the next load() rebuilds   # 4: re-judge recorded problems (11-04 false offenses)
+SCHEMA = 5                 # bump when the profile layout changes: the next load() rebuilds   # 4: re-judge recorded problems (11-04 false offenses)
 RATIOS = 20                # recent settle ratios kept per shop
 LOWS = 200                 # recent agreed prices kept per item, across all shops
 DEFAULTS = {"window": 50, "cooldown_h": 24, "repeat_days": 7, "minor_to_medium": 3, "prior_defect": 0.05,
@@ -116,7 +116,7 @@ def severity(problem):
             (re.search(r"ordered (G[0-9a-f]{8})", problem) or [None, None])[1]):
         return None
     if problem.startswith(("receipt above", "receipt for", "receipt names")):
-        return "severe"
+        return None          # HQ 11-04: no ban for a bad receipt (the buyer never pays one); Enuri watches the shop
     if problem.startswith("misbehaved (hallucination)"):
         return "medium"
     if problem.startswith("misbehaved"):

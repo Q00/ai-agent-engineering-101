@@ -658,6 +658,44 @@ def probe(q):
     return dict(q, task=t2, probe_offer=int(0.45 * lp), learned=learned), learned
 
 
+RECEIPT_ERRORS = Path(__file__).parent / "private" / "enuri" / "receipt_errors.jsonl"
+
+
+def log_receipt_error(shop, sku, rec, agreed, problem, corrected):
+    """Every wrong receipt, for Enuri's watch list and the record (HQ 11-04: keep the error record well)."""
+    try:
+        RECEIPT_ERRORS.parent.mkdir(parents=True, exist_ok=True)
+        with RECEIPT_ERRORS.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": round(time.time()), "shop": shop, "ordered": sku, "receipt_item": rec.get("item"),
+                                "agreed": agreed, "receipt_price": rec.get("price"), "problem": problem,
+                                "corrected": corrected}, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+def correct_receipt(pick, offer, sku, agreed, ok_items):
+    """Ask the shop once, in a new task, for the ordered product at the agreed price. Returns (task, receipt) when
+    it sends a receipt that now matches, else None."""
+    try:
+        t = send(pick["url"], f"I want to buy {offer['name']} ({sku}). Your last receipt named another product or a "
+                              f"higher price; the agreed price was {agreed}. Please sell {sku} at {agreed}.")
+        if state(t) == "TASK_STATE_INPUT_REQUIRED":
+            t = send(pick["url"], str(agreed), t["id"])
+        if state(t) != "TASK_STATE_COMPLETED":
+            try:
+                rpc(pick["url"], "CancelTask", {"id": t["id"]})
+            except Exception:
+                pass
+            return None
+        rec = receipt_of(t)
+        if rec and rec.get("item") in ok_items and isinstance(rec.get("price"), (int, float)) and rec["price"] <= agreed:
+            log(f"[receipt] corrected on request: {rec}")
+            return t, rec
+    except Exception as e:
+        log(f"[receipt] correction failed: {type(e).__name__}: {e}")
+    return None
+
+
 def accept_policy(order):
     """What the checkout must show before the kit pays. Food that will not last use_within_hours is worth 0."""
     pol = {"cert": True}
@@ -792,6 +830,17 @@ def round3(a, order, shops, mem, started):
             ok_items = {sku, order.get("item"), *(order.get("acceptable") or [])}
             problem = check_receipt(rec, task, rec.get("item") if rec.get("item") in ok_items else sku, agreed)
             log(f"[receipt] {rec}  agreed {agreed}: {problem or 'matches the deal'}")
+            if problem and problem.startswith("receipt") and agreed and time.time() - started < TIME_LIMIT - 40:
+                # HQ 11-04: the market has no refund for a wrong receipt (only warranty on broken goods), and a wrong
+                # receipt is never paid -- so ask the same shop once to put it right at the agreed price
+                fixed = correct_receipt(pick, offer, sku, agreed, ok_items)
+                log_receipt_error(shop["name"], sku, rec, agreed, problem, bool(fixed))
+                if fixed:
+                    task, rec = fixed
+                    log(f"[receipt] put right after: {problem}")
+                    problem = None
+            elif problem and problem.startswith("receipt"):
+                log_receipt_error(shop["name"], sku, rec, agreed, problem, False)
     issues, worst = misbehaviour(sku, asks, offers, texts, outcome)
     issues += notes
     if notes:

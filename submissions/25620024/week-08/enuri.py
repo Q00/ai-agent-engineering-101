@@ -425,6 +425,8 @@ def advise(order, shops, b=None, t=None, cat=None):
             continue
         qa = q.get(shop) or {}
         honest = qa.get("honest") if qa.get("honest") is not None else 0.9
+        if shop in (b.get("receipt_watch") or {}):          # a bad receipt lately: ranked lower, not banned
+            honest *= 0.6
         keep = (budget - min(x, budget)) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
         target = int(lp * t["r3_first_offer"])
         p, hl = (b.get("prices") or {}).get(sku) or {}, honest_low(b, sku)
@@ -514,7 +516,7 @@ def tick(md=Path(".market"), c=None, now=None, force=False):
             "asks": load(ASKS, {}).get("asks", {}), "k": state.get("k", {"goods": 1.0, "food": 1.0}),
             "avoid": sorted(s for s, x in q.items() if x["verdict"] == "avoid"), "where": idx,
             "penalty": state.get("penalty", {}), "enuri_accountability": acc or old.get("enuri_accountability"),
-            "shelf_refused": shelf_refusals(md, now),
+            "shelf_refused": shelf_refusals(md, now), "receipt_watch": receipt_watch(),
             "coverage": {"catalog_skus": n_cat, "shops": n_shops, "skus_in_stock": len(idx),
                          "skus_priced_24h": 0, "stocked_and_priced": 0}}
     book["coverage"].update(skus_priced_24h=len(book["prices"]),
@@ -610,6 +612,23 @@ def forum_votes(tr=None):
     out["by_feature_at_30min"] = {k: stat(v, 30) for k, v in groups.items() if stat(v, 30)}
     out["our_tags_at_30min"] = {t: stat([r for r in ours if r["tag"] == t], 30)
                                 for t in {r["tag"] for r in ours} if stat([r for r in ours if r["tag"] == t], 30)}
+    return out
+
+
+FRIENDLY = HERE / "private" / "friendly.json"   # HQ: friendly shops, never named in our warnings, never penalised
+RECEIPT_RE = re.compile(r"^receipt (?:above|for|names)")
+
+
+def friendly():
+    return set((load(FRIENDLY, {}) or {}).get("shops") or [])
+
+
+def receipt_watch(hours=24):
+    """{shop: [problem, ...]} bad receipts our buyer caught lately (it never pays them; HQ: watch, do not ban)."""
+    out, cut = {}, time.time() - hours * 3600
+    for m in _memory_since(cut):
+        if m.get("shop") and RECEIPT_RE.match(str(m.get("problem") or "")) and m["shop"] not in friendly():
+            out.setdefault(m["shop"], []).append({"ts": m.get("ts"), "item": m.get("item"), "problem": m["problem"]})
     return out
 
 

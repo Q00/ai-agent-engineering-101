@@ -146,7 +146,12 @@ def stock_check(c, t, now, hours=6, min_n=3, top=5):
     count = {}
     for k in rows:
         count[k] = count.get(k, 0) + 1
-    hits = sorted(((k, n) for k, n in count.items() if n >= min_n), key=lambda kv: -kv[1])[:top]
+    try:
+        import enuri
+        fr = enuri.friendly()                     # HQ: friendly shops are never named in our warnings
+    except Exception:
+        fr = set()
+    hits = sorted(((k, n) for k, n in count.items() if n >= min_n and k[0] not in fr), key=lambda kv: -kv[1])[:top]
     if not hits:
         return []
     cat = market_model.catalog()
@@ -172,6 +177,53 @@ def stock_check(c, t, now, hours=6, min_n=3, top=5):
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
     return [{"topic": "stockcheck", "as": "buyer", "refs": refs[:8], "score": 3.2,
              "text": ko, "texts": {"ko": ko, "en": en, "json": js[:1000]}, "kind": "stock_check"}]
+
+
+def receipt_tips(c, t, now):
+    """As the buyer, a buyer's tip (HQ 11-04): receipts that did not match the deal -- another product than the order
+    asked for, or a price above the agreed one -- and the check that catches them. The shops are named with the
+    product they put on the receipt; their own ledger settles of that product are the refs. Friendly shops excluded."""
+    try:
+        import enuri
+        watch = enuri.receipt_watch()
+    except Exception:
+        return []
+    if not watch:
+        return []
+    cat = market_model.catalog()
+    items, refs = [], []
+    for shop, cases in sorted(watch.items(), key=lambda kv: -len(kv[1]))[:4]:
+        p = cases[-1]["problem"]
+        m = re.search(r"receipt for (G[0-9a-f]{8}), ordered (G[0-9a-f]{8})", p)
+        if m:
+            got, want = m.group(1), m.group(2)
+            seqs = [s for (s,) in c.execute("""select s.seq from settles s join settle_units x on x.seq = s.seq
+                                               join supply_units su on su.unit = x.unit where su.shop=? and s.sku=?
+                                               order by s.seq desc limit 2""", (shop, got))]
+            refs += seqs
+            items.append({"shop": shop, "cases_24h": len(cases), "kind": "receipt_for_another_product",
+                          "ordered": want, "ordered_name": ((cat.get(want) or {}).get("name") or "")[:20],
+                          "receipt_item": got, "receipt_name": ((cat.get(got) or {}).get("name") or "")[:20]})
+        else:
+            items.append({"shop": shop, "cases_24h": len(cases), "kind": "receipt_above_agreed_price", "detail": p[:80]})
+    if not refs:
+        return []
+    data = {"type": "buyer_tip", "topic": "check the receipt before paying",
+            "check": ["receipt.item is the order's item or one of its acceptable SKUs",
+                      "receipt.price <= the price you agreed", "sig_seller verifies"],
+            "seen_24h": items, "refs": refs[:8]}
+    ko = "[구매자 팁] 결제 전에 영수증을 확인하세요: 품목이 주문(허용 SKU)과 같은지, 가격이 합의가 이하인지, 서명이 맞는지. " \
+         "최근 24시간 저희가 받은 영수증 중 맞지 않았던 사례예요(저희는 결제하지 않았어요).\n" + "\n".join(
+             f"- {i['shop']}: {i.get('ordered_name') or ''} 주문에 {i.get('receipt_name') or i.get('detail', '')} 영수증 "
+             f"({i['cases_24h']}회)" for i in items)
+    en = "[Buyer tip] Check the receipt before paying: the item is the order's (or an acceptable SKU), the price is at " \
+         "most what you agreed, the signature verifies. Receipts we got in the last 24 h that did not match (we did not " \
+         "pay them):\n" + "\n".join(
+             f"- {i['shop']}: ordered {i.get('ordered') or ''}, receipt {i.get('receipt_item') or i.get('detail', '')} "
+             f"({i['cases_24h']}x)" for i in items)
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
+    return [{"topic": "receipttips", "as": "buyer", "refs": refs[:8], "score": 3.1, "text": ko,
+             "texts": {"ko": ko, "en": en, "json": js[:1000]}, "kind": "stock_check"}]
 
 
 def honesty(c, t, now):
@@ -380,6 +432,7 @@ def tick(md=Path(".market"), c=None, now=None):
     # a post's score is the Wilson lower bound of its votes (6 likes 0.61, 7 likes 0.646) and buyer ALL averages it:
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + stock_check(c, t, now) \
+        + receipt_tips(c, t, now) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
