@@ -61,7 +61,7 @@ def sell_through(c, hours=6, old_h=12):
 def health(shop):
     inv = _inv()
     start, bal, profit = inv.get("start") or 5_000_000, inv.get("balance"), (shop or {}).get("profit")
-    return {"balance": bal, "profit": profit, "cash_above_fatal": None if bal is None else round(bal - 0.45 * start),
+    return {"balance": bal, "profit": profit, "cash_above_fatal": None if bal is None else round(bal - 0.25 * start),
             "loss_room": None if profit is None else round(profit + 0.15 * start)}
 
 
