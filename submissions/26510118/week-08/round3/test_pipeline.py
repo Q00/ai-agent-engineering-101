@@ -250,16 +250,26 @@ def test_restock(fake: Fake):
     check("the market's best seller in a category becomes its representative", GEOTJEORI in one2 and PAKIMCHI not in one2)
     out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, [], [], rules, NOW)
     buy = out["buy"]
-    check("empty shelf: 10 lines of one unit each, stage 1 only", len(buy) == 10 and all(b["qty"] == 1 and b["sku"] in one for b in buy),
-          [b["sku"] for b in buy])
+    check("empty shelf, no evidence yet: 10 lines of one unit each, stage 1 in its own order",
+          [b["sku"] for b in buy] == one[:10] and all(b["qty"] == 1 for b in buy), [b["sku"] for b in buy])
+    check("the kit runs restock every 20 minutes: a product we sold is kept at 3, a hot category starts at 2",
+          restock.RUN_EVERY == 1200 and restock.SOLD_TARGET == 3 and restock.HOT_TARGET == 2)
+    hot = {"by_category": {CATALOG[FILLERS[11]]["category"]: {"sold_24h": 5}}}
+    asked = [{"category": CATALOG[FILLERS[10]]["category"], "ts": NOW - H}, {"category": KIMCHI_CAT, "ts": NOW - 2 * DAY}]
+    out, _ = restock.plan(inv([]), CATALOG, DEMAND, hot, [], [], rules, NOW, {"테스트9": 1}, asked)
+    skus = [b["sku"] for b in out["buy"]]
+    check("evidence first: the market's 5 sales (2 units), a wanted post, one order of our buyer; then the stage order "
+          "(an order 2 days old counts for nothing)",
+          skus[:6] == [FILLERS[11], FILLERS[9], FILLERS[10], BEDDING, WATER, PAKIMCHI] and out["buy"][0]["qty"] == 2
+          and all(b["qty"] == 1 for b in out["buy"][1:]), out["buy"])
     shelf = [unit_row(f"u-{s}", s, CATALOG[s]["list_price"] // 2, 500 if CATALOG[s]["kind"] == "food" else None) for s in one]
     out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("full stage 1 shelf, gate closed: buys nothing", out["buy"] == [], out)
     sales = [{"sku": PAKIMCHI, "ts": NOW - H}] * 10
     out, info = restock.plan(inv(shelf), CATALOG, DEMAND, {}, sales, [], rules, NOW)
     skus = [b["sku"] for b in out["buy"]]
-    check("10 sales open the gate: the sold product first (target 2), then stage 2", skus[:1] == [PAKIMCHI]
-          and {PAD, BED, KIMCHI} <= set(skus), f"{skus} {info['gate']}")
+    check("10 sales open the gate: the sold product first (target 3, so 2 more), then stage 2",
+          out["buy"][0] == {"sku": PAKIMCHI, "qty": 2} and {PAD, BED, KIMCHI} <= set(skus), f"{out['buy']} {info['gate']}")
     out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW)
     check("a buyer turned away for lack of it: one more", out["buy"] == [{"sku": WATER, "qty": 1}], out)
     old = [u for u in shelf if u["sku"] != PAKIMCHI] + [unit_row("u-near", PAKIMCHI, 9000, 10)]
@@ -272,7 +282,7 @@ def test_restock(fake: Fake):
     late = [{"sku": PAKIMCHI, "ts": end - 2 * DAY - H}] * 3 + [{"sku": WATER, "ts": end - 2 * DAY - H}]
     empty_now = [u for u in shelf if u["sku"] not in (PAKIMCHI, WATER)]
     out, _ = restock.plan(inv(empty_now), CATALOG, DEMAND, {}, late, [], rules, end - 2 * DAY)
-    check("wind-down (3 days left): only products selling 2 a day are refilled", out["buy"] == [{"sku": PAKIMCHI, "qty": 2}], out)
+    check("wind-down (3 days left): only products selling 2 a day are refilled", out["buy"] == [{"sku": PAKIMCHI, "qty": 3}], out)
     out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, [], [], rules, end - 3 * H)
     check("last 6 h: buys nothing", out["buy"] == [], info)
     focus = dict(rules, drop_categories=["김치"], focus_categories=["주스/코코아/생수"])

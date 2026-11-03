@@ -1,5 +1,5 @@
-"""Round 3 restock hook (S1, and the hourly ledger collection): the kit runs it every 60 s
-and buys what it prints.
+"""Round 3 restock hook (S1, and the hourly ledger collection): the kit runs it every 20 minutes
+(RUN_EVERY; every 60 s until the 11/3 change) and buys the first 10 lines it prints.
 
     python restock.py --state .market
     {"buy": [{"sku": "...", "qty": 1}, ...]}            (or "bankrupt": true)
@@ -13,8 +13,13 @@ does not count as on the shelf; S5 sells it off). Exploration phase:
   stage 2   once our own sales reach 10: a cheaper second product (near 0.7 of the
             median) in the 40 largest categories, and the categories whose products all
             list above 60,000 (up to 400,000)
-  targets   1 per listed product; 2 once it has sold; +1 if a buyer was turned away for
-            lack of it in the last day; at most 4
+  targets   1 per listed product; 3 once it has sold, and 2 from the start in a category the
+            whole market sold 3 or more of in the last day (a refill waits for the next run, up
+            to 20 minutes); +1 if a buyer was turned away for lack of it in the last day; at most 4
+  order     only 10 lines a run, so what comes first matters while the first day's shelf fills
+            (about 12 runs): refills of what we sold, then the products with the most evidence
+            of demand (the market's sales of the category in the last day, our buyer's orders for
+            it, a wanted post), then the stage order. With no evidence yet it is the stage order.
   limits    stock at cost up to 2,500,000 and the balance kept at 2,500,000 or more,
             planning as if every unit came in at the dearest cost (75% of list)
   wanted    a category the analysis found wanted (another agent's "wanted" post on the
@@ -39,6 +44,11 @@ import pricing
 CAP = 2_500_000          # stock at cost
 RESERVE = 2_500_000      # balance kept
 LINES = 10               # the kit buys at most 10 lines a run
+RUN_EVERY = 20 * 60      # seconds between the kit's runs of this hook (60 until 11/3); set it to the kit's
+SLOW = RUN_EVERY >= 600  # refills wait 10 minutes or more: keep one more unit of what sells
+SOLD_TARGET = 2 + SLOW   # a product we have sold
+HOT, HOT_TARGET = 3, 1 + SLOW   # a category the market sold this many of in a day: its products start here
+WANTED_WEIGHT = 2        # a wanted category counts as this many sales when ordering what to buy first
 MAX_TARGET = 4
 GATE = 10                # our settled sales before stage 2
 MAX_PRICE = 60_000       # stage 1 list prices
@@ -109,9 +119,23 @@ def wanted_skus(catalog: dict, demand: list, wanted: dict, listed: set) -> list:
     return out
 
 
+def evidence(catalog: dict, summary: dict, orders: list, wanted: dict, now: float):
+    """sku -> how much says its category sells: the market's sales in the last day, our buyer's orders
+    for it in the last day, and WANTED_WEIGHT for a wanted category. 0 when nothing says so yet."""
+    market = {c: v.get("sold_24h", 0) for c, v in (summary.get("by_category") or {}).items()}
+    ordered = Counter(o.get("category") for o in orders if (o.get("ts") or 0) >= now - 86400)
+
+    def score(sku: str) -> float:
+        cat = catalog[sku]["category"]
+        hot = cat in wanted or cat.split(">")[-1] in wanted
+        return market.get(cat, 0) + ordered.get(cat, 0) + (WANTED_WEIGHT if hot else 0)
+    return score
+
+
 def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, refusals: list,
-         rules: dict, now: float, wanted: dict | None = None) -> tuple[dict, dict]:
-    """({"buy": [...]} or bankruptcy, a few numbers for the log). rules: the seller's rules in force."""
+         rules: dict, now: float, wanted: dict | None = None, orders: list | None = None) -> tuple[dict, dict]:
+    """({"buy": [...]} or bankruptcy, a few numbers for the log). rules: the seller's rules in force;
+    orders: our buyer's order records (what buyers ask for)."""
     units = inv.get("units") or []
     if inv.get("round", 0) < 3:
         return {"buy": []}, {"note": "before Round 3"}
@@ -129,9 +153,13 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     if gate:
         for s in two:
             targets.setdefault(s, 1)
+    market = {c: v.get("sold_24h", 0) for c, v in (summary.get("by_category") or {}).items()}
+    for s in targets:
+        if market.get(catalog[s]["category"], 0) >= HOT:
+            targets[s] = max(targets[s], HOT_TARGET)
     for s in sold:
         if s in catalog:
-            targets[s] = max(targets.get(s, 0), 2)
+            targets[s] = max(targets.get(s, 0), SOLD_TARGET)
     for s, n in refused.items():
         targets[s] = targets.get(s, 1) + 1
     for s in wanted_skus(catalog, demand, wanted or {}, set(targets)):
@@ -150,7 +178,9 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     usable = Counter(u["sku"] for u in units if u.get("grade") != "expired"
                      and (u.get("expires_at") or float("inf")) > now and not pricing.near_expiry(u, now))
     rank = lambda s: 0 if sold.get(s) else 1 if s in one else 2
-    gaps = sorted(((rank(s), s, t - usable[s]) for s, t in targets.items() if t > usable[s]), key=lambda g: (g[0], -g[2]))
+    score = evidence(catalog, summary, orders or [], wanted or {}, now)
+    gaps = sorted(((rank(s), s, t - usable[s]) for s, t in targets.items() if t > usable[s]),
+                  key=lambda g: (g[0] > 0, -score(g[1]), g[0], -g[2]))       # refills, then evidence, then stage
     value = sum(u.get("cost", 0) for u in units)
     balance = inv.get("balance", 0)
     buy, spend = [], 0.0
@@ -185,7 +215,7 @@ def main() -> int:
     wanted = (common.read_json(common.MARKET_DIR / "analysis" / "wanted.json", {}) or {}).get("categories") or {}
     out, info = plan(inv, catalog, common.read_json(state_dir / "demand.json", []) or [],
                      common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {},
-                     sales, common.records("refusals"), common.rules()["seller"], now, wanted)
+                     sales, common.records("refusals"), common.rules()["seller"], now, wanted, common.records("orders"))
     print(f"[restock] {info}, buying {len(out['buy'])} line(s)", flush=True)
     if state.get("round_start") and now - state["round_start"] > WARN_AFTER and len(sales) < WARN_BELOW \
             and now - state.get("warned", 0) > 3600:
