@@ -27,7 +27,8 @@ def main():
     with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output), \
             patch.dict(os.environ, {'R3_ENABLE_LIVE': '0'}), \
             patch('core.invoke', forbidden), patch('urllib.request.urlopen', forbidden), \
-            patch('httpx.HTTPTransport.handle_request', forbidden):
+            patch('httpx.HTTPTransport.handle_request', forbidden), \
+            patch('httpx.AsyncHTTPTransport.handle_async_request', forbidden):
         result = unittest.TextTestRunner(stream=output, verbosity=2).run(suite)
     guards = []
     env = dict(os.environ, R3_ENABLE_LIVE='0', PYTHONDONTWRITEBYTECODE='1')
