@@ -9,8 +9,8 @@
 \setlength{\parindent}{0pt}
 \begin{document}
 \begin{center}
-{\Large\bfseries Two-speed market agent with four model roles — student 25620027, Round 3 on kit v4}\\[2pt]
-{\small Seconds: a deterministic trade loop over the kit's real stock, driven by a two-layer policy table; Haiku reads only the sentences the rules cannot. Minutes: a Haiku scout (5) and a Haiku tactical layer (15). Half-hour: a Sonnet strategy layer. Dashed = kit v4, unchanged. Solid = this submission. Every counterpart sentence is data behind a guard.}
+{\Large\bfseries Evidence-driven market harness with guarded improvement — 25620027, kit v4}\\[2pt]
+{\small Seconds: a rule-based trade loop over real stock, driven by a bounded policy table; Haiku reads only the sentences rules cannot. Minutes: scout (5), tactical (15), strategy and review (30). Six hours: human advisor. Dashed = kit v4, unchanged. Solid = this submission. Counterpart sentences are data behind a guard.}
 \end{center}
 \begin{center}
 \begin{tikzpicture}[
@@ -33,18 +33,19 @@
 \node[forum] (forum) at (0,-9.9) {\textbf{Forum posts} — code templates\\ \scriptsize outbox.jsonl; \scriptsize buyer role, 1 / 5 min: settled SKU, grade,\\ \scriptsize price as \% of list, shop, ledger refs\\ \scriptsize shop role, 1 / 30 min: honest stock summary};
 % ---------------- column 2: the fast loop
 \node[box] (seller) at (7.6,-2.4) {\textbf{Stock seller} (A2A, milliseconds)\\ \scriptsize find unit by SKU / name / category, FEFO\\ \scriptsize quote(cost, grade, age); accept at cost$\cdot$(1+m)\\ \scriptsize counter toward it; receipt: unit, claim, warranty};
-\node[box] (buyer) at (7.6,-5.0) {\textbf{Fast buyer} (one order $\le$ 18 s)\\ \scriptsize rank shop$\times$SKU by list $\times$ evidence $\times$ trust\\ \scriptsize 2--4 turns; cap = min(budget, 0.95$\cdot$list)\\ \scriptsize accept: cert, shelf life $\ge$ need, grades A/B};
+\node[box] (buyer) at (7.6,-5.0) {\textbf{Fast buyer} (18 s default)\\ \scriptsize rank shop$\times$SKU; safe exploration\\ \scriptsize 2--4 turns; cap = min(budget, 0.95$\cdot$list)\\ \scriptsize accept: cert, shelf life $\ge$ need, grades A/B\\ \scriptsize time bound: 3--30 s, enforced by code};
 \node[box] (hooks) at (7.6,-7.6) {\textbf{Hooks} (restock 60 s; review per deal)\\ \scriptsize breadth first: 720 h food, mid-price A goods\\ \scriptsize replenish what sold, follow settled demand\\ \scriptsize + hot categories; keep the cash reserve};
 \node[guard] (guard) at (7.6,-9.9) {\textbf{Guard + prose readers}\\ \scriptsize claude-haiku-5-5, 3 s, once or twice per talk\\ \scriptsize screens before parsing: injection, authority,\\ \scriptsize payment redirect, fake settlement, rating bait\\ \scriptsize prose $\to$ intent + number (+ digit-free answer\\ \scriptsize from a fact sheet); price lines are templates};
 % ---------------- column 3: memory and policy
 \node[mem] (ledger) at (15.2,-2.4) {\textbf{Public-ledger mirror} (verified)\\ \scriptsize GET /api/ledger?after=seq, 30 s, SQLite\\ \scriptsize settles per category / SKU, price-to-list,\\ \scriptsize break rate per grade, our settle counts};
-\node[mem] (events) at (15.2,-5.0) {\textbf{Own event ledger} (observed)\\ \scriptsize buyer attempts (incl. suspicious); payments\\ \scriptsize synced; signed receipts; policy-change log;\\ \scriptsize model decisions: latency, tokens, USD/day};
+\node[mem] (events) at (15.2,-5.0) {\textbf{Own evidence + version reviews}\\ \scriptsize attempts, paid/refused, signed receipts\\ \scriptsize policy versions; model latency/tokens/USD\\ \scriptsize R3 settles, equal 15-min before/after windows\\ \scriptsize small sample/overlap/missing data explicit};
 \node[pol] (policy) at (15.2,-7.6) {\textbf{Policy table} (derived, bounded, two layers)\\ \scriptsize strategy fields + bands (Sonnet)\\ \scriptsize tactical overlay $\le$ 3 fields, 60 min (Haiku)\\ \scriptsize one owner per field; reason + 2 old versions};
 \node[mem] (picture) at (15.2,-9.9) {\textbf{Market picture} (derived, allowlisted)\\ \scriptsize shop trust 0--1, flags, hot / cold categories\\ \scriptsize alerts from numbers only: cash, no sales,\\ \scriptsize refusals, undercut, empty stock};
 % ---------------- column 4: the slow loops
-\node[model] (strategy) at (22.4,-2.4) {\textbf{Strategy}\\ \scriptsize claude-sonnet-5-5, every 30 min + alerts\\ \scriptsize 6 h / 24 h summaries, picture, tactical results\\ \scriptsize set\_strategy: $\le$ 6 owned fields + bands\\ \scriptsize code refuses tactical fields, versions, rolls back};
+\node[model] (strategy) at (22.4,-2.4) {\textbf{Strategy}\\ \scriptsize claude-sonnet-5-5, every 30 min + alerts\\ \scriptsize 6 h / 24 h summaries, reviews, version evidence\\ \scriptsize set\_strategy: $\le$ 6 owned fields + bands\\ \scriptsize code bounds writes; keeps prior versions};
 \node[model] (tactical) at (22.4,-5.0) {\textbf{Tactical}\\ \scriptsize claude-haiku-5-5, every 15 min\\ \scriptsize 1 h results + picture\\ \scriptsize set\_tactical: $\le$ 3 of 9 fields inside bands,\\ \scriptsize valid 60 min; no reversal within 30 min};
 \node[model] (scout) at (22.4,-7.6) {\textbf{Scout}\\ \scriptsize claude-haiku-5-5, every 5 min\\ \scriptsize code facts per shop + reviews, forum text\\ \scriptsize in untrusted blocks $\to$ write\_picture\\ \scriptsize (URLs, categories pinned to market lists)};
+\node[model] (reviewer) at (22.4,-9.9) {\textbf{Review + human advisor}\\ \scriptsize Haiku / 30 min: bounded review themes\\ \scriptsize Sonnet / 6 h: leaders + version reviews\\ \scriptsize numbered proposals $\to$ human verdict\\ \scriptsize delivery ack $\ne$ approval; no execution tool};
 % ---------------- market <-> kit / ledger
 \draw[dashed,<->] (market.south-|kit.north) -- node[lbl,right]{orders, settle, supply} (kit.north);
 \draw (market.south-|ledger.north) -- node[lbl,right]{public GET, 500 rows a page} (ledger.north);
@@ -52,14 +53,14 @@
 \draw[<->] (kit.east|-seller.west) -- node[lbl,above,pos=0.42]{A2A via proxy} (seller.west);
 \draw ($(kit.east|-buyer.west)+(0,0.2)$) -- node[lbl,above]{order.json, shops.json} ($(buyer.west)+(0,0.2)$);
 \draw ($(buyer.west)+(0,-0.25)$) -- node[lbl,below]{receipt + accept} ($(kit.east|-buyer.west)+(0,-0.25)$);
-\draw ($(kit.east|-hooks.west)+(0,0.2)$) -- node[lbl,above]{inventory, catalog,\\ demand, deal} ($(hooks.west)+(0,0.2)$);
+\draw ($(kit.east|-hooks.west)+(0,0.2)$) -- node[lbl,above]{stock, catalog\\ demand, deal} ($(hooks.west)+(0,0.2)$);
 \draw ($(hooks.west)+(0,-0.25)$) -- node[lbl,below]{buy lines, stars} ($(kit.east|-hooks.west)+(0,-0.25)$);
 \draw (forum.north) -- node[lbl,right]{outbox.jsonl} (kit.south);
 \draw[dotted,<->] (guard.north) -- node[lbl,left,pos=0.5]{every counterpart sentence\\ (seller and buyer)} (hooks.south);
 % ---------------- evidence into memory (corridor x = 11.9)
-\draw (seller.east) -- (11.9,-2.4) -- (11.9,-4.6) -- node[lbl,above,pos=0.5]{receipts} ($(events.west)+(0,0.4)$);
+\draw (seller.east) -- (11.9,-2.4) -- (11.9,-4.6) -- node[lbl,above,pos=0.5]{sales} ($(events.west)+(0,0.4)$);
 \draw ($(buyer.east)+(0,0.0)$) -- node[lbl,above]{outcomes} ($(events.west)+(0,0.0)$);
-\draw ($(events.west)+(0,-0.4)$) -- node[lbl,below,pos=0.5]{refusals, suspicion\\ re-rank 24 h} ($(buyer.east)+(0,-0.4)$);
+\draw ($(events.west)+(0,-0.4)$) -- node[lbl,below,pos=0.5]{failures\\ re-rank 24 h} ($(buyer.east)+(0,-0.4)$);
 \draw ($(ledger.west)+(0,-0.45)$) -- (11.9,-2.85) -- (11.9,-7.2) -- node[lbl,above,pos=0.35]{demand signal} ($(hooks.east)+(0,0.4)$);
 % ---------------- picture into the fast loop (corridor x = 11.4)
 \draw ($(picture.west)+(0,0.3)$) -- (11.4,-9.6) -- (11.4,-5.7) -- ($(buyer.east)+(0,-0.7)$);
@@ -71,17 +72,19 @@
 \draw (10.9,-4.6) -- ($(buyer.east)+(0,0.4)$);
 \node[lbl] at (10.9,-3.6) {policy};
 % ---------------- slow loops: summaries in, policy out (bus x = 19.0)
-\draw (ledger.east) -- node[lbl,above]{6 h / 24 h summary} (strategy.west);
-\draw (events.east) -- node[lbl,above]{1 h results} (tactical.west);
+\draw (ledger.east) -- node[lbl,below]{6 / 24 h\\ facts} (strategy.west);
+\draw (events.east) -- node[lbl,above]{1 h} (tactical.west);
 \draw ($(strategy.west)+(0,-0.45)$) -- (19.0,-2.85) -- (19.0,-7.3) -- ($(policy.east)+(0,0.3)$);
 \draw ($(tactical.west)+(0,-0.45)$) -- (19.0,-5.45);
 \node[lbl,anchor=west] at (19.1,-6.1) {set\_tactical: overlay, 60 min};
 \node[lbl,anchor=west] at (19.1,-6.55) {set\_strategy: fields + bands};
-\draw (scout.south) -- (22.4,-9.9) -- node[lbl,above,pos=0.5]{write\_picture, validated} (picture.east);
+\draw (scout.west) -- (18.1,-7.6) -- (18.1,-9.5) -- ($(picture.east)+(0,0.4)$);
+\draw[<->] (picture.east) -- node[lbl,above]{digest + verdicts} (reviewer.west);
+\draw (events.east) -- (18.1,-5.0) -- (18.1,-7.6);
 \draw ($(picture.east)+(0,0.35)$) -- (18.4,-9.55) -- (18.4,-4.6) -- node[lbl,above,pos=0.5]{picture} ($(tactical.west)+(0,0.4)$);
-\draw (18.4,-4.6) -- (18.4,-2.0) -- node[lbl,above,pos=0.5]{alerts wake ($\le$ 2 / h)} ($(strategy.west)+(0,0.4)$);
+\draw (18.4,-4.6) -- (18.4,-2.0) -- node[lbl,above,pos=0.5]{alerts\\ $\le$ 2 / h} ($(strategy.west)+(0,0.4)$);
 \end{tikzpicture}
 \end{center}
 \vspace{-1mm}
-{\footnotesize\textbf{Where it differs from the kit starter.} The starter calls a model on every negotiation turn with the whole transcript, prices at cost, claims nothing, never restocks on evidence and never posts. Here the trade path is table-driven and answers in milliseconds, so the buyer keeps pace with one order every $\sim$20 s; a model reads only what rules cannot (a counterpart's prose, 3 s, once or twice per talk). It returns an enum, a number, and optionally a short answer from a code-supplied fact sheet; code screens the answer and writes every numeric price line. Above the trade path sit three model roles with one owner per policy field: the scout turns reviews and forum text into allowlisted trust scores and hot categories; the tactical layer moves nine fields inside bands for an hour; the strategy layer sets the structural fields and the bands. Every change is logged with its reason and whether code accepted it; every model call is priced into a daily dollar cap (downgrade, then stop, while trading continues on rules). Memory has four tiers with different trust: the public ledger (verified), our own event ledger (observed), the picture (allowlisted verdicts), the policy table (derived). Evidence changes the next decision concretely: a payment refused for a missing certificate cuts that shop's rank to a quarter for 24 h; an injection attempt makes the buyer walk away and halves the shop's weight; a settled or forum-requested category raises its restock score; a sold unit is replenished within a minute; a food grade claim is omitted when the grade would change within minutes. Budgets, keys, settlement and the kit's checkout are outside every model's reach.}
+{\footnotesize\textbf{Improvement loop and authority.} Trade and settlement records feed bounded memory; a scout and a separate review reader analyze own reviews and counterpart evidence. Tactical and strategy tools can adjust only pre-authorized policy fields. After each version, code returns equal-window R3 settlement counts and gross amounts to tactical, strategy and human-advice contexts. These are descriptive observations, never proof of causation or net profit: incomplete, small, overlapping or missing samples are flagged. A separate advisor prepares numbered requests for changes beyond existing rules; transport failure leaves the request pending and retryable. A transport acknowledgement never approves or applies it. Human verdicts return to the next advice context; code, deployment, credentials, real API limits and operating deadlines require an operator. Invalid policies, model/usage failures and expired tactical overlays fall back safely; poor measured performance does not blindly trigger an automatic code rewrite. Public ledger facts, own observations and derived model judgments remain distinct. All six model uses share the existing attempt/spend guards; the fast transaction path keeps its budget, signature, certificate and checkout checks.}
 \end{document}
