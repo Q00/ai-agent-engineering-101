@@ -345,7 +345,7 @@ class EventLedger:
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
             rows = db.execute(
                 """SELECT ts, role, outcome, detail FROM loop_runs
-                WHERE ts > ? ORDER BY ts LIMIT 500""",
+                WHERE ts > ? ORDER BY ts DESC, id DESC LIMIT 500""",
                 (since,),
             ).fetchall()
         return [
@@ -355,7 +355,7 @@ class EventLedger:
                 "outcome": str(outcome),
                 "detail": str(detail or ""),
             }
-            for ts, role, outcome, detail in rows
+            for ts, role, outcome, detail in reversed(rows)
         ]
 
     def tactical_signals(self, hours: float) -> dict[str, int]:
@@ -405,7 +405,8 @@ class EventLedger:
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
             rows = db.execute(
                 """SELECT ts, actor, layer, field, before, after, reason, accepted, note
-                FROM policy_changes WHERE ts >= ? ORDER BY ts LIMIT 200""",
+                FROM policy_changes WHERE ts >= ?
+                ORDER BY ts DESC, id DESC LIMIT 200""",
                 (since,),
             ).fetchall()
         return [
@@ -420,7 +421,17 @@ class EventLedger:
                 "accepted": bool(accepted),
                 "note": str(note or "")[:80],
             }
-            for ts, actor, layer, field, before, after, reason, accepted, note in rows
+            for (
+                ts,
+                actor,
+                layer,
+                field,
+                before,
+                after,
+                reason,
+                accepted,
+                note,
+            ) in reversed(rows)
         ]
 
     def record_model_decision(  # noqa: PLR0913 - one row, explicit columns
