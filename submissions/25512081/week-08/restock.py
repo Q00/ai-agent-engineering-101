@@ -42,6 +42,12 @@ MAX_LINE_COST = 300_000    # one category's buy never ties up more than this (on
 PLANNER_EVERY = 60 * 60    # opus with tools: the costliest call; the code baseline restocks every minute between
 LESSONS_EVERY = 6 * 3600   # lessons.py: failures of the last day -> rules the manager and the buyer read
 PLAN_FRESH = 90 * 60       # plan lines older than this are dropped
+END_TS = 1794927540        # Round 3 ends Tue Nov 17 23:59 KST
+ENDGAME = 24 * 3600        # the last day buys nothing: stock left at the end is cost already paid, so it is sold off
+# Our buyer sees every competitor's stock of the categories it is ordered (.market/competitors.json): a category
+# few shops hold gets more of our stock, one many shops hold gets less.
+FEW_SHOPS, MANY_SHOPS = 1, 5
+COMP_FRESH = 12 * 3600
 
 
 def log(msg):
@@ -75,8 +81,19 @@ def read_ledger(st, catalog):
             if not rows:
                 break
             for r in rows:
+                d = r.get("data") or {}
+                if r.get("kind") == "broken":            # market-wide break rate per grade, for warranties
+                    g = st["unit_grade"].get(str(d.get("unit")), "?")
+                    st["breaks"].setdefault(g, [0, 0])[0] += 1
                 if r.get("kind") == "settle":
-                    sku = (r.get("data") or {}).get("item")
+                    sku = d.get("item")
+                    if (catalog.get(sku) or {}).get("kind") == "goods":
+                        st["breaks"].setdefault(d.get("grade") or "?", [0, 0])[1] += 1
+                        if d.get("unit"):
+                            st["unit_grade"][str(d["unit"])] = d.get("grade") or "?"
+                    lp_ = (catalog.get(sku) or {}).get("list_price")
+                    if d.get("shop") and d.get("amount") and lp_:     # price per shop, for the buyers' forum
+                        st["shop_px"][d["shop"]] = (st["shop_px"].get(d["shop"], []) + [[r["seq"], round(d["amount"] / lp_, 3)]])[-20:]
                     cat = (catalog.get(sku) or {}).get("category")
                     amount, lp = (r.get("data") or {}).get("amount"), (catalog.get(sku) or {}).get("list_price")
                     if cat and amount and lp:              # what the market pays, as a share of list
@@ -90,6 +107,10 @@ def read_ledger(st, catalog):
             if len(rows) < 500:
                 break
     st["seq"] = seq
+    st["unit_grade"] = dict(list(st["unit_grade"].items())[-5000:])
+    tmp = Path(".market") / "break_rates.tmp"
+    tmp.write_text(json.dumps(st["breaks"]), encoding="utf-8")
+    tmp.replace(Path(".market") / "break_rates.json")
 
 
 def track_my_sales(st, inv):
@@ -117,9 +138,18 @@ def targets(st, demand):
         n = round(TOTAL_UNITS * p / total) + (1 if st["sold"].get(cat) else 0)
         if (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48:
             n = min(n, 2)                    # food that spoils in two days: never hold much
+        c = competition(cat)
+        if c is not None and n > 0:
+            n = round(n * (1.5 if c <= FEW_SHOPS else 0.6 if c >= MANY_SHOPS else 1.0)) or 1
         if n > 0:
             out[cat] = min(n, MAX_PER_CAT)
     return out
+
+
+def competition(cat):
+    """How many other shops held this category when our buyer last saw it (None if not seen lately)."""
+    c = load(Path(".market") / "competitors.json", {}).get("cats", {}).get(cat)
+    return c["shops"] if c and time.time() - c["ts"] < COMP_FRESH else None
 
 
 def plan_lines(sd, st, catalog, room):
@@ -171,7 +201,7 @@ def main():
     catalog = catalog_of(sd)
     st = load(sd / "restock_state.json", {})
     for k, v in (("pop", {}), ("sku_pop", {}), ("sold", {}), ("sold_log", []), ("settles", 0),
-                 ("sku_px", {}), ("cat_px", {})):
+                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {})):
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
 
@@ -189,7 +219,11 @@ def main():
     room = min(cash, STOCK_CAP - stock_cost)
     medians = {d["category"]: d["median_price"] for d in demand}
     want = targets(st, demand)
-    if inv.get("round", 0) >= 3 and time.time() - st.get("planner_ts", 0) > PLANNER_EVERY:
+    endgame = time.time() > END_TS - ENDGAME
+    if endgame:
+        want, room = {}, 0
+        log("last day of the round: no new stock, the seller is selling off")
+    if inv.get("round", 0) >= 3 and not endgame and time.time() - st.get("planner_ts", 0) > PLANNER_EVERY:
         st["planner_ts"] = time.time()
         subprocess.Popen([sys.executable, "planner.py"], start_new_session=True,
                          stdout=open(sd / "planner.out", "a"), stderr=subprocess.STDOUT)
@@ -205,7 +239,7 @@ def main():
         log(f"forum skipped: {e}")
     order = sorted(want, key=lambda c: (-(st["pop"].get(c, 0) + 5 * st["sold"].get(c, 0)), medians.get(c, 0)))
 
-    buy = plan_lines(sd, st, catalog, room)
+    buy = plan_lines(sd, st, catalog, room) if not endgame else []
     room -= sum(catalog[b["sku"]]["list_price"] * 0.6 * b["qty"] for b in buy)
     for cat in order:
         gap = want[cat] - held.get(cat, 0)

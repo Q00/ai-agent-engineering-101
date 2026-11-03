@@ -135,8 +135,14 @@ def avoid():
     return out | {s for s, n in by.items() if n >= 2}
 
 
-def break_rate():
-    """Share of our goods purchases that broke, of those old enough to have broken (6 h), with a prior of 1 in 10:
-    the market does not publish it."""
-    old = [p for p in _load(PURCHASES, []) if p.get("kind") == "goods" and time.time() - p.get("ts", 0) > BREAK_WINDOW + 600]
-    return (1 + sum(1 for p in old if p.get("broke_at"))) / (10 + len(old))
+def break_rate(grade=None):
+    """Chance a goods unit breaks after the sale (the market does not publish it). The market-wide count first:
+    restock.py tallies "broken" entries on the ledger against goods settles, per grade (break_rates.json); then our
+    own purchases old enough to have broken (6 h). Prior: 1 in 10."""
+    rates = _load(MD / "break_rates.json", {})
+    rows = [rates[grade]] if grade in rates else list(rates.values())
+    broken, sold = sum(r[0] for r in rows), sum(r[1] for r in rows)
+    old = [p for p in _load(PURCHASES, []) if p.get("kind") == "goods" and time.time() - p.get("ts", 0) > BREAK_WINDOW + 600
+           and (grade is None or p.get("grade") == grade)]
+    broken += sum(1 for p in old if p.get("broke_at"))
+    return (1 + broken) / (10 + sold + len(old))

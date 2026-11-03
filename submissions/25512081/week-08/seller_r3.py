@@ -73,6 +73,18 @@ SHARE_BOUNDS = (0.55, 0.97)
 CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
 CLEARANCE_FLOOR = 0.6     # share of cost
 WARRANTY = {"A": 6}       # goods grade -> warranty hours; B and C goods carry none
+# A warranty refunds the whole price if the unit breaks within it, and goods break only in the 6 h after the sale,
+# so a 6 h warranty costs (break rate) x price. The market does not publish the rate, but every break is a
+# "broken" entry on the ledger: restock.py counts them per grade against goods settles (.market/break_rates.json).
+# The warranty stays while the grade's rate (with a prior of 1 in 20) is under MAX_BREAK_FOR_WARRANTY.
+MAX_BREAK_FOR_WARRANTY = 0.10
+# Our buyer collects every competitor's first ask (.market/competitors.json); we open at most UNDERCUT of the
+# lowest recent one for the same SKU, never under the floor.
+UNDERCUT, COMP_FRESH = 0.98, 6 * 3600
+# The last day of the round: stock left at the end is cost already paid, so selling it at any price raises the
+# final balance. Opening share and floor fall in two steps (share factor, floor as a share of cost).
+END_TS = 1794927540        # Tue Nov 17 23:59 KST
+ENDGAME = ((6 * 3600, 0.6, 0.25), (24 * 3600, 0.8, 0.6))
 MIN_FOOD_HOURS = 2        # never ship food with less shelf life left than this
 # A food order is worth nothing to the buyer unless the food lasts its use_within_hours (agent.md), and our seller
 # never sees the order. So: ship food that lasts what the buyer says it needs ("must last 30 hours"), else what
@@ -197,16 +209,40 @@ def terms(u):
     days = min(3, int((time.time() - u.get("supplied_at", time.time())) // 86400))
     share = base_share(u.get("category")) * GRADE_FACTOR.get(u["grade"], 0.8) * (1 - STALE_MARKDOWN * days)
     arm = None
-    if u["kind"] == "food" and (hours_left(u) or 0) < CLEARANCE_HOURS:
+    left = END_TS - time.time()
+    end = next(((f, fl) for h, f, fl in ENDGAME if left < h), None)
+    if end:                                   # sell-off: not a price test either
+        share *= end[0]
+        floor = max(1, math.ceil(u["cost"] * end[1]))
+    elif u["kind"] == "food" and (hours_left(u) or 0) < CLEARANCE_HOURS:
         share *= 0.8                          # clearance: not a price test, the bandit stays out
         floor = math.ceil(u["cost"] * CLEARANCE_FLOOR)
     else:
         arm, theta = pick_arm(u, share, floor)
         log(f"[bandit] {u['category'].split('>')[-1]}: opening with arm {arm} (sampled deal chance {theta:.2f})")
         share *= arm
-    ask = max(floor, int(round(u["list_price"] * min(max(share, SHARE_BOUNDS[0]), MAX_SHARE), -1)))
-    warranty = WARRANTY.get(u["grade"], 0) if u["kind"] == "goods" else 0
+    ask = max(floor, int(round(u["list_price"] * min(max(share, 0 if end else SHARE_BOUNDS[0]), MAX_SHARE), -1)))
+    rival = rival_ask(u["sku"])
+    if rival and rival * UNDERCUT < ask:
+        log(f"[rival] {u['sku']}: lowest competitor ask {rival}, opening at {max(floor, int(rival * UNDERCUT))} not {ask}")
+        ask = max(floor, int(rival * UNDERCUT))
+    warranty = warranty_for(u)
     return ask, floor, warranty, arm
+
+
+def rival_ask(sku):
+    asks = [a for ts, shop, a in _load("competitors.json", {}).get("asks", {}).get(sku, [])
+            if time.time() - ts < COMP_FRESH and shop != NAME and a]
+    return min(asks) if asks else None
+
+
+def warranty_for(u):
+    hours = WARRANTY.get(u["grade"], 0) if u["kind"] == "goods" else 0
+    if hours:
+        broken, sold = _load("break_rates.json", {}).get(u["grade"], [0, 0])
+        if (broken + 1) / (sold + 20) >= MAX_BREAK_FOR_WARRANTY:
+            return 0
+    return hours
 
 
 def facts(u, warranty):

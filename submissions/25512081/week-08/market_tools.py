@@ -85,15 +85,18 @@ def ratio(xs):
 def market_demand(top: int = 25, kind: str = "") -> dict:
     """Categories ranked by their share of recent market sales (settled deals on the public ledger, decayed so
     recent sales weigh more), with our own sales and stock in each. kind: "food", "goods" or "" for both.
-    price_ratio is the average settled price as a share of list price in the market."""
+    price_ratio is the average settled price as a share of list price in the market. competitor_shops is how many
+    other shops held the category when our buyer last saw it (null if unseen): fewer means less competition."""
     st = load("restock_state.json", {})
     dem = {d["category"]: d for d in load("demand.json", [])}
     pop, total = st.get("pop", {}), sum(st.get("pop", {}).values()) or 1
     held = Counter(u["category"] for u in live_units())
+    comp = load("competitors.json", {}).get("cats", {})
     cats = [c for c in sorted(dem, key=lambda c: -pop.get(c, 0)) if not kind or dem[c]["kind"] == kind]
     rows = [{"category": c, "market_share": round(pop.get(c, 0) / total, 4), "our_sales": st.get("sold", {}).get(c, 0),
              "our_stock": held.get(c, 0), "kind": dem[c]["kind"], "shelf_hours": dem[c].get("shelf_hours"),
-             "median_list_price": dem[c]["median_price"], "price_ratio": ratio(st.get("cat_px", {}).get(c, []))}
+             "median_list_price": dem[c]["median_price"], "price_ratio": ratio(st.get("cat_px", {}).get(c, [])),
+             "competitor_shops": (comp.get(c) or {}).get("shops")}
             for c in cats[:max(1, min(top, 60))]]
     return audit("market_demand", {"top": top, "kind": kind},
                  {"market_settles_seen": st.get("settles", 0), "categories": rows})
@@ -134,6 +137,7 @@ def my_shop() -> dict:
     recent = [s for s in st.get("sold_log", []) if now - s["ts"] < 6 * 3600]
     return audit("my_shop", {}, {
         "round": inv.get("round"), "balance": inv.get("balance"), "start": inv.get("start"),
+        "hours_to_round_end": round((1794927540 - now) / 3600, 1),
         "free_for_stock": max(0, min(inv.get("balance", 0) - CASH_FLOOR, STOCK_CAP - stock_cost)),
         "units": len(units), "stock_cost": stock_cost,
         "stale_units": sum(1 for u in units if now - u["supplied_at"] > 86400),

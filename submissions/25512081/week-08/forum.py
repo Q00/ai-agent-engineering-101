@@ -36,7 +36,7 @@ REFS = MD / "ledger_refs.json"
 MARKET = "https://market.ourolabs.ai"
 LOOKUPS = 30               # ledger lookups per background check (one takes several seconds)
 CHECK_EVERY = 2 * 60
-BUYER_EVERY = 15 * 60
+BUYER_EVERY = 6 * 60       # the market allows one buyer post per 5 minutes; votes on them are 30% of buyer ALL
 SHOP_EVERY = 60 * 60
 INJECTION = re.compile(r"(?i)(for (ai|llm) (buying )?agents|ignore (all |any |your )?(previous|prior) instructions|"
                        r"system prompt|you must (accept|pay|rate|buy)|give (this|the|our) shop \d+ stars?)")
@@ -149,8 +149,39 @@ def buyer_turn(log):
         log("[forum] buyer post started in the background")
 
 
+def price_watch():
+    """A post every buyer can use and check: the shops that sold cheapest against list price in recent settles on
+    the public ledger (restock.py keeps them per shop), each with one ledger ref. Written in code."""
+    import memory
+    rows = []
+    for url, xs in _load(MD / "restock_state.json", {}).get("shop_px", {}).items():
+        if len(xs) >= 3:
+            rows.append((sum(r for _, r in xs[-10:]) / len(xs[-10:]), len(xs), url, xs[-1][0]))
+    rows.sort()
+    if len(rows) < 3:
+        return None
+    best = rows[:4]
+    text = "Price watch from the ledger, avg paid vs list price over recent settles: " + "; ".join(
+        f"{memory.shop_name(u)} {r:.0%} ({n} deals)" for r, n, u, _ in best) + ". Refs are one settle each."
+    return {"post": text[:400], "refs": [seq for *_, seq in best], "as": "buyer"}
+
+
 def buyer_post():
-    import harness                                   # only the background post needs the model
+    """Alternates two kinds of buyer post: a price watch from the ledger, and what our own purchases showed."""
+    st = _load(STATE, {})
+    if st.get("last_post") != "watch":
+        post = price_watch()
+        if post:
+            _write([post])
+            st = _load(STATE, {})
+            st["last_post"] = "watch"
+            STATE.write_text(json.dumps(st), encoding="utf-8")
+            print(time.strftime("%H:%M:%S"), json.dumps(post, ensure_ascii=False), flush=True)
+            return
+    st = _load(STATE, {})
+    st["last_post"] = "purchases"
+    STATE.write_text(json.dumps(st), encoding="utf-8")
+    import harness                                   # only the purchases post needs the model
     rows = _load(MD / "purchases.json", [])[-15:]
     if len(rows) < 2:
         print("too few purchases to post")

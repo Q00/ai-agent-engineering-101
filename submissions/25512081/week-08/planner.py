@@ -30,7 +30,9 @@ SYSTEM = (
     "and for us, SKUs that have sold, food that keeps long enough), and set_prices for categories where the "
     "market's price_ratio, our unsold stock or the seller's own price_learning says our opening ask should move (the seller tests multipliers around what you set and counts which ones close deals). The write tools check every change "
     "against our records (a price moves at most 0.05 and only in a direction the data backs; a restock line in a "
-    "category with no sales is cut to one unit): if a write tool refuses a line, read why and adjust. Finish with a short summary of what you changed and why."
+    "category with no sales is cut to one unit): if a write tool refuses a line, read why and adjust. "
+    "In the last two days (my_shop shows hours_to_round_end) buy only what sells within a day: stock left at the "
+    "end is a loss. Finish with a short summary of what you changed and why."
 )
 SCHEMA = {"type": "object", "properties": {
     "summary": {"type": "string"}, "categories_boosted": {"type": "array", "items": {"type": "string"}},
