@@ -34,6 +34,7 @@ from seller import purchase_offer
 from r3_policy import selling_terms
 from market_state import read, write, task_file
 from kit_runtime import OFFER_SECONDS
+from market_intel import fresh
 
 NAME = "kcwarni Inventory Shop"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
@@ -187,7 +188,8 @@ class Seller(AgentExecutor):
                 u = next(x for x in inventory["units"] if x["unit"] == u["unit"])
                 deal["unit"] = u
                 catalog = json.loads((MARKET_DIR / "catalog.json").read_text(encoding="utf-8"))
-            terms = selling_terms(u, catalog)
+            signals = fresh(MARKET_DIR).get("skus", {}).get(u["sku"], {})
+            terms = selling_terms(u, catalog, signals=signals)
         except (OSError, ValueError, KeyError, StopIteration):
             self.open.pop(task.id, None)
             await up.reject(say("This unit is unavailable or its current condition cannot be verified."))
@@ -222,7 +224,7 @@ class Seller(AgentExecutor):
                 u = next(x for x in inventory["units"] if x["unit"] == u["unit"])
                 if u["unit"] in self.committed_units:
                     raise ValueError("Unit already committed")
-                terms = selling_terms(u, catalog)
+                terms = selling_terms(u, catalog, signals=signals)
                 reserve = terms["floor"]
                 deal["unit"] = u
             except (OSError, ValueError, KeyError, StopIteration):

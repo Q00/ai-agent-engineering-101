@@ -6,7 +6,10 @@ import json
 from pathlib import Path
 import re
 import time
+import math
 from uuid import uuid4
+from market_intel import fresh
+from r3_policy import load_policy
 
 
 def demand_hints(posts, catalog, now):
@@ -31,20 +34,35 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None):
     now = time.time() if now is None else now
     hints = hints or {}
+    intelligence = intelligence or {}
     if inventory.get("round", 0) < 3:
         return [], {"reason": "not_round_3"}
     units = [u for u in inventory.get("units", []) if u.get("grade") != "expired"]
     balance = max(0, inventory.get("balance", 0))
-    reserve = max(500000, inventory.get("start", 5000000) * 0.2)
+    end = datetime.fromisoformat(load_policy()["selling"]["round_end"]).timestamp()
+    if now >= end - 86400:
+        return [], {"reason": "round_end_purchase_stop"}
+    rate = inventory.get("storage_per_day", 0.01)
+    if type(rate) not in (int, float) or not 0 <= rate <= 1:
+        rate = 0.01
+    existing_storage = sum(max(0, u.get("cost", 0)) * rate * 7 for u in units if u.get("kind") == "goods")
+    # Our seller offers no warranties; retain any explicitly recorded future liability.
+    refund_reserve = max(0, inventory.get("local_refund_reserve", 0))
+    reserve = max(500000, inventory.get("start", 5000000) * 0.2) + existing_storage + refund_reserve
     budget = max(0, min(balance * 0.05, balance - reserve))
     if len(units) >= 8 or not budget:
         return [], {"reason": "stock_or_cash_limit", "budget": budget}
     categories = {d["category"] for d in demand}
     owned = {u["sku"] for u in units}
-    experimental = [u for u in units if not sales.get(u["sku"], 0)]
+    def signal(sku):
+        return intelligence.get(sku, {})
+    def proven(sku):
+        s = signal(sku)
+        return bool(sales.get(sku, 0) or (s.get("distinct_buyers", 0) >= 3 and s.get("settles_6h", 0) >= 3))
+    experimental = [u for u in units if not proven(u["sku"])]
     stale = any(type(u.get("supplied_at")) in (int, float)
                 and now - u["supplied_at"] >= 86400 for u in units)
     exploration_slots = 0 if stale else max(0, 2 - len(experimental))
@@ -55,27 +73,36 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None):
         offset = cursor % len(candidates)
         candidates = candidates[offset:] + candidates[:offset]
     # Stable sort preserves rotating exploration order among equal observed-sale counts.
-    candidates.sort(key=lambda pair: (-sales.get(pair[0], 0), -hints.get(pair[0], 0)))
+    def opportunity(pair):
+        sku, product = pair
+        s = signal(sku)
+        cost = product["list_price"] * 0.75
+        price = min(product["list_price"], s.get("median_price", product["list_price"]))
+        gap = s.get("observed_gap_hours")
+        hours = min(24, max(1, gap)) if type(gap) in (int, float) and math.isfinite(gap) else 24
+        margin = price - cost - cost * rate * hours / 24
+        return (not proven(sku), -margin / cost / hours, -sales.get(sku, 0), -hints.get(sku, 0))
+    candidates.sort(key=opportunity)
     buys = []
     estimated = 0
     storage_reserve = 0
-    rate = inventory.get("storage_per_day", 0.01)
-    if type(rate) not in (int, float) or not 0 <= rate <= 1:
-        rate = 0.01
     for sku, value in candidates:
         # Supply draws the grade on arrival; shelf_hours is not a minimum remaining lifetime.
         if value.get("kind") == "food":
             continue
-        if not sales.get(sku, 0) and exploration_slots <= 0:
+        if not proven(sku) and exploration_slots <= 0:
             continue
         worst_cost = value["list_price"] * 0.75
+        reference = signal(sku).get("median_price")
+        if reference is not None and reference <= worst_cost * (1 + rate):
+            continue
         carrying_cost = worst_cost * rate
         if estimated + storage_reserve + worst_cost + carrying_cost > budget:
             continue
         buys.append({"sku": sku, "qty": 1})
         estimated += worst_cost
         storage_reserve += carrying_cost
-        if not sales.get(sku, 0):
+        if not proven(sku):
             exploration_slots -= 1
         if len(buys) >= min(2, 8 - len(units)):
             break
@@ -83,6 +110,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None):
                   "estimated_max_cost": estimated, "cash_reserve": reserve,
                   "one_day_storage_reserve": storage_reserve,
                   "unproven_stock": len(experimental), "stale_stock": stale,
+                  "existing_seven_day_storage": existing_storage, "refund_reserve": refund_reserve,
+                  "public_evidence_skus": len(intelligence),
                   "forum_hints": hints,
                   "food_supply": "deferred: no guaranteed shelf life or supported sales-window estimate"}
 
@@ -117,7 +146,16 @@ def main():
         hints = demand_hints(posts, catalog, time.time()) if isinstance(posts, list) else {}
     except (OSError, ValueError, TypeError, AttributeError):
         hints = {}
-    buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints)
+    snapshot = fresh(md)
+    # Signed offers with a warranty reserve their entire price until the coverage ends.
+    liabilities = 0
+    for path in (md / "signed-offers").glob("*.json"):
+        offer = json.loads(path.read_text(encoding="utf8"))
+        if offer.get("warranty_hours", 0) > 0 and time.time() < offer["issued_at"] + offer["warranty_hours"] * 3600 + 600:
+            liabilities += offer["price"]
+    inv["local_refund_reserve"] = liabilities
+    buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
+                             intelligence=snapshot.get("skus", {}))
     memory["cursor"] += 1
     temporary = memory_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")

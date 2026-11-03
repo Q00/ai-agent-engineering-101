@@ -6,6 +6,7 @@ import runpy
 import ssl
 import sys
 from kit_runtime import install
+from market_intel import start_worker
 
 import certifi
 
@@ -47,11 +48,13 @@ def main():
                 "--market", "https://market.ourolabs.ai", "--name", "kcwarni",
                 *sys.argv[1:]]
     power_request = prevent_automatic_sleep()
+    intel_stop = start_worker(submission)
     try:
         namespace = runpy.run_path(str(kit), run_name="course_market_kit")
         install(namespace)
         namespace["main"]()
     finally:
+        intel_stop.set()
         if power_request is not None:
             power_request.SetThreadExecutionState(0x80000000)
 

@@ -9,9 +9,11 @@ class Policy(unittest.TestCase):
 
     def test_goods_discount_stages_and_rounding(self):
         self.assertEqual(selling_terms(self.unit(), now=0)["quote"], 200)
-        self.assertEqual(selling_terms(self.unit(), now=24*3600)["quote"], 101)
-        self.assertEqual(selling_terms(self.unit(), now=48*3600)["floor"], 86)
-        self.assertEqual(selling_terms(self.unit(), now=72*3600)["floor"], 71)
+        self.assertEqual(selling_terms(self.unit(), now=24*3600)["quote"], 180)
+        self.assertEqual(selling_terms(self.unit(), now=48*3600)["quote"], 160)
+        self.assertEqual(selling_terms(self.unit(), now=72*3600)["quote"], 140)
+        self.assertEqual(selling_terms(self.unit(), now=168*3600)["floor"], 86)
+        self.assertEqual(selling_terms(self.unit(), now=336*3600)["floor"], 71)
 
     def test_food_remaining_life_discounts(self):
         catalog = {"G1": {"shelf_hours": 100}}
