@@ -137,3 +137,31 @@ def test_food_selection_respects_required_use_hours_before_reserving(tmp_path):
     seller = Seller(j)
     assert seller.select_unit('G111. Food must last at least 3 hours after payment.', 'long') is None
     assert seller.select_unit('G111. Food must last at least 0.5 hours after payment.', 'short')
+
+
+def test_buyer_tries_next_shop_when_receipt_explicitly_disables_certificate(tmp_path, monkeypatch):
+    import base64
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from r3.protocol import canon, signed_body
+    from test_market_contract import pub
+    from market_buyer import buy
+    monkeypatch.setenv('R3_MODEL_MODE', 'offline')
+    j, now, _, _ = fixture(tmp_path)
+    keys = {url: Ed25519PrivateKey.generate() for url in ['http://no-cert', 'http://cert']}
+    atomic_json(j.md / 'registry.json', {url: {'pubkey': pub(key)} for url, key in keys.items()})
+    class Peer:
+        def discover(self, url): self.url = url
+        def send(self, text, task=None):
+            if task is None:
+                return {'id': 't', 'status': {'state': 'TASK_STATE_INPUT_REQUIRED',
+                        'message': {'metadata': {'ask': 8000, 'warranty_hours': 6}}}}
+            rec = {'shop': self.url, 'item': 'G111', 'price': int(text), 'task': 't', 'cert': self.url == 'http://cert'}
+            rec['sig_seller'] = base64.b64encode(keys[self.url].sign(canon(signed_body(rec)))).decode()
+            return {'id': 't', 'status': {'state': 'TASK_STATE_COMPLETED'}, 'artifacts': [{'parts': [{'data': rec}]}]}
+        def close(self): pass
+    shops = [{'name': str(n), 'url': url, 'offers': [{'sku': 'G111', 'qty': 1}]} for n, url in enumerate(keys)]
+    result = buy({'order': 'o', 'acceptable': ['G111'], 'kind': 'goods', 'budget': 10000,
+                  'expires': now + 300}, shops, j, peer_factory=Peer)
+    assert result['shop'] == 'http://cert'
+    assert j.events('attempt')[0]['reason'] == 'certificate_unavailable'
+    assert len(j.events('agreement')) == 1

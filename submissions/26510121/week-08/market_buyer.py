@@ -54,6 +54,9 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                         raise ValueError("receipt_integrity_failure")
                     # A2A protobuf numbers decode as whole-valued floats; the signature canonicalizes integer money.
                     rec = dict(receipts[0], price=int(receipts[0]["price"]))
+                    if rec.get('cert') is False:
+                        # The kit will reject this checkout. Try another shop while the order is still alive.
+                        raise ValueError('certificate_unavailable')
                     accept = {"cert": True, "expected_sku": c["sku"]}
                     if order.get("kind") == "food":
                         accept["min_hours_left"] = order.get("use_within_hours", 0) + cfg["checkout_buffer_seconds"] / 3600
@@ -104,8 +107,12 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
                                     "kind": "no_agreement", "seconds": time.monotonic() - started}, role="buyer")
         except Exception as exc:
+            reason = str(exc) if isinstance(exc, ValueError) and str(exc) in {
+                'certificate_unavailable', 'receipt_integrity_failure', 'registered_signing_key_unavailable',
+                'ambiguous_ask', 'conflicting_ask', 'invalid_money'} else None
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
+                                    'reason': reason,
                                     "kind": type(exc).__name__, "seconds": time.monotonic() - started}, role="buyer")
         finally:
             peer.close()

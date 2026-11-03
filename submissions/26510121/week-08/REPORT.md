@@ -2,6 +2,12 @@
 
 이 문서는 진행 중인 구현 보고서다. 실제 Round 3 운영 결과를 채우기 전에는 완성된 제출 보고서가 아니다.
 
+2026-11-03 21:06 KST 운영 갱신: kit 4의 Shop·Buyer `seochanit` Round 3 등록, 공개 agent-card HTTP 200, 실제 양쪽 정산과 Forum 발송을 확인했다. 21:08 KST 감사 시점 board는 양쪽 각각 4건 정산이었다. 기본 조건 20건과 최종 순위는 계속 확인해야 한다. 근거는 `logs/live-registration-20261103T120813305637Z.json`과 `logs/strategy-join-20261103T120630782000Z.txt`다. 아래 미운영·Round 2 설명은 이전 시점 기록이다.
+
+최신 변경의 근거·가정·검증 한계는 `MARKET_STRATEGY_UPDATE.md`, 고객 기억/FIFO 규격은 `CUSTOMER_MEMORY.md`에 정리했다. 공급·Forum 회귀 64개가 `logs/verification-20261103T120342575020Z.txt`에서 통과했다. 첫 공개 운영에서 확인한 `cert:false` 제안은 다음 가게로 넘어가도록 Buyer를 추가 보완했다. 결제 조건을 완화하지 않는다.
+
+최종 65개 회귀 통과: `logs/verification-20261103T121557557563Z.txt`. 21:16:59 KST board에서는 Shop 14건·Buyer 10건 정산, Shop profit 14,020, Buyer surplus 177,942, 양쪽 alive를 확인했다(`logs/live-progress-20261103T121659918635Z.json`). 초기 잠정 성과이며 장기적인 전략 우월성이나 20건 조건 충족을 뜻하지 않는다. 실제 실행은 계속 유지한다.
+
 ## 부품 설계
 
 모델 가중치 학습 없이 actor–critic의 역할 분리를 사용한다. actor는 계산된 후보와 관련 경험을 보고 행동을 선택하고, 수치 critic은 회수 가치·유효 잉여·성사 결과·불확실성을 계산한다. 자금 영향이 크거나 구매 조건이 중요한 결정에는 별도 LLM critic을 호출한다. API 오류와 비용 상한 도달 시에는 수치 후보 중 제한된 대체 경로를 사용하며 이를 모델 결정으로 기록하지 않는다.
