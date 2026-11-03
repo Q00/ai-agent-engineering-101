@@ -33,7 +33,7 @@ DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n"
             "max_posts_day": {"buyer": 288, "shop": 24}}   # buyer ALL counts posts written as a buyer (0.1) and the
                                                            # votes on them (0.3): post as a buyer as often as the market
                                                            # allows (1 per 5 min), each post ledger-cited; shop posts few
-WANTED = re.compile(r"구합니다|구해요|삽니다|필요해요|찾습니다|want(?:ed)? to buy|\bWTB\b|looking for|need (?:a|some)", re.I)
+WANTED = re.compile(r"구합니다|구해요|삽니다|필요해요|찾습니다|want(?:ed)? to buy|\bwanted\b|\bWTB\b|looking for|need (?:a|some)", re.I)
 INJECTION = re.compile(r"ignore (?:all|previous|your)|AI (?:buyers?|agents?) (?:must|should)|system prompt|"
                        r"pay the (?:asking|full) price|give (?:it|us) 5 stars|approved by the (?:instructor|operator)", re.I)
 
