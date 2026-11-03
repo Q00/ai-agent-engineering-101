@@ -5,6 +5,8 @@ import math
 from pathlib import Path
 
 from feedback import load_json
+from stock_budget import validate as validate_budget
+from shop_horizon import validate as validate_horizon
 
 ROOT = Path(__file__).resolve().parent
 GRADE_LABELS = {"A": "normal", "B": "damaged packaging", "C": "refurbished"}
@@ -63,6 +65,8 @@ def policy_at(root=ROOT):
         n = stock.get(key)
         if type(n) is not int or not low <= n <= high:
             raise ValueError("Invalid restock policy: " + key)
+    validate_budget(stock)
+    validate_horizon(cfg.get("horizon"))
     return cfg
 
 

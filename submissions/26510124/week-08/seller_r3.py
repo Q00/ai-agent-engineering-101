@@ -167,7 +167,7 @@ class InventorySeller(Seller):
                                                       ("unit", "sku", "category", "cost", "kind", "grade", "supplied_at", "expires_at")},
                                           "terms": selling_terms(product, self.policy)}
                 reference = self.openings.for_product(product, deal["terms"]["warranty_hours"], rnd)
-                deal["opening_bounds"] = opening_bounds(product, deal["terms"], reference, self.policy, now)
+                deal["opening_bounds"] = opening_bounds(product, deal["terms"], reference, self.policy, now, rnd=rnd)
                 self.event(task.id, "opened", product, deal=deal)
             else:
                 if re.fullmatch(r"[0-9]{1,12}", text.strip()) is None:

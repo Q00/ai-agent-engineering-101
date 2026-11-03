@@ -192,7 +192,8 @@ class MarketStrategyTests(unittest.TestCase):
         self.assertIn("G00001", detail["paused_skus"])
 
     def test_old_stock_blocks_rebuy_and_public_demand_only_drives_small_exploration(self):
-        held = [{"sku": "G00001", "category": "chairs", "supplied_at": self.now - 90000}]
+        held = [{"unit": "held1", "sku": "G00001", "category": "chairs", "kind": "goods",
+                 "cost": 70000, "supplied_at": self.now - 90000}]
         rows = [self.raw(i + 1, item="G00006", shop=str(i)) for i in range(3)]
         buys, detail = self.plan([], units=held, public=self.public(rows))
         self.assertNotIn("G00001", {b["sku"] for b in buys["buy"]})

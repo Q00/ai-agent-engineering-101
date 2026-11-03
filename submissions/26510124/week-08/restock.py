@@ -17,17 +17,25 @@ from sales_performance import sku_metrics, update as update_sales
 from market_evidence import demand_scores, refresh as refresh_market
 from opening_strategy import update as update_openings
 from shop_policy import policy_at
+from shop_horizon import phase as round_phase, purchase_window
+from stock_budget import StockBudget
+from stock_lifecycle import update as update_stock, metrics as stock_metrics
 
 ROOT = Path(__file__).resolve().parent
 
 
-def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None):
+def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifecycle=None, horizon=None):
     if (not number(inv.get("balance")) or not number(inv.get("start")) or inv["start"] <= 0
             or not isinstance(catalog, dict) or len(catalog) > 20000
             or not isinstance(demand, list) or len(demand) > 5000):
         raise ValueError("Incomplete inventory, catalog or category data")
     reserve = math.ceil(inv["start"] * cfg["cash_reserve_percent"] / 100)
     budget = max(0, math.floor(inv["balance"]) - reserve)
+    exposure = StockBudget(inv, cfg)
+    # The live hook always supplies the validated round schedule. Pure callers
+    # may omit it when testing the independent capital/selection calculations.
+    stage = (round_phase(horizon, inv.get("round"), now) if horizon is not None else
+             {"phase": "unscheduled_calculation", "allow_purchases": True, "allow_exploration": True})
     slots = min(cfg["max_units_per_run"], max(0, cfg["max_stock_units"] - len(inv["units"])))
     held = Counter()
     categories_held = Counter()
@@ -49,11 +57,18 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None):
     sku_sales = Counter(s["sku"] for s in sales)
     category_sales = Counter(s["category"] for s in sales)
     economics = sku_metrics(memory, now)
+    lifecycle_stats = stock_metrics(lifecycle, now) if lifecycle is not None else {}
     popular = demand_scores(public, now)
     slow = {u["sku"] for u in inv["units"] if number(u.get("supplied_at"))
             and now - u["supplied_at"] >= cfg["slow_stock_hours"] * 3600}
     paused = slow | {sku for sku, m in economics.items() if m["mature"] >= cfg["min_mature_sales"]
                      and (m["net_estimate"] <= 0 or m["refunded"] / m["settled"] >= .5)}
+    # A vanished unit is not a confirmed sale or spoilage. Pause new stock of
+    # that SKU while the separate lifecycle record awaits settlement evidence.
+    paused |= {sku for sku, m in lifecycle_stats.items()
+               if m["unresolved_cost"] > 0 or m["held_expired_cost"] > 0}
+    windows = {sku: purchase_window(horizon, inv.get("round"), p, economics.get(sku), now)
+               for sku, p in candidates.items()} if horizon is not None else {}
     tried = Counter(a["sku"] for a in attempts)
     buy, choices = Counter(), []
     remaining = budget
@@ -67,18 +82,22 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None):
 
     def available():
         return [sku for sku, p in candidates.items()
-                if sku not in paused and held[sku] + buy[sku] < stock_cap(sku)
-                and p["worst_cost"] <= remaining]
+                if stage["allow_purchases"] and sku not in paused
+                and held[sku] + buy[sku] < stock_cap(sku)
+                and p["worst_cost"] <= remaining and exposure.reason(sku, p) is None
+                and windows.get(sku, (True, None))[0]]
 
     def add(sku, reason):
         nonlocal remaining
         p = candidates[sku]
+        exposure.add(sku, p)
         buy[sku] += 1
         remaining -= p["worst_cost"]
         categories_held[p["category"]] += 1
         choices.append({"sku": sku, "reason": reason, "budgeted_cost": p["worst_cost"]})
 
-    preferred_slots = max(0, slots - cfg["exploration_units"]) if sales else 0
+    exploration_slots = cfg["exploration_units"] if stage["allow_exploration"] else 0
+    preferred_slots = max(0, slots - exploration_slots) if sales else 0
     for _ in range(preferred_slots):
         eligible = [s for s in available() if sku_sales[s] or category_sales[candidates[s]["category"]]]
         if not eligible:
@@ -94,7 +113,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None):
             else "limited_own_sample" if sku_sales[sku] else "own_settled_category")
     # With no sales evidence, all slots are small exploration buys. Once there
     # is evidence, unproven items never consume the performance allocation.
-    explore_slots = min(slots - len(choices), cfg["exploration_units"] if sales else slots)
+    explore_slots = min(slots - len(choices), exploration_slots if sales else slots) if stage["allow_exploration"] else 0
     for _ in range(explore_slots):
         eligible = [s for s in available() if held[s] + buy[s] == 0]
         if not eligible:
@@ -102,12 +121,25 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None):
         sku = min(eligible, key=lambda s: (-popular.get(s, 0), tried[s], categories_held[candidates[s]["category"]],
                     -category_sales[candidates[s]["category"]], digest([int(now // 86400), s])))
         add(sku, "public_demand_exploration" if popular.get(sku) else "small_exploration")
+    status = (stage.get("reason", stage["phase"]) if not stage["allow_purchases"] else
+              "cash_floor_no_stock" if budget == 0 and not inv["units"] else
+              "cash_floor_hold" if budget == 0 else "planned" if choices else "no_eligible_stock")
+    bankruptcy_eligible = (number(inv.get("bankrupt_line")) and inv["balance"] < inv["bankrupt_line"]
+                           and type(inv.get("bankruptcies_left")) is int and inv["bankruptcies_left"] > 0)
     return {"buy": [{"sku": sku, "qty": qty} for sku, qty in buy.items()]}, {
         "cash_floor": reserve, "balance_observed": inv["balance"], "budgeted_cost": budget - remaining,
         "projected_min_balance": math.floor(inv["balance"]) - (budget - remaining),
         "choices": choices, "own_settled_sample": len(sales),
         "paused_skus": sorted(paused)[:20],
-        "limits": "Sampled settlements and refunds; estimated storage/turnover; pending/unknown evidence caps stock at one."}
+        "operation_status": status, "needs_attention": status == "cash_floor_no_stock",
+        "bankruptcy_eligible": bankruptcy_eligible, "automatic_bankruptcy": False,
+        "exposure": exposure.summary(), "horizon": stage,
+        "horizon_exclusions": dict(Counter(reason for allowed, reason in windows.values() if not allowed)),
+        "stock_observations": {"held_cost": sum(m["held_cost"] for m in lifecycle_stats.values()),
+                               "unresolved_cost": sum(m["unresolved_cost"] for m in lifecycle_stats.values()),
+                               "expired_unconfirmed_cost": sum(m["expired_unconfirmed_cost"] for m in lifecycle_stats.values())},
+        "wallet_profit": memory.get("wallet_profit"),
+        "limits": "Sampled settlements/refunds; estimated storage/turnover. Missing units are uncertain losses, not proven spoilage; no automatic bankruptcy."}
 
 
 def run_once(root=ROOT, now=None):
@@ -151,6 +183,7 @@ def run_once(root=ROOT, now=None):
         if public and public.get("round") != inv["round"]:
             public = None
         memory = update_sales(root, inv["round"], now, public=public, inventory=inv)
+        lifecycle = update_stock(root, inv, memory, now)
         try:
             update_openings(root, inv, memory, public, policy, now)
         except (ValueError, OSError, KeyError, TypeError) as exc:
@@ -162,7 +195,8 @@ def run_once(root=ROOT, now=None):
                 raise ValueError("Malformed stock planning memory")
             if 0 <= now - row["time"] <= 7 * 86400:
                 attempts.append(row)
-        decision, evidence = plan(inv, catalog, demand, memory, attempts, cfg, now, public)
+        decision, evidence = plan(inv, catalog, demand, memory, attempts, cfg, now, public,
+                                  lifecycle=lifecycle, horizon=policy["horizon"])
         state["attempts"] = (attempts + [{"time": now, "sku": row["sku"], "planned_qty": row["qty"]}
                                         for row in decision["buy"]])[-500:]
         # Persist before returning instructions to the kit. A crash may skip a

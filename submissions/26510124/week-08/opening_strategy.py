@@ -8,6 +8,7 @@ from feedback import append_event, atomic_json, load_json, number
 from market_evidence import comparable_price
 from sales_performance import sku_metrics
 from shop_policy import selling_terms
+from shop_horizon import clearance_bounds
 
 TTL = 21600
 
@@ -113,7 +114,7 @@ class OpeningReader:
         return {"target": row["target"], "source": row.get("source"), "created_at": row["created_at"]}
 
 
-def bounds(product, terms, reference, policy, now):
+def bounds(product, terms, reference, policy, now, *, rnd=None):
     floor, rules = terms["price_floor"], policy["opening"]
     target = max(floor, min(product["list_price"], reference["target"])) if reference else None
     low = max(floor, math.floor(target * (100 - rules["band_percent"]) / 100)) if target else floor
@@ -129,6 +130,10 @@ def bounds(product, terms, reference, policy, now):
         cap = (floor * (100 + rules["aged_markup_percent"]) + 99) // 100
         high = min(high, cap) if high is not None else cap
         low, target, source = min(low, high), min(target or high, high), "aged_or_expiring_stock"
+    clearance = clearance_bounds(policy.get("horizon"), rnd, product, terms, now)
+    if clearance:
+        high = min(high, clearance["maximum"]) if high is not None else clearance["maximum"]
+        low, target, source = floor, min(target or high, high), clearance["source"]
     if high is None:
         return None
     return {"minimum": low, "maximum": high, "target": target, "source": source}

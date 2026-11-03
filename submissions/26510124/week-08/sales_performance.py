@@ -50,7 +50,8 @@ def update(root, rnd, now, *, public=None, inventory=None):
     public = public if public is not None else read_market(root / ".market", rnd, now)
     if public and public.get("round") != rnd:
         public = None
-    reset_at = (public or {}).get("reset_at")
+    reset_at = (public.get("reset_at") if public is not None else
+                old.get("reset_at") if old.get("round") == rnd else None)
     sales = {s["unit"]: s for s in old["sales"] if old.get("round") == rnd and valid_sale(s, now)
              and (not number(reset_at) or s["receipt_time"] >= reset_at)}
     # Every receipt is recorded locally with a timestamp, round, SKU and unit.
@@ -108,7 +109,7 @@ def update(root, rnd, now, *, public=None, inventory=None):
             elif not e.get("unit") and e["shop"] == s.get("shop"):
                 s["ambiguous_refund"] = True  # Never guess which identical SKU broke.
         s["refunds"] = sorted(refunds.values(), key=lambda e: e["seq"])[-10:]
-    result = {"schema": 1, "round": rnd, "updated_at": now,
+    result = {"schema": 1, "round": rnd, "updated_at": now, "reset_at": reset_at,
               "sales": sorted(sales.values(), key=lambda s: s["receipt_time"])[-MAX_SALES:],
               "funnel": funnel([e for e in events if not number(reset_at) or e.get("time", 0) >= reset_at],
                                sales, rnd, now)}
