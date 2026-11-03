@@ -818,6 +818,30 @@ def round3(a, order, shops, mem, started):
     except Exception as e:
         log(f"buyer error: {type(e).__name__}: {e}")
         outcome, problem = "no answer", f"no answer ({type(e).__name__})"
+    if outcome == "no deal" and not scout_deal and time.time() - started < TIME_LIMIT - 60:
+        # review meeting 11-04: 451 orders in 24 h ended 'no deal' although another shop was in reach -- try the
+        # next cheapest quote once before giving up
+        for alt in sorted((q for q in good if q is not pick), key=lambda q: q["ask"])[:1]:
+            q2 = quote(alt["c"])
+            if not q2.get("ask"):
+                continue
+            _, shop2, offer2, lp2 = q2["c"]
+            cap2 = min(order["budget"], int(lp2 * T["max_pay_ratio"]))
+            row2 = rows.get((shop2["name"], offer2["sku"])) if adv else None
+            if row2:
+                cap2 = min(cap2, row2["walk_away"])
+            low2 = min(row2["target"] if row2 else int(lp2 * T["r3_first_offer"]), int(0.9 * cap2))
+            log(f"[retry] {shop2['name']} ask {q2['ask']} after no deal at {shop['name']}")
+            try:
+                t2, a2, o2, x2, n2 = negotiate(shop2["url"], offer2["name"], cap2, started, low=low2,
+                                               opened=(q2["url"], q2["task"], q2["opening"]), decide_fn=code_decide)
+            except Exception as e:
+                log(f"[retry] failed: {type(e).__name__}")
+                continue
+            if state(t2) == "TASK_STATE_COMPLETED":
+                task, asks, offers, texts, notes, outcome = t2, a2, o2, x2, n2, "deal"
+                pick, shop, offer, lp, sku, cap, row = q2, shop2, offer2, lp2, offer2["sku"], cap2, row2
+                log(f"[retry] deal at {shop['name']}")
     if outcome == "deal":
         rec = receipt_of(task)
         if rec is None:
