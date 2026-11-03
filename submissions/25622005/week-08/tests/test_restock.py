@@ -206,7 +206,14 @@ class FocusTest(unittest.TestCase):
         self.assertEqual(p["headroom"], 200000)
         self.assertEqual(p["excluded"]["G1"], "focus_cap")
         self.assertEqual(p["buy"][0], {"sku": "X", "qty": 13})          # 13 x 7,500 = 97,500 of 100,000
-        self.assertEqual(p["buy"][1], {"sku": "F3", "qty": 2})          # the rest of the headroom
+        self.assertEqual(p["buy"][1], {"sku": "F3", "qty": 2})          # non-focus: its own per_sku_qty
+        # headroom 250,000; focus share 125,000 -> X 16 x 7,500 = 120,000; Y (not focus) gets the rest of the
+        # headroom, 130,000 -> 17, not the headroom outside the focus share (125,000 -> 16) nor all of it (20)
+        xy = dict([cat("X", "두부", 10000), cat("Y", "어묵", 10000)])
+        p = stock.plan_restock(inv(1250000), xy, [dem("어묵", 10000)], {}, focus_pol("X", per_sku_qty=20), NOW)
+        self.assertEqual(p["headroom"], 250000)
+        self.assertEqual(p["buy"], [{"sku": "X", "qty": 16}, {"sku": "Y", "qty": 17}])
+        self.assertEqual(p["worst_cost"], 247500)
         # the focus share left is too small, the whole headroom is not: still focus_cap
         p = stock.plan_restock(inv(1200000), c, [], {}, focus_pol("G1", focus_cap_share=0.1), NOW)
         self.assertEqual(p["excluded"]["G1"], "focus_cap")
