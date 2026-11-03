@@ -6,9 +6,36 @@ from market_intel import summarize, fresh, competition
 from market_state import write
 from restock_policy import plan
 from r3_policy import selling_terms
+from market_intel import collect
+from types import SimpleNamespace
 
 
 class PublicEvidence(unittest.TestCase):
+    def test_bounded_collector_skips_backlog_with_explicit_gap_and_fresh_tail(self):
+        calls = []
+        def get(url, params):
+            calls.append((url, params))
+            if url.endswith("/api/shops"):
+                data = {"round": 3}
+            elif url.endswith("/api/board"):
+                data = {"round": 3}
+            else:
+                starts = {-500: 1, 500: 501, 1000: 1001}
+                start = 2001 if len(calls) == 6 else starts[params["after"]]
+                data = [{"seq": n, "ts": 100, "kind": "order", "round": 3, "data": {}}
+                        for n in range(start, start+500)]
+                if len(calls) == 6:
+                    data[-1].update(kind="settle", data={"item": "A", "price": 90, "buyer": "b"})
+            return SimpleNamespace(raise_for_status=lambda: None, json=lambda: data)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root/".market/catalog.json", {"A": {"list_price": 100}})
+            result = collect(root, client=SimpleNamespace(get=get), now=200)
+        self.assertEqual(len(calls), 6)
+        self.assertEqual(result["cursor"], 2500)
+        self.assertEqual(result["skipped_seq_ranges"], [[1501, 2000]])
+        self.assertIn("A", result["skus"])
+
     def test_only_recent_r3_settlements_are_demand(self):
         row = {"seq": 1, "ts": 1000, "round": 3, "kind": "settle",
                "data": {"item": "A", "price": 90, "buyer": "b"}}

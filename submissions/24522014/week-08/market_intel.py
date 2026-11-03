@@ -110,6 +110,7 @@ def collect(root=ROOT, client=None, now=None):
         rows = previous.get("rows", []) if previous.get("round") == round_number else []
         cursor = previous.get("cursor", -500) if previous.get("round") == round_number else -500
         pages, behind = 0, False
+        gaps = previous.get("skipped_seq_ranges", []) if previous.get("round") == round_number else []
         if round_number == 3:
             for _ in range(3):
                 batch = get("/api/ledger", after=cursor)
@@ -125,10 +126,21 @@ def collect(root=ROOT, client=None, now=None):
                 behind = len(batch) >= 500
                 if not behind:
                     break
+            if behind:
+                # Prefer a fresh bounded sample to an ever-growing stale backlog.
+                tail = get("/api/ledger", after=-500)
+                pages += 1
+                if tail:
+                    first, last = min(r["seq"] for r in tail), max(r["seq"] for r in tail)
+                    if first > cursor + 1:
+                        gaps = (gaps + [[cursor+1, first-1]])[-20:]
+                    rows.extend(r for r in tail if r.get("kind") in ("settle", "broken", "refund"))
+                    cursor = max(cursor, last)
         by_seq = {r["seq"]: r for r in rows if finite(r.get("ts")) and now-r["ts"] <= 86400}
         rows = sorted(by_seq.values(), key=lambda r: r["seq"])[-10000:]
         result = {"round": round_number, "observed_at": now, "cursor": cursor, "rows": rows,
                   "pages": pages, "catching_up": behind, "bounded_sample": True,
+                  "skipped_seq_ranges": gaps,
                   "skus": summarize(rows, catalog, now), "competition": competition(board)}
         inventory = read(md / "inventory.json", {})
         if inventory.get("round") == 3:
