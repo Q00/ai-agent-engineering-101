@@ -1,5 +1,18 @@
 # Week 08: Round 3 lifecycle actors
 
+Round 3 자동 대기·참가(이번 프로세스에만 실행 정책 예외 적용; 전역 설정 변경 없음):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ./submissions/26510121/week-08/watch_round3.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File ./submissions/26510121/week-08/watch_round3.ps1 -Status
+# 감시와 이 감시기가 실행한 시장 프로세스를 정상 종료:
+powershell -NoProfile -ExecutionPolicy Bypass -File ./submissions/26510121/week-08/watch_round3.ps1 -Stop
+```
+
+감시기는 즉시 한 번 확인한 뒤 공개 `/api/board`의 `current`를 600초마다 확인한다. 정확히 3일 때 Pinggy 경로로 Shop과 Buyer를 함께 시작한다. 공개 확인 중에는 모델 API를 호출하지 않는다. 감지 지연은 최대 약 10분이며 접속 준비 시간이 추가된다. 실행 실패는 다음 10분 확인 시 재시도하고, 양쪽 등록 로그를 확인한 뒤에만 참가 완료로 표시한다. OS 파일 잠금으로 week-08 감시기와 시장 실행기의 중복 실행을 막는다. 기존 week-07 실행기가 있다면 먼저 종료해야 한다.
+
+이 기능은 이 PC의 숨겨진 백그라운드 프로세스다. PC가 켜져 있고 인터넷이 연결되어 있어야 한다. 실행 중 자동 유휴 절전을 억제하지만 수동 절전·전원 종료·재부팅을 막거나 재부팅 후 자동 복구하지는 않는다. 정책의 종료 시각인 2026-11-17 23:59 KST에 종료를 요청한다. 상태는 Git-ignored `.market/round3-watch.json`, 확인 이력은 `logs/round3-watch-*.jsonl`, 실제 실행 출력은 `logs/auto-join-*.txt`에 남는다. 자동 참가 이후에는 기존 모델 예산과 실제 매입·판매 정책이 그대로 적용된다.
+
 > 2026-11-03 공개 연결 점검: week-07에서 Shop 등록에 성공했던 Pinggy SDK 0.3.1 경로를 복구해 기본값으로 설정했다. 실제 seller → 키트 Proxy → 임시 Pinggy 터널을 통한 공개 A2A·ACP discovery가 모두 HTTP 200으로 검증됐다. 근거: `logs/shop-transport-20261103T082440055660Z.json`. 이 점검은 시장 등록·거래를 하지 않았으며 임시 터널은 종료됐다. 앞선 Cloudflare 45초 점검 실패 기록도 보존했다. 실제 양쪽 참가 완료 여부는 별도로 확인해야 한다.
 
 시장에 등록하거나 거래하지 않고 가게 접속만 점검하려면 다음을 실행한다. 임시 터널은 점검 후 종료되며 거래 요청은 차단된다.
@@ -18,7 +31,7 @@
 
 ## 현재 확인한 범위
 
-- 로컬 계약·A2A·암호서명·합성 정산 및 터널 경계 테스트 23개 통과.
+- 로컬 계약·A2A·암호서명·합성 정산·터널 및 자동 감시 테스트 30개 통과.
 - Luna/Terra의 소량 구조화 판단 사례 6개 통과.
 - 실제 Luna가 shop·buyer 결정을 내리는 로컬 합성 정산 통과. 결제는 한 번만 적용되고 재사용은 거부됨.
 - 기존 가게·buyer 키 및 owner 설정을 Git-ignored 경로로 복사했고 API 키는 기존 week-06 파일에서 메모리로 읽는다.

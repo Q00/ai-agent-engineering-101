@@ -6,12 +6,14 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 from r3.lifecycle import lease, market_active, request_stop
-from r3.state import atomic_json
+from r3.state import atomic_json, policy
 from watch_round3 import Watcher, INTERVAL
 
 
 def root(tmp_path):
-    atomic_json(tmp_path / 'policy.json', {'end_at': '2099-11-17T23:59:00+09:00'})
+    cfg = policy()
+    cfg['end_at'] = '2099-11-17T23:59:00+09:00'
+    atomic_json(tmp_path / 'policy.json', cfg)
     return tmp_path
 
 
@@ -89,3 +91,14 @@ def test_deadline_and_stop_do_not_launch_and_stop_is_pid_scoped(tmp_path):
     assert not (folder / '.market/runtime-stop.json').exists()
     request_stop(123, folder)
     assert json.loads((folder / '.market/runtime-stop.json').read_text())['session'] == 'synthetic-session'
+
+
+def test_windows_launcher_pid_only_stops_matching_launch(tmp_path):
+    folder = root(tmp_path)
+    atomic_json(folder / '.market/runtime.json',
+                {'pid': 222, 'session': 'child-session', 'launch_id': 'owned-launch'})
+    request_stop(111, folder, launch_id='different-launch')
+    assert not (folder / '.market/runtime-stop.json').exists()
+    request_stop(111, folder, launch_id='owned-launch')
+    requested = json.loads((folder / '.market/runtime-stop.json').read_text())
+    assert requested['pid'] == 222 and requested['session'] == 'child-session'

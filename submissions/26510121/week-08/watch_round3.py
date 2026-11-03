@@ -32,7 +32,8 @@ def launch(log):
                 owner = value.strip().strip('\"\'')
     if not owner:
         raise RuntimeError('Existing owner credential is unavailable')
-    env = dict(os.environ, MARKET_OWNER=owner, MARKET_TUNNEL_PROVIDER='pinggy', PYTHONUTF8='1')
+    env = dict(os.environ, MARKET_OWNER=owner, MARKET_TUNNEL_PROVIDER='pinggy', PYTHONUTF8='1',
+               R3_LAUNCH_ID=log.stem)
     command = [sys.executable, '-u', str(ROOT / 'run_market.py'), 'join', '--dir', str(ROOT),
                '--market', MARKET, '--name', 'seochanit', '--tunnel']
     with log.open('xb') as out:
@@ -73,7 +74,7 @@ class Watcher:
         if self.stop_file.exists() or now >= self.end:
             self.record('stopping', reason='requested' if self.stop_file.exists() else 'round3_deadline')
             if self.child and self.child.poll() is None:
-                request_stop(self.child.pid, self.root)
+                request_stop(self.child.pid, self.root, launch_id=self.child_log.stem)
                 return True  # Keep supervising until the kit has cleaned up its children.
             self.record('stopped')
             return False

@@ -54,7 +54,8 @@ def market_active(root=ROOT):
 @contextmanager
 def market_session(root=ROOT):
     with lease(root / '.market/runtime.lock'):
-        session = dict(pid=os.getpid(), session=uuid.uuid4().hex, started_at=time.time())
+        session = dict(pid=os.getpid(), session=uuid.uuid4().hex, started_at=time.time(),
+                       launch_id=os.environ.get('R3_LAUNCH_ID'))
         atomic_json(root / '.market/runtime.json', session)
         done = threading.Event()
         end = datetime.fromisoformat(policy(root)['end_at']).timestamp()
@@ -77,7 +78,8 @@ def market_session(root=ROOT):
             monitor.join(timeout=2)
 
 
-def request_stop(pid, root=ROOT):
+def request_stop(pid, root=ROOT, *, launch_id=None):
     session = read_json(root / '.market/runtime.json', {})
-    if session.get('pid') == pid:
+    # A Windows venv launcher can have a different PID from its Python child.
+    if session.get('pid') == pid or launch_id and session.get('launch_id') == launch_id:
         atomic_json(root / '.market/runtime-stop.json', session)
