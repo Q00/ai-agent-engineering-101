@@ -12,7 +12,8 @@ CATALOG = {
     "F1": {"category": "food>kimchi", "list_price": 100},
 }
 ENTRIES = [
-    {"seq": 1, "ts": NOW - 100, "kind": "settle", "data": {"sku": "S1", "price": 800, "shop": "u1", "buyer": "b"}},
+    {"seq": 1, "ts": NOW - 100, "kind": "settle", "data": {"sku": "S1", "item": "S1", "amount": 800, "shop": "u1", "buyer": "b",
+                                                            "unit": "u-1", "grade": "B", "claim": None, "claim_honest": None}},   # the real Round 3 shape
     {"seq": 2, "ts": NOW - 200, "kind": "settle", "data": {"item": "S1", "price": 900, "shop": "u2"}},
     {"seq": 3, "ts": NOW - 300, "kind": "settle", "data": {"sku": "S1", "price": 1000}},
     {"seq": 4, "ts": NOW - 400, "kind": "result", "data": {"receipt": {"item": "S2", "price": 1500}}},   # Round 2 shape

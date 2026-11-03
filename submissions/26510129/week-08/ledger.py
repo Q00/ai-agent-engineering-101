@@ -33,9 +33,9 @@ def fetch(after=-500, timeout=10):
 def settles(entries, now=None, hours=WINDOW_HOURS):
     """Normalize settled deals to {sku, price, shop, buyer, ts}.
 
-    Round 3 writes `settle` entries whose `item` is the SKU. The Round 2 ledger has no settle kind, only `result`
-    with the shop's receipt, which is read the same way so the code can be exercised before Round 3 opens.
-    Field names of the Round 3 entry are taken from agent.md; verify against the first real entry in the log."""
+    Round 3 writes `settle` entries (seen 2026-11-03 20:55, seq 2130137): data = {order, buyer, shop (URL), item (the
+    SKU), amount, checkout_hash, unit, sku, name, grade, expires_at, claim, claim_honest, warranty_hours}. The price
+    is `amount`. The Round 2 ledger has no settle kind, only `result` with the shop's receipt, read the same way."""
     now = now or time.time()
     since = now - hours * 3600
     rows = []
@@ -44,7 +44,8 @@ def settles(entries, now=None, hours=WINDOW_HOURS):
         kind = e.get("kind")
         if kind == "settle":
             sku = data.get("sku") or data.get("item") or (data.get("receipt") or {}).get("item")
-            price = data.get("price") if data.get("price") is not None else (data.get("receipt") or {}).get("price")
+            price = next((data.get(k) for k in ("amount", "price") if data.get(k) is not None),
+                         (data.get("receipt") or {}).get("price"))
         elif kind == "result":
             receipt = data.get("receipt") or {}
             sku, price = receipt.get("item"), receipt.get("price")
