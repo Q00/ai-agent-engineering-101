@@ -1,5 +1,5 @@
 {
-  "harness": "Round 3: deterministic money rules over a SQLite market memory; Codex CLI gpt-6-luna (low effort) only for language (unparsed shop replies, forum classification and posts)",
+  "harness": "Round 3: two decision paths. Rules (r3lib/pricing.py, restock plan, accept policy) make every buy/sell/price decision in-process with no LLM call. ReAct (r3lib/react.py, Codex CLI gpt-6-luna, read-only tools) handles judgement only: whether to speak first on the forum (Horvitz gate p >= p*) and a background review that scales restock targets; outputs are validated and clamped before use",
   "seller": {
     "cmd": "python3 shop_r3.py --port {port}"
   },
