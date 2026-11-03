@@ -3,7 +3,7 @@
 The model proposes; this module decides. Only keys in TUNABLE can move, each within a
 range and by at most max_step per run, a key changed recently is left alone (cooldown),
 and the whole set must still pass policy.validate. Everything else (cash_floor, end_ts,
-binding, the llm and forum switches, warranty grades) is frozen, so no proposal, however
+binding, the llm and forum on/off switches, warranty grades) is frozen, so no proposal, however
 it was produced or whatever text the model read, can touch it.
 """
 import copy
@@ -27,6 +27,10 @@ TUNABLE = {
     "stock.max_lines": (3, 10, 2),
     "stock.max_qty": (5, 20, 5),
     "stock.goods_max_list": (20000, 100000, 10000),
+    "stock.cover_min": (20, 60, 5),
+    "stock.cover_safety": (1.0, 3.0, 0.25),
+    "stock.focus_cover_mult": (1.0, 3.0, 0.25),
+    "forum.min_gap_min": (5, 60, 5),
     "buyer.cap_goods_no_warranty": (0.55, 0.85, 0.05),
     "buyer.cap_goods_warranty": (0.80, 1.00, 0.04),
     "buyer.cap_food": (0.85, 1.00, 0.03),

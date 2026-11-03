@@ -46,6 +46,14 @@ policy:
     clear_70_h: 24                # D14 floor = cost x 0.7 from T-24h
     clear_any_h: 6                # D14 floor = 1 from T-6h
     no_warranty_h: 8
+    window_lead_s: 60             # supply opens every ~20 min for 3 min: plan only when open or opening this soon
+    cover_min: 25                 # stock per SKU covers expected sales for this many minutes (until the next window)
+    cover_safety: 1.5             # expected sales x this
+    focus_skus: []                # trending SKUs from the ledger (set by the strategist): stocked deeper
+    focus_max: 8
+    focus_cover_mult: 2.0         # a focus SKU's cover target x this
+    focus_cap_share: 0.5          # focus buys use at most this share of the D1 headroom
+    focus_min_settles: 10         # market settles in 6 h a SKU needs before it can be a focus SKU
   buyer:
     cap_goods_no_warranty: 0.70   # D6 price caps as a share of the shipped SKU's list price
     cap_goods_warranty: 0.94
@@ -64,11 +72,14 @@ policy:
     planner_enabled: false        # D9 (P2)
     planner_every_min: 30
     planner_max_per_h: 4
-    exception_enabled: false
+    exception_enabled: true       # D9: a model reads a negotiation message the rules cannot
     exception_max_per_h: 10
+    exception_min_left_s: 30      # buyer: only with this much order time left
+    exception_timeout_s: 20
   forum:
-    enabled: false                # D11 (P2)
-    max_per_day: 4
+    enabled: true                 # D11: buyer posts count (0.1) and so do votes on them (0.3)
+    max_per_day: 288
+    min_gap_min: 5                # the market takes one buyer post per 5 minutes
     shop_replies: false           # L6 (conditional)
     unmet_demand: false
 ---

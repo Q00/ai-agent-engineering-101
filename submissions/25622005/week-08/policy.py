@@ -41,6 +41,8 @@ DEFAULTS = {
         "bankrupt_min_hours_to_end": 48, "bankrupt_recovery_threshold": 500000, "bankrupt_zero_sales_h": 12,
         "end_ts": 1794927540, "taper_h": 72, "taper_factor": 0.5, "goods_stop_h": 24,
         "clear_cost_h": 48, "clear_70_h": 24, "clear_any_h": 6, "no_warranty_h": 8,
+        "window_lead_s": 60, "cover_min": 25, "cover_safety": 1.5,
+        "focus_skus": [], "focus_max": 8, "focus_cover_mult": 2.0, "focus_cap_share": 0.5, "focus_min_settles": 10,
     },
     "buyer": {
         "cap_goods_no_warranty": 0.70, "cap_goods_warranty": 0.94, "cap_food": 0.95,
@@ -49,8 +51,9 @@ DEFAULTS = {
         "binding": True, "accept_cert": True,
     },
     "llm": {"planner_enabled": False, "planner_every_min": 30, "planner_max_per_h": 4,
-            "exception_enabled": False, "exception_max_per_h": 10},
-    "forum": {"enabled": False, "max_per_day": 4, "shop_replies": False, "unmet_demand": False},
+            "exception_enabled": True, "exception_max_per_h": 10, "exception_min_left_s": 30,
+            "exception_timeout_s": 20},
+    "forum": {"enabled": True, "max_per_day": 288, "min_gap_min": 5, "shop_replies": False, "unmet_demand": False},
 }
 
 # Bounds for values where a typo would be costly. (low, high), inclusive.
@@ -62,7 +65,11 @@ RANGES = {
     "buyer.cap_goods_no_warranty": (0.0, 1.5), "buyer.cap_goods_warranty": (0.0, 1.5), "buyer.cap_food": (0.0, 1.5),
     "buyer.open_list": (0.0, 1.5), "buyer.max_shops": (1, 10), "buyer.target_s": (1, 240),
     "buyer.continue_p": (0.0, 1.0), "buyer.msg_timeout_s": (1, 120), "buyer.order_cap_s": (5, 280),
-    "llm.planner_max_per_h": (0, 20), "llm.exception_max_per_h": (0, 60), "forum.max_per_day": (0, 50),
+    "stock.window_lead_s": (0, 60),         # the kit retries a closed-window line 3 x 30 s, then skips it "stock.cover_min": (5, 240), "stock.cover_safety": (0.5, 5.0),
+    "llm.planner_max_per_h": (0, 20), "llm.exception_max_per_h": (0, 60), "forum.max_per_day": (0, 288),
+    "forum.min_gap_min": (5, 1440),
+    "stock.focus_max": (0, 20), "stock.focus_cover_mult": (1.0, 4.0), "stock.focus_cap_share": (0.0, 1.0),
+    "stock.focus_min_settles": (1, 1000), "llm.exception_min_left_s": (0, 280), "llm.exception_timeout_s": (3, 60),
 }
 
 
@@ -175,6 +182,11 @@ def validate(pol):
             errors.append("seller.floor_list: above seller.first_ask_list")
         if pol["buyer"]["target_s"] > pol["buyer"]["order_cap_s"]:
             errors.append("buyer.target_s: above buyer.order_cap_s")
+        focus = pol["stock"]["focus_skus"]
+        if not all(isinstance(x, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,40}", x) for x in focus):
+            errors.append("stock.focus_skus: expected SKU strings")
+        elif len(focus) > pol["stock"]["focus_max"] or len(set(focus)) != len(focus):
+            errors.append("stock.focus_skus: more than stock.focus_max, or repeated")
     return errors
 
 

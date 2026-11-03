@@ -1,6 +1,6 @@
 ---
 name: round3-sales-strategy
-version: 1
+version: 2
 description: Round 3 shop and buyer strategy for psyoung82. The numbers under policy are read by the rule engine on every call; the text below is read by the planner model.
 policy:
   seller:
@@ -46,6 +46,14 @@ policy:
     clear_70_h: 24                # D14 floor = cost x 0.7 from T-24h
     clear_any_h: 6                # D14 floor = 1 from T-6h
     no_warranty_h: 8
+    window_lead_s: 60             # supply opens every ~20 min for 3 min: plan only when open or opening this soon
+    cover_min: 25                 # stock per SKU covers expected sales for this many minutes (until the next window)
+    cover_safety: 1.5             # expected sales x this
+    focus_skus: []                # trending SKUs from the ledger (set by the strategist): stocked deeper
+    focus_max: 8
+    focus_cover_mult: 2.0         # a focus SKU's cover target x this
+    focus_cap_share: 0.5          # focus buys use at most this share of the D1 headroom
+    focus_min_settles: 10         # market settles in 6 h a SKU needs before it can be a focus SKU
   buyer:
     cap_goods_no_warranty: 0.70   # D6 price caps as a share of the shipped SKU's list price
     cap_goods_warranty: 0.94
@@ -64,11 +72,14 @@ policy:
     planner_enabled: false        # D9 (P2)
     planner_every_min: 30
     planner_max_per_h: 4
-    exception_enabled: false
+    exception_enabled: true       # D9: a model reads a negotiation message the rules cannot
     exception_max_per_h: 10
+    exception_min_left_s: 30      # buyer: only with this much order time left
+    exception_timeout_s: 20
   forum:
-    enabled: false                # D11 (P2)
-    max_per_day: 4
+    enabled: true                 # D11: buyer posts count (0.1) and so do votes on them (0.3)
+    max_per_day: 288
+    min_gap_min: 5                # the market takes one buyer post per 5 minutes
     shop_replies: false           # L6 (conditional)
     unmet_demand: false
 ---
@@ -111,7 +122,16 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
   above `stock.cash_floor`.
 - Open long-shelf food first, then cheap goods. Pick the SKU closest to the category's
   median price. Fill categories in order of (demand + 1) / (supply + 1).
+- `stock.focus_skus` lists SKUs that settle often on the public ledger relative to how many
+  shops supply them (chosen by the strategist from ledger settles; forum posts are only a hint).
+  They are stocked even when they are not the category's median-price SKU, to
+  `stock.focus_cover_mult` times the cover target, within `stock.focus_cap_share` of the headroom.
 - Keep stock in the categories our regular customers buy.
+- Supply opens for everyone about every 20 minutes for 3 minutes. Plan a buy only when the
+  window is open or opens within `stock.window_lead_s` seconds; stock bought in one window has
+  to last until the next. Each SKU holds the larger of `stock.per_sku_qty` and its expected sales
+  over `stock.cover_min` minutes times `stock.cover_safety`. Sold-out SKUs are refilled first:
+  a shop without the SKU is not shown to the buyer at all.
 - Taper buying from `stock.taper_h` hours before the end; stop goods at `stock.goods_stop_h`.
 
 ## Buyer
@@ -122,6 +142,21 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 - After `buyer.target_s` seconds, continue only while the estimated chance of closing is at
   least `buyer.continue_p`.
 - Rate shops from the settled facts. Our own errors are never the shop's fault.
+
+## Forum
+
+- Buyer ALL now counts the buyer's posts (0.1) and the votes on them (0.3); hidden posts do
+  not count. Post as the buyer only, at most one post every `forum.min_gap_min` minutes.
+- Post facts from our own settled purchases: product, SKU, price against list, grade and claim
+  honesty, shelf life left, warranty, shop, ledger number. No budgets, no advertising.
+
+## Model
+
+- Every message is answered by rule. Only a message the rules cannot read (no price, an
+  unknown form) goes to a small model, at most `llm.exception_max_per_h` times an hour and, for
+  the buyer, only with `llm.exception_min_left_s` seconds of the order left. The model only
+  reads the message; the same rules then decide, so it can never raise a price or skip a check.
+- The strategist (a larger model, every 30 minutes) tunes the numbers above within its limits.
 
 ## Never
 
