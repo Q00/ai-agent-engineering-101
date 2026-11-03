@@ -20,6 +20,7 @@ from r3.protocol import canon, signed_body
 from r3.economy import grade, remaining, shop_candidates
 from r3.model import Chooser
 from r3.adaptive import effective
+from r3 import customer_memory
 
 NAME = "Seochanit Shop"
 
@@ -64,10 +65,26 @@ class Seller(AgentExecutor):
         deal = self.deals.get(task.id)
         if deal is None:
             unit = self.select_unit(text, task.id)
+            message_id = getattr(context.message, 'message_id', '')
+            metadata = getattr(context.message, 'metadata', None) or {}
+            shop_pubkey = None
+            if metadata.get('buyer_memory_proof'):
+                try:
+                    shop_key = serialization.load_pem_private_key(self.key_path.read_bytes(), password=None)
+                    shop_pubkey = base64.b64encode(shop_key.public_key().public_bytes(
+                        serialization.Encoding.Raw, serialization.PublicFormat.Raw)).decode()
+                except (ValueError, OSError):
+                    pass
+            signer = customer_memory.signed_visitor(self.j, task.id, message_id, text,
+                                                     metadata, expected_shop=shop_pubkey)
             if unit is None:
+                customer_memory.visit(self.j, task.id, text, signer=signer)
+                customer_memory.incoming(self.j, task.id, message_id, text)
+                customer_memory.finish(self.j, task.id, 'stockout')
                 await up.reject(say("No matching available inventory unit."))
                 return
             config, strategy = effective(self.j, 'shop', self.cfg)
+            customer_memory.visit(self.j, task.id, text, unit, strategy['version'], signer)
             deal = self.deals[task.id] = {"unit": unit, "ask": None, "turns": 0,
                                          "until": time.time() + self.cfg["session_ttl_seconds"],
                                          "config": config, "strategy": strategy}
@@ -76,6 +93,9 @@ class Seller(AgentExecutor):
             self.j.add("shop_opportunity", {"task": task.id, "unit": unit["unit"], "sku": unit["sku"],
                                             "strategy_version": strategy['version']},
                        eid="visit:" + task.id, role="shop")
+        message_id = getattr(context.message, 'message_id', '')
+        customer_memory.incoming(self.j, task.id, message_id, text,
+                                 last_ask=deal['ask'], turn=deal['turns'] + 1)
         if deal.get("receipt"):
             await up.add_artifact(parts=[new_data_part(deal["receipt"])], name="receipt")
             await up.complete(say("Previously agreed receipt; no new sale."))
@@ -84,12 +104,14 @@ class Seller(AgentExecutor):
         unit = next((u for u in inv.get("units", []) if u["unit"] == deal["unit"]["unit"]), None)
         cat = self.j.snapshot("catalog.json", {})
         if unit is None or remaining(unit) <= 0 or time.time() >= deal["until"]:
+            customer_memory.finish(self.j, task.id, 'expired_or_unavailable')
             self.j.release(task.id)
             self.deals.pop(task.id, None)
             await up.reject(say("That inventory unit is no longer available."))
             return
         deal["turns"] += 1
         if deal["turns"] > self.cfg["max_negotiation_turns"] + 1:
+            customer_memory.finish(self.j, task.id, 'turn_limit')
             self.j.release(task.id)
             self.deals.pop(task.id, None)
             await up.reject(say("Negotiation limit reached."))
@@ -99,21 +121,26 @@ class Seller(AgentExecutor):
             match = re.fullmatch(r"\s*(?:I accept(?: at)?\s*)?([\d,]+)\s*", text, re.I)
             if match:
                 offer = int(match.group(1).replace(",", ""))
-        candidates = shop_candidates(unit, inv, cat, self.j, deal['config'], offer=offer, previous_ask=deal["ask"])
+        memory = customer_memory.summary(self.j, task.id, unit)
+        candidates = shop_candidates(unit, inv, cat, self.j, deal['config'], offer=offer,
+                                     previous_ask=deal["ask"], customer_memory=memory)
         if not candidates:
+            customer_memory.finish(self.j, task.id, 'no_feasible_offer')
             await up.reject(say("No feasible inventory offer."))
             self.j.release(task.id)
             return
         selected = await asyncio.to_thread(self.chooser.choose, "shop", candidates,
-                                          {"unit": unit, "turn": deal["turns"], "offer": offer,
+                                          {"task": task.id, "unit": unit, "turn": deal["turns"], "offer": offer,
                                            "balance": inv.get("balance"), "previous_ask": deal["ask"],
-                                           "strategy": deal['strategy']},
+                                           "strategy": deal['strategy'], "customer_memory": memory},
                                           critical=unit["cost"] > inv.get("balance", 1) * self.cfg["critic_cash_fraction"],
                                           deadline=deal["until"] - 5)
         price = selected["price"]
+        customer_memory.action(self.j, task.id, message_id, deal['turns'], selected, deal['strategy']['version'])
         self.j.add("shop_quote", {"task": task.id, "sku": unit["sku"], "price": price, "action": selected["action"],
                                   "strategy_version": deal['strategy']['version']}, role="shop")
         if selected["action"] == "accept":
+            customer_memory.finish(self.j, task.id, 'agreed_not_yet_paid')
             rec = {"shop": NAME, "item": unit["sku"], "price": price, "task": task.id,
                    "unit": unit["unit"], "claim": grade(unit, cat), "cert": True,
                    "warranty_hours": selected["warranty_hours"]}
@@ -133,6 +160,7 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context, event_queue):
         task = context.current_task
+        customer_memory.finish(self.j, task.id, 'cancelled')
         self.j.release(task.id)
         self.deals.pop(task.id, None)
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()

@@ -44,7 +44,8 @@ def shop_statistics(journal, sku, category=None):
             "source": "own observed opportunities, with a disclosed Beta(1,1) rate prior"}
 
 
-def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous_ask=None, now=None):
+def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous_ask=None, now=None,
+                    customer_memory=None):
     now = time.time() if now is None else now
     left = remaining(unit, now)
     if left <= 0:
@@ -63,6 +64,19 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
         recovery_floor = max(1, int(recovery_floor * .65))
     ceiling = previous_ask or int(1.05 * L)
     prices = {max(recovery_floor, int(reference * f)) for f in (.9, 1, 1.1)}
+    memory_evidence = None
+    if customer_memory:
+        behavior = customer_memory.get('category_behavior', {})
+        personal = customer_memory.get('customer_profile', {})
+        source = personal if personal.get('category_paid_visits', 0) >= 3 else behavior
+        samples = source.get('category_paid_visits', source.get('paid_visits', 0))
+        ratio = source.get('median_paid_to_list_ratio')
+        if samples >= 3 and type(ratio) in (int, float) and 0 < ratio <= 2:
+            p = int(ratio * L)
+            if recovery_floor <= p <= ceiling:
+                prices.add(p)
+                memory_evidence = {'source': 'verified_customer' if source is personal else 'observed_category',
+                                   'paid_samples': samples, 'price_to_list_ratio': ratio}
     if previous_ask:
         prices.add(previous_ask)
     result = []
@@ -74,7 +88,8 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
         completion = quote_completion(journal, unit["sku"], p)
         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
                        "warranty_hours": warranty, "score": (1 - stress_refund) * p * completion["completion"],
-                       "evidence": dict(stats, quote_completion=completion), "recovery_floor": recovery_floor,
+                       "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence),
+                       "recovery_floor": recovery_floor,
                        "risk": "goods refund stress 0.15; not observed break probability" if warranty else "food expiry"})
     if offer and offer >= recovery_floor:
         p = min(offer, previous_ask) if previous_ask else offer

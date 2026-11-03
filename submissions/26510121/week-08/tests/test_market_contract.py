@@ -65,6 +65,11 @@ def test_actual_a2a_server_and_buyer_interoperate(tmp_path, monkeypatch):
         assert out['accept']['expected_sku'] == 'G111'
         assert out['accept']['warranty_hours'] == 6
         assert j.events('agreement')
+        task_id = out['receipt']['task']
+        assert j.events('customer_visit')[0]['task'] == task_id
+        assert any(e.get('offer') for e in j.events('customer_turn'))
+        shop_predictions = [e for e in j.events('prediction') if e.get('role') == 'shop']
+        assert all(e['context']['customer_memory']['task'] == task_id for e in shop_predictions)
     finally:
         server.should_exit = True
         thread.join(timeout=8)

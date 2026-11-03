@@ -107,11 +107,14 @@ def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch):
         acp.terms[rec['task']] = dict(rec)
         mr = kit.acp_pay(order, url, pub(shop_key), rec, buyer_key, result['accept'])
         assert mr and market.settlements == 1
+        assert len(j.events('customer_paid')) == 1
+        assert j.events('customer_paid')[0]['ledger'] == 101
         assert market.balance == 4994000 + rec['price'] and market.buyer_paid == rec['price']
         rv = review({'order': order, 'receipt': rec, 'settled': mr}, j)
         assert rv['stars'] >= 1 and len(j.events('purchase')) == 1
         assert kit.acp_pay(order, url, pub(shop_key), rec, buyer_key, result['accept']) is None
         assert market.settlements == 1
+        assert len(j.events('customer_paid')) == 1
         if os.environ.get('R3_LIVE_INTEGRATION'):
             assert j.events('model_usage'), 'A numeric fallback alone is not a live-model validation'
             decisions = j.events('decision')

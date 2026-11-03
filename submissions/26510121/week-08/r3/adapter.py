@@ -9,6 +9,7 @@ from pathlib import Path
 import time
 from starlette.responses import JSONResponse
 from .state import ROOT, Journal, atomic_json, policy
+from . import customer_memory
 
 
 def load_kit():
@@ -72,7 +73,22 @@ def install(kit, journal=None, config=None):
 
         async def handle(self, req, path, body, public):
             self.expire_sessions()
-            return await super().handle(req, path, body, public)
+            response = await super().handle(req, path, body, public)
+            if req.method == 'POST' and path.endswith('/complete') and response.status_code == 200:
+                # Use the shop's verified checkout and the accepted market receipt,
+                # never a buyer name or receipt supplied by the incoming request.
+                try:
+                    result = json.loads(response.body)
+                    session = self.sessions[result['id']]
+                    checkout = kit.jwt_payload(session['checkout_jwt'], kit.pub_b64(self.key))
+                    receipt = result['order']['mandate_receipt']
+                    if checkout and session['status'] == 'completed':
+                        customer_memory.paid(j, checkout['task'], checkout['price'],
+                                             receipt.get('sku', checkout['item']), receipt['ledger'], receipt)
+                except Exception as exc:
+                    # A nonessential memory error must not hide a successful payment.
+                    kit.log('[memory] customer attribution unavailable: ' + type(exc).__name__)
+            return response
 
     def market_call(self, method, path, role="buyer", **kwargs):
         response = original_call(self, method, path, role=role, **kwargs)
@@ -131,6 +147,7 @@ def install(kit, journal=None, config=None):
             for event in rows:
                 if event.get("kind") == "settle":
                     j.add("public_settle", event["data"], eid="public:" + str(event["seq"]), ts=event.get("ts"))
+                    customer_memory.bind_market_payer(j, event['seq'], event['data'])
                 elif event.get("kind") in {"refund", "broken"}:
                     j.add("public_" + event["kind"], event["data"], eid="public:" + str(event["seq"]), ts=event.get("ts"))
             seq = rows[-1]["seq"]
