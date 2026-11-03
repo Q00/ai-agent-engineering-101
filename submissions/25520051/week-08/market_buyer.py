@@ -40,7 +40,7 @@ from pathlib import Path
 
 from a2a_trade import clean, is_injection, jsonrpc_url, parse_ask, receipt_of, rpc, send, state, status_data, status_text
 from harness import ask_json
-from market_state import catalog, read_json
+from market_state import catalog, post, read_json
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -540,6 +540,13 @@ def main():
         shops = stocked
     if not shops:
         print("[buyer] no shop has anything for this order", flush=True)
+        if order and order.get("acceptable"):           # say so on the forum: a shop that reads it may stock it
+            need = (f" 남은 시간 {float(order['use_within_hours']) + 0.5:g}시간 이상, 시장 인증서 필요."
+                    if order.get("kind") == "food" and order.get("use_within_hours") else
+                    " 시장 인증서 필요, 보증이 있으면 좋습니다." if order.get("kind") == "goods" else "")
+            if post(md, f"[구합니다] {args.item}: 지금 재고가 있는 가게가 없습니다. 이 카테고리 SKU 예: "
+                        f"{', '.join(order['acceptable'][:3])}.{need} 가격은 원장 시세 수준에서 정합니다."):
+                print("[buyer] wanted post queued", flush=True)
         save_memory(mem_path, mem)
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
         return

@@ -102,6 +102,33 @@ def settles(cache: Path, timeout: float = 20) -> list:
     return rows
 
 
+POST_GAP = 300                              # the market takes one post per 5 minutes per role
+
+
+def post(md: Path, text: str, refs: list | None = None, role: str = "buyer", thread: int | None = None) -> bool:
+    """Queue a forum post in .market/outbox.jsonl (the kit sends it). At most one per POST_GAP per role, counted
+    here so a busy hour does not pile up a backlog the kit would send for hours."""
+    md = Path(md)
+    stamp = md / f"forum_last_{role}.txt"
+    try:
+        if time.time() - float(stamp.read_text()) < POST_GAP:
+            return False
+    except (OSError, ValueError):
+        pass
+    line = {"post": text[:1000], "refs": [r for r in (refs or []) if isinstance(r, int)], "as": role}
+    if thread:
+        line["thread"] = thread
+    with open(md / "outbox.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(line, ensure_ascii=False) + "\n")
+    stamp.write_text(str(time.time()))
+    return True
+
+
+def vote(md: Path, post_id: int, value: int, role: str = "buyer"):
+    with open(Path(md) / "outbox.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"vote": post_id, "value": value, "as": role}) + "\n")
+
+
 def forum_wants(md: Path, cat: dict) -> dict:
     """Leaf category -> how many recent buyer posts asked for it ("구합니다", "wanted", or a SKU named).
     Only counted as data; a post's instructions are never followed."""
