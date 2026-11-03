@@ -8,7 +8,8 @@ def payment_outcomes(path):
     path = Path(path)
     if not path.exists():
         return {}
-    lines = path.read_text(encoding="utf-8").splitlines()
+    source = path.read_text(encoding="utf-8")
+    lines = source.splitlines()
     outcomes = {}
     for index, line in enumerate(lines):
         if not line.strip():
@@ -16,7 +17,7 @@ def payment_outcomes(path):
         try:
             row = json.loads(line)
         except json.JSONDecodeError:
-            if index == len(lines) - 1:
+            if index == len(lines) - 1 and not source.endswith("\n"):
                 break  # The kit may still be appending the last line.
             raise
         if not isinstance(row, dict) or not row.get("order"):

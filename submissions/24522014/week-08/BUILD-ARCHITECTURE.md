@@ -1,5 +1,7 @@
 # 아키텍처 그림 빌드
 
+11월 3일 갱신: 날짜·검사 수를 현재 상태(79개 통과)로 바꿔 PDF를 다시 빌드했다. 로그는 `logs/architecture-build-20261103.log`, 최신 소스·PDF 해시와 페이지 검사는 `logs/preopen-submission-audit-20261103.json`이다. 아래 11월 2일 검증 기록은 이전 버전의 이력이다.
+
 `architecture.tex`는 TikZ로 작성한 한 페이지 그림 원본이며 `architecture.pdf`가 제출용 결과다. 그림은 영어로 표기하고 한국어 설명은 REPORT.md의 2절에 둔다. 제공된 키트, 수업 seller를 수정한 부분, 자체 제약·메모리·툴을 구분한다. 실제 R3 성과를 입증하는 자료로 해석하지 않는다.
 
 Tectonic 0.17.0 공식 Windows 배포판으로 빌드했다. 다운로드한 도구와 미리보기 라이브러리는 Git 제외 tools/에만 두었다. [공식 릴리스](https://github.com/tectonic-typesetting/tectonic/releases/tag/tectonic%400.17.0)를 참고한다. Tectonic이 설치된 환경에서 다음을 실행한다.

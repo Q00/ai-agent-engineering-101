@@ -85,6 +85,9 @@ class RefundTests(unittest.TestCase):
 
 class RefundProtocol(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        opening = patch.object(seller, "opening_reference", side_effect=lambda item: {"lamp": 105, "chair": 195, "bookshelf": 280}[item])
+        opening.start()
+        self.addCleanup(opening.stop)
         self.terms = json.loads((seller.ROOT / 'satisfaction_event.json').read_text(encoding='utf-8'))
         active = patch.object(seller,'refund_policy',return_value=self.terms)
         active.start()

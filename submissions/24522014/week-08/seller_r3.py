@@ -88,7 +88,9 @@ def find_unit(text, taken=()):
     try:
         inv = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        inv = {}
+        return None
+    if "round" not in inv:
+        return None
     if inv.get("round", 0) < 3:
         item = next((k for k in RESERVE if k in want), None)
         return item and {"sku": item, "name": item, "list_price": int(RESERVE[item] * 1.3), "cost": RESERVE[item],
@@ -163,6 +165,25 @@ class Seller(AgentExecutor):
             return
         print(f"[harness] {raw}", flush=True)
         action = (move or {}).get("action")
+        # A model call takes time: verify the unit and terms again before signing.
+        if u.get("unit"):
+            before = (u.get("grade"), u.get("expires_at"), terms["quote"])
+            try:
+                inventory = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
+                u = next(x for x in inventory["units"] if x["unit"] == u["unit"])
+                if u["unit"] in self.committed_units:
+                    raise ValueError("Unit already committed")
+                terms = selling_terms(u, catalog)
+                reserve = terms["floor"]
+                deal["unit"] = u
+            except (OSError, ValueError, KeyError, StopIteration):
+                self.open.pop(task.id, None)
+                await up.reject(say("Unit unavailable or expired while checking the offer. No purchase confirmed."))
+                return
+            after = (u.get("grade"), u.get("expires_at"), terms["quote"])
+            if before != after:
+                action, move = "counter", {"price": max(reserve, min(deal["ask"] or terms["quote"], terms["quote"]))}
+                print("[guard] inventory condition/price changed; disclose again and request confirmation", flush=True)
         # A new unit always receives an explicit quote before purchase confirmation.
         if terms["discount_stage"] and deal["ask"] is None:
             action, move = "counter", {"price": terms["quote"]}

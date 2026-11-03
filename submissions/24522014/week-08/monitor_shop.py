@@ -68,6 +68,7 @@ def main():
             if low:
                 record["alerts"].append(f"Public recent-review list contains {len(low)} reviews below 5 stars; inspect their text and dates separately.")
     except (httpx.HTTPError, ValueError, KeyError, TypeError, StopIteration, OSError) as error:
+        record["status"] = "error"
         record["alerts"].append(f"Observation failed: {type(error).__name__}: {error}")
     path.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     try:

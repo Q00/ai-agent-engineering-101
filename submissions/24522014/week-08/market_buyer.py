@@ -135,10 +135,12 @@ def main():
         shops, memory = load_shops(args.shops), load_memory(args.memory)
         order = json.loads(args.order.read_text(encoding="utf-8")) if args.order else {}
         acceptable = order.get("acceptable") or []
-        r3 = bool(acceptable)
+        r3 = order.get("round", 0) >= 3 or bool(acceptable)
+        accept_conditions = None
         if r3:
             if order.get("item") != args.item or order.get("budget") != args.budget:
                 raise ValueError("Order and command arguments disagree")
+            accept_conditions = buyer_accept(order)
             memory = reconcile(memory, payment_outcomes(args.order.parent / "payments.jsonl"))
             shops = [dict(s, offers=[o for o in s.get("offers", [])
                                     if o.get("sku") in acceptable and o.get("qty", 0) > 0]) for s in shops]
@@ -159,7 +161,7 @@ def main():
             record["order"] = order.get("order")
             record["category"] = order.get("category", args.item)
             # Certificate and food-use constraints are enforced by the kit before payment.
-            result["accept"] = buyer_accept(order)
+            result["accept"] = accept_conditions
         record["selection_reason"] = reason
         remember(args.memory, record)
     else:

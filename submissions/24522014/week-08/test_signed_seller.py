@@ -72,6 +72,9 @@ class SignatureChecks(unittest.TestCase):
 
 class SellerProtocol(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        opening = patch.object(seller, "opening_reference", side_effect=lambda item: {"lamp": 105, "chair": 195, "bookshelf": 280}[item])
+        opening.start()
+        self.addCleanup(opening.stop)
         # Protocol fixtures run inside the event window; time boundaries are
         # tested separately so these tests do not depend on the calendar date.
         event = json.loads((seller.ROOT / "review_event_promise_legacy.json").read_text(encoding="utf-8"))
