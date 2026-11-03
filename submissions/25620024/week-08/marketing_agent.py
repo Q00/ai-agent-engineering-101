@@ -62,7 +62,7 @@ BAN = re.compile(r"approved by|instructor|operator|official|ignore (all|previous
 
 RESEARCH_SCHEMA = {
     "type": "object", "additionalProperties": False,
-    "required": ["findings", "exclusive_candidates", "risks", "bugs"],
+    "required": ["findings", "exclusive_candidates", "risks", "bugs", "enuri_requests"],
     "properties": {
         "findings": {"type": "array", "items": {"type": "string"}},
         "exclusive_candidates": {"type": "array", "items": {"type": "object", "additionalProperties": False,
@@ -74,8 +74,14 @@ RESEARCH_SCHEMA = {
                                             "required": ["what", "evidence", "fix"],
                                             "properties": {"what": {"type": "string"}, "evidence": {"type": "string"},
                                                            "fix": {"type": "string"}}}},
+        "enuri_requests": {"type": "array", "items": {"type": "string"}},
     },
 }
+ENURI_REQ = HERE / "private" / "enuri_requests.json"
+SKU_RE = re.compile(r"G[0-9a-f]{8}")
+ACCOUNTABLE = """brief.accountability comes first: what headquarters holds you responsible for, with the numbers now. Answer
+it in your {where}.
+"""
 
 EMERGENCY = """EMERGENCY MEETING (contingency plan), called by the headquarters: the board rewards the leaders and we
 must break into the top ranks. Every team proposes from its own role. Marketing research: list the signature sales
@@ -93,7 +99,7 @@ shop: your job is to give it what it needs to maximise sales and profit. Answer 
 first. You do research only; the sales team decides.
 Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000; costs are
 only stock decay (goods storage 1%/day, food expiring, refunds of goods broken under our warranty).
-FOCUS: the board rewards the leaders (buyers choose shops they have bought from and shops with many reviews),
+{accountable}FOCUS: the board rewards the leaders (buyers choose shops they have bought from and shops with many reviews),
 so study the leaders in brief.leaders: what the top shops and top buyers do that we do not (prices, margins,
 categories, breadth, average sale size, card wording, buying habits), and find where dragonash can break in:
 categories or SKUs the leaders do not serve well, buyers they do not win, and what would make buyer agents pick a
@@ -105,6 +111,10 @@ logs/market-kit.log; read them, you cannot change them), report:
 - exclusive_candidates: hot SKUs that few competitors hold, with the evidence (sold, competitor units, our units)
 - risks: what could lose money or stars soon
 - bugs: anything in code or logs that loses sales or money, with evidence and a concrete fix
+- enuri_requests: up to 10 SKUs (G + 8 hex) whose competitor prices you want. The Enuri team (our buyer's price
+  scouts; they never buy) quotes them at other shops and puts the asks in their book; brief.enuri is that book:
+  price gaps between shops per SKU (where we can undercut), shops to avoid, forum prices, and their own record of
+  missed and wrong purchases. You are allies: use their findings, and ask for what you need. [] if nothing.
 Answer with the JSON object only.
 
 BRIEF:
@@ -225,10 +235,16 @@ Your job, every hour, from the brief below:
    stale or proved wrong. Change at most 2 levers against brief.current_plan per run, so each outcome can be
    traced to its cause.
 7. rationale: 3-6 sentences on why, naming which lessons you followed.
+brief.accountability comes first: what headquarters holds you responsible for, with the numbers now. Answer it in
+your rationale. BUYER UNIT (after the finance advice) is what our own buyer team and its price scouts learned
+about buyers and shop prices: use it, they read your plan too.
 Never plan anything deceptive. Answer with the JSON object only.
 
 BRIEF:
 """
+
+
+LAST = {}
 
 
 def brief():
@@ -238,6 +254,7 @@ def brief():
     except Exception:
         pass
     b = httpx.get(f"{market_model.MARKET}/api/board", timeout=30).json()
+    LAST["board"] = b                               # kept for the teams that need the raw board (sales kpi, buyer team)
     shops = [s for s in b["shops"] if not s.get("house")]
     keys = ("deals", "revenue", "profit", "stars", "all", "refunds", "broken")
     me = next((s for s in shops if s["name"] == NAME), {})
@@ -592,10 +609,30 @@ def run(a, t0):
         b["experiments"] = {"error": str(e)[:200]}
     if getattr(a, "emergency", False):
         b["emergency_meeting"] = EMERGENCY
+    try:                                             # the Enuri team's book: marketing and the buyer's scouts are allies
+        import enuri
+        b["enuri"] = enuri.summary()
+    except Exception as e:
+        b["enuri"] = {"error": f"{type(e).__name__}: {e}"[:200]}
+    try:                                             # what headquarters holds the team responsible for, first
+        import kpi
+        b = {"accountability": kpi.accountability("marketing", c), **b}
+    except Exception as e:
+        b = {"accountability": {"error": f"{type(e).__name__}: {e}"[:200]}, **b}
     research = json.loads(ask_codex((EMERGENCY + "\n\n" if getattr(a, "emergency", False) else "")
-                                    + RESEARCH_PROMPT + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
+                                    + RESEARCH_PROMPT.replace("{accountable}", ACCOUNTABLE.format(where="findings"))
+                                    + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
     print(f"[marketing] research: {len(research['findings'])} findings, "
           f"{len(research['exclusive_candidates'])} exclusive candidates, {len(research['bugs'])} bugs, {time.time() - t0:.0f} s")
+    asked = [x for x in dict.fromkeys(str(x).strip() for x in research.get("enuri_requests") or []) if SKU_RE.fullmatch(x)][:10]
+    if not a.dry:
+        try:                                         # marketing asks the Enuri team for prices; it window-shops now
+            ENURI_REQ.write_text(json.dumps({"skus": asked, "from": "marketing", "ts": time.time()}), encoding="utf-8")
+            import enuri
+            got = enuri.survey(MD)
+            print(f"[enuri] survey: {len(got)} quotes for {len(asked)} requested SKUs: {got[:6]}")
+        except Exception as e:
+            print(f"[enuri] survey skipped: {type(e).__name__}: {e}")
     scm = None                                       # the SCM team (Codex), once an hour
     try:
         import scm_agent
@@ -618,6 +655,23 @@ def run(a, t0):
             fin = finance_agent.load(finance_agent.LIMITS, {})
     except Exception as e:
         print(f"[finance] skipped: {type(e).__name__}: {e}")
+    buyer = None                                     # the buyer team (Codex), once an hour, before the decision
+    try:
+        import buyer_team
+        last = max((json.loads(x)["snapshot"]["ts"] for x in buyer_team.HISTORY.read_text(encoding="utf-8").splitlines()
+                    if x.strip()), default=0) if buyer_team.HISTORY.exists() else 0
+        if time.time() - last >= 55 * 60:
+            buyer, _ = buyer_team.run(ask_codex, board=LAST.get("board"), dry=a.dry)
+            print(f"[buyer] changed {buyer['changed']}, forecast {buyer['forecast_surplus_per_h']}/h, "
+                  f"enuri {buyer.get('accountability')}")
+        buyer = buyer_team.plan_summary() if not a.dry or buyer is None else buyer
+    except Exception as e:
+        print(f"[buyer] skipped: {type(e).__name__}: {e}")
+    try:
+        import kpi
+        b["accountability"] = kpi.accountability("sales", c, board=LAST.get("board"))
+    except Exception as e:
+        b["accountability"] = {"error": f"{type(e).__name__}: {e}"[:200]}
     try:
         directives = DIRECTIVES.read_text(encoding="utf-8")
     except OSError:
@@ -630,6 +684,9 @@ def run(a, t0):
                      + "\n\nFINANCE ADVICE (independent check; limits are binding):\n"
                      + json.dumps({k: (fin or {}).get(k) for k in ("verdict", "advice", "limits", "rationale")},
                                   ensure_ascii=False)
+                     + "\n\nBUYER UNIT (our buyer team and the Enuri price scouts; what they learned about prices "
+                       "and buyers, shared with you as they read your plan):\n"
+                     + json.dumps(buyer or {}, ensure_ascii=False)
                      + "\n\nHEADQUARTERS DIRECTIVES (follow them):\n"
                      + directives + "\n\nAnswer with one JSON object with exactly these keys: "
                      + json.dumps(list(SCHEMA["properties"])) + ", shaped as in this JSON Schema: " + json.dumps(SCHEMA))
