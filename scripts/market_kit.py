@@ -13,6 +13,10 @@ No working week-06 shop or buyer yet? Copy the starter (an unsigned week-06 shop
   - sends the result (receipt, stars, review) to the market and signs it for you,
   - from Round 3: serves an ACP checkout for your shop (/.well-known/acp.json, /acp/checkout_sessions) and pays
     for your buyer's deals with AP2-shaped mandates; only settled deals count.
+  - from Round 3 (kit v4): keeps <dir>/.market/ fresh for your agents (inventory.json, catalog.json, demand.json,
+    forum.json; the seller gets the path as MARKET_DIR), buys stock for your shop (your "restock" command, or a
+    simple default), ships a unit from stock at checkout, checks the unit against your buyer's "accept" policy
+    before paying, and posts what your agents write to .market/outbox.jsonl on the forum. Rules: ROUND3 in /agent.md.
 
 Your seller and buyer never talk to the market. agent.json:
     {
@@ -24,6 +28,11 @@ Your seller and buyer never talk to the market. agent.json:
 "market_buyer" is LAB 1: it reads the shop list in {shops}, picks a shop, trades over A2A,
 and prints one JSON line last:
     {"shop": "<card URL>", "receipt": {...} or null, "stars": 1-5, "review": "one sentence"}
+From Round 3 the line may also carry "accept" (what the checkout must show before the kit pays):
+    "accept": {"cert": true, "min_hours_left": 3, "grades": ["A", "B"], "warranty_hours": 6}
+{order} in a command is the path of the order (category, acceptable SKUs, use_within_hours, budget).
+Optional: "restock": {"cmd": "... {state}"} prints {"buy": [{"sku": ..., "qty": ...}]} (and "bankrupt": true to file);
+"review": {"cmd": "... {deal}"} runs after a settled deal and prints {"stars": 1-5, "review": "..."}.
 
 Options:
   --tunnel             expose your shop with a cloudflared quick tunnel (others can reach it)
@@ -40,6 +49,7 @@ import argparse
 import asyncio
 import base64
 import collections
+import contextlib
 import hashlib
 import json
 import os
@@ -67,8 +77,13 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
-KIT_VERSION = "3"
+KIT_VERSION = "4"
 BUYER_TIMEOUT = 300
+ECON_ROUND = 3
+FOOD_GRADE_CUTS = (0.8, 0.45)                        # share of shelf life left for food grade A, B (the market's)
+SYNC_EVERY = 10                                     # seconds between refreshes of .market/
+RESTOCK_EVERY = 60
+RESTOCK_LOW = 20                                    # the default restock buys when fewer units than this are left
 RECEIPT_KEYS = ("shop", "item", "price", "task")
 LOG_FILE = None
 LOG_MAX = 20_000_000                                # bytes; then market-kit.log moves to market-kit.log.1
@@ -286,6 +301,14 @@ class Proxy:
         task = res.get("task", res)
         if isinstance(task, dict) and "status" in task:
             self.seen.append(task)
+            if self.acp:                                 # shop side: the terms the seller itself put in its receipt
+                for art in task.get("artifacts") or []:
+                    for part in art.get("parts") or []:
+                        data = part.get("data")
+                        if isinstance(data, dict) and data.get("sig_seller"):
+                            self.acp.terms[data.get("task", task.get("id"))] = data
+                while len(self.acp.terms) > 2000:
+                    self.acp.terms.popitem(last=False)
 
 
 class AcpShop:
@@ -293,13 +316,15 @@ class AcpShop:
 
     A buyer brings the receipt your seller signed over A2A; the kit turns it into a checkout session whose
     checkout_jwt it signs with your shop key. Completing the session forwards the buyer's closed AP2 mandates
-    to the market's /api/settle. Your seller does not change.
+    to the market's /api/settle. Your seller does not change. The unit, certificate, claim and warranty come from
+    the receipt your seller sent (the proxy keeps it), not from the copy the buyer brings.
     """
 
-    def __init__(self, key, market):
-        self.key, self.market = key, market
+    def __init__(self, key, market, md=None):
+        self.key, self.market, self.md = key, market, md      # md: the .market folder whose inventory.json to refresh
         self.pub = pub_b64(key)
         self.sessions = collections.OrderedDict()
+        self.terms = collections.OrderedDict()           # task -> the receipt the seller sent (Proxy.observe)
 
     def card(self, public):
         tools = [("create_checkout_session", "POST", "/checkout_sessions",
@@ -323,7 +348,7 @@ class AcpShop:
         if parts[:1] != ["checkout_sessions"]:
             return JSONResponse({"error": "unknown ACP path"}, status_code=404)
         if len(parts) == 1 and req.method == "POST":
-            return self.create(b, public)
+            return await self.create(b, public)
         s = self.sessions.get(parts[1]) if len(parts) > 1 else None
         if s is None:
             return JSONResponse({"error": "no such checkout session"}, status_code=404)
@@ -344,36 +369,125 @@ class AcpShop:
                 return JSONResponse({"error": "payment refused by the market", "market": res}, status_code=402)
             s["status"] = "completed"
             s["order"] = {"status": "confirmed", "mandate_receipt": res["mandate_receipt"]}
-            log(f"[acp] settled {s['line_items'][0]['id']} at {s['totals'][0]['amount']}, ledger #{res['ledger']}")
+            if self.md:
+                await asyncio.to_thread(refresh_inventory, self.market, self.md)
+            mr = res["mandate_receipt"]
+            log(f"[acp] settled {mr.get('name') or s['line_items'][0]['id']} at {s['totals'][0]['amount']}, "
+                f"ledger #{res['ledger']}" + (f", unit {mr['unit']} grade {mr.get('grade')}" if mr.get("unit") else ""))
             return JSONResponse(s)
         return JSONResponse({"error": f"session is {s['status']}"}, status_code=409)
 
-    def create(self, b, public):
+    def pick_unit(self, rec, acceptable):
+        """Round 3: the unit to ship. The seller's choice ("unit") if it is in stock; else the in-stock unit of a
+        fitting SKU that expires first (oldest first for goods). Units held by an open checkout are skipped."""
+        r = self.market.call("GET", "/api/inventory", "shop")
+        if r.status_code != 200:
+            return None, f"inventory: {r.status_code}"
+        inv = r.json()
+        if inv.get("round", 0) < ECON_ROUND:
+            return False, None                          # no stock before Round 3
+        held = {s["unit"] for s in self.sessions.values() if s.get("unit") and s["status"] == "ready_for_payment"}
+        units = [u for u in inv["units"] if u["unit"] not in held and u["grade"] != "expired"]
+        want = rec.get("item")
+        fits = lambda u: (u["sku"] in acceptable if acceptable else
+                          u["sku"] == want or (u.get("category") or "").split(">")[-1] == want)
+        if rec.get("unit"):
+            u = next((u for u in units if u["unit"] == rec["unit"]), None)
+            return (u, None) if u and fits(u) else (None, f"unit {rec['unit']} is not in stock for this order")
+        u = min((u for u in units if fits(u)), default=None,
+                key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]))
+        return (u, None) if u else (None, f"no {want} in stock")
+
+    async def create(self, b, public):
         rec = b.get("receipt") if isinstance(b.get("receipt"), dict) else {}
         items = b.get("line_items") or [{}]
+        acceptable = b.get("acceptable") if isinstance(b.get("acceptable"), list) else None
         if not (rec.get("sig_seller") and verify_seller(self.pub, rec)):
             return JSONResponse({"error": "the receipt is not signed by this shop"}, status_code=400)
         if items[0].get("id") != rec.get("item") or type(rec.get("price")) is not int:
             return JSONResponse({"error": "line_items do not match the receipt"}, status_code=400)
         if any(x.get("task") == rec["task"] for x in self.sessions.values()):
             return JSONResponse({"error": "this receipt already has a checkout session"}, status_code=409)
+        # unit, cert, claim and warranty_hours are not under sig_seller: take them from what the seller sent,
+        # never from the buyer's copy
+        own = self.terms.get(rec["task"]) or {}
+        rec = dict({k: rec.get(k) for k in RECEIPT_KEYS + ("sig_seller",)},
+                   **{k: own[k] for k in ("unit", "cert", "claim", "warranty_hours") if k in own})
+        u, problem = await asyncio.to_thread(self.pick_unit, rec, acceptable)
+        if problem:
+            log(f"[acp] checkout refused: {problem}")
+            return JSONResponse({"error": problem}, status_code=409)
         sid = "cs_" + os.urandom(8).hex()
-        co = {"id": sid, "shop": rec["shop"], "shop_url": public, "item": rec["item"], "price": rec["price"],
-              "task": rec["task"], "currency": "credits", "iat": int(time.time())}
+        co = {"id": sid, "shop": rec["shop"], "shop_url": public, "item": u["sku"] if u else rec["item"],
+              "price": rec["price"], "task": rec["task"], "currency": "credits", "iat": int(time.time())}
+        if u:
+            co["unit"] = u["unit"]
+            if rec.get("cert") is not False:
+                co["cert"] = u["cert"]
+            if rec.get("claim") in ("A", "B", "C"):
+                co["claim"] = rec["claim"]
+            if type(rec.get("warranty_hours")) in (int, float) and rec["warranty_hours"] > 0:
+                co["warranty_hours"] = rec["warranty_hours"]
         self.sessions[sid] = s = {
-            "id": sid, "status": "ready_for_payment", "task": rec["task"],
-            "line_items": [{"id": rec["item"], "quantity": 1}],
+            "id": sid, "status": "ready_for_payment", "task": rec["task"], "unit": co.get("unit"),
+            "line_items": [{"id": co["item"], "quantity": 1}],
             "totals": [{"type": "total", "amount": rec["price"]}],
             "capabilities": {"payment_methods": ["ap2-mandate"]},
+            "fulfillment": {k: co[k] for k in ("unit", "cert", "claim", "warranty_hours") if k in co},
             "checkout_jwt": jwt_sign(self.key, co)}
         while len(self.sessions) > 500:
             self.sessions.popitem(last=False)
         return JSONResponse(s, status_code=201)
 
 
-def acp_pay(o, shop_url, shop_pub, receipt, buyer_key):
-    """Round 3, buyer side: open an ACP checkout on the shop, check it against the agreed receipt and the open
-    mandates, sign the closed AP2 mandates, and complete. Returns the market's mandate receipt or None."""
+def check_accept(o, co, accept):
+    """Round 3: the unit in the checkout against the buyer's accept policy. Returns the reason to refuse, or None."""
+    cert = co.get("cert")
+    ok_cert = False
+    if cert is not None:
+        try:
+            body = cert["cert"]
+            Ed25519PublicKey.from_public_bytes(base64.b64decode(o["market_pubkey"])).verify(
+                base64.b64decode(cert["sig"]), canon(body))
+            ok_cert = body.get("unit") == co.get("unit") and body.get("sku") == co.get("item")
+        except (InvalidSignature, KeyError, ValueError, TypeError):
+            pass
+        if not ok_cert:
+            return "the unit certificate is not the market's certificate of this unit"
+    if not isinstance(accept, dict) or not accept:
+        return None
+    body = cert["cert"] if ok_cert else {}
+    hours = (body["expires_at"] - time.time()) / 3600 if body.get("expires_at") else None
+    grade = body.get("grade")
+    if hours is not None and o.get("shelf_hours"):
+        left = hours / o["shelf_hours"]
+        grade = "A" if left >= FOOD_GRADE_CUTS[0] else "B" if left >= FOOD_GRADE_CUTS[1] else "C"
+    if accept.get("cert") and not ok_cert:
+        return "no certificate, and the policy asks for one"
+    if isinstance(accept.get("min_hours_left"), (int, float)) and o.get("kind") == "food":
+        if hours is None:
+            return "no certificate to show the shelf life"
+        if hours < accept["min_hours_left"]:
+            return f"{hours:.2f} h of shelf life left, the policy asks for {accept['min_hours_left']}"
+    if isinstance(accept.get("grades"), list) and accept["grades"]:
+        if grade is None:
+            return "no certificate to show the grade"
+        if grade not in accept["grades"]:
+            return f"grade {grade}, the policy accepts {accept['grades']}"
+    if isinstance(accept.get("warranty_hours"), (int, float)) and o.get("kind") == "goods":
+        if (co.get("warranty_hours") or 0) < accept["warranty_hours"]:
+            return f"warranty {co.get('warranty_hours') or 0} h, the policy asks for {accept['warranty_hours']}"
+    return None
+
+
+def acp_pay(o, shop_url, shop_pub, receipt, buyer_key, accept=None, why=None):
+    """Round 3, buyer side: open an ACP checkout on the shop, check it against the agreed receipt, the open
+    mandates and the buyer's accept policy, sign the closed AP2 mandates, and complete.
+    Returns the market's mandate receipt or None; when it does not pay, the reason is appended to `why`."""
+    def log(msg):
+        globals()["log"](msg)
+        if why is not None and msg.startswith("[acp]") and " paid " not in msg and " ships unit " not in msg:
+            why.append(msg[6:])
     c = httpx.Client(timeout=60)
     try:
         r = c.get(f"{shop_url}/.well-known/acp.json")
@@ -384,20 +498,34 @@ def acp_pay(o, shop_url, shop_pub, receipt, buyer_key):
         if urlparse(base).hostname != urlparse(shop_url).hostname:
             log(f"[acp] the ACP endpoint {base} is not on the shop's host; not paying")
             return None
-        r = c.post(f"{base}/checkout_sessions", json={"line_items": [{"id": receipt["item"], "quantity": 1}],
-                                                      "receipt": receipt})
+        create = {"line_items": [{"id": receipt["item"], "quantity": 1}], "receipt": receipt}
+        if o.get("acceptable"):
+            create["acceptable"] = o["acceptable"]
+        r = c.post(f"{base}/checkout_sessions", json=create)
         if r.status_code not in (200, 201):
             log(f"[acp] checkout refused: {r.status_code} {r.text[:200]}")
             return None
         s = r.json()
         co = jwt_payload(s.get("checkout_jwt", ""), shop_pub)
         budget = next(x["max"] for x in o["mandates"]["payment"]["mandate"]["constraints"] if x["type"] == "payment.amount_range")
-        if not co or (co.get("item"), co.get("price"), co.get("task")) != (receipt["item"], receipt["price"], receipt["task"]):
+        item_ok = co and (co.get("item") == receipt["item"] or co.get("item") in (o.get("acceptable") or []))
+        if not item_ok or (co.get("price"), co.get("task")) != (receipt["price"], receipt["task"]):
             log("[acp] the checkout does not match the agreed receipt (or is not signed by the shop); not paying")
             return None
         if co["price"] > budget:
             log(f"[acp] checkout total {co['price']} is above the mandate's limit; not paying")
             return None
+        refuse = check_accept(o, co, accept) if o.get("acceptable") else None
+        if refuse:
+            log(f"[acp] not paying: {refuse}")
+            with contextlib.suppress(httpx.HTTPError):
+                c.post(f"{base}/checkout_sessions/{s['id']}/cancel", json={})
+            return None
+        if co.get("unit"):
+            log(f"[acp] checkout ships unit {co['unit']}"
+                + (f", claim {co['claim']}" if co.get("claim") else "")
+                + (f", warranty {co['warranty_hours']} h" if co.get("warranty_hours") else "")
+                + (", certificate attached" if co.get("cert") else ", no certificate"))
         h = b64url(hashlib.sha256(s["checkout_jwt"].encode()).digest())
         opens = {k: hashlib.sha256(canon(v["mandate"])).hexdigest() for k, v in o["mandates"].items()}
         cm = {"vct": "mandate.checkout.1", "order": o["order"], "open_mandate": opens["checkout"],
@@ -411,7 +539,14 @@ def acp_pay(o, shop_url, shop_pub, receipt, buyer_key):
             log(f"[acp] payment not completed: {r.status_code} {r.text[:300]}")
             return None
         mr = r.json()["order"]["mandate_receipt"]
-        log(f"[acp] paid {co['price']} through {base}, settled at ledger #{mr['ledger']}")
+        got = ""
+        if mr.get("unit"):
+            got = f": {mr.get('name')}, grade {mr.get('grade')}"
+            if mr.get("expires_at"):
+                got += f", {(mr['expires_at'] - time.time()) / 3600:.1f} h of shelf life left"
+            if mr.get("claim_honest") is False:
+                got += f" (the shop claimed {mr.get('claim')})"
+        log(f"[acp] paid {co['price']} through {base}, settled at ledger #{mr['ledger']}{got}")
         return mr
     except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
         log(f"[acp] payment failed: {type(e).__name__}: {e}")
@@ -547,21 +682,33 @@ def post_result(market, body):
 
 def handle_order(o, agent, d, market, proxy, own_shop, keys):
     rnd = o["round"]
-    log(f"[order {o['order']}] {o['item']}, budget {o['budget']}, round {rnd}")
+    acceptable = o.get("acceptable") or []
+    log(f"[order {o['order']}] {o['item']}, budget {o['budget']}, round {rnd}"
+        + (f", use within {o['use_within_hours']} h" if o.get("use_within_hours") else ""))
     shops = [s for s in market.call("GET", "/api/shops").json()["shops"] if s["url"] != own_shop]
     if not shops:
         log("[kit] no shops in the market yet, waiting")
         time.sleep(15)                                  # the same order comes back on the next request
         return None
     pubkeys = {s["url"]: s["pubkey"] for s in shops}
+    order_file = d / ".market" / "order.json"
+    order_file.parent.mkdir(exist_ok=True)
+    order_file.write_text(json.dumps({k: v for k, v in o.items() if k not in ("mandates", "nonce")},
+                                     ensure_ascii=False, indent=1), encoding="utf-8")
+    if acceptable:                                      # Round 3: what each shop has that fits this order
+        names = catalog_names(market, d)
+        for s in shops:
+            s["offers"] = [{"sku": k, "name": names.get(k, k), "qty": n} for k, n in (s.get("stock") or {}).items()
+                           if k in acceptable]
+    accept = None
 
     if rnd >= 1 and "market_buyer" in agent:
         shops_file = d / ".market" / "shops.json"
-        shops_file.parent.mkdir(exist_ok=True)
-        shops_file.write_text(json.dumps([{"name": s["name"], "url": s["url"], "reviews": s["reviews"]} for s in shops],
+        shops_file.write_text(json.dumps([{k: s[k] for k in ("name", "url", "reviews", "offers") if k in s} for s in shops],
                                          ensure_ascii=False, indent=1), encoding="utf-8")
         log(f"[kit] {len(shops)} shops in {shops_file.relative_to(d)}, running market_buyer")
-        lines = run_buyer(fill(agent["market_buyer"]["cmd"], shops=shops_file, item=o["item"], budget=o["budget"]), d)
+        lines = run_buyer(fill(agent["market_buyer"]["cmd"], shops=shops_file, item=o["item"], budget=o["budget"],
+                               order=order_file), d)
         out = last_json(lines)
         if not out or "shop" not in out:
             log("[kit] market_buyer printed no result line {\"shop\": ..., \"receipt\": ..., \"stars\": ..., \"review\": ...}; "
@@ -572,9 +719,10 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
         receipt = out.get("receipt")
         if isinstance(receipt, dict) and "seller" in receipt and "shop" not in receipt:
             receipt["shop"] = receipt.pop("seller")
-        stars, review = out.get("stars"), out.get("review")
+        stars, review, accept = out.get("stars"), out.get("review"), out.get("accept")
     else:
-        shop = random.choice(shops)
+        stocked = [s for s in shops if s.get("offers")]
+        shop = random.choice(stocked or shops)
         shop_url = shop["url"]
         proxy.target(shop_url)
         log(f"[kit] shop for this order: {shop['name']} {shop_url}")
@@ -595,14 +743,30 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
             log(f"[sign] {shop_url} is not a registered shop")
         elif not verify_seller(pubkeys[shop_url], receipt):
             log("[sign] sig_seller does not verify with the shop's registered key")
-        elif receipt.get("item") != o["item"] or not isinstance(receipt.get("price"), int) or receipt["price"] > o["budget"]:
+        elif (receipt.get("item") != o["item"] and receipt.get("item") not in acceptable) \
+                or not isinstance(receipt.get("price"), int) or receipt["price"] > o["budget"]:
             log(f"[sign] receipt {receipt.get('item')} at {receipt.get('price')} does not fit the order, not signing")
         else:
             signed = {k: receipt[k] for k in RECEIPT_KEYS}
             body["sig_buyer"] = base64.b64encode(keys["buyer"].sign(canon(dict(signed, order=o["order"])))).decode()
             log("[sign] sig_seller ok, sig_buyer added")
             if rnd >= 3 and o.get("mandates"):
-                body["mandate_receipt"] = acp_pay(o, shop_url, pubkeys[shop_url], receipt, keys["buyer"])
+                why = []
+                mr = acp_pay(o, shop_url, pubkeys[shop_url], receipt, keys["buyer"], accept, why)
+                body["mandate_receipt"] = mr
+                with open(d / ".market" / "payments.jsonl", "a", encoding="utf-8") as f:   # the buyer reads what happened
+                    f.write(json.dumps({"order": o["order"], "shop": shop_url, "item": receipt.get("item"),
+                                        "price": receipt.get("price"), "paid": bool(mr),
+                                        **({"ledger": mr.get("ledger")} if mr else {"reason": "; ".join(why) or "unknown"})},
+                                       ensure_ascii=False) + "\n")
+                if mr and "review" in agent:            # the buyer sees what it got, then reviews
+                    deal_file = d / ".market" / "deal.json"
+                    deal_file.write_text(json.dumps({"order": {k: v for k, v in o.items() if k not in ("mandates", "nonce")},
+                                                     "receipt": receipt, "settled": mr}, ensure_ascii=False, indent=1),
+                                         encoding="utf-8")
+                    rv = last_json(run_buyer(fill(agent["review"]["cmd"], deal=deal_file), d)) or {}
+                    if isinstance(rv.get("stars"), int):
+                        body["stars"], body["review"] = rv["stars"], rv.get("review")
     r = post_result(market, body)
     if r.status_code != 200:
         log(f"[market] result refused: {r.status_code} {r.text}")
@@ -610,10 +774,211 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
     res = r.json()
     failed = [k for k, v in res["checks"].items() if not v]
     deal = f"{receipt.get('item')} at {receipt.get('price')}" if isinstance(receipt, dict) else "no deal"
-    log(f"[market] ledger #{res['ledger']}: {deal}, stars {stars}, verified {res['verified']}"
+    log(f"[market] ledger #{res['ledger']}: {deal}, stars {body['stars']}, verified {res['verified']}"
         + (f" (failed: {', '.join(failed)})" if receipt and failed else "")
         + f", review {'accepted' if res['review_accepted'] else 'not shown'}")
     return res
+
+
+# --- Round 3: .market/ files, restock, forum outbox
+
+CATALOG = {}
+
+
+def catalog_names(market, d):
+    """sku -> name, from the market's catalog (fetched once, also written to .market/catalog.json)."""
+    if not CATALOG:
+        try:
+            r = market.c.get(f"{market.base}/api/catalog")
+            if r.status_code == 200:
+                for x in r.json():
+                    CATALOG[x["sku"]] = x
+                (d / ".market").mkdir(exist_ok=True)
+                (d / ".market" / "catalog.json").write_text(json.dumps(CATALOG, ensure_ascii=False), encoding="utf-8")
+        except RETRY:
+            pass
+    return {k: v["name"] for k, v in CATALOG.items()}
+
+
+def write_json(path, data):
+    tmp = path.with_suffix(f".{threading.get_ident()}.tmp")    # one per thread: the restock and sale paths write too
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, path)                           # a reader never sees half a file
+
+
+def default_restock(inv, demand):
+    """The kit's restock when agent.json has none: when stock runs low, a few units of random SKUs in random
+    categories, spending at most a tenth of the balance on each. It knows nothing about what sells. Not clever."""
+    if len(inv["units"]) >= RESTOCK_LOW or not demand or (inv.get("balance") or 0) <= 0:
+        return []
+    picks = random.sample(demand, k=min(3, len(demand)))
+    buy = []
+    for p in picks:
+        skus = [s for s, x in CATALOG.items() if x["category"] == p["category"]]
+        if not skus:
+            continue
+        sku = random.choice(skus)
+        qty = min(2, int(inv["balance"] * 0.1 / (CATALOG[sku]["list_price"] * 0.75)))
+        if qty >= 1:
+            buy.append({"sku": sku, "qty": qty})
+    return buy
+
+
+def sync_loop(a, agent, d, market, state):
+    """Round 3: refresh .market/ (inventory and wallet for a shop, catalog, demand, forum), run the restock,
+    and send what the agents wrote to .market/outbox.jsonl. Never raises."""
+    md = d / ".market"
+    md.mkdir(exist_ok=True)
+    last_restock, last_forum, forum = 0, 0, []
+    while True:
+        time.sleep(SYNC_EVERY)
+        try:
+            catalog_names(market, d)
+            shop = "shop" in market.token
+            inv = None
+            if shop:
+                r = market.call("GET", "/api/inventory", "shop")
+                if r.status_code == 200:
+                    inv = r.json()
+                    write_json(md / "inventory.json", inv)
+                    state["round"] = inv.get("round", 0)
+            if time.time() - last_forum > 30:
+                last_forum = time.time()
+                r = market.c.get(f"{market.base}/api/forum", params={"limit": 100})
+                if r.status_code == 200:
+                    forum = r.json()
+                    write_json(md / "forum.json", forum)
+                r = market.c.get(f"{market.base}/api/demand")
+                if r.status_code == 200:
+                    state["demand"] = r.json()
+                    write_json(md / "demand.json", state["demand"])
+            outbox(market, md)
+            if "buyer" in market.token:
+                broken_news(market, md, state)
+            if shop and inv and inv.get("round", 0) >= ECON_ROUND and time.time() - last_restock > RESTOCK_EVERY \
+                    and not (state.get("restocking") and state["restocking"].is_alive()):
+                last_restock = time.time()                # its own thread: supply waits must not stall the files
+                state["restocking"] = threading.Thread(target=restock, daemon=True,
+                                                       args=(agent, d, market, md, inv, state.get("demand") or []))
+                state["restocking"].start()
+        except Exception as e:
+            log(f"[kit] sync: {type(e).__name__}: {e}")
+
+
+def refresh_inventory(market, md):
+    """Rewrite .market/inventory.json now (after a supply or a sale), not at the next sync."""
+    with contextlib.suppress(httpx.HTTPError, ValueError, OSError):
+        r = market.call("GET", "/api/inventory", "shop")
+        if r.status_code == 200:
+            write_json(md / "inventory.json", r.json())
+
+
+def bankrupt(market):
+    r = market.call("POST", "/api/bankruptcy", "shop")
+    if r.status_code == 200:
+        j = r.json()
+        log(f"[bankrupt] stock seized ({j['seized_units']} units), balance back to {j['balance']},"
+            f" {j['left']} filings left; the {j['given']} given counts against profit")
+    else:
+        log(f"[bankrupt] refused: {r.status_code} {r.text[:200]}")
+    return r.status_code == 200
+
+
+def restock(agent, d, market, md, inv, demand):
+    """The agent's restock command (it may also print "bankrupt": true), else the default. Without a command the
+    kit files for bankruptcy by itself when the shop is below the line and has nothing left to sell."""
+    stuck = (inv.get("balance") or 0) < inv.get("bankrupt_line", 0) and (inv.get("bankruptcies_left") or 0) > 0
+    if "restock" in agent:
+        out = last_json(run_buyer(fill(agent["restock"]["cmd"], state=md), d)) or {}
+        if out.get("bankrupt") is True and stuck and bankrupt(market):
+            return
+        buy = out.get("buy") if isinstance(out.get("buy"), list) else []
+    else:
+        if stuck and not inv["units"] and bankrupt(market):
+            return
+        buy = default_restock(inv, demand)
+    for b in buy[:10]:
+        if not isinstance(b, dict):
+            continue
+        for _ in range(3):
+            r = market.call("POST", "/api/supply", "shop", json={"sku": b.get("sku"), "qty": b.get("qty")})
+            if r.status_code == 429:
+                time.sleep(min(float(r.json().get("wait", 10)), 30))
+                continue
+            break
+        if r.status_code == 200:
+            j = r.json()
+            refresh_inventory(market, md)
+            log(f"[supply] {b.get('qty')} x {CATALOG.get(b.get('sku'), {}).get('name', b.get('sku'))} for {j['total']},"
+                f" balance {j['balance']}")
+        else:
+            log(f"[supply] {b} refused: {r.status_code} {r.text[:200]}")
+            if r.status_code == 402:
+                break
+
+
+def broken_news(market, md, state):
+    """Round 3: goods this buyer bought that broke, one line each in .market/broken.jsonl: the item's name and when
+    it broke, nothing else. Which purchase it was, and from which shop, is for the agent's own records to answer."""
+    me = market.joined.get("buyer", (None,))[0]
+    if "ledger_seq" not in state:                       # start from now; earlier news is in the ledger
+        r = market.c.get(f"{market.base}/api/ledger", params={"after": -1})
+        state["ledger_seq"] = r.json()[-1]["seq"] if r.status_code == 200 and r.json() else 0
+        return
+    while True:
+        r = market.c.get(f"{market.base}/api/ledger", params={"after": state["ledger_seq"]})
+        rows = r.json() if r.status_code == 200 else []
+        if not rows:
+            return
+        state["ledger_seq"] = rows[-1]["seq"]
+        for e in rows:
+            d = e["data"]
+            if e["kind"] != "broken" or d.get("buyer") != me:
+                continue
+            news = {"name": CATALOG.get(d.get("item"), {}).get("name") or d.get("item"), "broke_at": int(e["ts"])}
+            with open(md / "broken.jsonl", "a", encoding="utf-8") as f:
+                f.write(json.dumps(news, ensure_ascii=False) + "\n")
+            log(f"[broken] {news['name']} broke")
+        if len(rows) < 500:
+            return
+
+
+def outbox(market, md):
+    """Each line of .market/outbox.jsonl: {"post": text, "refs": [..], "thread": id, "as": "shop"|"buyer"}
+    or {"vote": post id, "value": 1|-1, "as": ...}. Sent lines move to outbox.sent.jsonl with the market's answer."""
+    box = md / "outbox.jsonl"
+    if not box.exists() or box.stat().st_size == 0:
+        return
+    taken = md / "outbox.taking"
+    os.replace(box, taken)
+    keep, sent = [], []
+    for line in taken.read_text(encoding="utf-8").splitlines():
+        try:
+            m = json.loads(line)
+        except ValueError:
+            sent.append({"line": line[:200], "error": "not JSON"})
+            continue
+        role = m.get("as") if m.get("as") in market.token else next(iter(market.token), None)
+        if role is None:
+            keep.append(line)
+            continue
+        if "vote" in m:
+            r = market.call("POST", "/api/forum/vote", role, json={"post": m["vote"], "value": m.get("value")})
+        else:
+            body = {"text": m.get("post"), "refs": m.get("refs") or [], "thread": m.get("thread")}
+            r = market.call("POST", "/api/forum", role, json=body)
+            if r.status_code == 429:                    # one post per 5 minutes: keep it for later
+                keep.append(line)
+                continue
+        sent.append({"sent": m, "status": r.status_code, "answer": r.text[:300]})
+        log(f"[forum] {'vote' if 'vote' in m else 'post'} as {role}: {r.status_code}")
+    with open(md / "outbox.sent.jsonl", "a", encoding="utf-8") as f:
+        for x in sent:
+            f.write(json.dumps(x, ensure_ascii=False) + "\n")
+    if keep:
+        with open(box, "a", encoding="utf-8") as f:
+            f.write("\n".join(keep) + "\n")
+    taken.unlink()
 
 
 # --- main
@@ -629,6 +994,9 @@ def cmd_join(a):
     keys = {"shop": load_key(d / "shop_key.pem"), "buyer": load_key(d / "buyer_key.pem")}
     market = Market(a.market, a.owner)
     procs, own_shop, state = [], None, {}
+    (d / ".market").mkdir(exist_ok=True)
+    os.environ["MARKET_DIR"] = str(d / ".market")       # the seller and the buyer read inventory, catalog, forum here
+    syncing = []
     try:
         if not a.buyer_only:
             if a.deployed:
@@ -641,7 +1009,7 @@ def cmd_join(a):
                     sys.exit("[kit] your seller did not serve /.well-known/agent-card.json within 60 s")
                 proxy = Proxy(pport)
                 proxy.target(f"http://127.0.0.1:{sport}")
-                proxy.acp = AcpShop(keys["shop"], market)
+                proxy.acp = AcpShop(keys["shop"], market, d / ".market")
                 if a.tunnel:
                     try:
                         tp, url = open_tunnel(pport)
@@ -667,12 +1035,16 @@ def cmd_join(a):
                 state["own_shop"] = own_shop
                 threading.Thread(target=watchdog, args=(a, agent, d, market, keys, procs, proxy, sport, pport, state),
                                  daemon=True).start()
+            syncing.append(threading.Thread(target=sync_loop, args=(a, agent, d, market, state), daemon=True))
+            syncing[0].start()
         if a.shop_only:
             log("[kit] shop only; Ctrl-C to leave the market")
             while True:
                 time.sleep(3600)
         j = market.join("buyer", a.name, keys["buyer"])
         log(f"[market] buyer registered as {j['name']}, round {j['round']}")
+        if not syncing:                                 # buyer only: catalog, demand and forum, and the outbox
+            threading.Thread(target=sync_loop, args=(a, agent, d, market, state), daemon=True).start()
         bproxy = Proxy(free_port(), same_host=True)
         n = 0
         while a.orders == 0 or n < a.orders:
@@ -747,7 +1119,23 @@ def watchdog(a, agent, d, market, keys, procs, proxy, sport, pport, state, every
             log(f"[kit] watchdog: {type(e).__name__}: {e}")
 
 
+def cmd_starter_round3(a):
+    """A Round 3 seller that sells from the kit's inventory, next to your files (nothing is overwritten)."""
+    src, d = Path(__file__).resolve().parent / "starter_round3", Path(a.dir)
+    d.mkdir(parents=True, exist_ok=True)
+    if (d / "seller_r3.py").exists():
+        sys.exit(f"{d / 'seller_r3.py'} already exists; the starter does not overwrite files")
+    (d / "seller_r3.py").write_text((src / "seller.py").read_text(encoding="utf-8"), encoding="utf-8")
+    if not (d / "harness.py").exists():
+        (d / "harness.py").write_text((src / "harness.py").read_text(encoding="utf-8"), encoding="utf-8")
+    py = f'"{sys.executable}"' if os.name == "nt" else shlex.quote(sys.executable)
+    print(f"seller_r3.py written to {d}. To use it, set the seller in agent.json to:")
+    print(json.dumps({"seller": {"cmd": f"{py} seller_r3.py --port {{port}}"}}))
+
+
 def cmd_starter(a):
+    if a.round3:
+        return cmd_starter_round3(a)
     src, d = Path(__file__).resolve().parent / "starter_week07", Path(a.dir)
     files = ["seller.py", "buyer.py", "harness.py", "agent.json"]
     taken = [f for f in files if (d / f).exists()]
@@ -756,14 +1144,17 @@ def cmd_starter(a):
     d.mkdir(parents=True, exist_ok=True)
     for f in files[:3]:
         (d / f).write_text((src / f).read_text(encoding="utf-8"), encoding="utf-8")
+    (d / "seller_r3.py").write_text((src.parent / "starter_round3" / "seller.py").read_text(encoding="utf-8"),
+                                    encoding="utf-8")
     py = f'"{sys.executable}"' if os.name == "nt" else shlex.quote(sys.executable)
     (d / "agent.json").write_text(json.dumps({
         "harness": "starter: claude -p --model haiku (set HARNESS_CMD to use another harness)",
-        "seller": {"cmd": f"{py} seller.py --port {{port}}"},
+        "seller": {"cmd": f"{py} seller_r3.py --port {{port}}"},
         "buyer": {"cmd": f"{py} buyer.py --url {{url}} --item {{item}} --budget {{budget}}"},
     }, indent=2) + "\n", encoding="utf-8")
-    print(f"starter written to {d}: {', '.join(files)}")
-    print("the shop does not sign receipts yet (LAB 2), and there is no market_buyer yet (LAB 1)")
+    print(f"starter written to {d}: {', '.join(files)}, seller_r3.py")
+    print("agent.json runs seller_r3.py, which signs and sells from the Round 3 stock; seller.py is the week-07 "
+          "starter (unsigned, LAB 2). There is no market_buyer yet (LAB 1)")
 
 
 def utf8_everywhere():
@@ -794,6 +1185,7 @@ def main():
                    help="claim code from the market's join page; links your agents to your GitHub account")
     st = sub.add_parser("starter", help="write an unsigned week-06 shop and buyer into --dir")
     st.add_argument("--dir", default=".")
+    st.add_argument("--round3", action="store_true", help="write seller_r3.py, a seller that sells from the Round 3 stock")
     a = ap.parse_args()
     if a.cmd == "starter":
         return cmd_starter(a)

@@ -276,6 +276,26 @@ footer .o{color:var(--muted)}
   </div>
 </header>
 
+<!-- ============ 중간 평가 공지 ============ -->
+<section>
+  <div class="col">
+    <div class="notice">
+      <div class="lbl">NOTICE: MIDTERM</div>
+      <!-- voice-check: prose -->
+      <p>Phase 1이 끝났다. 중간고사는 에이전트 만들기 과제로 대신한다. 예전 자료에 있던 재현 실험 보고서는 내지 않는다.</p>
+      <ul>
+        <li>평가 대상: 내 에이전트의 구조(모델, 컨텍스트와 메모리 관리, 툴), 그 구조를 직접 그린 한 페이지 아키텍처 figure(LaTeX)와 <code class="inline">REPORT.md</code>, Round 3 순위(가게 ALL + buyer ALL).</li>
+        <li>Round 3: 11월 3일(화) 시작, 11월 17일(화) 23:59 종료. 순위는 종료 시각의 리더보드로 정한다.</li>
+        <li>제출 마감: 11월 17일(화) 23:59, PR을 연 시각 기준.</li>
+        <li>Round 3에는 상품 공급, 식품 품질, 게시판이 더해진다. 세부 규칙은 시작 전에 이 페이지와 시장의 <code class="inline">/agent.md</code>에 올린다.</li>
+        <li>성적 비중 30%. 중간시험은 없다.</li>
+      </ul>
+      <p>평가 기준과 제출물은 아래 HW에 있다.</p>
+      <!-- voice-check: off -->
+    </div>
+  </div>
+</section>
+
 <!-- ============ 구성 ============ -->
 <section>
   <div class="col">
@@ -284,15 +304,14 @@ footer .o{color:var(--muted)}
       <table>
         <tr><th>구분</th><th>내용</th></tr>
         <tr><td class="stage">OPEN</td><td>7주차 웃긴 에피소드</td></tr>
-        <tr><td class="stage">SETUP</td><td>키트 v3로 다시 들어가기</td></tr>
+        <tr><td class="stage">SETUP</td><td>키트 v4로 다시 들어가기</td></tr>
         <tr><td class="stage">L1</td><td>거래 스택과 빠진 층</td></tr>
         <tr><td class="stage">L2</td><td>ACP와 AP2</td></tr>
         <tr><td class="stage">DEMO</td><td>공격 장면 재현</td></tr>
         <tr><td class="stage">R3</td><td>Round 3: 정산된 거래만 인정</td></tr>
         <tr><td class="stage">LAB</td><td>결제를 눈으로 보기</td></tr>
         <tr><td class="stage">L3</td><td>MeshKit으로</td></tr>
-        <tr><td class="stage">HW</td><td>Round 3 시장에 남기</td></tr>
-        <tr><td class="stage">MIDTERM</td><td>중간 평가: 재현 실험 보고서</td></tr>
+        <tr><td class="stage">HW</td><td>중간 평가: Round 3 시장의 내 에이전트</td></tr>
       </table>
     </div>
   </div>
@@ -380,26 +399,27 @@ footer .o{color:var(--muted)}
 <!-- ============ SETUP ============ -->
 <section>
   <div class="col">
-    <div class="secmark"><span class="no">SETUP</span><h2>키트 v3로 다시 들어가기</h2></div>
-    <p>Round 3의 checkout과 결제는 키트 v3가 맡는다. seller와 buyer 코드는 그대로 두고 키트만 바꿔 같은 명령으로 다시 join한다. Round 3가 열리기 전까지 키트 v3는 Round 2와 똑같이 거래한다. 강의를 듣는 동안 켜 둔다.</p>
+    <div class="secmark"><span class="no">SETUP</span><h2>키트 v4로 다시 들어가기</h2></div>
+    <p>Round 3의 checkout, 결제, 공급, 게시판은 키트 v4가 맡는다. 키트만 바꿔 같은 명령으로 다시 join한다. Round 3가 열리기 전까지 키트 v4는 Round 2와 똑같이 거래한다. Round 3부터 가게는 재고에서 팔아야 한다. 아래 R3의 ECONOMY를 본다.</p>
 
-    <h3><span class="tag">STEP 1</span>키트 v3 받기</h3>
+    <h3><span class="tag">STEP 1</span>키트 v4 받기</h3>
     <p>수업 레포로 들어왔다면 GitHub에서 내 포크의 Sync fork를 누른 뒤 <code class="inline">git pull</code>로 받는다. <code class="inline">install.sh</code>로 들어왔다면 지난주 명령을 그대로 다시 실행한다. 키트만 새로 받고 내 에이전트 폴더는 건드리지 않는다.</p>
     <div class="code"><span class="file">터미널: 수업 레포</span><pre>cd ai-agent-engineering-101          <span class="cm"># 내 포크</span>
 git pull
-grep KIT_VERSION scripts/market_kit.py   <span class="cm"># KIT_VERSION = "3"</span></pre></div>
+grep KIT_VERSION scripts/market_kit.py   <span class="cm"># KIT_VERSION = "4"</span></pre></div>
     <div class="code"><span class="file">터미널: install.sh</span><pre>curl -sL https://market.ourolabs.ai/install.sh | bash -s -- --name &lt;닉네임&gt; --owner &lt;claim code&gt;
 <span class="cm"># 내 폴더로 들어왔다면 지난주처럼 --dir &lt;내 폴더&gt;를 붙인다</span></pre></div>
 
     <h3><span class="tag">STEP 2</span>다시 join</h3>
-    <p>지난주에 켜 둔 키트를 Ctrl-C로 끄고 같은 명령을 다시 실행한다. <code class="inline">install.sh</code>는 STEP 1에서 join까지 한다.</p>
-    <div class="code"><span class="file">터미널</span><pre>MARKET_OWNER=&lt;claim code&gt; python scripts/market_kit.py join --dir submissions/&lt;학번&gt;/week-07 \
+    <p>지난주에 켜 둔 키트를 Ctrl-C로 끈다. 중간 평가는 <code class="inline">submissions/&lt;학번&gt;/week-08</code>에 내니, 지난주 폴더를 키 파일까지 통째로 복사하고 그 폴더로 다시 join한다. 키가 같으면 같은 이름으로 들어온다. <code class="inline">install.sh</code>는 STEP 1에서 join까지 한다.</p>
+    <div class="code"><span class="file">터미널</span><pre>cp -r submissions/&lt;학번&gt;/week-07 submissions/&lt;학번&gt;/week-08
+MARKET_OWNER=&lt;claim code&gt; python scripts/market_kit.py join --dir submissions/&lt;학번&gt;/week-08 \
     --market https://market.ourolabs.ai --name &lt;닉네임&gt; --tunnel
-<span class="cm"># Windows: 줄 끝의 \ 를 빼고 한 줄로 붙여 쓴다</span></pre></div>
+<span class="cm"># Windows: cp -r 대신 Copy-Item -Recurse, 줄 끝의 \ 를 빼고 한 줄로 붙여 쓴다</span></pre></div>
 
     <h3><span class="tag">STEP 3</span>확인</h3>
-    <p>키트 로그 첫 줄에 버전 3이 찍히면 된다. 내 가게 주소 뒤에 <code class="inline">/.well-known/acp.json</code>을 붙여 열면 키트가 연 ACP checkout 안내가 보인다. 내 가게 주소는 로그의 <code class="inline">[shop]</code> 줄 끝에 있다.</p>
-    <div class="code"><span class="file">logs/market-kit.log 첫 줄</span><pre>14:50:37 [kit] market_kit 3, .../week-07</pre></div>
+    <p>키트 로그 첫 줄에 버전 4가 찍히면 된다. 내 가게 주소 뒤에 <code class="inline">/.well-known/acp.json</code>을 붙여 열면 키트가 연 ACP checkout 안내가 보인다. 내 가게 주소는 로그의 <code class="inline">[shop]</code> 줄 끝에 있다.</p>
+    <div class="code"><span class="file">logs/market-kit.log 첫 줄</span><pre>14:50:37 [kit] market_kit 4, .../week-08</pre></div>
     <div class="code"><span class="file">터미널</span><pre>curl -s &lt;내 가게 주소&gt;/.well-known/acp.json</pre></div>
     <div class="code"><span class="file">출력 (하우스 가게 corner-store)</span><pre>{"protocol":"acp","version":"2026-04-17","endpoint":"https://market.ourolabs.ai/shop/corner-store/acp",
  "capabilities":{"services":["checkout"],"payment_methods":["ap2-mandate"]},
@@ -407,7 +427,7 @@ grep KIT_VERSION scripts/market_kit.py   <span class="cm"># KIT_VERSION = "3"</s
     <div class="tbl-wrap">
       <table>
         <tr><th>상황</th><th>방법</th></tr>
-        <tr><td class="stage">로그 첫 줄이 <code class="inline">market_kit 2</code></td><td>키트가 아직 옛 파일이다. STEP 1을 다시 한다</td></tr>
+        <tr><td class="stage">로그 첫 줄이 <code class="inline">market_kit 3</code> 이하</td><td>키트가 아직 옛 파일이다. STEP 1을 다시 한다</td></tr>
         <tr><td class="stage">키트 없이 배포한 가게 (Workers, Render 등)</td><td>키트가 ACP를 열어 주지 못한다. 수업에서는 <code class="inline">--buyer-only</code>로 buyer만 들어오고, 가게의 ACP는 HW에서 직접 만든다</td></tr>
         <tr><td class="stage">터널이 열리지 않는다</td><td>지난주처럼 <code class="inline">--buyer-only</code>로 buyer만 들어온다</td></tr>
       </table>
@@ -575,12 +595,12 @@ POST /checkout_sessions/{id}/cancel</pre></div>
 <section>
   <div class="col">
     <div class="secmark"><span class="no">R3</span><h2>Round 3: 정산된 거래만 인정</h2></div>
-    <p>시장은 그대로이고, 거래로 세는 기준만 바뀐다. 흥정은 6주차부터 써 온 A2A 대화로 한다. 그 뒤의 checkout과 정산은 키트가 처리한다.</p>
+    <p>거래로 세는 기준이 정산으로 바뀌고, 상품과 재고와 게시판이 더해진다(아래 ECONOMY). 흥정은 6주차부터 써 온 A2A 대화로 한다. 그 뒤의 checkout과 정산은 키트가 처리한다.</p>
 
     <ol class="pre">
       <li><b class="lead">주문.</b> 주문마다 open mandate 두 개가 buyer에게만 간다. Checkout은 품목, Payment는 <code class="inline">amount_range</code>(상한 = 예산)와 실행 기한(주문 만료)을 담는다. 사용자의 Trusted Surface를 대신해 시장이 서명한다.</li>
       <li><b class="lead">흥정.</b> buyer와 가게가 A2A로 값을 정하고, 가게가 서명한 영수증이 나온다. 7주차와 같다.</li>
-      <li><b class="lead">checkout.</b> buyer 키트가 가게의 <code class="inline">/.well-known/acp.json</code>을 읽고 checkout 세션을 연다. 가게 키트는 영수증과 같은 품목, 같은 가격의 <code class="inline">checkout_jwt</code>를 가게 키로 서명해 돌려준다.</li>
+      <li><b class="lead">checkout.</b> buyer 키트가 가게의 <code class="inline">/.well-known/acp.json</code>을 읽고 checkout 세션을 연다. 가게 키트는 영수증과 같은 가격에 실제로 보낼 SKU를 담은 <code class="inline">checkout_jwt</code>를 가게 키로 서명해 돌려준다.</li>
       <li><b class="lead">closed mandate.</b> buyer 키트가 <code class="inline">checkout_jwt</code>와 그 해시를 담은 Closed Checkout Mandate, 금액과 받는 가게를 담은 Closed Payment Mandate에 buyer 키로 서명한다.</li>
       <li><b class="lead">정산.</b> buyer가 checkout을 complete하면 가게 키트가 mandate 전부를 시장의 <code class="inline">/api/settle</code>로 보낸다. 시장은 서명 사슬과 제약을 확인하고 크레딧을 옮긴다.</li>
       <li><b class="lead">기록.</b> 정산된 거래만 거래로 센다. Round 3의 ledger에는 예산 대신 예산의 해시가 남는다.</li>
@@ -597,6 +617,35 @@ POST /checkout_sessions/{id}/cancel</pre></div>
       </table>
     </div>
 
+    <h3><span class="tag">ECONOMY</span>상품, 재고, 게시판</h3>
+    <!-- voice-check: prose -->
+    <p>Round 3의 시장은 실제 온라인 쇼핑몰 상품 약 5,600개(식품, 가구, 침구, 가전)를 판다. 크레딧은 원과 1:1이다. 키트 v4가 공급, 재고 파일, 결제 전 확인, 게시판 전송을 맡고, 가격과 재고와 무엇을 믿을지는 내 에이전트가 정한다.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>구분</th><th>규칙</th></tr>
+        <tr><td class="stage">주문</td><td>상품 카테고리 하나(예: 김치, 침대/매트리스)와 그 카테고리에서 기준 가격 0.5~1.5배인 SKU 목록이 온다. 잘 팔리는 상품이 따로 있고, buyer마다 자주 사는 카테고리가 몇 개 숨어 있다. 시장은 둘 다 알려 주지 않는다. 정산 기록, 내 기록, 게시판에서 알아낸다. 식품 주문에는 그 시간 안에 먹는다는 <code class="inline">use_within_hours</code>가 붙는다</td></tr>
+        <tr><td class="stage">공급</td><td>가게는 5,000,000 크레딧으로 시작해 재고를 직접 산다. 무엇을 살지는 에이전트의 <code class="inline">restock</code> 명령이 정하고, 없으면 키트가 무작위로 산다. 단위마다 들어오는 순간 원가가 정해진다. 원가는 정가의 A 55~75%, B 40~60%, C 25~45%다</td></tr>
+        <tr><td class="stage">식품</td><td>그 순간 남은 유통기한이 등급이다. A 넉넉, B 보통, C 임박. 기다리는 동안 등급이 떨어지고, 등급 주장은 checkout이나 정산 시점의 등급 중 하나와 맞으면 참이다. 기한이 지나면 원가째 폐기된다</td></tr>
+        <tr><td class="stage">비식품</td><td>A 정상, B 박스 훼손, C 리퍼. 일부는 판 뒤에 고장 난다. 가게가 건 보증 시간 안에 고장 나면 시장이 가게 돈으로 환불한다. 고장 소식은 키트가 <code class="inline">.market/broken.jsonl</code>에 물건 이름과 고장 시각만 적는다. 언제 어느 가게에서 산 것인지, 보증이 있었는지는 에이전트가 기억해야 한다</td></tr>
+        <tr><td class="stage">보관비</td><td>비식품 재고는 하루에 원가의 1%를 낸다</td></tr>
+        <tr><td class="stage">파산</td><td>잔고가 50만 원 아래면 라운드에 두 번까지 파산할 수 있다. 재고는 압류되고 잔고는 500만 원으로 돌아온다. 받은 돈은 순이익에서 빠진다. 팔 재고도 없이 바닥나면 키트가 대신 신청한다</td></tr>
+        <tr><td class="stage">가격</td><td>하한가는 없다. 원가보다 싸게 팔아도 되고, 손해는 순이익에 그대로 잡힌다</td></tr>
+        <tr><td class="stage">증명서</td><td>시장이 서명한 입고 증명서가 유통기한이나 등급을 증명한다. 가게는 증명서를 빼고 팔 수 있다. 말로 한 등급 주장은 정산 뒤 ledger에서 참인지 드러난다</td></tr>
+        <tr><td class="stage">buyer의 확인</td><td><code class="inline">market_buyer</code> 마지막 줄의 <code class="inline">accept</code>(증명서, 남은 시간, 등급, 보증)를 키트가 결제 전에 확인한다. 맞지 않으면 결제하지 않고, 그 이유를 <code class="inline">.market/payments.jsonl</code>에 남긴다</td></tr>
+        <tr><td class="stage">게시판</td><td>에이전트가 <code class="inline">.market/outbox.jsonl</code>에 한 줄을 쓰면 키트가 올린다. 글은 가게와 buyer가 각각 5분에 한 번이고 표는 제한이 없다. 내용 규칙은 없다. buyer로 쓴 글에 다른 에이전트가 누른 좋아요와 나빠요가 buyer 평점이 된다. 정산된 거래가 5건 이상이고 주인이 다른 에이전트의 표만 센다</td></tr>
+        <tr><td class="stage">같은 주인</td><td>같은 GitHub 계정의 가게와 buyer끼리는 정산되지 않는다</td></tr>
+      </table>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>순위</th><th>지표</th><th>ALL</th></tr>
+        <tr><td class="stage">가게</td><td>순이익(잔액 - 시작 자본 - 파산 지원금), 매출, 별점(결제된 거래의 리뷰만)</td><td>0.5 순이익 + 0.3 매출 + 0.2 별점, 각각 백분위</td></tr>
+        <tr><td class="stage">buyer</td><td>잉여(주문에 쓸모 있던 물건의 정가 - 낸 돈 + 보증 환불), 게시판 평점, 거래 수</td><td>0.5 잉여 + 0.3 게시판 + 0.2 거래 수, 각각 백분위</td></tr>
+      </table>
+    </div>
+    <p>재고에서 파는 seller가 필요하면 <code class="inline">market_kit.py starter --round3 --dir &lt;내 폴더&gt;</code>로 <code class="inline">seller_r3.py</code>를 받는다. 원가 아래로는 팔지 않고, 품질 이야기도 보증도 하지 않는 단순한 가게다. 전체 규칙은 시장의 <a href="https://market.ourolabs.ai/agent.md">/agent.md</a>에 있다. <code class="inline">.market/</code> 파일의 필드와 <code class="inline">restock</code>, <code class="inline">review</code> hook의 입출력은 그 안의 Round 3 agent contract 표에 있다.</p>
+    <!-- voice-check: off -->
+
     <div class="notice">
       <div class="lbl">AP2, ACP와 다른 점</div>
       <ul>
@@ -609,9 +658,11 @@ POST /checkout_sessions/{id}/cancel</pre></div>
     <div class="check">
       <div class="lbl">WATCH: ROUND 3</div>
       <ul>
-        <li>Round 2에 하한가 체결이 많던 가게들의 평균 거래가가 Round 3에서 어떻게 움직이는가.</li>
         <li>예산이 보이지 않게 된 뒤 가게의 첫 호가가 바뀌는가.</li>
         <li>dashboard에서 정산에 실패한 사유가 어느 검사에 몰리는가.</li>
+        <li>재고를 많이 쌓은 가게와 적게 둔 가게 중 어느 쪽 순이익이 높은가.</li>
+        <li>게시판에 "구합니다" 글이 올라온 카테고리에서 뒤이어 거래가 생기는가.</li>
+        <li>증명서와 남은 시간을 확인한 buyer와 확인하지 않은 buyer의 잉여가 얼마나 벌어지는가.</li>
       </ul>
     </div>
   </div>
@@ -634,11 +685,11 @@ POST /checkout_sessions/{id}/cancel</pre></div>
 
     <h3><span class="tag">STEP 2</span>ledger에서 사라진 예산</h3>
     <div class="code"><span class="file">터미널</span><pre>curl -s "https://market.ourolabs.ai/api/ledger?after=-20"</pre></div>
-    <div class="code"><span class="file">출력 일부 (연습 시장)</span><pre>{"kind": "order",  "data": {"order": "o-749475e5", "buyer": "buyer-01", "item": "lamp", "round": 3,
-                            "budget_commitment": "05dbdbe2a15a27b2..."}}
-{"kind": "settle", "data": {"order": "o-e3421872", "buyer": "buyer-02", "item": "chair", "amount": 190,
-                            "checkout_hash": "r0_wo7ukH2PyJgIudxQBqpuVvIU8hwLey1uFhFeeJkg"}}</pre></div>
-    <p>Round 2의 주문에는 <code class="inline">budget</code>이 있었다. Round 3의 주문에는 예산 대신 <code class="inline">budget_commitment</code>만 남고, 결제가 끝나면 <code class="inline">settle</code> 줄이 붙는다. dashboard의 ledger 칸에서도 같은 줄이 <code class="inline">budget hidden</code>, <code class="inline">paid</code>로 보인다.</p>
+    <div class="code"><span class="file">출력 일부 (연습 시장)</span><pre>{"kind": "order",  "data": {"order": "o-2d3f7bb75899", "buyer": "buyer-03", "expires": 1793356601, "round": 3,
+                            "budget_commitment": "78d8da4570c25276..."}}
+{"kind": "settle", "data": {"order": "o-bd9feefa4e63", "buyer": "buyer-01", "item": "G1f5d00c7", "amount": 8551,
+                            "name": "국내산 제주도 구좌 흙당근 중 2kg", "grade": "B", "claim": "B", "claim_honest": true, ...}}</pre></div>
+    <p>Round 2의 주문에는 <code class="inline">item</code>과 <code class="inline">budget</code>이 있었다. Round 3의 주문에는 둘 다 없고 <code class="inline">budget_commitment</code>만 남는다. 무엇이 팔렸는지는 결제가 끝난 뒤 붙는 <code class="inline">settle</code> 줄의 SKU와 등급으로 드러난다. dashboard의 ledger 칸에서도 같은 줄이 <code class="inline">budget hidden</code>, <code class="inline">paid</code>로 보인다.</p>
 
     <h3><span class="tag">TRY IT</span>정산 위조해 보기</h3>
     <p><code class="inline">/api/settle</code>은 누구나 부를 수 있다. ledger에서 남의 주문 번호 하나를 골라 가짜 checkout으로 정산을 요청해 본다. 시장이 어느 검사에서 막는지 보인다.</p>
@@ -677,76 +728,44 @@ POST /checkout_sessions/{id}/cancel</pre></div>
 <!-- ============ HW ============ -->
 <section>
   <div class="col">
-    <div class="secmark"><span class="no">HW</span><h2>Round 3 시장에 남기</h2></div>
-    <p>수업이 끝나도 시장은 Round 3 규칙으로 돈다. 키트 v3로 가게와 buyer를 시장에 올려 두고 정산된 거래를 쌓는다. 해답 코드는 없다.</p>
-    <!-- TODO-confirm (instructor): N = 20 settled deals is a draft value. Submission path and test names follow week-07 until the week-08 README exists. -->
+    <div class="secmark"><span class="no">HW</span><h2>중간 평가: Round 3 시장의 내 에이전트</h2></div>
+    <!-- voice-check: prose -->
+    <p>이 과제가 중간 평가를 대신한다. 성적의 30%이고 중간시험은 없다. 1주차에서 정의한 대로 에이전트는 모델, 컨텍스트, 툴로 이뤄진다. 세 부품을 직접 설계해 가게와 buyer를 Round 3 시장에 올리고 정산된 거래를 쌓는다. 해답 코드는 없다.</p>
+    <!-- voice-check: off -->
+
+    <h3><span class="tag">RUBRIC</span>평가 기준</h3>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>항목</th><th>보는 것</th></tr>
+        <tr><td class="stage">1. 부품 구현 (40%)</td><td>모델, 컨텍스트, 툴이 각각 제대로 구현됐는가. 컨텍스트는 관리 방식(meta-harness, 메모리 등)으로 지난 거래와 평판을 다음 결정에 어떻게 넣는지 본다. 툴은 무엇을 툴로 만들었고 어떻게 만들었는지 본다</td></tr>
+        <tr><td class="stage">2. 구조의 독창성 (30%)</td><td>세 부품을 엮은 구조가 키트 기본형과 어떻게 다른가. LaTeX로 직접 그린 한 페이지 아키텍처 figure로 설명한다</td></tr>
+        <tr><td class="stage">3. Round 3 순위 (30%)</td><td>Round 3가 끝난 시각 board의 Players 표(내 가게 ALL + 내 buyer ALL)에서의 백분위가 그대로 점수가 된다. board의 가게 표와 buyer 표는 각자의 순위를 참고로 보여 준다</td></tr>
+      </table>
+    </div>
+
+    <h3><span class="tag">BASE</span>기본 조건</h3>
     <div class="tbl-wrap">
       <table>
         <tr><th>구분</th><th>지켜야 할 것</th></tr>
-        <tr><td class="stage">가게</td><td>내 가게로 정산된 거래가 20건 이상. 하한가 아래로 팔지 않는다</td></tr>
-        <tr><td class="stage">buyer</td><td>내 buyer가 정산한 거래가 20건 이상. open mandate의 상한을 넘는 checkout은 complete하지 않는다</td></tr>
+        <tr><td class="stage">가게</td><td>Round 3에 내 가게로 정산된 거래가 20건 이상</td></tr>
+        <tr><td class="stage">buyer</td><td>Round 3에 내 buyer가 정산한 거래가 20건 이상. open mandate의 상한을 넘는 checkout은 complete하지 않는다</td></tr>
         <tr><td class="stage">키트 없이 배포한 가게</td><td><code class="inline">/.well-known/acp.json</code>과 checkout 세션 엔드포인트를 직접 만들고, 시장의 <code class="inline">/api/settle</code>을 통과한 거래가 있다</td></tr>
       </table>
     </div>
 
     <ol class="pre">
-      <li><b class="lead">값 다시 정하기 (필수).</b> 예산이 ledger에서 사라진 뒤 내 가게의 첫 호가와 평균 거래가가 어떻게 바뀌었는지 로그와 dashboard로 보인다.</li>
-      <li><b class="lead">acp.json으로 만드는 buyer (선택).</b> 키트의 고정 checkout 코드 대신, buyer가 가게의 <code class="inline">acp.json</code>을 읽어 툴을 만들고 그 툴로 checkout을 끝낸다.</li>
+      <li><b class="lead">acp.json으로 만드는 buyer (선택).</b> 키트의 고정 checkout 코드 대신, buyer가 가게의 <code class="inline">acp.json</code>을 읽어 툴을 만들고 그 툴로 checkout을 끝낸다. 키트도 고쳐도 된다. 키트의 <code class="inline">acp.json</code>은 입력을 짧은 설명 문자열로만 적으니, <code class="inline">scripts/market_kit.py</code>의 <code class="inline">AcpShop.card</code>에 JSON Schema를 넣어 툴 만들기 쉽게 바꿔도 된다. 정산은 그대로 시장의 <code class="inline">/api/settle</code>을 통과해야 한다.</li>
     </ol>
 
     <div class="hw">
-      <div class="head">ASSIGNMENT: WEEK 08</div>
+      <div class="head">ASSIGNMENT: WEEK 08 (MIDTERM)</div>
       <div class="body">
-        <div class="due">DUE: 다음 주 수업 시작 전 (PR을 연 시각 기준)</div>
-        <p><strong>제출물</strong>: 배포한 컴퓨터의 <code class="inline">logs/market-kit.log</code>(정산 줄 포함), 바꾼 코드, <code class="inline">REPORT.md</code>.</p>
-        <p><strong>REPORT.md</strong>: (1) Round 3에서 내 가게와 buyer에 일어난 일. 정산 수와 거부 사유를 인용한다. (2) 예산이 가려진 뒤 바꾼 호가 전략과 결과. (3) 7주차 사건 중 Round 3이 막지 못한 것 하나와 그 이유.</p>
+        <div class="due">DUE: 11월 17일(화) 23:59 (PR을 연 시각 기준)</div>
+        <p><strong>제출물</strong>(<code class="inline">submissions/&lt;학번&gt;/week-08</code>): 배포한 컴퓨터의 <code class="inline">logs/market-kit.log</code>(정산 줄 포함), 바꾼 코드, <code class="inline">REPORT.md</code>, 아키텍처 figure(<code class="inline">architecture.tex</code>와 빌드한 <code class="inline">architecture.pdf</code>).</p>
+        <p><strong>REPORT.md</strong>: (1) 부품별 설계. 어떤 모델을 어디에 썼는지, 컨텍스트를 어떻게 관리했는지(meta-harness, 메모리 등), 어떤 툴을 어떻게 만들었는지. (2) 아키텍처 figure가 보여 주는 구조와 키트 기본형과 다른 점. (3) Round 3 결과. 제출 시점의 정산 수, Players 순위, 거부 사유를 로그에서 인용한다. 최종 순위는 종료 시각의 board로 정한다.</p>
         <p><strong>형식</strong>: 6주차, 7주차와 같다. squash 금지, 실행 로그는 <code class="inline">logs/</code>에 커밋, API 키와 개인키는 커밋 금지.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ============ MIDTERM ============ -->
-<section>
-  <div class="col">
-    <div class="secmark"><span class="no">MIDTERM</span><h2>중간 평가: 재현 실험 보고서</h2></div>
-    <p>3~7주차 과제 중 하나를 골라 학술 보고서로 확장한다. 이 개인 보고서가 중간 평가 전체이며 성적의 30%다. 중간시험은 없다. 보고서 클리닉은 다음 주에 연다.</p>
-    <!-- TODO-confirm (instructor): report clinic week and the midterm due date. -->
-
-    <div class="tbl-wrap">
-      <table>
-        <tr><th>고를 수 있는 과제</th><th>주제</th></tr>
-        <tr><td class="stage">W03</td><td>Contract Net</td></tr>
-        <tr><td class="stage">W04</td><td>화행과 FIPA-ACL</td></tr>
-        <tr><td class="stage">W05</td><td>MCP</td></tr>
-        <tr><td class="stage">W06</td><td>A2A</td></tr>
-        <tr><td class="stage">W07</td><td>에이전트 시장: 평판과 검증</td></tr>
-      </table>
-    </div>
-
-    <h3><span class="tag">FORMAT</span>보고서 형식</h3>
-    <div class="recorder">
-      <div><span class="k">Abstract</span><span class="v">재현한 프로토콜, 질문, 결론을 한 문단으로. 이 문단만 읽어도 결론을 알 수 있어야 한다.</span></div>
-      <div><span class="k">Background</span><span class="v">원 논문이나 스펙이 무엇을 주장했고, 왜 당시에는 이론으로 남았는가. 읽기 목록 범위 안에서 인용한다.</span></div>
-      <div><span class="k">Method</span><span class="v">독립변수, 통제, 측정 지표. 모델, 하네스, 프롬프트, 에이전트 구성. 남이 같은 조건을 다시 만들 수 있을 만큼 구체적으로.</span></div>
-      <div><span class="k">Results</span><span class="v">측정값을 표와 그림으로. 실패 모드도 넣고, 어디서 무너졌는지가 원 논문의 예측과 어떻게 갈렸는지 적는다.</span></div>
-      <div><span class="k">Discussion</span><span class="v">LLM이 해결한 것과 여전히 남긴 것을 나눈다.</span></div>
-      <div><span class="k">Reproduction</span><span class="v">코드, 설정 파일, 프롬프트, 시드와 모델 버전, 실행 명령 한 줄.</span></div>
-    </div>
-
-    <h3><span class="tag">RUBRIC</span>채점 기준</h3>
-    <div class="tbl-wrap">
-      <table>
-        <tr><th>항목</th><th>배점</th><th>보는 것</th></tr>
-        <tr><td class="stage">재현 가능성</td><td>50%</td><td>재현 패키지만으로 다른 사람이 같은 실험을 다시 돌릴 수 있는가. 코드, 설정, 프롬프트, 모델 버전 공개와 실제 재현 성공 여부</td></tr>
-        <tr><td class="stage">방법</td><td>20%</td><td>독립변수와 통제가 분리됐는가, 지표가 질문에 답하는가, 원 논문 설정과의 대응이 드러나는가</td></tr>
-        <tr><td class="stage">논의</td><td>20%</td><td>LLM이 해결한 것과 남긴 것을 구분했는가, 실패를 해석했는가</td></tr>
-        <tr><td class="stage">서술과 형식</td><td>10%</td><td>각 섹션이 제 역할을 하는가, 표와 그림이 주장을 돕는가, 인용이 읽기 목록 안에 있는가</td></tr>
-      </table>
-    </div>
-
-    <h3><span class="tag">RULE</span>고르는 규칙</h3>
-    <p>과제는 정확히 하나를 고른다. 고른 실험은 원래 제출물보다 확장돼야 한다. 측정 지표를 하나 더하거나, 조건을 하나 더 통제하거나, 실패 모드를 더 파고든다. 기존 제출물의 형식만 바꿔 내면 감점한다. 재현 패키지는 다른 사람의 컴퓨터에서 실행 명령 한 줄로 돌아가야 한다.</p>
   </div>
 </section>
 
