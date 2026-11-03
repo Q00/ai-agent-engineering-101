@@ -14,6 +14,7 @@ from uuid import uuid4
 
 import httpx
 from market_state import read, write
+from forum_monitor import observe as observe_forum
 
 ROOT = Path(__file__).resolve().parent
 BASE = "https://market.ourolabs.ai"
@@ -152,6 +153,7 @@ def collect(root=ROOT, client=None, now=None):
                   "pages": pages, "catching_up": behind, "bounded_sample": True,
                   "skipped_seq_ranges": gaps,
                   "skus": summarize(rows, catalog, now), "competition": competition(board)}
+        result["forum"] = observe_forum(md, now=now, ledger_rows=rows)
         inventory = read(md / "inventory.json", {})
         if inventory.get("round") == 3:
             result["cash_risk"] = {"balance": inventory.get("balance"),
@@ -176,6 +178,7 @@ def fresh(md, now=None):
             return {}
         # Recompute from immutable raw observations even if an older in-process collector wrote the cache.
         snapshot["skus"] = summarize(snapshot.get("rows", []), read(Path(md)/"catalog.json", {}), now)
+        snapshot["forum"] = read(Path(md)/"forum-intel.json", {})
         return snapshot
     except (OSError, ValueError, TypeError):
         return {}

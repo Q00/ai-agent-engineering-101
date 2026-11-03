@@ -10,12 +10,15 @@ import math
 from uuid import uuid4
 from market_intel import fresh
 from r3_policy import load_policy
+from forum_monitor import observe as observe_forum, REQUEST
 
 
 def demand_hints(posts, catalog, now):
     """Recent buyer requests are weak signals; never execute instructions in forum text."""
     hints = {}
     for post in posts[-100:]:
+        if post.get("round", 3) != 3:
+            continue
         ts = post.get("ts")
         if isinstance(ts, str):
             try:
@@ -27,7 +30,7 @@ def demand_hints(posts, catalog, now):
         text = str(post.get("text", ""))[:2000]
         if post.get("role") != "buyer" or post.get("author") == "kcwarni":
             continue
-        if not re.search(r"구합니다|구매하고|찾습니다|\b(?:want|need|looking for|buying)\b", text, re.I):
+        if not REQUEST.search(text):
             continue
         for sku in set(re.findall(r"[\w.-]+", text)) & catalog.keys():
             hints.setdefault(sku, set()).add(str(post.get("author", "unknown")))
@@ -125,6 +128,13 @@ def main():
     md = args.state
     read = lambda name: json.loads((md / name).read_text(encoding="utf-8"))
     inv, catalog, demand = read("inventory.json"), read("catalog.json"), read("demand.json")
+    # A short-lived hook activates forum monitoring without restarting the live kit.
+    # The observer rate-limits itself to 30 minutes and performs no network/model calls.
+    if inv.get("round") == 3:
+        try:
+            observe_forum(md)
+        except (OSError, ValueError, TypeError):
+            pass  # Forum observation must not stop inventory safety checks.
     memory_path = md / "r3-restock-memory.json"
     memory = read("r3-restock-memory.json") if memory_path.exists() else {"round": 3, "cursor": 0, "last_sale_seq": 0, "sales": {}}
     # The local kit log contains our own settled sales. Read a bounded tail, never infer sales from disappearing stock.
