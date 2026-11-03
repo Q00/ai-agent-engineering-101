@@ -266,7 +266,8 @@ def hours_left(unit, now=None):
 def ask_price(unit, pol, stats=None, now=None, inv=None, shelf_hours=None, relax=0.0):
     """First ask: list_price * price_mult, less a discount for the grade the unit has NOW (food decays), less
     liquidate_discount for food near its date; moved down to the market's p75 settle price when stats know it.
-    Never below floor_price."""
+    v1.18: shop.ask_quantile (e.g. "p50") replaces p75 when the SKU itself has >= 5 settles; the category fallback
+    stays p75 (a category median mixes SKUs priced 0.5-1.5x apart). Never below floor_price."""
     c = resolve(pol, unit.get("category"), unit.get("kind"))
     lp = int(unit.get("list_price") or unit["cost"] * 2)
     g = food_grade_now(unit, shelf_hours, now)
@@ -276,9 +277,11 @@ def ask_price(unit, pol, stats=None, now=None, inv=None, shelf_hours=None, relax
     h = hours_left(unit, now)
     if unit.get("kind") == "food" and h is not None and h < c.get("liquidate_hours", 0):
         p *= 1 - c.get("liquidate_discount", 0)
-    s = _stat(stats, "sku", unit.get("sku")) or _stat(stats, "category", unit.get("category"))
-    if s and s.get("n", 0) >= 5 and s.get("p75"):
-        p = min(p, s["p75"] * 1.0)
+    ss = _stat(stats, "sku", unit.get("sku"))
+    s = ss or _stat(stats, "category", unit.get("category"))
+    q = (pol["shop"].get("ask_quantile") or "p75") if ss else "p75"
+    if s and s.get("n", 0) >= 5 and s.get(q):
+        p = min(p, s[q] * 1.0)
     p *= 1 - (pol.get("volume") or {}).get("relax_ask_cut", 0.0) * max(0.0, min(1.0, relax))
     return max(floor_price(unit, pol, inv, now, relax), int(round(p)))
 
@@ -644,6 +647,20 @@ def goods_cap(cat, c, sp, stats, own_v=0.0, storage_per_day=0.0, warn=None):
         return None
 
 
+def below_market(sku, x, stats, cost_frac, margin):
+    """v1.18: True when the market's median settle of this SKU (>= 5 settles) is under our expected unit cost
+    (list_price x cost_frac) plus margin, i.e. we could not sell it at the market price without going under floor."""
+    s = _stat(stats, "sku", sku) or {}
+    return bool(s.get("n", 0) >= 5 and s.get("p50") and s["p50"] < x["list_price"] * cost_frac * (1 + margin))
+
+
+def expected_cost_frac(units, sp):
+    """v1.18: unit cost / list_price we expect from the next supply = p75 of our units' ratios (the grade, and with
+    it the cost, is drawn at supply: measured 2026-11-03 goods A 0.64, B 0.55, C 0.37), est_cost_frac with < 4 units."""
+    fr = sorted(u["cost"] / u["list_price"] for u in units if u.get("cost") and u.get("list_price"))
+    return fr[(3 * len(fr)) // 4] if len(fr) >= 4 else float(sp.get("est_cost_frac") or 0.75)
+
+
 def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None, now=None):
     """Buy list for the restock hook: categories ranked by stats (velocity) when known, else by spread; keep
     stock_target units per category; never spend below balance_floor nor beyond max_spend_per_run.
@@ -675,6 +692,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         by_cat.setdefault(x.get("category"), []).append((sku, x))
 
     own_v = own_velocity(activity, catalog, pol, now)
+    cost_frac = expected_cost_frac(units, sp) if sp.get("skip_below_market") else None
 
     def score(d):
         s = _stat(stats, "category", d["category"])
@@ -712,6 +730,13 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
             order_ = sorted(near, key=lambda t: (-sold[t[0]], -(t[1].get("shelf_hours") or 0), abs(t[1]["list_price"] - med), t[0]))
         else:
             order_ = sorted(near, key=lambda t: (-sold[t[0]], abs(t[1]["list_price"] - med), t[0]))
+        if cost_frac:                                    # v1.18: SKUs the market settles under our cost + margin
+            low = [t[0] for t in order_ if below_market(t[0], t[1], stats, cost_frac, c["min_margin"])]
+            if low:
+                order_ = [t for t in order_ if t[0] not in low]
+                notes.append(f"{cat}: market p50 under cost {cost_frac:.2f} + margin: skip {low[:3]}")
+                if not order_:
+                    continue
         if any(sold.values()):
             notes.append(f"{cat}: by settles {[(t[0], sold[t[0]]) for t in order_[:3]]}")
         if kind == "food":                               # v1.7 (b): no deeper than expected sell-through

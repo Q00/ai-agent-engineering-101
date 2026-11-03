@@ -1,5 +1,5 @@
 {
- "version": 8,
+ "version": 9,
  "owner": {
   "github": "Lee-sungsoo",
   "own_shop_names": [
@@ -49,12 +49,16 @@
   "restock_window_lead_s": 60,
   "restock_line_s": 10,
   "_window_note": "v1.18: Round 3 supply windows (agent.md at the round start: every 20 min for 3 min, the first 10 min). restock plans only when the window is open or opens within restock_window_lead_s (the kit retries a line 3 times at most 30 s apart before skipping it) and buys at most (closes_at - now) / restock_line_s lines (measured: one supply about every 10 s).",
-  "_cap_note": "v1.18 2026-11-03 21:16 (성수님 결정): inventory cap 0.12 -> 0.30 x balance, max_total_units 120 -> 250. First 10 min of R3: 5 of 257 market settles were ours and the 0.12 cap was full at the end of the first window. Back to 0.12 / 120 if our share does not rise or inventory cost does not fall across two windows."
+  "_cap_note": "v1.18 2026-11-03 21:16 (성수님 결정): inventory cap 0.12 -> 0.30 x balance, max_total_units 120 -> 250. First 10 min of R3: 5 of 257 market settles were ours and the 0.12 cap was full at the end of the first window. Back to 0.12 / 120 if our share does not rise or inventory cost does not fall across two windows.",
+  "ask_quantile": "p50",
+  "skip_below_market": true,
+  "est_cost_frac": 0.6,
+  "_price_note": "v1.18 2026-11-03 21:35 (성수님 결정): first ask = the SKU's median settle (ask_quantile p50, >= 5 settles), min_margin goods 0.15 / food 0.12 -> 0.05, restock skips SKUs whose market median is under expected cost (p75 of our units' cost/list, est_cost_frac with < 4 units) + min_margin. After 21:15, 7 of 8 negotiations were cancelled at asks 2-15% over the market median. Back to p75 / 0.15 / 0.12 if profit per settle falls without more settles."
  },
  "defaults": {
   "food": {
    "price_mult": 0.92,
-   "min_margin": 0.12,
+   "min_margin": 0.05,
    "concession": 0.03,
    "max_rounds": 4,
    "stock_target": 5,
@@ -83,7 +87,7 @@
   },
   "goods": {
    "price_mult": 0.9,
-   "min_margin": 0.15,
+   "min_margin": 0.05,
    "concession": 0.03,
    "max_rounds": 4,
    "stock_target": 4,
