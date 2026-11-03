@@ -24,18 +24,27 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+import strategy_params
 from seller_guard import ReserveSigner
 
 
 NAME = "Sealed Stock Shop"
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 SHOP_KEY = "shop_key.pem"
+EVENTS = MARKET_DIR / "seller_events.jsonl"   # dated copy of the strategy events for tune.py; the kit log has no date
 ROUND2_RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 GRADE_RANK = {"A": 0, "B": 1, "C": 2}
 
 
 def strategy(event, **fields):
-    print("[strategy] " + json.dumps({"event": event, **fields}, ensure_ascii=False, sort_keys=True), flush=True)
+    row = {"event": event, **fields}
+    print("[strategy] " + json.dumps(row, ensure_ascii=False, sort_keys=True), flush=True)
+    try:
+        MARKET_DIR.mkdir(parents=True, exist_ok=True)
+        with EVENTS.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"at": time.strftime("%Y-%m-%d %H:%M:%S"), **row}, ensure_ascii=False, sort_keys=True) + "\n")
+    except OSError:
+        pass
 
 
 def load_inventory():
@@ -91,15 +100,17 @@ def policy_arm(unit, task):
     return "volume" if int.from_bytes(digest[:8], "big") / 2**64 < share else "margin"
 
 
-def price_plan(unit, task, now=None):
-    """Return an explainable ask/floor. A floor is this agent's policy, not a market rule."""
+def price_plan(unit, task, now=None, params=None):
+    """Return an explainable ask/floor. A floor is this agent's policy, not a market rule.
+    `params` are the tuner's knobs (margins per arm, grade B cap); defaults when not given."""
     now = now or time.time()
+    params = params or strategy_params.DEFAULTS
     cost = max(1, int(round(unit["cost"])))
     list_price = max(cost, int(round(unit["list_price"])))
     arm = policy_arm(unit, task)
-    target = max(cost * (1.15 if arm == "volume" else 1.30),
+    target = max(cost * (params["seller_margin_volume"] if arm == "volume" else params["seller_margin_margin"]),
                  list_price * (0.82 if arm == "volume" else 0.95))
-    cap = list_price * {"A": 0.99, "B": 0.85, "C": 0.65}.get(unit.get("grade"), 0.85)
+    cap = list_price * {"A": 0.99, "B": params["grade_cap_B"], "C": 0.65}.get(unit.get("grade"), 0.85)
     target = min(target, cap)
     floor = cost * 1.03
     hours_left = None
@@ -150,7 +161,7 @@ class Seller(AgentExecutor):
             if unit is None:
                 await up.reject(say("Sorry, no matching unit is in stock."))
                 return
-            plan = price_plan(unit, task.id)
+            plan = price_plan(unit, task.id, params=strategy_params.load())   # re-read per task: midnight changes apply live
             signer = ReserveSigner(NAME, unit["sku"], plan["floor"], task.id, SHOP_KEY)
             deal = self.open[task.id] = {"unit": unit, "plan": plan, "ask": plan["ask"], "offers": [], "signer": signer}
             strategy("seller_open", task=tid, sku=unit["sku"], grade=unit.get("grade"), **plan)

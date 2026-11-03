@@ -152,13 +152,13 @@ def rank_shops(shops, memory, item, reference=None):
     return sorted(ranked, key=lambda pair: (-pair[1]["score"], pair[0].get("name", "")))
 
 
-def choose_shop(shops, memory, item, reference=None):
-    """Deterministic exploit/explore choice, independent of the private budget."""
+def choose_shop(shops, memory, item, reference=None, explore_rate=EXPLORE_RATE):
+    """Deterministic exploit/explore choice, independent of the private budget. explore_rate is a tuner knob."""
     ranked = rank_shops(shops, memory, item, reference)
     if not ranked:
         raise ValueError("no shops to choose from")
     seed = hashlib.sha256(f"{item}:{len(memory)}".encode()).digest()
-    explore = int.from_bytes(seed[:8], "big") / 2**64 < EXPLORE_RATE
+    explore = int.from_bytes(seed[:8], "big") / 2**64 < explore_rate
     eligible_explore = [pair for pair in ranked if pair[1]["integrity"] >= 0.55]
     if explore and len(eligible_explore) > 1:
         # Prefer the least tried safe shop; the hash only breaks exact ties.

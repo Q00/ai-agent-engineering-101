@@ -20,6 +20,7 @@ import httpx
 
 import buyer_policy
 import harness
+import strategy_params
 from buyer import HEADERS, MAX_ROUNDS, rpc, send, state, status_text
 
 import re
@@ -50,27 +51,28 @@ def blacklisted(shops, mem):
     return [s for s in shops if s["name"] in bad]
 
 
-def fallback_choice(shops, mem, item, reference=None):
+def fallback_choice(shops, mem, item, reference=None, explore_rate=buyer_policy.EXPLORE_RATE):
     """The same budget-blind portfolio policy is used after an unreachable shop."""
-    return buyer_policy.choose_shop(shops, mem, item, reference)[0]
+    return buyer_policy.choose_shop(shops, mem, item, reference, explore_rate)[0]
 
 
-def choose(shops, item, mem, reference=None):
-    pick, features, mode, top = buyer_policy.choose_shop(shops, mem, item, reference)
+def choose(shops, item, mem, reference=None, explore_rate=buyer_policy.EXPLORE_RATE):
+    pick, features, mode, top = buyer_policy.choose_shop(shops, mem, item, reference, explore_rate)
     buyer_policy.emit("buyer_route", item=item, mode=mode, chosen=pick["name"], features=features, top=top)
     print(f"[choose] {pick['url']}: {pick['name']}. portfolio {mode}, score {features['score']}", flush=True)
     return pick
 
 
-def bargain_record(name, mem):
+def bargain_record(name, mem, discount=0.15):
     """How this shop bargained with me before, in one line for the harness. Rows from day 1 have no ask and are skipped.
-    Day 1 showed the harness pays the ask unless told otherwise, so the line ends with a concrete first-offer rule."""
+    Day 1 showed the harness pays the ask unless told otherwise, so the line ends with a concrete first-offer rule.
+    `discount` is the tuner's first_offer_discount."""
     rows = [m for m in mem if m.get("shop") == name and isinstance(m.get("ask"), (int, float)) and m["ask"] > 0]
     pushed = [m for m in rows if (m.get("first_offer") or m["ask"]) < m["ask"]]   # only rows where I opened below the ask tell anything
     deals = [1 - m["price"] / m["ask"] for m in pushed if m.get("outcome") == "deal" and m.get("price")]
     rejected_low = sum(1 for m in pushed if m.get("outcome") == "closed" and (m.get("last_offer") or 0) < m["ask"])
     if not pushed:
-        return "My past record with this shop: none on how it bargains. First offer: about 15% below the ask."
+        return f"My past record with this shop: none on how it bargains. First offer: about {discount:.0%} below the ask."
     parts = [f"My past record with this shop: {len(deals)} deal(s) after a low first offer"]
     if deals:
         parts.append(f"closed on average {sum(deals) / len(deals):.0%} below its first ask")
@@ -79,7 +81,7 @@ def bargain_record(name, mem):
     if (deals and sum(deals) / len(deals) < 0.02 and len(deals) >= 2) or rejected_low:
         rule = "First proposal: the ask itself; the private mandate guardian decides whether it is affordable."
     else:
-        rule = "First offer: about 15% below the ask."
+        rule = f"First offer: about {discount:.0%} below the ask."
     return ", ".join(parts) + ". " + rule
 
 
@@ -266,19 +268,22 @@ def main():
     if not shops:
         sys.exit("[buyer] no shops in the list")
     mem = load_memory()
+    params = strategy_params.load()   # the nightly tuner's knobs; defaults when the file is absent
+    buyer_policy.emit("buyer_params", **params)
     order, catalog = load_round3(a.order)
     category = order.get("category") or a.item
     reference = buyer_policy.item_reference(mem, category, fallback=category_reference(order, catalog))
     selector_guardian = buyer_policy.MandateGuardian(a.budget, reference)
     candidates = prepare_round3_shops(shops, order, catalog, selector_guardian)
-    pick = choose(candidates, category, mem, reference)
+    pick = choose(candidates, category, mem, reference, params["explore_rate"])
     request = choose_request(pick, catalog)
     wanted = request["sku"] if request else a.item
 
     for attempt in (1, 2):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
         try:
             outcome, agreed, receipt, log, manip, info = negotiate(
-                pick["url"], wanted, a.budget, reference, bargain_record(pick["name"], mem), request
+                pick["url"], wanted, a.budget, reference,
+                bargain_record(pick["name"], mem, params["first_offer_discount"]), request
             )
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)
@@ -298,7 +303,7 @@ def main():
         rest = [s for s in candidates if s is not pick and s not in blacklisted(candidates, mem)]
         if not rest:
             break
-        pick = fallback_choice(rest, mem, category, reference)
+        pick = fallback_choice(rest, mem, category, reference, params["explore_rate"])
         request = choose_request(pick, catalog)
         wanted = request["sku"] if request else a.item
         print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by portfolio policy after the first shop failed", flush=True)
