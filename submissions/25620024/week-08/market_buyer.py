@@ -35,6 +35,7 @@ The kit runs this for every order from Round 1 on. {shops} is a JSON list of
            kit never adds our signature to an overcharge.
 """
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -627,6 +628,36 @@ def remember_phantoms(quotes):
             pass
 
 
+AB_MIN = 60000            # HQ 11-04 A/B: orders of this budget and up are split by order id
+LOWEST_RE = re.compile(r"(?:our |my )?lowest(?: price)?(?: is|:)?\s*([\d,]+)", re.I)
+
+
+def ab_arm(order):
+    """'B' (Enuri probes first, the buyer buys at what it learned) or 'A' (the buyer negotiates as before) for an
+    order of AB_MIN and up; None for smaller orders. Stable per order id."""
+    if (order.get("budget") or 0) < AB_MIN:
+        return None
+    h = int(hashlib.sha256(str(order.get("order") or order.get("item")).encode()).hexdigest()[:8], 16)
+    return "B" if h % 2 else "A"
+
+
+def probe(q):
+    """Enuri's scout offer in a quote's open task: 45% of list, to learn the shop's counter or stated lowest. Returns
+    (q with the updated task, price learned or None). A shop that takes the scout offer has made a deal: the caller
+    keeps it (never left unpaid)."""
+    lp = q["c"][3]
+    try:
+        t2 = send(q["url"], str(int(0.45 * lp)), q["task"]["id"])
+    except Exception as e:
+        log(f"[probe] {q['c'][1]['name']}: {type(e).__name__}")
+        return q, None
+    text = status_text(t2)
+    m = LOWEST_RE.search(text)
+    learned = int(m.group(1).replace(",", "")) if m else (asking_price(t2) if state(t2) == "TASK_STATE_INPUT_REQUIRED" else None)
+    log(f"[probe] {q['c'][1]['name']}: offered {int(0.45 * lp)}, {state(t2)}, learned {learned}")
+    return dict(q, task=t2, probe_offer=int(0.45 * lp), learned=learned), learned
+
+
 def accept_policy(order):
     """What the checkout must show before the kit pays. Food that will not last use_within_hours is worth 0."""
     pol = {"cert": True}
@@ -695,8 +726,22 @@ def round3(a, order, shops, mem, started):
         print(json.dumps({"shop": shop["url"], "receipt": None, "stars": stars, "review": review}, ensure_ascii=False),
               flush=True)
         return
+    arm, probed, scout_deal = ab_arm(order), {}, None
+    if arm == "B":                                # Enuri scouts first: each open quote gets a 45%-of-list offer
+        for q in sorted(good, key=lambda q: q["ask"])[:3]:
+            q2, learned = probe(q)
+            good[good.index(q)] = q2
+            probed[q2["c"][1]["name"]] = learned
+            if state(q2["task"]) == "TASK_STATE_COMPLETED":
+                scout_deal = q2                   # the shop took the scout offer: that is the deal
+                break
+        good = [q for q in good if state(q["task"]) in ("TASK_STATE_INPUT_REQUIRED", "TASK_STATE_COMPLETED")] or good
+        for q in good:                            # what the scouting learned is the price to beat
+            if q.get("learned") and state(q["task"]) == "TASK_STATE_INPUT_REQUIRED":
+                q["ask"] = min(q["ask"], q["learned"])
     # with Enuri's advice: the lowest ask (surplus is budget - paid), then its rank; without: list - ask
-    pick = min(good, key=lambda q: (q["ask"], cands.index(q["c"]))) if adv else max(good, key=lambda q: q["c"][3] - q["ask"])
+    pick = scout_deal or (min(good, key=lambda q: (q["ask"], cands.index(q["c"]))) if adv else
+                          max(good, key=lambda q: q["c"][3] - q["ask"]))
     for q in good:
         if q is not pick:
             try:
@@ -717,15 +762,20 @@ def round3(a, order, shops, mem, started):
         low = int(max(0.45 * lp, min(low, book_low)))
     if row:
         low = row["target"]
-    low = min(low, int(0.9 * cap))
+    if arm == "B" and pick.get("learned"):        # buy at what the scouting learned
+        low = min(pick["learned"], cap)
+    low = min(low, int(0.9 * cap)) if arm != "B" else min(low, cap)
     log(f"[choose] {shop['name']} {offer['name']} ({sku}): ask {pick['ask']}, list {lp}, I pay at most {cap}, open {low}")
 
     task, asks, offers, texts, notes, rec, problem = None, [], [], [], [], None, None
     try:
-        task, asks, offers, texts, notes = negotiate(shop["url"], offer["name"], cap, started,
-                                                     low=low,
-                                                     opened=(pick["url"], pick["task"], pick["opening"]),
-                                                     decide_fn=code_decide)
+        if scout_deal:
+            task, asks, offers, texts, notes = pick["task"], [pick["ask"]], [pick["probe_offer"]], [], []
+        else:
+            task, asks, offers, texts, notes = negotiate(shop["url"], offer["name"], cap, started,
+                                                         low=low,
+                                                         opened=(pick["url"], pick["task"], pick["opening"]),
+                                                         decide_fn=code_decide)
         outcome = "deal" if state(task) == "TASK_STATE_COMPLETED" else "no deal"
     except Exception as e:
         log(f"buyer error: {type(e).__name__}: {e}")
@@ -749,7 +799,8 @@ def round3(a, order, shops, mem, started):
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": sku, "category": order.get("item"),
               "kind": order.get("kind"), "list_price": lp, "budget": order["budget"], "rfq": rfq,
               "enuri_first": adv["ranked"][0]["shop"] if adv else None, "enuri_target": row and row["target"],
-              "enuri_walk": row and row["walk_away"],
+              "enuri_walk": row and row["walk_away"], "ab": arm, "probed": probed or None,
+              "scout_deal": bool(scout_deal) or None,
               "first_ask": asks[0] if asks else None, "last_ask": asks[-1] if asks else None,
               "last_offer": offers[-1] if offers else None, "agreed": agreed,
               "receipt_price": rec.get("price") if rec else None, "outcome": outcome,

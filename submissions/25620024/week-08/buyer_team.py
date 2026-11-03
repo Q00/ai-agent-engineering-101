@@ -260,7 +260,27 @@ def diagnosis(board, now=None):
     return {"shops_skipped_now": len(blocked), "skipped": dict(list(blocked.items())[:15]),
             "outcomes_3h": {o: sum(1 for m in rows if m.get("outcome") == o) for o in
                             ("deal", "no deal", "no answer", "no candidates")},
-            "deal_rate_by_category_3h": fmt(cat), "deal_rate_by_budget_3h": fmt(band)}
+            "deal_rate_by_category_3h": fmt(cat), "deal_rate_by_budget_3h": fmt(band),
+            "ab_scout_then_buy_24h": ab_results(now)}
+
+
+def ab_results(now, hours=24):
+    """HQ 11-04 A/B on orders of 60,000 and up: A = the buyer negotiates; B = Enuri scouts each quote first and the
+    buyer buys at what it learned. Per arm: orders, deals, surplus per order (budget - paid, the board's measure)."""
+    out = {}
+    for m in load_memory(now - hours * 3600):
+        if m.get("ab") not in ("A", "B"):
+            continue
+        x = out.setdefault(m["ab"], {"orders": 0, "deals": 0, "surplus": 0, "scout_deals": 0})
+        x["orders"] += 1
+        if m.get("outcome") == "deal" and m.get("agreed"):
+            x["deals"] += 1
+            x["surplus"] += (m.get("budget") or 0) - m["agreed"]
+            x["scout_deals"] += bool(m.get("scout_deal"))
+    for x in out.values():
+        x["deal_rate"] = round(x["deals"] / x["orders"], 2) if x["orders"] else None
+        x["surplus_per_order"] = round(x["surplus"] / x["orders"]) if x["orders"] else None
+    return out
 
 
 def load_memory(since):
