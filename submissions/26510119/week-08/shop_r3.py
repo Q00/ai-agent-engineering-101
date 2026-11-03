@@ -7,13 +7,14 @@ import json
 import os
 import re
 import time
+
+import policy
 from datetime import datetime, timezone
 from pathlib import Path
 
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", Path(__file__).with_name(".market")))
 SALES = Path(os.environ.get("SHOP_SALES_R3") or Path(__file__).with_name("sales_r3.jsonl"))
 WINDOW = 80                                  # recent negotiations per category
-WARRANTY_HOURS = {"A": 6}                    # goods only; B and C sell without a warranty
 SKU = re.compile(r"\bG[0-9a-f]{8}\b")
 
 
@@ -65,16 +66,18 @@ def find_unit(text, taken=()):
 def floor_price(unit, shelf_hours=None):
     """Lowest price the code allows. Fresh stock: cost plus 5%. Food close to its date would be thrown away
     at cost, so any sale beats none: the floor falls with the shelf life left."""
+    p = policy.get("shop")
     cost = unit["cost"]
+    full = int(cost * (1 + p["margin"])) + 1
     h = hours_left(unit)
     if h is None:
-        return int(cost * 1.05) + 1
+        return full
     share = h / shelf_hours if shelf_hours else 1
-    if h < 12 or share < 0.15:
-        return max(1, int(cost * 0.3))
+    if h < p["salvage_hours"] or share < p["salvage_share"]:
+        return max(1, int(cost * p["salvage_floor"]))
     if share < 0.45:                          # grade C food
-        return int(cost * 0.85)
-    return int(cost * 1.05) + 1
+        return int(cost * p["grade_c_floor"])
+    return full
 
 
 def record(row):
@@ -129,14 +132,14 @@ def quality_line(unit, shelf_hours=None):
     if unit.get("kind") == "food":
         h = hours_left(unit)
         return f"grade {g}, {max(0, int(h or 0))} h shelf life left, market certificate included"
-    w = WARRANTY_HOURS.get(g, 0)
+    w = policy.get("shop")["warranty_hours"].get(g, 0)
     cond = {"A": "new", "B": "damaged box", "C": "refurbished"}.get(g, g)
     return f"grade {g} ({cond}), market certificate included" + (f", {w} h warranty" if w else ", no warranty")
 
 
 def receipt_extras(unit):
     extra = {"unit": unit["unit"], "claim": unit.get("grade")}
-    w = WARRANTY_HOURS.get(unit.get("grade"), 0) if unit.get("kind") == "goods" else 0
+    w = policy.get("shop")["warranty_hours"].get(unit.get("grade"), 0) if unit.get("kind") == "goods" else 0
     if w:
         extra["warranty_hours"] = w
     return extra

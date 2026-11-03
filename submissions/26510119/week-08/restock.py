@@ -1,0 +1,103 @@
+"""The purchasing manager: what to buy from the market's supply. Rules only, no LLM.
+
+    python restock.py --state <.market dir>        (the kit calls this every 60 s from Round 3)
+
+Prints one JSON line: {"buy": [{"sku", "qty"}], "why": [...]} and "bankrupt": true when stuck.
+The kit's default buys random SKUs in 3 random categories once fewer than 20 units are left. This one:
+  1. keeps a cash reserve and spends at most a small share of the balance per run;
+  2. scores each category by demand (buyers' orders in the last hours, from market_intel) against supply
+     (units other shops and we already hold), so it stocks what is asked for and not already everywhere;
+  3. in a category picks the SKU buyers list as acceptable most often, else the one priced nearest the
+     category median, skipping food with a short shelf life and goods too expensive to hold (storage 1%/day).
+Every number comes from policy.json.
+"""
+import argparse
+import json
+import os
+import random
+import sys
+from pathlib import Path
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--state", default=os.environ.get("MARKET_DIR", ".market"))
+    ap.add_argument("--offline", action="store_true", help="do not call the market (tests)")
+    a = ap.parse_args()
+    md = Path(a.state)
+    os.environ["MARKET_DIR"] = str(md)
+    sys.path.insert(0, str(Path(__file__).parent))
+    import market_intel
+    import policy
+
+    p = policy.get("restock")
+    load = lambda n, default: json.loads((md / n).read_text(encoding="utf-8")) if (md / n).exists() else default
+    inv = load("inventory.json", {})
+    catalog = load("catalog.json", {})
+    catalog = catalog if isinstance(catalog, dict) else {x["sku"]: x for x in catalog}
+    demand_list = load("demand.json", [])
+    out = {"buy": [], "why": []}
+
+    if inv.get("round", 0) < 3:
+        print(json.dumps(out))
+        return
+    units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
+    balance = inv.get("balance") or 0
+    if balance < inv.get("bankrupt_line", 0) and not units and (inv.get("bankruptcies_left") or 0) > 0:
+        print(json.dumps({"buy": [], "bankrupt": True, "why": ["below the line with nothing to sell"]}))
+        return
+    if len(units) >= p["target_units"]:
+        out["why"].append(f"{len(units)} units in stock, target {p['target_units']}")
+        print(json.dumps(out, ensure_ascii=False))
+        return
+    budget = min(balance - p["cash_reserve"], balance * p["max_spend_share"])
+    if budget <= 0:
+        out["why"].append(f"balance {balance} is at the cash reserve {p['cash_reserve']}")
+        print(json.dumps(out, ensure_ascii=False))
+        return
+
+    intel = market_intel.load() if a.offline else market_intel.update(p["window_hours"], me=os.environ.get("SHOP_NAME", "olstjr"))
+    orders, wanted = market_intel.demand(intel)
+    ours_cat, ours_sku = {}, {}
+    for u in units:
+        k = market_intel.leaf(u.get("category"))
+        ours_cat[k] = ours_cat.get(k, 0) + 1
+        ours_sku[u["sku"]] = ours_sku.get(u["sku"], 0) + 1
+
+    def ok(x):
+        if not (p["min_list_price"] <= x["list_price"] <= p["max_list_price"]):
+            return False
+        return x["kind"] != "food" or (x.get("shelf_hours") or 0) >= p["food_min_shelf_hours"]
+
+    scored = []
+    demand_list = random.sample(demand_list, len(demand_list))   # ties (no data yet) spread at random
+    for d in demand_list:
+        k = d["item"]
+        if ours_cat.get(k, 0) >= p["max_units_per_category"]:
+            continue
+        score = (orders.get(k, 0) + 1) / (1 + ours_cat.get(k, 0) + 0.2 * intel["stock"].get(k, 0))
+        scored.append((score, d))
+    scored.sort(key=lambda x: -x[0])
+
+    for score, d in scored:
+        if len(out["buy"]) >= p["categories_per_run"]:
+            break
+        skus = [x for x in catalog.values() if x["category"] == d["category"] and ok(x)
+                and ours_sku.get(x["sku"], 0) < p["max_units_per_sku"]]
+        if not skus:
+            continue
+        x = max(skus, key=lambda x: (wanted.get(x["sku"], 0), -abs(x["list_price"] - d["median_price"])))
+        unit_cost = x["list_price"] * p["cost_estimate"]
+        qty = min(p["max_units_per_sku"] - ours_sku.get(x["sku"], 0), int(budget // unit_cost))
+        if qty < 1:
+            continue
+        budget -= qty * unit_cost
+        out["buy"].append({"sku": x["sku"], "qty": qty})
+        out["why"].append(f"{d['item']}: {orders.get(d['item'], 0)} orders, others hold "
+                          f"{intel['stock'].get(d['item'], 0)}, we hold {ours_cat.get(d['item'], 0)}; "
+                          f"{x['sku']} list {x['list_price']}, acceptable in {wanted.get(x['sku'], 0)} orders")
+    print(json.dumps(out, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

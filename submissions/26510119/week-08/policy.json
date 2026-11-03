@@ -1,0 +1,30 @@
+{
+ "version": 1,
+ "note": "Every number the agents may tune. Agents read this file on each decision; tuner.py (the meta loop) is the only writer besides a human.",
+ "shop": {
+  "margin": 0.05,
+  "salvage_hours": 12,
+  "salvage_share": 0.15,
+  "salvage_floor": 0.3,
+  "grade_c_floor": 0.85,
+  "warranty_hours": {"A": 6}
+ },
+ "restock": {
+  "cash_reserve": 1500000,
+  "max_spend_share": 0.05,
+  "target_units": 40,
+  "categories_per_run": 4,
+  "max_units_per_sku": 3,
+  "max_units_per_category": 6,
+  "food_min_shelf_hours": 168,
+  "max_list_price": 150000,
+  "min_list_price": 3000,
+  "cost_estimate": 0.75,
+  "window_hours": 6
+ },
+ "buyer": {
+  "max_pay_share_of_list": 0.9,
+  "hours_margin": 6,
+  "goods_grades": ["A", "B"]
+ }
+}
