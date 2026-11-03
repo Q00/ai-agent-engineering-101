@@ -148,7 +148,7 @@ def big_buyer(c, text):
 
 
 CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grade or warranty? say e.g. "
-         "'need 48h, grade A/B' and I pick a unit that passes | bought here before? say your market name for VIP "
+         "'need 48h, grade A/B' and I pick a unit that passes "
          "| LOWEST-PRICE GUARANTEE: seen it cheaper? reply 'match <price>': if another shop settled it at that price "
          "on the ledger, we match it | paid us more than another shop's ledger price for the same SKU within 24 h? "
          "say your market name: the difference comes off this purchase")
@@ -267,7 +267,11 @@ class Shop(AgentExecutor):
             sub = f"substitute for {u['substitute_for']} (same category, in stock) | " if u.get("substitute_for") else ""
             log(f"{task.id[:8]} {u['sku']} cost {u['cost']} -> ask {q['price']} least {q['least']} ({q['why']})"
                 + (f" VIP {vip}" if vip else "") + (f" substitute for {u['substitute_for']}" if sub else ""))
-            await up.requires_input(say_offer(f"{sub}{facts(u, q['price'], q, code)}{warranty_note(u)}"
+            vd = promo.theta().get("vip_discount", 0)
+            regular = "" if vip or big or not vd else (f"REGULARS: bought here before? reply 'buyer: <your market name>'"
+                                                         f" and VIP -{vd:.0%} comes off this price at once (checked on "
+                                                         f"the ledger) | ")
+            await up.requires_input(say_offer(f"{regular}{sub}{facts(u, q['price'], q, code)}{warranty_note(u)}"
                                         + (f" | thank-you price for {big} (bought a {cross_sell()['min_ticket']}+ item "
                                            f"here): at our cost" if big else "")
                                         + (f" | VIP {vip}: -{promo.theta().get('vip_discount', 0):.0%} applied" if vip and not big else "")
@@ -279,6 +283,11 @@ class Shop(AgentExecutor):
         u, q = deal["unit"], deal["q"]
         offer = number(text)
         deal["turns"] += 1
+        late = None if deal["vip"] else is_vip(self.c, text)
+        if late and offer is not None:                  # named itself with a number: VIP before judging the offer
+            q = deal["q"] = promo.quote(self.c, u, deal["code"], me=NAME, stock_n=u.get("stock_n", 1), vip=True)
+            deal.update(ask=min(q["price"], deal["ask"]), vip=late)
+            log(f"{task.id[:8]} VIP {late} named in a reply: ask {deal['ask']} least {q['least']}")
         if offer is not None and offer < q["least"] and MATCH_RE.search(text):   # the lowest-price guarantee
             low = market_model.market_low(self.c, u["sku"], hours=24)
             floor = int(u["cost"] * (1 + promo.theta().get("match_margin", 0.05))) + 1
