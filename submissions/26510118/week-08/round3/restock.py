@@ -15,7 +15,12 @@ does not count as on the shelf; S5 sells it off). Exploration phase:
             list above 60,000 (up to 400,000)
   targets   1 per listed product; 3 once it has sold, and 2 from the start in a category the
             whole market sold 3 or more of in the last day (a refill waits for the next run, up
-            to 20 minutes); +1 if a buyer was turned away for lack of it in the last day; at most 4
+            to 20 minutes); +1 if a buyer was turned away for lack of it in the last day; at most 4.
+            A product selling fast is stocked for its pace instead: what our last 3 hours of its
+            sales say will sell in the next COVER windows, up to 20 (one line's quantity)
+  explore   the lines a window allows are few (about 18), and refilling what sells in small lots
+            would take them all, so in the exploration phase 40% of a run's lines (10% in the
+            focus phase) go to products never stocked yet, and the deep refills free the rest
   order     only 10 lines a run, so what comes first matters while the first day's shelf fills
             (about 12 runs): refills of what we sold, then the products with the most evidence
             of demand (the market's sales of the category in the last day, our buyer's orders for
@@ -43,6 +48,7 @@ unpaid (still there 10 minutes later). The ledger is collected by the analysis r
 (analysis.py); this hook only reads its market_summary.json.
 """
 import argparse
+import math
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -61,6 +67,10 @@ WANTED_WEIGHT = 2        # a wanted category counts as this many sales when orde
 SUPPLY_LEAD = 90         # seconds: the kit waits up to this long for a window before it skips a line
 SUPPLY_GAP = 10          # seconds between the kit's supply calls
 MAX_TARGET = 4
+PACE_HOURS = 3           # our recent sales of a product, over this many hours, set its pace
+COVER = 2                # runs' worth of that pace kept on the shelf (the next window may not have lines to spare)
+MAX_DEPTH = 20           # one line's quantity at most
+EXPLORE_SHARE = {"explore": 0.4, "focus": 0.1}   # share of a run's lines for products never stocked yet
 GATE = 10                # our settled sales before stage 2
 MAX_PRICE = 60_000       # stage 1 list prices
 PRICEY_MAX = 400_000     # stage 2, categories with nothing cheaper
@@ -166,9 +176,10 @@ def evidence(catalog: dict, summary: dict, orders: list, wanted: dict, now: floa
 
 
 def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, refusals: list,
-         rules: dict, now: float, wanted: dict | None = None, orders: list | None = None) -> tuple[dict, dict]:
+         rules: dict, now: float, wanted: dict | None = None, orders: list | None = None,
+         stocked: set | None = None, phase: str = "explore") -> tuple[dict, dict]:
     """({"buy": [...]} or bankruptcy, a few numbers for the log). rules: the seller's rules in force;
-    orders: our buyer's order records (what buyers ask for)."""
+    orders: our buyer's order records (what buyers ask for); stocked: the SKUs bought before."""
     units = inv.get("units") or []
     if inv.get("round", 0) < 3:
         return {"buy": []}, {"note": "before Round 3"}
@@ -197,9 +208,11 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     for s in targets:
         if market.get(catalog[s]["category"], 0) >= HOT:
             targets[s] = max(targets[s], HOT_TARGET)
+    pace = Counter(s["sku"] for s in sales if s.get("ts", 0) >= now - PACE_HOURS * 3600)
+    depth = {s: min(MAX_DEPTH, math.ceil(n / (PACE_HOURS * 3600) * COVER * RUN_EVERY)) for s, n in pace.items()}
     for s in sold:
         if s in catalog:
-            targets[s] = max(targets.get(s, 0), SOLD_TARGET)
+            targets[s] = max(targets.get(s, 0), SOLD_TARGET, depth.get(s, 0))
     for s, n in refused.items():
         targets[s] = targets.get(s, 1) + 1
     for s in wanted_skus(catalog, demand, wanted or {}, set(targets)):
@@ -211,7 +224,7 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
             targets[s] = 0
         elif cat in focus or cat.split(">")[-1] in focus:
             targets[s] += 1
-    targets = {s: min(MAX_TARGET, t) for s, t in targets.items()}
+    targets = {s: min(MAX_DEPTH if depth.get(s, 0) > MAX_TARGET else MAX_TARGET, t) for s, t in targets.items()}
     wind_down = to_end < WIND_DOWN
     if wind_down:
         targets = {s: t for s, t in targets.items() if sold_day.get(s, 0) >= FAST}
@@ -223,19 +236,31 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
                   key=lambda g: (g[0] > 0, -score(g[1]), g[0], -g[2]))       # refills, then evidence, then stage
     value = sum(u.get("cost", 0) for u in units)
     balance = inv.get("balance", 0)
+    seen = (stocked or set()) | set(usable) | set(sold)
+    fresh = [g for g in gaps if g[1] not in seen]                  # never stocked: what exploration is for
+    known = [g for g in gaps if g[1] in seen]
+    explore = min(len(fresh), max(1, round(lines * EXPLORE_SHARE.get(phase, 0.0)))) if fresh and not wind_down else 0
     buy, spend = [], 0.0
-    for _, sku, need in gaps:
-        each = catalog[sku]["list_price"] * DEAREST
-        qty = need
-        while qty and (value + spend + each * qty > CAP or balance - spend - each * qty < RESERVE):
-            qty -= 1
-        if qty:
-            buy.append({"sku": sku, "qty": qty})
-            spend += each * qty
-        if len(buy) >= lines:
-            break
+
+    def take(rows, room):
+        nonlocal spend
+        for _, sku, need in rows:
+            if room <= 0 or len(buy) >= lines:
+                return
+            each = catalog[sku]["list_price"] * DEAREST
+            qty = need
+            while qty and (value + spend + each * qty > CAP or balance - spend - each * qty < RESERVE):
+                qty -= 1
+            if qty:
+                buy.append({"sku": sku, "qty": qty})
+                spend += each * qty
+                room -= 1
+    take(known, lines - explore)                                   # refills, the fast sellers stocked deep
+    take(fresh, explore)
+    take([g for g in known + fresh if g[1] not in {b["sku"] for b in buy}], lines)   # lines left over
     info = {"stage1": len(one), "gate": f"{len(sales)}/{GATE}" + (" open" if gate else ""),
-            "targets": len(targets), "gaps": len(gaps), "stock": int(value), "wind_down": wind_down, "lines": lines}
+            "targets": len(targets), "gaps": len(gaps), "stock": int(value), "wind_down": wind_down, "lines": lines,
+            "new": sum(1 for b in buy if b["sku"] not in seen), "deep": sum(1 for b in buy if b["qty"] > MAX_TARGET)}
     return {"buy": buy}, info
 
 
@@ -255,7 +280,8 @@ def main() -> int:
     wanted = (common.read_json(common.MARKET_DIR / "analysis" / "wanted.json", {}) or {}).get("categories") or {}
     out, info = plan(inv, catalog, common.read_json(state_dir / "demand.json", []) or [],
                      common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {},
-                     sales, common.records("refusals"), common.rules()["seller"], now, wanted, common.records("orders"))
+                     sales, common.records("refusals"), common.rules()["seller"], now, wanted, common.records("orders"),
+                     {b.get("sku") for r in common.records("restock") for b in r.get("buy") or []}, common.strategy()["phase"])
     print(f"[restock] {info}, buying {len(out['buy'])} line(s)", flush=True)
     if state.get("round_start") and now - state["round_start"] > WARN_AFTER and len(sales) < WARN_BELOW \
             and now - state.get("warned", 0) > 3600:

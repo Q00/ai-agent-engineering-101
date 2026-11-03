@@ -267,6 +267,18 @@ def test_restock(fake: Fake):
     out, info = restock.plan(closing, CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("an open window with 45 s left: only the 4 lines it has time for, the most needed first",
           [b["sku"] for b in out["buy"]] == one[:4] and info["lines"] == 4, out["buy"])
+    shelf1 = [unit_row(f"u-{s}", s, CATALOG[s]["list_price"] // 2, 500 if CATALOG[s]["kind"] == "food" else None) for s in one]
+    fast = [{"sku": WATER, "ts": NOW - H}] * 45
+    out, info = restock.plan(inv(shelf1), CATALOG, DEMAND, {}, fast, [], rules, NOW, stocked=set(one))
+    check("a fast seller is stocked for its pace: 45 sold in 3 h -> 10 for the next two windows, one line",
+          out["buy"][0] == {"sku": WATER, "qty": 9} and info["deep"] == 1, out["buy"][:2])
+    sold10 = [{"sku": s, "ts": NOW - H} for s in FILLERS[:10]]
+    out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, sold10, [], rules, NOW, stocked=set(FILLERS[:10]))
+    skus = [b["sku"] for b in out["buy"]]
+    check("exploring: 6 lines refill what sold, 4 go to products never stocked (the stage order)",
+          skus == FILLERS[:6] + [WATER, BEDDING, PAKIMCHI, FILLERS[10]] and info["new"] == 4, skus)
+    out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, sold10, [], rules, NOW, stocked=set(FILLERS[:10]), phase="focus")
+    check("focus phase: one line for a new product", info["new"] == 1 and len(out["buy"]) == 10, out["buy"])
     check("the kit runs restock every 20 minutes: a product we sold is kept at 3, a hot category starts at 2",
           restock.RUN_EVERY == 1200 and restock.SOLD_TARGET == 3 and restock.HOT_TARGET == 2)
     hot = {"by_category": {CATALOG[FILLERS[11]]["category"]: {"sold_24h": 5}}}
