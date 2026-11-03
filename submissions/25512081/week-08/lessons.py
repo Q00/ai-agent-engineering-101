@@ -100,7 +100,7 @@ def main():
     ids = {i for i, _ in fs}
     try:
         ans = harness.ask(SYSTEM, "Facts:\n" + "\n".join(f"{i}: {t}" for i, t in fs), SCHEMA, None, 120, 1,
-                          model=harness.FAST)
+                          model=harness.CHEAP, role="lessons")
     except Exception as e:
         log(f"[lessons] failed: {type(e).__name__}: {str(e)[:200]}")
         return 0

@@ -11,7 +11,11 @@
   the claude.ai subscription login, never metered API billing.
 
 HARNESS_MODEL overrides the model (default: opus). ask(..., model=) picks one per call: the fast model for
-per-message work a buyer waits on, opus for the shop manager's planning.
+per-message work a buyer waits on and for reading untrusted reviews, the cheap model for short writing whose
+output code checks anyway (forum posts, lessons), opus for the shop manager's planning.
+Every call's cost (the API price the CLI reports; the subscription is not billed in money but its limits
+follow usage) and tokens are logged and appended to logs/usage.jsonl, so the report can show what each role
+costs.
 ask(..., tools=) is the same call with tools: MCP servers from a config file, only the named tools allowed,
 several turns, the structured answer at the end.
 """
@@ -29,9 +33,26 @@ CALLS = {"n": 0, "seconds": 0.0}
 
 
 FAST = os.environ.get("HARNESS_FAST_MODEL", "sonnet")
+CHEAP = os.environ.get("HARNESS_CHEAP_MODEL", "haiku")
+USAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "usage.jsonl")
 
 
-def ask(system, prompt, schema, log=None, timeout=150, retries=2, model=None, tools=None):
+def _usage(model, role, out, dt):
+    u = out.get("usage") or {}
+    tokens_in = sum(u.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+    row = {"ts": time.strftime("%m-%d %H:%M:%S"), "role": role, "model": model, "cost_usd": out.get("total_cost_usd"),
+           "tokens_in": tokens_in, "tokens_out": u.get("output_tokens"), "turns": out.get("num_turns"),
+           "seconds": round(dt, 1)}
+    try:
+        os.makedirs(os.path.dirname(USAGE), exist_ok=True)
+        with open(USAGE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row) + "\n")
+    except OSError:
+        pass
+    return row
+
+
+def ask(system, prompt, schema, log=None, timeout=150, retries=2, model=None, tools=None, role=None):
     """One harness call -> dict matching `schema`. Raises after `retries` failures.
     tools = (mcp config path, [allowed tool names]) lets the model call those MCP tools before answering."""
     cmd = ["claude", "-p", "--model", model or MODEL, "--tools", "", "--setting-sources", "",
@@ -50,10 +71,12 @@ def ask(system, prompt, schema, log=None, timeout=150, retries=2, model=None, to
             CALLS["seconds"] += dt
             out = json.loads(p.stdout) if p.stdout.strip() else {}
             answer = out.get("structured_output")
+            use = _usage(model or MODEL, role or os.path.basename(sys.argv[0]), out, dt)
             if p.returncode == 0 and isinstance(answer, dict):
                 if log:
                     turns = f", {out.get('num_turns')} turns" if tools else ""
-                    log(f"    [harness {dt:.1f}s{turns}] {json.dumps(answer, ensure_ascii=False)}")
+                    log(f"    [harness {dt:.1f}s{turns}, {model or MODEL} ${use['cost_usd'] or 0:.4f} "
+                        f"{use['tokens_in']}+{use['tokens_out']} tok] {json.dumps(answer, ensure_ascii=False)}")
                 return answer
             err = f"exit={p.returncode} is_error={out.get('is_error')} " \
                   f"{(out.get('result') or p.stderr or '')[:200]!r}"

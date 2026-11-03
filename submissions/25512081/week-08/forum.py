@@ -164,7 +164,7 @@ def buyer_post():
     ans = harness.ask(POST_SYSTEM, "Facts from my settled deals:\n" + "\n".join(facts), {
         "type": "object", "properties": {"post": {"type": "string"},
                                          "refs": {"type": "array", "items": {"type": "integer"}}},
-        "required": ["post", "refs"]}, None, 60, 1, model=harness.FAST)
+        "required": ["post", "refs"]}, None, 60, 1, model=harness.CHEAP, role="forum")
     known = {p.get("ledger") for p in rows}
     post = {"post": ans["post"][:400], "refs": [r for r in ans["refs"] if r in known][:5], "as": "buyer"}
     _write([post])

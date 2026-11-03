@@ -48,7 +48,7 @@ def main():
     log = lambda m: (out.write(f"{time.strftime('%m-%d %H:%M:%S')} {m}\n"), out.flush())
     log("[planner] start")
     try:
-        ans = harness.ask(SYSTEM, "Review the shop now and act.", SCHEMA, log, 420, 0, model="opus",
+        ans = harness.ask(SYSTEM, "Review the shop now and act.", SCHEMA, log, 420, 0, model="opus", role="planner",
                           tools=(str(cfg), [f"mcp__shop__{t}" for t in TOOLS]))
         log(f"[planner] done: {ans['summary'][:600]}")
     except Exception as e:
