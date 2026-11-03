@@ -613,6 +613,11 @@ def remember_phantoms(quotes):
         if NO_STOCK.search(text):
             ph[f"{q['c'][1]['name']}|{q['c'][2]['sku']}"] = now
             hit = True
+            try:                                 # the record behind the forum's stock-check posts (forum.py)
+                with (PHANTOMS.parent / "phantom_log.jsonl").open("a", encoding="utf-8") as f:
+                    f.write(json.dumps({"ts": round(now), "shop": q["c"][1]["name"], "sku": q["c"][2]["sku"]}) + "\n")
+            except OSError:
+                pass
     if hit:
         ph = {k: v for k, v in ph.items() if now - v < 1800}
         try:

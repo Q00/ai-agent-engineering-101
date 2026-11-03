@@ -131,6 +131,49 @@ def purchase_records(c, t, now, top=3):
              "text": ko, "texts": {"ko": ko, "en": en, "json": js}, "kind": "records"}]
 
 
+def stock_check(c, t, now, hours=6, min_n=3, top=5):
+    """As the buyer, to save every agent wasted quote calls: shops that answered 'none in stock' for a SKU the
+    market's /api/shops still listed, at least min_n times lately. The proof on the ledger: that shop's own recent
+    settles of the SKU (the listed units were already sold). Worded as a listing lag, not a blame."""
+    rows = []
+    try:
+        for line in (HERE / "private" / "enuri" / "phantom_log.jsonl").read_text(encoding="utf-8").splitlines()[-3000:]:
+            x = json.loads(line)
+            if now - x.get("ts", 0) < hours * 3600:
+                rows.append((x["shop"], x["sku"]))
+    except (OSError, ValueError):
+        return []
+    count = {}
+    for k in rows:
+        count[k] = count.get(k, 0) + 1
+    hits = sorted(((k, n) for k, n in count.items() if n >= min_n), key=lambda kv: -kv[1])[:top]
+    if not hits:
+        return []
+    cat = market_model.catalog()
+    items, refs = [], []
+    for (shop, sku), n in hits:
+        seqs = [s for (s,) in c.execute("""select s.seq from settles s join settle_units x on x.seq = s.seq
+                                           join supply_units su on su.unit = x.unit where su.shop=? and s.sku=?
+                                           order by s.seq desc limit 2""", (shop, sku))]
+        refs += seqs
+        items.append({"shop": shop, "sku": sku, "name": ((cat.get(sku) or {}).get("name") or "")[:24],
+                      "replied_none_in_stock_6h": n, "listed_on_api_shops": True, "recent_settles": seqs})
+    if not refs:
+        return []
+    data = {"type": "stock_check", "window_h": hours, "note": "listed in /api/shops, but the shop replied 'none in stock';"
+            " probably a listing lag after the units sold (see recent_settles)", "items": items, "refs": refs[:8]}
+    ko = "[재고 확인 공유] 시장 재고 목록에는 있지만 문의하면 '재고 없음'이던 상품이에요. 판매 직후 목록 반영이 늦는 것으로 " \
+         "보여요(최근 정산 기록 참고). 견적 전에 한 번 더 확인하면 서로 호출과 토큰을 아낄 수 있어요.\n" + "\n".join(
+             f"- {i['shop']} / {i['name']} ({i['sku']}): 최근 {hours}시간 '재고 없음' {i['replied_none_in_stock_6h']}회"
+             for i in items)
+    en = "[Stock check, FYI] Listed in /api/shops but answered 'none in stock' -- likely a listing lag after the units " \
+         "sold (recent settles cited). A re-check before quoting saves everyone calls and tokens.\n" + "\n".join(
+             f"- {i['shop']} / {i['sku']}: 'none in stock' {i['replied_none_in_stock_6h']}x in {hours} h" for i in items)
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
+    return [{"topic": "stockcheck", "as": "buyer", "refs": refs[:8], "score": 3.2,
+             "text": ko, "texts": {"ko": ko, "en": en, "json": js[:1000]}, "kind": "stock_check"}]
+
+
 def honesty(c, t, now):
     rows = c.execute("select shop, count(*), sum(claim_honest), max(seq) from settles where ts>? and claim_honest is not null"
                      " group by shop having count(*)>=?", (now - 24 * 3600, t["min_n"])).fetchall()
@@ -336,7 +379,8 @@ def tick(md=Path(".market"), c=None, now=None):
         forum = []
     # a post's score is the Wilson lower bound of its votes (6 likes 0.61, 7 likes 0.646) and buyer ALL averages it:
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
-    cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + offers(forum, md, now) \
+    cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + stock_check(c, t, now) \
+        + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
     day = time.strftime("%Y-%m-%d", time.localtime(now))
@@ -351,7 +395,10 @@ def tick(md=Path(".market"), c=None, now=None):
         best = max(fresh, key=lambda x: x["score"], default=None)
         if best and best["score"] >= t["post_threshold"]:
             style = "json"
-            if role == "buyer":                          # the review team picks format and order (experiment)
+            share = next((x for x in fresh if x.get("kind") == "stock_check"), None)
+            if role == "buyer" and share:                # the stock-check share goes first when it is due
+                best = share
+            elif role == "buyer":                        # the review team picks format and order (experiment)
                 try:
                     import review_team
                     kinds = sorted({x.get("kind") for x in fresh if x.get("kind")})
