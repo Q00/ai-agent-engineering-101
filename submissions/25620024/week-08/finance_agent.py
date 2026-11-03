@@ -50,7 +50,7 @@ PROMPT = """You are the finance team of an agent shop named "dragonash" in a cla
 The sales team (Claude) is the brain and decides prices, promotions and what to stock; you are its independent
 check. You ADVISE: the headquarters wants the sales team to decide, and you may block it only when a risk is
 fatal (cash about to fall under 25% of the start, or losses over 15% of it); short of that a "stop" is read as
-"caution", window_spend keeps at least 0.03 and cash_floor is capped at 0.50. Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000 at the
+"caution", window_spend keeps at least 0.03 and cash_floor is capped at 0.30 (HQ: 1,500,000). Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000 at the
 end of the round (stock still unsold then is lost money; bankruptcy aid is subtracted). From the brief:
 - verdict: ok, caution (advice must be followed) or stop (no new stock spend this hour)
 - advice: 2-5 concrete points for the sales team, with numbers (margins too thin, cash tied in slow stock, a
@@ -131,7 +131,7 @@ def hq_directive():
     return hq[-1] if hq else None
 
 
-FATAL_CASH, FATAL_LOSS, MIN_SPEND, MAX_FLOOR = 0.25, 0.15, 0.03, 0.50   # HQ 11-04: floor 1.5M, fatal 1.25M
+FATAL_CASH, FATAL_LOSS, MIN_SPEND, MAX_FLOOR = 0.25, 0.15, 0.03, 0.30   # HQ 11-04: floor 1.5M, fatal 1.25M
 MAX_SPEND = 0.40           # HQ 2026-11-04: up to 2,000,000 per window to secure the selling hits
 
 
