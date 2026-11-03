@@ -1,0 +1,5 @@
+{
+  "harness": "OpenAI gpt-5-mini (OPENAI_API_KEY from ../.env); claude -p --model haiku when no key is set. Code sets every price from the unit's cost and list price; the harness writes the greeting and picks restock lines from a ranked candidate list that code checks.",
+  "seller": {"cmd": "python ../seller.py --port {port}"},
+  "restock": {"cmd": "python ../restock.py --state {state}"}
+}

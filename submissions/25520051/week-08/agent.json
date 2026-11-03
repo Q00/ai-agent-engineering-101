@@ -1,6 +1,7 @@
 {
-  "harness": "OpenAI gpt-5-mini (chat completions, OPENAI_API_KEY from .env) on the always-on deployment; Claude Code 2.1.169 claude -p --model haiku when no key is set. seller: code sets prices, haiku writes the greeting. buyer (week 6): haiku decides offers. market_buyer: code plans offers and scores shops, haiku adjusts offers inside a band and picks among the top shops",
+  "harness": "OpenAI gpt-5-mini (chat completions, OPENAI_API_KEY from .env) on the always-on deployment; Claude Code claude -p --model haiku when no key is set. market_buyer: code picks (shop, SKU) for value, plans offers toward a hidden cap under min(budget, list price - 1), sets the kit's accept from the order and receipt; the harness adjusts offers inside a band and picks among the top shops. review: code scores stars from the settle; the harness writes the forum deal report. The shop runs from shop/ (shop/agent.json) so the two kits do not share one outbox.",
   "seller": {"cmd": "python seller.py --port {port}"},
   "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
-  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
+  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"},
+  "review": {"cmd": "python review.py --deal {deal}"}
 }

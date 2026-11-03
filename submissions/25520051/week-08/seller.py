@@ -65,7 +65,7 @@ WARRANTY_DEFAULT = {"A": True, "B": False, "C": False}   # goods grade A ship wi
 BREAK_PRIOR = 0.08                          # assumed break rate until shop memory has seen enough goods sales
 MAX_OFFERS = 6
 STEP = [0.25, 0.35, 0.5, 0.7, 1.0]          # share of the remaining (ask - reserve) given up per counter
-PRICES = HERE / "prices.json"
+PRICES = SHOP_DIR / "prices.json"           # Round 3 knobs; ../prices.json holds the Round 2 lamp/chair tuning
 
 
 def knobs() -> dict:

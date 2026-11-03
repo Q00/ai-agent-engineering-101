@@ -3,6 +3,10 @@
 # Runs on the personal PC (Windows, Tailscale) as a scheduled task at startup, so it outlives SSH sessions.
 # Secrets come from .env next to this file (git-ignored): MARKET_OWNER (claim code), OPENAI_API_KEY.
 # The keys (shop_key.pem, buyer_key.pem) were copied over by scp, never committed.
+# Round 3: the shop kit runs from shop/ (shop/agent.json: seller + restock) and the buyer kit from this folder, so
+# each kit has its own .market/ and outbox.jsonl; with one shared outbox the shop kit posted the buyer's forum lines
+# as the shop (market_kit.py outbox() falls back to its own role). The shop key moves into shop/ once, below: the kit
+# would otherwise make a new key there, and a new key cannot join under the old name.
 # A kit that exits is started again after 30 s; a restarted shop kit gets a new tunnel URL, which the kit
 # registers under the same name and key, so trades and reviews carry on.
 $ErrorActionPreference = "Continue"
@@ -19,10 +23,14 @@ if (Test-Path "$W\.env") {
 }
 $env:PYTHONUTF8 = "1"; $env:PYTHONIOENCODING = "utf-8"; $env:SELLER_RELOAD = "1"
 $env:PATH = "$Repo\.venv\Scripts;$env:USERPROFILE\market\bin;$env:PATH"
-New-Item -ItemType Directory -Force "$W\logs" | Out-Null
+New-Item -ItemType Directory -Force "$W\logs", "$W\shop" | Out-Null
+if (-not (Test-Path "$W\shop\shop_key.pem")) {
+    if (Test-Path "$W\shop_key.pem") { Copy-Item "$W\shop_key.pem" "$W\shop\shop_key.pem" }
+    else { "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') WARNING no shop_key.pem in $W or $W\shop: the kit will make a new shop key" | Add-Content "$W\logs\deploy.log" }
+}
 $Market = "https://market.ourolabs.ai"
 $Kits = @{
-    shop  = "scripts/market_kit.py join --dir $Rel --market $Market --name moss-and-oak --tunnel --shop-only"
+    shop  = "scripts/market_kit.py join --dir $Rel/shop --market $Market --name moss-and-oak --tunnel --shop-only"
     buyer = "scripts/market_kit.py join --dir $Rel --market $Market --name move_76 --buyer-only"
 }
 $Procs = @{}
