@@ -107,6 +107,16 @@ def plan(md, c, t, now=None):
         add(sku, min(t["regular_depth"], sum(skus.values())), f"regulars bought {sum(skus.values())} here")
     if regular:
         why.append(f"{len(regular)} regulars ({sum(regular.values())} buys)")
+    try:                                                      # 1c. the marketing team's picks
+        import promo
+        mk = promo.plan().get("restock") or {}
+    except Exception:
+        mk = {}
+    for x in mk.get("skus") or []:
+        add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "marketing pick")
+    if mk.get("mode") == "focus":                             # marketing: only regulars and its picks for now
+        return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"], cash, \
+            {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
     for sku, rate in sorted(by_sku.items(), key=lambda kv: -kv[1]):   # 2. demand
         r = cat.get(sku)
         if not r:

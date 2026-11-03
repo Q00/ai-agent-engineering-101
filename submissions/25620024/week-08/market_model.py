@@ -35,6 +35,8 @@ create table if not exists quotes (ts real, task text, sku text, kind text, grad
 create table if not exists members (code text primary key, purchases integer, spent integer, first real, last real);
 create table if not exists settle_units (seq integer primary key, unit text);
 create table if not exists our_units (unit text primary key);
+create table if not exists supplies (seq integer primary key, ts real, shop text, sku text, qty integer, total integer);
+create table if not exists supply_units (unit text primary key, shop text, sku text, cost real, ts real);
 create index if not exists settles_sku on settles(sku);
 create index if not exists settles_cat on settles(category);
 """
@@ -84,8 +86,15 @@ def sync(c=None, md=Path(".market"), budget_s=20):
                                None if d.get("claim_honest") is None else int(bool(d["claim_honest"]))))
                     c.execute("insert or ignore into settle_units values (?,?)", (e["seq"], d.get("unit")))
                     n += 1
-                elif e.get("kind") == "supply" and d.get("shop") == SHOP_NAME:
-                    c.executemany("insert or ignore into our_units values (?)", [(u,) for u in d.get("units") or []])
+                elif e.get("kind") == "supply":
+                    units = d.get("units") or []
+                    c.execute("insert or ignore into supplies values (?,?,?,?,?,?)",
+                              (e["seq"], e["ts"], d.get("shop"), d.get("sku"), d.get("qty"), d.get("total")))
+                    per = (d.get("total") or 0) / max(1, len(units) or d.get("qty") or 1)
+                    c.executemany("insert or ignore into supply_units values (?,?,?,?,?)",
+                                  [(u, d.get("shop"), d.get("sku"), per, e["ts"]) for u in units])
+                    if d.get("shop") == SHOP_NAME:
+                        c.executemany("insert or ignore into our_units values (?)", [(u,) for u in units])
                 elif e.get("kind") == "broken":
                     c.execute("insert or ignore into broken values (?,?,?,?)", (e["seq"], e["ts"], d.get("buyer"), d.get("item")))
             after = rows[-1]["seq"]
@@ -153,6 +162,39 @@ def regulars(c, min_buys=2, hours=48):
             wants.setdefault(cat, {})
             wants[cat][sku] = wants[cat].get(sku, 0) + 1
     return regular, wants
+
+
+def competitor_stock(c, hours=48):
+    """Units of each SKU other shops bought and have not sold yet (supplied minus settled), from the public ledger.
+    Food that expired is not visible, so this is an upper bound. {sku: units}"""
+    since = time.time() - hours * 3600
+    rows = c.execute("""select sku, count(*) from supply_units where shop != ? and ts > ? and unit not in
+                        (select unit from settle_units where unit is not null) group by sku""",
+                     (SHOP_NAME, since)).fetchall()
+    return dict(rows)
+
+
+def shop_prices(c, hours=24, min_n=10):
+    """Per shop, over its recent settles: deals, median price as a share of list, median margin over its unit cost.
+    {shop name: (n, price_share, margin)}"""
+    import statistics
+    rows = c.execute("""select su.shop, s.amount, s.list_price, su.cost from settles s
+                        join settle_units x on x.seq = s.seq join supply_units su on su.unit = x.unit
+                        where s.ts > ? and s.list_price > 0 and su.cost > 0""", (time.time() - hours * 3600,)).fetchall()
+    by = {}
+    for shop, amount, lp, cost in rows:
+        by.setdefault(shop, []).append((amount / lp, amount / cost - 1))
+    return {k: (len(v), round(statistics.median(a for a, _ in v), 3), round(statistics.median(m for _, m in v), 3))
+            for k, v in by.items() if len(v) >= min_n}
+
+
+def hot_skus(c, hours=24, top=20):
+    """The SKUs selling most in the whole market lately, with how many units competitors still hold.
+    [(sku, sold, competitor_units)]"""
+    sold = c.execute("select sku, count(*) from settles where ts>? group by sku order by count(*) desc limit ?",
+                     (time.time() - hours * 3600, top)).fetchall()
+    comp = competitor_stock(c)
+    return [(sku, n, comp.get(sku, 0)) for sku, n in sold]
 
 
 def remember_seen(order, shops):

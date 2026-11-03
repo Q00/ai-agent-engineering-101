@@ -42,11 +42,32 @@ DEFAULTS = {
 }
 
 
-def theta():
+PLAN = Path(os.environ.get("MARKETING_PLAN", Path(__file__).parent / "private" / "marketing_plan.json"))
+
+
+def plan():
+    """The marketing team's current plan (marketing_agent.py writes it after its gate), or {}."""
     try:
-        return {**DEFAULTS, **json.loads(THETA.read_text(encoding="utf-8"))}
+        return json.loads(PLAN.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return dict(DEFAULTS)
+        return {}
+
+
+def theta():
+    """DEFAULTS, then the owner's private shop_theta.json, then the marketing plan's pricing (latest wins)."""
+    t = dict(DEFAULTS)
+    try:
+        t.update(json.loads(THETA.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        pass
+    pr = plan().get("pricing") or {}
+    if pr.get("price_band"):
+        lo, hi = pr["price_band"]
+        t["arms"] = [round(lo + (hi - lo) * i / 3, 3) for i in range(4)]
+    for k in ("min_margin", "clear_floor_margin", "haggle_room", "hero_undercut", "warranty_goods_h", "vip_discount"):
+        if k in pr:
+            t[k] = pr[k]
+    return t
 
 
 def member(c, code):
@@ -77,21 +98,26 @@ def is_hero(c, sku, n):
     return sku in [k for k, _ in sorted(by_sku.items(), key=lambda kv: -kv[1])[:n]]
 
 
-def quote(c, unit, code=None, me=None, now=None, stock_n=1):
+def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
     """The price for this unit, the lowest price a counter may close at, and why (for the log, never the buyer).
     stock_n is how many units of this SKU we hold (for clearance)."""
     t, now = theta(), now or time.time()
-    intro = now < t["intro_until"]
+    intro = now < t["intro_until"] and not (plan().get("pricing") or {}).get("price_band")   # a plan wins
     if intro:
         t = {**t, "arms": t["intro_arms"], "min_margin": t["intro_margin"], "haggle_room": t["intro_haggle"]}
     lp, cost = unit["list_price"], unit["cost"]
     floor = int(cost * (1 + t["min_margin"])) + 1
     grade = unit.get("grade") or "?"
     bought = member(c, code)[0]
-    arm = pick_arm(c, unit.get("kind"), grade, t["arms"], explore=not bought)
-    price, why = lp * arm, [f"{'intro ' if intro else ''}arm {arm:.2f}"]
+    exclusive = (plan().get("exclusive_skus") or {}).get(unit["sku"])
+    if exclusive:                                        # the marketing team found few competitors holding it
+        arm = exclusive
+        price, why = lp * arm, [f"exclusive arm {arm:.2f}"]
+    else:
+        arm = pick_arm(c, unit.get("kind"), grade, t["arms"], explore=not bought)
+        price, why = lp * arm, [f"{'intro ' if intro else ''}arm {arm:.2f}"]
     low = market_model.market_low(c, unit["sku"], me)
-    if low and is_hero(c, unit["sku"], t["heroes"]):
+    if low and not exclusive and t.get("hero_undercut", True) and is_hero(c, unit["sku"], t["heroes"]):
         price, why = min(price, low - 1), why + [f"hero under {low}"]
     if unit.get("kind") == "food" and unit.get("expires_at") and unit.get("shelf_hours"):
         left = (unit["expires_at"] - now) / (unit["shelf_hours"] * 3600)
@@ -112,6 +138,10 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1):
     tier = next(((n, d) for n, d in t["tiers"] if bought >= n), None)
     if tier:
         price, why = price * (1 - tier[1]), why + [f"member {code} {bought} buys -{tier[1]:.0%}"]
+    if vip and t.get("vip_discount"):
+        price, why = price * (1 - t["vip_discount"]), why + [f"VIP -{t['vip_discount']:.0%}"]
+    if any(w.startswith(("shelf", "in stock")) or " in stock" in w for w in why) and "clear_floor_margin" in t:
+        floor = int(cost * (1 + min(t["min_margin"], t["clear_floor_margin"]))) + 1   # clearing may go lower
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
     return {"price": price, "least": least, "arm": f"{arm:.2f}", "floor": floor, "tier": tier, "why": "; ".join(why)}

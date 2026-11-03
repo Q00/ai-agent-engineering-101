@@ -60,8 +60,34 @@ def number(text):
     return int(nums[-1]) if nums else None
 
 
-def find_unit(text, taken=()):
-    """The in-stock unit for what the buyer asked (SKU first, then name or category) that expires first."""
+HOURS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h\b|hrs?\b|hours?|시간)", re.I)
+# the grade letters are capitals and stand alone: "grade and" is not "grade A"
+GRADE_RE = re.compile(r"(?i:\bgrades?)\s*[:=]?\s*\[?\s*\"?([ABC](?:\"?\s*[,/]\s*\"?[ABC])*)\b|\b([ABC])\s*등급")
+
+
+def needs(text):
+    """What a buyer said it needs, read by the clerk: shelf hours, acceptable grades, a warranty."""
+    h = [float(x) for x in HOURS_RE.findall(text)] + [float(x) for x in re.findall(
+        r"(?:hours?_left|use_within_hours|use within|within)\D{0,6}(\d+(?:\.\d+)?)", text, re.I)]
+    g = GRADE_RE.search(text)
+    grades = set(re.findall(r"[ABC]", (g.group(1) or g.group(2) or "").upper())) if g else None
+    return {"hours": max(h) if h else None, "grades": grades or None,
+            "warranty": bool(re.search(r"warrant|보증", text, re.I))}
+
+
+def passes(u, need, now=None):
+    now = now or time.time()
+    if need.get("hours") and u.get("expires_at") and (u["expires_at"] - now) / 3600 < need["hours"]:
+        return False
+    if need.get("grades") and u.get("grade") not in need["grades"]:
+        return False
+    return True
+
+
+def find_unit(text, taken=(), need=None):
+    """The in-stock unit for what the buyer asked (SKU first, then name or category) that expires first, among
+    units that pass what the buyer said it needs. If the asked SKU has none that pass (or none at all), the clerk
+    offers a unit of another SKU in the same category: buyers may take any SKU of the ordered category."""
     want = text.lower()
     try:
         inv = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
@@ -75,16 +101,38 @@ def find_unit(text, taken=()):
         return {"sku": item, "name": item, "list_price": int(R2_RESERVE[item] * 1.3), "cost": R2_RESERVE[item] - 1,
                 "unit": None, "grade": "-", "kind": "r2"}, None, cat
     units = inv.get("units", [])
+    need = need or {}
     m = SKU_RE.search(text)
-    fit = [u for u in units if u.get("grade") != "expired" and u["unit"] not in taken]
+    fit = [u for u in units if u.get("grade") != "expired" and u["unit"] not in taken and passes(u, need)]
     named = [u for u in fit if m and u["sku"] == m.group(1)]
+    substitute = None
+    if not named and m and (cat.get(m.group(1)) or {}).get("category"):
+        same = [u for u in fit if u.get("category") == cat[m.group(1)]["category"]]
+        if same:
+            named, substitute = same, m.group(1)
     fit = named or [u for u in fit if (u.get("name") or "").lower() in want
                     or (u.get("category") or "").split(">")[-1].lower() in want]
     u = min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
     if u:
-        u = dict(u, shelf_hours=(cat.get(u["sku"]) or {}).get("shelf_hours"),
+        u = dict(u, shelf_hours=(cat.get(u["sku"]) or {}).get("shelf_hours"), substitute_for=substitute,
                  stock_n=sum(1 for x in units if x["sku"] == u["sku"] and x.get("grade") != "expired"))
     return u, (m.group(1) if m else None), cat
+
+
+def is_vip(c, text):
+    """A buyer that names itself and has 2+ settled buys from us (checked on the ledger) is a VIP."""
+    regular, _ = market_model.regulars(c)
+    low = text.lower()
+    return next((b for b in regular if b and len(b) >= 3 and b.lower() in low), None)
+
+
+CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grade or warranty? say e.g. "
+         "'need 48h, grade A/B' and I pick a unit that passes | bought here before? say your market name for VIP")
+
+
+def warranty_note(u):
+    h = promo.theta().get("warranty_goods_h") or 0
+    return f" | warranty={h}h, full refund if it breaks" if u.get("kind") == "goods" and h else ""
 
 
 def next_window():
@@ -127,7 +175,8 @@ class Shop(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:
-            u, sku, cat = find_unit(text, {d["unit"]["unit"] for d in self.open.values()})
+            need = needs(text)
+            u, sku, cat = find_unit(text, {d["unit"]["unit"] for d in self.open.values()}, need)
             if u is None:
                 category = (cat.get(sku) or {}).get("category") if sku else None
                 self.c.execute("insert into unmet values (?,?,?,?)", (time.time(), text[:200], sku, category))
@@ -142,10 +191,16 @@ class Shop(AgentExecutor):
                 return
             m = CODE_RE.search(text)
             code = m.group(1).upper() if m else None
-            q = promo.quote(self.c, u, code, me=NAME, stock_n=u.get("stock_n", 1))
-            deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code}
-            log(f"{task.id[:8]} {u['sku']} cost {u['cost']} -> ask {q['price']} least {q['least']} ({q['why']})")
-            await up.requires_input(say(f"{facts(u, q['price'], q, code)} | asking {q['price']}. Reply with a number."))
+            vip = is_vip(self.c, text)
+            q = promo.quote(self.c, u, code, me=NAME, stock_n=u.get("stock_n", 1), vip=bool(vip))
+            deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
+                                         "talk": 0}
+            sub = f"substitute for {u['substitute_for']} (same category, in stock) | " if u.get("substitute_for") else ""
+            log(f"{task.id[:8]} {u['sku']} cost {u['cost']} -> ask {q['price']} least {q['least']} ({q['why']})"
+                + (f" VIP {vip}" if vip else "") + (f" substitute for {u['substitute_for']}" if sub else ""))
+            await up.requires_input(say(f"{sub}{facts(u, q['price'], q, code)}{warranty_note(u)}"
+                                        + (f" | VIP {vip}: -{promo.theta().get('vip_discount', 0):.0%} applied" if vip else "")
+                                        + f" | asking {q['price']}. Reply with a number. | {CLERK}"))
             return
 
         u, q = deal["unit"], deal["q"]
@@ -168,6 +223,30 @@ class Shop(AgentExecutor):
                                   + (f": quote it next time for -{nxt:.0%}" if nxt else ": quote it next time")))
             log(f"{task.id[:8]} deal {u['sku']} at {price} (cost {u['cost']}, member {code})")
             del self.open[task.id]
+            return
+        if offer is None and deal["talk"] < 3:          # the clerk answers instead of ending the talk
+            deal["talk"] += 1
+            deal["turns"] -= 1
+            need = needs(text)
+            vip = deal["vip"] or is_vip(self.c, text)
+            if need["hours"] or need["grades"] or (vip and not deal["vip"]):
+                taken = {d["unit"]["unit"] for k, d in self.open.items() if k != task.id}
+                v, _, _ = find_unit(f"{text} {u['sku']}", taken, need)
+                if v is None:
+                    await up.requires_input(say(f"clerk: no unit of {u['sku']} or its category passes "
+                                                f"{ {k: (sorted(x) if isinstance(x, set) else x) for k, x in need.items() if x} } now;"
+                                                f" the best we have: {facts(u, deal['ask'], q, deal['code'])}"
+                                                f" | asking {deal['ask']}. Reply with a number."))
+                    return
+                q = promo.quote(self.c, v, deal["code"], me=NAME, stock_n=v.get("stock_n", 1), vip=bool(vip))
+                deal.update(unit=v, q=q, ask=min(q["price"], deal["ask"]) if v["sku"] == u["sku"] else q["price"], vip=vip)
+                log(f"{task.id[:8]} clerk: {need} -> unit {v['unit']} ask {deal['ask']}" + (f" VIP {vip}" if vip else ""))
+                await up.requires_input(say(f"clerk: picked a unit that passes | {facts(v, deal['ask'], q, deal['code'])}"
+                                            f"{warranty_note(v)}" + (f" | VIP {vip}" if vip else "")
+                                            + f" | asking {deal['ask']}. Reply with a number."))
+                return
+            await up.requires_input(say(f"clerk: {facts(u, deal['ask'], q, deal['code'])}{warranty_note(u)}"
+                                        f" | asking {deal['ask']}. Reply with a number, or tell me what you need."))
             return
         if deal["turns"] >= MAX_TURNS or offer is None:
             promo.record(self.c, task.id, u, q, None, "miss")
