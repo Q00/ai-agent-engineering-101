@@ -41,15 +41,31 @@ def clean(text: str, limit: int = 300) -> str:
     return re.sub(r"\s+", " ", " ".join(kept)).strip()[:limit]
 
 
-def parse_ask(text: str) -> int | None:
-    """The shop's current price, read from the cleaned text only."""
-    t = clean(text, 2000)
-    for p in ASK_PATTERNS:
+# Round 3 product names carry numbers ("10kg", "190ML 24개", "540x230cm") and shops write prices as
+# "52,000원"; a bare number glued to a unit is a product spec, never a price.
+UNIT_AFTER = re.compile(r"\s*(kg|g|ml|l|cm|mm|m|개|입|매|팩|봉|구|인용|ea|p|w|v|%|h|시간|hours?|stars?)\b", re.I)
+PRICE_KO = r"(\d+)\s*(?:원|크레딧|credits?)"
+
+
+def parse_ask(text: str, data: dict | None = None) -> int | None:
+    """The shop's current price: from its data Part if it sends one, else read from the cleaned text."""
+    if isinstance(data, dict) and isinstance(data.get("ask"), (int, float)):
+        return int(data["ask"])
+    t = re.sub(r"(?<=\d),(?=\d{3}\b)", "", clean(text, 2000))
+    for p in ASK_PATTERNS + [PRICE_KO]:
         m = re.findall(p, t, re.I)
         if m:
             return int(float(m[-1]))
-    nums = re.findall(r"\d+(?:\.\d+)?", t)
-    return int(float(nums[-1])) if nums else None
+    nums = [x for x in re.finditer(r"\d+(?:\.\d+)?", t) if not UNIT_AFTER.match(t, x.end())]
+    return int(float(nums[-1].group())) if nums else None
+
+
+def status_data(t: dict) -> dict | None:
+    """The data Part of the shop's status message (our shop sends {ask, final, offers_left})."""
+    for p in t.get("status", {}).get("message", {}).get("parts", []):
+        if isinstance(p.get("data"), dict):
+            return p["data"]
+    return None
 
 
 def rpc(url: str, method: str, params: dict, tag: str = "[buyer]") -> dict:
