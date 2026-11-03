@@ -79,7 +79,7 @@ def shop_hint(journal, name, sku, now=None):
 def queue_wanted(journal, order, now=None):
     now = time.time() if now is None else now
     skus = [s for s in (order.get('acceptable') or [])[:3] if isinstance(s, str)]
-    if not skus or order['expires'] - now < 60:
+    if not skus or order['expires'] - now < 60 or now - journal.get('forum_last_wanted', 0) < 1800:
         return
     # Never publish the buyer's private budget or imply that a request is a sale.
     text = 'Wanted: ' + ', '.join(skus) + '; category=' + str(order.get('category', order.get('item', '')))[:100]
@@ -88,6 +88,7 @@ def queue_wanted(journal, order, now=None):
         text += f" Minimum shelf life after checkout: {order.get('use_within_hours', 0)} hours."
     journal.queue_post({'post': text, 'as': 'buyer', 'refs': [], 'priority': 2,
                         'expires_at': order['expires'] - 30}, 'wanted:' + str(order['order']))
+    journal.put('forum_last_wanted', now)
 
 
 def schedule(journal, config, now=None):
@@ -114,7 +115,7 @@ def schedule(journal, config, now=None):
             break
     if unit is None and units:
         unit = min(units, key=lambda u: (remaining(u, now), u.get('supplied_at', now)))
-    if unit:
+    if unit and now - journal.get('forum_last_sent:shop', 0) >= interval:
         candidates = shop_candidates(unit, inv, catalog, journal, config, now=now)
         if candidates:
             choice = max(candidates, key=lambda c: c['score'])
@@ -134,7 +135,7 @@ def schedule(journal, config, now=None):
         text = (f"Settled SKU={item['sku']} price={item['price']}; grade={item.get('grade')}; "
                 f"warranty_hours={item.get('warranty_hours', 0)}. "
                 'One observed purchase, not a guarantee of future quality or availability.')
-        journal.queue_post({'post': text, 'refs': [item['ledger']], 'as': 'buyer', 'priority': 1,
+        journal.queue_post({'post': text, 'refs': [item['ledger']], 'as': 'buyer', 'priority': 3,
                             'expires_at': item.get('paid_at', item['_ts']) + HORIZON},
                            'paid-observation:' + str(item['ledger']))
 

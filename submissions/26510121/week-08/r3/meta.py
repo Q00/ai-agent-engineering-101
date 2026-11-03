@@ -19,9 +19,10 @@ def rank_gain(board, role, own_name, delta):
     weights = {"profit": .5, "revenue": .3, "stars_rank": .2} if role == "shop" else {"surplus": .5, "forum": .3, "deals": .1, "posts": .1}
     gain = 0
     for key, w in weights.items():
-        values = [r[key] for r in rows if isinstance(r.get(key), (int, float))]
+        values = [r[key] for r in rows if r.get('name') != own_name and isinstance(r.get(key), (int, float))]
         if values and isinstance(own.get(key), (int, float)):
-            gain += w * (percentile(values, own[key] + delta.get(key, 0)) - percentile(values, own[key]))
+            updated = own[key] + delta.get(key, 0)
+            gain += w * (percentile(values + [updated], updated) - percentile(values + [own[key]], own[key]))
     return gain
 
 
