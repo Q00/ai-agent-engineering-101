@@ -36,6 +36,7 @@ def _load(path, default):
         return default
 
 
+PROBATION_H = 2            # hours after the handoff (new teams) with no demotion
 TARGETS = OUT / "targets.json"
 REWARDS = OUT / "rewards.json"
 
@@ -176,7 +177,8 @@ def levers(team):
 
 
 def auto_rewards(teams, history):
-    """Good three runs in a row: a commendation (a raise every third one). Fire candidate: a demotion, once a day."""
+    """Good three runs in a row: a commendation (a raise every third one). Fire candidate three runs in a row, after
+    the probation: a demotion, at most once a day."""
     out = []
     for t, v in teams.items():
         past = [x["teams"].get(t, {}).get("status") for x in history[-2:]]
@@ -186,8 +188,12 @@ def auto_rewards(teams, history):
                 n = sum(x["kind"] == "commendation" for x in mine) + 1
                 reward(t, "raise" if n % 3 == 0 else "commendation", f"good three runs in a row (score {v['score']})")
                 out.append(f"{NAMES[t]}: {'연봉 인상' if n % 3 == 0 else '표창'}")
-        if v["status"] == "fire candidate" and not any(x["kind"] == "demotion" and time.time() - x["ts"] < 24 * 3600
-                                                      for x in mine):
+        hired = (HERE / "private" / "handoff.md").stat().st_mtime if (HERE / "private" / "handoff.md").exists() else 0
+        if time.time() - hired < PROBATION_H * 3600:  # new teams get a probation period: graded, not demoted
+            continue
+        past3 = [x["teams"].get(t, {}).get("status") for x in history[-2:]] + [v["status"]]
+        if len(past3) == 3 and all(p == "fire candidate" for p in past3) and not any(
+                x["kind"] == "demotion" and time.time() - x["ts"] < 24 * 3600 for x in mine):
             reward(t, "demotion", f"fire candidate (score {v['score']})")
             out.append(f"{NAMES[t]}: 강등(자율권 축소)")
     return out
