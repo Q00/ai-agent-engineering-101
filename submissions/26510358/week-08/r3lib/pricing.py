@@ -51,14 +51,18 @@ def ask_adjustment(outcomes):
     return 0.0
 
 
-def seller_reply(ask, floor, offer, n_offers):
-    """One step of the shop's concession. Returns ("accept", price) or ("counter", price)."""
+def seller_reply(ask, floor, offer, n_offers, hold=None):
+    """One step of the shop's concession. Returns ("accept", price) or ("counter", price).
+    hold: from memory, roughly what buyers with this opening style have paid us; counters do not drop below it
+    during the first 3 offers (acceptance rules are unchanged, so the deal is still taken above the floor)."""
     if offer is not None and offer >= ask * 0.97:
         return "accept", int(offer)
     if offer is not None and offer >= floor and (n_offers >= 4 or offer >= (ask + floor) / 2 and n_offers >= 2):
         return "accept", int(offer)
     anchor = max(offer or floor, floor)
     new_ask = max(floor, int(ask - (ask - anchor) * (0.25 if n_offers < 2 else 0.4)))
+    if hold and n_offers < 4:
+        new_ask = max(new_ask, min(int(hold), ask))
     return "counter", new_ask
 
 
@@ -94,13 +98,21 @@ def expected_price(list_price, shop_ratio=None, market_ratio=None):
     return int(list_price * r)
 
 
-def buyer_next_offer(list_price, max_pay, ask, last_offer, n):
+def memory_opening(list_price, max_pay, profile):
+    """Buyer's first offer when we have closed with this shop before: just under the lowest share of list it has
+    accepted from us, instead of FIRST_OFFER_RATIO, so we skip rounds it never moves in. None without evidence."""
+    if not profile or (profile.get("deals") or 0) < 2 or not profile.get("min_close_ratio"):
+        return None
+    return int(min(max_pay, list_price * profile["min_close_ratio"] * 0.97))
+
+
+def buyer_next_offer(list_price, max_pay, ask, last_offer, n, opening=None):
     """Our next offer. Opens low (FIRST_OFFER_RATIO of list), then closes half the gap to the shop's ask each
     round, never above max_pay. Returns ("accept", ask) when the ask is already good enough."""
     if ask is not None and ask <= max_pay and (ask <= list_price * 0.72 or n >= 3):
         return "accept", int(ask)
     if last_offer is None:
-        first = int(list_price * config.FIRST_OFFER_RATIO)
+        first = max(int(list_price * config.FIRST_OFFER_RATIO), opening or 0)
         return "offer", min(max_pay, first, ask or first)
     if ask is None:
         return "offer", min(max_pay, int(last_offer * 1.1))

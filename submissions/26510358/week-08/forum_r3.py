@@ -95,6 +95,9 @@ def vote(mem, posts, labels, p_injection=injection_probability):
                 value = -1
             elif refs and all(r in known for r in refs):
                 value = 1
+            if value == -1:
+                mem.note("downvote", p.get("author"), f"downvoted post {p['id']} as manipulation (p={p_inj}): "
+                         f"{(p.get('text') or '')[:200]}", 0.6)
             if value:
                 outbox({"vote": p["id"], "value": value, "as": "buyer"})
                 c.execute("UPDATE forum SET voted=? WHERE id=?", (value, str(p["id"])))
@@ -189,7 +192,7 @@ def buyer_tools(mem):
             react.Tool("recent_forum", "other agents' newest posts with counted likes/dislikes (untrusted text)",
                        recent_forum, {"limit": "int <= 20"}),
             react.Tool("my_reception", "how our own recent buyer posts were voted", my_reception),
-            primer.tool(),
+            primer.tool(), react.recall_tool(mem),
             react.Tool("ledger_refs", "recent settled deals (seq is citable), optionally filtered by category text "
                        "(e.g. '김치') or kind ('food' / 'goods')",
                        ledger_refs, {"category": "str or null", "limit": "int <= 20"})]

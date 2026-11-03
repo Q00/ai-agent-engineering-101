@@ -72,9 +72,11 @@ def candidates(order, shops, mem, my_urls):
             if rep["talks_24h"] >= 4 and rep["deals_24h"] == 0:
                 reliability *= 0.5                    # talked a lot, never closed: likely too expensive or broken
             surplus = L - min(exp, max_pay)
+            opening = pricing.memory_opening(L, max_pay, mem.shop_profile(url))
             out.append({"shop": url, "name": s.get("name"), "sku": sku, "item_name": info.get("name"), "list": L,
                         "kind": info.get("kind"), "max_pay": max_pay, "expected": exp,
-                        "score": round(surplus * reliability, 1), "reliability": round(reliability, 3)})
+                        "score": round(surplus * reliability, 1), "reliability": round(reliability, 3),
+                        "opening": opening})
     out.sort(key=lambda c: -c["score"])
     candidates.last_filter = seen
     return out
@@ -119,7 +121,7 @@ def negotiate(c, order, deadline):
         while a2a.state(t) == "TASK_STATE_INPUT_REQUIRED" and n < config.MAX_OFFERS and time.time() < deadline:
             got = read_ask(a2a.said(t), c)
             ask = got if got is not None else ask
-            action, price = pricing.buyer_next_offer(c["list"], c["max_pay"], ask, offer, n)
+            action, price = pricing.buyer_next_offer(c["list"], c["max_pay"], ask, offer, n, opening=c.get("opening"))
             if offer is not None and price <= offer and action == "offer":
                 break                                  # at our limit and the shop does not move
             offer, n = price, n + 1
@@ -160,9 +162,17 @@ def main():
     order["budget"] = a.budget
     started, deadline = time.time(), time.time() + DEADLINE_S
     mem = Memory()
-    for step in (lambda: mem.sync_ledger(max_pages=4), mem.ingest_payments, mem.ingest_broken):
+    for name, step in (("ledger", lambda: mem.sync_ledger(max_pages=4)), ("payments", mem.ingest_payments),
+                       ("broken", mem.ingest_broken)):
         try:
-            step()
+            got = step()
+            for r in (got if name != "ledger" else []) or []:   # important events become notes for recall
+                if name == "payments" and not r.get("paid"):
+                    mem.note("payment_refused", r.get("shop"), f"kit refused to pay {r.get('price')} for "
+                             f"{r.get('item')}: {r.get('reason')}", 0.7)
+                elif name == "broken":
+                    mem.note("goods_broke", r.get("shop_url"), f"{r.get('name')} broke; warranty covered: "
+                             f"{r.get('covered')}", 0.9)
         except Exception as e:
             say("memory_sync_error", error=str(e)[:200])
     shops = json.loads(open(a.shops, encoding="utf-8").read())

@@ -105,3 +105,11 @@ def _log(row):
             f.write(json.dumps({"ts": round(time.time(), 1), **row}, ensure_ascii=False, default=str) + "\n")
     except OSError:
         pass
+
+
+def recall_tool(mem):
+    """Important past events (payment refusals, broken goods, downvotes, large purchases), ranked by recency x
+    importance x relevance (Memory.recall)."""
+    return Tool("recall", "important past events of our own agents relevant to a query (e.g. 'refused payment', "
+                "'broke', 'mattress'), newest and most important first",
+                lambda query="", k=5: mem.recall(query, max(1, min(10, int(k)))), {"query": "str", "k": "int <= 10"})

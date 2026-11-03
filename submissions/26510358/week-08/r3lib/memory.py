@@ -10,6 +10,7 @@ so a restart loses nothing and the same evidence drives the shop, the buyer and 
 """
 import json
 import math
+import re
 import sqlite3
 import statistics
 import time
@@ -41,10 +42,14 @@ CREATE TABLE IF NOT EXISTS negotiations (
 CREATE TABLE IF NOT EXISTS forum (
     id TEXT PRIMARY KEY, ts REAL, author TEXT, role TEXT, thread TEXT, text TEXT, refs TEXT, score INTEGER,
     signals TEXT, voted INTEGER DEFAULT 0, mine INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, kind TEXT, subject TEXT, text TEXT,
+    importance REAL, refs TEXT);
 CREATE TABLE IF NOT EXISTS restocks (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, sku TEXT, category TEXT, qty INTEGER,
     reason TEXT);
 """
-MIGRATIONS = ("ALTER TABLE forum ADD COLUMN likes INTEGER DEFAULT 0", "ALTER TABLE forum ADD COLUMN dislikes INTEGER DEFAULT 0")
+MIGRATIONS = (("forum", "ALTER TABLE forum ADD COLUMN likes INTEGER DEFAULT 0"),
+              ("forum", "ALTER TABLE forum ADD COLUMN dislikes INTEGER DEFAULT 0"),
+              ("negotiations", "ALTER TABLE negotiations ADD COLUMN style TEXT"))
 
 
 class Memory:
@@ -53,8 +58,8 @@ class Memory:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.db() as c:
             c.executescript(SCHEMA)
-            cols = {r["name"] for r in c.execute("PRAGMA table_info(forum)")}
-            for m in MIGRATIONS:
+            for table, m in MIGRATIONS:
+                cols = {r["name"] for r in c.execute(f"PRAGMA table_info({table})")}
                 if m.split("ADD COLUMN ")[1].split()[0] not in cols:
                     c.execute(m)
 
@@ -262,13 +267,13 @@ class Memory:
         return None
 
     # ------------------------------------------------------------------ layer 2: our own records
-    def record_negotiation(self, role, ref, counterpart, sku, first_ask, final_price, offers, outcome):
+    def record_negotiation(self, role, ref, counterpart, sku, first_ask, final_price, offers, outcome, style=None):
         info = market.catalog().get(sku, {})
         with self.db() as c:
             c.execute("INSERT INTO negotiations (ts, role, ref, counterpart, sku, category, list_price, first_ask, "
-                      "final_price, offers, outcome) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                      "final_price, offers, outcome, style) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                       (time.time(), role, ref, _shop_key(counterpart), sku, info.get("category"), info.get("list_price"),
-                       first_ask, final_price, json.dumps(offers), outcome))
+                       first_ask, final_price, json.dumps(offers), outcome, style))
 
     def record_purchase_intent(self, order, shop_url, shop_name, receipt):
         info = market.catalog().get(receipt.get("item"), {})
@@ -407,6 +412,79 @@ class Memory:
         for d in out.values():
             d["rate"] = round(d["sold"] / d["requested"], 2) if d["requested"] else None
         return out
+
+
+    # ------------------------------------------------------------------ long-term profiles (semantic memory)
+    def _profile(self, where, args, half_life_h=24, now=None):
+        """Recency-weighted summary of past negotiations: deals, closing price/list, offers to close. Each record
+        weighs 0.5 ** (age / half_life), so a counterpart that changed its behaviour is relearned within a day."""
+        now = now or time.time()
+        with self.db() as c:
+            rows = c.execute(f"SELECT ts, final_price, list_price, offers, outcome FROM negotiations WHERE {where}",
+                             args).fetchall()
+        w_all = w_deal = 0.0
+        ratios, rounds = [], []
+        for r in rows:
+            w = 0.5 ** ((now - r["ts"]) / 3600 / half_life_h)
+            w_all += w
+            if r["outcome"] == "deal" and r["final_price"] and r["list_price"]:
+                w_deal += w
+                ratios.append((r["final_price"] / r["list_price"], w))
+                try:
+                    rounds.append(len(json.loads(r["offers"] or "[]")))
+                except ValueError:
+                    pass
+        return {"n": len(rows), "deals": len(ratios), "deal_rate": round(w_deal / w_all, 3) if w_all else None,
+                "close_ratio": round(_weighted_median(ratios), 3) if ratios else None,
+                "min_close_ratio": round(min(r for r, _ in ratios), 3) if ratios else None,
+                "rounds": statistics.median(rounds) if rounds else None}
+
+    def buyer_style_profile(self, style):
+        """Shop side: how buyers whose opening message has this shape have closed with us. Several students may
+        run the same starter buyer, so a style is a population of similar agents, not one person."""
+        return self._profile("role='shop' AND style=?", (style,))
+
+    def shop_profile(self, shop_url):
+        """Buyer side: how this shop has closed with our buyer."""
+        return self._profile("role='buyer' AND counterpart=?", (_shop_key(shop_url),))
+
+    # ------------------------------------------------------------------ important events (episodic notes)
+    def note(self, kind, subject, text, importance, refs=()):
+        """An event worth remembering beyond its log line (payment refused, goods broke, stock concentration...).
+        importance in [0, 1]: how much it should shape later decisions."""
+        with self.db() as c:
+            c.execute("INSERT INTO notes (ts, kind, subject, text, importance, refs) VALUES (?,?,?,?,?,?)",
+                      (time.time(), kind, subject, str(text)[:500], max(0.0, min(1.0, importance)), json.dumps(list(refs))))
+
+    def recall(self, query="", k=5, half_life_h=12, now=None):
+        """Generative-Agents style retrieval: score = recency * importance * (0.5 + relevance), where recency halves
+        every half_life_h and relevance is the share of query words found in the note."""
+        now = now or time.time()
+        words = {w for w in re.findall(r"[a-z0-9]+|[가-힣]+", str(query).lower()) if len(w) > 1}
+        with self.db() as c:
+            rows = [dict(r) for r in c.execute("SELECT * FROM notes WHERE ts > ? ORDER BY ts DESC LIMIT 500",
+                                               (now - 7 * 86400,))]
+        scored = []
+        for r in rows:
+            hay = f"{r['kind']} {r['subject']} {r['text']}".lower()
+            rel = sum(1 for w in words if w in hay) / len(words) if words else 0.0
+            if words and rel == 0:
+                continue
+            score = 0.5 ** ((now - r["ts"]) / 3600 / half_life_h) * r["importance"] * (0.5 + rel)
+            scored.append((score, r))
+        scored.sort(key=lambda x: -x[0])
+        return [{"kind": r["kind"], "subject": r["subject"], "text": r["text"], "importance": r["importance"],
+                 "hours_ago": round((now - r["ts"]) / 3600, 1), "score": round(sc, 3)} for sc, r in scored[:k]]
+
+
+def _weighted_median(pairs):
+    pairs = sorted(pairs)
+    half, acc = sum(w for _, w in pairs) / 2, 0.0
+    for v, w in pairs:
+        acc += w
+        if acc >= half:
+            return v
+    return pairs[-1][0]
 
 
 def _shop_key(url):

@@ -60,7 +60,7 @@ def tools(mem, inv, demand):
                        sell_through, {"hours": "int <= 72"}),
             react.Tool("stock_on_hand", "per category: units, cost, hours until the first food expires, days goods "
                        "have been held", stock_on_hand),
-            primer.tool(),
+            primer.tool(), react.recall_tool(mem),
             react.Tool("category_evidence", "market demand, competition, price/list and forum signals for one category",
                        category_evidence, {"category": "full category string"})]
 

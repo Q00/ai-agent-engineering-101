@@ -210,6 +210,12 @@ def main():
             out["buy"] = lines
             if lines:
                 mem.record_restock(lines, why)
+                cat = market.catalog()
+                for ln in lines:
+                    cost = (cat.get(ln["sku"]) or {}).get("list_price", 0) * config.EV_COST_RATIO * ln["qty"]
+                    if cost >= 300_000:                  # big bets are worth remembering when they go wrong
+                        mem.note("large_restock", ln["sku"], f"asked for {ln['qty']} x {ln['sku']} "
+                                 f"(~{cost:,.0f} at expected cost)", 0.5)
                 config.LOG_DIR.mkdir(parents=True, exist_ok=True)
                 with open(config.LOG_DIR / "restock.jsonl", "a", encoding="utf-8") as f:
                     f.write(json.dumps({"ts": round(time.time()), **state, "buy": lines, "why": why},

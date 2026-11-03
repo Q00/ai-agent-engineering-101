@@ -14,6 +14,7 @@ Rounds before 3 have no stock: the week-07 items are sold at fixed reserves so t
 """
 import argparse
 import base64
+import hashlib
 import json
 import re
 import time
@@ -96,6 +97,20 @@ def find_unit(text, taken):
     return min(fit, key=lambda u: ("ABC".find(u.get("grade") or "C"), u.get("supplied_at") or 0)), inv
 
 
+def buyer_style(text, unit):
+    """A fingerprint of the buyer agent's opening message: its wording with the product, SKU, Korean words and
+    numbers masked. Buyers do not tell the shop who they are, but each agent has its own template."""
+    t = (text or "").lower()
+    for word in (unit.get("name"), unit.get("sku")):
+        if word:
+            t = t.replace(str(word).lower(), " <item> ")
+    t = SKU_RE.sub(" <sku> ", t)
+    t = re.sub(r"[가-힣]+", " <k> ", t)
+    t = re.sub(r"\d[\d,.]*", " # ", t)
+    t = re.sub(r"\s+", " ", t).strip()[:200]
+    return hashlib.sha1(t.encode()).hexdigest()[:12]
+
+
 class Shop(AgentExecutor):
     def __init__(self, memory):
         self.mem = memory
@@ -110,7 +125,7 @@ class Shop(AgentExecutor):
         if d and not d["unit"].get("legacy"):
             try:
                 self.mem.record_negotiation("shop", task_id, None, d["unit"]["sku"], d["first_ask"], price,
-                                            d["offers"], outcome)
+                                            d["offers"], outcome, style=d.get("style"))
             except Exception as e:                    # memory trouble must not lose a sale
                 log("memory_error", error=str(e)[:200])
 
@@ -157,8 +172,17 @@ class Shop(AgentExecutor):
                 await up.reject(say("Sorry, none of that in stock."))
                 return
             ask, floor, warranty = self._terms(u)
+            style = buyer_style(text, u)
+            hold = None
+            try:
+                prof = self.mem.buyer_style_profile(style)
+                if prof["deals"] >= 3 and prof["close_ratio"] and not u.get("legacy"):
+                    hold = max(floor, int(u["list_price"] * prof["close_ratio"] * 0.98))
+                    log("returning_style", style=style, profile=prof, hold=hold)
+            except Exception as e:                    # memory trouble must not lose a sale
+                log("memory_error", error=str(e)[:200])
             d = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "warranty": warranty, "first_ask": ask,
-                                      "offers": [], "t0": time.time()}
+                                      "offers": [], "t0": time.time(), "style": style, "hold": hold}
             offer = parse_offer(text)
             if offer is None:
                 await up.requires_input(say(self._pitch(u, ask, warranty)))
@@ -167,7 +191,7 @@ class Shop(AgentExecutor):
             offer = parse_offer(text)
         if offer is not None:
             d["offers"].append(offer)
-        action, price = pricing.seller_reply(d["ask"], d["floor"], offer, len(d["offers"]))
+        action, price = pricing.seller_reply(d["ask"], d["floor"], offer, len(d["offers"]), hold=d.get("hold"))
         u = d["unit"]
         if action == "accept":
             receipt = {"shop": config.SHOP_NAME, "item": u["sku"], "price": int(price), "task": task.id}
