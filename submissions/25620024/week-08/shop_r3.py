@@ -86,6 +86,20 @@ def find_unit(text, taken=()):
     return u, (m.group(1) if m else None), cat
 
 
+def next_window():
+    """When supply opens next (inventory.json "restock"), as ' (opens HH:MM, in N min)', or '' when unknown.
+    Supply opens 3 minutes every 20 (agent.md, 2026-11-03), so no promise of a fixed delay."""
+    try:
+        w = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8")).get("restock") or {}
+    except (OSError, ValueError):
+        return ""
+    if w.get("open"):
+        return " (open now)"
+    if w.get("opens_at"):
+        return f" (opens {time.strftime('%H:%M', time.localtime(w['opens_at']))}, in {max(0, (w['opens_at'] - time.time()) / 60):.0f} min)"
+    return ""
+
+
 def facts(u, price, q, code):
     shelf = ""
     if u.get("expires_at"):
@@ -121,8 +135,8 @@ class Shop(AgentExecutor):
                     with (HERE / "private" / "reserve.jsonl").open("a", encoding="utf-8") as f:
                         f.write(json.dumps({"ts": time.time(), "sku": sku}) + "\n")
                 log(f"unmet: {text[:80]!r}" + (f" -> reserved {sku}" if sku in cat else ""))
-                await up.reject(say(f"[sku {sku}] not in stock now. Reserved: it is restocked within ~2 min; ask again"
-                                    f" then. receipt=Ed25519 shop_fp={FP}" if sku in cat else
+                await up.reject(say(f"[sku {sku}] not in stock now. Reserved for the next supply window{next_window()};"
+                                    f" ask again after it. receipt=Ed25519 shop_fp={FP}" if sku in cat else
                                     f"Not in stock. Ask for a SKU from shops.json: 'I want to buy <name> (<sku>)'."))
                 return
             m = CODE_RE.search(text)
