@@ -89,13 +89,16 @@ def buyer_candidates(order, shops, catalog, journal):
     failures = journal.events("attempt", 2000)
     result = []
     allowed = set(order.get("acceptable") or [])
+    registry = journal.snapshot("registry.json", {})
     for shop in shops:
         for row in shop.get("offers", []):
             sku = row.get("sku")
             if sku not in allowed or row.get("qty", 0) < 1 or sku not in catalog:
                 continue
             product = catalog[sku]
-            own = [x for x in past if x.get("shop") == shop["url"] and x.get("sku") == sku]
+            counterpart_key = registry.get(shop["url"], {}).get("pubkey")
+            own = [x for x in past if (x.get("shop") == shop["url"] or
+                   counterpart_key and x.get("shop_identity") == counterpart_key) and x.get("sku") == sku]
             failed = [x for x in failures if x.get("shop") == shop["url"] and not x.get("success")
                       and x.get("kind") not in {"model_error", "local_error"}]
             estimate = sorted(x["price"] for x in own)[len(own) // 2] if own else int(.8 * product["list_price"])

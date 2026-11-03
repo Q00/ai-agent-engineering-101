@@ -19,6 +19,7 @@ def review(deal, journal):
                             use_hours=order.get("use_within_hours", 0))["value"]
     value = value or 0
     item = {"order": order["order"], "sku": sku, "unit": settled.get("unit"), "shop": settled["shop"],
+            "shop_identity": journal.snapshot("registry.json", {}).get(settled["shop"], {}).get("pubkey"),
             "name": settled.get("name", product.get("name", sku)), "kind": product.get("kind", order.get("kind")),
             "price": price, "value": value, "paid_at": now, "grade": settled.get("grade"),
             "warranty_hours": settled.get("warranty_hours", 0), "ledger": settled.get("ledger")}
