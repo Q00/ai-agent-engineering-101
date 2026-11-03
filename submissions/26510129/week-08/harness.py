@@ -1,94 +1,118 @@
-"""The one place that talks to the OpenAI Responses API.
+"""The one place that talks to a tightly bounded Claude Haiku harness.
 
     decide(system, situation) -> dict    parsed from the one-line JSON the model answers
 
-The model only proposes a small JSON decision.  Deterministic code still owns the
-budget, inventory, receipt checks, and signing authority.  OPENAI_API_KEY or
-OPENROUTER_API_KEY is read from the environment and never written to disk or logs.
+The model only proposes a compact JSON decision. Deterministic code still owns the
+budget, inventory, receipt checks, and signing authority. Calls are shared-budgeted
+through .market/llm_quota.json; once the daily limit is reached, callers use their
+deterministic fallback instead of consuming more model quota.
 """
+import fcntl
 import json
 import os
 import re
+import subprocess
 import sys
+import tempfile
 import time
-import urllib.error
-import urllib.request
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
-OPENAI_API_URL = "https://api.openai.com/v1/responses"
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/responses"
-MODEL = os.environ.get("OPENAI_MODEL", "gpt-6-luna")
-MAX_OUTPUT_TOKENS = 48
+MODEL = "haiku"
+DAILY_CALL_LIMIT = 200
+MAX_BUDGET_USD = "0.002"
 TIMEOUT = 30          # the kit stops a buyer after 300 s; fail closed instead of blocking it
-RETRIES = 1           # one malformed-output retry; keep token use bounded
+RETRIES = 0           # malformed output falls back; never pay for a repair call
+KST = ZoneInfo("Asia/Seoul")
+EMPTY_DIR = tempfile.mkdtemp(prefix="a2a-harness-")
+CMD = [
+    "claude", "-p", "--model", MODEL,
+    "--effort", "low",
+    "--max-budget-usd", MAX_BUDGET_USD,
+    "--tools", "",
+    "--setting-sources", "",
+    "--safe-mode",
+    "--strict-mcp-config",
+    "--disable-slash-commands",
+    "--permission-prompts", "none",
+    "--prompt-suggestions", "false",
+    "--no-session-persistence",
+]
 
 
-def _payload(system: str, situation: str) -> dict:
-    return {
-        "model": MODEL,
-        "reasoning": {"effort": "none"},
-        "instructions": system,
-        "input": situation,
-        "max_output_tokens": MAX_OUTPUT_TOKENS,
-    }
+def _env():
+    # Claude Code refuses to start inside another Claude Code session.
+    return {k: v for k, v in os.environ.items()
+            if not k.startswith("CLAUDECODE") and k != "CLAUDE_CODE_ENTRYPOINT"}
 
 
-def _route() -> tuple[str, str, str, str] | None:
-    """Return provider, endpoint, model id, and key without logging the key."""
-    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
-    openai_key = os.environ.get("OPENAI_API_KEY")
-    if openrouter_key:
-        model = MODEL if "/" in MODEL else f"openai/{MODEL}"
-        return "openrouter", OPENROUTER_API_URL, model, openrouter_key
-    if openai_key and openai_key.startswith("sk-or-v1"):
-        model = MODEL if "/" in MODEL else f"openai/{MODEL}"
-        return "openrouter", OPENROUTER_API_URL, model, openai_key
-    if openai_key:
-        return "openai", OPENAI_API_URL, MODEL.removeprefix("openai/"), openai_key
-    return None
+def _daily_limit():
+    try:
+        return max(0, int(os.environ.get("MARKET_LLM_DAILY_LIMIT", DAILY_CALL_LIMIT)))
+    except ValueError:
+        return DAILY_CALL_LIMIT
 
 
-def _output_text(response: dict) -> str:
-    """Collect every output_text part; Responses may include non-message items."""
-    chunks = []
-    for item in response.get("output") or []:
-        for part in item.get("content") or []:
-            if part.get("type") == "output_text" and isinstance(part.get("text"), str):
-                chunks.append(part["text"])
-    return "\n".join(chunks).strip()
+def _claim_daily_quota(now=None):
+    """Atomically reserve one model call across the kit's short-lived buyer processes."""
+    limit = _daily_limit()
+    if limit == 0:
+        return None
+    market_dir = Path(os.environ.get("MARKET_DIR", ".market"))
+    state_path = market_dir / "llm_quota.json"
+    lock_path = market_dir / "llm_quota.lock"
+    today = (now or datetime.now(KST)).astimezone(KST).date().isoformat()
+    try:
+        market_dir.mkdir(parents=True, exist_ok=True)
+        with lock_path.open("a+", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            try:
+                state = json.loads(state_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                state = {}
+            used = int(state.get("used", 0)) if state.get("date") == today else 0
+            if used >= limit:
+                return None
+            used += 1
+            tmp = state_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"date": today, "used": used, "limit": limit}) + "\n", encoding="utf-8")
+            os.replace(tmp, state_path)
+            return used, limit
+    except OSError as exc:
+        print(f"[harness] quota state unavailable: {exc}; treated as no answer", file=sys.stderr, flush=True)
+        return None
 
 
 def call(system: str, situation: str) -> str:
     t0, size = time.time(), len(system) + len(situation)
-    route = _route()
-    if route is None:
-        print("[harness] no OpenAI/OpenRouter API key is set; treated as no answer", file=sys.stderr, flush=True)
+    quota = _claim_daily_quota()
+    if quota is None:
+        print(f"[harness] daily Haiku quota exhausted or disabled ({_daily_limit()}/day); "
+              "treated as no answer", file=sys.stderr, flush=True)
         return ""
-    provider, api_url, model, api_key = route
-    payload = _payload(system, situation)
-    payload["model"] = model
-    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    request = urllib.request.Request(
-        api_url,
-        data=body,
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        method="POST",
-    )
+    bounded_system = system + ("\nReturn exactly one compact JSON object, with no markdown or explanation. "
+                               "Keep the entire answer under 120 characters.")
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as raw:
-            response = json.loads(raw.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read(300).decode("utf-8", errors="replace")
-        print(f"[harness] {provider} HTTP {exc.code} in={size}ch: {detail}", file=sys.stderr, flush=True)
-        return ""
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        print(f"[harness] {provider} request failed in={size}ch: {type(exc).__name__}: {exc}",
+        result = subprocess.run(
+            CMD + ["--system-prompt", bounded_system],
+            input=situation,
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT,
+            cwd=EMPTY_DIR,
+            env=_env(),
+        )
+    except subprocess.TimeoutExpired:
+        print(f"[harness] Haiku timed out after {TIMEOUT}s in={size}ch; treated as no answer",
               file=sys.stderr, flush=True)
         return ""
-    out = _output_text(response)
-    usage = response.get("usage") or {}
-    print(f"[harness] {provider}/{model} {time.time() - t0:.1f}s in={usage.get('input_tokens', '?')}tok "
-          f"out={usage.get('output_tokens', '?')}tok chars={size} -> {out[:200]!r}",
+    out = result.stdout.strip()
+    print(f"[harness] haiku call={quota[0]}/{quota[1]} {time.time() - t0:.1f}s "
+          f"exit={result.returncode} in={size}ch -> {out[:160]!r}",
           file=sys.stderr, flush=True)
+    if result.returncode != 0:
+        print(f"[harness] stderr: {result.stderr.strip()[:240]}", file=sys.stderr, flush=True)
     return out
 
 

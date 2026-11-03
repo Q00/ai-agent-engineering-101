@@ -30,12 +30,11 @@ LLM 호출을 각각 써서 harness 호출 한도도 자주 소진했다. Round 
 
 `agent.json`은 kit v4가 호출하는 여섯 개 경계를 정의한다. seller와 buyer의
 최종 권한 판단은 Python 규칙으로 수행한다. 기존 협상 대화가 필요한 경로만
-OpenAI의 `gpt-6-luna`를 Responses API 제안 생성기로 사용한다. OpenAI key면
-공식 endpoint, OpenRouter key면 호환 endpoint의 `openai/gpt-6-luna`로 자동
-라우팅한다. reasoning은 `none`, 출력은 최대 48 token, 비정상 출력 재시도는
-1회로 제한한다. API key는 환경변수에서만 읽고 저장하지 않는다. API가 응답하지
-않으면 exact budget을 모르는 결정론적 reference-price fallback이 제안한다.
-따라서 모델 출력은 명령이 아니라 검증 전 후보다.
+Claude Code의 Haiku를 제안 생성기로 사용한다. 호출은 `effort low`, 최대
+`$0.002/call`, 하루 200회, 재시도 0회로 제한하며 120자 이하의 JSON만 요구한다.
+호출 횟수는 `.market/llm_quota.json`에 buyer process 전체가 공유한다. 한도 초과,
+timeout 또는 비정상 출력이면 exact budget을 모르는 결정론적 reference-price
+fallback이 제안한다. 따라서 모델 출력은 명령이 아니라 검증 전 후보다.
 
 | 경계 | 구현 | 역할 |
 |---|---|---|
@@ -135,14 +134,14 @@ Round 3 시장 접속 전 로컬 검증 결과다.
 | Python 정책 단위 테스트 | 38/38 통과 | 7개 `test_*.py` |
 | 공식 `market_test_week07.py` | 25/25 통과 | `test-report.json`, `logs/market-test.log` |
 | v4 hook 계약 | 통과 | `agent.json`의 `{order}`, `{state}`, `{deal}` |
-| `gpt-6-luna` API smoke test | 인증 차단 | 현재 환경의 OpenRouter 형식 key가 401; 공식 테스트는 deterministic fallback 경로 검증 |
+| bounded Haiku smoke test | TODO | 하루 quota와 per-call 예산 제한을 적용한 실제 1회 호출 |
 
 공식 테스트에는 seller card/open/deal/bargain/signature와 buyer deal,
 budget hold, review-based selection이 각각 세 번씩 포함된다. 이 검증은 프로토콜
 호환성 결과이며 Round 3의 실제 ACP/AP2 정산 실적을 대신하지 않는다.
 Codex CLI 경로도 비교했으나 한 줄 JSON에 13,448 token을 사용해 비용 목표와
-맞지 않아 폐기했다. 실제 시장 실행 전 유효한 OpenAI 또는 OpenRouter key로
-API smoke test를 다시 수행한다.
+맞지 않아 폐기했다. OpenAI API 경로는 현재 key가 401이라 폐기하고, 기존 Haiku를
+작은 prompt와 명시적 호출 quota 안에서만 사용하는 쪽으로 되돌렸다.
 
 재현 명령:
 
