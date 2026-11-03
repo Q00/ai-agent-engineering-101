@@ -27,10 +27,13 @@ class Tool:
 
 def _instruction(goal, tools, final_shape):
     return (
-        "You are a ReAct agent. Work in steps. In each step answer with ONE JSON object, either\n"
+        "You are a ReAct agent. Work in steps. You cannot run the TOOLS below yourself and they are not part of "
+        "your own environment: to use one, reply with an action and our program runs it and shows you the result "
+        "as the next entry of DATA.transcript (observation). In each step answer with ONE JSON object, either\n"
         '  {"thought": "<why>", "action": "<tool name>", "args": {...}}  to call a tool, or\n'
         '  {"thought": "<why>", "final": ' + final_shape + "}  when you have enough evidence.\n"
-        "Call each tool at most twice. Base the final answer only on observations, not on guesses.\n\n"
+        "If DATA.transcript is empty you have observed nothing yet, so start with an action. Call each tool at "
+        "most twice. Base the final answer only on observations, not on guesses.\n\n"
         "GOAL:\n" + goal + "\n\nTOOLS (read-only):\n" + "\n".join(t.spec() for t in tools)
     )
 
@@ -65,14 +68,17 @@ def run(goal, tools, final_shape, *, purpose, context=None, max_steps=6, budget_
             trace.append({"step": step, "stop": "no valid reply"})
             break
         thought = str(reply.get("thought") or "")[:600]
-        if isinstance(reply.get("final"), dict):
-            final = reply["final"]
+        bare = {k: v for k, v in reply.items() if k not in ("thought", "action", "args", "final")}
+        if isinstance(reply.get("final"), dict) or ("action" not in reply and bare):
+            # some models drop the {"final": ...} wrapper once they have the answer; the caller validates either way
+            final = reply["final"] if isinstance(reply.get("final"), dict) else bare
             trace.append({"step": step, "thought": thought, "final": final})
             break
         name = reply.get("action")
         tool = by_name.get(name)
         if tool is None:
-            obs = json.dumps({"error": f"unknown tool {name!r}; use one of {sorted(by_name)} or give final"})
+            obs = json.dumps({"error": f"unknown tool {name!r}; use one of {sorted(by_name)} or give final",
+                              "your_reply": str(reply)[:300]}, ensure_ascii=False)
         elif sum(1 for t in trace if t.get("action") == name) >= 2:
             obs = json.dumps({"error": f"{name} already called twice; use the observations you have"})
         else:

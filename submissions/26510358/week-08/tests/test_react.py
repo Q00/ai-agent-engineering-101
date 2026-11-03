@@ -47,3 +47,11 @@ def test_step_limit(tmp_path, monkeypatch):
     ask, seen = scripted(*[{"action": "a"}] * 10)
     final, trace = react.run("g", [t], "{}", purpose="t", ask=ask, max_steps=3)
     assert final is None and len(seen) == 3
+
+
+def test_unwrapped_final_is_accepted(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "LOG_DIR", tmp_path)
+    t = react.Tool("a", "a", lambda: {"x": 1})
+    ask, _ = scripted({"thought": "look", "action": "a"}, {"thought": "ok", "adjustments": []})
+    final, trace = react.run("g", [t], "{}", purpose="t", ask=ask)
+    assert final == {"adjustments": []}
