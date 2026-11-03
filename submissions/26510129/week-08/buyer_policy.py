@@ -181,10 +181,13 @@ def choose_shop(shops, memory, item, reference=None, explore_rate=EXPLORE_RATE):
 class MandateGuardian:
     """The sole holder of the exact budget; returns an offer or refuses it."""
 
-    def __init__(self, budget, reference):
+    def __init__(self, budget, reference, value_cap=None):
         if not isinstance(budget, int) or budget <= 0:
             raise ValueError("budget must be a positive integer")
         self.__budget = budget
+        # A settled deal is worth the SKU's list price to the order (agent.md), so paying more than that is a loss
+        # whatever the budget says: the ceiling is the smaller of the mandate and the value.
+        self.__limit = min(budget, int(round(value_cap))) if _number(value_cap) and value_cap > 0 else budget
         self.reference = int(round(reference))
         self.ceiling_used = False
 
@@ -192,29 +195,34 @@ class MandateGuardian:
         if not _number(proposal) or int(proposal) <= 0:
             return {"action": "walk_away", "decision": "invalid_proposal", "price": None}
         proposal = int(round(proposal))
-        if proposal < self.__budget or (proposal == self.__budget and round_index >= 2):
-            if proposal == self.__budget:
+        decision = "approved"
+        if _number(current_ask) and 0 < current_ask < proposal:
+            # 21:09 (o-b3f18a8374b8): the model opened at 30500 against an ask of 26500. Paying the ask closes the deal;
+            # paying more than the ask is never the buyer's interest.
+            proposal, decision = int(round(current_ask)), "capped_at_ask"
+        if proposal < self.__limit or (proposal == self.__limit and round_index >= 2):
+            if proposal == self.__limit:
                 self.ceiling_used = True
-            return {"action": "offer", "decision": "approved", "price": proposal}
+            return {"action": "offer", "decision": decision, "price": proposal}
 
         # Do not reveal the exact ceiling in either of the first two offers.
         if round_index < 2:
             candidates = [self.reference]
             if _number(current_ask):
                 candidates.append(int(round(current_ask * 0.85)))
-            affordable = [price for price in candidates if 0 < price < self.__budget]
+            affordable = [price for price in candidates if 0 < price < self.__limit]
             if affordable:
                 return {"action": "offer", "decision": "reference_substitute", "price": max(affordable)}
             return {"action": "walk_away", "decision": "sealed_ceiling_below_market", "price": None}
 
         if not self.ceiling_used:
             self.ceiling_used = True
-            return {"action": "offer", "decision": "final_ceiling", "price": self.__budget}
+            return {"action": "offer", "decision": "final_ceiling", "price": self.__limit}
         return {"action": "walk_away", "decision": "ceiling_already_used", "price": None}
 
     def checkout_ok(self, amount):
         """The kit repeats this check against the signed open mandate."""
-        return _number(amount) and 0 < amount <= self.__budget
+        return _number(amount) and 0 < amount <= self.__limit
 
     def affordable_offers(self, offers, catalog, expected_ratio=0.90):
         """Return SKU offers with a plausible price under the ceiling, without revealing it."""

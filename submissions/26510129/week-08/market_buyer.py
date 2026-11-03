@@ -108,8 +108,9 @@ def steered(t):
     return bool(hit)
 
 
-def negotiate(url, item, budget, reference, record="", request=None):
+def negotiate(url, item, budget, reference, record="", request=None, value_cap=None):
     """A sealed-budget loop: the LLM proposes, then the mandate guardian authorizes.
+    `value_cap` is the SKU's list price: the guardian never pays above it, whatever the budget.
 
     Returns (outcome, agreed price or None, receipt or None, transcript, manipulative, {ask, first_offer, last_offer})."""
     card = httpx.get(url.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=10).json()
@@ -132,8 +133,8 @@ def negotiate(url, item, budget, reference, record="", request=None):
         return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
     tid = t["id"]
     log = [("you", opening), ("shop", status_text(t))]
-    guardian = buyer_policy.MandateGuardian(budget, reference)
-    print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}. {record}", flush=True)
+    guardian = buyer_policy.MandateGuardian(budget, reference, value_cap)
+    print(f"[buyer] first ask {ask0}, private ceiling sealed, personal reference {reference}, value cap {value_cap}. {record}", flush=True)
 
     offers = []   # (my offer, the ask the shop answered with): the harness gets this instead of the whole transcript
     for round_index in range(MAX_ROUNDS):
@@ -238,13 +239,30 @@ def prepare_round3_shops(shops, order, catalog, guardian):
     return affordable or stocked or shops
 
 
-def choose_request(shop, catalog):
+def choose_request(shop, catalog, order=None):
     offers = shop.get("_eligible_offers") or shop.get("offers") or []
     if not offers:
         return None
+    need = (order or {}).get("use_within_hours")
+    if (order or {}).get("kind") == "food" and isinstance(need, (int, float)) and need > 0:
+        # 21:04-21:07: four agreed food deals were refused at checkout because the unit's shelf life was shorter than
+        # the order's use_within_hours (358 h left, 360 asked). A SKU whose whole shelf life is shorter can never pass;
+        # prefer one with room for a unit that is no longer fresh (grade A still has 80% or more of it).
+        shelf = lambda offer: catalog.get(offer.get("sku"), {}).get("shelf_hours")
+        feasible = [offer for offer in offers if shelf(offer) is None or shelf(offer) >= need]
+        safe = [offer for offer in feasible if shelf(offer) is not None and shelf(offer) * 0.8 >= need]
+        offers = safe or feasible or offers
     # Higher catalog value improves buyer surplus; quantity breaks ties toward availability.
     return max(offers, key=lambda offer: (catalog.get(offer.get("sku"), {}).get("list_price", 0),
                                           offer.get("qty", 0), offer.get("sku", "")))
+
+
+def sku_reference(sku, catalog, fallback):
+    """The bargaining reference for one SKU: 90% of its list price, which is what a settled deal is worth to the order.
+    21:09 (o-b3f18a8374b8): the category reference (35910) sat above the SKU's list price (28900), the model opened
+    at 30500 and the deal settled with negative surplus. The category reference stands in only without a SKU."""
+    list_price = catalog.get(sku, {}).get("list_price")
+    return int(round(list_price * 0.90)) if isinstance(list_price, (int, float)) and list_price > 0 else fallback
 
 
 def accept_constraints(order):
@@ -279,16 +297,18 @@ def main():
     selector_guardian = buyer_policy.MandateGuardian(a.budget, reference)
     candidates = prepare_round3_shops(shops, order, catalog, selector_guardian)
     pick = choose(candidates, category, mem, reference, params["explore_rate"])
-    request = choose_request(pick, catalog)
+    request = choose_request(pick, catalog, order)
     wanted = request["sku"] if request else a.item
 
-    tried_urls = set()
+    category_ref, tried_urls = reference, set()
     for attempt in (1, 2, 3):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
         tried_urls.add(pick["url"])
+        value_cap = catalog.get(wanted, {}).get("list_price")
+        reference = sku_reference(wanted, catalog, category_ref)
         try:
             outcome, agreed, receipt, log, manip, info = negotiate(
                 pick["url"], wanted, a.budget, reference,
-                bargain_record(pick["name"], mem, params["first_offer_discount"]), request
+                bargain_record(pick["name"], mem, params["first_offer_discount"]), request, value_cap
             )
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)
@@ -315,8 +335,8 @@ def main():
         rest = [s for s in candidates if s.get("url") not in tried_urls and s not in blacklisted(candidates, mem)]
         if not rest:
             break
-        pick = fallback_choice(rest, mem, category, reference, params["explore_rate"])
-        request = choose_request(pick, catalog)
+        pick = fallback_choice(rest, mem, category, category_ref, params["explore_rate"])
+        request = choose_request(pick, catalog, order)
         wanted = request["sku"] if request else a.item
         print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by portfolio policy after the first shop "
               f"{'had no stock' if no_offer else 'failed'}", flush=True)
