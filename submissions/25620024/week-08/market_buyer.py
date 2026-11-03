@@ -555,6 +555,17 @@ def offer_of(task):
 
 
 NEED = {}          # set by round3: what this order needs, said to every shop up front
+SHELF_RE = re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s*(?:of\s+)?shelf|shelf[ -]life[^0-9]{0,25}(\d+(?:\.\d+)?)\s*h", re.I)
+
+
+def shelf_of(task, off=None):
+    """Hours of shelf life the shop says its unit has: the structured offer first, else the reply text; None."""
+    if off and off.get("shelf_hours_left") is not None:
+        return float(off["shelf_hours_left"])
+    msg = (task.get("status") or {}).get("message") or {}
+    text = " ".join(p.get("text") or "" for p in msg.get("parts") or [])
+    m = SHELF_RE.search(text)
+    return float(m.group(1) or m.group(2)) if m else None
 
 
 def quote(c):
@@ -570,9 +581,13 @@ def quote(c):
         task = send(url, opening)
         ask = asking_price(task) if state(task) == "TASK_STATE_INPUT_REQUIRED" else None
         off = offer_of(task)
-        if ask and off and NEED.get("hours") and (off.get("shelf_hours_left") or 1e9) < NEED["hours"]:
+        left = shelf_of(task, off)
+        if ask and NEED.get("hours") and left is not None and left < NEED["hours"]:
             rpc(url, "CancelTask", {"id": task["id"]})
-            return {"c": c, "error": f"offered unit has {off['shelf_hours_left']} h left, need {NEED['hours']} h"}
+            return {"c": c, "error": f"offered unit has {left} h left, need {NEED['hours']} h"}
+        if ask and NEED.get("strict") and left is None:     # a long-life need: no stated shelf life, no deal
+            rpc(url, "CancelTask", {"id": task["id"]})     # (144 of 153 refused payments were shelf life, 11-04)
+            return {"c": c, "error": f"no shelf life stated; this order needs {NEED['hours']} h"}
         return {"c": c, "url": url, "task": task, "opening": opening, "ask": ask}
     except Exception as e:
         return {"c": c, "error": f"{type(e).__name__}: {e}"}
@@ -612,7 +627,9 @@ def round3(a, order, shops, mem, started):
         return
     pol = accept_policy(order)
     NEED.clear()
-    NEED.update(hours=pol.get("min_hours_left"), text=", ".join(
+    shelf = min(((cat.get(s) or {}).get("shelf_hours") or 1e9) for s in order.get("acceptable") or [""])
+    NEED.update(hours=pol.get("min_hours_left"),            # strict: only a fresh grade A unit can pass
+                strict=bool(pol.get("min_hours_left") and pol["min_hours_left"] > 0.45 * shelf), text=", ".join(
         x for x in (f"shelf life {pol['min_hours_left']} h or more" if pol.get("min_hours_left") else "",
                     f"grade {'/'.join(pol['grades'])}" if pol.get("grades") else "", "market certificate") if x))
     with ThreadPoolExecutor(rfq) as ex:

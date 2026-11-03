@@ -383,6 +383,9 @@ def advise(order, shops, b=None, t=None, cat=None):
         if shop in avoid:
             skipped["avoid"] += 1
             continue
+        if kind == "food" and order.get("use_within_hours") and (b.get("shelf_refused") or {}).get(shop, 0) >= 2:
+            skipped["avoid"] += 1                               # its food failed our shelf-life check twice in 24 h
+            continue
         if not lp or not url:
             skipped["no list"] += 1
             continue
@@ -399,8 +402,8 @@ def advise(order, shops, b=None, t=None, cat=None):
             target = int(max(0.45 * lp, min(target, hl)))
         walk = min(budget, int(lp * t["max_pay_ratio"]))
         meds = [v["median"] for s_, v in (p.get("shops") or {}).items() if s_ not in avoid]
-        if p.get("n", 0) >= 3 and meds:                        # well known price: do not pay far above the market
-            walk = min(walk, max(int(1.1 * statistics.median(meds)), int(1.05 * x), target))
+        if p.get("n", 0) >= 3 and (hl or meds):                # well known price: at most 5% over the honest low
+            walk = min(walk, max(int(1.05 * hl) if hl else int(1.1 * statistics.median(meds)), target))   # HQ 11-04
         target = min(target, int(0.9 * walk))
         row = {"shop": shop, "sku": sku, "url": url, "name": name, "expected_price": round(x), "list_price": lp,
                "reach_ok": True, "keep": round(keep), "target": target, "walk_away": walk,
@@ -422,6 +425,38 @@ def advise(order, shops, b=None, t=None, cat=None):
             "walk_away": ranked[0]["walk_away"] if ranked else None, "warnings": warn}
 
 
+def shelf_refusals(md, now, hours=24):
+    """{shop: n} payments our kit refused for shelf life lately. payments.jsonl names the shop by its tunnel URL and
+    has no time, so each refusal is matched to the buyer's memory line with the same SKU and agreed price."""
+    try:
+        lines = [json.loads(x) for x in (Path(md) / "payments.jsonl").read_text(encoding="utf-8").splitlines()[-500:]
+                 if x.strip()]
+    except (OSError, ValueError):
+        return {}
+    bad = {(p.get("item"), p.get("price")) for p in lines if not p.get("paid") and "shelf" in (p.get("reason") or "")}
+    out = {}
+    for m in _memory_since(now - hours * 3600):
+        if (m.get("item"), m.get("agreed")) in bad and m.get("shop"):
+            out[m["shop"]] = out.get(m["shop"], 0) + 1
+    return out
+
+
+def _memory_since(ts):
+    out = []
+    try:
+        with MEMORY.open(encoding="utf-8") as f:
+            for line in f:
+                try:
+                    m = json.loads(line)
+                except ValueError:
+                    continue
+                if m.get("ts", 0) > ts:
+                    out.append(m)
+    except OSError:
+        pass
+    return out
+
+
 def tick(md=Path(".market"), c=None, now=None, force=False):
     """Rebuild the book (every tick_s seconds). Returns the scorecard of this tick, or None when not due."""
     t, now = settings(), now or time.time()
@@ -440,6 +475,7 @@ def tick(md=Path(".market"), c=None, now=None, force=False):
             "asks": load(ASKS, {}).get("asks", {}), "k": state.get("k", {"goods": 1.0, "food": 1.0}),
             "avoid": sorted(s for s, x in q.items() if x["verdict"] == "avoid"), "where": idx,
             "penalty": state.get("penalty", {}), "enuri_accountability": acc or old.get("enuri_accountability"),
+            "shelf_refused": shelf_refusals(md, now),
             "coverage": {"catalog_skus": n_cat, "shops": n_shops, "skus_in_stock": len(idx),
                          "skus_priced_24h": 0, "stocked_and_priced": 0}}
     book["coverage"].update(skus_priced_24h=len(book["prices"]),
