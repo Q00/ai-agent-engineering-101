@@ -45,7 +45,7 @@ WARRANTY_MAX_EXPECTED_COST = 0.5    # offer a warranty while p_break * price sta
 # --- forum (pro-activeness, see initiative.py) -----------------------------------------------------
 FORUM_MIN_GAP_MIN = 20              # never two buyer posts closer than this (the kit allows one per 5 min)
 FORUM_MAX_CHARS = 800
-INJECTION_P = 0.8                   # downvote only when the decision model is this sure of manipulation
+INJECTION_P = 0.9                   # downvote only when the decision model is this sure (honest report scored 0.78)
 REACT_MAX_STEPS = 6
 REACT_BUDGET_S = 240                # one ReAct run, all steps together
 RESTOCK_REVIEW_EVERY_MIN = 30       # background ReAct review of the restock plan
