@@ -3,8 +3,10 @@
 Missing stock is an unresolved acquisition cost, never a proven sale or
 spoilage. A matching confirmed settlement removes that estimate. Held costs
 are reported separately, and the official wallet remains total-profit truth.
-The restock lock serializes this writer. Capacity/corruption fails closed;
-unresolved units and settled identities are never silently discarded.
+The restock lock serializes this writer. Old settled records become bounded
+SKU totals with an archive watermark; unresolved identities are never pruned.
+Old untracked receipts below that watermark cannot be distinguished from
+replays and are omitted. The wallet remains authoritative for total profit.
 """
 import copy
 import json
@@ -15,6 +17,8 @@ from feedback import append_event, atomic_json, number
 MAX_BYTES = 800_000
 MAX_UNITS = 2000
 MAX_SALES = 1000
+KEEP_SETTLED = 1000
+MAX_SKUS = 6000
 
 
 def _text(value, limit=128):
@@ -23,6 +27,11 @@ def _text(value, limit=128):
 
 def _timestamp(value):
     return number(value) and value >= 0
+
+
+def _watermark(value):
+    return (isinstance(value, list) and len(value) == 2
+            and _timestamp(value[0]) and _text(value[1]))
 
 
 def _unit(raw, now, *, settled=False):
@@ -53,6 +62,17 @@ def _load(path, now):
             or state.get("reset_at") is not None and not _timestamp(state["reset_at"])
             or state.get("injected") is not None and not _timestamp(state["injected"])):
         raise ValueError("Invalid lifecycle memory; refusing to reset it")
+    archived, watermark = state.get("archived", {}), state.get("archive_watermark")
+    if (not isinstance(archived, dict) or len(archived) > MAX_SKUS
+            or watermark is not None and (not _watermark(watermark) or watermark[0] > now + 5)
+            or bool(archived) != (watermark is not None)):
+        raise ValueError("Invalid lifecycle archive")
+    for sku, totals in archived.items():
+        if (not _text(sku) or not isinstance(totals, dict)
+                or not _text(totals.get("category"), 256) or totals.get("kind") not in ("goods", "food")
+                or type(totals.get("count")) is not int or totals["count"] <= 0
+                or type(totals.get("cost")) is not int or totals["cost"] <= 0):
+            raise ValueError("Invalid lifecycle archive totals")
     ledgers = set()
     for uid, row in state["units"].items():
         if not isinstance(row, dict):
@@ -71,8 +91,51 @@ def _load(path, now):
                     or row["ledger"] in ledgers or not _timestamp(row.get("settled_at"))
                     or row["settled_at"] > now + 5):
                 raise ValueError("Invalid settled lifecycle identity")
+            if ("receipt_time" in row and (not _timestamp(row["receipt_time"])
+                    or not row["supplied_at"] <= row["receipt_time"] <= now + 5)):
+                raise ValueError("Invalid settled receipt time")
             ledgers.add(row["ledger"])
     return state
+
+
+def _compact(state, present, events):
+    """Roll up only settled, absent units, preserving late unresolved IDs.
+
+    Legacy rows lacking receipt_time remain detailed until a matching sale
+    supplies it. Advancing the watermark trades unknown old-receipt coverage
+    for bounded, durable replay dedup, never for invented acquisitions.
+    """
+    rows = state["units"]
+    eligible = sorted((row["receipt_time"], uid) for uid, row in rows.items()
+                      if row["state"] == "settled" and "receipt_time" in row and uid not in present)
+    closed = sum(row["state"] == "settled" for row in rows.values())
+    required = max(0, closed - KEEP_SETTLED, len(rows) - MAX_UNITS)
+    removed, cost_sum, cursor = 0, 0, 0
+    while cursor < len(eligible):
+        over_bytes = len(json.dumps(state, ensure_ascii=False).encode()) + 1 > MAX_BYTES
+        if removed >= required and not over_bytes:
+            break
+        batch = max(required - removed, max(1, (len(eligible) - cursor) // 4) if over_bytes else 1)
+        for stamp, uid in eligible[cursor:cursor + batch]:
+            row = rows.pop(uid)
+            archive = state.setdefault("archived", {})
+            totals = archive.setdefault(row["sku"], {"category": row["category"], "kind": row["kind"],
+                                                   "count": 0, "cost": 0})
+            if totals["category"] != row["category"] or totals["kind"] != row["kind"]:
+                raise ValueError("Archived SKU identity changed")
+            totals["count"] += 1
+            totals["cost"] += row["cost"]
+            state["archive_watermark"] = list(max(tuple(state.get("archive_watermark", [0, ""])),
+                                                   (stamp, uid)))
+            removed += 1
+            cost_sum += row["cost"]
+        cursor += batch
+    if len(state.get("archived", {})) > MAX_SKUS:
+        raise ValueError("Lifecycle SKU archive exceeds bounded catalog size")
+    if removed:
+        events.append({"event": "settled_rollup", "units": removed, "cost": cost_sum,
+                       "watermark": state["archive_watermark"],
+                       "coverage": "Unknown receipts <= watermark omitted; unresolved IDs always retained"})
 
 
 def update(root, inventory, sales_memory, now):
@@ -133,6 +196,9 @@ def update(root, inventory, sales_memory, now):
                                     and previous[k] is None)):
             raise ValueError("Actual unit identity changed")
         if not previous:
+            watermark = state.get("archive_watermark")
+            if watermark and unit["supplied_at"] <= watermark[0]:
+                raise ValueError("Old untracked inventory may be archived stock; refusing duplicate acquisition")
             rows[uid] = {**unit, "state": "held", "first_seen": now, "last_seen": now}
             events.append({"event": "observed", "unit": uid, "sku": unit["sku"], "cost": unit["cost"]})
         elif previous["state"] != "settled":
@@ -156,6 +222,9 @@ def update(root, inventory, sales_memory, now):
             continue
         uid, ledger = sale["unit"], sale["ledger"]
         previous = rows.get(uid)
+        watermark = state.get("archive_watermark")
+        if not previous and watermark and (sale["receipt_time"], uid) <= tuple(watermark):
+            continue  # Known unresolved IDs take precedence over this replay boundary.
         if previous and sale["receipt_time"] < previous["supplied_at"]:
             raise ValueError("Settlement predates observed acquisition")
         if previous and (previous["sku"] != sale["sku"] or previous["cost"] != sale["cost"]):
@@ -165,6 +234,9 @@ def update(root, inventory, sales_memory, now):
         if previous and previous["state"] == "settled":
             if previous["ledger"] != ledger:
                 raise ValueError("One actual unit has two settlements")
+            if "receipt_time" in previous and previous["receipt_time"] != sale["receipt_time"]:
+                raise ValueError("Settled receipt identity changed")
+            previous["receipt_time"] = sale["receipt_time"]
             continue
         if not previous:
             # A unit may be supplied and sold between inventory observations.
@@ -173,13 +245,15 @@ def update(root, inventory, sales_memory, now):
                     or not _timestamp(sale.get("supplied_at")) or sale["supplied_at"] > now + 5
                     or reset is not None and sale["supplied_at"] < reset):
                 continue
+            if sale["supplied_at"] > sale["receipt_time"]:
+                raise ValueError("Settlement predates acquisition; refusing to poison lifecycle memory")
             # Food receipts need not contain expiry. It is no longer needed
             # for settled units; retain a nullable value, never invent expiry.
             previous = {k: sale[k] for k in ("sku", "category", "kind", "cost", "supplied_at")}
             previous.update(expires_at=sale.get("expires_at"), first_seen=now, last_seen=now)
             _unit({**previous, "unit": uid}, now, settled=True)
             rows[uid] = previous
-        previous.update(state="settled", ledger=ledger, settled_at=now)
+        previous.update(state="settled", ledger=ledger, settled_at=now, receipt_time=sale["receipt_time"])
         previous.pop("missing_at", None)
         previous.pop("missing_reason", None)
         ledger_units[ledger] = uid
@@ -190,12 +264,22 @@ def update(root, inventory, sales_memory, now):
             row.update(state="missing", missing_at=now, missing_reason=reason)
             events.append({"event": "missing_unconfirmed", "unit": uid, "sku": row["sku"],
                            "cost_estimate": row["cost"], "reason": reason})
+    _compact(state, present, events)
     if len(rows) > MAX_UNITS or len(json.dumps(state, ensure_ascii=False).encode()) + 1 > MAX_BYTES:
-        raise ValueError("Lifecycle capacity reached; refusing buys instead of pruning unresolved units or IDs")
+        raise ValueError("Lifecycle capacity reached; refusing buys instead of pruning unresolved units")
     atomic_json(path, state)  # Durable dedup precedes append-only diagnostic events.
     for event in events:
         append_event(Path(root) / "logs/stock-lifecycle.jsonl", {"time": now, "round": rnd, **event})
     return state
+
+
+def _group(category, kind):
+    return {"category": category, "kind": kind,
+            "observed_units": 0, "observed_purchase_cost": 0, "settled_count": 0, "settled_cost": 0,
+            "held_count": 0, "held_cost": 0, "unresolved_count": 0, "unresolved_cost": 0,
+            "expired_unconfirmed_count": 0, "expired_unconfirmed_cost": 0,
+            "held_expired_cost": 0, "held_expiring_cost": 0, "seized_suspected_cost": 0,
+            "pending_count": 0}
 
 
 def metrics(state, now):
@@ -204,17 +288,16 @@ def metrics(state, now):
     held_cost and unresolved_cost are disjoint. expired_unconfirmed_cost and
     seized_suspected_cost are subsets of unresolved_cost; never add them again.
     Expired-but-held food is a risk, not an observed disposal. Counters retain
-    the whole current epoch, unlike sales_performance's seven-day window.
+    the whole observed epoch, unlike sales_performance's seven-day window.
+    Archived old receipts not previously observed are omitted for safe dedup.
     """
     result = {}
+    for sku, totals in state.get("archived", {}).items():
+        g = result.setdefault(sku, _group(totals["category"], totals["kind"]))
+        g.update(observed_units=totals["count"], settled_count=totals["count"],
+                 observed_purchase_cost=totals["cost"], settled_cost=totals["cost"])
     for row in state["units"].values():
-        g = result.setdefault(row["sku"], {
-            "category": row["category"], "kind": row["kind"],
-            "observed_units": 0, "observed_purchase_cost": 0, "settled_count": 0, "settled_cost": 0,
-            "held_count": 0, "held_cost": 0, "unresolved_count": 0, "unresolved_cost": 0,
-            "expired_unconfirmed_count": 0, "expired_unconfirmed_cost": 0,
-            "held_expired_cost": 0, "held_expiring_cost": 0, "seized_suspected_cost": 0,
-            "pending_count": 0})
+        g = result.setdefault(row["sku"], _group(row["category"], row["kind"]))
         cost = row["cost"]
         g["observed_units"] += 1
         g["observed_purchase_cost"] += cost

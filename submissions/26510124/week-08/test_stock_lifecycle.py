@@ -198,6 +198,92 @@ class StockLifecycleTests(unittest.TestCase):
         self.assertEqual(path.read_bytes(), state_before)
         self.assertEqual(log.read_bytes(), events_before)
 
+    def recent_sale(self, index):
+        stamp = self.now + index * 10
+        return self.sale(unit=f"sold-{index:03}", ledger=100 + index, expires_at=stamp + 1000,
+                         supplied_at=stamp, receipt_time=stamp + 1)
+
+    def test_unseen_sale_with_impossible_chronology_cannot_poison_saved_state(self):
+        self.update()
+        path = self.root / ".market/stock-lifecycle.json"
+        before = path.read_bytes()
+        self.sales["sales"] = [self.sale(supplied_at=self.now - 10, receipt_time=self.now - 20)]
+        with self.assertRaisesRegex(ValueError, "predates acquisition"):
+            self.update(30)
+        self.assertEqual(path.read_bytes(), before)
+        self.sales["sales"] = [self.sale()]
+        _, stats = self.update(40)
+        self.assertEqual(stats["F00001"]["settled_count"], 1)
+
+    def test_long_run_rolls_up_settled_rows_but_preserves_totals_and_restart_dedup(self):
+        with patch.object(lifecycle, "MAX_UNITS", 4), patch.object(lifecycle, "KEEP_SETTLED", 2):
+            receipts = []
+            for index in range(30):
+                receipts.append(self.recent_sale(index))
+                self.sales["sales"] = receipts[-3:]
+                state, stats = self.update(index * 10 + 2)
+                self.assertLessEqual(len(state["units"]), 2)
+                self.assertEqual(stats["F00001"]["settled_count"], index + 1)
+                self.assertEqual(stats["F00001"]["observed_purchase_cost"], (index + 1) * 100)
+            self.assertEqual(state["archived"]["F00001"]["count"], 28)
+            watermark = state["archive_watermark"]
+            self.sales["sales"] = receipts  # Replay every archived sale after reading disk again.
+            repeated, again = self.update(400)
+            self.assertEqual(again, stats)
+            self.assertEqual(repeated["archive_watermark"], watermark)
+            self.assertLess((self.root / ".market/stock-lifecycle.json").stat().st_size, lifecycle.MAX_BYTES)
+            events = [json.loads(x) for x in (self.root / "logs/stock-lifecycle.jsonl").read_text().splitlines()]
+            self.assertEqual(sum(e["units"] for e in events if e["event"] == "settled_rollup"), 28)
+
+    def test_old_missing_unit_survives_compaction_and_late_settlement_below_watermark(self):
+        with patch.object(lifecycle, "MAX_UNITS", 4), patch.object(lifecycle, "KEEP_SETTLED", 2):
+            self.inv["units"] = [self.unit()]
+            self.update()
+            self.inv["units"] = []
+            for index in range(1, 12):
+                self.sales["sales"] = [self.recent_sale(index)]
+                state, stats = self.update(index * 10 + 2)
+                self.assertEqual(state["units"]["u1"]["state"], "missing")
+                self.assertEqual(stats["F00001"]["unresolved_cost"], 100)
+            before = stats["F00001"]["observed_purchase_cost"]
+            self.assertGreater(state["archive_watermark"][0], self.sale()["receipt_time"])
+            self.sales["sales"] = [self.sale()]
+            _, stats = self.update(150)
+            self.assertEqual(stats["F00001"]["settled_count"], 12)
+            self.assertEqual(stats["F00001"]["unresolved_cost"], 0)
+            self.assertEqual(stats["F00001"]["observed_purchase_cost"], before)
+            _, again = self.update(160)
+            self.assertEqual(stats, again)
+
+    def test_archived_reappearing_inventory_fails_closed_instead_of_new_purchase(self):
+        with patch.object(lifecycle, "KEEP_SETTLED", 1):
+            self.sales["sales"] = [self.recent_sale(1), self.recent_sale(2)]
+            state, _ = self.update(30)
+            self.assertNotIn("sold-001", state["units"])
+            path = self.root / ".market/stock-lifecycle.json"
+            before = path.read_bytes()
+            self.inv["units"] = [self.recent_sale(1)]
+            with self.assertRaisesRegex(ValueError, "may be archived stock"):
+                self.update(40)
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_legacy_settled_rows_wait_for_receipt_time_before_rollup(self):
+        self.sales["sales"] = [self.recent_sale(1), self.recent_sale(2)]
+        state, _ = self.update(30)
+        for row in state["units"].values():
+            row.pop("receipt_time")
+        path = self.root / ".market/stock-lifecycle.json"
+        path.write_text(json.dumps(state))
+        self.sales["sales"] = []
+        with patch.object(lifecycle, "KEEP_SETTLED", 1):
+            state, _ = self.update(40)
+            self.assertEqual(len(state["units"]), 2)
+            self.assertNotIn("archived", state)
+            self.sales["sales"] = [self.recent_sale(1)]
+            state, stats = self.update(50)
+            self.assertEqual(state["archived"]["F00001"]["count"], 1)
+            self.assertEqual(stats["F00001"]["settled_count"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()
