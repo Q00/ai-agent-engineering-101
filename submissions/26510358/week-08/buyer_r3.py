@@ -1,0 +1,182 @@
+"""Round 3 market_buyer: picks (shop, SKU) by expected surplus from memory, negotiates over A2A, and hands the
+kit an accept policy so it never pays for something that is worth 0 to the order.
+
+    python3 buyer_r3.py --shops {shops} --item {item} --budget {budget} --order {order}
+
+Score of a candidate = (list price - expected price) * reliability, where
+  expected price  = this shop's median settled price / list for the category (memory), else the market's, else 0.85
+  reliability     = (1 - shop's dishonest-claim rate) * (1 - breaks and worthless deals we saw) * our payment success
+The last JSON line is what the kit reads. Orders before Round 3 go to the week-07 buyer (market_buyer.py).
+"""
+import argparse
+import json
+import os
+import sys
+import time
+
+from r3lib import a2a, config, llm, market, pricing
+from r3lib.memory import Memory
+from shop_r3 import parse_offer
+
+DEADLINE_S = 240          # the kit stops a buyer after 300 s
+PER_SHOP_S = 90
+
+
+def say(event, **kw):
+    print(json.dumps({"event": event, **kw}, ensure_ascii=False), flush=True)
+
+
+def decision_log(row):
+    config.LOG_DIR.mkdir(parents=True, exist_ok=True)
+    with open(config.LOG_DIR / "buyer-decisions.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": round(time.time(), 1), **row}, ensure_ascii=False) + "\n")
+
+
+def accept_policy(order):
+    if order.get("kind") == "food":
+        return {"cert": True, "min_hours_left": float(order.get("use_within_hours") or 0) + config.HOURS_MARGIN}
+    return {"cert": True, "grades": ["A", "B"]}
+
+
+def candidates(order, shops, mem, my_urls):
+    cat = market.catalog()
+    acceptable = set(order.get("acceptable") or [])
+    out = []
+    p_market = mem.break_rate()
+    for s in shops:
+        url = (s.get("url") or "").rstrip("/")
+        if not url or url in my_urls or s.get("name") in config.MY_NAMES:
+            continue                                  # same owner: the market will not settle it
+        rep = mem.shop_reputation(url)
+        for o in s.get("offers") or []:
+            sku = o.get("sku")
+            info = cat.get(sku) or {}
+            if sku not in acceptable or (o.get("qty") or 0) <= 0 or not info.get("list_price"):
+                continue
+            L = info["list_price"]
+            p_break = (rep["break_rate"] + p_market) / 2
+            max_pay = pricing.buyer_limits(L, order["budget"], info.get("kind"), p_break)
+            ratio_m, _ = mem.price_ratio(sku=sku, category=info.get("category"))
+            exp = pricing.expected_price(L, mem.shop_price_ratio(url, info.get("category")), ratio_m)
+            ours = 1.0 if rep["our_buys"] < 3 else (rep["our_paid"] + 1) / (rep["our_buys"] + 1)
+            bad = rep["our_bad"] / max(1, rep["our_paid"])
+            reliability = (1 - rep["lie_rate"]) * max(0.1, 1 - bad) * ours
+            if rep["talks_24h"] >= 4 and rep["deals_24h"] == 0:
+                reliability *= 0.5                    # talked a lot, never closed: likely too expensive or broken
+            surplus = L - min(exp, max_pay)
+            out.append({"shop": url, "name": s.get("name"), "sku": sku, "item_name": info.get("name"), "list": L,
+                        "kind": info.get("kind"), "max_pay": max_pay, "expected": exp,
+                        "score": round(surplus * reliability, 1), "reliability": round(reliability, 3)})
+    out.sort(key=lambda c: -c["score"])
+    return out
+
+
+def read_ask(reply, c):
+    """Shop's price from its reply; regex first, the LLM only when the regex finds nothing plausible."""
+    p = parse_offer(reply)
+    if p is not None and 0.1 * c["list"] <= p <= 5 * c["list"]:
+        return p
+    out = llm.ask_json("A shop replied in a price negotiation. Extract the price it is asking now, as a whole "
+                       'number of credits, as {"price": n}, or {"price": null} if it names none.',
+                       {"shop_reply": reply[:1500]}, timeout=30, purpose="read_ask")
+    v = (out or {}).get("price")
+    return int(v) if isinstance(v, (int, float)) and 0.1 * c["list"] <= v <= 5 * c["list"] else None
+
+
+def negotiate(c, order, deadline):
+    """Returns (receipt or None, transcript)."""
+    client = a2a.Client(c["shop"], timeout=60)
+    want = f"I want to buy {c['item_name']} ({c['sku']})."
+    if c["kind"] == "food":
+        want += f" Need at least {accept_policy(order)['min_hours_left']:.0f} h of shelf life."
+    t = client.send(want)
+    lines, ask, offer, n = [("me", want), ("shop", a2a.said(t))], None, None, 0
+    try:
+        while a2a.state(t) == "TASK_STATE_INPUT_REQUIRED" and n < config.MAX_OFFERS and time.time() < deadline:
+            got = read_ask(a2a.said(t), c)
+            ask = got if got is not None else ask
+            action, price = pricing.buyer_next_offer(c["list"], c["max_pay"], ask, offer, n)
+            if offer is not None and price <= offer and action == "offer":
+                break                                  # at our limit and the shop does not move
+            offer, n = price, n + 1
+            t = client.send(str(price), t.get("id"))
+            lines += [("me", str(price)), ("shop", a2a.said(t))]
+        if a2a.state(t) == "TASK_STATE_INPUT_REQUIRED":
+            client.cancel(t.get("id"))
+        rec = a2a.receipt(t) if a2a.state(t) == "TASK_STATE_COMPLETED" else None
+        return rec, {"lines": lines, "ask": ask, "offer": offer, "state": a2a.state(t), "task": t.get("id")}
+    finally:
+        client.close()
+
+
+def valid(rec, c, order):
+    if not rec:
+        return "no receipt"
+    price = rec.get("price")
+    if isinstance(price, float) and price.is_integer():
+        rec["price"] = price = int(price)
+    if rec.get("item") not in (order.get("acceptable") or []):
+        return f"receipt item {rec.get('item')} is not acceptable"
+    if not isinstance(price, int) or price > order["budget"] or price > c["max_pay"]:
+        return f"receipt price {price} above our limit {c['max_pay']}"
+    return None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--shops", required=True)
+    ap.add_argument("--item", required=True)
+    ap.add_argument("--budget", type=int, required=True)
+    ap.add_argument("--order")
+    a = ap.parse_args()
+    order = market.read_json(os.path.basename(a.order), {}, os.path.dirname(a.order)) if a.order else {}
+    if not order.get("acceptable"):                   # Round 0-2: the week-07 buyer still trades
+        os.execvp(sys.executable, [sys.executable, "market_buyer.py", "--shops", a.shops, "--item", a.item,
+                                   "--budget", str(a.budget)])
+    order["budget"] = a.budget
+    started, deadline = time.time(), time.time() + DEADLINE_S
+    mem = Memory()
+    for step in (lambda: mem.sync_ledger(max_pages=4), mem.ingest_payments, mem.ingest_broken):
+        try:
+            step()
+        except Exception as e:
+            say("memory_sync_error", error=str(e)[:200])
+    shops = json.loads(open(a.shops, encoding="utf-8").read())
+    cands = candidates(order, shops, mem, mem.my_shop_urls())
+    decision_log({"order": order.get("order"), "category": order.get("category"), "budget": a.budget,
+                  "kind": order.get("kind"), "use_within_hours": order.get("use_within_hours"),
+                  "candidates": cands[:8]})
+    say("candidates", n=len(cands), top=cands[:3])
+    if not cands:
+        mem.put("unmet_" + str(order.get("order")), {"category": order.get("category"), "ts": time.time()})
+        print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}))
+        return
+    tried = set()
+    for c in cands:
+        if c["shop"] in tried or len(tried) >= config.SHOPS_TO_TRY or time.time() > deadline - 20:
+            continue
+        tried.add(c["shop"])
+        try:
+            rec, talk = negotiate(c, order, min(deadline, time.time() + PER_SHOP_S))
+        except Exception as e:
+            rec, talk = None, {"error": f"{type(e).__name__}: {str(e)[:160]}"}
+        problem = valid(rec, c, order)
+        mem.record_negotiation("buyer", order.get("order"), c["shop"], c["sku"], talk.get("ask"),
+                               rec and rec.get("price"), talk.get("lines"), "deal" if not problem else "no_deal")
+        decision_log({"order": order.get("order"), "shop": c["shop"], "sku": c["sku"], "max_pay": c["max_pay"],
+                      "talk": talk, "problem": problem, "price": rec and rec.get("price")})
+        if problem:
+            say("no_deal", shop=c["name"], reason=problem, ask=talk.get("ask"), offer=talk.get("offer"))
+            continue
+        mem.record_purchase_intent(order, c["shop"], c["name"], rec)
+        surplus = c["list"] - rec["price"]
+        say("deal", shop=c["name"], sku=c["sku"], price=rec["price"], list=c["list"], seconds=round(time.time() - started))
+        print(json.dumps({"shop": c["shop"], "receipt": rec, "stars": 4,
+                          "review": f"Agreed {c['item_name']} at {rec['price']} (list {c['list']}, surplus {surplus}).",
+                          "accept": accept_policy(order)}, ensure_ascii=False))
+        return
+    print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}))
+
+
+if __name__ == "__main__":
+    main()
