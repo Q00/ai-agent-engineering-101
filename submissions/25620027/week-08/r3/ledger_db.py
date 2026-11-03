@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Collection, Iterable, Mapping
 
     import httpx
 
@@ -133,6 +133,56 @@ class LedgerDB:
                 )
             ]
         return statistics.median(prices) if len(prices) >= min_count else None
+
+    def shop_breaks(
+        self, since: float, goods: Collection[str]
+    ) -> dict[str, tuple[int, int]]:
+        """Per shop URL: (broken, observed) goods sales since ``since``.
+
+        A broken row names only the buyer and the SKU, so it is matched to that
+        buyer's latest settlement of the SKU at most six hours before. A sale is
+        observed once its six hours are over, or as soon as it breaks.
+        """
+        now = time.time()
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            settled = db.execute(
+                """SELECT buyer, sku, shop, ts FROM rows
+                WHERE kind='settle' AND ts >= ? ORDER BY ts""",
+                (since - BREAK_WINDOW,),
+            ).fetchall()
+            broken = db.execute(
+                "SELECT buyer, sku, ts FROM rows WHERE kind='broken' AND ts >= ?",
+                (since,),
+            ).fetchall()
+        sales: dict[tuple[str, str], list[tuple[float, str]]] = {}
+        for buyer, sku, shop, ts in settled:
+            if str(sku) in goods and shop:
+                sales.setdefault((str(buyer), str(sku)), []).append(
+                    (float(ts), str(shop).rstrip("/"))
+                )
+        hit: set[tuple[str, str, float]] = set()
+        counts: dict[str, tuple[int, int]] = {}
+        for buyer, sku, ts in broken:
+            match = [
+                (t, shop)
+                for t, shop in sales.get((str(buyer), str(sku)), [])
+                if 0 <= float(ts) - t <= BREAK_WINDOW
+            ]
+            if not match:
+                continue
+            t, shop = match[-1]
+            if (str(buyer), str(sku), t) in hit:
+                continue
+            hit.add((str(buyer), str(sku), t))
+            b, o = counts.get(shop, (0, 0))
+            counts[shop] = (b + 1, o + 1)
+        for (buyer, sku), rows in sales.items():
+            for t, shop in rows:
+                if t < since or (buyer, sku, t) in hit or now - t < BREAK_WINDOW:
+                    continue
+                b, o = counts.get(shop, (0, 0))
+                counts[shop] = (b, o + 1)
+        return counts
 
     def break_rates(self, since: float) -> dict[str, tuple[int, int]]:
         """Per grade: (broken, settled goods observed 6 h or older) since ``since``."""

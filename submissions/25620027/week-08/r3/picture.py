@@ -27,7 +27,7 @@ from r3.guard import annotate, sanitize, sanitize_name
 from r3.market_files import _read_json, read_shops
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Collection, Iterable, Mapping
 
     from r3.events import EventLedger
     from r3.ledger_db import LedgerDB
@@ -46,6 +46,11 @@ SELF_REVIEW_CAP: Final = 0.5
 SELF_REVIEW_SHARE: Final = 0.5
 AI_APPEAL_CAP: Final = 0.6
 AI_APPEAL_COUNT: Final = 3
+# Goods from a shop that break this often (with enough observed sales) cap its
+# trust: a broken unit without warranty costs our buyer the whole price.
+BREAK_CAP: Final = 0.4
+BREAK_SHARE: Final = 0.25
+BREAK_MIN_OBSERVED: Final = 5
 Flag = Literal[
     "dishonest_claims",
     "frequent_breaks",
@@ -147,13 +152,14 @@ def trust_factor(trust: float) -> float:
     return round(0.6 + 0.6 * max(0.0, min(1.0, trust)), 3)
 
 
-def shop_facts(
+def shop_facts(  # noqa: PLR0913, C901 - one pass over every evidence source
     ledger: LedgerDB,
     events: EventLedger | None,
     shops_file: Path,
     *,
     hours: float,
     our_shop: str,
+    goods: Collection[str] = (),
 ) -> dict[str, dict[str, object]]:
     """Per-shop numbers from the ledger mirror, our payments and public reviews."""
     since = time.time() - hours * 3600
@@ -171,6 +177,8 @@ def shop_facts(
                 "refused_us": 0,
                 "stars": [],
                 "reviews": [],
+                "goods_observed": 0,
+                "broken": 0,
             },
         )
 
@@ -181,6 +189,12 @@ def shop_facts(
         row["settles"] = int(str(row["settles"])) + 1
         if claim and grade and claim != grade:
             row["dishonest"] = int(str(row["dishonest"])) + 1
+    if goods:
+        for shop, (broken, observed) in ledger.shop_breaks(since, goods).items():
+            if shop == our_shop.rstrip("/"):
+                continue
+            row = bucket(shop)
+            row["broken"], row["goods_observed"] = broken, observed
     if events is not None:
         for shop, counts in events.shop_outcomes(hours).items():
             row = bucket(shop)
@@ -242,7 +256,39 @@ def trust_cap(review: Mapping[str, object]) -> float | None:
     appeals = review.get("ai_appeal_reviews")
     if isinstance(appeals, int) and appeals >= AI_APPEAL_COUNT:
         caps.append(AI_APPEAL_CAP)
+    broken, observed = review.get("broken"), review.get("goods_observed")
+    if (
+        isinstance(broken, int)
+        and isinstance(observed, int)
+        and observed >= BREAK_MIN_OBSERVED
+        and broken >= BREAK_SHARE * observed
+    ):
+        caps.append(BREAK_CAP)
     return min(caps) if caps else None
+
+
+def enforce_caps(
+    shops: Iterable[ShopTrust], caps: Mapping[str, float], names: Mapping[str, str]
+) -> tuple[ShopTrust, ...]:
+    """Apply code trust ceilings whether or not the scout model judged the shop.
+
+    A capped shop the model skipped (or every shop, when the model is off or its
+    reply failed) still gets its ceiling, so the buyer avoids it either way.
+    """
+    out: list[ShopTrust] = []
+    seen: set[str] = set()
+    for shop in shops:
+        cap = caps.get(shop.url)
+        seen.add(shop.url)
+        out.append(
+            shop
+            if cap is None or shop.trust <= cap
+            else shop.model_copy(update={"trust": cap})
+        )
+    for url, cap in sorted(caps.items()):
+        if url not in seen:
+            out.append(ShopTrust(url=url, name=names.get(url, "")[:80], trust=cap))
+    return tuple(out)
 
 
 def forum_snippets(market_dir: Path, limit: int = MAX_FORUM_POSTS) -> list[str]:

@@ -355,3 +355,80 @@ def test_short_shelf_food_counts_the_food_restock_skips() -> None:
     # And: the strategy is told how to act on it, one step at a time.
     assert "short_shelf_food_24h" in PROMPT
     assert "min_food_shelf_hours" in PROMPT
+
+
+def test_shop_breaks_attribute_broken_goods_and_cap_the_shops_trust(
+    tmp_path: Path,
+) -> None:
+    from r3.ledger_db import LedgerDB  # noqa: PLC0415 - test only
+    from r3.picture import (  # noqa: PLC0415 - test only
+        BREAK_CAP,
+        ShopTrust,
+        enforce_caps,
+        trust_cap,
+    )
+
+    now = time.time()
+    ledger = LedgerDB(tmp_path / "ledger.sqlite")
+    rows: list[dict[str, object]] = []
+
+    def sale(seq: int, shop: str, buyer: str, sku: str, age_h: float) -> None:
+        rows.append(
+            {
+                "seq": seq,
+                "ts": now - age_h * 3600,
+                "kind": "settle",
+                "round": 3,
+                "data": {"shop": shop, "buyer": buyer, "item": sku, "amount": 100},
+            }
+        )
+
+    # Given: shop "bad" sold six lamps 7 h ago, three of them broke within 6 h;
+    # shop "good" sold six lamps with no breaks; kimchi (food) never counts.
+    for n in range(6):
+        sale(n + 1, "http://bad/", f"b{n}", "lamp", 7)
+        sale(n + 11, "http://good", f"b{n}", "chair", 7)
+    sale(30, "http://bad/", "b9", "kimchi", 7)
+    rows.extend(
+        {
+            "seq": 40 + n,
+            "ts": now - 5 * 3600,
+            "kind": "broken",
+            "round": 3,
+            "data": {"buyer": f"b{n}", "item": "lamp"},
+        }
+        for n in range(3)
+    )
+    # And: a fresh sale whose break already arrived counts at once.
+    sale(50, "http://good", "b7", "chair", 1)
+    rows.append(
+        {
+            "seq": 51,
+            "ts": now - 0.5 * 3600,
+            "kind": "broken",
+            "round": 3,
+            "data": {"buyer": "b7", "item": "chair"},
+        }
+    )
+    _ = ledger.ingest(rows)
+    counts = ledger.shop_breaks(now - 24 * 3600, frozenset({"lamp", "chair"}))
+    # Then: breaks land on the shop that sold the unit.
+    assert counts == {"http://bad": (3, 6), "http://good": (1, 7)}
+    # And: half broken caps trust; one in seven does not.
+    assert trust_cap({"broken": 3, "goods_observed": 6}) == BREAK_CAP
+    assert trust_cap({"broken": 1, "goods_observed": 7}) is None
+    assert trust_cap({"broken": 2, "goods_observed": 3}) is None  # too few
+    # And: the cap holds even when the scout model skipped or overrated the shop.
+    shops = enforce_caps(
+        (ShopTrust(url="http://other", trust=0.9),),
+        {"http://bad": BREAK_CAP},
+        {"http://bad": "Bad"},
+    )
+    assert {(s.url, s.trust) for s in shops} == {
+        ("http://other", 0.9),
+        ("http://bad", BREAK_CAP),
+    }
+    overrated = enforce_caps(
+        (ShopTrust(url="http://bad", trust=1.0),), {"http://bad": BREAK_CAP}, {}
+    )
+    assert overrated[0].trust == BREAK_CAP

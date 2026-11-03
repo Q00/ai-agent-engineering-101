@@ -56,6 +56,7 @@ from r3.picture import (
     category_names,
     compute_alerts,
     dump_compact,
+    enforce_caps,
     forum_snippets,
     load_picture,
     picture_path,
@@ -681,6 +682,9 @@ class Manager:
             self.market_dir / "shops.json",
             hours=24,
             our_shop=self.shop_url,
+            goods=frozenset(
+                sku for sku, item in catalog.items() if item.kind == "goods"
+            ),
         )
         for url, name in self.shop_names.items():
             if url in facts and not facts[url]["name"]:
@@ -736,6 +740,20 @@ class Manager:
         """Write the picture: code facts always, model verdicts when a key exists."""
         previous = load_picture(self.picture_file)
         picture, facts = self.code_picture(previous)
+        caps = {
+            url: cap
+            for url, row in facts.items()
+            if (cap := trust_cap(row)) is not None
+        }
+        picture = picture.model_copy(
+            update={
+                "shops": enforce_caps(
+                    picture.shops,
+                    caps,
+                    {url: str(row["name"]) for url, row in facts.items()},
+                )
+            }
+        )
         client = self.client() if use_model else None
         if client is None or not facts:
             save_picture(self.picture_file, picture)
@@ -754,7 +772,8 @@ class Manager:
             f"reviews_total={row.get('reviews_total', '?')} "
             f"self_review_share={row.get('self_review_share', '?')} "
             f"third_party_stars={row.get('third_party_stars', '?')} "
-            f"ai_appeal_reviews={row.get('ai_appeal_reviews', '?')}"
+            f"ai_appeal_reviews={row.get('ai_appeal_reviews', '?')} "
+            f"goods_broken={row.get('broken', 0)}/{row.get('goods_observed', 0)}"
             + (
                 "\n"
                 + wrap_untrusted("reviews", "\n".join(map(str, row["reviews"])), 800)
@@ -799,18 +818,13 @@ class Manager:
             self.run_log("scout", "failed", "no model reply; code picture kept")
             save_picture(self.picture_file, picture)
             return picture
-        caps = {
-            url: cap
-            for url, row in facts.items()
-            if (cap := trust_cap(row)) is not None
-        }
         shops, hot, cold, notes = validate_verdict(
             parsed, shop_names=names, categories=categories, caps=caps
         )
         picture = picture.model_copy(
             update={
                 "by": reply.model if reply is not None else "code",
-                "shops": shops,
+                "shops": enforce_caps(shops, caps, names),
                 "hot_categories": hot,
                 "cold_categories": cold,
                 "notes": notes,
