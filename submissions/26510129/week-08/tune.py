@@ -109,7 +109,11 @@ def buyer_summary(rows):
         rs = [r for r in rows if r.get("shop") == name]
         deals = sum(1 for r in rs if r.get("outcome") == "deal")
         flags = sum(1 for r in rs if r.get("manipulative") or r.get("honest") is False)
-        lines.append(f"- shop {name}: {n} visits, {deals} deals" + (f", {flags} dishonest/manipulative" if flags else ""))
+        unpaid = sum(1 for r in rs if r.get("outcome") == "unpaid")
+        broken = sum(1 for r in rs if r.get("broken") and not r.get("refunded"))
+        lines.append(f"- shop {name}: {n} visits, {deals} deals" + (f", {flags} dishonest/manipulative" if flags else "")
+                     + (f", {unpaid} refused by the kit at payment" if unpaid else "")
+                     + (f", {broken} broke without warranty" if broken else ""))
     return lines
 
 

@@ -1,8 +1,12 @@
-"""Post-settlement review hook using market-certified facts, not seller prose."""
+"""Post-settlement review hook using market-certified facts, not seller prose.
+The same facts are merged into the order's row in the buyer memory (memory_sync), so the next shop choice
+scores the shop on what the market certified, not on the receipt alone."""
 import argparse
 import json
 import time
 from pathlib import Path
+
+import memory_sync
 
 
 POST_EVERY = 300
@@ -17,6 +21,8 @@ def read_json(path, default):
 
 def build_review(deal):
     order = deal.get("order") or {}
+    if isinstance(order, str):   # agent.md lists `order` as the id; the kit may also give the order object
+        order = {}
     receipt = deal.get("receipt") or {}
     settled = deal.get("settled") or {}
     name = settled.get("name") or receipt.get("item") or order.get("item") or "item"
@@ -66,8 +72,16 @@ def main():
     deal = read_json(path, {})
     stars, text = build_review(deal)
     posted = maybe_post(path.parent, deal)
+    memory_path = path.parent / memory_sync.MEMORY.name
+    rows = memory_sync.load(memory_path)
+    row = memory_sync.record_settlement(rows, deal)
+    if row is not None:
+        memory_sync.save(rows, memory_path)
     print("[strategy] " + json.dumps({"event": "settled_review", "stars": stars, "posted": posted,
-                                      "ledger": (deal.get("settled") or {}).get("ledger")}, ensure_ascii=False), flush=True)
+                                      "ledger": (deal.get("settled") or {}).get("ledger"),
+                                      "memory": {"shop": row.get("shop"), "claim_honest": row.get("claim_honest"),
+                                                 "warranty_hours": row.get("warranty_hours")} if row else "no matching row"},
+                                     ensure_ascii=False), flush=True)
     print(json.dumps({"stars": stars, "review": text[:200]}, ensure_ascii=False), flush=True)
 
 

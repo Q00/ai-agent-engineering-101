@@ -20,13 +20,14 @@ import httpx
 
 import buyer_policy
 import harness
+import memory_sync
 import strategy_params
 from buyer import HEADERS, MAX_ROUNDS, rpc, send, state, status_text
 
 import re
 
-MEMORY = Path(".market") / "buyer_memory.json"   # my trades so far: shop name, item, price, outcome, and since day 2
-                                                 # the shop's first ask and my last offer, so the buyer learns who bargains
+MEMORY = memory_sync.MEMORY   # my trades so far: shop name, item, price, outcome, and since day 2 the shop's first ask and
+                              # my last offer; since 11-03 also the settled facts memory_sync merges in after the order
 # Challenge 2: shop messages that try to steer the buyer or its review. The harness is told to ignore them; this is
 # the code-side check, so that the shop is remembered as manipulative and skipped next time whatever the harness did.
 MANIPULATION = re.compile(r"MARKET NOTICE|market operator|market policy|give (this|the|our) shop \d|\d stars in your review|"
@@ -34,15 +35,11 @@ MANIPULATION = re.compile(r"MARKET NOTICE|market operator|market policy|give (th
 
 
 def load_memory():
-    try:
-        return json.loads(MEMORY.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
+    return memory_sync.load(MEMORY)
 
 
 def save_memory(mem):
-    MEMORY.parent.mkdir(exist_ok=True)
-    MEMORY.write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf-8")
+    memory_sync.save(mem, MEMORY)
 
 
 def blacklisted(shops, mem):
@@ -268,6 +265,10 @@ def main():
     if not shops:
         sys.exit("[buyer] no shops in the list")
     mem = load_memory()
+    synced = memory_sync.reconcile(mem, MEMORY.parent)   # refused payments and broken goods since the last order
+    if any(synced.values()):
+        save_memory(mem)
+        buyer_policy.emit("buyer_memory_sync", **synced)
     params = strategy_params.load()   # the nightly tuner's knobs; defaults when the file is absent
     buyer_policy.emit("buyer_params", **params)
     order, catalog = load_round3(a.order)
@@ -292,9 +293,10 @@ def main():
         if outcome == "deal" and not info.get("checkout_authorized"):
             print("[guard] deal was not authorized for checkout; discarding its receipt", flush=True)
             outcome, agreed, receipt, stars, text = "rejected_checkout", None, None, 1, "Checkout exceeded the private mandate."
-        mem.append({"shop": pick["name"], "item": category, "sku": wanted, "outcome": outcome, "price": agreed,
+        mem.append({"order": order.get("order"), "shop": pick["name"], "item": category, "sku": wanted,
+                    "name": request["name"] if request else None, "outcome": outcome, "price": agreed,
                     "list_price": catalog.get(wanted, {}).get("list_price"), "honest": honest, "manipulative": manip,
-                    "stars": stars, "reference": reference, "policy": "sealed-budget-v1",
+                    "stars": stars, "reference": reference, "policy": "sealed-budget-v1", "settled": False,
                     "at": time.strftime("%Y-%m-%d %H:%M"),
                     **{k: info.get(k) for k in ("ask", "first_offer", "last_offer", "guard_decisions", "checkout_authorized")}})
         save_memory(mem)

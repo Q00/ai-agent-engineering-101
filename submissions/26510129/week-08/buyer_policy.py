@@ -97,7 +97,10 @@ def evidence(shop, memory, item, reference=None):
     reference = reference or item_reference(memory, item)
     rows = [row for row in memory if row.get("shop") == shop.get("name") and row.get("item") == item]
     deals = [row for row in rows if row.get("outcome") == "deal" and row.get("honest", True)]
-    bad = [row for row in rows if row.get("honest") is False or row.get("manipulative")]
+    # dishonest: a receipt that did not match, a false grade claim at settlement, a steering message, or goods that
+    # broke with no warranty to refund them (the buyer's whole price is gone). An "unpaid" row is simply not a deal.
+    bad = [row for row in rows if row.get("honest") is False or row.get("manipulative")
+           or (row.get("broken") and not row.get("refunded"))]
 
     # Beta(1, 1): an unknown shop starts at 0.5 rather than zero.
     success = (len(deals) + 1) / (len(rows) + 2)
@@ -127,6 +130,7 @@ def evidence(shop, memory, item, reference=None):
     return {
         "shop": shop.get("name"),
         "attempts": len(rows),
+        "bad": len(bad),
         "success": round(success, 4),
         "integrity": round(integrity, 4),
         "value": round(value, 4),
