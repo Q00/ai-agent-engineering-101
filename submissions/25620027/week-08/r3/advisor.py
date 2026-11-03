@@ -67,7 +67,10 @@ PROMPT: Final = (
     "code, a new rule or an operational fix, and write them for a human to decide. "
     "Every proposal must cite numbers from the input as evidence and state the "
     "expected effect, the risk and the effort (S under an hour, M a few hours, L a "
-    "day). Compare us with the leaders' table (leaders_now, leaders_day_ago, "
+    "day). Revisit prior versions with policy_reviews: do not infer causation "
+    "from incomplete, small or confounded windows. A proposal, delivery receipt "
+    "or model recommendation is not human approval. Compare us with the leaders' "
+    "table (leaders_now, leaders_day_ago, "
     "leaders_full) and the review digest (our complaints and praise, the leaders' "
     "praised strengths): name the gap, what the leaders measurably do differently, and "
     "whether we can close it; ignore rows marked do_not_copy. Mark urgent only "
@@ -360,7 +363,13 @@ def render(
         ]
         if item.get("risk"):
             lines.append(f"위험: {item.get('risk')}")
-    lines += ["", '결정은 Claude 세션에 "자문 N번 승인" 또는 "N번 거절"로 알려 주세요.']
+    lines += [
+        "",
+        (
+            '결정은 Codex/Claude 세션에 "자문 N번 승인" 또는 "N번 거절"로 알려 주세요. '
+            "알림 수신은 승인이 아닙니다."
+        ),
+    ]
     _ = reason
     return "\n".join(lines)
 
@@ -412,11 +421,7 @@ class Advisor:
         """One advisor pass; returns what to report (possibly nothing)."""
         client = self.manager.client()
         if client is None:
-            return {
-                "slot": slot,
-                "skipped": "model gate closed or no key",
-                "message": "",
-            }
+            return self.pending_report(slot, skipped="model gate closed or no key")
         previous = self.store.recent(REPEAT_WINDOW)
         reply = await client.call(
             Request(
@@ -437,40 +442,51 @@ class Advisor:
         )
         parsed = parse_arguments(reply.arguments) if reply is not None else None
         if parsed is None:
-            return {"slot": slot, "skipped": "no advice", "message": ""}
+            return self.pending_report(slot, skipped="no advice")
         advice, dropped = validate(parsed, previous)
         if advice is None:
-            return {
-                "slot": slot,
-                "skipped": "invalid advice",
-                "dropped": dropped,
-                "message": "",
-            }
+            return self.pending_report(slot, skipped="invalid advice", dropped=dropped)
         model = reply.model if reply is not None else ""
-        night = slot == "03"
-        new_items: list[dict[str, object]] = []
         for proposal in advice.proposals:
-            report_now = not night or proposal.urgency == "urgent"
-            proposal_id = self.store.add(
-                proposal, slot=slot, model=model, reported=report_now
-            )
-            if report_now:
-                new_items.append({"id": proposal_id, **proposal.model_dump()})
-        if slot == "09":
-            held = self.store.held()
-            new_items = held + [
-                i for i in new_items if i["id"] not in {h["id"] for h in held}
-            ]
-            self.store.mark_reported(int(str(i["id"])) for i in held)
-        message = render(slot, advice.auto_notes, new_items, advice.no_change_reason)
+            self.store.add(proposal, slot=slot, model=model, reported=False)
+        return self.pending_report(
+            slot,
+            model=model,
+            auto_notes=advice.auto_notes,
+            reason=advice.no_change_reason,
+            dropped=dropped,
+        )
+
+    def pending_report(  # noqa: PLR0913 - report metadata, no execution authority
+        self,
+        slot: str,
+        *,
+        model: str = "",
+        auto_notes: str = "",
+        reason: str = "",
+        dropped: list[str] | None = None,
+        skipped: str = "",
+    ) -> dict[str, object]:
+        """Prepare unacknowledged requests even when model calls are unavailable.
+
+        Delivery and approval are separate: only the sender acknowledges delivery;
+        only an operator records a verdict. Preparing a report does neither.
+        """
+        new_items = [
+            row
+            for row in self.store.held()
+            if slot != "03" or row.get("urgency") == "urgent"
+        ]
+        message = render(slot, auto_notes, new_items, reason)
         result: dict[str, object] = {
             "slot": slot,
             "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "model": model,
-            "auto_notes": advice.auto_notes,
-            "no_change_reason": advice.no_change_reason,
-            "reported": [i["id"] for i in new_items],
-            "dropped": dropped,
+            "auto_notes": auto_notes,
+            "no_change_reason": reason,
+            "proposal_ids": [i["id"] for i in new_items],
+            "dropped": dropped or [],
+            "skipped": skipped,
             "message": message,
         }
         latest = self.manager.run_dir / LATEST_FILE
@@ -492,6 +508,7 @@ def main(  # noqa: PLR0913, PLR0917 - CLI options
     decide: Annotated[int, typer.Option()] = 0,
     verdict: Annotated[str, typer.Option()] = "",
     note: Annotated[str, typer.Option()] = "",
+    ack: Annotated[str, typer.Option()] = "",
 ) -> None:
     """Run one advisor pass (prints JSON) or record a verdict with --decide ID."""
     manager = Manager(
@@ -502,6 +519,18 @@ def main(  # noqa: PLR0913, PLR0917 - CLI options
         shop_name="",
     )
     try:
+        if ack:
+            try:
+                ids = [int(value) for value in ack.split(",")]
+            except ValueError:
+                typer.echo("ack must contain positive proposal ids")
+                raise typer.Exit(2) from None
+            if not ids or any(value <= 0 for value in ids):
+                typer.echo("ack must contain positive proposal ids")
+                raise typer.Exit(2)
+            ProposalStore(manager.events.path).mark_reported(ids)
+            typer.echo(json.dumps({"delivered": ids}))
+            return
         if decide:
             if verdict not in ("accepted", "rejected", "done", "expired"):
                 typer.echo("verdict must be accepted, rejected, done or expired")

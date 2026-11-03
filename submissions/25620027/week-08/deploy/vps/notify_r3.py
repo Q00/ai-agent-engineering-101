@@ -609,12 +609,88 @@ def as_markdown(message: str, stamp: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def ack_advice(ids: list[int], *, dry_run: bool) -> bool:
+    """Acknowledge delivered ids; this does not approve or execute a proposal."""
+    if dry_run:
+        return False
+    if not ids or any(type(value) is not int or value <= 0 for value in ids):
+        return False
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "exec",
+                CONTAINER,
+                "python",
+                "-m",
+                "r3.advisor",
+                "--dir",
+                "/data/r3",
+                "--ack",
+                ",".join(map(str, ids)),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def advice_outbox(state_path: Path) -> Path:
+    """Durable delivery queue beside watcher state, with no credentials."""
+    return state_path.with_name("advisor-outbox.json")
+
+
+def queue_advice(state_path: Path, message: str, ids: object, *, dry_run: bool) -> None:
+    """Store pending delivery before attempting Telegram; never mark it sent here."""
+    if dry_run or not message or not isinstance(ids, list) or not ids:
+        return
+    if any(type(value) is not int or value <= 0 for value in ids):
+        return
+    target = advice_outbox(state_path)
+    temporary = target.with_suffix(".tmp")
+    temporary.write_text(
+        json.dumps({"message": message, "ids": ids}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    temporary.replace(target)
+
+
+def retry_advice(state_path: Path, *, dry_run: bool) -> bool:
+    """Retry the same approval request without another model call.
+
+    A crash between send and acknowledgement can repeat the same proposal id;
+    at-least-once delivery is preferable to silently losing a request.
+    """
+    target = advice_outbox(state_path)
+    try:
+        pending = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(pending, dict):
+        return False
+    message, ids = pending.get("message"), pending.get("ids")
+    if not isinstance(message, str) or not isinstance(ids, list) or not ids:
+        return False
+    if any(type(value) is not int or value <= 0 for value in ids):
+        return False
+    if not send(message, dry_run=dry_run) or not ack_advice(ids, dry_run=dry_run):
+        return False
+    target.unlink(missing_ok=True)
+    return True
+
+
 def advisor(slot: str, state_path: Path, *, dry_run: bool, force: bool = False) -> str:  # noqa: C901 - one scheduled pass
     """Run the advisor inside the trading container and send what it reports.
 
     The 09 KST run always sends (morning summary plus any proposals) and marks the
     day's summary as sent; other runs send only when there are new proposals.
     """
+    if dry_run:
+        return f"advisor slot={slot} dry-run: no model request or state changes"
     # Before Round 3 the market has no payments and no stock, and the advisor reads
     # that as an emergency (2026-11-02 21:45: two false "urgent" proposals). Scheduled
     # runs skip until the board says round 3; a manual run passes --force.
@@ -662,6 +738,8 @@ def advisor(slot: str, state_path: Path, *, dry_run: bool, force: bool = False) 
     except (ValueError, IndexError):
         report = {"message": "", "skipped": f"advisor exit {result.returncode}"}
     message = str(report.get("message", ""))
+    ids = report.get("proposal_ids", [])
+    queue_advice(state_path, message, ids, dry_run=dry_run)
     if message:
         day = _kst(time.time()).date().isoformat()
         _ = vault_job(
@@ -670,10 +748,12 @@ def advisor(slot: str, state_path: Path, *, dry_run: bool, force: bool = False) 
             f"ax-r3-advisor-{day}-{slot}",
             dry_run=dry_run,
         )
+    delivered = False
     if slot == f"{SUMMARY_HOUR_KST:02d}":
         snap = collect()
         body = summary(snap, "아침 요약") + ("\n\n" + message if message else "")
-        if send(body, dry_run=dry_run) and not dry_run:
+        delivered = send(body, dry_run=dry_run)
+        if delivered and not dry_run:
             try:
                 state = json.loads(state_path.read_text(encoding="utf-8"))
             except (OSError, ValueError):
@@ -683,8 +763,10 @@ def advisor(slot: str, state_path: Path, *, dry_run: bool, force: bool = False) 
                 json.dumps(state, ensure_ascii=False), encoding="utf-8"
             )
     elif message:
-        _ = send(message, dry_run=dry_run)
-    return f"advisor slot={slot} reported={report.get('reported', [])} skipped={report.get('skipped', '')}"
+        delivered = send(message, dry_run=dry_run)
+    if delivered and isinstance(ids, list) and ack_advice(ids, dry_run=dry_run):
+        advice_outbox(state_path).unlink(missing_ok=True)
+    return f"advisor slot={slot} queued={ids} delivered={delivered} skipped={report.get('skipped', '')}"
 
 
 def main() -> None:
@@ -723,6 +805,7 @@ def main() -> None:
         ok = send(summary(snap, "현재 상태"), dry_run=args.dry_run)
         print("sent" if ok else "send failed")
         return
+    _ = retry_advice(args.state, dry_run=args.dry_run)
     try:
         state = json.loads(args.state.read_text(encoding="utf-8"))
     except (OSError, ValueError):

@@ -113,11 +113,13 @@ def test_advisor_holds_non_urgent_night_proposals_until_nine(
     )
     try:
         night = anyio.run(advisor.run, "03")
-        assert night["reported"] == [2]  # only the urgent one at 03 KST
+        assert night["proposal_ids"] == [2]  # only the urgent one at 03 KST
         assert "긴급" in str(night["message"])
         assert "재입고" not in str(night["message"])
+        assert len(advisor.store.held()) == 2  # preparing a message is not delivery
+        advisor.store.mark_reported([2])  # simulated successful Telegram delivery
         morning = anyio.run(advisor.run, "09")
-        assert morning["reported"] == [1]  # the held one comes with the 09 report
+        assert morning["proposal_ids"] == [1]  # the held one comes with the 09 report
         assert "#1" in str(morning["message"])
         assert "자문 N번 승인" in str(morning["message"])
         latest = json.loads((run_dir / LATEST_FILE).read_text(encoding="utf-8"))
@@ -129,5 +131,33 @@ def test_advisor_holds_non_urgent_night_proposals_until_nine(
             == "지급 거절 가게 차단 규칙"
         )
         assert FakeModel.requests[-1]["model"] == "claude-sonnet-5-5"
+    finally:
+        manager.http.close()
+
+
+def test_pending_approval_survives_a_closed_model_gate_and_delivery_is_not_a_verdict(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manager = Manager(
+        tmp_path, "https://market.test", shop_url="us", buyer_name="me", shop_name="me"
+    )
+    monkeypatch.setattr(manager, "client", lambda: None)
+    advisor = Advisor(manager)
+    advice, _ = validate(
+        {"proposals": [proposal("코드 변경 검토", "거절 15건", category="code")]}, []
+    )
+    assert advice is not None
+    pid = advisor.store.add(
+        advice.proposals[0], slot="15", model="fake", reported=False
+    )
+    try:
+        report = anyio.run(advisor.run, "21")
+        assert report["proposal_ids"] == [pid]
+        assert advisor.store.held()
+        advisor.store.mark_reported([pid])
+        assert not advisor.store.held()
+        assert advisor.store.recent(60)[0]["status"] == "pending"
+        assert not manager.policy_file.exists()
     finally:
         manager.http.close()
