@@ -108,6 +108,14 @@ def main():
     except Exception as e:
         print(f"[restock] ledger sync failed: {type(e).__name__}: {e}", flush=True)
     buy, why, cash = plan(md, c, theta())
+    try:                                   # speak first: the forum runs here too, with no order behind it
+        import forum
+        said = forum.tick(md, c)
+        if said:
+            print(f"[forum] {sum('post' in x for x in said)} posts, {sum('vote' in x for x in said)} votes to the outbox",
+                  flush=True)
+    except Exception as e:
+        print(f"[forum] skipped: {type(e).__name__}: {e}", flush=True)
     print(f"[restock] {len(buy)} lines, cash above reserve after: {cash:,.0f}; " + "; ".join(why[:10]), flush=True)
     print(json.dumps({"buy": buy}, ensure_ascii=False), flush=True)
 
