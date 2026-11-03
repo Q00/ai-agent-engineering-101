@@ -40,7 +40,8 @@ def _instruction(goal, tools, final_shape):
 
 def _observe(tool, args):
     try:
-        out = tool.fn(**(args if isinstance(args, dict) else {}))
+        # models often send {"limit": null} for "use the default"; drop nulls so the tool's defaults apply
+        out = tool.fn(**({k: v for k, v in args.items() if v is not None} if isinstance(args, dict) else {}))
     except TypeError as e:
         out = {"error": f"bad arguments: {e}"}
     except Exception as e:                                   # a tool failure is an observation, not a crash
@@ -50,13 +51,21 @@ def _observe(tool, args):
 
 
 def run(goal, tools, final_shape, *, purpose, context=None, max_steps=6, budget_s=240, step_timeout=60,
-        ask=None):
-    """Returns (final dict or None, trace list). `ask` defaults to llm.ask_json (tests pass a fake)."""
+        ask=None, prefetch=()):
+    """Returns (final dict or None, trace list). `ask` defaults to llm.ask_json (tests pass a fake).
+
+    prefetch: tool names the program runs before the first model call, so the transcript is never empty. In live
+    runs the Codex model twice answered at step 0 that "no tools exist" and gave up; with the essential
+    observations already in the transcript it reasons from evidence and may still call tools for more."""
     ask = ask or llm.ask_json
     by_name = {t.name: t for t in tools}
     instruction = _instruction(goal, tools, final_shape)
     trace, started, run_id = [], time.time(), f"{purpose}-{int(time.time())}"
     final = None
+    for name in prefetch:
+        if name in by_name:
+            trace.append({"step": "pre", "thought": "observed by the program before the first step", "action": name,
+                          "args": {}, "observation": _observe(by_name[name], {})})
     for step in range(max_steps):
         left = budget_s - (time.time() - started)
         if left < 10:

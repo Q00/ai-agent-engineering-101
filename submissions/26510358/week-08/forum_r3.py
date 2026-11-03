@@ -145,7 +145,7 @@ def proactive_buyer_post(mem, now, run=react.run):
     p_star, _ = initiative.speak_threshold(reception, recent6)
     final, trace = run(BUYER_GOAL, buyer_tools(mem), BUYER_FINAL, purpose="forum_buyer",
                        context={"p_star_to_beat": round(p_star, 3)}, max_steps=config.REACT_MAX_STEPS,
-                       budget_s=config.REACT_BUDGET_S)
+                       budget_s=config.REACT_BUDGET_S, prefetch=("market_facts", "my_reception", "recent_forum"))
     with mem.db() as c:
         seqs = {r["seq"] for r in c.execute("SELECT seq FROM ledger")}
         ids = {r["id"] for r in c.execute("SELECT id FROM forum")}

@@ -55,3 +55,20 @@ def test_unwrapped_final_is_accepted(tmp_path, monkeypatch):
     ask, _ = scripted({"thought": "look", "action": "a"}, {"thought": "ok", "adjustments": []})
     final, trace = react.run("g", [t], "{}", purpose="t", ask=ask)
     assert final == {"adjustments": []}
+
+
+def test_prefetch_fills_the_transcript_before_the_model(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "LOG_DIR", tmp_path)
+    t = react.Tool("facts", "f", lambda: {"n": 3})
+    ask, seen = scripted({"thought": "enough", "final": {"ok": True}})
+    final, trace = react.run("g", [t], "{}", purpose="t", ask=ask, prefetch=("facts", "missing"))
+    assert final == {"ok": True}
+    assert seen[0]["transcript"][0]["action"] == "facts" and '"n": 3' in seen[0]["transcript"][0]["observation"]
+
+
+def test_null_args_fall_back_to_defaults(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "LOG_DIR", tmp_path)
+    t = react.Tool("refs", "r", lambda limit=10: {"limit": int(limit)})
+    ask, _ = scripted({"action": "refs", "args": {"limit": None}}, {"final": {}})
+    _, trace = react.run("g", [t], "{}", purpose="t", ask=ask)
+    assert json.loads(trace[0]["observation"]) == {"limit": 10}

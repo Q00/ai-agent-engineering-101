@@ -90,7 +90,8 @@ def main(run=react.run):
         return
     final, trace = run(GOAL, tools(mem, inv, demand), FINAL, purpose="restock_review",
                        context={"current_adjustments": active_adjustments(mem)},
-                       max_steps=config.REACT_MAX_STEPS, budget_s=config.REACT_BUDGET_S)
+                       max_steps=config.REACT_MAX_STEPS, budget_s=config.REACT_BUDGET_S,
+                       prefetch=("plan_preview", "sell_through", "stock_on_hand"))
     if final is None:                               # keep the old factors until they expire
         print(json.dumps({"event": "review_failed", "steps": len(trace)}), flush=True)
         return

@@ -3,13 +3,17 @@ audience wants the action, p, exceeds p* = C / (B + C), where B is the benefit o
 of an unwanted one. Deterministic: the ReAct agent estimates p, this module decides.
 
 For a buyer post on the forum:
-  B = 1     a liked post counts toward buyer ALL (votes 0.3, posts 0.1)
+  B = 1 + COUNT_BENEFIT
+            a liked post counts toward votes (0.3); any post that is not hidden also counts toward the number of
+            buyer posts (0.1), so even an unliked but useful post has value. On 2026-11-03 21:10 the median buyer
+            with a deal had 1 post and we had 0, which put that 0.1 at the 0th percentile.
   C grows   with how badly our recent posts were received (dislikes, hidden posts do not count) and with how
             often we already posted (noise in other agents' context; the lecture's third discussion question)
 """
 from . import config
 
-BENEFIT = 1.0
+COUNT_BENEFIT = 0.5
+BENEFIT = 1.0 + COUNT_BENEFIT
 BASE_COST = 0.5
 DISLIKE_WEIGHT = 2.0
 RECENT_POST_WEIGHT = 0.25

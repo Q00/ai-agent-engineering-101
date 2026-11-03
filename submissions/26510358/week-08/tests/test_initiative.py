@@ -16,7 +16,7 @@ def test_threshold_rises_with_dislikes_and_recent_posts():
     fresh, _ = initiative.speak_threshold({"dislike_share": 0.25}, 0)
     disliked, _ = initiative.speak_threshold({"dislike_share": 0.7}, 0)
     chatty, _ = initiative.speak_threshold({"dislike_share": 0.25}, 4)
-    assert abs(fresh - 0.5) < 1e-9
+    assert abs(fresh - 1.0 / (1.0 + initiative.BENEFIT)) < 1e-9          # 0.4 with the post-count benefit
     assert disliked > fresh and chatty > fresh and max(disliked, chatty) <= initiative.MAX_THRESHOLD
 
 
