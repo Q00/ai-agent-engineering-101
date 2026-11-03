@@ -103,7 +103,7 @@ BRIEF:
 SCHEMA = {
     "type": "object", "additionalProperties": False,
     "required": ["pricing", "exclusive_skus", "follow_skus", "restock", "forum_posts", "bugs", "lessons",
-                 "retire_lessons", "scm_veto", "requests", "rationale"],
+                 "retire_lessons", "scm_veto", "requests", "finance_response", "rationale"],
     "properties": {
         "pricing": {"type": "object", "additionalProperties": False,
                     "required": ["price_band", "min_margin", "clear_floor_margin", "haggle_room", "hero_undercut",
@@ -140,6 +140,7 @@ SCHEMA = {
                                                               "verdict": {"type": "string",
                                                                           "enum": ["keep", "undo", "watch"]}}}},
         "retire_lessons": {"type": "array", "items": {"type": "integer"}},
+        "finance_response": {"type": "string"},
         "requests": {"type": "object", "additionalProperties": False, "required": ["marketing", "scm"],
                      "properties": {"marketing": {"type": "array", "items": {"type": "string"}},
                                     "scm": {"type": "array", "items": {"type": "string"}}}},
@@ -153,7 +154,10 @@ SCHEMA = {
 PROMPT = """You are the seller (strategy) team of an agent shop named "dragonash" in a classroom agent market (Round 3).
 You are the top department: the marketing research team (Codex) and the SCM team (Codex) report to you, and
 only the headquarters (the owner) is above you. Their reports and the headquarters' directives follow the brief.
-You are the brain: the other teams exist to help you maximise sales and profit. You decide the plan; you may veto
+You are the brain, and the clerk and the shop's execution code belong to you; only the headquarters (the owner)
+is above you. The finance team (Codex) is your independent check: read FINANCE ADVICE every run and in
+finance_response say, point by point, how you follow it or why not; its limits are binding (the code clamps your
+plan to them). The other teams exist to help you maximise sales and profit. You decide the plan; you may veto
 SCM orders (scm_veto.cancel_orders) or markdowns (scm_veto.no_clearance) by SKU, and you direct the next runs:
 requests.marketing = up to 3 questions the research team must answer next, requests.scm = up to 3 stock tasks
 for the SCM team (e.g. "hold 4 units of SKU X for the follow list", "clear Y before it spoils").
@@ -557,6 +561,18 @@ def run(a, t0):
             print(f"[scm] {len(scm['orders'])} orders, {len(scm['clearance'])} markdowns, alerts {scm['alerts'][:2]}")
     except Exception as e:
         print(f"[scm] skipped: {type(e).__name__}: {e}")
+    fin = None                                       # the finance team (Codex), once an hour, before the decision
+    try:
+        import finance_agent
+        last = max((json.loads(x)["snapshot"]["ts"] for x in finance_agent.HISTORY.read_text(encoding="utf-8").splitlines()
+                    if x.strip()), default=0) if finance_agent.HISTORY.exists() else 0
+        if time.time() - last >= 55 * 60:
+            fin, _ = finance_agent.run(ask_codex, b["our_shop"], dry=a.dry)
+            print(f"[finance] {fin['verdict']}: {fin['limits']}, forecast {fin['forecast_profit_per_h']}/h")
+        else:
+            fin = finance_agent.load(finance_agent.LIMITS, {})
+    except Exception as e:
+        print(f"[finance] skipped: {type(e).__name__}: {e}")
     try:
         directives = DIRECTIVES.read_text(encoding="utf-8")
     except OSError:
@@ -566,6 +582,9 @@ def run(a, t0):
                      + "\n\nSCM TEAM PLAN (Codex owns stock; its orders and clearance run unless you have a strong "
                        "reason: then say so in rationale and adjust restock picks):\n"
                      + json.dumps(scm or __import__("scm_agent").scm_plan(), ensure_ascii=False)
+                     + "\n\nFINANCE ADVICE (independent check; limits are binding):\n"
+                     + json.dumps({k: (fin or {}).get(k) for k in ("verdict", "advice", "limits", "rationale")},
+                                  ensure_ascii=False)
                      + "\n\nHEADQUARTERS DIRECTIVES (follow them):\n"
                      + directives + "\n\nAnswer with one JSON object with exactly these keys: "
                      + json.dumps(list(SCHEMA["properties"])) + ", shaped as in this JSON Schema: " + json.dumps(SCHEMA))
@@ -590,6 +609,10 @@ def run(a, t0):
     (OUT / f"{stamp}.json").write_text(json.dumps({"brief": b, "research": research, "raw": raw, "plan": plan,
                                                    "gate": notes}, ensure_ascii=False, indent=1), encoding="utf-8")
     md = report_md(b, research, plan, notes)
+    md += ("\n\n## Finance (Codex)\n" + json.dumps({k: (fin or {}).get(k) for k in ("verdict", "advice", "limits",
+                                                                                        "forecast_profit_per_h")},
+                                                    ensure_ascii=False, indent=1)
+           + "\n\nSales team's answer to finance: " + str(raw_obj.get("finance_response") or "-"))
     if scm:
         md += ("\n\n## SCM (Codex)\n" + scm.get("rationale", "") + "\n\nOrders: " + json.dumps(scm["orders"], ensure_ascii=False)
                + "\nClearance: " + json.dumps(scm["clearance"], ensure_ascii=False) + "\nAlerts:\n"

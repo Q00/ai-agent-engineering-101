@@ -71,6 +71,15 @@ def theta():
     for k in ("min_margin", "clear_floor_margin", "haggle_room", "hero_undercut", "warranty_goods_h", "vip_discount"):
         if k in pr:
             t[k] = pr[k]
+    try:                                       # the finance team's limits bind the sales plan
+        import finance_agent
+        fl = finance_agent.limits()
+    except Exception:
+        fl = {}
+    if fl:
+        t["min_margin"] = max(t.get("min_margin", 0), fl.get("min_margin", 0))
+        t["warranty_goods_h"] = min(t.get("warranty_goods_h", 0), fl.get("max_warranty_h", 6))
+        t["max_undercut"] = fl.get("max_undercut", 0.05)
     try:                                       # headquarters (the owner) overrides any plan
         t.update(json.loads(OVERRIDE.read_text(encoding="utf-8")))
     except (OSError, ValueError):
@@ -125,6 +134,8 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         arm = pick_arm(c, unit.get("kind"), grade, t["arms"], explore=not bought)
         price, why = lp * arm, [f"{'intro ' if intro else ''}arm {arm:.2f}"]
     follow = (plan().get("follow_skus") or {}).get(unit["sku"])
+    if follow:
+        follow = min(follow, t.get("max_undercut", 0.05))      # finance caps how far under the median we go
     median = None
     if follow:
         median, n = market_model.market_price(c, unit["sku"])

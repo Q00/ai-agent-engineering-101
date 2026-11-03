@@ -43,9 +43,19 @@ STATE = Path(__file__).parent / "private" / "restock_state.json"
 
 def theta():
     try:
-        return {**DEFAULTS, **json.loads(THETA.read_text(encoding="utf-8"))}
+        t = {**DEFAULTS, **json.loads(THETA.read_text(encoding="utf-8"))}
     except (OSError, ValueError):
-        return dict(DEFAULTS)
+        t = dict(DEFAULTS)
+    try:                                                      # the finance team's limits bind every run
+        import finance_agent
+        fl = finance_agent.limits()
+    except Exception:
+        fl = {}
+    if fl:
+        t["cash_reserve"] = max(t["cash_reserve"], fl.get("cash_floor", 0))
+        t["window_budget"] = min(t["window_budget"], fl.get("window_spend", t["window_budget"]))
+        t["pick_window_budget"] = min(t["pick_window_budget"], fl.get("window_spend", t["pick_window_budget"]))
+    return t
 
 
 def load(md, name, default):
