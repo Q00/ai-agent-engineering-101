@@ -1,8 +1,7 @@
-[strategy] {"arm": "margin", "ask": 129, "cost": 100, "event": "seller_open", "floor": 103, "grade": "A", "hours_left": null, "list_price": 130, "sku": "lamp", "task": "b4400e94"}
-[strategy] {"counter": 106, "event": "seller_counter", "offer": 60, "round": 1, "sku": "lamp", "task": "b4400e94"}
-[strategy] {"arm": "margin", "cost": 100, "event": "seller_deal", "margin": 6, "price": 106, "rounds": 2, "sku": "lamp", "task": "b4400e94"}
-[strategy] {"arm": "volume", "ask": 115, "cost": 100, "event": "seller_open", "floor": 103, "grade": "A", "hours_left": null, "list_price": 130, "sku": "lamp", "task": "0d2a3b77"}
-[strategy] {"arm": "volume", "cost": 100, "event": "seller_deal", "margin": 15, "price": 115, "rounds": 1, "sku": "lamp", "task": "0d2a3b77"}
+[strategy] {"arm": "volume", "ask": 115, "cost": 100, "event": "seller_open", "floor": 103, "grade": "A", "hours_left": null, "list_price": 130, "sku": "lamp", "task": "b1059d36"}
+[strategy] {"arm": "volume", "cost": 100, "event": "seller_deal", "margin": 15, "price": 115, "rounds": 1, "sku": "lamp", "task": "b1059d36"}
+[strategy] {"arm": "volume", "ask": 115, "cost": 100, "event": "seller_open", "floor": 103, "grade": "A", "hours_left": null, "list_price": 130, "sku": "lamp", "task": "95892f55"}
+[strategy] {"arm": "volume", "cost": 100, "event": "seller_deal", "margin": 15, "price": 115, "rounds": 1, "sku": "lamp", "task": "95892f55"}
 Failed to detach context
 Traceback (most recent call last):
   File "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
@@ -25,9 +24,9 @@ Traceback (most recent call last):
   File "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x73d0e323a160> at 0x73d0e1f64d40> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x70453e46a160> at 0x70453d14f100> was created in a different Context
 Task was destroyed but it is pending!
-task: <Task pending name='Task-48' coro=<EventQueueSource._dispatch_loop() done, defined at /home/iai4/Desktop/han/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+task: <Task pending name='Task-38' coro=<EventQueueSource._dispatch_loop() done, defined at /home/iai4/Desktop/han/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
 Failed to detach context
 Traceback (most recent call last):
   File "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
@@ -50,26 +49,26 @@ Traceback (most recent call last):
   File "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
     self._current_context.reset(token)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
-ValueError: <Token var=<ContextVar name='current_context' default={} at 0x73d0e323a160> at 0x73d0e1f64500> was created in a different Context
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x70453e46a160> at 0x70453d14ecc0> was created in a different Context
 Task was destroyed but it is pending!
-task: <Task pending name='Task-49' coro=<EventQueueSource._dispatch_loop() done, defined at /home/iai4/Desktop/han/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
-[strategy] {"arm": "volume", "ask": 115, "cost": 100, "event": "seller_open", "floor": 103, "grade": "A", "hours_left": null, "list_price": 130, "sku": "lamp", "task": "b568c01e"}
-[strategy] {"arm": "volume", "cost": 100, "event": "seller_deal", "margin": 15, "price": 115, "rounds": 1, "sku": "lamp", "task": "b568c01e"}
-[strategy] {"arm": "volume", "ask": 299, "cost": 260, "event": "seller_open", "floor": 268, "grade": "A", "hours_left": null, "list_price": 338, "sku": "bookshelf", "task": "3d2e2798"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 140, "round": 1, "sku": "bookshelf", "task": "3d2e2798"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 170, "round": 2, "sku": "bookshelf", "task": "3d2e2798"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 200, "round": 3, "sku": "bookshelf", "task": "3d2e2798"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 230, "round": 4, "sku": "bookshelf", "task": "3d2e2798"}
-[strategy] {"arm": "volume", "event": "seller_reject", "floor": 268, "offer": 230, "sku": "bookshelf", "task": "3d2e2798"}
-[strategy] {"arm": "margin", "ask": 335, "cost": 260, "event": "seller_open", "floor": 268, "grade": "A", "hours_left": null, "list_price": 338, "sku": "bookshelf", "task": "ea46c911"}
-[strategy] {"counter": 270, "event": "seller_counter", "offer": 140, "round": 1, "sku": "bookshelf", "task": "ea46c911"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 170, "round": 2, "sku": "bookshelf", "task": "ea46c911"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 200, "round": 3, "sku": "bookshelf", "task": "ea46c911"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 230, "round": 4, "sku": "bookshelf", "task": "ea46c911"}
-[strategy] {"arm": "margin", "event": "seller_reject", "floor": 268, "offer": 230, "sku": "bookshelf", "task": "ea46c911"}
-[strategy] {"arm": "margin", "ask": 335, "cost": 260, "event": "seller_open", "floor": 268, "grade": "A", "hours_left": null, "list_price": 338, "sku": "bookshelf", "task": "6a4ee01e"}
-[strategy] {"counter": 270, "event": "seller_counter", "offer": 140, "round": 1, "sku": "bookshelf", "task": "6a4ee01e"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 170, "round": 2, "sku": "bookshelf", "task": "6a4ee01e"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 200, "round": 3, "sku": "bookshelf", "task": "6a4ee01e"}
-[strategy] {"counter": 268, "event": "seller_counter", "offer": 230, "round": 4, "sku": "bookshelf", "task": "6a4ee01e"}
-[strategy] {"arm": "margin", "event": "seller_reject", "floor": 268, "offer": 230, "sku": "bookshelf", "task": "6a4ee01e"}
+task: <Task pending name='Task-39' coro=<EventQueueSource._dispatch_loop() done, defined at /home/iai4/Desktop/han/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+[strategy] {"arm": "volume", "ask": 115, "cost": 100, "event": "seller_open", "floor": 103, "grade": "A", "hours_left": null, "list_price": 130, "sku": "lamp", "task": "03651713"}
+[strategy] {"arm": "volume", "cost": 100, "event": "seller_deal", "margin": 15, "price": 115, "rounds": 1, "sku": "lamp", "task": "03651713"}
+[strategy] {"arm": "margin", "ask": 335, "cost": 260, "event": "seller_open", "floor": 268, "grade": "A", "hours_left": null, "list_price": 338, "sku": "bookshelf", "task": "9f441f89"}
+[strategy] {"counter": 270, "event": "seller_counter", "offer": 140, "round": 1, "sku": "bookshelf", "task": "9f441f89"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 170, "round": 2, "sku": "bookshelf", "task": "9f441f89"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 200, "round": 3, "sku": "bookshelf", "task": "9f441f89"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 230, "round": 4, "sku": "bookshelf", "task": "9f441f89"}
+[strategy] {"arm": "margin", "event": "seller_reject", "floor": 268, "offer": 230, "sku": "bookshelf", "task": "9f441f89"}
+[strategy] {"arm": "volume", "ask": 299, "cost": 260, "event": "seller_open", "floor": 268, "grade": "A", "hours_left": null, "list_price": 338, "sku": "bookshelf", "task": "d4aa5a33"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 140, "round": 1, "sku": "bookshelf", "task": "d4aa5a33"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 170, "round": 2, "sku": "bookshelf", "task": "d4aa5a33"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 200, "round": 3, "sku": "bookshelf", "task": "d4aa5a33"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 230, "round": 4, "sku": "bookshelf", "task": "d4aa5a33"}
+[strategy] {"arm": "volume", "event": "seller_reject", "floor": 268, "offer": 230, "sku": "bookshelf", "task": "d4aa5a33"}
+[strategy] {"arm": "volume", "ask": 299, "cost": 260, "event": "seller_open", "floor": 268, "grade": "A", "hours_left": null, "list_price": 338, "sku": "bookshelf", "task": "7f672d5d"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 140, "round": 1, "sku": "bookshelf", "task": "7f672d5d"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 170, "round": 2, "sku": "bookshelf", "task": "7f672d5d"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 200, "round": 3, "sku": "bookshelf", "task": "7f672d5d"}
+[strategy] {"counter": 268, "event": "seller_counter", "offer": 230, "round": 4, "sku": "bookshelf", "task": "7f672d5d"}
+[strategy] {"arm": "volume", "event": "seller_reject", "floor": 268, "offer": 230, "sku": "bookshelf", "task": "7f672d5d"}

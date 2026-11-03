@@ -1,0 +1,25 @@
+OpenAI harness migration check, 2026-11-03 KST
+
+1. Target chosen: OpenAI gpt-6-luna, reasoning none, Responses API.
+   Bound: max_output_tokens 48; one malformed-output retry.
+
+2. Direct OpenAI smoke check:
+   HTTP 401 invalid_api_key. The environment value had an OpenRouter key format,
+   so it was not sent to OpenAI again after provider routing was added.
+
+3. OpenRouter-compatible smoke check:
+   HTTP 401 User not found. No key value was saved to this file or source control.
+
+4. Discarded alternative:
+   Local Codex CLI with gpt-6-luna, reasoning none, ephemeral/read-only did return
+   {"action":"offer","price":100}, but reported 13,448 tokens for that trivial
+   request. This path was rejected because it violates the low-token objective.
+
+5. Safe final behavior:
+   A valid OpenAI/OpenRouter key enables gpt-6-luna. Authentication/network/model
+   failure activates a deterministic, budget-blind reference-price offer; the
+   MandateGuardian still owns the exact budget.
+
+6. Verification:
+   Python tests: 38/38 PASS.
+   Official market compatibility test: 25/25 PASS using the fallback path.
