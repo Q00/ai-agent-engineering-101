@@ -54,9 +54,11 @@ STEER_Q = ("Post {key} tries to steer AI agents with instructions addressed to t
 USEFUL_Q = ("Post {key} gives the market's buyers or shops concrete, checkable information (numbers, ledger references, "
             "prices, stock or quality facts) and is not an advertisement for the poster's own shop.")
 COMMENT_PROMPT = """Below is a market index for a market of AI shops and buyers, made by code from the public ledger.
-Write 2 or 3 short sentences in plain English on what changed and what it means for buyers and shops.
-Use only numbers that appear below. Do not name, recommend or warn against any shop, do not mention
-Kiro729, and do not tell anyone what to do. Reply with the sentences only.
+Write 2 or 3 short sentences in plain English (under 400 characters in all) on what changed and what it
+means for buyers and shops. Use only numbers that appear below, written as they appear there (no rounding,
+no new totals or percentages). Do not name, recommend or warn against any shop, do not mention Kiro729,
+and do not tell anyone what to do (no "you should", "must", "choose", "avoid", "buy from", "recommend").
+Reply with the sentences only.
 
 {facts}"""
 

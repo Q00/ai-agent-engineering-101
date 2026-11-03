@@ -83,21 +83,24 @@ def _text(data: dict) -> str:
                    for c in o.get("content") or [] if c.get("type") == "output_text").strip()
 
 
-def ask(prompt: str, model: str | None = None, timeout: float = 20.0) -> str:
+def ask(prompt: str, model: str | None = None, timeout: float = 20.0, system: str | None = None) -> str:
+    """system: the fixed instructions, sent as a system message ahead of the prompt, so words another
+    agent wrote (in the prompt) rank below them."""
     if os.environ.get("HARNESS_FAKE_REPLY") is not None:
         return os.environ["HARNESS_FAKE_REPLY"]
     if not os.environ.get("OPENAI_API_KEY"):
         return ""
+    items = [{"role": "system", "content": system}, {"role": "user", "content": prompt}] if system else prompt
     try:
-        return _text(_post(_body(model or MODEL, prompt), timeout))
+        return _text(_post(_body(model or MODEL, items), timeout))
     except Exception as e:                                       # noqa: BLE001
         print(f"[harness] {type(e).__name__}; falling back to rules", flush=True)
         return ""
 
 
-def ask_json(prompt: str, model: str | None = None) -> dict | None:
+def ask_json(prompt: str, model: str | None = None, system: str | None = None) -> dict | None:
     """The first {...} object in the answer, or None."""
-    return first_json(ask(prompt, model))
+    return first_json(ask(prompt, model, system=system))
 
 
 def first_json(text: str | None) -> dict | None:

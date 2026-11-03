@@ -99,6 +99,11 @@ class Model:
         return self.answers.pop(0) if self.answers else None
 
 
+def told(seen: dict) -> str:
+    """What the model was told on one call: the system message and the user's, not the tool answers."""
+    return "\n".join(m["content"] for m in seen["messages"] if m["role"] in ("system", "user"))
+
+
 def tool_call(cid, **args):
     return {"content": None, "tool_calls": [{"id": cid, "type": "function",
                                              "function": {"name": "ledger_query", "arguments": json.dumps(args)}}]}
@@ -266,8 +271,17 @@ def test_analysts():
     check("its tools came from the data room over MCP: the four tools, and the report says so",
           [x["function"]["name"] for x in m.seen[0]["tools"]] == ["ledger_query", "replay", "shop_credit", "leave_memo"]
           and r["tools"] == "data room (MCP)", [x["function"]["name"] for x in m.seen[0]["tools"] or []])
-    check("its prompt carries our own records and the market summary", "stock_units" in m.seen[0]["messages"][0]["content"]
-          and "top_categories" in m.seen[0]["messages"][0]["content"] and m.seen[0]["model"] == harness.MODEL_MID)
+    check("its prompt carries our own records and the market summary", "stock_units" in told(m.seen[0])
+          and "top_categories" in told(m.seen[0]) and m.seen[0]["model"] == harness.MODEL_MID)
+    system, user = m.seen[0]["messages"][:2]
+    check("the fixed instructions go first as a system message (what counts, the fields and what they do, a step of 0.05), "
+          "the briefing as the user's",
+          system["role"] == "system" and user["role"] == "user" and "0.5 profit + 0.3 revenue" in system["content"]
+          and "20 settled deals" in system["content"] and "- price_adjust: added to the first ask" in system["content"]
+          and "(-0.1 to 0.15)" in system["content"] and "at most 0.05 per decision" in system["content"]
+          and "[1 The business now]" in user["content"] and "[1 The business now]" not in system["content"])
+    check("every field the code accepts is explained, for both roles",
+          all(set(analysts.FIELD_NOTES[r]) == set(analysts.FIELDS[r]) for r in ("seller", "buyer")))
     valid = [p["valid"] for p in r["proposals"]]
     check("proposals checked by code: out of range, unknown category and a field it may not touch are marked invalid",
           valid == [True, False, True, False, False, True, True], valid)
@@ -285,10 +299,13 @@ def test_analysts():
                       "insights": {"new": [I_KIMCHI, insight("both", "demand", "No number here", "many sold", "x"), I_BETA,
                                            insight("seller", "stock", "A third one", "5 units", "y")], "confirm": ["I9"]}}))
     e = analysts.integrated(m, t1 + 10)
-    prompt = m.seen[0]["messages"][0]["content"]
+    prompt = told(m.seen[0])
     check("the integrated analysis sees only valid proposals, and the private cross-role facts",
           f"seller-{t1}-1" not in prompt and f"seller-{t1}-0" in prompt and "budget_over_median_list" in prompt
           and m.seen[0]["model"] == harness.MODEL_STRONG)
+    check("each proposal as from -> to, with the value in force",
+          f'{{"id": "seller-{t1}-0", "field": "seller.price_adjust", "from": 0.0, "to": 0.12' in prompt
+          and m.seen[0]["messages"][0]["role"] == "system", prompt[prompt.find("Proposals since"):][:200])
     got = {(c["role"], c["field"]): c["to"] for c in e["changes"]}
     check("adopted: price +0.12 moves only 0.05; one proposal per field; the made-up id ignored",
           got == {("seller", "price_adjust"): 0.05, ("seller", "focus_categories"): ["김치"], ("buyer", "open_ratio"): 0.55}, got)
@@ -310,7 +327,7 @@ def test_analysts():
     m = Model(answer({"adopt": [f"seller-{t2}-0", f"seller-{t1}-2"], "revert": [], "insights": {"confirm": ["I1"], "refute": ["I2"]}}))
     e = analysts.integrated(m, t2 + 10)
     check("its briefing shows the insights by id, to be marked", "I1 [seller, price, testing: confirmed 0, refuted 0]"
-          in m.seen[0]["messages"][0]["content"])
+          in told(m.seen[0]))
     check("focus phase: applied to the rules in force (price 0.0 -> 0.05)", e["applied"] is True
           and common.rules()["seller"]["price_adjust"] == 0.05, common.rules()["seller"])
     check("a proposal from before the last decision is not adopted again", common.rules()["seller"]["focus_categories"] == [])

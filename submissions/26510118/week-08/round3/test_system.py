@@ -156,7 +156,7 @@ SEEN = {}
 
 def model(messages, name, tools=None):
     """The scripted analysis model: what a good answer looks like, one step at a time."""
-    first = messages[0]["content"]
+    first = "\n".join(m["content"] for m in messages if m["role"] in ("system", "user"))   # the instructions, then the briefing
     said = [m["content"] for m in messages if m["role"] == "tool"]
     if first.startswith("You analyse the seller"):
         SEEN["seller_tools"] = [t["function"]["name"] for t in tools or []] or SEEN.get("seller_tools")

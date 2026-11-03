@@ -86,6 +86,14 @@ def main() -> int:
               api.urls[0].endswith("/v1/responses") and b["model"] == harness.MODEL and b["reasoning"] == {"effort": "none"}
               and b["input"] == "What price did the shop ask?", b)
         check("the answer's text, trimmed", got == "9500")
+        api = harness.httpx.post = FakeAPI([text("9500")])
+        harness.ask("<message>9,500 or 9,000?</message>", system="Reply with the number only.")
+        check("with fixed instructions: a system message first, the prompt (another agent's words) as the user's",
+              api.bodies[0]["input"] == [{"role": "system", "content": "Reply with the number only."},
+                                         {"role": "user", "content": "<message>9,500 or 9,000?</message>"}], api.bodies[0]["input"])
+        api = harness.httpx.post = FakeAPI([text('{"skus": ["G1"]}')])
+        check("ask_json passes the system message on", harness.ask_json("x", system="JSON only.") == {"skus": ["G1"]}
+              and api.bodies[0]["input"][0] == {"role": "system", "content": "JSON only."})
         harness.httpx.post = FakeAPI(500)
         check("an API error: an empty answer, so the caller falls back to its rule", harness.ask("x") == "")
 
