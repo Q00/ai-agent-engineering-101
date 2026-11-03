@@ -3,6 +3,7 @@
 import math
 import time
 from datetime import datetime
+from market_intel import settlement_price
 
 
 def positive(value):
@@ -54,9 +55,9 @@ def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=
             reference_source = "own_r3_settlement" if reference is not None else "unknown"
             public = [r for r in (public_rows or []) if r.get("round") == 3 and r.get("kind") == "settle"
                       and 0 <= now-r.get("ts", 0) <= 3600 and (r.get("data") or {}).get("shop") == shop["url"]
-                      and r["data"].get("item") == sku and positive(r["data"].get("price"))]
+                      and r["data"].get("item") == sku and settlement_price(r["data"]) is not None]
             if reference is None and public:
-                reference = max(public, key=lambda r: r["ts"])["data"]["price"]
+                reference = settlement_price(max(public, key=lambda r: r["ts"])["data"])
                 reference_source = "public_r3_settlement"
             estimated_price = reference if reference is not None else cap
             feasible = estimated_price <= cap

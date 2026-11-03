@@ -11,6 +11,23 @@ from types import SimpleNamespace
 
 
 class PublicEvidence(unittest.TestCase):
+    def test_live_supply_window_closed_does_not_attempt_purchases(self):
+        inv = {"round": 3, "balance": 5000000, "units": [], "restock": {"open": False}}
+        buys, reason = plan(inv, {"A": {"kind": "goods", "category": "g", "list_price": 100}}, [{"category": "g"}], {})
+        self.assertEqual(buys, [])
+        self.assertEqual(reason["reason"], "market_restock_window_closed")
+
+    def test_live_r3_amount_field_and_contradictory_price(self):
+        row = {"seq": 1, "ts": 100, "round": 3, "kind": "settle",
+               "data": {"item": "A", "amount": 90, "buyer": "b"}}
+        self.assertEqual(summarize([row], {"A": {}}, 200)["A"]["median_price"], 90)
+        row["data"]["price"] = 99
+        self.assertEqual(summarize([row], {"A": {}}, 200), {})
+
+    def test_live_board_forum_metric_is_observed(self):
+        c = competition({"round": 3, "buyers": [{"name": "kcwarni", "deals": 4, "surplus": 100, "forum": .4}]})
+        self.assertEqual(c["diagnostic_components"]["buyers.forum"]["value"], .4)
+
     def test_bounded_collector_skips_backlog_with_explicit_gap_and_fresh_tail(self):
         calls = []
         def get(url, params):

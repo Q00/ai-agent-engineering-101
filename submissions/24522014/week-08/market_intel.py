@@ -23,11 +23,21 @@ def finite(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
+def settlement_price(data):
+    # Live R3 ledger uses amount; earlier fixtures used price. Reject contradictory fields.
+    amount = data.get("amount", data.get("price"))
+    if not finite(amount) or amount <= 0:
+        return None
+    if "price" in data and data["price"] != amount:
+        return None
+    return amount
+
+
 def summarize(rows, catalog, now):
     seen, groups = set(), defaultdict(list)
     for row in rows:
         data = row.get("data") or {}
-        sku, price = data.get("item"), data.get("price")
+        sku, price = data.get("item"), settlement_price(data)
         if (row.get("kind") != "settle" or row.get("round") != 3 or sku not in catalog
                 or not finite(row.get("ts")) or not 0 <= now - row["ts"] <= 86400
                 or not finite(price) or price <= 0 or row.get("seq") in seen):
@@ -41,7 +51,7 @@ def summarize(rows, catalog, now):
         gaps = [max(60, b["ts"] - a["ts"]) for a, b in zip(entries, entries[1:])]
         result[sku] = {"settles_24h": len(entries), "settles_6h": sum(now-r["ts"] <= 21600 for r in entries),
                        "distinct_buyers": len(buyers), "last_sale_at": entries[-1]["ts"],
-                       "median_price": statistics.median(r["data"]["price"] for r in entries),
+                       "median_price": statistics.median(settlement_price(r["data"]) for r in entries),
                        "observed_gap_hours": statistics.median(gaps)/3600 if gaps else None,
                        "ledger_refs": [r["seq"] for r in entries[-3:]]}
     return result
@@ -63,7 +73,7 @@ def competition(board, login="kcwarni"):
     rank = 1 + sum(r[score_key] > me[score_key] for r in players) if score_key else (me or {}).get("rank")
     components = {}
     weights = {"shops": {"profit": .5, "revenue": .3, "stars": .2},
-               "buyers": {"surplus": .5, "rating": .3, "deals": .2}}
+               "buyers": {"surplus": .5, "forum": .3, "deals": .2}}
     if board.get("round") == 3:
         for group, fields in weights.items():
             mine_row = mine[group] or {}
@@ -162,7 +172,11 @@ def fresh(md, now=None):
     now = time.time() if now is None else now
     try:
         snapshot = read(Path(md) / "market-intel.json", {})
-        return snapshot if snapshot.get("round") == 3 and 0 <= now - snapshot.get("observed_at", 0) <= 3600 else {}
+        if snapshot.get("round") != 3 or not 0 <= now - snapshot.get("observed_at", 0) <= 3600:
+            return {}
+        # Recompute from immutable raw observations even if an older in-process collector wrote the cache.
+        snapshot["skus"] = summarize(snapshot.get("rows", []), read(Path(md)/"catalog.json", {}), now)
+        return snapshot
     except (OSError, ValueError, TypeError):
         return {}
 

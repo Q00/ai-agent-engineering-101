@@ -40,6 +40,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     intelligence = intelligence or {}
     if inventory.get("round", 0) < 3:
         return [], {"reason": "not_round_3"}
+    if (inventory.get("restock") or {}).get("open") is False:
+        return [], {"reason": "market_restock_window_closed"}
     units = [u for u in inventory.get("units", []) if u.get("grade") != "expired"]
     balance = max(0, inventory.get("balance", 0))
     end = datetime.fromisoformat(load_policy()["selling"]["round_end"]).timestamp()

@@ -37,7 +37,7 @@ class ForumStrategy(unittest.TestCase):
     def test_component_diagnostics_do_not_fabricate_missing_buyer_metrics(self):
         c = competition({"round": 3, "shops": [{"name": "kcwarni", "deals": 20, "profit": 100, "revenue": 200, "stars": 5}],
                          "buyers": [{"name": "kcwarni", "deals": 10}]})
-        self.assertIsNone(c["diagnostic_components"]["buyers.rating"]["ahead_of_percent"])
+        self.assertIsNone(c["diagnostic_components"]["buyers.forum"]["ahead_of_percent"])
         self.assertIsNone(c["rank"])
         self.assertTrue(any("fewer than 20" in a for a in c["alerts"]))
 
