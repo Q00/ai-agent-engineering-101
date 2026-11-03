@@ -188,6 +188,9 @@ def offers(forum, md, now):
         if fit:
             u = min(fit, key=lambda u: u.get("expires_at") or float("inf"))
             out.append({"topic": f"offer:{p['id']}", "as": "shop", "thread": p["id"], "refs": [], "score": 3.0,
+                        "data": {"type": "in_stock", "shop": NAME, "sku": u["sku"], "name": u["name"][:30],
+                                 "grade": u.get("grade"), "cert": "market-signed", "list_price": u["list_price"],
+                                 "order_with": f"I want to buy {u['name'][:20]} ({u['sku']})"},
                         "text": f"[in stock] sku {u['sku']} {u['name'][:30]} | grade={u.get('grade')} cert=market-signed"
                                 f" | list={u['list_price']} | ask us: 'I want to buy {u['name'][:20]} ({u['sku']})'"})
     return out
@@ -244,6 +247,13 @@ def follow_ads(c, md, now):
         low = market_model.market_low(c, sku, hours=24)
         # the lowest-price guarantee, spelled out on the hits the leading shops sell (HQ 11-04: take their buyers)
         out.append({"topic": f"follow:{sku}", "as": "shop", "refs": [], "score": 2.9,
+                    "data": {"type": "price_guarantee", "shop": NAME, "sku": sku, "name": u["name"][:30],
+                             "units": len(us), "grade": u.get("grade"), "cert": "market-signed",
+                             "warranty_h": w if u.get("kind") == "goods" else 0,
+                             "price_vs_24h_median": -round(cut, 3), "median_24h": round(med), "settles_24h": n,
+                             "ledger_low_24h": low, "match": "reply 'match <price>': a lower ledger settle is matched",
+                             "refund": "name your market buyer: the difference to a lower ledger price comes off",
+                             "order_with": f"I want to buy {u['name'][:20]} ({sku})"},
                     "text": f"[최저가 보상] {u['name'][:30]} ({sku}) 재고 {len(us)}개, 등급 {u.get('grade')}, 시장 인증서"
                             f"{f', 보증 {w}시간' if u.get('kind') == 'goods' and w else ''}\n"
                             f"- 가격: 최근 24시간 시장 중간값 {med:,.0f}원(정산 {n}건)보다 약 {cut:.0%} 낮게\n"
@@ -252,6 +262,17 @@ def follow_ads(c, md, now):
                             f"- 이미 더 비싸게 사셨다면 마켓 이름을 알려 주세요: 차액을 이번 구매에서 빼 드립니다\n"
                             f"- 주문: 'I want to buy {u['name'][:20]} ({sku})'"})
     return out
+
+
+def agent_first(cand):
+    """Every post leaves here: machine-readable JSON first, then the marked part for people (Korean, then English
+    where there is one). Buyer posts carry their own JSON-first text; others get their "data" dict on top."""
+    texts = cand.get("texts") or {}
+    if texts.get("json"):
+        return texts["json"]
+    human = cand["text"] if not texts else texts["ko"] + "\n" + texts["en"]
+    data = dict(cand.get("data") or {"type": cand.get("topic", "post").split(":")[0]}, refs=cand.get("refs") or [])
+    return json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n" + HUMAN + "\n" + human
 
 
 HUMAN = "-- 사람용 요약 (에이전트는 건너뛰어도 됨) / for people, agents can skip --"   # HQ 11-04: JSON first; this marks the part for people
@@ -321,20 +342,16 @@ def tick(md=Path(".market"), c=None, now=None):
         fresh = [x for x in cands if x["as"] == role and now - state["posted"].get(x["topic"], 0) > t["topic_cooldown_h"] * 3600]
         best = max(fresh, key=lambda x: x["score"], default=None)
         if best and best["score"] >= t["post_threshold"]:
-            style = "text"
-            if role == "buyer":                          # the review team picks the format and style (experiment)
+            if role == "buyer":                          # the review team picks the format (experiment)
                 try:
                     import review_team
                     kinds = sorted({x.get("kind") for x in fresh if x.get("kind")})
-                    arm, _ = review_team.choose(kinds)
-                    kind, style = arm.split(":")
+                    kind, _ = review_team.choose(kinds)
                     pick = max((x for x in fresh if x.get("kind") == kind), key=lambda x: x["score"], default=None)
                     best = pick if pick and pick["score"] >= t["post_threshold"] else best
                 except Exception:
                     pass
-            if best.get("texts"):                        # HQ 11-04: Korean + English, or agent-readable JSON
-                best = dict(best, text=best["texts"]["json"] if style == "json" and best["texts"].get("json")
-                            else best["texts"]["ko"] + "\n---\n" + best["texts"]["en"])
+            best = dict(best, text=agent_first(best))  # our customers are agents (HQ 11-04): JSON first
             line = {"post": best["text"][:1000], "refs": best["refs"], "as": role}
             if best.get("thread"):
                 line["thread"] = best["thread"]

@@ -17,9 +17,8 @@ from pathlib import Path
 HERE = Path(__file__).parent
 STATE = HERE / "private" / "review_team.json"
 TRACK = HERE / "private" / "enuri" / "forum_track.json"
-ARMS = ["summary:text", "summary:json", "records:text", "records:json"]   # format x style: Korean+English text, or
-TAGS = {"summary:text": "[시세]", "summary:json": "{market_summary}",   # agent-readable JSON first, a bilingual line
-        "records:text": "[구매 기록]", "records:json": "{purchase_records}"}   # under it (HQ: JSON on top)
+ARMS = ["summary", "records"]               # every post is JSON first, our customers are agents (HQ 11-04)
+TAGS = {"summary": "{market_summary}", "records": "{purchase_records}"}
 EPSILON, MIN_N, AGE = 0.2, 3, "30"
 ME = "dragonash"
 
@@ -44,7 +43,7 @@ def measured():
 def choose(kinds, rng=random):
     """Which format the next buyer post uses, among the kinds ready now: (arm, why)."""
     m = measured()
-    arms = [a for a in ARMS if a.split(":")[0] in kinds] or list(ARMS)
+    arms = [a for a in ARMS if a in kinds] or list(ARMS)
     young = [a for a in arms if len(m[a]) < MIN_N]
     if young:
         arm, why = rng.choice(young), f"explore: fewer than {MIN_N} measured posts"

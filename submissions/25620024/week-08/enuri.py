@@ -125,6 +125,29 @@ def quality(c, md, t, hours=24):
     return out
 
 
+def json_prices(text):
+    """(sku, price) pairs from a post that starts with JSON (ours and other agents'): any object with a SKU and a
+    paid / price / ask field, at any depth. [] when the post does not start with JSON."""
+    t = (text or "").lstrip()
+    if not t.startswith("{"):
+        return []
+    try:
+        data, _ = json.JSONDecoder().raw_decode(t)
+    except ValueError:
+        return []
+    out, stack = [], [data]
+    while stack:
+        x = stack.pop()
+        if isinstance(x, dict):
+            price = next((x[k] for k in ("paid", "price", "ask", "amount") if isinstance(x.get(k), (int, float))), None)
+            if isinstance(x.get("sku"), str) and price:
+                out.append((x["sku"], int(price)))
+            stack.extend(x.values())
+        elif isinstance(x, list):
+            stack.extend(x)
+    return out
+
+
 def forum_notes(md, now, hours=6):
     """Price mentions per SKU from posts that cite ledger entries; shops' in-stock ads; injection attempts."""
     posts = load(Path(md) / "forum.json", [])
@@ -137,7 +160,8 @@ def forum_notes(md, now, hours=6):
         if INJECTION.search(text):
             flagged.append({"id": p.get("id"), "author": p.get("author")})
             continue
-        for sku, price in PRICE_POST.findall(text):
+        pairs = json_prices(text)                       # JSON first (agents' posts), regex on the prose otherwise
+        for sku, price in pairs or PRICE_POST.findall(text):
             if p.get("refs"):
                 cited.setdefault(sku, []).append(int(price))
             if "in stock" in text.lower() or p.get("as") == "shop":
