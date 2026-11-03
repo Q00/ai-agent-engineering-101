@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import time
 
-MODEL = "gpt-6-astra"
+MODEL = "gpt-5.6-luna"
 REASONING = "low"
 TIMEOUT = 60
 RETRY_DELAYS = (2, 4, 8)
