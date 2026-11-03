@@ -145,6 +145,8 @@ class RestockPolicy(FrozenModel):
     replenish_qty: int = Field(default=1, ge=1, le=20)
     stale_hours: float = Field(default=48.0, ge=1.0, le=336.0)
     categories_per_run: int = Field(default=10, ge=1, le=10)
+    # Share of the kit's ten buy lines allowed for food, including replenishment.
+    # Demand signals may rank those lines, never override the allowance.
     food_share: float = Field(default=0.6, ge=0.0, le=1.0)
 
 

@@ -174,6 +174,8 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
     cash = inventory.balance - policy.reserve_cash
     lines: list[dict[str, object]] = []
     spent = 0
+    food_lines = 0
+    food_cap = round(MAX_LINES * policy.food_share)
     stocked = {u.sku for u in inventory.units}
     stocked_categories: dict[str, int] = {}
     for unit in inventory.units:
@@ -186,7 +188,7 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
         if unit_cost <= 0:
             return 0
         room = min(cash - spent, policy.seed_budget - stock_cost - spent)
-        allowed = min(qty, room // unit_cost)
+        allowed = min(qty, room // unit_cost, policy.max_units - units_total)
         if allowed <= 0:
             return 0
         spent += unit_cost * allowed
@@ -202,18 +204,17 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
         item = catalog.get(sku)
         if item is None or not sku_fits(item, policy):
             continue
+        if item.kind == "food" and food_lines >= food_cap:
+            continue
         qty = affordable(item, policy.replenish_qty)
         if qty:
             lines.append({"sku": sku, "qty": qty})
             units_total += qty
+            if item.kind == "food":
+                food_lines += 1
     # 2. Breadth: new categories, long-life food and mid-priced goods first.
     rng = random.Random(int(now // 3600))  # noqa: S311 - variety, not security
     chosen_skus = set(stocked) | {str(line["sku"]) for line in lines}
-    food_lines = sum(
-        1
-        for line in lines
-        if catalog.get(str(line["sku"]), CatalogItem()).kind == "food"
-    )
     for _, row in category_scores(demand, catalog, signal, policy):
         if len(lines) >= min(MAX_LINES, policy.categories_per_run):
             break
@@ -221,8 +222,7 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
             break
         if stocked_categories.get(row.category, 0) >= policy.units_per_sku * 2:
             continue
-        food_cap = max(1, round(MAX_LINES * policy.food_share))
-        if row.kind == "food" and food_lines >= food_cap and signal is None:
+        if row.kind == "food" and food_lines >= food_cap:
             continue
         item = pick_sku(
             row.category, catalog, signal, policy, rng=rng, already=chosen_skus
