@@ -125,6 +125,9 @@ class BuyerPolicy(FrozenModel):
     # e-greedy: this share of orders goes to a random eligible shop instead of the
     # best-ranked one, so cheaper or newer shops get found (2026-11-03 user ask).
     explore_rate: float = Field(default=0.10, ge=0.0, le=0.5)
+    # Exploration skips shops with a failed deal this recent; refusals and tricks
+    # still count over refusal_memory_hours.
+    explore_memory_hours: float = Field(default=6.0, ge=0.5, le=48.0)
     # A shop whose last attempts all ended without a deal sits out this long.
     fail_streak: int = Field(default=3, ge=1, le=20)
     fail_cooldown_minutes: float = Field(default=30.0, ge=0.0, le=720.0)

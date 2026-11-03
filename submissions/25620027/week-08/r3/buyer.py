@@ -56,6 +56,8 @@ MAX_STARS: Final = 5
 # picked by exploration; price memory moves a shop by at most this share.
 EXPLORE_MIN_EVIDENCE: Final = 0.6
 EXPLORE_MIN_TRUST: Final = 0.6
+# Failure kinds exploration reads from the short window (explore_memory_hours).
+RECENT_FAILURE_KINDS: Final = ("no_deal", "error")
 PRICE_FACTOR_SPAN: Final = 0.2
 NUMBER: Final = re.compile(r"(?<![0-9A-Za-z])([0-9]{2,9})(?![0-9A-Za-z])")
 TRADE_GATE: Final = "AX_R3_TRADE_MODEL"
@@ -169,6 +171,30 @@ def exploration_allowed(
     )
 
 
+def exploration_view(
+    outcomes: dict[str, dict[str, int]],
+    recent: Mapping[str, Mapping[str, int]] | None,
+) -> dict[str, dict[str, int]]:
+    """Build the counts exploration reads: short memory for failures, long for refusals.
+
+    Over a whole day almost every shop shows one network error or failed deal
+    (33 of 34 live shops on 2026-11-03), which left nothing to explore. Plain
+    failures therefore come from the shorter ``recent`` window, while refusals,
+    suspicious replies and payments keep the full memory.
+    """
+    if recent is None:
+        return outcomes
+    view: dict[str, dict[str, int]] = {}
+    for url in set(outcomes) | set(recent):
+        counts = dict(outcomes.get(url, {}))
+        for kind in RECENT_FAILURE_KINDS:
+            counts.pop(kind, None)
+            if recent.get(url, {}).get(kind):
+                counts[kind] = recent[url][kind]
+        view[url] = counts
+    return view
+
+
 def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     order: Order,
     shops: tuple[ShopEntry, ...],
@@ -181,6 +207,7 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     ratios: Mapping[str, float] | None = None,
     explore: float = 0.0,
     rng: random.Random | None = None,
+    recent: Mapping[str, Mapping[str, int]] | None = None,
 ) -> Choice | None:
     """Pick the shop and SKU with the best expected surplus; None when no stock fits.
 
@@ -191,6 +218,7 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     cheaper or newer shop can be found; penalized shops are never explored.
     """
     acceptable = set(order.acceptable)
+    explore_counts = exploration_view(outcomes, recent)
     draw = (rng or random).random() < explore
     best: Choice | None = None
     by_shop: dict[str, Choice] = {}
@@ -201,7 +229,7 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
         if picture is not None:
             evidence *= trust_factor(picture.trust_of(shop.url))
         weight = evidence * price_factor(shop.url, ratios or {})
-        eligible = exploration_allowed(shop, outcomes, reasons, picture)
+        eligible = exploration_allowed(shop, explore_counts, reasons, picture)
         if not acceptable:
             # R2 shops need not publish stock. A lone stock advertisement must not
             # hide all other shops from ranking or random exploration.
@@ -494,6 +522,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
     outcomes: dict[str, dict[str, int]] = {}
     reasons: dict[str, str] = {}
     ratios: dict[str, float] = {}
+    recent: dict[str, dict[str, int]] | None = None
     cooling: frozenset[str] = frozenset()
     try:
         events = EventLedger(
@@ -502,6 +531,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         _ = events.sync_payments(read_payments(state))
         outcomes = events.shop_outcomes(policy.buyer.refusal_memory_hours)
         reasons = events.refusal_reasons(policy.buyer.refusal_memory_hours)
+        recent = events.shop_outcomes(policy.buyer.explore_memory_hours)
         ratios = events.price_ratios(policy.buyer.refusal_memory_hours)
         cooling = cooling_shops(
             events.failure_streaks(policy.buyer.refusal_memory_hours),
@@ -520,6 +550,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         picture=picture,
         ratios=ratios,
         explore=policy.buyer.explore_rate,
+        recent=recent,
     )
     if choice is None:
         fallback = shops[0].url if shops else ""

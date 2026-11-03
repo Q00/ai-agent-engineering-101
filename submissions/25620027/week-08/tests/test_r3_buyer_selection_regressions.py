@@ -228,3 +228,40 @@ def test_events_upgrade_preserves_old_attempts_and_leaves_round_unknown(
         ).fetchall() == [
             ("old", 0),
         ]
+
+
+def test_exploration_forgets_old_failed_deals_but_not_refusals() -> None:
+    shops = tuple(
+        ShopEntry(name=name, url=f"http://{name}.test") for name in ("a", "b", "c")
+    )
+    # Given: every shop failed once within the day, "c" also refused a payment;
+    # in the last hours only "b" failed.
+    day = {
+        "http://a.test": {"paid": 5, "no_deal": 1},
+        "http://b.test": {"paid": 5, "no_deal": 1},
+        "http://c.test": {"paid": 5, "no_deal": 1, "refused": 1},
+    }
+    recent = {"http://b.test": {"no_deal": 1}}
+    rng = random.Random(7)  # noqa: S311 - seeded selection, not cryptography
+    # When: every order explores with the short failure window.
+    picks = {
+        p.shop.url
+        for _ in range(50)
+        if (
+            p := buyer.choose(
+                Order(item="lamp"),
+                shops,
+                {},
+                day,
+                {},
+                explore=1,
+                rng=rng,
+                recent=recent,
+            )
+        )
+        and p.explored
+    }
+    # Then: the old failure no longer blocks "a"; recent failure and refusal do.
+    assert picks == {"http://a.test"}
+    # And: without the short window nothing is explorable (the whole-day rule).
+    assert buyer.exploration_view(day, None) is day
