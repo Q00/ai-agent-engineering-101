@@ -62,6 +62,21 @@ class RestockMemoryTest(unittest.TestCase):
         stats["skus"]["S2"]["median"] = 50_000
         self.assertEqual([], restock.plan(inv, catalog, demand, [], {}, stats))   # nothing in the category sells above cost
 
+    def test_stock_capital_is_capped_and_blind_exploration_stops_early(self):
+        catalog = {"A1": {"category": "c>a", "kind": "goods", "list_price": 100_000},
+                   "B1": {"category": "c>b", "kind": "goods", "list_price": 100_000}}
+        demand = [{"category": "c>a"}, {"category": "c>b"}]
+        stats = {"categories": {"c>b": {"n": 5, "median_ratio": 0.9}}, "skus": {"B1": {"n": 5, "median": 90_000}}}
+        small = {"balance": 4_800_000, "start": 5_000_000, "units": [{"category": "c>x", "cost": 100_000}] * 2}
+        self.assertEqual({"A1", "B1"}, {b["sku"] for b in restock.plan(small, catalog, demand, [], {}, stats)})
+        mid = {"balance": 4_000_000, "start": 5_000_000, "units": [{"category": "c>x", "cost": 100_000}] * 8}
+        report = {}
+        self.assertEqual(["B1"], [b["sku"] for b in restock.plan(mid, catalog, demand, [], {}, stats, report)])  # evidence only
+        self.assertFalse(report["explore"])
+        full = {"balance": 3_000_000, "start": 5_000_000, "units": [{"category": "c>x", "cost": 100_000}] * 13}
+        self.assertEqual([], restock.plan(full, catalog, demand, [], {}, stats, report))                         # 1.3M >= 25%
+        self.assertLessEqual(report["stock_room"], 0)
+
     def test_forum_requires_ledger_reference(self):
         forum = [{"text": "kimchi wanted", "refs": []}, {"text": "kimchi bought", "refs": [10]}]
         self.assertEqual(restock.forum_scores(forum, ["food>kimchi"])["food>kimchi"], 1)

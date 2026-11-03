@@ -20,6 +20,11 @@ MAX_SPEND_SHARE = 0.12
 FOOD_TARGET = 4
 GOODS_TARGET = 6
 EXPECTED_COST_RATIO = 0.60   # supply cost as a share of list price, averaged over the grade mix (agent.md): about 0.59
+# Round 3 minute 10 (11-03 21:05): 10 runs had put 1.10M of the 5M into 56 units over 31 of 140 categories, 0.2M sold.
+# Unsold stock is a loss and food spoils, so the capital tied up in stock is capped, and exploring categories with
+# no evidence (no ledger sales, no own depletion, no forum demand) is allowed only while that stock is small.
+MAX_STOCK_SHARE = 0.25       # stock at cost may not exceed this share of the starting capital
+EXPLORE_STOCK_SHARE = 0.10   # below this share, categories with no evidence may still be tried (one lot each)
 
 
 def read_json(path, default):
@@ -92,6 +97,14 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
     stats = stats or {}
     report = report if report is not None else {}
     skipped = report.setdefault("skipped_below_cost", [])
+    start = inv.get("start") or 5_000_000
+    stock_cost = sum(unit.get("cost") or 0 for unit in units)
+    room = MAX_STOCK_SHARE * start - stock_cost
+    report["stock_cost"], report["stock_room"] = stock_cost, round(room)
+    if room <= 0:
+        return []
+    explore = stock_cost < EXPLORE_STOCK_SHARE * start
+    report["explore"] = explore
     stock_category = Counter(unit.get("category") for unit in units)
     stock_sku = Counter(unit.get("sku") for unit in units)
     categories = [row.get("category") for row in demand if row.get("category")]
@@ -105,6 +118,9 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
         depletion = (memory.get("category_depletion") or {}).get(category, 0)
         waste = (memory.get("category_waste") or {}).get(category, 0)
         stock = stock_category[category]
+        evidence = depletion or posts[category] or cat_sales.get(category, 0)
+        if not evidence and not explore:
+            continue
         score = 1.0 + 3.0 * depletion + 0.5 * posts[category] - 0.75 * stock - 2.0 * waste
         if busiest:
             score += 2.0 * cat_sales.get(category, 0) / busiest
@@ -113,7 +129,7 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
         scored.append((score, category))
     scored.sort(key=lambda row: (-row[0], row[1]))
 
-    spend_cap = min(balance * MAX_SPEND_SHARE, 600_000)
+    spend_cap = min(balance * MAX_SPEND_SHARE, 600_000, room)
     estimated, buys = 0.0, []
     sku_depletion = memory.get("sku_depletion") or {}
     sku_sales = stats.get("skus") or {}
@@ -160,6 +176,8 @@ def main():
     memory_path.write_text(json.dumps(memory, ensure_ascii=False, indent=1), encoding="utf-8")
     print("[strategy] " + json.dumps({"event": "restock", "stock": len(inv.get("units") or []),
                                       "balance": inv.get("balance"), "ledger_settles": stats.get("settles"),
+                                      "stock_cost": report.get("stock_cost"), "stock_room": report.get("stock_room"),
+                                      "explore": report.get("explore"),
                                       "skipped_below_cost": report.get("skipped_below_cost", []), "buy": buys},
                                      ensure_ascii=False), flush=True)
     bankrupt = ((inv.get("balance") or 0) < (inv.get("bankrupt_line") or 0)
