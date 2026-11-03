@@ -452,24 +452,40 @@ def catalog():
 
 def candidates(shops, order, cat, prof):
     """Every (shop, SKU) that fits the order, best first, by code: what I expect to keep (list price minus the
-    price I expect to pay at that shop) times the chance the shop is honest. One SKU per shop."""
+    price I expect to pay at that shop) times the chance the shop is honest. One SKU per shop.
+    Reach: an offer stays in while min_reach x list fits the budget. The old test (r3_first_offer x list) dropped
+    every SKU listed above budget / 0.6, while leaders settle near half the list: 21 of 37 orders at 60-120k and
+    12 of 24 at 250k+ had no candidate at all, and the 8 deals at 250k+ kept 2.38M (VPS, 2026-11-04)."""
     budget, acceptable = order["budget"], set(order["acceptable"])
-    best = {}
+    best, why = {}, {"not acceptable": 0, "no stock": 0, "blocked shop": 0, "no list price": 0, "too expensive": 0}
+    dear = []
     for s in shops:
-        why = blocked(prof, s["name"])
-        if why:
-            log(f"[filter] skip {s['name']}: {why}")
+        fits = [o for o in s.get("offers") or [] if o.get("sku") in acceptable]
+        why["not acceptable"] += len(s.get("offers") or []) - len(fits)
+        blk = blocked(prof, s["name"])
+        if blk:
+            log(f"[filter] skip {s['name']}: {blk}")
+            why["blocked shop"] += bool(fits)
             continue
         p = prof.get(s["name"])
         ratio = buyer_memory.list_ratio(p) or T["prior_price_ratio"]
-        for o in s.get("offers") or []:
+        for o in fits:
             lp = (cat.get(o["sku"]) or {}).get("list_price")
-            if o["sku"] not in acceptable or not o.get("qty") or not lp or lp * T["r3_first_offer"] > budget:
-                continue
-            expect = min(lp * ratio, budget)
-            keep = (lp - expect) * (1 - buyer_memory.defect_rate(p))
-            if s["name"] not in best or keep > best[s["name"]][0]:
-                best[s["name"]] = (keep, s, o, lp)
+            if not o.get("qty"):
+                why["no stock"] += 1
+            elif not lp:
+                why["no list price"] += 1
+            elif lp * T["min_reach"] > budget:
+                why["too expensive"] += 1
+                dear.append(lp)
+            else:
+                expect = min(lp * ratio, budget)
+                keep = (lp - expect) * (1 - buyer_memory.defect_rate(p))
+                if s["name"] not in best or keep > best[s["name"]][0]:
+                    best[s["name"]] = (keep, s, o, lp)
+    if not best:
+        log("[r3] no candidates: " + ", ".join(f"{n} {k}" for k, n in why.items())
+            + (f" (list {min(dear)}-{max(dear)}, budget {budget}, reach {T['min_reach']})" if dear else ""))
     return sorted(best.values(), key=lambda c: -c[0])
 
 
@@ -547,8 +563,11 @@ def round3(a, order, shops, mem, started):
         q = quotes[0]
         shop = q["c"][1]
         stars, review = 1, f"No quote for {q['c'][2]['sku']}: {q.get('error') or 'no price in the reply'}."
+        # a unit that will not last is the shop answering, not silence: it must not count toward the no-answer pause
+        # (2 of 5 within 6 h blocks the shop, often the big one that heads the list)
+        shelf = (q.get("error") or "").startswith("offered unit has")
         remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": q["c"][2]["sku"], "budget": order["budget"],
-                  "outcome": "no answer", "problem": "no answer (no quote)"})
+                  "outcome": "no deal" if shelf else "no answer", "problem": None if shelf else "no answer (no quote)"})
         print(json.dumps({"shop": shop["url"], "receipt": None, "stars": stars, "review": review}, ensure_ascii=False),
               flush=True)
         return
@@ -562,12 +581,15 @@ def round3(a, order, shops, mem, started):
     keep, shop, offer, lp = pick["c"]
     sku = offer["sku"]
     cap = min(order["budget"], int(lp * T["max_pay_ratio"]))     # paying near the list price keeps nothing
-    log(f"[choose] {shop['name']} {offer['name']} ({sku}): ask {pick['ask']}, list {lp}, I pay at most {cap}")
+    # first offer: the anchor share of the list, but under the cap (an anchor above it would be dropped and the
+    # buyer would open at first_offer_max x ask); 0.9 x cap so an ask at the anchor still leaves surplus
+    low = min(int(lp * T["r3_first_offer"]), int(0.9 * cap))
+    log(f"[choose] {shop['name']} {offer['name']} ({sku}): ask {pick['ask']}, list {lp}, I pay at most {cap}, open {low}")
 
     task, asks, offers, texts, notes, rec, problem = None, [], [], [], [], None, None
     try:
         task, asks, offers, texts, notes = negotiate(shop["url"], offer["name"], cap, started,
-                                                     low=int(lp * T["r3_first_offer"]),
+                                                     low=low,
                                                      opened=(pick["url"], pick["task"], pick["opening"]),
                                                      decide_fn=code_decide)
         outcome = "deal" if state(task) == "TASK_STATE_COMPLETED" else "no deal"

@@ -43,7 +43,10 @@ DEFAULTS = {"window": 50, "cooldown_h": 24, "repeat_days": 7, "minor_to_medium":
             # Round 3: quotes asked in parallel, first offer and most I pay as a share of the list price, the price
             # share I expect before I know a shop, food shelf life beyond use_within_hours, goods grades I accept
             "rfq": 3, "r3_first_offer": 0.6, "max_pay_ratio": 0.95, "prior_price_ratio": 0.85, "food_margin_h": 1,
-            "goods_grades": ["A", "B"]}
+            "goods_grades": ["A", "B"],
+            # Round 3 reach: an offer is a candidate while min_reach x list price fits the budget (leaders settle
+            # near 0.5 of list; 0.6, the first-offer share, dropped half the big orders)
+            "min_reach": 0.45}
 
 
 def theta():
