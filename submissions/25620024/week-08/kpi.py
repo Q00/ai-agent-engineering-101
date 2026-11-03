@@ -28,9 +28,23 @@ def _inv():
 
 
 def stockouts(c):
+    """Our own hits out of stock, and the market's top high-ticket sellers (all shops, ledger) with our units of each:
+    HQ 11-04 holds SCM to keep at least 3 of the market's top 5 in stock."""
     import finance_agent
+    import hr
     hits = finance_agent.proven_sellers(c)
-    return {"hits": len(hits), "out_of_stock": [h for h in hits if not h["units_left"]]}
+    inv = _inv()
+    have = {}
+    for u in inv.get("units", []):
+        if u.get("grade") != "expired":
+            have[u["sku"]] = have.get(u["sku"], 0) + 1
+    cat = market_model.catalog(MD)
+    market = [{"sku": s, "sold_24h": n, "name": ((cat.get(s) or {}).get("name") or "")[:30],
+               "list_price": (cat.get(s) or {}).get("list_price"), "our_units": have.get(s, 0)}
+              for s, n in hr.market_hits(c)]
+    return {"hits": len(hits), "out_of_stock": [h for h in hits if not h["units_left"]],
+            "market_top_hits": market, "market_top5_in_stock": sum(1 for m in market[:5] if m["our_units"]),
+            "target": "at least 3 of the market's top 5 in stock, 2+ units each"}
 
 
 def sell_through(c, hours=6, old_h=12):
