@@ -77,6 +77,10 @@ def ref_status(refs, budget):
         return None
     cache = _load(REFS, {})
     for r in refs:
+        if isinstance(r, dict):            # the market sends refs already looked up: {"seq", "found", "kind", "data"}
+            if not (r.get("found") and r.get("kind") == "settle"):
+                return False
+            continue
         key = str(r)
         if key not in cache:
             if not isinstance(r, int):

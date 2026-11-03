@@ -86,6 +86,7 @@ UNDERCUT, COMP_FRESH = 0.98, 6 * 3600
 END_TS = 1794927540        # Tue Nov 17 23:59 KST
 ENDGAME = ((6 * 3600, 0.6, 0.25), (24 * 3600, 0.8, 0.6))
 MIN_FOOD_HOURS = 2        # never ship food with less shelf life left than this
+SOLD_HOLD = 120           # seconds a sold unit stays out of offers, until inventory.json drops it
 # A food order is worth nothing to the buyer unless the food lasts its use_within_hours (agent.md), and our seller
 # never sees the order. So: ship food that lasts what the buyer says it needs ("must last 30 hours"), else what
 # orders usually need (.market/use_within.json, the use_within_hours our own buyer saw, 80th percentile).
@@ -267,6 +268,7 @@ def last_number(text):
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}   # task id -> {"unit", "ask", "floor", "warranty", "rounds"}
+        self.sold = {}   # unit -> when we closed it
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -283,7 +285,11 @@ class Seller(AgentExecutor):
 
         deal = self.open.get(task.id)
         if deal is None:
-            taken = {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]}
+            # units in an open talk, and units sold in the last SOLD_HOLD seconds: inventory.json can be 10 s old,
+            # and on Nov 3 one unit went to two buyers a second apart, so the first buyer's checkout was refused
+            now = time.time()
+            self.sold = {k: t for k, t in self.sold.items() if now - t < SOLD_HOLD}
+            taken = {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]} | set(self.sold)
             u = find_unit(text, taken)
             if u is None:
                 await up.reject(say("Sorry, none of that in stock."))
@@ -326,6 +332,8 @@ class Seller(AgentExecutor):
             receipt.update(unit=u["unit"], cert=True, warranty_hours=deal["warranty"])
             if u["kind"] != "food":
                 receipt["claim"] = u["grade"]
+        if u["unit"]:
+            self.sold[u["unit"]] = time.time()
         await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
         await up.complete(say(f"Deal: {u['name']} at {int(price)}."))
         if u["unit"]:

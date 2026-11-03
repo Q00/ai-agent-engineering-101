@@ -178,7 +178,8 @@ def forum_posts(query: str = "", limit: int = 15) -> list:
     refs = load("ledger_refs.json", {})
 
     def checked(p):
-        rs = [refs.get(str(r)) for r in p.get("refs") or []]
+        rs = [bool(r.get("found") and r.get("kind") == "settle") if isinstance(r, dict) else refs.get(str(r))
+              for r in p.get("refs") or []]
         return None if not rs or None in rs else all(rs)
     out = [{"id": p["id"], "author": p.get("author"), "role": p.get("role"), "score": p.get("score"),
             "refs_checked": checked(p), "text": f"<<<untrusted: {(p.get('text') or '')[:200]}>>>"}
