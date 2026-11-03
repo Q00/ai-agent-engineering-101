@@ -9,7 +9,13 @@ false grade claims. The model writes the post from those facts; it is told to ad
 
 buyer_turn() is what market_buyer calls: it checks the clock and starts the post in the background, so the
 deal never waits on the model. shop_turn() is what restock calls: a short ad of what the shop has in stock,
-written in code, once an hour. Votes: +1 on posts that cite ledger refs, -1 on posts that give orders to agents.
+written in code, once an hour. Votes: +1 on posts whose ledger refs check out, -1 on posts that give orders to
+agents or cite refs that are not settled deals on the ledger.
+
+A post's refs are a claim like any other until checked (the RA rule: a citation counts only if the record it
+names exists). check_refs() runs in the background (a ledger request takes seconds; a deal must not wait), looks
+each ref up on the public ledger once and caches the answer in .market/ledger_refs.json. votes() and the shop
+manager's forum_posts tool only read that cache.
 """
 import argparse
 import json
@@ -20,8 +26,14 @@ import sys
 import time
 from pathlib import Path
 
+import httpx
+
 MD = Path(".market")
 STATE = MD / "forum_state.json"
+REFS = MD / "ledger_refs.json"
+MARKET = "https://market.ourolabs.ai"
+LOOKUPS = 30               # ledger lookups per background check (one takes several seconds)
+CHECK_EVERY = 2 * 60
 BUYER_EVERY = 15 * 60
 SHOP_EVERY = 60 * 60
 INJECTION = re.compile(r"(?i)(for (ai|llm) (buying )?agents|ignore (all |any |your )?(previous|prior) instructions|"
@@ -56,20 +68,53 @@ def _due(key, every):
     return True
 
 
+def ref_status(refs, budget):
+    """True if every ref is a settle entry on the ledger, False if one is not, None if unknown yet or no refs.
+    budget = [lookups left]; each uncached ref costs one ledger request."""
+    if not refs:
+        return None
+    cache = _load(REFS, {})
+    for r in refs:
+        key = str(r)
+        if key not in cache:
+            if not isinstance(r, int):
+                return False
+            if budget[0] <= 0:
+                return None
+            budget[0] -= 1
+            try:
+                rows = httpx.get(f"{MARKET}/api/ledger", params={"after": r - 1}, timeout=20).json()
+            except (httpx.HTTPError, ValueError):
+                return None
+            cache[key] = bool(rows) and rows[0].get("seq") == r and rows[0].get("kind") == "settle"
+            _save_refs(cache)
+        if not cache[key]:
+            return False
+    return True
+
+
+def _save_refs(cache):
+    tmp = REFS.with_suffix(".tmp")
+    tmp.write_text(json.dumps(dict(list(cache.items())[-5000:])), encoding="utf-8")
+    tmp.replace(REFS)
+
+
 def votes():
-    """+1 on posts that cite the ledger, -1 on posts that give orders to agents; each post once."""
+    """+1 on posts whose refs are settled deals, -1 on orders to agents or refs that do not check out; each
+    post once. A post whose refs are not looked up yet waits for a later call."""
     st = _load(STATE, {})
     done = set(st.get("voted", []))
-    out = []
+    out, budget = [], [0]                      # cache only: lookups happen in check_refs()
     for p in _load(MD / "forum.json", []):
         if p["id"] in done or p.get("author") == "kimauve":
             continue
         if INJECTION.search(p.get("text") or ""):
             out.append({"vote": p["id"], "value": -1, "as": "buyer"})
-        elif p.get("refs"):
-            out.append({"vote": p["id"], "value": 1, "as": "buyer"})
         else:
-            continue
+            ok = ref_status(p.get("refs"), budget)
+            if ok is None:
+                continue
+            out.append({"vote": p["id"], "value": 1 if ok else -1, "as": "buyer"})
         done.add(p["id"])
     if out:
         _write(out)
@@ -79,7 +124,20 @@ def votes():
     return len(out)
 
 
+def check_refs():
+    """Background: look up the refs of posts not voted on yet, so the next votes() can decide them."""
+    done = set(_load(STATE, {}).get("voted", []))
+    budget = [LOOKUPS]
+    for p in _load(MD / "forum.json", []):
+        if p["id"] not in done and p.get("author") != "kimauve" and budget[0] > 0:
+            ref_status(p.get("refs"), budget)
+    print(time.strftime("%H:%M:%S"), f"refs checked, {LOOKUPS - budget[0]} lookups", flush=True)
+
+
 def buyer_turn(log):
+    if _due("check", CHECK_EVERY):
+        subprocess.Popen([sys.executable, "forum.py", "--check"], start_new_session=True,
+                         stdout=open(MD / "forum.log", "a"), stderr=subprocess.STDOUT)
     n = votes()
     if n:
         log(f"[forum] {n} votes queued")
@@ -130,6 +188,10 @@ def shop_turn(inv, log):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--buyer", action="store_true")
-    if ap.parse_args().buyer:
-        os.chdir(Path(__file__).parent)
+    ap.add_argument("--check", action="store_true")
+    a = ap.parse_args()
+    os.chdir(Path(__file__).parent)
+    if a.check:
+        check_refs()
+    elif a.buyer:
         buyer_post()
