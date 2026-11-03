@@ -57,9 +57,9 @@
 \draw[flow] (find) -- (terms); \draw[flow] (terms) -- (adapt); \draw[flow] (adapt) -- (sneg); \draw[flow] (sneg) -- (receipt);
 
 % ---------------- SHOP, column B: restock and memory
-\node[code=4.3cm,anchor=north] (restock) at (9.4,-2.3) {\textbf{restock.py} (every 60 s, no model)\\
+\node[code=4.3cm,anchor=north] (restock) at (9.4,-2.3) {\textbf{restock.py} (no model)\\ buys only in the supply window\\ (3 min, every 20 min)\\
   1 SKUs I sold\quad 2 SKUs the market settled\\ 3 categories ``wanted'' on the forum\\ 4 middle SKU of each category\\
-  \scriptsize keep 2M cash, $\le$1M stock at cost, $\le$5\% of the balance a run};
+  \scriptsize keep 2M cash, $\le$1M stock at cost, $\le$10\% of the balance a run};
 \node[mem=3.4cm,below=7mm of restock] (msales) {market\_sales.json\\ \scriptsize ledger settle entries per SKU};
 \node[mem=3.4cm,below=5mm of msales] (sales) {sales\_memory.jsonl\\ \scriptsize my negotiations and deals};
 \draw[read] (msales) -- (restock);
@@ -67,10 +67,10 @@
 \draw[read] (sales.west) -- (adapt.east);
 \draw[read] (receipt.east) to[bend right=12] node[lab,pos=0.55]{append} (sales.south);
 
-\node[diff,anchor=north west,text width=10.5cm] at ($(receipt.south west)+(0,-0.35)$)
+\node[diff,anchor=north west,text width=10.5cm] (snote) at ($(receipt.south west |- sales.south)+(0,-0.15)$)
   {kit default: random restock; the starter seller states no grade, gives no warranty, never adapts};
 \begin{scope}[on background layer]
-  \node[group,draw=blue!50!black,fit=(find)(receipt)(restock)(sales),label={[font=\bfseries]above:SHOP (sells from its own stock)}] {};
+  \node[group,draw=blue!50!black,fit=(find)(receipt)(restock)(sales)(snote),label={[font=\bfseries]above:SHOP (sells from its own stock)}] {};
 \end{scope}
 
 % ---------------- BUYER, column C: per order

@@ -1,4 +1,8 @@
-"""Round 3 restock hook: what the shop buys, every 60 s (the kit runs it and buys what the last line names).
+"""Round 3 restock hook: what the shop buys (the kit runs it every 60 s and buys what the last line names).
+
+Supply opens once every 20 minutes for 3 minutes (inventory.json "restock": open, opens_at, closes_at). Outside a
+window the kit would wait 90 s per line and then skip it, so the hook buys nothing unless the window is open or
+opens within a minute, and what it buys has to last until the next window.
 
     python restock.py --state .market        ->  {"buy": [{"sku": "...", "qty": 1}, ...]}
 
@@ -9,7 +13,8 @@ Demand signal, best first:
   2b. categories other agents ask for on the forum ("구합니다", "looking for"), the middle SKU of each;
   3. cold start: per category, the SKU whose list price is closest to the category's median (orders accept SKUs
      priced 0.5-1.5 x a reference price, so the middle of the category fits the most orders).
-Money: keep 2,000,000 in cash, hold at most 1,000,000 of stock at cost, spend at most 5% of the balance a run.
+Money: keep 2,000,000 in cash, hold at most 1,000,000 of stock at cost, spend at most 10% of the balance a run
+(about two runs fit in one window).
 Food: only SKUs that keep for 10 days or more, unless the market or I sold that SKU before.
 """
 import argparse
@@ -22,9 +27,10 @@ from r3lib import HERE, SALES, append_jsonl, catalog, forum_wants, read_json, re
 
 CASH_FLOOR = 2_000_000
 STOCK_CAP = 1_000_000
-SPEND_SHARE = 0.05
+SPEND_SHARE = 0.10
 MAX_LINES = 10
 EST_COST = 0.65            # expected cost as a share of list price (A 55-75%, B 40-60%, C 25-45%)
+LEAD = 60                  # start a run this many seconds before the window opens (the kit waits for it)
 LOG = HERE / "logs" / "restock.log"
 
 
@@ -36,6 +42,10 @@ def main():
     cat = catalog()
     if int(inv.get("round") or 0) < 3 or not cat:
         print(json.dumps({"buy": []}))
+        return
+    win = inv.get("restock") or {}
+    if win and not win.get("open") and (win.get("opens_at") or 0) - time.time() > LEAD:
+        print(json.dumps({"buy": []}))                      # window closed: buying now would only be skipped
         return
     balance = inv.get("balance") or 0
     units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
@@ -59,10 +69,10 @@ def main():
     wants = []                                              # (reason, sku, target qty), best first
     for sku, _ in mine.most_common():
         if sku in cat:
-            wants.append(("sold by me", sku, 2))
+            wants.append(("sold by me", sku, 3))         # it has to last the 20 minutes to the next window
     for sku, _ in hot.most_common(60):
         if keeps(sku) or sku in mine:
-            wants.append(("sold in the market", sku, 2 if hot[sku] >= 3 else 1))
+            wants.append(("sold in the market", sku, 3 if hot[sku] >= 3 else 1))
     demand = read_json(md / "demand.json", []) or []
     medians = {d["category"]: d.get("median_price") for d in demand}
     for c, n in sorted(forum_wants(cat).items(), key=lambda kv: -kv[1]):   # what agents ask for on the forum
