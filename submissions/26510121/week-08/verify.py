@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -12,12 +13,17 @@ ROOT = Path(__file__).resolve().parent
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--live-models", action="store_true", help="Run bounded, paid model probes after local tests")
+    p.add_argument("--live-integration", action="store_true", help="Use real model decisions in one local synthetic-market test")
     args = p.parse_args()
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     log = ROOT / "logs" / ("verification-" + stamp + ".txt")
     log.parent.mkdir(exist_ok=True)
-    command = [sys.executable, "-m", "pytest", "tests", "-q"]
-    result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    command = [sys.executable, "-m", "pytest", "tests/test_settlement.py" if args.live_integration else "tests", "-q"]
+    env = dict(os.environ)
+    if args.live_integration:
+        env["R3_LIVE_INTEGRATION"] = "1"
+        command.append("-s")
+    result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace")
     with log.open("x", encoding="utf-8") as f:
         f.write("Local contract and integration tests; no public market actions.\n")
         f.write(result.stdout)

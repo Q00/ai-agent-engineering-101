@@ -47,7 +47,8 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                     if len(receipts) != 1 or agreed is None or not verify_receipt(receipts[0], pub, task=task["id"],
                             sku=c["sku"], budget=order["budget"], agreed=agreed):
                         raise ValueError("receipt_integrity_failure")
-                    rec = receipts[0]
+                    # A2A protobuf numbers decode as whole-valued floats; the signature canonicalizes integer money.
+                    rec = dict(receipts[0], price=int(receipts[0]["price"]))
                     accept = {"cert": True, "expected_sku": c["sku"]}
                     if order.get("kind") == "food":
                         accept["min_hours_left"] = order.get("use_within_hours", 0) + cfg["checkout_buffer_seconds"] / 3600
