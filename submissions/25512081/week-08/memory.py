@@ -133,3 +133,10 @@ def avoid():
         if p.get("broke_at") and not p.get("covered"):
             by[p["shop"]] = by.get(p["shop"], 0) + 1
     return out | {s for s, n in by.items() if n >= 2}
+
+
+def break_rate():
+    """Share of our goods purchases that broke, of those old enough to have broken (6 h), with a prior of 1 in 10:
+    the market does not publish it."""
+    old = [p for p in _load(PURCHASES, []) if p.get("kind") == "goods" and time.time() - p.get("ts", 0) > BREAK_WINDOW + 600]
+    return (1 + sum(1 for p in old if p.get("broke_at"))) / (10 + len(old))

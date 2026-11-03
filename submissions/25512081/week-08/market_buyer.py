@@ -115,6 +115,17 @@ def choose(shops, item, budget, mine, k=1):
     return [next(s for s in pool if s["name"] == n) for n in picked] or pool[:1], ans["reason"]
 
 
+def remember_need(order):
+    """The use_within_hours food orders carry, for our seller's default (it never sees the order)."""
+    if order.get("kind") == "food" and order.get("use_within_hours"):
+        f = Path(".market/use_within.json")
+        try:
+            seen = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            seen = []
+        f.write_text(json.dumps((seen + [order["use_within_hours"]])[-300:]), encoding="utf-8")
+
+
 def pick_in_code(shops, mine):
     """Rounds 1-2: the shop with the most honest deals of mine, then the best average stars; cheats left out."""
     cheats = {m["shop"] for m in mine if m.get("honest") is False}
@@ -127,10 +138,31 @@ def pick_in_code(shops, mine):
     return max(pool, key=score)
 
 
-def quote(shop, budget):
+WARRANTY = re.compile(r"(?i)(\d+(?:\.\d+)?)\s*h(?:ours?)?\b[^.;]{0,30}?warrant|warrant[^.;]{0,30}?(\d+(?:\.\d+)?)\s*h")
+
+
+SHELF = re.compile(r"(?i)(\d+(?:\.\d+)?)\s*h(?:ours?)?\s*(?:of\s*)?shelf|shelf[ -]life[^.;\d]{0,20}(\d+(?:\.\d+)?)\s*h")
+
+
+def shelf_of(text):
+    m = SHELF.search(text or "")
+    return float(m.group(1) or m.group(2)) if m else None
+
+
+def warranty_of(text):
+    """Warranty hours a shop's reply states, else 0 (the accept line makes the kit check the checkout carries it)."""
+    if re.search(r"(?i)no warranty", text or ""):
+        return 0
+    m = WARRANTY.search(text or "")
+    return float(m.group(1) or m.group(2)) if m else 0
+
+
+def quote(shop, budget, order=None):
     """Contract Net, the call for proposals: ask one shop for its SKU and read its first ask."""
     sku = pick_sku(shop, budget)
     opening = f"I want to buy {sku['name']} ({sku['sku']})"
+    if (order or {}).get("kind") == "food" and order.get("use_within_hours"):
+        opening += f", it must last {order['use_within_hours'] + 1} hours"
     peer = Peer(shop["url"], timeout=60)
     r = peer.send(opening)
     log(f"[quote] {shop['name']} -> {opening!r}  <- {r.state} | {r.text[:200]}")
@@ -138,12 +170,17 @@ def quote(shop, budget):
     return {"shop": shop, "peer": peer, "sku": sku, "reply": r, "value": value}
 
 
-def collect_quotes(shops, budget):
-    """Ask every shortlisted shop at once; keep the quotes a deal can come from, best surplus first
-    (list price, what the order is worth, minus the shop's first ask)."""
+def collect_quotes(shops, budget, order=None):
+    """Ask every shortlisted shop at once; keep the quotes a deal can come from, best expected surplus first.
+    A deal is worth the list price; goods that break are worth nothing, and without a warranty we also lose the
+    price (agent.md). With p the break rate we have seen: no warranty (1-p)*list - ask; a warranty covering the
+    6 h a break can happen (1-p)*(list - ask). Food and the round's other rules: list - ask."""
     out = []
+    goods = (order or {}).get("kind") == "goods"
+    p = memory.break_rate() if goods else 0
+    need = (order or {}).get("use_within_hours") and order["use_within_hours"] + 1
     with ThreadPoolExecutor(len(shops)) as ex:
-        futs = {ex.submit(quote, s, budget): s for s in shops}
+        futs = {ex.submit(quote, s, budget, order): s for s in shops}
         try:
             for f in as_completed(futs, timeout=QUOTE_WAIT):
                 try:
@@ -157,8 +194,14 @@ def collect_quotes(shops, budget):
                     walk(q["peer"], r.id)
                 elif r.done or r.ask is None:
                     log(f"[quote] {q['shop']['name']} gave no price ({r.state})")
+                elif need and (left := shelf_of(r.text)) is not None and left < need:
+                    log(f"[quote] {q['shop']['name']} says {left:g} h of shelf life, the order needs {need}: "
+                        "my kit would not pay; left out")
+                    walk(q["peer"], r.id)
                 else:
-                    q["surplus"] = q["value"] - r.ask
+                    q["warranty"] = warranty_of(r.text) if goods else 0
+                    q["surplus"] = int((1 - p) * (q["value"] - r.ask) if q["warranty"] >= 6
+                                       else (1 - p) * q["value"] - r.ask)
                     out.append(q)
         except FuturesTimeout:
             log(f"[quote] some shops did not answer within {QUOTE_WAIT} s")
@@ -168,7 +211,7 @@ def collect_quotes(shops, budget):
 
 def describe(q):
     return (f"{q['shop']['name']} asks {q['reply'].ask} for {q['sku']['name'][:40]} "
-            f"(list price {q['value']})")
+            f"(list price {q['value']}{', warranty %gh' % q['warranty'] if q.get('warranty') else ''})")
 
 
 def review(res, item, budget):
@@ -208,13 +251,16 @@ def pick_sku(shop, budget):
     return max(fit, key=lp) if fit else min(offers, key=lp)
 
 
-def accept_policy(order):
+def accept_policy(order, warranty=0):
     """What the kit must see in the checkout before it pays. Food has to last the order's use_within_hours
     (else it is worth 0), with an hour to spare for checkout; goods of grade C (refurbished) are refused
     because broken goods are worth minus the price."""
     if order.get("kind") == "food":
         return {"cert": True, "min_hours_left": (order.get("use_within_hours") or 0) + 1}
-    return {"cert": True, "grades": ["A", "B"]}
+    acc = {"cert": True, "grades": ["A", "B"]}
+    if warranty:                                  # the shop promised it in the talk: pay only if the checkout has it
+        acc["warranty_hours"] = warranty
+    return acc
 
 
 def trade(run, item, budget):
@@ -266,9 +312,11 @@ def main():
     else:                                         # round 3: Contract Net over a shortlist
         picked, reason = choose(shops, a.item, a.budget, mine, SHORTLIST)
         log(f"[choose] shortlist {[s['name'] for s in picked]}: {reason}")
-        quotes = collect_quotes(picked, a.budget)
+        quotes = collect_quotes(picked, a.budget, order)
+        remember_need(order)
         log("[quote] ranked: " + ("; ".join(f"{describe(q)}, surplus {q['surplus']}" for q in quotes) or "none"))
         shop, sku, attempt, tried = picked[0], pick_sku(picked[0], a.budget), None, set()
+        warranty = 0
         for i, q in enumerate(quotes):
             if attempt and time.time() - t0 > 300 - FALLBACK_LEFT:
                 log("[quote] no time left for the next quote")
@@ -279,7 +327,7 @@ def main():
             if attempt:
                 log(f"[quote] no deal with {shop['name']} ({attempt[5]}); trying {q['shop']['name']}")
                 mine.append(memo(shop, sku, a, order, attempt))
-            shop, sku = q["shop"], q["sku"]
+            shop, sku, warranty = q["shop"], q["sku"], q.get("warranty", 0)
             tried.add(id(q))
             alt = describe(quotes[i + 1]) if i + 1 < len(quotes) else None
             attempt = trade(lambda: negotiate(q["peer"], a.item, a.budget, t0, first=q["reply"], alternative=alt),
@@ -303,7 +351,7 @@ def main():
         except Exception as e:                    # the forum must never cost a deal
             log(f"[forum] skipped: {type(e).__name__}: {e}")
     if r3:
-        line["accept"] = accept_policy(order)
+        line["accept"] = accept_policy(order, warranty)
     print(json.dumps(line, ensure_ascii=False), flush=True)
     return 0
 

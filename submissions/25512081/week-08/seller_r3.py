@@ -74,6 +74,11 @@ CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may 
 CLEARANCE_FLOOR = 0.6     # share of cost
 WARRANTY = {"A": 6}       # goods grade -> warranty hours; B and C goods carry none
 MIN_FOOD_HOURS = 2        # never ship food with less shelf life left than this
+# A food order is worth nothing to the buyer unless the food lasts its use_within_hours (agent.md), and our seller
+# never sees the order. So: ship food that lasts what the buyer says it needs ("must last 30 hours"), else what
+# orders usually need (.market/use_within.json, the use_within_hours our own buyer saw, 80th percentile).
+NEED = re.compile(r"(?i)\blast(?:s|ing)?\D{0,15}?(\d{1,4})\s*h")
+DEFAULT_NEED = 24
 ACCEPT = re.compile(r"\b(ok|okay|yes|deal|accept|accepted|agree|agreed|take it|buy it|sold)\b", re.I)
 
 
@@ -102,6 +107,14 @@ def hours_left(u):
     return None if not u.get("expires_at") else (u["expires_at"] - time.time()) / 3600
 
 
+def need_hours(text):
+    m = NEED.search(text or "")
+    if m:
+        return int(m.group(1))
+    seen = sorted(_load("use_within.json", []))
+    return seen[int(len(seen) * 0.8)] if len(seen) >= 5 else DEFAULT_NEED
+
+
 def find_unit(text, taken=()):
     """The in-stock unit for what the buyer asked (SKU, then name, then category). Among several units of the
     same product: goods ship the best grade, food the one that expires first but still has MIN_FOOD_HOURS."""
@@ -111,15 +124,20 @@ def find_unit(text, taken=()):
         item = next((k for k in RESERVE if k in want), None)
         return item and {"sku": item, "name": item, "list_price": RESERVE[item], "cost": RESERVE[item],
                          "kind": "goods", "grade": "A", "unit": None, "expires_at": None, "cert": False}
+    need = max(MIN_FOOD_HOURS, need_hours(text))
     units = [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken
              and (u["kind"] != "food" or (hours_left(u) or 0) >= MIN_FOOD_HOURS)]
+    # food that lasts the need, expiring first; if none does, the freshest one (its hours are in the reply)
+    fresh = [u for u in units if u["kind"] != "food" or (hours_left(u) or 0) >= need]
     for match in (lambda u: u["sku"].lower() in want,
                   lambda u: (u.get("name") or "").lower() in want,
                   lambda u: (u.get("category") or "").split(">")[-1].lower() in want):
         fit = [u for u in units if match(u)]
         if fit:
             if fit[0]["kind"] == "food":
-                return min(fit, key=lambda u: u["expires_at"] or math.inf)
+                ok = [u for u in fresh if match(u)]
+                return (min(ok, key=lambda u: u["expires_at"] or math.inf) if ok
+                        else max(fit, key=lambda u: u["expires_at"] or 0))
             return min(fit, key=lambda u: (u["grade"], u["supplied_at"]))
     return None
 
@@ -267,7 +285,11 @@ class Seller(AgentExecutor):
         u = deal["unit"]
         receipt = {"shop": NAME, "item": u["sku"], "price": int(price), "task": task.id}
         if u["unit"]:
-            receipt.update(unit=u["unit"], claim=u["grade"], cert=True, warranty_hours=deal["warranty"])
+            # a food unit's grade drops while it waits and the claim is judged at checkout or settle, so a claim
+            # read from a 10 s old inventory can turn false: food carries only the market's certificate
+            receipt.update(unit=u["unit"], cert=True, warranty_hours=deal["warranty"])
+            if u["kind"] != "food":
+                receipt["claim"] = u["grade"]
         await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
         await up.complete(say(f"Deal: {u['name']} at {int(price)}."))
         if u["unit"]:
