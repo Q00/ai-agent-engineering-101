@@ -313,3 +313,45 @@ def test_tactical_triggers_name_moves_from_our_numbers_and_steps_stop_at_the_edg
     assert trigger_step(0.30, 0.20, 0.40, 1) == 0.35
     assert trigger_step(0.38, 0.20, 0.40, 1) == 0.40
     assert trigger_step(0.40, 0.20, 0.40, 1) is None
+
+
+def test_short_shelf_food_counts_the_food_restock_skips() -> None:
+    from r3.manager import PROMPT, short_shelf_food  # noqa: PLC0415 - test only
+    from r3.market_files import CatalogItem  # noqa: PLC0415 - test only
+
+    catalog = {
+        "burger": CatalogItem(
+            sku="burger",
+            category="식품>버거",
+            list_price=10000,
+            kind="food",
+            shelf_hours=7,
+        ),
+        "rice": CatalogItem(
+            sku="rice",
+            category="식품>쌀",
+            list_price=30000,
+            kind="food",
+            shelf_hours=2000,
+        ),
+        "lamp": CatalogItem(sku="lamp", category="가전>조명", list_price=50000),
+    }
+    settles = [
+        (1.0, "b", "http://us", "burger", 8000, "A", ""),
+        (2.0, "b", "http://them", "burger", 6000, "B", ""),
+        (3.0, "b", "http://them", "rice", 20000, "A", ""),
+        (4.0, "b", "http://them", "lamp", 40000, "A", ""),
+    ]
+    # When: restock buys only food that lasts 720 h.
+    signal = short_shelf_food(settles, catalog, 720, "http://us/")
+    # Then: the short-lived burger sales show up; rice and goods do not.
+    assert signal["settles"] == 2
+    assert signal["share_of_food_settles"] == round(2 / 3, 3)
+    assert signal["ours"] == 1
+    assert signal["median_price_to_list"] == 0.7
+    assert signal["top_categories"] == [
+        {"category": "버거", "settles": 2, "median_shelf_hours": 7.0}
+    ]
+    # And: the strategy is told how to act on it, one step at a time.
+    assert "short_shelf_food_24h" in PROMPT
+    assert "min_food_shelf_hours" in PROMPT
