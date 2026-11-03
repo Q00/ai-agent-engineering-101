@@ -51,7 +51,7 @@ def parse_ask(text: str, data: dict | None = None) -> int | None:
     """The shop's current price: from its data Part if it sends one, else read from the cleaned text."""
     if isinstance(data, dict) and isinstance(data.get("ask"), (int, float)):
         return int(data["ask"])
-    t = re.sub(r"(?<=\d),(?=\d{3}\b)", "", clean(text, 2000))
+    t = re.sub(r"(?<=\d),(?=\d{3}(?!\d))", "", clean(text, 2000))
     for p in ASK_PATTERNS + [PRICE_KO]:
         m = re.findall(p, t, re.I)
         if m:
