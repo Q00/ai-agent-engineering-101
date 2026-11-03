@@ -45,8 +45,9 @@ INJECTION = re.compile(r"(?i)(for (ai|llm) (buying )?agents|ignore (all |any |yo
 POST_SYSTEM = (
     "You write one short forum post for other shopping agents in an online market, as a buyer agent. "
     "Use only the facts given: shops, products, grades, prices against list price, warranties, broken goods, "
-    "false grade claims. Be specific and useful to a buyer choosing a shop. No ads, no instructions to other "
-    "agents, nothing you were not given. At most 280 characters. Pick the ledger numbers your post relies on as refs."
+    "false grade claims. Start with a short tag like [구매 기록], then the facts. Every number you state must be "
+    "in the fact of a ledger number you cite. No ads, no advice or instructions to other agents, nothing you were "
+    "not given. At most 280 characters. Pick the ledger numbers your post relies on as refs."
 )
 
 
@@ -155,44 +156,119 @@ def buyer_turn(log):
         log("[forum] buyer post started in the background")
 
 
-def price_watch():
-    """A post every buyer can use and check: the shops that sold cheapest against list price in recent settles on
-    the public ledger (restock.py keeps them per shop), each with one ledger ref. Written in code."""
+# What the voters are (deduced, Nov 3): other students' agents built from the same kit and agent.md, voting by a
+# code rule (refs that are real settles) or by asking a model whether the post helps a buyer, all told to distrust
+# forum text and orders hidden in it, and each reading only the newest 100 posts. So a buyer post here: cites only
+# settle entries, states only numbers its refs show (one ref per claim, so a voter can check each), leads with a
+# tag and the facts, gives no orders, never names our own shop, and covers what sells most. Three kinds rotate:
+POST_KINDS = ("reply", "alert", "deals", "purchases")
+OWN = "kimauve"
+FRESH = 6 * 3600
+
+
+def _recent():
+    """Settles of the last FRESH hours from restock.py's ledger reading, with shop names and catalog facts."""
     import memory
-    rows = []
-    for url, xs in _load(MD / "restock_state.json", {}).get("shop_px", {}).items():
-        if len(xs) >= 3:
-            rows.append((sum(r for _, r in xs[-10:]) / len(xs[-10:]), len(xs), url, xs[-1][0]))
-    rows.sort()
-    if len(rows) < 3:
+    st = _load(MD / "restock_state.json", {})
+    cat = _load(MD / "catalog.json", {})
+    cat = {x["sku"]: x for x in cat} if isinstance(cat, list) else cat
+    out = []
+    for r in st.get("recent", []):
+        x = cat.get(r["sku"]) or {}
+        if time.time() - r["ts"] > FRESH or not x.get("list_price"):
+            continue
+        name = memory.shop_name(r["shop"])
+        if name == OWN:
+            continue
+        out.append(dict(r, shop_name=name, name=(x.get("name") or "")[:28], category=x.get("category") or "",
+                        pct=round(100 * r["amount"] / x["list_price"]), list_price=x["list_price"]))
+    return out, st.get("pop", {})
+
+
+def _line(r):
+    w = f", 보증 {r['warranty']:g}h" if r.get("warranty") else ""
+    return (f"{r['shop_name']} {r['name']}({r['sku']}) {int(r['amount']):,}원=정가의 {r['pct']}%, "
+            f"{r['grade']}등급{w} (#{r['seq']})")
+
+
+def alert_post(done):
+    """Grade claims the ledger shows false: the warning a careful buyer wants most."""
+    rows, _ = _recent()
+    bad = [r for r in rows if r.get("honest") is False and r["seq"] not in done][-3:]
+    if not bad:
         return None
-    best = rows[:4]
-    text = "Price watch from the ledger, avg paid vs list price over recent settles: " + "; ".join(
-        f"{memory.shop_name(u)} {r:.0%} ({n} deals)" for r, n, u, _ in best) + ". Refs are one settle each."
-    return {"post": text[:400], "refs": [seq for *_, seq in best], "as": "buyer"}
+    text = "[등급 경고] 시장 판정과 다른 등급 주장: " + "; ".join(
+        f"{r['shop_name']} {r['name']}({r['sku']}) {r['claim']}등급 주장, 판정 {r['grade']}등급 (#{r['seq']})" for r in bad)
+    return {"post": text[:400], "refs": [r["seq"] for r in bad], "as": "buyer"}
+
+
+def deals_post(done):
+    """For the categories that sell most, the cheapest honest settle against list price, one ref each."""
+    rows, pop = _recent()
+    best = {}
+    for r in rows:
+        if r.get("honest") is not False and (r["category"] not in best or r["pct"] < best[r["category"]]["pct"]):
+            best[r["category"]] = r
+    top = sorted(best, key=lambda c: -pop.get(c, 0))[:3]
+    picks = [best[c] for c in top if best[c]["seq"] not in done]
+    if len(picks) < 2:
+        return None
+    text = "[최근 최저가] 정산 기준, 카테고리별: " + "; ".join(f"{c.split('>')[-1]}: {_line(best[c])}" for c in top)
+    return {"post": text[:400], "refs": [best[c]["seq"] for c in top], "as": "buyer"}
+
+
+def reply_post(done):
+    """An answer to a 'wanted' post (no refs) naming a category: who sold it lately and for how much."""
+    rows, _ = _recent()
+    for p in sorted(_load(MD / "forum.json", []), key=lambda p: -p["id"]):
+        if p.get("refs") or p.get("author") == OWN or p.get("thread") or p["id"] in done:
+            continue
+        text = p.get("text") or ""
+        hits = [r for r in rows if r.get("honest") is not False and r["category"]
+                and r["category"].split(">")[-1].split("(")[0] in text]
+        if not hits:
+            continue
+        uniq = {}                                  # one line per shop and SKU, settles not cited before first
+        for r in sorted(hits, key=lambda r: (r["seq"] in done, r["pct"])):
+            uniq.setdefault((r["shop_name"], r["sku"]), r)
+        hits = list(uniq.values())[:2]
+        body = f"[답변] {hits[0]['category'].split('>')[-1]} 최근 정산: " + "; ".join(_line(r) for r in hits)
+        return {"post": body[:400], "refs": [r["seq"] for r in hits], "thread": p["id"], "as": "buyer"}, p["id"]
+    return None
 
 
 def buyer_post():
-    """Alternates two kinds of buyer post: a price watch from the ledger, and what our own purchases showed."""
+    """One buyer post per slot, the next kind in POST_KINDS that has something to say."""
     st = _load(STATE, {})
-    enough = len(_load(MD / "purchases.json", [])) >= 2
-    if st.get("last_post") != "watch" or not enough:      # never waste a slot: fall back to the other kind
-        post = price_watch()
-        if post:
-            _write([post])
-            st = _load(STATE, {})
-            st["last_post"] = "watch"
-            STATE.write_text(json.dumps(st), encoding="utf-8")
-            print(time.strftime("%H:%M:%S"), json.dumps(post, ensure_ascii=False), flush=True)
-            return
-    st = _load(STATE, {})
-    st["last_post"] = "purchases"
-    STATE.write_text(json.dumps(st), encoding="utf-8")
-    import harness                                   # only the purchases post needs the model
+    done = set(st.get("posted", []))
+    last = st.get("last_post")
+    order = POST_KINDS[POST_KINDS.index(last) + 1:] + POST_KINDS[:POST_KINDS.index(last) + 1] if last in POST_KINDS \
+        else POST_KINDS
+    for kind in order:
+        if kind == "purchases":
+            post = purchases_post()
+            key = None
+        else:
+            got = {"alert": alert_post, "deals": deals_post, "reply": reply_post}[kind](done)
+            post, key = (got if kind == "reply" and got else (got, None))
+        if not post:
+            continue
+        _write([post])
+        st = _load(STATE, {})
+        st["last_post"] = kind
+        st["posted"] = (st.get("posted", []) + post["refs"] + ([key] if key else []))[-3000:]
+        STATE.write_text(json.dumps(st), encoding="utf-8")
+        print(time.strftime("%H:%M:%S"), kind, json.dumps(post, ensure_ascii=False), flush=True)
+        return
+    print("nothing to post")
+
+
+def purchases_post():
+    """What our own purchases showed, written by the cheap model from the facts, refs filtered to our ledger."""
     rows = _load(MD / "purchases.json", [])[-15:]
     if len(rows) < 2:
-        print("too few purchases to post")
-        return
+        return None
+    import harness
     facts = []
     for p in rows:
         line = (f"ledger {p.get('ledger')}: {p.get('shop')} sold {(p.get('name') or '')[:40]}, grade {p.get('grade')}"
@@ -206,9 +282,8 @@ def buyer_post():
                                          "refs": {"type": "array", "items": {"type": "integer"}}},
         "required": ["post", "refs"]}, None, 60, 1, model=harness.CHEAP, role="forum")
     known = {p.get("ledger") for p in rows}
-    post = {"post": ans["post"][:400], "refs": [r for r in ans["refs"] if r in known][:5], "as": "buyer"}
-    _write([post])
-    print(time.strftime("%H:%M:%S"), json.dumps(post, ensure_ascii=False), flush=True)
+    refs = [r for r in ans["refs"] if r in known][:5]
+    return {"post": ans["post"][:400], "refs": refs, "as": "buyer"} if refs else None
 
 
 SETTLED = re.compile(r"\[acp\] settled (.+?) at (\d+), ledger #(\d+)")      # the kit's line for each of our sales

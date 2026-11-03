@@ -92,6 +92,11 @@ def read_ledger(st, catalog):
                         if d.get("unit"):
                             st["unit_grade"][str(d["unit"])] = d.get("grade") or "?"
                     lp_ = (catalog.get(sku) or {}).get("list_price")
+                    if d.get("amount"):                   # the latest settles whole, for the buyers' forum posts
+                        st["recent"].append({"seq": r["seq"], "ts": int(r.get("ts") or 0), "shop": d.get("shop"),
+                                             "sku": sku, "amount": d["amount"], "grade": d.get("grade"),
+                                             "claim": d.get("claim"), "honest": d.get("claim_honest"),
+                                             "warranty": d.get("warranty_hours")})
                     if d.get("shop") and d.get("amount") and lp_:     # price per shop, for the buyers' forum
                         st["shop_px"][d["shop"]] = (st["shop_px"].get(d["shop"], []) + [[r["seq"], round(d["amount"] / lp_, 3)]])[-20:]
                     cat = (catalog.get(sku) or {}).get("category")
@@ -108,6 +113,7 @@ def read_ledger(st, catalog):
                 break
     st["seq"] = seq
     st["unit_grade"] = dict(list(st["unit_grade"].items())[-5000:])
+    st["recent"] = st["recent"][-600:]
     tmp = Path(".market") / "break_rates.tmp"
     tmp.write_text(json.dumps(st["breaks"]), encoding="utf-8")
     tmp.replace(Path(".market") / "break_rates.json")
@@ -201,7 +207,7 @@ def main():
     catalog = catalog_of(sd)
     st = load(sd / "restock_state.json", {})
     for k, v in (("pop", {}), ("sku_pop", {}), ("sold", {}), ("sold_log", []), ("settles", 0),
-                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {})):
+                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", [])):
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
 
