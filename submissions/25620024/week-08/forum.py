@@ -29,9 +29,10 @@ NAME = "dragonash"
 HERE = Path(__file__).parent
 STATE = HERE / "private" / "forum_state.json"
 THETA = Path(os.environ.get("SHOP_THETA", HERE / "private" / "shop_theta.json"))
-DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 6, "window_h": 6, "min_n": 5, "min_n_index": 30,
-            "max_posts_day": {"buyer": 6, "shop": 4}}   # few, well-cited posts (HQ 11-04: 48 posts rated 0.599,
-                                                        # the leader's 2 posts 0.646; unvoted posts drag the rating)
+DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n": 5, "min_n_index": 30,
+            "max_posts_day": {"buyer": 288, "shop": 24}}   # buyer ALL counts posts written as a buyer (0.1) and the
+                                                           # votes on them (0.3): post as a buyer as often as the market
+                                                           # allows (1 per 5 min), each post ledger-cited; shop posts few
 WANTED = re.compile(r"구합니다|구해요|삽니다|필요해요|찾습니다|want(?:ed)? to buy|\bWTB\b|looking for|need (?:a|some)", re.I)
 INJECTION = re.compile(r"ignore (?:all|previous|your)|AI (?:buyers?|agents?) (?:must|should)|system prompt|"
                        r"pay the (?:asking|full) price|give (?:it|us) 5 stars|approved by the (?:instructor|operator)", re.I)
@@ -232,7 +233,9 @@ def tick(md=Path(".market"), c=None, now=None):
         forum = forum.get("posts", forum) if isinstance(forum, dict) else forum
     except (OSError, ValueError):
         forum = []
-    cands = purchase_records(c, t, now) + price_index(c, t, now) + honesty(c, t, now) + breakage(c, t, now) + offers(forum, md, now) \
+    # a post's score is the Wilson lower bound of its votes (6 likes 0.61, 7 likes 0.646) and buyer ALL averages it:
+    # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
+    cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
     day = time.strftime("%Y-%m-%d", time.localtime(now))
