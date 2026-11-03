@@ -33,11 +33,15 @@ class ReserveSigner:
             return self.reserve
         return price
 
-    def sign(self, agreed_price):
+    def sign(self, agreed_price, **extras):
         if not isinstance(agreed_price, int) or isinstance(agreed_price, bool):
             raise ValueError("agreed price must be a whole number")
         if agreed_price < self.reserve:
             raise ValueError(f"refusing to sign {agreed_price} below reserve {self.reserve}")
         body = {"shop": self.shop, "item": self.item, "price": agreed_price, "task": self.task}
+        allowed = {"unit", "claim", "warranty_hours", "cert"}
+        unknown = set(extras) - allowed
+        if unknown:
+            raise ValueError(f"unsupported receipt fields: {sorted(unknown)}")
         key = serialization.load_pem_private_key(Path(self.key_path).read_bytes(), password=None)
-        return {**body, "sig_seller": base64.b64encode(key.sign(canonical(body))).decode()}
+        return {**body, **extras, "sig_seller": base64.b64encode(key.sign(canonical(body))).decode()}
