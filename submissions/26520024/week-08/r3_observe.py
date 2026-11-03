@@ -50,7 +50,8 @@ def refresh_public(md=None, *, get=None, now=None):
                         stamp = row.get('ts')
                         if type(stamp) not in (int, float) or not 0 < stamp <= now + 60:
                             raise ValueError('invalid ledger timestamp')
-                        data = {k: row['data'][k] for k in ('item', 'price', 'shop', 'buyer', 'unit', 'name')
+                        data = {k: row['data'][k] for k in ('item', 'price', 'amount', 'order', 'task',
+                                'shop', 'buyer', 'unit', 'name', 'grade', 'claim_honest')
                                 if k in row['data']}
                         data.update(seq=row['seq'], source='public_ledger', observed_at=now)
                         added += memory.record('market_settle', row['seq'], data, ts=stamp)
