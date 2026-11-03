@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import os
+import sqlite3
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -51,6 +52,7 @@ PRICES: Final[dict[str, tuple[float, float]]] = {
 DEFAULT_DAILY_USD: Final = 3.0
 COOLDOWN_SECONDS: Final = 1800.0
 COOLDOWN_KEY: Final = "model_cooldown_until"
+HAIKU_LONG_CONTEXT: Final = 100_000
 Role = Literal["scout", "tactical", "strategy", "trade"]
 Effort = Literal["low", "medium", "high"]
 HTTP_PAYMENT_REQUIRED: Final = 402
@@ -66,6 +68,8 @@ def kst_day(now: float | None = None) -> str:
 def price(model: str, input_tokens: int, output_tokens: int) -> float:
     """Price a call in USD from list prices; cache discounts are ignored (safe side)."""
     per_in, per_out = PRICES.get(model, PRICES[OPUS_MODEL])
+    if model == HAIKU_MODEL and input_tokens > HAIKU_LONG_CONTEXT:
+        per_in, per_out = 0.50, 2.50
     return round((input_tokens * per_in + output_tokens * per_out) / 1_000_000, 6)
 
 
@@ -139,6 +143,9 @@ class ModelClient:
         key = os.environ.get("ANTHROPIC_API_KEY")
         if not key or os.environ.get(gate, "1") != "1":
             return None
+        if events is None:
+            LOGGER.warning("model_events_unavailable; keep rule-based trading")
+            return None
         quota: DailyQuota | None = None
         quota_path = os.environ.get("AX_PAID_QUOTA_PATH")
         if quota_path:
@@ -161,8 +168,9 @@ class ModelClient:
             return 0.0
         try:
             return self.events.spend(kst_day())[0]
-        except OSError:
-            return 0.0
+        except (OSError, sqlite3.Error):
+            LOGGER.warning("model_spend_unavailable; calls disabled")
+            return float("inf")
 
     def cooling_down(self) -> bool:
         """Report whether a billing refusal is pausing every model call."""
@@ -170,8 +178,9 @@ class ModelClient:
             return False
         try:
             raw = self.events.get_value(COOLDOWN_KEY)
-        except OSError:
-            return False
+        except (OSError, sqlite3.Error):
+            LOGGER.warning("model_cooldown_unavailable; calls disabled")
+            return True
         try:
             return raw is not None and time.time() < float(raw)
         except ValueError:
