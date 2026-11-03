@@ -26,6 +26,8 @@ import context    # noqa: E402
 import forum      # noqa: E402
 import harness    # noqa: E402
 import insights   # noqa: E402
+import journal    # noqa: E402
+import ledger     # noqa: E402
 import restock    # noqa: E402
 import tools      # noqa: E402
 
@@ -230,14 +232,14 @@ def test_forum():
     print("    | " + new[0]["post"] + "\n    | " + new[1]["post"])
     before = len(outbox())
     note = analysis.replies(NOW + 600, st)
-    check("10 minutes later: the next post waits (30 minutes between replies per role)", len(outbox()) == before, note)
-    analysis.replies(NOW + 1900, st)
+    check("10 minutes later: the next post waits (an hour between replies per role)", len(outbox()) == before, note)
+    analysis.replies(NOW + 3700, st)
     new = outbox()[before:]
-    check("after 30 minutes: 침구 answered by our buyer only (our shop has none in stock)",
+    check("after an hour: 침구 answered by our buyer only (our shop has none in stock)",
           [(x["as"], x["thread"]) for x in new] == [("buyer", 104)], new)
     check("our buyer's data reply does not name our own shop", "Kiro729" not in new[0]["post"], new[0]["post"])
     check("our own post and replies in a thread are never answered; each post once",
-          sorted(st["answered"]) == [101, 104] and analysis.replies(NOW + 4000, st) == "0 wanted post(s) waiting")
+          sorted(st["answered"]) == [101, 104] and analysis.replies(NOW + 7400, st) == "0 wanted post(s) waiting")
 
 
 SELLER_PROPOSALS = [{"field": "price_adjust", "value": 0.12, "reason": "kimchi sells at 70% of list, 20 in 6 h"},
@@ -259,6 +261,61 @@ BUYER_PROPOSALS = [{"field": "open_ratio", "value": 0.55, "reason": "asks fall t
                    {"field": "max_ratio", "value": 0.99, "reason": "pay anything"},
                    {"field": "avoid_shops", "value": ["Beta"], "reason": "3 of 8 claims true"},
                    {"field": "prefer_shops", "value": ["Nobody"], "reason": "made up"}]
+
+
+def test_journal():
+    print("\n[journal] the Kiro Market Journal")
+    hour, hourly = int(NOW // 3600 * 3600) - 3600, {}
+    for i in range(150):                    # the last full hour: 150 deals agreed, 90 paid
+        checks = ({} if i < 90 else {"sig_buyer_ok": False, "settled": False} if i < 120
+                  else {"item_matches": False, "sig_buyer_ok": False, "settled": False} if i < 135 else {"settled": False})
+        ledger.count_result(hourly, {"seq": 1000 + i, "ts": hour + 60, "kind": "result",
+                                     "data": {"receipt": {"price": 9000}, "verified": i < 90, "checks": checks}})
+    ledger.count_result(hourly, {"seq": 2000, "ts": hour + 90, "kind": "result", "data": {"receipt": None}})
+    h = hourly[str(hour)]
+    check("results counted by hour: 151 results, 150 agreed, 90 paid; failed checks; 15 passed every check yet unpaid",
+          (h["results"], h["agreed"], h["paid"], h["failed"], h["passed_unpaid"], h["samples"])
+          == (151, 150, 90, {"sig_buyer_ok": 45, "item_matches": 15}, 15, [1147, 1148, 1149]), h)
+    saved = (journal.MIN_PRICE_ROWS, journal.MIN_CLAIMS, journal.MIN_SHOPS, journal.MIN_TRADE)
+    journal.MIN_PRICE_ROWS, journal.MIN_CLAIMS, journal.MIN_SHOPS, journal.MIN_TRADE = 5, 8, 2, 10    # the small test market
+    try:
+        data = dict(journal.gather(NOW), hourly=hourly)
+        good = "합의된 거래 150건 중 60건이 정산되지 않았고, 대부분은 buyer 서명 단계에서 멈췄다."
+        reader = lambda said: (lambda prompt, model=None, timeout=None: said)
+        state, issues = {}, []
+        for said in (good, "결제 실패가 많으니 가게들은 영수증 형식을 확인하세요.", "99건이 다시 시도됐다.", None):
+            issues.append(journal.next_issue(data, NOW, state, reader(said)))
+        text = issues[0][0]
+        print("\n".join("    | " + x for x in text.splitlines()))
+        check("four desks in turn, numbered 1 to 4", [(d, n) for _, _, d, n in issues] == [("탐사", 1), ("시세", 2), ("품질", 3), ("수급", 4)])
+        lines = text.splitlines()
+        check("an issue reads like a journal: masthead, headline, lede, sections, 해설, method, evidence",
+              lines[0].startswith("KIRO MARKET JOURNAL · 제1호 · ") and lines[0].endswith("KST · 탐사 데스크")
+              and lines[2] == "합의된 거래의 40%가 결제 단계에서 사라졌다" and "■ 결과" in lines and "■ 해설" in lines
+              and lines[-2].startswith("방법 · 공개 원장 result") and lines[-1] == "근거 · 원장 #1147 #1148 #1149", lines)
+        check("the investigation: the market's checks in Korean, and what passed every check yet went unpaid",
+              "  · buyer가 서명하지 않음(결제 포기) 45건" in lines and "  · 영수증 상품이 주문과 다름 15건" in lines
+              and "  · 검사는 모두 통과, buyer 자신의 조건으로 결제 안 됨 15건" in lines)
+        check("the 해설 is kept when its numbers are the issue's", "  " + good in lines)
+        check("a 해설 that tells shops what to do (Korean), or uses a number the issue lacks, is dropped",
+              "■ 해설" not in issues[1][0] and "■ 해설" not in issues[2][0])
+        check("price desk: the spread, by grade, the most traded product", "김치: 거래의 절반이 정가의 70%~70%에서 체결됐다" in issues[1][0]
+              and "A등급 70% (10건) · B등급 70% (10건)" in issues[1][0] and "20건 · 중앙 체결가 14,000원 / 정가 20,000원" in issues[1][0])
+        q = issues[2][0]
+        check("quality desk: honesty by shop name, ours left out and the issue says so",
+              "Beta: 3/8 (38%)" in q and "Alpha: 10/12 (83%)" in q and "Kiro729" not in q and "발행사와 주인이 같은 가게는 제외" in q, q)
+        check("supply desk: concentration, the category no other shop stocks", "거래의 100%가 상위 1개 카테고리에 몰렸다" in issues[3][0]
+              and "침구" in issues[3][0], issues[3][0])
+        check("nothing new on any desk: the hour is skipped", journal.next_issue(data, NOW, state, reader(good)) is None)
+        check("nothing private in any issue", not any(w in t for t, *_ in issues for w in ("원가", "마진", "budget", "cost", "margin")))
+        common.write_json(ledger.folder() / "results_hourly.json", hourly)
+        before = len(outbox())
+        note = analysis.journal_step(NOW + 3600 + 1, {}, reader(None))
+        line = outbox()[before] if len(outbox()) > before else {}
+        check("the runner posts an issue as our buyer, with ledger refs", line.get("as") == "buyer"
+              and line.get("post", "").startswith("KIRO MARKET JOURNAL · 제1호") and note.startswith("journal 제1호"), note)
+    finally:
+        journal.MIN_PRICE_ROWS, journal.MIN_CLAIMS, journal.MIN_SHOPS, journal.MIN_TRADE = saved
 
 
 def test_analysts():
@@ -448,11 +505,11 @@ def test_runner():
     quiet = lambda messages, model, tools=None: answer({"report": "ok", "proposals": []})
     t0 = NOW + 5 * H
     done = analysis.run_once(t0, quiet, fake_ledger, fake_shops)
-    check("first pass: every step is due", done == ["collect", "index", "replies", "votes", "seller", "buyer", "integrated"], done)
+    check("first pass: every step is due", done == ["collect", "replies", "votes", "seller", "buyer", "integrated"], done)
     check("10 minutes later: replies only", analysis.run_once(t0 + 600, quiet, fake_ledger, fake_shops) == ["replies"])
     check("an hour later: collect and replies", analysis.run_once(t0 + 3600, quiet, fake_ledger, fake_shops) == ["collect", "replies"])
-    check("3 hours later: index and the role analyses too",
-          analysis.run_once(t0 + 3 * H, quiet, fake_ledger, fake_shops) == ["collect", "index", "replies", "votes", "seller", "buyer"])
+    check("3 hours later: the role analyses too (the journal has nothing new in this small market)",
+          analysis.run_once(t0 + 3 * H, quiet, fake_ledger, fake_shops) == ["collect", "replies", "votes", "seller", "buyer"])
     lock = MD / "analysis" / "lock"
     lock.write_text("1", encoding="utf-8")
     check("a pass already running: skipped", analysis.run_once(t0 + 24 * H, quiet, fake_ledger, fake_shops) == []
@@ -559,6 +616,7 @@ def main() -> int:
         test_collect()
         test_tool()
         test_forum()
+        test_journal()
         test_analysts()
         test_insights()
         test_context()

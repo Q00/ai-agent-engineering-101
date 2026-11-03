@@ -10,11 +10,12 @@ Each pass does only what is due, in this order:
                         market shows them; the wanted categories restock reads (analysis/wanted.json)
     opening     10 min  once, our shop's opening post, when the first day's stock is in
                         (OPEN_CATEGORIES categories, or OPEN_MIN after OPEN_WAIT)
-    index        3 h    the market index on the forum, as our buyer (forum.py): what moved since
-                        the last one and a checked reading by MODEL_MID; skipped until the ledger
-                        holds MIN_INDEX settles of the last day
+    journal      1 h    the Kiro Market Journal on the forum, as our buyer (journal.py): one issue
+                        from the next of four desks with something new, the 해설 by MODEL_MID
+                        and checked; an hour with nothing new is skipped. (Until 11/4 this was
+                        the market index every 3 hours, index() below, no longer scheduled.)
     replies     10 min  other agents' "wanted" posts: a data reply as our buyer and a stock reply
-                        as our shop, each at most once every 30 minutes
+                        as our shop, each at most once an hour
     votes        3 h    at most one dislike (a post steering AI agents or a repeat) and one like (the
                         most useful post) on the last 3 hours' posts, as our buyer (forum.pick_votes)
     seller       3 h    the seller analysis (analysts.py, MODEL_MID + ledger_query)
@@ -38,11 +39,12 @@ import context
 import contract
 import forum
 import harness
+import journal
 import ledger
 
-EVERY = {"collect": 3600, "opening": 600, "index": 3 * 3600, "replies": 600, "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600,
-         "integrated": 12 * 3600}
-REPLY_GAP = 1800
+EVERY = {"collect": 3600, "opening": 600, "journal": 3600, "replies": 600, "votes": 3 * 3600, "seller": 3 * 3600,
+         "buyer": 3 * 3600, "integrated": 12 * 3600}
+REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 MIN_INDEX = 20
 OPEN_CATEGORIES = 100    # categories in stock before our shop announces itself (day one stocks about 116)
 OPEN_MIN, OPEN_WAIT = 20, 1800   # or at least this many, half an hour after the first stock came in
@@ -87,9 +89,10 @@ def collect(now: float, get_ledger=None, get_json=None) -> str:
         log(f"[contract] {p}")
     try:
         if any("stock" in s for s in shops):
-            stocked = {(catalog.get(k) or {}).get("category") for s in shops if not forum.own(s.get("name"))
-                       for k, q in (s.get("stock") or {}).items() if q}
-            common.write_json(folder() / "shops_stock.json", {"at": int(now), "stocked": sorted(c for c in stocked if c)})
+            per = Counter(c for s in shops if not forum.own(s.get("name"))
+                          for c in {(catalog.get(k) or {}).get("category") for k, q in (s.get("stock") or {}).items() if q} if c)
+            stocked = set(per)
+            common.write_json(folder() / "shops_stock.json", {"at": int(now), "stocked": sorted(stocked), "shops_per": dict(per)})
             stock_note = f"{len(stocked)} categories stocked by other shops"
     except Exception as e:                                       # noqa: BLE001
         stock_note = f"shops' stock unavailable ({type(e).__name__})"
@@ -137,6 +140,16 @@ def index(now: float, state: dict, ask=None) -> str | None:
     common.write_json(folder() / "last_index.json", record)
     state["index_n"] = n
     return f"market index #{n} posted ({len(text)} chars, {len(refs)} refs)"
+
+
+def journal_step(now: float, state: dict, ask=None) -> str | None:
+    """The next journal issue, posted as our buyer; None when no desk has anything new."""
+    got = journal.next_issue(journal.gather(now), now, state.setdefault("journal", {}), ask or harness.ask)
+    if not got:
+        return None
+    text, refs, desk, n = got
+    forum.outbox(post=text, refs=refs, **{"as": "buyer"})
+    return f"journal 제{n}호 ({desk}) posted ({len(text)} chars, {len(refs)} refs)"
 
 
 def replies(now: float, state: dict) -> str:
@@ -201,10 +214,11 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
                     note = opening(now, state)
                     if note is None:
                         continue                                # stock not in yet; look again next pass
-                elif name == "index":
-                    note = index(now, state)
+                elif name == "journal":
+                    note = journal_step(now, state)
                     if note is None:
-                        log("[analysis] index: not enough settles yet")
+                        log("[analysis] journal: no desk has anything new; skipped")
+                        state[name] = now                       # look again in an hour
                         continue
                 elif name == "replies":
                     note = replies(now, state)

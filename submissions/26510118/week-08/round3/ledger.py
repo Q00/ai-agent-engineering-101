@@ -12,6 +12,12 @@ Only settle and broken entries are kept: a Round 3 order entry carries no item o
 The first run starts from the newest 500 entries, not from the beginning of the ledger. The ledger
 runs on across rounds and each entry carries its round, so entries of another round (Round 2's last
 deals, when we join) are skipped: they would show as this round's market.
+
+Result entries (one per order: the receipt, whether the deal was verified and paid, and the market's
+checks) come by the ten thousand an hour, so they are counted, not kept: results_hourly.json holds,
+per clock hour, the deals agreed (a receipt with a price), those paid, the checks the unpaid ones
+failed, the unpaid ones that passed every check (the buyer's own conditions refused them), and a few
+sample entries. The journal's investigation desk (journal.py) reads it.
 """
 import json
 import os
@@ -23,7 +29,8 @@ import common
 
 URL = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
 EVERY = 3600                     # seconds between collections
-PAGES = 40                       # 500 entries a page; a run stops here and the next one goes on
+PAGES = 80                       # 500 entries a page; a run stops here and the next one goes on (11/3: ~14k entries an hour)
+RESULT_HOURS = 48                # hours of result counts kept
 SETTLE_KEYS = ("order", "buyer", "shop", "item", "amount", "name", "grade", "claim", "claim_honest",
                "warranty_hours", "unit")
 BROKEN_KEYS = ("buyer", "shop", "item", "unit", "order")
@@ -40,10 +47,12 @@ def fetch(after: int) -> list:
 
 
 def collect(get=fetch, pages: int = PAGES) -> int:
-    """Append new settle and broken entries to ledger/*.jsonl. Returns how many were new."""
+    """Append new settle and broken entries to ledger/*.jsonl and count the result entries by hour.
+    Returns how many settle and broken entries were new."""
     f = folder()
     f.mkdir(parents=True, exist_ok=True)
     state = common.read_json(f / "state.json", {}) or {}
+    hourly = common.read_json(f / "results_hourly.json", {}) or {}
     after, n = state.get("seq", -500), 0
     for _ in range(pages):
         rows = get(after)
@@ -54,7 +63,9 @@ def collect(get=fetch, pages: int = PAGES) -> int:
                 d, keys, out = e.get("data") or {}, None, None
                 if e.get("round", common.ROUND) != common.ROUND:
                     continue
-                if e.get("kind") == "settle":
+                if e.get("kind") == "result":
+                    count_result(hourly, e)
+                elif e.get("kind") == "settle":
                     keys, out = SETTLE_KEYS, s
                 elif e.get("kind") == "broken":
                     keys, out = BROKEN_KEYS, b
@@ -67,7 +78,28 @@ def collect(get=fetch, pages: int = PAGES) -> int:
             break
     state.update(seq=after, at=time.time())
     common.write_json(f / "state.json", state)
+    keep = int(time.time() // 3600 * 3600) - RESULT_HOURS * 3600
+    common.write_json(f / "results_hourly.json", {h: v for h, v in hourly.items() if int(h) >= keep})
     return n
+
+
+def count_result(hourly: dict, e: dict) -> None:
+    """One result entry into its clock hour's counts (results_hourly.json)."""
+    d = e.get("data") or {}
+    h = hourly.setdefault(str(int((e.get("ts") or 0) // 3600 * 3600)),
+                          {"results": 0, "agreed": 0, "paid": 0, "failed": {}, "passed_unpaid": 0, "samples": []})
+    h["results"] += 1
+    if not isinstance((d.get("receipt") or {}).get("price"), (int, float)):
+        return                                                  # no agreement: the talk ended without a receipt
+    h["agreed"] += 1
+    if d.get("verified"):
+        h["paid"] += 1
+        return
+    failed = [k for k, v in (d.get("checks") or {}).items() if v is False and k != "settled"]
+    for k in failed:
+        h["failed"][k] = h["failed"].get(k, 0) + 1
+    h["passed_unpaid"] += not failed
+    h["samples"] = (h["samples"] + [e.get("seq")])[-3:]
 
 
 def names() -> dict:

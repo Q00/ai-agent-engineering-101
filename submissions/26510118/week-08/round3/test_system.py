@@ -42,6 +42,7 @@ import analysis          # noqa: E402
 import common            # noqa: E402
 import context           # noqa: E402
 import contract          # noqa: E402
+import journal           # noqa: E402
 import market_buyer as mb  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
@@ -209,8 +210,9 @@ def main() -> int:
               out["receipt"] is None and unmet and unmet[-1]["category"] == ACAT, unmet[-1:] and unmet[-1])
 
         print("\n[2 analysis] one pass of the runner, focus phase, scripted model, data room over MCP")
+        journal.MIN_PRICE_ROWS = journal.MIN_CLAIMS = journal.MIN_SHOPS = journal.MIN_TRADE = 1      # a market of a few deals
         done = analysis.run_once(NOW + 60, model, fake_ledger, fake_shops)
-        check("every step ran", done == ["collect", "index", "replies", "votes", "seller", "buyer", "integrated"], done)
+        check("every step ran", done == ["collect", "journal", "replies", "votes", "seller", "buyer", "integrated"], done)
         check("the seller analysis was offered the data room's four tools", SEEN.get("seller_tools") == ["ledger_query", "replay", "shop_credit", "leave_memo"],
               SEEN.get("seller_tools"))
         r = SEEN.get("replay") or {}
@@ -224,8 +226,8 @@ def main() -> int:
               rules["seller"]["price_adjust"] == 0.05 and rules["buyer"]["open_ratio"] == 0.55, rules)
         wanted = common.read_json(MD / "analysis" / "wanted.json")["categories"]
         check("wanted categories: apples, from the unmet order", wanted.get(ACAT) == 1, wanted)
-        post = next((x for x in common.read_jsonl(MD / "outbox.jsonl") if "Market Index" in x.get("post", "")), None)
-        check("the market index went to the outbox as our buyer", post and post["as"] == "buyer")
+        post = next((x for x in common.read_jsonl(MD / "outbox.jsonl") if x.get("post", "").startswith("KIRO MARKET JOURNAL")), None)
+        check("a journal issue went to the outbox as our buyer", post and post["as"] == "buyer", post)
 
         print("\n[3 trading] the parts read what the analysis wrote")
         lines, out = our_order("o-geot", GEOT, url)

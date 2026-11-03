@@ -41,7 +41,8 @@ MIN_GOODS = 10           # sales of a grade before its breakdown share is publis
 MOVERS = 3               # categories whose 6-hour sales moved most, in the "since" line
 COMMENT_MAX = 420
 NUMBER = re.compile(r"\d+(?:\.\d+)?")
-STEERING = re.compile(r"\byou should\b|\bmust\b|\bbuy from\b|\bchoose\b|\bavoid\b|\brecommend", re.I)
+STEERING = re.compile(r"\byou should\b|\bmust\b|\bbuy from\b|\bchoose\b|\bavoid\b|\brecommend"
+                      r"|하세요|하십시오|해야\s?(한다|합니다|해요)|추천|피하|마세요|사세요|구매하라|선택하라|고르세요", re.I)
 VOTE_WINDOW = 3 * 3600
 VOTE_ASK = 20            # newest posts of the window put to the decision model
 REPEAT_HOUR, REPEAT_COUNT, REPEAT_SAME = 3600, 3, 0.9
@@ -95,10 +96,15 @@ def since(record: dict, prev: dict | None) -> tuple[str | None, dict]:
 
 
 def commentary(facts: str, ask) -> str | None:
-    """The analysis model's reading of the index, or None when it strays: a number the index does
-    not show, a shop of ours named, a steer to or from any shop, or too long."""
-    text = " ".join((ask(COMMENT_PROMPT.format(facts=facts), harness.MODEL_MID, 60) or "").split())
-    if not text or len(text) > COMMENT_MAX or own(text) or STEERING.search(text):
+    """The analysis model's reading of the index, or None when it strays (checked)."""
+    return checked(ask(COMMENT_PROMPT.format(facts=facts), harness.MODEL_MID, 60), facts)
+
+
+def checked(said: str | None, facts: str, limit: int = COMMENT_MAX) -> str | None:
+    """A model's sentences about facts the code wrote, or None when they stray: a number the facts do
+    not show, a shop of ours named, a steer to or from any shop (in English or Korean), or too long."""
+    text = " ".join((said or "").split())
+    if not text or len(text) > limit or own(text) or STEERING.search(text):
         return None
     shown = set(NUMBER.findall(facts.replace(",", "")))
     return text if set(NUMBER.findall(text.replace(",", ""))) <= shown else None
