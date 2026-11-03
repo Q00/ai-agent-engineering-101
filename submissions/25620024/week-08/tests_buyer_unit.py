@@ -175,6 +175,86 @@ def test_enuri(c, shops):
     return n
 
 
+def test_buyer(c, shops):
+    print("buyer: reach, diagnostics, sanctions, advice")
+    import market_buyer as mb
+    cat = market_model.catalog(MD)
+    order = {"budget": 250000, "kind": "goods", "acceptable": [A, D]}
+    got = mb.candidates(shops, order, cat, {})
+    check({x[2]["sku"] for x in got} == {A, D}, "candidates: 500k bed and 300k sofa kept on 250k (old rule 0.6 x list dropped both)")
+    logs = []
+    mb.log, old_log = logs.append, mb.log
+    try:
+        none = mb.candidates(shops, {"budget": 100000, "kind": "goods", "acceptable": [A, D]}, cat, {})
+        check(none == [] and any("no candidates" in x and "2 too expensive" in x for x in logs),
+              "no candidates: one line with counts")
+        # the sanction filter does not look at the order size: a shop paused for a raised ask is skipped for any budget
+        now = time.time()
+        p = buyer_memory._empty()
+        p["offenses"] = [[now - 60, "medium", "misbehaved (hallucination): raised ask"]]
+        small = mb.candidates(shops, {"budget": 18000, "kind": "goods", "acceptable": [B]}, cat, {"big-shop": p})
+        big = mb.candidates(shops, order, cat, {"big-shop": p})
+        check("big-shop" not in [x[1]["name"] for x in small + big], "sanction pause skips big-shop for small and big orders alike")
+        p["recent"] = [[now - 60, "no answer", None]] * 2
+        p["offenses"] = []
+        check(mb.blocked({"big-shop": p}, "big-shop") is not None, "2 no-answers in 6 h pause a shop (big orders included)")
+        cands, adv, rows = mb.follow_enuri(order, shops, cat, {}, enuri.book())
+        check(adv and cands[0][1]["name"] == adv["ranked"][0]["shop"] and any("[enuri] advice" in x for x in logs),
+              "round3 follows Enuri's ranking and logs the advice")
+        check(mb.follow_enuri(order, shops, cat, {}, {}) == ([], None, {}), "no book: falls back to my own ranking")
+        cands, adv, _ = mb.follow_enuri(order, shops, cat, {"big-shop": dict(p, recent=p["recent"])}, enuri.book())
+        check("big-shop" not in [x[1]["name"] for x in cands], "my own memory still filters Enuri's list")
+    finally:
+        mb.log = old_log
+
+
+def test_buyer_team(c, shops):
+    print("buyer team: gate, 2-knob limit, scorecard, brief")
+    import buyer_team as bt
+    bt.PLAN, bt.HISTORY, bt.LESSONS = (Path(os.environ["MARKET_BUYER_PLAN"]), TMP / "private" / "marketing" / "h.jsonl",
+                                       TMP / "private" / "marketing" / "l.json")
+    cur = bt.current()
+    check(cur["theta"]["rfq"] == 3 and cur["enuri"]["survey_quotes"] == 4, "current knobs read from theta and Enuri")
+    raw = {"theta": {"rfq": 99, "rfq_big": 1, "big_budget": 5, "r3_first_offer": 0.6, "max_pay_ratio": 0.95,
+                     "min_reach": 0.45},
+           "enuri": {"survey_quotes": 4, "min_honest": 0.8, "max_broken": 0.15},
+           "forum_advice": ["a", "b", "c", "d"], "forecast_surplus_per_h": 50000,
+           "lessons": [{"text": "x", "verdict": "keep"}, {"text": "y", "verdict": "bogus"}], "retire_lessons": [0],
+           "rationale": "r"}
+    plan, notes = bt.gate(json.dumps(raw), cur)
+    moved = [k for k in bt.THETA_KNOBS if plan["theta"][k] != cur["theta"][k]] + \
+            [k for k in bt.ENURI_KNOBS if plan["enuri"][k] != cur["enuri"][k]]
+    print(f"      gate: changed {plan['changed']}; notes {notes}")
+    check(len(moved) == 2 and len(plan["changed"]) == 2, "at most 2 knobs move per run")
+    check(plan["theta"]["big_budget"] == 20000 and plan["theta"]["rfq"] == 6, "the 2 largest moves win, clamped (big_budget 20000, rfq 6)")
+    check(plan["theta"]["rfq_big"] == 5 and any("not applied" in n for n in notes), "the third move is held and noted")
+    check(len(plan["forum_advice"]) == 3 and len(plan["lessons"]) == 1, "advice capped at 3, bad lesson dropped")
+    all_in = bt.gate({"theta": {k: 1e9 for k in bt.THETA_KNOBS}, "enuri": {k: -1e9 for k in bt.ENURI_KNOBS}},
+                     {"theta": {k: v[1] for k, v in bt.THETA_KNOBS.items()}, "enuri": {k: v[0] for k, v in bt.ENURI_KNOBS.items()}})[0]
+    check(all(all_in["theta"][k] == v[1] for k, v in bt.THETA_KNOBS.items()) and not all_in["changed"],
+          "every knob clamped to its range")
+    Path(bt.PLAN).write_text(json.dumps(plan))
+    check(buyer_memory.theta()["rfq"] == 6 and enuri.settings()["survey_quotes"] == 4, "the plan reaches the buyer and Enuri")
+    sc = bt.scorecard({"ts": 7200, "surplus": 130000, "deals": 12, "forum": 5, "posts": 3},
+                      {"snapshot": {"ts": 0, "surplus": 100000, "deals": 10, "forum": 4, "posts": 1}, "forecast": 20000})
+    check(sc["actual_surplus_per_h"] == 15000 and sc["forecast_error"] == -5000 and sc["deals_added"] == 2,
+          "scorecard: absolute surplus per hour vs the forecast, deals and forum deltas")
+    board = {"buyers": [{"name": "lead", "surplus": 900000, "all": 0.9, "deals": 50},
+                        {"name": "dragonash", "surplus": 300000, "all": 0.5, "deals": 40},
+                        {"name": "house", "house": True, "all": 1.0}]}
+    b, snap, _, _ = bt.brief(board)
+    check(list(b)[0] == "accountability" and b["accountability"]["now"]["surplus_share_of_leader"] == 0.333,
+          "buyer brief starts with accountability (surplus vs leader, Enuri misses)")
+    check(b["accountability"]["now"]["enuri_wrong_24h"] == enuri.book()["enuri_accountability"]["wrong"],
+          "Enuri's wrong purchases reach the buyer team")
+    check("250k+" in b["our_trades_by_budget_24h"] and b["our_trades_by_budget_24h"]["250k+"]["outcomes"].get("no candidates") == 1,
+          "trades per budget band, zero-candidate orders visible")
+    out, _ = bt.run(lambda text, schema: json.dumps(raw), board=board)
+    check(bt.HISTORY.exists() and json.loads(bt.PLAN.read_text())["by"] == "codex buyer team", "run writes plan and history")
+    check(bt.plan_summary()["changed"] == out["changed"], "plan_summary for the sales team")
+    json.dumps(b)
+
+
 def main():
     c, shops = setup()
     test_theta()
