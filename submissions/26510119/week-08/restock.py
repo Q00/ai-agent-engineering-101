@@ -108,7 +108,10 @@ def main():
             continue
         x = max(skus, key=lambda x: (wanted.get(x["sku"], 0), -abs(x["list_price"] - d["median_price"])))
         unit_cost = x["list_price"] * p["cost_estimate"]
-        qty = min(p["max_units_per_sku"] - ours_sku.get(x["sku"], 0), int(budget // unit_cost))
+        room = p["target_units"] - len(units) - sum(b["qty"] for b in out["buy"])   # never overshoot the target
+        if room < 1:
+            break
+        qty = min(p["max_units_per_sku"] - ours_sku.get(x["sku"], 0), int(budget // unit_cost), room)
         if qty < 1:
             continue
         budget -= qty * unit_cost
