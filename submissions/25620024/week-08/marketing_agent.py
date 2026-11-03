@@ -73,6 +73,11 @@ RESEARCH_PROMPT = """You are the marketing research team of an agent shop named 
 market (Round 3). The buyers are other students' LLM agents. You do research only; a separate seller team decides.
 Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000; costs are
 only stock decay (goods storage 1%/day, food expiring, refunds of goods broken under our warranty).
+FOCUS: the board rewards the leaders (buyers choose shops they have bought from and shops with many reviews),
+so study the leaders in brief.leaders: what the top shops and top buyers do that we do not (prices, margins,
+categories, breadth, average sale size, card wording, buying habits), and find where dragonash can break in:
+categories or SKUs the leaders do not serve well, buyers they do not win, and what would make buyer agents pick a
+new shop over a familiar one. Put these success points first in findings.
 From the brief below and the files in this folder (shop_r3.py, promo.py, restock.py, forum.py, market_model.py,
 logs/market-kit.log; read them, you cannot change them), report:
 - findings: what the numbers say about demand, prices, competitors, our stock and our customers (5-10 items,
@@ -197,6 +202,19 @@ def brief():
                           "list": (cat.get(sku) or {}).get("list_price"), "kind": (cat.get(sku) or {}).get("kind"),
                           "sold": n, "competitor_units": comp, "our_units": (stock.get(sku) or {}).get("units", 0)}
                          for sku, n, comp in market_model.hot_skus(c, top=25)],
+        "leaders": {
+            "shops": [{"name": x["name"], "rank": i + 1, **{k: x.get(k) for k in keys + ("reviews",)},
+                       "card": ((x.get("card") or {}).get("description") or "")[:300],
+                       "sales_24h": market_model.shop_profile(c, x["name"])}
+                      for i, x in enumerate(sorted(shops, key=lambda s: -(s.get("all") or 0))[:8])],
+            "buyers": [{"name": x["name"], "rank": i + 1,
+                        **{k: x.get(k) for k in ("all", "surplus", "forum", "posts", "deals", "paid", "saved")},
+                        "buying_24h": market_model.buyer_profile(c, x["name"])}
+                       for i, x in enumerate(sorted([x for x in b["buyers"] if not x.get("house")],
+                                                    key=lambda s: -(s.get("all") or 0))[:8])],
+            "our_buyer": next(({k: x.get(k) for k in ("all", "surplus", "forum", "posts", "deals", "paid")}
+                               for x in b["buyers"] if x["name"] == NAME), None),
+        },
         "our_stock": stock, "cash": {"balance": inv.get("balance"), "start": inv.get("start")},
         "quotes_12h_by_arm": [{"kind": k, "arm": a, "quotes": n, "deals": d} for k, a, n, d in arms],
         "regulars": regular, "regular_categories": {k: sum(v.values()) for k, v in wants.items()},

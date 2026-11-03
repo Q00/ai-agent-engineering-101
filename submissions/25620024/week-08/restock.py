@@ -34,7 +34,10 @@ DEFAULTS = {"cash_reserve": 0.35, "max_list": 300000, "cover_h": {"food": 6, "go
             "share_prior": 0.2, "min_settles": 3, "goods_cap_unproven": 3, "proven_sales": 2,
             "window_budget": 0.08,
             # regulars: buyers with 2+ settled buys from us in 48 h; keep their categories in stock first
-            "regular_min_buys": 2, "regular_depth": 2}
+            "regular_min_buys": 2, "regular_depth": 2,
+            # the marketing plan's picks (high-ticket entries, exclusives) get their own budget per window, above
+            # the general cap: leaders sell 88k-210k per deal in bedding and mattresses, we sold 10k (2026-11-03)
+            "pick_window_budget": 0.08}
 STATE = Path(__file__).parent / "private" / "restock_state.json"
 
 
@@ -112,8 +115,11 @@ def plan(md, c, t, now=None):
         mk = promo.plan().get("restock") or {}
     except Exception:
         mk = {}
+    general = cash
+    cash = min((inv.get("balance") or 0) - t["cash_reserve"] * start, t["pick_window_budget"] * start - spent)
     for x in mk.get("skus") or []:
         add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "marketing pick")
+    cash = min(cash, general)                                 # the rest of the run keeps the general cap
     if mk.get("mode") == "focus":                             # marketing: only regulars and its picks for now
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"], cash, \
             {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}

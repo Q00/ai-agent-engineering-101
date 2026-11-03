@@ -197,6 +197,42 @@ def hot_skus(c, hours=24, top=20):
     return [(sku, n, comp.get(sku, 0)) for sku, n in sold]
 
 
+def shop_profile(c, shop, hours=24, top=5):
+    """What one shop sold lately (by its name in supply entries): deals, distinct SKUs, mean sale, median price share
+    of list, median margin, its top categories."""
+    import statistics
+    rows = c.execute("""select s.amount, s.list_price, su.cost, s.category, s.sku from settles s
+                        join settle_units x on x.seq = s.seq join supply_units su on su.unit = x.unit
+                        where su.shop = ? and s.ts > ?""", (shop, time.time() - hours * 3600)).fetchall()
+    if not rows:
+        return None
+    cats = {}
+    for _, _, _, cat, _ in rows:
+        cats[cat] = cats.get(cat, 0) + 1
+    shares = [a / lp for a, lp, _, _, _ in rows if lp]
+    margins = [a / cost - 1 for a, _, cost, _, _ in rows if cost]
+    return {"deals": len(rows), "skus": len({r[4] for r in rows}), "mean_sale": round(statistics.mean(r[0] for r in rows)),
+            "price_share": round(statistics.median(shares), 3) if shares else None,
+            "margin": round(statistics.median(margins), 3) if margins else None,
+            "top_categories": [((k or "?").split(">")[-1], n) for k, n in sorted(cats.items(), key=lambda kv: -kv[1])[:top]]}
+
+
+def buyer_profile(c, buyer, hours=24):
+    """How one buyer buys: deals, median price share of list it paid, the shops it uses most (by supply name)."""
+    import statistics
+    rows = c.execute("""select s.amount, s.list_price, su.shop from settles s
+                        left join settle_units x on x.seq = s.seq left join supply_units su on su.unit = x.unit
+                        where s.buyer = ? and s.ts > ?""", (buyer, time.time() - hours * 3600)).fetchall()
+    if not rows:
+        return None
+    shops = {}
+    for _, _, sh in rows:
+        shops[sh] = shops.get(sh, 0) + 1
+    shares = [a / lp for a, lp, _ in rows if lp]
+    return {"deals": len(rows), "paid_share_of_list": round(statistics.median(shares), 3) if shares else None,
+            "top_shops": sorted(shops.items(), key=lambda kv: -kv[1])[:4]}
+
+
 def remember_seen(order, shops):
     c = db()
     now = time.time()
