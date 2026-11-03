@@ -17,7 +17,9 @@ tail -3 ~/Desktop/han/agent-market/join.log                                 # �
 curl -s <가게 주소>/.well-known/acp.json | head -c 300
 
 # 4. 자정 tuner cron (한 번만; 자동 설치는 권한 거부로 못 했음)
-( crontab -l 2>/dev/null; echo '0 0 * * * cd /home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-08 && PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin /home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python tune.py >> logs/tune.log 2>&1' ) | crontab -
+#    CLAUDE_CONFIG_DIR 필수: 이 서버의 claude 로그인은 ~/.claude-jiseok에 있어서, 없으면 "OAuth session expired"로 실패한다
+#    (11-04 00:00 첫 실행이 그렇게 실패했고 값은 바뀌지 않았다). harness._env()가 기본값을 넣어 주지만 cron 줄에도 적는다.
+( crontab -l 2>/dev/null | grep -v week-08/tune.py; echo '0 0 * * * cd /home/iai4/Desktop/han/ai-agent-engineering-101/submissions/26510129/week-08 && CLAUDE_CONFIG_DIR=/home/iai4/.claude-jiseok PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin /home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python tune.py >> logs/tune.log 2>&1' ) | crontab -
 crontab -l
 ```
 

@@ -85,12 +85,24 @@ def seller_events(since, until, path=EVENTS):
     return out
 
 
+TOP_ITEMS = 10   # Round 3 has 140 categories; the first summary (11-04 00:00) listed 37 of them in 9.8k chars
+
+
+def _plausible_ask(r):
+    """Stored asks parsed from shop text can be a weight or a count (fixed in first_ask on 11-04); keep 0.2x-3x of list."""
+    ask, lp = r.get("ask"), r.get("list_price")
+    if not isinstance(ask, (int, float)) or ask <= 0:
+        return False
+    return not (isinstance(lp, (int, float)) and lp > 0) or 0.2 * lp <= ask <= 3 * lp
+
+
 def buyer_summary(rows):
     lines = []
     by_item = defaultdict(list)
     for r in rows:
         by_item[r.get("item") or "?"].append(r)
-    for item, rs in sorted(by_item.items()):
+    items = sorted(by_item.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    for item, rs in items[:TOP_ITEMS]:
         deals = [r for r in rs if r.get("outcome") == "deal"]
         walked = sum(1 for r in rs if r.get("outcome") == "walked_away")
         # a walk-away before any offer is the harness giving no answer (10/31: the weekly limit), not a strategy outcome
@@ -99,11 +111,18 @@ def buyer_summary(rows):
         ratio = _mean([r["price"] / r["reference"] for r in deals
                        if isinstance(r.get("price"), (int, float)) and isinstance(r.get("reference"), (int, float)) and r["reference"]])
         cut = _mean([(r["ask"] - r["price"]) / r["ask"] for r in deals
-                     if isinstance(r.get("ask"), (int, float)) and r["ask"] > 0 and isinstance(r.get("price"), (int, float))])
+                     if _plausible_ask(r) and isinstance(r.get("price"), (int, float))])
         guard = Counter(d for r in rs for d in (r.get("guard_decisions") or []) if d != "approved")
         lines.append(f"- {item}: {len(rs)} orders, {len(deals)} deals ({_pct(len(deals) / len(rs))}), {walked_text}; "
                      + (f"deal price / my reference {ratio:.2f}; " if ratio is not None else ""))
-        lines[-1] += f"average cut below the ask {_pct(cut)}; guard interventions {dict(guard) or 'none'}"
+        lines[-1] += f"average cut below the ask {_pct(cut)}"
+        if guard:
+            lines[-1] += "; guard: " + ", ".join(f"{n} {name}" for name, n in guard.most_common(3))
+    rest = items[TOP_ITEMS:]
+    if rest:
+        n = sum(len(rs) for _, rs in rest)
+        d = sum(1 for _, rs in rest for r in rs if r.get("outcome") == "deal")
+        lines.append(f"- {len(rest)} other categories: {n} orders, {d} deals ({_pct(d / n)})")
     shops = Counter(r.get("shop") for r in rows)
     for name, n in shops.most_common(6):
         rs = [r for r in rows if r.get("shop") == name]

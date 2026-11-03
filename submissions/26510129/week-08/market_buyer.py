@@ -82,13 +82,18 @@ def bargain_record(name, mem, discount=0.15):
     return ", ".join(parts) + ". " + rule
 
 
-def first_ask(t):
-    """The shop's opening ask: the A2A metadata when given, else the last 2-3 digit number in its message."""
+def first_ask(t, list_price=None):
+    """The shop's opening ask: the A2A metadata when given, else the last number in its message.
+    Round 3 (first tuner summary, 11-04 00:00): shop messages carry weights and counts ("120g x 20팩"), and 179 of
+    535 stored asks were such numbers. A parsed number counts only when it is plausible against the SKU's list
+    price (0.2x to 3x); otherwise the ask is unknown and the harness is told nothing rather than nonsense."""
     ask = ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")
     if isinstance(ask, (int, float)):
         return int(ask)
-    nums = re.findall(r"(?<![\d.])(\d{1,9})(?![\d])", status_text(t))
-    return int(nums[-1]) if nums else None
+    nums = [int(n) for n in re.findall(r"(?<![\d.])(\d{1,9})(?![\d])", status_text(t))]
+    if isinstance(list_price, (int, float)) and list_price > 0:
+        nums = [n for n in nums if 0.2 * list_price <= n <= 3 * list_price]
+    return nums[-1] if nums else None
 
 
 def receipt_of(t):
@@ -126,7 +131,7 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
     t = send(rpc_url, opening)
     print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
     manip = steered(t)
-    ask0 = first_ask(t)
+    ask0 = first_ask(t, value_cap)
     info = {"ask": ask0, "first_offer": None, "last_offer": None, "reference": reference,
             "guard_decisions": [], "checkout_authorized": False}
     if state(t) != "TASK_STATE_INPUT_REQUIRED":
@@ -166,7 +171,7 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
         print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
         manip = steered(t) or manip
         log += [("you", str(d["price"])), ("shop", status_text(t))]
-        offers.append((d["price"], first_ask(t)))
+        offers.append((d["price"], first_ask(t, value_cap)))
         if state(t) == "TASK_STATE_COMPLETED":
             info["checkout_authorized"] = guardian.checkout_ok(d["price"])
             return "deal", d["price"], receipt_of(t), log, manip, info

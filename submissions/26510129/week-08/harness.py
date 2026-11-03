@@ -38,8 +38,14 @@ CMD = [
 
 def _env():
     # Claude Code refuses to start inside another Claude Code session.
-    return {k: v for k, v in os.environ.items()
-            if not k.startswith("CLAUDECODE") and k != "CLAUDE_CODE_ENTRYPOINT"}
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith("CLAUDECODE") and k != "CLAUDE_CODE_ENTRYPOINT"}
+    # 11-04 00:00: the cron-run tuner failed with "OAuth session expired" because the login on this machine lives in
+    # CLAUDE_CONFIG_DIR (~/.claude-jiseok), which cron and a plain ssh shell do not set. Default to it when it exists.
+    alt = os.path.join(os.path.expanduser("~"), ".claude-jiseok")
+    if "CLAUDE_CONFIG_DIR" not in env and os.path.isdir(alt):
+        env["CLAUDE_CONFIG_DIR"] = alt
+    return env
 
 
 def call(system: str, situation: str) -> str:
