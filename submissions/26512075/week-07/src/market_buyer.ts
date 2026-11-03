@@ -169,7 +169,16 @@ async function main(): Promise<void> {
   if (!Number.isSafeInteger(budget) || budget <= 0) throw new Error("not valid budget");
 
   const { shop, reason } = chooseShop(shops, memory);
-  console.log(`choose ${reason}`)
+  console.debug(`choose ${reason}`)
+
+  
+  const shopReviews = shop.reviews?.slice(0, 5).map(
+    ({ stars, review, round }) => ({
+      stars,
+      review: review.slice(0, 500),
+      round,
+    }),
+  );
 
   const shopUrl = shop.url;
 
@@ -369,12 +378,17 @@ async function main(): Promise<void> {
         break;
       }
 
+      console.error(
+        `[review-debug] selected_shop=${shop.name} reviews_to_harness=${shopReviews.length}`,
+      );
+
       const decision = await askPythonHarness({
         side: "buyer",
         item,
         limit: budget,
         currentAsk: ask,
         sellerTxt: sellerText,
+        shopReviews,
         transcript,
       });
 

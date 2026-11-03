@@ -9,6 +9,11 @@ export interface DecisionRequest {
     currentAsk?: number | undefined;
     incomingOffer?: number;
     sellerTxt?: string;
+    shopReviews?: Array<{
+        stars: number;
+        review: string;
+        round: number;
+    }>;
     transcript: string[];
 }
 
