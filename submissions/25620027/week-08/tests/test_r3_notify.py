@@ -153,14 +153,28 @@ def test_policy_changes_go_out_once_and_loops_report_every_hour() -> None:
     state: dict[str, object] = {"once": ["round3", "switch"]}
     snap = healthy(now)
     snap.loop_runs = runs_before(now)
+    snap.policy_changes = [
+        (
+            now - 60,
+            "claude-haiku-5-5",
+            "tactical",
+            "buyer.quick_accept_ratio",
+            "0.72",
+            "0.75",
+            "buyer_walkaway (agreed 66/124 priced orders in 1h)",
+        )
+    ]
     # When: the first pass after a change runs.
     messages, state = decide(snap, state)
-    # Then: the change goes out once; the first pass only starts the hourly clock.
+    # Then: the change goes out once, in plain Korean with the number behind it;
+    # the first pass only starts the hourly clock.
     assert len(messages) == 1
     assert "정책 변경" in messages[0]
-    assert "조건 발동 변경" in messages[0]
+    assert "바이어 즉시 수락선: 72% → 75%" in messages[0]
+    assert "바이어 합의율 낮음(1시간 66/124)" in messages[0]
     again = healthy(now + 300)
     again.loop_runs = runs_before(now)
+    again.policy_changes = snap.policy_changes
     assert decide(again, state)[0] == []
     # When: the next clock hour starts (13:02 KST) with the same runs in its hour.
     later = healthy(now + 1920)

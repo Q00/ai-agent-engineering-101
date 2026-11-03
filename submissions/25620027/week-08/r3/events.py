@@ -367,6 +367,17 @@ class EventLedger:
                 FROM buyer_attempts WHERE ts >= ?""",
                 (since,),
             ).fetchone()
+            # Attempts where a price was on the table: a shop that had no stock,
+            # timed out, or broke the protocol is not a buyer walking away (first
+            # night: 54 of 60 no-deals were "none of that in stock").
+            priced = db.execute(
+                """SELECT count(*) FROM buyer_attempts WHERE ts >= ? AND NOT (
+                    outcome = 'no_deal' AND (
+                        reason LIKE '%REJECTED%' OR reason LIKE '%timed out%'
+                        OR reason LIKE '%Error%' OR reason LIKE '%not signed%'
+                        OR reason LIKE '%HTTP%' OR reason LIKE '%stock%'))""",
+                (since,),
+            ).fetchone()[0]
             receipts, first_ask = db.execute(
                 """SELECT count(*), coalesce(sum(coalesce(rounds, 0) <= 1), 0)
                 FROM seller_receipts WHERE ts >= ?""",
@@ -374,6 +385,7 @@ class EventLedger:
             ).fetchone()
         return {
             "buyer_attempts": int(attempts),
+            "buyer_priced": int(priced),
             "buyer_agreed": int(agreed),
             "seller_receipts": int(receipts),
             "seller_first_ask": int(first_ask),

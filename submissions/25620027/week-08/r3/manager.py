@@ -474,14 +474,17 @@ def tactical_triggers(
 ) -> list[dict[str, object]]:
     """Name the tactical moves our own numbers call for; empty means hold."""
     found: list[dict[str, object]] = []
-    attempts, agreed = hour.get("buyer_attempts", 0), hour.get("buyer_agreed", 0)
+    # only attempts where a price was on the table count (no-stock, timeouts and
+    # protocol errors are the shop's failure, not a buyer walking away)
+    attempts = hour.get("buyer_priced", hour.get("buyer_attempts", 0))
+    agreed = hour.get("buyer_agreed", 0)
     if attempts >= TRIGGER_MIN_ATTEMPTS and agreed < 0.6 * attempts:
         found.append(
             {
                 "name": "buyer_walkaway",
                 "field": "buyer.quick_accept_ratio",
                 "direction": 1,
-                "why": f"agreed {agreed}/{attempts} orders in 1h",
+                "why": f"agreed {agreed}/{attempts} priced orders in 1h",
             }
         )
     receipts, first = hour.get("seller_receipts", 0), hour.get("seller_first_ask", 0)
@@ -1182,8 +1185,16 @@ class Manager:
             for c in self.events.recent_policy_changes(FOLD_WINDOW_HOURS)
             if c["layer"] == "tactical" and c["accepted"]
         ]
+        folds = [
+            c
+            for c in self.events.recent_policy_changes(FOLD_WINDOW_HOURS)
+            if c["layer"] == "strategy" and c["actor"] == "code" and c["accepted"]
+        ]
         for key in sorted(TACTICAL_FIELDS):
-            mine = [c for c in rows if c["field"] == key]
+            last_fold = max((c["ts"] for c in folds if c["field"] == key), default=0)
+            # only moves made after the last fold count (first night: the fold
+            # fired every 15 min and walked the base up one step at a time)
+            mine = [c for c in rows if c["field"] == key and c["ts"] > last_fold]
             if len(mine) < FOLD_RUNS:
                 continue
             directions: set[int] = set()

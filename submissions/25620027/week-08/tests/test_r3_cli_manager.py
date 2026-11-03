@@ -298,6 +298,35 @@ def test_floor_bounds_fold_and_note_resolution(
     assert manager.fold_recurring_moves() == {"buyer.quick_accept_ratio": 0.75}
     assert load_history(manager.policy_file).base().buyer.quick_accept_ratio == 0.75
     assert manager.fold_recurring_moves() == {}  # already the base
+    # And: after a fold only new moves count, so one more step does not refold
+    # (first night: the fold fired every 15 min and walked the base up).
+    manager.events.record_policy_change(
+        actor="m",
+        layer="tactical",
+        field="buyer.quick_accept_ratio",
+        before=0.75,
+        after=0.79,
+        reason="again",
+        expires_at=None,
+        version=None,
+        accepted=True,
+    )
+    assert manager.fold_recurring_moves() == {}
+    # And: shops without stock or timeouts are not buyers walking away.
+    for reason in ("TASK_STATE_REJECTED: none of that in stock", "timed out", ""):
+        manager.events.record_attempt(
+            order=f"nd-{reason[:4]}",
+            shop="http://b",
+            shop_name="b",
+            sku=KIMCHI,
+            list_price=100,
+            price=None,
+            outcome="no_deal",
+            reason=reason,
+        )
+    signals = manager.events.tactical_signals(1)
+    assert signals["buyer_attempts"] == 3
+    assert signals["buyer_priced"] == 1
     assert manager.events.loop_runs(0)[-1]["outcome"] == "nudged"
     # And: a resolved note leaves the open list.
     path = tmp_path / "notes.jsonl"

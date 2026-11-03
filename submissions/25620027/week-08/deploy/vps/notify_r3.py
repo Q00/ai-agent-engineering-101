@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sqlite3
 import subprocess
 import time
@@ -96,6 +97,11 @@ class Snapshot:
     # manager loop runs of the last 24 h: (ts, role, outcome, detail); None when the
     # release predates the loop_runs table, so the silence alert stays off
     loop_runs: list[tuple[float, str, str, str]] | None = None
+    # accepted policy changes of the last 24 h: (ts, actor, layer, field, before,
+    # after, reason), oldest first
+    policy_changes: list[tuple[float, str, str, str, str, str, str]] = field(
+        default_factory=list
+    )
     # engineer notes the strategy model filed (ts, note), oldest first
     engineer_notes: list[tuple[float, str]] = field(default_factory=list)
     refused_24h: int = 0
@@ -229,6 +235,15 @@ def collect(base: Path = BASE, *, market: str = MARKET) -> Snapshot:  # noqa: C9
         (now - 86400,),
     )
     snap.changes_24h = int(str(changes[0][0])) if changes else 0
+    snap.policy_changes = [
+        (float(str(ts)), str(a), str(layer), str(f), str(b), str(af), str(r or ""))
+        for ts, a, layer, f, b, af, r in _sql(
+            events,
+            "SELECT ts, actor, layer, field, before, after, reason FROM policy_changes "
+            "WHERE ts >= ? AND accepted = 1 ORDER BY ts, id",
+            (now - 86400,),
+        )
+    ]
     try:
         for line in (
             (base / "data/r3/r3-engineer-notes.jsonl")
@@ -401,14 +416,200 @@ def loop_digest(snap: Snapshot) -> str:
     return "\n".join(lines)
 
 
-def change_notice(runs: list[tuple[float, str, str, str]]) -> str:
-    """One message for policy changes made since the last pass."""
-    lines = ["[AX R3] 정책 변경"]
-    lines += [
-        f"{_kst(r[0]):%H:%M} {ROLE_NAMES.get(r[1], r[1])} "
-        f"{OUTCOME_NAMES.get(r[2], r[2])}: {r[3][:200]}"
-        for r in runs
-    ]
+# What each policy field means, for a phone reader: label, how to show the
+# value, and one line on the effect.
+FIELD_KO: dict[str, tuple[str, str, str]] = {
+    "buyer.quick_accept_ratio": (
+        "바이어 즉시 수락선",
+        "%",
+        "정가의 이 비율 이하 호가는 흥정 없이 바로 삼",
+    ),
+    "buyer.first_offer_ratio": ("바이어 첫 제안", "%", "정가의 이 비율로 첫 값을 부름"),
+    "buyer.late_accept_share": (
+        "바이어 늦은 수락 전환점",
+        "%",
+        "예산이 이만큼 쓰이면 상한 안 호가는 다 받음",
+    ),
+    "buyer.max_price_ratio": (
+        "바이어 지불 상한",
+        "%",
+        "정가의 이 비율 넘게는 절대 안 냄",
+    ),
+    "buyer.order_seconds": ("주문당 협상 시간", "초", "이 시간 안에 못 끝내면 포기"),
+    "buyer.explore_rate": (
+        "탐색 비율",
+        "%",
+        "이 비율의 주문은 1등 가게 대신 무작위 가게로",
+    ),
+    "seller.accept_margin": (
+        "판매 수락 마진",
+        "%",
+        "원가+이 마진 이상 제안은 바로 수락",
+    ),
+    "seller.min_margin": (
+        "판매 최소 마진",
+        "%",
+        "처분 아닌 한 원가+이 마진 아래로 안 팜",
+    ),
+    "seller.concession": (
+        "판매 양보폭",
+        "%",
+        "역제안마다 호가와 수락선 사이를 이만큼 내려감",
+    ),
+    "seller.clearance_shelf_ratio": (
+        "식품 처분 시작",
+        "%",
+        "남은 유통기한이 이 비율 아래면 원가 이하로도 처분",
+    ),
+    "seller.clearance_floor_of_cost": (
+        "처분 하한",
+        "%",
+        "처분 때도 원가의 이 비율 아래로는 안 팜",
+    ),
+    "seller.stale_markup_cut": (
+        "오래된 비식품 할인",
+        "%p",
+        "오래 안 팔린 비식품 첫 호가를 이만큼 깎음",
+    ),
+    "seller.stale_goods_hours": (
+        "비식품 '오래됨' 기준",
+        "시간",
+        "이보다 오래 안 팔리면 할인 시작",
+    ),
+    "seller.markup_a": ("A등급 첫 호가", "%", "정가 대비"),
+    "seller.markup_b": ("B등급 첫 호가", "%", "정가 대비"),
+    "seller.markup_c": ("C등급 첫 호가", "%", "정가 대비"),
+    "seller.warranty_a": ("A등급 보증", "시간", "이 시간 안에 고장 나면 전액 환불"),
+    "seller.warranty_b": ("B등급 보증", "시간", "이 시간 안에 고장 나면 전액 환불"),
+    "seller.warranty_c": ("C등급 보증", "시간", "이 시간 안에 고장 나면 전액 환불"),
+    "restock.replenish_qty": ("재입고 수량", "개", "팔린 SKU를 이만큼 다시 삼"),
+    "restock.units_per_sku": ("SKU당 매입 수량", "개", "한 상품을 이만큼씩 쌓아 둠"),
+    "restock.min_food_shelf_hours": (
+        "식품 매입 최소 유통기한",
+        "시간",
+        "이보다 짧은 식품은 안 삼",
+    ),
+    "restock.food_share": ("식품 매입 비중", "%", "매입 금액 중 식품 몫"),
+    "restock.categories_per_run": (
+        "매입 카테고리 수",
+        "개",
+        "한 번에 이만큼의 카테고리만 삼",
+    ),
+    "restock.goods_max_list_price": (
+        "비식품 매입 정가 상한",
+        "원",
+        "이보다 비싼 비식품은 안 삼",
+    ),
+    "restock.goods_min_list_price": ("비식품 매입 정가 하한", "원", ""),
+    "restock.food_max_list_price": (
+        "식품 매입 정가 상한",
+        "원",
+        "이보다 비싼 식품은 안 삼",
+    ),
+    "restock.food_min_list_price": ("식품 매입 정가 하한", "원", ""),
+    "restock.seed_budget": ("시작 매입 예산", "원", ""),
+    "restock.reserve_cash": ("예비 현금", "원", "이 아래로는 매입 안 함"),
+    "restock.max_units": ("최대 재고 수", "개", ""),
+    "restock.stale_hours": (
+        "재입고 제외 기준",
+        "시간",
+        "이보다 오래 안 팔린 SKU는 다시 안 삼",
+    ),
+}
+ACTOR_KO = [
+    ("claude-opus", "전략(Opus)"),
+    ("claude-sonnet", "전략(Sonnet)"),
+    ("claude-haiku", "전술(Haiku)"),
+    ("code", "코드 자동"),
+    ("user", "사용자"),
+    ("claude-code", "Claude Code"),
+]
+TRIGGER_KO = [
+    (re.compile(r"agreed (\d+)/(\d+)"), "바이어 합의율 낮음(1시간 {0}/{1})"),
+    (
+        re.compile(r"(\d+)/(\d+) sales closed at first ask"),
+        "첫 호가에 거의 다 팔림({0}/{1})",
+    ),
+    (re.compile(r"(\d+) food units near clearance"), "처분 임박 식품 {0}개"),
+    (re.compile(r"no sale in 1h after (\d+) in 6h"), "1시간 판매 0건(6시간엔 {0}건)"),
+    (
+        re.compile(r"Short-shelf food[^.]*?(\d+) settles"),
+        "단기 식품이 시장에서 하루 {0}건 팔림",
+    ),
+    (
+        re.compile(r"pinned at band (high|low) for (\d+) tactical runs"),
+        "전술이 띠 끝에 {1}번 붙어 띠를 넓힘",
+    ),
+    (
+        re.compile(r"fold recurring tactical moves"),
+        "같은 방향 전술 이동 3회 → 기본값으로 고정",
+    ),
+]
+
+
+def _actor_ko(actor: str) -> str:
+    for prefix, label in ACTOR_KO:
+        if actor.startswith(prefix):
+            return label
+    return actor
+
+
+def _value_ko(field_key: str, raw: str) -> str:  # noqa: PLR0911 - one unit per branch
+    unit = FIELD_KO.get(field_key, ("", "", ""))[1]
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        return raw
+    if isinstance(value, dict) and "low" in value:
+        return f"{_value_ko(field_key, json.dumps(value['low']))}~{_value_ko(field_key, json.dumps(value['high']))}"
+    if isinstance(value, bool) or value is None:
+        return str(value)
+    if isinstance(value, (int, float)):
+        if unit == "%":
+            return f"{value * 100:.0f}%" if abs(value) <= 1.5 else f"{value:g}"
+        if unit == "%p":
+            return f"{value * 100:.0f}%p"
+        if unit == "원":
+            return f"{int(value):,}원"
+        return f"{value:g}{unit}"
+    return str(value)
+
+
+def _why_ko(reason: str) -> str:
+    parts: list[str] = []
+    for pattern, text in TRIGGER_KO:
+        found = pattern.search(reason)
+        if found:
+            parts.append(text.format(*found.groups()))
+    return " · ".join(dict.fromkeys(parts))
+
+
+def change_notice(rows: list[tuple[float, str, str, str, str, str, str]]) -> str:
+    """Policy changes since the last pass, in plain Korean: what, from→to, why."""
+    lines = ["[AX R3] 정책 변경 (무엇이 왜 바뀌었나)"]
+    groups: dict[tuple[int, str], list[tuple[float, str, str, str, str, str, str]]] = {}
+    for row in rows:
+        groups.setdefault((int(row[0] // 60), row[1]), []).append(row)
+    for (_minute, actor), rows_of in groups.items():
+        stamp = _kst(rows_of[0][0])
+        lines += ["", f"■ {stamp:%H:%M} {_actor_ko(actor)}"]
+        for _ts, _actor, _layer, field_key, before, after, _reason in rows_of:
+            band = field_key.startswith("band:")
+            key = field_key[5:] if band else field_key
+            label, _unit, effect = FIELD_KO.get(key, (key, "", ""))
+            if band:
+                lines.append(
+                    f"- {label}의 전술 허용 범위: {_value_ko(key, before)} → {_value_ko(key, after)}"
+                )
+            else:
+                line = f"- {label}: {_value_ko(key, before)} → {_value_ko(key, after)}"
+                lines.append(line + (f" ({effect})" if effect else ""))
+        why = _why_ko(rows_of[0][6])
+        reason = rows_of[0][6].strip()
+        if why:
+            lines.append(f"근거: {why}")
+        elif reason:
+            lines.append(f"모델 설명: {reason[:160]}")
     return "\n".join(lines)
 
 
@@ -539,12 +740,12 @@ def loop_messages(snap: Snapshot, state: dict[str, object]) -> list[str]:
     if not snap.loop_runs:
         return messages
     cursor = float(str(state.get("loop_cursor", snap.now - 600)))
-    fresh = [
-        r for r in snap.loop_runs if r[0] > cursor and r[2] in {"changed", "nudged"}
-    ]
+    fresh = [r for r in snap.policy_changes if r[0] > cursor]
     if fresh:
         messages.append(change_notice(fresh))
-    state["loop_cursor"] = max(cursor, snap.loop_runs[-1][0])
+    state["loop_cursor"] = max(
+        [cursor, snap.loop_runs[-1][0]] + [r[0] for r in snap.policy_changes]
+    )
     hour = f"{_kst(snap.now):%Y-%m-%d %H}"
     recent = any(snap.now - r[0] <= 3600 for r in snap.loop_runs)
     if state.get("digest_hour") != hour and recent:
