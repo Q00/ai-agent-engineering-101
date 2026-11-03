@@ -126,6 +126,27 @@ def is_vip(c, text):
     return next((b for b in regular if b and len(b) >= 3 and b.lower() in low), None)
 
 
+CROSS = {"skus": ["G8fbdd9c2"], "min_ticket": 50000}   # thank-you item, sold at cost to our high-ticket buyers
+
+
+def cross_sell():
+    return {**CROSS, **(promo.theta().get("cross_sell") or {})}
+
+
+def stock():
+    try:
+        return json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8")).get("units", [])
+    except (OSError, ValueError):
+        return []
+
+
+def big_buyer(c, text):
+    """A buyer that names itself and settled a high-ticket purchase with us (checked on the ledger)."""
+    low = text.lower()
+    return next((b for b in market_model.big_buyers(c, cross_sell()["min_ticket"]) if len(b) >= 3 and b.lower() in low),
+                None)
+
+
 CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grade or warranty? say e.g. "
          "'need 48h, grade A/B' and I pick a unit that passes | bought here before? say your market name for VIP "
          "| LOWEST-PRICE GUARANTEE: seen it cheaper? reply 'match <price>': if another shop settled it at that price "
@@ -235,13 +256,21 @@ class Shop(AgentExecutor):
                         credit = (cr[0], off)
                         q = dict(q, price=q["price"] - off, least=max(q["least"] - off, q["floor"]),
                                  why=q["why"] + f"; guarantee credit -{off} (settle #{cr[0]})")
+            big = big_buyer(self.c, text) if u["sku"] in cross_sell()["skus"] else None
+            if big:                                       # thank-you price for a high-ticket buyer: at cost, never under
+                at_cost = int(-(-u["cost"] // 1))
+                if at_cost < q["price"]:
+                    q = dict(q, price=at_cost, least=at_cost, floor=at_cost, why=q["why"] + f"; at cost for {big}")
+                    credit = None
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
                                          "talk": 0, "credit": credit}
             sub = f"substitute for {u['substitute_for']} (same category, in stock) | " if u.get("substitute_for") else ""
             log(f"{task.id[:8]} {u['sku']} cost {u['cost']} -> ask {q['price']} least {q['least']} ({q['why']})"
                 + (f" VIP {vip}" if vip else "") + (f" substitute for {u['substitute_for']}" if sub else ""))
             await up.requires_input(say_offer(f"{sub}{facts(u, q['price'], q, code)}{warranty_note(u)}"
-                                        + (f" | VIP {vip}: -{promo.theta().get('vip_discount', 0):.0%} applied" if vip else "")
+                                        + (f" | thank-you price for {big} (bought a {cross_sell()['min_ticket']}+ item "
+                                           f"here): at our cost" if big else "")
+                                        + (f" | VIP {vip}: -{promo.theta().get('vip_discount', 0):.0%} applied" if vip and not big else "")
                                         + (f" | guarantee credit -{credit[1]} applied (you paid more than the ledger's "
                                            f"lowest price elsewhere, settle #{credit[0]})" if credit else "")
                                         + f" | asking {q['price']}. Reply with a number. | {CLERK}"))
@@ -279,9 +308,14 @@ class Shop(AgentExecutor):
                 market_model.use_credit(self.c, deal["vip"], deal["credit"][0], deal["credit"][1])
             await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
             nxt = next((d for n, d in promo.theta()["tiers"] if promo.member(self.c, code)[0] >= n), None)
+            cs = cross_sell()
+            gift = next((x for x in stock() if x["sku"] in cs["skus"] and x["sku"] != u["sku"]
+                         and x.get("grade") != "expired"), None) if price >= cs["min_ticket"] else None
             await up.complete(say(f"Deal: {u['name'][:40]} at {price}. Signed receipt attached (Ed25519 shop_fp={FP}),"
                                   f" claim={u.get('grade')} = true grade. member={code}"
-                                  + (f": quote it next time for -{nxt:.0%}" if nxt else ": quote it next time")))
+                                  + (f": quote it next time for -{nxt:.0%}" if nxt else ": quote it next time")
+                                  + (f" | thank you: your next order of {gift['name'][:30]} ({gift['sku']}) is at our cost;"
+                                     " ask for it with your market name" if gift else "")))
             log(f"{task.id[:8]} deal {u['sku']} at {price} (cost {u['cost']}, member {code})")
             del self.open[task.id]
             return

@@ -254,6 +254,12 @@ def leader_skus(c, leaders, hours=24, top=15):
     return [(sku, n, market_price(c, sku, hours)[0]) for sku, n in rows]
 
 
+def big_buyers(c, min_amount, hours=48):
+    """Buyers who settled a purchase of at least min_amount with our shop lately (the ledger names them)."""
+    return {b for (b,) in c.execute(f"select distinct buyer from settles where ts>? and amount>=? and seq in ({ours(c)})",
+                                    (time.time() - hours * 3600, min_amount)) if b}
+
+
 def credit_for(c, buyer, hours=48):
     """The lowest-price guarantee's coupon: for a buyer's latest purchase from us (not yet credited), how much more it
     paid than the lowest price another shop settled the same SKU at within 24 h of it. Returns (seq, amount) or None."""
