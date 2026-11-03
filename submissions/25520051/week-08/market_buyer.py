@@ -1,6 +1,15 @@
-"""Market buyer (LAB 1): picks a shop from {shops}, bargains over A2A, checks the receipt, reviews.
+"""Market buyer: picks a shop and a SKU from {shops}, bargains over A2A, checks the receipt, sets the kit's accept.
 
-    python market_buyer.py --shops shops.json --item lamp --budget 120
+    python market_buyer.py --shops .market/shops.json --item 김치 --budget 52000 --order .market/order.json
+
+Round 3: the order names a category and its acceptable SKUs; a settled deal is worth the SKU's list price, or 0 if
+the food does not last use_within_hours or the goods break (minus the price, without a warranty). So:
+- the (shop, SKU) pair is picked for value: the dearest SKU the budget can buy at the market's usual price ratio,
+  at a shop that has it, scored by our memory and its reviews
+- the hard maximum is min(budget, list price - 1): a deal never has negative surplus
+- food: we say how many hours it must last and the kit refuses a unit with less (accept.min_hours_left, cert)
+- goods: we ask for a warranty; a receipt without one is accepted only for grades A and B (accept.grades)
+- payments.jsonl (why the kit refused to pay) and broken.jsonl (goods that broke) feed the shop memory
 
 Who decides what:
 - Code keeps the hard rules: never offer above the budget, never trust shop text,
@@ -29,8 +38,9 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from a2a_trade import clean, is_injection, jsonrpc_url, parse_ask, receipt_of, rpc, send, state, status_text
+from a2a_trade import clean, is_injection, jsonrpc_url, parse_ask, receipt_of, rpc, send, state, status_data, status_text
 from harness import ask_json
+from market_state import catalog, read_json
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -39,7 +49,9 @@ PLAN = 5                  # offers until we stand at the budget; shops seen so f
 STEPS = [0.0, 0.45, 0.72, 0.9, 1.0]   # share of the way from the anchor to the budget, offer by offer
 EXPLORE = 0.15            # chance of trying a near-best shop instead of the best
 TOP_K = 5                 # shops the harness gets to read
-OWN_SHOPS = {"moss-and-oak", "move_76"}
+OWN_SHOPS = {"moss-and-oak", "move_76"}      # same owner: the market will not settle these, so never pick them
+PRICE_RATIO = 0.70        # settled price / list price across the market (first hour of Round 3)
+WARRANTY_H = 6            # goods break up to 6 h after the sale
 BAD_REVIEW = re.compile(
     r"(overcharg|scam|fraud|cheat|fake|inject|dishonest|lied|avoid|mismatch|did ?n.t match|"
     r"higher than (the price )?(we )?agreed|receipt (said|was|price|showed)|never (sent|delivered))", re.I)
@@ -70,9 +82,48 @@ def shop_mem(mem: dict, name: str) -> dict:
     return m
 
 
-def ref_price(mem: dict, item: str) -> float | None:
-    prices = mem["items"].get(item, {}).get("prices", [])
-    return statistics.median(prices) if len(prices) >= 2 else None
+def ref_price(mem: dict, item: str, list_price: int | None = None) -> float | None:
+    """What a deal usually costs: the median price/list ratio we paid in this category times the SKU's list price."""
+    it = mem["items"].get(item, {})
+    if list_price and len(it.get("ratios", [])) >= 2:
+        return statistics.median(it["ratios"]) * list_price
+    prices = it.get("prices", [])
+    return statistics.median(prices) if len(prices) >= 2 and not list_price else None
+
+
+def learn_from_kit(mem: dict, md: Path):
+    """The kit's own reports since the last order: refused payments (payments.jsonl) and broken goods (broken.jsonl).
+    A refusal is not the shop's fault by itself (our accept may have asked for more), so it only counts; goods that
+    broke without a warranty count against the shop that sold them."""
+    seen = mem.setdefault("seen", {"payments": 0, "broken": 0})
+    for name, key in (("payments.jsonl", "payments"), ("broken.jsonl", "broken")):
+        try:
+            lines = (md / name).read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines[seen[key]:]:
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if key == "payments":
+                for m in mem["shops"].values():
+                    t = next((t for t in reversed(m["trades"]) if t.get("order") == e.get("order")), None)
+                    if t:
+                        t["paid"] = bool(e.get("paid"))
+                        if not e.get("paid"):
+                            t["refused"] = str(e.get("reason", ""))[:160]
+                            m["flags"]["refused"] = m["flags"].get("refused", 0) + 1
+            else:
+                for m in mem["shops"].values():
+                    t = next((t for t in reversed(m["trades"]) if t.get("name") == e.get("name") and t.get("paid")
+                              and not t.get("broke")), None)
+                    if t:
+                        t["broke"] = e.get("broke_at")
+                        if not t.get("warranty_hours"):
+                            m["flags"]["broke_no_warranty"] = m["flags"].get("broke_no_warranty", 0) + 1
+                        break
+        seen[key] = len(lines)
 
 
 # ---------------------------------------------------------------- picking a shop
@@ -94,6 +145,7 @@ def experience_score(m: dict, item: str, budget: int) -> tuple[float, str]:
     """From our own trades: deals within budget are good, shops whose floor sits above the budget are not."""
     if m["flags"]["injection"] or m["flags"]["bad_receipt"]:
         return -9.0, f"BANNED (injection {m['flags']['injection']}, bad receipts {m['flags']['bad_receipt']})"
+    penalty = 0.4 * min(m["flags"].get("broke_no_warranty", 0), 3) + 0.15 * min(m["flags"].get("refused", 0), 3)
     ts = [t for t in m["trades"] if t["item"] == item][-5:] or m["trades"][-5:]
     if not ts:
         return 0.2, "never traded (curiosity bonus)"
@@ -101,6 +153,10 @@ def experience_score(m: dict, item: str, budget: int) -> tuple[float, str]:
     for t in ts:
         if t["result"] == "deal" and t.get("signed") is False:
             s.append(-0.5)             # an unsigned receipt does not count from Round 2 on
+        elif t["result"] == "deal" and t.get("paid") is False:
+            s.append(-0.3)             # agreed, but the unit failed our accept: no settle
+        elif t["result"] == "deal" and t.get("claim_honest") is False:
+            s.append(-1.0)             # the ledger showed the grade claim was false
         elif t["result"] == "deal":
             s.append(1 + (t["budget"] - t["price"]) / max(t["budget"], 1))
         elif t["result"] == "no_deal":
@@ -109,7 +165,7 @@ def experience_score(m: dict, item: str, budget: int) -> tuple[float, str]:
         else:
             s.append(-1.0)
     deals = [t for t in ts if t["result"] == "deal"]
-    return sum(s) / len(s), f"{len(deals)}/{len(ts)} deals" + (
+    return sum(s) / len(s) - penalty, f"{len(deals)}/{len(ts)} deals" + (
         f", paid {[t['price'] for t in deals]}" if deals else "")
 
 
@@ -259,21 +315,21 @@ def harness_adjust(item, budget, asks, offers, talk, plan, band):
     return plan
 
 
-def bargain(url: str, item: str, budget: int, ref, known: dict, start: float) -> dict:
+def bargain(url: str, item: str, budget: int, ref, known: dict, start: float, opening: str | None = None) -> dict:
     out = {"asks": [], "offers": [], "injection": False, "state": "", "receipt": None, "task": None, "agreed": None}
     # Round 3: pick a hidden ceiling below the budget, fresh per order so repeated trades do not
     # let a shop average our offers into our budget. We plan toward this cap; the budget stays a
     # hard guard. floor-stretch (plan_offer) still lets us meet an affordable, confident floor.
     known["cap"] = cap = round(budget * random.uniform(0.80, 0.90))
     print(f"[buyer] budget {budget}, hidden cap {cap} (shops see offers climb toward the cap, not the budget)", flush=True)
-    t = send(url, f"I want to buy a {item}")
+    t = send(url, opening or f"I want to buy a {item}")
     out["task"] = t.get("id")
     while state(t) == "TASK_STATE_INPUT_REQUIRED":
         text = status_text(t)
         if is_injection(text):
             out["injection"] = True
             print("[buyer] shop message carries instructions for AI agents; ignored and remembered", flush=True)
-        ask = parse_ask(text)
+        ask = parse_ask(text, status_data(t))
         if ask is not None:
             out["asks"].append(ask)
         if time.time() - start > DEADLINE:
@@ -306,7 +362,7 @@ def bargain(url: str, item: str, budget: int, ref, known: dict, start: float) ->
 
 # ---------------------------------------------------------------- receipt, review, memory
 
-def receipt_problems(r: dict | None, item: str, budget: int, deal: dict) -> list:
+def receipt_problems(r: dict | None, item: str, budget: int, deal: dict, acceptable: list | None = None) -> list:
     if r is None:
         return ["no receipt artifact"]
     p = []
@@ -314,7 +370,10 @@ def receipt_problems(r: dict | None, item: str, budget: int, deal: dict) -> list
         price = float(r.get("price"))
     except (TypeError, ValueError):
         return [f"receipt price {r.get('price')!r} is not a number"]
-    if str(r.get("item", "")).lower() != item.lower():
+    if acceptable is not None:
+        if r.get("item") not in acceptable:
+            p.append(f"receipt item {r.get('item')!r} is not one of the order's SKUs")
+    elif str(r.get("item", "")).lower() != item.lower():
         p.append(f"receipt item {r.get('item')!r}, ordered {item!r}")
     if price > budget:
         p.append(f"receipt price {price:g} is above the budget")
@@ -391,22 +450,66 @@ def review(item: str, budget: int, deal: dict, problems: list, ref: float | None
     return 3, f"[no deal] {item}: came down {first}->{low}, then held. Polite; its floor was above my limit."
 
 
-def remember(mem: dict, name: str, item: str, budget: int, deal: dict, problems: list, path: Path):
+def remember(mem: dict, name: str, item: str, budget: int, deal: dict, problems: list, path: Path,
+             order: dict | None = None, sku: dict | None = None):
     m = shop_mem(mem, name)
     if deal["injection"]:
         m["flags"]["injection"] += 1
-    if any("agreed" in x or "above the budget" in x for x in problems if deal["receipt"]):
+    if any("agreed" in x or "above the budget" in x or "SKUs" in x for x in problems if deal["receipt"]):
         m["flags"]["bad_receipt"] += 1
     result = "deal" if deal["receipt"] else ("no_deal" if deal["asks"] else "error")
     price = int(float(deal["receipt"]["price"])) if deal["receipt"] else None
+    r = deal["receipt"] or {}
     m["trades"] = (m["trades"] + [{"t": datetime.now(timezone.utc).isoformat(timespec="seconds"), "item": item,
                                    "budget": budget, "result": result, "price": price,
-                                   "signed": bool(deal["receipt"].get("sig_seller")) if deal["receipt"] else None,
-                                   "asks": deal["asks"], "offers": deal["offers"]}])[-30:]
+                                   "signed": bool(r.get("sig_seller")) if deal["receipt"] else None,
+                                   "asks": deal["asks"], "offers": deal["offers"],
+                                   "order": (order or {}).get("order"), "sku": (sku or {}).get("sku"),
+                                   "name": (sku or {}).get("name"), "list": (sku or {}).get("list_price"),
+                                   "warranty_hours": r.get("warranty_hours"), "claim": r.get("claim")}])[-30:]
     if price is not None and not problems:
-        prices = mem["items"].setdefault(item, {}).setdefault("prices", [])
-        mem["items"][item]["prices"] = (prices + [price])[-30:]
+        it = mem["items"].setdefault(item, {})
+        it["prices"] = (it.get("prices", []) + [price])[-30:]
+        if sku and sku.get("list_price"):
+            it["ratios"] = (it.get("ratios", []) + [round(price / sku["list_price"], 3)])[-30:]
     save_memory(path, mem)
+
+
+def pick_sku(shop: dict, order: dict, cat: dict, mem: dict) -> dict | None:
+    """The SKU to ask this shop for: the dearest one the budget can buy at the usual price ratio (surplus is list
+    price minus price, so a dearer SKU at the same ratio leaves more), else the cheapest it has."""
+    ratio = statistics.median(mem["items"].get(order["item"], {}).get("ratios") or [PRICE_RATIO])
+    have = [dict(cat.get(o["sku"], {}), sku=o["sku"], name=o.get("name") or cat.get(o["sku"], {}).get("name", o["sku"]))
+            for o in shop.get("offers") or [] if o.get("qty") and o["sku"] in order["acceptable"]
+            and cat.get(o["sku"], {}).get("list_price")]
+    if not have:
+        return None
+    fits = [x for x in have if x["list_price"] * ratio * 0.95 <= order["budget"]]
+    return max(fits, key=lambda x: x["list_price"]) if fits else min(have, key=lambda x: x["list_price"])
+
+
+def accept_for(order: dict, receipt: dict | None) -> dict:
+    """What the kit must see at checkout before it pays: always the market's certificate; food that lasts the hours
+    the order needs; goods with the warranty the shop signed for, or, without one, grade A or B only."""
+    acc = {"cert": True}
+    if order.get("kind") == "food" and order.get("use_within_hours"):
+        acc["min_hours_left"] = round(float(order["use_within_hours"]) + 0.5, 1)
+    elif order.get("kind") == "goods":
+        w = (receipt or {}).get("warranty_hours")
+        if isinstance(w, (int, float)) and w > 0:
+            acc["warranty_hours"] = w
+        else:
+            acc["grades"] = ["A", "B"]
+    return acc
+
+
+def opening_text(sku: dict, order: dict) -> str:
+    text = f"I want to buy {sku['name']} ({sku['sku']})."
+    if order.get("kind") == "food" and order.get("use_within_hours"):
+        text += f" I need it to last {float(order['use_within_hours']) + 0.5:g} hours; please ship a unit that does."
+    elif order.get("kind") == "goods":
+        text += " Please include a warranty."
+    return text
 
 
 def main():
@@ -414,55 +517,66 @@ def main():
     ap.add_argument("--shops", required=True)
     ap.add_argument("--item", required=True)
     ap.add_argument("--budget", type=int, required=True)
+    ap.add_argument("--order", default=None)
     ap.add_argument("--memory", default=str(Path(__file__).with_name("buyer_memory.json")))
     args = ap.parse_args()
     start, mem_path = time.time(), Path(args.memory)
     shops = json.loads(Path(args.shops).read_text(encoding="utf-8"))
-    # Our own shop runs under another kit name, so the kit does not filter it. It is scored like any other
-    # shop (no bonus); a review of it says so, since a same-owner review hidden as a stranger's would mislead.
+    md = Path(args.shops).parent
+    order = read_json(args.order, None) if args.order else None
+    cat = catalog(md)
     mem = load_memory(mem_path)
-    ref = ref_price(mem, args.item)
-    print(f"[buyer] order: {args.item}, budget {args.budget}, {len(shops)} shops, reference price {ref}", flush=True)
+    learn_from_kit(mem, md)
+    shops = [s for s in shops if s["name"].lower() not in OWN_SHOPS]       # same owner cannot settle
+    if order and order.get("acceptable"):
+        order.setdefault("item", args.item)
+        order["budget"] = args.budget
+        if not order.get("kind") and order["acceptable"]:
+            order["kind"] = cat.get(order["acceptable"][0], {}).get("kind")
+        stocked = [s for s in shops if any(o["sku"] in order["acceptable"] and o.get("qty") for o in s.get("offers") or [])]
+        print(f"[buyer] order {order.get('order')}: {args.item} ({order.get('kind')}), budget {args.budget}, "
+              f"{len(order['acceptable'])} SKUs, {len(stocked)}/{len(shops)} shops have one"
+              + (f", use within {order['use_within_hours']} h" if order.get("use_within_hours") else ""), flush=True)
+        shops = stocked
+    if not shops:
+        print("[buyer] no shop has anything for this order", flush=True)
+        save_memory(mem_path, mem)
+        print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
+        return
 
-    # One-shot owner's note (notice.json, written by hand): the next order trades with our own shop and the
-    # review carries the note, disclosed as the owner's. Stars still come from the trade itself.
-    notice_file = Path(__file__).with_name("notice.json")
-    notice = json.loads(notice_file.read_text(encoding="utf-8")) if notice_file.exists() else None
-    own = [s for s in shops if s["name"].lower() == (notice or {}).get("shop")]
-
-    tried = []
+    tried, sku = [], None
     while True:
         remaining = [s for s in shops if s["name"] not in tried]
-        if own and not tried:
-            shop, why = own[0], "owner's note to deliver (notice.json)"
-        else:
-            shop, why = pick_shop(remaining, mem, args.item, args.budget)
-        print(f"[buyer] picked {shop['name']} ({shop['url']}): {why}", flush=True)
+        shop, why = pick_shop(remaining, mem, args.item, args.budget)
+        sku = pick_sku(shop, order, cat, mem) if order and order.get("acceptable") else None
+        print(f"[buyer] picked {shop['name']} ({shop['url']}): {why}"
+              + (f"; SKU {sku['sku']} list {sku['list_price']}" if sku else ""), flush=True)
         url, card = jsonrpc_url(shop["url"])
         if url or len(tried) >= 1 or len(remaining) == 1:
             break
         tried.append(shop["name"])                                 # unreachable before any trade: one more try
         remember(mem, shop["name"], args.item, args.budget,
-                 {"injection": False, "receipt": None, "asks": [], "offers": []}, [], mem_path)
+                 {"injection": False, "receipt": None, "asks": [], "offers": []}, [], mem_path, order, sku)
 
+    hard_max = min(args.budget, sku["list_price"] - 1) if sku else args.budget    # never a negative surplus
+    ref = ref_price(mem, args.item, sku["list_price"] if sku else None)
     deal = {"asks": [], "offers": [], "injection": False, "receipt": None, "task": None, "agreed": None}
     if url:
-        known = {"paid": [t["price"] for t in shop_mem(mem, shop["name"])["trades"]
-                          if t["result"] == "deal" and t["item"] == args.item]}
-        deal = bargain(url, args.item, args.budget, ref, known, start)
-    problems = receipt_problems(deal["receipt"], args.item, args.budget, deal) if deal["receipt"] else []
+        known = {"paid": [t["price"] for t in shop_mem(mem, shop["name"])["trades"] if t["result"] == "deal"
+                          and (t.get("sku") == sku["sku"] if sku else t["item"] == args.item)]}
+        print(f"[buyer] hard maximum {hard_max} (budget {args.budget}"
+              + (f", list price {sku['list_price']})" if sku else ")"), flush=True)
+        deal = bargain(url, args.item, hard_max, ref, known, start, opening_text(sku, order) if sku else None)
+    acceptable = order["acceptable"] if order and order.get("acceptable") else None
+    problems = receipt_problems(deal["receipt"], args.item, hard_max, deal, acceptable) if deal["receipt"] else []
     if problems:
         print(f"[buyer] receipt check: {problems}", flush=True)
     stars, text = review(args.item, args.budget, deal, problems, ref)
-    if shop["name"].lower() in OWN_SHOPS:
-        note = ""
-        if own and shop is own[0]:
-            note = f"Owner's note: {notice['note']} "
-            notice_file.rename(notice_file.with_suffix(".sent.json"))      # once only
-        text = "[own shop: same owner as this buyer] " + note + text
-    remember(mem, shop["name"], args.item, args.budget, deal, problems, mem_path)
-    print(json.dumps({"shop": shop["url"], "receipt": deal["receipt"], "stars": stars, "review": text},
-                     ensure_ascii=False), flush=True)
+    remember(mem, shop["name"], args.item, args.budget, deal, problems, mem_path, order, sku)
+    out = {"shop": shop["url"], "receipt": deal["receipt"] if not problems else None, "stars": stars, "review": text}
+    if order and order.get("acceptable"):
+        out["accept"] = accept_for(order, deal["receipt"])
+    print(json.dumps(out, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":
