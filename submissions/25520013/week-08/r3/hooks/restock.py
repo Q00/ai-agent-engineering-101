@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 from common import P, Recorder, emit, ingest, load_stats, read_json
-from ledger import Ledger
+from ledger import Ledger, state_dir
 
 
 def market_activity(root=None, tau_h=24.0, now=None, pol=None):
@@ -121,6 +121,24 @@ ACTIVITY_KEYS = ("last_settle_ts", "first_stock_ts", "settles", "orders", "last_
                  "last_no_stock_ts", "own_accepts", "last_own_accept_ts")
 
 
+def taste_ranking(pol, root=None, now=None):
+    """v1.19: the category forecast of <R3_STATE>/taste_gate.json (written by memory.run's taste gate) when policy
+    taste.enabled, its state is "adopted" and its asof is at most taste.max_age_s old; else None (velocity ranking).
+    Read as a file only: the decision path imports nothing from taste/memory/harness/experiments."""
+    t = pol.get("taste") or {}
+    if not t.get("enabled"):
+        return None
+    g = read_json(Path(root or state_dir()) / "taste_gate.json", None)
+    if not isinstance(g, dict) or g.get("state") != "adopted":
+        return None
+    asof, f = g.get("asof"), g.get("forecast")
+    now = time.time() if now is None else now
+    age = now - asof if isinstance(asof, (int, float)) and not isinstance(asof, bool) else None
+    if age is None or not 0 <= age <= float(t.get("max_age_s") or 0):
+        return None
+    return f if isinstance(f, dict) and f else None
+
+
 def _plan_without_goods_cap(inv, demand, catalog, pol, stats, act, err):
     """v1.16 safety net: a restock_plan exception must not stop ALL restock (QA v1.14: a goods-cap crash stopped
     food too). Plan again without goods_max_storage_frac (= the checklist 3-0b revert); if that fails as well,
@@ -190,8 +208,9 @@ def _main():
         catalog = {x["sku"]: x for x in catalog}
     stats, serr = load_stats(catalog)
     act = market_activity(tau_h=float(pol["shop"].get("own_velocity_tau_h") or 24.0), pol=pol)
+    taste = taste_ranking(pol)
     try:
-        buy, why = P.restock_plan(inv, demand, catalog, pol, stats, activity=act)
+        buy, why = P.restock_plan(inv, demand, catalog, pol, stats, activity=act, taste=taste)
     except Exception as e:                               # noqa: BLE001 - v1.16 (QA v1.13 minor 11 / v1.14 rec 3)
         buy, why = _plan_without_goods_cap(inv, demand, catalog, pol, stats, act, e)
     for w in why.get("warnings") or []:                  # v1.14: goods cap off (unreadable storage_per_day)
@@ -209,7 +228,7 @@ def _main():
               extra={"stats": stats is not None, "stats_error": serr,
                      "activity": {k: v for k, v in act.items() if k != "own_sales"},
                      "own_velocity": {k: round(v, 4) for k, v in P.own_velocity(act, catalog, pol).items()},
-                     "idle_pause_s": P.idle_pause_s(pol)})
+                     "idle_pause_s": P.idle_pause_s(pol), "taste": taste is not None})
     emit(out)
 
 

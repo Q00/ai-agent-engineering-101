@@ -661,11 +661,13 @@ def expected_cost_frac(units, sp):
     return fr[(3 * len(fr)) // 4] if len(fr) >= 4 else float(sp.get("est_cost_frac") or 0.75)
 
 
-def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None, now=None):
+def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None, now=None, taste=None):
     """Buy list for the restock hook: categories ranked by stats (velocity) when known, else by spread; keep
     stock_target units per category; never spend below balance_floor nor beyond max_spend_per_run.
     v1.7: restock_gate (idle / round end), inventory cost cap (max_inventory_cost_frac x balance) and food depth
-    capped by expected sell-through (food_cap). v1.13: goods depth capped by the storage fee (goods_cap)."""
+    capped by expected sell-through (food_cap). v1.13: goods depth capped by the storage fee (goods_cap).
+    v1.19: taste = {category: next-hour probability} from an adopted taste gate (hooks/restock.py) ranks the
+    categories it covers first, by probability; it changes the ranking only (targets, caps, budget unchanged)."""
     sp = pol["shop"]
     bal = int(inv.get("balance") or 0)
     units = [u for u in inv.get("units") or [] if u.get("grade") != "expired"]
@@ -695,6 +697,8 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     cost_frac = expected_cost_frac(units, sp) if sp.get("skip_below_market") else None
 
     def score(d):
+        if taste and taste.get(d["category"]):          # v1.19: adopted taste forecast, ranking only
+            return (-1, -float(taste[d["category"]]))
         s = _stat(stats, "category", d["category"])
         v = ((s or {}).get("velocity_per_h") or 0) + own_v.get(d["category"], 0)
         if v:

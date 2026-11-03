@@ -1,5 +1,5 @@
 {
- "version": 9,
+ "version": 10,
  "owner": {
   "github": "Lee-sungsoo",
   "own_shop_names": [
@@ -239,5 +239,10 @@
   "rotate": 4,
   "_note": "v1.17 (2026-11-03): hooks/forum.py posts one ledger price summary as the buyer every interval_s (kit limit: one post per 5 min per role). Buyer ALL counts votes on buyer posts from voters with >= 5 settled deals and another GitHub owner.",
   "_interval_note": "v1.18 2026-11-03 21:27 (성수님 결정): 900 -> 300 s, the kit limit. Buyer ALL also counts the number of buyer posts (0.1, hidden posts excluded); our first two posts had 7 and 4 likes, 0 dislikes. Back to 900 if dislikes or hidden posts appear."
+ },
+ "taste": {
+  "enabled": true,
+  "max_age_s": 7200,
+  "_note": "v1.19: restock ranks categories by the taste forecast (buyer trajectories in the memory graph, taste/forecast.py) only while <R3_STATE>/taste_gate.json says \"adopted\" and its asof is at most max_age_s old. The gate (taste/gate.py, prereg taste-v1, pinned judge taste/judge.py) adopts when the 1-0.05/6 hour-bootstrap CI of mean d = L_B - L_A (log loss of next-hour settles by category, velocity ranking B vs taste A) is above 0 at 6/12/24/48/96/192 evaluable hours, and rolls back when mean d over the last 24 evaluable hours < 0. Only the category order changes; targets, caps, budget, window gate and below-market filter do not. enabled false = velocity ranking regardless of the gate."
  }
 }
