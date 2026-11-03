@@ -138,3 +138,78 @@ def test_failed_tactical_reply_does_not_turn_into_an_automatic_policy_move(
         assert manager.events.loop_runs(time.time() - 60)[-1]["outcome"] == "failed"
     finally:
         manager.http.close()
+
+
+def test_valid_empty_tactical_proposal_still_allows_the_bounded_code_nudge(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        model_client,
+        "AsyncOpenAI",
+        FakeModel.script({"changes": {}, "reason": "hold"}),
+    )
+    manager = Manager(
+        tmp_path,
+        "https://market.test",
+        shop_url="http://us",
+        buyer_name="me",
+        shop_name="me",
+    )
+    client = ModelClient("fake", events=manager.events, quota=None)
+    monkeypatch.setattr(manager, "client", lambda: client)
+    monkeypatch.setattr(
+        manager,
+        "tactical_summary",
+        lambda: {
+            "triggers": [
+                {
+                    "name": "buyer_walkaway",
+                    "field": "buyer.quick_accept_ratio",
+                    "direction": 1,
+                    "why": "4 of 10 orders agreed",
+                }
+            ]
+        },
+    )
+    before = load_policy(manager.policy_file)
+    try:
+        published = anyio.run(manager.tactical)
+        assert published is not None
+        assert published.buyer.quick_accept_ratio > before.buyer.quick_accept_ratio
+        assert manager.events.loop_runs(time.time() - 60)[-1]["outcome"] == "nudged"
+    finally:
+        manager.http.close()
+
+
+def test_tactical_limit_counts_valid_changes_instead_of_the_first_input_fields(
+    tmp_path: Path,
+) -> None:
+    manager = Manager(
+        tmp_path,
+        "https://market.test",
+        shop_url="http://us",
+        buyer_name="me",
+        shop_name="me",
+    )
+    try:
+        kept = manager.filter_tactical(
+            {
+                "seller.markup_a": 0.9,
+                "unknown": 1,
+                "buyer.first_offer_ratio": True,
+                "seller.concession": 0.31,
+                "buyer.quick_accept_ratio": 0.73,
+                "seller.accept_margin": 0.16,
+                "seller.clearance_shelf_ratio": 0.21,
+            },
+            "fake",
+            "bounded proposals",
+        )
+        assert kept == {
+            "seller.concession": 0.31,
+            "buyer.quick_accept_ratio": 0.73,
+            "seller.accept_margin": 0.16,
+        }
+    finally:
+        manager.http.close()
