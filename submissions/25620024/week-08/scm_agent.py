@@ -64,6 +64,9 @@ the brain of the shop: you work for it, to maximise its sales and profit; it may
 - rationale: 3-5 sentences.
 brief.accountability comes first: what headquarters holds you responsible for, with the numbers now. Answer
 it in your rationale (what you do about it this run).
+brief.demand_gaps are sales nobody makes: SKUs buyers asked for that no shop had, and 'wanted' posts (category,
+budget). Order 1-2 units of a gap SKU when it recurs (wanted 2+ times in 24 h) and the buyers' budget is at least
+0.6 x its list price: such a unit sells near list, to a buyer with no other shop. Say which gaps you took.
 Answer with the JSON object only.
 
 BRIEF:
@@ -172,6 +175,16 @@ def curate(lessons, retire, new, now):
     return keep[-20:]
 
 
+def demand_gaps(c):
+    """Wants nobody serves (HQ 11-04): SKUs our buyer's orders asked for that no shop stocked, and buyers' 'wanted'
+    posts on the forum (category and budget only)."""
+    try:
+        import forum
+        return {"skus_nobody_stocks_24h": market_model.gap_demand(c), "forum_wanted_6h": forum.wanted_demand(MD)}
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"[:200]}
+
+
 def run(ask_codex, dry=False):
     """One SCM cycle. ask_codex(prompt, schema) -> raw JSON text (marketing_agent passes its Codex runner)."""
     now = time.time()
@@ -197,7 +210,8 @@ def run(ask_codex, dry=False):
              "lessons": [{"index": i, **{k: x[k] for k in ("text", "verdict")}, "age_h": round((now - x["ts"]) / 3600, 1)}
                          for i, x in enumerate(lessons)],
              "current_plan": current,
-             "sales_requests": load(OUT / "requests.json", {}).get("scm") or []}
+             "sales_requests": load(OUT / "requests.json", {}).get("scm") or [],
+             "demand_gaps": demand_gaps(c)}
     raw = ask_codex(PROMPT + json.dumps(brief, ensure_ascii=False), SCHEMA)
     plan, notes = gate(raw, market_model.catalog(MD))
     moved = changes(current, plan)

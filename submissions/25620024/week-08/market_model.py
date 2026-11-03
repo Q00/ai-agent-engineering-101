@@ -38,6 +38,7 @@ create table if not exists our_units (unit text primary key);
 create table if not exists credits_used (seq integer primary key, buyer text, amount integer, ts real);
 create table if not exists supplies (seq integer primary key, ts real, shop text, sku text, qty integer, total integer);
 create table if not exists supply_units (unit text primary key, shop text, sku text, cost real, ts real);
+create table if not exists gaps (ts real, category text, kind text, budget integer, skus text);
 create index if not exists settles_sku on settles(sku);
 create index if not exists settles_cat on settles(category);
 """
@@ -288,7 +289,28 @@ def remember_seen(order, shops):
                                                                 s.get("name"), o.get("sku"), o.get("qty")))
     if not any(s.get("offers") for s in shops):
         c.execute("insert into seen values (?,?,?,?,?,?)", (now, order.get("category"), order.get("kind"), None, None, 0))
+        c.execute("insert into gaps values (?,?,?,?,?)", (now, order.get("category"), order.get("kind"),   # a want
+                  order.get("budget"), json.dumps(order.get("acceptable") or [])))                       # nobody stocks
     c.commit()
+
+
+def gap_demand(c, hours=24, top=12):
+    """SKUs buyers asked for that no shop had (our buyer's orders with no offer anywhere), by how often they were
+    wanted: [{sku, name, list_price, wanted, max_budget, budget_to_list}]. A recurring gap is a sale nobody makes."""
+    cat = catalog()
+    want = {}
+    for budget, skus in c.execute("select budget, skus from gaps where ts>?", (time.time() - hours * 3600,)):
+        for s in json.loads(skus or "[]"):
+            w = want.setdefault(s, {"wanted": 0, "max_budget": 0})
+            w["wanted"] += 1
+            w["max_budget"] = max(w["max_budget"], budget or 0)
+    out = []
+    for s, w in sorted(want.items(), key=lambda kv: (-kv[1]["wanted"], -kv[1]["max_budget"]))[:top]:
+        lp = (cat.get(s) or {}).get("list_price")
+        out.append({"sku": s, "name": ((cat.get(s) or {}).get("name") or "")[:30], "list_price": lp,
+                    "kind": (cat.get(s) or {}).get("kind"), **w,
+                    "budget_to_list": round(w["max_budget"] / lp, 2) if lp else None})
+    return out
 
 
 def summary(c):

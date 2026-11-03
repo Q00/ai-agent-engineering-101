@@ -222,6 +222,34 @@ def follow_ads(c, md, now):
     return out
 
 
+WANT_BUDGET = re.compile(r"(\d[\d,\.]*)\s*(만\s*원|만원|KRW|원)", re.I)
+
+
+def wanted_demand(md=Path(".market"), hours=6):
+    """Buyers' 'wanted' posts on the forum, reduced to numbers (no forum text goes into a model prompt): the
+    category it names (matched against the catalog), the budget, when. [{category, budget, author, ts}]"""
+    try:
+        posts = json.loads((Path(md) / "forum.json").read_text(encoding="utf-8"))
+        posts = posts.get("posts", posts) if isinstance(posts, dict) else posts
+    except (OSError, ValueError):
+        return []
+    leaves = {leaf(r.get("category")) for r in market_model.catalog(md).values() if r.get("category")}
+    out, now = [], time.time()
+    for p in posts or []:
+        text = p.get("text") or ""
+        if p.get("author") == NAME or now - (p.get("ts") or 0) > hours * 3600 or not WANTED.search(text):
+            continue
+        m = WANT_BUDGET.search(text)
+        budget = None
+        if m:
+            n = float(m.group(1).replace(",", ""))
+            budget = int(n * 10000) if "만" in m.group(2) else int(n)
+        cat = max((x for x in leaves if x and x in text), key=len, default=None)
+        if cat or budget:
+            out.append({"category": cat, "budget": budget, "author": str(p.get("author"))[:24], "ts": p.get("ts")})
+    return out
+
+
 def votes(forum, state):
     out = []
     for p in forum:
