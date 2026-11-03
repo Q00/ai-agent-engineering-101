@@ -358,6 +358,18 @@ def trade(run, item, budget):
         return 2, "Could not complete a trade: the shop did not answer properly.", None, None, None, "error"
 
 
+def unsignable(receipt, item, order):
+    """Why the kit would refuse to sign this deal's receipt (its own checks in scripts/market_kit.py: a seller
+    signature, an item the order accepts), or None."""
+    if not isinstance(receipt, dict):
+        return None
+    if not receipt.get("sig_seller"):
+        return "no sig_seller"
+    if receipt.get("item") != item and receipt.get("item") not in (order.get("acceptable") or []):
+        return f"item {receipt.get('item')} is not one the order accepts"
+    return None
+
+
 def memo(shop, sku, a, order, attempt):
     return {"shop": shop["name"], "item": a.item, "budget": a.budget, "outcome": attempt[5], "price": attempt[3],
             "honest": attempt[2], "time": int(time.time()), "order": order.get("order"), "sku": sku and sku["sku"],
@@ -437,7 +449,13 @@ def main():
                                               target_share=q["model"]["target"], alt_price=min(rest) if rest else None),
                             a.item, a.budget)
             if attempt[5] == "deal":
-                break
+                bad = unsignable(attempt[4], a.item, order)
+                if not bad:
+                    break
+                # the kit will not sign this receipt, so the order is lost unless another quote is tried
+                # (Nov 3 23:43 - Nov 4 06:15: willow-goods sent no sig_seller in all 25 deals it agreed with us,
+                # and 23 receipts named another SKU than the order's, e.g. soup at 6,851 for a mattress order)
+                log(f"[quote] deal with {shop['name']} cannot be signed ({bad}); trying the next quote")
         for q in quotes:                          # close the other shops' open tasks
             if id(q) not in tried and not q["reply"].done:
                 walk(q["peer"], q["reply"].id)
