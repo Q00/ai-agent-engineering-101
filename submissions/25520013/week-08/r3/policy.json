@@ -1,5 +1,5 @@
 {
- "version": 4,
+ "version": 5,
  "owner": {
   "github": "Lee-sungsoo",
   "own_shop_names": [
@@ -114,11 +114,9 @@
     "max_rounds": 5,
     "accept": {
      "cert": true,
-     "grades": [
-      "A",
-      "B"
-     ],
-     "hours_margin": 2
+     "grades": [],
+     "hours_margin": 2,
+     "_note": "v1.17 (2026-11-03): no grade filter for food. Buyer value is the list price if the food lasts use_within_hours (agent.md Buyer value), whatever its grade; min_hours_left (use_within_hours + hours_margin, needs the certificate) already guards that."
     },
     "accept_c": {
      "max_pay_frac": 0.6,
@@ -223,5 +221,14 @@
   "relax_max_pay_frac": 0.97,
   "relax_grade_c_at": 0.5,
   "_note": "BASE: >= 20 settled Round 3 trades each for shop and buyer (week-08 HW). goal = target + margin. r from policy.volume_relax per side; shop: floor margin * (1-r), concession * (1+r), ask * (1 - relax_ask_cut * r), never below cost + 1; buyer: max_pay_frac -> relax_max_pay_frac, step * (1 + r/2), grade C accepted at r >= relax_grade_c_at; shelf life never relaxed; budget cap kept. round_start_ts = 2026-11-03 00:00 KST (start hour not published), round_end_ts = 2026-11-17 23:59 KST. v1.4: relax_cert_at removed (kit refuses a checkout without certificate whenever grades are set; CR v1.2 new issue 3)."
+ },
+ "forum": {
+  "enabled": true,
+  "interval_s": 900,
+  "window_h": 3,
+  "min_settles": 3,
+  "max_refs": 8,
+  "rotate": 4,
+  "_note": "v1.17 (2026-11-03): hooks/forum.py posts one ledger price summary as the buyer every interval_s (kit limit: one post per 5 min per role). Buyer ALL counts votes on buyer posts from voters with >= 5 settled deals and another GitHub owner."
  }
 }
