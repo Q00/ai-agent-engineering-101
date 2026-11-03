@@ -191,6 +191,14 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context, event_queue):
         task = context.current_task
+        lock = self.task_locks.get(task.id)
+        if lock is not None:
+            async with lock:
+                await self.cancel_task(task, event_queue)
+        else:
+            await self.cancel_task(task, event_queue)
+
+    async def cancel_task(self, task, event_queue):
         deal = self.open.get(task.id)
         await TaskUpdater(event_queue=event_queue, task_id=task.id,
                           context_id=task.context_id).cancel()

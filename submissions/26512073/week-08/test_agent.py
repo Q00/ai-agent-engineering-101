@@ -412,6 +412,31 @@ class Round3BuyerTests(unittest.TestCase):
         self.assertTrue(goods["cert"])
         self.assertEqual(goods["warranty_hours"], 0)
 
+    def test_final_output_contains_quality_policy_and_pending_memory(self):
+        import io
+        from contextlib import redirect_stdout
+        import market_buyer
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
+            folder = Path(folder)
+            shops, order, memory = [folder / name for name in ("shops.json", "order.json", "memory.jsonl")]
+            shops.write_text(json.dumps([{"name": "Sample", "url": "https://sample.invalid",
+                                         "offers": [{"sku": "F1", "qty": 1}]}]))
+            order.write_text(json.dumps({"order": "sample-order", "item": "Food", "kind": "food",
+                                        "use_within_hours": 8, "budget": 100, "acceptable": ["F1"]}))
+            receipt = {"item": "F1", "price": 90, "task": "sample-task", "sig_seller": "simulated"}
+            output = io.StringIO()
+            with patch("market_buyer.call_harness", return_value={
+                    "shop_name": "Sample", "sku": "F1", "reason": "Simulated"}), \
+                    patch("market_buyer.buy", return_value={"receipt": receipt, "outcome": "deal"}) as buy, \
+                    redirect_stdout(output):
+                market_buyer.market_buy(shops, "Food", 100, memory, order)
+            final = json.loads(output.getvalue().splitlines()[-1])
+            self.assertEqual(final["receipt"], receipt)
+            self.assertEqual(final["accept"]["min_hours_left"], 8)
+            self.assertTrue(final["accept"]["cert"])
+            self.assertEqual(json.loads(memory.read_text())["result"], "agreed_pending_payment")
+            self.assertEqual(buy.call_args.args[1], "F1")
+
     def test_payment_memory_does_not_confuse_agreement_with_settlement(self):
         import market_buyer
         with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
