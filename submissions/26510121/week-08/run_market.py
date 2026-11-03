@@ -5,6 +5,7 @@ from r3.state import ROOT
 from r3.model import api_key
 from r3.adapter import install, load_kit
 from r3.transport import open_tunnel
+from r3.lifecycle import market_session
 
 if __name__ == "__main__":
     if "--dir" in sys.argv:
@@ -21,4 +22,5 @@ if __name__ == "__main__":
     os.environ["PATH"] = str(ROOT / ".market" / "bin") + os.pathsep + str(__import__("pathlib").Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
     kit = install(load_kit())
     kit.open_tunnel = lambda port: open_tunnel(kit, port)
-    kit.main()
+    with market_session():
+        kit.main()

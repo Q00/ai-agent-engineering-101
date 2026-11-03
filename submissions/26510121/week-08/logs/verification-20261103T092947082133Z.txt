@@ -1,0 +1,191 @@
+Local contract and integration tests; no public market actions.
+.......................FFFFFF                                            [100%]
+================================== FAILURES ===================================
+____________ test_waits_ten_minutes_then_launches_both_roles_once _____________
+
+tmp_path = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_waits_ten_minutes_then_la0')
+
+    def test_waits_ten_minutes_then_launches_both_roles_once(tmp_path):
+        folder = root(tmp_path)
+        rounds = iter([2, 3])
+        launched = []
+        child = SimpleNamespace(pid=123, returncode=None, poll=lambda: None)
+    
+        def spawn(log):
+            launched.append(log)
+            log.write_text('[market] shop registered as student, round 3\n'
+                           '[market] buyer registered as student, round 3\n', encoding='utf-8')
+            return child
+    
+>       w = Watcher(folder, fetch=lambda: next(rounds), spawn=spawn, active=lambda r: False)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_watch_round3.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+watch_round3.py:50: in __init__
+    self.end = datetime.fromisoformat(policy(root)['end_at']).timestamp()
+                                      ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+root = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_waits_ten_minutes_then_la0')
+
+    def policy(root=ROOT):
+        result = read_json(Path(root) / "policy.json", {})
+        for role in ("actor", "critic"):
+>           result[role + "_model"] = os.environ.get("R3_" + role.upper() + "_MODEL", result[role + "_model"])
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'actor_model'
+
+r3\state.py:33: KeyError
+_______________________ test_round_four_never_launches ________________________
+
+tmp_path = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_round_four_never_launches0')
+
+    def test_round_four_never_launches(tmp_path):
+>       w = Watcher(root(tmp_path), fetch=lambda: 4, spawn=lambda p: pytest.fail('must not start'))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_watch_round3.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+watch_round3.py:50: in __init__
+    self.end = datetime.fromisoformat(policy(root)['end_at']).timestamp()
+                                      ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+root = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_round_four_never_launches0')
+
+    def policy(root=ROOT):
+        result = read_json(Path(root) / "policy.json", {})
+        for role in ("actor", "critic"):
+>           result[role + "_model"] = os.environ.get("R3_" + role.upper() + "_MODEL", result[role + "_model"])
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'actor_model'
+
+r3\state.py:33: KeyError
+____________ test_existing_manual_runtime_prevents_duplicate_join _____________
+
+tmp_path = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_existing_manual_runtime_p0')
+
+    def test_existing_manual_runtime_prevents_duplicate_join(tmp_path):
+        folder = root(tmp_path)
+        with lease(folder / '.market/runtime.lock'):
+            assert market_active(folder)
+>           w = Watcher(folder, fetch=lambda: 3, spawn=lambda p: pytest.fail('duplicate'))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_watch_round3.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+watch_round3.py:50: in __init__
+    self.end = datetime.fromisoformat(policy(root)['end_at']).timestamp()
+                                      ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+root = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_existing_manual_runtime_p0')
+
+    def policy(root=ROOT):
+        result = read_json(Path(root) / "policy.json", {})
+        for role in ("actor", "critic"):
+>           result[role + "_model"] = os.environ.get("R3_" + role.upper() + "_MODEL", result[role + "_model"])
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'actor_model'
+
+r3\state.py:33: KeyError
+________ test_network_failure_waits_before_retry_without_assuming_open ________
+
+tmp_path = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_network_failure_waits_bef0')
+
+    def test_network_failure_waits_before_retry_without_assuming_open(tmp_path):
+        calls = []
+    
+        def fetch():
+            calls.append(True)
+            raise OSError('synthetic network failure')
+    
+>       w = Watcher(root(tmp_path), fetch=fetch, spawn=lambda p: pytest.fail('no verified round'))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_watch_round3.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+watch_round3.py:50: in __init__
+    self.end = datetime.fromisoformat(policy(root)['end_at']).timestamp()
+                                      ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+root = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_network_failure_waits_bef0')
+
+    def policy(root=ROOT):
+        result = read_json(Path(root) / "policy.json", {})
+        for role in ("actor", "critic"):
+>           result[role + "_model"] = os.environ.get("R3_" + role.upper() + "_MODEL", result[role + "_model"])
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'actor_model'
+
+r3\state.py:33: KeyError
+__________________ test_failed_join_retries_at_next_interval __________________
+
+tmp_path = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_failed_join_retries_at_ne0')
+
+    def test_failed_join_retries_at_next_interval(tmp_path):
+        folder = root(tmp_path)
+        launches = []
+        child = SimpleNamespace(pid=123, returncode=1, poll=lambda: 1)
+    
+        def spawn(log):
+            launches.append(log)
+            log.touch()
+            return child
+    
+>       w = Watcher(folder, fetch=lambda: 3, spawn=spawn, active=lambda r: False)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_watch_round3.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+watch_round3.py:50: in __init__
+    self.end = datetime.fromisoformat(policy(root)['end_at']).timestamp()
+                                      ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+root = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_failed_join_retries_at_ne0')
+
+    def policy(root=ROOT):
+        result = read_json(Path(root) / "policy.json", {})
+        for role in ("actor", "critic"):
+>           result[role + "_model"] = os.environ.get("R3_" + role.upper() + "_MODEL", result[role + "_model"])
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'actor_model'
+
+r3\state.py:33: KeyError
+_________ test_deadline_and_stop_do_not_launch_and_stop_is_pid_scoped _________
+
+tmp_path = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_deadline_and_stop_do_not_0')
+
+    def test_deadline_and_stop_do_not_launch_and_stop_is_pid_scoped(tmp_path):
+        folder = root(tmp_path)
+>       w = Watcher(folder, fetch=lambda: pytest.fail('deadline'), spawn=lambda p: pytest.fail('deadline'))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_watch_round3.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+watch_round3.py:50: in __init__
+    self.end = datetime.fromisoformat(policy(root)['end_at']).timestamp()
+                                      ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+root = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-60/test_deadline_and_stop_do_not_0')
+
+    def policy(root=ROOT):
+        result = read_json(Path(root) / "policy.json", {})
+        for role in ("actor", "critic"):
+>           result[role + "_model"] = os.environ.get("R3_" + role.upper() + "_MODEL", result[role + "_model"])
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'actor_model'
+
+r3\state.py:33: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_watch_round3.py::test_waits_ten_minutes_then_launches_both_roles_once
+FAILED tests/test_watch_round3.py::test_round_four_never_launches - KeyError:...
+FAILED tests/test_watch_round3.py::test_existing_manual_runtime_prevents_duplicate_join
+FAILED tests/test_watch_round3.py::test_network_failure_waits_before_retry_without_assuming_open
+FAILED tests/test_watch_round3.py::test_failed_join_retries_at_next_interval
+FAILED tests/test_watch_round3.py::test_deadline_and_stop_do_not_launch_and_stop_is_pid_scoped
+6 failed, 23 passed in 3.21s
