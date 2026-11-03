@@ -42,6 +42,7 @@ DEFAULTS = {
 }
 
 
+OVERRIDE = Path(os.environ.get("OWNER_OVERRIDE", Path(__file__).parent / "private" / "owner_override.json"))
 PLAN = Path(os.environ.get("MARKETING_PLAN", Path(__file__).parent / "private" / "marketing_plan.json"))
 
 
@@ -67,6 +68,10 @@ def theta():
     for k in ("min_margin", "clear_floor_margin", "haggle_room", "hero_undercut", "warranty_goods_h", "vip_discount"):
         if k in pr:
             t[k] = pr[k]
+    try:                                       # headquarters (the owner) overrides any plan
+        t.update(json.loads(OVERRIDE.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        pass
     return t
 
 

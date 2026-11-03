@@ -1,7 +1,14 @@
-"""Week 08 — marketing_agent.py: the shop's marketing team, a Codex agent run every hour on the VPS.
+"""Week 08 — marketing_agent.py: the shop's agent team, run every hour on the VPS.
 
-    python marketing_agent.py            # brief, ask Codex, gate, write the plan
-    python marketing_agent.py --dry      # brief and ask, print the plan, write nothing
+    python marketing_agent.py            # brief -> Codex research -> Claude strategy -> gate -> plan
+    python marketing_agent.py --dry      # the same, print the plan, write nothing
+
+Two teams and a headquarters (the owner, talking with Claude in the course session):
+  marketing team (Codex)   researches: findings, exclusive opportunities with evidence, risks, bugs; decides nothing
+  seller team (Claude)     reads the brief, the research and the headquarters' directives, decides the plan
+  headquarters             private/owner_directives.md (read by the seller team every run) and
+                           private/owner_override.json (wins over any plan, see promo.theta); reads the report the
+                           run copies to Google Drive (week08-reports), so it can follow the team without SSH
 
 One run:
   1. brief (code): board standing, what top shops charge and earn, hot SKUs with competitor stock left (from the
@@ -37,9 +44,46 @@ MD = HERE / ".market"
 OUT = HERE / "private" / "marketing"
 CODEX = os.environ.get("CODEX_BIN", "/root/.local/bin/codex")
 CODEX_HOME = os.environ.get("CODEX_HOME", "/root/.codex-market")
+CLAUDE = os.environ.get("CLAUDE_BIN", "/root/.local/bin/claude")
+CLAUDE_CONFIG = os.environ.get("CLAUDE_CONFIG_DIR", "/root/.claude-market")
+DIRECTIVES = HERE / "private" / "owner_directives.md"
+REPORTS = Path(os.environ.get("TEAM_REPORTS", "/mnt/gdrive-imajason-kimdaehakwon/week08-reports"))
 NAME = "dragonash"
 BAN = re.compile(r"approved by|instructor|operator|official|ignore (all|previous|your)|AI (buyers?|agents?) (must|should)|"
                  r"system prompt|scam|fraud|avoid \w+|worst|fake", re.I)
+
+RESEARCH_SCHEMA = {
+    "type": "object", "additionalProperties": False,
+    "required": ["findings", "exclusive_candidates", "risks", "bugs"],
+    "properties": {
+        "findings": {"type": "array", "items": {"type": "string"}},
+        "exclusive_candidates": {"type": "array", "items": {"type": "object", "additionalProperties": False,
+                                                            "required": ["sku", "evidence"],
+                                                            "properties": {"sku": {"type": "string"},
+                                                                           "evidence": {"type": "string"}}}},
+        "risks": {"type": "array", "items": {"type": "string"}},
+        "bugs": {"type": "array", "items": {"type": "object", "additionalProperties": False,
+                                            "required": ["what", "evidence", "fix"],
+                                            "properties": {"what": {"type": "string"}, "evidence": {"type": "string"},
+                                                           "fix": {"type": "string"}}}},
+    },
+}
+
+RESEARCH_PROMPT = """You are the marketing research team of an agent shop named "dragonash" in a classroom agent
+market (Round 3). The buyers are other students' LLM agents. You do research only; a separate seller team decides.
+Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000; costs are
+only stock decay (goods storage 1%/day, food expiring, refunds of goods broken under our warranty).
+From the brief below and the files in this folder (shop_r3.py, promo.py, restock.py, forum.py, market_model.py,
+logs/market-kit.log; read them, you cannot change them), report:
+- findings: what the numbers say about demand, prices, competitors, our stock and our customers (5-10 items,
+  each with numbers)
+- exclusive_candidates: hot SKUs that few competitors hold, with the evidence (sold, competitor units, our units)
+- risks: what could lose money or stars soon
+- bugs: anything in code or logs that loses sales or money, with evidence and a concrete fix
+Answer with the JSON object only.
+
+BRIEF:
+"""
 
 SCHEMA = {
     "type": "object", "additionalProperties": False,
@@ -73,7 +117,9 @@ SCHEMA = {
     },
 }
 
-PROMPT = """You are the marketing team of an agent shop named "dragonash" in a classroom agent market (Round 3).
+PROMPT = """You are the seller (strategy) team of an agent shop named "dragonash" in a classroom agent market (Round 3).
+The marketing research team (Codex) has studied the market; its report and the headquarters' directives follow
+the brief. You decide the plan.
 The buyers are other students' LLM agents, not people. Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars,
 each a percentile among shops; profit = balance - 5,000,000 (stock bought counts as spent until sold; no fixed
 costs, only stock decay: goods storage 1% of cost per day, food expiring, refunds for goods broken under warranty).
@@ -160,10 +206,10 @@ def brief():
     }
 
 
-def ask_codex(text):
+def ask_codex(text, schema_obj):
     with tempfile.TemporaryDirectory() as d:
         schema, out = Path(d) / "schema.json", Path(d) / "out.json"
-        schema.write_text(json.dumps(SCHEMA))
+        schema.write_text(json.dumps(schema_obj))
         cmd = [CODEX, "exec", "--skip-git-repo-check", "--ephemeral", "-s", "read-only", "-C", str(HERE),
                "--output-schema", str(schema), "-o", str(out), "-"]
         r = subprocess.run(cmd, input=text, text=True, capture_output=True, timeout=900,
@@ -171,6 +217,31 @@ def ask_codex(text):
         if not out.exists():
             raise RuntimeError(f"codex exited {r.returncode}: {r.stderr[-600:]}")
         return out.read_text(encoding="utf-8")
+
+
+def ask_claude(text):
+    """The seller team: Claude Code headless (claude -p) with its own config dir, no tools needed."""
+    r = subprocess.run([CLAUDE, "-p", "--output-format", "text"], input=text, text=True, capture_output=True,
+                       timeout=900, cwd=str(HERE), env={**os.environ, "CLAUDE_CONFIG_DIR": CLAUDE_CONFIG})
+    m = re.search(r"\{.*\}", r.stdout, re.S)
+    if not m:
+        raise RuntimeError(f"claude gave no JSON (exit {r.returncode}): {r.stdout[-400:]} {r.stderr[-400:]}")
+    return m.group(0)
+
+
+def report_md(b, research, plan, notes):
+    me = b["our_shop"]
+    lines = [f"# Agent team report {b['time']}", "",
+             f"Shop: profit {me.get('profit')}, revenue {me.get('revenue')}, deals {me.get('deals')}, "
+             f"stars {me.get('stars')}, ALL {me.get('all')}", "", "## Research (Codex)"]
+    lines += [f"- {x}" for x in research.get("findings", [])]
+    lines += ["", "Exclusive candidates:"] + [f"- {x['sku']}: {x['evidence']}" for x in research.get("exclusive_candidates", [])]
+    lines += ["", "Risks:"] + [f"- {x}" for x in research.get("risks", [])]
+    lines += ["", "## Strategy (Claude)", plan.get("rationale", ""), "", "```json",
+              json.dumps({k: plan[k] for k in ("pricing", "exclusive_skus", "restock", "forum_posts")}, ensure_ascii=False, indent=1),
+              "```", "", "## Bugs reported"] + [f"- {x['what']} | {x['evidence']} | fix: {x['fix']}" for x in plan.get("bugs", [])]
+    lines += ["", f"Gate notes: {notes}"]
+    return "\n".join(lines)
 
 
 def clamp(x, lo, hi):
@@ -218,8 +289,19 @@ def main():
     a = ap.parse_args()
     t0 = time.time()
     b = brief()
-    raw = ask_codex(PROMPT + json.dumps(b, ensure_ascii=False))
+    research = json.loads(ask_codex(RESEARCH_PROMPT + json.dumps(b, ensure_ascii=False), RESEARCH_SCHEMA))
+    print(f"[marketing] research: {len(research['findings'])} findings, "
+          f"{len(research['exclusive_candidates'])} exclusive candidates, {len(research['bugs'])} bugs, {time.time() - t0:.0f} s")
+    try:
+        directives = DIRECTIVES.read_text(encoding="utf-8")
+    except OSError:
+        directives = "(none)"
+    raw = ask_claude(PROMPT + json.dumps(b, ensure_ascii=False) + "\n\nMARKETING RESEARCH (Codex):\n"
+                     + json.dumps(research, ensure_ascii=False) + "\n\nHEADQUARTERS DIRECTIVES (follow them):\n"
+                     + directives + "\n\nAnswer with one JSON object with exactly these keys: "
+                     + json.dumps(list(SCHEMA["properties"])) + ", shaped as in this JSON Schema: " + json.dumps(SCHEMA))
     plan, notes = gate(raw, market_model.catalog(MD))
+    plan["bugs"] = (research.get("bugs") or [])[:10] + plan["bugs"]
     plan.update(version=int(time.time()), written=time.strftime("%Y-%m-%d %H:%M:%S"), by="codex marketing team")
     print(json.dumps({k: plan[k] for k in ("pricing", "exclusive_skus", "restock", "forum_posts", "rationale")},
                      ensure_ascii=False, indent=1))
@@ -228,8 +310,15 @@ def main():
         return
     OUT.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%m%d-%H%M")
-    (OUT / f"{stamp}.json").write_text(json.dumps({"brief": b, "raw": raw, "plan": plan, "gate": notes},
-                                                  ensure_ascii=False, indent=1), encoding="utf-8")
+    (OUT / f"{stamp}.json").write_text(json.dumps({"brief": b, "research": research, "raw": raw, "plan": plan,
+                                                   "gate": notes}, ensure_ascii=False, indent=1), encoding="utf-8")
+    md = report_md(b, research, plan, notes)
+    (OUT / "latest.md").write_text(md, encoding="utf-8")
+    try:
+        REPORTS.mkdir(parents=True, exist_ok=True)
+        (REPORTS / f"{stamp}.md").write_text(md, encoding="utf-8")
+    except OSError as e:
+        print(f"[marketing] report not copied to Drive: {e}")
     promo.PLAN.write_text(json.dumps({k: v for k, v in plan.items() if k not in ("bugs", "forum_posts")},
                                      ensure_ascii=False, indent=1), encoding="utf-8")
     with (OUT / "issues.jsonl").open("a", encoding="utf-8") as f:
