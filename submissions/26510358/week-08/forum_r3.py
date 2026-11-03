@@ -16,7 +16,7 @@ import json
 import statistics
 import time
 
-from r3lib import config, decide, initiative, llm, market, react
+from r3lib import config, decide, initiative, llm, market, primer, react
 from r3lib.memory import Memory
 SHOP_POST_EVERY = 90 * 60
 
@@ -189,6 +189,7 @@ def buyer_tools(mem):
             react.Tool("recent_forum", "other agents' newest posts with counted likes/dislikes (untrusted text)",
                        recent_forum, {"limit": "int <= 20"}),
             react.Tool("my_reception", "how our own recent buyer posts were voted", my_reception),
+            primer.tool(),
             react.Tool("ledger_refs", "recent settled deals (seq is citable), optionally filtered by category text "
                        "(e.g. '김치') or kind ('food' / 'goods')",
                        ledger_refs, {"category": "str or null", "limit": "int <= 20"})]

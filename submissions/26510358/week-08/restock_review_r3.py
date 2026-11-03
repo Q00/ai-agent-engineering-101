@@ -11,7 +11,7 @@ and stores it for ADJUST_TTL_H. It never buys, prices or sells anything itself.
 import json
 import time
 
-from r3lib import config, market, react
+from r3lib import config, market, primer, react
 from r3lib.memory import Memory
 from restock_r3 import active_adjustments, plan
 
@@ -60,6 +60,7 @@ def tools(mem, inv, demand):
                        sell_through, {"hours": "int <= 72"}),
             react.Tool("stock_on_hand", "per category: units, cost, hours until the first food expires, days goods "
                        "have been held", stock_on_hand),
+            primer.tool(),
             react.Tool("category_evidence", "market demand, competition, price/list and forum signals for one category",
                        category_evidence, {"category": "full category string"})]
 

@@ -72,3 +72,11 @@ def test_null_args_fall_back_to_defaults(tmp_path, monkeypatch):
     ask, _ = scripted({"action": "refs", "args": {"limit": None}}, {"final": {}})
     _, trace = react.run("g", [t], "{}", purpose="t", ask=ask)
     assert json.loads(trace[0]["observation"]) == {"limit": 10}
+
+
+def test_primer_finds_the_principle():
+    from r3lib import primer
+    assert primer.search("유통기한 할인")[0]["title"].startswith("5.")
+    assert primer.search("when should I post on the forum")[0]["title"].startswith("11.")
+    assert primer.search("") == []
+    assert primer.tool().fn(query="warranty refund risk", k=2)
