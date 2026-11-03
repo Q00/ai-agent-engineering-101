@@ -450,12 +450,26 @@ def catalog():
     return {r["sku"]: r for r in rows} if isinstance(rows, list) else rows
 
 
-def candidates(shops, order, cat, prof):
+def enuri_book():
+    """The Enuri team's book (enuri.py, rebuilt by the shop's restock hook); {} when it is missing."""
+    try:
+        import enuri
+        return enuri.book()
+    except Exception as e:
+        log(f"[enuri] no book: {type(e).__name__}: {e}")
+        return {}
+
+
+def candidates(shops, order, cat, prof, book=None):
     """Every (shop, SKU) that fits the order, best first, by code: what I expect to keep (list price minus the
     price I expect to pay at that shop) times the chance the shop is honest. One SKU per shop.
     Reach: an offer stays in while min_reach x list fits the budget. The old test (r3_first_offer x list) dropped
     every SKU listed above budget / 0.6, while leaders settle near half the list: 21 of 37 orders at 60-120k and
-    12 of 24 at 250k+ had no candidate at all, and the 8 deals at 250k+ kept 2.38M (VPS, 2026-11-04)."""
+    12 of 24 at 250k+ had no candidate at all, and the 8 deals at 250k+ kept 2.38M (VPS, 2026-11-04).
+    book: the Enuri team's shops to avoid are skipped, and its price forecast per (shop, SKU) replaces my own
+    list-price ratio when it has one."""
+    book = book or {}
+    avoid = set(book.get("avoid") or [])
     budget, acceptable = order["budget"], set(order["acceptable"])
     best, why = {}, {"not acceptable": 0, "no stock": 0, "blocked shop": 0, "no list price": 0, "too expensive": 0}
     dear = []
@@ -463,8 +477,12 @@ def candidates(shops, order, cat, prof):
         fits = [o for o in s.get("offers") or [] if o.get("sku") in acceptable]
         why["not acceptable"] += len(s.get("offers") or []) - len(fits)
         blk = blocked(prof, s["name"])
-        if blk:
+        if not blk and s["name"] in avoid:
+            blk = "enuri: " + str(((book.get("quality") or {}).get(s["name"]) or {}).get("why") or "avoid")
+            log(f"[enuri] skip {s['name']}: {blk[7:]}")
+        elif blk:
             log(f"[filter] skip {s['name']}: {blk}")
+        if blk:
             why["blocked shop"] += bool(fits)
             continue
         p = prof.get(s["name"])
@@ -479,7 +497,8 @@ def candidates(shops, order, cat, prof):
                 why["too expensive"] += 1
                 dear.append(lp)
             else:
-                expect = min(lp * ratio, budget)
+                pred = _predict(book, s["name"], o["sku"], order.get("kind"))
+                expect = min(pred or lp * ratio, budget)
                 keep = (lp - expect) * (1 - buyer_memory.defect_rate(p))
                 if s["name"] not in best or keep > best[s["name"]][0]:
                     best[s["name"]] = (keep, s, o, lp)
@@ -487,6 +506,16 @@ def candidates(shops, order, cat, prof):
         log("[r3] no candidates: " + ", ".join(f"{n} {k}" for k, n in why.items())
             + (f" (list {min(dear)}-{max(dear)}, budget {budget}, reach {T['min_reach']})" if dear else ""))
     return sorted(best.values(), key=lambda c: -c[0])
+
+
+def _predict(book, shop, sku, kind):
+    if not book:
+        return None
+    try:
+        import enuri
+        return enuri.predict(book, shop, sku, kind)
+    except Exception:
+        return None
 
 
 def offer_of(task):
@@ -535,8 +564,9 @@ def accept_policy(order):
 
 def round3(a, order, shops, mem, started):
     from concurrent.futures import ThreadPoolExecutor
-    prof, cat = mem["profiles"], catalog()
-    cands = candidates(shops, order, cat, prof)
+    prof, cat, book = mem["profiles"], catalog(), enuri_book()
+    cands = candidates(shops, order, cat, prof, book)
+    rfq = T["rfq_big"] if order["budget"] >= T["big_budget"] else T["rfq"]      # big orders: ask more shops
     try:
         import market_model          # the buyer is the shop's sensor: what this order showed goes in the shared model
         market_model.remember_seen(order, shops)
@@ -544,7 +574,7 @@ def round3(a, order, shops, mem, started):
         log(f"[r3] market model not updated: {type(e).__name__}: {e}")
     log(f"[r3] order {order.get('item')} ({order.get('kind')}), budget {order['budget']}, "
         f"{len(order['acceptable'])} SKUs fit, {len(cands)} shop offers")
-    for keep, s, o, lp in cands[:T["rfq"]]:
+    for keep, s, o, lp in cands[:rfq]:
         log(f"[r3]   {s['name']}: {o['name']} ({o['sku']}) list {lp}, expect to keep {keep:.0f}")
     if not cands:
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
@@ -554,8 +584,8 @@ def round3(a, order, shops, mem, started):
     NEED.update(hours=pol.get("min_hours_left"), text=", ".join(
         x for x in (f"shelf life {pol['min_hours_left']} h or more" if pol.get("min_hours_left") else "",
                     f"grade {'/'.join(pol['grades'])}" if pol.get("grades") else "", "market certificate") if x))
-    with ThreadPoolExecutor(T["rfq"]) as ex:
-        quotes = list(ex.map(quote, cands[:T["rfq"]]))
+    with ThreadPoolExecutor(rfq) as ex:
+        quotes = list(ex.map(quote, cands[:rfq]))
     for q in quotes:
         log(f"[quote] {q['c'][1]['name']}: " + (q.get("error") or f"ask {q['ask']}"))
     good = [q for q in quotes if q.get("ask")]
@@ -583,7 +613,11 @@ def round3(a, order, shops, mem, started):
     cap = min(order["budget"], int(lp * T["max_pay_ratio"]))     # paying near the list price keeps nothing
     # first offer: the anchor share of the list, but under the cap (an anchor above it would be dropped and the
     # buyer would open at first_offer_max x ask); 0.9 x cap so an ask at the anchor still leaves surplus
-    low = min(int(lp * T["r3_first_offer"]), int(0.9 * cap))
+    low = int(lp * T["r3_first_offer"])
+    book_low = ((book.get("prices") or {}).get(sku) or {}).get("low")
+    if book_low:                        # the market sold it lower lately: open there, never under 0.45 x list
+        low = int(max(0.45 * lp, min(low, book_low)))
+    low = min(low, int(0.9 * cap))
     log(f"[choose] {shop['name']} {offer['name']} ({sku}): ask {pick['ask']}, list {lp}, I pay at most {cap}, open {low}")
 
     task, asks, offers, texts, notes, rec, problem = None, [], [], [], [], None, None

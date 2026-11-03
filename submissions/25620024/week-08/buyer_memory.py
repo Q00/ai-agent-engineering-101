@@ -32,6 +32,7 @@ MEMORY = Path(os.environ.get("MARKET_BUYER_MEMORY", Path(__file__).parent / "mem
 PROFILES = MEMORY.with_name(MEMORY.stem.replace("memory", "shop_profiles") + ".json") \
     if "memory" in MEMORY.stem else MEMORY.with_name("shop_profiles.json")
 THETA = Path(os.environ.get("MARKET_THETA", Path(__file__).parent / "theta.json"))
+PLAN = Path(os.environ.get("MARKET_BUYER_PLAN", Path(__file__).parent / "private" / "buyer_plan.json"))
 SCHEMA = 3                 # bump when the profile layout changes: the next load() rebuilds
 RATIOS = 20                # recent settle ratios kept per shop
 LOWS = 200                 # recent agreed prices kept per item, across all shops
@@ -46,15 +47,22 @@ DEFAULTS = {"window": 50, "cooldown_h": 24, "repeat_days": 7, "minor_to_medium":
             "goods_grades": ["A", "B"],
             # Round 3 reach: an offer is a candidate while min_reach x list price fits the budget (leaders settle
             # near 0.5 of list; 0.6, the first-offer share, dropped half the big orders)
-            "min_reach": 0.45}
+            "min_reach": 0.45,
+            # quotes asked in parallel for an order of big_budget or more: the board counts absolute surplus, and
+            # one 250k deal kept more than all small deals together
+            "rfq_big": 5, "big_budget": 60000}
 
 
 def theta():
-    """The buyer's tunable numbers: DEFAULTS, overridden by the "buyer" section of theta.json if there is one."""
-    try:
-        return {**DEFAULTS, **json.loads(THETA.read_text(encoding="utf-8")).get("buyer", {})}
-    except (OSError, ValueError):
-        return dict(DEFAULTS)
+    """The buyer's tunable numbers, merged in order: DEFAULTS < theta.json "buyer" (the meta-harness) <
+    private/buyer_plan.json "theta" (the buyer team; its gate already clamped them). A missing file is skipped."""
+    t = dict(DEFAULTS)
+    for path, key in ((THETA, "buyer"), (PLAN, "theta")):
+        try:
+            t.update(json.loads(path.read_text(encoding="utf-8")).get(key) or {})
+        except (OSError, ValueError, AttributeError):
+            pass
+    return t
 
 
 def profile():
