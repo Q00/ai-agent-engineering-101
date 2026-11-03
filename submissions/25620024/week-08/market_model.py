@@ -137,6 +137,24 @@ def our_sales(c, sku=None, hours=6):
     return rates.get(sku, 0.0) if sku else rates
 
 
+def regulars(c, min_buys=2, hours=48):
+    """Our regular customers from the ledger: buyers who settled at least min_buys purchases with our shop lately.
+    We cannot tell who is asking during a negotiation (the A2A request names no buyer), but the settles do, so
+    the shop serves its regulars by stocking what they buy. Returns ({buyer: buys}, {category: {sku: buys}})."""
+    rows = c.execute(f"select buyer, category, sku from settles where ts>? and seq in ({ours(c)})",
+                     (time.time() - hours * 3600,)).fetchall()
+    buys = {}
+    for b, _, _ in rows:
+        buys[b] = buys.get(b, 0) + 1
+    regular = {b: n for b, n in buys.items() if b and n >= min_buys}
+    wants = {}
+    for b, cat, sku in rows:
+        if b in regular and cat:
+            wants.setdefault(cat, {})
+            wants[cat][sku] = wants[cat].get(sku, 0) + 1
+    return regular, wants
+
+
 def remember_seen(order, shops):
     c = db()
     now = time.time()

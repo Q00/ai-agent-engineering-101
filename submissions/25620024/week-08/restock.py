@@ -32,7 +32,9 @@ DEFAULTS = {"cash_reserve": 0.35, "max_list": 300000, "cover_h": {"food": 6, "go
             # demand counted as ours, and no floor on evidence. Now: our share of the market rate, a minimum of
             # settles before buying for demand, a cap on goods we have not sold yet, and a spend cap per window
             "share_prior": 0.2, "min_settles": 3, "goods_cap_unproven": 3, "proven_sales": 2,
-            "window_budget": 0.08}
+            "window_budget": 0.08,
+            # regulars: buyers with 2+ settled buys from us in 48 h; keep their categories in stock first
+            "regular_min_buys": 2, "regular_depth": 2}
 STATE = Path(__file__).parent / "private" / "restock_state.json"
 
 
@@ -96,6 +98,15 @@ def plan(md, c, t, now=None):
                 continue
             if now - rsv.get("ts", 0) < 3600 and not stock.get(rsv.get("sku")) and rsv.get("sku") not in buy:
                 add(rsv["sku"], 1, "reserved")
+    regular, wants = market_model.regulars(c, t["regular_min_buys"])          # 1b. what our regulars buy
+    have_cat = {(cat.get(s) or {}).get("category") for s in stock}
+    for category, skus in sorted(wants.items(), key=lambda kv: -sum(kv[1].values())):
+        if category in have_cat:
+            continue                                          # a regular coming back finds it in stock already
+        sku = max(skus, key=skus.get)
+        add(sku, min(t["regular_depth"], sum(skus.values())), f"regulars bought {sum(skus.values())} here")
+    if regular:
+        why.append(f"{len(regular)} regulars ({sum(regular.values())} buys)")
     for sku, rate in sorted(by_sku.items(), key=lambda kv: -kv[1]):   # 2. demand
         r = cat.get(sku)
         if not r:
