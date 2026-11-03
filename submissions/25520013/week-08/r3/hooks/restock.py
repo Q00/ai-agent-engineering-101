@@ -124,7 +124,8 @@ ACTIVITY_KEYS = ("last_settle_ts", "first_stock_ts", "settles", "orders", "last_
 def taste_ranking(pol, root=None, now=None):
     """v1.19: the category forecast of <R3_STATE>/taste_gate.json (written by memory.run's taste gate) when policy
     taste.enabled, its state is "adopted" and its asof is at most taste.max_age_s old; else None (velocity ranking).
-    Read as a file only: the decision path imports nothing from taste/memory/harness/experiments."""
+    Read as a file only: the decision path imports nothing from taste/memory/harness/experiments. A forecast value
+    that is not a probability in (0, 1] voids the whole forecast (velocity ranking, caps kept)."""
     t = pol.get("taste") or {}
     if not t.get("enabled"):
         return None
@@ -136,7 +137,10 @@ def taste_ranking(pol, root=None, now=None):
     age = now - asof if isinstance(asof, (int, float)) and not isinstance(asof, bool) else None
     if age is None or not 0 <= age <= float(t.get("max_age_s") or 0):
         return None
-    return f if isinstance(f, dict) and f else None
+    if not isinstance(f, dict) or not f:
+        return None
+    ok = all(isinstance(p, (int, float)) and not isinstance(p, bool) and 0 < p <= 1 for p in f.values())
+    return f if ok else None
 
 
 def _plan_without_goods_cap(inv, demand, catalog, pol, stats, act, err):

@@ -114,6 +114,16 @@ def test_hook_reads_only_a_fresh_adopted_enabled_gate(tmp_path):
     assert R.taste_ranking(pol, tmp_path, NOW) is None
 
 
+def test_hook_ignores_a_forecast_that_is_not_probabilities(tmp_path):
+    R = _restock_hook()
+    pol = P.load()
+    for bad in ({CATS[0]: "high"}, {CATS[0]: 0.9, CATS[1]: float("nan")}, {CATS[0]: True}, {CATS[0]: 0.0},
+                {CATS[0]: 1.5}, {CATS[0]: None}, {}, [0.9]):
+        g = {"state": "adopted", "asof": NOW - 600, "forecast": bad}
+        (tmp_path / "taste_gate.json").write_text(json.dumps(g, ensure_ascii=False), encoding="utf-8")
+        assert R.taste_ranking(pol, tmp_path, NOW) is None, bad      # restock_plan never sees a bad value
+
+
 def test_policy_taste_block_and_format():
     raw = (R3 / "policy.json").read_text(encoding="utf-8")
     d = json.loads(raw)
