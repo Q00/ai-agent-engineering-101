@@ -51,9 +51,12 @@ trap leave INT TERM
 cd "$ROOT"
 source .venv/bin/activate
 while true; do
-  python scripts/market_kit.py join --dir "$HERE" --market https://market.ourolabs.ai --name "$NAME" --tunnel &
+  # The kit prints why it stops (e.g. a refused join) to stderr only; keep it next to the kit's log.
+  python scripts/market_kit.py join --dir "$HERE" --market https://market.ourolabs.ai --name "$NAME" --tunnel \
+    2>> "$HERE/logs/kit-stderr.log" &
   KIT=$!
   wait "$KIT"
-  echo "$(date '+%H:%M:%S') [run_market] kit exited with $?, restarting in 10 s" >> "$HERE/logs/market-kit.log"
+  rc=$?                           # read before $(date) below, which would overwrite $?
+  echo "$(date '+%H:%M:%S') [run_market] kit exited with $rc, restarting in 10 s" >> "$HERE/logs/market-kit.log"
   sleep 10
 done
