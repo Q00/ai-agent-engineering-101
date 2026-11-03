@@ -1,23 +1,23 @@
 {
   "kit_version": "1",
   "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
-  "started": "2026-11-02T11:11:24+00:00",
+  "started": "2026-11-03T06:12:37+00:00",
   "harness": "Claude Code 2.1.273, claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence --system-prompt <role>, prompt on stdin",
-  "seller_cmd": "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python seller.py --port {port}",
-  "market_buyer_cmd": "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget}",
+  "seller_cmd": "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python seller_r3.py --port {port}",
+  "market_buyer_cmd": "/home/iai4/Desktop/han/ai-agent-engineering-101/.venv/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}",
   "seller_card": {
-    "name": "GPT Lamp Shop",
-    "description": "Sells desk lamps, chairs and bookshelves. A Claude Code (haiku) harness sets every price.",
+    "name": "Sealed Stock Shop",
+    "description": "An inventory-aware shop with certified grades, expiry liquidation, and guarded receipt signing.",
     "supportedInterfaces": [
       {
-        "url": "http://127.0.0.1:42773/",
+        "url": "http://127.0.0.1:49155/",
         "protocolBinding": "JSONRPC",
         "protocolVersion": "1.0"
       }
     ],
-    "version": "1.0.0",
+    "version": "3.0.0",
     "capabilities": {
-      "streaming": true
+      "streaming": false
     },
     "defaultInputModes": [
       "text/plain"
@@ -29,18 +29,17 @@
     "skills": [
       {
         "id": "negotiate",
-        "name": "Negotiate a purchase",
-        "description": "Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
+        "name": "Negotiate an in-stock SKU",
+        "description": "Ask by product name or SKU, then offer a whole-number price.",
         "tags": [
           "shopping",
-          "negotiation",
-          "bookshelf",
-          "chair",
-          "lamp"
+          "inventory",
+          "certificate",
+          "negotiation"
         ],
         "examples": [
-          "I want to buy a lamp",
-          "90"
+          "I want 종가 포기김치 (G00001)",
+          "52000"
         ]
       }
     ]
@@ -50,19 +49,19 @@
       "test": "seller_card",
       "run": 1,
       "pass": true,
-      "detail": "name='GPT Lamp Shop' binding=JSONRPC version=1.0 skills=1"
+      "detail": "name='Sealed Stock Shop' binding=JSONRPC version=1.0 skills=1"
     },
     {
       "test": "seller_opens",
       "run": 1,
       "pass": true,
-      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 108"
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 129"
     },
     {
       "test": "seller_deal",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 108.0, asks [108]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 106.0, asks [129, 106]"
     },
     {
       "test": "seller_signed_receipt",
@@ -80,7 +79,7 @@
       "test": "seller_deal",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 105.0, asks [105]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [115]"
     },
     {
       "test": "seller_signed_receipt",
@@ -92,7 +91,7 @@
       "test": "seller_deal",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_COMPLETED, receipt price 105.0, asks [105]"
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [115]"
     },
     {
       "test": "seller_signed_receipt",
@@ -104,25 +103,25 @@
       "test": "seller_holds_reserve",
       "run": 1,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [292, 275, 265, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [299, 268, 268, 268, 268]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 2,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [277, 270, 265, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [335, 270, 268, 268, 268]"
     },
     {
       "test": "seller_holds_reserve",
       "run": 3,
       "pass": true,
-      "detail": "TASK_STATE_REJECTED, asks [273, 260, 260, 260, 260, 260]"
+      "detail": "TASK_STATE_REJECTED, asks [335, 270, 268, 268, 268]"
     },
     {
       "test": "buyer_deal",
       "run": 1,
       "pass": true,
-      "detail": "offers [110], stars 3, receipt yes"
+      "detail": "offers [110], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
@@ -134,7 +133,7 @@
       "test": "buyer_deal",
       "run": 2,
       "pass": true,
-      "detail": "offers [110], stars 3, receipt yes"
+      "detail": "offers [110], stars 4, receipt yes"
     },
     {
       "test": "buyer_protocol_deal",
