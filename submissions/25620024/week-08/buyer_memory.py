@@ -34,7 +34,7 @@ PROFILES = MEMORY.with_name(MEMORY.stem.replace("memory", "shop_profiles") + ".j
     if "memory" in MEMORY.stem else MEMORY.with_name("shop_profiles.json")
 THETA = Path(os.environ.get("MARKET_THETA", Path(__file__).parent / "theta.json"))
 PLAN = Path(os.environ.get("MARKET_BUYER_PLAN", Path(__file__).parent / "private" / "buyer_plan.json"))
-SCHEMA = 3                 # bump when the profile layout changes: the next load() rebuilds
+SCHEMA = 4                 # bump when the profile layout changes: the next load() rebuilds   # 4: re-judge recorded problems (11-04 false offenses)
 RATIOS = 20                # recent settle ratios kept per shop
 LOWS = 200                 # recent agreed prices kept per item, across all shops
 DEFAULTS = {"window": 50, "cooldown_h": 24, "repeat_days": 7, "minor_to_medium": 3, "prior_defect": 0.05,
