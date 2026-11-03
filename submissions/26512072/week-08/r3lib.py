@@ -8,6 +8,7 @@ Files (all in this folder; .market/ is written by the kit):
     buyer_memory_r3.jsonl     my buyer's own trades (market_buyer_r3.py and review_r3.py append)
     market_sales.json         cache of the market's settled deals per SKU (restock.py refreshes)
 """
+import email.utils
 import json
 import os
 import time
@@ -22,6 +23,7 @@ SHOP_NAME = os.environ.get("SHOP_NAME", "bjeon01")
 SALES = Path(os.environ.get("SHOP_SALES", HERE / "sales_memory.jsonl"))
 BUYER_MEM = Path(os.environ.get("BUYER_MEMORY_R3", HERE / "buyer_memory_r3.jsonl"))
 MARKET_SALES = HERE / "market_sales.json"
+CLOCK = MD / "clock.json"
 
 
 def read_json(path, default=None):
@@ -62,8 +64,24 @@ def round_now():
     return int(inventory().get("round") or 0)
 
 
+def market_now():
+    """time.time() on the market's clock. This server's clock runs about 10 minutes fast, and supply windows and
+    expiry times are market timestamps, so the offset comes from the market's Date header (measured every 30 min)."""
+    c = read_json(CLOCK, {}) or {}
+    if time.time() - c.get("at", 0) > 1800:
+        try:
+            t0 = time.time()
+            r = httpx.head(f"{MARKET}/agent.md", timeout=5)
+            server = email.utils.parsedate_to_datetime(r.headers["date"]).timestamp()
+            c = {"at": t0, "skew": round((t0 + time.time()) / 2 - server, 1)}
+        except Exception:
+            c = {"at": time.time(), "skew": c.get("skew", 0)}     # keep the last offset, try again later
+        CLOCK.write_text(json.dumps(c), encoding="utf-8")
+    return time.time() - c.get("skew", 0)
+
+
 def hours_left(unit):
-    return (unit["expires_at"] - time.time()) / 3600 if unit.get("expires_at") else None
+    return (unit["expires_at"] - market_now()) / 3600 if unit.get("expires_at") else None
 
 
 def refresh_market_sales(max_pages=20):

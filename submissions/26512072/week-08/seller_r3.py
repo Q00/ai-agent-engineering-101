@@ -29,7 +29,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from harness import CMD, safe_ask_json
 import httpx
 
-from r3lib import MARKET, SALES, SHOP_NAME, append_jsonl, hours_left, inventory, read_jsonl
+from r3lib import MARKET, SALES, SHOP_NAME, append_jsonl, hours_left, inventory, market_now, read_jsonl
 
 KEY_FILE = Path(__file__).resolve().parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}      # Rounds 0-2: the week-07 items, no stock
@@ -110,7 +110,7 @@ def terms(u):
         floor = round(cost * 1.15)                  # room for the warranty refunds
         quality = GOODS_WORDS.get(u["grade"], u["grade"]) + f", {WARRANTY_HOURS} h warranty"
         opening = round(lp * ({"A": 0.95, "B": 0.88, "C": 0.8}.get(u["grade"], 0.9) + delta))
-        if time.time() - (u.get("supplied_at") or time.time()) > 72 * 3600:   # 3 days unsold: storage eats it
+        if market_now() - (u.get("supplied_at") or market_now()) > 72 * 3600:   # 3 days unsold: storage eats it
             floor, opening = round(cost), round(opening * 0.9)
     floor = max(1, floor)
     return floor, max(opening, floor), quality + ", market certificate included"

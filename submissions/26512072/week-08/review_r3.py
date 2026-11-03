@@ -12,7 +12,7 @@ import json
 import time
 
 from harness import safe_ask_json
-from r3lib import BUYER_MEM, HERE, MD, append_jsonl, catalog, read_json, read_jsonl
+from r3lib import BUYER_MEM, HERE, MD, append_jsonl, catalog, market_now, read_json, read_jsonl
 
 FORUM_STATE = MD / "forum_state.json"
 POST_EVERY = 300
@@ -38,7 +38,7 @@ def main():
     value = st.get("value") if isinstance(st.get("value"), (int, float)) else lp
     surplus = (value or 0) - price
     honest = st.get("claim_honest")
-    left = (st["expires_at"] - time.time()) / 3600 if st.get("expires_at") else None
+    left = (st["expires_at"] - market_now()) / 3600 if st.get("expires_at") else None
     trade = next((m for m in reversed(read_jsonl(BUYER_MEM)) if m.get("kind") == "trade"
                   and m.get("order") == order.get("order")), {})
     shop = trade.get("shop") or st.get("shop")

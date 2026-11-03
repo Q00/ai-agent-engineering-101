@@ -19,11 +19,13 @@ Food: only SKUs that keep for 10 days or more, unless the market or I sold that 
 """
 import argparse
 import json
+import os
 import time
 from collections import Counter
 from pathlib import Path
 
-from r3lib import HERE, SALES, append_jsonl, catalog, forum_wants, read_json, read_jsonl, refresh_market_sales
+from r3lib import (HERE, SALES, append_jsonl, catalog, forum_wants, market_now, read_json, read_jsonl,
+                   refresh_market_sales)
 
 CASH_FLOOR = 2_000_000
 STOCK_CAP = 1_000_000
@@ -31,7 +33,7 @@ SPEND_SHARE = 0.10
 MAX_LINES = 10
 EST_COST = 0.65            # expected cost as a share of list price (A 55-75%, B 40-60%, C 25-45%)
 LEAD = 60                  # start a run this many seconds before the window opens (the kit waits for it)
-LOG = HERE / "logs" / "restock.log"
+LOG = Path(os.environ.get("RESTOCK_LOG", HERE / "logs" / "restock.log"))   # tests point this elsewhere
 
 
 def main():
@@ -44,7 +46,7 @@ def main():
         print(json.dumps({"buy": []}))
         return
     win = inv.get("restock") or {}
-    if win and not win.get("open") and (win.get("opens_at") or 0) - time.time() > LEAD:
+    if win and not win.get("open") and (win.get("opens_at") or 0) - market_now() > LEAD:
         print(json.dumps({"buy": []}))                      # window closed: buying now would only be skipped
         return
     balance = inv.get("balance") or 0
@@ -61,7 +63,7 @@ def main():
 
     mine = Counter(s["sku"] for s in read_jsonl(SALES) if s.get("outcome") == "deal")
     market = refresh_market_sales()
-    now = time.time()
+    now = market_now()
     hot = Counter({sku: p["n"] * (2 if now - p.get("last", 0) < 6 * 3600 else 1)
                    for sku, p in market.items() if sku in cat})
 
