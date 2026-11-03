@@ -183,3 +183,13 @@ def test_silent_loops_alert_only_after_the_switch() -> None:
     assert "loops_silent" in conditions(snap)
     snap.manager_on = False
     assert "loops_silent" not in conditions(snap)
+
+
+def test_silent_loops_wait_forty_minutes_after_the_switch() -> None:
+    now = datetime(2026, 11, 3, 12, 5, tzinfo=UTC).timestamp()
+    snap = healthy(now)
+    snap.loop_runs = []  # the switch just relaunched; no loop has run yet
+    snap.switched_at = now - 120
+    assert "loops_silent" not in conditions(snap)
+    snap.switched_at = now - 3000
+    assert "loops_silent" in conditions(snap)

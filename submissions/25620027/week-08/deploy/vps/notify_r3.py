@@ -75,6 +75,8 @@ class Snapshot:
     manager_on: bool = False
     stop_at: str = ""
     switch_done: bool = False
+    # when the switch finished (the r3-switched marker's mtime); None if unknown
+    switched_at: float | None = None
     daily_cap: float = 3.0
     spend_today: float = 0.0
     calls_today: int = 0
@@ -191,6 +193,9 @@ def collect(base: Path = BASE, *, market: str = MARKET) -> Snapshot:  # noqa: C9
     snap.switch_done = switch_log.exists() and "switch done" in switch_log.read_text(
         encoding="utf-8", errors="replace"
     )
+    marker = base / "r3-switched"
+    if marker.exists():
+        snap.switched_at = marker.stat().st_mtime
     events = base / "data/r3/r3-events.sqlite"
     day = _kst(now).date().isoformat()
     spend = _sql(events, "SELECT usd, calls FROM model_spend WHERE day = ?", (day,))
@@ -308,6 +313,11 @@ def conditions(snap: Snapshot) -> set[str]:
         and snap.market_round == 3
         and snap.manager_on
         and snap.switch_done
+        # loops get their first turns after the switch (2026-11-03 21:05 false alarm)
+        and (
+            snap.switched_at is None
+            or snap.now - snap.switched_at >= LOOP_SILENT_SECONDS
+        )
         and not any(snap.now - run[0] <= LOOP_SILENT_SECONDS for run in snap.loop_runs)
     ):
         active.add("loops_silent")
