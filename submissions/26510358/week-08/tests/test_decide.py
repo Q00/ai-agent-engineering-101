@@ -19,6 +19,7 @@ def setup(tmp_path, monkeypatch, env_text):
         monkeypatch.delenv(k, raising=False)
     monkeypatch.setattr(config, "MARKET_DIR", tmp_path)
     monkeypatch.setattr(config, "LOG_DIR", tmp_path / "logs")
+    monkeypatch.setattr(config, "STATE_DIR", tmp_path / "r3")    # never touch the live call budget
     (tmp_path / "decision.env").write_text(env_text)
 
 
@@ -73,7 +74,6 @@ def test_vote_uses_model_probability_over_llm_label(tmp_path, monkeypatch):
 
 def test_hourly_budget_and_per_post_cache(tmp_path, monkeypatch):
     setup(tmp_path, monkeypatch, "DECISION_BACKEND=jev\nTYPESAFE_API_KEY=k\n")
-    monkeypatch.setattr(config, "STATE_DIR", tmp_path / "r3")
     monkeypatch.setattr(config, "DECISION_MAX_PER_HOUR", 2)
     ok = lambda url, body: {"answers": {"injection": {"noul": 0.1}, "team": {"choice": "a"}}}
     assert decide.decide("x", Q, purpose="t", transport=ok) is not None
