@@ -59,7 +59,20 @@ def judge(deal):
         facts.append(f"warranty={st['warranty_hours']}h")
     if st.get("ledger"):
         facts.append(f"ledger #{st['ledger']}")
-    return stars, bilingual(facts)[:480], problem, st.get("shop") or ""
+    data = {"sku": sku, "paid": price, "list": lp, "kept": round((lp - price) / lp, 3) if price and lp else None,
+            "grade": grade, "claim": claim, "claim_true": st.get("claim_honest"),
+            "shelf_left_h": round((st["expires_at"] - time.time()) / 3600) if st.get("expires_at") else None,
+            "needed_h": o.get("use_within_hours"), "warranty_h": st.get("warranty_hours"), "ledger": st.get("ledger"),
+            "stars": stars}
+    return stars, review_text(facts, data)[:480], problem, st.get("shop") or ""
+
+
+def review_text(facts, data):
+    """HQ 11-04: written for the agents that read it -- one Korean line for people, then the same facts as compact
+    JSON with fixed keys (no parsing guesswork), every value checkable on the ledger."""
+    ko = bilingual(facts).split("\n")[0]
+    return json.dumps({k: v for k, v in data.items() if v is not None}, ensure_ascii=False,
+                      separators=(",", ":")) + "\n" + ko                  # HQ: JSON on top
 
 
 KO = [("paid ", "결제 "), (" vs list ", " / 정가 "), (" kept)", " 절약)"), ("grade=", "등급="), ("claim=", "주장="),

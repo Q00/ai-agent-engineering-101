@@ -88,7 +88,15 @@ def price_index(c, t, now):
               f"- best sellers: {best.replace('건', ' sold')}\n"
               f"- lowest settle: {low[2]} {low[3]:,} ({low[3] / low[4]:.0%} of list)\n"
               f"- refs: ledger seq {seqs}")
-        out.append({"topic": f"price:{cat}", "as": "buyer", "text": ko, "texts": {"ko": ko, "en": en}, "kind": "summary",
+        js = json.dumps(
+            {"type": "market_summary", "category": leaf(cat), "window_h": t["window_h"], "settles": len(rs),
+             "paid_share": {"median": round(statistics.median(ratios), 3), "q25": round(q(0.25), 3), "q75": round(q(0.75), 3)},
+             "best_sellers": [{"sku": k, "name": ((cat_rows.get(k) or {}).get("name") or k)[:22], "sold": n} for k, n in top],
+             "lowest": {"sku": low[2], "price": low[3], "share": round(low[3] / low[4], 3)},
+             "refs": [r[0] for r in rs][-8:]}, ensure_ascii=False, separators=(",", ":")) + \
+            f"\n[시세] {leaf(cat)} 시장 요약 / market summary"                        # HQ: JSON on top
+        out.append({"topic": f"price:{cat}", "as": "buyer", "text": ko, "texts": {"ko": ko, "en": en, "json": js},
+                    "kind": "summary",
                     "refs": [r[0] for r in rs][-8:], "score": math.log(len(rs))})
     return out
 
@@ -109,8 +117,13 @@ def purchase_records(c, t, now, top=3):
     en = "[Purchase records] our latest settled buys (checkable on the public ledger)\n" + "\n".join(
         f"- {nm(sku)} ({sku}) | paid {a:,} vs list {lp:,} ({1 - a / lp:.0%} under) | grade {g}"
         f"{' (claim true)' if h else ''} | ledger #{seq}" for seq, sku, a, lp, g, h in rows)
+    js = json.dumps(
+        {"type": "purchase_records", "records": [{"sku": sku, "name": nm(sku)[:22], "paid": a, "list": lp,
+                                                  "kept": round(1 - a / lp, 3), "grade": g, "claim_true": bool(h),
+                                                  "ledger": seq} for seq, sku, a, lp, g, h in rows]},
+        ensure_ascii=False, separators=(",", ":")) + "\n[구매 기록] 최근 정산된 구매 / our settled buys"   # JSON on top
     return [{"topic": f"records:{rows[0][0]}", "as": "buyer", "refs": [r[0] for r in rows], "score": 3.5,
-             "text": ko, "texts": {"ko": ko, "en": en}, "kind": "records"}]
+             "text": ko, "texts": {"ko": ko, "en": en, "json": js}, "kind": "records"}]
 
 
 def honesty(c, t, now):
@@ -303,18 +316,20 @@ def tick(md=Path(".market"), c=None, now=None):
         fresh = [x for x in cands if x["as"] == role and now - state["posted"].get(x["topic"], 0) > t["topic_cooldown_h"] * 3600]
         best = max(fresh, key=lambda x: x["score"], default=None)
         if best and best["score"] >= t["post_threshold"]:
-            if role == "buyer":                          # the review team picks the format (experiment)
+            style = "text"
+            if role == "buyer":                          # the review team picks the format and style (experiment)
                 try:
                     import review_team
                     kinds = sorted({x.get("kind") for x in fresh if x.get("kind")})
-                    if len(kinds) > 1:
-                        kind, _ = review_team.choose(kinds)
-                        pick = max((x for x in fresh if x.get("kind") == kind), key=lambda x: x["score"], default=None)
-                        best = pick if pick and pick["score"] >= t["post_threshold"] else best
+                    arm, _ = review_team.choose(kinds)
+                    kind, style = arm.split(":")
+                    pick = max((x for x in fresh if x.get("kind") == kind), key=lambda x: x["score"], default=None)
+                    best = pick if pick and pick["score"] >= t["post_threshold"] else best
                 except Exception:
                     pass
-            if best.get("texts"):                        # HQ 11-04: Korean and English in every post
-                best = dict(best, text=best["texts"]["ko"] + "\n---\n" + best["texts"]["en"])
+            if best.get("texts"):                        # HQ 11-04: Korean + English, or agent-readable JSON
+                best = dict(best, text=best["texts"]["json"] if style == "json" and best["texts"].get("json")
+                            else best["texts"]["ko"] + "\n---\n" + best["texts"]["en"])
             line = {"post": best["text"][:1000], "refs": best["refs"], "as": role}
             if best.get("thread"):
                 line["thread"] = best["thread"]

@@ -3,7 +3,7 @@ votes on our buyer posts 0.3 and the number of posts 0.1, so the forum is 40% of
 
 Code, not a model, and it does not guess (11-04: "Korean posts get more likes" was a guess the data did not back):
 it runs an experiment. Every buyer post (Korean and English, HQ 11-04) uses one arm, a format: a market summary or
-our purchase records. The Enuri tracker (enuri.track_forum) records each post's likes at 30 minutes; the review team
+our purchase records, each as Korean+English text or as JSON for the agents that read it. The Enuri tracker (enuri.track_forum) records each post's likes at 30 minutes; the review team
 keeps the mean per arm and picks the next post's arm epsilon-greedy (best arm 80%, a random arm 20%; an arm with
 fewer than MIN_N measured posts is tried first). Posting stays at the market's rate (forum.py), always ledger-cited.
 
@@ -17,8 +17,9 @@ from pathlib import Path
 HERE = Path(__file__).parent
 STATE = HERE / "private" / "review_team.json"
 TRACK = HERE / "private" / "enuri" / "forum_track.json"
-ARMS = ["summary", "records"]                # every post is Korean + English (HQ 11-04); the arm is the format
-TAGS = {"summary": "[시세]", "records": "[구매 기록]"}
+ARMS = ["summary:text", "summary:json", "records:text", "records:json"]   # format x style: Korean+English text, or
+TAGS = {"summary:text": "[시세]", "summary:json": "{market_summary}",   # agent-readable JSON first, a bilingual line
+        "records:text": "[구매 기록]", "records:json": "{purchase_records}"}   # under it (HQ: JSON on top)
 EPSILON, MIN_N, AGE = 0.2, 3, "30"
 ME = "dragonash"
 
@@ -43,7 +44,7 @@ def measured():
 def choose(kinds, rng=random):
     """Which format the next buyer post uses, among the kinds ready now: (arm, why)."""
     m = measured()
-    arms = [a for a in ARMS if a in kinds] or list(ARMS)
+    arms = [a for a in ARMS if a.split(":")[0] in kinds] or list(ARMS)
     young = [a for a in arms if len(m[a]) < MIN_N]
     if young:
         arm, why = rng.choice(young), f"explore: fewer than {MIN_N} measured posts"

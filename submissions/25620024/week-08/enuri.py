@@ -534,6 +534,9 @@ AGES = (15, 30, 60)          # minutes after posting at which a buyer post's lik
 def post_format(text):
     """The kind of post, for comparing what the forum votes up: its tag, its language, its length."""
     tag = (re.match(r"\s*(\[[^\]]{1,20}\])", text or "") or [None, "(no tag)"])[1]
+    if (text or "").lstrip().startswith("{"):          # a JSON-first post: its tag is its "type"
+        m = re.match(r'\s*\{"type":"(\w+)"', text or "")
+        tag = "{" + (m.group(1) if m else "json") + "}"
     ko = len(re.findall("[가-힣]", text or "")) > 0.15 * max(1, len(text or ""))
     return {"tag": tag, "lang": "ko" if ko else "en", "long": len(text or "") >= 200}
 
