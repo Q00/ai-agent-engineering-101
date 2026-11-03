@@ -1,4 +1,5 @@
-"""market_buyer hook (Round 3): pick shops, negotiate by rule, hand the kit a receipt and accept terms.
+"""market_buyer hook (Round 3): pick shops, negotiate by rule (D9 model reading only for a reply the rules
+cannot read), hand the kit a receipt and accept terms.
 
     python market_buyer.py --shops .market/shops.json --item 김치 --budget 50000 --order .market/order.json
 
@@ -63,12 +64,12 @@ def run(args, t0):
             break
         if deadline.past_target() and cand["p_checkout"] * cand["p_reach"] < pol["buyer"]["continue_p"]:
             break                                   # D8: past the target only a likely deal is worth the time
-        res = negotiate(cand["shop"], cand, order, deadline, pol)
+        res = negotiate(cand["shop"], cand, order, deadline, pol, ver=ver)
         problem = None
         if res["receipt"]:
             problem = bp.verify_receipt(order, res["receipt"], cand, catalog, pol, res["unit"], res["warranty_h"])
         tried.append({k: res[k] for k in ("shop", "sku", "state", "turns", "asks", "offers", "cap", "unit",
-                                          "warranty_h", "canceled", "elapsed", "why")}
+                                          "warranty_h", "canceled", "llm_reads", "elapsed", "why")}
                      | {"p_trace": res["p_trace"], "receipt_problem": problem})
         if res["receipt"] and not problem:
             receipt = res["receipt"]

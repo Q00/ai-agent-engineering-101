@@ -2,13 +2,16 @@
 
     python seller.py --port 9301
 
-No model is called. Each message is answered by tools/pricing.py (D3 price, D4 below-cost, D5 warranty,
+Each message is answered by tools/pricing.py (D3 price, D4 below-cost, D5 warranty,
 D14 end-of-round, L5 fact line) with the policy reloaded from strategy/SKILL.md per request. The first
 reply names the unit and carries its market certificate; the signed receipt names the SKU and the unit
 (plus the claim and the warranty when they apply). Decisions go to logs/decisions/seller.jsonl, diagnostics
 to logs/hooks/seller.log; nothing is printed, because the kit copies our stdout into market-kit.log.
+Only a message the rules cannot read (no SKU, name or category; later no offer or acceptance) goes to a small
+model (D9, tools/llm_fallback.py), off the event loop; its reading then meets the same floor and promise rules.
 """
 import argparse
+import asyncio
 import base64
 import json
 import math
@@ -35,7 +38,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 import policy
 from memory import decisions
 from memory.store import HOME, LOGS, hook_log, read_json, tail_jsonl
-from tools import pricing
+from tools import llm_fallback, pricing
 
 NAME = "psyoung82"
 RECEIPT_KEYS = ("shop", "item", "price", "task")          # what sig_seller covers (kit L87)
@@ -53,6 +56,7 @@ NEED_RE = re.compile(r"(?:use[_ ]within[_ ]hours|min[_ ]hours[_ ]left)\s*[:=]?\s
                      r"|(\d+(?:\.\d+)?)\s*(?:h|hrs?|hours?|시간)\s+(?:of\s+)?shelf")
 WARRANTY_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hrs?|hours?|시간)\s*(?:of\s+)?(?:warranty|보증)"
                          r"|(?:warranty|보증)\D{0,12}?(\d+(?:\.\d+)?)\s*(?:h\b|hrs?\b|hours?\b|시간)")
+MAX_ITEMS = 30                                            # SKUs shown to the D9 model
 NO_WARRANTY_RE = re.compile(r"\bno\s+warranty\b|without\s+(?:a\s+|the\s+)?warranty|warranty\s+not\s+needed")
 
 
@@ -156,6 +160,15 @@ def find_unit(text, inv, promised=(), need_hours=None, catalog=None, now=None):
     if need_hours is not None:
         fit = [u for u in fit if u.get("kind") != "food" or (pricing.hours_left(u, now) or 0) >= need_hours]
     return min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
+
+
+def stock_items(inv, taken=()):
+    """The SKUs we can offer, for the D9 model: [{sku, name, list_price}], at most MAX_ITEMS."""
+    items = {}
+    for u in inv.get("units") or []:
+        if u.get("unit") not in taken and u.get("grade") != "expired" and u.get("sku"):
+            items.setdefault(u["sku"], {"sku": u["sku"], "name": u.get("name"), "list_price": u.get("list_price")})
+    return list(items.values())[:MAX_ITEMS]
 
 
 # --- memory (role D's API; neutral values when it is missing or broken)
@@ -326,9 +339,16 @@ class Shop(AgentExecutor):
                              rules=[], why="inventory round < 3")
                 return
             need = parse_need_hours(text, meta)
-            taken = {u for u, (t, until) in self.promised.items() if t != task.id and until > now}
             margin = pol["seller"]["claim_food_margin_h"]
-            unit = find_unit(text, inv, taken, None if need is None else need + margin, self._catalog(), now)
+            hours = None if need is None else need + margin
+            unit = find_unit(text, inv, self._taken(task.id, now), hours, self._catalog(), now)
+            reading = None
+            if unit is None and not SKU_RE.search(text) \
+                    and find_unit(text, inv, (), None, self._catalog(), now) is None:
+                reading = await self._read(text, {"items": stock_items(inv, self._taken(task.id, now))},
+                                           pol, ver, task.id, t0)     # D9: nothing in it the rules can match
+                if reading and reading["sku"]:
+                    unit = find_unit(reading["sku"], inv, self._taken(task.id, now), hours, self._catalog(), now)
             if unit is None:
                 why = "no unit in stock for this request" + (f" with {need + margin:g} h left" if need is not None else "")
                 await up.reject(say(f"Sorry, {why}. Ask by SKU."))
@@ -339,7 +359,8 @@ class Shop(AgentExecutor):
             deal["ctx"] = self._ctx(unit, now)
             self._price(deal, pol, now, parse_warranty(text, meta))
             self.promised[unit["unit"]] = (task.id, now + ttl)
-            offer = parse_offer(text, None, self._strip(unit), explicit_only=True)
+            offer = reading["price"] if reading and reading["kind"] == "offer" else \
+                parse_offer(text, None, self._strip(unit), explicit_only=True)
             if offer is None:
                 await self._quote(up, deal, now, pol, ver, task.id, t0, first=True)
                 return
@@ -361,6 +382,14 @@ class Shop(AgentExecutor):
                 await self._quote(up, deal, now, pol, ver, task.id, t0, first=True)
                 return
             offer = parse_offer(text, deal["state"]["ask"], self._strip(deal["unit"]))
+            if offer is None:                           # D9: no offer or acceptance the rules can read
+                items = stock_items({"units": [deal["unit"]]})
+                reading = await self._read(text, {"items": items, "ask": deal["state"]["ask"]}, pol, ver, task.id, t0)
+                if reading and self.open.get(task.id) is deal:     # not canceled meanwhile
+                    if reading["kind"] == "offer":
+                        offer = reading["price"]
+                    elif reading["kind"] == "accept":
+                        offer = reading["price"] or deal["state"]["ask"]
             if offer is None:
                 await self._quote(up, deal, now, pol, ver, task.id, t0, first=False)
                 return
@@ -388,6 +417,19 @@ class Shop(AgentExecutor):
                                         unit=deal["unit"]["unit"]))
             self._decide("quote", ver, task.id, deal, t0, inputs=inputs, rules=deal["rules"],
                          choice={"action": "final", "price": price}, why="offer below the floor")
+
+    def _taken(self, task_id, now):
+        """Units promised to other open negotiations."""
+        return {u for u, (t, until) in self.promised.items() if t != task_id and until > now}
+
+    async def _read(self, text, ctx, pol, ver, task_id, t0):
+        """D9: a small model's reading of a message the rules cannot read, or None (answer by rule). The
+        call blocks, so it runs in a thread and other buyers are served meanwhile. A buyer is assumed to
+        wait about as long for a reply as ours does (buyer.msg_timeout_s)."""
+        if not ctx["items"] or not text.strip():
+            return None
+        return await asyncio.to_thread(llm_fallback.read, "seller", text, ctx, pol,
+                                       t0 + pol["buyer"]["msg_timeout_s"], ver, {"task": task_id})
 
     def _strip(self, unit):
         return (unit.get("name"), unit.get("sku"), unit.get("unit"))

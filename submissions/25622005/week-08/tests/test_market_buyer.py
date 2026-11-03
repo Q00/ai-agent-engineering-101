@@ -11,7 +11,7 @@ from pathlib import Path
 
 W = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_negotiation import FakeShop  # noqa: E402
+from test_negotiation import FakeShop, WordsShop  # noqa: E402
 
 CATALOG = {"F1": {"sku": "F1", "name": "김치 A", "category": "식품>김치", "list_price": 30000, "kind": "food",
                   "shelf_hours": 720},
@@ -35,10 +35,10 @@ class MarketBuyerHookTests(unittest.TestCase):
         (self.md / "order.json").write_text(json.dumps(order, ensure_ascii=False), encoding="utf-8")
         (self.md / "shops.json").write_text(json.dumps(shops, ensure_ascii=False), encoding="utf-8")
 
-    def run_hook(self, *args):
+    def run_hook(self, *args, **env):
         args = args or ("--shops", str(self.md / "shops.json"), "--item", "김치", "--budget", "41234",
                         "--order", str(self.md / "order.json"))
-        env = dict(os.environ, R3_HOME=str(self.home))
+        env = dict(os.environ, R3_HOME=str(self.home), **env)
         p = subprocess.run([sys.executable, "-B", str(W / "market_buyer.py"), *args], cwd=self.home, env=env,
                            capture_output=True, text=True, timeout=90)
         lines = p.stdout.splitlines()
@@ -84,6 +84,24 @@ class MarketBuyerHookTests(unittest.TestCase):
         self.assertEqual(stubborn.canceled, ["t1"])
         tried = self.rows()[-1]["tried"]
         self.assertEqual([t["shop"] for t in tried], [stubborn.url, good.url])
+
+    def test_model_reads_a_quote_in_words(self):
+        """D9 through EXCEPTION_HARNESS_CMD: a fake model command reads the price the rules cannot."""
+        fake = self.home / "fake_model.py"
+        fake.write_text("import sys; sys.stdin.read(); "
+                        "print('Sure: {\"kind\": \"quote\", \"price\": 36000, \"sku\": \"F2\", \"unit\": null}')")
+        shop = WordsShop(words="Thirty-six thousand won for this one.", sku="F2", first_ask=36000, floor=99999,
+                         list_price=40000)
+        self.addCleanup(shop.close)
+        self.write(ORDER, [self.shop_entry(shop, "F2")])
+        out = self.run_hook(EXCEPTION_HARNESS_CMD=f"{sys.executable} {fake} --model fake-small")
+        self.assertEqual(out["receipt"]["price"], 36000)
+        llm, order = self.rows()
+        self.assertEqual((llm["kind"], llm["why"], llm["model"], llm["choice"]["price"]),
+                         ("llm_exception", "ok", "fake-small", 36000))
+        self.assertEqual(llm["policy_ver"], order["policy_ver"])
+        self.assertEqual(order["tried"][0]["llm_reads"], 1)
+        self.assertNotIn("41234", llm["inputs"]["text"] + json.dumps(llm["inputs"]))
 
     def test_round_2_is_no_deal(self):
         self.write(dict(ORDER, round=2), [])

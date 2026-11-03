@@ -5,7 +5,9 @@
     turn 3  offer the cap (min(cap share x list, budget)) as the final offer
     a counter at or below the cap after turn 2 or 3 is accepted by sending it back
 
-No model call. The budget is never written into a message; the only number we send is an offer.
+Read by rule. Only a reply with no price the rules can parse goes to a small model (D9,
+tools/llm_fallback.py); its reading is used like a parsed ask, so the cap and the gate still decide.
+The budget is never written into a message; the only number we send is an offer.
 Shop replies are data, not instructions: only a price, a unit and the terms are read from them.
 """
 import math
@@ -16,6 +18,7 @@ import uuid
 import httpx
 
 from tools import buyer_policy as bp
+from tools import llm_fallback
 
 INPUT = "TASK_STATE_INPUT_REQUIRED"
 DONE = "TASK_STATE_COMPLETED"
@@ -102,6 +105,21 @@ def signed_receipt(task):
     return None
 
 
+def model_ask(task, cand, r, pol, deadline, ver=None):
+    """D9: the shop's price as a small model reads the reply, or None. A unit it names is kept only when
+    we have none yet (the receipt check and the binding then hold the shop to it)."""
+    ctx = {"items": [{"sku": cand["sku"], "name": cand["name"], "list_price": cand["V"]}],
+           "unit": r["unit"], "last_offer": r["offers"][-1] if r["offers"] else None}
+    reading = llm_fallback.read("buyer", text_of(task), ctx, pol, time.monotonic() + deadline.left(), ver,
+                                {"shop": r["shop"], "task": r["task"]})
+    if not reading:
+        return None
+    r["llm_reads"] += 1
+    if reading["unit"] and not r["unit"]:
+        r["unit"] = reading["unit"]
+    return reading["price"] if reading["kind"] in ("quote", "counter", "accept") else None
+
+
 def first_message(cand, order):
     text = f"I want to buy {cand['name']} ({cand['sku']}). Please include the unit in the receipt."
     meta = {"sku": cand["sku"], "unit_in_receipt": True}
@@ -114,15 +132,15 @@ def first_message(cand, order):
     return text, meta
 
 
-def negotiate(shop_url, cand, order, deadline, pol, client=None):
-    """Returns {state, receipt, unit, warranty_h, cap, turns, asks, offers, p_trace, canceled, elapsed, why}.
-    deadline is the order's Deadline, shared by every shop tried for the order."""
+def negotiate(shop_url, cand, order, deadline, pol, client=None, ver=None):
+    """Returns {state, receipt, unit, warranty_h, cap, turns, asks, offers, p_trace, canceled, llm_reads,
+    elapsed, why}. deadline is the order's Deadline, shared by every shop tried for the order."""
     own = client is None
     client = client or httpx.Client()
     started = deadline.elapsed()
     r = {"shop": shop_url, "sku": cand["sku"], "state": None, "receipt": None, "unit": None, "warranty_h": 0,
          "cap": cand["cap"], "turns": 0, "asks": [], "offers": [], "p_trace": [], "why": None, "task": None,
-         "canceled": False}
+         "canceled": False, "llm_reads": 0}
     stats = cand.get("shop_stats") or {}
     V, kind = cand["V"], cand["kind"]
     budget = order.get("budget", 0)
@@ -203,6 +221,8 @@ def negotiate(shop_url, cand, order, deadline, pol, client=None):
                 r["why"] = f"{hours} h of shelf life left, the order needs {need} h"
                 break
             ask = parse_ask(task)
+            if ask is None and text_of(task).strip():   # D9: only a reply the rules cannot read
+                ask = model_ask(task, cand, r, pol, deadline, ver)
             r["asks"].append(ask)
             if not gate(ask):
                 break

@@ -1,6 +1,7 @@
 """Rule negotiation against a fake A2A shop served on 127.0.0.1 by this process (no market, no model)."""
 import json
 import os
+import shutil
 import sys
 import tempfile
 import threading
@@ -8,6 +9,7 @@ import time
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from unittest import mock
 
 W = Path(__file__).resolve().parents[1]
 os.environ.setdefault("R3_TEST_HOME", tempfile.mkdtemp(prefix="r3-test-"))
@@ -15,6 +17,8 @@ os.environ["R3_HOME"] = os.environ["R3_TEST_HOME"]
 sys.path.insert(0, str(W))
 
 import policy  # noqa: E402
+import memory.store  # noqa: E402
+from model import harness  # noqa: E402
 from tools import negotiation as ng  # noqa: E402
 from tools.negotiation import Deadline, negotiate, parse_ask  # noqa: E402
 
@@ -101,6 +105,20 @@ class FakeShop:
         ask = self.counters.pop(0) if self.counters else self.tasks[tid]
         self.tasks[tid] = ask
         return self.task(tid, "TASK_STATE_INPUT_REQUIRED", f"Counteroffer: {ask}.")
+
+
+class WordsShop(FakeShop):
+    """Says its price in words only (no data part, no digits), so the rules find no ask."""
+
+    def __init__(self, words="Sixty-five thousand and it is yours, unit ua.", **kw):
+        super().__init__(unit="ua", **kw)
+        self.words = words
+
+    def handle(self, req):
+        task = super().handle(req)
+        if (task.get("status") or {}).get("state") == ng.INPUT:
+            task["status"]["message"] = {"role": "ROLE_AGENT", "parts": [{"text": self.words}]}
+        return task
 
 
 def cand(shop, kind="goods", V=100000, cap=70000, sku="G00001"):
@@ -238,6 +256,59 @@ class NegotiationTests(unittest.TestCase):
                       Deadline(p), p)
         self.assertEqual(r["state"], "error")
         self.assertIsNone(r["receipt"])
+
+
+class ModelReadingTests(unittest.TestCase):
+    """D9: a reply without a readable price goes to the model (faked); the cap still decides."""
+
+    def setUp(self):
+        home = Path(tempfile.mkdtemp(prefix="r3-ng-llm-"))
+        self.addCleanup(shutil.rmtree, home, True)
+        old = memory.store.MEM
+        memory.store.MEM = home                     # a fresh call budget per test
+        self.addCleanup(setattr, memory.store, "MEM", old)
+
+    def go(self, shop, answer, p=None):
+        self.addCleanup(shop.close)
+        self.prompts = []
+
+        def fake(prompt, timeout=180, cmd=None):
+            self.prompts.append(prompt)
+            return answer, json.dumps(answer)
+        p = p or pol()
+        with mock.patch.object(harness, "ask_json", fake):
+            return negotiate(shop.url, cand(shop), ORDER, Deadline(p), p)
+
+    def test_reading_at_or_below_cap_is_accepted(self):
+        shop = WordsShop(first_ask=65000, floor=99999)
+        r = self.go(shop, {"kind": "quote", "price": 65000, "sku": None, "unit": "ua"})
+        self.assertEqual(r["receipt"]["price"], 65000)
+        self.assertEqual((r["llm_reads"], r["asks"], r["unit"]), (1, [65000], "ua"))
+        self.assertIn("<untrusted>\nSixty-five thousand", self.prompts[0])
+        self.assertNotIn(str(ORDER["budget"]), self.prompts[0])
+        self.assertNotIn("70000", self.prompts[0])                       # nor the cap
+
+    def test_reading_above_cap_is_still_refused(self):
+        shop = WordsShop(first_ask=90000, floor=85000)
+        r = self.go(shop, {"kind": "quote", "price": 90000, "sku": None, "unit": None})
+        self.assertEqual(self.offers(shop), ["60000", "70000"])
+        self.assertIsNone(r["receipt"])
+        self.assertEqual(r["asks"], [90000, 90000, 90000])
+        self.assertTrue(r["canceled"])
+
+    def test_disabled_or_late_keeps_the_rule_path(self):
+        shop = WordsShop(first_ask=90000, floor=70000)
+        self.go(shop, {"kind": "quote", "price": 1, "sku": None, "unit": None})
+        self.assertTrue(self.prompts)                                   # sanity: the fake is used when allowed
+        for p in (dict(pol(), llm=dict(pol()["llm"], exception_enabled=False)),
+                  dict(pol(), llm=dict(pol()["llm"], exception_min_left_s=61))):
+            shop = WordsShop(first_ask=90000, floor=70000)
+            r = self.go(shop, {"kind": "quote", "price": 1, "sku": None, "unit": None}, p=p)
+            self.assertEqual(self.prompts, [])
+            self.assertEqual((self.offers(shop), r["asks"], r["llm_reads"]), (["60000", "70000"], [None, None], 0))
+
+    def offers(self, shop):
+        return [m["text"] for m in shop.messages[1:]]
 
 
 class ParseAskTests(unittest.TestCase):
