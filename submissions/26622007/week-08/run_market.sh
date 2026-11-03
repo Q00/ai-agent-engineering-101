@@ -27,7 +27,8 @@ export SHOP_MARKET_NAME="$NAME"
 [ -n "$MARKET_OWNER" ] || { echo "MARKET_OWNER missing in $ENV_FILE" >&2; exit 1; }
 
 mkdir -p "$HERE/.market"
-echo $$ > "$HERE/.market/run_market.pid"
+source "$HERE/lib_single.sh"
+wait_turn "$HERE/.market/run_market.pid" run_market.sh    # launchd at boot, or by hand: one copy at a time
 caffeinate -ims -w $$ &            # no sleep while this loop runs
 CAF=$!
 

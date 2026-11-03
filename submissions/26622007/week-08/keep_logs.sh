@@ -15,7 +15,8 @@ PART="$HERE/logs/market-kit.log.1"
 OUT="$HERE/logs/kit-parts"
 
 mkdir -p "$OUT" "$HERE/.market"
-echo $$ > "$HERE/.market/keep_logs.pid"
+source "$(cd "$(dirname "$0")" && pwd)/lib_single.sh"
+wait_turn "$HERE/.market/keep_logs.pid" keep_logs.sh
 note() { echo "$(date '+%m-%d %H:%M:%S') [keep_logs] $1" >> "$HERE/logs/keep_logs.log"; }
 note "watching $PART every ${EVERY}s"
 

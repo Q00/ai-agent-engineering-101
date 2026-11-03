@@ -18,7 +18,8 @@ for k in META_TERRA_MODEL META_ASTRA_MODEL META_PUSH; do
   v="$(read_env "$k")"; [ -n "$v" ] && export "$k=$v"
 done
 mkdir -p "$HERE/.market"
-echo $$ > "$HERE/.market/run_meta.pid"
+source "$HERE/lib_single.sh"
+wait_turn "$HERE/.market/run_meta.pid" run_meta.sh
 source "$ROOT/.venv/bin/activate"
 cd "$HERE"
 while true; do

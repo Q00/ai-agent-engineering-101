@@ -1,0 +1,36 @@
+### install_launchd.sh plan + lib_single.sh check 2026-11-03 15:57:57 KST (nothing loaded into launchd)
+kr.nocha12.keeplogs.plist
+kr.nocha12.market.plist
+kr.nocha12.meta.plist
+kr.nocha12.keeplogs.plist: OK
+kr.nocha12.market.plist: OK
+kr.nocha12.meta.plist: OK
+--- agent plist (paths shortened)
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>kr.nocha12.market</string>
+    <key>ProgramArguments</key>
+    <array><string>/bin/bash</string><string><repo>/submissions/26622007/week-08/run_market.sh</string></array>
+    <key>WorkingDirectory</key><string><repo></string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key><string><home></string>
+        <key>PATH</key><string><home>/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>LANG</key><string>en_US.UTF-8</string>
+    </dict>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>ThrottleInterval</key><integer>60</integer>
+    <key>StandardOutPath</key><string><repo>/submissions/26622007/week-08/logs/launchd-market.log</string>
+    <key>StandardErrorPath</key><string><repo>/submissions/26622007/week-08/logs/launchd-market.log</string>
+</dict>
+</plist>
+daemon variant has UserName: 1
+--- two copies of keep_logs.sh
+first pid in file: yes, second still waiting: yes
+second said: 11-03 15:57:59 [keep_logs.sh] another copy runs as pid <A>; waiting for it to stop
+after the first stopped, pid file is the second: yes
+second said: 11-03 15:58:02 [keep_logs.sh] pid <A> stopped; taking over as <B>
+watch lines in keep_logs.log: 2 (one per copy that ran)
