@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Annotated, Final
 import anyio
 import httpx
 import typer
-from pydantic import Field, JsonValue, ValidationError
+from pydantic import Field, JsonValue, ValidationError, field_validator
 
 from market_a2a.anthropic_fallback import HAIKU_MODEL
 from market_a2a.models import FrozenModel
@@ -281,19 +281,42 @@ def tactical_schema() -> dict[str, object]:
     return schema
 
 
+MAX_REASON: Final = 300
+
+
+def cut_reason(value: object) -> object:
+    """Keep a long reason instead of dropping the whole proposal.
+
+    Round 3, 22:27-23:28 KST: the models named every standing trigger in the
+    reason (as the prompts ask), ran past 300 characters, and four tactical and
+    four strategy turns were lost to the length check alone.
+    """
+    return value[:MAX_REASON] if isinstance(value, str) else value
+
+
 class Proposal(FrozenModel):
     """The only shape the strategy tool accepts: a flat change map and a reason."""
 
     changes: dict[str, JsonValue] = Field(default_factory=dict, max_length=MAX_CHANGES)
-    reason: str = Field(default="", max_length=300)
+    reason: str = Field(default="", max_length=MAX_REASON)
     bands: dict[str, Band] = Field(default_factory=dict)
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def _cut_reason(cls, value: object) -> object:
+        return cut_reason(value)
 
 
 class TacticalProposal(FrozenModel):
     """Tactical changes and a short reason; code keeps the first three valid ones."""
 
     changes: dict[str, JsonValue] = Field(default_factory=dict)
-    reason: str = Field(default="", max_length=300)
+    reason: str = Field(default="", max_length=MAX_REASON)
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def _cut_reason(cls, value: object) -> object:
+        return cut_reason(value)
 
 
 def tactical_triggers(

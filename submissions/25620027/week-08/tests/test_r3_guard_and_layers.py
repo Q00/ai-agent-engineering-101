@@ -432,3 +432,20 @@ def test_shop_breaks_attribute_broken_goods_and_cap_the_shops_trust(
         (ShopTrust(url="http://bad", trust=1.0),), {"http://bad": BREAK_CAP}, {}
     )
     assert overrated[0].trust == BREAK_CAP
+
+
+def test_long_reasons_are_cut_not_fatal() -> None:
+    from r3.manager import MAX_REASON, Proposal, TacticalProposal  # noqa: PLC0415
+
+    long = "Trigger seller_first_ask: 70/86 sales closed at first ask, " * 12
+    assert len(long) > MAX_REASON
+    tactical = TacticalProposal.model_validate(
+        {"changes": {"seller.accept_margin": 0.165}, "reason": long}
+    )
+    assert tactical.changes == {"seller.accept_margin": 0.165}
+    assert len(tactical.reason) == MAX_REASON
+    strategy = Proposal.model_validate(
+        {"changes": {"restock.min_food_shelf_hours": 168}, "reason": long}
+    )
+    assert strategy.changes == {"restock.min_food_shelf_hours": 168}
+    assert len(strategy.reason) == MAX_REASON
