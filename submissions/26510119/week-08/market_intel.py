@@ -53,7 +53,7 @@ def update(window_hours=6, me=None):
                     continue
                 d = e.get("data") or {}
                 if e["kind"] == "settle" and d.get("item"):
-                    intel["settles"].append([e["ts"], d.get("item"), d.get("price"), d.get("shop"), e["seq"],
+                    intel["settles"].append([e["ts"], d.get("item"), d.get("amount", d.get("price")), d.get("shop"), e["seq"],
                                              {k: d.get(k) for k in ("buyer", "grade", "claim", "claim_honest",
                                                                     "warranty_hours", "unit") if k in d}])
             if rows:

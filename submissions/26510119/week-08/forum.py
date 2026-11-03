@@ -89,6 +89,8 @@ def price_report(intel, st, p):
     if not top:
         return None
     parts = [f"{k}: {n} sold, median {shares[k]:.0%} of list" for k, n in top if k in shares]
+    if not parts:                            # nothing to say: stay quiet rather than post an empty report
+        return None
     refs = [row[4] for row in settles[-5:]]
     hours = p["window_hours"]
     return {"post": f"Settled sales in the last {hours} h ({len(settles)} on the ledger): " + "; ".join(parts)
