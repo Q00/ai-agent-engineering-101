@@ -60,7 +60,8 @@ def quote(task):
 
 class Peer:
     def __init__(self, transport=None, timeout=8):
-        self.http = httpx.Client(transport=transport, timeout=timeout, trust_env=False, follow_redirects=False)
+        self.http = httpx.Client(transport=transport, timeout=timeout, trust_env=False, follow_redirects=False,
+                                 headers={"A2A-Version": "1.0"})
         self.endpoint = None
 
     def discover(self, base):
