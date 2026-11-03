@@ -112,6 +112,7 @@ def test_run_digest_stores_latest_and_history(
     )
     assert record["our_stars"] == 3.0
     assert record["suggestions"] == ["첫 줄에 호가를 분명히"]
+    assert record["model_digest_valid"] is True
     prompt = str(FakeModel.requests[-1]["messages"][1]["content"])  # pyright: ignore[reportIndexIssue]
     assert "<untrusted_our_reviews>" in prompt
     assert "[instruction_override]" in prompt
@@ -145,3 +146,4 @@ def test_run_digest_drops_an_assessment_with_more_complaints_than_reviews(
     assert record["our_reviews"] == 1
     assert "our_complaints" not in record
     assert "suggestions" not in record
+    assert record["model_digest_valid"] is False

@@ -165,7 +165,13 @@ def render_block(label: str, rows: list[dict[str, object]]) -> str:
     return wrap_untrusted(label, "\n".join(lines), 4000)
 
 
-def validate(arguments: Mapping[str, object], leaders: Iterable[str]) -> Digest | None:
+def validate(
+    arguments: Mapping[str, object],
+    leaders: Iterable[str],
+    *,
+    our_count: int | None = None,
+    leader_counts: Mapping[str, int] | None = None,
+) -> Digest | None:
     """Keep the digest only when it fits the schema; drop unknown leaders."""
     allowed = set(leaders)
     raw_leaders = arguments.get("leader_strengths")
@@ -181,7 +187,7 @@ def validate(arguments: Mapping[str, object], leaders: Iterable[str]) -> Digest 
         if annotate(str(s)) is None
     ][:3]
     try:
-        return Digest.model_validate(
+        digest = Digest.model_validate(
             {
                 "our_complaints": arguments.get("our_complaints", []),
                 "our_praise": arguments.get("our_praise", []),
@@ -191,6 +197,25 @@ def validate(arguments: Mapping[str, object], leaders: Iterable[str]) -> Digest 
         )
     except ValidationError:
         return None
+    if not _counts_fit(digest.our_complaints, our_count) or not _counts_fit(
+        digest.our_praise, our_count
+    ):
+        return None
+    for row in digest.leader_strengths:
+        limit = leader_counts.get(row.shop, 0) if leader_counts is not None else None
+        if not _counts_fit(row.themes, limit):
+            return None
+    return digest
+
+
+def _counts_fit(themes: Iterable[ThemeCount], source_count: int | None) -> bool:
+    """One theme per group; no count can exceed its input review sample."""
+    seen: set[str] = set()
+    for row in themes:
+        if row.theme in seen or (source_count is not None and row.count > source_count):
+            return False
+        seen.add(row.theme)
+    return True
 
 
 async def run_digest(  # noqa: PLR0913 - explicit inputs
@@ -208,6 +233,7 @@ async def run_digest(  # noqa: PLR0913 - explicit inputs
         "our_reviews": len(ours),
         "our_stars": stars(ours),
         "leader_stars": {name: stars(rows) for name, rows in leaders.items()},
+        "model_digest_valid": False,
     }
     if client is not None and (ours or any(leaders.values())):
         blocks = [render_block("our_reviews", ours)] + [
@@ -233,9 +259,19 @@ async def run_digest(  # noqa: PLR0913 - explicit inputs
             )
         )
         parsed = parse_arguments(reply.arguments) if reply is not None else None
-        digest = validate(parsed, leaders) if parsed is not None else None
+        digest = (
+            validate(
+                parsed,
+                leaders,
+                our_count=len(ours),
+                leader_counts={name: len(rows) for name, rows in leaders.items()},
+            )
+            if parsed is not None
+            else None
+        )
         if digest is not None:
             record.update(digest.model_dump(mode="json"))
+            record["model_digest_valid"] = True
     text = json.dumps(record, ensure_ascii=False)
     latest = run_dir / LATEST
     tmp = latest.with_suffix(".tmp")
