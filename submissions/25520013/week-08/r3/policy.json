@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "owner": {
   "github": "Lee-sungsoo",
   "own_shop_names": [
@@ -228,11 +228,12 @@
  },
  "forum": {
   "enabled": true,
-  "interval_s": 900,
+  "interval_s": 300,
   "window_h": 3,
   "min_settles": 3,
   "max_refs": 8,
   "rotate": 4,
-  "_note": "v1.17 (2026-11-03): hooks/forum.py posts one ledger price summary as the buyer every interval_s (kit limit: one post per 5 min per role). Buyer ALL counts votes on buyer posts from voters with >= 5 settled deals and another GitHub owner."
+  "_note": "v1.17 (2026-11-03): hooks/forum.py posts one ledger price summary as the buyer every interval_s (kit limit: one post per 5 min per role). Buyer ALL counts votes on buyer posts from voters with >= 5 settled deals and another GitHub owner.",
+  "_interval_note": "v1.18 2026-11-03 21:27 (성수님 결정): 900 -> 300 s, the kit limit. Buyer ALL also counts the number of buyer posts (0.1, hidden posts excluded); our first two posts had 7 and 4 likes, 0 dislikes. Back to 900 if dislikes or hidden posts appear."
  }
 }
