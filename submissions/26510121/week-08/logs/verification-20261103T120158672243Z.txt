@@ -1,0 +1,22 @@
+Local contract and integration tests; no public market actions.
+................................F...............................         [100%]
+================================== FAILURES ===================================
+___________ test_latest_buyer_score_has_posts_and_ten_percent_deals ___________
+
+    def test_latest_buyer_score_has_posts_and_ten_percent_deals():
+        board = {'round': 3, 'buyers': [{'name': 'seochanit', 'surplus': 0, 'forum': 0, 'deals': 1, 'posts': 0},
+                                        {'name': 'peer', 'surplus': 0, 'forum': 0, 'deals': 2, 'posts': 1}]}
+>       assert rank_gain(board, 'buyer', 'seochanit', {'posts': 2}) == .05
+E       AssertionError: assert 0.07500000000000001 == 0.05
+E        +  where 0.07500000000000001 = rank_gain({'round': 3, 'buyers': [{'name': 'seochanit', 'surplus': 0, 'forum': 0, 'deals': 1, ...}, {'name': 'peer', 'surplus': 0, 'forum': 0, 'deals': 2, ...}]}, 'buyer', 'seochanit', {'posts': 2})
+
+tests\test_forum_supply.py:129: AssertionError
+============================== warnings summary ===============================
+tests\test_customer_memory.py:10
+  C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\tests\test_customer_memory.py:10: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_forum_supply.py::test_latest_buyer_score_has_posts_and_ten_percent_deals
+1 failed, 63 passed, 1 warning in 16.19s

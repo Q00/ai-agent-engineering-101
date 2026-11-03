@@ -2,7 +2,8 @@
 import argparse
 import json
 from r3.state import Journal
-from r3.economy import restock_candidates
+from r3.economy import restock_candidates, supply_open, cash_capacity
+import time
 from r3.model import Chooser
 from r3.adaptive import effective
 
@@ -25,8 +26,14 @@ def plan(journal, chooser=None):
                            "score": sum(c["score"] for c in lines), "max_cost": sum(c["max_cost"] for c in lines),
                            "evidence": [c["evidence"] for c in lines]})
     selected = (chooser or Chooser(journal, cfg)).choose("shop", portfolios,
-               {"balance": inv["balance"], "stock_units": len(inv.get("units", [])), "strategy": strategy},
+               {"balance": inv["balance"], "stock_units": len(inv.get("units", [])), "strategy": strategy,
+                'supply_window': inv.get('restock'), 'cash_capacity': cash_capacity(inv, journal, cfg)},
+               deadline=(inv.get('restock') or {}).get('closes_at', time.time() + 120) - 15,
                critical=portfolios[0]["max_cost"] > cfg["critic_cash_fraction"] * inv["balance"])
+    current = journal.snapshot('inventory.json', {})
+    if not supply_open(current) or cash_capacity(current, journal, cfg)['spendable'] < sum(
+            c['capital_commitment'] for c in candidates if any(b['sku'] == c['sku'] for b in selected['buy'])):
+        return {'buy': []}
     journal.add('restock_decision', {'strategy_version': strategy['version'], 'buy': selected['buy']}, role='shop')
     return {"buy": selected["buy"]}
 

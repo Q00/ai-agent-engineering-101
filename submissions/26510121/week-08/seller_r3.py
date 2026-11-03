@@ -41,12 +41,15 @@ class Seller(AgentExecutor):
         cat = self.j.snapshot("catalog.json", {})
         want = text.casefold()
         skus = re.findall(r"\bG[0-9a-z]+\b", text, re.I)
+        requirement = re.search(r'(?:last at least|use within|minimum shelf life(?: after checkout)?:?)\s*(\d+(?:\.\d+)?)\s*(?:hours?|h)\b', text, re.I)
+        min_hours = float(requirement.group(1)) if requirement else 0
         choices = [u for u in inv.get("units", []) if grade(u, cat) != "expired" and
+                   (u.get('kind') != 'food' or remaining(u) >= min_hours + self.cfg['checkout_buffer_seconds'] / 3600) and
                    ((u["sku"].casefold() in {x.casefold() for x in skus}) if skus else
                     (u["name"].casefold() in want or u["category"].split(">")[ -1].casefold() in want))]
         for u in sorted(choices, key=lambda x: (remaining(x), x.get("supplied_at", 0))):
             if self.j.reserve(u["unit"], task, self.cfg["session_ttl_seconds"]):
-                return u
+                return dict(u, requested_use_hours=min_hours)
         self.j.add("stockout", {"sku": skus[0] if skus else None, "request": text[:300]}, role="shop")
         return None
 
@@ -103,7 +106,9 @@ class Seller(AgentExecutor):
         inv = self.j.snapshot("inventory.json", {})
         unit = next((u for u in inv.get("units", []) if u["unit"] == deal["unit"]["unit"]), None)
         cat = self.j.snapshot("catalog.json", {})
-        if unit is None or remaining(unit) <= 0 or time.time() >= deal["until"]:
+        if (unit is None or remaining(unit) <= 0 or time.time() >= deal["until"] or
+                unit.get('kind') == 'food' and remaining(unit) < deal['unit'].get('requested_use_hours', 0) +
+                self.cfg['checkout_buffer_seconds'] / 3600):
             customer_memory.finish(self.j, task.id, 'expired_or_unavailable')
             self.j.release(task.id)
             self.deals.pop(task.id, None)

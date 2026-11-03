@@ -19,12 +19,16 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
     catalog = journal.snapshot("catalog.json", {})
     registry = journal.snapshot("registry.json", {})
     ranked = buyer_candidates(order, shops, catalog, journal)
+    if not ranked:
+        from r3.forum import queue_wanted
+        queue_wanted(journal, order)
     chooser = chooser or Chooser(journal, cfg)
     deadline = min(order["expires"] - cfg["checkout_buffer_seconds"], time.time() + 240)
     for _ in range(cfg["max_shop_candidates"]):
         if not ranked or time.time() >= deadline:
             break
-        c = chooser.choose("buyer", ranked[:8], {"order": order, "strategy": strategy}, deadline=deadline,
+        c = chooser.choose("buyer", ranked[:8], {"order": order, "strategy": strategy,
+                           'forum_evidence': 'unverified discovery hint; registry and checkout remain authoritative'}, deadline=deadline,
                            critical=ranked[0]["reference_price"] > .8 * order["budget"])
         ranked = [x for x in ranked if x["shop"] != c["shop"]]
         peer = peer_factory()
@@ -105,6 +109,8 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                                     "kind": type(exc).__name__, "seconds": time.monotonic() - started}, role="buyer")
         finally:
             peer.close()
+    from r3.forum import queue_wanted
+    queue_wanted(journal, order)
     return empty
 
 

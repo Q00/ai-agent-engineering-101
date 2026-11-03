@@ -100,6 +100,7 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
 
 
 def buyer_candidates(order, shops, catalog, journal):
+    from .forum import shop_hint
     past = journal.events("purchase", 10000)
     failures = journal.events("attempt", 2000)
     result = []
@@ -119,18 +120,43 @@ def buyer_candidates(order, shops, catalog, journal):
             estimate = sorted(x["price"] for x in own)[len(own) // 2] if own else int(.8 * product["list_price"])
             estimate = min(estimate, order["budget"])
             success = (len(own) + 1) / (len(own) + len(failed) + 2)
+            hint = shop_hint(journal, shop['name'], sku)
             result.append({"id": shop["name"] + ":" + sku, "shop": shop["url"], "name": shop["name"],
                            "sku": sku, "product": product, "reference_price": estimate,
-                           "score": success * (product["list_price"] - estimate),
+                           "score": success * (product["list_price"] - estimate) * (1.03 if hint else 1),
                            "evidence": {"own_paid": len(own), "peer_failures": len(failed),
+                                        "forum_announcement_hint": hint, "forum_hint_is_unverified": True,
                                         "price_is_prior": not bool(own)}})
     return sorted(result, key=lambda x: x["score"], reverse=True)
+
+
+def supply_open(inv, now=None):
+    now = time.time() if now is None else now
+    window = inv.get('restock')
+    if window is None:
+        return True  # Older inventories do not expose a window; the server remains authoritative.
+    if not isinstance(window, dict) or window.get('open') is not True:
+        return False
+    return (type(window.get('opens_at')) in (int, float) and type(window.get('closes_at')) in (int, float)
+            and window['opens_at'] <= now < window['closes_at'] - 15)
+
+
+def cash_capacity(inv, journal, config, now=None):
+    now = time.time() if now is None else now
+    days = max(0, (datetime.fromisoformat(config['end_at']).timestamp() - now) / 86400)
+    liability = sum(e.get('price', 0) for e in journal.events('shop_settled', 10000)
+                    if now - e.get('paid_at', 0) < e.get('warranty_hours', 0) * 3600)
+    storage = sum(u.get('cost', 0) for u in inv.get('units', []) if u.get('kind') == 'goods') * .01 * days
+    balance = inv.get('balance', 0)
+    floor = max(config.get('cash_floor', 750000), balance * config['cash_reserve_fraction'])
+    return {'spendable': max(0, balance - floor - liability - storage), 'refund_liability': liability,
+            'storage_to_end': storage, 'cash_floor': floor, 'remaining_days': days}
 
 
 def restock_candidates(inv, catalog, demand, journal, config, now=None):
     now = time.time() if now is None else now
     end = datetime.fromisoformat(config["end_at"]).timestamp()
-    if end - now < 3600:
+    if end - now < 3600 or not supply_open(inv, now):
         return []
     units = [u for u in inv.get("units", []) if remaining(u, now) > 0]
     count = {}
@@ -139,9 +165,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     target = config["inventory_target_units"]
     if len(units) >= target:
         return []
-    liability = sum(e.get("price", 0) for e in journal.events("shop_settled", 10000)
-                    if now - e.get("paid_at", 0) < e.get("warranty_hours", 0) * 3600)
-    spendable = max(0, inv.get("balance", 0) * (1 - config["cash_reserve_fraction"]) - liability)
+    capacity = cash_capacity(inv, journal, config, now)
+    spendable = capacity['spendable']
     signals = {}
     for e in journal.events("public_settle", 20000):
         product = catalog.get(e.get("item") or e.get("sku"), {})
@@ -150,13 +175,24 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
             signals[cat] = signals.get(cat, 0) + math.exp(-(now - e["_ts"]) / 21600)
     for e in journal.events("stockout", 2000):
         product = catalog.get(e.get("sku"), {})
-        if product:
-            signals[product["category"]] = signals.get(product["category"], 0) + 1
+        if product and 0 <= now - e['_ts'] < 21600:
+            signals[product["category"]] = signals.get(product["category"], 0) + .35 * math.exp(-(now-e['_ts']) / 3600)
+    from .forum import signals as forum_signals
+    forum = forum_signals(journal, now)
+    for category, value in forum['categories'].items():
+        signals[category] = signals.get(category, 0) + min(value, 3)
+    own = {}
+    for event in journal.events('shop_settled', 10000):
+        if 0 <= now - event.get('paid_at', event['_ts']) < 3600:
+            own[event.get('sku')] = own.get(event.get('sku'), 0) + 1
     candidates = []
     # A deterministic rotating probe avoids presenting unobserved demand as fact.
     probe = int(now // 3600)
     for sku, p in catalog.items():
-        if count.get(sku, 0) >= config["restock_max_qty"] or .75 * p["list_price"] > spendable:
+        fee = .01 * capacity['remaining_days'] if p.get('kind') == 'goods' else 0
+        per_unit = math.ceil(.75 * p['list_price'])
+        commitment = per_unit * (1 + fee)
+        if count.get(sku, 0) >= config["restock_max_qty"] or commitment > spendable:
             continue
         if p.get("kind") == "food" and (p.get("shelf_hours") or 0) < 6:
             continue
@@ -165,18 +201,39 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         draw = int(hashlib.sha256((str(probe) + sku).encode()).hexdigest()[:8], 16) / 2**32
         scarcity = 1 / (1 + count.get(sku, 0))
         weight = config.get('category_weights', {}).get(p['category'], 1)
-        score = weight * scarcity * (cat_signal + config["exploration_fraction"] * draw) / math.sqrt(max(1, p["list_price"]))
-        candidates.append({"id": sku, "sku": sku, "qty": 1, "score": score,
-                           "max_cost": math.ceil(.75 * p["list_price"]), "category": p["category"],
+        exact = min(forum['skus'].get(sku, 0), 2)
+        # Cover observed own sales through the next supply window, in small lots.
+        desired = max(1, math.ceil(own.get(sku, 0) * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
+        qty = min(20, config['restock_max_qty'] - count.get(sku, 0),
+                  max(1, desired - count.get(sku, 0)), max(0, math.floor(spendable / commitment)))
+        if qty <= 0:
+            continue
+        # Capital yield uses disclosed grade probabilities and upper expected cost bounds,
+        # not an assumed uniform distribution within supplier price intervals.
+        cost_ratio = .60 if p.get('kind') == 'food' else .69
+        recovery = .85 * (1 if p.get('kind') == 'food' else .85)
+        capital_yield = max(.01, recovery - cost_ratio * (1 + fee)) / .75
+        score = weight * scarcity * (cat_signal + exact + 2 * own.get(sku, 0) + config["exploration_fraction"] * draw) * capital_yield
+        candidates.append({"id": sku, "sku": sku, "qty": qty, "score": score,
+                           "max_cost": per_unit * qty, "capital_commitment": commitment * qty, "category": p["category"],
                            "evidence": {"observed_category_signal": cat_signal, "probe": cat_signal == 0,
+                                        "forum_request_signal": exact, 'own_sales_last_hour': own.get(sku, 0),
+                                        'cash_capacity': capacity, 'capital_yield_stress': capital_yield,
                                         "adaptive_category_weight": weight}})
     chosen, covered = [], set()
     for c in sorted(candidates, key=lambda x: x["score"], reverse=True):
-        if c["category"] in covered or c["max_cost"] > spendable:
+        remaining_slots = target - len(units) - sum(x['qty'] for x in chosen)
+        if remaining_slots <= 0:
+            break
+        if c['qty'] > remaining_slots:
+            fraction = remaining_slots / c['qty']
+            c = dict(c, qty=remaining_slots, max_cost=c['max_cost'] * fraction,
+                     capital_commitment=c['capital_commitment'] * fraction)
+        if c["category"] in covered or c["capital_commitment"] > spendable:
             continue
         chosen.append(c)
         covered.add(c["category"])
-        spendable -= c["max_cost"]
+        spendable -= c["capital_commitment"]
         if len(chosen) >= min(config["restock_max_lines"], target - len(units)):
             break
     return chosen

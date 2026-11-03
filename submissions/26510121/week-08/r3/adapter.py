@@ -172,17 +172,13 @@ def install(kit, journal=None, config=None):
             update(j)
         except Exception as exc:
             j.add('strategy_error', {'error_type': type(exc).__name__})
-        for key, payload in j.pending_posts():
-            role = payload.get("as", "buyer")
-            if role not in market.token:
-                continue
-            r = market.call("POST", "/api/forum", role,
-                            json={"text": payload["post"], "refs": payload.get("refs", []), "thread": payload.get("thread")})
-            if r.status_code == 429:
-                break
-            j.add("forum_delivery", {"key": key, "status": r.status_code, "role": role})
-            if r.status_code in (200, 201) or 400 <= r.status_code < 500:
-                j.sent_post(key)
+        from .forum import schedule, deliver
+        try:
+            schedule(j, cfg)
+            if j.snapshot('inventory.json', {}).get('round') == 3 or j.get('board_round') == 3:
+                deliver(market, j, cfg)
+        except Exception as exc:
+            j.add('forum_error', {'error_type': type(exc).__name__})
 
     kit.check_accept = strict_accept
     kit.AcpShop = StrictShop

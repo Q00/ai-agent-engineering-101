@@ -16,7 +16,7 @@ def rank_gain(board, role, own_name, delta):
     own = next((x for x in rows if x.get("name") == own_name), None)
     if not own:
         return None
-    weights = {"profit": .5, "revenue": .3, "stars_rank": .2} if role == "shop" else {"surplus": .5, "forum": .3, "deals": .2}
+    weights = {"profit": .5, "revenue": .3, "stars_rank": .2} if role == "shop" else {"surplus": .5, "forum": .3, "deals": .1, "posts": .1}
     gain = 0
     for key, w in weights.items():
         values = [r[key] for r in rows if isinstance(r.get(key), (int, float))]

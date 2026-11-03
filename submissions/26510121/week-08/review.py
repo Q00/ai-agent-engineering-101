@@ -31,9 +31,7 @@ def review(deal, journal):
                     'claim matched' if settled.get('claim_honest') is True else
                     'claim did not match' if settled.get('claim_honest') is False else 'claim not verified')
     text = f"Settled {sku} at {price}; grade {settled.get('grade')}; {claim_status}."
-    # One useful, grounded post per 30-minute bucket; the kit separately enforces 5-minute limits.
-    bucket = int(now // 1800)
-    journal.queue_post({"post": text, "refs": [settled["ledger"]], "as": "buyer"}, "buyer-observation:" + str(bucket))
+    # The shared forum scheduler publishes ledger-backed observations with per-role cooldowns.
     return {"stars": stars, "review": text}
 
 
