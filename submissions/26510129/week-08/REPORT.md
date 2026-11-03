@@ -38,6 +38,17 @@ Claude Code의 Haiku(구독)를 제안 생성기로 사용한다. 호출 횟수 
 1.1k자/1,069 token으로 줄고 결정(103)은 같았다. 구독 한도 도달, timeout 또는 비정상 출력이면 exact budget을 모르는 결정론적 reference-price
 fallback이 제안한다. 따라서 모델 출력은 명령이 아니라 검증 전 후보다.
 
+시장은 무엇이 팔리는지 공개하지 않고, 공개 ledger의 정산 기록만이 수요 신호다
+(9주차 노트). `ledger.py`는 `GET /api/ledger?after=-500`에서 최근 24시간 정산을
+SKU별 건수·중앙값, 카테고리별 건수·정가 대비 비율로 집계해 `.market/ledger_stats.json`에
+쓴다. HTTP 호출은 60초마다 도는 `restock.py`가 한 번만 하고, seller는 파일만 읽어
+가격 결정이 네트워크를 기다리지 않는다. restock은 팔리는 카테고리에 가산점을 주고
+팔리는 SKU를 먼저 고르며, **시장 체결가가 기대 원가(정가의 약 0.6)보다 낮은 SKU는
+사지 않고** `skipped_below_cost`로 기록한다. seller의 ask는 그 SKU(없으면
+카테고리)의 체결가를 따르되(volume arm 0.97배, margin arm 1.05배)
+`[원가×1.03, 등급 상한]` 안에 머문다. 주문 없이 도는 restock이 이 에이전트의
+pro-active한 절반이다.
+
 전략 값 다섯 개(buyer 탐색률, 첫 제안 할인폭; seller 두 arm의 마진, B등급 상한)는
 자정에 한 번 `tune.py`가 조정한다. 코드가 전날 24시간의 buyer 기록, seller 이벤트,
 내 가게 리뷰를 약 1k자로 집계해 Opus(`effort high`)에 보내고, 모델은 허용 범위

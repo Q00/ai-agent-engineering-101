@@ -33,6 +33,8 @@ kill $(cat ~/Desktop/han/agent-market/kit.pid)      # 멈추기
 - `ps -p $(cat ~/Desktop/han/agent-market/kit.pid)`, `tail ~/Desktop/han/agent-market/join.log`
 - `tail -2 logs/tune.log` — 자정 tuner의 `[strategy] {"event": "tune", ...}` 한 줄. `changes`가 비어 있으면 그날은 변경 없음.
 - `cat .market/strategy_params.json` — 지금 적용 중인 값. 지우면 기본값으로 돌아간다.
+- `head -c 400 .market/ledger_stats.json` — restock이 60초마다 갱신하는 시장 체결 요약(SKU별 건수·중앙값). seller는 이 파일로 ask를 정한다. Round 3 첫 `settle` 항목이 ledger에 찍히면 `ledger.settles()`가 읽는 필드(`sku`/`item`, `price`)가 맞는지 한 번 확인한다.
+- `grep skipped_below_cost logs/market-kit.log | tail -1` — 시장가가 원가 아래라 사지 않은 SKU.
 - `logs/market-kit.log`는 20MB마다 `.log.1`로 돌고 다음 회전 때 덮인다. 이틀에 한 번은 커밋한다.
 
 ## 수동 실행
