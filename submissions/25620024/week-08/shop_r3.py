@@ -130,6 +130,18 @@ CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grad
          "'need 48h, grade A/B' and I pick a unit that passes | bought here before? say your market name for VIP")
 
 
+def offer_data(u, price, q, vip=None):
+    """The offer as data, same fields every time."""
+    left = round((u["expires_at"] - time.time()) / 3600, 1) if u.get("expires_at") else None
+    w = promo.theta().get("warranty_goods_h") or 0
+    return {"type": "offer", "shop": NAME, "sku": u["sku"], "name": u.get("name"), "unit": u.get("unit"),
+            "grade": u.get("grade"), "grade_claim_is_true_grade": True, "cert": "market-signed",
+            "shelf_hours_left": left, "warranty_hours": w if u.get("kind") == "goods" else 0,
+            "list_price": u.get("list_price"), "ask": price, "ask_share_of_list": round(price / u["list_price"], 3),
+            "vip": vip or None, "substitute_for": u.get("substitute_for"),
+            "receipt_key_fp": FP, "accept_by": "reply with the ask as a number"}
+
+
 def warranty_note(u):
     h = promo.theta().get("warranty_goods_h") or 0
     return f" | warranty={h}h, full refund if it breaks" if u.get("kind") == "goods" and h else ""
@@ -171,6 +183,15 @@ class Shop(AgentExecutor):
             await event_queue.enqueue_event(task)
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
+
+        def say_offer(text):
+            """The same words plus what an agent can parse without reading them: a data part with the offer and
+            {"ask": N} in the message metadata (week-07 buyers read metadata first)."""
+            d = self.open.get(task.id)
+            if not d:
+                return say(text)
+            o = offer_data(d["unit"], d["ask"], d["q"], d.get("vip"))
+            return up.new_agent_message(parts=[new_text_part(text), new_data_part(o)], metadata={"ask": d["ask"]})
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
 
@@ -198,7 +219,7 @@ class Shop(AgentExecutor):
             sub = f"substitute for {u['substitute_for']} (same category, in stock) | " if u.get("substitute_for") else ""
             log(f"{task.id[:8]} {u['sku']} cost {u['cost']} -> ask {q['price']} least {q['least']} ({q['why']})"
                 + (f" VIP {vip}" if vip else "") + (f" substitute for {u['substitute_for']}" if sub else ""))
-            await up.requires_input(say(f"{sub}{facts(u, q['price'], q, code)}{warranty_note(u)}"
+            await up.requires_input(say_offer(f"{sub}{facts(u, q['price'], q, code)}{warranty_note(u)}"
                                         + (f" | VIP {vip}: -{promo.theta().get('vip_discount', 0):.0%} applied" if vip else "")
                                         + f" | asking {q['price']}. Reply with a number. | {CLERK}"))
             return
@@ -233,7 +254,7 @@ class Shop(AgentExecutor):
                 taken = {d["unit"]["unit"] for k, d in self.open.items() if k != task.id}
                 v, _, _ = find_unit(f"{text} {u['sku']}", taken, need)
                 if v is None:
-                    await up.requires_input(say(f"clerk: no unit of {u['sku']} or its category passes "
+                    await up.requires_input(say_offer(f"clerk: no unit of {u['sku']} or its category passes "
                                                 f"{ {k: (sorted(x) if isinstance(x, set) else x) for k, x in need.items() if x} } now;"
                                                 f" the best we have: {facts(u, deal['ask'], q, deal['code'])}"
                                                 f" | asking {deal['ask']}. Reply with a number."))
@@ -241,11 +262,11 @@ class Shop(AgentExecutor):
                 q = promo.quote(self.c, v, deal["code"], me=NAME, stock_n=v.get("stock_n", 1), vip=bool(vip))
                 deal.update(unit=v, q=q, ask=min(q["price"], deal["ask"]) if v["sku"] == u["sku"] else q["price"], vip=vip)
                 log(f"{task.id[:8]} clerk: {need} -> unit {v['unit']} ask {deal['ask']}" + (f" VIP {vip}" if vip else ""))
-                await up.requires_input(say(f"clerk: picked a unit that passes | {facts(v, deal['ask'], q, deal['code'])}"
+                await up.requires_input(say_offer(f"clerk: picked a unit that passes | {facts(v, deal['ask'], q, deal['code'])}"
                                             f"{warranty_note(v)}" + (f" | VIP {vip}" if vip else "")
                                             + f" | asking {deal['ask']}. Reply with a number."))
                 return
-            await up.requires_input(say(f"clerk: {facts(u, deal['ask'], q, deal['code'])}{warranty_note(u)}"
+            await up.requires_input(say_offer(f"clerk: {facts(u, deal['ask'], q, deal['code'])}{warranty_note(u)}"
                                         f" | asking {deal['ask']}. Reply with a number, or tell me what you need."))
             return
         if deal["turns"] >= MAX_TURNS or offer is None:
@@ -256,7 +277,7 @@ class Shop(AgentExecutor):
         counter = max(q["least"], min(deal["ask"], (offer + deal["ask"]) // 2))   # never above the last ask
         final = counter == q["least"]
         deal["ask"] = counter
-        await up.requires_input(say(f"{facts(u, counter, q, deal['code'])} | counteroffer {counter}"
+        await up.requires_input(say_offer(f"{facts(u, counter, q, deal['code'])} | counteroffer {counter}"
                                     + (" (final)." if final else ". Reply with a number.")))
 
     async def cancel(self, context, event_queue):
