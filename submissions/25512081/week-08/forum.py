@@ -228,6 +228,8 @@ def reply_post(done):
                 and r["category"].split(">")[-1].split("(")[0] in text]
         if not hits:
             continue
+        cat = min(hits, key=lambda r: (r["seq"] in done, r["pct"]))["category"]
+        hits = [r for r in hits if r["category"] == cat]       # one category per answer
         uniq = {}                                  # one line per shop and SKU, settles not cited before first
         for r in sorted(hits, key=lambda r: (r["seq"] in done, r["pct"])):
             uniq.setdefault((r["shop_name"], r["sku"]), r)
