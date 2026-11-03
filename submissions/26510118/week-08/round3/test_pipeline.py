@@ -277,6 +277,11 @@ def test_restock(fake: Fake):
     skus = [b["sku"] for b in out["buy"]]
     check("exploring: 6 lines refill what sold, 4 go to products never stocked (the stage order)",
           skus == FILLERS[:6] + [WATER, BEDDING, PAKIMCHI, FILLERS[10]] and info["new"] == 4, skus)
+    busy_kimchi = {"by_category": {KIMCHI_CAT: {"sold_24h": 9}}}
+    out, _ = restock.plan(inv([]), CATALOG, DEMAND, busy_kimchi, sold10, [], rules, NOW, stocked=set(FILLERS[:10]) | {PAKIMCHI})
+    skus = [b["sku"] for b in out["buy"]]
+    check("exploring: categories we never had come before a second product of a busy category we know",
+          skus[6:] == [WATER, BEDDING, FILLERS[10], FILLERS[11]] and KIMCHI not in skus, skus)
     out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, sold10, [], rules, NOW, stocked=set(FILLERS[:10]), phase="focus")
     check("focus phase: one line for a new product", info["new"] == 1 and len(out["buy"]) == 10, out["buy"])
     check("the kit runs restock every 20 minutes: a product we sold is kept at 3, a hot category starts at 2",

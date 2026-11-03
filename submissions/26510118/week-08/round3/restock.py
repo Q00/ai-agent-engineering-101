@@ -20,7 +20,8 @@ does not count as on the shelf; S5 sells it off). Exploration phase:
             sales say will sell in the next COVER windows, up to 20 (one line's quantity)
   explore   the lines a window allows are few (about 18), and refilling what sells in small lots
             would take them all, so in the exploration phase 40% of a run's lines (10% in the
-            focus phase) go to products never stocked yet, and the deep refills free the rest
+            focus phase) go to products never stocked yet, a category we never had first (a second
+            product of a category we know waits), and the deep refills free the rest
   order     only 10 lines a run, so what comes first matters while the first day's shelf fills
             (about 12 runs): refills of what we sold, then the products with the most evidence
             of demand (the market's sales of the category in the last day, our buyer's orders for
@@ -237,7 +238,9 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     value = sum(u.get("cost", 0) for u in units)
     balance = inv.get("balance", 0)
     seen = (stocked or set()) | set(usable) | set(sold)
-    fresh = [g for g in gaps if g[1] not in seen]                  # never stocked: what exploration is for
+    seen_cats = {catalog[s]["category"] for s in seen if s in catalog}
+    fresh = sorted((g for g in gaps if g[1] not in seen),          # never stocked: what exploration is for,
+                   key=lambda g: catalog[g[1]]["category"] in seen_cats)   # a category new to us before a second product
     known = [g for g in gaps if g[1] in seen]
     explore = min(len(fresh), max(1, round(lines * EXPLORE_SHARE.get(phase, 0.0)))) if fresh and not wind_down else 0
     buy, spend = [], 0.0
