@@ -185,8 +185,10 @@ def record_market(order, shops, quotes):
     acc = order.get("acceptable") or []          # the catalog's category path, as restock.py keys it
     cat = (CATALOG.get(acc[0]) or {}).get("category") if acc else None
     cat = cat or order.get("category") or order.get("item")
-    data["cats"][cat] = {"ts": now, "shops": sum(1 for s in shops if s.get("offers")),
-                         "units": sum(o.get("qty", 1) for s in shops for o in s.get("offers") or [])}
+    prev = data["cats"].get(cat) or {}
+    n = sum(1 for s in shops if s.get("offers"))
+    data["cats"][cat] = {"ts": now, "shops": n, "units": sum(o.get("qty", 1) for s in shops for o in s.get("offers") or []),
+                         "skus": acc[:12], "empty_seen": (prev.get("empty_seen", 0) + 1) if n == 0 else 0}
     for q in quotes:
         data["asks"][q["sku"]["sku"]] = (data["asks"].get(q["sku"]["sku"], []) + [[now, q["shop"]["name"], q["reply"].ask]])[-10:]
     tmp = f.with_suffix(".tmp")
@@ -367,6 +369,11 @@ def main():
     mine = load_memory()
     MINE[:] = mine
     if not shops:
+        if r3:                                    # unmet demand: our shop can stock what nobody has
+            try:
+                record_market(order, [], [])
+            except (OSError, ValueError, KeyError) as e:
+                log(f"[intel] not recorded: {e}")
         print(json.dumps({"shop": None, "receipt": None, "stars": 1,
                           "review": "No shops in the list."}))
         return 0

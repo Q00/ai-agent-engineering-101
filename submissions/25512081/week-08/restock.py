@@ -29,13 +29,17 @@ import httpx
 import forum
 
 MARKET = "https://market.ourolabs.ai"
-CASH_FLOOR = 2_000_000
-STOCK_CAP = 2_500_000
+CASH_FLOOR = 1_500_000    # round 3's first 20 minutes: 55-60% of the market's orders ended without a deal while
+STOCK_CAP = 3_000_000     # shops' supply buys fell from 924 to 175 per 10 min; we sold 36 units in 21 min from
+                          # about 60 in stock. Demand is far above supply, so we hold more (bankruptcy line 500,000)
 SEED_PRICE = 80_000        # seed goods categories whose median price is at most this
 SEED_FOOD_HOURS = 168      # seed food that keeps at least a week
 MIN_DATA = 30              # market settles needed before targets follow the data
-TOTAL_UNITS = 80           # the stock the targets add up to, once there is data
-MAX_PER_CAT = 5
+TOTAL_UNITS = 160          # the stock the targets add up to, once there is data
+MAX_PER_CAT = 8
+UNMET_FRESH = 6 * 3600     # a category our buyer found no shop for, this recently, gets UNMET_UNITS of stock
+UNMET_UNITS = 2
+PULSE_DECAY = 0.97         # per run: the market's no-deal share over roughly the last half hour
 DECAY = 0.995              # per run (about one a minute): half-life about 2 hours
 MAX_LINES = 10
 MAX_LINE_COST = 300_000    # one category's buy never ties up more than this (one unit always allowed)
@@ -82,6 +86,9 @@ def read_ledger(st, catalog):
                 break
             for r in rows:
                 d = r.get("data") or {}
+                if r.get("kind") == "result":             # how much of the market's demand goes unmet now
+                    st["pulse"][0] += 1
+                    st["pulse"][1] += 0 if d.get("receipt") else 1
                 if r.get("kind") == "broken":            # market-wide break rate per grade, for warranties
                     g = st["unit_grade"].get(str(d.get("unit")), "?")
                     st["breaks"].setdefault(g, [0, 0])[0] += 1
@@ -114,6 +121,14 @@ def read_ledger(st, catalog):
     st["seq"] = seq
     st["unit_grade"] = dict(list(st["unit_grade"].items())[-5000:])
     st["recent"] = st["recent"][-600:]
+    nodeal = st["pulse"][1] / st["pulse"][0] if st["pulse"][0] >= 30 else None
+    tmp = Path(".market") / "pulse.tmp"
+    tmp.write_text(json.dumps({"ts": time.time(), "nodeal": nodeal, "results": round(st["pulse"][0])}), encoding="utf-8")
+    tmp.replace(Path(".market") / "pulse.json")
+    if nodeal is not None:                       # hourly samples for the report: is there a time of day to sell?
+        hour = time.strftime("%m-%d %H")
+        if not st["pulse_log"] or st["pulse_log"][-1][0] != hour:
+            st["pulse_log"] = (st["pulse_log"] + [[hour, round(nodeal, 3), round(st["pulse"][0])]])[-400:]
     tmp = Path(".market") / "break_rates.tmp"
     tmp.write_text(json.dumps(st["breaks"]), encoding="utf-8")
     tmp.replace(Path(".market") / "break_rates.json")
@@ -149,6 +164,10 @@ def targets(st, demand):
             n = round(n * (1.5 if c <= FEW_SHOPS else 0.6 if c >= MANY_SHOPS else 1.0)) or 1
         if n > 0:
             out[cat] = min(n, MAX_PER_CAT)
+    for cat, c in load(Path(".market") / "competitors.json", {}).get("cats", {}).items():
+        if c.get("shops") == 0 and time.time() - c["ts"] < UNMET_FRESH:   # nobody had it when it was ordered
+            short = (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
+            out[cat] = max(out.get(cat, 0), 1 if short else UNMET_UNITS)
     return out
 
 
@@ -175,11 +194,15 @@ def plan_lines(sd, st, catalog, room):
 
 
 def pick_sku(cat, catalog, st, median):
-    """A SKU of the category: one the market has bought before, else the one priced nearest the median
-    (orders accept SKUs at 0.5-1.5x a reference price, so the middle fits most orders)."""
+    """A SKU of the category: one the market has bought before, else one an unmet order accepted, else the one
+    priced nearest the median (orders accept SKUs at 0.5-1.5x a reference price, so the middle fits most orders)."""
     skus = [s for s, x in catalog.items() if x.get("category") == cat]
     if not skus:
         return None
+    wanted = [s for s in (load(Path(".market") / "competitors.json", {}).get("cats", {}).get(cat) or {}).get("skus", [])
+              if s in catalog]
+    if wanted and not any(st["sku_pop"].get(s) for s in skus):
+        return min(wanted, key=lambda s: abs(catalog[s]["list_price"] - median))
     seen = [s for s in skus if st["sku_pop"].get(s)]
     if seen:
         return max(seen, key=lambda s: st["sku_pop"][s])
@@ -207,9 +230,10 @@ def main():
     catalog = catalog_of(sd)
     st = load(sd / "restock_state.json", {})
     for k, v in (("pop", {}), ("sku_pop", {}), ("sold", {}), ("sold_log", []), ("settles", 0),
-                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", [])):
+                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", [])):
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
+    st["pulse"] = [x * PULSE_DECAY for x in st["pulse"]]
 
     try:
         keep_rotated_log()

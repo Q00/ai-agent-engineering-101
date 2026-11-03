@@ -81,6 +81,11 @@ MAX_BREAK_FOR_WARRANTY = 0.10
 # Our buyer collects every competitor's first ask (.market/competitors.json); we open at most UNDERCUT of the
 # lowest recent one for the same SKU, never under the floor.
 UNDERCUT, COMP_FRESH = 0.98, 6 * 3600
+# Scarcity: when much of the market's demand goes unmet (pulse.json, the no-deal share of recent results that
+# restock.py reads off the ledger) or no other shop held the category when our buyer last saw it, buyers have
+# nowhere else to go, so we open higher. Both stay under MAX_SHARE.
+SHORTAGE_PREMIUM = 0.10    # times (no-deal share - 0.3), so 0.6 unmet opens 3% higher
+ALONE_PREMIUM = 0.06
 # The last day of the round: stock left at the end is cost already paid, so selling it at any price raises the
 # final balance. Opening share and floor fall in two steps (share factor, floor as a share of cost).
 END_TS = 1794927540        # Tue Nov 17 23:59 KST
@@ -210,6 +215,7 @@ def terms(u):
     days = min(3, int((time.time() - u.get("supplied_at", time.time())) // 86400))
     share = base_share(u.get("category")) * GRADE_FACTOR.get(u["grade"], 0.8) * (1 - STALE_MARKDOWN * days)
     arm = None
+    share *= scarcity(u.get("category"))
     left = END_TS - time.time()
     end = next(((f, fl) for h, f, fl in ENDGAME if left < h), None)
     if end:                                   # sell-off: not a price test either
@@ -229,6 +235,17 @@ def terms(u):
         ask = max(floor, int(rival * UNDERCUT))
     warranty = warranty_for(u)
     return ask, floor, warranty, arm
+
+
+def scarcity(category):
+    pulse = _load("pulse.json", {})
+    f = 1.0
+    if pulse.get("nodeal") is not None and time.time() - pulse.get("ts", 0) < 600:
+        f += SHORTAGE_PREMIUM * max(0.0, pulse["nodeal"] - 0.3)
+    c = _load("competitors.json", {}).get("cats", {}).get(category)
+    if c and c.get("shops", 9) == 0 and time.time() - c["ts"] < COMP_FRESH:
+        f += ALONE_PREMIUM
+    return f
 
 
 def rival_ask(sku):

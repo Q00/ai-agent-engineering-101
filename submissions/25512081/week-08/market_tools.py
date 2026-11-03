@@ -33,8 +33,8 @@ from pathlib import Path
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
-CASH_FLOOR = 2_000_000
-STOCK_CAP = 2_500_000
+CASH_FLOOR = 1_500_000     # as in restock.py
+STOCK_CAP = 3_000_000
 MAX_LINE_COST = 300_000
 MAX_QTY = 5
 SHORT_SHELF = 48           # hours: food that spoils this fast is bought at most 2 at a time

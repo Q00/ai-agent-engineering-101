@@ -124,7 +124,8 @@ def notes(shop):
 
 
 def avoid():
-    """Shops to leave out in code: a false grade claim, or two items that broke without warranty."""
+    """Shops to leave out in code: a false grade claim, two items that broke without warranty, or two deals in
+    12 h our kit would not pay for lack of the market's certificate (round 3's first 20 minutes: 6 such deals)."""
     out = set()
     by = {}
     for p in _load(PURCHASES, []):
@@ -132,7 +133,11 @@ def avoid():
             out.add(p["shop"])
         if p.get("broke_at") and not p.get("covered"):
             by[p["shop"]] = by.get(p["shop"], 0) + 1
-    return out | {s for s, n in by.items() if n >= 2}
+    nocert = {}
+    for r in _load(CURSOR, {}).get("refusals", []):          # deals our kit would not pay: no certificate
+        if "no certificate" in (r.get("reason") or "") and time.time() - r.get("ts", 0) < 12 * 3600:
+            nocert[r["shop"]] = nocert.get(r["shop"], 0) + 1
+    return out | {s for s, n in by.items() if n >= 2} | {s for s, n in nocert.items() if n >= 2}
 
 
 def break_rate(grade=None):
