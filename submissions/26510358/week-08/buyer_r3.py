@@ -11,6 +11,7 @@ The last JSON line is what the kit reads. Orders before Round 3 go to the week-0
 import argparse
 import json
 import os
+import re
 import sys
 import time
 
@@ -42,16 +43,23 @@ def candidates(order, shops, mem, my_urls):
     cat = market.catalog()
     acceptable = set(order.get("acceptable") or [])
     out = []
+    seen = {"shops": len(shops), "with_offers": 0, "offers": 0, "mine": 0, "not_acceptable": 0, "no_qty": 0,
+            "no_list_price": 0}
     p_market = mem.break_rate()
     for s in shops:
+        seen["with_offers"] += bool(s.get("offers"))
         url = (s.get("url") or "").rstrip("/")
         if not url or url in my_urls or s.get("name") in config.MY_NAMES:
+            seen["mine"] += 1
             continue                                  # same owner: the market will not settle it
         rep = mem.shop_reputation(url)
         for o in s.get("offers") or []:
             sku = o.get("sku")
             info = cat.get(sku) or {}
+            seen["offers"] += 1
             if sku not in acceptable or (o.get("qty") or 0) <= 0 or not info.get("list_price"):
+                seen["not_acceptable" if sku not in acceptable else "no_qty" if (o.get("qty") or 0) <= 0
+                     else "no_list_price"] += 1
                 continue
             L = info["list_price"]
             p_break = (rep["break_rate"] + p_market) / 2
@@ -68,6 +76,7 @@ def candidates(order, shops, mem, my_urls):
                         "kind": info.get("kind"), "max_pay": max_pay, "expected": exp,
                         "score": round(surplus * reliability, 1), "reliability": round(reliability, 3)})
     out.sort(key=lambda c: -c["score"])
+    candidates.last_filter = seen
     return out
 
 
@@ -83,6 +92,15 @@ def read_ask(reply, c):
     return int(v) if isinstance(v, (int, float)) and 0.1 * c["list"] <= v <= 5 * c["list"] else None
 
 
+SHELF_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)\s*(?:of shelf life|left|남)", re.I)
+
+
+def stated_shelf_hours(text):
+    """Hours of shelf life the shop says the unit has left, if it says so."""
+    m = SHELF_RE.search(text or "")
+    return float(m.group(1)) if m else None
+
+
 def negotiate(c, order, deadline):
     """Returns (receipt or None, transcript)."""
     client = a2a.Client(c["shop"], timeout=60)
@@ -92,6 +110,12 @@ def negotiate(c, order, deadline):
     t = client.send(want)
     lines, ask, offer, n = [("me", want), ("shop", a2a.said(t))], None, None, 0
     try:
+        if c["kind"] == "food":
+            left, need = stated_shelf_hours(a2a.said(t)), accept_policy(order)["min_hours_left"]
+            if left is not None and left < need:            # the kit would refuse to pay: try the next shop now
+                client.cancel(t.get("id"))
+                return None, {"lines": lines, "ask": None, "offer": None, "state": "skipped",
+                              "task": t.get("id"), "skip": f"shop states {left:g} h left, order needs {need:g} h"}
         while a2a.state(t) == "TASK_STATE_INPUT_REQUIRED" and n < config.MAX_OFFERS and time.time() < deadline:
             got = read_ask(a2a.said(t), c)
             ask = got if got is not None else ask
@@ -145,7 +169,7 @@ def main():
     cands = candidates(order, shops, mem, mem.my_shop_urls())
     decision_log({"order": order.get("order"), "category": order.get("category"), "budget": a.budget,
                   "kind": order.get("kind"), "use_within_hours": order.get("use_within_hours"),
-                  "candidates": cands[:8]})
+                  "candidates": cands[:8], "filter": getattr(candidates, "last_filter", None)})
     say("candidates", n=len(cands), top=cands[:3])
     if not cands:
         mem.put("unmet_" + str(order.get("order")), {"category": order.get("category"), "ts": time.time()})

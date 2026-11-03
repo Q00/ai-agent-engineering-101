@@ -100,3 +100,10 @@ def test_review_stars():
     assert review_r3.rate(base)[0] == 5
     assert review_r3.rate({**base, "settled": {**base["settled"], "claim_honest": False}})[0] == 2
     assert review_r3.rate({**base, "settled": {**base["settled"], "value": 0}})[0] == 1
+
+
+def test_buyer_reads_stated_shelf_life():
+    import buyer_r3
+    assert buyer_r3.stated_shelf_hours("감귤: asking 8700. 19 hours of shelf life left. Send your offer") == 19.0
+    assert buyer_r3.stated_shelf_hours("만두, 30시간 남음") == 30.0
+    assert buyer_r3.stated_shelf_hours("asking 5000") is None
