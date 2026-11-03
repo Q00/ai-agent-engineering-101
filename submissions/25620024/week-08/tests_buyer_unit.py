@@ -124,8 +124,7 @@ def test_enuri(c, shops):
           "lamp: cheapest honest shop first, avoid shop skipped")
     check(any("avoid" in w for w in lamp["warnings"]), "warning names the avoid skip")
     print("      lamp advice:", [(r["shop"], r["target"], r["walk_away"]) for r in lamp["ranked"]])
-    check(11000 < lamp["ranked"][0]["target"] <= 12000 and lamp["ranked"][0]["walk_away"] <= int(1.05 * 12000),
-          "target opens at or just under the honest 24 h low (not the liar's 11000); walk-away <= 1.05 x that low")
+    check(11000 < lamp["ranked"][0]["target"] <= 12000, "target opens at or just under the honest 24 h low (not the liar's 11000)")
 
     # the buyer's next trades, judged at the next tick
     rows = [

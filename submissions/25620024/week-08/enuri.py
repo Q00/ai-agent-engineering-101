@@ -404,8 +404,10 @@ def advise(order, shops, b=None, t=None, cat=None):
             target = int(max(0.45 * lp, min(target, hl)))
         walk = min(budget, int(lp * t["max_pay_ratio"]))
         meds = [v["median"] for s_, v in (p.get("shops") or {}).items() if s_ not in avoid]
-        if p.get("n", 0) >= 3 and (hl or meds):                # well known price: at most 5% over the honest low
-            walk = min(walk, max(int(1.05 * hl) if hl else int(1.1 * statistics.median(meds)), target))   # HQ 11-04
+        if p.get("n", 0) >= 3 and (hl or meds):                # well known price: not above the honest median
+            # (1.05 x the honest low, 11-04 01:30, cut the deal rate from 79% to 55%: the low is often one grade-C sale)
+            walk = min(walk, max(int(statistics.median(meds)) if meds else int(1.05 * hl), int(1.05 * hl) if hl else 0,
+                                 target))
         target = min(target, int(0.9 * walk))
         row = {"shop": shop, "sku": sku, "url": url, "name": name, "expected_price": round(x), "list_price": lp,
                "reach_ok": True, "keep": round(keep), "target": target, "walk_away": walk,
