@@ -203,7 +203,7 @@ class Seller(AgentExecutor):
             deal["ask"] = price
             deal["history"].append(f"you asked {price}")
             log(f"[{tid}] counter {price}")
-            await up.requires_input(say(f"{offer} is too low. Counteroffer: {price}."))
+            await up.requires_input(say(f"{offer} is too low. Counteroffer price: {price}."))
 
     async def open_r3(self, task, up, say, text, tid):
         """Round 3 first message: pick a unit from stock, set the floor in code, let the harness pick the ask."""
@@ -230,7 +230,9 @@ class Seller(AgentExecutor):
             log(f"[guard] opening ask {ask} is below the floor {floor}; asking {floor}")
             ask = floor
         context = (f"List price {u['list_price']}; buyers value it at the list price at most. {history}")
-        self.open[task.id] = {"item": u["sku"], "name": u["name"], "unit": u, "category": u.get("category"),
+        leaf = (u.get("category") or "").split(">")[-1]
+        receipt_item = u["sku"] if u["sku"].lower() in text.lower() or leaf not in text else leaf
+        self.open[task.id] = {"item": receipt_item, "name": u["name"], "unit": u, "category": u.get("category"),
                               "ask": ask, "reserve": floor, "target": target, "context": context,
                               "history": [f"you asked {ask}"], "offers": []}
         shop_r3.record({"kind": "open", "task": task.id, "sku": u["sku"], "category": u.get("category"),
@@ -238,7 +240,7 @@ class Seller(AgentExecutor):
                         "floor": floor, "target": target, "ask": ask})
         log(f"[{tid}] {u['sku']} unit {u['unit']} ask {ask}")
         await up.requires_input(say(f"{u['name']} ({u['sku']}), {quality}. "
-                                    f"Send your offer as a number. Asking {ask}."))
+                                    f"Send your offer as a number. Asking price: {ask}."))
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task

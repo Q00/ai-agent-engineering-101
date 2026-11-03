@@ -91,9 +91,12 @@ def main():
 
     scored = []
     demand_list = random.sample(demand_list, len(demand_list))   # ties (no data yet) spread at random
+    proven = sum(orders.values()) >= p.get("min_settles_for_evidence", 20)
     for d in demand_list:
         k = d["item"]
         if ours_cat.get(k, 0) >= p["max_units_per_category"]:
+            continue
+        if proven and orders.get(k, 0) == 0:   # the ledger shows what sells: do not stock what nobody bought
             continue
         score = (orders.get(k, 0) + 1) / (1 + ours_cat.get(k, 0) + 0.2 * intel["stock"].get(k, 0))
         scored.append((score, d))

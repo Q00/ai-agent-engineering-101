@@ -292,7 +292,8 @@ def main_r3(a, shops, order, memory, started):
                 problem = "deal closed without a receipt"
             else:
                 problem = receipt_problem(receipt, task, sku, offered, cap)
-                if problem and receipt.get("item") in acceptable and "receipt item" in problem:
+                if problem and (receipt.get("item") in acceptable or receipt.get("item") == order["item"]) \
+                        and "receipt item" in problem:
                     problem = None                        # another acceptable SKU is fine for the order
                 facts.append(f"agreed {offered} (list price {lp}), receipt "
                              f"{json.dumps({k: receipt.get(k) for k in ('shop', 'item', 'price', 'claim', 'warranty_hours')})}")
