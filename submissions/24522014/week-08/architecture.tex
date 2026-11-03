@@ -71,8 +71,8 @@ Only matching paid outcomes become confirmed settlement observations; no rewriti
  -- node[lab,above]{filtered history on next order} (6.05,16.4) -- (6.05,14.5) -- (buyer.west);
 
 \node[wide,minimum height=1.8cm,fill=guard] (monitor) at (9,3.1) {\textbf{Market observation --- no automatic policy experimenter yet}\\
-\texttt{market\_intel.py}/\texttt{forum\_monitor.py}: R3 ledger, forum and Players; no model calls.\\
-Records missing metrics and skipped ranges; adaptive hooks use fresh signals.\\
+R3 ledger, forum and Players: \texttt{market\_intel.py}, \texttt{forum\_monitor.py}; no LLM.\\
+\texttt{purchase\_monitor.py}: buyer/SKU prices, grade/warranty groups and own-stock comparisons.\\
 Separate \texttt{monitor\_shop.py}/triage remains available. Experiment/rollback loop is proposed.};
 \node[align=left,text width=18.1cm,font=\footnotesize] at (9,0.7) {
 \textbf{Legend:} grey = provided; blue = agent implementation/adaptation; green = rules/guards.\\

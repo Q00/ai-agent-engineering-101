@@ -15,6 +15,7 @@ from uuid import uuid4
 import httpx
 from market_state import read, write
 from forum_monitor import observe as observe_forum
+from purchase_monitor import observe as observe_purchases, settlement_price
 
 ROOT = Path(__file__).resolve().parent
 BASE = "https://market.ourolabs.ai"
@@ -22,16 +23,6 @@ BASE = "https://market.ourolabs.ai"
 
 def finite(value):
     return type(value) in (int, float) and math.isfinite(value)
-
-
-def settlement_price(data):
-    # Live R3 ledger uses amount; earlier fixtures used price. Reject contradictory fields.
-    amount = data.get("amount", data.get("price"))
-    if not finite(amount) or amount <= 0:
-        return None
-    if "price" in data and data["price"] != amount:
-        return None
-    return amount
 
 
 def summarize(rows, catalog, now):
@@ -154,6 +145,7 @@ def collect(root=ROOT, client=None, now=None):
                   "skipped_seq_ranges": gaps,
                   "skus": summarize(rows, catalog, now), "competition": competition(board)}
         result["forum"] = observe_forum(md, now=now, ledger_rows=rows)
+        result["purchases"] = observe_purchases(md, now=now, snapshot=result)
         inventory = read(md / "inventory.json", {})
         if inventory.get("round") == 3:
             result["cash_risk"] = {"balance": inventory.get("balance"),
@@ -179,6 +171,7 @@ def fresh(md, now=None):
         # Recompute from immutable raw observations even if an older in-process collector wrote the cache.
         snapshot["skus"] = summarize(snapshot.get("rows", []), read(Path(md)/"catalog.json", {}), now)
         snapshot["forum"] = read(Path(md)/"forum-intel.json", {})
+        snapshot["purchases"] = read(Path(md)/"purchase-intel.json", {})
         return snapshot
     except (OSError, ValueError, TypeError):
         return {}

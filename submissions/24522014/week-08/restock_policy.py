@@ -11,6 +11,7 @@ from uuid import uuid4
 from market_intel import fresh
 from r3_policy import load_policy
 from forum_monitor import observe as observe_forum, REQUEST
+from purchase_monitor import observe as observe_purchases
 
 
 def demand_hints(posts, catalog, now):
@@ -133,6 +134,7 @@ def main():
     if inv.get("round") == 3:
         try:
             observe_forum(md)
+            observe_purchases(md)
         except (OSError, ValueError, TypeError):
             pass  # Forum observation must not stop inventory safety checks.
     memory_path = md / "r3-restock-memory.json"
