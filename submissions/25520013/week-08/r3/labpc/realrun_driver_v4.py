@@ -33,7 +33,7 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1]
-PROPOSER_DIR = Path("/workspace/course/r3_memo_proposer")
+PROPOSER_DIR = HERE  # memo_proposer.py lives at the r3 root
 for p in (str(HERE), str(HERE / "labpc"), "/workspace/course/r3", str(PROPOSER_DIR)):
     if p not in sys.path:
         sys.path.insert(0, p)
