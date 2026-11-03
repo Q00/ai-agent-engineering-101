@@ -21,6 +21,7 @@ RECEIPT_KEYS = ("shop", "item", "price", "task")      # what sig_seller covers
 KST = timezone(timedelta(hours=9))
 # Round 3 ends 2026-11-17 23:59 KST (week-08 notice); ROUND_END_TS moves it for tests.
 ROUND_END = float(os.environ.get("ROUND_END_TS") or datetime(2026, 11, 17, 23, 59, 59, tzinfo=KST).timestamp())
+ROUND = 3                # the ledger runs on across rounds, each entry marked with its round: only this one counts
 STRATEGY = {"phase": "explore"}
 # The market registers our shop and buyer as Kiro729 (one name for both, the kit's --name); the shop's
 # agent card and receipts say SHOP_NAME. Change the card when the focus phase picks a specialty: it must

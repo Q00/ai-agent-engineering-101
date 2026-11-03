@@ -9,7 +9,9 @@ seller's restock reads it to pick each category's representative product; the ma
 on the forum is written from it; the analysis models query the rows through the ledger tool.
 
 Only settle and broken entries are kept: a Round 3 order entry carries no item or budget.
-The first run starts from the newest 500 entries, not from the beginning of the ledger.
+The first run starts from the newest 500 entries, not from the beginning of the ledger. The ledger
+runs on across rounds and each entry carries its round, so entries of another round (Round 2's last
+deals, when we join) are skipped: they would show as this round's market.
 """
 import json
 import os
@@ -50,6 +52,8 @@ def collect(get=fetch, pages: int = PAGES) -> int:
         with open(f / "settles.jsonl", "a", encoding="utf-8") as s, open(f / "broken.jsonl", "a", encoding="utf-8") as b:
             for e in rows:
                 d, keys, out = e.get("data") or {}, None, None
+                if e.get("round", common.ROUND) != common.ROUND:
+                    continue
                 if e.get("kind") == "settle":
                     keys, out = SETTLE_KEYS, s
                 elif e.get("kind") == "broken":

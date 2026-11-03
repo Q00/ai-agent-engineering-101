@@ -312,11 +312,18 @@ def test_ledger():
                                                                 "grade": "A", "claim": "A", "claim_honest": True}},
               {"seq": 3, "ts": NOW - 2 * H, "kind": "settle", "data": {"buyer": "b1", "shop": "s2", "item": BEDDING, "amount": 25000,
                                                                     "grade": "C", "claim": "B", "claim_honest": False}},
-              {"seq": 4, "ts": NOW - H, "kind": "broken", "data": {"buyer": "b1", "item": BEDDING}}], []]
+              {"seq": 4, "ts": NOW - H, "round": 3, "kind": "broken", "data": {"buyer": "b1", "item": BEDDING}},
+              {"seq": 5, "ts": NOW - H, "round": 2, "kind": "settle", "data": {"buyer": "b2", "shop": "s1", "item": "chair",
+                                                                            "amount": 205}},
+              {"seq": 6, "ts": NOW - H, "round": 2, "kind": "broken", "data": {"buyer": "b2", "item": "chair"}}], []]
     calls = []
     get = lambda after: calls.append(after) or pages[len(calls) - 1]
     common.write_json(ledger.folder() / "state.json", {"seq": 0, "at": 0})
-    check("a collection keeps settle and broken entries only", ledger.collect(get) == 3 and calls[0] == 0, calls)
+    check("a collection keeps this round's settle and broken entries only (Round 2's left out)",
+          ledger.collect(get) == 3 and calls[0] == 0
+          and all(r.get("item") != "chair" for r in common.read_jsonl(ledger.folder() / "settles.jsonl")), calls)
+    check("the next collection reads on after the skipped entries too",
+          common.read_json(ledger.folder() / "state.json")["seq"] == 6)
     s = ledger.summarize(CATALOG, NOW)
     check("summary: sales by SKU with the share of list price", s["by_sku"][KIMCHI]["sold_24h"] == 1
           and s["by_sku"][KIMCHI]["price_ratio"] == 0.75, s["by_sku"].get(KIMCHI))
