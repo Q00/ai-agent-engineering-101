@@ -125,6 +125,13 @@ def accountability(team, c=None, shop=None, board=None):
                 out["hr_demand"] = HR_DEMAND
     except Exception:
         pass
+    try:
+        import leaders_meeting
+        lp = leaders_meeting.summary()
+        if lp:
+            out["leaders_plan"] = lp    # the unit heads' joint plan: do your part of it
+    except Exception:
+        pass
     h = handoff()
     if h:
         out["handoff"] = h          # read it before anything else: what the team before you learned and got wrong
