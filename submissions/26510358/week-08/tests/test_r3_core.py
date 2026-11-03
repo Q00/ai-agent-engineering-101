@@ -76,3 +76,27 @@ def test_pricing_rules():
     act, p = pricing.buyer_next_offer(10000, 9000, 9500, None, 0)
     assert act == "offer" and p == 5500
     assert pricing.buyer_next_offer(10000, 9000, 7000, 5500, 1) == ("accept", 7000)
+
+
+def test_restock_plan_evidence_then_coverage(tmp_path, monkeypatch):
+    import restock_r3
+    m = mem(tmp_path, monkeypatch)
+    now = time.time()
+    m._ingest([settle(i, "F1", 8500, now - i * 300) for i in range(1, 13)])
+    demand = [{"category": CAT["F1"]["category"], "item": "생수", "kind": "food", "skus": 1, "median_price": 10000},
+              {"category": CAT["G1"]["category"], "item": "의자", "kind": "goods", "skus": 1, "median_price": 100000}]
+    monkeypatch.setattr(restock_r3.config, "EXPLORE_MAX_LIST", 200000)
+    lines, why, state = restock_r3.plan({"balance": 5_000_000, "units": []}, demand, m, now=now)
+    assert lines[0]["sku"] == "F1" and lines[0]["qty"] >= 2          # demand first, sized by rate * horizon
+    assert {"sku": "G1", "qty": 1} in lines                          # coverage for the category without evidence
+    lines, _, _ = restock_r3.plan({"balance": 1_000_000, "units": []}, demand, m, now=now)
+    assert lines == []                                               # cash reserve kept
+
+
+def test_review_stars():
+    import review_r3
+    market._CATALOG = CAT
+    base = {"receipt": {"price": 7000}, "settled": {"sku": "F1", "grade": "A", "claim": "A", "claim_honest": True, "value": 10000}}
+    assert review_r3.rate(base)[0] == 5
+    assert review_r3.rate({**base, "settled": {**base["settled"], "claim_honest": False}})[0] == 2
+    assert review_r3.rate({**base, "settled": {**base["settled"], "value": 0}})[0] == 1
