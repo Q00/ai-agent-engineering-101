@@ -19,7 +19,11 @@ does not count as on the shelf; S5 sells it off). Exploration phase:
   order     only 10 lines a run, so what comes first matters while the first day's shelf fills
             (about 12 runs): refills of what we sold, then the products with the most evidence
             of demand (the market's sales of the category in the last day, our buyer's orders for
-            it, a wanted post), then the stage order. With no evidence yet it is the stage order.
+            it, a wanted post), then the stage order. With no evidence yet it is the stage order,
+            which brings one product of every group (the catalog's top level: 식품, 가구/침구,
+            의류, ...) in the first runs and then mixes the groups in proportion to their size, so
+            each run samples the whole catalog; the market's list is in alphabetical order, which
+            would bring furniture first and kitchenware hours later.
   limits    stock at cost up to 2,500,000 and the balance kept at 2,500,000 or more,
             planning as if every unit came in at the dearest cost (75% of list)
   wanted    a category the analysis found wanted (another agent's "wanted" post on the
@@ -103,7 +107,20 @@ def stages(catalog: dict, demand: list, summary: dict) -> tuple[list, list]:
         fit = [s for s in by_cat[d["category"]] if s["list_price"] <= MAX_PRICE and s["sku"] not in one]
         if fit:
             two.append(near(fit, SECOND * d["median_price"])["sku"])
-    return one, two
+    return spread(one, catalog), spread(two, catalog)
+
+
+def spread(skus: list, catalog: dict) -> list:
+    """The same SKUs, each top-level group spread over the list: the i-th of a group of n sits at i / n
+    of the way, so every group's first product comes before any group's second (the largest groups
+    first), and after that each group comes in proportion to its size (a group of 38 every third place)."""
+    group = lambda s: catalog[s]["category"].split(">")[0]
+    sizes, seen, keys = Counter(group(s) for s in skus), Counter(), {}
+    for s in skus:
+        g = group(s)
+        keys[s] = (seen[g] / sizes[g], -sizes[g])
+        seen[g] += 1
+    return sorted(skus, key=lambda s: keys[s])
 
 
 def wanted_skus(catalog: dict, demand: list, wanted: dict, listed: set) -> list:

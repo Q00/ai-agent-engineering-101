@@ -248,6 +248,8 @@ def test_restock(fake: Fake):
     check("stage 2: cheaper second products and the dear-only categories", PAD in two and BED in two and KIMCHI in two, two)
     one2, _ = restock.stages(CATALOG, DEMAND, {"by_sku": {GEOTJEORI: {"sold_24h": 5}}})
     check("the market's best seller in a category becomes its representative", GEOTJEORI in one2 and PAKIMCHI not in one2)
+    check("stage 1 mixes the groups, not the market's alphabetical order: each group's first product first "
+          "(the larger group ahead), then the 14 foods in turn", one[:4] == [WATER, BEDDING, PAKIMCHI, FILLERS[0]], one)
     out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, [], [], rules, NOW)
     buy = out["buy"]
     check("empty shelf, no evidence yet: 10 lines of one unit each, stage 1 in its own order",
@@ -260,7 +262,7 @@ def test_restock(fake: Fake):
     skus = [b["sku"] for b in out["buy"]]
     check("evidence first: the market's 5 sales (2 units), a wanted post, one order of our buyer; then the stage order "
           "(an order 2 days old counts for nothing)",
-          skus[:6] == [FILLERS[11], FILLERS[9], FILLERS[10], BEDDING, WATER, PAKIMCHI] and out["buy"][0]["qty"] == 2
+          skus[:6] == [FILLERS[11], FILLERS[9], FILLERS[10], WATER, BEDDING, PAKIMCHI] and out["buy"][0]["qty"] == 2
           and all(b["qty"] == 1 for b in out["buy"][1:]), out["buy"])
     shelf = [unit_row(f"u-{s}", s, CATALOG[s]["list_price"] // 2, 500 if CATALOG[s]["kind"] == "food" else None) for s in one]
     out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], [], rules, NOW)
