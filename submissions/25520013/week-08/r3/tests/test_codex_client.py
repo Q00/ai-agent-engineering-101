@@ -83,8 +83,8 @@ def test_fake_cli_not_logged_in_exit1_falls_back(sb, tmp_path):
 def test_fake_cli_timeout_falls_back(tmp_path):
     exe = fake_cli(tmp_path, "sleep 5")
     cl = C.CodexClient("editor", config_path=cfg(tmp_path, real_calls_enabled=True, cli=exe), base=tmp_path)
-    out, st = call_with_timeout(cl, "p", 10, 0.5)
-    assert out is None and st == "timeout"
+    out, st = call_with_timeout(cl, "p", 10, 0.5)          # outer join and inner subprocess share the 0.5 s deadline
+    assert out is None and st in ("timeout", "error:TimeoutExpired")
 
 
 def test_subprocess_timeout_inside_adapter(tmp_path):
