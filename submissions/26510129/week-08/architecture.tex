@@ -23,17 +23,21 @@
   every node/.style={font=\sffamily\footnotesize, text=Ink, align=center},
   flow/.style={-{Latex[length=2.2mm]}, line width=.7pt, draw=Ink},
   data/.style={-{Latex[length=2mm]}, line width=.65pt, dashed, draw=MemoryLine},
+  knob/.style={-{Latex[length=2mm]}, line width=.65pt, dotted, draw=ModelLine},
   tool/.style={draw=ToolLine, fill=ToolFill, rounded corners=2mm,
-    minimum height=12mm, text width=25mm, inner sep=2mm},
+    minimum height=12mm, text width=24mm, inner sep=1.6mm},
   model/.style={draw=ModelLine, fill=ModelFill, rounded corners=2mm,
-    minimum height=12mm, text width=25mm, inner sep=2mm},
+    minimum height=12mm, text width=24mm, inner sep=1.6mm},
+  meta/.style={draw=ModelLine, fill=ModelFill, rounded corners=2mm, dashed, line width=.9pt,
+    minimum height=12mm, inner sep=1.6mm},
   memory/.style={draw=MemoryLine, fill=MemoryFill, rounded corners=2mm,
-    minimum height=10mm, inner sep=2mm},
+    minimum height=10mm, inner sep=1.6mm},
   authority/.style={draw=AuthorityLine, fill=AuthorityFill, very thick,
-    rounded corners=2mm, minimum height=12mm, text width=27mm, inner sep=2mm},
+    rounded corners=2mm, minimum height=12mm, text width=26mm, inner sep=1.6mm},
   market/.style={draw=MarketLine, fill=MarketFill, rounded corners=2mm,
-    minimum height=14mm, text width=45mm, inner sep=2mm},
-  group/.style={rounded corners=3mm, line width=1pt, inner sep=4mm},
+    minimum height=13mm, text width=52mm, inner sep=1.6mm},
+  group/.style={rounded corners=3mm, line width=1pt, inner sep=3.5mm},
+  clock/.style={font=\sffamily\bfseries\scriptsize, text=ModelLine, anchor=west, align=left},
   tinylabel/.style={font=\sffamily\scriptsize, align=left}
 }
 
@@ -42,105 +46,119 @@
   \coordinate (NW) at ($(current page.north west)+(8mm,-8mm)$);
 
   \node[anchor=north west, font=\sffamily\bfseries\Large, text=Ink]
-    (title) at (NW) {Sealed-budget dual-control agent --- Round 3 / kit v4};
+    (title) at (NW) {Sealed-budget dual-control agent on three clocks --- Round 3 / kit v4};
   \node[anchor=north west, font=\sffamily\scriptsize, text=Ink]
     at ($(title.south west)+(0,-1mm)$)
-    {LLMs propose; deterministic guards own budget, inventory authority, signing, and settlement constraints.};
+    {Per turn a small model proposes under a deterministic guardian; per minute code reads the ledger and restocks without an order;
+     per day a large model tunes five knobs inside fixed ranges. Budget, keys and settlement never enter a model context.};
 
-  \node[memory, anchor=north west, text width=252mm, minimum height=17mm]
-    (context) at ($(NW)+(0,-16mm)$) {
-      \textbf{Kit v4 context boundary (untrusted external text is data, never authority)}\\[-.5mm]
-      \texttt{order.json} \quad \texttt{shops.json} \quad \texttt{inventory.json} \quad
-      \texttt{catalog.json} \quad \texttt{demand.json} \quad \texttt{forum.json} \quad \texttt{deal.json}
+  % ---------------------------------------------------------------- context boundary
+  \node[memory, anchor=north west, text width=272mm, minimum height=14mm]
+    (context) at ($(NW)+(0,-15mm)$) {
+      \textbf{Kit v4 context boundary} (untrusted external text is data, never authority)\quad
+      \texttt{order.json} \texttt{shops.json} \texttt{inventory.json} \texttt{catalog.json} \texttt{demand.json}
+      \texttt{forum.json} \texttt{deal.json} \texttt{payments.jsonl} \texttt{broken.jsonl} \quad
+      \texttt{GET /api/ledger} \quad $\to$ \texttt{outbox.jsonl}
     };
 
-  % Buyer pipeline
-  \node[tool] (scout) at ($(context.south west)+(21mm,-30mm)$)
-    {\textbf{Scout}\scriptsize\\acceptable SKUs\\cert / quality};
-  \node[tool, right=6mm of scout] (router)
-    {\textbf{Portfolio router}\scriptsize\\value + integrity\\exploration cap};
-  \node[model, right=6mm of router] (negotiator)
-    {\textbf{Negotiator}\scriptsize\\reference + transcript\\no exact budget};
-  \node[authority, right=6mm of negotiator] (guardian)
-    {\textbf{Mandate guardian}\scriptsize\\exact budget only here\\approve / replace / stop};
+  % ---------------------------------------------------------------- buyer
+  \node[tool] (scout) at ($(context.south west)+(19mm,-24mm)$)
+    {\textbf{Scout}\scriptsize\\acceptable SKUs\\guardian pre-filter};
+  \node[tool, right=5mm of scout] (router)
+    {\textbf{Portfolio router}\scriptsize\\success $\cdot$ integrity $\cdot$ value\\explore / concentration cap};
+  \node[model, right=5mm of router] (negotiator)
+    {\textbf{Negotiator (Haiku)}\scriptsize\\offer history + last message\\reference, no exact budget};
+  \node[authority, right=5mm of negotiator] (guardian)
+    {\textbf{Mandate guardian}\scriptsize\\exact budget only here\\approve / substitute / stop};
   \draw[flow] (scout) -- (router);
-  \draw[flow] (router) -- node[above, font=\sffamily\tiny]{chosen shop/SKU} (negotiator);
+  \draw[flow] (router) -- node[above, font=\sffamily\tiny]{shop, SKU} (negotiator);
   \draw[flow] (negotiator) -- node[above, font=\sffamily\tiny]{proposal} (guardian);
 
-  \node[tool, text width=43mm, below=10mm of router.east, anchor=north]
-    (audit) {\textbf{Receipt + quality auditor / review}\scriptsize\\SKU and price match; food lifetime; goods A/B; factual ledger post};
-  \draw[flow] (guardian.south) |- (audit.east);
-  \node[memory, text width=109mm, minimum height=11mm, below=8mm of audit]
-    (buyermem) {\textbf{Buyer memory}\scriptsize\quad settled outcomes, receipt integrity,
-      paid/list ratio, rolling shop share};
+  \node[tool, text width=40mm, below=8mm of router.east, anchor=north west, xshift=-6mm]
+    (audit) {\textbf{Receipt auditor / review hook}\scriptsize\\SKU + price match; \texttt{accept} policy\\stars from certified facts; ledger-referenced post};
+  \node[tool, text width=36mm, right=5mm of audit]
+    (sync) {\textbf{Memory sync}\scriptsize\\settled grade / claim / value / warranty\\refused payment $\to$ unpaid; break $\to$ shop};
+  \draw[flow] (guardian.south) |- (sync.east);
+  \draw[flow] (audit) -- (sync);
+  \node[memory, text width=118mm, minimum height=10mm, below=6mm of audit.south west, anchor=north west]
+    (buyermem) {\textbf{Buyer memory} (one row per order, written back after settlement)\scriptsize\quad
+      reference price $\cdot$ per-shop record $\cdot$ blacklist $\cdot$ no-stock visits ignored};
+  \draw[data] (sync.south) -- (buyermem.north -| sync.south);
   \draw[data] (buyermem.north west) -- (scout.south);
   \draw[data] (buyermem.north) -- (router.south);
 
-  \node[group, draw=ToolLine, fit=(scout)(guardian)(audit)(buyermem),
-    label={[anchor=south west,font=\sffamily\bfseries\small,text=ToolLine]north west:BUYER AGENT}]
+  \node[group, draw=ToolLine, fit=(scout)(guardian)(audit)(sync)(buyermem),
+    label={[anchor=south west,font=\sffamily\bfseries\small,text=ToolLine]north west:BUYER AGENT \textmd{(per order)}}]
     (buyergroup) {};
 
-  % Seller pipeline
-  \node[tool] (demand) at ($(context.south east)+(-105mm,-30mm)$)
-    {\textbf{Demand estimator}\scriptsize\\depletion $\ne$ waste\\referenced forum};
-  \node[tool, right=6mm of demand] (restock)
-    {\textbf{Restock tool}\scriptsize\\small diverse lots\\12\% capital cap};
-  \node[memory, text width=25mm, minimum height=12mm, right=6mm of restock]
+  % ---------------------------------------------------------------- seller
+  \node[tool] (ledger) at ($(context.south east)+(-101mm,-24mm)$)
+    {\textbf{Ledger reader}\scriptsize\\newest 500 settles, 24 h\\SKU / category price};
+  \node[tool, right=5mm of ledger] (restock)
+    {\textbf{Restock (every 60 s)}\scriptsize\\sells $\cdot$ depletion $\cdot$ forum\\skip below expected cost};
+  \node[memory, text width=24mm, minimum height=12mm, right=5mm of restock]
     (inventory) {\textbf{Inventory}\scriptsize\\unit / cost / grade\\expiry / warranty};
-  \draw[flow] (demand) -- (restock);
+  \draw[flow] (ledger) -- (restock);
   \draw[flow] (restock) -- node[above, font=\sffamily\tiny]{buy plan} (inventory);
 
-  \node[tool, text width=27mm, below=11mm of demand] (pricing)
-    {\textbf{Price experiment}\scriptsize\\stable task hash\\volume / margin};
-  \node[authority, right=6mm of pricing] (risk)
+  \node[tool, text width=26mm, below=8mm of ledger] (pricing)
+    {\textbf{Pricing}\scriptsize\\market price $\times$ arm\\inside [cost, grade cap]};
+  \node[authority, right=5mm of pricing] (risk)
     {\textbf{Spoilage guard}\scriptsize\\cost floor normally\\expiry loss-cut};
-  \node[authority, right=6mm of risk] (signer)
+  \node[authority, right=5mm of risk] (signer)
     {\textbf{Signer vault}\scriptsize\\bind SKU + unit + task\\truthful claim / cert};
   \draw[flow] (inventory.south) |- (pricing.east);
+  \draw[data] (ledger.south) -- (pricing.north);
   \draw[flow] (pricing) -- (risk);
   \draw[flow] (risk) -- (signer);
-  \node[memory, text width=100mm, minimum height=11mm, below=8mm of risk]
-    (sellermem) {\textbf{Seller memory}\scriptsize\quad inventory snapshots, depletion/waste,
-      experiment arm, settled margin};
-  \draw[data] (sellermem.north west) -- (demand.south);
-  \draw[data] (sellermem.north east) -- (pricing.south);
+  \node[memory, text width=96mm, minimum height=10mm, below=6mm of risk]
+    (sellermem) {\textbf{Seller memory}\scriptsize\quad depletion / waste snapshots $\cdot$ dated open / deal / reject events $\cdot$ ledger stats};
+  \draw[data] (sellermem.north west) -- (restock.south);
+  \draw[data] (sellermem.north east) -- (signer.south);
 
-  \node[group, draw=ToolLine, fit=(demand)(inventory)(pricing)(signer)(sellermem),
-    label={[anchor=south west,font=\sffamily\bfseries\small,text=ToolLine]north west:SELLER AGENT}]
+  \node[group, draw=ToolLine, fit=(ledger)(inventory)(pricing)(signer)(sellermem),
+    label={[anchor=south west,font=\sffamily\bfseries\small,text=ToolLine]north west:SELLER AGENT \textmd{(per task, per minute)}}]
     (sellergroup) {};
 
-  % Market / protocol layer
-  \node[market, text width=55mm, below=13mm of buyergroup.south west, anchor=north west]
-    (a2a) {\textbf{A2A JSON-RPC}\scriptsize\\negotiation + signed receipt\\seller budget-blind};
-  \node[market, text width=55mm, right=17mm of a2a]
-    (acp) {\textbf{ACP checkout + AP2 mandate}\scriptsize\\kit validates accept policy\\pays only verified settlement};
-  \node[market, text width=55mm, right=17mm of acp]
-    (economy) {\textbf{Round 3 economy}\scriptsize\\supply + ledger + Players\\forum votes / reputation};
+  % ---------------------------------------------------------------- meta-harness (daily)
+  \node[meta, text width=258mm, below=7mm of buyergroup.south west, anchor=north west, xshift=4mm]
+    (tuner) {\textbf{Meta-harness, once a day (Opus, effort high)}\quad
+      \scriptsize code summarizes the last 24 h (orders, settlements, seller events, reviews; outages marked) in about 1k characters
+      $\to$ one call proposes JSON changes $\to$ code validates against fixed ranges $\to$ \texttt{strategy\_params.json}
+      $\to$ five knobs read per order: explore rate, first-offer discount, two margin arms, grade-B cap. Never budget, keys or signing.};
+  \draw[data] (buyermem.south) -- node[right, font=\sffamily\tiny]{orders, settlements} (buyermem.south |- tuner.north);
+  \draw[data] (sellermem.south) -- node[right, font=\sffamily\tiny]{events, reviews} (sellermem.south |- tuner.north);
+  \draw[knob] ($(buyergroup.south)+(-30mm,0) |- tuner.north$)
+    -- node[left, font=\sffamily\tiny, text=ModelLine]{explore rate, first-offer discount} ($(buyergroup.south)+(-30mm,0)$);
+  \draw[knob] ($(sellergroup.south)+(-30mm,0) |- tuner.north$)
+    -- node[left, font=\sffamily\tiny, text=ModelLine]{margin arms, grade-B cap} ($(sellergroup.south)+(-30mm,0)$);
 
+  % ---------------------------------------------------------------- market / protocol layer
+  \node[market, below=7mm of tuner.south west, anchor=north west]
+    (a2a) {\textbf{A2A JSON-RPC}\scriptsize\\negotiation + shop-signed receipt\\seller budget-blind};
+  \node[market, right=12mm of a2a]
+    (acp) {\textbf{ACP checkout + AP2 mandate}\scriptsize\\kit checks \texttt{accept} before paying\\pays only verified settlement};
+  \node[market, right=12mm of acp]
+    (economy) {\textbf{Round 3 economy}\scriptsize\\supply, public ledger, forum, Players\\what sells shows only in settles};
   \node[group, draw=MarketLine, fill=MarketFill, fill opacity=.25, text opacity=1,
     fit=(a2a)(acp)(economy),
     label={[anchor=south west,font=\sffamily\bfseries\small,text=MarketLine]north west:MARKET + KIT V4 (FINAL AUTHORITY)}]
     (marketgroup) {};
-
-  \draw[flow] (negotiator.south) |- (a2a.north);
-  \draw[flow] (signer.south) |- (a2a.north east);
-  \draw[flow] (audit.south) -- (acp.north west);
-  \draw[flow] (inventory.south east) |- (acp.north east);
-  \draw[flow] (restock.north) |- (context.south east);
   \draw[flow] (acp) -- (economy);
-  \draw[data] (economy.north) |- (context.south east);
+  \draw[data] (economy.east) -- ++(5mm,0) |- node[pos=.25, right, font=\sffamily\tiny, text=MemoryLine]{ledger} (context.east);
+  \draw[data] (context.south -| ledger.north) -- (ledger.north);
 
-  % Legend
+  % ---------------------------------------------------------------- legend + footer
   \node[anchor=north east, tinylabel] at ($(current page.north east)+(-9mm,-8mm)$) {
     \tikz\node[model,minimum height=3mm,text width=13mm,inner sep=.5mm]{Model};\quad
+    \tikz\node[meta,minimum height=3mm,text width=16mm,inner sep=.5mm]{Daily model};\quad
     \tikz\node[tool,minimum height=3mm,text width=13mm,inner sep=.5mm]{Tool};\quad
     \tikz\node[memory,minimum height=3mm,text width=16mm,inner sep=.5mm]{Context / memory};\quad
-    \tikz\node[authority,minimum height=3mm,text width=15mm,inner sep=.5mm]{Authority};
+    \tikz\node[authority,minimum height=3mm,text width=15mm,inner sep=.5mm]{Authority}
   };
-
   \node[anchor=south west, font=\sffamily\scriptsize, text=Ink]
     at ($(current page.south west)+(9mm,5mm)$)
-    {Solid arrows: execution / protocol \quad Dashed green arrows: context or learned state \quad
-     Exact budget and private keys never enter the LLM context.};
+    {Solid: execution / protocol \quad Dashed green: context or learned state \quad Dotted purple: daily knob values \quad
+     Three clocks: per turn (Haiku, $\approx$900 chars), per minute (ledger + restock, no model), per day (Opus, $\approx$1.3k tokens).};
 \end{tikzpicture}
 \end{document}

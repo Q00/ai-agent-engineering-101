@@ -84,8 +84,18 @@ Receipt/Quality Auditor`다.
 - PortfolioRouter는 체결률, 영수증 무결성, 가격 가치, 탐색 보너스와 최근
   50회 집중도를 이용해 후보를 정한다. 정확한 예산 대신 guardian이 먼저
   걸러 준 `affordable_offers`만 받는다.
-- Negotiator가 보는 것은 기준 가격과 협상 transcript뿐이다. exact budget은
-  보이지 않는다.
+- Negotiator가 보는 것은 기준가, 제안 이력(숫자 쌍), 가게의 마지막 메시지
+  (240자까지)뿐이다. exact budget은 보이지 않는다.
+- 주문 시점에 재고가 없는 가게(첫 제안 전에 거절)는 `no_stock`으로 기록하고
+  가게 점수에서 제외하며, 같은 주문 안에서 최대 세 가게까지 옮겨 간다. Round 3
+  개장 1분차(11-03 20:55)에 선택한 가게의 재고가 shops.json보다 먼저 사라져
+  주문이 그대로 끝난 것을 보고 추가했다.
+- 정산 후 `review_r3.py`가 인증된 등급, claim 진위, value, 보증, ledger 번호를
+  해당 주문의 메모리 줄에 써 넣는다(`memory_sync.py`). kit이 결제를 거부한 주문은
+  `payments.jsonl`에서 읽어 `unpaid`로 바꾸고, 고장 난 물건은 `broken.jsonl`을
+  최근 정산 구매와 이름으로 맞춰 보증 환불 여부와 함께 기록한다. 가게 integrity는
+  영수증 일치뿐 아니라 거짓 claim과 무보증 고장을 센다. 메모리는 영수증이
+  아니라 시장이 인증한 사실로 갱신된다.
 - MandateGuardian만 exact budget을 가진다. 처음 두 차례에는 기준가 기반
   제안만 승인·대체하고, 세 번째 이후에만 마지막 수단으로 ceiling을 쓸 수
   있다. 초과 가격은 항상 거부한다.
@@ -128,10 +138,20 @@ unit, 가격, claim, warranty와 cert를 하나의 서명 대상에 묶는다.
 ## 3. 컨텍스트와 관측 가능성
 
 kit가 갱신하는 `.market/order.json`, `shops.json`, `inventory.json`,
-`catalog.json`, `demand.json`, `forum.json`, `deal.json`을 각 hook이 필요한
-범위에서만 읽는다. 장기 상태는 buyer 거래 메모리, seller 거래 메모리,
-restock snapshot으로 분리한다. 개인키와 `.market` runtime 상태는 Git에
-커밋하지 않는다.
+`catalog.json`, `demand.json`, `forum.json`, `deal.json`, `payments.jsonl`,
+`broken.jsonl`을 각 hook이 필요한 범위에서만 읽는다. 모델 호출은 매번 새
+세션이라 모델 자체는 아무것도 기억하지 않는다. 기억은 전부 파일이고 코드가
+읽는다.
+
+| 파일 | 쓰는 곳 | 읽는 곳 | 내용 |
+|---|---|---|---|
+| `buyer_memory.json` | market_buyer, review hook, memory_sync | router, guardian 기준가, 흥정 기록, tuner | 주문당 1줄; 정산 후 인증 사실로 갱신 |
+| `restock_memory.json` | restock | restock | 카테고리/SKU 소진, 폐기, unit snapshot |
+| `seller_events.jsonl` | seller | tuner | 날짜 붙은 open/deal/reject/counter |
+| `ledger_stats.json` | restock (60초) | restock, seller | 시장 24시간 정산 요약 (캐시, 기억 아님) |
+| `strategy_params.json`, `tune_history.jsonl` | tuner | buyer, seller | 조절값 5개와 변경 이력 |
+
+개인키와 `.market` runtime 상태는 Git에 커밋하지 않는다.
 
 각 라우팅·예산·가격 결정은 `[strategy]` JSON 한 줄로 기록한다. 공개 특징,
 실험 arm, guard 결정과 결과는 남기되 개인키는 남기지 않는다. 정확한 budget은
@@ -145,9 +165,16 @@ kit가 소유한 원 주문 로그에는 나타날 수 있지만 strategy event�
 사용한다. 이 제출물은 다음을 추가했다.
 
 - LLM 제안과 예산 승인·서명·결제를 분리한 dual-control 경계
+- 세 개의 시계: 턴마다 Haiku가 제안(약 900자), 분마다 코드가 ledger를 읽고
+  주문 없이 restock(모델 없음), 하루 한 번 Opus meta-harness가 범위 안에서
+  조절값 5개를 조정(약 1.3k 토큰)
 - acceptable SKU와 catalog value를 이용하는 code-first 라우터
+- 공개 ledger의 정산을 수요·가격 신호로 쓰는 ledger reader (restock과 가격이
+  공유)
 - unit 원가/등급/만료를 반영한 두 가격 arm과 spoilage guard
 - inventory snapshot의 depletion/waste를 구분하는 restock memory
+- 정산 사실이 메모리로 되돌아오는 write-back(memory_sync): 거짓 claim, 결제
+  거부, 무보증 고장이 가게 점수에 반영
 - 인증된 정산 사실에만 반응하는 review/forum 도구
 
 ## 5. 현재 재현 결과
@@ -156,7 +183,7 @@ Round 3 시장 접속 전 로컬 검증 결과다.
 
 | 검증 | 결과 | 근거 |
 |---|---:|---|
-| Python 정책 단위 테스트 | 46/46 통과 | 9개 `test_*.py` |
+| Python 정책 단위 테스트 | 60/60 통과 | 11개 `test_*.py` |
 | 공식 `market_test_week07.py` | 25/25 통과 | `test-report.json`, `logs/market-test.log` |
 | v4 hook 계약 | 통과 | `agent.json`의 `{order}`, `{state}`, `{deal}` |
 | nightly tuner dry run | 통과 (2026-11-03) | `tune.py --dry-run --hours 96`: Opus 5.6s, 입력 1,020자, 범위 안 제안 1건, 파일은 쓰지 않음 (`logs/tune-dryrun-2026-11-03.txt`) |
