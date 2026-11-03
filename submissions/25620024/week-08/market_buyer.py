@@ -594,6 +594,34 @@ def quote(c):
         return {"c": c, "error": f"{type(e).__name__}: {e}"}
 
 
+PHANTOMS = Path(__file__).parent / "private" / "enuri" / "phantoms.json"
+NO_STOCK = re.compile(r"none of that in stock|no matching (?:unreserved )?stock|not in stock|out of stock|품절|재고(?:가)? 없", re.I)
+
+
+def remember_phantoms(quotes):
+    """A shop that answers 'none in stock' for a SKU the market listed: Enuri skips that (shop, sku) for 30 min."""
+    try:
+        ph = json.loads(PHANTOMS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        ph = {}
+    now, hit = time.time(), False
+    for q in quotes:
+        if q.get("ask") or not q.get("task"):
+            continue
+        msg = (q["task"].get("status") or {}).get("message") or {}
+        text = " ".join(p.get("text") or "" for p in msg.get("parts") or [])
+        if NO_STOCK.search(text):
+            ph[f"{q['c'][1]['name']}|{q['c'][2]['sku']}"] = now
+            hit = True
+    if hit:
+        ph = {k: v for k, v in ph.items() if now - v < 1800}
+        try:
+            PHANTOMS.parent.mkdir(parents=True, exist_ok=True)
+            PHANTOMS.write_text(json.dumps(ph), encoding="utf-8")
+        except OSError:
+            pass
+
+
 def accept_policy(order):
     """What the checkout must show before the kit pays. Food that will not last use_within_hours is worth 0."""
     pol = {"cert": True}
@@ -637,7 +665,16 @@ def round3(a, order, shops, mem, started):
         quotes = list(ex.map(quote, cands[:rfq]))
     for q in quotes:
         log(f"[quote] {q['c'][1]['name']}: " + (q.get("error") or f"ask {q['ask']}"))
+    remember_phantoms(quotes)
     good = [q for q in quotes if q.get("ask")]
+    if not good and len(cands) > rfq:            # 11-04: 62% of quotes met "none in stock" (stock the market listed
+        with ThreadPoolExecutor(rfq) as ex:      # but the shop no longer had); ask the next shops before giving up
+            more = list(ex.map(quote, cands[rfq:2 * rfq]))
+        for q in more:
+            log(f"[quote] 2nd round {q['c'][1]['name']}: " + (q.get("error") or f"ask {q['ask']}"))
+        remember_phantoms(more)
+        quotes += more
+        good = [q for q in quotes if q.get("ask")]
     if not good:
         q = quotes[0]
         shop = q["c"][1]

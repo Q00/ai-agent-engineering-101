@@ -402,7 +402,11 @@ def advise(order, shops, b=None, t=None, cat=None):
         for h in (idx.get(sku) or {}).get("shops") or []:
             held.setdefault((h["shop"], sku), (h.get("url"), h.get("name"), idx[sku].get("list")))
     rows, warn, skipped = {}, [], {"avoid": 0, "reach": 0, "no list": 0}
+    phantom = load(HERE / "private" / "enuri" / "phantoms.json", {})
     for (shop, sku), (url, name, lp) in held.items():
+        if time.time() - phantom.get(f"{shop}|{sku}", 0) < 1800:   # said 'none in stock' in the last 30 min
+            skipped["avoid"] += 1
+            continue
         lp = lp or ((cat or {}).get(sku) or {}).get("list_price")
         if shop in avoid:
             skipped["avoid"] += 1
