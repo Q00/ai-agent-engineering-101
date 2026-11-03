@@ -1,22 +1,29 @@
 """Compare SKU/shop pairs using confirmed prices, catalogue value and existing risk guards."""
 
 import math
-
-from buyer_memory import choose_shop, EXPLORATION_INTERVAL
+import time
+from datetime import datetime
 
 
 def positive(value):
     return type(value) in (int, float) and math.isfinite(value) and value > 0
 
 
-def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=None):
-    # Reuse risk evidence without comparing unrelated SKU prices.
-    masked = [dict(row, item="__past_sku__") for row in memory]
-    _, _, risks = choose_shop(shops, masked, "__order__", budget)
-    by_name = {row["name"]: row for row in risks}
+def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=None, public_rows=None, now=None):
+    now = time.time() if now is None else now
     candidates = []
     for shop in shops:
-        risk = by_name[shop["name"]]
+        local = [r for r in memory if r.get("shop_name") == shop["name"]]
+        errors = 0
+        for row in local[-5:]:
+            try:
+                age = now-datetime.fromisoformat(row["timestamp"]).timestamp()
+            except (KeyError, ValueError, TypeError):
+                continue
+            if row.get("outcome") == "transport_error" and 0 <= age <= 3600:
+                errors += 1
+        risk = {"blocked_price_mismatch": any(r.get("outcome") == "receipt_mismatch" for r in local),
+                "recent_transport_errors": errors}
         if risk["blocked_price_mismatch"]:
             continue
         for offer in shop.get("offers", []):
@@ -44,6 +51,13 @@ def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=
                        and r.get("outcome") == "purchased" and positive(r.get("price"))]
             # Past prices are references, never current quotes. Unknown pairs use the full cap.
             reference = history[-1]["price"] if history else None
+            reference_source = "own_r3_settlement" if reference is not None else "unknown"
+            public = [r for r in (public_rows or []) if r.get("round") == 3 and r.get("kind") == "settle"
+                      and 0 <= now-r.get("ts", 0) <= 3600 and (r.get("data") or {}).get("shop") == shop["url"]
+                      and r["data"].get("item") == sku and positive(r["data"].get("price"))]
+            if reference is None and public:
+                reference = max(public, key=lambda r: r["ts"])["data"]["price"]
+                reference_source = "public_r3_settlement"
             estimated_price = reference if reference is not None else cap
             feasible = estimated_price <= cap
             surplus = value - estimated_price
@@ -52,24 +66,18 @@ def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=
                         "reference_within_cap": feasible, "estimated_surplus": surplus,
                         "warranty_required": policy["preferred_warranty_hours"] if protected else 0,
                         "attributed_faults": faults,
+                        "reference_source": reference_source,
                         "estimate_only": True, "risk": risk}
             rank = (risk["recent_transport_errors"] >= 2,
-                    risk["repeated_public_price_complaints"], faults > 0, not feasible,
+                    faults > 0, not feasible,
                     -surplus, reference is None, shop["name"], sku)
             candidates.append((rank, shop, sku, cap, evidence))
     evidence = [row[4] for row in candidates]
     if not candidates:
         return None, None, budget, "No eligible SKU with a valid catalogue value.", evidence
-    safe = [row for row in candidates if not any(row[0][:4])]
-    rotation = len(memory) % EXPLORATION_INTERVAL == EXPLORATION_INTERVAL - 1
-    if rotation and safe:
-        visits = {row["shop_name"]: i for i, row in enumerate(memory)}
-        chosen = min(safe, key=lambda row: (visits.get(row[1]["name"], -1), row[0]))
-    else:
-        chosen = min(candidates, key=lambda row: row[0])
-        rotation = False
+    chosen = min(candidates, key=lambda row: row[0])
     _, shop, sku, cap, detail = chosen
-    reason = (f"{shop['name']}/{sku}: {'rotation' if rotation else 'risk then surplus reference'}; "
+    reason = (f"{shop['name']}/{sku}: R3 risk then surplus reference; "
               f"value={detail['catalogue_value']}, cap={cap}, "
               f"past settled price={detail['past_settled_price']}; no current quote or breakage forecast.")
     return shop, sku, cap, reason, evidence

@@ -123,8 +123,8 @@ def main():
     md = args.state
     read = lambda name: json.loads((md / name).read_text(encoding="utf-8"))
     inv, catalog, demand = read("inventory.json"), read("catalog.json"), read("demand.json")
-    memory_path = md / "restock-memory.json"
-    memory = read("restock-memory.json") if memory_path.exists() else {"cursor": 0, "last_sale_seq": 0, "sales": {}}
+    memory_path = md / "r3-restock-memory.json"
+    memory = read("r3-restock-memory.json") if memory_path.exists() else {"round": 3, "cursor": 0, "last_sale_seq": 0, "sales": {}}
     # The local kit log contains our own settled sales. Read a bounded tail, never infer sales from disappearing stock.
     log = md.parent / "logs" / "market-kit.log"
     observed = {}
@@ -133,9 +133,22 @@ def main():
             stream.seek(0, 2)
             stream.seek(max(0, stream.tell() - 1048576))
             tail = stream.read().decode("utf-8", errors="replace")
-        for sku, seq in re.findall(r"\[acp\] settled (\S+) at \d+, ledger #(\d+)", tail):
-            if int(seq) > memory["last_sale_seq"] and sku in catalog:
+        names = {}
+        for sku, product in catalog.items():
+            names.setdefault(product.get("name"), []).append(sku)
+        for item, seq in re.findall(r"\[acp\] settled (.+) at \d+, ledger #(\d+)", tail):
+            sku = item if item in catalog else (names[item][0] if len(names.get(item, [])) == 1 else None)
+            if int(seq) > memory["last_sale_seq"] and sku:
                 observed[int(seq)] = sku
+    snapshot = fresh(md)
+    own = snapshot.get("competition", {}).get("own", {}).get("shops") or {}
+    own_url = (own.get("card") or {}).get("url")
+    for row in snapshot.get("rows", []):
+        data = row.get("data") or {}
+        if (row.get("round") == 3 and row.get("kind") == "settle" and own_url
+                and data.get("shop") == own_url and data.get("item") in catalog
+                and row["seq"] > memory["last_sale_seq"]):
+            observed[row["seq"]] = data["item"]
     for sku in observed.values():
         memory["sales"][sku] = memory["sales"].get(sku, 0) + 1
     if observed:
@@ -146,7 +159,6 @@ def main():
         hints = demand_hints(posts, catalog, time.time()) if isinstance(posts, list) else {}
     except (OSError, ValueError, TypeError, AttributeError):
         hints = {}
-    snapshot = fresh(md)
     # Signed offers with a warranty reserve their entire price until the coverage ends.
     liabilities = 0
     for path in (md / "signed-offers").glob("*.json"):

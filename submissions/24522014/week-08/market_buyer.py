@@ -12,7 +12,7 @@ from uuid import uuid4
 import httpx
 
 from buyer import BuyerError, BuyerTransport, run_autonomous
-from buyer_memory import choose_shop, load_memory, remember, RECENT_COUNT
+from buyer_memory import load_memory, remember, RECENT_COUNT
 from shop_catalog import load_shops
 from r3_policy import buyer_accept, load_policy
 from settlement_memory import payment_outcomes, reconcile
@@ -102,13 +102,15 @@ def error_kind(error):
     return "agent_error"
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None):
-    client = MarketTransport(shop["url"], item, budget, transport=transport)
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None):
+    client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.requirements = requirements
+    client.strategy_prompt = ROOT / "prompts/buyer-r3.txt"
+    client.r3_context = decision_context
     error = None
     try:
         with client:
-            summary = run_autonomous(client, mode)
+            summary = run_autonomous(client, mode, max_turns=6)
         outcome = "purchased" if summary["outcome"] == "purchased" else "no_deal"
     except (BuyerError, OSError, ValueError) as exc:
         outcome, error = error_kind(exc), str(exc)
@@ -150,10 +152,17 @@ def main():
     if args.budget <= 0:
         parser.error("Budget must be a positive integer")
     try:
-        shops, memory = load_shops(args.shops), load_memory(args.memory)
+        shops = load_shops(args.shops)
         order = json.loads(args.order.read_text(encoding="utf-8")) if args.order else {}
         acceptable = order.get("acceptable") or []
         r3 = order.get("round", 0) >= 3 or bool(acceptable)
+        if not r3:
+            print(json.dumps({"shop": "", "receipt": None, "stars": 3,
+                              "review": "R3-only strategy: waiting for Round 3; R2 trading disabled."}), flush=True)
+            return
+        if args.memory == ROOT / ".market/buyer-memory.jsonl":
+            args.memory = ROOT / ".market/r3-buyer-memory.jsonl"
+        memory = [r for r in load_memory(args.memory) if r.get("round") == 3]
         accept_conditions = None
         if r3:
             if order.get("item") != args.item or order.get("budget") != args.budget:
@@ -169,23 +178,20 @@ def main():
             portfolio = reconcile_portfolio(args.order.parent, snapshot.get("rows", []))
             shop, selected_item, trade_budget, reason, evidence = select_r3(
                 shops, memory, catalog, args.budget, policy=load_policy()["buying"],
-                portfolio=portfolio, kind=order.get("kind"))
+                portfolio=portfolio, kind=order.get("kind"), public_rows=snapshot.get("rows", []))
             selected_evidence = next((e for e in evidence if shop and e["shop"] == shop["name"] and e["sku"] == selected_item), {})
             if selected_evidence.get("warranty_required"):
                 accept_conditions["warranty_hours"] = selected_evidence["warranty_required"]
-        else:
-            shop, reason, evidence = choose_shop(shops, memory, args.item, args.budget,
-                                               recent_count=args.memory_window)
-            selected_item, trade_budget = args.item, args.budget
     except (OSError, ValueError) as error:
         parser.exit(1, f"Cannot load selection inputs: {error}\n")
     print(f"[choose] {reason}", flush=True)
     if shop:
-        trade_options = {"mode": args.mode}
+        trade_options = {"mode": args.mode, "decision_context": selected_evidence}
         if r3 and order.get("kind") == "goods":
             trade_options["requirements"] = accept_conditions
         result, record = trade(shop, selected_item, trade_budget, **trade_options)
         if r3:
+            record["round"] = 3
             record["order"] = order.get("order")
             record["order_budget"] = args.budget
             record["category"] = order.get("category", args.item)

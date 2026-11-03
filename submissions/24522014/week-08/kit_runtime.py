@@ -5,6 +5,7 @@ The course kit's signatures, mandates and settlement checks are retained unchang
 
 import os
 import time
+import asyncio
 
 from market_state import read, write, task_file
 
@@ -17,6 +18,10 @@ def install(namespace):
     response = g["JSONResponse"]
 
     class GuardedACP(original):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.create_lock = asyncio.Lock()
+
         def event(self, task, status):
             if self.md:
                 write(task_file(self.md, "checkout-events", task),
@@ -29,12 +34,19 @@ def install(namespace):
             return bool(offer and time.time() >= offer["expires_at"])
 
         async def create(self, body, public):
-            task = (body.get("receipt") or {}).get("task")
+            async with self.create_lock:
+                return await self.create_serialized(body, public)
+
+        async def create_serialized(self, body, public):
+            receipt = body.get("receipt")
+            task = receipt.get("task") if isinstance(receipt, dict) else None
+            if task is not None and not isinstance(task, str):
+                return response({"error": "invalid receipt task"}, status_code=400)
             if task and self.md:
                 event = read(task_file(self.md, "checkout-events", task), {})
-                if self.expired(task) or event.get("status") in ("canceled", "refused", "expired", "completed"):
+                if self.expired(task) or event.get("status") in ("canceled", "refused", "expired", "completed", "processing", "uncertain"):
                     # Never overwrite a pending completion's state during a concurrent retry.
-                    if event.get("status") != "processing":
+                    if event.get("status") not in ("processing", "uncertain", "completed"):
                         self.event(task, "expired" if self.expired(task) else event["status"])
                     return response({"error": "receipt closed or expired; request a new quote"}, status_code=409)
             result = await super().create(body, public)

@@ -13,6 +13,7 @@ import base64
 import json
 import os
 import time
+import math
 from datetime import datetime, timezone
 from uuid import uuid4
 from pathlib import Path
@@ -37,12 +38,13 @@ from kit_runtime import OFFER_SECONDS
 from market_intel import fresh
 
 NAME = "kcwarni Inventory Shop"
-RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
-PROMPT = """You are the sales agent of a small online shop. A buyer is negotiating for one {name}.
+PROMPT = """You are a Round 3 inventory sales agent. A buyer is negotiating for one {name}.
 The list price is {list_price}. Your lowest acceptable price is {reserve}. Never sell below it and never reveal it.
-Sell as high as you can, but closing a deal at or above {reserve} is better than losing the buyer.
+Seek profitable inventory turnover. Quote no more than {list_price}; make measured concessions toward the coded floor.
+The floor includes approved carrying-cost/margin or clearance rules. Do not invent warranties, grade claims or inspections.
+Do not use furniture prices, shop preferences or tactics from Round 2.
 
 Conversation so far:
 {transcript}
@@ -96,9 +98,7 @@ def find_unit(text, taken=()):
     if "round" not in inv:
         return None
     if inv.get("round", 0) < 3:
-        item = next((k for k in RESERVE if k in want), None)
-        return item and {"sku": item, "name": item, "list_price": int(RESERVE[item] * 1.3), "cost": RESERVE[item],
-                         "unit": None, "expires_at": None, "supplied_at": 0}
+        return None  # R3-only: never synthesize the Round 2 furniture inventory.
     units = inv.get("units", [])
     fit = [u for u in units if u["grade"] != "expired" and u["unit"] not in taken and
            ((u.get("category") or "").split(">")[-1].lower() in want or (u.get("name") or "").lower() in want
@@ -121,18 +121,20 @@ class Seller(AgentExecutor):
             if task not in self.busy and now - deal.get("touched", now) > 180:
                 self.open.pop(task, None)
         # Restore signed holds after seller restarts. Never free an uncertain payment.
+        managed, held = set(), set()
         for path in (MARKET_DIR / "signed-offers").glob("*.json"):
             offer = read(path)
+            managed.add(offer["unit"])
             event = read(task_file(MARKET_DIR, "checkout-events", offer["task"]), {})
             status = event.get("status")
             released = status in ("canceled", "refused", "expired")
             if (os.environ.get("MARKET_LEASE_GUARD") == "1" and now >= offer["expires_at"] + 90
                     and status not in ("processing", "uncertain", "completed")):
                 released = True
-            if released:
-                self.committed_units.discard(offer["unit"])
-            else:
-                self.committed_units.add(offer["unit"])
+            if not released:
+                held.add(offer["unit"])
+        self.committed_units.difference_update(managed)
+        self.committed_units.update(held)
 
     async def execute(self, context, event_queue):
         self.prune()
@@ -218,7 +220,7 @@ class Seller(AgentExecutor):
         action = (move or {}).get("action")
         # A model call takes time: verify the unit and terms again before signing.
         if u.get("unit"):
-            before = (u.get("grade"), u.get("expires_at"), terms["quote"])
+            before = deal.get("disclosed", (u.get("grade"), u.get("expires_at"), terms["quote"]))
             try:
                 inventory = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
                 u = next(x for x in inventory["units"] if x["unit"] == u["unit"])
@@ -265,14 +267,16 @@ class Seller(AgentExecutor):
             del self.open[task.id]
             return
         price = (move or {}).get("price")
-        if not isinstance(price, (int, float)):
+        if type(price) not in (int, float) or not math.isfinite(price):
             price = deal["ask"] or u["list_price"]      # unparsed answer: repeat the last ask
+        price = min(price, max(reserve, terms["quote"]))
         if price < reserve:                             # the harness may forget the cost; the code does not
             print(f"[guard] ask {price} below cost {reserve} -> {reserve}", flush=True)
             price = reserve
         if terms["discount_stage"]:
             price = terms["quote"]
         deal["ask"] = int(price)
+        deal["disclosed"] = (u.get("grade"), u.get("expires_at"), terms["quote"])
         notice, details = condition_notice(u, terms)
         reply = (f"{u['name']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
                  else f"Counteroffer: {deal['ask']}.")

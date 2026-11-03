@@ -204,7 +204,8 @@ def buyer_decision(client, provider, history, turn, max_turns):
     context = {"item": client.item, "budget": client.budget, "current_ask": asking,
                "seller_message": text, "history": history,
                "remaining_turns": max_turns - turn + 1, "remaining_seconds": round(client.remaining(), 2)}
-    instructions = (ROOT / "prompts/buyer.txt").read_text(encoding="utf-8")
+    context["r3_policy_evidence"] = getattr(client, "r3_context", None)
+    instructions = getattr(client, "strategy_prompt", ROOT / "prompts/buyer.txt").read_text(encoding="utf-8")
     prompt = instructions + "\nInput data:\n" + json.dumps(context, ensure_ascii=False)
     record = {"task_id": client.task_id, "provider": provider, "model": MODELS[provider],
               "turn": turn, "context": context, "status": "failed", "attempts": []}
