@@ -112,6 +112,19 @@ class FailureReuseTests(unittest.TestCase):
 
 
 class DialogueCompressionTests(unittest.TestCase):
+    def test_short_quote_prompt_fits_small_context_budget(self):
+        terms = buying_terms(100000, product={"list_price": 100000}, order={"round": 3, "kind": "goods"})
+        history = [{"role": "buyer", "text": "I want G00001"}]
+        for ask, bid in ((90000, 55000), (80000, 57000), (70000, 58000), (60000, 58000)):
+            message = f"Grade A. Warranty 6 hours. Asking price: {ask}"
+            history.append({"role": "seller", "text": message})
+            context = {"item": "G00001", "budget": 100000, "purchase_policy": terms, "current_ask": ask,
+                       **compact_dialogue(history, message, last_asking_price)}
+            prompt = (ROOT / "prompts/buyer.txt").read_text() + "\n" + json.dumps(context)
+            # Application input characters, not the CLI's full input or tokens.
+            self.assertLess(len(prompt), 2100)
+            history.append({"role": "buyer", "text": str(bid)})
+
     def test_price_trail_keeps_exact_bids_and_asks_without_duplicate_current_message(self):
         history = [{"role": "buyer", "text": "I want G00001"}]
         for ask, bid in ((90000, 55000), (80000, 57000), (70000, 58000)):
