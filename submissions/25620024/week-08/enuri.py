@@ -383,8 +383,10 @@ def advise(order, shops, b=None, t=None, cat=None):
         if shop in avoid:
             skipped["avoid"] += 1
             continue
-        if kind == "food" and order.get("use_within_hours") and (b.get("shelf_refused") or {}).get(shop, 0) >= 2:
-            skipped["avoid"] += 1                               # its food failed our shelf-life check twice in 24 h
+        need = (order.get("use_within_hours") or 0) + t.get("food_margin_h", 1)
+        shelf = ((cat or {}).get(sku) or {}).get("shelf_hours") or 0
+        if kind == "food" and shelf and need > 0.45 * shelf and (b.get("shelf_refused") or {}).get(shop, 0) >= 3:
+            skipped["avoid"] += 1           # a long-life need, and this shop's food failed our check 3+ times in 24 h
             continue
         if not lp or not url:
             skipped["no list"] += 1
@@ -434,10 +436,13 @@ def shelf_refusals(md, now, hours=24):
     except (OSError, ValueError):
         return {}
     bad = {(p.get("item"), p.get("price")) for p in lines if not p.get("paid") and "shelf" in (p.get("reason") or "")}
-    out = {}
+    last = {}                                   # each refusal goes to the latest deal with that SKU and price, once
     for m in _memory_since(now - hours * 3600):
         if (m.get("item"), m.get("agreed")) in bad and m.get("shop"):
-            out[m["shop"]] = out.get(m["shop"], 0) + 1
+            last[(m["item"], m["agreed"])] = m["shop"]
+    out = {}
+    for shop in last.values():
+        out[shop] = out.get(shop, 0) + 1
     return out
 
 
