@@ -77,13 +77,19 @@ def price_index(c, t, now):
         top = sorted(sold.items(), key=lambda kv: -kv[1])[:2]
         best = " / ".join(f"{((cat_rows.get(k) or {}).get('name') or k)[:22]} ({k}) {n}건" for k, n in top)
         low = min(rs, key=lambda r: r[3] / r[4])
-        text = (f"[시세] {leaf(cat)}: 최근 {t['window_h']}시간 시장 정산 {len(rs)}건 (공개 원장 기준)\n"
-                f"- 체결가/정가 중앙값 {statistics.median(ratios):.0%} (하위 25% {q(0.25):.0%}, 상위 25% {q(0.75):.0%})\n"
-                f"- 가장 많이 팔린 상품: {best}\n"
-                f"- 최저 체결: {low[2]} {low[3]:,}원 (정가의 {low[3] / low[4]:.0%})\n"
-                f"- 근거: 원장 seq {', '.join(str(r[0]) for r in rs[-8:])}")
-        out.append({"topic": f"price:{cat}", "as": "buyer", "text": text, "refs": [r[0] for r in rs][-8:],
-                    "score": math.log(len(rs))})
+        seqs = ", ".join(str(r[0]) for r in rs[-8:])
+        ko = (f"[시세] {leaf(cat)}: 최근 {t['window_h']}시간 시장 정산 {len(rs)}건 (공개 원장 기준)\n"
+              f"- 체결가/정가 중앙값 {statistics.median(ratios):.0%} (하위 25% {q(0.25):.0%}, 상위 25% {q(0.75):.0%})\n"
+              f"- 가장 많이 팔린 상품: {best}\n"
+              f"- 최저 체결: {low[2]} {low[3]:,}원 (정가의 {low[3] / low[4]:.0%})\n"
+              f"- 근거: 원장 seq {seqs}")
+        en = (f"[Market] {leaf(cat)}: {len(rs)} settles in the last {t['window_h']} h (public ledger)\n"
+              f"- paid/list median {statistics.median(ratios):.0%} (lower quartile {q(0.25):.0%}, upper {q(0.75):.0%})\n"
+              f"- best sellers: {best.replace('건', ' sold')}\n"
+              f"- lowest settle: {low[2]} {low[3]:,} ({low[3] / low[4]:.0%} of list)\n"
+              f"- refs: ledger seq {seqs}")
+        out.append({"topic": f"price:{cat}", "as": "buyer", "text": ko, "texts": {"ko": ko, "en": en}, "kind": "summary",
+                    "refs": [r[0] for r in rs][-8:], "score": math.log(len(rs))})
     return out
 
 
@@ -96,11 +102,15 @@ def purchase_records(c, t, now, top=3):
                         limit ?""", (NAME, now - t["window_h"] * 3600, top)).fetchall()
     if len(rows) < top:
         return []
-    parts = [f"- {((cat.get(sku) or {}).get('name') or sku)[:28]} ({sku}) | {a:,}원, 정가 {lp:,}원 대비 "
-             f"{1 - a / lp:.0%} 저렴 | 등급 {g}{' (주장과 일치)' if h else ''} | 원장 #{seq}"
-             for seq, sku, a, lp, g, h in rows]
+    nm = lambda sku: ((cat.get(sku) or {}).get('name') or sku)[:28]
+    ko = "[구매 기록] 최근 정산된 구매 (공개 원장으로 확인 가능)\n" + "\n".join(
+        f"- {nm(sku)} ({sku}) | {a:,}원, 정가 {lp:,}원 대비 {1 - a / lp:.0%} 저렴 | 등급 {g}{' (주장과 일치)' if h else ''}"
+        f" | 원장 #{seq}" for seq, sku, a, lp, g, h in rows)
+    en = "[Purchase records] our latest settled buys (checkable on the public ledger)\n" + "\n".join(
+        f"- {nm(sku)} ({sku}) | paid {a:,} vs list {lp:,} ({1 - a / lp:.0%} under) | grade {g}"
+        f"{' (claim true)' if h else ''} | ledger #{seq}" for seq, sku, a, lp, g, h in rows)
     return [{"topic": f"records:{rows[0][0]}", "as": "buyer", "refs": [r[0] for r in rows], "score": 3.5,
-             "text": "[구매 기록] 최근 정산된 구매 (공개 원장으로 확인 가능)\n" + "\n".join(parts)}]
+             "text": ko, "texts": {"ko": ko, "en": en}, "kind": "records"}]
 
 
 def honesty(c, t, now):
@@ -293,6 +303,13 @@ def tick(md=Path(".market"), c=None, now=None):
         fresh = [x for x in cands if x["as"] == role and now - state["posted"].get(x["topic"], 0) > t["topic_cooldown_h"] * 3600]
         best = max(fresh, key=lambda x: x["score"], default=None)
         if best and best["score"] >= t["post_threshold"]:
+            if best.get("texts"):                        # the review team picks the format's language (experiment)
+                try:
+                    import review_team
+                    arm, _ = review_team.choose(best["kind"])
+                    best = dict(best, text=best["texts"][arm.split(":")[1]])
+                except Exception:
+                    pass
             line = {"post": best["text"][:700], "refs": best["refs"], "as": role}
             if best.get("thread"):
                 line["thread"] = best["thread"]

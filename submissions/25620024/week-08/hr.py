@@ -24,9 +24,9 @@ MD = HERE / ".market"
 OUT = HERE / "private" / "hr"
 HISTORY = OUT / "history.jsonl"
 REPORTS = Path("/mnt/gdrive-imajason-kimdaehakwon/week08-reports")
-TEAMS = ("sales", "scm", "marketing", "finance", "buyer", "enuri")
+TEAMS = ("sales", "scm", "marketing", "finance", "buyer", "enuri", "review")
 NAMES = {"sales": "세일즈팀", "scm": "SCM팀", "marketing": "마케팅팀", "finance": "재경팀", "buyer": "바이어팀",
-         "enuri": "에누리팀"}
+         "enuri": "에누리팀", "review": "리뷰팀"}
 
 
 def _load(path, default):
@@ -105,10 +105,10 @@ def measure(board):
         "finance": [k("profit percentile (shop ALL x0.5)", pct(shops, "profit", me_s))],
         "scm": [k("revenue percentile (shop ALL x0.3)", pct(shops, "revenue", me_s))],
         "marketing": [k("stars percentile (shop ALL x0.2)", pct(shops, "stars", me_s))],
-        "buyer": [k("surplus percentile (buyer ALL x0.5)", pct(buyers, "surplus", me_b)),
-                  k("deals percentile (buyer ALL x0.1)", pct(buyers, "deals", me_b))],
-        "enuri": [k("forum votes percentile (buyer ALL x0.3)", pct(buyers, "forum", me_b)),
-                  k("posts percentile (buyer ALL x0.1)", pct(buyers, "posts", me_b))],
+        "buyer": [k("surplus percentile (buyer ALL x0.5)", pct(buyers, "surplus", me_b))],
+        "enuri": [k("deals percentile (buyer ALL x0.1)", pct(buyers, "deals", me_b))],
+        "review": [k("forum votes percentile (buyer ALL x0.3)", pct(buyers, "forum", me_b)),       # HQ 11-04:
+                   k("posts percentile (buyer ALL x0.1)", pct(buyers, "posts", me_b))],          # the review team
         "_board": {"shop_rank": rank.get("shop_rank"), "players_rank": rank.get("players_rank"),
                    "players_percentile": pct(players, "total", me_p),
                    "buyer_rank": next((i + 1 for i, b in enumerate(sorted(buyers, key=lambda b: -(b.get("all") or 0)))
