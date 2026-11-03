@@ -1,0 +1,11 @@
+market buyer: lamp, budget 120 (harness: claude -p --model haiku)
+[memory] 0 past trades (market test: memory off)
+[choose] http://127.0.0.1:64854 (Kit Shop): reviews: highest average 3.0 stars from 0 reviews
+seller: 'Kit Shop' at http://127.0.0.1:64854/
+-> SendMessage 'I want to buy a lamp'
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness round 1] 2.7s reply: {"action": "offer", "price": 100}
+-> SendMessage '100' taskId=28de34db
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+DONE bought: {'price': 100.0, 'item': 'lamp', 'sig_seller': 'h1U2C2Gka2EZu85Q+YXGA5Oiu+cRgndX+OUP6oDOyokPmQJ9wbCvWMWoXKOdLEaZz9mFIlmXAXw+CI0SXuvbBQ==', 'task': '28de34db-caab-4c0a-a070-ccbfdd3ec0b9', 'shop': 'Kit Shop'}
+{"shop": "http://127.0.0.1:64854", "receipt": {"price": 100.0, "item": "lamp", "sig_seller": "h1U2C2Gka2EZu85Q+YXGA5Oiu+cRgndX+OUP6oDOyokPmQJ9wbCvWMWoXKOdLEaZz9mFIlmXAXw+CI0SXuvbBQ==", "task": "28de34db-caab-4c0a-a070-ccbfdd3ec0b9", "shop": "Kit Shop"}, "stars": 5, "review": "Fair deal: lamp at 100, below my budget of 120."}
