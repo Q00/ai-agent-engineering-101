@@ -308,5 +308,98 @@ class ReceiptTests(unittest.TestCase):
         self.assertEqual(set(signed), {"shop", "item", "price", "task", "sig_seller"})
 
 
+class InventoryTests(unittest.TestCase):
+    def setUp(self):
+        self.units = [
+            {"unit": "food-1", "sku": "F0001", "name": "Sample food",
+             "category": "Food", "grade": "A", "expires_at": 200},
+            {"unit": "goods-1", "sku": "G0001", "name": "Sample chair",
+             "category": "Furniture", "grade": "B", "expires_at": None},
+            {"unit": "goods-10", "sku": "G00010", "name": "Another chair",
+             "category": "Furniture", "grade": "A", "expires_at": None},
+        ]
+
+    def candidates(self, text, reserved=(), now=100):
+        with patch("seller_strategy.load_inventory", return_value=self.units):
+            return seller_strategy.available_units(text, reserved, now)
+
+    def test_exact_sku_does_not_match_longer_sku(self):
+        self.assertEqual([u["unit"] for u in self.candidates("Buy G0001")], ["goods-1"])
+
+    def test_expiry_overrides_stale_grade(self):
+        self.assertEqual(self.candidates("F0001", now=200), [])
+
+    def test_reserved_unit_is_not_offered_again(self):
+        self.assertEqual(self.candidates("G0001", reserved={"goods-1"}), [])
+
+    def test_category_and_name_matching(self):
+        self.assertEqual(len(self.candidates("Furniture")), 2)
+        self.assertEqual(self.candidates("Sample food")[0]["unit"], "food-1")
+
+    def test_cached_expired_unit_is_excluded(self):
+        self.units[0]["grade"] = "expired"
+        self.assertEqual(self.candidates("F0001"), [])
+
+    def test_inventory_reader_uses_isolated_market_dir(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
+            with patch.dict("os.environ", {"MARKET_DIR": folder}):
+                self.assertEqual(seller_strategy.load_inventory(), [])
+                path = Path(folder) / "inventory.json"
+                path.write_text(json.dumps({"units": self.units}), encoding="utf-8")
+                before = path.read_bytes()
+                self.assertEqual(seller_strategy.load_inventory(), self.units)
+                self.assertEqual(path.read_bytes(), before)
+                path.write_text('{"units": {}}', encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    seller_strategy.load_inventory()
+
+
+class Round3BuyerTests(unittest.TestCase):
+    def test_shop_choice_requires_stocked_acceptable_sku(self):
+        import market_buyer
+        shops = [{"name": "Sample", "url": "http://sample", "reviews": [],
+                  "offers": [{"sku": "F1", "qty": 1}]}]
+        with patch("market_buyer.call_harness", return_value={
+                "shop_name": "Sample", "sku": "G2", "reason": "Simulated"}):
+            with self.assertRaises(ValueError):
+                market_buyer.choose_shop(shops, [], "Food", 100, {"acceptable": ["F1"]})
+
+    def test_valid_sku_choice_preserves_shop_input(self):
+        import market_buyer
+        shops = [{"name": "Sample", "url": "http://sample", "reviews": [],
+                  "offers": [{"sku": "F1", "qty": 1}]}]
+        with patch("market_buyer.call_harness", return_value={
+                "shop_name": "Sample", "sku": "F1", "reason": "Simulated"}):
+            choice = market_buyer.choose_shop(shops, [], "Food", 100, {"acceptable": ["F1"]})
+        self.assertEqual(choice["requested_sku"], "F1")
+        self.assertNotIn("requested_sku", shops[0])
+
+    def test_pending_rules_do_not_negotiate_or_write_memory(self):
+        import io
+        from contextlib import redirect_stdout
+        import market_buyer
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
+            folder = Path(folder)
+            shops, order, memory = [folder / name for name in ("shops.json", "order.json", "memory.jsonl")]
+            shops.write_text("[]", encoding="utf-8")
+            order.write_text(json.dumps({"order": "sample", "item": "Food",
+                                        "budget": 100, "acceptable": ["F1"]}), encoding="utf-8")
+            output = io.StringIO()
+            with patch("market_buyer.load_round3_rules", return_value={"enabled": False}), \
+                    patch("market_buyer.buy") as buy, redirect_stdout(output):
+                market_buyer.market_buy(shops, "Food", 100, memory, order)
+            buy.assert_not_called()
+            self.assertFalse(memory.exists())
+            self.assertIsNone(json.loads(output.getvalue())["receipt"])
+
+    def test_restock_guard_requests_no_purchases(self):
+        import io
+        from contextlib import redirect_stdout
+        output = io.StringIO()
+        with redirect_stdout(output):
+            seller_strategy.restock_preview(Path("unused-sample-path"))
+        self.assertEqual(json.loads(output.getvalue())["buy"], [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

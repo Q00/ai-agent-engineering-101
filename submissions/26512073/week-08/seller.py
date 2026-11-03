@@ -17,7 +17,8 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from seller_strategy import HISTORY_PATH, POLICY, decide_opening, decide_offer
+from seller_strategy import (HISTORY_PATH, POLICY, decide_opening, decide_offer,
+                             round3_inventory)
 
 RESERVES = {"lamp": 100, "chair": 180, "bookshelf": 260}
 SHOP_NAME = "Afford Shop"
@@ -77,6 +78,10 @@ class Seller(AgentExecutor):
 
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
+        if round3_inventory():
+            # Do not sell a fixed Round 2 item when the market requires a stock unit.
+            await up.reject(say("Round 3 inventory seller is being prepared; no offer made."))
+            return
         if deal is None:
             item = next((item for item in RESERVES
                          if re.search(rf"\b{item}\b", text.lower())), None)

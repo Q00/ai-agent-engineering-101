@@ -80,6 +80,10 @@ def buy(url, item, budget, time_budget=270):
                 receipt = next(p["data"] for a in task.get("artifacts", [])
                                for p in a.get("parts", [])
                                if isinstance(p.get("data"), dict) and "price" in p["data"])
+                if receipt.get("task") != task_id:
+                    raise ValueError("Receipt does not belong to this negotiation task")
+                if not offers or receipt["price"] != offers[-1]:
+                    raise ValueError("Receipt price differs from the buyer's last offer")
                 return {"outcome": "deal", "receipt": receipt, "offers": offers}
             if state in {"TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"}:
                 print(json.dumps({"outcome": "no_deal", "state": state}), flush=True)
@@ -112,7 +116,7 @@ def buy(url, item, budget, time_budget=270):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True)
-    parser.add_argument("--item", choices=["lamp", "chair", "bookshelf"], required=True)
+    parser.add_argument("--item", required=True)
     parser.add_argument("--budget", type=int, required=True)
     args = parser.parse_args()
     if args.budget < 0:

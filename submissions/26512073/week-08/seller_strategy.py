@@ -1,11 +1,31 @@
 """Seller pricing, persistent state, and negotiation memory in one module."""
 import json
 import os
+import re
 from pathlib import Path
 import tempfile
+import time
 from threading import Lock, RLock
 
 from harness import call_harness
+
+
+def load_round3_rules():
+    """Student decisions are deliberately unset; setup never enables live trading."""
+    path = Path(__file__).resolve().parent / "round3_rules.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def round3_inventory():
+    market_dir = Path(os.environ.get(
+        "MARKET_DIR", str(Path(__file__).resolve().parent / ".market")))
+    path = market_dir / "inventory.json"
+    return path.exists() and json.loads(path.read_text(encoding="utf-8")).get("round", 0) >= 3
+
+
+def restock_preview(state_dir):
+    """No purchases until the student has chosen and we implement the stock rules."""
+    print(json.dumps({"buy": [], "reason": "Stock rules pending student choice."}))
 
 def load_inventory():
     """Read the stock file maintained by market kit v4."""
@@ -25,7 +45,31 @@ def load_inventory():
         inventory_path.read_text(encoding="utf-8")
     )
 
-    return inventory["units"]
+    units = inventory["units"]
+    if not isinstance(units, list):
+        raise ValueError("Inventory units must be a list")
+    return units
+
+
+def available_units(text, reserved=(), now=None):
+    """Find stock matching an exact SKU token, name, or category.
+
+    This reads stock only: selecting a price and buying more stock are separate.
+    A food unit's expiry is checked against the clock, not just its cached grade.
+    """
+    now = time.time() if now is None else now
+    want = text.casefold()
+    units = [unit for unit in load_inventory()
+             if unit["unit"] not in reserved and unit.get("grade") != "expired"
+             and (unit.get("expires_at") is None or unit["expires_at"] > now)]
+    # Token boundaries prevent G0001 from accidentally matching G00010.
+    exact = [unit for unit in units if re.search(
+        r"(?<![\w-])" + re.escape(unit["sku"].casefold()) + r"(?![\w-])", want)]
+    if exact:
+        return exact
+    return [unit for unit in units if any(
+        value and value.casefold() in want
+        for value in (unit.get("name"), unit.get("category")))]
 
 # Pricing State
 DATA_DIR = Path(
@@ -324,6 +368,13 @@ def decide_offer(item, reserve, offer, countered_at_reserve=False):
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--restock-state", type=Path)
+    args = parser.parse_args()
+    if args.restock_state is not None:
+        restock_preview(args.restock_state)
+        raise SystemExit(0)
     # Three separate calls: these are real model decisions, not stub replies.
     for offer, countered, expected in [(80, False, "counter"),
                                       (90, True, "reject"),
