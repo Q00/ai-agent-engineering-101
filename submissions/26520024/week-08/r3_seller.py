@@ -26,13 +26,15 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from core import decide, emit
 from r3_common import (ROOT, effective_grade, hours_left, load_catalog, load_inventory,
-                       load_policy, money, state_dir)
+                       load_policy, money, state_dir, atomic_json)
 from r3_memory import Memory
+from r3_seller_lifecycle import RequestJournal, SellerRequestBoundary
 
 RECEIPT_FIELDS = ('shop', 'item', 'price', 'task')
 PROMPT = '''You negotiate the price of exactly the supplied, reserved inventory unit.
 Return only JSON with action (ask/accept/reject), price, summary.
-Ask and accept prices must be whole credits within pricing.minimum and pricing.ceiling.
+Ask prices must be whole credits within pricing.minimum and pricing.ceiling.
+Accept prices must be whole credits at or above pricing.minimum; the ceiling limits asks only.
 Accept only the actual typed incoming_offer on an existing quote, at exactly that price.
 Honor an offer meeting previous_ask by accepting. Never increase an existing ask.
 Reject uses null price. Summary is factual memory of at most 600 characters.
@@ -163,6 +165,7 @@ class Reservations:
             db.execute('CREATE TABLE IF NOT EXISTS deals '
                        '(task TEXT PRIMARY KEY, unit TEXT UNIQUE, status TEXT NOT NULL, '
                        'expires REAL NOT NULL, token TEXT, data TEXT NOT NULL)')
+            db.execute("UPDATE deals SET status='quarantined' WHERE status='committed'")
 
     @contextmanager
     def transaction(self):
@@ -224,6 +227,57 @@ class Reservations:
             db.execute(sql, args)
 
 
+    def reconcile(self, inventory, events, name, now):
+        """A signed promise stays blocked unless a matching paid ledger proves settlement."""
+        live = {unit['unit'] for unit in inventory['units']}
+        rows = []
+        with self.transaction() as db:
+            for row in db.execute("SELECT * FROM deals WHERE status IN ('signed_pending','quarantined','settled')"):
+                data = json.loads(row['data'])
+                receipt = data.get('receipt')
+                status, proof = row['status'], data.get('settlement')
+                if status != 'settled' and isinstance(receipt, dict):
+                    for event in events:
+                        evidence = event.get('data', {})
+                        if (event.get('kind') != 'market_settle' or not isinstance(evidence, dict) or
+                                evidence.get('source') != 'public_ledger' or evidence.get('shop') != name or
+                                evidence.get('unit') != row['unit'] or evidence.get('item') != data['sku'] or
+                                type(evidence.get('seq')) is not int or evidence['seq'] <= 0):
+                            continue
+                        if evidence.get('task') not in (None, receipt['task']):
+                            continue
+                        amounts = [evidence[key] for key in ('amount', 'price') if key in evidence]
+                        try:
+                            matches = amounts and all(money(value) == receipt['price'] for value in amounts)
+                        except (ValueError, TypeError):
+                            matches = False
+                        if not matches:
+                            continue
+                        proof = dict(ledger=evidence['seq'], source='public_ledger', observed_at=now)
+                        data['settlement'] = proof
+                        status = 'settled'
+                        break
+                if status != 'settled' and (now >= row['expires'] or row['unit'] not in live or not receipt):
+                    status = 'quarantined'
+                reason = ('verified_paid_ledger' if status == 'settled' else
+                          'legacy_receipt_not_recorded' if not receipt else
+                          'inventory_missing_is_not_payment_proof' if row['unit'] not in live else
+                          'checkout_finality_unavailable' if status == 'quarantined' else
+                          'signed_receipt_awaiting_payment')
+                db.execute('UPDATE deals SET status=?,data=? WHERE task=?', (status, json.dumps(data), row['task']))
+                rows.append(dict(task=row['task'], unit=row['unit'], sku=data.get('sku'), status=status,
+                                 in_inventory=row['unit'] in live, reason=reason, settlement=proof))
+        report = dict(observed_at=now, signed_pending=sum(r['status'] == 'signed_pending' for r in rows),
+                      quarantined=sum(r['status'] == 'quarantined' for r in rows),
+                      settled=sum(r['status'] == 'settled' for r in rows),
+                      blocked_in_inventory=sum(r['in_inventory'] for r in rows), units=rows,
+                      safe_unlock_available=False,
+                      limitation='The kit provides no seller checkout rejection or receipt revocation callback. '
+                                 'Elapsed quote time and inventory disappearance do not invalidate signed receipts.')
+        atomic_json(self.path.parent / 'seller-stock-status.json', report)
+        return report
+
+
 class Seller(AgentExecutor):
     def __init__(self, market_dir=None, name='Round 3 Inventory Shop', decision=decide,
                  signing_key=None, now=time.time):
@@ -232,6 +286,13 @@ class Seller(AgentExecutor):
         if not isinstance(self.key, Ed25519PrivateKey):
             raise ValueError('Ed25519 signing key required')
         self.reservations = Reservations(self.md)
+
+    def reconcile(self, inventory=None):
+        now = self.now()
+        inventory = inventory if inventory is not None else load_inventory(self.md, now=now)
+        with Memory(self.md) as memory:
+            evidence = memory.events('market_settle', limit=10000)
+        return self.reservations.reconcile(inventory, evidence, self.name, now)
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -246,6 +307,7 @@ class Seller(AgentExecutor):
         try:
             now = self.now()
             inventory, catalog, policy = load_inventory(self.md, now=now), load_catalog(self.md), load_policy(self.md)
+            self.reconcile(inventory)
             expires = now + min(300, float(policy.get('quote_ttl_seconds', 180)))
             deadline = timestamp(policy.get('trading_deadline'))
             if deadline is not None:
@@ -291,13 +353,19 @@ class Seller(AgentExecutor):
             receipt = None
             if action['action'] == 'accept':
                 receipt = sign_receipt(dict(shop=self.name, item=unit['sku'], price=action['price'], task=task.id), unit_id, key=self.key)
-            status = {'ask': 'open', 'accept': 'committed', 'reject': 'closed'}[action['action']]
+                data.update(receipt=receipt, signed_at=now)
+            status = {'ask': 'open', 'accept': 'signed_pending', 'reject': 'closed'}[action['action']]
             self.reservations.finish(task.id, token, status, data, self.now())
-            committed = status == 'committed'
-            with Memory(self.md) as memory:
-                memory.record('seller_action', '{}:{}'.format(task.id, data['rounds']),
-                              dict(role='seller', task=task.id, sku=unit['sku'], unit=unit_id,
-                                   action=action['action'], price=action['price'], summary=action['summary']), ts=now)
+            committed = status == 'signed_pending'
+            try:
+                with Memory(self.md) as memory:
+                    memory.record('seller_action', '{}:{}'.format(task.id, data['rounds']),
+                                  dict(role='seller', task=task.id, sku=unit['sku'], unit=unit_id,
+                                       action=action['action'], price=action['price'], summary=action['summary']), ts=now)
+                if committed:
+                    self.reconcile(fresh)
+            except Exception as exc:
+                emit('r3_seller_observation_error', task_id=task.id, error=str(exc))
             emit('r3_seller_action', task_id=task.id, unit=unit_id, sku=unit['sku'], action=action['action'], price=action['price'])
             if action['action'] == 'ask':
                 await up.requires_input(say('{} ({}); certificate included; asking {}'.format(unit['name'], unit['sku'], action['price'])))
@@ -341,6 +409,7 @@ def build(port, market_dir=None, name='Round 3 Inventory Shop', decision=decide,
     executor = Seller(market_dir, name, decision, signing_key, now)
     handler = DefaultRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=card)
     app = Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, '/'))
+    app.add_middleware(SellerRequestBoundary, journal=RequestJournal(executor.md))
     app.state.seller = executor
     return app
 
