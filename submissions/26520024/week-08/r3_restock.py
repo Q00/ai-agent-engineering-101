@@ -81,7 +81,7 @@ def _pending(ledger, inventory, now):
     return [row for intent in active for row in intent['remaining']]
 
 
-def bounded_proposals(catalog, inventory, analysis, pending, policy, now):
+def bounded_proposals(catalog, inventory, analysis, pending, policy, now, *, quantity_limits=None):
     """Compute all monetary and stock bounds without trusting model arithmetic."""
     if analysis.get('status') != 'ok':
         return []
@@ -135,6 +135,8 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now):
             if sku in catalog:
                 explored_categories.add(catalog[sku]['category'])
     for sku, hypothesis in hypotheses.items():
+        if quantity_limits is not None and sku not in quantity_limits:
+            continue
         candidate, product = candidates.get(sku), catalog.get(sku)
         if not candidate or not product:
             continue
@@ -172,6 +174,8 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now):
             qty = min(qty, 1 - counts[sku])
         if initial:
             qty = min(qty, 3 - total)
+        if quantity_limits is not None:
+            qty = min(qty, quantity_limits[sku])
         if qty <= 0:
             continue
         proposals.append({'sku': sku, 'qty': qty})
@@ -208,6 +212,7 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
     if memory is None:
         with Memory(md) as owned_memory:
             return plan_restock(md, now=now, decide_fn=decide_fn, memory=owned_memory)
+    started = time.monotonic()
     with (Path(md) / 'restock.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         try:
@@ -215,12 +220,14 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
             inventory = load_inventory(md, now=now, max_age=45)
             if inventory.get('round') != 3:
                 raise ValueError('Restock requires a Round 3 inventory snapshot')
-            inventory_fingerprint = _fingerprint(inventory)
             snapshot_id = _snapshot_id(md, inventory)
             ledger = read_json(Path(md) / 'restock_commitments.json', {'intents': []})
             if not isinstance(ledger, dict) or not isinstance(ledger.get('intents'), list):
                 raise ValueError('Malformed restock commitment ledger')
             pending = _pending(ledger, inventory, now)
+            if ledger['intents']:
+                # A delivered unit may sell while the model runs; retain its fulfillment.
+                atomic_json(Path(md) / 'restock_commitments.json', ledger)
             cooldown = max(60, _number(policy.get('restock_cooldown_seconds'), 900))
             last_at = _number(ledger.get('last_issued_at'), -math.inf)
             if ledger.get('last_snapshot_id') == snapshot_id or now - last_at < cooldown:
@@ -242,26 +249,39 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
                                           time.monotonic() + 45,
                                           context={'role': 'restock'})
             intent = validator(intent)
-            # Model latency must not let an expired or changed snapshot authorize buying.
-            check_now = now if decide_fn is not None else time.time()
+            # Normal sales may change stock during deliberation. Recompute every bound,
+            # preserving only purchases the model approved, at the same or lower quantity.
+            check_now = now + max(0, time.monotonic() - started)
+            policy, catalog = load_policy(md), load_catalog(md)
             current = load_inventory(md, now=check_now, max_age=45)
-            if _fingerprint(current) != inventory_fingerprint:
-                raise ValueError('Inventory changed during restock decision; retry from fresh state')
+            snapshot_id = _snapshot_id(md, current)
+            ledger = read_json(Path(md) / 'restock_commitments.json', {'intents': []})
+            if not isinstance(ledger, dict) or not isinstance(ledger.get('intents'), list):
+                raise ValueError('Malformed restock commitment ledger')
+            pending = _pending(ledger, current, check_now)
+            cooldown = max(60, _number(policy.get('restock_cooldown_seconds'), 900))
+            if (ledger.get('last_snapshot_id') == snapshot_id
+                    or check_now - _number(ledger.get('last_issued_at'), -math.inf) < cooldown):
+                atomic_json(Path(md) / 'restock_commitments.json', ledger)
+                return {'buy': []}
+            reduced = bounded_proposals(catalog, current, analysis, pending, policy, check_now,
+                                        quantity_limits={row['sku']: row['qty'] for row in intent['buy']})
+            intent = validate_intent({'buy': reduced}, intent['buy'])
             if not intent['buy']:
                 atomic_json(Path(md) / 'restock_commitments.json', ledger)
                 return intent
             ttl = max(cooldown, _number(policy.get('commitment_ttl_seconds'), 1800))
             key = uuid.uuid4().hex
-            ledger['intents'].append({'id': key, 'created_at': now, 'expires_at': now + ttl,
+            ledger['intents'].append({'id': key, 'created_at': check_now, 'expires_at': check_now + ttl,
                                       'snapshot_id': snapshot_id, 'buy': intent['buy'],
-                                      'baseline_units': [row['unit'] for row in _units(inventory)
+                                      'baseline_units': [row['unit'] for row in _units(current)
                                                          if isinstance(row.get('unit'), str)],
                                       'fulfilled_units': [], 'fulfilled_by_sku': {}})
-            ledger.update(last_issued_at=now, last_snapshot_id=snapshot_id)
+            ledger.update(last_issued_at=check_now, last_snapshot_id=snapshot_id)
             atomic_json(Path(md) / 'restock_commitments.json', ledger)
             memory.record('restock_intent', key, {'buy': intent['buy'],
                           'snapshot_id': snapshot_id, 'analysis_version': analysis['input_version'],
-                          'expires_at': now + ttl}, ts=now)
+                          'expires_at': check_now + ttl}, ts=check_now)
             return intent
         except Exception as exc:
             memory.record('restock_error', uuid.uuid4().hex, {'error': str(exc)[:400]}, ts=now)
