@@ -5,12 +5,14 @@
 Week 7 showed that fast, certain deals win buyers, so every price here is set in code from the unit's grade,
 list price and cost, and a reply never waits on a model. The restock agent (restock.py) is where the model works.
 
+- Opening ask: the shop manager's share of list price for the category, times the grade factor and the stale
+  markdown, times a multiplier chosen by Thompson sampling from our own deal outcomes (see ARMS).
 - First message: find the unit the buyer asked for (SKU first, then name, then category) and answer with the
   facts the buyer's kit checks before paying (grade, certificate, hours left, warranty) and the ask, which is
   always the last number in the reply.
 - Never below cost: the floor is cost plus FLOOR_MARGIN.
-- An offer at or above the ask closes at the ask; an offer near it closes at the offer; anything lower gets one
-  step toward it per round.
+- An offer at or above the ask closes at the ask; an offer near it closes at the offer; anything lower gets a
+  counter that gives up a shrinking share of the room down to the floor (STEPS).
 - The receipt claims the unit's true grade, keeps the market's certificate on and carries the warranty we
   promised in the reply, so the ledger shows every claim as honest.
 Before Round 3 there is no stock: the week-7 items sell at their reserve, as in Round 2.
@@ -20,6 +22,7 @@ import base64
 import json
 import math
 import os
+import random
 import re
 import time
 from pathlib import Path
@@ -51,11 +54,16 @@ CLOSE_GAP = 0.03          # an offer within 3% of the ask closes at the offer
 MAX_DISCOUNT = 0.10       # haggling never takes the ask more than 10% below the opening ask
 MAX_ROUNDS = 6
 STEPS = (0.4, 0.25, 0.2, 0.15)   # each counter gives up this share of the room between opening ask and floor
-# Learning from our own talks, per category, on top of the manager's share (.market/price_adj.json):
-# a buyer who takes the opening ask at once says we were cheap; a buyer who leaves without an offer (it took
-# another shop's quote) or walks after haggling says we were dear. Small steps, kept within ADJ_RANGE.
-LEARN = {"took_opening": 0.02, "lost_quote": -0.01, "walked": -0.02}
-ADJ_RANGE = (-0.15, 0.10)
+# Learning the price from our own talks: Thompson sampling, a bandit (the simplest kind of reinforcement
+# learning). Each category has ARMS, multipliers on the manager's share. Per arm we count talks that ended in a
+# deal (success) or without one: the buyer took another shop's quote, walked after haggling, or we refused
+# (failure). For each new buyer, every arm draws a deal chance from its Beta posterior and we open with the arm
+# whose draw times its margin (price minus cost) is highest. Arms rarely tried draw widely, so they still get
+# tried; arms that lose stop being picked. A category with few talks borrows from all categories' counts,
+# weighted by POOL. Counts live in .market/price_bandit.json.
+ARMS = (0.88, 0.94, 1.0, 1.06)
+POOL = 0.2
+TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask, after haggling
 SHARE_BOUNDS = (0.55, 0.97)
 CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
 CLEARANCE_FLOOR = 0.6     # share of cost
@@ -118,44 +126,64 @@ def _load(name, default):
         return default
 
 
-ADJ = _load("price_adj.json", {})          # category -> {"adj", "took_opening", "lost_quote", "walked", "deals"}
+BANDIT = _load("price_bandit.json", {"all": {}, "cats": {}})   # arm -> [deals, talks without one]
 
 
-def share_for(category):
+def base_share(category):
     if time.time() - _prices["t"] > 30:
         _prices["rules"] = _load("prices.json", {}).get("rules", _prices["rules"])
         _prices["t"] = time.time()
-    base = _prices["rules"].get(category, DEFAULT_SHARE)
-    return min(max(base + ADJ.get(category, {}).get("adj", 0), SHARE_BOUNDS[0]), SHARE_BOUNDS[1])
+    return _prices["rules"].get(category, DEFAULT_SHARE)
 
 
-def learn(category, what):
-    """Count one outcome for the category; outcomes in LEARN also move its price adjustment."""
-    if not category:
+def pick_arm(u, base, floor):
+    """Thompson sampling: the arm whose sampled deal chance times margin is highest, and the opening ask it gives."""
+    cat = BANDIT["cats"].get(u.get("category"), {})
+    best = None
+    for arm in ARMS:
+        k = str(arm)
+        s_, f_ = cat.get(k, [0, 0])
+        gs, gf = BANDIT["all"].get(k, [0, 0])
+        theta = random.betavariate(1 + s_ + POOL * gs, 1 + f_ + POOL * gf)
+        ask = max(floor, int(round(u["list_price"] * min(max(base * arm, SHARE_BOUNDS[0]), SHARE_BOUNDS[1]), -1)))
+        score = theta * (ask * TYPICAL_CLOSE - u["cost"])
+        if best is None or score > best[0]:
+            best = (score, arm, ask, theta)
+    return best[1], best[3]
+
+
+def learn(category, arm, deal):
+    """One finished talk opened with `arm`: a deal is a success, anything else a failure."""
+    if not category or arm is None:
         return
-    a = ADJ.setdefault(category, {"adj": 0.0})
-    a[what] = a.get(what, 0) + 1
-    if what in LEARN:
-        a["adj"] = round(min(max(a["adj"] + LEARN[what], ADJ_RANGE[0]), ADJ_RANGE[1]), 3)
-    tmp = MARKET_DIR / "price_adj.tmp"
-    tmp.write_text(json.dumps(ADJ, ensure_ascii=False), encoding="utf-8")
-    tmp.replace(MARKET_DIR / "price_adj.json")
-    log(f"[learn] {category.split('>')[-1]}: {what}, adjustment now {a['adj']:+.2f}")
+    i = 0 if deal else 1
+    for counts in (BANDIT["cats"].setdefault(category, {}), BANDIT["all"]):
+        counts.setdefault(str(arm), [0, 0])[i] += 1
+    tmp = MARKET_DIR / "price_bandit.tmp"
+    tmp.write_text(json.dumps(BANDIT, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(MARKET_DIR / "price_bandit.json")
+    log(f"[bandit] {category.split('>')[-1]}: arm {arm} {'deal' if deal else 'no deal'}, "
+        f"counts {BANDIT['cats'][category]}")
 
 
 def terms(u):
-    """(ask, floor, warranty hours) for one unit."""
+    """(ask, floor, warranty hours, bandit arm or None) for one unit."""
     if u["unit"] is None:
-        return u["cost"], u["cost"], 0
+        return u["cost"], u["cost"], 0, None
     floor = math.ceil(u["cost"] * (1 + FLOOR_MARGIN))
     days = min(3, int((time.time() - u.get("supplied_at", time.time())) // 86400))
-    share = share_for(u.get("category")) * GRADE_FACTOR.get(u["grade"], 0.8) * (1 - STALE_MARKDOWN * days)
+    share = base_share(u.get("category")) * GRADE_FACTOR.get(u["grade"], 0.8) * (1 - STALE_MARKDOWN * days)
+    arm = None
     if u["kind"] == "food" and (hours_left(u) or 0) < CLEARANCE_HOURS:
-        share *= 0.8
+        share *= 0.8                          # clearance: not a price test, the bandit stays out
         floor = math.ceil(u["cost"] * CLEARANCE_FLOOR)
-    ask = max(floor, int(round(u["list_price"] * share, -1)))
+    else:
+        arm, theta = pick_arm(u, share, floor)
+        log(f"[bandit] {u['category'].split('>')[-1]}: opening with arm {arm} (sampled deal chance {theta:.2f})")
+        share *= arm
+    ask = max(floor, int(round(u["list_price"] * min(max(share, SHARE_BOUNDS[0]), SHARE_BOUNDS[1]), -1)))
     warranty = WARRANTY.get(u["grade"], 0) if u["kind"] == "goods" else 0
-    return ask, floor, warranty
+    return ask, floor, warranty, arm
 
 
 def facts(u, warranty):
@@ -202,11 +230,11 @@ class Seller(AgentExecutor):
             if u is None:
                 await up.reject(say("Sorry, none of that in stock."))
                 return
-            ask, floor, warranty = terms(u)
+            ask, floor, warranty, arm = terms(u)
             # profit is half the shop's score: concede at most MAX_DISCOUNT, and never below cost
             floor = max(floor, int(ask * (1 - MAX_DISCOUNT)))
             deal = self.open[task.id] = {"unit": u, "ask": ask, "opening": ask, "floor": floor,
-                                         "warranty": warranty, "rounds": 0}
+                                         "warranty": warranty, "rounds": 0, "arm": arm}
             await up.requires_input(say(f"{facts(u, warranty)}. Send the ask or say ok to buy. "
                                         f"Our ask: {ask}"))
             return
@@ -223,7 +251,7 @@ class Seller(AgentExecutor):
         elif deal["rounds"] >= MAX_ROUNDS:
             del self.open[task.id]
             if deal["unit"]["unit"]:
-                learn(deal["unit"].get("category"), "walked")
+                learn(deal["unit"].get("category"), deal["arm"], False)
             await up.reject(say(f"No deal. Our last ask was {ask}."))
         else:
             if offer is not None:            # a third of the gap, but never more than this round's step
@@ -239,7 +267,7 @@ class Seller(AgentExecutor):
         await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
         await up.complete(say(f"Deal: {u['name']} at {int(price)}."))
         if u["unit"]:
-            learn(u.get("category"), "took_opening" if deal["rounds"] == 1 and price >= deal["opening"] else "deals")
+            learn(u.get("category"), deal["arm"], True)
         log(f"DEAL {u['sku']} {u['name'][:30]} grade {u['grade']} at {int(price)} "
             f"(cost {u['cost']}, list {u['list_price']}, warranty {deal['warranty']}h)")
         del self.open[task.id]
@@ -248,7 +276,7 @@ class Seller(AgentExecutor):
         task = context.current_task
         deal = self.open.pop(task.id, None)
         if deal and deal["unit"]["unit"]:
-            learn(deal["unit"].get("category"), "lost_quote" if deal["rounds"] == 0 else "walked")
+            learn(deal["unit"].get("category"), deal["arm"], False)
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 
