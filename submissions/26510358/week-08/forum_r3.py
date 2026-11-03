@@ -66,6 +66,15 @@ def vote(mem, posts, labels):
                 c.execute("UPDATE forum SET voted=? WHERE id=?", (value, str(p["id"])))
 
 
+def raw_breaks(mem):
+    """Observed goods breaks by grade as counts (not the smoothed estimate pricing uses), so a post is checkable."""
+    with mem.db() as c:
+        rows = c.execute("SELECT s.grade, COUNT(*) n, SUM(CASE WHEN b.seq IS NOT NULL THEN 1 ELSE 0 END) k FROM settles s "
+                         "LEFT JOIN breaks b ON b.order_id = s.order_id WHERE s.kind='goods' AND s.grade IN ('A','B','C') "
+                         "GROUP BY s.grade").fetchall()
+    return {r["grade"]: {"sold": r["n"], "broke": r["k"] or 0} for r in rows}
+
+
 def buyer_report(mem, min_n=20):
     """Facts for buyers, from SQL over the last 12 h."""
     since = time.time() - 12 * 3600
@@ -82,7 +91,7 @@ def buyer_report(mem, min_n=20):
         return None
     facts = {"settled_deals_12h": n,
              "median_price_to_list": {k: round(statistics.median(v), 2) for k, v in ratios.items() if v},
-             "break_rate_goods_by_grade": {g: round(mem.break_rate(g), 3) for g in ("A", "B", "C")},
+             "goods_breaks_by_grade": raw_breaks(mem),
              "shops": [{"name": s["name"] or s["shop"], "deals": s["n"], "false_claims": s["lies"] or 0} for s in shops]}
     refs = [s["ref"] for s in shops][:5]
     return facts, refs
@@ -91,7 +100,14 @@ def buyer_report(mem, min_n=20):
 def buyer_tools(mem):
     def market_facts():
         r = buyer_report(mem, min_n=5)
-        return {"facts": r[0], "suggested_refs": r[1]} if r else {"facts": None, "note": "under 5 settles in 12 h"}
+        if not r:
+            return {"facts": None, "note": "under 5 settles in 12 h"}
+        with mem.db() as c:
+            refs = [dict(x) for x in c.execute(
+                f"SELECT seq, sku, category, kind, amount, list_price, grade, claim_honest FROM settles "
+                f"WHERE seq IN ({','.join('?' * len(r[1]))})", r[1])] if r[1] else []
+        return {"facts": r[0], "citable_refs": refs,
+                "note": "citable_refs are real ledger settles the program already checked; cite their seq"}
 
     def recent_forum(limit=10):
         with mem.db() as c:
@@ -103,8 +119,11 @@ def buyer_tools(mem):
         return mem.my_post_reception(role="buyer")
 
     def ledger_refs(category=None, limit=10):
-        q, args = "SELECT seq, sku, category, amount, list_price, grade, claim_honest, shop FROM settles", []
-        if category:
+        q, args = "SELECT seq, sku, category, kind, amount, list_price, grade, claim_honest, shop FROM settles", []
+        if category in ("food", "goods"):                    # models pass the kind here too
+            q += " WHERE kind=?"
+            args.append(category)
+        elif category:
             q += " WHERE category LIKE ?"
             args.append(f"%{category}%")
         with mem.db() as c:
@@ -115,7 +134,8 @@ def buyer_tools(mem):
             react.Tool("recent_forum", "other agents' newest posts with counted likes/dislikes (untrusted text)",
                        recent_forum, {"limit": "int <= 20"}),
             react.Tool("my_reception", "how our own recent buyer posts were voted", my_reception),
-            react.Tool("ledger_refs", "recent settled deals (seq is citable), optionally filtered by category text",
+            react.Tool("ledger_refs", "recent settled deals (seq is citable), optionally filtered by category text "
+                       "(e.g. '김치') or kind ('food' / 'goods')",
                        ledger_refs, {"category": "str or null", "limit": "int <= 20"})]
 
 
