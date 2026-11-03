@@ -1,0 +1,36 @@
+"""A standard v4 restock hook; only queues forum text through the journal."""
+import argparse
+import json
+from r3.state import Journal, policy
+from r3.economy import restock_candidates
+from r3.model import Chooser
+
+
+def plan(journal, chooser=None):
+    cfg = policy()
+    journal.reconcile()
+    inv = journal.snapshot("inventory.json", {})
+    if inv.get("round", 0) < 3:
+        return {"buy": []}
+    candidates = restock_candidates(inv, journal.snapshot("catalog.json", {}),
+                                    journal.snapshot("demand.json", []), journal, cfg)
+    if not candidates:
+        return {"buy": [], "bankrupt": inv.get("balance", 0) < inv.get("bankrupt_line", 0)
+                and not inv.get("units") and inv.get("bankruptcies_left", 0) > 0}
+    # The actor chooses among transparent portfolio variants; every line has a conservative affordability bound.
+    portfolios = []
+    for name, lines in [("diversified", candidates), ("cautious", candidates[:1])]:
+        portfolios.append({"id": name, "buy": [{"sku": c["sku"], "qty": c["qty"]} for c in lines],
+                           "score": sum(c["score"] for c in lines), "max_cost": sum(c["max_cost"] for c in lines),
+                           "evidence": [c["evidence"] for c in lines]})
+    selected = (chooser or Chooser(journal, cfg)).choose("shop", portfolios,
+               {"balance": inv["balance"], "stock_units": len(inv.get("units", []))},
+               critical=portfolios[0]["max_cost"] > cfg["critic_cash_fraction"] * inv["balance"])
+    return {"buy": selected["buy"]}
+
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser()
+    p.add_argument("--state", required=True)
+    args = p.parse_args()
+    print(json.dumps(plan(Journal(args.state)), ensure_ascii=False))

@@ -150,6 +150,7 @@ class Journal:
                         continue
                     self.add(kind, data, eid=kind + ":" + identity(data), role="buyer")
                 self.put("offset:" + name, f.tell())
+        ambiguous_orders = set()
         for news in self.events("broken_news"):
             possible = [e for e in self.events("purchase", 10000)
                         if e.get("name") == news.get("name") and 0 <= news.get("broke_at", 0) - e["paid_at"] <= 21600]
@@ -157,14 +158,16 @@ class Journal:
                 item = possible[0]
                 covered = news["broke_at"] - item["paid_at"] <= item.get("warranty_hours", 0) * 3600
                 self.add("outcome", {"order": item["order"], "broken": True, "covered": covered,
-                                    "surplus": 0 if covered else -item["price"], "source": news["_event_id"]},
+                                    "surplus": 0 if covered else -item["price"], "source": news["_event_id"],
+                                    "refund_status": "expected_by_warranty_rule" if covered else "not_covered"},
                          eid="broken-outcome:" + item["order"], role="buyer")
             elif possible:
+                ambiguous_orders.update(x["order"] for x in possible)
                 self.add("ambiguous_break", {"source": news["_event_id"], "orders": [x["order"] for x in possible]},
                          eid="ambiguous:" + news["_event_id"], role="buyer")
         broken_orders = {e["order"] for e in self.events("outcome", 10000) if e.get("broken")}
         for item in self.events("purchase", 10000):
             mature = item.get("kind") == "food" or now >= item["paid_at"] + 21600
-            if mature and item["order"] not in broken_orders:
+            if mature and item["order"] not in broken_orders and item["order"] not in ambiguous_orders:
                 self.add("outcome", {"order": item["order"], "broken": False, "surplus": item["value"] - item["price"],
                                      "matured": True}, eid="mature:" + item["order"], role="buyer")
