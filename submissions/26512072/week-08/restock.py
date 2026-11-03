@@ -11,9 +11,11 @@ Demand signal, best first:
   1. SKUs I sold myself (sales_memory.jsonl), restocked to 2 units;
   2. SKUs the whole market settled recently (the public ledger's settle entries, market_sales.json);
   2b. categories other agents ask for on the forum ("구합니다", "looking for"), the middle SKU of each;
-  3. cold start: per category, the SKU whose list price is closest to the category's median (orders accept SKUs
-     priced 0.5-1.5 x a reference price, so the middle of the category fits the most orders).
-Money: keep 2,000,000 in cash, hold at most 1,000,000 of stock at cost, spend at most 10% of the balance a run
+  3. cold start, only while the ledger shows no settles yet: per category, the SKU whose list price is closest to
+     the category's median (orders accept SKUs priced 0.5-1.5 x a reference price).
+Round 3 showed demand is concentrated (one mattress, one kimchi, bedding and water took a third of the first 450
+settles), so best sellers get up to 5 units (1 above 100,000: a break under warranty refunds all of it), and fast-selling food is kept even if short-lived.
+Money: keep 2,000,000 in cash, hold at most 1,500,000 of stock at cost, spend at most 10% of the balance a run
 (about two runs fit in one window).
 Food: only SKUs that keep for 10 days or more, unless the market or I sold that SKU before.
 """
@@ -28,12 +30,16 @@ from r3lib import (HERE, SALES, append_jsonl, catalog, forum_wants, market_now, 
                    refresh_market_sales)
 
 CASH_FLOOR = 2_000_000
-STOCK_CAP = 1_000_000
+STOCK_CAP = 1_500_000
 SPEND_SHARE = 0.10
 MAX_LINES = 10
 EST_COST = 0.65            # expected cost as a share of list price (A 55-75%, B 40-60%, C 25-45%)
 LEAD = 60                  # start a run this many seconds before the window opens (the kit waits for it)
 LOG = Path(os.environ.get("RESTOCK_LOG", HERE / "logs" / "restock.log"))   # tests point this elsewhere
+
+
+def p_n(market, sku):
+    return market.get(sku, {}).get("n", 0)
 
 
 def main():
@@ -68,13 +74,15 @@ def main():
                    for sku, p in market.items() if sku in cat})
 
     keeps = lambda sku: cat[sku]["kind"] == "goods" or (cat[sku].get("shelf_hours") or 0) >= 240
+    proven = lambda sku: keeps(sku) or sku in mine or hot[sku] >= 3     # short-lived food only if it sells fast
     wants = []                                              # (reason, sku, target qty), best first
     for sku, _ in mine.most_common():
         if sku in cat:
             wants.append(("sold by me", sku, 3))         # it has to last the 20 minutes to the next window
-    for sku, _ in hot.most_common(60):
-        if keeps(sku) or sku in mine:
-            wants.append(("sold in the market", sku, 3 if hot[sku] >= 3 else 1))
+    for sku, n in hot.most_common(60):          # the market's best sellers: more units the more they sell
+        if proven(sku):
+            target = min(5, 1 + n // 6) if cat[sku]["list_price"] <= 100_000 else 1
+            wants.append((f"sold in the market ({p_n(market, sku)} settles)", sku, target))
     demand = read_json(md / "demand.json", []) or []
     medians = {d["category"]: d.get("median_price") for d in demand}
     for c, n in sorted(forum_wants(cat).items(), key=lambda kv: -kv[1]):   # what agents ask for on the forum
@@ -82,7 +90,7 @@ def main():
         if skus and medians.get(c):
             mid = min(skus, key=lambda s: abs(cat[s]["list_price"] - medians[c]))
             wants.append((f"asked for on the forum ({n} posts)", mid, 1))
-    for d in sorted(demand, key=lambda d: d.get("median_price") or 0):   # cheap categories first: more units per credit
+    for d in ([] if hot else sorted(demand, key=lambda d: d.get("median_price") or 0)):   # only with no market data
         skus = [s for s, x in cat.items() if x["category"] == d["category"] and keeps(s)]
         if skus and d.get("median_price"):
             mid = min(skus, key=lambda s: abs(cat[s]["list_price"] - d["median_price"]))

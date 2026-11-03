@@ -24,6 +24,7 @@ SALES = Path(os.environ.get("SHOP_SALES", HERE / "sales_memory.jsonl"))
 BUYER_MEM = Path(os.environ.get("BUYER_MEMORY_R3", HERE / "buyer_memory_r3.jsonl"))
 MARKET_SALES = HERE / "market_sales.json"
 CLOCK = MD / "clock.json"
+R3_START = 2_130_000        # ledger seq where Round 3 opened (11-03 12:01 market time)
 
 
 def read_json(path, default=None):
@@ -84,14 +85,14 @@ def hours_left(unit):
     return (unit["expires_at"] - market_now()) / 3600 if unit.get("expires_at") else None
 
 
-def refresh_market_sales(max_pages=20):
+def refresh_market_sales(max_pages=40):
     """Settled deals from the public ledger, accumulated per SKU: count, prices, last time. Incremental:
     remembers the last ledger seq it read. Round 3 'settle' entries name the SKU and the amount paid."""
     cache = read_json(MARKET_SALES, {}) or {}
     seq = cache.get("seq")
     per = cache.get("skus", {})
-    if seq is None:
-        seq = -500 * max_pages                      # first run: look back this far
+    if seq is None or seq < R3_START:               # Round 2 had no settle entries: start where Round 3 began
+        seq, per = R3_START, {}
     for _ in range(max_pages):
         try:
             rows = httpx.get(f"{MARKET}/api/ledger", params={"after": seq}, timeout=20).json()
