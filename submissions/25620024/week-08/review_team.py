@@ -17,9 +17,12 @@ from pathlib import Path
 HERE = Path(__file__).parent
 STATE = HERE / "private" / "review_team.json"
 TRACK = HERE / "private" / "enuri" / "forum_track.json"
-ARMS = ["summary:json", "summary:text", "records:json", "records:text"]   # format x order: JSON first, or the
-TAGS = {"summary:json": "{market_summary}", "summary:text": "[시세]",        # Korean+English text first and the
-        "records:json": "{purchase_records}", "records:text": "[구매 기록]"}  # JSON after it (HQ 11-04: test both)
+ARMS = ["summary:json", "summary:text", "summary:short", "records:json", "records:text", "records:short"]
+# format x style: JSON first, Korean+English text first, or three Korean lines with 5 refs (11-04 review: our posts
+# draw ~1 like fewer than the top authors' in every format -- is it length?). The tracker tells the styles apart by
+# tag and length, so each arm is scored on its own posts.
+TAGS = {"summary:json": "{market_summary}", "summary:text": "[시세]", "summary:short": "[시세]",
+        "records:json": "{purchase_records}", "records:text": "[구매 기록]", "records:short": "[구매 기록]"}
 EPSILON, MIN_N, AGE = 0.2, 3, "30"
 ME = "dragonash"
 
@@ -34,10 +37,14 @@ def load(path, default):
 def measured():
     """{arm: [likes at 30 min of each of our posts in that arm]} from the Enuri tracker."""
     out = {a: [] for a in ARMS}
-    tag_arm = {t: a for a, t in TAGS.items()}
     for p in load(TRACK, {}).values():
-        if p.get("author") == ME and AGE in (p.get("likes") or {}) and p.get("tag") in tag_arm:
-            out[tag_arm[p["tag"]]].append(p["likes"][AGE])
+        if p.get("author") != ME or AGE not in (p.get("likes") or {}):
+            continue
+        for arm, tag in TAGS.items():               # a text post is long, a short one is short (tracker's "long")
+            if p.get("tag") == tag and (not arm.endswith((":text", ":short")) or
+                                        arm.endswith(":text") == ((p.get("len") or 0) >= 400)):
+                out[arm].append(p["likes"][AGE])
+                break
     return out
 
 

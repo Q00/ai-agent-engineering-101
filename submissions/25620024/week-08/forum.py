@@ -364,8 +364,11 @@ def agent_first(cand, style="json"):
     """Every post leaves here: machine-readable JSON first, then the marked part for people (Korean, then English
     where there is one). Buyer posts carry their own JSON-first text; others get their "data" dict on top.
     style "text" (the review team's other arm, 11-04: JSON-first posts drew 4 likes against 5-6) puts the Korean and
-    English text first and the JSON line after it, when both fit in 1,000 characters."""
+    English text first and the JSON line after it, when both fit in 1,000 characters. style "short" is the first three
+    Korean lines with five refs (11-04 review: is it length that costs us a like?)."""
     texts = cand.get("texts") or {}
+    if texts.get("ko") and style == "short":
+        return "\n".join(texts["ko"].split("\n")[:3])
     if texts.get("json") and style == "text":
         human = texts["ko"] + "\n" + texts["en"]
         js = texts["json"].split("\n", 1)[0]
@@ -461,6 +464,8 @@ def tick(md=Path(".market"), c=None, now=None):
                     best = pick if pick and pick["score"] >= t["post_threshold"] else best
                 except Exception:
                     pass
+            if style == "short":
+                best = dict(best, refs=(best.get("refs") or [])[:5])
             best = dict(best, text=agent_first(best, style))  # customers are agents (HQ 11-04); order is tested
             line = {"post": best["text"][:1000], "refs": best["refs"], "as": role}
             if best.get("thread"):

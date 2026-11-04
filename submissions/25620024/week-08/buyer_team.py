@@ -264,17 +264,17 @@ def diagnosis(board, now=None):
             "outcomes_3h": {o: sum(1 for m in rows if m.get("outcome") == o) for o in
                             ("deal", "no deal", "no answer", "no candidates")},
             "deal_rate_by_category_3h": fmt(cat), "deal_rate_by_budget_3h": fmt(band),
-            "ab_scout_then_buy_24h": ab_results(now)}
+            "ab_scout_then_buy_24h": ab_results(now), "ab_pay_105_small_food_24h": ab_results(now, key="pay_ab")}
 
 
-def ab_results(now, hours=24):
+def ab_results(now, hours=24, key="ab"):
     """HQ 11-04 A/B on orders of 60,000 and up: A = the buyer negotiates; B = Enuri scouts each quote first and the
     buyer buys at what it learned. Per arm: orders, deals, surplus per order (budget - paid, the board's measure)."""
     out = {}
     for m in load_memory(now - hours * 3600):
-        if m.get("ab") not in ("A", "B"):
+        if m.get(key) not in ("A", "B"):
             continue
-        x = out.setdefault(m["ab"], {"orders": 0, "deals": 0, "surplus": 0, "scout_deals": 0})
+        x = out.setdefault(m[key], {"orders": 0, "deals": 0, "surplus": 0, "scout_deals": 0})
         x["orders"] += 1
         if m.get("outcome") == "deal" and m.get("agreed"):
             x["deals"] += 1

@@ -641,6 +641,16 @@ def ab_arm(order):
     return "B" if h % 2 else "A"
 
 
+def pay_arm(order):
+    """A/B (HQ 11-04, Enuri's finding: we pay the least of all buyers, 0.46, and close 42% while the top buyers pay
+    0.50-0.67 and close 55-64%): small food orders (under AB_MIN) split by order id; 'B' may pay up to 5% over the
+    honest median Enuri sets as walk-away, 'A' as before. None for other orders."""
+    if order.get("kind") != "food" or (order.get("budget") or 0) >= AB_MIN:
+        return None
+    h = int(hashlib.sha256(("pay:" + str(order.get("order") or order.get("item"))).encode()).hexdigest()[:8], 16)
+    return "B" if h % 2 else "A"
+
+
 def probe(q):
     """Enuri's scout offer in a quote's open task: 45% of list, to learn the shop's counter or stated lowest. Returns
     (q with the updated task, price learned or None). A shop that takes the scout offer has made a deal: the caller
@@ -790,8 +800,9 @@ def round3(a, order, shops, mem, started):
     sku = offer["sku"]
     cap = min(order["budget"], int(lp * T["max_pay_ratio"]))     # paying near the list price keeps nothing
     row = rows.get((shop["name"], offer["sku"])) if adv else None
+    parm = pay_arm(order)
     if row:
-        cap = min(cap, row["walk_away"])
+        cap = min(cap, int(row["walk_away"] * (1.05 if parm == "B" else 1)))
     # first offer: the anchor share of the list, but under the cap (an anchor above it would be dropped and the
     # buyer would open at first_offer_max x ask); 0.9 x cap so an ask at the anchor still leaves surplus
     low = int(lp * T["r3_first_offer"])
@@ -831,7 +842,7 @@ def round3(a, order, shops, mem, started):
             cap2 = min(order["budget"], int(lp2 * T["max_pay_ratio"]))
             row2 = rows.get((shop2["name"], offer2["sku"])) if adv else None
             if row2:
-                cap2 = min(cap2, row2["walk_away"])
+                cap2 = min(cap2, int(row2["walk_away"] * (1.05 if parm == "B" else 1)))
             low2 = min(row2["target"] if row2 else int(lp2 * T["r3_first_offer"]), int(0.9 * cap2))
             log(f"[retry] {shop2['name']} ask {q2['ask']} after no deal at {shop['name']}")
             try:
@@ -876,7 +887,7 @@ def round3(a, order, shops, mem, started):
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": sku, "category": order.get("item"),
               "kind": order.get("kind"), "list_price": lp, "budget": order["budget"], "rfq": rfq,
               "enuri_first": adv["ranked"][0]["shop"] if adv else None, "enuri_target": row and row["target"],
-              "enuri_walk": row and row["walk_away"], "ab": arm, "probed": probed or None,
+              "enuri_walk": row and row["walk_away"], "ab": arm, "probed": probed or None, "pay_ab": parm,
               "scout_deal": bool(scout_deal) or None,
               "first_ask": asks[0] if asks else None, "last_ask": asks[-1] if asks else None,
               "last_offer": offers[-1] if offers else None, "agreed": agreed,

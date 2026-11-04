@@ -574,7 +574,7 @@ def post_format(text):
         m = re.match(r'\s*\{"type":"(\w+)"', text or "")
         tag = "{" + (m.group(1) if m else "json") + "}"
     ko = len(re.findall("[가-힣]", text or "")) > 0.15 * max(1, len(text or ""))
-    return {"tag": tag, "lang": "ko" if ko else "en", "long": len(text or "") >= 200}
+    return {"tag": tag, "lang": "ko" if ko else "en", "long": len(text or "") >= 200, "len": len(text or "")}
 
 
 def track_forum(md=Path(".market"), now=None):
