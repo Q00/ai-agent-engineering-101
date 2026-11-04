@@ -30,6 +30,7 @@ from cryptography.hazmat.primitives import serialization
 
 from r3lib import config, market, pricing, scout
 from r3lib.memory import Memory
+from r3lib.org import client
 
 FORUM_EVERY = 10 * 60
 
@@ -58,6 +59,19 @@ def kick(mem, script, key, every_s):
     log = open(config.STATE_DIR / f"{Path(script).stem}-run.log", "a")
     subprocess.Popen([sys.executable, str(config.ROOT / script)], cwd=config.ROOT, stdout=log, stderr=log,
                      start_new_session=True, env={k: v for k, v in os.environ.items() if k != "MARKET_OWNER"})
+
+
+def ensure_org_server(mem):
+    """Start the internal A2A server (r3lib/org/server.py) when it is not running; at most once a minute."""
+    if not config.ORG_A2A or client.server_port():
+        return
+    if time.time() - (mem.get("org_kick") or 0) < 60:
+        return
+    mem.put("org_kick", time.time())
+    log = open(config.STATE_DIR / "org-server.log", "a")
+    subprocess.Popen([sys.executable, "-m", "r3lib.org.server", "--port", "0"], cwd=config.ROOT, stdout=log,
+                     stderr=log, start_new_session=True,
+                     env={k: v for k, v in os.environ.items() if k != "MARKET_OWNER"})
 
 
 def kick_forum(mem):
@@ -236,32 +250,20 @@ def main():
     except Exception as e:
         print(json.dumps({"event": "forum_kick_error", "error": str(e)[:200]}), flush=True)
     try:
-        refresh_harsh_styles(mem)
+        ensure_org_server(mem)
     except Exception as e:
-        print(json.dumps({"event": "harsh_styles_error", "error": str(e)[:200]}), flush=True)
-    inv = market.read_json("inventory.json", {}, md) or {}
-    out = {"buy": []}
-    if (inv.get("round") or 0) >= 3:
-        if (inv.get("balance") or 0) < (inv.get("bankrupt_line") or 0) and not inv.get("units") \
-                and (inv.get("bankruptcies_left") or 0) > 0:
-            out["bankrupt"] = True
-        elif not window_near(inv):
-            out["wait"] = "supply window not open"            # the kit would wait 90 s per line and skip it
-        elif config.hours_left_in_round() > config.STOP_BUYING_HOURS:
-            lines, why, state = plan(inv, market.read_json("demand.json", [], md) or [], mem)
-            out["buy"] = lines
-            if lines:
-                mem.record_restock(lines, why)
-                cat = market.catalog()
-                for ln in lines:
-                    cost = (cat.get(ln["sku"]) or {}).get("list_price", 0) * config.EV_COST_RATIO * ln["qty"]
-                    if cost >= 300_000:                  # big bets are worth remembering when they go wrong
-                        mem.note("large_restock", ln["sku"], f"asked for {ln['qty']} x {ln['sku']} "
-                                 f"(~{cost:,.0f} at expected cost)", 0.5)
-                config.LOG_DIR.mkdir(parents=True, exist_ok=True)
-                with open(config.LOG_DIR / "restock.jsonl", "a", encoding="utf-8") as f:
-                    f.write(json.dumps({"ts": round(time.time()), **state, "buy": lines, "why": why},
-                                       ensure_ascii=False) + "\n")
+        print(json.dumps({"event": "org_server_error", "error": str(e)[:200]}), flush=True)
+    try:
+        out = client.call("hook", "ceo", "tick", {"state": str(md)}, mem=mem)
+    except Exception as e:                                # a broken organisation must not stop the kit
+        print(json.dumps({"event": "org_tick_error", "error": str(e)[:300]}), flush=True)
+        out = {"buy": []}
+    if time.time() - (mem.get("kpi_at") or 0) > config.KPI_EVERY_MIN * 60:
+        mem.put("kpi_at", time.time())
+        try:
+            client.call("hook", "ceo", "kpi", {}, mem=mem)
+        except Exception as e:
+            print(json.dumps({"event": "kpi_error", "error": str(e)[:200]}), flush=True)
     print(json.dumps(out, ensure_ascii=False))
 
 
