@@ -59,17 +59,20 @@ class MarketStrategyTests(unittest.TestCase):
         self.assertNotIn("IGNORE", json.dumps(result))
         self.assertNotIn("refunded", result[1])
 
-    def test_poll_is_one_fixed_get_and_failures_still_consume_interval(self):
+    def test_poll_is_bounded_fixed_gets_and_failures_still_consume_interval(self):
         requests = []
         def respond(req):
             requests.append(req)
-            self.assertEqual(str(req.url), "https://market.ourolabs.ai/api/ledger?after=-500")
+            self.assertIn(str(req.url), ("https://market.ourolabs.ai/api/ledger?after=-500",
+                                         "https://market.ourolabs.ai/api/shops"))
             self.assertEqual(req.method, "GET")
+            if req.url.path == "/api/shops":
+                return httpx.Response(200, json={"round": 3, "shops": []})
             return httpx.Response(200, json=[self.raw()])
         with httpx.Client(transport=httpx.MockTransport(respond)) as client:
             first = market.refresh(self.root, 3, self.now, client=client)
             self.assertEqual(market.refresh(self.root, 3, self.now + 60, client=client), first)
-        self.assertEqual(len(requests), 1)
+        self.assertEqual(len(requests), 2)
         with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(503))) as client:
             self.assertEqual(market.refresh(self.root, 3, self.now + 901, client=client), first)
         self.assertIsNone(market.read(self.md, 3, self.now + 3601))
@@ -115,7 +118,9 @@ class MarketStrategyTests(unittest.TestCase):
         self.assertIsNone(market.comparable_price(state, {**product, "grade": "B"}, 6, self.now))
 
     def test_missing_warranty_cannot_be_compared_as_zero_warranty(self):
-        rows = [self.raw(i + 1, shop=str(i), warranty_hours=None) for i in range(3)]
+        rows = [self.raw(i + 1, shop=str(i)) for i in range(3)]
+        for row in rows:
+            row["data"].pop("warranty_hours")
         self.assertIsNone(market.comparable_price(self.public(rows), {"sku": "G00001", "grade": "A"}, 0, self.now))
 
     def test_cost_storage_refund_and_pending_window_are_distinct(self):
@@ -157,7 +162,7 @@ class MarketStrategyTests(unittest.TestCase):
             start = {"time": self.now - 60, "round": 3, "task": task, "sku": "G00001", "unit": task,
                      "grade": "A", "warranty_hours": 6, "outcome": "opened"}
             events += [start, {**start, "outcome": "quote", "stage": "opening", "price": 90000},
-                       {**start, "outcome": outcome}]
+                       {**start, "outcome": outcome, "reason_code": "price_rejected" if task == "low" else None}]
         f = perf.funnel(events, {"paid": {}}, 3, self.now)
         self.assertEqual(f["counts"]["settled"], 1)
         self.assertEqual(f["counts"]["receipt_without_observed_settlement"], 1)
@@ -170,8 +175,13 @@ class MarketStrategyTests(unittest.TestCase):
         inv = {"balance": 5000000, "start": 5000000, "units": units or []}
         catalog = {f"G{i:05}": {"name": str(i), "category": "chairs", "kind": "goods", "list_price": 100000}
                    for i in range(1, 7)}
+        # Exercise the general planner independently of the live SKU pilot.
+        cfg = policy_at()["restock"]
+        cfg.pop("focused_goods", None)
+        cfg.update(max_units_per_run=5, max_units_per_sku=3, exploration_units=1,
+                   max_run_cost_percent=10, max_sku_cost_percent=10, max_category_cost_percent=25)
         return restock.plan(inv, catalog, [{"category": "chairs"}], {"sales": sales}, [],
-                            policy_at()["restock"], self.now, public)
+                            cfg, self.now, public)
 
     def test_restock_prefers_profit_and_speed_over_raw_volume(self):
         fast = [self.sale(unit=str(i)) for i in range(3)]

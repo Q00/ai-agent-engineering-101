@@ -36,6 +36,13 @@ class ShopOperationsTests(unittest.TestCase):
         self.logs = self.root / "logs"
         self.logs.mkdir()
         self.policy = policy_at()
+        # These integration scenarios exercise the general planner with synthetic
+        # SKUs. The deployed focused portfolio has separate end-to-end tests.
+        stock = self.policy["restock"]
+        stock.pop("focused_goods", None)
+        stock.update(max_units_per_run=5, max_units_per_sku=3, exploration_units=1,
+                     max_run_cost_percent=10, max_sku_cost_percent=10,
+                     max_category_cost_percent=25)
         self.now = datetime.fromisoformat("2026-11-03T12:00:00+09:00").timestamp()
         self.end = datetime.fromisoformat(self.policy["horizon"]["ends_at"]).timestamp()
         self.inv = {"round": 3, "balance": 5000000, "start": 5000000, "injected": 0,

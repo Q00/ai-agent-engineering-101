@@ -104,6 +104,25 @@ def inventory_summary(inv, holds, meta, rnd, now):
             "note": "Active negotiations live in the seller process and are not included; issued receipt holds are never released by this report."}
 
 
+def supply_schedule(inv, meta, rnd, now):
+    """Display only the current kit announcement, never a guessed 20-minute clock."""
+    if inv.get("round") != rnd or not -5 <= meta.get("age_seconds", -999) <= 45:
+        return {"status": "inventory_unavailable_or_stale"}
+    raw = inv.get("restock")
+    if not isinstance(raw, dict) or type(raw.get("open")) is not bool:
+        return {"status": "schedule_unavailable"}
+    times = {k: raw[k] for k in ("opens_at", "closes_at") if number(raw.get(k)) and raw[k] >= 0}
+    if raw["open"]:
+        if (len(times) != 2 or times["closes_at"] <= times["opens_at"]
+                or not times["opens_at"] <= now < times["closes_at"]):
+            return {"status": "schedule_inconsistent", **times}
+        return {"status": "open", **times, "seconds_remaining": max(0, int(times["closes_at"] - now))}
+    result = {"status": "closed", **times}
+    if times.get("opens_at", 0) > now:
+        result["seconds_until_open"] = math.ceil(times["opens_at"] - now)
+    return result
+
+
 def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
     """Return only aggregate observations; never update cache or live state."""
     root, now = Path(root), time.time() if now is None else now
@@ -222,6 +241,7 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
                          "note": "Shop settle-refused lines are UNDATED_TAIL attempt counts, not unique tasks or current-round/window counts. Receipt without matched settlement does not prove failure."},
             "inventory": inventory_summary(inv, states["receipt-reservations"], sources["inventory"], rnd, now),
             "restock": {"decisions_by_status": dict(statuses), "excluded_unknown_round": restock_unknown,
+                        "schedule": supply_schedule(inv, sources["inventory"], rnd, now),
                         "note": "A plan is not proof of a completed inventory purchase; retries may create multiple decision rows."},
             "coverage": {"excluded_seller_rows": dict(excluded), "ambiguous_receipt_units": sum(n > 1 for n in unit_tasks.values()),
                          "sources": sources,
@@ -243,6 +263,7 @@ def format_report(report):
     inv = report["inventory"]
     lines.append(f"Inventory: {inv['status']}; units={inv.get('units', 'unknown')}; blocked by issued receipt={inv.get('blocked_by_issued_receipt', 'unknown')}; blocked SKUs={inv.get('blocked_skus', 'unknown')}")
     lines.append(f"Restock decision rows: {json.dumps(report['restock']['decisions_by_status'], sort_keys=True)}")
+    lines.append(f"Supply window (kit announcement): {json.dumps(report['restock']['schedule'], sort_keys=True)}")
     lines.append(f"UNDATED_TAIL shop settle-refused attempts: {report['checkout']['undated_tail_settle_refusal_attempts']} (no task IDs, dates or rounds).")
     lines.append("Failed checkout tasks: UNKNOWN. Receipt without matched settlement is not proof of failed payment.")
     lines.extend("Limit: " + note for note in report["coverage"]["limits"])

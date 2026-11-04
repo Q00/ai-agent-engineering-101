@@ -184,6 +184,20 @@ class ShopDiagnosticsTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.report(hours=hours)
 
+    def test_supply_schedule_uses_announced_jitter_and_rejects_stale_state(self):
+        inv = {"round": 3, "units": [], "restock": {
+            "open": False, "opens_at": NOW + 137, "closes_at": None}}
+        self.json(".market/inventory.json", inv)
+        self.assertEqual(self.report()["restock"]["schedule"]["seconds_until_open"], 137)
+        inv["restock"] = {"open": True, "opens_at": NOW - 30, "closes_at": NOW + 150}
+        self.json(".market/inventory.json", inv)
+        self.assertEqual(self.report()["restock"]["schedule"]["seconds_remaining"], 150)
+        os.utime(self.root / ".market/inventory.json", (NOW - 60, NOW - 60))
+        self.assertEqual(self.report()["restock"]["schedule"]["status"], "inventory_unavailable_or_stale")
+        inv["restock"]["closes_at"] = NOW - 1
+        self.json(".market/inventory.json", inv)
+        self.assertEqual(self.report()["restock"]["schedule"]["status"], "schedule_inconsistent")
+
 
 if __name__ == "__main__":
     unittest.main()
