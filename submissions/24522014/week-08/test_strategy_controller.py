@@ -1,6 +1,7 @@
 import copy
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import tempfile
 import time
@@ -13,6 +14,7 @@ from strategy_policy import BASE, effective, validate
 from market_state import read, write
 from r3_policy import selling_terms
 from restock_policy import plan
+from local_settlements import KST
 
 
 SETTINGS = controller.config()
@@ -176,13 +178,19 @@ class RuntimeAndPersistence(unittest.TestCase):
             md = Path(tmp)/".market"
             now = time.time()
             write(md/"inventory.json", {"round": 3, "balance": 5000000, "units": []})
+            log = Path(tmp)/"logs/market-kit.log"
+            log.parent.mkdir(parents=True)
+            clock = datetime.fromtimestamp(now, KST).strftime("%H:%M:%S")
+            log.write_text(f"{clock} [market] shop registered as kcwarni, round 3\n"
+                           f"{clock} [acp] settled fixture at 100, ledger #1, unit u grade A\n", encoding="utf8")
+            os.utime(log, (now, now))
             write(md/"market-intel.json", {"round": 3, "observed_at": now,
                   "competition": {"own": {"shops": {"alive": True, "deals": 10, "visits": 20,
                    "revenue": 2000, "stars": 5, "reviews": 10}}},
                   "rows": [{"round": 3, "kind": "settle", "seq": 1, "ts": now,
                             "data": {"unit": "u", "item": "G1", "grade": "A", "amount": 100}}]})
             for i, identity in enumerate((None, "trial")):
-                write(md/"signed-offers"/f"{i}.json", {"unit": "u", "cost": 80, "price": 100,
+                write(md/"signed-offers"/f"{i}.json", {"unit": "u", "sku": "G1", "cost": 80, "price": 100,
                       "issued_at": now-10, "strategy_experiment": identity})
             result = controller.observation(md, now)
             self.assertEqual(result["own_sales"][0]["receipt_attribution"], "ambiguous_or_missing")

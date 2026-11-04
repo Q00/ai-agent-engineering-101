@@ -63,7 +63,7 @@ Save first judgement; queue factual buyer posts (4/day); no LLM.};
 \node[wide,minimum height=2.1cm] (memory) at (9,6.6) {\textbf{Persistent evidence and feedback --- custom context management}\\
 \texttt{r3-buyer-memory.jsonl}: R3 observations; \texttt{settlement\_memory.py} joins payment outcomes.\\
 Only matching paid outcomes become confirmed settlement observations; no rewriting original history.\\
-\texttt{r3-restock-memory.json}: own sales; \texttt{market-intel.json}: bounded public evidence.\\
+\texttt{local-settlements.json}: own confirmed sales; \texttt{market-intel.json}: market comparisons.\\
 \texttt{strategy-state.json}/\texttt{strategy-policy.json}: trial state, prior controls and leased versions.};
 \draw[feedback] (model.south) -- node[lab,right]{trade observations} (memory.north -| model.south);
 \draw[feedback] (review.south) -- node[lab,right]{settled evidence} (memory.north -| review.south);

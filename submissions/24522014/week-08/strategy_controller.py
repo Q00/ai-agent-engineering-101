@@ -13,8 +13,8 @@ import time
 from uuid import uuid4
 
 from market_state import read, write
-from purchase_monitor import settlement_price
 from strategy_policy import BASE, validate
+from local_settlements import collect as local_settlements
 
 ROOT = Path(__file__).resolve().parent
 
@@ -41,7 +41,7 @@ def finite(value):
 
 def compact(observation):
     return {k: copy.deepcopy(v) for k, v in observation.items()
-            if k not in ("own_sales", "price_candidates", "stock")}
+            if k not in ("own_sales", "price_candidates", "stock", "local_counters")}
 
 
 def initial():
@@ -131,6 +131,15 @@ def transition(original, observation, settings):
         rollback("stale_or_invalid_observation")
         state["phase"] = "waiting_for_fresh_r3_data"
         return state, events
+    state.pop("wait_reason", None)
+    if observation.get("self_evidence") == "local_acp_v1" and state.get("self_evidence") != "local_acp_v1":
+        rollback("self_evidence_source_migration")
+        counters = observation["local_counters"]
+        for previous in state["history"]:
+            confirmed = [r for r in counters if r["ts"] <= previous["at"]]
+            previous.update(deals=len(confirmed), revenue=sum(r["amount"] for r in confirmed), self_evidence="local_acp_v1")
+        state["self_evidence"] = "local_acp_v1"
+        event("self_evidence_migrated", source="local_acp_v1", confirmed=observation["deals"])
     if observation["balance"] <= observation["reserve"]:
         rollback("cash_reserve_guard")
         state["controls"]["restock_paused"] = True
@@ -244,6 +253,10 @@ def transition(original, observation, settings):
         state["phase"] = "daily_trial_limit"
         return state, events
     choices = choose(observation, state["controls"], settings)
+    for choice in choices:
+        choice["own_baseline_settlements"] = len(cohort(observation.get("own_sales", []), choice.get("sku"),
+                                                    choice.get("grade"), start["at"], now))
+        choice["own_evidence_source"] = observation.get("self_evidence", "legacy_fixture")
     event("diagnosis", rank=observation.get("rank"), gap_to_third=observation.get("gap_to_third"), candidates=choices[:5],
           buyer_surplus=observation.get("buyer_surplus"), forum_status=observation.get("forum_status"))
     for choice in choices:
@@ -261,6 +274,7 @@ def transition(original, observation, settings):
         break
     else:
         state["phase"] = "waiting_for_comparable_evidence"
+        state["wait_reason"] = "no_eligible_market_candidate" if not choices else "insufficient_local_same_condition_settlements"
     return state, events
 
 
@@ -278,6 +292,14 @@ def observation(md, now):
             or shop.get("alive") is not True):
         return result
     stock = inv.get("units", [])
+    try:
+        local = local_settlements(md, now)
+    except (OSError, ValueError, TypeError) as error:
+        result["local_evidence_error"] = f"{type(error).__name__}: {error}"
+        return result
+    if not local["ready"] or not -10 <= local["source_age_seconds"] <= 120:
+        result["local_evidence_error"] = "missing R3 anchor, conflicting receipts, or stale local log"
+        return result
     cost = sum(u["cost"] for u in stock)
     rate = inv.get("storage_per_day", .01)
     reserve = max(500000, inv.get("start", 5000000)*.2) + sum(u["cost"]*rate*7 for u in stock if u.get("kind") == "goods")
@@ -299,8 +321,34 @@ def observation(md, now):
         coverage = offer.get("warranty_hours") or 0
         if coverage > 0 and now < offer["issued_at"]+coverage*3600+600:
             reserve += offer["price"]
+    missing_costs = {r["unit"] for r in local["rows"] if r["unit"] not in costs}
+    if missing_costs:
+        # Older resident sellers did not include cost in their signed-offer metadata.
+        for path in (md.parent/"logs/pricing").glob("*.json"):
+            entry = read(path)
+            if entry.get("unit") in missing_costs and finite(entry.get("cost")):
+                costs[entry["unit"]] = entry["cost"]
     write(cache_path, costs)
     own_sales, refunded = [], []
+    missing_metadata = []
+    for sale in local["rows"]:
+        unit, amount = sale["unit"], sale["amount"]
+        candidates_for_unit = offers.get(unit, [])
+        matching = [o for o in candidates_for_unit if o.get("price") == amount
+                    and finite(o.get("issued_at")) and o["issued_at"] <= sale["ts"]+1]
+        skus = {o.get("sku") for o in candidates_for_unit if isinstance(o.get("sku"), str)}
+        identities = {o.get("strategy_experiment") for o in matching}
+        warranties = {o.get("warranty_hours") or 0 for o in matching}
+        # The cost and SKU must be backed by this seller's own unit metadata.
+        if len(skus) != 1 or unit not in costs:
+            missing_metadata.append(sale["ledger"])
+            continue
+        identity = next(iter(identities)) if len(identities) == 1 else None
+        coverage = next(iter(warranties)) if len(warranties) == 1 else None
+        own_sales.append({**sale, "sku": next(iter(skus)), "cost": costs[unit], "experiment": identity,
+                          "warranty_hours": coverage,
+                          "receipt_attribution": "matched" if len(identities) == 1 else "ambiguous_or_missing"})
+    # Public settlements never populate own_sales. Refunds are adverse corroborating signals only.
     for row in snapshot.get("rows", []):
         data = row.get("data") or {}
         unit = data.get("unit")
@@ -308,41 +356,44 @@ def observation(md, now):
             continue
         if row.get("kind") == "refund":
             refunded.append(unit)
-        amount = settlement_price(data)
-        if row.get("kind") == "settle" and amount is not None and unit in costs:
-            matching = [o for o in offers[unit] if o.get("price") == amount
-                        and finite(o.get("issued_at")) and o["issued_at"] <= row["ts"]]
-            identities = {o.get("strategy_experiment") for o in matching}
-            identity = next(iter(identities)) if len(identities) == 1 else None
-            own_sales.append({"ledger": row["seq"], "ts": row["ts"], "unit": unit, "sku": data.get("item"),
-                              "grade": data.get("grade"), "warranty_hours": data.get("warranty_hours") or 0,
-                              "amount": amount, "cost": costs[unit], "experiment": identity,
-                              "receipt_attribution": "matched" if len(identities) == 1 else "ambiguous_or_missing"})
     consumer = read(md/"strategy-consumer.json", {})
     ready = consumer.get("protocol") == 1 and 0 <= now-consumer.get("heartbeat_at", 0) <= 1200
     purchase = read(md/"purchase-intel.json", {})
     candidates = []
     if purchase.get("status") == "ok" and 0 <= now-purchase.get("source_observed_at", 0) <= 3600:
         comparisons = {c["unit"]: c for c in purchase.get("summary", {}).get("own_stock_comparison", [])}
+        products = {p["sku"]: p for p in purchase.get("summary", {}).get("products", [])}
         catalog = read(md/"catalog.json", {})
         from strategy_policy import effective
         runtime = effective(md, now)
         for unit in stock:
             comparison = comparisons.get(unit["unit"], {})
             prices = comparison.get("same_grade_zero_warranty_prices") or {}
+            if not prices:
+                # A new stock unit can use the same SKU/grade market comparison.
+                conditions = products.get(unit["sku"], {}).get("conditions", [])
+                prices = next((g["prices"] for g in conditions
+                               if g.get("grade") == unit.get("grade") and g.get("warranty_hours") == 0), {})
             terms = selling_terms(unit, catalog, now, signals=snapshot.get("skus", {}).get(unit["sku"], {}), runtime=runtime)
             if unit.get("kind") == "goods" and not terms["below_cost_allowed"]:
                 candidates.append({"sku": unit["sku"], "grade": unit["grade"], "kind": "goods", "floor": terms["floor"],
                                    "quote": terms["quote"], "list_price": unit["list_price"],
                                    "median": prices.get("median"), "count": prices.get("count", 0)})
     result.update(valid=True, balance=inv["balance"], reserve=reserve, stock_cost=cost,
+                  self_evidence="local_acp_v1",
+                  local_counters=[{k: r[k] for k in ("ledger", "ts", "amount")} for r in local["rows"]],
+                  local_evidence={"confirmed": len(local["rows"]), "cost_attributed": len(own_sales),
+                                  "missing_metadata_ledgers": missing_metadata, "offset": local["offset"],
+                                  "conflicting_ledgers": local["conflicting_ledgers"]},
+                  deals=len(local["rows"]), revenue=sum(r["amount"] for r in local["rows"]),
+                  board_deals=shop["deals"], board_revenue=shop["revenue"],
                   operating_value=inv["balance"]+cost-inv.get("start", 5000000)-inv.get("injected", 0),
                   bankruptcies=inv.get("bankruptcies", 0), rank=snapshot.get("competition", {}).get("rank"),
                   gap_to_third=snapshot.get("competition", {}).get("gap_to_third"),
                   buyer_surplus=buyer.get("surplus"), forum_status=read(md/"forum-intel.json", {}).get("status"),
                   price_consumer_ready=ready, price_candidates=candidates, own_sales=own_sales, refunded_units=refunded,
                   aged_units=sum(now-u.get("supplied_at", now) >= 86400 for u in stock), stock=stock,
-                  **{k: shop[k] for k in ("deals", "visits", "revenue", "stars", "reviews")})
+                  **{k: shop[k] for k in ("visits", "stars", "reviews")})
     return result
 
 
@@ -391,6 +442,7 @@ def run(md, now=None, force=False):
         state = read(md/"strategy-state.json", initial())
         obs = observation(md, now) if settings["enabled"] else {"at": now, "valid": False}
         urgent = not settings["enabled"] or not obs.get("valid") or obs.get("balance", 0) <= obs.get("reserve", 0)
+        urgent = urgent or (obs.get("self_evidence") == "local_acp_v1" and state.get("self_evidence") != "local_acp_v1")
         active = state.get("active")
         if active and obs.get("valid"):
             baseline = active["baseline_end"]
@@ -410,12 +462,14 @@ def run(md, now=None, force=False):
                   "valid_until": now+settings["lease_seconds"], "controls": published,
                   "experiment": active["id"] if active and active["phase"] == "testing" else None}
         journal = {"at": now, "phase": state["phase"], "observation": compact(obs),
+                   "wait_reason": state.get("wait_reason"),
                    "events": events, "policy": policy, "active_experiment": active, "model_calls": 0}
         stamp = datetime.fromtimestamp(now, timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         write(md.parent/"logs/strategy-controller"/(stamp+"-"+uuid4().hex[:8]+".json"), journal)
         write(md/"strategy-state.json", state)
         write(md/"strategy-policy.json", policy)
         return {"status": state["phase"], "version": state["version"], "events": [e["event"] for e in events],
+                "wait_reason": state.get("wait_reason"),
                 "price_consumer_ready": obs.get("price_consumer_ready", False), "model_calls": 0}
     finally:
         release(handle)
