@@ -1,6 +1,6 @@
 """icrl meta-harness outer loop with a fake clock and a fake LLM (no network): 6 h gating, sample minimums,
-per-lane scoring and lane choice, per-lane revert, atomic candidate writes, invalid / oversized / PII replies,
-corrupted inputs and the write footprint."""
+per-side scoring over the side's lanes and side choice, per-side revert, atomic candidate writes, invalid /
+oversized / PII replies, corrupted inputs and the write footprint. The "lane" fields of meta rows name the side."""
 
 import json
 from pathlib import Path
@@ -108,7 +108,7 @@ def test_insufficient_samples_no_change(tmp_path):
     ctx = ctx_at(tmp_path)
     init(ctx)
     memrows(ctx, T0, 3)  # below MIN_MEM_ROWS
-    for ln in meta.LANES:
+    for ln in meta.SIDES:
         cycles(ctx, T0, ln, 8)
     llm = Fake(cand())
     out = meta.step(ctx, T0 + meta.META_S, llm=llm)
@@ -121,37 +121,35 @@ def test_valid_candidate_only_chosen_lane_changes(tmp_path):
     ctx = ctx_at(tmp_path)
     init(ctx)
     memrows(ctx, T0, 6)
-    cycles(ctx, T0, "shop", 6)
-    cycles(ctx, T0, "buyer", 4, valid=False)  # lowest score
-    cycles(ctx, T0, "buyer", 2)
+    cycles(ctx, T0, "price", 3)  # the shop side = the price and stock lanes together
+    cycles(ctx, T0, "stock", 2)
+    cycles(ctx, T0, "shop", 1, valid=False)  # an old shop-lane row counts as side shop
+    cycles(ctx, T0, "forum", 6, valid=False)  # old forum-lane rows are ignored
     cycles(
-        ctx, T0, "forum", 6, hold=True
-    )  # holds are not valid changes: 0.5 * 1 + 0.5 * 0
+        ctx, T0, "buyer", 6, hold=True
+    )  # holds are not valid changes: 0.5 * 1 + 0.5 * 0, lowest score
     llm = Fake(cand(features=["time", "market", "no_such_feature"]))
     out = meta.step(ctx, T0 + meta.META_S, llm=llm)
-    assert out["status"] == "candidate" and out["lane"] == "forum"
-    assert "GUARD_REASONS" in llm.prompts[0] and "'forum'" in llm.prompts[0]
+    assert out["status"] == "candidate" and out["lane"] == "buyer"
+    assert "GUARD_REASONS" in llm.prompts[0] and "'buyer'" in llm.prompts[0]
     h = harness(ctx)
-    assert h["version"] == 1
-    assert h["lanes"]["forum"] == {
+    assert h["version"] == 1 and set(h["lanes"]) == {"shop", "buyer"}
+    assert h["lanes"]["buyer"] == {
         "n_lessons": 12,
         "recall": "recent_first",
         "prompt_notes": "raise prices only with N>=5 settles",
         "features": ["time", "market"],
     }
-    assert (
-        h["lanes"]["shop"] == meta.DEFAULT_LANE
-        and h["lanes"]["buyer"] == meta.DEFAULT_LANE
-    )
+    assert h["lanes"]["shop"] == meta.DEFAULT_LANE
     c = meta._rows(ctx.sdir / "meta" / "candidates.jsonl")
-    assert {r["lane"] for r in c} == set(meta.LANES) and all(
+    assert {r["lane"] for r in c} == set(meta.SIDES) and all(
         r["version"] == 0 for r in c
     )
     by = {r["lane"]: r for r in c}
     assert (
-        by["shop"]["score"] == 1.0
-        and by["forum"]["hold_rate"] == 1.0
-        and by["buyer"]["validity"] == 0.3333
+        by["shop"]["samples"]["decisions"] == 6
+        and by["shop"]["validity"] == 0.8333
+        and by["buyer"]["hold_rate"] == 1.0
     )
     assert not list((ctx.sdir).glob(".*.tmp"))  # atomic: temp renamed away
 
@@ -160,14 +158,14 @@ def test_tie_rotates_lanes(tmp_path):
     ctx = ctx_at(tmp_path)
     init(ctx)
     memrows(ctx, T0, 30)
-    for ln in meta.LANES:
+    for ln in meta.SIDES:
         cycles(ctx, T0, ln, 30)
     t, seen = T0, []
     for _ in range(3):
         t += meta.META_S
         out = meta.step(ctx, t, llm=Fake(cand(n=10 + len(seen))))
         seen.append(out["lane"])
-    assert seen[0] == "shop" and len(set(seen)) == 3
+    assert seen == ["shop", "buyer", "shop"]
 
 
 def test_lane_without_samples_is_skipped(tmp_path):
@@ -325,3 +323,18 @@ def test_writes_only_meta_and_harness(tmp_path):
         for f, b in snap.items()
         if not f.startswith("meta/")
     )
+
+
+def test_sides_are_judged_from_the_side_field_or_the_lane(tmp_path):
+    """A cycle row's "side" wins over its lane; price and stock rows add up on the shop side, forum rows nowhere."""
+    ctx = ctx_at(tmp_path)
+    memrows(ctx, T0, 6)
+    cycles(ctx, T0, "price", 2, side="shop")
+    cycles(ctx, T0, "stock", 2, valid=False)
+    cycles(ctx, T0, "forum", 5)
+    cycles(ctx, T0, "buyer", 3)
+    shop = meta.lane_quality(ctx.sdir, "shop", T0, 0, T0 + meta.META_S)
+    buyer = meta.lane_quality(ctx.sdir, "buyer", T0, 0, T0 + meta.META_S)
+    assert shop["samples"]["decisions"] == 4 and shop["validity"] == 0.5 and shop["enough"]
+    assert buyer["samples"]["decisions"] == 3 and not buyer["enough"]  # sample floor unchanged
+    assert meta.LANE_SIDE == {"price": "shop", "stock": "shop", "buyer": "buyer", "shop": "shop"}

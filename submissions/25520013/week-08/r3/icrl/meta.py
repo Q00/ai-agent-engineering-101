@@ -1,7 +1,10 @@
 """Meta-harness outer loop over the icrl proposers (Lee et al., "Meta-Harness", arXiv 2603.28052; DESIGN.md sec 13).
 
-Every META_S the outer loop judges the harness (what each lane's proposer recalls and sees) of ONE lane and either
-reverts that lane to its best recorded config or asks the LLM (role "meta") for one new config of that lane.
+Every META_S the outer loop judges the harness (what each lane's proposer recalls and sees) of ONE side and either
+reverts that side to its best recorded config or asks the LLM (role "meta") for one new config of that side. The
+harness is per side, not per lane: shop = the price and stock lanes, buyer = the buyer lane (loop.LANE_SIDE); a
+side aggregates the cycle rows of all its lanes. Old rows with lane "shop" count as side shop, lane "forum" rows are
+ignored. harness.json keeps its key "lanes" (keyed by side), and the "lane" fields of meta rows name the side.
 Judged by harness-quality metrics with enough samples in 6 h (memcheck accuracy, proposal validity), not by the
 experiment score (experiments last 3-24 h). Running experiments are measured by code and are unaffected.
 
@@ -17,7 +20,9 @@ import traceback
 from pathlib import Path
 
 META_S = 10800  # 성수님 2026-11-04: run every 3 h (was 6 h); the sample floors below still gate every judgement
-LANES = ("shop", "buyer", "forum")
+SIDES = ("shop", "buyer")
+# cycle row lane -> side (= loop.LANE_SIDE, plus the old "shop" lane); a lane not listed (old "forum") is ignored
+LANE_SIDE = {"price": "shop", "stock": "shop", "buyer": "buyer", "shop": "shop"}
 RECALLS = ("graph_first", "recent_first")
 N_LESSONS_RANGE = (5, 40)
 NOTES_MAX = 600
@@ -131,7 +136,7 @@ def load_harness(sdir):
     v = v if isinstance(v, int) and not isinstance(v, bool) and v >= 0 else 0
     raw = h.get("lanes") if isinstance(h.get("lanes"), dict) else {}
     lanes = {}
-    for ln in LANES:
+    for ln in SIDES:
         cfg, _ = check_lane(raw.get(ln))
         lanes[ln] = cfg or json.loads(json.dumps(DEFAULT_LANE))
     return v, lanes
@@ -139,7 +144,8 @@ def load_harness(sdir):
 
 # ---------------------------------------------------------------- quality score
 def lane_quality(sdir, lane, since, lane_version, now):
-    """Harness quality of one lane over [since, now] from memcheck.jsonl and the loop's cycle rows."""
+    """Harness quality of one side over [since, now] from memcheck.jsonl and the cycle rows of all its lanes (a row's
+    "side", else its lane mapped by LANE_SIDE)."""
     sdir = Path(sdir)
     mem = [
         r
@@ -160,7 +166,8 @@ def lane_quality(sdir, lane, since, lane_version, now):
     )  # the same questions recur hourly: questions per check, not the sum
     dec, valid, holds, guard_ex = 0, 0, 0, []
     for r in _rows(sdir / "log.jsonl"):
-        if r.get("ev") != "cycle" or r.get("lane") != lane or not _num(r.get("ts")):
+        side = r.get("side") or LANE_SIDE.get(r.get("lane"))
+        if r.get("ev") != "cycle" or side != lane or not _num(r.get("ts")):
             continue
         if not since <= r["ts"] <= now:
             continue
@@ -213,9 +220,10 @@ def revert_margin(se_cur, se_best):
 # ---------------------------------------------------------------- LLM
 def meta_prompt(lane, cur, history, misses, guards):
     return (
-        "You improve the harness of a live market agent's experiment proposer for the lane "
-        f"'{lane}': what it recalls from memory and which state it sees. Quality = 0.5 memory recall accuracy "
-        "+ 0.5 share of proposals that are changes passing the code guards. Propose ONE new config for this lane. "
+        "You improve the harness of a live market agent's experiment proposers for the side "
+        f"'{lane}' (all its lanes share it): what they recall from memory and which state they see. Quality = 0.5 "
+        "memory recall accuracy + 0.5 share of proposals that are changes passing the code guards. Propose ONE new "
+        "config for this side. "
         'Reply with strict JSON only: {"n_lessons": int 5-40, "recall": "graph_first"|"recent_first", '
         f'"prompt_notes": str <= {NOTES_MAX} chars (advice shown to the proposer), "features": [names], '
         '"why": "<=200 chars"}.\n'
@@ -285,7 +293,7 @@ def _run(ctx, now, llm, mdir, st):
     known = [version] + [r["version"] for r in cands if _num(r.get("version"))]
     ls = st.setdefault("lanes", {})
     out = {"version": version, "lanes": {}}
-    for ln in LANES:  # a lane whose config changed outside meta (or first seen) starts a new window now
+    for ln in SIDES:  # a side whose config changed outside meta (or first seen) starts a new window now
         s = ls.get(ln)
         if (
             not isinstance(s, dict)
@@ -294,7 +302,7 @@ def _run(ctx, now, llm, mdir, st):
         ):
             ls[ln] = {"since": now, "version": version, "cfg_sha": _csha(lanes[ln])}
     quals = {}
-    for ln in LANES:
+    for ln in SIDES:
         s = ls[ln]
         lv = s["version"] if _num(s.get("version")) else version
         q = lane_quality(sdir, ln, s["since"], lv, now)
@@ -317,15 +325,15 @@ def _run(ctx, now, llm, mdir, st):
                     "window": [s["since"], now],
                 },
             )
-    ok = [ln for ln in LANES if quals[ln]["enough"]]
+    ok = [ln for ln in SIDES if quals[ln]["enough"]]
     if not ok:
         out["status"] = "waiting"
         return out
     rot = st.get("rot") if isinstance(st.get("rot"), int) else 0
-    order = [LANES[(rot + i) % len(LANES)] for i in range(len(LANES))]
+    order = [SIDES[(rot + i) % len(SIDES)] for i in range(len(SIDES))]
     low = min(quals[ln]["score"] for ln in ok)
     lane = next(ln for ln in order if ln in ok and quals[ln]["score"] == low)
-    st["rot"] = (LANES.index(lane) + 1) % len(LANES)
+    st["rot"] = (SIDES.index(lane) + 1) % len(SIDES)
     out["lane"] = lane
     cur, lv = quals[lane], ls[lane]["version"]
     latest = {}

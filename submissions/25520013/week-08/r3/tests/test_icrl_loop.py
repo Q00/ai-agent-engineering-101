@@ -1,6 +1,6 @@
 """icrl loop on a synthetic workspace with a fake clock and fake LLMs (no network): apply / revert bytes, versions,
 external edits, STOP, freeze, loss cap, no approver call, PII masking, idempotent ticks, the deploy check and the
-real-data state build. The fake proposer changes only in the shop lane (buyer and forum lanes hold), so the shop
+real-data state build. The fake proposer changes only in the price lane (stock and buyer lanes hold), so the price
 experiment runs alone here; tests/test_icrl_lanes.py covers lanes running together."""
 
 import functools
@@ -38,7 +38,7 @@ class Fake:
 
 
 def pick(prompt):
-    if "\nLANE shop\n" not in prompt:
+    if "\nLANE price\n" not in prompt:
         return HOLD
     arms = json.loads([x for x in prompt.splitlines() if x.startswith("ARMS ")][0][5:])
     a = arms.get(ARM) or next(
@@ -198,11 +198,11 @@ def start(env, first_arm=None, monkeypatch=None):
             loop.X, "block_arm", lambda seed, i: first_arm if i == 0 else "A"
         )
     r = loop.step(NOW0, ctx=env["ctx"])
-    assert r["status"] == "ok" and r["cycles"]["shop"]["started"] == "e0001", r
+    assert r["status"] == "ok" and r["cycles"]["price"]["started"] == "e0001", r
     L = json.loads((env["sdir"] / "loop.json").read_text())
-    t0 = L["lanes"]["shop"]["active"]["t_start"]
+    t0 = L["lanes"]["price"]["active"]["t_start"]
     assert env["pol"].read_bytes() == env["orig"]  # scheduled, not yet written
-    assert loop.step(t0 + 1, ctx=env["ctx"])["exp"]["shop"] == "started"
+    assert loop.step(t0 + 1, ctx=env["ctx"])["exp"]["price"] == "started"
     return t0
 
 
@@ -212,8 +212,8 @@ def test_first_cycle_applies_without_a_mode_file_and_ticks_are_idempotent(env):
     # one proposer call per lane on the first tick, none on the second tick of the same step
     assert len(env["prop"].prompts) == 3 and not (env["sdir"] / "mode.json").exists()
     lanes = json.loads((env["sdir"] / "loop.json").read_text())["lanes"]
-    assert lanes["shop"]["active"]["status"] == "scheduled"
-    assert lanes["buyer"]["active"] is None and lanes["forum"]["active"] is None
+    assert lanes["price"]["active"]["status"] == "scheduled"
+    assert lanes["buyer"]["active"] is None and lanes["stock"]["active"] is None
 
 
 def test_switchback_runs_to_keep_a_and_restores_identical_bytes(env):
@@ -253,7 +253,7 @@ def test_loss_cap_reverts_and_rejects(env, monkeypatch):
     t0 = start(env, "B", monkeypatch)
     assert env["pol"].read_bytes() != env["orig"]
     r = loop.step(t0 + 1800, ctx=env["ctx"])
-    assert r["exp"]["shop"] == "loss_cap" and env["pol"].read_bytes() == env["orig"]
+    assert r["exp"]["price"] == "loss_cap" and env["pol"].read_bytes() == env["orig"]
     end = [x for x in rows(env["sdir"] / "experiments.jsonl") if x["event"] == "end"][0]
     assert end["verdict"] == "reject" and end["reason"].startswith("loss_cap")
 
@@ -313,7 +313,7 @@ def test_external_edit_without_experiment_becomes_the_baseline(env):
 
 def test_no_approver_call_and_logs_are_masked(env):
     r = loop.step(NOW0, ctx=env["ctx"])
-    assert r["cycles"]["shop"]["started"] == "e0001" and "approver" not in r["cycles"]["shop"]
+    assert r["cycles"]["price"]["started"] == "e0001" and "approver" not in r["cycles"]["price"]
     assert {x["role"] for x in rows(env["sdir"] / "llm.jsonl")} == {"prop"}
     assert set(env["ctx"].llms) == {"prop"} and not hasattr(loop, "approver_prompt")
     start_row = rows(env["sdir"] / "experiments.jsonl")[0]
@@ -342,7 +342,7 @@ def test_bad_json_is_a_hold_and_retries_next_step(env):
     r = loop.step(NOW0, ctx=env["ctx"])
     assert (
         r["status"] == "ok"
-        and r["cycles"]["shop"]["proposer"] is None
+        and r["cycles"]["price"]["proposer"] is None
         and env["pol"].read_bytes() == env["orig"]
     )
     loop.step(NOW0 + 60, ctx=env["ctx"])

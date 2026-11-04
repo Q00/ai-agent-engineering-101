@@ -1,8 +1,9 @@
 """icrl loop entry: step(now) -> status dict, never raises (DESIGN.md sec 2, 6, 8, 9, 11).
 
-Three experiment lanes run side by side (sec 6): shop (price / supply / structure), buyer and forum, each with its
-own active experiment and next cycle step. Policy writes are path-level: B = the lane's edits on top of the current
-live policy, A = only the lane's paths set back to their recorded A values.
+Three experiment lanes run side by side (sec 6): price, stock (supply / structure) and buyer, each with its own
+active experiment and next cycle step; price and stock are the shop side, buyer the buyer side. No lane offers the
+forum family. Policy writes are path-level: B = the lane's edits on top of the current live policy, A = only the
+lane's paths set back to their recorded A values.
 
 Called by the runner every ~600 s. Acts on 20-min block boundaries by time (grid = policy volume.round_start_ts,
 the first supply window opens_at, + k x 1200 s, shifted BOUNDARY_LEAD_S earlier so a switch lands before the supply
@@ -42,12 +43,13 @@ N_LESSONS = 20
 N_CATS = 8
 PRIOR_M = 0.3
 LANES = {
-    "shop": ("price", "supply", "structure"),
+    "price": ("price",),
+    "stock": ("supply", "structure"),
     "buyer": ("buyer",),
-    "forum": ("forum",),
 }
+LANE_SIDE = {"price": "shop", "stock": "shop", "buyer": "buyer"}
 FAMILY_LANE = {f: ln for ln, fs in LANES.items() for f in fs}
-# harness.json (sec 7): per-lane proposer settings written by the meta-harness; defaults = the prompt without it
+# harness.json (sec 7): per-side proposer settings written by the meta-harness; defaults = the prompt without it
 HARNESS_DEFAULT = {
     "n_lessons": N_LESSONS,
     "recall": "graph_first",
@@ -167,24 +169,41 @@ def lane_of_path(space, path):
 
 
 def lane_of_exp(space, exp):
-    return exp.get("lane") or lane_of_path(space, (exp.get("edits") or [{}])[0].get("path"))
+    """exp["lane"] when it is a lane today; else (no lane, or an old "shop" / "forum" row) by its first edit."""
+    ln = exp.get("lane")
+    return ln if ln in LANES else lane_of_path(space, (exp.get("edits") or [{}])[0].get("path"))
 
 
 def arm_lane(space, a):
     return lane_of_path(space, a.get("path") or (a.get("edits") or [{}])[0].get("path"))
 
 
+def _home_lane(space, exp):
+    """The lane a migrated experiment belongs to: its first edit's family lane; a family no lane offers (forum)
+    keeps the family name as its lane, which _step then ends as lane_off."""
+    path = (exp.get("edits") or [{}])[0].get("path")
+    e = SP.entry(space, path) if isinstance(path, str) else None
+    return (FAMILY_LANE.get(e["family"]) or e["family"]) if e else exp_lane(exp)
+
+
 def migrate(ctx, L):
-    """Old single-lane loop.json (top-level "active" / "next_cycle_step") -> L["lanes"]: the running experiment goes
-    to the lane of its family with its schedule untouched, every lane keeps the old next_cycle_step."""
+    """loop.json -> L["lanes"], idempotent, run on every load. Old single-lane format (top-level "active" /
+    "next_cycle_step"): the running experiment goes to the lane of its family, every lane keeps the old
+    next_cycle_step. Old "shop" lane (price, supply, structure): split into price and stock, both inherit its
+    next_cycle_step, its experiment goes to the lane of its first edit's family. Schedules stay untouched. Lanes not
+    in LANES (forum) stay until _step ends them (lane_off)."""
     lanes = L.setdefault("lanes", {})
     old, nxt = L.pop("active", None), L.pop("next_cycle_step", None)
+    shop = lanes.pop("shop", None)
+    if shop is not None:
+        for ln in ("price", "stock"):
+            lanes.setdefault(ln, {"active": None, "next_cycle_step": shop.get("next_cycle_step")})
     for ln in LANES:
         lanes.setdefault(ln, {"active": None, "next_cycle_step": nxt})
-    if old:
-        ln = lane_of_exp(ctx.space, old) or exp_lane(old)
-        old["lane"] = ln
-        lanes[ln]["active"] = old
+    for exp in (x for x in ((shop or {}).get("active"), old) if x):
+        ln = _home_lane(ctx.space, exp)
+        exp["lane"] = ln
+        lanes.setdefault(ln, {"active": None, "next_cycle_step": nxt})["active"] = exp
     return lanes
 
 
@@ -379,7 +398,7 @@ def _login(pol):
 
 def stars_guard(ctx, exp, blk, now):
     """Flags a closed block of a shop (price / supply / structure) experiment whose raw stars fell by >= STARS_GUARD
-    against the block-start snapshot, and logs it to guards.jsonl (numbers for the shop lane's proposer state)."""
+    against the block-start snapshot, and logs it to guards.jsonl (numbers for the shop-side lanes' proposer state)."""
     d = blk.get("stars_drop")
     blk["stars_guard"] = bool(
         exp["side"] == "shop" and d is not None and d >= B.STARS_GUARD - 1e-9
@@ -507,11 +526,21 @@ def advance(ctx, L, exp, store, stats, now):
         return "started"
     cur = exp["blocks"][-1]
     if cur["arm"] == "B" and now > cur["t0"]:
-        a_won = [b["won"] for b in exp["blocks"] if b["arm"] == "A" and "won" in b] or [
-            exp["a_ref"]["won"]
-        ]
-        b_m = measure(store, stats, exp, cur["t0"], now)
-        short = (sum(a_won) / len(a_won) - b_m["won"]) * b_m["hours"]
+        if exp["side"] == "shop":
+            # whole-shop value_h from the store over every A window and the current B block, so concurrent
+            # shop-side B arms (price and stock lanes) are capped on their combined effect; not the verdict metric
+            t_a = [(b["t0"], b["t1"]) for b in exp["blocks"] if b["arm"] == "A" and "t1" in b] or [
+                (exp["blocks"][0]["t0"] - blk_s, exp["blocks"][0]["t0"])
+            ]
+            a_won = [ST.block_metrics(store, t0, t1, stats)["value_h"] for t0, t1 in t_a]
+            b_m = ST.block_metrics(store, cur["t0"], now, stats)
+            short = (sum(a_won) / len(a_won) - b_m["value_h"]) * b_m["hours"]
+        else:
+            a_won = [b["won"] for b in exp["blocks"] if b["arm"] == "A" and "won" in b] or [
+                exp["a_ref"]["won"]
+            ]
+            b_m = measure(store, stats, exp, cur["t0"], now)
+            short = (sum(a_won) / len(a_won) - b_m["won"]) * b_m["hours"]
         bal = store.get("balance") or (pol.get("shop") or {}).get("balance_floor") or 0
         if short > LOSS_CAP_FRAC * bal:
             end(
@@ -753,9 +782,10 @@ def proposer_prompt(lane, S, offered, rec, table, notes=""):
 
 
 def harness(ctx, lane):
-    """<state>/harness.json for this lane, read at the start of its cycle (sec 7) -> (version or None, settings,
-    applied). Missing file, bad JSON or a bad version: defaults, version None. A missing or invalid lane object, or
-    any invalid field in it: that lane's defaults (applied False). Unknown feature names are ignored; a features list
+    """<state>/harness.json for this lane's side, read at the start of its cycle (sec 7) -> (version or None,
+    settings, applied). The file key "lanes" is kept for compatibility and is keyed by side (shop: price and stock,
+    buyer). Missing file, bad JSON or a bad version: defaults, version None. A missing or invalid side object, or
+    any invalid field in it: that side's defaults (applied False). Unknown feature names are ignored; a features list
     with no known name means all features."""
     d = _jload(ctx.f("harness.json"), None)
     out = dict(HARNESS_DEFAULT)
@@ -765,7 +795,7 @@ def harness(ctx, lane):
     if not isinstance(ver, int) or isinstance(ver, bool):
         return None, out, False
     x = d.get("lanes")
-    x = x.get(lane) if isinstance(x, dict) else None
+    x = x.get(LANE_SIDE.get(lane, lane)) if isinstance(x, dict) else None
     if not isinstance(x, dict):
         return ver, out, False
     n, rc, nt, ft = (x.get(k, out[k]) for k in ("n_lessons", "recall", "prompt_notes", "features"))
@@ -895,7 +925,7 @@ def cycle(ctx, L, lane, store, stats, now, record=True):
             ),
         },
     }
-    if lane == "shop":
+    if LANE_SIDE[lane] == "shop":
         S["stars_guard"] = guard_nums(ctx, [offered[a].get("path") for a in offered], now)
     S["lanes"] = {
         ln: {q: x.get(q) for q in ("id", "arm", "status", "protocol", "t_start")}
@@ -913,6 +943,7 @@ def cycle(ctx, L, lane, store, stats, now, record=True):
     )
     res = {
         "lane": lane,
+        "side": LANE_SIDE[lane],
         "harness_version": hv,
         "harness_applied": happ,
         "seed": seed,
@@ -1184,6 +1215,11 @@ def _step(ctx, now):
         return out
     L["pol"] = pol = json.loads(ctx.policy.read_bytes())
     try:
+        for ln in [x for x in lanes if x not in LANES]:  # a lane switched off (forum): end it like STOP, path-level
+            if lanes[ln].get("active"):
+                end(ctx, L, lanes[ln]["active"], "stopped", None, now, reason="lane_off")
+                out.setdefault("lane_off", []).append(ln)
+            del lanes[ln]
         if ctx.f("STOP").exists():
             for _, exp in running(L):
                 end(ctx, L, exp, "stopped", None, now, reason="STOP file")

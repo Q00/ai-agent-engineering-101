@@ -1,7 +1,8 @@
 """icrl reward over all 7 official terms (DESIGN.md sec 5), each lane on the terms it can move: shop = profit, revenue
 and ledger stars, buyer = surplus and deals, forum = ledger posts plus the board forum score in long blocks only;
 missing-snapshot flags, finite fallback weights, the forum allowlist family (gate, --check copy, hooks/forum.py at
-the range edges) and the stars guard in the shop lane's proposer state. Synthetic boards, no network."""
+the range edges; no lane offers it) and the stars guard in the shop-side lanes' proposer state. Synthetic boards, no
+network."""
 
 import functools
 import json
@@ -307,7 +308,7 @@ def _L(env):
 
 
 def _shop(env):
-    return _L(env)["lanes"]["shop"]["active"]
+    return _L(env)["lanes"]["price"]["active"]
 
 
 def test_shop_block_row_has_ledger_terms_and_no_board_term(env, monkeypatch):
@@ -342,7 +343,7 @@ def test_stars_guard_flags_the_block_and_counts_trips(env, monkeypatch):
     assert t0 > 0
 
 
-def test_stars_guard_is_in_the_shop_lane_proposer_state_only(env):
+def test_stars_guard_is_in_the_shop_side_proposer_state_only(env):
     (env["sdir"] / "guards.jsonl").write_text(
         json.dumps(
             {
@@ -362,13 +363,14 @@ def test_stars_guard_is_in_the_shop_lane_proposer_state_only(env):
         for p in env["prop"].prompts
         for ln in [p.split("\nLANE ", 1)[1].split("\n", 1)[0]]
     }
-    assert state["shop"]["stars_guard"] == {
+    assert state["price"]["stars_guard"] == {
         "threshold": 0.05,
         "trips_24h": 1,
         "worst_drop_24h": 0.07,
         "trips_same_path": 1,
     }
-    assert "stars_guard" not in state["buyer"] and "stars_guard" not in state["forum"]
+    assert state["stock"]["stars_guard"] == dict(state["price"]["stars_guard"], trips_same_path=0)
+    assert "stars_guard" not in state["buyer"]
     assert all(WHY not in p for p in env["prop"].prompts)
 
 
@@ -482,17 +484,9 @@ def test_hooks_forum_accepts_the_range_edges(tmp_path, monkeypatch, edge):
     )
 
 
-def test_check_copy_with_a_forum_edit_passes_policy_validate(
-    env, tmp_path, monkeypatch, capsys
-):
+def test_check_refuses_a_forum_edit_in_every_lane(env, tmp_path, monkeypatch, capsys):
     import policy
 
-    arm = "forum.window_h|up"
-    monkeypatch.setattr(
-        loop.X,
-        "thompson",
-        lambda arms, post, pri, seed, k=3: [(arm, 9.0, 0.0)] if arm in arms else [],
-    )
     env["prop"].replies = [
         '{"action": "change", "edits": [{"path": "forum.window_h", '
         '"value": 4}], "why": "votes"}'
@@ -508,10 +502,13 @@ def test_check_copy_with_a_forum_edit_passes_policy_validate(
     code = loop.main(["--check", "--policy-out", str(out)])
     summary = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert code == 0, summary
-    assert "synthetic" not in summary and summary["edits"] == [["forum.window_h", 3, 4]]
-    assert summary["lane"] == "forum" and "approver_json_ok" not in summary
+    assert "synthetic" in summary and "lane" not in summary  # no lane took the forum edit
+    assert all(e[0].split(".")[0] != "forum" for e in summary["edits"])
     copy = json.loads(out.read_bytes())
-    assert copy["forum"]["window_h"] == 4 and copy["forum"]["interval_s"] == 300
+    assert copy["forum"]["window_h"] == 3 and copy["forum"]["interval_s"] == 300
     policy.validate(copy)
+    assert not any(
+        loop.arm_lane(SP.load(), {"path": p}) for p in FORUM
+    )  # no lane offers a forum arm
     assert env["pol"].read_bytes() == env["orig"]
     assert len(env["prop"].prompts) == 3  # one proposer call per lane, nothing else
