@@ -459,3 +459,61 @@ def test_short_food_unit_raises_so_the_order_moves_to_another_shop() -> None:
     fast.check_shelf_life(
         task, food.model_copy(update={"use_within_hours": 12}), BuyerPolicy()
     )
+
+
+def test_unfit_units_are_skipped_early_and_remembered_per_shop_and_sku() -> None:
+    from market_a2a.remote import Task  # noqa: PLC0415 - test only
+    from r3.policy import BuyerPolicy  # noqa: PLC0415 - test only
+
+    policy = BuyerPolicy()
+    goods = Order(item="스탠드", kind="goods", acceptable=(LAMP,))
+
+    def says(text: str) -> Task:
+        return Task.model_validate(
+            {
+                "id": "t",
+                "contextId": "c",
+                "status": {
+                    "state": "TASK_STATE_INPUT_REQUIRED",
+                    "message": {
+                        "messageId": "m",
+                        "role": "ROLE_AGENT",
+                        "parts": [{"text": text}],
+                    },
+                },
+            }
+        )
+
+    # A C unit stated in the first reply ends the talk; a card phrase does not.
+    with pytest.raises(fast.UnacceptedGradeError):
+        fast.check_shelf_life(
+            says("Lamp (G3), certified grade C: asking 9000."), goods, policy
+        )
+    fast.check_shelf_life(
+        says("grade A goods carry a warranty; asking 9000"), goods, policy
+    )
+    # Refused payments are remembered per (shop, SKU) for the next order.
+    now = 10_000.0
+    unfit = [
+        (
+            now - 600,
+            "http://c-shop",
+            LAMP,
+            "not paying: grade C, the policy accepts ['A', 'B']",
+        ),
+        (
+            now - 3600,
+            "http://old-food",
+            KIMCHI,
+            "not paying: 30.0 h of shelf life left, the policy asks for 25",
+        ),
+    ]
+    skip = fast.unfit_skipper(unfit, goods, policy, now)
+    assert skip("http://c-shop/", LAMP)
+    assert not skip("http://other", LAMP)
+    food = Order(item="김치", kind="food", use_within_hours=24, acceptable=(KIMCHI,))
+    # 30 h left an hour ago is 29 h now: enough for 24 + 1, so not skipped...
+    assert not fast.unfit_skipper(unfit, food, policy, now)("http://old-food", KIMCHI)
+    # ...but short of a 40 h order.
+    long_food = food.model_copy(update={"use_within_hours": 40})
+    assert fast.unfit_skipper(unfit, long_food, policy, now)("http://old-food", KIMCHI)

@@ -317,6 +317,25 @@ class EventLedger:
                 counts[key] = counts.get(key, 0) + 1
         return dict(sorted(counts.items(), key=lambda kv: -kv[1]))
 
+    def unfit_offers(self, hours: float) -> list[tuple[float, str, str, str]]:
+        """Unpaid agreed deals refused for the unit itself: (ts, shop, item, reason).
+
+        The same shop usually offers the same unit again, so the buyer avoids a
+        (shop, SKU) whose last unit was grade C or too short-lived for the order.
+        """
+        since = time.time() - hours * 3600
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = db.execute(
+                """SELECT ts, shop, item, reason FROM payments
+                WHERE ts >= ? AND paid = 0 AND reason IS NOT NULL ORDER BY ts""",
+                (since,),
+            ).fetchall()
+        return [
+            (float(ts), str(shop).rstrip("/"), str(item), str(reason))
+            for ts, shop, item, reason in rows
+            if refusal_kind(str(reason)) in {"grade", "shelf_life"}
+        ]
+
     def refusal_reasons(self, hours: float) -> dict[str, str]:
         """Return the latest refusal reason per shop URL within the window."""
         since = time.time() - hours * 3600

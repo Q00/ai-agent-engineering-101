@@ -68,8 +68,74 @@ class SuspiciousCounterpartError(HarnessError):
     """The seller's text tripped an injection or scam screen; walk away."""
 
 
-class ShortShelfLifeError(HarnessError):
+class UnfitUnitError(HarnessError):
+    """The offered unit fails our accept conditions; try another shop."""
+
+
+class ShortShelfLifeError(UnfitUnitError):
     """The offered food unit will not last the order; try another shop."""
+
+
+class UnacceptedGradeError(UnfitUnitError):
+    """The offered goods unit is certified at a grade we do not buy."""
+
+
+SHELF_LEFT: Final = re.compile(r"([0-9]+(?:\.[0-9]+)?) h of shelf life left")
+# Only a statement about this unit counts: "certified grade B" or "grade B now",
+# not a card's "grade A goods carry a warranty". The kit's reason: "grade C, ...".
+STATED_GRADE: Final = re.compile(r"certified grade ([ABC])\b|\bgrade ([ABC]) now\b")
+REFUSED_GRADE: Final = re.compile(r"\bgrade ([ABC]),")
+# A remembered unit is assumed still on that shop's shelf for this long.
+UNFIT_MEMORY_HOURS: Final = 6.0
+
+
+def unfit_skipper(
+    unfit: list[tuple[float, str, str, str]],
+    order: Order,
+    policy: BuyerPolicy,
+    now: float,
+) -> Callable[[str, str], bool]:
+    """Return a test for (shop URL, SKU) pairs whose last unit cannot serve this order.
+
+    From our own refused payments: a goods unit certified C, or a food unit whose
+    remaining life (as the kit read it at checkout, aged since) is short of the
+    order's need. 154 shelf-life and 91 grade refusals a day were renegotiated
+    with the same shop and the same unit.
+    """
+    need = (
+        float(order.use_within_hours) + policy.food_margin_hours
+        if order.kind == "food" and order.use_within_hours
+        else None
+    )
+    bad: set[tuple[str, str]] = set()
+    for ts, shop, item, reason in unfit:
+        if order.kind == "goods" and "grade" in reason:
+            grade = REFUSED_GRADE.search(reason)
+            if grade is not None and grade[1] not in policy.goods_grades:
+                bad.add((shop, item))
+        elif need is not None:
+            left = SHELF_LEFT.search(reason)
+            if left is not None and float(left[1]) - (now - ts) / 3600 < need:
+                bad.add((shop, item))
+    return lambda shop, sku: (shop.rstrip("/"), sku) in bad
+
+
+def stated_grade(task: Task) -> str | None:
+    """Return the certified grade the seller's reply states, if it states one."""
+    for part in task.status.message.parts:
+        data = part.data
+        if not isinstance(data, dict):
+            continue
+        cert = data.get("cert")
+        inner = cert.get("cert") if isinstance(cert, dict) else None
+        for source in (inner, data):
+            if isinstance(source, dict):
+                for key in ("grade", "grade_now"):
+                    value = source.get(key)
+                    if value in {"A", "B", "C"}:
+                        return str(value)
+    found = STATED_GRADE.search(task.observation())
+    return (found[1] or found[2]) if found is not None else None
 
 
 # A food order the shop's unit cannot serve is found in its first reply (the
@@ -247,6 +313,7 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     explore: float = 0.0,
     rng: random.Random | None = None,
     recent: Mapping[str, Mapping[str, int]] | None = None,
+    skip_offer: Callable[[str, str], bool] | None = None,
 ) -> Choice | None:
     """Pick the shop and SKU with the best expected surplus; None when no stock fits.
 
@@ -288,7 +355,9 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
         candidates = [
             o
             for o in shop.offers
-            if o.qty > 0 and (not acceptable or o.sku in acceptable)
+            if o.qty > 0
+            and (not acceptable or o.sku in acceptable)
+            and not (skip_offer is not None and skip_offer(shop.url, o.sku))
         ]
         for offer in candidates:
             item = catalog.get(offer.sku)
@@ -369,7 +438,12 @@ def accept_policy(order: Order, policy: BuyerPolicy) -> dict[str, object] | None
 
 
 def check_shelf_life(task: Task, order: Order | None, policy: BuyerPolicy) -> None:
-    """Raise ShortShelfLifeError when the offered food unit cannot last the order."""
+    """Raise when the offered unit fails the order: grade we do not buy, or too old."""
+    if order is not None and order.kind == "goods" and order.acceptable:
+        grade = stated_grade(task)
+        if grade is not None and grade not in policy.goods_grades:
+            message = f"grade {grade} offered, we buy {list(policy.goods_grades)}"
+            raise UnacceptedGradeError(message)
     if order is None or order.kind != "food" or not order.use_within_hours:
         return
     need = float(order.use_within_hours) + policy.food_margin_hours
@@ -575,6 +649,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
     ratios: dict[str, float] = {}
     recent: dict[str, dict[str, int]] | None = None
     cooling: frozenset[str] = frozenset()
+    unfit: list[tuple[float, str, str, str]] = []
     try:
         events = EventLedger(
             events_file if events_file is not None else events_path(state)
@@ -584,6 +659,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         reasons = events.refusal_reasons(policy.buyer.refusal_memory_hours)
         recent = events.shop_outcomes(policy.buyer.explore_memory_hours)
         ratios = events.price_ratios(policy.buyer.refusal_memory_hours)
+        unfit = events.unfit_offers(UNFIT_MEMORY_HOURS)
         cooling = cooling_shops(
             events.failure_streaks(policy.buyer.refusal_memory_hours),
             policy.buyer,
@@ -591,6 +667,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
     except (OSError, sqlite3.Error):
         emit("[R3 BUYER] events ledger unavailable; choosing without own history")
     picture = load_picture(picture_path(state))
+    skip_offer = unfit_skipper(unfit, order, policy.buyer, WALL_CLOCK())
 
     def pick(skip: frozenset[str] = frozenset()) -> Choice | None:
         return choose(
@@ -604,6 +681,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
             ratios=ratios,
             explore=policy.buyer.explore_rate,
             recent=recent,
+            skip_offer=skip_offer,
         )
 
     choice = pick()
@@ -647,7 +725,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
                             reader=reader,
                             order=order,
                         )
-                    except ShortShelfLifeError as short:
+                    except UnfitUnitError as short:
                         spent = time.monotonic() - started
                         skipped.add(choice.shop.name)
                         retry = (
@@ -671,7 +749,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
                                     list_price=choice.list_price,
                                     price=None,
                                     outcome="no_deal",
-                                    reason=f"ShortShelfLifeError: {short}",
+                                    reason=f"{type(short).__name__}: {short}",
                                     elapsed=spent,
                                     market_round=3,
                                 )
