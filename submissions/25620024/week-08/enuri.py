@@ -403,6 +403,10 @@ def advise(order, shops, b=None, t=None, cat=None):
             held.setdefault((h["shop"], sku), (h.get("url"), h.get("name"), idx[sku].get("list")))
     rows, warn, skipped = {}, [], {"avoid": 0, "reach": 0, "no list": 0}
     phantom = load(HERE / "private" / "enuri" / "phantoms.json", {})
+    first_fails = {}                       # 11-04 review: Kiro729 led the list and kept failing; the retry saved those
+    for m in _memory_since(time.time() - 3600):
+        if m.get("enuri_first") and m.get("outcome") in ("no deal", "no answer") and m.get("shop") == m["enuri_first"]:
+            first_fails[m["shop"]] = first_fails.get(m["shop"], 0) + 1
     for (shop, sku), (url, name, lp) in held.items():
         if time.time() - phantom.get(f"{shop}|{sku}", 0) < 1800:   # said 'none in stock' in the last 30 min
             skipped["avoid"] += 1
@@ -427,6 +431,8 @@ def advise(order, shops, b=None, t=None, cat=None):
         honest = qa.get("honest") if qa.get("honest") is not None else 0.9
         if shop in (b.get("receipt_watch") or {}):          # a bad receipt lately: ranked lower, not banned
             honest *= 0.6
+        if first_fails.get(shop, 0) >= 3:                     # our first pick 3+ times in 1 h without a deal
+            honest *= 0.7
         keep = (budget - min(x, budget)) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
         target = int(lp * t["r3_first_offer"])
         p, hl = (b.get("prices") or {}).get(sku) or {}, honest_low(b, sku)

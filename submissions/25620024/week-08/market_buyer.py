@@ -821,7 +821,9 @@ def round3(a, order, shops, mem, started):
     if outcome == "no deal" and not scout_deal and time.time() - started < TIME_LIMIT - 60:
         # review meeting 11-04: 451 orders in 24 h ended 'no deal' although another shop was in reach -- try the
         # next cheapest quote once before giving up
-        for alt in sorted((q for q in good if q is not pick), key=lambda q: q["ask"])[:1]:
+        for alt in sorted((q for q in good if q is not pick), key=lambda q: q["ask"])[:int(T.get("retry_alts", 2))]:
+            if outcome == "deal" or time.time() - started > TIME_LIMIT - 60:
+                break
             q2 = quote(alt["c"])
             if not q2.get("ask"):
                 continue

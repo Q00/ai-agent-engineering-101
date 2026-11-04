@@ -52,6 +52,7 @@ DEFAULTS = {"window": 50, "cooldown_h": 24, "repeat_days": 7, "minor_to_medium":
             # tuned by the buyer team (11-04): a shop is paused after pause_no_answers silent trades within pause_h;
             # a food need above shelf_strict x the SKU's shelf life takes no deal without a stated shelf life
             "pause_no_answers": 3, "pause_h": 1.0, "shelf_strict": 0.45,
+            "retry_alts": 2,         # quotes tried after a failed negotiation (11-04: 1 retry lifted deals 52% -> 64%)
             # quotes asked in parallel for an order of big_budget or more: the board counts absolute surplus, and
             # one 250k deal kept more than all small deals together
             "rfq_big": 5, "big_budget": 60000}
