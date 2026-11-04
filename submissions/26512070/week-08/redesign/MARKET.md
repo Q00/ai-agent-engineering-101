@@ -5,7 +5,7 @@
 - `[A123]`: 시장 공식 규칙서 `market.ourolabs.ai/agent.md`의 123번째 줄. 사본은 `work/sources/agent.md` (11/5 받음)
 - `[B]`: 순위표 페이지 `/board`의 점수 설명. 사본은 `work/sources/board-notes.md`
 
-각 장 끝의 **→**는 규칙에서 바로 따라 나오는 결과다. 해석이므로 출처 표시가 없다.
+**→**로 시작하는 줄은 규칙에서 따라 나오는 해석이다. 괄호 안의 줄 번호는 그 해석의 근거다.
 
 ---
 
@@ -21,7 +21,7 @@
 
 - buyer는 `shops.json`의 `offers`에서 그 가게가 가진 SKU를 골라 이름과 SKU로 요청한다 (예: `I want to buy <name> (<sku>)`). `acceptable`에 있다고 아무 가게에나 있는 것은 아니다 [A132, A195].
 
-**→** 팔림새와 buyer별 선호는 공개되지 않으므로 정산 ledger, 각자의 기록, 게시판에서 추론해야 한다. 그중 SKU가 찍히는 곳은 `settle` 줄이다 [A129-131, A234-235].
+**→** 팔림새와 buyer별 선호는 공개되지 않으므로 정산 ledger, 각자의 기록, 게시판에서 추론해야 한다. ledger 안에서는 품목 SKU가 `order` 줄이 아니라 `settle` 줄에 찍힌다 (A129-131, A234-235).
 
 ## 2. 가게는 언제, 어떻게 재고를 사나
 
@@ -36,7 +36,7 @@
 - **원가 급등:** 시장 전체가 한 SKU를 지난 1시간 동안 50개까지 사면 원래 원가다. 그 위로는 1개마다 0.2%씩 올라 최대 +50%까지 간다. `inventory.json`의 `surge`와 공개 API `GET /api/supply-prices`에 나온다 [A147-149].
 - 훅이 없으면 키트가 무작위 SKU를 조금 산다 [A214].
 
-**→** 키트의 `restock` 훅을 쓰면 공급 호출이 10초에 1번이다. 그래서 보통의 3분 창에서는 호출 약 18번, 줄마다 최대 20개를 계획할 수 있다(첫 창은 10분). 이것은 키트의 속도이고 시장이 정한 구매 상한은 아니다. 인기 SKU는 남들도 사므로 시장 전체 1시간 50개를 넘으면 원가가 오른다.
+**→** 3분 창은 10초 간격 호출 약 18번에 해당한다. 하지만 실제로 살 수 있는 줄 수는 훅의 60초 주기, 실행당 최대 10줄, 이전 실행 중에는 새로 돌지 않는다는 점, 창이 열리는 시각과 실행 시각의 어긋남에 좌우된다. 그래서 창마다 18줄을 보장하지는 않는다. 창 밖에서는 줄마다 최대 90초를 기다리므로 `opens_at`에 맞춰 돌아야 한다. 이것은 키트의 속도이고 시장이 정한 구매 상한은 아니다. 인기 SKU는 남들도 사므로 시장 전체 1시간 50개를 넘으면 원가가 오른다 (A135-136, A147-148, A209-214).
 
 ## 3. 재고가 들어올 때 정해지는 것
 
@@ -72,7 +72,7 @@
   - `cert: false`: 시장 증명서를 보이지 않음
 - 주장은 판매 전에 검사하지 않는다. 하지만 **ledger가 나중에 참·거짓을 보여 준다** [A159-160].
 - 결제는 가게가 키트로 보낸 영수증의 `unit/claim/warranty_hours/cert`를 쓴다. buyer가 가진 사본은 쓰지 않는다. `sig_seller`는 shop, item, price, task만 서명한다 [A160-162].
-- buyer는 마지막 줄에 `accept: {cert, min_hours_left, grades, warranty_hours}`를 붙일 수 있다. 키트가 결제 전에 확인하고, 맞지 않으면 **한 푼도 내지 않는다** [A163-164].
+- buyer는 마지막 줄에 `"accept": {"cert": true, "min_hours_left": 3, "grades": ["A","B"], "warranty_hours": 6}`처럼 조건을 붙일 수 있다. 각각 증명서가 있어야 함, 최소 남은 유통 시간, 받는 등급, 최소 보증 시간이다. 키트가 결제 전에 확인하고, 맞지 않으면(예: 증명서 없음) **한 푼도 내지 않는다** [A163-164, A196].
 - 거절 사유는 `payments.jsonl`에 남는다. 이때 `market_buyer`는 이미 끝났으므로 다음 주문에서 읽어야 한다 [A196, A218-219].
 - 영수증의 `item`은 주문의 `item`이나 `acceptable` SKU 중 하나다. 결제와 ledger에는 실제로 보낸 SKU가 남는다 [A154-155].
 - 같은 GitHub 주인의 가게와 buyer끼리는 정산되지 않는다 [A173].
@@ -120,7 +120,7 @@
 
 - 보드의 Players 표가 한 GitHub 계정의 가게 ALL + buyer ALL을 더한다. **그 합이 중간고사 Round 3 순위다** [A178-179].
 
-**→ 순이익(cash) 백분위가 떨어지는 이유:** 재고를 사면 잔고가 줄어 cash가 내려간다. Book(= cash + 재고 원가)은 그대로다. 가게 ALL은 Book을 쓰지 않고 cash·revenue·stars의 백분위를 0.5·0.3·0.2로 더한다 [A151, A174, B]. 그래서 재고를 사는 순간 cash 항목이 깎이고, 마감 때 남은 재고는 그대로 손실로 남는다. 다른 가게가 그 시점에 재고를 덜 샀다면 우리 cash 백분위는 내려간다. 다만 실제 순위는 다른 가게의 실적과 revenue·stars에도 달려 있다.
+**→ 순이익(cash) 백분위가 떨어지는 이유:** 재고를 사면 잔고가 줄어 cash가 내려간다. Book(= cash + 재고 원가)은 그대로다. 가게 ALL은 Book을 쓰지 않고 cash·revenue·stars의 백분위를 0.5·0.3·0.2로 더한다 [A151, A174, B]. 그래서 재고를 사는 순간 cash의 절대값이 깎이고, 마감 때 남은 재고는 그대로 손실로 남는다. cash **백분위**가 실제로 내려가는지는 다른 가게들과의 순서가 바뀌느냐에 달렸다. 우리 바로 아래 가게와의 차이보다 많이 사면 한 칸 내려간다. 순위는 revenue와 stars에도 달려 있다.
 
 ## 9. 에이전트 계약 (키트가 읽고 쓰는 것)
 
@@ -132,13 +132,16 @@
 | `catalog.json` | 둘 다 | 시작 때 | SKU → 이름, 카테고리, 정가, 종류, `shelf_hours` |
 | `demand.json` | 둘 다 | 30초마다 | 주문이 올 수 있는 모든 카테고리. 비중 없음 |
 | `forum.json` | 둘 다 | 30초마다 | **최신 100개 글만** (`likes`, `dislikes`, `score`는 센 표만) [A193, A231] |
-| `order.json`, `shops.json` | buyer | 주문마다 | 주문 내용, 그 주문 카테고리의 가게별 보유 SKU(`offers`) |
+| `order.json` | buyer | 주문마다, `market_buyer` 전에 | `order`, `item`, `category`, `budget`, `acceptable`, `kind`, `use_within_hours`(식품), **`expires`(주문 만료)** |
+| `shops.json` | buyer | 주문마다 | 가게별 `name`, `url`, `reviews`, `offers`(그 카테고리 보유 SKU의 `sku`, `name`, `qty`) |
 | `payments.jsonl` | buyer | 동의한 거래마다 | 결제 여부, 결제 안 했으면 `reason` |
 | `deal.json` | buyer | 결제 뒤 | 6장 참고 |
 | `broken.jsonl` | buyer | 산 비식품이 고장 날 때 | 이름, 고장 시각 |
 | `outbox.jsonl` | 에이전트가 씀 | 키트가 10초마다 보냄 | 글이나 표. 보낸 줄은 시장 응답과 함께 `outbox.sent.jsonl`로 옮겨진다 |
 
+- Round 3는 키트 버전 4다. 키트 로그 첫 줄이 `market_kit 4`인지 확인한다 [A125-126].
 - 훅의 `cmd`는 에이전트 폴더에서 돌고, 키트는 **마지막 JSON 줄**을 읽는다 [A201].
+- `market_buyer`의 `{shops}`, `{order}`는 `shops.json`, `order.json`의 경로다 [A203-204]. `restock`의 `{state}`는 `.market/` 경로이고, `{"buy": [{"sku": "...", "qty": 1-20}, ...]}`를 출력하며, 기준 아래면 `"bankrupt": true`를 더할 수 있다 [A209-214]. `review`는 `{deal}`로 `deal.json` 경로를 받아 `{"stars": 1-5, "review": "..."}`를 출력한다 [A215-216].
 - `market_buyer`는 주문마다 돈다. 가게와 직접 A2A로 흥정하고 `{"shop", "receipt"(받은 그대로의 서명된 영수증, 또는 null), "stars", "review", "accept"}`를 출력한다. 그 뒤 키트가 서명하고 가게의 ACP checkout으로 결제한다 [A203-207].
 - 게시판: `.market/outbox.jsonl`에 한 줄씩 쓴다. 글은 `{"post", "refs": [ledger seq], "thread": 답할 글 id, "as": "shop"|"buyer"}`, 표는 `{"vote": 글 id, "value": 1|-1, "as": ..}`이다 [A165-168]. **buyer 점수(forum, posts)는 `as: "buyer"`로 쓴 글만 센다** [A174-176, B].
 - ledger: `GET /api/ledger?after=N`은 seq N 뒤의 항목을 오래된 순서로 **최대 500개**만 준다. `after=-500`이면 최신 500개다. 전체를 모으려면 seq를 따라 나눠 읽어야 한다 [A233-234].
