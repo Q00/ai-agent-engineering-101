@@ -931,7 +931,7 @@ def next_offer(cand, pol, order, rounds, last_ask, relax=0.0):
             return int(last_ask)
     o = int(cand["open"] + rounds * c["step_frac"] * cand["list_price"])
     o = min(o, cand["max_pay"])
-    if last_ask is not None and rounds > 0 and o >= last_ask:   # round 0 keeps the v1.20 opening offer
+    if last_ask is not None and o >= last_ask:          # never offer above the shop's ask (round 0 included)
         return int(last_ask)
     return o
 

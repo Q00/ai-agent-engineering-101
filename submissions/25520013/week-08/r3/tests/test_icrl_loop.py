@@ -17,7 +17,7 @@ DATA = Path(
     "/private/tmp/claude-501/-Users-sungsoolee-orca-workspaces-ai-agent-engineering-101-Agents-market/"
     "d5f40484-eeeb-4ce5-a60a-536b9c26ca16/scratchpad/data_20261104"
 )
-NOW0 = 1793800000.0
+NOW0 = 1793800000.0 - (loop.BOUNDARY_LEAD_S - 600)  # same grid phase whatever the lead
 ARM = "defaults.food.price_mult|up"
 WHY = "WHY-SECRET reach me at kim@example.com"
 CATS = {

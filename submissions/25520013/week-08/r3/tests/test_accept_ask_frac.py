@@ -85,9 +85,10 @@ def test_absent_key_matches_v120_on_random_grid():
                 rng.randint(0, 2 * lp),
             ]
         )
-        assert P.next_offer(cand, pol, order, rounds, ask, relax) == _ref_next_offer(
-            cand, pol, order, rounds, ask, relax
-        )
+        ref = _ref_next_offer(cand, pol, order, rounds, ask, relax)
+        if rounds == 0 and ask is not None and ref > ask:  # v1.21: the opening offer is clamped to a lower first ask
+            ref = int(ask)
+        assert P.next_offer(cand, pol, order, rounds, ask, relax) == ref
         n += 1
     assert n == 4000 and base["buyer"]["defaults"]["goods"]["max_rounds"] == 5
 
@@ -168,7 +169,7 @@ def test_a06_counter_never_exceeds_ask_and_never_exceeds_cap():
         assert o <= cand["max_pay"]
         if budget:
             assert o <= budget
-        if ask is not None and rounds > 0:  # round 0 is the opening offer (v1.20, may sit above a low first ask)
+        if ask is not None:
             assert o <= ask
 
 

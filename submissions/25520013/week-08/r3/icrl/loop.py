@@ -26,7 +26,7 @@ from icrl import state as ST
 HERE = Path(__file__).resolve().parent
 WORK = HERE.parent
 STEP_S = 1200
-BOUNDARY_LEAD_S = 600
+BOUNDARY_LEAD_S = 900
 HOLD_STEPS = 3
 LOSS_CAP_FRAC = 0.02
 RETEST_AFTER_S = 86400
@@ -183,6 +183,13 @@ def check_live(ctx, L, now):
     h = sha(raw)
     if L.get("live_sha") == h:
         return None
+    try:
+        json.loads(raw)
+    except ValueError:  # a half-written or broken live file: do not register it, alarm once per content
+        if L.get("bad_live_sha") != h:
+            L["bad_live_sha"] = h
+            log(ctx, now, "alarm", what="live_policy_not_json")
+        return "bad_live"
     first = L.get("live_sha") is None
     v = ctx.runs.register(
         raw,
@@ -634,6 +641,9 @@ def cycle(ctx, L, store, stats, now, record=True):
         bad = ["edits match no offered arm"]
     if L.get("active"):
         bad.append("an experiment is already running")
+    from pii_mask import mask
+
+    bad = [mask(str(b))[:200] for b in bad]
     res["guards"] = bad
     ap = None
     res["_rows"] = rows
@@ -754,7 +764,7 @@ def _locked(ctx):
 
 
 def step(now=None, ctx=None, **kw):
-    """One runner tick. Never raises: -> {"status": ok | stopped | frozen | busy | error, ...}."""
+    """One runner tick. Never raises: -> {"status": ok | stopped | frozen | busy | bad_live | error, ...}."""
     now = time.time() if now is None else now
     try:
         ctx = ctx or Ctx(**kw)
@@ -814,6 +824,10 @@ def _step(ctx, now):
     L = _jload(ctx.f("loop.json"), {})
     out = {"status": "ok"}
     out["live"] = check_live(ctx, L, now)
+    if out["live"] == "bad_live":  # keep the last good state; retry next tick
+        _jsave(ctx.f("loop.json"), L)
+        out["status"] = "bad_live"
+        return out
     L["pol"] = pol = json.loads(ctx.policy.read_bytes())
     try:
         if ctx.f("STOP").exists():
