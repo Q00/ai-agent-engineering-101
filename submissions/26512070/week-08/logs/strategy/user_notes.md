@@ -19,3 +19,20 @@ What we saw:
 Playbook numbers you can set (playbook.restock): cover_windows (0.5-6), market_top (0-30), market_units (0-8),
 max_line_share (0.05-1: the most one line may take of the window's money; 1 = no cap). Stock cap: limits.max_stock_share
 (at most 0.5 by yourself; the user set 0.6).
+
+# 2026-11-04 17:1x — the cash is large: should we spend more of it, and how?
+
+The user asks: the balance is large (31.4M, board profit +23.4M); is spending it every window the right strategy,
+and how would you (the strategy agent) judge it?
+
+What we measured at 17:1x:
+- Free cash 17.93M (balance 31.45M - floor 0.5M - warranty reserve 13.01M = 10% of 130.1M sold in 6 h).
+- The next window's plan spends 17.93M, all of it, on 7 lines; 40 buy-list lines still lack stock and 33 of them are
+  left out for cash (Ge62449c9 10, G6b9db161 10, G5e3784e6 8, G5cd4ffbc 7, ...).
+- Refunds: 43 of 847 deals broke (about 5%, our goods are high-list), so the 10% reserve is about twice the expected
+  refunds of a 6 h window.
+- The buy list counts each unit at the worst-case cost (75% of list); real costs run near 62% of list.
+
+Options you can judge: (1) count units at the expected cost instead of the worst case, (2) a second plan in the same
+supply window with the cash left after the first, (3) a lower warranty reserve share, (4) leave it as it is.
+Recommend with numbers (cash, stock turnover, refunds, profit percentile).
