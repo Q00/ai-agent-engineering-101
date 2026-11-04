@@ -113,7 +113,8 @@ def outcomes(exp, intel):
                 res[r["arm"]].append((amount - r["cost"]) if amount else 0)
     else:
         mem = _rows(BUYER_MEMORY)
-        settled = {m.get("order"): m for m in mem if m.get("kind") == "settled"}
+        oid = lambda o: o.get("order") if isinstance(o, dict) else o   # review.py stores the whole order object
+        settled = {oid(m.get("order")): m for m in mem if m.get("kind") == "settled"}
         for m in mem:
             if m.get("round") == 3 and m.get("exp") == exp["id"] and m.get("arm") in res:
                 s = settled.get(m.get("order"))
