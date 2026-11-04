@@ -62,11 +62,9 @@ import ledger
 EVERY = {"collect": 1200, "linewatch": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
          "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
 RIVALS = 12             # the top players whose shops our buyer passes over in a near tie (market_buyer.RIVAL)
-BUYER_REPLIES = False    # data replies as our buyer (stopped 11/4: about one like each, against 5-6 for a top-level post)
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
             "sales", "restock", "stock_flow")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
-MIN_INDEX = 20
 OPEN_CATEGORIES = 100    # categories in stock before our shop announces itself (day one stocks about 116)
 OPEN_MIN, OPEN_WAIT = 20, 1800   # or at least this many, half an hour after the first stock came in
 SLEEP = 300              # 600 until 11/4: the notes post every 5 minutes
@@ -173,17 +171,6 @@ def board_snapshot(now: float, get_json) -> str:
     return f"board: {line.get('player', {}).get('place', '?')} of {len(players)} players; {sb_note}"
 
 
-def no_seller(now: float) -> tuple[list, str]:
-    demand = common.market_file("demand.json", []) or []
-    stock = common.read_json(folder() / "shops_stock.json", {}) or {}
-    if stock and now - stock.get("at", 0) < 2 * 3600:
-        have = set(stock.get("stocked") or [])
-        return [d["category"].split(">")[-1] for d in sorted(demand, key=lambda d: -d.get("skus", 0))
-                if d["category"] not in have], "shops' stock lists"
-    unmet = Counter(u.get("category") for u in common.records("unmet") if (u.get("ts") or 0) >= now - 86400)
-    return [forum.leaf(c) for c, _ in unmet.most_common() if c], "our buyer's orders"
-
-
 def opening(now: float, state: dict) -> str | None:
     """Our shop's one opening post, once the first day's stock is in; None until then."""
     inv = common.market_file("inventory.json", {}) or {}
@@ -195,20 +182,6 @@ def opening(now: float, state: dict) -> str | None:
     forum.outbox(post=forum.opening_post(inv), **{"as": "shop"})
     state["opened"] = now
     return f"opening post as our shop ({len(cats)} categories in stock)"
-
-
-def index(now: float, state: dict, ask=None) -> str | None:
-    summary = common.market_file("market_summary.json", {}) or {}
-    if summary.get("settles_24h", 0) < MIN_INDEX:
-        return None                                             # not enough to publish; try again next pass
-    n = state.get("index_n", 0) + 1
-    missing, source = no_seller(now)
-    prev = common.read_json(folder() / "last_index.json") or None
-    text, refs, record = forum.index_post(summary, n, missing, source, now, prev=prev, ask=ask or harness.ask)
-    forum.outbox(post=text, refs=refs, **{"as": "buyer"})
-    common.write_json(folder() / "last_index.json", record)
-    state["index_n"] = n
-    return f"market index #{n} posted ({len(text)} chars, {len(refs)} refs)"
 
 
 def journal_step(now: float, state: dict, ask=None) -> str | None:
@@ -228,24 +201,12 @@ def replies(now: float, state: dict) -> str:
     found = forum.wanted(posts, common.market_file("demand.json", []) or [], seen)
     done = []
     for pid, cat in found[:1]:
-        summary = common.market_file("market_summary.json", {}) or {}
-        did_buyer, did_shop = not BUYER_REPLIES, False
-        if BUYER_REPLIES and now - state.get("buyer_reply", 0) >= REPLY_GAP:
-            text = forum.data_reply(cat, summary, common.read_jsonl(ledger.folder() / "settles.jsonl"), common.catalog(), now,
-                                    ledger.names())
-            if text:
-                forum.outbox(post=text, thread=pid, **{"as": "buyer"})
-                state["buyer_reply"] = now
-                done.append(f"buyer data reply to #{pid} ({cat})")
-            did_buyer = True
         if now - state.get("shop_reply", 0) >= REPLY_GAP:
             text = forum.shop_reply(cat, common.market_file("inventory.json", {}) or {})
             if text:
                 forum.outbox(post=text, thread=pid, **{"as": "shop"})
                 state["shop_reply"] = now
                 done.append(f"shop reply to #{pid} ({cat})")
-            did_shop = True
-        if did_buyer and did_shop:
             state["answered"] = (list(seen) + [pid])[-500:]
     return "; ".join(done) or f"{len(found)} wanted post(s) waiting"
 

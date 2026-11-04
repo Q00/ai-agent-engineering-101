@@ -1,12 +1,13 @@
 """Ledger collection: the market's public ledger, read on from where the last run stopped,
 kept as compact rows and summed up into market_summary.json.
 
-    python ledger.py            (the analysis runner, analysis.py, runs it once an hour)
+    analysis.py's collect step runs it every 20 minutes (python ledger.py: once, by hand)
 
 Code only, no model. The summary says what sells in the whole market, at what share of the
-list price and in which grades, which shops' grade claims were true, and what broke. The
-seller's restock reads it to pick each category's representative product; the market index
-on the forum is written from it; the analysis models query the rows through the ledger tool.
+list price and in which grades (and, per SKU, what other shops get by grade: the seller's asks),
+which shops' grade claims were true, and what broke. The seller's restock reads it to pick each
+category's representative product; the journal and the notes are written from it; the analysis
+models query the rows through the ledger tool.
 
 Only settle and broken entries are kept: a Round 3 order entry carries no item or budget.
 The first run starts from the newest 500 entries, not from the beginning of the ledger. The ledger
@@ -35,7 +36,6 @@ import httpx
 import common
 
 URL = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
-EVERY = 3600                     # seconds between collections
 PAGES = 80                       # 500 entries a page; a run stops here and the next one goes on (11/3: ~14k entries an hour)
 RESULT_HOURS = 48                # hours of result counts kept
 KEEP = 48 * 3600                 # settle and broken rows kept in the files read every hour; older ones are archived
@@ -252,17 +252,7 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
             "goods_sold_by_grade": sold_by_grade, "broken_by_grade": broke_by_grade}
 
 
-def collect_if_due(catalog: dict, now: float | None = None, get=fetch) -> bool:
-    """Collect and rewrite market_summary.json when the last collection is an hour old."""
-    now = now or time.time()
-    state = common.read_json(folder() / "state.json", {}) or {}
-    if now - state.get("at", 0) < EVERY:
-        return False
-    n = collect(get)
-    common.write_json(common.MARKET_DIR / "market_summary.json", summarize(catalog, now))
-    print(f"[ledger] {n} new settle/broken entries; market_summary.json rewritten", flush=True)
-    return True
-
-
 if __name__ == "__main__":
-    print(collect_if_due(common.catalog(), now=None) or "[ledger] collected less than an hour ago")
+    n = collect()
+    common.write_json(common.MARKET_DIR / "market_summary.json", summarize(common.catalog()))
+    print(f"[ledger] {n} new settle/broken entries; market_summary.json rewritten", flush=True)

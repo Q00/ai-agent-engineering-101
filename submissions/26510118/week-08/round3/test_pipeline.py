@@ -584,13 +584,8 @@ def test_ledger():
     with open(ledger.folder() / "settles.jsonl", "w", encoding="utf-8") as f:
         for e in rows:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
-    reply = forum.data_reply("침구", s, rows, CATALOG, NOW, ledger.names())
-    check("a data reply names the seller, and leaves our own shop out", "sold by Shop Two (1)" in (reply or "")
-          and "sold by" not in (forum.data_reply("김치", s, rows, CATALOG, NOW, ledger.names()) or "x sold by"), reply)
     q = tools.ledger_query(shop="Shop Two", now=NOW)
     check("the ledger tool finds a shop by its name", q["settled"] == 1 and q["top_shops"] == {"Shop Two": 1}, q)
-    common.write_json(ledger.folder() / "state.json", {"seq": 4, "at": NOW})
-    check("collects at most once an hour", ledger.collect_if_due(CATALOG, NOW + 60, get=lambda a: []) is False)
     moved = ledger.archive(NOW + 60 * H)                                         # 60 h later every row is over 48 h old
     arch = sorted((ledger.folder() / "archive").glob("settles-*.jsonl.gz"))
     with gzip.open(arch[0], "rt", encoding="utf-8") as g:

@@ -147,7 +147,6 @@ def setup():
 
 def test_collect():
     print("\n[collect] the public ledger, shops' stock and the wanted categories")
-    check("no market index before there is a summary", analysis.index(NOW, {}) is None)
     note = analysis.collect(NOW, fake_ledger, fake_shops)
     print("    " + note)
     settles = common.read_jsonl(MD / "ledger" / "settles.jsonl")
@@ -225,64 +224,21 @@ def test_tool():
 
 
 def test_forum():
-    print("\n[forum] the market index and replies")
-    before = len(outbox())
-    note = analysis.index(NOW, state := {})
-    line = outbox()[before]
-    text, rec = line["post"], json.loads(line["post"].splitlines()[-1])
-    print("    " + note)
-    print("\n".join("    | " + x for x in text.splitlines()))
-    check("posted as our buyer, header '[Kiro729 Market Index #1 ...]'", line["as"] == "buyer"
-          and text.startswith("[Kiro729 Market Index #1 ·") and state["index_n"] == 1)
-    seqs = {e["seq"] for e in ENTRIES if e["kind"] == "settle"}
-    check("refs are real settle entries the market can show", line["refs"] and set(line["refs"]) <= seqs, line["refs"])
-    check("the last line is the same numbers as JSON", rec["n"] == 1 and rec["settled_24h"] == 26 and rec["price_share"] == {"김치": 0.7, "침구": 0.7})
-    check("the honesty table leaves our own shop out", set(rec["honest_claims"]) == {"Alpha", "Beta"}, rec["honest_claims"])
-    check("no shop had it: from the shops' stock lists, without what Alpha stocks",
-          rec["no_seller"] == ["침구", "사과"] and rec["no_seller_source"] == "shops' stock lists", rec["no_seller"])
-    check("a grade's breakdown share waits for 10 sales of it (6 so far)", rec["breakage"] == {} and "Goods that broke" not in text)
-    check("nothing private: no budget, cost or margin", not any(w in text.lower() for w in ("budget", "cost", "margin")))
-    s2 = json.loads(json.dumps(common.market_file("market_summary.json")))
-    s2["settles_24h"], s2["by_category"][KCAT]["sold_6h"] = 31, 27
-    reader = lambda said: (lambda prompt, model=None, timeout=None: said)
-    good = "Kimchi sales in 6 h rose from 20 to 27 while the average price held at 70% of list."
-    text2, _, rec2 = forum.index_post(s2, 2, ["침구"], "x", NOW + 3 * H, prev=rec, ask=reader(good))
-    lines2 = text2.splitlines()
-    print("\n".join("    | " + x for x in lines2[:3]))
-    check("the second index says what moved since the first", lines2[2] == "Since index #1 (3 h ago): settled deals in 24 h "
-          "26 -> 31; 김치 sold in 6 h 20 -> 27" and rec2["moved"]["sold_6h"] == {"김치": [20, 27]}, lines2[2])
-    check("...and opens with the model's reading when every number in it is one the index shows",
-          lines2[1] == "Reading: " + good and json.loads(lines2[-1])["n"] == 2)
-    for said, why in (("Kimchi sales jumped to 99 in 6 h.", "a number the index does not show"),
-                      ("Kiro Everyday has kimchi in stock at 70% of list.", "our shop named"),
-                      ("Buyers should avoid Beta, whose claims were true 3 of 8 times.", "a steer away from a shop")):
-        t, _, _ = forum.index_post(s2, 2, ["침구"], "x", NOW + 3 * H, prev=rec, ask=reader(said))
-        check(f"a reading with {why} is dropped; the numbers still go out", "Reading:" not in t and "Since index #1" in t)
+    print("\n[forum] replies to wanted posts (as our shop; the market index and the buyer's data reply went on 11/5)")
     st = {}
     before = len(outbox())
-    analysis.BUYER_REPLIES = True                         # the buyer's data reply (stopped on 11/4) still works when turned on
     analysis.replies(NOW, st)
     new = outbox()[before:]
-    check("a 'wanted' post gets a data reply as our buyer and a stock reply as our shop, in its thread",
-          [(x["as"], x["thread"]) for x in new] == [("buyer", 101), ("shop", 101)], [(x["as"], x["thread"]) for x in new])
-    check("the data reply names who sold it and at what share", "20 settled deals" in new[0]["post"]
-          and "Alpha (12), Beta (8)" in new[0]["post"] and "70% of list" in new[0]["post"], new[0]["post"])
-    print("    | " + new[0]["post"] + "\n    | " + new[1]["post"])
+    check("a 'wanted' post gets a stock reply as our shop, in its thread; none as our buyer",
+          [(x["as"], x["thread"]) for x in new] == [("shop", 101)], [(x["as"], x["thread"]) for x in new])
+    print("    | " + new[0]["post"])
     before = len(outbox())
     note = analysis.replies(NOW + 600, st)
-    check("10 minutes later: the next post waits (an hour between replies per role)", len(outbox()) == before, note)
+    check("10 minutes later: the next post waits (an hour between replies)", len(outbox()) == before, note)
     analysis.replies(NOW + 3700, st)
-    new = outbox()[before:]
-    check("after an hour: 침구 answered by our buyer only (our shop has none in stock)",
-          [(x["as"], x["thread"]) for x in new] == [("buyer", 104)], new)
-    check("our buyer's data reply does not name our own shop", "Kiro729" not in new[0]["post"], new[0]["post"])
+    check("after an hour: 침구, which our shop does not stock, gets no reply", len(outbox()) == before, outbox()[before:])
     check("our own post and replies in a thread are never answered; each post once",
-          sorted(st["answered"]) == [101, 104] and analysis.replies(NOW + 7400, st) == "0 wanted post(s) waiting")
-    analysis.BUYER_REPLIES = False
-    before = len(outbox())
-    analysis.replies(NOW, {})
-    check("as deployed (11/4): no data reply as our buyer, only the shop's stock reply",
-          [(x["as"], x["thread"]) for x in outbox()[before:]] == [("shop", 101)], outbox()[before:])
+          sorted(st["answered"]) == [101, 104] and analysis.replies(NOW + 7400, st) == "0 wanted post(s) waiting", st.get("answered"))
 
 
 SELLER_PROPOSALS = [{"field": "price_adjust", "value": 0.12, "reason": "kimchi sells at 70% of list, 20 in 6 h"},
