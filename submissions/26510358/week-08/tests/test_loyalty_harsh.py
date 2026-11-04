@@ -55,3 +55,15 @@ def test_product_name_numbers_are_not_offers():
     assert shop_r3.parse_offer(f"I want to buy {name} (Gea072173)", name) is None
     assert shop_r3.parse_offer(f"I want to buy {name} (Gea072173). 900", name) == 900
     assert shop_r3.parse_offer("지누스 매트리스 20cm Q 퀸 (G1515d951)", "지누스 매트리스 20cm Q 퀸") is None
+
+
+def test_member_codes_are_off_and_not_advertised(tmp_path, monkeypatch):
+    """2026-11-04: 332 codes issued, 0 quoted; switched off. The card no longer promises them."""
+    from starlette.testclient import TestClient
+    monkeypatch.setattr(config, "DB_PATH", tmp_path / "m.sqlite")
+    assert config.LOYALTY_ENABLED is False
+    card = TestClient(shop_r3.build(1)).get("/.well-known/agent-card.json").json()
+    assert "member code" not in card["description"]
+    monkeypatch.setattr(config, "LOYALTY_ENABLED", True)
+    card = TestClient(shop_r3.build(1)).get("/.well-known/agent-card.json").json()
+    assert "member code" in card["description"]

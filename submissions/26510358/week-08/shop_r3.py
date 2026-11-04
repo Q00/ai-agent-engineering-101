@@ -232,7 +232,7 @@ class Shop(AgentExecutor):
             ask, floor, warranty = self._terms(u)
             member = None
             m = CODE_RE.search(text)
-            if m and not u.get("legacy"):
+            if m and not u.get("legacy") and config.LOYALTY_ENABLED:
                 code = config.LOYALTY_PREFIX + m.group(0)[len(config.LOYALTY_PREFIX):].lower()
                 try:
                     if self.mem.redeem_code(code):
@@ -270,7 +270,7 @@ class Shop(AgentExecutor):
                     receipt["warranty_hours"] = d["warranty"]
             await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
             closing = f"Deal: {u['name']} at {price}."
-            if not u.get("legacy"):
+            if not u.get("legacy") and config.LOYALTY_ENABLED:
                 code = d.get("member") or member_code(task.id)
                 try:
                     self.mem.issue_code(code, u["sku"], d.get("style"))
@@ -302,8 +302,9 @@ def build(port):
         name=config.SHOP_NAME,
         description=("Shop with real stock. Every unit ships with the market's certificate and an honest grade claim; "
                      "goods carry a warranty when we can stand behind them. Ask for a product by name or SKU, "
-                     "optionally with the shelf life you need (e.g. 'need 24 h'), then send a price. Every deal gives a "
-                     "member code; quote it on a later order for 3% off the first ask."),
+                     "optionally with the shelf life you need (e.g. 'need 24 h'), then send a price."
+                     + (" Every deal gives a member code; quote it on a later order for 3% off the first ask."
+                        if config.LOYALTY_ENABLED else "")),
         version="3.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],

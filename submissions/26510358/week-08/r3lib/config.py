@@ -73,6 +73,9 @@ WARRANTY_PRICE_IN = True            # a warranty unit's ask carries its expected
 BREAK_MIN_N = 200                   # use the grade x category break rate once it rests on this many goods sales
 
 # --- shop: repeat customers and review defence ----------------------------------------------------
+LOYALTY_ENABLED = False             # off since 2026-11-04 16:40: 332 codes issued, 0 quoted. Buyer agents start fresh
+                                    #   on every order and never see an earlier deal's message; the 3% also ran
+                                    #   against the price raise. Code and the members table stay as evidence.
 LOYALTY_DISCOUNT = 0.03             # a quoted member code takes 3% off the first ask (the floor does not move)
 LOYALTY_PREFIX = "SSD-"
 HARSH_MIN_REVIEWS = 15              # a buyer style needs this many star ratings of our deals before we judge it
