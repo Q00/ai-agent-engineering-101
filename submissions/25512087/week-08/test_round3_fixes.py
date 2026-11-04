@@ -81,7 +81,7 @@ class RestockFix3(unittest.TestCase):
         buy, mem = restock.plan(self.inv(), DEMAND, CATALOG, {}, now=NOW, rng=random.Random(1),
                                 settles=["S071"] * 3 + ["S052"] * 2 + ["S022"])
         self.assertEqual([b["sku"] for b in buy[:3]], ["S071", "S052", "S022"], "momentum, hottest first")
-        self.assertEqual(buy[0]["qty"], 2, "goods: 2 units")
+        self.assertEqual(buy[0]["qty"], restock.HOT_QTY, "goods: HOT_QTY units (11/04: was 2)")
         cats = [CATALOG[b["sku"]]["category"] for b in buy[3:]]
         self.assertNotIn("cat11", cats, "cat11 (S071) is covered by the hot line")
         self.assertIn("hot", mem)
@@ -96,7 +96,7 @@ class SellerFix4(unittest.TestCase):
 
     def test_floor_adds_storage_held(self):
         self.assertEqual(s.floor_price(self.GOODS, NOW), 525_000)
-        self.assertEqual(s.floor_price(self.GOODS, NOW + 10 * 86400), 575_000, "10 days: +10 %")
+        self.assertEqual(s.floor_price(self.GOODS, NOW + 5 * 86400), 550_000, "5 days: +5 % (10 days now falls in the endgame)")
         self.assertEqual(s.opening_ask(self.GOODS, NOW), 828_000)
 
     def test_food_markdown_in_last_hours(self):

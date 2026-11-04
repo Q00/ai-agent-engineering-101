@@ -93,7 +93,7 @@ class RestockTests(unittest.TestCase):
         _, mem = restock.plan(self.inv(units), DEMAND, CATALOG, {}, now=1_794_000_000)
         buy, mem = restock.plan(self.inv([]), DEMAND, CATALOG, mem, now=1_794_000_060)
         self.assertEqual(mem["sold"], {"S001": 1})
-        self.assertEqual(buy[0], {"sku": "S001", "qty": 1}, "sold-out SKU first")
+        self.assertEqual(buy[0], {"sku": "S001", "qty": 2}, "sold-out SKU first (11/04: ceil(1.5 x 1 sale) = 2)")
 
     def test_expired_units_are_not_counted_as_sold(self):
         units = [{"unit": "f", "sku": "S003", "category": "cat3", "cost": 8000, "expires_at": 1_794_000_100}]
