@@ -101,3 +101,33 @@ def test_ambiguous_break_is_not_assigned_to_a_guessed_seller(tmp_path):
     j.reconcile(now=3000)
     assert j.events('ambiguous_break')
     assert not j.events('outcome')
+
+
+def test_null_warranty_does_not_poison_reconciliation_after_break(tmp_path):
+    j = Journal(tmp_path)
+    j.add('purchase', {'order': 'null-warranty', 'name': 'single product', 'kind': 'goods',
+                       'paid_at': 1000, 'price': 100, 'value': 200, 'warranty_hours': None})
+    j.add('broken_news', {'name': 'single product', 'broke_at': 1200})
+    j.reconcile(now=30000)
+    j.reconcile(now=30000)
+    result = j.events('outcome')
+    assert len(result) == 1 and result[0]['broken'] and not result[0]['covered']
+    assert result[0]['surplus'] == -100 and result[0]['refund_status'] == 'not_covered'
+    assert j.events('purchase')[0]['warranty_hours'] is None  # Preserve raw historical evidence.
+
+
+def test_cash_capacity_accepts_null_warranty_but_keeps_real_liability(tmp_path):
+    from r3.economy import cash_capacity
+    j = Journal(tmp_path)
+    now = time.time()
+    j.add('shop_settled', {'price': 100, 'paid_at': now, 'warranty_hours': None})
+    j.add('shop_settled', {'price': 200, 'paid_at': now, 'warranty_hours': 6})
+    assert cash_capacity({'balance': 5000000, 'units': []}, j, policy(), now)['refund_liability'] == 200
+
+
+def test_review_normalizes_nullable_warranty(tmp_path):
+    from review import review
+    j = Journal(tmp_path)
+    review({'order': {'order': 'null'}, 'receipt': {'price': 10},
+            'settled': {'sku': 'G1', 'shop': 'shop', 'ledger': 1, 'value': 20, 'warranty_hours': None}}, j)
+    assert j.events('purchase')[0]['warranty_hours'] == 0

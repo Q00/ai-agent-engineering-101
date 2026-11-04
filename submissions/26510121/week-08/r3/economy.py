@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 import math
 import time
+from .state import warranty_hours
 
 
 def remaining(unit, now=None):
@@ -145,7 +146,7 @@ def cash_capacity(inv, journal, config, now=None):
     now = time.time() if now is None else now
     days = max(0, (datetime.fromisoformat(config['end_at']).timestamp() - now) / 86400)
     liability = sum(e.get('price', 0) for e in journal.events('shop_settled', 10000)
-                    if now - e.get('paid_at', 0) < e.get('warranty_hours', 0) * 3600)
+                    if now - e.get('paid_at', 0) < warranty_hours(e.get('warranty_hours')) * 3600)
     storage = sum(u.get('cost', 0) for u in inv.get('units', []) if u.get('kind') == 'goods') * .01 * days
     balance = inv.get('balance', 0)
     floor = max(config.get('cash_floor', 750000), balance * config['cash_reserve_fraction'])

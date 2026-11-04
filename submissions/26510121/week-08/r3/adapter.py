@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import time
 from starlette.responses import JSONResponse
-from .state import ROOT, Journal, atomic_json, policy
+from .state import ROOT, Journal, atomic_json, policy, warranty_hours
 from . import customer_memory
 
 
@@ -112,7 +112,7 @@ def install(kit, journal=None, config=None):
                     co = kit.jwt_payload(token, kit.pub_b64(key)) or {}
                     attribution = j.get('shop_strategy:' + str(co.get('task')), {})
                     record = {"task": co.get("task"), "unit": mr.get("unit"), "sku": mr.get("sku", co.get("item")),
-                              "price": co.get("price", 0), "warranty_hours": co.get("warranty_hours", 0), "paid_at": time.time(),
+                              "price": co.get("price", 0), "warranty_hours": warranty_hours(co.get('warranty_hours')), "paid_at": time.time(),
                               "strategy_version": attribution.get('strategy', {}).get('version', 0),
                               "category": attribution.get('category'), "cost": attribution.get('cost')}
                     j.add("shop_settled", record, eid="settlement:" + str(data.get("ledger")), role="shop")

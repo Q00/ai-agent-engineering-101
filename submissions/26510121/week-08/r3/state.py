@@ -2,6 +2,7 @@
 from __future__ import annotations
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import sqlite3
@@ -10,6 +11,11 @@ import uuid
 from contextlib import contextmanager
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def warranty_hours(value):
+    """Missing/null warranty means no stated coverage; never fabricate a refund."""
+    return value if type(value) in (int, float) and math.isfinite(value) and value > 0 else 0
 
 
 def read_json(path, default=None):
@@ -162,7 +168,8 @@ class Journal:
                         if e.get("name") == news.get("name") and 0 <= news.get("broke_at", 0) - e["paid_at"] <= 21600]
             if len(possible) == 1:
                 item = possible[0]
-                covered = news["broke_at"] - item["paid_at"] <= item.get("warranty_hours", 0) * 3600
+                hours = warranty_hours(item.get('warranty_hours'))
+                covered = hours > 0 and news["broke_at"] - item["paid_at"] <= hours * 3600
                 self.add("outcome", {"order": item["order"], "broken": True, "covered": covered,
                                     "surplus": 0 if covered else -item["price"], "source": news["_event_id"],
                                     "refund_status": "expected_by_warranty_rule" if covered else "not_covered"},

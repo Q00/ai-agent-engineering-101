@@ -3,7 +3,7 @@ import argparse
 import json
 import os
 import time
-from r3.state import Journal, read_json
+from r3.state import Journal, read_json, warranty_hours
 from r3.economy import buyer_candidates
 from r3.model import Chooser
 from r3.protocol import Peer, quote, verify_receipt
@@ -75,7 +75,7 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                 cap = min(order["budget"], product["list_price"])
                 terms = task.get("status", {}).get("message", {}).get("metadata", {})
                 if product.get("kind") == "goods":
-                    required_warranty = 6 if terms.get("warranty_hours", 0) >= 6 else 0
+                    required_warranty = 6 if warranty_hours(terms.get('warranty_hours')) >= 6 else 0
                     if not required_warranty:
                         from r3.meta import observed_breaks
                         risk = observed_breaks(journal, c["sku"])

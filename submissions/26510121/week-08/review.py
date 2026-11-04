@@ -2,7 +2,7 @@
 import argparse
 import json
 import time
-from r3.state import Journal, read_json
+from r3.state import Journal, read_json, warranty_hours
 from r3.economy import buyer_value
 
 
@@ -22,7 +22,7 @@ def review(deal, journal):
             "shop_identity": journal.snapshot("registry.json", {}).get(settled["shop"], {}).get("pubkey"),
             "name": settled.get("name", product.get("name", sku)), "kind": product.get("kind", order.get("kind")),
             "price": price, "value": value, "paid_at": now, "grade": settled.get("grade"),
-            "warranty_hours": settled.get("warranty_hours", 0), "ledger": settled.get("ledger"),
+            "warranty_hours": warranty_hours(settled.get('warranty_hours')), "ledger": settled.get("ledger"),
             "strategy_version": journal.get('buyer_strategy:' + str(order['order']), {}).get('version', 0)}
     journal.add("purchase", item, eid="purchase:" + order["order"], role="buyer")
     honest = settled.get("claim_honest") is not False
