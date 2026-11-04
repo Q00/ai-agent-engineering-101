@@ -885,6 +885,44 @@ def recall(ctx, cats, keys, at=None, mem=None, n_lessons=N_LESSONS, order="graph
     }
 
 
+VOID_CAP = "void_old_cap"
+
+
+def superseded_cap(row):
+    """v1.26b (2026-11-05): True for an experiment end row stopped by a loss cap that the current LOSS_CAP_FRAC
+    would not trip. The 2 % cap before v1.25c stopped e0010, e0011, e0012, e0014 and e0015 at noise level (stats
+    None, so the posterior never saw them); the proposer is shown them as void, not as rejected."""
+    parts = str(row.get("reason") or "").split()
+    if parts[:2] != ["loss_cap", "shortfall"] or len(parts) < 7 or parts[3] != ">" or parts[5] != "x":
+        return False
+    try:
+        return float(parts[2]) <= LOSS_CAP_FRAC * float(parts[6])
+    except (IndexError, ValueError):
+        return False
+
+
+def prompt_memory(ctx, rec):
+    """v1.26b: the MEMORY block the proposer reads. An arm whose latest experiment was a superseded loss-cap stop
+    shows verdict void_old_cap, and that experiment's lesson says so; rec itself (memcheck reads it) is unchanged."""
+    ends = [x for x in _rows(ctx.f("experiments.jsonl")) if x.get("event") == "end"]
+    last = {}
+    for x in ends:
+        last[str(x.get("arm") or "").removeprefix("retest|")] = x
+    void = {a for a, x in last.items() if superseded_cap(x)}
+    ids = {x.get("id") for x in ends if superseded_cap(x)}
+    edges = [
+        dict(e, verdict=VOID_CAP) if e.get("exp") in void and "verdict" in e else e
+        for e in rec["edges"]
+    ]
+    lessons = [
+        t + " [void: the 2% loss cap was removed 02:52 KST 11-05; a noise-level stop, no evidence]"
+        if isinstance(r, dict) and r.get("exp") in ids and isinstance(t, str)
+        else t
+        for r, t in zip(rec.get("lesson_rows") or [], rec["lessons"])
+    ]
+    return dict(rec, edges=edges, lessons=lessons if len(lessons) == len(rec["lessons"]) else rec["lessons"])
+
+
 def exp_table(ctx, lane):
     out = []
     ends = [x for x in _rows(ctx.f("experiments.jsonl")) if x.get("event") == "end"]
@@ -897,7 +935,7 @@ def exp_table(ctx, lane):
                 "effect": st.get("mean", st.get("diff_prev_block")),
                 "ci": [st.get("lo"), st.get("hi")],
                 "pairs": st.get("pairs"),
-                "verdict": r["verdict"],
+                "verdict": VOID_CAP if superseded_cap(r) else r["verdict"],
             }
         )
     return out
@@ -1111,12 +1149,14 @@ def cycle(ctx, L, lane, store, stats, now, record=True):
         "_allarms": allarms,
     }
     prompt = proposer_prompt(
-        lane, S, offered, rec, exp_table(ctx, lane), hc["prompt_notes"], objective(lane, L)
+        lane, S, offered, prompt_memory(ctx, rec), exp_table(ctx, lane), hc["prompt_notes"], objective(lane, L)
     )
     prop = ask(ctx, "prop", prompt, now)
     res["proposer"] = None if prop is None else prop["action"]
     if prop is None or prop["action"] == "hold":
         ls["next_cycle_step"] = k + (HOLD_STEPS if prop else 1)
+        if prop:
+            res["why"] = prop.get("why")  # v1.26b: a hold costs HOLD_STEPS; keep its reason in the cycle log
         return res
     bad, rows = SP.check(
         prop["edits"], pol, ctx.space, stats["category"].keys(), kinds, ban
