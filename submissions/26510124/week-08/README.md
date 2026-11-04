@@ -6,20 +6,29 @@ Haiku 분석자 `sales_advisor.py`를 함께 실행한다. 구매자는 `market_
 `restock.py`는 공식 키트의 재입고 hook으로 실행되며 추가 모델 호출 없이 매입 계획을 낸다.
 아래에 보존한 Round 2의 lamp/chair/bookshelf 가격표는 Round 3에 적용하지 않는다.
 
-## 임시 Astra 거래 모델 선택 (2026-11-05)
+## Astra 거래 모델과 Luna 분석자 선택 (2026-11-05)
 
 현재 `model-profile.json`은 shop·buyer·가게 선택에 **Codex CLI `gpt-6-astra`,
-reasoning `low`**를 사용하고, 시장 분석자는 기존 **Claude Code Haiku**를 유지한다.
+reasoning `low`**를 사용하고, 시장 분석자는 **Codex CLI `gpt-6-luna`, reasoning `low`**를 사용한다.
 아래의 과거 Haiku 전용 실행 설명보다 이 설정이 우선한다. 구매 조건·가격 한도·
 재입고·리뷰·협상 횟수와 프롬프트는 변경하지 않았다. 별도로 논의한 buyer의 조건 전달,
 대안 가게, 가격 파서 개선은 아직 적용하지 않았다.
 
 API 키 방식이 아니라 서버 사용자의 기존 ChatGPT 로그인을 사용한다. 실행마다 로그인
-종류를 확인하고, API 키 환경변수와 사용자 Codex 설정은 거래 호출에 전달하지 않는다.
+종류를 확인하고, API 키 환경변수와 사용자 Codex 설정은 모델 호출에 전달하지 않는다.
 별도 임시 작업 폴더, 읽기 전용 sandbox, 사용자 MCP 설정 제외와 셸·앱·플러그인·검색 등 비활성화 설정,
 JSON 스키마·기존 가격 검사를 사용한다. CLI에 보편적인 모든 도구 제거 옵션은 없으므로
 도구 실행 이벤트가 나오면 결정을 거부한다. 모델 실패 시 임의의 다른 모델로 바꾸지 않는다.
-전체 시간 제한·잘못된 출력의 1회 수정 한도를 유지하며, 취소/시간 초과 시 CLI 자식도 종료한다.
+전체 시간 제한·거래 출력의 1회 수정 한도를 유지하며, 취소/시간 초과 시 CLI 자식도 종료한다.
+
+분석자는 기존처럼 15분마다 자료를 확인하고, 모델은 **최소 1시간 간격·최근 24시간 최대
+6회**만 호출한다. 근거가 같거나 부족하면 건너뛰며, 실패도 호출 예산에 포함한다.
+입력은 최대 18,000자, 출력은 근거를 포함한 기본 조언과 최대 4개 카테고리로 제한한다.
+분석 호출은 60초 제한·1회 시도이며 자동 수정 재호출은 없다. Luna의 구조화 응답에도
+기존 근거 ID·재고 카테고리·가격 조정 범위 검사를 적용한다. 이 제한은 토큰 수 자체의
+하드 상한은 아니다. 실제 토큰/계정 사용량 절감폭과 분석 품질은 아직 측정하지 않았다.
+모델 선택 근거: [공식 효율 모델 안내](https://learn.chatgpt.com/docs/models),
+[Luna의 추론 수준](https://developers.openai.com/api/docs/models/gpt-6-luna).
 
 서버에 Codex가 없거나 오래됐다면 **서버 터미널**에서 공식 설치/업데이트 및 로그인을 한다.
 Mac의 Codex 로그인만으로 서버 로그인이 완료되는 것은 아니다.
@@ -33,7 +42,7 @@ codex login status
 ```
 
 브라우저에서 로그인과 일회용 코드 입력을 완료한다. 계정/조직에서 device login을 허용해야
-하며, Astra 사용 권한도 필요하다. 인증 파일·키를 레포에 복사하지 않는다.
+하며, Astra와 Luna 사용 권한도 필요하다. 인증 파일·키를 레포에 복사하지 않는다.
 [공식 설치](https://learn.chatgpt.com/docs/cli),
 [로그인](https://learn.chatgpt.com/docs/auth),
 [Astra와 추론 수준](https://learn.chatgpt.com/docs/models?surface=cli).
@@ -45,14 +54,15 @@ python3 submissions/26510124/week-08/deploy/deploy_v4.py
 ```
 
 배포는 전송된 코드의 오프라인 검사 뒤, **기존 서비스 중지 전에** 선택 CLI/로그인을 검사하고
-Astra로 작은 JSON 응답 1회를 확인한다. 이 검사는 ChatGPT 사용량을 쓰지만 시장에는 주문하지
+Astra와 Luna 각각 작은 JSON 응답 1회씩을 확인한다. 이 검사는 실행 중 분석자의 6회 예산과
+별개이며 ChatGPT 사용량을 쓰지만 시장에는 주문하지
 않는다. 실패하면 기존 소스·프로필·서비스를 바꾸지 않는다. 상세 원본은 서버 배포 로그의
 `model-preflight.log`와 staged 폴더의 `logs/model-preflight-*.log`에 보관한다.
-성공한 배포는 shop과 buyer를 함께 재시작한다. 분석자의 Claude 사용량은 계속 발생하며,
-Astra 거래 호출의 사용량은 로그인한 ChatGPT 계정에 적용된다. 실제 속도·사용량·성사율
+성공한 배포는 shop과 buyer를 함께 재시작한다. 현재 Astra/Luna 조합은 Codex만 필요하고,
+두 모델의 사용량은 서버에서 로그인한 ChatGPT 계정에 적용된다. 실제 속도·성사율
 개선은 아직 측정하지 않았다.
 
-**Haiku로 돌아오기:** Mac의 레포 루트에서 다음 두 명령을 실행한다. 시간으로 자동 복귀하는
+**shop·buyer를 Haiku로 돌아오기:** Mac의 레포 루트에서 다음 두 명령을 실행한다. 시간으로 자동 복귀하는
 설정은 없으며, 프로필 선택과 재배포로 되돌린다.
 
 ```bash
@@ -60,10 +70,17 @@ python3 submissions/26510124/week-08/model_backend.py --profile haiku
 python3 submissions/26510124/week-08/deploy/deploy_v4.py
 ```
 
-`--profile astra`는 다시 Astra를 선택한다. 프로필 변경 명령 자체는 서비스를 시작하지 않는다.
-`model_backend.py --check`는 CLI/로그인 확인만 하며, `--preflight`는 Astra 응답까지 확인한다.
-이 변경 당시 자동 SSH는 비밀번호 인증 실패로 서버 접속하지 못했다. **로컬 364개 테스트
-통과** (`logs/offline-20261104T161633Z-204d2fa3.log`)는 실제 Astra 접근/서버 전환을 증명하지 않는다.
+이 명령은 분석자의 Luna 설정을 유지한다. 분석자도 Haiku로 되돌리려면 배포 전에
+`python3 submissions/26510124/week-08/model_backend.py --advisor-profile haiku`를 실행한다.
+Haiku를 선택한 역할이 있으면 서버에 Claude CLI와 해당 로그인이 필요하다.
+`--profile astra`는 거래 모델을, `--advisor-profile luna`는 분석자를 다시 GPT로 선택한다.
+프로필 변경 명령 자체는 서비스를 시작하지 않는다.
+`model_backend.py --check`는 CLI/로그인 확인만 하며, `--preflight`는 선택한 각 GPT의 응답까지 확인한다.
+자동 SSH는 비밀번호 인증이 필요해 서버 적용을 확인하지 못했다. 오프라인 테스트는 실제
+모델 접근이나 서버 전환을 증명하지 않으며, 서버 배포의 preflight 결과를 확인해야 한다.
+Luna 전환의 로컬 검증은 **374개 테스트 통과**이며 원본 출력은
+`logs/offline-20261104T162401Z-d0b612c0.log`에 보관했다. 새 테스트는 역할별 모델 선택,
+분석용 JSON 계약·근거 검증, 재시도 제한, 두 모델 사전 점검 실패 처리를 확인한다.
 
 ## 고가 비식품 소량 매입과 공급 창 준비 (2026-11-05)
 
