@@ -195,6 +195,48 @@ def test_notebook():
     check("the market's record of mostly false claims lowers trust too",
           memory.trust({}, "M", {"by_shop": {"M": {"claims": 10, "honest": 3}}}) == 0.56)
     check("three failures in a row", memory.failed_in_a_row({"F": {"recent": ["settled", "unpaid", "error", "unpaid"]}}, "F"))
+    memory.add_pending("o-w", shop="W", url="http://w", sku=BEDDING, list_price=32900, price=26140, warranty=False)
+    p = common.read_json(md / "buyer" / "pending.json")
+    p["o-w"]["ts"] -= memory.PAY_WAIT + 1
+    common.write_json(md / "buyer" / "pending.json", p)
+    nb = memory.load()
+    memory.sync(nb)
+    check("a deal with no payment line after 10 minutes counts as unpaid, with the reason kept",
+          nb["W"]["recent"] == ["unpaid"] and "o-w" not in common.read_json(md / "buyer" / "pending.json")
+          and any(u.get("order") == "o-w" and "no payment line" in u.get("reason", "") for u in common.records("unpaid_buys")), nb.get("W"))
+    memory.outcome(nb, "W", "refused")
+    check("being turned away counts against a shop like an unpaid deal", memory.failures(nb, "W") == 2 and nb["W"]["refused"] == 1)
+
+    def task(state, text, receipt=None):
+        t = {"id": "t1", "status": {"state": state, "message": {"parts": [{"text": text}], "metadata": {}}}}
+        if receipt:
+            t["artifacts"] = [{"parts": [{"data": receipt}]}]
+        return t
+
+    class Shop:
+        def __init__(self, replies):
+            self.replies, self.sent = replies, []
+
+        async def open(self, url):
+            return {}
+
+        async def send(self, text, task_id=None):
+            self.sent.append(text)
+            return self.replies[min(len(self.sent), len(self.replies)) - 1]
+
+        async def cancel(self, task_id):
+            pass
+
+    cand = {"shop": {"name": "W", "url": "http://w"}, "sku": BEDDING, "name": "pad", "list": 32900, "kind": "goods"}
+    unsigned = {"shop": "Willow Goods", "item": BEDDING, "price": 26140.0, "task": "t1", "claim": "A"}
+    r = asyncio.run(mb.trade(Shop([task("TASK_STATE_INPUT_REQUIRED", "asking 32900"),
+                                   task("TASK_STATE_COMPLETED", "Deal", unsigned)]), cand, order(40000, [BEDDING], "goods"),
+                             CATALOG, {}, RULES, False))
+    check("a receipt without the shop's signature is not a deal (the market cannot settle it)",
+          not r["deal"] and r.get("unsigned") and "not signed" in r["left"], r)
+    r = asyncio.run(mb.trade(Shop([task("TASK_STATE_REJECTED", "Sorry, we have none of that in stock.")]), cand,
+                             order(40000, [BEDDING], "goods"), CATALOG, {}, RULES, False))
+    check("turned away before any offer: noted with the shop's words", r.get("refused") and "none of that" in r["left"], r)
 
 
 def start_seller():

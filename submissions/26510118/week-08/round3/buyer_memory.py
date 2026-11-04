@@ -22,6 +22,7 @@ KEEP = 10
 UNKNOWN_TRUST = 0.8      # a shop we have not dealt with
 PRIOR = 2                # pseudo-deals at UNKNOWN_TRUST that soften a short record
 BREAK_WINDOW = 7 * 3600  # goods break within 6 h of the sale; an hour of slack for clocks
+PAY_WAIT = 600           # seconds after a deal with no payment line: it was not paid
 
 
 def folder():
@@ -42,11 +43,13 @@ def entry(nb: dict, name: str) -> dict:
 
 
 def outcome(nb: dict, name: str, what: str, url: str | None = None) -> None:
-    """what: settled, unpaid (agreed but the kit did not pay) or error (the shop broke off)."""
+    """what: settled, unpaid (agreed but not paid: the kit refused, the receipt was unsigned, or no
+    payment line came), error (the shop broke off) or refused (it turned us away before any offer,
+    for a product its stock list showed)."""
     e = entry(nb, name)
     e["recent"] = (e["recent"] + [what])[-KEEP:]
-    key = {"settled": "settled", "unpaid": "unpaid", "error": "errors"}[what]
-    e[key] += 1
+    key = {"settled": "settled", "unpaid": "unpaid", "error": "errors", "refused": "refused"}[what]
+    e[key] = e.get(key, 0) + 1
     if url:
         e["url"] = url
 
@@ -94,8 +97,13 @@ def sync(nb: dict) -> None:
             with open(folder() / "breaks.jsonl", "a", encoding="utf-8") as f:
                 f.write(json.dumps(dict(x, broke_at=b.get("broke_at")), ensure_ascii=False) + "\n")
     state["broken"] = len(news)
-    # an order whose payment line never came (the kit failed between deal and payment) is dropped after a day
-    pending = {k: v for k, v in pending.items() if time.time() - v.get("ts", 0) < 86400}
+    # a deal whose payment line never came: the kit pays within seconds of the deal, so after PAY_WAIT it was
+    # not paid (before 11/4 such deals were dropped after a day, unrecorded, and the shop kept its trust)
+    for order, deal in [(k, v) for k, v in pending.items() if time.time() - v.get("ts", 0) >= PAY_WAIT]:
+        pending.pop(order)
+        outcome(nb, deal["shop"], "unpaid", deal.get("url"))
+        common.record("unpaid_buys", order=order, shop=deal["shop"], sku=deal.get("sku"),
+                      reason=f"no payment line within {PAY_WAIT // 60} minutes of the deal")
     common.write_json(folder() / "pending.json", pending)
     common.write_json(state_path, state)
 

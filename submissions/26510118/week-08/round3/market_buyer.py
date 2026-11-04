@@ -11,7 +11,10 @@ average share for the SKU or category (the ledger summary), else 70%; the gain i
 price minus it (the order's value is the list price). Trust comes from the shop notebook
 (buyer_memory.py) and the market's record of the shop's grade claims. A product dearer than
 the budget is still a candidate when its expected price fits (we only find out by asking).
-Food whose whole shelf life is shorter than the order needs is never a candidate. Shops that
+Food whose whole shelf life is shorter than the order needs is never a candidate. A failure is a
+deal not paid (refused at payment, a receipt without the shop's signature, or no payment line
+within 10 minutes), a broken-off trade, or being turned away before any offer for a product the
+shop lists (11/4: a house shop did both 163 times a day, unrecorded, and kept getting chosen). Shops that
 failed us twice in the last five deals, lied about a grade, rate under 2.5 stars over 5 or
 more reviews, or the analysis said to avoid, are dropped while a cleaner choice exists; if
 none does, we still try, with stricter terms, unless every shop left failed us 3 times in a row.
@@ -380,13 +383,17 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             t = await client.send(str(offer), t["id"])
         if state(t) == "TASK_STATE_COMPLETED":
             rec = receipt_of(t)
-            if rec and rec.get("item") == c["sku"] and r["offers"] and float(rec.get("price", 1e18)) <= r["offers"][-1]:
+            if rec and not rec.get("sig_seller"):                   # the kit cannot sign it nor the market settle it
+                r.update(left="the shop's receipt is not signed, so the market cannot settle it", unsigned=True)
+            elif rec and rec.get("item") == c["sku"] and r["offers"] and float(rec.get("price", 1e18)) <= r["offers"][-1]:
                 r.update(deal=True, receipt=rec, price=int(float(rec["price"])))
             else:
                 r["left"] = f"the receipt is not what was agreed: {rec}"
         elif state(t) == "TASK_STATE_INPUT_REQUIRED":
             await client.cancel(t["id"])                            # B2 (7): free the shop's unit
             r["left"] = r["left"] or "no agreement within our ceiling"
+        elif not r["offers"] and not r["left"]:                    # turned away before any offer: the order is lost
+            r.update(left=f"the shop turned us away: {said(t)[:80]}", refused=True)
     except Exception as e:                                           # noqa: BLE001  (a hung or broken shop)
         r["error"] = type(e).__name__
         print(f"[buyer] trade broke off: {type(e).__name__}: {e}", flush=True)
@@ -439,6 +446,10 @@ async def amain(a) -> dict:
     c = r.pop("c")
     if r["error"]:
         memory.outcome(nb, c["shop"]["name"], "error", c["shop"]["url"])
+    elif r.get("unsigned"):                                         # 11/4: a house shop's unsigned receipts, 131 in 24 h
+        memory.outcome(nb, c["shop"]["name"], "unpaid", c["shop"]["url"])
+    elif r.get("refused"):                                          # ...and its "none in stock" for what it lists
+        memory.outcome(nb, c["shop"]["name"], "refused", c["shop"]["url"])
     if r["deal"]:
         memory.add_pending(order.get("order"), shop=c["shop"]["name"], url=c["shop"]["url"], sku=c["sku"],
                            list_price=c["list"], price=r["price"], warranty=warranty_of(r["receipt"]) >= WARRANTY_HOURS)
