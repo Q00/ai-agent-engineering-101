@@ -45,6 +45,8 @@ from market_state import catalog, post, read_json
 sys.stdout.reconfigure(encoding="utf-8")
 
 DEADLINE = 240            # seconds; the kit and the market test stop the buyer at 300
+MAX_TRIES = 3             # shops tried per order
+RETRY_UNTIL = 120         # seconds after which a failed negotiation does not start another
 PLAN = 5                  # offers until we stand at the budget; shops seen so far cut off after 5 or 6
 STEPS = [0.0, 0.45, 0.72, 0.9, 1.0]   # share of the way from the anchor to the budget, offer by offer
 EXPLORE = 0.15            # chance of trying a near-best shop instead of the best
@@ -551,35 +553,36 @@ def main():
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
         return
 
-    tried, sku = [], None
-    while True:
+    # A shop that has sold out since shops.json was written, or whose floor is out of reach, should not lose the order:
+    # on the first 42 orders 7 ended that way with other shops still stocking the SKU. Only the last shop gets a review.
+    acceptable = order["acceptable"] if order and order.get("acceptable") else None
+    tried = []
+    for attempt in range(MAX_TRIES):
         remaining = [s for s in shops if s["name"] not in tried]
+        if not remaining:
+            break
         shop, why = pick_shop(remaining, mem, args.item, args.budget)
-        sku = pick_sku(shop, order, cat, mem) if order and order.get("acceptable") else None
-        print(f"[buyer] picked {shop['name']} ({shop['url']}): {why}"
+        sku = pick_sku(shop, order, cat, mem) if acceptable else None
+        print(f"[buyer] try {attempt + 1}: picked {shop['name']} ({shop['url']}): {why}"
               + (f"; SKU {sku['sku']} list {sku['list_price']}" if sku else ""), flush=True)
         url, card = jsonrpc_url(shop["url"])
-        if url or len(tried) >= 1 or len(remaining) == 1:
+        hard_max = min(args.budget, sku["list_price"] - 1) if sku else args.budget    # never a negative surplus
+        ref = ref_price(mem, args.item, sku["list_price"] if sku else None)
+        deal = {"asks": [], "offers": [], "injection": False, "receipt": None, "task": None, "agreed": None}
+        if url:
+            known = {"paid": [t["price"] for t in shop_mem(mem, shop["name"])["trades"] if t["result"] == "deal"
+                              and (t.get("sku") == sku["sku"] if sku else t["item"] == args.item)]}
+            print(f"[buyer] hard maximum {hard_max} (budget {args.budget}"
+                  + (f", list price {sku['list_price']})" if sku else ")"), flush=True)
+            deal = bargain(url, args.item, hard_max, ref, known, start, opening_text(sku, order) if sku else None)
+        problems = receipt_problems(deal["receipt"], args.item, hard_max, deal, acceptable) if deal["receipt"] else []
+        if problems:
+            print(f"[buyer] receipt check: {problems}", flush=True)
+        remember(mem, shop["name"], args.item, args.budget, deal, problems, mem_path, order, sku)
+        if (deal["receipt"] and not problems) or time.time() - start > RETRY_UNTIL:
             break
-        tried.append(shop["name"])                                 # unreachable before any trade: one more try
-        remember(mem, shop["name"], args.item, args.budget,
-                 {"injection": False, "receipt": None, "asks": [], "offers": []}, [], mem_path, order, sku)
-
-    hard_max = min(args.budget, sku["list_price"] - 1) if sku else args.budget    # never a negative surplus
-    ref = ref_price(mem, args.item, sku["list_price"] if sku else None)
-    deal = {"asks": [], "offers": [], "injection": False, "receipt": None, "task": None, "agreed": None}
-    if url:
-        known = {"paid": [t["price"] for t in shop_mem(mem, shop["name"])["trades"] if t["result"] == "deal"
-                          and (t.get("sku") == sku["sku"] if sku else t["item"] == args.item)]}
-        print(f"[buyer] hard maximum {hard_max} (budget {args.budget}"
-              + (f", list price {sku['list_price']})" if sku else ")"), flush=True)
-        deal = bargain(url, args.item, hard_max, ref, known, start, opening_text(sku, order) if sku else None)
-    acceptable = order["acceptable"] if order and order.get("acceptable") else None
-    problems = receipt_problems(deal["receipt"], args.item, hard_max, deal, acceptable) if deal["receipt"] else []
-    if problems:
-        print(f"[buyer] receipt check: {problems}", flush=True)
+        tried.append(shop["name"])
     stars, text = review(args.item, args.budget, deal, problems, ref)
-    remember(mem, shop["name"], args.item, args.budget, deal, problems, mem_path, order, sku)
     out = {"shop": shop["url"], "receipt": deal["receipt"] if not problems else None, "stars": stars, "review": text}
     if order and order.get("acceptable"):
         out["accept"] = accept_for(order, deal["receipt"])
