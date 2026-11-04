@@ -36,7 +36,9 @@ kill $(cat ~/Desktop/han/agent-market/kit.pid)      # 멈추기
 - `tail -2 logs/tune.log` — 자정 tuner의 `[strategy] {"event": "tune", ...}` 한 줄. `changes`가 비어 있으면 그날은 변경 없음.
 - `cat .market/strategy_params.json` — 지금 적용 중인 값. 지우면 기본값으로 돌아간다.
 - `head -c 400 .market/ledger_stats.json` — restock이 60초마다 갱신하는 시장 체결 요약(SKU별 건수·중앙값). seller는 이 파일로 ask를 정한다. Round 3 첫 `settle` 항목이 ledger에 찍히면 `ledger.settles()`가 읽는 필드(`sku`/`item`, `price`)가 맞는지 한 번 확인한다.
-- `grep skipped_below_cost logs/market-kit.log | tail -1` — 시장가가 원가 아래라 사지 않은 SKU.
+- `grep skipped_below_cost logs/market-kit.log | tail -1` — 시장가가 원가 아래라 사지 않은 SKU. 같은 줄의 `stock_cost`/`stock_room`/`planned_cost`/`skus_too_dear`로 상한 상태를 본다.
+- `python restock.py --state .market` — 지금 상태에서 뭘 살지 dry run (사지는 않음; ledger_cache.json을 갱신함).
+- `.market/ledger_cache.json` — 최근 24시간 정산 캐시와 마지막 seq. 지우면 다음 실행이 5,000건부터 다시 받는다.
 - `logs/market-kit.log`는 20MB마다 `.log.1`로 돌고 다음 회전 때 덮인다. 이틀에 한 번은 커밋한다.
 
 ## 수동 실행
