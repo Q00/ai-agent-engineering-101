@@ -1,5 +1,6 @@
 # Alerts (newest first)
 
+- 11-05 00:06 **warn** health: 51% of agreed deals were not paid: [('N h of shelf life left,', 14), ('no certificate to show the shelf', 2)]
 - 11-04 17:20 **warn** health: 41% of visits found no stock; most asked [('G00327e80', 21), ('G03d0199f', 20), ('G5cd4ffbc', 5)]
 - 11-04 13:55 **warn** health: 41% of visits found no stock; most asked [('G1515d951', 20), ('G9a240832', 11), ('G7fa48eaa', 1)]
 - 11-04 13:50 **warn** health: 47% of visits found no stock; most asked [('G1515d951', 30), ('G9a240832', 12), ('G7fa48eaa', 1)]

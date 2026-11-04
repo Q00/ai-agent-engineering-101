@@ -1,0 +1,86 @@
+{
+ "proposal_id": "2026-11-05T0030",
+ "slice": "2026-11-05T0030",
+ "ts": 1793806433.0759964,
+ "version_from": 63,
+ "score": "Shop ALL 0.794: profit 32.1M (p0.873, 6 rows above, next 39.4M), revenue 609M (p0.931), stars 4.55 (p0.363, next 4.56 with 32 rows packed above). Buyer: surplus 28.3M (p0.49, next 30.7M), forum 0.626 (p0.552), deals 1,186 (p0.427), posts 296 (p0.865). Most room left (weight x (1 - percentile)): buyer surplus 0.255, buyer forum 0.134, shop stars 0.127, shop profit 0.064.",
+ "happened": [
+  {
+   "claim": "Since the last slice the shop settled 89 deals at a median margin of 10,236. It made 3.60M profit before losses on 14.19M revenue, with no sales below cost.",
+   "evidence": [
+    "eval.unit_economics seller since 1793804425: deals 89, revenue 14,193,409, profit_before_losses 3,595,177, median_margin 10,236, below_cost_deals 0"
+   ]
+  },
+  {
+   "claim": "Losses are zero: no expiry, no storage, no refunds. The rollback condition is far away.",
+   "evidence": [
+    "eval.experiment used losses.total 0"
+   ]
+  },
+  {
+   "claim": "Demand for the best sellers is going unmet. me.missed counts 703 asks in 24 h for G1515d951 (177), G00327e80 (109), G03d0199f (96) and Ge62449c9 (47), yet only 135 units were bought in the window.",
+   "evidence": [
+    "self summary 2026-11-05T0030: me.missed and stock_health"
+   ]
+  },
+  {
+   "claim": "Most buyer-side losses come from food the policy correctly refuses for short shelf life (8 of 11 unpaid), plus 3 checkout races.",
+   "evidence": [
+    "health buyer unpaid_reasons: 8 shelf life, 3 unit not in stock"
+   ]
+  },
+  {
+   "claim": "The regular whales (inextro, YAHO1212, shaun0927, chaewoonee, buyer-02) all kept growing. No new participants appeared and none changed strategy.",
+   "evidence": [
+    "market summary 2026-11-05T0030: deals and paid rose for each, new_6h empty"
+   ]
+  }
+ ],
+ "hypothesis": "H2 is still 'neither yet': the sample of 177 closed negotiations is above the 30 needed, and completion is 0.644 against a target of 0.5. The deals criterion reads 0 because the epoch e63 just started; since the last slice there are 89 settled deals. The H2 conditions are met in substance and nothing points to rollback.",
+ "counterparts": "Keep all current stances. The goods whales (inextro, YAHO1212, chaewoonee, shaun0927, move_76) buy the mattress, bedding and sofa-pad cluster, so keep it deep for them. buyer-02 is a regular for food (kimchi and water), so keep G200e39a3, G66ded25b and Gdf79cd07 on the shelf. No dishonest behaviour was seen, so no avoid stances.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "playbook": {
+     "restock": {
+      "market_units": 8,
+      "max_line_share": 0.45
+     }
+    }
+   },
+   "targets": "shop profit (0.5) and revenue: more paid deals on the best sellers that are now going unmet",
+   "expected": "The missed lines G1515d951, G03d0199f, Ge62449c9 and G5cd4ffbc each get up to 8 units instead of 6, and a single line may take 45% of the window's money instead of 35%. That lets the high-list mattress lines fit inside the stock cap. At the 10k+ median margin with zero losses this adds profit roughly in proportion to units sold; the next slice can check it through settled deals and me.missed.",
+   "risk": "More cash goes into fewer lines. The risk is small because the stock cap, the cash floor of 500k and the rule against selling below cost all stay in force, and refunds run at 5% while 6% is reserved.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {},
+   "targets": "none (control)",
+   "expected": "Keep v63 as it is so the next slice measures v63 cleanly.",
+   "risk": "Best-seller demand keeps going unmet.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "Option A, increasing market_units and max_line_share, is consistent with the goal of increasing shop profit and revenue.",
+    "why": "The brief clearly states that demand for best-selling items like G1515d951 is going unmet (703 asks for top SKUs, only 135 units bought). Increasing the stock for these high-demand, high-margin items (median margin 10,236) directly addresses this, leading to more settled deals and higher profit and revenue, which are key components of shop ALL. The current score shows 'Most room left' in shop profit (0.064) and shop stars (0.127). More deals on quality items (as per H2) should also boost stars."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793806435.6679235
+ },
+ "decision": {
+  "choice": "A",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793806435.6931171,
+  "installed": 64
+ }
+}
