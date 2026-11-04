@@ -212,12 +212,15 @@ def check_live(ctx, L, now):
 
 # ---------------------------------------------------------------- metrics
 def proxy(m, exp):
-    w = exp["w"]
+    """Weighted per-hour proxy of the side's official terms; board-measured terms come from m (0 when missing). The
+    long shop value change stands in for profit (and revenue), weighted like profit."""
+    w = {k: v or 0.0 for k, v in exp["w"].items()}
+    g = lambda k: w.get(k, 0.0) * (m.get(f"{k}_h") or 0.0)  # noqa: E731
     if exp["side"] == "buyer":
-        return w["surplus"] * m["surplus_h"] + w["deals"] * m["deals_h"]
+        return g("surplus") + g("deals") + g("forum") + g("posts")
     if exp["protocol"] == "long":
-        return m["value_h"]
-    return w["profit"] * m["gp_h"] + w["revenue"] * m["rev_h"]
+        return w.get("profit", 0.0) * m["value_h"] + g("stars_rank")
+    return w["profit"] * m["gp_h"] + w["revenue"] * m["rev_h"] + g("stars_rank")
 
 
 def won(m, exp):
@@ -226,9 +229,59 @@ def won(m, exp):
     return m["value_h"] if exp["protocol"] == "long" else m["gp_h"]
 
 
-def measure(store, stats, exp, t0, t1):
+def measure(store, stats, exp, t0, t1, sdir=None, login=None):
+    """Ledger metrics over [t0, t1) plus the board-measured terms from the cached snapshots under sdir (sdir None:
+    those terms are missing). Missing board terms contribute 0 and are listed in board_missing."""
     m = ST.block_metrics(store, t0, t1, stats if exp["protocol"] == "long" else None)
-    return {"metric": proxy(m, exp), "won": won(m, exp), "hours": m["hours"]}
+    bt = B.block_terms(sdir, login, t0, t1)
+    m.update({f"{t}_h": bt[f"{t}_h"] for t in B.BOARD_TERMS})
+    return {
+        "metric": proxy(m, exp),
+        "won": won(m, exp),
+        "hours": m["hours"],
+        "board": {f"{t}_h": round(bt[f"{t}_h"], 6) for t in B.BOARD_TERMS},
+        "board_missing": bt["missing"],
+        "board_snaps": bt["snaps"],
+        "stars_drop": bt["stars_drop"],
+    }
+
+
+def _login(pol):
+    return (pol.get("owner") or {}).get("github")
+
+
+def stars_guard(ctx, exp, blk, now):
+    """Flags a closed block of a shop (price / supply / structure) experiment whose raw stars fell by >= STARS_GUARD
+    against the block-start snapshot, and logs it to guards.jsonl for the approver's numeric input."""
+    d = blk.get("stars_drop")
+    blk["stars_guard"] = bool(
+        exp["side"] == "shop" and d is not None and d >= B.STARS_GUARD - 1e-9
+    )
+    if blk["stars_guard"]:
+        exp["stars_guard_trips"] = exp.get("stars_guard_trips", 0) + 1
+        _append(
+            ctx.f("guards.jsonl"),
+            {
+                "ts": now,
+                "exp": exp["id"],
+                "arm": blk["arm"],
+                "block": blk["i"],
+                "paths": [r["path"] for r in exp["edits"]],
+                "stars_drop": d,
+            },
+        )
+
+
+def guard_nums(ctx, paths, now):
+    """Numbers only: stars-guard trips in the last 24 h and earlier trips of experiments touching these paths."""
+    g = _rows(ctx.f("guards.jsonl"))
+    recent = [r for r in g if r.get("ts", 0) >= now - 86400]
+    return {
+        "threshold": B.STARS_GUARD,
+        "trips_24h": len(recent),
+        "worst_drop_24h": max((r["stars_drop"] for r in recent), default=None),
+        "trips_same_path": sum(bool(set(r.get("paths") or []) & set(paths)) for r in g),
+    }
 
 
 # ---------------------------------------------------------------- experiment engine
@@ -251,6 +304,7 @@ def _exp_row(exp):
         "A_version",
         "B_version",
         "reason",
+        "stars_guard_trips",
     )
     return dict(
         {k: exp.get(k) for k in keep},
@@ -307,10 +361,11 @@ def advance(ctx, L, store, stats, now):
     exp = L["active"]
     pol = L["pol"]
     blk_s = exp["block_steps"] * STEP_S
+    bd = {"sdir": ctx.sdir, "login": _login(pol)}
     if exp["status"] == "scheduled":
         if now < exp["t_start"]:
             return "scheduled"
-        m = measure(store, stats, exp, now - blk_s, now)
+        m = measure(store, stats, exp, now - blk_s, now, **bd)
         exp["a_ref"] = m
         arm = "B" if exp["protocol"] == "long" else X.block_arm(exp["seed"], 0)
         put_arm(ctx, L, exp, arm, now)
@@ -344,11 +399,14 @@ def advance(ctx, L, store, stats, now):
         return "supply_ban"
     if now < cur["t1_nom"]:
         return "running"
-    cur.update(measure(store, stats, exp, cur["t0"], now), t1=now)
+    cur.update(measure(store, stats, exp, cur["t0"], now, **bd), t1=now)
+    stars_guard(ctx, exp, cur, now)
     if exp["protocol"] == "long":
         prev = None
         if ST.covered(store, cur["t0"] - 86400):
-            prev = measure(store, stats, exp, cur["t0"] - 86400, now - 86400)["metric"]
+            prev = measure(store, stats, exp, cur["t0"] - 86400, now - 86400, **bd)[
+                "metric"
+            ]
         v, st = X.long_verdict(cur["metric"], exp["a_ref"]["metric"], prev)
         end(ctx, L, exp, v, st, now)
         return v
@@ -673,6 +731,7 @@ def cycle(ctx, L, store, stats, now, record=True):
             ),
             "gamma": ST.time_info(now)["gamma"],
             "t_rem_h": ST.time_info(now)["t_rem_h"],
+            "stars_guard": guard_nums(ctx, [r["path"] for r in rows], now),
         }
         ap = ask(ctx, "appr", approver_prompt(nums), now)
         res["_nums"] = nums
@@ -807,6 +866,7 @@ def observe(ctx, L, pol, now):
                 "revenue": m["rev_h"],
                 "surplus": m["surplus_h"],
                 "deals": m["deals_h"],
+                **B.term_scale(ctx.sdir, login, now),
             }
         )["w"]
         if bst.get("alarm"):
@@ -912,7 +972,8 @@ def check(policy_out, now=None, ctx=None, **kw):
                         break
             nums = {"edits": [{"path": r["path"], "current": r["current"], "proposed": r["value"]} for r in rows],
                     "arm": out.get("synthetic"), "mode": "check", "guards": {"ok": bool(rows), "violations": 0},
-                    "gamma": ST.time_info(now)["gamma"], "t_rem_h": ST.time_info(now)["t_rem_h"]}
+                    "gamma": ST.time_info(now)["gamma"], "t_rem_h": ST.time_info(now)["t_rem_h"],
+                    "stars_guard": guard_nums(ctx, [r["path"] for r in rows], now)}
             ap = ask(ctx, "appr", approver_prompt(nums), now)
             out["approver"] = None if ap is None else ap["decision"]
         else:

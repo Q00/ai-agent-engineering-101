@@ -215,7 +215,7 @@ def test_board_weights_on_snapshot():
     w = B.weights(board, POL["owner"]["github"])
     print("weights", w)
     assert all(math.isfinite(v) and v > 0 for v in w["w"].values())
-    assert set(w["w"]) == {"profit", "revenue", "surplus", "deals"}
+    assert set(w["w"]) == set(B.OFFICIAL)  # all 7 official terms
     pop = sorted(
         float(r["profit"]) for r in board["shops"] if not r["house"] and r["deals"] > 0
     )
