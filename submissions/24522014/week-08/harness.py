@@ -14,7 +14,7 @@ from uuid import uuid4
 
 
 ROOT = Path(__file__).resolve().parent
-MODELS = {"claude": "sonnet", "codex": "gpt-6-luna"}
+MODELS = {"claude": "sonnet", "codex": "gpt-6.1-sol"}
 
 
 class HarnessError(RuntimeError):
@@ -70,7 +70,7 @@ def build_command(provider):
                 executable = str(candidate)
     if not executable:
         raise FileNotFoundError("Native Codex CLI not found; check the Codex installation")
-    return [executable, "exec", "--skip-git-repo-check", "--model", "gpt-6-luna",
+    return [executable, "exec", "--skip-git-repo-check", "--model", MODELS["codex"],
             "--sandbox", "read-only", "--ephemeral", "--ignore-user-config",
             "-c", "project_doc_max_bytes=0", "-"]
 

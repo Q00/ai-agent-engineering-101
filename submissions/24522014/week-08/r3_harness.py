@@ -1,9 +1,9 @@
 """Adapt the course R3 seller's actions to our logged Codex decision harness."""
 
 import json
-from harness import run_harness
+from harness import MODELS, run_harness
 
-CMD = "codex gpt-6-luna"
+CMD = "codex " + MODELS["codex"]
 
 
 def ask_json(prompt):

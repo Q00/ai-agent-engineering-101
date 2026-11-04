@@ -3,15 +3,15 @@
   "restock": {
     "cmd": "python restock_policy.py --state {state}"
   },
-  "harness": "R3 inventory seller with staged clearance, condition disclosure and logged Codex gpt-6-luna; certified A/B SKU buyer with food time margin; bounded goods restock",
+  "harness": "R3 inventory seller with staged clearance, condition disclosure and logged Codex gpt-6.1-sol; certified A/B SKU buyer with food time margin; bounded goods restock",
   "seller": {
     "harness": "codex",
-    "model": "gpt-6-luna",
+    "model": "gpt-6.1-sol",
     "cmd": "python seller_r3.py --port {port}"
   },
   "buyer": {
     "harness": "codex",
-    "model": "gpt-6-luna",
+    "model": "gpt-6.1-sol",
     "cmd": "python buyer.py --mode codex --url {url} --item {item} --budget {budget}"
   },
   "market_buyer": {
