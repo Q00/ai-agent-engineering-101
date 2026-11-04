@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from r3.endgame import LIQUIDATION_ASK_CUT, LIQUIDATION_FLOOR_OF_COST, sell_pressure
+
 if TYPE_CHECKING:
     from r3.market_files import Unit
     from r3.policy import SellerPolicy
@@ -25,6 +27,7 @@ class Quote:
     grade_now: str
     clearance: bool
     stale: bool
+    endgame: float = 0.0
 
 
 def grade_now(unit: Unit, now: float, shelf_hours: float | None) -> str:
@@ -70,7 +73,16 @@ def quote(
         accept_at = max(floor, round(cost * (1.0 + policy.accept_margin)))
         ask = max(accept_at, round(list_price * max(0.25, markup)))
     ask = min(ask, list_price) if list_price >= accept_at else accept_at
-    return Quote(ask, accept_at, floor, grade, clearance, stale)
+    pressure = sell_pressure(now)
+    if pressure > 0:
+        # Endgame: unsold stock scores zero on the final board, so the accept
+        # line slides toward half of cost and the ask down with it.
+        liquidation = max(1, round(cost * LIQUIDATION_FLOOR_OF_COST))
+        floor = min(floor, round(floor + (liquidation - floor) * pressure))
+        accept_at = max(floor, round(accept_at + (floor - accept_at) * pressure))
+        cut = round(list_price * LIQUIDATION_ASK_CUT * pressure)
+        ask = max(accept_at, ask - cut)
+    return Quote(ask, accept_at, floor, grade, clearance, stale, pressure)
 
 
 def counter(ask: int, accept_at: int, policy: SellerPolicy) -> int:

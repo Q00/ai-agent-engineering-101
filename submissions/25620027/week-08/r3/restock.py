@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Final
 from pydantic import Field, ValidationError
 
 from market_a2a.models import FrozenModel
+from r3.endgame import buy_share
 from r3.market_files import (
     CatalogItem,
     DemandRow,
@@ -204,7 +205,7 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
             sold_at[sku] = now
     stock_cost = sum(u.cost for u in inventory.units)
     cash = inventory.balance - policy.reserve_cash
-    budget = stock_budget(inventory.balance, stock_cost, policy)
+    budget = round(stock_budget(inventory.balance, stock_cost, policy) * buy_share(now))
     lines: list[dict[str, object]] = []
     spent = 0
     food_lines = 0

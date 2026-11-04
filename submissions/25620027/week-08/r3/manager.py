@@ -175,7 +175,10 @@ PROMPT: Final = (
     "list rather than many cheap ones. Stock follows the money: restock may hold "
     "stock up to restock.stock_share of equity (cash plus stock at cost), with "
     "restock.seed_budget only a floor and the cash reserve kept; there is no fixed "
-    "cap. Raise it back when food "
+    "cap. The final board counts cash only (stock scores zero) at 11/17 23:59 "
+    "KST, so code tapers the stock budget to nothing from 72 to 36 hours before "
+    "the end and slides prices toward half of cost in the last 24 hours; do not "
+    "fight it by raising stock_share then. Raise it back when food "
     "write-offs in the policy reviews exceed what that food earned. Use the "
     "set_strategy tool once; an empty change map keeps the policy."
 )
