@@ -1,19 +1,20 @@
 """Read-only local DB/ledger diagnostic; never creates state or contacts the market."""
 import argparse
 import json
-from pathlib import Path
 import sqlite3
 import time
 
 from r3_common import read_json, state_dir
+from r3_storage import DATABASES, database_dir
 
 
 def inspect_state(md=None):
     md = state_dir(md)
-    result = {'state_directory': str(md), 'network': False,
+    dbdir = database_dir(md)
+    result = {'state_directory': str(md), 'database_directory': str(dbdir), 'network': False,
               'note': 'Local evidence counts, not official leaderboard totals', 'databases': {}}
-    for name in ('r3-memory.sqlite3', 'r3_seller.sqlite3', 'r3_seller_requests.sqlite3'):
-        path = md / name
+    for name in DATABASES:
+        path = dbdir / name
         item = {'exists': path.is_file()}
         result['databases'][name] = item
         if not path.is_file():

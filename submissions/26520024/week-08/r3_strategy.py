@@ -23,11 +23,16 @@ def price_ratio(memory, catalog, category, now):
             'samples': len(ratios), 'refs': refs[:8], 'limit': 'settled-price sample, not demand elasticity'}
 
 
-def buyer_estimate(memory, candidate, now=None):
-    now = time.time() if now is None else now
+def buyer_evidence(memory):
     rows = memory.db.execute("SELECT * FROM context_events WHERE kind IN ('settlement','broken') "
                              "ORDER BY ts DESC LIMIT 2000").fetchall()
-    records = [memory._event(row) for row in rows]
+    return [memory._event(row) for row in rows]
+
+
+def buyer_estimate(memory, candidate, now=None, *, records=None):
+    now = time.time() if now is None else now
+    if records is None:
+        records = buyer_evidence(memory)
     purchases, broken = {}, set()
     for event in records:
         data = event['data']
@@ -71,10 +76,12 @@ def buyer_fallback(state):
     value = state.get('value_estimate', {}).get('expected_value', state.get('list_price') or 0)
     ceiling = min(state['budget'], max(0, int(value * .95)))
     ask, last = state.get('current_ask'), state.get('last_offer')
-    if ceiling <= 0 or (last is not None and last >= ceiling):
+    if ceiling <= 0:
         return {'action': 'walk', 'price': None, 'summary': 'No positive risk-adjusted offer remains.'}
     if ask is not None and 0 <= ask <= ceiling:
         price = ask
+    elif last is not None and last >= ceiling:
+        return {'action': 'walk', 'price': None, 'summary': 'No positive risk-adjusted offer remains.'}
     elif last is None:
         price = min(ceiling, max(1, int((state.get('list_price') or ceiling) * .6)))
     else:

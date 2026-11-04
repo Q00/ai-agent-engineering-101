@@ -101,3 +101,36 @@ class CheckoutTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.gate.begin(self.receipt, self.now)
         self.assertEqual(self.reservations.reconcile(self.inventory, [], 'shop1', self.now + 181)['blocked_in_inventory'], 1)
+
+    def test_bad_checkout_body_does_not_poison_or_replay_reservation(self):
+        cls = guarded_shop(load_kit().AcpShop)
+        shop = cls(self.key, None, self.md)
+        bodies = [None, [], {'receipt': self.receipt},
+                  {'receipt': self.receipt, 'line_items': ['bad']},
+                  {'receipt': self.receipt, 'line_items': [{'id': 'sku1', 'quantity': True}]},
+                  {'receipt': self.receipt, 'line_items': [{'id': 'sku1', 'quantity': 2}]},
+                  {'receipt': self.receipt, 'line_items': [{'id': 'sku1', 'quantity': 1}], 'acceptable': []}]
+        for body in bodies:
+            self.assertEqual(asyncio.run(shop.create(body, 'https://offline.example')).status_code, 400)
+        # All invalid requests were rejected before the durable issuance marker.
+        self.gate.begin(self.receipt, self.now)
+
+    def test_replay_still_checks_items_and_acceptable_skus(self):
+        self.gate.begin(self.receipt, self.now)
+        session = {'id': 'cs_offline', 'task': 'task1', 'unit': 'u1',
+                   'line_items': [{'id': 'sku1', 'quantity': 1}]}
+        self.gate.finish('task1', session)
+        shop = guarded_shop(load_kit().AcpShop)(self.key, None, self.md)
+        body = {'receipt': self.receipt, 'line_items': [{'id': 'sku1', 'quantity': 1}],
+                'acceptable': ['not-sku1']}
+        self.assertEqual(asyncio.run(shop.create(body, 'https://offline.example')).status_code, 409)
+        body['acceptable'] = ['sku1']
+        body['line_items'][0]['id'] = 'not-sku1'
+        self.assertEqual(asyncio.run(shop.create(body, 'https://offline.example')).status_code, 400)
+
+    def test_fallback_accepts_ask_matching_already_reached_ceiling(self):
+        from r3_strategy import buyer_fallback
+        action = buyer_fallback({'budget': 100, 'value_estimate': {'expected_value': 100},
+                                 'last_offer': 95, 'current_ask': 95})
+        self.assertEqual(action['action'], 'offer')
+        self.assertEqual(action['price'], 95)

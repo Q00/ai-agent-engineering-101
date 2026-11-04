@@ -31,6 +31,7 @@ from r3_memory import Memory
 from r3_seller_lifecycle import RequestJournal, SellerRequestBoundary
 from r3_runtime import choose as resilient_choose
 from r3_strategy import price_ratio, seller_fallback
+from r3_storage import database_dir
 
 RECEIPT_FIELDS = ('shop', 'item', 'price', 'task')
 PROMPT = '''You negotiate the price of exactly the supplied, reserved inventory unit.
@@ -172,7 +173,8 @@ def validate_action(action, offer, previous_ask, bounds):
 class Reservations:
     """SQLite serializes unit allocation across tasks and processes, including restarts."""
     def __init__(self, directory):
-        self.path = Path(directory) / 'r3_seller.sqlite3'
+        self.md = state_dir(directory)
+        self.path = database_dir(self.md, write=True) / 'r3_seller.sqlite3'
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.transaction() as db:
             db.execute('CREATE TABLE IF NOT EXISTS deals '
@@ -297,7 +299,7 @@ class Reservations:
                       safe_unlock_available=any(r['status'] == 'revoked' for r in rows),
                       limitation='Only guarded promises with no checkout issuance can expire safely. '
                                  'Legacy receipts and issued/uncertain checkout JWTs stay blocked until settlement.')
-        atomic_json(self.path.parent / 'seller-stock-status.json', report)
+        atomic_json(self.md / 'seller-stock-status.json', report)
         return report
 
 

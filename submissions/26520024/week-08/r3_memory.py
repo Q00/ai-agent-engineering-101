@@ -7,6 +7,7 @@ import sqlite3
 import time
 
 from r3_common import parse_json, read_json, state_dir
+from r3_storage import database_dir
 
 
 def packed(data):
@@ -16,11 +17,13 @@ def packed(data):
 class Memory:
     def __init__(self, md=None):
         self.md = state_dir(md)
+        self.dbdir = database_dir(self.md, write=True)
         self.md.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(self.md / 'r3-memory.sqlite3', timeout=15)
+        self.dbdir.mkdir(parents=True, exist_ok=True)
+        self.db = sqlite3.connect(self.dbdir / 'r3-memory.sqlite3', timeout=15)
         self.db.row_factory = sqlite3.Row
         # Serialize first-open WAL/schema setup across concurrent buyer/restock processes.
-        with (self.md / 'memory-schema.lock').open('a') as lock:
+        with (self.dbdir / 'memory-schema.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             self._initialize()
         self._create_context_view()

@@ -2,21 +2,25 @@
 import json
 import sqlite3
 import time
-from pathlib import Path
 
 from starlette.responses import JSONResponse
+from r3_storage import database_dir
 
 
 class CheckoutGate:
     def __init__(self, md):
-        self.path = Path(md) / 'r3_seller.sqlite3'
+        self.path = database_dir(md, write=True) / 'r3_seller.sqlite3'
 
     def database(self):
         if not self.path.is_file():
             raise ValueError('Seller reservation database is not ready')
         db = sqlite3.connect(self.path, timeout=5)
         db.row_factory = sqlite3.Row
-        db.execute('BEGIN IMMEDIATE')
+        try:
+            db.execute('BEGIN IMMEDIATE')
+        except BaseException:
+            db.close()
+            raise
         return db
 
     def begin(self, receipt, now=None):
@@ -66,9 +70,12 @@ class CheckoutGate:
     def sessions(self):
         if not self.path.is_file():
             return []
-        with sqlite3.connect(self.path) as db:
+        db = sqlite3.connect(self.path)
+        try:
             rows = db.execute("SELECT data FROM deals WHERE json_extract(data,'$.checkout_session') IS NOT NULL "
                               "ORDER BY expires DESC LIMIT 500").fetchall()
+        finally:
+            db.close()
         return [json.loads(row[0])['checkout_session'] for row in rows]
 
 
@@ -83,13 +90,21 @@ def guarded_shop(base):
 
         async def create(self, body, public):
             receipt = body.get('receipt', {}) if isinstance(body, dict) else {}
-            if not isinstance(receipt, dict):
-                return JSONResponse({'error': 'receipt must be an object'}, status_code=400)
+            items = body.get('line_items') if isinstance(body, dict) else None
+            acceptable = body.get('acceptable') if isinstance(body, dict) else None
+            if (not isinstance(receipt, dict) or not isinstance(items, list) or len(items) != 1 or
+                    not isinstance(items[0], dict) or items[0].get('id') != receipt.get('item') or
+                    type(items[0].get('quantity')) is not int or items[0]['quantity'] != 1 or
+                    (acceptable is not None and (not isinstance(acceptable, list) or
+                        not acceptable or any(not isinstance(sku, str) or not sku for sku in acceptable)))):
+                return JSONResponse({'error': 'invalid receipt, line_items or acceptable list'}, status_code=400)
             try:
                 stored, replay = self.gate.begin(receipt)
             except (ValueError, TypeError, sqlite3.Error):
                 return JSONResponse({'error': 'receipt not active or checkout unresolved'}, status_code=409)
             if replay is not None:
+                if acceptable is not None and replay['line_items'][0]['id'] not in acceptable:
+                    return JSONResponse({'error': 'existing checkout does not fit this order'}, status_code=409)
                 self.sessions[replay['id']] = replay
                 return JSONResponse(replay, status_code=201)
             # Restore authoritative terms after restart, never the buyer's unsigned extras.

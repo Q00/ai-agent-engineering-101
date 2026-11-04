@@ -9,6 +9,7 @@ import sqlite3
 import time
 
 from r3_common import parse_json
+from r3_storage import database_dir
 
 MAX_BODY = 256 * 1024
 SEND_METHODS = {'SendMessage', 'message/send', 'send_message', 'sendMessage'}
@@ -23,7 +24,7 @@ def packed(value):
 
 class RequestJournal:
     def __init__(self, directory):
-        self.directory = Path(directory)
+        self.directory = database_dir(directory, write=True)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / 'r3_seller_requests.sqlite3'
         self.lock_dir = self.directory / 'seller-request-locks'
@@ -236,4 +237,3 @@ class SellerRequestBoundary:
             await self.error(send, request_id, -32001, str(exc))
             return
         await self.respond(send, response, request_id, replay)
-

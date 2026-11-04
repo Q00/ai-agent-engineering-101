@@ -10,7 +10,7 @@ from core import decide, validate_buyer
 from r3_common import load_catalog, load_policy, money as checked_money, read_json, state_dir
 from r3_memory import Memory
 from r3_runtime import choose as resilient_choose
-from r3_strategy import buyer_estimate, buyer_fallback, selection_fallback
+from r3_strategy import buyer_evidence, buyer_estimate, buyer_fallback, selection_fallback
 from wire import ReceiptError, Wire, market_url, receipt, task_text
 
 
@@ -140,10 +140,11 @@ def candidates_for(shops, order, catalog, memory, limit=48):
         counts[name] = index + 1
         ranked.append((index, candidate))
     chosen = [c for _, c in sorted(ranked, key=lambda pair: pair[0])[:limit]]
+    evidence = buyer_evidence(memory)
     for candidate in chosen:
         candidate['personal_records'] = memory.context(shop=candidate['shop_name'],
             sku=candidate['sku'], role='buyer', limit=6)
-        candidate['value_estimate'] = buyer_estimate(memory, candidate)
+        candidate['value_estimate'] = buyer_estimate(memory, candidate, records=evidence)
     return chosen
 
 
