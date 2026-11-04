@@ -97,6 +97,9 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertEqual(186000, market_buyer.stated_floor("No deal. Lowest for this unit: 186000. receipt=Ed1"))
         self.assertEqual(1740309, market_buyer.stated_floor("lowest I can go is 1,740,309"))
         self.assertIsNone(market_buyer.stated_floor("Counteroffer: 186413."))
+        self.assertEqual((200000, "the ask"), market_buyer.quick_offer(200000, None, 185000, 250000, slack=1.10))
+        self.assertTrue(market_buyer.regulars_prompt("REGULARS: bought here before? reply 'buyer: <your market name>' and VIP -3% comes off"))
+        self.assertFalse(market_buyer.regulars_prompt("lamp: asking 115. Send your offer as a number."))
 
     def test_listed_units_raise_a_shop_a_little(self):
         memory = []

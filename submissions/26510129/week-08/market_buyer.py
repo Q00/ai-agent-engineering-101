@@ -11,6 +11,7 @@ The last stdout line is the result the kit sends to the market:
 import argparse
 import json
 import math
+import os
 import statistics
 import sys
 import time
@@ -110,17 +111,26 @@ def food_unit_ok(grade, shelf_hours, need):
     return shelf_hours * GRADE_LIFE.get(grade, 1.0) >= need
 
 
+NICK = os.environ.get("MARKET_NICK", "jiseokkk")   # my market name, for shops that take a few percent off for regulars
+
+
+def regulars_prompt(text):
+    """A shop asking regulars to identify themselves: "reply 'buyer: <your market name>' and VIP -3% comes off this
+    price at once (checked on the ledger)" (00:41, a shop I have 95 deals with). Free surplus for one message."""
+    return bool(re.search(r"reply\s+'buyer:\s*<your market name>'", text or "", re.I))
+
+
 def stated_floor(text):
     """A floor the shop states in its reply ("No deal. Lowest for this unit: 186000"), else None."""
     m = re.search(r"\b[Ll]owest\b[^0-9]{0,40}(\d[\d,]*)", text or "")
     return int(m.group(1).replace(",", "")) if m else None
 
 
-def quick_offer(ask, floor, reference, limit):
+def quick_offer(ask, floor, reference, limit, slack=1.05):
     """A price worth taking without bargaining: the shop's stated floor or the ask when it is inside my limit and no
-    more than 5% over my reference (the reference is 95% of the market price, so this is "at the market price or
-    better": 00:30, asks ran 4-20% over the reference and a stricter rule never fired). Returns (price, why)."""
-    for price, why, slack in ((floor, "the shop's stated lowest", 1.05), (ask, "the ask", 1.05)):
+    more than `slack` over my reference (the reference is 95% of the market price, so 1.05 is "at the market price
+    or better": 00:30, asks ran 4-20% over the reference and a stricter rule never fired). Returns (price, why)."""
+    for price, why in ((floor, "the shop's stated lowest"), (ask, "the ask")):
         if isinstance(price, (int, float)) and 0 < price <= limit and reference and price <= reference * slack:
             return int(round(price)), why
     return None, None
@@ -184,6 +194,13 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
     if state(t) != "TASK_STATE_INPUT_REQUIRED":
         return "closed", None, None, [("you", opening), ("shop", status_text(t))], manip, info
     tid = t["id"]
+    if regulars_prompt(status_text(t)):
+        print(f"[buyer] the shop takes a few percent off for regulars who give their name; replying as {NICK}", flush=True)
+        named = send(rpc_url, f"buyer: {NICK}", tid)
+        print(f"[buyer] <- {state(named)} | {status_text(named)}", flush=True)
+        if state(named) == "TASK_STATE_INPUT_REQUIRED":
+            t = named
+            info["ask"] = ask0 = first_ask(t, value_cap)
     grade, hours_left = unit_grade(t), unit_hours_left(t)
     unfit = None
     if grade and grades and grade not in grades:   # 02:47: a 377,000 grade C unit was negotiated, then refused at checkout
@@ -206,7 +223,9 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
         ask = ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")
         if ask is None:
             ask = first_ask(t, value_cap)
-        quick, why = quick_offer(ask, stated_floor(status_text(t)), reference, guardian.limit)
+        # after a reopen the shop has shown its floor: the next ask near it is taken rather than bargained down again
+        quick, why = quick_offer(ask, stated_floor(status_text(t)), reference, guardian.limit,
+                                 1.10 if info.get("reopened") else 1.05)
         if quick is not None:
             # 11-05 00:30: 45% of the market's orders go unfilled and a unit draws several buyers within minutes, so
             # a price already at or under my reference is taken at once (no model call) rather than haggled for a few
