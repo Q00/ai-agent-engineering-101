@@ -1,0 +1,58 @@
+{
+  "scope": "paid:true with ledger only",
+  "status": "estimate; official value only in official_* fields",
+  "window": {
+    "since": "20261104T103400000000Z",
+    "until": null,
+    "deals": 4
+  },
+  "by_path": {
+    "deterministic:rule_offer": {
+      "deals": 3,
+      "broken": 0,
+      "surplus_sum": 129539,
+      "surplus_median": 5370,
+      "surplus_per_list_median": 0.21,
+      "price_per_cap_median": 0.9804,
+      "price_per_order_budget_median": 0.5005,
+      "price_per_first_ask_median": 1.0,
+      "cap_per_list_median": 0.8,
+      "with_cap": 3,
+      "with_labeled_first_ask": 3
+    },
+    "legacy_file:deterministic": {
+      "deals": 1,
+      "broken": 0,
+      "surplus_sum": 3870,
+      "surplus_median": 3870,
+      "surplus_per_list_median": 0.3,
+      "price_per_cap_median": 0.9151,
+      "price_per_order_budget_median": 0.7778,
+      "price_per_first_ask_median": 1.0,
+      "cap_per_list_median": 0.765,
+      "with_cap": 1,
+      "with_labeled_first_ask": 1
+    }
+  },
+  "official_same_window": {
+    "note": "fewer than two official snapshots inside the window",
+    "snapshots_inside": 1
+  },
+  "reconciliation": {
+    "official_surplus": 12018460,
+    "official_deals": 523,
+    "official_served": 518,
+    "official_observed_at": 1793788751.3488305,
+    "estimated_surplus": 12246980,
+    "local_deals": 523,
+    "difference": 228520,
+    "broken_events_unmatched": 3
+  },
+  "last_offer_per_first_ask": {
+    "at_or_above_ask": {
+      "offers": 6,
+      "receipt": 5,
+      "paid": 4
+    }
+  }
+}
