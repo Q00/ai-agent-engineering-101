@@ -138,5 +138,6 @@ def test_seller_llm_assist_import_is_guarded():
     tree = ast.parse((R3 / "hooks/seller.py").read_text(encoding="utf-8"))
     guarded = [m for n in ast.walk(tree) if isinstance(n, ast.Try) for m in ast.walk(n)
                if isinstance(m, ast.ImportFrom) and m.module == "llm.live_v120c"]
-    plain = [n for n in tree.body if isinstance(n, ast.ImportFrom) and (n.module or "").startswith("llm")]
+    plain = [n for n in tree.body if isinstance(n, ast.ImportFrom) and (n.module or "").startswith("llm")
+             or isinstance(n, ast.Import) and any(a.name.split(".")[0] == "llm" for a in n.names)]
     assert guarded and not plain
