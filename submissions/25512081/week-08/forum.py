@@ -192,7 +192,13 @@ def buyer_turn(log):
 # forum text and orders hidden in it, and each reading only the newest 100 posts. So a buyer post here: cites only
 # settle entries, states only numbers its refs show (one ref per claim, so a voter can check each), leads with a
 # tag and the facts, gives no orders, never names our own shop, and covers what sells most. Three kinds rotate:
-POST_KINDS = ("reply", "alert", "deals", "purchases")
+# Nov 5 01:50, 3,322 buyer posts with refs (25 min-18 h old): likes barely depend on format (authors 5.9-6.2, ours
+# 6.00, the leader 6.16), and a buyer's forum score ends up near its new posts' average, since ~3,000 more posts by
+# Nov 17 dilute the early ones. Our kinds: [최근 최저가] (deals) 6.07 likes, 20% at 7+ (n 44), [등급 경고] (alert)
+# 6.18, 18% (n 11), [구매 기록] (purchases) 5.96, 7%, [답변] (reply) 5.93, 7%. So deals every other slot, alert when
+# there is one, reply kept for threads; purchases (the only kind written by a model) dropped. (Was reply, alert,
+# deals, purchases.)
+POST_KINDS = ("deals", "alert", "deals", "reply")
 OWN = "kimauve"
 FRESH = 6 * 3600
 
@@ -274,10 +280,9 @@ def buyer_post():
     """One buyer post per slot, the next kind in POST_KINDS that has something to say."""
     st = _load(STATE, {})
     done = set(st.get("posted", []))
-    last = st.get("last_post")
-    order = POST_KINDS[POST_KINDS.index(last) + 1:] + POST_KINDS[:POST_KINDS.index(last) + 1] if last in POST_KINDS \
-        else POST_KINDS
-    for kind in order:
+    slot = st.get("slot", -1) + 1                # a slot counter: POST_KINDS repeats a kind
+    order = [(i % len(POST_KINDS), POST_KINDS[i % len(POST_KINDS)]) for i in range(slot, slot + len(POST_KINDS))]
+    for at, kind in order:
         if kind == "purchases":
             post = purchases_post()
             key = None
@@ -288,7 +293,7 @@ def buyer_post():
             continue
         _write([post])
         st = _load(STATE, {})
-        st["last_post"] = kind
+        st["last_post"], st["slot"] = kind, at
         st["posted"] = (st.get("posted", []) + post["refs"] + ([key] if key else []))[-3000:]
         STATE.write_text(json.dumps(st), encoding="utf-8")
         print(time.strftime("%H:%M:%S"), kind, json.dumps(post, ensure_ascii=False), flush=True)
