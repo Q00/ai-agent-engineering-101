@@ -16,7 +16,7 @@ scores its own forecasts so it gets better (self-improvement: forecast -> compar
            price, so an order is never short of candidates because the buyer only knew the shops it traded with
 
 advise(order, shops) is the buyer's shopping advice per order (round3 follows it): shops ranked by the surplus they
-should leave (budget - expected price, the board's measure) times quality, the first-offer target and the most to
+should leave (list - expected price, the board's measure) times quality, the first-offer target and the most to
 pay. Without a book the buyer falls back to its own ranking.
 
 Accountability (the owner's rule: the Enuri team answers for every missed opportunity and every wrong purchase).
@@ -307,6 +307,8 @@ def judge(state, old, c, now, t):
                 _case(cases, key, now, "wrong", "receipt problem", m, a, m["problem"])
             elif m.get("shop") in avoid:
                 _case(cases, key, now, "wrong", "bought at an avoid shop", m, a - (low(m.get("item")) or a), m["shop"])
+            elif m.get("list_price") and a > m["list_price"]:   # 11-04: overpaid = paid above list, negative surplus
+                _case(cases, key, now, "wrong", "paid above list", m, a - m["list_price"], f"paid {a}, list {m['list_price']}")
             elif low(m.get("item")) and a > 1.05 * low(m["item"]):
                 _case(cases, key, now, "wrong", "overpaid", m, a - low(m["item"]), f"paid {a}, book low {low(m['item'])}")
         elif out in ("no deal", "no answer", "no candidates") and budget:
@@ -319,16 +321,17 @@ def judge(state, old, c, now, t):
                         continue
                     x = expected(old, h["shop"], sku, e.get("kind"), e.get("list"), bt)
                     reach = (e.get("list") and e["list"] * bt.get("min_reach", 0.45) <= budget) or (x and x <= budget)
-                    if reach and x and (best is None or x < best[0]):
-                        best = (x, h["shop"], sku)
+                    gain = (e.get("list") or 0) - x if x else None      # list - price: the board's surplus
+                    if reach and x and gain and gain > 0 and (best is None or gain > best[3]):
+                        best = (x, h["shop"], sku, gain)
             if out == "no candidates" and best:
-                _case(cases, key, now, "missed", "no candidates, but stocked", m, budget - best[0],
+                _case(cases, key, now, "missed", "no candidates, but stocked", m, best[3],
                       f"{best[1]} had {best[2]} at ~{best[0]:.0f}")
             elif m.get("enuri_first") and m.get("enuri_first") == m.get("shop"):
-                _case(cases, key, now, "missed", "first pick failed", m, budget - (best[0] if best else budget),
+                _case(cases, key, now, "missed", "first pick failed", m, best[3] if best else 0,
                       f"{out} at {m.get('shop')}: {m.get('problem') or ''}")
             elif best:
-                _case(cases, key, now, "missed", "no deal, in reach", m, budget - best[0],
+                _case(cases, key, now, "missed", "no deal, in reach", m, best[3],
                       f"{out}; {best[1]} had {best[2]} at ~{best[0]:.0f}")
     if new:
         state["judged_to"] = max(m.get("ts") or 0 for m in new)
@@ -385,7 +388,7 @@ def _buyer_theta():
 
 
 def advise(order, shops, b=None, t=None, cat=None):
-    """The buyer's shopping advice for one order: shops ranked by the surplus they should leave (budget minus
+    """The buyer's shopping advice for one order: shops ranked by the surplus they should leave (list minus
     expected price; the board counts surplus in money) x quality x (1 - Enuri's penalty for that shop), the
     first-offer target and the most to pay. Shops from the market-wide index fill in any the order's list lacks."""
     b = book() if b is None else b

@@ -11,6 +11,7 @@ A temporary folder stands in for private/, .market/ and memory.jsonl; the module
     .venv/bin/python tests_buyer_unit.py
 """
 import json
+import re
 import os
 import sys
 import tempfile
@@ -261,11 +262,75 @@ def test_buyer_team(c, shops):
     json.dumps(b)
 
 
+def test_consolidated_policy(c, shops):
+    """Regression tests for the buyer-unit errors found on 11-04 (audit team): the objective is list - paid."""
+    import market_buyer as mb
+
+    class Shop:                       # a scripted seller: counters in order, a deal once an offer meets the ask
+        def __init__(self, asks, reject="No deal at {p}."):
+            self.asks, self.i, self.reject, self.paid, self.tasks = list(asks), 0, reject, None, 0
+
+        def task(self, st, text):
+            return {"id": f"t{self.tasks}", "status": {"state": st, "message": {"parts": [{"text": text}]}}}
+
+        def send(self, url, text, task_id=None):
+            if task_id is None:
+                self.tasks += 1
+                self.i = 0 if "accept your lowest" not in text else self.i
+                return self.task("TASK_STATE_INPUT_REQUIRED", f"Counteroffer: {self.asks[self.i]}.")
+            price = int(re.sub(r"[^0-9]", "", text) or 0)
+            if price >= self.asks[self.i]:
+                self.paid = price
+                return self.task("TASK_STATE_COMPLETED", f"Deal at {price}.")
+            if self.i + 1 >= len(self.asks):
+                return self.task("TASK_STATE_REJECTED", self.reject.format(p=price))
+            self.i += 1
+            return self.task("TASK_STATE_INPUT_REQUIRED", f"Counteroffer: {self.asks[self.i]}.")
+
+        def rpc(self, url, method, params):
+            return self.task("TASK_STATE_CANCELED", "cancelled")
+
+    old = (mb.send, mb.rpc, mb.log)
+    mb.log = lambda *a, **k: None
+    try:
+        def run(shop, cap, close, low=None):
+            mb.send, mb.rpc = shop.send, shop.rpc
+            t0 = shop.send("u", "I want to buy x")
+            task, asks, offers, _, _ = mb.negotiate("u", "x", cap, time.time(), low=low,
+                                                    opened=("u", t0, "I want to buy x"), decide_fn=mb.code_decide,
+                                                    close_at=close)
+            return mb.state(task), shop.paid
+        # 1. the 12:18 case: our offer stuck at the cap 9621, the shop came down to 9809 and then rejected
+        st, paid = run(Shop([10717, 10297, 10044, 9903, 9809]), 9621, 14440, low=6840)
+        check(st == "TASK_STATE_COMPLETED" and paid <= 14440, f"a stuck cap offer takes an ask under the close line (paid {paid})")
+        # 2. never above the close line
+        st, paid = run(Shop([20000, 19500, 19400, 19300, 19200, 19100]), 9621, 14440, low=6840)
+        check(st != "TASK_STATE_COMPLETED" and paid is None, "an ask that stays above the close line is never paid")
+        # 3. rejected without a floor after a counter under the close line: buy at that counter in a new task
+        st, paid = run(Shop([12000], reject="No deal."), 9621, 14440, low=6840)
+        check(st == "TASK_STATE_COMPLETED" and paid == 12000, f"rejected after a counter under the close line: rebuys at it ({paid})")
+    finally:
+        mb.send, mb.rpc, mb.log = old
+    # 4. one price policy: close line from list, capped by budget; big tickets close higher
+    q = {"c": (0, {"name": "s"}, {"sku": "G1"}, 15200)}
+    cap, low, close, _ = mb.price_plan({"budget": 22990}, q, {}, {}, None)
+    check(close == max(cap, int(15200 * mb.T["close_ratio"])) and cap <= close and low < cap, f"price_plan small: cap {cap} open {low} close {close}")
+    qb = {"c": (0, {"name": "s"}, {"sku": "G2"}, 300000)}
+    _, _, close_b, _ = mb.price_plan({"budget": 290000}, qb, {}, {}, None)
+    check(close_b == 290000, "price_plan: the budget caps the close line of a big ticket")
+    # 5. the pick maximises list - ask among asks within budget (until 11-04 it took the lowest ask)
+    cheap = {"c": (0, {"name": "a"}, {"sku": "G1"}, 10000), "ask": 6000}
+    dear = {"c": (0, {"name": "b"}, {"sku": "G2"}, 30000), "ask": 15000}
+    over = {"c": (0, {"name": "c"}, {"sku": "G3"}, 90000), "ask": 50000}
+    got = mb.pick_quote([cheap, dear, over], {"budget": 20000}, [cheap["c"], dear["c"], over["c"]])
+    check(got is dear, "pick: the most list - ask within the budget, not the lowest ask")
+
+
 def main():
     c, shops = setup()
     test_theta()
     test_enuri(c, shops)
-    for name in ("test_buyer", "test_buyer_team"):
+    for name in ("test_buyer", "test_buyer_team", "test_consolidated_policy"):
         if name in globals():
             globals()[name](c, shops)
     print(f"{ok} checks passed ({TMP})")

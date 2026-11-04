@@ -1,10 +1,9 @@
 """Week 08 — buyer_team.py: the buyer analysis team (Codex), run by marketing_agent.py once an hour, after the
 finance team and before the sales decision. With the Enuri team (enuri.py) it is the Buyer unit.
 
-The board scores our buyer on surplus 0.5 + forum 0.3 + deals 0.2 (percentiles), and "surplus" there is money:
-budget - paid, summed. The leaders have about 3x ours because they close the expensive orders. The meta-harness
-(meta_harness.py) still tunes the haggling on J = mean (budget - paid) / budget, a ratio that weighs a 5k order like
-a 200k one; this team does not touch it and scores everything in absolute money instead.
+The board scores our buyer on surplus 0.5 + forum 0.3 + deals 0.1 + posts 0.1 (percentiles), and "surplus" there is
+money: LIST price of what served the order - paid, summed (week-08 rules; until 11-04 the unit read it as budget - paid).
+The leaders have about 3-5x ours because their orders are for dear goods (mattresses, furniture).
 
   brief      our buyer row vs the top 10 buyers on the board; our Round 3 trades per budget band (tries, deals,
              surplus kept, outcomes, problems); the Enuri team's book (accountability first: what it missed and
@@ -131,7 +130,7 @@ def band_of(budget):
 
 
 def bands(hours=24, now=None):
-    """Our Round 3 orders per budget band: tries, deals, surplus kept (budget - agreed), outcomes, problems."""
+    """Our Round 3 orders per budget band: tries, deals, surplus kept (list - agreed), outcomes, problems."""
     now = now or time.time()
     out = {}
     for m in enuri.lines_since(now - hours * 3600):
@@ -146,7 +145,7 @@ def bands(hours=24, now=None):
         b["outcomes"][o] = b["outcomes"].get(o, 0) + 1
         if o == "deal" and m.get("agreed"):
             b["deals"] += 1
-            b["surplus"] += m["budget"] - m["agreed"]
+            b["surplus"] += (m.get("list_price") or m["budget"]) - m["agreed"]
         if m.get("problem"):
             p = str(m["problem"])[:40]
             b["problems"][p] = b["problems"].get(p, 0) + 1
@@ -266,13 +265,13 @@ def diagnosis(board, now=None):
     return {"shops_skipped_now": len(blocked), "skipped": dict(list(blocked.items())[:15]),
             "outcomes_3h": {o: sum(1 for m in rows if m.get("outcome") == o) for o in
                             ("deal", "no deal", "no answer", "no candidates")},
-            "deal_rate_by_category_3h": fmt(cat), "deal_rate_by_budget_3h": fmt(band),
-            "ab_scout_then_buy_24h": ab_results(now), "ab_pay_105_small_food_24h": ab_results(now, key="pay_ab")}
+            "deal_rate_by_category_3h": fmt(cat), "deal_rate_by_budget_3h": fmt(band)}
 
 
 def ab_results(now, hours=24, key="ab"):
     """HQ 11-04 A/B on orders of 60,000 and up: A = the buyer negotiates; B = Enuri scouts each quote first and the
-    buyer buys at what it learned. Per arm: orders, deals, surplus per order (budget - paid, the board's measure)."""
+    buyer buys at what it learned. Per arm: orders, deals, surplus per order (list - paid, the board's measure).
+    Both A/B experiments were retired 11-04; kept for the record of what they measured."""
     out = {}
     for m in load_memory(now - hours * 3600):
         if m.get(key) not in ("A", "B"):
@@ -281,7 +280,7 @@ def ab_results(now, hours=24, key="ab"):
         x["orders"] += 1
         if m.get("outcome") == "deal" and m.get("agreed"):
             x["deals"] += 1
-            x["surplus"] += (m.get("budget") or 0) - m["agreed"]
+            x["surplus"] += (m.get("list_price") or m.get("budget") or 0) - m["agreed"]
             x["scout_deals"] += bool(m.get("scout_deal"))
     for x in out.values():
         x["deal_rate"] = round(x["deals"] / x["orders"], 2) if x["orders"] else None
