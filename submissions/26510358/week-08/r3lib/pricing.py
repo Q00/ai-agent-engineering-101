@@ -68,10 +68,17 @@ def seller_reply(ask, floor, offer, n_offers, hold=None):
 
 def warranty_hours_for(u, price, p_break):
     """Offer a warranty when its expected cost (p_break * price refunded) stays under half the unit's margin."""
-    if u.get("kind") != "goods":
+    if u.get("kind") != "goods" or u.get("grade") not in config.WARRANTY_GRADES:
         return 0
     margin = max(0, price - u["cost"])
     return config.WARRANTY_HOURS if p_break * price <= config.WARRANTY_MAX_EXPECTED_COST * margin else 0
+
+
+def warranty_ask(ask, u, warranty_hours, p_break):
+    """With a warranty the buyer is insured, so the ask carries the expected refund (never above list price)."""
+    if not warranty_hours or not config.WARRANTY_PRICE_IN:
+        return ask
+    return int(min(u["list_price"], ask * (1 + p_break)))
 
 
 def warranty_floor(floor, u, price, warranty_hours, p_break):

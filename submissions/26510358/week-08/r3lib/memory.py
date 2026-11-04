@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS forum (
     signals TEXT, voted INTEGER DEFAULT 0, mine INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, kind TEXT, subject TEXT, text TEXT,
     importance REAL, refs TEXT);
+CREATE TABLE IF NOT EXISTS stockouts (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, category TEXT, sku TEXT);
 CREATE TABLE IF NOT EXISTS members (code TEXT PRIMARY KEY, ts REAL, sku TEXT, style TEXT, uses INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS restocks (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, sku TEXT, category TEXT, qty INTEGER,
     reason TEXT);
@@ -215,6 +216,29 @@ class Memory:
             r = c.execute(q, args).fetchone()
         n, k = r["n"] or 0, r["k"] or 0
         return (k + 1) / (n + 10)
+
+    def break_rate_for(self, grade, category):
+        """Grade x category break rate when that cell has BREAK_MIN_N goods sales, else the grade's. Mattresses and
+        bedding broke at ~6% while grade A overall broke at 2.4%."""
+        with self.db() as c:
+            n = c.execute("SELECT COUNT(*) n FROM settles WHERE kind='goods' AND grade=? AND category=?",
+                          (grade, category)).fetchone()["n"]
+        if category and n >= config.BREAK_MIN_N:
+            return self.break_rate(grade, category)
+        return self.break_rate(grade)
+
+    def record_stockout(self, category, sku=None):
+        with self.db() as c:
+            c.execute("INSERT INTO stockouts (ts, category, sku) VALUES (?,?,?)", (time.time(), category, sku))
+
+    def stockout_rates(self, hours=None, now=None):
+        """category -> requests per hour our shop turned away for lack of stock."""
+        hours = hours or config.STOCKOUT_HOURS
+        now = now or time.time()
+        with self.db() as c:
+            return {r["category"]: r["n"] / hours for r in c.execute(
+                "SELECT category, COUNT(*) n FROM stockouts WHERE ts>? AND category IS NOT NULL GROUP BY category",
+                (now - hours * 3600,))}
 
     def own_sales(self, hours=24):
         mine = self.my_shop_urls()

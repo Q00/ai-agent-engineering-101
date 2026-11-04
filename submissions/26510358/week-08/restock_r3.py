@@ -64,6 +64,19 @@ def kick_forum(mem):
     kick(mem, "forum_r3.py", "forum_kick", FORUM_EVERY)
 
 
+def window_near(inv, now=None):
+    """True when supply is open or opens within RESTOCK_LEAD_S. Without restock info, True (old behaviour)."""
+    r = inv.get("restock") or {}
+    if not r:
+        return True
+    if r.get("open"):
+        return True
+    now = now or time.time()
+    if r.get("closes_at") and now > r["closes_at"]:
+        return False                                      # stale: that window is over, the next is not posted yet
+    return (r.get("opens_at") or 0) - now <= config.RESTOCK_LEAD_S
+
+
 def refresh_harsh_styles(mem, now=None):
     """Buyer styles whose ratings of our deals average at or below HARSH_MAX_STARS; the shop declines them."""
     now = now or time.time()
@@ -119,6 +132,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     dem = mem.category_demand(now=now)
     forum = mem.forum_demand_signals()
     view = scout.category_view(mem, now=now)
+    stockouts = mem.stockout_rates(now=now)
     lines, why = [], []
 
     # 1) evidence: categories that sell, by expected profit per hour
@@ -127,11 +141,12 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         k = row["category"]
         d = dem.get(k) or {}
         rate = d.get("rate", 0) + 0.05 * forum.get(market.leaf(k), 0)
-        if rate <= 0:
+        missed = stockouts.get(k, 0.0)                    # orders that came to us and found nothing
+        if rate <= 0 and missed <= 0:
             continue
         share = scout.share_estimate(1 / (1 + (d.get("shops") or 0)), view.get(k))
         gap = scout.gap_factor(view.get(k))
-        exp_h = rate * share * gap
+        exp_h = rate * share * gap + missed
         factor = (adjust.get(k) or {}).get("factor", 1.0)
         target = math.ceil(exp_h * config.HORIZON_H * factor)
         shelf = [i.get("shelf_hours") for _, i in info_by_cat.get(k, []) if i.get("shelf_hours")]
@@ -142,8 +157,9 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
             why.append({"category": k, "skip": f"market pays {ratio:.2f} of list, no margin over cost"})
             continue
         need = target - have.get(k, 0)
-        if factor != 1.0 or gap != 1.0:
+        if factor != 1.0 or gap != 1.0 or missed:
             why.append({"category": k, "review_factor": factor, "gap_factor": gap, "share": round(share, 3),
+                        "stockouts_per_h": round(missed, 2),
                         "pressure": (view.get(k) or {}).get("pressure"), "target": target})
         if need > 0:
             margin = (ratio or config.EV_DEFAULT_PRICE_RATIO) - config.EV_COST_RATIO
@@ -229,6 +245,8 @@ def main():
         if (inv.get("balance") or 0) < (inv.get("bankrupt_line") or 0) and not inv.get("units") \
                 and (inv.get("bankruptcies_left") or 0) > 0:
             out["bankrupt"] = True
+        elif not window_near(inv):
+            out["wait"] = "supply window not open"            # the kit would wait 90 s per line and skip it
         elif config.hours_left_in_round() > config.STOP_BUYING_HOURS:
             lines, why, state = plan(inv, market.read_json("demand.json", [], md) or [], mem)
             out["buy"] = lines

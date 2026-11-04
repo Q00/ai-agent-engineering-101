@@ -24,6 +24,10 @@ STOCK_BUDGET_SHARE = 0.40           # stock on hand may cost up to this share of
 STOCK_BUDGET_MAX = 8_000_000        #   15.8M held 1.6M of stock while mattress EV said 20 units and the cap said 3)
 EXPLORE_SHARE = 0.25                # share of MAX_STOCK_COST for coverage of categories with no evidence yet
 EXPLORE_MAX_LIST = 60_000           # coverage buys only SKUs at or below this list price
+RESTOCK_LEAD_S = 60                 # emit a buy list only when supply is open or opens within this (2026-11-04:
+                                    #   505 supply calls refused with 429 vs 634 bought; the kit skips a line after 90 s)
+STOCKOUT_HOURS = 6                  # requests our shop turned away for lack of stock, counted over this window,
+                                    #   are demand addressed to us: added to the category's expected sales per hour
 STOP_BUYING_HOURS = 72              # no restock in the last 72 h of the round
 CLEARANCE_HOURS = 36                # in the last 36 h, prices fall toward a salvage floor
 DEMAND_HALF_LIFE_H = 8              # recent settles weigh more
@@ -53,6 +57,10 @@ MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
 WARRANTY_HOURS = 6                  # goods break up to 6 h after the sale (agent.md)
 WARRANTY_MAX_EXPECTED_COST = 0.5    # offer a warranty while p_break * price stays under half the margin
+WARRANTY_GRADES = ("A", "B")        # never on C: 27% of C goods broke market-wide (A 2.4%, B 9.1%, 2026-11-04)
+WARRANTY_PRICE_IN = True            # a warranty unit's ask carries its expected refund (p_break x ask), like a paid
+                                    #   warranty; refunds were 4.2% of our stock cost vs 0.8% at dae-yangkim
+BREAK_MIN_N = 200                   # use the grade x category break rate once it rests on this many goods sales
 
 # --- shop: repeat customers and review defence ----------------------------------------------------
 LOYALTY_DISCOUNT = 0.03             # a quoted member code takes 3% off the first ask (the floor does not move)

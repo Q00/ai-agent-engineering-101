@@ -119,6 +119,20 @@ def find_unit(text, taken):
     return min(fit, key=lambda u: ("ABC".find(u.get("grade") or "C"), u.get("supplied_at") or 0)), inv
 
 
+def requested_category(text):
+    """(category, sku) a buyer asked for, from a SKU in the text or a category leaf name; (None, None) if unclear."""
+    cat = market.catalog()
+    for sku in SKU_RE.findall(text or ""):
+        if sku in cat:
+            return cat[sku]["category"], sku
+    want = (text or "").lower()
+    leaves = {}
+    for i in cat.values():
+        leaves.setdefault(market.leaf(i["category"]).lower(), i["category"])
+    hits = [k for k in leaves if k and k in want]
+    return (leaves[max(hits, key=len)], None) if hits else (None, None)
+
+
 def buyer_style(text, unit):
     """A fingerprint of the buyer agent's opening message: its wording with the product, SKU, Korean words and
     numbers masked. Buyers do not tell the shop who they are, but each agent has its own template."""
@@ -165,11 +179,13 @@ class Shop(AgentExecutor):
         adj += premium
         ask = pricing.unit_ask(u, ratio, adj)
         floor = pricing.unit_floor(u)
-        p_break = self.mem.break_rate(u.get("grade"))
+        p_break = self.mem.break_rate_for(u.get("grade"), u.get("category"))
         warranty = pricing.warranty_hours_for(u, ask, p_break)
+        ask = pricing.warranty_ask(ask, u, warranty, p_break)
         floor = pricing.warranty_floor(floor, u, ask, warranty, p_break)
         log("terms", sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
-            floor=floor, market_ratio=ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty)
+            floor=floor, market_ratio=ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty,
+            p_break=round(p_break, 4))
         return ask, floor, warranty
 
     def _pitch(self, u, ask, warranty, member=None):
@@ -199,6 +215,12 @@ class Shop(AgentExecutor):
             u, _ = find_unit(text, taken)
             if u is None:
                 log("no_stock", request=text[:120])
+                try:
+                    k, sku = requested_category(text)
+                    if k:
+                        self.mem.record_stockout(k, sku)
+                except Exception as e:                # memory trouble must not lose a sale
+                    log("memory_error", error=str(e)[:200])
                 await up.reject(say("Sorry, none of that in stock."))
                 return
             style = buyer_style(text, u)
