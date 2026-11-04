@@ -227,6 +227,8 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
                 sh["honest"] += s.get("claim_honest") is True
     for table in (by_sku, by_cat):
         for t in table.values():
+            if table is by_sku and len(t["ratios"]) >= SKU_MIN * 2:      # the low end our buyer can cite (11/5)
+                t["p25"] = round(sorted(t["ratios"])[len(t["ratios"]) // 4], 4)
             t["price_ratio"] = _mean(t.pop("ratios"))
     for sku, t in by_sku.items():
         t["others_6h_n"] = others_n.get(sku, 0)

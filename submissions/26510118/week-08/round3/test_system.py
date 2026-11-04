@@ -234,8 +234,8 @@ def main() -> int:
         print("\n".join("    " + x for x in lines if x.startswith("[buyer]")))
         asked = [x for x in lines if "<-" in x and "Asking" in x]
         check("the seller asks 80% of list now: 10,720 for 겉절이 (13,400 x (0.75 + 0.05))", asked and "Asking 10720" in asked[0], asked[:1])
-        offered = [x for x in lines if "-> '" in x and re.search(r"-> '\d+'", x)]
-        check("our buyer opens at 55% of list now: 7,370", offered and "-> '7370'" in offered[0], offered[:1])
+        offered = [x for x in lines if "-> '" in x and re.search(r"-> '\d+[.']", x)]
+        check("our buyer opens at 55% of list now: 7,370", offered and "-> '7370." in offered[0], offered[:1])
         lines, out = run("restock.py", "--state", str(MD))
         check("restock buys apples now that they are wanted", APPLE in {b["sku"] for b in out["buy"]}, out["buy"])
 

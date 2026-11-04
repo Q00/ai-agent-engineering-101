@@ -275,7 +275,37 @@ def test_notebook():
     shop_ = Shop([ask("Asking 37000.", 37000), ask("Final price: 34000", 34000), task("TASK_STATE_COMPLETED", "Deal", signed)])
     r = asyncio.run(mb.trade(shop_, dict(cand, list=39900), order(40000, [BEDDING], "goods"), CATALOG, {}, RULES, False))
     check("after our first offer, an ask within our ceiling (90% of 39,900) is taken, not answered with a lower offer",
-          shop_.sent[1:] == ["23940", "34000"] and r["deal"] and r["price"] == 34000, (shop_.sent, r.get("left")))
+          shop_.sent[1].startswith("23940.") and shop_.sent[2] == "34000" and r["deal"] and r["price"] == 34000, (shop_.sent, r.get("left")))
+    check("...each offer of ours carries one number, the offer, then honest words; taking the shop's ask is the bare number",
+          [__import__("re").findall(r"\d[\d,]*", x) for x in shop_.sent[1:]] == [["23940"], ["34000"]]
+          and "I pay the moment the receipt arrives." in shop_.sent[1], shop_.sent)
+    nums = lambda text: __import__("re").findall(r"\d[\d,]*", text)
+    mk = dict(cand, list=39900, market=0.70, low=0.62)               # the item's market 70% of list, its low end 62%
+    check("the ceiling is also the item's market + 5% (75% of 39,900 = 29,925), under 90% of list and the budget",
+          mb.cap_of(mk, order(40000, [BEDDING], "goods"), 0.90) == 29925 and mb.cap_of(cand, order(40000, [BEDDING], "goods"), 0.90) == 29610)
+    shop_ = Shop([ask("Asking 37000.", 37000), ask("Best I can do: 29000", 29000), ask("Fine, 27500.", 27500),
+                  task("TASK_STATE_COMPLETED", "Deal", dict(signed, price=27500))])
+    r = asyncio.run(mb.trade(shop_, mk, order(40000, [BEDDING], "goods"), CATALOG, {}, RULES, False, others=True))
+    check("a counter above the item's market (29,000 > 27,930) is met once in the middle (26,470), then the next taken",
+          [nums(x)[0] for x in shop_.sent[1:]] == ["23940", "26470", "27500"] and r["deal"] and r["price"] == 27500
+          and "Let's meet in the middle" in shop_.sent[2] and "split" in r["said"], (shop_.sent, r.get("left")))
+    check("the first offer cites the ledger's low end in words (sixty-two percent), with no second number",
+          "about sixty-two percent of its list price" in shop_.sent[1] and nums(shop_.sent[1]) == ["23940"], shop_.sent[1])
+    check("...later offers say other shops stock it (true: others=True); the record keeps what was said and the cap",
+          "Other shops have it in stock too" in shop_.sent[2] and r["cap"] == 29925 and "other shops" in r["said"], (shop_.sent[2], r))
+    shop_ = Shop([ask("Asking 37000.", 37000)] * 6)
+    r = asyncio.run(mb.trade(shop_, mk, order(40000, [BEDDING], "goods"), CATALOG, {}, RULES, False))
+    offers = [nums(x)[0] for x in shop_.sent[1:] if x != "(cancel)"]
+    check("the shop holds at 37,000, over our cap: we leave without passing it; no 'other shops' when there are none",
+          offers and all(int(o) <= 29925 for o in offers) and not r["deal"] and "above our ceiling 29925" in (r["left"] or "")
+          and not any("Other shops" in x for x in shop_.sent), (shop_.sent, r.get("left")))
+    shop_ = Shop([ask("Asking 37000.", 37000), ask("35000 then.", 35000), ask("33000.", 33000), ask("31000.", 31000)])
+    r = asyncio.run(mb.trade(shop_, mk, order(40000, [BEDDING], "goods"), CATALOG, {}, RULES, False))
+    capped = [x for x in shop_.sent[1:] if x != "(cancel)" and nums(x)[0] == "29925"]
+    check("an offer at our cap says it is final, and only that one",
+          capped and all("That is my final offer." in x for x in capped)
+          and not any("final" in x for x in shop_.sent[1:] if x not in capped), shop_.sent)
+    check("words(): 62 -> sixty-two, 70 -> seventy, 9 -> nine", (mb.words(62), mb.words(70), mb.words(9)) == ("sixty-two", "seventy", "nine"))
 
 
 def test_shop_around():

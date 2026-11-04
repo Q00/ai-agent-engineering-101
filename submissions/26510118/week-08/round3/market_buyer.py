@@ -82,6 +82,16 @@ DEAR_ORDER = 500_000      # an order whose products list at this (median) or mor
                           # failure there costs seconds, a deal tens or hundreds of thousands)
 WARRANTY_HOURS = 6
 HOLDS = 2                 # asks above our ceiling that stopped falling before we leave
+# 11/5 03:30 (the person's call: "a lower ceiling, and better negotiating"): 27% of our deals in 12 h paid more than
+# the item's own market (its mean paid / list over 24 h) + 5% of list, 2.48M over that line; 64 paid over 90% of list.
+# Most came from taking a shop's counter at once whenever it was under our ceiling. So:
+MARKET_SLACK = 0.05       # the ceiling is also the item's market + this (when 20+ settles of it in 24 h)
+MARKET_SEEN = 20
+# ...a counter above the item's market but within the ceiling is met once in the middle before it is taken, and
+# every offer carries a few honest words (one number in the message, the offer: shops read the last or only number):
+# what the public ledger shows at the low end, that other shops stock it, that we pay at once, that this is our
+# last offer. Nothing said is untrue: the low end is the 25th percentile of the item's settles in 24 h, "other
+# shops" only when there are, "final" only at our ceiling.
 STEPS = 4
 TIMEOUT = 30              # seconds per A2A request; the kit stops a buyer after 300
 ODDS_TTL = 1800           # seconds a shop's odds are reused while its evidence is unchanged
@@ -285,9 +295,12 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             score = (lp - expected) * t * (EXPLORE if sh["name"] not in nb else 1) \
                 * (PREFER if sh["name"] in (rules.get("prefer_shops") or []) else 1) \
                 * (RIVAL if sh["name"] in (rivals or set()) else 1)
+            row = by_sku.get(o["sku"]) or {}
+            seen = (row.get("sold_24h") or 0) >= MARKET_SEEN
             out.append({"shop": sh, "sku": o["sku"], "name": o.get("name") or c.get("name"), "list": lp,
                         "kind": c.get("kind"), "expected": round(expected), "gain": round(lp - expected),
-                        "trust": t, "odds": p, "score": score, "flags": flags})
+                        "trust": t, "odds": p, "score": score, "flags": flags,
+                        "market": row.get("price_ratio") if seen else None, "low": row.get("p25") if seen else None})
     return out
 
 
@@ -340,6 +353,37 @@ def warranty_shown(t) -> bool:
     return bool(WARRANTY_SAID.search(text)) and not NO_WARRANTY.search(text)
 
 
+ONES = "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen " \
+       "eighteen nineteen".split()
+TENS = "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()
+
+
+def words(n: int) -> str:
+    """0-99 in English words: a share of list said without a second number in the message."""
+    n = max(0, min(99, int(n)))
+    return ONES[n] if n < 20 else TENS[n // 10] + ("-" + ONES[n % 10] if n % 10 else "")
+
+
+def say(offer: int, c: dict, first: bool, final: bool, split: bool, others: bool) -> tuple[str, list]:
+    """(the message, the kinds said): the offer, the only number in it, and a few true words."""
+    parts, kinds = [str(offer) + "."], []
+    if split:
+        parts.append("Let's meet in the middle and close now.")
+        kinds.append("split")
+    elif first and c.get("low"):
+        parts.append(f"On the public ledger a quarter of today's sales of this item went for about {words(round(c['low'] * 100))} "
+                     "percent of its list price or less.")
+        kinds.append("low end")
+    if others and not first:
+        parts.append("Other shops have it in stock too, so I would like to settle quickly.")
+        kinds.append("other shops")
+    if final:
+        parts.append("That is my final offer.")
+        kinds.append("final")
+    parts.append("I pay the moment the receipt arrives.")
+    return " ".join(parts), kinds
+
+
 def ladder(rules: dict, low_paid: float | None) -> list:
     lo, hi = rules.get("open_ratio", 0.6), rules.get("max_ratio", 0.9)
     steps = [round(lo + (hi - lo) * i / (STEPS - 1), 4) for i in range(STEPS)]
@@ -348,10 +392,17 @@ def ladder(rules: dict, low_paid: float | None) -> list:
     return steps
 
 
-async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rules: dict, poor: bool) -> dict:
+def cap_of(c: dict, order: dict, top: float) -> int:
+    """Our ceiling: the budget, top (max_ratio) of list, and the item's market + MARKET_SLACK when it is known."""
+    cap = min(order["budget"], round(c["list"] * top))
+    return min(cap, round(c["list"] * (c["market"] + MARKET_SLACK))) if c.get("market") else cap
+
+
+async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rules: dict, poor: bool,
+                others: bool = False) -> dict:
     """One negotiation. Returns the facts the order record, the notebook and the result line need."""
     r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": None, "left": None,
-         "switched": None, "warranty": wants_warranty(c, nb, poor, rules)}
+         "switched": None, "warranty": wants_warranty(c, nb, poor, rules), "said": [], "cap": None}
     need = order.get("use_within_hours")
     try:
         await client.open(c["shop"]["url"])
@@ -362,8 +413,8 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             first += f" Please include a {WARRANTY_HOURS}-hour warranty."
         t = await client.send(first)
         steps = ladder(rules, memory.paid_ratio(nb, c["shop"]["name"])[1])
-        ceiling = min(order["budget"], round(c["list"] * steps[-1]))
-        prev, holds, asked_warranty, refurb, covered = None, 0, r["warranty"], False, False
+        ceiling = r["cap"] = cap_of(c, order, steps[-1])
+        prev, holds, asked_warranty, refurb, covered, split = None, 0, r["warranty"], False, False, False
         for step in steps:
             if state(t) != "TASK_STATE_INPUT_REQUIRED":
                 break
@@ -382,9 +433,9 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                         or alt["list_price"] * steps[0] > order["budget"]:
                     r["left"] = "the shop offered a product the order does not accept"
                     break
-                c = dict(c, sku=pick, name=alt.get("name"), list=alt["list_price"], kind=alt.get("kind"))
+                c = dict(c, sku=pick, name=alt.get("name"), list=alt["list_price"], kind=alt.get("kind"), market=None, low=None)
                 r["switched"] = pick
-                ceiling = min(order["budget"], round(c["list"] * steps[-1]))
+                ceiling = r["cap"] = cap_of(c, order, steps[-1])
                 if pick != m.get("sku"):                            # choose it from the menu
                     t = await client.send(pick, t["id"])
                     continue
@@ -411,10 +462,19 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                         break
                 prev = ask
             offer = min(round(c["list"] * step), ceiling)
-            if ask is not None and (ask <= offer or (r["offers"] and ask <= ceiling)):
-                offer = ask                                         # it fits, or it is the shop's answer to our offer and within our ceiling: take it
+            meet = False
+            if ask is not None and ask <= offer:
+                offer = ask                                         # it fits: take it
+            elif ask is not None and r["offers"] and ask <= ceiling:
+                if split or not c.get("market") or ask <= round(c["list"] * c["market"]):
+                    offer = ask                                     # the shop's answer, within our ceiling: take it
+                else:                                               # above the item's market: meet in the middle once
+                    offer, split = max(r["offers"][-1], min(ceiling, round((r["offers"][-1] + ask) / 2))), True
+                    meet = True
             r["offers"].append(offer)
-            t = await client.send(str(offer), t["id"])
+            text, kinds = say(offer, c, len(r["offers"]) == 1, offer >= ceiling and offer != ask, meet, others)
+            r["said"] += [k for k in kinds if k not in r["said"]]
+            t = await client.send(text if offer != ask else str(offer), t["id"])
         if state(t) == "TASK_STATE_COMPLETED":
             rec = receipt_of(t)
             if rec and not rec.get("sig_seller"):                   # the kit cannot sign it nor the market settle it
@@ -477,7 +537,8 @@ async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: 
     tries = []
     while True:
         try:
-            r = await asyncio.wait_for(trade(client, c, order, catalog, nb, rules, bool(poor)),
+            others = any(x["shop"]["name"] != c["shop"]["name"] for x in cands)
+            r = await asyncio.wait_for(trade(client, c, order, catalog, nb, rules, bool(poor), others),
                                        timeout=max(5.0, HARD_STOP - (clock() - start)))
         except asyncio.TimeoutError:
             r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": "TimeoutError",
@@ -537,7 +598,8 @@ async def amain(a) -> dict:
     common.record("orders", **base, candidates=len(cands), shop=c["shop"]["name"], sku=c["sku"], list_price=c["list"],
                   expected=c["expected"], trust=c["trust"], odds=c.get("odds"), flags=c["flags"], poor=bool(poor), warranty=r["warranty"],
                   switched=r["switched"], asks=r["asks"], offers=r["offers"], deal=r["deal"], price=r["price"],
-                  error=r["error"], left=r["left"], tries=tries, rival=c["shop"]["name"] in rivals)
+                  error=r["error"], left=r["left"], tries=tries, rival=c["shop"]["name"] in rivals,
+                  cap=r.get("cap"), market=c.get("market"), said=r.get("said"))
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles
