@@ -71,6 +71,30 @@ def load(md, name, default):
         return default
 
 
+def _ours(c, now, hours=24):
+    """{sku: (units sold, average ticket, average profit per unit)} for our shop over the last `hours`."""
+    out = {}
+    for sku, n, tk, pr in c.execute("""select s.sku, count(*), avg(s.amount), avg(s.amount - su.cost) from settles s
+                                       join settle_units x on x.seq = s.seq join supply_units su on su.unit = x.unit
+                                       where su.shop = 'dragonash' and s.ts > ? group by s.sku""", (now - hours * 3600,)):
+        out[sku] = (n, tk or 0, pr or 0)
+    return out
+
+
+def by_value(c, buy, now=None):
+    """HQ 11-04 priority for the window (the kit buys 10 lines per run, 10 s apart, in a 3-min window, so the first
+    lines are the ones that get bought): 1. sells well (our units sold in 24 h, in tiers), 2. high ticket, 3. high
+    margin. A SKU we have not sold yet goes after every one we have."""
+    now = now or time.time()
+    ours = _ours(c, now)
+    tier = lambda n: 3 if n >= 50 else 2 if n >= 10 else 1 if n >= 3 else 0
+
+    def key(b):
+        n, tk, pr = ours.get(b["sku"], (0, 0, 0))
+        return (tier(n), tk, pr / tk if tk else 0)
+    return sorted(buy, key=key, reverse=True)
+
+
 def low_value(c, now, t, cat):
     """HQ 11-04 "객단가 낮고 이윤 낮은 제품은 팔지마": SKUs we do not stock again.
       sold by us (2+ in 24 h): average ticket under low_ticket AND average profit per unit under low_profit
@@ -98,13 +122,19 @@ def hits(c, now, t):
                                    join supply_units su on su.unit = x.unit where su.shop = 'dragonash' and s.ts > ?
                                    group by s.sku""", (now - hours * 3600,)):
             sold.setdefault(sku, {})[hours] = n
-    out = []
+    out, econ = [], _ours(c, now)
     for sku, n in sold.items():
         if n.get(24, 0) < t.get("hit_min_24h", 6) and n.get(3, 0) < 3:
             continue                                          # not a hit yet
         per_window = max(n.get(3, 0) / 9, n.get(24, 0) / 72)  # 9 windows in 3 h, 72 in 24 h
-        target = max(2, math.ceil(per_window * t.get("hit_cover", 4)))
-        out.append((sku, target, f"hit: sold {n.get(3, 0)} in 3 h, {n.get(24, 0)} in 24 h -> keep {target}"))
+        _, tk, pr = econ.get(sku, (0, 0, 0))
+        cover = t.get("hit_cover", 4) * (2 if tk >= t.get("hit_big_ticket", 100000) else 1) \
+            * (1.5 if tk and pr / tk >= t.get("hit_good_margin", 0.25) else 1)   # HQ 11-04: sells, ticket, margin
+        target = max(2, math.ceil(per_window * cover))
+        cost = tk - pr
+        if cost > 0:                                          # no single SKU above hit_max_value at cost
+            target = min(target, max(2, int(t.get("hit_max_value", 10_000_000) // cost)))
+        out.append((sku, target, f"hit: sold {n.get(3, 0)} in 3 h, {n.get(24, 0)} in 24 h, ticket {tk:,.0f} -> keep {target}"))
     return sorted(out, key=lambda x: -x[1])
 
 
@@ -305,6 +335,7 @@ def main():
     buy, cut = never_bankrupt(md, buy)
     if cut:
         why = [f"bankruptcy guard dropped {cut}"] + why
+    buy = by_value(c, buy)                 # the kit buys 10 lines per run, 10 s apart, in a 3-min window: most profit first
     go, when = window(md)
     if not go:
         buy, why = [], [f"waiting: {when}"]
