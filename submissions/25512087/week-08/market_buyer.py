@@ -659,6 +659,13 @@ def run_r3(shops: list[dict[str, Any]], order: dict, args: argparse.Namespace, m
         if len(kept) < len(shops):
             print(f"[r3] skipping {len(shops) - len(kept)} shop(s) that shipped without a certificate", file=sys.stderr, flush=True)
         shops = kept
+    if order.get("kind") == "food":                        # 11/04: shops that keep shipping short-dated food
+        short = r3_buyer.short_shelf_shops()
+        kept = [s for s in shops if str(s.get("url", "")).rstrip("/") not in short]
+        if short and len(kept) < len(shops):
+            print(f"[r3] food order: skipping {len(shops) - len(kept)} shop(s) that shipped short-dated food "
+                  f"{r3_buyer.SHELF_STRIKES}+ times", file=sys.stderr, flush=True)
+        shops = kept
     cands = shortlist(shops, order, catalog)
     if not cands:
         print(f"[r3] no listed shop stocks a SKU of {clean(args.item, 60)}", file=sys.stderr, flush=True)

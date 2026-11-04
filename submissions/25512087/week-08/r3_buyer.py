@@ -34,7 +34,7 @@ FOOD_MARGIN_H = 0.5       # settle comes after checkout; keep half an hour in ha
 
 def apply_policy() -> dict:
     """The improvement loop's overrides (clamped by tuning.py): rungs, cap, SKU pick."""
-    global VALUE_RUNGS, MAX_SHARE, EST_PRICE, NEAR_BEST
+    global VALUE_RUNGS, MAX_SHARE, EST_PRICE, NEAR_BEST, SHELF_STRIKES
     import tuning
     over = tuning.load("buyer")
     r1, step = over.get("rung_1", VALUE_RUNGS[0]), over.get("rung_step", 0.10)
@@ -43,6 +43,7 @@ def apply_policy() -> dict:
     MAX_SHARE = over.get("max_share", MAX_SHARE)
     EST_PRICE = over.get("est_price", EST_PRICE)
     NEAR_BEST = over.get("near_best", NEAR_BEST)
+    SHELF_STRIKES = int(over.get("shelf_strikes", SHELF_STRIKES))
     return over
 
 
@@ -117,6 +118,30 @@ def no_cert_shops(path: Path = Path(".market/payments.jsonl"), last: int = 300) 
         if not r.get("paid") and "no certificate" in str(r.get("reason") or ""):
             bad.add(str(r.get("shop") or "").rstrip("/"))
     return bad
+
+
+SHELF_STRIKES = 2
+
+
+def short_shelf_shops(path: Path = Path(".market/payments.jsonl"), strikes: int | None = None,
+                      last: int = 300) -> set[str]:
+    """11/04: shops that shipped food too short-dated for the order (the kit refused to pay) at least `strikes`
+    times in our last `last` payments. Food orders skip them; goods orders still use them."""
+    strikes = SHELF_STRIKES if strikes is None else strikes
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()[-last:]
+    except OSError:
+        return set()
+    n: dict[str, int] = {}
+    for raw in lines:
+        try:
+            r = json.loads(raw)
+        except ValueError:
+            continue
+        if not r.get("paid") and "shelf life" in str(r.get("reason") or ""):
+            u = str(r.get("shop") or "").rstrip("/")
+            n[u] = n.get(u, 0) + 1
+    return {u for u, k in n.items() if k >= strikes}
 
 
 def accept_terms(order: dict) -> dict:

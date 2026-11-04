@@ -72,6 +72,37 @@ class Buyer1104(unittest.TestCase):
             self.assertEqual(rb.no_cert_shops(p), {"https://a"})
 
 
+class ShelfShops1104(unittest.TestCase):
+    def test_short_shelf_shops_need_strikes(self):
+        with TemporaryDirectory() as d:
+            p = Path(d) / "payments.jsonl"
+            r = lambda shop, reason: json.dumps({"shop": shop, "paid": False, "reason": reason})
+            p.write_text("\n".join([r("https://a", "not paying: 3.2 h of shelf life left, the policy asks for 12.5")] * 2
+                                   + [r("https://b", "not paying: 70.0 h of shelf life left, the policy asks for 84.5")]
+                                   + [r("https://c", "not paying: no certificate, and the policy asks for one")] * 3))
+            self.assertEqual(rb.short_shelf_shops(p, 2), {"https://a"})
+            self.assertEqual(rb.short_shelf_shops(p, 1), {"https://a", "https://b"})
+
+
+class Tune1104(unittest.TestCase):
+    def metrics(self, paid, refused):
+        return {"window_hours": 3, "shop_now": {"categories": 0, "balance": 1e7, "stock_units": 100},
+                "window": {"shop": {"openings": 0}, "buyer": {"talks": 100, "outcomes": {},
+                           "payments": {"paid": paid, "refused": refused, "mean_price_share": 0.8}}}}
+
+    def test_rung_rule_retired_and_refusal_rule(self):
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent / "improve"))
+        import tune
+        pol = {k: dict(v) for k, v in tune.DEFAULTS.items()}
+        ch = tune.propose(self.metrics(60, 40), pol)
+        self.assertEqual([(c["key"], c["new"]) for c in ch if c["section"] == "buyer"], [("shelf_strikes", 1)])
+        ch = tune.propose(self.metrics(95, 5), pol)
+        self.assertEqual([(c["key"], c["new"]) for c in ch if c["section"] == "buyer"], [("shelf_strikes", 3)])
+        ch = tune.propose(self.metrics(85, 15), pol)
+        self.assertFalse([c for c in ch if c["section"] == "buyer"], "no rung_1 cut any more")
+
+
 class Forum1104(unittest.TestCase):
     def setup_dir(self, d):
         md, log = Path(d) / ".market", Path(d) / "market-kit.log"
