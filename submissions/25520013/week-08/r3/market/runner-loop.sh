@@ -4,7 +4,7 @@
 # an exit. A STOP file in .r3_runner_v121/ keeps it down (the runner refuses to start), so a deliberate stop survives.
 cd "$(dirname "$0")/.."
 unset MARKET_OWNER                       # the runner never joins the market; keep the owner id out of LLM subprocesses
-export RUNNER_MEMORY=1 R3_MEMORY_LLM=1 RUNNER_PERIOD_S=600
+export RUNNER_MEMORY=1 R3_MEMORY_LLM=1 RUNNER_PERIOD_S=600 RUNNER_ICRL=1
 export RUNNER_PYTHONPATH="$PWD/rlpo_v121"
 mkdir -p .r3_runner_v121
 while true; do

@@ -87,7 +87,18 @@ def stage_rlpo(now):
             "watch": (r.get("watch") or {}).get("a_status") if isinstance(r.get("watch"), dict) else None}
 
 
-STAGES = (("memory", stage_memory), ("harness", stage_harness), ("rlpo", stage_rlpo))
+def stage_icrl(now):
+    # icrl (week-08 icrl/DESIGN.md): OFF unless RUNNER_ICRL=1; icrl.loop.step never raises and acts on block
+    # boundaries by time, so a 600 s tick is idempotent.
+    if os.environ.get("RUNNER_ICRL", "0") != "1":
+        return {"status": "skipped", "why": "RUNNER_ICRL not 1 (default OFF)"}
+    from icrl import loop
+    r = loop.step(now)
+    return {"status": r.get("status", "error"), "mode": r.get("mode"), "exp": r.get("exp"),
+            "cycle": _short((r.get("cycle") or {}).get("proposer")), "msg": r.get("msg")}
+
+
+STAGES = (("memory", stage_memory), ("harness", stage_harness), ("rlpo", stage_rlpo), ("icrl", stage_icrl))
 
 
 def tick(d, now=None):
