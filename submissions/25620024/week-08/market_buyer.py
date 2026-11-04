@@ -234,7 +234,25 @@ def close_ratio(lp):
     return T.get("close_ratio_big", 1.0) if lp >= T.get("big_list", 100000) else T["close_ratio"]
 
 
-def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None, decide_fn=None, close_at=None):
+TACTICS = Path(__file__).parent / "private" / "buyer_tactics.json"
+
+
+def tactic_arm(order, name):
+    """HQ 11-05 MBT TF -> buyer team: a negotiation move learned at our own shop, run as an A/B until buyer_team.
+    auto_adopt() settles it. private/buyer_tactics.json {name: {"mode": "ab" | "on" | "off"}}; "B" uses the move."""
+    try:
+        mode = (json.loads(TACTICS.read_text(encoding="utf-8")).get(name) or {}).get("mode", "ab")
+    except (OSError, ValueError):
+        mode = "ab"
+    if mode in ("on", "off"):
+        return "B" if mode == "on" else "A"
+    import hashlib
+    h = int(hashlib.sha256(f"{name}:{order.get('order') or order.get('item')}".encode()).hexdigest()[:8], 16)
+    return "B" if h % 2 else "A"
+
+
+def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None, decide_fn=None, close_at=None,
+              first_note=None):
     """Week-06 buyer loop with two more guards. Returns (task, asks, offers): every ask the shop made and
     every price we sent, oldest first. low is the lowest price I agreed for this item lately at any shop
     (the market floor): an ask at or below it is taken at once, and my first offer is that price, not a
@@ -342,7 +360,9 @@ def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None
         last_offer = price
         offers.append(price)
         history.append(f"buyer: {price}")
-        task = send(url, str(price), task_id)
+        # the MBT price-match move: the first offer cites the ledger low it is equal to (one number, the same twice)
+        task = send(url, f"{price}. {first_note}" if first_note and len(offers) == 1 and action == "offer" else str(price),
+                    task_id)
         history.append(f"seller: {status_text(task)}")
 
     last_ask = asking_price(task) if state(task) == "TASK_STATE_INPUT_REQUIRED" else None
@@ -861,6 +881,11 @@ def round3(a, order, shops, mem, started):
     keep, shop, offer, lp = pick["c"]
     sku = offer["sku"]
     cap, low, close_at, row = price_plan(order, pick, rows, book, adv)
+    pm, note = tactic_arm(order, "price_match"), None
+    book_low = ((book.get("prices") or {}).get(sku) or {}).get("low")
+    if pm == "B" and book_low and int(0.45 * lp) <= book_low < pick["ask"] and book_low <= cap:
+        low = int(book_low)                       # MBT TF: a price-match request took 30% off our own first ask
+        note = f"Price match please: {low} is the lowest settle for this item on the public ledger in the last 24 h."
     log(f"[choose] {shop['name']} {offer['name']} ({sku}): ask {pick['ask']}, list {lp}, haggle up to {cap}, "
         f"open {low}, take up to {close_at}")
 
@@ -868,7 +893,7 @@ def round3(a, order, shops, mem, started):
     try:
         task, asks, offers, texts, notes = negotiate(shop["url"], offer["name"], cap, started, low=low,
                                                      opened=(pick["url"], pick["task"], pick["opening"]),
-                                                     decide_fn=code_decide, close_at=close_at)
+                                                     decide_fn=code_decide, close_at=close_at, first_note=note)
         outcome = "deal" if state(task) == "TASK_STATE_COMPLETED" else "no deal"
     except Exception as e:
         log(f"buyer error: {type(e).__name__}: {e}")
@@ -927,7 +952,7 @@ def round3(a, order, shops, mem, started):
     agreed = offers[-1] if outcome == "deal" and offers else None
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": sku, "category": order.get("item"),
               "kind": order.get("kind"), "list_price": lp, "budget": order["budget"], "rfq": rfq,
-              "warranty_ab": warranty_arm(order),
+              "warranty_ab": warranty_arm(order), "tactics": {"price_match": pm, "pm_used": bool(note)},
               "enuri_first": adv["ranked"][0]["shop"] if adv else None, "enuri_target": row and row["target"],
               "enuri_walk": row and row["walk_away"], "cap": cap, "close_at": close_at,
               "first_ask": asks[0] if asks else None, "last_ask": asks[-1] if asks else None,

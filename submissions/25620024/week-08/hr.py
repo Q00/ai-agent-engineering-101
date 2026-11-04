@@ -372,6 +372,13 @@ def run(board=None):
             pass
     if alarms:
         md = "## 🚨 바이어 경보\n" + "\n".join(f"- {a}" for a in alarms) + "\n\n" + md
+    try:                                       # MBT TF (sales team + shop agent): buyers' moves -> buyer team; and
+        import mbt, buyer_team                 # the buyer unit's self-improvement loop settles learned moves
+        mbt.analyse()
+        for why in buyer_team.auto_adopt():
+            md = f"- 바이어 자가개선(자동): {why}\n" + md
+    except Exception as e:
+        md = f"# MBT TF 실패: {type(e).__name__}: {e}\n\n" + md
     try:                                       # the audit team: the buyer unit's errors, on top of everything (11-04)
         import audit as audit_team
         md = audit_team.markdown(audit_team.run(board)) + "\n" + md

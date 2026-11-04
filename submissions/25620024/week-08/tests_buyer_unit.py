@@ -332,6 +332,9 @@ def test_consolidated_policy(c, shops):
     o = next({"kind": "goods", "order": f"o-{i}"} for i in range(20) if mb.warranty_arm({"kind": "goods", "order": f"o-{i}"}) == "W")
     check(mb.accept_policy(o).get("warranty_hours") == 6, "warranty arm W requires 6 h at checkout")
     mb.T["warranty_all_goods"] = True
+    # 7. MBT tactic A/B: a stable split by order id; "on"/"off" in buyer_tactics.json overrides it
+    arms = {mb.tactic_arm({"order": f"o-{i}"}, "price_match") for i in range(20)}
+    check(arms == {"A", "B"}, "MBT tactic A/B splits orders")
 
 
 def main():

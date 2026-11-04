@@ -20,6 +20,7 @@ The leaders have about 3-5x ours because their orders are for dear goods (mattre
     private/marketing/buyer_lessons.json
 """
 import json
+import statistics
 import time
 from pathlib import Path
 
@@ -318,6 +319,63 @@ def warranty_results(now, hours=24):
     return out
 
 
+def tactic_results(now, hours=24):
+    """{tactic: {arm: {orders, deals, deal_rate, surplus_per_order, paid_share}}} for the MBT moves on A/B
+    (market_buyer.tactic_arm). Surplus is list - paid, the board's measure; a lost order counts as 0."""
+    out = {}
+    for m in load_memory(now - hours * 3600):
+        for name, arm in ((m.get("tactics") or {}).items()):
+            if arm not in ("A", "B"):
+                continue
+            x = out.setdefault(name, {}).setdefault(arm, {"orders": 0, "deals": 0, "surplus": 0, "shares": []})
+            x["orders"] += 1
+            paid = m.get("receipt_price") or m.get("agreed")
+            if m.get("outcome") == "deal" and paid and m.get("list_price"):
+                x["deals"] += 1
+                x["surplus"] += m["list_price"] - paid
+                x["shares"].append(paid / m["list_price"])
+    for arms in out.values():
+        for x in arms.values():
+            x["deal_rate"] = round(x["deals"] / x["orders"], 3) if x["orders"] else None
+            x["surplus_per_order"] = round(x["surplus"] / x["orders"]) if x["orders"] else None
+            shares = x.pop("shares")
+            x["paid_share"] = round(statistics.median(shares), 3) if shares else None
+    return out
+
+
+def auto_adopt(now=None, min_orders=40, win=1.10, lose=0.90, rate_drop=0.03):
+    """The buyer unit's self-improvement loop for learned moves (HQ 11-05): a tactic on A/B is switched on for every
+    order when its arm B keeps >= 10% more surplus per order than A without losing more than 3 points of deal rate,
+    switched off when it keeps 10% less (or loses 5+ points of deal rate), after min_orders orders per arm. Every
+    switch is logged in private/buyer_tactics.json and private/hq_decisions.md. Returns the switches made."""
+    import market_buyer as mb
+    now = now or time.time()
+    try:
+        cfg = json.loads(mb.TACTICS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        cfg = {}
+    made = []
+    for name, arms in tactic_results(now).items():
+        a, b = arms.get("A"), arms.get("B")
+        if (cfg.get(name) or {}).get("mode", "ab") != "ab" or not a or not b or min(a["orders"], b["orders"]) < min_orders:
+            continue
+        sa, sb = a["surplus_per_order"] or 0, b["surplus_per_order"] or 0
+        if sb >= sa * win and b["deal_rate"] >= a["deal_rate"] - rate_drop:
+            mode = "on"
+        elif sb <= sa * lose or b["deal_rate"] < a["deal_rate"] - 0.05:
+            mode = "off"
+        else:
+            continue
+        why = f"{name} -> {mode}: B {sb:,} vs A {sa:,} surplus/order, deal rate {b['deal_rate']} vs {a['deal_rate']}"
+        cfg[name] = {"mode": mode, "since": time.strftime("%m-%d %H:%M"), "why": why}
+        made.append(why)
+    if made:
+        mb.TACTICS.write_text(json.dumps(cfg, ensure_ascii=False, indent=1), encoding="utf-8")
+        with (HERE / "private" / "hq_decisions.md").open("a", encoding="utf-8") as f:
+            f.write("\n## " + time.strftime("%Y-%m-%d %H:%M") + " buyer team self-improvement (auto): " + "; ".join(made) + "\n")
+    return made
+
+
 def load_memory(since):
     out = []
     try:
@@ -367,6 +425,8 @@ def brief(board=None, now=None):
          "enuri": summ, "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
          "diagnosis": diagnosis(board, now), "internal_audit": __import__("qa").summary(),
          "audit_team": __import__("audit").summary(),   # the audit team's buyer-unit findings: fix each red first
+         "mbt_tf": (__import__("mbt").summary() or {}).get("knowhow"),   # what buyers do that works at our shop
+         "tactics_ab": tactic_results(now),              # learned moves on A/B; auto_adopt settles them
          "current": current(), "plan_now": {k: load(PLAN, {}).get(k) for k in ("changed", "forum_advice", "rationale")},
          "scorecard": scorecard(snap, history[-1] if history else None),
          "history": [{"at": time.strftime("%m-%d %H:%M", time.localtime(h["snapshot"]["ts"])), "changed": h.get("changed"),
