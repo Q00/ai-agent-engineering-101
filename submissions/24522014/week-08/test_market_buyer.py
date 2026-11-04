@@ -587,7 +587,7 @@ class CounterOfferTrades(TradeFixture):
         import buyer_support
         from tempfile import TemporaryDirectory
         settings = {"max_model_orders_per_hour": 2, "max_model_orders_per_day": 24}
-        with TemporaryDirectory() as md, patch.object(buyer_support, "config", return_value=settings):
+        with TemporaryDirectory() as md, patch.object(buyer_support, "config", return_value=settings),                 patch.object(buyer_support, "model_gate_enabled", return_value=True):
             self.counter_trade(self.transport("asking 110."),
                                gate=lambda: buyer_support.model_reservation(md, "o-1", 1793750400.0))
             self.assertFalse((Path(md) / "buyer-support-state.json").exists())
@@ -783,7 +783,7 @@ class ReservationReasons(unittest.TestCase):
         import buyer_support
         from tempfile import TemporaryDirectory
         settings = {"max_model_orders_per_hour": 2, "max_model_orders_per_day": 3}
-        with TemporaryDirectory() as md, patch.object(buyer_support, "config", return_value=settings):
+        with TemporaryDirectory() as md, patch.object(buyer_support, "config", return_value=settings),                 patch.object(buyer_support, "model_gate_enabled", return_value=True):
             now = 1793750400.0
             self.assertEqual(buyer_support.model_reservation(md, "a", now), "reserved")
             self.assertEqual(buyer_support.model_reservation(md, "a", now), "model_order_already_reserved")

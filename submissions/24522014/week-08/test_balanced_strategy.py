@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 import buyer_fast
 import buyer_support
@@ -131,6 +132,10 @@ class FastQuotes(unittest.TestCase):
 
 class Files(unittest.TestCase):
     def setUp(self):
+        # These tests describe the gate's limits; the live flag may have the gate off.
+        gate = patch.object(buyer_support, 'model_gate_enabled', return_value=True)
+        gate.start()
+        self.addCleanup(gate.stop)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.md = Path(self.tmp.name) / '.market'

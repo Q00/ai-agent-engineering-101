@@ -1,0 +1,79 @@
+# window: gate on, decision logging live, 2026-11-04 10:37:30Z to just before the switch
+{
+  "window": {
+    "since": "20261104T103730000000Z",
+    "until": null
+  },
+  "by_role_and_actual_model": {
+    "buyer|gpt-6-luna": {
+      "calls": 3,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "timeouts": 0,
+      "usage_limit_errors": 0,
+      "elapsed_median": 3.568,
+      "elapsed_p90": 5.264,
+      "elapsed_max": 5.264,
+      "tokens_sum": 7674,
+      "tokens_median": 3243,
+      "max_calls_in_one_utc_hour": 3,
+      "label_differs_from_actual": 0
+    },
+    "seller|gpt-6-luna": {
+      "calls": 89,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "timeouts": 0,
+      "usage_limit_errors": 0,
+      "elapsed_median": 3.657,
+      "elapsed_p90": 4.638,
+      "elapsed_max": 10.927,
+      "tokens_sum": 130428,
+      "tokens_median": 838,
+      "max_calls_in_one_utc_hour": 52,
+      "label_differs_from_actual": 0
+    }
+  },
+  "seller_failures": {
+    "harness_calls_failed": 0,
+    "kit_log_decision_failed": 0
+  },
+  "usage_limit_errors": 0,
+  "hooks": {
+    "hook_runs": 140,
+    "hook_runs_per_hour": 173.8,
+    "trades": 69,
+    "trade_seconds_median": 0.6,
+    "trade_seconds_p90": 7.3,
+    "trade_seconds_max": 44.12
+  },
+  "funnel": {
+    "orders": 140,
+    "selected": 69,
+    "quoted": 55,
+    "offered": 12,
+    "receipt": 11,
+    "paid": 8
+  },
+  "decision_paths": {
+    "model_gate:model_quota_hour": 30,
+    "deterministic:rule_offer": 10,
+    "quote_filter:quote_grade_unacceptable": 7,
+    "quote_filter:quote_shelf_life_short": 7,
+    "model:model_offer": 3
+  },
+  "causes": {
+    "selection:attempt_cooldown": 68,
+    "model_quota_hour": 30,
+    "seller_rejected_at_open": 11,
+    "paid": 8,
+    "quote_grade_unacceptable": 7,
+    "quote_shelf_life_short": 7,
+    "selection:no_useful_research": 3,
+    "transport_error": 2,
+    "payment_refused:shelf_life": 2,
+    "payment_refused:grade": 1,
+    "agent_error": 1
+  },
+  "rollback_signal": false
+}
