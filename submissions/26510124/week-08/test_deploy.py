@@ -27,6 +27,8 @@ class DeploymentTests(unittest.TestCase):
         source = self.folder / "source"
         source.mkdir()
         for name, text in {"agent.json": "{}", "advisor-config.json": "{}", "shop-policy.json": "{}", "shop-adaptive.json": '{"name": "dyishappy"}',
+                           "model-profile.json": '{"version": 1, "trading": "astra", "advisor": "haiku"}',
+                           "model_backend.py": "# public model preflight\n",
                            "seller_r3.py": "# public source\n",
                            ".gitignore": "*.pem\n", "prompts/seller.txt": "sample prompt",
                            "deploy/install_server.py": "# public installer\n",
@@ -48,6 +50,7 @@ class DeploymentTests(unittest.TestCase):
         manifest = server.unpack(archive, digest, stage)
         self.assertEqual(manifest["run"], run)
         self.assertEqual(set(manifest["files"]), {"agent.json", "advisor-config.json", "shop-policy.json", "shop-adaptive.json", "seller_r3.py", ".gitignore",
+            "model-profile.json", "model_backend.py",
             "prompts/seller.txt", "deploy/install_server.py", "vendor/market_kit_v4.py", "vendor/SOURCE.json"})
         for name in manifest["files"]:
             self.assertEqual((source / name).read_bytes(), (stage / name).read_bytes())
@@ -216,7 +219,7 @@ class DeploymentTests(unittest.TestCase):
                 self.assertNotIn("Another systemd override", console.getvalue())
                 self.assertEqual(json.loads(report)["WorkingDirectory"], fields["WorkingDirectory"])
 
-    def simulate_deployment(self, *, fail_preflight=False, fail_startup=False):
+    def simulate_deployment(self, *, fail_preflight=False, fail_startup=False, fail_model=False):
         _, run, archive, digest, _ = self.fixture()
         fake_home = self.folder / "home"
         root = fake_home / server.RELATIVE
@@ -224,6 +227,8 @@ class DeploymentTests(unittest.TestCase):
         incoming.mkdir(parents=True)
         (root / "seller_r3.py").write_text("PREVIOUS SOURCE")
         (root / "shop_key.pem").write_text("PRESERVE EXISTING KEY")
+        (root / "model-profile.json").write_text('{"version": 1, "trading": "haiku", "advisor": "haiku"}')
+        (root / ".market/inventory.json").write_text('{"units": [{"id": "existing-stock"}]}')
         python = root.parent / "week-07/.venv/bin/python"
         python.parent.mkdir(parents=True)
         python.write_text("TEST STUB; NEVER EXECUTED")
@@ -234,19 +239,30 @@ class DeploymentTests(unittest.TestCase):
         dropin.parent.mkdir(parents=True)
         dropin.write_text("PREVIOUS SERVICE CONFIG")
         checked_by_systemd = False
+        checked_model = False
 
         def fake_capture(command, log, env):
-            nonlocal checked_by_systemd
+            nonlocal checked_by_systemd, checked_model
             if fail_preflight:
                 raise RuntimeError("preflight failed")
             if command[0] == "systemd-analyze":
                 self.assertEqual(command[1:3], ["--user", "verify"])
                 self.assertTrue(Path(command[-1]).is_file())
                 checked_by_systemd = True
+            elif len(command) > 2 and Path(command[1]).name == "model_backend.py":
+                self.assertEqual(command[0], python)
+                self.assertEqual(command[-1], "--preflight")
+                self.assertEqual(Path(command[1]).parent, incoming / "stage")
+                self.assertEqual(json.loads((root / "model-profile.json").read_text())["trading"], "haiku")
+                self.assertIn(str(fake_home / ".local/bin"), env["PATH"].split(":"))
+                if fail_model:
+                    raise RuntimeError("model preflight failed: Codex login or Astra access unavailable")
+                checked_model = True
 
         def fake_systemctl(*args, **kwargs):
             if args[0] == "stop":
                 self.assertTrue(checked_by_systemd, "Native syntax verification must precede service stop")
+                self.assertTrue(checked_model, "Model access verification must precede service stop")
             outputs = {"--property=LoadState": "loaded", "--property=EnvironmentFiles": str(env_path),
                        "--property=ExecStart": str(root / "run_round3.py"),
                        "--property=WorkingDirectory": str(root)}
@@ -263,12 +279,14 @@ class DeploymentTests(unittest.TestCase):
              patch.object(server, "wait_ready", return_value="https://sample.trycloudflare.com",
                           side_effect=RuntimeError("startup failed") if fail_startup else None), \
              redirect_stdout(io.StringIO()):
-            if fail_preflight or fail_startup:
+            if fail_preflight or fail_startup or fail_model:
                 with self.assertRaisesRegex(RuntimeError, "failed"):
                     server.deploy_locked(root, archive, digest, run)
             else:
                 server.deploy_locked(root, archive, digest, run)
         self.assertEqual((root / "shop_key.pem").read_text(), "PRESERVE EXISTING KEY")
+        self.assertEqual(json.loads((root / ".market/inventory.json").read_text()),
+                         {"units": [{"id": "existing-stock"}]})
         return root, run, dropin, system
 
     def test_failed_preflight_does_not_stop_or_modify_the_existing_service(self):
@@ -277,11 +295,20 @@ class DeploymentTests(unittest.TestCase):
         self.assertEqual((root / "seller_r3.py").read_text(), "PREVIOUS SOURCE")
         self.assertEqual(dropin.read_text(), "PREVIOUS SERVICE CONFIG")
 
+    def test_failed_model_access_keeps_live_profile_source_inventory_and_service(self):
+        root, _, dropin, system = self.simulate_deployment(fail_model=True)
+        mutations = {"stop", "start", "daemon-reload"}
+        self.assertFalse(any(call.args[0] in mutations for call in system.call_args_list))
+        self.assertEqual((root / "seller_r3.py").read_text(), "PREVIOUS SOURCE")
+        self.assertEqual(json.loads((root / "model-profile.json").read_text())["trading"], "haiku")
+        self.assertEqual(dropin.read_text(), "PREVIOUS SERVICE CONFIG")
+
     def test_failed_startup_automatically_restores_old_service_and_source(self):
         root, run, dropin, system = self.simulate_deployment(fail_startup=True)
         self.assertEqual((root / "seller_r3.py").read_text(), "PREVIOUS SOURCE")
         self.assertEqual(dropin.read_text(), "PREVIOUS SERVICE CONFIG")
         self.assertFalse((root / "agent.json").exists())
+        self.assertEqual(json.loads((root / "model-profile.json").read_text())["trading"], "haiku")
         state = json.loads((root / ".market/deploy-backups" / run / "state.json").read_text())
         self.assertTrue(state["rolled_back"])
         self.assertEqual(system.call_args_list[-1], unittest.mock.call("start", server.UNIT))
@@ -293,3 +320,4 @@ class DeploymentTests(unittest.TestCase):
         result = json.loads((root / "logs" / ("deployment-" + run) / "result.json").read_text())
         self.assertEqual(result["kit"], "4")
         self.assertTrue(result["buyer_registered"] and result["shop_registered"] and result["acp_verified"])
+        self.assertEqual(json.loads((root / "model-profile.json").read_text())["trading"], "astra")

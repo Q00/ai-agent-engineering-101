@@ -37,7 +37,7 @@ def allowed_source(name):
         return name == ".gitignore"
     if len(p.parts) == 1:
         return p.suffix == ".py" or name in (
-            "README.md", "requirements.txt", "requirements-lock.txt", "agent.json", "buyer-policy.json",
+            "README.md", "requirements.txt", "requirements-lock.txt", "agent.json", "model-profile.json", "buyer-policy.json",
             "feedback-config.json", "advisor-config.json", "shop-policy.json", "shop-adaptive.json", "shop-round2.json", "release-manifest.json")
     return ((p.parts[0] == "prompts" and p.suffix == ".txt")
             or (p.parts[0] == "deploy" and p.suffix == ".py")
@@ -299,7 +299,7 @@ def deploy_locked(root, archive, digest, run):
         raise ValueError("Existing service does not use the expected private EnvironmentFile")
     env = {**os.environ, "PATH": os.pathsep.join([str(python.parent), str(deployment_root / "bin"),
                                                 str(Path.home() / ".local/bin"), os.environ.get("PATH", "")])}
-    for executable in ("claude", "cloudflared", "systemd-analyze"):
+    for executable in ("cloudflared", "systemd-analyze"):
         if shutil.which(executable, path=env["PATH"]) is None:
             raise ValueError(executable + " is not available in the deployment PATH")
     for name in manifest["files"]:
@@ -318,6 +318,15 @@ def deploy_locked(root, archive, digest, run):
                       "identity(Path(sys.argv[2]),Path(sys.argv[3])); print('KIT v4 and both existing identities validated')")
     capture([python, "-c", check_identity, stage, old, root], evidence / "identity-preflight.log", env)
     capture([python, stage / "run_checks.py"], evidence / "offline-checks.log", env)
+    if "model_backend.py" in manifest["files"]:
+        # Validate the staged profile using this server's CLI login before the
+        # live source/profile or service changes. The probe never joins a market.
+        say("Checking selected model CLIs, login and model access before stopping the old service...")
+        capture([python, stage / "model_backend.py", "--preflight"], evidence / "model-preflight.log", env)
+    elif "model-profile.json" in manifest["files"]:
+        raise ValueError("Model profile is present but its model_backend.py validator is missing")
+    elif shutil.which("claude", path=env["PATH"]) is None:
+        raise ValueError("claude is not available in the deployment PATH")
     say("Offline checks passed. Saving the current configuration and installing week-08...")
     state = {"files": [], "was_active": systemctl("is-active", UNIT, check=False).stdout.strip() == "active",
              "dropin_existed": dropin.is_file(), "run": run, "source_manifest": manifest}

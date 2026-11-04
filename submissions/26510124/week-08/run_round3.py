@@ -9,6 +9,7 @@ import shutil
 import sys
 
 from receipt_signing import load_shop_key
+from model_backend import load_profile, required_executables
 
 ROOT = Path(__file__).resolve().parent
 
@@ -57,7 +58,17 @@ def main():
             print("Keys not prepared in week-08: " + ", ".join(missing), flush=True)
         else:
             print("shop/buyer identities match week-07", flush=True)
-        print("Claude CLI available: " + str(shutil.which("claude") is not None), flush=True)
+        # Match deployment's user CLI location without changing CLI credentials.
+        os.environ["PATH"] = os.pathsep.join([str(Path(sys.executable).parent),
+                                             str(Path.home() / ".local/bin"), os.environ.get("PATH", "")])
+        profile = load_profile(ROOT)
+        print(f"Model profile: shop/buyer={profile['trading']}; advisor={profile['advisor']}", flush=True)
+        unavailable = []
+        for executable in required_executables(ROOT):
+            available = shutil.which(executable) is not None
+            print(f"{executable} CLI available: {available}", flush=True)
+            if not available:
+                unavailable.append(executable)
         print("Agent folder: " + str(ROOT), flush=True)
         if not args.join:
             print("Check only. No model calls, registrations or purchases.")
@@ -66,8 +77,9 @@ def main():
             raise ValueError("Use --prepare-identity before joining")
         if not os.environ.get("MARKET_OWNER"):
             raise ValueError("MARKET_OWNER must be set in the existing private environment")
-        if not shutil.which("claude"):
-            raise ValueError("Claude CLI not found")
+        if unavailable:
+            raise ValueError("Required model CLI not found: " + ", ".join(unavailable)
+                             + "; run model_backend.py --preflight before joining")
         if not shutil.which("cloudflared"):
             raise ValueError("cloudflared not found")
         if args.orders < 0:

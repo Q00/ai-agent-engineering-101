@@ -1,11 +1,17 @@
+from contextlib import redirect_stdout, redirect_stderr
+import io
+import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from run_round3 import identity, verify_kit
+import run_round3 as runtime
 
 ROOT = Path(__file__).resolve().parent
 
@@ -16,6 +22,47 @@ def write_key(path):
 
 
 class RuntimeTests(unittest.TestCase):
+    def check_launcher(self, profile=None, *, join=False, missing=()):
+        (ROOT / ".market").mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ROOT / ".market") as d:
+            folder = Path(d)
+            if profile is not None:
+                (folder / "model-profile.json").write_text(json.dumps(profile))
+            output, errors = io.StringIO(), io.StringIO()
+            with patch.object(runtime, "ROOT", folder), \
+                 patch.object(runtime, "verify_kit", return_value=folder / "kit.py"), \
+                 patch.object(runtime, "identity", return_value=[]), \
+                 patch.object(runtime.shutil, "which", side_effect=lambda name: None if name in missing else "/cli/" + name), \
+                 patch.object(runtime.sys, "argv", ["run_round3.py", *(["--join"] if join else [])]), \
+                 patch.dict(os.environ, {"MARKET_OWNER": "synthetic-test-owner"}), \
+                 patch("subprocess.run", side_effect=AssertionError("Launcher check must never invoke models")), \
+                 patch.object(runtime.os, "execv", side_effect=AssertionError("No join is expected")), \
+                 redirect_stdout(output), redirect_stderr(errors):
+                result = runtime.main()
+            self.assertFalse((folder / ".market").exists(), "Failed/check-only launches must not touch runtime state")
+            return result, output.getvalue(), errors.getvalue()
+
+    def test_check_reports_astra_and_advisor_cli_without_model_calls(self):
+        result, output, errors = self.check_launcher({"version": 1, "trading": "astra", "advisor": "haiku"})
+        self.assertEqual(result, 0, errors)
+        self.assertIn("shop/buyer=astra; advisor=haiku", output)
+        self.assertIn("codex CLI available: True", output)
+        self.assertIn("claude CLI available: True", output)
+        self.assertIn("No model calls", output)
+
+    def test_missing_codex_refuses_join_before_starting_kit(self):
+        result, output, errors = self.check_launcher(
+            {"version": 1, "trading": "astra", "advisor": "haiku"}, join=True, missing=("codex",))
+        self.assertEqual(result, 1)
+        self.assertIn("codex CLI available: False", output)
+        self.assertIn("Required model CLI not found: codex", errors)
+
+    def test_missing_profile_keeps_legacy_haiku_launcher(self):
+        result, output, errors = self.check_launcher(missing=("codex",))
+        self.assertEqual(result, 0, errors)
+        self.assertIn("shop/buyer=haiku; advisor=haiku", output)
+        self.assertNotIn("codex CLI", output)
+
     def test_pinned_kit_exactly_matches_upstream_blob(self):
         self.assertTrue(verify_kit().is_file())
 
