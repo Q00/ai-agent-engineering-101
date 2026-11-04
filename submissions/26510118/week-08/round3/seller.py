@@ -293,7 +293,9 @@ def priced(u: dict, now: float, warranty: bool) -> dict:
     by_grade = ((summary.get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
     row = (summary.get("by_sku") or {}).get(u.get("sku")) or {}
     sku_market = row.get("others_6h")
-    solo = (row.get("others_6h_n") or 0) < pricing.SOLO_OTHERS              # no row: nobody sold it in 24 h
+    by_sku = summary.get("by_sku") or {}
+    solo = bool(by_sku) and row.get("others_6h_n", 0 if not row else pricing.SOLO_OTHERS) < pricing.SOLO_OTHERS
+                            # no row: nobody sold it in 24 h; a row without the count (an older summary) or no summary: not solo
     in_line = u.get("sku") in restock.load_line(market_file("analysis/line.json"))   # restock's reading of the line
     late = pricing.late_in_cycle(market_file("inventory.json").get("restock"), now)
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
