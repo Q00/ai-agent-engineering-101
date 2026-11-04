@@ -156,8 +156,8 @@
    "id": "M3",
    "area": "market.buy",
    "status": "confirmed",
-   "rule": "Supply opens for everyone once every 20 minutes for 3 minutes, at a time that moves a little each slot; the first window (round start) stays open 10 minutes. Outside a window the market answers 429 with wait and opens_at; inventory.json restock has open, opens_at, closes_at. Stock bought in a window has to last until the next one. Kit log check: first window 11/3 21:06-21:16, then about every 20 min; two windows spanned 276 s and 378 s of purchases (unexplained).",
-   "source": "agent.md A135-138; logs/market-kit.log [supply] lines (643 lines, 81 windows)",
+   "rule": "Supply opens for everyone once every 20 minutes for 3 minutes, at a time that moves a little each slot; the first window (round start) stays open 10 minutes. Outside a window the market answers 429 with wait and opens_at; inventory.json restock has open, opens_at, closes_at. Stock bought in a window has to last until the next one. Kit log check: first window 11/3 21:06-21:16, then about every 20 min; three windows on 11/3 night spanned 276 s, 243 s and 378 s of purchases, none since (unexplained; 823 lines, 99 windows at 11/5 08:40).",
+   "source": "agent.md A135-138; logs/market-kit.log [supply] lines",
    "harness": "Plan each restock run for restock.opens_at; size stock to last 20 min.",
    "history": "[11-05 MARKET.md] was: Supply windows last about 10 min (agent.md says 3). | why: agent.md is right; our 10-min observation was the first window"
   },
