@@ -17,8 +17,8 @@ from tests.test_icrl_loop import APPROVE, ARM, NOW0, R3, Fake, make_work, pick
 
 A1 = "defaults.food.price_mult|up"
 P1 = "defaults.food.price_mult"
-A2 = "shop.max_spend_per_run|up"
-P2 = "shop.max_spend_per_run"
+A2 = "shop.max_unit_cost|up"  # v1.23b: max_spend_per_run left the action space
+P2 = "shop.max_unit_cost"
 T1, T2, T3 = NOW0, NOW0 + 90000, NOW0 + 100000
 
 
@@ -57,7 +57,7 @@ HISTORY = [  # (end row, lesson row): adopt, then the retest flips it to reject;
         end_row(2, "retest|" + A1, "reject", T2, 1.03, 1.0),
         lesson(2, "retest|" + A1, "reject", T2),
     ),
-    (end_row(3, A2, "keep_a", T3, 1100000, 1200000), lesson(3, A2, "keep_a", T3)),
+    (end_row(3, A2, "keep_a", T3, 400000, 500000), lesson(3, A2, "keep_a", T3)),
 ]
 
 

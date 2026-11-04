@@ -35,7 +35,7 @@
   - 채택한 값도 24시간 뒤 이전 값과 짧은 스위치백으로 다시 비교해, 시장이 바뀌면 되돌아갈 수 있게 함
 - 키 계열(분석 근거는 analysis/shop_goods_20261104.json, analysis/buyer_surplus_20261104.json)
   - 판매 가격과 협상: 종류별 price_mult, min_margin, concession, max_rounds, shop.ask_quantile
-  - 공급과 재고: shop.max_spend_per_run, shop.max_unit_cost, shop.max_lines_per_run, 종류별과 카테고리별 stock_target, qty_per_buy, breadth_qty, skus_per_category, shop.restock_priority
+  - 공급과 재고: shop.max_spend_frac(공급 한 번 예산 = 잔액 대비 비율 0.15~0.35, 2026-11-05 금액 손잡이 max_spend_per_run을 대체), shop.max_unit_cost, shop.max_lines_per_run, 종류별과 카테고리별 stock_target, qty_per_buy, breadth_qty, skus_per_category, shop.restock_priority
   - 카테고리 덮어쓰기: 시장 통계에 있는 카테고리라면 categories 아래에 새 덮어쓰기를 만들 수 있음(예: 소파 재고 목표)
   - 구매: 종류별 open_frac, max_pay_frac, step_frac, max_rounds, accept_ask_frac(b 작업에서 새로 만드는 키), buyer.max_shops, 식품 accept.hours_margin
   - 포럼(구매자 쪽, 구매자 ALL의 포럼 0.3과 글 0.1을 미는 키): forum.window_h 1~6(한 번 1), forum.max_refs 3~8(한 번 2), forum.rotate 1~8(한 번 1), forum.min_settles 3~20(한 번 3), 모두 정수

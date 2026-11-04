@@ -113,8 +113,8 @@ def test_guard_range_step_and_allowlist():
         in chk([{"path": "defaults.goods.warranty_uplift", "value": 1}])[0][0]
     )
     assert "integer" in chk([{"path": "buyer.max_shops", "value": 6.5}])[0][0]
-    assert chk([{"path": "shop.max_spend_per_run", "value": 1650000}])[1]
-    assert chk([{"path": "shop.max_spend_per_run", "value": 1700000}])[0]
+    assert chk([{"path": "shop.max_unit_cost", "value": 600000}])[1]   # v1.23b: max_spend_per_run left the space
+    assert chk([{"path": "shop.max_unit_cost", "value": 650000}])[0]
     assert chk([{"path": "shop.ask_quantile", "value": "p75"}])[1]
     assert chk([{"path": "shop.ask_quantile", "value": "p25"}])[0]
 
@@ -160,14 +160,14 @@ def test_guard_categories_bundles_and_lists():
 
 
 def test_guard_supply_increase_ban_near_the_stop():
-    cur = POL["shop"]["max_spend_per_run"]
+    cur = POL["shop"]["max_unit_cost"]
     assert (
         "ban"
-        in chk([{"path": "shop.max_spend_per_run", "value": cur + 100000}], ban=True)[
+        in chk([{"path": "shop.max_unit_cost", "value": cur + 100000}], ban=True)[
             0
         ][0]
     )
-    assert chk([{"path": "shop.max_spend_per_run", "value": cur - 100000}], ban=True)[1]
+    assert chk([{"path": "shop.max_unit_cost", "value": cur - 50000}], ban=True)[1]
     assert chk([{"path": "defaults.food.price_mult", "value": 0.95}], ban=True)[1]
 
 

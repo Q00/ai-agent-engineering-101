@@ -35,6 +35,7 @@ SUPPLY_UP_KEYS = frozenset(
         "breadth_qty",
         "skus_per_category",
         "max_spend_per_run",
+        "max_spend_frac",
         "max_unit_cost",
         "max_lines_per_run",
     }

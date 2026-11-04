@@ -1,5 +1,6 @@
 """v1.23: shop.max_spend_frac caps one restock run at a share of the balance (성수님 2026-11-05: per-run spend
-follows cash). max_spend_per_run stays the absolute ceiling; without the key the v1.22 budget is unchanged."""
+follows cash). v1.23b: with the share set max_spend_per_run is not used (no absolute ceiling); without the key the v1.22 budget is
+unchanged."""
 
 import copy
 import sys
@@ -66,11 +67,10 @@ def test_frac_caps_the_run_at_a_share_of_the_balance():
     assert qty == 5_000_000 // 300_000  # worst cost 0.75 x list = 300,000 per unit
 
 
-def test_frac_grows_with_cash_up_to_the_absolute_ceiling():
+def test_frac_grows_with_cash_without_an_absolute_ceiling():
     assert _budget(_pol(frac=0.25), 30_000_000)[0] == 7_500_000
-    assert (
-        _budget(_pol(frac=0.25), 40_000_000)[0] == 9_000_000
-    )  # max_spend_per_run still binds
+    assert _budget(_pol(frac=0.25), 40_000_000)[0] == 10_000_000   # v1.23b: max_spend_per_run (9M) not used
+    assert _budget(_pol(frac=0.35, per_run=600_000), 20_000_000)[0] == 7_000_000
 
 
 def test_no_frac_keeps_the_old_budget():

@@ -693,8 +693,9 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     v1.20a: shop.restock_priority (category full paths or leaf names) ranks those categories before taste and
     velocity; categories[cat].skus_per_category spreads a category over its top-k SKUs by settles. Budget, balance
     floor, inventory cap, max_total_units, max_unit_cost and the below-market filter are unchanged.
-    v1.23: shop.max_spend_frac (optional) caps one run at that share of the balance as well, so the per-run spend
-    grows and shrinks with cash; max_spend_per_run stays the absolute ceiling."""
+    v1.23: shop.max_spend_frac (optional) sets one run's cap to that share of the balance, so the per-run spend
+    grows and shrinks with cash. v1.23b (성수님 2026-11-05): when it is set max_spend_per_run is not used (no
+    absolute ceiling); the icrl stock lane tunes the share (action space 0.15-0.35)."""
     sp = pol["shop"]
     bal = int(inv.get("balance") or 0)
     units = [u for u in inv.get("units") or [] if u.get("grade") != "expired"]
@@ -706,7 +707,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     # the market refuses a whole lot whose cost is above the balance: plan with the worst cost (75% of list)
     spend_cap = sp["max_spend_per_run"]
     if sp.get("max_spend_frac") is not None:            # v1.23 (성수님 2026-11-05): per-run spend follows the balance
-        spend_cap = min(spend_cap, int(float(sp["max_spend_frac"]) * bal))
+        spend_cap = int(float(sp["max_spend_frac"]) * bal)   # v1.23b: no absolute ceiling, max_spend_per_run unused
     budget = min(spend_cap, bal - sp["balance_floor"])
     inv_cost = inventory_cost(inv)[0]
     frac = sp.get("max_inventory_cost_frac")
