@@ -67,8 +67,12 @@ def main():
             out["why"].append(f"supply window closed, opens in {wait / 60:.1f} min")
             print(json.dumps(out, ensure_ascii=False))
             return
-    if len(units) >= p["target_units"]:
-        out["why"].append(f"{len(units)} units in stock, target {p['target_units']}")
+    sold_cats, _ = market_intel.demand(intel)
+    proven = sum(sold_cats.values()) >= p.get("min_settles_for_evidence", 20)
+    hot = p.get("min_category_sales", 3)
+    live = [u for u in units if not proven or sold_cats.get(market_intel.leaf(u.get("category")), 0) >= hot]
+    if len(live) >= p["target_units"]:      # stock in categories nobody buys does not block buying ones that sell
+        out["why"].append(f"{len(live)} units in selling categories ({len(units)} in all), target {p['target_units']}")
         print(json.dumps(out, ensure_ascii=False))
         return
     budget = min(balance - p["cash_reserve"], balance * p["max_spend_share"])
@@ -85,18 +89,18 @@ def main():
         ours_sku[u["sku"]] = ours_sku.get(u["sku"], 0) + 1
 
     def ok(x):
-        if not (p["min_list_price"] <= x["list_price"] <= p["max_list_price"]):
+        proven_sku = wanted.get(x["sku"], 0) >= p.get("min_category_sales", 3)   # a SKU the ledger shows selling
+        if x["list_price"] < p["min_list_price"] or (x["list_price"] > p["max_list_price"] and not proven_sku):
             return False
         return x["kind"] != "food" or (x.get("shelf_hours") or 0) >= p["food_min_shelf_hours"]
 
     scored = []
     demand_list = random.sample(demand_list, len(demand_list))   # ties (no data yet) spread at random
-    proven = sum(orders.values()) >= p.get("min_settles_for_evidence", 20)
     for d in demand_list:
         k = d["item"]
         if ours_cat.get(k, 0) >= p["max_units_per_category"]:
             continue
-        if proven and orders.get(k, 0) == 0:   # the ledger shows what sells: do not stock what nobody bought
+        if proven and orders.get(k, 0) < hot:  # the ledger shows what sells: stock only categories that sell
             continue
         score = (orders.get(k, 0) + 1) / (1 + ours_cat.get(k, 0) + 0.2 * intel["stock"].get(k, 0))
         scored.append((score, d))
@@ -111,7 +115,7 @@ def main():
             continue
         x = max(skus, key=lambda x: (wanted.get(x["sku"], 0), -abs(x["list_price"] - d["median_price"])))
         unit_cost = x["list_price"] * p["cost_estimate"]
-        room = p["target_units"] - len(units) - sum(b["qty"] for b in out["buy"])   # never overshoot the target
+        room = p["target_units"] - len(live) - sum(b["qty"] for b in out["buy"])    # never overshoot the target
         if room < 1:
             break
         qty = min(p["max_units_per_sku"] - ours_sku.get(x["sku"], 0), int(budget // unit_cost), room)

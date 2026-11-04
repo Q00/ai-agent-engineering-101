@@ -9,6 +9,7 @@ writes the messages so the ask is always the last number, and enforces the reser
 import argparse
 import os
 import re
+import time
 
 import uvicorn
 from starlette.applications import Starlette
@@ -97,6 +98,7 @@ def to_int(v):
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"item", "ask", "history"}
+        self.promised = {}  # unit id -> time accepted: still in inventory until the buyer pays, so not for sale again
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
@@ -187,6 +189,7 @@ class Seller(AgentExecutor):
             receipt = {"shop": NAME, "item": item, "price": int(offer), "task": task.id}
             if deal.get("unit"):
                 receipt.update(shop_r3.receipt_extras(deal["unit"]))
+                self.promised[deal["unit"]["unit"]] = time.time()
             receipt = sign_receipt(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {deal.get('name', item)} at {offer}."))
@@ -207,7 +210,9 @@ class Seller(AgentExecutor):
 
     async def open_r3(self, task, up, say, text, tid):
         """Round 3 first message: pick a unit from stock, set the floor in code, let the harness pick the ask."""
-        taken = {d["unit"]["unit"] for d in self.open.values() if d.get("unit")}
+        now = time.time()
+        self.promised = {k: t for k, t in self.promised.items() if now - t < 600}
+        taken = {d["unit"]["unit"] for d in self.open.values() if d.get("unit")} | set(self.promised)
         u = shop_r3.find_unit(text, taken)
         if u is None:
             await up.reject(say("Sorry, we have none of that in stock."))

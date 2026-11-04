@@ -1,6 +1,6 @@
 {
  "version": 1,
- "note": "Every number the agents may tune. Agents read this file on each decision; tuner.py (the meta loop) is the only writer besides a human. 2026-11-03: restock runs every 20 min (was 1 min, announced in class), so each run buys more. 2026-11-03 12:10 UTC, after the first 46 Round 3 settles: hold less stock, aim higher as seller, open higher as buyer.",
+ "note": "Every number the agents may tune. Agents read this file on each decision; tuner.py (the meta loop) is the only writer besides a human. 2026-11-03: restock runs every 20 min (was 1 min, announced in class), so each run buys more. 2026-11-03 12:10 UTC, after the first 46 Round 3 settles: hold less stock, aim higher as seller, open higher as buyer. 2026-11-04 04:50 UTC: 66% of shop visits found no stock; profit +1.15M; stock more of what sells; buyer posts every 6 min with evidence.",
  "shop": {
   "margin": 0.05,
   "salvage_hours": 12,
@@ -17,17 +17,18 @@
  },
  "restock": {
   "cash_reserve": 1500000,
-  "max_spend_share": 0.06,
-  "target_units": 30,
+  "max_spend_share": 0.15,
+  "target_units": 120,
   "categories_per_run": 10,
-  "max_units_per_sku": 4,
-  "max_units_per_category": 8,
+  "max_units_per_sku": 8,
+  "max_units_per_category": 16,
   "food_min_shelf_hours": 168,
   "max_list_price": 60000,
   "min_list_price": 3000,
   "cost_estimate": 0.75,
   "window_hours": 6,
-  "min_settles_for_evidence": 20
+  "min_settles_for_evidence": 20,
+  "min_category_sales": 3
  },
  "buyer": {
   "max_pay_share_of_list": 0.9,
@@ -39,9 +40,9 @@
   "first_offer_share": 0.65
  },
  "forum": {
-  "buyer_post_minutes": 30,
+  "buyer_post_minutes": 6,
   "shop_post_minutes": 60,
-  "min_new_settles": 20,
+  "min_new_settles": 5,
   "window_hours": 6
  }
 }
