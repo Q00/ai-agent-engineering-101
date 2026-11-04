@@ -77,10 +77,18 @@ BIG_TICKET, BIG_MAX_SHARE = 1_000_000, 0.86
 # 0.80 4.34, 0.85 4.07, 0.90 3.82, 0.95 2.72; 120 of our 261 reviews were at 0.85+), while a 20k sale at 0.95
 # instead of 0.80 earns 3k. Stars are 0.2 of shop ALL and ours sat at the 0.32 percentile (4.58 vs 4.72 at 0.75).
 CHEAP_TICKET, CHEAP_MAX_SHARE = 100_000, 0.80
+# 0.86 fits SKUs the market buys at ~0.80, not cheaper ones (Nov 5 02:20): we bought 20 hotel bed sets (G03d0199f,
+# list 1.61M, 19.4M) at 01:43 and opened them at 0.86 while the market paid a median 0.72 (ledger 1.48 h, 48.7 sold
+# and 63.5 supplied per hour); 35 min later 1 sold, 18 held. A big-ticket SKU now opens at most its recent market
+# median (restock's last 10 settles, at least 5) plus BIG_OVER_MARKET; the Jakomo sofa and Simmons bed (0.80) keep 0.86.
+BIG_OVER_MARKET, BIG_MIN_SETTLES = 0.06, 5
 
 
 def max_share(u):
     if u["list_price"] >= BIG_TICKET:
+        px = sorted((_load("restock_state.json", {}).get("sku_px") or {}).get(u.get("sku")) or [])
+        if len(px) >= BIG_MIN_SETTLES:
+            return min(BIG_MAX_SHARE, px[len(px) // 2] + BIG_OVER_MARKET)
         return BIG_MAX_SHARE
     return CHEAP_MAX_SHARE if u["list_price"] < CHEAP_TICKET else MAX_SHARE
 TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask, after haggling
