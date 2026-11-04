@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 import ledger
@@ -43,6 +44,27 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(("category", 4, 1700.0), (src, n, price))
         self.assertEqual((None, 0, "none"), ledger.market_price(st, "F1", "food>kimchi", 100))
         self.assertEqual((None, 0, "none"), ledger.market_price({}, "S1", "home>bed", 1000))
+
+    def test_refresh_fetches_incrementally_and_keeps_a_24h_cache(self):
+        pages = {-ledger.FIRST_FETCH: [ENTRIES[0], ENTRIES[1]], 2: [ENTRIES[2], ENTRIES[5]],
+                 6: [{"seq": 9, "ts": NOW - 10, "kind": "settle", "data": {"sku": "S2", "amount": 1500}}]}
+        calls = []
+        with tempfile.TemporaryDirectory() as d, unittest.mock.patch.object(ledger, "fetch", side_effect=lambda after, **_: (calls.append(after), pages[after])[1]):
+            st = ledger.refresh(d, CATALOG, now=NOW)
+            self.assertEqual([-ledger.FIRST_FETCH], calls)                  # first run reads from the back; a short page = caught up
+            self.assertEqual(2, st["settles"])
+            cache = json.loads(Path(d, ledger.CACHE_FILE).read_text())
+            self.assertEqual((2, 2), (cache["last_seq"], len(cache["rows"])))
+            st = ledger.refresh(d, CATALOG, now=NOW)
+            self.assertEqual([-ledger.FIRST_FETCH, 2], calls)               # then it follows the seq it stopped at
+            self.assertEqual(3, st["settles"])                              # seq 3 joins the cache; seq 6 is outside the window
+            st = ledger.refresh(d, CATALOG, now=NOW)
+            self.assertEqual((4, 9), (st["settles"], json.loads(Path(d, ledger.CACHE_FILE).read_text())["last_seq"]))
+
+    def test_refresh_keeps_the_old_stats_when_the_market_is_down(self):
+        with tempfile.TemporaryDirectory() as d, unittest.mock.patch.object(ledger, "fetch", side_effect=OSError("down")):
+            Path(d, ledger.STATS_FILE).write_text(json.dumps({"settles": 7}))
+            self.assertEqual(7, ledger.refresh(d, CATALOG, now=NOW)["settles"])
 
     def test_stats_file_round_trip(self):
         with tempfile.TemporaryDirectory() as d:

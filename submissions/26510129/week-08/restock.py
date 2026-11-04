@@ -158,11 +158,14 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
             continue
         kind = choices[0][1].get("kind")
         target = FOOD_TARGET if kind == "food" else GOODS_TARGET
-        if stock_category[category] >= target:
-            continue
         row_ = cat_rows.get(category) or {}
         sells_at = (row_["median_amount"] / row_["median_ratio"] if row_.get("median_amount") and row_.get("median_ratio")
                     else typical.get(category)) or None     # the list price the category actually settles around
+        # the unit target counts only stock comparable to what sells: six 40k stools must not block the first 2M sofa
+        comparable = sum(1 for unit in units if unit.get("category") == category
+                         and (not sells_at or (unit.get("list_price") or 0) >= 0.5 * sells_at))
+        if comparable >= target:
+            continue
 
         def rank(pair):   # my own sales first (I know I can sell it), then the market's, then not in stock yet,
             sku, row = pair                                  # then nearest the price that sells (dearest without data)
@@ -177,7 +180,7 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
         sku, row = choice
         est_cost = max(1, row.get("list_price", 1)) * EXPECTED_COST_RATIO
         per_lot = 1 if (kind == "food" or est_cost > 0.05 * balance) else 2
-        qty = min(per_lot, target - stock_category[category])
+        qty = min(per_lot, target - comparable)
         line_cost = est_cost * qty
         if estimated + line_cost > spend_cap:
             continue

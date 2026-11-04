@@ -19,8 +19,11 @@ import httpx
 
 MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
 STATS_FILE = "ledger_stats.json"
+CACHE_FILE = "ledger_cache.json"   # the window's settles and the last seq read, so each run fetches only what is new
 WINDOW_HOURS = 24
 MIN_N = 3            # fewer settles than this and the number is noise; fall back to the category, then to nothing
+FIRST_FETCH = 5000   # entries to read on the first run (about 20 minutes of this market); the cache grows from there
+MAX_PAGES = 20       # pages of 500 per run: a run never spends more than ~20 calls catching up
 
 
 def fetch(after=-500, timeout=10):
@@ -80,15 +83,39 @@ def stats(rows, catalog, now=None, hours=WINDOW_HOURS):
     }
 
 
-def refresh(state_dir, catalog, now=None):
-    path = Path(state_dir) / STATS_FILE
+def refresh(state_dir, catalog, now=None, max_pages=MAX_PAGES):
+    """Fetch what the ledger added since the last run, keep a 24 h cache of settles, and rewrite the stats.
+    11-04 17:30: one page of 500 entries is under two minutes of this market (40k entries in 2.3 h), so stats from
+    a single page saw sofas only now and then; the cache makes the window the full 24 h at one call a minute."""
+    now = now or time.time()
+    state = Path(state_dir)
+    cache = load_json(state / CACHE_FILE) or {"last_seq": None, "rows": []}
+    rows, after, pages = list(cache.get("rows") or []), cache.get("last_seq") or -FIRST_FETCH, 0
     try:
-        result = stats(settles(fetch(), now), catalog, now)
-        path.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+        while pages < max_pages:
+            page = fetch(after)
+            pages += 1
+            if not page:
+                break
+            rows += settles(page, now)
+            after = page[-1]["seq"]
+            if len(page) < 500:
+                break
+        rows = [r for r in rows if r["ts"] >= now - WINDOW_HOURS * 3600]
+        (state / CACHE_FILE).write_text(json.dumps({"last_seq": after, "rows": rows}, ensure_ascii=False), encoding="utf-8")
+        result = stats(rows, catalog, now)
+        (state / STATS_FILE).write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
         return result
     except Exception as e:   # market down, no network, odd body: keep the previous stats
         print(f"[ledger] refresh failed: {type(e).__name__}: {str(e)[:100]}; using the previous stats", flush=True)
         return load_stats(state_dir)
+
+
+def load_json(path):
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
 
 
 def load_stats(state_dir):

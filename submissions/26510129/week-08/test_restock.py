@@ -94,6 +94,14 @@ class RestockMemoryTest(unittest.TestCase):
         self.assertEqual("K1", buys[1]["sku"])
         self.assertNotIn("S-huge", [b["sku"] for b in buys])   # 5.4M expected cost > 15% of the balance
 
+    def test_cheap_leftovers_do_not_block_the_first_real_unit(self):
+        catalog = {"stool": {"category": "home>sofa", "kind": "goods", "list_price": 40_000},
+                   "sofa": {"category": "home>sofa", "kind": "goods", "list_price": 2_000_000}}
+        demand = [{"category": "home>sofa", "median_price": 600_000}]
+        stats = {"categories": {"home>sofa": {"n": 100, "median_ratio": 0.85, "revenue": 170_000_000, "median_amount": 1_700_000}}, "skus": {}}
+        inv = {"balance": 10_000_000, "units": [{"category": "home>sofa", "sku": "stool", "cost": 20_000, "list_price": 40_000}] * 6}
+        self.assertEqual([{"sku": "sofa", "qty": 1}], restock.plan(inv, catalog, demand, [], {}, stats))
+
     def test_one_category_cannot_take_the_whole_stock_cap(self):
         catalog = {"S1": {"category": "home>sofa", "kind": "goods", "list_price": 1_000_000}}
         demand = [{"category": "home>sofa", "median_price": 1_000_000}]
