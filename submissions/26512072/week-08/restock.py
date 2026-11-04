@@ -8,8 +8,8 @@ opens within a minute, and what it buys has to last until the next window.
 
 Plain code, no model: the numbers decide.
 Demand signal, best first:
-  1-2. SKUs I sold myself (sales_memory.jsonl) and SKUs the whole market settled (the public ledger's settle
-     entries, market_sales.json), in one ranking by credits settled;
+  1-2. SKUs I sold myself and SKUs the whole market settled in the last 3 hours (the public ledger's settle
+     entries, market_sales.json, snapshotted every 3 hours into market_flow.json), in one ranking by credits;
   2b. categories other agents ask for on the forum ("구합니다", "looking for"), the middle SKU of each;
   3. cold start, only while the ledger shows no settles yet: per category, the SKU whose list price is closest to
      the category's median (orders accept SKUs priced 0.5-1.5 x a reference price).
@@ -20,6 +20,7 @@ kept even if short-lived. 11-04 02:20: mattresses were 54% of the market's credi
 Money: keep 1,000,000 in cash, hold at most 7,000,000 of stock at cost, spend at most 40% of the balance a run
 (about two runs fit in one window).
 Food: only SKUs that keep for 10 days or more, unless the market or I sold that SKU before.
+No more of a SKU while one of my units of it has waited longer than 3 hours (profit counts the balance, not stock).
 """
 import argparse
 import json
@@ -28,8 +29,8 @@ import time
 from collections import Counter
 from pathlib import Path
 
-from r3lib import (HERE, SALES, append_jsonl, catalog, forum_wants, market_now, read_json, read_jsonl,
-                   refresh_market_sales)
+from r3lib import (FLOW_HOURS, HERE, SALES, append_jsonl, catalog, forum_wants, market_flow, market_now, read_json,
+                   read_jsonl, refresh_market_sales)
 
 CASH_FLOOR = 1_000_000
 STOCK_CAP = 7_000_000
@@ -38,10 +39,6 @@ MAX_LINES = 10
 EST_COST = 0.65            # expected cost as a share of list price (A 55-75%, B 40-60%, C 25-45%)
 LEAD = 60                  # start a run this many seconds before the window opens (the kit waits for it)
 LOG = Path(os.environ.get("RESTOCK_LOG", HERE / "logs" / "restock.log"))   # tests point this elsewhere
-
-
-def p_n(market, sku):
-    return market.get(sku, {}).get("n", 0)
 
 
 def main():
@@ -53,6 +50,8 @@ def main():
     if int(inv.get("round") or 0) < 3 or not cat:
         print(json.dumps({"buy": []}))
         return
+    market = refresh_market_sales()     # every run, also between windows, so the ledger cache stays current
+    flow = market_flow(market, cat)      # every 3 hours: what the market bought, and at what share of list price
     win = inv.get("restock") or {}
     if win and not win.get("open") and (win.get("opens_at") or 0) - market_now() > LEAD:
         print(json.dumps({"buy": []}))                      # window closed: buying now would only be skipped
@@ -63,23 +62,26 @@ def main():
         print(json.dumps({"buy": [], "bankrupt": True}))
         return
     have = Counter(u["sku"] for u in units)
+    # a unit of mine that has waited longer than a snapshot means the buyers went elsewhere: buy no more of that SKU
+    stale = {u["sku"] for u in units if market_now() - (u.get("supplied_at") or market_now()) > FLOW_HOURS * 3600}
     stock_cost = sum(u.get("cost") or 0 for u in units)
     budget = min(balance - CASH_FLOOR, STOCK_CAP - stock_cost, balance * SPEND_SHARE)
     if budget <= 0:
         print(json.dumps({"buy": []}))
         return
 
-    mine = Counter(s["sku"] for s in read_jsonl(SALES) if s.get("outcome") == "deal")
-    market = refresh_market_sales()
-    now = market_now()
-    hot = Counter({sku: p["n"] * (2 if now - p.get("last", 0) < 6 * 3600 else 1)
-                   for sku, p in market.items() if sku in cat})
+    since = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() - FLOW_HOURS * 3600))
+    mine = Counter(s["sku"] for s in read_jsonl(SALES) if s.get("outcome") == "deal" and s.get("time", "") >= since)
+    # the market's settles in the last 3-hour snapshot; before the first snapshot, everything since Round 3 opened
+    hot = Counter({sku: x["n"] for sku, x in (flow.get("skus") or {}).items() if sku in cat}) or \
+        Counter({sku: p["n"] for sku, p in market.items() if sku in cat})
 
     keeps = lambda sku: cat[sku]["kind"] == "goods" or (cat[sku].get("shelf_hours") or 0) >= 240
     proven = lambda sku: keeps(sku) or sku in mine or hot[sku] >= 3     # short-lived food only if it sells fast
     wants = []                                              # (reason, sku, target qty), best first
-    # my own sales and the market's best sellers in one ranking, by credits settled (count x list price): profit and
-    # revenue scale with the price, and the top shops average 120,000-240,000 a deal against my 16,000 (board, 11-04)
+    # my own sales and the market's best sellers of the last 3 hours in one ranking, by credits settled (count x list
+    # price): profit and revenue scale with the price, and the top shops average 120,000-240,000 a deal against my
+    # 16,000 (board, 11-04). When the flow moves (mattresses today), the next snapshot moves the buying with it.
     seen_by = lambda sku: 3 * mine[sku] + hot[sku]           # a sale of mine counts as three market settles
     for sku in sorted((k for k in set(mine) | set(hot) if k in cat and proven(k)),
                       key=lambda k: -seen_by(k) * cat[k]["list_price"])[:60]:
@@ -88,7 +90,8 @@ def main():
             target = min(5, max(3 if sku in mine else 1, 1 + n // 6))   # what I sold has to last to the next window
         else:
             target = min(6, 1 + n // 40)
-        why = f"sold by me ({mine[sku]})" if sku in mine else f"sold in the market ({p_n(market, sku)} settles)"
+        why = (f"sold by me ({mine[sku]} in 3 h)" if sku in mine else
+               f"sold in the market ({hot[sku]} settles in {FLOW_HOURS} h)")
         wants.append((why, sku, target))
     demand = read_json(md / "demand.json", []) or []
     medians = {d["category"]: d.get("median_price") for d in demand}
@@ -105,7 +108,7 @@ def main():
 
     buy, spend, seen = [], 0.0, set()
     for why, sku, target in wants:
-        if sku in seen or len(buy) >= MAX_LINES:
+        if sku in seen or sku in stale or len(buy) >= MAX_LINES:
             continue
         seen.add(sku)
         qty = target - have.get(sku, 0)

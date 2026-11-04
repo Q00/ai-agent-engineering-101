@@ -29,7 +29,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from harness import CMD, safe_ask_json
 import httpx
 
-from r3lib import MARKET, SALES, SHOP_NAME, append_jsonl, hours_left, inventory, market_now, read_jsonl
+from r3lib import FLOW, MARKET, SALES, SHOP_NAME, append_jsonl, hours_left, inventory, market_now, read_json, read_jsonl
 
 KEY_FILE = Path(__file__).resolve().parent / "shop_key.pem"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}      # Rounds 0-2: the week-07 items, no stock
@@ -94,6 +94,18 @@ def adapt():
     return delta, _adapt["why"]
 
 
+_flow = {"at": 0, "prices": {}}
+
+
+def market_ratio(u):
+    """What the market paid in the last 3-hour snapshot (market_flow.json, written by restock.py), as a share of the
+    list price: this category and grade if 5+ settles, else this category. None before the first snapshot."""
+    if time.time() - _flow["at"] > 60:
+        _flow.update(at=time.time(), prices=(read_json(FLOW, {}) or {}).get("prices") or {})
+    x = _flow["prices"].get(f"{u.get('category')}|{u.get('grade')}") or _flow["prices"].get(u.get("category"))
+    return x["ratio"] if x else None
+
+
 def terms(u):
     """Floor, opening ask and the honest quality line for one unit."""
     lp, cost = u["list_price"], u["cost"]
@@ -105,11 +117,14 @@ def terms(u):
         else:
             floor = round(cost * 1.08)
         quality = GRADE_WORDS.get(u["grade"], u["grade"]) + (f", about {left:.0f} h of shelf life left" if left else "")
-        opening = round(lp * ({"A": 0.85, "B": 0.8, "C": 0.72}.get(u["grade"], 0.8) + delta))
+        base = {"A": 0.85, "B": 0.8, "C": 0.72}.get(u["grade"], 0.8)
     else:
         floor = round(cost * 1.08)                  # goods break in about 2% of the market's deals
         quality = GOODS_WORDS.get(u["grade"], u["grade"]) + f", {WARRANTY_HOURS} h warranty"
-        opening = round(lp * ({"A": 0.85, "B": 0.78, "C": 0.7}.get(u["grade"], 0.8) + delta))
+        base = {"A": 0.85, "B": 0.78, "C": 0.7}.get(u["grade"], 0.8)
+    ratio = market_ratio(u)                         # open a little above where this market closes, so we land near it
+    opening = round(lp * (min(0.95, max(0.6, ratio + 0.05 + delta)) if ratio else base + delta))
+    if u.get("kind") != "food":
         if market_now() - (u.get("supplied_at") or market_now()) > 72 * 3600:   # 3 days unsold: storage eats it
             floor, opening = round(cost), round(opening * 0.9)
     floor = max(1, floor)

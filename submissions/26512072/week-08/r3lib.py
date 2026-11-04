@@ -25,6 +25,8 @@ BUYER_MEM = Path(os.environ.get("BUYER_MEMORY_R3", HERE / "buyer_memory_r3.jsonl
 MARKET_SALES = HERE / "market_sales.json"
 CLOCK = MD / "clock.json"
 R3_START = 2_130_000        # ledger seq where Round 3 opened (11-03 12:01 market time)
+FLOW = HERE / "market_flow.json"
+FLOW_HOURS = 3
 
 
 def read_json(path, default=None):
@@ -86,37 +88,88 @@ def hours_left(unit):
 
 
 def refresh_market_sales(max_pages=40):
-    """Settled deals from the public ledger, accumulated per SKU: count, prices, last time. Incremental:
-    remembers the last ledger seq it read. Round 3 'settle' entries name the SKU and the amount paid."""
+    """Settled deals from the public ledger, accumulated per SKU: count, prices, last time, and every settle of the
+    last FLOW_HOURS ("recent": [ts, amount, grade]). Incremental: remembers the last ledger seq it read, and says
+    whether it has reached the end of the ledger ("caught_up"). Returns the per-SKU table."""
     cache = read_json(MARKET_SALES, {}) or {}
     seq = cache.get("seq")
     per = cache.get("skus", {})
     if seq is None or seq < R3_START:               # Round 2 had no settle entries: start where Round 3 began
         seq, per = R3_START, {}
+    if cache.get("v") != 2:                         # v1 kept no times per settle: reread about the last 3 hours
+        seq, per = max(R3_START, seq - 50_000), {}
+    caught_up = False
     for _ in range(max_pages):
         try:
             rows = httpx.get(f"{MARKET}/api/ledger", params={"after": seq}, timeout=20).json()
         except (httpx.HTTPError, ValueError):
             break
         if not rows:
+            caught_up = True
             break
         for e in rows:
             d = e.get("data") or {}
             if e.get("kind") == "settle" and d.get("item"):
-                p = per.setdefault(d["item"], {"n": 0, "amounts": [], "last": 0, "grades": {}})
+                p = per.setdefault(d["item"], {"n": 0, "amounts": [], "last": 0, "grades": {}, "recent": []})
                 p["n"] += 1
                 p["amounts"] = (p["amounts"] + [d.get("amount")])[-20:]
                 p["last"] = e.get("ts", 0)
                 g = d.get("grade")
                 if g:
                     p["grades"][g] = p["grades"].get(g, 0) + 1
+                p.setdefault("recent", []).append([e.get("ts", 0), d.get("amount"), g])
         seq = rows[-1]["seq"]
         if len(rows) < 500:
+            caught_up = True
             break
-    cache = {"seq": seq, "updated": time.time(), "skus": per}
+    cut = market_now() - FLOW_HOURS * 3600
+    for p in per.values():
+        p["recent"] = [r for r in p.get("recent", []) if r[0] >= cut]
+    cache = {"v": 2, "seq": seq, "updated": time.time(), "caught_up": caught_up, "skus": per}
     tmp = MARKET_SALES.with_suffix(".tmp")
     tmp.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
     os.replace(tmp, MARKET_SALES)
+    return per
+
+
+def market_flow(per, cat):
+    """Every FLOW_HOURS, a snapshot of the market's last FLOW_HOURS (from refresh_market_sales): credits settled per
+    SKU, and per category (and grade) the median price as a share of the list price. Written to market_flow.json
+    for restock.py (what to buy) and seller_r3.py (where to open); each new snapshot is logged to
+    logs/market-flow.log. Returns the snapshot in use."""
+    flow = read_json(FLOW, {}) or {}
+    if time.time() - flow.get("at", 0) < FLOW_HOURS * 3600 or not (read_json(MARKET_SALES, {}) or {}).get("caught_up"):
+        return flow
+    skus, ratios = {}, {}
+    for sku, p in per.items():
+        if sku not in cat or not p.get("recent"):
+            continue
+        lp = cat[sku]["list_price"]
+        skus[sku] = {"n": len(p["recent"]), "credits": sum(r[1] or 0 for r in p["recent"])}
+        k = cat[sku]["category"]
+        for _, amount, g in p["recent"]:
+            if amount:
+                ratios.setdefault(k, []).append(amount / lp)
+                ratios.setdefault(f"{k}|{g}", []).append(amount / lp)
+    med = lambda xs: sorted(xs)[len(xs) // 2]
+    prices = {k: {"n": len(v), "ratio": round(med(v), 3)} for k, v in ratios.items() if len(v) >= 5}
+    flow = {"at": time.time(), "hours": FLOW_HOURS, "skus": skus, "prices": prices}
+    tmp = FLOW.with_suffix(".tmp")
+    tmp.write_text(json.dumps(flow, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, FLOW)
+    bycat = {}
+    for sku, x in skus.items():
+        k = cat[sku]["category"].split(">")[-1]
+        bycat[k] = bycat.get(k, 0) + x["credits"]
+    total = sum(bycat.values()) or 1
+    top = sorted(skus, key=lambda k: -skus[k]["credits"])[:5]
+    append_jsonl(HERE / "logs" / "market-flow.log", {
+        "time": time.strftime("%Y-%m-%d %H:%M:%S"), "hours": FLOW_HOURS, "settles": sum(x["n"] for x in skus.values()),
+        "credits": total, "top_categories": [[k, round(v / total, 3)] for k, v in sorted(bycat.items(), key=lambda kv: -kv[1])[:6]],
+        "top_skus": [[cat[k]["name"][:30], skus[k]["n"], skus[k]["credits"]] for k in top],
+        "price_ratio": {k.split(">")[-1]: v["ratio"] for k, v in sorted(prices.items(), key=lambda kv: -kv[1]["n"])
+                        if "|" not in k and v["n"] >= 30}})
+    return flow
     return per
 
 
