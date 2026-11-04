@@ -246,7 +246,7 @@ def haggle(cand, order, pol, deadline, accept=None):
     if why:
         cancel(url, t.get("id"))
         return None, {"rounds": 0, "state": "walked_away", "why": why}
-    while t is not None and state(t) == "TASK_STATE_INPUT_REQUIRED" and time.time() < deadline and rounds < 8:
+    while t is not None and state(t) == "TASK_STATE_INPUT_REQUIRED" and time.time() < deadline and rounds < P.HAGGLE_ROUNDS:
         ask = ask_of(t)
         offer = P.next_offer(cand, pol, order, rounds, ask, cand.get("relax", 0.0))
         if last is not None and offer <= last and (ask is None or ask > cand["max_pay"]):

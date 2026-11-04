@@ -859,6 +859,9 @@ def buyer_terms(order, pol, relax=0.0):
     hi = max(c["max_pay_frac"], float(v.get("relax_max_pay_frac", c["max_pay_frac"])))
     c["max_pay_frac"] = c["max_pay_frac"] + r * (hi - c["max_pay_frac"])
     c["step_frac"] = c["step_frac"] * (1 + 0.5 * r)
+    if "accept_ask_frac" in c:                          # v1.21 (2026-11-04): moves toward the relaxed max_pay_frac
+        a = float(c["accept_ask_frac"])
+        c["accept_ask_frac"] = a + r * (c["max_pay_frac"] - a)
     return c
 
 
@@ -907,13 +910,30 @@ def shop_tie_key(shop):
             str(shop.get("url") or ""))
 
 
+HAGGLE_ROUNDS = 8                                       # hooks/market_buyer.haggle sends at most this many offers
+
+
 def next_offer(cand, pol, order, rounds, last_ask, relax=0.0):
-    """Buyer's next int offer: open low, step up, never above max_pay (<= budget, < list price)."""
+    """Buyer's next int offer: open low, step up, never above max_pay (<= budget, < list price).
+    v1.21 (2026-11-04): optional buyer accept_ask_frac a (per kind, per category via resolve; relax moves it toward
+    the relaxed max_pay_frac in buyer_terms). From round 1 a shop ask is accepted when <= min(max_pay, list x a), or
+    when <= max_pay in the final round, rounds >= min(max_rounds, HAGGLE_ROUNDS) - 1 (haggle stops at HAGGLE_ROUNDS
+    offers and does not read max_rounds, so the final round is never later than the last one haggle plays);
+    otherwise counter, never above the ask. Ledger (analysis/buyer_surplus_20261104.json): we paid 0.986 x the SKU
+    median because any ask under the cap was accepted at round 1. Key absent = threshold max_pay = the v1.20 rule."""
     c = buyer_terms(order, pol, relax)
-    if last_ask is not None and last_ask <= cand["max_pay"] and rounds > 0:
-        return int(last_ask)
+    if last_ask is not None and rounds > 0:
+        thr = cand["max_pay"]
+        if "accept_ask_frac" in c:
+            thr = min(thr, int(cand["list_price"] * c["accept_ask_frac"]))
+        final = rounds >= min(int(c["max_rounds"]), HAGGLE_ROUNDS) - 1
+        if last_ask <= thr or (final and last_ask <= cand["max_pay"]):
+            return int(last_ask)
     o = int(cand["open"] + rounds * c["step_frac"] * cand["list_price"])
-    return min(o, cand["max_pay"])
+    o = min(o, cand["max_pay"])
+    if last_ask is not None and rounds > 0 and o >= last_ask:   # round 0 keeps the v1.20 opening offer
+        return int(last_ask)
+    return o
 
 
 def accept_policy(order, pol, relax=0.0):
