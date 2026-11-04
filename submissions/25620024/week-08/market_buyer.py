@@ -767,7 +767,19 @@ def price_plan(order, q, rows, book, adv):
             low = int(max(0.45 * lp, min(low, book_low)))
     low = min(low, int(0.9 * cap))
     close_at = max(cap, min(order["budget"], int(lp * close_ratio(lp))))
+    target = group_target(sku)
+    if target:                                  # HQ 11-05 group-buy call: we said we buy these at or under the target
+        cap, close_at, low = min(cap, target), min(close_at, target), min(low, int(0.95 * target))
     return cap, low, close_at, row
+
+
+def group_target(sku, max_age=6 * 3600):
+    """The group-buy call's target price for a SKU (forum.groupbuy_call writes them), while the call is under 6 h old."""
+    try:
+        g = json.loads((Path(__file__).parent / "private" / "groupbuy_targets.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return (g.get("targets") or {}).get(sku) if time.time() - g.get("ts", 0) < max_age else None
 
 
 def pick_quote(good, order, cands):

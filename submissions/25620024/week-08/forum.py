@@ -399,6 +399,11 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
                       "our_shop_group_price": int(lp * ours["share"]) if ours else None})
     if not items or not refs:
         return []
+    try:                                     # our buyer keeps the promise the post makes (market_buyer.price_plan)
+        (HERE / "private" / "groupbuy_targets.json").write_text(json.dumps(
+            {"ts": now, "targets": {i["sku"]: i["target_price"] for i in items}}), encoding="utf-8")
+    except OSError:
+        pass
     data = {"type": "group_buy_call", "from": NAME, "window_h": 24,
             "proposal": "buyers with orders for these SKUs: buy at or under target_price; shops: quote target_price "
                         "and get the volume. Reply to this post with your SKU and quote.",
