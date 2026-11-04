@@ -10,7 +10,7 @@
     "cmd": "HARNESS=openrouter HARNESS_MODEL=qwen/qwen3.7-flash /root/miniconda3/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"
   },
   "restock": {
-    "cmd": "/root/miniconda3/bin/python restock.py --state {state}"
+    "cmd": "HARNESS=openrouter HARNESS_MODEL=qwen/qwen3.7-flash /root/miniconda3/bin/python restock.py --state {state}"
   },
   "review": {
     "cmd": "/root/miniconda3/bin/python review.py --deal {deal}"

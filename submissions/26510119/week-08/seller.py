@@ -162,7 +162,7 @@ class Seller(AgentExecutor):
         action, price = answer.get("action"), to_int(answer.get("price"))
 
         if deal.get("unit") and len(deal["offers"]) == 1 and offer < deal.get("target", 0):
-            first = policy.get("shop")["first_accept_share"]
+            first = deal["policy"]["first_accept_share"]
             if offer < deal["ask"] * first:          # the first offer is a probe: never take it far below the ask
                 price = max(reserve, (deal["ask"] + offer) // 2)
                 log(f"[policy] first offer {offer} is below {first:.0%} of the ask {deal['ask']}; countering {price}")
@@ -215,6 +215,7 @@ class Seller(AgentExecutor):
         taken = {d["unit"]["unit"] for d in self.open.values() if d.get("unit")} | set(self.promised)
         u = shop_r3.find_unit(text, taken)
         if u is None:
+            shop_r3.record({"kind": "nostock", "task": task.id, "asked": text[:80]})
             await up.reject(say("Sorry, we have none of that in stock."))
             return
         sh = shop_r3.shelf_hours(u["sku"])
@@ -222,7 +223,8 @@ class Seller(AgentExecutor):
         quality = shop_r3.quality_line(u, sh)
         past = shop_r3.stats(u.get("category"))
         history = shop_r3.describe(u.get("category"), past)
-        target, why = shop_r3.target_price(u, floor, past, sh)
+        sp, arm, exp = policy.section("shop", task.id)       # this deal's arm of a running experiment, if any
+        target, why = shop_r3.target_price(u, floor, past, sh, sp)
         log(f"[pricing] {u['sku']} {u.get('category')} list {u['list_price']} cost {u['cost']} floor {floor} "
             f"target {target} ({why}); {history}")
         ask = to_int((harness.ask(OPEN_PROMPT_R3.format(name=u["name"], sku=u["sku"], list_price=u["list_price"],
@@ -238,11 +240,11 @@ class Seller(AgentExecutor):
         leaf = (u.get("category") or "").split(">")[-1]
         receipt_item = u["sku"] if u["sku"].lower() in text.lower() or leaf not in text else leaf
         self.open[task.id] = {"item": receipt_item, "name": u["name"], "unit": u, "category": u.get("category"),
-                              "ask": ask, "reserve": floor, "target": target, "context": context,
+                              "ask": ask, "reserve": floor, "target": target, "context": context, "policy": sp,
                               "history": [f"you asked {ask}"], "offers": []}
         shop_r3.record({"kind": "open", "task": task.id, "sku": u["sku"], "category": u.get("category"),
                         "list_price": u["list_price"], "cost": u["cost"], "grade": u.get("grade"),
-                        "floor": floor, "target": target, "ask": ask})
+                        "floor": floor, "target": target, "ask": ask, "unit": u["unit"], "arm": arm, "exp": exp})
         log(f"[{tid}] {u['sku']} unit {u['unit']} ask {ask}")
         await up.requires_input(say(f"{u['name']} ({u['sku']}), {quality}. "
                                     f"Send your offer as a number. Asking price: {ask}."))

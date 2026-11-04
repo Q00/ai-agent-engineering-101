@@ -60,6 +60,12 @@ def main():
         out["forum"] = forum.tick(intel)
     except Exception as e:
         out["forum_error"] = f"{type(e).__name__}: {e}"
+    try:                                     # so does the meta loop (A): it rewrites policy.json, read below
+        import tuner
+        out["tuner"] = tuner.tick(intel)
+        p = policy.get("restock")
+    except Exception as e:
+        out["tuner_error"] = f"{type(e).__name__}: {e}"
     window = inv.get("restock") or {}
     if window and not window.get("open"):    # supply opens for 3 min every 20 min; outside it the kit would wait
         wait = (window.get("opens_at") or 0) - time.time()       # up to 90 s per line and then skip the line

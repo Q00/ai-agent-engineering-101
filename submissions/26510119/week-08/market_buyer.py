@@ -131,7 +131,8 @@ Reply with exactly one JSON object and nothing else:
 {{"action": "accept" | "offer" | "walk", "price": <integer, your offer if you offer>}}"""
 
 
-def negotiate(base, item, budget, started, request=None, list_price=None, first_offer=None):
+def negotiate(base, item, budget, started, request=None, list_price=None, first_offer=None, first_check=None,
+              info=None):
     """The week-06 negotiation. Returns (task, last offer sent). budget is the cap the code enforces."""
     card = httpx.get(base.rstrip("/") + "/.well-known/agent-card.json", headers=HEADERS, timeout=30).json()
     url = next(i["url"] for i in card["supportedInterfaces"] if i.get("protocolBinding") == "JSONRPC")
@@ -142,6 +143,13 @@ def negotiate(base, item, budget, started, request=None, list_price=None, first_
         return task, None
     task_id, offered = task["id"], None
     history = [f"you: {request}", f"shop: {says(task)}"]
+    reason = first_check(says(task)) if first_check else None
+    if reason:
+        log(f"[quality] {reason}; walking away before haggling")
+        rpc(url, "CancelTask", {"id": task_id})
+        if info is not None:
+            info["walked"] = reason
+        return task, None
     for _ in range(MAX_ROUNDS):
         if state(task) != "TASK_STATE_INPUT_REQUIRED":
             break
@@ -226,18 +234,21 @@ def broken_by_shop(memory):
     return out
 
 
-def choose_r3(shops, order, memory, cat):
+def choose_r3(shops, order, memory, cat, p=None):
     """Each shop's best fitting offer (the acceptable SKU with the highest list price: the most to gain),
     then the harness picks the shop from numbers about it."""
-    p = policy.get("buyer")
+    p = p or policy.get("buyer")
     flagged = {m["shop"] for m in memory if m.get("receipt_problem")}
     broken = broken_by_shop(memory)
     rows = []
+    need = food_need(order, p)
     for s in shops:
-        offers = [o for o in s.get("offers") or [] if o.get("sku") in cat and (o.get("qty") or 0) > 0]
+        offers = [o for o in s.get("offers") or [] if o.get("sku") in cat and (o.get("qty") or 0) > 0
+                  and (not need or (cat[o["sku"]].get("shelf_hours") or 0) >= need)]   # food that cannot last: skip
         if not offers or s["name"] in flagged:
             continue
-        o = max(offers, key=lambda o: cat[o["sku"]]["list_price"])
+        lasts = lambda o: not need or 0.45 * (cat[o["sku"]].get("shelf_hours") or 0) >= need  # even grade B lasts
+        o = max(offers, key=lambda o: (lasts(o), cat[o["sku"]]["list_price"]))
         lp = cat[o["sku"]]["list_price"]
         cap = min(order["budget"], int(lp * p["max_pay_share_of_list"]))
         if cap < 1:
@@ -246,9 +257,9 @@ def choose_r3(shops, order, memory, cat):
         score -= 1.0 * broken.get(s["name"], 0)
         line += (f"; offers {o['name'][:40]} ({o['sku']}), list price {lp}, you may pay at most {cap}"
                  + (f"; {broken[s['name']]} goods bought there broke" if broken.get(s["name"]) else ""))
-        rows.append((score + lp / max(1, order["budget"]) * 0.5, line, unknown, s, o, cap))
+        rows.append((score + lp / max(1, order["budget"]) * 0.5 - (0 if lasts(o) else 1.0), line, unknown, s, o, cap))
     if not rows:
-        return None
+        return None, []
     rows.sort(key=lambda r: -r[0])
     shown = rows[:SHOWN] + [r for r in rows[SHOWN:] if r[2]][:1]
     log(f"[choose] {len(rows)} shops have a fitting SKU; showing {[r[3]['name'] for r in shown]}")
@@ -257,7 +268,30 @@ def choose_r3(shops, order, memory, cat):
     pick = next((r for r in shown if r[3]["name"] == answer.get("shop")), shown[0])
     log(f"[choose] {pick[3]['name']}: {pick[4]['sku']} list {cat[pick[4]['sku']]['list_price']}, cap {pick[5]}; "
         f"{answer.get('reason', '')}")
-    return pick
+    return pick, [pick] + [r for r in rows if r is not pick]
+
+
+def food_need(order, p):
+    """Hours of shelf life a food order needs at settle (0 for goods)."""
+    if order.get("kind") != "food" and not order.get("use_within_hours"):
+        return 0
+    return (order.get("use_within_hours") or 0) + p["hours_margin"]
+
+
+GRADE = re.compile(r"\bgrade\s*:?\s*([ABC])\b", re.I)
+HOURS = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?)\b(?:\s+of)?\s+shelf", re.I)
+
+
+def too_short(reply, need, shelf):
+    """The shop's first reply already shows the food will not last: walk away before haggling."""
+    m = HOURS.search(reply)
+    if m and float(m.group(1)) < need:
+        return f"the shop says {m.group(1)} h of shelf life left, the order needs {need:.0f}"
+    g = GRADE.search(reply)
+    top = {"C": 0.45, "B": 0.8}.get(g.group(1).upper()) if g else None
+    if top and shelf and top * shelf < need:
+        return f"grade {g.group(1).upper()} means at most {top * shelf:.0f} h left, the order needs {need:.0f}"
+    return None
 
 
 def accept_policy(order, sku, cat):
@@ -272,17 +306,42 @@ def accept_policy(order, sku, cat):
 def main_r3(a, shops, order, memory, started):
     cat = catalog()
     acceptable = set(order.get("acceptable") or [])
-    pick = choose_r3(shops, order, memory, {k: v for k, v in cat.items() if k in acceptable})
+    bp, arm, exp = policy.section("buyer", order.get("order"))   # this order's arm of a running experiment
+    pick, ranked = choose_r3(shops, order, memory, {k: v for k, v in cat.items() if k in acceptable}, bp)
     if pick is None:
-        log("[choose] no shop has a fitting SKU; no deal")
+        log("[choose] no shop has a fitting SKU that can last the order; no deal")
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
         return
-    _, _, _, shop, offer, cap = pick
-    sku, name, lp = offer["sku"], cat[offer["sku"]]["name"], cat[offer["sku"]]["list_price"]
-    receipt, problem, facts, offered = None, None, [], None
+    need = food_need(order, bp)
+    receipt, problem, facts, offered, task, error = None, None, [], None, None, None
+    for attempt, pick in enumerate(ranked[:3]):        # food: a shop whose unit will not last is left at once
+        if attempt and time.time() - started > DEADLINE - 90:
+            break
+        _, _, _, shop, offer, cap = pick
+        sku, name, lp = offer["sku"], cat[offer["sku"]]["name"], cat[offer["sku"]]["list_price"]
+        sh = cat[sku].get("shelf_hours")
+        info, error = {}, None
+        try:
+            task, offered = negotiate(shop["url"], name, cap, started, request=f"I want to buy {name} ({sku})",
+                                      list_price=lp, first_offer=int(lp * bp["first_offer_share"]),
+                                      first_check=(lambda reply: too_short(reply, need, sh)) if need else None,
+                                      info=info)
+        except Exception as e:
+            error = e
+            break
+        if not info.get("walked"):
+            break
+        facts.append(f"{shop['name']}: {info['walked']}")
+        log(f"[choose] {shop['name']} cannot deliver food that lasts; next shop")
+    if info.get("walked") and not error:      # no shop had food that lasts: no deal, and no shop to blame
+        remember({"time": datetime.now(timezone.utc).isoformat(timespec="seconds"), "ts": int(time.time()),
+                  "round": 3, "order": order.get("order"), "arm": arm, "exp": exp, "shop": None, "item": None,
+                  "category": order["item"], "result": "no_deal", "why": "no unit lasts the order"})
+        print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
+        return
     try:
-        task, offered = negotiate(shop["url"], name, cap, started, request=f"I want to buy {name} ({sku})",
-                                   list_price=lp, first_offer=int(lp * policy.get("buyer")["first_offer_share"]))
+        if error:
+            raise error
         final = state(task) or "error"
         facts.append(f"final state {final}; the shop's last message: {says(task)!r}")
         if final == "TASK_STATE_COMPLETED":
@@ -311,6 +370,7 @@ def main_r3(a, shops, order, memory, started):
     stars = 1 if problem else (min(5, max(1, stars)) if stars is not None else 3)
     review = str(answer.get("review") or "").strip() or ("Deal." if receipt else "No deal.")
     remember({"time": datetime.now(timezone.utc).isoformat(timespec="seconds"), "ts": int(time.time()), "round": 3,
+              "order": order.get("order"), "arm": arm, "exp": exp,
               "shop": shop["name"], "item": sku, "name": name, "category": order["item"],
               "kind": cat[sku].get("kind"), "list_price": lp, "budget": order["budget"], "cap": cap,
               "result": "deal" if receipt else "no_deal", "price": to_int(receipt.get("price")) if receipt else None,
