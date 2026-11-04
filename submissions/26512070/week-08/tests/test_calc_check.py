@@ -159,6 +159,19 @@ class CheckTest(Base):
         self.write_inventory(UNITS, balance=1_510_000)                          # 1,510,000 - 13,500 < 1,500,000
         self.assertIn("below the floor", self.refused("check.buy", plan=[{"sku": "G0026722f", "qty": 4}])["reason"])
 
+    def test_buy_at_expected_cost_keeps_floor_at_worst(self):
+        # 11/4 17:2x: the playbook's cost_share plans at 65% of list; the worst 75% still keeps the plain floor
+        atomic.write_json(paths.memory() / "strategy" / "active.json",
+                          dict(STRATEGY, playbook={"restock": {"cost_share": 0.65}}))
+        self.assertEqual(check.room(self.ctx)["worst"]("G0026722f"), 2925)
+        self.write_inventory(UNITS, balance=1_514_000)                          # worst 13,500 leaves 1,500,500
+        r = self.ok("check.buy", plan=[{"sku": "G0026722f", "qty": 4}])
+        self.assertEqual((r["expected_spend"], r["worst_case_spend"]), (11700, 13500))
+        self.write_inventory(UNITS, balance=1_512_000)                          # expected fits, worst does not
+        self.assertIn("worst cost", self.refused("check.buy", plan=[{"sku": "G0026722f", "qty": 4}])["reason"])
+        from tools import act
+        self.assertEqual(act.allocate(check.room(self.ctx), [("G0026722f", 4)]), [("G0026722f", 3, "cash")])
+
 
 if __name__ == "__main__":
     unittest.main()

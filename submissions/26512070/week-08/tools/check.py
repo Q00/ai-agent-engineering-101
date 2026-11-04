@@ -40,6 +40,16 @@ def warranty_reserve(ctx):
     return round(sum(open_) * share), sum(open_), len(open_)
 
 
+def cost_share(ctx):
+    """(expected, worst) cost as a share of list price. Costs are drawn on arrival (A: 55-75% of list); user 11/4
+    17:2x (strategy brief 17:15, option A): plan at the expected cost (playbook.restock.cost_share, 65%: bought units
+    came in at about 62%), not the worst 75% - at the worst cost a window planned 17.93M and left 33 lines out for
+    cash. The worst cost still keeps the plain cash floor (check.buy)."""
+    worst = mf.COST_SHARE["A"][1]
+    exp = ((ctx.strategy.get("playbook") or {}).get("restock") or {}).get("cost_share") or worst
+    return min(exp, worst), worst
+
+
 def _limits(ctx):
     lim = ctx.strategy.get("limits")
     if not lim:
@@ -136,7 +146,7 @@ def receipt(ctx, receipt, agreed_price, acceptable=None, budget=None):
 def room(ctx):
     """User 11/4 02:1x: the buy list is planned within the money we may spend, so no plan fails for money.
     {cash: balance - cash floor - warranty reserve, stock: stock cap - stock held (at cost), have: units per SKU,
-    worst(sku): the worst-case cost check.buy counts}. The same numbers check.buy checks."""
+    worst(sku): the cost check.buy counts per unit (the expected cost, cost_share)}. The same numbers check.buy checks."""
     lim = _limits(ctx)
     cat, inv = mf.catalog(ctx), mf.inventory(ctx)
     balance = inv.get("balance")
@@ -146,15 +156,19 @@ def room(ctx):
         have[u["sku"]] = have.get(u["sku"], 0) + 1
     reserve = warranty_reserve(ctx)[0]
     base = stock_base(lim, inv, balance, sum(u["cost"] for u in units))
+    exp, worst = cost_share(ctx)
     return {"cash": None if balance is None else balance - lim["cash_floor"] - reserve,
+            "cash_worst": None if balance is None else balance - lim["cash_floor"],
+            "unit_worst": lambda sku: round((cat.get(sku) or {}).get("list_price", 0) * worst),
             "stock": lim["max_stock_share"] * base - sum(u["cost"] for u in units), "have": have,
             "per_sku": lim["max_units_per_sku"], "balance": balance, "reserve": reserve, "floor": lim["cash_floor"],
-            "worst": lambda sku: round((cat.get(sku) or {}).get("list_price", 0) * mf.COST_SHARE["A"][1])}
+            "worst": lambda sku: round((cat.get(sku) or {}).get("list_price", 0) * exp)}
 
 
 @tool("check.buy", "May restock buy this plan? Checks the kit's format (10 lines, 1-20 each) and the limits: units per "
       "SKU, stock value as a share of the balance, food share of the stock, and the cash floor. Costs are not known "
-      "before arrival, so it assumes the most a unit can cost (75% of list price).",
+      "before arrival, so it counts the expected cost (the playbook's cost_share of list price) against the cash floor "
+      "plus the warranty reserve and the stock cap, and the most a unit can cost (75% of list) against the cash floor.",
       {"type": "object", "required": ["plan"],
        "properties": {"plan": {"type": "array", "items": {
            "type": "object", "required": ["sku", "qty"],
@@ -174,7 +188,8 @@ def buy(ctx, plan):
     stock_value = sum(u["cost"] for u in units)
     food_value = sum(u["cost"] for u in units if u.get("kind") == "food")
     food_share_before = food_value / stock_value if stock_value else 0
-    spend = 0
+    spend = spend_worst = 0
+    exp, worst_share = cost_share(ctx)
     for line in plan:
         c = cat.get(line["sku"])
         if c is None:
@@ -183,15 +198,19 @@ def buy(ctx, plan):
             raise Refused(f"{line['sku']}: {have.get(line['sku'], 0)} in stock + {line['qty']} is over "
                           f"{lim['max_units_per_sku']} per SKU", f"buy at most {lim['max_units_per_sku'] - have.get(line['sku'], 0)}")
         have[line["sku"]] = have.get(line["sku"], 0) + line["qty"]     # the same SKU on two lines counts once
-        worst = round(c["list_price"] * mf.COST_SHARE["A"][1]) * line["qty"]
-        spend += worst
+        est = round(c["list_price"] * exp) * line["qty"]
+        spend += est
+        spend_worst += round(c["list_price"] * worst_share) * line["qty"]
         if c.get("kind") == "food":
-            food_value += worst
+            food_value += est
     reserve, open_total, open_n = warranty_reserve(ctx)
     if balance - spend < lim["cash_floor"] + reserve:
         raise Refused(f"up to {spend} would take the balance {balance} below the floor {lim['cash_floor']}"
                       + (f" plus the warranty reserve {reserve} ({open_n} sales, {open_total}, still in warranty)"
                          if reserve else ""), "buy less, or cheaper SKUs")
+    if balance - spend_worst < lim["cash_floor"]:
+        raise Refused(f"at the worst cost (75% of list) up to {spend_worst} would take the balance {balance} below "
+                      f"the floor {lim['cash_floor']}", "buy less, or cheaper SKUs")
     # D31: "40% of the balance (2,000,000)" - of the starting capital, so the cap does not shrink as stock is bought
     base = stock_base(lim, inv, balance, stock_value)
     cap = lim["max_stock_share"] * base
@@ -204,5 +223,6 @@ def buy(ctx, plan):
     if share > lim["food_share_max"] and share > food_share_before:
         raise Refused(f"food would be {share:.0%} of the stock, over {lim['food_share_max']:.0%}",
                       "buy fewer food units or more goods")
-    return {"lines": len(plan), "worst_case_spend": spend, "balance_after_at_least": balance - spend,
+    return {"lines": len(plan), "expected_spend": spend, "worst_case_spend": spend_worst,
+            "balance_after_at_least": balance - spend_worst,
             "stock_after_at_most": total, "food_share_after_at_most": round(food_value / total, 4) if total else 0}

@@ -218,18 +218,22 @@ def buy(ctx, plan, why=""):
 
 def allocate(room, wants):
     """[(sku, units wanted)] in priority order -> [(sku, units we can buy, why short or None)] within the room:
-    per-SKU room, then the cash and the stock cap at the worst-case cost (check.room)."""
+    per-SKU room, then the cash and the stock cap at the expected cost, and the cash floor at the worst cost
+    (check.room)."""
     cash, stock = max(0, room["cash"] or 0), max(0, room["stock"])
+    hard = max(0, room["cash_worst"] if room.get("cash_worst") is not None else cash)
     out = []
     for sku, n in wants:
         w = room["worst"](sku)
         if w <= 0:
             out.append((sku, 0, "not in the catalog"))
             continue
+        wu = room["unit_worst"](sku) if room.get("unit_worst") else w
         per = max(0, room["per_sku"] - room["have"].get(sku, 0))
-        q = min(n, per, int(cash // w), int(stock // w))
-        why = None if q == n else "per-SKU limit" if q == per else "cash" if q == int(cash // w) else "stock cap"
-        cash, stock = cash - q * w, stock - q * w
+        q = min(n, per, int(cash // w), int(stock // w), int(hard // wu))
+        why = (None if q == n else "per-SKU limit" if q == per else "cash" if q in (int(cash // w), int(hard // wu))
+               else "stock cap")
+        cash, stock, hard = cash - q * w, stock - q * w, hard - q * wu
         out.append((sku, q, why))
     return out
 

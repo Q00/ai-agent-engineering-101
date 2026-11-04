@@ -57,7 +57,8 @@ def playbook(ctx):
             "top_n": pb.get("top_n", 0), "top_units": pb.get("top_units", 20), "top_line_share": pb.get("top_line_share", 0.5),
             "units_cap": pb.get("units_cap", 12),
             "own_sales": pb.get("own_sales", False), "own_cover": pb.get("own_cover", 1.5),
-            "probe_units": pb.get("probe_units", 2), "food_cap": pb.get("food_cap", 3)}
+            "probe_units": pb.get("probe_units", 2), "food_cap": pb.get("food_cap", 3),
+            "cost_share": check.cost_share(ctx)[0]}
 
 
 def build_buy_list(ctx, now=None):
@@ -205,7 +206,8 @@ def build_buy_list(ctx, now=None):
     doc = {"ts": now, "playbook": pb, "lines": lines,
            "budget": {"cash": room["cash"], "stock": round(room["stock"]), "balance": room["balance"],
                       "floor": room["floor"], "reserve": room["reserve"],
-                      "planned": sum(q * room["worst"](sku) for sku, q, _ in got)}}
+                      "planned": sum(q * room["worst"](sku) for sku, q, _ in got),
+                      "planned_worst": sum(q * room["unit_worst"](sku) for sku, q, _ in got)}}
     atomic.write_json(paths.memory() / "facts" / "buy_list.json", doc)
     return doc
 
