@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from improvement_notices import publish
+from market_state import read
 
 
 class NoticeTests(unittest.TestCase):
@@ -65,6 +66,67 @@ class NoticeTests(unittest.TestCase):
             result = controller.run(self.md, now=100000, force=True)
         self.assertEqual(result["status"], "waiting_for_fresh_r3_data")
         self.assertTrue(read(self.md / "strategy-policy.json")["controls"]["restock_paused"])
+        self.assertEqual(len(list((self.md.parent / "logs/notification-errors").glob("*.json"))), 1)
+
+    def test_profit_goal_reports_profit_rank_and_profit_growth(self):
+        self.emit(objective="seller_profit_rank_1", profit_rank=15, profit=1000000)
+        result = self.emit(at=107200, deals=30, objective="seller_profit_rank_1", profit_rank=13, profit=1200000, rank=30)
+        self.assertEqual(len(result), 1)
+        self.assertIn("순이익 순위 15→13", result[0]["message"])
+        self.assertIn("1,000,000→1,200,000", result[0]["message"])
+
+    def test_profit_growth_requires_confirmed_deals_and_threshold(self):
+        self.emit(objective="seller_profit_rank_1", profit_rank=15, profit=1000000)
+        result = self.emit(at=107200, deals=29, objective="seller_profit_rank_1", profit_rank=15, profit=1200000)
+        self.assertEqual(result, [])
+        result = self.emit(at=114400, deals=40, objective="seller_profit_rank_1", profit_rank=15, profit=1240000)
+        self.assertEqual(result, [])
+
+    def test_overall_rank_does_not_trigger_profit_goal_improvement(self):
+        self.emit(objective="seller_profit_rank_1", profit_rank=15, profit=1000000)
+        self.assertEqual(self.emit(at=107200, objective="seller_profit_rank_1", profit_rank=15, profit=1000000, rank=1), [])
+
+    def test_objective_change_resets_baseline_and_profit_first_is_immediate(self):
+        self.emit()
+        self.assertEqual(self.emit(at=107200, objective="seller_profit_rank_1", profit_rank=15, profit=1000000, rank=1), [])
+        result = self.emit(at=107260, objective="seller_profit_rank_1", profit_rank=1, profit=1000000)
+        self.assertEqual(len(result), 1)
+        self.assertIn("1위", result[0]["message"])
+        self.assertEqual(self.emit(at=107300, objective="seller_profit_rank_1", profit_rank=1, profit=1000000), [])
+
+    def test_status_is_visible_every_thirty_minutes_without_fake_improvements(self):
+        self.assertEqual(self.emit(), [])
+        self.emit(at=100060)
+        folder = self.md.parent / "logs/monitor-notices"
+        self.assertEqual(len(list(folder.glob("*.json"))), 1)
+        self.emit(at=101800)
+        self.assertEqual(len(list(folder.glob("*.json"))), 2)
+        self.assertTrue((self.md.parent / "MONITORING-NOTICES.md").exists())
+        self.assertFalse((self.md.parent / "IMPROVEMENTS.md").exists())
+
+    def test_stale_status_is_not_reported_as_normal(self):
+        self.emit(valid=False)
+        self.assertIn("자료 확인 대기", read(self.md / "latest-monitor-notice.json")["message"])
+
+    def test_failed_delivery_does_not_consume_keep_deduplication(self):
+        event = dict(event="keep", experiment="retry", comparison={"before": {}, "after": {}})
+        with patch("improvement_notices.write", side_effect=OSError("disk unavailable")):
+            with self.assertRaises(OSError):
+                self.emit([event])
+        self.assertEqual(len(self.emit([event])), 1)
+
+    def test_controller_interval_skip_still_checks_notice_delivery(self):
+        import strategy_controller as controller
+        from test_strategy_controller import observation
+        from market_state import write
+        state = controller.initial()
+        state.update(checked_at=100000, phase="cooldown")
+        write(self.md / "strategy-state.json", state)
+        with patch.object(controller, "observation", return_value=observation(100060)), \
+                patch("improvement_notices.publish") as delivery:
+            controller.run(self.md, now=100060)
+        delivery.assert_called_once()
+        self.assertEqual(delivery.call_args.kwargs["phase"], "cooldown")
 
 
 if __name__ == "__main__":

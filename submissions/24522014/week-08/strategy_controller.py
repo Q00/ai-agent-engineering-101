@@ -10,6 +10,7 @@ import math
 import os
 from pathlib import Path
 import time
+import sys
 from uuid import uuid4
 
 from market_state import read, write
@@ -402,6 +403,7 @@ def observation(md, now):
     except (OSError, ValueError, KeyError, TypeError):
         leader_benchmark = {"status": "unavailable"}
     result.update(valid=True, balance=inv["balance"], reserve=reserve, stock_cost=cost,
+                  profit=inv["balance"]-inv.get("start", 5000000)-inv.get("injected", 0),
                   objective="seller_profit_rank_1", profit_rank=leader_benchmark.get("profit_rank"),
                   profit_gap_to_first=leader_benchmark.get("profit_gap_to_first"),
                   leader_benchmark=leader_benchmark,
@@ -454,6 +456,26 @@ def release(handle):
     handle.close()
 
 
+def notify(md, observation, events, state, settings):
+    """Delivery failure is visible and isolated from trading and policy leases."""
+    try:
+        from improvement_notices import publish
+        publish(md, observation, events, phase=state.get("phase", "unknown"),
+                next_check_at=state.get("checked_at", observation["at"])+settings["check_interval_seconds"],
+                change_after=state.get("last_change_at", -86400)+settings["min_change_seconds"])
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        try:
+            record = {"at": observation["at"], "error": f"{type(error).__name__}: {error}", "model_calls": 0}
+            stamp = datetime.fromtimestamp(observation["at"], timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            write(md.parent/"logs/notification-errors"/(stamp+"-"+uuid4().hex[:8]+".json"), record)
+        except (OSError, ValueError):
+            pass
+        try:
+            print(f"[알림 오류] {type(error).__name__}: {error}", file=sys.stderr, flush=True)
+        except (OSError, ValueError):
+            pass
+
+
 def run(md, now=None, force=False):
     md = Path(md)
     md.mkdir(parents=True, exist_ok=True)
@@ -476,6 +498,7 @@ def run(md, now=None, force=False):
                                 and obs["stars"] <= baseline["stars"]-settings["rating_drop"])
             urgent = urgent or obs["deals"] < baseline["deals"] or obs["bankruptcies"] > baseline["bankruptcies"]
         if not force and not urgent and 0 <= now-state.get("checked_at", -86400) < settings["check_interval_seconds"]:
+            notify(md, obs, [], state, settings)
             return {"status": state["phase"], "next_check_at": state["checked_at"]+settings["check_interval_seconds"]}
         state, events = transition(state, obs, settings)
         state.update(checked_at=now, version=state["version"]+1)
@@ -494,12 +517,7 @@ def run(md, now=None, force=False):
         write(md.parent/"logs/strategy-controller"/(stamp+"-"+uuid4().hex[:8]+".json"), journal)
         write(md/"strategy-state.json", state)
         write(md/"strategy-policy.json", policy)
-        # Notification failures must never interrupt trading or policy guards.
-        try:
-            from improvement_notices import publish
-            publish(md, obs, events)
-        except (OSError, ValueError, KeyError, TypeError):
-            pass
+        notify(md, obs, events, state, settings)
         return {"status": state["phase"], "version": state["version"], "events": [e["event"] for e in events],
                 "wait_reason": state.get("wait_reason"),
                 "price_consumer_ready": obs.get("price_consumer_ready", False), "model_calls": 0}
