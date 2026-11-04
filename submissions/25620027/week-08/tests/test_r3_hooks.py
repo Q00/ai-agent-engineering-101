@@ -8,12 +8,21 @@ from typing import TYPE_CHECKING
 
 from r3.market_files import (
     CatalogItem,
+    DemandRow,
     read_catalog,
     read_demand,
     read_inventory,
 )
 from r3.policy import Policy
-from r3.restock import DemandSignal, RestockState, plan, run, sku_fits
+from r3.restock import (
+    DemandSignal,
+    RestockState,
+    category_scores,
+    plan,
+    run,
+    sku_fits,
+    stock_budget,
+)
 from r3.review import run as review_run
 from tests.r3_stock import CURTAIN, KIMCHI, LAMP, MILK, unit, write_market
 
@@ -139,6 +148,30 @@ def test_restock_never_buys_food_with_under_a_week_of_shelf_life() -> None:
     # Then: the owner's one-week floor still holds.
     assert not sku_fits(milk, policy)
     assert sku_fits(kimchi, policy)
+
+
+def test_stock_budget_follows_equity_and_goods_rank_by_value() -> None:
+    policy = Policy().restock.model_copy(
+        update={"seed_budget": 2_000_000, "stock_share": 0.7}
+    )
+    # Then: 13M cash and 4M stock allow 11.9M of stock; a small shop keeps the floor.
+    assert stock_budget(13_000_000, 4_000_000, policy) == 11_900_000
+    assert stock_budget(1_000_000, 500_000, policy) == 2_000_000
+    # And: with equal settles, the dear goods category ranks above the cheap one.
+    catalog = {
+        f"{name}{n}": CatalogItem(
+            sku=f"{name}{n}", category=name, kind="goods", list_price=price
+        )
+        for name, price in (("bed", 420_000), ("mug", 20_000))
+        for n in range(5)
+    }
+    demand = tuple(DemandRow(category=c, kind="goods") for c in ("mug", "bed"))
+    signal = DemandSignal(by_category={"bed": 3, "mug": 3}, by_sku={})
+    wide = policy.model_copy(
+        update={"goods_min_list_price": 0, "goods_max_list_price": 1_000_000}
+    )
+    ranked = [row.category for _, row in category_scores(demand, catalog, signal, wide)]
+    assert ranked == ["bed", "mug"]
 
 
 def deal_file(tmp_path: Path, **settled: object) -> Path:

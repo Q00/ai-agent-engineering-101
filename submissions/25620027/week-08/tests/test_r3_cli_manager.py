@@ -244,7 +244,7 @@ def test_pinned_tactical_fields_are_reported_and_their_band_widened_by_code(
     # alone (seven Opus runs failed whole on 11/4), and the run log names them.
     raw = {
         "changes": {
-            "restock.seed_budget": 30_000_000,
+            "restock.stock_share": 3.0,
             "restock.no_such": 1,
             **dict.fromkeys(
                 (
@@ -273,7 +273,7 @@ def test_pinned_tactical_fields_are_reported_and_their_band_widened_by_code(
     assert kept["bands"] == {}
     assert Proposal.model_validate(kept).changes == kept["changes"]
     assert dropped_entries(raw, kept) == [
-        "changes:restock.seed_budget",
+        "changes:restock.stock_share",
         "changes:restock.no_such",
         "changes:seller.accept_margin",
         "bands:seller.concession",

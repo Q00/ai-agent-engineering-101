@@ -137,7 +137,10 @@ class RestockPolicy(FrozenModel):
     """What the shop buys; the kit executes the plan, the market draws the costs."""
 
     reserve_cash: int = Field(default=1_500_000, ge=0, le=5_000_000)
-    seed_budget: int = Field(default=2_500_000, ge=0, le=20_000_000)
+    # Stock follows the money (owner, 11/4): stock cost may reach stock_share of
+    # equity (cash + stock at cost); seed_budget is only a floor for a small shop.
+    seed_budget: int = Field(default=2_500_000, ge=0)
+    stock_share: float = Field(default=0.7, ge=0.0, le=0.9)
     units_per_sku: int = Field(default=1, ge=1, le=20)
     max_units: int = Field(default=400, ge=1, le=5000)
     min_food_shelf_hours: int = Field(default=720, ge=24, le=720)

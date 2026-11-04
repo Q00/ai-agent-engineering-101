@@ -47,6 +47,11 @@ WINDOW_LEAD_SECONDS: Final = 30.0
 # Owner rule (11/4): no food with under a week of shelf life, whatever the
 # strategy sets; 24 h food aged into clearance and sold below cost.
 OWNER_MIN_FOOD_SHELF_HOURS: Final = 168
+# Owner rule (11/4): high-value goods first. A goods category's score is scaled
+# by the median list price of its fitting SKUs over this unit (never below 1):
+# a unit at ~0.78 of list on ~0.60 cost earns ~18% of list, so one 420k mattress
+# earns what about 28 cheap food sales do.
+VALUE_UNIT: Final = 100_000
 
 
 class RestockState(FrozenModel):
@@ -101,20 +106,31 @@ def sku_fits(item: CatalogItem, policy: RestockPolicy) -> bool:
     return policy.goods_min_list_price <= item.list_price <= policy.goods_max_list_price
 
 
+def stock_budget(balance: int, stock_cost: int, policy: RestockPolicy) -> int:
+    """Return the most stock (at cost) to hold: a share of equity, never a fixed cap.
+
+    Equity is cash plus stock at cost, so the budget grows as the shop earns and
+    shrinks after losses; ``seed_budget`` is the floor while the shop is small.
+    The cash reserve still applies separately.
+    """
+    return max(policy.seed_budget, round(policy.stock_share * (balance + stock_cost)))
+
+
 def category_scores(
     demand: tuple[DemandRow, ...],
     catalog: dict[str, CatalogItem],
     signal: DemandSignal | None,
     policy: RestockPolicy,
 ) -> list[tuple[float, DemandRow]]:
-    """Rank categories: settled deals first, then the risk heuristic."""
-    fitting: dict[str, int] = {}
+    """Rank categories: settled deals, scaled for goods by typical list price."""
+    fitting: dict[str, list[int]] = {}
     for item in catalog.values():
         if sku_fits(item, policy):
-            fitting[item.category] = fitting.get(item.category, 0) + 1
+            fitting.setdefault(item.category, []).append(item.list_price)
     scored: list[tuple[float, DemandRow]] = []
     for row in demand:
-        candidates = fitting.get(row.category, 0)
+        prices = sorted(fitting.get(row.category, ()))
+        candidates = len(prices)
         if candidates == 0:
             continue
         base = 1.0 if row.kind == "goods" else 1.5
@@ -124,6 +140,8 @@ def category_scores(
                 base += 1.5
             if row.category in signal.cold_categories:
                 base *= 0.5
+        if row.kind == "goods":
+            base *= max(1.0, prices[candidates // 2] / VALUE_UNIT)
         scored.append((base * min(1.0, candidates / 5.0), row))
     scored.sort(key=lambda pair: -pair[0])
     return scored
@@ -138,7 +156,7 @@ def pick_sku(  # noqa: PLR0913 - explicit inputs
     rng: random.Random,
     already: set[str],
 ) -> CatalogItem | None:
-    """Choose a SKU in the category: settled ones first, else a random fitting one."""
+    """Choose a SKU: the settled one with the most takings, else a random fit."""
     fitting = [
         item
         for item in catalog.values()
@@ -151,8 +169,14 @@ def pick_sku(  # noqa: PLR0913 - explicit inputs
     if signal is not None:
         settled = [i for i in fitting if signal.by_sku.get(i.sku, 0) > 0]
         if settled:
+            # expected takings, not settle count: a dear SKU that sells beats a
+            # cheap one that sells a little more often
             return max(
-                settled, key=lambda i: (signal.by_sku.get(i.sku, 0), i.list_price)
+                settled,
+                key=lambda i: (
+                    signal.by_sku.get(i.sku, 0) * i.list_price,
+                    i.list_price,
+                ),
             )
     return rng.choice(fitting)
 
@@ -180,6 +204,7 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
             sold_at[sku] = now
     stock_cost = sum(u.cost for u in inventory.units)
     cash = inventory.balance - policy.reserve_cash
+    budget = stock_budget(inventory.balance, stock_cost, policy)
     lines: list[dict[str, object]] = []
     spent = 0
     food_lines = 0
@@ -195,7 +220,7 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
         unit_cost = int(item.list_price * WORST_CASE_COST_SHARE)
         if unit_cost <= 0:
             return 0
-        room = min(cash - spent, policy.seed_budget - stock_cost - spent)
+        room = min(cash - spent, budget - stock_cost - spent)
         allowed = min(qty, room // unit_cost, policy.max_units - units_total)
         if allowed <= 0:
             return 0

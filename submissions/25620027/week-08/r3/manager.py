@@ -172,7 +172,10 @@ PROMPT: Final = (
     "opens) and say so in the reason. The owner forbids food with under 168 hours "
     "of shelf life (restock enforces it), so steps below 168 do nothing. The owner "
     "wants high-value goods first: stock dear items that sell at a sound share of "
-    "list rather than many cheap ones. Raise it back when food "
+    "list rather than many cheap ones. Stock follows the money: restock may hold "
+    "stock up to restock.stock_share of equity (cash plus stock at cost), with "
+    "restock.seed_budget only a floor and the cash reserve kept; there is no fixed "
+    "cap. Raise it back when food "
     "write-offs in the policy reviews exceed what that food earned. Use the "
     "set_strategy tool once; an empty change map keeps the policy."
 )
@@ -375,7 +378,7 @@ def lenient_strategy_arguments(parsed: dict[str, object]) -> dict[str, object]:
 def within_bounds(key: str, value: object) -> bool:
     """Return True for a number inside a known field's declared bounds.
 
-    One value past a bound (seed_budget above 5M, a seventh change) used to fail
+    One value past a bound (a ratio above 1, a seventh change) used to fail
     the whole proposal: seven Opus strategy runs were lost on 11/4 05:02-08:34.
     """
     if isinstance(value, bool) or not isinstance(value, (int, float)):
