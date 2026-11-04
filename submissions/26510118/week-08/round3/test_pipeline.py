@@ -227,9 +227,13 @@ def test_pricing():
     check("with a warranty every grade starts at 80% of list",
           {pricing.plan(u, now, warranty=True)["ask"] for u in (goods_a, goods_b, goods_c)} == {31920})
     check("no warranty on food", pricing.plan(food, now, warranty=True, catalog=CATALOG)["warranty_hours"] is None)
-    edge = dict(food, expires_at=now + 76 * H)
-    check("food about to drop to C is claimed C (true at checkout and at settle)",
+    shelf = CATALOG[KIMCHI]["shelf_hours"]
+    edge = dict(food, expires_at=now + pricing.FOOD_CUTS[1] * shelf * H + 120)
+    check("food dropping to C within the claim margin is claimed C (true at settle)",
           (pricing.grade(edge, now, CATALOG), pricing.claim(edge, now, CATALOG)) == ("B", "C"))
+    later = dict(food, expires_at=now + pricing.FOOD_CUTS[1] * shelf * H + 1800)
+    check("food dropping in 30 minutes is claimed at its grade now (a settle comes within minutes)",
+          pricing.claim(later, now, CATALOG) == "B")
 
 
 def unit_row(unit, sku, cost, hours=None, grade="A", age=0.5, now=None):
@@ -527,6 +531,9 @@ def main() -> int:
         check("turned-away buyers are recorded (held, out)", (GEOTJEORI, "held") in reasons and (BERRY, "out") in reasons, reasons)
         hows = [r.get("how") for r in common.records("requests")]
         check("how each buyer asked is recorded", {"sku", "category", "model"} <= set(hows), set(hows))
+        last = common.records("requests")[-1]
+        check("each request keeps its A2A context id and metadata keys (to recognise a buyer)",
+              isinstance(last.get("ctx"), str) and isinstance(last.get("meta"), list), {k: last.get(k) for k in ("ctx", "meta")})
 
         print("\n[S3] negotiating: the floor and its reason, quick close, a plain yes")
         fake.inventory([fake.unit("u-b1-a", BEDDING, "A", 29000), fake.unit("u-k1-a", KIMCHI, "A", 12000, 150)])

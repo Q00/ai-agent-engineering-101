@@ -38,6 +38,7 @@ LAST_DAY, LAST_DAY_CUT, LAST_DAY_FLOOR = 24, 0.15, 0.25
 LAST_HOURS, LAST_FLOOR = 6, 0.10
 MAX_ROUNDS = 4           # offers before the shop closes: take one at or above the floor, else no deal
 QUICK = 0.95             # an offer this close to the ask is taken at once
+CLAIM_MARGIN = 300       # seconds a grade claim must stay true (deal to settle: 99% within 4 minutes)
 
 
 def hours_left(unit: dict, now: float):
@@ -56,9 +57,12 @@ def grade(unit: dict, now: float, catalog: dict | None = None) -> str:
 
 
 def claim(unit: dict, now: float, catalog: dict | None = None) -> str:
-    """The grade to state on the receipt: true now, and still true in an hour (the claim is
-    judged at checkout or at settle), so food about to drop a grade is claimed at the lower one."""
-    return max(grade(unit, now, catalog), grade(unit, now + 3600, catalog), key=ORDER.index)
+    """The grade to state on the receipt: true now, and still true CLAIM_MARGIN later. The market
+    judges the claim at settle (claim_honest = claim equals the certified grade), a median 1.5 s
+    after the deal and within 4 minutes for 99 in 100 (ledger, 11/4). A one-hour margin claimed
+    food a grade low while it still settled at the higher one; 14 such deals in 2.5 h averaged
+    2.1 stars against 4.9 for the rest."""
+    return max(grade(unit, now, catalog), grade(unit, now + CLAIM_MARGIN, catalog), key=ORDER.index)
 
 
 def near_expiry(unit: dict, now: float) -> bool:

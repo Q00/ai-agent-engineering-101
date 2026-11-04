@@ -252,7 +252,12 @@ class Seller(AgentExecutor):
         now = time.time()
         d = self.open.get(task.id)
         if d is None:
-            await self.first(up, say, task.id, text, now)
+            # who asks: an A2A request names no buyer, so the context id and metadata keys are kept to
+            # learn whether a buyer that agrees and never pays can be recognised (11/4: buyers that ask
+            # by category paid 1 in 100 agreements; one of them pays no shop)
+            who = {"ctx": context.context_id or None,
+                   "meta": sorted(set(dict(context.message.metadata or {})) | set(context.metadata or {}))}
+            await self.first(up, say, task.id, text, now, who)
             return
         d["t"] = now
         d["said"] = d.get("said", [])[-5:] + [text[:300]]
@@ -309,8 +314,9 @@ class Seller(AgentExecutor):
         extra = " plus the 6-hour warranty" if p["warranty_hours"] else ""
         return f"{what}, with its certificate, and this price is only about 5% over what this unit cost us{extra}"
 
-    async def first(self, up, say, task_id: str, text: str, now: float) -> None:
+    async def first(self, up, say, task_id: str, text: str, now: float, who: dict | None = None) -> None:
         """S2: what do they want, which unit, what to tell them."""
+        who = who or {}
         held = self.held()
         everything = stock(now)
         units = [u for u in everything if u["unit"] not in held]
@@ -344,7 +350,7 @@ class Seller(AgentExecutor):
                     common.record("refusals", task=task_id, sku=None, category=cat, reason="out" if cat else "unread",
                                   text=text[:80])
                 common.record("requests", task=task_id, how=req["how"], wanted=req["wanted"], category=cat,
-                              need_hours=req["need_hours"], warranty=req["warranty"], offered=[])
+                              need_hours=req["need_hours"], warranty=req["warranty"], offered=[], **who)
                 await up.reject(say("Sorry, we have none of that in stock right now."))
                 return
             options = sorted(((u, priced(u, now, req["warranty"])) for u in menu), key=lambda x: x[1]["ask"])[:MENU]
@@ -353,7 +359,7 @@ class Seller(AgentExecutor):
         self.open[task_id] = d
         common.record("requests", task=task_id, how=req["how"], wanted=req["wanted"], category=cat,
                       need_hours=req["need_hours"], warranty=req["warranty"],
-                      offered=[o["sku"] for o, _ in d["menu"]] if d["menu"] else [d["unit"]["sku"]])
+                      offered=[o["sku"] for o, _ in d["menu"]] if d["menu"] else [d["unit"]["sku"]], **who)
         offer_warranty = d["unit"].get("kind") == "goods" and not d["warranty"]
         note = " A 6-hour warranty is available on request." if offer_warranty else ""
         if d["menu"]:
