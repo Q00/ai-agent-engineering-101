@@ -240,25 +240,69 @@ def term_scale(sdir, login, now, hours=24):
     return out
 
 
+def ranked(rows):
+    """The board's own population for its percentile columns: rows with a non-null 'all'. For shops that is the live
+    participant shops plus the house shops, for buyers it equals deals > 0 (v1.26: the 'all' column of 51/51 shops
+    and 48/48 buyers reproduced on the 01:57 KST snapshot of 2026-11-05)."""
+    return [r for r in rows if r.get("all") is not None]
+
+
+def _num(r, t):
+    v = r.get(t)
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0.0
+
+
+def _sig(x):
+    return float(f"{x:.3g}")
+
+
 def summary(board, login):
+    """Our standing per official term, computed like the board's 'all' column (v1.26, 2026-11-05: the population was
+    every non-house row before, which showed surplus at pct 0.831 against the official 0.574). Per term: ours, pct
+    (mid-rank), rank (1 = top) of n, the gap to the next value above and below (3 significant digits) and per_rank,
+    the score one rank step is worth (official weight / (n - 1))."""
     out = {}
     for group, W in (("shops", W_SHOP), ("buyers", W_BUYER)):
         me = _ours(board.get(group) or [], login)
         if me is None:
             continue
-        for term in W:
-            vals = sorted(
-                float(r.get(term) or 0)
-                for r in board.get(group) or []
-                if not r.get("house")
-            )
-            v = float(me.get(term) or 0)
+        rows = ranked(board.get(group) or [])
+        if not any(r is me for r in rows):
+            rows = rows + [me]
+        n = len(rows)
+        for term, wt in W.items():
+            vals = [_num(r, term) for r in rows]
+            v = _num(me, term)
             above = [x for x in vals if x > v]
             below = [x for x in vals if x < v]
             out[term] = {
                 "ours": v,
                 "pct": round(pct(v, vals) or 0, 3),
-                "gap_up": round(min(above) - v, 2) if above else None,
-                "gap_down": round(v - max(below), 2) if below else None,
+                "rank": len(above) + 1,
+                "n": n,
+                "gap_up": _sig(min(above) - v) if above else None,
+                "gap_down": _sig(v - max(below)) if below else None,
+                "per_rank": round(wt / max(n - 1, 1), 4),
             }
     return out
+
+
+def standing(board, login):
+    """Our player row (matched by our shop's name) -> {total, rank, n, gap_next, gap_top, shop_all, buyer_all}, or
+    None when it is not on the board."""
+    me = _ours(board.get("shops") or [], login)
+    pl = [p for p in board.get("players") or [] if isinstance(p.get("total"), (int, float))]
+    mine = [p for p in pl if me is not None and (p.get("shop") or {}).get("name") == me.get("name")]
+    if not mine:
+        return None
+    t = float(mine[0]["total"])
+    above = sorted(float(p["total"]) for p in pl if p["total"] > t)
+    return {
+        "total": round(t, 3),
+        "rank": len(above) + 1,
+        "n": len(pl),
+        "gap_next": round(above[0] - t, 3) if above else None,
+        "gap_top": round(above[-1] - t, 3) if above else None,
+        "shop_all": (mine[0].get("shop") or {}).get("all"),
+        "buyer_all": (mine[0].get("buyer") or {}).get("all"),
+    }

@@ -52,6 +52,8 @@ LANES = {
     "buyer": ("buyer",),
 }
 LANE_SIDE = {"price": "shop", "stock": "shop", "buyer": "buyer"}
+# v1.26: the official terms each lane's verdict metric moves (price gp_h, stock value_h, buyer surplus_h)
+LANE_TERMS = {"price": ("profit", "revenue"), "stock": ("profit", "revenue"), "buyer": ("surplus", "deals")}
 FAMILY_LANE = {f: ln for ln, fs in LANES.items() for f in fs}
 # harness.json (sec 7): per-side proposer settings written by the meta-harness; defaults = the prompt without it
 HARNESS_DEFAULT = {
@@ -901,7 +903,26 @@ def exp_table(ctx, lane):
     return out
 
 
-def proposer_prompt(lane, S, offered, rec, table, notes=""):
+def objective(lane, L):
+    """v1.26 (2026-11-05): the score the experiments serve, built in code: the official formula, our player standing
+    (rank, gaps) and, for the terms this lane's verdict metric moves, pct, rank of n, gap to the next value above and
+    the score one rank step is worth. Empty board data -> the formula alone."""
+    bs = L.get("board_summary") or {}
+    terms = {
+        t: {k: bs[t].get(k) for k in ("pct", "rank", "n", "gap_up", "per_rank")}
+        for t in LANE_TERMS.get(lane, ())
+        if isinstance(bs.get(t), dict)
+    }
+    return (
+        "OBJECTIVE the final rank at round end of total = shop(0.5 profit + 0.3 revenue + 0.2 stars_rank) + "
+        "buyer(0.5 surplus + 0.3 forum + 0.1 deals + 0.1 posts), each term a percentile among ranked players. "
+        "profit counts cash (book - stock_cost): stock is a cost until it sells, and stock left at round end is lost. "
+        f"This lane's verdict moves {', '.join(LANE_TERMS.get(lane, ()))}.\n"
+        f"SCORE {json.dumps({'standing': L.get('board_standing'), 'lane_terms': terms}, ensure_ascii=False)}\n"
+    )
+
+
+def proposer_prompt(lane, S, offered, rec, table, notes="", objective=""):
     return (
         "You tune a live market agent's policy by small experiments. "
         f"This is the {lane} lane ({', '.join(LANES[lane])} keys); other lanes run their own experiments at the "
@@ -909,7 +930,8 @@ def proposer_prompt(lane, S, offered, rec, table, notes=""):
         'Reply with strict JSON only: {"action": "change"|"hold", "edits": [{"path": str, "value": ...}], '
         '"why": "<=200 chars"}. Up to 3 edits of this lane; one must be an offered arm\'s path in its direction; '
         "values within range and max step. For a retest arm, use its edits exactly.\n"
-        f"LANE {lane}\n"
+        + objective
+        + f"LANE {lane}\n"
         f"STATE {json.dumps(S, ensure_ascii=False, default=str)}\n"
         f"EXPERIMENTS {json.dumps(table, ensure_ascii=False, default=str)}\n"
         f"MEMORY {json.dumps({'edges': rec['edges'], 'lessons': rec['lessons']}, ensure_ascii=False)}\n"
@@ -1089,7 +1111,7 @@ def cycle(ctx, L, lane, store, stats, now, record=True):
         "_allarms": allarms,
     }
     prompt = proposer_prompt(
-        lane, S, offered, rec, exp_table(ctx, lane), hc["prompt_notes"]
+        lane, S, offered, rec, exp_table(ctx, lane), hc["prompt_notes"], objective(lane, L)
     )
     prop = ask(ctx, "prop", prompt, now)
     res["proposer"] = None if prop is None else prop["action"]
@@ -1317,6 +1339,7 @@ def observe(ctx, L, pol, now):
     if brd:
         L["w"] = B.weights(brd, login)["w"]
         L["board_summary"] = B.summary(brd, login)
+        L["board_standing"] = B.standing(brd, login)
     else:
         m = ST.block_metrics(store, now - 86400, now)
         L["w"] = B.fixed_weights(
