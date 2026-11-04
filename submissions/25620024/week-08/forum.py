@@ -31,7 +31,9 @@ STATE = HERE / "private" / "forum_state.json"
 THETA = Path(os.environ.get("SHOP_THETA", HERE / "private" / "shop_theta.json"))
 DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n": 5, "min_n_index": 30,
             "max_posts_day": {"buyer": 288, "shop": 24},
-            "gap_s": {"buyer": 300, "shop": 300}}    # 11-04 19:30: every 5 min (the market's limit); 14:00: 10 min. The 30-min cut assumed new posts
+            "gap_s": {"buyer": 1800, "shop": 300}}   # 11-05 05:50: back to 30 min. At 5 min (19:30-20:49) the rating
+            # fell 0.600 -> 0.577 and the posts percentile only went 0.74 -> 0.73: new posts draw ~5.2 likes, under our
+            # average, so they are NOT neutral (the 14:00 assumption was wrong); quality over count The 30-min cut assumed new posts
             # (5.4 likes at 15 min) pull the 0.604 rating down, but that rating already implies ~6 final likes (Wilson:
             # 5 -> 0.566, 6 -> 0.61), so a post is about neutral to the rating and the posts percentile (0.1) needs them   # buyer ALL counts posts written as a buyer (0.1) and the
                                                            # votes on them (0.3): post as a buyer as often as the market
@@ -302,7 +304,7 @@ def frugal_shops(c, t, now, top_cats=3, min_n=5):
     en = f"[Frugal shops] last {t['window_h']} h, public ledger, median paid/list per shop:\n" + "\n".join(
         f"- {i['category']} (market {i['market_median']:.0%}): " + ", ".join(
             f"{b['shop']} {b['paid_share_median']:.0%} (n={b['n']})" for b in i["cheapest_shops"]) for i in items)
-    return [{"topic": "frugal", "as": "buyer", "refs": refs[:8], "score": 3.6, "text": ko,
+    return [{"topic": "frugal", "as": "buyer", "refs": refs[:8], "score": 9.0, "text": ko,   # above the price index
              "texts": {"ko": ko, "en": en, "json": json.dumps(data, ensure_ascii=False, separators=(",", ":"))[:1000]},
              "kind": "summary"}]
 
@@ -327,7 +329,7 @@ def wanted_posts(c, t, now, min_wanted=3):
         f"- {i['name']} ({i['sku']}), 정가 {i['list_price']:,}원, {i['wanted_24h']}회 주문" for i in items)
     en = "[Wanted] Orders we got in the last 24 h that no shop could fill; stock them and we buy:\n" + "\n".join(
         f"- {i['sku']} list {i['list_price']:,}, ordered {i['wanted_24h']}x" for i in items)
-    return [{"topic": "wanted", "as": "buyer", "refs": refs, "score": 3.3, "text": ko,
+    return [{"topic": "wanted", "as": "buyer", "refs": refs, "score": 8.5, "text": ko,
              "texts": {"ko": ko, "en": en, "json": json.dumps(data, ensure_ascii=False, separators=(",", ":"))[:1000]},
              "kind": "summary"}]
 

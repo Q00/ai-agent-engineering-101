@@ -631,6 +631,9 @@ def quote(c):
             rpc(url, "CancelTask", {"id": task["id"]})
             return {"c": c, "error": f"offered warranty {wh} h, need {NEED['warranty']} h"}
         grade = (off or {}).get("grade")
+        if not grade:                                    # 11-05 audit: 6 grade-C refusals; the grade is often only
+            gm = re.search(r"\bgrade ([ABC])\b", status_text(task) or "")   # in the text ("grade C now")
+            grade = gm.group(1) if gm else None
         if ask and NEED.get("grades") and grade and grade not in NEED["grades"]:   # audit 11-04: grade C goods were
             rpc(url, "CancelTask", {"id": task["id"]})                           # agreed, then refused by the kit
             return {"c": c, "error": f"offered grade {grade}, need {'/'.join(NEED['grades'])}"}
@@ -722,6 +725,8 @@ def warranty_arm(order):
     'W' requires warranty_hours >= 6 at checkout, 'N' as before. None for food."""
     if order.get("kind") == "food":
         return None
+    if T.get("warranty_all_goods", True):                # 11-05: W won -- 153k vs 91k surplus per order, broken
+        return "W"                                       # 6 vs 11, deal rate 0.95 both (24 h A/B)
     import hashlib
     h = int(hashlib.sha256(("warranty:" + str(order.get("order") or order.get("item"))).encode()).hexdigest()[:8], 16)
     return "W" if h % 2 else "N"
