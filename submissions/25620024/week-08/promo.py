@@ -198,6 +198,11 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         md = None
     if md:
         price, why = price * (1 - md), why + [f"scm clear -{md:.0%}"]
+    gb = groupbuy(c, unit["sku"])
+    if gb:                                                # HQ 11-05 group buy: this hour's first units
+        if lp * gb["share"] < price:
+            price, why = lp * gb["share"], why + [f"group buy {gb['share']:.0%} of list, {gb['left']} left this hour"]
+        arm = "gb"
     tier = next(((n, d) for n, d in t["tiers"] if bought >= n), None)
     if tier:
         price, why = price * (1 - tier[1]), why + [f"member {code} {bought} buys -{tier[1]:.0%}"]
@@ -209,9 +214,32 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
         floor = min(floor, int(cost * (1 + t["follow_margin"])) + 1)
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
-    return {"price": price, "least": least, "arm": f"{arm:.2f}", "floor": floor, "tier": tier,
+    return {"price": price, "least": least, "arm": arm if isinstance(arm, str) else f"{arm:.2f}", "floor": floor,
+            "tier": tier, "group_buy": gb,
             "why": "; ".join(why + [f"exp {e}:{a}" for e, a, _ in exps]), "market_median": median,
             "exps": [(e, a) for e, a, _ in exps], "warranty_goods_h": t.get("warranty_goods_h", 0)}
+
+
+GROUPBUY = Path(__file__).parent / "private" / "groupbuy.json"
+
+
+def groupbuy(c, sku, now=None):
+    """HQ 11-05 group buy (the W09 lecture's "선착순 50명만 50% 할인"): a SKU in private/groupbuy.json sells at `share`
+    of list to the first `per_hour` buyers each clock hour, then at the regular price. Returns
+    {"share", "per_hour", "left", "price_share"} while units are left this hour, else None."""
+    now = now or time.time()
+    try:
+        g = json.loads(GROUPBUY.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if g.get("until", 0) < now or sku not in (g.get("skus") or {}):
+        return None
+    x = g["skus"][sku]
+    hour = now - now % 3600
+    sold = c.execute("select count(*) from quotes where sku=? and outcome='deal' and ts>=? and arm like 'gb%'",
+                     (sku, hour)).fetchone()[0]
+    left = int(x["per_hour"]) - sold
+    return {"share": x["share"], "per_hour": int(x["per_hour"]), "left": left} if left > 0 else None
 
 
 def record(c, task, unit, q, price, outcome):

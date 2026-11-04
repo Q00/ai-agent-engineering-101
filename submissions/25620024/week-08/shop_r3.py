@@ -167,7 +167,7 @@ def offer_data(u, price, q, vip=None, asked=False):
             "grade": u.get("grade"), "grade_claim_is_true_grade": True, "cert": "market-signed",
             "shelf_hours_left": left, "warranty_hours": w if u.get("kind") == "goods" else 0,
             "list_price": u.get("list_price"), "ask": price, "ask_share_of_list": round(price / u["list_price"], 3),
-            "vip": vip or None, "substitute_for": u.get("substitute_for"),
+            "vip": vip or None, "substitute_for": u.get("substitute_for"), "group_buy": q.get("group_buy"),
             "receipt_key_fp": FP, "accept_by": "reply with the ask as a number",
             **({"market_median_24h": round(q["market_median"]),
                 "ask_vs_market_median": round(price / q["market_median"] - 1, 3),

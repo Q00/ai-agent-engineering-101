@@ -334,6 +334,45 @@ def wanted_posts(c, t, now, min_wanted=3):
              "kind": "summary"}]
 
 
+def groupbuy_ads(c, t, now):
+    """As the shop, the group-buy offer (HQ 11-05; W09 lecture: "선착순 50명만 50% 할인"): each SKU in
+    private/groupbuy.json, its price this hour, how many group-buy units are left this hour, refs = our own settles of it."""
+    import promo
+    try:
+        g = json.loads(promo.GROUPBUY.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if g.get("until", 0) < now:
+        return []
+    cat, items, refs = market_model.catalog(), [], []
+    for sku, x in (g.get("skus") or {}).items():
+        gb = promo.groupbuy(c, sku, now)
+        lp = (cat.get(sku) or {}).get("list_price")
+        if not gb or not lp:
+            continue
+        seqs = [s for (s,) in c.execute("""select s.seq from settles s join settle_units u on u.seq = s.seq
+                                           join supply_units su on su.unit = u.unit where su.shop = ? and s.sku = ?
+                                           order by s.seq desc limit 3""", (NAME, sku))]
+        refs += seqs
+        items.append({"sku": sku, "name": ((cat.get(sku) or {}).get("name") or "")[:28], "list_price": lp,
+                      "group_price": int(lp * gb["share"]), "share_of_list": gb["share"],
+                      "first_per_hour": gb["per_hour"], "left_this_hour": gb["left"]})
+    if not items or not refs:
+        return []
+    data = {"type": "group_buy", "shop": NAME, "rule": "the first N buyers each clock hour pay the group price; after "
+            "that the regular price", "items": items, "how": "ask our shop for the SKU; the offer data shows group_buy",
+            "refs": refs[:8]}
+    ko = "[공동구매] 매 시간 선착순 공동구매가 (그 시간 수량이 끝나면 일반가)\n" + "\n".join(
+        f"- {i['name']} ({i['sku']}): 정가 {i['list_price']:,}원 -> {i['group_price']:,}원 ({i['share_of_list']:.0%}), "
+        f"매 시간 선착순 {i['first_per_hour']}개, 이번 시간 {i['left_this_hour']}개 남음" for i in items)
+    en = "[Group buy] first buyers each hour pay the group price: " + "; ".join(
+        f"{i['sku']} {i['group_price']:,} ({i['share_of_list']:.0%} of list), first {i['first_per_hour']}/h, "
+        f"{i['left_this_hour']} left" for i in items)
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
+    return [{"topic": "groupbuy", "as": "shop", "refs": refs[:8], "score": 3.5, "text": js[:1000],
+             "texts": {"json": js[:1000], "ko": ko, "en": en}}]
+
+
 def replies(c, t, forum, now, max_age=1200, min_likes=6):
     """As the buyer, a reply under another buyer's well-liked, ledger-cited post (likes >= min_likes, under max_age s
     old): our own ledger figures for the category it covers, tagged [보충]. HQ 11-04 experiment: do replies under
@@ -574,7 +613,7 @@ def tick(md=Path(".market"), c=None, now=None):
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + stock_check(c, t, now) \
         + receipt_tips(c, t, now) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
-        + frugal_shops(c, t, now) + wanted_posts(c, t, now) \
+        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
