@@ -8,6 +8,8 @@ life that our accept policy would refuse at checkout. Refusals of earlier orders
 with a reason_code) are counted once each in the metrics row of the run that ingested them.
 v1.22: food orders get FOOD_DEADLINE_S (goods keep DEADLINE_S), and (shop, SKU) pairs that failed on shelf life are
 skipped for food until the refused unit expires (state file SHELF_FILE in the R3 state dir).
+v1.28: candidates are re-ordered by each shop's record with us (SHOP_FILE): P(deal) x expected surplus share, and a
+shop with a recent a2a error goes last (rerank).
 """
 import argparse
 import json
@@ -34,6 +36,12 @@ RPC_FLOOR_S = 3            # v1.22: least timeout of one haggle message under a 
 SHELF_FILE = "shelf_refusals.json"
 SHELF_TTL_S = 6 * 3600     # v1.22: skip a shelf-life refused (shop, SKU) this long when the unit's hours left are unknown
 SHELF_HOURS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*h (?:of )?shelf life", re.I)   # kit reason / our walk-away why
+SHOP_FILE = "shop_outcomes.json"   # v1.28: our recent attempts per (shop url, order kind), next to SHELF_FILE
+SHOP_TTL_S = 3 * 3600              # v1.28: attempts older than this are forgotten (a shop may change its prices)
+SHOP_KEEP = 60                     # v1.28: newest attempts kept per (shop, kind)
+SHOP_ERR_S = 20 * 60               # v1.28: an a2a error (timeout, dead tunnel, bad JSON) this recent ...
+SHOP_ERR_PEN = 0.1                 # ... multiplies the shop's weight by this
+SHOP_PRIOR_RATIO = 0.70            # v1.28: prior price/list of a deal (all our deals to 2026-11-05 04:07 KST: 0.699)
 
 
 def kind_deadline_s(order, pol):
@@ -339,6 +347,79 @@ def save_shelf(path, mem):
     os.replace(tmp, path)
 
 
+def load_shops(path, now):
+    """v1.28: attempt memory {"url|kind": [[ts, cls, price/list or None], ...]} without rows older than SHOP_TTL_S.
+    A missing or unreadable file is an empty memory."""
+    d = read_json(path, {}) or {}
+    rows = d.get("shops") if isinstance(d, dict) else None
+    out = {}
+    for k, v in (rows.items() if isinstance(rows, dict) else ()):
+        live = [r for r in v if isinstance(r, list) and len(r) == 3 and isinstance(r[0], (int, float))
+                and r[0] > now - SHOP_TTL_S] if isinstance(v, list) else []
+        if live:
+            out[k] = live[-SHOP_KEEP:]
+    return out
+
+
+def attempt_class(receipt, info):
+    """v1.28: one attempt's outcome: deal, r0 (rejected before any counter-offer), rej (rejected after haggling),
+    err (a2a exception), walk, rrf (receipt refused by us), cut (deadline or round cap mid-haggle) or other."""
+    if receipt:
+        return "deal"
+    if info.get("error"):
+        return "err"
+    s = info.get("state")
+    if s == "TASK_STATE_REJECTED":
+        return "rej" if info.get("rounds") else "r0"
+    return {"walked_away": "walk", "receipt_refused": "rrf", "TASK_STATE_INPUT_REQUIRED": "cut"}.get(s, "other")
+
+
+def deal_ratio(receipt, cand):
+    """v1.28: price / list price of an accepted receipt, else None."""
+    try:
+        return round(P.as_int_price(receipt["price"]) / cand["list_price"], 4) if receipt else None
+    except (TypeError, ValueError, KeyError, ZeroDivisionError):
+        return None
+
+
+def shop_weight(mem, url, kind, now):
+    """v1.28: weight of a shop for this order kind = P(deal) x expected surplus share, from our attempts in the last
+    SHOP_TTL_S: (deals + 1) / (attempts + 2) x (1 - mean price/list of our deals there, with 2 prior deals at
+    SHOP_PRIOR_RATIO), x SHOP_ERR_PEN after an a2a error in the last SHOP_ERR_S. A shop never tried weighs
+    0.5 x (1 - SHOP_PRIOR_RATIO) = 0.15."""
+    rows = mem.get(f"{url}|{kind}") or []
+    deals = [r for r in rows if r[1] == "deal"]
+    w = (len(deals) + 1) / (len(rows) + 2)
+    ratios = [r[2] for r in deals if isinstance(r[2], (int, float)) and not isinstance(r[2], bool)]
+    w *= 1 - (sum(ratios) + 2 * SHOP_PRIOR_RATIO) / (len(ratios) + 2)
+    if any(r[1] == "err" and now - r[0] < SHOP_ERR_S for r in rows):
+        w *= SHOP_ERR_PEN
+    return w
+
+
+def rerank(cands, mem, kind, now):
+    """v1.28: candidates by score x shop_weight; equal products keep choose_offers' order (score, SKU, shop name).
+    Before, a SKU listed by several shops was tried in shop-name order: 01:07-04:07 KST 2026-11-05, 180 of 263 failed
+    orders stopped at the food deadline (15 s) after 1-2 shops (round-0 rejections ~2.5 s each, timeouts ~15 s) with
+    10+ candidates left. Replay of 1,077 food orders (8 h): deal rate +0.097 (95 % CI +0.084..+0.110)."""
+    w = [shop_weight(mem, c["shop"].get("url"), kind, now) for c in cands]
+    idx = sorted(range(len(cands)), key=lambda i: (-(cands[i]["score"] * w[i]), i))
+    return [dict(cands[i], shop_w=round(w[i], 4)) for i in idx]
+
+
+def save_shops(path, new, now):
+    """v1.28: merge this run's attempts into the file as it is now (several hook processes run at once), prune,
+    write atomically."""
+    mem = load_shops(path, now)
+    for k, r in new:
+        mem.setdefault(k, []).append(r)
+    mem = {k: v[-SHOP_KEEP:] for k, v in mem.items()}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(f".{os.getpid()}.tmp")
+    tmp.write_text(json.dumps({"v": 1, "shops": mem}, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shops", required=True)
@@ -395,6 +476,13 @@ def main():
         kept = [c for c in cands if not shelf_refused(c, shelf)]
         shelf_skipped = len(cands) - len(kept)
         cands = kept or cands                           # all skipped: fall back to the unfiltered ranking, not no deal
+    kind = order.get("kind") or "goods"
+    shop_path = state_dir() / SHOP_FILE                 # v1.28: next to SHELF_FILE
+    shop_new, shop_err = [], None
+    try:
+        cands = rerank(cands, load_shops(shop_path, t0), kind, t0)
+    except Exception as e:                              # noqa: BLE001 - never cost the order: keep choose_offers' order
+        shop_err = f"{type(e).__name__}: {str(e)[:120]}"
     for c in cands:
         c["relax"] = relax
         c["pubkey"] = own.get("pubkeys", {}).get(OW.norm_url(c["shop"].get("url")))
@@ -422,6 +510,8 @@ def main():
             remember_shelf(shelf, c["shop"].get("url"), c["sku"], info["why"], time.time())
             shelf_dirty = True
         tried.append({"shop": c["shop"].get("name"), "sku": c["sku"], **info})
+        shop_new.append((f"{c['shop'].get('url')}|{kind}",
+                         [round(time.time(), 1), attempt_class(receipt, info), deal_ratio(receipt, c)]))
         if receipt:
             price = P.as_int_price(receipt["price"])
             out = {"shop": c["shop"]["url"], "receipt": receipt, "stars": 4,
@@ -434,7 +524,9 @@ def main():
                      {"hook": "market_buyer", "what": "offer_selection", "candidates": len(cands), "tried": tried,
                       # v1.5: the ranking itself (top 6), so a run shows when reputation changed the choice
                       "ranked": [{"shop": c["shop"].get("name"), "sku": c["sku"], "score": round(c["score"], 1),
-                                  "broken_rate": round(c.get("broken_rate", 0.0), 4)} for c in cands[:6]],
+                                  "broken_rate": round(c.get("broken_rate", 0.0), 4), "w": c.get("shop_w")}
+                                 for c in cands[:6]],
+                      "shop_err": shop_err,
                       "accept": accept, "relax": relax, "settled": nset, "own_excluded": excluded, "own_source": own["source"],
                       "own_error": own["error"]}, "buyer")
     rec.write("buy", seq, outcome={"deal": out["receipt"] is not None,
@@ -454,6 +546,11 @@ def main():
         try:
             save_shelf(shelf_path, shelf)
         except OSError:                                 # bookkeeping only: the order's output is already out
+            pass
+    if shop_new:
+        try:
+            save_shops(shop_path, shop_new, time.time())
+        except (OSError, TypeError, ValueError):        # bookkeeping only, as above
             pass
 
 
