@@ -186,7 +186,8 @@ def test_refusal_without_hours_uses_6h_ttl(monkeypatch, tmp_path):
 def test_other_refusals_not_remembered(monkeypatch, tmp_path):
     ev = _reject("http://s0", "G00000", "price above the mandate", "over_cap")
     calls, out = _run_main(monkeypatch, tmp_path, T0, [ev])
-    assert calls[0] == "http://s0" and out["shelf_skipped"] == 0
+    # v1.28b: any refused checkout sends s0 last for SHOP_ERR_S; the shelf filter still skips nothing
+    assert calls[0] == "http://s1" and out["shelf_skipped"] == 0
     assert not (tmp_path / "state" / MB.SHELF_FILE).exists()
 
 
@@ -212,7 +213,8 @@ def test_all_skipped_falls_back_to_unfiltered(monkeypatch, tmp_path):
 def test_goods_not_filtered(monkeypatch, tmp_path):
     ev = _reject("http://s0", "G00000", "2 h of shelf life left", "shelf_life")
     calls, out = _run_main(monkeypatch, tmp_path, T0, [ev], kind="goods")
-    assert calls[0] == "http://s0" and out["shelf_skipped"] == 0
+    # v1.28b: the refused checkout sends s0 last; goods are not filtered on shelf life
+    assert calls[0] == "http://s1" and out["shelf_skipped"] == 0
     calls, _ = _run_main(
         monkeypatch, tmp_path, T0 + 60, kind="food"
     )  # remembered for the next food order

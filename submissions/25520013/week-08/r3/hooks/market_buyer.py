@@ -10,6 +10,8 @@ v1.22: food orders get FOOD_DEADLINE_S (goods keep DEADLINE_S), and (shop, SKU) 
 skipped for food until the refused unit expires (state file SHELF_FILE in the R3 state dir).
 v1.28: candidates are re-ordered by each shop's record with us (SHOP_FILE): P(deal) x expected surplus share, and a
 shop with a recent a2a error goes last (rerank).
+v1.28b: a checkout the kit refused after a shop's receipt (reject event: unit not in stock, shelf life, ...) undoes
+one of that shop's deals in SHOP_FILE and puts the shop last for SHOP_ERR_S, like an a2a error.
 """
 import argparse
 import json
@@ -386,15 +388,32 @@ def shop_weight(mem, url, kind, now):
     """v1.28: weight of a shop for this order kind = P(deal) x expected surplus share, from our attempts in the last
     SHOP_TTL_S: (deals + 1) / (attempts + 2) x (1 - mean price/list of our deals there, with 2 prior deals at
     SHOP_PRIOR_RATIO), x SHOP_ERR_PEN after an a2a error in the last SHOP_ERR_S. A shop never tried weighs
-    0.5 x (1 - SHOP_PRIOR_RATIO) = 0.15."""
+    0.5 x (1 - SHOP_PRIOR_RATIO) = 0.15. v1.28b: a refused checkout ("cof" row) undoes one deal, is not an attempt
+    itself, and counts as an error for the SHOP_ERR_PEN window."""
     rows = mem.get(f"{url}|{kind}") or []
+    cofs = sum(1 for r in rows if r[1] == "cof")
     deals = [r for r in rows if r[1] == "deal"]
-    w = (len(deals) + 1) / (len(rows) + 2)
+    w = (max(0, len(deals) - cofs) + 1) / (len(rows) - cofs + 2)
     ratios = [r[2] for r in deals if isinstance(r[2], (int, float)) and not isinstance(r[2], bool)]
     w *= 1 - (sum(ratios) + 2 * SHOP_PRIOR_RATIO) / (len(ratios) + 2)
-    if any(r[1] == "err" and now - r[0] < SHOP_ERR_S for r in rows):
+    if any(r[1] in ("err", "cof") and now - r[0] < SHOP_ERR_S for r in rows):
         w *= SHOP_ERR_PEN
     return w
+
+
+def refused_rows(refused, catalog):
+    """v1.28b: one (key, "cof" row) per checkout the kit refused after a shop's receipt: (shop url, item, ts) from
+    this run's reject events, under the item's kind in the catalog (both kinds when the item is not there).
+    01:07-04:07 KST 2026-11-05 the kit refused 161 checkouts on shelf life and 16 as refused (409 unit not in stock;
+    one shop 8 times with the same unit); the hook had counted each of them as a deal."""
+    out = []
+    for shop, item, ts in refused:
+        if not shop:
+            continue
+        k = (catalog.get(item) or {}).get("kind") if isinstance(item, str) else None
+        for kd in ([k] if k in ("food", "goods") else ["food", "goods"]):
+            out.append((f"{shop}|{kd}", [round(float(ts), 1), "cof", None]))
+    return out
 
 
 def rerank(cands, mem, kind, now):
@@ -433,12 +452,13 @@ def main():
     md = Path(a.order).parent
     new = []
     seq, counts, ims = ingest(md, collect=new)
-    rej = {}
+    rej, refused = {}, []
     shelf_path = state_dir() / SHELF_FILE               # v1.22: next to reputation.json
     shelf, shelf_dirty = load_shelf(shelf_path, t0)
     for e in new:                                       # refusals of earlier orders, read once (ledger cursor)
         if e["type"] == "reject":
             rej[e["data"]["reason_code"]] = rej.get(e["data"]["reason_code"], 0) + 1
+            refused.append((e["data"].get("shop"), e["data"].get("item"), e.get("ts") or t0))  # v1.28b
             why = e["data"].get("reason") or ""
             if e["data"]["reason_code"] == "shelf_life" or SHELF_HOURS_RE.search(why):
                 remember_shelf(shelf, e["data"].get("shop"), e["data"].get("item"), why, t0)
@@ -480,7 +500,11 @@ def main():
     shop_path = state_dir() / SHOP_FILE                 # v1.28: next to SHELF_FILE
     shop_new, shop_err = [], None
     try:
-        cands = rerank(cands, load_shops(shop_path, t0), kind, t0)
+        mem = load_shops(shop_path, t0)
+        for key, row in refused_rows(refused, catalog):   # v1.28b: refused checkouts of earlier orders
+            mem.setdefault(key, []).append(row)
+            shop_new.append((key, row))
+        cands = rerank(cands, mem, kind, t0)
     except Exception as e:                              # noqa: BLE001 - never cost the order: keep choose_offers' order
         shop_err = f"{type(e).__name__}: {str(e)[:120]}"
     for c in cands:

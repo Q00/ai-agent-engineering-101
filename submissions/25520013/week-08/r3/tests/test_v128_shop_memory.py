@@ -43,7 +43,13 @@ def _rows(*classes, t=T0, ratio=None):
 
 
 def _run_main(
-    monkeypatch, tmp_path, now, behave, names=("s0", "s1", "s2"), kind="food"
+    monkeypatch,
+    tmp_path,
+    now,
+    behave,
+    names=("s0", "s1", "s2"),
+    kind="food",
+    new_events=(),
 ):
     """One hook run at `now` over candidates `names` (same SKU, equal scores, so the live rule tries them in this
     order). behave: shop name -> "deal" | "r0" | "err". Returns (shops tried in order, decision event data)."""
@@ -106,7 +112,12 @@ def _run_main(
     monkeypatch.setattr(MB, "haggle", fake_haggle)
     monkeypatch.setattr(MB, "Recorder", Rec)
     monkeypatch.setattr(MB, "Reputation", Rep)
-    monkeypatch.setattr(MB, "ingest", lambda md, collect=None: (0, {}, 0.0))
+    def fake_ingest(md, collect=None):
+        if collect is not None:
+            collect.extend(new_events)
+        return 0, {}, 0.0
+
+    monkeypatch.setattr(MB, "ingest", fake_ingest)
     monkeypatch.setattr(MB, "read_json", read_json)
     monkeypatch.setattr(
         MB.OW,
@@ -296,3 +307,62 @@ def test_a_broken_memory_never_costs_the_order(monkeypatch, tmp_path):
     assert calls == ["s0", "s1"] and dec["shop_err"].startswith(
         "RuntimeError: weights broke"
     )
+
+
+# --- v1.28b: refused checkouts
+
+
+def _reject(shop, item="G00000", ts=T0, code="checkout_refused"):
+    return {
+        "type": "reject",
+        "ts": ts,
+        "data": {
+            "reason_code": code,
+            "reason": "checkout refused: 409 unit is not in stock for this order",
+            "shop": shop,
+            "item": item,
+            "order": "o-x",
+            "price": 600,
+        },
+    }
+
+
+def test_a_refused_checkout_undoes_a_deal_and_sends_the_shop_last():
+    mem = {"http://x|food": [[T0 - 100, "deal", 0.6], [T0 - 50, "cof", None]]}
+    base = (0 + 1) / (2 - 1 + 2) * (1 - (0.6 + 2 * MB.SHOP_PRIOR_RATIO) / 3)
+    assert abs(MB.shop_weight(mem, "http://x", "food", T0) - base * MB.SHOP_ERR_PEN) < 1e-9
+    later = T0 - 50 + MB.SHOP_ERR_S + 1
+    assert abs(MB.shop_weight(mem, "http://x", "food", later) - base) < 1e-9
+    only_cof = {"http://x|food": [[T0 - MB.SHOP_ERR_S - 1, "cof", None]]}  # its deal row has expired
+    assert abs(MB.shop_weight(only_cof, "http://x", "food", T0) - 0.5 * PRIOR) < 1e-9
+
+
+def test_refused_rows_take_the_kind_from_the_catalog():
+    rows = MB.refused_rows(
+        [("http://a", "G1", T0), ("http://b", "김치", T0 + 1), (None, "G1", T0), ("http://c", None, T0)],
+        {"G1": {"kind": "food"}},
+    )
+    assert rows == [
+        ("http://a|food", [T0, "cof", None]),
+        ("http://b|food", [T0 + 1, "cof", None]),
+        ("http://b|goods", [T0 + 1, "cof", None]),
+        ("http://c|food", [T0, "cof", None]),
+        ("http://c|goods", [T0, "cof", None]),
+    ]
+
+
+def test_the_hook_records_a_refused_checkout_and_tries_that_shop_last(monkeypatch, tmp_path):
+    calls, _ = _run_main(monkeypatch, tmp_path, T0, {"s1": "deal"})
+    assert calls == ["s0", "s1"]
+    calls, dec = _run_main(
+        monkeypatch,
+        tmp_path,
+        T0 + 60,
+        {"s1": "deal", "s2": "deal"},
+        new_events=[_reject("http://s1", ts=T0 + 30)],
+    )
+    assert calls == ["s2"] and [r["shop"] for r in dec["ranked"]] == ["s2", "s0", "s1"]
+    mem = _mem(tmp_path)
+    assert [T0 + 30, "cof", None] in mem["http://s1|food"]
+    assert mem["http://s1|goods"] == [[T0 + 30, "cof", None]]  # not in the test catalog: both kinds
+    assert dec["shop_err"] is None
