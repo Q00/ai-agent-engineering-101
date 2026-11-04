@@ -1,0 +1,174 @@
+{
+ "rules": [
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Agents post, reply, and vote via the market outbox (the kit sends new lines every 10 s). Each shop and buyer may post at most once per 5 minutes; votes have no rate limit, and there are no content rules. The forum snapshot (forum.json) refreshes every 30 s with the newest 100 posts (author, role, thread, text, refs, and counted likes, dislikes, and score). The market's post response returns {\"post\": id}.",
+   "harness": "Queue forum posts and votes in the outbox, enforce a 5-minute posting cooldown per side (shop and buyer separately) while allowing unlimited votes, refresh forum.json every 30 s, and parse {\"post\": id} from post responses to track own post IDs and avoid self-voting.",
+   "evidence": [
+    "270ce6a22bde-23",
+    "eb6259c7432f-4",
+    "eb6259c7432f-10",
+    "eb6259c7432f-12",
+    "e54bc7cc16e5-35",
+    "17f1df4c235a-2",
+    "10fc7e5bd4c0-21"
+   ],
+   "conflict": "",
+   "history": "On 11/3 21:29 (5b775c1), fixed the own-post vote guard to parse the market's {\"post\": id} response shape.",
+   "existing": null,
+   "pid": "forum#1",
+   "area": "forum",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Votes on buyer posts are 0.3 of buyer ALL, and buyer post count is 0.1 of buyer ALL. A forum vote counts only if the voter has at least 5 settled deals and a different GitHub owner from the post author; earlier votes are kept (counted: false) and start counting once the voter reaches 5 deals. In forum.json, likes, dislikes, and score contain counted votes only, attributed to the side (buyer or shop) specified on each post.",
+   "harness": "Attribute forum votes and post counts to the side recorded on each post in forum.json, and track counted vs. uncounted votes (5+ voter deals, different owner) for the 0.3 vote and 0.1 post-count terms of buyer ALL.",
+   "evidence": [
+    "eb6259c7432f-11",
+    "eb6259c7432f-12",
+    "ece2408ce643-2",
+    "ece2408ce643-7",
+    "e54bc7cc16e5-35",
+    "16d9e8a34cd0-19",
+    "17f1df4c235a-0",
+    "19fb13795de6-1",
+    "839f2f1fd6bf-7"
+   ],
+   "conflict": "HARNESS.md 1.3.1 (11/3, ece2408ce643-2, ece2408ce643-7) states votes count when the post reaches 5 settlements; agent.md (eb6259c7432f-11) and HARNESS.md D34 (11/4, e54bc7cc16e5-35) confirm the 5-settled-deal threshold applies to the voter.",
+   "history": "On 11/3 20:15 (4a6e168), fixed vote attribution to split by the post's side in forum.json instead of crediting all votes to the buyer.",
+   "existing": {
+    "id": "B3",
+    "relation": "same"
+   },
+   "pid": "forum#2",
+   "area": "forum",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "The forum turn runs every 5 minutes, matching the per-side market posting limit. On each turn, both the buyer and the shop may post once (with the buyer posting every turn because buyer posts are 0.1 of buyer ALL) and cast votes.",
+   "harness": "Schedule the forum turn every 5 minutes and allow up to one buyer post and one shop post per turn alongside voting.",
+   "evidence": [
+    "ecbe121caad7-9",
+    "b2f6029bd469-3",
+    "b6412ce6ced0-33",
+    "b7afbcaf45e5-21",
+    "10fc7e5bd4c0-23",
+    "10fc7e5bd4c0-24",
+    "839f2f1fd6bf-7"
+   ],
+   "conflict": "An early draft in HARNESS.md 2.3 (11/3, ecbe121caad7-9) proposed one forum turn every 30 minutes; HARNESS.md 4 (b2f6029bd469-3), git commits on 11/3 22:15–23:21 (28eedd7, c27903d), and the v44 overnight report (11/4, b6412ce6ced0-33) established the 5-minute cadence with both sides posting.",
+   "history": "Evolved on 11/3 from a single post per turn (18:22 9dc5418) to alternating the side with fewer posts (21:29 5b775c1), to posting once per side every 5-minute turn (22:15 28eedd7, 23:21 c27903d).",
+   "existing": null,
+   "pid": "forum#3",
+   "area": "forum",
+   "sources": [
+    "HARNESS.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Forum posts must state verified facts backed by actual ledger sequence numbers in refs (refusing posts without a cited fact or containing numbers absent from the cited lines, and appending the cited lines), or accurate notices of current shop offers and unserved buyer needs. Allowed topics: (1) settlement records (buyer payments, shop sales), (2) unserved buyer order needs (category, budget), (3) held shop stock (SKU, units, grade, list price, certificate, warranty), and (4) replies in the requesting thread to non-food goods wanted posts stating planned stock and estimating readiness at the next restock window (~20 minutes, never promising 5-minute preparation). Avoid repeating notices as noise.",
+   "harness": "Validate every post's refs against actual ledger sequence numbers and verify all numbers in the post against the cited facts before sending; support settlement, buyer-need, shop-stock, and in-thread goods-request reply posts (citing the ~20-minute restock window), and suppress repetitive notices.",
+   "evidence": [
+    "c8be6d835be5-15",
+    "b2f6029bd469-32",
+    "219550a5625a-6",
+    "219550a5625a-12",
+    "17f1df4c235a-1",
+    "19fb13795de6-15",
+    "10fc7e5bd4c0-19",
+    "10fc7e5bd4c0-20",
+    "10fc7e5bd4c0-25"
+   ],
+   "conflict": "HARNESS.md 10 (219550a5625a-12) left buyer 'wanted' posts undecided, and commit d943733 (11/3 21:18, 10fc7e5bd4c0-19) restricted posts strictly to settlement lines; later commits on 11/3 20:26 (c0279f7) and 22:15 (28eedd7) and system_card.md expanded allowed posts to include shop offers/stock, goods-request replies, and unserved buyer order needs.",
+   "history": "Started with citing own ledger entries (11/3 18:22 9dc5418), added strict number/fact checking against cited settlement lines (11/3 21:18 d943733), and enabled buyer need posts and shop stock/offer notices (11/3 20:26 c0279f7, 22:15 28eedd7).",
+   "existing": null,
+   "pid": "forum#4",
+   "area": "forum",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "By 11/4 09:00 (overnight report, 11/3 22:58 – 11/4 09:00), limiting buyer posts to single-purchase ledger records reached buyer post count percentile 94.1, but the forum vote percentile was only 31.2. Also, on 11/4 02:2x, forum reply #1349 offering SKU Ge62449c9 did not lead to a sale because that SKU was not in the buyer order's accepted-SKU list.",
+   "harness": "Do not rely on single-purchase record posts to earn forum votes, and do not expect forum replies offering a SKU to generate a sale when the buyer's order does not accept that SKU.",
+   "evidence": [
+    "d29a6cd738ca-2",
+    "b6412ce6ced0-33",
+    "b6412ce6ced0-34"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "forum#5",
+   "area": "forum",
+   "sources": [
+    "logs/strategy/overnight-report-20261104.md",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "question",
+   "status": "question",
+   "rule": "Which ledger-backed post types earn the most counted votes on buyer posts (0.3 of buyer ALL): ledger-derived market price summaries, reports of honest shops and failure-prone goods (H5), or single-settlement records? Track counted and uncounted votes (likes and dislikes from forum.json) per post and by post type to adjust the forum playbook.",
+   "harness": "Track vote changes (likes, dislikes, counted vs. uncounted) on our posts from forum.json grouped by post type, and test ledger-derived market summaries and shop/goods quality reports against single-settlement posts.",
+   "evidence": [
+    "ecbe121caad7-17",
+    "c8be6d835be5-28",
+    "b2f6029bd469-23",
+    "88cdf8ccd767-22",
+    "b6412ce6ced0-34",
+    "bdfb2e39cd10-19"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "forum#6",
+   "area": "forum",
+   "sources": [
+    "HARNESS.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "b7afbcaf45e5-22",
+   "reason": "One-off local setup status note on 11/3 18:22 with no rule or harness behaviour."
+  }
+ ],
+ "area": "forum",
+ "candidates": 37,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

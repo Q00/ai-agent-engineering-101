@@ -19,6 +19,30 @@ def main(argv):
         for e in errors:
             print("  failed", e["chunk"], e["error"][:120])
         return 0
+    if argv[:1] == ["merge"]:
+        from redesign import merge
+        area = argv[argv.index("--area") + 1] if "--area" in argv else None
+        for r in merge.run(area):
+            if r.get("error"):
+                print(r["area"], "failed:", r["error"][:150])
+                continue
+            conflicts = sum(bool(x.get("conflict")) for x in r["rules"])
+            print(f"{r['area']}: {r['candidates']} candidates -> {len(r['rules'])} rules, {conflicts} conflicts, "
+                  f"{len(r.get('dropped', []))} dropped, {len(r['missing'])} left out")
+        return 0
+    if argv[:1] == ["proposals"]:
+        from redesign import review
+        print(review.markdown())
+        return 0
+    if argv[:1] == ["approve"]:
+        from redesign import review
+        for pid, action in review.approve(argv[1:]):
+            print(pid, action)
+        return 0
+    if argv[:1] == ["reject"]:
+        from redesign import review
+        review.reject(argv[1], " ".join(argv[2:]))
+        return 0
     if argv[:1] == ["rules"]:
         path, rs = rules.render()
         print(path, len(rs), dict(collections.Counter(r["status"] for r in rs)))

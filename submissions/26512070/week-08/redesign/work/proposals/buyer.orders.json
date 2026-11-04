@@ -1,0 +1,334 @@
+{
+ "rules": [
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Each buyer has a hidden preferred category its orders come from, and order categories cannot be changed. Our buyer's preferred category is food: 888 of 994 orders in a 6-hour window on 11/5 were food (89%) and 106 were goods (11%); as of 11/4, 90% of 531 orders (480 food, 51 goods) were food.",
+   "harness": "Treat the buyer's ~89-90% food / ~10-11% goods order-category mix as externally fixed rather than configurable.",
+   "evidence": [
+    "9ccbdd6e4a37-32",
+    "9ccbdd6e4a37-33",
+    "34a180580b1c-15"
+   ],
+   "conflict": "",
+   "history": "11/4 (HARNESS.md v4): 480 of 531 orders (90%) were food, 51 goods. 11/5 02:1x (design/harness-v5.md): 888 of 994 orders in 6 hours (89%) were food, 106 goods (11%).",
+   "existing": {
+    "id": "B4",
+    "relation": "refines"
+   },
+   "pid": "buyer.orders#1",
+   "area": "buyer.orders",
+   "sources": [
+    "HARNESS.md",
+    "design/harness-v5.md"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "In a 6-hour window on 11/5 (994 orders), food orders (888) had 263 payments (30%), 280 agreed orders refused at payment for shelf life, 222 shop rejections, and 114 with no fitting shop; goods orders (106) had 86 payments (81%), 7 unpaid after agreement, 8 shop rejections, and 3 with no fitting shop. The 280 unpaid agreed orders were logged as buyer.closed with outcome: completed even though payment was refused.",
+   "harness": "Do not treat buyer.closed outcome: completed as paid; join with payments.jsonl and expose order outcomes split by food and goods (paid, agreed-then-refused at payment, shop refusal, and no fitting shop).",
+   "evidence": [
+    "34a180580b1c-15",
+    "34a180580b1c-17",
+    "09d820310e90-0",
+    "09d820310e90-6",
+    "09d820310e90-17",
+    "839f2f1fd6bf-6",
+    "8f903d669414-4"
+   ],
+   "conflict": "",
+   "history": "11/3 23:42: 4 goods deals at median 95% of list and 15 agreed deals refused at payment for grade C or missing certificate. 11/4 03:09: of 51 goods orders, 15 refused at first message and 5 walked with 1 shop tried per order. 11/4 10:35: 0 paid in 30 min across 52 orders. 11/4 12:59: 52% of agreed deals unpaid (20 shelf life, 1 unit error). 11/5 00:06: 51% of agreed deals unpaid (14 shelf life, 2 missing certificate).",
+   "existing": {
+    "id": "B5",
+    "relation": "refines"
+   },
+   "pid": "buyer.orders#2",
+   "area": "buyer.orders",
+   "sources": [
+    "design/harness-v5.md",
+    "git log",
+    "logs/strategy/URGENT.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "The buyer hook runs once per order. Before each run, the order record provides order id, item, category, budget, acceptable SKUs (priced 0.5-1.5x reference price), kind, food use_within_hours, and expiry; the per-order shop list provides only shops holding at least one accepted SKU, with shop names, URLs, reviews, and offers (sku, name, qty) in the ordered category. The buyer talks to shops over A2A, picks a shop and SKU, negotiates within budget, may walk away, and returns at most one shop URL, signed receipt (matching the agreed price and item) or null, stars, review, and optional accept {cert, min_hours_left, grades, warranty_hours}.",
+   "harness": "Read the order record and eligible shop list per run, validate offers against budget and receipts against the agreed item and price, return at most one receipt with explicit accept terms, and let the kit sign, execute ACP checkout, and log the payment result.",
+   "evidence": [
+    "eb6259c7432f-5",
+    "eb6259c7432f-6",
+    "eb6259c7432f-24",
+    "c8be6d835be5-10",
+    "e54bc7cc16e5-26",
+    "16d9e8a34cd0-17",
+    "17f1df4c235a-8",
+    "d29a6cd738ca-1"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M1",
+    "relation": "refines"
+   },
+   "pid": "buyer.orders#3",
+   "area": "buyer.orders",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "The kit checks the buyer's accept {cert, min_hours_left, grades, warranty_hours} against the seller's checkout after the buyer hook exits, pays nothing if any check fails, and writes the refusal reason to payments.jsonl, which becomes readable on the next order. Asking for grade or min_hours_left on a unit without a certificate causes the kit to refuse payment.",
+   "harness": "Read payments.jsonl at the start of each order to inspect prior payment refusals, and never set grade or min_hours_left acceptance requirements unless the unit has a certificate (avoid grade/certificate requirements on goods where not needed).",
+   "evidence": [
+    "270ce6a22bde-22",
+    "eb6259c7432f-23",
+    "ece2408ce643-19",
+    "b7afbcaf45e5-4",
+    "839f2f1fd6bf-6"
+   ],
+   "conflict": "",
+   "history": "11/3 17:49 (5f2b5d8): buyer asked grade A and 24 h on a unit without a certificate, causing kit refusal. 11/3 23:42 (9248aad): 15 agreed goods deals were refused at payment for grade C or no certificate before requirements were relaxed.",
+   "existing": {
+    "id": "M8",
+    "relation": "refines"
+   },
+   "pid": "buyer.orders#4",
+   "area": "buyer.orders",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "Orders expire during negotiation, and walking away leaves the order unmade; after an order ends, the next buyer order arrives about 20 seconds later (median 20.4 s across 92 orders on 11/4).",
+   "harness": "Account for order expiry and the ~20 s inter-order gap when budgeting negotiation time; reserve extended negotiation for orders with large surplus at stake.",
+   "evidence": [
+    "16d9e8a34cd0-24",
+    "3109604ad9f8-13",
+    "81323a6db552-11"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "buyer.orders#5",
+   "area": "buyer.orders",
+   "sources": [
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "For goods orders, try up to 10 shops within a 120-second search budget (or until 40 seconds remain before order expiry) with a 20-second per-message timeout including card fetches. For food orders, visit up to 8 shops within a 10-second window for starting new shops (20-second total budget) and a 4-second per-message timeout.",
+   "harness": "Enforce separate shop-search budgets by category: goods up to 10 shops / 120 s (stop at 40 s left) / 20 s message timeout; food up to 8 shops / stop new shops after 10 s / 4 s message timeout.",
+   "evidence": [
+    "b6412ce6ced0-12",
+    "b6412ce6ced0-28",
+    "8f903d669414-2",
+    "8f903d669414-3",
+    "3109604ad9f8-12",
+    "3109604ad9f8-14",
+    "81323a6db552-11",
+    "81323a6db552-15",
+    "81323a6db552-16"
+   ],
+   "conflict": "Food shop limits evolved on 11/4: v44 (03:11, 35fd416) tried up to 3 food shops; at 11:01 (3af9e78, following user direction at 10:4x to visit many shops fast) food was raised to up to 8 shops within 20 s and an 8 s message timeout; by 12:22 (e556b57, v49) food stopped trying new shops after 10 s and cut the food shop message timeout from 8 s to 4 s (after p90 attempt took 28.6 s), raising food close rate from 0.42 to 0.76 over 51 orders in 36 min.",
+   "history": "Before 11/4 03:11: 1 shop tried per order. 11/4 03:11: goods up to 10 shops (until 40 s left), food up to 3 shops. 11/4 11:01: food up to 8 shops / 20 s total / 8 s timeout; goods up to 10 shops / 120 s / 20 s timeout. 11/4 12:22: food new-shop cutoff 10 s, food message timeout 4 s.",
+   "existing": null,
+   "pid": "buyer.orders#6",
+   "area": "buyer.orders",
+   "sources": [
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "In rules mode, select the highest-list-price SKU within budget and rank candidate shops by putting shops that refuse the buyer last (5+ tries with under 10% fair outcomes, or 0 deals in the last 3 tries), then shops with payment trouble, and then ordering by cheapest price / market share.",
+   "harness": "Rank eligible shops by filtering or demoting repeat refusers (5+ tries <10% fair or last 3 tries with no deal) and payment-trouble shops before sorting by price and market share.",
+   "evidence": [
+    "b6412ce6ced0-12",
+    "1dcdff1dfe1b-18",
+    "1dcdff1dfe1b-20",
+    "1dcdff1dfe1b-21"
+   ],
+   "conflict": "",
+   "history": "11/4 02:49 (525d2e6): rules mode picked the cheapest shop first, causing totato2203-r3 (which refused 105 of 106 orders) to be chosen every time. 11/4 02:50 (cd21dde): added refusal-aware and payment-trouble ranking.",
+   "existing": null,
+   "pid": "buyer.orders#7",
+   "area": "buyer.orders",
+   "sources": [
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "For buyer price negotiation: on goods with list price >= 30,000, open at 55% of list, target 68%, and cap at 82% of list; on food and smaller goods (< 30,000 list), open at 45% of list, target 60%, and step offers up to the ceiling (80% of list) by the penultimate turn, accepting any ask at or below the current bid/target or under the ceiling before turns run out. Ignore asks below 20% of list.",
+   "harness": "Use category and list-price tiers to set opening bid, target, and ceiling (goods >=30k: 55%/68%/82%; food and goods <30k: 45%/60%/80%), accept asks at or below target or ceiling near turn limit, walk away above ceiling, and ignore asks under 20% of list.",
+   "evidence": [
+    "10fc7e5bd4c0-14",
+    "839f2f1fd6bf-2",
+    "1dcdff1dfe1b-18",
+    "3109604ad9f8-12",
+    "81323a6db552-7",
+    "81323a6db552-8"
+   ],
+   "conflict": "Bargaining targets changed three times: (1) 11/3 22:37 (d11861c): goods >=50,000 list opened near 45%, aimed at 55%, took any ask under list before turns ran out. (2) 11/3 23:42 (9248aad): goods >=30,000 set to 40% open / 50% target; food and smaller goods set to 45% open / 60% target. (3) 11/4 02:49 (525d2e6): rules mode added an 80% ceiling by the penultimate turn. (4) 11/4 ~11:34 (7fb07cf..12e111a): raised goods >=30,000 to 55% open / 68% target / 82% ceiling while keeping food at 45% open / 60% target, and ignored asks under 20% of list.",
+   "history": "11/3 22:37: goods 50k+ open 45% / aim 55%. 11/3 23:42: goods 30k+ open 40% / aim 50%; food & <30k open 45% / aim 60%. 11/4 02:49: ceiling 80% by penultimate turn. 11/4 11:34: goods 30k+ open 55% / aim 68% / ceiling 82%, ignore asks <20% of list.",
+   "existing": null,
+   "pid": "buyer.orders#8",
+   "area": "buyer.orders",
+   "sources": [
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "observed",
+   "rule": "The buyer's first message on a food order must state the required shelf life (use_within_hours); when omitted on 11/4 after 01:47, only 2 of 26 food orders reached agreement and 14 shops refused at the first message. When the buyer receives a food receipt, the shelf-life guard checks whether the claimed grade can cover use_within_hours (grades A, B, and C retain at most 100%, 80%, and 45% of the SKU's total shelf life); if it cannot, the buyer silently drops the receipt and tries the next shop. In 6 hours of data on 11/4, 343 of 1,058 food receipts were unpaid for short shelf life, and grade-C receipts for orders needing >45% of shelf life were refused by the kit 138 of 146 times (losing 8 paid orders).",
+   "harness": "Always include use_within_hours in the first food negotiation message, and run the shelf-life guard on every food receipt (rejecting claimed grade A/B/C when use_within_hours exceeds 100%/80%/45% of SKU shelf life) so the buyer moves to the next shop without sending another message to the current shop.",
+   "evidence": [
+    "f2ab6d2b7565-0",
+    "b6412ce6ced0-28",
+    "914b9d6b33cb-24",
+    "6c71f11c898a-15",
+    "5a8684c5fdbd-0",
+    "5a8684c5fdbd-5"
+   ],
+   "conflict": "Earlier v44 (11/4 overnight report, b6412ce6ced0-28) imposed no expiry-date condition on long-lasting food; on 11/4 20:49-21:15 (e599edd, 82f94a7, 58b5bd4), the grade-based shelf guard (A/B/C <= 100%/80%/45% of SKU shelf life) was added and enabled for all food receipts.",
+   "history": "11/4 02:20 (ded892e): restored required shelf life in the buyer's first food message after 14/26 first-message refusals. 11/4 21:15 (58b5bd4): enabled buyer shelf-life guard on food receipts based on claimed grade.",
+   "existing": {
+    "id": "F2",
+    "relation": "refines"
+   },
+   "pid": "buyer.orders#9",
+   "area": "buyer.orders",
+   "sources": [
+    "design/buyer-parallel.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "When probing multiple shops in parallel, a price-free first message cannot produce a valid agreement: any receipt sent before the buyer makes a price offer must be ignored and never paid. Only one shop conversation may carry an active price offer at a time so at most one receipt is agreed, and all other open conversations must be cancelled before the buyer finishes the order.",
+   "harness": "Reject any receipt received prior to sending a price offer, serialize price offers across parallel shop conversations so at most one receipt is produced, and cancel all remaining open conversations on exit.",
+   "evidence": [
+    "34d7381d0edb-21",
+    "34d7381d0edb-22",
+    "34d7381d0edb-23"
+   ],
+   "conflict": "",
+   "history": "Proposed in design/buyer-parallel.md on 2026-11-04 21:0x.",
+   "existing": null,
+   "pid": "buyer.orders#10",
+   "area": "buyer.orders",
+   "sources": [
+    "design/buyer-parallel.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "If no shop holds an acceptable SKU for a goods order, record the unserved order in unserved.jsonl so the seller's restock hook can consider stocking that SKU.",
+   "harness": "Append goods orders with zero eligible shops in the per-order shop list to unserved.jsonl.",
+   "evidence": [
+    "e54bc7cc16e5-21"
+   ],
+   "conflict": "",
+   "history": "Adopted on 2026-11-04 (HARNESS.md D34); note that G2 separates seller and buyer processes, so any cross-feed is strictly via passive log files if enabled.",
+   "existing": null,
+   "pid": "buyer.orders#11",
+   "area": "buyer.orders",
+   "sources": [
+    "HARNESS.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Buyer analysis reports conversion and failure reasons by item type (food vs. goods), payments per hour and payments per order, surplus per payment by price band, SKU/shop/grade breakdown for post-agreement payment refusals, and whether gaps to top buyers come from order mix or conversion rate, always including the supporting row count.",
+   "harness": "Generate SQL-backed buyer analytics covering conversion/failure reasons by category, hourly and per-order payment rates, surplus by price band, post-consent refusal breakdowns (SKU, shop, grade), and top-buyer decomposition with row counts.",
+   "evidence": [
+    "64b1177cc65b-5",
+    "64b1177cc65b-7"
+   ],
+   "conflict": "",
+   "history": "Defined in design/harness-v5.md on 2026-11-05 02:1x.",
+   "existing": null,
+   "pid": "buyer.orders#12",
+   "area": "buyer.orders",
+   "sources": [
+    "design/harness-v5.md"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "c8be6d835be5-11",
+   "reason": "Belongs to seller restock (market.buy / seller.strategy), not buyer.orders."
+  },
+  {
+   "cid": "c8be6d835be5-13",
+   "reason": "Pure implementation detail of internal action/logging structure with no distinct market or strategy rule."
+  },
+  {
+   "cid": "b2f6029bd469-29",
+   "reason": "Belongs to seller restock inventory caps (market.buy / seller.strategy), not buyer.orders."
+  },
+  {
+   "cid": "19fb13795de6-17",
+   "reason": "Belongs to seller missed-demand tracking and restock, not buyer.orders."
+  },
+  {
+   "cid": "10fc7e5bd4c0-7",
+   "reason": "Belongs to seller pricing strategy for returning buyers visiting our shop, not our buyer's orders."
+  },
+  {
+   "cid": "914b9d6b33cb-14",
+   "reason": "Belongs to buyer forum posting rules (buyer.score / forum), not buyer.orders."
+  },
+  {
+   "cid": "1dcdff1dfe1b-12",
+   "reason": "Belongs to seller restock candidate ranking, not buyer.orders."
+  },
+  {
+   "cid": "1dcdff1dfe1b-13",
+   "reason": "Belongs to seller restock purchasing plan, not buyer.orders."
+  }
+ ],
+ "area": "buyer.orders",
+ "candidates": 58,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

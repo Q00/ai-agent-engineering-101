@@ -1,0 +1,169 @@
+{
+ "rules": [
+  {
+   "kind": "definition",
+   "status": "confirmed",
+   "rule": "Buyer ALL = 0.5 surplus + 0.3 votes on buyer posts + 0.1 deals + 0.1 buyer posts (hidden posts not counted), each a percentile among buyers with a deal (44 of 119 on 11/4 11:19). Missing values count as 0 and ties receive half credit.",
+   "harness": "Compute buyer ALL and component percentiles only over buyers with at least one deal (excluding 0-deal rows, treating missing values as 0 and ties as half credit), with weights 0.5 surplus, 0.3 votes on visible buyer posts, 0.1 deals, and 0.1 visible buyer posts.",
+   "evidence": [
+    "270ce6a22bde-12",
+    "270ce6a22bde-13",
+    "9ccbdd6e4a37-16",
+    "9ccbdd6e4a37-22",
+    "ece2408ce643-1",
+    "219550a5625a-10",
+    "64b1177cc65b-3",
+    "0e618b1ca536-5",
+    "16d9e8a34cd0-18",
+    "b6412ce6ced0-1",
+    "19fb13795de6-3",
+    "839f2f1fd6bf-0",
+    "3109604ad9f8-17"
+   ],
+   "conflict": "Early HARNESS.md (ece2408ce643-1, 2026-11-03), system_card.md (16d9e8a34cd0-18), and the week-08 page gave weights 0.5 surplus, 0.3 votes, and 0.2 deals (omitting post count). agent.md (270ce6a22bde-12) and commit 7637c09 (839f2f1fd6bf-0, 2026-11-03T23:12) confirmed the authoritative weights 0.5 / 0.3 / 0.1 / 0.1.",
+   "history": "Corrected from 0.5/0.3/0.2 to 0.5/0.3/0.1/0.1 on 2026-11-03 (09baae4, 7637c09). On 2026-11-04 11:19 (2e9f081), percentile calculation was fixed to filter to buyers with a deal instead of ranking all board rows (which had misread surplus percentile as 73.7 instead of 28.4).",
+   "existing": {
+    "id": "B1",
+    "relation": "refines"
+   },
+   "pid": "buyer.score#1",
+   "area": "buyer.score",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "design/harness-v5.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "definition",
+   "status": "confirmed",
+   "rule": "Surplus = value - price paid + warranty refund. A settled deal's value is the SKU's list price if it served the order, or 0 if food fails to last through the order's use_within_hours at settlement or if goods break. A broken good under warranty gives 0 surplus; a broken good without warranty or spoiled food loses the price paid. An agreed deal that is not paid gives 0 surplus, while a paid deal with small surplus still counts as a deal.",
+   "harness": "Calculate buyer surplus from settled, paid deals only: value is the SKU list price when food lasts through use_within_hours and goods do not break, and 0 otherwise; subtract price paid and add warranty refunds for broken goods covered by warranty.",
+   "evidence": [
+    "eb6259c7432f-16",
+    "eb6259c7432f-17",
+    "9ccbdd6e4a37-18",
+    "34a180580b1c-6",
+    "0e618b1ca536-8",
+    "16d9e8a34cd0-20",
+    "19fb13795de6-2",
+    "5a8684c5fdbd-24"
+   ],
+   "conflict": "",
+   "history": "On 2026-11-03 20:15 (4a6e168) surplus subtracted matched breaks without a warranty refund; on 2026-11-05 01:48 (23f5ac5) surplus calculation was tightened to count only items that served the order.",
+   "existing": {
+    "id": "B2",
+    "relation": "same"
+   },
+   "pid": "buyer.score#2",
+   "area": "buyer.score",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "definition",
+   "status": "confirmed",
+   "rule": "After each agreed deal, `payments.jsonl` records `order`, `shop`, `item`, `price`, `paid`, and either the `ledger` sequence number (if paid) or `reason` (if refused, such as missing certification). In Round 3 ledger entries, `order` entries carry no item or budget; the SKU that sold appears in `settle` entries as `item`. The ledger endpoint returns at most 500 entries oldest-first after a sequence number, and `after=-N` starts N entries before the newest.",
+   "harness": "Derive buyer payment outcomes and refusal reasons from `payments.jsonl`, read sold SKUs from ledger `settle` entries rather than `order` entries, and paginate ledger queries in pages of up to 500 (`after=-500` for the newest 500).",
+   "evidence": [
+    "eb6259c7432f-7",
+    "eb6259c7432f-27",
+    "eb6259c7432f-28",
+    "ecbe121caad7-16",
+    "bdfb2e39cd10-18"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M8",
+    "relation": "refines"
+   },
+   "pid": "buyer.score#3",
+   "area": "buyer.score",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "Buyer score progression and gap to top buyers: on 11/3 21:29 buyer ALL was 0.18 vs board median 0.479 (with 0 buyer posts, forfeiting the 40% weight of posts + votes). On 11/4 02:49 a benchmark buyer had ALL 0.888 (401 deals at 70/h, median price 70% of list, 11.5M surplus) while our buyer had 12.7 deals/h at 85% of list and 0.32M surplus. On 11/4 11:19 corrected buyer percentiles among 44 active buyers were surplus 28.4, forum votes 53.4, deals 37.5, and posts 83.0; at 11:31 weighted room to the top was 0.358 on surplus and 0.140 on forum votes, making surplus (weight 0.5) the primary bottleneck.",
+   "harness": "Prioritize increasing buyer surplus (via higher payment conversion and lower purchase price relative to list) and forum vote quality, using corrected active-buyer pool percentiles and headroom weights.",
+   "evidence": [
+    "b6412ce6ced0-4",
+    "b6412ce6ced0-6",
+    "10fc7e5bd4c0-22",
+    "1dcdff1dfe1b-16",
+    "3109604ad9f8-18",
+    "81323a6db552-4"
+   ],
+   "conflict": "The 11/4 09:00 overnight report (b6412ce6ced0-6) reported forum rating at percentile 31.2 (and posts at 94.1) before the eligible-pool percentile fix; commit 2e9f081 at 11/4 11:19 (3109604ad9f8-18) corrected the percentiles to surplus 28.4, forum 53.4, deals 37.5, and posts 83.0.",
+   "history": "",
+   "existing": null,
+   "pid": "buyer.score#4",
+   "area": "buyer.score",
+   "sources": [
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "lesson",
+   "status": "observed",
+   "rule": "Food payment conversion was 30% (unpaid agreements earn 0 surplus), representing a direct loss of buyer surplus. However, adding an expiry-date demand to the buyer's first negotiation message dropped the food agreement rate from 37% to 8% and was reverted on 11/4.",
+   "harness": "Track the buyer funnel (orders -> picks -> agreements -> payments -> useful outcomes) and refusal reasons to reduce unpaid food agreements, but do not put an expiry-date demand in the buyer's opening message.",
+   "evidence": [
+    "c8be6d835be5-22",
+    "34a180580b1c-7",
+    "b6412ce6ced0-9"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "B5",
+    "relation": "refines"
+   },
+   "pid": "buyer.score#5",
+   "area": "buyer.score",
+   "sources": [
+    "HARNESS.md",
+    "design/harness-v5.md",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "ecbe121caad7-6",
+   "reason": "Pure implementation detail (3-minute cron interval for matching broken items in v4 draft runtime)."
+  },
+  {
+   "cid": "88cdf8ccd767-19",
+   "reason": "Pure implementation detail (internal module naming `eval.unit_economics`, `eval.funnel`, etc.)."
+  },
+  {
+   "cid": "bdfb2e39cd10-24",
+   "reason": "Seller-side receipt validation implementation detail ('before any offer of ours'), misplaced in buyer.score."
+  }
+ ],
+ "area": "buyer.score",
+ "candidates": 38,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

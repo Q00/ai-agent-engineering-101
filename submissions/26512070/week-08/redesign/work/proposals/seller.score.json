@@ -1,0 +1,294 @@
+{
+ "rules": [
+  {
+   "kind": "definition",
+   "status": "confirmed",
+   "rule": "Shop ALL = 0.5 profit + 0.3 revenue + 0.2 stars, each a percentile among shops with a deal or a purchase (buyer percentiles are among buyers with a deal). Missing values count as 0, ties count half, and star rank uses the board's stars_rank. Stars come only from buyer reviews of paid deals; votes on shop forum posts do not count toward shop ALL. Verified on 11/4 against the public board (recalculated shop ALL 0.732 vs board 0.737; buyer ALL 0.423 vs 0.421).",
+   "harness": "Compute shop and buyer percentiles on the eligible cohorts (shops with a deal or purchase, buyers with a deal) with missing = 0, ties = 0.5, and stars_rank for stars; ignore shop-post votes in shop ALL.",
+   "evidence": [
+    "270ce6a22bde-11",
+    "9ccbdd6e4a37-15",
+    "9ccbdd6e4a37-20",
+    "9ccbdd6e4a37-21",
+    "ece2408ce643-0",
+    "64b1177cc65b-4",
+    "0e618b1ca536-4",
+    "16d9e8a34cd0-9",
+    "81323a6db552-1"
+   ],
+   "conflict": "",
+   "history": "Earlier overnight report (11/4 morning) computed percentiles across all board rows before switching to the eligible-cohort formula.",
+   "existing": {
+    "id": "S1",
+    "relation": "refines"
+   },
+   "pid": "seller.score#1",
+   "area": "seller.score",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "definition",
+   "status": "confirmed",
+   "rule": "Shop profit (`profit` / Cash on the board) = current balance - starting capital (5,000,000) - bankruptcy payouts. Stock purchase counts as spent immediately, so unsold stock (including any stock left at 11/17 23:59), expired food disposal, goods holding cost (1% of cost per day), and warranty refunds all reduce profit. Book = profit + cost of unsold stock; shop ALL uses profit (Cash), not Book.",
+   "harness": "Optimize and report shop ALL using cash profit (stock valued at 0), also report Book = profit + stock cost, and liquidate stock before 11/17 23:59.",
+   "evidence": [
+    "270ce6a22bde-10",
+    "9ccbdd6e4a37-17",
+    "34a180580b1c-3",
+    "0e618b1ca536-4",
+    "10fc7e5bd4c0-3",
+    "5a8684c5fdbd-23",
+    "5a8684c5fdbd-25",
+    "0340713513af-7"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "S2",
+    "relation": "refines"
+   },
+   "pid": "seller.score#2",
+   "area": "seller.score",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "definition",
+   "status": "confirmed",
+   "rule": "Shop revenue = settled sale prices - warranty refunds.",
+   "harness": "Deduct warranty refunds from settled sales when computing revenue and when judging whether offering warranty pays off.",
+   "evidence": [
+    "34a180580b1c-4",
+    "5a8684c5fdbd-23",
+    "5a8684c5fdbd-25"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "S3",
+    "relation": "same"
+   },
+   "pid": "seller.score#3",
+   "area": "seller.score",
+   "sources": [
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "definition",
+   "status": "confirmed",
+   "rule": "Shop stars (stars_rank on the board) are pulled toward 3 when reviews are few; with 2,110 reviews by 11/5 our rating is close to the raw average.",
+   "harness": "Treat the shop's star average as representative once reviews are in the thousands and classify every review of 3 stars or below by cause (food shelf life, goods breakage, or price).",
+   "evidence": [
+    "34a180580b1c-5",
+    "64b1177cc65b-10",
+    "5a8684c5fdbd-23"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "S4",
+    "relation": "refines"
+   },
+   "pid": "seller.score#4",
+   "area": "seller.score",
+   "sources": [
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "definition",
+   "status": "confirmed",
+   "rule": "Honest (`eval.integrity`) is the share of settled deals where the market's settle line judged the seller's grade claim true (`claim_true` in `seller.settled`). Deals without a grade judgment are counted separately and never counted as true.",
+   "harness": "Populate `claim_true` from the market ledger's settle line into `seller.settled` and keep unjudged deals in a separate bucket when reporting integrity.",
+   "evidence": [
+    "88cdf8ccd767-18",
+    "19fb13795de6-0"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "S5",
+    "relation": "refines"
+   },
+   "pid": "seller.score#5",
+   "area": "seller.score",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "Restocking lowers cash profit and its percentile immediately while Book value (`profit + stock cost`) stays flat or rises: on 11/3 21:46 filling stock to 2.44M dropped profit to -1.56M (profit percentile 3.8 at 23:12) and shop ALL from 0.569 to 0.409; on 11/4 21:19 -> 21:43 restocking moved profit 42.6M -> 27.1M (percentile 91 -> 85) while Book rose 83.7M -> 85.0M.",
+   "harness": "Track profit percentile and Book value together across restocks so temporary restock dips in profit percentile are distinguished from real trading losses.",
+   "evidence": [
+    "10fc7e5bd4c0-4",
+    "839f2f1fd6bf-1",
+    "0340713513af-7",
+    "0340713513af-8"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "S6",
+    "relation": "refines"
+   },
+   "pid": "seller.score#6",
+   "area": "seller.score",
+   "sources": [
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "Stars are the shop's weakest score component while profit and revenue percentiles are above 80: on 11/4 morning shop percentiles were profit 81.9, revenue 81.9, stars 34.0 (stars_rank 38.3); at 11/4 12:31 ranked shops clustered between 4.50 and 4.84 with ours at 4.50 (percentile 36), where reaching 4.70 was worth about +0.07 shop ALL; over the 6 h before 11/5 01:20 shop stars were 4.48 vs market median 4.63 (percentile 34).",
+   "harness": "Report shop stars against the ranked-shop distribution and median, and estimate the shop ALL gain of raising stars.",
+   "evidence": [
+    "b6412ce6ced0-3",
+    "b6412ce6ced0-5",
+    "3109604ad9f8-19",
+    "81323a6db552-21",
+    "5a8684c5fdbd-8"
+   ],
+   "conflict": "An initial 11/4 overnight report listed shop stars percentile as 26.7 across all rows; recalculating on the eligible cohort gave 34.0 (stars_rank 38.3) (b6412ce6ced0-3, 3109604ad9f8-19, 2026-11-04).",
+   "history": "",
+   "existing": null,
+   "pid": "seller.score#7",
+   "area": "seller.score",
+   "sources": [
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "When a shop's balance falls below the 500,000 bankruptcy line, it may declare bankruptcy up to twice; each bankruptcy seizes all stock, resets balance to 5,000,000, and subtracts the aid from profit. The harness only requests bankruptcy if balance < 500,000, a bankruptcy remains, and there is no stock left to sell, and it keeps a cash floor and a warranty reserve (on 11/4: 13.01M = 10% of 6 h sales of 130.1M, about 2x the ~5% observed breakage rate across 43/847 deals) to avoid hitting the line.",
+   "harness": "Size deployable restock cash as balance minus cash floor minus 6 h warranty reserve, and gate `bankrupt: true` on balance < 500,000, remaining bankruptcies > 0, and zero sellable stock with an urgent user alert.",
+   "evidence": [
+    "b2f6029bd469-34",
+    "17f1df4c235a-16",
+    "d29a6cd738ca-7",
+    "d29a6cd738ca-9",
+    "eb9189af1afa-10"
+   ],
+   "conflict": "HARNESS.md v4 (b2f6029bd469-34) sets a 1.5M cash floor, whereas 11/4 user_notes and overnight report (d29a6cd738ca-7, eb9189af1afa-10) use a 0.5M cash floor matching the bankruptcy threshold plus a 10%-of-6h-sales warranty reserve.",
+   "history": "",
+   "existing": {
+    "id": "M7",
+    "relation": "refines"
+   },
+   "pid": "seller.score#8",
+   "area": "seller.score",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "logs/strategy/overnight-report-20261104.md",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Seller evaluation and spending recommendations must be backed by reconciled board and ledger numbers: (1) funnel (visits -> negotiations -> agreements -> paid settlements, drop-offs, and no-stock visits), (2) unit economics (margin, margin/cost, buyer surplus, deal count, and below-cost `exposure_cost` kept separate from losses), (3) losses (spoiled food, holding cost, warranty refunds derived from ledger broken/refund lines), and (4) stock health (turnover, age, stockout misses, cash, and profit percentile).",
+   "harness": "Reconcile `seller.settled` and `seller.refund` against market ledger and board totals every cycle (do not use unverified brief counts), and report funnel, unit economics, losses, stock turnover, cash, and profit percentile in self-analysis and strategy recommendations.",
+   "evidence": [
+    "ecbe121caad7-5",
+    "ecbe121caad7-8",
+    "ecbe121caad7-15",
+    "ecbe121caad7-21",
+    "c8be6d835be5-21",
+    "c8be6d835be5-23",
+    "c8be6d835be5-24",
+    "c8be6d835be5-25",
+    "88cdf8ccd767-18",
+    "d29a6cd738ca-12",
+    "06b10b2a463e-17",
+    "bdfb2e39cd10-17",
+    "10fc7e5bd4c0-27"
+   ],
+   "conflict": "",
+   "history": "On 11/3 22:33, 59 seller.settled rows were reconciled to 27 actual paid sales (1,902,300 won on the board), replacing an inflated brief figure of 57 deals / 2.28M.",
+   "existing": null,
+   "pid": "seller.score#9",
+   "area": "seller.score",
+   "sources": [
+    "HARNESS.md",
+    "git log",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "219550a5625a-29",
+   "reason": "About stars the buyer gives to shops (buyer review policy in v4 draft), not seller.score."
+  },
+  {
+   "cid": "c766038e6250-22",
+   "reason": "About stars our buyer gives to shops, not seller.score."
+  },
+  {
+   "cid": "e54bc7cc16e5-0",
+   "reason": "LLM call count and tool rejection implementation telemetry from 11/3-4, not seller scoring."
+  },
+  {
+   "cid": "8f903d669414-22",
+   "reason": "Point-in-time 30-minute health log snapshot (11/4 03:35) with no standalone scoring rule."
+  },
+  {
+   "cid": "8f903d669414-23",
+   "reason": "Point-in-time 30-minute health log snapshot (11/4 04:05) with no standalone scoring rule."
+  },
+  {
+   "cid": "8f903d669414-24",
+   "reason": "Point-in-time 30-minute health log snapshot (11/4 04:35) with no standalone scoring rule."
+  },
+  {
+   "cid": "8f903d669414-25",
+   "reason": "Point-in-time 30-minute health log snapshot (11/4 05:05) with no standalone scoring rule."
+  },
+  {
+   "cid": "8f903d669414-26",
+   "reason": "Point-in-time 30-minute health log snapshot (11/4 05:35) with no standalone scoring rule."
+  }
+ ],
+ "area": "seller.score",
+ "candidates": 54,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}
