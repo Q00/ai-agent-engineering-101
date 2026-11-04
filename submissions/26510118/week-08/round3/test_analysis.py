@@ -9,6 +9,7 @@ the code around the models -- what they are shown, what the code lets them chang
 import json
 import os
 import shutil
+import statistics
 import sys
 import tempfile
 import time
@@ -27,6 +28,7 @@ import forum      # noqa: E402
 import harness    # noqa: E402
 import insights   # noqa: E402
 import journal    # noqa: E402
+import notes      # noqa: E402
 import ledger     # noqa: E402
 import restock    # noqa: E402
 import tools      # noqa: E402
@@ -249,6 +251,7 @@ def test_forum():
         check(f"a reading with {why} is dropped; the numbers still go out", "Reading:" not in t and "Since index #1" in t)
     st = {}
     before = len(outbox())
+    analysis.BUYER_REPLIES = True                         # the buyer's data reply (stopped on 11/4) still works when turned on
     analysis.replies(NOW, st)
     new = outbox()[before:]
     check("a 'wanted' post gets a data reply as our buyer and a stock reply as our shop, in its thread",
@@ -266,6 +269,11 @@ def test_forum():
     check("our buyer's data reply does not name our own shop", "Kiro729" not in new[0]["post"], new[0]["post"])
     check("our own post and replies in a thread are never answered; each post once",
           sorted(st["answered"]) == [101, 104] and analysis.replies(NOW + 7400, st) == "0 wanted post(s) waiting")
+    analysis.BUYER_REPLIES = False
+    before = len(outbox())
+    analysis.replies(NOW, {})
+    check("as deployed (11/4): no data reply as our buyer, only the shop's stock reply",
+          [(x["as"], x["thread"]) for x in outbox()[before:]] == [("shop", 101)], outbox()[before:])
 
 
 SELLER_PROPOSALS = [{"field": "price_adjust", "value": 0.12, "reason": "kimchi sells at 70% of list, 20 in 6 h"},
@@ -345,6 +353,127 @@ def test_journal():
               and line.get("post", "").startswith("KIRO MARKET JOURNAL · 제1호") and note.startswith("journal 제1호"), note)
     finally:
         journal.MIN_PRICE_ROWS, journal.MIN_CLAIMS, journal.MIN_SHOPS, journal.MIN_TRADE = saved
+
+
+def test_notes():
+    print("\n[notes] the Kiro 데이터 노트")
+    t0 = NOW - 2 * H
+    rows, seq = [], [9000]
+
+    def settle(item, ratio, grade, warranty=False, n=1, buyer="b1", claim_honest=True):
+        for _ in range(n):
+            seq[0] += 1
+            rows.append({"seq": seq[0], "ts": t0 + seq[0] % 600, "item": item, "amount": round(CATALOG[item]["list_price"] * ratio),
+                         "grade": grade, "warranty_hours": 6 if warranty else None, "buyer": buyer, "shop": "s1",
+                         "unit": f"u{seq[0]}", "claim": grade, "claim_honest": claim_honest})
+    settle(BEDDING, 0.78, "A", True, 40)
+    settle(BEDDING, 0.75, "A", False, 35)
+    settle(BEDDING, 0.70, "C", True, 32)
+    settle(BEDDING, 0.64, "C", False, 31)
+    settle(BEDDING, 0.72, "B", True, 5)
+    settle(KIMCHI, 0.70, "B", n=45, claim_honest=False)
+    settle(KIMCHI, 0.75, "A", n=35)
+
+    def by_grade(rs):
+        out = {}
+        for g in "ABC":
+            share = lambda r: r["amount"] / CATALOG[r["item"]]["list_price"]
+            x = [share(r) for r in rs if r["grade"] == g]
+            w = [share(r) for r in rs if r["grade"] == g and r["warranty_hours"]]
+            nw = [share(r) for r in rs if r["grade"] == g and not r["warranty_hours"]]
+            out[g] = {"n": len(x), "median": statistics.median(x) if x else None, "w_n": len(w),
+                      "w_median": statistics.median(w) if w else None, "nw_n": len(nw), "nw_median": statistics.median(nw) if nw else None}
+        return out
+    summary = {"by_category": {BCAT: {"sold_24h": 143, "by_grade": by_grade([r for r in rows if r["item"] == BEDDING])},
+                               KCAT: {"sold_24h": 80, "by_grade": by_grade([r for r in rows if r["item"] == KIMCHI])}}}
+    broken = [{"seq": 9900 + i, "ts": t0 + 900, "buyer": "b1", "item": BEDDING, "unit": r["unit"]}
+              for i, r in enumerate([r for r in rows if r["item"] == BEDDING and r["grade"] == "C"][:8])]
+    hour = int(NOW // 3600 * 3600) - 3600
+    hourly = {str(hour): {"results": 130, "agreed": 120, "paid": 80, "failed": {"item_matches": 30, "sig_buyer_ok": 6},
+                          "passed_unpaid": 4, "samples": [7001, 7002, 7003]}}
+    data = {"settles": rows, "catalog": CATALOG, "names": {}, "summary": summary, "hourly": hourly, "broken": broken}
+    posts = [{"id": 1, "author": "X", "role": "buyer", "text": "[시세] 김치 오늘 중앙 70%"}]
+    c = notes.conditions(data, NOW, set(), posts, None)
+    print("\n".join("    | " + x for x in c["text"].splitlines()))
+    check("조건: a goods category by grade, with and without a warranty; a cell under 30 settles left out; the gap per grade",
+          "· A등급: 보증 있음 78.0% (40건) · 보증 없음 75.0% (35건)" in c["text"] and "B등급" not in c["text"]
+          and "A +3.0%p · C +6.0%p" in c["text"] and c["key"] == "조건:침구", c["text"])
+    check("...with refs: two settles with a warranty and one without, on the last line",
+          len(c["refs"]) == 3 and c["text"].splitlines()[-1] == "근거 · 원장 " + " ".join(f"#{r}" for r in c["refs"]))
+    k = notes.conditions(data, NOW, {"조건:침구"}, posts, None)
+    check("조건: food by grade only (no warranty on food)", k and "· A등급: 75.0% (35건)" in k["text"] and "· B등급: 70.0% (45건)" in k["text"]
+          and "보증 있음" not in k["text"], k)
+    saved = notes.MIN_CAT
+    notes.MIN_CAT = 40
+    try:
+        g = notes.gap(data, NOW, set(), posts, None)
+        check("빈칸: the busiest category none of the newest posts names (침구; 김치 was named)", g and g["key"] == "빈칸:침구"
+              and "최근 24시간 정산 143건" in g["text"] and "중앙" in g["text"], g)
+        check("빈칸: nothing when every busy category was named", notes.gap(data, NOW, set(), posts + [{"text": "침구"}], None) is None)
+    finally:
+        notes.MIN_CAT = saved
+    q = notes.quality(data, NOW, set(), posts, None)
+    check("품질: breakage by grade, matched by unit (8 of 63 C units), with the 6-hour caveat and broken entries as refs",
+          q and "C등급 12.7% (8/63)" in q["text"] and "A등급 0.0% (0/75)" in q["text"] and "6시간" in q["text"]
+          and all(r >= 9900 for r in q["refs"]), q)
+    h = notes.quality(data, NOW, {"품질:고장:전체", "품질:고장:침구"}, posts, None)
+    check("품질: grade-claim honesty once breakage is posted (no shop named)", h and "판정과 다름 45건, 가게 1곳" in h["text"], h)
+    f = notes.failures(data, NOW, set(), posts, None)
+    check("실패: the last hour's unsettled deals, the checks in Korean, and the rule behind the top one",
+          f and "120건 중 40건(33.3%)" in f["text"] and "영수증 상품이 주문과 다름 30건" in f["text"]
+          and "허용 목록" in f["text"] and f["refs"] == [7001, 7002, 7003], f)
+    check("실패: not when the journal's investigation desk covered that hour",
+          notes.failures(data, NOW, set(), posts, {"last": {"탐사": {"key": str(hour)}}}) is None)
+    state, keys = {}, []
+    while len(keys) < 20:
+        n = notes.next_note(data, posts, NOW, state)
+        if not n:
+            break
+        keys.append(n["key"])
+    check("the desks take turns, and no topic comes twice within 6 hours; then nothing",
+          keys[:4] == ["조건:침구", "빈칸:침구", "품질:고장:전체", f"실패:{hour}"]
+          and len(keys) == len(set(keys)) and notes.next_note(data, posts, NOW + 60, state) is None, keys)
+    check("...6 hours later the topics come back", notes.next_note(data, posts, NOW + notes.REPEAT + 61, state) is not None)
+    texts = [c["text"], q["text"], f["text"], h["text"]]
+    check("no note names our shop, says what to do, or carries anything private",
+          not any(w in t for t in texts for w in ("Kiro7", "Everyday", "원가", "마진", "budget", "should", "must")))
+
+    def mine(i, ts, score, kind="조건별 시세"):
+        return {"id": i, "author": "Kiro729", "role": "buyer", "ts": ts, "likes": 6, "dislikes": 0, "score": score,
+                "thread": None, "text": f"[Kiro 데이터 노트 · {kind}] x"}
+    common.write_json(MD / "analysis" / "post_votes.json", {})
+    book = notes.track_votes([mine(i, NOW - 3000 + i, 0.2) for i in range(6)] + [{"id": 99, "author": "Other", "text": "y"}], NOW)
+    check("our posts' votes are kept by id with their kind; others' are not", len(book) == 6 and book["0"]["kind"] == "노트:조건별 시세")
+    check("guard: the last 6 scored notes averaging 0.2 trip it; notes posted before the last pause do not count",
+          abs(notes.guard(book, NOW) - 0.2) < 1e-9 and notes.guard(book, NOW, since=NOW) is None)
+    common.write_json(MD / "analysis" / "post_votes.json", {})
+    common.write_json(MD / "forum.json", POSTS)
+    (MD / "outbox.jsonl").write_text("", encoding="utf-8")
+    saved_gather = notes.gather
+    notes.gather = lambda now: dict(data)
+    try:
+        st = {}
+        out = analysis.notes_step(NOW, st)
+        line = outbox()[0] if outbox() else {}
+        check("the runner posts a note as our buyer, with its refs", out and line.get("as") == "buyer"
+              and line.get("post", "").startswith("[Kiro 데이터 노트 · ") and line.get("refs"), (out, line))
+        check("...and none while our buyer post still waits in the outbox", analysis.notes_step(NOW + notes.GAP + 1, st) is None)
+        (MD / "outbox.jsonl").write_text("", encoding="utf-8")
+        check("...nor within 5 minutes of the last", analysis.notes_step(NOW + 60, st) is None)
+        check("...then the next", analysis.notes_step(NOW + notes.GAP + 2, st) is not None)
+        (MD / "outbox.jsonl").write_text("", encoding="utf-8")
+        t1 = NOW + 2 * notes.GAP + 5
+        common.write_json(MD / "forum.json", [mine(1000 + i, t1 - 3000 + i, None) for i in range(6)])
+        check("six notes seen 50 minutes on with no votes: the notes pause for an hour, and it is logged",
+              analysis.notes_step(t1, st) is None and st["notes_state"]["paused_until"] == t1 + notes.PAUSE
+              and "notes paused" in analysis.LOG.read_text(encoding="utf-8"))
+        check("...and post again once the pause is over (the old notes no longer count)",
+              analysis.notes_step(t1 + notes.PAUSE + 1, st) is not None)
+    finally:
+        notes.gather = saved_gather
+        (MD / "outbox.jsonl").write_text("", encoding="utf-8")
+        common.write_json(MD / "analysis" / "post_votes.json", {})
+        common.write_json(MD / "forum.json", POSTS)
 
 
 def test_analysts():
@@ -659,6 +788,7 @@ def main() -> int:
         test_tool()
         test_forum()
         test_journal()
+        test_notes()
         test_analysts()
         test_insights()
         test_context()

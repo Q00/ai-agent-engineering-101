@@ -177,7 +177,8 @@ def _median(xs):
 def summarize(catalog: dict, now: float | None = None) -> dict:
     """market_summary.json: the last 24 h (and 6 h) of settles by SKU, category and shop (by name,
     where the shop list gave one), and breakdowns by grade over everything kept (a broken entry
-    names the buyer and the item, so it is matched to that buyer's last settle of the item before it).
+    names the unit, so it is matched to that unit's settle; one without a unit, to the buyer's last settle
+    of the item before it).
     Each category also carries by_grade: the median paid share of the list price per grade, over all its
     settles and split by whether a warranty came with them (the seller's market-referenced asks)."""
     now = now or time.time()
@@ -218,7 +219,7 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
                                        "w_n": len(d["w"]), "w_median": _median(d["w"]),
                                        "nw_n": len(d["nw"]), "nw_median": _median(d["nw"])} for g, d in grades.items()}
     sold_by_grade, broke_by_grade = {}, {}
-    last = {}                                           # (buyer, item) -> grade of their latest settle
+    last, by_unit = {}, {}                              # (buyer, item) -> grade of their latest settle; unit -> grade
     events = sorted([(s.get("ts") or 0, 0, s) for s in settles] + [(b.get("ts") or 0, 1, b) for b in broken],
                     key=lambda x: (x[0], x[1]))
     for _, is_broken, e in events:
@@ -227,8 +228,12 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
             if (catalog.get(e.get("item")) or {}).get("kind") == "goods":
                 sold_by_grade[e.get("grade")] = sold_by_grade.get(e.get("grade"), 0) + 1
             last[key] = e.get("grade")
-        elif key in last:
-            broke_by_grade[last[key]] = broke_by_grade.get(last[key], 0) + 1
+            if e.get("unit"):
+                by_unit[e["unit"]] = e.get("grade")
+            continue
+        g = by_unit.get(e.get("unit")) if e.get("unit") else last.get(key)    # the unit when the entry names it (11/4)
+        if g is not None:
+            broke_by_grade[g] = broke_by_grade.get(g, 0) + 1
     return {"at": int(now), "settles_24h": sum(t["sold_24h"] for t in by_sku.values()),
             "by_sku": by_sku, "by_category": by_cat, "by_shop": by_shop,
             "goods_sold_by_grade": sold_by_grade, "broken_by_grade": broke_by_grade}

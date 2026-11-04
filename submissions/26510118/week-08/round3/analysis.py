@@ -1,6 +1,6 @@
 """The analysis runner: the analysis side of the agents, apart from the kit's trading hooks.
 
-    python analysis.py             (a server service; wakes every 10 minutes)
+    python analysis.py             (a server service; wakes every 5 minutes)
     python analysis.py --once      (one pass, for a test or by hand)
 
 Each pass does only what is due, in this order:
@@ -16,8 +16,12 @@ Each pass does only what is due, in this order:
                         from the next of four desks with something new, the 해설 by MODEL_MID
                         and checked; an hour with nothing new is skipped. (Until 11/4 this was
                         the market index every 3 hours, index() below, no longer scheduled.)
-    replies     10 min  other agents' "wanted" posts: a data reply as our buyer and a stock reply
-                        as our shop, each at most once an hour
+    replies     10 min  other agents' "wanted" posts: a stock reply as our shop, at most once an hour
+                        (the data reply as our buyer stopped on 11/4: thread replies drew about one
+                        like, and a buyer post's score enters the buyer's ALL)
+    notes        5 min  a Kiro 데이터 노트 as our buyer (notes.py) when no buyer post of ours waits in
+                        the outbox and the last went out 5 minutes ago; the votes on our posts are read
+                        into analysis/post_votes.json first, and low scores pause the notes
     votes        3 h    at most one dislike (a post steering AI agents or a repeat) and one like (the
                         most useful post) on the last 3 hours' posts, as our buyer (forum.pick_votes)
     seller       3 h    the seller analysis (analysts.py, MODEL_MID + ledger_query)
@@ -38,6 +42,7 @@ import httpx
 
 import analysts
 import common
+import notes
 import context
 import contract
 import forum
@@ -45,15 +50,16 @@ import harness
 import journal
 import ledger
 
-EVERY = {"collect": 3600, "opening": 600, "journal": 3600, "replies": 600, "votes": 3 * 3600, "seller": 3 * 3600,
-         "buyer": 3 * 3600, "integrated": 12 * 3600}
+EVERY = {"collect": 3600, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP, "votes": 3 * 3600,
+         "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 12 * 3600}
+BUYER_REPLIES = False    # data replies as our buyer (stopped 11/4: about one like each, against 5-6 for a top-level post)
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
             "sales", "restock", "stock_flow")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
 MIN_INDEX = 20
 OPEN_CATEGORIES = 100    # categories in stock before our shop announces itself (day one stocks about 116)
 OPEN_MIN, OPEN_WAIT = 20, 1800   # or at least this many, half an hour after the first stock came in
-SLEEP = 600
+SLEEP = 300              # 600 until 11/4: the notes post every 5 minutes
 LOCK_STALE = 1800
 LOG = common.HERE / "logs" / "analysis.log"
 
@@ -203,8 +209,8 @@ def replies(now: float, state: dict) -> str:
     done = []
     for pid, cat in found[:1]:
         summary = common.market_file("market_summary.json", {}) or {}
-        did_buyer = did_shop = False
-        if now - state.get("buyer_reply", 0) >= REPLY_GAP:
+        did_buyer, did_shop = not BUYER_REPLIES, False
+        if BUYER_REPLIES and now - state.get("buyer_reply", 0) >= REPLY_GAP:
             text = forum.data_reply(cat, summary, common.read_jsonl(ledger.folder() / "settles.jsonl"), common.catalog(), now,
                                     ledger.names())
             if text:
@@ -222,6 +228,31 @@ def replies(now: float, state: dict) -> str:
         if did_buyer and did_shop:
             state["answered"] = (list(seen) + [pid])[-500:]
     return "; ".join(done) or f"{len(found)} wanted post(s) waiting"
+
+
+def buyer_post_waiting() -> bool:
+    """A post as our buyer still in the outbox (the kit keeps one the market refused for the 5-minute limit)."""
+    return any(x.get("post") and x.get("as") == "buyer" for x in common.read_jsonl(common.MARKET_DIR / "outbox.jsonl"))
+
+
+def notes_step(now: float, state: dict) -> str | None:
+    """Read the votes on our posts, then post the next Kiro 데이터 노트 if there is room; None when nothing went out."""
+    ns = state.setdefault("notes_state", {})
+    posts = common.market_file("forum.json", []) or []
+    book = notes.track_votes(posts, now)
+    low = notes.guard(book, now, ns.get("resumed_at", 0))
+    if low is not None and now >= ns.get("paused_until", 0):
+        ns["paused_until"] = ns["resumed_at"] = now + notes.PAUSE
+        log(f"[analysis] notes paused for {notes.PAUSE // 60} min: the last {notes.GUARD_N} scored notes average {low:.3f}")
+        return None
+    if now < ns.get("paused_until", 0) or buyer_post_waiting() or now - ns.get("last_post", 0) < notes.GAP:
+        return None
+    note = notes.next_note(notes.gather(now), posts, now, ns, state.get("journal_issues"))
+    if not note:
+        return None
+    forum.outbox(post=note["text"], refs=note["refs"], **{"as": "buyer"})
+    ns["last_post"] = now
+    return f"note {ns['n']} ({note['key']}) posted ({len(note['text'])} chars, {len(note['refs'])} refs)"
 
 
 def votes(now: float, state: dict, decide=None) -> str:
@@ -266,6 +297,11 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
                         continue
                 elif name == "replies":
                     note = replies(now, state)
+                elif name == "notes":
+                    note = notes_step(now, state)
+                    if note is None:
+                        state[name] = now
+                        continue
                 elif name == "votes":
                     note = votes(now, state)
                 elif name in ("seller", "buyer"):
