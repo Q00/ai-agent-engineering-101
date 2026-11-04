@@ -178,7 +178,11 @@ PROMPT: Final = (
     "cap. The final board counts cash only (stock scores zero) at 11/17 23:59 "
     "KST, so code tapers the stock budget to nothing from 72 to 36 hours before "
     "the end and slides prices toward half of cost in the last 24 hours; do not "
-    "fight it by raising stock_share then. Raise it back when food "
+    "fight it by raising stock_share then. The owner set buyer.goods_warranty_hours "
+    "to 0 on 11/4: per unit, grade A goods break 4% and B 13% within 6 hours, so "
+    "an A or B unit without warranty still pays, while the 6 h demand left ~130 "
+    "agreed deals a day unpaid (buyer_unpaid_by_reason_24h); keep it at 0 and C "
+    "out of buyer.goods_grades (C breaks ~36%). Raise it back when food "
     "write-offs in the policy reviews exceed what that food earned. Use the "
     "set_strategy tool once; an empty change map keeps the policy."
 )
@@ -798,6 +802,9 @@ class Manager:
             },
             "own_results_24h": self.events.summary(24, self.r3_opened_at()),
             "own_results_6h": self.events.summary(6, self.r3_opened_at()),
+            "buyer_unpaid_by_reason_24h": self.events.refusal_counts(
+                24, self.r3_opened_at()
+            ),
             "market_6h": self.ledger.summary(
                 catalog, hours=6, our_shop=self.shop_url, our_buyer=self.buyer_name
             ),

@@ -411,3 +411,23 @@ def test_floor_bounds_fold_and_note_resolution(
     _ = append_notes(path, ["fix a", "fix b"], actor="m", version=1)
     assert resolve_notes(path, ["fix a"], by="claude") == 1
     assert [r["note"] for r in load_notes(path)] == ["fix b"]
+
+
+def test_unpaid_agreed_deals_are_counted_by_reason() -> None:
+    from r3.events import refusal_kind  # noqa: PLC0415
+
+    assert refusal_kind("not paying: warranty 0 h, the policy asks for 6") == "warranty"
+    assert refusal_kind("not paying: grade C, the policy accepts ['A', 'B']") == "grade"
+    assert (
+        refusal_kind("not paying: no certificate, and the policy asks for one")
+        == "certificate"
+    )
+    assert (
+        refusal_kind("not paying: 256.01 h of shelf life left, the policy asks for 361")
+        == "shelf_life"
+    )
+    assert (
+        refusal_kind('checkout refused: 409 {"error":"unit u-1 is not in stock"}')
+        == "out_of_stock"
+    )
+    assert refusal_kind("something new") == "other"

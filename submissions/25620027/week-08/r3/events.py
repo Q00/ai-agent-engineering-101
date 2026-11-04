@@ -43,6 +43,22 @@ def events_path(market_dir: Path | None = None) -> Path:
     return base.resolve().parent / EVENTS_FILE
 
 
+def refusal_kind(reason: str) -> str:
+    """Name the cause of one unpaid agreed deal from the kit's reason text."""
+    text = reason.lower()
+    for key, needle in (
+        ("warranty", "warranty"),
+        ("grade", "grade"),
+        ("certificate", "certificate"),
+        ("shelf_life", "shelf life"),
+        ("out_of_stock", "not in stock"),
+        ("market_refused", "refused by the market"),
+    ):
+        if needle in text:
+            return key
+    return "other"
+
+
 class EventLedger:
     """Small WAL SQLite file; every write is one short transaction."""
 
@@ -283,6 +299,23 @@ class EventLedger:
                 key = str(shop).rstrip("/")
                 ratios.setdefault(key, []).append(float(price) / float(list_price))
         return {k: statistics.median(v) for k, v in ratios.items()}
+
+    def refusal_counts(self, hours: float, floor: float = 0.0) -> dict[str, int]:
+        """Agreed deals the kit did not pay, by reason, for the strategy model.
+
+        Without the breakdown the strategy saw only "118 refused" and asked for
+        it (engineer notes, 11/4): on 11/4 most were our own accept conditions
+        (warranty under 6 h, grade C), not shops.
+        """
+        since = max(time.time() - hours * 3600, floor)
+        counts: dict[str, int] = {}
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            for (reason,) in db.execute(
+                "SELECT reason FROM payments WHERE ts >= ? AND paid = 0", (since,)
+            ):
+                key = refusal_kind(str(reason or ""))
+                counts[key] = counts.get(key, 0) + 1
+        return dict(sorted(counts.items(), key=lambda kv: -kv[1]))
 
     def refusal_reasons(self, hours: float) -> dict[str, str]:
         """Return the latest refusal reason per shop URL within the window."""
