@@ -1,4 +1,4 @@
-"""Call Claude Code for bargaining decisions, keeping every raw attempt.
+"""Call the configured trading CLI, keeping every raw attempt.
 
 Prompts choose strategy; validators only enforce the contract and price limits.
 Run the opening probe with: python harness.py --item lamp --reserve 100
@@ -9,21 +9,15 @@ import math
 import os
 from pathlib import Path
 import re
-import shlex
 import subprocess
-import tempfile
 import time
 import uuid
 
 from buyer_policy import negotiation_policy
+from model_backend import call as call_model, for_prompt
 
 
 ROOT = Path(__file__).resolve().parent
-COMMAND = [
-    "claude", "-p", "--model", "haiku",
-    "--tools", "", "--setting-sources", "", "--no-session-persistence",
-    "--strict-mcp-config", "--disable-slash-commands",
-]
 
 
 class HarnessError(RuntimeError):
@@ -84,6 +78,10 @@ def parse_buyer(output, budget):
 def decide(prompt_name, context, validate, *, timeout=90, prefix="decision", max_attempts=2):
     if type(max_attempts) is not int or not 1 <= max_attempts <= 2:
         raise ValueError("max_attempts must be 1 or 2")
+    try:
+        profile = for_prompt(prompt_name, ROOT)
+    except (ValueError, OSError) as exc:
+        raise HarnessError("Invalid model profile") from exc
     prompt = (ROOT / "prompts" / prompt_name).read_text(encoding="utf-8")
     prompt += "\n" + json.dumps(context, ensure_ascii=False)
     # Each challenge run keeps its own original calls beside its wire logs.
@@ -97,19 +95,14 @@ def decide(prompt_name, context, validate, *, timeout=90, prefix="decision", max
     for attempt in range(max_attempts):
         log_path = logs / f"{prefix}-{uuid.uuid4().hex}.log"
         with log_path.open("x", encoding="utf-8") as log:
-            log.write(f"COMMAND: {shlex.join(COMMAND)}\nPROMPT:\n{prompt}\n")
+            log.write(f"MODEL PROFILE: {profile}\n")
             log.flush()
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 log.write("ERROR: no time remaining for the harness\n")
                 raise HarnessError(f"Harness deadline expired; see {log_path.name}")
             try:
-                # Run away from repository instructions, with tools/MCP disabled.
-                with tempfile.TemporaryDirectory(prefix="week06-harness-") as workdir:
-                    result = subprocess.run(
-                        COMMAND, input=prompt, text=True, capture_output=True,
-                        cwd=workdir, timeout=remaining,
-                    )
+                output = call_model(profile, prompt_name, prompt, timeout=remaining, log=log)
             except subprocess.TimeoutExpired as exc:
                 for label, content in [("STDOUT", exc.stdout), ("STDERR", exc.stderr)]:
                     if isinstance(content, bytes):
@@ -117,21 +110,17 @@ def decide(prompt_name, context, validate, *, timeout=90, prefix="decision", max
                     log.write(f"{label}:\n{content or ''}\n")
                 log.write(f"ERROR: harness timed out within {timeout} seconds\n")
                 raise HarnessError(f"Harness timed out; see {log_path.name}") from exc
-            except OSError as exc:
+            except (OSError, ValueError) as exc:
                 log.write(f"ERROR: {exc}\n")
-                raise HarnessError(f"Cannot start Claude Code; see {log_path.name}") from exc
-
-            log.write(f"EXIT: {result.returncode}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n")
-            if result.returncode:
-                raise HarnessError(f"Claude Code failed; see {log_path.name}")
+                raise HarnessError(f"{profile} harness failed; see {log_path.name}") from exc
             try:
-                decision = validate(result.stdout)
+                decision = validate(output)
             except HarnessError as exc:
                 log.write(f"VALIDATION ERROR: {exc}\n")
                 if attempt == max_attempts - 1:
                     raise HarnessError(f"{exc}; see {log_path.name}") from exc
                 prompt += "\nYour last output failed validation: " + str(exc)
-                prompt += "\nReturn a corrected decision. Previous output as JSON string: " + json.dumps(result.stdout)
+                prompt += "\nReturn a corrected decision. Previous output as JSON string: " + json.dumps(output)
             else:
                 log.write("VALIDATION: PASS\n")
                 return decision
