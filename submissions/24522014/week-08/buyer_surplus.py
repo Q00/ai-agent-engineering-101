@@ -28,6 +28,8 @@ def offer_path(root, record):
     offers = [e for e in record.get("decision_trail") or () if e.get("action") == "offer"]
     if offers:
         path = f"{offers[-1]['source']}:{offers[-1]['reason_code']}"
+        if offers[-1].get("provider"):
+            path += f"[{offers[-1]['provider']}]"
         countered = any(e["reason_code"] == "rule_counter_offer" for e in offers[:-1])
         return path + "_after_counter" if countered else path
     if record.get("decision_trail") is not None:

@@ -69,6 +69,17 @@ class Usage(unittest.TestCase):
         self.assertEqual(result["by_role_and_actual_model"]["seller|gpt-6.1-sol"]["timeouts"], 1)
         self.assertTrue(result["rollback_signal"])
 
+    def test_agy_calls_are_counted_by_provider_with_their_own_tokens(self):
+        self.call(BUYER, model="gemini-3.8-flash-low", tokens=1)
+        path = sorted((self.root / "logs/harness").iterdir())[-1]
+        metadata = json.loads((path / "metadata.json").read_text(encoding="utf-8"))
+        metadata.update(provider="agy", tokens=9000)
+        (path / "metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
+        result = self.report()
+        self.assertEqual(result["calls_by_provider"], {"agy": 1})
+        row = result["by_role_and_actual_model"]["buyer|gemini-3.8-flash-low"]
+        self.assertEqual((row["provider"], row["tokens_sum"]), ("agy", 9000))
+
     def test_window_and_busiest_hour(self):
         self.call(hour="10")
         self.call(hour="11")

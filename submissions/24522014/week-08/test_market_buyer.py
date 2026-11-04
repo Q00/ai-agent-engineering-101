@@ -981,15 +981,45 @@ class ModelUnavailable(TradeFixture):
             harness.assert_not_called()
 
 
+class ModelRouting(TradeFixture):
+    """A real route is recorded, and an unknown route never stops the trade."""
+
+    def setUp(self):
+        super().setUp()
+        route = patch("buyer.last_model_call", return_value={"provider": "agy", "model": "gemini-3.8-flash-low", "route_reason": "agy_first"})
+        route.start()
+        self.addCleanup(route.stop)
+
+    def test_decision_log_names_the_actual_provider_and_model(self):
+        with patch("buyer.run_harness", return_value={"action": "walk_away", "price": None, "reason": "stop"}):
+            _, record = self.trade(self.transport("Our price is 90."), gate=lambda: "reserved")
+        entry = record["decision_trail"][0]
+        self.assertEqual((entry["provider"], entry["model"], entry["route_reason"]), ("agy", "gemini-3.8-flash-low", "agy_first"))
+        saved = self.decision_file(record)
+        self.assertEqual((saved["provider"], saved["model"]), ("agy", "gemini-3.8-flash-low"))
+        self.assertEqual(saved["attempts"][0]["provider"], "agy")
+
+    def test_rule_decisions_carry_no_model_route(self):
+        _, record = self.trade(self.transport("asking 110."))
+        self.assertNotIn("provider", record["decision_trail"][0])
+
+    def test_a_route_does_not_leak_to_the_next_turn(self):
+        replies = iter([{"action": "offer", "price": 90, "reason": "try"}])
+        with patch("buyer.run_harness", side_effect=lambda *a, **k: next(replies)):
+            _, record = self.trade(self.transport("Our price is 95.", after_offer="asking 80."), gate=lambda: "reserved")
+        self.assertEqual(record["decision_trail"][0]["provider"], "agy")
+        self.assertNotIn("provider", record["decision_trail"][1])
+
+
 class BreakerGate(unittest.TestCase):
     def test_breaker_off_takes_no_reservation(self):
         calls = []
-        with patch.object(market.model_breaker, "check", return_value=(False, "usage_stale")):
+        with patch.object(market.model_router, "available", return_value=(False, "usage_stale")):
             self.assertEqual(market.model_gate("md", "o", lambda *a: calls.append(a) or "reserved"), "model_breaker_usage_stale")
         self.assertEqual(calls, [])
 
     def test_breaker_on_defers_to_the_limits(self):
-        with patch.object(market.model_breaker, "check", return_value=(True, "ok")):
+        with patch.object(market.model_router, "available", return_value=(True, "agy")):
             self.assertEqual(market.model_gate("md", "o", lambda *a: "model_quota_hour"), "model_quota_hour")
             self.assertEqual(market.model_gate("md", "o", lambda *a: "reserved"), "reserved")
 

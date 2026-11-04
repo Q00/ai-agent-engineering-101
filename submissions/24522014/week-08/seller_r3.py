@@ -29,7 +29,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-import model_breaker
+import model_router
 from r3_harness import ask_json
 from seller_rules import decision_mode, rule_move
 from seller import purchase_offer
@@ -114,7 +114,7 @@ def find_unit(text, taken=()):
 
 
 def model_allowed():
-    return model_breaker.check(role="seller")
+    return model_router.available(role="seller")
 
 
 async def choose_move(deal, terms, reserve, unit):

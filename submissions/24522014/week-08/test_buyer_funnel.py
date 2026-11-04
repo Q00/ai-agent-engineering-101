@@ -148,6 +148,13 @@ class Funnel(unittest.TestCase):
         self.assertEqual(report["decision_paths"]["turn_limit:turn_limit_exceeded"], 2)
         self.assertEqual(report["non_rule_paths_by_parser_reason"], {})
 
+    def test_model_routes_are_counted_by_provider(self):
+        first = dict(step("model", "model_offer", "over_budget", "offer"), provider="agy", model="gemini-x", route_reason="agy_first")
+        second = dict(step("model", "model_walk_away"), provider="codex", model="gpt-x", route_reason="agy_limit_failure")
+        self.add(trade_record("a", agreed=90, trail=[first], reason="seller_rejected"))
+        self.add(trade_record("b", trail=[second], reason="model_walk_away"))
+        self.assertEqual(self.report()["model_routes"], {"agy:gemini-x|agy_first": 1, "codex:gpt-x|agy_limit_failure": 1})
+
     def legacy_dir(self, name, *, outcome, turns=1, decision=None):
         directory = self.root / "logs/buyer" / name
         directory.mkdir(parents=True)

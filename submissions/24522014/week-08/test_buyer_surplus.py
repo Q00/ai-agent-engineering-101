@@ -90,6 +90,13 @@ class Surplus(unittest.TestCase):
         self.assertEqual(paths, {"deterministic:rule_offer": 1, "deterministic:rule_counter_offer": 1,
                                  "deterministic:rule_offer_after_counter": 1})
 
+    def test_model_offers_are_split_by_actual_provider(self):
+        self.deal("a", trail=[{**self.offer("model", "model_offer"), "provider": "agy"}])
+        self.deal("c", trail=[{**self.offer("model", "model_offer"), "provider": "codex"}])
+        self.deal("old", trail=[self.offer("model", "model_offer")])
+        paths = {k: v["deals"] for k, v in self.report()["by_path"].items()}
+        self.assertEqual(paths, {"model:model_offer[agy]": 1, "model:model_offer[codex]": 1, "model:model_offer": 1})
+
     def test_broken_goods_follow_the_contract_formula(self):
         self.deal("no_cover", price=60, value=100, name="lamp", at=START + 10, trail=[self.offer()])
         self.deal("covered", price=60, value=100, name="desk", warranty=3, at=START + 20, trail=[self.offer()])

@@ -25,6 +25,13 @@ def role_of(prompt):
     return "buyer" if "Round 3 buyer" in head else "seller" if "sales agent" in head else "other"
 
 
+def tokens_of(metadata, stderr):
+    if type(metadata.get("tokens")) is int:
+        return metadata["tokens"]
+    found = TOKENS.search(stderr.rstrip())
+    return int(found[1].replace(",", "")) if found else None
+
+
 def actual_model(metadata):
     command = metadata.get("command") or []
     return command[command.index("--model") + 1] if "--model" in command[:-1] else None
@@ -55,13 +62,12 @@ def load_calls(root, since, until=None):
         after_prompt = stderr[stderr.rfind(ending) + len(ending):] if ending and ending in stderr else stderr
         failed = metadata.get("status") == "failed"
         error = str(metadata.get("error", ""))
-        tokens = TOKENS.search(stderr.rstrip())
-        calls.append({"name": name, "role": role_of(prompt), "model": actual_model(metadata),
+        calls.append({"name": name, "role": role_of(prompt), "model": actual_model(metadata), "provider": metadata.get("provider"),
                       "label": metadata.get("model"), "failed": failed,
                       "timeout": failed and "exceeded" in error and "seconds" in error,
                       "limit_error": failed and bool(LIMIT_WORDS.search(error + "\n" + after_prompt)),
                       "elapsed": metadata.get("elapsed_seconds"),
-                      "tokens": int(tokens[1].replace(",", "")) if tokens else None})
+                      "tokens": tokens_of(metadata, stderr)})
     return calls
 
 
@@ -74,7 +80,7 @@ def summarize_calls(calls):
         elapsed = [c["elapsed"] for c in group if type(c["elapsed"]) in (int, float)]
         tokens = [c["tokens"] for c in group if c["tokens"] is not None]
         per_hour = Counter(c["name"][:11] for c in group)
-        report[key] = {"calls": len(group), "failed": sum(c["failed"] for c in group),
+        report[key] = {"provider": group[0].get("provider"), "calls": len(group), "failed": sum(c["failed"] for c in group),
                        "failure_rate": round(sum(c["failed"] for c in group) / len(group), 4),
                        "timeouts": sum(c["timeout"] for c in group), "usage_limit_errors": sum(c["limit_error"] for c in group),
                        "elapsed_median": median(elapsed) if elapsed else None, "elapsed_p90": percentile(elapsed, .9),
@@ -134,10 +140,11 @@ def hook_durations(root, since, until=None):
 def report(root, since, until=None):
     calls = load_calls(root, since, until)
     limit_errors = sum(c["limit_error"] for c in calls)
+    by_provider = Counter(c.get("provider") for c in calls)
     seller_failed = sum(c["failed"] for c in calls if c["role"] == "seller")
     kit_failures = seller_failures(root, since, until)
     purchase = funnel(root, since, until)
-    return {"window": {"since": since, "until": until}, "by_role_and_actual_model": summarize_calls(calls),
+    return {"window": {"since": since, "until": until}, "calls_by_provider": dict(by_provider), "by_role_and_actual_model": summarize_calls(calls),
             "seller_failures": {"harness_calls_failed": seller_failed, "kit_log_decision_failed": kit_failures},
             "usage_limit_errors": limit_errors, "hooks": hook_durations(root, since, until),
             "funnel": {row["stage"]: row["count"] for row in purchase["funnel"]},

@@ -14,7 +14,8 @@ import httpx
 
 from buyer_counter import evaluate as evaluate_counter
 from buyer_fast import classify
-from harness import HarnessError, MODELS, parse_response, run_harness, select_harness
+from harness import HarnessError, MODELS, parse_response, select_harness
+from model_router import last_call as last_model_call, run_model as run_harness
 from quote_terms import check_quote
 
 ROOT = Path(__file__).resolve().parent
@@ -206,6 +207,9 @@ def record_decision(client, turn, source, reason_code, decision=None, parser_rea
         entry["counter_check"] = counter_check
     if cancel:
         entry["cancel"] = cancel
+    route = getattr(client, "model_route", None)
+    if route:
+        entry.update(route)
     client.decisions.append(entry)
     (client.log_dir / f"decision-{turn:02d}.json").write_text(
         json.dumps({**(details or {}), **entry, "decision": decision}, ensure_ascii=False, indent=2),
@@ -217,7 +221,7 @@ def buyer_decision(client, provider, history, turn, max_turns):
     text = seller_message(client.task)
     _, parser_reason, clear_ask = classify(text, client.budget, getattr(client, "last_offer", None))
     accept = getattr(client, "accept_conditions", None)
-    client.counter_check = None
+    client.counter_check = client.model_route = None
     client.quote_check = check_quote(client.task, text, accept) if accept else None
     if client.quote_check and client.quote_check["reason_code"]:
         reason_code = client.quote_check["reason_code"]
@@ -279,6 +283,11 @@ def buyer_decision(client, provider, history, turn, max_turns):
             try:
                 decision = run_harness(provider, prompt, timeout=remaining)
                 entry["response"] = decision
+                route = last_model_call()
+                if route:
+                    client.model_route = route
+                    entry.update(route)
+                    record.update(provider=route["provider"], model=route["model"], route_reason=route["route_reason"])
                 validate_buyer_decision(decision, client.budget)
             except (ValueError, HarnessError) as error:
                 entry["error"] = str(error)
