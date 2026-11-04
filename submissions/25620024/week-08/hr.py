@@ -372,6 +372,11 @@ def run(board=None):
             pass
     if alarms:
         md = "## 🚨 바이어 경보\n" + "\n".join(f"- {a}" for a in alarms) + "\n\n" + md
+    try:                                       # the audit team: the buyer unit's errors, on top of everything (11-04)
+        import audit as audit_team
+        md = audit_team.markdown(audit_team.run(board)) + "\n" + md
+    except Exception as e:
+        md = f"# 감사팀 점검 실패: {type(e).__name__}: {e}\n\n" + md
     try:                                       # the review team's internal audit, on top of everything
         import qa
         audit = qa.audit(board)

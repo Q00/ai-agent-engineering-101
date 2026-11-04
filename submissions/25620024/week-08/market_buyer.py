@@ -327,6 +327,10 @@ def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None
             log(f"   GUARD unknown action {action!r}: walking away")
             action = "walk_away"
 
+        if action == "offer" and last_offer is not None and price <= last_offer and ask_price <= close_at:
+            # audit team 11-04: repeating the cap while the shop's ask is under the close line ends in REJECTED
+            log(f"   CLOSE my offer is stuck at {price}, ask {ask_price} is within {close_at}: taking it")
+            action, price = "accept", ask_price
         if action == "walk_away" and ask_price <= close_at:
             log(f"   CLOSE ask {ask_price} is over the cap {budget} but within {close_at}: taking it, not walking")
             action, price = "accept", ask_price
@@ -355,6 +359,8 @@ def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None
         # 'No deal below N' / 'our lowest is N': the shop named its floor; inside our cap, ask again at it
         m = re.search(r"(?:below|lowest(?: price)?(?: is|:)?)\s*([\d,]+)", status_text(task), re.I)
         floor = int(m.group(1).replace(",", "")) if m else None
+        if not floor and asks and asks[-1] <= close_at:     # audit team 11-04: no floor named, but its last
+            floor = asks[-1]                                # counter was under the close line: buy at it
         if floor and floor <= close_at and time.time() - started < TIME_LIMIT - 30:
             log(f"   the shop's floor {floor} is within {budget}: buying at it in a new task")
             t2 = send(url, f"I want to buy {item}. I accept your lowest price {floor}.")

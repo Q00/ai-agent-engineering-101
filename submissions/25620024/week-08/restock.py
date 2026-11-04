@@ -103,7 +103,8 @@ def plan(md, c, t, now=None):
             return
         qty = min(qty, t["max_qty"] - buy.get(sku, 0))
         cost = r["list_price"] * t["cost_guess"] * qty
-        if qty <= 0 or cost > cash or len(buy) >= t.get("max_skus", 25) and sku not in buy:   # 10 -> 25 (HQ 11-04: inextro buys 3x)
+        if qty <= 0 or cost > cash or len(buy) >= t.get("max_skus", 17) and sku not in buy:   # 10 -> 17: a 3-min window fits ~18
+                                                                                         # supply calls 10 s apart (week 09)
             return
         buy[sku] = buy.get(sku, 0) + qty
         cash -= cost

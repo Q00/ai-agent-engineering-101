@@ -337,6 +337,7 @@ def brief(board=None, now=None):
                                 hq_warning=__import__("hr").hq_warning("buyer")), "time": time.strftime("%Y-%m-%d %H:%M", time.localtime(now)), "our_buyer": me, "top_buyers": top,
          "enuri": summ, "our_trades_by_budget_24h": bands(now=now), "meta_harness": meta_tail(),
          "diagnosis": diagnosis(board, now), "internal_audit": __import__("qa").summary(),
+         "audit_team": __import__("audit").summary(),   # the audit team's buyer-unit findings: fix each red first
          "current": current(), "plan_now": {k: load(PLAN, {}).get(k) for k in ("changed", "forum_advice", "rationale")},
          "scorecard": scorecard(snap, history[-1] if history else None),
          "history": [{"at": time.strftime("%m-%d %H:%M", time.localtime(h["snapshot"]["ts"])), "changed": h.get("changed"),
