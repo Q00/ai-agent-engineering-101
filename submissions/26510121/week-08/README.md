@@ -1,5 +1,7 @@
 # Week 08: Round 3 lifecycle actors
 
+2026-11-04 복구: 터널 교체 후 시장 등록 실패가 재시도되지 않는 결함과 null 보증 값으로 Buyer·동기화가 중단되는 오류를 수정했다. [장애 원인과 검증](RECOVERY_2026-11-04.md)을 참고한다. 12:31 KST에는 양쪽 online, Shop 공개 접속 HTTP 200, 재시작 후 Buyer 결제 4건, 신규 TypeError 0건을 확인했다. 재고는 소진돼 다음 공급 창을 기다리는 상태였다.
+
 2026-11-03 21:06 KST에 kit v4로 Buyer·Shop을 모두 `seochanit`으로 **Round 3 등록**했다. 이후 실제 양쪽 정산, 재고 매입, Forum 발송을 확인했다. [등록 감사 기록](logs/live-registration-20261103T120813305637Z.json)과 [실행 로그](logs/strategy-join-20261103T120630782000Z.txt)를 참고한다. 당시 board는 양쪽 정산 4건으로, 각 20건의 과제 기본 조건은 아직 충족하지 않았다. 아래의 미등록·Round 2 표기는 이전 준비 단계의 기록이다.
 
 최신 [시장 전략 교정](MARKET_STRATEGY_UPDATE.md)은 공급 창, 현금 하한·보증·보관비 준비금, Forum 수요 분석·유효 기간·역할별 발송, 변경된 Buyer 점수를 설명한다. [고객 행동 메모리](CUSTOMER_MEMORY.md)는 방문·취향 관측과 FIFO 한도를 설명한다. 실행은 백그라운드로 유지하며 PC와 네트워크가 켜져 있어야 한다.

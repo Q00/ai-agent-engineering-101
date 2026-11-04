@@ -58,3 +58,60 @@ def test_failed_tunnel_is_stopped_and_recorded(tmp_path, monkeypatch):
         transport.open_tunnel(SimpleNamespace(stop=stopped.append), 9999, 'pinggy', log)
     assert stopped == [proc]
     assert 'synthetic provisioning failure' in log.read_text(encoding='utf-8')
+
+
+def supervisor_fixture(tmp_path, join, *, wait_card=lambda *a: True, open_tunnel=None):
+    old = SimpleNamespace(poll=lambda: None)
+    new = SimpleNamespace(poll=lambda: None)
+    seller = SimpleNamespace(poll=lambda: None)
+    stopped, logs = [], []
+    kit = SimpleNamespace(card_ok=lambda url: True, wait_card=wait_card, stop=stopped.append,
+                          log=logs.append, open_tunnel=open_tunnel or (lambda port: (new, 'https://new.example')))
+    proxy = SimpleNamespace(public='https://old.example')
+    procs = [seller, old]
+    monitor = transport.ShopSupervisor(kit, SimpleNamespace(tunnel=True, name='seochanit'), {}, tmp_path,
+        SimpleNamespace(join=join), {'shop': 'synthetic'}, procs, proxy, 8000, 8001, {}, now=0)
+    return monitor, old, new, stopped, logs
+
+
+def test_healthy_new_tunnel_still_retries_failed_market_registration(tmp_path):
+    attempts = []
+    def join(*args, **kwargs):
+        attempts.append((args, kwargs))
+        if len(attempts) == 1:
+            raise SystemExit('synthetic transient agent card timeout')
+        return {'name': 'seochanit'}
+    monitor, old, new, stopped, logs = supervisor_fixture(tmp_path, join)
+    monitor.tick(3301)
+    assert monitor.pending_registration and monitor.procs[1] is new
+    assert old not in stopped and old in monitor.procs
+    monitor.tick(3316)
+    assert len(attempts) == 2 and all(kwargs['tries'] == 1 for _, kwargs in attempts)
+    assert not monitor.pending_registration and old in stopped
+    assert len(monitor.procs) == 2 and monitor.procs[1] is new
+
+
+def test_renewal_keeps_old_tunnel_alive_until_new_registration(tmp_path):
+    events = []
+    monitor, old, new, stopped, logs = supervisor_fixture(tmp_path,
+        lambda *a, **kw: events.append(('join', old in stopped)) or {'name': 'seochanit'})
+    monitor.tick(3299)
+    assert not events and monitor.procs[1] is old
+    monitor.tick(3300)
+    assert events == [('join', False)] and old in stopped
+
+
+def test_failed_replacement_discovery_preserves_existing_route(tmp_path):
+    monitor, old, new, stopped, logs = supervisor_fixture(tmp_path,
+        lambda *a, **kw: pytest.fail('must not register an unreachable replacement'), wait_card=lambda *a: False)
+    with pytest.raises(RuntimeError):
+        monitor.tick(3301)
+    assert stopped == [new] and monitor.procs[1] is old and monitor.proxy.public == 'https://old.example'
+
+
+def test_cloudflare_does_not_inherit_pinggy_renewal_deadline(tmp_path):
+    monitor, old, new, stopped, logs = supervisor_fixture(tmp_path,
+        lambda *a, **kw: pytest.fail('must not rotate a healthy Cloudflare tunnel'))
+    monitor.provider = 'cloudflare'
+    monitor.tick(7200)
+    assert monitor.procs[1] is old and not stopped
