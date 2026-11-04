@@ -71,24 +71,26 @@ def others_stock() -> dict:
 
 
 def mark_broken(rows: list, mem_path: Path):
-    """Our goods that broke: a ledger 'broken' entry for a unit we sold (or our SKU within 6 h of our sale)."""
+    """Our goods that broke: a ledger 'broken' entry for a unit we sold. Every entry names its unit. Matching by SKU
+    as a fallback marked other shops' breaks as ours (4 of our 9 sales, while the board showed 0 broken)."""
     mem = read_json(mem_path, {}) or {}
     sold = mem.get("sold", {})
     if not sold:
         return
     changed = 0
+    if not mem.get("broke_by_unit"):                # once: drop the marks the SKU fallback left
+        for s in sold.values():
+            s.pop("broke", None)
+        mem["broke_by_unit"] = True
+        changed = -1
     for r in rows:
-        if not r.get("broken"):
-            continue
-        hit = sold.get(r.get("unit")) if r.get("unit") else None
-        if hit is None:
-            hit = next((s for s in sold.values() if s["sku"] == r.get("sku") and not s.get("broke")
-                        and 0 <= r["ts"] - s["t"] <= 6 * 3600), None)
+        hit = sold.get(r.get("unit")) if r.get("broken") else None
         if hit is not None and not hit.get("broke"):
             hit["broke"] = int(r["ts"])
-            changed += 1
+            changed = max(changed, 0) + 1
     if changed:
         write_json(mem_path, mem)
+    if changed > 0:
         print(f"[restock] {changed} of our goods broke since the last run", flush=True)
 
 
