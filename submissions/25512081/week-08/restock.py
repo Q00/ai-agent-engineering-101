@@ -292,6 +292,49 @@ def surge_cut(sku, qty, catalog, st, surge):
     return n, cost
 
 
+# Orders nobody can serve (Nov 4 18:00-22:20): an order accepts only the category's SKUs listed at about 0.56-1.6x
+# its budget, so big budgets want premium SKUs no shop stocks; 31 of our buyer's orders (49M of budget, 71% of all
+# the budget it left unpaid) found no shop at all. Other buyers draw the same kind of orders and their restocks
+# follow settles, which never show these. market_buyer.py logs them to .market/unmet.jsonl; here we stock the few
+# premium SKUs that would have served most of them, priced so that our usual close fits the budgets.
+UNMET_LOG_H = 6
+UNMET_SHARE = 0.15         # of total assets, at most, in this stock
+UNMET_SKUS = 4
+UNMET_FIT = 0.85           # a SKU serves an order when this share of its list price fits the budget
+
+
+def unmet_lines(catalog, held_sku, room, surge):
+    now = time.time()
+    rows = []
+    try:
+        for line in open(Path(".market") / "unmet.jsonl", encoding="utf-8"):
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if now - r.get("ts", 0) < UNMET_LOG_H * 3600:
+                rows.append(r)
+    except OSError:
+        return []
+    fits = [{k for k in r["acceptable"] if k in catalog and catalog[k]["list_price"] * UNMET_FIT <= r["budget"]}
+            for r in rows]
+    out, left = [], [f for f in fits if f]
+    while left and len(out) < UNMET_SKUS:
+        n = Counter(k for f in left for k in f)
+        sku = max(n, key=lambda k: (n[k], catalog[k]["list_price"]))
+        if n[sku] < 2:                               # one order in six hours is not demand
+            break
+        left = [f for f in left if sku not in f]
+        qty = (2 if n[sku] >= 4 else 1) - held_sku[sku]
+        est = catalog[sku]["list_price"] * UNIT_COST * surge.get(sku, 1.0) * max(qty, 0)
+        if qty > 0 and est <= room:
+            room -= est
+            out.append({"sku": sku, "qty": qty, "est": est})
+            log(f"unmet orders: {qty} x {catalog[sku]['name'][:30]} (list {catalog[sku]['list_price']}) "
+                f"would have served {n[sku]} of them")
+    return out
+
+
 def plan_lines(sd, st, catalog, room, surge):
     """The shop manager's latest plan, once: lines it kept that still fit the money free now."""
     plan = load(sd / "plan.json", {})
@@ -408,6 +451,10 @@ def main():
     buy = plan_lines(sd, st, catalog, room, surge) if not endgame and not closed else []
     room -= sum(b.pop("est") for b in buy)
     held_sku = Counter(u["sku"] for u in units)
+    if not endgame and not closed:
+        extra = unmet_lines(catalog, held_sku, min(room, UNMET_SHARE * (inv.get("balance", 0) + stock_cost)), surge)
+        room -= sum(b.pop("est") for b in extra)
+        buy += extra
     order = sorted(set(order) | set(VALUE_SKU), key=lambda c: (-st["rev"].get(c, 0), -st["pop"].get(c, 0)))
     for cat in order:
         if len(buy) >= MAX_LINES:

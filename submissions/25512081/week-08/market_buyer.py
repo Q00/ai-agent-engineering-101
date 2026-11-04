@@ -418,6 +418,11 @@ def main():
         if r3:                                    # unmet demand: our shop can stock what nobody has
             try:
                 record_market(order, [], [])
+                if order.get("kind") == "goods":       # which SKUs it would have taken, for restock.unmet_lines
+                    with open(".market/unmet.jsonl", "a", encoding="utf-8") as f:
+                        f.write(json.dumps({"ts": int(time.time()), "category": order.get("category"),
+                                            "budget": a.budget, "acceptable": order.get("acceptable") or []},
+                                           ensure_ascii=False) + "\n")
             except (OSError, ValueError, KeyError) as e:
                 log(f"[intel] not recorded: {e}")
         print(json.dumps({"shop": None, "receipt": None, "stars": 1,
