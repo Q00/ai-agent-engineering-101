@@ -376,9 +376,10 @@ def main():
             continue
         unit_est = catalog[sku]["list_price"] * 0.6        # a unit costs 25-75% of list
         gap = min(gap, max(1, int(MAX_LINE_COST // unit_est)))
-        est = unit_est * gap
-        if est > room:
+        gap = min(gap, int(room // unit_est))       # as many as fit: two sofas over the room used to mean none
+        if gap <= 0:
             continue
+        est = unit_est * gap
         room -= est
         buy.append({"sku": sku, "qty": gap})
 
