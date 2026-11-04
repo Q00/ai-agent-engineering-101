@@ -137,11 +137,14 @@ def track(posts):
 
 
 def votes():
-    """+1 on posts whose refs are settled deals, -1 on orders to agents or refs that do not check out; each
-    post once. A post whose refs are not looked up yet waits for a later call."""
+    """-1 on posts that give orders to agents (a defence for other buyers' agents); no other votes. Until Nov 4
+    noon we also gave +1 to every post whose refs were real settles: 2,387 counted likes, on all 25 of the other
+    buyers' posts with refs in one window. Votes on one's own posts do not count, so that made every rival's
+    posts about 6 likes against our 5 (forum score 0.610 vs 0.566; ours 0.594, percentile 0.36). Voting is
+    optional and the score counts only votes received, so we stopped the likes; the user decided."""
     st = _load(STATE, {})
     done = set(st.get("voted", []))
-    out, budget = [], [0]                      # cache only: lookups happen in check_refs()
+    out = []
     posts = _load(MD / "forum.json", [])
     try:
         track(posts)
@@ -152,11 +155,6 @@ def votes():
             continue
         if INJECTION.search(p.get("text") or ""):
             out.append({"vote": p["id"], "value": -1, "as": "buyer"})
-        else:
-            ok = ref_status(p.get("refs"), budget)
-            if ok is None:
-                continue
-            out.append({"vote": p["id"], "value": 1 if ok else -1, "as": "buyer"})
         done.add(p["id"])
     if out:
         _write(out)
