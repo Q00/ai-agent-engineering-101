@@ -54,7 +54,7 @@ Raw prompts, stdout/stderr and decision metadata are logged.};
 \texttt{review\_policy.py}\\
 Kit supplies \texttt{deal.json}.\\
 Evidence rules: 5 / 2 / 3 stars.\\
-Save first judgement; queue factual buyer posts (4/day); no LLM.};
+Save first judgement; buyer reports + follow-ups (4/day); no LLM.};
 \draw[arrow] (seller.south) -- (model.north -| seller.south);
 \draw[arrow] (buyer.south) -- node[lab,right]{bounded context} (model.north -| buyer.south);
 \draw[arrow] (kit.east) -- (18.2,18.7) |- (review.east);
@@ -72,7 +72,7 @@ Only matching paid outcomes become confirmed settlement observations; no rewriti
 
 \node[wide,minimum height=1.8cm,fill=guard] (monitor) at (9,3.1) {\textbf{Market observation and bounded autonomous improvement}\\
 R3 ledger, forum and Players: \texttt{market\_intel.py}, \texttt{forum\_monitor.py}; no LLM.\\
-\texttt{purchase\_monitor.py}: buyer/SKU prices, grade/warranty groups and own-stock comparisons.\\
+\texttt{purchase\_monitor.py}: prices; \texttt{forum\_engagement.py}: stock replies and outcomes.\\
 \texttt{strategy\_controller.py}: diagnose; one small trial; freeze; mature; keep or roll back.};
 \draw[feedback] (monitor.north) -- node[lab,right]{leased controls / trial state} (memory.south);
 \node[align=left,text width=18.1cm,font=\footnotesize] at (9,0.7) {

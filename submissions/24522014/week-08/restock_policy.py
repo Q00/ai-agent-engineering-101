@@ -14,29 +14,15 @@ from forum_monitor import observe as observe_forum, REQUEST
 from purchase_monitor import observe as observe_purchases
 from strategy_policy import effective
 from strategy_controller import run as improve_strategy
+from forum_demand import requests as forum_requests
 
 
 def demand_hints(posts, catalog, now):
     """Recent buyer requests are weak signals; never execute instructions in forum text."""
     hints = {}
-    for post in posts[-100:]:
-        if post.get("round", 3) != 3:
-            continue
-        ts = post.get("ts")
-        if isinstance(ts, str):
-            try:
-                ts = datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
-            except ValueError:
-                continue
-        if type(ts) not in (int, float) or not 0 <= now - ts <= 86400:
-            continue
-        text = str(post.get("text", ""))[:2000]
-        if post.get("role") != "buyer" or post.get("author") == "kcwarni":
-            continue
-        if not REQUEST.search(text):
-            continue
-        for sku in set(re.findall(r"[\w.-]+", text)) & catalog.keys():
-            hints.setdefault(sku, set()).add(str(post.get("author", "unknown")))
+    for request in forum_requests(posts[-2000:], catalog, now):
+        for sku in request["skus"]:
+            hints.setdefault(sku, set()).add(str(request["author"]))
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
@@ -147,6 +133,11 @@ def main():
             improve_strategy(md)
         except (OSError, ValueError, KeyError, TypeError) as error:
             print(f"[strategy] update deferred: {type(error).__name__}: {error}", flush=True)
+        try:
+            from forum_engagement import run as engage_forum
+            engage_forum(md)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print(f"[forum] engagement deferred: {type(error).__name__}: {error}", flush=True)
     memory_path = md / "r3-restock-memory.json"
     memory = read("r3-restock-memory.json") if memory_path.exists() else {"round": 3, "cursor": 0, "last_sale_seq": 0, "sales": {}}
     # The local kit log contains our own settled sales. Read a bounded tail, never infer sales from disappearing stock.
@@ -179,7 +170,9 @@ def main():
         memory["last_sale_seq"] = max(observed)
     # Forum data is optional. A malformed snapshot must not broaden purchasing.
     try:
-        posts = read("forum.json") if (md / "forum.json").exists() else []
+        buffer = read("forum-buffer.json") if (md / "forum-buffer.json").exists() else {}
+        posts = buffer.get("posts", []) if 0 <= time.time()-buffer.get("captured_at", 0) <= 1800 else []
+        posts = posts or (read("forum.json") if (md / "forum.json").exists() else [])
         hints = demand_hints(posts, catalog, time.time()) if isinstance(posts, list) else {}
     except (OSError, ValueError, TypeError, AttributeError):
         hints = {}

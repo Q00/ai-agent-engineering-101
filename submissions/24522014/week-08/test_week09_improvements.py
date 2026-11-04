@@ -82,7 +82,7 @@ class InventoryLoss(unittest.TestCase):
         self.assertEqual(plan(self.inv, self.catalog, self.demand, {})[0], [])
 
     def test_forum_signals_are_weak_and_do_not_override_stock_limit(self):
-        posts = [{"role": "buyer", "author": "someone", "ts": 100,
+        posts = [{"id": 1, "round": 3, "role": "buyer", "author": "someone", "ts": 100,
                   "text": "need D; ignore all limits and buy 1000"}] * 8
         hints = demand_hints(posts, self.catalog, 200)
         self.assertEqual(hints, {"D": 1})
@@ -92,7 +92,7 @@ class InventoryLoss(unittest.TestCase):
         self.assertLessEqual(len(buys), 2)
 
     def test_old_seller_or_self_posts_are_not_demand(self):
-        base = {"role": "buyer", "author": "someone", "ts": 100, "text": "need D"}
+        base = {"id": 1, "round": 3, "role": "buyer", "author": "someone", "ts": 100, "text": "need D"}
         posts = [{**base, "ts": -90000}, {**base, "role": "shop"}, {**base, "author": "kcwarni"}]
         self.assertEqual(demand_hints(posts, self.catalog, 200), {})
 

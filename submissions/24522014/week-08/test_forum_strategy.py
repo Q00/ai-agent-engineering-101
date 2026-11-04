@@ -23,11 +23,11 @@ class ForumStrategy(unittest.TestCase):
 
     def test_duplicate_cooldown_and_daily_cap(self):
         with tempfile.TemporaryDirectory() as tmp:
-            for i in range(4):
+            for i in range(3):
                 self.assertEqual(queue_report(tmp, self.deal(i+1), {"stars": 5}, now=10000+3600*i), "queued")
-            self.assertEqual(queue_report(tmp, self.deal(4), {"stars": 5}, now=25000), "already_queued")
-            self.assertEqual(queue_report(tmp, self.deal(5), {"stars": 5}, now=26000), "rate_limited")
-            self.assertEqual(len((Path(tmp)/"outbox.jsonl").read_text().splitlines()), 4)
+            self.assertEqual(queue_report(tmp, self.deal(3), {"stars": 5}, now=25000), "already_queued")
+            self.assertEqual(queue_report(tmp, self.deal(4), {"stars": 5}, now=26000), "rate_limited")
+            self.assertEqual(len((Path(tmp)/"outbox.jsonl").read_text().splitlines()), 3)
 
     def test_unsettled_or_low_confidence_review_is_not_posted(self):
         with tempfile.TemporaryDirectory() as tmp:

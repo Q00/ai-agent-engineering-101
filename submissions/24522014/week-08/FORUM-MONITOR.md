@@ -1,5 +1,7 @@
 # 포럼을 함께 보는 R3 모니터링
 
+11월 4일 확장: 현재는 [포럼 활용 기능](FORUM-ENGAGEMENT.md)에 따라 **5분 수집·30분 분석**, 카테고리 수요 인식·재고 답변·가격 비교 보고·후속 관측을 수행한다. 아래 30분 수집·자동 글쓰기 미추가 설명은 최초 구현 당시 기록이다. 자동 정책 실험 역시 현재는 `strategy_controller.py`로 구현되어 있다.
+
 사용자 요청: 시장 모니터링 시 포럼도 참고한다. `forum_monitor.py`가 키트의 `.market/forum.json`을 읽어 별도 `.market/forum-intel.json`과 `logs/forum-monitor/`의 새 관측 파일에 요약한다.
 
 ## 기록하는 것

@@ -10,6 +10,8 @@ import time
 from uuid import uuid4
 
 from market_state import read, write
+from forum_capture import capture
+from forum_demand import match_request
 
 REQUEST = re.compile(r"구합니다|구매하고|찾습니다|\b(?:want(?:ed)?|need|looking for|buying)\b", re.I)
 ISSUE = re.compile(r"불량|환불|고장|불일치|사기|\b(?:broken|refund|mismatch|dishonest)\b", re.I)
@@ -19,7 +21,7 @@ def summarize_forum(posts, catalog, ledger_rows, now, login="kcwarni"):
     settlements = {r["seq"]: r for r in ledger_rows
                    if r.get("round") == 3 and r.get("kind") == "settle"}
     selected = {}
-    for post in posts[-100:]:
+    for post in posts[-2000:]:
         if not isinstance(post, dict) or post.get("round") != 3 or type(post.get("id")) is not int:
             continue
         ts = post.get("ts")
@@ -44,7 +46,10 @@ def summarize_forum(posts, catalog, ledger_rows, now, login="kcwarni"):
                 "likes": post.get("likes"), "dislikes": post.get("dislikes"), "score": post.get("score"),
                 "issue_keywords": bool(ISSUE.search(text))}
         if not own and post.get("role") == "buyer" and REQUEST.search(text):
-            for sku in skus:
+            requested, match = match_request(text, catalog)
+            item["request_match"] = match
+            item["requested_sku_count"] = len(requested)
+            for sku in requested:
                 demand[sku].add(author)
             if len(examples) < 5:
                 examples.append(item)
@@ -67,6 +72,10 @@ def observe(md, now=None, force=False, ledger_rows=None):
     md = Path(md)
     now = time.time() if now is None else now
     try:
+        capture(md, now)
+    except (OSError, ValueError, TypeError, KeyError):
+        pass
+    try:
         previous = read(md/"forum-intel.json", {})
     except (OSError, ValueError, TypeError):
         previous = {}
@@ -84,6 +93,9 @@ def observe(md, now=None, force=False, ledger_rows=None):
             posts = read(path)
             if not isinstance(posts, list):
                 raise ValueError("forum snapshot must be a list")
+            buffer = read(md/"forum-buffer.json", {})
+            if 0 <= now-buffer.get("captured_at", 0) <= 1800:
+                posts = buffer.get("posts") or posts
             rows = ledger_rows if ledger_rows is not None else read(md/"market-intel.json", {}).get("rows", [])
             record.update(status="ok", summary=summarize_forum(posts, read(md/"catalog.json", {}), rows, now))
             old_ids = set((previous.get("summary") or {}).get("post_ids", []))
