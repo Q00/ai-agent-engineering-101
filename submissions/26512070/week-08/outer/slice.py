@@ -27,10 +27,12 @@ NIGHT = range(1, 8)            # 01:00-07:59 (HARNESS.md 5)
 # change keeps the safety terms (SAFE_KEYS); otherwise the brief waits for the user. These hours override NIGHT.
 AUTO_HOURS = range(0, 8)       # 00:00-07:59
 AUTO_EVERY_MIN = 30
-# User 11/5 01:3x: a change must live long enough to be measured. 20:00-01:33 installed v61-v67, one every ~30 min,
-# and v67 (auto, 01:33) landed 21 min after the user's v66 (01:12), so neither can be judged. No install (night
-# mode or delegation) while the active strategy is younger than HOLD_S; the slice still writes its brief.
-HOLD_S = 2 * 3600
+# User 11/5 01:3x: a change must live long enough to be measured - v67 (auto, 01:33) landed 21 min after the user's
+# v66 (01:12). No install (night mode or delegation) while the active strategy is younger than HOLD_S; the slice
+# still writes its brief. 2 h at first; the user (02:0x) keeps the 30-min pace and gets the night as one report
+# in the morning (outer/morning.py), so HOLD_S is just under one slice: an install lands ~3 min into its slice, so the
+# next slice (age ~27 min) may install again, while a user install mid-slice (v66 at 01:12) holds the 01:30 one.
+HOLD_S = 25 * 60
 # User notes (logs/strategy/user_notes.md) are questions for a moment; the 11/5 01:00 brief still cited the
 # 11/4 02:2x note as a current fact. Only sections whose '# YYYY-MM-DD HH:Mx' heading is this recent reach the brief.
 NOTE_HOURS = 6
@@ -163,6 +165,14 @@ def strategy_text(ctx):
                  + "; parts with the next row's value: " + _j({k: {f: {x: p[x] for x in ("value", "percentile", "next_value", "rows_above")}
                                                                     for f, p in ((sc.get(k) or {}).get("parts") or {}).items()}
                                                                for k in ("shop", "buyer")}, 1200))
+    pos = atomic.read_json(paths.memory() / "facts" / "position.json", default=None)
+    if pos:                                              # user 11/5 02:0x: our place in every part, and how it moved
+        lines.append("Our rank now (outer/position.py, 1 = best; rank_1h/rank_6h = our rank then): Players "
+                     + _j({k: pos["players"].get(k) for k in ("rank", "of", "next", "gap", "rank_1h", "rank_6h")}
+                          if pos.get("players") else None, 200)
+                     + "; parts " + _j({side: {f: {k: p.get(k) for k in ("rank", "of", "next", "gap", "rank_1h", "rank_6h")}
+                                               for f, p in ((pos.get(side) or {}).get("parts") or {}).items()}
+                                        for side in ("shop", "buyer")}, 1400))
     from outer import benchmark, health
     lines.append("Health (last 30 min, outer/health.py: what the shop, the buyer and restock did, and what crossed a "
                  "threshold): " + health.summary(atomic.read_json(paths.memory() / "facts" / "health.json",
@@ -182,7 +192,7 @@ def strategy_text(ctx):
     if pending.exists():
         lines.append("Stances waiting for the user: " + _j(pending.read_text(encoding="utf-8").splitlines()[-10:], 1000))
     if ctx.situation.get("hold"):
-        lines.append(f"The strategy in force was installed less than {HOLD_S // 3600} h ago, so nothing is installed "
+        lines.append(f"The strategy in force was installed less than {HOLD_S // 60} min ago, so nothing is installed "
                      f"for another {ctx.situation['hold'] // 60} min: a change needs that long to be measured. Write "
                      "the brief with rec.brief as a report on how the change in force is doing so far (what moved, "
                      "with numbers). Options are allowed but wait for the user.")

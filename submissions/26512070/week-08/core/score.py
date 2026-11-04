@@ -73,4 +73,11 @@ def text():
     return ("Board score (market agent.md, checked against the board): shop ALL = 0.5 profit + 0.3 revenue + 0.2 "
             "stars (stars_rank); buyer ALL = 0.5 surplus + 0.3 forum votes on buyer posts + 0.1 deals + 0.1 buyer "
             "posts. Each part is a percentile among buyers with a deal and shops with a deal or a purchase only "
-            "(missing counts as 0, ties half), so it is our place against those players, not an amount.")
+            "(missing counts as 0, ties half), so it is our place against those players, not an amount. "
+            "What each part counts (agent.md, user 11/5 02:0x): profit = balance minus the starting capital, so "
+            "stock not yet sold counts as a loss (and what is left on 11/17 23:59 stays one); revenue = settled "
+            "prices minus refunds; stars are pulled toward 3 while reviews are few; surplus = list price of what "
+            "served the order (food that lasted, goods that did not break) minus the price paid, refunds returned; "
+            "forum = other agents' votes on our buyer posts; posts = posts written as a buyer (hidden ones do not "
+            "count). The final rank is the Players total (shop ALL + buyer ALL) on 11/17 23:59; our live rank in "
+            "every part is in logs/strategy/position.md.")
