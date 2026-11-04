@@ -12,25 +12,42 @@ import common
 
 ROWS = 50                # the newest rows of a .jsonl file that are looked at
 
-# (path under MARKET_DIR, writer, readers, the rows to check, the fields each row needs)
+# (path under MARKET_DIR, writer, readers, the rows to check, the fields each row needs); brought up to date on
+# 11/5 (rivals, scoreboard, line, line_state, post_votes, refusals, stock_flow and shops.json added; the index gone)
 FILES = [
-    ("inventory.json", "kit", "seller, restock, briefing", lambda d: d.get("units") or [],
+    # the kit's files
+    ("inventory.json", "kit", "seller, restock, linewatch, briefings", lambda d: d.get("units") or [],
      ("unit", "sku", "cost", "list_price", "category", "kind")),
     ("catalog.json", "kit", "every part", lambda d: list(d.values())[:ROWS], ("sku", "name", "category", "list_price", "kind")),
-    ("demand.json", "kit", "restock, forum, analysis", lambda d: d, ("category", "median_price")),
-    ("forum.json", "kit", "forum replies, buyer analysis", lambda d: d, ("id", "author", "text")),
-    ("payments.jsonl", "kit", "buyer notebook", None, ("order", "paid")),
-    ("records/negotiations.jsonl", "seller", "replay, seller analysis", None,
+    ("demand.json", "kit", "restock, forum (wanted posts), analysis (collect)", lambda d: d, ("category", "median_price")),
+    ("shops.json", "kit", "market_buyer (candidates), analysis (collect: shops' stock)", lambda d: d, ("name", "url")),
+    ("forum.json", "kit", "forum (replies, votes), notes, market_buyer (shop odds), buyer analysis", lambda d: d,
+     ("id", "author", "text")),
+    ("payments.jsonl", "kit", "buyer notebook (buyer_memory), notes (follow-ups)", None, ("order", "paid")),
+    # the trading hooks' records
+    ("records/negotiations.jsonl", "seller", "replay (data room), seller analysis", None,
      ("ts", "sku", "asks", "offers", "outcome", "floor", "list_price", "cost")),
     ("records/deals.jsonl", "seller", "restock (sales)", None, ("ts", "task", "unit", "sku", "price", "cost")),
-    ("records/sales.jsonl", "restock", "restock, analyses, briefing", None, ("ts", "sku", "price", "cost")),
-    ("records/orders.jsonl", "market_buyer", "replay, buyer analysis", None, ("ts", "order", "category", "budget")),
-    ("records/unmet.jsonl", "market_buyer", "wanted categories", None, ("ts", "category")),
-    ("ledger/settles.jsonl", "analysis (collect)", "summary, tools, forum", None, ("seq", "ts", "shop", "item", "amount")),
-    ("market_summary.json", "analysis (collect)", "restock, buyer, index, analyses", lambda d: [d],
+    ("records/refusals.jsonl", "seller", "restock (missed categories), seller analysis", None, ("ts", "reason")),
+    ("records/sales.jsonl", "restock", "restock, linewatch, analyses, briefings", None, ("ts", "sku", "price", "cost")),
+    ("records/stock_flow.jsonl", "restock", "seller analysis", None, ("ts", "what")),
+    ("records/orders.jsonl", "market_buyer", "replay, buyer analysis, integrated analysis (tries)", None,
+     ("ts", "order", "category", "budget")),
+    ("records/unmet.jsonl", "market_buyer", "analysis (wanted categories), linewatch (the twins), analyses", None, ("ts", "category")),
+    # the analysis runner's files
+    ("ledger/settles.jsonl", "analysis (collect)", "summary, tools, journal, notes, linewatch", None,
+     ("seq", "ts", "shop", "item", "amount")),
+    ("market_summary.json", "analysis (collect)", "restock, seller (asks), market_buyer, journal, notes, analyses", lambda d: [d],
      ("settles_24h", "by_sku", "by_category", "by_shop")),
     ("analysis/wanted.json", "analysis (collect)", "restock", lambda d: [d], ("at", "categories")),
-    ("analysis/active_rules.json", "integrated analysis", "seller, buyer, restock", lambda d: [d], ("seller", "buyer")),
+    ("analysis/rivals.json", "analysis (collect)", "market_buyer (near ties)", lambda d: [d], ("at", "shops")),
+    ("analysis/scoreboard.json", "analysis (collect: scoreboard.py)", "linewatch (stars), integrated analysis", lambda d: [d],
+     ("at", "place", "total")),
+    ("analysis/line.json", "linewatch, or a person (then left alone)", "restock (load_line), seller (asks)", lambda d: [d], ("skus",)),
+    ("analysis/line_state.json", "linewatch", "linewatch, integrated analysis", lambda d: [d], ("caps", "defaults")),
+    ("analysis/post_votes.json", "analysis (notes step)", "notes (pause), integrated analysis", lambda d: list(d.values())[-ROWS:],
+     ("kind", "ts")),
+    ("analysis/active_rules.json", "integrated analysis", "seller, market_buyer, restock", lambda d: [d], ("seller", "buyer")),
     ("analysis/insights.json", "integrated analysis", "briefings, data room", lambda d: d,
      ("id", "role", "text", "evidence", "use", "status")),
     ("analysis/reports.jsonl", "role analyses", "briefings, data room", None, ("role", "at", "report", "proposals")),
