@@ -108,3 +108,36 @@ flowchart LR
                           상품명 속 숫자를 제안가로 읽던 버그 수정 ★
                           거래 완료 메시지에 회원 코드 발급 ★
 ```
+
+## 5. Market A2A 조직 (2026-11-04 오후, r3lib/org)
+
+```mermaid
+flowchart TB
+  KIT[market_kit 훅<br/>restock 60초] -- "서명 봉투 (hook)" --> CEO
+  subgraph ORG["내부 A2A 서버 127.0.0.1 (r3lib/org/server.py)"]
+    CEO[ceo<br/>tick · kpi]
+    PUR[purchasing<br/>propose]
+    LOG[logistics<br/>window · approve · health]
+    QUA[quality<br/>warranty_policy · harsh · refunds]
+    MKT[marketing<br/>stats]
+  end
+  CEO -- "1 window?" --> LOG
+  CEO -- "2 propose" --> PUR
+  CEO -- "3 approve(lines)" --> LOG
+  CEO -- "harsh (10분)" --> QUA
+  CEO -- "kpi: health · refunds · stats" --> LOG & QUA & MKT
+  CEO -- "buy 목록" --> KIT
+  QUA -. "harsh_styles · p_break (memory)" .-> SHOP[shop_r3 판매<br/>ms, 프로세스 내]
+  ORG -. "서버 다운 시 같은 스킬을 프로세스 안에서 실행" .-> FB[in-process fallback]
+```
+
+```
+ 부서 간 호출 한 번:
+   caller ── seal(from,to,skill,args,ts,nonce)+Ed25519 ──► /<dept>/ (A2A SendMessage, text part)
+          ◄── artifact {result, receipt{by, req=sha256(env), res=sha256(result), sig}} ──
+   receiver: registry 공개키로 서명 확인 · to 일치 · |now-ts|≤60s · nonce 재사용 거절 → 아니면 REJECTED
+   caller:   receipt 서명과 req/res 해시를 확인 → 불일치면 오류 (fallback 아님)
+```
+
+물류 개선(같은 날 오전 13:42): C 등급 무보증, 보증 상품은 기대 환불을 호가에 포함, 공급 창 근처에만 매입,
+재고 부족을 수요로 반영. 근거와 출처는 ROUND3_LOGISTICS.md.
