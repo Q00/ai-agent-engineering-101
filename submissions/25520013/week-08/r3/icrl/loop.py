@@ -25,6 +25,7 @@ from pathlib import Path
 
 from icrl import board as B
 from icrl import experiment as X
+from icrl import meta
 from icrl import space as SP
 from icrl import state as ST
 
@@ -1219,6 +1220,7 @@ def _step(ctx, now):
         if out.get("cycles"):
             out["cycle"] = {"proposer": {ln: r["proposer"] for ln, r in out["cycles"].items()}}
         out["memcheck"] = memcheck(ctx, L, now)
+        out["meta"] = meta.step(ctx, now)  # every META_S; None when not due, never raises (sec 13)
         if running(L):
             out["active"] = {ln: {k2: x.get(k2) for k2 in ("id", "arm", "status")} for ln, x in running(L)}
         return out

@@ -42,7 +42,7 @@ def memrows(ctx, t0, k, acc=1.0, n=4):
     jl(
         ctx.sdir / "memcheck.jsonl",
         [
-            {"ts": t0 + 600 + i * 3600, "n": n, "acc": acc, "correct": acc * n}
+            {"ts": t0 + 600 + i * 1800, "n": n, "acc": acc, "correct": acc * n}  # 6 rows fit in one 3 h META_S
             for i in range(k)
         ],
     )

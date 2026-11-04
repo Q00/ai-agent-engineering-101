@@ -16,13 +16,13 @@ import time
 import traceback
 from pathlib import Path
 
-META_S = 21600  # 성수님 2026-11-04: run every 6 h
+META_S = 10800  # 성수님 2026-11-04: run every 3 h (was 6 h); the sample floors below still gate every judgement
 LANES = ("shop", "buyer", "forum")
 RECALLS = ("graph_first", "recent_first")
 N_LESSONS_RANGE = (5, 40)
 NOTES_MAX = 600
 # The proposer prompt's STATE keys in loop.cycle() today; the loop ignores names it does not know.
-FEATURES = ("time", "shop", "buyer", "board", "market", "budget")
+FEATURES = ("time", "shop", "buyer", "board", "market", "budget", "stars_guard", "lanes")  # = loop.FEATURES
 DEFAULT_LANE = {
     "n_lessons": 20,
     "recall": "graph_first",
@@ -30,7 +30,7 @@ DEFAULT_LANE = {
     "features": list(FEATURES),
 }
 W_MEM, W_VALID = 0.5, 0.5  # score = 0.5 memcheck accuracy + 0.5 lane proposal validity
-MIN_MEM_ROWS = 4  # memcheck runs hourly: 4 of the 6 rows a 6 h window should hold
+MIN_MEM_ROWS = 4  # memcheck runs hourly: at least 4 h of checks since the lane's config changed
 MIN_DECISIONS = (
     4  # per lane: a lane cycles only between experiments, ~1-6 decisions per 6 h
 )
