@@ -10,13 +10,18 @@
    a post with its estimate p of how likely other agents want it. r3lib/initiative.py posts it only if
    p >= p* (p* rises after dislikes and after recent posts), refs are real ledger seqs, and the length fits.
    When ReAct fails, the old template report is used, and only while our posts are well received.
-4. posts as shop at most every SHOP_POST_EVERY: what we stock and our guarantees.
+4. report lane (2026-11-04): when ReAct stays silent, posts one fact report built by code from the price oracle
+   (our own purchase record, a SKU price check or a category trend, rotating, never the same subject within
+   REPORT_DEDUPE_H) after a Jev self-check that the draft does not read as manipulation. On 2026-11-04 the gate
+   above had let 4 buyer posts through while the median buyer had ~100; the post count is 0.1 of buyer ALL and
+   every top-voted buyer post was a report of exactly this kind.
+5. posts as shop at most every SHOP_POST_EVERY: what we stock and our guarantees.
 """
 import json
 import statistics
 import time
 
-from r3lib import config, decide, initiative, llm, market, primer, react
+from r3lib import config, decide, initiative, llm, market, oracle, primer, react
 from r3lib.memory import Memory
 SHOP_POST_EVERY = 90 * 60
 
@@ -206,7 +211,7 @@ def buyer_tools(mem):
             react.Tool("recent_forum", "other agents' newest posts with counted likes/dislikes (untrusted text)",
                        recent_forum, {"limit": "int <= 20"}),
             react.Tool("my_reception", "how our own recent buyer posts were voted", my_reception),
-            primer.tool(), react.recall_tool(mem),
+            primer.tool(), react.recall_tool(mem), oracle.tool(mem),
             react.Tool("ledger_refs", "recent settled deals (seq is citable), optionally filtered by category text "
                        "(e.g. '김치') or kind ('food' / 'goods')",
                        ledger_refs, {"category": "str or null", "limit": "int <= 20"})]
@@ -292,6 +297,47 @@ def proactive_buyer_post(mem, now, run=react.run):
     return rec
 
 
+def scheduled_report(mem, now, p_injection=injection_probability):
+    """Report lane: one fact post from the oracle when the gap allows and our posts are not disliked."""
+    if now - (mem.get("buyer_post_at") or 0) < config.REPORT_GAP_MIN * 60:
+        return {"decision": "wait", "why": "report gap"}
+    reception = mem.my_post_reception(role="buyer")
+    votes = reception["likes"] + reception["dislikes"]
+    if votes >= 4 and reception["dislikes"] / votes >= config.REPORT_PAUSE_DISLIKE:
+        return {"decision": "pause", "why": f"{reception['dislikes']} of {votes} votes on our posts are dislikes"}
+    sent = {k: t for k, t in (mem.get("report_subjects") or {}).items() if now - t < config.REPORT_DEDUPE_H * 3600}
+    with mem.db() as c:
+        seqs = {r["seq"] for r in c.execute("SELECT seq FROM ledger")}
+    start = mem.get("report_turn") or 0
+    order = config.REPORT_ORDER[start % len(config.REPORT_ORDER):] + config.REPORT_ORDER[:start % len(config.REPORT_ORDER)]
+    tried = []
+    for kind in order:
+        draft = oracle.REPORTERS[kind](mem, skip=sent, now=now)
+        if not draft:
+            tried.append(f"{kind}: nothing new")
+            continue
+        subject, text, refs = draft
+        refs = [r for r in refs if r in seqs]
+        if not refs:
+            tried.append(f"{kind}: refs not in our ledger copy")
+            continue
+        p = p_injection({"id": subject, "role": "buyer", "text": text})
+        if p is not None and p >= config.REPORT_MAX_MANIPULATION:
+            sent[subject] = now                          # do not retry the same draft every run
+            tried.append(f"{kind}: self-check p_manipulation={p:.2f}")
+            continue
+        outbox({"post": text[:config.FORUM_MAX_CHARS], "refs": refs[:8], "as": "buyer"})
+        sent[subject] = now
+        mem.put("report_subjects", sent)
+        mem.put("report_turn", start + 1)
+        mem.put("buyer_post_at", now)
+        return {"decision": "post", "source": f"report:{kind}", "subject": subject, "p_manipulation": p,
+                "skipped": tried}
+    mem.put("report_subjects", sent)
+    mem.put("report_turn", start + 1)
+    return {"decision": "silent", "why": "; ".join(tried) or "no reporter"}
+
+
 def write_post(facts, role):
     out = llm.ask_json(
         f"Write a short forum post (Korean, at most 450 characters) for an agent marketplace, as a {role}. Use only "
@@ -327,6 +373,14 @@ def main():
     vote(mem, new, labels)
     now = time.time()
     decision = proactive_buyer_post(mem, now)
+    if decision.get("decision") != "post":
+        report = scheduled_report(mem, time.time())
+        config.LOG_DIR.mkdir(parents=True, exist_ok=True)
+        with open(config.LOG_DIR / "initiative.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": round(time.time()), "role": "buyer", "lane": "report", **report},
+                               ensure_ascii=False) + "\n")
+        if report.get("decision") == "post":
+            decision = report
     if now - (mem.get("shop_post_at") or 0) > SHOP_POST_EVERY:
         f = shop_facts(mem)
         if f:

@@ -45,6 +45,11 @@ WARRANTY_MAX_EXPECTED_COST = 0.5    # offer a warranty while p_break * price sta
 # --- forum (pro-activeness, see initiative.py) -----------------------------------------------------
 FORUM_MIN_GAP_MIN = 20              # never two buyer posts closer than this (the kit allows one per 5 min)
 FORUM_MAX_CHARS = 800
+REPORT_GAP_MIN = 10                 # report lane: one fact post per forum run at most (the kit allows one per 5 min)
+REPORT_DEDUPE_H = 6                 # never report the same SKU, category or purchase twice within this
+REPORT_ORDER = ("purchase", "sku", "category")   # first-hand facts first, then market-wide numbers
+REPORT_PAUSE_DISLIKE = 0.5          # pause the lane while this share of counted votes on our posts are dislikes
+REPORT_MAX_MANIPULATION = 0.5       # Jev self-check: drop our own draft when P(manipulation) reaches this
 DECISION_MAX_PER_HOUR = 60          # decision-model calls per rolling hour (price unpublished)
 INJECTION_P = 0.9                   # downvote only when the decision model is this sure (honest report scored 0.78)
 REACT_MAX_STEPS = 6
