@@ -10,7 +10,7 @@
   "warranty_hours": {
    "A": 6
   },
-  "first_accept_share": 0.85,
+  "first_accept_share": 0.95,
   "target_share": 0.85,
   "target_min_deals": 5,
   "short_life_target_factor": 0.7,
@@ -19,7 +19,7 @@
  "restock": {
   "cash_reserve": 1500000,
   "max_spend_share": 0.15,
-  "target_units": 120,
+  "target_units": 144,
   "categories_per_run": 10,
   "max_units_per_sku": 8,
   "max_units_per_category": 16,
@@ -38,7 +38,9 @@
    "A",
    "B"
   ],
-  "first_offer_share": 0.65
+  "first_offer_share": 0.75,
+  "food_shops_to_try": 6,
+  "walk_memory_hours": 3
  },
  "forum": {
   "buyer_post_minutes": 6,
@@ -46,5 +48,26 @@
   "min_new_settles": 5,
   "window_hours": 6
  },
- "experiments": []
+ "experiments": [
+  {
+   "id": "e10",
+   "section": "buyer",
+   "key": "max_pay_share_of_list",
+   "arms": {
+    "a": 0.9,
+    "b": 0.95
+   },
+   "started": 1793790036.4667635
+  },
+  {
+   "id": "e11",
+   "section": "shop",
+   "key": "target_scale",
+   "arms": {
+    "a": 1.0,
+    "b": 1.2
+   },
+   "started": 1793790947.8632386
+  }
+ ]
 }

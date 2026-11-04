@@ -242,6 +242,7 @@ def choose_r3(shops, order, memory, cat, p=None):
     broken = broken_by_shop(memory)
     rows = []
     need = food_need(order, p)
+    stale = stale_food(memory, need, p)
     for s in shops:
         offers = [o for o in s.get("offers") or [] if o.get("sku") in cat and (o.get("qty") or 0) > 0
                   and (not need or (cat[o["sku"]].get("shelf_hours") or 0) >= need)]   # food that cannot last: skip
@@ -255,6 +256,7 @@ def choose_r3(shops, order, memory, cat, p=None):
             continue
         score, line, unknown = summarize(s, o["sku"], memory)
         score -= 1.0 * broken.get(s["name"], 0)
+        score -= 2.0 if (s["name"], o["sku"]) in stale else 0     # it told us lately its unit would not last
         line += (f"; offers {o['name'][:40]} ({o['sku']}), list price {lp}, you may pay at most {cap}"
                  + (f"; {broken[s['name']]} goods bought there broke" if broken.get(s["name"]) else ""))
         rows.append((score + lp / max(1, order["budget"]) * 0.5 - (0 if lasts(o) else 1.0), line, unknown, s, o, cap))
@@ -269,6 +271,17 @@ def choose_r3(shops, order, memory, cat, p=None):
     log(f"[choose] {pick[3]['name']}: {pick[4]['sku']} list {cat[pick[4]['sku']]['list_price']}, cap {pick[5]}; "
         f"{answer.get('reason', '')}")
     return pick, [pick] + [r for r in rows if r is not pick]
+
+
+def stale_food(memory, need, p):
+    """(shop, sku) pairs whose unit, by what the shop told us when we walked away lately, cannot last `need` hours
+    now. A shop does not show shelf life in its listing; this is the only way to learn it before asking."""
+    if not need:
+        return set()
+    now, keep = time.time(), p.get("walk_memory_hours", 3) * 3600
+    return {(m["shop"], m["sku"]) for m in memory
+            if m.get("kind") == "walked" and now - m.get("ts", 0) < keep
+            and m.get("hours_left") is not None and m["hours_left"] - (now - m["ts"]) / 3600 < need}
 
 
 def food_need(order, p):
@@ -314,7 +327,8 @@ def main_r3(a, shops, order, memory, started):
         return
     need = food_need(order, bp)
     receipt, problem, facts, offered, task, error = None, None, [], None, None, None
-    for attempt, pick in enumerate(ranked[:3]):        # food: a shop whose unit will not last is left at once
+    tries = bp.get("food_shops_to_try", 3) if need else 3
+    for attempt, pick in enumerate(ranked[:tries]):    # food: a shop whose unit will not last is left at once
         if attempt and time.time() - started > DEADLINE - 90:
             break
         _, _, _, shop, offer, cap = pick
@@ -332,6 +346,9 @@ def main_r3(a, shops, order, memory, started):
         if not info.get("walked"):
             break
         facts.append(f"{shop['name']}: {info['walked']}")
+        h = re.search(r"says ([0-9.]+) h", info["walked"])
+        remember({"kind": "walked", "ts": int(time.time()), "shop": shop["name"], "sku": sku,
+                  "hours_left": float(h.group(1)) if h else None, "why": info["walked"]})
         log(f"[choose] {shop['name']} cannot deliver food that lasts; next shop")
     if info.get("walked") and not error:      # no shop had food that lasts: no deal, and no shop to blame
         remember({"time": datetime.now(timezone.utc).isoformat(timespec="seconds"), "ts": int(time.time()),
