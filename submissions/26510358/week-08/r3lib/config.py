@@ -19,7 +19,9 @@ ROUND_END = datetime.fromisoformat(os.environ.get("R3_END", "2026-11-17T23:59:00
 # --- shop: capital and restock --------------------------------------------------------------------
 START_CAPITAL = 5_000_000
 CASH_RESERVE = 1_200_000            # never let a restock take the balance below this
-MAX_STOCK_COST = 3_000_000          # cost value of stock on hand we allow at most
+MAX_STOCK_COST = 3_000_000          # stock budget floor, and the base of the coverage (explore) budget
+STOCK_BUDGET_SHARE = 0.40           # stock on hand may cost up to this share of the balance (2026-11-04: balance
+STOCK_BUDGET_MAX = 8_000_000        #   15.8M held 1.6M of stock while mattress EV said 20 units and the cap said 3)
 EXPLORE_SHARE = 0.25                # share of MAX_STOCK_COST for coverage of categories with no evidence yet
 EXPLORE_MAX_LIST = 60_000           # coverage buys only SKUs at or below this list price
 STOP_BUYING_HOURS = 72              # no restock in the last 72 h of the round
@@ -29,7 +31,9 @@ HORIZON_H = 12                      # stock for the sales we expect in the next 
 MIN_FOOD_SHELF_FOR_EXPLORE = 720    # coverage only with long-life food (no expiry inside the round)
 
 # --- shop: expected-value restock (pricing.ev_quantity) -------------------------------------------
-CATEGORY_MAX_SHARE = 0.25           # one category's stock cost stays under this share of MAX_STOCK_COST
+CATEGORY_MAX_SHARE = 0.25           # one category's stock cost stays under this share of the stock budget
+DEEP_CATEGORY_RATE = 100            # market settles per hour above which a category is deep (many buyers)
+DEEP_CATEGORY_SHARE = 0.35          # a deep category may take this share: concentration risk is lower there
 EV_COST_RATIO = 0.62                # expected unit cost / list price when the grade is not known yet (A-C mix)
 EV_DEFAULT_PRICE_RATIO = 0.75       # expected sale price / list price without market evidence
 GOODS_END_RISK = 0.10               # share of cost an unsold goods unit is expected to lose (clearance, round end)
@@ -74,6 +78,11 @@ FIRST_OFFER_RATIO = 0.55            # first offer as a share of list price
 MAX_OFFERS = 6
 SHOPS_TO_TRY = 3
 HOURS_MARGIN = 0.25                 # food must last use_within_hours + this (2 h refused 8 deals worth paying)
+
+
+def stock_budget(balance):
+    """Cost of stock on hand we allow: STOCK_BUDGET_SHARE of the balance, between MAX_STOCK_COST and STOCK_BUDGET_MAX."""
+    return int(min(STOCK_BUDGET_MAX, max(MAX_STOCK_COST, STOCK_BUDGET_SHARE * (balance or 0))))
 
 
 def hours_left_in_round(now=None):

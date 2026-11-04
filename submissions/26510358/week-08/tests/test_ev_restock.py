@@ -41,3 +41,24 @@ def test_warranty_floor_carries_expected_refund():
     assert pricing.warranty_floor(base, u, 210000, 6, 0.05) == base + int(0.05 * 210000)
     assert pricing.warranty_floor(base, u, 210000, 0, 0.05) == base
     assert pricing.warranty_floor(base, {"kind": "food", "cost": 1}, 210000, 6, 0.05) == base
+
+
+def test_stock_budget_follows_balance():
+    assert config.stock_budget(5_000_000) == config.MAX_STOCK_COST                  # floor
+    assert config.stock_budget(15_000_000) == 6_000_000
+    assert config.stock_budget(40_000_000) == config.STOCK_BUDGET_MAX
+
+
+def test_deep_category_gets_a_larger_cap(tmp_path, monkeypatch):
+    import restock_r3
+    m = mem(tmp_path, monkeypatch)
+    now = time.time()
+    m._ingest([settle(i, "G1", 85000, now - i * 10) for i in range(1, 400)])
+    # category_demand's decayed rate assumes a long history (an hour of data reads ~33/h), so lower the bar here
+    monkeypatch.setattr(config, "DEEP_CATEGORY_RATE", 20)
+    demand = [{"category": CAT["G1"]["category"], "item": "의자", "kind": "goods", "skus": 1, "median_price": 100000}]
+    chairs = [{"unit": f"u{i}", "category": CAT["G1"]["category"], "cost": 60000, "sku": "G1"} for i in range(13)]
+    lines, why, state = restock_r3.plan({"balance": 15_000_000, "units": chairs}, demand, m, now=now)
+    assert state["stock_budget"] == 6_000_000
+    assert lines and lines[0]["sku"] == "G1"                                          # 780k < 35% of 6M = 2.1M
+    assert any(w.get("deep") for w in why)

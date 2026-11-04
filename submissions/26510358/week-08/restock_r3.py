@@ -98,9 +98,9 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
             have[u["category"]] = have.get(u["category"], 0) + 1
             stock_cost += u["cost"]
             cat_cost[u["category"]] = cat_cost.get(u["category"], 0) + u["cost"]
-    cat_cap = config.CATEGORY_MAX_SHARE * config.MAX_STOCK_COST
     balance = inv.get("balance") or 0
-    budget = min(balance - config.CASH_RESERVE, config.MAX_STOCK_COST - stock_cost)
+    stock_max = config.stock_budget(balance)
+    budget = min(balance - config.CASH_RESERVE, stock_max - stock_cost)
     explore_budget = min(budget, config.EXPLORE_SHARE * config.MAX_STOCK_COST - (mem.get("explore_spent") or 0))
     dem = mem.category_demand(now=now)
     forum = mem.forum_demand_signals()
@@ -145,11 +145,13 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         price = L * (ratio or config.EV_DEFAULT_PRICE_RATIO)
         loss = pricing.hold_loss(info.get("kind"), cost, info.get("shelf_hours"))
         ev_qty, evs = pricing.ev_quantity(have.get(k, 0), mu_h * config.HORIZON_H, price, cost, loss)
+        deep = (dem.get(k) or {}).get("rate", 0) >= config.DEEP_CATEGORY_RATE
+        cat_cap = (config.DEEP_CATEGORY_SHARE if deep else config.CATEGORY_MAX_SHARE) * stock_max
         room = int(max(0, cat_cap - cat_cost.get(k, 0)) // unit_cost_estimate(info))
         qty = min(20, need, ev_qty, room)
         if qty <= 0:
             why.append({"category": k, "sku": sku, "skip": "no unit with positive expected profit" if ev_qty <= 0
-                        else f"category stock cost {cat_cost.get(k, 0):.0f} at the {config.CATEGORY_MAX_SHARE:.0%} cap",
+                        else f"category stock cost {cat_cost.get(k, 0):.0f} at the {cat_cap / stock_max:.0%} cap",
                         "rule_need": need, "ev_qty": ev_qty})
             continue
         est = unit_cost_estimate(cat[sku]) * qty
@@ -162,7 +164,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         lines.append({"sku": sku, "qty": qty})
         cat_cost[k] = cat_cost.get(k, 0) + est
         why.append({"category": k, "sku": sku, "qty": qty, "reason": "demand", "score": round(score),
-                    "rule_need": need, "ev_qty": ev_qty, "ev_first_units": evs[:3], "cap_room": room})
+                    "rule_need": need, "ev_qty": ev_qty, "ev_first_units": evs[:3], "cap_room": room, "deep": deep})
 
     # 2) coverage: one unit where we have nothing and there is no evidence yet, most SKUs first
     spent = 0
@@ -183,7 +185,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         why.append({"category": k, "sku": sku, "qty": 1, "reason": "coverage"})
     if spent and not dry_run:
         mem.put("explore_spent", (mem.get("explore_spent") or 0) + spent)
-    return lines, why, {"balance": balance, "stock_cost": stock_cost, "units": len(units)}
+    return lines, why, {"balance": balance, "stock_cost": stock_cost, "stock_budget": stock_max, "units": len(units)}
 
 
 def main():
