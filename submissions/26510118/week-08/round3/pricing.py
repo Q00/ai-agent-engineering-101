@@ -71,6 +71,11 @@ SKU_MARKET_MIN = 10
 SOLO_OTHERS = 10
 SOLO_ASK = {"A": 0.85, "B": 0.80, "C": 0.70}
 SOLO_FLOOR = {"A": 0.75, "B": 0.70, "C": 0.60}
+# ...and the floor learns (11/5 02:40, the person's call): the first two uncontested talks both walked, one at 0.697
+# against our floor of 0.75 (the old floor, 0.684, would have sold it). A buyer who walks with a last offer within
+# SOLO_GIVE of list under the floor sets that product's floor to the offer + SOLO_STEP for SOLO_LEARN; the ask still
+# opens high, and the floor never goes under the one the rules without SOLO give.
+SOLO_GIVE, SOLO_STEP, SOLO_LEARN = 0.06, 0.01, 12 * 3600
 LATE_LIFT, LATE_WINDOW = 0.02, 600   # the ask in the last LATE_WINDOW seconds before the next supply window
 WARRANTY_DEFAULT_MIN = 100_000       # goods listed at this or more are quoted with the warranty unless asked otherwise:
                                      # 86-97% of the market's bed and sofa deals carry one, and our goods sold without
@@ -92,6 +97,27 @@ def sku_ref(cells: dict | None, g: str, warranty: bool):
     """The SKU's own market (others_6h) for grade g, with a warranty or without, or None."""
     d = (cells or {}).get(g + ("_w" if warranty else "")) or {}
     return d.get("median") if (d.get("n") or 0) >= SKU_MARKET_MIN and isinstance(d.get("median"), (int, float)) else None
+
+
+def learn_solo(book: dict, sku: str, plan: dict, offers: list, list_price: float, now: float) -> bool:
+    """A talk on an uncontested product that ended without a deal: when the buyer's last offer came within SOLO_GIVE
+    of list under our floor, the product's floor becomes that offer + SOLO_STEP (lower only). True when it changed."""
+    if not plan.get("solo") or not offers or not list_price:
+        return False
+    last, floor = offers[-1] / list_price, plan["floor"] / list_price
+    if not 0 <= floor - last <= SOLO_GIVE:
+        return False
+    new = round(last + SOLO_STEP, 4)
+    if solo_floor_of(book, sku, now) is not None and book[sku]["floor"] <= new:
+        return False
+    book[sku] = {"floor": new, "at": int(now)}
+    return True
+
+
+def solo_floor_of(book: dict | None, sku: str, now: float):
+    """The floor learn_solo set for the product (a share of list), while it is younger than SOLO_LEARN, else None."""
+    e = (book or {}).get(sku) or {}
+    return e.get("floor") if isinstance(e.get("floor"), (int, float)) and now - (e.get("at") or 0) < SOLO_LEARN else None
 
 
 def late_in_cycle(window: dict | None, now: float) -> bool:
@@ -146,12 +172,13 @@ def respond(ask: int, floor: int, offer: int, rounds: int) -> tuple[str, int]:
 def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: float = 0.0,
          catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
          late: bool = False, dear_default: bool = False, sku_market: dict | None = None,
-         in_line: bool = False, solo: bool = False) -> dict:
+         in_line: bool = False, solo: bool = False, solo_floor: float | None = None) -> dict:
     """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late, sku_ref, nudge} for one unit.
     sku_market: the SKU's others_6h; a grade A ask well above it comes down, a grade C ask well under it goes up
     (not for the premium line, in_line, nor on clearance); nudge: by how much (share of list), or None. A premium
     line product is never asked under its own market (11/5: a bed sold at 0.63 where others got 0.80), and solo
-    (uncontested, SOLO_OTHERS) is asked at SOLO_ASK and held at SOLO_FLOOR.
+    (uncontested, SOLO_OTHERS) is asked at SOLO_ASK and held at SOLO_FLOOR, or at solo_floor (share of list, from
+    learn_solo) when that is lower.
     at_cost: the floor is cost + 5% (no clearance), which is what the seller may say.
     adjust and extra come from the rules in force (price_adjust, warranty_extra); market is the
     category's by_grade from market_summary.json; late: the end of the supply cycle (late_in_cycle);
@@ -206,8 +233,10 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     if w:
         floor += round(lp * extra[g])
     if in_line and solo and clearance is None:
-        floor = max(floor, round(lp * (SOLO_FLOOR[g] + (extra[g] / 2 if w else 0))))
+        hold = SOLO_FLOOR[g] + (extra[g] / 2 if w else 0)
+        floor = max(floor, round(lp * (min(hold, solo_floor) if solo_floor is not None else hold)))
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
             "at_cost": clearance is None, "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
-            "sku_ref": sref, "nudge": nudge, "solo": bool(in_line and solo)}
+            "sku_ref": sref, "nudge": nudge, "solo": bool(in_line and solo),
+            "solo_floor": solo_floor if in_line and solo else None}

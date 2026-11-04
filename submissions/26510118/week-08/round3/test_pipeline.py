@@ -278,6 +278,22 @@ def test_pricing():
     check("...solo counts only in the line, and never on clearance",
           pricing.plan(dear_a, now, warranty=True, solo=True)["solo"] is False
           and pricing.plan(dict(dear_a, supplied_at=now - 8 * DAY), now, warranty=True, in_line=True, solo=True)["floor"] < 1_550_000)
+    sofa_b = dict(goods_a, grade="B", list_price=2_112_000, cost=900_000)
+    walked = pricing.plan(sofa_b, now, warranty=True, in_line=True, solo=True)
+    book = {}
+    check("a buyer who walks at 0.697 against our 0.75: the product's floor becomes 0.707 of list",
+          walked["floor"] == round(2_112_000 * 0.75) and pricing.learn_solo(book, "S", walked, [1_375_000, 1_472_000], 2_112_000, now)
+          and book["S"]["floor"] == 0.707, (walked["floor"], book))
+    p = pricing.plan(sofa_b, now, warranty=True, in_line=True, solo=True, solo_floor=pricing.solo_floor_of(book, "S", now))
+    check("...the next talk opens as high but holds only there (0.707), never under the rules' own floor",
+          p["ask"] == walked["ask"] and p["floor"] == round(2_112_000 * 0.707)
+          and pricing.plan(sofa_b, now, warranty=True, in_line=True, solo=True, solo_floor=0.40)["floor"]
+          == pricing.plan(sofa_b, now, warranty=True, in_line=True)["floor"], (p["floor"], p["ask"]))
+    check("...a walk far under the floor (0.60) teaches nothing; a higher learning does not raise a lower floor; it lasts 12 h",
+          not pricing.learn_solo(book, "S", walked, [1_267_000], 2_112_000, now)
+          and not pricing.learn_solo(book, "S", dict(walked, floor=1_520_000), [1_500_000], 2_112_000, now)
+          and pricing.solo_floor_of(book, "S", now + 13 * 3600) is None and pricing.solo_floor_of(book, "S", now + 3600) == 0.707)
+    check("...only uncontested products learn", not pricing.learn_solo({}, "S", dict(walked, solo=False), [1_472_000], 2_112_000, now))
     p = pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.86}})
     check("a contested line product is never asked under its own market (0.86 against the rule's 0.80)",
           p["ask"] == 1_720_000 and p["nudge"] == 0.06, p)

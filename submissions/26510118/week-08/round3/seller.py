@@ -298,9 +298,10 @@ def priced(u: dict, now: float, warranty: bool) -> dict:
                             # no row: nobody sold it in 24 h; a row without the count (an older summary) or no summary: not solo
     in_line = u.get("sku") in restock.load_line(market_file("analysis/line.json"))   # restock's reading of the line
     late = pricing.late_in_cycle(market_file("inventory.json").get("restock"), now)
+    learned = pricing.solo_floor_of(market_file("records/solo_floors.json"), u.get("sku"), now) if solo else None
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
                         extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True,
-                        sku_market=sku_market, in_line=in_line, solo=solo)
+                        sku_market=sku_market, in_line=in_line, solo=solo, solo_floor=learned)
 
 
 class Seller(AgentExecutor):
@@ -322,10 +323,17 @@ class Seller(AgentExecutor):
         common.record("negotiations", task=task_id, sku=u["sku"], unit=u["unit"], grade=p["grade"],
                       cost=u["cost"], list_price=u["list_price"], floor=p["floor"], at_cost=p["at_cost"],
                       ref=p.get("ref"), late=p.get("late"), sku_ref=p.get("sku_ref"), nudge=p.get("nudge"), solo=p.get("solo"),
+                      solo_floor=p.get("solo_floor"),
                       asked_warranty=d["warranty"],
                       warranty=bool(p.get("warranty_hours")), how=d["how"], asks=d["asks"], offers=d["offers"],
                       walk_odds=d.get("walk") or None, taken_early=d.get("early", False), outcome=outcome, price=price)
         print(f"[seller] {u['sku']} {outcome}" + (f" at {price}" if price else ""), flush=True)
+        if outcome != "deal" and p.get("solo"):                     # an uncontested product's floor learns from a walk
+            path = common.MARKET_DIR / "records" / "solo_floors.json"
+            book = common.read_json(path, {}) or {}
+            if pricing.learn_solo(book, u["sku"], p, d["offers"], u["list_price"], time.time()):
+                common.write_json(path, book)
+                print(f"[seller] {u['sku']} uncontested floor now {book[u['sku']]['floor']} of list", flush=True)
 
     def quote(self, d: dict, now: float) -> dict:
         """(Re)price the deal's current unit and start its asks."""
