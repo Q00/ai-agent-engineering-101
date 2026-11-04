@@ -32,14 +32,16 @@ def fake_cli(tmp_path, body):
 
 def test_shipped_config_defaults():
     c = C.load_config()
-    assert c["model"] == "gpt-6.1-terra" and c["real_calls_enabled"] is False
-    assert c["cli"] == "/home/box/.local/bin/codex" and c["extra_args"] == []    # sandbox flags fixed in code
+    # 2026-11-04 성수님: the LLM is a required design element, so the shipped config is ON (v121c, labpc codex)
+    assert c["model"] == "gpt-6.1-terra" and c["real_calls_enabled"] is True and c["live_ops"] is True
+    assert c["cli"] == "/home/sungsoo/.local/bin/codex" and c["extra_args"] == []    # sandbox flags fixed in code
     assert "--sandbox" in C.FIXED_ARGS and "--ephemeral" in C.FIXED_ARGS
     assert "@" not in C.CONFIG.read_text()                      # no account address in the config
 
 
-def test_disabled_by_default_falls_back(tmp_path):
-    cl = C.CodexClient("editor", config_path=cfg(tmp_path), base=tmp_path)
+def test_disabled_config_falls_back(tmp_path):
+    # the shipped config is ON since 2026-11-04; a config with real calls off must still make no call
+    cl = C.CodexClient("editor", config_path=cfg(tmp_path, real_calls_enabled=False), base=tmp_path)
     out, st = call_with_timeout(cl, "p", 10, 5)
     assert out is None and st == "error:RealCallsDisabled"
     assert not (tmp_path / "counter.json").exists()

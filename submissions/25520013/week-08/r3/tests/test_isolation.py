@@ -11,6 +11,10 @@ import pytest
 R3 = Path(__file__).resolve().parents[1]
 ROOTS = (R3, R3 / "hooks")
 FORBIDDEN = {"memory", "harness", "experiments", "evals", "taste", "memo_proposer", "llm"}
+# 2026-11-04 (성수님: the LLM is a required design element): the seller may reach exactly one LLM entry, the
+# interpreter assist llm.live_v120c (rule parse first, LLM only when it fails; guarded import, OFF on any error).
+# Nothing else in FORBIDDEN, and no other llm module, may be reached from the decision path.
+ALLOWED = {("hooks/seller.py", "llm.live_v120c")}
 DECISION = [f"hooks/{m}.py" for m in ("seller", "market_buyer", "restock", "review", "common")] + [
     f"{m}.py" for m in ("policy", "aggregates", "cards", "ledger", "reputation", "volume", "metrics", "owner")]
 
@@ -77,6 +81,8 @@ def reach(start, roots=ROOTS):
                 targets = resolve(name, (base,))
             else:
                 if name.split(".")[0] in FORBIDDEN:
+                    if f.is_relative_to(R3) and (str(f.relative_to(R3)), name) in ALLOWED:
+                        continue
                     if not member:  # `from memory import graph` is one hit, "memory"
                         hits.append(f"{chain} -> {name}")
                     continue
@@ -125,3 +131,12 @@ def test_negative_control_star_import_and_package_member(tmp_path):
     assert reach(tmp_path / "m.py", (tmp_path,) + ROOTS) == ["m.py -> memo_proposer"]
     (tmp_path / "n.py").write_text("from memory import graph\n", encoding="utf-8")
     assert reach(tmp_path / "n.py", (tmp_path,) + ROOTS) == ["n.py -> memory"]
+
+
+def test_seller_llm_assist_import_is_guarded():
+    """The one allowed LLM edge (ALLOWED) sits inside try/except, so an import or config error leaves the rule path."""
+    tree = ast.parse((R3 / "hooks/seller.py").read_text(encoding="utf-8"))
+    guarded = [m for n in ast.walk(tree) if isinstance(n, ast.Try) for m in ast.walk(n)
+               if isinstance(m, ast.ImportFrom) and m.module == "llm.live_v120c"]
+    plain = [n for n in tree.body if isinstance(n, ast.ImportFrom) and (n.module or "").startswith("llm")]
+    assert guarded and not plain

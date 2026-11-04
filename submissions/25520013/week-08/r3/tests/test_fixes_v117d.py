@@ -496,10 +496,10 @@ def caps(tmp_path, enabled=True, clock=None):
 
 
 def test_caps_default_config_is_disabled_and_makes_no_call(tmp_path):
-    assert CP.load_config()["enabled"] is False
+    assert CP.load_config()["enabled"] is True        # shipped caps ON since 2026-11-04 (성수님: LLM required)
     assert CP.load_config(tmp_path / "missing.json")["enabled"] is False
     c = MockClient("x")
-    o = CP.OpsCaps(tmp_path, clock=Clock())
+    o = CP.OpsCaps(tmp_path, config={}, clock=Clock())   # a config without enabled=true makes no call
     assert o.call("parse", c, "p", 5, "d1") == (None, "disabled") and c.prompts == []
 
 

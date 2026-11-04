@@ -223,7 +223,7 @@ def test_codex_cmd_fixed_flags(tmp_path):
     off = {cmd[i + 1] for i, a in enumerate(cmd) if a == "--disable"}
     assert {"shell_tool", "unified_exec", "apps", "plugins", "browser_use", "computer_use", "view_image"} <= off
     assert "shell_environment_policy.inherit=none" in cmd
-    assert cmd[cmd.index("-m") + 1] == "gpt-6.1-terra" and cfg["real_calls_enabled"] is False
+    assert cmd[cmd.index("-m") + 1] == "gpt-6.1-terra" and cfg["real_calls_enabled"] is True   # ON since 2026-11-04
 
 
 @pytest.mark.parametrize("bad", [["--sandbox", "danger-full-access"], ["--dangerously-bypass-approvals-and-sandbox"],

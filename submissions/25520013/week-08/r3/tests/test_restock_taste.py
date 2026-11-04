@@ -136,6 +136,7 @@ DECISION_PATH = ["hooks/seller.py", "hooks/market_buyer.py", "hooks/restock.py",
                  "hooks/common.py", "policy.py", "aggregates.py", "cards.py", "ledger.py", "reputation.py",
                  "volume.py", "metrics.py", "owner.py"]
 FORBIDDEN = {"memory", "harness", "experiments", "evals", "taste", "memo_proposer", "llm"}
+ALLOWED = {("hooks/seller.py", "llm.live_v120c")}   # 2026-11-04 성수님: LLM required; see tests/test_isolation.py
 
 
 def test_decision_path_imports_no_shadow_module():
@@ -146,7 +147,8 @@ def test_decision_path_imports_no_shadow_module():
             if isinstance(n, ast.Import):
                 mods |= {a.name.split(".")[0] for a in n.names}
             elif isinstance(n, ast.ImportFrom) and n.module and not n.level:
-                mods.add(n.module.split(".")[0])
+                if (rel, n.module) not in ALLOWED:
+                    mods.add(n.module.split(".")[0])
         assert not mods & FORBIDDEN, (rel, mods & FORBIDDEN)
 
 
