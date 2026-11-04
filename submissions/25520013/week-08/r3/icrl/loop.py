@@ -19,6 +19,7 @@ import copy
 import fcntl
 import hashlib
 import json
+import math
 import os
 import time
 import traceback
@@ -35,7 +36,9 @@ WORK = HERE.parent
 STEP_S = 1200
 BOUNDARY_LEAD_S = 900
 HOLD_STEPS = 3
-LOSS_CAP_FRAC = 0.02
+LOSS_CAP_FRAC = 0.15  # v1.25c: single-block disaster stop (was 0.02: 10-20 % placebo trips with 20-40 min blocks)
+LOSS_T = 4.0  # v1.25c: harm stop, one-sided t of the paired won differences (placebo trips 2-4 %, 30 h replay)
+LOSS_MIN_PAIRS = 3
 LOSS_REF_S = 3600  # v1.24b: the loss cap's A reference covers at least 1 h even when blocks are 20 min
 RETEST_AFTER_S = 86400
 MEMCHECK_S = 3600  # 성수님 2026-11-04: memory recall check every hour (was daily)
@@ -598,9 +601,43 @@ def reblock(ctx, exp):
     return old
 
 
+def null_arm(ctx, exp):
+    """v1.25c: True when every edit's B value already equals its value in A_version, i.e. both arms are the same
+    policy (an experiment proposed from a stale snapshot). An unreadable A_version or an absent path -> False."""
+    try:
+        a_pol = json.loads(ctx.runs.policy_bytes(exp["A_version"]))
+    except Exception:  # noqa: BLE001
+        return False
+    for r in exp.get("edits") or []:
+        v, ok = SP.get(a_pol, r["path"])
+        if not ok or v != r["value"]:
+            return False
+    return bool(exp.get("edits"))
+
+
+def harm(exp):
+    """v1.25c: one-sided harm stop on the money the lane moves ("won": value or gross profit per hour for the shop,
+    surplus per hour for the buyer) over complete pairs. -> stats {pairs, mean, sd, t, metric} when the mean pair
+    difference B - A is negative with t < -LOSS_T after LOSS_MIN_PAIRS pairs, else None."""
+    d = X.pair_diffs(exp.get("blocks") or [], key="won")
+    if len(d) < LOSS_MIN_PAIRS:
+        return None
+    m = sum(d) / len(d)
+    if m >= 0:
+        return None
+    sd = math.sqrt(sum((x - m) ** 2 for x in d) / (len(d) - 1))
+    t = -math.inf if sd == 0 else m / (sd / math.sqrt(len(d)))
+    if t >= -LOSS_T:
+        return None
+    return {"pairs": len(d), "mean": m, "sd": sd, "t": round(max(t, -1e9), 2), "metric": "won"}
+
+
 def advance(ctx, L, exp, store, stats, now):
     pol = L["pol"]
     reblock(ctx, exp)
+    if null_arm(ctx, exp):
+        end(ctx, L, exp, "stopped", None, now, reason="null_arm: B equals A_version")
+        return "null_arm"
     if "stars_base" not in exp:  # an experiment started before the ledger stars term
         exp["stars_base"] = L.get("stars_base")
     blk_s = exp["block_steps"] * STEP_S
@@ -667,6 +704,10 @@ def advance(ctx, L, exp, store, stats, now):
         end(ctx, L, exp, v, st, now)
         return v
     if cur["i"] % 2 == 1:
+        hv = harm(exp)
+        if hv:
+            end(ctx, L, exp, "reject", hv, now, reason=f"harm t={hv['t']} over {hv['pairs']} pairs")
+            return "harm"
         v, st = X.switchback_verdict(X.pair_diffs(exp["blocks"]), exp.get("retest"))
         exp["stats"] = st
         if v:
@@ -1336,6 +1377,9 @@ def _step(ctx, now):
             return out
         for ln, exp in running(L):
             out.setdefault("exp", {})[ln] = advance(ctx, L, exp, store, stats, now)
+        # v1.25c: an experiment that ended above restored its A values in the live file; the cycles below must see
+        # those, not the snapshot taken at the start of the tick (02:14 KST: e0014/e0015 were proposed from it)
+        L["pol"] = pol = json.loads(ctx.policy.read_bytes())
         k = step_idx(pol, now)
         for ln in LANES:
             s = lanes[ln]

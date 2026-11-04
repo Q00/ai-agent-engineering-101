@@ -247,7 +247,7 @@ def test_switchback_runs_to_keep_a_and_restores_identical_bytes(env):
 
 
 @pytest.mark.parametrize(
-    "env", [{"own_per_h": 12, "gp": 20000, "balance": 1000000}], indirect=True
+    "env", [{"own_per_h": 12, "gp": 20000, "balance": 500000}], indirect=True  # v1.25c: cap 15 % of the balance
 )
 def test_loss_cap_reverts_and_rejects(env, monkeypatch):
     t0 = start(env, "B", monkeypatch)
