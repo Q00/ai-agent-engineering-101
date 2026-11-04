@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "desc": "Compute 137 * 249 and return only the number.",
+    "gold": "A",
+    "verify": {"type": "exact", "expect": "34113"}
+  },
+  {
+    "id": 2,
+    "desc": "Compute 2**10 + 3**5 and return only the number.",
+    "gold": "A",
+    "verify": {"type": "exact", "expect": "1267"}
+  },
+  {
+    "id": 3,
+    "desc": "Rewrite this sentence for a 10-year-old, in two sentences or fewer: \"This study empirically validates the efficiency of negotiation-based task allocation in multi-agent systems.\"",
+    "gold": "B",
+    "verify": {"type": "rule", "max_sentences": 2}
+  },
+  {
+    "id": 4,
+    "desc": "Summarize the following in exactly one plain-English sentence: \"A manager announces a task, eligible contractors submit bids, and the manager awards the contract to one bidder.\"",
+    "gold": "B",
+    "verify": {"type": "rule", "max_sentences": 1}
+  },
+  {
+    "id": 5,
+    "desc": "Write a Python function rev(xs) that returns a reversed copy of the list without mutating the input.",
+    "gold": "C",
+    "verify": {"type": "pytest", "asserts": ["rev([1, 2, 3]) == [3, 2, 1]", "rev([]) == []"]}
+  },
+  {
+    "id": 6,
+    "desc": "Write a Python function is_palindrome(s) that returns True if s reads the same forwards and backwards, ignoring case and spaces.",
+    "gold": "C",
+    "verify": {"type": "pytest", "asserts": ["is_palindrome('A man a plan a canal Panama') is True", "is_palindrome('hello') is False"]}
+  }
+]
