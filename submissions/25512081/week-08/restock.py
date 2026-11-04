@@ -94,6 +94,15 @@ ENDGAME = 24 * 3600        # the last day buys nothing: stock left at the end is
 # few shops hold gets more of our stock, one many shops hold gets less.
 FEW_SHOPS, MANY_SHOPS = 1, 5
 COMP_FRESH = 12 * 3600
+# Patch 3.2 (Nov 4, /rules): over 50 units of a product bought by the whole market in an hour, each further unit
+# costs 0.2% more, up to +50% (inventory.json "surge": factor per SKU). At 22:17 the Q mattress stood at 1.366 and
+# kimchi at 1.228: our 21:23 mattress line cost 0.85 of list a unit (5.74M for 16) while we sold mattresses at a
+# median ~0.70 and held 15 of them an hour later. A unit costs ~0.6 of list x the factor; we buy only units whose
+# cost stays MIN_MARGIN under what the market paid for that SKU lately (each of our units raises the factor too).
+UNIT_COST = 0.6
+MIN_MARGIN = 0.15
+SURGE_STEP, SURGE_MAX = 0.002, 1.5
+DEFAULT_PX = 0.78          # grade A median share of list (Nov 4 research) when a SKU has few settles
 
 
 def log(msg):
@@ -265,7 +274,25 @@ def competition(cat):
     return c["shops"] if c and time.time() - c["ts"] < COMP_FRESH else None
 
 
-def plan_lines(sd, st, catalog, room):
+def surge_cut(sku, qty, catalog, st, surge):
+    """(units worth buying of qty, their estimated cost) under the surge cost and the market's price for the SKU."""
+    lp = (catalog.get(sku) or {}).get("list_price", 0)
+    px = st["sku_px"].get(sku) or []
+    sale = sorted(px)[len(px) // 2] if len(px) >= 3 else DEFAULT_PX
+    f, n, cost = surge.get(sku, 1.0), 0, 0.0
+    if f <= 1.0:                                     # no surge: unchanged (under 50 units we do not know the count)
+        return qty, UNIT_COST * lp * qty
+    while n < qty:
+        fk = min(SURGE_MAX, f + SURGE_STEP * n)
+        if UNIT_COST * fk > sale * (1 - MIN_MARGIN):
+            break
+        n, cost = n + 1, cost + UNIT_COST * fk * lp
+    if n < qty:
+        log(f"surge: {sku} x{qty} cut to {n} (factor {f:.3f}, unit ~{UNIT_COST * f:.2f} of list, market pays {sale:.2f})")
+    return n, cost
+
+
+def plan_lines(sd, st, catalog, room, surge):
     """The shop manager's latest plan, once: lines it kept that still fit the money free now."""
     plan = load(sd / "plan.json", {})
     if not plan.get("lines") or plan.get("ts", 0) <= st.get("plan_done", 0) or time.time() - plan["ts"] > PLAN_FRESH:
@@ -273,10 +300,10 @@ def plan_lines(sd, st, catalog, room):
     st["plan_done"] = plan["ts"]
     out = []
     for ln in plan["lines"][:MAX_LINES]:
-        est = (catalog.get(ln["sku"]) or {}).get("list_price", 0) * 0.6 * ln["qty"]
-        if est <= room:
+        qty, est = surge_cut(ln["sku"], ln["qty"], catalog, st, surge)
+        if qty and est <= room:
             room -= est
-            out.append(ln)
+            out.append({**ln, "qty": qty, "est": est})
     log(f"plan from the shop manager: {len(out)} lines ({plan.get('reason', '')[:120]})")
     return out
 
@@ -377,8 +404,9 @@ def main():
         log(f"forum skipped: {e}")
     order = sorted(want, key=lambda c: (-st["rev"].get(c, 0), -(st["pop"].get(c, 0) + 5 * st["sold"].get(c, 0))))
 
-    buy = plan_lines(sd, st, catalog, room) if not endgame and not closed else []
-    room -= sum(catalog[b["sku"]]["list_price"] * 0.6 * b["qty"] for b in buy)
+    surge = {s["sku"]: s.get("factor", 1.0) for s in inv.get("surge", []) if s.get("sku")}
+    buy = plan_lines(sd, st, catalog, room, surge) if not endgame and not closed else []
+    room -= sum(b.pop("est") for b in buy)
     held_sku = Counter(u["sku"] for u in units)
     order = sorted(set(order) | set(VALUE_SKU), key=lambda c: (-st["rev"].get(c, 0), -st["pop"].get(c, 0)))
     for cat in order:
@@ -394,12 +422,14 @@ def main():
             continue
         if not sku:
             continue
-        unit_est = catalog[sku]["list_price"] * 0.6        # a unit costs 25-75% of list
+        unit_est = catalog[sku]["list_price"] * UNIT_COST * surge.get(sku, 1.0)   # 25-75% of list, x surge
         gap = min(gap, LINE_QTY_MAX, max(1, int(MAX_LINE_COST // unit_est)))
         gap = min(gap, int(room // unit_est))       # as many as fit: two sofas over the room used to mean none
         if gap <= 0:
             continue
-        est = unit_est * gap
+        gap, est = surge_cut(sku, gap, catalog, st, surge)
+        if gap <= 0:
+            continue
         room -= est
         buy.append({"sku": sku, "qty": gap})
 
