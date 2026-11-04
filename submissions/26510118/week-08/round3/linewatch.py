@@ -18,6 +18,13 @@ shops' settles of the last FIND_WINDOW pick products of FIND_LIST_MIN or more th
 FIND_MEDIAN of list or more with FIND_SELLERS sellers or fewer, best expected margin first, until the line holds
 LINE_MAX_SKUS products with a cap above 0. Each comes in at FIND_CAP and is judged like the rest from then on;
 one out (cap 0) for FIND_DROP is let go.
+The twins (11/5 01:00, the person's call): dear products our own buyer could not find in any shop come in too. A
+product of UNMET_LIST_MIN or more that UNMET_MIN or more of our buyer's orders accepted in the last UNMET_WINDOW
+and found nowhere (records/unmet.jsonl), with budgets of UNMET_BUDGET of its list or more, joins at UNMET_CAP, at
+most UNMET_MAX at a time: the market asks every buyer for much the same, so other buyers want it too, and no shop
+sells it (our own buyer cannot buy from us: same owner). Nothing selling it, no market verdict: the stall rule
+(held STALL with no sale) takes it out. (11/4 night: 3 bed orders in 6 h with budgets of 3.6-5.1M for beds listed
+2.0-4.0M, sold once by other shops.)
 
 One guard (the minimum the person asked for, 11/4 23:40): no cap grows and no product comes back in while our
 stars on the board (scoreboard.py's stars_rank, a fifth of the shop's score) are under STARS_MIN, and under it
@@ -57,7 +64,9 @@ STARS_MIN, STARS_REST = 4.80, 2 * 3600
 FIND_WINDOW = 6 * 3600
 FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.76, 10
 FIND_CAP = 2
-LINE_MAX_SKUS = 20
+LINE_MAX_SKUS = 30       # 20 until 11/5 01:00
+UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 6 * 3600, 2, 500_000, 1, 5
+UNMET_BUDGET = 0.85      # ...and the orders' budgets cover this share of its list (a buyer can pay our ask)
 FIND_DROP = 12 * 3600
 COST_GUESS = 0.65        # a grade A unit's cost as a share of list (0.55-0.75): the margin a candidate is ranked by
 
@@ -122,7 +131,28 @@ def guards(units: list, line: dict, stars: float | None, balance=None) -> dict:
     return {"share": share, "stars": stars, "hold": hold, "low_stars": low}
 
 
-def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, now: float) -> dict:
+def unmet_wanted(unmet: list, catalog: dict, line: dict, now: float) -> dict:
+    """{sku: {orders, list, budget}}: dear products in UNMET_MIN or more of our buyer's unmet orders of the last
+    UNMET_WINDOW, with a median budget of UNMET_BUDGET of the list or more; most orders first."""
+    seen, budgets = defaultdict(int), defaultdict(list)
+    for u in unmet:
+        if (u.get("ts") or 0) < now - UNMET_WINDOW:
+            continue
+        for sku in set(u.get("acceptable") or []):
+            if sku not in line and ((catalog.get(sku) or {}).get("list_price") or 0) >= UNMET_LIST_MIN:
+                seen[sku] += 1
+                if isinstance(u.get("budget"), (int, float)):
+                    budgets[sku].append(u["budget"])
+    out = {}
+    for sku, n in sorted(seen.items(), key=lambda kv: -kv[1]):
+        lp = catalog[sku]["list_price"]
+        b = st.median(budgets[sku]) if budgets[sku] else 0
+        if n >= UNMET_MIN and b >= UNMET_BUDGET * lp:
+            out[sku] = {"orders": n, "list": lp, "budget": int(b)}
+    return out
+
+
+def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, now: float, unmet: list | None = None) -> dict:
     """{sku: {n, median, sellers, list, at}}: new products for the line from other shops' settles of the last
     FIND_WINDOW, best expected margin (settles x list x (median - COST_GUESS)) first, as many as leave the line at
     LINE_MAX_SKUS products with a cap above 0."""
@@ -146,7 +176,12 @@ def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, 
         if m >= FIND_MEDIAN and sellers <= FIND_SELLERS:
             picks.append((len(rows) * lp * (m - COST_GUESS), sku, {"n": len(rows), "median": round(m, 4), "sellers": sellers, "list": lp}))
     picks.sort(key=lambda x: -x[0])
-    return {sku: dict(info, at=int(now)) for _, sku, info in picks[:room]}
+    out = {sku: dict(info, at=int(now), cap=FIND_CAP, source="market") for _, sku, info in picks[:room]}
+    room -= len(out)
+    for sku, info in list(unmet_wanted(unmet or [], catalog, line, now).items())[:max(0, min(room, UNMET_MAX))]:
+        if sku not in out:
+            out[sku] = dict(info, at=int(now), cap=UNMET_CAP, source="our buyer's unmet orders")
+    return out
 
 
 def brief(now: float, hours: float = 6) -> dict:
@@ -160,7 +195,7 @@ def brief(now: float, hours: float = 6) -> dict:
 
 
 def run(now: float, settles: list | None = None, inv: dict | None = None, sales: list | None = None,
-        line: dict | None = None, stars: float | None = None) -> list:
+        line: dict | None = None, stars: float | None = None, unmet: list | None = None) -> list:
     """Judge every line product, rewrite analysis/line.json, log the changes; returns them."""
     current = common.read_json(folder() / "line.json", None)
     if isinstance(current, dict) and current.get("by") != "linewatch":
@@ -184,13 +219,16 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     found = state.setdefault("found", {})
     for sku in [s for s in list(found) if caps.get(s) == 0 and now - (exits.get(s) or now) > FIND_DROP]:
         del found[sku]                                  # out too long: let go (its state goes below, with the line's)
-    line = dict(line, **{s: FIND_CAP for s in found if s not in line})
+    line = dict(line, **{s: (f.get("cap") or FIND_CAP) for s, f in found.items() if s not in line})
+    unmet = unmet if unmet is not None else [u for u in common.records("unmet") if (u.get("ts") or 0) >= now - UNMET_WINDOW]
     cut = g["low_stars"] and now - (state.get("stars_cut_at") or 0) >= STARS_REST
     changes = []
-    for sku, info in discover(settles, names, catalog, line, caps, now).items():
-        found[sku], line[sku] = info, FIND_CAP
-        changes.append({"at": int(now), "sku": sku, "from": 0, "to": FIND_CAP, "market": info,
-                        "why": f"added: others sold it {info['n']} times in 6 h at {info['median']:.3f} of list, {info['sellers']} sellers"})
+    for sku, info in discover(settles, names, catalog, line, caps, now, unmet).items():
+        found[sku], line[sku] = info, info["cap"]
+        why = (f"added: others sold it {info['n']} times in 6 h at {info['median']:.3f} of list, {info['sellers']} sellers"
+               if info["source"] == "market" else
+               f"added: {info['orders']} of our buyer's orders in 6 h wanted it and no shop had it (budget {info['budget']}, list {info['list']})")
+        changes.append({"at": int(now), "sku": sku, "from": 0, "to": info["cap"], "market": info, "why": why})
     for sku, default in line.items():
         lp = (catalog.get(sku) or {}).get("list_price")
         if not lp or not isinstance(default, int):

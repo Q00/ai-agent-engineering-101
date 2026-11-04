@@ -386,9 +386,12 @@ def test_restock(fake: Fake):
     old = [u for u in shelf if u["sku"] != PAKIMCHI] + [unit_row("u-near", PAKIMCHI, 9000, 10)]
     out, _ = restock.plan(inv(old), CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("food with under a day left does not count: a fresh one is bought", out["buy"] == [{"sku": PAKIMCHI, "qty": 1}], out)
-    heavy = shelf + [unit_row(f"u-h{i}", BED, 200_000) for i in range(restock.CAP // 200_000 + 1)]
+    heavy = shelf + [unit_row(f"u-h{i}", BED, 200_000) for i in range(250)]                 # 50M held, 4.9M cash
     out, _ = restock.plan(inv(heavy), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW)
-    check("stock at the cap: buys nothing", out["buy"] == [], out)
+    check("stock at the cap (90% of a 55M book, over the 40M floor): buys nothing", out["buy"] == [], out)
+    out, info = restock.plan(inv(heavy, balance=30_000_000), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW)
+    check("...the cap grows with the book: with 30M in cash it is 72M and the shelf refills",
+          {"sku": WATER, "qty": 1} in out["buy"] and info["cap"] == int(0.9 * (30_000_000 + 50_000_000 + sum(u["cost"] for u in shelf))), (out, info))
     sofa = "Gsofa0001"
     cat2 = dict(CATALOG, **{s: {"sku": s, "name": f"테스트 소파 {s}", "category": "가구/침구>가구>소파/의자/스툴", "list_price": 2_000_000,
                                 "kind": "goods", "shelf_hours": None} for s in (sofa, "Gsofa0002", "Gsofa0003", "Gsofa0004", "Gsofa0005")})
@@ -423,12 +426,21 @@ def test_restock(fake: Fake):
     check("the balance kept (2,500,000) holds: no sofa planned at 1,500,000 with 3,000,000 in hand",
           all(b["sku"] != sofa for b in out["buy"]), out["buy"][:2])
     out, info = restock.plan(inv(shelf, balance=8_000_000), cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
-    check("the line takes at most 90% of the money above the balance kept (8M: three sofas at 1.5M of 4.95M), the shelf still refills",
-          info["line"] == 3 and {"sku": WATER, "qty": 1} in out["buy"], (info["line"], out["buy"]))
+    check("the line takes at most 90% of the money above the balance kept and the shelf's 2M (8M: two sofas at 1.5M of 3.15M), the shelf still refills",
+          info["line"] == 2 and {"sku": WATER, "qty": 1} in out["buy"], (info["line"], out["buy"]))
+    many8 = {s: 1 for s in cat2 if s.startswith("Gsofa")}
+    lots = dict(cat2, **{f"Gsofa{i:04d}": dict(cat2[sofa], sku=f"Gsofa{i:04d}") for i in range(6, 12)})
+    out, info = restock.plan(inv(shelf, balance=60_000_000), lots, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW,
+                             line={s: 1 for s in lots if s.startswith("Gsofa")})
+    check("eleven line products and money for all: the line takes 8 of the 10 lines, the shelf keeps 2",
+          info["line"] == 8 and {"sku": WATER, "qty": 1} in out["buy"], (info, out["buy"]))
     soon = dict(rich(shelf), restock={"open": True, "opens_at": NOW - 100, "closes_at": NOW + 40})
     out, info = restock.plan(soon, cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
-    check("...and at most 75% of the lines: 40 s left (4 lines), 3 for the line, the refill still bought",
-          info["lines"] == 4 and info["line"] == 3 and {"sku": WATER, "qty": 1} in out["buy"], (info, out["buy"]))
+    check("...and the shelf keeps 2 lines: 40 s left (4 lines), 2 for the line, the refill still bought",
+          info["lines"] == 4 and info["line"] == 2 and {"sku": WATER, "qty": 1} in out["buy"], (info, out["buy"]))
+    tiny = dict(rich(shelf), restock={"open": True, "opens_at": NOW - 100, "closes_at": NOW + 25})
+    out, info = restock.plan(tiny, cat2, DEMAND, {}, [], [], rules, NOW, line=many)
+    check("...but with two lines left the line still gets one", info["lines"] == 2 and info["line"] == 1, (info, out["buy"]))
     out, info = restock.plan(rich([]), cat2, DEMAND, {}, sold10, [], rules, NOW, stocked=set(FILLERS[:10]), line={sofa: 1})
     fresh = [b["sku"] for b in out["buy"] if b["sku"] not in set(FILLERS[:10]) | {sofa}]
     check("exploring with the line: the line's line comes out of the refills' share, products never stocked keep theirs (4)",

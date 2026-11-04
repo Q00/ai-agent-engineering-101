@@ -356,6 +356,15 @@ def test_shop_around():
     check("a receipt not as agreed counts against the shop as unpaid, and the order goes on (the try keeps its asks)",
           nb2["A"]["recent"][-1] == "unpaid" and r["deal"] and tries[0]["asks"] == [30000, 30000] and tries[0]["list"] == 39900,
           (nb2["A"]["recent"], tries))
+    locked = {"A": {"recent": ["error"] * 3, "recent_at": [time.time()] * 3, "ratios": []}}
+    lc = mb.candidates(bed, [shop("A", BEDDING)], CATALOG, locked, {}, RULES)
+    check("a shop that failed us 3 times in a row: no choice for an ordinary order, still tried for a dear one",
+          mb.choose(list(lc), locked)[0] is None and mb.choose(list(lc), locked, dear=True)[0]["shop"]["name"] == "A"
+          and mb.choose(list(lc), locked, dear=True)[1] is True)
+    closed = [task("TASK_STATE_INPUT_REQUIRED", "Asking 39000.", ask=39000), task("TASK_STATE_REJECTED", "No.")]
+    r = asyncio.run(mb.trade(Shops({"http://A.test": closed}), first, bed, CATALOG, {}, RULES, False))
+    check("a shop that ends the talk after our offer is named so in the record",
+          not r["deal"] and (r["left"] or "").startswith("the shop ended the talk after our offer") and "its ask 39000" in r["left"], r["left"])
     even = mb.candidates(bed, [shop("R", BEDDING), shop("S", BEDDING)], CATALOG, {}, {}, RULES, rivals={"R"})
     best, _ = mb.choose(even, {})
     check("a near tie: the rival player's shop is passed over (0.95 of its score)", best["shop"]["name"] == "S",

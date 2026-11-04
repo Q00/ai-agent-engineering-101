@@ -77,6 +77,9 @@ MAX_TRIES, TRY_BUDGET, HARD_STOP = 3, 90, 240   # shops per order; seconds from 
 RIVALS_FRESH = 2 * 3600                          # analysis/rivals.json older than this is ignored
 LOW_STARS, MIN_REVIEWS = 2.5, 5
 EXPENSIVE = 100_000       # goods listed at this or more need a warranty
+DEAR_ORDER = 500_000      # an order whose products list at this (median) or more: a shop that failed us 3 times in a
+                          # row is tried rather than none (11/5: 19 of 111 dear orders lost in 12 h to that alone; a
+                          # failure there costs seconds, a deal tens or hundreds of thousands)
 WARRANTY_HOURS = 6
 HOLDS = 2                 # asks above our ceiling that stopped falling before we leave
 STEPS = 4
@@ -288,13 +291,16 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
     return out
 
 
-def choose(cands: list, nb: dict):
-    """(the best candidate, every choice was poor) or (None, reason)."""
+def choose(cands: list, nb: dict, dear: bool = False):
+    """(the best candidate, every choice was poor) or (None, reason). dear: an order of DEAR_ORDER or more, where
+    a shop that failed us 3 times in a row is still tried (one that turns us away on most tries is not)."""
     random.shuffle(cands)                                           # spread equal scores over shops
     clean = [c for c in cands if not c["flags"]]
     if clean:
         return max(clean, key=lambda c: c["score"]), False
     hope = [c for c in cands if not memory.failed_in_a_row(nb, c["shop"]["name"]) and not memory.turns_away(nb, c["shop"]["name"])]
+    if not hope and dear:
+        hope = [c for c in cands if not memory.turns_away(nb, c["shop"]["name"])]
     if not hope:
         return None, "every shop left failed us 3 times in a row or turns us away on most tries"
     return max(hope, key=lambda c: c["score"]), True
@@ -422,6 +428,9 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             r["left"] = r["left"] or "no agreement within our ceiling"
         elif not r["offers"] and not r["left"]:                    # turned away before any offer: the order is lost
             r.update(left=f"the shop turned us away: {said(t)[:80]}", refused=True)
+        elif not r["left"]:                                         # 11/5: 357 of 2,053 orders in 12 h ended so, unnamed
+            r["left"] = (f"the shop ended the talk after our offer {r['offers'][-1]}"
+                         + (f" (its ask {r['asks'][-1]})" if r["asks"] else ""))
     except Exception as e:                                           # noqa: BLE001  (a hung or broken shop)
         r["error"] = type(e).__name__
         print(f"[buyer] trade broke off: {type(e).__name__}: {e}", flush=True)
@@ -459,7 +468,7 @@ def note_outcome(nb: dict, c: dict, r: dict, order: dict) -> None:
 
 
 async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: dict, nb: dict, rules: dict,
-                      clock=time.time, start: float | None = None) -> tuple[dict, dict, list, bool]:
+                      clock=time.time, start: float | None = None, dear: bool = False) -> tuple[dict, dict, list, bool]:
     """(the last trade's result, its candidate, the earlier tries [{shop, sku, left, list, asks, offers}], whether
     that candidate was a poor choice): the best candidate first, then, while there is no deal, the next from a shop
     not yet tried (a clean one when the first was clean), up to MAX_TRIES. A new try starts only within
@@ -479,7 +488,7 @@ async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: 
             return r, c, tries, bool(poor)
         done = {x["shop"] for x in tries} | {c["shop"]["name"]}
         rest = [x for x in cands if x["shop"]["name"] not in done and (poor or not x["flags"])]
-        nxt, nxt_poor = choose(rest, nb) if rest else (None, None)
+        nxt, nxt_poor = choose(rest, nb, dear) if rest else (None, None)
         if nxt is None:
             return r, c, tries, bool(poor)
         tries.append({"shop": c["shop"]["name"], "sku": c["sku"], "left": r["left"] or r["error"], "list": c["list"],
@@ -506,7 +515,8 @@ async def amain(a) -> dict:
     riv = common.read_json(common.MARKET_DIR / "analysis" / "rivals.json", {}) or {}
     rivals = set(riv.get("shops") or []) if isinstance(riv, dict) and time.time() - (riv.get("at") or 0) < RIVALS_FRESH else set()
     cands = candidates(order, shops, catalog, nb, summary, rules, odds, rivals) if order.get("acceptable") else []
-    c, poor = choose(cands, nb) if cands else (None, "no shop has an acceptable product in stock")
+    dear = (base["median_list"] or 0) >= DEAR_ORDER
+    c, poor = choose(cands, nb, dear) if cands else (None, "no shop has an acceptable product in stock")
     if c is None:
         common.record("orders", **base, candidates=len(cands), deal=False, left=poor)
         if not cands and order.get("acceptable"):                      # a Round 3 order (Round 2 ones list no products)
@@ -520,7 +530,7 @@ async def amain(a) -> dict:
           + (f", every choice poor: {c['flags']}" if poor else ""), flush=True)
     client = A2A()
     try:
-        r, c, tries, poor = await shop_around(client, c, poor, cands, order, catalog, nb, rules, start=began)
+        r, c, tries, poor = await shop_around(client, c, poor, cands, order, catalog, nb, rules, start=began, dear=dear)
     finally:
         await client.close()
     memory.save(nb)

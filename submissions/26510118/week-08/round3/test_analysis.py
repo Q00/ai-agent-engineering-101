@@ -962,8 +962,21 @@ def test_discover():
           linewatch.discover(sold("Gsofa0001", 30, 0.8, 5), {"s0": "Kiro729", "s1": "Kiro729", "s2": "Kiro729", "s3": "Kiro729",
                                                               "s4": "Kiro729"}, cat, {}, {}, t) == {})
     full = {f"Gx{i}": 2 for i in range(linewatch.LINE_MAX_SKUS - 1)}
-    check("only as many as leave the line at 20 products with a cap above 0 (one exited does not count)",
+    check("only as many as leave the line at 30 products with a cap above 0 (one exited does not count)",
           list(linewatch.discover(settles, {}, cat, dict(full, Gout=2), {"Gout": 0}, t)) == ["Gsofa0001"])
+    bed = dict(cat, Gbed00001={"name": "bed", "category": "가구/침구>가구>침대", "list_price": 2_000_000},
+               Gbed00002={"name": "bed 2", "category": "가구/침구>가구>침대", "list_price": 4_000_000},
+               Gbed00003={"name": "cheap", "category": "가구/침구>가구>침대", "list_price": 300_000})
+    want = [{"ts": t - 3600, "budget": 3_600_000, "acceptable": ["Gbed00001", "Gbed00002", "Gbed00003"]},
+            {"ts": t - 1800, "budget": 2_800_000, "acceptable": ["Gbed00001", "Gbed00002", "Gbed00003"]},
+            {"ts": t - 7 * 3600, "budget": 5_000_000, "acceptable": ["Gbed00001"]}]
+    check("our buyer's unmet orders: dear products in 2 or more of the last 6 h whose budgets cover 85% of the list "
+          "(the 4M bed's median budget 3.2M does not; a 300k one is not dear; the 7 h old order does not count)",
+          linewatch.unmet_wanted(want, bed, {}, t) == {"Gbed00001": {"orders": 2, "list": 2_000_000, "budget": 3_200_000}},
+          linewatch.unmet_wanted(want, bed, {}, t))
+    got = linewatch.discover([], {}, bed, {BEDDING: 3}, {}, t, want)
+    check("...they join the line at cap 1, named as from our buyer's orders",
+          {k: (v["cap"], v["source"]) for k, v in got.items()} == {"Gbed00001": (1, "our buyer's unmet orders")}, got)
     saved = common.catalog
     common.catalog = lambda *a, **k: cat
     try:

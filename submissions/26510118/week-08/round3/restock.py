@@ -73,6 +73,12 @@ import pricing
 CAP = 40_000_000         # stock at cost, planned at DEAREST: 2.5M until 11/4 14:00, then 4M, 15M at 20:48, 25M at 21:45 (the
                          # premium line sold 12 units in its first 30 minutes) and 40M at 23:40 (25M bound at the 23:20 window
                          # and the line sold out within half an hour): the balance kept binds first, the user's call to invest
+CAP_SHARE = 0.9          # 11/5 01:00, the person's call: the cap grows with the book (cash + stock at cost): CAP or this
+                         # share of the book, whichever is more (top shops' books were 80-280M against our 57M)
+SHELF_LINES = 2          # ...and the shelf keeps a share of every run: the line leaves it this many lines,
+SHELF_MONEY = 2_000_000  # this much of the money above RESERVE,
+SHELF_ROOM = 3_000_000   # and this much of the stock cap (from 23:40 the line took 9 of 10 lines, 90% of the money and
+                         # 36M of the 40M cap: our regular goods fell from about 300 units to 151 and their sales by half)
 RESERVE = 2_500_000      # balance kept: refunds of broken goods under warranty come out of it
 LINE = {                 # the premium line: SKU -> the most units held (11/4 evening; analysis/line.json overrides it,
     "G8ec51935": 5,      # 자코모 4인 소파 2,320,000: 40 sold an hour by 11 shops, 0.80 of list   which the line watch rewrites)
@@ -387,14 +393,17 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     explore = min(len(fresh), max(1, round(lines * EXPLORE_SHARE.get(phase, 0.0)))) if fresh and not wind_down else 0
     buy, spend = [], 0.0
 
-    def take(rows, room, limit=float("inf")):
+    cap = max(CAP, CAP_SHARE * (balance + value))
+
+    def take(rows, room, limit=float("inf"), most=None):
         nonlocal spend
+        most = cap if most is None else most
         for _, sku, need in rows:
             if room <= 0 or len(buy) >= lines:
                 return
             each = catalog[sku]["list_price"] * DEAREST
             qty = need
-            while qty and (value + spend + each * qty > CAP or balance - spend - each * qty < RESERVE
+            while qty and (value + spend + each * qty > most or balance - spend - each * qty < RESERVE
                            or spend + each * qty > limit):
                 qty -= 1
             if qty:
@@ -404,15 +413,16 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     premium = line_gaps(line, catalog, units, sales, now)
     # the premium line first, but with at most half the lines and half the money above the balance kept, so the
     # shelf's refills always have a share of the run (review 11/4: with 40 s left it took all 4 lines; at 8M it took all but 70k)
-    take([(-1, sku, need) for sku, need in premium], min(LINE_LINES, int(lines * LINE_SHARE)), LINE_SHARE * max(0, balance - RESERVE))
+    take([(-1, sku, need) for sku, need in premium], min(LINE_LINES, int(lines * LINE_SHARE), max(1, lines - SHELF_LINES)),
+         LINE_SHARE * max(0, balance - RESERVE - SHELF_MONEY), cap - SHELF_ROOM)
     bought_line = len(buy)
-    take(known, max(0, lines - explore - bought_line))             # refills, the fast sellers stocked deep
+    take(known, max(min(SHELF_LINES, lines - bought_line), lines - explore - bought_line))   # refills, the fast sellers stocked deep
     take(fresh, explore)
     take([g for g in known + fresh if g[1] not in {b["sku"] for b in buy}], lines)   # lines left over
     info = {"stage1": len(one), "gate": f"{len(sales)}/{GATE}" + (" open" if gate else ""),
             "targets": len(targets), "gaps": len(gaps), "stock": int(value), "wind_down": wind_down, "lines": lines,
             "new": sum(1 for b in buy if b["sku"] not in seen), "deep": sum(1 for b in buy if b["qty"] > MAX_TARGET),
-            "line": bought_line, "line_gaps": len(premium)}
+            "line": bought_line, "line_gaps": len(premium), "cap": int(cap)}
     return {"buy": buy}, info
 
 
