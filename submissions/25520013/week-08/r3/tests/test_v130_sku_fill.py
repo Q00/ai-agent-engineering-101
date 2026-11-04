@@ -142,10 +142,11 @@ def test_level_fill_levels_the_units_on_hand():
 
 
 def test_a_slow_sku_over_its_level_gets_no_units():
-    # 05:50 labpc: 10 sofa G5e3784e6 on hand, need 16 - 10 = 6
+    # 05:50 labpc: 10 sofa G5e3784e6 on hand, need 16 - 10 = 6 (v1.30); v1.31 leaves out the 4 units above the
+    # level ceil(16 / 3) = 6, so the need is 10 and qty_per_buy 8 buys 4 + 4
     units = [_unit("G5e3784e6", SOFA, 570000) for _ in range(10)]
     q, why = _plan(units)
-    assert (q.get("G8ec51935"), q.get("G00327e80"), q.get("G5e3784e6")) == (3, 3, None)
+    assert (q.get("G8ec51935"), q.get("G00327e80"), q.get("G5e3784e6")) == (4, 4, None)
     assert _old_split(6, 3) == [
         2,
         2,

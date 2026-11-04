@@ -763,7 +763,14 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     for d in sorted(demand, key=score):
         cat, kind = d["category"], d.get("kind") or "goods"
         c = resolve(pol, cat, kind)
-        need = c["stock_target"] - have.get(cat, 0)
+        # v1.31 (2026-11-05): a SKU's units above the category level (stock_target / skus_per_category, rounded up)
+        # do not fill the need, so a slow SKU's pile cannot take the fast SKUs' places; the food and storage caps
+        # below still count every unit on hand. At 07:04 labpc held 11 sofa G5e3784e6 (57만, 3 h market 43 settles)
+        # and 2 G00327e80, so the sofa need was 3 while G8ec51935 (232만) settled 235 times in 3 h market-wide (24 at
+        # our shop, each unit sold in about 6 min): the level is 6, so the need is 8.
+        lvl = math.ceil(c["stock_target"] / max(1, int(c.get("skus_per_category", sp.get("skus_per_category", 1)))))
+        over = sum(max(0, held.get(sku, 0) - lvl) for sku, _ in by_cat.get(cat, []))
+        need = c["stock_target"] - have.get(cat, 0) + over
         if need <= 0:
             continue
         cands = [(sku, x) for sku, x in by_cat.get(cat, []) if x.get("list_price")
