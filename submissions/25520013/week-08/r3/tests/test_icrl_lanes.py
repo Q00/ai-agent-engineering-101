@@ -273,8 +273,11 @@ def test_external_edit_aborts_only_the_lanes_it_touches(env, monkeypatch):
     pol["defaults"]["goods"]["min_margin"] = 0.123  # price family, not e0001's own path (food price_mult)
     edited2 = SP.dumps_like(edited, pol)
     env["pol"].write_bytes(edited2)
+    a_val = L_of(env)["lanes"]["price"]["active"]["edits"][0]["current"]
     r = loop.step(t + 650, ctx=env["ctx"])
-    assert r["live"] == "external" and env["pol"].read_bytes() == edited2
+    want = json.loads(edited2)
+    want["defaults"]["food"]["price_mult"] = a_val  # v1.26c: the aborted e0001 puts its own path back to A
+    assert r["live"] == "external" and json.loads(env["pol"].read_bytes()) == want
     ends = [x for x in rows(env["sdir"] / "experiments.jsonl") if x["event"] == "end"]
     assert [(x["lane"], x["verdict"]) for x in ends] == [("price", "aborted_external_edit")]
     lanes = L_of(env)["lanes"]

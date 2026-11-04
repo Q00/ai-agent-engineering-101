@@ -332,6 +332,25 @@ def edit_hits(space, exp, paths):
     ]
 
 
+def unset_b(ctx, L, exp, paths, now):
+    """v1.26c (2026-11-05): an experiment aborted by an external edit puts its A values back on the paths the edit
+    left alone, so an untested B value never becomes the new baseline (03:25 KST: e0004, e0006 and e0008 had left
+    theirs live). A path the edit changed, or a parent or child of one, keeps the edit. -> the restored paths."""
+    keep = [
+        r
+        for r in exp.get("edits") or []
+        if not any(
+            t[: len(m)] == m or m[: len(t)] == t
+            for t in paths
+            for m in [tuple(SP.split(r["path"]))]
+        )
+    ]
+    if not keep or not put_arm(ctx, L, dict(exp, edits=keep), "A", now):
+        return []
+    L["base_version"] = L["live_version"]
+    return [r["path"] for r in keep]
+
+
 def check_live(ctx, L, now):
     """Registers the first / externally edited live bytes as a baseline. v1.25 (2026-11-05: all 9 experiments that
     ended before had been aborted by deploy-time edits, so no lesson ever formed): an edit aborts only the
@@ -365,13 +384,15 @@ def check_live(ctx, L, now):
         paths = changed_paths(ctx.runs.policy_bytes(prev), raw)
     except Exception:  # noqa: BLE001 - previous bytes unreadable: abort every lane
         paths = None
-    aborted, kept = [], []
+    aborted, kept, restored = [], [], []
     for ln, exp in running(L):
         if paths is None or edit_hits(ctx.space, exp, paths):
             exp.update(status="done", verdict="aborted_external_edit", t_end=now)
             _append(ctx.f("experiments.jsonl"), dict(event="end", **_exp_row(exp)))
             L["lanes"][ln]["active"] = None
             aborted.append(exp["id"])
+            if paths is not None:
+                restored += unset_b(ctx, L, exp, paths, now)
             continue
         if exp.get("blocks"):
             exp["blocks"][-1]["ext_edit"] = True
@@ -385,6 +406,7 @@ def check_live(ctx, L, now):
         version=v,
         aborted=aborted,
         kept=kept,
+        restored=restored,
         paths=None if paths is None else [_pstr(t) for t in paths][:20],
     )
     return "external"
