@@ -397,6 +397,15 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
             continue
         p25, med = shares[len(shares) // 4], statistics.median(shares)
         refs += [x for (x,) in c.execute("select seq from settles where sku=? order by seq desc limit 2", (sku,))]
+        gb_file = promo.GROUPBUY                         # HQ 11-05 "우리 가게를 공동구매에 걸어": our shop joins the
+        try:                                             # call at the target price (its floor, cost + min margin, holds)
+            g = json.loads(gb_file.read_text(encoding="utf-8"))
+            x = (g.get("skus") or {}).setdefault(sku, {"share": p25, "per_hour": 10 if lp < 1_000_000 else 4})
+            if x["share"] > p25:
+                x["share"] = round(p25, 3)
+                gb_file.write_text(json.dumps(g, ensure_ascii=False, indent=1), encoding="utf-8")
+        except (OSError, ValueError):
+            pass
         ours = promo.groupbuy(c, sku, now)
         by_shop = {}
         for shop, r in c.execute("""select su.shop, s.amount * 1.0 / s.list_price from settles s
@@ -406,7 +415,7 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
         good = sorted((statistics.median(v), s) for s, v in by_shop.items()
                       if len(v) >= 2 and s not in problem and s != NAME and statistics.median(v) <= p25 + 0.02)
         items.append({"sku": sku, "name": ((cat.get(sku) or {}).get("name") or "")[:24], "list_price": int(lp),
-                      "recommended_shops": [s for _, s in good[:3]],
+                      "recommended_shops": ([f"{NAME} (poster's shop)"] if ours else []) + [s for _, s in good[:3]],
                       "settles_24h": n, "paid_share_median": round(med, 3), "target_share": round(p25, 3),
                       "target_price": int(lp * p25),
                       "our_shop_group_price": int(lp * ours["share"]) if ours else None})
@@ -420,7 +429,7 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
     data = {"type": "group_buy_call", "from": NAME, "window_h": 24,
             "proposal": "buyers with orders for these SKUs: buy at or under target_price; shops: quote target_price "
                         "and get the volume. Reply to this post with your SKU and quote.",
-            "items": items, "disclosure": "our shop (dragonash) also sells these; its own group price is listed",
+            "items": items, "disclosure": "our shop (dragonash) joins: it sells these at target_price to the first buyers each hour",
             "refs": refs[:8]}
     ko = "[공동구매 제안] 고가 상품을 사는 바이어분들, 같이 사요. 최근 24시간 원장에서 많이 팔린 고가 상품과 목표가예요.\n" + \
         "\n".join(f"- {i['name']} ({i['sku']}): 24시간 {i['settles_24h']}건, 중간 체결 정가의 {i['paid_share_median']:.0%}"
@@ -428,7 +437,7 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
                   + (f", 추천 가게: {', '.join(i['recommended_shops'])}" if i["recommended_shops"] else "") for i in items) + \
         "\n추천 가게 = 24시간 원장에서 목표가 근처에 판 가게 중 저희 기록에 오류(영수증·등급·결제 거부)가 없는 곳." \
         "\n바이어: 이 상품 주문이 오면 목표가 이하로만 사요. 판매자: 목표가로 견적 주시면 물량이 그 가게로 갑니다." \
-        "\n(이해관계 공개: 저희 상점도 이 상품을 팝니다.)"
+        "\n(이해관계 공개: 저희 상점 dragonash도 공동구매에 참여해 목표가로 매 시간 선착순 판매합니다.)"
     en = "[Group buy call] High-ticket SKUs buyers settle most (24 h): buy at or under the target price; shops quoting " \
          "it get the volume. " + "; ".join(f"{i['sku']} target {i['target_price']:,}" for i in items)
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
