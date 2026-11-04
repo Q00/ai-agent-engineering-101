@@ -73,4 +73,42 @@ def test_sell_through(tmp_path, monkeypatch):
     with m.db() as c:
         c.execute("INSERT INTO shops VALUES ('https://s1', 'me', 'k', 'o', 1, ?)", (now,))
     st = m.sell_through()[CAT["F1"]["category"]]
-    assert st["requested"] == 10 and st["sold"] == 12 and st["rate"] == 1.2
+    assert st["requested"] == 10 and st["sold"] == 12 and st["received"] == 0 and st["rate"] is None
+    supply(m, now, "F1", 6)                                            # the window filled 6 of the 10 asked
+    st = m.sell_through()[CAT["F1"]["category"]]
+    assert st["received"] == 6 and st["fill"] == 0.6 and st["rate"] == 2.0
+
+
+def supply(m, now, sku, qty, shop="me", seq=900):
+    m._ingest([{"seq": seq, "ts": now - 60, "kind": "supply", "round": 3,
+                "data": {"shop": shop, "sku": sku, "qty": qty, "total": qty * 5000, "units": []}}])
+
+
+def test_review_cannot_cut_a_category_that_sells_out(tmp_path, monkeypatch):
+    """2026-11-04: mattresses read 0.48 sell-through (sold / requested) while every unit received had sold; the
+    review halved them. A cut is now ignored where we sell >= PROTECT_SELL_THROUGH of what we receive."""
+    m, now = setup(tmp_path, monkeypatch)
+    with m.db() as c:
+        c.execute("INSERT INTO shops VALUES ('https://s1', 'me', 'k', 'o', 1, ?)", (now,))
+    m.record_restock([{"sku": "F1", "qty": 25}], [])
+    supply(m, now, "F1", 12)                                           # 12 received, 12 sold, 25 requested
+    f1, g1 = CAT["F1"]["category"], CAT["G1"]["category"]
+    final = {"adjustments": [{"category": f1, "factor": 0.5, "reason": "sold 12 of 25"},
+                             {"category": g1, "factor": 0.5, "reason": "slow"}]}
+    prot = restock_r3.protected_categories(m)
+    assert f1 in prot and g1 not in prot
+    assert set(restock_review_r3.clamp(final, {f1, g1}, prot)) == {g1}
+    # a factor stored before the guard is filtered when read
+    m.put("restock_adjust", {"ts": time.time(), "items": {f1: {"factor": 0.5, "reason": ""},
+                                                          g1: {"factor": 0.5, "reason": ""}}})
+    assert set(restock_r3.active_adjustments(m)) == {g1}
+
+
+def test_stockouts_protect_a_category(tmp_path, monkeypatch):
+    m, now = setup(tmp_path, monkeypatch)
+    g1 = CAT["G1"]["category"]
+    m.record_stockout(g1, "G1")
+    m.put("restock_adjust", {"ts": time.time(), "items": {g1: {"factor": 0.3, "reason": ""}}})
+    assert restock_r3.active_adjustments(m) == {}
+    m.put("restock_adjust", {"ts": time.time(), "items": {g1: {"factor": 1.3, "reason": ""}}})
+    assert restock_r3.active_adjustments(m)[g1]["factor"] == 1.3     # raising is always allowed

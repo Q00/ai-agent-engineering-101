@@ -35,11 +35,24 @@ from r3lib.org import client
 FORUM_EVERY = 10 * 60
 
 
+def protected_categories(mem, now=None):
+    """Categories no review may cut: we sell PROTECT_SELL_THROUGH of what we receive, or turn buyers away."""
+    st = mem.sell_through(hours=24)
+    keep = {k for k, d in st.items() if d.get("rate") is not None and d["rate"] >= config.PROTECT_SELL_THROUGH}
+    return keep | {k for k, v in mem.stockout_rates(now=now).items() if v > 0}
+
+
 def active_adjustments(mem, now=None):
+    """The review's factors while fresh; a cut (factor < 1) on a protected category is ignored, also for factors
+    stored before this guard existed."""
     a = mem.get("restock_adjust") or {}
     if (now or time.time()) - (a.get("ts") or 0) > config.ADJUST_TTL_H * 3600:
         return {}
-    return a.get("items") or {}
+    items = a.get("items") or {}
+    if not any(v.get("factor", 1) < 1 for v in items.values()):
+        return items
+    keep = protected_categories(mem, now)
+    return {k: v for k, v in items.items() if not (v.get("factor", 1) < 1 and k in keep)}
 
 
 def my_pubkey():

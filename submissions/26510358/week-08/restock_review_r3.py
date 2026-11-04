@@ -13,13 +13,14 @@ import time
 
 from r3lib import config, market, oracle, primer, react, scout
 from r3lib.memory import Memory
-from restock_r3 import active_adjustments, plan
+from restock_r3 import active_adjustments, plan, protected_categories
 
 GOAL = (
     "You review a shop's restock plan in an agent marketplace. The plan is computed by rules from market-wide "
     "demand. Unsold food is thrown away at cost; goods cost 1% of their cost per day in storage; stock that never "
     "sells is a loss in net profit, the shop's main score. Find categories where the rules are likely wrong for "
-    "OUR shop: low sell-through of what we requested, stock that will expire before it sells, goods held for days, "
+    "OUR shop: low sell-through of what we received (not of what we requested: the supply window often fills "
+    "less), stock that will expire before it sells, goods held for days, "
     "or strong forum demand the ledger does not show yet. Propose a factor per such category: 0 stops buying it, "
     "0.5 halves the target, 1.3 raises it. Leave every other category out (factor 1). Prefer few, well-supported "
     "changes; give the observation behind each reason.")
@@ -56,7 +57,9 @@ def tools(mem, inv, demand):
                 "forum_wanted": mem.forum_demand_signals().get(market.leaf(category), 0)}
 
     return [react.Tool("plan_preview", "what the rules would buy now, with reasons, before any review", plan_preview),
-            react.Tool("sell_through", "per category: units our restock requested vs units our shop sold",
+            react.Tool("sell_through", "per category: units requested, units the market actually supplied (received, "
+                       "fill = received/requested), units sold; rate = sold/received. Low fill is a supply "
+                       "problem, not weak demand",
                        sell_through, {"hours": "int <= 72"}),
             react.Tool("stock_on_hand", "per category: units, cost, hours until the first food expires, days goods "
                        "have been held", stock_on_hand),
@@ -65,7 +68,8 @@ def tools(mem, inv, demand):
                        category_evidence, {"category": "full category string"})]
 
 
-def clamp(final, categories):
+def clamp(final, categories, protected=()):
+    """Valid factors only; a cut on a protected category (restock_r3.protected_categories) is dropped."""
     items = {}
     for a in (final or {}).get("adjustments") or []:
         if not isinstance(a, dict) or a.get("category") not in categories:
@@ -75,6 +79,8 @@ def clamp(final, categories):
         except (TypeError, ValueError):
             continue
         f = round(min(config.ADJUST_MAX, max(config.ADJUST_MIN, f)), 2)
+        if f < 1.0 and a["category"] in protected:
+            continue
         if f != 1.0:
             items[a["category"]] = {"factor": f, "reason": str(a.get("reason") or "")[:300]}
         if len(items) >= 10:
@@ -96,7 +102,7 @@ def main(run=react.run):
     if final is None:                               # keep the old factors until they expire
         print(json.dumps({"event": "review_failed", "steps": len(trace)}), flush=True)
         return
-    items = clamp(final, {r.get("category") for r in demand})
+    items = clamp(final, {r.get("category") for r in demand}, protected_categories(mem))
     mem.put("restock_adjust", {"ts": time.time(), "items": items})
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
     with open(config.LOG_DIR / "restock-review.jsonl", "a", encoding="utf-8") as f:

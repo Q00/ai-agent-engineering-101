@@ -99,6 +99,9 @@ REACT_BUDGET_S = 240                # one ReAct run, all steps together
 RESTOCK_REVIEW_EVERY_MIN = 30       # background ReAct review of the restock plan
 ADJUST_TTL_H = 2                    # a review's scaling expires unless renewed
 ADJUST_MIN, ADJUST_MAX = 0.0, 1.5   # clamp on a category's demand target scaling
+PROTECT_SELL_THROUGH = 0.9          # a review may not scale a category below 1 while we sell this share of what we
+                                    #   receive, or while buyers are turned away for lack of stock (2026-11-04: the
+                                    #   review halved mattresses, kimchi, fruit and bedding on a wrong sell-through)
 
 BUYER_GRADES = ["A", "B", "C"]     # goods keep full value unless they break; max_pay already prices the break risk
 

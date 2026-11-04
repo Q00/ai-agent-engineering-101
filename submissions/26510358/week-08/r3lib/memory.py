@@ -428,21 +428,32 @@ class Memory:
                            reasons.get(ln["sku"])))
 
     def sell_through(self, hours=24):
-        """category -> {requested, sold, rate}: units our restock asked for vs units our shop settled, same window.
-        The kit may fill less than requested, so `rate` is a lower bound on the true sell-through."""
+        """category -> {requested, received, fill, sold, rate}. `received` counts the units the market actually
+        supplied to our shop (ledger `supply`), `rate` = sold / received. Until 2026-11-04 the rate was sold /
+        requested, and lines the supply window refused (half of them) read as unsold stock: mattresses showed 0.48
+        while every unit received had sold, and the review halved them."""
         since = time.time() - hours * 3600
         mine = self.my_shop_urls()
         out = {}
         with self.db() as c:
+            names = set(config.MY_NAMES) | {r["name"] for r in c.execute("SELECT name FROM shops WHERE mine=1")}
             for r in c.execute("SELECT category, SUM(qty) q FROM restocks WHERE ts>? GROUP BY category", (since,)):
-                out[r["category"]] = {"requested": r["q"] or 0, "sold": 0}
+                out[r["category"]] = {"requested": r["q"] or 0, "received": 0, "sold": 0}
+            cat = market.catalog()
+            for r in c.execute("SELECT data FROM ledger WHERE kind='supply' AND ts>?", (since,)):
+                d = json.loads(r["data"])
+                info = cat.get(d.get("sku"))
+                if d.get("shop") in names and info:
+                    out.setdefault(info["category"], {"requested": 0, "received": 0, "sold": 0})["received"] += \
+                        d.get("qty") or 0
             if mine:
                 q = f"SELECT category, COUNT(*) n FROM settles WHERE ts>? AND shop IN ({','.join('?' * len(mine))}) " \
                     "GROUP BY category"
                 for r in c.execute(q, (since, *mine)):
-                    out.setdefault(r["category"], {"requested": 0, "sold": 0})["sold"] = r["n"]
+                    out.setdefault(r["category"], {"requested": 0, "received": 0, "sold": 0})["sold"] = r["n"]
         for d in out.values():
-            d["rate"] = round(d["sold"] / d["requested"], 2) if d["requested"] else None
+            d["fill"] = round(d["received"] / d["requested"], 2) if d["requested"] else None
+            d["rate"] = round(d["sold"] / d["received"], 2) if d["received"] else None
         return out
 
 
