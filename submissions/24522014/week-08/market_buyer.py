@@ -101,6 +101,20 @@ def error_kind(error):
     return "agent_error"
 
 
+def failure_reason(outcome, negotiation, decisions):
+    """Why this attempt produced no receipt. Whether a receipt was paid is decided later from payments.jsonl."""
+    if outcome == "purchased":
+        return None
+    last = decisions[-1] if decisions else None
+    if negotiation == "walked_away" and last:
+        return last["reason_code"]
+    if outcome == "no_deal":
+        return negotiation or outcome
+    if outcome == "agent_error" and last and last["action"] is None:
+        return last["reason_code"]
+    return outcome
+
+
 def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.requirements = requirements
@@ -112,14 +126,17 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
         cached = []
         def allow_model():
             if not cached:
-                cached.append(bool(model_gate and model_gate()))
+                answer = model_gate() if model_gate else "model_gate_missing"
+                client.model_gate_reason = {True: "reserved", False: "model_gate_denied"}.get(answer, answer)
+                cached.append(client.model_gate_reason == "reserved")
             return cached[0]
         client.model_gate = allow_model
-    error = None
+    error = negotiation = None
     try:
         with client:
             summary = run_autonomous(client, mode, max_turns=max_turns)
-        outcome = "purchased" if summary["outcome"] == "purchased" else "no_deal"
+        negotiation = summary["outcome"]
+        outcome = "purchased" if negotiation == "purchased" else "no_deal"
     except (BuyerError, OSError, ValueError) as exc:
         outcome, error = error_kind(exc), str(exc)
     receipt = client.raw_receipt
@@ -141,6 +158,8 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
               "task": client.task_id, "receipt": receipt, "error": error,
               "verification": "local_receipt_consistent" if outcome == "purchased" else "not_confirmed",
               "signature_verification": "left_to_market_kit", "stars": stars, "review": review,
+              "negotiation_outcome": negotiation, "decision_trail": client.decisions,
+              "failure_reason": failure_reason(outcome, negotiation, client.decisions),
               "buyer_log_dir": str(client.log_dir)}
     result = {"shop": shop["url"], "receipt": receipt if outcome == "purchased" else None,
               "stars": stars, "review": review}
@@ -196,8 +215,8 @@ def main():
         trade_options = {"mode": args.mode, "decision_context": selected_evidence,
                          "max_turns": support_decision["max_turns"]}
         if support_decision.get("fast_rules"):
-            from buyer_support import reserve_model
-            trade_options.update(fast_rules=True, model_gate=lambda: reserve_model(args.order.parent, order["order"]))
+            from buyer_support import model_reservation
+            trade_options.update(fast_rules=True, model_gate=lambda: model_reservation(args.order.parent, order["order"]))
         if r3 and order.get("kind") == "goods":
             trade_options["requirements"] = accept_conditions
         result, record = trade(shop, selected_item, trade_budget, **trade_options)
@@ -215,7 +234,8 @@ def main():
         if r3 and not shops:
             reason = "No registered shop offers an acceptable in-stock SKU."
         result = {"shop": "", "receipt": None, "stars": 3, "review": reason}
-        record = {"outcome": "research_skipped", "selection_reason": reason}
+        record = {"outcome": "research_skipped", "order": order.get("order"), "selection_reason": reason,
+                  "failure_reason": "no_eligible_selection"}
     record["buyer_support"] = support_decision
     log_dir = ROOT / "logs/market-buyer"
     log_dir.mkdir(parents=True, exist_ok=True)

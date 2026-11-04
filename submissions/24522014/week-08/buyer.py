@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import httpx
 
+from buyer_fast import classify
 from harness import HarnessError, MODELS, parse_response, run_harness, select_harness
 
 ROOT = Path(__file__).resolve().parent
@@ -41,6 +42,7 @@ class BuyerTransport:
         self.receipt = None
         self.provider = None
         self.sequence = 0
+        self.decisions = []
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         self.log_dir = ROOT / "logs/buyer" / (stamp + "-" + uuid4().hex[:8])
         self.log_dir.mkdir(parents=True)
@@ -56,6 +58,7 @@ class BuyerTransport:
                     "controller": self.provider or "manual",
                     "model": MODELS[self.provider] if self.provider else None,
                     "task_id": self.task_id, "state": self.state, "receipt": self.receipt,
+                    "decisions": self.decisions,
                     "status": "error" if exc_value else "ok", "error": str(exc_value) if exc_value else None}
         (self.log_dir / "session.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
@@ -189,37 +192,53 @@ def validate_buyer_decision(decision, budget):
         raise ValueError(f"Offer must not exceed the budget {budget}")
 
 
+def record_decision(client, turn, source, reason_code, decision=None, parser_reason=None, details=None):
+    """Leave one decision-NN.json and one trail entry on every path, including refusals and failures."""
+    entry = {"turn": turn, "source": source, "reason_code": reason_code, "parser_reason": parser_reason,
+             "action": decision["action"] if decision else None, "price": decision["price"] if decision else None}
+    client.decisions.append(entry)
+    (client.log_dir / f"decision-{turn:02d}.json").write_text(
+        json.dumps({**(details or {}), **entry, "decision": decision}, ensure_ascii=False, indent=2),
+        encoding="utf-8")
+
+
 def buyer_decision(client, provider, history, turn, max_turns):
     """Ask for one decision; retry invalid JSON or budget violations once, without clamping."""
     text = seller_message(client.task)
+    _, parser_reason, clear_ask = classify(text, client.budget, getattr(client, "last_offer", None))
     rule = getattr(client, "rule_decision", None)
     if rule:
         fast = rule(text)
         if fast is not None:
             validate_buyer_decision(fast, client.budget)
-            (client.log_dir / f"decision-{turn:02d}.json").write_text(
-                json.dumps({"source": "deterministic", "decision": fast}, ensure_ascii=False), encoding="utf8")
+            record_decision(client, turn, "deterministic", parser_reason, fast, parser_reason)
             return fast
-    prices = re.findall(r"-?\d+(?:\.\d+)?", text)
-    asking = float(prices[-1]) if prices else None
-    if asking is None or not math.isfinite(asking) or asking <= 0:
+    if not any(float(number) > 0 for number in re.findall(r"-?\d+(?:\.\d+)?", text)):
+        record_decision(client, turn, "parser", "no_positive_number", None, parser_reason)
         raise BuyerError("Seller input-required message has no valid asking price")
     gate = getattr(client, "model_gate", None)
     if gate and not gate():
-        return {"action": "walk_away", "price": None, "reason": "Model negotiation quota reached; no purchase forced."}
+        reason_code = getattr(client, "model_gate_reason", None) or "model_gate_denied"
+        refused = {"action": "walk_away", "price": None,
+                   "reason": f"Model negotiation unavailable ({reason_code}); no purchase forced."}
+        record_decision(client, turn, "model_gate", reason_code, refused, parser_reason)
+        return refused
     # Keep time for the HTTP request that follows the model decision.
     allowance = min(90, client.remaining() - 5)
     if allowance <= 0:
+        record_decision(client, turn, "time_limit", "decision_time_exhausted", None, parser_reason)
         raise BuyerError("Insufficient time for another harness decision")
     deadline = time.monotonic() + allowance
-    context = {"item": client.item, "budget": client.budget, "current_ask": asking,
+    # Null when no single labeled ask exists: the last number may be a size, an hour or an offer count.
+    context = {"item": client.item, "budget": client.budget, "current_ask": clear_ask,
                "seller_message": text, "history": history,
                "remaining_turns": max_turns - turn + 1, "remaining_seconds": round(client.remaining(), 2)}
     context["r3_policy_evidence"] = getattr(client, "r3_context", None)
     instructions = getattr(client, "strategy_prompt", ROOT / "prompts/buyer.txt").read_text(encoding="utf-8")
     prompt = instructions + "\nInput data:\n" + json.dumps(context, ensure_ascii=False)
     record = {"task_id": client.task_id, "provider": provider, "model": MODELS[provider],
-              "turn": turn, "context": context, "status": "failed", "attempts": []}
+              "context": context, "status": "failed", "attempts": []}
+    decision = None
     try:
         for attempt in range(2):
             entry = {"attempt": attempt + 1, "prompt": prompt}
@@ -243,8 +262,9 @@ def buyer_decision(client, provider, history, turn, max_turns):
             return decision
         raise BuyerError("No valid buyer decision")
     finally:
-        (client.log_dir / f"decision-{turn:02d}.json").write_text(
-            json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+        settled = decision if record["status"] == "ok" else None
+        record_decision(client, turn, "model", f"model_{settled['action']}" if settled else "model_failed",
+                        settled, parser_reason, record)
 
 
 def run_autonomous(client, provider, *, max_turns=12):
@@ -276,7 +296,8 @@ def run_autonomous(client, provider, *, max_turns=12):
                    "TASK_STATE_CANCELED": "canceled"}[client.state]
     summary = {"outcome": outcome, "harness": provider, "model": MODELS[provider],
                "item": client.item, "budget": client.budget, "task_id": client.task_id,
-               "state": client.state, "receipt": client.receipt, "turns": turn}
+               "state": client.state, "receipt": client.receipt, "turns": turn,
+               "decisions": client.decisions}
     (client.log_dir / "outcome.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     return summary
 

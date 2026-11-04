@@ -175,5 +175,188 @@ class TradeRules(unittest.TestCase):
         self.assertEqual(result["stars"], 3)
 
 
+class FastQuoteTrades(unittest.TestCase):
+    """market.trade() over mock HTTP with the rule path on: wording decides what is actually sent."""
+
+    def setUp(self):
+        self.posts = []
+        directory = buyer.ROOT / "logs/lab1-step2/unit-runs" / uuid4().hex
+        (directory / "prompts").mkdir(parents=True)
+        root_patch = patch.object(buyer, "ROOT", directory)
+        root_patch.start()
+        self.addCleanup(root_patch.stop)
+        prompt_patch = patch.object(market, "ROOT", directory)
+        prompt_patch.start()
+        self.addCleanup(prompt_patch.stop)
+        (directory / "prompts/buyer-r3.txt").write_text("fixture prompt", encoding="utf-8")
+
+    def transport(self, quote, *, receipt_price=None, after_offer=None, offer_state="TASK_STATE_COMPLETED"):
+        def respond(request):
+            if request.method == "GET":
+                return httpx.Response(200, json={"supportedInterfaces": [
+                    {"protocolBinding": "JSONRPC", "protocolVersion": "1.0", "url": "http://fixture.test/rpc"}]})
+            body = json.loads(request.content)
+            self.posts.append(body)
+            message = body.get("params", {}).get("message", {})
+            state, text, artifacts = "TASK_STATE_INPUT_REQUIRED", quote, []
+            if body["method"] == "CancelTask":
+                state = "TASK_STATE_CANCELED"
+            elif message.get("taskId"):
+                offered = int(message["parts"][0]["text"])
+                if after_offer is not None:
+                    text = after_offer
+                else:
+                    state = offer_state
+                    if state == "TASK_STATE_COMPLETED":
+                        artifacts = [{"parts": [{"data": {"shop": "Fixture", "item": "lamp",
+                                     "price": receipt_price or offered, "task": "task-a", "sig_seller": "fixture-only"}}]}]
+            task = {"id": "task-a", "contextId": "context-a", "status": {"state": state,
+                    "message": {"parts": [{"text": text}]}}, "artifacts": artifacts}
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": task})
+        return httpx.MockTransport(respond)
+
+    def trade(self, transport, gate=lambda: False, budget=300000):
+        return market.trade(shop("fixture"), "lamp", budget, transport=transport, fast_rules=True,
+                            model_gate=gate, max_turns=3)
+
+    def offers(self):
+        return [int(p["params"]["message"]["parts"][0]["text"]) for p in self.posts
+                if p["method"] == "SendMessage" and p["params"]["message"].get("taskId")]
+
+    def decision_file(self, record, turn=1):
+        return json.loads((Path(record["buyer_log_dir"]) / f"decision-{turn:02d}.json").read_text(encoding="utf-8"))
+
+    def test_reported_quotes_are_offered_by_rule_without_the_model(self):
+        gate_calls = []
+        for quote, price in (("asking 110.", 110), ("Counteroffer: 234659.", 234659),
+                             ("Our asking price is 42630.", 42630)):
+            with self.subTest(quote=quote), patch("buyer.run_harness") as harness:
+                self.posts.clear()
+                result, record = self.trade(self.transport(quote), gate=lambda: gate_calls.append(1) or False)
+                harness.assert_not_called()
+                self.assertEqual(self.offers(), [price])
+                self.assertEqual(record["outcome"], "purchased")
+                self.assertEqual(result["receipt"]["price"], price)
+                self.assertIsNone(record["failure_reason"])
+                saved = self.decision_file(record)
+                self.assertEqual((saved["source"], saved["reason_code"], saved["price"]),
+                                 ("deterministic", "rule_offer", price))
+                self.assertEqual(record["decision_trail"], [
+                    {k: saved[k] for k in ("turn", "source", "reason_code", "parser_reason", "action", "price")}])
+        self.assertEqual(gate_calls, [])
+
+    def test_receipt_is_recorded_as_unconfirmed_not_paid(self):
+        _, record = self.trade(self.transport("asking 110."))
+        self.assertEqual(record["verification"], "local_receipt_consistent")
+        self.assertNotIn("settlement_ledger", record)
+
+    def test_unclear_quotes_send_no_offer_and_name_the_quota_reason(self):
+        for quote, parser_reason in (("asking 100.50", "malformed_price"), ("asking 1,00", "malformed_price"),
+                                     ("asking 100. Counteroffer: 90.", "conflicting_prices"),
+                                     ("list price 110.", "no_labeled_price"), ("Foo 110. Send a number.", "no_labeled_price"),
+                                     ("asking 300001.", "over_budget")):
+            with self.subTest(quote=quote), patch("buyer.run_harness") as harness:
+                self.posts.clear()
+                result, record = self.trade(self.transport(quote), gate=lambda: "model_quota_hour")
+                harness.assert_not_called()
+                self.assertEqual(self.offers(), [])
+                self.assertIsNone(result["receipt"])
+                self.assertEqual(record["outcome"], "no_deal")
+                self.assertEqual(record["failure_reason"], "model_quota_hour")
+                saved = self.decision_file(record)
+                self.assertEqual((saved["source"], saved["reason_code"], saved["parser_reason"], saved["action"]),
+                                 ("model_gate", "model_quota_hour", parser_reason, "walk_away"))
+                self.assertEqual(self.posts[-1]["method"], "CancelTask")
+
+    def test_plain_false_gate_and_missing_gate_are_distinguished(self):
+        with patch("buyer.run_harness") as harness:
+            _, denied = self.trade(self.transport("Our price is 90."), gate=lambda: False)
+            _, missing = self.trade(self.transport("Our price is 90."), gate=None)
+            harness.assert_not_called()
+        self.assertEqual(denied["failure_reason"], "model_gate_denied")
+        self.assertEqual(missing["failure_reason"], "model_gate_missing")
+
+    def test_repeated_counteroffer_walks_away_by_rule(self):
+        with patch("buyer.run_harness") as harness:
+            _, record = self.trade(self.transport("asking 110.", after_offer="Counteroffer: 110."))
+            harness.assert_not_called()
+        self.assertEqual(self.offers(), [110])
+        self.assertEqual(record["failure_reason"], "rule_repeated_offer")
+        self.assertEqual([d["reason_code"] for d in record["decision_trail"]], ["rule_offer", "rule_repeated_offer"])
+
+    def test_seller_rejection_after_a_rule_offer_is_not_a_quota_failure(self):
+        _, record = self.trade(self.transport("asking 110.", offer_state="TASK_STATE_REJECTED"))
+        self.assertEqual(record["outcome"], "no_deal")
+        self.assertEqual(record["negotiation_outcome"], "seller_rejected")
+        self.assertEqual(record["failure_reason"], "seller_rejected")
+        self.assertEqual(self.offers(), [110])
+
+    def test_model_decisions_and_failures_are_labeled_and_get_the_labeled_ask(self):
+        # The last number here is an offer count; it must not reach the model as the price.
+        quote = "asking 300001. This negotiation closes after 6 offers."
+        with patch("buyer.run_harness", return_value={"action": "walk_away", "price": None, "reason": "too high"}) as harness:
+            _, record = self.trade(self.transport(quote), gate=lambda: "reserved")
+        harness.assert_called_once()
+        self.assertEqual(record["failure_reason"], "model_walk_away")
+        saved = self.decision_file(record)
+        self.assertEqual((saved["source"], saved["parser_reason"], saved["context"]["current_ask"]),
+                         ("model", "over_budget", 300001))
+        with patch("buyer.run_harness", return_value={"action": "offer", "price": 300001, "reason": "over"}):
+            _, failed = self.trade(self.transport(quote), gate=lambda: "reserved")
+        self.assertEqual(failed["outcome"], "agent_error")
+        self.assertEqual(failed["failure_reason"], "model_failed")
+        self.assertEqual(self.decision_file(failed)["status"], "failed")
+
+    def test_unlabeled_quote_reaches_the_model_without_a_guessed_ask(self):
+        with patch("buyer.run_harness", return_value={"action": "walk_away", "price": None, "reason": "unclear"}):
+            _, record = self.trade(self.transport("Foo 700g. Our price is 41972. Closes after 6 offers."),
+                                   gate=lambda: "reserved")
+        self.assertIsNone(self.decision_file(record)["context"]["current_ask"])
+
+    def test_message_without_a_positive_number_is_logged_before_failing(self):
+        _, record = self.trade(self.transport("Send your offer."), gate=lambda: "reserved")
+        self.assertEqual(record["outcome"], "agent_error")
+        self.assertEqual(record["failure_reason"], "no_positive_number")
+        self.assertEqual(self.decision_file(record)["source"], "parser")
+
+    def test_gate_is_asked_at_most_once_per_trade(self):
+        calls = []
+        def gate():
+            calls.append(1)
+            return "reserved"
+        replies = iter([{"action": "offer", "price": 90, "reason": "try"},
+                        {"action": "walk_away", "price": None, "reason": "stop"}])
+        with patch("buyer.run_harness", side_effect=lambda *a, **k: next(replies)):
+            self.trade(self.transport("Our price is 95.", after_offer="Our price is 94."), gate=gate)
+        self.assertEqual(calls, [1])
+
+    def test_session_and_outcome_files_carry_the_trail_and_no_secrets(self):
+        _, record = self.trade(self.transport("asking 110."))
+        directory = Path(record["buyer_log_dir"])
+        for name in ("session.json", "outcome.json"):
+            saved = json.loads((directory / name).read_text(encoding="utf-8"))
+            self.assertEqual(saved["decisions"][0]["reason_code"], "rule_offer")
+        for name in ("session.json", "outcome.json", "decision-01.json"):
+            text = (directory / name).read_text(encoding="utf-8").lower()
+            for marker in ("api_key", "authorization", "claim", "private key", "begin "):
+                self.assertNotIn(marker, text)
+
+
+class ReservationReasons(unittest.TestCase):
+    def test_each_denial_has_its_own_code_and_reserve_model_stays_boolean(self):
+        import buyer_support
+        from tempfile import TemporaryDirectory
+        settings = {"max_model_orders_per_hour": 2, "max_model_orders_per_day": 3}
+        with TemporaryDirectory() as md, patch.object(buyer_support, "config", return_value=settings):
+            now = 1793750400.0
+            self.assertEqual(buyer_support.model_reservation(md, "a", now), "reserved")
+            self.assertEqual(buyer_support.model_reservation(md, "a", now), "model_order_already_reserved")
+            self.assertTrue(buyer_support.reserve_model(md, "b", now))
+            self.assertEqual(buyer_support.model_reservation(md, "c", now), "model_quota_hour")
+            self.assertFalse(buyer_support.reserve_model(md, "c", now))
+            self.assertEqual(buyer_support.model_reservation(md, "c", now + 3601), "reserved")
+            self.assertEqual(buyer_support.model_reservation(md, "d", now + 7300), "model_quota_day")
+
+
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(stream=sys.stdout, verbosity=2))

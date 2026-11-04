@@ -228,30 +228,36 @@ def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, ord
                "max_turns": settings["max_turns"], "funding": "market_order_budget_not_seller_cash"}
 
 
-def reserve_model(md, order_id, now=None):
+def model_reservation(md, order_id, now=None):
+    """Return 'reserved', or the specific reason no model negotiation is available."""
     from strategy_controller import acquire, release
     md = Path(md)
     now = time.time() if now is None else now
     settings = config()
     handle = acquire(md / "buyer-support.lock")
     if handle is None:
-        return False
+        return "model_gate_lock_busy"
     try:
         path = md / "buyer-support-state.json"
         state = read(path, initial())
         rows = [r for r in state.get("model_orders", []) if 0 <= now-r["at"] <= 86400*2]
         if any(r["order"] == order_id for r in rows):
-            return False
+            return "model_order_already_reserved"
         day = datetime.fromtimestamp(now, timezone.utc).date()
-        if (sum(datetime.fromtimestamp(r["at"], timezone.utc).date() == day for r in rows) >= settings["max_model_orders_per_day"]
-                or sum(now-r["at"] < 3600 for r in rows) >= settings["max_model_orders_per_hour"]):
-            return False
+        if sum(datetime.fromtimestamp(r["at"], timezone.utc).date() == day for r in rows) >= settings["max_model_orders_per_day"]:
+            return "model_quota_day"
+        if sum(now-r["at"] < 3600 for r in rows) >= settings["max_model_orders_per_hour"]:
+            return "model_quota_hour"
         rows.append({"at": now, "order": order_id})
         state["model_orders"] = rows
         write(path, state)
-        return True
+        return "reserved"
     finally:
         release(handle)
+
+
+def reserve_model(md, order_id, now=None):
+    return model_reservation(md, order_id, now) == "reserved"
 
 
 def report(md):
