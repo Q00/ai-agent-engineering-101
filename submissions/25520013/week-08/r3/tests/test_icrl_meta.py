@@ -42,7 +42,7 @@ def memrows(ctx, t0, k, acc=1.0, n=4):
     jl(
         ctx.sdir / "memcheck.jsonl",
         [
-            {"ts": t0 + 600 + i * 1800, "n": n, "acc": acc, "correct": acc * n}  # 6 rows fit in one 3 h META_S
+            {"ts": t0 + 600 + i * 1800, "v": meta.MEMCHECK_V, "n": n, "acc": acc, "correct": acc * n}  # 6 rows in 3 h
             for i in range(k)
         ],
     )
@@ -364,7 +364,7 @@ def test_v125_a_memcheck_miss_is_evidence_even_above_the_score_floor(tmp_path):
     memrows(ctx, T0, 6)
     jl(
         ctx.sdir / "memcheck.jsonl",
-        [{"ts": T0 + 700, "n": 4, "acc": 0.75, "correct": 3, "misses": ["e0003 verdict?"]}],
+        [{"ts": T0 + 700, "v": meta.MEMCHECK_V, "n": 4, "acc": 0.75, "correct": 3, "misses": ["e0003 verdict?"]}],
     )
     cycles(ctx, T0, "shop", 6)
     llm = Fake(cand())

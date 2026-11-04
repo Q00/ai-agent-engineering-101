@@ -42,6 +42,9 @@ MIN_DECISIONS = (
 MARGIN_MIN = 0.05  # revert floor when both binomial SEs are ~0 (rates at 0 or 1)
 Z_ONE_SIDED = 1.645  # one-sided 95 % on the score difference
 N_EXCERPTS = 5
+# = icrl.loop.MEMCHECK_V (v1.29, 2026-11-05): rows without it counted the stale-A records of e0014 and e0015 as
+# memory misses every hour, so only rows of this version enter the quality score and the miss excerpts
+MEMCHECK_V = 2
 
 
 def _jload(p, default):
@@ -152,6 +155,8 @@ def lane_quality(sdir, lane, since, lane_version, now):
         for r in _rows(sdir / "memcheck.jsonl")
         if _num(r.get("ts"))
         and since <= r["ts"] <= now
+        and _num(r.get("v"))
+        and r["v"] >= MEMCHECK_V
         and _num(r.get("acc"))
         and _num(r.get("n"))
         and r["n"] > 0
@@ -281,7 +286,13 @@ def _misses(sdir, since):
 
     out = []
     for r in _rows(Path(sdir) / "memcheck.jsonl"):
-        if _num(r.get("ts")) and r["ts"] >= since and isinstance(r.get("misses"), list):
+        if (
+            _num(r.get("ts"))
+            and r["ts"] >= since
+            and _num(r.get("v"))
+            and r["v"] >= MEMCHECK_V
+            and isinstance(r.get("misses"), list)
+        ):
             out += [mask(str(m))[:200] for m in r["misses"]]
     return out[-N_EXCERPTS:]
 

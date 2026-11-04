@@ -1277,6 +1277,7 @@ def cycle(ctx, L, lane, store, stats, now, record=True):
 # ---------------------------------------------------------------- memcheck
 MEMCHECK_STYLE = "LongMemEval-style (Wu et al., ICLR 2025 abilities)"
 MEMCHECK_TYPES = ("information_extraction", "knowledge_update", "temporal", "abstention")
+MEMCHECK_V = 2  # v1.29: rows carry "v"; icrl/meta.py counts only rows of this version (the stale-A skip below)
 N_ABSTAIN = 5
 NO_LESSON = ("aborted_external_edit",)  # check_live ends these without a lessons row
 
@@ -1300,12 +1301,34 @@ def _policy_at(ctx, t, cache):
     return cache[hit[1]]
 
 
-def memquestions(ctx, mem=None):
+def _stale_a(ctx, r, e, kinds, cache):
+    """v1.29 (2026-11-05): True when an experiment's recorded A value (edits[0].current) is not the value its
+    registered A policy (A_version) holds. Before v1.25c a lane that ended in the same tick as another proposed its
+    next experiment from the policy before the other lane's revert: e0014 recorded juice breadth_qty A 2 and e0015
+    food max_pay_frac A 0.88 while their A policy v16 held 3 and 0.85, so both arms were the same. A lesson's
+    value_after comes from that record, so its temporal question tests the record, not the memory. A row without
+    A_version, or whose A policy cannot be read, keeps its question."""
+    from memory.lessons import scalar
+
+    v, e0 = r.get("A_version"), (r.get("edits") or [{}])[0]
+    if not isinstance(v, int) or isinstance(v, bool) or "current" not in e0:
+        return False
+    if v not in cache:
+        try:
+            cache[v] = json.loads(ctx.runs.policy_bytes(v))
+        except Exception:  # noqa: BLE001 - an unreadable version keeps the question
+            return False
+    return not _same(scalar(SP.current(cache[v], e0["path"], e, kinds)), scalar(e0["current"]))
+
+
+def memquestions(ctx, mem=None, stale=None):
     """Code-built questions over the experiment record, answered by recall():
     [(type, question, gold, got)]. information_extraction: the latest verdict per arm (a retest counts as its
     arm); knowledge_update: the arms whose verdict changed on the last retest / rerun; temporal: a policy path's
     value 1 s after each experiment ended, gold from the PolicyRuns versions; abstention: up to N_ABSTAIN action
-    space arms never tested (gold None). Experiments ended without a lessons row (NO_LESSON) are left out."""
+    space arms never tested (gold None). Experiments ended without a lessons row (NO_LESSON) are left out, and so is
+    the temporal question of an experiment whose recorded A is not its registered A policy (_stale_a, v1.29); their
+    ids go to the list `stale` when one is given."""
     from memory.lessons import base_arm, scalar
 
     mem = mem or _memview(ctx)
@@ -1332,6 +1355,10 @@ def memquestions(ctx, mem=None):
             continue
         if kinds is None:
             kinds = kind_of(ST.catalog(ctx.P), _jload(ctx.P["demand"], []))
+        if _stale_a(ctx, r, e, kinds, cache):
+            if stale is not None:
+                stale.append(r.get("id"))
+            continue
         gold = scalar(SP.current(pol, path, e, kinds))
         ans = recall(ctx, [], [], at=t + 1, mem=mem)["policy"].get(path)
         qs.append(("temporal", f"value of {path} at {t + 1}?", gold, ans))
@@ -1352,8 +1379,8 @@ def memcheck(ctx, L, now):
     if now - (L.get("last_memcheck") or 0) < MEMCHECK_S:
         return None
     L["last_memcheck"] = now
-    mem = _memview(ctx)
-    qs = memquestions(ctx, mem)
+    mem, stale = _memview(ctx), []
+    qs = memquestions(ctx, mem, stale)
     types = {}
     for t in MEMCHECK_TYPES:
         ok = [_same(g, a) for k, _, g, a in qs if k == t]
@@ -1365,6 +1392,7 @@ def memcheck(ctx, L, now):
     c = sum(x["correct"] for x in types.values())
     row = {
         "ts": now,
+        "v": MEMCHECK_V,
         "style": MEMCHECK_STYLE,
         "n": len(qs),
         "correct": c,
@@ -1372,6 +1400,7 @@ def memcheck(ctx, L, now):
         "types": types,
         "unread_lessons": len(mem[1]) - mem[2],
         "misses": [[k, q] for k, q, g, a in qs if not _same(g, a)][:5],
+        "stale_a": stale[:10],
     }
     _append(ctx.f("memcheck.jsonl"), row)
     return row
