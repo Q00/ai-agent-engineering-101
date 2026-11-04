@@ -1,8 +1,9 @@
 """Call the coding harness and preserve each attempt's raw output."""
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -11,6 +12,55 @@ import time
 
 
 BASE = Path(__file__).resolve().parent
+COOLDOWN_PATH = BASE / ".market" / "codex-cooldown.json"
+
+
+class HarnessUsageLimit(RuntimeError):
+    """A reported account limit, not a seller/buyer negotiation decision."""
+
+
+def check_usage_cooldown():
+    if COOLDOWN_PATH.exists():
+        state = json.loads(COOLDOWN_PATH.read_text(encoding="utf-8"))
+        if state["retry_after"] > time.time():
+            raise HarnessUsageLimit(
+                f"Model usage allowance unavailable; next check {state['retry_at_kst']} KST")
+
+
+def record_usage_limit(stderr, log):
+    """Recognize CLI error diagnostics, never arbitrary prompt/review text."""
+    errors = [line for line in stderr.splitlines()
+              if re.match(r"^ERROR:.*hit your usage limit", line, re.IGNORECASE)]
+    if not errors:
+        return False
+    now = time.time()
+    retry_after = now + 300
+    reset = re.search(r"try again at (\d{1,2}):(\d{2})\s*(AM|PM)\b", errors[-1], re.IGNORECASE)
+    korea = timezone(timedelta(hours=9))
+    if reset:
+        hour, minute = int(reset[1]), int(reset[2])
+        if 1 <= hour <= 12 and 0 <= minute < 60:
+            hour = hour % 12 + (12 if reset[3].upper() == "PM" else 0)
+            candidate = datetime.fromtimestamp(now, korea).replace(
+                hour=hour, minute=minute, second=0, microsecond=0).timestamp()
+            if candidate > now:
+                retry_after = candidate + 5
+    COOLDOWN_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if COOLDOWN_PATH.exists():
+        previous = json.loads(COOLDOWN_PATH.read_text(encoding="utf-8"))
+        retry_after = max(retry_after, previous["retry_after"])
+    state = {"retry_after": retry_after,
+             "retry_at_kst": datetime.fromtimestamp(retry_after, korea).isoformat(),
+             "source_log": str(log), "reason": "CLI reported usage limit"}
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=COOLDOWN_PATH.parent,
+                                     prefix="cooldown-", suffix=".tmp", delete=False) as stream:
+        temporary = Path(stream.name)
+        json.dump(state, stream)
+    try:
+        temporary.replace(COOLDOWN_PATH)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return True
 
 
 def find_codex():
@@ -33,6 +83,7 @@ def find_codex():
 
 
 def call_harness(prompt, timeout=90):
+    check_usage_cooldown()
     executable = find_codex()
     log_dir = BASE / "development_logs"
     log_dir.mkdir(exist_ok=True)
@@ -41,6 +92,7 @@ def call_harness(prompt, timeout=90):
                "-c", "project_doc_max_bytes=0", "-"]
     deadline = time.monotonic() + timeout
     for attempt in range(4):
+        check_usage_cooldown()
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise TimeoutError("Harness retry time budget exhausted")
@@ -72,6 +124,9 @@ def _run_attempt(command, prompt, remaining, log, attempt, deadline):
         capture.write(f"EXIT: {result.returncode}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n")
         capture.flush()
         if result.returncode:
+            if record_usage_limit(result.stderr, log):
+                capture.write("PAUSED: account usage limit; shared cooldown recorded\n")
+                check_usage_cooldown()
             # Match an HTTP status in diagnostic output, not arbitrary prompt text.
             rate_limited = "429 Too Many Requests" in result.stderr
             if rate_limited and attempt < 3:

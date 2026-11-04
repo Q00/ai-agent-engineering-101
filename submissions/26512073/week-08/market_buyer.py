@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 from buyer import buy
-from harness import call_harness
+from harness import call_harness, HarnessUsageLimit
 from seller_strategy import load_round3_rules
 
 
@@ -121,7 +121,12 @@ def market_buy(shops_path, item, budget, memory_path, order_path=None):
         print(json.dumps({"shop": "", "receipt": None, "stars": 3,
                           "review": "No shop has an acceptable product in stock."}), flush=True)
         return
-    shop = choose_shop(shops, memory, item, budget, order)
+    try:
+        shop = choose_shop(shops, memory, item, budget, order)
+    except HarnessUsageLimit as error:
+        print(json.dumps({"shop": "", "receipt": None, "stars": 3,
+                          "review": f"My buyer's model allowance is unavailable: {error}"}), flush=True)
+        return
     requested_item = shop.get("requested_sku", item)
     receipt = None
     try:
@@ -140,6 +145,11 @@ def market_buy(shops_path, item, budget, memory_path, order_path=None):
         else:
             stars = 3
             review = "No deal within my budget; this alone does not show dishonesty."
+    except HarnessUsageLimit as error:
+        receipt = None
+        outcome, stars = "model_unavailable", 3
+        review = f"My buyer's model allowance is unavailable: {error}"
+        print("[trade paused] " + review, flush=True)
     except Exception as error:
         outcome, stars = "error", 2
         review = f"Negotiation failed: {type(error).__name__}: {error}"

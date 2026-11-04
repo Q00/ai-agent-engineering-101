@@ -1,5 +1,6 @@
 """A small A2A buyer: the harness chooses offers; code enforces the budget."""
 import argparse
+import contextlib
 import json
 import re
 import time
@@ -7,7 +8,7 @@ import uuid
 
 import httpx
 
-from harness import call_harness
+from harness import call_harness, HarnessUsageLimit
 
 
 def decide_buy(item, budget, asking_price, offers, seconds_left, discount_attempted=False):
@@ -119,8 +120,13 @@ def buy(url, item, budget, time_budget=270):
             if not numbers:
                 raise ValueError("Seller response has no asking price")
             ask = float(numbers[-1])
-            decision = decide_buy(item, budget, ask, offers, remaining - 30,
-                                  discount_attempted=discount_attempted)
+            try:
+                decision = decide_buy(item, budget, ask, offers, remaining - 30,
+                                      discount_attempted=discount_attempted)
+            except HarnessUsageLimit:
+                with contextlib.suppress(Exception):
+                    rpc("CancelTask", {"id": task_id})
+                raise
             print(json.dumps({"buyer_decision": decision}), flush=True)
             if decision["action"] == "walk_away":
                 break

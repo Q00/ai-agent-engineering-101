@@ -103,3 +103,20 @@ copied to retain identity, not rotated; that identity issue remains unresolved.
 No key, API token, or claim code belongs in commits. Existing Week 8 pricing
 migration notes and historical logs are preserved. The final report, student's
 LaTeX architecture figure, forum strategy, and market results remain future work.
+
+## Model allowance interruptions
+
+On November 4 the CLI repeatedly reported its account usage limit. The harness
+now records a shared `.market/codex-cooldown.json` marker after a confirmed CLI
+usage diagnostic. All newly loaded agent processes check it before spawning the
+CLI. An unambiguous future same-day AM/PM reset is interpreted in Korea time;
+unrecognized or past reset times use a five-minute check interval. Existing
+longer cooldowns are preserved. Calls resume after the recorded time, subject
+to the account actually having allowance again. This does not extend any quota.
+
+A seller whose model is unavailable declines the negotiation and releases the
+held unit. A buyer cancels an in-progress task when possible and records its own
+model outage without blaming the other shop. The first raw CLI failure remains
+in development logs; skipped calls do not spawn new CLI processes. Restart the
+kit once to load these changes in the long-running seller. Existing successful
+trades and the student's pricing/quality rules are preserved.

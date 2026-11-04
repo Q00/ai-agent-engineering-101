@@ -17,6 +17,7 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+from harness import HarnessUsageLimit
 
 from seller_strategy import (HISTORY_PATH, POLICY, decide_opening, decide_offer,
                              round3_inventory, available_units, load_round3_rules,
@@ -171,7 +172,14 @@ class Seller(AgentExecutor):
             return
         offer = int(text)
         self.record(task_id, "offer_received", deal, offer=offer, unit=unit["unit"])
-        decision = await asyncio.to_thread(decide_stock_offer, unit, offer, deal["counters"])
+        try:
+            decision = await asyncio.to_thread(decide_stock_offer, unit, offer, deal["counters"])
+        except HarnessUsageLimit as error:
+            self.record(task_id, "model_unavailable", deal, unit=unit["unit"], reason=str(error))
+            self.open.pop(task_id, None)
+            self.held.pop(unit["unit"], None)
+            await up.reject(say(str(error)))
+            return
         if unit.get("kind") == "food" and unit.get("expires_at") is not None \
                 and unit["expires_at"] <= time.time():
             self.record(task_id, "rejected", deal, unit=unit["unit"],

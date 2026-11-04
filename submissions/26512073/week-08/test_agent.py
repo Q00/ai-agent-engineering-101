@@ -558,6 +558,16 @@ class StockSellerTests(unittest.IsolatedAsyncioTestCase):
         await self.seller.cancel(self.context(""), self.queue)
         self.assertEqual(self.seller.held, {})
 
+    async def test_model_usage_limit_releases_unit_without_agreement(self):
+        from harness import HarnessUsageLimit
+        await self.seller.execute(self.context("Buy S1"), self.queue)
+        with patch("seller.decide_stock_offer", side_effect=HarnessUsageLimit("Model paused")):
+            await self.seller.execute(self.context("10500"), self.queue)
+        self.assertEqual(self.seller.held, {})
+        self.assertEqual(self.seller.open, {})
+        self.assertEqual(self.rows()[-1]["event"], "model_unavailable")
+        self.updater.complete.assert_not_awaited()
+
 
 class RestockTests(unittest.TestCase):
     def setUp(self):
@@ -775,6 +785,66 @@ class StockBudgetTests(unittest.TestCase):
                 "one": {"category": "Observed"}, "two": {"category": "Unconfirmed"}})
         self.assertEqual(result["own_settled_sales"], {"one": 1})
         self.assertNotIn("Unconfirmed", result["observed_categories"])
+
+
+class HarnessCooldownTests(unittest.TestCase):
+    def setUp(self):
+        import harness
+        from datetime import datetime
+        folder = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent)
+        self.addCleanup(folder.cleanup)
+        self.folder = Path(folder.name)
+        self.now = datetime.fromisoformat("2026-11-04T16:00:00+09:00").timestamp()
+        for target, value in [("harness.BASE", self.folder),
+                              ("harness.COOLDOWN_PATH", self.folder / "cooldown.json")]:
+            patcher = patch(target, value)
+            patcher.start(); self.addCleanup(patcher.stop)
+        patcher = patch("harness.time.time", return_value=self.now)
+        patcher.start(); self.addCleanup(patcher.stop)
+
+    def test_reported_reset_blocks_new_model_processes(self):
+        import harness
+        from datetime import datetime
+        self.assertTrue(harness.record_usage_limit(
+            "ERROR: You've hit your usage limit. Try again at 4:35 PM.", "sample.log"))
+        state = json.loads(harness.COOLDOWN_PATH.read_text())
+        expected = datetime.fromisoformat("2026-11-04T16:35:05+09:00").timestamp()
+        self.assertEqual(state["retry_after"], expected)
+        with patch("harness.find_codex") as find, patch("harness.subprocess.run") as process:
+            with self.assertRaises(harness.HarnessUsageLimit):
+                harness.call_harness("Sample")
+            find.assert_not_called(); process.assert_not_called()
+
+    def test_after_reset_model_calls_resume(self):
+        import harness
+        harness.COOLDOWN_PATH.write_text(json.dumps({"retry_after": self.now - 1}))
+        with patch("harness.find_codex", return_value="sample-cli"), \
+                patch("harness._run_attempt", return_value=({"ok": True}, None)) as run:
+            self.assertEqual(harness.call_harness("Sample"), {"ok": True})
+            run.assert_called_once()
+
+    def test_untrusted_text_is_not_a_usage_diagnostic(self):
+        import harness
+        self.assertFalse(harness.record_usage_limit(
+            'Review: "ERROR: You have hit your usage limit"', "sample.log"))
+        self.assertFalse(harness.COOLDOWN_PATH.exists())
+
+    def test_past_or_unknown_reset_uses_short_cooldown(self):
+        import harness
+        harness.record_usage_limit("ERROR: You've hit your usage limit. Try again at 3:00 PM.", "sample.log")
+        state = json.loads(harness.COOLDOWN_PATH.read_text())
+        self.assertEqual(state["retry_after"], self.now + 300)
+
+    def test_cli_error_preserves_raw_output_and_sets_shared_cooldown(self):
+        import harness,time
+        log = self.folder / "raw-attempt.txt"
+        result = SimpleNamespace(returncode=1, stdout="", stderr=
+            "ERROR: You've hit your usage limit. Try again at 4:35 PM.")
+        with patch("harness.subprocess.run", return_value=result):
+            with self.assertRaises(harness.HarnessUsageLimit):
+                harness._run_attempt(["sample-cli"], "Sample", 30, log, 0, time.monotonic() + 30)
+        self.assertIn("hit your usage limit", log.read_text())
+        self.assertTrue(harness.COOLDOWN_PATH.exists())
 
 
 if __name__ == "__main__":
