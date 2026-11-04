@@ -269,7 +269,8 @@ _files = {}
 
 
 def market_file(name: str) -> dict:
-    """A .market file the kit or the analysis rewrites now and then, read again only when it changed."""
+    """A .market file the kit or the analysis rewrites now and then, read again only when it changed (unlike
+    common.market_file, which reads every time: the seller prices every message)."""
     path = common.MARKET_DIR / name
     try:
         mtime = path.stat().st_mtime
@@ -291,8 +292,7 @@ def priced(u: dict, now: float, warranty: bool) -> dict:
     summary = market_file("market_summary.json")
     by_grade = ((summary.get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
     sku_market = ((summary.get("by_sku") or {}).get(u.get("sku")) or {}).get("others_6h")
-    line = market_file("analysis/line.json").get("skus")
-    in_line = u.get("sku") in (line if isinstance(line, dict) else restock.LINE)
+    in_line = u.get("sku") in restock.load_line(market_file("analysis/line.json"))   # restock's reading of the line
     late = pricing.late_in_cycle(market_file("inventory.json").get("restock"), now)
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
                         extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True,

@@ -56,8 +56,7 @@ def leaf(category: str | None) -> str:
     return (category or "").split(">")[-1]
 
 
-def own(name: str | None) -> bool:
-    return bool(name) and any(o.lower() in str(name).lower() for o in common.OWN_NAMES)
+own = common.is_ours
 
 
 def checked(said: str | None, facts: str, limit: int = COMMENT_MAX) -> str | None:

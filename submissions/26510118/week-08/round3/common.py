@@ -30,6 +30,11 @@ STRATEGY = {"phase": "explore"}
 SHOP_BRAND = "Kiro Everyday"
 SHOP_NAME = f"{SHOP_BRAND}: Groceries & Goods"
 OWN_NAMES = {"Kiro729", "Kiro729 Shop", SHOP_BRAND}  # ours, matched as parts of a name: left out of what we publish about shops
+
+
+def is_ours(name) -> bool:
+    """A shop, buyer or player name of ours (OWN_NAMES as parts of it): forum.own and ledger.is_ours."""
+    return bool(name) and any(o.lower() in str(name).lower() for o in OWN_NAMES)
 # The rules the trading modules follow. The integrated analysis rewrites analysis/active_rules.json
 # (only in the focus phase, within its limits); a missing file or key keeps these defaults.
 RULES = {

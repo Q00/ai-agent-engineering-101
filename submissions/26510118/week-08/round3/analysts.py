@@ -94,8 +94,7 @@ def validate(role: str, field: str, value):
     return (False, f"unknown {spec}: {unknown[:3]}") if unknown else (True, value)
 
 
-def _since(rows: list, now: float, seconds: float = 86400) -> list:
-    return [r for r in rows if (r.get("ts") or r.get("settled_at") or 0) >= now - seconds]
+_since = context._since
 
 
 def own_results(now: float, sales: list) -> dict:

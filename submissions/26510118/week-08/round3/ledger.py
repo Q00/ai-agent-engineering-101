@@ -121,8 +121,7 @@ def count_result(hourly: dict, e: dict) -> None:
     h["samples"] = (h["samples"] + [e.get("seq")])[-3:]
 
 
-def is_ours(name) -> bool:
-    return bool(name) and any(o.lower() in str(name).lower() for o in common.OWN_NAMES)
+is_ours = common.is_ours
 
 
 def count_ours(ours: dict, e: dict, shop_names: dict) -> None:

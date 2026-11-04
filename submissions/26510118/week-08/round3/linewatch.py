@@ -56,7 +56,7 @@ WINDOW = 2 * 3600
 SHRINK_DROP, EXIT_DROP = 0.03, 0.06
 CROWD_TIMES, CROWD_MORE = 2, 3
 GROW_SALES = 2
-STALL = 4 * 3600
+STALL = 4 * 3600         # out (cap 0) held this long with no sale; restock.LINE_STALL (2 h) stops buying more sooner
 EXIT_REST = 2 * 3600
 REENTRY_MIN = 0.70       # back in only where others still settle at this share of list or more (A costs 0.55-0.75)
 MIN_N = 20
@@ -90,7 +90,7 @@ def ours(sku: str, units: list, sales: list, now: float) -> dict:
     mine = [s for s in sales if s.get("sku") == sku]
     last = max((s.get("ts") or 0 for s in mine), default=0)
     first = min((u.get("supplied_at") or now for u in held), default=None)
-    return {"held": len(held), "sold_1h": sum(1 for s in mine if (s.get("ts") or 0) >= now - 3600),
+    return {"held": len(held), "sold_1h": sum(1 for s in mine if (s.get("ts") or 0) >= now - restock.LINE_PACE),
             "idle": now - max(last, first) if first is not None else None}
 
 
@@ -111,7 +111,7 @@ def decide(cap: int, base: dict | None, now_m: dict, us: dict, exit_at: float | 
         return 0, f"market median {now_m['median']:.3f} is {drop:.3f} under the baseline {base['median']:.3f}"
     if drop >= SHRINK_DROP or crowded:
         why = (f"market median {now_m['median']:.3f}, {drop:.3f} under the baseline" if drop >= SHRINK_DROP
-               else f"{now_m['sellers']} sellers in 2 h against {base.get('sellers')} at the baseline")
+               else f"{now_m['sellers']} sellers in {WINDOW // 3600} h against {base.get('sellers')} at the baseline")
         return max(1, cap - 1), why
     if us["sold_1h"] >= GROW_SALES and cap < restock.LINE_MAX_UNITS:
         if hold:
@@ -225,9 +225,10 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     changes = []
     for sku, info in discover(settles, names, catalog, line, caps, now, unmet).items():
         found[sku], line[sku] = info, info["cap"]
-        why = (f"added: others sold it {info['n']} times in 6 h at {info['median']:.3f} of list, {info['sellers']} sellers"
+        why = (f"added: others sold it {info['n']} times in {FIND_WINDOW // 3600} h at {info['median']:.3f} of list, {info['sellers']} sellers"
                if info["source"] == "market" else
-               f"added: {info['orders']} of our buyer's orders in 6 h wanted it and no shop had it (budget {info['budget']}, list {info['list']})")
+               f"added: {info['orders']} of our buyer's orders in {UNMET_WINDOW // 3600} h wanted it and no shop had it "
+               f"(budget {info['budget']}, list {info['list']})")
         changes.append({"at": int(now), "sku": sku, "from": 0, "to": info["cap"], "market": info, "why": why})
     for sku, default in line.items():
         lp = (catalog.get(sku) or {}).get("list_price")

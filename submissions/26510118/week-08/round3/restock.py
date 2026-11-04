@@ -94,7 +94,8 @@ LINE = {                 # the premium line: SKU -> the most units held (11/4 ev
     "G19a70f63": 2,      # 소파 1,672,800: 1.9 an hour, 4 shops (added 21:45)
     "G10693924": 2,      # 소파 707,000: 2.9 an hour, 5 shops (added 21:45)
 }
-LINE_LINES = 9           # line products bought in one run at most (4 until 21:45, 7 until 23:40), and never more than
+LINE_LINES = 8           # line products bought in one run at most (4 until 21:45, 7 until 23:40, 9 until 11/5 01:00, when
+                         # the shelf's SHELF_LINES made 8 of the kit's 10 the most anyway), and never more than
 LINE_SHARE = 0.9         # LINE_SHARE of the run's lines nor of the balance above RESERVE (0.5 until 21:45, 0.75 until 23:40)
 LINE_PACE = 3600         # a line product is kept at 1 + what we sold of it in this long (a unit sells out within
                          # minutes, so our sales count supply as much as demand: one more than they asks for more)

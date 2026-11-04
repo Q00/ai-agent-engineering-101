@@ -63,8 +63,7 @@ def pct(x: float) -> str:
     return f"{x * 100:.1f}%"
 
 
-def _leaf(category) -> str:
-    return (category or "").split(">")[-1]
+_leaf = forum.leaf
 
 
 def _ratio(s: dict, catalog: dict):
