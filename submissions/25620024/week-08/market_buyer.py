@@ -229,6 +229,12 @@ def code_decide(item, budget, history, ask_price):
     return ("offer", ask_price) if ask_price <= budget else ("offer", budget)
 
 
+def close_ratio(lp):
+    """The share of list up to which a final ask is taken (11-04). Big tickets are where surplus is: a 300k order
+    bought at 0.98 of list still adds surplus and a deal, so they close up to close_ratio_big."""
+    return T.get("close_ratio_big", 1.0) if lp >= T.get("big_list", 100000) else T["close_ratio"]
+
+
 def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None, decide_fn=None, close_at=None):
     """Week-06 buyer loop with two more guards. Returns (task, asks, offers): every ask the shop made and
     every price we sent, oldest first. low is the lowest price I agreed for this item lately at any shop
@@ -853,7 +859,7 @@ def round3(a, order, shops, mem, started):
                                                          low=low,
                                                          opened=(pick["url"], pick["task"], pick["opening"]),
                                                          decide_fn=code_decide,
-                                                         close_at=min(order["budget"], int(lp * T["close_ratio"])))
+                                                         close_at=min(order["budget"], int(lp * close_ratio(lp))))
         outcome = "deal" if state(task) == "TASK_STATE_COMPLETED" else "no deal"
     except Exception as e:
         log(f"buyer error: {type(e).__name__}: {e}")
@@ -877,7 +883,7 @@ def round3(a, order, shops, mem, started):
             try:
                 t2, a2, o2, x2, n2 = negotiate(shop2["url"], offer2["name"], cap2, started, low=low2,
                                                opened=(q2["url"], q2["task"], q2["opening"]), decide_fn=code_decide,
-                                               close_at=min(order["budget"], int(lp2 * T["close_ratio"])))
+                                               close_at=min(order["budget"], int(lp2 * close_ratio(lp2))))
             except Exception as e:
                 log(f"[retry] failed: {type(e).__name__}")
                 continue
