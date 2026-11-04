@@ -3,67 +3,72 @@
 운영 형태: `systemd --user` 서비스 `week08-myeonggi-market-v4` → `market_runtime.py join` → `market_kit.py`(키트 v4).
 키트가 터널·프록시·결제(ACP)·감시(watchdog)를 맡고, 우리 코드는 `agent.json`의 훅 5개로 붙음.
 
-## 1. 전체 구성
+## 1. 전체 구성 (Market A2A 조직 반영)
 
 ```mermaid
 flowchart LR
   subgraph EXT[외부]
-    MKT[(market.ourolabs.ai<br/>/api/ledger · shops · catalog · supply · forum)]
+    MKT[(market.ourolabs.ai<br/>ledger · shops · catalog · supply · forum · board)]
     BUY[다른 구매자 에이전트]
     SHOPS[다른 가게 에이전트]
-    JEV[Jev / Decisions API<br/>보정된 확률]
-    CODEX[Codex CLI gpt-6-luna<br/>언어·ReAct]
+    JEV[Decisions API / Jev<br/>보정 확률]
+    CODEX[Codex CLI<br/>언어 · ReAct]
   end
 
   subgraph KIT[market_kit.py v4 · systemd]
     TUN[cloudflared 터널 + 프록시]
-    WD[watchdog<br/>죽은 seller 60초 내 재시작]
+    WD[watchdog]
     HOOK[훅 실행기]
-    OUT[outbox 전송<br/>글·투표]
     PAY[ACP 결제 · accept 검사]
+    OUT[outbox 전송]
   end
 
-  subgraph AG[우리 에이전트 week-08]
-    SHOP[shop_r3.py<br/>A2A 가게 서버 · 상주]
-    MB[buyer_r3.py<br/>주문마다]
-    RS[restock_r3.py<br/>60초마다]
-    RV[review_r3.py<br/>정산마다]
-    FO[forum_r3.py<br/>10분마다 · 백그라운드]
-    RR[restock_review_r3.py<br/>30분마다 · 백그라운드]
+  subgraph SALES[판매 · 빠른 경로 ms]
+    SHOP[shop_r3.py<br/>호가 · 보증 · 회원 코드 · 스팸 거절]
+    MB[buyer_r3.py<br/>구매 협상]
+    RV[review_r3.py]
   end
 
-  subgraph LIB[r3lib]
-    MEM[(memory.py<br/>SQLite 3계층)]
-    PR[pricing.py<br/>돈 규칙]
-    OR[oracle.py<br/>시세 분포 ★]
-    SC[scout.py<br/>경쟁사 정찰 ★]
-    PM[primer.py + 시장학개론 16원칙]
-    DC[decide.py]
-    RE[react.py + llm.py]
-    IN[initiative.py<br/>Horvitz gate]
+  subgraph ORG[내부 A2A 조직 · 127.0.0.1 · 서명 봉투/영수증]
+    CEO[ceo<br/>tick · kpi]
+    PUR[purchasing<br/>propose]
+    LOG[logistics<br/>window · approve · health]
+    QUA[quality<br/>warranty · harsh · refunds]
+    MKG[marketing<br/>stats]
   end
 
-  BUY -- A2A 협상 --> TUN --> SHOP
-  MB -- A2A 협상 --> SHOPS
-  HOOK --> MB & RS & RV
-  RS -. kick .-> FO & RR
+  subgraph BG[백그라운드 판단]
+    FO[forum_r3.py 10분<br/>분류 · 투표 · ReAct · 리포트 레인]
+    RR[restock_review_r3.py 30분<br/>ReAct 배율]
+  end
+
+  subgraph LIB[r3lib 공용]
+    MEM[(memory.sqlite<br/>사실 · 기록 · 포럼)]
+    PR[pricing]
+    OR[oracle]
+    SC[scout]
+    PM[primer 16원칙]
+    DC[decide]
+    RE[react · llm]
+  end
+
+  BUY -- A2A --> TUN --> SHOP
+  MB -- A2A --> SHOPS
+  MB --> PAY --> MKT
+  HOOK -- 60초 restock --> CEO
+  CEO --> LOG & PUR & QUA & MKG
+  CEO -- buy 목록 --> HOOK -- supply --> MKT
+  HOOK --> MB & RV
+  HOOK -. kick .-> FO & RR
   WD -. 재시작 .-> SHOP
-  RS -- buy 목록 --> HOOK -- POST /api/supply --> MKT
-  MB -- receipt+accept --> PAY --> MKT
-  FO -- outbox.jsonl --> OUT --> MKT
-  RS -- sync_ledger · sync_shops --> MEM
-  MEM <-- 원장 · 재고 --> MKT
-
-  SHOP --> PR & SC & MEM
-  RS --> PR & SC & MEM
-  MB --> PR & MEM
-  FO --> OR & DC & RE & IN & MEM
-  RR --> RE & OR & SC & PM
+  FO --> OUT --> MKT
+  MKT -- ledger · shops --> MEM
+  SHOP & PUR & LOG & QUA --> PR & SC & MEM
+  FO --> OR & DC & RE & MEM
+  RR --> RE & PM & OR & SC
   DC --> JEV
   RE --> CODEX
 ```
-
-★ = 2026-11-04 추가
 
 ## 2. 결정 경로 세 갈래
 
