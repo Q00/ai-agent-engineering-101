@@ -95,6 +95,7 @@ def adapt():
 
 
 _flow = {"at": 0, "prices": {}}
+STALE_HOURS = 6
 
 
 def market_ratio(u):
@@ -123,10 +124,13 @@ def terms(u):
         quality = GOODS_WORDS.get(u["grade"], u["grade"]) + f", {WARRANTY_HOURS} h warranty"
         base = {"A": 0.85, "B": 0.78, "C": 0.7}.get(u["grade"], 0.8)
     ratio = market_ratio(u)                         # open a little above where this market closes, so we land near it
-    opening = round(lp * (min(0.95, max(0.6, ratio + 0.05 + delta)) if ratio else base + delta))
-    if u.get("kind") != "food":
-        if market_now() - (u.get("supplied_at") or market_now()) > 72 * 3600:   # 3 days unsold: storage eats it
-            floor, opening = round(cost), round(opening * 0.9)
+    waited = (market_now() - (u.get("supplied_at") or market_now())) / 3600
+    if waited > STALE_HOURS:                        # buyers went elsewhere: profit counts the balance, not the stock,
+        lift = 0                                    # so turn it back into cash at the market's price, cost at least
+        floor = min(floor, round(cost * (0.9 if waited > 24 else 1.0)))
+    else:
+        lift = 0.05
+    opening = round(lp * (min(0.95, max(0.6, ratio + lift + delta)) if ratio else base + delta))
     floor = max(1, floor)
     return floor, max(opening, floor), quality + ", market certificate included"
 

@@ -64,7 +64,10 @@ def main():
     have = Counter(u["sku"] for u in units)
     # a unit of mine that has waited longer than a snapshot means the buyers went elsewhere: buy no more of that SKU
     stale = {u["sku"] for u in units if market_now() - (u.get("supplied_at") or market_now()) > FLOW_HOURS * 3600}
-    stock_cost = sum(u.get("cost") or 0 for u in units)
+    # a unit that waited over 6 h counts half: the seller already sells it off at cost (seller_r3.STALE_HOURS), and it
+    # must not block buying what sells now
+    stock_cost = sum((u.get("cost") or 0) * (0.5 if market_now() - (u.get("supplied_at") or market_now()) > 6 * 3600
+                                             else 1) for u in units)
     budget = min(balance - CASH_FLOOR, STOCK_CAP - stock_cost, balance * SPEND_SHARE)
     if budget <= 0:
         print(json.dumps({"buy": []}))
