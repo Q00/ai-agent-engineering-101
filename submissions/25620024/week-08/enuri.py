@@ -410,7 +410,14 @@ def advise(order, shops, b=None, t=None, cat=None):
     for m in _memory_since(time.time() - 3600):
         if m.get("enuri_first") and m.get("outcome") in ("no deal", "no answer") and m.get("shop") == m["enuri_first"]:
             first_fails[m["shop"]] = first_fails.get(m["shop"], 0) + 1
+    trust = b.get("trust") or {}
+    problem = set(trust.get("problems") or {})
+    # HQ 11-05: problem shops are not visited -- unless every shop holding this order's SKUs is one (never lose it)
+    skip_problem = any(s not in problem for (s, _) in held)
     for (shop, sku), (url, name, lp) in held.items():
+        if skip_problem and shop in problem:
+            skipped["avoid"] += 1
+            continue
         if time.time() - phantom.get(f"{shop}|{sku}", 0) < 1800:   # said 'none in stock' in the last 30 min
             skipped["avoid"] += 1
             continue
@@ -439,6 +446,8 @@ def advise(order, shops, b=None, t=None, cat=None):
         # the board's buyer surplus is LIST price minus paid (week-08 rules, re-read 11-04), not budget minus paid:
         # among acceptable SKUs, a dear one bought at a deep discount keeps more than the cheapest one
         boost = 1.5 if shop in (b.get("frugal") or {}) else 1.0   # HQ 11-05: frugal shops first
+        if shop in (trust.get("preferred") or {}):                  # and above all, shops that sold us dear goods
+            boost *= 2.0                                            # at a good price with no error
         keep = boost * max(0, lp - min(x, budget)) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
         target = int(lp * t["r3_first_offer"])
         p, hl = (b.get("prices") or {}).get(sku) or {}, honest_low(b, sku)
@@ -506,6 +515,46 @@ def _memory_since(ts):
     return out
 
 
+def shop_trust(c, md, now, hours=24, big=100000):
+    """HQ 11-05 "문제가 있던 상점은 방문하지마… 1) 객단가가 비싼 제품 판매점 2) 좋은 가격 3) 오류가 없던 판매점":
+      problems   {shop: [reasons]} in the last `hours`: a receipt that did not match, a payment the kit refused (wrong grade,
+                 short shelf life, unit gone at checkout), a grade claim the ledger proved false, a misbehaviour our
+                 buyer logged. Friendly shops (private/friendly.json) are never listed.
+      preferred  {shop: {"big_deals", "share"}}: shops we bought high-ticket goods (list >= big) from in 72 h at a median
+                 paid/list at or under the market's median for high-ticket goods (24 h), with no problem."""
+    fr = friendly()
+    problems = {}
+    add = lambda s, why: s and s not in fr and problems.setdefault(s, []).append(why)
+    for s, cases in receipt_watch(hours).items():
+        add(s, f"receipt x{len(cases)}")
+    try:
+        pays = [json.loads(x) for x in (Path(md) / "payments.jsonl").read_text(encoding="utf-8").splitlines()[-500:] if x.strip()]
+    except (OSError, ValueError):
+        pays = []
+    bad = {(p.get("item"), p.get("price")): (p.get("reason") or "")[:40] for p in pays if not p.get("paid")}
+    for m in _memory_since(now - hours * 3600):
+        k = (m.get("item"), m.get("agreed"))
+        if k in bad:
+            add(m.get("shop"), "refused: " + bad[k])
+        if str(m.get("problem") or "").startswith("misbehaved"):
+            add(m.get("shop"), str(m["problem"])[:40])
+    for (s,) in c.execute("""select su.shop from settles st join settle_units x on x.seq = st.seq
+                             join supply_units su on su.unit = x.unit where st.buyer = ? and st.ts > ?
+                             and st.claim_honest = 0""", (ME, now - hours * 3600)):
+        add(s, "false grade claim")
+    mk = [r for (r,) in c.execute("select amount * 1.0 / list_price from settles where ts > ? and list_price >= ?",
+                                  (now - 24 * 3600, big))]
+    mkt = statistics.median(mk) if mk else 0.75
+    ours = {}
+    for s, r in c.execute("""select su.shop, st.amount * 1.0 / st.list_price from settles st
+                             join settle_units x on x.seq = st.seq join supply_units su on su.unit = x.unit
+                             where st.buyer = ? and st.ts > ? and st.list_price >= ?""", (ME, now - 72 * 3600, big)):
+        ours.setdefault(s, []).append(r)
+    preferred = {s: {"big_deals": len(v), "share": round(statistics.median(v), 3)} for s, v in ours.items()
+                 if s not in problems and statistics.median(v) <= mkt}
+    return {"problems": problems, "preferred": preferred, "big_market_share": round(mkt, 3)}
+
+
 def frugal(c, now, hours=24, min_n=20, gap=0.05):
     """HQ 11-05 "정가보다 확실히 싸게 주는 가게가 있다면, 그 가게만 집중 방문해": shops whose median paid/list over the
     last `hours` (public ledger, min_n settles) is at least `gap` under the market median. {shop: median share}."""
@@ -545,6 +594,7 @@ def tick(md=Path(".market"), c=None, now=None, force=False):
             "avoid": sorted(s for s, x in q.items() if x["verdict"] == "avoid"), "where": idx,
             "penalty": state.get("penalty", {}), "enuri_accountability": acc or old.get("enuri_accountability"),
             "shelf_refused": shelf_refusals(md, now), "receipt_watch": receipt_watch(), "frugal": frugal(c, now),
+            "trust": shop_trust(c, md, now),
             "coverage": {"catalog_skus": n_cat, "shops": n_shops, "skus_in_stock": len(idx),
                          "skus_priced_24h": 0, "stocked_and_priced": 0}}
     book["coverage"].update(skus_priced_24h=len(book["prices"]),

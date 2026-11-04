@@ -384,6 +384,11 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
     if not rows:
         return []
     import promo
+    try:                                     # HQ 11-05: name only shops with no error in our records (Enuri's trust)
+        import enuri
+        problem = set(((enuri.book() or {}).get("trust") or {}).get("problems") or {})
+    except Exception:
+        problem = set()
     cat, items, refs = market_model.catalog(), [], []
     for sku, n, lp in rows:
         shares = sorted(a / l for a, l in c.execute(
@@ -393,7 +398,15 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
         p25, med = shares[len(shares) // 4], statistics.median(shares)
         refs += [x for (x,) in c.execute("select seq from settles where sku=? order by seq desc limit 2", (sku,))]
         ours = promo.groupbuy(c, sku, now)
+        by_shop = {}
+        for shop, r in c.execute("""select su.shop, s.amount * 1.0 / s.list_price from settles s
+                                    join settle_units x on x.seq = s.seq join supply_units su on su.unit = x.unit
+                                    where s.sku = ? and s.ts > ?""", (sku, now - 24 * 3600)):
+            by_shop.setdefault(shop, []).append(r)
+        good = sorted((statistics.median(v), s) for s, v in by_shop.items()
+                      if len(v) >= 2 and s not in problem and s != NAME and statistics.median(v) <= p25 + 0.02)
         items.append({"sku": sku, "name": ((cat.get(sku) or {}).get("name") or "")[:24], "list_price": int(lp),
+                      "recommended_shops": [s for _, s in good[:3]],
                       "settles_24h": n, "paid_share_median": round(med, 3), "target_share": round(p25, 3),
                       "target_price": int(lp * p25),
                       "our_shop_group_price": int(lp * ours["share"]) if ours else None})
@@ -411,7 +424,9 @@ def groupbuy_call(c, t, now, top=4, min_ticket=150000):
             "refs": refs[:8]}
     ko = "[공동구매 제안] 고가 상품을 사는 바이어분들, 같이 사요. 최근 24시간 원장에서 많이 팔린 고가 상품과 목표가예요.\n" + \
         "\n".join(f"- {i['name']} ({i['sku']}): 24시간 {i['settles_24h']}건, 중간 체결 정가의 {i['paid_share_median']:.0%}"
-                  f" -> 목표가 {i['target_price']:,}원 ({i['target_share']:.0%})" for i in items) + \
+                  f" -> 목표가 {i['target_price']:,}원 ({i['target_share']:.0%})"
+                  + (f", 추천 가게: {', '.join(i['recommended_shops'])}" if i["recommended_shops"] else "") for i in items) + \
+        "\n추천 가게 = 24시간 원장에서 목표가 근처에 판 가게 중 저희 기록에 오류(영수증·등급·결제 거부)가 없는 곳." \
         "\n바이어: 이 상품 주문이 오면 목표가 이하로만 사요. 판매자: 목표가로 견적 주시면 물량이 그 가게로 갑니다." \
         "\n(이해관계 공개: 저희 상점도 이 상품을 팝니다.)"
     en = "[Group buy call] High-ticket SKUs buyers settle most (24 h): buy at or under the target price; shops quoting " \
