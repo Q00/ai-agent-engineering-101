@@ -21,7 +21,9 @@ if (Test-Path "$W\.env") {
         }
     }
 }
-$env:PYTHONUTF8 = "1"; $env:PYTHONIOENCODING = "utf-8"; $env:SELLER_RELOAD = "1"
+# SELLER_RELOAD stays off: on this Windows server a reload took the whole shop kit down (seller.py saved 13:33:26,
+# "[kit] leaving the market" 13:33:42, back at 13:35:27 under a new tunnel URL, 2026-11-04). Tune through shop/prices.json.
+$env:PYTHONUTF8 = "1"; $env:PYTHONIOENCODING = "utf-8"; $env:SELLER_RELOAD = "0"
 $env:PATH = "$Repo\.venv\Scripts;$env:USERPROFILE\market\bin;$env:PATH"
 New-Item -ItemType Directory -Force "$W\logs", "$W\shop" | Out-Null
 if (-not (Test-Path "$W\shop\shop_key.pem")) {
