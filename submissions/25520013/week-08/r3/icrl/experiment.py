@@ -66,11 +66,14 @@ def block_arm(seed, i):
 
 
 def pair_diffs(blocks):
-    """blocks: [{i, arm, metric}] closed, in order -> [B - A] for every complete pair."""
-    by = {}
+    """blocks: [{i, arm, metric}] closed, in order -> [B - A] for every complete pair. v1.25: a pair with a block
+    an outside policy edit fell into ("ext_edit") is left out, since its arms ran under different baselines."""
+    by, cut = {}, set()
     for b in blocks:
         by.setdefault(b["i"] // 2, {})[b["arm"]] = b["metric"]
-    return [p["B"] - p["A"] for _, p in sorted(by.items()) if "A" in p and "B" in p]
+        if b.get("ext_edit"):
+            cut.add(b["i"] // 2)
+    return [p["B"] - p["A"] for k, p in sorted(by.items()) if "A" in p and "B" in p and k not in cut]
 
 
 def switchback_verdict(diffs, retest=False):

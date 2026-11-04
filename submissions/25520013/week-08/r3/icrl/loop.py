@@ -291,8 +291,48 @@ def put_arm(ctx, L, exp, arm, now):
     return True
 
 
+def _flat(d, pre=()):
+    """Leaf values of a JSON tree by key tuple (an empty dict is a leaf)."""
+    if isinstance(d, dict) and d:
+        out = {}
+        for k, v in d.items():
+            out.update(_flat(v, pre + (str(k),)))
+        return out
+    return {pre: d}
+
+
+def _pstr(t):
+    """Key tuple -> action-space path; a category name stays whole (SP.split's rule)."""
+    if len(t) >= 3 and t[0] == "categories":
+        return "categories." + t[1] + "." + ".".join(t[2:])
+    return ".".join(t)
+
+
+def changed_paths(old_raw, new_raw):
+    """v1.25: the leaf key tuples whose values differ between two policy files (added and removed keys included)."""
+    a, b = _flat(json.loads(old_raw)), _flat(json.loads(new_raw))
+    miss = object()
+    return sorted(t for t in set(a) | set(b) if a.get(t, miss) != b.get(t, miss))
+
+
+def edit_hits(space, exp, paths):
+    """v1.25: the changed paths (key tuples) that touch a running experiment: one of its own edit paths, a parent or
+    a child of one, or any action-space key of its lane's families (e.g. min_margin for a price_mult experiment)."""
+    lane = exp_lane(exp)
+    mine = [tuple(SP.split(r["path"])) for r in exp.get("edits") or []]
+    return [
+        t
+        for t in paths
+        if any(t[: len(m)] == m or m[: len(t)] == t for m in mine) or lane_of_path(space, _pstr(t)) == lane
+    ]
+
+
 def check_live(ctx, L, now):
-    """Registers the first / externally edited live bytes as a baseline; an edit aborts the experiment of every lane."""
+    """Registers the first / externally edited live bytes as a baseline. v1.25 (2026-11-05: all 9 experiments that
+    ended before had been aborted by deploy-time edits, so no lesson ever formed): an edit aborts only the
+    experiments it touches (edit_hits); the others keep running with the edit in place (arm_bytes works path-level
+    on the live file) and the block open at the edit is marked ext_edit, so X.pair_diffs leaves its pair out. When
+    the previous bytes cannot be read, every lane aborts as before."""
     raw = ctx.policy.read_bytes()
     h = sha(raw)
     if L.get("live_sha") == h:
@@ -305,23 +345,43 @@ def check_live(ctx, L, now):
             log(ctx, now, "alarm", what="live_policy_not_json")
         return "bad_live"
     first = L.get("live_sha") is None
+    prev = L.get("live_version")
     v = ctx.runs.register(
         raw,
         now,
         "baseline",
-        parent=L.get("live_version"),
+        parent=prev,
         note="initial" if first else "external",
     )
     L.update(live_version=v, live_sha=h, base_version=v)
     if first:
         return None
-    aborted = []
+    try:
+        paths = changed_paths(ctx.runs.policy_bytes(prev), raw)
+    except Exception:  # noqa: BLE001 - previous bytes unreadable: abort every lane
+        paths = None
+    aborted, kept = [], []
     for ln, exp in running(L):
-        exp.update(status="done", verdict="aborted_external_edit", t_end=now)
-        _append(ctx.f("experiments.jsonl"), dict(event="end", **_exp_row(exp)))
-        L["lanes"][ln]["active"] = None
-        aborted.append(exp["id"])
-    log(ctx, now, "alarm", what="external_edit", version=v, aborted=aborted)
+        if paths is None or edit_hits(ctx.space, exp, paths):
+            exp.update(status="done", verdict="aborted_external_edit", t_end=now)
+            _append(ctx.f("experiments.jsonl"), dict(event="end", **_exp_row(exp)))
+            L["lanes"][ln]["active"] = None
+            aborted.append(exp["id"])
+            continue
+        if exp.get("blocks"):
+            exp["blocks"][-1]["ext_edit"] = True
+        exp.setdefault("ext_edits", []).append({"t": now, "version": v})
+        kept.append(exp["id"])
+    log(
+        ctx,
+        now,
+        "alarm",
+        what="external_edit",
+        version=v,
+        aborted=aborted,
+        kept=kept,
+        paths=None if paths is None else [_pstr(t) for t in paths][:20],
+    )
     return "external"
 
 
@@ -454,6 +514,7 @@ def _exp_row(exp):
         "reason",
         "stars_guard_trips",
         "reblocked_from",
+        "ext_edits",
     )
     return dict(
         {k: exp.get(k) for k in keep},

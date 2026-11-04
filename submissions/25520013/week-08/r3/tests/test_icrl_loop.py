@@ -281,8 +281,15 @@ def test_freeze_reverts_before_round_end(env, monkeypatch):
 
 
 def test_external_edit_aborts_the_experiment_and_is_never_overwritten(env, monkeypatch):
+    """v1.25: an outside edit of the experiment's own path aborts it (an unrelated key would not, see test_icrl_lanes)."""
+    from icrl import space as SP
+
     t0 = start(env, "B", monkeypatch)
-    edited = env["pol"].read_bytes().replace(b'"version": 10', b'"version": 11')
+    L = json.loads((env["sdir"] / "loop.json").read_text())
+    path = L["lanes"]["price"]["active"]["edits"][0]["path"]
+    pol = json.loads(env["pol"].read_bytes())
+    SP.put(pol, path, round(SP.get(pol, path)[0] + 0.011, 4))
+    edited = SP.dumps_like(env["pol"].read_bytes(), pol)
     assert edited != env["pol"].read_bytes()
     env["pol"].write_bytes(edited)
     r = loop.step(t0 + 600, ctx=env["ctx"])

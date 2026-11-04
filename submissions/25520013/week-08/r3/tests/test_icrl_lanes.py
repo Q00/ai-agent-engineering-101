@@ -252,7 +252,10 @@ def test_arm_bytes_restores_a_new_category_override_by_removing_it(env):
     assert env["pol"].read_bytes() == env["orig"]
 
 
-def test_external_edit_aborts_every_lane(env, monkeypatch):
+def test_external_edit_aborts_only_the_lanes_it_touches(env, monkeypatch):
+    """v1.25: an outside edit of a key no lane uses keeps every experiment running (the open blocks are marked
+    ext_edit, so their pairs are left out); an edit of a price-family key aborts the price lane only. The live
+    edit is never overwritten."""
     t = start_all(env, monkeypatch)
     edited = env["pol"].read_bytes().replace(b'"version": 10', b'"version": 11')
     assert edited != env["pol"].read_bytes()
@@ -260,17 +263,24 @@ def test_external_edit_aborts_every_lane(env, monkeypatch):
     env["prop"].replies = [HOLD]
     r = loop.step(t + 600, ctx=env["ctx"])
     assert r["live"] == "external" and env["pol"].read_bytes() == edited
+    assert not [x for x in rows(env["sdir"] / "experiments.jsonl") if x["event"] == "end"]
+    lanes = L_of(env)["lanes"]
+    assert all(s["active"]["blocks"][-1].get("ext_edit") for s in lanes.values())
+    alarm = [x for x in rows(env["sdir"] / "log.jsonl") if x.get("what") == "external_edit"]
+    assert alarm[-1]["aborted"] == [] and sorted(alarm[-1]["kept"]) == ["e0001", "e0002", "e0003"]
+    assert alarm[-1]["paths"] == ["version"]
+    pol = json.loads(edited)
+    pol["defaults"]["goods"]["min_margin"] = 0.123  # price family, not e0001's own path (food price_mult)
+    edited2 = SP.dumps_like(edited, pol)
+    env["pol"].write_bytes(edited2)
+    r = loop.step(t + 650, ctx=env["ctx"])
+    assert r["live"] == "external" and env["pol"].read_bytes() == edited2
     ends = [x for x in rows(env["sdir"] / "experiments.jsonl") if x["event"] == "end"]
-    assert sorted((x["lane"], x["verdict"]) for x in ends) == [
-        ("buyer", "aborted_external_edit"),
-        ("price", "aborted_external_edit"),
-        ("stock", "aborted_external_edit"),
-    ]
-    assert all(s["active"] is None for s in L_of(env)["lanes"].values())
-    alarm = [
-        x for x in rows(env["sdir"] / "log.jsonl") if x.get("what") == "external_edit"
-    ]
-    assert sorted(alarm[-1]["aborted"]) == ["e0001", "e0002", "e0003"]
+    assert [(x["lane"], x["verdict"]) for x in ends] == [("price", "aborted_external_edit")]
+    lanes = L_of(env)["lanes"]
+    assert lanes["price"]["active"] is None and lanes["stock"]["active"] and lanes["buyer"]["active"]
+    alarm = [x for x in rows(env["sdir"] / "log.jsonl") if x.get("what") == "external_edit"]
+    assert alarm[-1]["aborted"] == ["e0001"] and sorted(alarm[-1]["kept"]) == ["e0002", "e0003"]
 
 
 def test_stop_and_freeze_end_every_lane(env, monkeypatch):
