@@ -5,7 +5,7 @@ import hashlib
 import json
 import os
 import tempfile
-import time
+from r3_clock import clock as time
 import statistics
 from collections import defaultdict
 

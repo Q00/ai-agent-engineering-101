@@ -4,7 +4,7 @@ import fcntl
 import json
 from pathlib import Path
 import sqlite3
-import time
+from r3_clock import clock as time
 
 from r3_common import parse_json, read_json, state_dir
 from r3_storage import database_dir

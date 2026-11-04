@@ -2,7 +2,7 @@
 import argparse
 import json
 import sqlite3
-import time
+from r3_clock import clock as time, offset_seconds
 
 from r3_common import read_json, state_dir
 from r3_storage import DATABASES, database_dir
@@ -36,8 +36,10 @@ def inspect_state(md=None):
     result['public_cursor'] = read_json(md / 'public-cursor.json', {})
     result['supply_status'] = read_json(md / 'restock-status.json', {})
     result['model_circuit'] = read_json(md / 'model-circuit.json', {})
+    result['market_clock_offset_seconds'] = offset_seconds(md)
     inventory = md / 'inventory.json'
-    result['inventory_age_seconds'] = round(time.time() - inventory.stat().st_mtime, 1) if inventory.exists() else None
+    from r3_clock import host_time
+    result['inventory_age_seconds'] = round(host_time.time() + offset_seconds(md) - inventory.stat().st_mtime, 1) if inventory.exists() else None
     return result
 
 

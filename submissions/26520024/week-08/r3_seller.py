@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 import re
 import sqlite3
-import time
+from r3_clock import clock as time
 import unicodedata
 import uuid
 

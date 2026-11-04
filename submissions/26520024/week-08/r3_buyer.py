@@ -4,7 +4,7 @@ import json
 import math
 import os
 import re
-import time
+from r3_clock import clock as time
 
 from core import decide, validate_buyer
 from r3_common import load_catalog, load_policy, money as checked_money, read_json, state_dir

@@ -2,7 +2,7 @@
 import argparse
 import json
 import math
-import time
+from r3_clock import clock as time
 
 from r3_buyer import sanitized_order
 from r3_common import load_catalog, load_policy, money as checked_money, read_json, require_live, state_dir

@@ -1,5 +1,5 @@
 """Bounded model use and explicitly logged, validated degraded operation."""
-import time
+from r3_clock import clock as time
 import uuid
 
 from core import emit

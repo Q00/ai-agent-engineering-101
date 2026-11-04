@@ -8,7 +8,7 @@ import math
 import os
 from pathlib import Path
 import sys
-import time
+from r3_clock import clock as time
 import uuid
 
 from core import decide

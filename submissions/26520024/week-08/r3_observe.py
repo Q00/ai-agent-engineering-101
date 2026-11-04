@@ -1,7 +1,7 @@
 """Optional read-only public evidence collector; never authenticates or trades."""
 import json
 import os
-import time
+from r3_clock import clock as time
 from urllib.request import Request, urlopen
 
 from r3_common import atomic_json, load_policy, read_json, state_dir
@@ -31,7 +31,7 @@ def refresh_public(md=None, *, get=None, now=None):
     get = get or public_get
     cursor_path = md / 'public-cursor.json'
     cursor = read_json(cursor_path, {})
-    if now - cursor.get('polled_at', 0) < 60:
+    if 0 <= now - cursor.get('polled_at', 0) < 60:
         return {'status': 'cached', 'added': 0}
     after = cursor.get('after', -500)
     added = 0

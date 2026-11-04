@@ -4,7 +4,7 @@ import math
 import os
 from pathlib import Path
 import tempfile
-import time
+from r3_clock import clock as time
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_POLICY = {

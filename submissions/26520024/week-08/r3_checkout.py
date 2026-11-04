@@ -1,7 +1,7 @@
 """Durable gate before kit checkout issuance. No market calls and no key access here."""
 import json
 import sqlite3
-import time
+from r3_clock import clock as time
 
 from starlette.responses import JSONResponse
 from r3_storage import database_dir

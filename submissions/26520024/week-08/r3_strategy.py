@@ -1,7 +1,7 @@
 """Transparent estimates from settled observations, never claims of future demand."""
 import math
 import statistics
-import time
+from r3_clock import clock as time
 
 
 def price_ratio(memory, catalog, category, now):

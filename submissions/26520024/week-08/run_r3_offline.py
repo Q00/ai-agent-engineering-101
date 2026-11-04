@@ -25,7 +25,7 @@ def main():
     output = io.StringIO()
     suite = unittest.defaultTestLoader.discover(str(ROOT), pattern='test_r3*.py')
     with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output), \
-            patch.dict(os.environ, {'R3_ENABLE_LIVE': '0'}), \
+            patch.dict(os.environ, {'R3_ENABLE_LIVE': '0', 'R3_CLOCK_OFFSET_SECONDS': '0'}), \
             patch('core.invoke', forbidden), patch('urllib.request.urlopen', forbidden), \
             patch('httpx.HTTPTransport.handle_request', forbidden), \
             patch('httpx.AsyncHTTPTransport.handle_async_request', forbidden):

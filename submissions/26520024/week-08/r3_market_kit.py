@@ -4,7 +4,7 @@ import argparse
 import os
 from pathlib import Path
 import sys
-import time
+from r3_clock import clock as time, with_market_clock
 
 from r3_checkout import guarded_shop
 from r3_common import ROOT, require_live
@@ -37,7 +37,7 @@ def launch_directory(argv):
 
 
 def host_timestamped_writer(writer):
-    """Use the receiving host's clock, not the NFS server's default file clock."""
+    """Stamp received snapshots in the same corrected clock used by inventory readers."""
     def write(path, data):
         received_at = time.time()
         writer(path, data)
@@ -52,6 +52,8 @@ def main():
     dbdir = configure_database(directory / '.market', os.environ.get('R3_DB_DIR'))
     with exclusive_lock(dbdir / 'market-kit.lock'):
         kit = load_kit()
+        kit.time = time
+        kit.Market = with_market_clock(kit.Market, directory / '.market', kit.log)
         kit.AcpShop = guarded_shop(kit.AcpShop)
         kit.write_json = host_timestamped_writer(kit.write_json)
         os.environ['MARKET_DIR'] = str(directory / '.market')

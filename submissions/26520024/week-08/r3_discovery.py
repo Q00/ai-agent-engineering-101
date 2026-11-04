@@ -5,7 +5,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
-import time
+from r3_clock import clock as time
 
 from core import decide
 from r3_common import atomic_json, load_catalog, load_policy, read_json, state_dir
