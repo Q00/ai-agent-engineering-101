@@ -38,7 +38,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 HALF_LIFE = 2 * 3600            # seconds; demand from settles fades with this half-life
 CUSHION = 1_500_000             # cash never spent on stock (the bankruptcy line is 500,000)
-SPEND_SHARE = 0.40              # of the cash above the cushion, per supply window (was 0.30: first window sold 11 of 13 units in 16 min, +209k margin, 19% of asks found no stock)
+SPEND_SHARE = 0.50              # of the cash above the cushion, per supply window (was 0.40: three 18:00 windows bought 2.3-3.1M and only 3-18 units were left when the next opened, cash after buying stayed at 7.6M+, 15% of asks found no stock)
 LINE_MAX = 0.16                 # of the cash above the cushion, per line (was 0.10: it held the best seller, 22 asks and 8 stock-outs, to one unit a line)
 TARGET = {"food": 3, "goods": 2}            # base units per SKU to hold; a window lasts 20 minutes
 TARGET_MAX = 8                              # most units of one SKU, however fast it turns over
