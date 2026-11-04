@@ -15,6 +15,8 @@ from purchase_monitor import observe as observe_purchases
 from strategy_policy import effective
 from strategy_controller import run as improve_strategy
 from forum_demand import requests as forum_requests
+from restock_capacity import config as capacity_config, profitable_counts
+from collections import Counter
 
 
 def demand_hints(posts, catalog, now):
@@ -26,11 +28,13 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None):
     now = time.time() if now is None else now
     hints = hints or {}
     intelligence = intelligence or {}
     leader_hints = leader_hints or {}
+    own_profitable = own_profitable or {}
+    limits = capacity_config()
     if inventory.get("round", 0) < 3:
         return [], {"reason": "not_round_3"}
     if (inventory.get("restock") or {}).get("open") is False:
@@ -51,22 +55,30 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     refund_reserve = max(0, inventory.get("local_refund_reserve", 0))
     reserve = max(500000, inventory.get("start", 5000000) * 0.2) + existing_storage + refund_reserve
     budget = max(0, min(balance * runtime["controls"]["restock_budget_rate"], balance - reserve))
-    if len(units) >= 8 or not budget:
-        return [], {"reason": "stock_or_cash_limit", "budget": budget}
+    if len(units) >= limits["max_total_units"] or not budget:
+        return [], {"reason": "stock_or_cash_limit", "budget": budget, "capacity": limits}
     categories = {d["category"] for d in demand}
-    owned = {u["sku"] for u in units}
+    owned = Counter(u["sku"] for u in units)
     def signal(sku):
         return intelligence.get(sku, {})
     def proven(sku):
         s = signal(sku)
-        return bool(sales.get(sku, 0) or (s.get("distinct_buyers", 0) >= 3 and s.get("settles_6h", 0) >= 3))
+        return bool(sales.get(sku, 0) or own_profitable.get(sku, 0)
+                    or (s.get("distinct_buyers", 0) >= 3 and s.get("settles_6h", 0) >= 3))
+    def bulk_proven(sku):
+        s = signal(sku)
+        return (own_profitable.get(sku, 0) >= limits["min_profitable_own_sales_6h"]
+                or (s.get("distinct_buyers_6h", 0) >= limits["min_public_buyers"]
+                    and s.get("settles_6h", 0) >= limits["min_public_sales_6h"]))
+    def sku_limit(sku):
+        return limits["max_proven_units_per_sku"] if bulk_proven(sku) else 1
     experimental = [u for u in units if not proven(u["sku"])]
     stale = any(type(u.get("supplied_at")) in (int, float)
                 and now - u["supplied_at"] >= 86400 for u in units)
-    exploration_slots = 0 if stale else max(0, 2 - len(experimental))
+    exploration_slots = 0 if stale else max(0, limits["max_unproven_units"] - len(experimental))
     candidates = [(sku, value) for sku, value in sorted(catalog.items())
-                  if sku not in owned and value.get("category") in categories
-                  and isinstance(value.get("list_price"), (int, float)) and value["list_price"] > 0]
+                  if owned[sku] < sku_limit(sku) and value.get("category") in categories
+                  and type(value.get("list_price")) in (int, float) and math.isfinite(value["list_price"]) and value["list_price"] > 0]
     if candidates:
         offset = cursor % len(candidates)
         candidates = candidates[offset:] + candidates[:offset]
@@ -84,6 +96,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     buys = []
     estimated = 0
     storage_reserve = 0
+    planned_units = 0
     for sku, value in candidates:
         # Supply draws the grade on arrival; shelf_hours is not a minimum remaining lifetime.
         if value.get("kind") == "food":
@@ -94,20 +107,27 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         reference = signal(sku).get("median_price")
         if reference is not None and reference <= worst_cost * (1 + rate):
             continue
-        carrying_cost = worst_cost * rate
-        if estimated + storage_reserve + worst_cost + carrying_cost > budget:
+        carrying_cost = worst_cost * rate * 7
+        qty = min(sku_limit(sku)-owned[sku], limits["max_units_per_run"]-planned_units,
+                  limits["max_total_units"]-len(units)-planned_units)
+        while qty > 0 and estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget:
+            qty -= 1
+        if qty <= 0:
             continue
-        buys.append({"sku": sku, "qty": 1})
-        estimated += worst_cost
-        storage_reserve += carrying_cost
+        buys.append({"sku": sku, "qty": qty})
+        estimated += worst_cost * qty
+        storage_reserve += carrying_cost * qty
+        planned_units += qty
         if not proven(sku):
-            exploration_slots -= 1
-        if len(buys) >= min(2, 8 - len(units)):
+            exploration_slots -= qty
+        if planned_units >= min(limits["max_units_per_run"], limits["max_total_units"] - len(units)):
             break
     return buys, {"reason": "bounded_experiment", "budget": budget,
                   "strategy_version": runtime["version"], "strategy_experiment": runtime.get("experiment"),
                   "estimated_max_cost": estimated, "cash_reserve": reserve,
-                  "one_day_storage_reserve": storage_reserve,
+                  "one_day_storage_reserve": storage_reserve/7,
+                  "new_stock_seven_day_storage": storage_reserve, "planned_units": planned_units,
+                  "capacity": limits, "own_profitable_sales_6h": own_profitable,
                   "unproven_stock": len(experimental), "stale_stock": stale,
                   "existing_seven_day_storage": existing_storage, "refund_reserve": refund_reserve,
                   "public_evidence_skus": len(intelligence),
@@ -197,8 +217,13 @@ def main():
         leader_hints = restock_hints(md)
     except (OSError, ValueError, KeyError, TypeError):
         leader_hints = {}
+    try:
+        own_profitable = profitable_counts(md)
+    except (OSError, ValueError, KeyError, TypeError):
+        own_profitable = {}
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
-                             intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints)
+                             intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints,
+                             own_profitable=own_profitable)
     memory["cursor"] += 1
     temporary = memory_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -43,6 +43,8 @@ def summarize(rows, catalog, now):
         gaps = [max(60, b["ts"] - a["ts"]) for a, b in zip(entries, entries[1:])]
         result[sku] = {"settles_24h": len(entries), "settles_6h": sum(now-r["ts"] <= 21600 for r in entries),
                        "distinct_buyers": len(buyers), "last_sale_at": entries[-1]["ts"],
+                       "distinct_buyers_6h": len({r["data"].get("buyer") for r in entries
+                                                  if now-r["ts"] <= 21600 and r["data"].get("buyer")}),
                        "median_price": statistics.median(settlement_price(r["data"]) for r in entries),
                        "observed_gap_hours": statistics.median(gaps)/3600 if gaps else None,
                        "ledger_refs": [r["seq"] for r in entries[-3:]]}

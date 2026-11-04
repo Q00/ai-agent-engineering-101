@@ -120,13 +120,13 @@ class NoticeTests(unittest.TestCase):
         from test_strategy_controller import observation
         from market_state import write
         state = controller.initial()
-        state.update(checked_at=100000, phase="cooldown")
+        state.update(checked_at=100000, phase="waiting_for_comparable_evidence")
         write(self.md / "strategy-state.json", state)
         with patch.object(controller, "observation", return_value=observation(100060)), \
                 patch("improvement_notices.publish") as delivery:
             controller.run(self.md, now=100060)
         delivery.assert_called_once()
-        self.assertEqual(delivery.call_args.kwargs["phase"], "cooldown")
+        self.assertEqual(delivery.call_args.kwargs["phase"], "waiting_for_comparable_evidence")
 
 
 if __name__ == "__main__":

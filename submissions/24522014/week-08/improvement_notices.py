@@ -81,12 +81,14 @@ def publish(md, observation, events, *, phase="unknown", next_check_at=None, cha
         write(md.parent / "logs/improvement-notices" / (stamp + "-" + uuid4().hex[:8] + ".json"), record)
         records.append(record)
     status_records = []
-    if not 0 <= now-state.get("status_at", -86400) < 1800:
+    if not 0 <= now-state.get("status_at", -86400) < 1800 or state.get("status_phase") != phase:
         labels = {"cooldown": "정책 변경 대기", "collecting_baseline": "기준선 수집",
                   "testing": "가격 실험 중", "maturing": "효과 평가 대기", "cash_guard": "현금 보호",
                   "waiting_for_comparable_evidence": "비교 표본 대기", "waiting_for_settlements": "확정 정산 대기",
                   "maintaining_profit_lead": "순이익 1위 유지", "disabled": "정책 실험 중지"}
         phase_text = labels.get(phase, phase)
+        if phase == "cooldown" and number(change_after) and change_after <= now:
+            phase_text = "추가 대기 없음·다음 훅에서 재검토"
         if valid:
             parts = ["관측 정상", f"자기 확정 정산 {observation['deals']}건"]
             if number(observation.get("profit")):
@@ -99,10 +101,11 @@ def publish(md, observation, events, *, phase="unknown", next_check_at=None, cha
         if phase == "cooldown" and number(change_after) and change_after > now:
             parts.append(f"변경 가능 {kst(change_after)}")
         if number(next_check_at):
-            parts.append(f"다음 진단 {kst(next_check_at)}")
+            parts.append(f"다음 정기 진단 {kst(next_check_at)}")
         status_records.append({"at": now, "kind": "status", "message": " · ".join(parts),
                                "valid_observation": bool(valid), "phase": phase, "model_calls": 0})
         state["status_at"] = now
+        state["status_phase"] = phase
     for record in status_records:
         stamp = datetime.fromtimestamp(now, timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         write(md.parent / "logs/monitor-notices" / (stamp + "-" + uuid4().hex[:8] + ".json"), record)

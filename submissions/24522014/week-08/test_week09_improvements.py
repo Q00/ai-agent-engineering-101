@@ -90,7 +90,8 @@ class InventoryLoss(unittest.TestCase):
         self.assertEqual(plan(self.inv, self.catalog, self.demand, {}, hints=hints)[0][0]["sku"], "D")
         buys = plan(self.inv, self.catalog, self.demand, {"A": 1}, hints=hints)[0]
         self.assertEqual(buys[0]["sku"], "A")
-        self.assertLessEqual(len(buys), 2)
+        self.assertLessEqual(sum(b["qty"] for b in buys), 6)
+        self.assertLessEqual(sum(b["qty"] for b in buys if b["sku"] != "A"), 2)
 
     def test_old_seller_or_self_posts_are_not_demand(self):
         base = {"id": 1, "round": 3, "role": "buyer", "author": "someone", "ts": 100, "text": "need D"}

@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent
 
 def config():
     value = read(ROOT/"strategy_controller.json")
-    if (value["check_interval_seconds"] < 1800 or value["min_change_seconds"] < 7200
+    if (value["check_interval_seconds"] < 1800 or not 0 <= value["min_change_seconds"] <= 7200
             or value["baseline_seconds"] < 7200 or value["trial_seconds"] < 7200
             or value["maturity_seconds"] < 21600 or not 0 < value["price_step"] <= .03
             or not 1 <= value["max_daily_experiments"] <= 2 or value["min_new_deals"] < 10
@@ -124,6 +124,8 @@ def transition(original, observation, settings):
     def rollback(reason):
         active = state["active"]
         if active:
+            if reason in ("rating_guard", "early_performance_guard", "inconclusive", "no_gain_or_deterioration", "trial_timeout_or_insufficient_evidence"):
+                state["last_rejected"] = {"candidate": active["candidate"], "market_at": observation.get("market_at", now)}
             state["controls"] = active["before"]
             state["active"] = None
             state["last_change_at"] = now
@@ -268,6 +270,9 @@ def transition(original, observation, settings):
         state["phase"] = "daily_trial_limit"
         return state, events
     choices = choose(observation, state["controls"], settings)
+    rejected = state.get("last_rejected", {})
+    choices = [choice for choice in choices if not (choice["candidate"] == rejected.get("candidate")
+               and observation["market_at"] <= rejected.get("market_at", -86400))]
     for choice in choices:
         choice["own_baseline_settlements"] = len(cohort(observation.get("own_sales", []), choice.get("sku"),
                                                     choice.get("grade"), start["at"], now))
@@ -491,6 +496,7 @@ def run(md, now=None, force=False):
         urgent = not settings["enabled"] or not obs.get("valid") or obs.get("balance", 0) <= obs.get("reserve", 0)
         urgent = urgent or (obs.get("self_evidence") == "local_acp_v1" and state.get("self_evidence") != "local_acp_v1")
         urgent = urgent or (obs.get("objective") is not None and state.get("objective") != obs["objective"])
+        urgent = urgent or (settings["min_change_seconds"] == 0 and state.get("phase") == "cooldown" and not state.get("active"))
         active = state.get("active")
         if active and obs.get("valid"):
             baseline = active["baseline_end"]

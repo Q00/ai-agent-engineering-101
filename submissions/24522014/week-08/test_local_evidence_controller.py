@@ -130,7 +130,7 @@ class LocalEvidenceIntegration(unittest.TestCase):
         current = observation(T+7300, 11, 2200, 1100, self_evidence="local_acp_v1", local_counters=counters)
         result, events = controller.transition(state, current, SETTINGS)
         self.assertIsNone(result["active"])
-        self.assertEqual(result["phase"], "cooldown")
+        self.assertEqual(result["phase"], "waiting_for_comparable_evidence")
         self.assertTrue(any(e.get("reason") == "self_evidence_source_migration" for e in events))
 
 

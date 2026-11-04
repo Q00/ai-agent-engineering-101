@@ -222,7 +222,7 @@ class LeaderAdaptation(unittest.TestCase):
         self.assertEqual(buys[0]["sku"], "B")
         self.assertLessEqual(len(buys), 2)
         self.assertEqual(plan(inv, cat, demand, {"A": 1}, now=T, leader_hints={"B": 2})[0][0]["sku"], "A")
-        inv["units"] = [dict(sku=str(i), cost=100, kind="goods", supplied_at=T) for i in range(8)]
+        inv["units"] = [dict(sku=str(i), cost=100, kind="goods", supplied_at=T) for i in range(16)]
         self.assertEqual(plan(inv, cat, demand, {}, now=T, leader_hints={"B": 2})[0], [])
 
     def test_profit_goal_does_not_stop_at_player_top3(self):
