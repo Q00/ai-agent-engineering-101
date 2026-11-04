@@ -74,7 +74,7 @@ def test_budget_and_transport_failure_do_not_leak_keys(tmp_path, monkeypatch):
             return Response()
     j = Journal(tmp_path)
     c = Chooser(j, client=BrokenClient())
-    chosen = c.choose('buyer', [{'id': 'a', 'score': 1}], {})
+    chosen = c.choose('buyer', [{'id': 'a', 'score': 1}, {'id': 'b', 'score': .9}], {})
     assert chosen['id'] == 'a'
     assert 'PRIVATE_TEST_VALUE' not in json.dumps(j.events('decision'))
     assert j.events('decision')[0]['mode'] == 'numeric_fallback'

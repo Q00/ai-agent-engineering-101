@@ -1,5 +1,78 @@
 """Policy scheduling from observed outcomes and current R3 rank opportunities."""
 import time
+import math
+from bisect import bisect_right
+
+WEIGHTS = {'shop': {'profit': .5, 'revenue': .3, 'stars_rank': .2},
+           'buyer': {'surplus': .5, 'forum': .3, 'deals': .1, 'posts': .1}}
+
+
+def eligible_rows(board, role, own_name):
+    """Use the published trading cohort; alive is deliberately not a filter.
+
+    The public board omits a shop's supply count. A nonzero profit, even with
+    zero sales, is evidence of a purchase/storage charge. This is a proxy for
+    that unpublished eligibility field, not a claim to reproduce official ALL.
+    """
+    if not board or board.get('round') != 3 or role not in WEIGHTS:
+        return []
+    rows = board.get('shops' if role == 'shop' else 'buyers', [])
+    return [r for r in rows if r.get('name') == own_name or r.get('deals', 0) > 0 or
+            role == 'shop' and (r.get('profit', 0) != 0 or r.get('revenue', 0) > 0)]
+
+
+def finite(value):
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def interpolated_percentile(values, value):
+    """A continuous planning surrogate between observed rank thresholds.
+
+    The current own observation stays an anchor. Small profitable actions can
+    therefore make progress even before passing a peer. This is not official ALL.
+    """
+    anchors = sorted(set(values))
+    if len(anchors) < 2:
+        return percentile(values, value)
+    if value <= anchors[0]:
+        return percentile(values, anchors[0])
+    if value >= anchors[-1]:
+        return percentile(values, anchors[-1])
+    right = bisect_right(anchors, value)
+    low, high = anchors[right - 1:right + 1]
+    fraction = (value - low) / (high - low)
+    return percentile(values, low) + fraction * (percentile(values, high) - percentile(values, low))
+
+
+def rank_progress(board, role, own_name, delta):
+    rows = eligible_rows(board, role, own_name)
+    own = next((r for r in rows if r.get('name') == own_name), None)
+    if own is None:
+        return None
+    gain = 0
+    for key, weight in WEIGHTS[role].items():
+        if not finite(own.get(key)) or not finite(delta.get(key, 0)):
+            continue
+        values = [r[key] for r in rows if finite(r.get(key))]
+        gain += weight * (interpolated_percentile(values, own[key] + delta.get(key, 0)) -
+                          interpolated_percentile(values, own[key]))
+    return gain
+
+
+def rank_targets(board, role, own_name='seochanit'):
+    rows = eligible_rows(board, role, own_name)
+    own = next((r for r in rows if r.get('name') == own_name), None)
+    if own is None:
+        return {}
+    result = {}
+    for key, weight in WEIGHTS[role].items():
+        if not finite(own.get(key)):
+            continue
+        ahead = sorted(r[key] for r in rows if finite(r.get(key)) and r[key] > own[key])
+        result[key] = {'current': own[key], 'next_value': ahead[0] if ahead else None,
+                       'gap': ahead[0] - own[key] if ahead else None, 'weight': weight,
+                       'cohort_size': sum(finite(r.get(key)) for r in rows)}
+    return result
 
 
 def percentile(values, value):
@@ -10,13 +83,11 @@ def percentile(values, value):
 
 
 def rank_gain(board, role, own_name, delta):
-    if not board or board.get("round") != 3:
-        return None
-    rows = board.get("shops" if role == "shop" else "buyers", [])
+    rows = eligible_rows(board, role, own_name)
     own = next((x for x in rows if x.get("name") == own_name), None)
     if not own:
         return None
-    weights = {"profit": .5, "revenue": .3, "stars_rank": .2} if role == "shop" else {"surplus": .5, "forum": .3, "deals": .1, "posts": .1}
+    weights = WEIGHTS[role]
     gain = 0
     for key, w in weights.items():
         values = [r[key] for r in rows if r.get('name') != own_name and isinstance(r.get(key), (int, float))]

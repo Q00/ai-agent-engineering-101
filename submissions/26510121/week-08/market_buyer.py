@@ -3,7 +3,8 @@ import argparse
 import json
 import os
 import time
-from r3.state import Journal, read_json, warranty_hours
+from r3.state import Journal, read_json
+from r3.market_memory import buyer_price_actions, buyer_terms
 from r3.economy import buyer_candidates
 from r3.model import Chooser
 from r3.protocol import Peer, quote, verify_receipt
@@ -13,6 +14,8 @@ from r3.adaptive import begin_buyer
 def buy(order, shops, journal, chooser=None, peer_factory=Peer):
     cfg, strategy = begin_buyer(journal, order)
     journal.reconcile()
+    journal.add('buyer_execution', {'order': order['order'], 'strategy_version': strategy['version']},
+                eid='buyer-execution:' + order['order'], role='buyer')
     empty = {"shop": "", "receipt": None, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
     if time.time() + cfg["checkout_buffer_seconds"] >= order["expires"]:
         return empty
@@ -43,13 +46,25 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                 request += f" Food must last at least {order.get('use_within_hours', 0)} hours after payment."
             task = peer.send(request)
             agreed = None
+            previous_offer = None
             required_warranty = 0
             for turn in range(cfg["max_negotiation_turns"] + 1):
                 state = task["status"]["state"]
                 if state == "TASK_STATE_COMPLETED":
                     receipts = [p["data"] for a in task.get("artifacts", []) for p in a.get("parts", [])
                                 if isinstance(p.get("data"), dict) and "sig_seller" in p["data"]]
-                    if len(receipts) != 1 or agreed is None or not verify_receipt(receipts[0], pub, task=task["id"],
+                    if len(receipts) != 1:
+                        raise ValueError('receipt_integrity_failure')
+                    # Some peers return a signed final offer immediately. It is
+                    # still subject to our cap, signature and authoritative checkout.
+                    if agreed is None:
+                        cap, required_warranty, _ = buyer_terms(dict(c['product'], sku=c['sku']), order,
+                                                               receipts[0], journal, cfg)
+                        price = receipts[0].get('price')
+                        if type(price) not in (int, float) or price > cap:
+                            raise ValueError('receipt_integrity_failure')
+                        agreed = price
+                    if not verify_receipt(receipts[0], pub, task=task["id"],
                             sku=c["sku"], budget=order["budget"], agreed=agreed):
                         raise ValueError("receipt_integrity_failure")
                     # A2A protobuf numbers decode as whole-valued floats; the signature canonicalizes integer money.
@@ -72,33 +87,22 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
                     break
                 ask = quote(task)
                 product = c["product"]
-                cap = min(order["budget"], product["list_price"])
                 terms = task.get("status", {}).get("message", {}).get("metadata", {})
-                if product.get("kind") == "goods":
-                    required_warranty = 6 if warranty_hours(terms.get('warranty_hours')) >= 6 else 0
-                    if not required_warranty:
-                        from r3.meta import observed_breaks
-                        risk = observed_breaks(journal, c["sku"])
-                        stress = cfg["unknown_goods_failure_stress"]
-                        if risk["mature_samples"] >= 10:
-                            # Conservative posterior mean plus uncertainty buffer, not a guarantee.
-                            n = risk["mature_samples"]
-                            stress = min(1, (risk["broken"] + 1) / (n + 2) + 1 / (n + 2) ** .5)
-                        cap = min(cap, int(product["list_price"] * (1 - stress)))
-                actions = []
-                if ask <= cap:
-                    actions.append({"id": "accept", "price": ask, "score": product["list_price"] - ask + 1})
-                ratio = cfg['buyer_counter_ratio']
-                counter = max(1, min(cap, int(min(ask * ratio, c["reference_price"] * ratio / .92))))
-                if counter < ask and turn < cfg["max_negotiation_turns"] - 1:
-                    actions.append({"id": "counter", "price": counter,
-                                    "score": .75 * (product["list_price"] - counter),
-                                    "success_prior": "0.75 is an engineering negotiation prior, not empirical evidence"})
+                cap, required_warranty, stress = buyer_terms(dict(product, sku=c['sku']), order, terms, journal, cfg)
+                if (product.get('kind') == 'food' and type(terms.get('expires_at')) in (int, float) and
+                        terms['expires_at'] < time.time() + order.get('use_within_hours', 0) * 3600 +
+                        cfg['checkout_buffer_seconds']):
+                    break  # An already unsuitable offer cannot pass the final certificate check.
+                actions = buyer_price_actions(ask, cap, product, c['reference_price'],
+                                              cfg['buyer_counter_ratio'], turn,
+                                              cfg['max_negotiation_turns'], previous_offer,
+                                              stress, bool(required_warranty))
                 if not actions:
                     break
                 move = chooser.choose("buyer", actions, {"ask": ask, "order": order, "turn": turn,
                                        "product": product, "strategy": strategy}, deadline=deadline)
                 agreed = move["price"]
+                previous_offer = agreed
                 if move['id'] == 'counter':
                     journal.add('buyer_counter', {'order': order['order'], 'shop': c['shop'], 'ask': ask,
                                 'price': agreed, 'strategy_version': strategy['version']}, role='buyer')
