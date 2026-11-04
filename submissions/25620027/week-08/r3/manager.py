@@ -198,7 +198,9 @@ PROMPT: Final = (
     "score and ours ranked 32nd of 47 on 11/4 while profit and revenue ranked 7th "
     "and 5th, so the owner capped asks at seller.max_ask_ratio 0.79 of list "
     "(deals at 0.8+ drew 4.3-4.4 stars, 0.6-0.79 drew 4.7-4.8); do not raise it "
-    "above 0.79. Raise it back when food "
+    "above 0.79, and goods under seller.cheap_list_price (50k) open at "
+    "seller.cheap_max_ask_ratio 0.70: their reviews weigh the same as a mattress's "
+    "while they earn about 1% of margin. Raise it back when food "
     "write-offs in the policy reviews exceed what that food earned. Use the "
     "set_strategy tool once; an empty change map keeps the policy."
 )

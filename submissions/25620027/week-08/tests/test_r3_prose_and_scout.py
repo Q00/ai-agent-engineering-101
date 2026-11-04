@@ -38,6 +38,19 @@ if TYPE_CHECKING:
 
 def shop(tmp_path: Path, units: list[dict[str, object]]):  # noqa: ANN201 - test helper
     folder = write_market(tmp_path / ".market", units)
+    # These tests exercise conversation, not the cheap-goods star cap: the 40k lamp
+    # is priced as a dear good (0.79 cap, ask 31600).
+    if not (tmp_path / "r3-policy.json").exists():
+        base = Policy()
+        _ = save_policy(
+            tmp_path / "r3-policy.json",
+            base.model_copy(
+                update={
+                    "seller": base.seller.model_copy(update={"cheap_list_price": 0})
+                }
+            ),
+            "test",
+        )
     signer = ReceiptSigner(Ed25519PrivateKey.generate())
 
     def build(url: str) -> ASGIApp:

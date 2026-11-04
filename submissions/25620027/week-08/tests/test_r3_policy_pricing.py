@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from r3.market_files import Unit
 from r3.policy import Policy, apply_changes, load_history, load_policy, save_policy
 from r3.pricing import claimed_grade, counter, decide, quote
-from tests.r3_stock import KIMCHI, LAMP, unit
+from tests.r3_stock import CURTAIN, KIMCHI, LAMP, unit
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -49,7 +49,8 @@ def test_changes_outside_bounds_or_unknown_fields_are_rejected() -> None:
 
 def test_quote_prices_from_cost_and_grade_and_never_below_accept_line() -> None:
     now = time.time()
-    policy = Policy().seller
+    # The 40k lamp is a "cheap" good by default; this test prices it as a dear one.
+    policy = Policy().seller.model_copy(update={"cheap_list_price": 0})
     a = Unit.model_validate(unit(LAMP, 1, grade="A", now=now))
     c = Unit.model_validate(unit(LAMP, 2, grade="C", now=now))
     qa, qc = quote(a, now, None, policy), quote(c, now, None, policy)
@@ -106,3 +107,14 @@ def test_star_cap_never_quotes_below_the_accept_line() -> None:
     quoted = quote(dear, now, None, policy)
     assert quoted.accept_at == round(30000 * 1.15)
     assert quoted.ask == quoted.accept_at > round(40000 * 0.79)
+
+
+def test_cheap_goods_open_at_the_lower_star_cap_and_dear_goods_at_079() -> None:
+    now = time.time()
+    policy = Policy().seller
+    # A 40k lamp (under 50k) bought at 15k: opens at 0.70 of list, not 0.79.
+    cheap = Unit.model_validate(unit(LAMP, 4, grade="A", now=now, cost=15000))
+    assert quote(cheap, now, None, policy).ask == round(40000 * 0.70)
+    # A 236,900 curtain is dear: it keeps the 0.79 cap.
+    dear = Unit.model_validate(unit(CURTAIN, 1, grade="A", now=now, cost=100000))
+    assert quote(dear, now, None, policy).ask == round(236900 * 0.79)

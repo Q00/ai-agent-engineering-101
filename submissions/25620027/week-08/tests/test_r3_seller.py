@@ -68,7 +68,9 @@ def test_sku_request_quotes_from_stock_and_signed_receipt_names_the_unit(
             # Then: the ask is metadata and text, within the policy band.
             assert task.status.state == "TASK_STATE_INPUT_REQUIRED"
             ask = task.asking_price()
-            assert ask == round(40000 * 0.79)  # A opens at 0.95, capped at 0.79
+            # A cheap good (under 50k) caps at 0.70 of list (28000), below its
+            # accept line, so it opens at the accept line: cost 26000 * 1.15.
+            assert ask == 29900
             assert "asking" in task.observation()
             # When: offer above the accept line (cost 26000 * 1.15 = 29900).
             done = await remote.send(endpoint, "30000", task)

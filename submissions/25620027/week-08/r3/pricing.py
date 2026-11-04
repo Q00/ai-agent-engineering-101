@@ -72,7 +72,12 @@ def quote(
         floor = max(1, round(cost * (1.0 + policy.min_margin)))
         accept_at = max(floor, round(cost * (1.0 + policy.accept_margin)))
         ask = max(accept_at, round(list_price * max(0.25, markup)))
-    ask = max(accept_at, min(ask, round(list_price * policy.max_ask_ratio)))
+    cap = (
+        policy.cheap_max_ask_ratio
+        if list_price < policy.cheap_list_price
+        else policy.max_ask_ratio
+    )
+    ask = max(accept_at, min(ask, round(list_price * cap)))
     ask = min(ask, list_price) if list_price >= accept_at else accept_at
     pressure = sell_pressure(now)
     if pressure > 0:

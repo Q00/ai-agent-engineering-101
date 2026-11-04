@@ -60,6 +60,12 @@ class SellerPolicy(FrozenModel):
     # Deals at 0.8+ of list drew 4.3-4.4 stars, 0.6-0.79 drew 4.7-4.8, so no ask
     # opens above this share of list unless the accept line itself is higher.
     max_ask_ratio: float = Field(default=0.79, ge=0.50, le=1.00)
+    # Owner rule (11/4): every deal brings one review of equal weight, and goods
+    # under 50k list made 22% of our deals but 1% of margin (4.2k a deal), so they
+    # open lower still and buy stars almost for free; dear goods stay at 0.79
+    # (after the cap their margin per hour rose 18% on more volume).
+    cheap_list_price: int = Field(default=50_000, ge=0, le=1_000_000)
+    cheap_max_ask_ratio: float = Field(default=0.70, ge=0.50, le=1.00)
     # Never quote below cost * (1 + min_margin) unless the unit is in clearance.
     min_margin: float = Field(default=0.05, ge=0.0, le=0.50)
     # Accept any offer at or above cost * (1 + accept_margin) without more rounds.
