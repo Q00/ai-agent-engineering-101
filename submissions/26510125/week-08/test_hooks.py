@@ -66,7 +66,11 @@ now = time.time()
 assert seller.find_unit("I want to buy kimchi (F9)")["unit"] == "b"                      # A/B first, then earliest expiry
 assert seller.find_unit("I want to buy kimchi (F9), minimum 100 hours shelf life")["unit"] == "a"
 assert seller.find_unit("kimchi (F9)", taken={"a", "b"})["unit"] == "c"
-print("ok: find_unit")
+sl = seller.Seller()
+sl.open = {"fresh": {"unit": {"unit": "a"}, "t": now - 60}, "stale": {"unit": {"unit": "b"}, "t": now - 900},
+           "r2": {"unit": {"unit": None}, "t": now}}
+assert sl.held() == {"a"}, sl.held()                                                    # silent 15 min -> released
+print("ok: find_unit + held")
 
 # ---- acp_buyer: tools built from the kit's acp.json shape, against a mock shop (no market, no LLM)
 import base64, hashlib, httpx

@@ -84,7 +84,12 @@ def find_unit(text, taken=()):
 
 class Seller(AgentExecutor):
     def __init__(self):
-        self.open = {}  # task id -> {"unit", "ask", "offer", "lines"}
+        self.open = {}  # task id -> {"unit", "ask", "offer", "lines", "t": last message time}
+
+    def held(self):
+        """Units promised in negotiations that answered within the last 10 minutes. A buyer that stops answering
+        never cancels; without the cutoff its unit stayed promised forever (10 of 17 "no unit" visits had stock)."""
+        return {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"] and time.time() - d["t"] < 600}
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -97,10 +102,7 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:
-            # a buyer that stops answering never cancels: its unit stays promised forever (10 of 17 "no unit" visits had
-            # the SKU in stock), so a negotiation silent for 10 minutes no longer holds its unit
-            unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values()
-                                    if d["unit"]["unit"] and time.time() - d["t"] < 600})
+            unit = find_unit(text, self.held())
             if unit is None:
                 print(f"[visit] no unit for {text[:60]!r}", flush=True)
                 await up.reject(say("Sorry, we have none of that in stock."))
