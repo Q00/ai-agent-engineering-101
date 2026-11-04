@@ -732,23 +732,41 @@ def main():
             zero += b - last
         return zero / (b - a) if b > a else None
 
-    def depth_effect(c, extra_units_per_h):
-        """INFERRED: lost = in-stock sales rate x stock-out share (after v1.20a); credit half of it, at most the
-        extra supply; x our measured mean margin / price in that period."""
-        xs = [x for x in sold_by_cat.get(c, []) if x["ts"] >= ta]
-        so = stockout(c, ta, t1)
-        if not xs or so is None or so >= 1:
+    def depth_core(c, extra_units_per_h, a, credit):
+        xs = [x for x in sold_by_cat.get(c, []) if x["ts"] >= a]
+        so = stockout(c, a, t1)
+        hrs = (t1 - a) / 3600
+        if not xs or so is None or so >= 1 or hrs <= 0:
             return None
-        rate_in = len(xs) / (h_after * (1 - so))
+        rate_in = len(xs) / (hrs * (1 - so))
         lost = rate_in * so
-        units = min(0.5 * lost, extra_units_per_h)
+        units = min(credit * lost, extra_units_per_h)
         mpu = sum(x["amount"] - x["unit_cost"] for x in xs) / len(xs)
         ppu = sum(x["amount"] for x in xs) / len(xs)
-        return {"n_sold_after_v120a": len(xs), "hours_after_v120a": r(h_after, 2), "stockout_frac": r(so, 3),
+        return xs, so, hrs, rate_in, lost, units, mpu, ppu
+
+    def depth_effect(c, extra_units_per_h):
+        """INFERRED: lost = in-stock sales rate x stock-out share (after v1.20a); credit half of it, at most the
+        extra supply; x our measured mean margin / price in that period. sensitivity: credit 0.25 or 0.5, on the
+        whole after-period or on its second half only (later in-stock rates and stock-out shares)."""
+        base = depth_core(c, extra_units_per_h, ta, 0.5)
+        if base is None:
+            return None
+        xs, so, hrs, rate_in, lost, units, mpu, ppu = base
+        sens = {}
+        for per, a in (("after_v120a", ta), ("second_half", ta + (t1 - ta) / 2)):
+            for cr in (0.25, 0.5):
+                v = depth_core(c, extra_units_per_h, a, cr)
+                if v is not None:
+                    sens[f"{per}_credit_{cr}"] = {"stockout_frac": r(v[1], 3), "in_stock_rate_per_h": r(v[3], 2),
+                                                  "profit_per_h": r(v[5] * v[6]), "revenue_per_h": r(v[5] * v[7])}
+        prof = [x["profit_per_h"] for x in sens.values()]
+        return {"n_sold_after_v120a": len(xs), "hours_after_v120a": r(hrs, 2), "stockout_frac": r(so, 3),
                 "in_stock_rate_per_h": r(rate_in, 2), "lost_per_h_inferred": r(lost, 2),
                 "extra_supply_per_h": r(extra_units_per_h, 2), "credited_units_per_h": r(units, 2),
                 "margin_per_unit": r(mpu), "price_per_unit": r(ppu),
-                "profit_per_h": r(units * mpu), "revenue_per_h": r(units * ppu)}
+                "profit_per_h": r(units * mpu), "revenue_per_h": r(units * ppu),
+                "sensitivity": sens, "profit_per_h_range": [min(prof), max(prof)] if prof else None}
 
     def add(path, proposed, rng, eff, risk, ev, new_key=False, reads=None, companions=None, effective=None):
         cur, ok = get_path(pol, path)
@@ -773,15 +791,35 @@ def main():
     mk_b = sum(1 for x in by_cat[MAT] if x["ts"] < ta)
     mk_a = sum(1 for x in by_cat[MAT] if x["ts"] >= ta)
     h_before = (ta - first_stock) / 3600
-    add("shop.max_spend_per_run", int(sp["max_spend_per_run"]) + int(math.ceil(add_worst / 100000) * 100000),
+    new_spend = int(sp["max_spend_per_run"]) + int(math.ceil(add_worst / 100000) * 100000)
+    fcap = float(sp["max_inventory_cost_frac"])
+    pa = [x for x in prows if x["after_v120a"] and x["inv_room"] is not None]
+    short = [x for x in pa if x["inv_room"] < new_spend]
+    wst = min(pa, key=lambda x: x["inv_room"]) if pa else None
+    ws = ({"ts": kst(wst["ts"]), "balance": wst["balance"], "held_cost": wst["held_cost"],
+           "cap": r(fcap * wst["balance"]), "room": r(wst["inv_room"]), "shortfall": r(new_spend - wst["inv_room"]),
+           "balance_needed": r((wst["held_cost"] + new_spend) / fcap)} if wst else None)
+    last_room = r(fcap * last_bal - held_end_cost) if last_bal else None
+    cap_txt = (f"inventory cap {fcap} x balance would have bound in {len(short)}/{len(pa)} plans after v1.20a at "
+               f"{new_spend} (worst {ws['ts']}: balance {ws['balance']}, held cost {ws['held_cost']}, shortfall "
+               f"{ws['shortfall']}; binding until the balance reaches about {ws['balance_needed']}); room at the "
+               f"last balance is {last_room}" if ws else "inventory cap check unavailable")
+    rng_txt = (f"; profit_per_h_range {eff['profit_per_h_range']} over credit 0.25/0.5 on the whole after-period "
+               "or its second half (sensitivity); the after-period overlaps the daily mattress peak, so the point "
+               "value is the optimistic end" if eff and eff.get("profit_per_h_range") else "")
+    add("shop.max_spend_per_run", new_spend,
         [int(sp["max_spend_per_run"]), 1700000],
         dict(eff or {}, how="INFERRED (see fields): after v1.20a our mattress stock was empty stockout_frac of the "
                             "time; lost = in-stock rate x stockout_frac; half of it is credited, capped by the extra "
                             f"supply (+2 units/plan x {plans_per_w} plans/window x 3 windows/h); x our measured mean "
-                            "margin and price per mattress after v1.20a."),
+                            "margin and price per mattress after v1.20a" + rng_txt + ".",
+             inventory_cap_check={"proposed_max_spend": new_spend, "plans_after_v120a": len(pa),
+                                  "plans_with_room_below_proposed": len(short), "worst_plan": ws,
+                                  "room_at_last_balance": last_room}),
         "Reverses 성수님's 11-04 11:21 decision (1.5M rejected, 1.1M kept): the user must decide. Worst spend per "
-        f"plan rises by about {add_worst}; inventory cap 0.30 x balance is not binding (constraints). Mattress "
-        "breaks after sale are not refunded without a warranty; unsold mattresses at the round end are a loss.",
+        f"plan rises by about {add_worst}; {cap_txt}. stock_target and qty_per_buy also capped the 8-10 unit "
+        "windows, so the companion changes are needed for the effect. Mattress breaks after sale are not refunded "
+        "without a warranty; unsold mattresses at the round end are a loss.",
         {"max_spend_bound_plans_after_v120a": constraints["plan_bound_counts"]["max_spend_per_run_(worst>=0.95*max_spend)"]["after_v120a"],
          "mattress_before_vs_after_v120a (confounded with time of day)": {
              "before": {"hours": r(h_before, 2), "our_sold": len(mat_before),

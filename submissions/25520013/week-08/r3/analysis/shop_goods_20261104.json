@@ -29090,9 +29090,54 @@
     "price_per_unit": 249402,
     "profit_per_h": 258972,
     "revenue_per_h": 1797272,
-    "how": "INFERRED (see fields): after v1.20a our mattress stock was empty stockout_frac of the time; lost = in-stock rate x stockout_frac; half of it is credited, capped by the extra supply (+2 units/plan x 3.0 plans/window x 3 windows/h); x our measured mean margin and price per mattress after v1.20a."
+    "sensitivity": {
+     "after_v120a_credit_0.25": {
+      "stockout_frac": 0.321,
+      "in_stock_rate_per_h": 44.84,
+      "profit_per_h": 129486,
+      "revenue_per_h": 898636
+     },
+     "after_v120a_credit_0.5": {
+      "stockout_frac": 0.321,
+      "in_stock_rate_per_h": 44.84,
+      "profit_per_h": 258972,
+      "revenue_per_h": 1797272
+     },
+     "second_half_credit_0.25": {
+      "stockout_frac": 0.214,
+      "in_stock_rate_per_h": 34.45,
+      "profit_per_h": 59407,
+      "revenue_per_h": 463864
+     },
+     "second_half_credit_0.5": {
+      "stockout_frac": 0.214,
+      "in_stock_rate_per_h": 34.45,
+      "profit_per_h": 118813,
+      "revenue_per_h": 927727
+     }
+    },
+    "profit_per_h_range": [
+     59407,
+     258972
+    ],
+    "how": "INFERRED (see fields): after v1.20a our mattress stock was empty stockout_frac of the time; lost = in-stock rate x stockout_frac; half of it is credited, capped by the extra supply (+2 units/plan x 3.0 plans/window x 3 windows/h); x our measured mean margin and price per mattress after v1.20a; profit_per_h_range [59407, 258972] over credit 0.25/0.5 on the whole after-period or its second half (sensitivity); the after-period overlaps the daily mattress peak, so the point value is the optimistic end.",
+    "inventory_cap_check": {
+     "proposed_max_spend": 1700000,
+     "plans_after_v120a": 56,
+     "plans_with_room_below_proposed": 1,
+     "worst_plan": {
+      "ts": "2026-11-04T14:26",
+      "balance": 13126003,
+      "held_cost": 2408012,
+      "cap": 3937801,
+      "room": 1529789,
+      "shortfall": 170211,
+      "balance_needed": 13693373
+     },
+     "room_at_last_balance": 4349192
+    }
    },
-   "risk": "Reverses 성수님's 11-04 11:21 decision (1.5M rejected, 1.1M kept): the user must decide. Worst spend per plan rises by about 527108; inventory cap 0.30 x balance is not binding (constraints). Mattress breaks after sale are not refunded without a warranty; unsold mattresses at the round end are a loss.",
+   "risk": "Reverses 성수님's 11-04 11:21 decision (1.5M rejected, 1.1M kept): the user must decide. Worst spend per plan rises by about 527108; inventory cap 0.3 x balance would have bound in 1/56 plans after v1.20a at 1700000 (worst 2026-11-04T14:26: balance 13126003, held cost 2408012, shortfall 170211; binding until the balance reaches about 13693373); room at the last balance is 4349192. stock_target and qty_per_buy also capped the 8-10 unit windows, so the companion changes are needed for the effect. Mattress breaks after sale are not refunded without a warranty; unsold mattresses at the round end are a loss.",
    "evidence": {
     "max_spend_bound_plans_after_v120a": {
      "k": 44,
@@ -29230,6 +29275,36 @@
     "price_per_unit": 24595,
     "profit_per_h": 19425,
     "revenue_per_h": 111566,
+    "sensitivity": {
+     "after_v120a_credit_0.25": {
+      "stockout_frac": 0.721,
+      "in_stock_rate_per_h": 12.58,
+      "profit_per_h": 9713,
+      "revenue_per_h": 55783
+     },
+     "after_v120a_credit_0.5": {
+      "stockout_frac": 0.721,
+      "in_stock_rate_per_h": 12.58,
+      "profit_per_h": 19425,
+      "revenue_per_h": 111566
+     },
+     "second_half_credit_0.25": {
+      "stockout_frac": 0.542,
+      "in_stock_rate_per_h": 12.51,
+      "profit_per_h": 6528,
+      "revenue_per_h": 42091
+     },
+     "second_half_credit_0.5": {
+      "stockout_frac": 0.542,
+      "in_stock_rate_per_h": 12.51,
+      "profit_per_h": 13057,
+      "revenue_per_h": 84181
+     }
+    },
+    "profit_per_h_range": [
+     6528,
+     19425
+    ],
     "how": "INFERRED: same stock-out model as candidate 1, extra supply +1 unit/plan (with qty_per_buy +1)."
    },
    "risk": "Adds a categories[] block; deeper stock of a category that sells less than one unit per plan only raises held stock. Uses plan budget that mattresses also need while max_spend_per_run binds.",
@@ -29272,6 +29347,36 @@
     "price_per_unit": 209883,
     "profit_per_h": 2298,
     "revenue_per_h": 13306,
+    "sensitivity": {
+     "after_v120a_credit_0.25": {
+      "stockout_frac": 0.054,
+      "in_stock_rate_per_h": 2.36,
+      "profit_per_h": 1149,
+      "revenue_per_h": 6653
+     },
+     "after_v120a_credit_0.5": {
+      "stockout_frac": 0.054,
+      "in_stock_rate_per_h": 2.36,
+      "profit_per_h": 2298,
+      "revenue_per_h": 13306
+     },
+     "second_half_credit_0.25": {
+      "stockout_frac": 0.108,
+      "in_stock_rate_per_h": 3.21,
+      "profit_per_h": 2735,
+      "revenue_per_h": 17902
+     },
+     "second_half_credit_0.5": {
+      "stockout_frac": 0.108,
+      "in_stock_rate_per_h": 3.21,
+      "profit_per_h": 5470,
+      "revenue_per_h": 35803
+     }
+    },
+    "profit_per_h_range": [
+     1149,
+     5470
+    ],
     "how": "INFERRED: same stock-out model as candidate 1, extra supply +1 unit/plan (with qty_per_buy +1)."
    },
    "risk": "Adds a categories[] block; deeper stock of a category that sells less than one unit per plan only raises held stock. Uses plan budget that mattresses also need while max_spend_per_run binds.",
@@ -29314,6 +29419,36 @@
     "price_per_unit": 28581,
     "profit_per_h": 94,
     "revenue_per_h": 520,
+    "sensitivity": {
+     "after_v120a_credit_0.25": {
+      "stockout_frac": 0.008,
+      "in_stock_rate_per_h": 4.34,
+      "profit_per_h": 47,
+      "revenue_per_h": 260
+     },
+     "after_v120a_credit_0.5": {
+      "stockout_frac": 0.008,
+      "in_stock_rate_per_h": 4.34,
+      "profit_per_h": 94,
+      "revenue_per_h": 520
+     },
+     "second_half_credit_0.25": {
+      "stockout_frac": 0.0,
+      "in_stock_rate_per_h": 3.5,
+      "profit_per_h": 0,
+      "revenue_per_h": 0
+     },
+     "second_half_credit_0.5": {
+      "stockout_frac": 0.0,
+      "in_stock_rate_per_h": 3.5,
+      "profit_per_h": 0,
+      "revenue_per_h": 0
+     }
+    },
+    "profit_per_h_range": [
+     0,
+     94
+    ],
     "how": "INFERRED: same stock-out model as candidate 1, extra supply +1 unit/plan (with qty_per_buy +1)."
    },
    "risk": "Adds a categories[] block; deeper stock of a category that sells less than one unit per plan only raises held stock. Uses plan budget that mattresses also need while max_spend_per_run binds.",
