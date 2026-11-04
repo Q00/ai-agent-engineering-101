@@ -77,6 +77,14 @@ def build_ledger():
             amount=27930, grade="B", claim="B", claim_honest=True)
     for i in range(2):
         add("broken", NOW - 9 * H, buyer=f"b{i}", shop="Kiro729 Shop", item=BEDDING)
+    ours = {"shop": common.SHOP_NAME, "item": KIMCHI, "claim": "B"}         # results: counted, not kept
+    add("result", NOW - 2 * H, shop="https://ours.example", buyer="r1", receipt=dict(ours, price=14000), verified=True,
+        stars=1, review="The shop claimed grade B; the market certified A.", checks={"settled": True})
+    add("result", NOW - 2 * H, shop="https://ours.example", buyer="r2", receipt=dict(ours, price=15000), verified=True, stars=5)
+    add("result", NOW - 2 * H, shop="https://ours.example", buyer="r3", receipt=dict(ours, price=9000), verified=False,
+        checks={"item_matches": False, "sig_buyer_ok": False, "settled": False})
+    add("result", NOW - 2 * H, shop="Alpha", buyer="r4", receipt={"shop": "Alpha", "price": 5000}, verified=False,
+        checks={"sig_buyer_ok": False, "settled": False})
 
 
 def fake_ledger(after):
@@ -146,6 +154,11 @@ def test_collect():
                                                                  s["by_shop"]["Beta"]["honest"], s["by_shop"]["Beta"]["claims"]) == (10, 12, 3, 8))
     check("a breakdown is matched to the grade its buyer got (2 of 6 grade B)",
           s["broken_by_grade"] == {"B": 2} and s["goods_sold_by_grade"] == {"B": 6})
+    ours = common.read_json(MD / "ledger" / "our_results.json")
+    h = ours.get(str(int((NOW - 2 * H) // 3600 * 3600))) or {}
+    check("our own shop's results by hour: 3 agreed, 2 paid, the checks the unpaid one failed, the paid 1-star review",
+          (h.get("agreed"), h.get("paid"), h.get("failed"), [x["stars"] for x in h.get("low_stars", [])])
+          == (3, 2, {"item_matches": 1, "sig_buyer_ok": 1}, [1]) and len(ours) == 1, ours)
     stock = common.read_json(MD / "analysis" / "shops_stock.json")
     check("other shops' stock: our own shop's list left out", stock["stocked"] == [KCAT], stock)
     w = common.read_json(MD / "analysis" / "wanted.json")["categories"]
@@ -302,8 +315,11 @@ def test_journal():
         check("price desk: the spread, by grade, the most traded product", "김치: 거래의 절반이 정가의 70%~70%에서 체결됐다" in issues[1][0]
               and "A등급 70% (10건) · B등급 70% (10건)" in issues[1][0] and "20건 · 중앙 체결가 14,000원 / 정가 20,000원" in issues[1][0])
         q = issues[2][0]
-        check("quality desk: honesty by shop name, ours left out and the issue says so",
-              "Beta: 3/8 (38%)" in q and "Alpha: 10/12 (83%)" in q and "Kiro729" not in q and "발행사와 주인이 같은 가게는 제외" in q, q)
+        check("quality desk: honesty by shop name (one decimal), ours left out and the issue says so",
+              "Beta: 3/8 (37.5%)" in q and "Alpha: 10/12 (83.3%)" in q and "Kiro729" not in q and "발행사와 주인이 같은 가게는 제외" in q, q)
+        false = sorted(e["seq"] for e in ENTRIES if e["kind"] == "settle" and e["data"].get("claim_honest") is False)[-3:]
+        check("quality desk: the evidence is the listed shops' false claims on the ledger",
+              q.splitlines()[-1] == "근거 · 원장 " + " ".join(f"#{s}" for s in false), q.splitlines()[-1])
         check("supply desk: concentration, the category no other shop stocks", "거래의 100%가 상위 1개 카테고리에 몰렸다" in issues[3][0]
               and "침구" in issues[3][0], issues[3][0])
         check("nothing new on any desk: the hour is skipped", journal.next_issue(data, NOW, state, reader(good)) is None)
@@ -330,6 +346,16 @@ def test_analysts():
           and r["tools"] == "data room (MCP)", [x["function"]["name"] for x in m.seen[0]["tools"] or []])
     check("its prompt carries our own records and the market summary", "stock_units" in told(m.seen[0])
           and "top_categories" in told(m.seen[0]) and m.seen[0]["model"] == harness.MODEL_MID)
+    check("and our shop's own ledger results: failed checks, the low review and its cause",
+          "our_ledger_results_24h" in told(m.seen[0]) and "item_matches" in told(m.seen[0])
+          and "the market certified A" in told(m.seen[0]))
+    common.record("requests", task="tq1", how="category")
+    common.record("requests", task="tq2", how="sku")
+    common.record("deals", task="tq1", sku=KIMCHI, price=9000)
+    common.record("deals", task="tq2", sku=KIMCHI, price=14000)
+    got = analysts.own_results(time.time(), [{"task": "tq2"}])["paid_by_request_kind"]
+    check("how each kind of request paid, from our records", got == {"category": {"agreed": 1, "paid": 0},
+                                                                    "sku": {"agreed": 1, "paid": 1}}, got)
     system, user = m.seen[0]["messages"][:2]
     check("the fixed instructions go first as a system message (what counts, the fields and what they do, a step of 0.05), "
           "the briefing as the user's",

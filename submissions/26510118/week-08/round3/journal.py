@@ -148,8 +148,12 @@ def quality(data: dict, now: float, last: dict) -> dict | None:
     overall = honest / claims
     head = (f"등급 주장의 {overall:.1%}가 사실 — {len(table)}곳 중 {len(low)}곳이 90% 미만" if low
             else f"등급 주장의 {overall:.1%}가 사실 — {len(table)}곳 모두 90% 이상")
-    sections = [("정직도가 가장 낮은 가게", [f"{k}: {h}/{c} ({h / c:.0%})" for k, h, c in table[:3]]),
+    below = [x for x in table if x[1] < x[2]][:3]           # only shops with a false claim; one decimal, so 772/773 is not "100%"
+    sections = [("정직도가 가장 낮은 가게", [f"{k}: {h}/{c} ({h / c:.1%})" for k, h, c in below] or ["모든 가게 100%"]),
                 ("전체", [f"100%인 가게 {sum(1 for _, h, c in table if h == c)}곳 · 대조한 주장 {claims:,}건"])]
+    named = {k for k, _, _ in below}
+    false = sorted(s["seq"] for s in data["settles"] if s.get("claim_honest") is False and s.get("seq") is not None
+                   and names.get(s.get("shop"), s.get("shop")) in named)
     sold, broke = data["summary"].get("goods_sold_by_grade") or {}, data["summary"].get("broken_by_grade") or {}
     shown = [g for g in "ABC" if sold.get(g, 0) >= MIN_BROKEN_BASE]
     if shown:
@@ -158,7 +162,7 @@ def quality(data: dict, now: float, last: dict) -> dict | None:
     return {"desk": "품질", "headline": head,
             "lede": f"최근 24시간 등급 주장을 가게별로 대조했다({MIN_CLAIMS}건 이상인 {len(table)}곳, 발행사와 주인이 같은 가게는 제외).",
             "sections": sections, "method": "공개 원장 settle의 claim_honest(24시간)와 broken(최근 48시간)",
-            "refs": [], "key": f"{len(table)}:{len(low)}:{round(overall, 3)}", "remember": {"overall": round(overall, 3)}}
+            "refs": false[-3:], "key": f"{len(table)}:{len(low)}:{round(overall, 3)}", "remember": {"overall": round(overall, 3)}}
 
 
 def supply(data: dict, now: float, last: dict) -> dict | None:

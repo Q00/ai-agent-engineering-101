@@ -21,7 +21,10 @@ Result entries (one per order: the receipt, whether the deal was verified and pa
 checks) come by the ten thousand an hour, so they are counted, not kept: results_hourly.json holds,
 per clock hour, the deals agreed (a receipt with a price), those paid, the checks the unpaid ones
 failed, the unpaid ones that passed every check (the buyer's own conditions refused them), and a few
-sample entries. The journal's investigation desk (journal.py) reads it.
+sample entries. The journal's investigation desk (journal.py) reads it. our_results.json holds the same
+per hour for our own shop's deals, with the paid deals' reviews of 3 stars or fewer: the seller analysis
+reads it (11/4: a grade claimed low and category menus that missed the order's price band showed only
+here, found by hand).
 """
 import json
 import os
@@ -59,6 +62,8 @@ def collect(get=fetch, pages: int = PAGES) -> int:
     f.mkdir(parents=True, exist_ok=True)
     state = common.read_json(f / "state.json", {}) or {}
     hourly = common.read_json(f / "results_hourly.json", {}) or {}
+    ours = common.read_json(f / "our_results.json", {}) or {}
+    shop_names = names()
     after, n = state.get("seq", -500), 0
     for _ in range(pages):
         rows = get(after)
@@ -71,6 +76,7 @@ def collect(get=fetch, pages: int = PAGES) -> int:
                     continue
                 if e.get("kind") == "result":
                     count_result(hourly, e)
+                    count_ours(ours, e, shop_names)
                 elif e.get("kind") == "settle":
                     keys, out = SETTLE_KEYS, s
                 elif e.get("kind") == "broken":
@@ -86,6 +92,7 @@ def collect(get=fetch, pages: int = PAGES) -> int:
     common.write_json(f / "state.json", state)
     keep = int(time.time() // 3600 * 3600) - RESULT_HOURS * 3600
     common.write_json(f / "results_hourly.json", {h: v for h, v in hourly.items() if int(h) >= keep})
+    common.write_json(f / "our_results.json", {h: v for h, v in ours.items() if int(h) >= keep})
     return n
 
 
@@ -112,6 +119,31 @@ def count_result(hourly: dict, e: dict) -> None:
         h["failed"][k] = h["failed"].get(k, 0) + 1
     h["passed_unpaid"] += not failed
     h["samples"] = (h["samples"] + [e.get("seq")])[-3:]
+
+
+def is_ours(name) -> bool:
+    return bool(name) and any(o.lower() in str(name).lower() for o in common.OWN_NAMES)
+
+
+def count_ours(ours: dict, e: dict, shop_names: dict) -> None:
+    """One result entry of our own shop (the receipt names it, or the shop's address does) into its hour:
+    deals agreed and paid, the checks the unpaid ones failed, and paid deals' reviews of 3 stars or fewer."""
+    d = e.get("data") or {}
+    rec = d.get("receipt") or {}
+    if not isinstance(rec.get("price"), (int, float)) or not (
+            rec.get("shop") == common.SHOP_NAME or is_ours(shop_names.get(d.get("shop"), d.get("shop")))):
+        return
+    h = ours.setdefault(str(int((e.get("ts") or 0) // 3600 * 3600)), {"agreed": 0, "paid": 0, "failed": {}, "low_stars": []})
+    h["agreed"] += 1
+    if d.get("verified"):
+        h["paid"] += 1
+        if isinstance(d.get("stars"), (int, float)) and d["stars"] <= 3:
+            h["low_stars"] = (h["low_stars"] + [{"seq": e.get("seq"), "stars": d["stars"], "item": rec.get("item"),
+                                                 "claim": rec.get("claim"), "review": (d.get("review") or "")[:160]}])[-5:]
+        return
+    for k, v in (d.get("checks") or {}).items():
+        if v is False and k != "settled":
+            h["failed"][k] = h["failed"].get(k, 0) + 1
 
 
 def names() -> dict:
