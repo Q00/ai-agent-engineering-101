@@ -31,11 +31,71 @@ PARSE = {"per_deal": 1, "per_hour": 6, "per_day": 72, "per_round": 72 * ROUND_DA
          "timeout_s": 8, "max_input_chars": 300, "concurrency": 1}
 EDITOR = {"per_deal": None, "per_hour": 1, "per_day": 6, "per_round": 6 * ROUND_DAYS, "min_interval_s": 4 * H,
           "timeout_s": 60, "max_edits": 1, "concurrency": 1}
-ROLES = {"parse": PARSE, "editor": EDITOR}
+# v121 (성수님 결정 CoS 전달 17:40): RLPO proposer / approver and the memory op judge get their own roles (own counter
+# file and concurrency slot). v121b (CoS 결정 18:02): auto-OFF is PER ROLE. quota / usage-limit / 429 and auth trip the
+# GLOBAL breaker (one account: every role OFF); timeout / 5xx / other streaks and model-id errors trip only that role
+# (own file state/caps_breaker_<role>.json). harness = the editor role. No count cap: every count key is None here and on the live path (role_caps default unlimited).
+_LONG = {"per_deal": None, "per_hour": None, "per_day": None, "per_round": None, "min_interval_s": 0,
+         "timeout_s": 60, "concurrency": 1}
+RLPO_PROP = dict(_LONG)
+RLPO_APPR = dict(_LONG)
+MEMORY = dict(_LONG)
+ROLES = {"parse": PARSE, "editor": EDITOR, "rlpo_prop": RLPO_PROP, "rlpo_appr": RLPO_APPR, "memory": MEMORY}
+# r3 (성수님 14:38 via CoS, GPT 6.1 Terra): count caps are SETTINGS, default UNLIMITED on the live path.
+# PARSE/EDITOR above stay as the v1 reference values (used only when OpsCaps(caps=None), i.e. legacy direct callers).
+COUNT_KEYS = ("per_deal", "per_hour", "per_day", "per_round", "min_interval_s")
+
+
+def role_caps(cfg):
+    """llm_caps_config_v4.json {\"caps\": {role: {key: int>=0 | null}}} -> {role: caps}. Missing key = unlimited (None).
+    Only COUNT_KEYS are settable (timeouts / input size / concurrency stay code constants). Bad value -> ValueError."""
+    caps = (cfg or {}).get("caps", {})
+    if not isinstance(caps, dict) or set(caps) - set(ROLES):
+        raise ValueError("caps must be an object with keys " + "/".join(ROLES))
+    out = {}
+    for r in ROLES:
+        d = dict(ROLES[r], **{k: None for k in COUNT_KEYS})
+        o = caps.get(r, {})
+        if not isinstance(o, dict):
+            raise ValueError(f"caps.{r} must be an object")
+        for k, v in o.items():
+            if k not in COUNT_KEYS:
+                raise ValueError(f"caps.{r}.{k} is not settable")
+            if v is not None and (isinstance(v, bool) or not isinstance(v, int) or v < 0):
+                raise ValueError(f"caps.{r}.{k} must be an int >= 0 or null")
+            d[k] = v
+        out[r] = d
+    return out
 BREAKER_TIMEOUT_STREAK = 3
+GLOBAL_KINDS = frozenset({"quota", "auth"})   # v121b: account-wide errors -> global breaker; the rest -> role breaker
 BREAKER_OFF_S = H
 QUOTA_RX = re.compile(r"(?i)(\b429\b|rate[ _-]?limit|quota|usage[ _-]?limit|too many requests|insufficient_quota|"
                       r"plan limit)")
+AUTH_RX = re.compile(r"(?i)(\b401\b|\b403\b|unauthori[sz]ed|forbidden|authentication|not logged in|login required|"
+                     r"invalid[ _-]?api[ _-]?key|token (?:has )?expired|re-?login)")
+
+
+SERVER_RX = re.compile(r"(?i)(\b5\d\d\b|internal server error|bad gateway|service unavailable|gateway timeout|overloaded)")
+MODEL_RX = re.compile(r"(?i)(model[_ -]?not[_ -]?found|unknown model|unsupported model|invalid model|model \S+ does not exist)")
+OTHER_STREAK = 3                    # r3d C1: N consecutive other errors -> OFF (shared streak with timeout/5xx)
+TOKEN_CHARS = 4                     # r3c CR(2): token ESTIMATE = ceil(chars/4); the CLI reports no usage
+
+
+def est_tokens(text):
+    return -(-len(text or "") // TOKEN_CHARS)
+
+
+def error_kind(detail):
+    """-> quota | auth | server | other (no text kept). r3c: server (5xx) counts like a timeout (streak 3 -> OFF)."""
+    if QUOTA_RX.search(detail or ""):
+        return "quota"
+    if AUTH_RX.search(detail or ""):
+        return "auth"
+    if MODEL_RX.search(detail or ""):
+        return "model"
+    if SERVER_RX.search(detail or ""):
+        return "server"
+    return "other"
 
 
 def load_config(path=CONFIG):
@@ -59,10 +119,11 @@ def _next_kst_midnight(ts):
 class RoleCounter:
     """One role, one state file {rows: [{ts, scope}], round_total, round_id}. Counted at reservation."""
 
-    def __init__(self, path, role, round_id="r3"):
+    def __init__(self, path, role, round_id="r3", caps=None):
         if role not in ROLES:
             raise ValueError(f"unknown role {role!r}")
-        self.path, self.role, self.caps, self.round_id = Path(path), role, ROLES[role], round_id
+        self.path, self.role, self.round_id = Path(path), role, round_id
+        self.caps = ROLES[role] if caps is None else caps
 
     def _load(self):
         if not self.path.exists():
@@ -86,13 +147,13 @@ class RoleCounter:
                     return False, "round_id_mismatch"
             c = self.caps
             rows = [r for r in d["rows"] if now - r["ts"] < D]
-            if d["round_total"] >= c["per_round"]:
+            if c["per_round"] is not None and d["round_total"] >= c["per_round"]:
                 return False, "per_round"
             if c["min_interval_s"] and rows and now - max(r["ts"] for r in rows) < c["min_interval_s"]:
                 return False, "min_interval"
-            if sum(1 for r in rows if now - r["ts"] < H) >= c["per_hour"]:
+            if c["per_hour"] is not None and sum(1 for r in rows if now - r["ts"] < H) >= c["per_hour"]:
                 return False, "per_hour"
-            if len(rows) >= c["per_day"]:
+            if c["per_day"] is not None and len(rows) >= c["per_day"]:
                 return False, "per_day"
             if c["per_deal"] is not None:
                 if scope is None:
@@ -134,11 +195,19 @@ class Breaker:
             trip = False
             if status == "ok":
                 d["streak"] = 0
-            elif status == "timeout":
+            elif status == "timeout" or error_kind(detail) == "server":   # r3c: 5xx joins the timeout streak
                 d["streak"] += 1
                 trip = d["streak"] >= BREAKER_TIMEOUT_STREAK
-            elif QUOTA_RX.search(detail or ""):
+            elif error_kind(detail) == "quota":                     # usage-limit / 429 -> auto-OFF
                 trip = True
+            elif error_kind(detail) == "auth":                      # r3: auth error -> auto-OFF until KST midnight
+                trip = True
+                d["trips"] = [t for t in d["trips"] if _kst_day(t) == _kst_day(now)] + [now]
+            elif error_kind(detail) == "model":                     # r3d C2: wrong model id -> OFF at once
+                trip = True
+            else:                                                   # r3d C1: other errors count in the streak
+                d["streak"] += 1
+                trip = d["streak"] >= OTHER_STREAK
             if trip:
                 today = [t for t in d["trips"] if _kst_day(t) == _kst_day(now)]
                 d["off_until"] = _next_kst_midnight(now) if today else now + BREAKER_OFF_S
@@ -183,25 +252,43 @@ class _Slot:
 
 
 class OpsCaps:
-    def __init__(self, state_dir, config=None, round_id="r3", clock=time.time):
+    def __init__(self, state_dir, config=None, round_id="r3", clock=time.time, caps=None):
+        """caps=None -> v1 reference ROLES (legacy); caps=role_caps(cfg) -> settings (live path, default unlimited)."""
         self.cfg = load_config() if config is None else dict(config, enabled=config.get("enabled") is True)
         sd = Path(state_dir)
-        self.counters = {r: RoleCounter(sd / f"caps_{r}.json", r, round_id) for r in ROLES}
+        self.role_caps = ROLES if caps is None else caps
+        self.counters = {r: RoleCounter(sd / f"caps_{r}.json", r, round_id, caps=self.role_caps[r]) for r in ROLES}
         self.slots = {r: _Slot(sd / f"caps_{r}.json") for r in ROLES}
-        self.breaker = Breaker(sd / "caps_breaker.json")
+        self.breaker = Breaker(sd / "caps_breaker.json")                        # global (quota / auth)
+        self.role_breakers = {r: Breaker(sd / f"caps_breaker_{r}.json") for r in ROLES}   # v121b: per role
         self.clock = clock
         self.log_path = sd / "caps_log.jsonl"
+        self.last = {}                      # v121: {role, status, kind} of the last call (no text) for adapters
 
     def _log(self, row):
         with open(self.log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
 
+    def is_open(self, role, now=None):
+        # v121b: global breaker (quota / auth, unreadable = open) OR this role breaker (streaks / model, unreadable = open)
+        now = self.clock() if now is None else now
+        return self.breaker.is_open(now) or self.role_breakers[role].is_open(now)
+
+    def _record(self, role, now, status, detail):
+        # -> (tripped, off_until, scope). quota / auth -> global; ok / timeout / 5xx / other / model -> role
+        if status == "error" and error_kind(detail) in GLOBAL_KINDS:
+            return self.breaker.record(now, status, detail) + ("all",)
+        return self.role_breakers[role].record(now, status, detail) + ("role",)
+
     def call(self, role, client, prompt, max_tokens, scope=None):
         """-> (text or None, reason). None means: use the rule result / skip the cycle."""
         now = self.clock()
+        self.last = {"role": role, "status": None, "kind": None}
         if not self.cfg.get("enabled"):
             return None, "disabled"
-        if self.breaker.is_open(now):
+        if role not in self.role_breakers:
+            return None, "unknown_role"
+        if self.is_open(role, now):
             return None, "breaker_open"
         if not self.slots[role].acquire():
             return None, "busy"
@@ -219,10 +306,23 @@ class OpsCaps:
                     except BaseException as e:          # noqa: BLE001
                         box["msg"] = f"{type(e).__name__}: {e}"[:300]
                         raise
-            out, st = call_with_timeout(_W(), prompt, max_tokens, ROLES[role]["timeout_s"])
+            t0 = time.monotonic()
+            out, st = call_with_timeout(_W(), prompt, max_tokens, self.role_caps[role]["timeout_s"])
+            lat = round(time.monotonic() - t0, 3)
             status = "ok" if st == "ok" else ("timeout" if st == "timeout" else "error")
-            trip, off = self.breaker.record(self.clock(), status, box.get("msg", st))
-            self._log({"ts": now, "role": role, "status": st, "breaker_tripped": trip})
+            if status == "error" and "TimeoutExpired" in (box.get("msg", "") + st):   # r3d C1: subprocess 8 s timeout = timeout
+                status = "timeout"
+            kind = error_kind(box.get("msg", st)) if status == "error" else status
+            if status == "timeout":
+                box.pop("msg", None)
+            trip, off, bscope = self._record(role, self.clock(), status, box.get("msg", st))
+            pt, ot = est_tokens(prompt), est_tokens(out if isinstance(out, str) else "")
+            price = self.cfg.get("usd_per_1k_tokens")
+            cost = round((pt + ot) / 1000 * price, 6) if isinstance(price, (int, float)) and not isinstance(price, bool) and price >= 0 else None
+            self._log({"ts": now, "role": role, "status": st, "kind": kind, "latency_s": lat, "breaker_tripped": trip,
+                       "breaker_scope": bscope,
+                       "prompt_tokens_est": pt, "out_tokens_est": ot, "est_cost_usd": cost})
+            self.last = {"role": role, "status": status, "kind": kind, "breaker_tripped": trip, "breaker_scope": bscope}
             return out, st
         finally:
             self.slots[role].release()

@@ -35,6 +35,18 @@ def own_owner_names(policy_path=None, state=None):
             {OW.norm_url(u) for u in urls}) - {""}
 
 
+def own_shop_keys_safe(state=None, me_shop=None, policy_path=None):
+    """v120c-B name: owner.own_shop_keys for our running shop, no network; {} keys on any error (exact-name match only)."""
+    p = Path(policy_path or os.environ.get("R3_POLICY", Path(__file__).resolve().parent / "policy.json"))
+    try:
+        pol = json.loads(p.read_text(encoding="utf-8"))
+        import owner as OW
+        extra = [n for n in (me_shop, os.environ.get("R3_SHOP_NAME_PREV")) if n]   # r3c: name file rename keeps old name ours
+        return OW.own_shop_keys(pol, state, extra_names=extra)
+    except Exception:            # noqa: BLE001
+        return {}
+
+
 MARKET_KINDS = ("settle", "broken", "refund")
 LOG_MARKS = ("[acp] settled", "[acp] paid", "[market] ledger #", "[acp] not paying", "[acp] checkout refused",
              "[acp] settle refused", "[acp] payment", "[acp] the checkout", "[sign]", "[supply]", "[broken]")
@@ -78,6 +90,7 @@ class Ledger:
         self.me_shop = me_shop or os.environ.get("R3_SHOP_NAME")
         self.me_buyer = me_buyer or os.environ.get("R3_BUYER_NAME")
         self.own = own_owner_names(state=self.root)
+        self.shop_keys = own_shop_keys_safe(self.root, self.me_shop)   # v120c-B name: stable own-shop ids, not only R3_SHOP_NAME
         self._lock_fd = None
         self.cur = {}
         self.added = 0
@@ -220,7 +233,12 @@ class Ledger:
 
     def _mine(self, d):
         names = {self.me_shop, self.me_buyer} - {None}
-        return bool(names & {d.get("buyer"), d.get("shop"), d.get("shop_name"), d.get("seller")})
+        if names & {d.get("buyer"), d.get("shop"), d.get("shop_name"), d.get("seller")}:
+            return True
+        # v120c-B name: a rename of R3_SHOP_NAME (display name) must not drop our sales; match the shop field
+        # against owner.own_shop_keys (policy own_shop_names + cache names/urls/pubkeys + R3_SHOP_NAME)
+        import owner as OW
+        return any(OW.is_own_shop_ref(d.get(k), self.shop_keys) for k in ("shop", "shop_name", "seller"))
 
     def _market_entry(self, e):
         kind, d, seq = e.get("kind"), e.get("data") or {}, e.get("seq")

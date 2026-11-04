@@ -22,6 +22,7 @@ from pathlib import Path
 from ledger import state_dir
 
 from memory import source
+from memory import llm_step as memory_llm
 from taste import gate as taste_gate
 
 LAYERS = (
@@ -34,7 +35,7 @@ MAX_EVENTS = 200_000
 # Extension point. Steps run after ingest and the graph sweep, before anything is written: step(ctx) -> short
 # note or None, ctx = {"now", "root", "md", "mem", "layers", "events", "catalog"}. A step that raises is noted on
 # the run line and the run goes on. v1.19: the hourly taste forecast and its gate (taste/gate.py).
-POST_INGEST = [taste_gate.step]
+POST_INGEST = [taste_gate.step, memory_llm.step]   # v121: memory_llm.step is OFF unless MEMORY_LLM
 
 
 def market_dir(arg=None):
@@ -119,6 +120,23 @@ def run_once(md, now=None):
     )
 
 
+def run_once_locked(md, now=None):
+    # v121c (CR v121b R2): one memory run at a time on this host (runner, CLI, cron): non-blocking flock on
+    # <R3_STATE>/memory/run.lock; a run that finds it held is skipped (cursor.json / layer snapshots never raced).
+    import fcntl
+    mem = state_dir() / "memory"
+    mem.mkdir(parents=True, exist_ok=True)
+    with open(mem / "run.lock", "a+") as lk:
+        try:
+            fcntl.flock(lk, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            return "skipped: another memory run holds memory/run.lock"
+        try:
+            return run_once(md, now)
+        finally:
+            fcntl.flock(lk, fcntl.LOCK_UN)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument(
@@ -132,7 +150,7 @@ def main():
     md = market_dir(a.state)
     while True:
         try:
-            why = run_once(md, a.now)
+            why = run_once_locked(md, a.now)
         except Exception as e:  # noqa: BLE001  the loop must outlive one bad run
             why = f"error {type(e).__name__}: {str(e)[:150]}"
         print(f"{time.strftime('%H:%M:%S')} [memory] {why}", flush=True)

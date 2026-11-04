@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 
 from ledger import Ledger, own_owner_names
+import owner as OW
 from owner import norm_name
 
 KEEP_IDS = 5000
@@ -26,7 +27,7 @@ def _ids(e):
     return f"L{led}" if led is not None else e.get("key")
 
 
-def side_of(e, me_shop, me_buyer, own_urls):
+def side_of(e, me_shop, me_buyer, own_urls, shop_keys=None):
     if e.get("type") != "settle":
         return None
     d, src = e.get("data") or {}, e.get("src")
@@ -37,6 +38,8 @@ def side_of(e, me_shop, me_buyer, own_urls):
             return "buyer"
         s = norm_name(d.get("shop"))
         if (me_shop and s == me_shop) or s in own_urls:
+            return "shop"
+        if shop_keys and OW.is_own_shop_ref(d.get("shop"), shop_keys):   # v120c-B name: renamed display name
             return "shop"
     return None
 
@@ -59,7 +62,7 @@ def settled_counts(root=None):
     moved = False
     for off, e in L.iter_from(st["off"]):
         st["off"], moved = off, True
-        side = side_of(e, me_shop, me_buyer, own_urls)
+        side = side_of(e, me_shop, me_buyer, own_urls, getattr(L, "shop_keys", None))
         if side is None:
             continue
         i = _ids(e)

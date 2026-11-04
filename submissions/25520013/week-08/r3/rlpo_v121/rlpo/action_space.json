@@ -1,0 +1,60 @@
+{
+ "_note": "RLPO action space v3 (M2r). Proposal allowlist = allow (guard enforces: key, range, step; categories must exist in known_categories.json with the same kind). apply_blocked keys are never applied (price_mult: replay cannot judge it, CR cr_rlpo_M2 3a). shop_keys/buyer_keys = harness/bounds.py whitelist, kept for reference only. Warranty: placeholders only (CoS 15:41), enabled=false until v120c/A_for_RLPO.md gives key names + replay entry point.",
+ "shop_keys": [
+  "price_mult",
+  "min_margin",
+  "concession",
+  "max_rounds",
+  "stock_target",
+  "qty_per_buy"
+ ],
+ "buyer_keys": [
+  "open_frac",
+  "max_pay_frac",
+  "step_frac",
+  "max_rounds"
+ ],
+ "excluded_substr": [
+  "warranty"
+ ],
+ "placeholders": [
+  {
+   "name": "warranty_on",
+   "path": "TBD (A_for_RLPO.md)",
+   "type": "bool",
+   "range": [
+    0,
+    1
+   ],
+   "enabled": false
+  },
+  {
+   "name": "warranty_exposure_cap_6h",
+   "path": "TBD (A_for_RLPO.md)",
+   "type": "int",
+   "range": [
+    0,
+    1000000
+   ],
+   "unit": "settle price, 6h cumulative",
+   "enabled": false
+  }
+ ],
+ "max_edits": 3,
+ "max_step_frac_of_range": 0.25,
+ "cum_frac_of_range": 0.4,
+ "allow": {
+  "price_mult": {
+   "side": "shop",
+   "range": [
+    0.5,
+    1.5
+   ],
+   "max_step_frac_of_range": 0.25,
+   "int": false
+  }
+ },
+ "apply_blocked": [
+  "price_mult"
+ ]
+}

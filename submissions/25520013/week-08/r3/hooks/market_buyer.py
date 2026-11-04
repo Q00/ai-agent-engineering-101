@@ -20,8 +20,47 @@ from common import volume_level, catch_up_stats, P, Recorder, emit, hook_event, 
 from reputation import Reputation
 import owner as OW
 
-MAX_SHOPS = 3
+MAX_SHOPS = 3              # v1.20b: default only; policy buyer.max_shops overrides (attempt_allowed)
 DEADLINE_S = 200           # the kit stops the buyer at 300 s
+BASE_SHOPS = 3             # v1.20b: attempts 1-3 run as before; attempts 4..max_shops pass the time guard
+EXTRA_WINDOW_S = 60        # v1.20b defaults (policy buyer.extra_attempt_window_s / expiry_guard_s override)
+EXPIRY_GUARD_S = 60
+
+
+def attempt_allowed(n_shops, elapsed, now, order, pol):
+    """v1.20b: may the buyer start an attempt at one more shop? -> (ok, reason).
+    n_shops = shops already tried for this order, elapsed = seconds since the hook started.
+    Always: n_shops < buyer.max_shops (default MAX_SHOPS) and elapsed <= DEADLINE_S (v1.19 behaviour).
+    Attempts past BASE_SHOPS (4th and later) also need elapsed < extra_attempt_window_s and, when the order
+    carries 'expires' (epoch s), now < expires - expiry_guard_s. reason: None, 'max_shops', 'deadline',
+    'guard_elapsed' or 'guard_expiry' (the last two are the time-guard hits counted in metrics)."""
+    b = (pol or {}).get('buyer') or {}
+    cap = b.get('max_shops', MAX_SHOPS)
+    cap = cap if isinstance(cap, int) and not isinstance(cap, bool) and cap >= 1 else MAX_SHOPS
+    if n_shops >= cap:
+        return False, 'max_shops'
+    if elapsed > DEADLINE_S:
+        return False, 'deadline'
+    if n_shops < BASE_SHOPS:
+        return True, None
+    if elapsed >= float(b.get('extra_attempt_window_s', EXTRA_WINDOW_S)):
+        return False, 'guard_elapsed'
+    exp = order.get('expires')
+    if isinstance(exp, (int, float)) and not isinstance(exp, bool) and \
+            now >= float(exp) - float(b.get('expiry_guard_s', EXPIRY_GUARD_S)):
+        return False, 'guard_expiry'
+    return True, None
+
+
+def attempt_deadline(n_shops, t0, order, pol):
+    """v1.20b: haggle deadline for the next attempt. Attempts 1-3: t0 + DEADLINE_S (unchanged). Later attempts
+    also stop expiry_guard_s before the order expires."""
+    d = t0 + DEADLINE_S
+    exp = order.get('expires')
+    if n_shops >= BASE_SHOPS and isinstance(exp, (int, float)) and not isinstance(exp, bool):
+        b = (pol or {}).get('buyer') or {}
+        d = min(d, float(exp) - float(b.get('expiry_guard_s', EXPIRY_GUARD_S)))
+    return d
 
 
 def rpc(url, text, task_id=None, timeout=60):
@@ -288,14 +327,18 @@ def main():
     accept = P.accept_policy(order, pol, relax)
     tried, out = [], None
     seen_shops = set()
+    stop = None                                         # v1.20b: why the attempt loop stopped early
     for c in cands:
-        if len(seen_shops) >= MAX_SHOPS or time.time() - t0 > DEADLINE_S:
-            break
         if c["shop"]["url"] in seen_shops:
             continue
+        now = time.time()
+        ok, stop = attempt_allowed(len(seen_shops), now - t0, now, order, pol)
+        if not ok:
+            break
+        dl = attempt_deadline(len(seen_shops), t0, order, pol)
         seen_shops.add(c["shop"]["url"])
         try:
-            receipt, info = haggle(c, order, pol, t0 + DEADLINE_S, accept)
+            receipt, info = haggle(c, order, pol, dl, accept)
         except (httpx.HTTPError, ValueError, KeyError) as e:
             receipt, info = None, {"error": f"{type(e).__name__}"}
             hook_event("fail", f"a2a:{order.get('order')}:{c['shop']['url']}",
@@ -320,6 +363,8 @@ def main():
     rec.write("buy", seq, outcome={"deal": out["receipt"] is not None,
                                    "price": (out["receipt"] or {}).get("price"), "candidates": len(cands),
                                    "tried": len(tried), "budget": order.get("budget"),
+                                   "stop": stop, "guard_hit": stop in ("guard_elapsed", "guard_expiry"),
+                                   "max_shops": (pol.get("buyer") or {}).get("max_shops", MAX_SHOPS),
                                    "list_price": next((c["list_price"] for c in cands if out["receipt"] and c["sku"] == out["receipt"].get("item")), None)},
               rejections=rej, ingest_ms=ims, ingested=counts,
               extra={"rep_source": rsrc, "stats": stats is not None, "stats_error": serr, "catch_up": cinfo, "agg_broken": agg_broken, "relax": relax, "settled": nset, "own_source": own["source"], "own_names": len(own["names"]), "own_urls": len(own["urls"]),

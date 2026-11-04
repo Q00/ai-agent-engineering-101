@@ -147,7 +147,45 @@ def build_cmd(exe, cfg, cwd):
 # ---- fixes4 pins
 COUNTER_REL = "state/real_call_counter.json"
 CALL_LOG_REL = "state/real_calls.jsonl"
-ALLOWED_CLI = ("/home/box/.local/bin/codex",)          # box; a labpc deploy must list its own path explicitly
+ALLOWED_CLI = ("/home/box/.local/bin/codex",          # box
+               "/home/sungsoo/.local/bin/codex")      # labpc (v120c-B probe 14:10 KST: codex-cli 0.164.0, regular file)
+LIVE_COUNTER_REL = "state/live_call_counter.json"
+
+
+class LiveCounter:
+    """v120c-B r3: live per-round ceiling = settings caps.<role>.per_round in llm_caps_config_v4.json; default
+    UNLIMITED (성수님 14:38, GPT 6.1 Terra) - the count is still kept. The 20-call test HardCounter stays for the test
+    runs; live=True uses this one. Unreadable state or bad caps setting = full (fail closed)."""
+
+    def __init__(self, path, caps_path=None):
+        self.path = Path(path)
+        self.caps_path = None if caps_path is None else Path(caps_path)
+
+    def take(self, role):
+        from llm import caps_v4 as CAPS
+        if role not in CAPS.ROLES:
+            raise CallCapReached(f"unknown role {role!r}")
+        try:
+            cap = CAPS.role_caps(CAPS.load_config(self.caps_path) if self.caps_path else {})[role]["per_round"]
+        except ValueError as e:
+            raise CallCapReached(f"caps setting invalid (fail closed): {e}")
+        with locked(self.path):
+            d = {"editor": 0, "parse": 0}
+            if self.path.exists():
+                try:
+                    raw = json.loads(self.path.read_text(encoding="utf-8"))
+                    d = {k: int(raw[k]) for k in ("editor", "parse")}
+                    # v121: the new roles (rlpo_prop / rlpo_appr / memory) are optional keys, so a v1.20 counter file
+                    # (editor + parse only) stays readable; a present but non-int value is unreadable (fail closed).
+                    d.update({k: int(raw[k]) for k in CAPS.ROLES if k not in d and k in raw})
+                except Exception:                    # noqa: BLE001
+                    raise CallCapReached("live counter unreadable (fail closed)")
+            d.setdefault(role, 0)
+            if cap is not None and d[role] >= cap:
+                raise CallCapReached(f"live {role} round cap {cap} reached")
+            d[role] += 1
+            atomic_write_json(self.path, d)
+            return d
 
 
 def check_pins(cfg):
@@ -184,12 +222,13 @@ def child_env():
 
 class CodexClient:
     def __init__(self, role, config_path=CONFIG, base=HERE, which=shutil.which, runner=subprocess.run,
-                 allowed_cli=None):
+                 allowed_cli=None, live=False):
         self.role, self.cfg = role, load_config(config_path)
         self.allowed_cli = ALLOWED_CLI if allowed_cli is None else tuple(allowed_cli)
         self.base, self.which, self.runner = Path(base), which, runner
         check_pins(self.cfg)                                  # fixes4: refused before any count
-        self.counter = HardCounter(self.base / COUNTER_REL)
+        self.counter = (LiveCounter(self.base / LIVE_COUNTER_REL, self.base / "llm_caps_config_v4.json") if live
+                        else HardCounter(self.base / COUNTER_REL))
         self.log_path = self.base / CALL_LOG_REL
 
     def _log(self, row):
@@ -202,6 +241,8 @@ class CodexClient:
             raise RealCallsDisabled("real_calls_enabled is not true in llm_config.json")
         exe = resolve_cli(self.cfg.get("cli"), self.allowed_cli)
         check_settings(self.cfg)                             # v1.17b: bad settings refused BEFORE a count is used
+        from pii_mask import mask as _pii_mask                   # v121c (CoS 결정 18:48): email / phone / card / RRN masked
+        prompt = _pii_mask(prompt)                           # before the prompt leaves the box (and before its sha)
         self.counter.take(self.role)                         # counted before the call goes out
         row = {"ts": round(time.time(), 3), "role": self.role, "model": self.cfg["model"],
                "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
@@ -217,8 +258,12 @@ class CodexClient:
             raise
         lat = round(time.monotonic() - t0, 3)
         if out.returncode != 0:
-            self._log(dict(row, status=f"exit {out.returncode}", latency_s=lat))
-            raise RuntimeError(f"codex exit {out.returncode}")
+            # r3: the stderr tail goes into the exception ONLY (caps_v4 classifies quota/429/auth -> auto-OFF);
+            # the call log keeps the kind, never the text.
+            tail = " ".join(((out.stderr or "") + " " + (out.stdout or "")).split())[-300:]
+            from llm.caps_v4 import error_kind
+            self._log(dict(row, status=f"exit {out.returncode}", kind=error_kind(tail), latency_s=lat))
+            raise RuntimeError(f"codex exit {out.returncode}: {tail}")
         text = (out.stdout or "").strip()
         self._log(dict(row, status="ok", latency_s=lat, output_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
                        output_bytes=len(text.encode("utf-8"))))

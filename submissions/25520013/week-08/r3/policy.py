@@ -114,6 +114,21 @@ def _check(name, v, bounds):
 
 def validate(pol):
     b = pol.get("bounds") or {}
+    sp = pol.get("shop") or {}
+    rp = sp.get("restock_priority")                    # v1.20a
+    if rp is not None and (not isinstance(rp, list) or not all(isinstance(x, str) and x for x in rp)):
+        raise PolicyError("shop.restock_priority must be a list of category names")
+    for blk in list((pol.get("categories") or {}).values()) + [sp]:
+        k = blk.get("skus_per_category")
+        if k is not None and (isinstance(k, bool) or not isinstance(k, int) or not 1 <= k <= 5):
+            raise PolicyError(f"skus_per_category={k!r} outside [1, 5]")
+    bu = pol.get("buyer") or {}                         # v1.20b: attempt cap and time guard
+    for k, lo, hi in (("max_shops", 1, 8), ("extra_attempt_window_s", 0, 200), ("expiry_guard_s", 0, 600)):
+        v = bu.get(k)
+        if v is not None and (isinstance(v, bool) or not isinstance(v, (int, float)) or not lo <= v <= hi):
+            raise PolicyError(f"buyer.{k}={v!r} outside [{lo}, {hi}]")
+    if isinstance(bu.get("max_shops"), float):
+        raise PolicyError("buyer.max_shops must be an int")
     blocks = list((pol.get("defaults") or {}).values()) + list((pol.get("categories") or {}).values())
     blocks += list((pol.get("buyer", {}).get("defaults") or {}).values()) + list((pol.get("buyer", {}).get("categories") or {}).values())
     for blk in blocks:
@@ -667,7 +682,10 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     v1.7: restock_gate (idle / round end), inventory cost cap (max_inventory_cost_frac x balance) and food depth
     capped by expected sell-through (food_cap). v1.13: goods depth capped by the storage fee (goods_cap).
     v1.19: taste = {category: next-hour probability} from an adopted taste gate (hooks/restock.py) ranks the
-    categories it covers first, by probability; it changes the ranking only (targets, caps, budget unchanged)."""
+    categories it covers first, by probability; it changes the ranking only (targets, caps, budget unchanged).
+    v1.20a: shop.restock_priority (category full paths or leaf names) ranks those categories before taste and
+    velocity; categories[cat].skus_per_category spreads a category over its top-k SKUs by settles. Budget, balance
+    floor, inventory cap, max_total_units, max_unit_cost and the below-market filter are unchanged."""
     sp = pol["shop"]
     bal = int(inv.get("balance") or 0)
     units = [u for u in inv.get("units") or [] if u.get("grade") != "expired"]
@@ -696,7 +714,12 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     own_v = own_velocity(activity, catalog, pol, now)
     cost_frac = expected_cost_frac(units, sp) if sp.get("skip_below_market") else None
 
+    prio = [str(x) for x in (sp.get("restock_priority") or [])]      # v1.20a: categories bought first
+
     def score(d):
+        for i, key in enumerate(prio):                   # v1.20a: full path or leaf name, in list order
+            if key in (d["category"], leaf(d["category"])):
+                return (-2, i)
         if taste and taste.get(d["category"]):          # v1.19: adopted taste forecast, ranking only
             return (-1, -float(taste[d["category"]]))
         s = _stat(stats, "category", d["category"])
@@ -758,7 +781,9 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
                     notes.append(f"{cat}: goods storage cap {cap}")
                     continue
         qty_all = max(1, min(c["qty_per_buy"], need, 20))
-        k = max(1, min(int(sp.get("skus_per_category", 1)), qty_all, len(order_)))
+        # v1.20a: skus_per_category per category (categories[...]) over the shop default. With the shop default 1
+        # only order_[0] was ever bought: G1515d951 (2nd by settles in 90 of 92 mattress plans) got 0 units.
+        k = max(1, min(int(c.get("skus_per_category", sp.get("skus_per_category", 1))), qty_all, len(order_)))
         for i, (sku, x) in enumerate(order_[:k]):
             qty = max(1, qty_all // k + (1 if i < qty_all % k else 0))
             plan.append((sku, x, qty, max(1, min(qty, int(c.get("breadth_qty") or qty)))))

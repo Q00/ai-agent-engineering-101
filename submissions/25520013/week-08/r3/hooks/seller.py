@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 
 from common import volume_level, open_resident, P, Recorder, Ledger, hook_event, read_json  # noqa: F401
+import buyer_log as BL   # v1.20 logging only (never read by a decision)
 
 import uvicorn
 from cryptography.hazmat.primitives import serialization
@@ -33,7 +34,33 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-NAME = os.environ.get("R3_SHOP_NAME", "lee-sungsoo")
+ENV_NAME = os.environ.get("R3_SHOP_NAME", "lee-sungsoo")
+NAME_FILE_MAX = 64
+
+
+def resolve_shop_name(env_name=None, path=None):
+    """v120c-B r3c name (CoS 14:56, 성수님 14:31): <W>/.r3/shop_name overrides the kit env R3_SHOP_NAME (a seller-only
+    restart cannot change the inherited kit env). Missing/empty/invalid/too long/unreadable -> env value. Revert = rename
+    the file to shop_name.off (no delete). Returns (name, source)."""
+    env_name = env_name if env_name is not None else ENV_NAME
+    p = Path(path or os.environ.get("R3_SHOP_NAME_FILE", Path(os.environ.get("R3_STATE", ".r3")) / "shop_name"))
+    try:
+        raw = p.read_bytes()
+    except OSError:
+        return env_name, "env"
+    try:
+        v = raw.decode("utf-8").strip()
+    except UnicodeDecodeError:
+        return env_name, "env:invalid"
+    if not v or len(v) > NAME_FILE_MAX or "\n" in v or not v.isprintable() or not re.search(r"[0-9A-Za-z]", v):
+        return env_name, "env:invalid"
+    return v, "file"
+
+
+NAME, NAME_SOURCE = resolve_shop_name()
+if NAME != ENV_NAME:                       # ledger/volume (same process) see both old and new name as our shop
+    os.environ["R3_SHOP_NAME_PREV"] = ENV_NAME
+    os.environ["R3_SHOP_NAME"] = NAME
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 SKU_RE = re.compile(r"\b(G[0-9A-Za-z]{5,})\b")
 HOLD_S = 120               # a unit promised in an open negotiation is held this long, then freed (buyers walk away)
@@ -114,10 +141,24 @@ class Seller(AgentExecutor):
         self._R, self._rerr, self._rt, self.checkpoints = None, None, 0.0, 0
         self._lock = threading.Lock()                   # Resident is used by A2A calls and the tick thread
         self._ticker = None
+        self._blog = {}                                 # v1.20 logging only: task id -> (buyer_ref, source)
+
+    def _bl(self, event, tid, **kw):
+        """v1.20 logging only; never raises, never changes a decision."""
+        try:
+            b, src = self._blog.get(tid) or ("unknown", "none")
+            BL.write(event, b, src, tid, **kw)
+        except Exception:                               # noqa: BLE001
+            pass
 
     def refresh_policy(self, now=None):
         """v1.16: switch to a changed policy.json between deals; on a bad file keep the current one and warn (stderr
         + metric policy_reload_failed). Open deals keep the policy they were opened with (deal["pol"])."""
+        if LIVE is not None:                             # v120c-B r2: LLM flags re-read here (reload, no restart)
+            _on, _chg = LIVE.refresh()
+            if _chg:
+                print(f"INFO: seller: llm live {"ON" if _on else "OFF"}", file=sys.stderr, flush=True)
+                self._metric("llm_live", {"on": _on})
         if self._pw is None:
             return self.pol
         try:
@@ -238,14 +279,25 @@ class Seller(AgentExecutor):
         text = get_message_text(context.message) or ""
         now = time.time()
         for tid in [k for k, d in self.open.items() if now - d["t"] > HOLD_S and k != task.id]:
+            _d = self.open[tid]
             del self.open[tid]
+            self._bl("outcome", tid, outcome="no_response", sku=_d["unit"].get("sku"), last_ask=_d.get("ask"),
+                     rounds=_d.get("rounds"), idle_s=round(now - _d["t"], 1))
+            self._blog.pop(tid, None)
         deal = self.open.get(task.id)
         if deal is None:
+            try:
+                self._blog[task.id] = BL.buyer_ref(context)
+            except Exception:                           # noqa: BLE001
+                self._blog[task.id] = ("unknown", "none")
+            self._bl("request", task.id, text=BL.clean(text, 200))   # v121c: masked
             self.refresh_policy()                       # v1.16: only between deals
             inv = read_json(MARKET_DIR / "inventory.json", {}) or {}
             unit = find_unit(text, inv, {d["unit"]["unit"] for d in self.open.values()}, self.pol)
             if unit is None:
-                self._metric("no_stock", {"request": text[:80]})
+                self._metric("no_stock", {"request": BL.clean(text, 80)})
+                self._bl("outcome", task.id, outcome="no_stock", request=BL.clean(text, 80))
+                self._blog.pop(task.id, None)
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
             sh = self.shelf(unit["sku"])
@@ -258,13 +310,20 @@ class Seller(AgentExecutor):
                                   "floor": P.floor_price(unit, self.pol, inv, relax=relax), "relax": relax,
                                   "settled": nset, "stats": st is not None, "stats_error": self._rerr,
                                   "stats_seq": getattr(st, "s", {}).get("seq") if st is not None else None})
+            self._bl("quote", task.id, kind="open", sku=unit["sku"], unit=unit["unit"], category=unit.get("category"),
+                     grade=unit.get("grade"), ask=ask, cost=unit.get("cost"), policy_hash=self.pol.get("_hash"))
             await up.requires_input(say(opening_text(unit, self.pol, ask, st, sh)))
             return
         deal["rounds"] += 1
         deal["t"] = now
         offer = offer_in(text)
+        if offer is None and LIVE is not None and LIVE.on:   # v120c-B: LLM interpreter assist, caps v1, rule first, 8 s
+            offer, _src = await LIVE.offer(text, offer_in, task.id, deal["ask"])
+            self._metric("llm_parse", {"src": _src, "got": offer is not None})
         u = deal["unit"]
         move, price = self.decide(deal, offer)
+        self._bl("offer", task.id, sku=u["sku"], offer=offer, round=deal["rounds"], prev_ask=deal["ask"], move=move,
+                 price=price, **BL.offer_fields(text))   # v121b (CoS 결정 18:02): first 80 chars, secrets masked
         if offer is not None:
             deal.setdefault("offers", []).append(offer)  # v1.5/v1.6: next respond's prev_offer/history (pinned by tests_lead/test_v16_wiring.py)
         if move == "accept":
@@ -281,24 +340,39 @@ class Seller(AgentExecutor):
                                     "relax": deal["relax"], "claim": receipt.get("claim"),
                                     "warranty_hours": receipt.get("warranty_hours", 0)}, pol=deal.get("pol"))
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            self._bl("outcome", task.id, outcome="accept", sku=u["sku"], price=price, rounds=deal["rounds"])
+            self._blog.pop(task.id, None)
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             del self.open[task.id]
             return
         if move == "reject":
             self._metric("reject", {"sku": u["sku"], "offer": offer, "rounds": deal["rounds"]}, pol=deal.get("pol"))
+            self._bl("outcome", task.id, outcome="reject", sku=u["sku"], offer=offer, rounds=deal["rounds"],
+                     last_ask=deal["ask"])
+            self._blog.pop(task.id, None)
             await up.reject(say("No deal."))
             del self.open[task.id]
             return
         deal["ask"] = price
+        self._bl("quote", task.id, kind="counter", sku=u["sku"], ask=price, round=deal["rounds"])
         await up.requires_input(say(f"Counteroffer: {price}."))
 
     async def cancel(self, context, event_queue):
         task = context.current_task
         if task is None:
             return
-        self.open.pop(task.id, None)
+        _had = self.open.pop(task.id, None)
+        self._bl("outcome", task.id, outcome="cancel", open=_had is not None)
+        self._blog.pop(task.id, None)
         self._metric("cancel", {"task": task.id})
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+
+
+try:                                              # v120c-B: default OFF; any import/config error -> no LLM
+    from llm.live_v120c import Live as _Live
+    LIVE = _Live()                                # OFF unless flags; refresh() re-reads them on policy reload
+except Exception:                                 # noqa: BLE001
+    LIVE = None
 
 
 def build(port):

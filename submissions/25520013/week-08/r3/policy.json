@@ -19,7 +19,7 @@
  "shop": {
   "balance_floor": 3000000,
   "_restock_note": "v1.6 (CR v1.5 item 6): max_spend_per_run 300000 -> 600000; food stock_target/qty_per_buy 3/2 -> 5/4, goods 2/1 -> 4/3; breadth_qty (food 2, goods 1 = the v1.5 quantities): policy.restock_plan buys breadth first (every ranked category up to breadth_qty), then tops the same lines up to qty_per_buy with the leftover budget. SKU choice inside a category: aggregates sku() settles_all first (revealed allowlist demand), then the v1.4 rule. Diagnosis (tools/diag_orders_v16.py on the mock orders log, seeds 7/11, v1.6 base): every 'no candidate' order came after mock-shop-a had sold out (27/40, 20/40; allowlist misses 0 and 2): the mock issues all 40 orders within ~10 s of the first restock, so stock depth capped volume. Tuned on seeds 7/11 only (settled; balance+inventory_at_cost-5M): base 13/17 (73,013; 79,716), d1 22/27, d2 31/30, d3 27/30, chosen two-pass 31/30 (169,980; 144,914). balance_floor, liquidation_line, max_total_units unchanged. Risk: standing food stock up to 5 per category (expiry is not exercised by a 3-minute mock). See mock/RUNS.md v1.6.",
-  "max_spend_per_run": 600000,
+  "max_spend_per_run": 1100000,
   "max_unit_cost": 400000,
   "max_lines_per_run": 10,
   "max_total_units": 250,
@@ -53,7 +53,11 @@
   "ask_quantile": "p50",
   "skip_below_market": true,
   "est_cost_frac": 0.6,
-  "_price_note": "v1.18 2026-11-03 21:35 (성수님 결정): first ask = the SKU's median settle (ask_quantile p50, >= 5 settles), min_margin goods 0.15 / food 0.12 -> 0.05, restock skips SKUs whose market median is under expected cost (p75 of our units' cost/list, est_cost_frac with < 4 units) + min_margin. After 21:15, 7 of 8 negotiations were cancelled at asks 2-15% over the market median. Back to p75 / 0.15 / 0.12 if profit per settle falls without more settles."
+  "_price_note": "v1.18 2026-11-03 21:35 (성수님 결정): first ask = the SKU's median settle (ask_quantile p50, >= 5 settles), min_margin goods 0.15 / food 0.12 -> 0.05, restock skips SKUs whose market median is under expected cost (p75 of our units' cost/list, est_cost_frac with < 4 units) + min_margin. After 21:15, 7 of 8 negotiations were cancelled at asks 2-15% over the market median. Back to p75 / 0.15 / 0.12 if profit per settle falls without more settles.",
+  "restock_priority": [
+   "가구/침구>가구>침대/매트리스"
+  ],
+  "_v120a_note": "v1.20a 2026-11-04 (성수님 11-04 10:41 CoS 중계, CR 검토 전 후보): 매트리스 재고 깊이. Round 3 원장 13.7h: 매트리스가 시장 매출 54.3%, 우리 공급 후 판매 중앙값 1.7분, G07ec17d5 재고 0 시간 76%, 공급 창당 우리 매트리스 1~4개(중앙 2). G1515d951 공급 0개 원인 확인: max_unit_cost는 통과(423,810 x 0.75 = 317,858 <= 400,000), below_market 제외 0회, 매트리스 계획 92회 중 90회 by settles 2위. skus_per_category 미설정(기본 1)이라 1위 SKU G07ec17d5만 매번 구매. 변경: restock_priority로 매트리스를 먼저 계획, categories[매트리스] stock_target 4->8, qty_per_buy 3->4, breadth_qty 1->2, skus_per_category 2 (G07ec17d5와 G1515d951 각 2개), max_spend_per_run 600,000->1,500,000 (계획 93회 중 74회가 예산의 90% 이상 사용, 매트리스 2+2개 최악 원가 1,054,216). 그대로 둔 것: balance_floor 3,000,000, max_inventory_cost_frac 0.30, max_total_units 250, max_unit_cost 400,000, below_market 필터, 보증 6h. 롤백: max_spend_per_run 600000, restock_priority와 categories[매트리스] 삭제. 11-04 11:21 성수님 결정 (CoS 중계): max_spend_per_run은 1,100,000만 사용 (1.5M 안 폐기, CR 대안: 매트리스 2+2 최악 1,054,216 수용), 재고원가 상한 0.30 x 잔고(약 3.29M) 유지."
  },
  "defaults": {
   "food": {
@@ -112,7 +116,14 @@
    "patience_rounds": 6
   }
  },
- "categories": {},
+ "categories": {
+  "가구/침구>가구>침대/매트리스": {
+   "stock_target": 8,
+   "qty_per_buy": 4,
+   "breadth_qty": 2,
+   "skus_per_category": 2
+  }
+ },
  "buyer": {
   "defaults": {
    "food": {
@@ -154,7 +165,11 @@
   },
   "categories": {},
   "min_claim_honest_rate": 0.7,
-  "reputation_prior": 2
+  "reputation_prior": 2,
+  "max_shops": 6,
+  "extra_attempt_window_s": 60,
+  "expiry_guard_s": 60,
+  "_v120b_note": "v1.20b 2026-11-04 (성수님 11-04 10:41 CoS 중계, CR 검토 전 후보): 구매자 시도 상한 3->6. Round 3: 후보가 남았는데 3곳에서 멈춘 주문 식품 835, 공산품 46. 시도 차례별 성사율 공산품 0.292/0.264/0.306, 식품 0.178/0.248/0.242 (3번째에서도 떨어지지 않음). 시간 가드: 4번째 이후 시도는 훅 시작 후 extra_attempt_window_s(60초) 안이고 주문 expires - expiry_guard_s(60초) 전일 때만 시작, 그 시도의 협상 마감도 expires - 60초. 1~3번째 시도와 DEADLINE_S 200초는 그대로. 지표: market_buyer buy 행 outcome에 stop(max_shops/deadline/guard_elapsed/guard_expiry), guard_hit, max_shops 추가. 기준선(11-03 21:01~11-04 10:43 KST): buy 2,274행, 지연 p50 2.9초, p95 37.5초. 롤백: max_shops 3 (코드 유지 시 v1.19와 같은 시도 수)."
  },
  "bounds": {
   "price_mult": [
