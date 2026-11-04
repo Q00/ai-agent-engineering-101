@@ -235,7 +235,7 @@ def main():
             reason = "No registered shop offers an acceptable in-stock SKU."
         result = {"shop": "", "receipt": None, "stars": 3, "review": reason}
         record = {"outcome": "research_skipped", "order": order.get("order"), "selection_reason": reason,
-                  "failure_reason": "no_eligible_selection"}
+                  "failure_reason": "selection_" + str(support_decision.get("status", "unknown"))}
     record["buyer_support"] = support_decision
     log_dir = ROOT / "logs/market-buyer"
     log_dir.mkdir(parents=True, exist_ok=True)
