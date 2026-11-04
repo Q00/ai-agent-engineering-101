@@ -57,6 +57,20 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn("codex CLI available: False", output)
         self.assertIn("Required model CLI not found: codex", errors)
 
+    def test_astra_luna_runtime_requires_only_codex(self):
+        result, output, errors = self.check_launcher(
+            {"version": 1, "trading": "astra", "advisor": "luna"}, missing=("claude",))
+        self.assertEqual(result, 0, errors)
+        self.assertIn("shop/buyer=astra; advisor=luna", output)
+        self.assertIn("codex CLI available: True", output)
+        self.assertNotIn("claude CLI", output)
+
+    def test_luna_requires_codex_even_when_trading_uses_haiku(self):
+        result, output, errors = self.check_launcher(
+            {"version": 1, "trading": "haiku", "advisor": "luna"}, join=True, missing=("codex",))
+        self.assertEqual(result, 1)
+        self.assertIn("Required model CLI not found: codex", errors)
+
     def test_missing_profile_keeps_legacy_haiku_launcher(self):
         result, output, errors = self.check_launcher(missing=("codex",))
         self.assertEqual(result, 0, errors)
