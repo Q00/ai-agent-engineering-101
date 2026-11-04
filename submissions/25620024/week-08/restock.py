@@ -71,6 +71,22 @@ def load(md, name, default):
         return default
 
 
+def low_value(c, now, t, cat):
+    """HQ 11-04 "객단가 낮고 이윤 낮은 제품은 팔지마": SKUs we do not stock again.
+      sold by us (2+ in 24 h): average ticket under low_ticket AND average profit per unit under low_profit
+      never sold by us: list price under low_list (a small ticket whose profit is unknown)"""
+    ours = {}
+    for sku, a, cost in c.execute("""select s.sku, s.amount, su.cost from settles s join settle_units x on x.seq = s.seq
+                                     join supply_units su on su.unit = x.unit where su.shop = 'dragonash' and s.ts > ?""",
+                                  (now - 24 * 3600,)):
+        ours.setdefault(sku, []).append((a, a - cost))
+    low = {sku for sku, v in ours.items() if len(v) >= 2
+           and sum(a for a, _ in v) / len(v) < t.get("low_ticket", 30000)
+           and sum(p for _, p in v) / len(v) < t.get("low_profit", 5000)}
+    low |= {sku for sku, r in cat.items() if sku not in ours and r.get("list_price", 0) < t.get("low_list", 15000)}
+    return low
+
+
 def hits(c, now, t):
     """HQ 11-04 "잘 팔린 상품만 지속 늘려": every SKU our shop sold lately, stocked to cover its own sales until
     hit_cover windows from now. The rate is the faster of the last 3 h and the last 24 h (per 20-min supply window),
@@ -117,10 +133,14 @@ def plan(md, c, t, now=None):
     heroes = [k for k, _ in sorted(by_sku.items(), key=lambda kv: -kv[1])[:t["heroes"]]]
     buy, why = {}, []
 
+    low = low_value(c, now, t, cat)
+
     def add(sku, qty, reason, any_price=False):
         nonlocal cash
         r = cat.get(sku)
         if not r or qty <= 0 or (r["list_price"] > t["max_list"] and not any_price):
+            return
+        if sku in low:                                        # HQ 11-04: low ticket and low profit -- not stocked
             return
         qty = min(qty, t["max_qty"] - buy.get(sku, 0))
         cost = r["list_price"] * t["cost_guess"] * qty
