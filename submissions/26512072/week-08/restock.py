@@ -8,14 +8,15 @@ opens within a minute, and what it buys has to last until the next window.
 
 Plain code, no model: the numbers decide.
 Demand signal, best first:
-  1. SKUs I sold myself (sales_memory.jsonl), restocked to 2 units;
-  2. SKUs the whole market settled recently (the public ledger's settle entries, market_sales.json);
+  1-2. SKUs I sold myself (sales_memory.jsonl) and SKUs the whole market settled (the public ledger's settle
+     entries, market_sales.json), in one ranking by credits settled;
   2b. categories other agents ask for on the forum ("구합니다", "looking for"), the middle SKU of each;
   3. cold start, only while the ledger shows no settles yet: per category, the SKU whose list price is closest to
      the category's median (orders accept SKUs priced 0.5-1.5 x a reference price).
 Round 3 showed demand is concentrated (one mattress, one kimchi, bedding and water took a third of the first 450
-settles), so best sellers get up to 5 units (1 above 100,000: a break under warranty refunds all of it), and fast-selling food is kept even if short-lived.
-Money: keep 2,000,000 in cash, hold at most 1,500,000 of stock at cost, spend at most 10% of the balance a run
+settles), so best sellers get up to 5 units (3 above 100,000), ranked by credits settled, and fast-selling food is
+kept even if short-lived. Goods break in about 2% of the market's deals, so expensive goods are worth the warranty.
+Money: keep 2,000,000 in cash, hold at most 4,000,000 of stock at cost, spend at most 20% of the balance a run
 (about two runs fit in one window).
 Food: only SKUs that keep for 10 days or more, unless the market or I sold that SKU before.
 """
@@ -30,8 +31,8 @@ from r3lib import (HERE, SALES, append_jsonl, catalog, forum_wants, market_now, 
                    refresh_market_sales)
 
 CASH_FLOOR = 2_000_000
-STOCK_CAP = 1_500_000
-SPEND_SHARE = 0.10
+STOCK_CAP = 4_000_000
+SPEND_SHARE = 0.20
 MAX_LINES = 10
 EST_COST = 0.65            # expected cost as a share of list price (A 55-75%, B 40-60%, C 25-45%)
 LEAD = 60                  # start a run this many seconds before the window opens (the kit waits for it)
@@ -76,13 +77,18 @@ def main():
     keeps = lambda sku: cat[sku]["kind"] == "goods" or (cat[sku].get("shelf_hours") or 0) >= 240
     proven = lambda sku: keeps(sku) or sku in mine or hot[sku] >= 3     # short-lived food only if it sells fast
     wants = []                                              # (reason, sku, target qty), best first
-    for sku, _ in mine.most_common():
-        if sku in cat:
-            wants.append(("sold by me", sku, 3))         # it has to last the 20 minutes to the next window
-    for sku, n in hot.most_common(60):          # the market's best sellers: more units the more they sell
-        if proven(sku):
-            target = min(5, 1 + n // 6) if cat[sku]["list_price"] <= 100_000 else 1
-            wants.append((f"sold in the market ({p_n(market, sku)} settles)", sku, target))
+    # my own sales and the market's best sellers in one ranking, by credits settled (count x list price): profit and
+    # revenue scale with the price, and the top shops average 120,000-240,000 a deal against my 16,000 (board, 11-04)
+    seen_by = lambda sku: 3 * mine[sku] + hot[sku]           # a sale of mine counts as three market settles
+    for sku in sorted((k for k in set(mine) | set(hot) if k in cat and proven(k)),
+                      key=lambda k: -seen_by(k) * cat[k]["list_price"])[:60]:
+        n = seen_by(sku)
+        if cat[sku]["list_price"] <= 100_000:
+            target = min(5, max(3 if sku in mine else 1, 1 + n // 6))   # what I sold has to last to the next window
+        else:
+            target = min(3, 1 + n // 20)
+        why = f"sold by me ({mine[sku]})" if sku in mine else f"sold in the market ({p_n(market, sku)} settles)"
+        wants.append((why, sku, target))
     demand = read_json(md / "demand.json", []) or []
     medians = {d["category"]: d.get("median_price") for d in demand}
     for c, n in sorted(forum_wants(cat).items(), key=lambda kv: -kv[1]):   # what agents ask for on the forum

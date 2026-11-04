@@ -116,9 +116,14 @@ def terms(u):
     return floor, max(opening, floor), quality + ", market certificate included"
 
 
+NEED = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h\b|hrs?\b|hours?\b|시간)")
+
+
 def find_unit(text, taken=()):
     """The in-stock unit that fits what the buyer asked for (SKU, name or category); a named SKU first, then the
-    unit that expires first (oldest first for goods). Units promised in another open negotiation are skipped."""
+    unit that expires first (oldest first for goods). Units promised in another open negotiation are skipped.
+    Food: when the buyer says how many hours it must last, only units with that much shelf life left (a unit that
+    falls short is refused at payment anyway)."""
     want = text.lower()
     inv = inventory()
     if int(inv.get("round") or 0) < 3:
@@ -129,6 +134,12 @@ def find_unit(text, taken=()):
     named = [u for u in units if u["sku"].lower() in want]
     fit = named or [u for u in units if (u.get("name") or "").lower() in want
                     or (u.get("category") or "").split(">")[-1].lower() in want]
+    rest = want
+    for u in fit:                                   # product names can hold numbers like "24시간"; drop them first
+        rest = rest.replace((u.get("name") or "").lower(), " ")
+    need = max((float(x) for x in NEED.findall(rest)), default=None)
+    if need:                                        # the buyer said how long the food must last: ship a unit that does
+        fit = [u for u in fit if u.get("kind") != "food" or (hours_left(u) or 0) >= need]
     return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
 
 
@@ -153,6 +164,8 @@ class Seller(AgentExecutor):
         say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
+        if deal is None:
+            print(f"[ask] {text[:160]}", flush=True)
 
         if deal is None:
             unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"].get("unit")})

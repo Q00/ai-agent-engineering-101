@@ -8,7 +8,9 @@ Context the model sees is built by code, one line per candidate (shop x SKU): th
 the order), the shop's reviews, and my own memory of that shop (settled deals, dishonest grade claims, goods that
 broke, refused payments, errors). The model (harness.py, claude -p haiku) picks the candidate and makes every offer.
 Code enforces: offers never above min(budget, list price); food that cannot last use_within_hours is never a
-candidate; the payment policy ("accept") asks for the market certificate and enough shelf life.
+candidate; the payment policy ("accept") asks for the market certificate and enough shelf life, and the first message
+tells the shop how long the food must last. Listings go stale within seconds, so when a shop says it has none left
+before any offer, the next best shop is asked (up to 3 shops per order).
 Memory: buyer_memory_r3.jsonl, one line per order, updated later by review_r3.py (what settled) and here (payments
 the kit refused, goods that broke).
 """
@@ -28,6 +30,7 @@ from r3lib import BUYER_MEM, HERE, MD, append_jsonl, catalog, forum_about, forum
 
 MAX_OFFERS = 6
 TOP = 8
+MAX_TRIES = 3
 
 CHOOSE = """You are a buying agent in an online market. The order: one item from the category "{item}", budget {budget}{food}.
 A settled deal is worth the item's list price to your user, so the gain is list price minus the price you pay; a food
@@ -84,12 +87,13 @@ def shop_memory():
     out = {}
     def s(name):
         return out.setdefault(name, {"trades": 0, "settled": 0, "gain": 0, "lied": 0, "broken": 0, "refused": 0,
-                                     "errors": 0})
+                                     "errors": 0, "nostock": 0})
     for m in mem:
         if m.get("kind") == "trade":
             x = s(m["shop"])
             x["trades"] += 1
             x["errors"] += m.get("outcome") == "error"
+            x["nostock"] += m.get("outcome") == "no stock"
         elif m.get("kind") == "settled" and m.get("order") in by_order:
             x = s(by_order[m["order"]]["shop"])
             x["settled"] += 1
@@ -114,6 +118,8 @@ def mem_text(x):
         parts.append(f"{x['refused']} payments refused (certificate or shelf life)")
     if x["errors"]:
         parts.append(f"{x['errors']} errors")
+    if x.get("nostock"):
+        parts.append(f"{x['nostock']} times the listed stock was gone")
     return ", ".join(parts)
 
 
@@ -132,6 +138,7 @@ def trust(x, reviews, f=None):
         t += 0.05 * min(f["good"], 3) - 0.3 * min(f["warn"], 3)
     if x:
         t += 0.1 * min(x["settled"], 5) - 0.5 * x["lied"] - 0.3 * x["broken"] - 0.2 * x["refused"] - 0.2 * x["errors"]
+        t -= 0.3 * x.get("nostock", 0) / max(1, x["trades"])     # often "none left": its listing is stale
     return t
 
 
@@ -194,100 +201,121 @@ def main():
     reason = (move or {}).get("reason", "")
     if pick is None:
         pick, reason = top[0], "fallback: the best code score (the model named no listed candidate)"
-    shop = pick["shop"]
-    cap = min(a.budget, pick["list"])                   # paying more than the list price is a loss for the user
-    print(f"[choose] {shop['url']}: {shop['name']}: {pick['sku']} {pick['name'][:40]} (list {pick['list']}, cap {cap}): "
-          f"{reason}", flush=True)
-    row = {"kind": "trade", "time": time.strftime("%Y-%m-%d %H:%M:%S"), "order": order.get("order"),
-           "shop": shop["name"], "item": a.item, "sku": pick["sku"], "name": pick["name"], "goods_kind": pick["kind"],
-           "list": pick["list"], "budget": a.budget, "outcome": "walked", "agreed": None}
+    print(f"[choose] {pick['shop']['name']}: {pick['sku']} {pick['name'][:40]}: {reason}", flush=True)
 
-    accept = {"cert": True}
-    if pick["kind"] == "food" and use_h:
-        accept["min_hours_left"] = use_h + 1
-    result = {"shop": shop["url"], "receipt": None, "stars": 3, "review": "", "accept": accept}
-    try:
-        card = httpx.get(shop["url"].rstrip("/") + "/.well-known/agent-card.json",
-                         headers={"A2A-Version": "1.0"}, timeout=20).json()
-        url = card["supportedInterfaces"][0]["url"]
+    def negotiate(pick):
+        shop = pick["shop"]
+        cap = min(a.budget, pick["list"])               # paying more than the list price is a loss for the user
+        print(f"[try] {shop['url']}: {shop['name']}: {pick['sku']} {pick['name'][:40]} (list {pick['list']}, "
+              f"cap {cap})", flush=True)
+        row = {"kind": "trade", "time": time.strftime("%Y-%m-%d %H:%M:%S"), "order": order.get("order"),
+               "shop": shop["name"], "item": a.item, "sku": pick["sku"], "name": pick["name"], "goods_kind": pick["kind"],
+               "list": pick["list"], "budget": a.budget, "outcome": "walked", "agreed": None}
 
-        def rpc(method, params):
-            body = {"jsonrpc": "2.0", "id": uuid.uuid4().hex[:8], "method": method, "params": params}
-            r = httpx.post(url, json=body, headers={"A2A-Version": "1.0"}, timeout=200).json()
-            if "error" in r:
-                raise RuntimeError(r["error"])
-            return r["result"].get("task", r["result"])
+        accept = {"cert": True}
+        if pick["kind"] == "food" and use_h:
+            accept["min_hours_left"] = use_h + 1
+        result = {"shop": shop["url"], "receipt": None, "stars": 3, "review": "", "accept": accept}
+        try:
+            card = httpx.get(shop["url"].rstrip("/") + "/.well-known/agent-card.json",
+                             headers={"A2A-Version": "1.0"}, timeout=20).json()
+            url = card["supportedInterfaces"][0]["url"]
 
-        def send(text, task_id=None):
-            msg = {"role": "ROLE_USER", "messageId": uuid.uuid4().hex, "parts": [{"text": text}]}
-            if task_id:
-                msg["taskId"] = task_id
-            t = rpc("SendMessage", {"message": msg})
-            said = " ".join(p.get("text", "") for p in t["status"].get("message", {}).get("parts", []))
-            print(f"-> {text!r}  <- {t['status']['state']} | {said[:300]}", flush=True)
-            return t, said
+            def rpc(method, params):
+                body = {"jsonrpc": "2.0", "id": uuid.uuid4().hex[:8], "method": method, "params": params}
+                r = httpx.post(url, json=body, headers={"A2A-Version": "1.0"}, timeout=200).json()
+                if "error" in r:
+                    raise RuntimeError(r["error"])
+                return r["result"].get("task", r["result"])
 
-        t, said = send(f"I want to buy {pick['name']} ({pick['sku']})")
-        lines = [f"you: I want to buy {pick['name']} ({pick['sku']})", f"shop: {said}"]
-        offers = []
-        for _ in range(MAX_OFFERS):
-            if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
-                break
-            move, raw = safe_ask_json(OFFER.format(name=pick["name"], list_price=pick["list"], cap=cap,
-                                                   card=card.get("description", "")[:300], transcript="\n".join(lines)))
-            print(f"[harness] {raw}", flush=True)
-            if raw.startswith("[harness failed]"):        # my model is down: take a fair ask, else leave politely
+            def send(text, task_id=None):
+                msg = {"role": "ROLE_USER", "messageId": uuid.uuid4().hex, "parts": [{"text": text}]}
+                if task_id:
+                    msg["taskId"] = task_id
+                t = rpc("SendMessage", {"message": msg})
+                said = " ".join(p.get("text", "") for p in t["status"].get("message", {}).get("parts", []))
+                print(f"-> {text!r}  <- {t['status']['state']} | {said[:300]}", flush=True)
+                return t, said
+
+            first = f"I want to buy {pick['name']} ({pick['sku']})" + (
+                f". It must last at least {use_h:g} hours (shelf life left)." if pick["kind"] == "food" and use_h else "")
+            t, said = send(first)
+            lines = [f"you: {first}", f"shop: {said}"]
+            offers = []
+            for _ in range(MAX_OFFERS):
+                if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
+                    break
+                move, raw = safe_ask_json(OFFER.format(name=pick["name"], list_price=pick["list"], cap=cap,
+                                                       card=card.get("description", "")[:300], transcript="\n".join(lines)))
+                print(f"[harness] {raw}", flush=True)
+                if raw.startswith("[harness failed]"):        # my model is down: take a fair ask, else leave politely
+                    nums = re.findall(r"\d+", said.replace(",", ""))
+                    shop_ask = int(nums[-1]) if nums else None
+                    move = {"action": "offer", "price": shop_ask} if shop_ask is not None and shop_ask <= cap else None
+                    print(f"[fallback] {'accept the ask ' + str(shop_ask) if move else 'walk away'}", flush=True)
+                if not move or move.get("action") != "offer" or not isinstance(move.get("price"), (int, float)):
+                    rpc("CancelTask", {"id": t["id"]})
+                    print("walked away (CancelTask)", flush=True)
+                    break
+                offer = int(move["price"])
+                if offer > cap:                             # the model may forget the cap; the code does not
+                    print(f"[guard] offer {offer} above cap {cap} -> {cap}", flush=True)
+                    offer = cap
                 nums = re.findall(r"\d+", said.replace(",", ""))
-                shop_ask = int(nums[-1]) if nums else None
-                move = {"action": "offer", "price": shop_ask} if shop_ask is not None and shop_ask <= cap else None
-                print(f"[fallback] {'accept the ask ' + str(shop_ask) if move else 'walk away'}", flush=True)
-            if not move or move.get("action") != "offer" or not isinstance(move.get("price"), (int, float)):
-                rpc("CancelTask", {"id": t["id"]})
-                print("walked away (CancelTask)", flush=True)
-                break
-            offer = int(move["price"])
-            if offer > cap:                             # the model may forget the cap; the code does not
-                print(f"[guard] offer {offer} above cap {cap} -> {cap}", flush=True)
-                offer = cap
-            nums = re.findall(r"\d+", said.replace(",", ""))
-            ask = int(nums[-1]) if nums else None       # the shop's current ask is the last number it said
-            if ask is not None and offer > ask:
-                print(f"[guard] offer {offer} above the shop's ask {ask} -> {ask}", flush=True)
-                offer = ask
-            if offers and offer == cap and offers[-1] == cap:
-                rpc("CancelTask", {"id": t["id"]})
-                print("cap already offered and refused: walked away (CancelTask)", flush=True)
-                break
-            offers.append(offer)
-            t, said = send(str(offer), t["id"])
-            lines += [f"you: {offer}", f"shop: {said}"]
-        else:
-            if t["status"]["state"] == "TASK_STATE_INPUT_REQUIRED":
-                rpc("CancelTask", {"id": t["id"]})
-        receipt = None
-        for art in t.get("artifacts") or []:
-            for part in art.get("parts") or []:
-                if isinstance(part.get("data"), dict) and "price" in part["data"]:
-                    receipt = part["data"]
-        if t["status"]["state"] == "TASK_STATE_COMPLETED" and receipt:
-            agreed = offers[-1] if offers else None
-            row.update(outcome="deal", agreed=agreed, receipt_price=receipt.get("price"))
-            over = agreed is not None and float(receipt.get("price", 0)) > agreed   # cheaper than agreed is fine
-            row["receipt_ok"] = not over
-            result.update(receipt=receipt, stars=1 if over else 4,
-                          review=(f"Agreed {agreed}, receipt says {receipt.get('price')}." if over else
-                                  f"Agreed {agreed} for {pick['name'][:40]} (list {pick['list']})."))
-        else:
-            row["outcome"] = "no deal"
-            result["review"] = f"No deal on {pick['name'][:40]}: asks {lines[1::2][-3:]}, my offers {offers}."[:280]
-    except Exception as e:                              # the shop broke mid-negotiation: a fair, factual review
-        shop_said = isinstance(e, RuntimeError)
-        row["outcome"] = "error"
-        print(f"[error] {type(e).__name__}: {str(e)[:200]}", flush=True)
-        result.update(stars=2 if shop_said else 3,
-                      review=("The shop returned an internal error during the negotiation; no deal." if shop_said
-                              else f"The connection to the shop failed ({type(e).__name__}); no deal."))
-    append_jsonl(BUYER_MEM, row)
+                ask = int(nums[-1]) if nums else None       # the shop's current ask is the last number it said
+                if ask is not None and offer > ask:
+                    print(f"[guard] offer {offer} above the shop's ask {ask} -> {ask}", flush=True)
+                    offer = ask
+                if offers and offer == cap and offers[-1] == cap:
+                    rpc("CancelTask", {"id": t["id"]})
+                    print("cap already offered and refused: walked away (CancelTask)", flush=True)
+                    break
+                offers.append(offer)
+                t, said = send(str(offer), t["id"])
+                lines += [f"you: {offer}", f"shop: {said}"]
+            else:
+                if t["status"]["state"] == "TASK_STATE_INPUT_REQUIRED":
+                    rpc("CancelTask", {"id": t["id"]})
+            receipt = None
+            for art in t.get("artifacts") or []:
+                for part in art.get("parts") or []:
+                    if isinstance(part.get("data"), dict) and "price" in part["data"]:
+                        receipt = part["data"]
+            if t["status"]["state"] == "TASK_STATE_COMPLETED" and receipt:
+                agreed = offers[-1] if offers else None
+                row.update(outcome="deal", agreed=agreed, receipt_price=receipt.get("price"))
+                over = agreed is not None and float(receipt.get("price", 0)) > agreed   # cheaper than agreed is fine
+                row["receipt_ok"] = not over
+                result.update(receipt=receipt, stars=1 if over else 4,
+                              review=(f"Agreed {agreed}, receipt says {receipt.get('price')}." if over else
+                                      f"Agreed {agreed} for {pick['name'][:40]} (list {pick['list']})."))
+            elif t["status"]["state"] == "TASK_STATE_REJECTED" and not offers:
+                row["outcome"] = "no stock"                 # the listing was stale: someone bought it first
+                result["review"] = f"Asked for {pick['name'][:40]}; the shop had none left."
+            else:
+                row["outcome"] = "no deal"
+                result["review"] = f"No deal on {pick['name'][:40]}: asks {lines[1::2][-3:]}, my offers {offers}."[:280]
+        except Exception as e:                              # the shop broke mid-negotiation: a fair, factual review
+            shop_said = isinstance(e, RuntimeError)
+            row["outcome"] = "error"
+            print(f"[error] {type(e).__name__}: {str(e)[:200]}", flush=True)
+            result.update(stars=2 if shop_said else 3,
+                          review=("The shop returned an internal error during the negotiation; no deal." if shop_said
+                                  else f"The connection to the shop failed ({type(e).__name__}); no deal."))
+        return row, result
+
+    # listings go stale within seconds (another buyer takes the unit): when a shop says it has none left before any
+    # offer, ask the next best shop, up to MAX_TRIES shops for one order
+    tries = [pick] + [c for c in top if c["shop"]["name"] != pick["shop"]["name"]]
+    tried = set()
+    for c in tries:
+        if c["shop"]["name"] in tried:
+            continue
+        tried.add(c["shop"]["name"])
+        row, result = negotiate(c)
+        append_jsonl(BUYER_MEM, row)
+        if row["outcome"] != "no stock" or len(tried) >= MAX_TRIES:
+            break
     print(json.dumps(result, ensure_ascii=False), flush=True)
 
 
