@@ -109,12 +109,13 @@ class Journal:
             c.execute("DELETE FROM reservations WHERE task=?", (task,))
 
     def hold_budget(self, amount, cap):
+        """Reserve and track estimated spend. cap=None disables the daily ceiling."""
         day = time.strftime("%Y-%m-%d", time.gmtime())
         request_id = uuid.uuid4().hex
         with self.connect() as c:
             c.execute("BEGIN IMMEDIATE")
             total = c.execute("SELECT COALESCE(SUM(amount),0) FROM spending WHERE day=?", (day,)).fetchone()[0]
-            if total + amount > cap:
+            if cap is not None and total + amount > cap:
                 return None
             c.execute("INSERT INTO spending VALUES(?,?,?,?)", (request_id, day, amount, "reserved"))
         return request_id

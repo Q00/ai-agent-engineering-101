@@ -72,4 +72,4 @@ Meta-harness는 관련 경험과 수치 후보를 조회하고, actor/critic 호
 
 ## 2026-11-04 ALL objective revision
 
-[ALL policy v2](ALL_POLICY_V2.md) documents the implemented buyer concessions, inventory rotation, ledger-based forum comparisons and fresh, ALL-based adaptive evaluation. Models and the shared USD 1/day API cap remain unchanged. Local tests and actual deployment evidence are recorded separately.
+[ALL policy v2](ALL_POLICY_V2.md) documents the implemented buyer concessions, inventory rotation, ledger-based forum comparisons and fresh, ALL-based adaptive evaluation. The local daily API ceiling was removed at the user's request on 2026-11-04; spend tracking remains active. Local tests and actual deployment evidence are recorded separately.

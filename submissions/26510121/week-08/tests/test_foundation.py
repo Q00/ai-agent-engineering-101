@@ -31,6 +31,23 @@ def test_cost_cap_is_atomic(tmp_path):
     assert sum(x is not None for x in tickets) == 2
 
 
+def test_unlimited_budget_keeps_existing_spend_and_tracks_concurrent_calls(tmp_path):
+    j = Journal(tmp_path)
+    old = j.hold_budget(.99, 1)
+    j.close_budget(old, .99)
+    assert j.hold_budget(.1, 1) is None
+    with concurrent.futures.ThreadPoolExecutor(5) as pool:
+        tickets = list(pool.map(lambda _: j.hold_budget(.4, None), range(5)))
+    assert all(tickets) and len(set(tickets)) == 5
+    with j.connect() as c:
+        rows = c.execute('SELECT amount,status FROM spending').fetchall()
+    assert len(rows) == 6 and abs(sum(amount for amount, _ in rows) - 2.99) < 1e-9
+
+
+def test_zero_budget_still_blocks_model_spending(tmp_path):
+    assert Journal(tmp_path).hold_budget(.001, 0) is None
+
+
 def test_value_is_not_budget_and_bad_food_is_negative():
     product = {'list_price': 1000, 'kind': 'food'}
     assert buyer_value(product, 500, hours_left=2, use_hours=3)['surplus'] == -500
