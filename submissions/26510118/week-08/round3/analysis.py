@@ -5,7 +5,7 @@
 
 Each pass does only what is due, in this order:
     collect     20 min  the public ledger -> market_summary.json (every hour until 11/4 night) (rows and records over 48 h archived as
-                        .jsonl.gz every few hours, so the files read every hour stay small); a snapshot of our business
+                        .jsonl.gz every few hours, so the files read every 20 minutes stay small); a snapshot of our business
                         (analysis/business.jsonl, for the briefings); the file check (contract.py:
                         the fields each part counts on, problems logged); shops' stock lists if the
                         market shows them; the wanted categories restock reads (analysis/wanted.json);
@@ -132,7 +132,7 @@ def collect(now: float, get_ledger=None, get_json=None) -> str:
 
 
 def board_snapshot(now: float, get_json) -> str:
-    """One line an hour in analysis/board_history.jsonl: our player's, shop's and buyer's scores and places on
+    """One line a collection (20 min) in analysis/board_history.jsonl: our player's, shop's and buyer's scores and places on
     the market's board, and the leader's total. The board shows only the present; this is how a change (the
     focus phase, a fix) shows in the ranking afterwards. Places count shops and buyers with a deal (house
     shops left out), stars also among shops with 100 reviews or more."""

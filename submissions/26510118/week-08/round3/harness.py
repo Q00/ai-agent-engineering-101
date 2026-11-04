@@ -8,7 +8,7 @@ a decision matters (prices per million tokens, input/output, OpenAI's pricing pa
                                               the code cannot read (many calls, small, within 20 s)
     MODEL_MID     gpt-6.1-terra  $1/$5        the seller and buyer analyses, every 3 hours
     MODEL_STRONG  gpt-6.1-sol    $2/$10       the integrated analysis that changes the rules,
-                                              every 12 hours
+                                              every 3 hours (12 until 11/4 night)
 
 The Responses API, not Chat Completions: GPT-6.1 Sol calls tools only there, and GPT-6 Luna
 calls tools in Chat Completions only without reasoning (the models' pages of 11/2). Reasoning

@@ -6,7 +6,7 @@
                 analysis: the latest report of each role)
     4 memos     what the other analyses left for this role in the last 12 hours (analysis/memos.jsonl)
     5 numbers   the new numbers: our own records and the whole market, and the change since about
-                3 hours ago (analysis/business.jsonl, a snapshot the runner writes every hour)
+                3 hours ago (analysis/business.jsonl, a snapshot the runner writes with each collection)
 
 Small and always needed goes in here; large and needed in parts stays behind the tools. Every
 part has a size limit, and what does not fit is left out, oldest or weakest first, with a line

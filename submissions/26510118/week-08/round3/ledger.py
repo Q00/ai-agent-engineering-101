@@ -16,7 +16,7 @@ deals, when we join) are skipped: they would show as this round's market.
 
 The ledger brings ~1,500 settles an hour (11/4), so rows older than 48 hours are moved to
 ledger/archive/<name>-<YYYYMMDD>.jsonl.gz every few hours (archive()): kept, but not in the files read
-every hour on a server with 837 MB of memory. Breakage by grade is over the 48 hours kept.
+every 20 minutes on a server with 837 MB of memory. Breakage by grade is over the 48 hours kept.
 
 Result entries (one per order: the receipt, whether the deal was verified and paid, and the market's
 checks) come by the ten thousand an hour, so they are counted, not kept: results_hourly.json holds,
@@ -38,7 +38,7 @@ import common
 URL = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
 PAGES = 80                       # 500 entries a page; a run stops here and the next one goes on (11/3: ~14k entries an hour)
 RESULT_HOURS = 48                # hours of result counts kept
-KEEP = 48 * 3600                 # settle and broken rows kept in the files read every hour; older ones are archived
+KEEP = 48 * 3600                 # settle and broken rows kept in the files read every 20 minutes; older ones are archived
 SLACK = 6 * 3600                 # archive when the oldest row is this much past KEEP (every six hours or so)
 SETTLE_KEYS = ("order", "buyer", "shop", "item", "amount", "name", "grade", "claim", "claim_honest",
                "warranty_hours", "unit")

@@ -1,4 +1,4 @@
-"""Round 3 restock hook (S1, and the hourly ledger collection): the kit runs it every 20 minutes
+"""Round 3 restock hook (S1): the kit runs it every 20 minutes
 (RUN_EVERY; every 60 s until the 11/3 change) and buys the first 10 lines it prints.
 
     python restock.py --state .market
@@ -30,8 +30,9 @@ does not count as on the shelf; S5 sells it off). Exploration phase:
             의류, ...) in the first runs and then mixes the groups in proportion to their size, so
             each run samples the whole catalog; the market's list is in alphabetical order, which
             would bring furniture first and kitchenware hours later.
-  limits    stock at cost up to 4,000,000 and the balance kept at 2,500,000 or more,
-            planning as if every unit came in at the dearest cost (75% of list)
+  limits    stock at cost up to CAP (40M) or CAP_SHARE (90%) of the book (cash + stock at cost),
+            whichever is more, and the balance kept at RESERVE (2.5M) or more, planning as if every
+            unit came in at the dearest cost (75% of list)
   wanted    a category the analysis found wanted (another agent's "wanted" post on the
             forum, or one our buyer found no shop for), or one our shop turned buyers away
             for 3 times in 6 hours because it had nothing of it (missed), gets its
@@ -45,13 +46,15 @@ Rules in force (analysis/active_rules.json, which the integrated analysis writes
 the focus phase): focus categories +1, drop categories 0. Wind-down, by the clock: from 3
 days before the end only products selling 2 a day or more are refilled and nothing new is
 listed; nothing is bought in the last 6 hours.
-The premium line (focus phase, 11/4: sell where supply is short): a few dear products listed
-in LINE (or analysis/line.json, which a person or the analysis may rewrite) with the most units
-each may hold. 76% of the market's money was in beds and sofas, and the dear ones had few
-sellers (2-11 a product) while half of our buyer's orders for beds over 1.2M found no shop. A
-line product starts at one unit and is kept for its pace (our sales of it in 3 h cover two
-supply cycles) up to its cap; one held two hours without a sale gets no more; none is bought in
-the last 30 hours. Its lines come first, at most LINE_LINES a run, and the shelf's other rules
+The premium line (focus phase, 11/4: sell where supply is short): dear products listed in
+analysis/line.json (linewatch.py rewrites it every 20 minutes and adds products; a person may write
+it, then it is left alone; LINE when there is none) with the most units each may hold. 76% of the
+market's money was in beds and sofas, and the dear ones had few sellers (2-11 a product) while half
+of our buyer's orders for beds over 1.2M found no shop. A line product is kept at 1 + our sales of
+it in the last hour (LINE_PACE) up to its cap; one held LINE_STALL without a sale gets no more; none
+is bought in the last 30 hours. Its lines come first: up to LINE_TRY_FIRST products not yet tried,
+then the best sellers, at most LINE_LINES a run and LINE_SHARE of the money above RESERVE, leaving
+the shelf SHELF_LINES lines, SHELF_MONEY and SHELF_ROOM of the cap; the shelf's other rules
 (stages, drops, the wind-down) do not touch it. Anything listed over PRICEY_MAX that is not in
 the line is never refilled (a sofa sold once is not stocked 3 deep by the ordinary rule).
 
@@ -418,8 +421,8 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
                 spend += each * qty
                 room -= 1
     premium = line_gaps(line, catalog, units, sales, now)
-    # the premium line first, but with at most half the lines and half the money above the balance kept, so the
-    # shelf's refills always have a share of the run (review 11/4: with 40 s left it took all 4 lines; at 8M it took all but 70k)
+    # the premium line first, but leaving the shelf its lines, money and room under the cap, so the shelf's refills
+    # always have a share of the run (review 11/4: with 40 s left it took all 4 lines; 11/5: the shelf had halved)
     take([(-1, sku, need) for sku, need in premium], min(LINE_LINES, int(lines * LINE_SHARE), max(1, lines - SHELF_LINES)),
          LINE_SHARE * max(0, balance - RESERVE - SHELF_MONEY), cap - SHELF_ROOM)
     bought_line = len(buy)
