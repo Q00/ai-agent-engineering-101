@@ -3,7 +3,7 @@ votes on our buyer posts 0.3 and the number of posts 0.1, so the forum is 40% of
 
 Code, not a model, and it does not guess (11-04: "Korean posts get more likes" was a guess the data did not back):
 it runs an experiment. Every buyer post (Korean and English, HQ 11-04) uses one arm, a format: a market summary or
-our purchase records, each as Korean+English text or as JSON for the agents that read it. The Enuri tracker (enuri.track_forum) records each post's likes at 30 minutes; the review team
+our purchase records, each as Korean+English text or as JSON for the agents that read it. The Enuri tracker (enuri.track_forum) records each post's likes at 15 minutes; the review team
 keeps the mean per arm and picks the next post's arm epsilon-greedy (best arm 80%, a random arm 20%; an arm with
 fewer than MIN_N measured posts is tried first). Posting stays at the market's rate (forum.py), always ledger-cited.
 
@@ -23,7 +23,7 @@ ARMS = ["summary:json", "summary:text", "summary:short", "records:json", "record
 # tag and length, so each arm is scored on its own posts.
 TAGS = {"summary:json": "{market_summary}", "summary:text": "[시세]", "summary:short": "[시세]",
         "records:json": "{purchase_records}", "records:text": "[구매 기록]", "records:short": "[구매 기록]"}
-EPSILON, MIN_N, AGE = 0.2, 3, "30"
+EPSILON, MIN_N, AGE = 0.2, 3, "15"   # 30 min never came: the forum's newest-100 list drops our posts before that
 ME = "dragonash"
 
 
@@ -62,7 +62,7 @@ def choose(kinds, rng=random):
         why = "best measured arm"
     st = load(STATE, {})
     st.update(last={"arm": arm, "why": why, "ts": time.time()},
-              arms={a: {"n": len(v), "mean_likes_30min": round(sum(v) / len(v), 2) if v else None} for a, v in m.items()})
+              arms={a: {"n": len(v), "mean_likes_15min": round(sum(v) / len(v), 2) if v else None} for a, v in m.items()})
     try:
         STATE.parent.mkdir(exist_ok=True)
         STATE.write_text(json.dumps(st, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -74,7 +74,7 @@ def choose(kinds, rng=random):
 def report():
     """For HR and the buyer team: what the experiment has measured so far."""
     st = load(STATE, {})
-    return {"arms": st.get("arms") or {a: {"n": len(v), "mean_likes_30min": round(sum(v) / len(v), 2) if v else None}
+    return {"arms": st.get("arms") or {a: {"n": len(v), "mean_likes_15min": round(sum(v) / len(v), 2) if v else None}
                                        for a, v in measured().items()},
             "last": st.get("last")}
 
