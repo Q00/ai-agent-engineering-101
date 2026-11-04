@@ -4,9 +4,12 @@ Only matched kit/ledger confirmations count as sales. Unit-level estimates
 can miss public refunds; only the official wallet supplies aggregate profit.
 """
 from collections import Counter
+import hashlib
+import json
 import math
 from pathlib import Path
 import re
+from statistics import median
 
 from feedback import atomic_json, load_json, number
 from payment_memory import recent_jsonl
@@ -166,6 +169,40 @@ def sku_metrics(memory, now):
     return groups
 
 
+def own_price(memory, product, warranty, rnd, now):
+    """Price actually paid to us, with exact terms and a known settlement time.
+
+    `update` admits a sale only after matching its local receipt to a kit or
+    ledger confirmation. A receipt or opening quote alone is not price evidence.
+    Legacy confirmations without a ledger timestamp remain useful to accounting
+    but cannot establish this recent-price window.
+    """
+    if (not isinstance(memory, dict) or memory.get("schema") != 1 or memory.get("round") != rnd
+            or not number(memory.get("updated_at")) or not 0 <= now - memory["updated_at"] <= 86400
+            or not isinstance(memory.get("sales"), list) or len(memory["sales"]) > MAX_SALES):
+        return None
+    reset = memory.get("reset_at")
+    rows, units, seqs = [], set(), set()
+    for s in memory["sales"]:
+        if (not valid_sale(s, now) or s["sku"] != product["sku"] or s.get("grade") != product["grade"]
+                or type(s.get("warranty_hours")) is not int or s["warranty_hours"] != warranty
+                or not number(s.get("settled_at")) or not 0 <= now - s["settled_at"] <= 86400
+                or s["settled_at"] < s["receipt_time"]
+                or number(reset) and s["receipt_time"] < reset
+                or s["unit"] in units or s["ledger"] in seqs
+                or s.get("ambiguous_refund") or s.get("refunds")):
+            continue
+        rows.append(s)
+        units.add(s["unit"])
+        seqs.add(s["ledger"])
+    if len(rows) < 3:
+        return None
+    identity = sorted((s["ledger"], s["unit"], s["price"], s["settled_at"]) for s in rows)
+    return {"price": int(median(s["price"] for s in rows)), "samples": len(rows),
+            "evidence_id": hashlib.sha256(json.dumps(identity, separators=(",", ":")).encode()).hexdigest(),
+            "latest_at": max(s["settled_at"] for s in rows)}
+
+
 def funnel(events, sales, rnd, now):
     tasks = {}
     for e in events:
@@ -204,7 +241,7 @@ def funnel(events, sales, rnd, now):
         g["tasks"].append(opened["task"])
         if end.get("unit") in sold_units and outcome == "receipt_issued":
             g["settled"] += 1
-        elif outcome == "rejected":
+        elif outcome == "rejected" and end.get("reason_code") == "price_rejected":
             g["rejected"] += 1
         else:
             g["unknown_exit"] += 1
