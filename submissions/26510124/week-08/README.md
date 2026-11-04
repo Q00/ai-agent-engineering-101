@@ -6,6 +6,65 @@ Haiku 분석자 `sales_advisor.py`를 함께 실행한다. 구매자는 `market_
 `restock.py`는 공식 키트의 재입고 hook으로 실행되며 추가 모델 호출 없이 매입 계획을 낸다.
 아래에 보존한 Round 2의 lamp/chair/bookshelf 가격표는 Round 3에 적용하지 않는다.
 
+## 임시 Astra 거래 모델 선택 (2026-11-05)
+
+현재 `model-profile.json`은 shop·buyer·가게 선택에 **Codex CLI `gpt-6-astra`,
+reasoning `low`**를 사용하고, 시장 분석자는 기존 **Claude Code Haiku**를 유지한다.
+아래의 과거 Haiku 전용 실행 설명보다 이 설정이 우선한다. 구매 조건·가격 한도·
+재입고·리뷰·협상 횟수와 프롬프트는 변경하지 않았다. 별도로 논의한 buyer의 조건 전달,
+대안 가게, 가격 파서 개선은 아직 적용하지 않았다.
+
+API 키 방식이 아니라 서버 사용자의 기존 ChatGPT 로그인을 사용한다. 실행마다 로그인
+종류를 확인하고, API 키 환경변수와 사용자 Codex 설정은 거래 호출에 전달하지 않는다.
+별도 임시 작업 폴더, 읽기 전용 sandbox, 사용자 MCP 설정 제외와 셸·앱·플러그인·검색 등 비활성화 설정,
+JSON 스키마·기존 가격 검사를 사용한다. CLI에 보편적인 모든 도구 제거 옵션은 없으므로
+도구 실행 이벤트가 나오면 결정을 거부한다. 모델 실패 시 임의의 다른 모델로 바꾸지 않는다.
+전체 시간 제한·잘못된 출력의 1회 수정 한도를 유지하며, 취소/시간 초과 시 CLI 자식도 종료한다.
+
+서버에 Codex가 없거나 오래됐다면 **서버 터미널**에서 공식 설치/업데이트 및 로그인을 한다.
+Mac의 Codex 로그인만으로 서버 로그인이 완료되는 것은 아니다.
+
+```bash
+curl -fsSL https://chatgpt.com/codex/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+codex --version
+codex login --device-auth
+codex login status
+```
+
+브라우저에서 로그인과 일회용 코드 입력을 완료한다. 계정/조직에서 device login을 허용해야
+하며, Astra 사용 권한도 필요하다. 인증 파일·키를 레포에 복사하지 않는다.
+[공식 설치](https://learn.chatgpt.com/docs/cli),
+[로그인](https://learn.chatgpt.com/docs/auth),
+[Astra와 추론 수준](https://learn.chatgpt.com/docs/models?surface=cli).
+
+로그인 후 `exit`로 Mac에 돌아와 이 레포 루트에서 기존 배포 명령을 실행한다.
+
+```bash
+python3 submissions/26510124/week-08/deploy/deploy_v4.py
+```
+
+배포는 전송된 코드의 오프라인 검사 뒤, **기존 서비스 중지 전에** 선택 CLI/로그인을 검사하고
+Astra로 작은 JSON 응답 1회를 확인한다. 이 검사는 ChatGPT 사용량을 쓰지만 시장에는 주문하지
+않는다. 실패하면 기존 소스·프로필·서비스를 바꾸지 않는다. 상세 원본은 서버 배포 로그의
+`model-preflight.log`와 staged 폴더의 `logs/model-preflight-*.log`에 보관한다.
+성공한 배포는 shop과 buyer를 함께 재시작한다. 분석자의 Claude 사용량은 계속 발생하며,
+Astra 거래 호출의 사용량은 로그인한 ChatGPT 계정에 적용된다. 실제 속도·사용량·성사율
+개선은 아직 측정하지 않았다.
+
+**Haiku로 돌아오기:** Mac의 레포 루트에서 다음 두 명령을 실행한다. 시간으로 자동 복귀하는
+설정은 없으며, 프로필 선택과 재배포로 되돌린다.
+
+```bash
+python3 submissions/26510124/week-08/model_backend.py --profile haiku
+python3 submissions/26510124/week-08/deploy/deploy_v4.py
+```
+
+`--profile astra`는 다시 Astra를 선택한다. 프로필 변경 명령 자체는 서비스를 시작하지 않는다.
+`model_backend.py --check`는 CLI/로그인 확인만 하며, `--preflight`는 Astra 응답까지 확인한다.
+이 변경 당시 자동 SSH는 비밀번호 인증 실패로 서버 접속하지 못했다. **로컬 364개 테스트
+통과** (`logs/offline-20261104T161633Z-204d2fa3.log`)는 실제 Astra 접근/서버 전환을 증명하지 않는다.
+
 ## 고가 비식품 소량 매입과 공급 창 준비 (2026-11-05)
 
 현재 정책은 아래 표다. 뒤의 날짜별 기록은 당시의 실험을 보존한 것으로, 과거의
@@ -704,14 +763,15 @@ python3 submissions/26510124/week-08/deploy/deploy_v4.py
 SSH가 비밀번호를 요청하면 터미널에 직접 입력한다. 입력 글자는 표시되지 않는다.
 스크립트는 비밀번호를 받거나 저장하지 않으며, 한 번 연결한 SSH 세션을 전송과 설치에
 재사용한다. 설치 중에는 터미널을 열어 둔다. 실행하면 판매자와 구매자가 시작되므로
-Haiku 사용량이 발생하며, Round 3에서는 사용자 정의 재입고 계획에 따라 키트가 모의 시장 잔액을 사용한다.
+선택한 거래 모델과 Haiku 분석자의 사용량이 발생하며, Round 3에서는 사용자 정의 재입고 계획에 따라 키트가 모의 시장 잔액을 사용한다.
 
 배포 과정:
 
 1. 소스·프롬프트·명시한 공개 설정·고정 v4 키트만 SHA256 명세와 함께 전송한다.
    키, `.env`, 기타 JSON, `.market`, 기존 로그, 가상환경은 전송하지 않는다.
 2. 서버의 기존 가상환경으로 전송된 소스의 오프라인 검사를 실행하고, v4 원본 SHA,
-   두 신원 키, 기존 비공개 서비스 환경 설정, Claude/cloudflared 경로를 확인한다.
+   두 신원 키, 기존 비공개 서비스 환경 설정, 선택 모델 CLI/cloudflared 경로를 확인한다.
+   Astra 프로필이면 서버 ChatGPT 로그인과 작은 모델 응답 1회도 확인한다.
    이 단계가 실패하면 기존 서비스는 중지하지 않는다.
 3. 변경할 소스와 서비스 설정을 백업한 뒤 기존 서비스를 중지한다. 서버의 week-07 키를
    week-08에 복사하되, 이미 있는 다른 키를 덮어쓰거나 새 신원을 생성하지 않는다.
