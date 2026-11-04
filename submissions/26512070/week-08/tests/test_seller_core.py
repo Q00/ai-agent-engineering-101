@@ -155,6 +155,22 @@ class SellerCoreTest(Base):
             self.assertEqual(self.core.open[task]["candidates"][0]["unit"], unit, text)
             self.core.open.clear()
 
+    def test_hold_stops_selling_and_buying_a_sku(self):
+        # 11/5 03:1x: kimchi on hold - the seller says so, restock does not list it
+        from core import atomic
+        from tools import market_files as mf
+        from tools.registry import Ctx
+        path = paths.memory() / "strategy" / "active.json"
+        st = atomic.read_json(path)
+        st["playbook"] = {"seller": {"mode": "rules"}, "hold": {"skus": ["G0011e806"], "words": ["김치"]}}
+        atomic.write_json(path, st)
+        out = self.core.handle("h1", "I want to buy G0011e806")
+        self.assertEqual((out["state"], out["say"]), ("rejected", "Sorry, we are not selling that item right now."))
+        self.assertEqual(self.core.handle("h2", "I want to buy G0026722f")["state"], "input_required")
+        ctx = Ctx(caller="t", clock=lambda: NOW)
+        self.assertTrue(mf.on_hold(ctx, "G0011e806"))
+        self.assertFalse(mf.on_hold(ctx, "G0026722f"))
+
     def test_food_review_need_sells_only_units_lasting_what_reviews_said(self):
         # 11/5 03:0x: a review said 60 h was needed for G0011e806 - a buyer stating no hours gets a unit with 63 h+
         import json as _json

@@ -89,8 +89,9 @@ class SellerCore:
         cat, now = mf.catalog(ctx), ctx.now()
         taken = {s["unit"] for s in self.open.values() if s.get("unit")}
         units = [u for u in mf.inventory(ctx).get("units", []) if u.get("grade") != "expired" and u["unit"] not in taken
-                 and (u.get("cert") or not ctx.strategy.get("certified_only"))]
+                 and (u.get("cert") or not ctx.strategy.get("certified_only")) and not mf.on_hold(ctx, u["sku"], cat)]
         want = text.lower()
+        self.held = any(mf.on_hold(ctx, s, cat) for s in ex["skus"])
         named = [u for u in units if u["sku"] in ex["skus"]]
         if not named:
             def words(u):
@@ -189,6 +190,8 @@ class SellerCore:
         if st is None:
             cands = self.candidates(ctx, ex, text)
             if not cands:
+                if self.held:                    # on hold (playbook.hold): true, and not a missed request for restock
+                    return self._close(task_id, None, "rejected", "Sorry, we are not selling that item right now.")
                 self.missed(ctx, task_id, ex, text)
                 if self.short:                   # say the true hours rather than sell a unit that will not last
                     if self.short["need"] is None:

@@ -76,8 +76,10 @@ def build_buy_list(ctx, now=None):
     sell = call(ctx, "market.selling", {"hours": 6, "limit": 30})
     sell_food = call(ctx, "market.selling", {"hours": 6, "kind": "food", "limit": 30})
     want = {}
-    def keeps(sku):         # goods always; food only when it keeps long enough to sell (playbook)
+    def keeps(sku):         # goods always; food only when it keeps long enough to sell (playbook); nothing on hold
         c = cat.get(sku) or {}
+        if mf.on_hold(ctx, sku, cat):
+            return False
         return c.get("kind") == "goods" or (lim.get("food_share_max", 0) > 0 and c.get("kind") == "food"
                                             and (c.get("shelf_hours") or 0) >= pb["food_min_shelf_hours"])
     for x in (missed["result"].get("skus") or []) if missed["ok"] else []:

@@ -47,3 +47,16 @@ def current_grade(u, shelf_hours, now):
         h = hours_left(u.get("expires_at"), now)
         return food_grade(h / shelf_hours if (h is not None and shelf_hours) else None) or u.get("grade")
     return u.get("grade")
+
+
+def on_hold(ctx, sku, cat=None):
+    """11/5 03:1x (user: hold the kimchi): a SKU the strategy put on hold (playbook.hold: skus, or words in its name or
+    category) - the seller does not sell it and restock does not buy it."""
+    h = (ctx.strategy.get("playbook") or {}).get("hold") or {}
+    if sku in (h.get("skus") or []):
+        return True
+    c = (cat if cat is not None else catalog(ctx)).get(sku) or {}
+    # the category's last step only: "식품>김치/반찬/즉석요리>..." holds 890 SKUs, its leaf "김치" the 313 kimchi; names
+    # would add 김치만두, 김치찌개, 고추가루 김치용
+    text = (c.get("category") or "").split(">")[-1]
+    return any(w and w in text for w in h.get("words") or [])

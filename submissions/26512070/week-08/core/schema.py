@@ -194,6 +194,10 @@ STRATEGY = {
         "delegation": {"type": "object"},
         "playbook": {                                    # optional (HARNESS 14, D34): the numbers the rules run on
             "type": "object", "properties": {
+                # 11/5 03:1x: SKUs (or category words) on hold - the seller does not sell them, restock does not buy them
+                "hold": {"type": "object", "properties": {
+                    "skus": {"type": "array", "items": {"type": "string"}},
+                    "words": {"type": "array", "items": {"type": "string"}}}},
                 "restock": {"type": "object", "properties": {
                     "mode": {"type": "string", "enum": ["rules", "agent"]},
                     "cover_windows": {"type": "number", "minimum": 0.5, "maximum": 6},
