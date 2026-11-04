@@ -138,12 +138,13 @@ def category_report(mem, skip=(), now=None):
 
 
 def purchase_report(mem, skip=(), now=None, max_age_h=6):
-    """Our own latest paid purchase not reported yet: a first-hand record other buyers do not have."""
+    """Our own latest paid purchase not reported yet: a first-hand record other buyers do not have. Only purchases
+    whose settle is already in our ledger copy, so the ref is checkable (the newest one often is not synced yet)."""
     now = now or time.time()
     with mem.db() as c:
         rows = [dict(r) for r in c.execute(
             "SELECT p.*, h.name AS shop_label FROM purchases p LEFT JOIN shops h ON h.shop_url = p.shop_url "
-            "WHERE p.paid=1 AND p.ledger IS NOT NULL AND p.list_price>0 AND p.price>0 AND p.ts>? "
+            "WHERE p.paid=1 AND p.ledger IN (SELECT seq FROM settles) AND p.list_price>0 AND p.price>0 AND p.ts>? "
             "ORDER BY p.ts DESC LIMIT 20", (now - max_age_h * 3600,))]
     for r in rows:
         subject = f"buy:{r['order_id']}"

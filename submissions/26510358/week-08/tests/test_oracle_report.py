@@ -44,6 +44,8 @@ def test_purchase_report_is_first_hand(tmp_path, monkeypatch):
         c.execute("INSERT INTO purchases (order_id, ts, shop_url, shop_name, sku, name, list_price, price, grade, claim, "
                   "claim_honest, warranty_hours, ledger, paid) VALUES ('o1', ?, 'https://s1', 'Shop1', 'G1', '의자', "
                   "100000, 72000, 'A', 'A', 1, 6, 55, 1)", (now,))
+    assert oracle.purchase_report(m, now=now) is None                           # settle 55 not synced yet
+    m._ingest([settle(55, "G1", 72000, now, order="o1")])
     subject, text, refs = oracle.purchase_report(m, now=now)
     assert subject == "buy:o1" and refs == [55] and "28% 저렴" in text and "정직" in text and "보증 6h" in text
     assert oracle.purchase_report(m, skip={"buy:o1"}, now=now) is None

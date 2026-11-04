@@ -75,6 +75,7 @@ def test_vote_uses_model_probability_over_llm_label(tmp_path, monkeypatch):
 def test_hourly_budget_and_per_post_cache(tmp_path, monkeypatch):
     setup(tmp_path, monkeypatch, "DECISION_BACKEND=jev\nTYPESAFE_API_KEY=k\n")
     monkeypatch.setattr(config, "DECISION_MAX_PER_HOUR", 2)
+    monkeypatch.setattr(config, "DECISION_RESERVE", 0)
     ok = lambda url, body: {"answers": {"injection": {"noul": 0.1}, "team": {"choice": "a"}}}
     assert decide.decide("x", Q, purpose="t", transport=ok) is not None
     assert decide.decide("x", Q, purpose="t", transport=ok) is not None
@@ -89,3 +90,13 @@ def test_hourly_budget_and_per_post_cache(tmp_path, monkeypatch):
     forum_r3.vote(m, posts, {}, p_injection=judge)
     forum_r3.vote(m, posts, {}, p_injection=judge)
     assert len(calls) == 1                                                  # second run reuses the stored score
+
+
+def test_priority_calls_use_the_reserve(monkeypatch):
+    import time as _t
+    from r3lib import config, decide
+    now = _t.time()
+    for _ in range(config.DECISION_MAX_PER_HOUR - config.DECISION_RESERVE):
+        assert decide._spend_budget(now)
+    assert not decide._spend_budget(now)                                         # ordinary calls stop short
+    assert decide._spend_budget(now, priority=True)                              # the self-check still runs

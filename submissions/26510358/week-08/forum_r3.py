@@ -71,10 +71,11 @@ POST_KIND_Q = decide.choice("kind", "What is this marketplace forum post, judged
     "other": "Anything else: ads, greetings, questions, opinions"})
 
 
-def injection_probability(post):
+def injection_probability(post, priority=False):
     """Calibrated P(manipulation) from the decision model, or None when it is not configured or fails."""
     out = decide.decide({"author_role": post.get("role"), "text": (post.get("text") or "")[:1500]}, [POST_KIND_Q],
-                        purpose="forum_kind", subject=f"post {post.get('id')}")
+                        purpose="forum_selfcheck" if priority else "forum_kind", subject=f"post {post.get('id')}",
+                        priority=priority)
     kind = (out or {}).get("kind")
     if not kind:
         return None
@@ -297,7 +298,11 @@ def proactive_buyer_post(mem, now, run=react.run):
     return rec
 
 
-def scheduled_report(mem, now, p_injection=injection_probability):
+def _self_check(post):
+    return injection_probability(post, priority=True)
+
+
+def scheduled_report(mem, now, p_injection=_self_check):
     """Report lane: one fact post from the oracle when the gap allows and our posts are not disliked."""
     if now - (mem.get("buyer_post_at") or 0) < config.REPORT_GAP_MIN * 60:
         return {"decision": "wait", "why": "report gap"}

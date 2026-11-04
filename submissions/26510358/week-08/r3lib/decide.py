@@ -118,10 +118,11 @@ def parse(raw, questions):
     return out
 
 
-def decide(state, questions, purpose, timeout=8.0, transport=None, subject=None):
-    """One call for several questions about the same state. Returns parse() output or None (no key, error)."""
+def decide(state, questions, purpose, timeout=8.0, transport=None, subject=None, priority=False):
+    """One call for several questions about the same state. Returns parse() output or None (no key, error).
+    priority calls may use the DECISION_RESERVE that ordinary calls (votes on others' posts) leave free."""
     be = backend()
-    if be is None or not _spend_budget():
+    if be is None or not _spend_budget(priority=priority):
         return None
     name, url, key, model = be
     started, err, out = time.time(), None, None
@@ -145,16 +146,18 @@ def decide(state, questions, purpose, timeout=8.0, transport=None, subject=None)
     return out
 
 
-def _spend_budget(now=None):
+def _spend_budget(now=None, priority=False):
     """At most config.DECISION_MAX_PER_HOUR calls per rolling hour across all our processes (pricing of the
-    Decisions API is not published). Over budget the caller falls back, as if no model were configured."""
+    Decisions API is not published). Ordinary calls stop DECISION_RESERVE short of it, so the self-check of our own
+    posts still runs (2026-11-04: votes used all 60 and the first report went out unchecked). Over budget the
+    caller falls back, as if no model were configured."""
     now = now or time.time()
     path = config.STATE_DIR / "decision-budget.json"
     try:
         calls = [t for t in json.loads(path.read_text()) if now - t < 3600]
     except (OSError, ValueError):
         calls = []
-    if len(calls) >= config.DECISION_MAX_PER_HOUR:
+    if len(calls) >= config.DECISION_MAX_PER_HOUR - (0 if priority else config.DECISION_RESERVE):
         return False
     calls.append(now)
     try:

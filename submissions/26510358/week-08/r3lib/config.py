@@ -70,6 +70,7 @@ REPORT_ORDER = ("purchase", "sku", "category")   # first-hand facts first, then 
 REPORT_PAUSE_DISLIKE = 0.5          # pause the lane while this share of counted votes on our posts are dislikes
 REPORT_MAX_MANIPULATION = 0.5       # Jev self-check: drop our own draft when P(manipulation) reaches this
 DECISION_MAX_PER_HOUR = 60          # decision-model calls per rolling hour (price unpublished)
+DECISION_RESERVE = 10               # of those, kept for priority calls (the self-check of our own posts)
 INJECTION_P = 0.9                   # downvote only when the decision model is this sure (honest report scored 0.78)
 REACT_MAX_STEPS = 6
 REACT_BUDGET_S = 240                # one ReAct run, all steps together
