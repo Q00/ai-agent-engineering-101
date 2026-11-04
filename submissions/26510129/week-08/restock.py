@@ -127,15 +127,33 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
     cat_rev = {cat: (row.get("revenue") or row.get("n", 0)) for cat, row in cat_rows.items()}
     richest = max(cat_rev.values(), default=0)
 
+    def sells_at_of(category):   # the list price the category actually settles around, else its demand median
+        row_ = cat_rows.get(category) or {}
+        if row_.get("median_amount") and row_.get("median_ratio"):
+            return row_["median_amount"] / row_["median_ratio"]
+        return typical.get(category) or None
+
+    def comparable_of(category, sells_at):   # stock that can answer the orders this category gets: cheap leftovers
+        return sum(1 for unit in units if unit.get("category") == category          # (six 40k stools) do not count
+                   and (not sells_at or (unit.get("list_price") or 0) >= 0.5 * sells_at))
+
+    # my own sales weighed by the category's price level, like the market's: 140 sauces at 7k are not more evidence
+    # than one sofa at 1.7M (17:45 dry run: a raw count of 140 put sauces ahead of sofas)
+    depletions = memory.get("category_depletion") or {}
+    own_rev = {category: depletions.get(category, 0) * (sells_at_of(category) or 1) for category in categories}
+    richest_own = max(own_rev.values(), default=0)
+
     scored = []
     for category in categories:
-        depletion = (memory.get("category_depletion") or {}).get(category, 0)
+        depletion = depletions.get(category, 0)
         waste = (memory.get("category_waste") or {}).get(category, 0)
-        stock = stock_category[category]
+        stock = comparable_of(category, sells_at_of(category))
         evidence = depletion or posts[category] or cat_rev.get(category, 0)
         if not evidence and not explore:
             continue
-        score = 1.0 + 3.0 * depletion + 0.5 * posts[category] - 0.75 * stock - 2.0 * waste
+        score = 1.0 + 0.5 * posts[category] - 0.75 * stock - 2.0 * waste
+        if richest_own:
+            score += 3.0 * own_rev[category] / richest_own
         if richest:
             score += 2.0 * cat_rev.get(category, 0) / richest
         if stock == 0:
@@ -158,14 +176,17 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
             continue
         kind = choices[0][1].get("kind")
         target = FOOD_TARGET if kind == "food" else GOODS_TARGET
-        row_ = cat_rows.get(category) or {}
-        sells_at = (row_["median_amount"] / row_["median_ratio"] if row_.get("median_amount") and row_.get("median_ratio")
-                    else typical.get(category)) or None     # the list price the category actually settles around
-        # the unit target counts only stock comparable to what sells: six 40k stools must not block the first 2M sofa
-        comparable = sum(1 for unit in units if unit.get("category") == category
-                         and (not sells_at or (unit.get("list_price") or 0) >= 0.5 * sells_at))
+        sells_at = sells_at_of(category)
+        comparable = comparable_of(category, sells_at)
         if comparable >= target:
             continue
+        if sells_at:
+            # an order accepts SKUs priced 0.5x-1.5x its reference (agent.md); outside that band around the price the
+            # category settles at, a unit is cheap to buy and never asked for (17:40 dry run: a 3,860 spray paint in
+            # the sofa category because I had sold one before). Nothing affordable in the band: skip the category.
+            choices = [pair for pair in choices if 0.5 * sells_at <= (pair[1].get("list_price") or 0) <= 1.5 * sells_at]
+            if not choices:
+                continue
 
         def rank(pair):   # my own sales first (I know I can sell it), then the market's, then not in stock yet,
             sku, row = pair                                  # then nearest the price that sells (dearest without data)
