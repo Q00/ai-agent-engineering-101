@@ -41,7 +41,8 @@ MAX_MOVES = 2
 THETA_KNOBS = {"rfq": (2, 6, True), "rfq_big": (3, 8, True), "big_budget": (20000, 200000, True),
                "r3_first_offer": (0.45, 0.80, False), "max_pay_ratio": (0.80, 1.00, False),
                "min_reach": (0.35, 0.60, False), "pause_no_answers": (2, 5, True), "pause_h": (0.5, 6.0, False),
-               "shelf_strict": (0.30, 0.90, False), "retry_alts": (1, 3, True)}
+               "shelf_strict": (0.30, 0.90, False), "retry_alts": (1, 3, True),
+               "close_ratio": (0.70, 0.95, False)}
 ENURI_KNOBS = {"survey_quotes": (0, 8, True), "min_honest": (0.6, 0.95, False), "max_broken": (0.05, 0.30, False)}
 BANDS = [(0, 20000), (20000, 60000), (60000, 120000), (120000, 250000), (250000, None)]
 BOARD_KEYS = ("orders", "deals", "paid", "saved", "surplus", "served", "forum", "posts", "all")

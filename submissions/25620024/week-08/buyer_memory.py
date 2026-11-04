@@ -44,6 +44,10 @@ DEFAULTS = {"window": 50, "cooldown_h": 24, "repeat_days": 7, "minor_to_medium":
             "first_offer_max": 0.70, "concede": 0.5, "take_after": 3,
             # Round 3: quotes asked in parallel, first offer and most I pay as a share of the list price, the price
             # share I expect before I know a shop, food shelf life beyond use_within_hours, goods grades I accept
+            # close_ratio: when haggling ends (walk-away or out of offers), still take an ask at or under
+            # close_ratio x list and the budget -- the board's surplus is list minus paid, so any such deal adds
+            # surplus and a deal, a cancel adds nothing (11-04: 475 such walk-aways in 24 h, 2.87M surplus)
+            "close_ratio": 0.9,
             "rfq": 3, "r3_first_offer": 0.6, "max_pay_ratio": 0.95, "prior_price_ratio": 0.85, "food_margin_h": 1,
             "goods_grades": ["A", "B"],
             # Round 3 reach: an offer is a candidate while min_reach x list price fits the budget (leaders settle

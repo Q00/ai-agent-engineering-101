@@ -229,12 +229,15 @@ def code_decide(item, budget, history, ask_price):
     return ("offer", ask_price) if ask_price <= budget else ("offer", budget)
 
 
-def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None, decide_fn=None):
+def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None, decide_fn=None, close_at=None):
     """Week-06 buyer loop with two more guards. Returns (task, asks, offers): every ask the shop made and
     every price we sent, oldest first. low is the lowest price I agreed for this item lately at any shop
     (the market floor): an ask at or below it is taken at once, and my first offer is that price, not a
     share of the ask. A shop whose ask stays above my budget and does not move is left after two asks.
-    opened = (url, task, opening) continues a task the Round 3 quote round already opened."""
+    opened = (url, task, opening) continues a task the Round 3 quote round already opened.
+    close_at (11-04): the price up to which a walk-away becomes an accept. budget is the haggling cap (Enuri's
+    honest median); the board's surplus is list - paid, so an ask under close_at still adds surplus and a deal."""
+    close_at = max(budget, close_at or 0)
     if opened:
         url, task, opening = opened
     else:
@@ -318,6 +321,9 @@ def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None
             log(f"   GUARD unknown action {action!r}: walking away")
             action = "walk_away"
 
+        if action == "walk_away" and ask_price <= close_at:
+            log(f"   CLOSE ask {ask_price} is over the cap {budget} but within {close_at}: taking it, not walking")
+            action, price = "accept", ask_price
         if action == "walk_away":
             task = rpc(url, "CancelTask", {"id": task_id})
             log(f"-> CancelTask (walked away) <- {state(task)}")
@@ -331,11 +337,11 @@ def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None
         history.append(f"seller: {status_text(task)}")
 
     last_ask = asking_price(task) if state(task) == "TASK_STATE_INPUT_REQUIRED" else None
-    if last_ask is not None and last_ask <= budget:
+    if last_ask is not None and last_ask <= close_at:
         # 11-04: out of offers with the shop's counter inside our cap -- take it, a deal beats a cancel
         asks.append(last_ask)
         offers.append(last_ask)
-        log(f"   out of offers, counter {last_ask} is within {budget}: taking it")
+        log(f"   out of offers, counter {last_ask} is within {close_at}: taking it")
         task = send(url, str(last_ask), task_id)
         history.append(f"buyer: {last_ask}")
         history.append(f"seller: {status_text(task)}")
@@ -343,7 +349,7 @@ def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None
         # 'No deal below N' / 'our lowest is N': the shop named its floor; inside our cap, ask again at it
         m = re.search(r"(?:below|lowest(?: price)?(?: is|:)?)\s*([\d,]+)", status_text(task), re.I)
         floor = int(m.group(1).replace(",", "")) if m else None
-        if floor and floor <= budget and time.time() - started < TIME_LIMIT - 30:
+        if floor and floor <= close_at and time.time() - started < TIME_LIMIT - 30:
             log(f"   the shop's floor {floor} is within {budget}: buying at it in a new task")
             t2 = send(url, f"I want to buy {item}. I accept your lowest price {floor}.")
             if state(t2) == "TASK_STATE_INPUT_REQUIRED":
@@ -846,7 +852,8 @@ def round3(a, order, shops, mem, started):
             task, asks, offers, texts, notes = negotiate(shop["url"], offer["name"], cap, started,
                                                          low=low,
                                                          opened=(pick["url"], pick["task"], pick["opening"]),
-                                                         decide_fn=code_decide)
+                                                         decide_fn=code_decide,
+                                                         close_at=min(order["budget"], int(lp * T["close_ratio"])))
         outcome = "deal" if state(task) == "TASK_STATE_COMPLETED" else "no deal"
     except Exception as e:
         log(f"buyer error: {type(e).__name__}: {e}")
@@ -869,7 +876,8 @@ def round3(a, order, shops, mem, started):
             log(f"[retry] {shop2['name']} ask {q2['ask']} after no deal at {shop['name']}")
             try:
                 t2, a2, o2, x2, n2 = negotiate(shop2["url"], offer2["name"], cap2, started, low=low2,
-                                               opened=(q2["url"], q2["task"], q2["opening"]), decide_fn=code_decide)
+                                               opened=(q2["url"], q2["task"], q2["opening"]), decide_fn=code_decide,
+                                               close_at=min(order["budget"], int(lp2 * T["close_ratio"])))
             except Exception as e:
                 log(f"[retry] failed: {type(e).__name__}")
                 continue
