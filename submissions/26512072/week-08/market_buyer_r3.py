@@ -60,6 +60,22 @@ Answer with JSON only, one of:
 {{"action": "walk"}}                              walk away without buying"""
 
 
+# a price in a shop's message: first a number right after a price word ("asking 21200", "Counteroffer: 20,760",
+# "final price is 35,910"); else a whole number standing alone, not part of a SKU ("Gdf79cd07"), a size ("500mL",
+# "60병"), a shelf life ("636.01h", "6-hour", "72 hours"), a count ("5 offers left", "2 in stock") or a grade
+PRICE_WORD = re.compile(r"(?:asking|ask|price|counter(?:offer)?|offer of|deal at|deal:.*? at|at|is)\s*(?:price|is)?\s*[:=]?\s*"
+                        r"(\d[\d,]*)(?![\d.]*\d|[\w%-])(?!\s*(?:h\b|hrs?\b|hours?\b|days?\b|offers?\b|in stock|left))", re.I)
+PRICE = re.compile(r"(?<![\w.-])(\d[\d,]*)(?!\.?\d|[\w%-])"
+                   r"(?!\s*(?:h\b|hrs?\b|hours?\b|days?\b|offers?\b|in stock|left|units?\b|시간|일\b|%))")
+
+
+def shop_ask(said):
+    """The shop's current ask: the last price it named, or None."""
+    nums = [int(x.replace(",", "")) for x in PRICE_WORD.findall(said)] or \
+           [int(x.replace(",", "")) for x in PRICE.findall(said)]
+    return nums[-1] if nums else None
+
+
 def memory_update():
     """Fold in what happened after earlier orders: payments the kit refused (payments.jsonl) and goods that broke
     (broken.jsonl, matched by name to my newest settled purchase of that name). Appends update rows."""
@@ -238,21 +254,27 @@ def main():
                 return t, said
 
             first = f"I want to buy {pick['name']} ({pick['sku']})" + (
-                f". It must last at least {use_h:g} hours (shelf life left)." if pick["kind"] == "food" and use_h else "")
+                f". use within {use_h:g}h: it must last at least {use_h:g} hours (shelf life left)."
+                if pick["kind"] == "food" and use_h else "")
             t, said = send(first)
             lines = [f"you: {first}", f"shop: {said}"]
-            offers = []
+            offers, told = [], False
             for _ in range(MAX_OFFERS):
                 if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
                     break
+                if use_h and not told and re.search(r"use within|how many hours|몇 시간", said, re.I):
+                    told = True                             # the shop asks how long the food must last: answer that
+                    t, said = send(f"use within {use_h:g}h", t["id"])
+                    lines += [f"you: use within {use_h:g}h", f"shop: {said}"]
+                    if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
+                        break
                 move, raw = safe_ask_json(OFFER.format(name=pick["name"], list_price=pick["list"], cap=cap,
                                                        card=card.get("description", "")[:300], transcript="\n".join(lines)))
                 print(f"[harness] {raw}", flush=True)
+                ask = shop_ask(said)
                 if raw.startswith("[harness failed]"):        # my model is down: take a fair ask, else leave politely
-                    nums = re.findall(r"\d+", said.replace(",", ""))
-                    shop_ask = int(nums[-1]) if nums else None
-                    move = {"action": "offer", "price": shop_ask} if shop_ask is not None and shop_ask <= cap else None
-                    print(f"[fallback] {'accept the ask ' + str(shop_ask) if move else 'walk away'}", flush=True)
+                    move = {"action": "offer", "price": ask} if ask is not None and ask <= cap else None
+                    print(f"[fallback] {'accept the ask ' + str(ask) if move else 'walk away'}", flush=True)
                 if not move or move.get("action") != "offer" or not isinstance(move.get("price"), (int, float)):
                     rpc("CancelTask", {"id": t["id"]})
                     print("walked away (CancelTask)", flush=True)
@@ -261,8 +283,6 @@ def main():
                 if offer > cap:                             # the model may forget the cap; the code does not
                     print(f"[guard] offer {offer} above cap {cap} -> {cap}", flush=True)
                     offer = cap
-                nums = re.findall(r"\d+", said.replace(",", ""))
-                ask = int(nums[-1]) if nums else None       # the shop's current ask is the last number it said
                 if ask is not None and offer > ask:
                     print(f"[guard] offer {offer} above the shop's ask {ask} -> {ask}", flush=True)
                     offer = ask
