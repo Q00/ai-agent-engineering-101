@@ -23,6 +23,7 @@ import argparse
 import json
 import math
 import random
+import statistics
 import sys
 import time
 from collections import defaultdict
@@ -39,8 +40,10 @@ HALF_LIFE = 2 * 3600            # seconds; demand from settles fades with this h
 CUSHION = 1_500_000             # cash never spent on stock (the bankruptcy line is 500,000)
 SPEND_SHARE = 0.30              # of the cash above the cushion, per supply window
 LINE_MAX = 0.10                 # of the cash above the cushion, per line
-TARGET = {"food": 3, "goods": 2}            # units per SKU to hold; a window lasts 20 minutes
-MAX_LINES = 8                   # the kit buys at most 10 lines per run, one call per 10 s
+TARGET = {"food": 3, "goods": 2}            # base units per SKU to hold; a window lasts 20 minutes
+TARGET_MAX = 8                              # most units of one SKU, however fast it turns over
+STALE_H = 6                                 # a unit unsold this long stops further buying of its SKU
+MAX_LINES = 8                  # the kit buys at most 10 lines per run, one call per 10 s
 COST = {"food": 0.50, "goods": 0.59}        # expected cost / list price of a random grade (agent.md supply odds)
 PRICE_DEFAULT = 0.70            # settled price / list price across the market in the first hour of Round 3
 POST_EVERY = 1800
@@ -87,6 +90,39 @@ def mark_broken(rows: list, mem_path: Path):
     if changed:
         write_json(mem_path, mem)
         print(f"[restock] {changed} of our goods broke since the last run", flush=True)
+
+
+def market_prices(rows: list, cat: dict, path: Path, now: float):
+    """What buyers pay now, as a share of list, for the seller's opening ask: per SKU and grade with 8+ settles in
+    the last 2 h, per kind, grade and warranty with 5+."""
+    sku, cls = defaultdict(list), defaultdict(list)
+    for r in rows:
+        x = cat.get(r.get("sku"))
+        if r.get("broken") or not x or not r.get("amount") or now - r["ts"] > 2 * 3600 or not x.get("list_price"):
+            continue
+        ratio = r["amount"] / x["list_price"]
+        sku[f"{r['sku']}|{r.get('grade')}"].append(ratio)
+        cls[f"{x['kind']}|{r.get('grade')}|{1 if r.get('warranty_hours') else 0}"].append(ratio)
+    write_json(path, {"t": int(now), "sku": {k: round(statistics.median(v), 3) for k, v in sku.items() if len(v) >= 8},
+                      "class": {k: round(statistics.median(v), 3) for k, v in cls.items() if len(v) >= 5}})
+
+
+def turnover(units: list, sold: dict, now: float) -> tuple[dict, set]:
+    """(our sales per supply window by SKU over the last 3 h, SKUs with a unit unsold after STALE_H)."""
+    rate = defaultdict(float)
+    for s in sold.values():
+        if now - s.get("t", 0) < 3 * 3600:
+            rate[s["sku"]] += 1 / 9                                 # nine 20-minute windows in 3 h
+    return rate, {u["sku"] for u in units if now - (u.get("supplied_at") or now) > STALE_H * 3600}
+
+
+def target_for(c: dict, rate: dict, stale: set) -> int:
+    """Units to hold of a SKU: what it takes to sell through one window, not a flat number. A SKU we hold unsold
+    gets no more cash; one selling for us or fast across the market gets more."""
+    if c["sku"] in stale:
+        return 0
+    fast = 2 if c["sold_sku"] >= 50 else 1 if c["sold_sku"] >= 20 else 0
+    return min(TARGET_MAX, TARGET[c["kind"]] + fast + math.ceil(rate.get(c["sku"], 0) * 2))
 
 
 def candidates(cat: dict, rows: list, mine: dict, wants: dict, others: dict, have: dict, now: float) -> list:
@@ -139,23 +175,29 @@ def candidates(cat: dict, rows: list, mine: dict, wants: dict, others: dict, hav
 PICK_SYSTEM = """You plan stock purchases for an online shop agent. You get candidate products with numbers the
 code computed from the public ledger (sold_sku: recent settles of that SKU, decayed; demand: combined signal;
 price_ratio: what buyers paid as a share of list price in that category; others_hold: units other shops have;
-we_hold: our units) and a spending limit. Buy what is likely to sell within the next 20 minutes at a profit.
-Prefer SKUs that actually sold recently and that few shops hold; avoid food with a short shelf life unless it sells
-fast. Spread risk over several SKUs. Reply with JSON only:
-{"buy": [{"sku": "<sku from the list>", "qty": <1-4>}], "reason": "<one sentence>"}"""
+we_hold: our units; target: units worth holding, from how fast it turns over) and a spending limit. We sell at a thin
+margin and many units, so cash that turns over fast matters more than the margin on one unit. Buy what is likely to
+sell within the next 20 minutes at a profit, up to target minus we_hold per SKU. Prefer SKUs that actually sold
+recently; avoid food with a short shelf life unless it sells fast. Spread risk over several SKUs. Reply with JSON only:
+{"buy": [{"sku": "<sku from the list>", "qty": <1-8>}], "reason": "<one sentence>"}"""
 
 
 def harness_pick(cands: list, limit: int) -> tuple[list, str]:
     rows = [{k: c[k] for k in ("sku", "name", "cat", "kind", "list", "shelf_h", "sold_sku", "demand", "price_ratio",
-                               "others_hold", "we_hold")} for c in cands[:TOP_N]]
+                               "others_hold", "we_hold", "target")} for c in cands[:TOP_N]]
     ans = ask_json(PICK_SYSTEM, f"Spending limit: {limit} credits (cost is about 50-60% of list price).\n"
                                 f"Candidates:\n{json.dumps(rows, ensure_ascii=False)}", timeout=60, attempts=1) or {}
     buy = ans.get("buy") if isinstance(ans.get("buy"), list) else []
     return buy, str(ans.get("reason", ""))[:200]
 
 
-def plan(cands: list, limit: int, line_max: int, have: dict, use_harness: bool = True) -> tuple[list, str]:
+def plan(cands: list, limit: int, line_max: int, have: dict, use_harness: bool = True,
+         rate: dict | None = None, stale: set | None = None) -> tuple[list, str]:
     """Lines to buy within the limit: the harness's pick, checked; else the code's ranking."""
+    rate, stale = rate or {}, stale or set()
+    for c in cands:
+        c["target"] = target_for(c, rate, stale)
+    cands = [c for c in cands if c["sku"] not in stale]
     by_sku = {c["sku"]: c for c in cands}
     est = lambda c, q: int(c["list"] * COST[c["kind"]] * 1.15 * q)          # cost estimate with a margin
     picked, why = (harness_pick(cands, limit) if use_harness and cands else ([], ""))
@@ -164,7 +206,7 @@ def plan(cands: list, limit: int, line_max: int, have: dict, use_harness: bool =
         c = by_sku.get(str(b.get("sku"))) if isinstance(b, dict) else None
         if c is None or any(l["sku"] == c["sku"] for l in lines):
             continue
-        q = min(int(b.get("qty") or 1), 4, TARGET[c["kind"]] + 1 - have.get(c["sku"], 0))
+        q = min(int(b.get("qty") or 1), c["target"] - have.get(c["sku"], 0))
         while q > 0 and (est(c, q) > line_max or spent + est(c, q) > limit):
             q -= 1                                                          # trim the line, do not drop it
         if q <= 0:
@@ -174,7 +216,7 @@ def plan(cands: list, limit: int, line_max: int, have: dict, use_harness: bool =
     src = f"harness: {why}" if lines else "code ranking"
     if not lines:
         for c in cands:
-            q = TARGET[c["kind"]] - have.get(c["sku"], 0)
+            q = c["target"] - have.get(c["sku"], 0)
             if q <= 0:
                 continue
             while q > 0 and (est(c, q) > line_max or spent + est(c, q) > limit):
@@ -227,6 +269,9 @@ def main():
     window = inv.get("restock") or {}
     rows = settles(shop_dir / "settles.json")
     mark_broken(rows, shop_dir / "shop_memory.json")
+    cat = catalog(md)
+    if cat:
+        market_prices(rows, cat, shop_dir / "market_prices.json", now)
 
     if balance < (inv.get("bankrupt_line") or 500_000) and not units and (inv.get("bankruptcies_left") or 0) > 0:
         print(json.dumps({"buy": [], "bankrupt": True}))
@@ -241,7 +286,6 @@ def main():
         print(json.dumps({"buy": []}))
         return
 
-    cat = catalog(md)
     if not cat:
         print("[restock] no catalog yet", flush=True)
         print(json.dumps({"buy": []}))
@@ -258,7 +302,10 @@ def main():
         return
     shop_mem = read_json(shop_dir / "shop_memory.json", {}) or {}
     cands = candidates(cat, rows, shop_mem.get("cats", {}), forum_wants(md, cat), others_stock(), have, now)
-    lines, why = plan(cands, limit, int(free * LINE_MAX), have, not args.no_harness)
+    rate, stale = turnover(units, shop_mem.get("sold", {}), now)
+    lines, why = plan(cands, limit, int(free * LINE_MAX), have, not args.no_harness, rate, stale)
+    print(f"[restock] turnover: {len(rate)} SKUs sold in 3 h, {len(stale)} SKUs stale; "
+          f"sold units held {sum(s.get('held_h', 0) for s in shop_mem.get('sold', {}).values()):.1f} h in total", flush=True)
     for c in cands[:8]:
         print(f"[restock] cand {c['score']:>9} {c['sku']} {c['kind']} {c['cat']} sold {c['sold_sku']} "
               f"others {c['others_hold']} we {c['we_hold']} ratio {c['price_ratio']}", flush=True)
