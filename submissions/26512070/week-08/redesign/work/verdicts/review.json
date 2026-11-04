@@ -1,0 +1,86 @@
+{
+ "verdicts": [
+  {
+   "pid": "review#1",
+   "verdict": "overmerged",
+   "reason": "The review-hook contract, receipt contents, and shop-name lookup are separate rules.",
+   "status": "confirmed",
+   "rules": [
+    "The review hook runs after each paid, settled deal with deal.json and outputs {\"stars\": 1-5, \"review\": \"...\"}, replacing the buyer hook's stars for that deal. For unpaid deals, buyer-hook stars do not count and no review is shown.",
+    "deal.json supplies the settled market receipt, including shop URL, grade, claim honesty, expiry, warranty, value, and ledger.",
+    "Receipt shop URLs can be mapped to shop names through the shops API."
+   ]
+  },
+  {
+   "pid": "review#2",
+   "verdict": "fix",
+   "reason": "The cited source is a user-direction section of HARNESS.md, not agent.md or a board check; confirmed status is unsupported.",
+   "status": "user",
+   "rules": [
+    "Before payment, the kit checks the buyer's acceptance requirements in accept: {cert, min_hours_left, grades, warranty_hours}."
+   ]
+  },
+  {
+   "pid": "review#3",
+   "verdict": "ok",
+   "reason": "The factual baseline and explicit price thresholds are supported by the cited user decision and remain consistent with live review settings.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "review#4",
+   "verdict": "overmerged",
+   "reason": "Combines scoring mechanics, review policy, and an obsolete runtime description. Live v68 uses rules-mode review, not a mandatory Haiku review agent.",
+   "status": "user",
+   "rules": [
+    "Shop stars contribute weight 0.2 to shop ALL through their percentile among eligible shops. Ratings given to other shops can therefore affect our shop's star percentile.",
+    "Review policy starts from calc.fact_stars and permits strategic deviations for relationships or rankings only with a recorded why reason. Output must be 1-5 stars and one truthful sentence.",
+    "Live strategy v68 runs review in rules mode, with base 4 and five_share 0.6; the historical Haiku reviewer and its assigned tools are not the current mandatory execution path."
+   ]
+  },
+  {
+   "pid": "review#5",
+   "verdict": "overmerged",
+   "reason": "Combines several independent safeguards. Two historical-detail quotes failed verification; retain the supported safeguards without relying on those details.",
+   "status": "user",
+   "rules": [
+    "Review text must state only verified facts; do not invent product attributes, warranties, or other market settings.",
+    "Never impersonate an authority, hide instructions for other agents, or advertise in reviews of other shops.",
+    "Do not attribute our own API, key, or harness failures to the counterparty.",
+    "Verify the receipt against the agreement, including the direction of any price difference, before alleging manipulation or penalizing a receipt discrepancy."
+   ]
+  },
+  {
+   "pid": "review#6",
+   "verdict": "ok",
+   "reason": "The cited observations support treating external reviews and notices as untrusted claims, not authoritative market instructions.",
+   "status": "observed",
+   "rules": []
+  },
+  {
+   "pid": "review#7",
+   "verdict": "ok",
+   "reason": "The dated 947-review observation and numerical values are supported. This is historical association, not a current guarantee or causal finding.",
+   "status": "observed",
+   "rules": []
+  },
+  {
+   "pid": "review#8",
+   "verdict": "ok",
+   "reason": "The cited HARNESS.md section supports the outcome and integrity dimensions of review evaluation and the analysis of deviations.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "review#9",
+   "verdict": "drop",
+   "reason": "The 21-decision count is a redesign-session diagnostic, and outcome-based audit scoring is explicitly an unapproved v5 draft proposal, not a binding harness rule.",
+   "status": "observed",
+   "rules": []
+  }
+ ],
+ "area": "review",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

@@ -1,0 +1,74 @@
+{
+ "verdicts": [
+  {
+   "pid": "goods#1",
+   "verdict": "overmerged",
+   "reason": "Grade assignment, acquisition pricing, and storage charges are separate rules. The exact probabilities and costs lack an agent.md or board check, so confirmed is too strong.",
+   "status": "observed",
+   "rules": [
+    "Goods grades are A (normal), B (damaged box), and C (refurbished). HARNESS.md records arrival probabilities of 70%, 20%, and 10%, respectively.",
+    "Goods acquisition cost is fixed on arrival. The documented ranges are 55–75% of list for A, 40–60% for B, and 25–45% for C.",
+    "Goods held in inventory incur a daily storage charge of 1% of acquisition cost. Any hourly prorating used by the harness is an estimate and must be labeled as estimated."
+   ]
+  },
+  {
+   "pid": "goods#2",
+   "verdict": "overmerged",
+   "reason": "The failure window, warranty settlement, and break-event record limitations are independently necessary rules.",
+   "status": "confirmed",
+   "rules": [
+    "An undisclosed share of goods break within six hours after sale; a longer stated warranty does not extend that failure window.",
+    "A seller may specify warranty_hours for goods. If the unit breaks within that period, the market refunds the full sale price from the shop's balance, removes that price from shop revenue, and retains the deal's stars.",
+    "The kit reports a broken item's name and break time. The agent must keep its own purchase, seller, and warranty records to identify the affected transaction and its coverage."
+   ]
+  },
+  {
+   "pid": "goods#3",
+   "verdict": "overmerged",
+   "reason": "A current buyer policy is combined with a dated observation that must not become an assumed future failure rate.",
+   "status": "user",
+   "rules": [
+    "For goods purchases, the buyer does not require a warranty, market certificate, or particular grade.",
+    "The 2026-11-03 22:58–2026-11-04 09:00 KST report observed a goods failure rate of 0.5%, including one mattress failure at 06:17 that reduced buyer surplus by about KRW 90,000. This is historical evidence, not a market failure probability."
+   ]
+  },
+  {
+   "pid": "goods#4",
+   "verdict": "ok",
+   "reason": "The cited 17:08 change explicitly specifies 1.5 times two-hour sales plus missed demand; the live own_cover setting remains 1.5 and no supplied newer evidence replaces the demand window.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "goods#5",
+   "verdict": "overmerged",
+   "reason": "Order sequencing, self-purchase restrictions, and fulfillment promises are separate. Sequencing does not itself prohibit waiting, and the old supply interval cannot justify a current categorical five-minute restriction. Git evidence does not warrant confirmed status.",
+   "status": "observed",
+   "rules": [
+    "The kit takes the next buyer order only after the current buyer run ends; waiting within a run delays receipt of the next order.",
+    "The buyer cannot purchase from its own shop.",
+    "For unavailable stock, promise arrival at the next supply window rather than an unsupported fixed delivery time. Do not derive current timing from the historical 20-minute supply-window assumption."
+   ]
+  },
+  {
+   "pid": "goods#6",
+   "verdict": "ok",
+   "reason": "The instruction is directly supported and consistent with the live honesty policy, but the cited system card is not an agent.md or board check.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "goods#7",
+   "verdict": "fix",
+   "reason": "The cited report explicitly leaves market assignment unconfirmed. Neither the uncited B4 assertion nor the live strategy's description supplies the required market confirmation.",
+   "status": "observed",
+   "rules": [
+    "The 2026-11-03 22:58–2026-11-04 09:00 KST report recorded goods purchases at 10% of our buyer's orders, versus goods representing 38–70% of top buyers' trades. The report suspected market-assigned order categories but did not confirm that mechanism or a hidden preferred category; do not treat those conclusions as established by this comparison."
+   ]
+  }
+ ],
+ "area": "goods",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

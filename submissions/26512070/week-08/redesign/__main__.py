@@ -30,6 +30,16 @@ def main(argv):
             print(f"{r['area']}: {r['candidates']} candidates -> {len(r['rules'])} rules, {conflicts} conflicts, "
                   f"{len(r.get('dropped', []))} dropped, {len(r['missing'])} left out")
         return 0
+    if argv[:1] == ["verify"]:
+        from redesign import verify
+        area = argv[argv.index("--area") + 1] if "--area" in argv else None
+        for r in verify.run(area):
+            if r.get("error"):
+                print(r["area"], "failed:", r["error"][:150])
+                continue
+            c = collections.Counter(v["verdict"] for v in r["verdicts"])
+            print(f"{r['area']}: {dict(c)}" + (f", not reviewed {r['missing']}" if r["missing"] else ""))
+        return 0
     if argv[:1] == ["proposals"]:
         from redesign import review
         print(review.markdown())

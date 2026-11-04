@@ -1,0 +1,50 @@
+{
+ "verdicts": [
+  {
+   "pid": "goal#1",
+   "verdict": "overmerged",
+   "reason": "Combines the final objective with component-ranking mechanics. Not every component is a cumulative total: stars are a rating.",
+   "status": "confirmed",
+   "rules": [
+    "The final Round 3 score is the Players percentile at 11/17 23:59, determined by the sum of shop ALL and buyer ALL for the same GitHub account.",
+    "Component percentiles are calculated among eligible ranked participants: buyers with a deal and shops with a deal or purchase. Missing values count as zero, ties count halfway, and the stars component uses stars_rank rather than a cumulative star total."
+   ]
+  },
+  {
+   "pid": "goal#2",
+   "verdict": "fix",
+   "reason": "The quoted evidence does not establish the complete 40/30/30 evaluation weights. The independently supported base condition can be retained.",
+   "status": "user",
+   "rules": [
+    "Meet the stated base condition of at least 20 settled deals each for the shop and the buyer."
+   ]
+  },
+  {
+   "pid": "goal#3",
+   "verdict": "fix",
+   "reason": "The forecasting procedure comes from an explicitly unapproved v5 draft, not an adopted user decision. Current reporting supports component opportunity and next-player gaps.",
+   "status": "user",
+   "rules": [
+    "Report each shop and buyer score component's value, rank, percentile, remaining weighted opportunity calculated as weight × (1 − percentile), and gap to the next player's value. This opportunity is remaining weighted headroom, not a forecast of achievable final-rank gain."
+   ]
+  },
+  {
+   "pid": "goal#4",
+   "verdict": "ok",
+   "reason": "The user decision is supported by the cited note and commit and remains the first priority in live strategy v68.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "goal#5",
+   "verdict": "drop",
+   "reason": "Historical standing snapshots belong in observation logs, not the rule book. They are not operating requirements, and the current board snapshot is newer; the reporting requirement is covered separately.",
+   "status": "observed",
+   "rules": []
+  }
+ ],
+ "area": "goal",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

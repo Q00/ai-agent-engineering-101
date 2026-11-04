@@ -1,0 +1,86 @@
+{
+ "verdicts": [
+  {
+   "pid": "market.buy#1",
+   "verdict": "overmerged",
+   "reason": "Combines starting capital, restock limits and fallback behavior. The cited evidence is HARNESS.md, not agent.md or a board check, and does not establish whole-batch refusal.",
+   "status": "observed",
+   "rules": [
+    "A shop starts with a cash balance of 5,000,000.",
+    "The restock hook runs every 60 seconds and may submit at most 10 lines, each requesting 1–20 units.",
+    "If the restock hook is missing, the kit restocks randomly."
+   ]
+  },
+  {
+   "pid": "market.buy#2",
+   "verdict": "ok",
+   "reason": "The agent.md quote directly supports the rolling-hour threshold, increment and cap.",
+   "status": "confirmed",
+   "rules": []
+  },
+  {
+   "pid": "market.buy#3",
+   "verdict": "ok",
+   "reason": "Correctly distinguishes the observed 10-minute window from the documented 3-minute window and uses exposed timestamps rather than treating either duration as guaranteed.",
+   "status": "observed",
+   "rules": []
+  },
+  {
+   "pid": "market.buy#4",
+   "verdict": "overmerged",
+   "reason": "Combines execution policy, allocation, validation and exception handling. The no_budget evidence failed quote verification; duplicate merging is not established by the supplied quote.",
+   "status": "user",
+   "rules": [
+    "Run normal restock allocation deterministically, and buy only while the supply window is open.",
+    "Before allocation, compute available cash as balance minus the cash floor and warranty reserve, and compute available stock room once; allocate each line within that budget and record the budget.",
+    "Trim each purchase line to the SKU's remaining unit allowance, then drop lines from the end until cash and stock checks pass.",
+    "Do not reject a goods purchase merely because the existing food share exceeds its limit when that purchase reduces the food share.",
+    "Escalate restock exceptions to the agent when the candidate list is empty, all candidates are blocked by limits, or the supply purchase is rejected."
+   ]
+  },
+  {
+   "pid": "market.buy#5",
+   "verdict": "overmerged",
+   "reason": "The order-price band and surplus definition are independent rules. The band is supported only by HARNESS.md; the board confirms surplus and adds eligibility conditions omitted here.",
+   "status": "observed",
+   "rules": [
+    "An order's SKU price is in the range 0.5–1.5 times its reference price.",
+    "Buyer surplus is list price minus the amount paid for items that fulfill the order and survive the required food-use or goods-breakage conditions; refunds are returned to the buyer."
+   ]
+  },
+  {
+   "pid": "market.buy#6",
+   "verdict": "overmerged",
+   "reason": "Combines accept-policy checks, budget enforcement and negotiated-price verification. The supplied sources do not qualify for confirmed status.",
+   "status": "observed",
+   "rules": [
+    "The kit checks the buyer's accept policy before payment; its fields may include cert, min_hours_left, grades and warranty_hours.",
+    "Never offer or pay above the order budget; the kit refuses payment above that budget.",
+    "Verify the receipt price against the agreed price before checkout because the kit does not know the negotiated price. Pass null rather than pay a receipt priced above the agreement."
+   ]
+  },
+  {
+   "pid": "market.buy#7",
+   "verdict": "stale",
+   "reason": "The live strategy forbids below-cost sales now, including during the formerly permitted exposure period.",
+   "status": "user",
+   "rules": [
+    "Below-cost sales are not allowed. The current seller price floor is the greater of 70% of list price and 112% of unit cost."
+   ]
+  },
+  {
+   "pid": "market.buy#8",
+   "verdict": "stale",
+   "reason": "The historical model-driven acceptance requirement is not a current universal rule: the live seller runs in rules mode. Message-price consistency remains a separate supported safeguard.",
+   "status": "observed",
+   "rules": [
+    "Outgoing negotiation messages must carry the tool-checked price without substituting a different price; do not insert an unchecked price.",
+    "The live seller uses rule-based negotiation. Do not require a model call for every price-free acceptance message; the historical act.accept behavior used the buyer's offer or, when absent, the seller's last ask."
+   ]
+  }
+ ],
+ "area": "market.buy",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

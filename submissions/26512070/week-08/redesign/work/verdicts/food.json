@@ -1,0 +1,68 @@
+{
+ "verdicts": [
+  {
+   "pid": "food#1",
+   "verdict": "overmerged",
+   "reason": "Combines grade mechanics, inventory freshness, claim adjudication and loss accounting. The cited percentages do not establish an arrival-grade distribution; B excludes 80%. Numeric thresholds are not confirmed by the supplied agent.md excerpt.",
+   "status": "observed",
+   "rules": [
+    "Food grade declines with the fraction of shelf_hours remaining: A is at least 80%, B is at least 45% but below 80%, and C is below 45%.",
+    "Shop inventory data may be up to 10 seconds old; food-grade claims are judged at checkout or settlement, not at the time of the inventory snapshot.",
+    "Expired food is discarded at cost. Record an unsold expired unit's cost as an expiry loss once, without duplicating the loss when the unit disappears."
+   ]
+  },
+  {
+   "pid": "food#2",
+   "verdict": "overmerged",
+   "reason": "Combines an order requirement, surplus eligibility, payment validation and receipt visibility. Only the order requirement is directly confirmed by the supplied agent.md excerpt; the other details come from design and implementation evidence.",
+   "status": "observed",
+   "rules": [
+    "A food order's use_within_hours specifies how long the food must last for the buyer.",
+    "Food that spoils before the required use period contributes zero surplus.",
+    "The kit rejects food payment when the certificate shows insufficient remaining shelf life for the order's use_within_hours.",
+    "Before finishing, the buyer sees the shop's claimed grade in the receipt, not the certificate body; the kit obtains the certificate during ACP payment. A claimed grade gives only a possible remaining-life range, not an exact expiry time."
+   ]
+  },
+  {
+   "pid": "food#3",
+   "verdict": "stale",
+   "reason": "Live v68 sets the food share cap to 35%, not 25%. Welcome Food was a draft never installed, and current policy forbids below-cost sales. Demand-scaled food restocking retains a 10-unit cap.",
+   "status": "user",
+   "rules": [
+    "Food may account for at most 35% of total stock cost.",
+    "Restock food with at least 72 hours of shelf life, scaling purchases with measured demand up to the configured food cap of 10 units per SKU.",
+    "Do not offer Welcome Food or first-visit below-cost pricing. Current seller pricing must never go below cost and uses a minimum margin of 12% over cost."
+   ]
+  },
+  {
+   "pid": "food#4",
+   "verdict": "ok",
+   "reason": "The cited user decisions and live buyer configuration agree on the opening message, 55% opening bid, 68% target, 82% ceiling and food-order limits.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "food#5",
+   "verdict": "fix",
+   "reason": "The shelf guard is now enabled and explicitly retained in v68, not merely a design proposal. The supplied draft evidence does not establish that shop-specific penalty logging or the experimental targets were adopted as live requirements.",
+   "status": "user",
+   "rules": [
+    "Keep the buyer's pre-payment food shelf guard enabled. Before returning a receipt, reject a claimed grade whose maximum possible remaining shelf life is below use_within_hours and continue to another shop; in particular, reject C claims when use_within_hours exceeds 45% of shelf_hours. Do not reject merely uncertain grade ranges solely on this test. This screening does not replace the kit's certificate check at payment."
+   ]
+  },
+  {
+   "pid": "food#6",
+   "verdict": "overmerged",
+   "reason": "Combines different historical windows and analyses into one rule. Several detailed counts rely on quotes that failed verification, and a six-hour window cannot itself be 20:43–21:15. Retain only supported, explicitly historical observations.",
+   "status": "observed",
+   "rules": [
+    "A six-hour benchmark reported on 2026-11-04 at 20:43 found our buyer completing 34% of food orders at a median 54% of list, versus lee-sungsoo completing 62% at a median 69% of list. These are historical measurements, not current performance guarantees.",
+    "The v62 check reported on 2026-11-04 at 21:15 found food receipts rising from 53% to 73% of orders while settlements remained 24, or 34%; 55 of 122 food payments were refused for insufficient shelf life. More agreements alone did not improve settlements in that comparison."
+   ]
+  }
+ ],
+ "area": "food",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

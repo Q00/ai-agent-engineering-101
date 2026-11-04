@@ -36,8 +36,10 @@ def proposals():
 
 
 def markdown():
+    from redesign import verify
     done = _decided()
     ps = proposals()
+    vs = verify.verdicts()
     open_ = [p for p in ps if p["pid"] not in done]
     lines = [f"# 규칙 제안 검토 ({time.strftime('%Y-%m-%d %H:%M')})", "",
              f"제안 {len(ps)}개, 결정 {len(ps) - len(open_)}개, 남은 것 {len(open_)}개. "
@@ -62,6 +64,10 @@ def markdown():
             if p["flags"]:
                 lines.append(f"- **경고:** {'; '.join(p['flags'])}")
             lines.append(f"- 출처: {', '.join(p['sources'])} (후보 {len(p.get('evidence', []))}개)")
+            v = vs.get(p["pid"])
+            if v:
+                lines.append(f"- **리뷰어: {v['verdict']}** ({v.get('status')}) {v.get('reason', '')}")
+                lines += [f"  - {t}" for t in v.get("rules", [])]
             lines.append("")
     return guard.write("proposals.md", "\n".join(lines))
 

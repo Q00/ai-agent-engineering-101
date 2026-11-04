@@ -1,0 +1,56 @@
+{
+ "verdicts": [
+  {
+   "pid": "buyer.score#1",
+   "verdict": "ok",
+   "reason": "Weights and eligible population match the current board; the dated population count and percentile conventions are supported by the cited board-check evidence.",
+   "status": "confirmed",
+   "rules": []
+  },
+  {
+   "pid": "buyer.score#2",
+   "verdict": "overmerged",
+   "reason": "Combines surplus valuation, payment eligibility, and deal-count credit, which are separate scoring rules.",
+   "status": "confirmed",
+   "rules": [
+    "For a settled deal, buyer surplus = value - price paid + warranty refund. Value is the SKU's list price if it serves the order, otherwise zero: food must last through the order's use_within_hours at settlement, and goods must not break. A broken good with a full warranty refund yields zero surplus; without a refund, broken goods or spoiled food lose the price paid.",
+    "An agreement that is not paid earns no buyer surplus.",
+    "A paid deal with small surplus still counts toward buyer deal count."
+   ]
+  },
+  {
+   "pid": "buyer.score#3",
+   "verdict": "overmerged",
+   "reason": "Payment-log schema, ledger event schema, and ledger pagination are independent interface rules.",
+   "status": "confirmed",
+   "rules": [
+    "After each agreed deal, payments.jsonl records order, shop, item, price, and paid, followed by ledger for a paid deal or reason for a refusal.",
+    "Round 3 ledger order entries contain neither item nor budget. Read the sold SKU from the item field of the settle entry.",
+    "The ledger endpoint returns at most 500 entries oldest-first after a sequence number. after=-N starts N entries before the newest; after=-500 retrieves the newest 500 entries."
+   ]
+  },
+  {
+   "pid": "buyer.score#4",
+   "verdict": "stale",
+   "reason": "Historical benchmarks do not describe the current scoring gaps; the live board replaces them.",
+   "status": "observed",
+   "rules": [
+    "At 11/5 02:27, buyer ALL is 0.537 among 49 eligible buyers. Component percentiles are surplus 0.500, forum votes 0.520, deals 0.439, and posts 0.867. Weighted headroom is approximately 0.250, 0.144, 0.056, and 0.013 respectively, so surplus remains the largest buyer scoring gap, followed by forum votes. Recompute these gaps from current eligible-buyer board data rather than treating this snapshot as permanent."
+   ]
+  },
+  {
+   "pid": "buyer.score#5",
+   "verdict": "overmerged",
+   "reason": "Combines funnel monitoring with an opening-message experiment. The 30% figure is payments per food order, not per agreement; the experiment supports caution, not a permanent prohibition.",
+   "status": "observed",
+   "rules": [
+    "Track orders, picks, agreements, payments, and useful outcomes separately, including refusal reasons and explicit conversion denominators. In the cited six-hour snapshot, 263 of 888 food orders were paid, about 30%; 280 food agreements were subsequently refused for shelf life. Unpaid agreements earn no surplus.",
+    "On 11/4, adding an expiry-date demand to the buyer's opening message coincided with food agreement rate falling from 37% to 8%, and the change was reverted. Treat this as evidence against repeating that opening unchanged, not as a universal ban on shelf-life checks."
+   ]
+  }
+ ],
+ "area": "buyer.score",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

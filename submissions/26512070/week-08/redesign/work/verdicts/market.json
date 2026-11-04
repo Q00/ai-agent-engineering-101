@@ -1,0 +1,136 @@
+{
+ "verdicts": [
+  {
+   "pid": "market#1",
+   "verdict": "overmerged",
+   "reason": "Combines the round deadline, catalog, order matching, receipt identity, pricing freedom and unit locking. These are independent rules with different evidence strength.",
+   "status": "observed",
+   "rules": [
+    "Round 3 on market.ourolabs.ai runs November 3–17, 2026, ending at 23:59 KST; final rankings use the board at the deadline.",
+    "The catalog is available at market start and contains about 5,600 SKUs with name, category, list_price, kind and, for food, shelf_hours.",
+    "Orders identify a catalog category and acceptable SKUs priced 0.5–1.5 times a reference price; food orders also specify use_within_hours.",
+    "A receipt's item may identify the order item or an acceptable SKU; checkout and ledger records identify the SKU actually shipped.",
+    "The market imposes no minimum sale price; harness pricing floors are separate policy.",
+    "Under the observed harness contract, a unit cannot be changed after it has been chosen for a deal."
+   ]
+  },
+  {
+   "pid": "market#2",
+   "verdict": "overmerged",
+   "reason": "Ownership restrictions, starting capital and bankruptcy are separate rules. The bankruptcy aid deduction is supported by HARNESS.md, not the cited agent.md excerpt.",
+   "status": "observed",
+   "rules": [
+    "A buyer and shop with the same GitHub owner cannot settle with each other.",
+    "Round 3 starting capital is 5,000,000 credits; do not use the obsolete 2,000,000 figure.",
+    "A shop with balance below 500,000 credits may file bankruptcy at most twice; filing seizes its stock and restores its balance to 5,000,000 credits.",
+    "Bankruptcy aid is deducted when calculating net profit; bankruptcy is not a profit-free reset."
+   ]
+  },
+  {
+   "pid": "market#3",
+   "verdict": "fix",
+   "reason": "The cited commit supports the certificate prerequisite, not the complete accept-field validation or payments.jsonl logging claims. It is implementation evidence, not market confirmation.",
+   "status": "observed",
+   "rules": [
+    "The observed buyer implementation refuses to finish a deal whose accept terms require grades or min_hours_left unless the selected unit has a market certificate."
+   ]
+  },
+  {
+   "pid": "market#4",
+   "verdict": "fix",
+   "reason": "Neither cited candidate supports regular ten-minute windows. Both specify three minutes; only the first window lasts ten minutes. The once-per-window scheduling policy is not a market constraint.",
+   "status": "confirmed",
+   "rules": [
+    "Supply opens approximately every 20 minutes at a slightly shifting time, for three minutes; the first window at round start lasts ten minutes. Outside a window, the market returns HTTP 429 with wait and opens_at. Use those response fields rather than assuming a fixed opening time."
+   ]
+  },
+  {
+   "pid": "market#5",
+   "verdict": "ok",
+   "reason": "Directly supported by agent.md; the shelf-risk interpretation is consistent with the cited harness evidence.",
+   "status": "confirmed",
+   "rules": []
+  },
+  {
+   "pid": "market#6",
+   "verdict": "fix",
+   "reason": "The cited decision establishes a refund from shop funds, not a universal full-price warranty. Full refunds are our current warranty policy; the board confirms refunds reduce revenue.",
+   "status": "user",
+   "rules": [
+    "Our current goods warranty provides a full-price refund if the unit breaks within 12 hours. The refund is paid from shop balance and reduces net revenue."
+   ]
+  },
+  {
+   "pid": "market#7",
+   "verdict": "overmerged",
+   "reason": "Board eligibility and the coursework minimum are independent. The minimum is at least 20, not strictly more than 20; historical cohort counts are not current.",
+   "status": "observed",
+   "rules": [
+    "The board ranks buyers with at least one settled trade and shops with at least one settled trade or stock purchase; calculate percentiles against those eligible cohorts, not all participants. At the November 5 02:27 board check, the cohorts contained 49 buyers and 52 shops.",
+    "The documented Round 3 coursework minimum is at least 20 settled deals for each of our shop and buyer."
+   ]
+  },
+  {
+   "pid": "market#8",
+   "verdict": "overmerged",
+   "reason": "Combines market openness, identity, information visibility and ledger accounting. Some visibility claims exceed the supplied verified quotes; the strongest result-field quote failed its quote check.",
+   "status": "observed",
+   "rules": [
+    "Round 3 is an open market of independently designed agents. Participants and their strategies may change, and counterpart claims may be dishonest; opponents' internals are not observable.",
+    "A participant may operate a shop and a buyer under the same participant name; counterpart profiles should distinguish roles while retaining that shared identity.",
+    "Buyer preferences and best-selling products are not directly supplied as private ground truth. Infer demand from observable messages, inventory and public settlement records, and label such conclusions as inference.",
+    "Observed Round 3 paid deals produce both a settle line and a result line, while unpaid receipts can also produce result lines. Do not count both lines as separate sales or treat every result line as a paid sale; verify settlement before aggregation.",
+    "The historical collector mapped result sequence numbers to settlement records. Verify the current ledger schema before assuming which fields appear on each row."
+   ]
+  },
+  {
+   "pid": "market#9",
+   "verdict": "overmerged",
+   "reason": "Local file availability, ledger transport, negotiation flow and numeric parsing are independent contracts. Evidence outside agent.md supports observation, not confirmed market status.",
+   "status": "observed",
+   "rules": [
+    "The documented kit data cadence is 10 seconds for inventory.json and 30 seconds for demand.json and forum.json. Other listed .market files include catalog.json, orders.jsonl, shops.json, payments.jsonl, deals.jsonl and broken.jsonl.",
+    "Observed GET /api/ledger?after=N responses contain at most 500 rows and can return HTTP 502; paginate with a cursor and handle transient failures.",
+    "Seller negotiation proceeds one message at a time until acceptance, buyer departure or seller termination.",
+    "Do not interpret the last number in a negotiation message as its price. Distinguish prices from SKUs, hour counts, sizes and quantities; current parsing fixes also exclude size/count expressions such as 3kg and 15개."
+   ]
+  },
+  {
+   "pid": "market#10",
+   "verdict": "stale",
+   "reason": "The blanket user-approval requirement for avoiding counterparts is superseded by v68's user-approved temporary unsigned-shop skipping. The proposal also mixes several independent collector and profile policies.",
+   "status": "user",
+   "rules": [
+    "Maintain recent settled-sales aggregates by SKU and category, including sales counts, speed, price distributions, observed competitor stock, buyer category counts and our recent sales; the documented collector updates live.json every few minutes using a recent six-hour window.",
+    "Record the round with collected data, reset counts on round change, flag SKUs absent from the current catalog and warn when early-round samples are small.",
+    "Counterpart profile facts must match aggregate-tool evidence; interpretations require evidence, and prior profile versions must be retained.",
+    "The documented market-analyst watch list includes LAB-listed items.",
+    "General counterpart avoidance requires user approval, but v68 explicitly authorizes temporary skipping of a shop whose last three receipts lacked sig_seller and which was never fair. This is not a permanent block; retry is allowed one hour after its last try."
+   ]
+  },
+  {
+   "pid": "market#11",
+   "verdict": "overmerged",
+   "reason": "Combines two observations from different rounds and periods. Neither establishes a current retention rate or current best-selling SKU ranking.",
+   "status": "observed",
+   "rules": [
+    "Historical Round 2 data reported that 60.4% of purchases repeated the shop used for the immediately preceding purchase; do not treat this as a measured Round 3 rate.",
+    "A November 4 02:2x observation reported over 1,600 bedding units sold in six hours at a median 75% of list, including 772 G0be9ed07 units and 675 G07ec17d5 units. Treat these as dated demand evidence, not current sales rankings."
+   ]
+  },
+  {
+   "pid": "market#12",
+   "verdict": "stale",
+   "reason": "The November 3 Honest Shop branding is not established as current; live strategy now describes Certified Safe Goods. The naming constraint is documented outside agent.md, and the exact current card/receipt name is not supplied.",
+   "status": "observed",
+   "rules": [
+    "The documented market-entry nickname constraint permits only letters, digits and hyphens, with a maximum of 32 characters; entry nicknames are separate from card and receipt names.",
+    "The November 3 configuration used the join nickname gom31-honest-shop. Do not prescribe gom31 Honest Shop as the current card or receipt name: verify the live identity configuration before emitting it; v68's shop description begins gom31 Certified Safe Goods."
+   ]
+  }
+ ],
+ "area": "market",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

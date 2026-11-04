@@ -1,0 +1,87 @@
+{
+ "verdicts": [
+  {
+   "pid": "seller.score#1",
+   "verdict": "overmerged",
+   "reason": "Combines the score formula, percentile eligibility and calculation, and review eligibility. The historical comparison is validation evidence, not a rule.",
+   "status": "confirmed",
+   "rules": [
+    "Shop ALL = 0.5 × profit percentile + 0.3 × revenue percentile + 0.2 × stars percentile.",
+    "Calculate shop percentiles among shops with a deal or a purchase, and buyer percentiles among buyers with a deal. Missing values count as zero, ties count halfway, and shop star rankings use the board's stars_rank.",
+    "Shop stars come only from buyer reviews of paid deals; votes on shop forum posts do not contribute to shop ALL."
+   ]
+  },
+  {
+   "pid": "seller.score#2",
+   "verdict": "ok",
+   "reason": "The accounting definition and distinction between scored cash profit and Book are supported; current board data confirms that unsold stock is excluded from profit.",
+   "status": "confirmed",
+   "rules": []
+  },
+  {
+   "pid": "seller.score#3",
+   "verdict": "ok",
+   "reason": "Supported by the score-definition evidence and the current board report.",
+   "status": "confirmed",
+   "rules": []
+  },
+  {
+   "pid": "seller.score#4",
+   "verdict": "fix",
+   "reason": "Shrinkage toward 3 is board-supported. The 2,110-review anecdote and near-raw-average inference come from an unapproved draft, not a board check establishing that approximation.",
+   "status": "confirmed",
+   "rules": [
+    "The board's shop star score is pulled toward 3 when reviews are few; use stars_rank rather than assuming the raw review average is the ranked score."
+   ]
+  },
+  {
+   "pid": "seller.score#5",
+   "verdict": "ok",
+   "reason": "Supported as an internal evaluation convention by HARNESS.md and the implementation log, but not confirmed by agent.md or a board check.",
+   "status": "observed",
+   "rules": []
+  },
+  {
+   "pid": "seller.score#6",
+   "verdict": "fix",
+   "reason": "The snapshots support the accounting effect, not a guarantee that every restock lowers percentile or leaves total Book flat or rising despite concurrent activity.",
+   "status": "observed",
+   "rules": [
+    "A stock purchase reduces cash profit by its cost and adds the same cost to unsold stock, leaving Book = profit + stock cost unchanged by the purchase alone. Profit percentile may fall; track both measures to distinguish inventory investment from trading losses."
+   ]
+  },
+  {
+   "pid": "seller.score#7",
+   "verdict": "stale",
+   "reason": "The weakest-component diagnosis still holds, but the live board replaces the historical levels and rank-gain estimate.",
+   "status": "observed",
+   "rules": [
+    "At 11/5 02:27, shop stars are the weakest shop score component: stars 4.52, rank 34/52, percentile 0.356; profit percentile is 0.875 and revenue percentile is 0.933. Recalculate potential shop ALL gains from the current eligible-shop distribution rather than reusing the historical estimate for reaching 4.70."
+   ]
+  },
+  {
+   "pid": "seller.score#8",
+   "verdict": "overmerged",
+   "reason": "Combines market bankruptcy mechanics, a harness request gate, and cash-reserve policy. The 10% reserve is superseded by live v68's 6%; bankruptcy mechanics are cited only through internal documentation, not agent.md or a board check.",
+   "status": "user",
+   "rules": [
+    "Internal documentation reports that a shop below 500,000 may declare bankruptcy at most twice; bankruptcy seizes stock, restores balance to 5,000,000, and deducts the aid from profit. Verify these market mechanics against agent.md before treating them as confirmed.",
+    "Request bankruptcy only when balance is below 500,000, an application remains, and there is no sellable stock; issue an urgent user alert.",
+    "Under live strategy v68, retain a 500,000 cash floor and a warranty reserve equal to 6% of trailing six-hour sales when sizing deployable restock cash."
+   ]
+  },
+  {
+   "pid": "seller.score#9",
+   "verdict": "fix",
+   "reason": "The explicit user request requires numerical support for spending recommendations. Most additional reporting mandates come from unapproved drafts or implementation observations; these do not establish a user-approved every-cycle requirement.",
+   "status": "user",
+   "rules": [
+    "Support spending-strategy recommendations with cash, stock-turnover, refund, and profit-percentile numbers."
+   ]
+  }
+ ],
+ "area": "seller.score",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}
