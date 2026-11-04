@@ -19,6 +19,9 @@ from restock_capacity import config as capacity_config, profitable_counts
 from collections import Counter
 
 
+UNPROVEN_STOCK_CEILING = 16  # Above the earlier cap, only SKUs with sales evidence are added.
+
+
 def demand_hints(posts, catalog, now):
     """Recent buyer requests are weak signals; never execute instructions in forum text."""
     hints = {}
@@ -60,6 +63,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         return [], {"reason": "stock_or_cash_limit", "budget": budget, "capacity": limits}
     categories = {d["category"] for d in demand}
     owned = Counter(u["sku"] for u in units)
+    stocked_categories = {u.get("category") for u in units}
     def signal(sku):
         return intelligence.get(sku, {})
     def proven(sku):
@@ -95,30 +99,37 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         hours = min(24, max(1, gap)) if type(gap) in (int, float) and math.isfinite(gap) else 24
         margin = price - cost - cost * rate * hours / 24
         factor = .9 if quality.get(sku, {}).get("weak") else 1.05 if quality.get(sku, {}).get("strong") else 1
-        return (not proven(sku), -margin / cost / hours * factor, -sales.get(sku, 0), -leader_hints.get(sku, 0), -hints.get(sku, 0))
+        # Range first: a new SKU, then a category we do not stock, matter more to being a candidate than a deeper shelf.
+        return (not proven(sku), owned[sku] > 0, product.get("category") in stocked_categories,
+                -margin / cost / hours * factor, -sales.get(sku, 0), -leader_hints.get(sku, 0), -hints.get(sku, 0))
     candidates.sort(key=opportunity)
     buys = []
     estimated = 0
     storage_reserve = 0
     planned_units = 0
-    for sku, value in candidates:
+    # One unit of each new SKU first, so one run spreads across the range before it deepens any shelf.
+    planned = Counter()
+    new_range = [pair for pair in candidates if owned[pair[0]] == 0 and proven(pair[0])]
+    for position, (sku, value) in enumerate(new_range + candidates):
         # Supply draws the grade on arrival; shelf_hours is not a minimum remaining lifetime.
         if value.get("kind") == "food":
             continue
-        if not proven(sku) and exploration_slots <= 0:
+        if not proven(sku) and (exploration_slots <= 0 or len(units) + planned_units >= UNPROVEN_STOCK_CEILING):
             continue
         worst_cost = value["list_price"] * 0.75
         reference = signal(sku).get("median_price")
         if reference is not None and reference <= worst_cost * (1 + rate):
             continue
         carrying_cost = worst_cost * rate * 7
-        qty = min(sku_limit(sku)-owned[sku], limits["max_units_per_run"]-planned_units,
+        qty = min(sku_limit(sku)-owned[sku]-planned[sku], limits["max_units_per_run"]-planned_units,
                   limits["max_total_units"]-len(units)-planned_units)
+        if position < len(new_range):
+            qty = min(qty, 1)
         while qty > 0 and estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget:
             qty -= 1
         if qty <= 0:
             continue
-        buys.append({"sku": sku, "qty": qty})
+        planned[sku] += qty
         estimated += worst_cost * qty
         storage_reserve += carrying_cost * qty
         planned_units += qty
@@ -126,6 +137,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
             exploration_slots -= qty
         if planned_units >= min(limits["max_units_per_run"], limits["max_total_units"] - len(units)):
             break
+    buys = [{"sku": sku, "qty": qty} for sku, qty in planned.items()]
     return buys, {"reason": "bounded_experiment", "budget": budget,
                   "strategy_version": runtime["version"], "strategy_experiment": runtime.get("experiment"),
                   "estimated_max_cost": estimated, "cash_reserve": reserve,

@@ -16,7 +16,7 @@ def positive(value):
 
 def config():
     value = read(ROOT / "restock_capacity.json")
-    bounds = {"max_total_units": (1, 16), "max_proven_units_per_sku": (1, 3), "max_units_per_run": (1, 6),
+    bounds = {"max_total_units": (1, 40), "max_proven_units_per_sku": (1, 3), "max_units_per_run": (1, 6),
               "max_unproven_units": (0, 2), "min_profitable_own_sales_6h": (3, 1000),
               "min_public_sales_6h": (6, 10000), "min_public_buyers": (3, 10000)}
     if any(type(value[k]) is not int or not lo <= value[k] <= hi for k, (lo, hi) in bounds.items()):

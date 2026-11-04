@@ -25,15 +25,15 @@ class ActiveCapacity(unittest.TestCase):
         buys, info = self.run_plan(own_profitable={"A": 3, "B": 3})
         self.assertEqual(buys, [{"sku": "A", "qty": 3}, {"sku": "B", "qty": 3}])
         self.assertEqual(info["planned_units"], 6)
-        self.assertEqual(info["capacity"]["max_total_units"], 16)
+        self.assertEqual(info["capacity"]["max_total_units"], 40)
 
     def test_owned_sku_is_topped_up_to_three_not_three_more(self):
         self.cat = {"A": self.cat["A"]}
         self.inv["units"] = [{"sku": "A", "kind": "goods", "cost": 60000, "supplied_at": T} for _ in range(2)]
         self.assertEqual(self.run_plan(own_profitable={"A": 3})[0], [{"sku": "A", "qty": 1}])
 
-    def test_total_stock_sixteen_and_run_six_are_both_enforced(self):
-        self.inv["units"] = [{"sku": "held"+str(i), "kind": "goods", "cost": 100, "supplied_at": T} for i in range(15)]
+    def test_total_stock_forty_and_run_six_are_both_enforced(self):
+        self.inv["units"] = [{"sku": "held"+str(i), "kind": "goods", "cost": 100, "supplied_at": T} for i in range(39)]
         self.assertEqual(sum(x["qty"] for x in self.run_plan(own_profitable={"A": 3, "B": 3})[0]), 1)
         self.inv["units"].append({"sku": "last", "kind": "goods", "cost": 100, "supplied_at": T})
         self.assertEqual(self.run_plan(own_profitable={"A": 3})[0], [])
