@@ -27,6 +27,7 @@ class BuyerTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.md = Path(self.temp.name)
+        (self.md / 'policy.json').write_text(json.dumps({'fallback_enabled': False}))
         self.order = dict(order='order-1', item='milk', category='food>milk', budget=120,
                           acceptable=['F001'], kind='food', use_within_hours=2,
                           expires=time.time() + 600, mandates={'private': 'secret'}, nonce='secret')
@@ -213,6 +214,7 @@ class BuyerTests(unittest.TestCase):
                 self.received = original
 
     def test_model_failure_has_no_negative_public_rating_or_retry(self):
+        (self.md / 'policy.json').write_text(json.dumps({'fallback_enabled': False}))
         def failure(*args):
             raise TimeoutError('Our model timed out')
         final = self.execute(decision=failure)

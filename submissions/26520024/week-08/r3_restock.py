@@ -15,6 +15,19 @@ from core import decide
 from r3_common import atomic_json, load_catalog, load_inventory, load_policy, read_json, state_dir
 from r3_discovery import analyze, timestamp
 from r3_memory import Memory
+from r3_runtime import choose as resilient_choose
+
+
+def supply_window(inventory, now, margin=20):
+    """Only the market's current window, never a guessed periodic schedule."""
+    window = inventory.get('restock')
+    if not isinstance(window, dict) or type(window.get('open')) is not bool:
+        return None
+    opened, closes = timestamp(window.get('opens_at')), timestamp(window.get('closes_at'))
+    if (window['open'] is not True or opened is None or closes is None or
+            opened > now or now + margin >= closes):
+        return None
+    return {'id': str(opened) + ':' + str(closes), 'closes_at': closes}
 
 
 PROMPT = '''Choose a conservative restock intent for fictional market credits.
@@ -119,7 +132,9 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now, *, qua
         total += qty
         category_cost[catalog[sku]['category']] += cost
     capital = balance + held_cost
-    spend = min(balance * cycle_fraction, balance * (1 - reserve_fraction) - pending_cost)
+    exposure = policy.get('max_inventory_fraction', .6)
+    spend = min(balance * cycle_fraction, balance * (1 - reserve_fraction) - pending_cost,
+                capital * exposure - held_cost - pending_cost)
     if spend <= 0 or total >= unit_cap:
         return []
     inputs = analysis.get('current_inputs', analysis.get('inputs', {}))
@@ -220,6 +235,12 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
             inventory = load_inventory(md, now=now, max_age=45)
             if inventory.get('round') != 3:
                 raise ValueError('Restock requires a Round 3 inventory snapshot')
+            window = supply_window(inventory, now, policy['supply_margin_seconds'])
+            if window is None:
+                atomic_json(Path(md) / 'restock-status.json',
+                            {'status': 'waiting_for_supply_window', 'observed_at': now,
+                             'restock': inventory.get('restock')})
+                return {'buy': []}
             snapshot_id = _snapshot_id(md, inventory)
             ledger = read_json(Path(md) / 'restock_commitments.json', {'intents': []})
             if not isinstance(ledger, dict) or not isinstance(ledger.get('intents'), list):
@@ -230,7 +251,8 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
                 atomic_json(Path(md) / 'restock_commitments.json', ledger)
             cooldown = max(60, _number(policy.get('restock_cooldown_seconds'), 900))
             last_at = _number(ledger.get('last_issued_at'), -math.inf)
-            if ledger.get('last_snapshot_id') == snapshot_id or now - last_at < cooldown:
+            if (ledger.get('last_snapshot_id') == snapshot_id or
+                    (ledger.get('last_window', window['id']) == window['id'] and now - last_at < cooldown)):
                 atomic_json(Path(md) / 'restock_commitments.json', ledger)
                 return {'buy': []}
             analysis = analyze(md, now=now, decide_fn=decide_fn, memory=memory)
@@ -245,15 +267,19 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
                      'cash_balance': inventory['balance'], 'pending': pending,
                      'policy': policy, 'worst_wholesale_fraction': .75}
             validator = lambda result: validate_intent(result, proposals)
-            intent = (decide_fn or decide)(PROMPT, state, validator, 'r3-restock',
-                                          time.monotonic() + 45,
-                                          context={'role': 'restock'})
+            intent = resilient_choose(md, decide_fn or decide, PROMPT, state, validator,
+                                      'r3-restock', time.monotonic() + min(45, window['closes_at'] - now - 10),
+                                      lambda: {'buy': [dict(row, qty=1) for row in proposals[:3]]},
+                                      {'role': 'restock'})
             intent = validator(intent)
             # Normal sales may change stock during deliberation. Recompute every bound,
             # preserving only purchases the model approved, at the same or lower quantity.
             check_now = now + max(0, time.monotonic() - started)
             policy, catalog = load_policy(md), load_catalog(md)
             current = load_inventory(md, now=check_now, max_age=45)
+            fresh_window = supply_window(current, check_now, policy['supply_margin_seconds'])
+            if fresh_window is None or fresh_window['id'] != window['id']:
+                return {'buy': []}
             snapshot_id = _snapshot_id(md, current)
             ledger = read_json(Path(md) / 'restock_commitments.json', {'intents': []})
             if not isinstance(ledger, dict) or not isinstance(ledger.get('intents'), list):
@@ -261,23 +287,28 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
             pending = _pending(ledger, current, check_now)
             cooldown = max(60, _number(policy.get('restock_cooldown_seconds'), 900))
             if (ledger.get('last_snapshot_id') == snapshot_id
-                    or check_now - _number(ledger.get('last_issued_at'), -math.inf) < cooldown):
+                    or (ledger.get('last_window', window['id']) == window['id'] and
+                        check_now - _number(ledger.get('last_issued_at'), -math.inf) < cooldown)):
                 atomic_json(Path(md) / 'restock_commitments.json', ledger)
                 return {'buy': []}
             reduced = bounded_proposals(catalog, current, analysis, pending, policy, check_now,
                                         quantity_limits={row['sku']: row['qty'] for row in intent['buy']})
             intent = validate_intent({'buy': reduced}, intent['buy'])
+            # The kit submits at most one line every 10s; do not straddle closure.
+            lines = max(0, min(10, int((fresh_window['closes_at'] - check_now - 10) // 10)))
+            intent['buy'] = intent['buy'][:lines]
             if not intent['buy']:
                 atomic_json(Path(md) / 'restock_commitments.json', ledger)
                 return intent
-            ttl = max(cooldown, _number(policy.get('commitment_ttl_seconds'), 1800))
+            ttl = min(max(cooldown, _number(policy.get('commitment_ttl_seconds'), 1800)),
+                      fresh_window['closes_at'] - check_now + 120)
             key = uuid.uuid4().hex
             ledger['intents'].append({'id': key, 'created_at': check_now, 'expires_at': check_now + ttl,
                                       'snapshot_id': snapshot_id, 'buy': intent['buy'],
                                       'baseline_units': [row['unit'] for row in _units(current)
                                                          if isinstance(row.get('unit'), str)],
                                       'fulfilled_units': [], 'fulfilled_by_sku': {}})
-            ledger.update(last_issued_at=check_now, last_snapshot_id=snapshot_id)
+            ledger.update(last_issued_at=check_now, last_snapshot_id=snapshot_id, last_window=window['id'])
             atomic_json(Path(md) / 'restock_commitments.json', ledger)
             memory.record('restock_intent', key, {'buy': intent['buy'],
                           'snapshot_id': snapshot_id, 'analysis_version': analysis['input_version'],

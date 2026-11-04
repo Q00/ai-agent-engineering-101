@@ -8,7 +8,7 @@ from r3_discovery import analyze, build_candidates, validate_analysis
 from r3_memory import Memory
 
 
-NOW = 1800000000.
+NOW = 1793707200.
 CATALOG = {
     'tea': {'name': 'Tea', 'category': 'drinks', 'kind': 'goods', 'list_price': 40},
     'tea2': {'name': 'Related tea', 'category': 'drinks', 'kind': 'goods', 'list_price': 44},
@@ -124,6 +124,7 @@ class DiscoveryTests(unittest.TestCase):
     def test_unavailable_model_records_failure_without_hypotheses(self):
         with tempfile.TemporaryDirectory() as directory:
             md = Path(directory)
+            atomic_json(md / 'policy.json', {'fallback_enabled': False})
             atomic_json(md / 'catalog.json', CATALOG)
             memory = Memory(md)
             def fail(*args, **kwargs):

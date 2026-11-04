@@ -1,0 +1,94 @@
+"""Transparent estimates from settled observations, never claims of future demand."""
+import math
+import statistics
+import time
+
+
+def price_ratio(memory, catalog, category, now):
+    ratios, refs = [], []
+    for event in memory.events('market_settle', limit=2000):
+        data = event['data']
+        product = catalog.get(data.get('item'), {})
+        price = data.get('amount', data.get('price'))
+        listed = product.get('list_price', 0)
+        if (product.get('category') != category or not 0 <= now - event['ts'] <= 48 * 3600 or
+                type(price) not in (int, float) or not math.isfinite(price) or not listed or
+                not 0 < price / listed <= 1.5 or data.get('source') != 'public_ledger'):
+            continue
+        if data.get('seq') in refs:
+            continue
+        ratios.append(price / listed)
+        refs.append(data.get('seq'))
+    return {'median': statistics.median(ratios) if len(ratios) >= 3 else None,
+            'samples': len(ratios), 'refs': refs[:8], 'limit': 'settled-price sample, not demand elasticity'}
+
+
+def buyer_estimate(memory, candidate, now=None):
+    now = time.time() if now is None else now
+    rows = memory.db.execute("SELECT * FROM context_events WHERE kind IN ('settlement','broken') "
+                             "ORDER BY ts DESC LIMIT 2000").fetchall()
+    records = [memory._event(row) for row in rows]
+    purchases, broken = {}, set()
+    for event in records:
+        data = event['data']
+        if data.get('shop', data.get('shop_name')) != candidate['shop_name'] or data.get('sku') != candidate['sku']:
+            continue
+        if event['kind'] == 'settlement':
+            settled = data.get('settled', {})
+            ledger = settled.get('ledger')
+            if type(ledger) is int:
+                purchases[ledger] = (event, data)
+        elif data.get('attribution') == 'inferred_unique_name_time':
+            broken.add(data.get('ledger'))
+    mature = {key for key, (event, data) in purchases.items()
+              if 6 * 3600 <= now - data.get('observed_at', event['ts']) <= 7 * 86400}
+    failures = len(mature & broken)
+    # 10% is an explicit conservative prior, not the market's hidden breakage rate.
+    risk = (failures + 1) / (len(mature) + 10) if candidate['kind'] == 'goods' else 0.
+    prices = [data.get('receipt', {}).get('price') for _, data in purchases.values()]
+    prices = [p for p in prices if type(p) in (int, float) and math.isfinite(p) and p >= 0]
+    listed = candidate.get('list_price') or 0
+    estimate = statistics.median(prices) if prices else .8 * listed
+    value = listed * (1 - risk)
+    return {'expected_value': round(value, 2), 'estimated_price': round(estimate, 2),
+            'expected_surplus': round(value - estimate, 2), 'break_risk_estimate': round(risk, 4),
+            'mature_samples': len(mature), 'inferred_breaks': failures,
+            'assumptions': '10% goods prior; name/time break links are inferred; refund assumed zero'}
+
+
+def seller_fallback(state):
+    bounds, offer, previous = state['pricing'], state['incoming_offer'], state['previous_ask']
+    if offer is not None and offer >= bounds['minimum']:
+        price, action = offer, 'accept'
+    else:
+        price = bounds['ceiling'] if previous is None else max(bounds['minimum'],
+                    min(bounds['ceiling'], (previous + bounds['minimum']) // 2))
+        action = 'ask'
+    return {'action': action, 'price': price, 'summary': 'Deterministic degraded policy within current price bounds.'}
+
+
+def buyer_fallback(state):
+    value = state.get('value_estimate', {}).get('expected_value', state.get('list_price') or 0)
+    ceiling = min(state['budget'], max(0, int(value * .95)))
+    ask, last = state.get('current_ask'), state.get('last_offer')
+    if ceiling <= 0 or (last is not None and last >= ceiling):
+        return {'action': 'walk', 'price': None, 'summary': 'No positive risk-adjusted offer remains.'}
+    if ask is not None and 0 <= ask <= ceiling:
+        price = ask
+    elif last is None:
+        price = min(ceiling, max(1, int((state.get('list_price') or ceiling) * .6)))
+    else:
+        turns_left = max(1, 5 - state.get('rounds', 0))
+        price = min(ceiling, last + max(1, math.ceil((ceiling - last) / turns_left)))
+    return {'action': 'offer', 'price': price, 'summary': 'Deterministic budget and expected-value bounded offer.'}
+
+
+def selection_fallback(candidates, budget):
+    def score(row):
+        estimate = row.get('value_estimate', {})
+        value = estimate.get('expected_value', row.get('list_price') or 0)
+        price = estimate.get('estimated_price', value * .8)
+        return (value - price if price <= budget else -float('inf'), -price)
+    selected = max(candidates, key=score)
+    return {'shop_name': selected['shop_name'], 'sku': selected['sku'],
+            'reason': 'Deterministic estimated usable value minus price; checkout still enforces acceptance.'}

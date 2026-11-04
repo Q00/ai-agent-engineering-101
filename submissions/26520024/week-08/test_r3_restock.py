@@ -16,7 +16,8 @@ from test_r3_discovery import CATALOG, NOW, choose_all, event
 
 
 def inventory(balance=1000, units=None):
-    return {'round': 3, 'balance': balance, 'units': units or [], 'storage_per_day': 1}
+    return {'round': 3, 'balance': balance, 'units': units or [], 'storage_per_day': 1,
+            'restock': {'open': True, 'opens_at': NOW - 60, 'closes_at': NOW + 3600}}
 
 
 def unit(sku='tea', name='held', cost=30):
@@ -42,6 +43,7 @@ class RestockTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.md = Path(self.directory.name)
+        atomic_json(self.md / 'policy.json', {'fallback_enabled': False})
         atomic_json(self.md / 'catalog.json', CATALOG)
         self.write_inventory(inventory())
 
@@ -92,7 +94,7 @@ class RestockTests(unittest.TestCase):
         self.assertEqual(bounded_proposals(food, inventory(), analysis(catalog=food), [], DEFAULT_POLICY, NOW), [])
 
     def test_goods_charge_one_percent_of_cost_daily_but_food_has_no_storage_charge(self):
-        policy = dict(DEFAULT_POLICY, min_turnover_hours=34 * 24)
+        policy = dict(DEFAULT_POLICY, min_turnover_hours=34 * 24, trading_deadline=None)
         state = inventory()
         state.pop('storage_per_day')
         self.assertEqual(bounded_proposals(CATALOG, state, analysis(), [], policy, NOW), [])

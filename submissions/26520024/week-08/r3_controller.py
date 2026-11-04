@@ -6,6 +6,8 @@ import json
 import os
 import tempfile
 import time
+import statistics
+from collections import defaultdict
 
 from r3_common import atomic_json, load_policy, read_json, state_dir
 from r3_memory import Memory, packed
@@ -64,11 +66,45 @@ def reflection(md, memory, policy, now, decision=None):
 
 def forum_drafts(memory):
     drafts = []
+    catalog = read_json(memory.md / 'catalog.json', {})
+    groups = defaultdict(list)
+    for event in memory.events('settlement', limit=300):
+        data = event['data']
+        settled, receipt = data.get('settled', {}), data.get('receipt', {})
+        product = catalog.get(settled.get('sku'), {})
+        price, listed, ledger = receipt.get('price'), product.get('list_price'), settled.get('ledger')
+        if (type(price) in (int, float) and price >= 0 and type(listed) in (int, float) and
+                listed > 0 and type(ledger) is int and ledger > 0):
+            groups[product['category']].append((ledger, price / listed, settled.get('claim_honest')))
+    covered = set()
+    posted_refs = {ref for event in memory.events('forum_queued', limit=1000)
+                   for ref in event['data'].get('refs', []) if type(ref) is int}
+    for category, samples in sorted(groups.items()):
+        samples = sorted({row[0]: row for row in samples}.values())
+        if len(samples) < 3:
+            continue
+        covered.update(row[0] for row in samples)
+        samples = [row for row in samples if row[0] not in posted_refs]
+        if len(samples) < 3:
+            continue
+        # A new aggregate needs three new purchases, not a post for each extra row.
+        end = len(samples) // 3 * 3
+        rows = samples[max(0, end - 6):end]
+        refs = [row[0] for row in rows]
+        judged = [row[2] for row in rows if type(row[2]) is bool]
+        text = (f'Own settled sample in {category}: n={len(rows)}, median paid/list ratio '
+                f'{statistics.median(row[1] for row in rows):.3f}. '
+                f'Market-judged honest claims: {sum(judged)}/{len(judged)} '
+                '(missing judgments excluded). Biased purchase sample, not market-wide demand or a guarantee.')
+        identifier = hashlib.sha256(packed(refs).encode()).hexdigest()[:20]
+        drafts.append({'id': 'aggregate-' + identifier, 'post': text, 'refs': refs, 'as': 'buyer'})
     # Share confirmed price/quality evidence, never private budgets or invented endorsements.
     for event in memory.events('settlement', limit=20):
         data = event['data']
         settled, receipt = data.get('settled', {}), data.get('receipt', {})
         ledger = settled.get('ledger')
+        if ledger in covered:
+            continue
         if type(ledger) is not int or ledger < 0 or not isinstance(settled.get('sku'), str):
             continue
         text = (f"Observed purchase: SKU {settled['sku']} at {receipt.get('price')} credits; "
@@ -142,5 +178,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-

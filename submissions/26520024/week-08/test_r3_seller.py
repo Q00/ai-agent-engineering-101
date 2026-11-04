@@ -50,6 +50,7 @@ class InventorySellerTests(unittest.TestCase):
                                     list_price=200, kind='goods', shelf_hours=None)}
         self.inventory = dict(round=3, balance=10000, units=[self.unit()])
         self.write('catalog.json', self.catalog)
+        self.write('policy.json', {'adaptive_pricing': False, 'fallback_enabled': False})
         self.write('inventory.json', self.inventory)
         self.choose = Mock(side_effect=self.decision)
         self.client = self.client_for()

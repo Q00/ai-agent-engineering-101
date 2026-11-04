@@ -280,9 +280,14 @@ def analyze(md, *, now=None, decide_fn=None, memory=None):
                                                for row in inputs['candidates']],
                             metrics={category: stats for category, stats in inputs['metrics'].items()
                                      if category in {row['category'] for row in inputs['candidates']}})
-        result = (decide_fn or decide)(PROMPT, model_inputs, validator, 'r3-discovery',
-                                      time.monotonic() + 45,
-                                      context={'role': 'discovery'})
+        from r3_runtime import choose
+        def fallback():
+            return {'hypotheses': [dict(sku=row['sku'], evidence_ids=row['evidence_ids'][:3],
+                    reason='Deterministic ranked-evidence policy; small experiment, not proven demand.')
+                    for row in inputs['candidates'][:3]],
+                    'summary': 'Degraded policy using current observed candidates, not a model prediction.'}
+        result = choose(md, decide_fn or decide, PROMPT, model_inputs, validator,
+                        'r3-discovery', time.monotonic() + 45, fallback, {'role': 'discovery'})
         snapshot.update(validator(result))
     except Exception as exc:
         snapshot.update(status='unavailable', hypotheses=[], summary='', error=str(exc)[:400])

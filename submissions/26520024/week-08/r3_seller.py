@@ -29,6 +29,8 @@ from r3_common import (ROOT, effective_grade, hours_left, load_catalog, load_inv
                        load_policy, money, state_dir, atomic_json)
 from r3_memory import Memory
 from r3_seller_lifecycle import RequestJournal, SellerRequestBoundary
+from r3_runtime import choose as resilient_choose
+from r3_strategy import price_ratio, seller_fallback
 
 RECEIPT_FIELDS = ('shop', 'item', 'price', 'task')
 PROMPT = '''You negotiate the price of exactly the supplied, reserved inventory unit.
@@ -117,7 +119,7 @@ def find_units(text, inventory, catalog, now):
     return [match[-1] for match in sorted(matches, key=lambda row: row[:-1])]
 
 
-def pricing(unit, policy, now, previous_ask=None):
+def pricing(unit, policy, now, previous_ask=None, market_prices=None):
     cost, listed = money(unit['cost']), money(unit['list_price'])
     left = hours_left(unit, now)
     deadline = timestamp(policy.get('trading_deadline'))
@@ -126,6 +128,17 @@ def pricing(unit, policy, now, previous_ask=None):
     liquidation = terminal or (left is not None and 0 < left <= liquidation_hours)
     minimum = cost // 2 if liquidation else cost
     ceiling = max(minimum, min(listed, cost if liquidation else (cost * 110 + 99) // 100))
+    if policy.get('adaptive_pricing') and not liquidation:
+        storage = cost * .01 * max(0, now - unit['supplied_at']) / 86400 if unit['kind'] == 'goods' else 0
+        minimum = min(listed, math.ceil(cost + storage))
+        ratio = policy.get('opening_price_fraction', .9)
+        if market_prices and market_prices.get('median') is not None:
+            weight = min(.75, market_prices['samples'] / (market_prices['samples'] + 10))
+            ratio = (1 - weight) * ratio + weight * market_prices['median']
+        # Age the quote toward cost as food loses useful shelf life.
+        if left is not None and left < 12:
+            ratio = min(ratio, cost / listed + (ratio - cost / listed) * max(0, left / 12))
+        ceiling = max(minimum, min(listed, math.ceil(listed * ratio)))
     if previous_ask is not None:
         minimum, ceiling = min(minimum, previous_ask), min(ceiling, previous_ask)
     return dict(minimum=minimum, ceiling=ceiling, cost=cost, list_price=listed,
@@ -259,21 +272,31 @@ class Reservations:
                         break
                 if status != 'settled' and (now >= row['expires'] or row['unit'] not in live or not receipt):
                     status = 'quarantined'
+                revoked = (status == 'quarantined' and data.get('checkout_guarded') and
+                           not data.get('checkout_started') and now >= row['expires'])
+                if revoked:
+                    # The same SQLite transaction serializes against CheckoutGate.begin.
+                    # Gate will reject this receipt permanently before issuing any JWT.
+                    status = 'revoked'
                 reason = ('verified_paid_ledger' if status == 'settled' else
                           'legacy_receipt_not_recorded' if not receipt else
                           'inventory_missing_is_not_payment_proof' if row['unit'] not in live else
                           'checkout_finality_unavailable' if status == 'quarantined' else
                           'signed_receipt_awaiting_payment')
-                db.execute('UPDATE deals SET status=?,data=? WHERE task=?', (status, json.dumps(data), row['task']))
+                if revoked:
+                    reason = 'expired_unissued_checkout_revoked'
+                db.execute('UPDATE deals SET status=?,unit=?,data=? WHERE task=?',
+                           (status, None if revoked else row['unit'], json.dumps(data), row['task']))
                 rows.append(dict(task=row['task'], unit=row['unit'], sku=data.get('sku'), status=status,
-                                 in_inventory=row['unit'] in live, reason=reason, settlement=proof))
+                                 in_inventory=row['unit'] in live and not revoked, reason=reason, settlement=proof))
         report = dict(observed_at=now, signed_pending=sum(r['status'] == 'signed_pending' for r in rows),
                       quarantined=sum(r['status'] == 'quarantined' for r in rows),
                       settled=sum(r['status'] == 'settled' for r in rows),
                       blocked_in_inventory=sum(r['in_inventory'] for r in rows), units=rows,
-                      safe_unlock_available=False,
-                      limitation='The kit provides no seller checkout rejection or receipt revocation callback. '
-                                 'Elapsed quote time and inventory disappearance do not invalidate signed receipts.')
+                      revoked=sum(r['status'] == 'revoked' for r in rows),
+                      safe_unlock_available=any(r['status'] == 'revoked' for r in rows),
+                      limitation='Only guarded promises with no checkout issuance can expire safely. '
+                                 'Legacy receipts and issued/uncertain checkout JWTs stay blocked until settlement.')
         atomic_json(self.path.parent / 'seller-stock-status.json', report)
         return report
 
@@ -324,9 +347,10 @@ class Seller(AgentExecutor):
                 self.reservations.finish(task.id, token, 'open', previous, self.now())
                 await up.requires_input(say('A whole-credit numeric offer is required. Current asking {}'.format(previous['ask'])))
                 return
-            bounds = pricing(unit, policy, now, previous['ask'])
             with Memory(self.md) as memory:
                 remembered = memory.context(sku=unit['sku'], role='seller')
+                market_prices = price_ratio(memory, catalog, unit['category'], now)
+            bounds = pricing(unit, policy, now, previous['ask'], market_prices)
             state = dict(task_id=task.id, buyer_text=text[:3000], incoming_offer=offer,
                          previous_ask=previous['ask'], unit={k: unit[k] for k in
                          ('unit', 'sku', 'name', 'category', 'list_price', 'cost', 'kind')},
@@ -335,9 +359,10 @@ class Seller(AgentExecutor):
                          memory=remembered)
             budget = min(60, expires - now)
             action = await asyncio.wait_for(asyncio.to_thread(
-                self.decision, PROMPT, state,
+                resilient_choose, self.md, self.decision, PROMPT, state,
                 lambda value: validate_action(value, offer, previous['ask'], bounds),
-                'seller', time.monotonic() + budget, dict(task_id=task.id, shop=self.name)), timeout=budget)
+                'seller', time.monotonic() + budget, lambda: seller_fallback(state),
+                dict(task_id=task.id, shop=self.name)), timeout=budget)
             now = self.now()
             fresh = load_inventory(self.md, now=now)
             unit = next((u for u in fresh['units'] if u['unit'] == unit_id), None)
@@ -346,14 +371,15 @@ class Seller(AgentExecutor):
             current_deadline = timestamp(current_policy.get('trading_deadline'))
             if now >= expires or (current_deadline is not None and now >= current_deadline):
                 raise ValueError('Quote or trading deadline reached')
-            validate_action(action, offer, previous['ask'], pricing(unit, current_policy, now, previous['ask']))
+            validate_action(action, offer, previous['ask'], pricing(unit, current_policy, now, previous['ask'], market_prices))
             data = dict(previous, ask=action['price'] if action['action'] == 'ask' else previous['ask'],
                         rounds=previous['rounds'] + 1, summary=action['summary'],
                         recent=(previous['recent'] + [dict(buyer=text[:500], action=action['action'], price=action['price'])])[-2:])
             receipt = None
             if action['action'] == 'accept':
                 receipt = sign_receipt(dict(shop=self.name, item=unit['sku'], price=action['price'], task=task.id), unit_id, key=self.key)
-                data.update(receipt=receipt, signed_at=now)
+                data.update(receipt=receipt, signed_at=now,
+                            checkout_guarded=os.environ.get('R3_CHECKOUT_GUARD') == '1')
             status = {'ask': 'open', 'accept': 'signed_pending', 'reject': 'closed'}[action['action']]
             self.reservations.finish(task.id, token, status, data, self.now())
             committed = status == 'signed_pending'
@@ -421,6 +447,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if os.environ.get('R3_ENABLE_LIVE') != '1':
         parser.error('Live operation is disabled; R3_ENABLE_LIVE=1 is required')
+    if os.environ.get('R3_CHECKOUT_GUARD') != '1':
+        parser.error('Use r3_market_kit.py join: durable checkout gating is required')
     if not 1 <= args.port <= 65535:
         parser.error('Port must be between 1 and 65535')
     import uvicorn

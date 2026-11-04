@@ -11,13 +11,17 @@ DEFAULT_POLICY = {
     'reserve_cash_fraction': .25, 'purchase_budget_fraction': .10,
     'max_sku_units': 3, 'max_total_units': 40, 'max_category_fraction': .35,
     'quote_ttl_seconds': 180, 'warranty_hours': 0, 'liquidation_hours': 3,
-    'trading_deadline': None, 'min_food_buffer_minutes': 5,
+    'trading_deadline': '2026-11-17T23:59:00+09:00', 'min_food_buffer_minutes': 5,
     'max_buyer_turns': 6, 'buyer_timeout_seconds': 240,
     'analysis_interval_seconds': 900, 'restock_cooldown_seconds': 900,
     'commitment_ttl_seconds': 1800, 'trend_half_life_seconds': 21600,
     'min_turnover_hours': 6, 'public_observation_enabled': True,
-    'forum_enabled': False, 'reflection_enabled': False,
+    'forum_enabled': True, 'reflection_enabled': False,
     'reflection_interval_seconds': 1800,
+    'fallback_enabled': True, 'model_call_seconds': 20,
+    'model_cooldown_seconds': 300, 'supply_margin_seconds': 20,
+    'adaptive_pricing': True, 'opening_price_fraction': .9,
+    'max_inventory_fraction': .6,
 }
 
 
@@ -186,4 +190,3 @@ def load_inventory(md=None, now=None, max_age=45):
 def require_live():
     if os.environ.get('R3_ENABLE_LIVE') != '1':
         raise SystemExit('Round 3 is locked. Deployment is not enabled; use offline tests or --dry-run.')
-

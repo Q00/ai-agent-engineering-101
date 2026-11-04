@@ -1,5 +1,6 @@
 """Append-only local evidence, bounded retrieval, and explicitly conditional lessons."""
 import hashlib
+import fcntl
 import json
 from pathlib import Path
 import sqlite3
@@ -18,7 +19,15 @@ class Memory:
         self.md.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(self.md / 'r3-memory.sqlite3', timeout=15)
         self.db.row_factory = sqlite3.Row
-        self.db.execute('PRAGMA journal_mode=WAL')
+        # Serialize first-open WAL/schema setup across concurrent buyer/restock processes.
+        with (self.md / 'memory-schema.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            self._initialize()
+        self._create_context_view()
+
+    def _initialize(self):
+        if self.db.execute('PRAGMA journal_mode').fetchone()[0].lower() != 'wal':
+            self.db.execute('PRAGMA journal_mode=WAL')
         self.db.executescript('''
             CREATE TABLE IF NOT EXISTS events (
                 id INTEGER PRIMARY KEY, kind TEXT NOT NULL, event_key TEXT NOT NULL,
@@ -33,7 +42,6 @@ class Memory:
                 evidence TEXT, ts REAL, status TEXT DEFAULT 'candidate');
         ''')
         self.db.commit()
-        self._create_context_view()
 
     def _create_context_view(self):
         # Derived links are recalculated on reads; immutable evidence is never rewritten.
