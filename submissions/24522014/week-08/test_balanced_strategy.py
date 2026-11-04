@@ -30,6 +30,85 @@ class FastQuotes(unittest.TestCase):
         self.assertIsNone(buyer_fast.decision('asking 101', 100))
         self.assertEqual(buyer_fast.decision('asking 100', 100, 100)['action'], 'walk_away')
 
+    def test_sentence_final_period_is_not_a_decimal(self):
+        for text, price in (('asking 110.', 110), ('Counteroffer: 234659.', 234659),
+                            ('Our asking price is 42630.', 42630), ('The asking price is 42630', 42630),
+                            ('asking 1,000.', 1000), ('Asking: 28652. ', 28652),
+                            ('Asking price: 21500.\n', 21500), ('asking 110, no warranty.', 110),
+                            ('가격: 110원.', 110), ('asking 1881820 KRW.', 1881820)):
+            with self.subTest(text=text):
+                self.assertEqual(buyer_fast.decision(text, 2000000),
+                                 {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+
+    def test_shapes_seen_in_real_quotes(self):
+        for text, price in (
+                ('Foo 700gx2 (1.4kg): asking 14354. Send your offer as a number.\nReply with a number, or ok to take the ask: 14354', 14354),
+                ('Bar 500mL X 60 (Gdf79cd07), grade C, 243.2 h shelf life left. Asking 18308. Send your offer as a number.', 18308),
+                ('Baz Q (G1515d951), 6 h warranty. This negotiation closes after 6 offers. Asking 326334. Send your offer as a number.', 326334),
+                ('SKU G1 | unit u-8 | Qux 500mL | list 15200 | grade B now | 348.4 h left | 85% of list | ask 12920', 12920),
+                ('[sku G8] Quux | grade=A | list=87900 ask=70900 (-19%)', 70900),
+                ('Foo: asking 19853. Opening quote discount included: 20466 -> 19853; saving 613.', 19853)):
+            with self.subTest(text=text):
+                self.assertEqual(buyer_fast.decision(text, 2000000)['price'], price)
+
+    def test_decimals_and_malformed_numbers_still_hold(self):
+        for text in ('asking 100.50', 'asking 100.50.', 'asking 100.5 now', 'asking 1,00', 'asking 1,00.',
+                     'asking 1.000', 'asking 0.', 'asking 0110.', 'asking 100..', 'asking 100.Send', 'asking -100.'):
+            with self.subTest(text=text):
+                self.assertIsNone(buyer_fast.decision(text, 1000))
+
+    def test_a_malformed_price_is_not_hidden_by_a_clean_one(self):
+        for text in ('asking 100.50 and asking 100', 'asking 100. Counteroffer: 100.50', 'asking 1,00. asking 100.'):
+            with self.subTest(text=text):
+                self.assertIsNone(buyer_fast.decision(text, 1000))
+
+    def test_conflicting_prices_hold_even_with_periods(self):
+        for text in ('asking 100. Counteroffer: 90.', 'asking 100. Reply or take the ask: 110.',
+                     'asking 100-110.', 'asking 100 to 110.', 'asking 100, or 110.', 'asking 100 -> 90.'):
+            with self.subTest(text=text):
+                self.assertIsNone(buyer_fast.decision(text, 1000))
+        self.assertEqual(buyer_fast.decision('asking 100. Counteroffer: 100.', 1000)['price'], 100)
+
+    def test_budget_and_repeat_still_guarded_with_periods(self):
+        self.assertIsNone(buyer_fast.decision('asking 101.', 100))
+        self.assertEqual(buyer_fast.decision('Counteroffer: 100.', 100, 100)['action'], 'walk_away')
+
+    def test_other_numbers_are_never_the_price(self):
+        for text in ('Foo 110 Send your offer as a number.', 'Foo 110.', 'Item 3 closes after 6 offers.',
+                     'list price 900.', 'list 900.', 'price 900.', 'The price is 900.', 'Our price is 900.',
+                     'market median 900.', 'Last settled at 900.', 'budget 100.'):
+            with self.subTest(text=text):
+                self.assertIsNone(buyer_fast.decision(text, 1000))
+
+    def test_past_and_market_figures_are_not_the_current_ask(self):
+        for text in ('list asking price is 900.', 'market asking 900.', 'median asking price: 900.',
+                     'previous asking 900.', 'We were asking 900.', 'the asking price was 900.',
+                     'used to ask 900.', 'average asking price is 900.', '시중 가격 900.', '이전 가격: 900원.',
+                     'Was asking 900. Asking 800.'):
+            with self.subTest(text=text):
+                self.assertIsNone(buyer_fast.decision(text, 1000))
+
+    def test_quantity_like_followers_are_not_prices(self):
+        for text in ('asking 3 packs for 100.', 'asking 10% below list.', 'asking 110kg.', 'ask 5 questions.',
+                     'asking 100 was too low.', '가격은 110원입니다.', '제안가 110원입니다.'):
+            with self.subTest(text=text):
+                self.assertIsNone(buyer_fast.decision(text, 1000))
+
+    def test_classify_explains_each_outcome_without_changing_decision(self):
+        for text, cap, last, code in (('asking 100.', 1000, None, 'rule_offer'),
+                                      ('asking 100.', 1000, 100, 'rule_repeated_offer'),
+                                      ('asking 101.', 100, None, 'over_budget'),
+                                      ('Our price is 90.', 1000, None, 'no_labeled_price'),
+                                      ('asking 100.50', 1000, None, 'malformed_price'),
+                                      ('asking 100. Counteroffer: 90.', 1000, None, 'conflicting_prices'),
+                                      ('previous asking 900.', 1000, None, 'non_current_price')):
+            with self.subTest(text=text):
+                decided, reason, _ = buyer_fast.classify(text, cap, last)
+                self.assertEqual(reason, code)
+                self.assertEqual(decided, buyer_fast.decision(text, cap, last))
+        self.assertEqual(buyer_fast.classify('asking 101.', 100)[2], 101)
+        self.assertIsNone(buyer_fast.classify('asking 100. Counteroffer: 90.', 1000)[2])
+
 
 class Files(unittest.TestCase):
     def setUp(self):
