@@ -287,3 +287,40 @@ def test_six_hour_summary_reports_break_rates_from_a_matured_cohort(
     summary = db.summary({}, hours=6)
     assert summary["settles"] == 0
     assert summary["break_rates"] == {"A": {"broken": 1, "observed": 1}}
+
+
+def test_break_rates_count_one_break_against_the_unit_that_broke(
+    tmp_path: Path,
+) -> None:
+    # Given: one buyer bought three A lamps 8 h ago and one of them (u2) broke.
+    now = time.time()
+    db = LedgerDB(tmp_path / "ledger.sqlite")
+    rows: list[dict[str, object]] = [
+        {
+            "seq": n,
+            "ts": now - 8 * 3600 + n,
+            "kind": "settle",
+            "round": 3,
+            "data": {
+                "buyer": "b",
+                "shop": "s",
+                "item": LAMP,
+                "amount": 30000,
+                "grade": "A",
+                "unit": f"u{n}",
+            },
+        }
+        for n in (1, 2, 3)
+    ]
+    rows.append(
+        {
+            "seq": 4,
+            "ts": now - 7 * 3600,
+            "kind": "broken",
+            "round": 3,
+            "data": {"buyer": "b", "item": LAMP, "unit": "u2"},
+        }
+    )
+    _ = db.ingest(rows)
+    # Then: one of three broke, not all three (the old (buyer, SKU) match said 3/3).
+    assert db.break_rates(now - 24 * 3600) == {"A": (1, 3)}

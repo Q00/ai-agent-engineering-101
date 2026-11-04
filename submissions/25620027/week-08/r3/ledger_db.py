@@ -48,6 +48,15 @@ def ledger_path(market_dir: Path | None = None) -> Path:
     return base.resolve().parent / LEDGER_FILE
 
 
+def _data(raw: object) -> dict[str, object]:
+    """Return a row's JSON payload as a dict; anything unreadable is empty."""
+    try:
+        data = json.loads(str(raw or "{}"))
+    except ValueError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 class LedgerDB:
     """SQLite mirror of the rows we have seen; ``cursor`` is the last seq ingested."""
 
@@ -216,24 +225,53 @@ class LedgerDB:
         return out
 
     def break_rates(self, since: float) -> dict[str, tuple[int, int]]:
-        """Per grade: (broken, settled goods observed 6 h or older) since ``since``."""
+        """Per grade: (broken, settled goods observed 6 h or older) since ``since``.
+
+        Each break counts once, against the unit that broke: the settle with the
+        same ``unit`` id, else that buyer's latest unmatched settle of the SKU in
+        the six hours before. Matching on (buyer, SKU) alone marked every repeat
+        purchase broken and reported grade A at 42% (one unit per unit: 3.1%).
+        Food is left out: it expires, it does not break.
+        """
         now = time.time()
         with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
             settled = db.execute(
-                """SELECT buyer, sku, grade, ts FROM rows
-                WHERE kind='settle' AND ts >= ? AND ts <= ?""",
+                """SELECT seq, buyer, sku, grade, ts, data FROM rows
+                WHERE kind='settle' AND ts >= ? AND ts <= ? ORDER BY ts""",
                 (since, now - BREAK_WINDOW),
             ).fetchall()
             broken = db.execute(
-                "SELECT buyer, sku, ts FROM rows WHERE kind='broken' AND ts >= ?",
+                "SELECT buyer, sku, ts, data FROM rows WHERE kind='broken' AND ts >= ?",
                 (since,),
             ).fetchall()
-        broken_keys = {(str(b), str(s)) for b, s, _ in broken}
+        grade_of: dict[int, str] = {}
+        by_unit: dict[str, int] = {}
+        by_pair: dict[tuple[str, str], list[tuple[float, int]]] = {}
+        for seq, buyer, sku, grade, ts, raw in settled:
+            data = _data(raw)
+            if data.get("expires_at"):
+                continue
+            grade_of[int(seq)] = str(grade or "?")
+            unit = str(data.get("unit") or "")
+            if unit:
+                by_unit[unit] = int(seq)
+            by_pair.setdefault((str(buyer), str(sku)), []).append((float(ts), int(seq)))
+        hit: set[int] = set()
+        for buyer, sku, ts, raw in broken:
+            seq = by_unit.get(str(_data(raw).get("unit") or ""))
+            if seq is None:
+                earlier = [
+                    s
+                    for t, s in by_pair.get((str(buyer), str(sku)), [])
+                    if 0 <= float(ts) - t <= BREAK_WINDOW and s not in hit
+                ]
+                seq = earlier[-1] if earlier else None
+            if seq is not None:
+                hit.add(seq)
         rates: dict[str, tuple[int, int]] = {}
-        for buyer, sku, grade, _ in settled:
-            key = str(grade or "?")
-            hit, total = rates.get(key, (0, 0))
-            rates[key] = (hit + int((str(buyer), str(sku)) in broken_keys), total + 1)
+        for seq, grade in grade_of.items():
+            b, t = rates.get(grade, (0, 0))
+            rates[grade] = (b + int(seq in hit), t + 1)
         return rates
 
     def summary(
