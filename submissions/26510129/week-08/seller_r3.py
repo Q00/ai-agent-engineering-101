@@ -119,12 +119,13 @@ def price_plan(unit, task, now=None, params=None, market=None, pressure=None):
     market_price, market_n, market_src = market if market and market[0] else (None, 0, "none")
     if market_price:
         target = market_price * (0.97 if arm == "volume" else 1.05) * params["seller_markup"]
-    # the category's pressure from restock's category_pressure.json (my last 6 h): units that draw 1.5+ buyers each
-    # carry 5% more, units that close under 40% of the time give 3% back. 11-05 01:00: the market has no busy hour
-    # (orders arrive flat around the clock), so the regime is per category, not per time of day.
+    # the category's pressure from restock's category_pressure.json (my last 6 h): where units close 60%+ of the
+    # time they carry 5% more, where they close under 40% they give 3% back. 11-05 01:00: the market has no busy
+    # hour (orders arrive flat around the clock), so the regime is per category, not per time of day. Opens per
+    # deal is not the signal: juice had 4.3 opens per deal because buyers kept leaving (close rate 23%), not queueing.
     pressure = pressure or {}
     regime = "even"
-    if pressure.get("opens_per_deal", 0) >= 1.5:
+    if pressure.get("opens", 0) >= 10 and pressure.get("close_rate", 0) >= 0.6:
         target, regime = target * 1.05, "sought"
     elif pressure.get("opens", 0) >= 5 and pressure.get("close_rate", 1.0) < 0.4:
         target, regime = target * 0.97, "slow"

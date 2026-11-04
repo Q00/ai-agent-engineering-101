@@ -58,8 +58,8 @@ class Round3InventorySellerTest(unittest.TestCase):
         unit = {"sku": "GOOD-1", "kind": "goods", "cost": 700, "list_price": 1000, "grade": "A", "expires_at": None}
         p = {"seller_volume_share": 1.0, "seller_markup": 1.0}
         even = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p)
-        sought = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 10, "opens_per_deal": 3.0, "close_rate": 0.33})
-        slow = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 10, "opens_per_deal": 1.0, "close_rate": 0.33})
+        sought = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 24, "opens_per_deal": 1.25, "close_rate": 0.8})
+        slow = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 7, "opens_per_deal": 4.3, "close_rate": 0.23})
         self.assertEqual((873, "even"), (even["ask"], even["regime"]))
         self.assertEqual((917, "sought"), (sought["ask"], sought["regime"]))   # x 1.05
         self.assertEqual((847, "slow"), (slow["ask"], slow["regime"]))         # x 0.97
