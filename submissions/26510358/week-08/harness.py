@@ -18,7 +18,7 @@ from inference_queue import QueueStateError, QueueTimeout, inference_slot
 from inference_pool import defer_pool, pool_slot, validate_priority
 
 ROOT = Path(__file__).resolve().parent
-MODEL = os.environ.get("A2A_MODEL", "gpt-6-luna")
+MODEL = os.environ.get("A2A_MODEL", "gpt-6.1-sol")
 COMMAND = ["codex", "exec", "--skip-git-repo-check", "--ephemeral", "--ignore-user-config",
            "--sandbox", "read-only", "--color", "never", "--model", MODEL,
            "--disable", "apps", "--disable", "plugins",

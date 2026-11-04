@@ -14,10 +14,10 @@ from pathlib import Path
 
 from . import config
 
-MODEL = os.environ.get("R3_MODEL", "gpt-6-luna")
+MODEL = os.environ.get("R3_MODEL", "gpt-6.1-sol")
 CMD = ["codex", "exec", "--skip-git-repo-check", "--ephemeral", "--ignore-user-config", "--sandbox", "read-only",
        "--color", "never", "--model", MODEL, "--disable", "apps", "--disable", "plugins",
-       "-c", 'model_reasoning_effort="low"']
+       "-c", 'model_reasoning_effort="medium"']
 
 
 def ask_json(task, data, timeout=45, purpose="misc"):
