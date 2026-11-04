@@ -43,6 +43,14 @@ EV_DEFAULT_PRICE_RATIO = 0.75       # expected sale price / list price without m
 GOODS_END_RISK = 0.10               # share of cost an unsold goods unit is expected to lose (clearance, round end)
 FOOD_LEFTOVER_RISK = 0.15           # same for long-life food that does not sell in the horizon
 
+# --- shop: premium pilot (2026-11-04): goods listed at 800k+ sell 36/h across only 9 shops at 0.80 of list,
+#     we sold none. A separate small budget, so a slow pilot cannot starve the main stock.
+PREMIUM_MIN_LIST = 800_000          # a goods SKU at or above this list price is premium
+PREMIUM_BUDGET = 2_500_000          # worst-case cost of premium stock on hand, outside the normal stock budget
+PREMIUM_MAX_UNITS = 3               # premium units on hand at most
+PREMIUM_HOURS = 12                  # market sales window for picking premium SKUs
+PREMIUM_MIN_SOLD = 10               # a premium SKU needs this many market sales in the window
+
 # --- shop: competitor scout (r3lib/scout.py) ------------------------------------------------------
 SCOUT_MIN_SOLD = 20                 # a category needs this many market settles in 6 h before the scout has an opinion
 SCOUT_LOW_PRESSURE = 0.6            # competitors restock under 60% of what sells: a gap
@@ -53,6 +61,8 @@ SCARCITY_PREMIUM = 0.03             # first ask +3% of list in an under-supplied
 
 # --- shop: pricing ---------------------------------------------------------------------------------
 START_ASK_RATIO = 0.90              # first ask as a share of list price, before memory has prices
+ASK_ROOM = 0.09                     # first ask = market ratio + this (0.05 until 2026-11-04: our asks sat ~5 pts under
+                                    #   the market; profit per visit 0.052 at ask 0.70-0.75 vs 0.072 at 0.75-0.80)
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
 WARRANTY_HOURS = 6                  # goods break up to 6 h after the sale (agent.md)

@@ -117,10 +117,14 @@ def unit_cost_estimate(info):
     return info["list_price"] * 0.75            # worst case (grade A top): the market refuses a lot above balance
 
 
+def is_premium(info):
+    return info.get("kind") == "goods" and (info.get("list_price") or 0) >= config.PREMIUM_MIN_LIST
+
+
 def pick_sku(category, info_by_cat, mem, median_price, explore):
     """Best-selling SKU in the category (memory), else the SKU closest to the category median price, which sits
-    inside most orders' acceptable band (0.5-1.5 x a reference price)."""
-    skus = info_by_cat.get(category) or []
+    inside most orders' acceptable band (0.5-1.5 x a reference price). Premium SKUs are left to the pilot."""
+    skus = [(s, i) for s, i in info_by_cat.get(category) or [] if not is_premium(i)]
     counts = mem.sku_counts(category)
     sold = [s for s in counts if any(x == s for x, _ in skus)]
     if sold and not explore:
@@ -142,8 +146,12 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         info_by_cat.setdefault(i["category"], []).append((s, i))
     units = inv.get("units") or []
     have, stock_cost, cat_cost = {}, 0, {}
+    prem_units, prem_cost = [], 0
     for u in units:
-        if u.get("grade") != "expired":
+        if u.get("grade") != "expired" and is_premium(u):
+            prem_units.append(u)                          # premium stock has its own budget (pilot below)
+            prem_cost += u["cost"]
+        elif u.get("grade") != "expired":
             have[u["category"]] = have.get(u["category"], 0) + 1
             stock_cost += u["cost"]
             cat_cost[u["category"]] = cat_cost.get(u["category"], 0) + u["cost"]
@@ -237,7 +245,30 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         why.append({"category": k, "sku": sku, "qty": 1, "reason": "coverage"})
     if spent and not dry_run:
         mem.put("explore_spent", (mem.get("explore_spent") or 0) + spent)
-    return lines, why, {"balance": balance, "stock_cost": stock_cost, "stock_budget": stock_max, "units": len(units)}
+
+    # 3) premium pilot: one unit each of the market's best-selling 800k+ SKUs, under PREMIUM_BUDGET / MAX_UNITS
+    cash = balance - config.CASH_RESERVE - sum(unit_cost_estimate(cat[ln["sku"]]) * ln["qty"] for ln in lines)
+    held = {u["sku"] for u in prem_units}
+    n_prem, prem_est = len(prem_units), prem_cost
+    for sku, sold in mem.premium_skus(config.PREMIUM_MIN_LIST, config.PREMIUM_HOURS, config.PREMIUM_MIN_SOLD):
+        info = cat.get(sku)
+        if not info or not is_premium(info) or sku in held or len(lines) >= 10 or n_prem >= config.PREMIUM_MAX_UNITS:
+            continue
+        ratio, _ = mem.price_ratio(sku=sku, category=info["category"])
+        est = unit_cost_estimate(info)
+        if ratio is not None and ratio < 0.70:
+            why.append({"category": info["category"], "sku": sku, "skip": f"premium: market pays {ratio:.2f} of list"})
+            continue
+        if prem_est + est > config.PREMIUM_BUDGET or est > cash:
+            why.append({"category": info["category"], "sku": sku,
+                        "skip": f"premium budget: {prem_est:,.0f} held + {est:,.0f} worst case"})
+            continue
+        lines.append({"sku": sku, "qty": 1})
+        n_prem, prem_est, cash = n_prem + 1, prem_est + est, cash - est
+        why.append({"category": info["category"], "sku": sku, "qty": 1, "reason": "premium_pilot",
+                    "market_sold": sold, "market_ratio": ratio})
+    return lines, why, {"balance": balance, "stock_cost": stock_cost, "stock_budget": stock_max, "units": len(units),
+                        "premium_units": n_prem, "premium_cost": prem_est}
 
 
 def main():

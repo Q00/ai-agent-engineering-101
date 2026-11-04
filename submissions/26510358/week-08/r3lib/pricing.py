@@ -28,8 +28,8 @@ def unit_floor(u, now=None, hours_left_round=None):
 
 def unit_ask(u, market_ratio=None, adjust=0.0):
     """First ask. Starts from what the market has been paying for this SKU or category (median settled price /
-    list price) plus a little room, else START_ASK_RATIO; then the grade factor and our own deal-rate adjustment."""
-    base = (market_ratio + 0.05) if market_ratio else config.START_ASK_RATIO
+    list price) plus ASK_ROOM, else START_ASK_RATIO; then the grade factor and our own deal-rate adjustment."""
+    base = (market_ratio + config.ASK_ROOM) if market_ratio else config.START_ASK_RATIO
     base = min(1.0, max(0.5, base + adjust))
     grade = u.get("grade") if u.get("grade") in ("A", "B", "C") else "B"
     ask = u["list_price"] * base * config.GRADE_FACTOR.get(u.get("kind"), config.GRADE_FACTOR["goods"])[grade]

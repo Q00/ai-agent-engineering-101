@@ -188,6 +188,13 @@ class Memory:
                 "SELECT sku, COUNT(*) n FROM settles WHERE category=? AND ts>? GROUP BY sku ORDER BY n DESC",
                 (category, time.time() - hours * 3600))}
 
+    def premium_skus(self, min_list, hours=12, min_sold=10):
+        """Goods SKUs listed at min_list or more, by market sales in the window: [(sku, n)]."""
+        with self.db() as c:
+            return [(r["sku"], r["n"]) for r in c.execute(
+                "SELECT sku, COUNT(*) n FROM settles WHERE kind='goods' AND list_price>=? AND ts>? GROUP BY sku "
+                "HAVING n>=? ORDER BY n DESC", (min_list, time.time() - hours * 3600, min_sold))]
+
     def price_ratio(self, sku=None, category=None, hours=72, min_n=3):
         """Median settled price / list price for a SKU, else its category; None without enough evidence."""
         with self.db() as c:

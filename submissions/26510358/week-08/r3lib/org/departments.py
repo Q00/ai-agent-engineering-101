@@ -5,7 +5,7 @@ so the same code runs behind the internal A2A server or in-process when the serv
   purchasing  propose: what to buy (demand x share x gap x horizon, EV quantity)  [restock_r3.plan]
   logistics   window: is supply open; approve: cash, budget and line limits on a proposal; health: stock risks
   quality     warranty_policy: break rate and warranty per grade x category; harsh: review-spam styles; refunds
-  marketing   stats: our posts, votes and member codes
+  marketing   stats: our posts, votes and member codes; pricing: close rate, ask levels, premium pilot
 
 Selling (shop_r3.py) never goes through here: it answers buyers in milliseconds in-process and reads the same
 memory and pricing rules. The departments decide on the slow path (every 60 s or less often).
@@ -135,6 +135,31 @@ def marketing_stats(mem, args, call):
             "member_codes": m["n"], "member_code_uses": m["u"]}
 
 
+def marketing_pricing(mem, args, call, now=None):
+    """How our asks do: close rate, first ask and final price (share of list) over the last hours, plus the
+    premium pilot (800k+ goods) sold and held. The 2026-11-04 change (ASK_ROOM 0.05 -> 0.09) is judged on this."""
+    now = now or time.time()
+    hours = float(args.get("hours") or 2)
+    with mem.db() as c:
+        r = c.execute("SELECT COUNT(*) n, AVG(outcome='deal') close, AVG(first_ask*1.0/list_price) ask, "
+                      "AVG(CASE WHEN outcome='deal' THEN final_price*1.0/list_price END) fin FROM negotiations "
+                      "WHERE role='shop' AND list_price>0 AND ts>?", (now - hours * 3600,)).fetchone()
+        mine = mem.my_shop_urls()
+        prem = {"sold_24h": 0, "revenue_24h": 0}
+        if mine:
+            p = c.execute(f"SELECT COUNT(*) n, COALESCE(SUM(amount), 0) rev FROM settles WHERE kind='goods' AND "
+                          f"list_price>=? AND ts>? AND shop IN ({','.join('?' * len(mine))})",
+                          (config.PREMIUM_MIN_LIST, now - 24 * 3600, *mine)).fetchone()
+            prem = {"sold_24h": p["n"], "revenue_24h": p["rev"]}
+    inv = market.read_json("inventory.json", {}, args.get("state")) or {}
+    held = [u for u in inv.get("units") or [] if u.get("kind") == "goods" and u.get("grade") != "expired"
+            and (u.get("list_price") or 0) >= config.PREMIUM_MIN_LIST]
+    prem.update(held=len(held), held_cost=sum(u["cost"] for u in held))
+    rd = lambda x: round(x, 3) if x is not None else None
+    return {"ask_room": config.ASK_ROOM, "hours": hours, "negotiations": r["n"], "close_rate": rd(r["close"]),
+            "first_ask_ratio": rd(r["ask"]), "final_ratio": rd(r["fin"]), "premium": prem}
+
+
 # ------------------------------------------------------------------------------------------- ceo
 def ceo_tick(mem, args, call):
     """One restock cycle. Returns the kit's restock answer ({"buy": [...]}, maybe "bankrupt" or "wait")."""
@@ -195,7 +220,8 @@ def ceo_kpi(mem, args, call, now=None):
     if me is not None:
         snap["player"] = {"rank": me + 1, "of": len(players), "total": players[me].get("total"),
                           "leader_total": players[0].get("total")}
-    for to, skill in (("logistics", "health"), ("quality", "refunds"), ("marketing", "stats")):
+    for to, skill in (("logistics", "health"), ("quality", "refunds"), ("marketing", "stats"),
+                      ("marketing", "pricing")):
         try:
             snap[f"{to}.{skill}"] = call(to, skill, {})
         except Exception as e:
@@ -216,7 +242,8 @@ SKILLS = {
     "quality": {"warranty_policy": (quality_warranty_policy, "break rate and warranty per grade and category"),
                 "harsh": (quality_harsh, "buyer styles we decline for review spam"),
                 "refunds": (quality_refunds, "our goods refunds by grade")},
-    "marketing": {"stats": (marketing_stats, "our buyer posts, votes and member codes")},
+    "marketing": {"stats": (marketing_stats, "our buyer posts, votes and member codes"),
+                  "pricing": (marketing_pricing, "close rate, ask and final price ratios, premium pilot")},
 }
 
 
