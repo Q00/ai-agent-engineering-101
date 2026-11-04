@@ -22,6 +22,37 @@ from stock_budget import StockBudget
 from stock_lifecycle import update as update_stock, metrics as stock_metrics
 
 ROOT = Path(__file__).resolve().parent
+WINDOW_HANDOFF_SECONDS = 10
+SUPPLY_LINE_SECONDS = 10
+
+
+def supply_window(inv, now):
+    """Use the kit's explicit supply schedule, never infer a 20-minute clock."""
+    raw = inv.get("restock")
+    if not isinstance(raw, dict) or type(raw.get("open")) is not bool:
+        return {"status": "window_invalid"}
+    dates = {k: raw[k] for k in ("opens_at", "closes_at")
+             if number(raw.get(k)) and raw[k] >= 0}
+    if raw["open"] is False:
+        return {"status": "window_closed", **dates}
+    if (len(dates) != 2 or dates["closes_at"] <= dates["opens_at"]
+            or not number(now)):
+        return {"status": "window_invalid", **dates}
+    status = ("window_closed" if now < dates["opens_at"] or now >= dates["closes_at"]
+              else "window_closing" if dates["closes_at"] - now <= WINDOW_HANDOFF_SECONDS
+              else "window_open")
+    return {"status": status, **dates}
+
+
+def _skip(root, path, state, window, now, status=None):
+    """One diagnostic per state transition, rather than one row every hook."""
+    event = {**window, "status": status or window["status"]}
+    if state.get("last_skip") != event:
+        state["last_skip"] = event
+        atomic_json(path, state)
+        append_event(root / "logs/restock-decisions.jsonl", {
+            "time": now, "round": state["round"], **event, "buy": []})
+    return {"buy": []}
 
 
 def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifecycle=None, horizon=None):
@@ -76,8 +107,14 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
     def stock_cap(sku):
         cap = cfg["max_food_units_per_sku"] if candidates[sku]["kind"] == "food" else cfg["max_units_per_sku"]
         m = economics.get(sku, {})
-        if m.get("mature", 0) < cfg["min_mature_sales"] or m.get("unknown", 0) or m.get("pending", 0):
-            cap = min(cap, 1)
+        proven = (m.get("mature", 0) >= cfg["min_mature_sales"]
+                  and m.get("net_estimate", 0) > 0 and m.get("speed_score", 0) > 0
+                  and not m.get("unknown", 0) and not m.get("refunded", 0))
+        # Normal warranty exposure is expected for a shop that keeps selling.
+        # It cannot establish profitability by itself, but it must not erase
+        # three mature profitable observations. While it remains, limit depth
+        # to two; incomplete costs/refunds still limit new exposure to one.
+        cap = min(cap, 2 if proven and m.get("pending", 0) else 3 if proven else 1)
         return cap
 
     def available():
@@ -134,6 +171,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         "operation_status": status, "needs_attention": status == "cash_floor_no_stock",
         "bankruptcy_eligible": bankruptcy_eligible, "automatic_bankruptcy": False,
         "exposure": exposure.summary(), "horizon": stage,
+        "depth_limits": {sku: stock_cap(sku) for sku in buy},
         "horizon_exclusions": dict(Counter(reason for allowed, reason in windows.values() if not allowed)),
         "stock_observations": {"held_cost": sum(m["held_cost"] for m in lifecycle_stats.values()),
                                "unresolved_cost": sum(m["unresolved_cost"] for m in lifecycle_stats.values()),
@@ -144,6 +182,10 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
 
 def run_once(root=ROOT, now=None):
     now = time.time() if now is None else now
+    started = time.monotonic()
+    # Keep deterministic injected time, but still account for real network and
+    # disk latency so an initially open window cannot authorize a late plan.
+    clock = lambda: now + max(0, time.monotonic() - started)
     policy = policy_at(root)
     cfg = policy["restock"]
     if not cfg["enabled"]:
@@ -164,28 +206,39 @@ def run_once(root=ROOT, now=None):
             raise ValueError("Invalid restock control; refusing to reset limits")
         if state.get("round") != inv["round"]:
             state = {"round": inv["round"], "attempts": []}
-        last = state.get("last_run")
-        if last is not None and not number(last):
+        if state.get("last_run") is not None and not number(state["last_run"]):
             raise ValueError("Invalid restock interval state")
-        if number(last) and now - last < cfg["interval_seconds"]:
-            return {"buy": []}
-        # Reserve the interval before parsing or emitting any plan, so failures
-        # and restarts cannot produce repeated buys against the same snapshot.
-        state["last_run"] = now
-        atomic_json(path, state)
+        previous = state.get("last_window")
+        if previous is not None and (not isinstance(previous, dict)
+                or any(not number(previous.get(k)) or previous[k] < 0 for k in ("opens_at", "closes_at"))
+                or previous["closes_at"] <= previous["opens_at"]):
+            raise ValueError("Invalid supply window control; refusing to reset it")
+        window = supply_window(inv, clock())
+        if window["status"] != "window_open":
+            return _skip(root, path, state, window, clock())
+        # One plan per observed opening, including server extensions of the
+        # same window. Legacy last_run never hides the first open-window hook.
+        if previous and window["opens_at"] <= previous["opens_at"]:
+            return _skip(root, path, state, window, clock(), "already_planned")
         demand_path = md / "demand.json"
-        if not -5 <= now - demand_path.stat().st_mtime <= 120:
+        if not -5 <= clock() - demand_path.stat().st_mtime <= 120:
             raise ValueError("Category file is stale")
         catalog, demand = read_json(md / "catalog.json"), read_json(demand_path)
         public = refresh_market(root, inv["round"], now)
         # The network read can outlive the previous inventory snapshot.
         inv = Inventory(md).snapshot()
+        checked = supply_window(inv, clock())
+        if checked["status"] != "window_open":
+            return _skip(root, path, state, checked, clock())
+        if inv["round"] != state["round"] or checked["opens_at"] != window["opens_at"]:
+            return _skip(root, path, state, checked, clock(), "window_changed")
+        current = clock()
         if public and public.get("round") != inv["round"]:
             public = None
-        memory = update_sales(root, inv["round"], now, public=public, inventory=inv)
-        lifecycle = update_stock(root, inv, memory, now)
+        memory = update_sales(root, inv["round"], current, public=public, inventory=inv)
+        lifecycle = update_stock(root, inv, memory, current)
         try:
-            update_openings(root, inv, memory, public, policy, now)
+            update_openings(root, inv, memory, public, policy, current)
         except (ValueError, OSError, KeyError, TypeError) as exc:
             append_event(root / "logs/opening-strategy.jsonl", {"time": now, "status": "unavailable",
                          "error": type(exc).__name__})
@@ -193,17 +246,36 @@ def run_once(root=ROOT, now=None):
         for row in state["attempts"]:
             if not isinstance(row, dict) or not number(row.get("time")) or not isinstance(row.get("sku"), str):
                 raise ValueError("Malformed stock planning memory")
-            if 0 <= now - row["time"] <= 7 * 86400:
+            if 0 <= current - row["time"] <= 7 * 86400:
                 attempts.append(row)
-        decision, evidence = plan(inv, catalog, demand, memory, attempts, cfg, now, public,
+        # The official kit submits at most one supply line per ten seconds.
+        # Counting units here is conservative: repeated SKUs collapse to fewer
+        # lines, while cold-start exploration may use one line per unit.
+        line_capacity = max(0, int((checked["closes_at"] - clock()) // SUPPLY_LINE_SECONDS))
+        run_cfg = {**cfg, "max_units_per_run": min(cfg["max_units_per_run"], line_capacity)}
+        decision, evidence = plan(inv, catalog, demand, memory, attempts, run_cfg, current, public,
                                   lifecycle=lifecycle, horizon=policy["horizon"])
-        state["attempts"] = (attempts + [{"time": now, "sku": row["sku"], "planned_qty": row["qty"]}
+        latest = Inventory(md).snapshot()
+        checked = supply_window(latest, clock())
+        if checked["status"] != "window_open":
+            return _skip(root, path, state, checked, clock())
+        if latest["round"] != state["round"] or checked["opens_at"] != window["opens_at"]:
+            return _skip(root, path, state, checked, clock(), "window_changed")
+        if latest != inv:
+            return _skip(root, path, state, checked, clock(), "inventory_changed")
+        if decision["buy"] and checked["closes_at"] - clock() <= SUPPLY_LINE_SECONDS * len(decision["buy"]):
+            return _skip(root, path, state, checked, clock(), "window_closing")
+        state["attempts"] = (attempts + [{"time": current, "sku": row["sku"], "planned_qty": row["qty"]}
                                         for row in decision["buy"]])[-500:]
         # Persist before returning instructions to the kit. A crash may skip a
         # buy, but cannot knowingly emit the same plan a second time.
+        state.update(last_run=clock(), last_window={k: checked[k] for k in ("opens_at", "closes_at")})
+        state.pop("last_skip", None)
         atomic_json(path, state)
-        append_event(root / "logs/restock-decisions.jsonl", {"time": now, "round": inv["round"],
-                     "status": "planned", **decision, **evidence})
+        append_event(root / "logs/restock-decisions.jsonl", {"time": clock(), "round": inv["round"],
+                     "status": "planned", "window": checked,
+                     "supply_lines": len(decision["buy"]), "window_unit_cap": run_cfg["max_units_per_run"],
+                     **decision, **evidence})
         return decision
 
 

@@ -32,7 +32,8 @@ class RestockTests(unittest.TestCase):
         self.logs.mkdir()
         self.now = time.time()
         self.cfg = policy_at()
-        self.inv = {"round": 3, "balance": 5000000, "start": 5000000, "units": []}
+        self.inv = {"round": 3, "balance": 5000000, "start": 5000000, "units": [],
+                    "restock": {"open": True, "opens_at": self.now - 30, "closes_at": self.now + 150}}
         self.catalog = {f"G{i:05}": {"name": f"Product {i}", "kind": "goods", "list_price": 100000,
                                      "category": "furniture" if i < 4 else "appliances"} for i in range(1, 9)}
         self.demand = [{"category": "furniture"}, {"category": "appliances"}]
@@ -150,7 +151,7 @@ class RestockTests(unittest.TestCase):
         os.utime(self.md / "demand.json", (self.now - 500, self.now - 500))
         with self.assertRaisesRegex(ValueError, "stale"):
             restock.run_once(self.root, self.now)
-        self.assertEqual(load_json(control)["last_run"], self.now)
+        self.assertFalse(control.exists())  # No plan was emitted or supply window consumed.
 
     def test_round2_waits_and_kit_consumes_round3_plan_without_bankruptcy(self):
         atomic_json(self.md / "inventory.json", {**self.inv, "round": 2})

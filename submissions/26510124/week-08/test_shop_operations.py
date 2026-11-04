@@ -47,6 +47,7 @@ class ShopOperationsTests(unittest.TestCase):
         atomic_json(self.md / "catalog.json", self.catalog)
 
     def run_cycle(self, inv, now):
+        inv = {**inv, "restock": {"open": True, "opens_at": now - 30, "closes_at": now + 150}}
         atomic_json(self.md / "demand.json", self.demand)
         os.utime(self.md / "demand.json", (now, now))
         with patch("restock.Inventory") as inventory, patch("restock.refresh_market", return_value=None) as network, \
