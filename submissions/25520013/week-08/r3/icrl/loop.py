@@ -30,6 +30,7 @@ BOUNDARY_LEAD_S = 600
 HOLD_STEPS = 3
 LOSS_CAP_FRAC = 0.02
 RETEST_AFTER_S = 86400
+MEMCHECK_S = 3600  # 성수님 2026-11-04: memory recall check every hour (was daily)
 SEED = 20261104
 N_LESSONS = 20
 N_CATS = 8
@@ -708,7 +709,7 @@ def cycle(ctx, L, store, stats, now, record=True):
 
 # ---------------------------------------------------------------- memcheck
 def memcheck(ctx, L, now):
-    if now - (L.get("last_memcheck") or 0) < 86400:
+    if now - (L.get("last_memcheck") or 0) < MEMCHECK_S:
         return None
     L["last_memcheck"] = now
     truth = {}
