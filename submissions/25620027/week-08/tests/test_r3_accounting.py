@@ -269,7 +269,7 @@ def test_bad_stale_or_repeated_inventory_is_not_an_empty_stock_snapshot(
         assert db.execute("SELECT count(*) FROM snapshots").fetchone()[0] == 1
 
 
-def test_more_revenue_with_less_profit_is_worsened_and_confounds_still_block_it(
+def test_more_revenue_with_less_profit_is_worsened_and_a_fold_merges_with_its_move(
     tmp_path: Path,
 ) -> None:
     at = 2000.0
@@ -297,10 +297,12 @@ def test_more_revenue_with_less_profit_is_worsened_and_confounds_still_block_it(
     assert row["delta"]["shop_net_profit"] == -750
     assert row["assessment"] == "worsened"
     assert row["causal_effect_established"] is False
+    # And: a second version a second later is the same change (merged), not a
+    # confound that hides the result.
     change(events, 3, at + 1)
     row = policy_reviews(events, ledger, our_shop=SHOP, our_buyer="me", now=now)[-1]
-    assert row["status"] == "confounded"
-    assert row["assessment"] == "insufficient_evidence"
+    assert row["merged_versions"] == [2, 3]
+    assert row["assessment"] == "worsened"
 
 
 def test_higher_profit_with_less_revenue_is_improved(tmp_path: Path) -> None:

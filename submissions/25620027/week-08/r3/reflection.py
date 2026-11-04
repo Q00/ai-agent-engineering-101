@@ -21,6 +21,14 @@ if TYPE_CHECKING:
 WINDOW_SECONDS: Final = 900
 MAX_VERSIONS: Final = 6
 MIN_SAMPLE: Final = 5
+# Versions arrive every 3-15 minutes (tactical overlay plus strategy), so equal
+# +-15 min windows almost always held another change: on 11/4 every review read
+# "confounded" and the strategy model held for hours with nothing to learn from.
+# Each window now stops at the neighbouring change, so a review covers only the
+# time its version was in force; changes within MERGE_SECONDS (a move and its
+# code fold) count as one, and a window under MIN_WINDOW_SECONDS says so.
+MERGE_SECONDS: Final = 60.0
+MIN_WINDOW_SECONDS: Final = 300.0
 
 
 def policy_reviews(
@@ -31,12 +39,29 @@ def policy_reviews(
     our_buyer: str,
     now: float | None = None,
 ) -> list[dict[str, object]]:
-    """Compare equal 15-minute windows around up to six accepted policy versions."""
+    """Compare the time before and after up to six accepted policy versions.
+
+    Each window is at most 15 minutes and stops at the neighbouring change.
+    """
     stamp = now if now is not None else time.time()
     try:
         return _reviews(events, ledger, our_shop, our_buyer, stamp)
     except (OSError, sqlite3.Error) as exc:
         return [{"status": "unavailable", "reason": type(exc).__name__}]
+
+
+def _groups(
+    rows: list[tuple[int, float, int]],
+) -> list[tuple[float, list[int], int]]:
+    """Merge versions accepted within MERGE_SECONDS: (first ts, versions, fields)."""
+    groups: list[tuple[float, list[int], int]] = []
+    for version, changed_at, fields in sorted(rows, key=lambda r: r[1]):
+        if groups and changed_at - groups[-1][0] <= MERGE_SECONDS:
+            first, versions, total = groups[-1]
+            groups[-1] = (first, [*versions, version], total + fields)
+        else:
+            groups.append((changed_at, [version], fields))
+    return groups
 
 
 def _reviews(
@@ -47,30 +72,36 @@ def _reviews(
     stamp: float,
 ) -> list[dict[str, object]]:
     with closing(sqlite3.connect(events.path, timeout=1)) as db:
-        versions = db.execute(
+        found = db.execute(
             """SELECT version, min(ts), count(*) FROM policy_changes
             WHERE accepted = 1 AND version IS NOT NULL AND ts >= ?
-            GROUP BY version ORDER BY min(ts) DESC LIMIT ?""",
-            (stamp - 86400, MAX_VERSIONS),
-        ).fetchall()
-        changes = db.execute(
-            """SELECT version, ts FROM policy_changes
-            WHERE accepted = 1 AND ts >= ?""",
+            GROUP BY version""",
             (stamp - 86400 - WINDOW_SECONDS,),
         ).fetchall()
+    groups = _groups([(int(v), float(t), int(n)) for v, t, n in found])
+    picked = [index for index, group in enumerate(groups) if group[0] >= stamp - 86400][
+        -MAX_VERSIONS:
+    ]
     reviews: list[dict[str, object]] = []
     with closing(sqlite3.connect(ledger.path, timeout=2)) as db:
         latest = db.execute("SELECT max(ts) FROM rows").fetchone()[0]
-        for version, changed_raw, fields in versions:
-            changed_at = float(changed_raw)
-            start, end = changed_at - WINDOW_SECONDS, changed_at + WINDOW_SECONDS
+        for index in reversed(picked):
+            changed_at, versions, fields = groups[index]
+            previous = groups[index - 1][0] if index > 0 else None
+            following = groups[index + 1][0] if index + 1 < len(groups) else None
+            start = max(changed_at - WINDOW_SECONDS, previous or -1.0)
+            end = min(changed_at + WINDOW_SECONDS, following or float("inf"))
             row: dict[str, object] = {
-                "version": int(version),
+                "version": versions[-1],
                 "changed_at": changed_at,
-                "window_seconds": WINDOW_SECONDS,
-                "fields_changed": int(fields),
+                "window_seconds": round(end - changed_at),
+                "before_seconds": round(changed_at - start),
+                "fields_changed": fields,
                 "causal_effect_established": False,
+                "overlapping_versions": False,
             }
+            if len(versions) > 1:
+                row["merged_versions"] = versions
             if stamp < end:
                 row["status"] = "awaiting_complete_window"
                 reviews.append(row)
@@ -80,20 +111,12 @@ def _reviews(
             stock_path = ledger.path.resolve().with_name(STOCK_FILE)
             before.update(
                 financial_window(
-                    stock_path,
-                    db,
-                    start=start,
-                    end=changed_at,
-                    shop=our_shop,
+                    stock_path, db, start=start, end=changed_at, shop=our_shop
                 )
             )
             after.update(
                 financial_window(
-                    stock_path,
-                    db,
-                    start=changed_at,
-                    end=end,
-                    shop=our_shop,
+                    stock_path, db, start=changed_at, end=end, shop=our_shop
                 )
             )
             row.update(before=before, after=after)
@@ -105,11 +128,11 @@ def _reviews(
                 row["status"] = "ledger_not_caught_up"
                 reviews.append(row)
                 continue
-            overlap = any(
-                v != version and start <= float(ts) < end for v, ts in changes
-            )
-            row["overlapping_versions"] = overlap
-            row["status"] = "confounded" if overlap else "descriptive_only"
+            short = min(changed_at - start, end - changed_at) < MIN_WINDOW_SECONDS
+            row["status"] = "window_too_short" if short else "descriptive_only"
+            # Unequal windows: the before side is scaled to the after side's length.
+            scale = (end - changed_at) / max(1.0, changed_at - start)
+            row["before_scaled_by"] = round(scale, 4)
             row["small_sample"] = (
                 min(
                     before["shop_settles"] + before["buyer_settles"],
@@ -117,8 +140,8 @@ def _reviews(
                 )
                 < MIN_SAMPLE
             )
-            row["delta"] = {
-                key: after[key] - before[key]
+            delta: dict[str, object] = {
+                key: round(after[key] - before[key] * scale, 6)
                 for key in (
                     "shop_settles",
                     "shop_gross_revenue",
@@ -137,21 +160,22 @@ def _reviews(
                 "shop_inventory_asset_change",
             ):
                 left, right = before.get(key), after.get(key)
-                row["delta"][key] = (
-                    round(right - left, 6)
+                delta[key] = (
+                    round(right - left * scale, 6)
                     if isinstance(left, (int, float))
                     and isinstance(right, (int, float))
                     else None
                 )
-            profit = row["delta"].get("shop_net_profit")
+            row["delta"] = delta
+            profit = delta.get("shop_net_profit")
             row["assessment_basis"] = "shop_net_profit"
             row["assessment"] = "insufficient_evidence"
             row["financial_small_sample"] = (
                 min(before["shop_settles"], after["shop_settles"]) < MIN_SAMPLE
             )
             if (
-                profit is not None
-                and not overlap
+                isinstance(profit, (int, float))
+                and not short
                 and not row["small_sample"]
                 and not row["financial_small_sample"]
             ):

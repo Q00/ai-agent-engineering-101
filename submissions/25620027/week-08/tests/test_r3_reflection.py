@@ -137,7 +137,42 @@ def test_round_boundary_and_overlapping_versions_are_explicit(tmp_path: Path) ->
     )
     change(events, 3, at + 10)
     rows = policy_reviews(events, ledger, our_shop="us", our_buyer="me", now=now)
-    assert all(row["status"] == "confounded" for row in rows)
+    # A change 10 s later (a move and its code fold) is one review, not two.
+    assert len(rows) == 1
+    assert rows[0]["merged_versions"] == [2, 3]
+    assert rows[0]["overlapping_versions"] is False
+
+
+def test_a_window_stops_at_the_next_change_and_is_scaled_not_confounded(
+    tmp_path: Path,
+) -> None:
+    # Given: v2 at t, v3 eight minutes later; two sales before t, two after.
+    now = time.time()
+    at = now - 3600
+    events, ledger = (
+        EventLedger(tmp_path / "events.db"),
+        LedgerDB(tmp_path / "ledger.db"),
+    )
+    change(events, 2, at)
+    change(events, 3, at + 480)
+    ledger.ingest(
+        [
+            settled(1, at - 600, "us", 100),
+            settled(2, at - 300, "us", 100),
+            settled(3, at + 100, "us", 100),
+            settled(4, at + 200, "us", 100),
+            {"seq": 5, "ts": now - 10, "kind": "order", "round": 3, "data": {}},
+        ]
+    )
+    rows = policy_reviews(events, ledger, our_shop="us", our_buyer="me", now=now)
+    v2 = next(r for r in rows if r["version"] == 2)
+    # Then: v2's after window is the 480 s it was in force; the 900 s before side
+    # is scaled to 480 s, so 2 sales after vs 2 x 480/900 before.
+    assert v2["status"] == "descriptive_only"
+    assert v2["window_seconds"] == 480
+    assert v2["delta"]["shop_settles"] == round(2 - 2 * 480 / 900, 6)
+    v3 = next(r for r in rows if r["version"] == 3)
+    assert v3["before_seconds"] == 480
 
 
 def test_unavailable_ledger_is_unknown_not_zero(tmp_path: Path) -> None:
