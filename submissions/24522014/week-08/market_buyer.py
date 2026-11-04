@@ -1,4 +1,4 @@
-"""LAB 1 Step 2: select a shop, reuse the week-06 buyer, remember and review."""
+"""R3 buyer: sparse seller-profit research with verified settlement feedback."""
 
 import argparse
 from datetime import datetime, timezone
@@ -16,9 +16,8 @@ from buyer_memory import load_memory, remember, RECENT_COUNT
 from shop_catalog import load_shops
 from r3_policy import buyer_accept, load_policy
 from settlement_memory import payment_outcomes, reconcile
-from r3_selection import select as select_r3
-from buyer_portfolio import reconcile as reconcile_portfolio
 from market_intel import fresh
+from buyer_support import prepare as prepare_support
 
 ROOT = Path(__file__).resolve().parent
 
@@ -102,7 +101,7 @@ def error_kind(error):
     return "agent_error"
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.requirements = requirements
     client.strategy_prompt = ROOT / "prompts/buyer-r3.txt"
@@ -110,7 +109,7 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
     error = None
     try:
         with client:
-            summary = run_autonomous(client, mode, max_turns=6)
+            summary = run_autonomous(client, mode, max_turns=max_turns)
         outcome = "purchased" if summary["outcome"] == "purchased" else "no_deal"
     except (BuyerError, OSError, ValueError) as exc:
         outcome, error = error_kind(exc), str(exc)
@@ -175,10 +174,9 @@ def main():
             catalog_path = args.order.parent / "catalog.json"
             catalog = json.loads(catalog_path.read_text(encoding="utf-8")) if catalog_path.exists() else {}
             snapshot = fresh(args.order.parent)
-            portfolio = reconcile_portfolio(args.order.parent, snapshot.get("rows", []))
-            shop, selected_item, trade_budget, reason, evidence = select_r3(
-                shops, memory, catalog, args.budget, policy=load_policy()["buying"],
-                portfolio=portfolio, kind=order.get("kind"), public_rows=snapshot.get("rows", []))
+            shop, selected_item, trade_budget, reason, evidence, support_decision = prepare_support(
+                args.order.parent, shops, memory, catalog, args.budget, load_policy()["buying"],
+                None, snapshot, order)
             selected_evidence = next((e for e in evidence if shop and e["shop"] == shop["name"] and e["sku"] == selected_item), {})
             if selected_evidence.get("warranty_required"):
                 accept_conditions["warranty_hours"] = selected_evidence["warranty_required"]
@@ -186,7 +184,8 @@ def main():
         parser.exit(1, f"Cannot load selection inputs: {error}\n")
     print(f"[choose] {reason}", flush=True)
     if shop:
-        trade_options = {"mode": args.mode, "decision_context": selected_evidence}
+        trade_options = {"mode": args.mode, "decision_context": selected_evidence,
+                         "max_turns": support_decision["max_turns"]}
         if r3 and order.get("kind") == "goods":
             trade_options["requirements"] = accept_conditions
         result, record = trade(shop, selected_item, trade_budget, **trade_options)
@@ -204,7 +203,8 @@ def main():
         if r3 and not shops:
             reason = "No registered shop offers an acceptable in-stock SKU."
         result = {"shop": "", "receipt": None, "stars": 3, "review": reason}
-        record = {"outcome": "no_eligible_shop", "selection_reason": reason}
+        record = {"outcome": "research_skipped", "selection_reason": reason}
+    record["buyer_support"] = support_decision
     log_dir = ROOT / "logs/market-buyer"
     log_dir.mkdir(parents=True, exist_ok=True)
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid4().hex[:8]

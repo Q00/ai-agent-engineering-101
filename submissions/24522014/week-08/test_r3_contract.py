@@ -45,7 +45,7 @@ class R3Contract(unittest.TestCase):
                 self.assertEqual(seller_r3.find_unit("G00001", {"3"})["unit"], "2")
                 self.assertIsNone(seller_r3.find_unit("G00002"))
 
-    def test_order_filters_stock_and_adds_food_payment_constraints(self):
+    def test_food_constraints_retained_while_support_buyer_skips_food(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             shops = [{"name": "shop", "url": "https://example.test", "reviews": [],
@@ -62,9 +62,11 @@ class R3Contract(unittest.TestCase):
                     patch.object(market_buyer, "trade", return_value=({"shop": "https://example.test", "receipt": None},
                                                                      {"outcome": "no_deal"})) as trade:
                 market_buyer.main()
-            self.assertEqual(trade.call_args.args[1], "G00001")
+            trade.assert_not_called()
             result = json.loads(output.getvalue().splitlines()[-1])
-            self.assertEqual(result["accept"], {"cert": True, "grades": ["A", "B"], "min_hours_left": 5})
+            self.assertIsNone(result["receipt"])
+            from r3_policy import buyer_accept
+            self.assertEqual(buyer_accept(order), {"cert": True, "grades": ["A", "B"], "min_hours_left": 5})
 
 
 if __name__ == "__main__":

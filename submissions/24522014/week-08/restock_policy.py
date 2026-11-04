@@ -129,6 +129,8 @@ def main():
         try:
             observe_forum(md)
             observe_purchases(md)
+            from buyer_support import observe as observe_buyer_support
+            observe_buyer_support(md)
         except (OSError, ValueError, TypeError):
             pass  # Forum observation must not stop inventory safety checks.
         try:

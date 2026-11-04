@@ -45,19 +45,20 @@ class BuyerValue(unittest.TestCase):
     def test_main_passes_value_cap_and_retains_original_order_budget(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            fixtures = {"shops.json": [self.shop], "catalog.json": {"A": {"list_price": 100}},
-                        "order.json": {"round": 3, "item": "goods", "kind": "goods", "budget": 200,
+            fixtures = {"shops.json": [self.shop], "catalog.json": {"A": {"list_price": 100000, "kind": "goods"}},
+                        "inventory.json": {"round": 3, "units": [{"sku": "A"}]},
+                        "order.json": {"round": 3, "item": "goods", "kind": "goods", "budget": 200000,
                                        "order": "o1", "acceptable": ["A"]}}
             for name, data in fixtures.items():
                 (root / name).write_text(json.dumps(data), encoding="utf8")
             args = ["buyer", "--shops", str(root / "shops.json"), "--order", str(root / "order.json"),
-                    "--memory", str(root / "memory.jsonl"), "--item", "goods", "--budget", "200"]
+                    "--memory", str(root / "memory.jsonl"), "--item", "goods", "--budget", "200000"]
             with patch("sys.argv", args), patch.object(market_buyer, "ROOT", root), \
                     patch.object(market_buyer, "trade", return_value=({"receipt": None}, {})) as trade, \
                     patch.object(market_buyer, "remember") as remember, redirect_stdout(io.StringIO()):
                 market_buyer.main()
-            self.assertEqual(trade.call_args.args[1:3], ("A", 80))
-            self.assertEqual(remember.call_args.args[1]["order_budget"], 200)
+            self.assertEqual(trade.call_args.args[1:3], ("A", 80000))
+            self.assertEqual(remember.call_args.args[1]["order_budget"], 200000)
 
 
 class InventoryLoss(unittest.TestCase):

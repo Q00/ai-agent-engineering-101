@@ -128,7 +128,13 @@ def observe(md, now=None, force=False, snapshot=None):
         if snapshot.get("round") != 3 or not 0 <= now-snapshot.get("observed_at", 0) <= 3600:
             result["status"] = "stale_or_not_r3"
         else:
-            result.update(status="ok", summary=analyze(snapshot.get("rows", []), read(md/"catalog.json", {}),
+            # Confirmed research buys supplement external comparison prices only.
+            from buyer_support import research_rows
+            local_research = research_rows(md, now)
+            combined = {r["seq"]: r for r in local_research}
+            combined.update({r["seq"]: r for r in snapshot.get("rows", []) if isinstance(r, dict) and type(r.get("seq")) is int})
+            combined_rows = sorted(combined.values(), key=lambda r: (r["ts"] if type(r.get("ts")) in (int, float) and math.isfinite(r["ts"]) else 0, r["seq"]))
+            result.update(status="ok", research_price_rows=len(local_research), summary=analyze(combined_rows, read(md/"catalog.json", {}),
                           read(md/"inventory.json", {}), read(md/"forum-intel.json", {}), now),
                           skipped_seq_ranges=snapshot.get("skipped_seq_ranges", []), bounded_sample=True)
     except (OSError, ValueError, KeyError, TypeError) as error:
