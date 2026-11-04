@@ -23,9 +23,10 @@ Each pass does only what is due, in this order:
                         like, and a buyer post's score enters the buyer's ALL)
     linewatch   20 min  the premium line's caps (linewatch.py): out fast when other shops crowd in or the
                         price falls, up when ours sell
-    notes        5 min  a Kiro 데이터 노트 as our buyer (notes.py) when no buyer post of ours waits in
-                        the outbox and the last went out 5 minutes ago; the votes on our posts are read
-                        into analysis/post_votes.json first, and low scores pause the notes
+    notes        5 min  the votes on our posts read into analysis/post_votes.json (notes.py). Until 11/5
+                        03:20 it also posted a Kiro 데이터 노트 every 5 minutes (NOTES_ALONE); from 02:31
+                        every post of ours drew one dislike (0.61 -> 0.487) and the person chose fewer
+                        posts and the journal: a note now goes out only inside a journal issue
     votes        3 h    at most one dislike (a post steering AI agents or a repeat) and one like (the
                         most useful post) on the last 3 hours' posts, as our buyer (forum.pick_votes)
     seller       3 h    the seller analysis (analysts.py, MODEL_MID + ledger_query)
@@ -62,6 +63,10 @@ import ledger
 EVERY = {"collect": 1200, "linewatch": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
          "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
 RIVALS = 12             # the top players whose shops our buyer passes over in a near tie (market_buyer.RIVAL)
+NOTES_ALONE = False      # stand-alone notes every 5 minutes (stopped 11/5 03:20, the person's call)
+JOURNAL_BOX = True       # each journal issue carries one data note, the desks in turn (notes.next_note)
+JOURNAL_MAX = 1800       # characters of an issue with its box; over it, the box is left out (the forum shows posts to ~2,000)
+JOURNAL_REFS = 6
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
             "sales", "restock", "stock_flow")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
@@ -193,8 +198,21 @@ def journal_step(now: float, state: dict, ask=None) -> str | None:
     if not got:
         return None
     text, refs, desk, n = got
+    box = None
+    if JOURNAL_BOX:                                             # one data note inside the issue (11/5 03:20)
+        trial = json.loads(json.dumps(state.get("notes_state") or {}))
+        posts = common.market_file("forum.json", []) or []
+        note = notes.next_note(notes.gather(now), posts if isinstance(posts, list) else [], now, trial,
+                               state.get("journal_issues"))
+        if note:
+            d = str(note.get("key", "")).split(":")[0]
+            body = notes.HEADER.sub("", note["text"]).strip()
+            boxed = text + f"\n\n■ 데이터 노트 · {notes.TITLE.get(d, d)}\n" + "\n".join("  " + x for x in body.splitlines())
+            if len(boxed) <= JOURNAL_MAX:
+                text, refs, box = boxed, list(dict.fromkeys(list(refs) + list(note["refs"])))[:JOURNAL_REFS], note["key"]
+                state["notes_state"] = trial
     forum.outbox(post=text, refs=refs, **{"as": "buyer"})
-    return f"journal 제{n}호 ({desk}) posted ({len(text)} chars, {len(refs)} refs)"
+    return (f"journal 제{n}호 ({desk}" + (f" + 노트 {box}" if box else "") + f") posted ({len(text)} chars, {len(refs)} refs)")
 
 
 def replies(now: float, state: dict) -> str:
@@ -232,6 +250,8 @@ def notes_step(now: float, state: dict) -> str | None:
         seen_at = None
     book = notes.track_votes(posts, now, seen_at)
     notes.remember_posts(posts, common.catalog(), now)      # others' quoted prices, for the follow-up desk
+    if not NOTES_ALONE:
+        return None                                         # the notes go out inside the journal (journal_step)
     low = notes.guard(book, now, ns.get("resumed_at", 0))
     if low is not None and now >= ns.get("paused_until", 0):
         ns["paused_until"] = ns["resumed_at"] = now + notes.PAUSE

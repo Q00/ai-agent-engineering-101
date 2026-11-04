@@ -316,6 +316,24 @@ def test_journal():
         line = outbox()[before] if len(outbox()) > before else {}
         check("the runner posts an issue as our buyer, with ledger refs", line.get("as") == "buyer"
               and line.get("post", "").startswith("KIRO MARKET JOURNAL · 제1호") and note.startswith("journal 제1호"), note)
+        fake = {"text": "[Kiro 데이터 노트 · 조건별 시세] 커피/차\n· A등급: 81.1% (175건)\n근거 · 원장 #11 #12", "refs": [11, 12],
+                "key": "조건:커피/차"}
+        saved_next = notes.next_note
+        notes.next_note = lambda *a, **k: dict(fake)
+        try:
+            st2 = {"journal_issues": {}}
+            before = len(outbox())
+            note = analysis.journal_step(NOW + 3600 + 1, st2, reader(None))
+            post = outbox()[before]
+            check("each issue carries one data note in a box at its end, its refs added to the issue's",
+                  "\n\n■ 데이터 노트 · 조건별 시세\n  커피/차\n  · A등급: 81.1% (175건)" in post["post"] and post["refs"][-2:] == [11, 12]
+                  and "+ 노트 조건:커피/차" in note and "[Kiro 데이터 노트" not in post["post"], (note, post["post"][-160:]))
+            notes.next_note = lambda *a, **k: dict(fake, text=fake["text"] + "\n" + "가" * 2000)
+            before = len(outbox())
+            analysis.journal_step(NOW + 3600 + 1, {"journal_issues": {}}, reader(None))
+            check("...left out when the issue with it would run past 1,800 characters", "데이터 노트" not in outbox()[before]["post"])
+        finally:
+            notes.next_note = saved_next
     finally:
         journal.MIN_PRICE_ROWS, journal.MIN_CLAIMS, journal.MIN_SHOPS, journal.MIN_TRADE = saved
 
@@ -456,6 +474,10 @@ def test_notes():
     notes.gather = lambda now: dict(data)
     try:
         st = {}
+        analysis.NOTES_ALONE = False
+        check("as deployed (11/5 03:20): no stand-alone note, but the votes on our posts are still read",
+              analysis.notes_step(NOW, st) is None and outbox() == [] and (MD / "analysis" / "post_votes.json").exists())
+        analysis.NOTES_ALONE = True                             # the posting rules, for when it is turned on again
         out = analysis.notes_step(NOW, st)
         line = outbox()[0] if outbox() else {}
         check("the runner posts a note as our buyer, with its refs", out and line.get("as") == "buyer"
@@ -478,6 +500,7 @@ def test_notes():
         check("...and post again once the pause is over (the old notes no longer count)",
               analysis.notes_step(t1 + notes.PAUSE + 1, st) is not None)
     finally:
+        analysis.NOTES_ALONE = False
         notes.gather = saved_gather
         (MD / "outbox.jsonl").write_text("", encoding="utf-8")
         common.write_json(MD / "analysis" / "post_votes.json", {})
