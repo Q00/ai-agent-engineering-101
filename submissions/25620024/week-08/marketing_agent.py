@@ -55,7 +55,7 @@ GUARD = HERE / "private" / "team_guard.json"
 LIMITS = {"overnight_min": 9, "normal_min": 118, "max_runs_day": 150,   # HQ 11-04: every 10 min
           "limit_cooldown_h": 3, "fail_cooldown_h": 1,
           "normal_when_all": 0.85}             # HQ 11-04: rest only near the top (0.6 put the team to sleep at rank 18)
-TEAM_GAP = {"overnight": 25 * 60, "normal": 55 * 60}   # how often SCM, finance and the buyer team meet
+TEAM_GAP = {"overnight": 9 * 60, "normal": 55 * 60}     # HQ 11-04: every meeting (10 min)   # how often SCM, finance and the buyer team meet
 MODE = {"now": "overnight"}
 LIMIT_RE = re.compile(r"usage limit|rate.?limit|quota|429|too many requests|limit reached|exceeded", re.I)
 REPORTS = Path(os.environ.get("TEAM_REPORTS", "/mnt/gdrive-imajason-kimdaehakwon/week08-reports"))

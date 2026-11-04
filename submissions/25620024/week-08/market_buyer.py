@@ -330,6 +330,28 @@ def negotiate(card_url, item, budget, started, ratio=None, low=None, opened=None
         task = send(url, str(price), task_id)
         history.append(f"seller: {status_text(task)}")
 
+    last_ask = asking_price(task) if state(task) == "TASK_STATE_INPUT_REQUIRED" else None
+    if last_ask is not None and last_ask <= budget:
+        # 11-04: out of offers with the shop's counter inside our cap -- take it, a deal beats a cancel
+        asks.append(last_ask)
+        offers.append(last_ask)
+        log(f"   out of offers, counter {last_ask} is within {budget}: taking it")
+        task = send(url, str(last_ask), task_id)
+        history.append(f"buyer: {last_ask}")
+        history.append(f"seller: {status_text(task)}")
+    elif state(task) == "TASK_STATE_REJECTED" and opened is not None:
+        # 'No deal below N' / 'our lowest is N': the shop named its floor; inside our cap, ask again at it
+        m = re.search(r"(?:below|lowest(?: price)?(?: is|:)?)\s*([\d,]+)", status_text(task), re.I)
+        floor = int(m.group(1).replace(",", "")) if m else None
+        if floor and floor <= budget and time.time() - started < TIME_LIMIT - 30:
+            log(f"   the shop's floor {floor} is within {budget}: buying at it in a new task")
+            t2 = send(url, f"I want to buy {item}. I accept your lowest price {floor}.")
+            if state(t2) == "TASK_STATE_INPUT_REQUIRED":
+                t2 = send(url, str(floor), t2["id"])
+            if state(t2) == "TASK_STATE_COMPLETED":
+                task = t2
+                asks.append(floor)
+                offers.append(floor)
     if state(task) == "TASK_STATE_INPUT_REQUIRED":
         task = rpc(url, "CancelTask", {"id": task_id})
         log(f"-> CancelTask (out of offers) <- {state(task)}")
