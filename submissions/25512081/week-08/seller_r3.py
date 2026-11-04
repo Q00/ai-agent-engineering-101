@@ -168,9 +168,24 @@ def hours_left(u):
 
 
 def need_hours(text):
+    """Hours the buyer says the food must last, or None when it does not say."""
     m = NEED.search(text or "")
-    if m:
-        return int(m.group(1))
+    return int(m.group(1)) if m else None
+
+
+# Orders ask food to last 0.5 or 0.75 of the SKU's catalog shelf_hours (G00c60e91 coffee, shelf 720: 360 or 540).
+# Buyers that do not say so rate a shorter unit 2 stars ("Only 410 h of shelf life left; I needed 540 h").
+NEED_SHARE = 0.75
+_SHELF = {}
+
+
+def default_need(sku):
+    if not _SHELF:
+        cat = _load("catalog.json", [])
+        _SHELF.update({x["sku"]: x.get("shelf_hours") for x in (cat if isinstance(cat, list) else cat.values())})
+        _SHELF.setdefault("", None)
+    if _SHELF.get(sku):
+        return NEED_SHARE * _SHELF[sku]
     seen = sorted(_load("use_within.json", []))
     return seen[int(len(seen) * 0.8)] if len(seen) >= 5 else DEFAULT_NEED
 
@@ -184,11 +199,12 @@ def find_unit(text, taken=()):
         item = next((k for k in RESERVE if k in want), None)
         return item and {"sku": item, "name": item, "list_price": RESERVE[item], "cost": RESERVE[item],
                          "kind": "goods", "grade": "A", "unit": None, "expires_at": None, "cert": False}
-    need = max(MIN_FOOD_HOURS, need_hours(text))
+    said = need_hours(text)
+    need = lambda u: max(MIN_FOOD_HOURS, said if said is not None else default_need(u["sku"]))
     units = [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken
              and (u["kind"] != "food" or (hours_left(u) or 0) >= MIN_FOOD_HOURS)]
     # food that lasts the need, expiring first; if none does, the freshest one (its hours are in the reply)
-    fresh = [u for u in units if u["kind"] != "food" or (hours_left(u) or 0) >= need]
+    fresh = [u for u in units if u["kind"] != "food" or (hours_left(u) or 0) >= need(u)]
     for match in (lambda u: u["sku"].lower() in want,
                   lambda u: (u.get("name") or "").lower() in want,
                   lambda u: (u.get("category") or "").split(">")[-1].lower() in want):
