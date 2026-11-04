@@ -332,6 +332,35 @@ def rival_factor(name: str, view: Mapping[str, str], *, cheap: bool) -> float:
             return 1.0
 
 
+# Prior for "our payment to this shop goes through": Beta(3, 1), mean 0.75.
+PAY_PRIOR_HIT: Final = 3.0
+PAY_PRIOR_MISS: Final = 1.0
+# Thompson draws use their own generator, independent of the module's random.
+THOMPSON_RNG: Final = random.Random()  # noqa: S311 - ranking draws, not security
+
+
+def thompson_factor(
+    url: str,
+    misses: Mapping[str, tuple[int, int]],
+    outcomes: Mapping[str, Mapping[str, int]],
+    rng: random.Random | None = None,
+) -> float:
+    """One Thompson draw of P(listed stock is there) x P(our payment completes).
+
+    A shop with little evidence draws widely, so it still gets tried; a shop
+    that kept missing draws low almost every time. This replaces the posterior
+    mean in the ranking, so exploration follows uncertainty, not a fixed 10 %.
+    """
+    draw = rng or THOMPSON_RNG
+    miss, asks = misses.get(url.rstrip("/"), (0, 0))
+    stock = draw.betavariate(asks - miss + STOCK_PRIOR_HIT, miss + STOCK_PRIOR_MISS)
+    counts = outcomes.get(url.rstrip("/"), {})
+    pay = draw.betavariate(
+        counts.get("paid", 0) + PAY_PRIOR_HIT, counts.get("refused", 0) + PAY_PRIOR_MISS
+    )
+    return stock * pay
+
+
 def review_factor(shop: ShopEntry) -> float:
     """Weigh a light prior from public stars; our own evidence dominates."""
     stars = [r.stars for r in shop.reviews if 1 <= r.stars <= MAX_STARS]
@@ -428,6 +457,7 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     need_margin_hours: float = 1.0,
     stock_misses: Mapping[str, tuple[int, int]] | None = None,
     rivals: Mapping[str, str] | None = None,
+    thompson: bool = False,
 ) -> Choice | None:
     """Pick the shop and SKU with the best expected surplus; None when no stock fits.
 
@@ -461,7 +491,11 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
         weight = (
             evidence
             * priced
-            * stock_factor(shop.url, stock_misses or {})
+            * (
+                thompson_factor(shop.url, stock_misses or {}, outcomes)
+                if thompson
+                else stock_factor(shop.url, stock_misses or {})
+            )
             * rival_factor(shop.name, rivals or {}, cheap=priced > 1.0)
         )
         eligible = exploration_allowed(shop, explore_counts, reasons, picture)
@@ -820,6 +854,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
             need_margin_hours=policy.buyer.food_margin_hours,
             stock_misses=misses,
             rivals=rivals,
+            thompson=policy.buyer.thompson,
         )
 
     choice = pick()

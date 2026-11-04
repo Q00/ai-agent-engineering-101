@@ -602,3 +602,24 @@ def test_rivals_lose_weight_unless_cheap_and_bottom_half_shops_gain() -> None:
     assert fast.rival_factor("small", view, cheap=False) == 1.1
     assert fast.rival_factor("upper", view, cheap=False) == 1.0
     assert fast.rival_view(None, "25620027") == {}
+
+
+def test_thompson_draws_rarely_favour_a_shop_that_keeps_missing() -> None:
+    import random  # noqa: PLC0415 - test only
+
+    rng = random.Random(11)  # noqa: S311 - reproducible test draws
+    misses = {"http://bad": (12, 12), "http://good": (0, 30)}
+    outcomes = {"http://good": {"paid": 20, "refused": 1}}
+    wins = sum(
+        fast.thompson_factor("http://bad", misses, {}, rng)
+        > fast.thompson_factor("http://good", misses, outcomes, rng)
+        for _ in range(400)
+    )
+    assert wins < 8  # under 2 % of draws
+    # And: a shop never seen draws widely, so it still wins sometimes.
+    fresh = sum(
+        fast.thompson_factor("http://new", {}, {}, rng)
+        > fast.thompson_factor("http://good", misses, outcomes, rng)
+        for _ in range(400)
+    )
+    assert 20 < fresh < 380

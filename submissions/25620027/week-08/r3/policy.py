@@ -141,6 +141,10 @@ class BuyerPolicy(FrozenModel):
     # A shop whose last attempts all ended without a deal sits out this long.
     fail_streak: int = Field(default=3, ge=1, le=20)
     fail_cooldown_minutes: float = Field(default=30.0, ge=0.0, le=720.0)
+    # Stage 1 of the owner's bandit rollout (11/4): rank shops on a Thompson draw
+    # of "has the listed stock" x "our payment goes through" instead of the means.
+    # A policy switch, so a bad hour is undone without a deploy.
+    thompson: bool = True
 
 
 class RestockPolicy(FrozenModel):
