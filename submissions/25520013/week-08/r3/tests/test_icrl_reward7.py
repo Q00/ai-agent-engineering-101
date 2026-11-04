@@ -1,6 +1,7 @@
-"""icrl reward over all 7 official terms (DESIGN.md sec 5): board-measured stars / forum / posts from cached snapshots,
+"""icrl reward over all 7 official terms (DESIGN.md sec 5), each lane on the terms it can move: shop = profit, revenue
+and ledger stars, buyer = surplus and deals, forum = ledger posts plus the board forum score in long blocks only;
 missing-snapshot flags, finite fallback weights, the forum allowlist family (gate, --check copy, hooks/forum.py at
-the range edges) and the stars guard in the approver's numeric input. Synthetic boards, no network."""
+the range edges) and the stars guard in the shop lane's proposer state. Synthetic boards, no network."""
 
 import functools
 import json
@@ -14,7 +15,7 @@ from icrl import loop
 from icrl import space as SP
 from icrl import state as ST
 
-from tests.test_icrl_loop import APPROVE, ARM, NOW0, WHY, Fake, make_work, pick, start
+from tests.test_icrl_loop import ARM, NOW0, WHY, Fake, make_work, pick, start
 
 R3 = Path(__file__).resolve().parents[1]
 POL = json.loads((R3 / "policy.json").read_text(encoding="utf-8"))
@@ -71,17 +72,27 @@ def snap(sdir, ts, brd):
 T0 = 1793800000
 
 
+BASE = {"n": 1000, "avg": 4.5}
+
+
 def ledger_store():
-    """1 h block [T0, T0 + 3600): one own sale (rev 25000, gp 10000) and one buyer deal (surplus 10000)."""
+    """1 h block [T0, T0 + 3600): one own sale (rev 25000, gp 10000), one buyer deal (surplus 10000), two own-shop
+    reviews (5 and 2 stars) and 12 own posts."""
     s = ST.empty()
     s["units"]["u1"] = ["F1", "c", "food", 15000, T0 - 100, None]
     s["sold"]["u1"] = [T0 + 600, 25000, 15000]
     s["deals"] = [[T0 + 600, 20000, 30000]]
+    s["reviews"] = [[T0 + 700, 5], [T0 + 900, 2]]
+    s["posts"] = [T0 + 300 * i for i in range(12)]
     return s
 
 
-def exp_of(side, w, protocol="switchback"):
-    return {"side": side, "protocol": protocol, "w": w}
+# (5 + 2 - 2 x 4.5) / (1000 + 2) / 1 h
+STARS_H = -2 / 1002
+
+
+def exp_of(side, w, protocol="switchback", lane=None):
+    return {"side": side, "protocol": protocol, "w": w, "stars_base": BASE, "lane": lane}
 
 
 def test_weights_cover_all_seven_terms_and_are_finite():
@@ -112,39 +123,112 @@ def test_real_snapshot_values_are_read_for_our_rows(tmp_path):
     assert v == {"stars_rank": 4.69, "stars": 4.69, "forum": 0.638, "posts": 259.0}
 
 
-def test_reward_includes_all_seven_terms_when_snapshots_exist(tmp_path):
+def test_each_lane_uses_only_its_own_terms_and_no_board_term_in_switchback(tmp_path):
     snap(tmp_path, T0, board(stars=4.69, forum=0.60, posts=250))
-    snap(tmp_path, T0 + 3600, board(stars=4.67, forum=0.65, posts=262))
+    snap(tmp_path, T0 + 3600, board(stars=4.60, forum=0.65, posts=262))
     w = B.weights(board(), LOGIN)["w"]
     store = ledger_store()
-    shop = loop.measure(store, None, exp_of("shop", w), T0, T0 + 3600, tmp_path, LOGIN)
-    buyer = loop.measure(
-        store, None, exp_of("buyer", w), T0, T0 + 3600, tmp_path, LOGIN
+    m = {
+        ln: loop.measure(store, None, exp_of(sd, w, lane=ln), T0, T0 + 3600, tmp_path, LOGIN)
+        for ln, sd in (("shop", "shop"), ("buyer", "buyer"), ("forum", "buyer"))
+    }
+    assert m["shop"]["metric"] == pytest.approx(
+        w["profit"] * 10000 + w["revenue"] * 25000 + w["stars_rank"] * STARS_H
     )
-    assert shop["board_missing"] == [] and shop["board_snaps"] == [T0, T0 + 3600]
-    assert shop["board"]["stars_rank_h"] == pytest.approx(-0.02)
-    assert shop["stars_drop"] == pytest.approx(0.02)
-    want_shop = w["profit"] * 10000 + w["revenue"] * 25000 + w["stars_rank"] * -0.02
-    want_buyer = (
-        w["surplus"] * 10000 + w["deals"] * 1 + w["forum"] * 0.05 + w["posts"] * 12
-    )
-    assert shop["metric"] == pytest.approx(want_shop)
-    assert buyer["metric"] == pytest.approx(want_buyer)
-    # each board-measured term actually moves the metric
-    for side, term in (("shop", "stars_rank"), ("buyer", "forum"), ("buyer", "posts")):
-        m0 = loop.measure(
-            store,
-            None,
-            exp_of(side, dict(w, **{term: 0.0})),
-            T0,
-            T0 + 3600,
-            tmp_path,
-            LOGIN,
-        )["metric"]
-        assert m0 != pytest.approx((shop if side == "shop" else buyer)["metric"])
+    assert m["buyer"]["metric"] == pytest.approx(w["surplus"] * 10000 + w["deals"] * 1)
+    assert m["forum"]["metric"] == pytest.approx(w["posts"] * 12)  # switchback: posts only
+    for x in m.values():  # snapshots exist, yet no board term enters a switchback block
+        assert x["board"] == {} and x["board_missing"] == []
+    assert m["shop"]["stars_drop"] == pytest.approx(0.09)  # the guard still reads the board
+    assert m["shop"]["ledger"] == {"stars_rank_h": pytest.approx(STARS_H, abs=1e-6), "reviews": 2, "posts_h": 12.0}
+    # moving every board snapshot does not move any switchback metric
+    snap(tmp_path, T0 + 3600, board(stars=3.0, forum=0.99, posts=999))
+    for ln, sd in (("shop", "shop"), ("buyer", "buyer"), ("forum", "buyer")):
+        again = loop.measure(store, None, exp_of(sd, w, lane=ln), T0, T0 + 3600, tmp_path, LOGIN)
+        assert again["metric"] == pytest.approx(m[ln]["metric"])
 
 
-def test_long_shop_metric_adds_stars_to_the_weighted_value_change(tmp_path):
+def test_switchback_pair_diffs_contain_no_board_term(tmp_path):
+    """Two blocks with identical ledgers but very different board snapshots: the pair difference is 0."""
+    w = B.weights(board(), LOGIN)["w"]
+    store = ledger_store()
+    for t, st in ((T0 + 3600, 4.69), (T0 + 7200, 3.0)):
+        snap(tmp_path, t, board(stars=st, forum=st / 10, posts=int(st * 100)))
+    snap(tmp_path, T0, board(stars=4.69))
+    store2 = ledger_store()
+    for k in ("reviews", "deals"):
+        store2[k] = [[r[0] + 3600] + r[1:] for r in store[k]]
+    store2["posts"] = [x + 3600 for x in store["posts"]]
+    store2["sold"]["u1"] = [T0 + 4200, 25000, 15000]
+    blocks = []
+    for i, (t0, stv) in enumerate(((T0, store), (T0 + 3600, store2))):
+        for ln, sd in (("shop", "shop"), ("buyer", "buyer"), ("forum", "buyer")):
+            mm = loop.measure(stv, None, exp_of(sd, w, lane=ln), t0, t0 + 3600, tmp_path, LOGIN)
+            blocks.append((ln, {"i": i, "arm": "AB"[i], "metric": mm["metric"]}))
+    for ln in ("shop", "buyer", "forum"):
+        d = loop.X.pair_diffs([b for x, b in blocks if x == ln])
+        assert d == [pytest.approx(0.0, abs=1e-12)], (ln, d)
+
+
+def test_ledger_stars_sign_and_scale():
+    store = ST.empty()
+    store["reviews"] = [[T0 + 60 * i, 5] for i in range(10)]
+    m = ST.block_metrics(store, T0, T0 + 3600)
+    assert (m["rv_k"], m["rv_sum"]) == (10, 50)
+    up = loop.stars_h(m, {"n": 1976, "avg": 4.69})
+    assert up == pytest.approx(10 * (5 - 4.69) / 1986) and up > 0
+    store["reviews"] = [[T0 + 60 * i, 1] for i in range(10)]
+    dn = loop.stars_h(ST.block_metrics(store, T0, T0 + 3600), {"n": 1976, "avg": 4.69})
+    assert dn == pytest.approx(10 * (1 - 4.69) / 1986) and dn < 0
+    # per hour: the same reviews over a 2 h block give half the rate
+    m2 = ST.block_metrics(store, T0, T0 + 7200)
+    assert loop.stars_h(m2, {"n": 1976, "avg": 4.69}) == pytest.approx(dn / 2)
+    assert loop.stars_h(m, None) == 0.0 and loop.stars_h(m, {"n": 0, "avg": None}) == 0.0
+
+
+def test_ledger_reviews_and_posts_are_ours_only(tmp_path):
+    ev = [
+        {"ts": T0 + 1, "type": "review", "src": "market", "role": "shop", "mine": True,
+         "data": {"shop": "https://ours.example", "stars": 4}},
+        {"ts": T0 + 2, "type": "review", "src": "market", "role": "buyer", "mine": True,
+         "data": {"shop": "https://other.example", "stars": 1}},  # our buyer's review of another shop
+        {"ts": T0 + 3, "type": "review", "src": "hook", "role": "buyer", "mine": True,
+         "data": {"shop": "https://other.example", "stars": 5}},
+        {"ts": T0 + 4, "type": "forum", "src": "forum", "role": "market", "mine": False,
+         "data": {"author": "lee-sungsoo", "role": "buyer", "text": "x"}},
+        {"ts": T0 + 5, "type": "forum", "src": "forum", "role": "market", "mine": False,
+         "data": {"author": "lee-sungsoo", "role": "shop", "text": "x"}},
+        {"ts": T0 + 6, "type": "forum", "src": "forum", "role": "market", "mine": False,
+         "data": {"author": "someone", "role": "buyer", "text": "x"}},
+    ]
+    (tmp_path / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in ev))
+    P = {"events": tmp_path / "events.jsonl", "kit": tmp_path / "none.log"}
+    s = ST.update(ST.empty(), P, T0 + 60, {}, {"lee-sungsoo"})
+    assert s["reviews"] == [[T0 + 1, 4]] and s["rv_all"] == [1, 4] and s["posts"] == [T0 + 4]
+    # an old store without review rows is rebuilt from offset 0
+    old = {k: v for k, v in s.items() if k not in ("reviews", "rv_all", "posts")}
+    ST.save_store(tmp_path / "store.json", old)
+    assert ST.load_store(tmp_path / "store.json")["off"] == 0
+
+
+@pytest.mark.skipif(
+    not (SCRATCH / "data_20261104" / ".r3" / "events.jsonl").exists(), reason="real data copy missing"
+)
+def test_real_ledger_identifies_our_reviews_and_posts():
+    d = SCRATCH / "data_20261104" / ".r3"
+    P = {"events": d / "events.jsonl", "kit": d / "none.log"}
+    s = ST.update(ST.empty(), P, 1793788878.46 + 60, {}, {"lee-sungsoo"})
+    own = json.loads((d / "own_shops.json").read_text())["urls"]
+    shops = set()
+    for ln in (d / "events.jsonl").read_text(encoding="utf-8").splitlines():
+        e = json.loads(ln)
+        if e.get("type") == "review" and e.get("role") == "shop" and e.get("mine") is True:
+            shops.add(e["data"]["shop"])
+    print(f"own-shop reviews in the ledger {s['rv_all']}, own posts {len(s['posts'])}")
+    assert shops == set(own) and s["rv_all"][0] == 286 and len(s["posts"]) == 263
+
+
+def test_long_shop_metric_adds_ledger_stars_to_the_weighted_value_change(tmp_path):
     snap(tmp_path, T0, board(stars=4.69))
     snap(tmp_path, T0 + 3600, board(stars=4.70))
     w = B.weights(board(), LOGIN)["w"]
@@ -154,28 +238,27 @@ def test_long_shop_metric_adds_stars_to_the_weighted_value_change(tmp_path):
         store, stats, exp_of("shop", w, "long"), T0, T0 + 3600, tmp_path, LOGIN
     )
     v = ST.block_metrics(store, T0, T0 + 3600, stats)["value_h"]
-    assert m["metric"] == pytest.approx(w["profit"] * v + w["stars_rank"] * 0.01)
+    assert m["metric"] == pytest.approx(w["profit"] * v + w["stars_rank"] * STARS_H)
 
 
-def test_missing_snapshot_contributes_zero_and_is_flagged(tmp_path):
+def test_long_forum_block_adds_the_board_forum_term_and_flags_missing(tmp_path):
     w = B.weights(board(), LOGIN)["w"]
     store = ledger_store()
-    ledger_only = w["profit"] * 10000 + w["revenue"] * 25000
-    snap(tmp_path, T0, board(stars=4.5))  # start only: no end snapshot
-    m = loop.measure(store, None, exp_of("shop", w), T0, T0 + 3600, tmp_path, LOGIN)
-    assert m["board_missing"] == sorted(B.BOARD_TERMS) and m["board_snaps"] is None
-    assert m["metric"] == pytest.approx(ledger_only) and m["stars_drop"] is None
-    snap(tmp_path, T0 + 3600 + B.SNAP_TOL_S + 60, board(stars=4.0))  # too far
-    m = loop.measure(store, None, exp_of("shop", w), T0, T0 + 3600, tmp_path, LOGIN)
-    assert m["board_missing"] == sorted(B.BOARD_TERMS)
-    assert m["metric"] == pytest.approx(ledger_only)
+    fx = exp_of("buyer", w, "long", lane="forum")
+    m = loop.measure(store, None, fx, T0, T0 + 3600, tmp_path, LOGIN)
+    assert m["board_missing"] == ["forum"] and m["metric"] == pytest.approx(w["posts"] * 12)
+    snap(tmp_path, T0, board(forum=0.60))
+    snap(tmp_path, T0 + 3600, board(forum=0.65))
+    m = loop.measure(store, None, fx, T0, T0 + 3600, tmp_path, LOGIN)
+    assert m["board_missing"] == [] and m["board"] == {"forum_h": pytest.approx(0.05)}
+    assert m["metric"] == pytest.approx(w["posts"] * 12 + w["forum"] * 0.05)
     no_forum = board()
     no_forum["buyers"][0]["forum"] = None
-    snap(tmp_path, T0 + 3500, no_forum)
-    m = loop.measure(store, None, exp_of("buyer", w), T0, T0 + 3600, tmp_path, LOGIN)
+    snap(tmp_path, T0 + 3600, no_forum)
+    m = loop.measure(store, None, fx, T0, T0 + 3600, tmp_path, LOGIN)
     assert m["board_missing"] == ["forum"] and m["board"]["forum_h"] == 0.0
-    m = loop.measure(store, None, exp_of("shop", w), T0, T0 + 3600, None, LOGIN)
-    assert m["board_missing"] == sorted(B.BOARD_TERMS)
+    m = loop.measure(store, None, fx, T0, T0 + 3600, None, LOGIN)
+    assert m["board_missing"] == ["forum"]
 
 
 def test_term_scale_feeds_finite_fallback_weights(tmp_path):
@@ -201,12 +284,12 @@ def env(tmp_path):
     sdir = tmp_path / "st"
     sdir.mkdir()
     (sdir / "arms.json").write_text(json.dumps({ARM: [50.0, 1e6]}))
-    prop, appr = Fake([pick, '{"action": "hold", "why": "x"}']), Fake([APPROVE])
+    prop = Fake([pick, '{"action": "hold", "why": "x"}'])
     ctx = loop.Ctx(
         work=w,
         sdir=sdir,
         policy=pol,
-        llms={"prop": prop, "appr": appr},
+        llms={"prop": prop},
         fetch=lambda u: (500, b""),
         audit=tmp_path / "audit.jsonl",
     )
@@ -215,7 +298,6 @@ def env(tmp_path):
         "pol": pol,
         "orig": pol.read_bytes(),
         "prop": prop,
-        "appr": appr,
         "sdir": sdir,
     }
 
@@ -224,26 +306,30 @@ def _L(env):
     return json.loads((env["sdir"] / "loop.json").read_text())
 
 
-def test_block_row_flags_missing_snapshots(env, monkeypatch):
+def _shop(env):
+    return _L(env)["lanes"]["shop"]["active"]
+
+
+def test_shop_block_row_has_ledger_terms_and_no_board_term(env, monkeypatch):
     t0 = start(env, "B", monkeypatch)
-    blk = _L(env)["active"]["blocks"][0]
+    blk = _shop(env)["blocks"][0]
     loop.step(blk["t1_nom"] + 1, ctx=env["ctx"])
-    closed = _L(env)["active"]["blocks"][0]
-    assert closed["board_missing"] == sorted(B.BOARD_TERMS)
-    assert closed["board"] == {f"{t}_h": 0.0 for t in B.BOARD_TERMS}
+    closed = _shop(env)["blocks"][0]
+    assert closed["board_missing"] == [] and closed["board"] == {}
+    assert set(closed["ledger"]) == {"stars_rank_h", "reviews", "posts_h"}
     assert closed["stars_guard"] is False and t0 < closed["t1"]
 
 
-def test_stars_guard_flags_the_block_and_reaches_the_approver(env, monkeypatch):
+def test_stars_guard_flags_the_block_and_counts_trips(env, monkeypatch):
     t0 = start(env, "B", monkeypatch)
-    blk = _L(env)["active"]["blocks"][0]
+    blk = _shop(env)["blocks"][0]
     snap(env["sdir"], blk["t0"], board(stars=4.69))
     snap(env["sdir"], blk["t1_nom"], board(stars=4.63))
     loop.step(blk["t1_nom"] + 1, ctx=env["ctx"])
-    L = _L(env)
-    closed = L["active"]["blocks"][0]
+    exp = _shop(env)
+    closed = exp["blocks"][0]
     assert closed["stars_guard"] is True and closed["stars_drop"] == pytest.approx(0.06)
-    assert closed["board_missing"] == [] and L["active"]["stars_guard_trips"] == 1
+    assert closed["board_missing"] == [] and exp["stars_guard_trips"] == 1
     g = [json.loads(x) for x in (env["sdir"] / "guards.jsonl").read_text().splitlines()]
     assert g[0]["paths"] == ["defaults.food.price_mult"] and g[0]["arm"] == "B"
     nums = loop.guard_nums(env["ctx"], ["defaults.food.price_mult"], blk["t1_nom"] + 2)
@@ -256,7 +342,7 @@ def test_stars_guard_flags_the_block_and_reaches_the_approver(env, monkeypatch):
     assert t0 > 0
 
 
-def test_stars_guard_is_in_the_approver_prompt_without_the_why(env):
+def test_stars_guard_is_in_the_shop_lane_proposer_state_only(env):
     (env["sdir"] / "guards.jsonl").write_text(
         json.dumps(
             {
@@ -271,15 +357,19 @@ def test_stars_guard_is_in_the_approver_prompt_without_the_why(env):
         + "\n"
     )
     loop.step(NOW0, ctx=env["ctx"])
-    p = env["appr"].prompts[0]
-    nums = json.loads(p.split("INPUT ", 1)[1])
-    assert nums["stars_guard"] == {
+    state = {
+        ln: json.loads([x for x in p.splitlines() if x.startswith("STATE ")][0][6:])
+        for p in env["prop"].prompts
+        for ln in [p.split("\nLANE ", 1)[1].split("\n", 1)[0]]
+    }
+    assert state["shop"]["stars_guard"] == {
         "threshold": 0.05,
         "trips_24h": 1,
         "worst_drop_24h": 0.07,
         "trips_same_path": 1,
     }
-    assert "WHY-SECRET" not in p and WHY not in p and "why" not in nums
+    assert "stars_guard" not in state["buyer"] and "stars_guard" not in state["forum"]
+    assert all(WHY not in p for p in env["prop"].prompts)
 
 
 # ---------------------------------------------------------------- forum family
@@ -410,7 +500,7 @@ def test_check_copy_with_a_forum_edit_passes_policy_validate(
     ctx_kw = {
         "work": env["ctx"].work,
         "policy": env["pol"],
-        "llms": {"prop": env["prop"], "appr": env["appr"]},
+        "llms": {"prop": env["prop"]},
         "fetch": lambda u: (200, json.dumps(board()).encode()),
     }
     monkeypatch.setattr(loop, "Ctx", functools.partial(loop.Ctx, **ctx_kw))
@@ -419,9 +509,9 @@ def test_check_copy_with_a_forum_edit_passes_policy_validate(
     summary = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert code == 0, summary
     assert "synthetic" not in summary and summary["edits"] == [["forum.window_h", 3, 4]]
+    assert summary["lane"] == "forum" and "approver_json_ok" not in summary
     copy = json.loads(out.read_bytes())
     assert copy["forum"]["window_h"] == 4 and copy["forum"]["interval_s"] == 300
     policy.validate(copy)
     assert env["pol"].read_bytes() == env["orig"]
-    nums = json.loads(env["appr"].prompts[-1].split("INPUT ", 1)[1])
-    assert "stars_guard" in nums
+    assert len(env["prop"].prompts) == 3  # one proposer call per lane, nothing else

@@ -1,4 +1,8 @@
-"""icrl loop entry: step(now) -> status dict, never raises (DESIGN.md sec 2, 8, 9, 11).
+"""icrl loop entry: step(now) -> status dict, never raises (DESIGN.md sec 2, 6, 8, 9, 11).
+
+Three experiment lanes run side by side (sec 6): shop (price / supply / structure), buyer and forum, each with its
+own active experiment and next cycle step. Policy writes are path-level: B = the lane's edits on top of the current
+live policy, A = only the lane's paths set back to their recorded A values.
 
 Called by the runner every ~600 s. Acts on 20-min block boundaries by time (grid = policy volume.round_start_ts,
 the first supply window opens_at, + k x 1200 s, shifted BOUNDARY_LEAD_S earlier so a switch lands before the supply
@@ -10,6 +14,7 @@ category overrides, and its lock.verify / single-registry check do not fit an A/
 """
 
 import contextlib
+import copy
 import fcntl
 import hashlib
 import json
@@ -35,6 +40,23 @@ SEED = 20261104
 N_LESSONS = 20
 N_CATS = 8
 PRIOR_M = 0.3
+LANES = {
+    "shop": ("price", "supply", "structure"),
+    "buyer": ("buyer",),
+    "forum": ("forum",),
+}
+FAMILY_LANE = {f: ln for ln, fs in LANES.items() for f in fs}
+# harness.json (sec 7): per-lane proposer settings written by the meta-harness; defaults = the prompt without it
+HARNESS_DEFAULT = {
+    "n_lessons": N_LESSONS,
+    "recall": "graph_first",
+    "prompt_notes": "",
+    "features": None,
+}
+RECALL_ORDERS = ("graph_first", "recent_first")
+N_LESSONS_RANGE = (5, 40)
+NOTES_MAX = 600
+FEATURES = ("time", "shop", "buyer", "board", "market", "budget", "stars_guard", "lanes")
 _LIVE = {}
 
 
@@ -77,10 +99,7 @@ class Ctx:
 
             live = _LIVE.setdefault("live", Live(base=WORK))
             live.refresh()
-            self.llms = {
-                "prop": RoleLLM(live, "rlpo_prop"),
-                "appr": RoleLLM(live, "rlpo_appr"),
-            }
+            self.llms = {"prop": RoleLLM(live, "rlpo_prop")}
         return self.llms
 
 
@@ -106,14 +125,20 @@ def _append(p, row):
 
 
 def _rows(p):
+    """JSON-lines rows of p; a bad or non-object line is skipped, not the whole file."""
     try:
-        return [
-            json.loads(x)
-            for x in Path(p).read_text(encoding="utf-8").splitlines()
-            if x.strip()
-        ]
+        lines = Path(p).read_text(encoding="utf-8").splitlines()
     except (OSError, ValueError):
         return []
+    out = []
+    for x in lines:
+        try:
+            r = json.loads(x) if x.strip() else None
+        except ValueError:
+            continue
+        if isinstance(r, dict):
+            out.append(r)
+    return out
 
 
 def log(ctx, now, ev, **kw):
@@ -132,6 +157,38 @@ def step_idx(pol, now):
 
 def boundary(pol, k):
     return anchor(pol) + k * STEP_S
+
+
+# ---------------------------------------------------------------- lanes
+def lane_of_path(space, path):
+    e = SP.entry(space, path) if isinstance(path, str) else None
+    return FAMILY_LANE.get(e["family"]) if e else None
+
+
+def lane_of_exp(space, exp):
+    return exp.get("lane") or lane_of_path(space, (exp.get("edits") or [{}])[0].get("path"))
+
+
+def arm_lane(space, a):
+    return lane_of_path(space, a.get("path") or (a.get("edits") or [{}])[0].get("path"))
+
+
+def migrate(ctx, L):
+    """Old single-lane loop.json (top-level "active" / "next_cycle_step") -> L["lanes"]: the running experiment goes
+    to the lane of its family with its schedule untouched, every lane keeps the old next_cycle_step."""
+    lanes = L.setdefault("lanes", {})
+    old, nxt = L.pop("active", None), L.pop("next_cycle_step", None)
+    for ln in LANES:
+        lanes.setdefault(ln, {"active": None, "next_cycle_step": nxt})
+    if old:
+        ln = lane_of_exp(ctx.space, old) or exp_lane(old)
+        old["lane"] = ln
+        lanes[ln]["active"] = old
+    return lanes
+
+
+def running(L):
+    return [(ln, s["active"]) for ln, s in L["lanes"].items() if s.get("active")]
 
 
 # ---------------------------------------------------------------- writes
@@ -153,11 +210,47 @@ def write_policy(ctx, L, raw, action, note, now):
     return v
 
 
+def _has(pol, parts):
+    d = pol
+    for p in parts:
+        if not isinstance(d, dict) or p not in d:
+            return False
+        d = d[p]
+    return True
+
+
+def _restore(pol, a_pol, path):
+    """Sets path in pol back to its value in a_pol; absent there: drops it and the parent dicts B created."""
+    v, ok = SP.get(a_pol, path)
+    if ok:
+        SP.put(pol, path, copy.deepcopy(v))
+        return
+    parts, chain = SP.split(path), [pol]
+    for p in parts[:-1]:
+        if not isinstance(chain[-1].get(p), dict):
+            return
+        chain.append(chain[-1][p])
+    chain[-1].pop(parts[-1], None)
+    for i in range(len(parts) - 1, 0, -1):
+        if chain[i] == {} and not _has(a_pol, parts[:i]):
+            chain[i - 1].pop(parts[i - 1], None)
+
+
 def arm_bytes(ctx, exp, arm):
+    """Path-level arm bytes on top of the CURRENT live policy: B sets this experiment's paths to its values, A sets
+    only those paths back to their values in A_version. Other lanes' paths stay as they are live. A restore that
+    lands on A_version's content returns A_version's bytes, so a lane running alone restores byte-identically."""
+    live_raw = ctx.policy.read_bytes()
     a_raw = ctx.runs.policy_bytes(exp["A_version"])
-    if arm == "A":
+    a_pol, pol = json.loads(a_raw), json.loads(live_raw)
+    for r in exp["edits"]:
+        if arm == "B":
+            SP.put(pol, r["path"], copy.deepcopy(r["value"]))
+        else:
+            _restore(pol, a_pol, r["path"])
+    if arm == "A" and pol == a_pol:
         return a_raw
-    return SP.dumps_like(a_raw, SP.apply(json.loads(a_raw), exp["edits"]))
+    return SP.dumps_like(live_raw, pol)
 
 
 def put_arm(ctx, L, exp, arm, now):
@@ -169,7 +262,7 @@ def put_arm(ctx, L, exp, arm, now):
         L,
         raw,
         "change" if arm == "B" else "rollback",
-        f"icrl {exp['id']} arm {arm}",
+        f"icrl {exp['id']} {exp.get('lane')} arm {arm}",
         now,
     )
     if arm == "B" and exp.get("B_version") is None:
@@ -178,7 +271,7 @@ def put_arm(ctx, L, exp, arm, now):
 
 
 def check_live(ctx, L, now):
-    """Registers the first / externally edited live bytes as a baseline; aborts a running experiment on an edit."""
+    """Registers the first / externally edited live bytes as a baseline; an edit aborts the experiment of every lane."""
     raw = ctx.policy.read_bytes()
     h = sha(raw)
     if L.get("live_sha") == h:
@@ -201,46 +294,79 @@ def check_live(ctx, L, now):
     L.update(live_version=v, live_sha=h, base_version=v)
     if first:
         return None
-    exp = L.get("active")
-    if exp:
+    aborted = []
+    for ln, exp in running(L):
         exp.update(status="done", verdict="aborted_external_edit", t_end=now)
         _append(ctx.f("experiments.jsonl"), dict(event="end", **_exp_row(exp)))
-        L["active"] = None
-    log(ctx, now, "alarm", what="external_edit", version=v, aborted=bool(exp))
+        L["lanes"][ln]["active"] = None
+        aborted.append(exp["id"])
+    log(ctx, now, "alarm", what="external_edit", version=v, aborted=aborted)
     return "external"
 
 
 # ---------------------------------------------------------------- metrics
+def exp_lane(exp):
+    """The lane of an experiment dict (rows built before lanes: by side, buyer side = the buyer lane)."""
+    return exp.get("lane") or ("buyer" if exp.get("side") == "buyer" else "shop")
+
+
 def proxy(m, exp):
-    """Weighted per-hour proxy of the side's official terms; board-measured terms come from m (0 when missing). The
-    long shop value change stands in for profit (and revenue), weighted like profit."""
+    """Weighted per-hour proxy of the terms the lane can move (sec 5): shop = profit, revenue, stars; buyer = surplus,
+    deals; forum = posts, plus the board forum score in long blocks only. Stars and posts are ledger terms. The long
+    shop value change stands in for profit (and revenue), weighted like profit; a switchback supply / structure
+    experiment (outcome "value") uses the whole-shop value change in place of profit, plus revenue and stars."""
     w = {k: v or 0.0 for k, v in exp["w"].items()}
     g = lambda k: w.get(k, 0.0) * (m.get(f"{k}_h") or 0.0)  # noqa: E731
-    if exp["side"] == "buyer":
-        return g("surplus") + g("deals") + g("forum") + g("posts")
+    lane = exp_lane(exp)
+    if lane == "forum":
+        return g("posts") + (g("forum") if exp["protocol"] == "long" else 0.0)
+    if lane == "buyer":
+        return g("surplus") + g("deals")
     if exp["protocol"] == "long":
         return w.get("profit", 0.0) * m["value_h"] + g("stars_rank")
+    if exp.get("outcome") == "value":
+        return w["profit"] * m["value_h"] + w["revenue"] * m["rev_h"] + g("stars_rank")
     return w["profit"] * m["gp_h"] + w["revenue"] * m["rev_h"] + g("stars_rank")
 
 
 def won(m, exp):
     if exp["side"] == "buyer":
         return m["surplus_h"]
-    return m["value_h"] if exp["protocol"] == "long" else m["gp_h"]
+    return m["value_h"] if _valued(exp) else m["gp_h"]
+
+
+def stars_h(m, base):
+    """Change of our running star average contributed by the block's own-shop reviews, per hour: (sum - k x avg) /
+    (n + k) / hours with base = {n, avg} fixed per experiment (0 without a base)."""
+    n, avg = (base or {}).get("n") or 0, (base or {}).get("avg")
+    if avg is None or n + m["rv_k"] <= 0:
+        return 0.0
+    return (m["rv_sum"] - m["rv_k"] * avg) / (n + m["rv_k"]) / m["hours"]
+
+
+def _valued(exp):
+    return exp["protocol"] == "long" or exp.get("outcome") == "value"
 
 
 def measure(store, stats, exp, t0, t1, sdir=None, login=None):
-    """Ledger metrics over [t0, t1) plus the board-measured terms from the cached snapshots under sdir (sdir None:
-    those terms are missing). Missing board terms contribute 0 and are listed in board_missing."""
-    m = ST.block_metrics(store, t0, t1, stats if exp["protocol"] == "long" else None)
+    """Ledger metrics over [t0, t1), stars and posts included. The board snapshots under sdir give only the forum
+    score of a long forum block (missing: 0 and listed in board_missing) and the raw stars drop for the guard."""
+    m = ST.block_metrics(store, t0, t1, stats if _valued(exp) else None)
+    m["stars_rank_h"] = stars_h(m, exp.get("stars_base"))
     bt = B.block_terms(sdir, login, t0, t1)
-    m.update({f"{t}_h": bt[f"{t}_h"] for t in B.BOARD_TERMS})
+    used = ["forum"] if exp_lane(exp) == "forum" and exp["protocol"] == "long" else []
+    m.update({f"{t}_h": bt[f"{t}_h"] for t in used})
     return {
         "metric": proxy(m, exp),
         "won": won(m, exp),
         "hours": m["hours"],
-        "board": {f"{t}_h": round(bt[f"{t}_h"], 6) for t in B.BOARD_TERMS},
-        "board_missing": bt["missing"],
+        "ledger": {
+            "stars_rank_h": round(m["stars_rank_h"], 6),
+            "reviews": m["rv_k"],
+            "posts_h": round(m["posts_h"], 4),
+        },
+        "board": {f"{t}_h": round(bt[f"{t}_h"], 6) for t in used},
+        "board_missing": [t for t in used if t in bt["missing"]],
         "board_snaps": bt["snaps"],
         "stars_drop": bt["stars_drop"],
     }
@@ -252,7 +378,7 @@ def _login(pol):
 
 def stars_guard(ctx, exp, blk, now):
     """Flags a closed block of a shop (price / supply / structure) experiment whose raw stars fell by >= STARS_GUARD
-    against the block-start snapshot, and logs it to guards.jsonl for the approver's numeric input."""
+    against the block-start snapshot, and logs it to guards.jsonl (numbers for the shop lane's proposer state)."""
     d = blk.get("stars_drop")
     blk["stars_guard"] = bool(
         exp["side"] == "shop" and d is not None and d >= B.STARS_GUARD - 1e-9
@@ -288,6 +414,7 @@ def guard_nums(ctx, paths, now):
 def _exp_row(exp):
     keep = (
         "id",
+        "lane",
         "arm",
         "mode",
         "protocol",
@@ -316,6 +443,7 @@ def _exp_row(exp):
 
 
 def end(ctx, L, exp, verdict, stats, now, reason=None):
+    lane = exp_lane(exp)
     final = "B" if verdict == "adopt" else "A"
     put_arm(ctx, L, exp, final, now)
     exp.update(status="done", verdict=verdict, stats=stats, t_end=now, reason=reason)
@@ -345,6 +473,7 @@ def end(ctx, L, exp, verdict, stats, now, reason=None):
         {
             "ts": now,
             "exp": exp["id"],
+            "lane": lane,
             "arm": exp["arm"],
             "path": r0["path"],
             "dir": r0["dir"],
@@ -353,13 +482,13 @@ def end(ctx, L, exp, verdict, stats, now, reason=None):
             f"stats {json.dumps(stats, default=str)[:160]}{', ' + reason if reason else ''})",
         },
     )
-    L["active"] = None
-    L["next_cycle_step"] = step_idx(L["pol"], now)
+    L["lanes"][lane].update(active=None, next_cycle_step=step_idx(L["pol"], now))
 
 
-def advance(ctx, L, store, stats, now):
-    exp = L["active"]
+def advance(ctx, L, exp, store, stats, now):
     pol = L["pol"]
+    if "stars_base" not in exp:  # an experiment started before the ledger stars term
+        exp["stars_base"] = L.get("stars_base")
     blk_s = exp["block_steps"] * STEP_S
     bd = {"sdir": ctx.sdir, "login": _login(pol)}
     if exp["status"] == "scheduled":
@@ -399,7 +528,8 @@ def advance(ctx, L, store, stats, now):
         return "supply_ban"
     if now < cur["t1_nom"]:
         return "running"
-    cur.update(measure(store, stats, exp, cur["t0"], now, **bd), t1=now)
+    wo = cur["t0"] + exp.get("washout_steps", 0) * STEP_S  # washout: the block's first steps are not measured
+    cur.update(measure(store, stats, exp, min(wo, now - 1), now, **bd), t1=now, t0_measured=min(wo, now - 1))
     stars_guard(ctx, exp, cur, now)
     if exp["protocol"] == "long":
         prev = None
@@ -501,18 +631,25 @@ def arms(ctx, L, pol, stats, kinds, now, ban):
 
 def _memview(ctx):
     """Read-only look at the memory dir: (graph snapshot or None, lessons.jsonl rows, how many of those rows the
-    memory stage has ingested; its cursor.json "lessons" must name this lessons file)."""
+    memory stage has ingested; its cursor.json "lessons" must name this lessons file). A wrong-typed cursor reads
+    as nothing ingested."""
     g = _jload(ctx.P["graph"], None)
+    g = g if isinstance(g, dict) else None
     rows = _rows(ctx.f("lessons.jsonl"))
-    cur = (_jload(ctx.P["graph"].with_name("cursor.json"), {}) or {}).get("lessons") or {}
+    cur = _jload(ctx.P["graph"].with_name("cursor.json"), {})
+    cur = cur.get("lessons") if isinstance(cur, dict) else None
+    cur = cur if isinstance(cur, dict) else {}
+    n = cur.get("n")
+    n = n if isinstance(n, int) and not isinstance(n, bool) and n >= 0 else 0
     same = cur.get("path") == str(ctx.f("lessons.jsonl").resolve())
-    return g, rows, int(cur.get("n") or 0) if g and same else 0
+    return g, rows, n if g and same else 0
 
 
-def recall(ctx, cats, keys, at=None, mem=None):
+def recall(ctx, cats, keys, at=None, mem=None, n_lessons=N_LESSONS, order="graph_first"):
     """Memory recall used by the proposer and the memcheck, read-only on the memory dir. Experiment knowledge is
     the graph's exp:<arm> verdict / policy:<path> value memos (memory/lessons.py): the relevant ones (path in
-    `keys` or naming one of `cats`) first, then the most recent, N_LESSONS in all. lessons.jsonl rows past the
+    `keys` or naming one of `cats`) first, then the most recent, n_lessons in all (order "recent_first": the most
+    recent only, relevance ignored; sec 7 harness.json). lessons.jsonl rows past the
     memory stage's cursor (not ingested yet) are laid on top and listed as lessons. Plus buyer_cat edges on `cats`
     and other memos naming cats / keys. at: the view at that time (graph versions open at `at`, lessons with
     ts < at; no buyer_cat / other memos). mem: a _memview() result to reuse.
@@ -549,10 +686,13 @@ def recall(ctx, cats, keys, at=None, mem=None):
 
     mrows = [("exp", a, v, t) for a, (v, t) in view["exp"].items()]
     mrows += [("policy", q, v, t) for q, (v, t) in view["policy"].items()]
-    mrows.sort(key=lambda x: (not rel(x[1]), -(x[3] or 0), x[1]))
+    if order == "recent_first":
+        mrows.sort(key=lambda x: (-(x[3] or 0), x[1]))
+    else:
+        mrows.sort(key=lambda x: (not rel(x[1]), -(x[3] or 0), x[1]))
     edges += [
         {k: name, ("verdict" if k == "exp" else "value"): str(v)[:60]}
-        for k, name, v, _ in mrows[:N_LESSONS]
+        for k, name, v, _ in mrows[:n_lessons]
     ]
     exp = {a: v for a, (v, _) in view["exp"].items()}
     pol = {q: v for q, (v, _) in view["policy"].items()}
@@ -569,18 +709,17 @@ def recall(ctx, cats, keys, at=None, mem=None):
             pol[f["policy"][len("policy:"):]] = f["value_after"]
     return {
         "edges": edges,
-        "lessons": [x.get("text") for x in new[-N_LESSONS:]],
-        "lesson_rows": new[-N_LESSONS:],
+        "lessons": [x.get("text") for x in new[-n_lessons:]],
+        "lesson_rows": new[-n_lessons:],
         "exp": exp,
         "policy": pol,
     }
 
 
-def exp_table(ctx):
+def exp_table(ctx, lane):
     out = []
-    for r in [x for x in _rows(ctx.f("experiments.jsonl")) if x.get("event") == "end"][
-        -15:
-    ]:
+    ends = [x for x in _rows(ctx.f("experiments.jsonl")) if x.get("event") == "end"]
+    for r in [x for x in ends if lane_of_exp(ctx.space, x) == lane][-15:]:
         st = r.get("stats") or {}
         out.append(
             {
@@ -595,25 +734,53 @@ def exp_table(ctx):
     return out
 
 
-def proposer_prompt(S, offered, rec, table):
+def proposer_prompt(lane, S, offered, rec, table, notes=""):
     return (
-        "You tune a live market agent's policy by small experiments. Pick ONE of the offered arms (or hold). "
+        "You tune a live market agent's policy by small experiments. "
+        f"This is the {lane} lane ({', '.join(LANES[lane])} keys); other lanes run their own experiments at the "
+        "same time. Pick ONE of the offered arms (or hold). "
         'Reply with strict JSON only: {"action": "change"|"hold", "edits": [{"path": str, "value": ...}], '
-        '"why": "<=200 chars"}. Up to 3 edits of one side; one must be an offered arm\'s path in its direction; '
+        '"why": "<=200 chars"}. Up to 3 edits of this lane; one must be an offered arm\'s path in its direction; '
         "values within range and max step. For a retest arm, use its edits exactly.\n"
+        f"LANE {lane}\n"
         f"STATE {json.dumps(S, ensure_ascii=False, default=str)}\n"
         f"EXPERIMENTS {json.dumps(table, ensure_ascii=False, default=str)}\n"
         f"MEMORY {json.dumps({'edges': rec['edges'], 'lessons': rec['lessons']}, ensure_ascii=False)}\n"
         f"ARMS {json.dumps(offered, ensure_ascii=False, default=str)}\n"
+        + (f"NOTES (harness)\n{notes}\n" if notes else "")
     )
 
 
-def approver_prompt(nums):
-    return (
-        "Approve or reject this policy experiment from the numbers alone. Reply with strict JSON only: "
-        '{"decision": "approve"|"reject", "reason": "<=80 chars"}.\n'
-        f"INPUT {json.dumps(nums, ensure_ascii=False, default=str)}\n"
+def harness(ctx, lane):
+    """<state>/harness.json for this lane, read at the start of its cycle (sec 7) -> (version or None, settings,
+    applied). Missing file, bad JSON or a bad version: defaults, version None. A missing or invalid lane object, or
+    any invalid field in it: that lane's defaults (applied False). Unknown feature names are ignored; a features list
+    with no known name means all features."""
+    d = _jload(ctx.f("harness.json"), None)
+    out = dict(HARNESS_DEFAULT)
+    if not isinstance(d, dict):
+        return None, out, False
+    ver = d.get("version")
+    if not isinstance(ver, int) or isinstance(ver, bool):
+        return None, out, False
+    x = d.get("lanes")
+    x = x.get(lane) if isinstance(x, dict) else None
+    if not isinstance(x, dict):
+        return ver, out, False
+    n, rc, nt, ft = (x.get(k, out[k]) for k in ("n_lessons", "recall", "prompt_notes", "features"))
+    ok = (
+        isinstance(n, int)
+        and not isinstance(n, bool)
+        and N_LESSONS_RANGE[0] <= n <= N_LESSONS_RANGE[1]
+        and rc in RECALL_ORDERS
+        and isinstance(nt, str)
+        and len(nt) <= NOTES_MAX
+        and (ft is None or (isinstance(ft, list) and all(isinstance(f, str) for f in ft)))
     )
+    if not ok:
+        return ver, out, False
+    ft = [f for f in ft if f in FEATURES] if ft is not None else None
+    return ver, dict(n_lessons=n, recall=rc, prompt_notes=nt, features=ft or None), True
 
 
 def parse_json(text):
@@ -651,15 +818,6 @@ def parse_proposal(text):
     return d
 
 
-def parse_approval(text):
-    d = parse_json(text)
-    if not d or d.get("decision") not in ("approve", "reject"):
-        return None
-    from pii_mask import mask
-
-    return {"decision": d["decision"], "reason": mask(str(d.get("reason") or ""))[:80]}
-
-
 def ask(ctx, role, prompt, now):
     from pii_mask import mask
 
@@ -668,7 +826,7 @@ def ask(ctx, role, prompt, now):
         text, err = ctx.get_llms()[role].complete(prompt, max_tokens=800)["text"], None
     except Exception as e:  # noqa: BLE001 - LLMUnavailable or a client failure
         text, err = None, type(e).__name__
-    out = (parse_proposal if role == "prop" else parse_approval)(text)
+    out = parse_proposal(text)
     _append(
         ctx.f("llm.jsonl"),
         {
@@ -700,18 +858,25 @@ def match_arm(offered, rows, edits):
     return None
 
 
-def cycle(ctx, L, store, stats, now, record=True):
-    """One decision: select, propose, gate, approve and (record=True) schedule the experiment. record=False (the
-    deploy check) leaves the experiment unrecorded and returns the gated rows in res["_rows"]."""
+def cycle(ctx, L, lane, store, stats, now, record=True):
+    """One decision of one lane: select among the lane's arms, propose, gate and (record=True) schedule the
+    experiment; the edits apply iff the code guards pass (no approver). record=False (the deploy check) leaves the
+    experiment unrecorded and returns the gated rows in res["_rows"]."""
     pol = L["pol"]
+    ls = L["lanes"][lane]
+    hv, hc, happ = harness(ctx, lane)
     cat = ST.catalog(ctx.P)
     kinds = kind_of(cat, _jload(ctx.P["demand"], []))
     ban = now >= ST.SUPPLY_STOP - ST.SUPPLY_BAN_S
     k = step_idx(pol, now)
-    allarms = arms(ctx, L, pol, stats, kinds, now, ban)
+    allarms = {
+        a: x
+        for a, x in arms(ctx, L, pol, stats, kinds, now, ban).items()
+        if arm_lane(ctx.space, x) == lane
+    }
     pri = priors(ctx)
     post = _jload(ctx.f("arms.json"), {})
-    seed = SEED + k
+    seed = SEED + k + 1000 * list(LANES).index(lane)
     top = X.thompson(sorted(allarms), post, pri, seed)
     offered = {a: dict(allarms[a], posterior_mean=round(m, 3)) for a, _, m in top}
     cats = top_cats(stats)
@@ -729,74 +894,75 @@ def cycle(ctx, L, store, stats, now, record=True):
             ),
         },
     }
-    rec = recall(ctx, cats, [a.split("|")[0] for a in offered])
-    res = {"seed": seed, "offered": list(offered), "_allarms": allarms}
-    prop = ask(ctx, "prop", proposer_prompt(S, offered, rec, exp_table(ctx)), now)
+    if lane == "shop":
+        S["stars_guard"] = guard_nums(ctx, [offered[a].get("path") for a in offered], now)
+    S["lanes"] = {
+        ln: {q: x.get(q) for q in ("id", "arm", "status", "protocol", "t_start")}
+        for ln, x in running(L)
+        if ln != lane
+    }
+    if hc["features"]:
+        S = {q: v for q, v in S.items() if q in hc["features"]}
+    rec = recall(
+        ctx,
+        cats,
+        [a.split("|")[0] for a in offered],
+        n_lessons=hc["n_lessons"],
+        order=hc["recall"],
+    )
+    res = {
+        "lane": lane,
+        "harness_version": hv,
+        "harness_applied": happ,
+        "seed": seed,
+        "offered": list(offered),
+        "guards": [],
+        "_allarms": allarms,
+    }
+    prompt = proposer_prompt(
+        lane, S, offered, rec, exp_table(ctx, lane), hc["prompt_notes"]
+    )
+    prop = ask(ctx, "prop", prompt, now)
     res["proposer"] = None if prop is None else prop["action"]
     if prop is None or prop["action"] == "hold":
-        res["approver"] = "skipped"
-        L["next_cycle_step"] = k + (HOLD_STEPS if prop else 1)
+        ls["next_cycle_step"] = k + (HOLD_STEPS if prop else 1)
         return res
     bad, rows = SP.check(
         prop["edits"], pol, ctx.space, stats["category"].keys(), kinds, ban
     )
+    if not bad and any(lane_of_path(ctx.space, r["path"]) != lane for r in rows):
+        bad = [f"edits outside the {lane} lane"]
     aid = match_arm(offered, rows, prop["edits"]) if not bad else None
     if not bad and aid is None:
         bad = ["edits match no offered arm"]
-    if L.get("active"):
-        bad.append("an experiment is already running")
+    if ls.get("active"):
+        bad.append(f"an experiment is already running in the {lane} lane")
     from pii_mask import mask
 
     bad = [mask(str(b))[:200] for b in bad]
     res["guards"] = bad
-    ap = None
     res["_rows"] = rows
-    if not bad:
-        best = (
-            max(allarms, key=lambda a: X.posterior(post, a, pri.get(a, 0.0))[0])
-            if allarms
-            else None
-        )
-        nums = {
-            "edits": [
-                {"path": r["path"], "current": r["current"], "proposed": r["value"]}
-                for r in rows
-            ]
-            or [{"path": e["path"], "proposed": e["value"]} for e in prop["edits"]],
-            "arm": aid,
-            "mode": "retest"
-            if aid and aid.startswith("retest|")
-            else ("exploit" if aid == best else "explore"),
-            "offline_prior": pri.get(aid),
-            "guards": {"ok": not bad, "violations": len(bad)},
-            "last24h": dict(
-                ST.buyer_summary(store, now),
-                rev_h=shop["rev_h"],
-                gp_h=shop["gp_h"],
-                balance=shop["balance"],
-            ),
-            "gamma": ST.time_info(now)["gamma"],
-            "t_rem_h": ST.time_info(now)["t_rem_h"],
-            "stars_guard": guard_nums(ctx, [r["path"] for r in rows], now),
-        }
-        ap = ask(ctx, "appr", approver_prompt(nums), now)
-        res["_nums"] = nums
-    res["approver"] = None if ap is None else ap["decision"]
-    L["next_cycle_step"] = k + 1
-    if not record or bad or ap is None or ap["decision"] != "approve":
+    ls["next_cycle_step"] = k + 1
+    if not record or bad:
         return res
+    best = max(allarms, key=lambda a: X.posterior(post, a, pri.get(a, 0.0))[0])
     long_ = any(r["entry"]["protocol"] == "long" for r in rows)
     retest = aid.startswith("retest|")
     L["n_exp"] = L.get("n_exp", 0) + 1
     exp = {
         "id": f"e{L['n_exp']:04d}",
+        "lane": lane,
         "arm": aid,
-        "mode": nums["mode"],
+        "mode": "retest" if retest else ("exploit" if aid == best else "explore"),
         "retest": retest,
         "protocol": "switchback" if retest or not long_ else "long",
         "block_steps": 3
         if retest or not long_
         else max(r["entry"]["block_steps"] for r in rows),
+        "washout_steps": max(r["entry"].get("washout_steps", 0) for r in rows),
+        "outcome": "value"
+        if any(r["entry"]["family"] in ("supply", "structure") for r in rows)
+        else None,
         "seed": SEED * 1000 + L["n_exp"],
         "side": rows[0]["entry"]["side"],
         "prior": pri.get(aid, 0.0),
@@ -812,11 +978,12 @@ def cycle(ctx, L, store, stats, now, record=True):
         "A_version": L["live_version"],
         "B_version": None,
         "w": L["w"],
+        "stars_base": L.get("stars_base"),
         "why": prop["why"],
     }
     if retest:
         L["retests"] = [r for r in L.get("retests") or [] if r["id"] != aid]
-    L["active"] = exp
+    ls["active"] = exp
     _append(ctx.f("experiments.jsonl"), dict(event="start", **_exp_row(exp)))
     res["started"] = exp["id"]
     return res
@@ -966,13 +1133,20 @@ def step(now=None, ctx=None, **kw):
 
 
 def observe(ctx, L, pol, now):
-    """State build + board refresh + weights (into L). -> (store, stats, board status)."""
+    """State build + board refresh + weights and the stars base (into L). -> (store, stats, board status)."""
     cat = ST.catalog(ctx.P)
-    store = ST.update(ST.load_store(ctx.f("store.json")), ctx.P, now, cat)
+    own = pol.get("owner") or {}
+    authors = {str(x).lower() for x in [own.get("github")] + list(own.get("own_buyer_names") or []) if x}
+    store = ST.update(ST.load_store(ctx.f("store.json")), ctx.P, now, cat, authors)
     ST.save_store(ctx.f("store.json"), store)
     stats = ST.market_stats(store, cat, now)
     brd, bst = B.refresh(ctx.sdir, now, ctx.fetch)
     login = (pol.get("owner") or {}).get("github")
+    n, s = store["rv_all"]
+    L["stars_base"] = {"n": n, "avg": s / n, "src": "ledger"} if n else None
+    me = B._ours((brd or {}).get("shops") or [], login) or {}
+    if all(isinstance(me.get(q), (int, float)) for q in ("reviews", "stars")) and me["reviews"] > 0:
+        L["stars_base"] = {"n": me["reviews"], "avg": me["stars"], "src": "board"}
     if brd:
         L["w"] = B.weights(brd, login)["w"]
         L["board_summary"] = B.summary(brd, login)
@@ -1000,6 +1174,7 @@ def observe(ctx, L, pol, now):
 
 def _step(ctx, now):
     L = _jload(ctx.f("loop.json"), {})
+    lanes = migrate(ctx, L)
     out = {"status": "ok"}
     out["live"] = check_live(ctx, L, now)
     if out["live"] == "bad_live":  # keep the last good state; retry next tick
@@ -1009,18 +1184,18 @@ def _step(ctx, now):
     L["pol"] = pol = json.loads(ctx.policy.read_bytes())
     try:
         if ctx.f("STOP").exists():
-            if L.get("active"):
-                end(ctx, L, L["active"], "stopped", None, now, reason="STOP file")
+            for _, exp in running(L):
+                end(ctx, L, exp, "stopped", None, now, reason="STOP file")
             out["status"] = "stopped"
             return out
         store, stats, bst = observe(ctx, L, pol, now)
         out["board"] = bst.get("last_code")
         if now >= ST.ROUND_END - ST.FREEZE_S:
-            if L.get("active"):
+            for _, exp in running(L):
                 end(
                     ctx,
                     L,
-                    L["active"],
+                    exp,
                     "frozen",
                     None,
                     now,
@@ -1028,17 +1203,24 @@ def _step(ctx, now):
                 )
             out["status"] = "frozen"
             return out
-        if L.get("active"):
-            out["exp"] = advance(ctx, L, store, stats, now)
+        for ln, exp in running(L):
+            out.setdefault("exp", {})[ln] = advance(ctx, L, exp, store, stats, now)
         k = step_idx(pol, now)
-        if not L.get("active") and k >= L.get("next_cycle_step", k):
-            L["next_cycle_step"] = k + 1                  # an exception below does not re-run the cycle this step
-            res = cycle(ctx, L, store, stats, now)
-            out["cycle"] = {k2: v for k2, v in res.items() if not k2.startswith("_")}
-            log(ctx, now, "cycle", **{k2: v for k2, v in out["cycle"].items() if k2 != "offered"})
+        for ln in LANES:
+            s = lanes[ln]
+            nxt = s.get("next_cycle_step")
+            if s.get("active") or k < (k if nxt is None else nxt):
+                continue
+            s["next_cycle_step"] = k + 1                  # an exception below does not re-run the cycle this step
+            res = cycle(ctx, L, ln, store, stats, now)
+            pub = {k2: v for k2, v in res.items() if not k2.startswith("_")}
+            out.setdefault("cycles", {})[ln] = pub
+            log(ctx, now, "cycle", **{k2: v for k2, v in pub.items() if k2 != "offered"})
+        if out.get("cycles"):
+            out["cycle"] = {"proposer": {ln: r["proposer"] for ln, r in out["cycles"].items()}}
         out["memcheck"] = memcheck(ctx, L, now)
-        if L.get("active"):
-            out["active"] = {k2: L["active"].get(k2) for k2 in ("id", "arm", "status")}
+        if running(L):
+            out["active"] = {ln: {k2: x.get(k2) for k2 in ("id", "arm", "status")} for ln, x in running(L)}
         return out
     finally:
         L.pop("pol", None)
@@ -1047,15 +1229,15 @@ def _step(ctx, now):
 
 # ---------------------------------------------------------------- one-off deploy check
 def check(policy_out, now=None, ctx=None, **kw):
-    """One full cycle against the real environment that writes ONLY the copy at policy_out: the state dir, the
-    PolicyRuns registry and the audit log are a temporary directory, the live policy is only read. A proposer hold
-    (or a refused / rejected edit) still exercises the write path with a synthetic in-bounds edit of an offered arm.
-    -> (exit code, summary dict)."""
+    """One full cycle of every lane against the real environment that writes ONLY the copy at policy_out: the state
+    dir, the PolicyRuns registry and the audit log are a temporary directory, the live policy is only read. The first
+    lane whose proposal passes the guards is written; when none does (holds or refused edits), the write path is
+    still exercised with a synthetic in-bounds edit of an offered arm. -> (exit code, summary dict)."""
     import shutil
     import tempfile
     import policy as POL
     now = time.time() if now is None else now
-    out = {"board_ok": False, "ledger_ok": False, "proposer_json_ok": False, "approver_json_ok": False,
+    out = {"board_ok": False, "ledger_ok": False, "proposer_json_ok": False,
            "gate": None, "wrote_copy": False, "validate_ok": False}
     tmp = tempfile.mkdtemp(prefix="icrl-check-")
     try:
@@ -1067,36 +1249,30 @@ def check(policy_out, now=None, ctx=None, **kw):
         ctx.sdir, ctx.policy = Path(tmp), dst
         ctx.runs, ctx.audit = PolicyRuns(Path(tmp) / "runs", Path(tmp) / "runs"), Path(tmp) / "audit.jsonl"
         L = {}
+        migrate(ctx, L)
         check_live(ctx, L, now)
         L["pol"] = pol = json.loads(dst.read_bytes())
         store, stats, bst = observe(ctx, L, pol, now)
         out["board_ok"] = bst.get("last_code") == 200
         out["ledger_ok"] = bool(store["m"]) and bool(stats["category"])
-        res = cycle(ctx, L, store, stats, now, record=False)
-        out["proposer"] = res.get("proposer")
-        out["proposer_json_ok"] = res.get("proposer") is not None
-        rows, nums = res.get("_rows") or [], res.get("_nums")
-        approved = res.get("approver") == "approve" and not res.get("guards")
-        if not (rows and approved):
+        res = {ln: cycle(ctx, L, ln, store, stats, now, record=False) for ln in LANES}
+        out["proposer"] = {ln: r.get("proposer") for ln, r in res.items()}
+        out["proposer_json_ok"] = all(r.get("proposer") is not None for r in res.values())
+        ok = [r for r in res.values() if r.get("proposer") == "change" and r.get("_rows") and not r["guards"]]
+        rows = ok[0]["_rows"] if ok else []
+        if ok:
+            out["lane"] = ok[0]["lane"]
+        else:
             cat = ST.catalog(ctx.P)
             kinds = kind_of(cat, _jload(ctx.P["demand"], []))
-            rows = []
-            for aid, a in sorted(res["_allarms"].items()):
+            allarms = {a: x for r in res.values() for a, x in r["_allarms"].items()}
+            for aid, a in sorted(allarms.items()):
                 if "suggest" in a and not isinstance(a["suggest"], list):
                     bad, rows = SP.check([{"path": a["path"], "value": a["suggest"]}], pol, ctx.space,
                                          stats["category"].keys(), kinds, False)
                     if rows:
                         out["synthetic"] = aid
                         break
-            nums = {"edits": [{"path": r["path"], "current": r["current"], "proposed": r["value"]} for r in rows],
-                    "arm": out.get("synthetic"), "mode": "check", "guards": {"ok": bool(rows), "violations": 0},
-                    "gamma": ST.time_info(now)["gamma"], "t_rem_h": ST.time_info(now)["t_rem_h"],
-                    "stars_guard": guard_nums(ctx, [r["path"] for r in rows], now)}
-            ap = ask(ctx, "appr", approver_prompt(nums), now)
-            out["approver"] = None if ap is None else ap["decision"]
-        else:
-            out["approver"] = res.get("approver")
-        out["approver_json_ok"] = out["approver"] is not None
         out["gate"] = "ok" if rows else "no in-bounds edit"
         if rows:
             raw = SP.dumps_like(dst.read_bytes(), SP.apply(pol, rows))
@@ -1109,7 +1285,7 @@ def check(policy_out, now=None, ctx=None, **kw):
         out["error"] = f"{type(e).__name__}: {str(e)[:160]}"
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-    keys = ("board_ok", "ledger_ok", "proposer_json_ok", "approver_json_ok", "wrote_copy", "validate_ok")
+    keys = ("board_ok", "ledger_ok", "proposer_json_ok", "wrote_copy", "validate_ok")
     return (0 if all(out[k] for k in keys) and out["gate"] == "ok" else 1), out
 
 

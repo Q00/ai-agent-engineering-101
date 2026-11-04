@@ -3,6 +3,9 @@ on disk), market price stats, our shop and buyer summaries, block metrics, inven
 
 Our sales = market settles whose unit id is in our restock rows (unit_cost from that row). Balance = the last kit
 log '[supply] ... balance B' line (the line has no date, so its time is the read time). Our buyer = settle/deal rows.
+Our shop's reviews = review rows with src market, role shop and mine true (on the 2026-11-04 ledger exactly the rows
+whose data.shop is our URL); our posts = forum rows whose author is one of our names (owner login / buyer names) with
+role buyer.
 """
 
 import json
@@ -90,11 +93,15 @@ def empty():
         "sold": {},
         "gone": {},
         "deals": [],
+        "reviews": [],
+        "rv_all": [0, 0],
+        "posts": [],
     }
 
 
-def update(store, P, now, cat=None):
-    """Reads the new bytes of events.jsonl and the kit log into store (in place) and prunes old rows."""
+def update(store, P, now, cat=None, authors=()):
+    """Reads the new bytes of events.jsonl and the kit log into store (in place) and prunes old rows. authors: our
+    forum author names, lower case."""
     lines, store["off"], reset = _read_new(P["events"], store["off"])
     if reset:
         store.update(
@@ -143,6 +150,17 @@ def update(store, P, now, cat=None):
                 or ((cat or {}).get(d.get("sku")) or (None, None, None))[2]
             )
             store["deals"].append([ts, int(d.get("amount") or 0), int(val or 0)])
+        elif t == "review" and src == "market" and e.get("role") == "shop" and e.get("mine") is True:
+            s = d.get("stars")
+            if isinstance(s, (int, float)) and not isinstance(s, bool):
+                store["reviews"].append([ts, s])
+                store["rv_all"] = [store["rv_all"][0] + 1, store["rv_all"][1] + s]
+        elif (
+            t == "forum"
+            and d.get("role") == "buyer"
+            and str(d.get("author") or "").lower() in authors
+        ):
+            store["posts"].append(ts)
     klines, store["kit_off"], _ = _read_new(P["kit"], store["kit_off"])
     for ln in klines:
         m = SUPPLY_RX.search(ln)
@@ -151,6 +169,8 @@ def update(store, P, now, cat=None):
     lo = now - RETAIN_H * 3600
     store["m"] = [r for r in store["m"] if r[0] >= lo]
     store["deals"] = [r for r in store["deals"] if r[0] >= lo]
+    store["reviews"] = [r for r in store["reviews"] if r[0] >= lo]
+    store["posts"] = [x for x in store["posts"] if x >= lo]
     for u in [u for u, s in sold.items() if s[0] < lo]:
         sold.pop(u)
         units.pop(u, None)
@@ -250,14 +270,16 @@ def valuation(store, t, stats, vel):
 
 
 def block_metrics(store, t0, t1, stats=None, vel=None):
-    """Per-hour metrics over [t0, t1): our sales (revenue, gross profit), buyer surplus / deals and, with stats,
-    the long-block value change (cash + inventory valuation)."""
+    """Per-hour metrics over [t0, t1): our sales (revenue, gross profit), buyer surplus / deals, our posts, our
+    shop's reviews (count rv_k, star sum rv_sum) and, with stats, the long-block value change (cash + inventory
+    valuation)."""
     h = max((t1 - t0) / 3600, 1e-6)
     rev = gp = n = 0
     for u, (ts, amt, uc) in store["sold"].items():
         if t0 <= ts < t1:
             rev, gp, n = rev + amt, gp + amt - uc, n + 1
     dl = [r for r in store["deals"] if t0 <= r[0] < t1]
+    rv = [s for ts, s in store.get("reviews") or [] if t0 <= ts < t1]
     out = {
         "hours": round(h, 4),
         "rev_h": rev / h,
@@ -265,6 +287,9 @@ def block_metrics(store, t0, t1, stats=None, vel=None):
         "sales_h": n / h,
         "surplus_h": sum(v - a for _, a, v in dl) / h,
         "deals_h": len(dl) / h,
+        "posts_h": sum(t0 <= x < t1 for x in store.get("posts") or []) / h,
+        "rv_k": len(rv),
+        "rv_sum": sum(rv),
     }
     if stats is not None:
         spent = sum(x[3] for x in store["units"].values() if t0 <= x[4] < t1)
@@ -322,7 +347,8 @@ def time_info(now):
 
 def load_store(path):
     d = _jload(path)
-    return d if isinstance(d, dict) and "m" in d else empty()
+    # a store from before the review / post rows is rebuilt once from offset 0, so those rows are backfilled
+    return d if isinstance(d, dict) and "m" in d and "reviews" in d else empty()
 
 
 def save_store(path, store):

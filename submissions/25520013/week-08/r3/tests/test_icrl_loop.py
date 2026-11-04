@@ -1,6 +1,7 @@
 """icrl loop on a synthetic workspace with a fake clock and fake LLMs (no network): apply / revert bytes, versions,
-external edits, STOP, freeze, loss cap, approver isolation, PII masking, idempotent ticks, the deploy check and the
-real-data state build."""
+external edits, STOP, freeze, loss cap, no approver call, PII masking, idempotent ticks, the deploy check and the
+real-data state build. The fake proposer changes only in the shop lane (buyer and forum lanes hold), so the shop
+experiment runs alone here; tests/test_icrl_lanes.py covers lanes running together."""
 
 import functools
 import json
@@ -37,6 +38,8 @@ class Fake:
 
 
 def pick(prompt):
+    if "\nLANE shop\n" not in prompt:
+        return HOLD
     arms = json.loads([x for x in prompt.splitlines() if x.startswith("ARMS ")][0][5:])
     a = arms.get(ARM) or next(
         x
@@ -163,12 +166,12 @@ def env(tmp_path, request):
     (sdir / "arms.json").write_text(
         json.dumps({ARM: [50.0, 1e6]})
     )  # make the price_mult arm the top draw
-    prop, appr = Fake([pick, HOLD]), Fake([APPROVE])
+    prop = Fake([pick, HOLD])
     ctx = loop.Ctx(
         work=w,
         sdir=sdir,
         policy=pol,
-        llms={"prop": prop, "appr": appr},
+        llms={"prop": prop},
         fetch=lambda u: (500, b""),
         audit=tmp_path / "audit.jsonl",
     )
@@ -177,7 +180,6 @@ def env(tmp_path, request):
         "pol": pol,
         "orig": pol.read_bytes(),
         "prop": prop,
-        "appr": appr,
         "sdir": sdir,
     }
 
@@ -196,22 +198,22 @@ def start(env, first_arm=None, monkeypatch=None):
             loop.X, "block_arm", lambda seed, i: first_arm if i == 0 else "A"
         )
     r = loop.step(NOW0, ctx=env["ctx"])
-    assert r["status"] == "ok" and r["cycle"]["started"] == "e0001", r
+    assert r["status"] == "ok" and r["cycles"]["shop"]["started"] == "e0001", r
     L = json.loads((env["sdir"] / "loop.json").read_text())
-    t0 = L["active"]["t_start"]
+    t0 = L["lanes"]["shop"]["active"]["t_start"]
     assert env["pol"].read_bytes() == env["orig"]  # scheduled, not yet written
-    assert loop.step(t0 + 1, ctx=env["ctx"])["exp"] == "started"
+    assert loop.step(t0 + 1, ctx=env["ctx"])["exp"]["shop"] == "started"
     return t0
 
 
 def test_first_cycle_applies_without_a_mode_file_and_ticks_are_idempotent(env):
     loop.step(NOW0, ctx=env["ctx"])
     loop.step(NOW0 + 30, ctx=env["ctx"])
-    assert len(env["prop"].prompts) == 1 and not (env["sdir"] / "mode.json").exists()
-    assert (
-        json.loads((env["sdir"] / "loop.json").read_text())["active"]["status"]
-        == "scheduled"
-    )
+    # one proposer call per lane on the first tick, none on the second tick of the same step
+    assert len(env["prop"].prompts) == 3 and not (env["sdir"] / "mode.json").exists()
+    lanes = json.loads((env["sdir"] / "loop.json").read_text())["lanes"]
+    assert lanes["shop"]["active"]["status"] == "scheduled"
+    assert lanes["buyer"]["active"] is None and lanes["forum"]["active"] is None
 
 
 def test_switchback_runs_to_keep_a_and_restores_identical_bytes(env):
@@ -251,7 +253,7 @@ def test_loss_cap_reverts_and_rejects(env, monkeypatch):
     t0 = start(env, "B", monkeypatch)
     assert env["pol"].read_bytes() != env["orig"]
     r = loop.step(t0 + 1800, ctx=env["ctx"])
-    assert r["exp"] == "loss_cap" and env["pol"].read_bytes() == env["orig"]
+    assert r["exp"]["shop"] == "loss_cap" and env["pol"].read_bytes() == env["orig"]
     end = [x for x in rows(env["sdir"] / "experiments.jsonl") if x["event"] == "end"][0]
     assert end["verdict"] == "reject" and end["reason"].startswith("loss_cap")
 
@@ -309,18 +311,19 @@ def test_external_edit_without_experiment_becomes_the_baseline(env):
     )
 
 
-def test_approver_never_sees_the_why_and_logs_are_masked(env):
-    loop.step(NOW0, ctx=env["ctx"])
-    assert env["appr"].prompts and all(
-        "WHY-SECRET" not in p for p in env["appr"].prompts
-    )
+def test_no_approver_call_and_logs_are_masked(env):
+    r = loop.step(NOW0, ctx=env["ctx"])
+    assert r["cycles"]["shop"]["started"] == "e0001" and "approver" not in r["cycles"]["shop"]
+    assert {x["role"] for x in rows(env["sdir"] / "llm.jsonl")} == {"prop"}
+    assert set(env["ctx"].llms) == {"prop"} and not hasattr(loop, "approver_prompt")
     start_row = rows(env["sdir"] / "experiments.jsonl")[0]
     assert "[EMAIL]" in start_row["why"] and "kim@example.com" not in json.dumps(
         start_row
     )
+    assert all("WHY-SECRET" not in p for p in env["prop"].prompts)
     loop.ask(
         env["ctx"],
-        "appr",
+        "prop",
         "contact lee@example.org or 010-1234-5678 " + "x" * 200,
         NOW0,
     )
@@ -339,13 +342,13 @@ def test_bad_json_is_a_hold_and_retries_next_step(env):
     r = loop.step(NOW0, ctx=env["ctx"])
     assert (
         r["status"] == "ok"
-        and r["cycle"]["proposer"] is None
+        and r["cycles"]["shop"]["proposer"] is None
         and env["pol"].read_bytes() == env["orig"]
     )
     loop.step(NOW0 + 60, ctx=env["ctx"])
-    assert len(env["prop"].prompts) == 1
+    assert len(env["prop"].prompts) == 3
     loop.step(NOW0 + loop.STEP_S, ctx=env["ctx"])
-    assert len(env["prop"].prompts) == 2
+    assert len(env["prop"].prompts) == 6
 
 
 def _listing(p):
@@ -361,7 +364,7 @@ def test_deploy_check_writes_only_the_copy(env, tmp_path, monkeypatch, capsys):
     ctx_kw = {
         "work": env["ctx"].work,
         "policy": env["pol"],
-        "llms": {"prop": env["prop"], "appr": env["appr"]},
+        "llms": {"prop": env["prop"]},
         "fetch": lambda u: (200, b'{"shops": [], "buyers": []}'),
     }
     monkeypatch.setattr(loop, "Ctx", functools.partial(loop.Ctx, **ctx_kw))
@@ -386,7 +389,7 @@ def test_state_builder_on_real_data(tmp_path):
         sdir=tmp_path / "st",
         policy=pol,
         fetch=lambda u: (500, b""),
-        llms={"prop": Fake([HOLD]), "appr": Fake([APPROVE])},
+        llms={"prop": Fake([HOLD])},
         audit=tmp_path / "audit.jsonl",
     )
     t = time.monotonic()
@@ -398,7 +401,8 @@ def test_state_builder_on_real_data(tmp_path):
         f"{len(store['m'])}, own units {len(store['units'])}, sold {len(store['sold'])}, deals {len(store['deals'])}, "
         f"store {os.path.getsize(tmp_path / 'st' / 'store.json')} B, balance {store['balance']}"
     )
-    assert r["status"] == "ok" and r["cycle"]["proposer"] == "hold" and took < 60
+    assert r["status"] == "ok" and took < 60
+    assert {ln: c["proposer"] for ln, c in r["cycles"].items()} == dict.fromkeys(loop.LANES, "hold")
     assert (
         store["off"] == os.path.getsize(DATA / ".r3" / "events.jsonl")
         and store["balance"] is not None

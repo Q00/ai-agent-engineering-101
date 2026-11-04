@@ -52,7 +52,10 @@ def http_get(url, timeout=10):
 def _cache(sdir):
     d = Path(sdir) / "board"
     d.mkdir(parents=True, exist_ok=True)
-    return sorted(d.glob("*.json"), key=lambda p: int(p.stem))
+    return sorted(
+        (p for p in d.glob("*.json") if p.stem.isascii() and p.stem.isdigit()),
+        key=lambda p: int(p.stem),
+    )
 
 
 def latest(sdir):
