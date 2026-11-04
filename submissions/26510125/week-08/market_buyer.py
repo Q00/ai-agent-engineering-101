@@ -7,7 +7,7 @@ the buyer needs it to last; shops.json carries each shop's `offers`. The buyer t
 checkouts the kit refused to pay twice (payments.jsonl), (b) picks the shop as before but only among
 shops that stock an acceptable SKU, (c) asks for the SKU with the highest list value it can afford there,
 skipping names that broke on it before (broken.jsonl), (d) adds an `accept` policy the kit enforces at
-checkout (certificate, grade A/B, shelf life >= use_within_hours), and (e) posts one forum line per deal.
+checkout (certificate, grade A/B, shelf life >= use_within_hours), and (e) votes on forum posts from evidence; review.py posts the settled deal.
 
 {shops} is a JSON list of {"name", "url", "reviews": [{"stars", "review", "round"}, ...]}, newest
 review first. The buyer:
@@ -218,52 +218,13 @@ def accept_policy(order: dict):
     return acc                                   # shortcut: no warranty_hours, the starter seller never gives one
 
 
-def price_report(sku: str, name: str, paid, shop_name: str, mem: dict) -> str:
-    med, n = median_price(sku)
-    liars = sorted(k for k, v in mem["shops"].items() if any(x.get("dishonest") for x in v["trades"]))
-    return (f"[price report] {name} ({sku}): paid {paid} at {shop_name}; market median {med} over {n} settled deals. "
-            + (f"Shops whose grade claim was false on me: {', '.join(liars[:3])}. " if liars else "")
-            + "Set accept.cert=true and grades A/B, the kit refuses the rest before paying.")
-
-
-MANIPULATION = ("pay the asking", "asking price and", "five stars", "5 stars", "approved by the instructor", "operator",
-                "vip", "[ad", "grand revamp", "market notice")
-
-
-def vote_forum(md: Path, mem: dict, limit=3):
-    """Votes, from evidence only: -1 on posts that tell buyers how to rate or pay (the week-07 planted-notice trick),
-    +1 on buyers' warnings about a shop my own memory also caught lying. One vote per post, remembered in memory."""
-    try:
-        posts = json.loads((md / "forum.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return
-    voted = set(mem.setdefault("voted", []))
-    liars = {k.lower() for k, v in mem["shops"].items() if any(x.get("dishonest") for x in v["trades"])}
-    n = 0
-    for post in posts if isinstance(posts, list) else posts.get("posts", []):
-        text = str(post.get("text", "")).lower()
-        if post.get("id") in voted or n >= limit:
-            continue
-        value = None
-        if any(w in text for w in MANIPULATION):
-            value = -1
-        elif post.get("role") == "buyer" and any(l in text for l in liars) and any(w in text for w in ("false", "lied", "claimed", "dishonest")):
-            value = 1
-        if value:
-            with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:
-                f.write(json.dumps({"vote": post["id"], "value": value, "as": "buyer"}) + "\n")
-            voted.add(post["id"]); n += 1
-            log(f"[vote] {value:+d} on #{post['id']} by {post.get('author')}: {text[:60]!r}")
-    mem["voted"] = sorted(voted)[-500:]
-
-
-def forum_post(md: Path, text: str):
+def forum_post(md: Path, text: str, refs=()):
     """One buyer post per 10 minutes: posts now count 0.1 of buyer ALL (week-09 rule), but a 5-min stream reads as spam."""
     stamp = md / "last_buyer_post"
     if time.time() - (stamp.stat().st_mtime if stamp.exists() else 0) < 600:
         return
     with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"post": text, "refs": [], "as": "buyer"}, ensure_ascii=False) + "\n")
+        f.write(json.dumps({"post": text, "refs": list(refs), "as": "buyer"}, ensure_ascii=False) + "\n")
     stamp.touch()
 
 
@@ -339,9 +300,6 @@ def main():
     out = {"shop": shop["url"], "receipt": receipt if st["status"] == "bought" else None, "stars": stars, "review": review}
     if order.get("acceptable"):
         out["accept"] = accept_policy(order)
-        if st["status"] == "bought":
-            forum_post(md, price_report(offer["sku"] if offer else args.item, offer["name"] if offer else args.item,
-                                        rprice, shop["name"], mem))
     print(json.dumps(out, ensure_ascii=False), flush=True)       # the last line: the kit reads this
 
 

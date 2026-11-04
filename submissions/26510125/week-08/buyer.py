@@ -51,7 +51,12 @@ def rpc_url(card: dict, base: str) -> str:
 
 def rpc(url: str, method: str, params: dict):
     body = {"jsonrpc": "2.0", "id": str(uuid.uuid4())[:8], "method": method, "params": params}
-    r = httpx.post(url, json=body, headers=HEADERS, timeout=200).json()
+    try:
+        r = httpx.post(url, json=body, headers=HEADERS, timeout=200).json()
+    except (httpx.HTTPError, ValueError) as e:          # dead tunnel, timeout, or a non-JSON reply
+        return None, {"code": -1, "message": f"{type(e).__name__}: {str(e)[:80]}"}
+    if not isinstance(r, dict) or ("error" not in r and "result" not in r):
+        return None, {"code": -1, "message": "reply is not JSON-RPC"}
     if "error" in r:
         return None, r["error"]
     res = r["result"]

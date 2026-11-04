@@ -105,7 +105,7 @@ class Seller(AgentExecutor):
         u = deal["unit"]
         hours = (u["expires_at"] - time.time()) / 3600 if u.get("expires_at") else None
         urgent = (hours is not None and hours < 12) or u.get("grade") == "C"
-        reserve = u["cost"] if urgent else int(u["cost"] * 1.15)       # margin floor unless the unit must go
+        reserve = int(u["cost"] * 1.15) if u.get("kind") == "goods" and not urgent else u["cost"]   # margin floor on goods only
         med, n = median_price(u["sku"])
         market = (f"\nThe market's recent settled price for this exact item is {med} (median of {n} deals); buyers know it, "
                   f"so open a little above {med} and close near it rather than at the list price.") if med and med >= reserve else ""

@@ -3,7 +3,7 @@
 The kit's default buys random SKUs when stock is low. This one reads demand from the market's ledger
 (what actually settled, market-wide, newest 500 entries) and buys the SKUs that sell, within the balance.
 Rules: keep stock under 120 units (storage is 1 %/day of cost), spend at most 5 % of the balance per SKU,
-prefer goods and long-shelf food (short shelf life rots before a buyer asks), file for bankruptcy only
+food only with >= 10 days of shelf life (buyers refuse grade C, and food gets there fast), file for bankruptcy only
 when below the line with nothing left to sell. Also posts a shop notice to the forum at most every 60 min.
 """
 import argparse, collections, json, time
@@ -33,14 +33,16 @@ def main():
     out = {"buy": []}
     if balance < inv.get("bankrupt_line", 0) and not units and (inv.get("bankruptcies_left") or 0) > 0:
         out["bankrupt"] = True
-    elif len(units) < MAX_UNITS and cat:
+    elif cat:
         have = collections.Counter(u["sku"] for u in units)
         hot = settled_counts()
-        def score(sku):   # settled demand, discounted for food that rots fast
+        def score(sku):   # settled demand; food only with >= 10 days of shelf life (grade B after 20 % elapsed), half weight
             c = cat.get(sku, {}); shelf = c.get("shelf_hours") or 1e9
-            return hot[sku] * (0.3 if c.get("kind") == "food" and shelf < 48 else 1.0)
-        ranked = sorted((s for s in hot if s in cat), key=score, reverse=True)[:TOP]
-        room = MAX_UNITS - len(units)
+            if c.get("kind") == "food":
+                return hot[sku] * 0.5 if shelf >= 240 else 0
+            return hot[sku]
+        ranked = [s for s in sorted((s for s in hot if s in cat), key=score, reverse=True) if score(s) > 0][:TOP]
+        room = MAX_UNITS - sum(1 for u in units if u.get("grade") in ("A", "B"))   # grade C stock is dead weight, not stock
         for sku in ranked:
             if room <= 0:
                 break

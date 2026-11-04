@@ -25,7 +25,7 @@ out = json.loads(buf.getvalue().strip().splitlines()[-1])
 buy = {b["sku"]: b["qty"] for b in out["buy"]}
 assert set(buy) <= set(cat) and "ZZ" not in buy, buy
 assert buy.get("G1", 0) == 7 - 1, buy          # int(20000*0.08/225)=7 affordable, minus the one in stock
-assert buy.get("F1", 0) == 8 and buy.get("G2") == 2, buy   # desk: int(1600/675) = 2 units
+assert "F1" not in buy and buy.get("G2") == 2, buy   # milk: 24 h shelf -> never; desk: int(1600/675) = 2 units
 assert "bankrupt" not in out
 assert (md / "outbox.jsonl").exists() and json.loads((md / "outbox.jsonl").read_text())["as"] == "shop"
 
@@ -44,12 +44,15 @@ mb.forum_post(md, "hello"); mb.forum_post(md, "again")
 assert sum(1 for l in (md / "outbox.jsonl").read_text().splitlines() if '"buyer"' in l) == 1   # 5-min limit
 
 # review hook end to end (harness or its fallback), dishonest claim capped at 2 stars
-deal = {"order": order, "receipt": {"item": "G1", "price": 250}, "settled": {"name": "lamp", "grade": "C", "claim": "A",
-        "claim_honest": False, "value": 300, "warranty_hours": 0}}
+deal = {"order": order, "receipt": {"item": "G1", "price": 250}, "settled": {"name": "lamp", "sku": "G1", "grade": "C", "claim": "A",
+        "claim_honest": False, "value": 300, "warranty_hours": 0, "ledger": 99, "shop": "http://x"}}
+(md / "last_buyer_post").unlink(missing_ok=True)
 (md / "deal.json").write_text(json.dumps(deal))
 r = subprocess.run([sys.executable, "review.py", "--deal", str(md / "deal.json")], capture_output=True, text=True, timeout=120)
 rv = json.loads(r.stdout.strip().splitlines()[-1])
 assert 1 <= rv["stars"] <= 2 and rv["review"], (rv, r.stderr[-300:])
+post = [json.loads(l) for l in (md / "outbox.jsonl").read_text().splitlines() if "[구매 기록]" in l][-1]
+assert post["refs"] == [99] and "거짓" in post["post"] and "17% 저렴" in post["post"], post
 print("ok: restock", buy, "| review", rv)
 
 # ---- acp_buyer: tools built from the kit's acp.json shape, against a mock shop (no market, no LLM)
@@ -106,13 +109,7 @@ assert mr is None and "above the mandate" in why, why
 harness.ask_json = lambda *a, **k: {"plan": ["cancel_checkout_session"]}      # bad plan -> code fallback
 mr, why = acp_buyer.pay(payload, buyer_key)
 assert mr and harness.CALLS["fallbacks"] >= 1
-# market_buyer additions
-import market_buyer as mb2
-mem = {"shops": {"liar": {"trades": [{"dishonest": True}]}}}
-mb2.median_price = lambda sku: (240, 12)
-txt = mb2.price_report("G1", "lamp", 250, "s", mem)
-assert "median 240" in txt and "liar" in txt, txt
-print("ok: acp_buyer mock checkout + refusal + mandate cap + plan fallback; price_report")
+print("ok: acp_buyer mock checkout + refusal + mandate cap + plan fallback")
 # forum votes: manipulation -> -1, warning that matches my memory -> +1, once per post
 mem = {"shops": {"Liar Shop": {"trades": [{"dishonest": True}]}}}
 (md / "forum.json").write_text(json.dumps([

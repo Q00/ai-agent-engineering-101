@@ -7,6 +7,7 @@ Code sets a floor/ceiling (a dishonest claim is never above 2 stars); the harnes
 import argparse, json, time
 from pathlib import Path
 import harness
+from market_buyer import forum_post
 
 
 def main():
@@ -42,6 +43,12 @@ def main():
             Path("buyer_memory.json").write_text(json.dumps(mem, ensure_ascii=False, indent=1), encoding="utf-8")
         except (OSError, ValueError, KeyError, IndexError) as e:
             print(f"[memory] could not mark the shop dishonest: {type(e).__name__}", flush=True)
+    if s.get("ledger"):                       # forum: a verifiable purchase record (ledger ref), the kind other buyers upvote
+        pct = f", 정가 대비 {100 - 100 * price // value}% 저렴" if value and price and value > price else ""
+        forum_post(Path(a.deal).parent,
+                   f"[구매 기록] {s.get('name')} ({s.get('sku')}) | {price:,}{pct} | 등급 {s.get('grade')} (주장 {s.get('claim') or '-'}, "
+                   f"{'정직' if honest else '거짓' if honest is False else '주장 없음'}) | 판매: {s.get('shop')} | ledger #{s['ledger']} | 별점 {stars}",
+                   refs=[s["ledger"]])
     print(json.dumps({"stars": stars, "review": review}, ensure_ascii=False), flush=True)
 
 
