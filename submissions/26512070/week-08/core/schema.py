@@ -235,7 +235,9 @@ STRATEGY = {
                     "goods_time_budget": {"type": "number", "minimum": 5, "maximum": 250},
                     "food_time_budget": {"type": "number", "minimum": 5, "maximum": 250},
                     "goods_msg_timeout": {"type": "number", "minimum": 3, "maximum": 120},
-                    "food_msg_timeout": {"type": "number", "minimum": 3, "maximum": 120}}}}},
+                    "food_msg_timeout": {"type": "number", "minimum": 3, "maximum": 120},
+                    # 11/4 21:1x: leave a food receipt whose claimed grade cannot last the order (design 1)
+                    "shelf_guard": {"type": "boolean"}}}}},
     },
 }
 

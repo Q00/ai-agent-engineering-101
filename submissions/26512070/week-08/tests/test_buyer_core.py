@@ -174,6 +174,35 @@ class BuyerCoreTest(Base):
         finally:
             core.close()
         self.assertEqual((out["receipt"]["price"], len([t for t in shop.sent if t.startswith("I want to buy")])), (13000, 2))
+    def shelf_run(self, guard):
+        # 11/4 21:1x design 1: SKU shelf 96 h, the order needs 48 h - grade C keeps at most 43 h, B up to 77 h
+        from core import atomic
+        path = paths.memory() / "strategy" / "active.json"
+        st = atomic.read_json(path)
+        st["buyer"] = {"food_target_share": 0.6, "food_open_share": 0.45}
+        st["playbook"] = {"buyer": {"mode": "rules", "ceiling_share": 0.8, "shelf_guard": guard}}
+        atomic.write_json(path, st)
+        two = [dict(SHOPS[0]), dict(SHOPS[0], name="oak", url="http://oak")]
+        shop = Shop([("TASK_STATE_INPUT_REQUIRED", "Asking 13000.", None),
+                     ("TASK_STATE_COMPLETED", "Deal at 13000.", dict(receipt(13000), claim="C")),
+                     ("TASK_STATE_INPUT_REQUIRED", "Asking 13500.", None),
+                     ("TASK_STATE_COMPLETED", "Deal at 13500.", dict(receipt(13500), shop="oak", claim="B"))])
+        core = BuyerCore(dict(ORDER), two, model_call=None, connect=shop, clock=lambda: NOW)
+        try:
+            return core.run()
+        finally:
+            core.close()
+
+    def test_shelf_guard_leaves_a_receipt_that_cannot_last(self):
+        out = self.shelf_run(True)
+        self.assertEqual((out["receipt"]["price"], out["receipt"]["claim"]), (13500, "B"))
+        closed = [e["data"]["verdict"] for e in EventReader("t2", "buyer").iter_new() if e["kind"] == "buyer.closed"]
+        self.assertTrue(closed[0].startswith("no deal: shelf - grade C keeps at most 43 h of 96 h"), closed)
+
+    def test_shelf_guard_off_keeps_todays_behaviour(self):
+        out = self.shelf_run(False)
+        self.assertEqual((out["receipt"]["price"], out["receipt"]["claim"]), (13000, "C"))
+
     def test_goods_order_no_shop_serves_is_recorded(self):
         # 11/4 10:3x: restock stocks what no shop could serve
         order = dict(ORDER, order="o9", item="소파", budget=900000, acceptable=["G0026722f"], kind="goods")

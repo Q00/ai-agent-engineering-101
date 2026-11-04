@@ -25,6 +25,9 @@ from tools.registry import Ctx, call
 DEADLINE = 270             # the kit stops market_buyer after 300 s
 MAX_TURNS = 10
 REVIEWS_SHOWN = 2
+# 11/4 21:1x: food grades by the shelf life left (agent.md: A 80% or more, B 45% or more, C less) - the most a
+# claimed grade can have left, as a share of the SKU's shelf life
+GRADE_MAX_LEFT = {"A": 1.0, "B": 0.8, "C": 0.45}
 MAX_SHOPS = 3              # rules: shops tried per order when one ends without a receipt
 HEADERS = {"A2A-Version": "1.0"}
 PRICE_FACT_EVERY = 600     # seconds between rebuilds of memory/facts/shop_prices.json
@@ -226,7 +229,8 @@ class BuyerCore:
         return {"mode": pb.get("mode", "agent"), "ceiling_share": pb.get("ceiling_share", 0.8),   # rules when the strategy says so
                 "max_shops_goods": pb.get("max_shops_goods", 10), "max_shops_food": pb.get("max_shops_food", MAX_SHOPS),
                 "goods_time_budget": pb.get("goods_time_budget", 120), "food_time_budget": pb.get("food_time_budget", 20),
-                "goods_msg_timeout": pb.get("goods_msg_timeout", 20), "food_msg_timeout": pb.get("food_msg_timeout", 8)}
+                "goods_msg_timeout": pb.get("goods_msg_timeout", 20), "food_msg_timeout": pb.get("food_msg_timeout", 8),
+                "shelf_guard": pb.get("shelf_guard", False)}
 
     def rules(self):
         return self.playbook()["mode"] == "rules"
@@ -477,6 +481,14 @@ class BuyerCore:
             self.close_events(shop, verdict, agreed, receipt.get("price"), c.get("list_price"), "completed")
             reflex.record_outcome(shop["name"], shop["url"], verdict, receipt.get("price"), agreed, o.get("order"), ctx.now())
             return {"shop": shop["url"], "receipt": None, "stars": None, "review": None}
+        short = self.shelf_short(c, kind, receipt)
+        if short:
+            # 11/4 21:1x (design/buyer-parallel.md, design 1): a receipt whose claimed grade cannot last the order's use
+            # window is refused by the kit at payment (138 of 146 in 6 h) - leave it and let run() try the next shop.
+            # The shop is told nothing more (11/4 01:47: asking shops for the hours made them refuse at once)
+            self.close_events(shop, short, agreed, receipt.get("price"), c.get("list_price"), "completed")
+            reflex.record_outcome(shop["name"], shop["url"], short, receipt.get("price"), agreed, o.get("order"), ctx.now())
+            return {"shop": shop["url"], "receipt": None, "stars": None, "review": None}
         ctx.situation = {"budget": o["budget"], "receipt": receipt}
         text = (f"# the decision at hand\nThe shop {shop['name']} sent a receipt for {c.get('name')} ({sku}, {kind}) at "
                 f"{receipt['price']}, matching what we agreed. Claim on the receipt: {receipt.get('claim')}; warranty "
@@ -504,6 +516,18 @@ class BuyerCore:
         if accept:
             out["accept"] = accept
         return out
+
+    def shelf_short(self, c, kind, receipt):
+        """'no deal: shelf ...' when the receipt's claimed grade cannot last the order's use window, else None.
+        Only the sure case: a claim whose most shelf life left is under the need (the uncertain B band is paid)."""
+        need, shelf = self.order.get("use_within_hours"), c.get("shelf_hours")
+        top = GRADE_MAX_LEFT.get(str(receipt.get("claim") or "").upper())
+        if not (self.rules() and self.playbook()["shelf_guard"] and kind == "food" and need and shelf and top):
+            return None
+        if need <= top * shelf:
+            return None
+        return (f"no deal: shelf - grade {receipt['claim']} keeps at most {top * shelf:.0f} h of {shelf} h, "
+                f"the order needs {need:g} h")
 
     def finish_none(self, shop, verdict, shop_obj=None, agreed=None, list_price=None):
         name = shop_obj["name"] if shop_obj else ""
