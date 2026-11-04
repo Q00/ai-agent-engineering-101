@@ -15,8 +15,17 @@ ANSWER = {"action": "offer", "price": 90, "reason": "fine"}
 QUOTA = {"weekly_remaining_percent": 90, "five_hour_remaining_percent": 90, "weekly_resets_at": "2026-11-11T12:00:00Z", "five_hour_resets_at": "2026-11-05T00:00:00Z"}
 
 
-def success(answer=ANSWER, **extra):
-    return json.dumps({"status": "SUCCESS", "response": json.dumps(answer), "structured_output": answer, "usage": {"total_tokens": 9000}, **extra}).encode()
+def stream(result=None, tools=()):
+    lines = [json.dumps({"event": "init", "init": {"model": "m", "tools": ["search_web"]}})]
+    for name, state in tools:
+        lines.append(json.dumps({"event": "step_update", "step_update": {"step_type": "tool", "tool_name": name, "state": state, "input": "SENSITIVE"}}))
+    if result is not None:
+        lines.append(json.dumps({"event": "result", "result": result}))
+    return "\n".join(lines).encode()
+
+
+def success(answer=ANSWER, tools=(), **extra):
+    return stream({"status": "SUCCESS", "response": json.dumps(answer), "structured_output": answer, "usage": {"total_tokens": 9000}, **extra}, tools)
 
 
 class Base(unittest.TestCase):
@@ -52,8 +61,11 @@ class Surface(unittest.TestCase):
         command = mr.build_agy_command("agy", "p", "gemini-3.8-flash-low", 70)
         for flag in ("--sandbox", "--disable-slash-commands", "--json-schema"):
             self.assertIn(flag, command)
-        for flag in ("--dangerously-skip-permissions", "--settings", "--add-dir", "--remote-agent", "--mode", "--project", "--continue"):
+        for flag in ("--dangerously-skip-permissions", "--add-dir", "--remote-agent", "--mode", "--project", "--continue"):
             self.assertNotIn(flag, command)
+        self.assertEqual(command[command.index("--output-format") + 1], "stream-json")
+        self.assertEqual(json.loads(command[command.index("--settings") + 1]),
+                         {"permissions": {"deny": ["read_file(*)", "write_file(*)", "command(*)", "read_url(*)", "execute_url(*)", "mcp(*)"]}})
         self.assertEqual(command[command.index("--model") + 1], "gemini-3.8-flash-low")
         self.assertEqual(command[command.index("--print") + 1], "p")
 
@@ -141,7 +153,8 @@ class Routing(Base):
 
     def test_unknown_failure_shapes_go_to_codex_with_raw_output_saved(self):
         for outcome in (SimpleNamespace(returncode=1, stdout=b"not json at all", stderr=b"weird new failure"),
-                        SimpleNamespace(returncode=0, stdout=json.dumps({"status": "ERROR"}).encode(), stderr=b""),
+                        SimpleNamespace(returncode=0, stdout=stream({"status": "ERROR"}), stderr=b""),
+                        SimpleNamespace(returncode=0, stdout=stream(None), stderr=b""),
                         SimpleNamespace(returncode=0, stdout=success(finished_reason="error"), stderr=b""),
                         FileNotFoundError("no agy")):
             with self.subTest(outcome=str(outcome)[:40]):
@@ -167,20 +180,20 @@ class Routing(Base):
         self.codex.assert_not_called()
 
     def test_print_timeout_result_is_transient(self):
-        self.outcomes = [SimpleNamespace(returncode=0, stdout=json.dumps({"status": "SUCCESS", "finished_reason": "print_timeout", "response": ""}).encode(), stderr=b"")]
+        self.outcomes = [SimpleNamespace(returncode=0, stdout=stream({"status": "SUCCESS", "finished_reason": "print_timeout", "response": ""}), stderr=b"")]
         with self.assertRaises(HarnessError):
             self.ask()
         self.codex.assert_not_called()
 
     def test_bad_json_is_a_validation_error_so_the_caller_can_retry(self):
-        self.outcomes = [SimpleNamespace(returncode=0, stdout=json.dumps({"status": "SUCCESS", "response": ""}).encode(), stderr=b"denied")]
+        self.outcomes = [SimpleNamespace(returncode=0, stdout=stream({"status": "SUCCESS", "response": ""}), stderr=b"denied")]
         with self.assertRaises(HarnessError) as caught:
             self.ask()
         self.assertIsInstance(caught.exception.__cause__, ValueError)
         self.codex.assert_not_called()
 
     def test_repeated_passing_failures_move_on_then_a_success_resets(self):
-        bad = SimpleNamespace(returncode=0, stdout=json.dumps({"status": "SUCCESS", "response": ""}).encode(), stderr=b"")
+        bad = SimpleNamespace(returncode=0, stdout=stream({"status": "SUCCESS", "response": ""}), stderr=b"")
         self.outcomes = [bad, SimpleNamespace(returncode=0, stdout=success(), stderr=b""), bad, bad]
         with self.assertRaises(HarnessError):
             self.ask()
@@ -222,6 +235,59 @@ class Routing(Base):
         self.assertIn("weekly_usage_high", str(caught.exception))
         self.codex.assert_not_called()
         self.assertIsNone(mr.last_call())
+
+    def test_prompt_tells_the_model_not_to_use_tools(self):
+        self.ask()
+        command = self.calls[0][0]
+        self.assertTrue(command[command.index("--print") + 1].endswith(mr.NO_TOOLS_NOTE))
+        folder = next((self.root / "logs/harness").iterdir())
+        self.assertTrue((folder / "request.txt").read_text(encoding="utf-8").endswith(mr.NO_TOOLS_NOTE))
+
+    def test_search_web_is_recorded_and_its_answer_discarded(self):
+        self.outcomes = [SimpleNamespace(returncode=0, stdout=success(tools=[("search_web", "DONE")]), stderr=b"")]
+        self.assertEqual(self.ask(), mr.DISCARDED)
+        self.codex.assert_not_called()
+        self.assertEqual(mr.last_call(), {"provider": "agy", "model": mr.DEFAULTS["agy_model"], "route_reason": "agy_tool_use_discarded", "tools_used": ["search_web"]})
+        self.assertTrue(mr.load_config(self.root)["agy_enabled"])
+        folder = next((self.root / "logs/harness").iterdir())
+        metadata = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
+        self.assertEqual((metadata["tools_used"], metadata["answer_discarded"]), (["search_web"], True))
+        self.assertFalse((self.root / "logs/model-router-alerts.log").exists())
+
+    def test_refused_file_calls_discard_without_stopping(self):
+        self.outcomes = [SimpleNamespace(returncode=0, stdout=success(tools=[("read_file", "ACTIVE"), ("read_file", "ERROR")]), stderr=b"")]
+        self.assertEqual(self.ask(), mr.DISCARDED)
+        self.assertTrue(mr.load_config(self.root)["agy_enabled"])
+
+    def test_unexpected_tools_turn_agy_off_and_leave_a_notice(self):
+        for name, state in (("schedule", "DONE"), ("send_message", "ERROR"), ("define_subagent", "DONE"), ("invoke_subagent", "ACTIVE"), ("manage_subagents", "DONE"),
+                            ("manage_task", "DONE"), ("ask_question", "DONE"), ("brand_new_tool", "DONE"), ("read_file", "DONE"), ("run_command", "DONE")):
+            with self.subTest(name=name, state=state):
+                self.setUp()
+                (self.root / "model_router.json").write_text(json.dumps({"agy_enabled": True, "agy_model": "gemini-4-argon-low"}), encoding="utf-8")
+                self.outcomes = [SimpleNamespace(returncode=0, stdout=success(tools=[(name, state)]), stderr=b"")]
+                self.assertEqual(self.ask(), mr.DISCARDED)
+                self.assertFalse(mr.load_config(self.root)["agy_enabled"])
+                self.assertEqual(mr.load_config(self.root)["agy_model"], "gemini-4-argon-low")
+                self.assertEqual(mr.last_call()["route_reason"], "agy_unexpected_tool")
+                alert = json.loads((self.root / "logs/model-router-alerts.log").read_text(encoding="utf-8"))
+                self.assertEqual(alert["tools"], [name])
+                self.assertEqual(self.ask()["reason"], "codex")
+                self.assertEqual(len(self.calls), 1)
+
+    def test_tool_inputs_are_not_kept_in_metadata(self):
+        self.outcomes = [SimpleNamespace(returncode=0, stdout=success(tools=[("search_web", "DONE")]), stderr=b"")]
+        self.ask()
+        folder = next((self.root / "logs/harness").iterdir())
+        self.assertNotIn("SENSITIVE", (folder / "metadata.json").read_text(encoding="utf-8"))
+
+    def test_argon_quota_uses_its_weekly_group_and_the_gemini_five_hour(self):
+        output = {"command": {"data": {"groups": [
+            {"name": "Gemini Models", "buckets": [{"window": "weekly", "remaining_fraction": .9, "reset_time": "a"}, {"window": "5h", "remaining_fraction": .8, "reset_time": "b"}]},
+            {"name": "Gemini 4 Argon", "buckets": [{"window": "weekly", "remaining_fraction": .1, "reset_time": "c"}]}]}}}
+        self.assertEqual(mr.parse_quota(output, "gemini-4-argon-low"), {"weekly_remaining_percent": 10.0, "weekly_resets_at": "c", "five_hour_remaining_percent": 80.0, "five_hour_resets_at": "b"})
+        self.assertEqual(mr.parse_quota(output, "gemini-3.8-flash-low")["weekly_remaining_percent"], 90.0)
+        self.assertIsNone(mr.parse_quota({"command": {"data": {"groups": output["command"]["data"]["groups"][:1]}}}, "gemini-4-argon-low"))
 
     def test_available_reports_any_usable_model(self):
         self.assertEqual(mr.available(self.root, "buyer", 1000, lambda _t: dict(QUOTA)), (True, "agy"))

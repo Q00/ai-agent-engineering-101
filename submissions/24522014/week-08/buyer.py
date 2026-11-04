@@ -287,7 +287,7 @@ def buyer_decision(client, provider, history, turn, max_turns):
                 if route:
                     client.model_route = route
                     entry.update(route)
-                    record.update(provider=route["provider"], model=route["model"], route_reason=route["route_reason"])
+                    record.update(route)
                 validate_buyer_decision(decision, client.budget)
             except (ValueError, HarnessError) as error:
                 entry["error"] = str(error)

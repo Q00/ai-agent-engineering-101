@@ -126,6 +126,7 @@ def funnel(root, since, until=None, payments_path=None):
     turn_limit_endings, cancel_results = 0, Counter()
     model_routes = Counter()
     formats, skipped_shops, qty_rows = {}, Counter(), {}
+    tools_used = Counter()
     orders, instrumented = set(), 0
     for _, record in runs:
         reached, cause = classify_run(root, record, payments)
@@ -153,6 +154,7 @@ def funnel(root, since, until=None, payments_path=None):
                 counter_runs["paid"] += "paid" in reached
             for entry in trail:
                 sources[f"{entry['source']}:{entry['reason_code']}"] += 1
+                tools_used.update(entry.get("tools_used") or ())
                 if entry.get("provider"):
                     model_routes[f"{entry['provider']}:{entry.get('model')}|{entry.get('route_reason')}"] += 1
                 if entry["reason_code"] == "turn_limit_exceeded":
@@ -186,7 +188,7 @@ def funnel(root, since, until=None, payments_path=None):
             "non_rule_paths_by_parser_reason": dict(parser_reasons.most_common()),
             "counter_offer": {"offered": counter_runs["offered"], "receipt": counter_runs["receipt"],
                               "paid": counter_runs["paid"], "exclusions": dict(counter_exclusions.most_common())},
-            "model_routes": dict(model_routes.most_common()),
+            "model_routes": dict(model_routes.most_common()), "model_tools_used": dict(tools_used.most_common()),
             "open_refusals_by_request_format": formats, "open_refusals_by_listed_qty": dict(sorted(qty_rows.items())),
             "runs_skipping_refusing_shops": dict(skipped_shops.most_common()),
             "turn_limit": {"endings": turn_limit_endings, "cancel_results": dict(cancel_results.most_common())},

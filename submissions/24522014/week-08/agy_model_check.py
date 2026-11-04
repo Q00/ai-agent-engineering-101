@@ -50,6 +50,7 @@ def call(agy, prompt, model, use_schema):
         command = [agy, "--print", prompt, "--model", model, "--output-format", "json", "--sandbox", "--disable-slash-commands", "--print-timeout", "70s"]
         if use_schema:
             command += ["--json-schema", json.dumps(SCHEMA)]
+        command += ["--settings", json.dumps({"permissions": {"deny": ["read_file(*)", "write_file(*)", "command(*)", "read_url(*)", "execute_url(*)", "mcp(*)"]}})]
         started = time.monotonic()
         done = subprocess.run(command, cwd=work, stdin=subprocess.DEVNULL, capture_output=True, timeout=100, env=env)
         return done, round(time.monotonic() - started, 2)

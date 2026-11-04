@@ -1,10 +1,11 @@
 """Model order: agy, then codex, then the caller's coded rules. Agy calls run with no way to act on the machine.
 
 agy is a tool-using agent and these prompts carry seller text, so a call runs in an empty folder with temp pointed there,
-in its sandbox, in print mode where anything needing permission is refused, and its answer is parsed as data only. See
-agy_safety_check.py and logs/agy-check for what that was tested against. Quota is read with agy's /quota command, which
-starts no model turn. A limit, sign-in or service failure turns agy off for a while; a timeout or bad JSON is a passing
-failure and stays on agy unless it repeats, so ordinary hiccups do not spend the codex allowance.
+in its sandbox, with file, command, URL and MCP rules denied, and its answer is parsed as data only. agy has no way to turn
+off search_web and seven other tools, which the owner accepted knowingly, so tool use is read from the event stream: any
+tool use discards the answer, and anything other than search_web or a refused file call turns agy off. Quota is read with
+agy's /quota command, which starts no model turn. A limit, sign-in or service failure turns agy off for a while; a timeout
+or bad JSON is a passing failure and stays on agy unless it repeats, so ordinary hiccups do not spend the codex allowance.
 """
 
 from datetime import datetime, timezone
@@ -23,12 +24,18 @@ from harness import HarnessError, parse_response
 import model_breaker
 
 ROOT = Path(__file__).resolve().parent
-DEFAULTS = {"agy_enabled": True, "agy_model": "gemini-3.8-flash-low", "min_remaining_percent": 15, "quota_read_interval_seconds": 300,
+DEFAULTS = {"agy_enabled": True, "agy_model": "gemini-4-argon-low", "min_remaining_percent": 15, "quota_read_interval_seconds": 300,
             "max_quota_age_seconds": 1800, "quota_read_timeout_seconds": 20, "limit_off_seconds": 3600, "service_off_seconds": 900,
             "repeat_failures_to_switch": 3, "repeat_failure_off_seconds": 900, "max_prompt_chars": 25000, "print_timeout_seconds": 70}
 ANSWER_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["action", "price", "reason"],
                  "properties": {"action": {"type": "string", "enum": ["ask", "accept", "reject", "offer", "walk_away"]},
                                 "price": {"type": ["integer", "null"]}, "reason": {"type": "string"}}}
+DENY_SETTINGS = {"permissions": {"deny": ["read_file(*)", "write_file(*)", "command(*)", "read_url(*)", "execute_url(*)", "mcp(*)"]}}
+NO_TOOLS_NOTE = "\n\nDo not call any tools. Answer only from the input data above, as one JSON object."
+FILE_TOOLS = {"read_file", "write_file", "edit_file", "run_command"}
+ACCEPTED_TOOLS = {"search_web"}
+REFUSED_STATES = {"ERROR", "ACTIVE", "PENDING"}
+DISCARDED = {"action": "walk_away", "price": None, "reason": "Model used a tool; its answer was discarded."}
 LIMIT_WORDS = ("resource_exhausted", "resource exhausted", "quota", "rate limit", "rate_limit", "usage limit", "limit reached", "too many requests",
                "429", "credits", "exhausted")
 SERVICE_WORDS = ("unauthenticated", "unauthorized", "sign in", "log in", "login", "not logged", "credential", "403", "401", "503", "unavailable",
@@ -111,31 +118,37 @@ def executable():
 
 def build_agy_command(agy, prompt, model, print_timeout):
     """The whole permission surface. There is no permission-skipping flag and no settings override, by design."""
-    return [agy, "--print", prompt, "--model", model, "--output-format", "json", "--sandbox", "--disable-slash-commands",
-            "--print-timeout", f"{int(print_timeout)}s", "--json-schema", json.dumps(ANSWER_SCHEMA, separators=(",", ":"))]
+    return [agy, "--print", prompt, "--model", model, "--output-format", "stream-json", "--sandbox", "--disable-slash-commands",
+            "--print-timeout", f"{int(print_timeout)}s", "--json-schema", json.dumps(ANSWER_SCHEMA, separators=(",", ":")),
+            "--settings", json.dumps(DENY_SETTINGS, separators=(",", ":"))]
 
 
-def parse_quota(output):
-    """Keep only remaining fractions and reset times of the Gemini model group."""
+def parse_quota(output, model=None):
+    """Keep only remaining fractions and reset times. Argon has its own weekly group and no five-hour one of its own,
+    so its five-hour figure comes from the Gemini group, which also fell during Argon calls."""
     groups = (((output or {}).get("command") or {}).get("data") or {}).get("groups")
     if not isinstance(groups, list):
         return None
-    group = next((g for g in groups if isinstance(g, dict) and "gemini" in str(g.get("name")).lower() and "models" in str(g.get("name")).lower()), None)
-    buckets = group.get("buckets") if group else None
-    if not isinstance(buckets, list):
-        return None
+    wanted = [lambda name: "gemini" in name and "models" in name]
+    if "argon" in str(model):
+        wanted.insert(0, lambda name: "argon" in name)
     usage = {}
-    for bucket in buckets:
-        window = bucket.get("window") if isinstance(bucket, dict) else None
-        remaining = bucket.get("remaining_fraction") if isinstance(bucket, dict) else None
-        if window in ("weekly", "5h") and type(remaining) in (int, float):
-            label = "weekly" if window == "weekly" else "five_hour"
-            usage[f"{label}_remaining_percent"] = round(remaining * 100, 2)
-            usage[f"{label}_resets_at"] = bucket.get("reset_time")
+    for match in wanted:
+        group = next((g for g in groups if isinstance(g, dict) and match(str(g.get("name")).lower())), None)
+        buckets = group.get("buckets") if group else None
+        if not isinstance(buckets, list):
+            return None
+        for bucket in buckets:
+            window = bucket.get("window") if isinstance(bucket, dict) else None
+            remaining = bucket.get("remaining_fraction") if isinstance(bucket, dict) else None
+            label = {"weekly": "weekly", "5h": "five_hour"}.get(window)
+            if label and type(remaining) in (int, float) and f"{label}_remaining_percent" not in usage:
+                usage[f"{label}_remaining_percent"] = round(remaining * 100, 2)
+                usage[f"{label}_resets_at"] = bucket.get("reset_time")
     return usage if "weekly_remaining_percent" in usage and "five_hour_remaining_percent" in usage else None
 
 
-def read_quota(timeout=DEFAULTS["quota_read_timeout_seconds"], agy=None):
+def read_quota(timeout=DEFAULTS["quota_read_timeout_seconds"], agy=None, model=None):
     """Read agy's quota with its read-only command, which uses no tokens. Returns None when it cannot."""
     agy = agy or executable()
     if not agy:
@@ -144,7 +157,7 @@ def read_quota(timeout=DEFAULTS["quota_read_timeout_seconds"], agy=None):
         with tempfile.TemporaryDirectory() as work:
             done = subprocess.run([agy, "--print", "/quota", "--output-format", "json"], cwd=work, stdin=subprocess.DEVNULL,
                                   capture_output=True, timeout=timeout)
-        return parse_quota(json.loads(done.stdout.decode("utf-8", "replace")))
+        return parse_quota(json.loads(done.stdout.decode("utf-8", "replace")), model)
     except (OSError, ValueError, subprocess.SubprocessError):
         return None
 
@@ -175,7 +188,7 @@ def agy_status(root=ROOT, role="buyer", now=None, reader=None):
             retry_due = type(tried_at) not in (int, float) or now - tried_at >= settings["quota_read_interval_seconds"]
             if due and retry_due:
                 state["quota_tried_at"] = now
-                fresh = (reader or read_quota)(settings["quota_read_timeout_seconds"])
+                fresh = reader(settings["quota_read_timeout_seconds"]) if reader else read_quota(settings["quota_read_timeout_seconds"], model=settings["agy_model"])
                 if fresh:
                     quota = dict(fresh, read_at=now)
                     state["quota"] = quota
@@ -227,6 +240,60 @@ def classify_failure(text):
     return "unknown"
 
 
+def read_stream(stdout):
+    """The result object and the tools the run tried, by name and state. Tool inputs are not kept."""
+    result, tools = None, {}
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        if event.get("event") == "result" and isinstance(event.get("result"), dict):
+            result = event["result"]
+        step = event.get("step_update")
+        if isinstance(step, dict) and step.get("step_type") == "tool" and step.get("tool_name"):
+            tools.setdefault(str(step["tool_name"]), set()).add(str(step.get("state")))
+    return result, tools
+
+
+def serious_tools(tools):
+    """A tool beyond what the owner accepted, unknown, or a file or command call that was not refused."""
+    return sorted(name for name, states in tools.items()
+                  if not (name in ACCEPTED_TOOLS or (name in FILE_TOOLS and states <= REFUSED_STATES)))
+
+
+def stop_agy(root, role, serious, now):
+    """Keep agy off until someone turns it back on, and leave a notice. Nothing the tool made is touched."""
+    try:
+        path = Path(root) / "model_router.json"
+        try:
+            settings = json.loads(path.read_text(encoding="utf-8"))
+            settings = settings if isinstance(settings, dict) else {}
+        except (OSError, ValueError):
+            settings = {}
+        settings["agy_enabled"] = False
+        descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=".model_router.", suffix=".tmp")
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            json.dump(settings, stream, indent=2)
+        os.replace(temporary, path)
+    except OSError as error:
+        print(f"[model] ALERT {role}: could not write agy_enabled=false ({type(error).__name__})", flush=True)
+    state = read_state(root)
+    state.update(agy_off_until=now + 3650 * 86400, agy_off_reason="agy_unexpected_tool")
+    _note(root, role, state, False, "agy_unexpected_tool", now)
+    _write_state(root, state)
+    print(f"[model] ALERT {role}: agy used {serious}; agy turned off, answer discarded", flush=True)
+    try:
+        alerts = Path(root) / "logs/model-router-alerts.log"
+        alerts.parent.mkdir(parents=True, exist_ok=True)
+        with alerts.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps({"at": datetime.fromtimestamp(now, timezone.utc).isoformat(), "role": role, "tools": serious}) + "\n")
+    except OSError:
+        pass
+
+
 def extract_answer(output):
     """Prefer the schema-checked object, then the text. Tool requests and prose never count as an answer."""
     structured = output.get("structured_output")
@@ -241,7 +308,7 @@ def extract_answer(output):
 
 
 def run_agy(prompt, timeout, settings, root=ROOT, runner=None):
-    """One agy call with every output kept. Returns (answer, model). Raises AgyTransient or AgyUnavailable."""
+    """One agy call with every output kept. Returns (answer, model, tools tried). Raises AgyTransient or AgyUnavailable."""
     agy = executable() if runner is None else "agy"
     if not agy:
         raise AgyUnavailable("agy executable not found", "service")
@@ -251,6 +318,7 @@ def run_agy(prompt, timeout, settings, root=ROOT, runner=None):
     log_dir.mkdir(parents=True)
     work_dir = Path(root) / ".harness-work" / (run_id + "-agy")
     work_dir.mkdir(parents=True)
+    prompt += NO_TOOLS_NOTE
     (log_dir / "request.txt").write_text(prompt, encoding="utf-8")
     print_timeout = max(5, min(settings["print_timeout_seconds"], timeout - 5))
     command = build_agy_command(agy, prompt, model, print_timeout)
@@ -271,16 +339,18 @@ def run_agy(prompt, timeout, settings, root=ROOT, runner=None):
         (log_dir / "stdout.txt").write_text(stdout, encoding="utf-8")
         (log_dir / "stderr.txt").write_text(stderr, encoding="utf-8")
         metadata["returncode"] = done.returncode
-        try:
-            output = json.loads(stdout)
-        except ValueError:
-            output = None
+        output, tools = read_stream(stdout)
+        metadata["tools_used"] = sorted(tools)
         if isinstance(output, dict):
             metadata.update(tokens=(output.get("usage") or {}).get("total_tokens"), agy_status=output.get("status"),
                             finished_reason=output.get("finished_reason"), denied_actions=output.get("denied_actions"))
         finished = (output or {}).get("finished_reason") if isinstance(output, dict) else None
         if finished == "print_timeout":
             raise AgyTransient("agy print timeout")
+        if tools:
+            # Never use an answer from a run that touched a tool, even when the tool was refused.
+            metadata.update(status="ok", answer_discarded=True, tool_states={name: sorted(states) for name, states in tools.items()})
+            return None, model, tools
         if done.returncode != 0 or not isinstance(output, dict) or output.get("status") != "SUCCESS" or finished == "error":
             detail = (stderr + "\n" + stdout)[-2000:]
             raise AgyUnavailable(f"agy failed with code {done.returncode}", classify_failure(detail))
@@ -290,7 +360,7 @@ def run_agy(prompt, timeout, settings, root=ROOT, runner=None):
             raise AgyTransient(f"agy answer was not valid: {error}") from error
         metadata["status"] = "ok"
         (log_dir / "result.json").write_text(json.dumps(answer, ensure_ascii=False, indent=2), encoding="utf-8")
-        return answer, model
+        return answer, model, {}
     except (AgyTransient, AgyUnavailable) as error:
         metadata["status"] = "failed"
         metadata["error"] = str(error)
@@ -306,7 +376,7 @@ def _turn_agy_off(root, role, settings, state, kind, now, reader=None):
     until = now + seconds
     reason = f"agy_{kind}_failure"
     if kind == "limit":
-        fresh = (reader or read_quota)(settings["quota_read_timeout_seconds"])
+        fresh = reader(settings["quota_read_timeout_seconds"]) if reader else read_quota(settings["quota_read_timeout_seconds"], model=settings["agy_model"])
         if fresh:
             state["quota"] = dict(fresh, read_at=now)
             spent = [_epoch(fresh.get(f"{label}_resets_at")) for label in ("five_hour", "weekly") if fresh.get(f"{label}_remaining_percent", 100) < 1]
@@ -333,9 +403,16 @@ def run_model(provider, prompt, timeout=90, role="buyer", root=ROOT, runner=None
     if usable:
         state = read_state(root)
         try:
-            answer, model = run_agy(prompt, timeout, settings, root, runner)
+            answer, model, tools = run_agy(prompt, timeout, settings, root, runner)
             state["agy_transient_failures"] = 0
             _write_state(root, state)
+            if tools:
+                serious = serious_tools(tools)
+                if serious:
+                    stop_agy(root, role, serious, now)
+                _last_call = {"provider": "agy", "model": model, "route_reason": "agy_unexpected_tool" if serious else "agy_tool_use_discarded",
+                              "tools_used": sorted(tools)}
+                return dict(DISCARDED)
             _last_call = {"provider": "agy", "model": model, "route_reason": "agy_first"}
             return answer
         except AgyTransient as error:
