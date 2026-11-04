@@ -576,3 +576,29 @@ def test_shops_that_keep_saying_none_in_stock_lose_weight_and_can_recover() -> N
     assert always_out < 0.3 < new < reliable
     # And: answers with stock pull a shop back up.
     assert fast.stock_factor("http://out", {"http://out": (10, 30)}) > always_out
+
+
+def test_rivals_lose_weight_unless_cheap_and_bottom_half_shops_gain() -> None:
+    board = {
+        "players": [
+            {"player": "me", "shop": {"name": "25620027"}, "total": 1.50},
+            {"player": "top", "shop": {"name": "leader"}, "total": 1.80},
+            {"player": "near", "shop": {"name": "close"}, "total": 1.47},
+            {"player": "mid", "shop": {"name": "middle"}, "total": 1.20},
+            {"player": "up", "shop": {"name": "upper"}, "total": 1.30},
+            {"player": "low", "shop": {"name": "small"}, "total": 0.40},
+            {"player": "low2", "shop": {"name": "tiny"}, "total": 0.30},
+            {"player": "h", "house": True, "shop": {"name": "house"}, "total": 2.0},
+        ]
+    }
+    view = fast.rival_view(board, "25620027")
+    assert view["leader"] == "rival"
+    assert view["close"] == "rival"  # within 0.05 below us
+    assert view["small"] == "underdog"
+    assert "upper" not in view  # the median: neither rival nor underdog
+    assert "house" not in view
+    assert fast.rival_factor("leader", view, cheap=False) == 0.5
+    assert fast.rival_factor("leader", view, cheap=True) == 0.8
+    assert fast.rival_factor("small", view, cheap=False) == 1.1
+    assert fast.rival_factor("upper", view, cheap=False) == 1.0
+    assert fast.rival_view(None, "25620027") == {}

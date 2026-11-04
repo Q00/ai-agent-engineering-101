@@ -244,6 +244,22 @@ STOCK_PRIOR_HIT: Final = 4.0
 STOCK_PRIOR_MISS: Final = 1.0
 
 
+# The board the manager cached (kv "board", refreshed every 10 min) and our name
+# there; the buyer never fetches the board itself on the 18 s order path.
+OUR_SHOP_NAME: Final = "25620027"
+
+
+def cached_board(events: EventLedger) -> object:
+    """Return the manager's cached public board, or None."""
+    raw = events.get_value("board")
+    if not raw:
+        return None
+    try:
+        return json.loads(raw).get("body")
+    except (ValueError, AttributeError):
+        return None
+
+
 def stock_factor(url: str, misses: Mapping[str, tuple[int, int]]) -> float:
     """Posterior mean that this shop really has a SKU it lists (bandit estimate).
 
@@ -254,6 +270,66 @@ def stock_factor(url: str, misses: Mapping[str, tuple[int, int]]) -> float:
     miss, asks = misses.get(url.rstrip("/"), (0, 0))
     hits = asks - miss
     return (hits + STOCK_PRIOR_HIT) / (asks + STOCK_PRIOR_HIT + STOCK_PRIOR_MISS)
+
+
+# Competition (owner, 11/4): what our buyer pays becomes the seller's revenue and
+# profit. Shops of players ranked above us, or just below (within RIVAL_MARGIN of
+# our Players total), get half the weight unless they have sold to us cheaper than
+# usual; shops of bottom-half players get a little more, to find cheap sellers.
+RIVAL_FACTOR: Final = 0.5
+RIVAL_CHEAP_FACTOR: Final = 0.8
+RIVAL_MARGIN: Final = 0.05
+UNDERDOG_FACTOR: Final = 1.1
+
+
+def rival_view(board: object, our_shop_name: str) -> dict[str, str]:
+    """Map shop name -> "rival" or "underdog" from the public board's Players table."""
+    if not isinstance(board, dict):
+        return {}
+    players = [
+        p
+        for p in (board.get("players") or [])
+        if isinstance(p, dict) and not p.get("house")
+    ]
+    ours = next(
+        (
+            p
+            for p in players
+            if isinstance(p.get("shop"), dict)
+            and p["shop"].get("name") == our_shop_name
+        ),
+        None,
+    )
+    if ours is None:
+        return {}
+    try:
+        line = float(ours.get("total") or 0) - RIVAL_MARGIN
+        totals = sorted(float(p.get("total") or 0) for p in players)
+    except (TypeError, ValueError):
+        return {}
+    median = totals[len(totals) // 2] if totals else 0.0
+    view: dict[str, str] = {}
+    for player in players:
+        shop = player.get("shop")
+        if player is ours or not isinstance(shop, dict) or not shop.get("name"):
+            continue
+        total = float(player.get("total") or 0)
+        if total >= line:
+            view[str(shop["name"])] = "rival"
+        elif total < median:
+            view[str(shop["name"])] = "underdog"
+    return view
+
+
+def rival_factor(name: str, view: Mapping[str, str], *, cheap: bool) -> float:
+    """Weight for a shop by its owner's standing against ours."""
+    match view.get(name):
+        case "rival":
+            return RIVAL_CHEAP_FACTOR if cheap else RIVAL_FACTOR
+        case "underdog":
+            return UNDERDOG_FACTOR
+        case _:
+            return 1.0
 
 
 def review_factor(shop: ShopEntry) -> float:
@@ -351,6 +427,7 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     skip_offer: Callable[[str, str], bool] | None = None,
     need_margin_hours: float = 1.0,
     stock_misses: Mapping[str, tuple[int, int]] | None = None,
+    rivals: Mapping[str, str] | None = None,
 ) -> Choice | None:
     """Pick the shop and SKU with the best expected surplus; None when no stock fits.
 
@@ -380,10 +457,12 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
         evidence = shop_factor(shop.url, outcomes, reasons) * review_factor(shop)
         if picture is not None:
             evidence *= trust_factor(picture.trust_of(shop.url))
+        priced = price_factor(shop.url, ratios or {})
         weight = (
             evidence
-            * price_factor(shop.url, ratios or {})
+            * priced
             * stock_factor(shop.url, stock_misses or {})
+            * rival_factor(shop.name, rivals or {}, cheap=priced > 1.0)
         )
         eligible = exploration_allowed(shop, explore_counts, reasons, picture)
         if not acceptable:
@@ -700,6 +779,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
     reasons: dict[str, str] = {}
     ratios: dict[str, float] = {}
     misses: dict[str, tuple[int, int]] = {}
+    rivals: dict[str, str] = {}
     recent: dict[str, dict[str, int]] | None = None
     cooling: frozenset[str] = frozenset()
     unfit: list[tuple[float, str, str, str]] = []
@@ -713,6 +793,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         recent = events.shop_outcomes(policy.buyer.explore_memory_hours)
         ratios = events.price_ratios(policy.buyer.refusal_memory_hours)
         misses = events.stock_misses(policy.buyer.explore_memory_hours)
+        rivals = rival_view(cached_board(events), OUR_SHOP_NAME)
         unfit = events.unfit_offers(UNFIT_MEMORY_HOURS)
         cooling = cooling_shops(
             events.failure_streaks(policy.buyer.refusal_memory_hours),
@@ -738,6 +819,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
             skip_offer=skip_offer,
             need_margin_hours=policy.buyer.food_margin_hours,
             stock_misses=misses,
+            rivals=rivals,
         )
 
     choice = pick()
