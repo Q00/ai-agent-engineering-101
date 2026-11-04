@@ -468,6 +468,12 @@ def run(md, now=None, force=False):
         write(md.parent/"logs/strategy-controller"/(stamp+"-"+uuid4().hex[:8]+".json"), journal)
         write(md/"strategy-state.json", state)
         write(md/"strategy-policy.json", policy)
+        # Notification failures must never interrupt trading or policy guards.
+        try:
+            from improvement_notices import publish
+            publish(md, obs, events)
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
         return {"status": state["phase"], "version": state["version"], "events": [e["event"] for e in events],
                 "wait_reason": state.get("wait_reason"),
                 "price_consumer_ready": obs.get("price_consumer_ready", False), "model_calls": 0}
