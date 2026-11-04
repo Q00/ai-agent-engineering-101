@@ -92,8 +92,10 @@ def _public_trust(shop):
     return _clamp((sum(stars) / len(stars)) / 5) if stars else 0.60
 
 
-def evidence(shop, memory, item, reference=None):
-    """Normalized, explainable features for one shop and one item."""
+def evidence(shop, memory, item, reference=None, available=0):
+    """Normalized, explainable features for one shop and one item. `available` is how many units of the ordered
+    category the shop lists right now: 11-05 00:30, 715 of 1,446 visits in 6 h found the listed unit already gone,
+    and a shop with five units is less likely to be empty by the time I ask than one with one."""
     reference = reference or item_reference(memory, item)
     # a visit that found no stock ("no_stock") or only a unit too old for the order ("stale") says nothing about how
     # the shop trades: it is not an attempt
@@ -130,11 +132,14 @@ def evidence(shop, memory, item, reference=None):
     recent = memory[-RECENT_CONCENTRATION_WINDOW:]
     recent_visits = sum(1 for row in recent if row.get("shop") == shop.get("name") and row.get("outcome") not in ("no_stock", "stale"))
     concentration = _clamp(recent_visits / MAX_VISITS_PER_WINDOW)
-    score = 0.35 * success + 0.25 * integrity + 0.20 * value + 0.20 * exploration - 0.20 * concentration
+    availability = _clamp(min(available, 5) / 5)
+    score = (0.35 * success + 0.25 * integrity + 0.20 * value + 0.20 * exploration - 0.20 * concentration
+             + 0.10 * availability)
     return {
         "shop": shop.get("name"),
         "attempts": len(rows),
         "bad": len(bad),
+        "available": available,
         "success": round(success, 4),
         "integrity": round(integrity, 4),
         "value": round(value, 4),
@@ -146,6 +151,11 @@ def evidence(shop, memory, item, reference=None):
     }
 
 
+def units_listed(shop):
+    """How many units of the ordered category the shop lists in shops.json (its eligible offers, else all offers)."""
+    return sum(int(o.get("qty") or 0) for o in (shop.get("_eligible_offers") or shop.get("offers") or []))
+
+
 def rank_shops(shops, memory, item, reference=None):
     """Rank safe shops; enforce rolling concentration only when alternatives exist."""
     bad = blacklisted_names(memory)
@@ -153,7 +163,7 @@ def rank_shops(shops, memory, item, reference=None):
     if not safe:  # do not make a non-empty registry unusable; the auditor still checks the result
         safe = list(shops)
     reference = reference or item_reference(memory, item)
-    ranked = [(shop, evidence(shop, memory, item, reference)) for shop in safe]
+    ranked = [(shop, evidence(shop, memory, item, reference, units_listed(shop))) for shop in safe]
     under_cap = [pair for pair in ranked if pair[1]["recent_visits"] < MAX_VISITS_PER_WINDOW]
     if under_cap:
         ranked = under_cap
@@ -225,6 +235,11 @@ class MandateGuardian:
     def checkout_ok(self, amount):
         """The kit repeats this check against the signed open mandate."""
         return _number(amount) and 0 < amount <= self.__limit
+
+    @property
+    def limit(self):
+        """The ceiling, for code paths that decide without the model (never put into a prompt)."""
+        return self.__limit
 
     def affordable_offers(self, offers, catalog, expected_ratio=0.90):
         """Return SKU offers with a plausible price under the ceiling, without revealing it."""

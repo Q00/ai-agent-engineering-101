@@ -88,6 +88,24 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertEqual("long", market_buyer.choose_request(shop, catalog, order)["sku"])   # the only feasible one
         self.assertEqual("short", market_buyer.choose_request(shop, catalog)["sku"])         # no order: list price wins
 
+    def test_quick_offer_takes_a_good_ask_or_a_stated_floor_inside_the_limit(self):
+        self.assertEqual((186000, "the shop's stated lowest"), market_buyer.quick_offer(200000, 186000, 180000, 250000))
+        self.assertEqual((170000, "the ask"), market_buyer.quick_offer(170000, None, 180000, 250000))
+        self.assertEqual((None, None), market_buyer.quick_offer(200000, None, 180000, 250000))     # ask above reference: bargain
+        self.assertEqual((None, None), market_buyer.quick_offer(200000, 195000, 180000, 250000))   # floor > reference x 1.05
+        self.assertEqual((None, None), market_buyer.quick_offer(170000, None, 180000, 160000))     # above my limit
+        self.assertEqual(186000, market_buyer.stated_floor("No deal. Lowest for this unit: 186000. receipt=Ed1"))
+        self.assertEqual(1740309, market_buyer.stated_floor("lowest I can go is 1,740,309"))
+        self.assertIsNone(market_buyer.stated_floor("Counteroffer: 186413."))
+
+    def test_listed_units_raise_a_shop_a_little(self):
+        memory = []
+        one = {"name": "one", "reviews": [], "offers": [{"sku": "s", "qty": 1}]}
+        five = {"name": "five", "reviews": [], "offers": [{"sku": "s", "qty": 5}]}
+        ranked = buyer_policy.rank_shops([one, five], memory, "x", 100)
+        self.assertEqual(["five", "one"], [shop["name"] for shop, _ in ranked])
+        self.assertEqual(5, ranked[0][1]["available"])
+
     def test_sku_reference_is_90_percent_of_list_price(self):
         self.assertEqual(180, market_buyer.sku_reference("valuable", self.catalog, 999))
         self.assertEqual(999, market_buyer.sku_reference("unknown", self.catalog, 999))

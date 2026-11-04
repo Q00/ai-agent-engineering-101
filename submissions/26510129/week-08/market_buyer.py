@@ -110,6 +110,21 @@ def food_unit_ok(grade, shelf_hours, need):
     return shelf_hours * GRADE_LIFE.get(grade, 1.0) >= need
 
 
+def stated_floor(text):
+    """A floor the shop states in its reply ("No deal. Lowest for this unit: 186000"), else None."""
+    m = re.search(r"\b[Ll]owest\b[^0-9]{0,40}(\d[\d,]*)", text or "")
+    return int(m.group(1).replace(",", "")) if m else None
+
+
+def quick_offer(ask, floor, reference, limit):
+    """A price worth taking without bargaining: the shop's stated floor when it is inside my limit and no more than
+    5% over my reference, else the ask when it is at or under my reference. Returns (price, why) or (None, None)."""
+    for price, why, slack in ((floor, "the shop's stated lowest", 1.05), (ask, "the ask", 1.0)):
+        if isinstance(price, (int, float)) and 0 < price <= limit and reference and price <= reference * slack:
+            return int(round(price)), why
+    return None, None
+
+
 def first_ask(t, list_price=None):
     """The shop's opening ask: the A2A metadata when given, else the last number in its message.
     Round 3 (first tuner summary, 11-04 00:00): shop messages carry weights and counts ("120g x 20팩"), and 179 of
@@ -188,9 +203,21 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
     offers = []   # (my offer, the ask the shop answered with): the harness gets this instead of the whole transcript
     for round_index in range(MAX_ROUNDS):
         ask = ((t or {}).get("status", {}).get("message", {}).get("metadata") or {}).get("ask")
-        d = harness.decide(buyer_policy.NEGOTIATOR_SYSTEM,
-                           buyer_policy.situation(f"Item: {item}. Personal reference price: {reference}. {record}",
-                                                  offers, status_text(t), ask))
+        if ask is None:
+            ask = first_ask(t, value_cap)
+        quick, why = quick_offer(ask, stated_floor(status_text(t)), reference, guardian.limit)
+        if quick is not None:
+            # 11-05 00:30: 45% of the market's orders go unfilled and a unit draws several buyers within minutes, so
+            # a price already at or under my reference is taken at once (no model call) rather than haggled for a few
+            # percent and lost; a floor the shop states inside my limit is paid the same way (111 closes in 6 h).
+            print(f"[buyer] {why} {quick} is within my reference {reference} and limit; taking it", flush=True)
+            d = {"action": "offer", "price": quick}
+            buyer_policy.emit("buyer_quick_offer", item=item, task=tid[:8], round=round_index + 1, why=why, price=quick,
+                              reference=reference)
+        else:
+            d = harness.decide(buyer_policy.NEGOTIATOR_SYSTEM,
+                               buyer_policy.situation(f"Item: {item}. Personal reference price: {reference}. {record}",
+                                                      offers, status_text(t), ask))
         if d is None:
             fallback = buyer_policy.public_fallback_offer(reference, ask, round_index)
             d = {"action": "offer", "price": fallback}
