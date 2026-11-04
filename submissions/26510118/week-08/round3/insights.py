@@ -1,7 +1,7 @@
 """Insights: what the integrated analysis has learned from the numbers, kept from run to run.
 
 An insight has three short parts: what was found ("grade B bedding sells at about 60% of list"),
-the numbers behind it, and how later decisions should use it ("open grade B bedding at 65%, not 70%"). The integrated analysis keeps them every 12 hours
+the numbers behind it, and how later decisions should use it ("open grade B bedding at 65%, not 70%"). The integrated analysis keeps them every 3 hours (12 until 11/4 night)
 in both phases (an insight changes no rule): it adds at most NEW_MAX new ones and marks the ones
 the new numbers confirm or refute. The code holds the rest:
 

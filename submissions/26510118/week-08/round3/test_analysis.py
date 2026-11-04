@@ -589,6 +589,9 @@ def test_linewatch():
           run(t5 + 1200, market(0.75, at=t5 + 1200), sales=sold5, line={BEDDING: 4}, stars=4.7) == [])
     ch = run(t5 + 600 + linewatch.STARS_REST, market(0.75, at=t5 + 600 + linewatch.STARS_REST), line={BEDDING: 4}, stars=4.75)
     check("...and once more after 2 hours under", [(c["from"], c["to"]) for c in ch] == [(3, 2)], ch)
+    check("a guard also keeps an exited product out (others at 0.75, none held, the rest over)",
+          linewatch.decide(0, {"median": 0.75, "sellers": 2}, {"n": 30, "median": 0.75, "sellers": 2}, {"held": 0, "sold_1h": 0, "idle": None},
+                           t, t + linewatch.EXIT_REST + 1, "our stars are 4.7 (under 4.8)") == (0, "out"))
     check("stars back at 4.85 and none of ours held: the guards say nothing",
           linewatch.guards([], {BEDDING: 4}, 4.85) == {"share": 0.0, "stars": 4.85, "hold": None, "low_stars": False})
     common.write_json(MD / "analysis" / "line.json", {"skus": {}})
@@ -744,7 +747,7 @@ def test_context():
     rep = p[t["reports"]]
     check("the last two seller reports, newest first", 0 <= rep.find("again") < rep.find("Kimchi sells."))
     check("what became of each proposal: applied with the period after, recorded only, refused by code, not adopted",
-          all(s in rep for s in ("adopted and applied as 0.05; the period after", "recorded only (exploration phase)",
+          all(s in rep for s in ("adopted and applied as 0.05; per hour, before -> after", "recorded only (exploration phase)",
                                  "refused by code", "not adopted")), rep)
 
     fake = [{"id": f"I{100 + i}", "role": ["seller", "buyer", "both"][i % 3], "topic": "price", "text": f"insight-{i:02d} " + "x" * 60,
@@ -824,6 +827,11 @@ def test_runner():
     check("an hour later: collect and replies", analysis.run_once(t0 + 3600, quiet, fake_ledger, fake_shops) == ["collect", "replies"])
     check("3 hours later: the role analyses and the integrated analysis after them (the journal has nothing new in this small market)",
           analysis.run_once(t0 + 3 * H, quiet, fake_ledger, fake_shops) == ["collect", "replies", "votes", "seller", "buyer", "integrated"])
+    st = common.read_json(MD / "analysis" / "state.json")
+    common.write_json(MD / "analysis" / "state.json", dict(st, integrated=st["integrated"] - 2 * H))
+    check("the integrated analysis waits for the role analyses rather than running on its own clock",
+          "integrated" not in analysis.run_once(t0 + 4 * H, quiet, fake_ledger, fake_shops))
+    check("...and runs right after them", analysis.run_once(t0 + 6 * H, quiet, fake_ledger, fake_shops)[-3:] == ["seller", "buyer", "integrated"])
     lock = MD / "analysis" / "lock"
     lock.write_text("1", encoding="utf-8")
     check("a pass already running: skipped", analysis.run_once(t0 + 24 * H, quiet, fake_ledger, fake_shops) == []
@@ -968,6 +976,16 @@ def test_scoreboard():
     check("the briefing's view: one side's parts with their next two steps, and the pace of that side only",
           "shop" not in br and br["buyer"]["forum"]["pct"] == 1.0 and all(k.startswith("buyer") for k in br["pace_per_h_ours_vs_rows_above"]), br)
     check("our stars for linewatch, from a fresh scoreboard only", scoreboard.stars(NOW + 60) == 4.8 and scoreboard.stars(NOW + 7200) is None)
+    no_stars = board(260)
+    for r in no_stars["shops"]:
+        r.pop("stars_rank")
+    scoreboard.update(NOW + 120, no_stars)
+    check("a board without stars_rank: no stars for linewatch (not 0, which would read as bad stars)", scoreboard.stars(NOW + 180) is None)
+    named = board(260)
+    named["players"][1].update(shop="Kiro729", buyer="Kiro729")
+    scoreboard.update(NOW + 240, named)
+    check("a player's shop and buyer given as names still count in the projection",
+          common.read_json(MD / "analysis" / "scoreboard.json")["projection"]["total"] > 0.9)
     for f in ("scoreboard.json", "scoreboard_history.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
 

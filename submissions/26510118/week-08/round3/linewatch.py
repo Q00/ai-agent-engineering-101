@@ -13,7 +13,7 @@ how it gets out fast when others crowd in.
             in WINDOW) still pays REENTRY_MIN of list or more; the baseline is taken again then
     keep    otherwise
 
-Two guards (11/4 night) keep the line from eating the rest: no cap grows while the line's units are more than
+Two guards (11/4 night) keep the line from eating the rest: no cap grows (and no product comes back in) while the line's units are more than
 PREMIUM_MAX of our stock at cost, or while our stars on the board (scoreboard.py's stars_rank, a fifth of the
 shop's score) are under STARS_MIN; and under STARS_MIN every cap above 1 also comes down one, at most once
 every STARS_REST. (The third guard, the cash kept, is restock.RESERVE.)
@@ -78,7 +78,7 @@ def decide(cap: int, base: dict | None, now_m: dict, us: dict, exit_at: float | 
     drop = round(base["median"] - now_m["median"], 4) if verdict else 0.0
     crowded = verdict and now_m["sellers"] >= max(CROWD_TIMES * base.get("sellers", 0), base.get("sellers", 0) + CROWD_MORE)
     if cap == 0:
-        if (exit_at is not None and now - exit_at >= EXIT_REST and us["held"] == 0 and now_m["n"] >= MIN_N
+        if (not hold and exit_at is not None and now - exit_at >= EXIT_REST and us["held"] == 0 and now_m["n"] >= MIN_N
                 and now_m["median"] is not None and now_m["median"] >= REENTRY_MIN):
             return 1, f"back in: others settle at {now_m['median']:.3f} of list and we hold none"
         return 0, "out"
@@ -145,7 +145,8 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
         lp = (catalog.get(sku) or {}).get("list_price")
         if not lp or not isinstance(default, int):
             continue
-        if defaults.get(sku) != default:                  # new, or restock.LINE changed: a person's decision
+        fresh = defaults.get(sku) != default
+        if fresh:                                         # new, or restock.LINE changed: a person's decision
             caps[sku], defaults[sku] = default, default
             base.pop(sku, None)
             exits.pop(sku, None)
@@ -154,7 +155,7 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
             base[sku] = {"median": now_m["median"], "sellers": now_m["sellers"], "at": int(now)}
         us = ours(sku, inv.get("units") or [], sales, now)
         new, why = decide(caps.get(sku, default), base.get(sku), now_m, us, exits.get(sku), now, g["hold"])
-        if cut and new > 1:
+        if cut and new > 1 and new >= caps.get(sku, default) and not fresh:   # one step down, not on top of a shrink
             new, why = new - 1, f"our stars {g['stars']} are under {STARS_MIN}" + ("" if why.startswith("keep") else f"; {why}")
         if new != caps.get(sku, default):
             changes.append({"at": int(now), "sku": sku, "from": caps.get(sku, default), "to": new, "why": why,

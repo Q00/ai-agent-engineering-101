@@ -54,7 +54,7 @@ def num(row: dict, k: str):
 
 def pools(board: dict) -> tuple[list, list]:
     shops = [s for s in board.get("shops") or [] if isinstance(s, dict) and s.get("all") is not None and s.get("name")]
-    buyers = [b for b in board.get("buyers") or [] if isinstance(b, dict) and (b.get("deals") or 0) > 0 and b.get("name")]
+    buyers = [b for b in board.get("buyers") or [] if isinstance(b, dict) and num(b, "deals") > 0 and b.get("name")]
     return shops, buyers
 
 
@@ -154,20 +154,22 @@ def update(now: float, board: dict) -> str:
         p_buyers, b_pace = project(buyers, BUYER, then.get("buyers") or {}, hours)
         s_all, b_all = alls(p_shops, SHOP), alls(p_buyers, BUYER)
         future = {}
+        side = lambda x: x if isinstance(x, dict) else {"name": x} if isinstance(x, str) else {}
         for p in players:
-            sh, by = p.get("shop") if isinstance(p.get("shop"), dict) else {}, p.get("buyer") if isinstance(p.get("buyer"), dict) else {}
+            sh, by = side(p.get("shop")), side(p.get("buyer"))
             future[p["player"]] = (s_all.get(sh.get("name"), num(sh, "all")) + b_all.get(by.get("name"), num(by, "all")))
         f_ranked = sorted(future.values(), reverse=True)
         sb["projection"] = {"hours": PROJECT // 3600, "pace_hours": round(hours, 1), "place": place(future, me["player"]),
                             "total": round(future[me["player"]], 4), "third": round(f_ranked[min(2, len(f_ranked) - 1)], 4)}
         sb["pace"] = {}
-        for side, rows, paces, mine_row in (("shop", shops, s_pace, my_shop), ("buyer", buyers, b_pace, my_buyer)):
+        per_h = lambda x: round(x) if abs(x) >= 10 else round(x, 2)          # posts and deals move a few an hour
+        for part, rows, paces, mine_row in (("shop", shops, s_pace, my_shop), ("buyer", buyers, b_pace, my_buyer)):
             if not mine_row or mine_row["name"] not in paces:
                 continue
             for k, ours in paces[mine_row["name"]].items():
                 near = sorted((r for r in rows if num(r, k) > num(mine_row, k) and r["name"] in paces), key=lambda r: num(r, k))[:NEIGHBOURS]
                 others = [paces[r["name"]][k] for r in near]
-                sb["pace"][f"{side}.{k}"] = {"ours_per_h": round(ours), "above_median_per_h": round(st.median(others)) if others else None}
+                sb["pace"][f"{part}.{k}"] = {"ours_per_h": per_h(ours), "above_median_per_h": per_h(st.median(others)) if others else None}
         note += f"; in {PROJECT // 3600} h at this pace: {sb['projection']['place']}"
     common.write_json(folder() / "scoreboard.json", sb)
     return note
@@ -180,12 +182,14 @@ def read(now: float, fresh: float = 3600) -> dict | None:
 
 
 def stars(now: float) -> float | None:
-    """Our shop's stars_rank on the board, from a fresh scoreboard."""
+    """Our shop's stars_rank on the board, from a fresh scoreboard; None unless it is a figure from 1 to 5 (a
+    board without the field gives 0 in the formula, which must not read as bad stars)."""
     sb = read(now)
     try:
-        return sb["shop"]["parts"]["stars_rank"]["value"]
+        v = sb["shop"]["parts"]["stars_rank"]["value"]
     except (TypeError, KeyError):
         return None
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) and 1 <= v <= 5 else None
 
 
 def brief(sb: dict | None, side: str | None = None) -> dict | None:

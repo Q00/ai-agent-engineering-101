@@ -54,6 +54,9 @@ STEP = 0.05
 LIST_MAX = 15
 WINDOW = 3 * 3600        # the numbers a decision is judged by: one decision's period (12 h until 11/4 night)
 FOR_PERSON = 2
+OLD_WINDOW_HOURS = 12    # what a decision's metrics covered when they carry no "hours" (before 11/4 night)
+REVERT_BACK = 2          # a change from either of the last two decisions can be reverted (6 h now; was the last one, 12 h)
+CHANGE_TEXT = 140        # a change as the briefing shows it (lists of 15 names make long lines)
 
 
 def folder():
@@ -303,7 +306,7 @@ def metrics(now: float) -> dict:
     """The numbers a change is judged by, over the last WINDOW (one decision's period)."""
     sales = _since(common.records("sales"), now, WINDOW)
     bought = _since(common.read_jsonl(common.MARKET_DIR / "buyer" / "purchases.jsonl"), now, WINDOW)
-    return {"at": int(now), "seller_sales": len(sales),
+    return {"at": int(now), "hours": WINDOW // 3600, "seller_sales": len(sales),
             "seller_margin": sum((s.get("price") or 0) - (s.get("cost") or 0) for s in sales),
             "buyer_deals": len(bought),
             "buyer_surplus": sum((b.get("list_price") or 0) - (b.get("price") or 0) for b in bought)}
@@ -325,8 +328,8 @@ integrated analysis of Kiro729, our agent business. The goal is a top-3 player t
 {market}
 
 Each turn you get a briefing assembled by code: 1 the business now (with the rules in force), 2 all
-insights, 3 the latest reports, 4 memos, 5 the last decisions with the 3-hour numbers when they were
-made, and the numbers now: the scoreboard (the board's own formula: each part's value and percentile,
+insights, 3 the latest reports, 4 memos, 5 the numbers now over the last 3 hours, the last decisions with
+the numbers when they were made (each over its "hours": 12 before 11/4 night, 3 since; compare per hour), the scoreboard (the board's own formula: each part's value and percentile,
 what the next rows above us in it would take ("need") and give our ALL ("gain"), our pace per hour
 against the rows just above us, and where the players would stand in 6 hours at this pace), the
 premium line (its caps, guards and recent changes), our forum notes' scores by desk over 6 hours, and
@@ -337,8 +340,8 @@ linking the two roles.
 Deciding:
 - Adopt only proposals the numbers support; two proposals for one field: pick one. A number moves at
   most {step} per decision, whatever is proposed.
-- Revert a last change when the numbers since are worse on enough deals to tell; with only a few deals
-  since, keep it and wait.
+- Revert a change from the last two decisions when the numbers since are worse per hour on enough deals to
+  tell; with only a few deals since, keep it and wait.
 - {tools}
 
 Changes no field can make (the premium line's products or caps, the notes, how a part of the code
@@ -408,15 +411,16 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
     current = common.rules()
     m = metrics(now)
     decisions = [{"at": context.stamp(c.get("at")), "applied": c.get("applied"),
-                  "changes": [f"{x['role']}.{x['field']}: {x['from']} -> {x['to']}" for x in c.get("changes") or []],
-                  "reverted": [f"{x['role']}.{x['field']} back to {x['back_to']}" for x in c.get("reverted") or []],
-                  "metrics_then": c.get("metrics")} for c in changes[-2:]]
+                  "changes": [f"{x['role']}.{x['field']}: {x['from']} -> {x['to']}"[:CHANGE_TEXT] for x in c.get("changes") or []],
+                  "reverted": [f"{x['role']}.{x['field']} back to {x['back_to']}"[:CHANGE_TEXT] for x in c.get("reverted") or []],
+                  "metrics_then": dict({"hours": OLD_WINDOW_HOURS}, **(c.get("metrics") or {}))} for c in changes[-REVERT_BACK:]]
     book = common.read_json(folder() / "post_votes.json", {}) or {}
-    brief = context.form("integrated", now, {"last_decisions": decisions, "metrics_3h_now": m,
+    brief = context.form("integrated", now, {"metrics_3h_now": m,                     # most needed first: a part over its
                                              "scoreboard": scoreboard.brief(scoreboard.read(now)) or "(not in yet)",
-                                             "premium_line": linewatch.brief(now),
+                                             "last_decisions": decisions,             # limit drops the blocks after it
+                                             "buyer_tries_3h": tries(now),
                                              "notes_by_desk_6h": notes.by_desk(book if isinstance(book, dict) else {}, now),
-                                             "buyer_tries_3h": tries(now)})
+                                             "premium_line": linewatch.brief(now)})
     with mcp_host.open_room("integrated") as room:
         system = INTEGRATED_SYSTEM.format(market=MARKET, step=STEP, new_max=insights.NEW_MAX, for_person=FOR_PERSON,
                                           tools=_tools_note(room, tools.INTEGRATED_CALLS, INTEGRATED_TOOLS))
@@ -428,11 +432,11 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
     decision = harness.first_json(text) or {}
     new = json.loads(json.dumps(current))
     done, reverted = [], []
-    applied_before = [c for c in (last.get("changes") or []) if last.get("applied")]
+    applied_before = [x for c in changes[-REVERT_BACK:] if c.get("applied") for x in c.get("changes") or []][::-1]
     for key in decision.get("revert") or []:
         role, _, field = str(key).partition(".")
         prev = next((c for c in applied_before if c["role"] == role and c["field"] == field), None)
-        if prev:
+        if prev and (new.get(role) or {}).get(field) == prev["to"]:    # the newest change of it, still in force
             new[role][field] = prev["from"]
             reverted.append({"role": role, "field": field, "back_to": prev["from"]})
     by_id = {p["id"]: p for p in proposals}

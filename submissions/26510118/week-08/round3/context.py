@@ -20,7 +20,7 @@ import common
 
 LIMITS = {"state": 800, "insights": 2400, "reports": 1000, "memos": 800, "numbers": 2000}
 INTEGRATED_LIMITS = {"insights": 4800,          # it marks every active insight, so it sees all 20
-                     "numbers": 4400}           # and since 11/4 night the scoreboard, the line, the notes and the tries
+                     "numbers": 5600}           # and since 11/4 night the scoreboard, the line, the notes and the tries
 TITLES = {"state": "1 The business now", "insights": "2 Insights so far (kept by the integrated analysis)",
           "reports": "3 Last reports and what became of their proposals", "memos": "4 Memos from the other analyses",
           "numbers": "5 New numbers"}
@@ -114,8 +114,9 @@ def fate(p: dict, changes: list) -> str:
     if len(later) < 2:
         return f"adopted and applied as {to}; result not in yet"
     m0, m1 = later[0].get("metrics") or {}, later[1].get("metrics") or {}
-    return (f"adopted and applied as {to}; the period after: shop margin {m0.get('seller_margin')} -> {m1.get('seller_margin')}, "
-            f"buyer surplus {m0.get('buyer_surplus')} -> {m1.get('buyer_surplus')}")
+    rate = lambda m, k: round((m.get(k) or 0) / (m.get("hours") or 12)) if isinstance(m.get(k), (int, float)) else None
+    return (f"adopted and applied as {to}; per hour, before -> after: shop margin {rate(m0, 'seller_margin')} -> "
+            f"{rate(m1, 'seller_margin')}, buyer surplus {rate(m0, 'buyer_surplus')} -> {rate(m1, 'buyer_surplus')}")
 
 
 def reports(role: str) -> list:

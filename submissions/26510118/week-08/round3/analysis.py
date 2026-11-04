@@ -30,7 +30,8 @@ Each pass does only what is due, in this order:
                         most useful post) on the last 3 hours' posts, as our buyer (forum.pick_votes)
     seller       3 h    the seller analysis (analysts.py, MODEL_MID + ledger_query)
     buyer        3 h    the buyer analysis
-    integrated   3 h    adopt, keep or revert rule changes (MODEL_STRONG); applied in the focus phase
+    integrated   3 h    (right after the seller and buyer analyses have both run since it)
+                        adopt, keep or revert rule changes (MODEL_STRONG); applied in the focus phase
                         (every 12 h until 11/4 night; now with the role analyses, and its briefing carries the
                         scoreboard, the premium line, the notes' scores by desk and our buyer's tries)
                         and keep the insights (both phases)
@@ -70,6 +71,8 @@ OPEN_CATEGORIES = 100    # categories in stock before our shop announces itself 
 OPEN_MIN, OPEN_WAIT = 20, 1800   # or at least this many, half an hour after the first stock came in
 SLEEP = 300              # 600 until 11/4: the notes post every 5 minutes
 LOCK_STALE = 1800
+ROLES = ("seller", "buyer")   # the integrated analysis runs in the pass after both have run since it (not on its own clock),
+                              # or on its own after twice its period when they keep failing
 LOG = common.HERE / "logs" / "analysis.log"
 
 
@@ -306,7 +309,12 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
     done = []
     try:
         for name, every in EVERY.items():
-            if now - state.get(name, 0) < every:
+            if name == "integrated":
+                last = state.get(name, 0)
+                fresh = any(r in done for r in ROLES) and all(state.get(r, 0) > last for r in ROLES)
+                if not (fresh or now - last >= 2 * every):
+                    continue
+            elif now - state.get(name, 0) < every:
                 continue
             try:
                 if name == "collect":
