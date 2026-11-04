@@ -322,7 +322,12 @@ def brief(board=None, now=None):
     except Exception:
         grades = None
     low = any((g or {}).get("status") in ("warning", "fire candidate") for g in (grades or {}).values())
+    try:
+        handoff_buyer = (HERE / "private" / "handoff_buyer.md").read_text(encoding="utf-8")[:5000]
+    except OSError:
+        handoff_buyer = None
     b = {"accountability": dict(accountability(me, top, summ), handoff=kpi.handoff(), hr_grade=grades,
+                                handoff_buyer_team=handoff_buyer,       # HQ replaced the buyer team (11-04 11:45)
                                 **({"hr_demand": kpi.HR_DEMAND} if low else {}),
                                 leaders_plan=__import__("leaders_meeting").summary(),
                                 private_from_hq=__import__("hr").contest_for("buyer"),

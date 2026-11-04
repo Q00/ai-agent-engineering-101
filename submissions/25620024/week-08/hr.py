@@ -269,6 +269,7 @@ def auto_rewards(teams, history):
                 reward(t, "raise" if n % 3 == 0 else "commendation", f"good three runs in a row (score {v['score']})")
                 out.append(f"{NAMES[t]}: {'연봉 인상' if n % 3 == 0 else '표창'}")
         hired = (HERE / "private" / "handoff.md").stat().st_mtime if (HERE / "private" / "handoff.md").exists() else 0
+        hired = max([hired] + [x["ts"] for x in mine if x["kind"] == "hired"])   # a team replaced on its own
         if time.time() - hired < PROBATION_H * 3600:  # new teams get a probation period: graded, not demoted
             continue
         past3 = [x["teams"].get(t, {}).get("status") for x in history[-2:]] + [v["status"]]
