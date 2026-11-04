@@ -1,10 +1,10 @@
-"""icrl lessons as memo-graph evidence (memory.llm_step.lessons_step through memory.run), icrl.loop.recall over the
-graph + not-yet-ingested lessons, the LongMemEval-style memcheck on a synthetic history, and icrl never writing
-under the memory dir. Stubbed memory LLM, no network."""
+"""icrl lessons as memo-graph evidence (memory.llm_step.lessons_step through memory.run, by rule, no LLM),
+icrl.loop.recall over the graph + not-yet-ingested lessons, the LongMemEval-style memcheck on a synthetic history,
+icrl never writing under the memory dir, and the ledger memory LLM step (item-level parse, masked values). Stubbed
+memory LLM, no network."""
 
 import hashlib
 import json
-import re
 import types
 
 import pytest
@@ -61,36 +61,9 @@ HISTORY = [  # (end row, lesson row): adopt, then the retest flips it to reject;
 ]
 
 
-def add_all(prompt):
-    """The stub memory LLM: ADD every lesson row it is shown (verdict + value_after)."""
-    rows = json.loads(re.search(r"<<<DATA\n(.*)\nDATA>>>", prompt, re.S).group(1))[
-        "lessons"
-    ]
-    out = []
-    for r in rows:
-        out.append(
-            {
-                "subject": r["exp"],
-                "predicate": "verdict",
-                "value": r["verdict"],
-                "evidence": [r["seq"]],
-                "op": "ADD",
-            }
-        )
-        out.append(
-            {
-                "subject": r["policy"],
-                "predicate": "value",
-                "value": r["value_after"],
-                "evidence": [r["seq"]],
-                "op": "ADD",
-            }
-        )
-    return json.dumps(out)
-
-
 class Role:
     calls = []
+    reply = "[]"
 
     def __init__(self, live, role):
         pass
@@ -100,7 +73,7 @@ class Role:
 
     def complete(self, prompt, max_tokens=None):
         Role.calls.append(prompt)
-        return {"text": add_all(prompt) if "policy experiments" in prompt else "[]"}
+        return {"text": Role.reply}
 
 
 @pytest.fixture
@@ -115,7 +88,7 @@ def mem(tmp_path, monkeypatch):
     import llm.ops_llm
     from memory import llm_step
 
-    Role.calls = []
+    Role.calls, Role.reply = [], "[]"
     monkeypatch.setattr(llm.ops_llm, "RoleLLM", Role)
     monkeypatch.setattr(llm_step, "_live", lambda: object())
     monkeypatch.setattr(MR, "POST_INGEST", [llm_step.step, llm_step.lessons_step])
@@ -152,8 +125,9 @@ def test_a_lesson_row_becomes_an_evidence_memo(mem):
     )
     cur = json.loads((mem.root / "memory" / "cursor.json").read_text())["lessons"]
     assert cur["n"] == 1 and cur["path"] == str((mem.isd / "lessons.jsonl").resolve())
-    MR.run_once(mem.md, now=T1 + 1200)  # nothing new: no second lessons call
-    assert sum("policy experiments" in p for p in Role.calls) == 1
+    MR.run_once(mem.md, now=T1 + 1200)  # nothing new: no further ops
+    assert len(ops(mem.root)) == 2
+    assert not any("lessons" in p for p in Role.calls)  # lessons never go to the LLM
 
 
 def test_llm_off_leaves_the_cursor(mem, monkeypatch):
@@ -178,8 +152,8 @@ def test_a_retest_that_flips_the_verdict_is_an_update(mem):
     ]
     last = [r for r in ops(mem.root) if r["key"] == f"exp:{A1}|verdict"][-1]
     assert (
-        last["op"] == "UPDATE" and last["overridden"] and last["evidence"] == [-2]
-    )  # the stub said ADD
+        last["op"] == "UPDATE" and not last["overridden"] and last["evidence"] == [-2]
+    )  # the rule picks UPDATE itself
     pol = memo(mem.root, "policy:" + P1, "value")["v"]
     assert (
         len(pol) == 1 and pol[0]["to"] is None
@@ -352,3 +326,156 @@ def test_icrl_never_writes_under_the_memory_dir(tmp_path):
         assert r["status"] == "ok", r
     assert tree_hash(md) == before
     assert json.loads((sdir / "memcheck.jsonl").read_text().splitlines()[0])["types"]
+
+
+# --- rule-based lessons (no LLM)
+
+
+def test_same_verdict_again_is_a_noop(mem):
+    write_history(mem.isd, 2)
+    MR.run_once(mem.md, now=T2 + 600)
+    again = (
+        end_row(4, "retest|" + A1, "reject", T3, 1.03, 1.0),
+        lesson(4, "retest|" + A1, "reject", T3),
+    )
+    jl(mem.isd / "experiments.jsonl", [e for e, _ in HISTORY[:2]] + [again[0]])
+    jl(mem.isd / "lessons.jsonl", [x for _, x in HISTORY[:2]] + [again[1]])
+    MR.run_once(mem.md, now=T3 + 600)
+    last = [r for r in ops(mem.root) if r["evidence"] == [-3]]
+    assert [r["op"] for r in last] == ["NOOP", "NOOP"]
+    assert all(not r["overridden"] for r in last)
+    assert len(memo(mem.root, "exp:" + A1, "verdict")["v"]) == 2
+
+
+def test_rollback_leaves_the_lessons_cursor(mem, monkeypatch):
+    from memory import llm_step
+
+    write_history(mem.isd, 1)
+    with monkeypatch.context() as m:
+        m.setattr(llm_step, "invariant_violations", lambda *a: ["forced"])
+        MR.run_once(mem.md, now=T1 + 600)
+    assert json.loads((mem.root / "memory" / "cursor.json").read_text())["lessons"] is None
+    assert memo(mem.root, "exp:" + A1, "verdict") is None
+    dl = [json.loads(x) for x in (mem.root / "memory" / "llm_decisions.jsonl").read_text().splitlines()]
+    assert any(r.get("stage") == "memory_lessons" and r.get("status") == "rolled_back" for r in dl)
+    MR.run_once(mem.md, now=T1 + 1200)  # the real check again: the same lesson is ingested now
+    assert json.loads((mem.root / "memory" / "cursor.json").read_text())["lessons"]["n"] == 1
+    assert memo(mem.root, "exp:" + A1, "verdict")["v"][-1]["attrs"] == {"value": "adopt"}
+
+
+def test_missing_graph_json_restarts_the_lessons_cursor(mem):
+    write_history(mem.isd, 1)
+    MR.run_once(mem.md, now=T1 + 600)
+    (mem.root / "memory" / "graph.json").unlink()
+    MR.run_once(mem.md, now=T1 + 1200)
+    cur = json.loads((mem.root / "memory" / "cursor.json").read_text())["lessons"]
+    assert cur["n"] == 1
+    assert memo(mem.root, "exp:" + A1, "verdict")["v"][-1]["ev"] == [-1]
+
+
+def test_lesson_subjects_match_exactly():
+    from memory.graph import Graph
+
+    G = Graph()
+    f = {"exp": "exp:" + A1, "policy": "policy:" + P1, "verdict": "adopt", "value_after": 1.03}
+    look = {-1: {"seq": -1, "ts": T1, "data": f}}.get
+    for subject, pred in (("exp:" + P1, "verdict"), ("policy:defaults", "value")):
+        r = G.propose(
+            {"subject": subject, "predicate": pred, "value": 9.9, "evidence": [-1], "op": "ADD"},
+            look,
+            T1,
+        )
+        assert r["op"] == "NOOP" and "not about the key" in r["reason"], subject
+    r = G.propose(
+        {"subject": "exp:" + A1, "predicate": "verdict", "value": "adopt", "evidence": [-1], "op": "ADD"},
+        look,
+        T1,
+    )
+    assert r["op"] == "ADD"
+    assert not G.edges["memo"].get("exp:" + P1 + "|verdict") and not G.edges["memo"].get("policy:defaults|value")
+
+
+def test_post_ingest_has_no_taste_gate():
+    from memory import llm_step
+
+    assert MR.POST_INGEST == [llm_step.step, llm_step.lessons_step]
+    assert not any("taste" in getattr(s, "__module__", "") for s in MR.POST_INGEST)
+
+
+# --- the ledger memory LLM step (memory_llm.step)
+
+
+def ledger_ctx(tmp_path):
+    from tests.test_memory_graph import graph, prefs
+
+    f = prefs()
+    return {"now": f.rows[-1]["ts"], "mem": tmp_path, "layers": {"graph": graph(f)}, "events": f.rows}
+
+
+def item(**kw):
+    return dict({"subject": "buyer:A", "predicate": "likes", "value": "김치", "evidence": [1, 3], "op": "ADD"}, **kw)
+
+
+class Log(list):
+    def __bool__(self):  # step() takes `log or DecisionLog(...)`: an empty list must still count
+        return True
+
+
+def run_step(mem, tmp_path, reply):
+    from memory import llm_step
+
+    Role.reply = reply
+    ctx, log = ledger_ctx(tmp_path), Log()
+    llm_step.step(ctx, live=object(), enabled=True, log=log)
+    return ctx["layers"]["graph"], log[-1]
+
+
+def test_item_level_parse_keeps_good_items_and_counts_bad(mem, tmp_path):
+    reply = json.dumps(
+        [
+            item(),
+            item(predicate="claim_honest", value=False),  # a bool flag from the window: accepted now
+            item(predicate="why", reason="extra"),
+            item(predicate="raw", value={"a": 1}),
+            item(subject="exp:" + A1, predicate="verdict"),
+            {"subject": "buyer:A"},
+        ],
+        ensure_ascii=False,
+    )
+    G, row = run_step(mem, tmp_path, reply)
+    assert row["status"] == "applied" and row["n_items"] == 2 and row["dropped"] == 4
+    assert row["bad_items"] == {
+        "extra fields": 1,
+        "value not a scalar": 1,
+        "missing fields": 1,
+        "subject not allowed": 1,
+    }
+    assert row["final"] == ["ADD", "ADD"] and "head" not in row
+    assert G.edges["memo"]["buyer:A|claim_honest"]["v"][-1]["attrs"] == {"value": False}
+
+
+def test_over_max_items_keeps_the_first_five(mem, tmp_path):
+    reply = json.dumps([item(predicate=f"p{i}") for i in range(7)], ensure_ascii=False)
+    _, row = run_step(mem, tmp_path, reply)
+    assert row["n_items"] == 5 and row["bad_items"] == {"over 5 items": 2}
+
+
+def test_nothing_usable_logs_a_masked_head(mem, tmp_path):
+    secret = "kim@example.com 010-1234-5678 "
+    _, row = run_step(mem, tmp_path, json.dumps([{"subject": "buyer:A", "note": secret * 20}]))
+    assert row["status"] == "applied" and row["n_items"] == 0 and row["bad_items"] == {"extra fields": 1}
+    assert len(row["head"]) <= 200 and "[EMAIL]" in row["head"] and "kim@example.com" not in row["head"]
+    _, row = run_step(mem, tmp_path, "sorry, mail " + secret * 20)
+    assert row["status"] == "llm_bad_reply" and row["error"] == "not json"
+    assert len(row["head"]) <= 200 and "[PHONE]" in row["head"] and "010-1234-5678" not in row["head"]
+    _, row = run_step(mem, tmp_path, '{"subject": "buyer:A"}')
+    assert row["status"] == "llm_bad_reply" and row["error"] == "not an array"
+    _, row = run_step(mem, tmp_path, "[]")  # nothing to change is not a failure
+    assert row["status"] == "applied" and "head" not in row and "bad_items" not in row
+
+
+def test_llm_memo_values_are_masked(mem, tmp_path):
+    G, row = run_step(mem, tmp_path, json.dumps([item(value="mail kim@example.com, 010-1234-5678")]))
+    assert row["final"] == ["ADD"]
+    v = G.edges["memo"]["buyer:A|likes"]["v"][-1]["attrs"]["value"]
+    assert "kim@example.com" not in v and "010-1234-5678" not in v and "[EMAIL]" in v and "[PHONE]" in v

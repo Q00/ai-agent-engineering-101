@@ -24,7 +24,6 @@ from ledger import state_dir
 
 from memory import source
 from memory import llm_step as memory_llm
-from taste import gate as taste_gate
 
 LAYERS = (
     ("graph", "memory.graph", "Graph"),
@@ -35,8 +34,10 @@ MAX_EVENTS = 200_000
 
 # Extension point. Steps run after ingest and the graph sweep, before anything is written: step(ctx) -> short
 # note or None, ctx = {"now", "root", "md", "mem", "layers", "events", "catalog"}. A step that raises is noted on
-# the run line and the run goes on. v1.19: the hourly taste forecast and its gate (taste/gate.py).
-POST_INGEST = [taste_gate.step, memory_llm.step, memory_llm.lessons_step]   # memory_llm steps OFF unless MEMORY_LLM
+# the run line and the run goes on. The v1.19 taste gate (taste/gate.py step) is off: it overlapped with the icrl
+# restock-order key and changed restock order outside policy.json, where icrl cannot see it; taste_gate.json stays as
+# last written (hooks/restock.py uses it only when "adopted" and at most taste.max_age_s old).
+POST_INGEST = [memory_llm.step, memory_llm.lessons_step]   # OFF unless MEMORY_LLM / R3_MEMORY_LLM=1
 
 
 def market_dir(arg=None):

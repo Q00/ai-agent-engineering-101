@@ -577,6 +577,8 @@ class Graph:
     def _mentions(self, ev, subject):
         d = ev.get("data") or {}
         kind, _, name = subject.partition(":")
+        if kind in LESSON_KINDS:  # a lesson row names exactly one exp: and one policy: subject
+            return d.get(kind) == subject
         fields = {
             "shop": ("shop",),
             "buyer": ("buyer",),

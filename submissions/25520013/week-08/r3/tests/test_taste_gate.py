@@ -209,5 +209,6 @@ def test_decide_looks_and_rollback_rule():
     assert d["state"] == "rolled_back" and d["at"] == 8 and abs(d["mean_d"] - sum(r["d"] for r in rows) / 9) < 1e-12
 
 
-def test_gate_is_registered_in_the_memory_runner():
-    assert TG.step in MR.POST_INGEST
+def test_gate_is_not_stepped_by_the_memory_runner():
+    # off: it overlapped with the icrl restock-order key and changed restock order outside policy.json
+    assert TG.step not in MR.POST_INGEST
