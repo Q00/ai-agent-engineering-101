@@ -272,6 +272,10 @@ def terms(u):
     if rival and rival * UNDERCUT < ask and not short:     # in a short market a buyer takes what it finds
         log(f"[rival] {u['sku']}: lowest competitor ask {rival}, opening at {max(floor, int(rival * UNDERCUT))} not {ask}")
         ask = max(floor, int(rival * UNDERCUT))
+    # never ask above list: the market settles at most list, so a surge-cost unit (cost x 1.05 > list) that opened at
+    # 469545 on a 423810 mattress closed at 423810 and got 1 star for "Agreed 469545, receipt says 423810"
+    ask = min(ask, u["list_price"])
+    floor = min(floor, ask)
     warranty = warranty_for(u)
     return ask, floor, warranty, arm
 
