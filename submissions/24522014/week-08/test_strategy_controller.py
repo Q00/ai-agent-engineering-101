@@ -143,9 +143,28 @@ class BoundedTrials(unittest.TestCase):
         obs = observation(T+7200, 10, 2000, 1000, own_sales=[trade(i, T+i) for i in range(1, 4)], price_consumer_ready=False)
         missing, _ = controller.transition(state, obs, SETTINGS)
         self.assertIsNone(missing["active"])
-        state.update(day=datetime.fromtimestamp(T+7200, timezone.utc).date().isoformat(), experiments_today=2)
+        state.update(day=datetime.fromtimestamp(T+7200, timezone.utc).date().isoformat(),
+                     experiments_today=SETTINGS["max_daily_experiments"])
         limited, _ = controller.transition(state, {**obs, "price_consumer_ready": True}, SETTINGS)
         self.assertEqual(limited["phase"], "daily_trial_limit")
+
+    def test_expanded_daily_quota_allows_third_but_blocks_seventh_trial(self):
+        state, _ = controller.transition(None, observation(), SETTINGS)
+        state.update(day=datetime.fromtimestamp(T+7200, timezone.utc).date().isoformat(), experiments_today=2)
+        obs = observation(T+7200, 10, 2000, 1000, own_sales=[trade(i, T+i) for i in range(1, 4)])
+        third, _ = controller.transition(state, obs, SETTINGS)
+        self.assertEqual(third["phase"], "testing")
+        self.assertEqual(third["experiments_today"], 3)
+        state["experiments_today"] = 6
+        seventh, _ = controller.transition(state, obs, SETTINGS)
+        self.assertEqual(seventh["phase"], "daily_trial_limit")
+        self.assertIsNone(seventh["active"])
+
+    def test_config_rejects_excessive_or_non_integer_daily_quota(self):
+        for limit in (7, 6.5, True):
+            with self.subTest(limit=limit), patch.object(controller, "read", return_value={**SETTINGS, "max_daily_experiments": limit}):
+                with self.assertRaises(ValueError):
+                    controller.config()
 
     def test_restock_throttle_is_one_percentage_point(self):
         choices = controller.choose(observation(price_candidates=[], aged_units=3, stock_cost=2000000), BASE, SETTINGS)

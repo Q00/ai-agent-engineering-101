@@ -25,7 +25,8 @@ def config():
     if (value["check_interval_seconds"] < 1800 or not 0 <= value["min_change_seconds"] <= 7200
             or value["baseline_seconds"] < 7200 or value["trial_seconds"] < 7200
             or value["maturity_seconds"] < 21600 or not 0 < value["price_step"] <= .03
-            or not 1 <= value["max_daily_experiments"] <= 2 or value["min_new_deals"] < 10
+            or type(value["max_daily_experiments"]) is not int
+            or not 1 <= value["max_daily_experiments"] <= 6 or value["min_new_deals"] < 10
             or value["min_target_trades"] < 3 or not 0 < value["lease_seconds"] <= 3600):
         raise ValueError("Controller configuration violates experiment bounds")
     if (type(value["enabled"]) is not bool or not 0 < value["min_gain"] <= .2
