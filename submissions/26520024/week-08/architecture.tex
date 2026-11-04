@@ -24,7 +24,7 @@
 \node[box] (evidence) at (0,0) {\textbf{Market evidence}\par Public paid ledger; kit snapshots\par Catalog, stock, orders, reviews\par Claims are not sales facts};
 \node[shared] (memory) at (5.8,0) {\textbf{Persistent evidence memory}\par Host-local SQLite; kit JSON on NAS\par Official ledger is read-only evidence\par Scoped, bounded retrieval};
 \node[shared] (model) at (11.6,0) {\textbf{Shared decision model}\par Codex gpt-5.6-luna / low\par 20s limit; 300s failure backoff\par Validated, labelled policy fallback};
-\node[optional] (reflect) at (17.4,0) {\textbf{Slow maintenance}\par Conditional lessons (opt-in)\par Customer-feedback queue\par Evidence-linked aggregate posts};
+\node[optional] (reflect) at (17.4,0) {\textbf{Slow maintenance}\par 2h local trends; bounded policy edits\par Audit + rollback; lessons opt-in\par Evidence-linked aggregate posts};
 
 \node[box] (discover) at (0,-3.2) {\textbf{Discovery / hypotheses}\par Decayed observed sales\par Related SKU candidates\par Unknown demand stays unknown};
 \node[guarded] (restock) at (5.8,-3.2) {\textbf{Independent procurement}\par Supply window + fresh limit checks\par Cash, concentration, expiry limits\par Emit bounded \texttt{buy} proposals};
@@ -33,7 +33,7 @@
 
 \node[box] (kit) at (5.8,-6.5) {\textbf{Guarded kit v4 launcher}\par Durable pre-checkout gate + replay\par Uncertain issued JWTs quarantined\par ACP/AP2; market settles};
 \node[shared] (review) at (11.6,-6.5) {\textbf{Post-settlement review}\par Price, grade, claim consistency\par Payment evidence, not guesses\par Failure attribution stays cautious};
-\node[optional] (lock) at (17.4,-6.5) {\textbf{Deployment boundary}\par Live execution disabled by default\par No join/tunnel run in this work\par Offline tests use injected doubles};
+\node[optional] (lock) at (17.4,-6.5) {\textbf{Deployment boundary}\par Live execution requires opt-in\par Authorized tmux deployment Nov 4\par Offline tests use injected doubles};
 
 \draw[flow] (evidence) -- (memory);
 \draw[flow] (memory) -- node[note,above]{selected facts only} (model);
@@ -60,6 +60,6 @@ Slow discovery is cached independently of fast negotiation.
 Forum claims cannot become verified transactions. Review/lesson data never overrides budget, stock or signature checks.
 \par\smallskip
 \noindent\footnotesize
-\textbf{Status:} local offline verification only; real-model latency, market rank and profit remain unmeasured.
+\textbf{Status:} offline checks and initial live settlements; long-run profit and final rank remain unmeasured.
 Warranty defaults to zero; factual posts require live opt-in, reflection is off. Figure source is original TikZ; PDF compilation is pending.
 \end{document}

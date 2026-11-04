@@ -36,6 +36,9 @@ def inspect_state(md=None):
     result['public_cursor'] = read_json(md / 'public-cursor.json', {})
     result['supply_status'] = read_json(md / 'restock-status.json', {})
     result['model_circuit'] = read_json(md / 'model-circuit.json', {})
+    watch = read_json(md / 'trend-watch-state.json', {})
+    result['trend_watch'] = {key: watch.get(key) for key in ('started_at', 'next_due_at', 'last_status')}
+    result['trend_watch']['note'] = 'Saved schedule only; check the ai trend-watch tmux window for process liveness.'
     result['market_clock_offset_seconds'] = offset_seconds(md)
     inventory = md / 'inventory.json'
     from r3_clock import host_time

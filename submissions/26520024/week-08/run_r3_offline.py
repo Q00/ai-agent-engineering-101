@@ -36,7 +36,7 @@ def main():
                  ["r3_buyer.py", "--shops", "unused", "--order", "unused", "--item", "unused", "--budget", "1"],
                  ["r3_restock.py", "--state", "unused"],
                  ["r3_review.py", "--deal", "unused"], ["r3_controller.py"],
-                 ["r3_market_kit.py", "join"]):
+                 ["r3_market_kit.py", "join"], ["r3_trend_watch.py", "--loop", "--apply"]):
         proc = subprocess.run([sys.executable, *args], cwd=ROOT, env=env, text=True,
                               capture_output=True, timeout=15)
         blocked = proc.returncode != 0 and ('R3_ENABLE_LIVE' in proc.stderr or 'locked' in proc.stderr)
