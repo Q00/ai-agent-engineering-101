@@ -24,4 +24,7 @@ if __name__ == "__main__":
     kit.open_tunnel = lambda port: open_tunnel(kit, port)
     kit.watchdog = lambda *args: supervise(kit, *args)
     with market_session():
+        from r3.state import Journal, policy
+        from r3.adaptive import activate_revision
+        activate_revision(Journal(), policy()['version'])
         kit.main()

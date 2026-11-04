@@ -16,6 +16,23 @@ MIN_SAMPLES = 20
 KEY = 'adaptive:'
 
 
+def activate_revision(journal, revision, now=None):
+    """Start an auditable observation epoch; never assess new code on old outages."""
+    now = time.time() if now is None else now
+    if journal.get('objective_revision') == revision:
+        return
+    for role in ('buyer', 'shop'):
+        previous = journal.get(KEY + role, {'version': 0, 'patch': {}, 'status': 'stable'})
+        # A pre-revision trial has no valid post-revision counterfactual baseline.
+        patch = previous.get('trial', {}).get('previous_patch', previous.get('patch', {}))
+        updated = {'version': previous['version'] + 1, 'patch': validate(role, patch),
+                   'status': 'stable', 'since': now, 'cooldown_until': now + MATURITY}
+        transition(journal, role, previous, updated, 'revision_epoch',
+                   {'revision': revision, 'reason': 'new candidate and objective semantics; collect fresh evidence'}, now)
+    journal.put('objective_revision', revision)
+    journal.put('objective_epoch', now)
+
+
 def validate(role, patch):
     allowed = {'buyer_counter_ratio'} if role == 'buyer' else {'inventory_target_units', 'category_weights'}
     if role not in {'buyer', 'shop'} or not isinstance(patch, dict) or set(patch) - allowed:
@@ -89,6 +106,14 @@ def board_snapshot(journal, now):
                 if type(row.get(field)) in (int, float) and math.isfinite(row[field])}
         if 'seochanit' in rows:
             result[role] = {'own': rows.pop('seochanit'), 'peers': rows}
+            scored = {r.get('name'): r['all'] for r in board.get(table, [])
+                      if type(r.get('all')) in (int, float) and math.isfinite(r['all'])}
+            if 'seochanit' in scored:
+                result[role]['own_all'] = scored.pop('seochanit')
+                result[role]['peer_all'] = scored
+            if role == 'shop':
+                result[role]['stock_cost'] = sum(u.get('cost', 0) for u in
+                                                journal.snapshot('inventory.json', {}).get('units', []))
     return result
 
 
@@ -101,16 +126,27 @@ def flow(start, end, role):
               if name in b['peers'] ]
     own = (b['own'] - a['own']) / hours
     benchmark = statistics.median(peers) if len(peers) >= 3 else 0
-    return {'own_per_hour': own, 'peer_median_per_hour': benchmark,
+    result = {'own_per_hour': own, 'peer_median_per_hour': benchmark,
             'relative_per_hour': own - benchmark, 'matched_peers': len(peers),
             'note': 'observational board flow; traffic and category mix can confound comparisons'}
+    if 'own_all' in a and 'own_all' in b:
+        peer_all = [(b['peer_all'][name] - value) / hours for name, value in a['peer_all'].items()
+                    if name in b['peer_all']]
+        result['own_all_per_hour'] = (b['own_all'] - a['own_all']) / hours
+        result['relative_all_per_hour'] = result['own_all_per_hour'] - (statistics.median(peer_all) if peer_all else 0)
+    return result
 
 
 def evidence(journal, role, version, now, since=0):
+    epoch = journal.get('objective_epoch', 0)
+    since = max(since, epoch)
     kind = 'buyer_order' if role == 'buyer' else 'shop_opportunity'
     opportunities = [e for e in journal.events(kind, 10000)
                      if e.get('strategy_version') == version and since <= e['_ts'] <= now - MATURITY]
     if role == 'buyer':
+        executed = {e['order'] for e in journal.events('buyer_execution', 10000) if e['_ts'] >= epoch}
+        if epoch:
+            opportunities = [e for e in opportunities if e['order'] in executed]
         results = {e['order']: e for e in journal.events('market_result', 10000)}
         purchases = {e['order']: e for e in journal.events('purchase', 10000)}
         outcomes = {}
@@ -218,7 +254,8 @@ def update(journal, now=None):
             return {'status': 'cooldown'}
         connection.execute('INSERT OR REPLACE INTO kv VALUES(?,?)', (KEY + 'last_tick', json.dumps(now)))
     journal.add('strategy_market', snapshot, eid='strategy-market:' + str(int(now // INTERVAL)), ts=now)
-    history = [e for e in journal.events('strategy_market', 500) if e['at'] <= now - MATURITY]
+    history = [e for e in journal.events('strategy_market', 500)
+               if journal.get('objective_epoch', 0) <= e['at'] <= now - MATURITY]
     market = public_context(journal, now)
     actions = []
     for role in ('buyer', 'shop'):
@@ -231,23 +268,31 @@ def update(journal, now=None):
         if trial:
             observed = flow(trial['board_start'], snapshot, role)
             baseline = trial['baseline']
+            relative_key = 'relative_all_per_hour' if observed and 'relative_all_per_hour' in observed and \
+                           'relative_all_per_hour' in baseline else 'relative_per_hour'
+            own_key = 'own_all_per_hour' if relative_key == 'relative_all_per_hour' else 'own_per_hour'
+            scale_floor = .0001 if relative_key == 'relative_all_per_hour' else 1000
+            health = journal.snapshot('shop-health.json', {})
+            healthy = role != 'shop' or not health or (health.get('status') == 'healthy' and
+                       now - health.get('checked_at', 0) < 120)
             # An absolute cash-loss guard can roll back before labels mature.
             shop_loss = (role == 'shop' and role in snapshot and role in trial['board_start'] and
-                         snapshot[role]['own'] - trial['board_start'][role]['own'] < -500000)
-            ready = now - trial['started_at'] >= MATURITY and stats['samples'] >= MIN_SAMPLES and observed
-            degraded = ready and (observed['relative_per_hour'] < baseline['relative_per_hour'] -
-                                  .15 * max(abs(baseline['relative_per_hour']), 1000) or
-                                  observed['own_per_hour'] < min(0, baseline['own_per_hour']))
+                         snapshot[role]['own'] - trial['board_start'][role]['own'] +
+                         snapshot[role].get('stock_cost', 0) - trial['board_start'][role].get('stock_cost', 0) < -500000)
+            ready = healthy and now - trial['started_at'] >= MATURITY and stats['samples'] >= MIN_SAMPLES and observed
+            degraded = ready and (observed[relative_key] < baseline[relative_key] -
+                                  .15 * max(abs(baseline[relative_key]), scale_floor) or
+                                  observed[own_key] < min(0, baseline[own_key]))
             previous_stats = trial['baseline_evidence']
             own_supported = (stats['paid'] >= 5 and
                              stats['success_rate'] >= previous_stats['success_rate'] - .1 and
                              (role != 'buyer' or stats['bad'] / max(1, stats['paid']) <=
                               previous_stats['bad'] / max(1, previous_stats['paid']) + .05))
-            improved = ready and observed['relative_per_hour'] > baseline['relative_per_hour'] + \
-                       .05 * max(abs(baseline['relative_per_hour']), 1000) and \
-                       observed['own_per_hour'] >= baseline['own_per_hour'] and own_supported
+            improved = ready and observed[relative_key] > baseline[relative_key] + \
+                       .05 * max(abs(baseline[relative_key]), scale_floor) and \
+                       observed[own_key] >= baseline[own_key] and own_supported
             expired = now - trial['started_at'] >= 48 * 3600
-            if shop_loss or degraded or expired and not improved:
+            if shop_loss or degraded or healthy and expired and not improved:
                 action, reason = 'rollback', 'Cash loss, degraded observed flow, or trial expired without evidence of improvement'
                 next_state = dict(version=state['version'] + 1, patch=trial['previous_patch'], status='stable',
                                   since=now, cooldown_until=now + 24 * 3600,
@@ -261,6 +306,12 @@ def update(journal, now=None):
                 transition(journal, role, state, next_state, action,
                            {'reason': reason, 'evidence': stats, 'observed': observed}, now)
         elif now >= state.get('cooldown_until', 0) and stats['samples'] >= MIN_SAMPLES and history:
+            health = journal.snapshot('shop-health.json', {})
+            if role == 'shop' and health and (health.get('status') != 'healthy' or now - health.get('checked_at', 0) >= 120):
+                journal.add('strategy_evaluation', {'version': state['version'], 'action': 'hold',
+                            'reason': 'shop transport unhealthy; do not attribute it to inventory policy'}, role=role, ts=now)
+                actions.append({'role': role, 'action': 'hold'})
+                continue
             baseline = flow(history[0], snapshot, role)
             proposal = propose(journal, role, state, stats, market) if baseline else None
             blocked = {entry['patch'] for entry in state.get('rejected', [])

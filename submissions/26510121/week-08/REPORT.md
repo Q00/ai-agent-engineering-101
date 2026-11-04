@@ -68,3 +68,8 @@ Meta-harness는 관련 경험과 수치 후보를 조회하고, actor/critic 호
 ## 남은 실험과 한계
 
 초기 매입·가격·보증 정책 및 불명확한 고장 위험 스트레스 값은 관측 결과로 검토할 가설이다. 5,629 SKU의 인기나 고장 분포를 사전에 안다고 가정하지 않는다. 실제 운영에서 actor만 사용한 기준 정책과 critic 사용 정책의 성과·오류·지연·비용을 비교해야 한다. 공식 백분위·별점 보정의 세부 처리와 종료 후 결과 반영도 추가 확인 대상이다.
+
+
+## 2026-11-04 ALL objective revision
+
+[ALL policy v2](ALL_POLICY_V2.md) documents the implemented buyer concessions, inventory rotation, ledger-based forum comparisons and fresh, ALL-based adaptive evaluation. Models and the shared USD 1/day API cap remain unchanged. Local tests and actual deployment evidence are recorded separately.

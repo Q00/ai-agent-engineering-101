@@ -118,3 +118,8 @@ uv pip install --python submissions/26510121/week-08/.venv/Scripts/python.exe -r
 매입 수량·가격 배율·불명확한 고장 위험의 스트레스 값은 실험할 초기 정책이다. 실제 수요나 최적 정책으로 확정한 값이 아니다. 운영 결과에 따라 검토해야 한다. 받은 게시판 점수나 Players 순위의 개선도 아직 실증하지 않았다.
 
 전체 문제 정의는 `ROUND3_FORMULATION.md`, 전략 후보와 실패 조건은 `ROUND3_STRATEGY_REVIEW.md`, 구현 결과는 `REPORT.md`, 실제 모듈 구조는 `architecture.tex`와 `architecture.pdf`를 참고한다.
+
+
+## 2026-11-04 ALL objective revision
+
+[ALL policy v2](ALL_POLICY_V2.md) documents the implemented buyer concessions, inventory rotation, ledger-based forum comparisons and fresh, ALL-based adaptive evaluation. Models and the shared USD 1/day API cap remain unchanged. Local tests and actual deployment evidence are recorded separately.

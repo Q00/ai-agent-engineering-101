@@ -53,8 +53,11 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
         return []
     L, cost = unit["list_price"], unit["cost"]
     stats = shop_statistics(journal, unit["sku"])
+    from .market_memory import market_book
+    public = market_book(journal, catalog, now).get(unit['sku'], {})
     # Observed paid prices remain observations, not guaranteed current demand.
-    reference = sorted(stats["prices"])[len(stats["prices"]) // 2] if stats["prices"] else .85 * L
+    reference = (sorted(stats["prices"])[len(stats["prices"]) // 2] if stats["prices"] else
+                 public.get('grade_medians', {}).get(grade(unit, catalog, now), public.get('median', .85 * L)))
     urgency = max(0, min(1, left / max(1, catalog.get(unit["sku"], {}).get("shelf_hours") or 24)))
     if unit.get("kind") == "food":
         recovery_floor = max(1, int(min(cost, .55 * L) * min(1, urgency * 3)))
@@ -90,18 +93,24 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
                        "warranty_hours": warranty, "score": (1 - stress_refund) * p * completion["completion"],
                        "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence),
+                       'expected_delta': {'profit': (1 - stress_refund) * p * completion['completion'],
+                                          'revenue': (1 - stress_refund) * p * completion['completion']},
                        "recovery_floor": recovery_floor,
                        "risk": "goods refund stress 0.15; not observed break probability" if warranty else "food expiry"})
     if offer and offer >= recovery_floor:
         p = min(offer, previous_ask) if previous_ask else offer
         result.append({"id": "accept:" + str(p), "action": "accept" if p == offer else "counter", "price": p,
                        "warranty_hours": warranty, "score": (1 - stress_refund) * p,
+                       'expected_delta': {'profit': (1 - stress_refund) * p, 'revenue': (1 - stress_refund) * p},
                        "evidence": stats, "recovery_floor": recovery_floor})
     return result
 
 
 def buyer_candidates(order, shops, catalog, journal):
     from .forum import shop_hint
+    from .market_memory import market_book
+    now = time.time()
+    book = market_book(journal, catalog, now)
     past = journal.events("purchase", 10000)
     failures = journal.events("attempt", 2000)
     result = []
@@ -114,20 +123,27 @@ def buyer_candidates(order, shops, catalog, journal):
                 continue
             product = catalog[sku]
             counterpart_key = registry.get(shop["url"], {}).get("pubkey")
-            own = [x for x in past if (x.get("shop") == shop["url"] or
+            own = [x for x in past if 0 <= now - x.get('paid_at', x['_ts']) <= 21600 and (x.get("shop") == shop["url"] or
                    counterpart_key and x.get("shop_identity") == counterpart_key) and x.get("sku") == sku]
             failed = [x for x in failures if x.get("shop") == shop["url"] and not x.get("success")
+                      and x.get('sku') == sku and 0 <= now - x['_ts'] <= 21600
                       and x.get("kind") not in {"model_error", "local_error"}]
-            estimate = sorted(x["price"] for x in own)[len(own) // 2] if own else int(.8 * product["list_price"])
+            observed = book.get(sku, {})
+            public_reference = observed.get('median', .8 * product['list_price'])
+            estimate = sorted(x["price"] for x in own)[len(own) // 2] if own else int(public_reference)
             estimate = min(estimate, order["budget"])
-            success = (len(own) + 1) / (len(own) + len(failed) + 2)
+            failed_orders = {x.get('order', x['_event_id']) for x in failed}
+            success = (len(own) + 1) / (len(own) + len(failed_orders) + 2)
             hint = shop_hint(journal, shop['name'], sku)
             result.append({"id": shop["name"] + ":" + sku, "shop": shop["url"], "name": shop["name"],
                            "sku": sku, "product": product, "reference_price": estimate,
-                           "score": success * (product["list_price"] - estimate) * (1.03 if hint else 1),
-                           "evidence": {"own_paid": len(own), "peer_failures": len(failed),
+                           "score": success * max(0, product["list_price"] - estimate) * (1.03 if hint else 1),
+                           'expected_delta': {'surplus': success * max(0, product['list_price'] - estimate),
+                                              'deals': success},
+                           "evidence": {"own_paid": len(own), "peer_failures": len(failed_orders),
+                                        'public_sku_prices': observed,
                                         "forum_announcement_hint": hint, "forum_hint_is_unverified": True,
-                                        "price_is_prior": not bool(own)}})
+                                        "price_is_prior": not bool(own) and not bool(observed)}})
     return sorted(result, key=lambda x: x["score"], reverse=True)
 
 
@@ -168,6 +184,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         return []
     capacity = cash_capacity(inv, journal, config, now)
     spendable = capacity['spendable']
+    from .market_memory import market_book
+    book = market_book(journal, catalog, now)
     signals = {}
     for e in journal.events("public_settle", 20000):
         product = catalog.get(e.get("item") or e.get("sku"), {})
@@ -186,6 +204,11 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     for event in journal.events('shop_settled', 10000):
         if 0 <= now - event.get('paid_at', event['_ts']) < 3600:
             own[event.get('sku')] = own.get(event.get('sku'), 0) + 1
+    costs = {}
+    for e in journal.events('shop_settled', 10000) + units:
+        product = catalog.get(e.get('sku'), {})
+        if product.get('list_price') and type(e.get('cost')) in (int, float) and e['cost'] > 0:
+            costs.setdefault(e['sku'], []).append(e['cost'] / product['list_price'])
     candidates = []
     # A deterministic rotating probe avoids presenting unobserved demand as fact.
     probe = int(now // 3600)
@@ -209,31 +232,90 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                   max(1, desired - count.get(sku, 0)), max(0, math.floor(spendable / commitment)))
         if qty <= 0:
             continue
-        # Capital yield uses disclosed grade probabilities and upper expected cost bounds,
-        # not an assumed uniform distribution within supplier price intervals.
-        cost_ratio = .60 if p.get('kind') == 'food' else .69
-        recovery = .85 * (1 if p.get('kind') == 'food' else .85)
-        capital_yield = max(.01, recovery - cost_ratio * (1 + fee)) / .75
-        score = weight * scarcity * (cat_signal + exact + 2 * own.get(sku, 0) + config["exploration_fraction"] * draw) * capital_yield
+        # Affordability still reserves worst-case storage THROUGH THE END. The
+        # objective uses expected holding time instead, so quick-turn goods do
+        # not pay two weeks of hypothetical storage in every ranking decision.
+        observed = book.get(sku, {})
+        probe_sku = observed.get('samples', 0) < 3 and own.get(sku, 0) < 2
+        rate = max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0))
+        hours = min(6, max(0, (end - now) / 3600))
+        if probe_sku:
+            sale_probability = .9  # Explicit exploration scenario; not observed demand.
+        else:
+            sale_probability = min(.98, 1 - math.exp(-max(.01, rate) * hours))
+        holding_hours = min(hours, max(config.get('supply_cycle_seconds', 1200) / 3600,
+                                        1 / max(.01, rate)))
+        # Unknown supplier costs use the midpoint of the published weighted
+        # expectation bounds as a planning scenario, NOT an assumed distribution.
+        ratios = costs.get(sku, [])
+        prior_cost = .50 if p.get('kind') == 'food' else .59
+        cost_lower = .40 if p.get('kind') == 'food' else .49
+        # Sold units are a selected sample. Shrink sparse own observations and
+        # keep the published grade-mixture expectation bounds for a NEW draw.
+        cost_ratio = max(cost_lower, min(.60 if p.get('kind') == 'food' else .69,
+                          (sum(ratios[:20]) + 5 * prior_cost) / (len(ratios[:20]) + 5)))
+        cost_upper = .60 if p.get('kind') == 'food' else .69
+        price = min(p['list_price'], observed.get('median', .85 * p['list_price']))
+        refund_stress = .15 if p.get('kind') == 'goods' else 0
+        expected_storage = cost_ratio * p['list_price'] * .01 * holding_hours / 24 if fee else 0
+        # Small lots: only own observed repeat sales justify multiple new units.
+        if probe_sku:
+            qty = 1
+        max_exposure = min(spendable, inv.get('balance', 0) * .15)
+        if probe_sku:
+            max_exposure = min(max_exposure, capacity['spendable'] * config['exploration_fraction'])
+        qty = min(qty, max(0, math.floor(max_exposure / commitment)))
+        if qty <= 0:
+            continue
+        expected_revenue = qty * sale_probability * price * (1 - refund_stress)
+        expected_profit = expected_revenue - qty * (cost_ratio * p['list_price'] + expected_storage)
+        if expected_profit <= 0:
+            continue
+        exploration_weight = config['exploration_fraction'] * draw if probe_sku else 1
+        score = weight * scarcity * exploration_weight * expected_profit
         candidates.append({"id": sku, "sku": sku, "qty": qty, "score": score,
                            "max_cost": per_unit * qty, "capital_commitment": commitment * qty, "category": p["category"],
+                           'expected_delta': {'profit': expected_profit, 'revenue': expected_revenue},
                            "evidence": {"observed_category_signal": cat_signal, "probe": cat_signal == 0,
                                         "forum_request_signal": exact, 'own_sales_last_hour': own.get(sku, 0),
-                                        'cash_capacity': capacity, 'capital_yield_stress': capital_yield,
+                                        'cash_capacity': capacity, 'public_sku_trades': observed,
+                                        'sale_probability_scenario': sale_probability, 'expected_holding_hours': holding_hours,
+                                        'cost_ratio_scenario': cost_ratio, 'cost_is_observed': bool(ratios),
+                                        'own_cost_samples': len(ratios[:20]), 'cost_prior_pseudo_samples': 5,
+                                        'expected_profit_scenario': expected_profit,
+                                        'upper_cost_profit_stress': expected_revenue - qty * (cost_upper * p['list_price'] + expected_storage),
+                                        'refund_stress': refund_stress, 'exploration': probe_sku,
                                         "adaptive_category_weight": weight}})
-    chosen, covered = [], set()
-    for c in sorted(candidates, key=lambda x: x["score"], reverse=True):
+    from .meta import rank_progress
+    board = journal.snapshot('board.json', {})
+    if now - journal.get('board_checked_at', 0) > 300:
+        board = {}
+    for c in candidates:
+        c['rank_progress_surrogate'] = rank_progress(board, 'shop', 'seochanit', c['expected_delta'])
+    chosen, category_capital = [], {}
+    exploration_spent = 0
+    for c in sorted(candidates, key=lambda x: ((x['rank_progress_surrogate'] or 0) *
+                    (config['exploration_fraction'] if x['evidence']['exploration'] else 1), x['score']), reverse=True):
         remaining_slots = target - len(units) - sum(x['qty'] for x in chosen)
         if remaining_slots <= 0:
             break
         if c['qty'] > remaining_slots:
             fraction = remaining_slots / c['qty']
             c = dict(c, qty=remaining_slots, max_cost=c['max_cost'] * fraction,
-                     capital_commitment=c['capital_commitment'] * fraction)
-        if c["category"] in covered or c["capital_commitment"] > spendable:
+                     capital_commitment=c['capital_commitment'] * fraction,
+                     expected_delta={k: v * fraction for k, v in c['expected_delta'].items()},
+                     score=c['score'] * fraction)
+        used = category_capital.get(c['category'], 0)
+        # Multiple high-demand SKUs may share a category, but it cannot consume
+        # all deployable cash. Probe spending is bounded across the entire plan.
+        if (c['capital_commitment'] > spendable or used + c['capital_commitment'] > capacity['spendable'] * .6 or
+                c['evidence']['exploration'] and exploration_spent + c['capital_commitment'] >
+                capacity['spendable'] * config['exploration_fraction']):
             continue
         chosen.append(c)
-        covered.add(c["category"])
+        category_capital[c['category']] = used + c['capital_commitment']
+        if c['evidence']['exploration']:
+            exploration_spent += c['capital_commitment']
         spendable -= c["capital_commitment"]
         if len(chosen) >= min(config["restock_max_lines"], target - len(units)):
             break

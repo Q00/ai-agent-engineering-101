@@ -138,6 +138,26 @@ def schedule(journal, config, now=None):
         journal.queue_post({'post': text, 'refs': [item['ledger']], 'as': 'buyer', 'priority': 3,
                             'expires_at': item.get('paid_at', item['_ts']) + HORIZON},
                            'paid-observation:' + str(item['ledger']))
+    # A recent paid purchase can support one more useful, scoped price comparison.
+    # Refs are server ledger sequences; prose in other posts is never price data.
+    from .market_memory import market_book
+    book = market_book(journal, catalog, now)
+    for item in journal.events('purchase', 100):
+        observed = book.get(item.get('sku'), {})
+        if (not 0 <= now - item.get('paid_at', item['_ts']) < 1800 or
+                type(item.get('ledger')) is not int or observed.get('samples', 0) < 3 or
+                not observed.get('refs')):
+            continue
+        text = (f"SKU={item['sku']}: I paid {item['price']} (grade={item.get('grade')}, "
+                f"warranty_hours={item.get('warranty_hours', 0)}). In the locally observed last 6h ledger "
+                f"sample, n={observed['samples']}, median={observed['median']:g}, "
+                f"range={observed['low']:g}..{observed['high']:g}, seller URLs={observed['sellers']}. "
+                'Observed trades, not live quotes; grade, expiry and warranty differ. '
+                'References are examples, not the complete sample.')
+        refs = list(dict.fromkeys([item['ledger']] + observed['refs']))[:5]
+        journal.queue_post({'post': text, 'refs': refs, 'as': 'buyer', 'priority': 4,
+                            'expires_at': now + 600}, 'price-comparison:' + str(int(now // 1800)))
+        break
 
 
 def deliver(market, journal, config, now=None):

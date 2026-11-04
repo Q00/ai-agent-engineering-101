@@ -24,7 +24,10 @@ def plan(journal, chooser=None):
     for name, lines in [("diversified", candidates), ("cautious", candidates[:1])]:
         portfolios.append({"id": name, "buy": [{"sku": c["sku"], "qty": c["qty"]} for c in lines],
                            "score": sum(c["score"] for c in lines), "max_cost": sum(c["max_cost"] for c in lines),
+                           'expected_delta': {k: sum(c['expected_delta'][k] for c in lines) for k in ('profit', 'revenue')},
                            "evidence": [c["evidence"] for c in lines]})
+    portfolios.append({'id': 'wait', 'buy': [], 'score': 0, 'max_cost': 0,
+                       'expected_delta': {'profit': 0, 'revenue': 0}, 'evidence': 'keep cash; no attractive inventory'})
     selected = (chooser or Chooser(journal, cfg)).choose("shop", portfolios,
                {"balance": inv["balance"], "stock_units": len(inv.get("units", [])), "strategy": strategy,
                 'supply_window': inv.get('restock'), 'cash_capacity': cash_capacity(inv, journal, cfg)},
