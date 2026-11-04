@@ -41,7 +41,17 @@ class Isolation(unittest.TestCase):
                 for n in names:
                     top = n.split(".")[0]
                     self.assertNotIn(top, live, f"{f.name} imports {n}")
+                    if top == "subprocess" and f.name == "guard.py":
+                        continue                       # guard.git_log only, checked below
                     self.assertNotIn(top, BANNED_MODULES, f"{f.name} imports {n}")
+
+    def test_the_one_outside_command_is_git(self):
+        tree = ast.parse((guard.OWN / "guard.py").read_text(encoding="utf-8"))
+        calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                 and getattr(n.func.value, "id", "") == "subprocess"]
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0].args[0].elts[0].value, "git")
+        self.assertEqual(calls[0].args[0].elts[1].value, "log")
 
     def test_no_claude_cli(self):
         for f in guard.OWN.rglob("*.py"):
