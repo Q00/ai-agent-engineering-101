@@ -231,7 +231,8 @@ def test_switchback_runs_to_keep_a_and_restores_identical_bytes(env):
         if "active" not in r:
             break
     end = [x for x in rows(env["sdir"] / "experiments.jsonl") if x["event"] == "end"]
-    assert end[0]["verdict"] == "keep_a" and end[0]["stats"]["pairs"] == 12
+    assert end[0]["verdict"] == "keep_a" and end[0]["stats"]["pairs"] == 6  # v1.27: B no better at the first look
+    assert end[0]["reason"].startswith("futility: mean ") and end[0]["reason"].endswith(" at 6 of 12 pairs")
     assert env["pol"].read_bytes() == env["orig"] and seen_b > 0
     new, old = json.loads(raw_b), json.loads(env["orig"])
     assert new["defaults"]["food"]["price_mult"] == pytest.approx(

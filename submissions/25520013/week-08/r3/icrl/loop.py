@@ -740,7 +740,7 @@ def advance(ctx, L, exp, store, stats, now):
         v, st = X.switchback_verdict(X.pair_diffs(exp["blocks"]), exp.get("retest"))
         exp["stats"] = st
         if v:
-            end(ctx, L, exp, v, st, now)
+            end(ctx, L, exp, v, st, now, reason=st.get("futility"))  # v1.27: an early keep_a says why
             return v
     i = cur["i"] + 1
     arm = X.block_arm(exp["seed"], i)

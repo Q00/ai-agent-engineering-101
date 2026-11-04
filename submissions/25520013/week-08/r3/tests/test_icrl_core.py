@@ -66,7 +66,7 @@ def test_switchback_false_adopt_rate_at_zero_effect():
 
 def test_switchback_keeps_a_at_12_pairs_and_order_is_seeded():
     assert X.switchback_verdict([0.0] * 12)[0] == "keep_a"
-    assert X.switchback_verdict([1.0, -1.0] * 4)[0] is None
+    assert X.switchback_verdict([1.0, -0.5] * 4)[0] is None  # a positive interim mean continues (v1.27)
     assert [X.order(42, p) for p in range(6)] == [X.order(42, p) for p in range(6)]
     assert {X.order(42, p) for p in range(40)} == {"AB", "BA"}
 

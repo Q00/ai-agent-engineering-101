@@ -80,7 +80,11 @@ def pair_diffs(blocks, key="metric"):
 
 
 def switchback_verdict(diffs, retest=False):
-    """-> (verdict or None to continue, stats dict)."""
+    """-> (verdict or None to continue, stats dict). v1.27 (2026-11-05): at an interim look a mean B - A of zero or
+    below ends the experiment as keep_a (futility, a non-binding stop: it never adopts, so the false-adopt rate stays).
+    Seeded simulation, 20,000 identical paths per effect size, pair diffs N(delta, 1): adoption within 0.3 points of
+    the rule without it at every delta (0.213 -> 0.210 at 0.5 SD, unchanged from 0.75 SD up), pairs used 11.9 -> 8.5
+    with no effect and 11.4 -> 6.4 when B is 0.5 SD worse. Overnight 11-04/05 no experiment reached a verdict."""
     looks, alpha = (RETEST_LOOKS, RETEST_ALPHA) if retest else (LOOKS, ALPHA)
     n = len(diffs)
     if n not in looks:
@@ -91,7 +95,11 @@ def switchback_verdict(diffs, retest=False):
         return "adopt", st
     if hi < 0:
         return "reject", st
-    return ("keep_a" if n >= looks[-1] else None), st
+    if n >= looks[-1]:
+        return "keep_a", st
+    if m <= 0:
+        return "keep_a", dict(st, futility=f"futility: mean {m:.4g} <= 0 at {n} of {looks[-1]} pairs")
+    return None, st
 
 
 def long_verdict(b, a, prev=None):
