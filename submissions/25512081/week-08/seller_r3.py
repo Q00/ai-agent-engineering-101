@@ -68,6 +68,14 @@ POOL = 0.2
 # their turn), and no arm opens above MAX_SHARE of list, so even a deal at our first ask stays well below list.
 PRIOR_DEALS = {"1.0": 2}
 MAX_SHARE = 0.95          # 0.92 until Nov 4 13:00: our sales averaged 0.62 of list, the top shops 0.79-0.86
+# Big-ticket goods open at most BIG_MAX_SHARE (Nov 4 17:40): the leader sold 97 of the 2.32M sofa in 1.5 h at a
+# median 0.80 of list while ours sat for up to 3.7 h at 0.79-0.88; reviews of ours at 87-89% of list gave 3 stars.
+# Opening at 0.86 with our up-to-10% concession closes near 0.80.
+BIG_TICKET, BIG_MAX_SHARE = 1_000_000, 0.86
+
+
+def max_share(u):
+    return BIG_MAX_SHARE if u["list_price"] >= BIG_TICKET else MAX_SHARE
 TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask, after haggling
 SHARE_BOUNDS = (0.55, 0.97)
 CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
@@ -197,7 +205,7 @@ def pick_arm(u, base, floor):
         s_, f_ = cat.get(k, [0, 0])
         gs, gf = BANDIT["all"].get(k, [0, 0])
         theta = random.betavariate(1 + PRIOR_DEALS.get(k, 0) + s_ + POOL * gs, 1 + f_ + POOL * gf)
-        ask = max(floor, int(round(u["list_price"] * min(max(base * arm, SHARE_BOUNDS[0]), MAX_SHARE), -1)))
+        ask = max(floor, int(round(u["list_price"] * min(max(base * arm, SHARE_BOUNDS[0]), max_share(u)), -1)))
         score = theta * (ask * TYPICAL_CLOSE - u["cost"])
         if best is None or score > best[0]:
             best = (score, arm, ask, theta)
@@ -239,7 +247,7 @@ def terms(u):
         arm, theta = pick_arm(u, share, floor)
         log(f"[bandit] {u['category'].split('>')[-1]}: opening with arm {arm} (sampled deal chance {theta:.2f})")
         share *= arm
-    ask = max(floor, int(round(u["list_price"] * min(max(share, 0 if end else SHARE_BOUNDS[0]), MAX_SHARE), -1)))
+    ask = max(floor, int(round(u["list_price"] * min(max(share, 0 if end else SHARE_BOUNDS[0]), max_share(u)), -1)))
     rival = rival_ask(u["sku"])
     short = (_load("pulse.json", {}).get("nodeal") or 0) >= SHORT_MARKET
     if rival and rival * UNDERCUT < ask and not short:     # in a short market a buyer takes what it finds

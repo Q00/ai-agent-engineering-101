@@ -49,7 +49,7 @@ PLANNER_LEAD = 10 * 60
 PULSE_DECAY = 0.97         # per run: the market's no-deal share over roughly the last half hour
 DECAY = 0.995              # per run (about one a minute): half-life about 2 hours
 MAX_LINES = 10
-MAX_LINE_COST = 6_000_000  # (4M until Nov 4 17:00) one category's buy never ties up more than this (one unit always allowed)
+MAX_LINE_COST = 40_000_000  # (4M until Nov 4 17:00, 6M until 17:40; now the room decides) one category's buy never ties up more than this (one unit always allowed)
 # Nov 4 13:00: 91% of the market's revenue was sofas/chairs (avg sale 1.2M), mattresses (317k) and bedding (67k);
 # the top shops sell those at 0.79-0.86 of list. Our 3M of stock was 102 cheap units (avg sale 34k), so our
 # revenue and profit (absolute sums, 0.3 and 0.5 of shop ALL) trailed. Stock cost now also follows each
@@ -58,8 +58,9 @@ VALUE_BUDGET = 7_000_000   # 4.5M until Nov 4 14:00; since 17:00 the floor of th
 # Nov 4 17:00: every big-ticket line sold within minutes at ~30% margin (Q mattresses 38 sold, 253k -> 361k;
 # sofas 1.2-1.4M -> 1.9-2.0M) while 7.5M of our 16.5M cash sat idle under the 9M cap. Profit grows with the money
 # turning over, so the caps follow total assets (cash + stock at cost), and grow as we do.
-STOCK_SHARE = 0.70
-VALUE_SHARE = 0.55
+STOCK_SHARE = 0.90        # 0.70 / 0.55 for 40 min: the leader (inextro) puts ~27-30M into 20 units of one
+VALUE_SHARE = 0.70        # 2.32M sofa every window (236M of supply in 1.5 h) and sells ~65 an hour at 0.80 of list
+LINE_QTY_MAX = 20         # the most any shop bought in one line (inextro and yms979 buy 20 at a time)
 
 
 def scale_caps(inv, stock_cost):
@@ -223,7 +224,7 @@ def targets(st, demand, catalog=None):
         if (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48:
             n = min(n, 2)
         if top and n > 0:                            # counted against units of that SKU, not of the category:
-            VALUE_SKU[cat] = (top, min(n, SHORT_MAX))  # six cheap stools must not stand in for leather sofas
+            VALUE_SKU[cat] = (top, min(n, LINE_QTY_MAX))  # six cheap stools must not stand in for leather sofas
     for cat, m in market_state(st).items():          # short categories: stock for what sells until the next window
         if m["cover"] is not None and m["cover"] < SHORT_COVER and cat in kind:
             short_food = kind[cat].get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
@@ -389,7 +390,7 @@ def main():
         if not sku:
             continue
         unit_est = catalog[sku]["list_price"] * 0.6        # a unit costs 25-75% of list
-        gap = min(gap, max(1, int(MAX_LINE_COST // unit_est)))
+        gap = min(gap, LINE_QTY_MAX, max(1, int(MAX_LINE_COST // unit_est)))
         gap = min(gap, int(room // unit_est))       # as many as fit: two sofas over the room used to mean none
         if gap <= 0:
             continue

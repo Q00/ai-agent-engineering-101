@@ -35,11 +35,11 @@ from mcp.server.mcpserver.exceptions import ToolError
 
 CASH_FLOOR = 1_500_000     # as in restock.py
 STOCK_CAP = 9_000_000     # floor; the cap follows assets as in restock.scale_caps
-MAX_LINE_COST = 6_000_000
+MAX_LINE_COST = 40_000_000
 
 
 def stock_cap(inv, stock_cost):
-    return max(STOCK_CAP, int(0.70 * (inv.get("balance", 0) + stock_cost)))
+    return max(STOCK_CAP, int(0.90 * (inv.get("balance", 0) + stock_cost)))
 MAX_QTY = 5
 SHORT_SHELF = 48           # hours: food that spoils this fast is bought at most 2 at a time
 SHARE_RANGE = (0.60, 0.95)
