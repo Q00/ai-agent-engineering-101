@@ -54,6 +54,14 @@ LIFT = 0.02              # a market-referenced ask: the market's median for the 
 DEADBAND = 0.03          # ...taken only when the rule's ask is further than this from it
 REACH = 0.10             # ...moving the rule's ask by at most this
 MARKET_MIN = 20          # settles of the category and grade (with a warranty, or without) in a day before its median counts
+# The SKU's own market (11/4 night, the person's call; market_summary by_sku others_6h: other shops' settles of the
+# SKU in the same grade, with a warranty or without, over 6 h, 10 or more). Our talks of 6 h against it, like for
+# like: grade A first asked 2-5% of list under it closed 76% (margin per talk 0.058), at it 54% (0.039), 1-4% over
+# 44% (0.040), more over 23% (0.016); grade C closed 91-100% from 5% under to 4% over (0.17-0.22 a talk) but only
+# 0.092 a talk asked more than 5% under; grade B was flat (0.11-0.13) and the premium line did best at the market.
+SKU_A_OVER, SKU_A_TARGET = 0.01, -0.02   # grade A asked more than SKU_A_OVER above it: down to SKU_A_TARGET from it
+SKU_C_UNDER, SKU_C_TARGET = 0.05, -0.02  # grade C asked more than SKU_C_UNDER under it: up to SKU_C_TARGET from it
+SKU_MARKET_MIN = 10
 LATE_LIFT, LATE_WINDOW = 0.02, 600   # the ask in the last LATE_WINDOW seconds before the next supply window
 WARRANTY_DEFAULT_MIN = 100_000       # goods listed at this or more are quoted with the warranty unless asked otherwise:
                                      # 86-97% of the market's bed and sofa deals carry one, and our goods sold without
@@ -69,6 +77,12 @@ def market_ref(by_grade: dict | None, g: str, warranty: bool):
     d = (by_grade or {}).get(g) or {}
     key = "w" if warranty else "nw"
     return d.get(f"{key}_median") if (d.get(f"{key}_n") or 0) >= MARKET_MIN else None
+
+
+def sku_ref(cells: dict | None, g: str, warranty: bool):
+    """The SKU's own market (others_6h) for grade g, with a warranty or without, or None."""
+    d = (cells or {}).get(g + ("_w" if warranty else "")) or {}
+    return d.get("median") if (d.get("n") or 0) >= SKU_MARKET_MIN and isinstance(d.get("median"), (int, float)) else None
 
 
 def late_in_cycle(window: dict | None, now: float) -> bool:
@@ -122,8 +136,11 @@ def respond(ask: int, floor: int, offer: int, rounds: int) -> tuple[str, int]:
 
 def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: float = 0.0,
          catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
-         late: bool = False, dear_default: bool = False) -> dict:
-    """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late} for one unit.
+         late: bool = False, dear_default: bool = False, sku_market: dict | None = None,
+         in_line: bool = False) -> dict:
+    """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late, sku_ref, nudge} for one unit.
+    sku_market: the SKU's others_6h; a grade A ask well above it comes down, a grade C ask well under it goes up
+    (not for the premium line, in_line, nor on clearance); nudge: by how much (share of list), or None.
     at_cost: the floor is cost + 5% (no clearance), which is what the seller may say.
     adjust and extra come from the rules in force (price_adjust, warranty_extra); market is the
     category's by_grade from market_summary.json; late: the end of the supply cycle (late_in_cycle);
@@ -146,6 +163,13 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     else:
         ref = None
     start = rule + adjust + (LATE_LIFT if late else 0)
+    sref, nudge = sku_ref(sku_market, g, w), None
+    if sref is not None and not clearing and not in_line:
+        if g == "A" and start > sref + SKU_A_OVER:
+            nudge = round(sref + SKU_A_TARGET - start, 4)
+        elif g == "C" and start < sref - SKU_C_UNDER:
+            nudge = round(sref + SKU_C_TARGET - start, 4)
+        start += nudge or 0
     floor = math.ceil(round(cost * (1 + MARGIN), 6))            # 12000 * 1.05 is 12600.000000000002 in floats
     clearance = None
     if age > MARKDOWN_AFTER:
@@ -165,4 +189,5 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         floor += round(lp * extra[g])
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
-            "at_cost": clearance is None, "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late}
+            "at_cost": clearance is None, "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
+            "sku_ref": sref, "nudge": nudge}

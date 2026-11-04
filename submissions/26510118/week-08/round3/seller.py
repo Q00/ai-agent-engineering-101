@@ -47,6 +47,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 import common
 import harness
 import pricing
+import restock
 
 NAME = common.SHOP_NAME              # the card's name and the receipt's shop field
 CARD_DESCRIPTION = ("Everyday groceries and goods. Every unit ships with the market's certificate and its true grade "
@@ -287,10 +288,15 @@ def priced(u: dict, now: float, warranty: bool) -> dict:
     market's prices for the unit's category and grade, and where we are in the supply cycle. Dear goods
     (pricing.WARRANTY_DEFAULT_MIN) come with the warranty whether or not the buyer asked."""
     r = common.rules()["seller"]
-    by_grade = ((market_file("market_summary.json").get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
+    summary = market_file("market_summary.json")
+    by_grade = ((summary.get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
+    sku_market = ((summary.get("by_sku") or {}).get(u.get("sku")) or {}).get("others_6h")
+    line = market_file("analysis/line.json").get("skus")
+    in_line = u.get("sku") in (line if isinstance(line, dict) else restock.LINE)
     late = pricing.late_in_cycle(market_file("inventory.json").get("restock"), now)
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
-                        extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True)
+                        extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True,
+                        sku_market=sku_market, in_line=in_line)
 
 
 class Seller(AgentExecutor):
@@ -311,7 +317,8 @@ class Seller(AgentExecutor):
         u, p = d["unit"], d["plan"]
         common.record("negotiations", task=task_id, sku=u["sku"], unit=u["unit"], grade=p["grade"],
                       cost=u["cost"], list_price=u["list_price"], floor=p["floor"], at_cost=p["at_cost"],
-                      ref=p.get("ref"), late=p.get("late"), asked_warranty=d["warranty"],
+                      ref=p.get("ref"), late=p.get("late"), sku_ref=p.get("sku_ref"), nudge=p.get("nudge"),
+                      asked_warranty=d["warranty"],
                       warranty=bool(p.get("warranty_hours")), how=d["how"], asks=d["asks"], offers=d["offers"],
                       walk_odds=d.get("walk") or None, taken_early=d.get("early", False), outcome=outcome, price=price)
         print(f"[seller] {u['sku']} {outcome}" + (f" at {price}" if price else ""), flush=True)

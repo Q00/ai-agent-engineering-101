@@ -166,6 +166,10 @@ def _mean(xs):
     return round(sum(xs) / len(xs), 3) if xs else None
 
 
+SKU_WINDOW = 6 * 3600   # others_6h: other shops' settles of one SKU in one grade over this long
+SKU_MIN = 10
+
+
 def _median(xs):
     if not xs:
         return None
@@ -180,12 +184,14 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
     names the unit, so it is matched to that unit's settle; one without a unit, to the buyer's last settle
     of the item before it).
     Each category also carries by_grade: the median paid share of the list price per grade, over all its
-    settles and split by whether a warranty came with them (the seller's market-referenced asks)."""
+    settles and split by whether a warranty came with them (the seller's market-referenced asks).
+    A SKU other shops sold SKU_MIN times or more in one grade (with a warranty, or without) over the last
+    SKU_WINDOW also carries others_6h: {"A": {n, median}, "A_w": ...} (11/4 night: the seller's asks by grade)."""
     now = now or time.time()
     settles = common.read_jsonl(folder() / "settles.jsonl")
     broken = common.read_jsonl(folder() / "broken.jsonl")
     named = names()
-    by_sku, by_cat, by_shop, by_grade = {}, {}, {}, {}
+    by_sku, by_cat, by_shop, by_grade, others = {}, {}, {}, {}, {}
     for s in settles:
         ts = s.get("ts") or 0
         if ts < now - 24 * 3600:
@@ -205,6 +211,9 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
         if c.get("category") and lp and isinstance(s.get("amount"), (int, float)) and s.get("grade") in ("A", "B", "C"):
             g = by_grade.setdefault(c["category"], {}).setdefault(s["grade"], {"w": [], "nw": []})
             g["w" if s.get("warranty_hours") else "nw"].append(s["amount"] / lp)
+            if ts >= now - SKU_WINDOW and not is_ours(named.get(s.get("shop"), s.get("shop"))):
+                cell = s["grade"] + ("_w" if s.get("warranty_hours") else "")
+                others.setdefault(s.get("item"), {}).setdefault(cell, []).append(s["amount"] / lp)
         if s.get("shop"):
             sh = by_shop.setdefault(named.get(s["shop"], s["shop"]), {"settled_24h": 0, "claims": 0, "honest": 0})
             sh["settled_24h"] += 1
@@ -214,6 +223,10 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
     for table in (by_sku, by_cat):
         for t in table.values():
             t["price_ratio"] = _mean(t.pop("ratios"))
+    for sku, cells in others.items():
+        kept = {k: {"n": len(v), "median": _median(v)} for k, v in cells.items() if len(v) >= SKU_MIN}
+        if kept and sku in by_sku:
+            by_sku[sku]["others_6h"] = kept
     for cat, grades in by_grade.items():
         by_cat[cat]["by_grade"] = {g: {"n": len(d["w"]) + len(d["nw"]), "median": _median(d["w"] + d["nw"]),
                                        "w_n": len(d["w"]), "w_median": _median(d["w"]),

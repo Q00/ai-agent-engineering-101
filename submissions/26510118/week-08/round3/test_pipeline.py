@@ -252,6 +252,23 @@ def test_pricing():
     check("the late cycle adds 2% of list", pricing.plan(food, now, catalog=CATALOG, late=True)["ask"] == 15400)
     check("a market-referenced ask never goes below the floor",
           pricing.plan(dict(goods_c, cost=30000), now, market={"C": {"nw_n": 99, "nw_median": 0.40}})["ask"] == 31500)
+    own = {"A": {"n": 12, "median": 0.68}}
+    p = pricing.plan(food, now, catalog=CATALOG, sku_market=own)
+    check("grade A asked 7% of list over the SKU's own market (0.68, 12 settles): down to 2% under it (66%)",
+          (p["ask"], p["sku_ref"], p["nudge"]) == (13200, 0.68, -0.09), p)
+    check("...not when it is within 1% of it, nor on 9 settles, nor for the premium line",
+          pricing.plan(food, now, catalog=CATALOG, sku_market={"A": {"n": 12, "median": 0.745}})["ask"] == 15000
+          and pricing.plan(food, now, catalog=CATALOG, sku_market={"A": {"n": 9, "median": 0.60}})["ask"] == 15000
+          and pricing.plan(food, now, catalog=CATALOG, sku_market=own, in_line=True)["ask"] == 15000)
+    p = pricing.plan(goods_a, now, warranty=True, sku_market={"A": {"n": 30, "median": 0.70}, "A_w": {"n": 12, "median": 0.72}})
+    check("with a warranty it is set against the market's warranty settles (0.72 - 2%), and never under the floor (cost + 5% + warranty)",
+          (p["ask"], p["sku_ref"]) == (29295, 0.72), p)
+    p = pricing.plan(goods_c, now, sku_market={"C": {"n": 15, "median": 0.70}})
+    check("grade C asked 10% of list under its market (0.70): up to 2% under it (68%)", (p["ask"], p["nudge"]) == (27132, 0.08), p)
+    check("...and one 4% under it is left alone", pricing.plan(goods_c, now, sku_market={"C": {"n": 15, "median": 0.64}})["nudge"] is None)
+    check("...but not on clearance (8 days unsold), and grade B is left alone",
+          pricing.plan(dict(goods_c, supplied_at=now - 8 * DAY), now, sku_market={"C": {"n": 15, "median": 0.70}})["nudge"] is None
+          and pricing.plan(goods_b, now, sku_market={"B": {"n": 50, "median": 0.50}})["nudge"] is None)
     win = {"open": False, "opens_at": now + 300, "closes_at": now + 480}
     check("late in the cycle: the last 10 minutes before a window opens, not during one or long before",
           pricing.late_in_cycle(win, now) and not pricing.late_in_cycle(dict(win, opens_at=now + 900), now)
@@ -533,6 +550,19 @@ def test_ledger():
           set(s["by_shop"]) == {"Kiro729", "Shop Two"} and s["by_shop"]["Shop Two"]["claims"] == 1
           and ledger.names() == {"s1": "Kiro729", "s2": "Shop Two", "s2-new": "Shop Two"}, s["by_shop"])
     rows = common.read_jsonl(ledger.folder() / "settles.jsonl")
+    extra = ([{"seq": 100 + i, "ts": NOW - H, "shop": "s2", "item": KIMCHI, "amount": 14000, "grade": "A"} for i in range(10)]
+             + [{"seq": 120 + i, "ts": NOW - H, "shop": "s1", "item": KIMCHI, "amount": 19000, "grade": "A"} for i in range(10)]
+             + [{"seq": 140 + i, "ts": NOW - 7 * H, "shop": "s2", "item": KIMCHI, "amount": 10000, "grade": "A"} for i in range(10)]
+             + [{"seq": 160 + i, "ts": NOW - H, "shop": "s2", "item": KIMCHI, "amount": 12000, "grade": "B"} for i in range(9)])
+    with open(ledger.folder() / "settles.jsonl", "a", encoding="utf-8") as f:
+        for e in extra:
+            f.write(json.dumps(e) + "\n")
+    s2 = ledger.summarize(CATALOG, NOW)
+    check("a SKU's own market by grade over 6 h: other shops only (ours, Kiro729, left out), older settles left out, cells of 10 or more",
+          s2["by_sku"][KIMCHI].get("others_6h") == {"A": {"n": 10, "median": 0.7}}, s2["by_sku"][KIMCHI].get("others_6h"))
+    with open(ledger.folder() / "settles.jsonl", "w", encoding="utf-8") as f:
+        for e in rows:
+            f.write(json.dumps(e, ensure_ascii=False) + "\n")
     reply = forum.data_reply("침구", s, rows, CATALOG, NOW, ledger.names())
     check("a data reply names the seller, and leaves our own shop out", "sold by Shop Two (1)" in (reply or "")
           and "sold by" not in (forum.data_reply("김치", s, rows, CATALOG, NOW, ledger.names()) or "x sold by"), reply)
