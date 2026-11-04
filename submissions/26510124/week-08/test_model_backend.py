@@ -137,6 +137,18 @@ class ModelBackendTests(unittest.TestCase):
         kill.assert_called_once_with(12345, backend.signal.SIGKILL)
         self.assertEqual(error.exception.stdout, "partial")
 
+    def test_call_timeout_keeps_partial_diagnostics_without_retry(self):
+        log = io.StringIO()
+        failure = subprocess.TimeoutExpired("codex", 30, output=b"partial event", stderr=b"connection stalled")
+        with patch.object(backend, "ensure_chatgpt"), \
+                patch.object(backend, "execute", side_effect=failure) as run:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                backend.call("luna", "sales_advisor.txt", "fixture", timeout=30, log=log)
+        run.assert_called_once()
+        self.assertIn("TIMEOUT:", log.getvalue())
+        self.assertIn("partial event", log.getvalue())
+        self.assertIn("connection stalled", log.getvalue())
+
     def test_interruption_reaps_the_cli_children_without_starting_a_retry(self):
         process = Mock(pid=12345, returncode=-9)
         process.communicate.side_effect = [KeyboardInterrupt(), ("", "")]
@@ -183,6 +195,19 @@ class ModelBackendTests(unittest.TestCase):
             model.assert_called_once()
             self.assertEqual(model.call_args.args[:2], ("astra", "preflight"))
         self.assertEqual(len(list((self.root / "logs").glob("model-preflight-*.log"))), 1)
+
+    def test_failed_preflight_prints_exact_details_path(self):
+        self.write_profile()
+        output = io.StringIO()
+        with patch.object(backend, "ROOT", self.root), patch.object(backend.shutil, "which", return_value="/cli"), \
+                patch.object(backend, "call", side_effect=ValueError("astra CLI failed (exit 2)")), \
+                redirect_stdout(output):
+            self.assertEqual(backend.main(["--preflight"]), 1)
+        paths = list((self.root / "logs").glob("model-preflight-*.log"))
+        self.assertEqual(len(paths), 1)
+        self.assertIn("Model probe details: " + str(paths[0]), output.getvalue())
+        self.assertIn("Model configuration not ready: astra CLI failed (exit 2)", output.getvalue())
+        self.assertIn("ERROR: ValueError: astra CLI failed (exit 2)", paths[0].read_text())
 
 
 if __name__ == "__main__":

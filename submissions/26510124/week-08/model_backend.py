@@ -188,7 +188,16 @@ def call(profile, prompt_name, prompt, *, timeout, log):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise ValueError("Model deadline expired during authentication check")
-        result = execute(cmd, prompt=prompt, cwd=folder, timeout=remaining, env=environment(profile))
+        try:
+            result = execute(cmd, prompt=prompt, cwd=folder, timeout=remaining, env=environment(profile))
+        except subprocess.TimeoutExpired as exc:
+            log.write("TIMEOUT: model process and children stopped\n")
+            for label, content in (("STDOUT", exc.stdout), ("STDERR", exc.stderr)):
+                if isinstance(content, bytes):
+                    content = content.decode("utf-8", errors="replace")
+                log.write(f"{label}:\n{content or ''}\n")
+            log.flush()
+            raise
         log.write(f"EXIT: {result.returncode}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n")
         if result.returncode:
             raise ValueError(f"{profile} CLI failed (exit {result.returncode}); no model fallback")
@@ -228,6 +237,7 @@ def main(argv=None):
                 logs.mkdir(exist_ok=True)
                 path = logs / f"model-preflight-{uuid.uuid4().hex}.log"
                 with path.open("x") as log:
+                    print(f"Model probe details: {path}", flush=True)
                     try:
                         for profile in selected:
                             raw = call(profile, "preflight", 'Return only {"ready":true,"reason":"ok"}. Do not use tools.',

@@ -188,6 +188,27 @@ def capture(command, path, env):
         raise RuntimeError(f"Validation failed; original output saved at {path}")
 
 
+def show_model_preflight_status(path):
+    """Echo bounded backend status only; preserve the complete private log."""
+    prefixes = ("Model profile:", "Model configuration not ready:", "Model probe details:")
+    try:
+        if path.is_symlink():
+            return
+        with path.open("rb") as stream:
+            text = stream.read(65536).decode("utf-8", errors="replace")
+    except OSError:
+        return
+    shown = 0
+    for line in text.splitlines():
+        if line.startswith(prefixes):
+            # Do not relay CLI stderr, event streams, environment or auth output.
+            clean = "".join(character for character in line if character.isprintable())
+            say(clean[:1200])
+            shown += 1
+            if shown == 6:
+                break
+
+
 def log_start(path):
     return (path.stat().st_ino, path.stat().st_size) if path.exists() else (None, 0)
 
@@ -322,7 +343,12 @@ def deploy_locked(root, archive, digest, run):
         # Validate the staged profile using this server's CLI login before the
         # live source/profile or service changes. The probe never joins a market.
         say("Checking selected model CLIs, login and model access before stopping the old service...")
-        capture([python, stage / "model_backend.py", "--preflight"], evidence / "model-preflight.log", env)
+        model_log = evidence / "model-preflight.log"
+        try:
+            capture([python, stage / "model_backend.py", "--preflight"], model_log, env)
+        except RuntimeError:
+            show_model_preflight_status(model_log)
+            raise
     elif "model-profile.json" in manifest["files"]:
         raise ValueError("Model profile is present but its model_backend.py validator is missing")
     elif shutil.which("claude", path=env["PATH"]) is None:

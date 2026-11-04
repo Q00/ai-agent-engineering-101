@@ -56,6 +56,45 @@ class DeploymentTests(unittest.TestCase):
             self.assertEqual((source / name).read_bytes(), (stage / name).read_bytes())
         self.assertEqual(json.loads((evidence / "package-manifest.json").read_text())["archive_sha256"], digest)
 
+    def test_model_failure_status_echoes_only_bounded_backend_lines_and_preserves_log(self):
+        log = self.folder / "model-preflight.log"
+        original = ("COMMAND: ['python', 'model_backend.py', '--preflight']\n"
+                    "Model profile: trading=astra, advisor=luna\n"
+                    "PRIVATE_UNRELATED_TOKEN=synthetic-secret\n"
+                    '{"type":"error","message":"raw-cli-event-secret"}\n'
+                    "Logged in using an API key synthetic-auth-secret\n"
+                    "Model probe details: /stage/logs/model-preflight-example.log\n"
+                    "Model configuration not ready: Codex needs ChatGPT login on this server: codex login --device-auth\n"
+                    "EXIT: 1\n")
+        log.write_text(original)
+        output = io.StringIO()
+        with redirect_stdout(output):
+            server.show_model_preflight_status(log)
+        shown = output.getvalue()
+        self.assertIn("Model profile: trading=astra, advisor=luna", shown)
+        self.assertIn("Model probe details: /stage/logs/model-preflight-example.log", shown)
+        self.assertIn("Codex needs ChatGPT login", shown)
+        for hidden in ("synthetic-secret", "raw-cli-event-secret", "synthetic-auth-secret", "COMMAND:", "EXIT:"):
+            self.assertNotIn(hidden, shown)
+        self.assertEqual(log.read_text(), original)
+        log.write_text(("Model configuration not ready: " + "x" * 2000 + "\n") * 20)
+        output = io.StringIO()
+        with redirect_stdout(output):
+            server.show_model_preflight_status(log)
+        self.assertEqual(len(output.getvalue().splitlines()), 6)
+        self.assertTrue(all(len(line) <= 1200 for line in output.getvalue().splitlines()))
+
+    def test_model_failure_status_ignores_missing_or_symlinked_logs(self):
+        log = self.folder / "model-preflight.log"
+        output = io.StringIO()
+        with redirect_stdout(output):
+            server.show_model_preflight_status(log)
+            other = self.folder / "private.log"
+            other.write_text("Model configuration not ready: unrelated private content\n")
+            log.symlink_to(other)
+            server.show_model_preflight_status(log)
+        self.assertEqual(output.getvalue(), "")
+
     def test_tampered_transport_archive_is_rejected_before_extracting(self):
         _, _, archive, _, _ = self.fixture()
         with self.assertRaisesRegex(ValueError, "checksum"):
@@ -256,6 +295,9 @@ class DeploymentTests(unittest.TestCase):
                 self.assertEqual(json.loads((root / "model-profile.json").read_text())["trading"], "haiku")
                 self.assertIn(str(fake_home / ".local/bin"), env["PATH"].split(":"))
                 if fail_model:
+                    log.write_text("Model profile: trading=astra, advisor=haiku\n"
+                                   "PRIVATE_TEST_TOKEN=never-echo\n"
+                                   "Model configuration not ready: Codex needs ChatGPT login on this server: codex login --device-auth\n")
                     raise RuntimeError("model preflight failed: Codex login or Astra access unavailable")
                 checked_model = True
 
@@ -272,18 +314,20 @@ class DeploymentTests(unittest.TestCase):
                     value = text
             return subprocess.CompletedProcess(args, 0, stdout=value, stderr="")
 
+        output = io.StringIO()
         with patch.object(server.Path, "home", return_value=fake_home), \
              patch.object(server.shutil, "which", return_value="/synthetic/cli"), \
              patch.object(server, "systemctl", side_effect=fake_systemctl) as system, \
              patch.object(server, "capture", side_effect=fake_capture), \
              patch.object(server, "wait_ready", return_value="https://sample.trycloudflare.com",
                           side_effect=RuntimeError("startup failed") if fail_startup else None), \
-             redirect_stdout(io.StringIO()):
+             redirect_stdout(output):
             if fail_preflight or fail_startup or fail_model:
                 with self.assertRaisesRegex(RuntimeError, "failed"):
                     server.deploy_locked(root, archive, digest, run)
             else:
                 server.deploy_locked(root, archive, digest, run)
+        self.deployment_output = output.getvalue()
         self.assertEqual((root / "shop_key.pem").read_text(), "PRESERVE EXISTING KEY")
         self.assertEqual(json.loads((root / ".market/inventory.json").read_text()),
                          {"units": [{"id": "existing-stock"}]})
@@ -296,12 +340,15 @@ class DeploymentTests(unittest.TestCase):
         self.assertEqual(dropin.read_text(), "PREVIOUS SERVICE CONFIG")
 
     def test_failed_model_access_keeps_live_profile_source_inventory_and_service(self):
-        root, _, dropin, system = self.simulate_deployment(fail_model=True)
+        root, run, dropin, system = self.simulate_deployment(fail_model=True)
         mutations = {"stop", "start", "daemon-reload"}
         self.assertFalse(any(call.args[0] in mutations for call in system.call_args_list))
         self.assertEqual((root / "seller_r3.py").read_text(), "PREVIOUS SOURCE")
         self.assertEqual(json.loads((root / "model-profile.json").read_text())["trading"], "haiku")
         self.assertEqual(dropin.read_text(), "PREVIOUS SERVICE CONFIG")
+        self.assertIn("Model configuration not ready: Codex needs ChatGPT login", self.deployment_output)
+        self.assertNotIn("never-echo", self.deployment_output)
+        self.assertIn("PRIVATE_TEST_TOKEN=never-echo", (root / "logs" / ("deployment-" + run) / "model-preflight.log").read_text())
 
     def test_failed_startup_automatically_restores_old_service_and_source(self):
         root, run, dropin, system = self.simulate_deployment(fail_startup=True)
