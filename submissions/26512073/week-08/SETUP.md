@@ -33,15 +33,31 @@ The old 15% fixed-reserve adaptation applies only to the retained Round 2 path.
 - `harness.py`: authenticated CLI calls with raw attempt logs.
 - `agent.json`: kit commands, including the restock hook and order-file argument.
 - `test_agent.py`: offline checks, including retained Week 7 regression tests.
-- `join_market.ps1`: preflight and foreground launch using repository kit v4.
+- `join_market.ps1`: preflight and foreground launch.
+- `market_runner.py`: loads repository kit v4 unchanged and tracks supply outcomes.
 
 Stock selection uses a bounded catalog sample spread across categories and both
-product types; it does not know hidden popularity. The model chooses at most ten
-SKUs per hook invocation. Code reserves each SKU's worst-case supply cost (75%
-of list price) before returning a purchase request to the kit. Reservations are
-cumulative in `.market/restock-reservations.jsonl`; there is no automatic reset
-or reinvestment. A failed purchase still consumes this conservative reservation,
-so actual spend may be lower. Preserve this file across restarts.
+product types. Confirmed own shop settlements (matched by unit to the kit log)
+and the buyer's paid purchases prioritize observed products and categories.
+These observations are not a claim about global popularity. The model chooses
+at most ten SKUs per hook invocation. One unit per SKU may be in stock; a sold-out
+SKU can be purchased again while the original cumulative budget allows it.
+
+Code reserves each SKU's worst-case supply cost (75% of list price) before the
+request. The runner records the exact reservation ID and API outcome. Confirmed
+purchases consume their actual cost, confirmed refusals and unattempted requests
+consume zero, and ambiguous/in-flight requests retain their full reservation.
+A closed supply window defers the remaining batch and pauses new stock selection
+until the stated opening time. There is no automatic budget reset or reinvestment.
+Preserve both `.market/restock-reservations.jsonl` and `restock-outcomes.jsonl`.
+Outcome copies are also appended under `logs/` for grading evidence.
+
+On November 4, old logs uniquely confirmed 95 purchases costing 1,050,537 credits
+and 30 refusals. Three unresolved requests remain reserved at 44,580 credits.
+Reconciliation restored 904,883 credits of allowance within the unchanged
+2,000,000 cap. Original reservation rows and raw logs were preserved; the repair
+snapshot and report are under `logs/setup/stock-repair-20261104T010846_513969Z/`.
+The code includes idempotent legacy reconciliation; no uncertain result is freed.
 
 The seller holds units during negotiation and checkout handoff, with a five-minute
 timeout. A signed receipt is an agreement, not proof of settlement. Buyer memory
@@ -58,7 +74,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File submissions/26512073/week-08
 ```
 
 The launcher asks for the claim code privately if it is absent. It sets UTF-8,
-uses the Week 8 environment and repository `scripts/market_kit.py` (v4), and
+uses the Week 8 environment and `market_runner.py`, which loads the unchanged
+repository `scripts/market_kit.py` (v4), and
 finds the existing ignored cloudflared binary in Week 7. Keep this terminal and
 PC running. Ctrl+C stops the kit. There is no scheduled start or automatic join.
 The v3 copy in `course_support/` remains historical material; do not launch it.

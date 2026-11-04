@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 $weekDir = $PSScriptRoot
 $repoDir = (Resolve-Path (Join-Path $weekDir '../../..')).Path
 $pythonExe = Join-Path $weekDir '.venv/Scripts/python.exe'
-$kit = Join-Path $repoDir 'scripts/market_kit.py'
+$kit = Join-Path $weekDir 'market_runner.py'
 $cloudflaredDir = Join-Path $repoDir 'submissions/26512073/week-07/.tools'
 $env:PYTHONUTF8 = '1'
 if (Test-Path -LiteralPath (Join-Path $cloudflaredDir 'cloudflared.exe')) {

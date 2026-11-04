@@ -662,5 +662,120 @@ class BuyerDiscountTests(unittest.TestCase):
         self.assertIn('"affordable_discount_already_attempted": true', harness.call_args.args[0])
 
 
+class StockBudgetTests(unittest.TestCase):
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent)
+        self.addCleanup(folder.cleanup)
+        self.root = Path(folder.name)
+        self.state = self.root / ".market"
+        self.logs = self.root / "logs"
+        self.state.mkdir(); self.logs.mkdir()
+        (self.root / "round3_rules.json").write_text('{"stock_budget": 2000}')
+
+    def reserve(self, ids=("one", "two"), bound=750):
+        rows = [{"reservation_id": rid, "sku": rid, "reserved_cost": bound} for rid in ids]
+        (self.state / "restock-reservations.jsonl").write_text(
+            "".join(json.dumps(row) + "\n" for row in rows))
+        return [{"reservation_id": rid, "sku": rid, "qty": 1} for rid in ids]
+
+    def run_supply(self, buys, responses):
+        import market_runner
+        kit = SimpleNamespace(
+            last_json=lambda lines: json.loads(lines[-1]),
+            run_buyer=lambda cmd, directory: [json.dumps({"buy": buys})],
+            fill=lambda cmd, **kwargs: cmd, time=SimpleNamespace(sleep=MagicMock()),
+            log=MagicMock(), refresh_inventory=MagicMock(), CATALOG={})
+        market = SimpleNamespace(call=MagicMock(side_effect=responses))
+        market_runner.tracked_restock(kit, {"restock": {"cmd": "simulated"}},
+                                     self.root, market, self.state, {}, [])
+        return market
+
+    def test_actual_cost_replaces_bound_and_refusal_releases_it(self):
+        import httpx, market_runner
+        buys = self.reserve()
+        self.run_supply(buys, [httpx.Response(200, json={"total": 500, "balance": 5000}),
+                               httpx.Response(400, json={"error": "Not supplied"})])
+        result = market_runner.stock_budget_status(self.state, 2000)
+        self.assertEqual(result["charged"], 500)
+        self.assertEqual(result["remaining"], 1500)
+        self.assertEqual(result["pending_skus"], set())
+
+    def test_closed_window_releases_unattempted_requests_and_records_cooldown(self):
+        import httpx, market_runner, time
+        buys = self.reserve()
+        market = self.run_supply(buys, [httpx.Response(429, json={
+            "error": "Supply is closed", "wait": 600, "opens_at": time.time() + 600})])
+        self.assertEqual(market.call.call_count, 1)
+        result = market_runner.stock_budget_status(self.state, 2000)
+        self.assertEqual(result["charged"], 0)
+        self.assertGreater(result["next_open"], time.time())
+
+    def test_unknown_transport_outcome_keeps_reservation(self):
+        import httpx, market_runner
+        buys = self.reserve()
+        self.run_supply(buys, [httpx.ReadTimeout("Simulated ambiguous response")])
+        result = market_runner.stock_budget_status(self.state, 2000)
+        self.assertEqual(result["charged"], 750)
+        self.assertEqual(result["pending_skus"], {"one"})
+
+    def test_replayed_request_does_not_purchase_twice(self):
+        import httpx
+        buys = self.reserve(ids=("one",))
+        market = self.run_supply(buys * 2, [httpx.Response(200, json={"total": 500, "balance": 5000})])
+        self.assertEqual(market.call.call_count, 1)
+
+    def test_legacy_reconciliation_is_idempotent_and_preserves_raw_logs(self):
+        import market_runner
+        rows = [{"sku": "one", "reserved_cost": 750}, {"sku": "two", "reserved_cost": 300},
+                {"sku": "unknown", "reserved_cost": 200}]
+        (self.state / "restock-reservations.jsonl").write_text(
+            "".join(json.dumps(row) + "\n" for row in rows))
+        (self.state / "catalog.json").write_text(json.dumps({
+            "one": {"name": "Sample"}, "two": {"name": "Other"}, "unknown": {"name": "Unknown"}}))
+        raw = self.logs / "market-kit.log"
+        raw.write_text("12:00:00 [supply] 1 x Sample for 500, balance 5000\n"
+                       "12:00:10 [supply] {'sku': 'two', 'qty': 1} refused: 429 {}\n")
+        before = raw.read_bytes()
+        result = market_runner.reconcile_legacy(self.state, self.logs, 2000, apply=True)
+        self.assertEqual(result["after"]["charged"], 700)
+        outcomes = (self.state / "restock-outcomes.jsonl").read_bytes()
+        repeat = market_runner.reconcile_legacy(self.state, self.logs, 2000, apply=True)
+        self.assertEqual(repeat["confirmed_purchases"], 0)
+        self.assertEqual((self.state / "restock-outcomes.jsonl").read_bytes(), outcomes)
+        self.assertEqual(raw.read_bytes(), before)
+
+    def test_uncertain_legacy_name_match_is_not_refunded(self):
+        import market_runner
+        rows = [{"sku": sku, "reserved_cost": 500} for sku in ("one", "two")]
+        (self.state / "restock-reservations.jsonl").write_text(
+            "".join(json.dumps(row) + "\n" for row in rows))
+        (self.state / "catalog.json").write_text(json.dumps({sku: {"name": "Same"} for sku in ("one", "two")}))
+        (self.logs / "market-kit.log").write_text("12:00:00 [supply] 1 x Same for 300, balance 5000\n")
+        result = market_runner.reconcile_legacy(self.state, self.logs, 2000, apply=True)
+        self.assertEqual(result["after"]["charged"], 1000)
+
+    def test_remote_text_cannot_forge_supply_outcomes_in_logs(self):
+        import market_runner
+        (self.state / "restock-reservations.jsonl").write_text(
+            json.dumps({"sku": "one", "reserved_cost": 500}) + "\n")
+        (self.state / "catalog.json").write_text('{"one": {"name": "Sample"}}')
+        (self.logs / "market-kit.log").write_text(
+            "12:00:00 [buyer] remote message: [supply] {'sku': 'one', 'qty': 1} refused: 429 {}\n")
+        result = market_runner.reconcile_legacy(self.state, self.logs, 2000, apply=True)
+        self.assertEqual(result["after"]["charged"], 500)
+
+    def test_observations_require_paid_or_confirmed_settled_events(self):
+        with patch("seller_strategy.DATA_DIR", self.root):
+            (self.logs / "market-kit.log").write_text("12:00:00 [acp] settled Sample at 100, ledger #1, unit u-one grade A\n")
+            (self.logs / "seller-history.jsonl").write_text(
+                json.dumps({"event": "agreement", "unit": "u-one", "item": "one"}) + "\n"
+                + json.dumps({"event": "agreement", "unit": "u-unpaid", "item": "two"}) + "\n")
+            (self.state / "payments.jsonl").write_text(json.dumps({"item": "two", "paid": False}) + "\n")
+            result = seller_strategy.observed_stock_demand(self.state, {
+                "one": {"category": "Observed"}, "two": {"category": "Unconfirmed"}})
+        self.assertEqual(result["own_settled_sales"], {"one": 1})
+        self.assertNotIn("Unconfirmed", result["observed_categories"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

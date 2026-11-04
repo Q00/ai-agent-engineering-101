@@ -5,9 +5,12 @@ import re
 from pathlib import Path
 import tempfile
 import time
+import uuid
+from collections import Counter
 from threading import Lock, RLock
 
 from harness import call_harness
+from market_runner import read_rows, stock_budget_status
 
 
 def load_round3_rules():
@@ -81,32 +84,60 @@ def decide_stock_offer(unit, offer, counters):
     return decision
 
 
+def observed_stock_demand(state_dir, catalog):
+    """Use confirmed seller settlements and our buyer's paid purchases as evidence."""
+    settled_units = set()
+    for path in (DATA_DIR / "logs").glob("market-kit.log*"):
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            match = re.match(r"\d{2}:\d{2}:\d{2} \[acp\] settled .*?, unit ([\w-]+)", line)
+            if match:
+                settled_units.add(match[1])
+    own_sales = Counter()
+    for row in read_rows(DATA_DIR / "logs" / "seller-history.jsonl"):
+        if row.get("event") == "agreement" and row.get("unit") in settled_units:
+            own_sales[row["item"]] += 1
+    buyer_purchases = Counter(row["item"] for row in read_rows(Path(state_dir) / "payments.jsonl")
+                              if row.get("paid"))
+    categories = Counter()
+    for sku, count in (own_sales + buyer_purchases).items():
+        if sku in catalog:
+            categories[catalog[sku]["category"]] += count
+    return {"own_settled_sales": own_sales, "own_paid_purchases": buyer_purchases,
+            "observed_categories": categories}
+
+
 def plan_restock(state_dir):
-    """Reserve worst-case costs before the kit buys; never reset spent allowance."""
+    """Keep actual purchases plus uncertain/in-flight reservations within the cap."""
     rules = load_round3_rules()
     if not rules.get("enabled"):
         return {"buy": [], "reason": "Round 3 trading disabled."}
+    if os.environ.get("RESTOCK_OUTCOME_TRACKING") != "v2":
+        return {"buy": [], "reason": "Restart using join_market.ps1 for outcome-tracked restocking."}
     state_dir = Path(state_dir)
     inv = json.loads((state_dir / "inventory.json").read_text(encoding="utf-8"))
     catalog = json.loads((state_dir / "catalog.json").read_text(encoding="utf-8"))
     if inv.get("round", 0) < 3:
         return {"buy": []}
     journal = state_dir / "restock-reservations.jsonl"
-    reservations = [json.loads(line) for line in journal.read_text(encoding="utf-8").splitlines()
-                    if line.strip()] if journal.exists() else []
-    reserved = sum(row["reserved_cost"] for row in reservations)
-    allowance = min(rules["stock_budget"] - reserved, inv["balance"])
+    budget = stock_budget_status(state_dir, rules["stock_budget"])
+    if budget["next_open"] > time.time():
+        return {"buy": [], "reason": "Waiting for the supply window.", "opens_at": budget["next_open"]}
+    allowance = min(budget["remaining"], inv["balance"])
     if allowance <= 0:
         return {"buy": [], "reason": "Initial stock allowance exhausted."}
-    used = {row["sku"] for row in reservations} | {u["sku"] for u in inv["units"]}
+    used = budget["pending_skus"] | {u["sku"] for u in inv["units"]}
+    demand = observed_stock_demand(state_dir, catalog)
     # At most 40 candidates, spread across categories and both product types.
     groups = {}
-    for sku, product in sorted(catalog.items()):
+    for sku, product in sorted(catalog.items(), key=lambda pair: (
+            -demand["own_settled_sales"][pair[0]], -demand["own_paid_purchases"][pair[0]], pair[0])):
         cost_bound = (product["list_price"] * 75 + 99) // 100
         if sku not in used and 0 < cost_bound <= allowance:
             groups.setdefault((product["kind"], product["category"]), []).append(
                 dict(product, sku=sku, maximum_cost=cost_bound))
     candidates = []
+    groups = dict(sorted(groups.items(), key=lambda pair: (
+        -demand["observed_categories"][pair[0][1]], pair[0])))
     kinds = {kind: [v for (k, _), v in groups.items() if k == kind]
              for kind in ("food", "goods")}
     for kind, categories in kinds.items():
@@ -117,15 +148,19 @@ def plan_restock(state_dir):
                 if offset < len(group):
                     candidates.append(group[offset])
     if not candidates:
-        return {"buy": [], "reason": "No affordable unused SKU."}
+        return {"buy": [], "reason": "No affordable SKU outside current or pending stock."}
     decision = call_harness(
         "Choose initial stock for a student shop selling both food and goods. "
         "Do not use tools. Return JSON with buy: [{sku, qty:1}], and reason. "
         "Choose at most ten distinct SKUs from the candidates, diversify across "
         "food and goods when affordable, and do not exceed allowance using "
-        "maximum_cost. Demand popularity is unknown; do not invent evidence. "
+        "maximum_cost. Prefer observed successful products/categories while "
+        "retaining variety. These are our observations, not global popularity. "
+        "Products sold out may be bought again; never buy a second unit of a "
+        "SKU still stocked or awaiting an uncertain supply result. "
         "This is an initial cumulative purchase budget, not a renewing budget.\n"
-        + json.dumps({"allowance": allowance, "candidates": candidates}), timeout=45)
+        + json.dumps({"allowance": allowance, "observations": demand,
+                      "candidates": candidates}), timeout=45)
     buys = decision.get("buy")
     if not isinstance(buys, list) or len(buys) > 10:
         raise ValueError("Invalid stock selection")
@@ -139,11 +174,12 @@ def plan_restock(state_dir):
         cost = by_sku[sku]["maximum_cost"]
         total += cost
         rows.append({"time": time.time(), "sku": sku, "reserved_cost": cost,
+                     "reservation_id": uuid.uuid4().hex,
                      "source": "worst_case_supply_reservation", "reason": decision.get("reason")})
     if total > allowance:
         raise ValueError("Stock plan exceeds remaining initial budget")
-    # The kit serializes hook invocations. Failed supply still consumes this
-    # conservative reservation; release requires an explicit later reconciliation.
+    # The runner records an exact result for each ID. Until that result is known,
+    # the whole worst-case cost remains charged against the cumulative cap.
     if rows:
         with journal.open("a", encoding="utf-8") as stream:
             for row in rows:
@@ -153,7 +189,8 @@ def plan_restock(state_dir):
         with evidence.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps({"time": time.time(), "buy": buys,
                                      "reserved_cost": total, "reason": decision.get("reason")}) + "\n")
-    return {"buy": buys}
+    return {"buy": [dict(buy, reservation_id=row["reservation_id"])
+                    for buy, row in zip(buys, rows)]}
 
 def load_inventory():
     """Read the stock file maintained by market kit v4."""
