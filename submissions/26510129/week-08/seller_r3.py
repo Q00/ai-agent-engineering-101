@@ -119,6 +119,10 @@ def price_plan(unit, task, now=None, params=None, market=None):
         target = market_price * (0.97 if arm == "volume" else 1.05)
     cap = list_price * {"A": 0.99, "B": params["grade_cap_B"], "C": 0.65}.get(unit.get("grade"), 0.85)
     target = min(target, cap)
+    # goods pay 1% of cost a day in storage: from the third day the ask comes down 5% a day, to 70% of the target
+    days = (now - unit["supplied_at"]) / 86400 if unit.get("kind") == "goods" and isinstance(unit.get("supplied_at"), (int, float)) and unit["supplied_at"] > 0 else 0
+    if days > 2:
+        target *= max(0.70, 1 - 0.05 * (days - 2))
     floor = cost * 1.03
     hours_left = None
 

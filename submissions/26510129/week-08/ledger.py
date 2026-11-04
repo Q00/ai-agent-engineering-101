@@ -60,18 +60,23 @@ def settles(entries, now=None, hours=WINDOW_HOURS):
 
 def stats(rows, catalog, now=None, hours=WINDOW_HOURS):
     """Per SKU: settles and median price. Per category: settles and median price / list price."""
-    by_sku, by_cat = defaultdict(list), defaultdict(list)
+    by_sku, by_cat, cat_amounts = defaultdict(list), defaultdict(list), defaultdict(list)
     for r in rows:
         by_sku[r["sku"]].append(r["price"])
         row = catalog.get(r["sku"]) or {}
         if row.get("category") and isinstance(row.get("list_price"), (int, float)) and row["list_price"] > 0:
             by_cat[row["category"]].append(r["price"] / row["list_price"])
+            cat_amounts[row["category"]].append(r["price"])
+    # revenue and the typical settled price per category: 11-04 17:10, sofas were 405 of 6347 settles but 591M of
+    # 1.1B revenue (median 1.7M each) while kimchi was 751 settles for 17M; a shop that counts settles sells kimchi
     return {
         "at": int(now or time.time()),
         "window_hours": hours,
         "settles": len(rows),
         "skus": {sku: {"n": len(p), "median": round(statistics.median(p))} for sku, p in by_sku.items()},
-        "categories": {cat: {"n": len(x), "median_ratio": round(statistics.median(x), 3)} for cat, x in by_cat.items()},
+        "categories": {cat: {"n": len(x), "median_ratio": round(statistics.median(x), 3),
+                             "revenue": round(sum(cat_amounts[cat])), "median_amount": round(statistics.median(cat_amounts[cat]))}
+                       for cat, x in by_cat.items()},
     }
 
 
