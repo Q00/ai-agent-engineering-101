@@ -981,6 +981,94 @@ class ModelUnavailable(TradeFixture):
             harness.assert_not_called()
 
 
+class RequestWording(TradeFixture):
+    def first_text(self):
+        return next(p["params"]["message"]["parts"][0]["text"] for p in self.posts if p["method"] == "SendMessage")
+
+    def run_trade(self, **options):
+        return market.trade(shop("fixture"), "lamp", 300, transport=self.transport("asking 110."), fast_rules=True,
+                            model_gate=lambda: "reserved", max_turns=3, **options)
+
+    def test_contract_form_with_catalog_name(self):
+        _, record = self.run_trade(item_name="침대 프레임")
+        self.assertEqual(self.first_text(), "I want to buy 침대 프레임 (lamp)")
+        self.assertEqual(record["request_format"], "name_and_sku")
+        self.assertEqual(record["receipt"]["item"], "lamp")
+
+    def test_certificate_and_warranty_requests_are_kept(self):
+        self.run_trade(item_name="침대", requirements={"cert": True, "warranty_hours": 6})
+        text = self.first_text()
+        self.assertTrue(text.startswith("I want to buy 침대 (lamp). Please include a market certificate."))
+        self.assertIn("I require 6 hours of warranty in the checkout.", text)
+        self.posts.clear()
+        self.run_trade(item_name="침대", requirements={"cert": True})
+        self.assertIn("If available, please offer a 6-hour goods warranty", self.first_text())
+
+    def test_without_a_name_the_old_form_stays(self):
+        for name in (None, "", "  ", 5):
+            with self.subTest(name=name):
+                self.posts.clear()
+                _, record = self.run_trade(item_name=name)
+                self.assertEqual(self.first_text(), "I want to buy a lamp")
+                self.assertEqual(record["request_format"], "sku_only")
+
+    def test_refused_at_open_is_only_a_first_message_refusal(self):
+        def refuse(request):
+            if request.method == "GET":
+                return httpx.Response(200, json={"supportedInterfaces": [
+                    {"protocolBinding": "JSONRPC", "protocolVersion": "1.0", "url": "http://fixture.test/rpc"}]})
+            body = json.loads(request.content)
+            task = {"id": "t", "contextId": "c", "status": {"state": "TASK_STATE_REJECTED", "message": {"parts": [{"text": "none in stock"}]}}}
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": task})
+        _, record = market.trade(shop("fixture"), "lamp", 300, transport=httpx.MockTransport(refuse), fast_rules=True, model_gate=lambda: "reserved")
+        self.assertTrue(record["refused_at_open"])
+        _, later = self.trade(self.transport("asking 110.", offer_state="TASK_STATE_REJECTED"))
+        self.assertFalse(later["refused_at_open"])
+        _, deal = self.trade(self.transport("asking 110."))
+        self.assertFalse(deal["refused_at_open"])
+
+
+class RefusalSkip(unittest.TestCase):
+    RULE = {"refusal_skip": {"enabled": True, "window": 10, "min_share": .9, "retry_seconds": 1800}}
+    NOW = 1793800000.0
+
+    def tries(self, shop_name, refused, age_seconds=60):
+        at = datetime.fromtimestamp(self.NOW - age_seconds, timezone.utc).isoformat()
+        return [{"round": 3, "shop_name": shop_name, "timestamp": at, "refused_at_open": i < refused, "decision_trail": []} for i in range(10)]
+
+    def flagged(self, memory, rule=None):
+        import buyer_support
+        return buyer_support.refusing_shops(memory, self.RULE if rule is None else rule, self.NOW)
+
+    def test_nine_of_ten_is_flagged_and_eight_is_not(self):
+        self.assertEqual(self.flagged(self.tries("a", 9)), {"a"})
+        self.assertEqual(self.flagged(self.tries("a", 8)), set())
+
+    def test_fewer_than_ten_tries_is_not_enough(self):
+        self.assertEqual(self.flagged(self.tries("a", 9)[:9]), set())
+
+    def test_retry_comes_due(self):
+        self.assertEqual(self.flagged(self.tries("a", 10, 1799)), {"a"})
+        self.assertEqual(self.flagged(self.tries("a", 10, 1801)), set())
+
+    def test_a_successful_retry_clears_the_shop(self):
+        memory = self.tries("a", 10) + [{"round": 3, "shop_name": "a", "timestamp": datetime.fromtimestamp(self.NOW - 30, timezone.utc).isoformat(), "refused_at_open": False, "decision_trail": []}]
+        self.assertEqual(self.flagged(memory), {"a"})
+        memory += [dict(memory[-1]) for _ in range(1)]
+        self.assertEqual(self.flagged(memory), set())
+
+    def test_records_without_a_trail_do_not_count(self):
+        memory = [{k: v for k, v in row.items() if k != "decision_trail"} for row in self.tries("a", 10)]
+        self.assertEqual(self.flagged(memory), set())
+
+    def test_off_or_malformed_settings_skip_nothing(self):
+        for rule in ({}, {"refusal_skip": None}, {"refusal_skip": {"enabled": False, "window": 10, "min_share": .9, "retry_seconds": 1800}},
+                     {"refusal_skip": {"enabled": "yes", "window": 10, "min_share": .9, "retry_seconds": 1800}},
+                     {"refusal_skip": {"enabled": True, "window": "x", "min_share": .9, "retry_seconds": 1800}}):
+            with self.subTest(rule=rule):
+                self.assertEqual(self.flagged(self.tries("a", 10), rule), set())
+
+
 class ModelRouting(TradeFixture):
     """A real route is recorded, and an unknown route never stops the trade."""
 

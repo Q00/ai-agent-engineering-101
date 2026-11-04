@@ -94,6 +94,30 @@ def context(md, catalog, settings, now):
     return {"targets": targets, "rival_names": rivals, "rival_urls": urls}
 
 
+def refusing_shops(memory, settings, now):
+    """Shops whose recent tries mostly ended with a refusal at the first message, unless a retry is due.
+
+    Only tries with a recorded decision trail count, since older records cannot tell a refusal from other endings.
+    Without the periodic retry no new evidence would ever arrive, so a shop could never recover.
+    """
+    rule = settings.get("refusal_skip")
+    if not isinstance(rule, dict) or rule.get("enabled") is not True:
+        return set()
+    window, share, retry = rule.get("window"), rule.get("min_share"), rule.get("retry_seconds")
+    if type(window) is not int or window <= 0 or type(share) not in (int, float) or type(retry) not in (int, float):
+        return set()
+    tries = {}
+    for row in memory:
+        if row.get("round") == 3 and row.get("shop_name") and "decision_trail" in row:
+            tries.setdefault(row["shop_name"], []).append(row)
+    flagged = set()
+    for name, rows in tries.items():
+        recent = rows[-window:]
+        if len(recent) >= window and sum(bool(r.get("refused_at_open")) for r in recent) / window >= share and age(recent[-1], now) < retry:
+            flagged.add(name)
+    return flagged
+
+
 def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, state, settings, now, kind="goods"):
     memory = [r for r in memory if r.get("round") == 3]
     # Keep durable mismatch/outage evidence; only positive price references expire.
@@ -160,6 +184,14 @@ def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, 
         item.update(support_eligible=True, research_relevance=ctx["targets"].get(sku, "buyer_surplus_opportunity"),
                     rival_at_selection=shop["name"].casefold() in ctx["rival_names"] or shop["url"].rstrip("/") in ctx["rival_urls"])
         eligible.append(item)
+    refusing = refusing_shops(memory, settings, now)
+    kept = [item for item in eligible if item["shop"] not in refusing]
+    # With no other shop for this order, trying is better than a sure miss.
+    if kept and len(kept) != len(eligible):
+        for item in eligible:
+            if item["shop"] in refusing:
+                item.update(support_eligible=False, support_skip_reason="recent_open_refusals")
+        eligible = kept
     if not eligible:
         return None, None, budget, "No new, relevant, value-preserving seller research opportunity.", evidence
     best = min(eligible, key=lambda e: (bool(e["attributed_faults"]), -e["estimated_surplus"], e["shop"], e["sku"]))
@@ -227,6 +259,7 @@ def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, ord
             shop, sku, reason = None, None, status
     return shop, sku, cap, reason, evidence, {"status": status, "purpose": "balanced_player_score" if balanced else "seller_profit_support",
                "fast_rules": balanced,
+               "refusal_skipped_shops": sorted({e["shop"] for e in evidence if e.get("support_skip_reason") == "recent_open_refusals"}),
                "max_turns": settings["max_turns"], "funding": "market_order_budget_not_seller_cash"}
 
 

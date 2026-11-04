@@ -155,6 +155,17 @@ class Funnel(unittest.TestCase):
         self.add(trade_record("b", trail=[second], reason="model_walk_away"))
         self.assertEqual(self.report()["model_routes"], {"agy:gemini-x|agy_first": 1, "codex:gpt-x|agy_limit_failure": 1})
 
+    def test_refusals_by_wording_listed_quantity_and_skips(self):
+        self.add(trade_record("a", trail=[], reason="seller_rejected", request_format="sku_only", refused_at_open=True, selected_offer_qty=1))
+        self.add(trade_record("b", trail=[], reason="seller_rejected", request_format="name_and_sku", refused_at_open=True, selected_offer_qty=2))
+        self.add(trade_record("c", trail=[], reason="x", request_format="name_and_sku", refused_at_open=False, selected_offer_qty=9,
+                              buyer_support={"refusal_skipped_shops": ["s1", "s2"]}))
+        report = self.report()
+        self.assertEqual(report["open_refusals_by_request_format"], {"sku_only": {"attempts": 1, "refused_at_open": 1},
+                                                                     "name_and_sku": {"attempts": 2, "refused_at_open": 1}})
+        self.assertEqual(report["open_refusals_by_listed_qty"]["4+"], {"attempts": 1, "refused_at_open": 0})
+        self.assertEqual(report["runs_skipping_refusing_shops"], {"s1": 1, "s2": 1})
+
     def legacy_dir(self, name, *, outcome, turns=1, decision=None):
         directory = self.root / "logs/buyer" / name
         directory.mkdir(parents=True)

@@ -125,6 +125,7 @@ def funnel(root, since, until=None, payments_path=None):
     counter_runs, counter_exclusions = Counter(), Counter()
     turn_limit_endings, cancel_results = 0, Counter()
     model_routes = Counter()
+    formats, skipped_shops, qty_rows = {}, Counter(), {}
     orders, instrumented = set(), 0
     for _, record in runs:
         reached, cause = classify_run(root, record, payments)
@@ -133,6 +134,17 @@ def funnel(root, since, until=None, payments_path=None):
         if record.get("order"):
             orders.add(record["order"])
         trail = record.get("decision_trail")
+        for name in (record.get("buyer_support") or {}).get("refusal_skipped_shops") or ():
+            skipped_shops[name] += 1
+        if record.get("request_format"):
+            row = formats.setdefault(record["request_format"], {"attempts": 0, "refused_at_open": 0})
+            row["attempts"] += 1
+            row["refused_at_open"] += bool(record.get("refused_at_open"))
+        if type(record.get("selected_offer_qty")) in (int, float):
+            band = "1" if record["selected_offer_qty"] <= 1 else "2-3" if record["selected_offer_qty"] <= 3 else "4+"
+            row = qty_rows.setdefault(band, {"attempts": 0, "refused_at_open": 0})
+            row["attempts"] += 1
+            row["refused_at_open"] += bool(record.get("refused_at_open"))
         if trail is not None:
             instrumented += 1
             if any(e["reason_code"] == "rule_counter_offer" for e in trail):
@@ -175,6 +187,8 @@ def funnel(root, since, until=None, payments_path=None):
             "counter_offer": {"offered": counter_runs["offered"], "receipt": counter_runs["receipt"],
                               "paid": counter_runs["paid"], "exclusions": dict(counter_exclusions.most_common())},
             "model_routes": dict(model_routes.most_common()),
+            "open_refusals_by_request_format": formats, "open_refusals_by_listed_qty": dict(sorted(qty_rows.items())),
+            "runs_skipping_refusing_shops": dict(skipped_shops.most_common()),
             "turn_limit": {"endings": turn_limit_endings, "cancel_results": dict(cancel_results.most_common())},
             "quote_filter_by_basis": dict(filter_basis.most_common()),
             "quote_conflicts": dict(conflicts.most_common()),
