@@ -69,6 +69,25 @@ class FastQuotes(unittest.TestCase):
                 self.assertIsNone(buyer_fast.decision(text, 1000))
         self.assertEqual(buyer_fast.decision('asking 100. Counteroffer: 100.', 1000)['price'], 100)
 
+    def test_a_lower_current_price_after_the_ask_holds(self):
+        for text in ('asking 150. Today only 120.', 'asking 150, today only 120.', 'asking 150 (now 120)',
+                     'asking 150\nNew price: 120', 'asking 150. Now 120 KRW.', 'asking 150. Now only 120 for you.',
+                     'Today only 120. asking 150.', 'asking 150. 할인가 120원.', 'asking 150. 오늘만 120원',
+                     'asking 150. Sale price: 120.', 'asking 150. Only $120!'):
+            with self.subTest(text=text):
+                self.assertEqual(buyer_fast.classify(text, 1000)[:2], (None, 'conflicting_prices'))
+
+    def test_later_numbers_that_do_not_change_the_price_are_fine(self):
+        for text in ('asking 150. 24 h warranty.', 'asking 150; shelf life left 35.68h.',
+                     'asking 150. Opening discount included: 20466 -> 150; saving 613.',
+                     'asking 150. Reply with a number, or ok to take the ask: 150',
+                     'asking 150. Only 3 left.', 'asking 150. Now 24 h warranty.', 'asking 150. Only 6 offers.',
+                     'asking 150. Today only 6-hour warranty.', 'asking 150. Now 500g.', 'asking 150. Only 10% left.',
+                     'asking 150. Now 150.', '[한정특가] 120 세트: asking 150.', '[특가] 120g: asking 150.',
+                     '한정특가 120: asking 150.', 'asking 150. Only 35.68 h left.'):
+            with self.subTest(text=text):
+                self.assertEqual(buyer_fast.classify(text, 1000)[:2][1], 'rule_offer')
+
     def test_budget_and_repeat_still_guarded_with_periods(self):
         self.assertIsNone(buyer_fast.decision('asking 101.', 100))
         self.assertEqual(buyer_fast.decision('Counteroffer: 100.', 100, 100)['action'], 'walk_away')

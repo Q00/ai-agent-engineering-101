@@ -19,6 +19,13 @@ NOT_CURRENT = {"list", "listed", "was", "were", "previous", "previously", "prior
                "competitor", "rival", "your", "not", "to", "정가", "시중", "이전", "과거", "기존", "평균",
                "시장", "중앙값", "정상", "권장", "소비자"}
 PAST_LABEL = re.compile(r"(?<![\w])(?:asking price|asking|ask|offer price|가격|제안가)\s+(?:was|were)\b", re.I)
+# A marker that replaces the current price, directly followed by a number. The lookbehind skips [한정특가].
+PRICE_CHANGE = re.compile(r"(?<![\w])(?:now|today|only|just|new price|sale price|discount price|special price|"
+                          r"price now|할인가|특가|오늘만|지금)"
+                          r"(?:\s+(?:only|just|at|for|is))*\s*[:：=]?\s*[$₩]?\s*(\d[\d,.]*)", re.I)
+# The same words also introduce stock counts, sizes and durations: "Only 3 left", "now 24 h warranty".
+QUANTITY = re.compile(r"[\s-]*(?:%|(?:left|h|hrs?|hours?|days?|mins?|minutes?|units?|pcs?|pieces?|items?|ea|"
+                      r"g|kg|ml|l|offers?|remaining|more|in)\b|개|시간|일|남)", re.I)
 
 
 def _preceding_word(text, start):
@@ -40,6 +47,16 @@ def _token_is_price(token, rest):
     return bool(FOLLOWER.match(rest[currency.end():] if currency else rest))
 
 
+def _names_another_price(text, price):
+    for match in PRICE_CHANGE.finditer(text):
+        token, rest = match[1], text[match.end():]
+        if QUANTITY.match(rest) or (rest[:1].isalpha() and not CURRENCY.match(rest)):
+            continue
+        if token.rstrip(".,").replace(",", "") != str(price):
+            return True
+    return False
+
+
 def parse_ask(text):
     """Return (price, code); price is set only for one unambiguous current ask."""
     if PAST_LABEL.search(text):
@@ -58,7 +75,10 @@ def parse_ask(text):
         return None, "no_labeled_price"
     if len(prices) != 1:
         return None, "conflicting_prices"
-    return prices.pop(), "single_ask"
+    price = prices.pop()
+    if _names_another_price(text, price):
+        return None, "conflicting_prices"
+    return price, "single_ask"
 
 
 def classify(text, cap, last_offer=None):
