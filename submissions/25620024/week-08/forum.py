@@ -30,7 +30,9 @@ HERE = Path(__file__).parent
 STATE = HERE / "private" / "forum_state.json"
 THETA = Path(os.environ.get("SHOP_THETA", HERE / "private" / "shop_theta.json"))
 DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n": 5, "min_n_index": 30,
-            "max_posts_day": {"buyer": 288, "shop": 24}}   # buyer ALL counts posts written as a buyer (0.1) and the
+            "max_posts_day": {"buyer": 288, "shop": 24},
+            "gap_s": {"buyer": 1800, "shop": 300}}   # HQ 11-04: a buyer post every 30 min -- our posts drew ~5.5
+                                                     # likes against our 0.605 average, so more of them pulled it down   # buyer ALL counts posts written as a buyer (0.1) and the
                                                            # votes on them (0.3): post as a buyer as often as the market
                                                            # allows (1 per 5 min), each post ledger-cited; shop posts few
 WANTED = re.compile(r"구합니다|구해요|삽니다|필요해요|찾습니다|want(?:ed)? to buy|\bwanted\b|\bWTB\b|looking for|need (?:a|some)", re.I)
@@ -224,6 +226,36 @@ def receipt_tips(c, t, now):
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko + "\n" + en
     return [{"topic": "receipttips", "as": "buyer", "refs": refs[:8], "score": 3.1, "text": ko,
              "texts": {"ko": ko, "en": en, "json": js[:1000]}, "kind": "stock_check"}]
+
+
+def replies(c, t, forum, now, max_age=1200, min_likes=6):
+    """As the buyer, a reply under another buyer's well-liked, ledger-cited post (likes >= min_likes, under max_age s
+    old): our own ledger figures for the category it covers, tagged [보충]. HQ 11-04 experiment: do replies under
+    posts the forum already likes draw more likes than our top-level posts?"""
+    st = load_state()
+    done = set(st.get("replied") or [])
+    idx = {leaf(x["topic"].split(":", 1)[1]): x for x in price_index(c, t, now)}
+    out = []
+    for p in sorted(forum or [], key=lambda p: -(p.get("likes") or 0)):
+        if p.get("author") == NAME or p.get("role") != "buyer" or not p.get("refs") or p.get("thread") \
+                or (p.get("likes") or 0) < min_likes or now - (p.get("ts") or 0) > max_age or p.get("id") in done:
+            continue
+        text = p.get("text") or ""
+        hit = next((k for k in sorted(idx, key=len, reverse=True) if k and k in text), None)
+        if not hit:
+            continue
+        x = idx[hit]
+        ko = x["texts"]["ko"].replace("[시세]", "[보충]", 1).split("\n")
+        body = "\n".join([ko[0] + " (저희 장부 집계로 보충합니다)"] + ko[1:4])
+        en = x["texts"]["en"].split("\n")[0].replace("[Market]", "[Addendum]", 1)
+        js = (x["texts"].get("json") or "").split("\n")[0]   # customers are agents: JSON first (HQ 11-04)
+        js = js.replace('"market_summary"', '"addendum"', 1).replace(f'"category"', f'"reply_to":{p["id"]},"category"', 1)
+        js = js if len(js) <= 600 else ""
+        text = (js + "\n" + HUMAN + "\n" if js else "") + body + "\n" + en
+        out.append({"topic": f"reply:{p['id']}", "as": "buyer", "thread": p["id"], "refs": x["refs"][:5],
+                    "score": 3.0, "text": text[:1000], "kind": "reply", "reply_to": p["id"]})
+        break
+    return out
 
 
 def honesty(c, t, now):
@@ -435,7 +467,7 @@ def tick(md=Path(".market"), c=None, now=None):
     # a post's score is the Wilson lower bound of its votes (6 likes 0.61, 7 likes 0.646) and buyer ALL averages it:
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + stock_check(c, t, now) \
-        + receipt_tips(c, t, now) \
+        + receipt_tips(c, t, now) + replies(c, t, forum, now) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
@@ -443,7 +475,7 @@ def tick(md=Path(".market"), c=None, now=None):
     if state.get("day") != day:
         state["day"], state["today"] = day, {}
     for role in ("buyer", "shop"):
-        if now - state["last"].get(role, 0) < 300:
+        if now - state["last"].get(role, 0) < (t.get("gap_s") or {}).get(role, 300):
             continue
         if state.setdefault("today", {}).get(role, 0) >= (t["max_posts_day"] or {}).get(role, 99):
             continue
@@ -466,12 +498,15 @@ def tick(md=Path(".market"), c=None, now=None):
                     pass
             if style == "short":
                 best = dict(best, refs=(best.get("refs") or [])[:5])
-            best = dict(best, text=agent_first(best, style))  # customers are agents (HQ 11-04); order is tested
+            if best.get("kind") != "reply":
+                best = dict(best, text=agent_first(best, style))  # customers are agents (HQ 11-04); order is tested
             line = {"post": best["text"][:1000], "refs": best["refs"], "as": role}
             if best.get("thread"):
                 line["thread"] = best["thread"]
             lines.append(line)
             state["posted"][best["topic"]] = now
+            if best.get("reply_to"):
+                state["replied"] = (state.get("replied", []) + [best["reply_to"]])[-500:]
             state["last"][role] = now
             state["today"][role] = state["today"].get(role, 0) + 1
     vs = votes(forum, state)

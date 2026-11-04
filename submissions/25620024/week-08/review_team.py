@@ -17,12 +17,13 @@ from pathlib import Path
 HERE = Path(__file__).parent
 STATE = HERE / "private" / "review_team.json"
 TRACK = HERE / "private" / "enuri" / "forum_track.json"
-ARMS = ["summary:json", "summary:text", "summary:short", "records:json", "records:text", "records:short"]
+ARMS = ["summary:json", "summary:text", "summary:short", "records:json", "records:text", "records:short", "reply:text"]
 # format x style: JSON first, Korean+English text first, or three Korean lines with 5 refs (11-04 review: our posts
 # draw ~1 like fewer than the top authors' in every format -- is it length?). The tracker tells the styles apart by
 # tag and length, so each arm is scored on its own posts.
 TAGS = {"summary:json": "{market_summary}", "summary:text": "[시세]", "summary:short": "[시세]",
-        "records:json": "{purchase_records}", "records:text": "[구매 기록]", "records:short": "[구매 기록]"}
+        "records:json": "{purchase_records}", "records:text": "[구매 기록]", "records:short": "[구매 기록]",
+        "reply:text": "{addendum}"}                     # HQ 11-04: a reply under a post the forum already likes
 EPSILON, MIN_N, AGE = 0.2, 3, "15"   # 30 min never came: the forum's newest-100 list drops our posts before that
 ME = "dragonash"
 
@@ -41,6 +42,11 @@ def measured():
         if p.get("author") != ME or AGE not in (p.get("likes") or {}):
             continue
         for arm, tag in TAGS.items():               # a text post is long, a short one is short (tracker's "long")
+            if arm == "reply:text":
+                if p.get("tag") == tag:
+                    out[arm].append(p["likes"][AGE])
+                    break
+                continue
             if p.get("tag") == tag and (not arm.endswith((":text", ":short")) or
                                         arm.endswith(":text") == ((p.get("len") or 0) >= 400)):
                 out[arm].append(p["likes"][AGE])
