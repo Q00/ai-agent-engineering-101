@@ -51,6 +51,12 @@ def theta():
         fl = finance_agent.limits()
     except Exception:
         fl = {}
+    try:                                                      # the owner's override wins over finance (HQ 11-04)
+        ov = json.loads((Path(__file__).parent / "private" / "owner_override.json").read_text(encoding="utf-8"))
+        if ov.get("window_spend") is not None:
+            fl = {**fl, "window_spend": ov["window_spend"]}
+    except (OSError, ValueError):
+        pass
     if fl:
         t["cash_reserve"] = max(t["cash_reserve"], fl.get("cash_floor", 0))
         t["window_budget"] = min(t["window_budget"], fl.get("window_spend", t["window_budget"]))
@@ -97,7 +103,7 @@ def plan(md, c, t, now=None):
             return
         qty = min(qty, t["max_qty"] - buy.get(sku, 0))
         cost = r["list_price"] * t["cost_guess"] * qty
-        if qty <= 0 or cost > cash or len(buy) >= 10 and sku not in buy:
+        if qty <= 0 or cost > cash or len(buy) >= t.get("max_skus", 25) and sku not in buy:   # 10 -> 25 (HQ 11-04: inextro buys 3x)
             return
         buy[sku] = buy.get(sku, 0) + qty
         cash -= cost

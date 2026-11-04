@@ -56,7 +56,7 @@ end of the round (stock still unsold then is lost money; bankruptcy aid is subtr
 - advice: 2-5 concrete points for the sales team, with numbers (margins too thin, cash tied in slow stock, a
   promotion that costs more than it brings, warranty or guarantee exposure, ...)
 - limits (binding; the code enforces them over the sales plan): min_margin over cost (0.05-0.60),
-  window_spend as a share of the 5,000,000 start per supply window (0.0-1.0), cash_floor as a share of the start
+  window_spend as a share of the 5,000,000 start per supply window (0.0-3.0), cash_floor as a share of the start
   (0.10-0.80), max_warranty_h (0, 3 or 6), max_undercut under the market median for follow pricing (0.0-0.05)
 - forecast_profit_per_h: your forecast of the change in profit per hour over the next hour
 - lessons: score your last forecast and limits with brief.scorecard and brief.history (1-3 lessons, keep / undo /
@@ -133,7 +133,7 @@ def hq_directive():
 
 FATAL_CASH, FATAL_LOSS, MIN_SPEND, MAX_FLOOR = 0.10, 0.15, 0.03, 0.12   # HQ 11-04 02:45: floor 0.6M, fatal 0.5M
 # (stock sells in 12 min, cash returns before the next window; the bankruptcy line is 500,000 with stock left)
-MAX_SPEND = 1.0            # HQ 11-04 02:40: no window cap, cash decides (stock turns in 12 min)
+MAX_SPEND = 3.0            # HQ 11-04 12:50: up to 15M per window -- inextro supplied 3x our units in 6 h
 
 
 def fatal(snap):
