@@ -36,6 +36,7 @@ STEP_S = 1200
 BOUNDARY_LEAD_S = 900
 HOLD_STEPS = 3
 LOSS_CAP_FRAC = 0.02
+LOSS_REF_S = 3600  # v1.24b: the loss cap's A reference covers at least 1 h even when blocks are 20 min
 RETEST_AFTER_S = 86400
 MEMCHECK_S = 3600  # 성수님 2026-11-04: memory recall check every hour (was daily)
 SEED = 20261104
@@ -506,6 +507,15 @@ def end(ctx, L, exp, verdict, stats, now, reason=None):
     L["lanes"][lane].update(active=None, next_cycle_step=step_idx(L["pol"], now))
 
 
+def lane_block_steps(ctx, lane):
+    """v1.24: the switchback block length of a lane = the largest block_steps among its switchback keys."""
+    fams = LANES.get(lane, ())
+    return max(
+        (e["block_steps"] for e in ctx.space if e["family"] in fams and e.get("protocol") == "switchback"),
+        default=None,
+    )
+
+
 def reblock(ctx, exp):
     """v1.24 (2026-11-05, 성수님: improve overnight): a switchback experiment takes its lane's current block length
     (the largest block_steps among the lane's switchback keys) until its first block closes, so a shorter family
@@ -513,11 +523,7 @@ def reblock(ctx, exp):
     yet, so the pair statistics are untouched. -> the old block_steps when changed, else None."""
     if exp.get("protocol") != "switchback" or any("t1" in b for b in exp.get("blocks") or []):
         return None
-    fams = LANES.get(exp_lane(exp), ())
-    want = max(
-        (e["block_steps"] for e in ctx.space if e["family"] in fams and e.get("protocol") == "switchback"),
-        default=None,
-    )
+    want = lane_block_steps(ctx, exp_lane(exp))
     if not want or want == exp["block_steps"] or want <= exp.get("washout_steps", 0):
         return None
     old, exp["block_steps"] = exp["block_steps"], want
@@ -541,7 +547,7 @@ def advance(ctx, L, exp, store, stats, now):
     if exp["status"] == "scheduled":
         if now < exp["t_start"]:
             return "scheduled"
-        m = measure(store, stats, exp, now - blk_s, now, **bd)
+        m = measure(store, stats, exp, now - max(blk_s, LOSS_REF_S), now, **bd)
         exp["a_ref"] = m
         arm = "B" if exp["protocol"] == "long" else X.block_arm(exp["seed"], 0)
         put_arm(ctx, L, exp, arm, now)
@@ -556,16 +562,18 @@ def advance(ctx, L, exp, store, stats, now):
         if exp["side"] == "shop":
             # whole-shop value_h from the store over every A window and the current B block, so concurrent
             # shop-side B arms (price and stock lanes) are capped on their combined effect; not the verdict metric
-            t_a = [(b["t0"], b["t1"]) for b in exp["blocks"] if b["arm"] == "A" and "t1" in b] or [
-                (exp["blocks"][0]["t0"] - blk_s, exp["blocks"][0]["t0"])
-            ]
+            t_a = [(b["t0"], b["t1"]) for b in exp["blocks"] if b["arm"] == "A" and "t1" in b]
+            if sum(t1 - t0 for t0, t1 in t_a) < LOSS_REF_S:  # v1.24b: short A history -> add the 1 h before block 0
+                t0_ = exp["blocks"][0]["t0"]
+                t_a = [(t0_ - max(blk_s, LOSS_REF_S), t0_)] + t_a
             a_won = [ST.block_metrics(store, t0, t1, stats)["value_h"] for t0, t1 in t_a]
             b_m = ST.block_metrics(store, cur["t0"], now, stats)
             short = (sum(a_won) / len(a_won) - b_m["value_h"]) * b_m["hours"]
         else:
-            a_won = [b["won"] for b in exp["blocks"] if b["arm"] == "A" and "won" in b] or [
-                exp["a_ref"]["won"]
-            ]
+            a_bl = [b for b in exp["blocks"] if b["arm"] == "A" and "won" in b]
+            a_won = [b["won"] for b in a_bl]
+            if sum(b.get("hours") or 0 for b in a_bl) * 3600 < LOSS_REF_S:  # v1.24b: same 1 h floor as the shop side
+                a_won = [exp["a_ref"]["won"]] + a_won
             b_m = measure(store, stats, exp, cur["t0"], now)
             short = (sum(a_won) / len(a_won) - b_m["won"]) * b_m["hours"]
         bal = store.get("balance") or (pol.get("shop") or {}).get("balance_floor") or 0
@@ -947,8 +955,8 @@ def cycle(ctx, L, lane, store, stats, now, record=True):
         "market": {c: stats["category"][c] for c in cats},
         "budget": {
             "h_to_freeze": ST.time_info(now)["h_to_freeze"],
-            "switchback_experiments_left": max(
-                0, int(ST.time_info(now)["h_to_freeze"] // 24)
+            "switchback_experiments_left": max(  # v1.24b: longest run = 12 pairs of this lane's blocks
+                0, int(ST.time_info(now)["h_to_freeze"] // max(1e-9, X.LOOKS[-1] * 2 * lane_block_steps(ctx, lane) * STEP_S / 3600))
             ),
         },
     }

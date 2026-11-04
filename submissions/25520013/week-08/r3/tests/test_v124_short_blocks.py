@@ -62,3 +62,8 @@ def test_an_experiment_with_a_closed_block_keeps_its_length():
 def test_long_experiments_and_matching_lengths_are_left_alone():
     assert loop.reblock(CTX, _exp("forum", steps=12, protocol="long")) is None
     assert loop.reblock(CTX, _exp("price", steps=1)) is None
+
+
+def test_lane_block_steps_and_the_loss_cap_reference_floor():
+    assert [loop.lane_block_steps(CTX, ln) for ln in ("price", "stock", "buyer")] == [1, 2, 1]
+    assert loop.LOSS_REF_S >= 3 * loop.STEP_S  # v1.24b: the A reference never shrinks below the old 1 h block
