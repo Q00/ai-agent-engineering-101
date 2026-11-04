@@ -13,7 +13,7 @@ from r3.market_files import (
     read_demand,
     read_inventory,
 )
-from r3.policy import Policy
+from r3.policy import Policy, RestockPolicy
 from r3.restock import (
     DemandSignal,
     RestockState,
@@ -235,3 +235,29 @@ def test_review_rates_certified_facts_and_never_prints_the_budget(
     recorded = (tmp_path / "r3-deals.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(recorded) == 3
     assert json.loads(recorded[0])["ledger"] == 4321
+
+
+def test_restock_stocks_market_best_sellers_deep_and_skips_unsold_skus(
+    tmp_path: Path,
+) -> None:
+    now = time.time()
+    folder = write_market(
+        tmp_path / ".market", [unit(CURTAIN, 1, now=now)], balance=30_000_000
+    )
+    policy = RestockPolicy(
+        goods_min_list_price=0, goods_max_list_price=1_000_000, units_per_sku=10
+    )
+    # The curtain sells 800 a day market-wide, the lamp never has.
+    signal = DemandSignal({}, {CURTAIN: 800})
+    lines, _ = plan(
+        read_inventory(folder),
+        read_catalog(folder),
+        read_demand(folder),
+        policy,
+        RestockState(),
+        now,
+        signal,
+    )
+    by_sku = {line["sku"]: line["qty"] for line in lines}
+    assert by_sku.get(CURTAIN) == 9  # depth min(10, 800 // 50), one already held
+    assert LAMP not in by_sku

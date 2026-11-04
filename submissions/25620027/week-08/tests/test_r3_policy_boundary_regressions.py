@@ -59,7 +59,7 @@ def test_zero_food_allocation_applies_to_replenishment_and_demand_signals(
     now = time.time()
     folder = write_market(tmp_path / ".market", [])
     state = RestockState(last_sold_at={KIMCHI: now}) if replenish else RestockState()
-    signal = DemandSignal({}, {KIMCHI: 1000}) if with_signal else None
+    signal = DemandSignal({}, {KIMCHI: 1000, LAMP: 10}) if with_signal else None
     lines, _ = plan(
         read_inventory(folder),
         read_catalog(folder),
@@ -96,7 +96,10 @@ def test_hot_food_demand_does_not_override_the_food_line_allowance() -> None:
         RestockPolicy(food_share=0.1),
         RestockState(),
         time.time(),
-        DemandSignal({i.category: 100 for i in catalog.values()}, {}),
+        DemandSignal(
+            {i.category: 100 for i in catalog.values()},
+            dict.fromkeys(catalog, 100),
+        ),
     )
     assert len(lines) == 1
 

@@ -53,6 +53,15 @@ OWNER_MIN_FOOD_SHELF_HOURS: Final = 168
 # a unit at ~0.78 of list on ~0.60 cost earns ~18% of list, so one 420k mattress
 # earns what about 28 cheap food sales do.
 VALUE_UNIT: Final = 100_000
+# Depth (11/4 audit): two mattresses were 43% of market takings and sell within
+# minutes of supply, yet we held 3 and 1 while 10-unit lots of SKUs with no market
+# sale sat unsold. The top goods SKUs by market takings (settles x list, 24 h) are
+# held to a depth of one unit per DEPTH_SETTLES market settles (owner 11/4: go
+# aggressive, so one per 50), from 2 up to
+# units_per_sku; a SKU needs MIN_MARKET_SETTLES to count as selling at all.
+DEPTH_SKUS: Final = 6
+DEPTH_SETTLES: Final = 50
+MIN_MARKET_SETTLES: Final = 5
 
 
 class RestockState(FrozenModel):
@@ -157,7 +166,11 @@ def pick_sku(  # noqa: PLR0913 - explicit inputs
     rng: random.Random,
     already: set[str],
 ) -> CatalogItem | None:
-    """Choose a SKU: the settled one with the most takings, else a random fit."""
+    """Choose a SKU: the settled one with the most takings.
+
+    With a market signal, a category with no SKU that sells is skipped: random
+    picks bought 10-unit lots nobody wanted (11/4). Without one, a random fit.
+    """
     fitting = [
         item
         for item in catalog.values()
@@ -168,18 +181,49 @@ def pick_sku(  # noqa: PLR0913 - explicit inputs
     if not fitting:
         return None
     if signal is not None:
-        settled = [i for i in fitting if signal.by_sku.get(i.sku, 0) > 0]
-        if settled:
-            # expected takings, not settle count: a dear SKU that sells beats a
-            # cheap one that sells a little more often
-            return max(
-                settled,
-                key=lambda i: (
-                    signal.by_sku.get(i.sku, 0) * i.list_price,
-                    i.list_price,
-                ),
-            )
+        settled = [
+            i for i in fitting if signal.by_sku.get(i.sku, 0) >= MIN_MARKET_SETTLES
+        ]
+        if not settled:
+            return None
+        # expected takings, not settle count: a dear SKU that sells beats a
+        # cheap one that sells a little more often
+        return max(
+            settled,
+            key=lambda i: (signal.by_sku.get(i.sku, 0) * i.list_price, i.list_price),
+        )
     return rng.choice(fitting)
+
+
+def depth_targets(
+    catalog: dict[str, CatalogItem],
+    signal: DemandSignal | None,
+    policy: RestockPolicy,
+) -> list[tuple[CatalogItem, int]]:
+    """Top goods SKUs by market takings and how many units of each to hold."""
+    if signal is None:
+        return []
+    selling = [
+        item
+        for item in catalog.values()
+        if item.kind == "goods"
+        and sku_fits(item, policy)
+        and signal.by_sku.get(item.sku, 0) >= MIN_MARKET_SETTLES
+    ]
+    selling.sort(key=lambda i: -signal.by_sku.get(i.sku, 0) * i.list_price)
+    return [
+        (
+            item,
+            max(
+                2,
+                min(
+                    policy.units_per_sku,
+                    signal.by_sku.get(item.sku, 0) // DEPTH_SETTLES,
+                ),
+            ),
+        )
+        for item in selling[:DEPTH_SKUS]
+    ]
 
 
 def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
@@ -229,11 +273,22 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
         return allowed
 
     units_total = len(inventory.units)
+    held = {sku: len(units) for sku, units in seen_now.items()}
+    # 0. Depth: keep the market's best sellers on the shelf.
+    for item, target in depth_targets(catalog, signal, policy):
+        if len(lines) >= MAX_LINES or units_total >= policy.max_units:
+            break
+        qty = affordable(item, target - held.get(item.sku, 0))
+        if qty:
+            lines.append({"sku": item.sku, "qty": qty})
+            units_total += qty
     # 1. Replenish what just sold, while demand for it is fresh.
     for sku, stamp in sorted(sold_at.items(), key=lambda kv: -kv[1]):
         if len(lines) >= MAX_LINES or units_total >= policy.max_units:
             break
         if now - stamp > policy.stale_hours * 3600 or sku in stocked:
+            continue
+        if any(line["sku"] == sku for line in lines):
             continue
         item = catalog.get(sku)
         if item is None or not sku_fits(item, policy):
