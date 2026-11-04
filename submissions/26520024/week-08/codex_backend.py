@@ -123,10 +123,10 @@ class ModelSession:
         self.stats = dict(actor_calls=0, reader_calls=0, retries=0, input_tokens=0, output_tokens=0)
 
     def __call__(self, system, history, purpose):
-        if purpose not in ("buyer", "seller", "reader"):
+        if purpose not in ("buyer", "seller", "reader", "r3-discovery", "r3-restock", "round3_reflection"):
             raise ValueError("unknown call purpose")
         for attempt in range(len(RETRY_DELAYS) + 1):
-            key = "reader_calls" if purpose == "reader" else "actor_calls"
+            key = "reader_calls" if purpose in ("reader", "r3-discovery", "round3_reflection") else "actor_calls"
             self.stats[key] += 1
             call = self.stats["actor_calls"] + self.stats["reader_calls"]
             def emit(event, **data):
