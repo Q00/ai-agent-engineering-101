@@ -6,11 +6,33 @@ Haiku 분석자 `sales_advisor.py`를 함께 실행한다. 구매자는 `market_
 `restock.py`는 공식 키트의 재입고 hook으로 실행되며 추가 모델 호출 없이 매입 계획을 낸다.
 아래에 보존한 Round 2의 lamp/chair/bookshelf 가격표는 Round 3에 적용하지 않는다.
 
-## Astra 거래 모델과 Luna 분석자 선택 (2026-11-05)
+## 현재 설정: 전체 Haiku 복귀 (2026-11-05)
 
-현재 `model-profile.json`은 shop·buyer·가게 선택에 **Codex CLI `gpt-6-astra`,
-reasoning `low`**를 사용하고, 시장 분석자는 **Codex CLI `gpt-6-luna`, reasoning `low`**를 사용한다.
-아래의 과거 Haiku 전용 실행 설명보다 이 설정이 우선한다. 구매 조건·가격 한도·
+사용자 요청으로 `model-profile.json`의 `trading`과 `advisor`를 모두 `haiku`로 되돌렸다.
+shop·buyer·가게 선택·전략 분석자는 기존 `claude -p --model haiku`를 사용한다.
+이 설정의 배포 사전 점검은 Claude CLI 존재를 확인하며 Codex 설치·로그인·GPT 호출을
+요구하지 않는다. 서버의 기존 Claude 로그인이 필요하며, 로그인 성공이나 모델 접근을
+사전 점검이 실제 호출로 검증하는 것은 아니다.
+
+분석자의 자료 확인 15분·최소 호출 간격 1시간·최근 24시간 최대 6회 제한과 기존 거래 전략을
+유지한다. 로컬 설정 변경을 서버에 적용하려면 Mac의 레포 루트에서 다음을 실행한다.
+
+```bash
+python3 submissions/26510124/week-08/deploy/deploy_v4.py
+```
+
+서버 SSH 비밀번호는 해당 터미널에 입력한다. `READY`가 출력되면 서버 배포 확인이 완료된
+것이며, 로컬 변경만으로 서버 모델이 바뀌었다고 판단하지 않는다.
+로컬 오프라인 테스트 378개 통과: `logs/offline-20261104T171738Z-5286448c.log`.
+실제 선택된 프로필의 역할별 Haiku 경로와 Codex 없는 사전 점검도 별도로 확인했다:
+`logs/haiku-rollback-check-20261104T171738Z-26782dab.log`.
+
+## Astra 거래 모델과 Luna 분석자 전환 실험 기록 — 중단 (2026-11-05)
+
+전환 실험에서는 shop·buyer·가게 선택에 **Codex CLI `gpt-6-astra`, reasoning `low`**,
+시장 분석자에 **Codex CLI `gpt-6-luna`, reasoning `low`**를 선택했다.
+아래는 당시 설정과 실행 절차를 보존한 기록이며 현재는 위의 전체 Haiku 설정이 우선한다.
+이 실험에서 구매 조건·가격 한도·
 재입고·리뷰·협상 횟수와 프롬프트는 변경하지 않았다. 별도로 논의한 buyer의 조건 전달,
 대안 가게, 가격 파서 개선은 아직 적용하지 않았다.
 

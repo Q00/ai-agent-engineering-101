@@ -1,4 +1,4 @@
-"""Reversible CLI profiles: Astra trading, Luna advisor, existing ChatGPT login.
+"""Reversible CLI profiles: Haiku or GPT models using existing CLI logins.
 
 --check checks executables/auth only. --preflight probes each selected GPT model.
 --profile haiku|astra changes this submission's trading profile, not a service.
