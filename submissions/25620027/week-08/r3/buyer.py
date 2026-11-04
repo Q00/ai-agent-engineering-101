@@ -11,6 +11,7 @@ otherwise unrecognized prose without changing the code's price or payment limits
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import json
 import random
@@ -65,6 +66,44 @@ TRADE_GATE: Final = "AX_R3_TRADE_MODEL"
 
 class SuspiciousCounterpartError(HarnessError):
     """The seller's text tripped an injection or scam screen; walk away."""
+
+
+class ShortShelfLifeError(HarnessError):
+    """The offered food unit will not last the order; try another shop."""
+
+
+# A food order the shop's unit cannot serve is found in its first reply (the
+# market certificate carries expires_at) instead of at payment: 154 agreed deals
+# on 11/4 were negotiated to the end and then refused for shelf life. With this
+# share of the order's seconds still left, the next-best shop gets the order.
+RETRY_BEFORE_SHARE: Final = 0.5
+# Expiry is wall-clock time; negotiation timing uses an injectable monotonic clock.
+WALL_CLOCK: Final = time.time
+
+
+def stated_hours_left(task: Task, now: float) -> float | None:
+    """Hours of shelf life the seller's unit has, from its data part; None if unsaid.
+
+    Read from the market-signed certificate when present (``cert.cert.expires_at``),
+    else the seller's own ``expires_at`` or ``hours_left``. Used only to walk away
+    early; the kit still checks the checkout before it pays.
+    """
+    for part in task.status.message.parts:
+        data = part.data
+        if not isinstance(data, dict):
+            continue
+        cert = data.get("cert")
+        inner = cert.get("cert") if isinstance(cert, dict) else None
+        for source in (inner, data):
+            if not isinstance(source, dict):
+                continue
+            expires = source.get("expires_at")
+            if isinstance(expires, (int, float)) and not isinstance(expires, bool):
+                return (float(expires) - now) / 3600
+        hours = data.get("hours_left")
+        if isinstance(hours, (int, float)) and not isinstance(hours, bool):
+            return float(hours)
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -329,6 +368,17 @@ def accept_policy(order: Order, policy: BuyerPolicy) -> dict[str, object] | None
     return accept
 
 
+def check_shelf_life(task: Task, order: Order | None, policy: BuyerPolicy) -> None:
+    """Raise ShortShelfLifeError when the offered food unit cannot last the order."""
+    if order is None or order.kind != "food" or not order.use_within_hours:
+        return
+    need = float(order.use_within_hours) + policy.food_margin_hours
+    left = stated_hours_left(task, WALL_CLOCK())
+    if left is not None and left < need:
+        message = f"shelf life {left:.1f} h left, the order needs {need:.1f}"
+        raise ShortShelfLifeError(message)
+
+
 async def negotiate(  # noqa: PLR0913, C901 - one negotiation, explicit inputs
     remote: Remote,
     endpoint: str,
@@ -368,6 +418,7 @@ async def negotiate(  # noqa: PLR0913, C901 - one negotiation, explicit inputs
         flag = suspicious(task.observation())
         if flag is not None:
             raise SuspiciousCounterpartError(flag)
+        check_shelf_life(task, order, policy)
         ask = seller_ask(task, floor=int(choice.list_price * 0.1))
         if ask is None and reads < 1:
             reads += 1
@@ -540,18 +591,22 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
     except (OSError, sqlite3.Error):
         emit("[R3 BUYER] events ledger unavailable; choosing without own history")
     picture = load_picture(picture_path(state))
-    choice = choose(
-        order,
-        shops,
-        catalog,
-        outcomes,
-        reasons,
-        blocked=blocked | cooling,
-        picture=picture,
-        ratios=ratios,
-        explore=policy.buyer.explore_rate,
-        recent=recent,
-    )
+
+    def pick(skip: frozenset[str] = frozenset()) -> Choice | None:
+        return choose(
+            order,
+            shops,
+            catalog,
+            outcomes,
+            reasons,
+            blocked=blocked | cooling | skip,
+            picture=picture,
+            ratios=ratios,
+            explore=policy.buyer.explore_rate,
+            recent=recent,
+        )
+
+    choice = pick()
     if choice is None:
         fallback = shops[0].url if shops else ""
         return Outcome(
@@ -577,18 +632,52 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         with anyio.fail_after(policy.buyer.order_seconds):
             async with create_client() as client:
                 remote = Remote(client, emit, security)
-                card = await remote.card(choice.shop.url)
-                task, price = await negotiate(
-                    remote,
-                    card.endpoint(),
-                    choice,
-                    order.budget,
-                    policy=policy.buyer,
-                    emit=emit,
-                    clock=time.monotonic,
-                    reader=reader,
-                    order=order,
-                )
+                skipped: set[str] = set()
+                while True:
+                    card = await remote.card(choice.shop.url)
+                    try:
+                        task, price = await negotiate(
+                            remote,
+                            card.endpoint(),
+                            choice,
+                            order.budget,
+                            policy=policy.buyer,
+                            emit=emit,
+                            clock=time.monotonic,
+                            reader=reader,
+                            order=order,
+                        )
+                    except ShortShelfLifeError as short:
+                        spent = time.monotonic() - started
+                        skipped.add(choice.shop.name)
+                        retry = (
+                            pick(frozenset(skipped))
+                            if spent < policy.buyer.order_seconds * RETRY_BEFORE_SHARE
+                            else None
+                        )
+                        if retry is None:
+                            raise
+                        emit(
+                            f"[R3 BUYER] skip shop={choice.shop.name} ({short}); "
+                            f"retry shop={retry.shop.name} sku={retry.sku}"
+                        )
+                        if events is not None:
+                            with contextlib.suppress(OSError, sqlite3.Error):
+                                events.record_attempt(
+                                    order=order.order,
+                                    shop=choice.shop.url.rstrip("/"),
+                                    shop_name=choice.shop.name,
+                                    sku=choice.sku,
+                                    list_price=choice.list_price,
+                                    price=None,
+                                    outcome="no_deal",
+                                    reason=f"ShortShelfLifeError: {short}",
+                                    elapsed=spent,
+                                    market_round=3,
+                                )
+                        choice = retry
+                        continue
+                    break
                 task_state = task.status.state
                 if task_state == "TASK_STATE_COMPLETED":
                     receipt = receipt_from(task)

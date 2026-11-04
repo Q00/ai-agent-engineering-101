@@ -396,3 +396,66 @@ def test_failing_shops_cool_down_and_exploration_spreads_orders(
     assert fast.price_factor("http://b.test", ratios) == pytest.approx(1.1)
     assert fast.price_factor("http://a.test", ratios) == pytest.approx(0.9)
     assert fast.price_factor("http://z.test", ratios) == 1.0
+
+
+def test_food_unit_too_short_for_the_order_is_seen_in_the_first_reply() -> None:
+    from market_a2a.remote import Task  # noqa: PLC0415 - test only
+
+    now = 1_793_766_400.0
+
+    def reply(data: dict[str, object]) -> Task:
+        return Task.model_validate(
+            {
+                "id": "t",
+                "contextId": "c",
+                "status": {
+                    "state": "TASK_STATE_INPUT_REQUIRED",
+                    "message": {
+                        "messageId": "m",
+                        "role": "ROLE_AGENT",
+                        "parts": [{"text": "ask 26505"}, {"data": data}],
+                    },
+                },
+            }
+        )
+
+    signed = reply(
+        {
+            "ask": 26505,
+            "cert": {
+                "cert": {"unit": "u-1", "kind": "food", "expires_at": now + 256 * 3600},
+                "sig": "x",
+            },
+        }
+    )
+    left = fast.stated_hours_left(signed, now)
+    assert left is not None
+    assert round(left) == 256  # 256 h left: a 360 h order walks away at once
+    assert fast.stated_hours_left(reply({"hours_left": 12.5}), now) == 12.5
+    assert fast.stated_hours_left(reply({"ask": 1}), now) is None
+
+
+def test_short_food_unit_raises_so_the_order_moves_to_another_shop() -> None:
+    from market_a2a.remote import Task  # noqa: PLC0415 - test only
+    from r3.policy import BuyerPolicy  # noqa: PLC0415 - test only
+
+    task = Task.model_validate(
+        {
+            "id": "t",
+            "contextId": "c",
+            "status": {
+                "state": "TASK_STATE_INPUT_REQUIRED",
+                "message": {
+                    "messageId": "m",
+                    "role": "ROLE_AGENT",
+                    "parts": [{"data": {"hours_left": 20.0}}],
+                },
+            },
+        }
+    )
+    food = Order(item="김치", kind="food", use_within_hours=24, acceptable=(KIMCHI,))
+    with pytest.raises(fast.ShortShelfLifeError):
+        fast.check_shelf_life(task, food, BuyerPolicy())
+    fast.check_shelf_life(
+        task, food.model_copy(update={"use_within_hours": 12}), BuyerPolicy()
+    )
