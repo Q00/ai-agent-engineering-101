@@ -72,10 +72,17 @@ MAX_SHARE = 0.95          # 0.92 until Nov 4 13:00: our sales averaged 0.62 of l
 # median 0.80 of list while ours sat for up to 3.7 h at 0.79-0.88; reviews of ours at 87-89% of list gave 3 stars.
 # Opening at 0.86 with our up-to-10% concession closes near 0.80.
 BIG_TICKET, BIG_MAX_SHARE = 1_000_000, 0.86
+# Cheap goods and food open at most CHEAP_MAX_SHARE (Nov 5 01:40): each review counts the same in our stars
+# whatever the price, and ours fall with the price paid (1.77 h of ledger results: 0.70-0.75 of list 4.6 stars,
+# 0.80 4.34, 0.85 4.07, 0.90 3.82, 0.95 2.72; 120 of our 261 reviews were at 0.85+), while a 20k sale at 0.95
+# instead of 0.80 earns 3k. Stars are 0.2 of shop ALL and ours sat at the 0.32 percentile (4.58 vs 4.72 at 0.75).
+CHEAP_TICKET, CHEAP_MAX_SHARE = 100_000, 0.80
 
 
 def max_share(u):
-    return BIG_MAX_SHARE if u["list_price"] >= BIG_TICKET else MAX_SHARE
+    if u["list_price"] >= BIG_TICKET:
+        return BIG_MAX_SHARE
+    return CHEAP_MAX_SHARE if u["list_price"] < CHEAP_TICKET else MAX_SHARE
 TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask, after haggling
 SHARE_BOUNDS = (0.55, 0.97)
 CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
@@ -354,7 +361,11 @@ class Seller(AgentExecutor):
         if offer is None and ACCEPT.search(text):
             offer = ask
         if offer is not None and offer >= ask:
-            await self._close(task, up, say, deal, ask)
+            # a bare number at or over our ask is the buyer's agreed price: the receipt says that price (up to list).
+            # Nov 5 00:00-01:40, buyer cheapest-in-town sent list price, we closed at our lower ask, and it rated
+            # 21 of our deals 1.38 stars on average ("Agreed 17900, receipt says 16340") vs 3.0 for other shops
+            bare = re.fullmatch(r"\s*[\d,]+(\.\d+)?\s*", text or "")
+            await self._close(task, up, say, deal, int(min(offer, deal["unit"]["list_price"])) if bare else ask)
         elif offer is not None and offer >= max(floor, ask * (1 - CLOSE_GAP)):
             await self._close(task, up, say, deal, offer)
         elif deal["rounds"] >= MAX_ROUNDS:
