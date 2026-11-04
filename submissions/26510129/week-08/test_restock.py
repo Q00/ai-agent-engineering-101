@@ -108,6 +108,15 @@ class RestockMemoryTest(unittest.TestCase):
         inv = {"balance": 5_000_000, "units": [{"category": "home>sofa", "cost": 600_000, "sku": "S1"}] * 2}   # 1.2M of a 3.1M cap
         self.assertEqual([], restock.plan(inv, catalog, demand, [], {}, {"categories": {"home>sofa": {"n": 5, "median_ratio": 0.8, "revenue": 4_000_000, "median_amount": 800_000}}}))
 
+    def test_category_pressure_counts_opens_per_deal_over_recent_events(self):
+        catalog = {"S": {"category": "home>sofa"}, "K": {"category": "food>kimchi"}}
+        events = ([{"at": "2026-11-05 00:10:00", "event": "seller_open", "sku": "S"}] * 6
+                  + [{"at": "2026-11-05 00:11:00", "event": "seller_deal", "sku": "S"}] * 2
+                  + [{"at": "2026-11-04 10:00:00", "event": "seller_open", "sku": "S"}] * 50      # too old
+                  + [{"at": "2026-11-05 00:12:00", "event": "seller_open", "sku": "K"}] * 3)       # under 5 opens
+        pressure = restock.category_pressure(events, catalog, "2026-11-04 19:00:00")
+        self.assertEqual({"home>sofa": {"opens": 6, "deals": 2, "opens_per_deal": 3.0, "close_rate": 0.333}}, pressure)
+
     def test_forum_requires_ledger_reference(self):
         forum = [{"text": "kimchi wanted", "refs": []}, {"text": "kimchi bought", "refs": [10]}]
         self.assertEqual(restock.forum_scores(forum, ["food>kimchi"])["food>kimchi"], 1)

@@ -114,6 +114,28 @@ def food_unit_ok(grade, shelf_hours, need):
 NICK = os.environ.get("MARKET_NICK", "jiseokkk")   # my market name, for shops that take a few percent off for regulars
 
 
+def scarcity(mem, category, recent=60):
+    """How scarce this category is for me right now: the share of my recent visits that found the listed unit gone.
+    11-05 01:00: orders arrive at a flat ~150/h around the clock (agents, not people), so there is no busy/quiet
+    hour; what moves is supply per category (sofas: two thirds of visits found nothing, kimchi: none). None under 10 visits."""
+    rows = [r for r in mem if r.get("item") == category][-recent:]
+    if len(rows) < 10:
+        return None
+    return sum(1 for r in rows if r.get("outcome") == "no_stock") / len(rows)
+
+
+def regime(sc, discount):
+    """Bargaining posture from scarcity: scarce -> take a price up to 10% over the reference and open closer to the
+    ask; plentiful -> take only the reference or better and open deeper. Returns (quick-offer slack, first-offer discount)."""
+    if sc is None:
+        return 1.05, discount, "unknown"
+    if sc >= 0.6:
+        return 1.10, round(max(0.05, discount - 0.05), 3), "scarce"
+    if sc <= 0.3:
+        return 1.00, round(min(0.25, discount + 0.05), 3), "plentiful"
+    return 1.05, discount, "normal"
+
+
 def regulars_prompt(text):
     """A shop asking regulars to identify themselves: "reply 'buyer: <your market name>' and VIP -3% comes off this
     price at once (checked on the ledger)" (00:41, a shop I have 95 deals with). Free surplus for one message."""
@@ -168,7 +190,7 @@ def steered(t):
 
 
 def negotiate(url, item, budget, reference, record="", request=None, value_cap=None, food_need=None, shelf_hours=None,
-              grades=()):
+              grades=(), slack=1.05):
     """A sealed-budget loop: the LLM proposes, then the mandate guardian authorizes.
     `value_cap` is the SKU's list price: the guardian never pays above it, whatever the budget.
     `food_need` (the order's use_within_hours) with the SKU's `shelf_hours`: a unit whose stated grade cannot last
@@ -225,7 +247,7 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             ask = first_ask(t, value_cap)
         # after a reopen the shop has shown its floor: the next ask near it is taken rather than bargained down again
         quick, why = quick_offer(ask, stated_floor(status_text(t)), reference, guardian.limit,
-                                 1.10 if info.get("reopened") else 1.05)
+                                 max(slack, 1.10) if info.get("reopened") else slack)
         if quick is not None:
             # 11-05 00:30: 45% of the market's orders go unfilled and a unit draws several buyers within minutes, so
             # a price already at or under my reference is taken at once (no model call) rather than haggled for a few
@@ -435,6 +457,10 @@ def main():
     stats = ledger.load_stats(MEMORY.parent)   # what the market lately paid: the bargaining anchor per SKU
     food_need = order.get("use_within_hours") if order.get("kind") == "food" else None
     grades = tuple((accept_constraints(order) or {}).get("grades") or ())   # what the kit will pay for; checked first
+    sc = scarcity(mem, category)
+    slack, discount, posture = regime(sc, params["first_offer_discount"])
+    buyer_policy.emit("buyer_regime", item=category, scarcity=round(sc, 2) if sc is not None else None,
+                      posture=posture, quick_slack=slack, first_offer_discount=discount)
     category_ref, tried = reference, {}   # tried: shop url -> SKUs it was asked for
     for attempt in range(1, 7):   # day 1: 15 orders died on a shop whose card came back as an error page; now the order moves on
         tried.setdefault(pick["url"], set()).add(wanted)
@@ -443,8 +469,8 @@ def main():
         try:
             outcome, agreed, receipt, log, manip, info = negotiate(
                 pick["url"], wanted, a.budget, reference,
-                bargain_record(pick["name"], mem, params["first_offer_discount"]), request, value_cap,
-                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades
+                bargain_record(pick["name"], mem, discount), request, value_cap,
+                food_need, catalog.get(wanted, {}).get("shelf_hours"), grades, slack
             )
         except Exception as e:   # httpx errors, a card that is not JSON, a task without the fields we expect
             print(f"[buyer] shop unreachable: {type(e).__name__}: {str(e)[:120]}", flush=True)

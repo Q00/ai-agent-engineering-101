@@ -101,6 +101,15 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertTrue(market_buyer.regulars_prompt("REGULARS: bought here before? reply 'buyer: <your market name>' and VIP -3% comes off"))
         self.assertFalse(market_buyer.regulars_prompt("lamp: asking 115. Send your offer as a number."))
 
+    def test_regime_follows_category_scarcity(self):
+        mem = [{"item": "c", "outcome": "no_stock"}] * 8 + [{"item": "c", "outcome": "deal"}] * 2
+        self.assertEqual(0.8, market_buyer.scarcity(mem, "c"))
+        self.assertIsNone(market_buyer.scarcity(mem[:5], "c"))
+        self.assertEqual((1.10, 0.10, "scarce"), market_buyer.regime(0.8, 0.15))
+        self.assertEqual((1.00, 0.20, "plentiful"), market_buyer.regime(0.1, 0.15))
+        self.assertEqual((1.05, 0.15, "normal"), market_buyer.regime(0.45, 0.15))
+        self.assertEqual((1.05, 0.15, "unknown"), market_buyer.regime(None, 0.15))
+
     def test_listed_units_raise_a_shop_a_little(self):
         memory = []
         one = {"name": "one", "reviews": [], "offers": [{"sku": "s", "qty": 1}]}

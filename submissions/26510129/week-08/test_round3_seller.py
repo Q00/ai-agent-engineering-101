@@ -54,6 +54,16 @@ class Round3InventorySellerTest(unittest.TestCase):
         self.assertEqual(990, seller_r3.price_plan(unit, "task", market=(2000.0, 5, "sku"))["ask"])   # cap: list x 0.99
         self.assertIsNone(seller_r3.price_plan(unit, "task", market=(None, 0, "none"))["market"])
 
+    def test_category_pressure_moves_the_ask(self):
+        unit = {"sku": "GOOD-1", "kind": "goods", "cost": 700, "list_price": 1000, "grade": "A", "expires_at": None}
+        p = {"seller_volume_share": 1.0, "seller_markup": 1.0}
+        even = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p)
+        sought = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 10, "opens_per_deal": 3.0, "close_rate": 0.33})
+        slow = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 10, "opens_per_deal": 1.0, "close_rate": 0.33})
+        self.assertEqual((873, "even"), (even["ask"], even["regime"]))
+        self.assertEqual((917, "sought"), (sought["ask"], sought["regime"]))   # x 1.05
+        self.assertEqual((847, "slow"), (slow["ask"], slow["regime"]))         # x 0.97
+
     def test_receipt_options_are_truthful_and_grade_sensitive(self):
         options = seller_r3.receipt_options({"unit": "u1", "kind": "goods", "grade": "A"})
         self.assertEqual(options, {"unit": "u1", "claim": "A", "cert": True, "warranty_hours": 6})

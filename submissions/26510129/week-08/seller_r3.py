@@ -103,7 +103,7 @@ def policy_arm(unit, task, volume_share=None):
     return "volume" if int.from_bytes(digest[:8], "big") / 2**64 < share else "margin"
 
 
-def price_plan(unit, task, now=None, params=None, market=None):
+def price_plan(unit, task, now=None, params=None, market=None, pressure=None):
     """Return an explainable ask/floor. A floor is this agent's policy, not a market rule.
     `params` are the tuner's knobs (margins per arm, grade B cap); defaults when not given.
     `market` is ledger.market_price(): when the market paid a known price for this SKU (or its category) lately,
@@ -119,6 +119,15 @@ def price_plan(unit, task, now=None, params=None, market=None):
     market_price, market_n, market_src = market if market and market[0] else (None, 0, "none")
     if market_price:
         target = market_price * (0.97 if arm == "volume" else 1.05) * params["seller_markup"]
+    # the category's pressure from restock's category_pressure.json (my last 6 h): units that draw 1.5+ buyers each
+    # carry 5% more, units that close under 40% of the time give 3% back. 11-05 01:00: the market has no busy hour
+    # (orders arrive flat around the clock), so the regime is per category, not per time of day.
+    pressure = pressure or {}
+    regime = "even"
+    if pressure.get("opens_per_deal", 0) >= 1.5:
+        target, regime = target * 1.05, "sought"
+    elif pressure.get("opens", 0) >= 5 and pressure.get("close_rate", 1.0) < 0.4:
+        target, regime = target * 0.97, "slow"
     cap = list_price * {"A": 0.99, "B": params["grade_cap_B"], "C": 0.65}.get(unit.get("grade"), 0.85)
     target = min(target, cap)
     # goods pay 1% of cost a day in storage: from the third day the ask comes down 5% a day, to 70% of the target
@@ -140,7 +149,8 @@ def price_plan(unit, task, now=None, params=None, market=None):
     ask = max(floor, int(round(target)))
     return {"arm": arm, "ask": ask, "floor": floor, "cost": cost, "list_price": list_price,
             "hours_left": round(hours_left, 2) if hours_left is not None else None,
-            "market": round(market_price) if market_price else None, "market_n": market_n, "market_src": market_src}
+            "market": round(market_price) if market_price else None, "market_n": market_n, "market_src": market_src,
+            "regime": regime}
 
 
 def receipt_options(unit):
@@ -176,7 +186,8 @@ class Seller(AgentExecutor):
                 await up.reject(say("Sorry, no matching unit is in stock."))
                 return
             market = ledger.market_price(ledger.load_stats(MARKET_DIR), unit["sku"], unit.get("category"), unit.get("list_price"))
-            plan = price_plan(unit, task.id, params=strategy_params.load(), market=market)   # both re-read per task: live without a restart
+            pressure = (ledger.load_json(MARKET_DIR / "category_pressure.json") or {}).get(unit.get("category"))
+            plan = price_plan(unit, task.id, params=strategy_params.load(), market=market, pressure=pressure)   # all re-read per task
             signer = ReserveSigner(NAME, unit["sku"], plan["floor"], task.id, SHOP_KEY)
             deal = self.open[task.id] = {"unit": unit, "plan": plan, "ask": plan["ask"], "offers": [], "signer": signer}
             strategy("seller_open", task=tid, sku=unit["sku"], grade=unit.get("grade"), **plan)

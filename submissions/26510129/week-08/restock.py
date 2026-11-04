@@ -215,6 +215,45 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
     return buys
 
 
+PRESSURE_FILE = "category_pressure.json"
+PRESSURE_HOURS = 6
+
+
+def category_pressure(events, catalog, since):
+    """Per category, how many buyers each of my units draws (opens per deal) and the close rate over recent hours.
+    The seller reads this file: a category where units draw several buyers can carry a markup, one whose units do
+    not move needs a cut. Written every minute by this hook; the seller never reads the event log itself."""
+    opens, deals = Counter(), Counter()
+    for e in events:
+        if e.get("at", "") < since:
+            continue
+        category = (catalog.get(e.get("sku")) or {}).get("category") or "?"
+        if e.get("event") == "seller_open":
+            opens[category] += 1
+        elif e.get("event") == "seller_deal":
+            deals[category] += 1
+    return {c: {"opens": opens[c], "deals": deals[c], "opens_per_deal": round(opens[c] / max(1, deals[c]), 2),
+                "close_rate": round(deals[c] / opens[c], 3)}
+            for c in opens if opens[c] >= 5}
+
+
+def write_pressure(state, catalog, now=None):
+    try:
+        lines = (state / "seller_events.jsonl").read_text(encoding="utf-8").splitlines()[-30000:]
+    except OSError:
+        return {}
+    events = []
+    for line in lines:
+        try:
+            events.append(json.loads(line))
+        except ValueError:
+            continue
+    since = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime((now or time.time()) - PRESSURE_HOURS * 3600))
+    pressure = category_pressure(events, catalog, since)
+    (state / PRESSURE_FILE).write_text(json.dumps(pressure, ensure_ascii=False), encoding="utf-8")
+    return pressure
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--state", required=True)
@@ -227,7 +266,8 @@ def main():
     memory_path = state / "restock_memory.json"
     memory = update_memory(read_json(memory_path, {}), inv.get("units") or [])
     stats = ledger.refresh(state, catalog)   # one ledger call per run; the seller reads the file this writes
-    report = {}
+    pressure = write_pressure(state, catalog)   # and this one: buyers per unit by category, for the seller's markup
+    report = {"pressure_categories": len(pressure)}
     buys = plan(inv, catalog, demand, forum, memory, stats, report)
     memory_path.write_text(json.dumps(memory, ensure_ascii=False, indent=1), encoding="utf-8")
     print("[strategy] " + json.dumps({"event": "restock", "stock": len(inv.get("units") or []),
