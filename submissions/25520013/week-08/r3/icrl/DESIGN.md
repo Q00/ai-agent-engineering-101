@@ -29,9 +29,16 @@
 
 ## 4. 행동 A
 - 허용 목록(action_space.json)의 정책 경로 편집만 허용하고, 각 키는 범위와 한 번 변경 폭과 블록 길이와 실험 방식을 가짐
-- 키 목록은 (a) 판매자 공산품 분석(analysis/shop_goods_20261104.json) 결과로 채움. 후보 계열
-  - 가격과 협상: shop 가격 배수, 최소 마진, 양보 폭, 구매자 즉시 수락 비율(b 작업에서 새로 만드는 키)
-  - 재고: 원가 상한 비율, 카테고리 우선순위, 카테고리별 SKU 수와 수량
+- 자유도 원칙(성수님 2026-11-04: 시장을 잘 파악한다면 개선 자유도는 크게): 무엇을 시험할지는 넓게, 한 번에 얼마나 바꿀지는 좁게
+  - 키와 범위는 넓게 열어, LLM이 시장 통계로 가장 유망한 실험을 넓은 메뉴에서 고르게 함
+  - 한 번에 실험 하나, 서로 맞물린 키는 최대 3개를 한 묶음으로 바꿀 수 있음(예: 공급 예산, 매트리스 수량, 재고 목표)
+  - 채택한 값도 24시간 뒤 이전 값과 짧은 스위치백으로 다시 비교해, 시장이 바뀌면 되돌아갈 수 있게 함
+- 키 계열(분석 근거는 analysis/shop_goods_20261104.json, analysis/buyer_surplus_20261104.json)
+  - 판매 가격과 협상: 종류별 price_mult, min_margin, concession, max_rounds, shop.ask_quantile
+  - 공급과 재고: shop.max_spend_per_run, shop.max_unit_cost, shop.max_lines_per_run, 종류별과 카테고리별 stock_target, qty_per_buy, breadth_qty, skus_per_category, shop.restock_priority
+  - 카테고리 덮어쓰기: 시장 통계에 있는 카테고리라면 categories 아래에 새 덮어쓰기를 만들 수 있음(예: 소파 재고 목표)
+  - 구매: 종류별 open_frac, max_pay_frac, step_frac, max_rounds, accept_ask_frac(b 작업에서 새로 만드는 키), buyer.max_shops, 식품 accept.hours_margin
+- LLM이 못 바꾸는 고정 한도: balance_floor, max_inventory_cost_frac 0.30, max_total_units, restock_stop_before_end_h, 청산 기준, 손실 상한, γ와 보상 가중 공식과 관문 자체
 - 유지도 하나의 행동임. LLM이 끊기거나 관문이 막으면 유지로 처리
 
 ## 5. 보상 R
@@ -85,10 +92,10 @@
 - 실패하면 마지막 캐시를 쓰고, 429나 401이 이어지면 가중치를 고정한 대리 보상으로 내려감
 
 ## 11. 배포 단계
-- S0 그림자: 제안, 관문, 승인까지 돌리고 정책은 쓰지 않음. 기록으로 동작 확인
-- S1 적용: CR 1회 뒤 성수님 확인을 받고 가격과 협상 키부터 적용 켬
-- S2 재고 키: (a) 모델 검증 뒤 켬
-- runner 재시작은 거래 프로세스와 무관하지만, 라이브 정책을 쓰기 시작하는 S1은 성수님 확인 사항
+- 시작하자마자 그림자 주기 1번을 바로 돌림: 제안, 관문, 승인까지 실제로 부르고 정책은 쓰지 않음(몇 분)
+- 그림자 주기가 오류 없이 끝나고 제안 LLM과 승인 LLM이 올바른 JSON으로 답하면, 사람 확인 없이 적용 모드로 넘어감(성수님 2026-11-04). 첫 실험은 다음 20분 경계에서 시작
+- 실패하면 그림자 상태로 남고 경보를 남김
+- 코드 검토(CR)는 Grok 팀 대신 독립 Claude 세션의 실행 기반 검증으로 함(성수님 2026-11-04)
 
 ## 12. 기존 rlpo_v121과의 관계
 - rlpo_v121의 Loop는 쓰지 않음
