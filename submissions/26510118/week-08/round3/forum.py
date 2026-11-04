@@ -43,6 +43,11 @@ COMMENT_MAX = 420
 NUMBER = re.compile(r"\d+(?:\.\d+)?")
 STEERING = re.compile(r"\byou should\b|\bmust\b|\bbuy from\b|\bchoose\b|\bavoid\b|\brecommend"
                       r"|하세요|하십시오|해야\s?(한다|합니다|해요)|추천|피하|마세요|사세요|구매하라|선택하라|고르세요", re.I)
+COMMON = re.compile(                                      # the kinds most of the forum repeats (11/4: 60 of 79 buyer posts)
+    r"시세|중앙\s?값|중앙\s?체결|중앙가|체결가|분위수|사분위|하위\s?25|상위\s?25|정가의\s?\d|정가\s?대비|가격\s?(보고|확인|카드)"
+    r"|견적|평균\s?(가|가격|체결)|median|quartile|percentile|% of list|of list price|price (report|card|check)"
+    r"|구매\s?(기록|확정|인증|보고|완료)|샀습니다|purchase (record|report)|purchased|bought|paid \d|settled at|observed purchase"
+    r"|리뷰|후기|별점|평점|review|rating|\bstars?\b", re.I)
 VOTE_WINDOW = 3 * 3600
 VOTE_ASK = 20            # newest posts of the window put to the decision model
 REPEAT_HOUR, REPEAT_COUNT, REPEAT_SAME = 3600, 3, 0.9
@@ -176,12 +181,16 @@ def pick_votes(posts: list, voted: set, now: float, decide) -> list:
               and p.get("id") not in voted]
     copies = repeats([p for p in posts if (p.get("ts") or 0) >= now - VOTE_WINDOW - REPEAT_HOUR])
     asked = sorted(window, key=lambda p: p.get("ts") or 0)[-VOTE_ASK:]
-    keys = [f"p{p.get('id')}" for p in asked]
-    got = decide(VOTE_NOTE, {k: {"author": p.get("author"), "role": p.get("role"), "text": str(p.get("text") or "")[:400],
-                                 "refs": len(p.get("refs") or [])} for k, p in zip(keys, asked)},
-                 [STEER_Q.format(key=k) for k in keys] + [USEFUL_Q.format(key=k) for k in keys]) if asked else None
+    novel = sorted((p for p in window if not COMMON.search(str(p.get("text") or ""))),     # like candidates: picked
+                   key=lambda p: p.get("ts") or 0)[-VOTE_ASK:]                           # before the slice, not after
+    shown = {p.get("id"): p for p in asked + novel}
+    keys = {pid: f"p{pid}" for pid in shown}
+    got = decide(VOTE_NOTE, {keys[pid]: {"author": p.get("author"), "role": p.get("role"), "text": str(p.get("text") or "")[:400],
+                                         "refs": len(p.get("refs") or [])} for pid, p in shown.items()},
+                 [STEER_Q.format(key=keys[p.get("id")]) for p in asked]
+                 + [USEFUL_Q.format(key=keys[p.get("id")]) for p in novel]) if shown else None
     steer = {p.get("id"): (got[i] if got else None) for i, p in enumerate(asked)}
-    useful = {p.get("id"): (got[len(asked) + i] if got else None) for i, p in enumerate(asked)}
+    useful = {p.get("id"): (got[len(asked) + i] if got else None) for i, p in enumerate(novel)}
     out = []
     bad = sorted((p for p in asked if (steer[p.get("id")] or 0) >= STEER_MIN), key=lambda p: -steer[p.get("id")])
     spam = sorted((p for p in window if p.get("id") in copies), key=lambda p: -(p.get("ts") or 0))
@@ -191,12 +200,15 @@ def pick_votes(posts: list, voted: set, now: float, decide) -> list:
     elif spam:
         out.append({"post": spam[0].get("id"), "value": -1, "author": spam[0].get("author"),
                     "reason": f"repeated post ({REPEAT_COUNT}+ near-copies within an hour)", "odds": None})
-    good = [p for p in asked if (useful[p.get("id")] or 0) >= USEFUL_MIN and (steer[p.get("id")] or 0) < 0.5
+    good = [p for p in novel if (useful[p.get("id")] or 0) >= USEFUL_MIN and (steer.get(p.get("id")) or 0) < 0.5
             and p.get("id") not in copies and p.get("id") not in {v["post"] for v in out}]
+                                                                    # no like for one more price summary, purchase report
+                                                                    # or review (the user's call, 11/4): only what is new
     if good:
         best = max(good, key=lambda p: useful[p.get("id")])
         out.append({"post": best.get("id"), "value": 1, "author": best.get("author"),
-                    "reason": "most useful post of the last 3 hours", "odds": useful[best.get("id")]})
+                    "reason": "most useful post of the last 3 hours that is not a price summary, purchase report or review",
+                    "odds": useful[best.get("id")]})
     return out
 
 

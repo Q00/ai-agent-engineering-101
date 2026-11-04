@@ -12,6 +12,9 @@ out. The notes give what the others do not, from the public ledger only:
           and without (market_summary.json by_grade), so a price is compared on the same terms
     빈칸  a category no post among the newest 100 names: its prices and most traded product
     품질  risk: breakage after the sale by grade (all goods, or one category), grade-claim honesty
+    후속  a follow-up to another agent's post that quoted a price for a product our buyer then bought: the
+          quoted price, ours, how many minutes later, with our settle's ledger ref (11/4, after a GPT proposal:
+          what the original author can point to). It says plainly that our buyer did not buy on the post's word.
     실패  why agreed deals failed at checkout in the last full hour, and the market rule behind the top check
 
 A figure rests on MIN_N settles or is left out; a note carries two or three ledger refs; a topic is not
@@ -33,8 +36,13 @@ import forum
 import journal
 import ledger
 
-DESKS = ("조건", "빈칸", "품질", "실패")
-TITLE = {"조건": "조건별 시세", "빈칸": "빈칸 카테고리", "품질": "품질·위험", "실패": "결제 실패 해부"}
+DESKS = ("조건", "빈칸", "후속", "품질", "실패")
+TITLE = {"조건": "조건별 시세", "빈칸": "빈칸 카테고리", "후속": "후속 확인", "품질": "품질·위험", "실패": "결제 실패 해부"}
+SKU = re.compile(r"\bG[0-9a-f]{8}\b")
+NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+SEEN_KEEP = 12 * 3600    # others' posts that quoted a price, kept this long for the follow-up desk
+FOLLOW_WINDOW = 6 * 3600 # a purchase this soon after the post is followed up
+FOLLOW_RECENT = 3 * 3600 # our purchases this recent are looked at
 MIN_N = 30               # settles behind a figure; a cell with fewer is left out
 MIN_CAT = 40             # settles of a category in a day before the gap desk writes about it
 REPEAT = 6 * 3600        # a topic (desk and subject) is not posted again within this
@@ -242,7 +250,77 @@ def failures(data: dict, now: float, seen: set, posts: list, journal_state: dict
     return {"desk": "실패", "key": key, "text": "\n".join(out + ["근거 · 원장 " + " ".join(f"#{r}" for r in refs)]), "refs": refs}
 
 
-DESK_FN = {"조건": conditions, "빈칸": gap, "품질": quality, "실패": failures}
+QUOTE_BAND = (0.3, 0.98)   # a quoted price: this share of the list price (the list price itself is not one)
+NOT_A_PRICE = re.compile(r"예산|budget", re.I)
+
+
+def quoted(text: str, catalog: dict) -> dict:
+    """{sku: the price a post quotes for it}: the first number after the SKU and before the next SKU between 0.3 and
+    0.98 of its list price, so the list price, another product's price, a SKU's digits, hours or counts are not
+    taken for it. (Review, 11/4: "정가 2,320,000원, 체결 1,856,000원" read as 2,320,000; two SKUs then two prices
+    gave the second the first's.)"""
+    out, marks = {}, list(SKU.finditer(text))
+    for i, m in enumerate(marks):
+        sku = m.group(0)
+        lp = (catalog.get(sku) or {}).get("list_price")
+        if not lp or sku in out:
+            continue
+        end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
+        for n in NUMBER.finditer(text[m.end():end]):
+            v = float(n.group(0).replace(",", ""))
+            if QUOTE_BAND[0] * lp <= v < QUOTE_BAND[1] * lp:
+                out[sku] = int(v)
+                break
+    return out
+
+
+def remember_posts(posts: list, catalog: dict, now: float) -> dict:
+    """Others' posts quoting a price for a SKU, into analysis/forum_seen.json {id: author, ts, skus}, kept SEEN_KEEP."""
+    path = common.MARKET_DIR / "analysis" / "forum_seen.json"
+    seen = {k: v for k, v in (common.read_json(path, {}) or {}).items() if now - (v.get("ts") or 0) < SEEN_KEEP}
+    for p in posts:
+        text = str(p.get("text") or "")
+        if (p.get("id") is None or forum.own(p.get("author")) or forum.STEERING.search(text) or forum.WANTED.search(text)
+                or NOT_A_PRICE.search(text)):
+            continue                                    # a wanted post's number is a budget, not a price
+        q = quoted(str(p.get("text") or ""), catalog)
+        if q and now - (p.get("ts") or 0) < SEEN_KEEP:
+            seen[str(p["id"])] = {"author": str(p.get("author") or "")[:40], "ts": p.get("ts"), "skus": q}
+    common.write_json(path, seen)
+    return seen
+
+
+def followup(data: dict, now: float, seen: set, posts: list, journal_state: dict | None) -> dict | None:
+    """후속: our latest purchase of a product another agent's post quoted a price for, shortly before."""
+    catalog, pay = data["catalog"], data.get("pay") or {}
+    mine = sorted((p for p in data.get("purchases") or [] if now - (p.get("settled_at") or 0) < FOLLOW_RECENT
+                   and pay.get(p.get("order")) and p.get("price")), key=lambda p: -(p.get("settled_at") or 0))
+    for buy in mine:
+        sku, at = buy.get("sku"), buy["settled_at"]
+        if any(k.startswith("후속:") and k.endswith(f":{buy.get('order')}") for k in seen):
+            continue                                    # one follow-up per purchase
+        before = [(int(pid), v) for pid, v in (data.get("forum_seen") or {}).items()
+                  if sku in (v.get("skus") or {}) and 0 < at - (v.get("ts") or 0) <= FOLLOW_WINDOW
+                  and not any(k.startswith(f"후속:{pid}:") for k in seen)]   # and one per post
+        if not before:
+            continue
+        pid, post = max(before, key=lambda x: x[1].get("ts") or 0)
+        lp = (catalog.get(sku) or {}).get("list_price") or buy.get("list_price")
+        if not lp:
+            continue
+        q, p = post["skus"][sku], int(buy["price"])
+        when = datetime.fromtimestamp(post["ts"], common.KST).strftime("%H:%M")
+        terms = f"{buy.get('grade')}등급" + (f", 보증 {buy['warranty_hours']:.0f}시간" if buy.get("warranty_hours") else "")
+        out = [f"[Kiro 데이터 노트 · {TITLE['후속']}] 원글 #{pid} ({post.get('author')})",
+               f"원글({when})에 적힌 {str((catalog.get(sku) or {}).get('name') or sku)[:28]} ({sku}) 가격: {q:,}원 (정가의 {pct(q / lp)})",
+               f"{round((at - post['ts']) / 60)}분 뒤 발행사 buyer의 같은 상품 정산: {p:,}원 (정가의 {pct(p / lp)}), {terms}",
+               f"차이 {p - q:+,}원. 확인 범위는 이 거래 1건이며, 원글의 정보를 따라 산 거래라는 뜻은 아니다.",
+               f"근거 · 원장 #{pay[buy['order']]}"]
+        return {"desk": "후속", "key": f"후속:{pid}:{buy['order']}", "text": "\n".join(out), "refs": [pay[buy["order"]]]}
+    return None
+
+
+DESK_FN = {"조건": conditions, "빈칸": gap, "후속": followup, "품질": quality, "실패": failures}
 
 
 def next_note(data: dict, posts: list, now: float, state: dict, journal_state: dict | None = None) -> dict | None:
@@ -309,8 +387,13 @@ def guard(book: dict, now: float, since: float = 0) -> float | None:
 
 
 def gather(now: float) -> dict:
+    pays = {p.get("order"): p.get("ledger") for p in common.read_jsonl(common.MARKET_DIR / "payments.jsonl")
+            if p.get("paid") and p.get("ledger") is not None}
     return dict(journal.gather(now), broken=common.read_jsonl(ledger.folder() / "broken.jsonl"),
-                ledger_at=(common.read_json(ledger.folder() / "state.json", {}) or {}).get("at"))
+                ledger_at=(common.read_json(ledger.folder() / "state.json", {}) or {}).get("at"),
+                purchases=[p for p in common.read_jsonl(common.MARKET_DIR / "buyer" / "purchases.jsonl")
+                           if now - (p.get("settled_at") or 0) < FOLLOW_RECENT],
+                pay=pays, forum_seen=common.read_json(common.MARKET_DIR / "analysis" / "forum_seen.json", {}) or {})
 
 
 if __name__ == "__main__":                                       # print the next note without posting it

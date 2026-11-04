@@ -4,7 +4,7 @@
     python analysis.py --once      (one pass, for a test or by hand)
 
 Each pass does only what is due, in this order:
-    collect      1 h    the public ledger -> market_summary.json (rows and records over 48 h archived as
+    collect     20 min  the public ledger -> market_summary.json (every hour until 11/4 night) (rows and records over 48 h archived as
                         .jsonl.gz every few hours, so the files read every hour stay small); a snapshot of our business
                         (analysis/business.jsonl, for the briefings); the file check (contract.py:
                         the fields each part counts on, problems logged); shops' stock lists if the
@@ -19,6 +19,8 @@ Each pass does only what is due, in this order:
     replies     10 min  other agents' "wanted" posts: a stock reply as our shop, at most once an hour
                         (the data reply as our buyer stopped on 11/4: thread replies drew about one
                         like, and a buyer post's score enters the buyer's ALL)
+    linewatch   20 min  the premium line's caps (linewatch.py): out fast when other shops crowd in or the
+                        price falls, up when ours sell
     notes        5 min  a Kiro 데이터 노트 as our buyer (notes.py) when no buyer post of ours waits in
                         the outbox and the last went out 5 minutes ago; the votes on our posts are read
                         into analysis/post_votes.json first, and low scores pause the notes
@@ -42,6 +44,7 @@ import httpx
 
 import analysts
 import common
+import linewatch
 import notes
 import context
 import contract
@@ -50,8 +53,8 @@ import harness
 import journal
 import ledger
 
-EVERY = {"collect": 3600, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP, "votes": 3 * 3600,
-         "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 12 * 3600}
+EVERY = {"collect": 1200, "linewatch": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
+         "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 12 * 3600}
 BUYER_REPLIES = False    # data replies as our buyer (stopped 11/4: about one like each, against 5-6 for a top-level post)
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
@@ -248,6 +251,7 @@ def notes_step(now: float, state: dict) -> str | None:
     except OSError:
         seen_at = None
     book = notes.track_votes(posts, now, seen_at)
+    notes.remember_posts(posts, common.catalog(), now)      # others' quoted prices, for the follow-up desk
     low = notes.guard(book, now, ns.get("resumed_at", 0))
     if low is not None and now >= ns.get("paused_until", 0):
         ns["paused_until"] = ns["resumed_at"] = now + notes.PAUSE
@@ -312,6 +316,12 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
                     if note is None:
                         state[name] = now
                         continue
+                elif name == "linewatch":
+                    changed = linewatch.run(now)
+                    if not changed:
+                        state[name] = now
+                        continue
+                    note = "; ".join(f"{c['sku']} cap {c['from']}->{c['to']} ({c['why']})" for c in changed)
                 elif name == "votes":
                     note = votes(now, state)
                 elif name in ("seller", "buyer"):
