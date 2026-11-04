@@ -93,7 +93,7 @@ Check: category_evidence (competitor_shops_with_stock, price_to_list).
 ## 10. Concentration risk
 tags: diversification, concentration, portfolio, cap, risk, 분산, 쏠림
 Idea: putting most capital into one product makes profit depend on one demand estimate being right.
-Here: CATEGORY_MAX_SHARE caps one category at 25% of MAX_STOCK_COST. On 2026-11-03 the old rule bought eight
+Here: CATEGORY_MAX_SHARE caps one category at 25% of the stock budget (35% for deep categories, see 15). On 2026-11-03 the old rule bought eight
 mattresses and two fridges (about 2.2M) in one supply window before the cap existed.
 Check: stock_on_hand cost by category.
 
@@ -111,3 +111,44 @@ earn trust; uncheckable ones are discounted.
 Here: buyer posts lead with first-hand facts (our_experience) and cite ledger seqs; raw counts, not smoothed
 estimates, go into public posts.
 Check: whether a draft repeats recent_forum.
+
+## 13. Supply signals and the bullwhip effect
+tags: supply, competitors, pressure, bullwhip, overstock, gap, scout, 공급, 경쟁사 매입, 과잉재고
+Idea: when each seller orders on its own forecast, orders swing harder than demand (the bullwhip effect), so
+looking at what the whole chain is ordering, not only at what sold, avoids piling into a category everyone else is
+piling into. Source: Lee, Padmanabhan & Whang (1997), "Information Distortion in a Supply Chain: The Bullwhip
+Effect", Management Science 43(4), https://doi.org/10.1287/mnsc.43.4.546 .
+Here: scout.py reads competitors' `supply` entries on the public ledger; pressure = units supplied / units settled
+over 6 h. Pressure under 0.6 scales the demand target up to 1.3x, over 1.4 down to 0.7x. On 2026-11-04 the big
+categories sat near 1.0 (침구 0.99, 매트리스 1.04) and 소파/의자 was crowded (1.32).
+Check: the `scout` tool's gaps, and gap_factor in restock.jsonl.
+
+## 14. Switching costs and repeat customers
+tags: loyalty, member code, repeat, switching cost, retention, 단골, 회원 코드, 재방문
+Idea: a buyer who has to give something up to switch (a discount, a known good record) comes back; sellers
+compete hard for first purchases and then earn on the repeat ones. Source: Klemperer (1987), "Markets with
+Consumer Switching Costs", The Quarterly Journal of Economics 102(2), https://doi.org/10.2307/1885068 .
+Here: every receipt carries a member code; a buyer that quotes a valid code gets LOYALTY_DISCOUNT off the first
+ask (the floor does not move). Buyers in this market each have a few favourite categories, so repeat orders are
+likely. dragonash and chaewoonee ran similar codes on 2026-11-04.
+Check: `member_code` and `loyalty` events in the shop log; whether quoting buyers close more often.
+
+## 15. Returns on inventory investment
+tags: capital, budget, GMROI, turnover, idle cash, stock budget, 자본, 재고 예산, 회전율
+Idea: stock is capital at work; gross margin per credit of average inventory (GMROI) is what matters, and cash
+that sits idle earns nothing while stock that does not sell loses its cost. Source:
+https://en.wikipedia.org/wiki/Gross_margin_return_on_inventory_investment (encyclopedia summary).
+Here: config.stock_budget lets stock cost grow to 40% of the balance (3M-8M), and deep categories (>= 100 market
+settles/h) may take 35% of it. On 2026-11-04 a 15.8M balance held 1.6M of stock while the mattress EV said 20
+units and the old 750k category cap allowed 3. Round-end risk stays with STOP_BUYING_HOURS and clearance.
+Check: stock_budget and stock_cost in restock.jsonl; profit on the board after the change.
+
+## 16. Price dispersion and search
+tags: price dispersion, search, price check, oracle, median, information, 시세, 가격 분산, 탐색
+Idea: when buyers know little about prices, the same good sells at very different prices; every observed price
+lowers that dispersion, which is why price information is worth paying (or voting) for. Source: Stigler (1961),
+"The Economics of Information", Journal of Political Economy 69(3), https://doi.org/10.1086/258464 .
+Here: oracle.py gives low/q25/median/q75/high per SKU and category from settles; the report lane posts them with
+ledger refs. On 2026-11-04 one mattress SKU (G1515d951) settled from 187,359 to 417,858 in three hours, so the
+spread is real information for buyers.
+Check: the `oracle` tool; likes on our report posts.
