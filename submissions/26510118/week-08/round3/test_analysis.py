@@ -998,6 +998,25 @@ def test_discover():
     finally:
         common.catalog = saved
     st_ = common.read_json(MD / "analysis" / "line_state.json")
+    loose = dict(cat, Gsofa0005={"name": "near", "category": "가구/침구>가구>소파", "list_price": 1_000_000})
+    near = [{"seq": i, "ts": t - 3600, "item": "Gsofa0005", "amount": 750_000, "shop": f"s{i % 11}"} for i in range(30)]
+    check("an experiment's looser bar (0.74 of list, 12 sellers) admits a product the usual one does not, marked exp",
+          linewatch.discover(near, {}, loose, {}, {}, t) == {}
+          and linewatch.discover(near, {}, loose, {}, {}, t, None, {"find_median": 0.74, "find_sellers": 12})["Gsofa0005"]["exp"] is True)
+    exp_path = MD / "analysis" / "experiment.json"
+    common.write_json(exp_path, {"start": t - 3700, "until": t - 100, "params": {"find_median": 0.74}})
+    check("...its params hold only while it runs", linewatch.experiment(t) == {} and linewatch.experiment(t - 200) == {"find_median": 0.74})
+    shop_sales = ([{"sku": "Gx", "ts": t - 3700 - 3600 * i, "price": 200, "cost": 100} for i in range(1, 4)]
+                  + [{"sku": "Gx", "ts": t - 1000, "price": 200, "cost": 100}])
+    exp_sales = [{"sku": "Gsofa0005", "ts": t - 900, "price": 800_000, "cost": 600_000}] * 2
+    v = linewatch.judge(t, {"Gsofa0005": {"exp": True}}, shop_sales + exp_sales)
+    check("an hour on it judges itself: 2 of its products sold over cost and the shop kept its pace: kept 5 hours more",
+          v["kept"] and v["sold"] == 2 and v["margin"] == 400_000 and common.read_json(exp_path)["until"] == int(t + linewatch.EXTEND)
+          and linewatch.judge(t + 60, {}, []) is None, v)
+    common.write_json(exp_path, {"start": t - 3700, "until": t - 100, "params": {}})
+    v = linewatch.judge(t, {"Gsofa0005": {"exp": True}}, shop_sales + exp_sales[:1])
+    check("...one sold is too few: it ends there", not v["kept"] and common.read_json(exp_path)["until"] == int(t), v)
+    exp_path.unlink()
     check("one out for 12 hours is let go; the other stays", set(st_["found"]) == {"Gsofa0001"} and "Gsofa0002" not in st_["caps"]
           and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0001": 2}, st_)
     for f in ("line_state.json", "line.json", "line_log.jsonl"):

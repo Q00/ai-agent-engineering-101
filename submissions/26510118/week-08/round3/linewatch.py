@@ -70,6 +70,14 @@ UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 12 * 3600, 1, 30
 UNMET_BUDGET = 0.85      # ...and the orders' budgets cover this share of its list (a buyer can pay our ask)
 FIND_DROP = 12 * 3600
 COST_GUESS = 0.65        # a grade A unit's cost as a share of list (0.55-0.75): the margin a candidate is ranked by
+# An experiment (11/5 04:00, the person's call: "one hour; if it pays, run it 5 more hours, no need to ask"):
+# analysis/experiment.json {"start", "until", "params": {"find_median", "find_sellers", "line_max_skus"}} relaxes the
+# discovery while start <= now < until. After TRIAL it judges itself once: kept EXTEND longer when the products it
+# added sold EXP_MIN_SOLD units or more at a positive price - cost and the whole shop's price - cost per hour held at
+# EXP_KEEP_RATE of the 3 hours before it; else it ends there. Either way the verdict is logged and kept in the file.
+EXPERIMENT_FILE = "experiment.json"
+TRIAL, EXTEND = 3600, 5 * 3600
+EXP_MIN_SOLD, EXP_KEEP_RATE = 2, 0.9
 
 
 def folder():
@@ -153,11 +161,42 @@ def unmet_wanted(unmet: list, catalog: dict, line: dict, now: float) -> dict:
     return out
 
 
-def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, now: float, unmet: list | None = None) -> dict:
+def experiment(now: float) -> dict:
+    """The params of the experiment running now (analysis/experiment.json), else {}."""
+    e = common.read_json(folder() / EXPERIMENT_FILE, None)
+    ok = isinstance(e, dict) and (e.get("start") or 0) <= now < (e.get("until") or 0) and isinstance(e.get("params"), dict)
+    return e["params"] if ok else {}
+
+
+def judge(now: float, found: dict, sales: list) -> dict | None:
+    """The experiment's one verdict, TRIAL after its start: {sold, margin, rate, before, kept}; None when not due."""
+    path = folder() / EXPERIMENT_FILE
+    e = common.read_json(path, None)
+    if not isinstance(e, dict) or e.get("verdict") or now < (e.get("start") or 0) + TRIAL:
+        return None
+    start = e["start"]
+    mine = {s for s, f in found.items() if f.get("exp")}
+    sold = [s for s in sales if s.get("sku") in mine and (s.get("ts") or 0) >= start]
+    margin = sum((s.get("price") or 0) - (s.get("cost") or 0) for s in sold)
+    rate = lambda a, b: sum((s.get("price") or 0) - (s.get("cost") or 0) for s in sales if a <= (s.get("ts") or 0) < b) / max(1, (b - a) / 3600)
+    during, before = rate(start, now), rate(start - 3 * 3600, start)
+    kept = len(sold) >= EXP_MIN_SOLD and margin > 0 and during >= EXP_KEEP_RATE * before
+    e["verdict"] = {"at": int(now), "products": sorted(mine), "sold": len(sold), "margin": int(margin),
+                    "rate": int(during), "before": int(before), "kept": kept}
+    e["until"] = int(now + EXTEND) if kept else int(now)
+    common.write_json(path, e)
+    return e["verdict"]
+
+
+def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, now: float, unmet: list | None = None,
+             params: dict | None = None) -> dict:
     """{sku: {n, median, sellers, list, at}}: new products for the line from other shops' settles of the last
     FIND_WINDOW, best expected margin (settles x list x (median - COST_GUESS)) first, as many as leave the line at
-    LINE_MAX_SKUS products with a cap above 0."""
-    room = LINE_MAX_SKUS - sum(1 for s in line if caps.get(s, line[s]) > 0)
+    LINE_MAX_SKUS products with a cap above 0. params: an experiment's find_median, find_sellers, line_max_skus;
+    what it adds is marked exp."""
+    params = params or {}
+    least, most = params.get("find_median", FIND_MEDIAN), params.get("find_sellers", FIND_SELLERS)
+    room = params.get("line_max_skus", LINE_MAX_SKUS) - sum(1 for s in line if caps.get(s, line[s]) > 0)
     if room <= 0:
         return {}
     by = defaultdict(list)
@@ -174,10 +213,11 @@ def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, 
             continue
         m = st.median(a / lp for a, _ in rows)
         sellers = len({sh for _, sh in rows})
-        if m >= FIND_MEDIAN and sellers <= FIND_SELLERS:
+        if m >= least and sellers <= most:
             picks.append((len(rows) * lp * (m - COST_GUESS), sku, {"n": len(rows), "median": round(m, 4), "sellers": sellers, "list": lp}))
     picks.sort(key=lambda x: -x[0])
-    out = {sku: dict(info, at=int(now), cap=FIND_CAP, source="market") for _, sku, info in picks[:room]}
+    out = {sku: dict(info, at=int(now), cap=FIND_CAP, source="market", **({"exp": True} if params else {}))
+           for _, sku, info in picks[:room]}
     room -= len(out)
     for sku, info in list(unmet_wanted(unmet or [], catalog, line, now).items())[:max(0, min(room, UNMET_MAX))]:
         if sku not in out:
@@ -224,7 +264,12 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     unmet = unmet if unmet is not None else [u for u in common.records("unmet") if (u.get("ts") or 0) >= now - UNMET_WINDOW]
     cut = g["low_stars"] and now - (state.get("stars_cut_at") or 0) >= STARS_REST
     changes = []
-    for sku, info in discover(settles, names, catalog, line, caps, now, unmet).items():
+    verdict = judge(now, found, sales)
+    if verdict:
+        changes.append({"at": int(now), "sku": "experiment", "from": "1 h trial", "to": "5 h more" if verdict["kept"] else "ended",
+                        "why": f"its {len(verdict['products'])} products sold {verdict['sold']} for {verdict['margin']:,} over cost; "
+                               f"shop {verdict['rate']:,}/h against {verdict['before']:,}/h before", "market": verdict})
+    for sku, info in discover(settles, names, catalog, line, caps, now, unmet, experiment(now)).items():
         found[sku], line[sku] = info, info["cap"]
         why = (f"added: others sold it {info['n']} times in {FIND_WINDOW // 3600} h at {info['median']:.3f} of list, {info['sellers']} sellers"
                if info["source"] == "market" else
