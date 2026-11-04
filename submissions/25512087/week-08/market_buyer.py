@@ -602,7 +602,8 @@ def trade(chosen: dict[str, Any], args: argparse.Namespace, memories: list[dict[
         if pick:                                     # Round 3: value ladder on the SKU we ask for
             print(f"[r3] {clean(chosen.get('name'), 80)}: {clean(pick['name'], 80)} ({pick['sku']}), value {pick['value']}, "
                   f"budget {args.budget}", file=sys.stderr, flush=True)
-            result = BuyerRunner(client, ValueLadderPolicy(pick["value"]), seen_tasks=seen).run(
+            terms = accept_terms(order)
+            result = BuyerRunner(client, ValueLadderPolicy(pick["value"], terms.get("min_hours_left")), seen_tasks=seen).run(
                 args.item, args.budget, opening=ask_text(pick),
                 allowed=set(order.get("acceptable") or []) | {pick["sku"]})
         else:
@@ -647,7 +648,17 @@ def trade(chosen: dict[str, Any], args: argparse.Namespace, memories: list[dict[
 def run_r3(shops: list[dict[str, Any]], order: dict, args: argparse.Namespace, memory: "MemoryStore",
            memories: list[dict[str, Any]], feedback: dict, prices: dict) -> None:
     """Round 3 (fix 1, 11/02): pick shop + SKU by value, haggle on the value ladder, one retry, accept policy."""
+    import r3_buyer
+    over = r3_buyer.apply_policy()
+    if over:
+        print(f"[r3] policy {json.dumps(over)}", file=sys.stderr, flush=True)
     catalog = load_json(Path(".market/catalog.json"), {})
+    bad = r3_buyer.no_cert_shops()                       # 11/04: they ship without a certificate; the kit won't pay
+    if bad:
+        kept = [s for s in shops if str(s.get("url", "")).rstrip("/") not in bad]
+        if len(kept) < len(shops):
+            print(f"[r3] skipping {len(shops) - len(kept)} shop(s) that shipped without a certificate", file=sys.stderr, flush=True)
+        shops = kept
     cands = shortlist(shops, order, catalog)
     if not cands:
         print(f"[r3] no listed shop stocks a SKU of {clean(args.item, 60)}", file=sys.stderr, flush=True)
@@ -669,12 +680,19 @@ def run_r3(shops: list[dict[str, Any]], order: dict, args: argparse.Namespace, m
         result, record = trade(chosen, args, memories, memory, order=order)
         memories = memories + [record]
         tried.append(str(chosen.get("name", "")))
-        retry = result.get("outcome") in RETRY_OUTCOMES or (
-            result.get("outcome") == "walk" and str(result.get("detail") or "").startswith("value:"))
-        if not retry or time.time() >= deadline or len(tried) >= 2:
+        detail = str(result.get("detail") or "")
+        miss = result.get("outcome") == "no_deal" and bool(r3_buyer.STOCK_MISS.search(detail))   # 11/04: stale offer
+        retry = result.get("outcome") in RETRY_OUTCOMES or miss or (
+            result.get("outcome") == "walk" and (detail.startswith("value:") or detail.startswith("shelf:")))
+        if not retry or time.time() >= deadline or len(tried) >= 3:
             break
     stars, review = rating_for(result, args.budget)
     receipt = result.get("receipt") if result.get("outcome") in {"deal", "bad_receipt", "unsigned"} else None
+    try:                                                 # 11/04: honest forum reports from our paid deals
+        import forum_post
+        forum_post.maybe_post()
+    except Exception as error:                           # a forum problem must never cost the order
+        print(f"[forum] skipped: {type(error).__name__}: {clean(error, 120)}", file=sys.stderr, flush=True)
     print(json.dumps({"shop": chosen["url"], "receipt": receipt, "stars": stars, "review": review,
                       "accept": accept_terms(order)}, ensure_ascii=True))
 
@@ -712,6 +730,8 @@ def main() -> None:
               file=sys.stderr, flush=True)
         shops = payable
     order = r3_order()
+    if order is not None and (order.get("item") != args.item or int(order.get("budget") or -1) != args.budget):
+        order = None                     # order.json is from another order (or a test): not this one
     if order is not None:                # Round 3 order: SKUs and values (fix 1)
         run_r3(shops, order, args, memory, memories, feedback, prices)
         return

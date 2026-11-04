@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,20 @@ MAX_SHARE = 0.92          # never pay more than 92 % of the value (the deal must
 EST_PRICE = 0.70          # what a sale usually costs us, as a share of list price (grade A cost 55-75 % + margin)
 NEAR_BEST = 0.80
 FOOD_MARGIN_H = 0.5       # settle comes after checkout; keep half an hour in hand
+
+
+def apply_policy() -> dict:
+    """The improvement loop's overrides (clamped by tuning.py): rungs, cap, SKU pick."""
+    global VALUE_RUNGS, MAX_SHARE, EST_PRICE, NEAR_BEST
+    import tuning
+    over = tuning.load("buyer")
+    r1, step = over.get("rung_1", VALUE_RUNGS[0]), over.get("rung_step", 0.10)
+    if "rung_1" in over or "rung_step" in over:
+        VALUE_RUNGS = (r1, r1) + tuple(round(r1 + step * i, 4) for i in (1, 2, 3))
+    MAX_SHARE = over.get("max_share", MAX_SHARE)
+    EST_PRICE = over.get("est_price", EST_PRICE)
+    NEAR_BEST = over.get("near_best", NEAR_BEST)
+    return over
 
 
 def load_json(path: Path, default: Any) -> Any:
@@ -84,6 +99,26 @@ def shortlist(shops: list[dict], order: dict, catalog: dict) -> list[dict]:
             and math.ceil(EST_PRICE * p["_pick"]["value"]) <= budget] or picked
 
 
+STOCK_MISS = re.compile(r"none of that|no matching|not in stock|out of stock|unreserved|no stock|sold out|재고", re.I)
+
+
+def no_cert_shops(path: Path = Path(".market/payments.jsonl"), last: int = 300) -> set[str]:
+    """Shops whose unit came without the market's certificate in our last `last` payments (the kit refused to pay)."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()[-last:]
+    except OSError:
+        return set()
+    bad = set()
+    for raw in lines:
+        try:
+            r = json.loads(raw)
+        except ValueError:
+            continue
+        if not r.get("paid") and "no certificate" in str(r.get("reason") or ""):
+            bad.add(str(r.get("shop") or "").rstrip("/"))
+    return bad
+
+
 def accept_terms(order: dict) -> dict:
     terms: dict[str, Any] = {"cert": True}
     if order.get("kind") == "food" and order.get("use_within_hours"):
@@ -99,10 +134,13 @@ class ValueLadderPolicy:
     """Offers rise along VALUE_RUNGS x value; an ask at or under the planned rung is taken; never above the cap."""
 
     MAX_RUNGS = 6
+    SHELF = re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:of\s+)?shelf", re.I)
 
-    def __init__(self, value: int) -> None:
+    def __init__(self, value: int, min_hours: float | None = None) -> None:
         self.value = int(value)
         self.last_offer = 0
+        self.min_hours = min_hours      # food: the shelf life the order needs (+ margin); the kit refuses less
+        self.last_text = ""
 
     def ladder(self, budget: int) -> list[int]:
         cap = self.cap(budget)
@@ -121,6 +159,9 @@ class ValueLadderPolicy:
     def respond(self, item: str, budget: int, ask: int, rounds: int) -> Decision:
         if ask is None:
             return Decision("walk", None, "no ask to answer")
+        m = self.SHELF.search(self.last_text or "") if self.min_hours else None
+        if m and float(m.group(1)) < self.min_hours:      # 11/04: the kit would refuse to pay; leave now
+            return Decision("walk", None, f"shelf: {m.group(1)} h left, the order needs {self.min_hours}")
         ladder, cap = self.ladder(budget), self.cap(budget)
         if rounds >= len(ladder) and ask > cap:
             return Decision("walk", None, f"value: ask {ask} still above {cap} ({MAX_SHARE:.0%} of value {self.value})")

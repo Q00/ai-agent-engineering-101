@@ -83,6 +83,8 @@ class BuyerRunner:
                 return self._done("invalid", task_id, rounds, started, asks=asks,
                                   detail=f"no price in {task_text(task)[:80]!r}")
             asks.append(ask)
+            if hasattr(self.policy, "last_text"):          # R3 policy reads the shop's words (shelf life)
+                self.policy.last_text = task_text(task)
             decision = self.policy.respond(item, budget, ask, rounds)
             self._log("decision", task_id=task_id, ask=ask, action=decision.action,
                       offer=decision.price, reason=decision.reason)
