@@ -1,4 +1,4 @@
-"""Small bounded restock experiment; no network or model calls."""
+"""Bounded restock with periodic public benchmarks; no model calls."""
 
 import argparse
 from datetime import datetime, timezone
@@ -26,10 +26,11 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None):
     now = time.time() if now is None else now
     hints = hints or {}
     intelligence = intelligence or {}
+    leader_hints = leader_hints or {}
     if inventory.get("round", 0) < 3:
         return [], {"reason": "not_round_3"}
     if (inventory.get("restock") or {}).get("open") is False:
@@ -78,7 +79,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         gap = s.get("observed_gap_hours")
         hours = min(24, max(1, gap)) if type(gap) in (int, float) and math.isfinite(gap) else 24
         margin = price - cost - cost * rate * hours / 24
-        return (not proven(sku), -margin / cost / hours, -sales.get(sku, 0), -hints.get(sku, 0))
+        return (not proven(sku), -margin / cost / hours, -sales.get(sku, 0), -leader_hints.get(sku, 0), -hints.get(sku, 0))
     candidates.sort(key=opportunity)
     buys = []
     estimated = 0
@@ -111,6 +112,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
                   "existing_seven_day_storage": existing_storage, "refund_reserve": refund_reserve,
                   "public_evidence_skus": len(intelligence),
                   "forum_hints": hints,
+                  "leader_hints": leader_hints,
                   "food_supply": "deferred: no guaranteed shelf life or supported sales-window estimate"}
 
 
@@ -129,6 +131,11 @@ def main():
             observe_purchases(md)
         except (OSError, ValueError, TypeError):
             pass  # Forum observation must not stop inventory safety checks.
+        try:
+            from leader_monitor import observe as observe_leaders
+            observe_leaders(md)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print(f"[leaders] observation deferred: {type(error).__name__}: {error}", flush=True)
         try:
             improve_strategy(md)
         except (OSError, ValueError, KeyError, TypeError) as error:
@@ -183,8 +190,13 @@ def main():
         if offer.get("warranty_hours", 0) > 0 and time.time() < offer["issued_at"] + offer["warranty_hours"] * 3600 + 600:
             liabilities += offer["price"]
     inv["local_refund_reserve"] = liabilities
+    try:
+        from leader_monitor import restock_hints
+        leader_hints = restock_hints(md)
+    except (OSError, ValueError, KeyError, TypeError):
+        leader_hints = {}
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
-                             intelligence=snapshot.get("skus", {}), runtime=effective(md))
+                             intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints)
     memory["cursor"] += 1
     temporary = memory_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")

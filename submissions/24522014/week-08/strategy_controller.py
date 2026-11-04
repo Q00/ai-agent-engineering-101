@@ -94,8 +94,12 @@ def choose(observation, controls, settings):
                         "grade": item["grade"], "candidate": validate(candidate),
                         "reason": "quote_above_comparables" if direction < 0 else "quote_below_comparables",
                         "gap_ratio": abs(quote/median-1), "expected_quote": expected,
-                        "comparable_price": median, "sample_count": item["count"]})
-    choices.sort(key=lambda c: (-c["gap_ratio"], c["sku"]))
+                        "comparable_price": median, "sample_count": item["count"],
+                        "benchmark_source": item.get("benchmark_source", "market_settlements"),
+                        "benchmark_basis": item.get("benchmark_basis"),
+                        "leader_logins": item.get("leader_logins", []),
+                        "leader_ledger_refs": item.get("leader_ledger_refs", [])})
+    choices.sort(key=lambda c: (c["benchmark_source"] != "top3_settlements", -c["gap_ratio"], c["sku"]))
     if choices:
         return choices
     if (observation.get("aged_units", 0) >= 3 and observation["stock_cost"] > observation["balance"]*.2
@@ -131,6 +135,11 @@ def transition(original, observation, settings):
         rollback("stale_or_invalid_observation")
         state["phase"] = "waiting_for_fresh_r3_data"
         return state, events
+    if observation.get("objective") and state.get("objective") != observation["objective"]:
+        previous_objective = state.get("objective", "player_top3")
+        rollback("operator_objective_changed")
+        state["objective"] = observation["objective"]
+        event("objective_changed", before=previous_objective, after=state["objective"])
     state.pop("wait_reason", None)
     if observation.get("self_evidence") == "local_acp_v1" and state.get("self_evidence") != "local_acp_v1":
         rollback("self_evidence_source_migration")
@@ -207,7 +216,9 @@ def transition(original, observation, settings):
             prior = cohort_rate(active["baseline_cohort"], active["baseline_start"]["at"], baseline["at"])
             after = cohort_rate(active["post_cohort"], baseline["at"], end["at"])
             enough = enough and min(prior["count"], after["count"]) >= settings["min_target_trades"]
-            if active["kind"] == "quote_cut":
+            if observation.get("objective") == "seller_profit_rank_1":
+                improved = after["gross_per_hour"] > 0 and after["gross_per_hour"] >= prior["gross_per_hour"]*(1+gain)
+            elif active["kind"] == "quote_cut":
                 improved = (after["deals_per_hour"] >= prior["deals_per_hour"]*(1+gain)
                             and after["gross_per_hour"] >= prior["gross_per_hour"]*(1-loss))
             else:
@@ -221,7 +232,8 @@ def transition(original, observation, settings):
         cohort_units = {r["unit"] for r in active["post_cohort"].values()}
         refund_hit = bool(cohort_units & set(observation.get("refunded_units", [])))
         event("evaluation", experiment=active["id"], enough=enough, improved=improved,
-              operating_ok=acceptable_operating, refund_in_cohort=refund_hit, comparison=evaluation)
+              operating_ok=acceptable_operating, refund_in_cohort=refund_hit, comparison=evaluation,
+              objective=observation.get("objective", "player_top3"))
         if enough and improved and acceptable_operating and not refund_hit:
             state["controls"] = active["candidate"]
             state["active"] = None
@@ -243,8 +255,10 @@ def transition(original, observation, settings):
     if observation["deals"]-start["deals"] < settings["min_new_deals"]:
         state["phase"] = "waiting_for_settlements"
         return state, events
-    if observation.get("rank") is not None and observation["rank"] <= 3:
-        state["phase"] = "maintaining_top3"
+    profit_objective = observation.get("objective") == "seller_profit_rank_1"
+    if ((profit_objective and observation.get("profit_rank") == 1)
+            or (not profit_objective and observation.get("rank") is not None and observation["rank"] <= 3)):
+        state["phase"] = "maintaining_profit_lead" if profit_objective else "maintaining_top3"
         return state, events
     day = datetime.fromtimestamp(now, timezone.utc).date().isoformat()
     if state["day"] != day:
@@ -258,7 +272,8 @@ def transition(original, observation, settings):
                                                     choice.get("grade"), start["at"], now))
         choice["own_evidence_source"] = observation.get("self_evidence", "legacy_fixture")
     event("diagnosis", rank=observation.get("rank"), gap_to_third=observation.get("gap_to_third"), candidates=choices[:5],
-          buyer_surplus=observation.get("buyer_surplus"), forum_status=observation.get("forum_status"))
+          buyer_surplus=observation.get("buyer_surplus"), forum_status=observation.get("forum_status"),
+          leader_benchmark=observation.get("leader_benchmark"))
     for choice in choices:
         prior = cohort(observation.get("own_sales", []), choice.get("sku"), choice.get("grade"), start["at"], now)
         if choice["kind"].startswith("quote_") and len(prior) < settings["min_target_trades"]:
@@ -379,7 +394,17 @@ def observation(md, now):
                 candidates.append({"sku": unit["sku"], "grade": unit["grade"], "kind": "goods", "floor": terms["floor"],
                                    "quote": terms["quote"], "list_price": unit["list_price"],
                                    "median": prices.get("median"), "count": prices.get("count", 0)})
+    try:
+        from leader_monitor import enrich
+        from strategy_policy import effective
+        candidates, leader_benchmark = enrich(md, candidates, stock, read(md/"catalog.json", {}),
+                                              snapshot, effective(md, now), now)
+    except (OSError, ValueError, KeyError, TypeError):
+        leader_benchmark = {"status": "unavailable"}
     result.update(valid=True, balance=inv["balance"], reserve=reserve, stock_cost=cost,
+                  objective="seller_profit_rank_1", profit_rank=leader_benchmark.get("profit_rank"),
+                  profit_gap_to_first=leader_benchmark.get("profit_gap_to_first"),
+                  leader_benchmark=leader_benchmark,
                   self_evidence="local_acp_v1",
                   local_counters=[{k: r[k] for k in ("ledger", "ts", "amount")} for r in local["rows"]],
                   local_evidence={"confirmed": len(local["rows"]), "cost_attributed": len(own_sales),
@@ -443,6 +468,7 @@ def run(md, now=None, force=False):
         obs = observation(md, now) if settings["enabled"] else {"at": now, "valid": False}
         urgent = not settings["enabled"] or not obs.get("valid") or obs.get("balance", 0) <= obs.get("reserve", 0)
         urgent = urgent or (obs.get("self_evidence") == "local_acp_v1" and state.get("self_evidence") != "local_acp_v1")
+        urgent = urgent or (obs.get("objective") is not None and state.get("objective") != obs["objective"])
         active = state.get("active")
         if active and obs.get("valid"):
             baseline = active["baseline_end"]

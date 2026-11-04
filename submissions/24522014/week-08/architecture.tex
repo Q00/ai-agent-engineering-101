@@ -71,7 +71,7 @@ Only matching paid outcomes become confirmed settlement observations; no rewriti
  -- node[lab,above]{filtered history on next order} (6.05,16.4) -- (6.05,14.5) -- (buyer.west);
 
 \node[wide,minimum height=1.8cm,fill=guard] (monitor) at (9,3.1) {\textbf{Market observation and bounded autonomous improvement}\\
-R3 ledger, forum and Players: \texttt{market\_intel.py}, \texttt{forum\_monitor.py}; no LLM.\\
+R3 ledger / forum: \texttt{market\_intel.py}; \texttt{leader\_monitor.py}: profit Top 3; no LLM.\\
 \texttt{purchase\_monitor.py}: prices; \texttt{forum\_engagement.py}: stock replies and outcomes.\\
 \texttt{strategy\_controller.py}: diagnose; one small trial; freeze; mature; keep or roll back.};
 \draw[feedback] (monitor.north) -- node[lab,right]{leased controls / trial state} (memory.south);
