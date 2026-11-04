@@ -39,9 +39,10 @@ BOUNDS = {
         "max_share": (0.80, 0.97),          # never pay above this share of value
         "est_price": (0.45, 0.90),          # expected price share used to pick the SKU
         "near_best": (0.50, 1.00),
+        "shelf_strikes": (1, 5),            # food orders skip a shop after this many short-dated units (11/04)
     },
 }
-INTS = {"max_rounds", "TARGET_CATEGORIES", "HOT_LINES", "MAX_LIST_PRICE", "HOT_QTY", "FOOD_MAX", "endgame_h"}
+INTS = {"max_rounds", "TARGET_CATEGORIES", "HOT_LINES", "MAX_LIST_PRICE", "HOT_QTY", "FOOD_MAX", "endgame_h", "shelf_strikes"}
 
 _cache: dict = {"mtime": None, "data": {}}
 

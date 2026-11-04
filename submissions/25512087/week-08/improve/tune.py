@@ -26,7 +26,7 @@ DEFAULTS = {
     "seller": {"ask_of_list": 0.92, "min_margin": 0.05, "max_rounds": 6, "food_markdown_h": 2.0, "food_markdown_share": 0.5, "endgame_h": 24, "endgame_floor": 0.8},
     "restock": {"CASH_FLOOR": 0.30, "PER_SKU_CAP": 0.05, "OPENING_BUDGET": 0.20, "TARGET_CATEGORIES": 60, "HOT_LINES": 3,
                 "MAX_LIST_PRICE": 3_000_000, "HOT_QTY": 3, "REORDER_MULT": 1.5, "FOOD_MAX": 4},
-    "buyer": {"rung_1": 0.50, "rung_step": 0.10, "max_share": 0.92, "est_price": 0.70, "near_best": 0.80},
+    "buyer": {"rung_1": 0.50, "rung_step": 0.10, "max_share": 0.92, "est_price": 0.70, "near_best": 0.80, "shelf_strikes": 2},
 }
 ROLLBACK_DROP = 0.40
 MIN_EVENTS = 5
@@ -81,11 +81,18 @@ def propose(m: dict, pol: dict) -> list[dict]:
     # buyer: ladder against walks and price paid
     talks = buy.get("talks", 0)
     walks = sum(v for k, v in (buy.get("outcomes") or {}).items() if k.startswith("value:"))
-    if talks >= MIN_EVENTS:
-        if walks / talks > 0.20:
-            step("buyer", "max_share", +0.02, f"{walks}/{talks} talks walked at our value cap")
-        elif walks / talks < 0.05 and (pay.get("mean_price_share") or 0) > 0.72:
-            step("buyer", "rung_1", -0.03, f"paid {pay['mean_price_share']:.0%} of value on average with few walks: open lower")
+    if talks >= MIN_EVENTS and walks / talks > 0.20:
+        step("buyer", "max_share", +0.02, f"{walks}/{talks} talks walked at our value cap")
+    # 11/04 (approved): the rung_1 rule is retired. It proposed the same cut every cycle; two cuts left the share of
+    # value we pay flat (73-76 %): shops' floors set the price, not our first rung.
+    # New rule: the kit's refusal share (signed, then not paid: short shelf life or no certificate).
+    signed = pay.get("paid", 0) + pay.get("refused", 0)
+    if signed >= 2 * MIN_EVENTS:
+        share = pay.get("refused", 0) / signed
+        if share > 0.25:
+            step("buyer", "shelf_strikes", -1, f"{pay['refused']}/{signed} signed deals refused by the kit: skip short-dated shops sooner")
+        elif share < 0.10:
+            step("buyer", "shelf_strikes", +1, f"only {pay['refused']}/{signed} refused: give shops more chances")
     return out
 
 
