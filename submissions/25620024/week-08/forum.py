@@ -31,6 +31,8 @@ STATE = HERE / "private" / "forum_state.json"
 THETA = Path(os.environ.get("SHOP_THETA", HERE / "private" / "shop_theta.json"))
 DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n": 5, "min_n_index": 30,
             "max_posts_day": {"buyer": 288, "shop": 96},
+            "name_shops": False,   # 11-05: our posts draw ~0.8 likes under others' in every hour and every format since
+                                   # day 1 (author-level); test: no post names other shops (receipt tips, stock checks)
             "gap_s": {"buyer": 1800, "shop": 300}}   # 11-05 05:50: back to 30 min. At 5 min (19:30-20:49) the rating
             # fell 0.600 -> 0.577 and the posts percentile only went 0.74 -> 0.73: new posts draw ~5.2 likes, under our
             # average, so they are NOT neutral (the 14:00 assumption was wrong); quality over count The 30-min cut assumed new posts
@@ -688,8 +690,8 @@ def tick(md=Path(".market"), c=None, now=None):
         forum = []
     # a post's score is the Wilson lower bound of its votes (6 likes 0.61, 7 likes 0.646) and buyer ALL averages it:
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
-    cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + stock_check(c, t, now) \
-        + receipt_tips(c, t, now) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
+    cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + (stock_check(c, t, now) if t.get("name_shops") else []) \
+        + (receipt_tips(c, t, now) if t.get("name_shops") else []) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
         + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
