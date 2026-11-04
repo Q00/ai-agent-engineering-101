@@ -59,19 +59,43 @@ PROMISES = ("Honest grade: we claim only the grade the market's certificate show
 
 # --- pricing knobs (prices.json may override them; tune_prices.py writes it)
 MARGIN = {"A": 0.06, "B": 0.10, "C": 0.12}  # reserve = cost * (1 + margin); B and C cost less, so more room
-OPEN = 0.92                                 # opening ask as a share of list price (settles run at about 0.70)
 WARRANTY_H = 6                              # goods can break up to 6 h after the sale: a warranty covers all of it
 WARRANTY_DEFAULT = {"A": True, "B": False, "C": False}   # goods grade A ship with a warranty unless it is unwanted
-BREAK_PRIOR = 0.08                          # assumed break rate until shop memory has seen enough goods sales
+# Share of goods that broke, ledger 2026-11-04: 2,750 settles at least 6.2 h old (the guess was 8%, C 12%).
+BREAK_PRIOR = {"A": 0.031, "B": 0.111, "C": 0.373}
+# Paid / list price on the ledger, 2026-11-04, last 2 h: (kind, grade, warranty). restock.py refreshes this from
+# the live ledger in shop/market_prices.json; the table is what the seller uses until that file has enough rows.
+MARKET_RATIO = {("food", "A", 0): 0.75, ("food", "B", 0): 0.70, ("food", "C", 0): 0.60,
+                ("goods", "A", 1): 0.79, ("goods", "A", 0): 0.75, ("goods", "B", 1): 0.73, ("goods", "B", 0): 0.73,
+                ("goods", "C", 1): 0.68, ("goods", "C", 0): 0.67}
+# Pricing strategies, tried against each other per quote. 24 of our first 27 negotiations ended on the opening ask,
+# so the opening decides the sale. ask: share of the market price; margin: reserve over cost (None = MARGIN).
+ARMS = {"costco": {"ask": 0.92, "margin": 0.02},      # below the market, thin margin, sell many, turn the cash fast
+        "market": {"ask": 1.00, "margin": None},
+        "premium": {"ask": 1.08, "margin": None}}
+ARM_EXPLORE = 0.25                          # share of quotes that keep trying every strategy
+ARM_MIN_QUOTES = 30                         # quotes per strategy and kind before the best one gets the rest
+OPEN_TTL = 120                              # s; a negotiation the buyer left without cancelling frees its unit
 MAX_OFFERS = 6
 STEP = [0.25, 0.35, 0.5, 0.7, 1.0]          # share of the remaining (ask - reserve) given up per counter
 PRICES = SHOP_DIR / "prices.json"           # Round 3 knobs; ../prices.json holds the Round 2 lamp/chair tuning
+MARKET_PRICES = SHOP_DIR / "market_prices.json"     # written by restock.py from the ledger
 
 
 def knobs() -> dict:
     p = read_json(PRICES, {}) or {}
-    return {"margin": {**MARGIN, **(p.get("margin") or {})}, "open": p.get("open", OPEN),
+    return {"margin": {**MARGIN, **(p.get("margin") or {})}, "arms": {**ARMS, **(p.get("arms") or {})},
             "step": p.get("step") or STEP, "open_by_cat": p.get("open_by_cat") or {}}
+
+
+def market_ratio(u: dict, grade: str | None, warranty: int) -> float:
+    """What buyers pay now for this kind of unit, as a share of list: the SKU's own median at this grade when the
+    ledger has enough of them, else the class median, else the table above."""
+    g = grade or u.get("grade") or "B"
+    w = 1 if warranty else 0
+    live = read_json(MARKET_PRICES, {}) or {}
+    return (live.get("sku", {}).get(f"{u['sku']}|{g}") or live.get("class", {}).get(f"{u['kind']}|{g}|{w}")
+            or MARKET_RATIO.get((u["kind"], g, w)) or 0.70)
 
 
 def canon(d: dict) -> bytes:
@@ -137,18 +161,36 @@ def account(book: dict, code: str | None) -> dict | None:
 # Round 3 hides budgets and demand; what the shop observes for itself (and restock reads from the ledger) is its
 # only edge. Hard limits never move with it: the reserve over cost, and the member price promise.
 SHOP_MEM = SHOP_DIR / "shop_memory.json"
-MARKUP_CAP = 0.12                            # bounded live move of the opening ask per category
-MARKUP_MIN_N = 6                             # negotiations seen in a category before its opening moves
 
 
 def load_shop_mem() -> dict:
     d = read_json(SHOP_MEM, {}) or {}
-    for k in ("cats", "sold", "members"):
+    for k in ("cats", "sold", "members", "arms"):
         d.setdefault(k, {})
     return d
 
 
 _MEM_LOCK = threading.Lock()
+
+
+def choose_arm(kind: str, arms: dict) -> str:
+    """Try every strategy on a share of the quotes; give the rest to the one with the most profit per quote, measured
+    against list price so one mattress does not outweigh a hundred kimchi."""
+    stats = load_shop_mem()["arms"].get(kind, {})
+    ready = {a: stats[a] for a in arms if stats.get(a, {}).get("list", 0) > 0
+             and stats[a].get("quotes", 0) >= ARM_MIN_QUOTES}
+    if len(ready) < len(arms) or random.random() < ARM_EXPLORE:
+        return random.choice(list(arms))
+    return max(ready, key=lambda a: ready[a]["profit"] / ready[a]["list"])
+
+
+def record_quote(kind: str, arm: str, list_price: int):
+    with _MEM_LOCK:
+        d = load_shop_mem()
+        s = d["arms"].setdefault(kind, {}).setdefault(arm, {"quotes": 0, "deals": 0, "profit": 0.0, "list": 0})
+        s["quotes"] += 1
+        s["list"] += list_price
+        write_json(SHOP_MEM, d)
 
 
 def record_deal(cat: str, result: str, price: int | None, offers: list, deal: dict, task: str | None = None):
@@ -161,8 +203,14 @@ def record_deal(cat: str, result: str, price: int | None, offers: list, deal: di
             if len(offers) <= 2:
                 c["fast"] += 1
             u = deal["unit"]
+            refund = price * break_rate(deal["grade"] or "B") if deal["warranty"] else 0
+            s = d["arms"].setdefault(u["kind"], {}).setdefault(deal.get("arm", "market"),
+                                                               {"quotes": 0, "deals": 0, "profit": 0.0, "list": 0})
+            s["deals"] += 1
+            s["profit"] = round(s["profit"] + price - u["cost"] - refund, 1)
             d["sold"][u["unit"]] = {"t": int(time.time()), "sku": u["sku"], "kind": u["kind"], "grade": deal["grade"],
-                                    "price": price, "cost": u["cost"], "warranty_hours": deal["warranty"], "task": task}
+                                    "price": price, "cost": u["cost"], "warranty_hours": deal["warranty"], "task": task,
+                                    "arm": deal.get("arm"), "held_h": round(age_hours(u), 2)}
             if len(d["sold"]) > 3000:
                 for k in sorted(d["sold"], key=lambda k: d["sold"][k]["t"])[:500]:
                     del d["sold"][k]
@@ -176,20 +224,22 @@ def break_rate(grade: str) -> float:
     """Share of our goods of this grade that broke within six hours (restock.py marks them from the ledger)."""
     sold = [s for s in load_shop_mem()["sold"].values() if s["kind"] == "goods" and s["grade"] == grade
             and time.time() - s["t"] > WARRANTY_H * 3600]
-    if len(sold) < 10:
-        return BREAK_PRIOR * (1.5 if grade == "C" else 1.0)
-    return sum(1 for s in sold if s.get("broke")) / len(sold)
+    prior = BREAK_PRIOR.get(grade, BREAK_PRIOR["B"])
+    if len(sold) < 30:                      # few of our own sales say less than 2,750 on the ledger
+        return prior
+    return (sum(1 for s in sold if s.get("broke")) + 10 * prior) / (len(sold) + 10)
 
 
-def opening_move(cat: str) -> tuple[float, str]:
-    """Winning nearly every negotiation in a category means its opening is too low; losing many means too high."""
-    c = load_shop_mem()["cats"].get(cat, {})
-    n = c.get("deals", 0) + c.get("walk", 0)
-    if n < MARKUP_MIN_N:
-        return 0.0, ""
-    win = c["deals"] / n
-    adj = max(-MARKUP_CAP, min(MARKUP_CAP, (win - 0.70) * MARKUP_CAP / 0.30))
-    return adj, f"{cat}: win rate {win:.0%} of {n}, opening {adj:+.0%}"
+def age_hours(u: dict) -> float:
+    return max(0.0, (time.time() - (u.get("supplied_at") or time.time())) / 3600)
+
+
+def age_margin(margin: float, u: dict) -> float:
+    """Turnover: unsold goods hold cash and pay storage, so the floor falls as a unit waits. Food has its own rule."""
+    if u["kind"] != "goods":
+        return margin
+    h = age_hours(u)
+    return margin if h < 6 else margin / 2 if h < 24 else 0.0 if h < 72 else -0.10
 
 
 # --- picking the unit
@@ -230,9 +280,20 @@ def find_unit(text: str, taken: set, need_hours: float | None) -> tuple[dict | N
     return u, others
 
 
-def reserve_for(u: dict, grade: str | None, share: float | None, warranty: int, k: dict) -> int:
+def opening_ask(u: dict, grade: str | None, warranty: int, reserve: int, arm: dict, override: float | None) -> int:
+    """The market's price for this unit moved by the strategy, older goods lower; never below the reserve, and under
+    the list price, since a buyer's deal at list price or above has no surplus."""
+    ask = u["list_price"] * (override if override else market_ratio(u, grade, warranty) * arm["ask"])
+    if u["kind"] == "goods" and age_hours(u) >= 24:
+        ask *= 0.95
+    return max(round(ask), reserve)
+
+
+def reserve_for(u: dict, grade: str | None, share: float | None, warranty: int, k: dict,
+                arm: dict | None = None) -> int:
     g = grade or u.get("grade") or "B"
-    r = u["cost"] * (1 + k["margin"].get(g, 0.08))
+    margin = arm["margin"] if arm and arm.get("margin") is not None else k["margin"].get(g, 0.08)
+    r = u["cost"] * (1 + age_margin(margin, u))
     if u["kind"] == "food" and share is not None:
         if share < 0.15:
             r = u["cost"] * 0.55              # about to be thrown away: anything above half the cost is a rescue
@@ -280,6 +341,11 @@ class Seller(AgentExecutor):
         self.open = {}  # task id -> deal
 
     def taken(self) -> set:
+        now = time.time()
+        for task_id, d in list(self.open.items()):
+            if now - d.get("t", now) > OPEN_TTL:                # the buyer left without a cancel: free the unit
+                record_deal(d["cat"], "walk", None, d["buyer_offers"], d)
+                del self.open[task_id]
         return {d["unit"]["unit"] for d in self.open.values()}
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
@@ -356,25 +422,22 @@ class Seller(AgentExecutor):
         code = member_of(text)
         warranty = (WARRANTY_H if u["kind"] == "goods" and (WARRANTY_DEFAULT.get(u.get("grade"))
                     or WANTS_WARRANTY.search(text)) and not NO_WARRANTY.search(text) else 0)
-        reserve = reserve_for(u, grade, share, warranty, k)
+        arm_name = choose_arm(u["kind"], k["arms"])
+        arm = k["arms"][arm_name]
+        reserve = reserve_for(u, grade, share, warranty, k, arm)
         lf = leaf(u.get("category"))
-        adj, note = opening_move(lf)
-        open_share = k["open_by_cat"].get(lf, k["open"]) * (1 + adj)
-        if u["kind"] == "food" and share is not None and share < 0.30:
-            open_share = min(open_share, 0.75)                # short-dated food: open where it can still sell
-        ask = round(u["list_price"] * open_share)
-        ask = max(round(ask * (MEMBER_ASK if code else 1)), round(reserve * 1.05))
+        ask = opening_ask(u, grade, warranty, reserve, arm, k["open_by_cat"].get(lf))
+        ask = max(round(ask * (MEMBER_ASK if code else 1)), reserve)
         cap = (account(members(), code) or {}).get(u["sku"]) if code else None
         if cap is not None:
             ask = max(reserve, min(ask, cap))                 # member price promise
-        if note:
-            print(f"[seller] memory: {note}", flush=True)
+        record_quote(u["kind"], arm_name, u["list_price"])
         deal = {"unit": u, "cat": lf, "list": u["list_price"], "reserve": reserve, "ask": ask, "offers": 0,
                 "grade": grade, "hours": hours, "share": share, "warranty": warranty, "member": bool(code),
-                "code": code, "step": k["step"], "buyer_offers": [], "k": k}
+                "code": code, "step": k["step"], "buyer_offers": [], "k": k, "arm": arm_name, "t": time.time()}
         self.open[task_id] = deal
         print(f"[seller] unit {u['unit']} {u['sku']} {u['kind']} grade {grade} cost {u['cost']} list {u['list_price']}"
-              f" -> reserve {reserve}, ask {ask}" + (f", {hours:.1f} h left" if hours is not None else "")
+              f" -> {arm_name}: reserve {reserve}, ask {ask}" + (f", {hours:.1f} h left" if hours is not None else "")
               + (", warranty" if warranty else ""), flush=True)
         hello = await asyncio.to_thread(pitch, lf)
         alt = f" Also in stock in this category: {', '.join(others[:5])}." if others else ""
@@ -388,7 +451,7 @@ class Seller(AgentExecutor):
         k = deal["k"]
         old = deal["reserve"]
         deal["warranty"] = hours
-        deal["reserve"] = reserve_for(deal["unit"], deal["grade"], deal["share"], hours, k)
+        deal["reserve"] = reserve_for(deal["unit"], deal["grade"], deal["share"], hours, k, k["arms"][deal["arm"]])
         deal["ask"] = max(deal["reserve"], deal["ask"] + deal["reserve"] - old)
         said = ("Six-hour warranty added: a full refund if it breaks within six hours." if hours
                 else "Warranty removed, the price comes down by its cost.")
@@ -431,7 +494,7 @@ class Seller(AgentExecutor):
             f"{u['unit']} with its market certificate. Your Moss & Oak member code is {new_code}; include it next "
             f"time for member pricing.")]))
         print(f"[seller] -> deal at {price} ({u['sku']} {u['kind']} grade {deal['grade']}, cost {u['cost']}, "
-              f"reserve {deal['reserve']}{', member' if deal['member'] else ''})", flush=True)
+              f"reserve {deal['reserve']}, {deal['arm']}{', member' if deal['member'] else ''})", flush=True)
         del self.open[task_id]
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
