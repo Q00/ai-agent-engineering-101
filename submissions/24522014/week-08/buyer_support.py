@@ -19,8 +19,8 @@ MODEL_ALLOWED = ("reserved", "gate_disabled")
 def config():
     value = read(ROOT / "buyer_support.json")
     balanced = value.get("mode") == "balanced"
-    if (type(value["enabled"]) is not bool or not 1 <= value["max_attempts_per_utc_day"] <= (480 if balanced else 12)
-            or not (30 if balanced else 1800) <= value["min_attempt_interval_seconds"] <= 86400
+    if (type(value["enabled"]) is not bool or not 1 <= value["max_attempts_per_utc_day"] <= (4320 if balanced else 12)
+            or not (20 if balanced else 1800) <= value["min_attempt_interval_seconds"] <= 86400
             or not (300 if balanced else 3600) <= value["pair_cooldown_seconds"] <= 86400
             or not 60 <= value["reference_max_age_seconds"] <= 3600
             or value["min_catalogue_value"] < (1 if balanced else 10000) or value["sufficient_public_samples"] < 3

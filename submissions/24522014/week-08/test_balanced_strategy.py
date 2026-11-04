@@ -130,6 +130,30 @@ class FastQuotes(unittest.TestCase):
         self.assertIsNone(buyer_fast.classify('asking 100. Counteroffer: 90.', 1000)[2])
 
 
+class AttemptBounds(unittest.TestCase):
+    def valid(self):
+        return read(Path(buyer_support.__file__).parent / 'buyer_support.json')
+
+    def test_approved_attempt_settings_load_and_other_limits_stay(self):
+        settings = buyer_support.config()
+        self.assertEqual((settings['max_attempts_per_utc_day'], settings['min_attempt_interval_seconds']), (4320, 20))
+        self.assertEqual((settings['pair_cooldown_seconds'], settings['max_turns']), (300, 3))
+        self.assertEqual((settings['max_model_orders_per_hour'], settings['max_model_orders_per_day']), (2, 24))
+
+    def test_values_past_the_new_bounds_are_still_refused(self):
+        for key, value in (('max_attempts_per_utc_day', 4321), ('min_attempt_interval_seconds', 19), ('max_turns', 4),
+                           ('max_model_orders_per_hour', 3), ('max_model_orders_per_day', 25)):
+            with self.subTest(key=key), patch.object(buyer_support, 'read', return_value={**self.valid(), key: value}):
+                with self.assertRaises(ValueError):
+                    buyer_support.config()
+
+    def test_research_mode_bounds_did_not_widen(self):
+        research = {**self.valid(), 'mode': 'research', 'max_attempts_per_utc_day': 13, 'min_attempt_interval_seconds': 1800,
+                    'pair_cooldown_seconds': 3600, 'min_catalogue_value': 10000}
+        with patch.object(buyer_support, 'read', return_value=research), self.assertRaises(ValueError):
+            buyer_support.config()
+
+
 class Files(unittest.TestCase):
     def setUp(self):
         # These tests describe the gate's limits; the live flag may have the gate off.
