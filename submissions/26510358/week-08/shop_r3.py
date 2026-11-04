@@ -37,6 +37,7 @@ from r3lib.memory import Memory
 LEGACY = {"lamp": (100, 130), "chair": (180, 234), "bookshelf": (260, 338)}   # reserve, first ask (Round 0-2)
 OPEN_TTL = 15 * 60
 SKU_RE = re.compile(r"\b([A-Z][0-9a-f]{6,}|[A-Z]\d{4,})\b")
+CODE_RE = re.compile(re.escape(config.LOYALTY_PREFIX) + r"[0-9a-f]{8}\b", re.I)
 
 
 def log(event, **kw):
@@ -58,9 +59,30 @@ def sign(receipt):
     return dict(receipt, sig_seller=base64.b64encode(_KEY.sign(canon(body))).decode())
 
 
-def parse_offer(text, sku=None):
-    """The buyer's price: the last number in the message, ignoring SKUs, hours and kilograms."""
-    t = SKU_RE.sub(" ", text or "")
+def member_code(task_id):
+    """A member code bound to the deal's task and our key, so it cannot be guessed from the prefix."""
+    return config.LOYALTY_PREFIX + hashlib.sha256(f"{task_id}:".encode() + _secret()).hexdigest()[:8]
+
+
+_SECRET = None
+
+
+def _secret():
+    global _SECRET
+    if _SECRET is None:
+        _SECRET = hashlib.sha256((config.ROOT / "shop_key.pem").read_bytes()).digest()
+    return _SECRET
+
+
+def parse_offer(text, name=None):
+    """The buyer's price: the last number in the message, ignoring the product name, SKUs, member codes, hours and
+    kilograms. Without the name, '... 리튬 코인 배터리 CR1220 (G...)' read as an offer of 1220 and closed a deal on
+    the opening message (loyalty smoke test, 2026-11-04); '20cm' or '85x200' in a name counted as low offers."""
+    t = text or ""
+    if name:
+        t = t.replace(name, " ")
+    t = CODE_RE.sub(" ", t)
+    t = SKU_RE.sub(" ", t)
     t = re.sub(r"\d+(\.\d+)?\s*(h|hours?|시간|kg|g|ml|l|개|EA|ea)\b", " ", t, flags=re.I)
     nums = [int(n.replace(",", "")) for n in re.findall(r"\d[\d,]*", t)]
     return nums[-1] if nums else None
@@ -150,7 +172,7 @@ class Shop(AgentExecutor):
             floor=floor, market_ratio=ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty)
         return ask, floor, warranty
 
-    def _pitch(self, u, ask, warranty):
+    def _pitch(self, u, ask, warranty, member=None):
         if u.get("legacy"):
             return f"{u['name']}: asking {ask}. Send your offer as a number."
         bits = [f"{u['name']} ({u['sku']})", f"grade {u.get('grade')} with the market's certificate"]
@@ -158,6 +180,8 @@ class Shop(AgentExecutor):
             bits.append(f"{max(0, (u['expires_at'] - time.time()) / 3600):.0f} h of shelf life left")
         if warranty:
             bits.append(f"{warranty} h warranty")
+        if member:
+            bits.append(f"member price for {member}")
         return ", ".join(bits) + f". Asking {ask}. Send your offer as a number."
 
     async def execute(self, context, event_queue):
@@ -177,8 +201,24 @@ class Shop(AgentExecutor):
                 log("no_stock", request=text[:120])
                 await up.reject(say("Sorry, none of that in stock."))
                 return
-            ask, floor, warranty = self._terms(u)
             style = buyer_style(text, u)
+            harsh = (self.mem.get("harsh_styles") or {}).get(style) if not u.get("legacy") else None
+            if harsh:
+                log("declined_harsh_style", style=style, ratings=harsh[0], mean_stars=harsh[1])
+                await up.reject(say("Sorry, we cannot take this order."))
+                return
+            ask, floor, warranty = self._terms(u)
+            member = None
+            m = CODE_RE.search(text)
+            if m and not u.get("legacy"):
+                code = config.LOYALTY_PREFIX + m.group(0)[len(config.LOYALTY_PREFIX):].lower()
+                try:
+                    if self.mem.redeem_code(code):
+                        member = code
+                        ask = max(floor, int(ask * (1 - config.LOYALTY_DISCOUNT)))
+                        log("loyalty", code=member, sku=u["sku"], ask=ask, floor=floor)
+                except Exception as e:                # memory trouble must not lose a sale
+                    log("memory_error", error=str(e)[:200])
             hold = None
             try:
                 prof = self.mem.buyer_style_profile(style)
@@ -188,13 +228,14 @@ class Shop(AgentExecutor):
             except Exception as e:                    # memory trouble must not lose a sale
                 log("memory_error", error=str(e)[:200])
             d = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "warranty": warranty, "first_ask": ask,
-                                      "offers": [], "t0": time.time(), "style": style, "hold": hold}
-            offer = parse_offer(text)
+                                      "offers": [], "t0": time.time(), "style": style, "hold": hold,
+                                      "member": member}
+            offer = parse_offer(text, u.get("name"))
             if offer is None:
-                await up.requires_input(say(self._pitch(u, ask, warranty)))
+                await up.requires_input(say(self._pitch(u, ask, warranty, member)))
                 return
         else:
-            offer = parse_offer(text)
+            offer = parse_offer(text, d["unit"].get("name"))
         if offer is not None:
             d["offers"].append(offer)
         action, price = pricing.seller_reply(d["ask"], d["floor"], offer, len(d["offers"]), hold=d.get("hold"))
@@ -206,7 +247,16 @@ class Shop(AgentExecutor):
                 if d["warranty"]:
                     receipt["warranty_hours"] = d["warranty"]
             await up.add_artifact(parts=[new_data_part(sign(receipt))], name="receipt")
-            await up.complete(say(f"Deal: {u['name']} at {price}."))
+            closing = f"Deal: {u['name']} at {price}."
+            if not u.get("legacy"):
+                code = d.get("member") or member_code(task.id)
+                try:
+                    self.mem.issue_code(code, u["sku"], d.get("style"))
+                    closing += (f" Member code {code}: quote it on your next order for "
+                                f"{config.LOYALTY_DISCOUNT:.0%} off our first ask.")
+                except Exception as e:                # memory trouble must not lose a sale
+                    log("memory_error", error=str(e)[:200])
+            await up.complete(say(closing))
             log("deal", sku=u["sku"], price=price, cost=u["cost"], ask=d["first_ask"], offers=d["offers"],
                 warranty=d["warranty"])
             self._end(task.id, "deal", price)
@@ -230,7 +280,8 @@ def build(port):
         name=config.SHOP_NAME,
         description=("Shop with real stock. Every unit ships with the market's certificate and an honest grade claim; "
                      "goods carry a warranty when we can stand behind them. Ask for a product by name or SKU, "
-                     "optionally with the shelf life you need (e.g. 'need 24 h'), then send a price."),
+                     "optionally with the shelf life you need (e.g. 'need 24 h'), then send a price. Every deal gives a "
+                     "member code; quote it on a later order for 3% off the first ask."),
         version="3.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],

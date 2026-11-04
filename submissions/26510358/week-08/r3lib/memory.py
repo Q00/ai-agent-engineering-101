@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS forum (
     signals TEXT, voted INTEGER DEFAULT 0, mine INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, kind TEXT, subject TEXT, text TEXT,
     importance REAL, refs TEXT);
+CREATE TABLE IF NOT EXISTS members (code TEXT PRIMARY KEY, ts REAL, sku TEXT, style TEXT, uses INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS restocks (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, sku TEXT, category TEXT, qty INTEGER,
     reason TEXT);
 """
@@ -447,6 +448,37 @@ class Memory:
     def shop_profile(self, shop_url):
         """Buyer side: how this shop has closed with our buyer."""
         return self._profile("role='buyer' AND counterpart=?", (_shop_key(shop_url),))
+
+    # ------------------------------------------------------------------ repeat customers and review defence (shop)
+    def issue_code(self, code, sku, style=None):
+        with self.db() as c:
+            c.execute("INSERT OR IGNORE INTO members (code, ts, sku, style) VALUES (?,?,?,?)",
+                      (code, time.time(), sku, style))
+
+    def redeem_code(self, code):
+        """True when the code is one we issued; counts the use. A code can be used again (it is a membership)."""
+        with self.db() as c:
+            r = c.execute("UPDATE members SET uses = uses + 1 WHERE code=?", (code,))
+            return r.rowcount > 0
+
+    def style_stars(self, min_n=10):
+        """Buyer style -> (ratings, mean stars) over the market's results for our shop's deals. Joins the result's
+        receipt task to our negotiation record, whose style is the buyer agent's message fingerprint."""
+        mine = self.my_shop_urls()
+        out = {}
+        with self.db() as c:
+            style = {r["ref"]: r["style"] for r in c.execute(
+                "SELECT ref, style FROM negotiations WHERE role='shop' AND style IS NOT NULL")}
+            for r in c.execute("SELECT json_extract(data, '$.shop') shop, json_extract(data, '$.receipt.task') task, "
+                               "json_extract(data, '$.stars') stars FROM ledger WHERE kind='result' "
+                               "AND json_extract(data, '$.stars') IS NOT NULL"):
+                if (r["shop"] or "").rstrip("/") not in mine:
+                    continue
+                st = style.get(r["task"])
+                if st:
+                    n, total = out.get(st, (0, 0))
+                    out[st] = (n + 1, total + r["stars"])
+        return {k: (n, round(t / n, 2)) for k, (n, t) in out.items() if n >= min_n}
 
     # ------------------------------------------------------------------ important events (episodic notes)
     def note(self, kind, subject, text, importance, refs=()):

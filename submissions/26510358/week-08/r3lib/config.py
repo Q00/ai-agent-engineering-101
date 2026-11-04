@@ -54,6 +54,13 @@ GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B
 WARRANTY_HOURS = 6                  # goods break up to 6 h after the sale (agent.md)
 WARRANTY_MAX_EXPECTED_COST = 0.5    # offer a warranty while p_break * price stays under half the margin
 
+# --- shop: repeat customers and review defence ----------------------------------------------------
+LOYALTY_DISCOUNT = 0.03             # a quoted member code takes 3% off the first ask (the floor does not move)
+LOYALTY_PREFIX = "SSD-"
+HARSH_MIN_REVIEWS = 15              # a buyer style needs this many star ratings of our deals before we judge it
+HARSH_MAX_STARS = 3.3               # styles averaging at or below this are declined (2026-11-04: one buyer left 64
+HARSH_EVERY_MIN = 10                #   3-star reviews with an ad for its own shop in each)
+
 # --- forum (pro-activeness, see initiative.py) -----------------------------------------------------
 FORUM_MIN_GAP_MIN = 20              # never two buyer posts closer than this (the kit allows one per 5 min)
 FORUM_MAX_CHARS = 800

@@ -64,6 +64,20 @@ def kick_forum(mem):
     kick(mem, "forum_r3.py", "forum_kick", FORUM_EVERY)
 
 
+def refresh_harsh_styles(mem, now=None):
+    """Buyer styles whose ratings of our deals average at or below HARSH_MAX_STARS; the shop declines them."""
+    now = now or time.time()
+    if now - (mem.get("harsh_at") or 0) < config.HARSH_EVERY_MIN * 60:
+        return None
+    mem.put("harsh_at", now)
+    stats = mem.style_stars(min_n=config.HARSH_MIN_REVIEWS)
+    harsh = {k: v for k, v in stats.items() if v[1] <= config.HARSH_MAX_STARS}
+    if set(harsh) - set(mem.get("harsh_styles") or {}):
+        mem.note("harsh_style", ",".join(sorted(harsh)), f"declining buyer styles {harsh} (ratings, mean stars)", 0.5)
+    mem.put("harsh_styles", harsh)
+    return harsh
+
+
 def unit_cost_estimate(info):
     return info["list_price"] * 0.75            # worst case (grade A top): the market refuses a lot above balance
 
@@ -205,6 +219,10 @@ def main():
             kick(mem, "restock_review_r3.py", "review_kick", config.RESTOCK_REVIEW_EVERY_MIN * 60)
     except Exception as e:
         print(json.dumps({"event": "forum_kick_error", "error": str(e)[:200]}), flush=True)
+    try:
+        refresh_harsh_styles(mem)
+    except Exception as e:
+        print(json.dumps({"event": "harsh_styles_error", "error": str(e)[:200]}), flush=True)
     inv = market.read_json("inventory.json", {}, md) or {}
     out = {"buy": []}
     if (inv.get("round") or 0) >= 3:
