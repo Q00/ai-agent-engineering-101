@@ -118,6 +118,42 @@ def test_terms():
           == {"cert": True, "grades": ["A", "B"]})
     check("goods with a warranty: a 6-hour warranty", mb.accept_for(order(1, [], "goods"), goods, True)
           == {"cert": True, "warranty_hours": 6})
+    check("a warranty asked for but not on the receipt is not demanded at payment: grades A and B, as without one",
+          mb.accept_for(order(1, [], "goods"), goods, True, {"price": 1, "warranty_hours": 2})
+          == {"cert": True, "grades": ["A", "B"]}
+          and mb.accept_for(order(1, [], "goods"), goods, True, {"price": 1, "warranty_hours": 6})
+          == {"cert": True, "warranty_hours": 6})
+    said = lambda text, m=None: t(text, m)
+    check("a warranty the shop confirms: its metadata, or its words",
+          mb.warranty_shown(said("x", {"warranty_hours": 6})) and not mb.warranty_shown(said("x", {"warranty_hours": 3}))
+          and mb.warranty_shown(said("With a 6-hour warranty: 31920.")) and mb.warranty_shown(said("6시간 보증 포함, 31920원"))
+          and not mb.warranty_shown(said("No 6-hour warranty on this one. Asking 20000."))
+          and not mb.warranty_shown(said("Asking 20000.")))
+    reply = lambda text, m: {"id": "t1", "status": {"state": "TASK_STATE_INPUT_REQUIRED",
+                                                    "message": {"parts": [{"text": text}], "metadata": m}}}
+    flow = [reply("Bed (G1): grade C (refurbished). Asking 50000.", {"ask": 50000, "grade": "C"}),
+            reply("Sorry, asking 50000.", {"ask": 50000})]
+
+    class Shop:                     # a shop that sells refurbished goods and never mentions a warranty
+        def __init__(self):
+            self.sent = []
+
+        async def open(self, url):
+            return {}
+
+        async def send(self, text, task_id=None):
+            self.sent.append(text)
+            return flow[min(len(self.sent), len(flow)) - 1]
+
+        async def cancel(self, task_id):
+            self.sent.append("(cancel)")
+
+    shop_ = Shop()
+    cand = {"shop": {"name": "K", "url": "http://k"}, "sku": "G1", "name": "Bed", "list": 80000, "kind": "goods"}
+    r = asyncio.run(mb.trade(shop_, cand, order(70000, ["G1"], "goods"), {}, {}, RULES, False))
+    check("refurbished goods whose warranty the shop does not confirm: we ask, then leave before any offer",
+          shop_.sent == ["I want to buy Bed (G1).", "Please include a 6-hour warranty.", "(cancel)"] and not r["offers"]
+          and "did not confirm" in (r["left"] or ""), (shop_.sent, r["left"]))
     check("a warranty for goods listed at 100,000 or more", mb.wants_warranty(dict(goods, list=168000), {}, False, RULES))
     check("...from a shop whose goods broke on us", mb.wants_warranty(goods, {"K": {"broken": 1}}, False, RULES))
     check("...when every choice was poor", mb.wants_warranty(goods, {}, True, RULES))
