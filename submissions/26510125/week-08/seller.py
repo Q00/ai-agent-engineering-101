@@ -94,8 +94,10 @@ class Seller(AgentExecutor):
         if deal is None:
             unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]})
             if unit is None:
+                print(f"[visit] no unit for {text[:60]!r}", flush=True)
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
+            print(f"[visit] {text[:60]!r} -> {unit['sku']} grade {unit.get('grade')} cost {unit['cost']}", flush=True)
             deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"]}
         else:
             deal["lines"].append(f"buyer: {text}")
@@ -128,10 +130,12 @@ class Seller(AgentExecutor):
                     receipt["warranty_hours"] = {"A": 6, "B": 3}.get(u.get("grade"), 0)
             receipt = sign(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            print(f"[deal] {u['sku']} grade {u.get('grade')} at {price} (cost {u['cost']})", flush=True)
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             del self.open[task.id]
             return
         if action == "reject":
+            print(f"[walk] {u['sku']} grade {u.get('grade')}: rejected at offer {deal['offer']} vs floor {reserve}", flush=True)
             await up.reject(say("No deal."))
             del self.open[task.id]
             return
