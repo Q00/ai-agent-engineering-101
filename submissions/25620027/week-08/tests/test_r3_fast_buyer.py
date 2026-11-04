@@ -566,3 +566,13 @@ def test_food_requests_state_the_shelf_life_needed_and_goods_requests_do_not() -
     plain = fast.choose(goods, shops, {}, {}, {})
     assert plain is not None
     assert plain.request.endswith(f"({KIMCHI})")
+
+
+def test_shops_that_keep_saying_none_in_stock_lose_weight_and_can_recover() -> None:
+    new = fast.stock_factor("http://new", {})
+    assert new == 0.8  # Beta(4, 1) prior: an unanswered shop is not punished
+    always_out = fast.stock_factor("http://out/", {"http://out": (10, 10)})
+    reliable = fast.stock_factor("http://ok", {"http://ok": (0, 20)})
+    assert always_out < 0.3 < new < reliable
+    # And: answers with stock pull a shop back up.
+    assert fast.stock_factor("http://out", {"http://out": (10, 30)}) > always_out

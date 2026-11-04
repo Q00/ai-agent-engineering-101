@@ -238,6 +238,24 @@ def shop_factor(
     return max(0.05, factor)
 
 
+# Prior for "a listed SKU is really in stock": Beta(4, 1), mean 0.8, so a new shop
+# is not punished before it has answered, and each answer moves the estimate.
+STOCK_PRIOR_HIT: Final = 4.0
+STOCK_PRIOR_MISS: Final = 1.0
+
+
+def stock_factor(url: str, misses: Mapping[str, tuple[int, int]]) -> float:
+    """Posterior mean that this shop really has a SKU it lists (bandit estimate).
+
+    On 11/4 195 of 926 asks in 6 h were answered "none in stock", and some shops
+    did so 10 times out of 10; each such ask costs part of an 18 s order. The
+    weight falls with every miss and recovers with every answer that had stock.
+    """
+    miss, asks = misses.get(url.rstrip("/"), (0, 0))
+    hits = asks - miss
+    return (hits + STOCK_PRIOR_HIT) / (asks + STOCK_PRIOR_HIT + STOCK_PRIOR_MISS)
+
+
 def review_factor(shop: ShopEntry) -> float:
     """Weigh a light prior from public stars; our own evidence dominates."""
     stars = [r.stars for r in shop.reviews if 1 <= r.stars <= MAX_STARS]
@@ -332,6 +350,7 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     recent: Mapping[str, Mapping[str, int]] | None = None,
     skip_offer: Callable[[str, str], bool] | None = None,
     need_margin_hours: float = 1.0,
+    stock_misses: Mapping[str, tuple[int, int]] | None = None,
 ) -> Choice | None:
     """Pick the shop and SKU with the best expected surplus; None when no stock fits.
 
@@ -361,7 +380,11 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
         evidence = shop_factor(shop.url, outcomes, reasons) * review_factor(shop)
         if picture is not None:
             evidence *= trust_factor(picture.trust_of(shop.url))
-        weight = evidence * price_factor(shop.url, ratios or {})
+        weight = (
+            evidence
+            * price_factor(shop.url, ratios or {})
+            * stock_factor(shop.url, stock_misses or {})
+        )
         eligible = exploration_allowed(shop, explore_counts, reasons, picture)
         if not acceptable:
             # R2 shops need not publish stock. A lone stock advertisement must not
@@ -676,6 +699,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
     outcomes: dict[str, dict[str, int]] = {}
     reasons: dict[str, str] = {}
     ratios: dict[str, float] = {}
+    misses: dict[str, tuple[int, int]] = {}
     recent: dict[str, dict[str, int]] | None = None
     cooling: frozenset[str] = frozenset()
     unfit: list[tuple[float, str, str, str]] = []
@@ -688,6 +712,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
         reasons = events.refusal_reasons(policy.buyer.refusal_memory_hours)
         recent = events.shop_outcomes(policy.buyer.explore_memory_hours)
         ratios = events.price_ratios(policy.buyer.refusal_memory_hours)
+        misses = events.stock_misses(policy.buyer.explore_memory_hours)
         unfit = events.unfit_offers(UNFIT_MEMORY_HOURS)
         cooling = cooling_shops(
             events.failure_streaks(policy.buyer.refusal_memory_hours),
@@ -712,6 +737,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
             recent=recent,
             skip_offer=skip_offer,
             need_margin_hours=policy.buyer.food_margin_hours,
+            stock_misses=misses,
         )
 
     choice = pick()

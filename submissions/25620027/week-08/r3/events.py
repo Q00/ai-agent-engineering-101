@@ -283,6 +283,21 @@ class EventLedger:
                     streaks[key] = (0, float(ts))
         return {k: (n, now - last) for k, (n, last) in streaks.items() if n > 0}
 
+    def stock_misses(self, hours: float) -> dict[str, tuple[int, int]]:
+        """Per shop URL: (asks answered "none in stock", asks) within the window."""
+        since = time.time() - hours * 3600
+        counts: dict[str, tuple[int, int]] = {}
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            for shop, reason in db.execute(
+                "SELECT shop, reason FROM buyer_attempts WHERE ts >= ?", (since,)
+            ):
+                text = str(reason or "").lower()
+                miss = "in stock" in text or "out of stock" in text
+                key = str(shop).rstrip("/")
+                misses, asks = counts.get(key, (0, 0))
+                counts[key] = (misses + int(miss), asks + 1)
+        return counts
+
     def price_ratios(self, hours: float) -> dict[str, float]:
         """Median actual paid/list share, excluding pending and refused agreements."""
         since = time.time() - hours * 3600
