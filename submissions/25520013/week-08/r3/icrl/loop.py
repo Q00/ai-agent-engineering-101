@@ -669,6 +669,10 @@ def advance(ctx, L, exp, store, stats, now):
     if exp["status"] == "scheduled":
         if now < exp["t_start"]:
             return "scheduled"
+        why = retired(pol, exp, stats)
+        if why:
+            end(ctx, L, exp, "stopped", None, now, reason=why)
+            return "retired"
         m = measure(store, stats, exp, now - max(blk_s, LOSS_REF_S), now, **bd)
         exp["a_ref"] = m
         arm = "B" if exp["protocol"] == "long" else X.block_arm(exp["seed"], 0)
@@ -757,14 +761,36 @@ def kind_of(cat, demand):
     return out
 
 
-def top_cats(stats, n=N_CATS):
-    return [
-        c
-        for c, _ in sorted(
-            stats["category"].items(), key=lambda kv: -kv[1]["settles_h"]
-        )
-        if c != "?"
-    ][:n]
+def top_cats(stats, n=N_CATS, by="settles_h"):
+    """The n top market categories: by settles per hour, by="value" by settles per hour times the mean price, or
+    by="ours" by our own settles in the stats window times the mean price (where our sales value is)."""
+
+    def size(v):
+        if by == "ours":
+            return (v.get("our_n") or 0) * (v.get("mean") or 0)
+        return (v.get("settles_h") or 0) * ((v.get("mean") or 0) if by == "value" else 1)
+
+    return [c for c, _ in sorted(stats["category"].items(), key=lambda kv: -size(kv[1])) if c != "?"][:n]
+
+
+def arm_cats(pol, stats):
+    """v1.26d (2026-11-05): the categories that get category arms: the policy's overrides plus the top 5 categories
+    by our own sales value. e0017 (kimchi breadth_qty, proposed 03:28 KST) came from the top 5 by settle count, where
+    kimchi is 3rd (4th by market value), yet kimchi is 1 % of our sales value (03:36 KST: mattresses 58 %, sofas 31 %),
+    an effect far below the noise of one 40-minute block."""
+    ov = [c for c in (pol.get("categories") or {}) if "." not in c]
+    return list(dict.fromkeys(ov + top_cats(stats, 5, by="ours")))
+
+
+def retired(pol, exp, stats):
+    """v1.26d: a scheduled experiment whose edits all name categories outside arm_cats -> the reason it is retired
+    before it starts, else None. Only experiments that have not started are retired, so no data is lost."""
+    edits = exp.get("edits") or []
+    if exp.get("retest") or not edits or not all(r["path"].startswith("categories.") for r in edits):
+        return None  # a retest re-checks an adopted change, wherever its category ranks now
+    ok = set(arm_cats(pol, stats))
+    out = [SP.split(r["path"])[1] for r in edits]
+    return None if any(c in ok for c in out) else f"retired: {', '.join(out)} not among the arm categories"
 
 
 def priors(ctx):
@@ -779,13 +805,12 @@ def priors(ctx):
 
 def arms(ctx, L, pol, stats, kinds, now, ban):
     out = {}
-    cats = top_cats(stats, 5)
+    cats = top_cats(stats, 5, by="value")  # v1.26d: list suggestions by market value, not settle count
     paths = [e["path"] for e in ctx.space if "*" not in e["path"]]
     for e in ctx.space:
         if e["path"].startswith("categories.*."):
             key = e["path"].rsplit(".", 1)[1]
-            ov = [c for c in (pol.get("categories") or {}) if "." not in c]
-            paths += [f"categories.{c}.{key}" for c in dict.fromkeys(ov + cats)]
+            paths += [f"categories.{c}.{key}" for c in arm_cats(pol, stats)]
     for p in paths:
         e = SP.entry(ctx.space, p)
         cur = SP.current(pol, p, e, kinds)
