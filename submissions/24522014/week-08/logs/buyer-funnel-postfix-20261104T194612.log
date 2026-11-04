@@ -1,0 +1,68 @@
+# window: after decision logging went live (2026-11-04 10:37:30Z) to now
+{
+  "window": {
+    "since": "20261104T103730000000Z",
+    "until": null,
+    "first_run": "20261104T103740512355Z",
+    "last_run": "20261104T104610822992Z"
+  },
+  "sample": {
+    "hook_runs": 25,
+    "distinct_orders": 25,
+    "runs_with_decision_trail": 13
+  },
+  "funnel": [
+    {
+      "stage": "orders",
+      "count": 25,
+      "of_previous": null,
+      "of_selected": null
+    },
+    {
+      "stage": "selected",
+      "count": 13,
+      "of_previous": 0.52,
+      "of_selected": 1.0
+    },
+    {
+      "stage": "quoted",
+      "count": 10,
+      "of_previous": 0.7692,
+      "of_selected": 0.7692
+    },
+    {
+      "stage": "offered",
+      "count": 4,
+      "of_previous": 0.4,
+      "of_selected": 0.3077
+    },
+    {
+      "stage": "receipt",
+      "count": 3,
+      "of_previous": 0.75,
+      "of_selected": 0.2308
+    },
+    {
+      "stage": "paid",
+      "count": 2,
+      "of_previous": 0.6667,
+      "of_selected": 0.1538
+    }
+  ],
+  "causes": {
+    "selection:attempt_cooldown": 12,
+    "model_quota_hour": 7,
+    "transport_error": 2,
+    "paid": 2,
+    "seller_rejected_at_open": 1,
+    "payment_refused:grade": 1
+  },
+  "decision_paths": {
+    "model_gate:model_quota_hour": 7,
+    "deterministic:rule_offer": 4
+  },
+  "non_rule_paths_by_parser_reason": {
+    "model_quota_hour|parser=over_budget": 4,
+    "model_quota_hour|parser=no_labeled_price": 3
+  }
+}
