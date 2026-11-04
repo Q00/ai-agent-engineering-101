@@ -55,6 +55,12 @@ def test_partial_warranty_is_a_checkout_requirement_with_conservative_value(tmp_
     assert 0 <= move['expected_delta']['surplus'] < 2
 
 
+def test_zero_safe_value_cannot_become_a_one_credit_counteroffer():
+    from r3.market_memory import buyer_price_actions
+    assert buyer_price_actions(100, 0, {'list_price': 100}, 80, .92, 0, 4,
+                               failure_stress=1, covered_failure=0) == []
+
+
 def test_public_price_above_budget_does_not_become_fake_affordable_offer(tmp_path):
     from r3.economy import buyer_candidates
     j, now = Journal(tmp_path), time.time()

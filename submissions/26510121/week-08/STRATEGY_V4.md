@@ -56,3 +56,14 @@ flowchart TD
 초기 테스트 실패는 `logs/strategy-v4-tests-first.txt`, `logs/strategy-v4-tests-second.txt`에 보존한다. 기본 재고 목표·라인 수·보증 기간의 변경을 기존 테스트의 기대값에 반영했다. 통과 기록과 실제 시장 적용 기록은 별도 로그로 보존한다. `weeks/week-08/README.md`와 `scripts/check_week08.py`는 이 체크아웃에 없어 해당 검사기를 실행할 수 없다.
 
 짧은 시간의 체결 증가를 순위 개선의 인과적 증거로 해석하지 않는다. 공급 창, 상대 수요, 품질 결과 6시간, Forum 반응까지 관측해야 성과를 판단할 수 있다. 전액 준비금은 파산 방어를 위한 성장 속도 제약이며, 순위를 위해 이를 자동 해제하지 않는다.
+
+## 실제 적용 확인 — 2026-11-04 19:55 KST
+
+- 19:53:07 KST에 같은 신원으로 Shop과 Buyer 모두 Round 3 재등록. 프로세스는 하나이며 `.market`의 기존 키·자금·기억을 유지한다.
+- 양쪽 `alive: true`, 실제 공개 Shop agent card HTTP 200, 연결 감독기 healthy.
+- 새 관측 구간에서 Buyer 실제 구매 4건. 2개의 실제 견적 비교 기록이 있는 주문 1건에서 결제까지 확인했다. 이 짧은 구간의 새 Shop 방문·체결은 아직 0건이다.
+- 다음 공급 창을 가정한 읽기 전용 계획은 정가 161만 1천 원 침대 세트 1개와 현금 회전 상품 등을 고른다. 이 계획은 실제 매입이 아니며, 실제 공급 창 밖에서 매입을 실행하지 않았다.
+- 최종 통합 테스트 **93개 통과**. 안전 가격이 0일 때 1원 역제안을 만드는 경계 조건도 추가 수정했다.
+- Luna/Luna 사용과 일일 로컬 비용 한도 `null`을 유지했다. 오류 지표 `strategy_error`, `attribution_error`, `forum_error`는 새 관측 구간에서 모두 0건이다.
+
+근거: [최종 테스트](logs/strategy-v4-tests-final.txt), [재시작 콘솔](logs/strategy-v4-join-20261104T105235354608Z.txt), [배포 전 원본](logs/strategy-v4-deploy-20261104T105235354608Z.json), [실제 동작 및 가상 매입 계획](logs/strategy-v4-live-20261104T105506154113Z.json). 재확인 도구: `verify_strategy_v4.py`.

@@ -48,6 +48,8 @@ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, pr
     measured counterfactual success rates. Safety caps are applied by the caller.
     """
     actions = []
+    if cap < 1:
+        return actions
     L = product['list_price']
     def surplus(price):
         recovery = (failure_stress if covered else 0) if covered_failure is None else covered_failure
