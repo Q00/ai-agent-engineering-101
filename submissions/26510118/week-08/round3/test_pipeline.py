@@ -361,6 +361,11 @@ def test_restock(fake: Fake):
     check("the seller quotes dear goods (100,000 or more) with the warranty unasked, cheap ones without",
           _seller.priced(dear, NOW, False)["warranty_hours"] == 6 and _seller.priced(cheap, NOW, False)["warranty_hours"] is None
           and _seller.priced(cheap, NOW, True)["warranty_hours"] == 6)
+    end = common.ROUND_END
+    check("...but not on clearance (unsold 8 days, or the last day), where it would lift the clearance floor; asked for, it still comes",
+          _seller.priced(dict(dear, supplied_at=NOW - 8 * DAY), NOW, False)["warranty_hours"] is None
+          and _seller.priced(dear, end - 10 * H, False)["warranty_hours"] is None
+          and _seller.priced(dear, end - 10 * H, True)["warranty_hours"] == 6)
     old = [u for u in shelf if u["sku"] != PAKIMCHI] + [unit_row("u-near", PAKIMCHI, 9000, 10)]
     out, _ = restock.plan(inv(old), CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("food with under a day left does not count: a fresh one is bought", out["buy"] == [{"sku": PAKIMCHI, "qty": 1}], out)
@@ -397,6 +402,21 @@ def test_restock(fake: Fake):
     out, _ = restock.plan(inv(shelf, balance=3_000_000), cat2, DEMAND, {}, [], [], rules, NOW, line={sofa: 1})
     check("the balance kept (2,500,000) holds: no sofa planned at 1,500,000 with 3,000,000 in hand",
           all(b["sku"] != sofa for b in out["buy"]), out["buy"][:2])
+    out, info = restock.plan(inv(shelf, balance=8_000_000), cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
+    check("the line takes at most half the money above the balance kept (8M: one sofa at 1.5M of 2.75M), and the shelf still refills",
+          info["line"] == 1 and {"sku": WATER, "qty": 1} in out["buy"], (info["line"], out["buy"]))
+    soon = dict(rich(shelf), restock={"open": True, "opens_at": NOW - 100, "closes_at": NOW + 40})
+    out, info = restock.plan(soon, cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
+    check("...and at most half the lines: 40 s left (4 lines), 2 for the line, the refill still bought",
+          info["lines"] == 4 and info["line"] == 2 and {"sku": WATER, "qty": 1} in out["buy"], (info, out["buy"]))
+    out, info = restock.plan(rich([]), cat2, DEMAND, {}, sold10, [], rules, NOW, stocked=set(FILLERS[:10]), line={sofa: 1})
+    fresh = [b["sku"] for b in out["buy"] if b["sku"] not in set(FILLERS[:10]) | {sofa}]
+    check("exploring with the line: the line's line comes out of the refills' share, products never stocked keep theirs (4)",
+          info["line"] == 1 and len(fresh) == 4, out["buy"])
+    check("line.json: a well formed file wins, {} turns the line off, anything malformed keeps the default",
+          restock.load_line({"skus": {sofa: 2}}) == {sofa: 2} and restock.load_line({"skus": {}}) == {}
+          and restock.load_line({"skus": [sofa]}) is restock.LINE and restock.load_line([1]) is restock.LINE
+          and restock.load_line(None) is restock.LINE)
     end = common.ROUND_END
     late = [{"sku": PAKIMCHI, "ts": end - 2 * DAY - H}] * 3 + [{"sku": WATER, "ts": end - 2 * DAY - H}]
     empty_now = [u for u in shelf if u["sku"] not in (PAKIMCHI, WATER)]

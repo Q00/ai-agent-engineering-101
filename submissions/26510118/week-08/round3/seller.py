@@ -275,7 +275,10 @@ def market_file(name: str) -> dict:
     except OSError:
         return {}
     if (_files.get(name) or (None,))[0] != mtime:
-        _files[name] = (mtime, common.read_json(path, {}) or {})
+        data = common.read_json(path, {}) or {}
+        if not data:                                     # half written or unreadable: read it again next time
+            return (_files.get(name) or (None, {}))[1]
+        _files[name] = (mtime, data)
     return _files[name][1]
 
 
@@ -286,8 +289,8 @@ def priced(u: dict, now: float, warranty: bool) -> dict:
     r = common.rules()["seller"]
     by_grade = ((market_file("market_summary.json").get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
     late = pricing.late_in_cycle(market_file("inventory.json").get("restock"), now)
-    return pricing.plan(u, now, warranty=warranty or pricing.default_warranty(u), adjust=float(r["price_adjust"] or 0),
-                        catalog=catalog(), extra=r["warranty_extra"], market=by_grade, late=late)
+    return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
+                        extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True)
 
 
 class Seller(AgentExecutor):
@@ -308,8 +311,8 @@ class Seller(AgentExecutor):
         u, p = d["unit"], d["plan"]
         common.record("negotiations", task=task_id, sku=u["sku"], unit=u["unit"], grade=p["grade"],
                       cost=u["cost"], list_price=u["list_price"], floor=p["floor"], at_cost=p["at_cost"],
-                      ref=p.get("ref"), late=p.get("late"),
-                      warranty=d["warranty"], how=d["how"], asks=d["asks"], offers=d["offers"],
+                      ref=p.get("ref"), late=p.get("late"), asked_warranty=d["warranty"],
+                      warranty=bool(p.get("warranty_hours")), how=d["how"], asks=d["asks"], offers=d["offers"],
                       walk_odds=d.get("walk") or None, taken_early=d.get("early", False), outcome=outcome, price=price)
         print(f"[seller] {u['sku']} {outcome}" + (f" at {price}" if price else ""), flush=True)
 
@@ -406,15 +409,16 @@ class Seller(AgentExecutor):
                 await up.requires_input(say(f"{describe(d['unit'], p)}. Asking {p['ask']}. Send your offer as a number.", d))
                 return
         # a warranty asked for during the negotiation
-        if WARRANTY.search(text) and d["unit"].get("kind") == "goods" and not d["plan"].get("warranty_hours"):
-            before = d["plan"]
-            d["warranty"] = True
-            p = priced(d["unit"], now, True)
-            d["plan"] = p
-            d["asks"].append(max(p["floor"], d["asks"][-1] + p["ask"] - before["ask"]))
-            if not numbers(text):
-                await up.requires_input(say(f"With a 6-hour warranty: {d['asks'][-1]}. Send your offer as a number.", d))
-                return
+        if WARRANTY.search(text) and d["unit"].get("kind") == "goods":
+            d["warranty"] = True                         # remembered for a switch to another product
+            if not d["plan"].get("warranty_hours"):     # dear goods carry it already
+                before = d["plan"]
+                p = priced(d["unit"], now, True)
+                d["plan"] = p
+                d["asks"].append(max(p["floor"], d["asks"][-1] + p["ask"] - before["ask"]))
+                if not numbers(text):
+                    await up.requires_input(say(f"With a 6-hour warranty: {d['asks'][-1]}. Send your offer as a number.", d))
+                    return
 
         offer = await offer_in(text)
         ask, floor = d["asks"][-1], d["plan"]["floor"]

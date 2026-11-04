@@ -83,7 +83,8 @@ LINE = {                 # the premium line: SKU -> the most units held (11/4 ev
     "G8095ddd6": 1,      # 침대 851,400: 4.9 an hour, 4 shops
     "G05277ffe": 1,      # 침구 600,000: 6.7 an hour, 4 shops
 }
-LINE_LINES = 4           # line products bought in one run at most (the shelf's refills need the other lines)
+LINE_LINES = 4           # line products bought in one run at most (the shelf's refills need the other lines),
+LINE_SHARE = 0.5         # ...and never more than half the run's lines nor this share of the balance above RESERVE
 LINE_MAX_UNITS = 5
 LINE_STALL = 2 * 3600    # held this long with no sale of the product: no more units
 LINE_STOP = 30 * 3600    # no line product is bought this close to the end
@@ -267,6 +268,14 @@ def evidence(catalog: dict, summary: dict, orders: list, wanted: dict, now: floa
     return score
 
 
+def load_line(data) -> dict:
+    """analysis/line.json {"skus": {SKU: most units}} when it is there and well formed ({"skus": {}} turns the
+    line off), else LINE. A malformed file must not stop the run: it buys the whole shelf, food included."""
+    if isinstance(data, dict) and isinstance(data.get("skus"), dict):
+        return data["skus"]
+    return LINE
+
+
 def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: float) -> list:
     """[(sku, units to buy)] for the premium line: one unit to start, then our pace over two supply cycles,
     up to the product's cap; nothing more for one held LINE_STALL seconds with no sale, nor near the end."""
@@ -371,23 +380,26 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     explore = min(len(fresh), max(1, round(lines * EXPLORE_SHARE.get(phase, 0.0)))) if fresh and not wind_down else 0
     buy, spend = [], 0.0
 
-    def take(rows, room):
+    def take(rows, room, limit=float("inf")):
         nonlocal spend
         for _, sku, need in rows:
             if room <= 0 or len(buy) >= lines:
                 return
             each = catalog[sku]["list_price"] * DEAREST
             qty = need
-            while qty and (value + spend + each * qty > CAP or balance - spend - each * qty < RESERVE):
+            while qty and (value + spend + each * qty > CAP or balance - spend - each * qty < RESERVE
+                           or spend + each * qty > limit):
                 qty -= 1
             if qty:
                 buy.append({"sku": sku, "qty": qty})
                 spend += each * qty
                 room -= 1
     premium = line_gaps(line, catalog, units, sales, now)
-    take([(-1, sku, need) for sku, need in premium], min(LINE_LINES, lines))   # the premium line first
+    # the premium line first, but with at most half the lines and half the money above the balance kept, so the
+    # shelf's refills always have a share of the run (review 11/4: with 40 s left it took all 4 lines; at 8M it took all but 70k)
+    take([(-1, sku, need) for sku, need in premium], min(LINE_LINES, lines // 2), LINE_SHARE * max(0, balance - RESERVE))
     bought_line = len(buy)
-    take(known, lines - explore)                                   # refills, the fast sellers stocked deep
+    take(known, max(0, lines - explore - bought_line))             # refills, the fast sellers stocked deep
     take(fresh, explore)
     take([g for g in known + fresh if g[1] not in {b["sku"] for b in buy}], lines)   # lines left over
     info = {"stage1": len(one), "gate": f"{len(sales)}/{GATE}" + (" open" if gate else ""),
@@ -416,7 +428,7 @@ def main() -> int:
     refusals = common.records("refusals")
     if "stocked" not in state:                           # every SKU bought so far; records/restock.jsonl is archived after 48 h
         state["stocked"] = sorted({b.get("sku") for r in common.records("restock") for b in r.get("buy") or [] if b.get("sku")})
-    line = (common.read_json(common.MARKET_DIR / "analysis" / "line.json", {}) or {}).get("skus") or LINE
+    line = load_line(common.read_json(common.MARKET_DIR / "analysis" / "line.json", None))
     out, info = plan(inv, catalog, common.read_json(state_dir / "demand.json", []) or [],
                      common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {},
                      sales, refusals, common.rules()["seller"], now, wanted, common.records("orders"),

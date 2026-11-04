@@ -122,17 +122,22 @@ def respond(ask: int, floor: int, offer: int, rounds: int) -> tuple[str, int]:
 
 def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: float = 0.0,
          catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
-         late: bool = False) -> dict:
+         late: bool = False, dear_default: bool = False) -> dict:
     """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late} for one unit.
     at_cost: the floor is cost + 5% (no clearance), which is what the seller may say.
     adjust and extra come from the rules in force (price_adjust, warranty_extra); market is the
-    category's by_grade from market_summary.json; late: the end of the supply cycle (late_in_cycle).
+    category's by_grade from market_summary.json; late: the end of the supply cycle (late_in_cycle);
+    dear_default: dear goods (default_warranty) get the warranty unasked, except on clearance (unsold a
+    week, or the round's last day), where it would lift the clearance floor by its extra.
     ref: the market median the ask moved toward, or None."""
     extra = extra or WARRANTY_EXTRA
     now = now or time.time()
     lp, cost = unit["list_price"], unit["cost"]
     g = grade(unit, now, catalog)
-    w = bool(warranty) and unit.get("kind") == "goods"
+    age = (now - unit.get("supplied_at", now)) / 86400
+    to_end = (common.ROUND_END - now) / 3600
+    clearing = age > DUD_DAYS or near_expiry(unit, now) or to_end < LAST_DAY
+    w = (bool(warranty) or (dear_default and default_warranty(unit) and not clearing)) and unit.get("kind") == "goods"
     rule = START[g] + (extra[g] if w else 0)
     ref = market_ref(market, g, w)
     gap = round(ref + LIFT - rule, 6) if ref is not None else 0.0      # rounded: 0.72 - 0.75 is -0.030000000000000027
@@ -143,14 +148,12 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     start = rule + adjust + (LATE_LIFT if late else 0)
     floor = math.ceil(round(cost * (1 + MARGIN), 6))            # 12000 * 1.05 is 12600.000000000002 in floats
     clearance = None
-    age = (now - unit.get("supplied_at", now)) / 86400
     if age > MARKDOWN_AFTER:
         start -= MARKDOWN_STEP * math.ceil(age - MARKDOWN_AFTER)
     if age > DUD_DAYS:
         clearance = DUD_FLOOR
     if near_expiry(unit, now):
         start, clearance = NEAR_ASK, NEAR_FLOOR
-    to_end = (common.ROUND_END - now) / 3600
     if to_end < LAST_DAY:
         start -= LAST_DAY_CUT
         clearance = min(clearance if clearance is not None else 1.0, LAST_DAY_FLOOR)
