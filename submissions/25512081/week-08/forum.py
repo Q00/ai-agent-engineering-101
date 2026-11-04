@@ -108,13 +108,46 @@ def _save_refs(cache):
     tmp.replace(REFS)
 
 
+HISTORY = MD / "forum_history.json"
+
+
+def track(posts):
+    """Keep every post's final votes with its features (.market/forum_history.json). A post's score is the Wilson
+    lower bound of likes over votes, and a buyer's forum score their average: on Nov 4 at noon our posts all
+    stopped at 5 likes while others reached 6-7, and buyers' forum scores sit between 0.60 and 0.645, so one
+    more like per post moves the percentile a lot. Votes only come while a post is among the newest 100 (about
+    20 minutes), so the most likes seen is the final count. This file is how the overseer learns which posts
+    get the extra likes."""
+    hist = _load(HISTORY, {})
+    for p in posts:
+        text = p.get("text") or ""
+        h = hist.get(str(p["id"])) or {
+            "author": p.get("author"), "role": p.get("role"), "ts": p.get("ts"), "thread": bool(p.get("thread")),
+            "refs": len(p.get("refs") or []), "chars": len(text),
+            "hangul": round(sum(1 for c in text if "\uac00" <= c <= "\ud7a3") / max(1, len(text)), 2),
+            "tag": text[:text.index("]") + 1] if text.startswith("[") and "]" in text[:20] else ""}
+        h["likes"] = max(h.get("likes", 0), p.get("likes") or 0)
+        h["dislikes"] = max(h.get("dislikes", 0), p.get("dislikes") or 0)
+        hist[str(p["id"])] = h
+    if len(hist) > 6000:
+        hist = dict(sorted(hist.items(), key=lambda kv: int(kv[0]))[-6000:])
+    tmp = HISTORY.with_suffix(".tmp")
+    tmp.write_text(json.dumps(hist, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(HISTORY)
+
+
 def votes():
     """+1 on posts whose refs are settled deals, -1 on orders to agents or refs that do not check out; each
     post once. A post whose refs are not looked up yet waits for a later call."""
     st = _load(STATE, {})
     done = set(st.get("voted", []))
     out, budget = [], [0]                      # cache only: lookups happen in check_refs()
-    for p in _load(MD / "forum.json", []):
+    posts = _load(MD / "forum.json", [])
+    try:
+        track(posts)
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    for p in posts:
         if p["id"] in done or p.get("author") == "kimauve":
             continue
         if INJECTION.search(p.get("text") or ""):
