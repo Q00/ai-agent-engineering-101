@@ -4,6 +4,7 @@ import argparse
 import os
 from pathlib import Path
 import sys
+import time
 
 from r3_checkout import guarded_shop
 from r3_common import ROOT, require_live
@@ -35,6 +36,16 @@ def launch_directory(argv):
     return directory
 
 
+def host_timestamped_writer(writer):
+    """Use the receiving host's clock, not the NFS server's default file clock."""
+    def write(path, data):
+        received_at = time.time()
+        writer(path, data)
+        if Path(path).name == 'inventory.json':
+            os.utime(path, (received_at, received_at))
+    return write
+
+
 def main():
     require_live()
     directory = launch_directory(sys.argv[1:])
@@ -42,6 +53,7 @@ def main():
     with exclusive_lock(dbdir / 'market-kit.lock'):
         kit = load_kit()
         kit.AcpShop = guarded_shop(kit.AcpShop)
+        kit.write_json = host_timestamped_writer(kit.write_json)
         os.environ['MARKET_DIR'] = str(directory / '.market')
         os.environ['R3_CHECKOUT_GUARD'] = '1'
         kit.main()

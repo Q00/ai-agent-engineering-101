@@ -83,6 +83,9 @@ def load_order(path, item, budget):
         raise ValueError('Unknown order kind')
     if not isinstance(order.get('category'), str) or not order['category']:
         raise ValueError('Missing order category')
+    # The live market uses null for goods: only food has a use-by horizon.
+    if order['kind'] == 'goods' and order.get('use_within_hours') is None:
+        order['use_within_hours'] = 0
     _number(order.get('use_within_hours', 0), 'use horizon')
     _number(order.get('expires'), 'order expiration')
     return sanitized_order(order)
