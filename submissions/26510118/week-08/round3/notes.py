@@ -64,8 +64,17 @@ def _ratio(s: dict, catalog: dict):
     return s["amount"] / lp if lp and isinstance(s.get("amount"), (int, float)) else None
 
 
-def _latest(rows: list, k: int = 3) -> list:
-    return sorted(s["seq"] for s in rows if s.get("seq") is not None)[-k:]
+def _latest(rows: list, k: int = 3, names: dict | None = None) -> list:
+    """The newest k ledger seqs, never one of our own shop's settles (the market shows a ref's shop next to the post)."""
+    return sorted(s["seq"] for s in rows if s.get("seq") is not None
+                  and not forum.own((names or {}).get(s.get("shop"), s.get("shop"))))[-k:]
+
+
+def named(leaf: str, said: str, extra: tuple = ()) -> bool:
+    """A category counts as covered when its whole name, any part of it (침대/매트리스 -> 침대, 매트리스;
+    신선과일(부패주의) -> 신선과일) or one of `extra` (its top product's SKU or name) appears in the posts."""
+    parts = {leaf} | {x for x in re.split(r"[/()\s]+", leaf) if len(x) >= 2} | {x for x in extra if x}
+    return any(x in said for x in parts)
 
 
 def _kinds(catalog: dict) -> dict:
@@ -94,8 +103,9 @@ def conditions(data: dict, now: float, seen: set, posts: list, journal_state: di
         if len(lines) < 2:
             continue
         rows = [s for s in data["settles"] if (catalog.get(s.get("item")) or {}).get("category") == cat]
-        refs = (_latest([s for s in rows if s.get("warranty_hours")], 2) + _latest([s for s in rows if not s.get("warranty_hours")], 1)
-                if goods else _latest(rows))
+        names = data.get("names") or {}
+        refs = (_latest([s for s in rows if s.get("warranty_hours")], 2, names)
+                + _latest([s for s in rows if not s.get("warranty_hours")], 1, names) if goods else _latest(rows, 3, names))
         if not refs:
             continue
         intro = (f"최근 24시간 정산 {t.get('sold_24h', 0):,}건. 정가 대비 중앙 체결가를 등급과 보증 여부로 나눴다"
@@ -122,22 +132,24 @@ def gap(data: dict, now: float, seen: set, posts: list, journal_state: dict | No
         if len(rows) < MIN_CAT:
             break
         key = f"빈칸:{leaf}"
-        if not cat or key in seen or leaf in said:
+        sku, top = Counter(s["item"] for s, _ in rows).most_common(1)[0]
+        if not cat or key in seen or named(leaf, said, (sku, str((catalog.get(sku) or {}).get("name") or "")[:12])):
             continue
         q1, q2, q3 = st.quantiles(sorted(r for _, r in rows), n=4)
         grades = [f"{g} {pct(st.median(r for s, r in rows if s.get('grade') == g))} ({n}건)"
-                  for g in "ABC" if (n := sum(1 for s, _ in rows if s.get("grade") == g)) >= 10]
-        sku, top = Counter(s["item"] for s, _ in rows).most_common(1)[0]
+                  for g in "ABC" if (n := sum(1 for s, _ in rows if s.get("grade") == g)) >= MIN_N]
         paid = int(st.median(s["amount"] for s, _ in rows if s["item"] == sku))
         shops = len({names.get(s.get("shop"), s.get("shop")) for s, _ in rows})
         out = [f"[Kiro 데이터 노트 · {TITLE['빈칸']}] {leaf}",
-               f"게시판의 최근 글 100개가 다루지 않은 카테고리다. 최근 24시간 정산 {len(rows):,}건, 판매 가게 {shops}곳.",
+               f"게시판의 최근 글 100개에 이 카테고리와 그 최다 거래 상품이 보이지 않았다. 최근 24시간 정산 {len(rows):,}건, 판매 가게 {shops}곳.",
                f"· 정가 대비 체결가: 하위 25% {pct(q1)} · 중앙 {pct(q2)} · 상위 25% {pct(q3)}"]
         if grades:
             out.append("· 등급별 중앙: " + " · ".join(grades))
         out.append(f"· 최다 거래 상품: {str((catalog.get(sku) or {}).get('name'))[:32]} ({sku}) {top}건, "
                    f"중앙 {paid:,}원 / 정가 {(catalog.get(sku) or {}).get('list_price', 0):,}원")
-        refs = _latest([s for s, _ in rows])
+        refs = _latest([s for s, _ in rows], 3, names)
+        if not refs:
+            continue
         return {"desk": "빈칸", "key": key, "text": "\n".join(out + ["근거 · 원장 " + " ".join(f"#{r}" for r in refs)]), "refs": refs}
     return None
 
@@ -178,16 +190,17 @@ def quality(data: dict, now: float, seen: set, posts: list, journal_state: dict 
         if key in seen:
             continue
         if topic == "정직도":
-            claims = [s for s in data["settles"] if s.get("claim")]
+            names = data.get("names") or {}
+            claims = [s for s in data["settles"] if s.get("claim") and s.get("claim_honest") in (True, False)]
             false = [s for s in claims if s.get("claim_honest") is False]
             if len(claims) < MIN_N:
                 continue
-            shops = len({s.get("shop") for s in false})
+            shops = len({names.get(s.get("shop"), s.get("shop")) for s in false})     # by name: a shop that moved address once
             out = [f"[Kiro 데이터 노트 · {TITLE['품질']}] 등급 주장 정직도",
-                   f"최근 24시간 등급 주장 {len(claims):,}건을 시장 판정과 대조했다.",
+                   f"최근 24시간 시장이 판정한 등급 주장 {len(claims):,}건을 대조했다.",
                    f"· 사실과 같음 {len(claims) - len(false):,}건 ({pct(1 - len(false) / len(claims))})",
                    f"· 판정과 다름 {len(false):,}건, 가게 {shops}곳"]
-            refs = _latest(false) or _latest(claims)
+            refs = _latest(false, 3, names) or _latest(claims, 3, names)
         else:
             which = topic.split(":", 1)[1]
             cells = [(g, sum(n for (c, gg), n in sold.items() if gg == g and (which == "전체" or c == which)),
@@ -212,7 +225,8 @@ def failures(data: dict, now: float, seen: set, posts: list, journal_state: dict
     key = f"실패:{hour}"
     h = (data.get("hourly") or {}).get(str(hour))
     covered = (((journal_state or {}).get("last") or {}).get("탐사") or {}).get("key") == str(hour)
-    if key in seen or covered or not h or h.get("agreed", 0) < journal.MIN_AGREED or not h.get("samples"):
+    complete = (data.get("ledger_at") or 0) >= hour + 3600       # the ledger collected after the hour ended, not halfway
+    if key in seen or covered or not complete or not h or h.get("agreed", 0) < journal.MIN_AGREED or not h.get("samples"):
         return None
     unpaid = h["agreed"] - h["paid"]
     span = f"{datetime.fromtimestamp(hour, common.KST):%H}~{datetime.fromtimestamp(hour + 3600, common.KST):%H}시"
@@ -257,16 +271,18 @@ def kind_of(post: dict) -> str:
     return "답글" if post.get("thread") is not None else "기타"
 
 
-def track_votes(posts: list, now: float) -> dict:
+def track_votes(posts: list, now: float, seen_at: float | None = None) -> dict:
     """Our posts in forum.json (the newest 100) into analysis/post_votes.json: {id: kind, role, ts, likes,
-    dislikes, score, last_seen}. The latest sight wins (votes only grow, within about 10 minutes)."""
+    dislikes, score, last_seen}. The latest sight wins (votes only grow, within about 10 minutes). seen_at: when
+    forum.json was written (its mtime), so a file the kit stopped refreshing does not age our posts' votes."""
     path = common.MARKET_DIR / "analysis" / "post_votes.json"
     book = common.read_json(path, {}) or {}
     for p in posts:
         if not forum.own(p.get("author")) or p.get("id") is None:
             continue
         book[str(p["id"])] = {"kind": kind_of(p), "role": p.get("role"), "ts": p.get("ts"), "likes": p.get("likes", 0),
-                              "dislikes": p.get("dislikes", 0), "score": p.get("score"), "last_seen": int(now)}
+                              "dislikes": p.get("dislikes", 0), "score": p.get("score"),
+                              "last_seen": int(seen_at if seen_at is not None else now)}
     if len(book) > KEEP_VOTES:
         book = dict(sorted(book.items(), key=lambda kv: kv[1].get("ts") or 0)[-KEEP_VOTES:])
     common.write_json(path, book)
@@ -293,7 +309,8 @@ def guard(book: dict, now: float, since: float = 0) -> float | None:
 
 
 def gather(now: float) -> dict:
-    return dict(journal.gather(now), broken=common.read_jsonl(ledger.folder() / "broken.jsonl"))
+    return dict(journal.gather(now), broken=common.read_jsonl(ledger.folder() / "broken.jsonl"),
+                ledger_at=(common.read_json(ledger.folder() / "state.json", {}) or {}).get("at"))
 
 
 if __name__ == "__main__":                                       # print the next note without posting it

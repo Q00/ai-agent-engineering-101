@@ -162,7 +162,8 @@ def quality(data: dict, now: float, last: dict) -> dict | None:
     return {"desk": "품질", "headline": head,
             "lede": f"최근 24시간 등급 주장을 가게별로 대조했다({MIN_CLAIMS}건 이상인 {len(table)}곳, 발행사와 주인이 같은 가게는 제외).",
             "sections": sections, "method": "공개 원장 settle의 claim_honest(24시간)와 broken(최근 48시간)",
-            "refs": false[-3:] or sorted(s["seq"] for s in data["settles"] if s.get("claim") and s.get("seq") is not None)[-3:],
+            "refs": false[-3:] or sorted(s["seq"] for s in data["settles"] if s.get("claim") and s.get("seq") is not None
+                                         and not forum.own(names.get(s.get("shop"), s.get("shop"))))[-3:],
             "key": f"{len(table)}:{len(low)}:{round(overall, 3)}", "remember": {"overall": round(overall, 3)}}
 
 
@@ -190,7 +191,8 @@ def supply(data: dict, now: float, last: dict) -> dict | None:
         lede += f" 주문이 나오는 {len(data['demand'])}개 카테고리 중 {len(none)}개는 파는 가게가 없다."
     return {"desk": "수급", "headline": f"거래의 {share:.0%}가 상위 {len(top)}개 카테고리에 몰렸다", "lede": lede, "sections": sections,
             "method": "공개 원장 settle(최근 3시간), 시장 가게 목록의 재고, 발행사 buyer의 주문 기록",
-            "refs": sorted(s["seq"] for s in rows if cat[s["item"]]["category"] in dict(top) and s.get("seq") is not None)[-3:],
+            "refs": sorted(s["seq"] for s in rows if cat[s["item"]]["category"] in dict(top) and s.get("seq") is not None
+                           and not forum.own(data["names"].get(s.get("shop"), s.get("shop"))))[-3:],
             "key": f"{[c for c, _ in top]}:{len(none)}", "remember": {"share": round(share, 3)}}     # refs: until 11/4 none
 
 

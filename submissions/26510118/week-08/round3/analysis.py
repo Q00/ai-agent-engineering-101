@@ -231,15 +231,23 @@ def replies(now: float, state: dict) -> str:
 
 
 def buyer_post_waiting() -> bool:
-    """A post as our buyer still in the outbox (the kit keeps one the market refused for the 5-minute limit)."""
-    return any(x.get("post") and x.get("as") == "buyer" for x in common.read_jsonl(common.MARKET_DIR / "outbox.jsonl"))
+    """A post as our buyer still in the outbox (the kit keeps one the market refused for the 5-minute limit),
+    or in outbox.taking, the file the kit moves it to while it sends."""
+    return any(x.get("post") and x.get("as") == "buyer" for name in ("outbox.jsonl", "outbox.taking")
+               for x in common.read_jsonl(common.MARKET_DIR / name))
 
 
 def notes_step(now: float, state: dict) -> str | None:
     """Read the votes on our posts, then post the next Kiro 데이터 노트 if there is room; None when nothing went out."""
     ns = state.setdefault("notes_state", {})
     posts = common.market_file("forum.json", []) or []
-    book = notes.track_votes(posts, now)
+    if not isinstance(posts, list):
+        posts = []
+    try:
+        seen_at = (common.MARKET_DIR / "forum.json").stat().st_mtime
+    except OSError:
+        seen_at = None
+    book = notes.track_votes(posts, now, seen_at)
     low = notes.guard(book, now, ns.get("resumed_at", 0))
     if low is not None and now >= ns.get("paused_until", 0):
         ns["paused_until"] = ns["resumed_at"] = now + notes.PAUSE
@@ -252,6 +260,8 @@ def notes_step(now: float, state: dict) -> str | None:
         return None
     forum.outbox(post=note["text"], refs=note["refs"], **{"as": "buyer"})
     ns["last_post"] = now
+    common.write_json(folder() / "state.json", state)      # now, not at the pass's end: a kill during the long steps
+                                                            # after this (model calls) must not post the same note again
     return f"note {ns['n']} ({note['key']}) posted ({len(note['text'])} chars, {len(note['refs'])} refs)"
 
 

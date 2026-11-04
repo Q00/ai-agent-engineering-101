@@ -391,7 +391,8 @@ def test_notes():
     hour = int(NOW // 3600 * 3600) - 3600
     hourly = {str(hour): {"results": 130, "agreed": 120, "paid": 80, "failed": {"item_matches": 30, "sig_buyer_ok": 6},
                           "passed_unpaid": 4, "samples": [7001, 7002, 7003]}}
-    data = {"settles": rows, "catalog": CATALOG, "names": {}, "summary": summary, "hourly": hourly, "broken": broken}
+    data = {"settles": rows, "catalog": CATALOG, "names": {}, "summary": summary, "hourly": hourly, "broken": broken,
+            "ledger_at": hour + 3600 + 120}
     posts = [{"id": 1, "author": "X", "role": "buyer", "text": "[시세] 김치 오늘 중앙 70%"}]
     c = notes.conditions(data, NOW, set(), posts, None)
     print("\n".join("    | " + x for x in c["text"].splitlines()))
@@ -410,6 +411,10 @@ def test_notes():
         check("빈칸: the busiest category none of the newest posts names (침구; 김치 was named)", g and g["key"] == "빈칸:침구"
               and "최근 24시간 정산 143건" in g["text"] and "중앙" in g["text"], g)
         check("빈칸: nothing when every busy category was named", notes.gap(data, NOW, set(), posts + [{"text": "침구"}], None) is None)
+        check("빈칸: a category counts as named by any part of its name or its top product (review, 11/4)",
+              notes.named("침대/매트리스", "지누스 매트리스 Q 70%") and notes.named("신선과일(부패주의)", "신선과일 시세")
+              and not notes.named("주스/코코아/생수", "커피 시세") and notes.named("침구", "G1234abcd 가격", ("G1234abcd",))
+              and notes.gap(data, NOW, set(), posts + [{"text": "테스트 차렵이불 SS 구매 기록"}], None) is None)
     finally:
         notes.MIN_CAT = saved
     q = notes.quality(data, NOW, set(), posts, None)
@@ -424,6 +429,10 @@ def test_notes():
           and "허용 목록" in f["text"] and f["refs"] == [7001, 7002, 7003], f)
     check("실패: not when the journal's investigation desk covered that hour",
           notes.failures(data, NOW, set(), posts, {"last": {"탐사": {"key": str(hour)}}}) is None)
+    check("실패: not before the ledger was collected after the hour ended (a half-counted hour)",
+          notes.failures(dict(data, ledger_at=hour + 2400), NOW, set(), posts, None) is None)
+    check("refs never cite our own shop's settles (the market shows a ref's shop next to the post)",
+          notes._latest(rows, 3, {"s1": "Kiro729"}) == [] and len(notes._latest(rows, 3, {"s1": "Other"})) == 3)
     state, keys = {}, []
     while len(keys) < 20:
         n = notes.next_note(data, posts, NOW, state)
@@ -444,6 +453,9 @@ def test_notes():
     common.write_json(MD / "analysis" / "post_votes.json", {})
     book = notes.track_votes([mine(i, NOW - 3000 + i, 0.2) for i in range(6)] + [{"id": 99, "author": "Other", "text": "y"}], NOW)
     check("our posts' votes are kept by id with their kind; others' are not", len(book) == 6 and book["0"]["kind"] == "노트:조건별 시세")
+    stale = notes.track_votes([mine(50, NOW - 100, 0.0)], NOW, seen_at=NOW - 90)
+    check("a post is aged by when forum.json was written, not by the clock (a stale file scores nothing)",
+          stale["50"]["last_seen"] == int(NOW - 90) and not any(ts == NOW - 100 for ts, _ in notes.scored(stale, NOW)))
     check("guard: the last 6 scored notes averaging 0.2 trip it; notes posted before the last pause do not count",
           abs(notes.guard(book, NOW) - 0.2) < 1e-9 and notes.guard(book, NOW, since=NOW) is None)
     common.write_json(MD / "analysis" / "post_votes.json", {})
@@ -458,7 +470,12 @@ def test_notes():
         check("the runner posts a note as our buyer, with its refs", out and line.get("as") == "buyer"
               and line.get("post", "").startswith("[Kiro 데이터 노트 · ") and line.get("refs"), (out, line))
         check("...and none while our buyer post still waits in the outbox", analysis.notes_step(NOW + notes.GAP + 1, st) is None)
+        check("the note's state is written at once, not at the pass's end (a kill later must not repost it)",
+              (common.read_json(MD / "analysis" / "state.json", {}) or {}).get("notes_state", {}).get("last_post") == NOW)
+        (MD / "outbox.taking").write_text((MD / "outbox.jsonl").read_text(encoding="utf-8"), encoding="utf-8")
         (MD / "outbox.jsonl").write_text("", encoding="utf-8")
+        check("...nor while the kit is sending it (outbox.taking)", analysis.buyer_post_waiting())
+        (MD / "outbox.taking").unlink()
         check("...nor within 5 minutes of the last", analysis.notes_step(NOW + 60, st) is None)
         check("...then the next", analysis.notes_step(NOW + notes.GAP + 2, st) is not None)
         (MD / "outbox.jsonl").write_text("", encoding="utf-8")
