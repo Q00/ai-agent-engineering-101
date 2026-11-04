@@ -169,6 +169,8 @@ class BuyerCore:
                                          "use_within_hours": o.get("use_within_hours"),
                                          "acceptable_n": len(acceptable)}, order=o.get("order"))
         blocked = reflex.blocked()
+        if self.rules() and self.playbook()["skip_unsigned"]:
+            blocked = {**{n: "unsigned receipts" for n in reflex.unsigned(ctx.now())}, **blocked}
         shops = {}
         for s in self.shops_in:
             skus = [x["sku"] for x in s.get("offers") or [] if x.get("qty") and (not acceptable or x["sku"] in acceptable)]
@@ -230,7 +232,7 @@ class BuyerCore:
                 "max_shops_goods": pb.get("max_shops_goods", 10), "max_shops_food": pb.get("max_shops_food", MAX_SHOPS),
                 "goods_time_budget": pb.get("goods_time_budget", 120), "food_time_budget": pb.get("food_time_budget", 20),
                 "goods_msg_timeout": pb.get("goods_msg_timeout", 20), "food_msg_timeout": pb.get("food_msg_timeout", 8),
-                "shelf_guard": pb.get("shelf_guard", False)}
+                "shelf_guard": pb.get("shelf_guard", False), "skip_unsigned": pb.get("skip_unsigned", False)}
 
     def rules(self):
         return self.playbook()["mode"] == "rules"

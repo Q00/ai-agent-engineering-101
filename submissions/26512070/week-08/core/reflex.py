@@ -89,3 +89,20 @@ def read_payments(market_dir, now=None):
 def blocked():
     """{shop name: why} for every blocked shop."""
     return {n: s["blocked"] for n, s in load()["shops"].items() if s.get("blocked")}
+
+
+UNSIGNED_RETRY = 3600     # a skipped shop is tried again after this long (it may have fixed its signing)
+
+
+def unsigned(now=None):
+    """Shops to skip for now (11/5 01:4x): the last 3 receipts had no sig_seller and none was ever fair - the kit
+    cannot pay such a receipt (willow-goods: 44 in an hour, 461 no deals, 0 fair). Not a block (D16: blocks are
+    for cheating); the shop is tried again UNSIGNED_RETRY after its last try."""
+    now = now or time.time()
+    out = set()
+    for n, s in load()["shops"].items():
+        last = s.get("last") or []
+        if (s.get("fair", 0) == 0 and len(last) >= 3 and all("sig_seller" in x.get("verdict", "") for x in last[:3])
+                and now - (last[0].get("ts") or 0) < UNSIGNED_RETRY):
+            out.add(n)
+    return out

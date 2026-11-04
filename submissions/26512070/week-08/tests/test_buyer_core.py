@@ -203,6 +203,29 @@ class BuyerCoreTest(Base):
         out = self.shelf_run(False)
         self.assertEqual((out["receipt"]["price"], out["receipt"]["claim"]), (13000, "C"))
 
+    def test_skip_unsigned_leaves_out_a_shop_that_never_signs(self):
+        # 11/5 01:4x: willow-goods sent 44 receipts without sig_seller in an hour; skipped, retried after an hour
+        for i in range(3):
+            reflex.record_outcome("elm", "http://elm", "no deal: the receipt has no sig_seller", 13000, 13000,
+                                  f"o{i}", NOW - 60 * (3 - i))
+        self.assertEqual(reflex.unsigned(NOW), {"elm"})
+        self.assertEqual(reflex.unsigned(NOW + reflex.UNSIGNED_RETRY), set())
+        from core import atomic
+        path = paths.memory() / "strategy" / "active.json"
+        st = atomic.read_json(path)
+        st["buyer"] = {"food_target_share": 0.6, "food_open_share": 0.45}
+        st["playbook"] = {"buyer": {"mode": "rules", "ceiling_share": 0.8, "skip_unsigned": True}}
+        atomic.write_json(path, st)
+        two = [dict(SHOPS[0]), dict(SHOPS[0], name="oak", url="http://oak")]
+        shop = Shop([("TASK_STATE_INPUT_REQUIRED", "Asking 13000.", None),
+                     ("TASK_STATE_COMPLETED", "Deal at 13000.", dict(receipt(13000), shop="oak"))])
+        core = BuyerCore(dict(ORDER), two, model_call=None, connect=shop, clock=lambda: NOW)
+        try:
+            out = core.run()
+        finally:
+            core.close()
+        self.assertEqual((shop.url, out["receipt"]["price"]), ("http://oak", 13000))
+
     def test_goods_order_no_shop_serves_is_recorded(self):
         # 11/4 10:3x: restock stocks what no shop could serve
         order = dict(ORDER, order="o9", item="소파", budget=900000, acceptable=["G0026722f"], kind="goods")
