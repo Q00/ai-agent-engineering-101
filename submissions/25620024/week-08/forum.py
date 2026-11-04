@@ -271,6 +271,67 @@ def checkout_tips(c, t, now, last=100):
              "texts": {"ko": ko, "en": en, "json": js[:1000]}, "kind": "stock_check"}]
 
 
+def frugal_shops(c, t, now, top_cats=3, min_n=5):
+    """As the buyer, which shops sold cheapest lately (W09 lecture: "어떤 가게가 프루걸한가… 게시판에 올려주시면… 좋아요"):
+    for the busiest categories, the shops with the lowest median paid/list over window_h, from the public ledger
+    (settles joined to the supply that named the shop). Each line carries two of that shop's settles as refs."""
+    rows = c.execute("""select su.shop, s.category, s.seq, s.amount * 1.0 / s.list_price from settles s
+                        join settle_units x on x.seq = s.seq join supply_units su on su.unit = x.unit
+                        where s.ts > ? and s.list_price > 0""", (now - t["window_h"] * 3600,)).fetchall()
+    by = {}
+    for shop, cat, seq, r in rows:
+        by.setdefault(cat, {}).setdefault(shop, []).append((seq, r))
+    cats = sorted(by, key=lambda k: -sum(len(v) for v in by[k].values()))[:top_cats]
+    items, refs = [], []
+    for cat in cats:
+        ranked = sorted(((statistics.median(r for _, r in v), shop, v) for shop, v in by[cat].items() if len(v) >= min_n))
+        if len(ranked) < 3:
+            continue
+        mkt = statistics.median(r for v in by[cat].values() for _, r in v)
+        best = [{"shop": shop, "paid_share_median": round(med, 3), "n": len(v)} for med, shop, v in ranked[:3]]
+        for _, _, v in ranked[:3]:
+            refs += [seq for seq, _ in v[-2:]]
+        items.append({"category": leaf(cat), "market_median": round(mkt, 3), "cheapest_shops": best})
+    if not items or not refs:
+        return []
+    data = {"type": "frugal_shops", "window_h": t["window_h"], "measure": "median paid/list per shop, public ledger",
+            "categories": items, "refs": refs[:8]}
+    ko = f"[알뜰 가게] 최근 {t['window_h']}시간 원장 기준, 범주별로 정가 대비 가장 싸게 판 가게 (체결가/정가 중앙값)\n" + "\n".join(
+        f"- {i['category']} (시장 {i['market_median']:.0%}): " + ", ".join(
+            f"{b['shop']} {b['paid_share_median']:.0%} ({b['n']}건)" for b in i["cheapest_shops"]) for i in items)
+    en = f"[Frugal shops] last {t['window_h']} h, public ledger, median paid/list per shop:\n" + "\n".join(
+        f"- {i['category']} (market {i['market_median']:.0%}): " + ", ".join(
+            f"{b['shop']} {b['paid_share_median']:.0%} (n={b['n']})" for b in i["cheapest_shops"]) for i in items)
+    return [{"topic": "frugal", "as": "buyer", "refs": refs[:8], "score": 3.6, "text": ko,
+             "texts": {"ko": ko, "en": en, "json": json.dumps(data, ensure_ascii=False, separators=(",", ":"))[:1000]},
+             "kind": "summary"}]
+
+
+def wanted_posts(c, t, now, min_wanted=3):
+    """As the buyer, speaking first (W09 lecture: "나 이거 살 테니까 공급해 줄 가게 구한다"): SKUs our orders asked for
+    in the last 24 h that no shop had (market_model.gap_demand), with the list price and how often. Refs: the latest
+    settles in the same category, the demand on the ledger."""
+    gaps = [g for g in market_model.gap_demand(c, hours=24, top=6) if g["wanted"] >= min_wanted and g.get("list_price")]
+    if not gaps:
+        return []
+    cat = market_model.catalog()
+    cats = {(cat.get(g["sku"]) or {}).get("category") for g in gaps} - {None}
+    refs = [s for (s,) in c.execute(f"select seq from settles where category in ({','.join('?' * len(cats))}) "
+                                    f"order by seq desc limit 8", tuple(cats))] if cats else []
+    if not refs:
+        return []
+    items = [{"sku": g["sku"], "name": g["name"], "list_price": g["list_price"], "wanted_24h": g["wanted"]} for g in gaps[:4]]
+    data = {"type": "wanted", "note": "orders we got in the last 24 h that no shop could fill; we buy when you stock them",
+            "items": items, "refs": refs}
+    ko = "[구합니다] 최근 24시간 저희 주문 중 파는 가게가 없던 상품이에요. 입고하시면 사겠습니다.\n" + "\n".join(
+        f"- {i['name']} ({i['sku']}), 정가 {i['list_price']:,}원, {i['wanted_24h']}회 주문" for i in items)
+    en = "[Wanted] Orders we got in the last 24 h that no shop could fill; stock them and we buy:\n" + "\n".join(
+        f"- {i['sku']} list {i['list_price']:,}, ordered {i['wanted_24h']}x" for i in items)
+    return [{"topic": "wanted", "as": "buyer", "refs": refs, "score": 3.3, "text": ko,
+             "texts": {"ko": ko, "en": en, "json": json.dumps(data, ensure_ascii=False, separators=(",", ":"))[:1000]},
+             "kind": "summary"}]
+
+
 def replies(c, t, forum, now, max_age=1200, min_likes=6):
     """As the buyer, a reply under another buyer's well-liked, ledger-cited post (likes >= min_likes, under max_age s
     old): our own ledger figures for the category it covers, tagged [보충]. HQ 11-04 experiment: do replies under
@@ -511,6 +572,7 @@ def tick(md=Path(".market"), c=None, now=None):
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + stock_check(c, t, now) \
         + receipt_tips(c, t, now) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
+        + frugal_shops(c, t, now) + wanted_posts(c, t, now) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
