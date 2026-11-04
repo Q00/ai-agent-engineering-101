@@ -280,6 +280,42 @@ def test_pinned_tactical_fields_are_reported_and_their_band_widened_by_code(
     ]
 
 
+def test_food_near_clearance_is_a_fixed_line_and_its_band_is_never_widened(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    now = time.time()
+    run_dir = tmp_path / "run"
+    # Given: kimchi with 35% and 25% of its shelf life left, clearance at 0.28.
+    _ = write_market(
+        run_dir / ".market",
+        [
+            unit(KIMCHI, 1, now=now, shelf_left_ratio=0.35),
+            unit(KIMCHI, 2, now=now, shelf_left_ratio=0.25),
+        ],
+    )
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    manager = Manager(
+        run_dir,
+        "http://127.0.0.1:9",
+        shop_url="http://us.test",
+        buyer_name="25620027",
+        shop_name="S",
+    )
+    key = "seller.clearance_shelf_ratio"
+    _ = save_policy(
+        manager.policy_file, Policy(), "s", bands={key: Band(low=0.2, high=0.28)}
+    )
+    _ = save_tactical(manager.policy_file, {key: 0.28}, "up")
+    # When / Then: only the unit under 30% counts (not "under 1.5 x 0.28").
+    aging = manager.summary_aging()
+    assert aging["food_near_clearance"] == 1
+    assert aging["clearance_ratio_pct"] == 28
+    # And: pinned at its band top for many runs, code leaves the band alone.
+    for _ in range(EDGE_RUNS_TO_WIDEN * 2):
+        _ = manager.track_band_edges()
+    assert load_history(manager.policy_file).bands[key] == Band(low=0.2, high=0.28)
+
+
 def test_floor_bounds_fold_and_note_resolution(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

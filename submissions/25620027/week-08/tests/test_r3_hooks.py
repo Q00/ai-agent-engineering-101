@@ -6,9 +6,14 @@ import json
 import time
 from typing import TYPE_CHECKING
 
-from r3.market_files import read_catalog, read_demand, read_inventory
+from r3.market_files import (
+    CatalogItem,
+    read_catalog,
+    read_demand,
+    read_inventory,
+)
 from r3.policy import Policy
-from r3.restock import DemandSignal, RestockState, plan, run
+from r3.restock import DemandSignal, RestockState, plan, run, sku_fits
 from r3.review import run as review_run
 from tests.r3_stock import CURTAIN, KIMCHI, LAMP, MILK, unit, write_market
 
@@ -104,7 +109,6 @@ def test_restock_follows_settled_demand_and_round_two_buys_nothing(
     }
 
 
-
 def test_restock_prints_nothing_while_the_supply_window_is_shut(
     tmp_path: Path,
 ) -> None:
@@ -125,6 +129,17 @@ def test_restock_prints_nothing_while_the_supply_window_is_shut(
         _ = write_market(folder, [], window=window)
         # Then: the plan goes out.
         assert json.loads(run(folder, policy_file=tmp_path / "p.json", now=now))["buy"]
+
+
+def test_restock_never_buys_food_with_under_a_week_of_shelf_life() -> None:
+    # Given: the strategy lowered the food shelf floor to 24 h.
+    policy = Policy().restock.model_copy(update={"min_food_shelf_hours": 24})
+    milk = CatalogItem(sku="M", kind="food", shelf_hours=48, list_price=20_000)
+    kimchi = milk.model_copy(update={"sku": "K", "shelf_hours": 720})
+    # Then: the owner's one-week floor still holds.
+    assert not sku_fits(milk, policy)
+    assert sku_fits(kimchi, policy)
+
 
 def deal_file(tmp_path: Path, **settled: object) -> Path:
     folder = tmp_path / ".market"

@@ -124,8 +124,7 @@ def hook_command(parts: list[str]) -> str:
     and an order item such as ``신선과일(부패주의)`` broke ``/bin/sh``.
     """
     return " ".join(
-        part if re.fullmatch(r"\{\w+\}", part) else shlex.quote(part)
-        for part in parts
+        part if re.fullmatch(r"\{\w+\}", part) else shlex.quote(part) for part in parts
     )
 
 

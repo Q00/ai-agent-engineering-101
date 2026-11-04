@@ -306,6 +306,10 @@ def test_tactical_triggers_name_moves_from_our_numbers_and_steps_stop_at_the_edg
     ]
     # Then: each signal names its own move.
     assert names == ["buyer_walkaway", "seller_first_ask", "food_ageing"]
+    # And: once the clearance ratio reaches the fixed near line, ageing food no
+    # longer raises it (it fed itself from 0.32 to 0.43 on 11/4).
+    capped = {"food_near_clearance": 12, "clearance_ratio_pct": 30}
+    assert tactical_triggers(quiet, quiet, capped) == []
     # And: a dry hour after a busy six hours asks the seller to concede more.
     dry = tactical_triggers({}, {"seller_receipts": 4}, {})
     assert [(t["field"], t["direction"]) for t in dry] == [("seller.concession", 1)]

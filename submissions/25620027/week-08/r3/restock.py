@@ -44,6 +44,9 @@ WORST_CASE_COST_SHARE: Final = 0.75
 # The kit retries a refused line three times, sleeping up to 30 s each, so a plan
 # printed further than this before the window opens spends its lines on 429s.
 WINDOW_LEAD_SECONDS: Final = 30.0
+# Owner rule (11/4): no food with under a week of shelf life, whatever the
+# strategy sets; 24 h food aged into clearance and sold below cost.
+OWNER_MIN_FOOD_SHELF_HOURS: Final = 168
 
 
 class RestockState(FrozenModel):
@@ -89,7 +92,8 @@ def sku_fits(item: CatalogItem, policy: RestockPolicy) -> bool:
     """Risk filter: long-life food in a mid price band, mid-priced goods."""
     if item.kind == "food":
         return (
-            (item.shelf_hours or 0) >= policy.min_food_shelf_hours
+            (item.shelf_hours or 0)
+            >= max(policy.min_food_shelf_hours, OWNER_MIN_FOOD_SHELF_HOURS)
             and policy.food_min_list_price
             <= item.list_price
             <= policy.food_max_list_price

@@ -168,8 +168,11 @@ PROMPT: Final = (
     "so buying it is a deliberate step. When it shows steady demand (roughly 30 or "
     "more settlements a day at a sound price share of list) and our own food has "
     "not been written off, lower restock.min_food_shelf_hours one step at a time "
-    "(720, 336, 168, 72, 24; top_categories shows which shelf lives each step "
-    "opens) and say so in the reason. Raise it back when food "
+    "(720, 336, 168; top_categories shows which shelf lives each step "
+    "opens) and say so in the reason. The owner forbids food with under 168 hours "
+    "of shelf life (restock enforces it), so steps below 168 do nothing. The owner "
+    "wants high-value goods first: stock dear items that sell at a sound share of "
+    "list rather than many cheap ones. Raise it back when food "
     "write-offs in the policy reviews exceed what that food earned. Use the "
     "set_strategy tool once; an empty change map keeps the policy."
 )
@@ -202,6 +205,12 @@ EDGE_EPS: Final = 1e-6
 TRIGGER_MIN_ATTEMPTS: Final = 6
 TRIGGER_MIN_RECEIPTS: Final = 5
 TRIGGER_FOOD_NEAR: Final = 3
+# "Near clearance" is food with less than this share of shelf life left, a fixed
+# line: measured against the clearance ratio itself, each raise put more units
+# "near", which fired the trigger again (0.32 -> 0.43 on 11/4 06:17-09:20). The
+# trigger stops once the ratio reaches the line, and code never widens its band.
+FOOD_NEAR_PCT: Final = 30
+NO_CODE_WIDEN: Final = frozenset({"seller.clearance_shelf_ratio"})
 SCOUT_PROMPT: Final = (
     "You are the scout for one shop and one buyer agent in a simulated market. You "
     "receive numbers computed by code (per-shop settlements, dishonest grade "
@@ -546,7 +555,10 @@ def tactical_triggers(
             }
         )
     near = aging.get("food_near_clearance", 0)
-    if near >= TRIGGER_FOOD_NEAR:
+    if (
+        near >= TRIGGER_FOOD_NEAR
+        and aging.get("clearance_ratio_pct", 0) < FOOD_NEAR_PCT
+    ):
         found.append(
             {
                 "name": "food_ageing",
@@ -872,7 +884,7 @@ class Manager:
         }
 
     def summary_aging(self) -> dict[str, int]:
-        """Count food near clearance and stale goods."""
+        """Count food under FOOD_NEAR_PCT of shelf life left, and stale goods."""
         catalog = read_catalog(self.market_dir)
         inventory = read_inventory(self.market_dir)
         now = time.time()
@@ -883,14 +895,18 @@ class Manager:
             ratio = unit.shelf_left_ratio(
                 now, float(item.shelf_hours) if item and item.shelf_hours else None
             )
-            if ratio is not None and ratio < policy.seller.clearance_shelf_ratio * 1.5:
+            if ratio is not None and ratio < FOOD_NEAR_PCT / 100:
                 near += 1
             if (
                 unit.kind == "goods"
                 and now - unit.supplied_at > policy.seller.stale_goods_hours * 3600
             ):
                 stale += 1
-        return {"food_near_clearance": near, "stale_goods": stale}
+        return {
+            "food_near_clearance": near,
+            "stale_goods": stale,
+            "clearance_ratio_pct": round(policy.seller.clearance_shelf_ratio * 100),
+        }
 
     # -- scout ------------------------------------------------------------------
 
@@ -1178,7 +1194,7 @@ class Manager:
             runs = int(str(edges[key]["runs"])) + 1
             self.events.set_value(runs_key, str(runs))
             edges[key]["runs"] = runs
-            if runs < EDGE_RUNS_TO_WIDEN:
+            if runs < EDGE_RUNS_TO_WIDEN or key in NO_CODE_WIDEN:
                 continue
             history = load_history(self.policy_file)
             band = history.bands.get(key) or default_band(key, history.base())
