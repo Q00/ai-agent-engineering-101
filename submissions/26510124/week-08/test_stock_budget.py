@@ -60,3 +60,13 @@ class StockBudgetTests(unittest.TestCase):
         self.assertEqual(budget.reason("G00001", {"category": "goods", "kind": "goods", "worst_cost": 1}),
                          "sku_cost_cap")
         self.assertEqual(units, before)
+
+    def test_secondary_cap_only_applies_after_explicit_focus_gate(self):
+        cfg = {**CFG, "max_run_cost_percent": 44, "max_sku_cost_percent": 26,
+               "max_category_cost_percent": 60, "focused_goods": {
+                   "enabled": True, "secondary_skus": ["G03d0199f"], "max_secondary_sku_cost_percent": 40}}
+        budget = StockBudget({"start": 5000000, "units": []}, cfg)
+        offer = {"category": "goods", "kind": "goods", "worst_cost": 1812376}
+        self.assertEqual(budget.reason("G03d0199f", offer), "sku_cost_cap")
+        self.assertIsNone(budget.reason("G03d0199f", {**offer, "secondary_eligible": True}))
+        self.assertEqual(budget.reason("other", {**offer, "secondary_eligible": True}), "sku_cost_cap")

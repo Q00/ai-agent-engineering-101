@@ -7,7 +7,11 @@
     "band_percent": 3,
     "min_completed_tasks": 10,
     "min_new_tasks": 5,
-    "aged_markup_percent": 3
+    "aged_markup_percent": 3,
+    "pilot_targets": {
+      "G8095ddd6": {"grade": "A", "warranty_hours": 6, "target": 690000},
+      "Gb5d0dde7": {"grade": "A", "warranty_hours": 6, "target": 890000}
+    }
   },
   "closing": {
     "grade_margin_percent": {"A": 10, "B": 2, "C": 0},
@@ -21,18 +25,28 @@
   "restock": {
     "enabled": true,
     "cash_reserve_percent": 40,
-    "max_units_per_run": 5,
+    "max_units_per_run": 2,
     "max_stock_units": 20,
-    "max_units_per_sku": 3,
+    "max_units_per_sku": 2,
     "max_food_units_per_sku": 1,
     "interval_seconds": 900,
-    "exploration_units": 1,
+    "exploration_units": 0,
     "min_mature_sales": 3,
     "slow_stock_hours": 24,
-    "max_run_cost_percent": 10,
-    "max_sku_cost_percent": 10,
-    "max_category_cost_percent": 25,
-    "max_food_cost_percent": 10
+    "max_run_cost_percent": 44,
+    "max_sku_cost_percent": 26,
+    "max_category_cost_percent": 60,
+    "max_food_cost_percent": 10,
+    "focused_goods": {
+      "enabled": true,
+      "primary_skus": ["G8095ddd6", "Gb5d0dde7"],
+      "secondary_skus": ["G03d0199f"],
+      "max_surge_factor": 1.10,
+      "minimum_public_sales": 3,
+      "minimum_public_buyers": 2,
+      "max_secondary_sku_cost_percent": 40,
+      "prepare_before_seconds": 180
+    }
   },
   "horizon": {
     "round": 3,

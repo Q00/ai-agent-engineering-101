@@ -33,6 +33,9 @@ class StockBudget:
         if not number(capital) or capital <= 0:
             raise ValueError("Unknown starting capital")
         self.limits = {label: math.floor(capital * cfg[key] / 100) for key, label in FIELDS.items()}
+        self.focus = cfg.get("focused_goods", {})
+        if self.focus.get("enabled") is True:
+            self.limits["secondary_sku"] = math.floor(capital * self.focus["max_secondary_sku_cost_percent"] / 100)
         self.skus, self.categories = Counter(), Counter()
         self.food, self.spent = 0, 0
         seen = set()
@@ -55,7 +58,10 @@ class StockBudget:
             raise ValueError("Missing conservative unit cost")
         if self.spent + cost > self.limits["run"]:
             return "run_cost_cap"
-        if self.skus[sku] + cost > self.limits["sku"]:
+        sku_limit = (self.limits["secondary_sku"] if self.focus.get("enabled") is True
+                     and sku in self.focus.get("secondary_skus", [])
+                     and product.get("secondary_eligible") is True else self.limits["sku"])
+        if self.skus[sku] + cost > sku_limit:
             return "sku_cost_cap"
         if self.categories[product["category"]] + cost > self.limits["category"]:
             return "category_cost_cap"

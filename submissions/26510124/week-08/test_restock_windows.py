@@ -24,6 +24,10 @@ class SupplyWindowTests(unittest.TestCase):
         self.md = self.root / ".market"
         self.now = time.time()
         self.policy = policy_at()
+        self.policy["restock"].update(max_units_per_run=5, max_units_per_sku=3,
+            exploration_units=1, max_run_cost_percent=10, max_sku_cost_percent=10,
+            max_category_cost_percent=25)
+        self.policy["restock"]["focused_goods"] = {**self.policy["restock"]["focused_goods"], "enabled": False, "max_secondary_sku_cost_percent": 25}
         self.inv = {"round": 3, "balance": 5000000, "start": 5000000, "units": [],
                     "restock": {"open": True, "opens_at": self.now - 30, "closes_at": self.now + 150}}
         self.catalog = {f"G{i:05}": {"name": str(i), "category": "goods", "kind": "goods", "list_price": 100000}
@@ -92,7 +96,7 @@ class SupplyWindowTests(unittest.TestCase):
 
     def test_network_elapsed_time_and_fresh_window_are_checked_before_emit(self):
         elapsed = [100.0]
-        def delayed(*args):
+        def delayed(*args, **kwargs):
             elapsed[0] += 151
             return None
         self.network.side_effect = delayed
@@ -100,7 +104,7 @@ class SupplyWindowTests(unittest.TestCase):
             self.assertEqual(restock.run_once(self.root, self.now), {"buy": []})
         self.assertEqual(self.status(), "window_closed")
         self.assertNotIn("last_window", load_json(self.control))
-        self.network.side_effect = lambda *args: atomic_json(self.md / "inventory.json", {
+        self.network.side_effect = lambda *args, **kwargs: atomic_json(self.md / "inventory.json", {
             **self.inv, "restock": {"open": False}})
         self.assertEqual(restock.run_once(self.root, self.now), {"buy": []})
         self.assertEqual(self.status(), "window_closed")
@@ -108,7 +112,7 @@ class SupplyWindowTests(unittest.TestCase):
     def test_changed_round_or_opening_is_not_used_with_previous_evidence(self):
         for update in ({"round": 4}, {"restock": {**self.inv["restock"], "opens_at": self.now - 10}}):
             atomic_json(self.md / "inventory.json", self.inv)
-            self.network.side_effect = lambda *args, change=update: atomic_json(
+            self.network.side_effect = lambda *args, change=update, **kwargs: atomic_json(
                 self.md / "inventory.json", {**self.inv, **change})
             self.assertEqual(restock.run_once(self.root, self.now), {"buy": []})
             self.assertEqual(self.status(), "window_changed")
@@ -118,10 +122,10 @@ class SupplyWindowTests(unittest.TestCase):
         atomic_json(self.md / "inventory.json", {**self.inv, "restock": {
             **self.inv["restock"], "closes_at": self.now + 35}})
         decision = restock.run_once(self.root, self.now)
-        self.assertEqual(len(decision["buy"]), 3)
-        self.assertEqual(sum(row["qty"] for row in decision["buy"]), 3)
+        self.assertEqual(len(decision["buy"]), 2)
+        self.assertEqual(sum(row["qty"] for row in decision["buy"]), 2)
         evidence = json.loads(self.log.read_text().splitlines()[-1])
-        self.assertEqual((evidence["window_unit_cap"], evidence["supply_lines"]), (3, 3))
+        self.assertEqual((evidence["window_unit_cap"], evidence["supply_lines"]), (2, 2))
 
     def test_planning_latency_cannot_emit_more_lines_than_remaining_window(self):
         atomic_json(self.md / "inventory.json", {**self.inv, "restock": {
@@ -157,6 +161,10 @@ class ProvenDepthTests(unittest.TestCase):
     def setUp(self):
         self.now = time.time()
         self.policy = policy_at()
+        self.policy["restock"].update(max_units_per_run=5, max_units_per_sku=3,
+            exploration_units=1, max_run_cost_percent=10, max_sku_cost_percent=10,
+            max_category_cost_percent=25)
+        self.policy["restock"]["focused_goods"] = {**self.policy["restock"]["focused_goods"], "enabled": False, "max_secondary_sku_cost_percent": 25}
         self.inv = {"round": 3, "balance": 5000000, "start": 5000000, "units": []}
         self.catalog = {"G00001": {"name": "goods", "kind": "goods", "list_price": 100000, "category": "goods"}}
         self.sales = [self.sale(i) for i in range(3)]
@@ -197,7 +205,7 @@ class ProvenDepthTests(unittest.TestCase):
         self.assertEqual(self.quantity(), 0)
         self.inv["balance"] = 5000000
         self.catalog["G00001"]["list_price"] = 500000
-        self.assertEqual(self.quantity(), 1)  # Per-run/SKU cost caps apply before depth.
+        self.assertEqual(self.quantity(), 0)  # Maximum surge now exceeds the old 500k cap.
         self.catalog["G00001"]["list_price"] = 100000
         self.inv["units"] = [unit(unit=str(i), sku="G00009", category="other") for i in range(19)]
         self.assertEqual(self.quantity(), 1)

@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from copy import deepcopy
 import math
+import re
 from pathlib import Path
 
 from feedback import load_json
@@ -38,6 +39,15 @@ def policy_at(root=ROOT):
         n = opening.get(key)
         if type(n) is not int or not low <= n <= high:
             raise ValueError("Invalid opening policy: " + key)
+    pilots = opening.get("pilot_targets", {})
+    if not isinstance(pilots, dict) or len(pilots) > 10:
+        raise ValueError("Invalid opening pilot targets")
+    for sku, row in pilots.items():
+        if (not isinstance(sku, str) or not re.fullmatch(r"[GF][0-9a-f]{8}", sku)
+                or not isinstance(row, dict) or row.get("grade") not in GRADE_LABELS
+                or type(row.get("warranty_hours")) is not int or not 0 <= row["warranty_hours"] <= 6
+                or type(row.get("target")) is not int or not 0 < row["target"] <= 100_000_000):
+            raise ValueError("Invalid opening pilot target")
     closing = cfg.get("closing")
     if not isinstance(closing, dict):
         raise ValueError("Missing closing policy")
@@ -66,6 +76,29 @@ def policy_at(root=ROOT):
         if type(n) is not int or not low <= n <= high:
             raise ValueError("Invalid restock policy: " + key)
     validate_budget(stock)
+    focus = stock.get("focused_goods")
+    if focus is not None:
+        if not isinstance(focus, dict) or type(focus.get("enabled")) is not bool:
+            raise ValueError("Invalid focused inventory policy")
+        seen = set()
+        for field in ("primary_skus", "secondary_skus"):
+            skus = focus.get(field)
+            if not isinstance(skus, list) or len(skus) > 5 or (field == "primary_skus" and not skus):
+                raise ValueError("Invalid focused inventory SKUs")
+            for sku in skus:
+                if not isinstance(sku, str) or not re.fullmatch(r"[GF][0-9a-f]{8}", sku) or sku in seen:
+                    raise ValueError("Invalid or duplicate focused inventory SKU")
+                seen.add(sku)
+        factor = focus.get("max_surge_factor")
+        if type(factor) not in (int, float) or not math.isfinite(factor) or not 1 <= factor <= 1.5:
+            raise ValueError("Invalid focused surge limit")
+        for key, low, high in (("minimum_public_sales", 3, 100), ("minimum_public_buyers", 2, 20),
+                               ("max_secondary_sku_cost_percent", stock["max_sku_cost_percent"],
+                                stock["max_category_cost_percent"]),
+                               ("prepare_before_seconds", 60, 300)):
+            n = focus.get(key)
+            if type(n) is not int or not low <= n <= high:
+                raise ValueError("Invalid focused inventory policy: " + key)
     validate_horizon(cfg.get("horizon"))
     return cfg
 

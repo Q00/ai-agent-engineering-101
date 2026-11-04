@@ -32,6 +32,10 @@ class RestockTests(unittest.TestCase):
         self.logs.mkdir()
         self.now = time.time()
         self.cfg = policy_at()
+        self.cfg["restock"].update(max_units_per_run=5, max_units_per_sku=3,
+            exploration_units=1, max_run_cost_percent=10, max_sku_cost_percent=10,
+            max_category_cost_percent=25)
+        self.cfg["restock"]["focused_goods"] = {**self.cfg["restock"]["focused_goods"], "enabled": False, "max_secondary_sku_cost_percent": 25}
         self.inv = {"round": 3, "balance": 5000000, "start": 5000000, "units": [],
                     "restock": {"open": True, "opens_at": self.now - 30, "closes_at": self.now + 150}}
         self.catalog = {f"G{i:05}": {"name": f"Product {i}", "kind": "goods", "list_price": 100000,
@@ -95,7 +99,7 @@ class RestockTests(unittest.TestCase):
     def test_cold_start_explores_at_most_five_different_skus_without_model(self):
         with patch("harness.decide", side_effect=AssertionError("No model in restock")):
             decision = restock.run_once(self.root, self.now)
-        self.assertEqual(sum(b["qty"] for b in decision["buy"]), 5)
+        self.assertEqual(sum(b["qty"] for b in decision["buy"]), 4)  # Maximum surge fits four in 500k.
         self.assertTrue(all(b["qty"] == 1 for b in decision["buy"]))
         self.assertEqual(set(decision), {"buy"})
         rows = [json.loads(x) for x in (self.logs / "restock-decisions.jsonl").read_text().splitlines()]
@@ -110,11 +114,11 @@ class RestockTests(unittest.TestCase):
         self.assertEqual(sum(c["reason"] == "small_exploration" for c in detail["choices"]), 1)
 
     def test_cash_floor_is_starting_capital_and_worst_cost_rounds_up(self):
-        self.inv["balance"] = 2000077
+        self.inv["balance"] = 2000115
         self.catalog = {"G00001": {"name": "cheap", "kind": "goods", "category": "furniture", "list_price": 101}}
         decision, detail = self.plan()
         self.assertEqual(decision["buy"], [{"sku": "G00001", "qty": 1}])
-        self.assertEqual(detail["budgeted_cost"], 77)
+        self.assertEqual(detail["budgeted_cost"], 115)
         self.assertEqual(detail["projected_min_balance"], 2000000)
         self.inv["balance"] = 2000001
         self.assertEqual(self.plan()[0], {"buy": []})

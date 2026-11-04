@@ -1,4 +1,4 @@
-"""No-LLM stock planner: local economics plus one bounded public ledger GET.
+"""No-LLM stock planner: local economics plus bounded, cached public evidence.
 
 Keep 40% of starting capital in cash, budget worst-case supply cost and count
 all inventory against caps. Print instructions; the official kit buys stock.
@@ -12,14 +12,16 @@ import json
 import time
 
 from feedback import append_event, atomic_json, digest, load_json, number
+from focused_stock import configuration as focused_config, gates as focused_gates, observe_control, epoch_control
 from inventory import Inventory, read_json
 from sales_performance import sku_metrics, update as update_sales
-from market_evidence import demand_scores, refresh as refresh_market
+from market_evidence import demand_scores, demand_profiles, refresh as refresh_market
 from opening_strategy import update as update_openings
 from shop_policy import policy_at
 from shop_horizon import phase as round_phase, purchase_window
 from stock_budget import StockBudget
 from stock_lifecycle import update as update_stock, metrics as stock_metrics
+from supply_pricing import worst_cost
 
 ROOT = Path(__file__).resolve().parent
 WINDOW_HANDOFF_SECONDS = 10
@@ -55,7 +57,8 @@ def _skip(root, path, state, window, now, status=None):
     return {"buy": []}
 
 
-def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifecycle=None, horizon=None):
+def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifecycle=None, horizon=None,
+         focus_control=None):
     if (not number(inv.get("balance")) or not number(inv.get("start")) or inv["start"] <= 0
             or not isinstance(catalog, dict) or len(catalog) > 20000
             or not isinstance(demand, list) or len(demand) > 5000):
@@ -77,18 +80,25 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         categories_held[u["category"]] += 1
     categories = {d["category"] for d in demand if isinstance(d, dict) and isinstance(d.get("category"), str)}
     candidates = {}
-    for sku, p in catalog.items():
+    focus = focused_config(cfg)
+    candidate_skus = focus["primary_skus"] + focus["secondary_skus"] if focus else catalog
+    for sku in candidate_skus:
+        p = catalog.get(sku)
         if (isinstance(p, dict) and isinstance(sku, str) and isinstance(p.get("category"), str)
                 and p["category"] in categories and p.get("kind") in ("food", "goods")
                 and type(p.get("list_price")) is int and p["list_price"] > 0):
-            # Highest documented supply cost is 75% of list. Include one credit
-            # of rounding headroom. Actual grade/cost is unknown until delivery.
-            candidates[sku] = {**p, "worst_cost": (p["list_price"] * 75 + 99) // 100 + 1}
+            # Grade and congestion are unknown until delivery. Reserve the
+            # documented maximum surge even when the current factor is lower.
+            candidates[sku] = {**p, "worst_cost": worst_cost(p["list_price"])}
     sales = memory["sales"]
     sku_sales = Counter(s["sku"] for s in sales)
     category_sales = Counter(s["category"] for s in sales)
     economics = sku_metrics(memory, now)
     lifecycle_stats = stock_metrics(lifecycle, now) if lifecycle is not None else {}
+    focused = focused_gates(inv, candidates, economics, cfg, now, public, focus_control) if focus else None
+    if focused:
+        candidates = {sku: {**candidates[sku], "secondary_eligible": gate["secondary"]}
+                      for sku, gate in focused["eligible"].items()}
     popular = demand_scores(public, now)
     slow = {u["sku"] for u in inv["units"] if number(u.get("supplied_at"))
             and now - u["supplied_at"] >= cfg["slow_stock_hours"] * 3600}
@@ -105,6 +115,8 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
     remaining = budget
 
     def stock_cap(sku):
+        if focused:
+            return min(cfg["max_units_per_sku"], focused["eligible"][sku]["cap"])
         cap = cfg["max_food_units_per_sku"] if candidates[sku]["kind"] == "food" else cfg["max_units_per_sku"]
         m = economics.get(sku, {})
         proven = (m.get("mature", 0) >= cfg["min_mature_sales"]
@@ -121,6 +133,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         return [sku for sku, p in candidates.items()
                 if stage["allow_purchases"] and sku not in paused
                 and held[sku] + buy[sku] < stock_cap(sku)
+                and (not focused or buy[sku] < focused["eligible"][sku]["remaining_credit"])
                 and p["worst_cost"] <= remaining and exposure.reason(sku, p) is None
                 and windows.get(sku, (True, None))[0]]
 
@@ -133,8 +146,24 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         categories_held[p["category"]] += 1
         choices.append({"sku": sku, "reason": reason, "budgeted_cost": p["worst_cost"]})
 
-    exploration_slots = cfg["exploration_units"] if stage["allow_exploration"] else 0
-    preferred_slots = max(0, slots - exploration_slots) if sales else 0
+    if focused:
+        def focus_rank(sku):
+            evidence = focused["evidence"][sku]
+            pressure = evidence.get("sample_to_stock_ratio")
+            measured = number(pressure) and pressure >= 0
+            return (int(focused["eligible"][sku]["secondary"]), held[sku] + buy[sku],
+                    -int(measured), -pressure if measured else 0,
+                    -evidence["buyers"] if measured else 0, focused["order"].index(sku))
+        for _ in range(slots):
+            eligible = available()
+            if not eligible:
+                break
+            # Fill one of each primary before adding depth. Secondary stock is
+            # considered only after its own evidence/profit/capital gates pass.
+            sku = min(eligible, key=focus_rank)
+            add(sku, focused["eligible"][sku]["reason"])
+    exploration_slots = cfg["exploration_units"] if stage["allow_exploration"] and not focused else 0
+    preferred_slots = max(0, slots - exploration_slots) if sales and not focused else 0
     for _ in range(preferred_slots):
         eligible = [s for s in available() if sku_sales[s] or category_sales[candidates[s]["category"]]]
         if not eligible:
@@ -150,7 +179,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
             else "limited_own_sample" if sku_sales[sku] else "own_settled_category")
     # With no sales evidence, all slots are small exploration buys. Once there
     # is evidence, unproven items never consume the performance allocation.
-    explore_slots = min(slots - len(choices), exploration_slots if sales else slots) if stage["allow_exploration"] else 0
+    explore_slots = min(slots - len(choices), exploration_slots if sales else slots) if stage["allow_exploration"] and not focused else 0
     for _ in range(explore_slots):
         eligible = [s for s in available() if held[s] + buy[s] == 0]
         if not eligible:
@@ -171,6 +200,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         "operation_status": status, "needs_attention": status == "cash_floor_no_stock",
         "bankruptcy_eligible": bankruptcy_eligible, "automatic_bankruptcy": False,
         "exposure": exposure.summary(), "horizon": stage,
+        "focused_goods": focused,
         "depth_limits": {sku: stock_cap(sku) for sku in buy},
         "horizon_exclusions": dict(Counter(reason for allowed, reason in windows.values() if not allowed)),
         "stock_observations": {"held_cost": sum(m["held_cost"] for m in lifecycle_stats.values()),
@@ -215,6 +245,21 @@ def run_once(root=ROOT, now=None):
             raise ValueError("Invalid supply window control; refusing to reset it")
         window = supply_window(inv, clock())
         if window["status"] != "window_open":
+            focus = focused_config(cfg)
+            # The existing 60-second kit hook does this lightweight preparation
+            # once per announced opening. It never sleeps or polls in a loop.
+            opens = window.get("opens_at")
+            if (focus and window["status"] == "window_closed" and number(opens)
+                    and 0 < opens - clock() <= focus.get("prepare_before_seconds", 180)
+                    and state.get("prepared_opening") != opens):
+                prepared = refresh_market(root, inv["round"], clock(), deadline_seconds=8)
+                state["prepared_opening"] = opens
+                profiles = demand_profiles(prepared, clock())
+                state["prepared_demand_usable"] = any(
+                    profiles.get(sku, {}).get("sales", 0) >= 1
+                    and profiles.get(sku, {}).get("buyers", 0) >= 1
+                    for sku in focus["primary_skus"] + focus["secondary_skus"])
+                atomic_json(path, state)
             return _skip(root, path, state, window, clock())
         # One plan per observed opening, including server extensions of the
         # same window. Legacy last_run never hides the first open-window hook.
@@ -224,7 +269,13 @@ def run_once(root=ROOT, now=None):
         if not -5 <= clock() - demand_path.stat().st_mtime <= 120:
             raise ValueError("Category file is stale")
         catalog, demand = read_json(md / "catalog.json"), read_json(demand_path)
-        public = refresh_market(root, inv["round"], now)
+        # Leave time for the kit handoff and each paced supply line.
+        remaining = window["closes_at"] - clock()
+        retry_opening = (window["opens_at"] if state.get("prepared_opening") == window["opens_at"]
+                         and state.get("prepared_demand_usable") is False else None)
+        public = refresh_market(root, inv["round"], clock(),
+                                opening_retry=retry_opening,
+                                deadline_seconds=max(1, min(12, remaining - WINDOW_HANDOFF_SECONDS - SUPPLY_LINE_SECONDS)))
         # The network read can outlive the previous inventory snapshot.
         inv = Inventory(md).snapshot()
         checked = supply_window(inv, clock())
@@ -237,6 +288,21 @@ def run_once(root=ROOT, now=None):
             public = None
         memory = update_sales(root, inv["round"], current, public=public, inventory=inv)
         lifecycle = update_stock(root, inv, memory, current)
+        focus = focused_config(cfg)
+        focused_control = None
+        focused_epoch = state.get("focused_reset_at")
+        if focus:
+            held = Counter(u["sku"] for u in inv["units"])
+            actual_units = {u["unit"] for u in inv["units"]}
+            reservations = Inventory(md).holds
+            confirmed_units = {s["unit"] for s in memory.get("sales", [])
+                               if isinstance(s.get("unit"), str) and type(s.get("ledger")) is int
+                               and s["ledger"] > 0}
+            previous_focus, focused_epoch = epoch_control(state.get("focused_supply"), focused_epoch, memory)
+            focused_control = observe_control(previous_focus, memory, focus,
+                lifecycle_stats=stock_metrics(lifecycle, current), held=held,
+                next_window=bool(previous and checked["opens_at"] > previous["opens_at"]),
+                unresolved_receipts=bool(set(reservations) - actual_units - confirmed_units))
         try:
             update_openings(root, inv, memory, public, policy, current)
         except (ValueError, OSError, KeyError, TypeError) as exc:
@@ -248,13 +314,13 @@ def run_once(root=ROOT, now=None):
                 raise ValueError("Malformed stock planning memory")
             if 0 <= current - row["time"] <= 7 * 86400:
                 attempts.append(row)
-        # The official kit submits at most one supply line per ten seconds.
+        # Reserve the official contract's ten-second spacing per supply line.
         # Counting units here is conservative: repeated SKUs collapse to fewer
         # lines, while cold-start exploration may use one line per unit.
-        line_capacity = max(0, int((checked["closes_at"] - clock()) // SUPPLY_LINE_SECONDS))
+        line_capacity = max(0, int((checked["closes_at"] - clock() - WINDOW_HANDOFF_SECONDS) // SUPPLY_LINE_SECONDS))
         run_cfg = {**cfg, "max_units_per_run": min(cfg["max_units_per_run"], line_capacity)}
         decision, evidence = plan(inv, catalog, demand, memory, attempts, run_cfg, current, public,
-                                  lifecycle=lifecycle, horizon=policy["horizon"])
+                                  lifecycle=lifecycle, horizon=policy["horizon"], focus_control=focused_control)
         latest = Inventory(md).snapshot()
         checked = supply_window(latest, clock())
         if checked["status"] != "window_open":
@@ -263,10 +329,17 @@ def run_once(root=ROOT, now=None):
             return _skip(root, path, state, checked, clock(), "window_changed")
         if latest != inv:
             return _skip(root, path, state, checked, clock(), "inventory_changed")
-        if decision["buy"] and checked["closes_at"] - clock() <= SUPPLY_LINE_SECONDS * len(decision["buy"]):
+        if decision["buy"] and checked["closes_at"] - clock() <= WINDOW_HANDOFF_SECONDS + SUPPLY_LINE_SECONDS * len(decision["buy"]):
             return _skip(root, path, state, checked, clock(), "window_closing")
         state["attempts"] = (attempts + [{"time": current, "sku": row["sku"], "planned_qty": row["qty"]}
                                         for row in decision["buy"]])[-500:]
+        if focused_control is not None:
+            lifecycle_stats = stock_metrics(lifecycle, current)
+            for row in decision["buy"]:
+                focused_control[row["sku"]]["planned_qty"] += row["qty"]
+                focused_control[row["sku"]]["observed_at_plan"] = lifecycle_stats.get(row["sku"], {}).get("observed_units", 0)
+            state["focused_supply"] = focused_control
+            state["focused_reset_at"] = focused_epoch
         # Persist before returning instructions to the kit. A crash may skip a
         # buy, but cannot knowingly emit the same plan a second time.
         state.update(last_run=clock(), last_window={k: checked[k] for k in ("opens_at", "closes_at")})
