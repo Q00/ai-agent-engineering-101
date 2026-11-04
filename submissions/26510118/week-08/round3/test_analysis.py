@@ -92,6 +92,12 @@ def fake_ledger(after):
 
 
 def fake_shops(path):
+    if path == "/api/board":
+        return {"players": [{"player": "Lead", "total": 1.8}, {"player": "Kiro729", "total": 1.3}, {"player": "Z", "total": 0.9}],
+                "shops": [{"name": "Alpha", "deals": 50, "all": 0.9, "profit": 9, "revenue": 90, "stars": 4.9, "reviews": 120},
+                          {"name": "Kiro729", "deals": 900, "all": 0.7, "profit": 5, "revenue": 40, "stars": 4.8, "reviews": 900},
+                          {"name": "willow", "house": True, "deals": 0}],
+                "buyers": [{"name": "Kiro729", "deals": 700, "all": 0.6, "surplus": 21, "forum": 0.56, "posts": 30}]}
     return {"shops": [{"name": "Alpha", "stock": {KIMCHI: 2}}, {"name": "Kiro729 Shop", "stock": {BEDDING: 1}}]}
 
 
@@ -154,6 +160,13 @@ def test_collect():
                                                                  s["by_shop"]["Beta"]["honest"], s["by_shop"]["Beta"]["claims"]) == (10, 12, 3, 8))
     check("a breakdown is matched to the grade its buyer got (2 of 6 grade B)",
           s["broken_by_grade"] == {"B": 2} and s["goods_sold_by_grade"] == {"B": 6})
+    hist = common.read_jsonl(MD / "analysis" / "board_history.jsonl")
+    line = hist[-1] if hist else {}
+    check("the board snapshot: our places (house shops left out), stars also among 100+ reviews, the leader",
+          len(hist) == 1 and line["player"] == {"total": 1.3, "place": 2} and line["shop"]["place_profit"] == 2
+          and line["shop"]["place_deals"] == 1 and line["shop"]["place_stars_100"] == 2 and line["shops"] == 2
+          and line["buyer"]["place_surplus"] == 1 and line["leader"] == {"player": "Lead", "total": 1.8}
+          and "board: 2 of 3 players" in note, line)
     ours = common.read_json(MD / "ledger" / "our_results.json")
     h = ours.get(str(int((NOW - 2 * H) // 3600 * 3600))) or {}
     check("our own shop's results by hour: 3 agreed, 2 paid, the checks the unpaid one failed, the paid 1-star review",
@@ -348,7 +361,7 @@ def test_analysts():
           and "top_categories" in told(m.seen[0]) and m.seen[0]["model"] == harness.MODEL_MID)
     check("and our shop's own ledger results: failed checks, the low review and its cause",
           "our_ledger_results_24h" in told(m.seen[0]) and "item_matches" in told(m.seen[0])
-          and "the market certified A" in told(m.seen[0]))
+          and "the market certified A" in told(m.seen[0]) and "stock_flow_24h" in told(m.seen[0]))
     common.record("requests", task="tq1", how="category")
     common.record("requests", task="tq2", how="sku")
     common.record("deals", task="tq1", sku=KIMCHI, price=9000)

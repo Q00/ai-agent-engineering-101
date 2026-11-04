@@ -113,6 +113,22 @@ def own_results(now: float, sales: list) -> dict:
             "paid_by_request_kind": by_how}
 
 
+def stock_flow(now: float, catalog: dict) -> dict:
+    """The shelf in 24 h (restock.stock_flow): units that arrived, food that expired unsold (with its cost, by
+    category: the waste a category costs) and units that left with no deal we know of."""
+    flow = _since(common.records("stock_flow"), now)
+    leaf = lambda s: ((catalog.get(s) or {}).get("category") or "?").split(">")[-1]
+    expired = [f for f in flow if f.get("what") == "expired"]
+    waste = Counter()
+    for f in expired:
+        waste[leaf(f.get("sku"))] += f.get("cost") or 0
+    return {"received": sum(f.get("what") == "received" for f in flow),
+            "received_cost": sum(f.get("cost") or 0 for f in flow if f.get("what") == "received"),
+            "expired": len(expired), "expired_cost": sum(waste.values()),
+            "expired_cost_by_category": dict(waste.most_common(6)),
+            "gone_without_a_deal": sum(f.get("what") == "gone" for f in flow)}
+
+
 def seller_facts(now: float) -> dict:
     sales = _since(common.records("sales"), now)
     neg = Counter(n.get("outcome") for n in _since(common.records("negotiations"), now))
@@ -130,6 +146,7 @@ def seller_facts(now: float) -> dict:
             "oldest_unit_days": round(max(ages), 1) if ages else None,
             "top_sold_categories": dict(sold_in.most_common(8)),
             "our_ledger_results_24h": own_results(now, sales),
+            "stock_flow_24h": stock_flow(now, catalog),
             "rules": common.rules()["seller"], "phase": common.strategy()["phase"]}
 
 

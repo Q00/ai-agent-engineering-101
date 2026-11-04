@@ -8,7 +8,8 @@ Each pass does only what is due, in this order:
                         .jsonl.gz every few hours, so the files read every hour stay small); a snapshot of our business
                         (analysis/business.jsonl, for the briefings); the file check (contract.py:
                         the fields each part counts on, problems logged); shops' stock lists if the
-                        market shows them; the wanted categories restock reads (analysis/wanted.json)
+                        market shows them; the wanted categories restock reads (analysis/wanted.json);
+                        our scores and places on the board (analysis/board_history.jsonl)
     opening     10 min  once, our shop's opening post, when the first day's stock is in
                         (OPEN_CATEGORIES categories, or OPEN_MIN after OPEN_WAIT)
     journal      1 h    the Kiro Market Journal on the forum, as our buyer (journal.py): one issue
@@ -27,6 +28,7 @@ Trading modules only read what this writes. A lock keeps two passes from overlap
 step is logged to logs/analysis.log, which goes with the submission.
 """
 import argparse
+import json
 import os
 import time
 from collections import Counter
@@ -47,7 +49,7 @@ EVERY = {"collect": 3600, "opening": 600, "journal": 3600, "replies": 600, "vote
          "buyer": 3 * 3600, "integrated": 12 * 3600}
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
-            "sales", "restock")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
+            "sales", "restock", "stock_flow")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
 MIN_INDEX = 20
 OPEN_CATEGORIES = 100    # categories in stock before our shop announces itself (day one stocks about 116)
 OPEN_MIN, OPEN_WAIT = 20, 1800   # or at least this many, half an hour after the first stock came in
@@ -105,8 +107,44 @@ def collect(now: float, get_ledger=None, get_json=None) -> str:
     for _, cat in forum.wanted(common.market_file("forum.json", []) or [], common.market_file("demand.json", []) or [], set()):
         wanted[cat] += 1
     common.write_json(folder() / "wanted.json", {"at": int(now), "categories": dict(wanted)})
+    try:
+        board_note = board_snapshot(now, get_json or market_get)
+    except Exception as e:                                       # noqa: BLE001
+        board_note = f"board unavailable ({type(e).__name__})"
     return (f"{n} new ledger entries, {summary.get('settles_24h', 0)} settles in 24 h, {stock_note}, {len(wanted)} wanted categories, "
-            f"file check: {len(problems)} problem(s)" + (f", {moved} rows over 48 h archived" if moved else ""))
+            f"{board_note}, file check: {len(problems)} problem(s)" + (f", {moved} rows over 48 h archived" if moved else ""))
+
+
+def board_snapshot(now: float, get_json) -> str:
+    """One line an hour in analysis/board_history.jsonl: our player's, shop's and buyer's scores and places on
+    the market's board, and the leader's total. The board shows only the present; this is how a change (the
+    focus phase, a fix) shows in the ranking afterwards. Places count shops and buyers with a deal (house
+    shops left out), stars also among shops with 100 reviews or more."""
+    b = get_json("/api/board")
+    if not isinstance(b, dict) or not b.get("players"):
+        return "board not shown"
+    shops = [s for s in b.get("shops") or [] if not s.get("house") and (s.get("deals") or 0) > 0]
+    buyers = [x for x in b.get("buyers") or [] if not x.get("house") and (x.get("deals") or 0) > 0]
+    players = b["players"]
+    place = lambda rows, row, k: 1 + sum(1 for r in rows if (r.get(k) or 0) > (row.get(k) or 0))
+    me_p = next((p for p in players if forum.own(p.get("player"))), None)
+    me_s = next((s for s in shops if forum.own(s.get("name"))), None)
+    me_b = next((x for x in buyers if forum.own(x.get("name"))), None)
+    line = {"ts": int(now), "players": len(players), "shops": len(shops), "buyers": len(buyers),
+            "leader": max(({"player": p.get("player"), "total": p.get("total")} for p in players), key=lambda x: x["total"] or 0)}
+    if me_p:
+        line["player"] = {"total": me_p.get("total"), "place": place(players, me_p, "total")}
+    if me_s:
+        big = [s for s in shops if (s.get("reviews") or 0) >= 100]
+        line["shop"] = dict({k: me_s.get(k) for k in ("all", "deals", "revenue", "profit", "stars", "reviews")},
+                            **{f"place_{k}": place(shops, me_s, k) for k in ("all", "deals", "revenue", "profit", "stars")},
+                            place_stars_100=place(big, me_s, "stars") if me_s in big else None)
+    if me_b:
+        line["buyer"] = dict({k: me_b.get(k) for k in ("all", "surplus", "deals", "forum", "posts")},
+                             **{f"place_{k}": place(buyers, me_b, k) for k in ("all", "surplus", "deals", "forum")})
+    with open(folder() / "board_history.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(line, ensure_ascii=False) + "\n")
+    return f"board: {line.get('player', {}).get('place', '?')} of {len(players)} players"
 
 
 def no_seller(now: float) -> tuple[list, str]:

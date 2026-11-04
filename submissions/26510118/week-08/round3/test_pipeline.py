@@ -390,6 +390,17 @@ def test_deals():
     gone = [s["task"] for s in common.records("unpaid") if s.get("superseded") and s["unit"] == "u-twice"]
     check("one unit agreed three times then gone: one sale (the latest deal), two unpaid",
           [s["task"] for s in sold] == ["t-c"] and sold[0]["price"] == 10002 and gone == ["t-a", "t-b"], (sold, gone))
+    shelf = {}
+    first_run = {"units": [{"unit": "f-sold", "sku": KIMCHI, "cost": 12000, "expires_at": NOW + 99 * H},
+                           {"unit": "f-old", "sku": BERRY, "cost": 9000, "expires_at": NOW - 60},
+                           {"unit": "f-lost", "sku": BEDDING, "cost": 14000}, {"unit": "f-keep", "sku": PAD, "cost": 15000}]}
+    check("the shelf: the first run only takes the snapshot", restock.stock_flow(first_run, shelf, NOW, set()) == {})
+    flow = restock.stock_flow({"units": [{"unit": "f-keep", "sku": PAD, "cost": 15000},
+                                         {"unit": "f-new", "sku": WATER, "cost": 7000, "grade": "A"}]}, shelf, NOW, {"f-sold"})
+    rows = {r["unit"]: r["what"] for r in common.records("stock_flow")}
+    check("the shelf since the last run: a unit that arrived, food past its date, a unit gone with no deal; a sale is not counted",
+          flow == {"expired": 1, "gone": 1, "received": 1} and rows == {"f-old": "expired", "f-lost": "gone", "f-new": "received"},
+          (flow, rows))
     spec = importlib.util.spec_from_file_location("repair_sales", HERE / "deploy" / "repair_sales.py")
     repair = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(repair)

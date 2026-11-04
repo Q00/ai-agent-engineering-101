@@ -45,7 +45,8 @@ days before the end only products selling 2 a day or more are refilled and nothi
 listed; nothing is bought in the last 6 hours.
 
 Each run also checks which agreed deals settled (their unit left the inventory) or stayed
-unpaid (still there 10 minutes later). The ledger is collected by the analysis runner
+unpaid (still there 10 minutes later), and records what reached the shelf and what left it
+without a sale (expired food, or gone) in records/stock_flow.jsonl. The ledger is collected by the analysis runner
 (analysis.py); this hook only reads its market_summary.json.
 """
 import argparse
@@ -85,12 +86,14 @@ UNPAID_AFTER = 600       # seconds an agreed unit may stay in stock before the d
 WARN_AFTER, WARN_BELOW = 86400, 3
 
 
-def check_deals(inv: dict, state: dict, now: float) -> None:
+def check_deals(inv: dict, state: dict, now: float) -> set:
     """Deals the seller agreed: settled once the unit left the inventory, unpaid if it is still
     there UNPAID_AFTER seconds later (the buyer's kit refused to pay, or the buyer left). A unit a
     buyer agreed to and did not pay for is offered again, so several deals can name one unit: when
-    it leaves, only the latest of them is the sale (the earlier buyers went without paying)."""
+    it leaves, only the latest of them is the sale (the earlier buyers went without paying).
+    Returns the units recorded as sold."""
     pending = state.setdefault("pending", {})
+    sold = set()
     for d in new_deals(state):
         pending[d["task"]] = d
     present = {u["unit"] for u in inv.get("units") or []}
@@ -103,12 +106,39 @@ def check_deals(inv: dict, state: dict, now: float) -> None:
         if d["unit"] not in present:
             if latest[d["unit"]] is d:
                 common.record("sales", deal_ts=d.get("ts"), **fields)
+                sold.add(d["unit"])
             else:
                 common.record("unpaid", deal_ts=d.get("ts"), superseded=True, **fields)
             del pending[task]
         elif now - (d.get("ts") or now) > UNPAID_AFTER:
             common.record("unpaid", deal_ts=d.get("ts"), **fields)
             del pending[task]
+    return sold
+
+
+def stock_flow(inv: dict, state: dict, now: float, sold: set) -> dict:
+    """What reached the shelf and what left it since the last run, unit by unit, into records/stock_flow.jsonl:
+    received (the supply that arrived: records/restock.jsonl holds the lines asked for, and a line outside a
+    supply window is refused), expired (food past its date, which the market takes off the shelf with nothing
+    recorded) and gone (left with no deal we know of). The expired units' cost is what a category wastes;
+    before 11/4 neither was known (2,850 units asked for, 2,502 sold, 168 on the shelf: 180 unexplained)."""
+    units = {u["unit"]: u for u in inv.get("units") or [] if u.get("unit")}
+    prev = state.get("shelf")
+    state["shelf"] = {k: [u.get("sku"), u.get("cost"), u.get("expires_at")] for k, u in units.items()}
+    if prev is None:                                     # the first run only takes the snapshot
+        return {}
+    out = Counter()
+    for k, (sku, cost, expires) in prev.items():
+        if k in units or k in sold:
+            continue
+        what = "expired" if expires and expires <= now + 120 else "gone"
+        common.record("stock_flow", what=what, unit=k, sku=sku, cost=cost)
+        out[what] += 1
+    for k, u in units.items():
+        if k not in prev:
+            common.record("stock_flow", what="received", unit=k, sku=u.get("sku"), cost=u.get("cost"), grade=u.get("grade"))
+            out["received"] += 1
+    return dict(out)
 
 
 def new_deals(state: dict) -> list:
@@ -301,7 +331,9 @@ def main() -> int:
     state = common.read_json(path, {}) or {}
     if inv.get("round", 0) >= 3:
         state.setdefault("round_start", now)
-        check_deals(inv, state, now)
+        flow = stock_flow(inv, state, now, check_deals(inv, state, now))
+        if flow:
+            print(f"[restock] shelf since the last run: {flow}", flush=True)
     sales = common.records("sales")
     wanted = (common.read_json(common.MARKET_DIR / "analysis" / "wanted.json", {}) or {}).get("categories") or {}
     if "stocked" not in state:                           # every SKU bought so far; records/restock.jsonl is archived after 48 h
