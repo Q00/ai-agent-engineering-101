@@ -580,8 +580,10 @@ def test_linewatch():
     heavy = {"units": [{"sku": BEDDING, "supplied_at": t5 + 100, "cost": 900_000}, {"sku": KIMCHI, "supplied_at": t5 + 100, "cost": 100_000}]}
     ch = run(t5 + 300, market(0.75, at=t5 + 300), inv=heavy, sales=sold5, line={BEDDING: 4})
     g = common.read_json(MD / "analysis" / "line_state.json")["guards"]
-    check("guard: the line is 90% of our stock at cost, so two more sold do not raise the cap",
-          ch == [] and g["share"] == 0.9 and "90%" in (g["hold"] or ""), (ch, g))
+    check("guard: the line is 90% of our book (no cash in this inventory), so two more sold do not raise the cap",
+          ch == [] and g["share"] == 0.9 and "90% of our book" in (g["hold"] or ""), (ch, g))
+    check("...the book counts the cash: the same stock with 2M in cash is 30% of it, and nothing is held",
+          linewatch.guards(heavy["units"], {BEDDING: 4}, None, 2_000_000) == {"share": 0.3, "stars": None, "hold": None, "low_stars": False})
     ch = run(t5 + 600, market(0.75, at=t5 + 600), sales=sold5, line={BEDDING: 4}, stars=4.7)
     check("guard: our stars 4.7, under 4.80: the cap comes down one (not grown)",
           [(c["from"], c["to"]) for c in ch] == [(4, 3)] and ch[0]["why"].startswith("our stars 4.7") and ch[0]["guards"]["stars"] == 4.7, ch)

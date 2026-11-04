@@ -14,9 +14,11 @@ how it gets out fast when others crowd in.
     keep    otherwise
 
 Two guards (11/4 night) keep the line from eating the rest: no cap grows (and no product comes back in) while the line's units are more than
-PREMIUM_MAX of our stock at cost, or while our stars on the board (scoreboard.py's stars_rank, a fifth of the
+PREMIUM_MAX of our book (cash + stock at cost), or while our stars on the board (scoreboard.py's stars_rank, a fifth of the
 shop's score) are under STARS_MIN; and under STARS_MIN every cap above 1 also comes down one, at most once
-every STARS_REST. (The third guard, the cash kept, is restock.RESERVE.)
+every STARS_REST. (The third guard, the cash kept, is restock.RESERVE.) The share was of the stock alone until
+11/4 23:30: next to cheap goods the line was 85-89% of it at once and no cap could grow, while it was 32% of the
+book and its units sold within half an hour (the person's call: the book, at 75%).
 
 The market is other shops' settles of the product over the last WINDOW (ours left out), its median share of
 the list price and its sellers; a verdict needs MIN_N of them. The baseline is that same window's figure the
@@ -44,7 +46,7 @@ STALL = 4 * 3600
 EXIT_REST = 2 * 3600
 REENTRY_MIN = 0.70       # back in only where others still settle at this share of list or more (A costs 0.55-0.75)
 MIN_N = 20
-PREMIUM_MAX = 0.75       # the line's share of our stock at cost above which no cap grows
+PREMIUM_MAX = 0.75       # the line's share of our book (cash + stock at cost) above which no cap grows
 STARS_MIN, STARS_REST = 4.80, 2 * 3600
 
 
@@ -97,12 +99,13 @@ def decide(cap: int, base: dict | None, now_m: dict, us: dict, exit_at: float | 
     return cap, "keep"
 
 
-def guards(units: list, line: dict, stars: float | None) -> dict:
-    """{share: the line's share of our stock at cost, stars, hold: why no cap grows (or None), low_stars}."""
-    total = sum(u.get("cost") or 0 for u in units)
-    share = round(sum(u.get("cost") or 0 for u in units if u.get("sku") in line) / total, 3) if total else 0.0
+def guards(units: list, line: dict, stars: float | None, balance=None) -> dict:
+    """{share: the line's share of our book (cash + stock at cost), stars, hold: why no cap grows (or None), low_stars}."""
+    cash = balance if isinstance(balance, (int, float)) and not isinstance(balance, bool) and balance > 0 else 0
+    book = cash + sum(u.get("cost") or 0 for u in units)
+    share = round(sum(u.get("cost") or 0 for u in units if u.get("sku") in line) / book, 3) if book else 0.0
     low = stars is not None and stars < STARS_MIN
-    hold = (f"the line is {share:.0%} of our stock at cost (over {PREMIUM_MAX:.0%})" if share > PREMIUM_MAX
+    hold = (f"the line is {share:.0%} of our book, cash and stock (over {PREMIUM_MAX:.0%})" if share > PREMIUM_MAX
             else f"our stars are {stars} (under {STARS_MIN})" if low else None)
     return {"share": share, "stars": stars, "hold": hold, "low_stars": low}
 
@@ -134,7 +137,7 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     inv = inv if inv is not None else (common.market_file("inventory.json", {}) or {})
     sales = sales if sales is not None else [s for s in common.records("sales") if (s.get("ts") or 0) >= now - 86400]
     names = ledger.names()
-    g = guards(inv.get("units") or [], line, stars if stars is not None else scoreboard.stars(now))
+    g = guards(inv.get("units") or [], line, stars if stars is not None else scoreboard.stars(now), inv.get("balance"))
     state = common.read_json(folder() / "line_state.json", {}) or {}
     if not isinstance(state, dict):
         state = {}
