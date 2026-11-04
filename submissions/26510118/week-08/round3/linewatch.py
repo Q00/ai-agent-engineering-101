@@ -13,6 +13,11 @@ how it gets out fast when others crowd in.
             in WINDOW) still pays REENTRY_MIN of list or more; the baseline is taken again then
     keep    otherwise
 
+Two guards (11/4 night) keep the line from eating the rest: no cap grows while the line's units are more than
+PREMIUM_MAX of our stock at cost, or while our stars on the board (scoreboard.py's stars_rank, a fifth of the
+shop's score) are under STARS_MIN; and under STARS_MIN every cap above 1 also comes down one, at most once
+every STARS_REST. (The third guard, the cash kept, is restock.RESERVE.)
+
 The market is other shops' settles of the product over the last WINDOW (ours left out), its median share of
 the list price and its sellers; a verdict needs MIN_N of them. The baseline is that same window's figure the
 first time it holds MIN_N settles (so a product is never judged against a day-long average, nor against an
@@ -29,6 +34,7 @@ import statistics as st
 import common
 import ledger
 import restock
+import scoreboard
 
 WINDOW = 2 * 3600
 SHRINK_DROP, EXIT_DROP = 0.03, 0.06
@@ -38,6 +44,8 @@ STALL = 4 * 3600
 EXIT_REST = 2 * 3600
 REENTRY_MIN = 0.70       # back in only where others still settle at this share of list or more (A costs 0.55-0.75)
 MIN_N = 20
+PREMIUM_MAX = 0.75       # the line's share of our stock at cost above which no cap grows
+STARS_MIN, STARS_REST = 4.80, 2 * 3600
 
 
 def folder():
@@ -63,8 +71,9 @@ def ours(sku: str, units: list, sales: list, now: float) -> dict:
             "idle": now - max(last, first) if first is not None else None}
 
 
-def decide(cap: int, base: dict | None, now_m: dict, us: dict, exit_at: float | None, now: float) -> tuple[int, str]:
-    """(new cap, why) for one product."""
+def decide(cap: int, base: dict | None, now_m: dict, us: dict, exit_at: float | None, now: float,
+           hold: str | None = None) -> tuple[int, str]:
+    """(new cap, why) for one product; hold: why no cap may grow now (a guard), or None."""
     verdict = bool(base) and base.get("median") is not None and now_m["n"] >= MIN_N and now_m["median"] is not None
     drop = round(base["median"] - now_m["median"], 4) if verdict else 0.0
     crowded = verdict and now_m["sellers"] >= max(CROWD_TIMES * base.get("sellers", 0), base.get("sellers", 0) + CROWD_MORE)
@@ -82,12 +91,34 @@ def decide(cap: int, base: dict | None, now_m: dict, us: dict, exit_at: float | 
                else f"{now_m['sellers']} sellers in 2 h against {base.get('sellers')} at the baseline")
         return max(1, cap - 1), why
     if us["sold_1h"] >= GROW_SALES and cap < restock.LINE_MAX_UNITS:
+        if hold:
+            return cap, f"keep: sold {us['sold_1h']} in the last hour, but {hold}"
         return cap + 1, f"we sold {us['sold_1h']} in the last hour"
     return cap, "keep"
 
 
+def guards(units: list, line: dict, stars: float | None) -> dict:
+    """{share: the line's share of our stock at cost, stars, hold: why no cap grows (or None), low_stars}."""
+    total = sum(u.get("cost") or 0 for u in units)
+    share = round(sum(u.get("cost") or 0 for u in units if u.get("sku") in line) / total, 3) if total else 0.0
+    low = stars is not None and stars < STARS_MIN
+    hold = (f"the line is {share:.0%} of our stock at cost (over {PREMIUM_MAX:.0%})" if share > PREMIUM_MAX
+            else f"our stars are {stars} (under {STARS_MIN})" if low else None)
+    return {"share": share, "stars": stars, "hold": hold, "low_stars": low}
+
+
+def brief(now: float, hours: float = 6) -> dict:
+    """The line as the integrated analysis reads it: the caps now, the guards, and the changes of the last hours."""
+    state = common.read_json(folder() / "line_state.json", {}) or {}
+    line = common.read_json(folder() / "line.json", {}) or {}
+    log = [c for c in common.read_jsonl(folder() / "line_log.jsonl") if (c.get("at") or 0) >= now - hours * 3600]
+    return {"caps": line.get("skus") if isinstance(line, dict) else None,
+            "guards": state.get("guards") if isinstance(state, dict) else None,
+            f"changes_{int(hours)}h": [[c.get("sku"), c.get("from"), c.get("to"), str(c.get("why"))[:70]] for c in log[-8:]]}
+
+
 def run(now: float, settles: list | None = None, inv: dict | None = None, sales: list | None = None,
-        line: dict | None = None) -> list:
+        line: dict | None = None, stars: float | None = None) -> list:
     """Judge every line product, rewrite analysis/line.json, log the changes; returns them."""
     current = common.read_json(folder() / "line.json", None)
     if isinstance(current, dict) and current.get("by") != "linewatch":
@@ -103,10 +134,12 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     inv = inv if inv is not None else (common.market_file("inventory.json", {}) or {})
     sales = sales if sales is not None else [s for s in common.records("sales") if (s.get("ts") or 0) >= now - 86400]
     names = ledger.names()
+    g = guards(inv.get("units") or [], line, stars if stars is not None else scoreboard.stars(now))
     state = common.read_json(folder() / "line_state.json", {}) or {}
     if not isinstance(state, dict):
         state = {}
     caps, defaults, base, exits = (state.setdefault(k, {}) for k in ("caps", "defaults", "base", "exit_at"))
+    cut = g["low_stars"] and now - (state.get("stars_cut_at") or 0) >= STARS_REST
     changes = []
     for sku, default in line.items():
         lp = (catalog.get(sku) or {}).get("list_price")
@@ -120,15 +153,20 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
         if sku not in base and now_m["n"] >= MIN_N:
             base[sku] = {"median": now_m["median"], "sellers": now_m["sellers"], "at": int(now)}
         us = ours(sku, inv.get("units") or [], sales, now)
-        new, why = decide(caps.get(sku, default), base.get(sku), now_m, us, exits.get(sku), now)
+        new, why = decide(caps.get(sku, default), base.get(sku), now_m, us, exits.get(sku), now, g["hold"])
+        if cut and new > 1:
+            new, why = new - 1, f"our stars {g['stars']} are under {STARS_MIN}" + ("" if why.startswith("keep") else f"; {why}")
         if new != caps.get(sku, default):
             changes.append({"at": int(now), "sku": sku, "from": caps.get(sku, default), "to": new, "why": why,
-                            "market": now_m, "baseline": base.get(sku), "ours": us})
+                            "market": now_m, "baseline": base.get(sku), "ours": us, "guards": {k: g[k] for k in ("share", "stars")}})
             if new == 0:
                 exits[sku] = int(now)
             elif caps.get(sku, default) == 0:                # back in: judged from here on against today's market
                 base[sku] = {"median": now_m["median"], "sellers": now_m["sellers"], "at": int(now)}
             caps[sku] = new
+    if cut:
+        state["stars_cut_at"] = int(now)
+    state["guards"] = {"at": int(now), **{k: g[k] for k in ("share", "stars", "hold")}}
     for sku in [s for s in list(caps) if s not in line]:   # dropped from restock.LINE by a person
         for k in ("caps", "defaults", "base", "exit_at"):
             state[k].pop(sku, None)

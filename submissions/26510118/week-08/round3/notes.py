@@ -376,6 +376,16 @@ def scored(book: dict, now: float, since: float = 0) -> list:
     return sorted(rows, reverse=True)
 
 
+def by_desk(book: dict, now: float, hours: float = 6) -> dict:
+    """{kind: [notes, mean score]} over our notes of the last hours that have their votes."""
+    out = {}
+    for v in book.values():
+        if (str(v.get("kind", "")).startswith("노트:") and v.get("role") == "buyer" and (v.get("ts") or 0) >= now - hours * 3600
+                and (v.get("last_seen") or 0) - (v.get("ts") or 0) >= SCORED_AGE):
+            out.setdefault(v["kind"], []).append(v.get("score") or 0.0)
+    return {k: [len(s), round(sum(s) / len(s), 3)] for k, s in out.items()}
+
+
 def guard(book: dict, now: float, since: float = 0) -> float | None:
     """The mean score of the last GUARD_N scored notes (posted since the last pause ended) when it is under
     GUARD_SCORE, else None."""

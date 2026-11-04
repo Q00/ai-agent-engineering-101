@@ -19,7 +19,8 @@ from datetime import datetime
 import common
 
 LIMITS = {"state": 800, "insights": 2400, "reports": 1000, "memos": 800, "numbers": 2000}
-INTEGRATED_LIMITS = {"insights": 4800}          # it marks every active insight, so it sees all 20
+INTEGRATED_LIMITS = {"insights": 4800,          # it marks every active insight, so it sees all 20
+                     "numbers": 4400}           # and since 11/4 night the scoreboard, the line, the notes and the tries
 TITLES = {"state": "1 The business now", "insights": "2 Insights so far (kept by the integrated analysis)",
           "reports": "3 Last reports and what became of their proposals", "memos": "4 Memos from the other analyses",
           "numbers": "5 New numbers"}
@@ -98,7 +99,7 @@ def insights(role: str) -> list:
 
 
 def fate(p: dict, changes: list) -> str:
-    """What the integrated analysis's next decision did with a proposal, and the 12 hours after it if it was applied."""
+    """What the integrated analysis's next decision did with a proposal, and the period after it if it was applied."""
     if not p.get("valid"):
         return f"refused by code ({p.get('why_not')})"
     later = [c for c in changes if c.get("at", 0) >= p.get("ts", 0)]
@@ -113,7 +114,7 @@ def fate(p: dict, changes: list) -> str:
     if len(later) < 2:
         return f"adopted and applied as {to}; result not in yet"
     m0, m1 = later[0].get("metrics") or {}, later[1].get("metrics") or {}
-    return (f"adopted and applied as {to}; next 12 h: shop margin {m0.get('seller_margin')} -> {m1.get('seller_margin')}, "
+    return (f"adopted and applied as {to}; the period after: shop margin {m0.get('seller_margin')} -> {m1.get('seller_margin')}, "
             f"buyer surplus {m0.get('buyer_surplus')} -> {m1.get('buyer_surplus')}")
 
 

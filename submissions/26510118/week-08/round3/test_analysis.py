@@ -540,8 +540,8 @@ def test_linewatch():
     for f in ("line_state.json", "line.json", "line_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
     inv = {"units": []}
-    run = lambda at, settles, inv=inv, sales=(), line=None: linewatch.run(at, settles=settles, inv=inv, sales=list(sales),
-                                                                        line=line or {BEDDING: 3})
+    run = lambda at, settles, inv=inv, sales=(), line=None, stars=None: linewatch.run(
+        at, settles=settles, inv=inv, sales=list(sales), line=line or {BEDDING: 3}, stars=stars)
     check("no baseline from a thin window (12 settles): no verdict, the code's cap kept",
           run(t - 60, market(0.75, n=12)) == [] and BEDDING not in common.read_json(MD / "analysis" / "line_state.json")["base"])
     ch = run(t, market(0.75))
@@ -576,6 +576,21 @@ def test_linewatch():
     check("a unit held 5 h with no sale: out", [(c["from"], c["to"]) for c in ch] == [(2, 0)] and "no sale" in ch[0]["why"], ch)
     run(t5 + 60, [], line={BEDDING: 4})
     check("a person changes the code's cap: it wins", common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 4})
+    sold5 = [{"sku": BEDDING, "ts": t5 + 100}] * 2
+    heavy = {"units": [{"sku": BEDDING, "supplied_at": t5 + 100, "cost": 900_000}, {"sku": KIMCHI, "supplied_at": t5 + 100, "cost": 100_000}]}
+    ch = run(t5 + 300, market(0.75, at=t5 + 300), inv=heavy, sales=sold5, line={BEDDING: 4})
+    g = common.read_json(MD / "analysis" / "line_state.json")["guards"]
+    check("guard: the line is 90% of our stock at cost, so two more sold do not raise the cap",
+          ch == [] and g["share"] == 0.9 and "90%" in (g["hold"] or ""), (ch, g))
+    ch = run(t5 + 600, market(0.75, at=t5 + 600), sales=sold5, line={BEDDING: 4}, stars=4.7)
+    check("guard: our stars 4.7, under 4.80: the cap comes down one (not grown)",
+          [(c["from"], c["to"]) for c in ch] == [(4, 3)] and ch[0]["why"].startswith("our stars 4.7") and ch[0]["guards"]["stars"] == 4.7, ch)
+    check("...not again within 2 hours, and still no growing",
+          run(t5 + 1200, market(0.75, at=t5 + 1200), sales=sold5, line={BEDDING: 4}, stars=4.7) == [])
+    ch = run(t5 + 600 + linewatch.STARS_REST, market(0.75, at=t5 + 600 + linewatch.STARS_REST), line={BEDDING: 4}, stars=4.75)
+    check("...and once more after 2 hours under", [(c["from"], c["to"]) for c in ch] == [(3, 2)], ch)
+    check("stars back at 4.85 and none of ours held: the guards say nothing",
+          linewatch.guards([], {BEDDING: 4}, 4.85) == {"share": 0.0, "stars": 4.85, "hold": None, "low_stars": False})
     common.write_json(MD / "analysis" / "line.json", {"skus": {}})
     check("a line.json a person wrote (the off switch) is left alone", run(t5 + 120, market(0.75, at=t5)) == []
           and common.read_json(MD / "analysis" / "line.json") == {"skus": {}})
@@ -664,6 +679,15 @@ def test_analysts():
     e = analysts.integrated(Model(), t1 + 20)
     check("no answer from the integrated analysis: nothing changes and the entry says so",
           e["decided"] is False and e["changes"] == [] and "no answer" in e["note"])
+    asks = [{"change": "raise G1's line cap to 5", "why": "profit: 1.5M more passes the next shop (+0.01)"},
+            {"change": "a sixth notes desk", "why": "forum +0.003 passes one buyer"}, {"change": "third"}, "junk"]
+    m = Model(answer({"adopt": [], "revert": [], "for_person": asks}))
+    e = analysts.integrated(m, t1 + 30)
+    check("its briefing carries the scoreboard, the line, the notes by desk and our buyer's tries",
+          all(k in told(m.seen[0]) for k in ("scoreboard:", "premium_line:", "notes_by_desk_6h:", "buyer_tries_3h:", "metrics_3h_now:")))
+    check("changes for a person: at most 2 recorded, never applied",
+          [x["change"] for x in e["for_person"]] == ["raise G1's line cap to 5", "a sixth notes desk"] and e["changes"] == []
+          and len(common.read_jsonl(MD / "analysis" / "for_person.jsonl")) == 2, e["for_person"])
 
     (ROOT / "strategy.json").write_text('{"phase": "focus"}', encoding="utf-8")
     t2 = t1 + 3 * H
@@ -688,7 +712,7 @@ def test_analysts():
           e["reverted"] == [{"role": "seller", "field": "price_adjust", "back_to": 0.0}]
           and common.rules()["seller"]["price_adjust"] == 0.0, e["reverted"])
     log = common.read_jsonl(MD / "analysis" / "changes.jsonl")
-    check("every decision is kept with its numbers", [x["applied"] for x in log] == [False, False, True, True]
+    check("every decision is kept with its numbers", [x["applied"] for x in log] == [False, False, False, True, True]
           and all("seller_margin" in x["metrics"] for x in log))
     (ROOT / "strategy.json").write_text('{"phase": "explore"}', encoding="utf-8")
 
@@ -719,8 +743,8 @@ def test_context():
     check("no memos yet: the part says so", p[t["memos"]] == context.NONE)
     rep = p[t["reports"]]
     check("the last two seller reports, newest first", 0 <= rep.find("again") < rep.find("Kimchi sells."))
-    check("what became of each proposal: applied with the 12 h after, recorded only, refused by code, not adopted",
-          all(s in rep for s in ("adopted and applied as 0.05; next 12 h", "recorded only (exploration phase)",
+    check("what became of each proposal: applied with the period after, recorded only, refused by code, not adopted",
+          all(s in rep for s in ("adopted and applied as 0.05; the period after", "recorded only (exploration phase)",
                                  "refused by code", "not adopted")), rep)
 
     fake = [{"id": f"I{100 + i}", "role": ["seller", "buyer", "both"][i % 3], "topic": "price", "text": f"insight-{i:02d} " + "x" * 60,
@@ -798,8 +822,8 @@ def test_runner():
     check("first pass: every step is due", done == ["collect", "replies", "votes", "seller", "buyer", "integrated"], done)
     check("10 minutes later: replies only", analysis.run_once(t0 + 600, quiet, fake_ledger, fake_shops) == ["replies"])
     check("an hour later: collect and replies", analysis.run_once(t0 + 3600, quiet, fake_ledger, fake_shops) == ["collect", "replies"])
-    check("3 hours later: the role analyses too (the journal has nothing new in this small market)",
-          analysis.run_once(t0 + 3 * H, quiet, fake_ledger, fake_shops) == ["collect", "replies", "votes", "seller", "buyer"])
+    check("3 hours later: the role analyses and the integrated analysis after them (the journal has nothing new in this small market)",
+          analysis.run_once(t0 + 3 * H, quiet, fake_ledger, fake_shops) == ["collect", "replies", "votes", "seller", "buyer", "integrated"])
     lock = MD / "analysis" / "lock"
     lock.write_text("1", encoding="utf-8")
     check("a pass already running: skipped", analysis.run_once(t0 + 24 * H, quiet, fake_ledger, fake_shops) == []
@@ -901,6 +925,53 @@ def test_restock_wanted():
     check("a category the rules drop is not stocked even when wanted", APPLE not in skus(out))
 
 
+def test_scoreboard():
+    print("\n[scoreboard] the board's formula, the next rows above us, the pace")
+    import scoreboard
+    for f in ("scoreboard.json", "scoreboard_history.jsonl"):
+        (MD / "analysis" / f).unlink(missing_ok=True)
+
+    def board(kiro_profit):
+        return {"shops": [{"name": "A", "profit": 300, "revenue": 900, "stars_rank": 4.9, "all": 0.0},
+                          {"name": "Kiro729", "profit": kiro_profit, "revenue": 800, "stars_rank": 4.8, "all": 0.0},
+                          {"name": "C", "profit": 100, "revenue": 800, "stars_rank": 4.5, "all": 0.0},
+                          {"name": "D", "profit": 999, "revenue": 999, "stars_rank": 5.0, "all": None}],
+                "buyers": [{"name": "A", "surplus": 50, "forum": 0.6, "deals": 10, "posts": 5},
+                           {"name": "Kiro729", "surplus": 40, "forum": 0.61, "deals": 9, "posts": 5},
+                           {"name": "C", "surplus": 99, "forum": 0.9, "deals": 0, "posts": 9}],
+                "players": [{"player": "A", "total": 1.9, "shop": {"name": "A", "all": 1.0}, "buyer": {"name": "A", "all": 0.9}},
+                            {"player": "Kiro729", "total": 1.0, "shop": {"name": "Kiro729"}, "buyer": {"name": "Kiro729"}},
+                            {"player": "C", "total": 0.2, "shop": {"name": "C"}, "buyer": None}]}
+    shops, buyers = scoreboard.pools(board(200))
+    check("the pools: shops with an ALL (D has none), buyers with a deal (C has none)",
+          [x["name"] for x in shops] == ["A", "Kiro729", "C"] and [x["name"] for x in buyers] == ["A", "Kiro729"])
+    check("shop ALL by the formula: (below + half the level) / (rows - 1), weighed 0.5 / 0.3 / 0.2",
+          scoreboard.alls(shops, scoreboard.SHOP) == {"A": 1.0, "Kiro729": 0.425, "C": 0.075}, scoreboard.alls(shops, scoreboard.SHOP))
+    check("buyer ALL: 0.5 surplus + 0.3 forum + 0.1 deals + 0.1 posts (level posts: half each)",
+          scoreboard.alls(buyers, scoreboard.BUYER) == {"A": 0.65, "Kiro729": 0.35}, scoreboard.alls(buyers, scoreboard.BUYER))
+    note = scoreboard.update(NOW - 3 * H, board(200))
+    sb = common.read_json(MD / "analysis" / "scoreboard.json")
+    check("the next row above us in profit: 101 more passes A and gives 0.25; in stars 0.11 more gives 0.1",
+          sb["shop"]["parts"]["profit"]["next"] == [{"need": 101, "gain": 0.25}]
+          and sb["shop"]["parts"]["stars_rank"]["next"] == [{"need": 0.11, "gain": 0.1}] and sb["shop"]["all"] == 0.425, sb["shop"])
+    check("place and gaps from the board's totals; no pace without a history line 2 h old",
+          sb["place"] == 2 and sb["gap_to_next"] == 0.9 and sb["gap_to_3rd"] == 0.0 and "projection" not in sb
+          and note.startswith("scoreboard: 2 of 3"), (sb, note))
+    note = scoreboard.update(NOW, board(260))
+    sb = common.read_json(MD / "analysis" / "scoreboard.json")
+    check("3 h later: our profit's pace (20 an hour) against the rows above us (A: 0), and the players in 6 h",
+          sb["pace"]["shop.profit"] == {"ours_per_h": 20, "above_median_per_h": 0} and sb["projection"]["place"] == 2
+          and sb["projection"]["total"] == 1.025 and "in 6 h at this pace: 2" in note, (sb.get("pace"), sb.get("projection")))
+    check("every row's parts kept in the history, one line a pass",
+          [sorted(x["shops"]) for x in common.read_jsonl(MD / "analysis" / "scoreboard_history.jsonl")] == [["A", "C", "Kiro729"]] * 2)
+    br = scoreboard.brief(sb, "buyer")
+    check("the briefing's view: one side's parts with their next two steps, and the pace of that side only",
+          "shop" not in br and br["buyer"]["forum"]["pct"] == 1.0 and all(k.startswith("buyer") for k in br["pace_per_h_ours_vs_rows_above"]), br)
+    check("our stars for linewatch, from a fresh scoreboard only", scoreboard.stars(NOW + 60) == 4.8 and scoreboard.stars(NOW + 7200) is None)
+    for f in ("scoreboard.json", "scoreboard_history.jsonl"):
+        (MD / "analysis" / f).unlink(missing_ok=True)
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     try:
@@ -911,6 +982,7 @@ def main() -> int:
         test_journal()
         test_notes()
         test_linewatch()
+        test_scoreboard()
         test_analysts()
         test_insights()
         test_context()

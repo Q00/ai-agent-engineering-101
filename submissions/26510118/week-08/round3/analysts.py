@@ -1,5 +1,5 @@
 """The analysis models: seller and buyer analyses every 3 hours report and propose; the
-integrated analysis every 12 hours adopts proposals into the rules in force, and checks the
+integrated analysis every 3 hours (12 until 11/4 night) adopts proposals into the rules in force, and checks the
 changes it made last time against what happened since, keeping or reverting them.
 
     seller / buyer analysis   MODEL_MID (gpt-6.1-terra) + the data room's tools over MCP (data_room.py:
@@ -11,10 +11,13 @@ changes it made last time against what happened since, keeping or reverting them
     integrated analysis       MODEL_STRONG (gpt-6.1-sol) + the same tools (at most INTEGRATED_CALLS,
                               e.g. replay a proposal before adopting it). In: its briefing (the latest report of each
                               role, all insights and memos, the last decisions with the numbers then
-                              and now), the last 12 hours' proposals, and the private facts that
-                              link the two roles (our orders' budgets against the list prices, the
-                              asks other shops gave our buyer).
-                              Out: analysis/active_rules.json (focus phase only), changes.jsonl,
+                              and now), the proposals since its last decision, the scoreboard (scoreboard.py),
+                              the premium line and its guards, our notes' scores by desk, our buyer's
+                              tries from shop to shop, and the private facts that link the two roles
+                              (our orders' budgets against the list prices, the asks other shops gave our buyer).
+                              It may also name at most FOR_PERSON changes outside the fields (the line, the
+                              notes, the code) for a person to decide: recorded, never applied.
+                              Out: analysis/active_rules.json (focus phase only), changes.jsonl, for_person.jsonl,
                               and the insights it keeps (insights.py, both phases)
 
 Each call sends the fixed instructions (who it is, what counts, the fields and what they do, the
@@ -35,7 +38,10 @@ import context
 import harness
 import insights
 import mcp_host
+import linewatch
+import notes
 import pricing
+import scoreboard
 import tools
 
 FIELDS = {
@@ -46,7 +52,8 @@ FIELDS = {
 }
 STEP = 0.05
 LIST_MAX = 15
-WINDOW = 12 * 3600
+WINDOW = 3 * 3600        # the numbers a decision is judged by: one decision's period (12 h until 11/4 night)
+FOR_PERSON = 2
 
 
 def folder():
@@ -211,7 +218,7 @@ analyses, 5 the new numbers (our own records counted by code; the whole market f
 
 The fields you may propose, what each does, and its range:
 {fields}
-The integrated analysis decides every 12 hours, and a number moves at most {step} per decision: propose
+The integrated analysis decides every 3 hours, and a number moves at most {step} per decision: propose
 a step, not a destination.
 
 How to work:
@@ -293,7 +300,7 @@ def role_analysis(role: str, chat_fn=None, now: float | None = None) -> dict:
 
 
 def metrics(now: float) -> dict:
-    """The numbers a change is judged by, over the last 12 hours."""
+    """The numbers a change is judged by, over the last WINDOW (one decision's period)."""
     sales = _since(common.records("sales"), now, WINDOW)
     bought = _since(common.read_jsonl(common.MARKET_DIR / "buyer" / "purchases.jsonl"), now, WINDOW)
     return {"at": int(now), "seller_sales": len(sales),
@@ -313,14 +320,19 @@ def cross(now: float) -> dict:
                 u.get("category") for u in _since(common.records("unmet"), now)).most_common(8))}
 
 
-INTEGRATED_SYSTEM = """You decide which rule changes our shop and buyer adopt for the next 12 hours: you are the
-integrated analysis of Kiro729, our agent business.
+INTEGRATED_SYSTEM = """You decide which rule changes our shop and buyer adopt for the next 3 hours: you are the
+integrated analysis of Kiro729, our agent business. The goal is a top-3 player total by 11/17.
 {market}
 
 Each turn you get a briefing assembled by code: 1 the business now (with the rules in force), 2 all
-insights, 3 the latest reports, 4 memos, 5 the last decisions with the 12-hour numbers when they were
-made, and the numbers now. Then the proposals from the seller and buyer analyses since the last
-decision (each within its range; "from" is the value in force), and private facts linking the two roles.
+insights, 3 the latest reports, 4 memos, 5 the last decisions with the 3-hour numbers when they were
+made, and the numbers now: the scoreboard (the board's own formula: each part's value and percentile,
+what the next rows above us in it would take ("need") and give our ALL ("gain"), our pace per hour
+against the rows just above us, and where the players would stand in 6 hours at this pace), the
+premium line (its caps, guards and recent changes), our forum notes' scores by desk over 6 hours, and
+how our buyer's orders went from shop to shop. Then the proposals from the seller and buyer analyses
+since the last decision (each within its range; "from" is the value in force), and private facts
+linking the two roles.
 
 Deciding:
 - Adopt only proposals the numbers support; two proposals for one field: pick one. A number moves at
@@ -329,6 +341,10 @@ Deciding:
   since, keep it and wait.
 - {tools}
 
+Changes no field can make (the premium line's products or caps, the notes, how a part of the code
+works) are for a person: name at most {for_person}, each with the scoreboard numbers that call for it.
+They are recorded and shown to the person, never applied.
+
 Insights (part 2) are kept in either phase. An insight is not a rule change; it has three parts: what
 was found ("grade B bedding sells at about 60% of list"), the numbers behind it, and how later decisions
 should use it ("open grade B bedding at 65%, not 70%"). Mark by id the ones the new numbers confirm or
@@ -336,6 +352,7 @@ refute, and add at most {new_max} new ones the numbers support.
 
 Reply with ONE JSON object and nothing else:
 {{"adopt": ["proposal id", ...], "revert": ["role.field", ...],
+ "for_person": [{{"change": "what to change", "why": "the numbers"}}],
  "insights": {{"confirm": ["I1", ...], "refute": ["I2", ...],
               "new": [{{"role": "seller|buyer|both", "topic": "price|stock|shops|demand|quality|other",
                        "text": "what was found", "evidence": "the numbers", "use": "how to use it"}}]}},
@@ -372,6 +389,16 @@ def _step(old, new):
     return new
 
 
+def tries(now: float) -> dict:
+    """Our buyer's orders over the last WINDOW that went from shop to shop (market_buyer.shop_around)."""
+    rows = [o for o in _since(common.records("orders"), now, WINDOW) if "tries" in o]
+    more = [o for o in rows if o.get("tries")]
+    first = Counter(str((o["tries"][0].get("left") or "?"))[:40] for o in more)
+    return {"orders": len(rows), "deals": sum(1 for o in rows if o.get("deal")), "went_on": len(more),
+            "deals_after_going_on": sum(1 for o in more if o.get("deal")), "first_shop_left_because": dict(first.most_common(4)),
+            "a_rival_shop_got_the_deal": sum(1 for o in rows if o.get("deal") and o.get("rival"))}
+
+
 def integrated(chat_fn=None, now: float | None = None) -> dict:
     now = now or time.time()
     changes = common.read_jsonl(folder() / "changes.jsonl")
@@ -383,10 +410,15 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
     decisions = [{"at": context.stamp(c.get("at")), "applied": c.get("applied"),
                   "changes": [f"{x['role']}.{x['field']}: {x['from']} -> {x['to']}" for x in c.get("changes") or []],
                   "reverted": [f"{x['role']}.{x['field']} back to {x['back_to']}" for x in c.get("reverted") or []],
-                  "metrics_12h_then": c.get("metrics")} for c in changes[-2:]]
-    brief = context.form("integrated", now, {"last_decisions": decisions, "metrics_12h_now": m})
+                  "metrics_then": c.get("metrics")} for c in changes[-2:]]
+    book = common.read_json(folder() / "post_votes.json", {}) or {}
+    brief = context.form("integrated", now, {"last_decisions": decisions, "metrics_3h_now": m,
+                                             "scoreboard": scoreboard.brief(scoreboard.read(now)) or "(not in yet)",
+                                             "premium_line": linewatch.brief(now),
+                                             "notes_by_desk_6h": notes.by_desk(book if isinstance(book, dict) else {}, now),
+                                             "buyer_tries_3h": tries(now)})
     with mcp_host.open_room("integrated") as room:
-        system = INTEGRATED_SYSTEM.format(market=MARKET, step=STEP, new_max=insights.NEW_MAX,
+        system = INTEGRATED_SYSTEM.format(market=MARKET, step=STEP, new_max=insights.NEW_MAX, for_person=FOR_PERSON,
                                           tools=_tools_note(room, tools.INTEGRATED_CALLS, INTEGRATED_TOOLS))
         prompt = INTEGRATED_PROMPT.format(context=brief, proposals=_listed(proposals, current),
                                           cross=json.dumps(cross(now), ensure_ascii=False))
@@ -420,9 +452,15 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
     if focus and (done or reverted):
         common.write_json(folder() / "active_rules.json", new)
     kept = insights.update(decision.get("insights") if isinstance(decision.get("insights"), dict) else {}, now)
+    asks = [{"change": str(x.get("change"))[:300], "why": str(x.get("why") or "")[:300]}
+            for x in (decision.get("for_person") or []) if isinstance(x, dict) and x.get("change")][:FOR_PERSON]
+    if asks:
+        with open(folder() / "for_person.jsonl", "a", encoding="utf-8") as f:
+            for x in asks:
+                f.write(json.dumps({"at": int(now), **x}, ensure_ascii=False) + "\n")
     entry = {"at": int(now), "phase": common.strategy()["phase"], "applied": focus, "model": harness.MODEL_STRONG,
              "tools": "data room (MCP)" if room else "none",
-             "decided": bool(decision), "changes": done, "reverted": reverted, "insights": kept,
+             "decided": bool(decision), "changes": done, "reverted": reverted, "insights": kept, "for_person": asks,
              "note": str(decision.get("note") or ("(no answer from the model)" if not decision else ""))[:400],
              "metrics": m}
     with open(folder() / "changes.jsonl", "a", encoding="utf-8") as f:

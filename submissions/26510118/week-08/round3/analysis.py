@@ -9,7 +9,9 @@ Each pass does only what is due, in this order:
                         (analysis/business.jsonl, for the briefings); the file check (contract.py:
                         the fields each part counts on, problems logged); shops' stock lists if the
                         market shows them; the wanted categories restock reads (analysis/wanted.json);
-                        our scores and places on the board (analysis/board_history.jsonl)
+                        our scores and places on the board (analysis/board_history.jsonl); the scoreboard
+                        model (scoreboard.py: the board's formula, what the next rows above us in each part
+                        would take and give, where the players stand in 6 h at this pace)
     opening     10 min  once, our shop's opening post, when the first day's stock is in
                         (OPEN_CATEGORIES categories, or OPEN_MIN after OPEN_WAIT)
     journal      1 h    the Kiro Market Journal on the forum, as our buyer (journal.py): one issue
@@ -28,7 +30,9 @@ Each pass does only what is due, in this order:
                         most useful post) on the last 3 hours' posts, as our buyer (forum.pick_votes)
     seller       3 h    the seller analysis (analysts.py, MODEL_MID + ledger_query)
     buyer        3 h    the buyer analysis
-    integrated  12 h    adopt, keep or revert rule changes (MODEL_STRONG); applied in the focus phase
+    integrated   3 h    adopt, keep or revert rule changes (MODEL_STRONG); applied in the focus phase
+                        (every 12 h until 11/4 night; now with the role analyses, and its briefing carries the
+                        scoreboard, the premium line, the notes' scores by desk and our buyer's tries)
                         and keep the insights (both phases)
 Trading modules only read what this writes. A lock keeps two passes from overlapping; every
 step is logged to logs/analysis.log, which goes with the submission.
@@ -46,6 +50,7 @@ import analysts
 import common
 import linewatch
 import notes
+import scoreboard
 import context
 import contract
 import forum
@@ -54,7 +59,7 @@ import journal
 import ledger
 
 EVERY = {"collect": 1200, "linewatch": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
-         "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 12 * 3600}
+         "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
 RIVALS = 12             # the top players whose shops our buyer passes over in a near tie (market_buyer.RIVAL)
 BUYER_REPLIES = False    # data replies as our buyer (stopped 11/4: about one like each, against 5-6 for a top-level post)
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
@@ -158,7 +163,11 @@ def board_snapshot(now: float, get_json) -> str:
     rivals = sorted({p["shop"].get("name") for p in ranked if isinstance(p.get("shop"), dict)
                      and not forum.own(p.get("player")) and not forum.own(p["shop"].get("name"))} - {None})
     common.write_json(folder() / "rivals.json", {"at": int(now), "shops": rivals})
-    return f"board: {line.get('player', {}).get('place', '?')} of {len(players)} players"
+    try:
+        sb_note = scoreboard.update(now, b)
+    except Exception as e:                                       # noqa: BLE001
+        sb_note = f"scoreboard failed ({type(e).__name__}: {e})"
+    return f"board: {line.get('player', {}).get('place', '?')} of {len(players)} players; {sb_note}"
 
 
 def no_seller(now: float) -> tuple[list, str]:
