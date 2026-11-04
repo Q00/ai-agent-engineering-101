@@ -113,6 +113,27 @@ class Funnel(unittest.TestCase):
         self.assertEqual(report["quote_conflicts"], {"hours_left": 1})
         self.assertEqual(report["non_rule_paths_by_parser_reason"], {})
 
+    def test_counteroffers_are_separate_from_rule_offers(self):
+        counter = step("deterministic", "rule_counter_offer", "over_budget", "offer")
+        counter["counter_check"] = {"reason_code": "rule_counter_offer"}
+        refused = step("model_gate", "model_quota_hour", "over_budget")
+        refused["counter_check"] = {"reason_code": "counter_ratio_exceeded"}
+        disabled = step("model_gate", "model_quota_hour", "over_budget")
+        disabled["counter_check"] = {"reason_code": "counter_disabled"}
+        self.add(trade_record("c1", outcome="purchased", agreed=100, receipt=receipt(), trail=[counter]))
+        self.add(trade_record("c2", agreed=100, trail=[counter], reason="seller_rejected"))
+        self.add(trade_record("r", outcome="purchased", agreed=100, receipt=receipt(),
+                              trail=[step("deterministic", "rule_offer", "rule_offer", "offer")]))
+        self.add(trade_record("x", trail=[refused], reason="model_quota_hour"))
+        self.add(trade_record("d", trail=[disabled], reason="model_quota_hour"))
+        self.pay({"order": "c1", "shop": SHOP, "item": "sku", "price": 100, "paid": True, "ledger": 9},
+                 {"order": "r", "shop": SHOP, "item": "sku", "price": 100, "paid": True, "ledger": 10})
+        report = self.report()
+        self.assertEqual(report["counter_offer"], {"offered": 2, "receipt": 1, "paid": 1, "exclusions": {
+            "counter_ratio_exceeded": 1, "counter_disabled": 1}})
+        self.assertEqual(report["decision_paths"]["deterministic:rule_counter_offer"], 2)
+        self.assertEqual(report["decision_paths"]["deterministic:rule_offer"], 1)
+
     def legacy_dir(self, name, *, outcome, turns=1, decision=None):
         directory = self.root / "logs/buyer" / name
         directory.mkdir(parents=True)

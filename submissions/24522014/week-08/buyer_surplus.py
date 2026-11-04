@@ -27,7 +27,9 @@ def offer_path(root, record):
     """The decision that produced the last offer; old logs are kept apart from the decision trail."""
     offers = [e for e in record.get("decision_trail") or () if e.get("action") == "offer"]
     if offers:
-        return f"{offers[-1]['source']}:{offers[-1]['reason_code']}"
+        path = f"{offers[-1]['source']}:{offers[-1]['reason_code']}"
+        countered = any(e["reason_code"] == "rule_counter_offer" for e in offers[:-1])
+        return path + "_after_counter" if countered else path
     if record.get("decision_trail") is not None:
         return UNKNOWN_PATH
     directory = root / "logs/buyer" / Path(str(record.get("buyer_log_dir", "")).replace("\\", "/")).name

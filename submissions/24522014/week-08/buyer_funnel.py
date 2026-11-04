@@ -122,6 +122,7 @@ def funnel(root, since, until=None, payments_path=None):
     payments = payment_outcomes(payments_path or root / ".market/payments.jsonl")
     counts, causes, sources, parser_reasons = Counter(), Counter(), Counter(), Counter()
     filter_basis, conflicts, shelf_notes = Counter(), Counter(), Counter()
+    counter_runs, counter_exclusions = Counter(), Counter()
     orders, instrumented = set(), 0
     for _, record in runs:
         reached, cause = classify_run(root, record, payments)
@@ -132,8 +133,15 @@ def funnel(root, since, until=None, payments_path=None):
         trail = record.get("decision_trail")
         if trail is not None:
             instrumented += 1
+            if any(e["reason_code"] == "rule_counter_offer" for e in trail):
+                counter_runs["offered"] += 1
+                counter_runs["receipt"] += "receipt" in reached
+                counter_runs["paid"] += "paid" in reached
             for entry in trail:
                 sources[f"{entry['source']}:{entry['reason_code']}"] += 1
+                excluded = (entry.get("counter_check") or {}).get("reason_code")
+                if excluded and excluded != "rule_counter_offer":
+                    counter_exclusions[excluded] += 1
                 check = entry.get("quote_check")
                 if check:
                     conflicts.update(check["conflicts"])
@@ -157,6 +165,8 @@ def funnel(root, since, until=None, payments_path=None):
             "funnel": stages, "causes": dict(causes.most_common()),
             "decision_paths": dict(sources.most_common()),
             "non_rule_paths_by_parser_reason": dict(parser_reasons.most_common()),
+            "counter_offer": {"offered": counter_runs["offered"], "receipt": counter_runs["receipt"],
+                              "paid": counter_runs["paid"], "exclusions": dict(counter_exclusions.most_common())},
             "quote_filter_by_basis": dict(filter_basis.most_common()),
             "quote_conflicts": dict(conflicts.most_common()),
             "quote_text_shelf_life": dict(shelf_notes.most_common())}
