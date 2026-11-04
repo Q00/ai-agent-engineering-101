@@ -6,7 +6,8 @@ for the next run; at most MAX_EVENTS per run), feeds the layers in LAYERS (memor
 memory.prices: ingest(ev) -> bool, to_json(), from_json(d, catalog=...); a layer whose module is missing is
 skipped with a note), sweeps the graph at `now`, runs the POST_INGEST steps, then writes under <R3_STATE>/memory/:
 graph_ops.jsonl (op log, append), <layer>.json (snapshots, tmp + replace) and cursor.json
-{"layers": {layer: byte offset}, "seq", "ts"} last. Each layer has its own offset, so a layer that appears later (or
+{"layers": {layer: byte offset}, "seq", "ts", "lessons"} last ("lessons": the icrl lessons cursor {path, off, n}
+that memory_llm.lessons_step advances). Each layer has its own offset, so a layer that appears later (or
 whose snapshot is missing) is rebuilt from the start of the ledger. Prints one line "HH:MM:SS [memory] ..." per run;
 the loop outlives a failed run.
 """
@@ -35,7 +36,7 @@ MAX_EVENTS = 200_000
 # Extension point. Steps run after ingest and the graph sweep, before anything is written: step(ctx) -> short
 # note or None, ctx = {"now", "root", "md", "mem", "layers", "events", "catalog"}. A step that raises is noted on
 # the run line and the run goes on. v1.19: the hourly taste forecast and its gate (taste/gate.py).
-POST_INGEST = [taste_gate.step, memory_llm.step]   # v121: memory_llm.step is OFF unless MEMORY_LLM
+POST_INGEST = [taste_gate.step, memory_llm.step, memory_llm.lessons_step]   # memory_llm steps OFF unless MEMORY_LLM
 
 
 def market_dir(arg=None):
@@ -100,6 +101,7 @@ def run_once(md, now=None):
         "layers": layers,
         "events": [e for _, e in rows],
         "catalog": catalog,
+        "lessons_cursor": cur.get("lessons") if loaded.get("graph") else None,   # memos live in graph.json
     }
     for step in POST_INGEST:
         try:
@@ -112,7 +114,7 @@ def run_once(md, now=None):
     for n, L in layers.items():
         write_json(mem / f"{n}.json", L.to_json())
     seq = rows[-1][1].get("seq") if rows else cur.get("seq")
-    write_json(mem / "cursor.json", {"layers": offs, "seq": seq, "ts": now})
+    write_json(mem / "cursor.json", {"layers": offs, "seq": seq, "ts": now, "lessons": ctx.get("lessons_cursor")})
     notes += [f"{n}: {k} bad events skipped" for n, k in errs.items() if k]
     took = " ".join(f"{n} {k}" for n, k in used.items())
     return f"+{len(rows)} events seq={seq} ({took}) graph ops {nops}" + "".join(

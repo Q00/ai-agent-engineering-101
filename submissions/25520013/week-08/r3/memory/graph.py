@@ -31,7 +31,8 @@ Op rule, fixed priority, the same for ingest and for proposals:
  5 NOOP: anything else. Counters change in place (refunded settles are not counted) and the evidence seq goes to
    the version's bounded list (EV_KEEP); in-place NOOPs are not written to the op log.
 A proposal whose op differs from the rule's is applied as the rule's op and logged overridden: true. A memo about
-"buyer:X" / "shop:X" is DELETEd (not ADDed) when X has no open edge.
+"buyer:X" / "shop:X" is DELETEd (not ADDed) when X has no open edge. A memo about "exp:..." / "policy:..." (icrl
+lessons, memory/lessons.py) cites lesson ids (< 0), never ledger seqs, resolved through `lookup`.
 
 Queries with `at` use only what has ts < at: a version is open at `at` when from < at <= to, an observation counts
 when ts < at and it was not refunded before at, and a trajectory idle for more than inactive_h before `at` counts
@@ -51,6 +52,7 @@ from owner import norm_name
 from reputation import KEEP, broken_pair
 
 from memory import ABSTAIN
+from memory.lessons import KINDS as LESSON_KINDS
 
 EDGE_KINDS = ("buyer_cat", "shop_sku")
 KINDS = EDGE_KINDS + ("memo",)
@@ -538,6 +540,13 @@ class Graph:
             return "no evidence"
         if not all(_seq(s) for s in evidence):
             return "evidence is not ledger seqs"
+        if kind == "memo" and a.partition(":")[0] in LESSON_KINDS:
+            if lookup is None or not all(s < 0 for s in evidence):
+                return "evidence is not lesson ids"
+            evs = [lookup(s) for s in evidence]
+            if not all(evs):
+                return "evidence not in the lessons"
+            return None if any(self._mentions(e, a) for e in evs) else "evidence not about the key"
         if self.seq_lo is None or not all(
             self.seq_lo <= s <= self.seq_hi for s in evidence
         ):

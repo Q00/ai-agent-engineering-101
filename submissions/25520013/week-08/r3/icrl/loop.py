@@ -499,34 +499,80 @@ def arms(ctx, L, pol, stats, kinds, now, ban):
     return out
 
 
-def recall(ctx, cats, keys):
-    """Memory recall used by the proposer and the memcheck: graph edges on these categories (read-only) + the last
-    N_LESSONS lessons."""
-    edges = []
+def _memview(ctx):
+    """Read-only look at the memory dir: (graph snapshot or None, lessons.jsonl rows, how many of those rows the
+    memory stage has ingested; its cursor.json "lessons" must name this lessons file)."""
     g = _jload(ctx.P["graph"], None)
+    rows = _rows(ctx.f("lessons.jsonl"))
+    cur = (_jload(ctx.P["graph"].with_name("cursor.json"), {}) or {}).get("lessons") or {}
+    same = cur.get("path") == str(ctx.f("lessons.jsonl").resolve())
+    return g, rows, int(cur.get("n") or 0) if g and same else 0
+
+
+def recall(ctx, cats, keys, at=None, mem=None):
+    """Memory recall used by the proposer and the memcheck, read-only on the memory dir. Experiment knowledge is
+    the graph's exp:<arm> verdict / policy:<path> value memos (memory/lessons.py): the relevant ones (path in
+    `keys` or naming one of `cats`) first, then the most recent, N_LESSONS in all. lessons.jsonl rows past the
+    memory stage's cursor (not ingested yet) are laid on top and listed as lessons. Plus buyer_cat edges on `cats`
+    and other memos naming cats / keys. at: the view at that time (graph versions open at `at`, lessons with
+    ts < at; no buyer_cat / other memos). mem: a _memview() result to reuse.
+    -> {"edges", "lessons" (texts), "lesson_rows", "exp": {arm: verdict}, "policy": {path: value}}"""
+    from memory import lessons as LS
+
+    g, rows, n = mem or _memview(ctx)
+    edges, view = [], {"exp": {}, "policy": {}}
     if g:
         try:
-            from memory.graph import Graph
+            view = LS.view((g.get("edges") or {}).get("memo"), at)
+            if at is None:
+                from memory.graph import Graph
 
-            G = Graph.from_json(g)
-            bc = G.active_edges("buyer_cat")
-            bc = [e for e in (bc if isinstance(bc, list) else []) if e["b"] in cats]
-            edges += [
-                {"buyer_cat": e["b"], "count": e["attrs"]["count"]}
-                for e in sorted(bc, key=lambda e: -e["attrs"]["count"])[:6]
-            ]
-            mm = G.active_edges("memo")
-            edges += [
-                {"memo": e["key"][:80], "value": str(e["attrs"].get("value"))[:60]}
-                for e in (mm if isinstance(mm, list) else [])
-                if any(k in e["key"] for k in list(cats) + keys)
-            ][:4]
+                G = Graph.from_json(g)
+                bc = G.active_edges("buyer_cat")
+                bc = [e for e in (bc if isinstance(bc, list) else []) if e["b"] in cats]
+                edges += [
+                    {"buyer_cat": e["b"], "count": e["attrs"]["count"]}
+                    for e in sorted(bc, key=lambda e: -e["attrs"]["count"])[:6]
+                ]
+                mm = G.active_edges("memo")
+                edges += [
+                    {"memo": e["key"][:80], "value": str(e["attrs"].get("value"))[:60]}
+                    for e in (mm if isinstance(mm, list) else [])
+                    if e["a"].partition(":")[0] not in LS.KINDS
+                    and any(k in e["key"] for k in list(cats) + keys)
+                ][:4]
         except Exception:  # noqa: BLE001 - recall is best effort
             pass
+
+    def rel(name):
+        return name.split("|")[0] in keys or any(c in name for c in cats)
+
+    mrows = [("exp", a, v, t) for a, (v, t) in view["exp"].items()]
+    mrows += [("policy", q, v, t) for q, (v, t) in view["policy"].items()]
+    mrows.sort(key=lambda x: (not rel(x[1]), -(x[3] or 0), x[1]))
+    edges += [
+        {k: name, ("verdict" if k == "exp" else "value"): str(v)[:60]}
+        for k, name, v, _ in mrows[:N_LESSONS]
+    ]
+    exp = {a: v for a, (v, _) in view["exp"].items()}
+    pol = {q: v for q, (v, _) in view["policy"].items()}
+    new = [
+        r
+        for r in rows[n:]
+        if at is None or (isinstance(r.get("ts"), (int, float)) and r["ts"] < at)
+    ]
+    ends = LS.ends_by_id(_rows(ctx.f("experiments.jsonl"))) if new else {}
+    for r in new:
+        f = LS.facts(r, ends)
+        exp[f["exp"][len("exp:"):]] = f["verdict"]
+        if f["policy"] and f["value_after"] is not None:
+            pol[f["policy"][len("policy:"):]] = f["value_after"]
     return {
         "edges": edges,
-        "lessons": [x.get("text") for x in _rows(ctx.f("lessons.jsonl"))[-N_LESSONS:]],
-        "lesson_rows": _rows(ctx.f("lessons.jsonl"))[-N_LESSONS:],
+        "lessons": [x.get("text") for x in new[-N_LESSONS:]],
+        "lesson_rows": new[-N_LESSONS:],
+        "exp": exp,
+        "policy": pol,
     }
 
 
@@ -777,31 +823,103 @@ def cycle(ctx, L, store, stats, now, record=True):
 
 
 # ---------------------------------------------------------------- memcheck
+MEMCHECK_STYLE = "LongMemEval-style (Wu et al., ICLR 2025 abilities)"
+MEMCHECK_TYPES = ("information_extraction", "knowledge_update", "temporal", "abstention")
+N_ABSTAIN = 5
+NO_LESSON = ("aborted_external_edit",)  # check_live ends these without a lessons row
+
+
+def _same(a, b):
+    if all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in (a, b)):
+        return abs(a - b) <= 1e-9 * max(1.0, abs(a), abs(b))
+    return a == b
+
+
+def _policy_at(ctx, t, cache):
+    """The registered policy live at t (the latest version with t_from <= t), parsed and cached; None before the
+    first version."""
+    if "_vs" not in cache:
+        cache["_vs"] = [(ctx.runs.meta(v)["t_from"], v) for v in ctx.runs.versions()]
+    hit = max((x for x in cache["_vs"] if x[0] <= t), default=None)
+    if hit is None:
+        return None
+    if hit[1] not in cache:
+        cache[hit[1]] = json.loads(ctx.runs.policy_bytes(hit[1]))
+    return cache[hit[1]]
+
+
+def memquestions(ctx, mem=None):
+    """Code-built questions over the experiment record, answered by recall():
+    [(type, question, gold, got)]. information_extraction: the latest verdict per arm (a retest counts as its
+    arm); knowledge_update: the arms whose verdict changed on the last retest / rerun; temporal: a policy path's
+    value 1 s after each experiment ended, gold from the PolicyRuns versions; abstention: up to N_ABSTAIN action
+    space arms never tested (gold None). Experiments ended without a lessons row (NO_LESSON) are left out."""
+    from memory.lessons import base_arm, scalar
+
+    mem = mem or _memview(ctx)
+    ends = [
+        r
+        for r in _rows(ctx.f("experiments.jsonl"))
+        if r.get("event") == "end" and r.get("verdict") and r["verdict"] not in NO_LESSON
+    ]
+    hist = {}
+    for r in ends:
+        hist.setdefault(base_arm(r.get("arm")), []).append(r["verdict"])
+    got = recall(ctx, [], [], mem=mem)["exp"]
+    qs = []
+    for a, vs in hist.items():
+        qs.append(("information_extraction", f"latest verdict of {a}?", vs[-1], got.get(a)))
+        if len(vs) > 1 and vs[-1] != vs[-2]:
+            qs.append(("knowledge_update", f"verdict of {a} after its retest?", vs[-1], got.get(a)))
+    cache, kinds = {}, None
+    for r in ends:
+        path, t = (r.get("edits") or [{}])[0].get("path"), r.get("t_end")
+        e = SP.entry(ctx.space, path) if path else None
+        pol = _policy_at(ctx, t + 1, cache) if isinstance(t, (int, float)) and e else None
+        if pol is None:
+            continue
+        if kinds is None:
+            kinds = kind_of(ST.catalog(ctx.P), _jload(ctx.P["demand"], []))
+        gold = scalar(SP.current(pol, path, e, kinds))
+        ans = recall(ctx, [], [], at=t + 1, mem=mem)["policy"].get(path)
+        qs.append(("temporal", f"value of {path} at {t + 1}?", gold, ans))
+    never = sorted(
+        f"{e['path']}|{d}"
+        for e in ctx.space
+        if "*" not in e["path"]
+        for d in (("insert", "remove") if e.get("type") == "list" else ("up", "down"))
+        if f"{e['path']}|{d}" not in hist
+    )
+    for a in never[:N_ABSTAIN]:
+        qs.append(("abstention", f"verdict of {a}?", None, got.get(a)))
+    return qs
+
+
 def memcheck(ctx, L, now):
+    """Every MEMCHECK_S: memquestions() scored per type (no LLM) -> one memcheck.jsonl row."""
     if now - (L.get("last_memcheck") or 0) < MEMCHECK_S:
         return None
     L["last_memcheck"] = now
-    truth = {}
-    for r in _rows(ctx.f("experiments.jsonl")):
-        if r.get("event") == "end" and r.get("verdict"):
-            truth[r["arm"]] = r["verdict"]
-    rec = recall(ctx, [], [])
-    got = {}
-    for x in rec["lesson_rows"]:
-        got[x.get("arm")] = x.get("verdict")
-    qs = [
-        {
-            "q": f"verdict of experiment on {a.replace('|', ' ')}?",
-            "a": v,
-            "got": got.get(a),
+    mem = _memview(ctx)
+    qs = memquestions(ctx, mem)
+    types = {}
+    for t in MEMCHECK_TYPES:
+        ok = [_same(g, a) for k, _, g, a in qs if k == t]
+        types[t] = {
+            "n": len(ok),
+            "correct": sum(ok),
+            "acc": round(sum(ok) / len(ok), 3) if ok else None,
         }
-        for a, v in truth.items()
-    ]
+    c = sum(x["correct"] for x in types.values())
     row = {
         "ts": now,
+        "style": MEMCHECK_STYLE,
         "n": len(qs),
-        "correct": sum(q["a"] == q["got"] for q in qs),
-        "acc": round(sum(q["a"] == q["got"] for q in qs) / len(qs), 3) if qs else None,
+        "correct": c,
+        "acc": round(c / len(qs), 3) if qs else None,
+        "types": types,
+        "unread_lessons": len(mem[1]) - mem[2],
+        "misses": [[k, q] for k, q, g, a in qs if not _same(g, a)][:5],
     }
     _append(ctx.f("memcheck.jsonl"), row)
     return row
