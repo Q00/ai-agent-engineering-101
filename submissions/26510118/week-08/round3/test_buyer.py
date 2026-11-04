@@ -90,6 +90,9 @@ def test_choosing():
     check("only a shop that failed us 3 times in a row: the order is skipped", c is None, why)
     c, _ = mb.choose(mb.candidates(food, [shop("G", KIMCHI), shop("H", KIMCHI)], CATALOG, {}, {}, dict(RULES, avoid_shops=["G"])), {})
     check("a shop the rules say to avoid is passed over", c["shop"]["name"] == "H")
+    check("a banned shop is never a candidate, even the only one with a clean record",
+          mb.candidates(food, [shop("willow-goods", KIMCHI)], CATALOG, {}, {}, RULES) == []
+          and [x["shop"]["name"] for x in mb.candidates(food, [shop("willow-goods", KIMCHI), shop("H", KIMCHI)], CATALOG, {}, {}, RULES)] == ["H"])
     nb = {"I": {"recent": ["settled"], "ratios": [0.55]}}
     x = mb.candidates(food, [shop("I", KIMCHI)], CATALOG, nb, {}, RULES)[0]
     check("our own past price at a shop sets the expectation there (55%)", x["expected"] == 11000, x["expected"])
