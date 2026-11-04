@@ -1,0 +1,136 @@
+{
+  "scope": "paid:true with ledger only",
+  "status": "estimate; official value only in official_* fields",
+  "window": {
+    "since": "20261104T121931000000Z",
+    "until": null,
+    "deals": 12
+  },
+  "by_path": {
+    "deterministic:rule_counter_offer": {
+      "deals": 3,
+      "broken": 0,
+      "surplus_sum": 129605,
+      "surplus_median": 18759,
+      "surplus_per_list_median": 0.2915,
+      "price_per_cap_median": 1.0,
+      "price_per_order_budget_median": 0.72,
+      "price_per_first_ask_median": 0.9883,
+      "cap_per_list_median": 0.7085,
+      "with_cap": 3,
+      "with_labeled_first_ask": 3
+    },
+    "deterministic:rule_offer": {
+      "deals": 7,
+      "broken": 0,
+      "surplus_sum": 732261,
+      "surplus_median": 18270,
+      "surplus_per_list_median": 0.25,
+      "price_per_cap_median": 0.95,
+      "price_per_order_budget_median": 0.6452,
+      "price_per_first_ask_median": 1.0,
+      "cap_per_list_median": 0.8,
+      "with_cap": 7,
+      "with_labeled_first_ask": 7
+    },
+    "model:model_offer": {
+      "deals": 1,
+      "broken": 0,
+      "surplus_sum": 189639,
+      "surplus_median": 189639,
+      "surplus_per_list_median": 0.4645,
+      "price_per_cap_median": 0.6693,
+      "price_per_order_budget_median": 0.5737,
+      "price_per_first_ask_median": null,
+      "cap_per_list_median": 0.8,
+      "with_cap": 1,
+      "with_labeled_first_ask": 0
+    },
+    "model:model_offer[agy]": {
+      "deals": 1,
+      "broken": 0,
+      "surplus_sum": 265818,
+      "surplus_median": 265818,
+      "surplus_per_list_median": 0.4721,
+      "price_per_cap_median": 0.7472,
+      "price_per_order_budget_median": 0.5279,
+      "price_per_first_ask_median": null,
+      "cap_per_list_median": 0.7065,
+      "with_cap": 1,
+      "with_labeled_first_ask": 0
+    }
+  },
+  "goods_still_within_break_window": {
+    "deals": 6,
+    "estimated_surplus_at_risk": 1249306,
+    "ledgers": [
+      2521692,
+      2526101,
+      2526591,
+      2526859,
+      2536229,
+      2538641
+    ]
+  },
+  "official_same_window": {
+    "from_observed_at": 1793793470.1088455,
+    "to_observed_at": 1793798906.8162463,
+    "official_surplus_delta": 1483753,
+    "official_deals_delta": 15,
+    "buyer_all_from": 0.474,
+    "buyer_all_to": 0.474,
+    "local_estimate_same_interval": 1483753,
+    "local_deals_same_interval": 15,
+    "note": "Side by side only; a before/after difference is not a causal effect."
+  },
+  "reconciliation": {
+    "official_surplus": 15013585,
+    "official_deals": 558,
+    "official_served": 553,
+    "official_observed_at": 1793798906.8162463,
+    "estimated_surplus": 15128295,
+    "local_deals": 558,
+    "difference": 114710,
+    "broken_events_unmatched": [
+      {
+        "name": "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS",
+        "broke_at": 1793741996,
+        "candidates": 2,
+        "max_overstatement_if_covered": 20900
+      },
+      {
+        "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+        "broke_at": 1793767743,
+        "candidates": 10,
+        "max_overstatement_if_covered": 139456
+      }
+    ]
+  },
+  "last_offer_per_first_ask": {
+    "0.85-0.90": {
+      "offers": 6,
+      "receipt": 0,
+      "paid": 0
+    },
+    "0.90-0.95": {
+      "offers": 4,
+      "receipt": 0,
+      "paid": 0
+    },
+    "0.95-1.00": {
+      "offers": 4,
+      "receipt": 3,
+      "paid": 3
+    },
+    "at_or_above_ask": {
+      "offers": 7,
+      "receipt": 7,
+      "paid": 7
+    },
+    "below_0.85": {
+      "offers": 1,
+      "receipt": 0,
+      "paid": 0
+    }
+  }
+}
