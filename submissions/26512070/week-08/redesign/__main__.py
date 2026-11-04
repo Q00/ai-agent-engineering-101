@@ -40,6 +40,14 @@ def main(argv):
             c = collections.Counter(v["verdict"] for v in r["verdicts"])
             print(f"{r['area']}: {dict(c)}" + (f", not reviewed {r['missing']}" if r["missing"] else ""))
         return 0
+    if argv[:1] == ["audit"]:
+        from redesign import audit
+        out = audit.run(argv[1])
+        print("bad citations:", out["bad_citations"] or "none")
+        for f in out["findings"]:
+            print(f"[{f['by']}] {f['type']}: {f.get('where', '')} ({f.get('source_lines', '')})\n    {f.get('detail', '')}"
+                  + (f"\n    fix: {f['fix']}" if f.get("fix") else ""))
+        return 0
     if argv[:1] == ["proposals"]:
         from redesign import review
         print(review.markdown())

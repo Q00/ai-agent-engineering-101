@@ -1,0 +1,154 @@
+{
+ "doc": "MARKET.md",
+ "bad_citations": [],
+ "findings": [
+  {
+   "type": "wrong",
+   "where": "4. 식품과 비식품의 차이: 가게가 `warranty_hours`를 걸 수 있다. 그 시간 안에 고장 나면 시장이 **가게 잔고에서 정가 전액을 환불**한다 [A156-158]",
+   "source_lines": "A156-158",
+   "detail": "보증 기간 내 고장 시 환불되는 금액은 정가(list price)가 아니라 거래 가격(the full price)이다. 6장에서는 '낸 값을 돌려받음'으로 맞게 적었으나 4장 표에서는 '정가 전액'으로 잘못 적었다.",
+   "fix": "가게가 `warranty_hours`를 걸 수 있다. 그 시간 안에 고장 나면 시장이 **가게 잔고에서 구매가(결제 금액) 전액을 환불**한다 [A156-158]",
+   "by": "designer"
+  },
+  {
+   "type": "unsupported",
+   "where": "머리글 및 10장: 우리 하네스의 문서나 관측은 출처로 쓰지 않는다 ... 9장: (우리 하네스는 보드로 검산한 규칙을 씀: 값 없음 = 0, 동점은 절반) ... 10. 우리 문서와 다른 점 (표 전체)",
+   "source_lines": "A123-235, B",
+   "detail": "요약서 서두에서 공식 출처 두 곳만 쓰고 자체 문서나 관측은 쓰지 않는다고 선언했으나, 9장 일부와 10장 전체에서 공식 출처에 없는 자체 하네스 규칙과 로그 관측값(11/3 21:06:40, 643개 줄, 276초 등)을 서술하고 있다.",
+   "fix": "",
+   "by": "designer"
+  },
+  {
+   "type": "missing",
+   "where": "A183-200, A201-208, A233-234",
+   "source_lines": "A183-208, A233-234",
+   "detail": "에이전트가 실제로 동작하고 상호작용하는 데 필수적인 계약 및 프로토콜 규칙들이 누락되었다: (1) 구매자가 가게에 재고(`shops.json`의 `offers`)에 있는 특정 SKU를 요청하는 방법(예: `I want to buy <name> (<sku>)`, A132), (2) 파일 계약의 구체적 갱신 주기와 필드(`inventory.json` 10초마다, `demand.json`/`forum.json` 30초마다 최신 100개 글, 결제 후 `review` 훅을 위해 생성되는 `deal.json`과 `claim_honest` 등의 필드, 전체 상점 URL-이름 매핑을 위한 `GET /api/shops`, A188-198), (3) `outbox.jsonl`에 글(`post`, `refs`, `thread`, `as`)이나 투표(`vote`, `value`, `as`)를 한 줄씩 추가하면 키트가 10초마다 전송하고 `outbox.sent.jsonl`로 옮긴다는 작성 방법(A165-168, A199), (4) `market_buyer` 훅의 입출력 형식과 결제를 안 한 거래는 후기(텍스트)도 표시되지 않는다는 점(A203-207, A217), (5) `GET /api/ledger?after=N` (최대 500개, 음수 인덱스 `after=-500` 사용법) API 조회 규칙(A233-234).",
+   "fix": "",
+   "by": "designer"
+  },
+  {
+   "type": "inference_wrong",
+   "where": "1. → 「settle 줄을 직접 모아야만 안다」「우리 기록으로만 안다」",
+   "source_lines": "A129-131",
+   "detail": "출처는 판매 경향과 선호가 정산 원장뿐 아니라 각 에이전트의 기록과 포럼에도 드러난다고 한다. 직접 원장을 수집하거나 자기 기록만 사용해야 한다는 배타적 결론은 나오지 않는다.",
+   "fix": "→ 판매 경향과 buyer의 선호는 정산 원장, 각자의 기록, 포럼에서 추론할 수 있다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "inference_wrong",
+   "where": "2. → 「한 창에서 많아야 약 18줄 … 약 360개」",
+   "source_lines": "A135-136, A209-214",
+   "detail": "첫 창은 10분이므로 모든 창에 적용되는 상한이 아니다. 또한 10초당 한 번은 키트의 restock 실행 규약이지 시장 전체 또는 직접 API 사용에도 적용된다고 명시된 구매 상한이 아니다. 실행 간격과 창 경계도 실제 구매량에 영향을 준다.",
+   "fix": "→ 일반적인 3분 창에서 키트가 계속 공급을 호출할 수 있다고 가정하면 약 18회 규모의 구매를 계획할 수 있다. 이는 모든 창에 적용되는 시장의 구매 상한은 아니며, 첫 창은 10분이다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "wrong",
+   "where": "4. 보증 표 「가게 잔고에서 정가 전액을 환불」",
+   "source_lines": "A156-158, A225-227",
+   "detail": "환불액은 SKU 정가가 아니라 거래에서 낸 가격 전액이다. 정가와 거래 가격이 다르면 환불액과 buyer 잉여 계산이 달라진다.",
+   "fix": "보증 시간 안에 고장 나면 시장이 가게 잔고에서 구매 가격 전액을 환불한다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "inference_wrong",
+   "where": "6. → 「buyer 쪽 손해는 … 낸 값만큼 마이너스」「보증을 요구해야 마이너스를 막는다」",
+   "source_lines": "A156-158, A225-227",
+   "detail": "낸 값만큼 마이너스가 되는 것은 주문에 필요한 시간을 못 버틴 식품이나 보증으로 보상되지 않는 고장 상품의 경우다. 보증이 고장 시점을 포함하면 잉여는 0이다. 보증을 단순히 요구하는 것만으로는 부족하고 실제 고장 시점까지 유효한 보증이 있어야 한다.",
+   "fix": "→ 식품이 필요한 시간을 못 버티거나 비식품 고장이 보증으로 보상되지 않으면 잉여는 −구매 가격이다. 비식품은 고장 시점을 포함하는 보증이 있어야 전액 환불로 잉여가 0이 된다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "unsupported",
+   "where": "8. 가게 「Honest = … 맞은 비율. 보드에만 보이고」",
+   "source_lines": "B, A159-160",
+   "detail": "보드 설명은 Honest가 실제 배송 등급과 맞는 등급 주장이라고만 설명하며, 비율이라는 산식이나 분모를 정의하지 않는다. 또한 보드에서만 확인할 수 있다는 제한도 없고, 등급 주장의 진실 여부는 원장에도 나온다. ALL에 포함되지 않는다는 부분은 공식 산식과 부합한다.",
+   "fix": "Honest는 등급 주장이 실제 배송 등급과 맞았는지를 나타내는 항목이다. 구체적인 산식은 설명되어 있지 않으며 ALL에는 포함되지 않는다. 등급 주장의 진실 여부는 원장에서도 확인할 수 있다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "unclear",
+   "where": "8. → 「Book은 그대로인데 ALL은 cash만 쓴다」",
+   "source_lines": "A150-151, A174, B",
+   "detail": "ALL이 cash만으로 계산된다는 뜻으로 읽힐 수 있다. Book과 Cash 중에서는 Cash를 사용하지만, ALL에는 revenue와 stars도 들어간다.",
+   "fix": "재고 구매 시 Book은 그대로지만 Cash는 줄어든다. ALL은 Book을 사용하지 않고 Cash·Revenue·Stars의 백분위를 각각 0.5·0.3·0.2로 합산한다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "inference_wrong",
+   "where": "8. → 「재고를 쌓지 않는 가게는 cash가 유지되므로 상대 순위가 오른다」",
+   "source_lines": "A143, A150-151, A174-179, B",
+   "detail": "재고를 추가 구매하지 않는다는 조건만으로 Cash 유지나 상대 순위 상승이 보장되지 않는다. 기존 재고 보관비·환불·판매 등도 잔고에 영향을 주며, Cash 백분위는 다른 가게의 결과에, ALL 순위는 매출과 별점에도 달려 있다.",
+   "fix": "→ 다른 현금 변동이 없다면 재고를 사지 않는 가게는 구매로 인한 Cash 감소를 피한다. 다만 Cash 백분위나 ALL 순위가 오르는지는 다른 가게의 실적과 매출·별점에 달려 있다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "missing",
+   "where": "A132: 주문할 SKU 선택",
+   "source_lines": "A132, A195",
+   "detail": "buyer는 shops.json의 offers에 있는 해당 가게의 보유 SKU를 골라 요청하라는 지침이 빠졌다. acceptable에 있다는 이유만으로 어느 가게에나 요청할 수 있는 것으로 오해할 수 있다.",
+   "fix": "buyer는 shops.json의 offers를 확인해 그 가게가 보유한 SKU를 골라 상품명과 SKU로 구매를 요청한다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "missing",
+   "where": "A185-199: 에이전트 파일 위치와 갱신 범위",
+   "source_lines": "A152-153, A185-199",
+   "detail": "파일명은 여러 곳에 나오지만 공통 경로, seller의 접근 방법, 주요 갱신 주기와 forum.json의 범위가 빠졌다. 특히 forum.json을 전체 포럼 기록으로 취급하면 과거 글을 놓친다.",
+   "fix": "에이전트 파일은 에이전트 폴더의 .market/에 있고 seller에는 이 경로가 MARKET_DIR로 전달된다. JSON 파일은 통째로 교체된다. inventory.json은 10초마다 및 공급·판매 직후, demand.json과 forum.json은 30초마다 갱신되며 forum.json에는 최신 100개 글만 들어 있다. order.json과 shops.json은 주문마다 제공된다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "missing",
+   "where": "A201-207: market_buyer 실행 및 출력 계약",
+   "source_lines": "A201-207",
+   "detail": "accept의 마지막 줄만 설명하고, buyer가 직접 A2A 협상을 해야 한다는 점과 키트가 읽는 출력 계약을 빠뜨렸다. 이를 모르면 buyer가 영수증을 얻거나 키트에 결제를 요청하는 방식을 잘못 구현할 수 있다.",
+   "fix": "각 훅의 cmd는 에이전트 폴더에서 실행되고 키트는 마지막 JSON 출력 줄을 읽는다. market_buyer는 주문마다 실행되어 직접 A2A로 가게와 협상하고 shop URL, 받은 그대로의 가게 서명 receipt 또는 null, stars, review 및 선택적 accept를 출력한다. 이후 키트가 서명하고 가게의 ACP checkout을 통해 결제한다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "missing",
+   "where": "A197: 결제 후 실제 배송 정보와 가게 식별",
+   "source_lines": "A197, A215",
+   "detail": "review 훅이 받는 deal.json의 settled 정보와 가게 URL을 이름에 연결하는 방법이 빠졌다. 실제 배송 등급·주장 진위·보증·가치를 기록하고 이후 고장과 연결하는 데 필요한 규약이다.",
+   "fix": "결제 후 review 훅의 deal.json에는 주문·영수증과 함께 실제 배송 unit, SKU, 등급, claim_honest, expires_at, warranty_hours, value, ledger 등이 settled에 들어 있다. settled.shop은 URL이며 GET /api/shops로 가게 이름에 연결할 수 있다. shops.json은 현재 주문의 가게만 담는다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "missing",
+   "where": "A217: 결제되지 않은 거래의 후기 표시",
+   "source_lines": "A215-217",
+   "detail": "미결제 거래의 별점이 점수에 반영되지 않는다는 설명은 있지만, 후기 자체도 표시되지 않는다는 규칙이 빠졌다.",
+   "fix": "키트가 결제하지 않은 거래는 market_buyer의 별점이 기록되어도 점수에 반영되지 않으며 후기 역시 표시되지 않는다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "missing",
+   "where": "A165-169, A199: 포럼 게시·투표 전달 방법과 역할 지정",
+   "source_lines": "A165-169, A199",
+   "detail": "게시 빈도와 투표 자격만 설명하고 실제 게시·투표 방법, 답글 연결, shop/buyer 역할 지정이 빠졌다. 특히 buyer 역할로 작성해야 buyer 포럼·게시물 점수 대상이 된다.",
+   "fix": "포럼 글과 표는 .market/outbox.jsonl에 JSON 한 줄씩 추가한다. 글은 post, refs와 선택적 thread를, 표는 vote와 value(1 또는 −1)를 쓰고 as로 shop 또는 buyer 역할을 지정한다. thread는 답글 대상 post_id다. 키트는 10초마다 새 줄을 보내고 응답과 함께 outbox.sent.jsonl로 옮긴다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "missing",
+   "where": "A233-235: 원장 조회의 페이지 제한과 커서",
+   "source_lines": "A233-235",
+   "detail": "원장을 직접 모으라는 추론은 있지만 API가 최대 500개만 반환한다는 제한과 after 커서 의미가 빠졌다. 한 번 조회한 결과를 전체 이력으로 오해하면 수요 분석에서 거래를 누락한다.",
+   "fix": "GET /api/ledger?after=N은 seq N 이후 항목을 오래된 순서로 최대 500개 반환한다. after=-N은 최신에서 N개 전부터 시작하며 최신 500개는 after=-500으로 조회한다. 전체 이력을 모으려면 seq를 따라 나누어 조회해야 한다.",
+   "by": "reviewer"
+  },
+  {
+   "type": "missing",
+   "where": "A180: Round 3 starter 가게의 가격 정책",
+   "source_lines": "A180",
+   "detail": "시장이 원가 이하 판매를 허용한다는 규칙은 있지만, 기본 seller_r3.py는 원가 이상으로만 판매한다는 동작이 빠졌다. starter 사용자는 시장의 허용 범위와 자기 가게의 기본 정책을 구분해야 한다.",
+   "fix": "시장은 원가 이하 판매를 허용하지만 Round 3 starter 가게 seller_r3.py는 보유 재고를 원가 이상으로만 판매한다.",
+   "by": "reviewer"
+  }
+ ],
+ "models": {
+  "designer": "google/gemini-4-argon",
+  "reviewer": "openai/gpt-6.1-sol"
+ }
+}
