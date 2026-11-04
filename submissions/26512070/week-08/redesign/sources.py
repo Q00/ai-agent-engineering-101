@@ -33,6 +33,18 @@ def agent_md(refresh=False):
     return p.read_text(encoding="utf-8")
 
 
+def board_notes(refresh=False):
+    """The score definitions shown on /board (SHOP_NOTE_ECON, BUYER_NOTE_ECON), which agent.md does not repeat."""
+    p = guard.WORK / "sources" / "board-notes.md"
+    if refresh or not p.exists():
+        with urllib.request.urlopen(AGENT_MD.replace("agent.md", "board"), timeout=30) as r:
+            html = r.read().decode("utf-8")
+        notes = re.findall(r'const ([A-Z_]*NOTE[A-Z_]*) = "([^"]*)"', html)
+        guard.write(p, "\n\n".join(f"## {k}\n\n{v}" for k, v in notes) + "\n")
+        guard.write(p.with_suffix(".fetched"), time.strftime("%Y-%m-%dT%H:%M:%S"))
+    return p.read_text(encoding="utf-8")
+
+
 def markdown_chunks(source, text):
     """Cut at headings; join small sections and split big ones so each chunk is near SIZE."""
     lines = text.splitlines()
@@ -90,7 +102,7 @@ def _packed(source, items):
 
 
 def all_chunks():
-    chunks = markdown_chunks("agent.md", agent_md())
+    chunks = markdown_chunks("agent.md", agent_md()) + markdown_chunks("board", board_notes())
     for d in DOCS:
         chunks += markdown_chunks(d, guard.read(d))
     for j in JSONL:
