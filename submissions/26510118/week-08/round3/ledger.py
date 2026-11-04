@@ -166,15 +166,25 @@ def _mean(xs):
     return round(sum(xs) / len(xs), 3) if xs else None
 
 
+def _median(xs):
+    if not xs:
+        return None
+    xs = sorted(xs)
+    mid = len(xs) // 2
+    return round(xs[mid] if len(xs) % 2 else (xs[mid - 1] + xs[mid]) / 2, 3)
+
+
 def summarize(catalog: dict, now: float | None = None) -> dict:
     """market_summary.json: the last 24 h (and 6 h) of settles by SKU, category and shop (by name,
     where the shop list gave one), and breakdowns by grade over everything kept (a broken entry
-    names the buyer and the item, so it is matched to that buyer's last settle of the item before it)."""
+    names the buyer and the item, so it is matched to that buyer's last settle of the item before it).
+    Each category also carries by_grade: the median paid share of the list price per grade, over all its
+    settles and split by whether a warranty came with them (the seller's market-referenced asks)."""
     now = now or time.time()
     settles = common.read_jsonl(folder() / "settles.jsonl")
     broken = common.read_jsonl(folder() / "broken.jsonl")
     named = names()
-    by_sku, by_cat, by_shop = {}, {}, {}
+    by_sku, by_cat, by_shop, by_grade = {}, {}, {}, {}
     for s in settles:
         ts = s.get("ts") or 0
         if ts < now - 24 * 3600:
@@ -191,6 +201,9 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
             if lp and isinstance(s.get("amount"), (int, float)):
                 t["ratios"].append(s["amount"] / lp)
             t["grades"][s.get("grade")] = t["grades"].get(s.get("grade"), 0) + 1
+        if c.get("category") and lp and isinstance(s.get("amount"), (int, float)) and s.get("grade") in ("A", "B", "C"):
+            g = by_grade.setdefault(c["category"], {}).setdefault(s["grade"], {"w": [], "nw": []})
+            g["w" if s.get("warranty_hours") else "nw"].append(s["amount"] / lp)
         if s.get("shop"):
             sh = by_shop.setdefault(named.get(s["shop"], s["shop"]), {"settled_24h": 0, "claims": 0, "honest": 0})
             sh["settled_24h"] += 1
@@ -200,6 +213,10 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
     for table in (by_sku, by_cat):
         for t in table.values():
             t["price_ratio"] = _mean(t.pop("ratios"))
+    for cat, grades in by_grade.items():
+        by_cat[cat]["by_grade"] = {g: {"n": len(d["w"]) + len(d["nw"]), "median": _median(d["w"] + d["nw"]),
+                                       "w_n": len(d["w"]), "w_median": _median(d["w"]),
+                                       "nw_n": len(d["nw"]), "nw_median": _median(d["nw"])} for g, d in grades.items()}
     sold_by_grade, broke_by_grade = {}, {}
     last = {}                                           # (buyer, item) -> grade of their latest settle
     events = sorted([(s.get("ts") or 0, 0, s) for s in settles] + [(b.get("ts") or 0, 1, b) for b in broken],

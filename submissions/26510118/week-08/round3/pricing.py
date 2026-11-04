@@ -19,6 +19,17 @@ analysis memos may move them (strategy.json's price_adjust).
                 + 20% for C. A warranty must cost more than the refunds it is expected to
                 pay (breakdown share x price): about 20% for refurbished goods sold near
                 60% of list if a quarter of them break. With one, every grade starts at 80%.
+    the market  (focus phase, 11/4) the market's median paid share for the unit's category and
+                grade, with a warranty or without (market_summary.json by_grade, 20 settles a
+                day or more), plus 2%: when the rule's ask is more than 3% of list away from it,
+                the ask moves toward it by at most 10% of list. On 11/4 the market paid for
+                furniture and bedding A 0.77-0.80, B 0.72-0.74, C 0.69-0.70 of list, against our
+                A 75%, refurbished 60% (too low) and 80% for any grade with a warranty (too
+                high for B and C); for kimchi A 0.75, our 75%, it changes nothing.
+    late        in the last 10 minutes before the next supply window the ask is 2% of list
+                higher: other shops have sold out by then and the market pays more (11/4:
+                kimchi 0.686 in the first 5 minutes of the cycle, 0.711 in the last 5;
+                sofas over 1.2M 0.790 with 13 shops selling, 0.805 with 7).
 """
 import math
 import time
@@ -39,6 +50,24 @@ LAST_HOURS, LAST_FLOOR = 6, 0.10
 MAX_ROUNDS = 4           # offers before the shop closes: take one at or above the floor, else no deal
 QUICK = 0.95             # an offer this close to the ask is taken at once
 CLAIM_MARGIN = 300       # seconds a grade claim must stay true (deal to settle: 99% within 4 minutes)
+LIFT = 0.02              # a market-referenced ask: the market's median for the grade plus this
+DEADBAND = 0.03          # ...taken only when the rule's ask is further than this from it
+REACH = 0.10             # ...moving the rule's ask by at most this
+MARKET_MIN = 20          # settles of the category and grade (with a warranty, or without) in a day before its median counts
+LATE_LIFT, LATE_WINDOW = 0.02, 600   # the ask in the last LATE_WINDOW seconds before the next supply window
+
+
+def market_ref(by_grade: dict | None, g: str, warranty: bool):
+    """The market's median paid share of the list price for grade g, with a warranty or without, or None."""
+    d = (by_grade or {}).get(g) or {}
+    key = "w" if warranty else "nw"
+    return d.get(f"{key}_median") if (d.get(f"{key}_n") or 0) >= MARKET_MIN else None
+
+
+def late_in_cycle(window: dict | None, now: float) -> bool:
+    """inventory.json's restock {open, opens_at, closes_at}: the last LATE_WINDOW seconds before a window opens."""
+    w = window or {}
+    return bool(w) and not w.get("open") and 0 < (w.get("opens_at") or 0) - now <= LATE_WINDOW
 
 
 def hours_left(unit: dict, now: float):
@@ -85,15 +114,25 @@ def respond(ask: int, floor: int, offer: int, rounds: int) -> tuple[str, int]:
 
 
 def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: float = 0.0,
-         catalog: dict | None = None, extra: dict | None = None) -> dict:
-    """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours} for one unit.
+         catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
+         late: bool = False) -> dict:
+    """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late} for one unit.
     at_cost: the floor is cost + 5% (no clearance), which is what the seller may say.
-    adjust and extra come from the rules in force (price_adjust, warranty_extra)."""
+    adjust and extra come from the rules in force (price_adjust, warranty_extra); market is the
+    category's by_grade from market_summary.json; late: the end of the supply cycle (late_in_cycle).
+    ref: the market median the ask moved toward, or None."""
     extra = extra or WARRANTY_EXTRA
     now = now or time.time()
     lp, cost = unit["list_price"], unit["cost"]
     g = grade(unit, now, catalog)
-    start = START[g] + adjust
+    w = bool(warranty) and unit.get("kind") == "goods"
+    rule = START[g] + (extra[g] if w else 0)
+    ref = market_ref(market, g, w)
+    if ref is not None and abs(ref + LIFT - rule) > DEADBAND:
+        rule += max(-REACH, min(REACH, ref + LIFT - rule))
+    else:
+        ref = None
+    start = rule + adjust + (LATE_LIFT if late else 0)
     floor = math.ceil(round(cost * (1 + MARGIN), 6))            # 12000 * 1.05 is 12600.000000000002 in floats
     clearance = None
     age = (now - unit.get("supplied_at", now)) / 86400
@@ -111,10 +150,8 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         clearance = LAST_FLOOR
     if clearance is not None:
         floor = min(floor, round(lp * clearance))
-    w = bool(warranty) and unit.get("kind") == "goods"
     if w:
-        start += extra[g]
         floor += round(lp * extra[g])
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
-            "at_cost": clearance is None, "warranty_hours": WARRANTY_HOURS if w else None}
+            "at_cost": clearance is None, "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late}

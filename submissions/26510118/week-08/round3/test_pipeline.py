@@ -235,6 +235,25 @@ def test_pricing():
     later = dict(food, expires_at=now + pricing.FOOD_CUTS[1] * shelf * H + 1800)
     check("food dropping in 30 minutes is claimed at its grade now (a settle comes within minutes)",
           pricing.claim(later, now, CATALOG) == "B")
+    mk = {"A": {"w_n": 40, "w_median": 0.78, "nw_n": 30, "nw_median": 0.77}, "B": {"w_n": 25, "w_median": 0.74, "nw_n": 5, "nw_median": 0.60},
+          "C": {"w_n": 25, "w_median": 0.70, "nw_n": 20, "nw_median": 0.69}}
+    p = pricing.plan(goods_c, now, market=mk)
+    check("the market pays refurbished 0.69 without a warranty: our 60% moves up by at most 10% of list (70%)",
+          (p["ask"], p["ref"]) == (27930, 0.69), p)
+    p = pricing.plan(goods_b, now, warranty=True, market=mk)
+    check("B with a warranty: the market's 0.74 + 2% replaces our 80% (76%); the floor keeps its warranty share",
+          (p["ask"], p["floor"]) == (30324, 21000 + 3990), p)
+    p = pricing.plan(goods_a, now, warranty=True, market=mk)
+    check("A with a warranty: 0.78 + 2% is within 3% of our 80%: unchanged", (p["ask"], p["ref"]) == (31920, None), p)
+    check("B without a warranty: 5 market settles are too few to count", pricing.plan(goods_b, now, market=mk)["ref"] is None)
+    check("food with no market data is unchanged", pricing.plan(food, now, catalog=CATALOG, market={})["ask"] == 15000)
+    check("the late cycle adds 2% of list", pricing.plan(food, now, catalog=CATALOG, late=True)["ask"] == 15400)
+    check("a market-referenced ask never goes below the floor",
+          pricing.plan(dict(goods_c, cost=30000), now, market={"C": {"nw_n": 99, "nw_median": 0.40}})["ask"] == 31500)
+    win = {"open": False, "opens_at": now + 300, "closes_at": now + 480}
+    check("late in the cycle: the last 10 minutes before a window opens, not during one or long before",
+          pricing.late_in_cycle(win, now) and not pricing.late_in_cycle(dict(win, opens_at=now + 900), now)
+          and not pricing.late_in_cycle(dict(win, open=True), now) and not pricing.late_in_cycle(None, now))
 
 
 def test_categories():
@@ -437,6 +456,9 @@ def test_ledger():
     check("summary: shops' grade claims, true and false", s["by_shop"]["s2"] == {"settled_24h": 1, "claims": 1, "honest": 0})
     check("summary: a breakdown is matched to the grade that was sold", s["broken_by_grade"] == {"C": 1}
           and s["goods_sold_by_grade"] == {"C": 1}, s["broken_by_grade"])
+    kg = s["by_category"][CATALOG[KIMCHI]["category"]]["by_grade"]
+    check("summary: each category's median share by grade, with and without a warranty (the seller's market prices)",
+          kg == {"A": {"n": 1, "median": 0.75, "w_n": 0, "w_median": None, "nw_n": 1, "nw_median": 0.75}}, kg)
     ledger.learn_names([{"name": "Kiro729", "url": "s1"}, {"name": "Shop Two", "url": "s2"}])
     ledger.learn_names([{"name": "Shop Two", "url": "s2-new"}])                 # restarted: a new tunnel address
     s = ledger.summarize(CATALOG, NOW)

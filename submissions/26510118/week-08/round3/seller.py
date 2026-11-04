@@ -262,11 +262,29 @@ def describe(u: dict, p: dict) -> str:
     return f"{u.get('name')} ({u['sku']}): grade {p['grade']}, {p['hours_left']:.0f} h of shelf life left, certificate attached"
 
 
+_files = {}
+
+
+def market_file(name: str) -> dict:
+    """A .market file the kit or the analysis rewrites now and then, read again only when it changed."""
+    path = common.MARKET_DIR / name
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return {}
+    if (_files.get(name) or (None,))[0] != mtime:
+        _files[name] = (mtime, common.read_json(path, {}) or {})
+    return _files[name][1]
+
+
 def priced(u: dict, now: float, warranty: bool) -> dict:
-    """pricing.plan under the rules in force (price_adjust, warranty_extra from active_rules.json)."""
+    """pricing.plan under the rules in force (price_adjust, warranty_extra from active_rules.json), the
+    market's prices for the unit's category and grade, and where we are in the supply cycle."""
     r = common.rules()["seller"]
+    by_grade = ((market_file("market_summary.json").get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
+    late = pricing.late_in_cycle(market_file("inventory.json").get("restock"), now)
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
-                        extra=r["warranty_extra"])
+                        extra=r["warranty_extra"], market=by_grade, late=late)
 
 
 class Seller(AgentExecutor):
@@ -287,6 +305,7 @@ class Seller(AgentExecutor):
         u, p = d["unit"], d["plan"]
         common.record("negotiations", task=task_id, sku=u["sku"], unit=u["unit"], grade=p["grade"],
                       cost=u["cost"], list_price=u["list_price"], floor=p["floor"], at_cost=p["at_cost"],
+                      ref=p.get("ref"), late=p.get("late"),
                       warranty=d["warranty"], how=d["how"], asks=d["asks"], offers=d["offers"],
                       walk_odds=d.get("walk") or None, taken_early=d.get("early", False), outcome=outcome, price=price)
         print(f"[seller] {u['sku']} {outcome}" + (f" at {price}" if price else ""), flush=True)
