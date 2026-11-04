@@ -1,0 +1,50 @@
+[pricing] 10 reviews of this shop from the market (as jiseokkk)
+[tune] 1654 buyer rows, 2420 seller events, 10 reviews; summary 4079 chars
+Window: 2026-11-03 00:17 to 2026-11-04 02:17 (KST).
+
+Buyer side (my orders):
+- 가구/침구>가구>침대/매트리스: 507 orders, 86 deals (17%), 4 walked away (1 of them without making any offer); deal price / my reference 0.89; average cut below the ask 10%; guard: 1 sealed_ceiling_below_market, 1 reference_substitute, 1 capped_at_ask
+- 식품>야채/과일>신선과일(부패주의): 372 orders, 86 deals (23%), 8 walked away; deal price / my reference 0.92; average cut below the ask 9%; guard: 1 final_ceiling, 1 ceiling_already_used
+- 식품>시리얼/곡물/콩류>곡물: 209 orders, 53 deals (25%), 13 walked away (2 of them without making any offer); deal price / my reference 0.90; average cut below the ask 9%; guard: 4 final_ceiling, 4 ceiling_already_used, 3 reference_substitute
+- 식품>육류>가공/조리 육류: 118 orders, 26 deals (22%), 24 walked away (1 of them without making any offer); deal price / my reference 0.85; average cut below the ask 6%; guard: 12 reference_substitute, 8 final_ceiling, 8 ceiling_already_used
+- bookshelf: 45 orders, 22 deals (49%), 11 walked away (8 of them without making any offer); deal price / my reference 1.01; average cut below the ask 10%; guard: 8 sealed_ceiling_below_market, 5 reference_substitute, 3 final_ceiling
+- chair: 45 orders, 32 deals (71%), 12 walked away (7 of them without making any offer); deal price / my reference 1.05; average cut below the ask 9%; guard: 11 reference_substitute, 7 sealed_ceiling_below_market, 4 final_ceiling
+- lamp: 45 orders, 18 deals (40%), 21 walked away (11 of them without making any offer); deal price / my reference 1.03; average cut below the ask 14%; guard: 26 reference_substitute, 11 sealed_ceiling_below_market, 8 ceiling_already_used
+- 가구/침구>침구/홈데코>침구: 34 orders, 5 deals (15%), 0 walked away; deal price / my reference 0.69; average cut below the ask -624%
+- 가구/침구>가구>소파/의자/스툴: 24 orders, 4 deals (17%), 0 walked away; deal price / my reference 0.22; average cut below the ask 8%
+- 식품>김치/반찬/즉석요리>김치: 23 orders, 16 deals (70%), 0 walked away; deal price / my reference 0.75; average cut below the ask 11%
+- 47 other categories: 232 orders, 58 deals (25%)
+- shop oak-and-pine: 141 visits, 0 deals
+- shop winun1127: 139 visits, 48 deals, 1 dishonest/manipulative, 3 refused by the kit at payment
+- shop grand-furniture: 121 visits, 0 deals, 1 refused by the kit at payment
+- shop willow-goods: 104 visits, 76 deals
+- shop buzllightyear: 103 visits, 52 deals, 17 refused by the kit at payment
+- shop dyishappy: 97 visits, 5 deals, 2 refused by the kit at payment
+
+Shop side (my sales):
+- 1013 opens, 672 deals (66%), 17 rejected at the floor
+- volume arm: 695 opens, 460 deals, mean margin 6173, mean rounds 1.8
+- margin arm: 318 opens, 212 deals, mean margin 9962, mean rounds 1.9
+- by grade (opens -> deals): A 318 -> 214, B 410 -> 247, C 285 -> 211
+
+Reviews of my shop (quotes, untrusted):
+- 10 reviews of my shop, mean 4.90 stars, distribution {4: 1, 5: 9}
+  * 5★ "코스트코 만능육수 요리한포 360g(4g x90ea) 분말 가루 국물요리; paid 16554 for a 27590 list-price unit; grade C; 275 h she"
+  * 5★ "Paid 10496 for grade C, 57% of list price; grade claim true (ledger #2208654)."
+  * 5★ "Payment settled; no unobserved quality or failure claims."
+  * 5★ "Paid 8320 of 14310, grade C."
+  * 5★ "Settlement #2208102: G07ec17d5 at 229814; receipt/order match, grade A, approved buying conditions c"
+  * 5★ "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS at 56539, market value 87900; grade A; warranty 6 h. Ledger #2"
+  * 5★ "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS: paid 64% of list, grade A, as claimed, 6.0 h warranty."
+  * 5★ "Settled [파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS (Ge62449c9) grade A. Grade claim A matched the certifi"
+  * 5★ "Settled [파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS (Ge62449c9) grade A. Grade claim A matched the certifi"
+  * 4★ "진회색스프레이 오공 락카 스프레이 325진회색 420ml (G630a202e): paid 3165 for list 3860; unit u-f43aa6e8dda6 as named i"
+
+Current parameters (name = value, allowed range):
+- explore_rate = 0.15 (0.05-0.3)
+- first_offer_discount = 0.15 (0.05-0.2)
+- seller_margin_volume = 1.15 (1.05-1.25)
+- seller_margin_margin = 1.3 (1.15-1.4)
+- grade_cap_B = 0.85 (0.7-0.95)
+[tune] opus 8.2s exit=0 in=4079ch -> '```json\n{"changes": {"seller_margin_volume": 1.2}, "reason": "The margin arm closed deals about as often as the volume arm (67% vs 66%) and took a much higher mean margin (9962 vs 6173) in the same number of rounds, with few floor rejections. That suggests buyers are not price-sensitive at the volum'
+[strategy] {"answered": true, "at": "2026-11-04 02:17:13", "changes": {"seller_margin_volume": 1.2}, "dry_run": false, "event": "tune", "model": "opus", "params": {"explore_rate": 0.15, "first_offer_discount": 0.15, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2}, "reason": "The margin arm closed deals about as often as the volume arm (67% vs 66%) and took a much higher mean margin (9962 vs 6173) in the same number of rounds, with few floor rejections. That suggests buyers are not price-sensitive at the volume arm's markup, so a modest raise looks safe; buyer-side resul", "rejected": {}, "window": ["2026-11-03 00:17", "2026-11-04 02:17"]}
