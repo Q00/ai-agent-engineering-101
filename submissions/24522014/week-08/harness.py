@@ -14,7 +14,7 @@ from uuid import uuid4
 
 
 ROOT = Path(__file__).resolve().parent
-MODELS = {"claude": "sonnet", "codex": "gpt-6.1-sol"}
+MODELS = {"claude": "sonnet", "codex": "gpt-6.1-terra"}
 
 
 class HarnessError(RuntimeError):
