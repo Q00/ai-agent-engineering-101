@@ -683,6 +683,22 @@ def expected_cost_frac(units, sp):
     return fr[(3 * len(fr)) // 4] if len(fr) >= 4 else float(sp.get("est_cost_frac") or 0.75)
 
 
+def level_fill(qty, held):
+    """v1.30 (2026-11-05): split `qty` units over a category's top-k SKUs (rank order; held = units on hand per
+    SKU) so the SKUs end as level as possible: each unit goes to the SKU holding the fewest, ties to the higher
+    rank. With nothing on hand this is the old even split (qty // k, the first qty % k SKUs one more). Before v1.30
+    every SKU got that even split whatever it held, so a slow SKU piled up and took the category's stock_target
+    from fast ones: at 05:50 labpc held 10 sofa G5e3784e6 (57만, median 138 min from supply to sale, 18 of 28
+    supplied units sold in 6 h) and no G8ec51935 (232만, 45 of 48 sold, 6.4 min) or G00327e80 (225만, 26 of 29,
+    12.6 min), so the sofa need of 6 went 2/2/2 instead of 3/3/0."""
+    out, lvl = [0] * len(held), list(held)
+    for _ in range(qty):
+        i = min(range(len(lvl)), key=lambda j: (lvl[j], j))
+        out[i] += 1
+        lvl[i] += 1
+    return out
+
+
 def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None, now=None, taste=None):
     """Buy list for the restock hook: categories ranked by stats (velocity) when known, else by spread; keep
     stock_target units per category; never spend below balance_floor nor beyond max_spend_per_run.
@@ -717,9 +733,10 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         why = "full" if len(units) >= sp["max_total_units"] else (
             "inventory_cap" if frac is not None and int(float(frac) * bal) - inv_cost <= 0 else "budget")
         return [], {"why": why, "budget": budget, "units": len(units), "inventory_cost": inv_cost}
-    have = {}
+    have, held = {}, {}                                 # units on hand per category, and per SKU (v1.30)
     for u in units:
         have[u.get("category")] = have.get(u.get("category"), 0) + 1
+        held[u.get("sku")] = held.get(u.get("sku"), 0) + 1
     by_cat = {}
     for sku, x in catalog.items():
         by_cat.setdefault(x.get("category"), []).append((sku, x))
@@ -797,9 +814,11 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         # v1.20a: skus_per_category per category (categories[...]) over the shop default. With the shop default 1
         # only order_[0] was ever bought: G1515d951 (2nd by settles in 90 of 92 mattress plans) got 0 units.
         k = max(1, min(int(c.get("skus_per_category", sp.get("skus_per_category", 1))), qty_all, len(order_)))
-        for i, (sku, x) in enumerate(order_[:k]):
-            qty = max(1, qty_all // k + (1 if i < qty_all % k else 0))
-            plan.append((sku, x, qty, max(1, min(qty, int(c.get("breadth_qty") or qty)))))
+        # v1.30: the units bring the k SKUs up to one level of units on hand (level_fill), so a SKU already above
+        # it gets none; with nothing on hand the split is the old even one
+        for (sku, x), qty in zip(order_[:k], level_fill(qty_all, [held.get(t[0], 0) for t in order_[:k]])):
+            if qty:
+                plan.append((sku, x, qty, max(1, min(qty, int(c.get("breadth_qty") or qty)))))
     # v1.6 (CR v1.5 item 6): two passes. Pass 1 = breadth: every ranked category gets up to breadth_qty units (the
     # v1.5 per-category quantities), as many lines as max_lines_per_run allows. Pass 2 = depth: the remaining budget
     # tops the pass-1 lines up to qty_per_buy, in rank order. Without breadth_qty pass 1 buys the full quantity and
