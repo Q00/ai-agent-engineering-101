@@ -30,7 +30,7 @@ import forum
 
 MARKET = "https://market.ourolabs.ai"
 CASH_FLOOR = 1_500_000    # round 3's first 20 minutes: 55-60% of the market's orders ended without a deal while
-STOCK_CAP = 3_000_000     # shops' supply buys fell from 924 to 175 per 10 min; we sold 36 units in 21 min from
+STOCK_CAP = 6_000_000     # (3M until Nov 4 13:00; raised for big-ticket stock, see VALUE_BUDGET) shops' supply buys fell from 924 to 175 per 10 min; we sold 36 units in 21 min from
                           # about 60 in stock. Demand is far above supply, so we hold more (bankruptcy line 500,000)
 SEED_PRICE = 80_000        # seed goods categories whose median price is at most this
 SEED_FOOD_HOURS = 168      # seed food that keeps at least a week
@@ -48,7 +48,12 @@ PLANNER_LEAD = 10 * 60
 PULSE_DECAY = 0.97         # per run: the market's no-deal share over roughly the last half hour
 DECAY = 0.995              # per run (about one a minute): half-life about 2 hours
 MAX_LINES = 10
-MAX_LINE_COST = 300_000    # one category's buy never ties up more than this (one unit always allowed)
+MAX_LINE_COST = 2_000_000  # one category's buy never ties up more than this (one unit always allowed)
+# Nov 4 13:00: 91% of the market's revenue was sofas/chairs (avg sale 1.2M), mattresses (317k) and bedding (67k);
+# the top shops sell those at 0.79-0.86 of list. Our 3M of stock was 102 cheap units (avg sale 34k), so our
+# revenue and profit (absolute sums, 0.3 and 0.5 of shop ALL) trailed. Stock cost now also follows each
+# category's share of market revenue, not only its share of settles.
+VALUE_BUDGET = 4_500_000
 PLANNER_EVERY = 60 * 60    # opus with tools: the costliest call; the code baseline restocks every minute between
 LESSONS_EVERY = 6 * 3600   # lessons.py: failures of the last day -> rules the manager and the buyer read
 PLAN_FRESH = 90 * 60       # plan lines older than this are dropped
@@ -117,6 +122,8 @@ def read_ledger(st, catalog):
                     if cat and amount and lp:              # what the market pays, as a share of list
                         st["sku_px"][sku] = (st["sku_px"].get(sku, []) + [round(amount / lp, 3)])[-10:]
                         st["cat_px"][cat] = (st["cat_px"].get(cat, []) + [round(amount / lp, 3)])[-30:]
+                    if cat and d.get("amount"):
+                        st["rev"][cat] = st["rev"].get(cat, 0) + d["amount"]
                     if cat:
                         st["pop"][cat] = st["pop"].get(cat, 0) + 1
                         st["sku_pop"][sku] = st["sku_pop"].get(sku, 0) + 1
@@ -170,6 +177,16 @@ def targets(st, demand):
             n = round(n * (1.5 if c <= FEW_SHOPS else 0.6 if c >= MANY_SHOPS else 1.0)) or 1
         if n > 0:
             out[cat] = min(n, MAX_PER_CAT)
+    rev_total = sum(st["rev"].values()) or 1
+    for cat, v in st["rev"].items():                # money follows revenue: a few sofas, many mattresses
+        share = v / rev_total
+        unit_cost = (kind.get(cat) or {}).get("median_price", 0) * 0.6
+        if share < 0.01 or not unit_cost:
+            continue
+        n = int(VALUE_BUDGET * share // unit_cost)
+        if (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48:
+            n = min(n, 2)
+        out[cat] = max(out.get(cat, 0), min(n, MAX_PER_CAT))
     for cat, c in load(Path(".market") / "competitors.json", {}).get("cats", {}).items():
         if c.get("shops") == 0 and time.time() - c["ts"] < UNMET_FRESH:   # nobody had it when it was ordered
             short = (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
@@ -236,9 +253,15 @@ def main():
     catalog = catalog_of(sd)
     st = load(sd / "restock_state.json", {})
     for k, v in (("pop", {}), ("sku_pop", {}), ("sold", {}), ("sold_log", []), ("settles", 0),
-                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", [])):
+                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {})):
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
+    st["rev"] = {k: v * DECAY for k, v in st["rev"].items()}
+    if not st["rev"] and st.get("recent"):           # first run with revenue tracking: seed from recent settles
+        for r in st["recent"]:
+            c = (catalog.get(r["sku"]) or {}).get("category")
+            if c:
+                st["rev"][c] = st["rev"].get(c, 0) + r["amount"]
     st["pulse"] = [x * PULSE_DECAY for x in st["pulse"]]
 
     try:
@@ -279,7 +302,7 @@ def main():
         forum.shop_turn(inv, log)
     except Exception as e:
         log(f"forum skipped: {e}")
-    order = sorted(want, key=lambda c: (-(st["pop"].get(c, 0) + 5 * st["sold"].get(c, 0)), medians.get(c, 0)))
+    order = sorted(want, key=lambda c: (-st["rev"].get(c, 0), -(st["pop"].get(c, 0) + 5 * st["sold"].get(c, 0))))
 
     buy = plan_lines(sd, st, catalog, room) if not endgame and not closed else []
     room -= sum(catalog[b["sku"]]["list_price"] * 0.6 * b["qty"] for b in buy)

@@ -34,8 +34,8 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 CASH_FLOOR = 1_500_000     # as in restock.py
-STOCK_CAP = 3_000_000
-MAX_LINE_COST = 300_000
+STOCK_CAP = 6_000_000
+MAX_LINE_COST = 2_000_000
 MAX_QTY = 5
 SHORT_SHELF = 48           # hours: food that spoils this fast is bought at most 2 at a time
 SHARE_RANGE = (0.60, 0.95)
@@ -210,8 +210,9 @@ def price_evidence(category, cur, new):
         if bandit and hi >= lo:
             return f"multipliers >= 1 close {hi:.0%} of {nhi} talks, lower ones {lo:.0%} of {nlo}"
     else:
-        if mkt is not None and mkt < cur:
-            return f"market settles at {mkt} of list, below our {cur}"
+        # (until Nov 4 13:00 a market settle ratio below our opening share counted as evidence to go down; but
+        # settles are after haggling and our share is an opening ask, so it pulled our rules to 0.6-0.8 while
+        # the top multiplier 1.06 closed 62% of 2,086 talks. Only stale stock or the bandit can lower a price.)
         if stale:
             return f"{stale} units in stock over a day"
         if bandit and lo > hi:

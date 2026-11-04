@@ -67,7 +67,7 @@ POOL = 0.2
 # test starts from the manager's price (arm 1.0 begins as if it had closed PRIOR_DEALS deals; the others must earn
 # their turn), and no arm opens above MAX_SHARE of list, so even a deal at our first ask stays well below list.
 PRIOR_DEALS = {"1.0": 2}
-MAX_SHARE = 0.92
+MAX_SHARE = 0.95          # 0.92 until Nov 4 13:00: our sales averaged 0.62 of list, the top shops 0.79-0.86
 TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask, after haggling
 SHARE_BOUNDS = (0.55, 0.97)
 CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
@@ -81,6 +81,7 @@ MAX_BREAK_FOR_WARRANTY = 0.10
 # Our buyer collects every competitor's first ask (.market/competitors.json); we open at most UNDERCUT of the
 # lowest recent one for the same SKU, never under the floor.
 UNDERCUT, COMP_FRESH = 0.98, 6 * 3600
+SHORT_MARKET = 0.4        # no undercutting while this share of the market's orders ends without a deal
 # Scarcity: when much of the market's demand goes unmet (pulse.json, the no-deal share of recent results that
 # restock.py reads off the ledger) or no other shop held the category when our buyer last saw it, buyers have
 # nowhere else to go, so we open higher. Both stay under MAX_SHARE.
@@ -236,7 +237,8 @@ def terms(u):
         share *= arm
     ask = max(floor, int(round(u["list_price"] * min(max(share, 0 if end else SHARE_BOUNDS[0]), MAX_SHARE), -1)))
     rival = rival_ask(u["sku"])
-    if rival and rival * UNDERCUT < ask:
+    short = (_load("pulse.json", {}).get("nodeal") or 0) >= SHORT_MARKET
+    if rival and rival * UNDERCUT < ask and not short:     # in a short market a buyer takes what it finds
         log(f"[rival] {u['sku']}: lowest competitor ask {rival}, opening at {max(floor, int(rival * UNDERCUT))} not {ask}")
         ask = max(floor, int(rival * UNDERCUT))
     warranty = warranty_for(u)
