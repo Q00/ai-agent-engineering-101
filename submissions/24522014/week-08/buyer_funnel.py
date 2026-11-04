@@ -123,6 +123,7 @@ def funnel(root, since, until=None, payments_path=None):
     counts, causes, sources, parser_reasons = Counter(), Counter(), Counter(), Counter()
     filter_basis, conflicts, shelf_notes = Counter(), Counter(), Counter()
     counter_runs, counter_exclusions = Counter(), Counter()
+    turn_limit_endings, cancel_results = 0, Counter()
     orders, instrumented = set(), 0
     for _, record in runs:
         reached, cause = classify_run(root, record, payments)
@@ -139,6 +140,9 @@ def funnel(root, since, until=None, payments_path=None):
                 counter_runs["paid"] += "paid" in reached
             for entry in trail:
                 sources[f"{entry['source']}:{entry['reason_code']}"] += 1
+                if entry["reason_code"] == "turn_limit_exceeded":
+                    turn_limit_endings += 1
+                    cancel_results[(entry.get("cancel") or {}).get("result", "unknown")] += 1
                 excluded = (entry.get("counter_check") or {}).get("reason_code")
                 if excluded and excluded != "rule_counter_offer":
                     counter_exclusions[excluded] += 1
@@ -148,7 +152,7 @@ def funnel(root, since, until=None, payments_path=None):
                     shelf_notes[check["text_hours_note"]] += 1
                 if entry["source"] == "quote_filter":
                     filter_basis[f"{entry['reason_code']}|basis={check['basis']}"] += 1
-                elif entry["source"] != "deterministic":
+                elif entry["source"] not in ("deterministic", "turn_limit"):
                     parser_reasons[f"{entry['reason_code']}|parser={entry['parser_reason']}"] += 1
     stages, previous = [], None
     for stage in STAGES:
@@ -167,6 +171,7 @@ def funnel(root, since, until=None, payments_path=None):
             "non_rule_paths_by_parser_reason": dict(parser_reasons.most_common()),
             "counter_offer": {"offered": counter_runs["offered"], "receipt": counter_runs["receipt"],
                               "paid": counter_runs["paid"], "exclusions": dict(counter_exclusions.most_common())},
+            "turn_limit": {"endings": turn_limit_endings, "cancel_results": dict(cancel_results.most_common())},
             "quote_filter_by_basis": dict(filter_basis.most_common()),
             "quote_conflicts": dict(conflicts.most_common()),
             "quote_text_shelf_life": dict(shelf_notes.most_common())}

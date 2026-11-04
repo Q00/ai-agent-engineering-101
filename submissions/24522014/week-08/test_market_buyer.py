@@ -778,6 +778,163 @@ class ModelGateSwitch(TradeFixture):
             harness.assert_not_called()
 
 
+class TurnLimitCancel(TradeFixture):
+    """A negotiation that uses every turn cancels its open task, without changing its result or any decision."""
+
+    def offer_each_turn(self):
+        replies = iter({"action": "offer", "price": 80 + i, "reason": "try"} for i in range(9))
+        return patch("buyer.run_harness", side_effect=lambda *a, **k: next(replies))
+
+    def scripted(self, *, cancel=None, complete_on_offer=None):
+        """Seller keeps countering. `cancel` overrides the CancelTask answer; complete_on_offer accepts that offer."""
+        seen = {"offers": 0}
+
+        def respond(request):
+            if request.method == "GET":
+                return httpx.Response(200, json={"supportedInterfaces": [
+                    {"protocolBinding": "JSONRPC", "protocolVersion": "1.0", "url": "http://fixture.test/rpc"}]})
+            body = json.loads(request.content)
+            self.posts.append(body)
+            message = body.get("params", {}).get("message", {})
+            if body["method"] == "CancelTask" and cancel is not None:
+                return cancel(request, body)
+            state, artifacts = "TASK_STATE_INPUT_REQUIRED", []
+            if body["method"] == "CancelTask":
+                state = "TASK_STATE_CANCELED"
+            elif message.get("taskId"):
+                seen["offers"] += 1
+                if seen["offers"] == complete_on_offer:
+                    state = "TASK_STATE_COMPLETED"
+                    artifacts = [{"parts": [{"data": {"shop": "Fixture", "item": "lamp", "price": int(message["parts"][0]["text"]),
+                                                      "task": "task-a", "sig_seller": "fixture-only"}}]}]
+            task = {"id": "task-a", "contextId": "context-a", "status": {"state": state,
+                    "message": {"parts": [{"text": "Our price is 95."}]}}, "artifacts": artifacts}
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": task})
+        return httpx.MockTransport(respond)
+
+    def run_trade(self, transport):
+        return self.trade(transport, gate=lambda: "gate_disabled")
+
+    def cancels(self):
+        return [p for p in self.posts if p["method"] == "CancelTask"]
+
+    def test_turn_limit_cancels_once_and_keeps_every_other_result(self):
+        with self.offer_each_turn() as harness:
+            result, record = self.run_trade(self.scripted())
+        self.assertEqual(len(self.cancels()), 1)
+        self.assertEqual(self.posts[-1]["method"], "CancelTask")
+        self.assertEqual(self.cancels()[0]["params"]["id"], "task-a")
+        self.assertEqual(harness.call_count, 3)
+        self.assertEqual(self.offers(), [80, 81, 82])
+        self.assertEqual(record["outcome"], "agent_error")
+        self.assertEqual(record["error"], "Buyer decision turn limit exceeded")
+        self.assertEqual((result["stars"], result["receipt"]), (3, None))
+        self.assertEqual(record["failure_reason"], "turn_limit_exceeded")
+        entry = record["decision_trail"][-1]
+        self.assertEqual((entry["turn"], entry["source"], entry["reason_code"], entry["action"]),
+                         (4, "turn_limit", "turn_limit_exceeded", None))
+        self.assertEqual(entry["cancel"], {"attempted": True, "result": "canceled",
+                                           "state": "TASK_STATE_CANCELED", "error": None})
+        saved = self.decision_file(record, 4)
+        self.assertEqual(saved["cancel"]["result"], "canceled")
+        session = json.loads((Path(record["buyer_log_dir"]) / "session.json").read_text(encoding="utf-8"))
+        self.assertEqual(session["state"], "TASK_STATE_CANCELED")
+        self.assertEqual(session["decisions"][-1]["reason_code"], "turn_limit_exceeded")
+
+    def test_failed_cancel_does_not_change_the_result_and_is_recorded(self):
+        def refused(request, body):
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "error": {"code": -32000, "message": "no"}})
+
+        def outage(request, body):
+            return httpx.Response(503, text="down")
+
+        def dropped(request, body):
+            raise httpx.ConnectError("fixture outage", request=request)
+
+        def garbage(request, body):
+            return httpx.Response(200, text="not json")
+        for cancel in (refused, outage, dropped, garbage):
+            with self.subTest(cancel=cancel.__name__), self.offer_each_turn() as harness:
+                self.posts.clear()
+                result, record = self.run_trade(self.scripted(cancel=cancel))
+                self.assertEqual(len(self.cancels()), 1)
+                self.assertEqual(harness.call_count, 3)
+                self.assertEqual(record["outcome"], "agent_error")
+                self.assertEqual(record["error"], "Buyer decision turn limit exceeded")
+                self.assertEqual(record["failure_reason"], "turn_limit_exceeded")
+                self.assertEqual(result["stars"], 3)
+                outcome = record["decision_trail"][-1]["cancel"]
+                self.assertEqual((outcome["attempted"], outcome["result"], outcome["state"]),
+                                 (True, "failed", "TASK_STATE_INPUT_REQUIRED"))
+                self.assertTrue(outcome["error"])
+                self.assertLessEqual(len(outcome["error"]), 200)
+
+    def test_unconfirmed_cancel_is_recorded_as_such(self):
+        def ignored(request, body):
+            task = {"id": "task-a", "contextId": "context-a", "status": {"state": "TASK_STATE_INPUT_REQUIRED",
+                    "message": {"parts": [{"text": "Still here"}]}}}
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": task})
+        with self.offer_each_turn():
+            _, record = self.run_trade(self.scripted(cancel=ignored))
+        self.assertEqual(record["decision_trail"][-1]["cancel"]["result"], "not_confirmed")
+        self.assertEqual(record["outcome"], "agent_error")
+
+    def test_a_receipt_on_the_last_turn_is_kept_and_never_canceled(self):
+        with self.offer_each_turn() as harness:
+            result, record = self.run_trade(self.scripted(complete_on_offer=3))
+        self.assertEqual(self.cancels(), [])
+        self.assertEqual(harness.call_count, 3)
+        self.assertEqual(record["outcome"], "purchased")
+        self.assertEqual(result["receipt"]["price"], 82)
+        self.assertEqual([e["source"] for e in record["decision_trail"]], ["model", "model", "model"])
+
+    def test_a_task_holding_a_receipt_is_not_canceled_even_if_reached(self):
+        class Client:
+            task_id, state, decisions, log_dir = "t", "TASK_STATE_INPUT_REQUIRED", [], None
+            receipt, raw_receipt = {"price": 1}, None
+            quote_check = counter_check = None
+
+            def cancel(self):
+                raise AssertionError("must not cancel")
+        from tempfile import TemporaryDirectory
+        for field in ("receipt", "raw_receipt"):
+            with self.subTest(field=field), TemporaryDirectory() as directory:
+                client = Client()
+                client.decisions, client.log_dir = [], Path(directory)
+                client.receipt, client.raw_receipt = None, None
+                setattr(client, field, {"price": 1})
+                buyer.cancel_after_turn_limit(client, 4)
+                self.assertEqual(client.decisions[-1]["cancel"], {"attempted": False, "result": "skipped_has_receipt",
+                                                                  "state": "TASK_STATE_INPUT_REQUIRED", "error": None})
+
+    def test_other_endings_send_no_extra_cancel(self):
+        walk = {"action": "walk_away", "price": None, "reason": "stop"}
+        with patch("buyer.run_harness", return_value=walk):
+            _, record = self.trade(self.transport("Our price is 90."), gate=lambda: "gate_disabled")
+        self.assertEqual(len(self.cancels()), 1)
+        self.assertEqual(record["failure_reason"], "model_walk_away")
+        self.assertNotIn("cancel", record["decision_trail"][-1])
+        self.posts.clear()
+        _, record = self.trade(self.transport("asking 110."))
+        self.assertEqual(self.cancels(), [])
+        self.assertEqual(record["outcome"], "purchased")
+        _, record = self.trade(self.transport("asking 110.", offer_state="TASK_STATE_REJECTED"))
+        self.assertEqual(self.cancels(), [])
+        self.assertEqual(record["failure_reason"], "seller_rejected")
+        with patch("buyer.run_harness", return_value={"action": "offer", "price": 300001, "reason": "over"}):
+            _, record = self.trade(self.transport("asking 300001."), gate=lambda: "gate_disabled")
+        self.assertEqual(self.cancels(), [])
+        self.assertEqual(record["failure_reason"], "model_failed")
+
+    def test_the_limit_itself_is_not_moved(self):
+        replies = iter({"action": "offer", "price": 80 + i, "reason": "try"} for i in range(9))
+        with patch("buyer.run_harness", side_effect=lambda *a, **k: next(replies)) as harness:
+            market.trade(shop("fixture"), "lamp", 300, transport=self.scripted(), fast_rules=True, max_turns=2,
+                         model_gate=lambda: "gate_disabled")
+        self.assertEqual(harness.call_count, 2)
+        self.assertEqual(len(self.cancels()), 1)
+
+
 class ReservationReasons(unittest.TestCase):
     def test_each_denial_has_its_own_code_and_reserve_model_stays_boolean(self):
         import buyer_support

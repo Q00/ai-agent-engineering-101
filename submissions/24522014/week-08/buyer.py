@@ -194,7 +194,7 @@ def validate_buyer_decision(decision, budget):
         raise ValueError(f"Offer must not exceed the budget {budget}")
 
 
-def record_decision(client, turn, source, reason_code, decision=None, parser_reason=None, details=None):
+def record_decision(client, turn, source, reason_code, decision=None, parser_reason=None, details=None, cancel=None):
     """Leave one decision-NN.json and one trail entry on every path, including refusals and failures."""
     entry = {"turn": turn, "source": source, "reason_code": reason_code, "parser_reason": parser_reason,
              "action": decision["action"] if decision else None, "price": decision["price"] if decision else None}
@@ -204,6 +204,8 @@ def record_decision(client, turn, source, reason_code, decision=None, parser_rea
     counter_check = getattr(client, "counter_check", None)
     if counter_check:
         entry["counter_check"] = counter_check
+    if cancel:
+        entry["cancel"] = cancel
     client.decisions.append(entry)
     (client.log_dir / f"decision-{turn:02d}.json").write_text(
         json.dumps({**(details or {}), **entry, "decision": decision}, ensure_ascii=False, indent=2),
@@ -295,6 +297,21 @@ def buyer_decision(client, provider, history, turn, max_turns):
                         settled, parser_reason, record)
 
 
+def cancel_after_turn_limit(client, turn):
+    """Close a task left open by the turn limit. A failed cancel is recorded and never replaces the result."""
+    client.quote_check = client.counter_check = None
+    outcome = {"attempted": False, "result": "skipped_has_receipt", "state": client.state, "error": None}
+    if not (client.receipt or getattr(client, "raw_receipt", None)):
+        outcome["attempted"] = True
+        try:
+            client.cancel()
+            outcome["result"] = "canceled" if client.state == "TASK_STATE_CANCELED" else "not_confirmed"
+        except Exception as error:
+            outcome.update(result="failed", error=str(error)[:200] or type(error).__name__)
+        outcome["state"] = client.state
+    record_decision(client, turn, "turn_limit", "turn_limit_exceeded", cancel=outcome)
+
+
 def run_autonomous(client, provider, *, max_turns=12):
     client.provider = provider
     client.open()
@@ -306,6 +323,7 @@ def run_autonomous(client, provider, *, max_turns=12):
             raise BuyerError("Expected an input-required or terminal task from the seller")
         turn += 1
         if turn > max_turns:
+            cancel_after_turn_limit(client, turn)
             raise BuyerError("Buyer decision turn limit exceeded")
         decision = buyer_decision(client, provider, history, turn, max_turns)
         history.append({"role": "buyer", "decision": decision})

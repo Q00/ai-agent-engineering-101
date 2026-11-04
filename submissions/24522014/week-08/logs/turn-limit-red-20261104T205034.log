@@ -1,0 +1,95 @@
+.................................................................EEFFFF.FFE........E
+======================================================================
+ERROR: test_a_task_holding_a_receipt_is_not_canceled_even_if_reached (test_market_buyer.TurnLimitCancel.test_a_task_holding_a_receipt_is_not_canceled_even_if_reached) (field='receipt')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_market_buyer.py", line 906, in test_a_task_holding_a_receipt_is_not_canceled_even_if_reached
+    buyer.cancel_after_turn_limit(client, 4)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer' has no attribute 'cancel_after_turn_limit'
+
+======================================================================
+ERROR: test_a_task_holding_a_receipt_is_not_canceled_even_if_reached (test_market_buyer.TurnLimitCancel.test_a_task_holding_a_receipt_is_not_canceled_even_if_reached) (field='raw_receipt')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_market_buyer.py", line 906, in test_a_task_holding_a_receipt_is_not_canceled_even_if_reached
+    buyer.cancel_after_turn_limit(client, 4)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer' has no attribute 'cancel_after_turn_limit'
+
+======================================================================
+ERROR: test_unconfirmed_cancel_is_recorded_as_such (test_market_buyer.TurnLimitCancel.test_unconfirmed_cancel_is_recorded_as_such)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_market_buyer.py", line 879, in test_unconfirmed_cancel_is_recorded_as_such
+    self.assertEqual(record["decision_trail"][-1]["cancel"]["result"], "not_confirmed")
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+KeyError: 'cancel'
+
+======================================================================
+ERROR: test_turn_limit_endings_and_cancel_results_are_counted (test_buyer_funnel.Funnel.test_turn_limit_endings_and_cancel_results_are_counted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_buyer_funnel.py", line 147, in test_turn_limit_endings_and_cancel_results_are_counted
+    self.assertEqual(report["turn_limit"], {"endings": 2, "cancel_results": {"canceled": 1, "failed": 1}})
+                     ~~~~~~^^^^^^^^^^^^^^
+KeyError: 'turn_limit'
+
+======================================================================
+FAIL: test_failed_cancel_does_not_change_the_result_and_is_recorded (test_market_buyer.TurnLimitCancel.test_failed_cancel_does_not_change_the_result_and_is_recorded) (cancel='refused')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_market_buyer.py", line 860, in test_failed_cancel_does_not_change_the_result_and_is_recorded
+    self.assertEqual(len(self.cancels()), 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_failed_cancel_does_not_change_the_result_and_is_recorded (test_market_buyer.TurnLimitCancel.test_failed_cancel_does_not_change_the_result_and_is_recorded) (cancel='outage')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_market_buyer.py", line 860, in test_failed_cancel_does_not_change_the_result_and_is_recorded
+    self.assertEqual(len(self.cancels()), 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_failed_cancel_does_not_change_the_result_and_is_recorded (test_market_buyer.TurnLimitCancel.test_failed_cancel_does_not_change_the_result_and_is_recorded) (cancel='dropped')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_market_buyer.py", line 860, in test_failed_cancel_does_not_change_the_result_and_is_recorded
+    self.assertEqual(len(self.cancels()), 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_failed_cancel_does_not_change_the_result_and_is_recorded (test_market_buyer.TurnLimitCancel.test_failed_cancel_does_not_change_the_result_and_is_recorded) (cancel='garbage')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_market_buyer.py", line 860, in test_failed_cancel_does_not_change_the_result_and_is_recorded
+    self.assertEqual(len(self.cancels()), 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_the_limit_itself_is_not_moved (test_market_buyer.TurnLimitCancel.test_the_limit_itself_is_not_moved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_market_buyer.py", line 935, in test_the_limit_itself_is_not_moved
+    self.assertEqual(len(self.cancels()), 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_turn_limit_cancels_once_and_keeps_every_other_result (test_market_buyer.TurnLimitCancel.test_turn_limit_cancels_once_and_keeps_every_other_result)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_market_buyer.py", line 824, in test_turn_limit_cancels_once_and_keeps_every_other_result
+    self.assertEqual(len(self.cancels()), 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+----------------------------------------------------------------------
+Ran 80 tests in 1.021s
+
+FAILED (failures=6, errors=4)

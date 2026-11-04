@@ -134,6 +134,20 @@ class Funnel(unittest.TestCase):
         self.assertEqual(report["decision_paths"]["deterministic:rule_counter_offer"], 2)
         self.assertEqual(report["decision_paths"]["deterministic:rule_offer"], 1)
 
+    def test_turn_limit_endings_and_cancel_results_are_counted(self):
+        def ended(result):
+            entry = step("turn_limit", "turn_limit_exceeded", None, None)
+            entry["action"] = None
+            entry["cancel"] = {"attempted": True, "result": result, "state": "x", "error": None}
+            return entry
+        self.add(trade_record("a", outcome="agent_error", agreed=90, trail=[ended("canceled")], reason="turn_limit_exceeded"))
+        self.add(trade_record("b", outcome="agent_error", agreed=90, trail=[ended("failed")], reason="turn_limit_exceeded"))
+        report = self.report()
+        self.assertEqual(report["causes"], {"turn_limit_exceeded": 2})
+        self.assertEqual(report["turn_limit"], {"endings": 2, "cancel_results": {"canceled": 1, "failed": 1}})
+        self.assertEqual(report["decision_paths"]["turn_limit:turn_limit_exceeded"], 2)
+        self.assertEqual(report["non_rule_paths_by_parser_reason"], {})
+
     def legacy_dir(self, name, *, outcome, turns=1, decision=None):
         directory = self.root / "logs/buyer" / name
         directory.mkdir(parents=True)
