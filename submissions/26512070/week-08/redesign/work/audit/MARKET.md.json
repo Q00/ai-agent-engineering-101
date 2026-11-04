@@ -4,66 +4,10 @@
  "findings": [
   {
    "type": "inference_wrong",
-   "where": "1장 '→ ... 그중 SKU가 찍히는 곳은 `settle` 줄이다 [A129-131, A234-235].'",
-   "source_lines": "A129-131, A234-235",
-   "detail": "서문에서 '→는 규칙에서 바로 따라 나오는 결과다. 해석이므로 출처 표시가 없다'고 했으나 여기에는 출처 표시가 붙어 있다. 또한 본문에서는 정산 ledger, 각자의 기록, 게시판 세 곳을 들어 놓고 '그중 SKU가 찍히는 곳은 settle 줄이다'라고 하여 마치 각자의 기록(`deal.json`, `payments.jsonl`)이나 게시판에는 SKU가 찍히지 않는 것처럼 읽힌다. `settle` 줄에만 SKU가 있고 `order` 줄에는 없다는 규칙(A234-235)은 ledger 내부에 한정한 이야기다.",
-   "fix": "**→** 팔림새와 buyer별 선호는 공개되지 않으므로 정산 ledger(품목 SKU는 `order`가 아니라 `settle` 줄에 찍힘), 각자의 기록, 게시판에서 추론해야 한다.",
-   "by": "designer"
-  },
-  {
-   "type": "missing",
-   "where": "5장 또는 9장 (`accept` 세부 필드 조건 및 기본 증명서 요구 동작)",
-   "source_lines": "A163, A196",
-   "detail": "5장에서 `accept: {cert, min_hours_left, grades, warranty_hours}`의 키 이름만 나열하고 각 필드가 무엇을 검사하는지(`cert: true` 여부, 최소 남은 유통 시간 `min_hours_left`, 허용 등급 목록 `grades`, 최소 보증 시간 `warranty_hours`), 그리고 증명서가 없으면(`cert: false`) 키트가 결제를 거부한다는 점(`reason (why the kit did not pay, e.g. no certificate)`)을 빠뜨렸다.",
-   "fix": "- buyer는 마지막 줄에 `accept: {\"cert\": true, \"min_hours_left\": 3, \"grades\": [\"A\",\"B\"], \"warranty_hours\": 6}`처럼 조건(증명서 유무, 최소 남은 유통 시간, 허용 등급 목록, 최소 보증 시간)을 붙일 수 있다. 키트가 결제 전에 확인하고, 맞지 않으면(예: 증명서 없음) **한 푼도 내지 않는다** [A163-164, A196].",
-   "by": "designer"
-  },
-  {
-   "type": "missing",
-   "where": "9장 표 `order.json`, `shops.json` 행 (중요 필드 누락)",
-   "source_lines": "A194-195",
-   "detail": "9장 에이전트 계약 표에서 `inventory.json`과 `catalog.json`은 세부 필드를 적었으나, `order.json`의 `expires`(주문 만료 시각), `kind`, `use_within_hours`와 `shops.json`의 가게별 `url`, `reviews`, 그리고 `offers` 안의 재고 수량(`qty`) 등 buyer 에이전트 구현에 필수적인 계약 필드를 생략했다.",
-   "fix": "| `order.json`, `shops.json` | buyer | 주문마다 | 주문(`order`, `item`, `category`, `budget`, `acceptable`, `kind`, `use_within_hours`, `expires`), 가게 목록(`name`, `url`, `reviews`, 해당 카테고리 보유 SKU·이름·수량 `offers: [{sku, name, qty}]`) |",
-   "by": "designer"
-  },
-  {
-   "type": "inference_wrong",
-   "where": "2장 → \"보통의 3분 창에서는 호출 약 18번, 줄마다 최대 20개를 계획할 수 있다\"",
-   "source_lines": "A209-214",
-   "detail": "10초당 1회라는 호출 간격만으로 창당 약 18회 실행을 계획할 수 있다고 결론 낼 수 없다. 훅은 60초 주기로 실행되고, 실행당 최대 10줄이며, 이전 실행이 구매 중이면 새 실행이 시작되지 않는다. 창과 훅 실행의 정렬 및 실행 사이의 공백을 무시한 계산이다.",
-   "fix": "→ 3분은 10초 간격의 호출 약 18회분에 해당하지만, 실제 구매 가능한 줄 수는 훅의 60초 실행 주기, 실행당 최대 10줄, 이전 실행 중 재실행 금지와 창에 대한 실행 시점에 좌우된다. 따라서 창마다 약 18줄을 살 수 있다고 보장할 수는 없다.",
-   "by": "reviewer"
-  },
-  {
-   "type": "inference_wrong",
-   "where": "8장 → \"재고를 사는 순간 cash 항목이 깎이고 … 다른 가게가 그 시점에 재고를 덜 샀다면 우리 cash 백분위는 내려간다\"",
+   "where": "8. 점수 → 「우리 바로 아래 가게와의 차이보다 많이 사면 한 칸 내려간다」",
    "source_lines": "A150-151, A174-177, B",
-   "detail": "재고 구매는 cash의 절대값을 줄이지만, ALL에 들어가는 cash 백분위까지 반드시 낮추지는 않는다. 다른 가게가 재고를 덜 샀다는 사실만으로도 백분위 하락은 도출되지 않는다. 구매 전후에도 가게들 사이의 cash 순서가 같을 수 있다.",
-   "fix": "→ 재고를 사면 cash의 절대값은 내려가고, 다른 변동이 없다면 Book은 그대로다. 다만 ALL에 들어가는 cash 백분위가 내려가는지는 다른 가게들과의 상대적 위치에 달려 있다. 다른 가게가 재고를 덜 샀다는 사실만으로 백분위 하락을 단정할 수는 없다.",
-   "by": "reviewer"
-  },
-  {
-   "type": "missing",
-   "where": "A125-126: Round 3용 키트 버전 확인",
-   "source_lines": "A125-126",
-   "detail": "Round 3의 처리는 키트 버전 4를 전제로 하며 로그 첫 줄이 `market_kit 4`인지 확인하라는 지시가 빠졌다. 설명된 재고·결제 기능을 해당 키트가 제공하는지 확인하는 운영상 점검이다.",
-   "fix": "Round 3에서는 키트 버전 4를 사용하며, 로그 첫 줄에 `market_kit 4`가 나오는지 확인한다.",
-   "by": "reviewer"
-  },
-  {
-   "type": "missing",
-   "where": "A194: order.json의 `expires`",
-   "source_lines": "A194",
-   "detail": "주문별 입력의 주요 내용을 설명하면서 주문 만료를 나타내는 `expires` 필드를 빠뜨렸다. buyer가 주문 처리 시 확인해야 하는 시간 관련 입력이다.",
-   "fix": "`order.json`에는 `order`, `item`, `category`, `budget`, `acceptable`, `kind`, 식품의 `use_within_hours`뿐 아니라 주문의 `expires`도 들어 있다.",
-   "by": "reviewer"
-  },
-  {
-   "type": "missing",
-   "where": "A203-216: 훅의 입력 경로와 restock·review 출력 계약",
-   "source_lines": "A203-216",
-   "detail": "훅의 동작과 제한은 설명하지만 구현에 필요한 입력·출력 계약 일부가 빠졌다. `market_buyer`의 `{shops}`·`{order}`는 각각 JSON 파일 경로이고, `restock`의 `{state}`는 `.market/` 경로다. 특히 restock 구매 목록을 `buy` 키로 출력한다는 규칙과 review의 출력 형식이 없다.",
-   "fix": "`market_buyer`의 `{shops}`와 `{order}`는 각각 `shops.json`과 `order.json`의 경로다. `restock`의 `{state}`는 `.market/` 경로이며, 마지막 JSON 줄로 `{\"buy\":[{\"sku\":\"...\",\"qty\":1}]}` 형태를 출력한다. `review`는 `{deal}`로 `deal.json` 경로를 받아 마지막 JSON 줄로 `{\"stars\":1,\"review\":\"...\"}` 형태를 출력하며, 별점은 1~5다.",
+   "detail": "다른 가게의 cash가 그대로라는 가정이 빠졌다. 또한 구매액이 바로 아래 가게와의 차이보다 크더라도 여러 가게에 추월당할 수 있으므로 정확히 한 칸 내려간다고 할 수 없다. cash 순서의 하락이 가게 ALL 순위의 한 칸 하락을 뜻하는 것도 아니다.",
+   "fix": "다른 가게들의 cash가 그대로라면, 바로 아래 가게와의 cash 차이보다 많은 금액을 재고 구매에 쓸 때 cash 순서에서 적어도 한 가게에 추월당한다. 구매액에 따라 여러 가게에 추월당할 수도 있으며, ALL 순위 변화는 다른 항목의 백분위에도 달려 있다.",
    "by": "reviewer"
   }
  ],
