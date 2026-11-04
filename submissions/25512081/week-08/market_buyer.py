@@ -164,7 +164,12 @@ def pick_in_code(shops, mine):
 WARRANTY = re.compile(r"(?i)(\d+(?:\.\d+)?)\s*h(?:ours?)?\b[^.;]{0,30}?warrant|warrant[^.;]{0,30}?(\d+(?:\.\d+)?)\s*h")
 
 
-SHELF = re.compile(r"(?i)(\d+(?:\.\d+)?)\s*h(?:ours?)?\s*(?:of\s*)?shelf|shelf[ -]life[^.;\d]{0,20}(\d+(?:\.\d+)?)\s*h")
+# Also the ways shops other than the kit's wording state it: "lasts 466 more hours" and "only 24 hours left" (yms979),
+# "shelf_left=30h" (dragonash), "at least 541 hours" (inextro). Nov 4 10:17 log: yms979 said "lasts N more hours"
+# 193 times, unread; 56 orders had its quote under the need and 45 ended with our kit refusing it for shelf life.
+SHELF = re.compile(r"(?i)(\d+(?:\.\d+)?)\s*h(?:ours?)?\s*(?:of\s*)?shelf|shelf[ -]life[^.;\d]{0,20}(\d+(?:\.\d+)?)\s*h"
+                   r"|lasts\s+(\d+(?:\.\d+)?)\s+more\s+hours|only\s+(\d+(?:\.\d+)?)\s+hours\s+left"
+                   r"|shelf_left=(\d+(?:\.\d+)?)\s*h|at\s+least\s+(\d+(?:\.\d+)?)\s+hours")
 
 
 def grade_of(text):
@@ -198,7 +203,7 @@ def record_market(order, shops, quotes):
 
 def shelf_of(text):
     m = SHELF.search(text or "")
-    return float(m.group(1) or m.group(2)) if m else None
+    return float(next(g for g in m.groups() if g)) if m else None
 
 
 def warranty_of(text):
