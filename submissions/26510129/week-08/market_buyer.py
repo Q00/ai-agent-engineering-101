@@ -117,9 +117,10 @@ def stated_floor(text):
 
 
 def quick_offer(ask, floor, reference, limit):
-    """A price worth taking without bargaining: the shop's stated floor when it is inside my limit and no more than
-    5% over my reference, else the ask when it is at or under my reference. Returns (price, why) or (None, None)."""
-    for price, why, slack in ((floor, "the shop's stated lowest", 1.05), (ask, "the ask", 1.0)):
+    """A price worth taking without bargaining: the shop's stated floor or the ask when it is inside my limit and no
+    more than 5% over my reference (the reference is 95% of the market price, so this is "at the market price or
+    better": 00:30, asks ran 4-20% over the reference and a stricter rule never fired). Returns (price, why)."""
+    for price, why, slack in ((floor, "the shop's stated lowest", 1.05), (ask, "the ask", 1.05)):
         if isinstance(price, (int, float)) and 0 < price <= limit and reference and price <= reference * slack:
             return int(round(price)), why
     return None, None
@@ -247,6 +248,29 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             info["checkout_authorized"] = guardian.checkout_ok(d["price"])
             return "deal", d["price"], receipt_of(t), log, manip, info
         if state(t) != "TASK_STATE_INPUT_REQUIRED":
+            # 00:30: 111 closes in 6 h came as "No deal. Lowest for this unit: N" with the task already over. When N is
+            # inside my limit and near my reference, one new task is opened and N is paid at once.
+            floor = stated_floor(status_text(t))
+            if floor and floor <= guardian.limit and floor <= reference * 1.10 and not info.get("reopened"):
+                info["reopened"] = True
+                print(f"[buyer] the shop closed at a stated lowest {floor} inside my limit; reopening to pay it", flush=True)
+                buyer_policy.emit("buyer_reopen_at_floor", item=item, floor=floor, reference=reference)
+                t = send(rpc_url, opening)
+                print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
+                if state(t) == "TASK_STATE_INPUT_REQUIRED":
+                    tid = t["id"]
+                    decision = guardian.authorize(floor, 2, floor)
+                    if decision["action"] == "offer":
+                        info["last_offer"] = decision["price"]
+                        t = send(rpc_url, str(decision["price"]), tid)
+                        print(f"[buyer] <- {state(t)} | {status_text(t)}", flush=True)
+                        log += [("you", str(decision["price"])), ("shop", status_text(t))]
+                        offers.append((decision["price"], first_ask(t, value_cap)))
+                        if state(t) == "TASK_STATE_COMPLETED":
+                            info["checkout_authorized"] = guardian.checkout_ok(decision["price"])
+                            return "deal", decision["price"], receipt_of(t), log, manip, info
+                        if state(t) == "TASK_STATE_INPUT_REQUIRED":
+                            continue
             return "closed", None, None, log, manip, info
     print("[buyer] round limit reached, walking away", flush=True)
     rpc(rpc_url, "CancelTask", {"id": tid})
