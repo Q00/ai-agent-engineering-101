@@ -71,6 +71,27 @@ def load(md, name, default):
         return default
 
 
+def hits(c, now, t):
+    """HQ 11-04 "잘 팔린 상품만 지속 늘려": every SKU our shop sold lately, stocked to cover its own sales until
+    hit_cover windows from now. The rate is the faster of the last 3 h and the last 24 h (per 20-min supply window),
+    so a SKU that speeds up gets deeper stock at once and one that slows down is not refilled past its pace.
+    Returns [(sku, target units, why)], fastest first."""
+    sold = {}
+    for hours in (3, 24):
+        for sku, n in c.execute("""select s.sku, count(*) from settles s join settle_units x on x.seq = s.seq
+                                   join supply_units su on su.unit = x.unit where su.shop = 'dragonash' and s.ts > ?
+                                   group by s.sku""", (now - hours * 3600,)):
+            sold.setdefault(sku, {})[hours] = n
+    out = []
+    for sku, n in sold.items():
+        if n.get(24, 0) < t.get("hit_min_24h", 6) and n.get(3, 0) < 3:
+            continue                                          # not a hit yet
+        per_window = max(n.get(3, 0) / 9, n.get(24, 0) / 72)  # 9 windows in 3 h, 72 in 24 h
+        target = max(2, math.ceil(per_window * t.get("hit_cover", 4)))
+        out.append((sku, target, f"hit: sold {n.get(3, 0)} in 3 h, {n.get(24, 0)} in 24 h -> keep {target}"))
+    return sorted(out, key=lambda x: -x[1])
+
+
 def plan(md, c, t, now=None):
     now = now or time.time()
     inv, cat, demand = load(md, "inventory.json", {}), market_model.catalog(md), load(md, "demand.json", [])
@@ -136,6 +157,8 @@ def plan(md, c, t, now=None):
     cash = min((inv.get("balance") or 0) - t["cash_reserve"] * start, t["pick_window_budget"] * start - spent)
     for x in promo.hq_orders():                               # 1b. headquarters' direct orders: first, never vetoed
         add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0), "HQ order", any_price=True)
+    for sku, target, why_ in hits(c, now, t):                 # 1b'. our own hits, deepened as they sell (HQ 11-04)
+        add(sku, target - stock.get(sku, 0) - buy.get(sku, 0), why_, any_price=True)
     for x in mk.get("skus") or []:
         add(x.get("sku"), int(x.get("qty") or 0) - stock.get(x.get("sku"), 0) - buy.get(x.get("sku"), 0),
             "marketing pick", any_price=True)
