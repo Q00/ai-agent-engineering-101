@@ -1,0 +1,207 @@
+.........[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 정기 진단 01-02 15:16 KST
+.......EFE......F..F.FF..F....................F.......[알림 오류] OSError: notification unavailable
+...............................EEEE[모니터링] 관측 정상 · 자기 확정 정산 10건 · 종합 순위 10위 · 비교 표본 대기 · 다음 정기 진단 01-02 15:17 KST
+.....................................Cannot load selection inputs: Food order requires a nonnegative use period
+...[harness] fixture
+.[harness] fixture
+[guard] inventory condition/price changed; disclose again and request confirmation
+.........F.............18:24:54 [acp] settle refused: {'error': 'budget'}
+......................Dispatcher task is not running. Cannot wait for event dispatch.
+..............................[harness] fixture
+[harness] deterministic acceptance of the disclosed quote
+..............E.[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 기준선 수집 · 다음 정기 진단 01-02 13:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 정기 진단 01-02 15:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 현금 보호 · 다음 정기 진단 01-02 15:18 KST
+..[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 정책 실험 중지 · 다음 정기 진단 01-02 13:16 KST
+.[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 추가 대기 없음·다음 훅에서 재검토 · 다음 정기 진단 01-02 15:17 KST
+..............
+======================================================================
+ERROR: test_cli_skip_never_calls_trade_and_outputs_valid_no_deal (test_buyer_support.SupportRules.test_cli_skip_never_calls_trade_and_outputs_valid_no_deal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_buyer_support.py", line 174, in test_cli_skip_never_calls_trade_and_outputs_valid_no_deal
+    market_buyer.main()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\market_buyer.py", line 203, in main
+    result, record = trade(shop, selected_item, trade_budget, **trade_options)
+    ^^^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected 2, got 0)
+
+======================================================================
+ERROR: test_irrelevant_orders_skip_portfolio_scan_and_model (test_buyer_support.SupportRules.test_irrelevant_orders_skip_portfolio_scan_and_model)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_buyer_support.py", line 166, in test_irrelevant_orders_skip_portfolio_scan_and_model
+    market_buyer.main()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\market_buyer.py", line 203, in main
+    result, record = trade(shop, selected_item, trade_budget, **trade_options)
+    ^^^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected 2, got 0)
+
+======================================================================
+ERROR: test_local_confirmations_survive_missing_public_ledger (test_local_evidence_controller.LocalEvidenceIntegration.test_local_confirmations_survive_missing_public_ledger)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_local_evidence_controller.py", line 42, in test_local_confirmations_survive_missing_public_ledger
+    result = controller.observation(md, now)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\strategy_controller.py", line 368, in observation
+    reserve += liability(md, now)
+               ~~~~~~~~~^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\warranty_trial.py", line 23, in liability
+    signed.add(offer["task"])
+               ~~~~~^^^^^^^^
+KeyError: 'task'
+
+======================================================================
+ERROR: test_new_unit_uses_same_sku_grade_public_prices_without_relaxing_conditions (test_local_evidence_controller.LocalEvidenceIntegration.test_new_unit_uses_same_sku_grade_public_prices_without_relaxing_conditions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_local_evidence_controller.py", line 123, in test_new_unit_uses_same_sku_grade_public_prices_without_relaxing_conditions
+    candidate = controller.observation(md, now)["price_candidates"][0]
+                ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\strategy_controller.py", line 368, in observation
+    reserve += liability(md, now)
+               ~~~~~~~~~^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\warranty_trial.py", line 23, in liability
+    signed.add(offer["task"])
+               ~~~~~^^^^^^^^
+KeyError: 'task'
+
+======================================================================
+ERROR: test_public_price_comparison_stays_available (test_local_evidence_controller.LocalEvidenceIntegration.test_public_price_comparison_stays_available)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_local_evidence_controller.py", line 71, in test_public_price_comparison_stays_available
+    result = controller.observation(md, now)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\strategy_controller.py", line 368, in observation
+    reserve += liability(md, now)
+               ~~~~~~~~~^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\warranty_trial.py", line 23, in liability
+    signed.add(offer["task"])
+               ~~~~~^^^^^^^^
+KeyError: 'task'
+
+======================================================================
+ERROR: test_public_settlement_without_local_confirmation_is_not_own_evidence (test_local_evidence_controller.LocalEvidenceIntegration.test_public_settlement_without_local_confirmation_is_not_own_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_local_evidence_controller.py", line 56, in test_public_settlement_without_local_confirmation_is_not_own_evidence
+    result = controller.observation(md, now)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\strategy_controller.py", line 368, in observation
+    reserve += liability(md, now)
+               ~~~~~~~~~^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\warranty_trial.py", line 23, in liability
+    signed.add(offer["task"])
+               ~~~~~^^^^^^^^
+KeyError: 'task'
+
+======================================================================
+ERROR: test_ambiguous_receipts_are_not_attributed_to_the_experiment (test_strategy_controller.RuntimeAndPersistence.test_ambiguous_receipts_are_not_attributed_to_the_experiment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_strategy_controller.py", line 195, in test_ambiguous_receipts_are_not_attributed_to_the_experiment
+    result = controller.observation(md, now)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\strategy_controller.py", line 368, in observation
+    reserve += liability(md, now)
+               ~~~~~~~~~^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\warranty_trial.py", line 23, in liability
+    signed.add(offer["task"])
+               ~~~~~^^^^^^^^
+KeyError: 'task'
+
+======================================================================
+FAIL: test_comparable_nonleader_preferred_but_not_overpriced_or_unknown (test_buyer_support.SupportRules.test_comparable_nonleader_preferred_but_not_overpriced_or_unknown)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_buyer_support.py", line 75, in test_comparable_nonleader_preferred_but_not_overpriced_or_unknown
+    self.assertEqual(self.choose(shops, rows)[0]["name"], "other")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'leader' != 'other'
+- leader
++ other
+
+
+======================================================================
+FAIL: test_reservation_enforces_duplicate_hour_pair_and_daily_limits (test_buyer_support.SupportRules.test_reservation_enforces_duplicate_hour_pair_and_daily_limits)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_buyer_support.py", line 109, in test_reservation_enforces_duplicate_hour_pair_and_daily_limits
+    self.assertEqual(reserve("o2", T+60), "attempt_cooldown")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'pair_attempt_cooldown' != 'attempt_cooldown'
+- pair_attempt_cooldown
+? -----
++ attempt_cooldown
+
+
+======================================================================
+FAIL: test_settled_own_recent_information_skips_without_using_r2 (test_buyer_support.SupportRules.test_settled_own_recent_information_skips_without_using_r2)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_buyer_support.py", line 90, in test_settled_own_recent_information_skips_without_using_r2
+    self.assertIsNone(self.choose(memory=[record])[0])
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'name': 'other', 'url': 'https://shops/other', 'reviews': [], 'offers': [{'sku': 'G1', 'qty': 1}]} is not None
+
+======================================================================
+FAIL: test_unrelated_and_already_observed_public_pairs_skip (test_buyer_support.SupportRules.test_unrelated_and_already_observed_public_pairs_skip)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_buyer_support.py", line 52, in test_unrelated_and_already_observed_public_pairs_skip
+    self.assertIsNone(self.choose(ctx={**self.ctx, "targets": {}})[0])
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'name': 'other', 'url': 'https://shops/other', 'reviews': [], 'offers': [{'sku': 'G1', 'qty': 1}]} is not None
+
+======================================================================
+FAIL: test_utc_day_reset_keeps_hourly_guard (test_buyer_support.SupportRules.test_utc_day_reset_keeps_hourly_guard)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_buyer_support.py", line 119, in test_utc_day_reset_keeps_hourly_guard
+    self.assertEqual(support.availability(state, "new", CFG, midnight+60), "attempt_cooldown")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'available' != 'attempt_cooldown'
+- available
++ attempt_cooldown
+
+
+======================================================================
+FAIL: test_buyer_fourth_slot_reserved_for_followup (test_forum_engagement.ForumEngagementTests.test_buyer_fourth_slot_reserved_for_followup)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_forum_engagement.py", line 172, in test_buyer_fourth_slot_reserved_for_followup
+    self.assertEqual(queue_report(self.md, deal, {"stars": 5}, T+10800), "rate_limited")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'queued' != 'rate_limited'
+- queued
++ rate_limited
+
+
+======================================================================
+FAIL: test_duplicate_cooldown_and_daily_cap (test_forum_strategy.ForumStrategy.test_duplicate_cooldown_and_daily_cap)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_forum_strategy.py", line 29, in test_duplicate_cooldown_and_daily_cap
+    self.assertEqual(queue_report(tmp, self.deal(4), {"stars": 5}, now=26000), "rate_limited")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'queued' != 'rate_limited'
+- queued
++ rate_limited
+
+
+======================================================================
+FAIL: test_food_constraints_retained_while_support_buyer_skips_food (test_r3_contract.R3Contract.test_food_constraints_retained_while_support_buyer_skips_food)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_r3_contract.py", line 65, in test_food_constraints_retained_while_support_buyer_skips_food
+    trade.assert_not_called()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\unittest\mock.py", line 947, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected 'trade' to not have been called. Called 1 times.
+Calls: [call({'name': 'shop', 'url': 'https://example.test', 'reviews': [], 'offers': [{'sku': 'G00001', 'qty': 1}]}, 'G00001', 95, mode='claude', decision_context={'shop': 'shop', 'sku': 'G00001', 'catalogue_value': 100, 'negotiation_cap': 95, 'past_settled_price': None, 'reference_within_cap': True, 'estimated_surplus': 5, 'warranty_required': 0, 'attributed_faults': 0, 'reference_source': 'unknown', 'estimate_only': True, 'risk': {'blocked_price_mismatch': False, 'recent_transport_errors': 0}, 'support_eligible': True, 'reference_condition': None, 'support_skip_reason': None, 'research_relevance': 'buyer_surplus_opportunity', 'rival_at_selection': False}, max_turns=3, fast_rules=True, model_gate=<function main.<locals>.<lambda> at 0x000001DF1F14F5E0>)].
+
+----------------------------------------------------------------------
+Ran 247 tests in 1.225s
+
+FAILED (failures=8, errors=7)

@@ -164,14 +164,14 @@ class ForumEngagementTests(unittest.TestCase):
         lines = (self.md / "outbox.jsonl").read_text(encoding="utf8").splitlines()
         self.assertIn("Refund settlement confirmed", json.loads(lines[-1])["post"])
 
-    def test_buyer_fourth_slot_reserved_for_followup(self):
-        for i in range(3):
+    def test_buyer_three_slots_reserved_for_followups(self):
+        for i in range(9):
             deal = dict(receipt={"price": 80}, settled=dict(ledger=i+1, sku="G1", value=100, grade="A"))
             self.assertEqual(queue_report(self.md, deal, {"stars": 5}, T+i*3600), "queued")
-        deal["settled"]["ledger"] = 4
-        self.assertEqual(queue_report(self.md, deal, {"stars": 5}, T+10800), "rate_limited")
+        deal["settled"]["ledger"] = 10
+        self.assertEqual(queue_report(self.md, deal, {"stars": 5}, T+32400), "rate_limited")
         self.assertEqual(enqueue(self.md, {"post": "follow-up", "refs": [1], "as": "buyer"},
-                                 "followup:1", "buyer_followup", now=T+10800), "queued")
+                                 "followup:1", "buyer_followup", now=T+32400), "queued")
 
 
 if __name__ == "__main__":

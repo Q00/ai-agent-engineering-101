@@ -15,7 +15,9 @@ from r3_policy import load_policy
 from purchase_monitor import observe as observe_purchases
 
 T = 1793760000
-CFG = support.config()
+CFG = {**support.config(), "mode": "research", "max_attempts_per_utc_day": 8,
+       "min_attempt_interval_seconds": 3600, "pair_cooldown_seconds": 21600,
+       "min_catalogue_value": 30000, "alternative_tolerance_ratio": .02}
 POLICY = load_policy()["buying"]
 CAT = {"G1": {"kind": "goods", "list_price": 100000, "category": "goods"}}
 
@@ -31,6 +33,9 @@ def price(name="other", amount=70000, seq=1, **fields):
 
 class SupportRules(unittest.TestCase):
     def setUp(self):
+        settings_patch = patch.object(support, "config", return_value=CFG)
+        settings_patch.start()
+        self.addCleanup(settings_patch.stop)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.md = Path(self.tmp.name) / ".market"

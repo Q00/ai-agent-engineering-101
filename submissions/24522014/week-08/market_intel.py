@@ -67,7 +67,7 @@ def competition(board, login="kcwarni"):
     rank = 1 + sum(r[score_key] > me[score_key] for r in players) if score_key else (me or {}).get("rank")
     components = {}
     weights = {"shops": {"profit": .5, "revenue": .3, "stars": .2},
-               "buyers": {"surplus": .5, "forum": .3, "deals": .2}}
+               "buyers": {"surplus": .5, "forum": .3, "deals": .1, "posts": .1}}
     if board.get("round") == 3:
         for group, fields in weights.items():
             mine_row = mine[group] or {}

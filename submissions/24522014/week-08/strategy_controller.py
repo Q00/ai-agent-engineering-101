@@ -42,7 +42,7 @@ def finite(value):
 
 def compact(observation):
     return {k: copy.deepcopy(v) for k, v in observation.items()
-            if k not in ("own_sales", "price_candidates", "stock", "local_counters")}
+            if k not in ("own_sales", "price_candidates", "stock", "local_counters", "score_history")}
 
 
 def initial():
@@ -79,10 +79,17 @@ def choose(observation, controls, settings):
             continue
         sku, median = item["sku"], item.get("median")
         quote, floor = item.get("quote"), item.get("floor")
-        if not all(finite(v) for v in (median, quote, floor)) or item.get("count", 0) < 3 or quote <= floor:
+        quality = item.get("quality", {})
+        rating_probe = quality.get("weak") and quality.get("count", 0) >= 3 and quality.get("price_hints", 0) >= 2
+        market_valid = finite(median) and median > 0 and item.get("count", 0) >= 3
+        if not all(finite(v) for v in (quote, floor)) or quote <= floor or not (market_valid or rating_probe):
             continue
         old = controls["quote_multipliers"].get(sku, 1)
-        direction = -1 if quote > median*1.05 else 1 if quote < median*.95 else 0
+        direction = (-1 if quote > median*1.05 else 1 if quote < median*.95 else 0) if market_valid else 0
+        if rating_probe:
+            if direction == 1:
+                continue
+            direction = -1
         multiplier = round(min(1.03, max(.94, old*(1+direction*settings["price_step"]))), 4)
         expected = max(floor, min(item["list_price"], math.ceil(quote*multiplier/old)))
         if not direction or multiplier == old or expected == quote:
@@ -93,9 +100,10 @@ def choose(observation, controls, settings):
         candidate["quote_multipliers"][sku] = multiplier
         choices.append({"kind": "quote_cut" if direction < 0 else "quote_raise", "sku": sku,
                         "grade": item["grade"], "candidate": validate(candidate),
-                        "reason": "quote_above_comparables" if direction < 0 else "quote_below_comparables",
-                        "gap_ratio": abs(quote/median-1), "expected_quote": expected,
-                        "comparable_price": median, "sample_count": item["count"],
+                        "reason": "matched_low_price_reviews" if rating_probe else "quote_above_comparables" if direction < 0 else "quote_below_comparables",
+                        "gap_ratio": abs(quote/median-1) if market_valid else 0, "expected_quote": expected,
+                        "comparable_price": median if market_valid else None, "sample_count": item.get("count", 0),
+                        "quality": quality,
                         "benchmark_source": item.get("benchmark_source", "market_settlements"),
                         "benchmark_basis": item.get("benchmark_basis"),
                         "leader_logins": item.get("leader_logins", []),
@@ -165,6 +173,11 @@ def transition(original, observation, settings):
         state["controls"]["restock_paused"] = False
         event("cash_guard_released")
     history = state["history"]
+    scores = {r["market_at"]: r for r in observation.get("score_history", [])}
+    for previous in history:
+        score = scores.get(previous.get("market_at"))
+        if score:
+            previous.update({k: score[k] for k in ("player_total", "shop_all", "buyer_all")})
     if history and (observation["deals"] < history[-1]["deals"]
                     or observation["bankruptcies"] > history[-1]["bankruptcies"]):
         rollback("counter_reset_or_bankruptcy")
@@ -231,6 +244,18 @@ def transition(original, observation, settings):
         else:
             improved = end["stock_cost"] < baseline["stock_cost"] and after_rates["deals"] >= before_rates["deals"]*(1-loss)
             evaluation = {"before": before_rates, "after": after_rates}
+        if observation.get("objective") == "balanced_player_top3":
+            old_score, new_score = baseline.get("player_total"), end.get("player_total")
+            score_gain = finite(old_score) and finite(new_score) and new_score >= old_score+.005
+            if active["kind"].startswith("quote_"):
+                local_gain = (after["gross_per_hour"] >= prior["gross_per_hour"]*(1+gain)
+                              or after_rates["revenue"] >= before_rates["revenue"]*(1+gain)
+                              or (end["reviews"]-baseline["reviews"] >= 5 and end["stars"] >= baseline["stars"]+.05))
+                improved = (after["gross_per_hour"] > 0 and after["gross_per_hour"] >= prior["gross_per_hour"]*(1-loss)
+                            and local_gain and score_gain)
+            else:
+                improved = improved and score_gain
+            evaluation["official_total"] = {"before": old_score, "after": new_score, "gain_required": .005}
         # Explicit refunds in the target cohort invalidate optimistic gross margins.
         cohort_units = {r["unit"] for r in active["post_cohort"].values()}
         refund_hit = bool(cohort_units & set(observation.get("refunded_units", [])))
@@ -339,9 +364,8 @@ def observation(md, now):
         offers.setdefault(offer["unit"], []).append(offer)
         if finite(offer.get("cost")):
             costs[offer["unit"]] = offer["cost"]
-        coverage = offer.get("warranty_hours") or 0
-        if coverage > 0 and now < offer["issued_at"]+coverage*3600+600:
-            reserve += offer["price"]
+    from warranty_trial import liability
+    reserve += liability(md, now)
     missing_costs = {r["unit"] for r in local["rows"] if r["unit"] not in costs}
     if missing_costs:
         # Older resident sellers did not include cost in their signed-offer metadata.
@@ -407,9 +431,17 @@ def observation(md, now):
                                               snapshot, effective(md, now), now)
     except (OSError, ValueError, KeyError, TypeError):
         leader_benchmark = {"status": "unavailable"}
+    from balanced_metrics import entry as score_entry, history as score_history
+    from seller_quality import fresh as quality_fresh
+    quality = quality_fresh(md, now)
+    for candidate in candidates:
+        candidate["quality"] = quality.get(candidate["sku"], {})
+    settings_objective = read(ROOT/"leader_monitor.json", {}).get("objective", "balanced_player_top3")
     result.update(valid=True, balance=inv["balance"], reserve=reserve, stock_cost=cost,
                   profit=inv["balance"]-inv.get("start", 5000000)-inv.get("injected", 0),
-                  objective="seller_profit_rank_1", profit_rank=leader_benchmark.get("profit_rank"),
+                  objective=settings_objective, profit_rank=leader_benchmark.get("profit_rank"),
+                  **{k: v for k, v in score_entry(snapshot).items() if k != "market_at"},
+                  score_history=score_history(md, snapshot, now),
                   profit_gap_to_first=leader_benchmark.get("profit_gap_to_first"),
                   leader_benchmark=leader_benchmark,
                   self_evidence="local_acp_v1",

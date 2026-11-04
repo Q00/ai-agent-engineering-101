@@ -11,7 +11,7 @@
 \begin{document}
 \centering
 {\Large\bfseries kcwarni: evidence-guided market agents}\par
-\small Week 08 / 24522014 \quad Implementation architecture, 3 November 2026\par
+\small Week 08 / 24522014 \quad Implementation architecture, 4 November 2026\par
 \vspace{3mm}
 \begin{tikzpicture}[x=1cm,y=1cm, font=\small,
  b/.style={draw=ink,rounded corners=2pt,align=left,inner sep=7pt,text width=5.05cm,minimum height=2.4cm,fill=custom},
@@ -31,15 +31,15 @@ Reads \texttt{agent.json}; exposes order/state files and restock/review hooks.};
 \texttt{seller\_r3.py}\\
 Course starter adapted to our harness.\\
 R3 only; reservation leases; refresh stock; sign receipt.\\
-\texttt{r3\_policy.py}: clearance stages and condition disclosure.};
-\node[b] (buyer) at (9,14.5) {\textbf{Seller-support SKU buyer}\\
+\texttt{r3\_policy.py}: clearance; actual grade; bounded 2h A-grade warranty.};
+\node[b] (buyer) at (9,14.5) {\textbf{Balanced-value buyer}\\
 \texttt{market\_buyer.py}, \texttt{buyer.py}\\
-\texttt{buyer\_support.py}: useful research; 8 attempts/day; 3 turns.\\
+\texttt{buyer\_fast.py}: clear-quote rules; 480 attempts/day; 3 turns.\\
 A2A; value cap; observed warranty and A/B/time payment guards.};
 \node[b] (restock) at (15.2,14.5) {\textbf{Bounded restock tool}\\
 \texttt{restock\_policy.py}\\
 R3 demand and return estimates; unsold-trial, storage and cash guards.\\
-16 total / 3 proven SKU / 6 per run.\\
+16 total / 3 proven SKU / 6 per run; matched-review quality signals.\\
 Food supply deferred; no LLM.};
 \draw[arrow] (kit.south -| seller.north) -- (seller.north);
 \draw[arrow] (kit.south) -- node[lab,right]{order / shops} (buyer.north);
@@ -47,14 +47,14 @@ Food supply deferred; no LLM.};
 
 \node[b,text width=11.25cm,fill=guard,minimum height=2.15cm] (model) at (5.9,10.6) {\textbf{Model and deterministic guards}\\
 \texttt{harness.py} + \texttt{r3\_harness.py}: Codex \texttt{gpt-6-luna} in isolated calls.\\
-Prompts contain the current negotiation; JSON decisions are validated.\\
+Current negotiation only; buyer model cap: 2 orders/hour, 24/day.\\
 Margin/clearance and budget guards; \texttt{kit\_runtime.py} recovers failed checkouts.\\
 Raw prompts, stdout/stderr and decision metadata are logged.};
 \node[b,fill=guard,minimum height=2.15cm] (review) at (15.2,10.6) {\textbf{Post-settlement review tool}\\
 \texttt{review\_policy.py}\\
 Kit supplies \texttt{deal.json}.\\
 Evidence rules: 5 / 2 / 3 stars.\\
-Save first judgement; buyer reports + follow-ups (4/day); no LLM.};
+Save first judgement; factual posts + follow-ups (12/day); reaction brake; no LLM.};
 \draw[arrow] (seller.south) -- (model.north -| seller.south);
 \draw[arrow] (buyer.south) -- node[lab,right]{bounded context} (model.north -| buyer.south);
 \draw[arrow] (kit.east) -- (18.2,18.7) |- (review.east);
@@ -64,21 +64,22 @@ Save first judgement; buyer reports + follow-ups (4/day); no LLM.};
 \texttt{r3-buyer-memory.jsonl}: R3 observations; \texttt{settlement\_memory.py} joins payment outcomes.\\
 Only matching paid outcomes become confirmed settlement observations; no rewriting original history.\\
 \texttt{local-settlements.json}: own confirmed sales; \texttt{market-intel.json}: market comparisons.\\
-\texttt{strategy-state.json}/\texttt{strategy-policy.json}: trial state, prior controls and leased versions.};
+Matched local review evidence; official ALL history; warranty liability reservations.\\
+\texttt{strategy-state.json}/\texttt{strategy-policy.json}: prior controls and leased versions.};
 \draw[feedback] (model.south) -- node[lab,right]{trade observations} (memory.north -| model.south);
 \draw[feedback] (review.south) -- node[lab,right]{settled evidence} (memory.north -| review.south);
 \draw[feedback] (memory.west) -- (-0.2,6.6) -- (-0.2,16.4)
  -- node[lab,above]{filtered history on next order} (6.05,16.4) -- (6.05,14.5) -- (buyer.west);
 
 \node[wide,minimum height=1.8cm,fill=guard] (monitor) at (9,3.1) {\textbf{Market observation and bounded autonomous improvement}\\
-R3 ledger / forum: \texttt{market\_intel.py}; \texttt{leader\_monitor.py}: profit Top 3; no LLM.\\
+R3 ledger / forum: \texttt{market\_intel.py}; \texttt{leader\_monitor.py}: Players Top 3; no LLM.\\
 \texttt{purchase\_monitor.py}: prices; \texttt{forum\_engagement.py}: stock replies and outcomes.\\
-\texttt{strategy\_controller.py}: diagnose; one small trial; freeze; mature; keep or roll back.};
+\texttt{strategy\_controller.py}: small trial; mature local margin + official score; keep / roll back.};
 \draw[feedback] (monitor.north) -- node[lab,right]{leased controls / trial state} (memory.south);
 \node[align=left,text width=18.1cm,font=\footnotesize] at (9,0.7) {
 \textbf{Legend:} grey = provided; blue = agent implementation/adaptation; green = rules/guards.\\
 Solid arrows = execution/data flow; dashed = retained evidence for later decisions.\\
-\textbf{Status:} R3-only strategy; initial live supply, sale, payment and review paths verified.\\
-Final ranking, long-term profitability and live fault/refund attribution remain unverified.};
+\textbf{Status:} 267 checks pass; live supply/payment verified; new seller requires one restart.\\
+Balanced-policy ranking gains and long-term warranty profitability remain unverified.};
 \end{tikzpicture}
 \end{document}

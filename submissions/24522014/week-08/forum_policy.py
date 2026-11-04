@@ -9,6 +9,26 @@ import time
 
 from market_state import read, write
 
+ROOT = Path(__file__).resolve().parent
+
+
+def posting_limits(md, now):
+    value = read(ROOT / "forum_posting.json")
+    if (not 4 <= value["buyer_daily_limit"] <= 12 or not 3 <= value["buyer_report_limit"] <= 9
+            or value["buyer_report_limit"] >= value["buyer_daily_limit"] or value["shop_daily_limit"] != 4
+            or value["min_interval_seconds"] < 3600 or value["brake_dislikes"] < 3
+            or not 0 < value["brake_dislike_ratio"] <= .5
+            or not .1 <= value["minimum_report_surplus_ratio"] <= 1):
+        raise ValueError("Invalid bounded posting limits")
+    forum = read(md / "forum-intel.json", {})
+    reactions = forum.get("summary", {}).get("own_post_reactions", []) if (
+        forum.get("status") == "ok" and 0 <= now-forum.get("observed_at", 0) <= 3600) else []
+    likes = sum(r.get("likes") or 0 for r in reactions)
+    dislikes = sum(r.get("dislikes") or 0 for r in reactions)
+    brake = len(reactions) >= 3 and dislikes >= value["brake_dislikes"] and dislikes/max(1, likes+dislikes) > value["brake_dislike_ratio"]
+    return {**value, "buyer_daily_limit": 4 if brake else value["buyer_daily_limit"],
+            "buyer_report_limit": 3 if brake else value["buyer_report_limit"], "reaction_brake": brake}
+
 
 def message_key(message):
     return hashlib.sha256(json.dumps(message, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
@@ -29,6 +49,7 @@ def enqueue(md, message, key, kind, metadata=None, now=None):
 
 
 def _enqueue(md, message, key, kind, metadata, now):
+    settings = posting_limits(md, now)
     state = read(md / "forum-policy.json", {"ledger_refs": [], "last_at": 0, "day": "", "count": 0})
     actions = read(md / "forum-actions.json", {})
     if key in actions or (kind == "buyer_report" and metadata["ledger"] in state["ledger_refs"]):
@@ -37,13 +58,14 @@ def _enqueue(md, message, key, kind, metadata, now):
     role = message["as"]
     limits = state if role == "buyer" else state.get("shop", {"last_at": 0, "day": "", "count": 0})
     count = limits["count"] if limits["day"] == day else 0
-    if count >= 4 or now-limits["last_at"] < 3600:
+    limit = settings["buyer_daily_limit"] if role == "buyer" else settings["shop_daily_limit"]
+    if count >= limit or now-limits["last_at"] < settings["min_interval_seconds"]:
         return "rate_limited"
     reports_today = sum(a["kind"] == "buyer_report" and
                         datetime.fromtimestamp(a["queued_at"], timezone.utc).date().isoformat() == day
                         for a in actions.values())
-    if kind == "buyer_report" and reports_today >= 3:
-        return "rate_limited"  # Reserve the fourth buyer slot for a mature follow-up.
+    if kind == "buyer_report" and reports_today >= settings["buyer_report_limit"]:
+        return "rate_limited"  # Reserve buyer slots for mature follow-ups.
     with (md / "outbox.jsonl").open("a", encoding="utf8") as stream:
         stream.write(json.dumps(message, ensure_ascii=False, allow_nan=False) + "\n")
     limits.update(last_at=now, day=day, count=count+1)
@@ -102,6 +124,9 @@ def queue_report(md, deal, result, now=None):
             or not math.isfinite(price) or not math.isfinite(value) or price <= 0 or value <= 0 or not settled.get("sku")):
         return "insufficient_evidence"
     md = Path(md)
+    settings = posting_limits(md, now)
+    if (value-price)/value < settings["minimum_report_surplus_ratio"]:
+        return "insufficient_new_value"
     md.mkdir(parents=True, exist_ok=True)
     text = (f"Buyer settlement report #{ledger}: {str(settled['sku'])[:80]}, paid {price} credits, "
             f"market value at settlement {value}, initial surplus {value-price}. "

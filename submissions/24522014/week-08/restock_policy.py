@@ -28,12 +28,13 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None):
     now = time.time() if now is None else now
     hints = hints or {}
     intelligence = intelligence or {}
     leader_hints = leader_hints or {}
     own_profitable = own_profitable or {}
+    quality = quality or {}
     limits = capacity_config()
     if inventory.get("round", 0) < 3:
         return [], {"reason": "not_round_3"}
@@ -71,6 +72,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
                 or (s.get("distinct_buyers_6h", 0) >= limits["min_public_buyers"]
                     and s.get("settles_6h", 0) >= limits["min_public_sales_6h"]))
     def sku_limit(sku):
+        if quality.get(sku, {}).get("weak"):
+            return 1
         return limits["max_proven_units_per_sku"] if bulk_proven(sku) else 1
     experimental = [u for u in units if not proven(u["sku"])]
     stale = any(type(u.get("supplied_at")) in (int, float)
@@ -91,7 +94,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         gap = s.get("observed_gap_hours")
         hours = min(24, max(1, gap)) if type(gap) in (int, float) and math.isfinite(gap) else 24
         margin = price - cost - cost * rate * hours / 24
-        return (not proven(sku), -margin / cost / hours, -sales.get(sku, 0), -leader_hints.get(sku, 0), -hints.get(sku, 0))
+        factor = .9 if quality.get(sku, {}).get("weak") else 1.05 if quality.get(sku, {}).get("strong") else 1
+        return (not proven(sku), -margin / cost / hours * factor, -sales.get(sku, 0), -leader_hints.get(sku, 0), -hints.get(sku, 0))
     candidates.sort(key=opportunity)
     buys = []
     estimated = 0
@@ -128,6 +132,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
                   "one_day_storage_reserve": storage_reserve/7,
                   "new_stock_seven_day_storage": storage_reserve, "planned_units": planned_units,
                   "capacity": limits, "own_profitable_sales_6h": own_profitable,
+                  "quality_evidence": quality,
                   "unproven_stock": len(experimental), "stale_stock": stale,
                   "existing_seven_day_storage": existing_storage, "refund_reserve": refund_reserve,
                   "public_evidence_skus": len(intelligence),
@@ -158,6 +163,13 @@ def main():
             observe_leaders(md)
         except (OSError, ValueError, KeyError, TypeError) as error:
             print(f"[leaders] observation deferred: {type(error).__name__}: {error}", flush=True)
+        try:
+            from seller_quality import observe as observe_quality
+            observe_quality(md)
+            from warranty_trial import evaluate as evaluate_warranty
+            evaluate_warranty(md)
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
         try:
             improve_strategy(md)
         except (OSError, ValueError, KeyError, TypeError) as error:
@@ -206,11 +218,8 @@ def main():
     except (OSError, ValueError, TypeError, AttributeError):
         hints = {}
     # Signed offers with a warranty reserve their entire price until the coverage ends.
-    liabilities = 0
-    for path in (md / "signed-offers").glob("*.json"):
-        offer = json.loads(path.read_text(encoding="utf8"))
-        if offer.get("warranty_hours", 0) > 0 and time.time() < offer["issued_at"] + offer["warranty_hours"] * 3600 + 600:
-            liabilities += offer["price"]
+    from warranty_trial import liability
+    liabilities = liability(md)
     inv["local_refund_reserve"] = liabilities
     try:
         from leader_monitor import restock_hints
@@ -221,9 +230,10 @@ def main():
         own_profitable = profitable_counts(md)
     except (OSError, ValueError, KeyError, TypeError):
         own_profitable = {}
+    from seller_quality import fresh as fresh_quality
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
                              intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints,
-                             own_profitable=own_profitable)
+                             own_profitable=own_profitable, quality=fresh_quality(md))
     memory["cursor"] += 1
     temporary = memory_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")

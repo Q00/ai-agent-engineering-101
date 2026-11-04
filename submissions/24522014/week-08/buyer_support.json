@@ -1,12 +1,15 @@
 {
   "enabled": true,
-  "max_attempts_per_utc_day": 8,
-  "min_attempt_interval_seconds": 3600,
-  "pair_cooldown_seconds": 21600,
+  "mode": "balanced",
+  "max_attempts_per_utc_day": 480,
+  "min_attempt_interval_seconds": 30,
+  "max_model_orders_per_day": 24,
+  "max_model_orders_per_hour": 2,
+  "pair_cooldown_seconds": 300,
   "reference_max_age_seconds": 3600,
-  "min_catalogue_value": 30000,
+  "min_catalogue_value": 1,
   "sufficient_public_samples": 3,
-  "alternative_tolerance_ratio": 0.02,
+  "alternative_tolerance_ratio": 0.0,
   "reference_premium_ratio": 0.02,
   "max_turns": 3
 }

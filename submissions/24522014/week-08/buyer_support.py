@@ -16,15 +16,19 @@ ROOT = Path(__file__).resolve().parent
 
 def config():
     value = read(ROOT / "buyer_support.json")
-    if (type(value["enabled"]) is not bool or not 1 <= value["max_attempts_per_utc_day"] <= 12
-            or not 1800 <= value["min_attempt_interval_seconds"] <= 86400
-            or not 3600 <= value["pair_cooldown_seconds"] <= 86400
+    balanced = value.get("mode") == "balanced"
+    if (type(value["enabled"]) is not bool or not 1 <= value["max_attempts_per_utc_day"] <= (480 if balanced else 12)
+            or not (30 if balanced else 1800) <= value["min_attempt_interval_seconds"] <= 86400
+            or not (300 if balanced else 3600) <= value["pair_cooldown_seconds"] <= 86400
             or not 60 <= value["reference_max_age_seconds"] <= 3600
-            or value["min_catalogue_value"] < 10000 or value["sufficient_public_samples"] < 3
+            or value["min_catalogue_value"] < (1 if balanced else 10000) or value["sufficient_public_samples"] < 3
             or not 0 <= value["alternative_tolerance_ratio"] <= .02
             or not 0 <= value["reference_premium_ratio"] <= .02
             or not 1 <= value["max_turns"] <= 3):
         raise ValueError("Invalid seller-support buyer bounds")
+    if balanced and (not 1 <= value.get("max_model_orders_per_day", 0) <= 24
+                     or not 1 <= value.get("max_model_orders_per_hour", 0) <= 2):
+        raise ValueError("Balanced model negotiation quota exceeded")
     return value
 
 
@@ -88,7 +92,7 @@ def context(md, catalog, settings, now):
     return {"targets": targets, "rival_names": rivals, "rival_urls": urls}
 
 
-def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, state, settings, now):
+def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, state, settings, now, kind="goods"):
     memory = [r for r in memory if r.get("round") == 3]
     # Keep durable mismatch/outage evidence; only positive price references expire.
     recent_memory = [dict(r, verification="stale_price_reference") if r.get("verification") == "market_settled"
@@ -103,12 +107,17 @@ def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, 
               and (r.get("data") or {}).get("grade") in policy["grades"]
               and (r.get("data") or {}).get("claim_honest") is not False}
     _, _, _, _, evidence = select(shops, recent_memory, catalog, budget, policy=policy, portfolio=portfolio,
-                                  kind="goods", public_rows=list(public.values()), now=now)
+                                  kind=kind, public_rows=list(public.values()), now=now)
     by_name = {s["name"]: s for s in shops}
     eligible = []
+    balanced = settings.get("mode") == "balanced"
     for item in evidence:
         shop = by_name[item["shop"]]
         sku = item["sku"]
+        if balanced and kind != "goods":
+            item["negotiation_cap"] = min(item["negotiation_cap"], int(item["catalogue_value"]*(1-policy["minimum_surplus_ratio"])))
+            item["reference_within_cap"] = item["past_settled_price"] is None or item["past_settled_price"] <= item["negotiation_cap"]
+            item["estimated_surplus"] = item["catalogue_value"]-(item["past_settled_price"] or item["negotiation_cap"])
         item["support_eligible"] = False
         references = [r for r in public.values() if r["data"].get("shop") == shop["url"] and r["data"].get("item") == sku]
         latest = max(references, key=lambda r: r["ts"], default=None)
@@ -120,15 +129,15 @@ def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, 
         owner = owner.get("login", "") if isinstance(owner, dict) else str(owner)
         if shop["name"].casefold() == "kcwarni" or owner.casefold() == "kcwarni":
             reason = "same_owner_shop"
-        elif sku not in ctx["targets"]:
+        elif not balanced and sku not in ctx["targets"]:
             reason = "not_relevant_to_seller"
         elif any(r["shop"].casefold() == shop["name"].casefold() and r["sku"] == sku
                  and now-r["at"] < settings["pair_cooldown_seconds"] for r in state["attempts"]):
             reason = "pair_attempt_cooldown"
-        elif any(r.get("shop_name") == shop["name"] and r.get("item") == sku and r.get("verification") == "market_settled"
+        elif not balanced and any(r.get("shop_name") == shop["name"] and r.get("item") == sku and r.get("verification") == "market_settled"
                  and r.get("outcome") == "purchased" and 0 <= age(r, now) <= settings["pair_cooldown_seconds"] for r in memory):
             reason = "recent_own_information_sufficient"
-        elif max(Counter((r["data"].get("grade"), r["data"].get("warranty_hours") or 0) for r in public.values()
+        elif not balanced and max(Counter((r["data"].get("grade"), r["data"].get("warranty_hours") or 0) for r in public.values()
                          if r["data"].get("shop") == shop["url"] and r["data"].get("item") == sku
                          and (r["data"].get("warranty_hours") or 0) >= item["warranty_required"]).values(), default=0) >= settings["sufficient_public_samples"]:
             reason = "public_information_sufficient"
@@ -146,7 +155,7 @@ def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, 
         reference = item["past_settled_price"]
         if positive(reference):
             item["negotiation_cap"] = min(item["negotiation_cap"], math.floor(reference*(1+settings["reference_premium_ratio"])))
-        item.update(support_eligible=True, research_relevance=ctx["targets"][sku],
+        item.update(support_eligible=True, research_relevance=ctx["targets"].get(sku, "buyer_surplus_opportunity"),
                     rival_at_selection=shop["name"].casefold() in ctx["rival_names"] or shop["url"].rstrip("/") in ctx["rival_urls"])
         eligible.append(item)
     if not eligible:
@@ -181,7 +190,7 @@ def reserve(md, order_id, shop, sku, cap, rival, settings, now):
         if any(r["shop"].casefold() == shop["name"].casefold() and r["sku"] == sku
                and now-r["at"] < settings["pair_cooldown_seconds"] for r in state["attempts"]):
             return "pair_attempt_cooldown"
-        state["attempts"] = [r for r in state["attempts"] if 0 <= now-r["at"] <= 7*86400][-255:]
+        state["attempts"] = [r for r in state["attempts"] if 0 <= now-r["at"] <= 7*86400][-4999:]
         state["attempts"].append({"at": now, "order": order_id, "shop": shop["name"], "url": shop["url"],
                                    "sku": sku, "cap": cap, "rival_at_selection": rival})
         write(path, state)
@@ -196,25 +205,53 @@ def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, ord
     settings = config()
     state = read(md / "buyer-support-state.json", initial())
     status = availability(state, order.get("order"), settings, now)
-    if status != "available" or order.get("kind") != "goods":
+    balanced = settings.get("mode") == "balanced"
+    if status != "available" or (not balanced and order.get("kind") != "goods"):
         status = status if status != "available" else "no_relevant_goods_order"
         return None, None, budget, status, [], {"status": status, "model_calls": 0}
     ctx = context(md, catalog, settings, now)
-    if not set(order.get("acceptable") or []) & ctx["targets"].keys():
+    if not balanced and not set(order.get("acceptable") or []) & ctx["targets"].keys():
         return None, None, budget, "no_relevant_seller_sku", [], {"status": "no_relevant_seller_sku", "model_calls": 0}
     rows = snapshot.get("rows", []) if snapshot.get("round") == 3 and 0 <= now-snapshot.get("observed_at", 0) <= 3600 else []
     if portfolio is None:
         from buyer_portfolio import reconcile
         portfolio = reconcile(md, rows, now)
-    shop, sku, cap, reason, evidence = choose(shops, memory, catalog, budget, policy, portfolio, rows, ctx, state, settings, now)
+    shop, sku, cap, reason, evidence = choose(shops, memory, catalog, budget, policy, portfolio, rows, ctx, state, settings, now, kind=order.get("kind"))
     status = "no_useful_research"
     if shop:
         selected = next(e for e in evidence if e["shop"] == shop["name"] and e["sku"] == sku)
         status = reserve(md, order.get("order"), shop, sku, cap, selected["rival_at_selection"], settings, now)
         if status != "reserved":
             shop, sku, reason = None, None, status
-    return shop, sku, cap, reason, evidence, {"status": status, "purpose": "seller_profit_support",
+    return shop, sku, cap, reason, evidence, {"status": status, "purpose": "balanced_player_score" if balanced else "seller_profit_support",
+               "fast_rules": balanced,
                "max_turns": settings["max_turns"], "funding": "market_order_budget_not_seller_cash"}
+
+
+def reserve_model(md, order_id, now=None):
+    from strategy_controller import acquire, release
+    md = Path(md)
+    now = time.time() if now is None else now
+    settings = config()
+    handle = acquire(md / "buyer-support.lock")
+    if handle is None:
+        return False
+    try:
+        path = md / "buyer-support-state.json"
+        state = read(path, initial())
+        rows = [r for r in state.get("model_orders", []) if 0 <= now-r["at"] <= 86400*2]
+        if any(r["order"] == order_id for r in rows):
+            return False
+        day = datetime.fromtimestamp(now, timezone.utc).date()
+        if (sum(datetime.fromtimestamp(r["at"], timezone.utc).date() == day for r in rows) >= settings["max_model_orders_per_day"]
+                or sum(now-r["at"] < 3600 for r in rows) >= settings["max_model_orders_per_hour"]):
+            return False
+        rows.append({"at": now, "order": order_id})
+        state["model_orders"] = rows
+        write(path, state)
+        return True
+    finally:
+        release(handle)
 
 
 def report(md):

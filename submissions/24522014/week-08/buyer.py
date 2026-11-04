@@ -192,10 +192,21 @@ def validate_buyer_decision(decision, budget):
 def buyer_decision(client, provider, history, turn, max_turns):
     """Ask for one decision; retry invalid JSON or budget violations once, without clamping."""
     text = seller_message(client.task)
+    rule = getattr(client, "rule_decision", None)
+    if rule:
+        fast = rule(text)
+        if fast is not None:
+            validate_buyer_decision(fast, client.budget)
+            (client.log_dir / f"decision-{turn:02d}.json").write_text(
+                json.dumps({"source": "deterministic", "decision": fast}, ensure_ascii=False), encoding="utf8")
+            return fast
     prices = re.findall(r"-?\d+(?:\.\d+)?", text)
     asking = float(prices[-1]) if prices else None
     if asking is None or not math.isfinite(asking) or asking <= 0:
         raise BuyerError("Seller input-required message has no valid asking price")
+    gate = getattr(client, "model_gate", None)
+    if gate and not gate():
+        return {"action": "walk_away", "price": None, "reason": "Model negotiation quota reached; no purchase forced."}
     # Keep time for the HTTP request that follows the model decision.
     allowance = min(90, client.remaining() - 5)
     if allowance <= 0:

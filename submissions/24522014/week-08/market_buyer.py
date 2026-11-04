@@ -101,11 +101,20 @@ def error_kind(error):
     return "agent_error"
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.requirements = requirements
     client.strategy_prompt = ROOT / "prompts/buyer-r3.txt"
     client.r3_context = decision_context
+    if fast_rules:
+        from buyer_fast import decision
+        client.rule_decision = lambda text: decision(text, client.budget, client.last_offer)
+        cached = []
+        def allow_model():
+            if not cached:
+                cached.append(bool(model_gate and model_gate()))
+            return cached[0]
+        client.model_gate = allow_model
     error = None
     try:
         with client:
@@ -186,6 +195,9 @@ def main():
     if shop:
         trade_options = {"mode": args.mode, "decision_context": selected_evidence,
                          "max_turns": support_decision["max_turns"]}
+        if support_decision.get("fast_rules"):
+            from buyer_support import reserve_model
+            trade_options.update(fast_rules=True, model_gate=lambda: reserve_model(args.order.parent, order["order"]))
         if r3 and order.get("kind") == "goods":
             trade_options["requirements"] = accept_conditions
         result, record = trade(shop, selected_item, trade_budget, **trade_options)

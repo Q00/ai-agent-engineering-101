@@ -5,7 +5,7 @@ Round 3 starter seller: sells from the stock the kit keeps in $MARKET_DIR/invent
     python seller.py --port 9301
 
 The course inventory seller is adapted to our logged model harness, explicit purchase confirmation,
-condition disclosure and approved clearance policy. No product warranty is promised.
+condition disclosure, approved clearance policy and bounded A-grade warranty trials.
 """
 import argparse
 import asyncio
@@ -67,7 +67,7 @@ def sign(receipt):
 
 
 def condition_notice(unit, terms=None):
-    """Disclose observed inventory state without promising an inspection or warranty."""
+    """Disclose observed inventory state and the coded coverage, without inventing inspection."""
     if not unit.get("unit"):
         return "", {}
     grade = unit.get("grade", "unknown")
@@ -79,12 +79,14 @@ def condition_notice(unit, terms=None):
                "certificate_available": bool(unit.get("cert")),
                "discount_reason": (terms or {}).get("discount_reason"),
                "discount_stage": (terms or {}).get("discount_stage", 0)}
+    details["warranty_hours"] = (terms or {}).get("warranty_hours", 0)
     notice = f"Inventory condition: {grade}."
     if expires:
         notice += f" Expires at {expires}."
     if terms and terms["discount_stage"]:
         notice += f" Clearance reason: {terms['discount_reason']}; stage {terms['discount_stage']}."
     notice += " Confirm the certificate at checkout; condition can change while negotiating."
+    notice += f" Warranty: {details['warranty_hours']} hours."
     return notice, details
 
 
@@ -153,7 +155,8 @@ class Seller(AgentExecutor):
                         self.open[identity]["touched"] = time.time()
 
     async def _execute(self, context, event_queue, busy_ids):
-        write(MARKET_DIR/"strategy-consumer.json", {"protocol": 1, "pid": os.getpid(), "heartbeat_at": time.time()})
+        write(MARKET_DIR/"strategy-consumer.json", {"protocol": 1, "pid": os.getpid(), "heartbeat_at": time.time(),
+              "features": ["actual_grade_receipt", "bounded_warranty_v1"]})
         task = context.current_task
         if task is None:
             task = new_task_from_user_message(context.message)
@@ -194,6 +197,13 @@ class Seller(AgentExecutor):
                 catalog = json.loads((MARKET_DIR / "catalog.json").read_text(encoding="utf-8"))
             signals = fresh(MARKET_DIR).get("skus", {}).get(u["sku"], {})
             terms = selling_terms(u, catalog, signals=signals, runtime=effective(MARKET_DIR))
+            from warranty_trial import assignment
+            coverage = deal.get("coverage")
+            if coverage is None or coverage.get("enrolled"):
+                coverage = assignment(MARKET_DIR, task.id, u, terms)
+                deal["coverage"] = coverage
+            terms["floor"] = max(terms["floor"], coverage["floor"])
+            terms["warranty_hours"] = coverage["hours"]
         except (OSError, ValueError, KeyError, StopIteration):
             self.open.pop(task.id, None)
             await up.reject(say("This unit is unavailable or its current condition cannot be verified."))
@@ -229,6 +239,10 @@ class Seller(AgentExecutor):
                 if u["unit"] in self.committed_units:
                     raise ValueError("Unit already committed")
                 terms = selling_terms(u, catalog, signals=signals, runtime=effective(MARKET_DIR))
+                if deal.get("coverage", {}).get("hours"):
+                    coverage = assignment(MARKET_DIR, task.id, u, terms)
+                    terms["floor"] = max(terms["floor"], coverage["floor"])
+                terms["warranty_hours"] = deal.get("coverage", {}).get("hours", 0)
                 reserve = terms["floor"]
                 deal["unit"] = u
             except (OSError, ValueError, KeyError, StopIteration):
@@ -254,11 +268,14 @@ class Seller(AgentExecutor):
             receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id}
             if u["unit"]:
                 receipt["unit"] = u["unit"]
+                receipt.update(claim=u["grade"], cert=True, warranty_hours=terms.get("warranty_hours", 0))
             receipt = sign(receipt)
             if u.get("unit"):
                 write(task_file(MARKET_DIR, "signed-offers", task.id),
                       {"task": task.id, "unit": u["unit"], "sku": u["sku"], "price": price,
                        "cost": u["cost"], "strategy_version": terms.get("strategy_version"),
+                       "grade": u.get("grade"), "warranty_hours": terms.get("warranty_hours", 0),
+                       "warranty_trial_group": deal.get("coverage", {}).get("group"),
                        "strategy_experiment": terms.get("strategy_experiment"),
                        "issued_at": time.time(), "expires_at": time.time() + OFFER_SECONDS})
                 self.committed_units.add(u["unit"])
@@ -299,7 +316,8 @@ class Seller(AgentExecutor):
 
 
 def build(port):
-    write(MARKET_DIR/"strategy-consumer.json", {"protocol": 1, "pid": os.getpid(), "heartbeat_at": time.time()})
+    write(MARKET_DIR/"strategy-consumer.json", {"protocol": 1, "pid": os.getpid(), "heartbeat_at": time.time(),
+          "features": ["actual_grade_receipt", "bounded_warranty_v1"]})
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=NAME,
