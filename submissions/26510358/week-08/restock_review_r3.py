@@ -21,7 +21,8 @@ GOAL = (
     "sells is a loss in net profit, the shop's main score. Find categories where the rules are likely wrong for "
     "OUR shop: low sell-through of what we received (not of what we requested: the supply window often fills "
     "less), stock that will expire before it sells, goods held for days, "
-    "or strong forum demand the ledger does not show yet. Propose a factor per such category: 0 stops buying it, "
+    "or strong forum demand the ledger does not show yet. market_principles in the context are the economics that "
+    "apply (cite one in a reason when it drove the factor). Propose a factor per such category: 0 stops buying it, "
     "0.5 halves the target, 1.3 raises it. Leave every other category out (factor 1). Prefer few, well-supported "
     "changes; give the observation behind each reason.")
 FINAL = '{"adjustments": [{"category": "<full category from the plan>", "factor": 0.0-1.5, "reason": "..."}]}'
@@ -63,9 +64,25 @@ def tools(mem, inv, demand):
                        sell_through, {"hours": "int <= 72"}),
             react.Tool("stock_on_hand", "per category: units, cost, hours until the first food expires, days goods "
                        "have been held", stock_on_hand),
-            primer.tool(), react.recall_tool(mem), scout.tool(mem), oracle.tool(mem),
+            react.recall_tool(mem), scout.tool(mem), oracle.tool(mem),
             react.Tool("category_evidence", "market demand, competition, price/list and forum signals for one category",
                        category_evidence, {"category": "full category string"})]
+
+
+def principles(mem, inv, now=None, k=2):
+    """Primer sections for the situation, put in the prompt up front. As a tool the primer was called 0 times in
+    107 ReAct runs (2026-11-04): the model reaches for data tools, never for principles."""
+    now = now or time.time()
+    units = inv.get("units") or []
+    q = ["newsvendor", "stock", "quantity"]
+    if any(u.get("expires_at") and u["expires_at"] - now < 12 * 3600 for u in units):
+        q += ["markdown", "perishable", "expiry"]
+    if any(u.get("kind") == "goods" and now - (u.get("supplied_at") or now) > 2 * 86400 for u in units):
+        q += ["inventory", "investment", "storage", "return"]
+    st = mem.sell_through(hours=24)
+    if any(d.get("fill") is not None and d["fill"] < 0.7 for d in st.values()):
+        q += ["supply", "signals", "bullwhip", "order"]
+    return primer.search(" ".join(q), k=k)
 
 
 def clamp(final, categories, protected=()):
@@ -95,8 +112,10 @@ def main(run=react.run):
     if (inv.get("round") or 0) < 3 or not demand:
         print(json.dumps({"event": "review_skip", "why": "not round 3 or no demand.json"}), flush=True)
         return
+    secs = principles(mem, inv)
     final, trace = run(GOAL, tools(mem, inv, demand), FINAL, purpose="restock_review",
-                       context={"current_adjustments": active_adjustments(mem)},
+                       context={"current_adjustments": active_adjustments(mem),
+                                "market_principles": [{"title": x["title"], "text": x["text"]} for x in secs]},
                        max_steps=config.REACT_MAX_STEPS, budget_s=config.REACT_BUDGET_S,
                        prefetch=("plan_preview", "sell_through", "stock_on_hand"))
     if final is None:                               # keep the old factors until they expire
@@ -106,7 +125,8 @@ def main(run=react.run):
     mem.put("restock_adjust", {"ts": time.time(), "items": items})
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
     with open(config.LOG_DIR / "restock-review.jsonl", "a", encoding="utf-8") as f:
-        f.write(json.dumps({"ts": round(time.time()), "proposed": final, "applied": items, "steps": len(trace)},
+        f.write(json.dumps({"ts": round(time.time()), "proposed": final, "applied": items, "steps": len(trace),
+                            "principles": [x["title"] for x in secs]},
                            ensure_ascii=False) + "\n")
     print(json.dumps({"event": "review_done", "applied": items}, ensure_ascii=False), flush=True)
 

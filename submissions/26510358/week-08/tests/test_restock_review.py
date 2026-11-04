@@ -112,3 +112,21 @@ def test_stockouts_protect_a_category(tmp_path, monkeypatch):
     assert restock_r3.active_adjustments(m) == {}
     m.put("restock_adjust", {"ts": time.time(), "items": {g1: {"factor": 1.3, "reason": ""}}})
     assert restock_r3.active_adjustments(m)[g1]["factor"] == 1.3     # raising is always allowed
+
+
+def test_principles_follow_the_situation_and_reach_the_prompt(tmp_path, monkeypatch):
+    m, now = setup(tmp_path, monkeypatch)
+    base = [x["title"] for x in restock_review_r3.principles(m, {"units": []})]
+    assert base[0].startswith("3.")                                    # newsvendor by default
+    food = {"units": [{"kind": "food", "expires_at": now + 3600, "cost": 1}]}
+    assert any(t.startswith("5.") for t in (x["title"] for x in restock_review_r3.principles(m, food)))
+    seen = {}
+
+    def run(goal, tools, final, **kw):
+        seen.update(kw)
+        assert "primer" not in {t.name for t in tools}                 # prefetched, no longer a tool
+        return {"adjustments": []}, []
+    restock_review_r3.main(run=run)
+    assert seen["context"]["market_principles"][0]["title"].startswith("3.")
+    row = json.loads((tmp_path / "logs" / "restock-review.jsonl").read_text().splitlines()[-1])
+    assert row["principles"] and row["principles"][0].startswith("3.")
