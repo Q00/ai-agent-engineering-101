@@ -69,7 +69,9 @@ SKU_MARKET_MIN = 10
 # SOLO_FLOOR of list, each plus half the warranty share (refurbished with a warranty: 0.80 and 0.70, not the full
 # share's 0.90), never under the cost floor.
 SOLO_OTHERS = 10
-SOLO_ASK = {"A": 0.85, "B": 0.80, "C": 0.70}
+SOLO_ASK = {"A": 0.82, "B": 0.77, "C": 0.67}   # 0.85 / 0.80 / 0.70 until 11/5 03:45: of 16 uncontested talks, 3 closed
+                                                # at 0.78-0.83 of list and 11 walked, most at the first ask (0.875 with a
+                                                # warranty) without an offer, which the floor cannot learn from
 SOLO_FLOOR = {"A": 0.75, "B": 0.70, "C": 0.60}
 # ...and the floor learns (11/5 02:40, the person's call): the first two uncontested talks both walked, one at 0.697
 # against our floor of 0.75 (the old floor, 0.684, would have sold it). A buyer who walks with a last offer within

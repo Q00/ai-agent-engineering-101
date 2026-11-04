@@ -271,8 +271,8 @@ def test_pricing():
           and pricing.plan(goods_b, now, sku_market={"B": {"n": 50, "median": 0.50}})["nudge"] is None)
     dear_a = dict(goods_a, list_price=2_000_000, cost=1_200_000)
     p = pricing.plan(dear_a, now, warranty=True, in_line=True, solo=True)
-    check("an uncontested line product, grade A with a warranty: asked at 85%, held at 75% of list, each + half the warranty's 5%",
-          (p["ask"], p["floor"], p["solo"]) == (1_750_000, 1_550_000, True), p)
+    check("an uncontested line product, grade A with a warranty: asked at 82%, held at 75% of list, each + half the warranty's 5%",
+          (p["ask"], p["floor"], p["solo"]) == (1_690_000, 1_550_000, True), p)
     check("...the same contested is priced by the rules (the warranty's 80%, the cost floor)",
           (lambda q: (q["ask"], q["floor"], q["solo"]))(pricing.plan(dear_a, now, warranty=True, in_line=True)) == (1_600_000, 1_360_000, False))
     check("...solo counts only in the line, and never on clearance",
