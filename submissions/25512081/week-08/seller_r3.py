@@ -89,6 +89,10 @@ MAX_BREAK_FOR_WARRANTY = 0.10
 # Our buyer collects every competitor's first ask (.market/competitors.json); we open at most UNDERCUT of the
 # lowest recent one for the same SKU, never under the floor.
 UNDERCUT, COMP_FRESH = 0.98, 6 * 3600
+# A rival ask under RIVAL_MIN of list is a misread, not a price: supply costs ~0.6 of list, and until 41fc22c our
+# buyer read e.g. "Ed25519" as an ask of 25519 for 0.1-0.4M mattresses (competitors.json Nov 5 00:20: of 1,850
+# asks, 93 under 0.15 of list and 17 more under 0.4); since Nov 4 11:00, 138 of our openings were cut toward cost.
+RIVAL_MIN = 0.4
 SHORT_MARKET = 0.4        # no undercutting while this share of the market's orders ends without a deal
 # Scarcity: when much of the market's demand goes unmet (pulse.json, the no-deal share of recent results that
 # restock.py reads off the ledger) or no other shop held the category when our buyer last saw it, buyers have
@@ -248,7 +252,7 @@ def terms(u):
         log(f"[bandit] {u['category'].split('>')[-1]}: opening with arm {arm} (sampled deal chance {theta:.2f})")
         share *= arm
     ask = max(floor, int(round(u["list_price"] * min(max(share, 0 if end else SHARE_BOUNDS[0]), max_share(u)), -1)))
-    rival = rival_ask(u["sku"])
+    rival = rival_ask(u["sku"], u["list_price"])
     short = (_load("pulse.json", {}).get("nodeal") or 0) >= SHORT_MARKET
     if rival and rival * UNDERCUT < ask and not short:     # in a short market a buyer takes what it finds
         log(f"[rival] {u['sku']}: lowest competitor ask {rival}, opening at {max(floor, int(rival * UNDERCUT))} not {ask}")
@@ -276,9 +280,9 @@ def scarcity(category):
     return f
 
 
-def rival_ask(sku):
+def rival_ask(sku, list_price=0):
     asks = [a for ts, shop, a in _load("competitors.json", {}).get("asks", {}).get(sku, [])
-            if time.time() - ts < COMP_FRESH and shop != NAME and a]
+            if time.time() - ts < COMP_FRESH and shop != NAME and a and a >= RIVAL_MIN * list_price]
     return min(asks) if asks else None
 
 
