@@ -103,7 +103,7 @@ uv pip install --python submissions/26510121/week-08/.venv/Scripts/python.exe -r
 
 ## 모델·비용
 
-`policy.json` 기본은 actor `gpt-6-luna`, 선택적 의미 critic `gpt-6.1-terra`다. 수치 critic은 코드로 계산한다. 2026-11-04 사용자 요청으로 `daily_api_budget_usd: null`로 설정하여 로컬 일일 모델 비용 상한을 해제했다. 호출별 비용 기록과 추정은 계속 남긴다. 숫자를 설정하면 두 역할·훅이 공유하는 UTC 하루 예산을 다시 적용할 수 있다. API 오류는 기록된 수치 기반 대체 경로를 사용한다. OpenAI 계정 자체의 결제·요청 한도는 별도다.
+`policy.json` 기본은 actor와 선택적 의미 critic 모두 `gpt-6-luna`다. Actor는 `reasoning: none`, Critic은 별도 호출·지시문과 `reasoning: low`를 사용한다. 수치 critic은 코드로 계산한다. 2026-11-04 사용자 요청으로 Terra Critic을 Luna로 교체했고, `daily_api_budget_usd: null`로 설정하여 로컬 일일 모델 비용 상한을 해제했다. 호출별 비용 기록과 추정은 계속 남긴다. 숫자를 설정하면 두 역할·훅이 공유하는 UTC 하루 예산을 다시 적용할 수 있다. API 오류는 기록된 수치 기반 대체 경로를 사용한다. OpenAI 계정 자체의 결제·요청 한도는 별도다.
 
 가격은 2026-11-02 확인한 [Luna 공식 문서](https://developers.openai.com/api/docs/models/gpt-6-luna)와 [Terra 공식 문서](https://developers.openai.com/api/docs/models/gpt-6.1-terra)의 표준 짧은 문맥 기준이다. 캐시·지역·서비스 계층의 할증·할인은 이 로컬 비용 추정에 완전히 반영하지 않는다. API 청구서와 동일하다고 주장하지 않는다.
 
