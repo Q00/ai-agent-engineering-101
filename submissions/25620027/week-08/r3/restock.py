@@ -25,6 +25,7 @@ from r3.market_files import (
     CatalogItem,
     DemandRow,
     Inventory,
+    RestockWindow,
     read_catalog,
     read_demand,
     read_inventory,
@@ -40,6 +41,9 @@ MAX_LINES: Final = 10
 # The market draws a unit's cost at 55-75% of list for grade A; cash checks use the
 # top of that range. The policy table cannot lower it.
 WORST_CASE_COST_SHARE: Final = 0.75
+# The kit retries a refused line three times, sleeping up to 30 s each, so a plan
+# printed further than this before the window opens spends its lines on 429s.
+WINDOW_LEAD_SECONDS: Final = 30.0
 
 
 class RestockState(FrozenModel):
@@ -249,6 +253,17 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
     return lines[:MAX_LINES], updated
 
 
+def supply_closed(window: RestockWindow | None, now: float) -> bool:
+    """True while the supply window is shut for longer than the kit's retries wait.
+
+    Half the lines printed on 11/4 (237 of 521) hit a closed window and were lost;
+    the hook now prints nothing until the window is about to open.
+    """
+    if window is None or window.open is not False:
+        return False
+    return window.opens_at - now > WINDOW_LEAD_SECONDS
+
+
 def run(
     folder: Path,
     *,
@@ -261,10 +276,13 @@ def run(
     policy = load_policy(
         policy_file if policy_file is not None else policy_path(folder)
     )
+    inventory = read_inventory(folder)
+    if supply_closed(inventory.restock, stamp):
+        return json.dumps({"buy": []})
     state_path = folder.resolve().parent / STATE_FILE
     state = load_state(state_path)
     lines, updated = plan(
-        read_inventory(folder),
+        inventory,
         read_catalog(folder),
         read_demand(folder),
         policy.restock,

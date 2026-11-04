@@ -54,6 +54,14 @@ class Unit(KitFile):
         return "B" if ratio >= FOOD_GRADE_CUTS[1] else "C"
 
 
+class RestockWindow(KitFile):
+    """When the market's supply endpoint takes orders (about 3 min every 20 min)."""
+
+    open: bool | None = None
+    opens_at: float = 0.0
+    closes_at: float = 0.0
+
+
 class Inventory(KitFile):
     """The shop's wallet and stock as the kit last read it (up to 10 s old)."""
 
@@ -65,6 +73,7 @@ class Inventory(KitFile):
     bankrupt_line: int = 500_000
     storage_per_day: float = 0.01
     units: tuple[Unit, ...] = ()
+    restock: RestockWindow | None = None
 
 
 class CatalogItem(KitFile):

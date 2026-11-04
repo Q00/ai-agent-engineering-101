@@ -104,6 +104,28 @@ def test_restock_follows_settled_demand_and_round_two_buys_nothing(
     }
 
 
+
+def test_restock_prints_nothing_while_the_supply_window_is_shut(
+    tmp_path: Path,
+) -> None:
+    # Given: a Round 3 shop with cash and the market's supply window 10 min away.
+    folder = tmp_path / ".market"
+    now = time.time()
+    shut = {"open": False, "opens_at": now + 600, "closes_at": now + 780}
+    _ = write_market(folder, [], window=shut)
+    # When / Then: the hook buys nothing (each line would be a lost 429).
+    assert json.loads(run(folder, policy_file=tmp_path / "p.json", now=now)) == {
+        "buy": []
+    }
+    # When: the window opens within the kit's retry wait, or is open.
+    for window in (
+        {**shut, "opens_at": now + 20},
+        {"open": True, "opens_at": now - 30, "closes_at": now + 150},
+    ):
+        _ = write_market(folder, [], window=window)
+        # Then: the plan goes out.
+        assert json.loads(run(folder, policy_file=tmp_path / "p.json", now=now))["buy"]
+
 def deal_file(tmp_path: Path, **settled: object) -> Path:
     folder = tmp_path / ".market"
     folder.mkdir(exist_ok=True)

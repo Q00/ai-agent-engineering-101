@@ -87,6 +87,7 @@ def write_market(
     *,
     balance: int = 5_000_000,
     market_round: int = 3,
+    window: dict[str, object] | None = None,
 ) -> Path:
     """Write inventory.json, catalog.json and demand.json like kit v4 does."""
     folder.mkdir(parents=True, exist_ok=True)
@@ -101,6 +102,7 @@ def write_market(
                 "bankrupt_line": 500_000,
                 "storage_per_day": 0.01,
                 "units": units,
+                **({"restock": window} if window is not None else {}),
             },
             ensure_ascii=False,
         ),
