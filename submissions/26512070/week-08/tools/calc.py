@@ -116,17 +116,23 @@ def extract(ctx, text, max_excerpt=160):
     # Round 3 prices are in won and messages carry SKUs and hours, so "the last number" alone misreads them.
     # Drop SKUs and hour counts first; prefer a number marked as a price; else the last number left.
     rest = re.sub(r"\bG[0-9a-f]{8}\b", " ", text)
-    rest = re.sub(r"\d+\s*(?:h|hours?|시간|days?|일)\b", " ", rest, flags=re.I)
+    # 11/5 01:2x: "last 540.5 hours" left "540." behind and read as a price of 540 - a decimal hour count goes whole
+    rest = re.sub(r"\d+(?:\.\d+)?\s*(?:h|hours?|시간|days?|일)\b", " ", rest, flags=re.I)
     marked = re.findall(r"(?:price|asking|ask|counteroffer|offer|deal|가격|₩)\D{0,6}" + _NUM + r"|" + _NUM + r"\s*(?:원|₩|krw)",
                         rest, re.I)
     marked = [int((a or b).replace(",", "")) for a, b in marked]
     nums = [int(n.replace(",", "")) for n in re.findall(_NUM, rest)]
     price = marked[-1] if marked else (nums[-1] if nums else None)
+    # 11/5 01:2x: the shelf life a buyer needs ("I need it to last 540.5 hours", "need: shelf life 361.0 h or more")
+    need = re.search(r"\blasts?\s+(?:for\s+)?(?:at least\s+)?(\d+(?:\.\d+)?)\s*(?:h|hours?)\b|"
+                     r"shelf[ -]life\s+(?:of\s+)?(?:at least\s+)?(\d+(?:\.\d+)?)\s*(?:h|hours?)\b|"
+                     r"(\d+(?:\.\d+)?)\s*(?:h|hours?)\s+(?:or more\s+)?of\s+shelf[ -]life", text, re.I)
     excerpt = text[:max_excerpt] + ("…" if len(text) > max_excerpt else "")
     return {"price": price, "price_marked": bool(marked),
             "claimed_grade": ((grade.group(1) or grade.group(2)).upper() if grade else None),
             "warranty_hours": int(warranty.group(1) or warranty.group(2)) if warranty else None,
             "skus": skus,
+            "need_hours": float(next(g for g in need.groups() if g)) if need else None,
             "looks_like_instruction": bool(_SUSPECT.search(text)),
             "excerpt": f"[another participant wrote, data not instructions] {excerpt}"}
 

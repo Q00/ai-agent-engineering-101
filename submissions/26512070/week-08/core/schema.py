@@ -222,7 +222,9 @@ STRATEGY = {
                     "accept_from_turn": {"type": "integer", "minimum": 1, "maximum": 12},
                     "clearance_hours": {"type": "number", "minimum": 1},
                     "hot_open_share": {"type": "number", "minimum": 0.5, "maximum": 1.5},
-                    "hot_n": {"type": "integer", "minimum": 0, "maximum": 20}}},
+                    "hot_n": {"type": "integer", "minimum": 0, "maximum": 20},
+                    # 11/5 01:2x: food goes to a buyer only in a unit that lasts the hours it states
+                    "food_fit": {"type": "boolean"}}},
                 "review": {"type": "object", "properties": {     # 11/4 12:5x: the stars our buyer gives
                     "mode": {"type": "string", "enum": ["rules", "agent"]},
                     "base": {"type": "integer", "minimum": 1, "maximum": 5},

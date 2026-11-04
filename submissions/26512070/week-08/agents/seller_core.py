@@ -26,6 +26,7 @@ from tools.registry import Ctx, call
 MAX_TURNS = 12
 KNOWN_AT = 0.5             # a guess this sure that names a confirmed customer makes the buyer "not first time"
 CANDIDATES = 5
+FIT_SPARE = 1.05           # food_fit: a unit must last the buyer's stated hours with 5% to spare
 
 
 def canon(d):
@@ -69,6 +70,20 @@ class SellerCore:
                 return [w for w in [(c.get("category") or u.get("category") or "").split(">")[-1],
                                     c.get("name") or u.get("name")] if w]
             named = [u for u in units if any(w.lower() in want for w in words(u))]
+        # 11/5 01:2x (user: seller unit choice): a food buyer that states the hours it needs gets a unit that lasts them
+        # with 5% to spare - selling the first to expire drew 61 of 109 ratings of 3 or less in 6 h ("Only 306 h of
+        # shelf life left; I needed 361 h") while longer units of the same SKU sat in stock
+        need = ex.get("need_hours")
+        self.short = None
+        if need and self.playbook(ctx)["food_fit"]:
+            def lasts(u):
+                h = mf.hours_left(u.get("expires_at"), now)
+                return u.get("kind") != "food" or h is None or h >= need * FIT_SPARE
+            fit = [u for u in named if lasts(u)]
+            if named and not fit:
+                most = max(mf.hours_left(u.get("expires_at"), now) or 0 for u in named)
+                self.short = {"need": need, "most": most, "sku": named[0]["sku"]}
+            named = fit
         # one unit per SKU (the one that expires first), so the model sees choices, not copies
         best = {}
         for u in sorted(named, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0)):
@@ -110,6 +125,10 @@ class SellerCore:
             cands = self.candidates(ctx, ex, text)
             if not cands:
                 self.missed(ctx, task_id, ex, text)
+                if self.short:                   # say the true hours rather than sell a unit that will not last
+                    return self._close(task_id, None, "rejected",
+                                       f"Sorry, our units of {self.short['sku']} keep at most {self.short['most']:.0f} h, "
+                                       f"less than the {self.short['need']:g} h you need.")
                 return self._close(task_id, None, "rejected", "Sorry, we have none of that in stock right now.")
             st = self.open[task_id] = {"unit": None, "candidates": cands, "ask": None, "offer": None, "turns": 0,
                                        "lines": []}
@@ -182,7 +201,8 @@ class SellerCore:
                 # user 11/4 11:5x (benchmark: dae-yangkim, top profit, sells its scarce high-list goods at 0.85):
                 # SKUs in demand open at hot_open_share - the buy list's top hot_n goods and what visitors asked for
                 # that we lacked in the last 30 min
-                "hot_open_share": pb.get("hot_open_share"), "hot_n": pb.get("hot_n", 5)}
+                "hot_open_share": pb.get("hot_open_share"), "hot_n": pb.get("hot_n", 5),
+                "food_fit": pb.get("food_fit", False)}
 
     @staticmethod
     def hot_skus(ctx, pb):

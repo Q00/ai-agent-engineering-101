@@ -119,5 +119,26 @@ class SellerCoreTest(Base):
         sh = [e["data"] for e in EventReader("t2", "seller").iter_new() if e["kind"] == "seller.shadow"]
         self.assertEqual((sh[-1]["rule"]["price"], sh[-1]["agent"]["price"]), (4500, 4400))
 
+    def test_food_fit_sells_a_unit_that_lasts_the_stated_hours(self):
+        # 11/5 01:2x: two units of G0011e806, 30 h and 90 h left; the buyer needs 60 h
+        from core import atomic
+        from tests.test_calc_check import H, UNITS
+        short = dict(UNITS[0], unit="u-food-a2", expires_at=NOW + 30 * H)
+        self.write_inventory(UNITS + [short], balance=4_000_000)
+        path = paths.memory() / "strategy" / "active.json"
+        st = atomic.read_json(path)
+        ask = "I want to buy G0011e806. I need it to last {} hours; please ship a unit that does."
+        for fit, need, unit in [(False, 60, "u-food-a2"), (True, 60, "u-food-a"), (True, 20.5, "u-food-a2")]:
+            st["playbook"] = {"seller": {"mode": "rules", "food_fit": fit}}
+            atomic.write_json(path, st)
+            task = f"f-{fit}-{need}"
+            out = self.core.handle(task, ask.format(need))
+            self.assertEqual(out["state"], "input_required", out["say"])
+            self.assertEqual(self.core.open[task]["candidates"][0]["unit"], unit, (fit, need))
+            self.core.open.clear()                                # the unit is held while a talk is open
+        out = self.core.handle("f-none", ask.format(95))           # 90 h is under 95 x 1.05: say so, sell nothing
+        self.assertEqual(out["state"], "rejected")
+        self.assertIn("keep at most 90 h, less than the 95 h you need", out["say"])
+
 if __name__ == "__main__":
     unittest.main()
