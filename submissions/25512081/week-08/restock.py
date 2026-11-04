@@ -61,6 +61,8 @@ VALUE_BUDGET = 7_000_000   # 4.5M until Nov 4 14:00; since 17:00 the floor of th
 STOCK_SHARE = 0.90        # 0.70 / 0.55 for 40 min: the leader (inextro) puts ~27-30M into 20 units of one
 VALUE_SHARE = 0.70        # 2.32M sofa every window (236M of supply in 1.5 h) and sells ~65 an hour at 0.80 of list
 LINE_QTY_MAX = 20         # the most any shop bought in one line (inextro and yms979 buy 20 at a time)
+SELL_PACE = 2.0           # Nov 4 16:17-18:17: our 8-10 Jakomo sofas a window sold out in ~12 min (13 deals 18:03-18:15),
+                          # then 34 asks for it got "none in stock"; the revenue share alone sized the line at 8
 
 
 def scale_caps(inv, stock_cost):
@@ -223,7 +225,10 @@ def targets(st, demand, catalog=None):
         n = int(VALUE_BUDGET * share // unit_cost)
         if (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48:
             n = min(n, 2)
-        if top and n > 0:                            # counted against units of that SKU, not of the category:
+        elif top and n > 0:                          # at least what we sold of it last hour, per window, x SELL_PACE
+            pace = sum(1 for s in st.get("sold_log", []) if s["sku"] == top and time.time() - s["ts"] < 3600)
+            n = max(n, math.ceil(pace / 3 * SELL_PACE))
+        if top and n > 0:                          # counted against units of that SKU, not of the category:
             VALUE_SKU[cat] = (top, min(n, LINE_QTY_MAX))  # six cheap stools must not stand in for leather sofas
     for cat, m in market_state(st).items():          # short categories: stock for what sells until the next window
         if m["cover"] is not None and m["cover"] < SHORT_COVER and cat in kind:
