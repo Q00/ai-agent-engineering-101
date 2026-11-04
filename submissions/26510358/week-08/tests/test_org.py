@@ -19,6 +19,8 @@ def org(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "MARKET_DIR", tmp_path / "market")
     monkeypatch.setattr(config, "LOG_DIR", tmp_path / "logs")
     (tmp_path / "market").mkdir()
+    from r3lib import market
+    monkeypatch.setattr(market, "get_json", lambda *a, **k: None)                # no network: inventory.json decides
     client._CLIENTS.clear()
     return tmp_path
 

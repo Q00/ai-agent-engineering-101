@@ -78,14 +78,22 @@ def kick_forum(mem):
     kick(mem, "forum_r3.py", "forum_kick", FORUM_EVERY)
 
 
-def window_near(inv, now=None):
-    """True when supply is open or opens within RESTOCK_LEAD_S. Without restock info, True (old behaviour)."""
-    r = inv.get("restock") or {}
+def window_near(inv, now=None, live=None):
+    """True when supply is open or opens within RESTOCK_LEAD_S, judged on the market's clock: GET /api/restock gives
+    open, opens_at and the server's now (2026-11-04: this machine ran 163 s fast without NTP, so a run 47 s before
+    the window by our clock was 148 s before it by the market's, and the kit skipped every line). Falls back to
+    inventory.json and our clock when the endpoint does not answer; True without any restock info."""
+    if live is None and now is None:
+        live = market.get_json("/api/restock")
+    if isinstance(live, dict) and live.get("now"):
+        r, now = live, live["now"]
+    else:
+        r = inv.get("restock") or {}
+        now = now or time.time()
     if not r:
         return True
     if r.get("open"):
         return True
-    now = now or time.time()
     if r.get("closes_at") and now > r["closes_at"]:
         return False                                      # stale: that window is over, the next is not posted yet
     return (r.get("opens_at") or 0) - now <= config.RESTOCK_LEAD_S

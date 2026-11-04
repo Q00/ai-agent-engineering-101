@@ -40,6 +40,14 @@ def test_window_timing():
     assert restock_r3.window_near({}, now)
 
 
+def test_window_uses_the_market_clock():
+    import restock_r3
+    inv = {"restock": {"open": False, "opens_at": 1000, "closes_at": 1180}}
+    # our clock says 47 s to go, the market says 148 s: the market wins
+    assert not restock_r3.window_near(inv, live={"now": 852, "open": False, "opens_at": 1000, "closes_at": 1180})
+    assert restock_r3.window_near(inv, live={"now": 960, "open": False, "opens_at": 1000, "closes_at": 1180})
+
+
 def test_stockouts_become_our_demand(tmp_path, monkeypatch):
     import restock_r3
     import shop_r3
