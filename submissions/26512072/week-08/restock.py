@@ -14,9 +14,10 @@ Demand signal, best first:
   3. cold start, only while the ledger shows no settles yet: per category, the SKU whose list price is closest to
      the category's median (orders accept SKUs priced 0.5-1.5 x a reference price).
 Round 3 showed demand is concentrated (one mattress, one kimchi, bedding and water took a third of the first 450
-settles), so best sellers get up to 5 units (3 above 100,000), ranked by credits settled, and fast-selling food is
-kept even if short-lived. Goods break in about 2% of the market's deals, so expensive goods are worth the warranty.
-Money: keep 2,000,000 in cash, hold at most 4,000,000 of stock at cost, spend at most 20% of the balance a run
+settles), so best sellers get up to 5 units (6 above 100,000), ranked by credits settled, and fast-selling food is
+kept even if short-lived. 11-04 02:20: mattresses were 54% of the market's credits over 3 hours, one queen mattress
+(list 423,810) sold 424 times against 437 supplied, and mine sold within minutes of arriving. Goods break in about 2% of the market's deals, so expensive goods are worth the warranty.
+Money: keep 1,000,000 in cash, hold at most 7,000,000 of stock at cost, spend at most 40% of the balance a run
 (about two runs fit in one window).
 Food: only SKUs that keep for 10 days or more, unless the market or I sold that SKU before.
 """
@@ -30,9 +31,9 @@ from pathlib import Path
 from r3lib import (HERE, SALES, append_jsonl, catalog, forum_wants, market_now, read_json, read_jsonl,
                    refresh_market_sales)
 
-CASH_FLOOR = 2_000_000
-STOCK_CAP = 4_000_000
-SPEND_SHARE = 0.20
+CASH_FLOOR = 1_000_000
+STOCK_CAP = 7_000_000
+SPEND_SHARE = 0.40
 MAX_LINES = 10
 EST_COST = 0.65            # expected cost as a share of list price (A 55-75%, B 40-60%, C 25-45%)
 LEAD = 60                  # start a run this many seconds before the window opens (the kit waits for it)
@@ -86,7 +87,7 @@ def main():
         if cat[sku]["list_price"] <= 100_000:
             target = min(5, max(3 if sku in mine else 1, 1 + n // 6))   # what I sold has to last to the next window
         else:
-            target = min(3, 1 + n // 20)
+            target = min(6, 1 + n // 40)
         why = f"sold by me ({mine[sku]})" if sku in mine else f"sold in the market ({p_n(market, sku)} settles)"
         wants.append((why, sku, target))
     demand = read_json(md / "demand.json", []) or []

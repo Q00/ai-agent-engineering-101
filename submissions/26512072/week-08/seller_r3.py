@@ -107,7 +107,7 @@ def terms(u):
         quality = GRADE_WORDS.get(u["grade"], u["grade"]) + (f", about {left:.0f} h of shelf life left" if left else "")
         opening = round(lp * ({"A": 0.85, "B": 0.8, "C": 0.72}.get(u["grade"], 0.8) + delta))
     else:
-        floor = round(cost * 1.15)                  # room for the warranty refunds
+        floor = round(cost * 1.08)                  # goods break in about 2% of the market's deals
         quality = GOODS_WORDS.get(u["grade"], u["grade"]) + f", {WARRANTY_HOURS} h warranty"
         opening = round(lp * ({"A": 0.85, "B": 0.78, "C": 0.7}.get(u["grade"], 0.8) + delta))
         if market_now() - (u.get("supplied_at") or market_now()) > 72 * 3600:   # 3 days unsold: storage eats it
