@@ -163,10 +163,10 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             arm, price, why = o["price_share"], lp * o["price_share"], why + [f"experiment price_share {o['price_share']}"]
         if "undercut" in o:
             follow = o["undercut"]
-    if follow:
+    if follow is not None:
         follow = min(follow, t.get("max_undercut", 0.05))      # finance caps how far under the median we go
     median = None
-    if follow:
+    if follow is not None:          # 0 means "at the median", not "no follow" (11-04: a 0 cap sent mattresses out at 0.92)
         median, n = market_model.market_price(c, unit["sku"])
         if median:
             price, why = min(price, median * (1 - follow)), why + [f"follow: {follow:.0%} under the 24 h median {median:.0f} (n={n})"]
