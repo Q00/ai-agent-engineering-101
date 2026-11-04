@@ -43,6 +43,15 @@ Rules in force (analysis/active_rules.json, which the integrated analysis writes
 the focus phase): focus categories +1, drop categories 0. Wind-down, by the clock: from 3
 days before the end only products selling 2 a day or more are refilled and nothing new is
 listed; nothing is bought in the last 6 hours.
+The premium line (focus phase, 11/4: sell where supply is short): a few dear products listed
+in LINE (or analysis/line.json, which a person or the analysis may rewrite) with the most units
+each may hold. 76% of the market's money was in beds and sofas, and the dear ones had few
+sellers (2-11 a product) while half of our buyer's orders for beds over 1.2M found no shop. A
+line product starts at one unit and is kept for its pace (our sales of it in 3 h cover two
+supply cycles) up to its cap; one held two hours without a sale gets no more; none is bought in
+the last 30 hours. Its lines come first, at most LINE_LINES a run, and the shelf's other rules
+(stages, drops, the wind-down) do not touch it. Anything listed over PRICEY_MAX that is not in
+the line is never refilled (a sofa sold once is not stocked 3 deep by the ordinary rule).
 
 Each run also checks which agreed deals settled (their unit left the inventory) or stayed
 unpaid (still there 10 minutes later), and records what reached the shelf and what left it
@@ -59,8 +68,23 @@ from pathlib import Path
 import common
 import pricing
 
-CAP = 4_000_000          # stock at cost (2,500,000 until 11/4: each window stopped near it with ~130 products below target)
-RESERVE = 2_500_000      # balance kept
+CAP = 15_000_000         # stock at cost, planned at DEAREST (2.5M until 11/4 14:00, then 4M; 15M for the premium line,
+                         # so the balance kept binds first: the user's call to invest, 11/4 evening)
+RESERVE = 2_500_000      # balance kept: refunds of broken goods under warranty come out of it
+LINE = {                 # the premium line: SKU -> the most units held (11/4 evening; analysis/line.json overrides it)
+    "G8ec51935": 3,      # 자코모 4인 소파 2,320,000: 40 sold an hour by 11 shops, 0.80 of list
+    "G7a341425": 1,      # 자코모 3.5인 소파 2,192,000: 3.8 an hour, 2 shops
+    "G8adbc159": 2,      # 에비뉴엘 4인 소파 1,872,000: 7.9 an hour, 3 shops
+    "G03d0199f": 2,      # 라클라우드 침대 Q 1,611,000: 12.8 an hour, 6 shops; our buyer's orders for such beds unmet
+    "G00327e80": 2,      # 다우닝 4인 소파 2,246,800: 15.8 an hour, 9 shops
+    "Gb5d0dde7": 1,      # 시몬스 매트리스 Q 1,094,400: 9.4 an hour, 7 shops
+    "G8095ddd6": 1,      # 침대 851,400: 4.9 an hour, 4 shops
+    "G05277ffe": 1,      # 침구 600,000: 6.7 an hour, 4 shops
+}
+LINE_LINES = 4           # line products bought in one run at most (the shelf's refills need the other lines)
+LINE_MAX_UNITS = 5
+LINE_STALL = 2 * 3600    # held this long with no sale of the product: no more units
+LINE_STOP = 30 * 3600    # no line product is bought this close to the end
 LINES = 10               # the kit buys at most 10 lines a run
 RUN_EVERY = 20 * 60      # seconds between the kit's runs of this hook (60 until 11/3); set it to the kit's
 SLOW = RUN_EVERY >= 600  # refills wait 10 minutes or more: keep one more unit of what sells
@@ -229,11 +253,40 @@ def evidence(catalog: dict, summary: dict, orders: list, wanted: dict, now: floa
     return score
 
 
+def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: float) -> list:
+    """[(sku, units to buy)] for the premium line: one unit to start, then our pace over two supply cycles,
+    up to the product's cap; nothing more for one held LINE_STALL seconds with no sale, nor near the end."""
+    line = {s: n for s, n in (line or {}).items()
+            if s in catalog and isinstance(n, int) and not isinstance(n, bool) and 0 < n <= LINE_MAX_UNITS}
+    if not line or common.ROUND_END - now <= LINE_STOP:
+        return []
+    held = Counter(u["sku"] for u in units if u.get("sku") in line)
+    recent = Counter(s["sku"] for s in sales if s.get("sku") in line and s.get("ts", 0) >= now - PACE_HOURS * 3600)
+    alive = {}                                           # the last sale of it, or the arrival of the oldest unit held
+    for s in sales:
+        if s.get("sku") in line:
+            alive[s["sku"]] = max(alive.get(s["sku"], 0), s.get("ts", 0))
+    for u in units:
+        if u.get("sku") in line:
+            first = min((x.get("supplied_at") or now) for x in units if x.get("sku") == u["sku"])
+            alive[u["sku"]] = max(alive.get(u["sku"], 0), first)
+    out = []
+    for sku, most in line.items():
+        if held[sku] and now - alive.get(sku, now) > LINE_STALL:
+            continue
+        pace = math.ceil(recent[sku] / PACE_HOURS * 2 * RUN_EVERY / 3600)
+        target = max(1, min(most, pace))
+        if target > held[sku]:
+            out.append((sku, target - held[sku]))
+    return out
+
+
 def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, refusals: list,
          rules: dict, now: float, wanted: dict | None = None, orders: list | None = None,
-         stocked: set | None = None, phase: str = "explore") -> tuple[dict, dict]:
+         stocked: set | None = None, phase: str = "explore", line: dict | None = None) -> tuple[dict, dict]:
     """({"buy": [...]} or bankruptcy, a few numbers for the log). rules: the seller's rules in force;
-    orders: our buyer's order records (what buyers ask for); stocked: the SKUs bought before."""
+    orders: our buyer's order records (what buyers ask for); stocked: the SKUs bought before;
+    line: the premium line, SKU -> the most units held."""
     units = inv.get("units") or []
     if inv.get("round", 0) < 3:
         return {"buy": []}, {"note": "before Round 3"}
@@ -278,7 +331,8 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
             targets[s] = 0
         elif cat in focus or cat.split(">")[-1] in focus:
             targets[s] += 1
-    targets = {s: min(MAX_DEPTH if depth.get(s, 0) > MAX_TARGET else MAX_TARGET, t) for s, t in targets.items()}
+    targets = {s: min(MAX_DEPTH if depth.get(s, 0) > MAX_TARGET else MAX_TARGET, t) for s, t in targets.items()
+               if s not in (line or {}) and catalog[s]["list_price"] <= PRICEY_MAX}    # dear goods only through the line
     wind_down = to_end < WIND_DOWN
     if wind_down:
         targets = {s: t for s, t in targets.items() if sold_day.get(s, 0) >= FAST}
@@ -311,12 +365,16 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
                 buy.append({"sku": sku, "qty": qty})
                 spend += each * qty
                 room -= 1
+    premium = line_gaps(line, catalog, units, sales, now)
+    take([(-1, sku, need) for sku, need in premium], min(LINE_LINES, lines))   # the premium line first
+    bought_line = len(buy)
     take(known, lines - explore)                                   # refills, the fast sellers stocked deep
     take(fresh, explore)
     take([g for g in known + fresh if g[1] not in {b["sku"] for b in buy}], lines)   # lines left over
     info = {"stage1": len(one), "gate": f"{len(sales)}/{GATE}" + (" open" if gate else ""),
             "targets": len(targets), "gaps": len(gaps), "stock": int(value), "wind_down": wind_down, "lines": lines,
-            "new": sum(1 for b in buy if b["sku"] not in seen), "deep": sum(1 for b in buy if b["qty"] > MAX_TARGET)}
+            "new": sum(1 for b in buy if b["sku"] not in seen), "deep": sum(1 for b in buy if b["qty"] > MAX_TARGET),
+            "line": bought_line, "line_gaps": len(premium)}
     return {"buy": buy}, info
 
 
@@ -338,10 +396,11 @@ def main() -> int:
     wanted = (common.read_json(common.MARKET_DIR / "analysis" / "wanted.json", {}) or {}).get("categories") or {}
     if "stocked" not in state:                           # every SKU bought so far; records/restock.jsonl is archived after 48 h
         state["stocked"] = sorted({b.get("sku") for r in common.records("restock") for b in r.get("buy") or [] if b.get("sku")})
+    line = (common.read_json(common.MARKET_DIR / "analysis" / "line.json", {}) or {}).get("skus") or LINE
     out, info = plan(inv, catalog, common.read_json(state_dir / "demand.json", []) or [],
                      common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {},
                      sales, common.records("refusals"), common.rules()["seller"], now, wanted, common.records("orders"),
-                     set(state["stocked"]), common.strategy()["phase"])
+                     set(state["stocked"]), common.strategy()["phase"], line)
     state["stocked"] = sorted(set(state["stocked"]) | {b["sku"] for b in out["buy"]})
     print(f"[restock] {info}, buying {len(out['buy'])} line(s)", flush=True)
     if state.get("round_start") and now - state["round_start"] > WARN_AFTER and len(sales) < WARN_BELOW \
