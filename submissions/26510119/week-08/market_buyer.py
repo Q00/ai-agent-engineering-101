@@ -140,6 +140,9 @@ def negotiate(base, item, budget, started, request=None, list_price=None, first_
     request = request or f"I want to buy a {item}"
     task = send(url, request)
     if state(task) != "TASK_STATE_INPUT_REQUIRED":
+        if state(task) == "TASK_STATE_REJECTED" and info is not None:   # mostly "none in stock": the listing
+            info["walked"] = f"the shop turned the request down: {says(task)[:80]!r}"   # lags behind sales
+            info["nostock"] = True
         return task, None
     task_id, offered = task["id"], None
     history = [f"you: {request}", f"shop: {says(task)}"]
@@ -159,7 +162,13 @@ def negotiate(base, item, budget, started, request=None, list_price=None, first_
             break
         numbers = re.findall(r"\d+", says(task))
         ask = int(numbers[-1]) if numbers else None
-        if first_offer and offered is None and ask is not None and ask > first_offer:
+        left = re.search(r"(\d+)\s+offers?\s+left", says(task), re.I)
+        if offered is not None and ask is not None and ask <= budget and \
+                (ask - offered <= 0.02 * ask or (left and int(left.group(1)) <= 1)):
+            action, price = "accept", ask      # a few won apart, or the shop's last round: haggling on loses the deal
+            log(f"[policy] accepting {ask}: {ask - offered} above our offer"
+                + (f", {left.group(1)} offers left" if left else ""))
+        elif first_offer and offered is None and ask is not None and ask > first_offer:
             action, price = "offer", min(first_offer, budget)       # the opening offer comes from the policy
             log(f"[policy] opening offer {price} ({first_offer} from the list price)")
         else:
@@ -276,12 +285,14 @@ def choose_r3(shops, order, memory, cat, p=None):
 def stale_food(memory, need, p):
     """(shop, sku) pairs whose unit, by what the shop told us when we walked away lately, cannot last `need` hours
     now. A shop does not show shelf life in its listing; this is the only way to learn it before asking."""
-    if not need:
-        return set()
     now, keep = time.time(), p.get("walk_memory_hours", 3) * 3600
-    return {(m["shop"], m["sku"]) for m in memory
-            if m.get("kind") == "walked" and now - m.get("ts", 0) < keep
-            and m.get("hours_left") is not None and m["hours_left"] - (now - m["ts"]) / 3600 < need}
+    gone = {(m["shop"], m["sku"]) for m in memory    # said "none in stock": supply refills every 20 min
+            if m.get("kind") == "walked" and m.get("nostock") and now - m.get("ts", 0) < 1200}
+    if not need:
+        return gone
+    return gone | {(m["shop"], m["sku"]) for m in memory
+                   if m.get("kind") == "walked" and now - m.get("ts", 0) < keep
+                   and m.get("hours_left") is not None and m["hours_left"] - (now - m["ts"]) / 3600 < need}
 
 
 def food_need(order, p):
@@ -327,8 +338,8 @@ def main_r3(a, shops, order, memory, started):
         return
     need = food_need(order, bp)
     receipt, problem, facts, offered, task, error = None, None, [], None, None, None
-    tries = bp.get("food_shops_to_try", 3) if need else 3
-    for attempt, pick in enumerate(ranked[:tries]):    # food: a shop whose unit will not last is left at once
+    tries = bp.get("shops_to_try", 3)
+    for attempt, pick in enumerate(ranked[:tries]):    # a shop out of stock, or whose food will not last, is left at once
         if attempt and time.time() - started > DEADLINE - 90:
             break
         _, _, _, shop, offer, cap = pick
@@ -348,12 +359,14 @@ def main_r3(a, shops, order, memory, started):
         facts.append(f"{shop['name']}: {info['walked']}")
         h = re.search(r"says ([0-9.]+) h", info["walked"])
         remember({"kind": "walked", "ts": int(time.time()), "shop": shop["name"], "sku": sku,
-                  "hours_left": float(h.group(1)) if h else None, "why": info["walked"]})
-        log(f"[choose] {shop['name']} cannot deliver food that lasts; next shop")
-    if info.get("walked") and not error:      # no shop had food that lasts: no deal, and no shop to blame
+                  "hours_left": float(h.group(1)) if h else None, "nostock": bool(info.get("nostock")),
+                  "why": info["walked"]})
+        log(f"[choose] {shop['name']}: {info['walked']}; next shop")
+    if info.get("walked") and not error:      # every shop tried was out of stock or had food that would not last
         remember({"time": datetime.now(timezone.utc).isoformat(timespec="seconds"), "ts": int(time.time()),
                   "round": 3, "order": order.get("order"), "arm": arm, "exp": exp, "shop": None, "item": None,
-                  "category": order["item"], "result": "no_deal", "why": "no unit lasts the order"})
+                  "category": order["item"], "result": "no_deal",
+                  "why": f"none of {attempt + 1} shops had a unit in stock that lasts the order"})
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
         return
     try:
