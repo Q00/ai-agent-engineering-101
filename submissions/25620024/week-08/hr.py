@@ -184,6 +184,8 @@ def reward(team, kind, reason, by="HR"):
 def levers(team):
     """How many levers the team may change per run: 2 + raises + promotion grades - demotions, kept within 1-6."""
     log = [x for x in rewards()["log"] if x["team"] == team]
+    new = [i for i, x in enumerate(log) if x.get("new_team")]  # a team replaced by HQ starts fresh: the old team's
+    log = log[new[-1]:] if new else log                         # raises and demotions leave with it (HQ 11-04)
     return max(1, min(6, 2 + sum(x["kind"] == "raise" for x in log) + sum(x.get("grades", 0) for x in log
                                                                          if x["kind"] == "promotion")
                       - sum(x["kind"] == "demotion" for x in log)))
