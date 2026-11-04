@@ -169,6 +169,15 @@ def test_collect():
           and line["shop"]["place_deals"] == 1 and line["shop"]["place_stars_100"] == 2 and line["shops"] == 2
           and line["buyer"]["place_surplus"] == 1 and line["leader"] == {"player": "Lead", "total": 1.8}
           and "board: 2 of 3 players" in note, line)
+    check("the top players' shops (ours left out) for the buyer's near-tie rule",
+          common.read_json(MD / "analysis" / "rivals.json")["shops"] == [], common.read_json(MD / "analysis" / "rivals.json"))
+    snap = {"players": [{"player": "Lead", "total": 1.8, "shop": {"name": "LeadShop"}},
+                        {"player": "Kiro729", "total": 1.3, "shop": {"name": "Kiro729"}}, {"player": "Z", "total": 0.9, "shop": None},
+                        {"player": "Odd", "total": 0.8, "shop": "odd-shop"}, {"player": "Y", "total": 0.7, "shop": {"name": "Kiro729 Shop"}}],
+            "shops": [], "buyers": []}
+    analysis.board_snapshot(NOW, lambda path: snap)
+    check("...named from the board's players (a shop not given as an object, or named like ours, is left out)",
+          common.read_json(MD / "analysis" / "rivals.json")["shops"] == ["LeadShop"], common.read_json(MD / "analysis" / "rivals.json"))
     ours = common.read_json(MD / "ledger" / "our_results.json")
     h = ours.get(str(int((NOW - 2 * H) // 3600 * 3600))) or {}
     check("our own shop's results by hour: 3 agreed, 2 paid, the checks the unpaid one failed, the paid 1-star review",

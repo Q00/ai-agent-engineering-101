@@ -278,6 +278,95 @@ def test_notebook():
           shop_.sent[1:] == ["23940", "34000"] and r["deal"] and r["price"] == 34000, (shop_.sent, r.get("left")))
 
 
+def test_shop_around():
+    print("\n[B6] more than one shop per order, and rivals in a near tie")
+
+    def task(state, text, receipt=None, ask=None):
+        t = {"id": "t1", "status": {"state": state, "message": {"parts": [{"text": text}], "metadata": {"ask": ask} if ask else {}}}}
+        if receipt:
+            t["artifacts"] = [{"parts": [{"data": receipt}]}]
+        return t
+
+    class Shops:                    # one fake A2A client for several shops, by URL
+        def __init__(self, script):
+            self.script, self.sent, self.url = script, {}, None
+
+        async def open(self, url):
+            self.url = url
+            return {}
+
+        async def send(self, text, task_id=None):
+            self.sent.setdefault(self.url, []).append(text)
+            replies = self.script[self.url]
+            return replies[min(len(self.sent[self.url]), len(replies)) - 1]
+
+        async def cancel(self, task_id):
+            self.sent.setdefault(self.url, []).append("(cancel)")
+
+    nb = {"A": {"recent": ["settled"] * 3, "recent_at": [], "ratios": []}, "B": {"recent": ["settled"], "recent_at": [], "ratios": []}}
+    bed = order(40000, [BEDDING], "goods", oid="o-around")
+    cands = mb.candidates(bed, [shop("A", BEDDING), shop("B", BEDDING), shop("C", BEDDING)], CATALOG, nb, {}, RULES)
+    first, poor = mb.choose(list(cands), nb)
+    check("the best candidate first (A: three settled deals)", first["shop"]["name"] == "A", first["shop"]["name"])
+    signed = {"shop": "B", "item": BEDDING, "price": 30000, "task": "t1", "sig_seller": "x"}
+    away = [task("TASK_STATE_REJECTED", "Sorry, we have none of that in stock.")]
+    deal_b = [task("TASK_STATE_INPUT_REQUIRED", "Asking 30000.", ask=30000), task("TASK_STATE_INPUT_REQUIRED", "Asking 30000.", ask=30000),
+              task("TASK_STATE_COMPLETED", "Deal", signed)]
+    client = Shops({"http://A.test": away, "http://B.test": deal_b, "http://C.test": away})
+    r, c, tries, _ = asyncio.run(mb.shop_around(client, first, poor, cands, bed, CATALOG, nb, RULES))
+    check("turned away by A: the same order goes on to B and closes there",
+          r["deal"] and c["shop"]["name"] == "B" and r["price"] == 30000 and [t["shop"] for t in tries] == ["A"]
+          and "turned us away" in tries[0]["left"], (r.get("left"), c["shop"]["name"], tries))
+    check("...A's turn-away is counted (not a failure), B's deal is pending payment",
+          len(nb["A"].get("turned") or []) == 1 and nb["A"]["recent"] == ["settled"] * 3
+          and "o-around" in common.read_json(common.MARKET_DIR / "buyer" / "pending.json"))
+    client = Shops({"http://A.test": away, "http://B.test": away, "http://C.test": away})
+    r, c, tries, _ = asyncio.run(mb.shop_around(client, first, poor, cands, bed, CATALOG, {}, RULES))
+    check("every shop turns us away: three tried, then the order ends", not r["deal"] and len(tries) == 2
+          and len({t["shop"] for t in tries} | {c["shop"]["name"]}) == 3, (tries, c["shop"]["name"]))
+    ticks = iter(range(0, 100000, 100))
+    r, c, tries, _ = asyncio.run(mb.shop_around(Shops({"http://A.test": away, "http://B.test": deal_b, "http://C.test": away}),
+                                                first, poor, cands, bed, CATALOG, {}, RULES, clock=lambda: next(ticks)))
+    check("past the time budget (90 s from the order's start) no other shop is tried", not r["deal"] and tries == [], tries)
+    flagged = [dict(x, flags=["failed us twice in the last five deals"]) if x["shop"]["name"] != "A" else x for x in cands]
+    r, c, tries, _ = asyncio.run(mb.shop_around(Shops({"http://A.test": away, "http://B.test": deal_b, "http://C.test": deal_b}),
+                                                first, False, flagged, bed, CATALOG, {}, RULES))
+    check("a clean first choice is followed only by clean shops (B and C flagged: the order ends at A)",
+          not r["deal"] and c["shop"]["name"] == "A" and tries == [], (c["shop"]["name"], tries))
+
+    class Slow(Shops):
+        async def send(self, text, task_id=None):
+            if self.url == "http://A.test":
+                await asyncio.sleep(10)
+            return await super().send(text, task_id)
+    saved = mb.HARD_STOP
+    mb.HARD_STOP = 0.5
+    try:
+        r, c, tries, _ = asyncio.run(mb.shop_around(Slow({"http://A.test": deal_b, "http://B.test": deal_b, "http://C.test": away}),
+                                                    first, poor, cands, bed, CATALOG, {}, RULES))
+    finally:
+        mb.HARD_STOP = saved
+    check("a trade that runs past the hard stop is cut and counted as an error; the next shop still gets its turn (5 s floor)",
+          tries and tries[0]["left"] == "TimeoutError" and r["deal"] and c["shop"]["name"] == "B", (tries, c["shop"]["name"]))
+    mismatch = [task("TASK_STATE_INPUT_REQUIRED", "Asking 30000.", ask=30000), task("TASK_STATE_INPUT_REQUIRED", "Asking 30000.", ask=30000),
+                task("TASK_STATE_COMPLETED", "Deal", dict(signed, item=PAD))]
+    nb2 = {"A": {"recent": ["settled"] * 3, "recent_at": [], "ratios": []}}
+    r, c, tries, _ = asyncio.run(mb.shop_around(Shops({"http://A.test": mismatch, "http://B.test": deal_b, "http://C.test": away}),
+                                                first, poor, cands, bed, CATALOG, nb2, RULES))
+    check("a receipt not as agreed counts against the shop as unpaid, and the order goes on (the try keeps its asks)",
+          nb2["A"]["recent"][-1] == "unpaid" and r["deal"] and tries[0]["asks"] == [30000, 30000] and tries[0]["list"] == 39900,
+          (nb2["A"]["recent"], tries))
+    even = mb.candidates(bed, [shop("R", BEDDING), shop("S", BEDDING)], CATALOG, {}, {}, RULES, rivals={"R"})
+    best, _ = mb.choose(even, {})
+    check("a near tie: the rival player's shop is passed over (0.95 of its score)", best["shop"]["name"] == "S",
+          {x["shop"]["name"]: round(x["score"]) for x in even})
+    cheap = mb.candidates(bed, [shop("R", BEDDING), shop("S", BEDDING)], CATALOG, {"R": {"recent": [], "ratios": [0.55]}}, {}, RULES,
+                          rivals={"R"})
+    best, _ = mb.choose(cheap, {"R": {"recent": [], "ratios": [0.55]}})
+    check("...but not when the rival is clearly cheaper (55% of list paid there before)", best["shop"]["name"] == "R",
+          {x["shop"]["name"]: round(x["score"]) for x in cheap})
+
+
 def start_seller():
     md = ROOT / "shop" / ".market"
     md.mkdir(parents=True)
@@ -363,6 +452,7 @@ def main() -> int:
         test_choosing()
         test_terms()
         test_notebook()
+        test_shop_around()
         test_against_our_shop()
     finally:
         shutil.rmtree(ROOT, ignore_errors=True)

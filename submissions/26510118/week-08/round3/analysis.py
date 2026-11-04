@@ -55,6 +55,7 @@ import ledger
 
 EVERY = {"collect": 1200, "linewatch": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
          "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 12 * 3600}
+RIVALS = 12             # the top players whose shops our buyer passes over in a near tie (market_buyer.RIVAL)
 BUYER_REPLIES = False    # data replies as our buyer (stopped 11/4: about one like each, against 5-6 for a top-level post)
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
@@ -153,6 +154,10 @@ def board_snapshot(now: float, get_json) -> str:
                              **{f"place_{k}": place(buyers, me_b, k) for k in ("all", "surplus", "deals", "forum")})
     with open(folder() / "board_history.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
+    ranked = sorted(players, key=lambda p: -(p.get("total") or 0))[:RIVALS]   # the players ahead of and around us
+    rivals = sorted({p["shop"].get("name") for p in ranked if isinstance(p.get("shop"), dict)
+                     and not forum.own(p.get("player")) and not forum.own(p["shop"].get("name"))} - {None})
+    common.write_json(folder() / "rivals.json", {"at": int(now), "shops": rivals})
     return f"board: {line.get('player', {}).get('place', '?')} of {len(players)} players"
 
 

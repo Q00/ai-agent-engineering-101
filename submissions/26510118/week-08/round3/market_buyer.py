@@ -20,7 +20,15 @@ on 67-94% of our tries. Shops that failed us twice in the last five deals, lied 
 rate under 2.5 stars over 5 or more reviews, turn us away on most tries, or the analysis said to
 avoid, are dropped while a cleaner choice exists; if none does, we still try, with stricter
 terms, unless every shop left failed us 3 times in a row or turns us away on most tries.
-A shop in BANNED is never a candidate (the person's call, 11/4).
+A shop in BANNED is never a candidate (the person's call, 11/4). The shop of a player ranked near the top
+(analysis/rivals.json) scores RIVAL times its gain and trust: our money is their profit and revenue, so in a near
+tie another shop gets it (11/4: 69% of our buyer's spending went to the top 10 players' shops).
+B6, more than one shop per order (11/4 night): when a trade ends without a deal (turned away, a refurbished
+unit without a warranty, a receipt not as agreed, an ask held above our ceiling, a shop that broke off), the
+next candidate from another shop is tried, up to MAX_TRIES shops, a new one only within TRY_BUDGET seconds of
+the order's start and each trade cut at HARD_STOP (an order took a median 6 s; the kit stops a buyer at 300 s,
+and then nothing it learnt is saved). A retry stays with clean shops when the first choice was clean. From 21:08 to 22:20, 23 of about 200 orders ended at a turn-away and 20 at
+a refurbished unit, each with other shops still listing what the order accepts.
 What the numbers miss is what others wrote: for a shop with reviews or forum posts about it, the
 decision model (harness.decide, the Decisions API) gives the odds that a purchase there goes as
 described, from those words, the ledger's record and our own deals there; the odds make half of
@@ -63,6 +71,10 @@ MARGIN_HOURS = 1          # food must last this much longer than the order needs
 DEFAULT_RATIO = 0.70      # expected price as a share of the list price, with nothing better to go on
 EXPLORE = 1.05            # a shop we have not dealt with gets this edge in a tie
 PREFER = 1.2
+RIVAL = 0.95             # a top player's shop: its score this much lower (a near tie goes elsewhere)
+MAX_TRIES, TRY_BUDGET, HARD_STOP = 3, 90, 240   # shops per order; seconds from the order's start to begin
+                                                 # another; seconds after which a trade is cut short
+RIVALS_FRESH = 2 * 3600                          # analysis/rivals.json older than this is ignored
 LOW_STARS, MIN_REVIEWS = 2.5, 5
 EXPENSIVE = 100_000       # goods listed at this or more need a warranty
 WARRANTY_HOURS = 6
@@ -229,7 +241,7 @@ def shop_odds(shops: list, posts: list, summary: dict, nb: dict, now: float | No
 
 
 def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict, rules: dict,
-               odds: dict | None = None) -> list:
+               odds: dict | None = None, rivals: set | None = None) -> list:
     """Every (shop, SKU) worth asking for, with its expected price, gain, trust and red flags."""
     by_sku, by_cat = summary.get("by_sku") or {}, summary.get("by_category") or {}
     budget, out = order["budget"], []
@@ -268,7 +280,8 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             if p is not None:
                 t = round((1 - ODDS_BLEND) * t + ODDS_BLEND * p, 3)
             score = (lp - expected) * t * (EXPLORE if sh["name"] not in nb else 1) \
-                * (PREFER if sh["name"] in (rules.get("prefer_shops") or []) else 1)
+                * (PREFER if sh["name"] in (rules.get("prefer_shops") or []) else 1) \
+                * (RIVAL if sh["name"] in (rivals or set()) else 1)
             out.append({"shop": sh, "sku": o["sku"], "name": o.get("name") or c.get("name"), "list": lp,
                         "kind": c.get("kind"), "expected": round(expected), "gain": round(lp - expected),
                         "trust": t, "odds": p, "score": score, "flags": flags})
@@ -403,7 +416,7 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             elif rec and rec.get("item") == c["sku"] and r["offers"] and float(rec.get("price", 1e18)) <= r["offers"][-1]:
                 r.update(deal=True, receipt=rec, price=int(float(rec["price"])))
             else:
-                r["left"] = f"the receipt is not what was agreed: {rec}"
+                r.update(left=f"the receipt is not what was agreed: {rec}", mismatch=bool(rec))
         elif state(t) == "TASK_STATE_INPUT_REQUIRED":
             await client.cancel(t["id"])                            # B2 (7): free the shop's unit
             r["left"] = r["left"] or "no agreement within our ceiling"
@@ -429,7 +442,54 @@ def median_list(order: dict, catalog: dict):
     return ps[len(ps) // 2] if ps else None
 
 
+def note_outcome(nb: dict, c: dict, r: dict, order: dict) -> None:
+    """One trade's result into the shop notebook (and a deal into pending, to be matched with its payment)."""
+    if r["error"]:
+        memory.outcome(nb, c["shop"]["name"], "error", c["shop"]["url"])
+    elif r.get("unsigned"):                                         # 11/4: a house shop's unsigned receipts, 131 in 24 h
+        memory.outcome(nb, c["shop"]["name"], "unpaid", c["shop"]["url"])
+    elif r.get("refused"):                                          # "none in stock": not a failure, but counted (house shops)
+        memory.turned_away(nb, c["shop"]["name"], c["shop"]["url"])
+    elif r.get("mismatch"):                                         # a receipt not as agreed: we did not pay it
+        memory.outcome(nb, c["shop"]["name"], "unpaid", c["shop"]["url"])
+    if r["deal"]:
+        memory.agreed(nb, c["shop"]["name"])
+        memory.add_pending(order.get("order"), shop=c["shop"]["name"], url=c["shop"]["url"], sku=c["sku"],
+                           list_price=c["list"], price=r["price"], warranty=warranty_of(r["receipt"]) >= WARRANTY_HOURS)
+
+
+async def shop_around(client, c: dict, poor, cands: list, order: dict, catalog: dict, nb: dict, rules: dict,
+                      clock=time.time, start: float | None = None) -> tuple[dict, dict, list, bool]:
+    """(the last trade's result, its candidate, the earlier tries [{shop, sku, left, list, asks, offers}], whether
+    that candidate was a poor choice): the best candidate first, then, while there is no deal, the next from a shop
+    not yet tried (a clean one when the first was clean), up to MAX_TRIES. A new try starts only within
+    TRY_BUDGET seconds of `start` (the order's start), and a trade is cut at HARD_STOP."""
+    start = clock() if start is None else start
+    tries = []
+    while True:
+        try:
+            r = await asyncio.wait_for(trade(client, c, order, catalog, nb, rules, bool(poor)),
+                                       timeout=max(5.0, HARD_STOP - (clock() - start)))
+        except asyncio.TimeoutError:
+            r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": "TimeoutError",
+                 "left": None, "switched": None, "warranty": False, "c": c}
+        c = r.pop("c")
+        note_outcome(nb, c, r, order)
+        if r["deal"] or len(tries) + 1 >= MAX_TRIES or clock() - start > TRY_BUDGET:
+            return r, c, tries, bool(poor)
+        done = {x["shop"] for x in tries} | {c["shop"]["name"]}
+        rest = [x for x in cands if x["shop"]["name"] not in done and (poor or not x["flags"])]
+        nxt, nxt_poor = choose(rest, nb) if rest else (None, None)
+        if nxt is None:
+            return r, c, tries, bool(poor)
+        tries.append({"shop": c["shop"]["name"], "sku": c["sku"], "left": r["left"] or r["error"], "list": c["list"],
+                      "asks": r["asks"], "offers": r["offers"]})
+        print(f"[buyer] next shop: {nxt['shop']['name']} {nxt['sku']} (after {c['shop']['name']}: {tries[-1]['left']})", flush=True)
+        c, poor = nxt, nxt_poor
+
+
 async def amain(a) -> dict:
+    began = time.time()                                             # the order's clock: the kit stops us at 300 s
     order = common.read_json(a.order, {}) or {}
     shops = common.read_json(a.shops, []) or []
     md = Path(a.order).parent
@@ -443,12 +503,16 @@ async def amain(a) -> dict:
     offering = [sh for sh in shops if sh["name"] not in BANNED
                 and any(o.get("sku") in (order.get("acceptable") or []) for o in sh.get("offers") or [])]
     odds = shop_odds(offering, common.read_json(md / "forum.json", []) or [], summary, nb) if offering else {}
-    cands = candidates(order, shops, catalog, nb, summary, rules, odds) if order.get("acceptable") else []
+    riv = common.read_json(common.MARKET_DIR / "analysis" / "rivals.json", {}) or {}
+    rivals = set(riv.get("shops") or []) if isinstance(riv, dict) and time.time() - (riv.get("at") or 0) < RIVALS_FRESH else set()
+    cands = candidates(order, shops, catalog, nb, summary, rules, odds, rivals) if order.get("acceptable") else []
     c, poor = choose(cands, nb) if cands else (None, "no shop has an acceptable product in stock")
     if c is None:
         common.record("orders", **base, candidates=len(cands), deal=False, left=poor)
         if not cands and order.get("acceptable"):                      # a Round 3 order (Round 2 ones list no products)
-            common.record("unmet", order=order.get("order"), category=base["category"], kind=order.get("kind"))
+            common.record("unmet", order=order.get("order"), category=base["category"], kind=order.get("kind"),
+                          budget=a.budget, median_list=base["median_list"], acceptable=(order.get("acceptable") or [])[:30])
+                                                                    # what was wanted and nobody had: for the premium line
         memory.save(nb)
         return {"shop": "", "receipt": None, "stars": 3, "review": f"No deal on {a.item}: {poor}.", "accept": {}}
     print(f"[buyer] {len(cands)} candidate(s); {c['shop']['name']} {c['sku']} list {c['list']}, expected "
@@ -456,25 +520,14 @@ async def amain(a) -> dict:
           + (f", every choice poor: {c['flags']}" if poor else ""), flush=True)
     client = A2A()
     try:
-        r = await trade(client, c, order, catalog, nb, rules, bool(poor))
+        r, c, tries, poor = await shop_around(client, c, poor, cands, order, catalog, nb, rules, start=began)
     finally:
         await client.close()
-    c = r.pop("c")
-    if r["error"]:
-        memory.outcome(nb, c["shop"]["name"], "error", c["shop"]["url"])
-    elif r.get("unsigned"):                                         # 11/4: a house shop's unsigned receipts, 131 in 24 h
-        memory.outcome(nb, c["shop"]["name"], "unpaid", c["shop"]["url"])
-    elif r.get("refused"):                                          # "none in stock": not a failure, but counted (house shops)
-        memory.turned_away(nb, c["shop"]["name"], c["shop"]["url"])
-    if r["deal"]:
-        memory.agreed(nb, c["shop"]["name"])
-        memory.add_pending(order.get("order"), shop=c["shop"]["name"], url=c["shop"]["url"], sku=c["sku"],
-                           list_price=c["list"], price=r["price"], warranty=warranty_of(r["receipt"]) >= WARRANTY_HOURS)
     memory.save(nb)
     common.record("orders", **base, candidates=len(cands), shop=c["shop"]["name"], sku=c["sku"], list_price=c["list"],
                   expected=c["expected"], trust=c["trust"], odds=c.get("odds"), flags=c["flags"], poor=bool(poor), warranty=r["warranty"],
                   switched=r["switched"], asks=r["asks"], offers=r["offers"], deal=r["deal"], price=r["price"],
-                  error=r["error"], left=r["left"])
+                  error=r["error"], left=r["left"], tries=tries, rival=c["shop"]["name"] in rivals)
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles
