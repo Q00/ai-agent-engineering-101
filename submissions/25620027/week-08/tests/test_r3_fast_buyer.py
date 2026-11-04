@@ -546,3 +546,23 @@ def test_an_immediate_out_of_stock_refusal_is_recognised_for_a_retry() -> None:
     )
     assert not fast.stock_refusal(ended("TASK_STATE_REJECTED", "No deal below 24998."))
     assert not fast.stock_refusal(ended("TASK_STATE_COMPLETED", "none in stock"))
+
+
+def test_food_requests_state_the_shelf_life_needed_and_goods_requests_do_not() -> None:
+    shops = (
+        ShopEntry.model_validate(
+            {
+                "name": "a",
+                "url": "http://a.test",
+                "offers": [{"sku": KIMCHI, "name": "김치", "qty": 2}],
+            }
+        ),
+    )
+    food = Order(item="김치", kind="food", use_within_hours=24, acceptable=(KIMCHI,))
+    choice = fast.choose(food, shops, {}, {}, {})
+    assert choice is not None
+    assert choice.request.endswith(f"({KIMCHI}), need 25 h")
+    goods = Order(item="김치", kind="goods", acceptable=(KIMCHI,))
+    plain = fast.choose(goods, shops, {}, {}, {})
+    assert plain is not None
+    assert plain.request.endswith(f"({KIMCHI})")

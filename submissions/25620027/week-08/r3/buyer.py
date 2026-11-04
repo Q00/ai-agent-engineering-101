@@ -14,6 +14,7 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import json
+import math
 import random
 import re
 import sqlite3
@@ -330,6 +331,7 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     rng: random.Random | None = None,
     recent: Mapping[str, Mapping[str, int]] | None = None,
     skip_offer: Callable[[str, str], bool] | None = None,
+    need_margin_hours: float = 1.0,
 ) -> Choice | None:
     """Pick the shop and SKU with the best expected surplus; None when no stock fits.
 
@@ -340,6 +342,15 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
     cheaper or newer shop can be found; penalized shops are never explored.
     """
     acceptable = set(order.acceptable)
+    # Food orders say the shelf life they need up front, in the "need 24 h" form
+    # shops advertise, so a shop picks a unit that lasts (or says it has none)
+    # instead of selling one the kit refuses at checkout: 11 of 59 agreed deals on
+    # 11/4 17:26-17:56 were refused for shelf life, each a different shop and SKU.
+    need = (
+        f", need {math.ceil(float(order.use_within_hours) + need_margin_hours)} h"
+        if order.kind == "food" and order.use_within_hours
+        else ""
+    )
     explore_counts = exploration_view(outcomes, recent)
     draw = (rng or random).random() < explore
     best: Choice | None = None
@@ -385,7 +396,7 @@ def choose(  # noqa: PLR0913, C901 - ranking needs every evidence source
                 offer.sku,
                 name,
                 list_price,
-                f"I want to buy {name} ({offer.sku})",
+                f"I want to buy {name} ({offer.sku}){need}",
                 score,
             )
             if best is None or score > best.score:
@@ -700,6 +711,7 @@ async def buy(  # noqa: PLR0913, C901, PLR0912, PLR0915 - one order, explicit in
             explore=policy.buyer.explore_rate,
             recent=recent,
             skip_offer=skip_offer,
+            need_margin_hours=policy.buyer.food_margin_hours,
         )
 
     choice = pick()
