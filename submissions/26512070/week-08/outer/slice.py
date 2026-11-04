@@ -27,6 +27,13 @@ NIGHT = range(1, 8)            # 01:00-07:59 (HARNESS.md 5)
 # change keeps the safety terms (SAFE_KEYS); otherwise the brief waits for the user. These hours override NIGHT.
 AUTO_HOURS = range(0, 8)       # 00:00-07:59
 AUTO_EVERY_MIN = 30
+# User 11/5 01:3x: a change must live long enough to be measured. 20:00-01:33 installed v61-v67, one every ~30 min,
+# and v67 (auto, 01:33) landed 21 min after the user's v66 (01:12), so neither can be judged. No install (night
+# mode or delegation) while the active strategy is younger than HOLD_S; the slice still writes its brief.
+HOLD_S = 2 * 3600
+# User notes (logs/strategy/user_notes.md) are questions for a moment; the 11/5 01:00 brief still cited the
+# 11/4 02:2x note as a current fact. Only sections whose '# YYYY-MM-DD HH:Mx' heading is this recent reach the brief.
+NOTE_HOURS = 6
 
 
 def slice_id(now):
@@ -40,6 +47,31 @@ def slice_id(now):
 DELEGATED = {"stock": {"limits": {"max_stock_share", "max_units_per_sku"}, "restock": None, "context": None},
              # user 11/4 02:1x: the rules' numbers keep changing with the data (HARNESS 14)
              "playbook": {"playbook": None, "context": None}}
+
+
+def held(now):
+    """Seconds left of the hold after the last install (active.json is written only by core.strategy.install), or 0."""
+    try:
+        age = now - (paths.memory() / "strategy" / "active.json").stat().st_mtime
+    except OSError:
+        return 0
+    return round(HOLD_S - age) if 0 <= age < HOLD_S else 0
+
+
+def recent_notes(text, now, hours=NOTE_HOURS):
+    """The user_notes.md sections whose heading time is within `hours` of now ('x' in the minutes reads as 0)."""
+    import re
+    keep, cur = [], None
+    for line in text.splitlines():
+        m = re.match(r"# (\d{4}-\d{2}-\d{2} \d{2}):(\d)[0-9x]", line)
+        if m:
+            t = time.mktime(time.strptime(f"{m.group(1)}:{m.group(2)}0", "%Y-%m-%d %H:%M"))
+            cur = [] if 0 <= now - t <= hours * 3600 else None
+            if cur is not None:
+                keep.append(cur)
+        if cur is not None:
+            cur.append(line)
+    return "\n".join("\n".join(s) for s in keep).strip()
 
 
 def delegated(strategy, change):
@@ -139,16 +171,22 @@ def strategy_text(ctx):
     lines.append("Benchmark (the top players by board profit and buyer ALL, last 6 h of the public ledger; copy what "
                  "wins - the SKUs they sell that we lack, their prices, their speed): " + benchmark.summary(bench)[:2500])
     notes = paths.root() / "logs" / "strategy" / "user_notes.md"
-    if notes.exists():                                   # 11/4 02:2x: what the user asks the strategy agent to judge
+    fresh = recent_notes(notes.read_text(encoding="utf-8"), time.time()) if notes.exists() else ""
+    if fresh:                                            # 11/4 02:2x: what the user asks the strategy agent to judge
         lines.append("The user asks you to judge (answer it in this brief, with options if a change is due): "
-                     + notes.read_text(encoding="utf-8")[-2000:])
+                     + fresh[-2000:])
     bl = atomic.read_json(paths.memory() / "facts" / "buy_list.json", default=None)
     lines.append(f"Playbook in force (the numbers the rules run on; change them with an option's playbook): "
                  f"{_j(s.get('playbook') or 'defaults', 300)}; restock buy list now: "
                  f"{_j([(x['sku'], x['target'], x['have'], x['why']) for x in (bl or {}).get('lines', [])][:12], 900)}")
     if pending.exists():
         lines.append("Stances waiting for the user: " + _j(pending.read_text(encoding="utf-8").splitlines()[-10:], 1000))
-    if ctx.situation.get("auto"):
+    if ctx.situation.get("hold"):
+        lines.append(f"The strategy in force was installed less than {HOLD_S // 3600} h ago, so nothing is installed "
+                     f"for another {ctx.situation['hold'] // 60} min: a change needs that long to be measured. Write "
+                     "the brief with rec.brief as a report on how the change in force is doing so far (what moved, "
+                     "with numbers). Options are allowed but wait for the user.")
+    elif ctx.situation.get("auto"):
         lines.append("It is night and the user is away: your recommendation is installed by itself once the audit "
                      "agrees, and the next slice comes in 30 minutes. The goal is the board's Players rank: shop ALL = "
                      "0.5 profit + 0.3 revenue + 0.2 stars, buyer ALL = 0.5 surplus + 0.3 votes on buyer posts + "
@@ -227,7 +265,8 @@ def _run(now=None, model_call=None, sid_override=None):
     st = atomic.read_json(st_path, default=None) or {"last": now - 7200}
     tm = time.localtime(now)
     sid = sid_override or slice_id(now)        # --id: a slice the user asked for between the scheduled ones
-    auto = tm.tm_hour in AUTO_HOURS
+    hold = held(now)
+    auto = tm.tm_hour in AUTO_HOURS and not hold
     tool_w, w = EventWriter("outer", source="tools"), EventWriter("slice", source="outer")
     out = {"slice": sid, "steps": {}}
     try:
@@ -235,7 +274,7 @@ def _run(now=None, model_call=None, sid_override=None):
         epoch = base.strategy.get("epoch") or "e0"
         w.context(strategy_version=base.strategy.get("version"), epoch=epoch)
         common = {"epoch": epoch, "slice": sid, "night": tm.tm_hour in NIGHT and not auto, "auto": auto,
-                  "proposal_id": sid}
+                  "hold": hold, "proposal_id": sid}
 
         def step(role, caller, text_fn, extra=None):
             ctx = Ctx(caller=caller, _writer=tool_w)
@@ -265,7 +304,7 @@ def _run(now=None, model_call=None, sid_override=None):
                 brief.write_markdown(pub)
             brief.refresh_pending()
             rec_change = next((o.get("change") for o in doc.get("options") or [] if o["id"] == doc.get("recommendation")), None)
-            if doc.get("options") and doc.get("recommendation") and (auto or delegated(base.strategy, rec_change)):
+            if doc.get("options") and doc.get("recommendation") and not hold and (auto or delegated(base.strategy, rec_change)):
                 out["steps"]["auto"] = auto_install(sid, model_call)
             elif model_call is not None:                 # tests: the audit in this process, with the same script
                 out["steps"]["audit"] = {"ok": audit.run(sid, model_call=model_call) is not None}

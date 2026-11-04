@@ -65,6 +65,11 @@ class SliceDecideTest(Base):
         with self.assertRaises(ValueError):
             decide.decide(pid, "A")
 
+    def installed_at(self, t):
+        import os
+        a = paths.memory() / "strategy" / "active.json"
+        os.utime(a, (t, t))
+
     def night_answers(self, options, agrees):
         it = list(self.answers(options))[:4]
         return iter(it + [j("rec.audit", agrees=agrees, points=[{"claim": "c", "why": "w"}])])
@@ -75,6 +80,7 @@ class SliceDecideTest(Base):
         opts = [{"id": "A", "change": {"phase": "profit"}, "targets": "x", "expected": "x", "risk": "x", "reversible": True},
                 {"id": "B", "change": {"phase": "exposure"}, "targets": "x", "expected": "x", "risk": "x", "reversible": True}]
         now = time.mktime(time.strptime("2026-11-05 03:30", "%Y-%m-%d %H:%M"))
+        self.installed_at(now - outer_slice.HOLD_S - 60)
         it = self.night_answers(opts, True)
         out = outer_slice.run(now=now, model_call=lambda p, s, t: next(it))
         self.assertEqual(out["slice"], "2026-11-05T0330", out)
@@ -89,6 +95,7 @@ class SliceDecideTest(Base):
         opts = [{"id": "A", "change": {"phase": "profit"}, "targets": "x", "expected": "x", "risk": "x", "reversible": True},
                 {"id": "B", "change": {"phase": "exposure"}, "targets": "x", "expected": "x", "risk": "x", "reversible": True}]
         now = time.mktime(time.strptime("2026-11-05 03:00", "%Y-%m-%d %H:%M"))
+        self.installed_at(now - outer_slice.HOLD_S - 60)
         it = self.night_answers(opts, False)
         out = outer_slice.run(now=now, model_call=lambda p, s, t: next(it))
         self.assertIsNone(out["steps"]["auto"]["installed"])
@@ -98,6 +105,29 @@ class SliceDecideTest(Base):
         loose["limits"]["cash_floor"] = (active["limits"].get("cash_floor") or 0) - 1
         self.assertIn("cash_floor", outer_slice.unsafe(active, loose))
         self.assertIsNone(outer_slice.unsafe(active, active))
+
+    def test_hold_after_an_install(self):
+        # user 11/5 01:3x: nothing is installed while the strategy in force is younger than HOLD_S
+        import time
+        opts = [{"id": "A", "change": {"phase": "profit"}, "targets": "x", "expected": "x", "risk": "x", "reversible": True},
+                {"id": "B", "change": {"phase": "exposure"}, "targets": "x", "expected": "x", "risk": "x", "reversible": True}]
+        now = time.mktime(time.strptime("2026-11-05 03:30", "%Y-%m-%d %H:%M"))
+        self.installed_at(now - 1200)
+        it = iter(list(self.answers(opts))[:4])
+        out = outer_slice.run(now=now, model_call=lambda p, s, t: next(it))
+        self.assertNotIn("auto", out["steps"], out)
+        self.assertEqual(atomic.read_json(paths.memory() / "strategy" / "active.json")["version"], 1)
+        self.assertEqual(outer_slice.held(now), outer_slice.HOLD_S - 1200)
+        self.assertEqual(outer_slice.held(now + outer_slice.HOLD_S), 0)
+
+    def test_recent_notes(self):
+        import time
+        text = "# 2026-11-04 02:2x - old\nold body\n\n# 2026-11-05 01:1x - new\nnew body"
+        now = time.mktime(time.strptime("2026-11-05 03:00", "%Y-%m-%d %H:%M"))
+        got = outer_slice.recent_notes(text, now)
+        self.assertIn("new body", got)
+        self.assertNotIn("old", got)
+        self.assertEqual(outer_slice.recent_notes(text, now + 86400), "")
 
     def test_slice_ids_and_due(self):
         import importlib.util
