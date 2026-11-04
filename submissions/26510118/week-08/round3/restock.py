@@ -70,21 +70,27 @@ from pathlib import Path
 import common
 import pricing
 
-CAP = 15_000_000         # stock at cost, planned at DEAREST (2.5M until 11/4 14:00, then 4M; 15M for the premium line,
-                         # so the balance kept binds first: the user's call to invest, 11/4 evening)
+CAP = 25_000_000         # stock at cost, planned at DEAREST: 2.5M until 11/4 14:00, then 4M, 15M at 20:48 and 25M at 21:45 (the
+                         # premium line sold 12 units in its first 30 minutes): the balance kept binds first, the user's call to invest
 RESERVE = 2_500_000      # balance kept: refunds of broken goods under warranty come out of it
-LINE = {                 # the premium line: SKU -> the most units held (11/4 evening; analysis/line.json overrides it)
-    "G8ec51935": 3,      # 자코모 4인 소파 2,320,000: 40 sold an hour by 11 shops, 0.80 of list
-    "G7a341425": 1,      # 자코모 3.5인 소파 2,192,000: 3.8 an hour, 2 shops
-    "G8adbc159": 2,      # 에비뉴엘 4인 소파 1,872,000: 7.9 an hour, 3 shops
-    "G03d0199f": 2,      # 라클라우드 침대 Q 1,611,000: 12.8 an hour, 6 shops; our buyer's orders for such beds unmet
-    "G00327e80": 2,      # 다우닝 4인 소파 2,246,800: 15.8 an hour, 9 shops
-    "Gb5d0dde7": 1,      # 시몬스 매트리스 Q 1,094,400: 9.4 an hour, 7 shops
-    "G8095ddd6": 1,      # 침대 851,400: 4.9 an hour, 4 shops
-    "G05277ffe": 1,      # 침구 600,000: 6.7 an hour, 4 shops
+LINE = {                 # the premium line: SKU -> the most units held (11/4 evening; analysis/line.json overrides it,
+    "G8ec51935": 5,      # 자코모 4인 소파 2,320,000: 40 sold an hour by 11 shops, 0.80 of list   which the line watch rewrites)
+    "G7a341425": 4,      # 자코모 3.5인 소파 2,192,000: 3.8 an hour, 2 shops (ours: 3 sold in the first 30 minutes)
+    "G00327e80": 4,      # 다우닝 4인 소파 2,246,800: 15.8 an hour, 9 shops
+    "G03d0199f": 4,      # 라클라우드 침대 Q 1,611,000: 12.8 an hour, 6 shops; our buyer's orders for such beds unmet
+    "G8adbc159": 3,      # 에비뉴엘 4인 소파 1,872,000: 7.9 an hour, 3 shops
+    "Gb5d0dde7": 3,      # 시몬스 매트리스 Q 1,094,400: 9.4 an hour, 7 shops
+    "G04ee8423": 3,      # 자코모 3인 소파 1,624,000: 9 an hour, 9 shops, 0.80 (added 21:45)
+    "G8095ddd6": 2,      # 침대 851,400: 4.9 an hour, 4 shops
+    "G05277ffe": 2,      # 침구 600,000: 6.7 an hour, 4 shops
+    "G0e4deffc": 2,      # 에비뉴엘 4인 소파+스툴 2,112,000: 2 an hour, 3 shops, 0.845 (added 21:45)
+    "G19a70f63": 2,      # 소파 1,672,800: 1.9 an hour, 4 shops (added 21:45)
+    "G10693924": 2,      # 소파 707,000: 2.9 an hour, 5 shops (added 21:45)
 }
-LINE_LINES = 4           # line products bought in one run at most (the shelf's refills need the other lines),
-LINE_SHARE = 0.5         # ...and never more than half the run's lines nor this share of the balance above RESERVE
+LINE_LINES = 7           # line products bought in one run at most (4 until 21:45), and never more than
+LINE_SHARE = 0.75        # LINE_SHARE of the run's lines nor of the balance above RESERVE (0.5 until 21:45)
+LINE_PACE = 3600         # a line product is kept at 1 + what we sold of it in this long (a unit sells out within
+                         # minutes, so our sales count supply as much as demand: one more than they asks for more)
 LINE_MAX_UNITS = 5
 LINE_STALL = 2 * 3600    # held this long with no sale of the product: no more units
 LINE_STOP = 30 * 3600    # no line product is bought this close to the end
@@ -277,14 +283,15 @@ def load_line(data) -> dict:
 
 
 def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: float) -> list:
-    """[(sku, units to buy)] for the premium line: one unit to start, then our pace over two supply cycles,
-    up to the product's cap; nothing more for one held LINE_STALL seconds with no sale, nor near the end."""
+    """[(sku, units to buy)] for the premium line: 1 + our sales of it in the last LINE_PACE seconds (one unit to
+    start), up to the product's cap; nothing more for one held LINE_STALL seconds with no sale, nor near the end.
+    (Until 21:45 on 11/4 the pace over 3 hours covered two cycles: 3 sold in half an hour still meant one unit.)"""
     line = {s: n for s, n in (line or {}).items()
             if s in catalog and isinstance(n, int) and not isinstance(n, bool) and 0 < n <= LINE_MAX_UNITS}
     if not line or common.ROUND_END - now <= LINE_STOP:
         return []
     held = Counter(u["sku"] for u in units if u.get("sku") in line)
-    recent = Counter(s["sku"] for s in sales if s.get("sku") in line and s.get("ts", 0) >= now - PACE_HOURS * 3600)
+    recent = Counter(s["sku"] for s in sales if s.get("sku") in line and s.get("ts", 0) >= now - LINE_PACE)
     alive = {}                                           # the last sale of it, or the arrival of the oldest unit held
     for s in sales:
         if s.get("sku") in line:
@@ -297,8 +304,7 @@ def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: f
     for sku, most in line.items():
         if held[sku] and now - alive.get(sku, now) > LINE_STALL:
             continue
-        pace = math.ceil(recent[sku] / PACE_HOURS * 2 * RUN_EVERY / 3600)
-        target = max(1, min(most, pace))
+        target = min(most, 1 + recent[sku])
         if target > held[sku]:
             out.append((sku, target - held[sku]))
     return out
@@ -397,7 +403,7 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     premium = line_gaps(line, catalog, units, sales, now)
     # the premium line first, but with at most half the lines and half the money above the balance kept, so the
     # shelf's refills always have a share of the run (review 11/4: with 40 s left it took all 4 lines; at 8M it took all but 70k)
-    take([(-1, sku, need) for sku, need in premium], min(LINE_LINES, lines // 2), LINE_SHARE * max(0, balance - RESERVE))
+    take([(-1, sku, need) for sku, need in premium], min(LINE_LINES, int(lines * LINE_SHARE)), LINE_SHARE * max(0, balance - RESERVE))
     bought_line = len(buy)
     take(known, max(0, lines - explore - bought_line))             # refills, the fast sellers stocked deep
     take(fresh, explore)

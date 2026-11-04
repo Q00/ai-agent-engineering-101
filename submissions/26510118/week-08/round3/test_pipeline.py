@@ -380,16 +380,19 @@ def test_restock(fake: Fake):
     out, info = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, NOW, line={sofa: 3})
     check("premium line: one unit to start, bought before the shelf's other lines", out["buy"][:1] == [{"sku": sofa, "qty": 1}]
           and info["line"] == 1, out["buy"][:3])
-    fast = [{"sku": sofa, "ts": NOW - H}] * 6                               # 2 an hour: two cycles want 2
-    out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, fast, [], rules, NOW, line={sofa: 3})
-    check("...then its pace over two supply cycles (6 sold in 3 h: 2 held)", out["buy"][0] == {"sku": sofa, "qty": 2}, out["buy"][:2])
+    fast = [{"sku": sofa, "ts": NOW - 0.5 * H}] * 2                         # 2 sold in the last hour: 1 + 2 held
+    out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, fast, [], rules, NOW, line={sofa: 5})
+    check("...then 1 + what we sold of it in the last hour (2 sold: 3 held)", out["buy"][0] == {"sku": sofa, "qty": 3}, out["buy"][:2])
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, fast, [], rules, NOW, line={sofa: 1})
     check("...never above its cap", out["buy"][0] == {"sku": sofa, "qty": 1}, out["buy"][:2])
+    out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, [{"sku": sofa, "ts": NOW - 2 * H}] * 6, [], rules, NOW, line={sofa: 5})
+    check("...and sales older than an hour do not count (6 sold 2 hours ago: one unit)", out["buy"][0] == {"sku": sofa, "qty": 1}, out["buy"][:2])
     stale = shelf + [srow("u-s1", age=3 / 24)]
     out, _ = restock.plan(rich(stale), cat2, DEMAND, {}, fast[:1] and [{"sku": sofa, "ts": NOW - 5 * H}], [], rules, NOW, line={sofa: 3})
     check("one held 3 h with no sale (the last 5 h ago): no more units", all(b["sku"] != sofa for b in out["buy"]), out["buy"][:3])
     out, _ = restock.plan(rich(stale), cat2, DEMAND, {}, fast, [], rules, NOW, line={sofa: 3})
-    check("...but one that sold an hour ago is kept at its pace", out["buy"][0] == {"sku": sofa, "qty": 1}, out["buy"][:2])
+    check("...but one that sold half an hour ago is kept at 1 + its sales (3, one held: 2 more)",
+          out["buy"][0] == {"sku": sofa, "qty": 2}, out["buy"][:2])
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, common.ROUND_END - 29 * H, line={sofa: 3})
     check("no line product in the last 30 hours", all(b["sku"] != sofa for b in out["buy"]), out["buy"][:3])
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, fast, [], rules, NOW, line={})
@@ -397,18 +400,18 @@ def test_restock(fake: Fake):
           all(b["sku"] != sofa for b in out["buy"]), out["buy"][:3])
     many = {s: 1 for s in cat2 if s.startswith("Gsofa")}
     out, info = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, NOW, line=dict(many, Gbad=2, **{BED: 9}))
-    check("at most 4 line products a run; unknown SKUs and caps over 5 are ignored",
-          info["line"] == 4 and info["line_gaps"] == 5 and all(b["sku"] != BED for b in out["buy"][:4]), (info, out["buy"][:5]))
+    check("at most 7 line products a run (75% of its 10 lines): all 5; unknown SKUs and caps over 5 are ignored",
+          info["line"] == 5 and info["line_gaps"] == 5 and all(b["sku"] != BED for b in out["buy"][:5]), (info, out["buy"][:6]))
     out, _ = restock.plan(inv(shelf, balance=3_000_000), cat2, DEMAND, {}, [], [], rules, NOW, line={sofa: 1})
     check("the balance kept (2,500,000) holds: no sofa planned at 1,500,000 with 3,000,000 in hand",
           all(b["sku"] != sofa for b in out["buy"]), out["buy"][:2])
     out, info = restock.plan(inv(shelf, balance=8_000_000), cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
-    check("the line takes at most half the money above the balance kept (8M: one sofa at 1.5M of 2.75M), and the shelf still refills",
-          info["line"] == 1 and {"sku": WATER, "qty": 1} in out["buy"], (info["line"], out["buy"]))
+    check("the line takes at most 75% of the money above the balance kept (8M: two sofas at 1.5M of 4.125M), the shelf still refills",
+          info["line"] == 2 and {"sku": WATER, "qty": 1} in out["buy"], (info["line"], out["buy"]))
     soon = dict(rich(shelf), restock={"open": True, "opens_at": NOW - 100, "closes_at": NOW + 40})
     out, info = restock.plan(soon, cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
-    check("...and at most half the lines: 40 s left (4 lines), 2 for the line, the refill still bought",
-          info["lines"] == 4 and info["line"] == 2 and {"sku": WATER, "qty": 1} in out["buy"], (info, out["buy"]))
+    check("...and at most 75% of the lines: 40 s left (4 lines), 3 for the line, the refill still bought",
+          info["lines"] == 4 and info["line"] == 3 and {"sku": WATER, "qty": 1} in out["buy"], (info, out["buy"]))
     out, info = restock.plan(rich([]), cat2, DEMAND, {}, sold10, [], rules, NOW, stocked=set(FILLERS[:10]), line={sofa: 1})
     fresh = [b["sku"] for b in out["buy"] if b["sku"] not in set(FILLERS[:10]) | {sofa}]
     check("exploring with the line: the line's line comes out of the refills' share, products never stocked keep theirs (4)",
