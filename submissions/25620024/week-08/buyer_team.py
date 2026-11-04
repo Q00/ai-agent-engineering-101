@@ -265,7 +265,8 @@ def diagnosis(board, now=None):
     return {"shops_skipped_now": len(blocked), "skipped": dict(list(blocked.items())[:15]),
             "outcomes_3h": {o: sum(1 for m in rows if m.get("outcome") == o) for o in
                             ("deal", "no deal", "no answer", "no candidates")},
-            "deal_rate_by_category_3h": fmt(cat), "deal_rate_by_budget_3h": fmt(band)}
+            "deal_rate_by_category_3h": fmt(cat), "deal_rate_by_budget_3h": fmt(band),
+            "ab_warranty_goods_24h": warranty_results(now)}
 
 
 def ab_results(now, hours=24, key="ab"):
@@ -282,6 +283,35 @@ def ab_results(now, hours=24, key="ab"):
             x["deals"] += 1
             x["surplus"] += (m.get("list_price") or m.get("budget") or 0) - m["agreed"]
             x["scout_deals"] += bool(m.get("scout_deal"))
+    for x in out.values():
+        x["deal_rate"] = round(x["deals"] / x["orders"], 2) if x["orders"] else None
+        x["surplus_per_order"] = round(x["surplus"] / x["orders"]) if x["orders"] else None
+    return out
+
+
+def warranty_results(now, hours=24):
+    """Warranty A/B on goods orders (11-04): W requires warranty_hours >= 6, N does not. Per arm: orders, deals, deal
+    rate, refused payments, broken units, surplus = list - paid + refund (a broken unit refunds the price under W and
+    costs it under N), per order. Broken units come from .market/broken.jsonl, matched by name to our deals."""
+    rows = [m for m in load_memory(now - hours * 3600) if m.get("warranty_ab") in ("W", "N")]
+    try:
+        broken = [json.loads(x) for x in (HERE / ".market" / "broken.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
+    except (OSError, ValueError):
+        broken = []
+    import market_model
+    names = {k: (v.get("name") or "") for k, v in market_model.catalog().items()}
+    out = {}
+    for m in rows:
+        x = out.setdefault(m["warranty_ab"], {"orders": 0, "deals": 0, "broken": 0, "surplus": 0})
+        x["orders"] += 1
+        if m.get("outcome") == "deal" and m.get("agreed"):
+            x["deals"] += 1
+            paid = m.get("receipt_price") or m["agreed"]
+            br = any(b.get("name") and b["name"] == names.get(m.get("item")) and (b.get("broke_at") or 0) >= m["ts"]
+                     for b in broken)
+            x["broken"] += br
+            # agent.md: surplus = value - price + refund; a broken unit's value is 0, a warranty refunds the price
+            x["surplus"] += ((0 if m["warranty_ab"] == "W" else -paid) if br else (m.get("list_price") or 0) - paid)
     for x in out.values():
         x["deal_rate"] = round(x["deals"] / x["orders"], 2) if x["orders"] else None
         x["surplus_per_order"] = round(x["surplus"] / x["orders"]) if x["orders"] else None

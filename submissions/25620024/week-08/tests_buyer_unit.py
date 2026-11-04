@@ -324,6 +324,11 @@ def test_consolidated_policy(c, shops):
     over = {"c": (0, {"name": "c"}, {"sku": "G3"}, 90000), "ask": 50000}
     got = mb.pick_quote([cheap, dear, over], {"budget": 20000}, [cheap["c"], dear["c"], over["c"]])
     check(got is dear, "pick: the most list - ask within the budget, not the lowest ask")
+    # 6. warranty A/B: goods split by order id, food never; arm W asks for 6 h at checkout
+    arms = {mb.warranty_arm({"kind": "goods", "order": f"o-{i}"}) for i in range(20)}
+    check(arms == {"W", "N"} and mb.warranty_arm({"kind": "food", "order": "o-1"}) is None, "warranty A/B: goods split, food never")
+    o = next({"kind": "goods", "order": f"o-{i}"} for i in range(20) if mb.warranty_arm({"kind": "goods", "order": f"o-{i}"}) == "W")
+    check(mb.accept_policy(o).get("warranty_hours") == 6, "warranty arm W requires 6 h at checkout")
 
 
 def main():

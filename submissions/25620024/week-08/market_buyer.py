@@ -626,6 +626,10 @@ def quote(c):
         if ask and NEED.get("hours") and left is not None and left < NEED["hours"]:
             rpc(url, "CancelTask", {"id": task["id"]})
             return {"c": c, "error": f"offered unit has {left} h left, need {NEED['hours']} h"}
+        wh = (off or {}).get("warranty_hours")
+        if ask and NEED.get("warranty") and wh is not None and wh < NEED["warranty"]:   # warranty A/B, arm W
+            rpc(url, "CancelTask", {"id": task["id"]})
+            return {"c": c, "error": f"offered warranty {wh} h, need {NEED['warranty']} h"}
         grade = (off or {}).get("grade")
         if ask and NEED.get("grades") and grade and grade not in NEED["grades"]:   # audit 11-04: grade C goods were
             rpc(url, "CancelTask", {"id": task["id"]})                           # agreed, then refused by the kit
@@ -709,6 +713,20 @@ def correct_receipt(pick, offer, sku, agreed, ok_items):
     return None
 
 
+WARRANTY_H = 6           # goods can break up to 6 h after the sale (agent.md)
+
+
+def warranty_arm(order):
+    """A/B (HQ 11-04, W09 lecture + agent.md: buyer surplus = value - price + refund, so a good that breaks without a
+    warranty costs the whole price; the market breaks ~6% of goods within 6 h). Goods orders split by order id:
+    'W' requires warranty_hours >= 6 at checkout, 'N' as before. None for food."""
+    if order.get("kind") == "food":
+        return None
+    import hashlib
+    h = int(hashlib.sha256(("warranty:" + str(order.get("order") or order.get("item"))).encode()).hexdigest()[:8], 16)
+    return "W" if h % 2 else "N"
+
+
 def accept_policy(order):
     """What the checkout must show before the kit pays. Food that will not last use_within_hours is worth 0."""
     pol = {"cert": True}
@@ -716,6 +734,8 @@ def accept_policy(order):
         pol["min_hours_left"] = round((order.get("use_within_hours") or 0) + T["food_margin_h"], 1)
     else:
         pol["grades"] = list(T["goods_grades"])
+        if warranty_arm(order) == "W":
+            pol["warranty_hours"] = WARRANTY_H
     return pol
 
 
@@ -779,7 +799,9 @@ def round3(a, order, shops, mem, started):
     NEED.update(hours=pol.get("min_hours_left"), grades=pol.get("grades"),            # strict: only a fresh grade A unit can pass
                 strict=bool(pol.get("min_hours_left") and pol["min_hours_left"] > T.get("shelf_strict", 0.45) * shelf), text=", ".join(
         x for x in (f"shelf life {pol['min_hours_left']} h or more" if pol.get("min_hours_left") else "",
-                    f"grade {'/'.join(pol['grades'])}" if pol.get("grades") else "", "market certificate") if x))
+                    f"grade {'/'.join(pol['grades'])}" if pol.get("grades") else "",
+                    f"warranty {pol['warranty_hours']} h" if pol.get("warranty_hours") else "", "market certificate") if x))
+    NEED["warranty"] = pol.get("warranty_hours")
     with ThreadPoolExecutor(rfq) as ex:
         quotes = list(ex.map(quote, cands[:rfq]))
     for q in quotes:
@@ -888,6 +910,7 @@ def round3(a, order, shops, mem, started):
     agreed = offers[-1] if outcome == "deal" and offers else None
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": sku, "category": order.get("item"),
               "kind": order.get("kind"), "list_price": lp, "budget": order["budget"], "rfq": rfq,
+              "warranty_ab": warranty_arm(order),
               "enuri_first": adv["ranked"][0]["shop"] if adv else None, "enuri_target": row and row["target"],
               "enuri_walk": row and row["walk_away"], "cap": cap, "close_at": close_at,
               "first_ask": asks[0] if asks else None, "last_ask": asks[-1] if asks else None,
