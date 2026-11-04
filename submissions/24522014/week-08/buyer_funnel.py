@@ -121,6 +121,7 @@ def funnel(root, since, until=None, payments_path=None):
     runs = load_runs(root, since, until)
     payments = payment_outcomes(payments_path or root / ".market/payments.jsonl")
     counts, causes, sources, parser_reasons = Counter(), Counter(), Counter(), Counter()
+    filter_basis, conflicts, shelf_notes = Counter(), Counter(), Counter()
     orders, instrumented = set(), 0
     for _, record in runs:
         reached, cause = classify_run(root, record, payments)
@@ -133,7 +134,13 @@ def funnel(root, since, until=None, payments_path=None):
             instrumented += 1
             for entry in trail:
                 sources[f"{entry['source']}:{entry['reason_code']}"] += 1
-                if entry["source"] != "deterministic":
+                check = entry.get("quote_check")
+                if check:
+                    conflicts.update(check["conflicts"])
+                    shelf_notes[check["text_hours_note"]] += 1
+                if entry["source"] == "quote_filter":
+                    filter_basis[f"{entry['reason_code']}|basis={check['basis']}"] += 1
+                elif entry["source"] != "deterministic":
                     parser_reasons[f"{entry['reason_code']}|parser={entry['parser_reason']}"] += 1
     stages, previous = [], None
     for stage in STAGES:
@@ -149,7 +156,10 @@ def funnel(root, since, until=None, payments_path=None):
                        "runs_with_decision_trail": instrumented},
             "funnel": stages, "causes": dict(causes.most_common()),
             "decision_paths": dict(sources.most_common()),
-            "non_rule_paths_by_parser_reason": dict(parser_reasons.most_common())}
+            "non_rule_paths_by_parser_reason": dict(parser_reasons.most_common()),
+            "quote_filter_by_basis": dict(filter_basis.most_common()),
+            "quote_conflicts": dict(conflicts.most_common()),
+            "quote_text_shelf_life": dict(shelf_notes.most_common())}
 
 
 def main():

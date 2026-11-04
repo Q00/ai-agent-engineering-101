@@ -94,6 +94,25 @@ class Funnel(unittest.TestCase):
         self.assertEqual(report["decision_paths"]["deterministic:rule_offer"], 1)
         self.assertEqual(report["sample"], {"hook_runs": 6, "distinct_orders": 6, "runs_with_decision_trail": 5})
 
+    def test_quote_filter_is_counted_by_reason_and_basis(self):
+        def filtered(code, basis, conflicts=()):
+            entry = step("quote_filter", code)
+            entry["quote_check"] = {"reason_code": code, "basis": basis, "conflicts": list(conflicts),
+                                    "text_hours_note": "absent"}
+            return entry
+        self.add(trade_record("g", trail=[filtered("quote_grade_unacceptable", "structured")],
+                              reason="quote_grade_unacceptable"))
+        self.add(trade_record("s", trail=[filtered("quote_shelf_life_short", "text", ["hours_left"])],
+                              reason="quote_shelf_life_short"))
+        report = self.report()
+        self.assertEqual(self.stages(report), {"orders": 2, "selected": 2, "quoted": 2, "offered": 0, "receipt": 0, "paid": 0})
+        self.assertEqual(report["causes"], {"quote_grade_unacceptable": 1, "quote_shelf_life_short": 1})
+        self.assertEqual(report["decision_paths"]["quote_filter:quote_shelf_life_short"], 1)
+        self.assertEqual(report["quote_filter_by_basis"], {"quote_grade_unacceptable|basis=structured": 1,
+                                                           "quote_shelf_life_short|basis=text": 1})
+        self.assertEqual(report["quote_conflicts"], {"hours_left": 1})
+        self.assertEqual(report["non_rule_paths_by_parser_reason"], {})
+
     def legacy_dir(self, name, *, outcome, turns=1, decision=None):
         directory = self.root / "logs/buyer" / name
         directory.mkdir(parents=True)

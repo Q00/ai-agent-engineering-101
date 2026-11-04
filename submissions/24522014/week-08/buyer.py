@@ -14,6 +14,7 @@ import httpx
 
 from buyer_fast import classify
 from harness import HarnessError, MODELS, parse_response, run_harness, select_harness
+from quote_terms import check_quote
 
 ROOT = Path(__file__).resolve().parent
 TERMINAL = {"TASK_STATE_COMPLETED", "TASK_STATE_REJECTED", "TASK_STATE_CANCELED", "TASK_STATE_FAILED"}
@@ -196,6 +197,9 @@ def record_decision(client, turn, source, reason_code, decision=None, parser_rea
     """Leave one decision-NN.json and one trail entry on every path, including refusals and failures."""
     entry = {"turn": turn, "source": source, "reason_code": reason_code, "parser_reason": parser_reason,
              "action": decision["action"] if decision else None, "price": decision["price"] if decision else None}
+    quote_check = getattr(client, "quote_check", None)
+    if quote_check:
+        entry["quote_check"] = quote_check
     client.decisions.append(entry)
     (client.log_dir / f"decision-{turn:02d}.json").write_text(
         json.dumps({**(details or {}), **entry, "decision": decision}, ensure_ascii=False, indent=2),
@@ -206,6 +210,14 @@ def buyer_decision(client, provider, history, turn, max_turns):
     """Ask for one decision; retry invalid JSON or budget violations once, without clamping."""
     text = seller_message(client.task)
     _, parser_reason, clear_ask = classify(text, client.budget, getattr(client, "last_offer", None))
+    accept = getattr(client, "accept_conditions", None)
+    client.quote_check = check_quote(client.task, text, accept) if accept else None
+    if client.quote_check and client.quote_check["reason_code"]:
+        reason_code = client.quote_check["reason_code"]
+        skipped = {"action": "walk_away", "price": None,
+                   "reason": f"Quote states terms the accept policy refuses ({reason_code}); no offer sent."}
+        record_decision(client, turn, "quote_filter", reason_code, skipped, parser_reason)
+        return skipped
     rule = getattr(client, "rule_decision", None)
     if rule:
         fast = rule(text)

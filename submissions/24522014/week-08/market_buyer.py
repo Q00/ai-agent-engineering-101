@@ -115,9 +115,10 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.requirements = requirements
+    client.accept_conditions = accept_conditions
     client.strategy_prompt = ROOT / "prompts/buyer-r3.txt"
     client.r3_context = decision_context
     if fast_rules:
@@ -213,7 +214,7 @@ def main():
     print(f"[choose] {reason}", flush=True)
     if shop:
         trade_options = {"mode": args.mode, "decision_context": selected_evidence,
-                         "max_turns": support_decision["max_turns"]}
+                         "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions}
         if support_decision.get("fast_rules"):
             from buyer_support import model_reservation
             trade_options.update(fast_rules=True, model_gate=lambda: model_reservation(args.order.parent, order["order"]))

@@ -190,7 +190,8 @@ class FastQuoteTrades(unittest.TestCase):
         self.addCleanup(prompt_patch.stop)
         (directory / "prompts/buyer-r3.txt").write_text("fixture prompt", encoding="utf-8")
 
-    def transport(self, quote, *, receipt_price=None, after_offer=None, offer_state="TASK_STATE_COMPLETED"):
+    def transport(self, quote, *, receipt_price=None, after_offer=None, offer_state="TASK_STATE_COMPLETED",
+                  metadata=None, data=None, nested=False):
         def respond(request):
             if request.method == "GET":
                 return httpx.Response(200, json={"supportedInterfaces": [
@@ -210,14 +211,90 @@ class FastQuoteTrades(unittest.TestCase):
                     if state == "TASK_STATE_COMPLETED":
                         artifacts = [{"parts": [{"data": {"shop": "Fixture", "item": "lamp",
                                      "price": receipt_price or offered, "task": "task-a", "sig_seller": "fixture-only"}}]}]
-            task = {"id": "task-a", "contextId": "context-a", "status": {"state": state,
-                    "message": {"parts": [{"text": text}]}}, "artifacts": artifacts}
-            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"], "result": task})
+            parts = [{"text": text}]
+            if data is not None:
+                parts.append({"data": data, "mediaType": "application/json"})
+            reply = {"parts": parts}
+            if metadata is not None:
+                reply["metadata"] = metadata
+            task = {"id": "task-a", "contextId": "context-a", "status": {"state": state, "message": reply},
+                    "artifacts": artifacts}
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": body["id"],
+                                             "result": {"task": task} if nested else task})
         return httpx.MockTransport(respond)
 
-    def trade(self, transport, gate=lambda: False, budget=300000):
+    def trade(self, transport, gate=lambda: False, budget=300000, accept=None):
         return market.trade(shop("fixture"), "lamp", budget, transport=transport, fast_rules=True,
-                            model_gate=gate, max_turns=3)
+                            model_gate=gate, max_turns=3, accept_conditions=accept)
+
+    def test_bidet_quote_with_grade_only_in_nested_metadata_sends_no_offer(self):
+        quote = "Bidet DDS-S550R: asking 178698. Send your offer as a number.\nReply with a number, or ok to take the ask: 178698"
+        gate_calls = []
+        with patch("buyer.run_harness") as harness:
+            result, record = self.trade(
+                self.transport(quote, nested=True, data={"ask": 178698.0, "sku": "G0aebcd94"},
+                               metadata={"ask": 178698.0, "warranty_hours": 6.0, "certificate": True, "grade": "C"}),
+                gate=lambda: gate_calls.append(1) or "reserved", accept={"cert": True, "grades": ["A", "B"]})
+            harness.assert_not_called()
+        self.assertEqual(self.offers(), [])
+        self.assertEqual(gate_calls, [])
+        self.assertIsNone(result["receipt"])
+        self.assertEqual(record["failure_reason"], "quote_grade_unacceptable")
+        saved = self.decision_file(record)
+        self.assertEqual((saved["source"], saved["reason_code"], saved["parser_reason"], saved["action"]),
+                         ("quote_filter", "quote_grade_unacceptable", "rule_offer", "walk_away"))
+        self.assertEqual((saved["quote_check"]["basis"], saved["quote_check"]["grade"]), ("structured", "C"))
+        self.assertEqual(self.posts[-1]["method"], "CancelTask")
+
+    def test_shelf_life_from_text_sends_no_offer_on_a_food_order(self):
+        _, record = self.trade(self.transport("Kimchi, 100 h of shelf life left. Asking 110."),
+                               accept={"cert": True, "grades": ["A", "B"], "min_hours_left": 128.0})
+        self.assertEqual(self.offers(), [])
+        self.assertEqual(record["failure_reason"], "quote_shelf_life_short")
+        self.assertEqual(record["decision_trail"][0]["quote_check"]["basis"], "text")
+
+    def test_acceptable_or_silent_quotes_still_offer_and_record_the_check(self):
+        accept = {"cert": True, "grades": ["A", "B"], "min_hours_left": 128.0}
+        for quote, metadata in (("Asking 110.", None), ("grade B, 200 h of shelf life left. Asking 110.", None),
+                                ("Asking 110. A fair amount of shelf life left.", {"grade": "A"}),
+                                ("at least 38 hours of shelf life left. Asking 110.", None)):
+            with self.subTest(quote=quote):
+                self.posts.clear()
+                _, record = self.trade(self.transport(quote, metadata=metadata), accept=accept)
+                self.assertEqual(self.offers(), [110])
+                check = record["decision_trail"][0]["quote_check"]
+                self.assertIsNone(check["reason_code"])
+
+    def test_a_passing_claim_does_not_skip_later_safeguards_or_mark_payment(self):
+        _, record = self.trade(self.transport("Grade A. Asking 110."), accept={"cert": True, "grades": ["A", "B"]})
+        self.assertEqual(record["verification"], "local_receipt_consistent")
+        self.assertEqual(record["decision_trail"][0]["source"], "deterministic")
+
+    def test_filter_also_precedes_a_model_reservation_and_counteroffers(self):
+        gate_calls = []
+        with patch("buyer.run_harness") as harness:
+            _, record = self.trade(self.transport("grade C. asking 300001."), accept={"grades": ["A", "B"]},
+                                   gate=lambda: gate_calls.append(1) or "reserved")
+            harness.assert_not_called()
+        self.assertEqual(gate_calls, [])
+        self.assertEqual(record["failure_reason"], "quote_grade_unacceptable")
+        self.assertEqual(record["decision_trail"][0]["parser_reason"], "over_budget")
+        self.posts.clear()
+        _, record = self.trade(self.transport("asking 110.", after_offer="grade C. Counteroffer: 105."),
+                               accept={"grades": ["A", "B"]})
+        self.assertEqual(self.offers(), [110])
+        self.assertEqual(record["failure_reason"], "quote_grade_unacceptable")
+
+    def test_conflict_is_recorded_even_when_the_offer_goes_out(self):
+        _, record = self.trade(self.transport("grade A. Asking 110.", metadata={"grade": "B"}),
+                               accept={"grades": ["A", "B"]})
+        self.assertEqual(self.offers(), [110])
+        self.assertEqual(record["decision_trail"][0]["quote_check"]["conflicts"], ["grade"])
+
+    def test_no_accept_conditions_means_no_check(self):
+        _, record = self.trade(self.transport("grade C. Asking 110."))
+        self.assertEqual(self.offers(), [110])
+        self.assertNotIn("quote_check", record["decision_trail"][0])
 
     def offers(self):
         return [int(p["params"]["message"]["parts"][0]["text"]) for p in self.posts
