@@ -3,7 +3,7 @@
   "restock": {
     "cmd": "python restock_policy.py --state {state}"
   },
-  "harness": "R3 inventory seller with staged clearance, condition disclosure and logged Codex gpt-6.1-terra; certified A/B SKU buyer with food time margin; bounded goods restock",
+  "harness": "R3 inventory seller: coded rules answer quotes and numeric offers, with staged clearance and condition disclosure; Codex gpt-6.1-terra only if seller_decision.json selects it. Certified A/B SKU buyer with food time margin: coded rules first, Codex gpt-6.1-terra within hourly limits. A usage breaker falls back to rules; bounded goods restock",
   "seller": {
     "harness": "codex",
     "model": "gpt-6.1-terra",

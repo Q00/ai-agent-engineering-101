@@ -24,6 +24,7 @@ def parse_call(prompt, answer):
     convo = prompt[prompt.index("Conversation so far:"):]
     convo = convo[:convo.index("Decide your next move")] if "Decide your next move" in convo else convo
     offers, asks = [], []
+    first = next((line[6:].strip() for line in convo.splitlines() if line.startswith("buyer:")), "")
     for line in convo.splitlines():
         if line.startswith("buyer:"):
             text = line[6:].strip().rstrip(".!")
@@ -37,7 +38,7 @@ def parse_call(prompt, answer):
             found = ASK_LINE.search(line)
             if found:
                 asks.append(int(found[1]))
-    return {"quote": int(terms[1]), "floor": int(terms[2]), "offers": offers, "asks": asks,
+    return {"quote": int(terms[1]), "floor": int(terms[2]), "offers": offers, "asks": asks, "first": first,
             "action": (answer or {}).get("action"), "price": (answer or {}).get("price")}
 
 

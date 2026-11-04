@@ -18,6 +18,7 @@ from r3_policy import buyer_accept, load_policy
 from settlement_memory import payment_outcomes, reconcile
 from market_intel import fresh
 from buyer_support import prepare as prepare_support
+import model_breaker
 
 ROOT = Path(__file__).resolve().parent
 
@@ -169,6 +170,12 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
     return result, record
 
 
+def model_gate(market_dir, order_id, reservation):
+    """The usage breaker goes first, so a model that is off never takes a place in the hourly and daily limits."""
+    allowed, reason = model_breaker.check(role="buyer")
+    return reservation(market_dir, order_id) if allowed else f"model_breaker_{reason}"
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--shops", type=Path, required=True)
@@ -220,7 +227,7 @@ def main():
         if support_decision.get("fast_rules"):
             from buyer_counter import load_settings
             from buyer_support import model_reservation
-            trade_options.update(fast_rules=True, model_gate=lambda: model_reservation(args.order.parent, order["order"]),
+            trade_options.update(fast_rules=True, model_gate=lambda: model_gate(args.order.parent, order["order"], model_reservation),
                                  over_budget_counter=load_settings(),
                                  catalog_list_price=(catalog.get(selected_item) or {}).get("list_price"))
         if r3 and order.get("kind") == "goods":

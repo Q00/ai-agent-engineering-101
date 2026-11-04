@@ -12,6 +12,8 @@ import time
 from datetime import datetime, timezone
 from uuid import uuid4
 
+import model_breaker
+
 
 ROOT = Path(__file__).resolve().parent
 MODELS = {"claude": "sonnet", "codex": "gpt-6.1-terra"}
@@ -75,6 +77,17 @@ def build_command(provider):
             "-c", "project_doc_max_bytes=0", "-"]
 
 
+def limit_error_in(log_dir, prompt):
+    """Codex echoes the prompt to stderr, and prompts may use these words, so read only what follows the echo."""
+    try:
+        text = (log_dir / "stderr.txt").read_text(encoding="utf-8", errors="replace")
+        text += "\n" + (log_dir / "stdout.txt").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    ending = prompt[-200:]
+    return model_breaker.looks_like_limit_error(text[text.rfind(ending) + len(ending):] if ending and ending in text else text)
+
+
 def run_harness(provider, prompt, timeout=90):
     """Send UTF-8 stdin, save unedited output, return parsed JSON or raise HarnessError."""
     if provider not in MODELS or timeout <= 0:
@@ -90,6 +103,8 @@ def run_harness(provider, prompt, timeout=90):
     started = time.monotonic()
     process = None
     try:
+        if provider == "codex" and model_breaker.is_tripped(ROOT):
+            raise RuntimeError("Model calls are off after a usage limit error")
         command = build_command(provider)
         metadata["command"] = command
         with (log_dir / "stdout.txt").open("wb") as stdout, (log_dir / "stderr.txt").open("wb") as stderr:
@@ -117,6 +132,9 @@ def run_harness(provider, prompt, timeout=90):
     except (OSError, ValueError, RuntimeError) as error:
         metadata["status"] = "failed"
         metadata["error"] = str(error)
+        if (provider == "codex" and process is not None and process.returncode not in (0, None)
+                and not isinstance(error, TimeoutError) and limit_error_in(log_dir, prompt)):
+            model_breaker.trip(ROOT, provider)
         raise HarnessError(f"{error}\nLogs: {log_dir}") from error
     finally:
         metadata["elapsed_seconds"] = round(time.monotonic() - started, 3)

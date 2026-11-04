@@ -284,6 +284,9 @@ def buyer_decision(client, provider, history, turn, max_turns):
                 entry["error"] = str(error)
                 validation_error = isinstance(error, ValueError) or isinstance(error.__cause__, ValueError)
                 if not validation_error or attempt == 1:
+                    if isinstance(error, HarnessError):
+                        # The model is unavailable: end this order cleanly. A bad budget answer stays an error below.
+                        return {"action": "walk_away", "price": None, "reason": "Model unavailable; no purchase forced."}
                     raise BuyerError(f"Buyer decision failed: {error}") from error
                 prompt += ("\nYour previous response was invalid. Error: " + str(error)
                            + "\nReturn a corrected JSON object obeying the original rules.")

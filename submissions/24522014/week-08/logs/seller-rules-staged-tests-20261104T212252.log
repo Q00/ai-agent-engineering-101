@@ -1,0 +1,405 @@
+.........[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 정기 진단 01-02 15:16 KST
+.................................[harness] fixture
+[harness] deterministic acceptance of the disclosed quote
+..................................................................................................[알림 오류] OSError: notification unavailable
+...................................[모니터링] 관측 정상 · 자기 확정 정산 10건 · 종합 순위 10위 · 비교 표본 대기 · 다음 정기 진단 01-02 15:17 KST
+.............................................................................................................C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\threading.py:1028: ResourceWarning: unclosed file <_io.TextIOWrapper name=4 encoding='utf-8'>
+  del self._target, self._args, self._kwargs
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\threading.py:1028: ResourceWarning: unclosed file <_io.TextIOWrapper name=5 encoding='utf-8'>
+  del self._target, self._args, self._kwargs
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_model_breaker.py:145: ResourceWarning: unclosed file <_io.TextIOWrapper name=6 encoding='utf-8'>
+  self.assertEqual(mb.read_usage(10, [sys.executable, "-c", script])["weekly_percent"], 8)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_model_breaker.py:145: ResourceWarning: unclosed file <_io.TextIOWrapper name=7 encoding='utf-8'>
+  self.assertEqual(mb.read_usage(10, [sys.executable, "-c", script])["weekly_percent"], 8)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+..........Cannot load selection inputs: Food order requires a nonnegative use period
+...[harness] fixture
+.[harness] fixture
+[guard] inventory condition/price changed; disclose again and request confirmation
+.............................................s...........EEE.....................Dispatcher task is not running. Cannot wait for event dispatch.
+Could not sign receipt for task 3dec0a90-3d6f-40cb-b7b6-0cfe4cbf9608: FileNotFoundError
+F.EEEEE..............Could not sign receipt for task c80f4413-63a4-4c7a-98a0-8f2dc231857c: FileNotFoundError
+FCould not sign receipt for task 58a67d63-158c-4f04-b5a8-6c0e9b4e582a: FileNotFoundError
+F.Could not sign receipt for task 1f097572-78fd-4dd8-9e00-ca64bfe2b4cf: FileNotFoundError
+F..Could not sign receipt for task 74a32717-d8d7-4b3a-83f7-d9dbc8861bfd: FileNotFoundError
+ECould not sign receipt for task e5d13310-5b3c-4171-993d-c60feba46c03: FileNotFoundError
+ECould not sign receipt for task d2678aaa-d122-4b1f-8d0f-ea3c38c1bbc9: FileNotFoundError
+F..Could not sign receipt for task 7363cf57-6bc0-4c06-bac0-963f584dba94: FileNotFoundError
+F..EEEEEE[harness] fixture
+[harness] deterministic acceptance of the disclosed quote
+..................[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 기준선 수집 · 다음 정기 진단 01-02 13:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 정기 진단 01-02 15:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 현금 보호 · 다음 정기 진단 01-02 15:18 KST
+..[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 정책 실험 중지 · 다음 정기 진단 01-02 13:16 KST
+.[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 추가 대기 없음·다음 훅에서 재검토 · 다음 정기 진단 01-02 15:17 KST
+..............
+======================================================================
+ERROR: test_expired_receipt_rejected_before_signature_or_market_call (test_reservation_recovery.ACPRecovery.test_expired_receipt_rejected_before_signature_or_market_call)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_reservation_recovery.py", line 92, in test_expired_receipt_rejected_before_signature_or_market_call
+    ns = runpy.run_path(str(root / "scripts/market_kit.py"), run_name="kit_test")
+  File "<frozen runpy>", line 293, in run_path
+  File "<frozen runpy>", line 261, in _get_code_from_file
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\scripts\\market_kit.py'
+
+======================================================================
+ERROR: test_expired_replay_never_releases_an_uncertain_payment (test_reservation_recovery.ACPRecovery.test_expired_replay_never_releases_an_uncertain_payment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_reservation_recovery.py", line 62, in test_expired_replay_never_releases_an_uncertain_payment
+    ns = runpy.run_path(str(root / "scripts/market_kit.py"), run_name="kit_test")
+  File "<frozen runpy>", line 293, in run_path
+  File "<frozen runpy>", line 261, in _get_code_from_file
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\scripts\\market_kit.py'
+
+======================================================================
+ERROR: test_real_kit_adapter_cancels_failed_payment_and_rejects_replay (test_reservation_recovery.ACPRecovery.test_real_kit_adapter_cancels_failed_payment_and_rejects_replay)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_reservation_recovery.py", line 74, in test_real_kit_adapter_cancels_failed_payment_and_rejects_replay
+    ns = runpy.run_path(str(root / "scripts/market_kit.py"), run_name="kit_test")
+  File "<frozen runpy>", line 293, in run_path
+  File "<frozen runpy>", line 261, in _get_code_from_file
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\scripts\\market_kit.py'
+
+======================================================================
+ERROR: test_calendar_month_clamps_last_day_and_preserves_timezone (test_satisfaction_refund.RefundTests.test_calendar_month_clamps_last_day_and_preserves_timezone)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_satisfaction_refund.py", line 22, in setUp
+    self.temporary = tempfile.TemporaryDirectory(dir=seller.ROOT / '.market')
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 907, in __init__
+    self.name = mkdtemp(suffix, prefix, dir)
+                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 381, in mkdtemp
+    _os.mkdir(file, 0o700)
+    ~~~~~~~~~^^^^^^^^^^^^^
+FileNotFoundError: [WinError 3] 지정된 경로를 찾을 수 없습니다: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\.market\\tmpr4rrdxun'
+
+======================================================================
+ERROR: test_coverage_survives_event_end_and_policy_file_changes (test_satisfaction_refund.RefundTests.test_coverage_survives_event_end_and_policy_file_changes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_satisfaction_refund.py", line 22, in setUp
+    self.temporary = tempfile.TemporaryDirectory(dir=seller.ROOT / '.market')
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 907, in __init__
+    self.name = mkdtemp(suffix, prefix, dir)
+                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 381, in mkdtemp
+    _os.mkdir(file, 0o700)
+    ~~~~~~~~~^^^^^^^^^^^^^
+FileNotFoundError: [WinError 3] 지정된 경로를 찾을 수 없습니다: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\.market\\tmp5hj059rj'
+
+======================================================================
+ERROR: test_deadline_inclusive_and_claim_does_not_mean_payment (test_satisfaction_refund.RefundTests.test_deadline_inclusive_and_claim_does_not_mean_payment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_satisfaction_refund.py", line 22, in setUp
+    self.temporary = tempfile.TemporaryDirectory(dir=seller.ROOT / '.market')
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 907, in __init__
+    self.name = mkdtemp(suffix, prefix, dir)
+                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 381, in mkdtemp
+    _os.mkdir(file, 0o700)
+    ~~~~~~~~~^^^^^^^^^^^^^
+FileNotFoundError: [WinError 3] 지정된 경로를 찾을 수 없습니다: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\.market\\tmpt08vvomr'
+
+======================================================================
+ERROR: test_signed_terms_preserve_full_amount_and_original_deadline (test_satisfaction_refund.RefundTests.test_signed_terms_preserve_full_amount_and_original_deadline)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_satisfaction_refund.py", line 22, in setUp
+    self.temporary = tempfile.TemporaryDirectory(dir=seller.ROOT / '.market')
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 907, in __init__
+    self.name = mkdtemp(suffix, prefix, dir)
+                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 381, in mkdtemp
+    _os.mkdir(file, 0o700)
+    ~~~~~~~~~^^^^^^^^^^^^^
+FileNotFoundError: [WinError 3] 지정된 경로를 찾을 수 없습니다: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\.market\\tmprd9bs4nz'
+
+======================================================================
+ERROR: test_tampering_or_uncovered_purchase_cannot_create_claim (test_satisfaction_refund.RefundTests.test_tampering_or_uncovered_purchase_cannot_create_claim)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_satisfaction_refund.py", line 22, in setUp
+    self.temporary = tempfile.TemporaryDirectory(dir=seller.ROOT / '.market')
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 907, in __init__
+    self.name = mkdtemp(suffix, prefix, dir)
+                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py", line 381, in mkdtemp
+    _os.mkdir(file, 0o700)
+    ~~~~~~~~~^^^^^^^^^^^^^
+FileNotFoundError: [WinError 3] 지정된 경로를 찾을 수 없습니다: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\.market\\tmp1rph3_73'
+
+======================================================================
+ERROR: test_natural_below_quote_offer_still_uses_existing_negotiation (test_signed_seller.SellerProtocol.test_natural_below_quote_offer_still_uses_existing_negotiation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 276, in test_natural_below_quote_offer_still_uses_existing_negotiation
+    self.assertEqual(done['artifacts'][0]['parts'][0]['data']['price'], 100)
+                     ~~~~^^^^^^^^^^^^^
+KeyError: 'artifacts'
+
+======================================================================
+ERROR: test_natural_overbid_keeps_lower_quote_until_explicit_confirmation (test_signed_seller.SellerProtocol.test_natural_overbid_keeps_lower_quote_until_explicit_confirmation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 269, in test_natural_overbid_keeps_lower_quote_until_explicit_confirmation
+    self.assertEqual(done['artifacts'][0]['parts'][0]['data']['price'], 105)
+                     ~~~~^^^^^^^^^^^^^
+KeyError: 'artifacts'
+
+======================================================================
+ERROR: test_affordable_offers_close_without_counter_or_reject (test_signed_seller.SignatureChecks.test_affordable_offers_close_without_counter_or_reject)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 24, in setUp
+    self.key = serialization.load_pem_private_key((seller.ROOT / "shop_key.pem").read_bytes(), password=None)
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 777, in read_bytes
+    with self.open(mode='rb', buffering=0) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 771, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\shop_key.pem'
+
+======================================================================
+ERROR: test_canonical_utf8_signature_and_tamper_detection (test_signed_seller.SignatureChecks.test_canonical_utf8_signature_and_tamper_detection)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 24, in setUp
+    self.key = serialization.load_pem_private_key((seller.ROOT / "shop_key.pem").read_bytes(), password=None)
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 777, in read_bytes
+    with self.open(mode='rb', buffering=0) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 771, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\shop_key.pem'
+
+======================================================================
+ERROR: test_opening_guides_keep_all_reserve_guards (test_signed_seller.SignatureChecks.test_opening_guides_keep_all_reserve_guards)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 24, in setUp
+    self.key = serialization.load_pem_private_key((seller.ROOT / "shop_key.pem").read_bytes(), password=None)
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 777, in read_bytes
+    with self.open(mode='rb', buffering=0) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 771, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\shop_key.pem'
+
+======================================================================
+ERROR: test_opening_uses_validated_config_without_model_inference (test_signed_seller.SignatureChecks.test_opening_uses_validated_config_without_model_inference)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 24, in setUp
+    self.key = serialization.load_pem_private_key((seller.ROOT / "shop_key.pem").read_bytes(), password=None)
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 777, in read_bytes
+    with self.open(mode='rb', buffering=0) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 771, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\shop_key.pem'
+
+======================================================================
+ERROR: test_overbid_validation_requires_lower_quote_confirmation (test_signed_seller.SignatureChecks.test_overbid_validation_requires_lower_quote_confirmation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 24, in setUp
+    self.key = serialization.load_pem_private_key((seller.ROOT / "shop_key.pem").read_bytes(), password=None)
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 777, in read_bytes
+    with self.open(mode='rb', buffering=0) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 771, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\shop_key.pem'
+
+======================================================================
+ERROR: test_signing_rejects_non_integer_and_invalid_prices (test_signed_seller.SignatureChecks.test_signing_rejects_non_integer_and_invalid_prices)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 24, in setUp
+    self.key = serialization.load_pem_private_key((seller.ROOT / "shop_key.pem").read_bytes(), password=None)
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 777, in read_bytes
+    with self.open(mode='rb', buffering=0) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 771, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\claude\\69e0b6e8f1a83776\\a8e3013a-6b0c-4c24-a231-dca858d004e8\\scratchpad\\staged\\shop_key.pem'
+
+======================================================================
+FAIL: test_old_pledge_does_not_unlock_new_discount_and_purchase_gets_separate_terms (test_satisfaction_refund.RefundProtocol.test_old_pledge_does_not_unlock_new_discount_and_purchase_gets_separate_terms)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_satisfaction_refund.py", line 127, in test_old_pledge_does_not_unlock_new_discount_and_purchase_gets_separate_terms
+    self.assertEqual(done['status']['state'],'TASK_STATE_COMPLETED')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'TASK_STATE_FAILED' != 'TASK_STATE_COMPLETED'
+- TASK_STATE_FAILED
+?            ^^^
++ TASK_STATE_COMPLETED
+?            ^^^^ ++
+
+
+======================================================================
+FAIL: test_budget_conditional_or_negative_messages_never_authorize_purchase (test_signed_seller.SellerProtocol.test_budget_conditional_or_negative_messages_never_authorize_purchase)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 259, in test_budget_conditional_or_negative_messages_never_authorize_purchase
+    self.assertEqual(done['status']['state'], 'TASK_STATE_COMPLETED')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'TASK_STATE_FAILED' != 'TASK_STATE_COMPLETED'
+- TASK_STATE_FAILED
+?            ^^^
++ TASK_STATE_COMPLETED
+?            ^^^^ ++
+
+
+======================================================================
+FAIL: test_completed_receipt_matches_agreement_and_task (test_signed_seller.SellerProtocol.test_completed_receipt_matches_agreement_and_task)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 152, in test_completed_receipt_matches_agreement_and_task
+    self.assertEqual(done["status"]["state"], "TASK_STATE_COMPLETED")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'TASK_STATE_FAILED' != 'TASK_STATE_COMPLETED'
+- TASK_STATE_FAILED
+?            ^^^
++ TASK_STATE_COMPLETED
+?            ^^^^ ++
+
+
+======================================================================
+FAIL: test_explicit_promise_unlocks_floor_before_confirmed_purchase (test_signed_seller.SellerProtocol.test_explicit_promise_unlocks_floor_before_confirmed_purchase)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 172, in test_explicit_promise_unlocks_floor_before_confirmed_purchase
+    self.assertEqual(done["status"]["state"], "TASK_STATE_COMPLETED")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'TASK_STATE_FAILED' != 'TASK_STATE_COMPLETED'
+- TASK_STATE_FAILED
+?            ^^^
++ TASK_STATE_COMPLETED
+?            ^^^^ ++
+
+
+======================================================================
+FAIL: test_overbid_has_no_receipt_until_buyer_confirms_lower_price (test_signed_seller.SellerProtocol.test_overbid_has_no_receipt_until_buyer_confirms_lower_price)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 142, in test_overbid_has_no_receipt_until_buyer_confirms_lower_price
+    self.assertEqual(done["status"]["state"], "TASK_STATE_COMPLETED")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'TASK_STATE_FAILED' != 'TASK_STATE_COMPLETED'
+- TASK_STATE_FAILED
+?            ^^^
++ TASK_STATE_COMPLETED
+?            ^^^^ ++
+
+
+======================================================================
+FAIL: test_service_questions_get_truthful_terms_before_any_purchase (test_signed_seller.SellerProtocol.test_service_questions_get_truthful_terms_before_any_purchase)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\강철원\AppData\Local\Temp\claude\69e0b6e8f1a83776\a8e3013a-6b0c-4c24-a231-dca858d004e8\scratchpad\staged\test_signed_seller.py", line 248, in test_service_questions_get_truthful_terms_before_any_purchase
+    self.assertEqual(done['status']['state'], 'TASK_STATE_COMPLETED')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'TASK_STATE_FAILED' != 'TASK_STATE_COMPLETED'
+- TASK_STATE_FAILED
+?            ^^^
++ TASK_STATE_COMPLETED
+?            ^^^^ ++
+
+
+----------------------------------------------------------------------
+Ran 455 tests in 3.548s
+
+FAILED (failures=6, errors=16, skipped=1)

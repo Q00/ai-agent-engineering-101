@@ -304,6 +304,7 @@ class SellerCoverage(unittest.IsolatedAsyncioTestCase):
             with patch.object(seller_r3, 'MARKET_DIR', md), patch.object(seller_r3, '__file__', str(root/'seller_r3.py')), \
                     patch.object(seller_r3, 'TaskUpdater', return_value=updater), \
                     patch.object(seller_r3, 'get_message_text', side_effect=['buy G1', '200']), \
+                    patch.object(seller_r3, 'decision_mode', return_value='model'), patch.object(seller_r3, 'model_allowed', return_value=(True, 'ok')), \
                     patch.object(seller_r3, 'ask_json', return_value=({'action': 'counter', 'price': 200}, 'fixture')), \
                     patch.object(seller_r3, 'sign', side_effect=lambda r: {**r, 'sig_seller': 'fixture'}) as sign:
                 await seller.execute(context, MagicMock())

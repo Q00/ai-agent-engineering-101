@@ -935,6 +935,65 @@ class TurnLimitCancel(TradeFixture):
         self.assertEqual(len(self.cancels()), 1)
 
 
+class ModelUnavailable(TradeFixture):
+    """With no model, rules and the filter still work; everything else ends as a clean walk-away, never a crash."""
+
+    def failing(self, message):
+        return patch("buyer.run_harness", side_effect=buyer.HarnessError(message))
+
+    def test_limit_timeout_and_bad_output_walk_away_and_cancel(self):
+        for message in ("Harness exited with code 1", "Harness exceeded 90 seconds", "not json"):
+            with self.subTest(message=message), self.failing(message):
+                self.posts.clear()
+                result, record = self.trade(self.transport("Our price is 90."), gate=lambda: "reserved")
+                self.assertEqual(self.offers(), [])
+                self.assertEqual(record["outcome"], "no_deal")
+                self.assertEqual(record["failure_reason"], "model_failed")
+                self.assertEqual(result["stars"], 3)
+                self.assertEqual(self.posts[-1]["method"], "CancelTask")
+                self.assertEqual(self.decision_file(record)["status"], "failed")
+
+    def test_invalid_json_is_retried_once_then_walks_away(self):
+        error = buyer.HarnessError("bad")
+        error.__cause__ = ValueError("not json")
+        with patch("buyer.run_harness", side_effect=error) as harness:
+            _, record = self.trade(self.transport("Our price is 90."), gate=lambda: "reserved")
+        self.assertEqual(harness.call_count, 2)
+        self.assertEqual(record["outcome"], "no_deal")
+
+    def test_a_model_offer_over_budget_is_still_refused(self):
+        with patch("buyer.run_harness", return_value={"action": "offer", "price": 300001, "reason": "over"}):
+            _, record = self.trade(self.transport("asking 300001."), gate=lambda: "reserved")
+        self.assertEqual(self.offers(), [])
+        self.assertEqual(record["outcome"], "agent_error")
+
+    def test_breaker_off_keeps_rules_and_filter_and_walks_away_otherwise(self):
+        with patch("buyer.run_harness") as harness:
+            _, ruled = self.trade(self.transport("asking 110."), gate=lambda: "model_breaker_usage_limit_error")
+            self.assertEqual(ruled["decision_trail"][0]["reason_code"], "rule_offer")
+            self.assertEqual(ruled["outcome"], "purchased")
+            _, filtered = self.trade(self.transport("grade C. asking 110."), gate=lambda: "model_breaker_usage_limit_error",
+                                     accept={"grades": ["A", "B"]})
+            self.assertEqual(filtered["decision_trail"][0]["source"], "quote_filter")
+            _, other = self.trade(self.transport("Our price is 90."), gate=lambda: "model_breaker_weekly_usage_high")
+            self.assertEqual(other["failure_reason"], "model_breaker_weekly_usage_high")
+            self.assertEqual(other["outcome"], "no_deal")
+            harness.assert_not_called()
+
+
+class BreakerGate(unittest.TestCase):
+    def test_breaker_off_takes_no_reservation(self):
+        calls = []
+        with patch.object(market.model_breaker, "check", return_value=(False, "usage_stale")):
+            self.assertEqual(market.model_gate("md", "o", lambda *a: calls.append(a) or "reserved"), "model_breaker_usage_stale")
+        self.assertEqual(calls, [])
+
+    def test_breaker_on_defers_to_the_limits(self):
+        with patch.object(market.model_breaker, "check", return_value=(True, "ok")):
+            self.assertEqual(market.model_gate("md", "o", lambda *a: "model_quota_hour"), "model_quota_hour")
+            self.assertEqual(market.model_gate("md", "o", lambda *a: "reserved"), "reserved")
+
+
 class ReservationReasons(unittest.TestCase):
     def test_each_denial_has_its_own_code_and_reserve_model_stays_boolean(self):
         import buyer_support

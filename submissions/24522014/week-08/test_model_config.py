@@ -61,6 +61,13 @@ class ModelConfig(unittest.TestCase):
     def test_seller_adapter_names_the_same_model(self):
         self.assertEqual(r3_harness.CMD, "codex " + harness.MODELS["codex"])
 
+    def test_card_and_agent_file_say_what_the_code_does(self):
+        source = (ROOT / "seller_r3.py").read_text(encoding="utf-8")
+        self.assertIn("Coded rules answer quote requests and numeric offers", source)
+        self.assertNotIn("negotiates the price.", source)
+        agent = json.loads((ROOT / "agent.json").read_text(encoding="utf-8"))
+        self.assertIn("coded rules answer quotes and numeric offers", agent["harness"])
+
     def test_active_agent_files_name_the_same_model(self):
         for name in ("agent.json", "agent-r3.json"):
             with self.subTest(name=name):

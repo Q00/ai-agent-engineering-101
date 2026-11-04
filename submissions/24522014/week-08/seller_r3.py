@@ -29,8 +29,9 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from r3_harness import CMD, ask_json
-from harness import HarnessError
+import model_breaker
+from r3_harness import ask_json
+from seller_rules import decision_mode, rule_move
 from seller import purchase_offer
 from r3_policy import selling_terms
 from market_state import read, write, task_file
@@ -39,6 +40,7 @@ from market_intel import fresh
 from strategy_policy import effective
 
 NAME = "kcwarni Inventory Shop"
+FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker"]
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
 PROMPT = """You are a Round 3 inventory sales agent. A buyer is negotiating for one {name}.
@@ -111,6 +113,27 @@ def find_unit(text, taken=()):
     return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
 
 
+def model_allowed():
+    return model_breaker.check(role="seller")
+
+
+async def choose_move(deal, terms, reserve, unit):
+    """Coded rule by default. The model is optional: any reason it cannot answer leaves the coded rule in place."""
+    rule = rule_move(deal["ask"], deal["offer"], reserve, terms["quote"], deal.get("asks", 0))
+    if decision_mode() != "model":
+        return rule
+    allowed, reason = model_allowed()
+    if not allowed:
+        print(f"[decision] model off ({reason}); coded rule used", flush=True)
+        return rule
+    try:
+        return await asyncio.to_thread(ask_json, PROMPT.format(
+            name=unit["name"], list_price=terms["quote"], reserve=reserve, transcript="\n".join(deal["lines"])))
+    except Exception as error:
+        print(f"[harness] decision failed: {error}; coded rule used", flush=True)
+        return rule
+
+
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"unit", "ask", "offer", "lines"}
@@ -156,7 +179,7 @@ class Seller(AgentExecutor):
 
     async def _execute(self, context, event_queue, busy_ids):
         write(MARKET_DIR/"strategy-consumer.json", {"protocol": 1, "pid": os.getpid(), "heartbeat_at": time.time(),
-              "features": ["actual_grade_receipt", "bounded_warranty_v1"]})
+              "features": FEATURES})
         task = context.current_task
         if task is None:
             task = new_task_from_user_message(context.message)
@@ -216,19 +239,11 @@ class Seller(AgentExecutor):
              "unit": u.get("unit"), "sku": u["sku"], "cost": u["cost"],
              "grade_observed": u.get("grade"), "expires_at": u.get("expires_at"), **terms},
             ensure_ascii=False, indent=2), encoding="utf-8")
-        try:
-            if deal["ask"] is not None and deal["offer"] == deal["ask"] and deal["offer"] >= reserve:
-                move, raw = {"action": "accept"}, "deterministic acceptance of the disclosed quote"
-            else:
-                move, raw = await asyncio.to_thread(ask_json, PROMPT.format(
-                name=u["name"], list_price=terms["quote"], reserve=reserve,
-                transcript="\n".join(deal["lines"])))
-        except (HarnessError, ValueError) as error:
-            self.open.pop(task.id, None)
-            print(f"[harness] decision failed: {error}", flush=True)
-            await up.failed(say("Unable to obtain a valid seller decision."))
-            return
-        print(f"[harness] {raw}", flush=True)
+        if deal["ask"] is not None and deal["offer"] == deal["ask"] and deal["offer"] >= reserve:
+            move, raw = {"action": "accept"}, "deterministic acceptance of the disclosed quote"
+        else:
+            move, raw = await choose_move(deal, terms, reserve, u)
+        print(f"[decision] {raw}", flush=True)
         action = (move or {}).get("action")
         # A model call takes time: verify the unit and terms again before signing.
         if u.get("unit"):
@@ -297,6 +312,7 @@ class Seller(AgentExecutor):
         if terms["discount_stage"]:
             price = terms["quote"]
         deal["ask"] = int(price)
+        deal["asks"] = deal.get("asks", 0) + 1
         deal["disclosed"] = (u.get("grade"), u.get("expires_at"), terms["quote"])
         notice, details = condition_notice(u, terms)
         reply = (f"{u['name']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
@@ -317,11 +333,14 @@ class Seller(AgentExecutor):
 
 def build(port):
     write(MARKET_DIR/"strategy-consumer.json", {"protocol": 1, "pid": os.getpid(), "heartbeat_at": time.time(),
-          "features": ["actual_grade_receipt", "bounded_warranty_v1"]})
+          "features": FEATURES})
+    mode = decision_mode()
+    allowed, reason = model_allowed()
+    print(f"[model] seller: decisions={mode}, model {'on' if allowed else 'off'} ({reason})", flush=True)
     url = f"http://127.0.0.1:{port}/"
     card = AgentCard(
         name=NAME,
-        description=f"A small online shop. Ask for an item by name or SKU. A coding harness ({CMD.split()[0]}) negotiates the price.",
+        description="A small online shop. Ask for an item by name or SKU. Coded rules answer quote requests and numeric offers.",
         version="1.0.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
