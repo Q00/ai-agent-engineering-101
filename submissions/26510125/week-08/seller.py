@@ -97,15 +97,18 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:
-            unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]})
+            # a buyer that stops answering never cancels: its unit stays promised forever (10 of 17 "no unit" visits had
+            # the SKU in stock), so a negotiation silent for 10 minutes no longer holds its unit
+            unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values()
+                                    if d["unit"]["unit"] and time.time() - d["t"] < 600})
             if unit is None:
                 print(f"[visit] no unit for {text[:60]!r}", flush=True)
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
             print(f"[visit] {text[:60]!r} -> {unit['sku']} grade {unit.get('grade')} cost {unit['cost']}", flush=True)
-            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"]}
+            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"], "t": time.time()}
         else:
-            deal["lines"].append(f"buyer: {text}")
+            deal["lines"].append(f"buyer: {text}"); deal["t"] = time.time()
             m = re.search(r"\d+", text)
             deal["offer"] = int(m.group()) if m else deal["offer"]
 
