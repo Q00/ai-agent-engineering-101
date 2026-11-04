@@ -138,6 +138,10 @@ def negotiate(peer, item, budget, t0=None, opening=None, first=None, alternative
             log(f"[buyer] [guard] 5th offer {price} below an ask {ask} within budget; "
                 f"offering the ask")
             price = ask
+        # asks parse as floats, and "1788978.0" is not a whole number to every shop: on Nov 4 18:00-22:20, 17 of
+        # our orders ended with the shop closing the talk while we repeated its own ask with ".0" (it had asked
+        # for an integer offer), e.g. a 2.25M sofa at 1788978 within a 4.6M budget
+        price = int(round(price))
         history.append({"ask": ask, "offer": price})
         last_offer = price
         r = peer.send(str(price), task_id)
