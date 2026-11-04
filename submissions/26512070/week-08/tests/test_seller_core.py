@@ -140,5 +140,26 @@ class SellerCoreTest(Base):
         self.assertEqual(out["state"], "rejected")
         self.assertIn("keep at most 90 h, less than the 95 h you need", out["say"])
 
+    def test_food_unknown_share_sells_only_fresh_units_when_no_hours_are_stated(self):
+        # 11/5 02:4x: shelf 96 h; 75% x 1.05 = 75.6 h - the 90 h unit sells, the 30 h one only to a stated need
+        from core import atomic
+        from tests.test_calc_check import H, UNITS
+        short = dict(UNITS[0], unit="u-food-a2", expires_at=NOW + 30 * H)
+        self.write_inventory(UNITS + [short], balance=4_000_000)
+        path = paths.memory() / "strategy" / "active.json"
+        st = atomic.read_json(path)
+        st["playbook"] = {"seller": {"mode": "rules", "food_fit": True, "food_unknown_share": 0.75}}
+        atomic.write_json(path, st)
+        self.core.handle("u1", "I want to buy G0011e806")
+        self.assertEqual(self.core.open["u1"]["candidates"][0]["unit"], "u-food-a")
+        self.core.open.clear()
+        self.core.handle("u2", "I want to buy G0011e806. I need it to last 20 hours")
+        self.assertEqual(self.core.open["u2"]["candidates"][0]["unit"], "u-food-a2")    # a stated need: first to expire
+        self.core.open.clear()
+        self.write_inventory([u for u in UNITS if u["unit"] != "u-food-a"] + [short], balance=4_000_000)
+        out = self.core.handle("u3", "I want to buy G0011e806")
+        self.assertEqual(out["state"], "rejected")
+        self.assertIn("have 30 h of shelf life left. If that is enough for you, ask again with the hours", out["say"])
+
 if __name__ == "__main__":
     unittest.main()
