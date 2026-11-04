@@ -133,7 +133,7 @@ def hq_directive():
 
 FATAL_CASH, FATAL_LOSS, MIN_SPEND, MAX_FLOOR = 0.10, 0.15, 0.03, 0.12   # HQ 11-04 02:45: floor 0.6M, fatal 0.5M
 # (stock sells in 12 min, cash returns before the next window; the bankruptcy line is 500,000 with stock left)
-MAX_SPEND = 3.0            # HQ 11-04 12:50: up to 15M per window -- inextro supplied 3x our units in 6 h
+MAX_SPEND = 6.0            # HQ 11-04 14:35: up to 30M per window -- after 3.0 we still bought half of inextro
 
 
 def fatal(snap):
