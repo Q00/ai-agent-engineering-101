@@ -152,10 +152,17 @@ CLERK = ("clerk: no haggling needed, this is our price | need a shelf life, grad
 MATCH_RE = re.compile(r"\bmatch|cheaper|elsewhere|other shop|another shop|lower price|최저가|더 싸|다른 (가게|곳)", re.I)
 
 
-def offer_data(u, price, q, vip=None):
+def warranty_for(asked):
+    """HQ 11-04 18:50: a warranty only when the buyer asks for one. With 3 h on every goods sale, 41 of 67 broken units
+    were refunded in full: 7,775,432 out of the balance (ledger 'broken' entries, 11-03 23:23 to 11-04 18:50)."""
+    w = promo.theta().get("warranty_goods_h") or 0
+    return w if asked or not promo.theta().get("warranty_on_request", True) else 0
+
+
+def offer_data(u, price, q, vip=None, asked=False):
     """The offer as data, same fields every time."""
     left = round((u["expires_at"] - time.time()) / 3600, 1) if u.get("expires_at") else None
-    w = promo.theta().get("warranty_goods_h") or 0
+    w = warranty_for(asked)
     return {"type": "offer", "shop": NAME, "sku": u["sku"], "name": u.get("name"), "unit": u.get("unit"),
             "grade": u.get("grade"), "grade_claim_is_true_grade": True, "cert": "market-signed",
             "shelf_hours_left": left, "warranty_hours": w if u.get("kind") == "goods" else 0,
@@ -167,9 +174,11 @@ def offer_data(u, price, q, vip=None):
                 "market_median_source": "public ledger settles of other shops, last 24 h"} if q.get("market_median") else {})}
 
 
-def warranty_note(u):
-    h = promo.theta().get("warranty_goods_h") or 0
-    return f" | warranty={h}h, full refund if it breaks" if u.get("kind") == "goods" and h else ""
+def warranty_note(u, asked=False):
+    h = warranty_for(asked)
+    if u.get("kind") != "goods":
+        return ""
+    return f" | warranty={h}h, full refund if it breaks" if h else " | no warranty unless you ask for one"
 
 
 def next_window():
@@ -219,7 +228,7 @@ class Shop(AgentExecutor):
             d = self.open.get(task.id)
             if not d:
                 return say(text)
-            o = offer_data(d["unit"], d["ask"], d["q"], d.get("vip"))
+            o = offer_data(d["unit"], d["ask"], d["q"], d.get("vip"), d.get("warranty_asked"))
             return up.new_agent_message(parts=[new_text_part(text), new_data_part(o)], metadata={"ask": d["ask"]})
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
@@ -260,7 +269,7 @@ class Shop(AgentExecutor):
                     q = dict(q, price=at_cost, least=at_cost, floor=at_cost, why=q["why"] + f"; at cost for {big}")
                     credit = None
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
-                                         "talk": 0, "credit": credit}
+                                         "talk": 0, "credit": credit, "warranty_asked": need["warranty"]}
             sub = f"substitute for {u['substitute_for']} (same category, in stock) | " if u.get("substitute_for") else ""
             log(f"{task.id[:8]} {u['sku']} cost {u['cost']} -> ask {q['price']} least {q['least']} ({q['why']})"
                 + (f" VIP {vip}" if vip else "") + (f" substitute for {u['substitute_for']}" if sub else ""))
@@ -268,7 +277,7 @@ class Shop(AgentExecutor):
             regular = "" if vip or big or not vd else (f"REGULARS: bought here before? reply 'buyer: <your market name>'"
                                                          f" and VIP -{vd:.0%} comes off this price at once (checked on "
                                                          f"the ledger) | ")
-            await up.requires_input(say_offer(f"{regular}{sub}{facts(u, q['price'], q, code)}{warranty_note(u)}"
+            await up.requires_input(say_offer(f"{regular}{sub}{facts(u, q['price'], q, code)}{warranty_note(u, need['warranty'])}"
                                         + (f" | thank-you price for {big} (bought a {cross_sell()['min_ticket']}+ item "
                                            f"here): at our cost" if big else "")
                                         + (f" | VIP {vip}: -{promo.theta().get('vip_discount', 0):.0%} applied" if vip and not big else "")
@@ -303,6 +312,8 @@ class Shop(AgentExecutor):
             if u["unit"]:
                 receipt.update(unit=u["unit"], claim=u.get("grade"))
             w = q.get("warranty_goods_h", promo.theta()["warranty_goods_h"])   # an experiment may set it per SKU
+            if promo.theta().get("warranty_on_request", True) and not deal.get("warranty_asked"):
+                w = 0                                   # HQ 11-04: no warranty unless the buyer asked
             if u.get("kind") == "goods" and w:
                 receipt["warranty_hours"] = w
             code = deal["code"] or promo.new_code(task.id)
@@ -329,6 +340,7 @@ class Shop(AgentExecutor):
             deal["talk"] += 1
             deal["turns"] -= 1
             need = needs(text)
+            deal["warranty_asked"] = deal.get("warranty_asked") or need["warranty"]
             vip = deal["vip"] or is_vip(self.c, text)
             if need["hours"] or need["grades"] or (vip and not deal["vip"]):
                 taken = {d["unit"]["unit"] for k, d in self.open.items() if k != task.id} | set(self.sold)
@@ -343,10 +355,10 @@ class Shop(AgentExecutor):
                 deal.update(unit=v, q=q, ask=min(q["price"], deal["ask"]) if v["sku"] == u["sku"] else q["price"], vip=vip)
                 log(f"{task.id[:8]} clerk: {need} -> unit {v['unit']} ask {deal['ask']}" + (f" VIP {vip}" if vip else ""))
                 await up.requires_input(say_offer(f"clerk: picked a unit that passes | {facts(v, deal['ask'], q, deal['code'])}"
-                                            f"{warranty_note(v)}" + (f" | VIP {vip}" if vip else "")
+                                            f"{warranty_note(v, deal.get('warranty_asked'))}" + (f" | VIP {vip}" if vip else "")
                                             + f" | asking {deal['ask']}. Reply with a number."))
                 return
-            await up.requires_input(say_offer(f"clerk: {facts(u, deal['ask'], q, deal['code'])}{warranty_note(u)}"
+            await up.requires_input(say_offer(f"clerk: {facts(u, deal['ask'], q, deal['code'])}{warranty_note(u, deal.get('warranty_asked'))}"
                                         f" | asking {deal['ask']}. Reply with a number, or tell me what you need."))
             return
         if deal["turns"] >= MAX_TURNS or offer is None:
