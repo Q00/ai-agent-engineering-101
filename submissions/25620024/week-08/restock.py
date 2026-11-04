@@ -74,6 +74,7 @@ PACE = Path(__file__).parent / "private" / "stock_pace.json"
 CALM = {"window_budget": 0.5, "pick_window_budget": 3.0, "hit_cover": 6, "hit_max_value": 6_000_000,
         "hit_big_ticket": 10 ** 12}
 PACE_OVER_H, PACE_OK_H, PACE_HOLD_S = 3.0, 2.0, 3600
+PACE_CASH_OK = 17_000_000     # 11-04 17:05 finance simulation: profit >= 12M (balance 17M) is shop top 3
 
 
 def pace(c, inv, now=None):
@@ -92,8 +93,8 @@ def pace(c, inv, now=None):
         st["over_since"] = st.get("over_since") or now
         if now - st["over_since"] >= PACE_HOLD_S:
             st["calm"] = True
-    elif cover <= PACE_OK_H:
-        st["over_since"], st["calm"] = None, False
+    elif cover <= PACE_OK_H and (inv.get("balance") or 0) >= PACE_CASH_OK:
+        st["over_since"], st["calm"] = None, False            # aggressive again only with the cash back (17:05)
     st.update(cover_h=round(cover, 2) if cover != float("inf") else None, stock_cost=round(stock),
               cogs_1h=round(cogs), at=time.strftime("%m-%d %H:%M"))
     if bool(st.get("calm")) != was:
