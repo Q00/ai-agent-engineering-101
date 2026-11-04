@@ -127,12 +127,12 @@ def start_seller(fake):
     return p, url, md
 
 
-async def haggle(url):
+async def haggle(url, last="13000 is my final offer. If not, I will buy elsewhere."):
     c = mb.A2A()
     await c.open(url)
     t = await c.send(f"I want to buy {CATALOG[KIMCHI]['name']} ({KIMCHI})")
     t = await c.send("12000", t["id"])                              # under the floor: countered by the rule, no question
-    t = await c.send("13000 is my final offer. If not, I will buy elsewhere.", t["id"])
+    t = await c.send(last, t["id"])
     if mb.state(t) == "TASK_STATE_INPUT_REQUIRED":
         await c.cancel(t["id"])
     await c.close()
@@ -181,6 +181,14 @@ def test_seller():
                   and n["walk_odds"] == [float(fake)], (said, n.get("walk_odds")))
         check(f"{label}: asked only once, for the offer over the floor (12,000 was under it)", len(n["walk_odds"]) == 1)
         (md / "analysis" / "active_rules.json").unlink(missing_ok=True)
+    seller, url, md = start_seller("0.9")
+    try:
+        state, said = asyncio.run(haggle(url, "13000"))
+    finally:
+        seller.kill()
+    n = last_negotiation(md)
+    check("the same offer with no word of leaving: the model is not asked, the rule's counter stands",
+          "13400" in said and n["walk_odds"] is None and n["taken_early"] is False, (said, n.get("walk_odds")))
 
 
 def main() -> int:
