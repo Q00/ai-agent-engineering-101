@@ -61,7 +61,49 @@ def theta():
         t["cash_reserve"] = max(t["cash_reserve"], fl.get("cash_floor", 0))
         t["window_budget"] = min(t["window_budget"], fl.get("window_spend", t["window_budget"]))
         t["pick_window_budget"] = min(t["pick_window_budget"], fl.get("window_spend", t["pick_window_budget"]))
+    pace = load(PACE.parent, PACE.name, {})
+    if pace.get("calm"):                                      # stock outran sales for an hour: the pre-attack levels
+        for k, v in CALM.items():
+            t[k] = min(t.get(k, v), v)
     return t
+
+
+PACE = Path(__file__).parent / "private" / "stock_pace.json"
+# HQ 11-04 16:50: "팔리는 추이를 보고, 이 상태가 1시간 이상 반복될 것 같으면 매입 추이를 기존으로 회복시켜". The levels
+# before the 14:35 / 16:20 attack: 15M per window for picks, 2.5M general, 6-window hit cover, no big-ticket doubling
+CALM = {"window_budget": 0.5, "pick_window_budget": 3.0, "hit_cover": 6, "hit_max_value": 6_000_000,
+        "hit_big_ticket": 10 ** 12}
+PACE_OVER_H, PACE_OK_H, PACE_HOLD_S = 3.0, 2.0, 3600
+
+
+def pace(c, inv, now=None):
+    """Stock cover in hours: our stock at cost / the cost of what we sold in the last hour. Over PACE_OVER_H for an
+    hour in a row -> calm (the CALM levels apply in theta()); back at or under PACE_OK_H -> aggressive again. Every
+    change is logged in private/stock_pace.json."""
+    now = now or time.time()
+    stock = sum(u.get("cost") or 0 for u in inv.get("units", []) if u.get("grade") != "expired")
+    cogs = c.execute("""select coalesce(sum(su.cost), 0) from settles s join settle_units x on x.seq = s.seq
+                        join supply_units su on su.unit = x.unit where su.shop = 'dragonash' and s.ts > ?""",
+                     (now - 3600,)).fetchone()[0]
+    cover = stock / cogs if cogs else float("inf")
+    st = load(PACE.parent, PACE.name, {})
+    was = bool(st.get("calm"))
+    if cover > PACE_OVER_H:
+        st["over_since"] = st.get("over_since") or now
+        if now - st["over_since"] >= PACE_HOLD_S:
+            st["calm"] = True
+    elif cover <= PACE_OK_H:
+        st["over_since"], st["calm"] = None, False
+    st.update(cover_h=round(cover, 2) if cover != float("inf") else None, stock_cost=round(stock),
+              cogs_1h=round(cogs), at=time.strftime("%m-%d %H:%M"))
+    if bool(st.get("calm")) != was:
+        st.setdefault("log", []).append(f"{st['at']} {'calm' if st['calm'] else 'aggressive'}: cover {st['cover_h']} h")
+        st["log"] = st["log"][-50:]
+    try:
+        PACE.write_text(json.dumps(st, ensure_ascii=False, indent=1), encoding="utf-8")
+    except OSError:
+        pass
+    return st
 
 
 def load(md, name, default):
@@ -328,6 +370,11 @@ def main():
         market_model.sync(c, md, budget_s=15)
     except Exception as e:
         print(f"[restock] ledger sync failed: {type(e).__name__}: {e}", flush=True)
+    try:
+        p = pace(c, load(md, "inventory.json", {}))
+        print(f"[restock] stock cover {p.get('cover_h')} h ({'calm' if p.get('calm') else 'aggressive'})", flush=True)
+    except Exception as e:
+        print(f"[restock] pace check failed: {type(e).__name__}: {e}", flush=True)
     buy, why, cash, st = plan(md, c, theta())
     buy, unsold = only_sellers(c, buy)
     if unsold:
