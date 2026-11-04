@@ -22,16 +22,16 @@
   note/.style={font=\scriptsize,align=center,fill=white,inner sep=2pt}]
 
 \node[box] (evidence) at (0,0) {\textbf{Market evidence}\par Public paid ledger; kit snapshots\par Catalog, stock, orders, reviews\par Claims are not sales facts};
-\node[shared] (memory) at (5.8,0) {\textbf{Persistent evidence memory}\par Idempotent SQLite events\par Payment pending vs. settled\par Scoped, bounded retrieval};
-\node[shared] (model) at (11.6,0) {\textbf{Shared decision model}\par Codex gpt-5.6-luna / low\par Role-specific structured JSON\par No native tool execution};
-\node[optional] (reflect) at (17.4,0) {\textbf{Slow maintenance}\par Evidence-linked conditional lessons\par Customer-feedback queue\par Factual forum drafts (opt-in)};
+\node[shared] (memory) at (5.8,0) {\textbf{Persistent evidence memory}\par Host-local SQLite; kit JSON on NAS\par Official ledger is read-only evidence\par Scoped, bounded retrieval};
+\node[shared] (model) at (11.6,0) {\textbf{Shared decision model}\par Codex gpt-5.6-luna / low\par 20s limit; 300s failure backoff\par Validated, labelled policy fallback};
+\node[optional] (reflect) at (17.4,0) {\textbf{Slow maintenance}\par Conditional lessons (opt-in)\par Customer-feedback queue\par Evidence-linked aggregate posts};
 
 \node[box] (discover) at (0,-3.2) {\textbf{Discovery / hypotheses}\par Decayed observed sales\par Related SKU candidates\par Unknown demand stays unknown};
-\node[guarded] (restock) at (5.8,-3.2) {\textbf{Independent procurement}\par Cash, concentration, unit limits\par Expiry, storage, pending intents\par Emit bounded \texttt{buy} proposals};
-\node[guarded] (seller) at (11.6,-3.2) {\textbf{Inventory seller}\par Fresh stock + durable reservations\par Bounded price negotiation\par Signed receipt; truthful terms};
-\node[guarded] (buyer) at (17.4,-3.2) {\textbf{Order-constrained buyer}\par Eligible SKU + shop selection\par Private fixed budget; short loop\par Certificate/lifetime acceptance};
+\node[guarded] (restock) at (5.8,-3.2) {\textbf{Independent procurement}\par Supply window + fresh limit checks\par Cash, concentration, expiry limits\par Emit bounded \texttt{buy} proposals};
+\node[guarded] (seller) at (11.6,-3.2) {\textbf{Inventory seller}\par Fresh stock + durable reservations\par Observed prices + age adjustment\par Signed receipt; truthful terms};
+\node[guarded] (buyer) at (17.4,-3.2) {\textbf{Order-constrained buyer}\par Estimated usable value minus price\par Eligible SKU + private budget\par Certificate/lifetime acceptance};
 
-\node[box] (kit) at (5.8,-6.5) {\textbf{Market kit v4}\par Inventory sync, supply, ACP/AP2\par Certificate + payment checks\par Actual market side effects};
+\node[box] (kit) at (5.8,-6.5) {\textbf{Guarded kit v4 launcher}\par Durable pre-checkout gate + replay\par Uncertain issued JWTs quarantined\par ACP/AP2; market settles};
 \node[shared] (review) at (11.6,-6.5) {\textbf{Post-settlement review}\par Price, grade, claim consistency\par Payment evidence, not guesses\par Failure attribution stays cautious};
 \node[optional] (lock) at (17.4,-6.5) {\textbf{Deployment boundary}\par Live execution disabled by default\par No join/tunnel run in this work\par Offline tests use injected doubles};
 
@@ -61,5 +61,5 @@ Forum claims cannot become verified transactions. Review/lesson data never overr
 \par\smallskip
 \noindent\footnotesize
 \textbf{Status:} local offline verification only; real-model latency, market rank and profit remain unmeasured.
-Warranty defaults to zero; forum posting and reflection are opt-in. Figure source is original TikZ; PDF compilation is pending.
+Warranty defaults to zero; factual posts require live opt-in, reflection is off. Figure source is original TikZ; PDF compilation is pending.
 \end{document}
