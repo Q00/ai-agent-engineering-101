@@ -52,7 +52,8 @@ GUARD = HERE / "private" / "team_guard.json"
 #   overnight (until the shop is back on its feet): every 30 min; normal: every 2 h
 #   a usage/rate-limit error from Codex or Claude: cool down 3 h; 3 failures in a row: 1 h; at most 40 runs a day;
 #   headquarters can pause it by setting "paused": true
-LIMITS = {"overnight_min": 28, "normal_min": 118, "max_runs_day": 40, "limit_cooldown_h": 3, "fail_cooldown_h": 1,
+LIMITS = {"overnight_min": 9, "normal_min": 118, "max_runs_day": 150,   # HQ 11-04: every 10 min
+          "limit_cooldown_h": 3, "fail_cooldown_h": 1,
           "normal_when_all": 0.85}             # HQ 11-04: rest only near the top (0.6 put the team to sleep at rank 18)
 TEAM_GAP = {"overnight": 25 * 60, "normal": 55 * 60}   # how often SCM, finance and the buyer team meet
 MODE = {"now": "overnight"}
