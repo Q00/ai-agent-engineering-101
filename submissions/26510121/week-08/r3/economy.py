@@ -84,7 +84,9 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     if previous_ask:
         prices.add(previous_ask)
     result = []
-    warranty = 6 if unit.get("kind") == "goods" else 0
+    warranty = (max(unit.get('minimum_warranty_hours', 0), unit.get('promised_warranty_hours', 0),
+                    config.get('goods_warranty_by_grade', {}).get(unit.get('grade'), 6))
+                if unit.get('kind') == 'goods' else 0)
     # Unknown break risk is an explicit stress scenario, not an empirical estimate.
     stress_refund = .15 if warranty else 0
     for p in sorted({min(ceiling, p) for p in prices}):
@@ -96,7 +98,7 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
                        'expected_delta': {'profit': (1 - stress_refund) * p * completion['completion'],
                                           'revenue': (1 - stress_refund) * p * completion['completion']},
                        "recovery_floor": recovery_floor,
-                       "risk": "goods refund stress 0.15; not observed break probability" if warranty else "food expiry"})
+                           "risk": "goods refund stress 0.15; full gross reserve remains required" if warranty else "food expiry"})
     if offer and offer >= recovery_floor:
         p = min(offer, previous_ask) if previous_ask else offer
         result.append({"id": "accept:" + str(p), "action": "accept" if p == offer else "counter", "price": p,
@@ -131,9 +133,12 @@ def buyer_candidates(order, shops, catalog, journal):
             observed = book.get(sku, {})
             public_reference = observed.get('median', .8 * product['list_price'])
             estimate = sorted(x["price"] for x in own)[len(own) // 2] if own else int(public_reference)
-            estimate = min(estimate, order["budget"])
             failed_orders = {x.get('order', x['_event_id']) for x in failed}
             success = (len(own) + 1) / (len(own) + len(failed_orders) + 2)
+            # An observed price above our budget is NOT an available capped
+            # quote. Keep a small explicit chance of negotiating below history.
+            affordability = 1 if estimate <= order['budget'] else .1
+            success *= affordability
             hint = shop_hint(journal, shop['name'], sku)
             result.append({"id": shop["name"] + ":" + sku, "shop": shop["url"], "name": shop["name"],
                            "sku": sku, "product": product, "reference_price": estimate,
@@ -143,6 +148,7 @@ def buyer_candidates(order, shops, catalog, journal):
                            "evidence": {"own_paid": len(own), "peer_failures": len(failed_orders),
                                         'public_sku_prices': observed,
                                         "forum_announcement_hint": hint, "forum_hint_is_unverified": True,
+                                        'budget_feasibility_scenario': affordability,
                                         "price_is_prior": not bool(own) and not bool(observed)}})
     return sorted(result, key=lambda x: x["score"], reverse=True)
 
@@ -240,7 +246,9 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         weight = config.get('category_weights', {}).get(p['category'], 1)
         exact = min(forum['skus'].get(sku, 0), 2)
         # Cover observed own sales through the next supply window, in small lots.
-        desired = max(1, math.ceil(own.get(sku, 0) * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
+        observed = book.get(sku, {})
+        rate = max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0))
+        desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
         qty = min(20, config['restock_max_qty'] - count.get(sku, 0),
                   max(1, desired - count.get(sku, 0)), max(0, math.floor(spendable / commitment)))
         if qty <= 0:
@@ -248,7 +256,6 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         # Affordability still reserves worst-case storage THROUGH THE END. The
         # objective uses expected holding time instead, so quick-turn goods do
         # not pay two weeks of hypothetical storage in every ranking decision.
-        observed = book.get(sku, {})
         probe_sku = observed.get('samples', 0) < 3 and own.get(sku, 0) < 2
         rate = max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0))
         hours = min(6, max(0, (end - now) / 3600))
@@ -274,7 +281,9 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         # Small lots: only own observed repeat sales justify multiple new units.
         if probe_sku:
             qty = 1
-        max_exposure = min(spendable, inv.get('balance', 0) * .15)
+        existing_exposure = sum(u.get('cost', 0) * (1 + fee) for u in units if u['sku'] == sku)
+        max_exposure = min(spendable, max(0, inv.get('balance', 0) *
+                           config.get('max_sku_capital_fraction', .15) - existing_exposure))
         if probe_sku:
             max_exposure = min(max_exposure, capacity['spendable'] * config['exploration_fraction'])
         qty = min(qty, max(0, math.floor(max_exposure / commitment)))
@@ -299,37 +308,12 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                         'upper_cost_profit_stress': expected_revenue - qty * (cost_upper * p['list_price'] + expected_storage),
                                         'refund_stress': refund_stress, 'exploration': probe_sku,
                                         "adaptive_category_weight": weight}})
+        candidates[-1]['evidence'].update(kind=p.get('kind'), list_price=p['list_price'])
     from .meta import rank_progress
     board = journal.snapshot('board.json', {})
     if now - journal.get('board_checked_at', 0) > 300:
         board = {}
     for c in candidates:
         c['rank_progress_surrogate'] = rank_progress(board, 'shop', 'seochanit', c['expected_delta'])
-    chosen, category_capital = [], {}
-    exploration_spent = 0
-    for c in sorted(candidates, key=lambda x: ((x['rank_progress_surrogate'] or 0) *
-                    (config['exploration_fraction'] if x['evidence']['exploration'] else 1), x['score']), reverse=True):
-        remaining_slots = target - len(units) - sum(x['qty'] for x in chosen)
-        if remaining_slots <= 0:
-            break
-        if c['qty'] > remaining_slots:
-            fraction = remaining_slots / c['qty']
-            c = dict(c, qty=remaining_slots, max_cost=c['max_cost'] * fraction,
-                     capital_commitment=c['capital_commitment'] * fraction,
-                     expected_delta={k: v * fraction for k, v in c['expected_delta'].items()},
-                     score=c['score'] * fraction)
-        used = category_capital.get(c['category'], 0)
-        # Multiple high-demand SKUs may share a category, but it cannot consume
-        # all deployable cash. Probe spending is bounded across the entire plan.
-        if (c['capital_commitment'] > spendable or used + c['capital_commitment'] > capacity['spendable'] * .6 or
-                c['evidence']['exploration'] and exploration_spent + c['capital_commitment'] >
-                capacity['spendable'] * config['exploration_fraction']):
-            continue
-        chosen.append(c)
-        category_capital[c['category']] = used + c['capital_commitment']
-        if c['evidence']['exploration']:
-            exploration_spent += c['capital_commitment']
-        spendable -= c["capital_commitment"]
-        if len(chosen) >= min(config["restock_max_lines"], target - len(units)):
-            break
-    return chosen
+    from .portfolio import allocate
+    return allocate(candidates, inv, capacity, config, units)

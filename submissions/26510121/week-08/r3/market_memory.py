@@ -41,7 +41,7 @@ def market_book(journal, catalog, now=None):
 
 
 def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, previous_offer=None,
-                        failure_stress=0, covered=False):
+                        failure_stress=0, covered=False, covered_failure=None):
     """Monotone concessions with a final feasible acceptance; no repeated bids.
 
     Completion priors below are explicit engineering scenarios. They are not
@@ -50,7 +50,8 @@ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, pr
     actions = []
     L = product['list_price']
     def surplus(price):
-        return (1 - failure_stress) * L - price + (price * failure_stress if covered else 0)
+        recovery = (failure_stress if covered else 0) if covered_failure is None else covered_failure
+        return (1 - failure_stress) * L - price + price * recovery
     if ask <= cap:
         value = surplus(ask)
         actions.append({'id': 'accept', 'price': ask, 'score': value + 1,
@@ -76,18 +77,24 @@ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, pr
     return actions
 
 
-def buyer_terms(product, order, terms, journal, config):
+def buyer_assessment(product, order, terms, journal, config):
     from .state import warranty_hours
     cap = min(order['budget'], product['list_price'])
-    required, stress = 0, 0
+    required, stress, covered = 0, 0, 0
+    risk = {}
     if product.get('kind') == 'goods':
-        required = 6 if warranty_hours(terms.get('warranty_hours')) >= 6 else 0
-        from .meta import observed_breaks
-        risk = observed_breaks(journal, product.get('sku') or terms.get('sku'))
-        stress = config['unknown_goods_failure_stress']
-        if risk['mature_samples'] >= 10:
-            n = risk['mature_samples']
-            stress = min(1, (risk['broken'] + 1) / (n + 2) + 1 / (n + 2) ** .5)
-        if not required:
-            cap = min(cap, int(product['list_price'] * (1 - stress)))
-    return cap, required, stress
+        required = min(6, warranty_hours(terms.get('warranty_hours')))
+        from .risk import goods_risk
+        declared = terms.get('grade', terms.get('claim'))
+        declared = declared if declared in ('A', 'B', 'C') else None
+        risk = goods_risk(journal, declared, required, config)
+        stress, covered = risk['failure_upper'], risk['covered_lower']
+        if required < 6:
+            cap = min(cap, int(product['list_price'] * (1 - stress) / max(.000001, 1 - covered)))
+    return {'cap': cap, 'required_warranty': required, 'failure': stress,
+            'covered_failure': covered, 'risk_evidence': risk}
+
+
+def buyer_terms(product, order, terms, journal, config):
+    result = buyer_assessment(product, order, terms, journal, config)
+    return result['cap'], result['required_warranty'], result['failure']

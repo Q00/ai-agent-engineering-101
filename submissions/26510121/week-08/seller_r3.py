@@ -49,7 +49,9 @@ class Seller(AgentExecutor):
                     (u["name"].casefold() in want or u["category"].split(">")[ -1].casefold() in want))]
         for u in sorted(choices, key=lambda x: (remaining(x), x.get("supplied_at", 0))):
             if self.j.reserve(u["unit"], task, self.cfg["session_ttl_seconds"]):
-                return dict(u, requested_use_hours=min_hours)
+                warranty = re.search(r'(?:minimum|at least)\s*(\d+(?:\.\d+)?)\s*(?:hours?|h)\s*(?:of\s*)?warranty|warranty\s*(?:of\s*)?(?:at least|minimum)\s*(\d+(?:\.\d+)?)', text, re.I)
+                required = min(6, float(next(x for x in warranty.groups() if x))) if warranty else 0
+                return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=required)
         self.j.add("stockout", {"sku": skus[0] if skus else None, "request": text[:300]}, role="shop")
         return None
 
@@ -127,7 +129,9 @@ class Seller(AgentExecutor):
             if match:
                 offer = int(match.group(1).replace(",", ""))
         memory = customer_memory.summary(self.j, task.id, unit)
-        candidates = shop_candidates(unit, inv, cat, self.j, deal['config'], offer=offer,
+        quoting_unit = dict(unit, minimum_warranty_hours=deal['unit'].get('minimum_warranty_hours', 0),
+                            promised_warranty_hours=deal.get('promised_warranty_hours', 0))
+        candidates = shop_candidates(quoting_unit, inv, cat, self.j, deal['config'], offer=offer,
                                      previous_ask=deal["ask"], customer_memory=memory)
         if not candidates:
             customer_memory.finish(self.j, task.id, 'no_feasible_offer')
@@ -141,9 +145,11 @@ class Seller(AgentExecutor):
                                           critical=unit["cost"] > inv.get("balance", 1) * self.cfg["critic_cash_fraction"],
                                           deadline=deal["until"] - 5)
         price = selected["price"]
+        deal['promised_warranty_hours'] = selected['warranty_hours']
         customer_memory.action(self.j, task.id, message_id, deal['turns'], selected, deal['strategy']['version'])
         self.j.add("shop_quote", {"task": task.id, "sku": unit["sku"], "price": price, "action": selected["action"],
-                                  "strategy_version": deal['strategy']['version']}, role="shop")
+                                  "strategy_version": deal['strategy']['version'],
+                                  'warranty_hours': selected['warranty_hours']}, role="shop")
         if selected["action"] == "accept":
             customer_memory.finish(self.j, task.id, 'agreed_not_yet_paid')
             rec = {"shop": NAME, "item": unit["sku"], "price": price, "task": task.id,

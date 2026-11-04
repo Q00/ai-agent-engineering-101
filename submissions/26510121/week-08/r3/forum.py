@@ -101,6 +101,8 @@ def schedule(journal, config, now=None):
     interval = max(300, config.get('forum_post_interval_seconds', 600))
     bucket = int(now // interval)
     catalog = journal.snapshot('catalog.json', {})
+    from .market_memory import market_book
+    book = market_book(journal, catalog, now)
     from .economy import remaining, grade, shop_candidates
     with journal.connect() as connection:
         reserved = {r[0] for r in connection.execute('SELECT unit FROM reservations WHERE until>?', (now,))}
@@ -114,7 +116,12 @@ def schedule(journal, config, now=None):
             thread = row['post']
             break
     if unit is None and units:
-        unit = min(units, key=lambda u: (remaining(u, now), u.get('supplied_at', now)))
+        urgent = [u for u in units if u.get('kind') == 'food' and remaining(u, now) < 3]
+        # The forum is a demand channel: surface valuable observed-demand stock
+        # instead of advertising only the oldest cheap food every time.
+        unit = (min(urgent, key=lambda u: remaining(u, now)) if urgent else
+                max(units, key=lambda u: book.get(u['sku'], {}).get('median', u.get('list_price', 0)*.8) *
+                    book.get(u['sku'], {}).get('per_seller_per_hour', .01)))
     if unit and now - journal.get('forum_last_sent:shop', 0) >= interval:
         candidates = shop_candidates(unit, inv, catalog, journal, config, now=now)
         if candidates:
@@ -140,9 +147,9 @@ def schedule(journal, config, now=None):
                            'paid-observation:' + str(item['ledger']))
     # A recent paid purchase can support one more useful, scoped price comparison.
     # Refs are server ledger sequences; prose in other posts is never price data.
-    from .market_memory import market_book
-    book = market_book(journal, catalog, now)
-    for item in journal.events('purchase', 100):
+    informative = sorted(journal.events('purchase', 100), key=lambda p:
+                         book.get(p.get('sku'), {}).get('median', p.get('price', 0)) - p.get('price', 0), reverse=True)
+    for item in informative:
         observed = book.get(item.get('sku'), {})
         if (not 0 <= now - item.get('paid_at', item['_ts']) < 1800 or
                 type(item.get('ledger')) is not int or observed.get('samples', 0) < 3 or
@@ -156,7 +163,7 @@ def schedule(journal, config, now=None):
                 'References are examples, not the complete sample.')
         refs = list(dict.fromkeys([item['ledger']] + observed['refs']))[:5]
         journal.queue_post({'post': text, 'refs': refs, 'as': 'buyer', 'priority': 4,
-                            'expires_at': now + 600}, 'price-comparison:' + str(int(now // 1800)))
+                            'expires_at': now + 600}, 'price-comparison:' + str(bucket))
         break
 
 

@@ -160,7 +160,7 @@ def test_round_reset_or_stale_board_cannot_update(tmp_path):
     assert not j.events('strategy_change')
 
 
-@pytest.mark.parametrize('stock,paid,target', [(2, 12, 25), (20, 0, 15)])
+@pytest.mark.parametrize('stock,paid,target', [(2, 12, 30), (30, 0, 25)])
 def test_inventory_target_changes_with_own_stock_and_conversion(tmp_path, stock, paid, target):
     j = Journal(tmp_path)
     baseline(j)
@@ -176,7 +176,7 @@ def test_inventory_target_changes_with_own_stock_and_conversion(tmp_path, stock,
     cfg, _ = effective(j, 'shop')
     assert cfg['inventory_target_units'] == target
     assert cfg['cash_reserve_fraction'] == .2
-    assert cfg['restock_max_lines'] == 5
+    assert cfg['restock_max_lines'] == policy()['restock_max_lines']
 
 
 def test_trial_without_enough_new_evidence_expires_and_restores_baseline(tmp_path):

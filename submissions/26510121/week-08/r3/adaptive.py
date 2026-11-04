@@ -77,6 +77,8 @@ def begin_buyer(journal, order):
     if frozen is None:
         journal.put(key, selected)
         journal.add('buyer_order', {'order': order['order'], 'budget': order['budget'],
+                    'kind': order.get('kind'), 'category': order.get('category'),
+                    'acceptable': (order.get('acceptable') or [])[:200],
                     'strategy_version': selected['version']}, eid='buyer-order:' + str(order['order']), role='buyer')
     return cfg, selected
 

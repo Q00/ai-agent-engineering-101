@@ -58,6 +58,24 @@ def quote(task):
     return money(int(matches[0].replace(",", "")))
 
 
+def quote_terms(task):
+    """Read explicit structured terms; never infer warranty/grade from prose."""
+    message = task.get('status', {}).get('message', {})
+    sources = [task.get('metadata', {}), task.get('status', {}).get('metadata', {}), message.get('metadata', {})]
+    sources += [p['data']['offer_terms'] for p in message.get('parts', [])
+                if isinstance(p.get('data'), dict) and isinstance(p['data'].get('offer_terms'), dict)]
+    result = {}
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        for key in ('ask', 'sku', 'grade', 'expires_at', 'warranty_hours', 'cert', 'certificate'):
+            if key in source:
+                if key in result and result[key] != source[key]:
+                    raise ValueError('conflicting_offer_terms')
+                result[key] = source[key]
+    return result
+
+
 class Peer:
     def __init__(self, transport=None, timeout=8):
         self.http = httpx.Client(transport=transport, timeout=timeout, trust_env=False, follow_redirects=False,
@@ -100,3 +118,8 @@ class Peer:
 
     def close(self):
         self.http.close()
+
+    def cancel(self, task):
+        # Best effort: not every course peer implements A2A CancelTask.
+        self.http.post(self.endpoint, json={'jsonrpc': '2.0', 'id': uuid.uuid4().hex,
+                       'method': 'CancelTask', 'params': {'id': task}}, timeout=2)
