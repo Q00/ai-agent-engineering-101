@@ -140,6 +140,21 @@ class SellerCoreTest(Base):
         self.assertEqual(out["state"], "rejected")
         self.assertIn("keep at most 90 h, less than the 95 h you need", out["say"])
 
+    def test_food_fresh_unknown_sells_the_freshest_unit_when_no_hours_are_stated(self):
+        # 11/5 02:5x: no stated hours -> the freshest unit (90 h); stated 20 h -> the first to expire that lasts (30 h)
+        from core import atomic
+        from tests.test_calc_check import H, UNITS
+        self.write_inventory(UNITS + [dict(UNITS[0], unit="u-food-a2", expires_at=NOW + 30 * H)], balance=4_000_000)
+        path = paths.memory() / "strategy" / "active.json"
+        st = atomic.read_json(path)
+        st["playbook"] = {"seller": {"mode": "rules", "food_fit": True, "food_fresh_unknown": True}}
+        atomic.write_json(path, st)
+        for task, text, unit in [("n1", "I want to buy G0011e806", "u-food-a"),
+                                 ("n2", "I want to buy G0011e806. I need it to last 20 hours", "u-food-a2")]:
+            self.assertEqual(self.core.handle(task, text)["state"], "input_required")
+            self.assertEqual(self.core.open[task]["candidates"][0]["unit"], unit, text)
+            self.core.open.clear()
+
     def test_food_unknown_share_sells_only_fresh_units_when_no_hours_are_stated(self):
         # 11/5 02:4x: shelf 96 h; 75% x 1.05 = 75.6 h - the 90 h unit sells, the 30 h one only to a stated need
         from core import atomic

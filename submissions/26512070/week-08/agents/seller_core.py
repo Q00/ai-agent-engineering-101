@@ -99,8 +99,17 @@ class SellerCore:
                 self.short = {"need": None, "most": most, "sku": named[0]["sku"]}
             named = fit
         # one unit per SKU (the one that expires first), so the model sees choices, not copies
+        # 11/5 02:5x (user: sell a lot, and earn good ratings by selling good quality): a food buyer that states no hours
+        # gets the freshest unit of the SKU; the older ones go to buyers whose stated hours they cover (food_fit)
+        fresh_first = not need and self.playbook(ctx)["food_fresh_unknown"]
+
+        def order(u):
+            exp = u.get("expires_at") or float("inf")
+            if fresh_first and u.get("kind") == "food":
+                exp = -exp
+            return exp, u.get("supplied_at") or 0
         best = {}
-        for u in sorted(named, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0)):
+        for u in sorted(named, key=order):
             best.setdefault(u["sku"], u)
         rows = []
         for u in list(best.values())[:CANDIDATES]:
@@ -221,7 +230,8 @@ class SellerCore:
                 # SKUs in demand open at hot_open_share - the buy list's top hot_n goods and what visitors asked for
                 # that we lacked in the last 30 min
                 "hot_open_share": pb.get("hot_open_share"), "hot_n": pb.get("hot_n", 5),
-                "food_fit": pb.get("food_fit", False), "food_unknown_share": pb.get("food_unknown_share")}
+                "food_fit": pb.get("food_fit", False), "food_unknown_share": pb.get("food_unknown_share"),
+                "food_fresh_unknown": pb.get("food_fresh_unknown", False)}
 
     @staticmethod
     def hot_skus(ctx, pb):
