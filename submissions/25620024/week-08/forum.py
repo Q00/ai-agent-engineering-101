@@ -30,7 +30,7 @@ HERE = Path(__file__).parent
 STATE = HERE / "private" / "forum_state.json"
 THETA = Path(os.environ.get("SHOP_THETA", HERE / "private" / "shop_theta.json"))
 DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n": 5, "min_n_index": 30,
-            "max_posts_day": {"buyer": 288, "shop": 24},
+            "max_posts_day": {"buyer": 288, "shop": 96},
             "gap_s": {"buyer": 1800, "shop": 300}}   # 11-05 05:50: back to 30 min. At 5 min (19:30-20:49) the rating
             # fell 0.600 -> 0.577 and the posts percentile only went 0.74 -> 0.73: new posts draw ~5.2 likes, under our
             # average, so they are NOT neutral (the 14:00 assumption was wrong); quality over count The 30-min cut assumed new posts
