@@ -124,6 +124,21 @@ def scarcity(mem, category, recent=60):
     return sum(1 for r in rows if r.get("outcome") == "no_stock") / len(rows)
 
 
+def cooling_off(mem, shop_name, streak=4):
+    """A shop whose last `streak` visits all ended before any offer (no stock, or a rejection at the opening like
+    leeuichann's "cannot be verified against current inventory", 11 times in 40 orders at 01:10) is left alone
+    until it has been visited and answered again; no_stock rows do not lower its score, so this is the only brake."""
+    rows = [r for r in mem if r.get("shop") == shop_name][-streak:]
+    return len(rows) == streak and all(r.get("outcome") in ("no_stock", "stale") for r in rows)
+
+
+def closing_gap(last_offer, ask, limit, reference, slack):
+    """When my last offer is within 2% of the shop's ask and the ask is inside my limit and near my reference, pay the
+    ask: 01:15, seven offers crept 385,000 -> 404,800 against a 405,000 ask and the round limit ended it with nothing."""
+    return (isinstance(last_offer, (int, float)) and isinstance(ask, (int, float)) and ask > 0
+            and last_offer >= 0.98 * ask and ask <= limit and reference and ask <= reference * max(slack, 1.10))
+
+
 def regime(sc, discount):
     """Bargaining posture from scarcity: scarce -> take a price up to 10% over the reference and open closer to the
     ask; plentiful -> take only the reference or better and open deeper. Returns (quick-offer slack, first-offer discount)."""
@@ -248,6 +263,8 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
         # after a reopen the shop has shown its floor: the next ask near it is taken rather than bargained down again
         quick, why = quick_offer(ask, stated_floor(status_text(t)), reference, guardian.limit,
                                  max(slack, 1.10) if info.get("reopened") else slack)
+        if quick is None and offers and closing_gap(offers[-1][0], ask, guardian.limit, reference, slack):
+            quick, why = int(round(ask)), "the ask, within 2% of my last offer,"
         if quick is not None:
             # 11-05 00:30: 45% of the market's orders go unfilled and a unit draws several buyers within minutes, so
             # a price already at or under my reference is taken at once (no model call) rather than haggled for a few
@@ -450,6 +467,10 @@ def main():
     reference = buyer_policy.item_reference(mem, category, fallback=category_reference(order, catalog))
     selector_guardian = buyer_policy.MandateGuardian(a.budget, reference)
     candidates = prepare_round3_shops(shops, order, catalog, selector_guardian)
+    cooled = [s for s in candidates if cooling_off(mem, s.get("name"))]
+    if cooled and len(cooled) < len(candidates):
+        print(f"[choose] skipping {[s.get('name') for s in cooled]}: answered nothing on their last visits", flush=True)
+        candidates = [s for s in candidates if s not in cooled]
     pick = choose(candidates, category, mem, reference, params["explore_rate"])
     request = choose_request(pick, catalog, order)
     wanted = request["sku"] if request else a.item

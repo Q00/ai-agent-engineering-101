@@ -101,6 +101,18 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertTrue(market_buyer.regulars_prompt("REGULARS: bought here before? reply 'buyer: <your market name>' and VIP -3% comes off"))
         self.assertFalse(market_buyer.regulars_prompt("lamp: asking 115. Send your offer as a number."))
 
+    def test_a_shop_that_answers_nothing_four_times_is_cooled_off(self):
+        mem = [{"shop": "x", "outcome": "no_stock"}] * 3 + [{"shop": "x", "outcome": "stale"}]
+        self.assertTrue(market_buyer.cooling_off(mem, "x"))
+        self.assertFalse(market_buyer.cooling_off(mem[:3], "x"))                              # not yet four
+        self.assertFalse(market_buyer.cooling_off(mem + [{"shop": "x", "outcome": "deal"}], "x"))   # answered again
+
+    def test_closing_gap_pays_the_ask_when_my_offer_is_within_two_percent(self):
+        self.assertTrue(market_buyer.closing_gap(404800, 405000, 441000, 380000, 1.05))
+        self.assertFalse(market_buyer.closing_gap(385000, 405000, 441000, 380000, 1.05))     # 5% apart: keep bargaining
+        self.assertFalse(market_buyer.closing_gap(404800, 405000, 400000, 380000, 1.05))     # ask above my limit
+        self.assertFalse(market_buyer.closing_gap(404800, 405000, 441000, 300000, 1.05))     # ask far above the reference
+
     def test_regime_follows_category_scarcity(self):
         mem = [{"item": "c", "outcome": "no_stock"}] * 8 + [{"item": "c", "outcome": "deal"}] * 2
         self.assertEqual(0.8, market_buyer.scarcity(mem, "c"))
