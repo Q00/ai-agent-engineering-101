@@ -82,15 +82,19 @@ CHEAP_TICKET, CHEAP_MAX_SHARE = 100_000, 0.80
 # and 63.5 supplied per hour); 35 min later 1 sold, 18 held. A big-ticket SKU now opens at most its recent market
 # median (restock's last 10 settles, at least 5) plus BIG_OVER_MARKET; the Jakomo sofa and Simmons bed (0.80) keep 0.86.
 BIG_OVER_MARKET, BIG_MIN_SETTLES = 0.06, 5
+# The same median rule now holds for mid-priced goods (list 100k-1M, cap stays MAX_SHARE) (Nov 5 04:31-06:17):
+# our 19 reviews of them averaged 3.42 stars (0.85 of list 4.75 on 4, 0.90-1.0 3.21 on 14), and 20 goose duvets
+# (G05277ffe, list 600k) sat up to 9.2 h opening at 0.85-0.91 while the market's median was 0.78.
 
 
 def max_share(u):
-    if u["list_price"] >= BIG_TICKET:
-        px = sorted((_load("restock_state.json", {}).get("sku_px") or {}).get(u.get("sku")) or [])
-        if len(px) >= BIG_MIN_SETTLES:
-            return min(BIG_MAX_SHARE, px[len(px) // 2] + BIG_OVER_MARKET)
-        return BIG_MAX_SHARE
-    return CHEAP_MAX_SHARE if u["list_price"] < CHEAP_TICKET else MAX_SHARE
+    if u["list_price"] < CHEAP_TICKET:
+        return CHEAP_MAX_SHARE
+    cap = BIG_MAX_SHARE if u["list_price"] >= BIG_TICKET else MAX_SHARE
+    px = sorted((_load("restock_state.json", {}).get("sku_px") or {}).get(u.get("sku")) or [])
+    if len(px) >= BIG_MIN_SETTLES:
+        return min(cap, px[len(px) // 2] + BIG_OVER_MARKET)
+    return cap
 TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask, after haggling
 SHARE_BOUNDS = (0.55, 0.97)
 CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
