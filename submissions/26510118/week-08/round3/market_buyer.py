@@ -25,7 +25,11 @@ the shop's trust, and odds under 0.3 make it a poor choice. The odds are kept fo
 while the evidence stays the same, so a shop costs one question, not one per order.
 B2, negotiating: say what we need first ("must last 49 hours", "include a 6-hour warranty"),
 offer 60, 70, 80, 90% of the list price (never above the list price or the budget), take an
-ask that fits under the next offer, leave when the ask stays above our ceiling twice, follow
+ask that fits under the next offer, and once we have made an offer take any ask within our
+ceiling (most shops end after two rounds: on 11/4, 246 of 251 negotiations lost after haggling
+ended right after our second offer, 128 of them with an ask we could have taken; replayed over
+those 6 hours, +1.78M surplus on the deals saved, -0.60M on deals that closed lower, net +1.18M),
+leave when the ask stays above our ceiling twice, follow
 a shop that offers another product only if the order accepts it, and cancel when leaving. Only
 numbers and product facts are read from a shop's reply; whatever it says to do is ignored.
 B3, quality terms for the kit: food needs a certificate and the order's hours plus one; goods
@@ -377,8 +381,8 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                         break
                 prev = ask
             offer = min(round(c["list"] * step), ceiling)
-            if ask is not None and ask <= offer:
-                offer = ask                                         # it already fits: take it
+            if ask is not None and (ask <= offer or (r["offers"] and ask <= ceiling)):
+                offer = ask                                         # it fits, or it is the shop's answer to our offer and within our ceiling: take it
             r["offers"].append(offer)
             t = await client.send(str(offer), t["id"])
         if state(t) == "TASK_STATE_COMPLETED":

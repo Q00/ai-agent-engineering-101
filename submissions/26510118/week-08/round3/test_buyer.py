@@ -237,6 +237,13 @@ def test_notebook():
     r = asyncio.run(mb.trade(Shop([task("TASK_STATE_REJECTED", "Sorry, we have none of that in stock.")]), cand,
                              order(40000, [BEDDING], "goods"), CATALOG, {}, RULES, False))
     check("turned away before any offer: noted with the shop's words", r.get("refused") and "none of that" in r["left"], r)
+    ask = lambda text, n: dict(task("TASK_STATE_INPUT_REQUIRED", text), status={"state": "TASK_STATE_INPUT_REQUIRED",
+                               "message": {"parts": [{"text": text}], "metadata": {"ask": n}}})
+    signed = {"shop": "S", "item": BEDDING, "price": 34000, "task": "t1", "sig_seller": "x"}
+    shop_ = Shop([ask("Asking 37000.", 37000), ask("Final price: 34000", 34000), task("TASK_STATE_COMPLETED", "Deal", signed)])
+    r = asyncio.run(mb.trade(shop_, dict(cand, list=39900), order(40000, [BEDDING], "goods"), CATALOG, {}, RULES, False))
+    check("after our first offer, an ask within our ceiling (90% of 39,900) is taken, not answered with a lower offer",
+          shop_.sent[1:] == ["23940", "34000"] and r["deal"] and r["price"] == 34000, (shop_.sent, r.get("left")))
 
 
 def start_seller():
