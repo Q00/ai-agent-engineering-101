@@ -1,0 +1,183 @@
+{
+ "chunk": "eb9189af1afa",
+ "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "harness",
+   "kind": "observation",
+   "rule": "On the night of November 3–4, 2026, people found all reported problems by manually searching logs, including zero inventory purchases, tied-up cash, customers leaving at the opening offer, bestsellers out of stock, payment rejection reasons, and model latency.",
+   "quote": "오늘 밤의 문제는 모두 사람이 로그를 뒤져서 찾았다",
+   "harness": "Track these health indicators automatically and surface alerts and a strategy brief when thresholds are exceeded.",
+   "cid": "eb9189af1afa-0",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The harness should classify seller outcomes as completed, quote only, left at the opening offer, left after a counteroffer, or out of stock with the SKU identified.",
+   "quote": "판매자 결과 분류(완료, 견적만, 첫 제시가에 떠남, 제안 후 떠남, 재고 없음과 그 SKU)",
+   "harness": "Record these outcome categories and the out-of-stock SKU for monitoring and strategy briefs.",
+   "cid": "eb9189af1afa-1",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The harness should collect accumulated exec anomalies, count them by type, summarize them, and include the counts in the strategy brief.",
+   "quote": "수집이 종류별로 세어 brief에 넣는다",
+   "harness": "Aggregate anomaly counts by type into the strategy brief.",
+   "cid": "eb9189af1afa-2",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "observation",
+   "rule": "Long-running seller and outer processes used old working versions after rejecting a new strategy for a schema mismatch at 02:22, 02:24, and 03:02.",
+   "quote": "(02:22, 02:24, 03:02)",
+   "harness": "Detect strategy schema-version changes and restart affected processes so they load the new strategy.",
+   "cid": "eb9189af1afa-3",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Strategy briefs were rejected multiple times for format problems, including prose in recommendations, string context, string evidence, and overly long card descriptions.",
+   "quote": "추천에 문장, 문자열 context, 문자열 근거, 긴 카드 설명",
+   "harness": "Put valid format examples in tool descriptions and correct rejected inputs before resubmitting when possible.",
+   "cid": "eb9189af1afa-4",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "Registering a login-time scheduled task to restart the kit and outer after reboot requires permission and a user decision.",
+   "quote": "로그인 시 작업 스케줄러 등록이 필요 (권한 필요, 사용자 결정)",
+   "harness": "Do not register the scheduled task without the required permission and user approval.",
+   "cid": "eb9189af1afa-5",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": false
+  },
+  {
+   "area": "harness",
+   "kind": "lesson",
+   "rule": "The same test_index code alternated between passing and failing, so its results cannot be trusted until the test is fixed.",
+   "quote": "test_index가 같은 코드로 통과·실패를 오간다",
+   "harness": "Fix test_index so repeated runs give reliable results before relying on it.",
+   "cid": "eb9189af1afa-6",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": false
+  },
+  {
+   "area": "harness",
+   "kind": "observation",
+   "rule": "Claude was slow on this PC, so the seller, buyer, restock rules, and OpenRouter handled almost all real-time decisions.",
+   "quote": "Claude가 이 PC에서 느려서 판매자·구매자·restock 규칙과 OpenRouter가 거의 모든 실시간 판단을 한다.",
+   "harness": "Account for the existing real-time decision path when changing model use.",
+   "cid": "eb9189af1afa-7",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Prompts for the remaining exception, analysis, and strategy model calls should be reduced to the target size in HARNESS chapter 7.",
+   "quote": "남은 모델 호출(예외, 분석, 전략)은 프롬프트를 HARNESS 7장 목표 크기로 줄인다.",
+   "harness": "Keep those prompts within the HARNESS chapter 7 target size.",
+   "cid": "eb9189af1afa-8",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "process",
+   "rule": "Starting prices, floors, and line limits were manually changed every 30 minutes; a slice analyst should use sold-price distributions, the customer departure rate, and out-of-stock SKUs so the strategy agent can adjust delegated playbooks.",
+   "quote": "팔린 가격 분포, 떠난 손님 비율, 품절 SKU",
+   "harness": "Provide those metrics to the slice analyst for delegated playbook adjustments.",
+   "cid": "eb9189af1afa-9",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "definition",
+   "rule": "A cash floor of KRW 500,000 is equivalent to the bankruptcy threshold.",
+   "quote": "현금 하한 50만 원은 파산 기준선과 같다.",
+   "harness": "Treat KRW 500,000 as the minimum cash safety floor.",
+   "cid": "eb9189af1afa-10",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "Inventory cost was KRW 4.1 million, and unsold inventory or a surge in refunds could drain cash to the floor; the kit does not apply for bankruptcy while inventory remains.",
+   "quote": "재고는 원가 4.1M어치이고, 팔리지 않거나 환불이 몰리면 현금이 바닥까지 간다 (재고가 있으면 키트가 파산을 신청하지 않는다).",
+   "harness": "Monitor cash against the floor and account for the kit's no-bankruptcy behavior while inventory exists.",
+   "cid": "eb9189af1afa-11",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Night automation and delegation change strategy every 30 minutes; safety conditions are the cash floor, no below-cost selling, certified goods, warranty, inventory share, price floor, stopping at round end, and food share, and the changed version must be checked in the morning brief.",
+   "quote": "안전 조건(현금 하한, 원가 이하 금지, 인증품, 보증, 재고 비중, 가격 바닥, 라운드 끝 정지, 식품 비중)",
+   "harness": "Enforce every listed safety condition and review the changed strategy in the morning brief.",
+   "cid": "eb9189af1afa-12",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "market_rule",
+   "rule": "The buyer purchases goods without a warranty.",
+   "quote": "구매자는 보증 없이 goods를 산다.",
+   "harness": "Do not assume buyer purchases include warranty coverage.",
+   "cid": "eb9189af1afa-13",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "observation",
+   "rule": "At 06:17, one mattress failed and reduced surplus by about KRW 90,000.",
+   "quote": "06:17 매트리스 하나가 고장 나 surplus가 약 9만 원 빠졌다.",
+   "harness": "Record product failures and their effect on surplus.",
+   "cid": "eb9189af1afa-14",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "lesson",
+   "rule": "The observed failure rate was 0.5%, and the current decision was to maintain the no-warranty goods policy.",
+   "quote": "고장률이 0.5%라 지금은 유지한다.",
+   "harness": "Maintain the current policy unless updated evidence or a user decision changes it.",
+   "cid": "eb9189af1afa-15",
+   "source": "logs/strategy/overnight-report-20261104.md",
+   "loc": "logs/strategy/overnight-report-20261104.md lines 83-99 (4.2 하네스)",
+   "quote_ok": true
+  }
+ ]
+}

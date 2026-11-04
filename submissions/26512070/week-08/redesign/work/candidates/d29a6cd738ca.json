@@ -1,0 +1,150 @@
+{
+ "chunk": "d29a6cd738ca",
+ "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "goal",
+   "kind": "user_decision",
+   "rule": "The user's first priority is to recover the early loss by selling many units profitably, as set in strategy v19.",
+   "quote": "The user's goal: win back the early loss by selling many units at a profit (strategy v19, first priority).",
+   "harness": "Prioritize profitable sales volume when choosing the seller's strategy.",
+   "cid": "d29a6cd738ca-0",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "market_rule",
+   "rule": "Each buyer order accepts only certain SKUs in its category, and the kit shows a buyer only shops holding at least one accepted SKU; shops without those SKUs are never visited and their absence does not appear in me.missed.",
+   "quote": "Each order accepts only certain SKUs of its category, and the kit shows a buyer only the shops that hold one of those SKUs.",
+   "harness": "Use accepted order SKUs to determine buyer visibility; do not treat unvisited shops as missed sales.",
+   "cid": "d29a6cd738ca-1",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "forum",
+   "kind": "observation",
+   "rule": "Forum reply #1349 (Ge62449c9) did not help when that SKU was absent from the buyer order's accepted-SKU list.",
+   "quote": "Our forum reply (#1349, Ge62449c9) does not help when that SKU is not in the order's list.",
+   "harness": "Do not rely on forum replies to generate sales for SKUs an order does not accept.",
+   "cid": "d29a6cd738ca-2",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "observation",
+   "rule": "In the observed market, bedding SKUs accepted by orders sold more than 1,600 units in 6 hours at a median 75% of list; sofa pad G0be9ed07 sold 772 and mattress G07ec17d5 sold 675.",
+   "quote": "침구 sold 1,600+ in 6 h at a median 75% of list; G0be9ed07 (소파패드) 772 sold, G07ec17d5 (매트리스) 675.",
+   "harness": "Consider observed order-accepted best sellers when ranking restock candidates.",
+   "cid": "d29a6cd738ca-3",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "At 02:17, the buy list prioritized missed SKUs (apron G53e73f8c with 39 asks and Ge62449c9 with 18) before the market top five at 2 units each; about 0.93M of stock-cap headroom, rather than the 2.33M spendable cash, constrained purchases, and four mattresses at up to about 199k each left no room for a market best seller.",
+   "quote": "At 02:17 the cash we may spend is ~2.33M but the stock cap leaves ~0.93M",
+   "harness": "Account for stock-cap headroom as well as available cash when planning restocks.",
+   "cid": "d29a6cd738ca-4",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "market_rule",
+   "rule": "Restock settings allow cover_windows 0.5–6, market_top 0–30, market_units 0–8, and max_line_share 0.05–1; max_line_share 1 means no cap. The harness may set limits.max_stock_share to at most 0.5 on its own, while the user set it to 0.6.",
+   "quote": "cover_windows (0.5-6), market_top (0-30), market_units (0-8), max_line_share (0.05-1: the most one line may take of the window's money; 1 = no cap).",
+   "harness": "Keep settings within their stated ranges, do not autonomously raise max_stock_share above 0.5, and preserve the user's configured 0.6.",
+   "cid": "d29a6cd738ca-5",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "question",
+   "rule": "The user asked whether restocking should favor breadth—more market best-selling SKUs in small quantities—or depth—fewer missed SKUs up to 8 units each—and requested a decision using playbook numbers.",
+   "quote": "Question: should the buy list go wide (more of the market's best-selling SKUs, a few units each) instead of deep (a few SKUs we missed, up to 8 units each)?",
+   "harness": "Compare breadth and depth using current playbook constraints and observed demand before choosing.",
+   "cid": "d29a6cd738ca-6",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "observation",
+   "rule": "At 17:1x, free cash was 17.93M, calculated from a 31.45M balance less a 0.5M floor and 13.01M warranty reserve, equal to 10% of 130.1M sold in 6 hours.",
+   "quote": "Free cash 17.93M (balance 31.45M - floor 0.5M - warranty reserve 13.01M = 10% of 130.1M sold in 6 h).",
+   "harness": "Calculate deployable cash after retaining the configured cash floor and warranty reserve.",
+   "cid": "d29a6cd738ca-7",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "At 17:1x, the next window's plan spent all 17.93M on 7 lines; 40 buy-list lines lacked stock, and 33 were excluded for lack of cash, including Ge62449c9 (10), G6b9db161 (10), G5e3784e6 (8), and G5cd4ffbc (7).",
+   "quote": "The next window's plan spends 17.93M, all of it, on 7 lines; 40 buy-list lines still lack stock and 33 of them are left out for cash",
+   "harness": "Track how spending concentration affects the number of buy-list lines left unstocked.",
+   "cid": "d29a6cd738ca-8",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "observation",
+   "rule": "Across 847 deals, 43 broke, about 5%; the 10% warranty reserve was about twice the expected refunds for a 6-hour window, and the goods were high-list.",
+   "quote": "Refunds: 43 of 847 deals broke (about 5%, our goods are high-list), so the 10% reserve is about twice the expected refunds of a 6 h window.",
+   "harness": "Use observed refund rates and sales volume to assess whether the warranty reserve is appropriately sized.",
+   "cid": "d29a6cd738ca-9",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "The buy list valued each unit at a worst-case cost of 75% of list, while actual costs ran near 62% of list.",
+   "quote": "The buy list counts each unit at the worst-case cost (75% of list); real costs run near 62% of list.",
+   "harness": "Distinguish worst-case budgeting from observed expected cost when estimating restock capacity.",
+   "cid": "d29a6cd738ca-10",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "question",
+   "rule": "The user asked whether spending all available cash every window is the right strategy and requested a recommendation comparing expected-cost budgeting, a second plan using leftover cash in the same supply window, a lower warranty reserve, or no change.",
+   "quote": "Options you can judge: (1) count units at the expected cost instead of the worst case, (2) a second plan in the same supply window with the cash left after the first, (3) a lower warranty reserve share, (4) leave it as it is.",
+   "harness": "Evaluate the listed alternatives rather than assuming that spending all free cash each window is optimal.",
+   "cid": "d29a6cd738ca-11",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "user_decision",
+   "rule": "The user wants the spending-strategy recommendation supported by cash, stock turnover, refunds, and profit percentile numbers.",
+   "quote": "Recommend with numbers (cash, stock turnover, refunds, profit percentile).",
+   "harness": "Include those four measures when evaluating or reporting a spending-strategy recommendation.",
+   "cid": "d29a6cd738ca-12",
+   "source": "logs/strategy/user_notes.md",
+   "loc": "logs/strategy/user_notes.md lines 1-38 (2026-11-04 02:2x — restock: breadth or depth?)",
+   "quote_ok": true
+  }
+ ]
+}

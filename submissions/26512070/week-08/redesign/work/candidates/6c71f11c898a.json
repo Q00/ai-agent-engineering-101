@@ -1,0 +1,205 @@
+{
+ "chunk": "6c71f11c898a",
+ "loc": "git log 4f329d1 .. e599edd",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "review",
+   "kind": "definition",
+   "rule": "Shop stars are a percentile among shops, so a buyer's high ratings can lift competitors.",
+   "quote": "shop stars are a percentile among shops, so our buyer's 5s lift the competitors",
+   "harness": "Treat shop stars as a relative percentile and account for the competitive effect of buyer ratings.",
+   "cid": "6c71f11c898a-0",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "review",
+   "kind": "user_decision",
+   "rule": "On 2026-11-04, the user chose price-only reviews: give 5 stars at 60% of value or less for any grade, one star less than the base 4 above 90% of value, and 1 star for a false claim, higher receipt, or worthless item; do not deduct for grade.",
+   "quote": "user 11/4 13:5x: do not split by grade",
+   "harness": "Use the price-only thresholds and penalties; do not apply a grade-based deduction.",
+   "cid": "6c71f11c898a-1",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "The stock cap is based on a share of equity, defined as balance plus stock at cost; buying stock preserves equity and does not shrink the cap.",
+   "quote": "limits.stock_base = equity",
+   "harness": "Calculate the stock cap from balance plus stock at cost, rather than from the starting balance.",
+   "cid": "6c71f11c898a-2",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "At a 15.7M balance, the old stock cap left 2.1M available for buying while 9.0M cash was free, and 35 of 86 visits in 30 minutes found no stock.",
+   "quote": "at 15.7M balance it left 2.1M to buy while 9.0M of cash was free, and 35 of 86 visits in 30 min found no stock",
+   "harness": "Monitor available buying capacity and stockouts when balance grows; the old starting-cap basis caused understocking.",
+   "cid": "6c71f11c898a-3",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "market_rule",
+   "rule": "Restock goods using 1.5 times each SKU's combined units sold and units visitors asked for but could not find during the previous two hours.",
+   "quote": "demand per SKU = what we sold + what visitors asked for and found missing, both in 2 h, x1.5",
+   "harness": "Measure both sales and missed demand over two hours and use 1.5 times their sum to set goods restock depth.",
+   "cid": "6c71f11c898a-4",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "food",
+   "kind": "market_rule",
+   "rule": "Food restocking grows with measured demand, up to 10 units per SKU.",
+   "quote": "food grows with it up to 10 a SKU",
+   "harness": "Scale food orders with measured demand and cap each food SKU at 10 units.",
+   "cid": "6c71f11c898a-5",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "Allocate restock money first to SKUs with the greatest demand, then use value as the tie-breaker.",
+   "quote": "The money goes first to the SKUs with the most demand, then value",
+   "harness": "Rank buy-list items by demand first and value second before allocating limited funds.",
+   "cid": "6c71f11c898a-6",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "On 2026-11-04, water SKU G7fa48eaa had 20 missed requests but received only one unit because it ranked behind a 2.2M sofa; the revised allocation raised its order to nine.",
+   "quote": "water G7fa48eaa, asked 20 times, came last behind a 2.2M sofa and got 1 unit; now its 9",
+   "harness": "Avoid letting high-priced goods displace high-demand essentials when allocating restock funds.",
+   "cid": "6c71f11c898a-7",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "question",
+   "rule": "At 17:1x on 2026-11-04, the user asked whether the shop should spend more and how; free cash was 17.93M, all planned each window, 33 buy-list lines were omitted for lack of cash, and 43 of 847 orders were refunded.",
+   "quote": "user question for the strategy agent (11/4 17:1x: the cash is large, should we spend more and how?)",
+   "harness": "Treat the spending policy as an open strategy question rather than assuming that free cash should be spent without limits.",
+   "cid": "6c71f11c898a-8",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "The restock cost share sets expected unit cost for the buy list, stock cap, cash floor, and warranty reserve; the 75%-of-list worst-case cost must still preserve the plain cash floor, and unaffordable plans are cut rather than refused.",
+   "quote": "the worst cost (75% of list) still has to keep the plain cash floor, in check.buy and in act.allocate, so a plan is cut rather than refused",
+   "harness": "Budget against the 75%-of-list worst case, preserve the cash floor in both checks and allocation, and trim plans that exceed the budget.",
+   "cid": "6c71f11c898a-9",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "The user approved option A on 2026-11-04: use a 0.65 restock cost share and a 6% warranty reserve.",
+   "quote": "playbook.restock.cost_share 0.65, warranty reserve 10% -> 6%",
+   "harness": "Use a restock cost share of 0.65 and reserve 6% for warranty.",
+   "cid": "6c71f11c898a-10",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "At 19:47 on 2026-11-04, the shop had a 23,194,111 balance, a 14,535,724 warranty reserve for 432 goods sales worth 242M still under warranty, 8,158,387 available to plan, and a binding stock cap of 4,897,566.",
+   "quote": "Room at 19:47: balance 23,194,111, reserve 14,535,724",
+   "harness": "Track warranty liabilities and the binding stock cap when calculating spendable funds.",
+   "cid": "6c71f11c898a-11",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "food",
+   "kind": "user_decision",
+   "rule": "On 2026-11-04, the user selected food-buying option A+B: open bids at 55%, aim for 68%, cap at 82%, allow 30 seconds per food order, 8 seconds per message, and 12 shops.",
+   "quote": "food bids open 55% (was 45%), aim 68% (was 60%), ceiling 82%",
+   "harness": "Apply the chosen food bid levels and the 30-second order, 8-second message, and 12-shop limits.",
+   "cid": "6c71f11c898a-12",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "food",
+   "kind": "observation",
+   "rule": "Over six hours, lee-sungsoo closed 62% of food orders at a median 69% of list, while this shop closed 34% at 54%; this shop had 1,258 of 2,321 shop talks rejected and 214 timeouts.",
+   "quote": "lee-sungsoo (buyer ALL 0.733, food 87%) closes 62% of orders at a median 69% of list, we close 34% at 54%",
+   "harness": "Use the observed competitor performance as a benchmark, while retaining that the competitor's round-3 code was not public.",
+   "cid": "6c71f11c898a-13",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "observation",
+   "rule": "In a six-hour measurement, shop talks ended in 1–2 seconds, and sequential tries lost a median 4.6 seconds on 197 of 554 won food orders.",
+   "quote": "shop talks end in 1-2 s and sequential tries lose a median 4.6 s on 197 of 554 won food orders",
+   "harness": "Account for the time cost of sequential food-shop probing when designing buyer order behavior.",
+   "cid": "6c71f11c898a-14",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "lesson",
+   "rule": "In a six-hour measurement, 343 of 1,058 food receipts were unpaid because of short shelf life; grade-C receipts for orders longer than 45% of shelf life were refused 138 of 146 times, so the shelf-life guard should run first.",
+   "quote": "a receipt claiming grade C for an order longer than 45% of the shelf was refused 138 of 146 times, so the guard goes first",
+   "harness": "Check the order duration against 45% of shelf life before accepting a grade-C receipt.",
+   "cid": "6c71f11c898a-15",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "observation",
+   "rule": "Buyer parallel probing and a shelf-life guard were described as a draft on 2026-11-04, not as live behavior.",
+   "quote": "week-08 design (draft, not live)",
+   "harness": "Do not assume parallel probing or the shelf-life guard is already active; treat it as a proposed design until deployed.",
+   "cid": "6c71f11c898a-16",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "When a schema change requires a restart, restart the seller and outer processes so they use the new schema.",
+   "quote": "seller and outer restarted for the schema",
+   "harness": "Restart both seller and outer processes after applicable schema changes.",
+   "cid": "6c71f11c898a-17",
+   "source": "git log",
+   "loc": "git log 4f329d1 .. e599edd",
+   "quote_ok": true
+  }
+ ]
+}

@@ -5,17 +5,20 @@ files as data, and nothing more:
 
 - import: install() blocks every top-level module of the live harness (core, agents, outer, seller, ...),
   found by listing the week-08 folder, so `py -m redesign` started there cannot load it by accident.
-- write: write() only accepts paths under redesign/work/.
+- write: write() only accepts paths under redesign/work/, plus the rule book redesign/rules.json.
 - read: read() opens harness files read-only, as text or bytes; nothing is executed.
+- git: git_log() is the one outside command (git log, read-only) - the commit history is a source.
 """
 import importlib.abc
 import os
+import subprocess
 import sys
 from pathlib import Path
 
 OWN = Path(__file__).resolve().parent             # week-08/redesign
 HARNESS = OWN.parent                               # week-08 (the live harness)
-WORK = OWN / "work"                                # the only place this package writes
+WORK = OWN / "work"                                # where this package writes
+RULE_BOOK = OWN / "rules.json"                     # and the rule book
 
 
 class IsolationError(RuntimeError):
@@ -58,10 +61,14 @@ def _inside(p, root):
         return False
 
 
+def _writable(p):
+    return _inside(p, WORK) or os.path.realpath(p) == os.path.realpath(RULE_BOOK)
+
+
 def write(path, data):
-    """Write text or bytes under redesign/work/ only."""
+    """Write text or bytes under redesign/work/ (or the rule book) only."""
     p = Path(path) if Path(path).is_absolute() else WORK / path
-    if not _inside(p, WORK):
+    if not _writable(p):
         raise IsolationError(f"redesign writes only under {WORK}: {p}")
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_name(p.name + ".tmp")
@@ -89,3 +96,15 @@ def read(rel, binary=False):
     if not _inside(p, HARNESS) or _inside(p, OWN):
         raise IsolationError(f"not a harness path: {rel}")
     return p.read_bytes() if binary else p.read_text(encoding="utf-8", errors="replace")
+
+
+def git_log():
+    """Commit messages that touch week-08, oldest first: [(short hash, iso date, message)]."""
+    r = subprocess.run(["git", "log", "--reverse", "--date=iso-strict", "--format=%h%x1f%ad%x1f%B%x1e", "--", "."],
+                       cwd=HARNESS, capture_output=True, text=True, encoding="utf-8", check=True)
+    out = []
+    for rec in r.stdout.split("\x1e"):
+        parts = rec.strip("\n").split("\x1f")
+        if len(parts) == 3:
+            out.append((parts[0].strip(), parts[1], parts[2].strip()))
+    return out

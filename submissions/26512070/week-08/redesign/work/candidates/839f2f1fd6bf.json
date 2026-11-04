@@ -1,0 +1,271 @@
+{
+ "chunk": "839f2f1fd6bf",
+ "loc": "git log cfc4782 .. f848530",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "buyer.score",
+   "kind": "definition",
+   "rule": "Buyer ALL is weighted as 0.5 surplus, 0.3 votes, 0.1 deals, and 0.1 buyer posts; the week-08 page's 0.5/0.3/0.2 weights omitted the post count and were incorrect.",
+   "quote": "buyer ALL = 0.5 surplus + 0.3 votes + 0.1 deals + 0.1 buyer posts",
+   "harness": "Calculate buyer ALL with the four agent.md weights, including buyer posts.",
+   "cid": "839f2f1fd6bf-0",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "observation",
+   "rule": "On 11/3, held stock counted as zero board profit, and the shop's profit percentile was 3.8.",
+   "quote": "held stock is zero board profit: profit percentile 3.8",
+   "harness": "Do not treat the value of unsold inventory as board profit.",
+   "cid": "839f2f1fd6bf-1",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "user_decision",
+   "rule": "The buyer's haggling targets are 50% of list with a 40% opening for goods priced at 30,000 or more, and 60% of list with a 45% opening for food and smaller goods.",
+   "quote": "goods 30,000+: 50%/open 40%, food and smaller goods: 60%/open 45%",
+   "harness": "Apply the stated target and opening percentages according to item category and list price.",
+   "cid": "839f2f1fd6bf-2",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "user_decision",
+   "rule": "On 11/3, the buyer was directed to prioritize surplus and sort shops by cheapest median share of list, using shop-price data refreshed every 10 minutes.",
+   "quote": "the pick shows each shop's market median share of list (memory/facts/shop_prices.json from the ledger, every 10 min) and sorts the cheapest first",
+   "harness": "Prioritize surplus and use the latest available shop median-share-of-list data to sort shops cheapest first.",
+   "cid": "839f2f1fd6bf-3",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "user_decision",
+   "rule": "For goods, the buyer should not ask for a certificate or grade.",
+   "quote": "goods ask for no certificate or grade",
+   "harness": "Do not make a certificate or grade a buyer requirement for goods.",
+   "cid": "839f2f1fd6bf-4",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "food",
+   "kind": "user_decision",
+   "rule": "For food, the buyer should ask only about the use window and state the required shelf life in the first message.",
+   "quote": "the buyer's first message on a food order states the shelf life it needs",
+   "harness": "Include the required shelf life in the buyer's first food-order message and limit food requirements to the use window.",
+   "cid": "839f2f1fd6bf-5",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "observation",
+   "rule": "Before the 11/3 order changes, 4 goods deals were made at a median 95% of list, and 15 agreed deals were refused at payment because of grade C or missing certificates.",
+   "quote": "4 goods deals at a median 95% of list, 15 agreed deals refused at payment for grade C or no certificate",
+   "harness": "Avoid post-agreement payment refusals by not imposing grade or certificate requirements on goods.",
+   "cid": "839f2f1fd6bf-6",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "forum",
+   "kind": "user_decision",
+   "rule": "The buyer should post on every forum turn; buyer posts contribute 0.1 of buyer ALL, and forum turns occur every 5 minutes.",
+   "quote": "forum turn every 5 min (buyer posts are 0.1 of buyer ALL)",
+   "harness": "Have the buyer post each forum turn and account for the 5-minute cadence.",
+   "cid": "839f2f1fd6bf-7",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "On 11/3, the user chose a 45% stock cap; the shop's stock strategy may be delegated, but an automatic option may raise the maximum stock share only up to 0.5.",
+   "quote": "stock cap 45% (option A; restock had bought nothing since 23:00 at 38.6% stock)",
+   "harness": "Use a 45% stock-share cap unless an approved strategy change adjusts it, and never permit delegated options to exceed 50%.",
+   "cid": "839f2f1fd6bf-8",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "The shop should present itself as premium and fully guaranteed, but not as expensive.",
+   "quote": "the shop presents itself as premium and fully guaranteed (not as expensive: user)",
+   "harness": "Use premium, fully guaranteed positioning without describing the shop as expensive.",
+   "cid": "839f2f1fd6bf-9",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "Restocking should consult both the market's selling list and the forum.",
+   "quote": "restock reads the market's selling list and the forum",
+   "harness": "Use the selling list and forum as inputs to restock decisions.",
+   "cid": "839f2f1fd6bf-10",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "From 00:00 through 07:59, night mode runs a slice every 30 minutes; it may install a recommendation automatically only when the audit agrees and the change preserves the cash floor, no-below-cost pricing, certified-only stock, warranty hours, and a stock-share ceiling of 0.5; otherwise it waits for the user.",
+   "quote": "from 00:00 to 07:59 a slice runs every 30 min",
+   "harness": "Schedule the night slices and enforce every listed safety condition before automatic installation; otherwise require user review.",
+   "cid": "839f2f1fd6bf-11",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "user_decision",
+   "rule": "On 11/3, the user directed that Claude be tried first on every trading call; a timeout should fall back for that call without opening the breaker, and the Claude seat has a 6-second cap.",
+   "quote": "Claude first on every trading call again (user 11/3 23:3x: Claude works, set it up); a timeout no longer opens the breaker",
+   "harness": "Call Claude first, cap its trading seat at 6 seconds, fall back for that call on timeout, and do not open the breaker solely because of a timeout.",
+   "cid": "839f2f1fd6bf-12",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "observation",
+   "rule": "On 11/3 23:36–23:46, 46 of 53 seller calls exceeded 15 seconds; buyers waited about 20 seconds per message and visitor traffic fell from 3.1 to 1–2 visitors per minute.",
+   "quote": "46 of 53 seller calls ran past 15 s, so a buyer waited ~20 s per message (laptop 7 s) and visitors fell from 3.1/min to 1-2/min",
+   "harness": "Keep trading-call waits bounded rather than allowing long model delays to stall visitors.",
+   "cid": "839f2f1fd6bf-13",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "lesson",
+   "rule": "On the home PC, the kit's shebang launched the Microsoft Store Python stub and exited 49; setting PYLAUNCHER_NO_SEARCH_PATH=1 fixed the launch.",
+   "quote": "fixed with the user env var PYLAUNCHER_NO_SEARCH_PATH=1",
+   "harness": "Set PYLAUNCHER_NO_SEARCH_PATH=1 when launching the kit on the home PC.",
+   "cid": "839f2f1fd6bf-14",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "The seller is restarted by the kit watchdog, and the outer process is also restarted when needed.",
+   "quote": "seller restarted by the kit watchdog, outer restarted",
+   "harness": "Keep the watchdog responsible for seller restarts and restart the outer process when required.",
+   "cid": "839f2f1fd6bf-15",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "At 23:47 on 11/3, restocking had bought nothing since 23:00 while stock was 1,932,781, or 38.6% of the starting stock and above the then-current 35% cap.",
+   "quote": "restock bought nothing since 23:00 (stock 1,932,781 = 38.6% of the start, over the v13 cap 35%)",
+   "harness": "Monitor stock share and ensure the active stock cap does not prevent the intended restock behavior.",
+   "cid": "839f2f1fd6bf-16",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "lesson",
+   "rule": "In the four hours before 11/4 01:40, restock succeeded in only 4 of 32 planned runs; the shop turned away 44 of 58 visitors after 00:30 for lack of stock and sold nothing.",
+   "quote": "restock bought in 4 of 32 planned runs in 4 h",
+   "harness": "Monitor restock execution and inventory availability so missed restocks do not leave the shop unable to serve visitors.",
+   "cid": "839f2f1fd6bf-17",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "market.buy",
+   "kind": "market_rule",
+   "rule": "A buy plan must be trimmed to each SKU's remaining unit limit, then lines dropped from the end until cash and stock checks pass.",
+   "quote": "act.buy now cuts each line to the SKU's room and drops lines from the end until the cash/stock checks pass",
+   "harness": "Enforce per-SKU limits and cash/stock checks by trimming the plan before purchase.",
+   "cid": "839f2f1fd6bf-18",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "food",
+   "kind": "lesson",
+   "rule": "Agreed food deals were refused at payment because only 8–10 hours of shelf life remained; the buyer must state the required shelf life in the first message.",
+   "quote": "agreed food deals were refused at payment for 8-10 h left",
+   "harness": "Confirm the required shelf life before agreeing to a food purchase.",
+   "cid": "839f2f1fd6bf-19",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "lesson",
+   "rule": "With a 6-second cap on restock calls, the gpt-4o-mini fallback returned empty plans and an invented SKU during 11/4 01:41–01:44; restock was therefore returned to Claude Haiku without that cap.",
+   "quote": "its gpt-4o-mini fallback returned empty plans (and a made-up SKU), so nothing was bought again",
+   "harness": "Run restock with Claude Haiku without the 6-second cap, and do not treat empty or invalid fallback plans as purchases.",
+   "cid": "839f2f1fd6bf-20",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "observation",
+   "rule": "On the home PC, Haiku kit calls took 40–60 seconds, with median seller latency 47 seconds and buyer latency 40 seconds, while the same calls in a test script took 3–8 seconds; the delay was attributed to the API.",
+   "quote": "the same calls from a test script took 3-8 s and the waiting claude processes used no CPU, so the delay is on the API side",
+   "harness": "Distinguish API-side latency from local CPU work when diagnosing slow calls.",
+   "cid": "839f2f1fd6bf-21",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "lesson",
+   "rule": "A git stash while the kit was running reset market-kit.log to HEAD; 56 log lines had to be restored from the stash, while the locked kit-console.log remained intact.",
+   "quote": "A git stash during the check reset logs/market-kit.log to HEAD while the kit ran",
+   "harness": "Do not stash or alter live logs while the kit is running; preserve and restore any lost log lines.",
+   "cid": "839f2f1fd6bf-22",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "observation",
+   "rule": "The test_index test failed in 2 of 3 runs on the same code and was reported as flaky, not caused by the strategy change.",
+   "quote": "test_index fails 2 of 3 runs on the same code (flaky, not this change)",
+   "harness": "Treat test_index failures as known flaky results rather than automatically attributing them to a strategy change.",
+   "cid": "839f2f1fd6bf-23",
+   "source": "git log",
+   "loc": "git log cfc4782 .. f848530",
+   "quote_ok": true
+  }
+ ]
+}

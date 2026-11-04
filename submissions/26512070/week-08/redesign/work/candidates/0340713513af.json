@@ -1,0 +1,106 @@
+{
+ "chunk": "0340713513af",
+ "loc": "git log e8dbd70 .. 75b7547",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "On November 5, the user decided to redesign the whole harness with code, use OpenRouter only, and never use the live harness.",
+   "quote": "user 11/5: redesign the whole harness with code, OpenRouter only, never use the live harness",
+   "harness": "Keep the redesign isolated from the live harness and route model access through OpenRouter only.",
+   "cid": "0340713513af-0",
+   "source": "git log",
+   "loc": "git log e8dbd70 .. 75b7547",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The redesign guard must block imports of every week-08 top-level module, write only under redesign/work/, and read harness files only as data.",
+   "quote": "blocks imports of every week-08 top-level module, writes only under redesign/work/, reads harness files as data",
+   "harness": "Enforce these import, write-path, and read-only-data boundaries.",
+   "cid": "0340713513af-1",
+   "source": "git log",
+   "loc": "git log e8dbd70 .. 75b7547",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "OpenRouter credentials must come from OPENROUTER_API_KEY, remain in memory only, and never appear in calls.jsonl; calls.jsonl must also omit prompts.",
+   "quote": "key from OPENROUTER_API_KEY in memory only, calls.jsonl without key or prompt",
+   "harness": "Keep the key in memory and exclude both keys and prompts from call logs.",
+   "cid": "0340713513af-2",
+   "source": "git log",
+   "loc": "git log e8dbd70 .. 75b7547",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "On November 5, the user decided to find and use stronger models, and allowed the core to change.",
+   "quote": "user 11/5: find and use stronger models, the core may change too",
+   "harness": "Use the requested stronger models and permit core changes within the redesign.",
+   "cid": "0340713513af-3",
+   "source": "git log",
+   "loc": "git log e8dbd70 .. 75b7547",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Use google/gemini-4-argon as designer, openai/gpt-6.1-sol as reviewer of core changes, and openai/gpt-6-luna for bulk reading.",
+   "quote": "designer google/gemini-4-argon, reviewer openai/gpt-6.1-sol (another vendor checks core changes), worker openai/gpt-6-luna for bulk reading",
+   "harness": "Assign these models to their stated roles and have the reviewer check core changes.",
+   "cid": "0340713513af-4",
+   "source": "git log",
+   "loc": "git log e8dbd70 .. 75b7547",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "On November 5, the user decided that the rules must be written down first and the new harness should decide afterward.",
+   "quote": "user 11/5: write down the rules the harness must carry first, then let the new harness decide",
+   "harness": "Load and apply the rule book before making decisions.",
+   "cid": "0340713513af-5",
+   "source": "git log",
+   "loc": "git log e8dbd70 .. 75b7547",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The rule book contains 30 rules with sources and required harness actions, covering the goal, seller and buyer scores, market buying, food, goods, and open questions.",
+   "quote": "rules.json, 30 rules with source and what the harness must do (goal, seller/buyer score, market buy, food, goods, open questions)",
+   "harness": "Preserve each rule's source and required action, and include the listed topics.",
+   "cid": "0340713513af-6",
+   "source": "git log",
+   "loc": "git log e8dbd70 .. 75b7547",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "definition",
+   "rule": "The seller's book score is profit plus stock cost.",
+   "quote": "book = profit + stock cost",
+   "harness": "Calculate book score using profit plus stock cost.",
+   "cid": "0340713513af-7",
+   "source": "git log",
+   "loc": "git log e8dbd70 .. 75b7547",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "observation",
+   "rule": "On November 4 from 21:19 to 21:43, a restock coincided with profit falling from 42.6M to 27.1M, profit percentile falling from 91 to 85, and book value rising from 83.7M to 85.0M.",
+   "quote": "11/4 21:19->21:43 profit 42.6M->27.1M, pct 91->85, book 83.7M->85.0M",
+   "harness": "Track profit percentile separately from book value; a restock can raise book value while profit and its percentile fall.",
+   "cid": "0340713513af-8",
+   "source": "git log",
+   "loc": "git log e8dbd70 .. 75b7547",
+   "quote_ok": true
+  }
+ ]
+}

@@ -1,0 +1,282 @@
+{
+ "chunk": "b7afbcaf45e5",
+ "loc": "git log 9e118aa .. a8fd9c3",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "After three rate limits, the model caller must open its breaker for 300 seconds; OpenRouter fallback is available only for L1 seats.",
+   "quote": "breaker after 3 rate limits for 300 s ... OpenRouter fallback for L1 seats only",
+   "harness": "Track breaker state and enforce the cooldown and seat restriction.",
+   "cid": "b7afbcaf45e5-0",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": false
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "The seller must offer the lowest price allowed in the current situation.",
+   "quote": "lowest allowed price in the situation",
+   "harness": "Constrain seller offers to the lowest permitted price.",
+   "cid": "b7afbcaf45e5-1",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "market_rule",
+   "rule": "A cheating receipt must be returned as null, and the buyer must block that shop.",
+   "quote": "a cheating receipt goes out as null and blocks the shop",
+   "harness": "Validate receipts and block shops whose receipts are fraudulent.",
+   "cid": "b7afbcaf45e5-2",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "A buyer cannot finish an order that requires grades or shelf life unless the unit has a certificate; the kit refuses payment otherwise.",
+   "quote": "act.finish now says grades and shelf life need the certificate",
+   "harness": "Require certificate-backed grade and shelf-life terms before allowing the buyer to finish.",
+   "cid": "b7afbcaf45e5-3",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "lesson",
+   "rule": "On 2026-11-03, the buyer asked for grade A and 24-hour shelf life on a unit without a certificate, so the kit would refuse payment.",
+   "quote": "the buyer asked grades A and 24 h on a unit without a certificate, which the kit would refuse to pay",
+   "harness": "Check certificate support before committing to grade or shelf-life requirements.",
+   "cid": "b7afbcaf45e5-4",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "On 2026-11-03, a local buyer-seller run with Haiku closed a deal at 15,000 in 60 seconds.",
+   "quote": "deal at 15000 in 60 s",
+   "harness": "",
+   "cid": "b7afbcaf45e5-5",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "On 2026-11-03, Haiku seller runs took 9–10 seconds for two steps per turn; a later one-step run took 11 seconds, compared with 4–5 seconds in the first run.",
+   "quote": "run 1 two steps per turn ... 9-10 s; run 2 ... one step per turn ... 11 s (run 1: 4-5 s)",
+   "harness": "",
+   "cid": "b7afbcaf45e5-6",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": false
+  },
+  {
+   "area": "ops",
+   "kind": "question",
+   "rule": "Seller latency was still to be measured on day one as of 2026-11-03.",
+   "quote": "latency to be measured on day one",
+   "harness": "Measure live seller latency on the first operating day.",
+   "cid": "b7afbcaf45e5-7",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "On 2026-11-03, the first restock call took 23–60 seconds and ran out of time, while the same call measured again took 5–6 seconds; the log attributed this to latency spikes, not prompt size.",
+   "quote": "23-60 s and ran out of time, the same call measured again took 5-6 s, so latency spikes, not prompt size",
+   "harness": "",
+   "cid": "b7afbcaf45e5-8",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "process",
+   "rule": "Restock should call the model only when stock, sales, balance, or strategy changes, or when 20 minutes have passed; a restock run is bounded at 150 seconds and 7 steps.",
+   "quote": "model only when stock/sales/balance/strategy changed or 20 min passed; 150 s, 7 steps",
+   "harness": "Apply the change-or-time trigger and enforce the run bounds.",
+   "cid": "b7afbcaf45e5-9",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "process",
+   "rule": "On 2026-11-03, the chosen bankruptcy behavior was to file automatically when the shop is stuck below the line, has filings left, and has nothing to sell, while sending an urgent alert.",
+   "quote": "files bankruptcy by code when stuck (below the line, filings left, nothing to sell) with an urgent alert (user 11/3)",
+   "harness": "File only when all stated conditions hold, and send an urgent alert.",
+   "cid": "b7afbcaf45e5-10",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "food",
+   "kind": "observation",
+   "rule": "On 2026-11-03, a restock run bought two goods in 38 seconds, but refused food because of the food-share limit.",
+   "quote": "restock rerun bought 2 goods in 38 s ... food refused by the food share limit",
+   "harness": "Respect the food-share limit when restocking.",
+   "cid": "b7afbcaf45e5-11",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": false
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "On 2026-11-03, the successful restock rerun used seven Haiku calls taking 4–8 seconds each; a review gave five stars in 12 seconds.",
+   "quote": "7 haiku calls, 4-8 s each; ... review gave 5 stars in 12 s",
+   "harness": "",
+   "cid": "b7afbcaf45e5-12",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": false
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "On 2026-11-03, the user chose the shop name “gom31 Honest Shop” and a truth-only description, and strategy v3 with that shop card was installed.",
+   "quote": "shop name gom31 Honest Shop and its truth-only description (user), strategy v3 with that shop card installed",
+   "harness": "Use the chosen name and truth-only card as the active seller strategy.",
+   "cid": "b7afbcaf45e5-13",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "process",
+   "rule": "The seller must serve the shop card currently in force on every card request, and a card change does not require a restart.",
+   "quote": "serves the one in force on every card request, checked locally without a restart",
+   "harness": "Read the active card for each request and apply updates without restarting.",
+   "cid": "b7afbcaf45e5-14",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "The certificate always goes with the unit, and the seller cannot choose whether to include it when accepting an offer.",
+   "quote": "the certificate always goes with the unit (act.accept has no cert choice)",
+   "harness": "Treat the certificate as included with every unit.",
+   "cid": "b7afbcaf45e5-15",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "The market join name cannot contain spaces; the configured name is “gom31-honest-shop.”",
+   "quote": "join name rule (no spaces: gom31-honest-shop)",
+   "harness": "Join using the configured no-spaces name.",
+   "cid": "b7afbcaf45e5-16",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Market collection must continue from a ledger cursor; seller sales map to seller.settled using seller cost, and guesses map to guess.confirmed.",
+   "quote": "ledger after a cursor, kept as is, our sales to seller.settled with the seller's cost and guess.confirmed",
+   "harness": "Resume ledger collection from its cursor and preserve these event mappings.",
+   "cid": "b7afbcaf45e5-17",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The collector maintains a rolling live state and a board snapshot with percentiles.",
+   "quote": "live.json from a rolling state, board snapshot with percentiles",
+   "harness": "Maintain rolling live state and collect board percentiles.",
+   "cid": "b7afbcaf45e5-18",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "observation",
+   "rule": "On 2026-11-03, a read-only Round 2 ledger collection found 1,249 rows in two minutes and counted 385 deals over six hours; 502 board entries were skipped.",
+   "quote": "1249 rows in 2 min, 385 deals in 6 h counted, board 502 skipped",
+   "harness": "",
+   "cid": "b7afbcaf45e5-19",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The user's answer installs the next strategy version; strategy changes must be schema-checked, and no strategy changes should be made at night so the harness does not wait for the user.",
+   "quote": "options are schema-checked strategy changes, none at night, avoiding waits for the user; ... the user's answer installs the next version",
+   "harness": "Validate proposed changes, make none at night, and install the next version only after the user answers.",
+   "cid": "b7afbcaf45e5-20",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": false
+  },
+  {
+   "area": "forum",
+   "kind": "market_rule",
+   "rule": "A forum turn includes voting and at most one post, and the post must cite the shop's own ledger entries.",
+   "quote": "forum.py (one turn: votes, one post citing our own ledger entries)",
+   "harness": "Run forum votes and limit each turn to one ledger-supported post.",
+   "cid": "b7afbcaf45e5-21",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "forum",
+   "kind": "observation",
+   "rule": "On 2026-11-03, the forum was not run locally because there was no local forum data.",
+   "quote": "forum not run yet (no forum data locally)",
+   "harness": "",
+   "cid": "b7afbcaf45e5-22",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "lesson",
+   "rule": "On 2026-11-03, one market 502 caused the first outer-loop pass to lose both collection and forum work; the issue was fixed.",
+   "quote": "first pass in a scratch folder lost collection and forum to one market 502, fixed",
+   "harness": "Ensure transient market failures do not silently lose collection or forum work.",
+   "cid": "b7afbcaf45e5-23",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "The outer loop reports status every 30 seconds, collects every 3 minutes, runs forum in its own process every 30 minutes, and runs a slice at each even hour; each job fails independently and raises an alert.",
+   "quote": "status every 30 s, collection every 3 min, forum turn every 30 min in its own process, a slice at each even hour; each job fails on its own with an alert",
+   "harness": "Keep these schedules and isolate job failures while alerting on each failure.",
+   "cid": "b7afbcaf45e5-24",
+   "source": "git log",
+   "loc": "git log 9e118aa .. a8fd9c3",
+   "quote_ok": true
+  }
+ ]
+}
