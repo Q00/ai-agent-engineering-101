@@ -229,6 +229,48 @@ def receipt_tips(c, t, now):
              "texts": {"ko": ko, "en": en, "json": js[:1000]}, "kind": "stock_check"}]
 
 
+def checkout_tips(c, t, now, last=100):
+    """As the buyer, a buyer's tip (HQ 11-04 "이런 오류는 게시판에 공유해야지, 구매 팁이잖아"): why agreed deals were not
+    paid at checkout in our last `last` payments (the kit's own reasons, .market/payments.jsonl), and the check that
+    avoids each. No shop is named. Refs: our own settled purchases in the same span, the deals that passed the check."""
+    try:
+        pays = [json.loads(x) for x in (Path(".market") / "payments.jsonl").read_text(encoding="utf-8").splitlines()[-last:]
+                if x.strip()]
+    except (OSError, ValueError):
+        return []
+    bad = [p for p in pays if not p.get("paid")]
+    kinds = {"shelf": 0, "grade": 0, "gone": 0}
+    for p in bad:
+        r = p.get("reason") or ""
+        k = "shelf" if "shelf life" in r else "grade" if "grade" in r else "gone" if "not in stock" in r else None
+        if k:
+            kinds[k] += 1
+    if len(pays) < 30 or sum(kinds.values()) < 5:
+        return []
+    refs = [s for (s,) in c.execute("select seq from settles where buyer=? order by seq desc limit 8", (NAME,))]
+    if not refs:
+        return []
+    data = {"type": "buyer_tip", "topic": "agreed deals the kit refused to pay", "sample": f"our last {len(pays)} payments",
+            "refused": {"shelf_life_too_short": kinds["shelf"], "grade_not_accepted": kinds["grade"],
+                        "unit_sold_before_checkout": kinds["gone"]},
+            "check_before_agreeing": ["food: ask for hours of shelf life left, need use_within_hours + margin",
+                                      "goods: say the grades you accept in the first message and read the offer's grade",
+                                      "unit gone at checkout: agree quickly or retry the next quote at once"],
+            "refs": refs}
+    ko = (f"[구매자 팁] 합의하고도 결제가 안 된 거래: 저희 최근 결제 {len(pays)}건 중 유통기한 부족 {kinds['shelf']}건, "
+          f"등급 불일치 {kinds['grade']}건, 결제 직전 재고 소진 {kinds['gone']}건.\n"
+          "- 식품: 남은 유통기한(시간)을 먼저 물어보세요. 주문의 사용 시간보다 짧으면 키트가 결제하지 않아요.\n"
+          "- 공산품: 첫 메시지에 받는 등급(A/B)을 말하고, 견적의 등급을 확인하세요.\n"
+          "- 재고 소진: 협상이 길면 그 사이 다른 바이어에게 팔려요. 빨리 합의하거나 다음 견적으로 바로 넘어가세요.")
+    en = (f"[Buyer tip] Agreed deals the kit did not pay, our last {len(pays)} payments: shelf life too short "
+          f"{kinds['shelf']}, grade not accepted {kinds['grade']}, unit sold before checkout {kinds['gone']}. Ask hours "
+          "left for food, state accepted grades for goods, and agree quickly or move to the next quote.")
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + f"\n{HUMAN}\n" + ko
+    js = js + "\n" + en if len(js) + len(en) < 1000 else js        # never cut a sentence at the 1000-char limit
+    return [{"topic": "checkouttips", "as": "buyer", "refs": refs, "score": 3.15, "text": ko,
+             "texts": {"ko": ko, "en": en, "json": js[:1000]}, "kind": "stock_check"}]
+
+
 def replies(c, t, forum, now, max_age=1200, min_likes=6):
     """As the buyer, a reply under another buyer's well-liked, ledger-cited post (likes >= min_likes, under max_age s
     old): our own ledger figures for the category it covers, tagged [보충]. HQ 11-04 experiment: do replies under
@@ -468,7 +510,7 @@ def tick(md=Path(".market"), c=None, now=None):
     # a post's score is the Wilson lower bound of its votes (6 likes 0.61, 7 likes 0.646) and buyer ALL averages it:
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + stock_check(c, t, now) \
-        + receipt_tips(c, t, now) + replies(c, t, forum, now) \
+        + receipt_tips(c, t, now) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
