@@ -55,6 +55,19 @@ post = [json.loads(l) for l in (md / "outbox.jsonl").read_text().splitlines() if
 assert post["refs"] == [99] and "거짓" in post["post"] and "17% 저렴" in post["post"], post
 print("ok: restock", buy, "| review", rv)
 
+# seller.find_unit: the unit that meets the asked shelf life, A/B before C, then earliest expiry
+import seller
+seller.MARKET_DIR = md
+now = time.time()
+(md / "inventory.json").write_text(json.dumps({"round": 3, "units": [
+    {"unit": "c", "sku": "F9", "name": "kimchi", "category": "food>side", "grade": "C", "expires_at": now + 5 * 3600, "supplied_at": 1},
+    {"unit": "b", "sku": "F9", "name": "kimchi", "category": "food>side", "grade": "B", "expires_at": now + 50 * 3600, "supplied_at": 2},
+    {"unit": "a", "sku": "F9", "name": "kimchi", "category": "food>side", "grade": "A", "expires_at": now + 200 * 3600, "supplied_at": 3}]}))
+assert seller.find_unit("I want to buy kimchi (F9)")["unit"] == "b"                      # A/B first, then earliest expiry
+assert seller.find_unit("I want to buy kimchi (F9), minimum 100 hours shelf life")["unit"] == "a"
+assert seller.find_unit("kimchi (F9)", taken={"a", "b"})["unit"] == "c"
+print("ok: find_unit")
+
 # ---- acp_buyer: tools built from the kit's acp.json shape, against a mock shop (no market, no LLM)
 import base64, hashlib, httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey

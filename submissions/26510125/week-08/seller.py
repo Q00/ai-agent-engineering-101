@@ -74,7 +74,12 @@ def find_unit(text, taken=()):
             or u["sku"].lower() in want)]
     named = [u for u in fit if u["sku"].lower() in want]
     fit = named or fit                                   # a SKU the buyer named comes first
-    return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
+    # 58 of 88 visits got a grade-C unit (earliest expiry first) and were refused at checkout: serve the unit that
+    # meets the hours the buyer asked for, grade A/B before C, and only then the one that expires first
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:h|hours)", want)
+    need = float(m.group(1)) * 3600 if m else 0
+    return min(fit, key=lambda u: ((u["expires_at"] or float("inf")) - time.time() < need, u.get("grade") == "C",
+                                   u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
 
 
 class Seller(AgentExecutor):
