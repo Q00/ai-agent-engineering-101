@@ -24,6 +24,8 @@ import re
 import time
 from pathlib import Path
 
+import tuning
+
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}      # Rounds 0-2 have no stock: the week-07 items
 PRICING = {
@@ -34,7 +36,10 @@ PRICING = {
     "storage_per_day": 0.01,     # fix 4: storage cost already paid, added to the floor (goods)
     "food_markdown_h": 2.0,      # fix 4: food in its last 2 h ...
     "food_markdown_share": 0.5,  # ... may go down to half its cost (thrown away it returns nothing)
+    "endgame_h": 24,             # 11/04: in the round's last 24 h the floor drops to cost (no margin) ...
+    "endgame_floor": 0.8,        # ... and in its last 6 h to cost x 0.8: stock left at the end is a total loss
 }
+ROUND_END = 1794927599           # 2026-11-17 23:59:59 KST (the board counts balance, not stock)
 PRICE = re.compile(r"(?<![\w.])(\d{1,9})(?![\w.])")
 
 
@@ -51,6 +56,11 @@ def floor_price(unit: dict, now: float | None = None) -> int:
     exp = unit.get("expires_at")
     if exp and 0 < exp - now <= PRICING["food_markdown_h"] * 3600:
         return max(1, math.ceil(cost * PRICING["food_markdown_share"] - 1e-9))
+    left_h = (ROUND_END - now) / 3600
+    if 0 < left_h <= 6:
+        return max(1, math.ceil(cost * PRICING["endgame_floor"] - 1e-9))
+    if 0 < left_h <= PRICING["endgame_h"]:
+        return max(1, math.ceil(cost - 1e-9))
     held_days = max(0.0, (now - float(unit.get("supplied_at") or now)) / 86400) if unit.get("kind") != "food" else 0.0
     return math.ceil(cost * (1 + PRICING["min_margin"] + PRICING["storage_per_day"] * held_days) - 1e-9)
 
@@ -171,6 +181,7 @@ def build(port: int, name: str):
                 if unit is None:
                     await up.reject(say("Sorry, we have none of that in stock right now."))
                     return
+                PRICING.update(tuning.load("seller"))          # the improvement loop's knobs, no restart needed
                 floor = floor_price(unit)
                 ask = opening_ask(unit)
                 deal = self.open[task.id] = {"unit": unit, "floor": floor, "ask": ask, "offers": [],
