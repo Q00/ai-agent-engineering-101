@@ -389,8 +389,8 @@ def test_migration_of_a_running_loop_keeps_the_experiment_schedule(env, monkeypa
 # ---------------------------------------------------------------- supply switchback, washout
 def test_supply_and_structure_keys_get_the_switchback_protocol_with_washout():
     fam = {e["family"]: (e["protocol"], e["block_steps"], e.get("washout_steps", 0)) for e in SP.load()}
-    assert fam["supply"] == fam["structure"] == ("switchback", 3, 1)
-    assert fam["price"] == fam["buyer"] == ("switchback", 3, 0)
+    assert fam["supply"] == fam["structure"] == ("switchback", 2, 1)   # v1.24: 40 min blocks, first 20 min washout
+    assert fam["price"] == fam["buyer"] == ("switchback", 1, 0)         # v1.24: 20 min blocks
     assert fam["forum"] == ("long", 12, 0)
 
 
@@ -398,7 +398,7 @@ def test_a_new_supply_experiment_is_a_whole_shop_switchback(env):
     env["prop"].replies = [picker({"stock": CAT_ARM})]
     loop.step(NOW0, ctx=env["ctx"])
     exp = L_of(env)["lanes"]["stock"]["active"]
-    assert (exp["protocol"], exp["block_steps"], exp["washout_steps"], exp["outcome"]) == ("switchback", 3, 1, "value")
+    assert (exp["protocol"], exp["block_steps"], exp["washout_steps"], exp["outcome"]) == ("switchback", 2, 1, "value")
     w = {"profit": 0.5, "revenue": 0.3, "stars_rank": 0.2}
     m = {"value_h": 100.0, "gp_h": 7.0, "rev_h": 40.0, "stars_rank_h": 0.5}
     assert loop.proxy(m, dict(exp, w=w)) == pytest.approx(0.5 * 100 + 0.3 * 40 + 0.2 * 0.5)
@@ -711,7 +711,9 @@ def test_live_migration_splits_shop_and_ends_forum_as_lane_off(env):
     L = L_of(env)
     assert set(L["lanes"]) == set(loop.LANES)
     assert L["lanes"]["stock"]["active"] == dict(exps["shop"], lane="stock")  # schedule, blocks, versions as they were
-    assert L["lanes"]["buyer"]["active"] == exps["buyer"]
+    want_b = dict(exps["buyer"], block_steps=1, reblocked_from=3)  # v1.24: block 0 still open -> the lane's 20 min block
+    want_b["blocks"] = [dict(exps["buyer"]["blocks"][0], t1_nom=exps["buyer"]["t_start"] + loop.STEP_S)]
+    assert L["lanes"]["buyer"]["active"] == want_b
     assert L["lanes"]["price"]["active"] is None
     assert L["lanes"]["price"]["next_cycle_step"] == k + loop.HOLD_STEPS  # cycled from shop's next_cycle_step
     assert L["lanes"]["stock"]["next_cycle_step"] == k  # inherited from the old shop lane
@@ -755,7 +757,7 @@ def test_shop_side_loss_cap_trips_on_the_combined_whole_shop_shortfall(tmp_path,
     lanes = L_of(e)["lanes"]
     t0 = lanes["price"]["active"]["blocks"][0]["t0"]
     assert lanes["stock"]["active"]["blocks"][0]["t0"] == t0
-    now = t0 + loop.STEP_S
+    now = t0 + loop.STEP_S - 300  # v1.24: still inside the 20 min price block
     cat = ST.catalog(ctx.P)
 
     def shortfall(key):

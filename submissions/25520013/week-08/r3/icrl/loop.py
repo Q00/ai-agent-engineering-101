@@ -452,6 +452,7 @@ def _exp_row(exp):
         "B_version",
         "reason",
         "stars_guard_trips",
+        "reblocked_from",
     )
     return dict(
         {k: exp.get(k) for k in keep},
@@ -505,8 +506,34 @@ def end(ctx, L, exp, verdict, stats, now, reason=None):
     L["lanes"][lane].update(active=None, next_cycle_step=step_idx(L["pol"], now))
 
 
+def reblock(ctx, exp):
+    """v1.24 (2026-11-05, 성수님: improve overnight): a switchback experiment takes its lane's current block length
+    (the largest block_steps among the lane's switchback keys) until its first block closes, so a shorter family
+    setting also reaches experiments already scheduled or still in block 0. Nothing has been measured for a pair
+    yet, so the pair statistics are untouched. -> the old block_steps when changed, else None."""
+    if exp.get("protocol") != "switchback" or any("t1" in b for b in exp.get("blocks") or []):
+        return None
+    fams = LANES.get(exp_lane(exp), ())
+    want = max(
+        (e["block_steps"] for e in ctx.space if e["family"] in fams and e.get("protocol") == "switchback"),
+        default=None,
+    )
+    if not want or want == exp["block_steps"] or want <= exp.get("washout_steps", 0):
+        return None
+    old, exp["block_steps"] = exp["block_steps"], want
+    exp.setdefault("reblocked_from", old)
+    if exp.get("blocks"):  # block 0 is open: same nominal end rule as the start branch of advance
+        cur, blk_s = exp["blocks"][0], want * STEP_S
+        t1 = exp["t_start"] + blk_s
+        while t1 <= cur["t0"]:
+            t1 += blk_s
+        cur["t1_nom"] = t1
+    return old
+
+
 def advance(ctx, L, exp, store, stats, now):
     pol = L["pol"]
+    reblock(ctx, exp)
     if "stars_base" not in exp:  # an experiment started before the ledger stars term
         exp["stars_base"] = L.get("stars_base")
     blk_s = exp["block_steps"] * STEP_S
@@ -988,9 +1015,7 @@ def cycle(ctx, L, lane, store, stats, now, record=True):
         "mode": "retest" if retest else ("exploit" if aid == best else "explore"),
         "retest": retest,
         "protocol": "switchback" if retest or not long_ else "long",
-        "block_steps": 3
-        if retest or not long_
-        else max(r["entry"]["block_steps"] for r in rows),
+        "block_steps": max(r["entry"]["block_steps"] for r in rows),  # v1.24: the family's length, was 3 for switchback
         "washout_steps": max(r["entry"].get("washout_steps", 0) for r in rows),
         "outcome": "value"
         if any(r["entry"]["family"] in ("supply", "structure") for r in rows)
