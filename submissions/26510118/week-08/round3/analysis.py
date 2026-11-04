@@ -65,6 +65,8 @@ RIVALS = 12             # the top players whose shops our buyer passes over in a
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
             "sales", "restock", "stock_flow")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
+RECORDS_KEEP = 48 * 3600  # our records kept in the files read every pass (restock counts what sold in 48 h); the
+                          # ledger's rows are kept 24 h (ledger.KEEP, since 11/5)
 OPEN_CATEGORIES = 100    # categories in stock before our shop announces itself (day one stocks about 116)
 OPEN_MIN, OPEN_WAIT = 20, 1800   # or at least this many, half an hour after the first stock came in
 SLEEP = 300              # 600 until 11/4: the notes post every 5 minutes
@@ -94,7 +96,7 @@ def market_get(path: str):
 
 def collect(now: float, get_ledger=None, get_json=None) -> str:
     n = ledger.collect(get_ledger or ledger.fetch)
-    moved = ledger.archive(now) + sum(common.archive_old(common.MARKET_DIR / "records" / f"{s}.jsonl", now - ledger.KEEP,
+    moved = ledger.archive(now) + sum(common.archive_old(common.MARKET_DIR / "records" / f"{s}.jsonl", now - RECORDS_KEEP,
                                                          ledger.SLACK) for s in ARCHIVED)
     catalog = common.catalog()
     stock_note, shops = "shops' stock not shown", []

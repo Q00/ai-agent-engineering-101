@@ -38,7 +38,9 @@ import common
 URL = os.environ.get("MARKET_URL", "https://market.ourolabs.ai").rstrip("/")
 PAGES = 80                       # 500 entries a page; a run stops here and the next one goes on (11/3: ~14k entries an hour)
 RESULT_HOURS = 48                # hours of result counts kept
-KEEP = 48 * 3600                 # settle and broken rows kept in the files read every 20 minutes; older ones are archived
+KEEP = 24 * 3600                 # settle and broken rows kept in the files read every 20 minutes; older ones are archived
+                                 # (48 h until 11/5: no reader looks back further than 24 h, and the file is the
+                                 # analysis's largest; the breakdowns by grade are now over 24 h too)
 SLACK = 6 * 3600                 # archive when the oldest row is this much past KEEP (every six hours or so)
 SETTLE_KEYS = ("order", "buyer", "shop", "item", "amount", "name", "grade", "claim", "claim_honest",
                "warranty_hours", "unit")
@@ -189,8 +191,8 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
     and every SKU sold in 24 h carries others_6h_n, other shops' settles of it in SKU_WINDOW in any grade (11/5: a
     line product with few is priced as uncontested)."""
     now = now or time.time()
-    settles = common.read_jsonl(folder() / "settles.jsonl")
-    broken = common.read_jsonl(folder() / "broken.jsonl")
+    settles = common.read_jsonl(folder() / "settles.jsonl", since=now - KEEP)
+    broken = common.read_jsonl(folder() / "broken.jsonl", since=now - KEEP)
     named = names()
     by_sku, by_cat, by_shop, by_grade, others, others_n = {}, {}, {}, {}, {}, {}
     for s in settles:

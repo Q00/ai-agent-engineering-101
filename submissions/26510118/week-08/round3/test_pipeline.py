@@ -624,6 +624,13 @@ def test_ledger():
         kept_away = [json.loads(x) for x in g]
     check("rows over 48 h move to a compressed archive; nothing is lost; the hourly file is left small",
           moved == 3 and len(kept_away) == 2 and common.read_jsonl(ledger.folder() / "settles.jsonl") == [], (moved, len(kept_away)))
+    win = ledger.folder() / "window.jsonl"
+    win.write_text("".join(json.dumps(r) + "\n" for r in ({"seq": 1, "ts": NOW - 30 * H, "a": 1}, {"seq": 2, "ts": NOW - 2 * H, "a": 2},
+                                                          {"b": 3, "nested": {"ts": 1}, "ts": NOW - H})) + '{"ts": 1', encoding="utf-8")
+    check("read_jsonl(since): only rows of the window (an old one skipped unparsed, a later 'ts' still checked), "
+          "the half-written last line skipped",
+          [r.get("a", r.get("b")) for r in common.read_jsonl(win, since=NOW - 24 * H)] == [2, 3]
+          and len(common.read_jsonl(win)) == 3, common.read_jsonl(win, since=NOW - 24 * H))
     f = ledger.folder() / "mixed.jsonl"
     f.write_bytes((json.dumps({"ts": NOW - 50 * H, "a": 1}) + "\n" + json.dumps({"ts": NOW - H, "a": 2}) + "\n" + '{"ts": 1').encode())
     check("archive_old: only the old line moves; a recent line and a line still being written stay",

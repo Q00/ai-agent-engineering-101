@@ -10,6 +10,7 @@ import base64
 import gzip
 import json
 import os
+import re
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -62,15 +63,29 @@ def catalog(market_dir: Path = MARKET_DIR) -> dict:
     return read_json(market_dir / "catalog.json", {}) or {}
 
 
-def read_jsonl(path) -> list:
-    """Every whole line of a .jsonl file; a missing file or a half-written last line is skipped."""
+_TS = re.compile(r'"ts":\s*(-?[0-9.]+)')
+
+
+def read_jsonl(path, since: float | None = None) -> list:
+    """Every whole line of a .jsonl file; a missing file or a half-written last line is skipped. With since,
+    only rows whose ts is since or later: an older line is skipped by its "ts" near the start, before it is
+    parsed. Read a line at a time (11/5: the analysis read the whole ledger file, 69k rows and 26 MB, in four
+    places, and peaked at 398 MB on a server with 837 MB)."""
     rows = []
     try:
-        for line in Path(path).read_text(encoding="utf-8").splitlines():
-            try:
-                rows.append(json.loads(line))
-            except ValueError:
-                pass
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if since is not None:
+                    m = _TS.search(line, 0, 120)
+                    if m and "{" not in line[1:m.start()] and float(m.group(1)) < since:   # the top level's ts
+                        continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if since is not None and (not isinstance(row, dict) or (row.get("ts") or 0) < since):
+                    continue
+                rows.append(row)
     except OSError:
         pass
     return rows

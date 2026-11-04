@@ -57,8 +57,8 @@ def ledger_query(category: str | None = None, sku: str | None = None, shop: str 
             full = (catalog.get(row.get("item")) or {}).get("category", "")
             return category in (full, leaf(row.get("item")))
         return True
-    settles = [s for s in common.read_jsonl(ledger.folder() / "settles.jsonl") if (s.get("ts") or 0) >= since and wanted(s)]
-    broken = [b for b in common.read_jsonl(ledger.folder() / "broken.jsonl") if (b.get("ts") or 0) >= since and wanted(b)]
+    settles = [s for s in common.read_jsonl(ledger.folder() / "settles.jsonl", since=since) if wanted(s)]
+    broken = [b for b in common.read_jsonl(ledger.folder() / "broken.jsonl", since=since) if wanted(b)]
     ratios = [s["amount"] / catalog[s["item"]]["list_price"] for s in settles
               if isinstance(s.get("amount"), (int, float)) and (catalog.get(s.get("item")) or {}).get("list_price")]
     grades, shops = {}, {}

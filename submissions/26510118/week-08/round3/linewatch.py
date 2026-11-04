@@ -207,8 +207,8 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     catalog = common.catalog()
     if not catalog:
         return []                                       # nothing to judge with: line.json is left as it is
-    settles = settles if settles is not None else [s for s in common.read_jsonl(ledger.folder() / "settles.jsonl")
-                                                   if (s.get("ts") or 0) >= now - max(WINDOW, FIND_WINDOW)]
+    settles = settles if settles is not None else common.read_jsonl(ledger.folder() / "settles.jsonl",
+                                                                    since=now - max(WINDOW, FIND_WINDOW))
     inv = inv if inv is not None else (common.market_file("inventory.json", {}) or {})
     sales = sales if sales is not None else [s for s in common.records("sales") if (s.get("ts") or 0) >= now - 86400]
     names = ledger.names()

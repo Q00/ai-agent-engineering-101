@@ -54,7 +54,7 @@ ANALYSIS_PROMPT = """아래는 AI 에이전트 시장의 공개 기록으로 코
 def gather(now: float) -> dict:
     """What the desks read: the ledger's rows and hourly result counts, the summary, the market's lists."""
     return {"hourly": common.read_json(ledger.folder() / "results_hourly.json", {}) or {},
-            "settles": [s for s in common.read_jsonl(ledger.folder() / "settles.jsonl") if (s.get("ts") or 0) >= now - 86400],
+            "settles": common.read_jsonl(ledger.folder() / "settles.jsonl", since=now - 86400),
             "catalog": common.catalog(), "names": ledger.names(),
             "summary": common.market_file("market_summary.json", {}) or {},
             "demand": common.market_file("demand.json", []) or [],

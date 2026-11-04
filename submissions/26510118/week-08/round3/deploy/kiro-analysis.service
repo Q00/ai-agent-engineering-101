@@ -1,6 +1,9 @@
-# The analysis runner on the Azure VM (analysis.py --loop): ledger collection, the market index and replies
-# on the forum, the 3-hour seller and buyer analyses and the 12-hour integrated analysis. Separate from the
-# kit, so either can restart without the other.
+# The analysis runner on the Azure VM (analysis.py): ledger collection, the scoreboard and the line watch every
+# 20 minutes, the journal and notes on the forum, the 3-hour seller, buyer and integrated analyses. Separate from
+# the kit, so either can restart without the other.
+# Memory (11/5): the VM has 837 MB and the analysis once peaked at 398 MB. Over MemoryHigh the kernel reclaims this
+# service's memory first; over MemoryMax only this service is stopped and restarted (Restart=always), while the
+# kit's trading (kiro-kit: the seller, restock, the buyer) goes on.
 [Unit]
 Description=Kiro729 analysis runner
 After=network-online.target kiro-kit.service
@@ -15,6 +18,8 @@ Environment=PYTHONUTF8=1
 ExecStart=/home/azureuser/market/.venv/bin/python /home/azureuser/market/round3/analysis.py
 Restart=always
 RestartSec=60
+MemoryHigh=350M
+MemoryMax=450M
 
 [Install]
 WantedBy=multi-user.target
