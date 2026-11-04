@@ -433,7 +433,9 @@ def advise(order, shops, b=None, t=None, cat=None):
             honest *= 0.6
         if first_fails.get(shop, 0) >= 3:                     # our first pick 3+ times in 1 h without a deal
             honest *= 0.7
-        keep = (budget - min(x, budget)) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
+        # the board's buyer surplus is LIST price minus paid (week-08 rules, re-read 11-04), not budget minus paid:
+        # among acceptable SKUs, a dear one bought at a deep discount keeps more than the cheapest one
+        keep = max(0, lp - min(x, budget)) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
         target = int(lp * t["r3_first_offer"])
         p, hl = (b.get("prices") or {}).get(sku) or {}, honest_low(b, sku)
         if hl:
@@ -449,7 +451,7 @@ def advise(order, shops, b=None, t=None, cat=None):
                "reach_ok": True, "keep": round(keep), "target": target, "walk_away": walk,
                "quality": {k: qa.get(k) for k in ("deals", "honest", "broken", "verdict")} if qa else None,
                "why": f"expect {round(x)} ({'book' if predict(b, shop, sku, kind) else 'market/prior'}), "
-                      f"keep ~{round(budget - min(x, budget))}" + (f", penalty {pen[shop]}" if pen.get(shop) else "")}
+                      f"keep ~{round(max(0, lp - min(x, budget)))} (list - paid)" + (f", penalty {pen[shop]}" if pen.get(shop) else "")}
         if shop not in rows or row["keep"] > rows[shop]["keep"]:
             rows[shop] = row
     ranked = sorted(rows.values(), key=lambda r: -r["keep"])

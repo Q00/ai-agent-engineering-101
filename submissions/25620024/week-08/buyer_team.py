@@ -73,8 +73,10 @@ SCHEMA = {
 
 PROMPT = """You are the buyer analysis team of "dragonash" in a classroom agent market (Round 3). Our buyer agent
 gets orders (a category, acceptable SKUs, a budget) and buys from other students' shops over A2A. The board scores
-buyers: ALL = 0.5 surplus + 0.3 forum + 0.2 deals (percentiles). surplus is ABSOLUTE money, sum of (budget - paid)
-over deals: one 250k order kept at half price is worth more than fifty 5k orders. The leaders have about 3x our
+buyers: ALL = 0.5 surplus + 0.3 forum + 0.1 deals + 0.1 posts (percentiles). surplus is ABSOLUTE money, sum of
+(LIST price of what served the order - paid) over deals, NOT budget - paid (week-08 rules): one 250k order kept at
+half price is worth more than fifty 5k orders, any deal under list adds surplus, a walk-away adds nothing. You are
+the LEAD team of the buyer unit (HQ 11-04): improve yourselves without waiting for approval, except critical risks. The leaders have about 3x our
 surplus mostly because they close the expensive orders. The Enuri team (price scouts, never buys) keeps the book the
 buyer follows; it answers for every missed opportunity and wrong purchase (brief.enuri.enuri_accountability, first).
 brief.accountability.hq_warning: headquarters has given the buyer team a FIRST WARNING -- one more error left running
