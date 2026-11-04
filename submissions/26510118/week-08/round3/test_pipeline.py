@@ -438,6 +438,10 @@ def test_restock(fake: Fake):
     out, info = restock.plan(soon, cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
     check("...and the shelf keeps 2 lines: 40 s left (4 lines), 2 for the line, the refill still bought",
           info["lines"] == 4 and info["line"] == 2 and {"sku": WATER, "qty": 1} in out["buy"], (info, out["buy"]))
+    sold_lots = [{"sku": s, "ts": NOW - 0.2 * H} for s in ("Gsofa0001", "Gsofa0002") for _ in range(5)] + [{"sku": "Gsofa0003", "ts": NOW - 0.2 * H}]
+    gaps = restock.line_gaps({"Gsofa0001": 9, "Gsofa0002": 9, "Gsofa0003": 9, "Gsofa0004": 1}, cat2, [], sold_lots, NOW)
+    check("line gaps by last hour's sales, a product never sold nor held among the best (as if it sold 3)",
+          [g[0] for g in gaps] == ["Gsofa0001", "Gsofa0002", "Gsofa0004", "Gsofa0003"], gaps)
     tiny = dict(rich(shelf), restock={"open": True, "opens_at": NOW - 100, "closes_at": NOW + 25})
     out, info = restock.plan(tiny, cat2, DEMAND, {}, [], [], rules, NOW, line=many)
     check("...but with two lines left the line still gets one", info["lines"] == 2 and info["line"] == 1, (info, out["buy"]))
