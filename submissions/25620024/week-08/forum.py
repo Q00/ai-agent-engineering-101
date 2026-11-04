@@ -31,7 +31,7 @@ STATE = HERE / "private" / "forum_state.json"
 THETA = Path(os.environ.get("SHOP_THETA", HERE / "private" / "shop_theta.json"))
 DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n": 5, "min_n_index": 30,
             "max_posts_day": {"buyer": 288, "shop": 24},
-            "gap_s": {"buyer": 600, "shop": 300}}    # 11-04 14:00: every 10 min. The 30-min cut assumed new posts
+            "gap_s": {"buyer": 300, "shop": 300}}    # 11-04 19:30: every 5 min (the market's limit); 14:00: 10 min. The 30-min cut assumed new posts
             # (5.4 likes at 15 min) pull the 0.604 rating down, but that rating already implies ~6 final likes (Wilson:
             # 5 -> 0.566, 6 -> 0.61), so a post is about neutral to the rating and the posts percentile (0.1) needs them   # buyer ALL counts posts written as a buyer (0.1) and the
                                                            # votes on them (0.3): post as a buyer as often as the market
