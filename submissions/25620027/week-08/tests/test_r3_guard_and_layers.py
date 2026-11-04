@@ -302,7 +302,11 @@ def test_tactical_triggers_name_moves_from_our_numbers_and_steps_stop_at_the_edg
         "seller_first_ask": 5,
     }
     names = [
-        t["name"] for t in tactical_triggers(hour, hour, {"food_near_clearance": 3})
+        t["name"] for t in tactical_triggers(hour, hour, {"food_near_clearance": 8})
+    ]
+    # And: a handful of ageing units (7) is not a batch worth moving the ratio for.
+    assert "food_ageing" not in [
+        t["name"] for t in tactical_triggers(hour, hour, {"food_near_clearance": 7})
     ]
     # Then: each signal names its own move.
     assert names == ["buyer_walkaway", "seller_first_ask", "food_ageing"]

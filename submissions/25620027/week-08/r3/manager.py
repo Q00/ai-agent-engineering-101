@@ -210,7 +210,10 @@ FOLD_WINDOW_HOURS: Final = 3.0
 EDGE_EPS: Final = 1e-6
 TRIGGER_MIN_ATTEMPTS: Final = 6
 TRIGGER_MIN_RECEIPTS: Final = 5
-TRIGGER_FOOD_NEAR: Final = 3
+# The strategy model filed this four times on 11/4: 3-8 units kept re-pinning the
+# clearance ratio at its band edge every run. Act only on a real batch, and only
+# on units not already priced as clearance.
+TRIGGER_FOOD_NEAR: Final = 8
 # "Near clearance" is food with less than this share of shelf life left, a fixed
 # line: measured against the clearance ratio itself, each raise put more units
 # "near", which fired the trigger again (0.32 -> 0.43 on 11/4 06:17-09:20). The
@@ -890,7 +893,11 @@ class Manager:
         }
 
     def summary_aging(self) -> dict[str, int]:
-        """Count food under FOOD_NEAR_PCT of shelf life left, and stale goods."""
+        """Count food near clearance (not yet in it) and stale goods.
+
+        Near means under FOOD_NEAR_PCT of shelf life left but still at or above
+        the clearance ratio: units already sold as clearance need no trigger.
+        """
         catalog = read_catalog(self.market_dir)
         inventory = read_inventory(self.market_dir)
         now = time.time()
@@ -901,7 +908,10 @@ class Manager:
             ratio = unit.shelf_left_ratio(
                 now, float(item.shelf_hours) if item and item.shelf_hours else None
             )
-            if ratio is not None and ratio < FOOD_NEAR_PCT / 100:
+            if (
+                ratio is not None
+                and policy.seller.clearance_shelf_ratio <= ratio < FOOD_NEAR_PCT / 100
+            ):
                 near += 1
             if (
                 unit.kind == "goods"

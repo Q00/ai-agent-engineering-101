@@ -285,12 +285,13 @@ def test_food_near_clearance_is_a_fixed_line_and_its_band_is_never_widened(
 ) -> None:
     now = time.time()
     run_dir = tmp_path / "run"
-    # Given: kimchi with 35% and 25% of its shelf life left, clearance at 0.28.
+    # Given: kimchi with 35%, 29% and 10% of its shelf life left, clearance at 0.28.
     _ = write_market(
         run_dir / ".market",
         [
             unit(KIMCHI, 1, now=now, shelf_left_ratio=0.35),
-            unit(KIMCHI, 2, now=now, shelf_left_ratio=0.25),
+            unit(KIMCHI, 2, now=now, shelf_left_ratio=0.29),
+            unit(KIMCHI, 3, now=now, shelf_left_ratio=0.10),
         ],
     )
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -306,7 +307,8 @@ def test_food_near_clearance_is_a_fixed_line_and_its_band_is_never_widened(
         manager.policy_file, Policy(), "s", bands={key: Band(low=0.2, high=0.28)}
     )
     _ = save_tactical(manager.policy_file, {key: 0.28}, "up")
-    # When / Then: only the unit under 30% counts (not "under 1.5 x 0.28").
+    # When / Then: only the unit under 30% and not yet in clearance counts
+    # (not "under 1.5 x 0.28", and not the 10% unit already sold as clearance).
     aging = manager.summary_aging()
     assert aging["food_near_clearance"] == 1
     assert aging["clearance_ratio_pct"] == 28
