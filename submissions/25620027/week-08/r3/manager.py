@@ -89,6 +89,7 @@ from r3.policy import (
 from r3.reflection import policy_reviews
 from r3.review import DEALS_FILE
 from r3.reviews import MAX_OURS, MAX_PER_LEADER, load_digest, run_digest, third_party
+from r3.standing import standing as graded_standing
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -120,7 +121,17 @@ PROMPT: Final = (
     "You manage the trading policy of one shop and one buyer agent in a simulated "
     "market. Shops rank by profit, revenue and stars; buyers by surplus (list price "
     "minus price paid, zero for broken or expired goods), forum reputation and deal "
-    "count. All ranks are percentiles. You own the strategy fields and the bands "
+    "count. All ranks are percentiles. "
+    "The grade is our Players-table rank (shop ALL + buyer ALL) at 11/17 23:59 KST. "
+    "The standing table rebuilds it per component (rank, percentile, points, "
+    "points_left, gap_up, role, and the ranks about an hour ago). Work it as a loop: "
+    "defend every strength (do not trade away a component ranked high, above all "
+    "shop profit at weight 0.5) and spend each change on the weakness with the most "
+    "points_left that a field can move (shop stars, buyer deals and surplus on "
+    "11/4). In the reason, name the component the change serves and the rank move "
+    "you expect; next run, check standing.about_an_hour_ago and keep, extend or "
+    "undo it by what moved. "
+    "You own the strategy fields and the bands "
     "inside which a faster tactical layer may move its own fields for the next "
     "hour. You see the last 6 and 24 hours: settlements, refusals and reasons, "
     "break rates by grade, category medians, the scout's trust picture, and the "
@@ -194,7 +205,17 @@ PROMPT: Final = (
 TACTICAL_PROMPT: Final = (
     "You run the fifteen-minute tactical adjustment for one shop and one buyer agent "
     "in a simulated market. You may change at most three tactical fields, each inside "
-    "the band shown for it, and the change lasts one hour. Read the last hour: our "
+    "the band shown for it, and the change lasts one hour. "
+    "The grade is our Players-table rank (shop ALL + buyer ALL) at 11/17 23:59 KST. "
+    "The standing table rebuilds it per component (rank, percentile, points, "
+    "points_left, gap_up, role, and the ranks about an hour ago). Work it as a loop: "
+    "defend every strength (do not trade away a component ranked high, above all "
+    "shop profit at weight 0.5) and spend each change on the weakness with the most "
+    "points_left that a field can move (shop stars, buyer deals and surplus on "
+    "11/4). In the reason, name the component the change serves and the rank move "
+    "you expect; next run, check standing.about_an_hour_ago and keep, extend or "
+    "undo it by what moved. "
+    "Read the last hour: our "
     "receipts and settlements, refusals, negotiation rounds, the scout picture. "
     "Typical moves: raise concession or lower accept_margin when buyers walk away; "
     "tighten them when every deal closes at the first ask; lower clearance limits "
@@ -228,6 +249,10 @@ TRIGGER_FOOD_NEAR: Final = 8
 # "near", which fired the trigger again (0.32 -> 0.43 on 11/4 06:17-09:20). The
 # trigger stops once the ratio reaches the line, and code never widens its band.
 FOOD_NEAR_PCT: Final = 30
+# The graded standing is snapshotted at most every 10 minutes, 2 hours kept.
+STANDING_EVERY: Final = 600.0
+STANDING_KEEP: Final = 12
+STANDING_HOUR_AGO: Final = 3000.0
 NO_CODE_WIDEN: Final = frozenset({"seller.clearance_shelf_ratio"})
 SCOUT_PROMPT: Final = (
     "You are the scout for one shop and one buyer agent in a simulated market. You "
@@ -734,6 +759,44 @@ class Manager:
                 )
         return body
 
+    def standing(self) -> dict[str, object]:
+        """Our graded position now and about an hour ago (rank per component)."""
+        board = self.cached_json(
+            "board", f"{self.market}/api/board", BOARD_CACHE_SECONDS
+        )
+        now = graded_standing(board, self.buyer_name)
+        if not now:
+            return {}
+        try:
+            past = json.loads(self.events.get_value("standing_history") or "[]")
+        except ValueError:
+            past = []
+        stamp = time.time()
+        brief = {
+            "ts": stamp,
+            "rank": now.get("rank"),
+            "total": now.get("total"),
+            "ranks": {
+                f"{c['side']}.{c['metric']}": c["rank"]
+                for c in now["components"]  # pyright: ignore[reportGeneralTypeIssues]
+            },
+        }
+        if not past or stamp - float(past[-1].get("ts", 0)) >= STANDING_EVERY:
+            past = [*past, brief][-STANDING_KEEP:]
+            with contextlib.suppress(OSError):
+                self.events.set_value("standing_history", json.dumps(past))
+        hour_ago = next(
+            (
+                p
+                for p in reversed(past)
+                if stamp - float(p.get("ts", 0)) >= STANDING_HOUR_AGO
+            ),
+            None,
+        )
+        if hour_ago is not None:
+            now["about_an_hour_ago"] = {k: v for k, v in hour_ago.items() if k != "ts"}
+        return now
+
     def shop_owners(self) -> dict[str, str]:
         """Map shop URL -> owner login from the public board (10 min cache)."""
         board = self.cached_json(
@@ -839,6 +902,7 @@ class Manager:
                 our_buyer=self.buyer_name,
             ),
             "model_calls_24h": self.events.model_summary(24),
+            "standing": self.standing(),
             "leaders_now": compact(load_latest(self.benchmark_file)),
             "review_digest": load_digest(self.run_dir),
             "leaders_day_ago": compact(load_day_ago(self.benchmark_file)),
@@ -880,6 +944,7 @@ class Manager:
                 catalog, hours=1, our_shop=self.shop_url, our_buyer=self.buyer_name
             ),
             "review_digest": load_digest(self.run_dir),
+            "standing": self.standing(),
             "leaders_now": compact(load_latest(self.benchmark_file)),
             "tactical_values": {
                 key: field_value(history.current, key)
