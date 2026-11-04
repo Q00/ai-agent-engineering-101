@@ -51,7 +51,8 @@ def load_calls(root, since, until=None):
             stderr = (path / "stderr.txt").read_text(encoding="utf-8", errors="replace")
         except OSError:
             prompt, stderr = "", ""
-        after_prompt = stderr[stderr.rfind(prompt[-200:]) + 200:] if prompt and prompt[-200:] in stderr else stderr
+        ending = prompt[-200:]
+        after_prompt = stderr[stderr.rfind(ending) + len(ending):] if ending and ending in stderr else stderr
         failed = metadata.get("status") == "failed"
         error = str(metadata.get("error", ""))
         tokens = TOKENS.search(stderr.rstrip())
