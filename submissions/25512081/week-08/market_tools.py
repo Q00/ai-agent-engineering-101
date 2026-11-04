@@ -34,8 +34,12 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 CASH_FLOOR = 1_500_000     # as in restock.py
-STOCK_CAP = 9_000_000
-MAX_LINE_COST = 4_000_000
+STOCK_CAP = 9_000_000     # floor; the cap follows assets as in restock.scale_caps
+MAX_LINE_COST = 6_000_000
+
+
+def stock_cap(inv, stock_cost):
+    return max(STOCK_CAP, int(0.70 * (inv.get("balance", 0) + stock_cost)))
 MAX_QTY = 5
 SHORT_SHELF = 48           # hours: food that spoils this fast is bought at most 2 at a time
 SHARE_RANGE = (0.60, 0.95)
@@ -138,7 +142,7 @@ def my_shop() -> dict:
     return audit("my_shop", {}, {
         "round": inv.get("round"), "balance": inv.get("balance"), "start": inv.get("start"),
         "hours_to_round_end": round((1794927540 - now) / 3600, 1),
-        "free_for_stock": max(0, min(inv.get("balance", 0) - CASH_FLOOR, STOCK_CAP - stock_cost)),
+        "free_for_stock": max(0, min(inv.get("balance", 0) - CASH_FLOOR, stock_cap(inv, stock_cost) - stock_cost)),
         "units": len(units), "stock_cost": stock_cost,
         "stale_units": sum(1 for u in units if now - u["supplied_at"] > 86400),
         "sales_6h": len(recent), "sales_6h_by_category": Counter(s["category"] for s in recent).most_common(10),
@@ -230,7 +234,8 @@ def plan_restock(lines: list[dict], reason: str) -> dict:
     st = load("restock_state.json", {})
     sold = lambda c: st.get("pop", {}).get(c, 0) > 0 or st.get("sold", {}).get(c, 0) > 0
     inv = load("inventory.json", {})
-    room = min(inv.get("balance", 0) - CASH_FLOOR, STOCK_CAP - sum(u["cost"] for u in units))
+    held = sum(u["cost"] for u in units)
+    room = min(inv.get("balance", 0) - CASH_FLOOR, stock_cap(inv, held) - held)
     kept, refused = [], []
     for ln in lines[:20]:
         sku, qty = ln.get("sku"), ln.get("qty")

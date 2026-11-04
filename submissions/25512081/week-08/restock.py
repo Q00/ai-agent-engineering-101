@@ -49,12 +49,25 @@ PLANNER_LEAD = 10 * 60
 PULSE_DECAY = 0.97         # per run: the market's no-deal share over roughly the last half hour
 DECAY = 0.995              # per run (about one a minute): half-life about 2 hours
 MAX_LINES = 10
-MAX_LINE_COST = 4_000_000  # one category's buy never ties up more than this (one unit always allowed)
+MAX_LINE_COST = 6_000_000  # (4M until Nov 4 17:00) one category's buy never ties up more than this (one unit always allowed)
 # Nov 4 13:00: 91% of the market's revenue was sofas/chairs (avg sale 1.2M), mattresses (317k) and bedding (67k);
 # the top shops sell those at 0.79-0.86 of list. Our 3M of stock was 102 cheap units (avg sale 34k), so our
 # revenue and profit (absolute sums, 0.3 and 0.5 of shop ALL) trailed. Stock cost now also follows each
 # category's share of market revenue, not only its share of settles.
-VALUE_BUDGET = 7_000_000   # 4.5M until Nov 4 14:00
+VALUE_BUDGET = 7_000_000   # 4.5M until Nov 4 14:00; since 17:00 the floor of the share below
+# Nov 4 17:00: every big-ticket line sold within minutes at ~30% margin (Q mattresses 38 sold, 253k -> 361k;
+# sofas 1.2-1.4M -> 1.9-2.0M) while 7.5M of our 16.5M cash sat idle under the 9M cap. Profit grows with the money
+# turning over, so the caps follow total assets (cash + stock at cost), and grow as we do.
+STOCK_SHARE = 0.70
+VALUE_SHARE = 0.55
+
+
+def scale_caps(inv, stock_cost):
+    global STOCK_CAP, VALUE_BUDGET
+    assets = inv.get("balance", 0) + stock_cost
+    STOCK_CAP = max(9_000_000, int(STOCK_SHARE * assets))
+    VALUE_BUDGET = max(7_000_000, int(VALUE_SHARE * assets))
+    return STOCK_CAP
 # Market research, Nov 4 14:00 (1.67 h of ledger, 3,652 settles): one mattress SKU (list 424k) was 20% of all
 # revenue, four leather sofas (list 1.6-2.3M) about 25%; buyers pay about the same share of list for any price
 # (grade A median 0.78-0.80), so a unit's profit grows with its list price. The top shops sold
@@ -328,6 +341,7 @@ def main():
     held = Counter(u["category"] for u in units)
     stock_cost = sum(u["cost"] for u in units)
     cash = inv.get("balance", 0) - CASH_FLOOR
+    scale_caps(inv, stock_cost)
     room = min(cash, STOCK_CAP - stock_cost)
     medians = {d["category"]: d["median_price"] for d in demand}
     want = targets(st, demand, catalog)
