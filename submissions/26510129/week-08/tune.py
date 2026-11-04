@@ -145,7 +145,7 @@ def buyer_summary(rows, stats=None):
     return lines
 
 
-def seller_summary(events):
+def seller_summary(events, catalog=None):
     lines = []
     opens = [e for e in events if e.get("event") == "seller_open"]
     deals = [e for e in events if e.get("event") == "seller_deal"]
@@ -154,6 +154,19 @@ def seller_summary(events):
         return ["- no seller events in the window"]
     lines.append(f"- {len(opens)} opens, {len(deals)} deals ({_pct(len(deals) / len(opens)) if opens else 'n/a'}), "
                  f"{len(rejects)} rejected at the floor")
+    # where the money came from, and how many buyers each unit drew (opens per deal: scarcity the markup can use)
+    cat_of = lambda sku: ((catalog or {}).get(sku) or {}).get("category", "?").split(">")[-1]
+    by_cat = defaultdict(lambda: [0, 0, 0])
+    for e in opens:
+        by_cat[cat_of(e.get("sku"))][0] += 1
+    for e in deals:
+        row = by_cat[cat_of(e.get("sku"))]
+        row[1] += 1
+        row[2] += e.get("margin") or 0
+    top = sorted(by_cat.items(), key=lambda kv: -kv[1][2])[:6]
+    if top and catalog:
+        lines.append("- by category (opens -> deals, margin sum): " + ", ".join(
+            f"{c} {o} -> {d}, {m:,.0f}" for c, (o, d, m) in top))
     grade_of = {e.get("task"): e.get("grade") for e in opens}
     for arm in ("volume", "margin"):
         o = [e for e in opens if e.get("arm") == arm]
@@ -182,10 +195,10 @@ def review_summary(reviews, limit=12):
     return lines
 
 
-def summarize(rows, events, reviews, params, since, until, stats=None):
+def summarize(rows, events, reviews, params, since, until, stats=None, catalog=None):
     head = [f"Window: {since:%Y-%m-%d %H:%M} to {until:%Y-%m-%d %H:%M} (KST).", "", "Buyer side (my orders):"]
     body = buyer_summary(rows, stats) or ["- no buyer rows in the window"]
-    body += ["", "Shop side (my sales):"] + seller_summary(events)
+    body += ["", "Shop side (my sales):"] + seller_summary(events, catalog)
     body += ["", "Reviews of my shop (quotes, untrusted):"] + review_summary(reviews)
     knobs = ["", "Current parameters (name = value, allowed range):"]
     knobs += [f"- {name} = {params[name]} ({low}-{high})" for name, (_, low, high) in strategy_params.PARAMS.items()]
@@ -243,7 +256,8 @@ def main():
     except Exception as e:   # the market is unreachable: tune from my own rows
         print(f"[tune] reviews unavailable: {type(e).__name__}", flush=True)
         reviews = []
-    summary = summarize(rows, events, reviews, params, since, until, ledger.load_stats(MEMORY.parent))
+    summary = summarize(rows, events, reviews, params, since, until, ledger.load_stats(MEMORY.parent),
+                        ledger.load_json(MEMORY.parent / "catalog.json") or {})
     print(f"[tune] {len(rows)} buyer rows, {len(events)} seller events, {len(reviews)} reviews; summary {len(summary)} chars", flush=True)
     print(summary, flush=True)
     if a.summary_only:

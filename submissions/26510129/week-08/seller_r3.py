@@ -95,8 +95,10 @@ def find_unit(text, taken=()):
     return min(fit, key=ship_order)
 
 
-def policy_arm(unit, task):
-    share = 0.75 if unit.get("kind") == "food" else 0.60
+def policy_arm(unit, task, volume_share=None):
+    """Stable per (sku, task): the tuner's seller_volume_share for goods, 0.15 more for food (it spoils)."""
+    share = strategy_params.DEFAULTS["seller_volume_share"] if volume_share is None else volume_share
+    share = min(1.0, share + 0.15) if unit.get("kind") == "food" else share
     digest = hashlib.sha256(f"{unit.get('sku')}:{task}".encode()).digest()
     return "volume" if int.from_bytes(digest[:8], "big") / 2**64 < share else "margin"
 
@@ -108,15 +110,15 @@ def price_plan(unit, task, now=None, params=None, market=None):
     the ask follows that price (volume arm 0.97x, margin arm 1.05x) instead of the cost-based target. Either way
     the ask stays inside [cost x 1.03, grade cap]: not below cost, not above what the grade is worth."""
     now = now or time.time()
-    params = params or strategy_params.DEFAULTS
+    params = {**strategy_params.DEFAULTS, **(params or {})}
     cost = max(1, int(round(unit["cost"])))
     list_price = max(cost, int(round(unit["list_price"])))
-    arm = policy_arm(unit, task)
+    arm = policy_arm(unit, task, params["seller_volume_share"])
     target = max(cost * (params["seller_margin_volume"] if arm == "volume" else params["seller_margin_margin"]),
                  list_price * (0.82 if arm == "volume" else 0.95))
     market_price, market_n, market_src = market if market and market[0] else (None, 0, "none")
     if market_price:
-        target = market_price * (0.97 if arm == "volume" else 1.05)
+        target = market_price * (0.97 if arm == "volume" else 1.05) * params["seller_markup"]
     cap = list_price * {"A": 0.99, "B": params["grade_cap_B"], "C": 0.65}.get(unit.get("grade"), 0.85)
     target = min(target, cap)
     # goods pay 1% of cost a day in storage: from the third day the ask comes down 5% a day, to 70% of the target

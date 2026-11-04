@@ -30,7 +30,9 @@ EXPECTED_COST_RATIO = 0.60   # supply cost as a share of list price, averaged ov
 STOCK_SHARE = 0.50           # stock at cost may not exceed this share of capital (balance + stock at cost)
 EXPLORE_STOCK_SHARE = 0.10   # of capital: below this, categories with no evidence may still be tried (one lot each)
 RUN_SPEND_SHARE = 0.30       # of the balance, per run
-UNIT_COST_SHARE = 0.15       # one unit's expected cost may not exceed this share of the balance
+UNIT_COST_SHARE = 0.20       # one unit's expected cost may not exceed this share of capital (balance + stock at cost);
+                             # 11-04 17:40: at 15% of the balance a 1.63M sofa blocked the next one until it sold (2 min,
+                             # 3 buyers); a refund on a break (~3% of settles) is a third of the margin in expectation
 CATEGORY_SHARE = 0.35        # one category's stock at cost may not exceed this share of the stock cap
 
 
@@ -162,7 +164,7 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
     scored.sort(key=lambda row: (-row[0], row[1]))
 
     spend_cap = min(balance * RUN_SPEND_SHARE, room)
-    unit_cap = balance * UNIT_COST_SHARE
+    unit_cap = capital * UNIT_COST_SHARE
     estimated, buys, too_dear = 0.0, [], 0
     sku_depletion = memory.get("sku_depletion") or {}
     sku_sales = stats.get("skus") or {}

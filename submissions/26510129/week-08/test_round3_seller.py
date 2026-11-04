@@ -62,6 +62,16 @@ class Round3InventorySellerTest(unittest.TestCase):
         unit = {"sku": "GOOD-1", "kind": "goods"}
         self.assertEqual(seller_r3.policy_arm(unit, "task"), seller_r3.policy_arm(unit, "task"))
 
+    def test_tuner_knobs_move_the_arm_split_and_the_markup(self):
+        unit = {"sku": "GOOD-1", "kind": "goods", "cost": 700, "list_price": 1000, "grade": "A", "expires_at": None}
+        self.assertEqual("margin", seller_r3.policy_arm(unit, "task", volume_share=0.0))
+        self.assertEqual("volume", seller_r3.policy_arm(unit, "task", volume_share=1.0))
+        plain = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params={"seller_volume_share": 1.0, "seller_markup": 1.0})
+        marked = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params={"seller_volume_share": 1.0, "seller_markup": 1.10})
+        self.assertEqual((873, 960), (plain["ask"], marked["ask"]))        # 900 x 0.97, then x 1.10
+        capped = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params={"seller_volume_share": 0.0, "seller_markup": 1.15})
+        self.assertEqual(990, capped["ask"])                                # 900 x 1.05 x 1.15 = 1087 -> cap 0.99 x list
+
 
 if __name__ == "__main__":
     unittest.main()

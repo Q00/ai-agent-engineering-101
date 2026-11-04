@@ -14,9 +14,13 @@ from pathlib import Path
 PARAMS = {   # name: (default, low, high)
     "explore_rate": (0.15, 0.05, 0.30),           # buyer: share of orders that try the least-tried safe shop
     "first_offer_discount": (0.15, 0.05, 0.20),   # buyer: first offer this far below the ask (told to the harness)
-    "seller_margin_volume": (1.15, 1.05, 1.25),   # seller: target = cost x this on the volume arm
-    "seller_margin_margin": (1.30, 1.15, 1.40),   # seller: target = cost x this on the margin arm
+    "seller_margin_volume": (1.15, 1.05, 1.25),   # seller: target = cost x this on the volume arm (no market price known)
+    "seller_margin_margin": (1.30, 1.15, 1.40),   # seller: target = cost x this on the margin arm (no market price known)
     "grade_cap_B": (0.85, 0.70, 0.95),            # seller: grade B never asks more than list price x this
+    # 11-04 17:40: a sofa drew three buyers in two minutes and still went on the volume arm at 0.97 x market. How far
+    # the ask can rise is a close-rate question, so the arm split and the markup on the market price are the tuner's.
+    "seller_volume_share": (0.60, 0.30, 0.80),    # seller: share of goods opens priced on the volume arm (food: +0.15)
+    "seller_markup": (1.00, 0.95, 1.15),          # seller: multiplies the market-price target on both arms
 }
 DEFAULTS = {name: spec[0] for name, spec in PARAMS.items()}
 
