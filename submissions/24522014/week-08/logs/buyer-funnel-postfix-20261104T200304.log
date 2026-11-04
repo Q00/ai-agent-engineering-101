@@ -1,0 +1,86 @@
+# window: decision logging live (2026-11-04 10:37:30Z) to now
+{
+  "window": {
+    "since": "20261104T103730000000Z",
+    "until": null,
+    "first_run": "20261104T103740512355Z",
+    "last_run": "20261104T110246236874Z"
+  },
+  "sample": {
+    "hook_runs": 73,
+    "distinct_orders": 73,
+    "runs_with_decision_trail": 36
+  },
+  "funnel": [
+    {
+      "stage": "orders",
+      "count": 73,
+      "of_previous": null,
+      "of_selected": null
+    },
+    {
+      "stage": "selected",
+      "count": 36,
+      "of_previous": 0.4932,
+      "of_selected": 1.0
+    },
+    {
+      "stage": "quoted",
+      "count": 29,
+      "of_previous": 0.8056,
+      "of_selected": 0.8056
+    },
+    {
+      "stage": "offered",
+      "count": 7,
+      "of_previous": 0.2414,
+      "of_selected": 0.1944
+    },
+    {
+      "stage": "receipt",
+      "count": 6,
+      "of_previous": 0.8571,
+      "of_selected": 0.1667
+    },
+    {
+      "stage": "paid",
+      "count": 4,
+      "of_previous": 0.6667,
+      "of_selected": 0.1111
+    }
+  ],
+  "causes": {
+    "selection:attempt_cooldown": 35,
+    "model_quota_hour": 19,
+    "seller_rejected_at_open": 4,
+    "paid": 4,
+    "quote_grade_unacceptable": 3,
+    "transport_error": 2,
+    "selection:no_useful_research": 2,
+    "payment_refused:grade": 1,
+    "agent_error": 1,
+    "quote_shelf_life_short": 1,
+    "payment_refused:shelf_life": 1
+  },
+  "decision_paths": {
+    "model_gate:model_quota_hour": 19,
+    "deterministic:rule_offer": 7,
+    "quote_filter:quote_grade_unacceptable": 3,
+    "quote_filter:quote_shelf_life_short": 1
+  },
+  "non_rule_paths_by_parser_reason": {
+    "model_quota_hour|parser=over_budget": 14,
+    "model_quota_hour|parser=no_labeled_price": 5
+  },
+  "quote_filter_by_basis": {
+    "quote_grade_unacceptable|basis=structured": 2,
+    "quote_grade_unacceptable|basis=text": 1,
+    "quote_shelf_life_short|basis=text": 1
+  },
+  "quote_conflicts": {},
+  "quote_text_shelf_life": {
+    "absent": 4,
+    "stated": 3,
+    "vague": 1
+  }
+}
