@@ -31,7 +31,7 @@ import forum
 
 MARKET = "https://market.ourolabs.ai"
 CASH_FLOOR = 1_500_000    # round 3's first 20 minutes: 55-60% of the market's orders ended without a deal while
-STOCK_CAP = 6_000_000     # (3M until Nov 4 13:00; raised for big-ticket stock, see VALUE_BUDGET) shops' supply buys fell from 924 to 175 per 10 min; we sold 36 units in 21 min from
+STOCK_CAP = 9_000_000     # (3M until Nov 4 13:00, 6M until 14:00; raised for big-ticket stock, see VALUE_BUDGET) shops' supply buys fell from 924 to 175 per 10 min; we sold 36 units in 21 min from
                           # about 60 in stock. Demand is far above supply, so we hold more (bankruptcy line 500,000)
 SEED_PRICE = 80_000        # seed goods categories whose median price is at most this
 SEED_FOOD_HOURS = 168      # seed food that keeps at least a week
@@ -49,12 +49,17 @@ PLANNER_LEAD = 10 * 60
 PULSE_DECAY = 0.97         # per run: the market's no-deal share over roughly the last half hour
 DECAY = 0.995              # per run (about one a minute): half-life about 2 hours
 MAX_LINES = 10
-MAX_LINE_COST = 2_000_000  # one category's buy never ties up more than this (one unit always allowed)
+MAX_LINE_COST = 4_000_000  # one category's buy never ties up more than this (one unit always allowed)
 # Nov 4 13:00: 91% of the market's revenue was sofas/chairs (avg sale 1.2M), mattresses (317k) and bedding (67k);
 # the top shops sell those at 0.79-0.86 of list. Our 3M of stock was 102 cheap units (avg sale 34k), so our
 # revenue and profit (absolute sums, 0.3 and 0.5 of shop ALL) trailed. Stock cost now also follows each
 # category's share of market revenue, not only its share of settles.
-VALUE_BUDGET = 4_500_000
+VALUE_BUDGET = 7_000_000   # 4.5M until Nov 4 14:00
+# Market research, Nov 4 14:00 (1.67 h of ledger, 3,652 settles): one mattress SKU (list 424k) was 20% of all
+# revenue, four leather sofas (list 1.6-2.3M) about 25%; buyers pay about the same share of list for any price
+# (grade A median 0.78-0.80), so a unit's profit grows with its list price. The top shops sold
+# 825-840k per sale at 0.77-0.84 of list; we sold 31.6k per sale. So within a category we stock the SKU with the
+# most revenue (sales x list price), not the most sales, and size its units on that SKU's cost.
 # Supply vs demand per category (Nov 4 13:40: 45% of orders unmet; market stock covered 0.1-0.9 h of sales in
 # kimchi, bedding, mattresses, one sofa for 100 sold per hour, while supply opens every 20 min). Each run we
 # write .market/market_state.json: settles per hour on the ledger (last hour), units all shops held when our
@@ -137,6 +142,7 @@ def read_ledger(st, catalog):
                         st["cat_px"][cat] = (st["cat_px"].get(cat, []) + [round(amount / lp, 3)])[-30:]
                     if cat and d.get("amount"):
                         st["rev"][cat] = st["rev"].get(cat, 0) + d["amount"]
+                        st["sku_rev"][sku] = st["sku_rev"].get(sku, 0) + d["amount"]
                     if cat:
                         st["pop"][cat] = st["pop"].get(cat, 0) + 1
                         st["sku_pop"][sku] = st["sku_pop"].get(sku, 0) + 1
@@ -172,7 +178,10 @@ def track_my_sales(st, inv):
                    for uid, u in now.items()}
 
 
-def targets(st, demand):
+VALUE_SKU = {}             # category -> (SKU, units of it) from the revenue budget; filled by targets()
+
+
+def targets(st, demand, catalog=None):
     """category -> how many units to hold."""
     if st["settles"] < MIN_DATA:
         return {d["category"]: 1 for d in demand
@@ -193,13 +202,15 @@ def targets(st, demand):
     rev_total = sum(st["rev"].values()) or 1
     for cat, v in st["rev"].items():                # money follows revenue: a few sofas, many mattresses
         share = v / rev_total
-        unit_cost = (kind.get(cat) or {}).get("median_price", 0) * 0.6
+        top = pick_sku(cat, catalog, st, (kind.get(cat) or {}).get("median_price", 0)) if catalog else None
+        unit_cost = (catalog[top]["list_price"] if top else (kind.get(cat) or {}).get("median_price", 0)) * 0.65
         if share < 0.01 or not unit_cost:
             continue
         n = int(VALUE_BUDGET * share // unit_cost)
         if (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48:
             n = min(n, 2)
-        out[cat] = max(out.get(cat, 0), min(n, MAX_PER_CAT))
+        if top and n > 0:                            # counted against units of that SKU, not of the category:
+            VALUE_SKU[cat] = (top, min(n, SHORT_MAX))  # six cheap stools must not stand in for leather sofas
     for cat, m in market_state(st).items():          # short categories: stock for what sells until the next window
         if m["cover"] is not None and m["cover"] < SHORT_COVER and cat in kind:
             short_food = kind[cat].get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
@@ -262,8 +273,11 @@ def pick_sku(cat, catalog, st, median):
     if wanted and not any(st["sku_pop"].get(s) for s in skus):
         return min(wanted, key=lambda s: abs(catalog[s]["list_price"] - median))
     seen = [s for s in skus if st["sku_pop"].get(s)]
-    if seen:
-        return max(seen, key=lambda s: st["sku_pop"][s])
+    recent = [s for s in skus if st.get("sku_rev", {}).get(s)]
+    if recent:                                       # most recent revenue (decayed like categories, ~2 h half-life):
+        return max(recent, key=lambda s: st["sku_rev"][s])   # cumulative counts favoured an older, cheaper sofa
+    if seen:                                         # most revenue: sales times list price
+        return max(seen, key=lambda s: st["sku_pop"][s] * catalog[s]["list_price"])
     return min(skus, key=lambda s: abs(catalog[s]["list_price"] - median))
 
 
@@ -288,10 +302,14 @@ def main():
     catalog = catalog_of(sd)
     st = load(sd / "restock_state.json", {})
     for k, v in (("pop", {}), ("sku_pop", {}), ("sold", {}), ("sold_log", []), ("settles", 0),
-                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {}), ("sold_ts", {})):
+                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {}), ("sold_ts", {}), ("sku_rev", {})):
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
     st["rev"] = {k: v * DECAY for k, v in st["rev"].items()}
+    st["sku_rev"] = {k: v * DECAY for k, v in st["sku_rev"].items() if v > 1000}
+    if not st["sku_rev"]:                            # first run: seed from the latest settles
+        for r in st.get("recent", []):
+            st["sku_rev"][r["sku"]] = st["sku_rev"].get(r["sku"], 0) + r["amount"]
     if not st["rev"] and st.get("recent"):           # first run with revenue tracking: seed from recent settles
         for r in st["recent"]:
             c = (catalog.get(r["sku"]) or {}).get("category")
@@ -312,7 +330,7 @@ def main():
     cash = inv.get("balance", 0) - CASH_FLOOR
     room = min(cash, STOCK_CAP - stock_cost)
     medians = {d["category"]: d["median_price"] for d in demand}
-    want = targets(st, demand)
+    want = targets(st, demand, catalog)
     endgame = time.time() > END_TS - ENDGAME
     if endgame:
         want, room = {}, 0
@@ -341,11 +359,19 @@ def main():
 
     buy = plan_lines(sd, st, catalog, room) if not endgame and not closed else []
     room -= sum(catalog[b["sku"]]["list_price"] * 0.6 * b["qty"] for b in buy)
+    held_sku = Counter(u["sku"] for u in units)
+    order = sorted(set(order) | set(VALUE_SKU), key=lambda c: (-st["rev"].get(c, 0), -st["pop"].get(c, 0)))
     for cat in order:
-        gap = want[cat] - held.get(cat, 0)
-        if gap <= 0 or len(buy) >= MAX_LINES:
+        if len(buy) >= MAX_LINES:
+            break
+        if cat in VALUE_SKU:                         # the revenue budget names the SKU and its units
+            sku, n = VALUE_SKU[cat]
+            gap = max(n - held_sku[sku], want.get(cat, 0) - held.get(cat, 0))
+        else:
+            gap = want[cat] - held.get(cat, 0)
+            sku = pick_sku(cat, catalog, st, medians.get(cat, 0)) if gap > 0 else None
+        if gap <= 0:
             continue
-        sku = pick_sku(cat, catalog, st, medians.get(cat, 0))
         if not sku:
             continue
         unit_est = catalog[sku]["list_price"] * 0.6        # a unit costs 25-75% of list

@@ -46,7 +46,7 @@ RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2: the we
 # category in .market/prices.json, else DEFAULT_SHARE. The buyer's value is the list price, so a lower ask is
 # the buyer's surplus. Lower grades open lower, and stock held over a day is marked down; both stay in code.
 DEFAULT_SHARE = 0.85
-GRADE_FACTOR = {"A": 1.0, "B": 0.92, "C": 0.80}
+GRADE_FACTOR = {"A": 1.0, "B": 0.92, "C": 0.85}   # C 0.80 until Nov 4 14:00 (market pays C 0.67-0.70 of list vs A 0.78-0.80)
 STALE_MARKDOWN = 0.05     # per day in stock, up to 3 days
 _prices = {"t": 0, "rules": {}}
 FLOOR_MARGIN = float(os.environ.get("SHOP_FLOOR_MARGIN", "0.05"))
