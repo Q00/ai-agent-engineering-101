@@ -161,13 +161,26 @@ def supply_open(inv, now=None):
 def cash_capacity(inv, journal, config, now=None):
     now = time.time() if now is None else now
     days = max(0, (datetime.fromisoformat(config['end_at']).timestamp() - now) / 86400)
-    liability = sum(e.get('price', 0) for e in journal.events('shop_settled', 10000)
-                    if now - e.get('paid_at', 0) < warranty_hours(e.get('warranty_hours')) * 3600)
+    # A confirmed full refund has already reduced the authoritative balance.
+    # Keep its raw history, but do not collateralize the discharged obligation twice.
+    closed = {}
+    for e in journal.events('public_broken', 20000):
+        amount = e.get('refunded')
+        if (0 <= now - e['_ts'] and e.get('unit') and (e.get('item') or e.get('sku')) and
+                type(amount) in (int, float) and math.isfinite(amount) and amount > 0):
+            key = (e['unit'], e.get('item') or e.get('sku'))
+            closed[key] = max(closed.get(key, 0), amount)
+    pending = [e for e in journal.events('shop_settled', 10000)
+               if 0 <= now - e.get('paid_at', 0) < warranty_hours(e.get('warranty_hours')) * 3600]
+    released = sum(e.get('price', 0) for e in pending
+                   if closed.get((e.get('unit'), e.get('sku')), 0) >= e.get('price', 0) > 0)
+    liability = sum(e.get('price', 0) for e in pending) - released
     storage = sum(u.get('cost', 0) for u in inv.get('units', []) if u.get('kind') == 'goods') * .01 * days
     balance = inv.get('balance', 0)
     floor = max(config.get('cash_floor', 750000), balance * config['cash_reserve_fraction'])
     return {'spendable': max(0, balance - floor - liability - storage), 'refund_liability': liability,
-            'storage_to_end': storage, 'cash_floor': floor, 'remaining_days': days}
+            'storage_to_end': storage, 'cash_floor': floor, 'remaining_days': days,
+            'discharged_refund_reserve': released}
 
 
 def restock_candidates(inv, catalog, demand, journal, config, now=None):
