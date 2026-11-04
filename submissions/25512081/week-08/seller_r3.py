@@ -87,6 +87,10 @@ SHORT_MARKET = 0.4        # no undercutting while this share of the market's ord
 # nowhere else to go, so we open higher. Both stay under MAX_SHARE.
 SHORTAGE_PREMIUM = 0.10    # times (no-deal share - 0.3), so 0.6 unmet opens 3% higher
 ALONE_PREMIUM = 0.06
+# Cover = hours the market's stock of the category lasts at its sales rate (market_state.json, restock.py).
+# Short categories open higher, glutted ones lower (Nov 4 13:40: most categories under one hour).
+COVER_STEPS = ((0.33, 0.06), (1.0, 0.03), (10.0, 0.0))   # cover under h -> premium; above the last: GLUT_CUT
+GLUT_CUT = -0.05
 # Supply opens once every 20 minutes for 3 (agent.md): right after a window every shop is full, and as the cycle
 # runs on, rivals sell out while orders keep coming. So the opening share rises with the time since the last
 # window, by up to CYCLE_PREMIUM just before the next one: we sell more of our stock when buyers have fewest
@@ -257,6 +261,10 @@ def scarcity(category):
     c = _load("competitors.json", {}).get("cats", {}).get(category)
     if c and c.get("shops", 9) == 0 and time.time() - c["ts"] < COMP_FRESH:
         f += ALONE_PREMIUM
+    ms = _load("market_state.json", {})
+    m = (ms.get("cats") or {}).get(category) if time.time() - ms.get("ts", 0) < 600 else None
+    if m and m.get("cover") is not None:
+        f += next((prem for h, prem in COVER_STEPS if m["cover"] < h), GLUT_CUT)
     return f
 
 

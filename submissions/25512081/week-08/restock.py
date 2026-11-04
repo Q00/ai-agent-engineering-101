@@ -17,6 +17,7 @@ Prints {"buy": [{"sku", "qty"}, ...]} as its last line.
 """
 import argparse
 import json
+import math
 import shutil
 import subprocess
 import sys
@@ -54,6 +55,15 @@ MAX_LINE_COST = 2_000_000  # one category's buy never ties up more than this (on
 # revenue and profit (absolute sums, 0.3 and 0.5 of shop ALL) trailed. Stock cost now also follows each
 # category's share of market revenue, not only its share of settles.
 VALUE_BUDGET = 4_500_000
+# Supply vs demand per category (Nov 4 13:40: 45% of orders unmet; market stock covered 0.1-0.9 h of sales in
+# kimchi, bedding, mattresses, one sofa for 100 sold per hour, while supply opens every 20 min). Each run we
+# write .market/market_state.json: settles per hour on the ledger (last hour), units all shops held when our
+# buyer last saw the category, and cover = units / rate. A category whose market stock runs out before the next
+# window (cover < SHORT_COVER h) may hold up to SHORT_MAX units, sized to what the market sells until then
+# times SHORT_SHARE (our guess of what we can take while others are out); the seller prices on cover too.
+SHORT_COVER = 1.0
+SHORT_MAX = 15
+SHORT_SHARE = 0.25
 PLANNER_EVERY = 60 * 60    # opus with tools: the costliest call; the code baseline restocks every minute between
 LESSONS_EVERY = 6 * 3600   # lessons.py: failures of the last day -> rules the manager and the buyer read
 PLAN_FRESH = 90 * 60       # plan lines older than this are dropped
@@ -105,6 +115,9 @@ def read_ledger(st, catalog):
                     st["breaks"].setdefault(g, [0, 0])[0] += 1
                 if r.get("kind") == "settle":
                     sku = d.get("item")
+                    c_ = (catalog.get(sku) or {}).get("category")
+                    if c_:
+                        st["sold_ts"][c_] = (st["sold_ts"].get(c_, []) + [int(r.get("ts") or 0)])[-400:]
                     if (catalog.get(sku) or {}).get("kind") == "goods":
                         st["breaks"].setdefault(d.get("grade") or "?", [0, 0])[1] += 1
                         if d.get("unit"):
@@ -187,10 +200,32 @@ def targets(st, demand):
         if (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48:
             n = min(n, 2)
         out[cat] = max(out.get(cat, 0), min(n, MAX_PER_CAT))
+    for cat, m in market_state(st).items():          # short categories: stock for what sells until the next window
+        if m["cover"] is not None and m["cover"] < SHORT_COVER and cat in kind:
+            short_food = kind[cat].get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
+            n = math.ceil(m["rate"] / 3 * SHORT_SHARE)
+            out[cat] = max(out.get(cat, 0), min(n, 2 if short_food else SHORT_MAX))
     for cat, c in load(Path(".market") / "competitors.json", {}).get("cats", {}).items():
         if c.get("shops") == 0 and time.time() - c["ts"] < UNMET_FRESH:   # nobody had it when it was ordered
             short = (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
             out[cat] = max(out.get(cat, 0), 1 if short else UNMET_UNITS)
+    return out
+
+
+def market_state(st):
+    """category -> {rate: settles per hour over the last hour, units: rivals' stock last seen, cover: hours}."""
+    comp = load(Path(".market") / "competitors.json", {}).get("cats", {})
+    now, out = time.time(), {}
+    for cat, ts in st["sold_ts"].items():
+        rate = sum(1 for t in ts if now - t < 3600)
+        if not rate:
+            continue
+        c = comp.get(cat) or {}
+        units = c.get("units") if c and now - c["ts"] < COMP_FRESH else None
+        out[cat] = {"rate": rate, "units": units, "cover": round(units / rate, 2) if units is not None else None}
+    tmp = Path(".market") / "market_state.tmp"
+    tmp.write_text(json.dumps({"ts": now, "cats": out}, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(Path(".market") / "market_state.json")
     return out
 
 
@@ -253,7 +288,7 @@ def main():
     catalog = catalog_of(sd)
     st = load(sd / "restock_state.json", {})
     for k, v in (("pop", {}), ("sku_pop", {}), ("sold", {}), ("sold_log", []), ("settles", 0),
-                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {})):
+                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {}), ("sold_ts", {})):
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
     st["rev"] = {k: v * DECAY for k, v in st["rev"].items()}
