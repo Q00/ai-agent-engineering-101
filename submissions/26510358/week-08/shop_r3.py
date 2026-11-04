@@ -31,7 +31,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from r3lib import config, market, pricing
+from r3lib import config, market, pricing, scout
 from r3lib.memory import Memory
 
 LEGACY = {"lamp": (100, 130), "chair": (180, 234), "bookshelf": (260, 338)}   # reserve, first ask (Round 0-2)
@@ -135,13 +135,19 @@ class Shop(AgentExecutor):
             return u["list_price"], u["cost"], 0
         ratio, n = self.mem.price_ratio(sku=u["sku"], category=u.get("category"))
         adj = pricing.ask_adjustment(self.mem.seller_outcomes(u.get("category")) or self.mem.seller_outcomes())
+        try:
+            premium = scout.ask_premium(self.mem, u.get("category"))
+        except Exception as e:                        # scout trouble must not lose a sale
+            premium = 0.0
+            log("scout_error", error=str(e)[:200])
+        adj += premium
         ask = pricing.unit_ask(u, ratio, adj)
         floor = pricing.unit_floor(u)
         p_break = self.mem.break_rate(u.get("grade"))
         warranty = pricing.warranty_hours_for(u, ask, p_break)
         floor = pricing.warranty_floor(floor, u, ask, warranty, p_break)
         log("terms", sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
-            floor=floor, market_ratio=ratio, evidence=n, adjust=adj, warranty=warranty)
+            floor=floor, market_ratio=ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty)
         return ask, floor, warranty
 
     def _pitch(self, u, ask, warranty):

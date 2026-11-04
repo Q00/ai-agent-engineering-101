@@ -5,8 +5,9 @@ prints what to buy.
 
 For each category:
   rate   = market-wide settles per hour, decayed (memory.category_demand), plus forum want-to-buy signals
-  share  = 1 / (1 + competitors holding stock in that category)
-  target = ceil(rate * share * HORIZON_H) units, capped for short-life food by half its shelf life
+  share  = 1 / (1 + competitors holding stock in that category), or our realised share when higher (scout)
+  gap    = competitor supply vs market sales from the ledger (scout.gap_factor, 0.7-1.3)
+  target = ceil(rate * share * gap * HORIZON_H) units, capped for short-life food by half its shelf life
 Categories without evidence get one unit for coverage (long-life food, cheap goods), within EXPLORE_SHARE of the
 stock budget, so orders can find us while the ledger fills. No buying in the last STOP_BUYING_HOURS.
 
@@ -27,7 +28,7 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 
-from r3lib import config, market, pricing
+from r3lib import config, market, pricing, scout
 from r3lib.memory import Memory
 
 FORUM_EVERY = 10 * 60
@@ -103,6 +104,7 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
     explore_budget = min(budget, config.EXPLORE_SHARE * config.MAX_STOCK_COST - (mem.get("explore_spent") or 0))
     dem = mem.category_demand(now=now)
     forum = mem.forum_demand_signals()
+    view = scout.category_view(mem, now=now)
     lines, why = [], []
 
     # 1) evidence: categories that sell, by expected profit per hour
@@ -113,8 +115,9 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
         rate = d.get("rate", 0) + 0.05 * forum.get(market.leaf(k), 0)
         if rate <= 0:
             continue
-        share = 1 / (1 + (d.get("shops") or 0))
-        exp_h = rate * share
+        share = scout.share_estimate(1 / (1 + (d.get("shops") or 0)), view.get(k))
+        gap = scout.gap_factor(view.get(k))
+        exp_h = rate * share * gap
         factor = (adjust.get(k) or {}).get("factor", 1.0)
         target = math.ceil(exp_h * config.HORIZON_H * factor)
         shelf = [i.get("shelf_hours") for _, i in info_by_cat.get(k, []) if i.get("shelf_hours")]
@@ -125,8 +128,9 @@ def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
             why.append({"category": k, "skip": f"market pays {ratio:.2f} of list, no margin over cost"})
             continue
         need = target - have.get(k, 0)
-        if factor != 1.0:
-            why.append({"category": k, "review_factor": factor, "target": target})
+        if factor != 1.0 or gap != 1.0:
+            why.append({"category": k, "review_factor": factor, "gap_factor": gap, "share": round(share, 3),
+                        "pressure": (view.get(k) or {}).get("pressure"), "target": target})
         if need > 0:
             margin = (ratio or config.EV_DEFAULT_PRICE_RATIO) - config.EV_COST_RATIO
             needs.append((exp_h * row.get("median_price", 0) * margin, k, need, row, exp_h * factor, ratio))

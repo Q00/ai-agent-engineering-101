@@ -35,6 +35,14 @@ EV_DEFAULT_PRICE_RATIO = 0.75       # expected sale price / list price without m
 GOODS_END_RISK = 0.10               # share of cost an unsold goods unit is expected to lose (clearance, round end)
 FOOD_LEFTOVER_RISK = 0.15           # same for long-life food that does not sell in the horizon
 
+# --- shop: competitor scout (r3lib/scout.py) ------------------------------------------------------
+SCOUT_MIN_SOLD = 20                 # a category needs this many market settles in 6 h before the scout has an opinion
+SCOUT_LOW_PRESSURE = 0.6            # competitors restock under 60% of what sells: a gap
+SCOUT_HIGH_PRESSURE = 1.4           # competitors restock 140% of what sells: crowded
+GAP_MAX, GAP_MIN = 1.3, 0.7         # demand-target scaling at the two ends
+SCOUT_MIN_OUR_SOLD = 5              # our realised share replaces the 1/(1+shops) prior only on this many own sales
+SCARCITY_PREMIUM = 0.03             # first ask +3% of list in an under-supplied category
+
 # --- shop: pricing ---------------------------------------------------------------------------------
 START_ASK_RATIO = 0.90              # first ask as a share of list price, before memory has prices
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
