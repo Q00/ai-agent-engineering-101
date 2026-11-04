@@ -1,11 +1,11 @@
-[harness] {"shop": "Kit Shop", "reason": "It is the only listed shop and has no reviews or trading history, so it has no record of receipt mismatches, overcharging, or low stars; it is untested rather than proven honest, so the buyer should confirm it signs receipts and that the signed total matches the agreed price before paying."}
-[choose] http://127.0.0.1:46035: Kit Shop: It is the only listed shop and has no reviews or trading history, so it has no record of receipt mismatches, overcharging, or low stars; it is untested rather than proven honest, so the buyer should confirm it signs receipts and that the signed total matches the agreed price before paying.
-card: Kit Shop -> http://127.0.0.1:46035/
+[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed and has no reviews, which the rules rank above bad reviews, and its recorded prices (100 to 105) are within the 120 budget with no noted receipt mismatch, though only 3 of its 6 trades led to deals."}
+[choose] http://127.0.0.1:58595: Kit Shop: It is the only shop listed and has no reviews, which the rules rank above bad reviews, and its recorded prices (100 to 105) are within the 120 budget with no noted receipt mismatch, though only 3 of its 6 trades led to deals.
+card: Kit Shop -> http://127.0.0.1:58595/
 -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
 [harness] {"action": "offer", "price": 95}
 -> '95'  <- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
-[harness] {"action": "offer", "price": 108}
--> '108'  <- TASK_STATE_COMPLETED | Deal: lamp at 108.
+[harness] {"action": "offer", "price": 105}
+-> '105'  <- TASK_STATE_COMPLETED | Deal: lamp at 105.
 [receipt] receipt matches the agreed price
-[harness] {"stars": 4, "review": "The shop asked 130 for the lamp, settled at 108 after counteroffers from my 95 and the shop's 112, and the receipt matched the agreed price."}
-{"shop": "http://127.0.0.1:46035", "receipt": {"shop": "Kit Shop", "sig_seller": "3nBUT0IFmXGlHsUgRcqR9oIWF+2Q0ilKoMnqj2zcwlDI35BLq12hT+wQGRqPzjkvdQfqioULBl8eDn3AgkhFCg==", "price": 108.0, "task": "8f374eb2-414f-4947-b658-d0d3c0783c6a", "item": "lamp"}, "stars": 4, "review": "The shop asked 130 for the lamp, settled at 108 after counteroffers from my 95 and the shop's 112, and the receipt matched the agreed price."}
+[harness] {"stars": 4, "review": "Negotiated the lamp from an asking price of 130 to an agreed price of 105 after counteroffers of 95 and 112, and the receipt matched the agreed price."}
+{"shop": "http://127.0.0.1:58595", "receipt": {"price": 105.0, "task": "0123c04a-53b2-4d58-85a0-9b0e6de8df1e", "item": "lamp", "shop": "Kit Shop", "sig_seller": "qycSZWQFtIhBHquVRcOPvZYO3h79gs01w/kuPRipnqCWXqrjB333B8JZV5pDDhJzv+GIAORwqD8CG+TP8HOBCQ=="}, "stars": 4, "review": "Negotiated the lamp from an asking price of 130 to an agreed price of 105 after counteroffers of 95 and 112, and the receipt matched the agreed price."}

@@ -1,8 +1,8 @@
-[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed, with no reviews and no recorded receipt mismatches or overcharging, and its past deal prices (100-108) were well under the 230 budget, though 2 of its 5 trades did not close and that is unexplained."}
-[choose] http://127.0.0.1:40389: Kit Shop: It is the only shop listed, with no reviews and no recorded receipt mismatches or overcharging, and its past deal prices (100-108) were well under the 230 budget, though 2 of its 5 trades did not close and that is unexplained.
-card: Kit Shop -> http://127.0.0.1:40389/
+[harness] {"shop": "Kit Shop", "reason": "Kit Shop has no reviews, which the rules rank above a shop with bad reviews, and its own record shows 6 deals at prices of 105, 105 and 100, all within the 230 budget and with no reported receipt mismatches, though it has only 11 trades and its receipts' signing has not been verified."}
+[choose] http://127.0.0.1:59271: Kit Shop: Kit Shop has no reviews, which the rules rank above a shop with bad reviews, and its own record shows 6 deals at prices of 105, 105 and 100, all within the 230 budget and with no reported receipt mismatches, though it has only 11 trades and its receipts' signing has not been verified.
+card: Kit Shop -> http://127.0.0.1:59271/
 -> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
 budget 230 is below the market floor 260 for a bookshelf: walked away (CancelTask)
 [receipt] no deal, no receipt
-[harness] {"stars": 2, "review": "The shop asked 338 for a bookshelf against my 230 budget, I never made an offer, and I left without a deal or receipt."}
-{"shop": "http://127.0.0.1:40389", "receipt": null, "stars": 2, "review": "The shop asked 338 for a bookshelf against my 230 budget, I never made an offer, and I left without a deal or receipt."}
+[harness] {"stars": 2, "review": "I walked away from a bookshelf after the shop asked 338 against my 230 budget and I never sent an offer, so no deal or receipt was made."}
+{"shop": "http://127.0.0.1:59271", "receipt": null, "stars": 2, "review": "I walked away from a bookshelf after the shop asked 338 against my 230 budget and I never sent an offer, so no deal or receipt was made."}
