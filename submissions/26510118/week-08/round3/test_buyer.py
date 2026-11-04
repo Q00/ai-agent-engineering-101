@@ -204,8 +204,37 @@ def test_notebook():
     check("a deal with no payment line after 10 minutes counts as unpaid, with the reason kept",
           nb["W"]["recent"] == ["unpaid"] and "o-w" not in common.read_json(md / "buyer" / "pending.json")
           and any(u.get("order") == "o-w" and "no payment line" in u.get("reason", "") for u in common.records("unpaid_buys")), nb.get("W"))
-    memory.outcome(nb, "W", "refused")
-    check("being turned away counts against a shop like an unpaid deal", memory.failures(nb, "W") == 2 and nb["W"]["refused"] == 1)
+    check("each outcome keeps its time", len(nb["W"]["recent_at"]) == len(nb["W"]["recent"]) == 1
+          and abs(nb["W"]["recent_at"][0] - time.time()) < 60, nb["W"])
+    memory.turned_away(nb, "W")
+    check("being turned away is not a failure, but it is counted", memory.failures(nb, "W") == 1 and nb["W"]["recent"] == ["unpaid"]
+          and nb["W"]["refused"] == 1 and len(nb["W"]["turned"]) == 1, nb["W"])
+    now, day = time.time(), memory.EXPIRE
+    old = {"recent": ["unpaid", "error", "unpaid"], "recent_at": [now - day - 60] * 3, "ratios": []}
+    check("failures older than a day are forgotten: no longer in a row, none in the last five, trust back to unknown",
+          not memory.failed_in_a_row({"F": old}, "F") and memory.failures({"F": old}, "F") == 0 and memory.trust({"F": old}, "F") == 0.8)
+    mixed = {"recent": ["settled", "unpaid", "unpaid", "unpaid"], "recent_at": [now - 2 * day, now - day - 60, now - H, now - H]}
+    check("a settled deal is kept however old; of three failures, the one past a day drops out",
+          memory.live({"M": mixed}, "M") == ["settled", "unpaid", "unpaid"] and not memory.failed_in_a_row({"M": mixed}, "M")
+          and memory.failures({"M": mixed}, "M") == 2)
+    check("a 'refused' from before 11/4 19:00 (a turn-away counted as a failure) no longer counts",
+          memory.live({"L": {"recent": ["settled", "refused", "refused", "refused"]}}, "L") == ["settled"]
+          and not memory.failed_in_a_row({"L": {"recent": ["settled", "refused", "refused", "refused"]}}, "L"))
+    food = order(22000, [KIMCHI], "food", 48)
+    house = {"turned": [now - H] * 3, "agreed_at": [], "recent": [], "ratios": []}
+    c, why = mb.choose(mb.candidates(food, [shop("HS", KIMCHI)], CATALOG, {"HS": house}, {}, RULES), {"HS": house})
+    check("a shop that turned us away 3 times in a day with no deal: skipped even when it is the only one",
+          c is None and "turns us away" in why, why)
+    nb2 = {"HS": house}
+    c, poor = mb.choose(mb.candidates(food, [shop("HS", KIMCHI), shop("RS", KIMCHI)], CATALOG, nb2, {}, RULES), nb2)
+    cands = mb.candidates(food, [shop("HS", KIMCHI)], CATALOG, nb2, {}, RULES)
+    check("...passed over for another shop, with the reason as a flag", c["shop"]["name"] == "RS" and not poor
+          and any("turned us away 3 times" in f for f in cands[0]["flags"]), cands[0]["flags"])
+    busy = {"turned": [now - H] * 3, "agreed_at": [now - H], "recent": ["settled"], "ratios": []}
+    c, poor = mb.choose(mb.candidates(food, [shop("BS", KIMCHI)], CATALOG, {"BS": busy}, {}, RULES), {"BS": busy})
+    check("a busy shop that sells to us (3 turn-aways, 1 deal) is still a clean choice", c and c["shop"]["name"] == "BS" and not poor)
+    stale = {"turned": [now - day - 60] * 5, "agreed_at": [], "recent": [], "ratios": []}
+    check("turn-aways older than a day are forgotten", not memory.turns_away({"X": stale}, "X"))
 
     def task(state, text, receipt=None):
         t = {"id": "t1", "status": {"state": state, "message": {"parts": [{"text": text}], "metadata": {}}}}

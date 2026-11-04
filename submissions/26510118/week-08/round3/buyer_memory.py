@@ -1,8 +1,19 @@
 """B4: the buyer's shop notebook and purchase book, kept by code (no model writes a fact).
 
     buyer/notebook.json     per shop (by name): the outcomes of our last agreed deals there
-                            (settled, unpaid, error), false grade claims, breakdowns (and how many
-                            had no warranty), the shares of the list price we paid, the url seen
+                            (settled, unpaid, error) and when, the times it turned us away and the
+                            times we agreed a deal there (the last day), false grade claims,
+                            breakdowns (and how many had no warranty), the shares of the list price
+                            we paid, the url seen
+
+A failure counts against a shop for a day (EXPIRE), then is forgotten; a settled deal counts until
+newer outcomes push it out. Being turned away before any offer ("none of that in stock") is not a
+failure: a busy shop's stock list is seconds old and its best sellers go fast. A shop that turns us
+away on most tries (3 or more times in a day and more than 3 times per deal there) is passed over:
+on 11/4 four house shops did so on 67-94% of our tries with no deal, against 4-15% at the busiest
+real shops. Until then a turn-away counted as a failure and a failure never expired, so a shop
+locked after 3 never got the try that could clear it: 33 of the 47 shops were locked at 19:30, and 16%
+of the orders since 17:12 had been dropped for it.
     buyer/purchases.jsonl   one line per settled purchase: order, shop, SKU, name, price, list
                             price, grade, claim, warranty, shelf life left, when it settled
     buyer/breaks.jsonl      a breakdown matched to the purchase it came from
@@ -23,6 +34,8 @@ UNKNOWN_TRUST = 0.8      # a shop we have not dealt with
 PRIOR = 2                # pseudo-deals at UNKNOWN_TRUST that soften a short record
 BREAK_WINDOW = 7 * 3600  # goods break within 6 h of the sale; an hour of slack for clocks
 PAY_WAIT = 600           # seconds after a deal with no payment line: it was not paid
+EXPIRE = 24 * 3600       # a failure older than this no longer counts against the shop
+TURNED_MIN, TURNED_PER_DEAL = 3, 3   # turn-aways in a day, and per deal there, that make a shop one to pass over
 
 
 def folder():
@@ -38,20 +51,45 @@ def save(nb: dict) -> None:
 
 
 def entry(nb: dict, name: str) -> dict:
-    return nb.setdefault(name, {"recent": [], "settled": 0, "unpaid": 0, "errors": 0, "false_claims": 0,
-                                "broken": 0, "broken_no_warranty": 0, "ratios": [], "url": None})
+    return nb.setdefault(name, {"recent": [], "recent_at": [], "settled": 0, "unpaid": 0, "errors": 0, "refused": 0,
+                                "turned": [], "agreed_at": [], "false_claims": 0, "broken": 0,
+                                "broken_no_warranty": 0, "ratios": [], "url": None})
 
 
-def outcome(nb: dict, name: str, what: str, url: str | None = None) -> None:
+def times(e: dict) -> list:
+    """recent_at lined up with recent; an entry from before times were kept (11/4) has None."""
+    r, at = e.get("recent") or [], list(e.get("recent_at") or [])
+    return ([None] * (len(r) - len(at)) + at)[-len(r):] if r else []
+
+
+def outcome(nb: dict, name: str, what: str, url: str | None = None, now: float | None = None) -> None:
     """what: settled, unpaid (agreed but not paid: the kit refused, the receipt was unsigned, or no
-    payment line came), error (the shop broke off) or refused (it turned us away before any offer,
-    for a product its stock list showed)."""
+    payment line came) or error (the shop broke off). A turn-away is not an outcome: turned_away()."""
     e = entry(nb, name)
+    at = times(e)
     e["recent"] = (e["recent"] + [what])[-KEEP:]
-    key = {"settled": "settled", "unpaid": "unpaid", "error": "errors", "refused": "refused"}[what]
+    e["recent_at"] = (at + [int(now or time.time())])[-KEEP:]
+    key = {"settled": "settled", "unpaid": "unpaid", "error": "errors"}[what]
     e[key] = e.get(key, 0) + 1
     if url:
         e["url"] = url
+
+
+def turned_away(nb: dict, name: str, url: str | None = None, now: float | None = None) -> None:
+    """The shop turned us away before any offer, for a product its stock list showed."""
+    now = now or time.time()
+    e = entry(nb, name)
+    e["turned"] = [t for t in e.get("turned") or [] if now - t < EXPIRE] + [int(now)]
+    e["refused"] = e.get("refused", 0) + 1
+    if url:
+        e["url"] = url
+
+
+def agreed(nb: dict, name: str, now: float | None = None) -> None:
+    """We agreed a deal there (paid or not): what a shop's turn-aways are weighed against."""
+    now = now or time.time()
+    e = entry(nb, name)
+    e["agreed_at"] = [t for t in e.get("agreed_at") or [] if now - t < EXPIRE] + [int(now)]
 
 
 def add_pending(order: str, **deal) -> None:
@@ -137,7 +175,7 @@ def trust(nb: dict, name: str, summary: dict | None = None) -> float:
     if not e:
         t = UNKNOWN_TRUST
     else:
-        recent = e["recent"][-RECENT:]
+        recent = live(nb, name)[-RECENT:]
         t = (recent.count("settled") + UNKNOWN_TRUST * PRIOR) / (len(recent) + PRIOR)
         if e.get("false_claims"):
             t *= 0.5
@@ -149,13 +187,37 @@ def trust(nb: dict, name: str, summary: dict | None = None) -> float:
     return round(max(0.05, min(1.0, t)), 3)
 
 
-def failures(nb: dict, name: str) -> int:
-    return sum(1 for x in (nb.get(name) or {}).get("recent", [])[-RECENT:] if x != "settled")
+def live(nb: dict, name: str, now: float | None = None) -> list:
+    """The shop's recent outcomes that still count: a settled deal always, a failure for EXPIRE seconds
+    (one with no time, from before times were kept, until newer outcomes push it out). A "refused" left
+    from before 11/4 19:00, when a turn-away was a failure, no longer counts."""
+    now = now or time.time()
+    e = nb.get(name) or {}
+    return [w for w, t in zip(e.get("recent") or [], times(e))
+            if w == "settled" or (w != "refused" and (t is None or now - t < EXPIRE))]
 
 
-def failed_in_a_row(nb: dict, name: str, n: int = 3) -> bool:
-    recent = (nb.get(name) or {}).get("recent", [])
+def failures(nb: dict, name: str, now: float | None = None) -> int:
+    return sum(1 for x in live(nb, name, now)[-RECENT:] if x != "settled")
+
+
+def failed_in_a_row(nb: dict, name: str, n: int = 3, now: float | None = None) -> bool:
+    recent = live(nb, name, now)
     return len(recent) >= n and all(x != "settled" for x in recent[-n:])
+
+
+def turned_counts(nb: dict, name: str, now: float | None = None) -> tuple[int, int]:
+    """(times it turned us away, deals we agreed there), in the last day."""
+    now = now or time.time()
+    e = nb.get(name) or {}
+    return (sum(1 for t in e.get("turned") or [] if now - t < EXPIRE),
+            sum(1 for t in e.get("agreed_at") or [] if now - t < EXPIRE))
+
+
+def turns_away(nb: dict, name: str, now: float | None = None) -> bool:
+    """It turns us away on most tries: TURNED_MIN or more times in a day, more than TURNED_PER_DEAL per deal."""
+    t, d = turned_counts(nb, name, now)
+    return t >= TURNED_MIN and t > TURNED_PER_DEAL * d
 
 
 def paid_ratio(nb: dict, name: str) -> tuple[float | None, float | None]:

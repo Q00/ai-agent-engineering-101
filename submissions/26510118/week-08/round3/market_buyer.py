@@ -13,11 +13,13 @@ price minus it (the order's value is the list price). Trust comes from the shop 
 the budget is still a candidate when its expected price fits (we only find out by asking).
 Food whose whole shelf life is shorter than the order needs is never a candidate. A failure is a
 deal not paid (refused at payment, a receipt without the shop's signature, or no payment line
-within 10 minutes), a broken-off trade, or being turned away before any offer for a product the
-shop lists (11/4: a house shop did both 163 times a day, unrecorded, and kept getting chosen). Shops that
-failed us twice in the last five deals, lied about a grade, rate under 2.5 stars over 5 or
-more reviews, or the analysis said to avoid, are dropped while a cleaner choice exists; if
-none does, we still try, with stricter terms, unless every shop left failed us 3 times in a row.
+within 10 minutes) or a broken-off trade, and it counts for a day. Being turned away before any
+offer ("none of that in stock") is not a failure, but a shop that turns us away on most tries
+(3 or more times in a day, more than 3 per deal) is passed over: on 11/4 four house shops did so
+on 67-94% of our tries. Shops that failed us twice in the last five deals, lied about a grade,
+rate under 2.5 stars over 5 or more reviews, turn us away on most tries, or the analysis said to
+avoid, are dropped while a cleaner choice exists; if none does, we still try, with stricter
+terms, unless every shop left failed us 3 times in a row or turns us away on most tries.
 What the numbers miss is what others wrote: for a shop with reviews or forum posts about it, the
 decision model (harness.decide, the Decisions API) gives the odds that a purchase there goes as
 described, from those words, the ledger's record and our own deals there; the odds make half of
@@ -191,7 +193,8 @@ def evidence_of(sh: dict, posts: list, summary: dict, nb: dict) -> dict:
              if name.lower() in str(x.get("text") or "").lower() and x.get("author") not in common.OWN_NAMES][-5:]
     ours = nb.get(name)
     return {"reviews": reviews, "forum_posts": posts, "ledger_24h": (summary.get("by_shop") or {}).get(name),
-            "our_deals": {k: ours.get(k) for k in ("recent", "false_claims", "broken")} if ours else None}
+            "our_deals": dict({k: ours.get(k) for k in ("false_claims", "broken")}, recent=memory.live(nb, name))
+            if ours else None}
 
 
 def shop_odds(shops: list, posts: list, summary: dict, nb: dict, now: float | None = None) -> dict:
@@ -235,6 +238,8 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             flags.append(f"what others wrote points to trouble (odds {p:.2f})")
         if memory.failures(nb, sh["name"]) >= 2:
             flags.append("failed us twice in the last five deals")
+        if memory.turns_away(nb, sh["name"]):
+            flags.append("turned us away {} times in a day, against {} deal(s)".format(*memory.turned_counts(nb, sh["name"])))
         if (nb.get(sh["name"]) or {}).get("false_claims"):
             flags.append("lied about a grade")
         if mean is not None and n >= MIN_REVIEWS and mean < LOW_STARS:
@@ -270,9 +275,9 @@ def choose(cands: list, nb: dict):
     clean = [c for c in cands if not c["flags"]]
     if clean:
         return max(clean, key=lambda c: c["score"]), False
-    hope = [c for c in cands if not memory.failed_in_a_row(nb, c["shop"]["name"])]
+    hope = [c for c in cands if not memory.failed_in_a_row(nb, c["shop"]["name"]) and not memory.turns_away(nb, c["shop"]["name"])]
     if not hope:
-        return None, "every shop left failed us 3 times in a row"
+        return None, "every shop left failed us 3 times in a row or turns us away on most tries"
     return max(hope, key=lambda c: c["score"]), True
 
 
@@ -452,9 +457,10 @@ async def amain(a) -> dict:
         memory.outcome(nb, c["shop"]["name"], "error", c["shop"]["url"])
     elif r.get("unsigned"):                                         # 11/4: a house shop's unsigned receipts, 131 in 24 h
         memory.outcome(nb, c["shop"]["name"], "unpaid", c["shop"]["url"])
-    elif r.get("refused"):                                          # ...and its "none in stock" for what it lists
-        memory.outcome(nb, c["shop"]["name"], "refused", c["shop"]["url"])
+    elif r.get("refused"):                                          # "none in stock": not a failure, but counted (house shops)
+        memory.turned_away(nb, c["shop"]["name"], c["shop"]["url"])
     if r["deal"]:
+        memory.agreed(nb, c["shop"]["name"])
         memory.add_pending(order.get("order"), shop=c["shop"]["name"], url=c["shop"]["url"], sku=c["sku"],
                            list_price=c["list"], price=r["price"], warranty=warranty_of(r["receipt"]) >= WARRANTY_HOURS)
     memory.save(nb)
