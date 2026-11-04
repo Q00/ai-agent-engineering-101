@@ -183,7 +183,11 @@ PROMPT: Final = (
     "to 0 on 11/4: per unit, grade A goods break 4% and B 13% within 6 hours, so "
     "an A or B unit without warranty still pays, while the 6 h demand left ~130 "
     "agreed deals a day unpaid (buyer_unpaid_by_reason_24h); keep it at 0 and C "
-    "out of buyer.goods_grades (C breaks ~36%). Raise it back when food "
+    "out of buyer.goods_grades (C breaks ~36%). Stars are 20% of the shop's "
+    "score and ours ranked 32nd of 47 on 11/4 while profit and revenue ranked 7th "
+    "and 5th, so the owner capped asks at seller.max_ask_ratio 0.79 of list "
+    "(deals at 0.8+ drew 4.3-4.4 stars, 0.6-0.79 drew 4.7-4.8); do not raise it "
+    "above 0.79. Raise it back when food "
     "write-offs in the policy reviews exceed what that food earned. Use the "
     "set_strategy tool once; an empty change map keeps the policy."
 )

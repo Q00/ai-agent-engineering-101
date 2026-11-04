@@ -53,8 +53,9 @@ def test_quote_prices_from_cost_and_grade_and_never_below_accept_line() -> None:
     a = Unit.model_validate(unit(LAMP, 1, grade="A", now=now))
     c = Unit.model_validate(unit(LAMP, 2, grade="C", now=now))
     qa, qc = quote(a, now, None, policy), quote(c, now, None, policy)
-    # Then: A asks 95% of list, C asks 70%; both accept at cost*(1+accept_margin).
-    assert qa.ask == round(40000 * 0.95)
+    # Then: A would ask 95% of list but the owner's star cap opens it at 79%; C asks
+    # 70%; both accept at cost*(1+accept_margin).
+    assert qa.ask == round(40000 * 0.79)
     assert qc.ask == round(40000 * 0.70)
     assert qa.accept_at == round(a.cost * 1.15)
     assert qc.accept_at == round(c.cost * 1.15)
@@ -94,3 +95,14 @@ def test_decide_accepts_counters_then_rejects_after_max_rounds() -> None:
     assert 1100 <= new_ask < 1500
     assert decide(900, 1500, 1100, policy.max_rounds, policy) == ("reject", 0)
     assert decide(None, 1500, 1100, 0, policy)[0] == "counter"
+
+
+def test_star_cap_never_quotes_below_the_accept_line() -> None:
+    now = time.time()
+    policy = Policy().seller
+    # A unit that cost 0.75 of list accepts at 0.8625 of list, above the 0.79 cap:
+    # the ask stays at the accept line rather than selling at a loss.
+    dear = Unit.model_validate(unit(LAMP, 3, grade="A", now=now, cost=30000))
+    quoted = quote(dear, now, None, policy)
+    assert quoted.accept_at == round(30000 * 1.15)
+    assert quoted.ask == quoted.accept_at > round(40000 * 0.79)

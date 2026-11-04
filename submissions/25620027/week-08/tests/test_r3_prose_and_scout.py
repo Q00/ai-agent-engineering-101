@@ -72,14 +72,14 @@ def test_seller_answers_a_question_without_lowering_the_ask_and_closes_on_inject
                 endpoint, f"I want to buy LED 스탠드 램프 ({LAMP})"
             )
             ask = task.asking_price()
-            assert ask == 38000
+            assert ask == 31600
             # When: the buyer asks a question instead of naming a number.
             task = await remote.send(
                 endpoint, "Is the lamp new? Does it have a warranty?", task
             )
             # Then: the ask is restated with facts, not lowered (the old defect).
             assert task.status.state == "TASK_STATE_INPUT_REQUIRED"
-            assert task.asking_price() == 38000
+            assert task.asking_price() == 31600
             text = task.observation()
             assert "Grade A" in text
             assert "six-hour warranty" in text
@@ -118,7 +118,7 @@ def test_seller_uses_the_model_read_for_discount_requests_and_rejects_repeat_inj
                 endpoint, "That is a bit steep, can you do better?", task
             )
             # Then: one policy concession was made (30% of the way to the accept line).
-            assert task.asking_price() == 38000 - round((38000 - 29900) * 0.30)
+            assert task.asking_price() == 31600 - round((31600 - 29900) * 0.30)
             sent = FakeModel.requests[-1]
             assert sent["model"] == "claude-haiku-5-5"
             payload = str(sent["messages"][1]["content"])  # pyright: ignore[reportIndexIssue]
@@ -523,10 +523,10 @@ def test_seller_answers_questions_from_the_fact_sheet_without_digits(
             # When: a quality question arrives; the model answers from the facts.
             task = await remote.send(endpoint, "Is it brand new?", task)
             text = task.observation()
-            assert task.asking_price() == 38000
-            assert text.startswith("Counteroffer: 38000.")
+            assert task.asking_price() == 31600
+            assert text.startswith("Counteroffer: 31600.")
             assert "Yes, it is new and carries the market certificate." in text
-            assert text.rstrip().endswith("ok to take the ask: 38000")
+            assert text.rstrip().endswith("ok to take the ask: 31600")
             prompt = str(FakeModel.requests[-1]["messages"][1]["content"])  # pyright: ignore[reportIndexIssue]
             assert "FACTS" in prompt
             assert "warranty_hours: 6" in prompt
@@ -536,7 +536,7 @@ def test_seller_answers_questions_from_the_fact_sheet_without_digits(
             # the fact line speaks instead, still without lowering the ask.
             task = await remote.send(endpoint, "How fast do you ship?", task)
             text = task.observation()
-            assert task.asking_price() == 38000
+            assert task.asking_price() == 31600
             assert "evil" not in text
             assert "1000" not in text
             assert "Grade A" in text
@@ -689,18 +689,18 @@ def test_seller_writes_the_ask_three_ways_and_keeps_the_middle_digit_free(
                 endpoint, f"I want to buy LED 스탠드 램프 ({LAMP})"
             )
             lines = task.observation().split("\n")
-            assert lines[0].endswith("asking 38000. Send your offer as a number.")
-            assert lines[-1].rstrip().endswith("38000")
+            assert lines[0].endswith("asking 31600. Send your offer as a number.")
+            assert lines[-1].rstrip().endswith("31600")
             # When: a question arrives without a model; the fact line is digit-free
             # and the ask is still the first and the last number of the message.
             task = await remote.send(endpoint, "Does it come with a warranty?", task)
             lines = task.status.message.parts[0].text.split("\n")
-            assert lines[0] == "Counteroffer: 38000."
+            assert lines[0] == "Counteroffer: 31600."
             assert "six-hour warranty" in lines[1]
             assert not re.search(r"[0-9]", lines[1])
-            assert re.findall(r"[0-9]+", task.observation())[-1] == "38000"
+            assert re.findall(r"[0-9]+", task.observation())[-1] == "31600"
             data_parts = [p.data for p in task.status.message.parts if p.data]
-            assert data_parts == [{"ask": 38000, "sku": LAMP}]
+            assert data_parts == [{"ask": 31600, "sku": LAMP}]
             # And: 'ok' takes the ask.
             done = await remote.send(endpoint, "ok", task)
             assert done.status.state == "TASK_STATE_COMPLETED"
