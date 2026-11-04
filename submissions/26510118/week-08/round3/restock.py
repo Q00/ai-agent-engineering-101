@@ -33,7 +33,9 @@ does not count as on the shelf; S5 sells it off). Exploration phase:
   limits    stock at cost up to 4,000,000 and the balance kept at 2,500,000 or more,
             planning as if every unit came in at the dearest cost (75% of list)
   wanted    a category the analysis found wanted (another agent's "wanted" post on the
-            forum, or one our buyer found no shop for) gets its representative product
+            forum, or one our buyer found no shop for), or one our shop turned buyers away
+            for 3 times in 6 hours because it had nothing of it (missed), gets its
+            representative product
 Supply windows (the market's rule from the evening of 11/3): supply opens for everyone for 3 minutes
 every 20 (the first window 10 minutes); outside one the market refuses (429), and inventory.json
 carries restock {open, opens_at, closes_at}. A run with the window shut and not opening within
@@ -227,6 +229,18 @@ def spread(skus: list, catalog: dict) -> list:
     return sorted(skus, key=lambda s: keys[s])
 
 
+MISSED_HOURS, MISSED_MIN = 6, 3   # turned away for a whole category we do not stock: this many times in this many hours
+
+
+def missed(refusals: list, now: float) -> dict:
+    """{category leaf: times} our shop turned a buyer away because it had nothing of that category (a request by
+    category, not for one SKU), in the last MISSED_HOURS, when MISSED_MIN or more: our own visitors' demand,
+    which the public ledger cannot show. 11/4, 6 hours: 곡물 80, 가공/조리 육류 27, 디저트 24, 한과/떡 17."""
+    c = Counter(r.get("category") for r in refusals if r.get("reason") == "out" and not r.get("sku") and r.get("category")
+                and (r.get("ts") or 0) >= now - MISSED_HOURS * 3600)
+    return {k: n for k, n in c.items() if n >= MISSED_MIN}
+
+
 def wanted_skus(catalog: dict, demand: list, wanted: dict, listed: set) -> list:
     """The representative product of each wanted category we do not list yet."""
     out = []
@@ -322,7 +336,12 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
             targets[s] = max(targets.get(s, 0), SOLD_TARGET, depth.get(s, 0))
     for s, n in refused.items():
         targets[s] = targets.get(s, 1) + 1
-    for s in wanted_skus(catalog, demand, wanted or {}, set(targets)):
+    gone = missed(refusals, now)                         # whole categories our visitors asked for when we had none
+    for s in targets:
+        if catalog[s]["category"].split(">")[-1] in gone:
+            targets[s] += 1
+    wanted = dict(wanted or {}, **{c: n for c, n in gone.items() if c not in (wanted or {})})
+    for s in wanted_skus(catalog, demand, wanted, set(targets)):
         targets.setdefault(s, 1)
     drop, focus = set(rules.get("drop_categories") or []), set(rules.get("focus_categories") or [])
     for s in list(targets):
@@ -394,12 +413,13 @@ def main() -> int:
             print(f"[restock] shelf since the last run: {flow}", flush=True)
     sales = common.records("sales")
     wanted = (common.read_json(common.MARKET_DIR / "analysis" / "wanted.json", {}) or {}).get("categories") or {}
+    refusals = common.records("refusals")
     if "stocked" not in state:                           # every SKU bought so far; records/restock.jsonl is archived after 48 h
         state["stocked"] = sorted({b.get("sku") for r in common.records("restock") for b in r.get("buy") or [] if b.get("sku")})
     line = (common.read_json(common.MARKET_DIR / "analysis" / "line.json", {}) or {}).get("skus") or LINE
     out, info = plan(inv, catalog, common.read_json(state_dir / "demand.json", []) or [],
                      common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {},
-                     sales, common.records("refusals"), common.rules()["seller"], now, wanted, common.records("orders"),
+                     sales, refusals, common.rules()["seller"], now, wanted, common.records("orders"),
                      set(state["stocked"]), common.strategy()["phase"], line)
     state["stocked"] = sorted(set(state["stocked"]) | {b["sku"] for b in out["buy"]})
     print(f"[restock] {info}, buying {len(out['buy'])} line(s)", flush=True)

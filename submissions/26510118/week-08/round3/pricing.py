@@ -55,6 +55,13 @@ DEADBAND = 0.03          # ...taken only when the rule's ask is further than thi
 REACH = 0.10             # ...moving the rule's ask by at most this
 MARKET_MIN = 20          # settles of the category and grade (with a warranty, or without) in a day before its median counts
 LATE_LIFT, LATE_WINDOW = 0.02, 600   # the ask in the last LATE_WINDOW seconds before the next supply window
+WARRANTY_DEFAULT_MIN = 100_000       # goods listed at this or more are quoted with the warranty unless asked otherwise:
+                                     # 86-97% of the market's bed and sofa deals carry one, and our goods sold without
+                                     # one went unpaid 15% (A, B) to 32% (C) of the time against 0-3% with one (11/4)
+
+
+def default_warranty(unit: dict) -> bool:
+    return unit.get("kind") == "goods" and (unit.get("list_price") or 0) >= WARRANTY_DEFAULT_MIN
 
 
 def market_ref(by_grade: dict | None, g: str, warranty: bool):
@@ -128,8 +135,9 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     w = bool(warranty) and unit.get("kind") == "goods"
     rule = START[g] + (extra[g] if w else 0)
     ref = market_ref(market, g, w)
-    if ref is not None and abs(ref + LIFT - rule) > DEADBAND:
-        rule += max(-REACH, min(REACH, ref + LIFT - rule))
+    gap = round(ref + LIFT - rule, 6) if ref is not None else 0.0      # rounded: 0.72 - 0.75 is -0.030000000000000027
+    if abs(gap) > DEADBAND:
+        rule += max(-REACH, min(REACH, gap))
     else:
         ref = None
     start = rule + adjust + (LATE_LIFT if late else 0)

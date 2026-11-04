@@ -25,7 +25,9 @@ offer, buying elsewhere, a deadline), the decision model (harness.decide) gives 
 buyer walks away if countered, from its own words and how its offers moved;
 at the rules' walk_threshold (0.7) or above, the shop takes the offer now. Never below the floor.
 S4: the certificate always (the kit attaches it unless the receipt says otherwise), the
-true grade on the receipt, and a 6-hour warranty when the buyer asks, at a higher price.
+true grade on the receipt, and a 6-hour warranty when the buyer asks, at a higher price; goods
+listed at 100,000 or more come with it unasked (pricing.WARRANTY_DEFAULT_MIN: the buyers of dear
+goods mostly require one at payment).
 """
 import argparse
 import asyncio
@@ -279,12 +281,13 @@ def market_file(name: str) -> dict:
 
 def priced(u: dict, now: float, warranty: bool) -> dict:
     """pricing.plan under the rules in force (price_adjust, warranty_extra from active_rules.json), the
-    market's prices for the unit's category and grade, and where we are in the supply cycle."""
+    market's prices for the unit's category and grade, and where we are in the supply cycle. Dear goods
+    (pricing.WARRANTY_DEFAULT_MIN) come with the warranty whether or not the buyer asked."""
     r = common.rules()["seller"]
     by_grade = ((market_file("market_summary.json").get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
     late = pricing.late_in_cycle(market_file("inventory.json").get("restock"), now)
-    return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
-                        extra=r["warranty_extra"], market=by_grade, late=late)
+    return pricing.plan(u, now, warranty=warranty or pricing.default_warranty(u), adjust=float(r["price_adjust"] or 0),
+                        catalog=catalog(), extra=r["warranty_extra"], market=by_grade, late=late)
 
 
 class Seller(AgentExecutor):
@@ -403,7 +406,7 @@ class Seller(AgentExecutor):
                 await up.requires_input(say(f"{describe(d['unit'], p)}. Asking {p['ask']}. Send your offer as a number.", d))
                 return
         # a warranty asked for during the negotiation
-        if WARRANTY.search(text) and d["unit"].get("kind") == "goods" and not d["warranty"]:
+        if WARRANTY.search(text) and d["unit"].get("kind") == "goods" and not d["plan"].get("warranty_hours"):
             before = d["plan"]
             d["warranty"] = True
             p = priced(d["unit"], now, True)
@@ -499,7 +502,7 @@ class Seller(AgentExecutor):
         common.record("requests", task=task_id, how=req["how"], wanted=req["wanted"], category=cat,
                       need_hours=req["need_hours"], warranty=req["warranty"],
                       offered=[o["sku"] for o, _ in d["menu"]] if d["menu"] else [d["unit"]["sku"]], budget=budget, **who)
-        offer_warranty = d["unit"].get("kind") == "goods" and not d["warranty"]
+        offer_warranty = d["unit"].get("kind") == "goods" and not p.get("warranty_hours")
         note = " A 6-hour warranty is available on request." if offer_warranty else ""
         if d["menu"]:
             head = "That one is not available right now. " if req["how"] != "category" else ""

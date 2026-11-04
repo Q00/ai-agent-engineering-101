@@ -246,6 +246,8 @@ def test_pricing():
     p = pricing.plan(goods_a, now, warranty=True, market=mk)
     check("A with a warranty: 0.78 + 2% is within 3% of our 80%: unchanged", (p["ask"], p["ref"]) == (31920, None), p)
     check("B without a warranty: 5 market settles are too few to count", pricing.plan(goods_b, now, market=mk)["ref"] is None)
+    check("exactly 3% of list apart is within the band (no float edge): food A 75% stays with the market at 0.70 + 2%",
+          pricing.plan(food, now, catalog=CATALOG, market={"A": {"nw_n": 30, "nw_median": 0.70}})["ask"] == 15000)
     check("food with no market data is unchanged", pricing.plan(food, now, catalog=CATALOG, market={})["ask"] == 15000)
     check("the late cycle adds 2% of list", pricing.plan(food, now, catalog=CATALOG, late=True)["ask"] == 15400)
     check("a market-referenced ask never goes below the floor",
@@ -347,6 +349,18 @@ def test_restock(fake: Fake):
           out["buy"][0] == {"sku": PAKIMCHI, "qty": 2} and {PAD, BED, KIMCHI} <= set(skus), f"{out['buy']} {info['gate']}")
     out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW)
     check("a buyer turned away for lack of it: one more", out["buy"] == [{"sku": WATER, "qty": 1}], out)
+    away = lambda n, cat, age=H, sku=None: [{"ts": NOW - age, "sku": sku, "category": cat, "reason": "out"}] * n
+    check("missed: a whole category turned away 3 times in 6 hours counts; twice, an old one or one SKU does not",
+          restock.missed(away(3, "김치") + away(2, "침구") + away(5, "곡물", 7 * H) + away(4, "과자", sku=WATER), NOW) == {"김치": 3})
+    out, _ = restock.plan(inv(shelf), CATALOG, DEMAND, {}, [], away(3, "김치"), rules, NOW)
+    check("...and the category's product we list gets one more", out["buy"] == [{"sku": PAKIMCHI, "qty": 1}], out)
+    import seller as _seller
+    dear = {"sku": BED, "unit": "u-bed", "list_price": 344640, "cost": 200000, "kind": "goods", "grade": "A",
+            "category": CATALOG[BED]["category"], "supplied_at": NOW - H}
+    cheap = dict(dear, sku=BEDDING, list_price=39900, cost=26000, category=CATALOG[BEDDING]["category"])
+    check("the seller quotes dear goods (100,000 or more) with the warranty unasked, cheap ones without",
+          _seller.priced(dear, NOW, False)["warranty_hours"] == 6 and _seller.priced(cheap, NOW, False)["warranty_hours"] is None
+          and _seller.priced(cheap, NOW, True)["warranty_hours"] == 6)
     old = [u for u in shelf if u["sku"] != PAKIMCHI] + [unit_row("u-near", PAKIMCHI, 9000, 10)]
     out, _ = restock.plan(inv(old), CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("food with under a day left does not count: a fresh one is bought", out["buy"] == [{"sku": PAKIMCHI, "qty": 1}], out)
