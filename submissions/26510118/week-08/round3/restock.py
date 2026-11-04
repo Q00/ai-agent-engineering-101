@@ -100,9 +100,10 @@ LINE_PACE = 3600         # a line product is kept at 1 + what we sold of it in t
                          # minutes, so our sales count supply as much as demand: one more than they asks for more)
 LINE_MAX_UNITS = 10      # 5 until 11/4 23:40 (the best seller sold 20 in 1.5 h at a cap of 5; others sold it 90 an hour)
 LINE_STALL = 2 * 3600    # held this long with no sale of the product: no more units
-LINE_TRY_RANK = 3        # a line product never sold nor held (just added) ranks as if it sold this many in the last hour:
+LINE_TRY_FIRST = 3       # line products never sold nor held (just added) go first, this many a run (at their caps, 1-2):
                          # ordered by sales alone, one with none came after the best sellers and no run reached it
-                         # (11/5 01:20: the three beds added at 01:09 were not bought)
+                         # (11/5 01:20: the three beds added at 01:09 were not bought; ranked as 3 sold an hour, at 01:40
+                         # they tied with the best sellers, came after them on the tie, and the money ran out first)
 LINE_STOP = 30 * 3600    # no line product is bought this close to the end
 LINES = 10               # the kit buys at most 10 lines a run
 RUN_EVERY = 20 * 60      # seconds between the kit's runs of this hook (60 until 11/3); set it to the kit's
@@ -317,8 +318,9 @@ def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: f
         target = min(most, 1 + recent[sku])
         if target > held[sku]:
             out.append((sku, target - held[sku]))
-    return sorted(out, key=lambda x: -(recent[x[0]] if x[0] in alive else LINE_TRY_RANK))   # what sells most first,
-                                                                     # a product not yet tried among them
+    new = [g for g in out if g[0] not in alive]
+    tried = sorted((g for g in out if g[0] in alive), key=lambda g: -recent[g[0]])
+    return new[:LINE_TRY_FIRST] + tried + new[LINE_TRY_FIRST:]    # a few new products, then what sells most
 
 
 def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, refusals: list,
