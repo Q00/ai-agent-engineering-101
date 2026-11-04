@@ -3,16 +3,20 @@
     python seller.py --port 9301
 
 S2, reading the request: the code looks for a SKU, a product name, a category name
-and conditions ("72 hours", "3 days", "warranty", "grade A"). Only when it finds no
-product does the cheap model read the sentence against a short list of the stock,
-and whatever it names is checked against the stock again.
+(a whole name from the catalog first) and conditions ("72 hours", "3 days", "warranty",
+"grade A"). Only when it finds no product does the cheap model read the sentence against
+a short list of the stock, and whatever it names is checked against the stock again.
 S2, choosing the unit: a stated need gets the unit that just meets it (the shortest
 shelf life that still lasts), so the fresher ones stay for later; no stated need gets
 the freshest food or the best-graded goods, so the buyer's own quality check at payment
 passes. Food with under a day left goes only to a buyer whose stated need it meets. A
 category request, or a SKU that is gone or promised to another open negotiation, gets
-up to three products of that category to choose from; a bare offer goes on with the
-first. Whatever is turned away for lack of stock is recorded, and restock raises it.
+up to three products of that category to choose from, spread over its prices (the one
+nearest the asked SKU's list price, or the category's median, first); a bare offer goes
+on with the first. An order accepts only its category's products priced 0.5 to 1.5 times
+a reference price, so a category buyer's budget (a number above the list price) narrows
+the menu to list prices 0.45 to 1.0 times it, or the shop says it has nothing that fits.
+Whatever is turned away for lack of stock is recorded, and restock raises it.
 S3: prices from pricing.py (the first ask by grade, counters halfway to the offer, the
 floor at cost + 5%, an offer within 5% of the ask taken at once, and on the last round
 anything at or above the floor), and an honest reason once the floor is reached. When the rule
@@ -49,6 +53,10 @@ HOLD = 300               # seconds a silent negotiation keeps its unit (the kit'
 PAY_HOLD = 120           # seconds after a deal its unit is offered only when no other unit of the product is left:
                          # most buyers who agree never pay (11/3: 57%), so the unit is not kept back from the next one
 MENU = 3                # products shown for a category request
+# An order accepts the SKUs of its category priced 0.5 to 1.5 times a reference price it does not show (agent.md);
+# its budget is 1.14 to 1.53 times the median acceptable list price (middle half of our buyer's 2,394 orders, 11/4),
+# so list prices of 0.45 to 1.0 times a stated budget pass most orders' item check, 0.7 times the safest
+BUDGET_BAND, BUDGET_AIM = (0.45, 1.0), 0.7
 NEED_MARGIN = 1          # hours food must outlast the buyer's stated need
 MODEL_LINES = 80         # stock lines shown to the model
 CONDITION = {"A": "new", "B": "damaged box", "C": "refurbished"}
@@ -96,6 +104,57 @@ def catalog() -> dict:
 
 def leaf(u: dict) -> str:
     return (u.get("category") or "").split(">")[-1]
+
+
+_leafs, _medians = [], {}
+
+
+def leafs() -> list:
+    """Every category's name in the catalog (its last part), longest first."""
+    if not _leafs:
+        _leafs.extend(sorted({leaf(v) for v in catalog().values()} - {""}, key=len, reverse=True))
+    return _leafs
+
+
+def category_in(text: str, units: list):
+    """The category a request names. A whole category name first, the longest, from the whole catalog (so a
+    category we lack is named, not swapped for another); else the category with the longest matching part,
+    one in stock on a tie. Matching parts first read 즉석조리식품 as 조리/가공 견과류 (through "조리") and 19 of the
+    140 names as another category; a buyer got 매실원액 for 즉석조리식품 and called the shop a forger (11/4)."""
+    low = text.lower()
+    names = leafs() or sorted({leaf(u) for u in units if leaf(u)}, key=len, reverse=True)
+    whole = next((c for c in names if c.lower() in low), None)
+    if whole:
+        return whole
+    stocked = {leaf(u) for u in units}
+    parts = [(len(p), c in stocked, c) for c in names for p in c.split("/") if len(p) >= 2 and p.lower() in low]
+    return max(parts)[2] if parts else None
+
+
+def median_list(cat: str):
+    """The median list price of a category in the catalog."""
+    if cat not in _medians:
+        ps = sorted(v["list_price"] for v in catalog().values() if leaf(v) == cat and v.get("list_price"))
+        _medians[cat] = ps[len(ps) // 2] if ps else None
+    return _medians[cat]
+
+
+def choose(products: list, cat: str, budget=None, anchor=None) -> list:
+    """Up to MENU of a category's products (one unit each), the default (option 1) first. With a budget: only
+    list prices within BUDGET_BAND of it, the nearest BUDGET_AIM first. Without one: the product nearest the
+    anchor first (the list price of the SKU the buyer asked for, which its order accepts), else nearest the
+    category's median list price (an order's reference price is near it: the median acceptable price is 1.1
+    times the category median across our buyer's orders), then the cheapest and the dearest of the rest."""
+    lp = lambda u: u["list_price"]
+    if budget:
+        fit = [u for u in products if BUDGET_BAND[0] * budget <= lp(u) <= BUDGET_BAND[1] * budget]
+        return sorted(fit, key=lambda u: abs(lp(u) - BUDGET_AIM * budget))[:MENU]
+    if not products:
+        return []
+    mid = anchor or median_list(cat) or sorted(map(lp, products))[len(products) // 2]
+    first = min(products, key=lambda u: abs(lp(u) - mid))
+    rest = sorted((u for u in products if u is not first), key=lp)
+    return [first] + (rest if len(rest) < MENU else [rest[0], rest[-1]])
 
 
 def stock(now: float) -> list:
@@ -148,9 +207,8 @@ async def read_request(text: str, units: list) -> dict:
     names = list(dict.fromkeys(u["sku"] for u in units if u.get("name") and u["name"].lower() in low))
     if names:
         return dict(req, how="name", skus=names, wanted=names[0])
-    cats = {leaf(u) for u in units if leaf(u) and any(len(p) >= 2 and p.lower() in low for p in leaf(u).split("/"))}
-    if cats:
-        cat = max(cats, key=len)
+    cat = category_in(text, units)
+    if cat:
         return dict(req, how="category", category=cat, skus=list(dict.fromkeys(u["sku"] for u in units if leaf(u) == cat)))
     if not re.search(r"[^\W\d_]{2,}", text) or not units:
         return req
@@ -232,6 +290,51 @@ class Seller(AgentExecutor):
         d["asks"], d["offers"] = [d["plan"]["ask"]], []
         return d["plan"]
 
+    def shelf(self, units: list, now: float) -> dict:
+        """SKU -> its units to offer; a unit agreed to moments ago is offered again only if it is the last one."""
+        self.agreed = {u: t for u, t in self.agreed.items() if now - t < PAY_HOLD}
+        by_sku = {}
+        for u in units:
+            by_sku.setdefault(u["sku"], []).append(u)
+        return {s: [u for u in v if u["unit"] not in self.agreed] or v for s, v in by_sku.items()}
+
+    def products(self, cat: str, req: dict, now: float, mine=None) -> list:
+        """One unit (pick) of each product of a category free to offer; `mine` is this negotiation's own unit."""
+        held = self.held() - {mine}
+        by_sku = self.shelf([u for u in stock(now) if u["unit"] not in held and leaf(u) == cat], now)
+        return [u for u in (pick(v, req, now) for v in by_sku.values()) if u]
+
+    @staticmethod
+    def no_fit(cat: str, budget: int) -> str:
+        lo, hi = (round(f * budget) for f in BUDGET_BAND)
+        return (f"Sorry, we have no {cat} listed near your budget of {budget} right now (about {lo} to {hi}). An order "
+                f"accepts products of its category priced 0.5 to 1.5 times a reference price, so what we have would fail "
+                f"your order's item check at payment.")
+
+    @staticmethod
+    def menu_text(d: dict) -> str:
+        lines = "; ".join(f"{i}) {describe(u, op)}, list price {u['list_price']}, asking {op['ask']}"
+                          for i, (u, op) in enumerate(d["menu"], 1))
+        why = (f"Listed near your budget of {d['budget']}, where an order of that size most likely accepts them. "
+               if d.get("budget") else
+               "An order accepts products of its category priced 0.5 to 1.5 times a reference price (its acceptable "
+               "SKUs); tell us your budget and we show what fits it. ")
+        return f"{lines}. {why}Reply with the SKU your order accepts, or send an offer for option 1."
+
+    async def refit(self, up, say, task_id: str, d: dict, now: float) -> None:
+        """A category buyer named its budget (a number above the list price): show what an order of that size
+        accepts, or say there is none, rather than agree on a product its order refuses at payment (11/4: a
+        buyer whose first number was its budget, 4 times our product's list price, paid 1 of 37 such deals)."""
+        menu = choose(self.products(d["cat"], d["req"], now, d["unit"]["unit"]), d["cat"], d["budget"])
+        if not menu:
+            common.record("refusals", task=task_id, sku=None, category=d["cat"], reason="price", budget=d["budget"])
+            self.close(task_id, "out_of_range")
+            await up.reject(say(self.no_fit(d["cat"], d["budget"])))
+            return
+        d["unit"], d["menu"] = menu[0], [(u, priced(u, now, d["warranty"])) for u in menu]
+        self.quote(d, now)
+        await up.requires_input(say(f"We have {len(d['menu'])} {d['cat']} option(s) for that budget: {self.menu_text(d)}", d))
+
     def meta(self, d: dict) -> dict:
         u, p = d["unit"], d["plan"]
         return {"ask": d["asks"][-1], "sku": u["sku"], "unit": u["unit"], "grade": p["grade"],
@@ -262,13 +365,17 @@ class Seller(AgentExecutor):
         d["t"] = now
         d["said"] = d.get("said", [])[-5:] + [text[:300]]
 
-        # a switch to another product from the menu
-        other = [s for s in SKU.findall(text) if s != d["unit"]["sku"] and s in {o["sku"] for o, _ in d.get("menu") or []}]
-        if other:
-            d["unit"] = next(o for o, _ in d["menu"] if o["sku"] == other[0])
-            p = self.quote(d, now)
-            await up.requires_input(say(f"{describe(d['unit'], p)}. Asking {p['ask']}. Send your offer as a number.", d))
-            return
+        # a switch to another product: one from the menu, or another of the category we have (the menu asks
+        # for the SKU the buyer's order accepts, which may not be among the three shown)
+        named = [s for s in SKU.findall(text) if s != d["unit"]["sku"]]
+        if named and d.get("menu"):
+            u = next((o for o, _ in d["menu"] if o["sku"] in named), None) or \
+                next((x for x in self.products(d["cat"], d["req"], now, d["unit"]["unit"]) if x["sku"] in named), None)
+            if u is not None:
+                d["unit"] = u
+                p = self.quote(d, now)
+                await up.requires_input(say(f"{describe(d['unit'], p)}. Asking {p['ask']}. Send your offer as a number.", d))
+                return
         # a warranty asked for during the negotiation
         if WARRANTY.search(text) and d["unit"].get("kind") == "goods" and not d["warranty"]:
             before = d["plan"]
@@ -288,6 +395,11 @@ class Seller(AgentExecutor):
             else:
                 await up.requires_input(say(f"Send your offer as a number. Asking {ask}.", d))
             return
+        if d["how"] == "category" and not d.get("budget") and offer > d["unit"]["list_price"]:
+            d["budget"] = offer                  # more than the list price: the buyer's budget, not a price for this
+            if not BUDGET_BAND[0] * offer <= d["unit"]["list_price"] <= BUDGET_BAND[1] * offer:
+                await self.refit(up, say, task.id, d, now)
+                return
         d["offers"].append(offer)
         what, new = pricing.respond(ask, floor, offer, len(d["offers"]))
         if what == "counter" and offer >= floor:                    # within reach: would a counter lose the buyer?
@@ -321,12 +433,7 @@ class Seller(AgentExecutor):
         everything = stock(now)
         units = [u for u in everything if u["unit"] not in held]
         req = await read_request(text, units)
-        self.agreed = {u: t for u, t in self.agreed.items() if now - t < PAY_HOLD}
-        by_sku = {}
-        for u in units:
-            by_sku.setdefault(u["sku"], []).append(u)
-        for s, v in by_sku.items():              # a unit agreed to moments ago: offered again only if it is the last one
-            by_sku[s] = [u for u in v if u["unit"] not in self.agreed] or v
+        by_sku = self.shelf(units, now)
         direct = [u for u in (pick(by_sku.get(s, []), req, now) for s in req["skus"]) if u] \
             if req["how"] != "category" else []
         if req["how"] == "category":
@@ -340,33 +447,36 @@ class Seller(AgentExecutor):
                               need_hours=req["need_hours"])
         else:
             cat = None
-        d = {"warranty": req["warranty"], "t": now, "how": req["how"], "menu": None, "said": [text[:300]]}
+        d = {"warranty": req["warranty"], "t": now, "how": req["how"], "menu": None, "said": [text[:300]], "cat": cat,
+             "req": {k: req[k] for k in ("need_hours", "grades")}}
+        budget = None
         if direct:
             d["unit"] = direct[0]
         else:
-            menu = [u for u in (pick(v, req, now) for s, v in by_sku.items() if leaf(v[0]) == cat) if u] if cat else []
+            products = [u for u in (pick(v, req, now) for v in by_sku.values() if leaf(v[0]) == cat) if u] if cat else []
+            if req["how"] == "category" and products:     # a number above every list price we have: a budget
+                budget = max((n for n in numbers(text) if n > min(u["list_price"] for u in products)), default=None)
+            anchor = (catalog().get(req["wanted"]) or {}).get("list_price") if req["how"] != "category" else None
+            menu = choose(products, cat, budget, anchor)
             if not menu:
                 if req["how"] in ("category", "none"):
-                    common.record("refusals", task=task_id, sku=None, category=cat, reason="out" if cat else "unread",
-                                  text=text[:80])
+                    common.record("refusals", task=task_id, sku=None, category=cat, budget=budget,
+                                  reason="price" if budget else "out" if cat else "unread", text=text[:80])
                 common.record("requests", task=task_id, how=req["how"], wanted=req["wanted"], category=cat,
-                              need_hours=req["need_hours"], warranty=req["warranty"], offered=[], **who)
-                await up.reject(say("Sorry, we have none of that in stock right now."))
+                              need_hours=req["need_hours"], warranty=req["warranty"], offered=[], budget=budget, **who)
+                await up.reject(say(self.no_fit(cat, budget) if budget else "Sorry, we have none of that in stock right now."))
                 return
-            options = sorted(((u, priced(u, now, req["warranty"])) for u in menu), key=lambda x: x[1]["ask"])[:MENU]
-            d["unit"], d["menu"] = options[0][0], options
+            d["unit"], d["menu"], d["budget"] = menu[0], [(u, priced(u, now, req["warranty"])) for u in menu], budget
         p = self.quote(d, now)
         self.open[task_id] = d
         common.record("requests", task=task_id, how=req["how"], wanted=req["wanted"], category=cat,
                       need_hours=req["need_hours"], warranty=req["warranty"],
-                      offered=[o["sku"] for o, _ in d["menu"]] if d["menu"] else [d["unit"]["sku"]], **who)
+                      offered=[o["sku"] for o, _ in d["menu"]] if d["menu"] else [d["unit"]["sku"]], budget=budget, **who)
         offer_warranty = d["unit"].get("kind") == "goods" and not d["warranty"]
         note = " A 6-hour warranty is available on request." if offer_warranty else ""
         if d["menu"]:
-            lines = "; ".join(f"{i}) {describe(u, op)}, asking {op['ask']}" for i, (u, op) in enumerate(d["menu"], 1))
             head = "That one is not available right now. " if req["how"] != "category" else ""
-            await up.requires_input(say(f"{head}We have {len(d['menu'])} {cat} option(s): {lines}. "
-                                        f"Reply with a SKU to choose, or send an offer for option 1.{note}", d))
+            await up.requires_input(say(f"{head}We have {len(d['menu'])} {cat} option(s): {self.menu_text(d)}{note}", d))
         else:
             await up.requires_input(say(f"{describe(d['unit'], p)}. Asking {p['ask']}.{note} Send your offer as a number.", d))
 
@@ -396,7 +506,7 @@ def build(port: int) -> Starlette:
     card = AgentCard(
         name=NAME,
         description=CARD_DESCRIPTION,
-        version="3.2.0",
+        version="3.3.0",
         default_input_modes=["text/plain"],
         default_output_modes=["application/json", "text/plain"],
         capabilities=AgentCapabilities(streaming=False),
@@ -412,8 +522,10 @@ def build(port: int) -> Starlette:
                            examples=["I want to buy 비비고 포기배추김치 5kg x1개 (G29fc9227)", "14000"]),
                 AgentSkill(id="browse", name="Choose within a category",
                            description="Name a category instead of a product (for example 김치 or 침구). We offer up to 3 "
-                                       "units of it, cheapest ask first, each with its grade and ask. Reply with a SKU to "
-                                       "choose one, or send a price for the first.",
+                                       "products of it across its prices, each with its grade, list price and ask. Say "
+                                       "your budget and we offer only what an order of that size accepts (0.5 to 1.5 "
+                                       "times its reference price). Reply with the SKU your order accepts, or send a "
+                                       "price for the first.",
                            tags=["category", "menu"],
                            examples=["I want to buy a 김치", "G29fc9227"]),
                 AgentSkill(id="terms", name="State what you need",

@@ -42,6 +42,7 @@ import ledger                                                                   
 import market_buyer as mb                                                        # noqa: E402
 import pricing                                                                   # noqa: E402
 import restock                                                                   # noqa: E402
+import seller                                                                    # noqa: E402
 import tools                                                                     # noqa: E402
 
 HERE = Path(__file__).resolve().parent
@@ -234,6 +235,24 @@ def test_pricing():
     later = dict(food, expires_at=now + pricing.FOOD_CUTS[1] * shelf * H + 1800)
     check("food dropping in 30 minutes is claimed at its grade now (a settle comes within minutes)",
           pricing.claim(later, now, CATALOG) == "B")
+
+
+def test_categories():
+    print("\n[S2] category names and the menu (seller.py)")
+    names = ["즉석조리식품", "조리/가공 견과류", "가공/조리 오징어/문어류", "조리/가공 과일", "곡물", "시리얼/곡물/콩류세트", "청소기",
+             "청소/생활선물세트"]
+    seller._leafs[:] = sorted(names, key=len, reverse=True)
+    got = {t: seller.category_in(t, []) for t in ("I want to buy a 즉석조리식품", "곡물 사고 싶어요", "청소기 one please",
+                                                  "시리얼/곡물/콩류세트 주세요", "가공 견과류 please")}
+    check("a whole category name wins over a longer category sharing a part (즉석조리식품 is not 조리/가공 견과류)",
+          got == {"I want to buy a 즉석조리식품": "즉석조리식품", "곡물 사고 싶어요": "곡물", "청소기 one please": "청소기",
+                  "시리얼/곡물/콩류세트 주세요": "시리얼/곡물/콩류세트", "가공 견과류 please": "조리/가공 견과류"}, got)
+    seller._leafs.clear()
+    prods = [{"sku": f"P{p}", "list_price": p} for p in (5000, 12000, 20000, 31000, 60000)]
+    check("budget 40000: only list prices 18000-40000, nearest 28000 first",
+          [u["sku"] for u in seller.choose(prods, "x", 40000)] == ["P31000", "P20000"])
+    check("no budget: nearest the asked SKU's list price first, then the cheapest and the dearest",
+          [u["sku"] for u in seller.choose(prods, "x", None, anchor=13000)] == ["P12000", "P5000", "P60000"])
 
 
 def unit_row(unit, sku, cost, hours=None, grade="A", age=0.5, now=None):
@@ -514,8 +533,26 @@ def main() -> int:
               and meta(t[0]).get("ask") == 14000, said(t[0]))
         t = run(["I want to buy a 김치", PAKIMCHI])
         opts = [o["sku"] for o in meta(t[0]).get("options") or []]
-        check("a category request gets up to 3 products, cheapest ask first", opts == [GEOTJEORI, KIMCHI, PAKIMCHI], opts)
+        check("a category request gets up to 3 products: nearest the category's median list price first, then by price",
+              opts == [KIMCHI, GEOTJEORI, PAKIMCHI], opts)
+        check("the menu shows list prices and the market's acceptable-price rule",
+              "list price 20000" in said(t[0]) and "0.5 to 1.5 times a reference price" in said(t[0]), said(t[0]))
         check("a SKU from the menu switches the product", meta(t[1]).get("sku") == PAKIMCHI and meta(t[1]).get("ask") == 17892,
+              said(t[1]))
+        t = run(["I want to buy a 김치", "50000", "OK, deal"])
+        check("a number above the list price is a budget: the menu narrows to 0.45-1.0 x 50000 (파김치 25560)",
+              [o["sku"] for o in meta(t[1]).get("options") or []] == [PAKIMCHI] and "for that budget" in said(t[1]), said(t[1]))
+        check("then the deal is on the product that fits", mb.state(t[-1]) == "TASK_STATE_COMPLETED"
+              and PAKIMCHI in said(t[-1]), said(t[-1]))
+        t = run(["I want to buy a 김치", "90000"])
+        check("a budget nothing fits: declined with the reason, not a deal the order would refuse",
+              mb.state(t[-1]) == "TASK_STATE_REJECTED" and "item check" in said(t[-1]), said(t[-1]))
+        check("the refusal is recorded with the budget", any(r.get("reason") == "price" and r.get("budget") == 90000
+                                                            for r in common.records("refusals")))
+        t = run(["I want to buy a 김치, budget 50000", GEOTJEORI])
+        check("a budget in the first message narrows the first menu", [o["sku"] for o in meta(t[0]).get("options") or []]
+              == [PAKIMCHI], said(t[0]))
+        check("a SKU of the category we have but did not show switches the product too", meta(t[1]).get("sku") == GEOTJEORI,
               said(t[1]))
         t = run(["Looking for kimchi that lasts 3 days"])
         check("words the code cannot place go to the cheap model, checked against the stock",
@@ -563,6 +600,7 @@ def main() -> int:
         check("false grade claim: 1 star", bool(out) and out["stars"] == 1, out and out["review"])
 
         test_pricing()
+        test_categories()
         test_restock(fake)
         test_deals()
         test_ledger()
