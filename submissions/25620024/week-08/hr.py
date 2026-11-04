@@ -248,8 +248,6 @@ def judge_contest(board, now=None):
         REWARDS.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
         done.append(f"{NAMES[win]} 승진 {g}계급 (순위 {ranks[win]})")
     for t, rk in ranks.items():
-        if any(x["team"] == t and x["kind"] == "hired" and now - x["ts"] < 24 * 3600 for x in rewards()["log"]):
-            continue                                   # HQ 11-04: no demotion for a newly hired team
         if rk and rk > 10:
             reward(t, "demotion", f"unit heads' contest {day}: rank {rk}, outside the top 10", by="HR (HQ contest)")
             done.append(f"{NAMES[t]} 강등 (순위 {rk})")
@@ -274,8 +272,6 @@ def auto_rewards(teams, history):
         hired = max([hired] + [x["ts"] for x in mine if x["kind"] == "hired"])   # a team replaced on its own
         if time.time() - hired < PROBATION_H * 3600:  # new teams get a probation period: graded, not demoted
             continue
-        if any(x["kind"] == "hired" and time.time() - x["ts"] < 24 * 3600 for x in mine):
-            continue                                   # HQ 11-04: a newly hired team is not demoted (24 h)
         past3 = [x["teams"].get(t, {}).get("status") for x in history[-2:]] + [v["status"]]
         if len(past3) == 3 and all(p == "fire candidate" for p in past3) and not any(
                 x["kind"] == "demotion" and time.time() - x["ts"] < 24 * 3600 for x in mine):
