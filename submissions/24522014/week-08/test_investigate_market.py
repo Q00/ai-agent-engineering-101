@@ -52,6 +52,18 @@ class Rejections(Fixture):
         self.assertEqual(result["by_kind"]["goods"], {"attempts": 4, "refused": 3, "rate": .75})
 
 
+class ShopHistory(Rejections):
+    def test_counts_and_skip_simulation(self):
+        for i in range(7):
+            self.run_log(f"20261104T1000{i:02d}000000Z", "a", "TASK_STATE_REJECTED")
+        self.run_log("20261104T100700000000Z", "a", "TASK_STATE_INPUT_REQUIRED", "asking 1.")
+        self.run_log("20261104T100800000000Z", "b", "TASK_STATE_INPUT_REQUIRED", "asking 1.")
+        result = im.shop_refusal_history(self.root, "20261104T000000000000Z", {})
+        self.assertEqual((result["negotiations"], result["refused"]), (9, 7))
+        self.assertEqual(result["worst_shops"][0]["refused"], 7)
+        self.assertEqual(result["skip_by_recent_refusal_rate"]["last_5_at_least_0.8"], {"refusals_avoided": 2, "quotes_lost": 1, "paid_lost": 0})
+
+
 class Quality(Fixture):
     def test_goods_rates_by_grade_and_expected_breaks(self):
         rows = [{"kind": "settle", "data": {"unit": f"u{i}", "item": "g", "grade": "C" if i < 4 else "A"}} for i in range(8)]

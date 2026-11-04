@@ -112,6 +112,50 @@ def open_rejections(root, since, rows):
             "stock_detail_missing": "Offer quantity at selection is not logged, so stale versus promised stock cannot be told apart per case."}
 
 
+def shop_refusal_history(root, since, payments=None):
+    """Whole-round refusal rate by shop, and what skipping a shop with a poor recent record would have cost."""
+    payments = payments if payments is not None else read_payments(root)
+    runs = []
+    for name, record in load_runs(root, since):
+        if record.get("outcome") == "research_skipped" or not record.get("buyer_log_dir"):
+            continue
+        state, text = seller_refusal_text(root, record)
+        if state is None:
+            continue
+        payment = payments.get(record.get("order")) or {}
+        runs.append({"shop": record.get("shop_name"), "refused": state == "TASK_STATE_REJECTED", "text": text[:60],
+                     "paid": payment.get("paid") is True and payment.get("ledger") is not None})
+    attempts, refused, paid, wording = Counter(), Counter(), Counter(), defaultdict(Counter)
+    for row in runs:
+        attempts[row["shop"]] += 1
+        refused[row["shop"]] += row["refused"]
+        paid[row["shop"]] += row["paid"]
+        if row["refused"]:
+            wording[row["shop"]][row["text"]] += 1
+    simulations = {}
+    for window, share in ((5, .8), (10, .8), (10, .9), (20, .8)):
+        recent = defaultdict(list)
+        result = Counter()
+        for row in runs:
+            history = recent[row["shop"]][-window:]
+            if len(history) >= window and sum(history) / window >= share:
+                result["refusals_avoided" if row["refused"] else "quotes_lost"] += 1
+                result["paid_lost"] += row["paid"]
+                # A skipped shop gets no new evidence, so a real rule would need a retry; replay keeps the record moving.
+            recent[row["shop"]].append(row["refused"])
+        simulations[f"last_{window}_at_least_{share}"] = dict(result)
+    worst = sorted(attempts, key=lambda name: -refused[name])[:10]
+    return {"negotiations": len(runs), "refused": sum(r["refused"] for r in runs), "paid": sum(r["paid"] for r in runs),
+            "worst_shops": [{"shop": name, "attempts": attempts[name], "refused": refused[name], "paid": paid[name],
+                             "message": wording[name].most_common(1)[0][0] if wording[name] else None} for name in worst],
+            "skip_by_recent_refusal_rate": simulations}
+
+
+def read_payments(root):
+    from settlement_memory import payment_outcomes
+    return payment_outcomes(Path(root) / ".market/payments.jsonl")
+
+
 def _own_units(root):
     units = {}
     for path in glob.glob(str(Path(root) / ".market/signed-offers/*.json")):
@@ -264,6 +308,7 @@ def main():
     board = args.board or sorted(glob.glob(str(ROOT / "logs/rank-analysis/board-*.json")))[-1]
     rows = ledger_rows(ROOT)
     print(json.dumps({"saved_public_rows": len(rows), "open_rejections": open_rejections(ROOT, stamp(args.since), rows),
+                      "shop_refusals_whole_round": shop_refusal_history(ROOT, "20261103T000000000000Z"),
                       "quality": quality(ROOT, rows), "visits": visits(ROOT, rows, shops, board)}, ensure_ascii=False, indent=1))
 
 
