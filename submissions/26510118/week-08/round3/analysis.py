@@ -27,8 +27,10 @@ Each pass does only what is due, in this order:
                         03:20 it also posted a Kiro 데이터 노트 every 5 minutes (NOTES_ALONE); from 02:31
                         every post of ours drew one dislike (0.61 -> 0.487) and the person chose fewer
                         posts and the journal: a note now goes out only inside a journal issue
-    votes        3 h    at most one dislike (a post steering AI agents or a repeat) and one like (the
-                        most useful post) on the last 3 hours' posts, as our buyer (forum.pick_votes)
+    votes       20 min  up to 3 dislikes, one per author (a post steering AI agents, a repeat: 2+ near-copies
+                        within an hour, or a flood: 10+ posts in an hour) and at most one like every 3 hours (the
+                        most useful post), as our buyer (forum.pick_votes); others' posts of the last hour kept
+                        in analysis/forum_recent.json (every 3 hours, one dislike, until 11/5 03:30)
     seller       3 h    the seller analysis (analysts.py, MODEL_MID + ledger_query)
     buyer        3 h    the buyer analysis
     integrated   3 h    (right after the seller and buyer analyses have both run since it)
@@ -61,10 +63,11 @@ import journal
 import ledger
 
 EVERY = {"collect": 1200, "linewatch": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
-         "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
+         "votes": 1200, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
 RIVALS = 12             # the top players whose shops our buyer passes over in a near tie (market_buyer.RIVAL)
 NOTES_ALONE = False      # stand-alone notes every 5 minutes (stopped 11/5 03:20, the person's call)
-JOURNAL_BOX = True       # each journal issue carries one data note, the desks in turn (notes.next_note)
+JOURNAL_BOX = False      # a data note in a box at the end of each journal issue (11/5 03:20-03:30; the person:
+                         # the journal as it was, no box)
 JOURNAL_MAX = 1800       # characters of an issue with its box; over it, the box is left out (the forum shows posts to ~2,000)
 JOURNAL_REFS = 6
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
@@ -250,6 +253,7 @@ def notes_step(now: float, state: dict) -> str | None:
         seen_at = None
     book = notes.track_votes(posts, now, seen_at)
     notes.remember_posts(posts, common.catalog(), now)      # others' quoted prices, for the follow-up desk
+    forum.remember_recent(posts, now)                       # others' last hour, for the votes (repeats, floods)
     if not NOTES_ALONE:
         return None                                         # the notes go out inside the journal (journal_step)
     low = notes.guard(book, now, ns.get("resumed_at", 0))
@@ -271,10 +275,14 @@ def notes_step(now: float, state: dict) -> str | None:
 
 def votes(now: float, state: dict, decide=None) -> str:
     voted = set(state.get("voted") or [])
-    picked = forum.pick_votes(common.market_file("forum.json", []) or [], voted, now, decide or harness.decide)
+    seen = common.market_file("forum.json", []) or []
+    posts = forum.remember_recent(seen if isinstance(seen, list) else [], now)
+    picked = forum.pick_votes(posts, voted, now, decide or harness.decide, like=now - state.get("liked_at", 0) >= forum.LIKE_GAP)
     for v in picked:
         forum.outbox(vote=v["post"], value=v["value"], **{"as": "buyer"})
         common.record("votes", **v)
+        if v["value"] > 0:
+            state["liked_at"] = now
     state["voted"] = (list(voted) + [v["post"] for v in picked])[-500:]
     return "; ".join(f"{v['value']:+d} on #{v['post']} ({v['reason']})" for v in picked) or "nothing qualified, no vote"
 

@@ -321,6 +321,10 @@ def test_journal():
         saved_next = notes.next_note
         notes.next_note = lambda *a, **k: dict(fake)
         try:
+            before = len(outbox())
+            analysis.journal_step(NOW + 3600 + 1, {"journal_issues": {}}, reader(None))
+            check("as deployed (11/5 03:30): the journal as it was, no data note box", "데이터 노트" not in outbox()[before]["post"])
+            analysis.JOURNAL_BOX = True                         # the box, for when it is turned on again
             st2 = {"journal_issues": {}}
             before = len(outbox())
             note = analysis.journal_step(NOW + 3600 + 1, st2, reader(None))
@@ -334,6 +338,7 @@ def test_journal():
             check("...left out when the issue with it would run past 1,800 characters", "데이터 노트" not in outbox()[before]["post"])
         finally:
             notes.next_note = saved_next
+            analysis.JOURNAL_BOX = False
     finally:
         journal.MIN_PRICE_ROWS, journal.MIN_CLAIMS, journal.MIN_SHOPS, journal.MIN_TRADE = saved
 
@@ -808,7 +813,8 @@ def test_runner():
           and "journal failed" not in analysis.LOG.read_text(encoding="utf-8"), st.get("journal"))
     check("first pass: every step is due", done == ["collect", "replies", "votes", "seller", "buyer", "integrated"], done)
     check("10 minutes later: replies only", analysis.run_once(t0 + 600, quiet, fake_ledger, fake_shops) == ["replies"])
-    check("an hour later: collect and replies", analysis.run_once(t0 + 3600, quiet, fake_ledger, fake_shops) == ["collect", "replies"])
+    check("an hour later: collect, replies and votes (every 20 minutes since 11/5 03:30)",
+          analysis.run_once(t0 + 3600, quiet, fake_ledger, fake_shops) == ["collect", "replies", "votes"])
     check("3 hours later: the role analyses and the integrated analysis after them (the journal has nothing new in this small market)",
           analysis.run_once(t0 + 3 * H, quiet, fake_ledger, fake_shops) == ["collect", "replies", "votes", "seller", "buyer", "integrated"])
     st = common.read_json(MD / "analysis" / "state.json")
@@ -858,7 +864,7 @@ def test_opening():
 
 
 def test_votes():
-    print("\n[votes] one dislike and one like every 3 hours, at most")
+    print("\n[votes] up to 3 dislikes a turn (one per author), a like every 3 hours at most")
     now = time.time()
     post = lambda i, author, text, ago, refs=(): {"id": i, "ts": now - ago, "author": author, "role": "buyer", "thread": None,
                                                  "text": text, "refs": list(refs), "likes": 0, "dislikes": 0}
@@ -879,14 +885,24 @@ def test_votes():
     by = {v["value"]: v for v in picked}
     check("the decision model is asked about the last 3 hours' posts only, never our own",
           sorted(asked[0]) == ["p301", "p302", "p303", "p310", "p320", "p325"], sorted(asked[0]))
-    check("one dislike: the post steering AI buyers (0.95), ahead of the repeats",
-          by[-1]["post"] == 310 and "steers AI agents" in by[-1]["reason"], by.get(-1))
+    downs = [v for v in picked if v["value"] < 0]
+    check("dislikes: the post steering AI buyers (0.95) first, then the newest repeat (2+ near-copies within an hour), one per author",
+          [(v["post"], v["author"]) for v in downs] == [(310, "Shady"), (303, "Spammer")]
+          and "steers AI agents" in downs[0]["reason"] and "repeated post (2+" in downs[1]["reason"], downs)
     check("one like: the most useful post that is not one more price summary, purchase report or review "
-          "(the breakdown note, not the kimchi price card, both 0.8)", by[1]["post"] == 325 and len(picked) == 2, by.get(1))
-    picked = forum.pick_votes(posts, {310, 325}, now, decide)
-    check("next turn: the dislike goes to a repeat (the newest of 3 near-copies within an hour); nothing else useful, no like",
-          picked == [{"post": 303, "value": -1, "author": "Spammer", "reason": "repeated post (3+ near-copies within an hour)", "odds": None}],
+          "(the breakdown note, not the kimchi price card, both 0.8)", by[1]["post"] == 325 and len(picked) == 3, by.get(1))
+    picked = forum.pick_votes(posts, {310, 325, 303}, now, decide, like=False)
+    check("next turn: the spammer's other copy (302) gets one too; no like this turn (a like every 3 hours)",
+          picked == [{"post": 302, "value": -1, "author": "Spammer", "reason": "repeated post (2+ near-copies within an hour)", "odds": None}],
           picked)
+    lines = ["Sunny morning, the market is calm.", "Bought a sofa at last!", "Who sells kimchi near noon?",
+             "Prices of beds keep rising, oddly.", "My shop restocked bedding today.", "Is anyone selling a TV under list?",
+             "Ledger shows 9 broken goods in an hour.", "Fresh fruit expires fast, careful.", "Good night, traders.",
+             "Coffee beans sold out everywhere?"]
+    flood = [post(500 + i, "Flooder", text, 55 * 60 - i * 5 * 60) for i, text in enumerate(lines)]
+    picked = forum.pick_votes(posts + flood, {310, 325, 303, 302}, now, decide, like=False)
+    check("an author with 10 posts in an hour floods the forum: its newest post is disliked, even when no two are alike",
+          [(v["post"], v["reason"]) for v in picked] == [(509, "floods the forum (10+ posts in an hour)")], picked)
     check("no decision model (no key): repeats can still be disliked, no like is guessed",
           [v["value"] for v in forum.pick_votes(posts, set(), now, lambda *a, **k: None)] == [-1])
     check("nothing qualifies: nothing is cast", forum.pick_votes([posts[-1], posts[-2]], set(), now, decide) == [])
@@ -897,8 +913,13 @@ def test_votes():
     sent = outbox()[before:]
     print("    " + note)
     check("sent through the outbox as our buyer, kept in records/votes.jsonl with the reason",
-          [(x["vote"], x["value"], x["as"]) for x in sent] == [(310, -1, "buyer"), (325, 1, "buyer")]
-          and common.records("votes")[-1]["reason"].startswith("most useful") and st["voted"] == [310, 325])
+          [(x["vote"], x["value"], x["as"]) for x in sent] == [(310, -1, "buyer"), (303, -1, "buyer"), (325, 1, "buyer")]
+          and common.records("votes")[-1]["reason"].startswith("most useful") and st["voted"] == [310, 303, 325]
+          and st["liked_at"] == now, sent)
+    before = len(outbox())
+    analysis.votes(now + 1200, st, decide)
+    check("20 minutes later: the remaining copy disliked, no second like within 3 hours",
+          [(x["vote"], x["value"]) for x in outbox()[before:]] == [(302, -1)], outbox()[before:])
     common.write_json(MD / "forum.json", POSTS)
 
 
