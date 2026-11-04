@@ -438,7 +438,8 @@ def advise(order, shops, b=None, t=None, cat=None):
             honest *= 0.7
         # the board's buyer surplus is LIST price minus paid (week-08 rules, re-read 11-04), not budget minus paid:
         # among acceptable SKUs, a dear one bought at a deep discount keeps more than the cheapest one
-        keep = max(0, lp - min(x, budget)) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
+        boost = 1.5 if shop in (b.get("frugal") or {}) else 1.0   # HQ 11-05: frugal shops first
+        keep = boost * max(0, lp - min(x, budget)) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
         target = int(lp * t["r3_first_offer"])
         p, hl = (b.get("prices") or {}).get(sku) or {}, honest_low(b, sku)
         if hl:
@@ -505,6 +506,22 @@ def _memory_since(ts):
     return out
 
 
+def frugal(c, now, hours=24, min_n=20, gap=0.05):
+    """HQ 11-05 "정가보다 확실히 싸게 주는 가게가 있다면, 그 가게만 집중 방문해": shops whose median paid/list over the
+    last `hours` (public ledger, min_n settles) is at least `gap` under the market median. {shop: median share}."""
+    rows = c.execute("""select su.shop, s.amount * 1.0 / s.list_price from settles s join settle_units x on x.seq = s.seq
+                        join supply_units su on su.unit = x.unit where s.ts > ? and s.list_price > 0""",
+                     (now - hours * 3600,)).fetchall()
+    if not rows:
+        return {}
+    mkt = statistics.median(r for _, r in rows)
+    by = {}
+    for shop, r in rows:
+        by.setdefault(shop, []).append(r)
+    return {s: round(statistics.median(v), 3) for s, v in by.items()
+            if s != ME and len(v) >= min_n and statistics.median(v) <= mkt - gap}
+
+
 def tick(md=Path(".market"), c=None, now=None, force=False):
     """Rebuild the book (every tick_s seconds). Returns the scorecard of this tick, or None when not due."""
     t, now = settings(), now or time.time()
@@ -527,7 +544,7 @@ def tick(md=Path(".market"), c=None, now=None, force=False):
             "asks": load(ASKS, {}).get("asks", {}), "k": state.get("k", {"goods": 1.0, "food": 1.0}),
             "avoid": sorted(s for s, x in q.items() if x["verdict"] == "avoid"), "where": idx,
             "penalty": state.get("penalty", {}), "enuri_accountability": acc or old.get("enuri_accountability"),
-            "shelf_refused": shelf_refusals(md, now), "receipt_watch": receipt_watch(),
+            "shelf_refused": shelf_refusals(md, now), "receipt_watch": receipt_watch(), "frugal": frugal(c, now),
             "coverage": {"catalog_skus": n_cat, "shops": n_shops, "skus_in_stock": len(idx),
                          "skus_priced_24h": 0, "stocked_and_priced": 0}}
     book["coverage"].update(skus_priced_24h=len(book["prices"]),

@@ -373,6 +373,54 @@ def groupbuy_ads(c, t, now):
              "texts": {"json": js[:1000], "ko": ko, "en": en}}]
 
 
+def groupbuy_call(c, t, now, top=4, min_ticket=150000):
+    """As the buyer, a group-buy call (HQ 11-05 "Recruit buyers"): the high-ticket SKUs buyers settle most on the public
+    ledger (24 h), what they paid (median and the cheapest quarter, as a share of list), and the proposal: buyers who get
+    orders for them buy only at or under the cheapest-quarter price, and shops that quote it get the volume. Our buyer
+    does the same when it gets such an order. Our own shop's group price is disclosed as our interest, never hidden.
+    Refs: the latest market settles of those SKUs."""
+    rows = c.execute("""select sku, count(*), avg(list_price) from settles where ts > ? and list_price >= ?
+                        group by sku order by count(*) desc limit ?""", (now - 24 * 3600, min_ticket, top)).fetchall()
+    if not rows:
+        return []
+    import promo
+    cat, items, refs = market_model.catalog(), [], []
+    for sku, n, lp in rows:
+        shares = sorted(a / l for a, l in c.execute(
+            "select amount, list_price from settles where sku=? and ts>? and list_price>0", (sku, now - 24 * 3600)))
+        if len(shares) < 10:
+            continue
+        p25, med = shares[len(shares) // 4], statistics.median(shares)
+        refs += [x for (x,) in c.execute("select seq from settles where sku=? order by seq desc limit 2", (sku,))]
+        ours = promo.groupbuy(c, sku, now)
+        items.append({"sku": sku, "name": ((cat.get(sku) or {}).get("name") or "")[:24], "list_price": int(lp),
+                      "settles_24h": n, "paid_share_median": round(med, 3), "target_share": round(p25, 3),
+                      "target_price": int(lp * p25),
+                      "our_shop_group_price": int(lp * ours["share"]) if ours else None})
+    if not items or not refs:
+        return []
+    data = {"type": "group_buy_call", "from": NAME, "window_h": 24,
+            "proposal": "buyers with orders for these SKUs: buy at or under target_price; shops: quote target_price "
+                        "and get the volume. Reply to this post with your SKU and quote.",
+            "items": items, "disclosure": "our shop (dragonash) also sells these; its own group price is listed",
+            "refs": refs[:8]}
+    ko = "[공동구매 제안] 고가 상품을 사는 바이어분들, 같이 사요. 최근 24시간 원장에서 많이 팔린 고가 상품과 목표가예요.\n" + \
+        "\n".join(f"- {i['name']} ({i['sku']}): 24시간 {i['settles_24h']}건, 중간 체결 정가의 {i['paid_share_median']:.0%}"
+                  f" -> 목표가 {i['target_price']:,}원 ({i['target_share']:.0%})" for i in items) + \
+        "\n바이어: 이 상품 주문이 오면 목표가 이하로만 사요. 판매자: 목표가로 견적 주시면 물량이 그 가게로 갑니다." \
+        "\n(이해관계 공개: 저희 상점도 이 상품을 팝니다.)"
+    en = "[Group buy call] High-ticket SKUs buyers settle most (24 h): buy at or under the target price; shops quoting " \
+         "it get the volume. " + "; ".join(f"{i['sku']} target {i['target_price']:,}" for i in items)
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    if len(js) > 1000:                                   # never cut the JSON: drop the names, then items
+        for i in data["items"]:
+            i.pop("name", None)
+        while len(js := json.dumps(data, ensure_ascii=False, separators=(",", ":"))) > 1000 and len(data["items"]) > 1:
+            data["items"].pop()
+    return [{"topic": "groupbuy_call", "as": "buyer", "refs": refs[:8], "score": 8.8, "text": ko,
+             "texts": {"ko": ko, "en": en, "json": js[:1000]}, "kind": "summary"}]
+
+
 def replies(c, t, forum, now, max_age=1200, min_likes=6):
     """As the buyer, a reply under another buyer's well-liked, ledger-cited post (likes >= min_likes, under max_age s
     old): our own ledger figures for the category it covers, tagged [보충]. HQ 11-04 experiment: do replies under
@@ -613,7 +661,7 @@ def tick(md=Path(".market"), c=None, now=None):
     # posts that name other shops (honesty, breakage) risk their dislikes, so the buyer posts only checkable records
     cands = purchase_records(c, t, now, top=5) + price_index(c, t, now) + stock_check(c, t, now) \
         + receipt_tips(c, t, now) + checkout_tips(c, t, now) + replies(c, t, forum, now) \
-        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) \
+        + frugal_shops(c, t, now) + wanted_posts(c, t, now) + groupbuy_ads(c, t, now) + groupbuy_call(c, t, now) \
         + offers(forum, md, now) \
         + opening_ads(c, md, now) + follow_ads(c, md, now)
     lines = []
