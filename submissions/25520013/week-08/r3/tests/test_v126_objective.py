@@ -108,6 +108,10 @@ def test_standing_ranks_our_player_row():
         "buyer_all": 0.6,
     }
     assert B.standing({"shops": [], "players": BOARD["players"]}, LOGIN) is None
+    odd = [None, "junk", {"shop": "x", "total": 1.0}, {"shop": {"name": "q"}, "total": True}] + BOARD["players"]
+    # non-object rows and a boolean total are left out; a row with an odd shop field still counts as a player
+    assert B.standing(dict(BOARD, players=odd), LOGIN) == dict(st, n=4)
+    assert B.standing(dict(BOARD, players="junk"), LOGIN) is None
 
 
 def test_objective_lists_the_lane_terms():

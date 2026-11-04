@@ -242,8 +242,8 @@ def term_scale(sdir, login, now, hours=24):
 
 def ranked(rows):
     """The board's own population for its percentile columns: rows with a non-null 'all'. For shops that is the live
-    participant shops plus the house shops, for buyers it equals deals > 0 (v1.26: the 'all' column of 51/51 shops
-    and 48/48 buyers reproduced on the 01:57 KST snapshot of 2026-11-05)."""
+    participant shops plus the house shops, for buyers it equals deals > 0 (v1.26: reproduces the 'all' column of
+    51/51 shops and 48/48 buyers on all 7 snapshots from 22:14 KST 2026-11-04 to 01:24 KST 2026-11-05)."""
     return [r for r in rows if r.get("all") is not None]
 
 
@@ -287,12 +287,23 @@ def summary(board, login):
     return out
 
 
+def _obj(p, k):
+    v = p.get(k)
+    return v if isinstance(v, dict) else {}
+
+
 def standing(board, login):
     """Our player row (matched by our shop's name) -> {total, rank, n, gap_next, gap_top, shop_all, buyer_all}, or
-    None when it is not on the board."""
+    None when it is not on the board. Player rows that are not objects or have no numeric total are left out, so odd
+    server data cannot cost the tick."""
     me = _ours(board.get("shops") or [], login)
-    pl = [p for p in board.get("players") or [] if isinstance(p.get("total"), (int, float))]
-    mine = [p for p in pl if me is not None and (p.get("shop") or {}).get("name") == me.get("name")]
+    rows = board.get("players")
+    pl = [
+        p
+        for p in (rows if isinstance(rows, list) else [])
+        if isinstance(p, dict) and isinstance(p.get("total"), (int, float)) and not isinstance(p.get("total"), bool)
+    ]
+    mine = [p for p in pl if me is not None and _obj(p, "shop").get("name") == me.get("name")]
     if not mine:
         return None
     t = float(mine[0]["total"])
@@ -303,6 +314,6 @@ def standing(board, login):
         "n": len(pl),
         "gap_next": round(above[0] - t, 3) if above else None,
         "gap_top": round(above[-1] - t, 3) if above else None,
-        "shop_all": (mine[0].get("shop") or {}).get("all"),
-        "buyer_all": (mine[0].get("buyer") or {}).get("all"),
+        "shop_all": _obj(mine[0], "shop").get("all"),
+        "buyer_all": _obj(mine[0], "buyer").get("all"),
     }
