@@ -115,7 +115,7 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.requirements = requirements
     client.accept_conditions = accept_conditions
@@ -132,6 +132,8 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
                 cached.append(client.model_gate_reason == "reserved")
             return cached[0]
         client.model_gate = allow_model
+        client.over_budget_counter = over_budget_counter
+        client.catalog_list_price = catalog_list_price
     error = negotiation = None
     try:
         with client:
@@ -216,8 +218,11 @@ def main():
         trade_options = {"mode": args.mode, "decision_context": selected_evidence,
                          "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions}
         if support_decision.get("fast_rules"):
+            from buyer_counter import load_settings
             from buyer_support import model_reservation
-            trade_options.update(fast_rules=True, model_gate=lambda: model_reservation(args.order.parent, order["order"]))
+            trade_options.update(fast_rules=True, model_gate=lambda: model_reservation(args.order.parent, order["order"]),
+                                 over_budget_counter=load_settings(),
+                                 catalog_list_price=(catalog.get(selected_item) or {}).get("list_price"))
         if r3 and order.get("kind") == "goods":
             trade_options["requirements"] = accept_conditions
         result, record = trade(shop, selected_item, trade_budget, **trade_options)

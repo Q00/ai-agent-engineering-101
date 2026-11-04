@@ -175,7 +175,7 @@ class TradeRules(unittest.TestCase):
         self.assertEqual(result["stars"], 3)
 
 
-class FastQuoteTrades(unittest.TestCase):
+class TradeFixture(unittest.TestCase):
     """market.trade() over mock HTTP with the rule path on: wording decides what is actually sent."""
 
     def setUp(self):
@@ -227,6 +227,15 @@ class FastQuoteTrades(unittest.TestCase):
         return market.trade(shop("fixture"), "lamp", budget, transport=transport, fast_rules=True,
                             model_gate=gate, max_turns=3, accept_conditions=accept)
 
+    def offers(self):
+        return [int(p["params"]["message"]["parts"][0]["text"]) for p in self.posts
+                if p["method"] == "SendMessage" and p["params"]["message"].get("taskId")]
+
+    def decision_file(self, record, turn=1):
+        return json.loads((Path(record["buyer_log_dir"]) / f"decision-{turn:02d}.json").read_text(encoding="utf-8"))
+
+
+class FastQuoteTrades(TradeFixture):
     def test_bidet_quote_with_grade_only_in_nested_metadata_sends_no_offer(self):
         quote = "Bidet DDS-S550R: asking 178698. Send your offer as a number.\nReply with a number, or ok to take the ask: 178698"
         gate_calls = []
@@ -295,13 +304,6 @@ class FastQuoteTrades(unittest.TestCase):
         _, record = self.trade(self.transport("grade C. Asking 110."))
         self.assertEqual(self.offers(), [110])
         self.assertNotIn("quote_check", record["decision_trail"][0])
-
-    def offers(self):
-        return [int(p["params"]["message"]["parts"][0]["text"]) for p in self.posts
-                if p["method"] == "SendMessage" and p["params"]["message"].get("taskId")]
-
-    def decision_file(self, record, turn=1):
-        return json.loads((Path(record["buyer_log_dir"]) / f"decision-{turn:02d}.json").read_text(encoding="utf-8"))
 
     def test_reported_quotes_are_offered_by_rule_without_the_model(self):
         gate_calls = []
@@ -417,6 +419,219 @@ class FastQuoteTrades(unittest.TestCase):
             text = (directory / name).read_text(encoding="utf-8").lower()
             for marker in ("api_key", "authorization", "claim", "private key", "begin "):
                 self.assertNotIn(marker, text)
+
+
+class CounterOfferTrades(TradeFixture):
+    """Over-budget counteroffer over mock HTTP. Cap 100, list price 200 unless a test says otherwise."""
+    ON = {"enabled": True, "max_ask_per_cap": 1.18, "min_surplus_per_list": 0.10}
+    OFF = {"enabled": False, "max_ask_per_cap": None, "min_surplus_per_list": None}
+
+    def setUp(self):
+        super().setUp()
+        self.gate_calls = []
+
+    def gate(self):
+        self.gate_calls.append(1)
+        return "model_quota_hour"
+
+    def counter_trade(self, transport, *, settings=None, list_price=200, accept=None, cap=100, gate=None):
+        return market.trade(shop("fixture"), "lamp", cap, transport=transport, fast_rules=True, max_turns=3,
+                            model_gate=gate or self.gate, accept_conditions=accept,
+                            over_budget_counter=self.ON if settings is None else settings,
+                            catalog_list_price=list_price)
+
+    def test_exact_ratio_boundary_counters_at_the_cap_without_any_model(self):
+        with patch("buyer.run_harness") as harness:
+            result, record = self.counter_trade(self.transport("asking 118."))
+            harness.assert_not_called()
+        self.assertEqual(self.gate_calls, [])
+        self.assertEqual(self.offers(), [100])
+        entry = record["decision_trail"][0]
+        self.assertEqual((entry["source"], entry["reason_code"], entry["parser_reason"], entry["price"]),
+                         ("deterministic", "rule_counter_offer", "over_budget", 100))
+        check = entry["counter_check"]
+        self.assertEqual((check["ask"], check["cap"], check["list_price"], check["offer"], check["ask_per_cap"]),
+                         (118, 100, 200, 100, 1.18))
+        self.assertEqual(self.decision_file(record)["counter_check"]["reason_code"], "rule_counter_offer")
+
+    def test_accepted_counter_reaches_a_receipt_and_the_settled_path_is_counted_apart(self):
+        from settlement_memory import reconcile
+        import buyer_surplus
+        result, record = self.counter_trade(self.transport("asking 118."))
+        self.assertEqual(record["outcome"], "purchased")
+        self.assertEqual((result["receipt"]["price"], record["agreed_price"]), (100, 100))
+        record.update(order="o-1", url_at_time="http://fixture.test", price=100)
+        self.assertEqual(record["verification"], "local_receipt_consistent")
+        self.assertEqual(reconcile([record], {})[0]["outcome"], "awaiting_payment")
+        settled = reconcile([record], {"o-1": {"shop": "http://fixture.test", "item": "lamp", "price": 100,
+                                               "paid": True, "ledger": 5}})[0]
+        self.assertEqual((settled["outcome"], settled["verification"]), ("purchased", "market_settled"))
+        self.assertEqual(buyer_surplus.offer_path(buyer.ROOT, record), "deterministic:rule_counter_offer")
+
+    def test_exclusions_fall_through_to_the_gate_with_their_reason(self):
+        for quote, list_price, cap, code in (("asking 119.", 200, 100, "counter_ratio_exceeded"),
+                                             ("asking 100.", 100, 90, "rule_counter_offer"),
+                                             ("asking 100.", 100, 91, "counter_surplus_too_low"),
+                                             ("asking 110.", None, 100, "counter_no_list_price")):
+            with self.subTest(quote=quote, cap=cap), patch("buyer.run_harness") as harness:
+                self.posts.clear()
+                self.gate_calls.clear()
+                _, record = self.counter_trade(self.transport(quote), list_price=list_price, cap=cap)
+                harness.assert_not_called()
+                check = record["decision_trail"][0]["counter_check"]
+                self.assertEqual(check["reason_code"], code)
+                if code == "rule_counter_offer":
+                    self.assertEqual(self.offers(), [cap])
+                    self.assertEqual(self.gate_calls, [])
+                else:
+                    self.assertEqual(self.offers(), [])
+                    self.assertEqual(self.gate_calls, [1])
+                    self.assertEqual(record["failure_reason"], "model_quota_hour")
+
+    def test_quote_filter_comes_first(self):
+        accept = {"cert": True, "grades": ["A", "B"]}
+        _, record = self.counter_trade(self.transport("asking 110.", metadata={"grade": "C"}), accept=accept)
+        self.assertEqual(self.offers(), [])
+        self.assertEqual(self.gate_calls, [])
+        entry = record["decision_trail"][0]
+        self.assertEqual((entry["source"], entry["reason_code"]), ("quote_filter", "quote_grade_unacceptable"))
+        self.assertNotIn("counter_check", entry)
+
+    def test_ambiguous_or_within_cap_quotes_are_never_countered(self):
+        for quote, offers, reason in (("asking 110. Counteroffer: 105.", [], "model_quota_hour"),
+                                      ("asking 110. Now 105.", [], "model_quota_hour"), ("Our price is 110.", [], "model_quota_hour"),
+                                      ("asking 110.50", [], "model_quota_hour")):
+            with self.subTest(quote=quote):
+                self.posts.clear()
+                _, record = self.counter_trade(self.transport(quote))
+                self.assertEqual(self.offers(), offers)
+                self.assertEqual(record["failure_reason"], reason)
+                self.assertNotIn("counter_check", record["decision_trail"][0])
+        self.posts.clear()
+        _, record = self.counter_trade(self.transport("asking 90."))
+        self.assertEqual(self.offers(), [90])
+        self.assertEqual(record["decision_trail"][0]["reason_code"], "rule_offer")
+
+    def test_second_over_budget_reply_cannot_counter_again(self):
+        with patch("buyer.run_harness") as harness:
+            _, record = self.counter_trade(self.transport("asking 110.", after_offer="Counteroffer: 105."))
+            harness.assert_not_called()
+        self.assertEqual(self.offers(), [100])
+        self.assertEqual(self.gate_calls, [1])
+        reasons = [(e["source"], e["reason_code"], e["counter_check"]["reason_code"]) for e in record["decision_trail"]]
+        self.assertEqual(reasons, [("deterministic", "rule_counter_offer", "rule_counter_offer"),
+                                   ("model_gate", "model_quota_hour", "counter_already_used")])
+        self.assertEqual(record["failure_reason"], "model_quota_hour")
+
+    def test_seller_coming_down_after_the_counter_takes_the_existing_rule(self):
+        transport = self.transport("asking 110.", after_offer="Counteroffer: 98.")
+        with patch("buyer.run_harness") as harness:
+            _, record = self.counter_trade(transport)
+            harness.assert_not_called()
+        self.assertEqual(self.offers()[:2], [100, 98])
+        self.assertEqual([e["reason_code"] for e in record["decision_trail"]][:2], ["rule_counter_offer", "rule_offer"])
+        self.assertNotIn("counter_check", record["decision_trail"][1])
+
+    def test_a_rule_offer_at_the_cap_is_not_repeated_as_a_counter(self):
+        _, record = self.counter_trade(self.transport("asking 100.", after_offer="Counteroffer: 105."))
+        self.assertEqual(self.offers(), [100])
+        second = record["decision_trail"][1]
+        self.assertEqual((second["source"], second["counter_check"]["reason_code"]),
+                         ("model_gate", "counter_repeated_price"))
+
+    def test_seller_rejecting_the_counter_is_a_plain_no_deal(self):
+        _, record = self.counter_trade(self.transport("asking 110.", offer_state="TASK_STATE_REJECTED"))
+        self.assertEqual(record["outcome"], "no_deal")
+        self.assertEqual(record["failure_reason"], "seller_rejected")
+        self.assertEqual(self.gate_calls, [])
+
+    def test_disabled_behaves_exactly_like_today(self):
+        scenarios = (("asking 110.", {}), ("asking 119.", {}), ("asking 110.50", {}), ("asking 90.", {}),
+                     ("asking 110.", {"after_offer": "Counteroffer: 105."}), ("Our price is 90.", {}))
+        for gate_answer in ("model_quota_hour", "reserved"):
+            for quote, options in scenarios:
+                with self.subTest(quote=quote, gate=gate_answer), \
+                        patch("buyer.run_harness", return_value={"action": "walk_away", "price": None, "reason": "stop"}) as harness:
+                    self.posts.clear()
+                    today, record_today = self.trade(self.transport(quote, **options), gate=lambda: gate_answer, budget=100)
+                    posts_today, calls_today = list(self.offers()), harness.call_count
+                    self.posts.clear()
+                    harness.reset_mock()
+                    off, record_off = self.counter_trade(self.transport(quote, **options), settings=self.OFF,
+                                                         gate=lambda: gate_answer)
+                    self.assertEqual(self.offers(), posts_today)
+                    self.assertEqual(harness.call_count, calls_today)
+                    self.assertEqual(off["receipt"], today["receipt"])
+                    self.assertEqual(off["stars"], today["stars"])
+                    self.assertEqual(record_off["outcome"], record_today["outcome"])
+                    self.assertEqual(record_off["failure_reason"], record_today["failure_reason"])
+                    plain = lambda trail: [{k: v for k, v in e.items() if k != "counter_check"} for e in trail]
+                    self.assertEqual(plain(record_off["decision_trail"]), plain(record_today["decision_trail"]))
+                    for entry in record_off["decision_trail"]:
+                        if "counter_check" in entry:
+                            self.assertEqual(entry["counter_check"]["reason_code"], "counter_disabled")
+
+    def test_no_settings_means_no_counter_and_no_new_field(self):
+        _, record = self.trade(self.transport("asking 300001."), gate=lambda: "model_quota_hour")
+        self.assertEqual(self.offers(), [])
+        self.assertNotIn("counter_check", record["decision_trail"][0])
+
+    def test_counter_never_runs_outside_the_rule_path(self):
+        with patch("buyer.run_harness", return_value={"action": "walk_away", "price": None, "reason": "stop"}):
+            _, record = market.trade(shop("fixture"), "lamp", 100, transport=self.transport("asking 110."),
+                                     over_budget_counter=self.ON, catalog_list_price=200)
+        self.assertEqual(self.offers(), [])
+        self.assertEqual(record["decision_trail"][0]["source"], "model")
+
+    def test_a_real_reservation_is_not_consumed_by_a_counter(self):
+        import buyer_support
+        from tempfile import TemporaryDirectory
+        settings = {"max_model_orders_per_hour": 2, "max_model_orders_per_day": 24}
+        with TemporaryDirectory() as md, patch.object(buyer_support, "config", return_value=settings):
+            self.counter_trade(self.transport("asking 110."),
+                               gate=lambda: buyer_support.model_reservation(md, "o-1", 1793750400.0))
+            self.assertFalse((Path(md) / "buyer-support-state.json").exists())
+            self.assertEqual(buyer_support.model_reservation(md, "o-1", 1793750400.0), "reserved")
+
+
+class MainWiring(unittest.TestCase):
+    """main() hands the configured settings and our catalog's list price to trade, never the seller's."""
+
+    def run_main(self, *, fast_rules=True, catalog=None):
+        from tempfile import TemporaryDirectory
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        order = {"order": "o-1", "item": "cat", "budget": 300, "round": 3, "kind": "goods", "acceptable": ["k"]}
+        (root / "order.json").write_text(json.dumps(order), encoding="utf-8")
+        (root / "catalog.json").write_text(json.dumps(catalog if catalog is not None else {"k": {"list_price": 200}}), encoding="utf-8")
+        (root / "shops.json").write_text("{}", encoding="utf-8")
+        shop_row = {"name": "s", "url": "http://s.test", "offers": [{"sku": "k", "qty": 1}], "reviews": []}
+        decision = {"max_turns": 3, "fast_rules": fast_rules, "status": "reserved"}
+        argv = ["market_buyer.py", "--shops", str(root / "shops.json"), "--item", "cat", "--budget", "300",
+                "--order", str(root / "order.json"), "--memory", str(root / "memory.jsonl")]
+        with patch.object(sys, "argv", argv), patch.object(market, "ROOT", root), \
+                patch.object(market, "load_shops", return_value=[shop_row]), patch.object(market, "fresh", return_value={}), \
+                patch.object(market, "prepare_support", return_value=(shop_row, "k", 100, "why", [], decision)), \
+                patch.object(market, "trade", return_value=({"shop": "", "receipt": None}, {"outcome": "no_deal"})) as trade, \
+                patch("sys.stdout"):
+            market.main()
+        return trade.call_args.kwargs
+
+    def test_settings_and_catalog_price_are_passed(self):
+        marker = {"enabled": False, "max_ask_per_cap": None, "min_surplus_per_list": None}
+        with patch("buyer_counter.load_settings", return_value=marker) as load:
+            kwargs = self.run_main()
+        load.assert_called_once()
+        self.assertEqual(kwargs["over_budget_counter"], marker)
+        self.assertEqual(kwargs["catalog_list_price"], 200)
+        self.assertTrue(kwargs["fast_rules"])
+
+    def test_sku_missing_from_our_catalog_gives_no_list_price(self):
+        self.assertIsNone(self.run_main(catalog={})["catalog_list_price"])
+
+    def test_without_the_rule_path_no_counter_settings_are_passed(self):
+        self.assertNotIn("over_budget_counter", self.run_main(fast_rules=False))
 
 
 class ReservationReasons(unittest.TestCase):

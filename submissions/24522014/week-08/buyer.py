@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import httpx
 
+from buyer_counter import evaluate as evaluate_counter
 from buyer_fast import classify
 from harness import HarnessError, MODELS, parse_response, run_harness, select_harness
 from quote_terms import check_quote
@@ -200,6 +201,9 @@ def record_decision(client, turn, source, reason_code, decision=None, parser_rea
     quote_check = getattr(client, "quote_check", None)
     if quote_check:
         entry["quote_check"] = quote_check
+    counter_check = getattr(client, "counter_check", None)
+    if counter_check:
+        entry["counter_check"] = counter_check
     client.decisions.append(entry)
     (client.log_dir / f"decision-{turn:02d}.json").write_text(
         json.dumps({**(details or {}), **entry, "decision": decision}, ensure_ascii=False, indent=2),
@@ -211,6 +215,7 @@ def buyer_decision(client, provider, history, turn, max_turns):
     text = seller_message(client.task)
     _, parser_reason, clear_ask = classify(text, client.budget, getattr(client, "last_offer", None))
     accept = getattr(client, "accept_conditions", None)
+    client.counter_check = None
     client.quote_check = check_quote(client.task, text, accept) if accept else None
     if client.quote_check and client.quote_check["reason_code"]:
         reason_code = client.quote_check["reason_code"]
@@ -225,6 +230,17 @@ def buyer_decision(client, provider, history, turn, max_turns):
             validate_buyer_decision(fast, client.budget)
             record_decision(client, turn, "deterministic", parser_reason, fast, parser_reason)
             return fast
+        settings = getattr(client, "over_budget_counter", None)
+        if settings is not None and parser_reason == "over_budget":
+            counter, client.counter_check = evaluate_counter(
+                clear_ask, client.budget, getattr(client, "catalog_list_price", None),
+                used=getattr(client, "counter_used", False), last_offer=getattr(client, "last_offer", None),
+                config=settings)
+            if counter is not None:
+                validate_buyer_decision(counter, client.budget)
+                client.counter_used = True
+                record_decision(client, turn, "deterministic", "rule_counter_offer", counter, parser_reason)
+                return counter
     if not any(float(number) > 0 for number in re.findall(r"-?\d+(?:\.\d+)?", text)):
         record_decision(client, turn, "parser", "no_positive_number", None, parser_reason)
         raise BuyerError("Seller input-required message has no valid asking price")
