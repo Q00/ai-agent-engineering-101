@@ -80,6 +80,22 @@ class UnacceptedGradeError(UnfitUnitError):
     """The offered goods unit is certified at a grade we do not buy."""
 
 
+class NoStockError(UnfitUnitError):
+    """The shop listed the SKU but refused at once for lack of stock."""
+
+
+def stock_refusal(task: Task) -> bool:
+    """Return True for an immediate "none in stock" refusal (stale stock list).
+
+    On 11/4 17:00-17:26, 17 of 73 orders ended this way about a second in, with
+    17 of the order's 18 seconds unused; the next shop now gets the order.
+    """
+    if task.status.state != "TASK_STATE_REJECTED":
+        return False
+    text = task.observation().lower()
+    return "in stock" in text or "out of stock" in text or "sold out" in text
+
+
 SHELF_LEFT: Final = re.compile(r"([0-9]+(?:\.[0-9]+)?) h of shelf life left")
 # Only a statement about this unit counts: "certified grade B" or "grade B now",
 # not a card's "grade A goods carry a warranty". The kit's reason: "grade C, ...".
@@ -453,7 +469,7 @@ def check_shelf_life(task: Task, order: Order | None, policy: BuyerPolicy) -> No
         raise ShortShelfLifeError(message)
 
 
-async def negotiate(  # noqa: PLR0913, C901 - one negotiation, explicit inputs
+async def negotiate(  # noqa: PLR0913, PLR0912, C901 - one negotiation, explicit inputs
     remote: Remote,
     endpoint: str,
     choice: Choice,
@@ -487,6 +503,8 @@ async def negotiate(  # noqa: PLR0913, C901 - one negotiation, explicit inputs
         if state == "TASK_STATE_COMPLETED":
             return task, my_offer
         if state != "TASK_STATE_INPUT_REQUIRED":
+            if my_offer is None and stock_refusal(task):
+                raise NoStockError(task.observation()[:120])
             return task, None
         # Screen before parsing: a number inside an injection is not an ask.
         flag = suspicious(task.observation())

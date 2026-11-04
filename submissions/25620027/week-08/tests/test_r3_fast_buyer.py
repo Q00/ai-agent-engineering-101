@@ -517,3 +517,32 @@ def test_unfit_units_are_skipped_early_and_remembered_per_shop_and_sku() -> None
     # ...but short of a 40 h order.
     long_food = food.model_copy(update={"use_within_hours": 40})
     assert fast.unfit_skipper(unfit, long_food, policy, now)("http://old-food", KIMCHI)
+
+
+def test_an_immediate_out_of_stock_refusal_is_recognised_for_a_retry() -> None:
+    from market_a2a.remote import Task  # noqa: PLC0415 - test only
+
+    def ended(state: str, text: str) -> Task:
+        return Task.model_validate(
+            {
+                "id": "t",
+                "contextId": "c",
+                "status": {
+                    "state": state,
+                    "message": {
+                        "messageId": "m",
+                        "role": "ROLE_AGENT",
+                        "parts": [{"text": text}],
+                    },
+                },
+            }
+        )
+
+    assert fast.stock_refusal(
+        ended("TASK_STATE_REJECTED", "Sorry, we have none of that in stock.")
+    )
+    assert fast.stock_refusal(
+        ended("TASK_STATE_REJECTED", "Sorry, no matching unit is in stock.")
+    )
+    assert not fast.stock_refusal(ended("TASK_STATE_REJECTED", "No deal below 24998."))
+    assert not fast.stock_refusal(ended("TASK_STATE_COMPLETED", "none in stock"))
