@@ -7,18 +7,24 @@ how it gets out fast when others crowd in.
             under its baseline, or we have held a unit of it STALL without selling one
     shrink  cap - 1, not below 1: the median is SHRINK_DROP or more under the baseline, or it had at least
             twice the baseline's sellers in WINDOW and CROWD_MORE more
-    grow    cap + 1, up to restock.LINE_MAX_UNITS: we sold GROW_SALES or more of it in the last hour, and
-            the market is not shrinking it
+    grow    up to what we sold of it in the last hour (at least cap + 1), up to restock.LINE_MAX_UNITS: we sold
+            GROW_SALES or more of it in the last hour, and the market is not shrinking it
     back    cap 1 again after an exit, once EXIT_REST has passed, we hold none, and the market (MIN_N settles
             in WINDOW) still pays REENTRY_MIN of list or more; the baseline is taken again then
     keep    otherwise
 
-Two guards (11/4 night) keep the line from eating the rest: no cap grows (and no product comes back in) while the line's units are more than
-PREMIUM_MAX of our book (cash + stock at cost), or while our stars on the board (scoreboard.py's stars_rank, a fifth of the
-shop's score) are under STARS_MIN; and under STARS_MIN every cap above 1 also comes down one, at most once
-every STARS_REST. (The third guard, the cash kept, is restock.RESERVE.) The share was of the stock alone until
-11/4 23:30: next to cheap goods the line was 85-89% of it at once and no cap could grow, while it was 32% of the
-book and its units sold within half an hour (the person's call: the book, at 75%).
+New products (11/4 23:40, the person's call: the line follows unmet demand rather than a list): every run, other
+shops' settles of the last FIND_WINDOW pick products of FIND_LIST_MIN or more that sold FIND_N times or more at
+FIND_MEDIAN of list or more with FIND_SELLERS sellers or fewer, best expected margin first, until the line holds
+LINE_MAX_SKUS products with a cap above 0. Each comes in at FIND_CAP and is judged like the rest from then on;
+one out (cap 0) for FIND_DROP is let go.
+
+One guard (the minimum the person asked for, 11/4 23:40): no cap grows and no product comes back in while our
+stars on the board (scoreboard.py's stars_rank, a fifth of the shop's score) are under STARS_MIN, and under it
+every cap above 1 comes down one, at most once every STARS_REST. The cash kept is restock.RESERVE; the market
+rules above are the rest. (A guard on the line's share of our stock, then of our book, ran from 23:07 to 23:40:
+next to cheap goods the line was 85-89% of the stock at once, and its units sold within half an hour. The share
+is still reported.)
 
 The market is other shops' settles of the product over the last WINDOW (ours left out), its median share of
 the list price and its sellers; a verdict needs MIN_N of them. The baseline is that same window's figure the
@@ -32,6 +38,7 @@ exited on the first pass and never came back; our own settles counted as the mar
 import importlib
 import json
 import statistics as st
+from collections import defaultdict
 
 import common
 import ledger
@@ -46,8 +53,13 @@ STALL = 4 * 3600
 EXIT_REST = 2 * 3600
 REENTRY_MIN = 0.70       # back in only where others still settle at this share of list or more (A costs 0.55-0.75)
 MIN_N = 20
-PREMIUM_MAX = 0.75       # the line's share of our book (cash + stock at cost) above which no cap grows
 STARS_MIN, STARS_REST = 4.80, 2 * 3600
+FIND_WINDOW = 6 * 3600
+FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.76, 10
+FIND_CAP = 2
+LINE_MAX_SKUS = 20
+FIND_DROP = 12 * 3600
+COST_GUESS = 0.65        # a grade A unit's cost as a share of list (0.55-0.75): the margin a candidate is ranked by
 
 
 def folder():
@@ -95,19 +107,46 @@ def decide(cap: int, base: dict | None, now_m: dict, us: dict, exit_at: float | 
     if us["sold_1h"] >= GROW_SALES and cap < restock.LINE_MAX_UNITS:
         if hold:
             return cap, f"keep: sold {us['sold_1h']} in the last hour, but {hold}"
-        return cap + 1, f"we sold {us['sold_1h']} in the last hour"
+        return min(restock.LINE_MAX_UNITS, max(cap + 1, us["sold_1h"])), f"we sold {us['sold_1h']} in the last hour"
     return cap, "keep"
 
 
 def guards(units: list, line: dict, stars: float | None, balance=None) -> dict:
-    """{share: the line's share of our book (cash + stock at cost), stars, hold: why no cap grows (or None), low_stars}."""
+    """{share: the line's share of our book (cash + stock at cost; reported only), stars, hold: why no cap grows
+    (or None), low_stars}."""
     cash = balance if isinstance(balance, (int, float)) and not isinstance(balance, bool) and balance > 0 else 0
     book = cash + sum(u.get("cost") or 0 for u in units)
     share = round(sum(u.get("cost") or 0 for u in units if u.get("sku") in line) / book, 3) if book else 0.0
     low = stars is not None and stars < STARS_MIN
-    hold = (f"the line is {share:.0%} of our book, cash and stock (over {PREMIUM_MAX:.0%})" if share > PREMIUM_MAX
-            else f"our stars are {stars} (under {STARS_MIN})" if low else None)
+    hold = f"our stars are {stars} (under {STARS_MIN})" if low else None
     return {"share": share, "stars": stars, "hold": hold, "low_stars": low}
+
+
+def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, now: float) -> dict:
+    """{sku: {n, median, sellers, list, at}}: new products for the line from other shops' settles of the last
+    FIND_WINDOW, best expected margin (settles x list x (median - COST_GUESS)) first, as many as leave the line at
+    LINE_MAX_SKUS products with a cap above 0."""
+    room = LINE_MAX_SKUS - sum(1 for s in line if caps.get(s, line[s]) > 0)
+    if room <= 0:
+        return {}
+    by = defaultdict(list)
+    for s in settles:
+        if (s.get("ts") or 0) < now - FIND_WINDOW or s.get("item") in line or not isinstance(s.get("amount"), (int, float)):
+            continue
+        shop = names.get(s.get("shop"), s.get("shop"))
+        if not ledger.is_ours(shop):
+            by[s.get("item")].append((s["amount"], shop))
+    picks = []
+    for sku, rows in by.items():
+        lp = (catalog.get(sku) or {}).get("list_price") or 0
+        if lp < FIND_LIST_MIN or len(rows) < FIND_N:
+            continue
+        m = st.median(a / lp for a, _ in rows)
+        sellers = len({sh for _, sh in rows})
+        if m >= FIND_MEDIAN and sellers <= FIND_SELLERS:
+            picks.append((len(rows) * lp * (m - COST_GUESS), sku, {"n": len(rows), "median": round(m, 4), "sellers": sellers, "list": lp}))
+    picks.sort(key=lambda x: -x[0])
+    return {sku: dict(info, at=int(now)) for _, sku, info in picks[:room]}
 
 
 def brief(now: float, hours: float = 6) -> dict:
@@ -133,7 +172,7 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     if not catalog:
         return []                                       # nothing to judge with: line.json is left as it is
     settles = settles if settles is not None else [s for s in common.read_jsonl(ledger.folder() / "settles.jsonl")
-                                                   if (s.get("ts") or 0) >= now - WINDOW]
+                                                   if (s.get("ts") or 0) >= now - max(WINDOW, FIND_WINDOW)]
     inv = inv if inv is not None else (common.market_file("inventory.json", {}) or {})
     sales = sales if sales is not None else [s for s in common.records("sales") if (s.get("ts") or 0) >= now - 86400]
     names = ledger.names()
@@ -142,8 +181,16 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     if not isinstance(state, dict):
         state = {}
     caps, defaults, base, exits = (state.setdefault(k, {}) for k in ("caps", "defaults", "base", "exit_at"))
+    found = state.setdefault("found", {})
+    for sku in [s for s in list(found) if caps.get(s) == 0 and now - (exits.get(s) or now) > FIND_DROP]:
+        del found[sku]                                  # out too long: let go (its state goes below, with the line's)
+    line = dict(line, **{s: FIND_CAP for s in found if s not in line})
     cut = g["low_stars"] and now - (state.get("stars_cut_at") or 0) >= STARS_REST
     changes = []
+    for sku, info in discover(settles, names, catalog, line, caps, now).items():
+        found[sku], line[sku] = info, FIND_CAP
+        changes.append({"at": int(now), "sku": sku, "from": 0, "to": FIND_CAP, "market": info,
+                        "why": f"added: others sold it {info['n']} times in 6 h at {info['median']:.3f} of list, {info['sellers']} sellers"})
     for sku, default in line.items():
         lp = (catalog.get(sku) or {}).get("list_price")
         if not lp or not isinstance(default, int):

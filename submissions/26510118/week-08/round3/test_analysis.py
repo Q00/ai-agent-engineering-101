@@ -580,17 +580,20 @@ def test_linewatch():
     heavy = {"units": [{"sku": BEDDING, "supplied_at": t5 + 100, "cost": 900_000}, {"sku": KIMCHI, "supplied_at": t5 + 100, "cost": 100_000}]}
     ch = run(t5 + 300, market(0.75, at=t5 + 300), inv=heavy, sales=sold5, line={BEDDING: 4})
     g = common.read_json(MD / "analysis" / "line_state.json")["guards"]
-    check("guard: the line is 90% of our book (no cash in this inventory), so two more sold do not raise the cap",
-          ch == [] and g["share"] == 0.9 and "90% of our book" in (g["hold"] or ""), (ch, g))
-    check("...the book counts the cash: the same stock with 2M in cash is 30% of it, and nothing is held",
+    check("no guard on the line's share any more (the person's call, 23:40): at 90% of our book two sold still raise the cap; the share is reported",
+          [(c["from"], c["to"]) for c in ch] == [(4, 5)] and g["share"] == 0.9 and g["hold"] is None, (ch, g))
+    check("...the book counts the cash: the same stock with 2M in cash is 30% of it",
           linewatch.guards(heavy["units"], {BEDDING: 4}, None, 2_000_000) == {"share": 0.3, "stars": None, "hold": None, "low_stars": False})
     ch = run(t5 + 600, market(0.75, at=t5 + 600), sales=sold5, line={BEDDING: 4}, stars=4.7)
     check("guard: our stars 4.7, under 4.80: the cap comes down one (not grown)",
-          [(c["from"], c["to"]) for c in ch] == [(4, 3)] and ch[0]["why"].startswith("our stars 4.7") and ch[0]["guards"]["stars"] == 4.7, ch)
+          [(c["from"], c["to"]) for c in ch] == [(5, 4)] and ch[0]["why"].startswith("our stars 4.7") and ch[0]["guards"]["stars"] == 4.7, ch)
     check("...not again within 2 hours, and still no growing",
           run(t5 + 1200, market(0.75, at=t5 + 1200), sales=sold5, line={BEDDING: 4}, stars=4.7) == [])
     ch = run(t5 + 600 + linewatch.STARS_REST, market(0.75, at=t5 + 600 + linewatch.STARS_REST), line={BEDDING: 4}, stars=4.75)
-    check("...and once more after 2 hours under", [(c["from"], c["to"]) for c in ch] == [(3, 2)], ch)
+    check("...and once more after 2 hours under", [(c["from"], c["to"]) for c in ch] == [(4, 3)], ch)
+    check("growth goes straight to what sold in the last hour (cap 2, 7 sold: 7), not past the most units (12 sold: 10)",
+          linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 7, "idle": None}, None, t)[0] == 7
+          and linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 12, "idle": None}, None, t)[0] == 10)
     check("a guard also keeps an exited product out (others at 0.75, none held, the rest over)",
           linewatch.decide(0, {"median": 0.75, "sellers": 2}, {"n": 30, "median": 0.75, "sellers": 2}, {"held": 0, "sold_1h": 0, "idle": None},
                            t, t + linewatch.EXIT_REST + 1, "our stars are 4.7 (under 4.8)") == (0, "out"))
@@ -935,6 +938,58 @@ def test_restock_wanted():
     check("a category the rules drop is not stocked even when wanted", APPLE not in skus(out))
 
 
+def test_discover():
+    print("\n[linewatch] new products for the line from other shops' settles")
+    import linewatch
+    t = time.time()
+    for f in ("line_state.json", "line.json", "line_log.jsonl"):
+        (MD / "analysis" / f).unlink(missing_ok=True)
+    cat = dict(CATALOG, Gsofa0001={"name": "sofa", "category": "가구/침구>가구>소파", "list_price": 2_000_000},
+               Gsofa0002={"name": "sofa 2", "category": "가구/침구>가구>소파", "list_price": 1_000_000},
+               Gsofa0003={"name": "crowded sofa", "category": "가구/침구>가구>소파", "list_price": 1_500_000},
+               Gsofa0004={"name": "cheap sale", "category": "가구/침구>가구>소파", "list_price": 1_500_000},
+               Gmat00001={"name": "mattress", "category": "가구/침구>가구>침대", "list_price": 400_000})
+
+    def sold(sku, n, ratio, shops, at=None):
+        lp = cat[sku]["list_price"]
+        return [{"seq": i, "ts": (at or t) - 3600, "item": sku, "amount": round(lp * ratio), "shop": f"s{i % shops}"} for i in range(n)]
+    settles = (sold("Gsofa0001", 30, 0.80, 5) + sold("Gsofa0002", 60, 0.78, 6) + sold("Gsofa0003", 90, 0.80, 14)
+               + sold("Gsofa0004", 40, 0.70, 3) + sold("Gmat00001", 200, 0.80, 4) + sold("Gsofa0001", 10, 0.80, 5, at=t - 7 * 3600))
+    got = linewatch.discover(settles, {}, cat, {BEDDING: 3}, {}, t)
+    check("picked: dear (500k+), 20+ settles in 6 h, 0.76+ of list, 10 sellers or fewer; best expected margin first",
+          list(got) == ["Gsofa0001", "Gsofa0002"] and got["Gsofa0001"]["n"] == 30 and got["Gsofa0002"]["sellers"] == 6, got)
+    check("...left out: 14 sellers (crowded), 0.70 of list, a 400k mattress, settles older than 6 h, our own shop's",
+          linewatch.discover(sold("Gsofa0001", 30, 0.8, 5), {"s0": "Kiro729", "s1": "Kiro729", "s2": "Kiro729", "s3": "Kiro729",
+                                                              "s4": "Kiro729"}, cat, {}, {}, t) == {})
+    full = {f"Gx{i}": 2 for i in range(linewatch.LINE_MAX_SKUS - 1)}
+    check("only as many as leave the line at 20 products with a cap above 0 (one exited does not count)",
+          list(linewatch.discover(settles, {}, cat, dict(full, Gout=2), {"Gout": 0}, t)) == ["Gsofa0001"])
+    saved = common.catalog
+    common.catalog = lambda *a, **k: cat
+    try:
+        ch = linewatch.run(t, settles=settles, inv={"units": []}, sales=[], line={BEDDING: 3}, stars=4.9)
+    finally:
+        common.catalog = saved
+    st_ = common.read_json(MD / "analysis" / "line_state.json")
+    check("a run adds them at cap 2, logged with their numbers, into line.json for restock",
+          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 0, 2), ("Gsofa0002", 0, 2)] and "added" in ch[0]["why"]
+          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0001": 2, "Gsofa0002": 2}
+          and set(st_["found"]) == {"Gsofa0001", "Gsofa0002"}, (ch, st_.get("found")))
+    st_["caps"]["Gsofa0002"] = 0
+    st_["exit_at"]["Gsofa0002"] = int(t - linewatch.FIND_DROP - 60)
+    common.write_json(MD / "analysis" / "line_state.json", st_)
+    common.catalog = lambda *a, **k: cat
+    try:
+        linewatch.run(t + 60, settles=[], inv={"units": []}, sales=[], line={BEDDING: 3}, stars=4.9)
+    finally:
+        common.catalog = saved
+    st_ = common.read_json(MD / "analysis" / "line_state.json")
+    check("one out for 12 hours is let go; the other stays", set(st_["found"]) == {"Gsofa0001"} and "Gsofa0002" not in st_["caps"]
+          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0001": 2}, st_)
+    for f in ("line_state.json", "line.json", "line_log.jsonl"):
+        (MD / "analysis" / f).unlink(missing_ok=True)
+
+
 def test_scoreboard():
     print("\n[scoreboard] the board's formula, the next rows above us, the pace")
     import scoreboard
@@ -1002,6 +1057,7 @@ def main() -> int:
         test_journal()
         test_notes()
         test_linewatch()
+        test_discover()
         test_scoreboard()
         test_analysts()
         test_insights()

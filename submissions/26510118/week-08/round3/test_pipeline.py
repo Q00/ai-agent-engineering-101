@@ -399,15 +399,15 @@ def test_restock(fake: Fake):
     check("a dear product that sold is not refilled by the ordinary rule when it is not in the line",
           all(b["sku"] != sofa for b in out["buy"]), out["buy"][:3])
     many = {s: 1 for s in cat2 if s.startswith("Gsofa")}
-    out, info = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, NOW, line=dict(many, Gbad=2, **{BED: 9}))
-    check("at most 7 line products a run (75% of its 10 lines): all 5; unknown SKUs and caps over 5 are ignored",
+    out, info = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, NOW, line=dict(many, Gbad=2, **{BED: 11}))
+    check("at most 9 line products a run (90% of its 10 lines): all 5; unknown SKUs and caps over 10 are ignored",
           info["line"] == 5 and info["line_gaps"] == 5 and all(b["sku"] != BED for b in out["buy"][:5]), (info, out["buy"][:6]))
     out, _ = restock.plan(inv(shelf, balance=3_000_000), cat2, DEMAND, {}, [], [], rules, NOW, line={sofa: 1})
     check("the balance kept (2,500,000) holds: no sofa planned at 1,500,000 with 3,000,000 in hand",
           all(b["sku"] != sofa for b in out["buy"]), out["buy"][:2])
     out, info = restock.plan(inv(shelf, balance=8_000_000), cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
-    check("the line takes at most 75% of the money above the balance kept (8M: two sofas at 1.5M of 4.125M), the shelf still refills",
-          info["line"] == 2 and {"sku": WATER, "qty": 1} in out["buy"], (info["line"], out["buy"]))
+    check("the line takes at most 90% of the money above the balance kept (8M: three sofas at 1.5M of 4.95M), the shelf still refills",
+          info["line"] == 3 and {"sku": WATER, "qty": 1} in out["buy"], (info["line"], out["buy"]))
     soon = dict(rich(shelf), restock={"open": True, "opens_at": NOW - 100, "closes_at": NOW + 40})
     out, info = restock.plan(soon, cat2, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW, line=many)
     check("...and at most 75% of the lines: 40 s left (4 lines), 3 for the line, the refill still bought",

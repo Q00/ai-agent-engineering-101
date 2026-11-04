@@ -70,8 +70,9 @@ from pathlib import Path
 import common
 import pricing
 
-CAP = 25_000_000         # stock at cost, planned at DEAREST: 2.5M until 11/4 14:00, then 4M, 15M at 20:48 and 25M at 21:45 (the
-                         # premium line sold 12 units in its first 30 minutes): the balance kept binds first, the user's call to invest
+CAP = 40_000_000         # stock at cost, planned at DEAREST: 2.5M until 11/4 14:00, then 4M, 15M at 20:48, 25M at 21:45 (the
+                         # premium line sold 12 units in its first 30 minutes) and 40M at 23:40 (25M bound at the 23:20 window
+                         # and the line sold out within half an hour): the balance kept binds first, the user's call to invest
 RESERVE = 2_500_000      # balance kept: refunds of broken goods under warranty come out of it
 LINE = {                 # the premium line: SKU -> the most units held (11/4 evening; analysis/line.json overrides it,
     "G8ec51935": 5,      # 자코모 4인 소파 2,320,000: 40 sold an hour by 11 shops, 0.80 of list   which the line watch rewrites)
@@ -87,11 +88,11 @@ LINE = {                 # the premium line: SKU -> the most units held (11/4 ev
     "G19a70f63": 2,      # 소파 1,672,800: 1.9 an hour, 4 shops (added 21:45)
     "G10693924": 2,      # 소파 707,000: 2.9 an hour, 5 shops (added 21:45)
 }
-LINE_LINES = 7           # line products bought in one run at most (4 until 21:45), and never more than
-LINE_SHARE = 0.75        # LINE_SHARE of the run's lines nor of the balance above RESERVE (0.5 until 21:45)
+LINE_LINES = 9           # line products bought in one run at most (4 until 21:45, 7 until 23:40), and never more than
+LINE_SHARE = 0.9         # LINE_SHARE of the run's lines nor of the balance above RESERVE (0.5 until 21:45, 0.75 until 23:40)
 LINE_PACE = 3600         # a line product is kept at 1 + what we sold of it in this long (a unit sells out within
                          # minutes, so our sales count supply as much as demand: one more than they asks for more)
-LINE_MAX_UNITS = 5
+LINE_MAX_UNITS = 10      # 5 until 11/4 23:40 (the best seller sold 20 in 1.5 h at a cap of 5; others sold it 90 an hour)
 LINE_STALL = 2 * 3600    # held this long with no sale of the product: no more units
 LINE_STOP = 30 * 3600    # no line product is bought this close to the end
 LINES = 10               # the kit buys at most 10 lines a run
@@ -307,7 +308,7 @@ def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: f
         target = min(most, 1 + recent[sku])
         if target > held[sku]:
             out.append((sku, target - held[sku]))
-    return out
+    return sorted(out, key=lambda x: -recent[x[0]])        # what sells most first: a run takes LINE_LINES of up to 20
 
 
 def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, refusals: list,
