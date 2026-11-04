@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
+import json
 import math
 import time
 from collections import Counter
@@ -12,6 +13,7 @@ from settlement_memory import payment_outcomes
 from purchase_monitor import settlement_price
 
 ROOT = Path(__file__).resolve().parent
+MODEL_ALLOWED = ("reserved", "gate_disabled")
 
 
 def config():
@@ -228,11 +230,44 @@ def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, ord
                "max_turns": settings["max_turns"], "funding": "market_order_budget_not_seller_cash"}
 
 
+def model_gate_enabled():
+    """Only an explicit false turns the gate off; a missing or unreadable setting keeps it."""
+    try:
+        value = json.loads((ROOT / "buyer_support.json").read_text(encoding="utf-8")).get("model_gate_enabled")
+    except (OSError, ValueError, AttributeError):
+        return True
+    return value is not False
+
+
+def note_ungated_model_order(md, order_id, now):
+    """Keep usage measurable while the gate is off. Separate from model_orders, so turning the gate back on
+    does not count this period against its limits. Bookkeeping must never stop the model call."""
+    try:
+        from strategy_controller import acquire, release
+        handle = acquire(md / "buyer-support.lock")
+        if handle is None:
+            return
+        try:
+            path = md / "buyer-support-state.json"
+            state = read(path, initial())
+            rows = [r for r in state.get("ungated_model_orders", []) if 0 <= now-r["at"] <= 86400*2]
+            rows.append({"at": now, "order": order_id})
+            state["ungated_model_orders"] = rows
+            write(path, state)
+        finally:
+            release(handle)
+    except Exception:
+        return
+
+
 def model_reservation(md, order_id, now=None):
-    """Return 'reserved', or the specific reason no model negotiation is available."""
+    """Return 'reserved' or 'gate_disabled', or the specific reason no model negotiation is available."""
     from strategy_controller import acquire, release
     md = Path(md)
     now = time.time() if now is None else now
+    if not model_gate_enabled():
+        note_ungated_model_order(md, order_id, now)
+        return "gate_disabled"
     settings = config()
     handle = acquire(md / "buyer-support.lock")
     if handle is None:
@@ -257,7 +292,7 @@ def model_reservation(md, order_id, now=None):
 
 
 def reserve_model(md, order_id, now=None):
-    return model_reservation(md, order_id, now) == "reserved"
+    return model_reservation(md, order_id, now) in MODEL_ALLOWED
 
 
 def report(md):

@@ -634,6 +634,150 @@ class MainWiring(unittest.TestCase):
         self.assertNotIn("over_budget_counter", self.run_main(fast_rules=False))
 
 
+class ModelGateSwitch(TradeFixture):
+    """model_gate_enabled=false opens model_reservation only; order of paths and every other check stay."""
+    LIMITS = {"max_model_orders_per_hour": 2, "max_model_orders_per_day": 3}
+
+    def support_dir(self, flag="absent"):
+        import buyer_support
+        from tempfile import TemporaryDirectory
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        content = {"mode": "balanced"}
+        if flag != "absent":
+            content["model_gate_enabled"] = flag
+        (root / "buyer_support.json").write_text(json.dumps(content), encoding="utf-8")
+        for patcher in (patch.object(buyer_support, "ROOT", root),
+                        patch.object(buyer_support, "config", return_value=self.LIMITS)):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        return root, buyer_support
+
+    def test_only_an_explicit_false_turns_the_gate_off(self):
+        for flag, enabled in (("absent", True), (True, True), (False, False), ("false", True), (0, True), (None, True)):
+            with self.subTest(flag=flag):
+                _, support = self.support_dir(flag)
+                self.assertEqual(support.model_gate_enabled(), enabled)
+
+    def test_unreadable_settings_keep_the_gate(self):
+        root, support = self.support_dir(False)
+        (root / "buyer_support.json").write_text("{broken", encoding="utf-8")
+        self.assertTrue(support.model_gate_enabled())
+        (root / "buyer_support.json").write_text("[]", encoding="utf-8")
+        self.assertTrue(support.model_gate_enabled())
+        (root / "buyer_support.json").unlink()
+        self.assertTrue(support.model_gate_enabled())
+
+    def test_gate_on_still_refuses_with_each_reason(self):
+        root, support = self.support_dir(True)
+        now = 1793750400.0
+        self.assertEqual(support.model_reservation(root, "a", now), "reserved")
+        self.assertEqual(support.model_reservation(root, "a", now), "model_order_already_reserved")
+        self.assertEqual(support.model_reservation(root, "b", now), "reserved")
+        self.assertEqual(support.model_reservation(root, "c", now), "model_quota_hour")
+        self.assertEqual(support.model_reservation(root, "c", now + 3601), "reserved")
+        self.assertEqual(support.model_reservation(root, "d", now + 7300), "model_quota_day")
+        with patch("strategy_controller.acquire", return_value=None):
+            self.assertEqual(support.model_reservation(root, "e", now), "model_gate_lock_busy")
+
+    def test_gate_off_opens_every_refusal_and_keeps_a_usage_record(self):
+        root, support = self.support_dir(False)
+        now = 1793750400.0
+        answers = [support.model_reservation(root, name, now) for name in ("a", "a", "b", "c", "d", "e", "f")]
+        self.assertEqual(set(answers), {"gate_disabled"})
+        with patch("strategy_controller.acquire", return_value=None):
+            self.assertEqual(support.model_reservation(root, "busy", now), "gate_disabled")
+        state = json.loads((root / "buyer-support-state.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(state["ungated_model_orders"]), 7)
+        self.assertEqual(state.get("model_orders", []), [])
+
+    def test_bookkeeping_failures_never_stop_the_model(self):
+        import strategy_controller
+        root, support = self.support_dir(False)
+        real_release = strategy_controller.release
+
+        def release_then_fail(handle):
+            real_release(handle)
+            raise OSError("unlock")
+        for failing in (patch.object(support, "write", side_effect=OSError("disk")),
+                        patch.object(support, "read", side_effect=ValueError("corrupt")),
+                        patch("strategy_controller.acquire", side_effect=OSError("lock")),
+                        patch("strategy_controller.release", side_effect=release_then_fail)):
+            with self.subTest(failing=str(failing)), failing:
+                self.assertEqual(support.model_reservation(root, "a", 1793750400.0), "gate_disabled")
+
+    def test_gate_off_does_not_read_the_quota_settings(self):
+        root, support = self.support_dir(False)
+        with patch.object(support, "config", side_effect=ValueError("bounds")):
+            self.assertEqual(support.model_reservation(root, "a", 1793750400.0), "gate_disabled")
+
+    def test_turning_the_gate_back_on_restores_limits_without_counting_the_open_period(self):
+        root, support = self.support_dir(False)
+        now = 1793750400.0
+        for name in "abcd":
+            support.model_reservation(root, name, now)
+        (root / "buyer_support.json").write_text(json.dumps({"model_gate_enabled": True}), encoding="utf-8")
+        self.assertEqual(support.model_reservation(root, "e", now), "reserved")
+        self.assertEqual(support.model_reservation(root, "f", now), "reserved")
+        self.assertEqual(support.model_reservation(root, "g", now), "model_quota_hour")
+
+    def test_upper_bounds_stay_enforced_for_the_settings_file(self):
+        import buyer_support
+        valid = json.loads((Path(buyer_support.__file__).parent / "buyer_support.json").read_text(encoding="utf-8"))
+        for key, value in (("max_model_orders_per_hour", 3), ("max_model_orders_per_day", 25)):
+            for flag in (True, False):
+                with self.subTest(key=key, flag=flag), patch.object(buyer_support, "read", return_value={**valid, key: value, "model_gate_enabled": flag}):
+                    with self.assertRaises(ValueError):
+                        buyer_support.config()
+
+    def test_gate_off_answer_reaches_the_model_and_only_after_filter_and_rule(self):
+        reply = {"action": "walk_away", "price": None, "reason": "stop"}
+        with patch("buyer.run_harness", return_value=reply) as harness:
+            _, unclear = self.trade(self.transport("Our price is 90."), gate=lambda: "gate_disabled")
+            self.assertEqual(harness.call_count, 1)
+            self.assertEqual(unclear["decision_trail"][0]["source"], "model")
+            harness.reset_mock()
+            _, clear = self.trade(self.transport("asking 110."), gate=lambda: "gate_disabled")
+            harness.assert_not_called()
+            self.assertEqual(clear["decision_trail"][0]["reason_code"], "rule_offer")
+            _, filtered = self.trade(self.transport("grade C. Our price is 90."), gate=lambda: "gate_disabled",
+                                     accept={"grades": ["A", "B"]})
+            harness.assert_not_called()
+            self.assertEqual(filtered["decision_trail"][0]["source"], "quote_filter")
+
+    def test_gate_off_keeps_the_budget_check_on_model_offers(self):
+        with patch("buyer.run_harness", return_value={"action": "offer", "price": 300001, "reason": "over"}) as harness:
+            _, record = self.trade(self.transport("asking 300001."), gate=lambda: "gate_disabled")
+        self.assertEqual(self.offers(), [])
+        self.assertEqual(record["outcome"], "agent_error")
+        self.assertEqual(harness.call_count, 2)
+
+    def test_gate_off_keeps_the_turn_limit(self):
+        replies = [{"action": "offer", "price": 80 + i, "reason": "try"} for i in range(9)]
+        with patch("buyer.run_harness", side_effect=replies) as harness:
+            _, record = self.trade(self.transport("Our price is 95.", after_offer="Our price is 94."), gate=lambda: "gate_disabled")
+        self.assertEqual(harness.call_count, 3)
+        self.assertEqual(record["outcome"], "agent_error")
+
+    def test_gate_off_leaves_the_counter_flag_alone(self):
+        off = {"enabled": False, "max_ask_per_cap": None, "min_surplus_per_list": None}
+        with patch("buyer.run_harness", return_value={"action": "walk_away", "price": None, "reason": "stop"}) as harness:
+            _, record = market.trade(shop("fixture"), "lamp", 100, transport=self.transport("asking 110."), fast_rules=True,
+                                     max_turns=3, model_gate=lambda: "gate_disabled", over_budget_counter=off, catalog_list_price=200)
+        self.assertEqual(harness.call_count, 1)
+        self.assertEqual(self.offers(), [])
+        self.assertEqual(record["decision_trail"][0]["counter_check"]["reason_code"], "counter_disabled")
+
+    def test_denied_answers_still_block_when_the_gate_is_on(self):
+        with patch("buyer.run_harness") as harness:
+            for answer in ("model_quota_hour", "model_quota_day", "model_gate_lock_busy", "model_order_already_reserved"):
+                with self.subTest(answer=answer):
+                    _, record = self.trade(self.transport("Our price is 90."), gate=lambda: answer)
+                    self.assertEqual(record["failure_reason"], answer)
+            harness.assert_not_called()
+
+
 class ReservationReasons(unittest.TestCase):
     def test_each_denial_has_its_own_code_and_reserve_model_stays_boolean(self):
         import buyer_support

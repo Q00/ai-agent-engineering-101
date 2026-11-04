@@ -129,7 +129,7 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
             if not cached:
                 answer = model_gate() if model_gate else "model_gate_missing"
                 client.model_gate_reason = {True: "reserved", False: "model_gate_denied"}.get(answer, answer)
-                cached.append(client.model_gate_reason == "reserved")
+                cached.append(client.model_gate_reason in ("reserved", "gate_disabled"))
             return cached[0]
         client.model_gate = allow_model
         client.over_budget_counter = over_budget_counter
