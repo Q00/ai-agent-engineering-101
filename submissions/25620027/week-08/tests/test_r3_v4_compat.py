@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -88,8 +89,17 @@ def test_launcher_writes_every_v4_hook_with_the_order_path(tmp_path: Path) -> No
         (settings.run_directory / "agent.json").read_text(encoding="utf-8")
     )
     # Then: the kit sees the order, restock and review hooks and unlimited orders.
-    assert "--order '{order}'" in agent["market_buyer"]["cmd"]
-    assert agent["restock"]["cmd"].endswith("restock --state '{state}'")
-    assert agent["review"]["cmd"].endswith("review --deal '{deal}'")
+    assert "--order {order}" in agent["market_buyer"]["cmd"]
+    assert agent["restock"]["cmd"].endswith("restock --state {state}")
+    assert agent["review"]["cmd"].endswith("review --deal {deal}")
+    # And: the kit's own quoting keeps an item with brackets in one argument
+    # (quoted placeholders left it bare and /bin/sh failed on 신선과일(부패주의)).
+    filled = agent["market_buyer"]["cmd"].replace(
+        "{item}", shlex.quote("신선과일(부패주의)")
+    )
+    assert "--item '신선과일(부패주의)'" in filled
+    assert shlex.split(filled)[shlex.split(filled).index("--item") + 1] == (
+        "신선과일(부패주의)"
+    )
     assert "--orders 0" in " ".join(settings.command(app))
     assert settings.seconds_remaining(datetime.now(UTC)) > 14 * 86400

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shlex
 import shutil
 import sys
@@ -63,12 +64,12 @@ def prepare(settings: LaunchSettings, app: Path) -> None:
         target.chmod(0o600)
     commands = {
         "seller": {
-            "cmd": shlex.join(
+            "cmd": hook_command(
                 ["python", str(app / "harness_app.py"), "seller", "--port", "{port}"]
             )
         },
         "buyer": {
-            "cmd": shlex.join(
+            "cmd": hook_command(
                 [
                     "python",
                     str(app / "harness_app.py"),
@@ -83,7 +84,7 @@ def prepare(settings: LaunchSettings, app: Path) -> None:
             )
         },
         "market_buyer": {
-            "cmd": shlex.join(
+            "cmd": hook_command(
                 [
                     "python",
                     str(app / "harness_app.py"),
@@ -102,17 +103,30 @@ def prepare(settings: LaunchSettings, app: Path) -> None:
             ),
         },
         "restock": {
-            "cmd": shlex.join(
+            "cmd": hook_command(
                 ["python", str(app / "harness_app.py"), "restock", "--state", "{state}"]
             )
         },
         "review": {
-            "cmd": shlex.join(
+            "cmd": hook_command(
                 ["python", str(app / "harness_app.py"), "review", "--deal", "{deal}"]
             )
         },
     }
     _ = (settings.run_directory / "agent.json").write_text(json.dumps(commands))
+
+
+def hook_command(parts: list[str]) -> str:
+    """Join a kit hook command, leaving its ``{placeholder}`` parts bare.
+
+    The kit fills each placeholder with an already shell-quoted value, so a
+    quoted placeholder came out as ``''`` + value + ``''``: the value was bare
+    and an order item such as ``신선과일(부패주의)`` broke ``/bin/sh``.
+    """
+    return " ".join(
+        part if re.fullmatch(r"\{\w+\}", part) else shlex.quote(part)
+        for part in parts
+    )
 
 
 async def stop(process: Process) -> None:
