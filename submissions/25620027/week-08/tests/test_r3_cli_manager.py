@@ -17,7 +17,9 @@ from r3.manager import (
     FOLD_RUNS,
     PROMPT,
     Manager,
+    Proposal,
     append_notes,
+    dropped_entries,
     lenient_strategy_arguments,
     load_notes,
     policy_schema,
@@ -238,6 +240,44 @@ def test_pinned_tactical_fields_are_reported_and_their_band_widened_by_code(
     )
     assert lenient["changes"] == {"seller.markup_a": 0.9}
     assert list(lenient["bands"]) == ["seller.concession"]
+    # And: a value past its bound, an unknown field and a seventh change drop
+    # alone (seven Opus runs failed whole on 11/4), and the run log names them.
+    raw = {
+        "changes": {
+            "restock.seed_budget": 30_000_000,
+            "restock.no_such": 1,
+            **dict.fromkeys(
+                (
+                    "seller.markup_a",
+                    "seller.markup_b",
+                    "seller.markup_c",
+                    "buyer.max_price_ratio",
+                    "restock.food_share",
+                    "seller.stale_markup_cut",
+                    "seller.accept_margin",
+                ),
+                0.4,
+            ),
+        },
+        "bands": {"seller.concession": {"low": 0.2, "high": 4.0}},
+    }
+    kept = lenient_strategy_arguments(raw)
+    assert list(kept["changes"]) == [
+        "seller.markup_a",
+        "seller.markup_b",
+        "seller.markup_c",
+        "buyer.max_price_ratio",
+        "restock.food_share",
+        "seller.stale_markup_cut",
+    ]
+    assert kept["bands"] == {}
+    assert Proposal.model_validate(kept).changes == kept["changes"]
+    assert dropped_entries(raw, kept) == [
+        "changes:restock.seed_budget",
+        "changes:restock.no_such",
+        "changes:seller.accept_margin",
+        "bands:seller.concession",
+    ]
 
 
 def test_floor_bounds_fold_and_note_resolution(

@@ -254,7 +254,7 @@ def plan(  # noqa: PLR0913, PLR0912, PLR0915, PLR0917, C901 - one explicit pass
 
 
 def supply_closed(window: RestockWindow | None, now: float) -> bool:
-    """True while the supply window is shut for longer than the kit's retries wait.
+    """Return True while the supply window stays shut past the kit's retry wait.
 
     Half the lines printed on 11/4 (237 of 521) hit a closed window and were lost;
     the hook now prints nothing until the window is about to open.

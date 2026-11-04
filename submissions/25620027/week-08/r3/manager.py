@@ -334,9 +334,13 @@ def lenient_strategy_arguments(parsed: dict[str, object]) -> dict[str, object]:
     out = dict(parsed)
     changes = parsed.get("changes")
     if isinstance(changes, dict):
-        out["changes"] = {
-            k: v for k, v in changes.items() if isinstance(v, (int, float))
-        }
+        numbers: dict[str, object] = {}
+        for k, v in changes.items():
+            if len(numbers) < MAX_CHANGES and within_bounds(k, v):
+                numbers[k] = v
+            else:
+                LOGGER.warning("strategy_change_dropped %s=%s", k, v)
+        out["changes"] = numbers
     bands = parsed.get("bands")
     if isinstance(bands, dict):
         kept: dict[str, object] = {}
@@ -346,10 +350,45 @@ def lenient_strategy_arguments(parsed: dict[str, object]) -> dict[str, object]:
             except ValidationError:
                 LOGGER.warning("strategy_band_dropped %s", k)
                 continue
-            if band.low <= band.high:
+            if (
+                band.low <= band.high
+                and within_bounds(k, band.low)
+                and within_bounds(k, band.high)
+            ):
                 kept[k] = v
+            else:
+                LOGGER.warning("strategy_band_dropped %s", k)
         out["bands"] = kept
     out["notes"] = list(clean_notes(parsed.get("notes")))
+    return out
+
+
+def within_bounds(key: str, value: object) -> bool:
+    """Return True for a number inside a known field's declared bounds.
+
+    One value past a bound (seed_budget above 5M, a seventh change) used to fail
+    the whole proposal: seven Opus strategy runs were lost on 11/4 05:02-08:34.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        low, high = field_bounds(key)
+    except ValueError:
+        return False
+    return (low is None or value >= low) and (high is None or value <= high)
+
+
+def dropped_entries(
+    parsed: Mapping[str, object], kept: Mapping[str, object]
+) -> list[str]:
+    """Names of the changes and bands the lenient pass dropped, for the run log."""
+    out: list[str] = []
+    for part in ("changes", "bands"):
+        before = parsed.get(part)
+        after = kept.get(part)
+        if isinstance(before, dict):
+            names = after if isinstance(after, dict) else {}
+            out.extend(f"{part}:{k}" for k in before if k not in names)
     return out
 
 
@@ -1457,7 +1496,9 @@ class Manager:
             self.run_log("strategy", "failed", "no model reply")
             return None
         actor = reply.model if reply is not None else model
+        raw = parsed
         parsed = lenient_strategy_arguments(parsed)
+        dropped = dropped_entries(raw, parsed)
         try:
             proposal = Proposal.model_validate(parsed)
             changes = self.filter_strategy(proposal.changes, actor, proposal.reason)
@@ -1470,7 +1511,13 @@ class Manager:
                 type(exc).__name__,
                 dump_compact(parsed, 300),
             )
-            self.run_log("strategy", "failed", f"invalid proposal {type(exc).__name__}")
+            where = ""
+            if isinstance(exc, ValidationError) and exc.errors():
+                first = exc.errors()[0]
+                where = f" {'.'.join(str(p) for p in first['loc'])}: {first['msg']}"
+            self.run_log(
+                "strategy", "failed", f"invalid proposal {type(exc).__name__}{where}"
+            )
             return None
         if proposal.notes:
             try:
@@ -1486,7 +1533,10 @@ class Manager:
                 self.run_log("strategy", "noted", " | ".join(added)[:300])
                 LOGGER.info("engineer_notes_added=%s", len(added))
         if not changes and not proposal.bands:
-            self.run_log("strategy", "held", proposal.reason or "no reason given")
+            held = proposal.reason or "no reason given"
+            if dropped:
+                held = f"dropped={','.join(dropped)} {held}"
+            self.run_log("strategy", "held", held)
             LOGGER.info("manager_no_change reason=%s", proposal.reason)
             return None
         try:
@@ -1527,7 +1577,8 @@ class Manager:
         self.run_log(
             "strategy",
             "changed",
-            f"{json.dumps(changes)} bands={len(proposal.bands)} {proposal.reason}",
+            f"{json.dumps(changes)} bands={len(proposal.bands)}"
+            f"{' dropped=' + ','.join(dropped) if dropped else ''} {proposal.reason}",
         )
         LOGGER.info(
             "manager_policy_v%s changes=%s bands=%s reason=%s",
