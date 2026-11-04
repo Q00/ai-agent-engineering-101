@@ -220,6 +220,7 @@ class SellerHistoryTests(unittest.IsolatedAsyncioTestCase):
             setattr(self.updater, method, AsyncMock())
         self.queue = AsyncMock()
         for target, replacement in (
+            ("seller.round3_inventory", MagicMock(return_value=False)),
             ("seller.TaskUpdater", MagicMock(return_value=self.updater)),
             ("seller.get_message_text", lambda message: message),
         ):
@@ -559,6 +560,11 @@ class StockSellerTests(unittest.IsolatedAsyncioTestCase):
 
 
 class RestockTests(unittest.TestCase):
+    def setUp(self):
+        patcher = patch.dict("os.environ", {"RESTOCK_OUTCOME_TRACKING": "v2"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_initial_allowance_survives_repeated_hook_calls(self):
         with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as folder:
             folder = Path(folder)
