@@ -129,6 +129,10 @@ def validate(pol):
             raise PolicyError(f"buyer.{k}={v!r} outside [{lo}, {hi}]")
     if isinstance(bu.get("max_shops"), float):
         raise PolicyError("buyer.max_shops must be an int")
+    for kind, blk in (bu.get("defaults") or {}).items():   # v1.22: optional per-kind buyer deadline
+        v = blk.get("deadline_s") if isinstance(blk, dict) else None
+        if v is not None and (isinstance(v, bool) or not isinstance(v, (int, float)) or not 0 < v <= 280):
+            raise PolicyError(f"buyer.defaults.{kind}.deadline_s={v!r} outside (0, 280]")
     blocks = list((pol.get("defaults") or {}).values()) + list((pol.get("categories") or {}).values())
     blocks += list((pol.get("buyer", {}).get("defaults") or {}).values()) + list((pol.get("buyer", {}).get("categories") or {}).values())
     for blk in blocks:
@@ -865,11 +869,30 @@ def buyer_terms(order, pol, relax=0.0):
     return c
 
 
+# v1.22 (round 3 labpc logs, 589 food checkout refusals for shelf life): refusal rate by r = use_within_hours /
+# shelf_hours. r < 0.25: 1.7%, < 0.5: 11%, < 0.75: 34%, else 64%.
+SHELF_REFUSE_STEPS = ((0.25, 0.017), (0.5, 0.11), (0.75, 0.34))
+SHELF_REFUSE_TOP = 0.64
+
+
+def p_refuse(use_within_hours, shelf_hours):
+    """v1.22: chance that a food checkout is refused for shelf life (step function of r above), or None when
+    either number is missing or not positive."""
+    ok = lambda x: isinstance(x, (int, float)) and not isinstance(x, bool) and x > 0
+    if not ok(use_within_hours) or not ok(shelf_hours):
+        return None
+    r = use_within_hours / shelf_hours
+    return next((p for hi, p in SHELF_REFUSE_STEPS if r < hi), SHELF_REFUSE_TOP)
+
+
 def choose_offers(order, shops, catalog, pol, reputation=None, own=None, relax=0.0):
     """Rank (shop, sku) pairs by expected surplus: list_price * (1 - target pay share) weighted by the shop's
-    claim_honest / not-broken record. Own-owner shops are dropped (same GitHub owner cannot settle)."""
+    claim_honest / not-broken record. Own-owner shops are dropped (same GitHub owner cannot settle).
+    v1.22: food scores are also weighted by 1 - p_refuse(use_within_hours, catalog shelf_hours) (skipped when
+    either is missing)."""
     acceptable = set(order.get("acceptable") or [])
     c = buyer_terms(order, pol, relax)
+    food = (order.get("kind") or "goods") == "food"
     budget = int(order.get("budget") or 0)
     out = []
     for s in shops:
@@ -891,6 +914,9 @@ def choose_offers(order, shops, catalog, pol, reputation=None, own=None, relax=0
             if target <= 0:
                 continue
             exp = (lp - int(lp * c["open_frac"])) * honest * (1 - broken)
+            pr = p_refuse(order.get("use_within_hours"), (catalog.get(sku) or {}).get("shelf_hours")) if food else None
+            if pr is not None:
+                exp *= 1 - pr
             out.append({"shop": s, "sku": sku, "name": off.get("name") or sku, "list_price": lp,
                         "max_pay": target, "open": max(1, int(lp * c["open_frac"])), "score": exp,
                         "broken_rate": broken})

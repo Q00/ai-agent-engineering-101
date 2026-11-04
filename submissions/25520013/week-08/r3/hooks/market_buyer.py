@@ -6,9 +6,12 @@ skips own-owner shops, haggles with int offers capped below the budget and the l
 line {"shop", "receipt", "stars", "review", "accept"}. Walks away when the shop states a grade or shelf
 life that our accept policy would refuse at checkout. Refusals of earlier orders (payments.jsonl -> reject events
 with a reason_code) are counted once each in the metrics row of the run that ingested them.
+v1.22: food orders get FOOD_DEADLINE_S (goods keep DEADLINE_S), and (shop, SKU) pairs that failed on shelf life are
+skipped for food until the refused unit expires (state file SHELF_FILE in the R3 state dir).
 """
 import argparse
 import json
+import os
 import re
 import time
 import uuid
@@ -17,6 +20,7 @@ from pathlib import Path
 import httpx
 
 from common import volume_level, catch_up_stats, P, Recorder, emit, hook_event, ingest, read_json
+from ledger import state_dir
 from reputation import Reputation
 import owner as OW
 
@@ -25,12 +29,28 @@ DEADLINE_S = 200           # the kit stops the buyer at 300 s
 BASE_SHOPS = 3             # v1.20b: attempts 1-3 run as before; attempts 4..max_shops pass the time guard
 EXTRA_WINDOW_S = 60        # v1.20b defaults (policy buyer.extra_attempt_window_s / expiry_guard_s override)
 EXPIRY_GUARD_S = 60
+FOOD_DEADLINE_S = 15       # v1.22: the market issues the next order ~20 s after this one (policy buyer.defaults.{kind}.deadline_s overrides)
+RPC_FLOOR_S = 3            # v1.22: least timeout of one haggle message under a time-capped kind
+SHELF_FILE = "shelf_refusals.json"
+SHELF_TTL_S = 6 * 3600     # v1.22: skip a shelf-life refused (shop, SKU) this long when the unit's hours left are unknown
+SHELF_HOURS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*h (?:of )?shelf life", re.I)   # kit reason / our walk-away why
+
+
+def kind_deadline_s(order, pol):
+    """v1.22: hook deadline (s since start) for the order's kind: policy buyer.defaults.{kind}.deadline_s when it
+    is a number in (0, 280], else FOOD_DEADLINE_S for food and DEADLINE_S for goods (unchanged)."""
+    kind = order.get("kind") or "goods"
+    blk = (((pol or {}).get("buyer") or {}).get("defaults") or {}).get(kind)
+    v = blk.get("deadline_s") if isinstance(blk, dict) else None
+    if isinstance(v, (int, float)) and not isinstance(v, bool) and 0 < v <= 280:
+        return v
+    return FOOD_DEADLINE_S if kind == "food" else DEADLINE_S
 
 
 def attempt_allowed(n_shops, elapsed, now, order, pol):
     """v1.20b: may the buyer start an attempt at one more shop? -> (ok, reason).
     n_shops = shops already tried for this order, elapsed = seconds since the hook started.
-    Always: n_shops < buyer.max_shops (default MAX_SHOPS) and elapsed <= DEADLINE_S (v1.19 behaviour).
+    Always: n_shops < buyer.max_shops (default MAX_SHOPS) and elapsed <= kind_deadline_s (v1.22; goods DEADLINE_S).
     Attempts past BASE_SHOPS (4th and later) also need elapsed < extra_attempt_window_s and, when the order
     carries 'expires' (epoch s), now < expires - expiry_guard_s. reason: None, 'max_shops', 'deadline',
     'guard_elapsed' or 'guard_expiry' (the last two are the time-guard hits counted in metrics)."""
@@ -39,7 +59,7 @@ def attempt_allowed(n_shops, elapsed, now, order, pol):
     cap = cap if isinstance(cap, int) and not isinstance(cap, bool) and cap >= 1 else MAX_SHOPS
     if n_shops >= cap:
         return False, 'max_shops'
-    if elapsed > DEADLINE_S:
+    if elapsed > kind_deadline_s(order, pol):
         return False, 'deadline'
     if n_shops < BASE_SHOPS:
         return True, None
@@ -53,9 +73,9 @@ def attempt_allowed(n_shops, elapsed, now, order, pol):
 
 
 def attempt_deadline(n_shops, t0, order, pol):
-    """v1.20b: haggle deadline for the next attempt. Attempts 1-3: t0 + DEADLINE_S (unchanged). Later attempts
-    also stop expiry_guard_s before the order expires."""
-    d = t0 + DEADLINE_S
+    """v1.20b: haggle deadline for the next attempt. Attempts 1-3: t0 + kind_deadline_s (v1.22; goods DEADLINE_S).
+    Later attempts also stop expiry_guard_s before the order expires."""
+    d = t0 + kind_deadline_s(order, pol)
     exp = order.get('expires')
     if n_shops >= BASE_SHOPS and isinstance(exp, (int, float)) and not isinstance(exp, bool):
         b = (pol or {}).get('buyer') or {}
@@ -110,8 +130,8 @@ def receipt_of(t):
     return None
 
 
-def endpoint(shop_url):
-    card = httpx.get(shop_url.rstrip("/") + "/.well-known/agent-card.json", timeout=20).json()
+def endpoint(shop_url, timeout=20):
+    card = httpx.get(shop_url.rstrip("/") + "/.well-known/agent-card.json", timeout=timeout).json()
     ifs = card.get("supportedInterfaces") or []
     return (ifs[0].get("url") if ifs else None) or card.get("url")
 
@@ -235,8 +255,18 @@ def over_cap(rec, cand, order):
 
 
 def haggle(cand, order, pol, deadline, accept=None):
-    url = endpoint(cand["shop"]["url"])
-    t = rpc(url, f"I want to buy {cand['name']} ({cand['sku']})")
+    capped = kind_deadline_s(order, pol) < DEADLINE_S   # v1.22: food; goods keep their normal timeouts
+
+    def tmo(normal):
+        """v1.22: under a time-capped kind a message waits at most until the deadline (at least RPC_FLOOR_S)."""
+        return max(RPC_FLOOR_S, min(normal, deadline - time.time())) if capped else normal
+
+    url = endpoint(cand["shop"]["url"], timeout=tmo(20))
+    opening = f"I want to buy {cand['name']} ({cand['sku']})"
+    need = (accept or {}).get("min_hours_left")
+    if (order.get("kind") or "goods") == "food" and isinstance(need, (int, float)) and not isinstance(need, bool):
+        opening += f". The unit must last at least {need:g} hours."    # v1.22: food only
+    t = rpc(url, opening, timeout=tmo(60))
     rounds, last = 0, None
     why = stated_misfit(text_of(t), accept or {}) if state(t) == "TASK_STATE_INPUT_REQUIRED" else None
     if why == "stated grade C":                         # v1.4 (G): haggle on at the grade-C cap instead
@@ -254,7 +284,8 @@ def haggle(cand, order, pol, deadline, accept=None):
                 cancel(url, t.get("id"))
                 break                                   # at our cap and the shop is above it: walk away
         last = offer
-        t = rpc(url, str(int(offer)), t["id"])
+        # v1.22: an offer at or above the shop's ask accepts it (checkout step): normal timeout, never cut short
+        t = rpc(url, str(int(offer)), t["id"], timeout=60 if ask is not None and offer >= ask else tmo(60))
         rounds += 1
     rec = receipt_of(t) if state(t) == "TASK_STATE_COMPLETED" else None
     sig = None
@@ -262,6 +293,7 @@ def haggle(cand, order, pol, deadline, accept=None):
         sig, rec, how = verify_receipt(rec, cand.get("pubkey"))
         if sig is False:                                # the kit would refuse it too: no checkout attempt
             return None, {"rounds": rounds, "state": "receipt_refused", "why": f"signature {how}", "last_offer": last}
+    cut = state(t) == "TASK_STATE_INPUT_REQUIRED" and rounds < P.HAGGLE_ROUNDS and time.time() >= deadline
     if state(t) == "TASK_STATE_INPUT_REQUIRED":
         cancel(url, t.get("id"))                        # deadline or round cap: free the shop's unit
     if rec and claim_refused(rec, accept) and str(rec.get("claim") or "").strip().upper() == "C" \
@@ -274,7 +306,37 @@ def haggle(cand, order, pol, deadline, accept=None):
     if rec and over_cap(rec, cand, order):
         return None, {"rounds": rounds, "state": "receipt_refused", "why": over_cap(rec, cand, order), "last_offer": last}
     return rec, {"rounds": rounds, "state": state(t), "last_offer": last, "sig": sig,
-                 "grade_c": bool(cand.get("grade_c")), "accept": accept}
+                 "grade_c": bool(cand.get("grade_c")), "accept": accept, **({"deadline_cut": True} if cut else {})}
+
+
+def load_shelf(path, now):
+    """v1.22: shelf-life refusal memory {"shop|sku": {"until": epoch s, "why": text}} -> (live pairs, pruned?)."""
+    d = read_json(path, {}) or {}
+    pairs = (d.get("pairs") if isinstance(d, dict) else None) or {}
+    live = {k: v for k, v in pairs.items() if isinstance(v, dict) and isinstance(v.get("until"), (int, float))
+            and v["until"] > now}
+    return live, len(live) != len(pairs)
+
+
+def remember_shelf(mem, shop, sku, why, now):
+    """v1.22: (shop, SKU) failed on shelf life (kit refusal or our walk-away). The shop keeps shipping its oldest
+    unit, so the pair is skipped until that unit expires: now + the hours left stated in `why`, else SHELF_TTL_S."""
+    if not shop or not sku:
+        return
+    m = SHELF_HOURS_RE.search(why or "")
+    until = now + (float(m.group(1)) * 3600 if m else SHELF_TTL_S)
+    mem[f"{shop}|{sku}"] = {"until": round(until, 1), "why": str(why or "")[:120]}
+
+
+def shelf_refused(c, mem):
+    return any(f"{k}|{c['sku']}" in mem for k in (c["shop"].get("url"), c["shop"].get("name")) if k)
+
+
+def save_shelf(path, mem):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(f".{os.getpid()}.tmp")
+    tmp.write_text(json.dumps({"v": 1, "pairs": mem}, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def main():
@@ -291,9 +353,15 @@ def main():
     new = []
     seq, counts, ims = ingest(md, collect=new)
     rej = {}
+    shelf_path = state_dir() / SHELF_FILE               # v1.22: next to reputation.json
+    shelf, shelf_dirty = load_shelf(shelf_path, t0)
     for e in new:                                       # refusals of earlier orders, read once (ledger cursor)
         if e["type"] == "reject":
             rej[e["data"]["reason_code"]] = rej.get(e["data"]["reason_code"], 0) + 1
+            why = e["data"].get("reason") or ""
+            if e["data"]["reason_code"] == "shelf_life" or SHELF_HOURS_RE.search(why):
+                remember_shelf(shelf, e["data"].get("shop"), e["data"].get("item"), why, t0)
+                shelf_dirty = True
     order = read_json(a.order, {}) or {}
     if a.budget and not order.get("budget"):
         order["budget"] = a.budget
@@ -321,6 +389,12 @@ def main():
     except Exception as e:                              # noqa: BLE001
         serr = f"{type(e).__name__}: {str(e)[:150]}"
     cands = P.choose_offers(order, shops, catalog, pol, rtab, own, relax)
+    food = (order.get("kind") or "goods") == "food"
+    shelf_skipped = 0
+    if food:                                            # v1.22: skip (shop, SKU) pairs refused on shelf life
+        kept = [c for c in cands if not shelf_refused(c, shelf)]
+        shelf_skipped = len(cands) - len(kept)
+        cands = kept or cands                           # all skipped: fall back to the unfiltered ranking, not no deal
     for c in cands:
         c["relax"] = relax
         c["pubkey"] = own.get("pubkeys", {}).get(OW.norm_url(c["shop"].get("url")))
@@ -344,6 +418,9 @@ def main():
             hook_event("fail", f"a2a:{order.get('order')}:{c['shop']['url']}",
                        {"order": order.get("order"), "stage": "a2a", "detail": str(e)[:200]}, "buyer")
         deal_accept = info.pop("accept", None) or accept   # v1.4: with C only for a deal made under the C cap
+        if food and info.get("state") == "walked_away" and "shelf life" in (info.get("why") or ""):
+            remember_shelf(shelf, c["shop"].get("url"), c["sku"], info["why"], time.time())
+            shelf_dirty = True
         tried.append({"shop": c["shop"].get("name"), "sku": c["sku"], **info})
         if receipt:
             price = P.as_int_price(receipt["price"])
@@ -364,12 +441,20 @@ def main():
                                    "price": (out["receipt"] or {}).get("price"), "candidates": len(cands),
                                    "tried": len(tried), "budget": order.get("budget"),
                                    "stop": stop, "guard_hit": stop in ("guard_elapsed", "guard_expiry"),
+                                   "deadline_s": kind_deadline_s(order, pol),
+                                   "deadline_hit": stop == "deadline" or any(x.get("deadline_cut") for x in tried),
+                                   "shelf_skipped": shelf_skipped,
                                    "max_shops": (pol.get("buyer") or {}).get("max_shops", MAX_SHOPS),
                                    "list_price": next((c["list_price"] for c in cands if out["receipt"] and c["sku"] == out["receipt"].get("item")), None)},
               rejections=rej, ingest_ms=ims, ingested=counts,
               extra={"rep_source": rsrc, "stats": stats is not None, "stats_error": serr, "catch_up": cinfo, "agg_broken": agg_broken, "relax": relax, "settled": nset, "own_source": own["source"], "own_names": len(own["names"]), "own_urls": len(own["urls"]),
                      "own_excluded": len(excluded), "own_error": own["error"]})
     emit(out)
+    if shelf_dirty:
+        try:
+            save_shelf(shelf_path, shelf)
+        except OSError:                                 # bookkeeping only: the order's output is already out
+            pass
 
 
 if __name__ == "__main__":
