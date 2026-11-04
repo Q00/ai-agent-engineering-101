@@ -30,7 +30,7 @@ does not count as on the shelf; S5 sells it off). Exploration phase:
             의류, ...) in the first runs and then mixes the groups in proportion to their size, so
             each run samples the whole catalog; the market's list is in alphabetical order, which
             would bring furniture first and kitchenware hours later.
-  limits    stock at cost up to 2,500,000 and the balance kept at 2,500,000 or more,
+  limits    stock at cost up to 4,000,000 and the balance kept at 2,500,000 or more,
             planning as if every unit came in at the dearest cost (75% of list)
   wanted    a category the analysis found wanted (another agent's "wanted" post on the
             forum, or one our buyer found no shop for) gets its representative product
@@ -59,7 +59,7 @@ from pathlib import Path
 import common
 import pricing
 
-CAP = 2_500_000          # stock at cost
+CAP = 4_000_000          # stock at cost (2,500,000 until 11/4: each window stopped near it with ~130 products below target)
 RESERVE = 2_500_000      # balance kept
 LINES = 10               # the kit buys at most 10 lines a run
 RUN_EVERY = 20 * 60      # seconds between the kit's runs of this hook (60 until 11/3); set it to the kit's

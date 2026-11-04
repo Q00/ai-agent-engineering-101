@@ -331,9 +331,9 @@ def test_restock(fake: Fake):
     old = [u for u in shelf if u["sku"] != PAKIMCHI] + [unit_row("u-near", PAKIMCHI, 9000, 10)]
     out, _ = restock.plan(inv(old), CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("food with under a day left does not count: a fresh one is bought", out["buy"] == [{"sku": PAKIMCHI, "qty": 1}], out)
-    heavy = shelf + [unit_row(f"u-h{i}", BED, 200_000) for i in range(12)]
+    heavy = shelf + [unit_row(f"u-h{i}", BED, 200_000) for i in range(20)]
     out, _ = restock.plan(inv(heavy), CATALOG, DEMAND, {}, [], [{"sku": WATER, "ts": NOW - H}], rules, NOW)
-    check("stock at the 2,500,000 cap: buys nothing", out["buy"] == [], out)
+    check("stock at the 4,000,000 cap: buys nothing", out["buy"] == [], out)
     end = common.ROUND_END
     late = [{"sku": PAKIMCHI, "ts": end - 2 * DAY - H}] * 3 + [{"sku": WATER, "ts": end - 2 * DAY - H}]
     empty_now = [u for u in shelf if u["sku"] not in (PAKIMCHI, WATER)]
