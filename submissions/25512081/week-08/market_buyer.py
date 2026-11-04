@@ -276,6 +276,9 @@ def collect_quotes(shops, budget, order=None):
                     q["expect"] = int(price)
                     q["surplus"] = int((1 - pg) * (q["value"] - price) if q["warranty"] >= 6
                                        else (1 - pg) * q["value"] - price)
+                    gone = memory.stock_fail(q["shop"]["name"])     # agreed, then the unit was gone at checkout
+                    if q["surplus"] > 0:
+                        q["surplus"] = int(q["surplus"] * (1 - gone))
                     # the quote names no shelf life, but our kit refused this shop's unit of this SKU in the last
                     # hour for being too short: likely the same unit again, so try the other shops first
                     q["short"] = need and memory.short_shelf(q["shop"]["name"], q["sku"]["sku"], need)
@@ -438,6 +441,14 @@ def main():
         picked, reason = choose(shops, a.item, a.budget, mine, SHORTLIST)
         log(f"[choose] shortlist {[s['name'] for s in picked]}: {reason}")
         quotes = collect_quotes(picked, a.budget, order)
+        cheats = memory.avoid()
+        more = [s for s in shops if s not in picked and s["name"] not in cheats][:SHORTLIST]
+        if not quotes and more:
+            # Nov 4 18:00-22:20: 65 orders ended with no price from the shops asked (mostly "none of that in
+            # stock": shops.json lags the shops' stock) while other listed shops were never asked
+            log(f"[choose] no quote from the shortlist; asking {[s['name'] for s in more]}")
+            quotes = collect_quotes(more, a.budget, order)
+            picked = more + picked
         remember_need(order)
         try:
             record_market(order, shops, quotes)

@@ -143,6 +143,34 @@ def avoid():
     return out | {s for s, n in by.items() if n >= 2} | {s for s, n in nocert.items() if n >= 2}
 
 
+_GONE = None
+
+
+def stock_fail(shop):
+    """Share of our agreed deals with `shop` whose checkout the shop refused because the unit was gone (sold to
+    someone else after it agreed with us), with a prior of 1 in 10. Nov 4 18:00-22:20: 23 such deals lost 6M of
+    budget, and the rate is a property of the shop: olstjr 7 of 8, dae-yangkim 24 of 42, shaun0927 14 of 56,
+    yms979 11 of 343."""
+    global _GONE
+    if _GONE is None:
+        _GONE, paid = {}, {}
+        try:
+            for line in open(MD / "payments.jsonl", encoding="utf-8"):
+                try:
+                    x = json.loads(line)
+                except ValueError:
+                    continue
+                n = shop_name(x.get("shop"))
+                if x.get("paid"):
+                    paid[n] = paid.get(n, 0) + 1
+                elif "not in stock" in (x.get("reason") or ""):
+                    _GONE[n] = _GONE.get(n, 0) + 1
+        except OSError:
+            pass
+        _GONE = {n: (_GONE.get(n, 0) + 1) / (_GONE.get(n, 0) + paid.get(n, 0) + 10) for n in set(_GONE) | set(paid)}
+    return _GONE.get(shop, 0.1)
+
+
 SHORT_SHELF_WINDOW = 3600     # Nov 4 00:40-02:17: 24 of 216 orders agreed a deal the kit refused for short shelf
                               # life, often the same shop and SKU again (one shop 7 times); replaying the payments
                               # log, a refusal under 1 h old predicted 20 of 56 such refusals, but 5 paid deals too
