@@ -31,7 +31,7 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None):
     now = time.time() if now is None else now
     hints = hints or {}
     intelligence = intelligence or {}
@@ -109,6 +109,17 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     planned_units = 0
     # One unit of each new SKU first, so one run spreads across the range before it deepens any shelf.
     planned = Counter()
+    # The capped food trial goes first so goods cannot use up its places. Ordinary food stays out below.
+    run_room = min(limits["max_units_per_run"], limits["max_total_units"] - len(units))
+    trial_skus = []
+    for pick in food_trial or ():
+        carrying = 0  # Food pays no storage; the contract charges goods only.
+        if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] + carrying > budget:
+            continue
+        planned[pick["sku"]] = 1
+        estimated += pick["estimated_cost"]
+        planned_units += 1
+        trial_skus.append(pick["sku"])
     new_range = [pair for pair in candidates if owned[pair[0]] == 0 and proven(pair[0])]
     for position, (sku, value) in enumerate(new_range + candidates):
         # Supply draws the grade on arrival; shelf_hours is not a minimum remaining lifetime.
@@ -150,7 +161,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
                   "public_evidence_skus": len(intelligence),
                   "forum_hints": hints,
                   "leader_hints": leader_hints,
-                  "food_supply": "deferred: no guaranteed shelf life or supported sales-window estimate"}
+                  "food_trial": trial_skus,
+                  "food_supply": "deferred outside the capped trial: no guaranteed shelf life or supported sales-window estimate"}
 
 
 def main():
@@ -243,9 +255,23 @@ def main():
     except (OSError, ValueError, KeyError, TypeError):
         own_profitable = {}
     from seller_quality import fresh as fresh_quality
+    import food_trial
+    trial_settings = food_trial.load_settings()
+    trial_state = food_trial.load_state(md)
+    if trial_state is not None:
+        food_trial.observe(trial_state, inv, time.time())
+    trial_picks = food_trial.choose(trial_settings, trial_state, catalog, snapshot.get("skus", {}), inv.get("surge"), time.time())
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
                              intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints,
-                             own_profitable=own_profitable, quality=fresh_quality(md))
+                             own_profitable=own_profitable, quality=fresh_quality(md), food_trial=trial_picks)
+    if trial_state is not None:
+        chosen = set(explanation.get("food_trial") or ())
+        food_trial.record_plan(trial_state, trial_picks, chosen, time.time())
+        # A purchase is only sent once it is on record, so the cumulative cap cannot be passed by a lost update.
+        if not food_trial.save_state(md, trial_state):
+            buys = [b for b in buys if b["sku"] not in chosen]
+            explanation["food_trial"] = []
+    explanation["food_trial_picks"] = trial_picks
     memory["cursor"] += 1
     temporary = memory_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")
