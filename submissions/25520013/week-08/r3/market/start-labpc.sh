@@ -11,5 +11,5 @@ export R3_MARKET=https://market.ourolabs.ai R3_SHOP_NAME=lee-sungsoo R3_BUYER_NA
 tmux has-session -t market 2>/dev/null && { echo "tmux session market already running"; exit 0; }
 tmux new-session -d -s market -n kit "bash $PWD/kit-loop.sh"
 tmux new-window -t market -n forum "bash $PWD/forum-loop.sh"
-tmux new-window -t market -n memory "bash $PWD/memory-loop.sh"
-echo "started tmux session market (kit, forum, memory)"
+tmux new-window -t market -n runner "bash $PWD/runner-loop.sh"   # T1 2026-11-04: was memory-loop.sh (rollback: start-labpc.sh.bak)
+echo "started tmux session market (kit, forum, runner)"
