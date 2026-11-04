@@ -46,6 +46,7 @@ SEED = 20261104
 N_LESSONS = 20
 N_CATS = 8
 PRIOR_M = 0.3
+MIN_CAT_SHARE = 0.10  # v1.26e: a category arm needs this share of our sales value (arm_cats)
 LANES = {
     "price": ("price",),
     "stock": ("supply", "structure"),
@@ -774,12 +775,20 @@ def top_cats(stats, n=N_CATS, by="settles_h"):
 
 
 def arm_cats(pol, stats):
-    """v1.26d (2026-11-05): the categories that get category arms: the policy's overrides plus the top 5 categories
-    by our own sales value. e0017 (kimchi breadth_qty, proposed 03:28 KST) came from the top 5 by settle count, where
-    kimchi is 3rd (4th by market value), yet kimchi is 1 % of our sales value (03:36 KST: mattresses 58 %, sofas 31 %),
-    an effect far below the noise of one 40-minute block."""
+    """v1.26d (2026-11-05): the categories that get category arms: of the policy's overrides and the top 5 categories
+    by our own sales value, those holding at least MIN_CAT_SHARE of our sales value (v1.26e), and overrides we have
+    no sales in yet. e0017 (kimchi breadth_qty, proposed 03:28 KST) came from the top 5 by settle count, where kimchi
+    is 3rd (4th by market value), yet kimchi is 1 % of our sales value (03:36 KST: mattresses 58 %, sofas 31 %,
+    bedding 3.4 %, juice 0.8 %); e0008, e0011 and e0014 edited juice. A one-step change there moves the shop value by
+    far less than the noise of one block, so such an experiment ends without a verdict after up to 16 hours."""
+    ours = {c: (v.get("our_n") or 0) * (v.get("mean") or 0) for c, v in stats["category"].items() if c != "?"}
+    tot = sum(ours.values())
     ov = [c for c in (pol.get("categories") or {}) if "." not in c]
-    return list(dict.fromkeys(ov + top_cats(stats, 5, by="ours")))
+    return [
+        c
+        for c in dict.fromkeys(ov + top_cats(stats, 5, by="ours"))
+        if (tot and ours.get(c, 0) >= MIN_CAT_SHARE * tot) or (c in ov and not ours.get(c))
+    ]
 
 
 def retired(pol, exp, stats):

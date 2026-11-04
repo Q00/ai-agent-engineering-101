@@ -1,6 +1,7 @@
-"""v1.26d (2026-11-05): category arms come from the policy's overrides plus the top 5 categories by our own sales
-value, and a scheduled experiment whose category edits all fall outside them is retired before it starts (03:36 KST:
-e0017 kimchi breadth_qty, 1 % of our sales value, was 3rd by settle count and 4th by market value)."""
+"""v1.26d/e (2026-11-05): category arms come from the policy's overrides and the top 5 categories by our own sales
+value, kept only when they hold at least MIN_CAT_SHARE of our sales value (or are overrides with no sales yet), and a
+scheduled experiment whose category edits all fall outside them is retired before it starts (03:36 KST: e0017 kimchi
+breadth_qty, 1 % of our sales value, was 3rd by settle count and 4th by market value; juice, 0.8 %, is an override)."""
 
 import json
 
@@ -49,10 +50,11 @@ def test_top_cats_by_count_by_market_value_and_by_ours():
     assert loop.top_cats(STATS, 5, by="ours") == [MAT, SOFA, BED, RUG, FRUIT]
 
 
-def test_arm_cats_are_the_overrides_plus_the_top_5_by_ours():
-    pol = {"categories": {JUICE: {"breadth_qty": 2}, "a.b": {}}}
-    assert loop.arm_cats(pol, STATS) == [JUICE, MAT, SOFA, BED, RUG, FRUIT]
-    assert KIM not in loop.arm_cats({}, STATS)
+def test_arm_cats_keep_a_tenth_of_our_sales_value_and_unsold_overrides():
+    pol = {"categories": {JUICE: {"breadth_qty": 2}, "a.b": {}, "NEW": {}}}
+    assert loop.arm_cats(pol, STATS) == ["NEW", MAT, SOFA]  # juice 0.8 %, bedding 3.5 %, mattress 60 %, sofa 32 %
+    assert loop.arm_cats({}, STATS) == [MAT, SOFA]
+    assert loop.arm_cats(pol, {"category": {}}) == [JUICE, "NEW"]  # no sales data: the overrides keep their arms
 
 
 def test_retired_only_when_every_edit_is_an_ineligible_category():
@@ -62,9 +64,8 @@ def test_retired_only_when_every_edit_is_an_ineligible_category():
         == f"retired: {KIM} not among the arm categories"
     )
     assert loop.retired(pol, _exp(_cat(MAT)), STATS) is None
-    assert (
-        loop.retired(pol, _exp(_cat(JUICE)), STATS) is None
-    )  # an override always has arms
+    assert loop.retired(pol, _exp(_cat(JUICE)), STATS) == f"retired: {JUICE} not among the arm categories"
+    assert loop.retired({"categories": {"NEW": {}}}, _exp(_cat("NEW")), STATS) is None  # an override not sold yet
     assert loop.retired(pol, _exp(_cat(KIM), _cat(MAT)), STATS) is None
     assert (
         loop.retired(pol, _exp(_cat(KIM), "defaults.food.breadth_qty"), STATS) is None
