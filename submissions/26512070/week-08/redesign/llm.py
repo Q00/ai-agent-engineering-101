@@ -41,6 +41,7 @@ def config():
 def ask(prompt, system=None, model=None, timeout=None, tag=""):
     cfg = config()
     model = model or cfg["model"]
+    model = cfg.get("roles", {}).get(model, model)       # a role name (designer, reviewer, worker) or a model id
     msgs = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": prompt}]
     body = json.dumps({"model": model, "messages": msgs, "usage": {"include": True}}).encode()
     req = urllib.request.Request(URL, data=body, method="POST", headers={

@@ -1,4 +1,9 @@
 {
-  "model": "openai/gpt-4o-mini",
-  "timeout_s": 120
+  "roles": {
+    "designer": "google/gemini-4-argon",
+    "reviewer": "openai/gpt-6.1-sol",
+    "worker": "openai/gpt-6-luna"
+  },
+  "model": "designer",
+  "timeout_s": 300
 }
