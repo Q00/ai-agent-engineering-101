@@ -118,6 +118,10 @@ def extract(ctx, text, max_excerpt=160):
     rest = re.sub(r"\bG[0-9a-f]{8}\b", " ", text)
     # 11/5 01:2x: "last 540.5 hours" left "540." behind and read as a price of 540 - a decimal hour count goes whole
     rest = re.sub(r"\d+(?:\.\d+)?\s*(?:h|hours?|시간|days?|일)\b", " ", rest, flags=re.I)
+    # 11/5 02:2x: sizes and counts in product names ("총각김치 3kg", "245ml 15개") were read as prices of 3 and 15
+    # (not when Hangul follows: "945545입니다" is a price)
+    rest = re.sub(r"\d+(?:\.\d+)?\s*(?:kg|mg|g|ml|l|cm|mm|개입|개|입|팩|병|봉|구|매|장|ea|인용|인|박스|box)(?![a-z가-힣])",
+                  " ", rest, flags=re.I)
     marked = re.findall(r"(?:price|asking|ask|counteroffer|offer|deal|가격|₩)\D{0,6}" + _NUM + r"|" + _NUM + r"\s*(?:원|₩|krw)",
                         rest, re.I)
     marked = [int((a or b).replace(",", "")) for a, b in marked]
