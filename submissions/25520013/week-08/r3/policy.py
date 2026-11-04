@@ -118,6 +118,9 @@ def validate(pol):
     rp = sp.get("restock_priority")                    # v1.20a
     if rp is not None and (not isinstance(rp, list) or not all(isinstance(x, str) and x for x in rp)):
         raise PolicyError("shop.restock_priority must be a list of category names")
+    f = sp.get("max_spend_frac")                        # v1.23: per-run spend as a share of the balance
+    if f is not None and (isinstance(f, bool) or not isinstance(f, (int, float)) or not 0 < f <= 1):
+        raise PolicyError(f"shop.max_spend_frac={f!r} outside (0, 1]")
     for blk in list((pol.get("categories") or {}).values()) + [sp]:
         k = blk.get("skus_per_category")
         if k is not None and (isinstance(k, bool) or not isinstance(k, int) or not 1 <= k <= 5):
@@ -689,7 +692,9 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     categories it covers first, by probability; it changes the ranking only (targets, caps, budget unchanged).
     v1.20a: shop.restock_priority (category full paths or leaf names) ranks those categories before taste and
     velocity; categories[cat].skus_per_category spreads a category over its top-k SKUs by settles. Budget, balance
-    floor, inventory cap, max_total_units, max_unit_cost and the below-market filter are unchanged."""
+    floor, inventory cap, max_total_units, max_unit_cost and the below-market filter are unchanged.
+    v1.23: shop.max_spend_frac (optional) caps one run at that share of the balance as well, so the per-run spend
+    grows and shrinks with cash; max_spend_per_run stays the absolute ceiling."""
     sp = pol["shop"]
     bal = int(inv.get("balance") or 0)
     units = [u for u in inv.get("units") or [] if u.get("grade") != "expired"]
@@ -699,7 +704,10 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     if why:
         return [], {"why": why, "units": len(units), **info}
     # the market refuses a whole lot whose cost is above the balance: plan with the worst cost (75% of list)
-    budget = min(sp["max_spend_per_run"], bal - sp["balance_floor"])
+    spend_cap = sp["max_spend_per_run"]
+    if sp.get("max_spend_frac") is not None:            # v1.23 (성수님 2026-11-05): per-run spend follows the balance
+        spend_cap = min(spend_cap, int(float(sp["max_spend_frac"]) * bal))
+    budget = min(spend_cap, bal - sp["balance_floor"])
     inv_cost = inventory_cost(inv)[0]
     frac = sp.get("max_inventory_cost_frac")
     if frac is not None:                                 # v1.7 (a): inventory at cost + this run <= frac x balance
