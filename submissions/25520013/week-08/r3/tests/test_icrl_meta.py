@@ -185,6 +185,7 @@ def test_lane_without_samples_is_skipped(tmp_path):
     memrows(ctx2, T0, 6)
     cycles(ctx2, T0, "shop", 3, valid=False)  # below MIN_DECISIONS
     cycles(ctx2, T0, "buyer", 6)
+    cycles(ctx2, T0, "buyer", 1, valid=False)  # v1.25: one guard reason = evidence, so the LLM is asked
     out = meta.step(ctx2, T0 + meta.META_S, llm=Fake(cand()))
     assert out["lane"] == "buyer" and out["lanes"]["shop"]["enough"] is False
     assert harness(ctx2)["lanes"]["shop"] == meta.DEFAULT_LANE
@@ -194,7 +195,8 @@ def test_worse_than_best_reverts_that_lane(tmp_path):
     ctx = ctx_at(tmp_path)
     init(ctx)
     memrows(ctx, T0, 6)
-    cycles(ctx, T0, "shop", 6)  # v0 shop scores 1.0
+    cycles(ctx, T0, "shop", 6)
+    cycles(ctx, T0, "shop", 1, valid=False)  # v0 shop 0.5 + 0.5 * 6/7 # v1.25: one guard reason = evidence, so the LLM is asked
     t1 = T0 + meta.META_S
     out = meta.step(ctx, t1, llm=Fake(cand(n=7)))
     assert (
@@ -241,6 +243,7 @@ def test_invalid_oversized_pii_and_failing_llm(tmp_path):
         init(ctx)
         memrows(ctx, T0, 6)
         cycles(ctx, T0, "shop", 6)
+        cycles(ctx, T0, "shop", 1, valid=False)  # v1.25: one guard reason = evidence, so the LLM is asked
         out = meta.step(ctx, T0 + meta.META_S, llm=Fake(reply))
         assert out["status"] == "kept", (i, out)
         assert not (ctx.sdir / "harness.json").exists()
@@ -248,6 +251,7 @@ def test_invalid_oversized_pii_and_failing_llm(tmp_path):
     init(ctx)
     memrows(ctx, T0, 6)
     cycles(ctx, T0, "shop", 6)
+    cycles(ctx, T0, "shop", 1, valid=False)  # v1.25: one guard reason = evidence, so the LLM is asked
     out = meta.step(
         ctx,
         T0 + meta.META_S,
@@ -312,6 +316,7 @@ def test_writes_only_meta_and_harness(tmp_path):
     init(ctx)
     memrows(ctx, T0, 6)
     cycles(ctx, T0, "shop", 6)
+    cycles(ctx, T0, "shop", 1, valid=False)  # v1.25: one guard reason = evidence, so the LLM is asked
     before = set(files(ctx.sdir))
     snap = {f: (ctx.sdir / f).read_bytes() for f in before}
     meta.step(ctx, T0 + meta.META_S, llm=Fake(cand()))
@@ -338,3 +343,31 @@ def test_sides_are_judged_from_the_side_field_or_the_lane(tmp_path):
     assert shop["samples"]["decisions"] == 4 and shop["validity"] == 0.5 and shop["enough"]
     assert buyer["samples"]["decisions"] == 3 and not buyer["enough"]  # sample floor unchanged
     assert meta.LANE_SIDE == {"price": "shop", "stock": "shop", "buyer": "buyer", "shop": "shop"}
+
+
+def test_v125_no_defect_keeps_the_config_without_asking_the_llm(tmp_path):
+    """v1.25: score at the ceiling, no memcheck miss and no guard reason -> kept, no LLM call, no harness.json."""
+    ctx = ctx_at(tmp_path)
+    init(ctx)
+    memrows(ctx, T0, 6)
+    for ln in meta.SIDES:
+        cycles(ctx, T0, ln, 6)
+    llm = Fake(cand())
+    out = meta.step(ctx, T0 + meta.META_S, llm=llm)
+    assert out["status"] == "kept" and out["reason"] == "no defect" and not llm.prompts
+    assert not (ctx.sdir / "harness.json").exists()
+
+
+def test_v125_a_memcheck_miss_is_evidence_even_above_the_score_floor(tmp_path):
+    ctx = ctx_at(tmp_path)
+    init(ctx)
+    memrows(ctx, T0, 6)
+    jl(
+        ctx.sdir / "memcheck.jsonl",
+        [{"ts": T0 + 700, "n": 4, "acc": 0.75, "correct": 3, "misses": ["e0003 verdict?"]}],
+    )
+    cycles(ctx, T0, "shop", 6)
+    llm = Fake(cand())
+    out = meta.step(ctx, T0 + meta.META_S, llm=llm)
+    assert out["lanes"]["shop"]["score"] >= 1 - meta.MARGIN_MIN  # 0.5 * 27/28 + 0.5 * 1
+    assert out["status"] == "candidate" and "e0003 verdict" in llm.prompts[0]

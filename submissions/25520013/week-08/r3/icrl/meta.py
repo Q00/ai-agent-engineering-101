@@ -388,9 +388,13 @@ def _run(ctx, now, llm, mdir, st):
             },
         )
     )
-    prompt = meta_prompt(
-        lane, lanes[lane], hist, _misses(sdir, ls[lane]["since"]), cur["_guards"]
-    )
+    misses = _misses(sdir, ls[lane]["since"])
+    if not misses and not cur["_guards"] and cur["score"] >= 1 - MARGIN_MIN:
+        # v1.25 (2026-11-05): no evidence of a defect (score at the ceiling, no memcheck miss, no guard reason) ->
+        # no LLM rewrite; a blind rewrite only adds noise to the proposer prompt the running experiments rely on
+        out.update(status="kept", reason="no defect")
+        return out
+    prompt = meta_prompt(lane, lanes[lane], hist, misses, cur["_guards"])
     try:
         model = llm if llm is not None else _default_llm(ctx)
     except Exception as e:  # noqa: BLE001 - no LLM client: keep current
