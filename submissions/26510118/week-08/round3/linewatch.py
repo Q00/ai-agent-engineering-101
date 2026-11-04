@@ -65,7 +65,8 @@ FIND_WINDOW = 6 * 3600
 FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.76, 10
 FIND_CAP = 2
 LINE_MAX_SKUS = 30       # 20 until 11/5 01:00
-UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 6 * 3600, 2, 500_000, 1, 5
+UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 12 * 3600, 1, 300_000, 2, 10
+                         # 6 h, 2 orders, 500k, cap 1, 5 until 11/5 02:20 (the first beds sold within minutes)
 UNMET_BUDGET = 0.85      # ...and the orders' budgets cover this share of its list (a buyer can pay our ask)
 FIND_DROP = 12 * 3600
 COST_GUESS = 0.65        # a grade A unit's cost as a share of list (0.55-0.75): the margin a candidate is ranked by

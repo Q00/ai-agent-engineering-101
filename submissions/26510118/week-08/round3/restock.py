@@ -104,7 +104,7 @@ LINE_PACE = 3600         # a line product is kept at 1 + what we sold of it in t
                          # minutes, so our sales count supply as much as demand: one more than they asks for more)
 LINE_MAX_UNITS = 10      # 5 until 11/4 23:40 (the best seller sold 20 in 1.5 h at a cap of 5; others sold it 90 an hour)
 LINE_STALL = 2 * 3600    # held this long with no sale of the product: no more units
-LINE_TRY_FIRST = 3       # line products never sold nor held (just added) go first, this many a run (at their caps, 1-2):
+LINE_TRY_FIRST = 5       # line products never sold nor held (just added) go first, this many a run (3 until 11/5 02:20):
                          # ordered by sales alone, one with none came after the best sellers and no run reached it
                          # (11/5 01:20: the three beds added at 01:09 were not bought; ranked as 3 sold an hour, at 01:40
                          # they tied with the best sellers, came after them on the tie, and the money ran out first)

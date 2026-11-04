@@ -62,6 +62,15 @@ MARKET_MIN = 20          # settles of the category and grade (with a warranty, o
 SKU_A_OVER, SKU_A_TARGET = 0.01, -0.02   # grade A asked more than SKU_A_OVER above it: down to SKU_A_TARGET from it
 SKU_C_UNDER, SKU_C_TARGET = 0.05, -0.02  # grade C asked more than SKU_C_UNDER under it: up to SKU_C_TARGET from it
 SKU_MARKET_MIN = 10
+# Uncontested (11/5, the person's call: "raise it, a little over what we would have set"): a line product other shops
+# sold fewer than SOLO_OTHERS times in 6 h in any grade. The first two beds our buyer found in no shop sold within
+# minutes at 0.63-0.64 of list, near our floor (cost + 5% + the warranty share), after the buyer's 4 offers; its
+# buyers' budgets were 1.8x list and other shops sold dear beds at 0.74-0.80. So: asked at SOLO_ASK and held at
+# SOLO_FLOOR of list, each plus half the warranty share (refurbished with a warranty: 0.80 and 0.70, not the full
+# share's 0.90), never under the cost floor.
+SOLO_OTHERS = 10
+SOLO_ASK = {"A": 0.85, "B": 0.80, "C": 0.70}
+SOLO_FLOOR = {"A": 0.75, "B": 0.70, "C": 0.60}
 LATE_LIFT, LATE_WINDOW = 0.02, 600   # the ask in the last LATE_WINDOW seconds before the next supply window
 WARRANTY_DEFAULT_MIN = 100_000       # goods listed at this or more are quoted with the warranty unless asked otherwise:
                                      # 86-97% of the market's bed and sofa deals carry one, and our goods sold without
@@ -137,10 +146,12 @@ def respond(ask: int, floor: int, offer: int, rounds: int) -> tuple[str, int]:
 def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: float = 0.0,
          catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
          late: bool = False, dear_default: bool = False, sku_market: dict | None = None,
-         in_line: bool = False) -> dict:
+         in_line: bool = False, solo: bool = False) -> dict:
     """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late, sku_ref, nudge} for one unit.
     sku_market: the SKU's others_6h; a grade A ask well above it comes down, a grade C ask well under it goes up
-    (not for the premium line, in_line, nor on clearance); nudge: by how much (share of list), or None.
+    (not for the premium line, in_line, nor on clearance); nudge: by how much (share of list), or None. A premium
+    line product is never asked under its own market (11/5: a bed sold at 0.63 where others got 0.80), and solo
+    (uncontested, SOLO_OTHERS) is asked at SOLO_ASK and held at SOLO_FLOOR.
     at_cost: the floor is cost + 5% (no clearance), which is what the seller may say.
     adjust and extra come from the rules in force (price_adjust, warranty_extra); market is the
     category's by_grade from market_summary.json; late: the end of the supply cycle (late_in_cycle);
@@ -170,6 +181,13 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         elif g == "C" and start < sref - SKU_C_UNDER:
             nudge = round(sref + SKU_C_TARGET - start, 4)
         start += nudge or 0
+    if in_line and not clearing:
+        if sref is not None and sref > start:
+            nudge, start = round(sref - start, 4), sref           # the line: at least its own market
+        if solo:
+            want = SOLO_ASK[g] + (extra[g] / 2 if w else 0)
+            if want > start:
+                nudge, start = round((nudge or 0) + want - start, 4), want
     floor = math.ceil(round(cost * (1 + MARGIN), 6))            # 12000 * 1.05 is 12600.000000000002 in floats
     clearance = None
     if age > MARKDOWN_AFTER:
@@ -187,7 +205,9 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         floor = min(floor, round(lp * clearance))
     if w:
         floor += round(lp * extra[g])
+    if in_line and solo and clearance is None:
+        floor = max(floor, round(lp * (SOLO_FLOOR[g] + (extra[g] / 2 if w else 0))))
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
             "at_cost": clearance is None, "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
-            "sku_ref": sref, "nudge": nudge}
+            "sku_ref": sref, "nudge": nudge, "solo": bool(in_line and solo)}

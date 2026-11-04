@@ -185,12 +185,14 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
     Each category also carries by_grade: the median paid share of the list price per grade, over all its
     settles and split by whether a warranty came with them (the seller's market-referenced asks).
     A SKU other shops sold SKU_MIN times or more in one grade (with a warranty, or without) over the last
-    SKU_WINDOW also carries others_6h: {"A": {n, median}, "A_w": ...} (11/4 night: the seller's asks by grade)."""
+    SKU_WINDOW also carries others_6h: {"A": {n, median}, "A_w": ...} (11/4 night: the seller's asks by grade),
+    and every SKU sold in 24 h carries others_6h_n, other shops' settles of it in SKU_WINDOW in any grade (11/5: a
+    line product with few is priced as uncontested)."""
     now = now or time.time()
     settles = common.read_jsonl(folder() / "settles.jsonl")
     broken = common.read_jsonl(folder() / "broken.jsonl")
     named = names()
-    by_sku, by_cat, by_shop, by_grade, others = {}, {}, {}, {}, {}
+    by_sku, by_cat, by_shop, by_grade, others, others_n = {}, {}, {}, {}, {}, {}
     for s in settles:
         ts = s.get("ts") or 0
         if ts < now - 24 * 3600:
@@ -207,6 +209,8 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
             if lp and isinstance(s.get("amount"), (int, float)):
                 t["ratios"].append(s["amount"] / lp)
             t["grades"][s.get("grade")] = t["grades"].get(s.get("grade"), 0) + 1
+        if ts >= now - SKU_WINDOW and not is_ours(named.get(s.get("shop"), s.get("shop"))):
+            others_n[s.get("item")] = others_n.get(s.get("item"), 0) + 1
         if c.get("category") and lp and isinstance(s.get("amount"), (int, float)) and s.get("grade") in ("A", "B", "C"):
             g = by_grade.setdefault(c["category"], {}).setdefault(s["grade"], {"w": [], "nw": []})
             g["w" if s.get("warranty_hours") else "nw"].append(s["amount"] / lp)
@@ -222,6 +226,8 @@ def summarize(catalog: dict, now: float | None = None) -> dict:
     for table in (by_sku, by_cat):
         for t in table.values():
             t["price_ratio"] = _mean(t.pop("ratios"))
+    for sku, t in by_sku.items():
+        t["others_6h_n"] = others_n.get(sku, 0)
     for sku, cells in others.items():
         kept = {k: {"n": len(v), "median": _median(v)} for k, v in cells.items() if len(v) >= SKU_MIN}
         if kept and sku in by_sku:

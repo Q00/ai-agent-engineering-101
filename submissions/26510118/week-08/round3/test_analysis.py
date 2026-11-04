@@ -923,16 +923,17 @@ def test_discover():
     bed = dict(cat, Gbed00001={"name": "bed", "category": "가구/침구>가구>침대", "list_price": 2_000_000},
                Gbed00002={"name": "bed 2", "category": "가구/침구>가구>침대", "list_price": 4_000_000},
                Gbed00003={"name": "cheap", "category": "가구/침구>가구>침대", "list_price": 300_000})
+    bed["Gbed00003"]["list_price"] = 250_000
     want = [{"ts": t - 3600, "budget": 3_600_000, "acceptable": ["Gbed00001", "Gbed00002", "Gbed00003"]},
             {"ts": t - 1800, "budget": 2_800_000, "acceptable": ["Gbed00001", "Gbed00002", "Gbed00003"]},
-            {"ts": t - 7 * 3600, "budget": 5_000_000, "acceptable": ["Gbed00001"]}]
-    check("our buyer's unmet orders: dear products in 2 or more of the last 6 h whose budgets cover 85% of the list "
-          "(the 4M bed's median budget 3.2M does not; a 300k one is not dear; the 7 h old order does not count)",
+            {"ts": t - 13 * 3600, "budget": 5_000_000, "acceptable": ["Gbed00001"]}]
+    check("our buyer's unmet orders: dear products (300k+) in any order of the last 12 h whose budgets cover 85% of the list "
+          "(the 4M bed's median budget 3.2M does not; a 250k one is not dear; the 13 h old order does not count)",
           linewatch.unmet_wanted(want, bed, {}, t) == {"Gbed00001": {"orders": 2, "list": 2_000_000, "budget": 3_200_000}},
           linewatch.unmet_wanted(want, bed, {}, t))
     got = linewatch.discover([], {}, bed, {BEDDING: 3}, {}, t, want)
-    check("...they join the line at cap 1, named as from our buyer's orders",
-          {k: (v["cap"], v["source"]) for k, v in got.items()} == {"Gbed00001": (1, "our buyer's unmet orders")}, got)
+    check("...they join the line at cap 2, named as from our buyer's orders",
+          {k: (v["cap"], v["source"]) for k, v in got.items()} == {"Gbed00001": (2, "our buyer's unmet orders")}, got)
     saved = common.catalog
     common.catalog = lambda *a, **k: cat
     try:

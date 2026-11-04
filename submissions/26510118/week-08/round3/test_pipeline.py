@@ -269,6 +269,20 @@ def test_pricing():
     check("...but not on clearance (8 days unsold), and grade B is left alone",
           pricing.plan(dict(goods_c, supplied_at=now - 8 * DAY), now, sku_market={"C": {"n": 15, "median": 0.70}})["nudge"] is None
           and pricing.plan(goods_b, now, sku_market={"B": {"n": 50, "median": 0.50}})["nudge"] is None)
+    dear_a = dict(goods_a, list_price=2_000_000, cost=1_200_000)
+    p = pricing.plan(dear_a, now, warranty=True, in_line=True, solo=True)
+    check("an uncontested line product, grade A with a warranty: asked at 85%, held at 75% of list, each + half the warranty's 5%",
+          (p["ask"], p["floor"], p["solo"]) == (1_750_000, 1_550_000, True), p)
+    check("...the same contested is priced by the rules (the warranty's 80%, the cost floor)",
+          (lambda q: (q["ask"], q["floor"], q["solo"]))(pricing.plan(dear_a, now, warranty=True, in_line=True)) == (1_600_000, 1_360_000, False))
+    check("...solo counts only in the line, and never on clearance",
+          pricing.plan(dear_a, now, warranty=True, solo=True)["solo"] is False
+          and pricing.plan(dict(dear_a, supplied_at=now - 8 * DAY), now, warranty=True, in_line=True, solo=True)["floor"] < 1_550_000)
+    p = pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.86}})
+    check("a contested line product is never asked under its own market (0.86 against the rule's 0.80)",
+          p["ask"] == 1_720_000 and p["nudge"] == 0.06, p)
+    check("...but not pulled down to it (0.70)",
+          pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.70}})["ask"] == 1_600_000)
     win = {"open": False, "opens_at": now + 300, "closes_at": now + 480}
     check("late in the cycle: the last 10 minutes before a window opens, not during one or long before",
           pricing.late_in_cycle(win, now) and not pricing.late_in_cycle(dict(win, opens_at=now + 900), now)
@@ -442,11 +456,11 @@ def test_restock(fake: Fake):
     gaps = restock.line_gaps({"Gsofa0001": 9, "Gsofa0002": 9, "Gsofa0003": 9, "Gsofa0004": 1}, cat2, [], sold_lots, NOW)
     check("line gaps: a product never sold nor held first, then by last hour's sales",
           [g[0] for g in gaps] == ["Gsofa0004", "Gsofa0001", "Gsofa0002", "Gsofa0003"], gaps)
-    five_new = {f"Gsofa{i:04d}": 1 for i in range(6, 11)}
+    five_new = {f"Gsofa{i:04d}": 1 for i in range(6, 13)}
     lots5 = dict(cat2, **{s: dict(cat2[sofa], sku=s) for s in five_new})
     gaps = restock.line_gaps(dict({"Gsofa0001": 9}, **five_new), lots5, [], sold_lots, NOW)
-    check("...at most 3 new ones ahead of the best seller, the rest after it",
-          [g[0] for g in gaps] == ["Gsofa0006", "Gsofa0007", "Gsofa0008", "Gsofa0001", "Gsofa0009", "Gsofa0010"], gaps)
+    check("...at most 5 new ones ahead of the best seller, the rest after it",
+          [g[0] for g in gaps] == ["Gsofa0006", "Gsofa0007", "Gsofa0008", "Gsofa0009", "Gsofa0010", "Gsofa0001", "Gsofa0011", "Gsofa0012"], gaps)
     tiny = dict(rich(shelf), restock={"open": True, "opens_at": NOW - 100, "closes_at": NOW + 25})
     out, info = restock.plan(tiny, cat2, DEMAND, {}, [], [], rules, NOW, line=many)
     check("...but with two lines left the line still gets one", info["lines"] == 2 and info["line"] == 1, (info, out["buy"]))
@@ -581,6 +595,8 @@ def test_ledger():
     s2 = ledger.summarize(CATALOG, NOW)
     check("a SKU's own market by grade over 6 h: other shops only (ours, Kiro729, left out), older settles left out, cells of 10 or more",
           s2["by_sku"][KIMCHI].get("others_6h") == {"A": {"n": 10, "median": 0.7}}, s2["by_sku"][KIMCHI].get("others_6h"))
+    check("...and how many other shops' settles in 6 h in any grade (10 A + 9 B)", s2["by_sku"][KIMCHI].get("others_6h_n") == 19,
+          s2["by_sku"][KIMCHI].get("others_6h_n"))
     with open(ledger.folder() / "settles.jsonl", "w", encoding="utf-8") as f:
         for e in rows:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")

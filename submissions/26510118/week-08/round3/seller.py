@@ -291,12 +291,14 @@ def priced(u: dict, now: float, warranty: bool) -> dict:
     r = common.rules()["seller"]
     summary = market_file("market_summary.json")
     by_grade = ((summary.get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
-    sku_market = ((summary.get("by_sku") or {}).get(u.get("sku")) or {}).get("others_6h")
+    row = (summary.get("by_sku") or {}).get(u.get("sku")) or {}
+    sku_market = row.get("others_6h")
+    solo = (row.get("others_6h_n") or 0) < pricing.SOLO_OTHERS              # no row: nobody sold it in 24 h
     in_line = u.get("sku") in restock.load_line(market_file("analysis/line.json"))   # restock's reading of the line
     late = pricing.late_in_cycle(market_file("inventory.json").get("restock"), now)
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
                         extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True,
-                        sku_market=sku_market, in_line=in_line)
+                        sku_market=sku_market, in_line=in_line, solo=solo)
 
 
 class Seller(AgentExecutor):
@@ -317,7 +319,7 @@ class Seller(AgentExecutor):
         u, p = d["unit"], d["plan"]
         common.record("negotiations", task=task_id, sku=u["sku"], unit=u["unit"], grade=p["grade"],
                       cost=u["cost"], list_price=u["list_price"], floor=p["floor"], at_cost=p["at_cost"],
-                      ref=p.get("ref"), late=p.get("late"), sku_ref=p.get("sku_ref"), nudge=p.get("nudge"),
+                      ref=p.get("ref"), late=p.get("late"), sku_ref=p.get("sku_ref"), nudge=p.get("nudge"), solo=p.get("solo"),
                       asked_warranty=d["warranty"],
                       warranty=bool(p.get("warranty_hours")), how=d["how"], asks=d["asks"], offers=d["offers"],
                       walk_odds=d.get("walk") or None, taken_early=d.get("early", False), outcome=outcome, price=price)
