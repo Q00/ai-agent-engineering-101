@@ -228,7 +228,9 @@ STRATEGY = {
                     # 11/5 02:4x: a buyer stating no hours gets food with at least this share of its shelf left
                     "food_unknown_share": {"type": "number", "minimum": 0.1, "maximum": 0.95},
                     # 11/5 02:5x: a food buyer stating no hours gets the freshest unit of the SKU
-                    "food_fresh_unknown": {"type": "boolean"}}},
+                    "food_fresh_unknown": {"type": "boolean"},
+                    # 11/5 03:0x: a food buyer stating no hours gets a unit lasting the most hours reviews said were needed
+                    "food_review_need": {"type": "boolean"}}},
                 "review": {"type": "object", "properties": {     # 11/4 12:5x: the stars our buyer gives
                     "mode": {"type": "string", "enum": ["rules", "agent"]},
                     "base": {"type": "integer", "minimum": 1, "maximum": 5},

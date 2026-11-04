@@ -27,6 +27,34 @@ MAX_TURNS = 12
 KNOWN_AT = 0.5             # a guess this sure that names a confirmed customer makes the buyer "not first time"
 CANDIDATES = 5
 FIT_SPARE = 1.05           # food_fit: a unit must last the buyer's stated hours with 5% to spare
+NEEDS_EVERY = 600          # food_review_need: the needed hours are read again from the ledger this often
+_needs = {"ts": 0, "by_sku": {}}
+
+
+def review_needs(now=None, hours=24):
+    """{sku: the most hours a buyer said it needed} from reviews in the public ledger ("Only 115.2 h of shelf life
+    left; I needed 126.0 h"), the last `hours`, cached NEEDS_EVERY. Only lines with 'I needed' are parsed."""
+    import re
+    now = now or time.time()
+    if now - _needs["ts"] < NEEDS_EVERY:
+        return _needs["by_sku"]
+    by = {}
+    for f in sorted((paths.memory() / "market").glob("ledger-*.jsonl"))[-2:]:
+        with open(f, encoding="utf-8") as fh:
+            for line in fh:
+                if "I needed" not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                x = d.get("data") or {}
+                m = re.search(r"I needed (\d+(?:\.\d+)?) h", x.get("review") or "")
+                sku = (x.get("receipt") or {}).get("item")
+                if m and sku and d.get("ts", 0) >= now - hours * 3600:
+                    by[sku] = max(by.get(sku, 0), float(m.group(1)))
+    _needs.update(ts=now, by_sku=by)
+    return by
 
 
 def canon(d):
@@ -88,6 +116,20 @@ class SellerCore:
         # may need up to 75% of the shelf life (the market's use windows are 10/25/50/75%); buyer-02 states none and
         # rated 79 of 227 grade B/C units 2 stars in 12 h while A units drew 4.83. Such a buyer gets only a unit with
         # food_unknown_share of its shelf life left (x1.05); the reply asks for the hours, so food_fit can serve it
+        # 11/5 03:0x (user: raise the bar we sell food at - buyers say how long they need it): a buyer that states no
+        # hours gets only a unit lasting the most hours buyers wrote they needed for that SKU (x1.05); buyer-02 states
+        # none and wrote 126 h for G200e39a3 (shelf 168) and 540 h for G9a240832 (shelf 720), 75% of the shelf
+        if not need and self.playbook(ctx)["food_review_need"]:
+            needs = review_needs(now)
+
+            def enough(u):
+                h, want = mf.hours_left(u.get("expires_at"), now), needs.get(u["sku"])
+                return u.get("kind") != "food" or h is None or not want or h >= want * FIT_SPARE
+            fit = [u for u in named if enough(u)]
+            if named and not fit:
+                most = max(mf.hours_left(u.get("expires_at"), now) or 0 for u in named)
+                self.short = {"need": None, "most": most, "sku": named[0]["sku"], "wanted": needs.get(named[0]["sku"])}
+            named = fit
         unknown = self.playbook(ctx)["food_unknown_share"]
         if not need and unknown:
             def fresh(u):
@@ -150,10 +192,12 @@ class SellerCore:
                 self.missed(ctx, task_id, ex, text)
                 if self.short:                   # say the true hours rather than sell a unit that will not last
                     if self.short["need"] is None:
+                        wanted = (f", less than the {self.short['wanted']:g} h buyers have needed it for"
+                                  if self.short.get("wanted") else "")
                         return self._close(task_id, None, "rejected",
                                            f"Our units of {self.short['sku']} have {self.short['most']:.0f} h of shelf "
-                                           "life left. If that is enough for you, ask again with the hours you need "
-                                           "(for example 'I need it to last 100 hours').")
+                                           f"life left{wanted}. If that is enough for you, ask again with the hours you "
+                                           "need (for example 'I need it to last 100 hours').")
                     return self._close(task_id, None, "rejected",
                                        f"Sorry, our units of {self.short['sku']} keep at most {self.short['most']:.0f} h, "
                                        f"less than the {self.short['need']:g} h you need.")
@@ -231,7 +275,8 @@ class SellerCore:
                 # that we lacked in the last 30 min
                 "hot_open_share": pb.get("hot_open_share"), "hot_n": pb.get("hot_n", 5),
                 "food_fit": pb.get("food_fit", False), "food_unknown_share": pb.get("food_unknown_share"),
-                "food_fresh_unknown": pb.get("food_fresh_unknown", False)}
+                "food_fresh_unknown": pb.get("food_fresh_unknown", False),
+                "food_review_need": pb.get("food_review_need", False)}
 
     @staticmethod
     def hot_skus(ctx, pb):

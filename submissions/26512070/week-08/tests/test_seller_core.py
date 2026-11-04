@@ -155,6 +155,34 @@ class SellerCoreTest(Base):
             self.assertEqual(self.core.open[task]["candidates"][0]["unit"], unit, text)
             self.core.open.clear()
 
+    def test_food_review_need_sells_only_units_lasting_what_reviews_said(self):
+        # 11/5 03:0x: a review said 60 h was needed for G0011e806 - a buyer stating no hours gets a unit with 63 h+
+        import json as _json
+        from core import atomic
+        from agents import seller_core
+        from tests.test_calc_check import H, UNITS
+        led = paths.memory() / "market"
+        led.mkdir(parents=True, exist_ok=True)
+        (led / "ledger-20270115.jsonl").write_text(_json.dumps({"ts": NOW - H, "kind": "result", "data": {
+            "receipt": {"item": "G0011e806"}, "review": "Only 40.0 h of shelf life left; I needed 60.0 h."}}) + "\n",
+            encoding="utf-8")
+        seller_core._needs.update(ts=0, by_sku={})
+        short = dict(UNITS[0], unit="u-food-a2", expires_at=NOW + 30 * H)
+        self.write_inventory(UNITS + [short], balance=4_000_000)
+        path = paths.memory() / "strategy" / "active.json"
+        st = atomic.read_json(path)
+        st["playbook"] = {"seller": {"mode": "rules", "food_fit": True, "food_review_need": True}}
+        atomic.write_json(path, st)
+        self.core.handle("r1", "I want to buy G0011e806")
+        self.assertEqual(self.core.open["r1"]["candidates"][0]["unit"], "u-food-a")
+        self.core.open.clear()
+        self.write_inventory([u for u in UNITS if u["unit"] != "u-food-a"] + [short], balance=4_000_000)
+        out = self.core.handle("r2", "I want to buy G0011e806")
+        self.assertEqual(out["state"], "rejected")
+        self.assertIn("have 30 h of shelf life left, less than the 60 h buyers have needed it for", out["say"])
+        out = self.core.handle("r3", "I want to buy G0011e806. I need it to last 20 hours")   # a stated need still buys
+        self.assertEqual(out["state"], "input_required")
+
     def test_food_unknown_share_sells_only_fresh_units_when_no_hours_are_stated(self):
         # 11/5 02:4x: shelf 96 h; 75% x 1.05 = 75.6 h - the 90 h unit sells, the 30 h one only to a stated need
         from core import atomic
