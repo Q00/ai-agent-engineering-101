@@ -15,7 +15,7 @@ if (-not (Test-Path -LiteralPath $kit)) { throw 'Repository market kit is missin
 
 Push-Location $weekDir
 try {
-    & $pythonExe -c "import json, pathlib, harness, seller, market_buyer; r=json.loads(pathlib.Path('round3_rules.json').read_text()); assert r['enabled'], 'Round 3 rules are disabled'; assert r['stock_budget']==2000000; assert pathlib.Path('shop_key.pem').exists() and pathlib.Path('buyer_key.pem').exists(); assert harness.find_codex(); print('Week 8 imports, rules, local identities and Codex executable: OK')"
+    & $pythonExe -c "import json, pathlib, harness, seller, market_buyer; r=json.loads(pathlib.Path('round3_rules.json').read_text()); assert r['enabled'], 'Round 3 rules are disabled'; assert r['stock_budget']==4000000; assert pathlib.Path('shop_key.pem').exists() and pathlib.Path('buyer_key.pem').exists(); assert harness.find_codex(); print('Week 8 imports, rules, local identities and Codex executable: OK')"
     if ($LASTEXITCODE -ne 0) { throw 'Week 8 preflight failed.' }
     & $pythonExe $kit join --help | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Market kit import failed.' }

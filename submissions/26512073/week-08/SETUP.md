@@ -3,7 +3,7 @@
 ## Student's selected rules
 
 - Sell both food and goods. Buy one unit per selected SKU.
-- Initial cumulative stock allowance: at most 2,000,000 credits.
+- Current cumulative stock allowance: at most 4,000,000 credits, shared across food and goods. Previous purchases count toward this total.
 - Open at 5% above actual unit cost, rounding up to whole credits.
 - Hold the full 5% price for two counteroffers. After that, accept an offer
   at or above 3% above cost; otherwise counter at the 3% minimum.
