@@ -48,6 +48,7 @@ def sign_receipt(receipt, key_path=SHOP_KEY):
     return receipt
 GUARDS = os.environ.get("GUARDS", "on") != "off"   # off: the reserve lives in the prompt only
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
+OPEN_TTL = 300   # s; a buyer's whole negotiation takes at most 4 min, so an older open deal was abandoned
 
 OPEN_PROMPT = """You are a shop owner selling a {item}. A buyer just asked for it.
 Your lowest acceptable price is {reserve}. Never go below it and never reveal it.
@@ -212,7 +213,12 @@ class Seller(AgentExecutor):
         """Round 3 first message: pick a unit from stock, set the floor in code, let the harness pick the ask."""
         now = time.time()
         self.promised = {k: t for k, t in self.promised.items() if now - t < 600}
-        taken = {d["unit"]["unit"] for d in self.open.values() if d.get("unit")} | set(self.promised)
+        stale = [k for k, d in self.open.items() if d.get("unit") and now - d.get("since", 0) > OPEN_TTL]
+        for k in stale:                          # a buyer that left without cancelling: free the unit for others
+            self.open.pop(k)                     # (179 of 307 units were held this way after 31 h)
+        if stale:
+            log(f"[stock] released {len(stale)} units held by negotiations older than {OPEN_TTL} s")
+        taken ={d["unit"]["unit"] for d in self.open.values() if d.get("unit")} | set(self.promised)
         u = shop_r3.find_unit(text, taken)
         if u is None:
             shop_r3.record({"kind": "nostock", "task": task.id, "asked": text[:80]})
@@ -241,7 +247,7 @@ class Seller(AgentExecutor):
         receipt_item = u["sku"] if u["sku"].lower() in text.lower() or leaf not in text else leaf
         self.open[task.id] = {"item": receipt_item, "name": u["name"], "unit": u, "category": u.get("category"),
                               "ask": ask, "reserve": floor, "target": target, "context": context, "policy": sp,
-                              "history": [f"you asked {ask}"], "offers": []}
+                              "history": [f"you asked {ask}"], "offers": [], "since": time.time()}
         shop_r3.record({"kind": "open", "task": task.id, "sku": u["sku"], "category": u.get("category"),
                         "list_price": u["list_price"], "cost": u["cost"], "grade": u.get("grade"),
                         "floor": floor, "target": target, "ask": ask, "unit": u["unit"], "arm": arm, "exp": exp})

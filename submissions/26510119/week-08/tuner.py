@@ -37,7 +37,8 @@ RULE_MINUTES = 60
 MAX_HOURS = 4
 WIN_MARGIN = 0.05
 STEP = 0.2
-MIN_N = {"shop": 30, "buyer": 40}
+MIN_N = {"shop": 100, "buyer": 100}   # was 30/40: values flipped back and forth (0.9 <-> 0.95) on noise
+MIN_T = 2.0                            # the challenger must win by about two standard errors, else keep the current
 TUNABLE = {                                   # (section, key): (low, high)
     ("shop", "target_scale"): (0.85, 1.25),
     ("shop", "first_accept_share"): (0.70, 0.95),
@@ -161,15 +162,19 @@ def decide(exp, intel, d):
     if min(n_a, n_b) < need and age_h < MAX_HOURS:
         return False
     mean = {k: (sum(v) / len(v) if v else 0) for k, v in res.items()}
+    var = {k: (sum((x - mean[k]) ** 2 for x in v) / (len(v) - 1) if len(v) > 1 else 0) for k, v in res.items()}
+    se = ((var["a"] / max(n_a, 1)) + (var["b"] / max(n_b, 1))) ** 0.5
+    t = (mean["b"] - mean["a"]) / se if se else 0      # Welch t: is the gap larger than the noise?
     enough = min(n_a, n_b) >= need
-    win = enough and mean["b"] > mean["a"] * (1 + WIN_MARGIN) + (0 if mean["a"] > 0 else 1)
+    win = enough and t >= MIN_T and mean["b"] > mean["a"] * (1 + WIN_MARGIN) + (0 if mean["a"] > 0 else 1)
     key = exp["key"]
     if win:
         d[exp["section"]][key] = exp["arms"]["b"]
     record({"kind": "decision", "id": exp["id"], "setting": f"{exp['section']}.{key}", "arms": exp["arms"],
-            "n": {"a": n_a, "b": n_b}, "mean": {k: round(v, 1) for k, v in mean.items()},
+            "n": {"a": n_a, "b": n_b}, "mean": {k: round(v, 1) for k, v in mean.items()}, "t": round(t, 2),
             "adopted": exp["arms"]["b"] if win else exp["arms"]["a"],
-            "why": ("challenger won" if win else "not enough deals in time" if not enough else "challenger did not win")})
+            "why": ("challenger won" if win else "not enough deals in time" if not enough else
+                    f"gap within noise (t {t:.2f} < {MIN_T})" if t < MIN_T else "challenger did not win")})
     return True
 
 
