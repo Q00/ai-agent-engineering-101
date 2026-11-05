@@ -65,6 +65,10 @@ NEED_RE = re.compile(
     re.I,
 )
 NEED_MARGIN_H = 0.25  # attempt 1 v2.1: the settle lands minutes after the quote
+# 성수님 결정 2026-11-06: with no stated need, food under half its shelf is not offered. Our reviewed sales to 11-05
+# 18h: food with <50% shelf left averaged 4.21 stars (68 of 413 two-star), 50-75% 4.52, >=75% 4.67; buyer-02, which
+# never states its need, wants 75% of the shelf.
+UNSTATED_MIN_SHARE = 0.5
 
 
 def stated_need_hours(text, names=()):
@@ -140,6 +144,15 @@ def candidate_units(market_dir, text, held=()):
             if u["hours_left"] is None
             or (u["expires_at"] - now) / 3600 >= need + NEED_MARGIN_H
         ]
+    else:  # 성수님 결정 2026-11-06: no stated need -> a dated unit with under half its catalog shelf left is not offered
+
+        def fresh(u):
+            sh = (cat.get(u["sku"]) or {}).get("shelf_hours")
+            if u["hours_left"] is None or not isinstance(sh, (int, float)) or sh <= 0:
+                return True
+            return (u["expires_at"] - now) / 3600 >= UNSTATED_MIN_SHARE * sh
+
+        hit = [u for u in hit if fresh(u)]
     return hit[:MAX_UNITS], raw
 
 

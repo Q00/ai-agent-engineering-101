@@ -1035,3 +1035,16 @@ def test_stated_need_ignores_hours_inside_product_names():
     assert sb.stated_need_hours("48시간 구운계란 30구, last 72h", ["48시간 구운계란 30구"]) == 72.0
     assert sb.stated_need_hours("48시간 구운계란 30구", ["48시간 구운계란 30구"]) is None
     assert sb.stated_need_hours("need 1,000 hours or Gab12345 at 48h,72h") == 1000.0
+
+
+def test_unstated_need_drops_food_under_half_shelf(tmp_path):
+    from kernel import seller_bridge as sb
+
+    m = _food_market(tmp_path, [59.6, 90.0, 160.0])
+    cat = json.loads((m / "catalog.json").read_text())
+    cat["Gkimchi1"]["shelf_hours"] = 168
+    (m / "catalog.json").write_text(json.dumps(cat))
+    units, _ = sb.candidate_units(str(m), "포기김치 10kg please")
+    assert sorted(u["unit"] for u in units) == ["u-k1", "u-k2"]  # 59.6 h < 84 h (half of 168) is dropped
+    units, _ = sb.candidate_units(str(m), "포기김치 10kg please, it must last 24 hours")
+    assert len(units) == 3  # a stated need wins: 59.6 h covers 24 h
