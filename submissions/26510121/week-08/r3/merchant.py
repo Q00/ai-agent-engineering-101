@@ -98,8 +98,12 @@ def context(journal, catalog, now=None):
     # an unknown SKU still spends only from the bounded exploration budget.
     relevant.update(sku for basket in baskets.values() for sku in basket['skus'])
     settled_by_sku=defaultdict(set)
+    positive_paid=defaultdict(set)
     for e in journal.events('shop_settled',10000):
-        if 0<=now-e['_ts']<=HORIZON:settled_by_sku[e.get('sku')].add(e.get('task'))
+        if coverage_start<=e['_ts']<=now and any(a<=e['_ts']<=b for a,b in intervals[e.get('sku')]):
+            settled_by_sku[e.get('sku')].add(e.get('task'))
+            if type(e.get('cost')) in (int,float) and e['price']>e['cost']:
+                positive_paid[e.get('sku')].add(e.get('task'))
     mature_by_sku=defaultdict(set)
     for e in visits:
         if now-e['_ts']>=300 and e['task'] in opportunities:
@@ -125,6 +129,10 @@ def context(journal, catalog, now=None):
         # The public prior is realized sales; own requests need conversion.
         rate=max(prior,conditional*paid_scenario) if observed_hours>=2/60 and n>=2 else prior
         rows[sku] = {'public': public, 'arrival_rate_scenario': min(120, rate),
+                     'paid_while_available':len(settled_tasks),
+                     'positive_paid_while_available':len(positive_paid[sku]),
+                     'paid_arrival_rate_scenario':min(120,(len(positive_paid[sku])+.25*prior)/(.25+observed_hours))
+                         if observed_hours>=2/60 else prior,
                      'payment_rate_scenario':paid_scenario,
                      'available_hours_observed': observed_hours, 'available_requests': n,
                      'lost_exact_requests': lost[sku], 'category_lost_signal': category_lost[catalog[sku].get('category')],

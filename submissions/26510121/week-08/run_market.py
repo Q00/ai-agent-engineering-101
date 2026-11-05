@@ -25,6 +25,7 @@ if __name__ == "__main__":
     kit.watchdog = lambda *args: supervise(kit, *args)
     with market_session():
         from r3.state import Journal, policy
-        from r3.adaptive import activate_revision
+        from r3.adaptive import activate_revision,activate_shop_revision
         activate_revision(Journal(), policy()['version'])
+        activate_shop_revision(Journal(),policy().get('shop_strategy_revision'))
         kit.main()

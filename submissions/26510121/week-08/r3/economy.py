@@ -127,6 +127,13 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
             continue
         from .meta import quote_completion
         completion = quote_completion(journal, unit["sku"], p)
+        if config.get('shop_velocity_enabled'):
+            # A common flat conversion prior always preferred the highest
+            # price. Price response is an explicit scenario, not a causal fit.
+            prior=min(.9,max(.1,.65*math.exp(max(-20,min(20,-4*(p/max(1,reference)-1))))))
+            completion=dict(completion,completion=(completion['paid']+2*prior)/(completion['samples']+2),
+                            price_response_prior=prior,reference_price=reference,
+                            scenario='shrunk observed completion plus monotone price response')
         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
                        "warranty_hours": warranty, "score": sale_delta(p, cost, completion['completion'], stress_refund)['book'],
                        "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence),
@@ -136,7 +143,7 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     if offer and offer >= recovery_floor:
         p = min(offer, previous_ask) if previous_ask else offer
         if p >= recovery_floor:
-            result.append({"id": "accept:" + str(p), "action": "accept" if p == offer else "counter", "price": p,
+            result.append({"id": "accept:" + str(p), "action": "accept", "price": p,
                        "warranty_hours": warranty, "score": sale_delta(p, cost, 1, stress_refund)['book'],
                        'expected_delta': sale_delta(p, cost, 1, stress_refund),
                            "evidence": stats, "recovery_floor": recovery_floor})
@@ -239,6 +246,7 @@ def cash_capacity(inv, journal, config, now=None):
 
 def restock_candidates(inv, catalog, demand, journal, config, now=None):
     now = time.time() if now is None else now
+    velocity=config.get('shop_velocity_enabled',False)
     end = now + planning_hours(config, now)*3600
     if end - now < 3600 or not supply_open(inv, now):
         return []
@@ -311,7 +319,13 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         growth = merchant.get('skus', {}).get(sku, {})
         rate = (growth.get('arrival_rate_scenario', 0) if merchant else
                 max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0)))
-        desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
+        if velocity:
+            from .shop_growth import target_stock
+            paid=growth.get('positive_paid_while_available',0)
+            if paid>=3:rate=max(.01,growth.get('paid_arrival_rate_scenario',rate))
+            desired=target_stock(rate,paid,config)
+        else:
+            desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
         needed=desired-count.get(sku,0)
         if needed<=0:
             continue
@@ -343,6 +357,11 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         cost_ratio *= factor
         price = min(p['list_price'], observed.get('median', .85 * p['list_price']))
         refund_stress = .15 if p.get('kind') == 'goods' else 0
+        terms={}
+        if velocity:
+            from .shop_growth import resale_terms
+            terms=resale_terms(p,observed,journal,config,now)
+            price,refund_stress=terms['price'],terms['refund_stress']
         expected_storage = cost_ratio * p['list_price'] * .01 * holding_hours / 24 if fee else 0
         # Small lots: only own observed repeat sales justify multiple new units.
         if probe_sku:
@@ -350,6 +369,9 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         existing_exposure = sum(u.get('cost', 0) * (1 + fee) for u in units if u['sku'] == sku)
         max_exposure = min(spendable, max(0, inv.get('balance', 0) *
                            config.get('max_sku_capital_fraction', .15) - existing_exposure))
+        if velocity:
+            working=sum(u.get('cost',0) for u in units)+spendable
+            max_exposure=min(max_exposure,max(0,working*config.get('max_sku_capital_fraction',.35)-existing_exposure))
         if probe_sku:
             max_exposure = min(max_exposure, capacity['spendable'] * config['exploration_fraction'])
         qty = min(qty, max(0, math.floor(max_exposure / commitment)))
@@ -379,7 +401,9 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                         'refund_stress': refund_stress, 'exploration': probe_sku,
                                         "adaptive_category_weight": weight}})
         candidates[-1]['evidence'].update(kind=p.get('kind'), list_price=p['list_price'],
-                                           growth=growth, arrival_rate_scenario=rate)
+                                           growth=growth, arrival_rate_scenario=rate,
+                                           planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
+                                           resale_price_scenario=price,resale_terms_scenario=terms)
     from .meta import rank_progress
     board = journal.snapshot('board.json', {})
     if now - journal.get('board_checked_at', 0) > 300:

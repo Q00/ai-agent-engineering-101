@@ -32,12 +32,14 @@ def status(shadow=False):
         epoch=j.get('objective_epoch',now)
         kinds=['market_control','strategy_evaluation','strategy_change','purchase','shop_settled','restock_decision',
                'supply_blocked','restock_blocked','checkout_attempt','buyer_fast_choice','market_control_error',
-               'strategy_error','merchant_context_error','forum_error','model_usage']
+               'strategy_error','merchant_context_error','forum_error','model_usage','shop_fast_execution']
         counts={kind:c.execute('SELECT COUNT(*) FROM events WHERE kind=? AND ts>=? AND ts<=?',
                                (kind,epoch,now)).fetchone()[0] for kind in kinds}
         inv=j.snapshot('inventory.json',{})
         result={'checked_at':datetime.fromtimestamp(now,timezone.utc).isoformat(),
                 'policy_version':cfg['version'],'objective_revision':j.get('objective_revision'),'epoch':epoch,
+                'shop_strategy_revision':j.get('shop_strategy_revision'),
+                'shop_revision_epoch':j.get('shop_revision_epoch'),
                 'runtime':j.snapshot('runtime.json',{}),'health':j.snapshot('shop-health.json',{}),
                 'transport_preference':j.snapshot('transport-provider.json',{}),
                 'rules':j.get('market_rules',{}),'control':j.get('market_control',{}),

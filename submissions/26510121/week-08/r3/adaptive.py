@@ -58,6 +58,23 @@ def validate(role, patch):
     return dict(patch)
 
 
+def activate_shop_revision(journal,revision,now=None):
+    """A shop release must not erase the unchanged buyer's maturity clock."""
+    if not revision or journal.get('shop_strategy_revision')==revision:return
+    now=time.time() if now is None else now
+    previous=journal.get(KEY+'shop',{'version':0,'patch':{},'status':'stable'})
+    patch=previous.get('trial',{}).get('previous_patch',previous.get('patch',{}))
+    updated={'version':previous['version']+1,'patch':validate('shop',patch),
+             'status':'stable','since':now,'cooldown_until':now+MATURITY}
+    if not transition(journal,'shop',previous,updated,'shop_revision_epoch',
+               {'revision':revision,'reason':'shop execution and procurement changed; buyer preserved'},now):return
+    journal.put('shop_strategy_revision',revision)
+    journal.put('shop_revision_epoch',now)
+    journal.put('merchant_context_v5',{})
+    journal.put('market_control:last_tick',0)
+    journal.put(KEY+'last_tick',now-INTERVAL)
+
+
 def strategy(journal, role):
     state = journal.get(KEY + role, {})
     try:
@@ -155,6 +172,7 @@ def flow(start, end, role):
 
 def evidence(journal, role, version, now, since=0):
     epoch = journal.get('objective_epoch', 0)
+    if role=='shop':epoch=max(epoch,journal.get('shop_revision_epoch',0))
     since = max(since, epoch)
     kind = 'buyer_order' if role == 'buyer' else 'shop_opportunity'
     opportunities = [e for e in journal.events(kind, 10000)

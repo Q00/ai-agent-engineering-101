@@ -40,6 +40,7 @@ class Chooser:
         self.client = client
 
     def choose(self, role, candidates, context, *, critical=False, deadline=None):
+        started=time.monotonic()
         if not candidates:
             raise ModelError("no_candidates")
         from .meta import rank_gain, rank_progress, rank_targets
@@ -75,6 +76,17 @@ class Chooser:
         decision_id = __import__("uuid").uuid4().hex
         self.j.add("prediction", {"decision": decision_id, "role": role, "candidates": candidates,
                                   "context": context}, role=role)
+        bounded_restock=(context.get('operation')=='restock' and all(
+            'buy' in c and 0<=c.get('capital_commitment',float('inf'))<=
+                context.get('cash_capacity',{}).get('spendable',-1) for c in candidates))
+        if (role=='shop' and context.get('shop_execution') and
+                self.config.get('shop_fast_execution_enabled') and (not critical or bounded_restock)):
+            self.j.add('decision',{'decision':decision_id,'chosen':best['id'],
+                'mode':'fast_shop_numeric','reason':'feasible numeric trade; avoid negotiation latency'},role=role)
+            self.j.add('shop_fast_execution',{'decision':decision_id,'chosen':best['id'],
+                'operation':context.get('operation','quote'),'seconds':time.monotonic()-started,
+                'bounded_restock':bounded_restock},role=role)
+            return best
         if os.environ.get("R3_MODEL_MODE") == "offline" or len(candidates) == 1:
             self.j.add("decision", {"decision": decision_id, "chosen": best["id"],
                                     "mode": 'explicit_offline' if os.environ.get('R3_MODEL_MODE') == 'offline' else 'single_feasible'}, role=role)

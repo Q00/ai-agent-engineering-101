@@ -6,6 +6,9 @@ have already been fully collateralized by cash_capacity before this runs.
 
 
 def allocate(candidates, inv, capacity, config, existing_units, merchant=None):
+    if config.get('shop_velocity_enabled') and config.get('shop_velocity_allocation_enabled',True):
+        from .shop_growth import allocate_velocity
+        return allocate_velocity(candidates,inv,capacity,config,existing_units,merchant or {})
     if config.get('shop_growth_v5'):
         return allocate_growth(candidates, inv, capacity, config, existing_units, merchant or {})
     total = capacity['spendable']

@@ -141,7 +141,8 @@ class Seller(AgentExecutor):
         selected = await asyncio.to_thread(self.chooser.choose, "shop", candidates,
                                           {"task": task.id, "unit": unit, "turn": deal["turns"], "offer": offer,
                                            "balance": inv.get("balance"), "previous_ask": deal["ask"],
-                                           "strategy": deal['strategy'], "customer_memory": memory},
+                                           "strategy": deal['strategy'], "customer_memory": memory,
+                                           'shop_execution':True},
                                           critical=unit["cost"] > inv.get("balance", 1) * self.cfg["critic_cash_fraction"],
                                           deadline=deal["until"] - 5)
         price = selected["price"]

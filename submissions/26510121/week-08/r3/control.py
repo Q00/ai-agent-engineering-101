@@ -55,6 +55,9 @@ def update(journal, config=None, now=None, force=False):
     sales = [e for e in journal.events('shop_settled', 10000) if 0 <= now-e['_ts'] <= 21600]
     known = [e for e in sales if type(e.get('cost')) in (int,float)]
     losses = [e for e in known if e['price'] < e['cost']]
+    shop_epoch=max(epoch,journal.get('shop_revision_epoch',epoch))
+    current_known=[e for e in known if e['_ts']>=shop_epoch]
+    current_losses=[e for e in current_known if e['price']<e['cost']]
     payments = [e for e in journal.events('payment', 10000) if 0 <= now-e['_ts'] <= 21600]
     failures = Counter('shelf_life' if 'shelf life' in e.get('reason','') else
                        'stockout' if 'not in stock' in e.get('reason','') else 'other'
@@ -86,7 +89,7 @@ def update(journal, config=None, now=None, force=False):
         for s,r in skus.items() if r.get('public',{}).get('external_samples', r.get('public',{}).get('samples',0))>=3],
         key=lambda r:(r.get('arrival_rate_scenario') or 0),reverse=True)[:20]
     suggestions=[]
-    if known and len(losses)/len(known)>.1:
+    if len(current_known)>=5 and len(current_losses)/len(current_known)>.1:
         suggestions.append({'role':'shop','field':'shop_margin_fraction','direction':1,'reason':'realized below-cost sales'})
     if market.get('summary',{}).get('top_unserved_categories'):
         suggestions.append({'role':'shop','field':'assortment_coverage_fraction','direction':1,'reason':'observed unserved external requests'})
@@ -104,6 +107,8 @@ def update(journal, config=None, now=None, force=False):
             'leader_total':leaders[0]['total'] if leaders else None,
             'leader_gap':leaders[0]['total']-own.get('all',0)-buyer.get('all',0) if leaders else None,
             'sold_known_cost':len(known),'below_cost_sales':len(losses),
+            'shop_evidence_since':shop_epoch,'current_shop_known_cost':len(current_known),
+            'current_shop_below_cost':len(current_losses),
             'buyer_payment_failures':dict(failures),'opportunities':opportunities,
             'suggestions':suggestions,'market_summary':market.get('summary',{}),
             'note':'observational diagnosis; policy trials require mature own evidence and rollback checks'}
