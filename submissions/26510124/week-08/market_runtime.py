@@ -5,6 +5,7 @@ from pathlib import Path
 from receipt_leases import ReceiptLeaseStore
 from run_round3 import verify_kit
 from buyer_forum import drain_buyer_forum
+from market_clock import install_market_clock
 
 ROOT = Path(__file__).resolve().parent
 
@@ -39,6 +40,7 @@ def main():
     from vendor import market_kit_v4 as kit
     ReceiptLeaseStore(ROOT / ".market").initialize()
     kit.AcpShop = GuardedAcpShop
+    install_market_clock(kit, ROOT / ".market")
     install_buyer_forum(kit)
     # Only this guarded launcher opts the child seller into expiring receipts.
     # Running the plain pinned kit keeps the previous conservative hold policy.

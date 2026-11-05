@@ -1,0 +1,82 @@
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python', '-m', 'unittest', 'test_market_clock', 'test_buyer_runtime', 'test_guarded_checkout', '-v']
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_inventory.py:14: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_ahead_and_behind_host_use_market_window_and_keep_offset_direction (test_market_clock.MarketClockTests.test_ahead_and_behind_host_use_market_window_and_keep_offset_direction) ... 
+  test_ahead_and_behind_host_use_market_window_and_keep_offset_direction (test_market_clock.MarketClockTests.test_ahead_and_behind_host_use_market_window_and_keep_offset_direction) (offset=600) ... FAIL
+  test_ahead_and_behind_host_use_market_window_and_keep_offset_direction (test_market_clock.MarketClockTests.test_ahead_and_behind_host_use_market_window_and_keep_offset_direction) (offset=-600) ... FAIL
+  test_ahead_and_behind_host_use_market_window_and_keep_offset_direction (test_market_clock.MarketClockTests.test_ahead_and_behind_host_use_market_window_and_keep_offset_direction) (offset=776) ... FAIL
+test_bounded_corrupt_clock_file_does_not_change_local_fallback (test_market_clock.MarketClockTests.test_bounded_corrupt_clock_file_does_not_change_local_fallback) ... ok
+test_capture_failure_preserves_response_and_original_errors_still_propagate (test_market_clock.MarketClockTests.test_capture_failure_preserves_response_and_original_errors_still_propagate) ... ok
+test_clock_jump_monotonic_reset_and_changed_boot_invalidate_sample (test_market_clock.MarketClockTests.test_clock_jump_monotonic_reset_and_changed_boot_invalidate_sample) ... ok
+test_clock_sample_does_not_change_inventory_file_age_or_global_clock (test_market_clock.MarketClockTests.test_clock_sample_does_not_change_inventory_file_age_or_global_clock) ... ok
+test_elapsed_monotonic_time_closes_window_conservatively (test_market_clock.MarketClockTests.test_elapsed_monotonic_time_closes_window_conservatively) ... ok
+test_missing_stale_and_wrong_round_return_labelled_local_fallback (test_market_clock.MarketClockTests.test_missing_stale_and_wrong_round_return_labelled_local_fallback) ... ok
+test_unreliable_responses_do_not_replace_last_trusted_sample (test_market_clock.MarketClockTests.test_unreliable_responses_do_not_replace_last_trusted_sample) ... ok
+test_wall_clock_step_during_http_call_does_not_record_sample (test_market_clock.MarketClockTests.test_wall_clock_step_during_http_call_does_not_record_sample) ... ok
+test_wrapper_is_idempotent_and_only_observes_existing_inventory_call (test_market_clock.MarketClockTests.test_wrapper_is_idempotent_and_only_observes_existing_inventory_call) ... ok
+test_forum_error_does_not_stop_original_sync_or_expose_details (test_buyer_runtime.ForumRuntimeTests.test_forum_error_does_not_stop_original_sync_or_expose_details) ... ok
+test_original_error_does_not_starve_independent_buyer_spool (test_buyer_runtime.ForumRuntimeTests.test_original_error_does_not_starve_independent_buyer_spool) ... ok
+test_queue_failure_keeps_review_output_and_evidence (test_buyer_runtime.ForumRuntimeTests.test_queue_failure_keeps_review_output_and_evidence) ... ok
+test_real_review_hook_reaches_buyer_transport_once (test_buyer_runtime.ForumRuntimeTests.test_real_review_hook_reaches_buyer_transport_once) ... ok
+test_runtime_drains_once_and_preserves_original_outbox (test_buyer_runtime.ForumRuntimeTests.test_runtime_drains_once_and_preserves_original_outbox) ... ok
+test_invalid_selection_controls_fail_before_trading (test_buyer_runtime.SelectionSettingsTests.test_invalid_selection_controls_fail_before_trading) ... ok
+test_local_controls_never_enter_negotiation_context (test_buyer_runtime.SelectionSettingsTests.test_local_controls_never_enter_negotiation_context) ... ok
+test_cancel_cannot_release_stock_while_settlement_is_in_flight (test_guarded_checkout.GuardedCheckoutTests.test_cancel_cannot_release_stock_while_settlement_is_in_flight) ... 02:26:57 [acp] settled G00001 at 85000, ledger #8, unit u1 grade B
+ok
+test_cancel_revokes_and_releases_but_old_receipt_stays_denied (test_guarded_checkout.GuardedCheckoutTests.test_cancel_revokes_and_releases_but_old_receipt_stays_denied) ... ok
+test_concurrent_create_only_publishes_one_session (test_guarded_checkout.GuardedCheckoutTests.test_concurrent_create_only_publishes_one_session) ... ok
+test_confirmed_payment_is_durable_idempotent_and_log_compatible (test_guarded_checkout.GuardedCheckoutTests.test_confirmed_payment_is_durable_idempotent_and_log_compatible) ... ok
+test_disconnect_during_payment_retains_uncertain_hold (test_guarded_checkout.GuardedCheckoutTests.test_disconnect_during_payment_retains_uncertain_hold) ... ok
+test_expired_checkout_releases_upstream_picker_hold_and_denies_completion (test_guarded_checkout.GuardedCheckoutTests.test_expired_checkout_releases_upstream_picker_hold_and_denies_completion) ... ok
+test_expiry_while_inventory_request_runs_never_publishes_session (test_guarded_checkout.GuardedCheckoutTests.test_expiry_while_inventory_request_runs_never_publishes_session) ... ok
+test_explicit_market_validation_refusal_revokes_and_releases_stock (test_guarded_checkout.GuardedCheckoutTests.test_explicit_market_validation_refusal_revokes_and_releases_stock) ... 02:26:57 [acp] settle refused: ['order_live']; receipt revoked
+ok
+test_invalid_payload_and_get_cannot_cancel_a_receipt (test_guarded_checkout.GuardedCheckoutTests.test_invalid_payload_and_get_cannot_cancel_a_receipt) ... ok
+test_old_signed_receipt_cannot_rebind_unreserved_stock (test_guarded_checkout.GuardedCheckoutTests.test_old_signed_receipt_cannot_rebind_unreserved_stock) ... ok
+test_payment_cannot_start_when_durable_state_write_fails (test_guarded_checkout.GuardedCheckoutTests.test_payment_cannot_start_when_durable_state_write_fails) ... ok
+test_public_guard_card_reports_runtime_without_credentials (test_guarded_checkout.GuardedCheckoutTests.test_public_guard_card_reports_runtime_without_credentials) ... ok
+test_recorded_receipt_restores_unsigned_terms_after_restart (test_guarded_checkout.GuardedCheckoutTests.test_recorded_receipt_restores_unsigned_terms_after_restart) ... ok
+test_restart_does_not_create_second_session_for_same_receipt (test_guarded_checkout.GuardedCheckoutTests.test_restart_does_not_create_second_session_for_same_receipt) ... ok
+test_timeout_or_ambiguous_refusal_retains_hold_past_deadline (test_guarded_checkout.GuardedCheckoutTests.test_timeout_or_ambiguous_refusal_retains_hold_past_deadline) ... 02:26:57 [acp] payment result unknown: ReadTimeout; hold retained
+02:26:57 [acp] settlement not confirmed: HTTP 503; hold retained
+ok
+test_unstructured_or_ambiguous_market_errors_never_release (test_guarded_checkout.GuardedCheckoutTests.test_unstructured_or_ambiguous_market_errors_never_release) ... 02:26:57 [acp] settlement not confirmed: HTTP 400; hold retained
+02:26:57 [acp] settlement not confirmed: HTTP 403; hold retained
+02:26:57 [acp] settlement not confirmed: HTTP 422; hold retained
+02:26:57 [acp] settlement not confirmed: HTTP 409; hold retained
+02:26:57 [acp] settlement not confirmed: HTTP 400; hold retained
+02:26:57 [acp] settlement not confirmed: HTTP 400; hold retained
+02:26:57 [acp] settlement not confirmed: HTTP 500; hold retained
+02:26:57 [acp] settlement not confirmed: HTTP 503; hold retained
+ok
+test_join_launches_guard_wrapper_instead_of_bare_vendor (test_guarded_checkout.GuardedLauncherTests.test_join_launches_guard_wrapper_instead_of_bare_vendor) ... ok
+test_wrapper_installs_guard_before_opt_in_and_preserves_pinned_kit (test_guarded_checkout.GuardedLauncherTests.test_wrapper_installs_guard_before_opt_in_and_preserves_pinned_kit) ... ok
+
+======================================================================
+FAIL: test_ahead_and_behind_host_use_market_window_and_keep_offset_direction (test_market_clock.MarketClockTests.test_ahead_and_behind_host_use_market_window_and_keep_offset_direction) (offset=600)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_market_clock.py", line 49, in test_ahead_and_behind_host_use_market_window_and_keep_offset_direction
+    self.assertAlmostEqual(clock["offset_seconds"], 0.6 - offset)
+AssertionError: -599.4000000953674 != -599.4 within 7 places (9.536745437799254e-08 difference)
+
+======================================================================
+FAIL: test_ahead_and_behind_host_use_market_window_and_keep_offset_direction (test_market_clock.MarketClockTests.test_ahead_and_behind_host_use_market_window_and_keep_offset_direction) (offset=-600)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_market_clock.py", line 49, in test_ahead_and_behind_host_use_market_window_and_keep_offset_direction
+    self.assertAlmostEqual(clock["offset_seconds"], 0.6 - offset)
+AssertionError: 600.5999999046326 != 600.6 within 7 places (9.536745437799254e-08 difference)
+
+======================================================================
+FAIL: test_ahead_and_behind_host_use_market_window_and_keep_offset_direction (test_market_clock.MarketClockTests.test_ahead_and_behind_host_use_market_window_and_keep_offset_direction) (offset=776)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_market_clock.py", line 49, in test_ahead_and_behind_host_use_market_window_and_keep_offset_direction
+    self.assertAlmostEqual(clock["offset_seconds"], 0.6 - offset)
+AssertionError: -775.4000000953674 != -775.4 within 7 places (9.536745437799254e-08 difference)
+
+----------------------------------------------------------------------
+Ran 35 tests in 0.287s
+
+FAILED (failures=3)

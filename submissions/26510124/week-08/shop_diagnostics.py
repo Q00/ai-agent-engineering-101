@@ -14,6 +14,8 @@ from pathlib import Path
 import re
 import time
 
+from market_clock import schedule_now
+
 ROOT = Path(__file__).resolve().parent
 MAX_BYTES = 2_000_000
 MAX_ROWS = 4000
@@ -183,6 +185,7 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
         rnd = inv.get("round")
         if type(rnd) is not int or rnd < 1:
             raise ValueError("Cannot identify the current round from inventory; pass --round explicitly")
+    clock = schedule_now(root / ".market", rnd, local_now=now)
     since = now - hours * 3600
     resets = [s["reset_at"] for s in (memory, public) if s.get("round") == rnd
               and number(s.get("reset_at")) and since < s["reset_at"] <= now]
@@ -266,10 +269,18 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
                 reasons["unknown_terminal_reason"] += 1
         else:
             counts["open_or_missing_end"] += 1
-    statuses, restock_unknown = Counter(), 0
+    statuses, restock_unknown, unknown_refusals = Counter(), 0, Counter()
     for row in restock:
         if type(row.get("round")) is not int and number(row.get("time")) and since <= row["time"] <= now:
             restock_unknown += 1
+            if row.get("status") == "refused":
+                # Older restock.main exceptions omitted round. Make these
+                # visible separately, without pretending they belong to rnd or
+                # echoing exception text that might contain private state.
+                error = row.get("error")
+                known = {"ValueError", "TypeError", "KeyError", "OSError", "FileNotFoundError",
+                         "PermissionError", "JSONDecodeError", "InventoryError", "RuntimeError"}
+                unknown_refusals[error if isinstance(error, str) and error in known else "other_error"] += 1
         if recent(row, rnd, now, since):
             status = row.get("status")
             # Do not echo untrusted detail strings, exceptions, prompts or arbitrary status text.
@@ -288,7 +299,9 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
             "receipt_lifecycle": lifecycle_summary(states["receipt-leases"], states["receipt-reservations"],
                                                     sources["receipt-leases"], now),
             "restock": {"decisions_by_status": dict(statuses), "excluded_unknown_round": restock_unknown,
-                        "schedule": supply_schedule(inv, sources["inventory"], rnd, now),
+                        "unknown_round_refusals_by_error": dict(unknown_refusals),
+                        "schedule": supply_schedule(inv, sources["inventory"], rnd, clock["now"]),
+                        "clock": {key: clock.get(key) for key in ("status", "offset_seconds", "uncertainty_seconds")},
                         "note": "A plan is not proof of a completed inventory purchase; retries may create multiple decision rows."},
             "coverage": {"excluded_seller_rows": dict(excluded), "ambiguous_receipt_units": sum(n > 1 for n in unit_tasks.values()),
                          "sources": sources,
@@ -318,7 +331,11 @@ def format_report(report):
         lines.append(f"Passed deadlines (issued/checkout): {overdue if overdue is not None else 'unknown'}; release is not confirmed by this read.")
         lines.append("Lifecycle limit: " + lifecycle["note"])
     lines.append(f"Restock decision rows: {json.dumps(report['restock']['decisions_by_status'], sort_keys=True)}")
+    lines.append("Restock rows without a known round: " + str(report["restock"]["excluded_unknown_round"])
+                 + "; refusals by error: " + json.dumps(report["restock"].get("unknown_round_refusals_by_error", {}), sort_keys=True)
+                 + " (within time window; excluded from current-round counts).")
     lines.append(f"Supply window (kit announcement): {json.dumps(report['restock']['schedule'], sort_keys=True)}")
+    lines.append(f"Supply clock: {json.dumps(report['restock'].get('clock', {}), sort_keys=True)}")
     lines.append(f"UNDATED_TAIL shop settle-refused attempts: {report['checkout']['undated_tail_settle_refusal_attempts']} (no task IDs, dates or rounds).")
     lines.append("Failed checkout tasks: UNKNOWN. Receipt without matched settlement is not proof of failed payment.")
     lines.extend("Limit: " + note for note in report["coverage"]["limits"])

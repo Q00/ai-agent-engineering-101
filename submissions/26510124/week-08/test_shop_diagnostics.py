@@ -15,6 +15,37 @@ NOW = 1800000000
 
 
 class ShopDiagnosticsTests(unittest.TestCase):
+    def test_unknown_round_restock_errors_are_visible_without_private_detail(self):
+        self.events([
+            {"time": NOW - 10, "status": "refused", "error": "ValueError", "detail": "PRIVATE-TOKEN"},
+            {"time": NOW - 5, "status": "refused", "error": "PRIVATE-ERROR", "detail": "secret"},
+            {"time": NOW - 90000, "status": "refused", "error": "ValueError"},
+            {"time": NOW + 1, "status": "refused", "error": "ValueError"},
+            {"time": NOW - 3, "round": 2, "status": "refused", "error": "ValueError"},
+        ], "logs/restock-decisions.jsonl")
+        report = self.report()
+        self.assertEqual(report["restock"]["decisions_by_status"], {})
+        self.assertEqual(report["restock"]["unknown_round_refusals_by_error"], {"ValueError": 1, "other_error": 1})
+        text = diagnostics.format_report(report)
+        self.assertIn("Restock rows without a known round: 2", text)
+        self.assertIn("excluded from current-round counts", text)
+        self.assertNotIn("PRIVATE", text)
+
+    def test_market_clock_only_changes_supply_schedule_not_local_log_window(self):
+        self.json(".market/inventory.json", {"round": 3, "units": [], "restock": {
+            "open": True, "opens_at": NOW - 650, "closes_at": NOW - 470}})
+        self.events([self.event()])
+        with patch.object(diagnostics, "schedule_now", return_value={
+                "now": NOW - 600, "status": "synced", "offset_seconds": -600,
+                "uncertainty_seconds": 1}):
+            report = self.report(hours=1)
+        self.assertEqual(report["restock"]["schedule"]["status"], "open")
+        self.assertEqual(report["restock"]["schedule"]["seconds_remaining"], 130)
+        self.assertEqual(report["inventory"]["status"], "fresh")
+        self.assertEqual(report["tasks"]["opened_tasks"], 1)
+        self.assertEqual(report["since"], NOW - 3600)
+        self.assertIn('"status": "synced"', diagnostics.format_report(report))
+
     def setUp(self):
         (ROOT / ".market").mkdir(exist_ok=True)
         self.tmp = tempfile.TemporaryDirectory(dir=ROOT / ".market")
