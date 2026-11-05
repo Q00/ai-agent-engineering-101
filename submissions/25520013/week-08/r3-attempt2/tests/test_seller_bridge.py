@@ -1000,3 +1000,38 @@ def test_decline_texts_phrase_is_declined_without_model(tmp_path, hdir):
     b = make_bridge(w, ag, metrics=metrics)
     ok, log = talk(b, "t1", "Oak Bed please.  QUOTE the total   price. thanks")
     assert ok and log[0][0] == "reject" and ag.calls == []
+
+
+def _food_market(tmp_path, hours):
+    m = tmp_path / "m"
+    m.mkdir()
+    now = time.time()
+    units = [
+        {"unit": f"u-k{i}", "sku": "Gkimchi1", "grade": "A", "cost": 100, "expires_at": now + h * 3600}
+        for i, h in enumerate(hours)
+    ]
+    (m / "inventory.json").write_text(json.dumps({"units": units}))
+    (m / "catalog.json").write_text(
+        json.dumps({"Gkimchi1": {"name": "포기김치 10kg", "category": "식품>김치", "list_price": 300}})
+    )
+    return m
+
+
+def test_stated_need_drops_units_that_cannot_last(tmp_path):
+    from kernel import seller_bridge as sb
+
+    m = _food_market(tmp_path, [59.6, 130.0, 200.0])
+    units, _ = sb.candidate_units(str(m), "포기김치 10kg please, I need it to last 126.0 hours")
+    assert sorted(u["unit"] for u in units) == ["u-k1", "u-k2"]
+    units, _ = sb.candidate_units(str(m), "포기김치 10kg please, I need it to last 250 hours")
+    assert units == []  # nothing lasts: no_stock rather than a two-star review
+    units, _ = sb.candidate_units(str(m), "포기김치 10kg please")
+    assert len(units) == 3  # no stated need: the model sees every unit with hours_left
+
+
+def test_stated_need_ignores_hours_inside_product_names():
+    from kernel import seller_bridge as sb
+
+    assert sb.stated_need_hours("48시간 구운계란 30구, last 72h", ["48시간 구운계란 30구"]) == 72.0
+    assert sb.stated_need_hours("48시간 구운계란 30구", ["48시간 구운계란 30구"]) is None
+    assert sb.stated_need_hours("need 1,000 hours or Gab12345 at 48h,72h") == 1000.0

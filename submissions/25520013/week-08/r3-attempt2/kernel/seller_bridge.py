@@ -46,7 +46,9 @@ def declined_text(root, text):
     """성수님 결정 2026-11-05 (v2.2): a request carrying a policy.json shop.decline_texts phrase (case and runs of
     whitespace ignored, 12+ characters) is declined before stock is read, exactly as attempt 1 does."""
     pol = c.load_json(os.path.join(root, "policy.json"), {}) or {}
-    lst = (pol.get("shop") or {}).get("decline_texts") if isinstance(pol, dict) else None
+    lst = (
+        (pol.get("shop") or {}).get("decline_texts") if isinstance(pol, dict) else None
+    )
     if not isinstance(lst, list):
         return None
     t = " ".join((text or "").split()).casefold()
@@ -55,6 +57,38 @@ def declined_text(root, text):
         if len(e) >= 12 and e in t:
             return e
     return None
+
+
+SKU_RE = re.compile(r"\b(G[0-9A-Za-z]{5,})\b")  # attempt 1's seller.py
+NEED_RE = re.compile(
+    r"(?<!\d)(?<!\d[.,])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h|시간)(?![0-9A-Za-z])",
+    re.I,
+)
+NEED_MARGIN_H = 0.25  # attempt 1 v2.1: the settle lands minutes after the quote
+
+
+def stated_need_hours(text, names=()):
+    """Shelf life the request asks for, in hours, read as attempt 1 v2.1/v2.1a does: the largest '<number> h /
+    hour(s) / 시간' after SKUs, product `names` and the hour tokens inside those names are removed; None when it
+    names no hours. Attempt 1 added the rule on 11-05 (71 of 75 two-star food reviews read 'only N h left, I
+    needed M h'); attempt 2 lost it and buyer-02 posted that complaint about us 47 times by 11-06 01:11."""
+    t = SKU_RE.sub(" ", text or "")
+    names = sorted({n for n in names if n}, key=len, reverse=True)
+    for nm in names:
+        t = re.sub(re.escape(nm), " ", t, flags=re.I)
+    for tok in sorted(
+        {m.group(0) for nm in names for m in NEED_RE.finditer(nm)},
+        key=len,
+        reverse=True,
+    ):
+        t = re.sub(
+            r"(?<!\d)(?<!\d[.,])" + re.escape(tok) + r"(?![0-9A-Za-z])",
+            " ",
+            t,
+            flags=re.I,
+        )
+    hs = [float(m.group(1).replace(",", "")) for m in NEED_RE.finditer(t)]
+    return max(hs) if hs else None
 
 
 def candidate_units(market_dir, text, held=()):
@@ -69,7 +103,9 @@ def candidate_units(market_dir, text, held=()):
         if not isinstance(u, dict) or u.get("unit") in held:
             continue
         exp = u.get("expires_at")
-        if u.get("grade") == "expired" or (isinstance(exp, (int, float)) and exp <= now):
+        if u.get("grade") == "expired" or (
+            isinstance(exp, (int, float)) and exp <= now
+        ):
             continue  # market rule: an expired unit cannot be sold
         item = cat.get(u.get("sku")) or {}
         raw[u.get("unit")] = u
@@ -80,7 +116,9 @@ def candidate_units(market_dir, text, held=()):
                 "grade": u.get("grade"),
                 "cost": u.get("cost"),
                 "expires_at": u.get("expires_at"),
-                "hours_left": round((exp - now) / 3600, 1) if isinstance(exp, (int, float)) else None,
+                "hours_left": round((exp - now) / 3600, 1)
+                if isinstance(exp, (int, float))
+                else None,
                 "name": item.get("name"),
                 "list_price": item.get("list_price", item.get("price")),
                 "category": item.get("category"),
@@ -90,6 +128,18 @@ def candidate_units(market_dir, text, held=()):
     hit = [u for u in units if want & (_tokens(u["name"]) | _tokens(u["category"]))]
     if not hit:
         hit = sorted(units, key=lambda u: len(repr(u)))
+    need = stated_need_hours(
+        text, [u["name"] for u in hit if u["hours_left"] is not None]
+    )
+    if (
+        need is not None
+    ):  # attempt 1 v2.1 rule: a dated unit that cannot last the stated need is not offered
+        hit = [
+            u
+            for u in hit
+            if u["hours_left"] is None
+            or (u["expires_at"] - now) / 3600 >= need + NEED_MARGIN_H
+        ]
     return hit[:MAX_UNITS], raw
 
 
@@ -287,7 +337,12 @@ class Bridge:
         if offer is not None:
             deal["offers"].append(offer)
         move, price = decision.get("action"), decision.get("price")
-        if move == "accept" and offer is not None and isinstance(price, int) and price > offer:
+        if (
+            move == "accept"
+            and offer is not None
+            and isinstance(price, int)
+            and price > offer
+        ):
             move = "counter"  # accepting means the buyer's own offer; a higher price is a counteroffer
         if move == "counter" and deal["rounds"] >= MAX_ROUNDS:
             self._metric(
