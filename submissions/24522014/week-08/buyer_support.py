@@ -118,6 +118,33 @@ def refusing_shops(memory, settings, now):
     return flagged
 
 
+def stock_band(qty):
+    """1 unit was refused about half the time, 2-3 about a third and 4 or more under a tenth. Unknown counts as the lowest."""
+    if type(qty) not in (int, float) or not math.isfinite(qty) or qty < 1:
+        return 0
+    return 1 if qty < 2 else 2 if qty < 4 else 3
+
+
+def prefer_listed_stock(eligible, best, rule):
+    """The candidate to try: `best`, unless one about as good has more listed stock.
+
+    Only surplus within the tolerance can be given up, a candidate with a known fault never replaces one without, and an
+    unknown price never replaces a known one, since its surplus is only the cap. Caps are each candidate's own.
+    """
+    if not isinstance(rule, dict) or rule.get("enabled") is not True:
+        return best
+    tolerance = rule.get("surplus_tolerance_ratio")
+    if type(tolerance) not in (int, float) or not 0 <= tolerance <= .1:
+        return best
+    floor = best["estimated_surplus"] - abs(best["estimated_surplus"]) * tolerance
+    known = positive(best["past_settled_price"])
+    near = [e for e in eligible if e["estimated_surplus"] >= floor and bool(e["attributed_faults"]) <= bool(best["attributed_faults"])
+            and (positive(e["past_settled_price"]) or not known)]
+    if stock_band(best.get("listed_qty")) >= max((stock_band(e.get("listed_qty")) for e in near), default=0):
+        return best
+    return min(near, key=lambda e: (-stock_band(e.get("listed_qty")), -e["estimated_surplus"], e["shop"], e["sku"]))
+
+
 def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, state, settings, now, kind="goods"):
     memory = [r for r in memory if r.get("round") == 3]
     # Keep durable mismatch/outage evidence; only positive price references expire.
@@ -195,6 +222,11 @@ def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, 
     if not eligible:
         return None, None, budget, "No new, relevant, value-preserving seller research opportunity.", evidence
     best = min(eligible, key=lambda e: (bool(e["attributed_faults"]), -e["estimated_surplus"], e["shop"], e["sku"]))
+    first_choice = best
+    best = prefer_listed_stock(eligible, best, settings.get("listed_stock_preference"))
+    if best is not first_choice:
+        best["listed_stock_preferred_over"] = {"shop": first_choice["shop"], "sku": first_choice["sku"], "listed_qty": first_choice.get("listed_qty"),
+                                               "surplus_given_up": first_choice["estimated_surplus"] - best["estimated_surplus"]}
     # Rival avoidance applies only to genuinely comparable observed conditions.
     if best["rival_at_selection"] and positive(best["past_settled_price"]):
         alternatives = [e for e in eligible if not e["rival_at_selection"] and e["sku"] == best["sku"]
@@ -260,6 +292,7 @@ def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, ord
     return shop, sku, cap, reason, evidence, {"status": status, "purpose": "balanced_player_score" if balanced else "seller_profit_support",
                "fast_rules": balanced,
                "refusal_skipped_shops": sorted({e["shop"] for e in evidence if e.get("support_skip_reason") == "recent_open_refusals"}),
+               "listed_stock_preferred_over": next((e["listed_stock_preferred_over"] for e in evidence if e.get("listed_stock_preferred_over")), None),
                "max_turns": settings["max_turns"], "funding": "market_order_budget_not_seller_cash"}
 
 

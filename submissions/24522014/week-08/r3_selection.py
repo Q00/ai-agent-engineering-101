@@ -70,7 +70,7 @@ def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=
             estimated_price = reference if reference is not None else cap
             feasible = estimated_price <= cap
             surplus = value - estimated_price
-            evidence = {"shop": shop["name"], "sku": sku, "catalogue_value": value,
+            evidence = {"shop": shop["name"], "sku": sku, "catalogue_value": value, "listed_qty": offer.get("qty"),
                         "negotiation_cap": cap, "past_settled_price": reference,
                         "reference_within_cap": feasible, "estimated_surplus": surplus,
                         "warranty_required": policy["preferred_warranty_hours"] if protected else 0,

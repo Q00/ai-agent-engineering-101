@@ -137,6 +137,7 @@ def funnel(root, since, until=None, payments_path=None):
     model_routes = Counter()
     formats, skipped_shops, qty_rows = {}, Counter(), {}
     tools_used = Counter()
+    stock_preference = {"applied": 0, "refused_at_open": 0, "paid": 0, "surplus_given_up_estimate": 0}
     mismatches = {"total": 0, "by_request_format": Counter(), "by_kind": Counter(), "by_shop": Counter()}
     orders, instrumented = set(), 0
     for _, record in runs:
@@ -146,6 +147,12 @@ def funnel(root, since, until=None, payments_path=None):
         if record.get("order"):
             orders.add(record["order"])
         trail = record.get("decision_trail")
+        preferred = (record.get("buyer_support") or {}).get("listed_stock_preferred_over")
+        if preferred:
+            stock_preference["applied"] += 1
+            stock_preference["refused_at_open"] += bool(record.get("refused_at_open"))
+            stock_preference["paid"] += "paid" in reached
+            stock_preference["surplus_given_up_estimate"] += preferred.get("surplus_given_up", 0)
         if record.get("outcome") == "receipt_mismatch":
             mismatches["total"] += 1
             mismatches["by_request_format"][str(record.get("request_format"))] += 1
@@ -205,7 +212,7 @@ def funnel(root, since, until=None, payments_path=None):
             "counter_offer": {"offered": counter_runs["offered"], "receipt": counter_runs["receipt"],
                               "paid": counter_runs["paid"], "exclusions": dict(counter_exclusions.most_common())},
             "model_routes": dict(model_routes.most_common()), "model_tools_used": dict(tools_used.most_common()),
-            "open_refusals_by_request_format": formats, "open_refusals_by_listed_qty": dict(sorted(qty_rows.items())),
+            "open_refusals_by_request_format": formats, "open_refusals_by_listed_qty": dict(sorted(qty_rows.items())), "listed_stock_preference": stock_preference,
             "runs_skipping_refusing_shops": dict(skipped_shops.most_common()),
             "receipt_mismatches": {key: dict(value.most_common()) if isinstance(value, Counter) else value for key, value in mismatches.items()},
             "turn_limit": {"endings": turn_limit_endings, "cancel_results": dict(cancel_results.most_common())},
