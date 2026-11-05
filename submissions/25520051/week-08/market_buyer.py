@@ -38,9 +38,11 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+import threading
+
 from a2a_trade import clean, is_injection, jsonrpc_url, parse_ask, receipt_of, rpc, send, state, status_data, status_text
 from harness import ask_json
-from market_state import catalog, post, read_json
+from market_state import catalog, read_json
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -54,6 +56,10 @@ TOP_K = 5                 # shops the harness gets to read
 OWN_SHOPS = {"moss-and-oak", "move_76"}      # same owner: the market will not settle these, so never pick them
 PRICE_RATIO = 0.70        # settled price / list price across the market (first hour of Round 3)
 WARRANTY_H = 6            # goods break up to 6 h after the sale
+# Compare before bargaining: we paid 0.616 of list and took 58k surplus a deal, inextro 0.573 and 95k, kimauve 0.543.
+SCOUT = 3                 # shops asked for a first price per order
+SCOUT_WAIT = 20           # seconds; shops that have not answered by then are left out
+FIRST_COUNTER = 0.90      # share of a first ask already within reach that we offer once before accepting
 BAD_REVIEW = re.compile(
     r"(overcharg|scam|fraud|cheat|fake|inject|dishonest|lied|avoid|mismatch|did ?n.t match|"
     r"higher than (the price )?(we )?agreed|receipt (said|was|price|showed)|never (sent|delivered))", re.I)
@@ -252,6 +258,8 @@ def plan_offer(budget: int, asks: list, offers: list, ref: float | None, known: 
         target = floor
     target = min(target, budget)
     if ask is not None and ask <= budget:
+        if not offers and ask <= target:                 # shops move on the first offer: ask once, then take it
+            return "offer", max(1, int(ask * FIRST_COUNTER)), f"ask {ask} is within reach: one counter first"
         if ask <= target or ask <= last or len(offers) >= PLAN or sure or ask - last <= max(2, budget * 0.03):
             return "accept", ask, f"ask {ask} is within reach and close to our last {last}"
         # A deal within budget is on the table: only nibble. Splitting the gap here lost a chair at 180
@@ -490,6 +498,46 @@ def pick_sku(shop: dict, order: dict, cat: dict, mem: dict) -> dict | None:
     return max(fits, key=lambda x: x["list_price"]) if fits else min(have, key=lambda x: x["list_price"])
 
 
+def scout(shops: list, order: dict, cat: dict, mem: dict, budget: int) -> list:
+    """The best-rated shops, dearest surplus first: ask each for its opening price, cancel, and go to the best one."""
+    rows = []
+    for s in shops:
+        rv = review_score(s.get("reviews") or [])[0]
+        ex = experience_score(shop_mem(mem, s["name"]), order["item"], budget)[0]
+        if ex > -9 and rv >= 0:
+            rows.append((1.5 * ex + rv, s))
+    top = [s for _, s in sorted(rows, key=lambda r: -r[0])[:SCOUT]]
+    if len(top) < 2:
+        return []
+    found = []
+
+    def quote(s):
+        try:
+            sku = pick_sku(s, order, cat, mem)
+            url = jsonrpc_url(s["url"])[0] if sku else None
+            if not url:
+                return
+            t = send(url, opening_text(sku, order), tag="[scout]")
+            text = status_text(t)
+            ask = parse_ask(text, status_data(t))
+            if state(t) == "TASK_STATE_INPUT_REQUIRED" and t.get("id"):
+                rpc(url, "CancelTask", {"id": t["id"]}, "[scout]")
+            if ask is not None and not is_injection(text) and ask <= min(budget, sku["list_price"] - 1):
+                found.append((sku["list_price"] - ask, s))
+        except Exception as e:                           # a shop that fails here is simply not compared
+            print(f"[scout] {s['name']}: {e!r}", flush=True)
+
+    threads = [threading.Thread(target=quote, args=(s,), daemon=True) for s in top]
+    for t in threads:
+        t.start()
+    end = time.time() + SCOUT_WAIT
+    for t in threads:
+        t.join(max(0.0, end - time.time()))
+    best = sorted(list(found), key=lambda r: -r[0])
+    print(f"[scout] {len(best)}/{len(top)} shops quoted; surplus at the first ask: {[r[0] for r in best]}", flush=True)
+    return [s for _, s in best]
+
+
 def accept_for(order: dict, receipt: dict | None) -> dict:
     """What the kit must see at checkout before it pays: always the market's certificate; food that lasts the hours
     the order needs; goods with the warranty the shop signed for, or, without one, grade A or B only."""
@@ -542,13 +590,6 @@ def main():
         shops = stocked
     if not shops:
         print("[buyer] no shop has anything for this order", flush=True)
-        if order and order.get("acceptable"):           # say so on the forum: a shop that reads it may stock it
-            need = (f" 남은 시간 {float(order['use_within_hours']) + 0.5:g}시간 이상, 시장 인증서 필요."
-                    if order.get("kind") == "food" and order.get("use_within_hours") else
-                    " 시장 인증서 필요, 보증이 있으면 좋습니다." if order.get("kind") == "goods" else "")
-            if post(md, f"[구합니다] {args.item}: 지금 재고가 있는 가게가 없습니다. 이 카테고리 SKU 예: "
-                        f"{', '.join(order['acceptable'][:3])}.{need} 가격은 원장 시세 수준에서 정합니다."):
-                print("[buyer] wanted post queued", flush=True)
         save_memory(mem_path, mem)
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
         return
@@ -557,11 +598,13 @@ def main():
     # on the first 42 orders 7 ended that way with other shops still stocking the SKU. Only the last shop gets a review.
     acceptable = order["acceptable"] if order and order.get("acceptable") else None
     tried = []
+    ranked = scout(shops, order, cat, mem, args.budget) if acceptable else []
     for attempt in range(MAX_TRIES):
         remaining = [s for s in shops if s["name"] not in tried]
         if not remaining:
             break
-        shop, why = pick_shop(remaining, mem, args.item, args.budget)
+        ranked = [s for s in ranked if s["name"] not in tried]
+        shop, why = (ranked[0], "best first price of the shops asked") if ranked else pick_shop(remaining, mem, args.item, args.budget)
         sku = pick_sku(shop, order, cat, mem) if acceptable else None
         print(f"[buyer] try {attempt + 1}: picked {shop['name']} ({shop['url']}): {why}"
               + (f"; SKU {sku['sku']} list {sku['list_price']}" if sku else ""), flush=True)
