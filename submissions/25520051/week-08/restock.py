@@ -38,18 +38,19 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 HALF_LIFE = 2 * 3600            # seconds; demand from settles fades with this half-life
 CUSHION = 1_500_000             # cash never spent on stock (the bankruptcy line is 500,000)
-SPEND_SHARE = 0.50              # of the cash above the cushion, per supply window (was 0.40: three 18:00 windows bought 2.3-3.1M and only 3-18 units were left when the next opened, cash after buying stayed at 7.6M+, 15% of asks found no stock)
+SPEND_SHARE = 0.65              # of the cash above the cushion, per supply window (was 0.40: three 18:00 windows bought 2.3-3.1M and only 3-18 units were left when the next opened, cash after buying stayed at 7.6M+, 15% of asks found no stock; 0.50 -> 0.65 on 2026-11-05: 14.7M+ stayed idle and ALL counts stock at cost)
 LINE_MAX = 0.16                 # of the cash above the cushion, per line (was 0.10: it held the best seller, 22 asks and 8 stock-outs, to one unit a line)
-TARGET = {"food": 3, "goods": 2}            # base units per SKU to hold; a window lasts 20 minutes
+TARGET = {"food": 3, "goods": 3}            # base units per SKU to hold; a window lasts 20 minutes; storage is only 1% a day
 TARGET_MAX = 8                              # most units of one SKU, however fast it turns over
 STALE_H = 6                                 # a unit unsold this long stops further buying of its SKU
-MAX_LINES = 8                  # the kit buys at most 10 lines per run, one call per 10 s
+MAX_LINES = 10                 # the kit buys at most 10 lines per run, one call per 10 s
 COST = {"food": 0.50, "goods": 0.59}        # expected cost / list price of a random grade (agent.md supply odds)
 PRICE_DEFAULT = 0.70            # settled price / list price across the market in the first hour of Round 3
 POST_EVERY = 1800
 TOP_N = 25                      # candidates the harness reads
-CODE_FIRST = 4                  # top-scoring SKUs that need stock, bought before the harness picks: it chose water and
-                                # snacks while SKUs with score 17-22k stayed at 0 units and 30M+ cash sat idle (2026-11-05)
+# Top-scoring SKUs that need stock, bought before the harness picks: it chose water and snacks while SKUs with score
+# 17-22k stayed at 0 units and 30M+ cash sat idle; then goods alone left 6-8 food units. Food first, it costs little.
+CODE_FIRST = {"food": 3, "goods": 5}
 
 
 def decay(ts: float, now: float) -> float:
@@ -129,7 +130,8 @@ def target_for(c: dict, rate: dict, stale: set) -> int:
     return min(TARGET_MAX, TARGET[c["kind"]] + fast + math.ceil(rate.get(c["sku"], 0) * 2))
 
 
-def candidates(cat: dict, rows: list, mine: dict, wants: dict, others: dict, have: dict, now: float) -> list:
+def candidates(cat: dict, rows: list, mine: dict, wants: dict, others: dict, have: dict, now: float,
+               surge: dict | None = None) -> list:
     """Every SKU with some sign of demand, scored by expected profit per unit held."""
     sku_d, cat_d, ratio = defaultdict(float), defaultdict(float), defaultdict(list)
     for r in rows:
@@ -156,7 +158,8 @@ def candidates(cat: dict, rows: list, mine: dict, wants: dict, others: dict, hav
             continue
         r = sorted(ratio[lf])
         price = r[len(r) // 2] if len(r) >= 3 else PRICE_DEFAULT
-        margin = price - COST[x["kind"]]
+        factor = (surge or {}).get(s, 1.0)                              # a SKU the market buys a lot costs up to +50%
+        margin = price - COST[x["kind"]] * factor
         if x["kind"] == "food":
             sh = x.get("shelf_hours") or 24
             margin -= 0.25 if sh < 12 else 0.10 if sh < 48 else 0.0     # short-lived food is thrown away more
@@ -171,7 +174,7 @@ def candidates(cat: dict, rows: list, mine: dict, wants: dict, others: dict, hav
         out.append({"sku": s, "name": x["name"][:40], "cat": lf, "kind": x["kind"], "list": x["list_price"],
                     "shelf_h": x.get("shelf_hours"), "score": round(score, 1), "demand": round(demand, 2),
                     "sold_sku": round(sku_d[s], 2), "price_ratio": round(price, 2), "others_hold": crowd,
-                    "we_hold": have.get(s, 0), "wanted_posts": wants.get(lf, 0)})
+                    "we_hold": have.get(s, 0), "wanted_posts": wants.get(lf, 0), "factor": factor})
     out.sort(key=lambda c: c["score"], reverse=True)
     return out
 
@@ -179,10 +182,10 @@ def candidates(cat: dict, rows: list, mine: dict, wants: dict, others: dict, hav
 PICK_SYSTEM = """You plan stock purchases for an online shop agent. You get candidate products with numbers the
 code computed from the public ledger (sold_sku: recent settles of that SKU, decayed; demand: combined signal;
 price_ratio: what buyers paid as a share of list price in that category; others_hold: units other shops have;
-we_hold: our units; target: units worth holding, from how fast it turns over) and a spending limit. We sell at a thin
-margin and many units, so cash that turns over fast matters more than the margin on one unit. Buy what is likely to
-sell within the next 20 minutes at a profit, up to target minus we_hold per SKU. Prefer SKUs that actually sold
-recently; avoid food with a short shelf life unless it sells fast. Spread risk over several SKUs. Reply with JSON only:
+we_hold: our units; target: units worth holding, from how fast it turns over) and a spending limit. Unsold stock still
+counts at cost and storage is only 1% a day, so idle cash is the waste: profit per unit decides. Buy up to target minus
+we_hold per SKU, dearer SKUs that sold recently first (one sold mattress earns what dozens of snacks do), and keep food
+that sells fast in stock too. Avoid food with a short shelf life unless it sells fast. Reply with JSON only:
 {"buy": [{"sku": "<sku from the list>", "qty": <1-8>}], "reason": "<one sentence>"}"""
 
 
@@ -203,17 +206,22 @@ def plan(cands: list, limit: int, line_max: int, have: dict, use_harness: bool =
         c["target"] = target_for(c, rate, stale)
     cands = [c for c in cands if c["sku"] not in stale]
     by_sku = {c["sku"]: c for c in cands}
-    est = lambda c, q: int(c["list"] * COST[c["kind"]] * 1.15 * q)          # cost estimate with a margin
+    est = lambda c, q: int(c["list"] * COST[c["kind"]] * c.get("factor", 1.0) * 1.15 * q)  # cost estimate with a margin
     lines, spent = [], 0
-    for c in cands:
-        if len(lines) >= CODE_FIRST:
-            break
-        q = c["target"] - have.get(c["sku"], 0)
-        while q > 0 and (est(c, q) > line_max or spent + est(c, q) > limit):
-            q -= 1
-        if q > 0:
-            lines.append({"sku": c["sku"], "qty": q})
-            spent += est(c, q)
+    for kind, quota in CODE_FIRST.items():
+        taken = 0
+        for c in cands:
+            if taken >= quota:
+                break
+            if c["kind"] != kind:
+                continue
+            q = c["target"] - have.get(c["sku"], 0)
+            while q > 0 and (est(c, q) > line_max or spent + est(c, q) > limit):
+                q -= 1
+            if q > 0:
+                lines.append({"sku": c["sku"], "qty": q})
+                spent += est(c, q)
+                taken += 1
     first = len(lines)
     picked, why = (harness_pick(cands, limit - spent) if use_harness and cands else ([], ""))
     for b in picked:
@@ -261,7 +269,7 @@ def stock_post(md: Path, inv: dict, cat: dict, mem: dict):
     top = sorted(by.items(), key=lambda x: -x[1])[:5]
     text = ("moss-and-oak 재고: " + ", ".join(f"{k} {v}개" for k, v in top)
             + ". 모든 단위에 시장 인증서, 등급은 인증서 그대로, 식품은 남은 시간을 말씀드리고 필요한 시간만큼 가는 단위를 "
-              "보냅니다. 비식품 A등급은 6시간 보증 포함, 다른 등급도 요청하면 보증을 붙입니다.")
+              "보냅니다. 비식품 A등급은 12시간 보증 포함, 다른 등급도 요청하면 보증을 붙입니다.")
     with open(md / "outbox.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps({"post": text, "refs": [], "as": "shop"}, ensure_ascii=False) + "\n")
     mem["last_post"] = time.time()
@@ -315,7 +323,8 @@ def main():
         print(json.dumps({"buy": []}))
         return
     shop_mem = read_json(shop_dir / "shop_memory.json", {}) or {}
-    cands = candidates(cat, rows, shop_mem.get("cats", {}), forum_wants(md, cat), others_stock(), have, now)
+    surge = {x["sku"]: float(x["factor"]) for x in inv.get("surge") or [] if isinstance(x, dict) and x.get("sku") and x.get("factor")}
+    cands = candidates(cat, rows, shop_mem.get("cats", {}), forum_wants(md, cat), others_stock(), have, now, surge)
     rate, stale = turnover(units, shop_mem.get("sold", {}), now)
     lines, why = plan(cands, limit, int(free * LINE_MAX), have, not args.no_harness, rate, stale)
     print(f"[restock] turnover: {len(rate)} SKUs sold in 3 h, {len(stale)} SKUs stale; "
@@ -325,7 +334,7 @@ def main():
               f"others {c['others_hold']} we {c['we_hold']} ratio {c['price_ratio']}", flush=True)
     print(f"[restock] balance {balance}, limit {limit}, {len(units)} units held, {len(rows)} ledger rows; {why}",
           flush=True)
-    spent = sum(int(cat[l["sku"]]["list_price"] * COST[cat[l["sku"]]["kind"]] * l["qty"]) for l in lines)
+    spent = sum(int(cat[l["sku"]]["list_price"] * COST[cat[l["sku"]]["kind"]] * surge.get(l["sku"], 1.0) * l["qty"]) for l in lines)
     mem.update({"window": key, "runs": (mem.get("runs", 0) + 1) if mem.get("window") == key else 1,
                 "spent": spent_window + spent})
     stock_post(md, inv, cat, mem)
