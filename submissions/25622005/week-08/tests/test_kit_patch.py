@@ -1,4 +1,4 @@
-"""Offline tests for the five local patches in week-08/market_kit.py (blocks marked "# 25622005:").
+"""Offline tests for the local patches in week-08/market_kit.py (blocks marked "# 25622005:").
 
 No network: acp_pay talks to an httpx.MockTransport, AcpShop to a fake market object.
 """
@@ -318,9 +318,93 @@ class LogArchiveTest(KitState):
     def test_version_and_startup_line(self):
         self.assertEqual(mk.KIT_VERSION, "4")
         src = (W / "market_kit.py").read_text(encoding="utf-8")
-        self.assertIn('log("[kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive, log-oneline")',
-                      src)
+        self.assertIn('log("[kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive, log-oneline,'
+                      ' supply-stop")', src)
         self.assertEqual(mk.HOLD_TTL, 300)
+
+
+# --- 6) supply-stop: the restock run stops on a closed window, 402, 5xx or a transport error; no retry
+
+class FakeSupplyMarket:
+    """/api/supply answers from a script (an httpx.Response, or an exception to raise); /api/inventory is 200."""
+
+    def __init__(self, script):
+        self.script, self.supplied = list(script), []
+
+    def call(self, method, path, role="buyer", **kw):
+        if path == "/api/inventory":
+            return httpx.Response(200, json={"units": []})
+        self.supplied.append(kw["json"]["sku"])
+        r = self.script.pop(0)
+        if isinstance(r, Exception):
+            raise r
+        return r
+
+
+def ok():
+    return httpx.Response(200, json={"total": 100, "balance": 900})
+
+
+def too_many(wait):
+    return httpx.Response(429, json={"error": "closed", "wait": wait})
+
+
+class SupplyStopTest(KitState):
+    def run_restock(self, script, lines=2):
+        market = FakeSupplyMarket(script)
+        buy = [{"sku": f"S{i}", "qty": 1} for i in range(1, lines + 1)]
+        inv = {"balance": 1000, "bankrupt_line": 0, "units": []}
+        with mock.patch.object(mk, "default_restock", return_value=buy), \
+                mock.patch.object(mk.time, "sleep") as sleep, quiet():
+            mk.restock({}, Path(self.tmp.name), market, Path(self.tmp.name), inv, [])
+        return market.supplied, [c.args[0] for c in sleep.call_args_list]
+
+    def log_lines(self):
+        return [x[9:] for x in mk.LOG_FILE.read_text(encoding="utf-8").splitlines()]   # drop the HH:MM:SS stamp
+
+    def test_both_lines_bought(self):
+        self.assertEqual(self.run_restock([ok(), ok()]), (["S1", "S2"], []))
+
+    def test_5xx_stops_the_run_without_retry(self):
+        for code in (502, 503, 504):
+            self.assertEqual(self.run_restock([httpx.Response(code, text="bad gateway"), ok()]), (["S1"], []))
+
+    def test_closed_window_stops_at_once(self):
+        self.assertEqual(self.run_restock([too_many(700), ok()]), (["S1"], []))
+
+    def test_short_429_waits_and_buys(self):
+        self.assertEqual(self.run_restock([too_many(5), ok(), ok()]), (["S1", "S1", "S2"], [5.0]))
+
+    def test_429_three_times_stops_the_run(self):
+        supplied, slept = self.run_restock([too_many(40)] * 3 + [ok()])
+        self.assertEqual((supplied, slept), (["S1"] * 3, [30, 30, 30]))
+
+    def test_non_json_429_waits_ten(self):
+        supplied, slept = self.run_restock([httpx.Response(429, text="<html>slow down</html>"), ok(), ok()])
+        self.assertEqual((supplied, slept), (["S1", "S1", "S2"], [10.0]))
+
+    def test_negative_or_nan_wait_does_not_raise(self):
+        for body in (b'{"wait": -2}', b'{"wait": NaN}'):
+            supplied, slept = self.run_restock([httpx.Response(429, content=body), ok(), ok()])
+            self.assertEqual((supplied, slept), (["S1", "S1", "S2"], [0.0]))
+
+    def test_402_stops(self):
+        self.assertEqual(self.run_restock([httpx.Response(402, json={"error": "balance"}), ok()]), (["S1"], []))
+
+    def test_other_refusal_goes_on(self):
+        self.assertEqual(self.run_restock([httpx.Response(400, json={"error": "sku"}), ok()]), (["S1", "S2"], []))
+
+    def test_read_timeout_logs_failed_and_stops(self):
+        supplied, _ = self.run_restock([httpx.ReadTimeout("slow"), ok()])
+        self.assertEqual(supplied, ["S1"])
+        self.assertTrue(self.log_lines()[-1].startswith("[supply] {'sku': 'S1', 'qty': 1} failed: ReadTimeout"))
+
+    def test_refused_line_still_counted_by_the_strategist(self):
+        from strategist.collect import _REFUSED
+        self.run_restock([too_many(700)])
+        m = _REFUSED.match(self.log_lines()[-1])
+        self.assertIsNotNone(m)
+        self.assertEqual(m.group(1), "429")
 
 
 if __name__ == "__main__":

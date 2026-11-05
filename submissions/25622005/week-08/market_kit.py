@@ -969,12 +969,22 @@ def restock(agent, d, market, md, inv, demand):
     for b in buy[:10]:
         if not isinstance(b, dict):
             continue
-        for _ in range(3):
-            r = market.call("POST", "/api/supply", "shop", json={"sku": b.get("sku"), "qty": b.get("qty")})
-            if r.status_code == 429:
-                time.sleep(min(float(r.json().get("wait", 10)), 30))
-                continue
-            break
+        try:                                            # 25622005: supply-stop, no retry (the next run replans)
+            for _ in range(3):
+                r = market.call("POST", "/api/supply", "shop", json={"sku": b.get("sku"), "qty": b.get("qty")})
+                if r.status_code == 429:
+                    try:
+                        wait = float(r.json().get("wait", 10))
+                    except (ValueError, TypeError, AttributeError):    # a proxy's 429 page, not the market's JSON
+                        wait = 10.0
+                    if wait > 90:                       # the window opens later than this run can wait
+                        break
+                    time.sleep(max(0.0, min(wait, 30)))     # a negative or NaN wait would raise in sleep
+                    continue
+                break
+        except httpx.HTTPError as e:                    # e.g. a ReadTimeout: the market may have taken the lot
+            log(f"[supply] {b} failed: {type(e).__name__}, stopping this run")
+            return
         if r.status_code == 200:
             j = r.json()
             refresh_inventory(market, md)
@@ -982,8 +992,8 @@ def restock(agent, d, market, md, inv, demand):
                 f" balance {j['balance']}")
         else:
             log(f"[supply] {b} refused: {r.status_code} {r.text[:200]}")
-            if r.status_code == 402:
-                break
+            if r.status_code in (402, 429, 502, 503, 504):     # 25622005: stop this run; the next one replans
+                return
 
 
 def broken_news(market, md, state):
@@ -1059,7 +1069,7 @@ def cmd_join(a):
     (d / "logs").mkdir(exist_ok=True)
     LOG_FILE = d / "logs" / "market-kit.log"
     log(f"[kit] market_kit {KIT_VERSION}, {d}")
-    log("[kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive, log-oneline")   # 25622005: local kit copy
+    log("[kit] local patches: binding, cancel, acp-sessions, hold-ttl, log-archive, log-oneline, supply-stop")   # 25622005: local kit copy
     ignore_pem(d)
     keys = {"shop": load_key(d / "shop_key.pem"), "buyer": load_key(d / "buyer_key.pem")}
     market = Market(a.market, a.owner)
