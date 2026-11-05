@@ -273,7 +273,7 @@ def plan_offer(budget: int, asks: list, offers: list, ref: float | None, known: 
         known["anchor"] = max(1, int(anchor))
         return "offer", known["anchor"], f"anchor at {known['anchor']} (ask {ask}, reference {ref}, cap {cap})"
 
-    anchor = known["anchor"]
+    anchor = known.get("anchor") or max(1, last)         # an earlier offer can exist with no planned anchor (KeyError on 20 of 6684 orders)
     k = min(len(offers), PLAN - 1)
     price = int(round(anchor + (target - anchor) * STEPS[k]))
     why = f"step {k + 1}/{PLAN} toward cap {cap}" + (f" (stretched to floor {target})" if target != cap else "")
