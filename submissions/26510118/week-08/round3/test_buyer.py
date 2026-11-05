@@ -90,6 +90,12 @@ def test_choosing():
     check("only a shop that failed us 3 times in a row: the order is skipped", c is None, why)
     c, _ = mb.choose(mb.candidates(food, [shop("G", KIMCHI), shop("H", KIMCHI)], CATALOG, {}, {}, dict(RULES, avoid_shops=["G"])), {})
     check("a shop the rules say to avoid is passed over", c["shop"]["name"] == "H")
+    c, poor = mb.choose(mb.candidates(food, [shop("shaun0927-lab9", KIMCHI), shop("H", KIMCHI)], CATALOG, {}, {}, RULES, bad={"shaun0927-lab9"}), {})
+    check("a shop of an owner who rates in bad faith is passed over while another has the product", c["shop"]["name"] == "H" and not poor)
+    c, poor = mb.choose(mb.candidates(food, [shop("shaun0927-lab9", KIMCHI)], CATALOG, {}, {}, RULES, bad={"shaun0927-lab9"}), {})
+    check("...and tried last, as a poor choice, when it is the only one", c["shop"]["name"] == "shaun0927-lab9" and poor is True)
+    check("bad-faith shops: the analysis's list and any shop named after such an owner",
+          mb.bad_faith(["Totato2203-new", "inextro", "x"]) >= {"Totato2203-new"} and "inextro" not in mb.bad_faith(["inextro"]))
     check("a banned shop is never a candidate, even the only one with a clean record",
           mb.candidates(food, [shop("willow-goods", KIMCHI)], CATALOG, {}, {}, RULES) == []
           and [x["shop"]["name"] for x in mb.candidates(food, [shop("willow-goods", KIMCHI), shop("H", KIMCHI)], CATALOG, {}, {}, RULES)] == ["H"])

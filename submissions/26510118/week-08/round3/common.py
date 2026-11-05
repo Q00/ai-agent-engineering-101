@@ -46,6 +46,14 @@ RULES = {
 }
 
 
+# Owners whose buyers rate shops 1 star on purpose (the user's call, 11/5 15:45: "go to their shops as little as
+# possible"; inextro stays as it is). From the public ledger on 11/5: totato2203's buyer gave every shop 1 star on
+# every purchase from 03:50 (us 40 of 40, other shops 219 of 219); from 12:43 shaun0927's two buyers gave us 1 star on
+# 30 of 30 and the other top shops most of theirs (inextro 17/19, psyoung82 30/53, yms979 10/16; kimauve 1/16).
+# The analysis maps them to their shops on the board (analysis/bad_faith.json); the buyer tries those shops last.
+BAD_FAITH_OWNERS = ("shaun0927", "totato2203")
+
+
 def read_json(path, default=None):
     """A file the kit replaces whole; missing or unreadable -> default."""
     try:

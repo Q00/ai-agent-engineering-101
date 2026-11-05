@@ -174,6 +174,9 @@ def board_snapshot(now: float, get_json) -> str:
     rivals = sorted({p["shop"].get("name") for p in ranked if isinstance(p.get("shop"), dict)
                      and not forum.own(p.get("player")) and not forum.own(p["shop"].get("name"))} - {None})
     common.write_json(folder() / "rivals.json", {"at": int(now), "shops": rivals})
+    bad = sorted({s.get("name") for s in b.get("shops") or [] if isinstance(s, dict)
+                  and ((s.get("owner") or {}).get("login") or "").lower() in common.BAD_FAITH_OWNERS} - {None})
+    common.write_json(folder() / "bad_faith.json", {"at": int(now), "owners": list(common.BAD_FAITH_OWNERS), "shops": bad})
     try:
         sb_note = scoreboard.update(now, b)
     except Exception as e:                                       # noqa: BLE001

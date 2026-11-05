@@ -253,9 +253,18 @@ def shop_odds(shops: list, posts: list, summary: dict, nb: dict, now: float | No
     return out
 
 
+def bad_faith(names) -> set:
+    """The shops of owners who rate in bad faith (common.BAD_FAITH_OWNERS): as the analysis found them on the board,
+    and any whose name starts with such an owner's login (a shop opened since)."""
+    got = common.read_json(common.MARKET_DIR / "analysis" / "bad_faith.json", {}) or {}
+    known = set(got.get("shops") or []) if isinstance(got, dict) else set()
+    return known | {n for n in names if any(str(n).lower().startswith(o) for o in common.BAD_FAITH_OWNERS)}
+
+
 def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict, rules: dict,
-               odds: dict | None = None, rivals: set | None = None) -> list:
-    """Every (shop, SKU) worth asking for, with its expected price, gain, trust and red flags."""
+               odds: dict | None = None, rivals: set | None = None, bad: set | None = None) -> list:
+    """Every (shop, SKU) worth asking for, with its expected price, gain, trust and red flags. bad: shops of owners
+    who rate in bad faith, flagged so that choose() takes them only when no clean shop has the order's product."""
     by_sku, by_cat = summary.get("by_sku") or {}, summary.get("by_category") or {}
     budget, out = order["budget"], []
     for sh in shops:
@@ -277,6 +286,8 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             flags.append(f"{mean:.1f} stars over {n} reviews")
         if sh["name"] in (rules.get("avoid_shops") or []):
             flags.append("the analysis said to avoid it")
+        if sh["name"] in (bad or set()):
+            flags.append("its owner's buyers rate shops 1 star on purpose")
         for o in sh.get("offers") or []:
             c = catalog.get(o.get("sku")) or {}
             if o.get("sku") not in order.get("acceptable", []) or not o.get("qty") or not c.get("list_price"):
@@ -575,7 +586,8 @@ async def amain(a) -> dict:
     odds = shop_odds(offering, common.read_json(md / "forum.json", []) or [], summary, nb) if offering else {}
     riv = common.read_json(common.MARKET_DIR / "analysis" / "rivals.json", {}) or {}
     rivals = set(riv.get("shops") or []) if isinstance(riv, dict) and time.time() - (riv.get("at") or 0) < RIVALS_FRESH else set()
-    cands = candidates(order, shops, catalog, nb, summary, rules, odds, rivals) if order.get("acceptable") else []
+    bad = bad_faith(sh["name"] for sh in shops)
+    cands = candidates(order, shops, catalog, nb, summary, rules, odds, rivals, bad) if order.get("acceptable") else []
     dear = (base["median_list"] or 0) >= DEAR_ORDER
     c, poor = choose(cands, nb, dear) if cands else (None, "no shop has an acceptable product in stock")
     if c is None:
