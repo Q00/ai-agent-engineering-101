@@ -145,6 +145,12 @@ class Seller(AgentExecutor):
                                           critical=unit["cost"] > inv.get("balance", 1) * self.cfg["critic_cash_fraction"],
                                           deadline=deal["until"] - 5)
         price = selected["price"]
+        if selected['action'] == 'hold':
+            customer_memory.finish(self.j, task.id, 'retain_inventory')
+            self.j.release(task.id)
+            self.deals.pop(task.id, None)
+            await up.reject(say('No currently feasible price for these terms; retaining this inventory.'))
+            return
         deal['promised_warranty_hours'] = selected['warranty_hours']
         customer_memory.action(self.j, task.id, message_id, deal['turns'], selected, deal['strategy']['version'])
         self.j.add("shop_quote", {"task": task.id, "sku": unit["sku"], "price": price, "action": selected["action"],

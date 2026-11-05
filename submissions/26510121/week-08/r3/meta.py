@@ -3,7 +3,7 @@ import time
 import math
 from bisect import bisect_right
 
-WEIGHTS = {'shop': {'profit': .5, 'revenue': .3, 'stars_rank': .2},
+WEIGHTS = {'shop': {'book': .5, 'revenue': .3, 'stars_rank': .2},
            'buyer': {'surplus': .5, 'forum': .3, 'deals': .1, 'posts': .1}}
 
 
@@ -17,6 +17,8 @@ def eligible_rows(board, role, own_name):
     if not board or board.get('round') != 3 or role not in WEIGHTS:
         return []
     rows = board.get('shops' if role == 'shop' else 'buyers', [])
+    from .finance import book_row
+    rows = [dict(r, book=book_row(r)) for r in rows] if role == 'shop' else rows
     return [r for r in rows if r.get('name') == own_name or r.get('deals', 0) > 0 or
             role == 'shop' and (r.get('profit', 0) != 0 or r.get('revenue', 0) > 0)]
 

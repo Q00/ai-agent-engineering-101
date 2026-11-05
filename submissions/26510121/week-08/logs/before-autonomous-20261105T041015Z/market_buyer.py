@@ -1,0 +1,179 @@
+"""R3 buyer: choose useful surplus; verify exact SKU, receipt, and acceptance policy."""
+import argparse
+import json
+import os
+import time
+from r3.state import Journal, read_json
+from r3.market_memory import buyer_price_actions, buyer_assessment
+from r3.economy import buyer_candidates
+from r3.model import Chooser
+from r3.protocol import Peer, quote, quote_terms, verify_receipt
+from r3.quote_market import compare_quotes, close_quotes, request_text
+from r3.adaptive import begin_buyer
+
+
+def buy(order, shops, journal, chooser=None, peer_factory=Peer):
+    cfg, strategy = begin_buyer(journal, order)
+    journal.reconcile()
+    journal.add('buyer_execution', {'order': order['order'], 'strategy_version': strategy['version']},
+                eid='buyer-execution:' + order['order'], role='buyer')
+    empty = {"shop": "", "receipt": None, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+    if time.time() + cfg["checkout_buffer_seconds"] >= order["expires"]:
+        return empty
+    catalog = journal.snapshot("catalog.json", {})
+    registry = journal.snapshot("registry.json", {})
+    ranked = buyer_candidates(order, shops, catalog, journal)
+    if not ranked:
+        from r3.forum import queue_wanted
+        queue_wanted(journal, order)
+    chooser = chooser or Chooser(journal, cfg)
+    deadline = min(order["expires"] - cfg["checkout_buffer_seconds"], time.time() + 240)
+    prepared, contacted = compare_quotes(order, ranked, registry, journal, cfg, peer_factory, deadline)
+    try:
+        return execute(order, journal, chooser, peer_factory, cfg, strategy, registry, ranked,
+                       deadline, prepared, contacted, empty)
+    finally:
+        close_quotes(prepared)
+
+
+def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, ranked,
+            deadline, prepared, contacted, empty):
+    for _ in range(cfg["max_shop_candidates"]):
+        if not ranked or time.time() >= deadline:
+            break
+        c = chooser.choose("buyer", ranked[:8], {"order": order, "strategy": strategy,
+                           'forum_evidence': 'unverified discovery hint; registry and checkout remain authoritative'}, deadline=deadline,
+                           critical=ranked[0]["reference_price"] > .8 * order["budget"])
+        ranked = [x for x in ranked if x['id'] != c['id']]
+        cached = prepared.pop(c['id'], None)
+        if cached is None and contacted >= cfg['max_shop_candidates']:
+            # Spend remaining attempts on already collected quotes.
+            ranked = [x for x in ranked if x['id'] in prepared]
+            if not ranked:
+                break
+            c = ranked.pop(0)
+            cached = prepared.pop(c['id'])
+        peer = cached[0] if cached else peer_factory()
+        if not cached:
+            contacted += 1
+        started = time.monotonic()
+        task, task_complete = None, False
+        try:
+            pub = registry.get(c["shop"], {}).get("pubkey")
+            if not pub:
+                raise ValueError("registered_signing_key_unavailable")
+            if cached:
+                task = cached[1]
+            else:
+                peer.discover(c["shop"])
+                task = peer.send(request_text(c, order))
+            agreed = None
+            previous_offer = None
+            required_warranty = 0
+            required_grade = None
+            for turn in range(cfg["max_negotiation_turns"] + 1):
+                state = task["status"]["state"]
+                if state == "TASK_STATE_COMPLETED":
+                    receipts = [p["data"] for a in task.get("artifacts", []) for p in a.get("parts", [])
+                                if isinstance(p.get("data"), dict) and "sig_seller" in p["data"]]
+                    if len(receipts) != 1:
+                        raise ValueError('receipt_integrity_failure')
+                    # Some peers return a signed final offer immediately. It is
+                    # still subject to our cap, signature and authoritative checkout.
+                    if agreed is None:
+                        assessment = buyer_assessment(dict(c['product'], sku=c['sku']), order, receipts[0], journal, cfg)
+                        cap, required_warranty = assessment['cap'], assessment['required_warranty']
+                        required_grade = receipts[0].get('grade', receipts[0].get('claim'))
+                        price = receipts[0].get('price')
+                        if type(price) not in (int, float) or price > cap:
+                            raise ValueError('receipt_integrity_failure')
+                        agreed = price
+                    if not verify_receipt(receipts[0], pub, task=task["id"],
+                            sku=c["sku"], budget=order["budget"], agreed=agreed):
+                        raise ValueError("receipt_integrity_failure")
+                    # A2A protobuf numbers decode as whole-valued floats; the signature canonicalizes integer money.
+                    rec = dict(receipts[0], price=int(receipts[0]["price"]))
+                    if rec.get('cert') is False:
+                        # The kit will reject this checkout. Try another shop while the order is still alive.
+                        raise ValueError('certificate_unavailable')
+                    accept = {"cert": True, "expected_sku": c["sku"]}
+                    if order.get("kind") == "food":
+                        accept["min_hours_left"] = order.get("use_within_hours", 0) + cfg["checkout_buffer_seconds"] / 3600
+                    else:
+                        accept["warranty_hours"] = required_warranty
+                        if required_grade in ('A', 'B', 'C'):
+                            accept['grades'] = [required_grade]
+                    journal.add("agreement", {"order": order["order"], "sku": c["sku"], "shop": c["shop"],
+                                              "task": task["id"], "price": rec["price"], "accept": accept,
+                                              "strategy_version": strategy['version']},
+                                eid="agreement:" + order["order"], role="buyer")
+                    task_complete = True
+                    return {"shop": c["shop"], "receipt": rec, "stars": 3,
+                            "review": "Pending checkout; settled quality will determine review.", "accept": accept}
+                if state != "TASK_STATE_INPUT_REQUIRED" or time.time() >= deadline:
+                    break
+                ask = quote(task)
+                product = c["product"]
+                terms = quote_terms(task)
+                if terms.get('sku') not in (None, c['sku']):
+                    raise ValueError('quote_sku_mismatch')
+                assessment = buyer_assessment(dict(product, sku=c['sku']), order, terms, journal, cfg)
+                cap, required_warranty, stress = assessment['cap'], assessment['required_warranty'], assessment['failure']
+                required_grade = terms.get('grade')
+                if (product.get('kind') == 'food' and type(terms.get('expires_at')) in (int, float) and
+                        terms['expires_at'] < time.time() + order.get('use_within_hours', 0) * 3600 +
+                        cfg['checkout_buffer_seconds']):
+                    break  # An already unsuitable offer cannot pass the final certificate check.
+                actions = buyer_price_actions(ask, cap, product, c['reference_price'],
+                                              cfg['buyer_counter_ratio'], turn,
+                                              cfg['max_negotiation_turns'], previous_offer,
+                                              stress, required_warranty >= 6, assessment['covered_failure'])
+                if not actions:
+                    break
+                move = chooser.choose("buyer", actions, {"ask": ask, "order": order, "turn": turn,
+                                       "product": product, "strategy": strategy}, deadline=deadline)
+                agreed = move["price"]
+                previous_offer = agreed
+                if move['id'] == 'counter':
+                    journal.add('buyer_counter', {'order': order['order'], 'shop': c['shop'], 'ask': ask,
+                                'price': agreed, 'strategy_version': strategy['version']}, role='buyer')
+                task = peer.send(str(agreed), task["id"])
+            journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
+                                    "shop": c["shop"], "sku": c["sku"], "success": False,
+                                    "kind": "no_agreement", "seconds": time.monotonic() - started}, role="buyer")
+        except Exception as exc:
+            if not isinstance(exc, ValueError):
+                ranked = [x for x in ranked if x['shop'] != c['shop']]
+            reason = str(exc) if isinstance(exc, ValueError) and str(exc) in {
+                'certificate_unavailable', 'receipt_integrity_failure', 'registered_signing_key_unavailable',
+                'ambiguous_ask', 'conflicting_ask', 'conflicting_offer_terms', 'quote_sku_mismatch', 'invalid_money'} else None
+            journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
+                                    "shop": c["shop"], "sku": c["sku"], "success": False,
+                                    'reason': reason,
+                                    "kind": type(exc).__name__, "seconds": time.monotonic() - started}, role="buyer")
+        finally:
+            try:
+                if not task_complete and hasattr(peer, 'cancel') and task:
+                    peer.cancel(task['id'])
+            except Exception:
+                pass
+            peer.close()
+    from r3.forum import queue_wanted
+    queue_wanted(journal, order)
+    return empty
+
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser()
+    p.add_argument("--shops", required=True)
+    p.add_argument("--order", required=True)
+    p.add_argument("--item")
+    p.add_argument("--budget", type=int)
+    args = p.parse_args()
+    if os.environ.get("R3_STRICT_ADAPTER") != "1":
+        raise SystemExit("Use run_market.py: the exact-SKU acceptance adapter is required.")
+    order = read_json(args.order, {})
+    if not order.get("acceptable"):
+        print(json.dumps({"shop": "", "receipt": None, "stars": 3, "review": "R3 actor waits for SKU orders."}))
+    else:
+        print(json.dumps(buy(order, read_json(args.shops, []), Journal()), ensure_ascii=False))

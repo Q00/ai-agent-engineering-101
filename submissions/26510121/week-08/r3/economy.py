@@ -4,6 +4,7 @@ from datetime import datetime
 import math
 import time
 from .state import warranty_hours
+from .finance import planning_hours, reserve_days, surge_factor, supply_bound, sale_delta
 
 
 def remaining(unit, now=None):
@@ -56,16 +57,21 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     from .market_memory import market_book
     public = market_book(journal, catalog, now).get(unit['sku'], {})
     # Observed paid prices remain observations, not guaranteed current demand.
-    reference = (sorted(stats["prices"])[len(stats["prices"]) // 2] if stats["prices"] else
-                 public.get('grade_medians', {}).get(grade(unit, catalog, now), public.get('median', .85 * L)))
+    public_reference = public.get('grade_medians', {}).get(grade(unit, catalog, now), public.get('median', .85 * L))
+    own_reference = sorted(stats['prices'])[len(stats['prices'])//2] if stats['prices'] else public_reference
+    reference = .75*public_reference + .25*own_reference
     urgency = max(0, min(1, left / max(1, catalog.get(unit["sku"], {}).get("shelf_hours") or 24)))
-    if unit.get("kind") == "food":
-        recovery_floor = max(1, int(min(cost, .55 * L) * min(1, urgency * 3)))
-    else:
-        recovery_floor = max(1, int(cost * .95))
-    horizon = datetime.fromisoformat(config["end_at"]).timestamp() - now
-    if horizon < 6 * 3600:
-        recovery_floor = max(1, int(recovery_floor * .65))
+    from .risk import goods_risk
+    warranty = (max(unit.get('minimum_warranty_hours', 0), unit.get('promised_warranty_hours', 0),
+                    config.get('goods_warranty_by_grade', {}).get(unit.get('grade'), 3))
+                if unit.get('kind') == 'goods' else 0)
+    stress_refund = goods_risk(journal, unit.get('grade'), warranty, config, now)['failure_upper'] if warranty else 0
+    age = max(0, (now-unit.get('supplied_at', now))/3600)
+    liquidation = unit.get('kind') == 'food' and left < config.get('food_clearance_hours', 6)
+    recovery_floor = (max(1, int(cost * max(.05, left/6)*.9)) if liquidation else
+                      max(1, math.ceil(cost*(1+config.get('shop_margin_fraction', .02))/max(.01,1-stress_refund))))
+    if unit.get('kind') == 'goods' and age > config.get('goods_clearance_hours', 96):
+        recovery_floor = max(1, math.ceil(cost*.98/max(.01,1-stress_refund)))
     ceiling = previous_ask or int(1.05 * L)
     prices = {max(recovery_floor, int(reference * f)) for f in (.9, 1, 1.1)}
     memory_evidence = None
@@ -84,27 +90,29 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     if previous_ask:
         prices.add(previous_ask)
     result = []
-    warranty = (max(unit.get('minimum_warranty_hours', 0), unit.get('promised_warranty_hours', 0),
-                    config.get('goods_warranty_by_grade', {}).get(unit.get('grade'), 6))
-                if unit.get('kind') == 'goods' else 0)
-    # Unknown break risk is an explicit stress scenario, not an empirical estimate.
-    stress_refund = .15 if warranty else 0
     for p in sorted({min(ceiling, p) for p in prices}):
+        if p < recovery_floor:
+            continue
         from .meta import quote_completion
         completion = quote_completion(journal, unit["sku"], p)
         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
-                       "warranty_hours": warranty, "score": (1 - stress_refund) * p * completion["completion"],
+                       "warranty_hours": warranty, "score": sale_delta(p, cost, completion['completion'], stress_refund)['book'],
                        "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence),
-                       'expected_delta': {'profit': (1 - stress_refund) * p * completion['completion'],
-                                          'revenue': (1 - stress_refund) * p * completion['completion']},
+                       'expected_delta': sale_delta(p, cost, completion['completion'], stress_refund),
                        "recovery_floor": recovery_floor,
                            "risk": "goods refund stress 0.15; full gross reserve remains required" if warranty else "food expiry"})
     if offer and offer >= recovery_floor:
         p = min(offer, previous_ask) if previous_ask else offer
         result.append({"id": "accept:" + str(p), "action": "accept" if p == offer else "counter", "price": p,
-                       "warranty_hours": warranty, "score": (1 - stress_refund) * p,
-                       'expected_delta': {'profit': (1 - stress_refund) * p, 'revenue': (1 - stress_refund) * p},
+                       "warranty_hours": warranty, "score": sale_delta(p, cost, 1, stress_refund)['book'],
+                       'expected_delta': sale_delta(p, cost, 1, stress_refund),
                        "evidence": stats, "recovery_floor": recovery_floor})
+    result.append({'id': 'hold', 'action': 'hold', 'price': 0, 'warranty_hours': warranty,
+                   'score': -cost if liquidation else 0,
+                   'expected_delta': {'book': -cost if liquidation else 0, 'revenue': 0},
+                   'evidence': {'cost': cost, 'hours_left': left if math.isfinite(left) else None,
+                                'clearance': liquidation, 'alternative': 'retain inventory; expiry is a loss'},
+                   'recovery_floor': recovery_floor})
     return result
 
 
@@ -166,7 +174,7 @@ def supply_open(inv, now=None):
 
 def cash_capacity(inv, journal, config, now=None):
     now = time.time() if now is None else now
-    days = max(0, (datetime.fromisoformat(config['end_at']).timestamp() - now) / 86400)
+    days = reserve_days(config, now)
     # A confirmed full refund has already reduced the authoritative balance.
     # Keep its raw history, but do not collateralize the discharged obligation twice.
     closed = {}
@@ -184,14 +192,21 @@ def cash_capacity(inv, journal, config, now=None):
     storage = sum(u.get('cost', 0) for u in inv.get('units', []) if u.get('kind') == 'goods') * .01 * days
     balance = inv.get('balance', 0)
     floor = max(config.get('cash_floor', 750000), balance * config['cash_reserve_fraction'])
+    schedule = {}
+    for e in pending:
+        if closed.get((e.get('unit'), e.get('sku')), 0) < e.get('price', 0):
+            expiry = e.get('paid_at', 0)+warranty_hours(e.get('warranty_hours'))*3600
+            bucket = int(expiry//1200)*1200
+            schedule[bucket] = schedule.get(bucket, 0)+e.get('price', 0)
     return {'spendable': max(0, balance - floor - liability - storage), 'refund_liability': liability,
             'storage_to_end': storage, 'cash_floor': floor, 'remaining_days': days,
+            'reserve_release_schedule': [{'at': k+1200, 'amount': v} for k,v in sorted(schedule.items())],
             'discharged_refund_reserve': released}
 
 
 def restock_candidates(inv, catalog, demand, journal, config, now=None):
     now = time.time() if now is None else now
-    end = datetime.fromisoformat(config["end_at"]).timestamp()
+    end = now + planning_hours(config, now)*3600
     if end - now < 3600 or not supply_open(inv, now):
         return []
     units = [u for u in inv.get("units", []) if remaining(u, now) > 0]
@@ -205,6 +220,10 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     spendable = capacity['spendable']
     from .market_memory import market_book
     book = market_book(journal, catalog, now)
+    merchant = {}
+    if config.get('shop_growth_v5'):
+        from .merchant import context
+        merchant = context(journal, catalog, now)
     signals = {}
     for e in journal.events("public_settle", 20000):
         product = catalog.get(e.get("item") or e.get("sku"), {})
@@ -233,7 +252,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     probe = int(now // 3600)
     for sku, p in catalog.items():
         fee = .01 * capacity['remaining_days'] if p.get('kind') == 'goods' else 0
-        per_unit = math.ceil(.75 * p['list_price'])
+        factor = surge_factor(inv, sku)
+        per_unit = supply_bound(p, inv, sku)
         commitment = per_unit * (1 + fee)
         if count.get(sku, 0) >= config["restock_max_qty"] or commitment > spendable:
             continue
@@ -247,7 +267,9 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         exact = min(forum['skus'].get(sku, 0), 2)
         # Cover observed own sales through the next supply window, in small lots.
         observed = book.get(sku, {})
-        rate = max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0))
+        growth = merchant.get('skus', {}).get(sku, {})
+        rate = (growth.get('arrival_rate_scenario', 0) if merchant else
+                max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0)))
         desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
         qty = min(20, config['restock_max_qty'] - count.get(sku, 0),
                   max(1, desired - count.get(sku, 0)), max(0, math.floor(spendable / commitment)))
@@ -257,10 +279,9 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         # objective uses expected holding time instead, so quick-turn goods do
         # not pay two weeks of hypothetical storage in every ranking decision.
         probe_sku = observed.get('samples', 0) < 3 and own.get(sku, 0) < 2
-        rate = max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0))
         hours = min(6, max(0, (end - now) / 3600))
         if probe_sku:
-            sale_probability = .9  # Explicit exploration scenario; not observed demand.
+            sale_probability = .25  # Bounded discovery scenario; never pretend unknown demand is certain.
         else:
             sale_probability = min(.98, 1 - math.exp(-max(.01, rate) * hours))
         holding_hours = min(hours, max(config.get('supply_cycle_seconds', 1200) / 3600,
@@ -274,7 +295,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         # keep the published grade-mixture expectation bounds for a NEW draw.
         cost_ratio = max(cost_lower, min(.60 if p.get('kind') == 'food' else .69,
                           (sum(ratios[:20]) + 5 * prior_cost) / (len(ratios[:20]) + 5)))
-        cost_upper = .60 if p.get('kind') == 'food' else .69
+        cost_upper = (.60 if p.get('kind') == 'food' else .69)*factor
+        cost_ratio *= factor
         price = min(p['list_price'], observed.get('median', .85 * p['list_price']))
         refund_stress = .15 if p.get('kind') == 'goods' else 0
         expected_storage = cost_ratio * p['list_price'] * .01 * holding_hours / 24 if fee else 0
@@ -290,17 +312,21 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         if qty <= 0:
             continue
         expected_revenue = qty * sale_probability * price * (1 - refund_stress)
-        expected_profit = expected_revenue - qty * (cost_ratio * p['list_price'] + expected_storage)
+        # Unsold stock retains acquisition value. Only sales remove its cost;
+        # food additionally risks expiration within the rolling horizon.
+        expiry_stress = (1-sale_probability)*.25 if p.get('kind') == 'food' else 0
+        expected_profit = expected_revenue - qty * ((sale_probability+expiry_stress)*cost_ratio*p['list_price'] + expected_storage)
         if expected_profit <= 0:
             continue
         exploration_weight = config['exploration_fraction'] * draw if probe_sku else 1
         score = weight * scarcity * exploration_weight * expected_profit
         candidates.append({"id": sku, "sku": sku, "qty": qty, "score": score,
                            "max_cost": per_unit * qty, "capital_commitment": commitment * qty, "category": p["category"],
-                           'expected_delta': {'profit': expected_profit, 'revenue': expected_revenue},
+                           'expected_delta': {'book': expected_profit, 'profit': expected_profit, 'revenue': expected_revenue},
                            "evidence": {"observed_category_signal": cat_signal, "probe": cat_signal == 0,
                                         "forum_request_signal": exact, 'own_sales_last_hour': own.get(sku, 0),
-                                        'cash_capacity': capacity, 'public_sku_trades': observed,
+                                        'cash_capacity': capacity, 'public_sku_trades': observed, 'supply_surge_factor': factor,
+                                        'worst_case_unit_cost': per_unit,
                                         'sale_probability_scenario': sale_probability, 'expected_holding_hours': holding_hours,
                                         'cost_ratio_scenario': cost_ratio, 'cost_is_observed': bool(ratios),
                                         'own_cost_samples': len(ratios[:20]), 'cost_prior_pseudo_samples': 5,
@@ -308,7 +334,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
                                         'upper_cost_profit_stress': expected_revenue - qty * (cost_upper * p['list_price'] + expected_storage),
                                         'refund_stress': refund_stress, 'exploration': probe_sku,
                                         "adaptive_category_weight": weight}})
-        candidates[-1]['evidence'].update(kind=p.get('kind'), list_price=p['list_price'])
+        candidates[-1]['evidence'].update(kind=p.get('kind'), list_price=p['list_price'],
+                                           growth=growth, arrival_rate_scenario=rate)
     from .meta import rank_progress
     board = journal.snapshot('board.json', {})
     if now - journal.get('board_checked_at', 0) > 300:
@@ -316,4 +343,4 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     for c in candidates:
         c['rank_progress_surrogate'] = rank_progress(board, 'shop', 'seochanit', c['expected_delta'])
     from .portfolio import allocate
-    return allocate(candidates, inv, capacity, config, units)
+    return allocate(candidates, inv, capacity, config, units, merchant=merchant)
