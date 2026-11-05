@@ -45,7 +45,8 @@ def status(shadow=False):
                 'cash_capacity':cash_capacity(inv,j,cfg,now),'cash':inv.get('balance'),
                 'stock_units':len(inv.get('units',[])),'stock_skus':len({u['sku'] for u in inv.get('units',[])}),
                 'quality_epoch_mature':now-epoch>=21600,'stop_at':cfg.get('end_at'),
-                'recent_strategy_actions':j.events('strategy_change',4)}
+                'recent_strategy_actions':j.events('strategy_change',4),
+                'recent_shop_settlements':j.events('shop_settled',5)}
         if shadow:
             started=time.monotonic()
             hypothetical=dict(inv,restock={'open':True,'opens_at':now-1,'closes_at':now+180})
