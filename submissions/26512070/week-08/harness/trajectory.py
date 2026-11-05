@@ -88,6 +88,7 @@ def build(day):
         if kind == "buyer.order" and order:
             t = get(order, "buyer", ev)
             t["input"] = {k2: d.get(k2) for k2 in ("category", "budget", "kind", "use_within_hours", "acceptable_n")}
+            t["experiment"] = d.get("experiment")
             cur[("buyer", pid_of(ev))] = order
         elif kind == "buyer.pick" and order:
             t = get(order, "buyer", ev)
