@@ -47,6 +47,22 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(d["cause"], "limit")
         self.assertNotIn("clipped", self.w.events[0][1])
 
+    def test_capability_marks(self):
+        from harness import capability
+        ctx = Ctx(caller="buyer", _writer=self.w)
+        call(ctx, "test.echo", {"text": "a"})                        # not in the buyer's list: marked, still runs
+        self.assertIn("not in buyer's capability list", self.w.events[-2][1]["not_permitted"])
+        self.assertTrue(self.w.events[-1][1]["ok"])
+        old, capability.ENFORCE = capability.ENFORCE, True
+        try:
+            out = call(ctx, "test.echo", {"text": "a"})
+        finally:
+            capability.ENFORCE = old
+        self.assertFalse(out["ok"])
+        self.assertEqual(self.w.events[-1][1]["cause"], "limit")
+        self.assertEqual(capability.permitted("buyer", "calc.extract"), (True, None))
+        self.assertFalse(capability.permitted("outer", "act.buy")[0])
+
     def test_long_summary_cut(self):
         s = registry.summary({"x": "y" * 1000})
         self.assertEqual(len(s), registry.SUMMARY_MAX)

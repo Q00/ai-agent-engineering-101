@@ -119,6 +119,17 @@ def summary(result):
     return text if len(text) <= SUMMARY_MAX else text[:SUMMARY_MAX - 1] + "…"
 
 
+def _denied(caller, name):
+    """C3 (design 16-1): (why, enforce) when the caller's capability list does not hold the tool, else None. The
+    check must never break a call: if the list cannot be read, the call goes on unmarked."""
+    try:
+        from harness import capability
+        ok, why = capability.permitted(caller, name)
+        return None if ok else (why, capability.ENFORCE)
+    except Exception:
+        return None
+
+
 def call(ctx: Ctx, name: str, args=None):
     args = dict(args or {})
     t = TOOLS.get(name)
@@ -130,8 +141,15 @@ def call(ctx: Ctx, name: str, args=None):
     errors = schema.validate(args, t.input_schema)
     if errors:
         return {"ok": False, "reason": "bad input: " + "; ".join(errors[:3]), "hint": "see the tool's input schema"}
+    denied = _denied(ctx.caller, name)
     ctx.writer.emit("tool.call", {"tool": name, "args": args, "tool_version": TOOL_VERSION,
-                                  **({"clipped": True} if args != given else {})}, **keys)
+                                  **({"clipped": True} if args != given else {}),
+                                  **({"not_permitted": denied[0]} if denied else {})}, **keys)
+    if denied and denied[1]:
+        out = {"ok": False, "reason": f"not permitted: {denied[0]}", "hint": "see capability.list"}
+        ctx.writer.emit("tool.result", {"tool": name, "ok": False, "ms": 0, "tool_version": TOOL_VERSION,
+                                        "reason": out["reason"], "cause": "limit"}, **keys)
+        return out
     t0 = time.perf_counter()
     try:
         out = {"ok": True, "result": t.fn(ctx, **args)}
