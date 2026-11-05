@@ -85,12 +85,43 @@ def injection_probability(post, priority=False):
     return p if isinstance(p, (int, float)) else None
 
 
+def ref_seqs(refs):
+    """Ledger seqs of a post's refs. The forum gives refs as records {seq, found, kind, data}; older rows and
+    tests may give bare ints or digit strings. Returns [] when there are no refs and None when any ref cannot be
+    checked (no seq, or the market marked it found=False): such a post gets no +1.
+    vote() uses this only when FORUM_LEVER2 is True. With it False, vote() keeps the old int-only filter, so a
+    real post (refs are records) never gets a +1, as before 2026-11-05."""
+    if isinstance(refs, str):
+        try:
+            refs = json.loads(refs)
+        except ValueError:
+            return None
+    out = []
+    for r in refs or []:
+        if isinstance(r, dict):
+            if r.get("found") is False:
+                return None
+            r = r.get("seq")
+        if isinstance(r, bool):
+            return None
+        if isinstance(r, str) and r.strip().isdigit():
+            r = int(r.strip())
+        if not isinstance(r, int):
+            return None
+        out.append(r)
+    return out
+
+
 def vote(mem, posts, labels, p_injection=injection_probability):
     """+1 when every ref is a ledger entry we hold; -1 when the post is flagged as manipulation.
     FORUM_LEVER2 False (default): flagged = decision model P >= INJECTION_P, else the LLM label (as before).
     FORUM_LEVER2 True: -1 needs deterministic evidence, the decision model P >= max(INJECTION_P,
-    LEVER2_DOWNVOTE_P). A -1 that rests only on the LLM label is not sent (2026-11-05: 135 of our 158 -1 did)."""
+    LEVER2_DOWNVOTE_P). A -1 that rests only on the LLM label is not sent (2026-11-05: 135 of our 158 -1 did).
+    FORUM_LEVER2 True also reads refs as records with ref_seqs and sends at most LEVER2_UPVOTES_PER_RUN +1 per
+    run; a post over the cap stays unvoted for a later run. FORUM_LEVER2 False keeps the old int-only refs
+    filter unchanged (MO option C, 2026-11-05): real refs are records, so no +1 is sent, as before."""
     lever2 = bool(getattr(config, "FORUM_LEVER2", False))
+    upvotes = 0                                        # +1 sent in this run; capped only when lever2
     notes = []                                         # written after the transaction: a second connection would lock
     with mem.db() as c:
         known = {r["seq"] for r in c.execute("SELECT seq FROM ledger")}
@@ -98,7 +129,10 @@ def vote(mem, posts, labels, p_injection=injection_probability):
             row = c.execute("SELECT voted, mine FROM forum WHERE id=?", (str(p["id"]),)).fetchone()
             if not row or row["voted"] or row["mine"]:
                 continue
-            refs = [r for r in p.get("refs") or [] if isinstance(r, int)]
+            if lever2:                                  # refs are records {seq, found, ...}
+                refs = ref_seqs(p.get("refs"))
+            else:                                       # old filter, unchanged: int refs only
+                refs = [r for r in p.get("refs") or [] if isinstance(r, int)]
             value = None
             cached = c.execute("SELECT signals FROM forum WHERE id=?", (str(p["id"]),)).fetchone()
             try:
@@ -122,6 +156,11 @@ def vote(mem, posts, labels, p_injection=injection_probability):
                 value = -1
             elif refs and all(r in known for r in refs):
                 value = 1
+                if lever2:
+                    if upvotes >= config.LEVER2_UPVOTES_PER_RUN:
+                        value = None                    # cap reached: no vote, the post stays unvoted
+                    else:
+                        upvotes += 1
             if value == -1:
                 notes.append(("downvote", p.get("author"), f"downvoted post {p['id']} as manipulation (p={p_inj}): "
                               f"{(p.get('text') or '')[:200]}", 0.6))

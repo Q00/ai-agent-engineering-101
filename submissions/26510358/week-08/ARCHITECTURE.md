@@ -233,6 +233,8 @@ logs/monitor/board-*.json ┴─> forum_lever2.dry_run(end)
 - 표:
   - 기본 −1 없음. −1은 p_manipulation ≥ 0.9일 때만.
   - +1은 refs가 우리 원장에 있고, 금액이 같고, 본문에 인용된 쓸모 있는 글에만.
+  - refs는 레코드 {seq, found}임. `FORUM_LEVER2 = True`일 때만 `forum_r3.ref_seqs()`로 읽음. 한 실행에 +1은 최대 12개임.
+  - `False`이면 예전 int 필터를 그대로 씀. +1은 나가지 않음.
   - 우리 정산 거래 5건 미만이거나 글쓴이 owner가 우리와 같으면 표를 만들지 않음. 세어지지 않기 때문임.
   - 이미 표를 준 글, 우리 글은 건너뜀.
 - 되돌리기(상대 기준, MO 2026-11-05):

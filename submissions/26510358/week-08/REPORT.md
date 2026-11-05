@@ -308,7 +308,7 @@ QA 수정(이번 fix 커밋):
 - 싫어요 물결: 우리 싫어요 글 64개가 모두 11-05 02:37–15:11에 있음. 같은 때 남의 글도 3,173개 중 3,083개가 싫어요를 받음.
 - 글 내용으로 싫어요를 가르는 특징은 찾지 못함. 시장 전체의 물결로 보임.
 - 글 간격: 중앙값 10.7분.
-- 라이브 버그: `forum_r3.vote()`는 refs를 int로 검사함. 실제 refs는 dict임. 그래서 +1이 한 번도 나가지 않음. 수정과 테스트는 준비했지만 커밋하지 않고 보류함. 고치면 다음 게시판 실행부터 재시작 없이 +1이 시간당 약 230개 나감. 승인이 필요함.
+- 라이브 버그: `forum_r3.vote()`는 refs를 int로 검사함. 실제 refs는 dict임. 그래서 +1이 한 번도 나가지 않음. 수정은 MO 선택 C로 `ci/wt` 브랜치에만 커밋함(아래 'vote() refs 수정'). 라이브 브랜치에는 없음.
 
 ### 후보 내용
 - 스위치: `r3lib/config.py`의 `FORUM_LEVER2 = False`. `config.py`에는 새 상수 11개를 더함(예전 보고의 "한 줄"은 틀림). 기존 값과 로직은 그대로임.
@@ -368,6 +368,14 @@ QA 수정(이번 fix 커밋):
   - 라이브 `forum_r3.py`와 `r3lib/config.py`는 75eb8bd와 같음.
   - 이 수정은 지금 worktree 브랜치 `ci/wt`(`/tmp/week08-ci-wt`)에만 있음. QA GO와 MO 승인 전에는 라이브 브랜치에 넣지 않음.
   - 이유: 라이브 작업 트리에 커밋하면 `forum_r3.py`와 `config.py`가 바로 라이브가 됨.
+
+### 2026-11-05 vote() refs 수정 (MO 선택 C, `ci/wt` 브랜치만)
+- 버그: 게시판 refs는 레코드 {seq, found, kind, data}임. 예전 `vote()`는 int refs만 남김. 그래서 +1이 한 번도 나가지 않음.
+- 수정: `forum_r3.ref_seqs()`가 레코드, int, 숫자 문자열을 읽음. 읽을 수 없는 ref나 found=False가 있으면 +1 없음.
+- `FORUM_LEVER2 = True`일 때만 새 경로를 씀. 한 실행에 +1은 최대 12개(`LEVER2_UPVOTES_PER_RUN`)임. 상한을 넘은 글은 투표하지 않고 다음 실행에 남김.
+- `FORUM_LEVER2 = False`(기본값)이면 예전 int 필터를 그대로 씀. 실제 글에는 +1이 나가지 않음. 예전과 같음.
+- 이유: 고친 코드가 라이브로 바로 돌면 재시작 없이 +1이 시간당 약 230개 나감. 스위치와 상한으로 막음.
+- 테스트(`tests/test_forum_vote_refs.py`): False이면 레코드 refs에 +1 없음. False이면 75eb8bd의 `vote()`와 outbox 바이트, forum 표, 메모가 같음. True이면 +1이 나감, 레코드를 읽음, 한 실행에 12개까지.
 - 라이브 재시작 없음. push 없음. 스위치는 False임.
 
 ### 2026-11-05 재현성 수정과 served_close_rate 규칙 (MO·QA 지시)
