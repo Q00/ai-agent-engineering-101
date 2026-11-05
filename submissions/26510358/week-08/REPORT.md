@@ -304,10 +304,10 @@ QA 수정(이번 fix 커밋):
 - 싫어요 물결: 우리 싫어요 글 64개가 모두 11-05 02:37–15:11에 있음. 같은 때 남의 글도 3,173개 중 3,083개가 싫어요를 받음.
 - 글 내용으로 싫어요를 가르는 특징은 찾지 못함. 시장 전체의 물결로 보임.
 - 글 간격: 중앙값 10.7분.
-- 라이브 버그(고치지 않음): `forum_r3.vote()`는 refs를 int로 검사함. 실제 refs는 dict임. 그래서 +1이 한 번도 나가지 않음.
+- 라이브 버그: `forum_r3.vote()`는 refs를 int로 검사함. 실제 refs는 dict임. 그래서 +1이 한 번도 나가지 않음. 수정은 따로 커밋함(아래 참고).
 
 ### 후보 내용
-- 스위치: `r3lib/config.py`의 `FORUM_LEVER2 = False`. 새 상수만 더함. 기존 값과 로직은 그대로임.
+- 스위치: `r3lib/config.py`의 `FORUM_LEVER2 = False`. `config.py`에는 새 상수 11개를 더함(예전 보고의 "한 줄"은 틀림). 기존 값과 로직은 그대로임.
 - 로직: `r3lib/forum_lever2.py`. `forum_r3.py`에는 연결하지 않음. 라이브 코드는 이 모듈을 import하지 않음.
 - 글: 5분 간격(시간당 12개). 목표 345개 이상.
 - 주제 셋:
@@ -317,7 +317,7 @@ QA 수정(이번 fix 커밋):
 - 모든 글: 숫자 2개 이상, 우리 원장의 실제 seq를 refs로 씀. 같은 글 반복 없음. 비슷한 글(Jaccard ≥ 0.8)도 버림. 주제마다 새 ledger # 또는 새 카테고리만 씀.
 - 표: 기본 −1 없음. −1은 p_manipulation ≥ 0.9일 때만. +1은 정확하고(우리 원장의 refs, 금액 일치, 본문에 인용) 쓸모 있는 글에만. 한 번에 +1 최대 12개.
 - 표가 세어지는 조건: 우리 정산 거래 5건 이상, 글쓴이의 owner가 우리와 다름. 그 밖의 표는 만들지 않음.
-- 되돌리기(라이브 뒤 2시간 안): 글당 싫어요 > 0.8, 숨김 글 하나, HTTP 429 하나 중 하나면 끔.
+- 되돌리기: 켠 뒤 2시간 안에 우리 글당 싫어요 > 1.2 × 기준선(켜기 전 2시간 값), 숨김 글 하나, HTTP 429 하나 중 하나면 끔.
 
 ### dry run (15:23 KST 끝, 보내지 않음, LLM 0회, memory.sqlite 읽기 전용)
 - 명령: `python -m r3lib.forum_lever2 --end 1793859780`. gate도 같은 dry run을 돌림.
@@ -328,7 +328,8 @@ QA 수정(이번 fix 커밋):
 
 ### 되돌리기 경고
 - 지난 2시간 기준선: 우리 글 8개 글당 싫어요 1.0, 남의 글 477개 1.214.
-- 지금 켜면 0.8 기준에 바로 걸림(`would_trip_now = True`). 물결이 가라앉은 뒤에 켜야 함.
+- 예전 절대 기준 0.8로는 지금 켜면 바로 걸렸음. 시장 전체의 물결 때문임.
+- 그래서 MO가 상대 기준으로 바꿈. 지금 켜면 기준선 1.0, 한계 1.2임.
 - memory.sqlite forum 표에는 숨김 칸이 없음. 숨김 검사는 라이브에서 API 값을 읽어야 함.
 
 ### 추정치 (ESTIMATE, 실제 값 아님)
@@ -344,6 +345,20 @@ QA 수정(이번 fix 커밋):
 - 싫어요와 숨김에 대한 반응은 모델링하지 못함. 그래서 PASS를 주지 않음.
 - 종료 코드: 모든 판정이 PASS 또는 ESTIMATED일 때만 0임. FAIL, NOT_APPLICABLE, UNSIMULATED는 1임. lever1이 FAIL이라 함께 돌리면 1임.
 - `/tmp/twin-*` 예전 복사본 16개는 지우지 않음. 이번 실행은 새 복사본을 남기지 않음(16개 그대로).
-- 알려진 버그 두 개(seller ContextVar ValueError, 반복 409 "unit not in stock")와 vote() 버그는 고치지 않음.
+- 알려진 버그 두 개(seller ContextVar ValueError, 반복 409 "unit not in stock")는 고치지 않음.
 
 테스트: `tests/test_forum_lever2.py` 13개를 더함. 간격 300초, 중복·비슷한 글 없음, 숫자와 실제 ledger refs, 기본 −1 없음, 정확한 글에 +1, 세는 규칙, +1 상한, 되돌리기 규칙, 기본값 False면 라이브가 그대로임, dry run은 읽기만 함. 전체 463 passed, 실패 0.
+
+### 2026-11-05 lever2 수정 (MO·QA 지시)
+- `FORUM_LEVER2 = True`일 때 `forum_r3.vote()`는 LLM 표시만 근거인 −1을 보내지 않음.
+  - −1에는 결정 모델 P(manipulation) ≥ max(`INJECTION_P`, `LEVER2_DOWNVOTE_P`) = 0.9가 있어야 함.
+  - 예전 −1 158개 중 135개가 LLM 표시만 근거였음. 켜면 이런 −1은 나가지 않음.
+  - `False`(기본값)이면 동작은 예전과 같음.
+- 되돌리기 기준을 절대값 0.8에서 상대값으로 바꿈:
+  - 기준선 = 켜기 전 2시간의 우리 글당 싫어요(지금 약 1.0).
+  - 켠 뒤 2시간 안에 글당 싫어요 > 1.2 × 기준선, 숨김 글, HTTP 429 중 하나면 끔.
+  - 바꾼 곳: `config.py` 상수, `policies/candidates/lever2-forum.json`, `forum_lever2.rollback_check`, `dislike_baseline`, gate 출력, 테스트.
+- QA 4번: `VOTE_MIN_SETTLED`를 `LEVER2_VOTE_MIN_SETTLED`로 이름을 바꿈.
+- `config.py`의 lever2 상수는 모두 11개임. 테스트가 이 수를 검사함.
+- 라이브 재시작 없음. push 없음. 스위치는 False임.
+
