@@ -32,8 +32,9 @@ case "${1:-status}" in
       esac
     done
     ;;
-  stop)
-    for n in operator memfeed memd; do
+  stop)  # a2ctl.sh stop [names]; no names = all three
+    names="${*:2}"; names="${names:-operator memfeed memd}"
+    for n in $names; do
       if alive "$n"; then
         pg=$(ps -o pgid= -p "$(cat "$P/$n.pid")" | tr -d ' ')
         [ -n "$pg" ] && kill -TERM -- "-$pg" && echo "$n stopped (pgid $pg)"
