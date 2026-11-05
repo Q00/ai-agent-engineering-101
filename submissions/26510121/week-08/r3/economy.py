@@ -47,8 +47,36 @@ def shop_statistics(journal, sku, category=None):
 
 
 def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous_ask=None, now=None,
-                    customer_memory=None):
+                    customer_memory=None, _warranty_variant=False):
     now = time.time() if now is None else now
+    if config.get('warranty_menu_enabled') and unit.get('kind')=='goods' and not _warranty_variant:
+        from .risk import goods_risk
+        minimum=max(unit.get('minimum_warranty_hours',0),unit.get('promised_warranty_hours') or 0)
+        # Never change a warranty after quoting; a new task can request more.
+        choices=[minimum] if unit.get('promised_warranty_hours') is not None else sorted({minimum,3,6})
+        result=[];hold=None
+        pressure=journal.get('market_control',{}).get('cash_capacity',{})
+        for hours in choices:
+            if hours<minimum:continue
+            cfg=dict(config,goods_warranty_by_grade={unit.get('grade'):hours})
+            risk=goods_risk(journal,unit.get('grade'),hours,cfg,now)
+            cap=unit['list_price']*(1-risk['failure_upper'])/max(.01,1-risk['covered_lower'])
+            for c in shop_candidates(unit,inv,catalog,journal,cfg,offer=offer,previous_ask=previous_ask,
+                                     now=now,customer_memory=customer_memory,_warranty_variant=True):
+                if c['action']=='hold':hold=c;continue
+                c['id']+=':w'+str(hours)
+                # A conservative buyer-value scenario, not a private budget.
+                feasibility=.1 if hours<6 and c['price']>cap and c['action']!='accept' else 1
+                c['score']*=feasibility
+                c['expected_delta']={k:v*feasibility for k,v in c['expected_delta'].items()}
+                fraction=pressure.get('refund_liability',0)/max(1,inv.get('balance',0))
+                c['capital_efficiency_factor']=1/(1+c['price']*hours*fraction/max(750000,pressure.get('spendable',0)))
+                c['score']*=c['capital_efficiency_factor']
+                c['evidence']=dict(c['evidence'],buyer_value_feasibility_scenario=feasibility,
+                                  refund_risk=risk,full_gross_reserve=True)
+                result.append(c)
+        if hold:result.append(hold)
+        return result
     left = remaining(unit, now)
     if left <= 0:
         return []
@@ -62,7 +90,7 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     reference = .75*public_reference + .25*own_reference
     urgency = max(0, min(1, left / max(1, catalog.get(unit["sku"], {}).get("shelf_hours") or 24)))
     from .risk import goods_risk
-    warranty = (max(unit.get('minimum_warranty_hours', 0), unit.get('promised_warranty_hours', 0),
+    warranty = (max(unit.get('minimum_warranty_hours', 0), unit.get('promised_warranty_hours') or 0,
                     config.get('goods_warranty_by_grade', {}).get(unit.get('grade'), 3))
                 if unit.get('kind') == 'goods' else 0)
     stress_refund = goods_risk(journal, unit.get('grade'), warranty, config, now)['failure_upper'] if warranty else 0
@@ -100,13 +128,14 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
                        "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence),
                        'expected_delta': sale_delta(p, cost, completion['completion'], stress_refund),
                        "recovery_floor": recovery_floor,
-                           "risk": "goods refund stress 0.15; full gross reserve remains required" if warranty else "food expiry"})
+                           "risk": "conservative grade risk; full gross reserve remains required" if warranty else "food expiry or uninsured goods"})
     if offer and offer >= recovery_floor:
         p = min(offer, previous_ask) if previous_ask else offer
-        result.append({"id": "accept:" + str(p), "action": "accept" if p == offer else "counter", "price": p,
+        if p >= recovery_floor:
+            result.append({"id": "accept:" + str(p), "action": "accept" if p == offer else "counter", "price": p,
                        "warranty_hours": warranty, "score": sale_delta(p, cost, 1, stress_refund)['book'],
                        'expected_delta': sale_delta(p, cost, 1, stress_refund),
-                       "evidence": stats, "recovery_floor": recovery_floor})
+                           "evidence": stats, "recovery_floor": recovery_floor})
     result.append({'id': 'hold', 'action': 'hold', 'price': 0, 'warranty_hours': warranty,
                    'score': -cost if liquidation else 0,
                    'expected_delta': {'book': -cost if liquidation else 0, 'revenue': 0},
@@ -226,6 +255,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         merchant = context(journal, catalog, now)
     signals = {}
     for e in journal.events("public_settle", 20000):
+        if e.get('buyer') == 'seochanit' or not 0 <= now-e['_ts'] <= 21600:
+            continue
         product = catalog.get(e.get("item") or e.get("sku"), {})
         cat = product.get("category")
         if cat:
@@ -278,7 +309,7 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         # Affordability still reserves worst-case storage THROUGH THE END. The
         # objective uses expected holding time instead, so quick-turn goods do
         # not pay two weeks of hypothetical storage in every ranking decision.
-        probe_sku = observed.get('samples', 0) < 3 and own.get(sku, 0) < 2
+        probe_sku = observed.get('external_samples', observed.get('samples', 0)) < 3 and own.get(sku, 0) < 2
         hours = min(6, max(0, (end - now) / 3600))
         if probe_sku:
             sale_probability = .25  # Bounded discovery scenario; never pretend unknown demand is certain.

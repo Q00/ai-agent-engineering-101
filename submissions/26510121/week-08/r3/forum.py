@@ -162,9 +162,40 @@ def schedule(journal, config, now=None):
                 'Observed trades, not live quotes; grade, expiry and warranty differ. '
                 'References are examples, not the complete sample.')
         refs = list(dict.fromkeys([item['ledger']] + observed['refs']))[:5]
+        matched=next((r for r in observed.get('term_prices',[]) if r['grade']==item.get('grade') and
+                      r['warranty_hours']==(item.get('warranty_hours') or 0) and r['n']>=3),None)
+        if matched:
+            text=(f"조건별 시세: {catalog.get(item['sku'],{}).get('name',item['sku'])} ({item['sku']}). "
+                  f"내 결제 {item['price']}; 같은 등급 {matched['grade']}, 보증 {matched['warranty_hours']}h의 "
+                  f"최근 관측 n={matched['n']}, median={matched['median']:g}. "
+                  '과거 정산 표본이며 현재 호가·재고 또는 미래 품질 보장이 아닙니다.')
+            refs=list(dict.fromkeys([item['ledger']]+matched['refs']))[:5]
+        if bucket%3==1:
+            product=catalog.get(item['sku'],{})
+            alternatives=[(sku,row) for sku,row in book.items() if sku!=item['sku'] and
+                          catalog.get(sku,{}).get('category')==product.get('category') and
+                          .5*product.get('list_price',0)<=catalog.get(sku,{}).get('list_price',0)<=1.5*product.get('list_price',0)
+                          and row.get('external_samples',0)>=3 and row.get('refs')]
+            if alternatives:
+                sku,row=max(alternatives,key=lambda x:catalog[x[0]]['list_price']-x[1]['median'])
+                text+=(f" 대체 상품 관측: {catalog[sku].get('name',sku)} ({sku}), n={row['samples']}, "
+                       f"median={row['median']:g}. 주문 acceptable·등급·유통기한·보증은 별도 확인해야 합니다.")
+                refs=list(dict.fromkeys(refs+row['refs']))[:5]
         journal.queue_post({'post': text, 'refs': refs, 'as': 'buyer', 'priority': 4,
                             'expires_at': now + 600}, 'price-comparison:' + str(bucket))
         break
+    if bucket%3==2:
+        from .risk import quality_book
+        grades=quality_book(journal,now)
+        rows={g:r for g,r in grades.items() if r['n']>=20}
+        refs=[p['ledger'] for p in journal.events('purchase',1000) if p.get('kind')=='goods' and
+              21600<=now-p.get('paid_at',now)<=172800 and type(p.get('ledger')) is int][:5]
+        if rows and refs:
+            text='내 성숙 구매 표본(최소 6시간 경과): '+ '; '.join(
+                f"등급 {g}: {r['n']}건 중 확인 고장 {r['broken']}건, 3h 이내 확인 {r['within3']}건" for g,r in rows.items())
+            text+='; 자신의 선택된 표본이며 전체 시장 고장률 또는 미래 품질 보장이 아닙니다. 참조는 예시입니다.'
+            journal.queue_post({'post':text,'refs':refs,'as':'buyer','priority':5,'expires_at':now+600},
+                               'quality-insight:'+str(bucket))
 
 
 def deliver(market, journal, config, now=None):

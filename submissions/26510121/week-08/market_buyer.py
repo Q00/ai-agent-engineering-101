@@ -23,11 +23,19 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
     catalog = journal.snapshot("catalog.json", {})
     registry = journal.snapshot("registry.json", {})
     ranked = buyer_candidates(order, shops, catalog, journal)
+    blocked={(e['shop'],e['sku']) for e in journal.get('checkout_exclusions:'+order['order'],[])}
+    ranked=[c for c in ranked if (c['shop'],c['sku']) not in blocked]
     if not ranked:
         from r3.forum import queue_wanted
         queue_wanted(journal, order)
     chooser = chooser or Chooser(journal, cfg)
-    deadline = min(order["expires"] - cfg["checkout_buffer_seconds"], time.time() + 240)
+    seconds=cfg.get('buyer_goods_time_seconds',90) if order.get('kind')=='goods' else cfg.get('buyer_food_time_seconds',18)
+    session=journal.get('buyer_deadline:'+order['order'])
+    if session is None:
+        session=min(order['expires']-cfg['checkout_buffer_seconds'],time.time()+seconds*cfg.get('checkout_max_attempts',2))
+        journal.put('buyer_deadline:'+order['order'],session)
+    deadline = min(order["expires"] - cfg["checkout_buffer_seconds"], session, time.time()+seconds)
+    if deadline<=time.time()+2:return empty
     prepared, contacted = compare_quotes(order, ranked, registry, journal, cfg, peer_factory, deadline)
     try:
         return execute(order, journal, chooser, peer_factory, cfg, strategy, registry, ranked,
@@ -41,9 +49,15 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
     for _ in range(cfg["max_shop_candidates"]):
         if not ranked or time.time() >= deadline:
             break
-        c = chooser.choose("buyer", ranked[:8], {"order": order, "strategy": strategy,
+        shortlist=ranked[:8]
+        if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled'):
+            c=shortlist[0]
+            journal.add('buyer_fast_choice',{'order':order['order'],'sku':c['sku'],'shop':c['shop'],
+                                            'reason':'bounded low-value search; checkout remains authoritative'})
+        else:
+            c = chooser.choose("buyer", shortlist, {"order": order, "strategy": strategy,
                            'forum_evidence': 'unverified discovery hint; registry and checkout remain authoritative'}, deadline=deadline,
-                           critical=ranked[0]["reference_price"] > .8 * order["budget"])
+                               critical=ranked[0]["reference_price"] > .8 * order["budget"])
         ranked = [x for x in ranked if x['id'] != c['id']]
         cached = prepared.pop(c['id'], None)
         if cached is None and contacted >= cfg['max_shop_candidates']:
@@ -106,7 +120,7 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                     journal.add("agreement", {"order": order["order"], "sku": c["sku"], "shop": c["shop"],
                                               "task": task["id"], "price": rec["price"], "accept": accept,
                                               "strategy_version": strategy['version']},
-                                eid="agreement:" + order["order"], role="buyer")
+                                eid="agreement:" + order["order"]+':'+task['id'], role="buyer")
                     task_complete = True
                     return {"shop": c["shop"], "receipt": rec, "stars": 3,
                             "review": "Pending checkout; settled quality will determine review.", "accept": accept}
@@ -130,8 +144,11 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                                               stress, required_warranty >= 6, assessment['covered_failure'])
                 if not actions:
                     break
-                move = chooser.choose("buyer", actions, {"ask": ask, "order": order, "turn": turn,
-                                       "product": product, "strategy": strategy}, deadline=deadline)
+                if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled'):
+                    move=max(actions,key=lambda a:a['score'])
+                else:
+                    move = chooser.choose("buyer", actions, {"ask": ask, "order": order, "turn": turn,
+                                           "product": product, "strategy": strategy}, deadline=deadline)
                 agreed = move["price"]
                 previous_offer = agreed
                 if move['id'] == 'counter':

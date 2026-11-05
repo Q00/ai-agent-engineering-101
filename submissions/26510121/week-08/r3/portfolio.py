@@ -5,7 +5,9 @@ have already been fully collateralized by cash_capacity before this runs.
 """
 
 
-def allocate(candidates, inv, capacity, config, existing_units):
+def allocate(candidates, inv, capacity, config, existing_units, merchant=None):
+    if config.get('shop_growth_v5'):
+        return allocate_growth(candidates, inv, capacity, config, existing_units, merchant or {})
     total = capacity['spendable']
     slots = config['inventory_target_units'] - len(existing_units)
     chosen, category_spent, bucket_spent = [], {}, {'core': 0, 'cashflow': 0, 'discovery': 0}
@@ -63,3 +65,65 @@ def allocate(candidates, inv, capacity, config, existing_units):
                              portfolio_used=bucket_spent, allocation_book=c['allocation_book'],
                              warranty_pressure=pressure)
     return chosen
+
+
+def allocate_growth(candidates, inv, capacity, config, existing_units, merchant):
+    """Breadth opens discoverable order baskets; depth keeps hot SKUs visible.
+
+    Greedy coverage is a heuristic, not an optimality or traffic guarantee.
+    All quantities still reserve worst-case acquisition and storage cost.
+    """
+    total = capacity['spendable']
+    weights = merchant.get('coverage_weights', {})
+    coverage = set()
+    for unit in existing_units:
+        coverage.update(merchant.get('skus', {}).get(unit['sku'], {}).get('coverage_keys', []))
+    selected, cat_used = {}, {}
+    used = probes = 0
+    slots = config['inventory_target_units'] - len(existing_units)
+    def per_unit(c): return c['capital_commitment'] / c['qty']
+    def feasible(c):
+        quantity = selected.get(c['sku'], {}).get('qty', 0)
+        cost = per_unit(c)
+        return (slots > 0 and quantity < c['qty'] and used + cost <= total and
+                (c['sku'] in selected or len(selected) < min(10, config['restock_max_lines'])) and
+                cat_used.get(c['category'], 0) + cost <= total*.6 and
+                (not c['evidence']['exploration'] or probes+cost <= total*config['exploration_fraction']))
+    def gain(c):
+        return sum(weights.get(k, 0) for k in c['evidence']['growth'].get('coverage_keys', []) if k not in coverage)
+    def add(c):
+        nonlocal slots, used, probes
+        cost = per_unit(c)
+        selected.setdefault(c['sku'], {'source': c, 'qty': 0, 'new_coverage_weight': gain(c)})['qty'] += 1
+        used += cost
+        slots -= 1
+        cat_used[c['category']] = cat_used.get(c['category'], 0) + cost
+        if c['evidence']['exploration']: probes += cost
+        coverage.update(c['evidence']['growth'].get('coverage_keys', []))
+    breadth_budget = total * config.get('assortment_coverage_fraction', .35)
+    while True:
+        feasible_lines = [c for c in candidates if feasible(c) and c['sku'] not in selected and gain(c) > 0
+                          and used + per_unit(c) <= breadth_budget]
+        if not feasible_lines: break
+        c = max(feasible_lines, key=lambda c: (gain(c)/max(1, per_unit(c))**.5,
+                                               c['score']/max(1, per_unit(c)), c['sku']))
+        add(c)
+    def yield_priority(c):
+        holding = max(1/3, c['evidence']['expected_holding_hours'])
+        return ((c.get('rank_progress_surrogate') or 0)/c['qty']/holding,
+                c['score']/c['qty']/holding, gain(c), c['sku'])
+    while True:
+        available = [c for c in candidates if feasible(c)]
+        if not available: break
+        add(max(available, key=yield_priority))
+    result = []
+    for row in selected.values():
+        c, quantity = row['source'], row['qty']
+        fraction = quantity/c['qty']
+        result.append(dict(c, qty=quantity, max_cost=c['max_cost']*fraction,
+            capital_commitment=c['capital_commitment']*fraction, score=c['score']*fraction,
+            expected_delta={k: v*fraction for k,v in c['expected_delta'].items()},
+            allocation_book='coverage_and_depth', evidence=dict(c['evidence'],
+                new_coverage_weight=row['new_coverage_weight'], portfolio_used=used,
+                coverage_budget_scenario=breadth_budget)))
+    return result

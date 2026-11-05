@@ -34,7 +34,8 @@ def activate_revision(journal, revision, now=None):
 
 
 def validate(role, patch):
-    allowed = {'buyer_counter_ratio'} if role == 'buyer' else {'inventory_target_units', 'category_weights'}
+    allowed = {'buyer_counter_ratio', 'buyer_food_time_seconds', 'buyer_goods_time_seconds'} if role == 'buyer' else {
+        'inventory_target_units', 'category_weights', 'assortment_coverage_fraction', 'shop_margin_fraction'}
     if role not in {'buyer', 'shop'} or not isinstance(patch, dict) or set(patch) - allowed:
         raise ValueError('Unsupported adaptive strategy field')
     for key, value in patch.items():
@@ -42,8 +43,13 @@ def validate(role, patch):
             if type(value) not in (int, float) or not .88 <= value <= .98:
                 raise ValueError('Counter ratio outside bounds')
         elif key == 'inventory_target_units':
-            if type(value) is not int or not 10 <= value <= 30:
+            if type(value) is not int or not 10 <= value <= 90:
                 raise ValueError('Inventory target outside bounds')
+        elif key in {'assortment_coverage_fraction', 'shop_margin_fraction', 'buyer_food_time_seconds', 'buyer_goods_time_seconds'}:
+            low, high = {'assortment_coverage_fraction':(.2,.5),'shop_margin_fraction':(.01,.10),
+                         'buyer_food_time_seconds':(8,35),'buyer_goods_time_seconds':(30,120)}[key]
+            if type(value) not in (int,float) or not low <= value <= high:
+                raise ValueError('Control outside bounded trial range')
         elif (not isinstance(value, dict) or len(value) > 200 or
               any(not isinstance(k, str) or type(v) not in (int, float) or not .75 <= v <= 1.5
                   for k, v in value.items())):
@@ -89,7 +95,7 @@ def public_context(journal, now):
                 if row.get('name') in {'seochanit', 'Seochanit Shop'}}
     counts = {}
     for event in journal.events('public_settle', 20000):
-        if not now - MATURITY <= event['_ts'] <= now or event.get('shop') in own_urls:
+        if not now - MATURITY <= event['_ts'] <= now or event.get('shop') in own_urls or event.get('buyer')=='seochanit':
             continue
         category = catalog.get(event.get('sku') or event.get('item'), {}).get('category')
         if category:
@@ -103,11 +109,14 @@ def board_snapshot(journal, now):
             now - journal.get('board_checked_at', 0) > 300):
         return None
     result = {'at': now}
-    for role, table, field in [('buyer', 'buyers', 'surplus'), ('shop', 'shops', 'profit')]:
-        rows = {row.get('name'): row.get(field) for row in board.get(table, [])
+    from .finance import book_row
+    for role, table, field in [('buyer', 'buyers', 'surplus'), ('shop', 'shops', 'book')]:
+        source = [dict(r, book=book_row(r)) for r in board.get(table, [])] if role=='shop' else board.get(table, [])
+        rows = {row.get('name'): row.get(field) for row in source
                 if type(row.get(field)) in (int, float) and math.isfinite(row[field])}
         if 'seochanit' in rows:
             result[role] = {'own': rows.pop('seochanit'), 'peers': rows}
+            result[role]['metric'] = field
             scored = {r.get('name'): r['all'] for r in board.get(table, [])
                       if type(r.get('all')) in (int, float) and math.isfinite(r['all'])}
             if 'seochanit' in scored:
@@ -191,6 +200,25 @@ def evidence(journal, role, version, now, since=0):
 
 def propose(journal, role, state, stats, market):
     current = state.get('patch', {})
+    cfg = policy()
+    diagnosis = journal.get('market_control', {})
+    if cfg.get('market_control_enabled') and 0 <= time.time()-diagnosis.get('at',0) < 900:
+        if diagnosis.get('pause_restock'):
+            return None
+        steps = {'shop_margin_fraction':.01, 'assortment_coverage_fraction':.05,
+                 'inventory_target_units':5, 'buyer_food_time_seconds':-3}
+        for item in diagnosis.get('suggestions', []):
+            key=item['field']
+            if item['role']!=role or key not in steps:
+                continue
+            value=current.get(key,cfg.get(key))
+            if value is None:continue
+            proposed=round(value+steps[key],3)
+            if key=='inventory_target_units':proposed=int(proposed)
+            patch=dict(current, **{key:proposed})
+            try:validate(role,patch)
+            except ValueError:continue
+            return patch, item['reason']
     if role == 'buyer':
         ratio = current.get('buyer_counter_ratio', .92)
         if stats['counter_moves'] >= 5 and stats['no_agreement'] >= 5 and stats['success_rate'] < .5:
@@ -210,7 +238,7 @@ def propose(journal, role, state, stats, market):
     count = len(inv.get('units', []))
     target = current.get('inventory_target_units', policy()['inventory_target_units'])
     if stats['success_rate'] >= .5 and count < target / 2 and sum(market.values()) >= 5:
-        new = min(30, target + 5)
+        new = min(90, target + 5)
     elif stats['success_rate'] < .2 and count >= target * .8:
         new = max(10, target - 5)
     else:
@@ -278,9 +306,9 @@ def update(journal, now=None):
             healthy = role != 'shop' or not health or (health.get('status') == 'healthy' and
                        now - health.get('checked_at', 0) < 120)
             # An absolute cash-loss guard can roll back before labels mature.
-            shop_loss = (role == 'shop' and role in snapshot and role in trial['board_start'] and
-                         snapshot[role]['own'] - trial['board_start'][role]['own'] +
-                         snapshot[role].get('stock_cost', 0) - trial['board_start'][role].get('stock_cost', 0) < -500000)
+            same_metric = snapshot.get(role,{}).get('metric') == trial['board_start'].get(role,{}).get('metric')
+            shop_loss = (role == 'shop' and same_metric and role in snapshot and role in trial['board_start'] and
+                         snapshot[role]['own'] - trial['board_start'][role]['own'] < -500000)
             ready = healthy and now - trial['started_at'] >= MATURITY and stats['samples'] >= MIN_SAMPLES and observed
             degraded = ready and (observed[relative_key] < baseline[relative_key] -
                                   .15 * max(abs(baseline[relative_key]), scale_floor) or

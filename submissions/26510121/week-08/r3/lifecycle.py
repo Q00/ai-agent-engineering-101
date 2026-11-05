@@ -58,7 +58,8 @@ def market_session(root=ROOT):
                        launch_id=os.environ.get('R3_LAUNCH_ID'))
         atomic_json(root / '.market/runtime.json', session)
         done = threading.Event()
-        end = datetime.fromisoformat(policy(root)['end_at']).timestamp()
+        stop_at = policy(root).get('end_at')
+        end = datetime.fromisoformat(stop_at).timestamp() if stop_at else float('inf')
 
         def shutdown():
             while not done.wait(1):

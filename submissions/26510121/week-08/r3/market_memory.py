@@ -6,6 +6,7 @@ Peer/forum prose never enters these numerical summaries.
 import math
 import statistics
 import time
+from collections import Counter
 
 HORIZON = 21600
 
@@ -19,23 +20,39 @@ def market_book(journal, catalog, now=None):
         if (sku not in catalog or not 0 <= now - e['_ts'] <= HORIZON or
                 type(price) not in (int, float) or not math.isfinite(price) or price <= 0):
             continue
-        row = grouped.setdefault(sku, {'prices': [], 'sellers': set(), 'refs': [], 'grades': {},
+        row = grouped.setdefault(sku, {'prices': [], 'external_prices': [], 'buyers': Counter(),
+                                      'terms': {}, 'term_refs': {}, 'sellers': set(), 'refs': [], 'grades': {},
                                       'latest_at': e['_ts']})
         row['prices'].append(price)
+        if e.get('buyer') != 'seochanit':
+            row['external_prices'].append(price)
+            row['buyers'][e.get('buyer', 'unknown')] += 1
+        term = (e.get('grade'), e.get('warranty_hours') or 0)
+        row['terms'].setdefault(term, []).append(price)
         row['sellers'].add(e.get('shop', 'unknown'))
         row['grades'].setdefault(e.get('grade', 'unknown'), []).append(price)
         # Journal IDs preserve the server sequence. Never invent one from a price.
         prefix, _, seq = e.get('_event_id', '').partition(':')
         if prefix == 'public' and seq.isdigit() and len(row['refs']) < 4:
             row['refs'].append(int(seq))
+        if prefix=='public' and seq.isdigit() and len(row['term_refs'].get(term,[]))<3:
+            row['term_refs'].setdefault(term,[]).append(int(seq))
     result = {}
     for sku, row in grouped.items():
         prices = sorted(row['prices'])
         result[sku] = {'samples': len(prices), 'median': statistics.median(prices),
+                       'external_samples': len(row['external_prices']),
+                       'external_median': statistics.median(row['external_prices']) if row['external_prices'] else None,
+                       'external_buyers': row['buyers'].most_common(5),
+                       'term_prices': [{'grade': g, 'warranty_hours': w, 'n': len(ps), 'median': statistics.median(ps),
+                                        'refs':row['term_refs'].get((g,w),[])}
+                                       for (g,w),ps in row['terms'].items()],
                        'low': prices[0], 'high': prices[-1], 'sellers': len(row['sellers']),
                        'per_seller_per_hour': len(prices) / 6 / max(1, len(row['sellers'])),
                        'refs': row['refs'], 'latest_at': row['latest_at'],
                        'grade_medians': {g: statistics.median(ps) for g, ps in row['grades'].items()},
+                       'grade_prices': {g: {'n': len(ps), 'p25': sorted(ps)[int((len(ps)-1)*.25)],
+                                           'p50': statistics.median(ps)} for g, ps in row['grades'].items()},
                        'note': 'observed 6h trades; availability, quality, warranty and traffic confound comparisons'}
     return result
 

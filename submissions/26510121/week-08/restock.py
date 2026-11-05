@@ -14,6 +14,14 @@ def plan(journal, chooser=None):
     inv = journal.snapshot("inventory.json", {})
     if inv.get("round", 0) < 3:
         return {"buy": []}
+    if not supply_open(inv):
+        return {'buy':[], 'bankrupt':inv.get('balance',0)<inv.get('bankrupt_line',0)
+                and not inv.get('units') and inv.get('bankruptcies_left',0)>0}
+    if cfg.get('market_control_enabled'):
+        diagnosis = journal.get('market_control', {})
+        if diagnosis.get('pause_restock', True) or not 0 <= time.time()-diagnosis.get('at',0)<900:
+            journal.add('restock_blocked', {'reason':'market_control_defensive_or_stale'})
+            return {'buy': []}
     candidates = restock_candidates(inv, journal.snapshot("catalog.json", {}),
                                     journal.snapshot("demand.json", []), journal, cfg)
     if not candidates:
@@ -21,7 +29,10 @@ def plan(journal, chooser=None):
                 and not inv.get("units") and inv.get("bankruptcies_left", 0) > 0}
     # The actor chooses among transparent portfolio variants; every line has a conservative affordability bound.
     portfolios = []
-    for name, lines in [("diversified", candidates), ("cautious", candidates[:1])]:
+    breadth = [dict(c, qty=1, max_cost=c['max_cost']/c['qty'],
+                    capital_commitment=c['capital_commitment']/c['qty'],score=c['score']/c['qty'],
+                    expected_delta={k:v/c['qty'] for k,v in c['expected_delta'].items()}) for c in candidates]
+    for name, lines in [("diversified", candidates), ("breadth", breadth), ("cautious", candidates[:1])]:
         portfolios.append({"id": name, "buy": [{"sku": c["sku"], "qty": c["qty"]} for c in lines],
                            "score": sum(c["score"] for c in lines), "max_cost": sum(c["max_cost"] for c in lines),
                            'expected_delta': {k: sum(c['expected_delta'].get(k, 0) for c in lines) for k in ('book', 'profit', 'revenue')},

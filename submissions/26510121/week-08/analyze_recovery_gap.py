@@ -117,7 +117,8 @@ def analyze(source_path):
     duplicate = sum(by_unit[u]['price'] for u in reserved_units & refunded_units.keys())
     balance = inv['balance']
     floor = max(policy['cash_floor'], balance * policy['cash_reserve_fraction'])
-    days = max(0, (datetime.fromisoformat(policy['end_at']).timestamp() - cutoff) / 86400)
+    from r3.finance import reserve_days
+    days = reserve_days(policy, cutoff)
     storage = sum(u.get('cost', 0) for u in inv.get('units', []) if u.get('kind') == 'goods') * .01 * days
     result['cash_and_inventory'] = {'balance': balance, 'floor': floor, 'reserved_gross_warranty': liability,
         'already_refunded_still_reserved': duplicate, 'storage_to_end': storage,

@@ -130,7 +130,7 @@ class Seller(AgentExecutor):
                 offer = int(match.group(1).replace(",", ""))
         memory = customer_memory.summary(self.j, task.id, unit)
         quoting_unit = dict(unit, minimum_warranty_hours=deal['unit'].get('minimum_warranty_hours', 0),
-                            promised_warranty_hours=deal.get('promised_warranty_hours', 0))
+                            promised_warranty_hours=deal.get('promised_warranty_hours'))
         candidates = shop_candidates(quoting_unit, inv, cat, self.j, deal['config'], offer=offer,
                                      previous_ask=deal["ask"], customer_memory=memory)
         if not candidates:
@@ -171,6 +171,8 @@ class Seller(AgentExecutor):
             deal["ask"] = price
             terms = {"ask": price, "sku": unit["sku"], "unit": unit["unit"], "grade": grade(unit, cat),
                      "expires_at": unit.get("expires_at"), "warranty_hours": selected["warranty_hours"], "certificate": True}
+            terms['warranty_menu']=[{'price':c['price'],'warranty_hours':c['warranty_hours']}
+                                    for c in candidates if c['action']=='counter'][:12]
             message = say(f"{unit['sku']}: asking {price}. Send your integer offer.", terms)
             message.parts.append(new_data_part({"offer_terms": terms}))
             await up.update_status(TaskState.TASK_STATE_INPUT_REQUIRED, message=message, metadata=terms)

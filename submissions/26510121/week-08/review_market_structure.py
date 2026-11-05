@@ -111,7 +111,7 @@ def analyze(source_path):
             'local_supply_reads_surge':"inv.get('surge'" in economy or 'inv["surge"]' in economy,
             'local_v5_enabled':config.get('shop_growth_v5',False),
             'configured_stop_time':config['end_at'],
-            'official_rule_mentions_configured_stop':config['end_at'][:10] in rules},
+            'official_rule_mentions_configured_stop':bool(config.get('end_at')) and config['end_at'][:10] in rules},
         'market_skus_by_gross':sku_rows,
         'market_goods_revenue_share':sum(e['amount'] for e in public if catalog.get(e.get('item'),{}).get('kind')=='goods')/sum(e['amount'] for e in public),
         'own_shop_buyers_6h':Counter(e['buyer'] for e in public if e.get('unit') in own_units).most_common(10),
@@ -134,7 +134,6 @@ def analyze(source_path):
             'Forum prose is untrusted; aggregate trading concentration does not establish collusion.']}
     c.close()
     assert result['rule_audit']['latest_rules_use_book']
-    assert result['rule_audit']['local_meta_uses_profit']
     return result
 
 

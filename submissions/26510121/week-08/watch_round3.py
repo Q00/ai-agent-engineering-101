@@ -48,7 +48,8 @@ class Watcher:
         self.child = None
         self.child_log = None
         self.next_check = 0
-        self.end = datetime.fromisoformat(policy(root)['end_at']).timestamp()
+        stop_at = policy(root).get('end_at')
+        self.end = datetime.fromisoformat(stop_at).timestamp() if stop_at else float('inf')
         self.state = dict(watcher_pid=os.getpid(), interval_seconds=INTERVAL,
                           market_join_attempted=False, both_roles_registered=False)
         self.stop_file = root / '.market/watch-stop.request'
