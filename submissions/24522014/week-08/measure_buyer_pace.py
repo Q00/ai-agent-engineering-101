@@ -1,7 +1,9 @@
 """Read-only: buyer pace in a time window, to compare before and after a change. No network and no model.
 
 Per hour: orders, attempts, paid deals and surplus before breakage, with every order's last stopping point. Also the failures that would
-reverse a change: payments refused, transport and agent errors, and from the kit log HTTP 429s, timeouts and hooks that printed no result.
+reverse a change: payments refused, transport and agent errors, and from the kit log timeouts and hooks that printed no result.
+There is no 429 figure. The kit waits out a market 429 on /api/orders without logging it, so it cannot be counted here; a falling orders_per_hour is the only sign of one.
+A shop's 429 to our buyer ends as transport_error in the stops.
 Payments carry no time, so they are tied to a window through the order id. Kit log lines carry only a clock time and are read by their KST date.
 """
 
@@ -16,7 +18,8 @@ import re
 ROOT = Path(__file__).resolve().parent
 KST = timezone(timedelta(hours=9))
 STAMP = re.compile(r"^(\d\d):(\d\d):(\d\d) ")
-KIT_PATTERNS = {"http_429": re.compile(r"\b429\b"), "timeout": re.compile(r"timed? ?out|timeout", re.I), "hook_no_result": re.compile(r"market_buyer printed no result"),
+NO_429 = "not measured: the kit waits out a market 429 on orders without logging it; watch orders_per_hour, and transport_error for shops"
+KIT_PATTERNS = {"timeout": re.compile(r"timed? ?out|timeout", re.I), "hook_no_result": re.compile(r"market_buyer printed no result"),
                 "hook_traceback": re.compile(r"Traceback \(most recent call last\)")}
 
 
@@ -111,7 +114,7 @@ def measure(root, start, end):
             "surplus_before_breakage": surplus, "surplus_per_hour": per_hour(surplus), "paid_per_attempt": round(paid / attempts, 4) if attempts else None,
             "payment_refused": sum(refused.values()), "payment_refused_per_paid": round(sum(refused.values()) / paid, 4) if paid else None, "payment_refused_reasons": refused.most_common(8),
             "stops": stops.most_common(), "stops_per_hour": {k: per_hour(v) for k, v in stops.most_common()},
-            "gap_under_10s": sum(g < 10 for g in gaps), "gap_under_20s": sum(g < 20 for g in gaps), "gaps": len(gaps), "kit_log": kit_counts(root, start, end)}
+            "gap_under_10s": sum(g < 10 for g in gaps), "gap_under_20s": sum(g < 20 for g in gaps), "gaps": len(gaps), "kit_log": kit_counts(root, start, end), "market_429": NO_429}
 
 
 def main():

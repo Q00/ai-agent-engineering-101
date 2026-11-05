@@ -28,6 +28,8 @@ class Measure(unittest.TestCase):
         self.assertEqual((result["orders"], result["attempts"], result["paid"], result["surplus_before_breakage"], result["payment_refused"]), (3, 2, 1, 20, 1))
         self.assertEqual((result["gap_under_10s"], result["gap_under_20s"], result["gaps"]), (1, 1, 2))
         self.assertEqual(dict(result["stops"])["selection_attempt_cooldown"], 1)
+        self.assertNotIn("http_429", result["kit_log"])
+        self.assertIn("not measured", result["market_429"])
 
 
 if __name__ == "__main__":
