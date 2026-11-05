@@ -58,8 +58,8 @@ VALUE_BUDGET = 7_000_000   # 4.5M until Nov 4 14:00; since 17:00 the floor of th
 # Nov 4 17:00: every big-ticket line sold within minutes at ~30% margin (Q mattresses 38 sold, 253k -> 361k;
 # sofas 1.2-1.4M -> 1.9-2.0M) while 7.5M of our 16.5M cash sat idle under the 9M cap. Profit grows with the money
 # turning over, so the caps follow total assets (cash + stock at cost), and grow as we do.
-STOCK_SHARE = 0.75        # 0.90 until Nov 5 10:20 (big-ticket units bought 09:02-09:23: ~25% of cost sold within two
-                          # windows, under the 40% step-down rule); 0.70 / 0.55 for 40 min before that: the leader (inextro) puts ~27-30M into 20 units of one
+STOCK_SHARE = 0.55        # 0.75 until Nov 5 22:20 (big-ticket units bought 20:23-21:24: 37% of cost sold within 40 min,
+                          # under the 40% step-down rule); 0.90 until Nov 5 10:20 (09:02-09:23: ~25%); 0.70 / 0.55 for 40 min before that: the leader (inextro) puts ~27-30M into 20 units of one
 VALUE_SHARE = 0.70        # 2.32M sofa every window (236M of supply in 1.5 h) and sells ~65 an hour at 0.80 of list
 LINE_QTY_MAX = 20         # the most any shop bought in one line (inextro and yms979 buy 20 at a time)
 SELL_PACE = 2.0           # Nov 4 16:17-18:17: our 8-10 Jakomo sofas a window sold out in ~12 min (13 deals 18:03-18:15),

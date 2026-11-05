@@ -39,7 +39,7 @@ MAX_LINE_COST = 40_000_000
 
 
 def stock_cap(inv, stock_cost):
-    return max(STOCK_CAP, int(0.75 * (inv.get("balance", 0) + stock_cost)))   # restock.STOCK_SHARE
+    return max(STOCK_CAP, int(0.55 * (inv.get("balance", 0) + stock_cost)))   # restock.STOCK_SHARE
 MAX_QTY = 5
 SHORT_SHELF = 48           # hours: food that spoils this fast is bought at most 2 at a time
 SHARE_RANGE = (0.60, 0.95)
