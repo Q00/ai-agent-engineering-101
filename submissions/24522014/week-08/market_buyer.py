@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 import ssl
 import sys
+import time
 from uuid import uuid4
 
 import httpx
@@ -21,6 +22,8 @@ from buyer_support import prepare as prepare_support
 import model_router
 
 ROOT = Path(__file__).resolve().parent
+CATEGORY_ONLY = "receipt_category_only"
+CANCEL_WAIT_SECONDS = 10
 
 
 class ReceiptProblem(BuyerError):
@@ -29,7 +32,24 @@ class ReceiptProblem(BuyerError):
         self.kind = kind
 
 
-def check_receipt(receipt, *, item, budget, task, agreed_price):
+def is_category_receipt(receipt, *, budget, task, agreed_price, order_item):
+    """The contract allows a receipt to name the order's item instead of a SKU, but then nothing shows which SKU we would get
+    and the kit does not compare it with the one we priced. Honest on every other point, it is not paid and not a mismatch."""
+    return (isinstance(order_item, str) and bool(order_item) and receipt.get("item") == order_item and receipt.get("task") == task
+            and agreed_price is not None and receipt.get("price") == agreed_price and receipt["price"] <= budget)
+
+
+def receipt_format(receipt, item, order_item):
+    """How a receipt named what it sold, for the funnel."""
+    named = receipt.get("item") if isinstance(receipt, dict) else None
+    if named is None:
+        return None
+    if named == item:
+        return "sku"
+    return "order_item" if isinstance(order_item, str) and order_item and named == order_item else "other"
+
+
+def check_receipt(receipt, *, item, budget, task, agreed_price, order_item=None):
     if not isinstance(receipt, dict):
         raise ReceiptProblem("Completed task has no unique receipt")
     price = receipt.get("price")
@@ -38,6 +58,8 @@ def check_receipt(receipt, *, item, budget, task, agreed_price):
     if agreed_price is not None and price != agreed_price:
         raise ReceiptProblem(f"Agreed {agreed_price}, receipt says {price}.", "receipt_mismatch")
     if receipt.get("item") is not None and receipt["item"] != item:
+        if is_category_receipt(receipt, budget=budget, task=task, agreed_price=agreed_price, order_item=order_item):
+            raise ReceiptProblem("Receipt names the order's category, not a SKU.", CATEGORY_ONLY)
         raise ReceiptProblem("Receipt names a different item.", "receipt_mismatch")
     if receipt.get("task") is not None and receipt["task"] != task:
         raise ReceiptProblem("Receipt names a different task.", "receipt_mismatch")
@@ -50,6 +72,7 @@ class MarketTransport(BuyerTransport):
     last_offer = None
     raw_receipt = None
     requirements = None
+    order_item = None
 
     def open(self):
         # SKU only: a catalog name carries category words, and shops then handed over another item of that category.
@@ -85,7 +108,21 @@ class MarketTransport(BuyerTransport):
                             if isinstance(part.get("data"), dict) and "price" in part["data"]]
                 self.raw_receipt = receipts[0] if len(receipts) == 1 else None
                 check_receipt(self.raw_receipt, item=self.item, budget=self.budget,
-                              task=self.task_id, agreed_price=self.last_offer)
+                              task=self.task_id, agreed_price=self.last_offer, order_item=self.order_item)
+
+
+def release_category_task(client):
+    """Ask the shop to close a finished task so its signed unit is not left waiting. A shop may refuse, and that changes nothing."""
+    outcome = {"attempted": True, "result": "not_confirmed", "error": None}
+    try:
+        client.deadline = min(client.deadline, time.monotonic() + CANCEL_WAIT_SECONDS)
+        client._rpc("CancelTask", {"id": client.task_id})
+        if client.state == "TASK_STATE_CANCELED":
+            outcome["result"] = "canceled"
+    except Exception as error:
+        outcome.update(result="failed", error=str(error)[:200] or type(error).__name__)
+    outcome["state"] = client.state
+    return outcome
 
 
 def error_kind(error):
@@ -117,9 +154,10 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None, order_item=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.requirements = requirements
+    client.order_item = order_item
     client.accept_conditions = accept_conditions
     client.strategy_prompt = ROOT / "prompts/buyer-r3.txt"
     client.r3_context = decision_context
@@ -136,10 +174,17 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
         client.model_gate = allow_model
         client.over_budget_counter = over_budget_counter
         client.catalog_list_price = catalog_list_price
-    error = negotiation = None
+    error = negotiation = release = None
     try:
         with client:
-            summary = run_autonomous(client, mode, max_turns=max_turns)
+            try:
+                summary = run_autonomous(client, mode, max_turns=max_turns)
+            except ReceiptProblem as problem:
+                if problem.kind == CATEGORY_ONLY:
+                    held = client.raw_receipt
+                    release = release_category_task(client)
+                    client.raw_receipt = held
+                raise problem
         negotiation = summary["outcome"]
         outcome = "purchased" if negotiation == "purchased" else "no_deal"
     except (BuyerError, OSError, ValueError) as exc:
@@ -149,6 +194,8 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
         stars, review = 5, f"Bought {item} at agreed price {receipt['price']}, within budget {budget}; receipt matches item and task."
     elif outcome == "receipt_mismatch":
         stars, review = 1, error
+    elif outcome == CATEGORY_ONLY:
+        stars, review = 3, "Receipt names no SKU, so this buyer did not proceed; no dishonesty inferred."
     elif outcome == "invalid_receipt":
         stars, review = 2, error
     elif outcome == "transport_error":
@@ -164,7 +211,7 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
               "verification": "local_receipt_consistent" if outcome == "purchased" else "not_confirmed",
               "signature_verification": "left_to_market_kit", "stars": stars, "review": review,
               "negotiation_outcome": negotiation, "decision_trail": client.decisions,
-              "request_format": "sku_only",
+              "request_format": "sku_only", "receipt_format": receipt_format(receipt, item, order_item), "category_receipt_release": release,
               "refused_at_open": client.state == "TASK_STATE_REJECTED" and not client.decisions,
               "failure_reason": failure_reason(outcome, negotiation, client.decisions),
               "buyer_log_dir": str(client.log_dir)}
@@ -226,7 +273,7 @@ def main():
     print(f"[choose] {reason}", flush=True)
     if shop:
         trade_options = {"mode": args.mode, "decision_context": selected_evidence,
-                         "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions}
+                         "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions, "order_item": order.get("item")}
         if support_decision.get("fast_rules"):
             from buyer_counter import load_settings
             from buyer_support import model_reservation

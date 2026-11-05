@@ -138,6 +138,7 @@ def funnel(root, since, until=None, payments_path=None):
     formats, skipped_shops, qty_rows = {}, Counter(), {}
     tools_used = Counter()
     stock_preference = {"applied": 0, "refused_at_open": 0, "paid": 0, "surplus_given_up_estimate": 0}
+    receipt_formats, category_only = {}, {"total": 0, "by_shop": Counter(), "release_results": Counter()}
     mismatches = {"total": 0, "by_request_format": Counter(), "by_kind": Counter(), "by_shop": Counter()}
     orders, instrumented = set(), 0
     for _, record in runs:
@@ -147,6 +148,14 @@ def funnel(root, since, until=None, payments_path=None):
         if record.get("order"):
             orders.add(record["order"])
         trail = record.get("decision_trail")
+        if record.get("receipt_format"):
+            row = receipt_formats.setdefault(record["receipt_format"], {"receipts": 0, "paid": 0})
+            row["receipts"] += 1
+            row["paid"] += "paid" in reached
+        if record.get("outcome") == "receipt_category_only":
+            category_only["total"] += 1
+            category_only["by_shop"][str(record.get("shop_name"))] += 1
+            category_only["release_results"][str((record.get("category_receipt_release") or {}).get("result"))] += 1
         preferred = (record.get("buyer_support") or {}).get("listed_stock_preferred_over")
         if preferred:
             stock_preference["applied"] += 1
@@ -212,7 +221,8 @@ def funnel(root, since, until=None, payments_path=None):
             "counter_offer": {"offered": counter_runs["offered"], "receipt": counter_runs["receipt"],
                               "paid": counter_runs["paid"], "exclusions": dict(counter_exclusions.most_common())},
             "model_routes": dict(model_routes.most_common()), "model_tools_used": dict(tools_used.most_common()),
-            "open_refusals_by_request_format": formats, "open_refusals_by_listed_qty": dict(sorted(qty_rows.items())), "listed_stock_preference": stock_preference,
+            "open_refusals_by_request_format": formats, "open_refusals_by_listed_qty": dict(sorted(qty_rows.items())), "listed_stock_preference": stock_preference, "receipt_formats": receipt_formats,
+            "receipt_category_only": {key: dict(value.most_common()) if isinstance(value, Counter) else value for key, value in category_only.items()},
             "runs_skipping_refusing_shops": dict(skipped_shops.most_common()),
             "receipt_mismatches": {key: dict(value.most_common()) if isinstance(value, Counter) else value for key, value in mismatches.items()},
             "turn_limit": {"endings": turn_limit_endings, "cancel_results": dict(cancel_results.most_common())},

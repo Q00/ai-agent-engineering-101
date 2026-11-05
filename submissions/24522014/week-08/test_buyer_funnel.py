@@ -178,6 +178,17 @@ class Funnel(unittest.TestCase):
         self.assertEqual(found["by_kind"], {"item": 2, "price": 1})
         self.assertEqual(found["by_shop"], {"s2": 2, "s1": 1})
 
+    def test_category_receipts_are_counted_by_shop_and_format(self):
+        other = {"item": "김치", "price": 100, "task": "t"}
+        self.add(trade_record("a", outcome="receipt_category_only", agreed=100, receipt=other, task="t", shop_name="s1", receipt_format="order_item", category_receipt_release={"result": "failed"}))
+        self.add(trade_record("b", outcome="receipt_category_only", agreed=100, receipt=other, task="t", shop_name="s1", receipt_format="order_item", category_receipt_release={"result": "canceled"}))
+        self.add(trade_record("c", reason="seller_rejected"))
+        report = self.report()
+        self.assertEqual(report["receipt_formats"], {"order_item": {"receipts": 2, "paid": 0}})
+        self.assertEqual(report["receipt_category_only"], {"total": 2, "by_shop": {"s1": 2}, "release_results": {"failed": 1, "canceled": 1}})
+        self.assertEqual(report["receipt_mismatches"]["total"], 0)
+        self.assertEqual(report["causes"]["receipt_category_only"], 2)
+
     def test_no_mismatch_reports_zero(self):
         self.add(trade_record("a", reason="seller_rejected"))
         self.assertEqual(self.report()["receipt_mismatches"], {"total": 0, "by_request_format": {}, "by_kind": {}, "by_shop": {}})
