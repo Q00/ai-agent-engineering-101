@@ -21,7 +21,9 @@ START_CAPITAL = 5_000_000
 CASH_RESERVE = 1_200_000            # never let a restock take the balance below this
 MAX_STOCK_COST = 3_000_000          # stock budget floor, and the base of the coverage (explore) budget
 STOCK_BUDGET_SHARE = 0.40           # stock on hand may cost up to this share of the balance (2026-11-04: balance
-STOCK_BUDGET_MAX = 8_000_000        #   15.8M held 1.6M of stock while mattress EV said 20 units and the cap said 3)
+STOCK_BUDGET_MAX = 16_000_000       #   15.8M held 1.6M of stock while mattress EV said 20 units and the cap said 3)
+                                    # 8M -> 16M 2026-11-05: stock sat at the 8M cap from 11-04 18:00 with balance 57M,
+                                    #   sofa turned away 8-15 req/h; 12 h market 7.75B, our share 1.4%, top shops buy 450-880M
 EXPLORE_SHARE = 0.25                # share of MAX_STOCK_COST for coverage of categories with no evidence yet
 EXPLORE_MAX_LIST = 60_000           # coverage buys only SKUs at or below this list price
 RESTOCK_LEAD_S = 60                 # emit a buy list only when supply is open or opens within this (2026-11-04:
@@ -46,8 +48,8 @@ FOOD_LEFTOVER_RISK = 0.15           # same for long-life food that does not sell
 # --- shop: premium pilot (2026-11-04): goods listed at 800k+ sell 36/h across only 9 shops at 0.80 of list,
 #     we sold none. A separate small budget, so a slow pilot cannot starve the main stock.
 PREMIUM_MIN_LIST = 800_000          # a goods SKU at or above this list price is premium
-PREMIUM_BUDGET = 2_500_000          # worst-case cost of premium stock on hand, outside the normal stock budget
-PREMIUM_MAX_UNITS = 3               # premium units on hand at most
+PREMIUM_BUDGET = 8_000_000          # worst-case cost of premium stock on hand, outside the normal stock budget
+PREMIUM_MAX_UNITS = 10              # premium units on hand at most (2.5M/3 until 2026-11-05: 98 sold in 24 h, 0 held)
 PREMIUM_HOURS = 12                  # market sales window for picking premium SKUs
 PREMIUM_MIN_SOLD = 10               # a premium SKU needs this many market sales in the window
 
@@ -61,8 +63,9 @@ SCARCITY_PREMIUM = 0.03             # first ask +3% of list in an under-supplied
 
 # --- shop: pricing ---------------------------------------------------------------------------------
 START_ASK_RATIO = 0.90              # first ask as a share of list price, before memory has prices
-ASK_ROOM = 0.09                     # first ask = market ratio + this (0.05 until 2026-11-04: our asks sat ~5 pts under
+ASK_ROOM = 0.07                     # first ask = market ratio + this (0.05 until 2026-11-04: our asks sat ~5 pts under
                                     #   the market; profit per visit 0.052 at ask 0.70-0.75 vs 0.072 at 0.75-0.80)
+                                    # 0.09 -> 0.07 2026-11-05: 2 h close rate under 0.5 for ~9 h overnight (low 0.26)
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
 WARRANTY_HOURS = 6                  # goods break up to 6 h after the sale (agent.md)

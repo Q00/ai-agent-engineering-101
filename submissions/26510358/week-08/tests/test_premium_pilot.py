@@ -32,7 +32,7 @@ def pmem(tmp_path, monkeypatch, premium_sales=15):
 def test_first_ask_uses_the_wider_room():
     u = {"kind": "goods", "grade": "A", "cost": 50000, "list_price": 100000}
     assert pricing.unit_ask(u, market_ratio=0.70) == int(100000 * (0.70 + config.ASK_ROOM))
-    assert config.ASK_ROOM == 0.09
+    assert config.ASK_ROOM == 0.07
 
 
 def test_premium_pilot_buys_one_unit_each_within_budget(tmp_path, monkeypatch):
