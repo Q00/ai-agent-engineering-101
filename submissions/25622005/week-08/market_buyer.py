@@ -5,14 +5,18 @@ cannot read), hand the kit a receipt and accept terms.
 
 Prints exactly one line on stdout, always: {"shop", "receipt", "stars", "review", "accept"}, or the
 no-deal line {"shop": "", "receipt": null}. Diagnostics go to logs/hooks/market_buyer.log and the
-decision to logs/decisions/buyer.jsonl.
+decision to logs/decisions/buyer.jsonl. Each shop's first ask is folded into memory/shop_asks.json, which ranks
+the shops of later orders (buyer_policy.candidates).
 """
 import argparse
+import fcntl
 import json
 import time
 from pathlib import Path
 
 NO_DEAL = {"shop": "", "receipt": None}
+ASKS = "shop_asks.json"             # under memory/: {"<shop url>|<kind>": {n, share, w, ts}}, see buyer_policy.fold_ask
+ASK_LOCK_TRIES, ASK_LOCK_WAIT_S = 10, 0.05   # a busy record lock is skipped after this: the order must not wait
 
 
 def run(args, t0):
@@ -52,7 +56,7 @@ def run(args, t0):
 
     if (order.get("round") or 0) < 3 or not order.get("acceptable"):
         return done(NO_DEAL, "no_deal", "not a Round 3 order with acceptable SKUs", ["contract"])
-    cands = bp.candidates(order, shops, catalog, summary, pol)
+    cands = bp.candidates(order, shops, catalog, summary, pol, load_asks())
     refs = [query.summary_ref("cat", leaf)] + [query.summary_ref("shop", c["shop"]) for c in cands]
     if not cands:
         return done(NO_DEAL, "no_deal", "no shop offers an acceptable SKU worth its cap", ["D6"], refs,
@@ -65,6 +69,7 @@ def run(args, t0):
         if deadline.past_target() and cand["p_checkout"] * cand["p_reach"] < pol["buyer"]["continue_p"]:
             break                                   # D8: past the target only a likely deal is worth the time
         res = negotiate(cand["shop"], cand, order, deadline, pol, ver=ver)
+        record_ask(cand, res, time.time())
         problem = None
         if res["receipt"]:
             problem = bp.verify_receipt(order, res["receipt"], cand, catalog, pol, res["unit"], res["warranty_h"])
@@ -87,8 +92,43 @@ def run(args, t0):
                 candidates=_brief(cands), tried=tried, p_trace={t["shop"]: t["p_trace"] for t in tried})
 
 
+def load_asks():
+    """The entries of memory/shop_asks.json updated within buyer_policy.ASK_KEEP_H; {} if missing or broken."""
+    from memory.store import MEM, read_json
+    from tools import buyer_policy as bp
+    return bp.fresh_asks(read_json(MEM / ASKS, {}), time.time())
+
+
+def record_ask(cand, res, now):
+    """Fold the shop's first ask / V and whether it granted the full warranty into memory/shop_asks.json under an
+    exclusive lock (several buyer hooks can run at once). A lock still busy after ASK_LOCK_TRIES or any other
+    failure is logged, never raised: the record must not cost the order."""
+    from memory.store import MEM, atomic_write_json, hook_log
+    from tools import buyer_policy as bp
+    try:
+        ask = (res.get("asks") or [None])[0]
+        if not isinstance(ask, (int, float)) or ask <= 0 or not cand["V"] > 0:
+            return
+        MEM.mkdir(parents=True, exist_ok=True)
+        with open(MEM / ".shop_asks.lock", "a") as lock:
+            for _ in range(ASK_LOCK_TRIES):
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)   # released when the file closes
+                    break
+                except BlockingIOError:
+                    time.sleep(ASK_LOCK_WAIT_S)
+            else:
+                raise TimeoutError(f"{lock.name} busy")
+            warranty = (res.get("warranty_h") or 0) >= bp.WARRANTY_FULL_H
+            atomic_write_json(MEM / ASKS, bp.fold_ask(load_asks(), cand["shop"], cand["kind"], ask / cand["V"], now,
+                                                      warranty))
+    except Exception as e:
+        hook_log("market_buyer", f"shop ask not recorded: {type(e).__name__}: {e}")
+
+
 def _brief(cands):
-    return [{k: c[k] for k in ("shop", "sku", "V", "cap", "score", "p_checkout", "p_reach")} for c in cands]
+    return [{k: c[k] for k in ("shop", "sku", "V", "cap", "ask_est", "kept", "score", "p_checkout", "p_reach")}
+            for c in cands]
 
 
 def main(argv=None):

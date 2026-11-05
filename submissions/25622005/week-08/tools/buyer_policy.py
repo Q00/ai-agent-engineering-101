@@ -1,6 +1,7 @@
 """Buyer decisions as pure functions (strategy §4, D6, D7, D8, D12).
 
-    candidates     offers ∩ acceptable, ranked by expected surplus x chance of closing
+    candidates     offers ∩ acceptable, ranked by share of list kept x chance of closing
+    fold_ask       add a shop's first ask / list to our record of what each shop asks (memory/shop_asks.json)
     cap            the highest price worth paying for one SKU (D6)
     p_success      chance of closing = p_price x p_checkout (D8, P0 form)
     verify_receipt does a signed receipt fit the order and what was agreed
@@ -20,6 +21,10 @@ WARRANTY_FULL_H = 6     # goods break within 6 h of the sale, so a 6 h warranty 
 REACH_LO, REACH_HI = 0.50, 0.85   # P0 prior for p_price before any quote: a cap below half of list rarely
                                   # closes, at a typical first ask (0.85 of list) it always can
 PRICE_GAP_LIST = 0.15   # D8 p_price falls linearly to 0 when the ask is this share of list above the cap
+ASK_ALPHA = 0.25        # weight of the newest first ask in a shop's ask share (exponentially weighted mean)
+ASK_MIN_N = 3           # first asks seen from a shop and kind before its ask share replaces the P0 prior
+ASK_KEEP_H = 48         # a shop not quoted for this long is forgotten
+ASK_SHARE_LO, ASK_SHARE_HI = 0.2, 2.0   # a first ask outside this share of list is a misread price: not folded
 # the most shelf life a claimed food grade can have left (agent.md 'Supply' cuts; update by hand if they change)
 GRADE_TOP = {"A": 1.0, "B": FOOD_GRADE_CUTS[0], "C": FOOD_GRADE_CUTS[1]}
 
@@ -95,8 +100,50 @@ def goods_q(summary, leaf, pol):
     return q_prior(pol), None
 
 
-def candidates(order, shops, catalog, summary, pol):
-    """One best SKU per shop from offers ∩ acceptable, best first, at most buyer.max_shops shops."""
+def ask_key(url, kind):
+    """memory/shop_asks.json key: the shop URL without a trailing / and the kind (food|goods)."""
+    return f"{str(url or '').rstrip('/')}|{kind}"
+
+
+def _ask_entry(e):
+    """A well-formed shop_asks entry {n, share, w, ts}; anything else counts as no record."""
+    return isinstance(e, dict) and type(e.get("n")) is int and e["n"] > 0 \
+        and type(e.get("share")) in (int, float) and e["share"] > 0 and type(e.get("w", 0)) in (int, float) \
+        and type(e.get("ts")) in (int, float)
+
+
+def fresh_asks(asks, now):
+    """The well-formed shop_asks entries updated within ASK_KEEP_H; {} for anything but a dict."""
+    return {k: e for k, e in (asks if isinstance(asks, dict) else {}).items()
+            if _ask_entry(e) and now - e["ts"] <= ASK_KEEP_H * 3600}
+
+
+def fold_ask(asks, url, kind, share, now, warranty=False):
+    """A new asks dict (fresh_asks) with one more first ask / V of a shop for a kind: the first observation sets
+    share and w (1 when the shop granted the full warranty), each later one moves them by ASK_ALPHA. A share
+    outside ASK_SHARE_LO..ASK_SHARE_HI is a misread price and is not folded."""
+    out = fresh_asks(asks, now)
+    if not ASK_SHARE_LO <= share <= ASK_SHARE_HI:
+        return out
+    key = ask_key(url, kind)
+    e = out.get(key)
+    w = 1.0 if warranty else 0.0
+    if e is not None:
+        share = e["share"] + ASK_ALPHA * (share - e["share"])
+        w = e.get("w", 0) + ASK_ALPHA * (w - e.get("w", 0))
+    out[key] = {"n": (e["n"] if e else 0) + 1, "share": round(share, 4), "w": round(w, 4), "ts": round(now)}
+    return out
+
+
+def candidates(order, shops, catalog, summary, pol, asks=None):
+    """One best SKU per shop from offers ∩ acceptable, best first, at most buyer.max_shops shops.
+
+    score = kept x p_checkout x p. kept is the expected share of list kept (Patch 3.4 Saved) at the likely price:
+    the shop's estimated first ask (its ask share in asks x V, from ASK_MIN_N first asks of the kind) when below
+    the cap, else the cap. p is p_price of that estimated ask, or the P0 p_reach without one. A goods shop that
+    granted the 6 h warranty in most first replies (w >= 0.5) is judged at the warranty cap, as negotiate()
+    raises the cap when the warranty comes. Ties go to the higher list price (every food SKU of a shop keeps the
+    same share)."""
     acceptable = set(order.get("acceptable") or [])
     leaf = order.get("item")
     kind = order.get("kind")
@@ -116,19 +163,30 @@ def candidates(order, shops, catalog, summary, pol):
                 continue
             k = (catalog[sku].get("kind") or kind)
             c = cap(V, k, 0, q_upper, budget, pol)
-            surplus = expected_surplus(V, c, k, q if k != "food" else 0.0, 0)
+            qk = q if k != "food" else 0.0
+            surplus = expected_surplus(V, c, k, qk, 0)
             if c <= 0 or surplus < pol["buyer"]["min_surplus_list"] * V - 1:
                 continue
-            pr = p_reach(c, V)
-            score = surplus * pc * pr
+            e = (asks or {}).get(ask_key(url, k))
+            known = _ask_entry(e) and e["n"] >= ASK_MIN_N
+            ask_est = int(e["share"] * V) if known else None
+            wh = WARRANTY_FULL_H if known and k != "food" and e.get("w", 0) >= 0.5 else 0
+            c_est = cap(V, k, wh, q_upper, budget, pol) if wh else c
+            p_est = c_est if ask_est is None else min(c_est, ask_est)
+            kept = expected_surplus(V, p_est, k, qk, wh) / V
+            pr = p_reach(c, V) if ask_est is None else p_price(ask_est, c_est, V)
+            score = kept * pc * pr
             cand = {"shop": url, "shop_name": shop.get("name"), "sku": sku,
                     "name": offer.get("name") or catalog[sku].get("name") or sku, "V": V, "kind": k,
                     "cap": c, "q": q, "q_upper": q_upper, "surplus_at_cap": round(surplus),
-                    "p_checkout": round(pc, 4), "p_reach": round(pr, 4), "score": round(score, 1),
+                    "ask_est": ask_est, "kept": round(kept, 4),
+                    "p_checkout": round(pc, 4), "p_reach": round(pr, 4), "score": round(score, 4),
                     "shop_stats": stats,
                     "memory_refs": [query.summary_ref("shop", url), query.summary_ref("cat", leaf)],
-                    "why": f"E[S] at cap {round(surplus)} x p_checkout {pc:.2f} x p_reach {pr:.2f}"}
-            if url not in best or cand["score"] > best[url]["score"]:
+                    "why": f"kept {kept:.3f} of list at {p_est} x p_checkout {pc:.2f} x "
+                           + (f"p_reach {pr:.2f}" if ask_est is None else f"p_price {pr:.2f} (ask est {ask_est}"
+                              + (f", {wh} h warranty cap {c_est})" if wh else ")"))}
+            if url not in best or (cand["score"], V) > (best[url]["score"], best[url]["V"]):
                 best[url] = cand
     ranked = sorted(best.values(), key=lambda c: (-c["score"], -c["V"], c["shop"]))
     return ranked[:pol["buyer"]["max_shops"]]

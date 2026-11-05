@@ -1,11 +1,13 @@
 """market_buyer end to end: fixture .market files, a fake A2A shop on 127.0.0.1, the hook in a subprocess.
 The hook must print exactly one line on stdout whatever happens."""
+import fcntl
 import json
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -116,6 +118,60 @@ class MarketBuyerHookTests(unittest.TestCase):
             self.assertEqual(llm["policy_ver"], order["policy_ver"])
             self.assertNotIn("41234", llm["inputs"]["text"] + json.dumps(llm["inputs"]))
         self.assertEqual(order["tried"][0]["llm_reads"], 2)
+
+    def asks(self):
+        return json.loads((self.home / "memory" / "shop_asks.json").read_text(encoding="utf-8"))
+
+    def test_first_ask_recorded_after_each_try(self):
+        shop = FakeShop(sku="F2", first_ask=36000, floor=99999, list_price=40000, data={"hours_left": 300.0})
+        self.addCleanup(shop.close)
+        self.write(ORDER, [self.shop_entry(shop, "F2")])
+        (self.home / "memory").mkdir()
+        (self.home / "memory" / "shop_asks.json").write_text("{half", encoding="utf-8")   # broken: start empty
+        self.run_hook()
+        self.assertEqual({k: (e["n"], e["share"], e["w"]) for k, e in self.asks().items()},
+                         {f"{shop.url}|food": (1, 0.9, 0.0)})
+        self.run_hook()
+        self.assertEqual(self.asks()[f"{shop.url}|food"]["n"], 2)
+
+    def test_known_cheap_shop_is_tried_first(self):
+        shops = [FakeShop(sku="F2", floor=0, list_price=40000) for _ in range(2)]
+        for s in shops:
+            self.addCleanup(s.close)
+        dear, cheap = sorted(shops, key=lambda s: s.url)    # without a record the URL order would try dear first
+        dear.first_ask, cheap.first_ask = 38000, 32000
+        self.write(ORDER, [self.shop_entry(dear, "F2"), self.shop_entry(cheap, "F2")])
+        (self.home / "memory").mkdir()
+        (self.home / "memory" / "shop_asks.json").write_text(json.dumps(          # dear's cheap record is stale
+            {f"{cheap.url}|food": {"n": 3, "share": 0.8, "w": 0.0, "ts": int(time.time())},
+             f"{dear.url}|food": {"n": 3, "share": 0.5, "w": 0.0, "ts": int(time.time()) - 49 * 3600}}),
+            encoding="utf-8")
+        out = self.run_hook()
+        self.assertEqual(out["shop"], cheap.url)
+        row = self.rows()[-1]
+        self.assertEqual([c["shop"] for c in row["candidates"]], [cheap.url, dear.url])
+        self.assertEqual(row["candidates"][0]["ask_est"], 32000)
+
+    def test_a_recording_error_does_not_break_the_order(self):
+        shop = FakeShop(sku="F2", first_ask=36000, floor=99999, list_price=40000, data={"hours_left": 300.0})
+        self.addCleanup(shop.close)
+        self.write(ORDER, [self.shop_entry(shop, "F2")])
+        (self.home / "memory" / ".shop_asks.lock").mkdir(parents=True)                 # the lock cannot open
+        self.assertEqual(self.run_hook()["receipt"]["price"], 36000)
+        log = (self.home / "logs" / "hooks" / "market_buyer.log").read_text(encoding="utf-8")
+        self.assertIn("shop ask not recorded", log)
+        self.assertFalse((self.home / "memory" / "shop_asks.json").exists())
+
+    def test_a_busy_record_lock_does_not_hold_the_order(self):
+        shop = FakeShop(sku="F2", first_ask=36000, floor=99999, list_price=40000, data={"hours_left": 300.0})
+        self.addCleanup(shop.close)
+        self.write(ORDER, [self.shop_entry(shop, "F2")])
+        (self.home / "memory").mkdir()
+        with open(self.home / "memory" / ".shop_asks.lock", "a") as f:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)                               # another hook holds it
+            self.assertEqual(self.run_hook()["receipt"]["price"], 36000)
+        log = (self.home / "logs" / "hooks" / "market_buyer.log").read_text(encoding="utf-8")
+        self.assertIn("shop ask not recorded: TimeoutError", log)
 
     def test_round_2_is_no_deal(self):
         self.write(dict(ORDER, round=2), [])

@@ -85,6 +85,48 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual(cs[0]["cap"], 38000)
         self.assertIn("shop:http://a", cs[0]["memory_refs"])
         self.assertIn("cat:김치", cs[0]["memory_refs"])
+        # F1 and F2 both keep 5 % of list at the cap: the tie goes to the higher list price
+        self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["score"]), (None, 0.05, 0.045))
+
+    def known(self, url, share, n=3, kind="food", w=0.0):
+        return {bp.ask_key(url, kind): {"n": n, "share": share, "w": w, "ts": 1}}
+
+    def test_known_cheap_shop_outranks_an_unknown_one(self):
+        shops = [shop("http://a", ("F2", 1)), shop("http://b", ("F2", 1))]
+        cs = bp.candidates(FOOD, shops, CATALOG, {}, POL, self.known("http://b", 0.80))
+        self.assertEqual([c["shop"] for c in cs], ["http://b", "http://a"])
+        self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["p_reach"], cs[0]["score"]), (32000, 0.2, 1.0, 0.18))
+        self.assertIn("ask est 32000", cs[0]["why"])
+
+    def test_known_shop_asking_above_the_cap_ranks_below_an_unknown_one(self):
+        shops = [shop("http://a", ("F2", 1)), shop("http://b", ("F2", 1))]
+        cs = bp.candidates(FOOD, shops, CATALOG, {}, POL, self.known("http://a", 1.0))
+        self.assertEqual([c["shop"] for c in cs], ["http://b", "http://a"])
+        self.assertEqual((cs[1]["ask_est"], cs[1]["kept"], cs[1]["p_reach"]), (40000, 0.05, 0.6667))  # cap 38000
+
+    def test_fewer_than_ask_min_n_first_asks_are_ignored(self):
+        cs = bp.candidates(FOOD, [shop("http://a", ("F2", 1))], CATALOG, {}, POL,
+                           self.known("http://a", 0.5, n=bp.ASK_MIN_N - 1))
+        self.assertEqual((cs[0]["ask_est"], cs[0]["score"]), (None, 0.045))
+
+    def test_food_and_goods_asks_are_separate(self):
+        cs = bp.candidates(FOOD, [shop("http://a/", ("F2", 1))], CATALOG, {}, POL,
+                           self.known("http://a", 0.5, kind="goods"))
+        self.assertIsNone(cs[0]["ask_est"])
+        cs = bp.candidates(FOOD, [shop("http://a/", ("F2", 1))], CATALOG, {}, POL, self.known("http://a", 0.5))
+        self.assertEqual(cs[0]["ask_est"], 20000)
+
+    def test_known_goods_shop_with_warranty_is_judged_at_the_warranty_cap(self):
+        """A goods shop that grants the 6 h warranty closes above the 0.70 cap (negotiate raises it to 0.94)."""
+        shops = [shop("http://a", ("G1", 1)), shop("http://b", ("G1", 1))]
+        cs = bp.candidates(GOODS, shops, CATALOG, {}, POL, self.known("http://b", 0.85, kind="goods", w=0.75))
+        self.assertEqual([c["shop"] for c in cs], ["http://b", "http://a"])
+        self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["p_reach"], cs[0]["cap"]), (85000, 0.1125, 1.0, 70000))
+        self.assertIn("6 h warranty cap 94000", cs[0]["why"])
+        self.assertEqual((cs[1]["kept"], cs[1]["p_reach"]), (0.05, 0.5714))             # unknown: 0.75 - 0.70
+        cs = bp.candidates(GOODS, shops, CATALOG, {}, POL, self.known("http://b", 0.85, kind="goods", w=0.25))
+        self.assertEqual([c["shop"] for c in cs], ["http://a", "http://b"])             # no warranty: 0.85 > 0.70
+        self.assertEqual(cs[1]["p_reach"], 0.0)
 
     def test_max_shops_and_shop_record_ranks(self):
         shops = [shop(f"http://s{i}", ("F1", 1)) for i in range(5)]
@@ -115,6 +157,50 @@ class CandidateTests(unittest.TestCase):
 
     def test_reference_list(self):
         self.assertEqual(bp.reference_list(FOOD, CATALOG), 30000)
+
+
+class FoldAskTests(unittest.TestCase):
+    def test_first_observation_sets_the_share_then_ewma(self):
+        a = bp.fold_ask({}, "http://a/", "food", 0.8, 1000.4)
+        self.assertEqual(a, {"http://a|food": {"n": 1, "share": 0.8, "w": 0.0, "ts": 1000}})
+        b = bp.fold_ask(a, "http://a", "food", 0.6, 2000)
+        self.assertEqual(b, {"http://a|food": {"n": 2, "share": 0.75, "w": 0.0, "ts": 2000}})  # 0.8 + 0.25 x -0.2
+        self.assertEqual(a["http://a|food"]["n"], 1)                                    # pure: the input is unchanged
+
+    def test_warranty_share_is_folded_the_same_way(self):
+        a = bp.fold_ask({}, "http://a", "goods", 0.85, 0, warranty=True)
+        self.assertEqual(a["http://a|goods"]["w"], 1.0)
+        self.assertEqual(bp.fold_ask(a, "http://a", "goods", 0.85, 0)["http://a|goods"]["w"], 0.75)
+
+    def test_a_misread_share_is_not_folded(self):
+        a = bp.fold_ask({}, "http://a", "food", 0.9, 0)
+        for share in (5 / 40000, 0.19, 2.01):
+            with self.subTest(share=share):
+                self.assertEqual(bp.fold_ask(a, "http://a", "food", share, 0), a)
+                self.assertEqual(bp.fold_ask({}, "http://a", "food", share, 0), {})
+
+    def test_kinds_are_separate(self):
+        a = bp.fold_ask(bp.fold_ask({}, "http://a", "food", 0.8, 0), "http://a", "goods", 0.6, 0)
+        self.assertEqual({k: (e["n"], e["share"]) for k, e in a.items()},
+                         {"http://a|food": (1, 0.8), "http://a|goods": (1, 0.6)})
+
+    def test_entries_older_than_48_h_are_dropped(self):
+        keep_s = bp.ASK_KEEP_H * 3600
+        a = {"http://old|food": {"n": 5, "share": 0.7, "ts": 0}, "http://edge|food": {"n": 5, "share": 0.7, "ts": 1}}
+        out = bp.fold_ask(a, "http://new", "food", 0.9, keep_s + 1)
+        self.assertEqual(sorted(out), ["http://edge|food", "http://new|food"])
+        self.assertEqual(sorted(bp.fresh_asks(a, keep_s + 1)), ["http://edge|food"])   # the read side skips them too
+
+    def test_malformed_record_counts_as_empty(self):
+        for asks in (None, [], "x", {"http://a|food": {"n": "3", "share": 0.7, "ts": 0}},
+                     {"http://a|food": {"n": 3, "share": 0.7, "w": "1", "ts": 0}},
+                     {"http://a|food": {"n": 3, "share": None, "ts": 0}}, {"http://a|food": 7}):
+            with self.subTest(asks=asks):
+                self.assertEqual(bp.fold_ask(asks, "http://a", "food", 0.9, 10),
+                                 {"http://a|food": {"n": 1, "share": 0.9, "w": 0.0, "ts": 10}})
+                cs = bp.candidates(FOOD, [shop("http://a", ("F2", 1))], CATALOG, {}, POL,
+                                   asks if isinstance(asks, dict) else None)
+                self.assertIsNone(cs[0]["ask_est"])
 
 
 class AcceptAndReceiptTests(unittest.TestCase):
