@@ -72,8 +72,8 @@ TWIN_KEYS = ("HOLD_FACTOR", "HOLD_MIN_DEALS")
 def live_policy():
     """The policy the shop runs now: r3lib/config.py values (read at call time, never written)."""
     p = {"name": "live", "HOLD_FACTOR": HOLD_FACTOR, "HOLD_MIN_DEALS": HOLD_MIN_DEALS,
-         "restock_adjust": {}, "category_budget_share": {}, "sku_targets": {}, "cut_skus": {},
-         "forum": {}}
+         "restock_adjust": {}, "category_budget_share": {}, "category_cap_mode": "raise_all",
+         "sku_targets": {}, "cut_skus": {}, "forum": {}}
     for k in PRICING_KEYS + RESTOCK_KEYS:
         p[k] = getattr(config, k)
     return p
@@ -95,7 +95,7 @@ def make_policy(overrides=None, name=None):
 
 
 def restock_differs(a, b):
-    keys = RESTOCK_KEYS + ("restock_adjust", "category_budget_share", "sku_targets", "cut_skus")
+    keys = RESTOCK_KEYS + ("restock_adjust", "category_budget_share", "category_cap_mode", "sku_targets", "cut_skus")
     return any(a.get(k) != b.get(k) for k in keys)
 
 
@@ -704,7 +704,10 @@ def _restock_tick(w, policy, stock, cash, ts, seed, plan_fn, cut_state=None):
             lines = plan_fn(stock.as_inventory(cash), ts, adjust, policy)
     lines = _apply_cuts(lines, policy, cut_state)
     lines = _apply_sku_targets(lines, stock, cash, policy, w)
-    lines = _apply_category_shares(lines, stock, cash, policy, w.catalog)
+    deep = None
+    if cap_mode(policy) == "listed" and hasattr(plan_fn, "deep_categories"):
+        deep = plan_fn.deep_categories(ts)
+    lines = _apply_category_shares(lines, stock, cash, policy, w.catalog, deep=deep)
     rng = random.Random(f"{seed}:tick:{int(ts)}")
     got = []
     for ln in lines:
@@ -761,13 +764,17 @@ def _apply_sku_targets(lines, stock, cash, policy, w):
     return out
 
 
-def _apply_category_shares(lines, stock, cash, policy, catalog):
+def _apply_category_shares(lines, stock, cash, policy, catalog, deep=None):
     """category_budget_share: a category's stock cost (held + bought this tick) stays under share x stock budget.
     Lets a candidate cap some categories below plan's global CATEGORY_MAX_SHARE (raising others is done by the
-    global share, see effective_plan_policy)."""
+    global share, see effective_plan_policy). In category_cap_mode "listed" with raised global caps, every
+    category NOT in the shares is held at its live cap again: DEEP_CATEGORY_SHARE if it is in `deep` (plan's
+    deep test, DefaultPlan.deep_categories), else CATEGORY_MAX_SHARE; deep=None (unknown) uses the deep share,
+    the looser of the two. This is a post-filter: budget that plan gave to a trimmed line is not re-spent."""
     shares = policy.get("category_budget_share") or {}
     if not shares:
         return lines
+    defaults = policy.get("_default_share") if cap_mode(policy) == "listed" else None
     stock_max = min(policy["STOCK_BUDGET_MAX"], max(policy["MAX_STOCK_COST"], policy["STOCK_BUDGET_SHARE"] * cash))
     held = {}
     for s, costs in stock.units.items():
@@ -778,6 +785,8 @@ def _apply_category_shares(lines, stock, cash, policy, catalog):
         info = catalog.get(ln["sku"]) or {}
         k = info.get("category")
         share = lookup_category(shares, k)
+        if share is None and defaults is not None:
+            share = defaults[1] if deep is None or k in deep else defaults[0]
         if share is None:
             out.append(ln)
             continue
@@ -801,11 +810,31 @@ def expand_adjust(adjust, catalog):
     return out
 
 
+CAP_MODES = ("raise_all", "live", "listed")
+
+
+def cap_mode(policy):
+    """category_cap_mode: how a category_budget_share above plan's global caps is simulated.
+    raise_all (default, the mode of every result before 2026-11-05): plan's global CATEGORY_MAX_SHARE and
+      DEEP_CATEGORY_SHARE go up to the top share for EVERY category; only the listed categories are then capped.
+    live: the global caps are never raised (what the live shop would do with r3lib/config.py unchanged); a share
+      can only lower a category below the live cap.
+    listed: the global caps go up for plan, then every category not in the shares is cut back to its live cap
+      (see _apply_category_shares), so only the listed categories get the higher share."""
+    mode = policy.get("category_cap_mode") or "raise_all"
+    if mode not in CAP_MODES:
+        raise ValueError(f"category_cap_mode {mode!r} not in {CAP_MODES}")
+    return mode
+
+
 def effective_plan_policy(policy):
     """plan() has one global category cap; a candidate that gives some category a larger share raises it (both
-    CATEGORY_MAX_SHARE and DEEP_CATEGORY_SHARE) and _apply_category_shares keeps every other category at the
-    live share."""
+    CATEGORY_MAX_SHARE and DEEP_CATEGORY_SHARE), except in category_cap_mode "live". In "raise_all" every other
+    category also gets the raised cap; in "listed" _apply_category_shares cuts the others back to the live caps
+    kept in _default_share."""
     p = dict(policy)
+    if cap_mode(policy) == "live":
+        return p
     shares = dict(p.get("category_budget_share") or {})
     top = max(shares.values()) if shares else 0
     if top > p["CATEGORY_MAX_SHARE"] or top > p["DEEP_CATEGORY_SHARE"]:
@@ -855,6 +884,15 @@ class DefaultPlan:
         with frozen_clock(ts):                     # memory.py look-backs use time.time(), not `now`
             lines, _, _ = restock_r3.plan(inv, self.w.demand_rows, self.mem, now=ts, dry_run=True, adjust=adjust)
         return lines
+
+    def deep_categories(self, ts):
+        """Categories plan() treats as deep at ts (market settles per hour >= DEEP_CATEGORY_RATE), from the same
+        DB copy and the same clock. Only called in category_cap_mode "listed", after a plan call at ts."""
+        if self.mem is None:
+            return None
+        with frozen_clock(ts):
+            dem = self.mem.category_demand(now=ts)
+        return {k for k, d in dem.items() if (d or {}).get("rate", 0) >= config.DEEP_CATEGORY_RATE}
 
     def close(self):
         d, self.dir, self.mem = self.dir, None, None
