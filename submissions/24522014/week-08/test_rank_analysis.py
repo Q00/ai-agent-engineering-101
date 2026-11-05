@@ -25,6 +25,10 @@ class Formula(unittest.TestCase):
         self.assertEqual(ra.computed_all(rows[1], rows, ra.BUYER_WEIGHTS), 1)
         self.assertEqual(ra.computed_all(rows[0], rows, ra.BUYER_WEIGHTS), 0)
 
+    def test_shop_field_follows_the_board(self):
+        self.assertIs(ra.shop_weights({"shops": [{"profit": 1}]}), ra.SHOP_WEIGHTS)
+        self.assertIs(ra.shop_weights({"shops": [{"profit": 1, "book": 2}]}), ra.BOOK_WEIGHTS)
+
     def test_saved_boards_reproduce_the_official_scores(self):
         boards = sorted(glob.glob(str(ra.ROOT / "logs/rank-analysis/board-*.json")))
         if not boards:

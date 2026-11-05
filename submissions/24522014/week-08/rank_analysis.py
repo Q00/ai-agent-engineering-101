@@ -17,6 +17,7 @@ SHOP_WEIGHTS = {"profit": .5, "revenue": .3, "stars_rank": .2}
 BUYER_WEIGHTS = {"surplus": .5, "forum": .3, "deals": .1, "posts": .1}
 KST_SESSION_START = 1793785140.0  # 2026-11-04 18:39 KST, when the balanced strategy started
 EPS = 1e-9
+BOOK_WEIGHTS = {"book": .5, "revenue": .3, "stars_rank": .2}
 
 
 def login_of(row):
@@ -43,9 +44,14 @@ def computed_all(row, rows, weights):
     return sum(w * percentile(number(row.get(k)), [number(r.get(k)) for r in rows]) for k, w in weights.items())
 
 
+def shop_weights(board):
+    """A board with a book field scores shops on it (saved boards fit to .0005); the 11-04 board had no such field and scored profit."""
+    return BOOK_WEIGHTS if any(r.get("book") is not None for r in board.get("shops", [])) else SHOP_WEIGHTS
+
+
 def formula_check(board):
     report = {}
-    for group, weights in (("shops", SHOP_WEIGHTS), ("buyers", BUYER_WEIGHTS)):
+    for group, weights in (("shops", shop_weights(board)), ("buyers", BUYER_WEIGHTS)):
         rows = eligible(board, group)
         errors = [abs(computed_all(r, rows, weights) - r["all"]) for r in rows]
         report[group] = {"players": len(rows), "mean_error": round(sum(errors) / len(errors), 5), "max_error": round(max(errors), 5)}
@@ -113,11 +119,12 @@ def sensitivity(row, rows, weights, step=.05):
 
 
 def compare(board, own_player, rival):
+    shop_scored = shop_weights(board)
     shop, buyer = rows_for(board, own_player)
     rival_shop, rival_buyer = rows_for(board, rival)
     shops, buyers = eligible(board, "shops"), eligible(board, "buyers")
     gaps = {}
-    for label, mine, theirs, rows, weights in (("shop", shop, rival_shop, shops, SHOP_WEIGHTS), ("buyer", buyer, rival_buyer, buyers, BUYER_WEIGHTS)):
+    for label, mine, theirs, rows, weights in (("shop", shop, rival_shop, shops, shop_scored), ("buyer", buyer, rival_buyer, buyers, BUYER_WEIGHTS)):
         for key, weight in weights.items():
             values = [number(r.get(key)) for r in rows]
             own_share, their_share = percentile(number(mine.get(key)), values), percentile(number(theirs.get(key)), values)
@@ -165,8 +172,11 @@ def conversion(board, own_player, rivals):
 
 
 def scenarios(board, own_player, third):
-    """Points if deals per order changed and value per deal stayed ours. Arithmetic with rivals held still."""
+    """Points if deals per order changed and value per deal stayed ours. Arithmetic with rivals held still. Stock held stays in book."""
+    weights = shop_weights(board)
+    scored = next(iter(weights))
     shop, buyer = rows_for(board, own_player)
+    stock = shop[scored] - shop["profit"]
     buyers, shops = eligible(board, "buyers"), eligible(board, "shops")
     orders, per_deal = buyer["orders"], buyer["surplus"] / buyer["deals"]
     table = {}
@@ -185,16 +195,16 @@ def scenarios(board, own_player, third):
     deals = round(visits_median * rate)
     table["shop_visits_market_median_same_rate_and_margin"] = {
         "visits": visits_median, "deals": deals, "revenue": round(deals * revenue_per), "profit": round(deals * profit_per),
-        "points": round(what_if(shop, shops, SHOP_WEIGHTS, "profit", deals * profit_per)
-                        + what_if(shop, shops, SHOP_WEIGHTS, "revenue", deals * revenue_per), 4)}
+        "points": round(what_if(shop, shops, weights, scored, deals * profit_per + stock)
+                        + what_if(shop, shops, weights, "revenue", deals * revenue_per), 4)}
     half_margin_profit = deals * revenue_per * (shop["profit"] / shop["revenue"]) / 2
     table["shop_visits_market_median_half_margin"] = {
         "deals": deals, "profit": round(half_margin_profit),
-        "points": round(what_if(shop, shops, SHOP_WEIGHTS, "profit", half_margin_profit)
-                        + what_if(shop, shops, SHOP_WEIGHTS, "revenue", deals * revenue_per), 4),
+        "points": round(what_if(shop, shops, weights, scored, half_margin_profit + stock)
+                        + what_if(shop, shops, weights, "revenue", deals * revenue_per), 4),
         "assumption": "revenue per deal unchanged although margin halves, so revenue is if anything overstated"}
     for stars in (4.62, 4.68):
-        table[f"shop_stars_rank_{stars}"] = {"points": round(what_if(shop, shops, SHOP_WEIGHTS, "stars_rank", stars), 4)}
+        table[f"shop_stars_rank_{stars}"] = {"points": round(what_if(shop, shops, weights, "stars_rank", stars), 4)}
     return table
 
 
@@ -377,9 +387,9 @@ def report(root, board_path):
             "formula_check": formula_check(board),
             "own": {"rank": 1 + sum(p["total"] > own_player["total"] for p in players), "players": len(players), "total": own_player["total"],
                     "shop_all": own_player["shop"]["all"], "buyer_all": own_player["buyer"]["all"],
-                    "shop": breakdown(shop, shops, SHOP_WEIGHTS), "buyer": breakdown(buyer, buyers, BUYER_WEIGHTS)},
+                    "shop": breakdown(shop, shops, shop_weights(board)), "buyer": breakdown(buyer, buyers, BUYER_WEIGHTS)},
             "rivals": {"third": compare(board, own_player, players[2]), "tenth": compare(board, own_player, players[9])},
-            "sensitivity": {"shop": sensitivity(shop, shops, SHOP_WEIGHTS), "buyer": sensitivity(buyer, buyers, BUYER_WEIGHTS)},
+            "sensitivity": {"shop": sensitivity(shop, shops, shop_weights(board)), "buyer": sensitivity(buyer, buyers, BUYER_WEIGHTS)},
             "conversion": conversion(board, own_player, [players[0], players[2], players[9]]),
             "scenarios": scenarios(board, own_player, players[2]),
             "scenario_ranks": {name: rank_at(players, own_player["total"] + row["points"])
