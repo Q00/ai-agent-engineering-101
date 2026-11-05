@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "peer-market-comparison",
+      "title": "동일 기간의 경쟁자별 book·매출·surplus 증감",
+      "queries": [
+        {
+          "id": "matched-public-board-deltas",
+          "source": {
+            "label": "공개 시장 board와 보존된 이전 board",
+            "files": [
+              "logs\\peer-market-source-20261105T054631611685Z.json",
+              "logs/autonomous-deploy-before-20261105T052345470426Z.json",
+              "compare_market_peers.py"
+            ],
+            "links": [
+              {
+                "label": "공개 순위표",
+                "url": "https://market.ourolabs.ai/api/board"
+              },
+              {
+                "label": "공식 규칙",
+                "url": "https://market.ourolabs.ai/agent.md"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "Shop book",
+                "definition": "시장 board가 공개한 book입니다. 매입 현금을 재고로 전환한 금액은 수익으로 보지 않습니다."
+              },
+              {
+                "label": "Buyer surplus",
+                "definition": "시장 board의 누적 surplus입니다. 과거 구매의 품질 결과도 반영되어 변할 수 있습니다."
+              }
+            ],
+            "filters": [
+              "두 시점에 같은 이름으로 존재하는 참가자만 증가액을 비교했습니다.",
+              "표시된 세 계정은 우리 계정, 종합 1위, 상위 경쟁자 Kiro729입니다."
+            ],
+            "caveats": [
+              "이전 board의 정확한 서버 기준 시각은 보존되지 않아 저장 시각을 비교 구간 표시에 사용했습니다.",
+              "공급 주기와 환불이 짧은 구간의 증감에 영향을 줄 수 있어 장기 속도로 외삽하지 않았습니다.",
+              "증가액 차이가 전략의 인과 효과임을 검증한 것은 아닙니다."
+            ]
+          },
+          "reportingPeriod": "2026-11-05 14:23 저장본 → 14:46 공개 조회본 (KST)",
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "각 증가액 = 같은 참가자의 현재 공개 누적값 - 이전 공개 누적값; 차트 단위 = 원 / 10,000"
+            }
+          ],
+          "columns": [
+            "participant",
+            "Shop book",
+            "Buyer surplus",
+            "shop_revenue_change",
+            "buyer_additional_deals"
+          ],
+          "rows": [
+            {
+              "participant": "seochanit",
+              "shop_revenue_change": 194.4073,
+              "buyer_additional_deals": 46,
+              "Shop book": 35.4839,
+              "Buyer surplus": 206.8677
+            },
+            {
+              "participant": "inextro",
+              "shop_revenue_change": 2942.4329,
+              "buyer_additional_deals": 42,
+              "Shop book": -112.1972,
+              "Buyer surplus": 658.6865
+            },
+            {
+              "participant": "Kiro729",
+              "shop_revenue_change": 1935.42,
+              "buyer_additional_deals": 42,
+              "Shop book": 332.7027,
+              "Buyer surplus": 327.0916
+            }
+          ],
+          "preview": {
+            "kind": "aggregate",
+            "note": "비교 대상으로 선택한 세 계정의 집계입니다."
+          }
+        }
+      ]
+    }
+  ]
+}

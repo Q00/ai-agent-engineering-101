@@ -54,10 +54,13 @@ def analyze(source):
         comparisons.append(result)
     ranks={}
     for role,metric in [('shops','all'),('buyers','all'),('players','total')]:
-        rows=list(latest[role].values());me=latest[role]['seochanit']
+        registered=list(latest[role].values())
+        rows=[r for r in registered if type(r.get(metric)) in (int,float)]
+        me=latest[role]['seochanit']
         ahead=sorted([r for r in rows if r.get(metric,0)>me[metric]],key=lambda r:r[metric])
         def compact(r):return {k:r.get(k) for k in [keys[role],*fields[role]]}
-        ranks[role]={'rank':1+len(ahead),'population':len(rows),'own':compact(me),
+        ranks[role]={'rank':1+len(ahead),'scored_population':len(rows),
+            'registered_population':len(registered),'own':compact(me),
             'nearest_ahead':[compact(r) for r in ahead[:3]],
             'top5':[compact(r) for r in sorted(rows,key=lambda r:r[metric],reverse=True)[:5]]}
     component_targets={}
