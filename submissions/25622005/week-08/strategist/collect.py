@@ -3,10 +3,14 @@
 Every source is optional. One failing endpoint or a missing file is recorded and the rest of the run
 goes on, because a brief with a hole is still better than no brief. A run stays under ~50 requests:
 the ledger is paged from a cursor kept in state (at most 40 pages, then a jump to the newest rows,
-flagged as a gap), and the 1.2 MB catalog and the demand table change rarely, so they are cached
-for 24 h. The ledger rows a run reads are the ones since the last run (raw["ledger_h"] says how many hours
-that is), and their settles are also kept in 10-minute buckets for 6 h (ledger_buckets), so an hour or
-two of market settles can be counted after the rows themselves are gone. The shop's files are on a
+flagged as a gap), and the 1.2 MB catalog changes rarely, so it is cached for 24 h. /api/trades (the last
+~4 minutes) and /api/demand (SKU counts, not demand) are no longer read. The ledger rows a run reads are the
+ones since the last run (raw["ledger_h"] says how many hours that is), and their settles are also kept in
+10-minute buckets for 6 h (ledger_buckets), so an hour or two of market settles can be counted after the rows
+themselves are gone; sku_tables keeps the same per SKU (market and our settles, paid/list, market supply) for
+6 h and per kind for 24 h. /api/shops gives the units on every shop's shelf per SKU (shelf), /api/stats the
+deals per category leaf since the last run (leaf_deltas), and the reviews of the top 3 shops by ALL are
+reduced to counts per catalog SKU and leaf (top_reviews): their text is never kept. The shop's files are on a
 shared volume and are only read here. The kit's own log
 (logs/market-kit.log: supply buys, payments, restarts, errors) is reduced to counts. Of the shop's
 .market/ folder only inventory.json is read: the other files there hold keys and the claim code.
@@ -15,6 +19,7 @@ import bisect
 import json
 import os
 import re
+import statistics
 from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -41,6 +46,14 @@ OLD_RUN = 20                # consecutive kit lines before the window that end t
 FORUM_KEYS = ("id", "author", "role", "owner", "thread", "ts", "title", "body", "text",
               "votes", "likes", "dislikes", "score")
 UNIT_KEYS = ("unit", "sku", "kind", "cost", "grade", "supplied_at", "expires_at")
+SKU_RE = re.compile(r"[A-Za-z0-9_-]{1,40}")
+G_SKU = re.compile(r"(?<![A-Za-z0-9])G[0-9a-f]{8}(?![A-Za-z0-9])")
+TOP_SHOPS = 3
+# review texts name a product as "Paid N for <name>, ...", "<name>: N (..% under list)", "<name> at N (list M)"
+# or "<name> grade A ..."; the price is the number after "Paid ", " at " or ": "
+PAID_FOR = re.compile(r"Paid \d+(?: of \d+)? for (.{2,200}?)(?:[,;]| grade | \(list |$)")
+NAME_LEAD = re.compile(r"^(.{2,200}?)(?:: \d| at \d|,? grade [ABC]\b| \(list )")
+PRICE = re.compile(r"(?:Paid |\bat |: )(\d{2,})\b")
 _memo = {}                  # the 24 h cache when no cache_dir is given (one long-running process)
 
 
@@ -149,7 +162,8 @@ def _ledger(client, state, raw, errors, now):
 
 def fetch_public(client, state, now, cache_dir=None, me=ME):
     """(raw, errors). client: httpx.Client(base_url=market). state["ledger_seq"] is read and advanced.
-    cache_dir: where catalog.json/demand.json are kept for 24 h (None: in this process only).
+    cache_dir: where catalog.json is kept for 24 h (None: in this process only). Also advances
+    state["stats_items"] (leaf_deltas).
     A failed endpoint leaves its key out of raw and adds "<name>: <ExcType>: msg" to errors."""
     raw, errors = {"fetched_at": now}, []
 
@@ -161,16 +175,120 @@ def fetch_public(client, state, now, cache_dir=None, me=ME):
 
     take("board", lambda: _get(client, "/api/board", want=dict))
     take("stats", lambda: _current_round(_get(client, "/api/stats", want=dict)))
-    take("trades", lambda: _get(client, "/api/trades", want=list))
+    raw["leaf_deltas"] = leaf_deltas(state, raw.get("stats"), now)
     _ledger(client, state, raw, errors, now)
     take("forum", lambda: _forum(_get(client, "/api/forum", {"limit": 100})))
     take("shop_reviews", lambda: _get(client, "/api/shop-reviews", {"shop": me}, list))
-    take("demand", lambda: _cached("demand", now, cache_dir,
-                                   lambda: _get(client, "/api/demand", want=list), errors))
     take("catalog", lambda: _cached("catalog", now, cache_dir,
                                     lambda: _catalog(_get(client, "/api/catalog", want=list)), errors, _catalog_ok))
+    take("shelf", lambda: shelf(_get(client, "/api/shops", want=(dict, list)), me))
+    if isinstance(raw.get("catalog"), dict) and isinstance(raw.get("board"), dict):
+        raw["top_reviews"] = top_reviews(client, raw["board"], raw.get("stats"), raw["catalog"], me, errors)
     raw["errors"] = errors
     return raw, errors
+
+
+# --- market structure: shelves (/api/shops), category deals (/api/stats), the leaders' reviews
+
+def shelf(data, me=ME):
+    """/api/shops as {"units": {sku: units on all shelves}, "shops": {sku: other shops holding it}, "n_shops",
+    "skipped"}: a shop whose stock is not a {sku: count} map is skipped. Names and reviews are dropped."""
+    rows = data.get("shops") if isinstance(data, dict) else data
+    if not isinstance(rows, list):
+        raise TypeError("no shops list")
+    units, shops, n, skipped = Counter(), Counter(), 0, 0
+    for r in rows:
+        st = r.get("stock") if isinstance(r, dict) else None
+        if not isinstance(st, dict) or not all(isinstance(k, str) and SKU_RE.fullmatch(k) and _number(v) and v >= 0
+                                               for k, v in st.items()):
+            skipped += 1
+            continue
+        n += 1
+        mine = r.get("name") == me
+        for k, v in st.items():
+            if v > 0:
+                units[k] += int(v)
+                if not mine:
+                    shops[k] += 1
+    return {"units": dict(units), "shops": dict(shops), "n_shops": n, "skipped": skipped}
+
+
+def leaf_deltas(state, stats, now):
+    """Deals per category leaf since the last run, from the cumulative /api/stats items (state["stats_items"]
+    keeps the last counts): {"h": hours, "n": {leaf: deals}} or None on a first run, a new round or bad data."""
+    items = stats.get("items") if isinstance(stats, dict) else None
+    if not isinstance(items, dict):
+        return None
+    cur = {k: v["n"] for k, v in items.items() if isinstance(k, str) and isinstance(v, dict) and _number(v.get("n"))}
+    prev = state.get("stats_items") if isinstance(state.get("stats_items"), dict) else {}
+    state["stats_items"] = {"ts": now, "round": stats.get("round"), "n": cur}
+    pn, pts = prev.get("n"), prev.get("ts")
+    if not isinstance(pn, dict) or not _number(pts) or now <= pts or prev.get("round") != stats.get("round"):
+        return None
+    out = {k: v - pn.get(k, 0) for k, v in cur.items() if _number(pn.get(k, 0)) and v - pn.get(k, 0) > 0}
+    return {"h": round((now - pts) / 3600, 3), "n": out}
+
+
+def _names(catalog):
+    return {c[0]: sku for sku, c in catalog.items() if isinstance(c, list) and isinstance(c[0], str)}
+
+
+def review_hits(reviews, catalog, names=None):
+    """Counts from review texts, never the text itself: {"reviews", "sku": {sku: n}, "leaf": {leaf: n},
+    "paid_list": [paid / list]}. A review names a SKU by its id or by an exact catalog name (PAID_FOR, NAME_LEAD);
+    paid/list is taken when it names exactly one SKU and gives a price (PRICE)."""
+    names = names if names is not None else _names(catalog)
+    skus, leaves, pl, n = Counter(), Counter(), [], 0
+    for r in reviews if isinstance(reviews, list) else []:
+        t = r.get("review") if isinstance(r, dict) else None
+        if not isinstance(t, str):
+            continue
+        n += 1
+        t = " ".join(t.split())[:600]
+        found = {g for g in G_SKU.findall(t) if g in catalog}
+        for rx in (PAID_FOR, NAME_LEAD):
+            m = rx.search(t)
+            if m and m.group(1).strip() in names:
+                found.add(names[m.group(1).strip()])
+        for sku in found:
+            skus[sku] += 1
+            leaf = str(catalog[sku][1] or "").split(">")[-1]
+            if leaf:
+                leaves[leaf] += 1
+        m = PRICE.search(t)
+        if m and len(found) == 1:
+            lp = catalog[next(iter(found))][2]
+            if _number(lp) and lp > 0:
+                pl.append(round(int(m.group(1)) / lp, 4))
+    return {"reviews": n, "sku": dict(skus), "leaf": dict(leaves), "paid_list": pl}
+
+
+def top_reviews(client, board, stats, catalog, me, errors):
+    """The reviews of this round of the TOP_SHOPS real shops by ALL (us left out), as review_hits counts summed
+    over them; None when the board has no ALL."""
+    shops = [s for s in board.get("shops") or [] if isinstance(s, dict) and not s.get("house")
+             and s.get("name") != me and isinstance(s.get("name"), str) and _number(s.get("all"))]
+    top = sorted(shops, key=lambda s: -s["all"])[:TOP_SHOPS]
+    if not top:
+        return None
+    rnd = stats.get("round") if isinstance(stats, dict) else None
+    names, out = _names(catalog), {"shops": 0, "reviews": 0, "sku": Counter(), "leaf": Counter(), "paid_list": []}
+    for s in top:
+        try:
+            params = {"shop": s["name"]} | ({"round": rnd} if rnd is not None else {})
+            h = review_hits(_get(client, "/api/shop-reviews", params, list), catalog, names)
+        except Exception as e:
+            errors.append(_err("top_reviews", e))
+            continue
+        out["shops"] += 1
+        out["reviews"] += h["reviews"]
+        out["sku"].update(h["sku"])
+        out["leaf"].update(h["leaf"])
+        out["paid_list"] += h["paid_list"]
+    out["sku"], out["leaf"] = dict(out["sku"].most_common(30)), dict(out["leaf"].most_common(15))
+    pl = out.pop("paid_list")
+    out["paid_list_median"] = round(statistics.median(pl), 3) if pl else None
+    return out
 
 
 # --- the shop's own files (shared volume, read-only)
@@ -403,3 +521,164 @@ def bucket_total(lb, t0, t1):
         if t0 <= int(k) and int(k) + BUCKET_S <= t1:
             out.update(v)
     return out
+
+
+# --- per SKU market tables (state["sku_tables"]): 10-minute buckets for 6 h, hourly buckets for 24 h
+
+TBL_KEEP_S = 6 * 3600
+DAY_S = 24 * 3600
+HOUR_S = 3600
+C_FALLBACK = {"food": 0.51, "goods": 0.61}      # our mean supply cost / list before any supply row of ours
+
+
+def _add(d, k, v=1):
+    d[k] = d.get(k, 0) + v
+
+
+def _hist_add(h, kind, x):
+    _add(h.setdefault(kind, {}), f"{min(max(x, 0.0), 2.0):.2f}")
+
+
+def sku_tables(t, ledger, catalog, ours, me, cost_of, now):
+    """t (state["sku_tables"], or None) with this run's ledger rows folded in. Every ledger row is read once (the
+    cursor), so each is counted once. ours(data) -> bool says a settle is ours; our supply and expire rows carry
+    our shop name (me). cost_of(unit id) -> the unit's cost or None (then list x our mean cost/list of its kind).
+      b: 10-minute bucket start (str) -> {"s": {sku: market settles}, "o": {sku: our settles},
+         "pl": {sku: [sum paid/list, n]}, "k": {kind: {paid/list bin: n}}, "u": {sku: market supply units},
+         "ou": {sku: our supply units}}, kept TBL_KEEP_S;
+      h: hour start (str) -> {"k": {kind: {bin: n}}, "c": {kind: [sum cost/list, units]} (our supply),
+         "cogs", "rev" (our settles' cost and amount), "exp" (our expired cost), "o": {sku: our settles}}, kept 24 h;
+      since: when the counts began (the oldest row of the first fold); h_since: the same for the hourly buckets."""
+    t = t if isinstance(t, dict) else {}
+    b = {k: v for k, v in (t.get("b") or {}).items() if isinstance(v, dict) and str(k).isdigit()
+         and int(k) + BUCKET_S > now - TBL_KEEP_S}
+    h = {k: v for k, v in (t.get("h") or {}).items() if isinstance(v, dict) and str(k).isdigit()
+         and int(k) + HOUR_S > now - DAY_S}
+    catalog = catalog if isinstance(catalog, dict) else {}
+    since = t.get("since") if b and _number(t.get("since")) else None
+    h_since = t.get("h_since") if h and _number(t.get("h_since")) else None
+    c_kind = table_view({"b": {}, "h": h, "since": since}, now)["c_kind"]
+    first, first_h = [], []
+    for r in ledger or []:
+        if not isinstance(r, dict) or not isinstance(r.get("data"), dict) or not _number(r.get("ts")):
+            continue
+        ts, d, kind_ = r["ts"], r["data"], r.get("kind")
+        if ts <= now - DAY_S or kind_ not in ("settle", "supply", "expire"):
+            continue
+        hb = h.setdefault(str(int(ts // HOUR_S * HOUR_S)), {})
+        first_h.append(ts)
+        bb = b.setdefault(str(int(ts // BUCKET_S * BUCKET_S)), {}) if ts > now - TBL_KEEP_S else None
+        if bb is not None:
+            first.append(ts)
+        if kind_ == "expire":
+            if d.get("shop") == me and _number(d.get("cost")):
+                _add(hb, "exp", d["cost"])
+            continue
+        sku = d.get("sku") or d.get("item")
+        if not isinstance(sku, str) or not SKU_RE.fullmatch(sku):
+            continue
+        c = catalog.get(sku)
+        lp = c[2] if isinstance(c, list) and len(c) > 3 and _number(c[2]) and c[2] > 0 else None
+        kind = c[3] if isinstance(c, list) and len(c) > 3 and c[3] in C_FALLBACK else None
+        if kind_ == "settle":
+            mine = bool(ours(d))
+            amount = d["amount"] if _number(d.get("amount")) else None
+            if bb is not None:
+                _add(bb.setdefault("s", {}), sku)
+                if mine:
+                    _add(bb.setdefault("o", {}), sku)
+            if mine:
+                _add(hb.setdefault("o", {}), sku)
+                cost = cost_of(str(d.get("unit")))
+                if not _number(cost) and lp and kind:
+                    cost = lp * (c_kind.get(kind) or C_FALLBACK[kind])
+                _add(hb, "cogs", round(cost) if _number(cost) else 0)
+                _add(hb, "rev", amount or 0)
+            if amount and lp and kind:
+                x = amount / lp
+                _hist_add(hb.setdefault("k", {}), kind, x)
+                if bb is not None:
+                    _hist_add(bb.setdefault("k", {}), kind, x)
+                    pl = bb.setdefault("pl", {}).setdefault(sku, [0, 0])
+                    pl[0], pl[1] = round(pl[0] + x, 4), pl[1] + 1
+        else:                                           # supply
+            qty = d["qty"] if _number(d.get("qty")) else 0
+            if bb is not None:
+                _add(bb.setdefault("u", {}), sku, qty)
+                if d.get("shop") == me:
+                    _add(bb.setdefault("ou", {}), sku, qty)
+            if d.get("shop") == me and qty and lp and kind and _number(d.get("total")):
+                cs = hb.setdefault("c", {}).setdefault(kind, [0, 0])
+                cs[0], cs[1] = round(cs[0] + d["total"] / lp, 4), cs[1] + qty
+    if since is None:
+        since = min(first) if first else now
+    if h_since is None:
+        h_since = min(first_h) if first_h else now
+    return {"b": b, "h": h, "since": since, "h_since": max(h_since, now - DAY_S)}
+
+
+def _hist_median(hists):
+    """(median, n) over paid/list histograms {bin: n}; (None, 0) when empty."""
+    c = Counter()
+    for hs in hists:
+        c.update({k: v for k, v in (hs or {}).items() if _number(v) and v > 0})
+    n = sum(c.values())
+    if not n:
+        return None, 0
+    xs = sorted((float(k), v) for k, v in c.items())
+
+    def at(i):
+        for x, v in xs:
+            if i < v:
+                return x
+            i -= v
+
+    return round((at((n - 1) // 2) + at(n // 2)) / 2, 3), n
+
+
+def table_view(t, now):
+    """The tables as numbers: {"covered_h", "h1", "h6" (hours the 1 h and 6 h counts span),
+    "sku": {sku: {"s1", "s6", "o6", "u1", "ou1", "pl6" (mean paid/list or None), "pl_n"}},
+    "p_clear": {kind: {"h6", "n6", "h24", "n24"}} (median paid/list of market settles), "c_kind": {kind: our mean
+    supply cost/list over 24 h or None}, "day": {"cogs", "rev", "exp", "o": {sku: our settles}, "h" (hours the
+    24 h sums span)}}."""
+    t = t if isinstance(t, dict) else {}
+    b, h = t.get("b") or {}, t.get("h") or {}
+    since = t.get("since") if _number(t.get("since")) else now
+    covered = max(0.0, now - since)
+    span = lambda w: round(max(BUCKET_S, min(covered, w)) / 3600, 3)
+    rows = {}
+    for k, v in b.items():
+        recent = int(k) + BUCKET_S > now - HOUR_S
+        for f, tf in (("s", "s6"), ("o", "o6"), ("u", None), ("ou", None)):
+            for sku, n in (v.get(f) or {}).items():
+                r = rows.setdefault(sku, {"s1": 0, "s6": 0, "o6": 0, "u1": 0, "ou1": 0, "pl": [0, 0]})
+                if tf:
+                    r[tf] += n
+                if recent and f in ("s", "u", "ou"):
+                    r[{"s": "s1", "u": "u1", "ou": "ou1"}[f]] += n
+        for sku, (x, n) in (v.get("pl") or {}).items():
+            r = rows.setdefault(sku, {"s1": 0, "s6": 0, "o6": 0, "u1": 0, "ou1": 0, "pl": [0, 0]})
+            r["pl"][0] += x
+            r["pl"][1] += n
+    for r in rows.values():
+        x, n = r.pop("pl")
+        r["pl6"], r["pl_n"] = (round(x / n, 3) if n else None), n
+    p_clear = {}
+    for kind in C_FALLBACK:
+        m6, n6 = _hist_median([(v.get("k") or {}).get(kind) for v in b.values()])
+        m24, n24 = _hist_median([(v.get("k") or {}).get(kind) for v in h.values()])
+        p_clear[kind] = {"h6": m6, "n6": n6, "h24": m24, "n24": n24}
+    c_kind = {}
+    for kind in C_FALLBACK:
+        x = sum(((v.get("c") or {}).get(kind) or [0, 0])[0] for v in h.values())
+        n = sum(((v.get("c") or {}).get(kind) or [0, 0])[1] for v in h.values())
+        c_kind[kind] = round(x / n, 3) if n else None
+    o24 = Counter()
+    for v in h.values():
+        o24.update({k: n for k, n in (v.get("o") or {}).items() if _number(n)})
+    h_since = t.get("h_since") if _number(t.get("h_since")) else since
+    day = {f: round(sum(v.get(f) or 0 for v in h.values())) for f in ("cogs", "rev", "exp")} | {
+        "o": dict(o24), "h": round(min(DAY_S, max(0.0, now - h_since)) / 3600, 2)}
+    return {"covered_h": round(covered / 3600, 2), "h1": span(HOUR_S), "h6": span(TBL_KEEP_S),
+            "sku": rows, "p_clear": p_clear, "c_kind": c_kind, "day": day}

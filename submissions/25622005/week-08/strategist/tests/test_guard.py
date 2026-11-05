@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 os.environ.setdefault("R3_HOME", tempfile.mkdtemp(prefix="r3-guard-"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -50,7 +51,7 @@ class Table(unittest.TestCase):
         rows = g.tunable_view(pol(seller__floor_list=0.55))
         self.assertEqual(len(rows), len(g.TUNABLE))
         row = next(r for r in rows if r["key"] == "seller.floor_list")
-        self.assertEqual(row, {"key": "seller.floor_list", "value": 0.55, "lo": 0.40, "hi": 0.80, "max_step": 0.05})
+        self.assertEqual(row, {"key": "seller.floor_list", "value": 0.55, "lo": 0.40, "hi": 0.70, "max_step": 0.05})
 
 
 class Rejects(unittest.TestCase):
@@ -159,28 +160,53 @@ class Settles(unittest.TestCase):
 
 
 class CrossValidate(unittest.TestCase):
+    # inside the tunable bounds floor_list <= first_ask_list always holds (hi 0.70 = lo 0.70), so policy.validate
+    # is made to refuse per_sku_qty 3 here
+    def refuse(self, pol):
+        return ["stock.per_sku_qty: refused"] if pol["stock"]["per_sku_qty"] == 3 else []
+
     def test_validate_failure_rejects_all(self):
-        p = pol(seller__first_ask_list=0.80, seller__floor_list=0.78)
-        acc, rej = run(prop("seller.first_ask_list", 0.75), prop("seller.floor_list", 0.80),
-                       prop("stock.per_sku_qty", 3), prop("stock.cash_floor", 1), p=p)
+        p = pol(seller__first_ask_list=0.75, seller__floor_list=0.65)
+        with mock.patch.object(g.policy, "validate", self.refuse):
+            acc, rej = run(prop("seller.first_ask_list", 0.70), prop("seller.floor_list", 0.70),
+                           prop("stock.per_sku_qty", 3), prop("stock.cash_floor", 1), p=p)
         self.assertEqual(acc, [])
         self.assertEqual(rej[0]["why"], "frozen")
         self.assertEqual([r["key"] for r in rej[1:]], ["seller.first_ask_list", "seller.floor_list", "stock.per_sku_qty"])
         for r in rej[1:]:
-            self.assertTrue(r["why"].startswith("validate: "), r)
-            self.assertIn("seller.floor_list: above seller.first_ask_list", r["why"])
+            self.assertEqual(r["why"], "validate: stock.per_sku_qty: refused")
 
     def test_each_change_alone_passes(self):
-        p = pol(seller__first_ask_list=0.80, seller__floor_list=0.78)
-        self.assertEqual(len(run(prop("seller.first_ask_list", 0.85), p=p)[0]), 1)
-        self.assertEqual(len(run(prop("seller.floor_list", 0.75), p=p)[0]), 1)
+        p = pol(seller__first_ask_list=0.75, seller__floor_list=0.65)
+        with mock.patch.object(g.policy, "validate", self.refuse):
+            self.assertEqual(len(run(prop("seller.first_ask_list", 0.70), p=p)[0]), 1)
+            self.assertEqual(len(run(prop("seller.floor_list", 0.70), p=p)[0]), 1)
+
+    def test_real_validate_runs(self):
+        acc, rej = run(prop("stock.focus_max", 4), p=pol(stock__focus_skus=["A"] * 2))     # repeated SKUs
+        self.assertEqual(acc, [])
+        self.assertIn("repeated", rej[0]["why"])
 
 
 class Bounds(unittest.TestCase):
     def test_new_and_widened_bounds(self):
         self.assertEqual(g.bounds("stock.focus_cap_share"), (0.3, 0.8, 0.1))
         self.assertEqual(g.bounds("stock.focus_max"), (4, 12, 2))
-        self.assertEqual(g.bounds("stock.inventory_cap_share"), (0.15, 0.60, 0.05))
+        self.assertEqual(g.bounds("stock.inventory_cap_share"), (0.15, 0.70, 0.05))
+        self.assertEqual(g.bounds("seller.floor_list"), (0.40, 0.70, 0.05))
+        self.assertEqual(g.bounds("seller.floor_cost_mult"), (1.00, 1.15, 0.05))
+        self.assertEqual(g.bounds("stock.cover_min"), (20, 180, 15))
+        self.assertEqual(g.bounds("stock.per_sku_qty"), (1, 10, 1))
+        self.assertEqual(g.bounds("stock.big_ticket_share"), (0.10, 0.40, 0.05))
+        self.assertEqual(g.bounds("stock.bigticket_probe_qty"), (1, 6, 1))
+        self.assertEqual(g.bounds("stock.max_hold"), (20, 80, 10))
+        self.assertEqual(g.bounds("stock.min_line_qty"), (1, 10, 1))
+        self.assertEqual(g.bounds("stock.trend_max"), (0, 32, 4))
+        self.assertEqual(g.bounds("stock.trend_share"), (0.03, 0.20, 0.02))
+        self.assertEqual(g.bounds("stock.min_margin_share"), (0.02, 0.12, 0.01))
+        for key, b in (("clear_cost_h", (0, 72, 12)), ("clear_70_h", (0, 48, 6)), ("clear_any_h", (0, 24, 3)),
+                       ("taper_h", (0, 96, 12)), ("goods_stop_h", (0, 48, 6))):
+            self.assertEqual(g.bounds(f"stock.{key}"), b)
         self.assertEqual(g.bounds("seller.warranty_cap_6h"), (100000, 3000000, 250000))
         self.assertNotIn("forum.min_gap_min", g.TUNABLE)
 
@@ -192,6 +218,12 @@ class Bounds(unittest.TestCase):
         self.assertEqual((acc[0]["new"], acc[0]["clamped"], rej), (7, True, []))
         p = pol(stock__focus_skus=[f"G{i}" for i in range(14)], stock__focus_max=14)     # longer than hi
         self.assertEqual(g.bounds("stock.focus_max", p), (12, 12, 2))
+
+    def test_trend_max_not_below_the_trend_list(self):
+        p = pol(stock__trend_skus=[f"G{i}" for i in range(10)])
+        self.assertEqual(g.bounds("stock.trend_max", p), (10, 32, 4))
+        acc, _ = run(prop("stock.trend_max", 8), p=p)
+        self.assertEqual(acc[0]["new"], 12)                         # one step down from 16, not under 10
 
 
 class Linked(unittest.TestCase):
@@ -211,7 +243,7 @@ class Linked(unittest.TestCase):
         acc, rej = run(prop("buyer.min_surplus_list", 0.05), p=p)
         self.assertEqual(([(a["key"], a["new"]) for a in acc], rej), ([("buyer.min_surplus_list", 0.05)], []))
         p["buyer"]["min_surplus_list"] = 0.05
-        self.assertEqual(g.linked_alerts(p), list(g.LINKED))           # 1.03: still broken until cap_food comes down
+        self.assertEqual(g.linked_alerts(p), list(g.LINKED)[:1])       # 1.03: still broken until cap_food comes down
         p["buyer"]["cap_food"] = 0.95
         self.assertEqual(g.linked_alerts(p), [])
 
@@ -219,6 +251,21 @@ class Linked(unittest.TestCase):
         acc, rej = run(prop("buyer.min_surplus_list", 0.07), prop("seller.floor_list", 0.55))
         self.assertEqual([a["key"] for a in acc], ["seller.floor_list"])
         self.assertEqual([r["key"] for r in rej], ["buyer.min_surplus_list"])
+
+    def test_stock_pairs(self):
+        acc, rej = run(prop("stock.min_line_qty", 6), p=pol(stock__max_qty=5, stock__min_line_qty=5))
+        self.assertEqual(acc, [])
+        self.assertTrue(rej[0]["why"].startswith("linked: stock.min_line_qty <= stock.max_qty"), rej)
+        acc, rej = run(prop("stock.max_hold", 30), p=pol(stock__max_qty=20, stock__max_hold=40))
+        self.assertEqual([a["new"] for a in acc], [30])
+        acc, rej = run(prop("stock.max_hold", 30), p=pol(stock__max_qty=20, stock__max_hold=20))
+        self.assertEqual([a["new"] for a in acc], [30])
+        acc, rej = run(prop("stock.max_qty", 20), p=pol(stock__max_qty=15, stock__max_hold=15, stock__min_line_qty=4))
+        self.assertTrue(rej[0]["why"].startswith("linked: stock.max_qty <= stock.max_hold"), rej)
+        acc, rej = run(prop("stock.trend_max", 32), p=pol(stock__focus_max=12, stock__trend_max=28))
+        self.assertTrue(rej[0]["why"].startswith("linked: stock.focus_max + stock.trend_max <= 40"), rej)
+        acc, rej = run(prop("stock.trend_max", 28), p=pol(stock__focus_max=12, stock__trend_max=24))
+        self.assertEqual([a["new"] for a in acc], [28])
 
     def test_defaults_hold_and_bad_policy_has_no_alert(self):
         self.assertEqual(g.linked_alerts(pol()), [])
@@ -305,6 +352,63 @@ class OwnValue(unittest.TestCase):
         acc, rej = g.guard([prop("seller.first_ask_list", 0.9)], pol(**self.P), {}, NOW, last=theirs)
         self.assertEqual(acc, [])
         self.assertIn("manual setting", rej[0]["why"])
+
+
+class BoundsRepair(unittest.TestCase):
+    """A tunable value outside its (narrowed) bounds is moved to the nearest bound by a source "bounds" row."""
+
+    def test_rows_for_the_live_floors_only(self):
+        p = pol(seller__floor_list=0.8, seller__floor_cost_mult=1.18, buyer__open_list=0.3)   # buyer: left alone
+        rows = g.bounds_rows(p)
+        self.assertEqual([(r["key"], r["value"], r["source"]) for r in rows],
+                         [("seller.floor_list", 0.70, "bounds"), ("seller.floor_cost_mult", 1.15, "bounds")])
+        self.assertEqual(g.bounds_rows(pol()), [])
+
+    def test_bounds_rows_skip_step_cooldown_and_max_changes(self):
+        p = pol(seller__floor_list=0.8, seller__floor_cost_mult=1.30)
+        recent = {"seller.floor_list": NOW - 60, "seller.floor_cost_mult": NOW - 60}
+        acc, rej = run(*g.bounds_rows(p), prop("stock.per_sku_qty", 3), p=p, last=recent, max_changes=1)
+        self.assertEqual(rej, [])
+        self.assertEqual([(a["key"], a["old"], a["new"], a["source"]) for a in acc],
+                         [("seller.floor_list", 0.8, 0.7, "bounds"), ("seller.floor_cost_mult", 1.3, 1.15, "bounds"),
+                          ("stock.per_sku_qty", 2, 3, "model")])
+
+    def test_model_row_on_the_same_key_is_a_duplicate(self):
+        p = pol(seller__floor_list=0.8)
+        acc, rej = run(*g.bounds_rows(p), prop("seller.floor_list", 0.75), p=p)
+        self.assertEqual([(a["new"], a["source"]) for a in acc], [(0.7, "bounds")])
+        self.assertEqual(rej[0]["why"], "duplicate")
+
+    def test_bounds_row_inside_the_bounds_or_for_a_buyer_key_rejected(self):
+        acc, rej = run({"key": "seller.floor_list", "value": 0.4, "source": "bounds"},
+                       {"key": "buyer.open_list", "value": 0.4, "source": "bounds"}, p=pol(buyer__open_list=0.3))
+        self.assertEqual(acc, [])
+        self.assertEqual([r["why"] for r in rej], ["inside its bounds", "no bounds repair for this key"])
+
+
+class FloorCheck(unittest.TestCase):
+    def test_floor_raise_above_the_market_clearing_price_rejected(self):
+        p = pol(seller__floor_list=0.60)
+        acc, rej = run(prop("seller.floor_list", 0.65), p=p, p_clear=0.62)
+        self.assertEqual(acc, [])
+        self.assertIn("clearing price 0.62", rej[0]["why"])
+        self.assertEqual(len(run(prop("seller.floor_list", 0.65), p=p, p_clear=0.74)[0]), 1)
+        self.assertEqual(len(run(prop("seller.floor_list", 0.65), p=p)[0]), 1)              # unknown: no check
+        self.assertEqual(len(run(prop("seller.floor_list", 0.55), p=p, p_clear=0.50)[0]), 1)  # a cut is fine
+
+
+class MissingKeys(unittest.TestCase):
+    """A key missing from the file acts at its DEFAULT: the guard moves it from there."""
+
+    def test_missing_key_starts_at_its_default(self):
+        p = pol()
+        del p["stock"]["max_hold"], p["market"]
+        acc, rej = run(prop("stock.max_hold", 50), {"key": "market.surge_free", "value": 60, "source": "market-rule"},
+                       p=p)
+        self.assertEqual(rej, [])
+        self.assertEqual([(a["key"], a["old"], a["new"]) for a in acc],
+                         [("stock.max_hold", 40, 50), ("market.surge_free", 50, 60)])
+        self.assertEqual(next(r for r in g.tunable_view(p) if r["key"] == "stock.max_hold")["value"], 40)
 
 
 if __name__ == "__main__":

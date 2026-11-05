@@ -194,6 +194,98 @@ class ListValue(Base):
         self.assertEqual((sf.fmt([]), sf.fmt(["A", "b_2"])), ("[]", "[A, b_2]"))
 
 
+class MissingKeys(Base):
+    """A policy.DEFAULTS key the file lacks is inserted when written: under its section, or a new section."""
+
+    def test_inserted_at_the_end_of_its_section_with_the_template_comment(self):
+        new = sf.apply(self.path, self.orig, {"stock.max_hold": 50, "seller.floor_list": 0.55})
+        lines = new.splitlines()
+        i = next(n for n, x in enumerate(lines) if x.startswith("    max_hold:"))
+        self.assertEqual(lines[i + 1], "  buyer:")                         # after the last stock line
+        self.assertEqual(value_token(lines[i]), "50")
+        self.assertIn("# units one SKU may hold", lines[i])                # the repository SKILL.md's comment
+        front = policy.split_skill(new)[0]
+        self.assertEqual((front["version"], front["policy"]["stock"]["max_hold"]), (2, 50))
+        self.assertEqual(policy.load(self.path)[2], [])
+        self.assertEqual(len(new.splitlines()), len(self.orig.splitlines()) + 1)
+
+    def test_new_section_after_the_policy_block(self):
+        new = sf.apply(self.path, self.orig, {"market.surge_free": 40, "market.surge_max": 2.0})
+        front = policy.split_skill(new)[0]
+        self.assertEqual(front["policy"]["market"], {"surge_free": 40, "surge_max": 2.0})
+        lines = new.splitlines()
+        self.assertEqual(lines[lines.index("  market:") + 3], "---")
+        self.assertEqual(policy.fill_defaults(front["policy"])[0]["market"]["surge_per_unit"], 0.002)
+
+    def test_without_a_template_line_a_plain_comment(self):
+        with mock.patch.object(sf, "TEMPLATES", (self.dir / "none.md", self.path)):
+            new = sf.apply(self.path, self.orig, {"stock.trend_max": 8})
+        line = next(x for x in new.splitlines() if x.startswith("    trend_max:"))
+        self.assertEqual(line.split("#")[1].strip(), "added by the strategist (a policy.DEFAULTS key)")
+
+    def test_unknown_key_still_refused(self):
+        for key in ("stock.no_such_key", "nosection.x", "seller"):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                sf.apply(self.path, self.orig, {key: 1})
+            self.assert_untouched()
+
+
+class Notes(Base):
+    def test_clean(self):
+        dirty = ("# Heading\n---\n```python\nversion: 9\n  floor_list: 0.9\n```\npolicy:\n"
+                 "<script>x</script>keep <b>this</b>\x00\x1b[31m a < b\n\n\n\nlast")
+        self.assertEqual(sf.clean_notes(dirty), "Heading\nxkeep this[31m a  b\n\nlast")
+        self.assertEqual(len(sf.clean_notes("y" * 5000)), sf.NOTES_MAX)
+        for v in (None, 3, "", "---\n```", "   "):
+            self.assertIsNone(sf.clean_notes(v))
+
+    def test_section_created_then_replaced(self):
+        self.assertIsNone(sf.notes_of(self.orig))
+        one = sf.apply(self.path, self.orig, {}, notes="first")
+        self.assertEqual(sf.notes_of(one), "first")
+        self.assertTrue(one.replace("version: 2", "version: 1", 1).startswith(self.orig.rstrip("\n")))
+        self.assertEqual(policy.split_skill(one)[0]["version"], 2)
+        two = sf.apply(self.path, one, {}, notes="second\nline")
+        self.assertEqual((sf.notes_of(two), two.count(sf.NOTES_HEAD)), ("second\nline", 1))
+
+    def test_section_in_the_middle_keeps_what_follows(self):
+        text = self.orig.rstrip("\n") + "\n\n## Strategist notes\n\nold\n\n## Later\n\nkept\n"
+        self.path.write_text(text, encoding="utf-8")
+        new = sf.apply(self.path, text, {}, notes="new")
+        self.assertTrue(new.endswith("## Strategist notes\n\nnew\n\n## Later\n\nkept\n"), new[-80:])
+        self.assertEqual(sf.notes_of(new), "new")
+
+
+class History(Base):
+    def test_copies_are_named_by_epoch_and_never_overwritten(self):
+        a = sf.save_copy(self.path, "one", 1794000000.7)
+        b = sf.save_copy(self.path, "two", 1794000000.2)
+        c = sf.save_copy(self.path, "three", 1794000001)
+        self.assertEqual([p.name for p in (a, b, c)], ["SKILL.md.1794000000", "SKILL.md.1794000000_1",
+                                                         "SKILL.md.1794000001"])
+        self.assertEqual([p.read_text(encoding="utf-8") for p in sf.copies(self.path)], ["one", "two", "three"])
+        self.assertEqual(sorted(p.name for p in self.dir.iterdir() if p.name.startswith(".")), [])
+
+    def test_without_hard_links_a_rename_to_a_free_name(self):
+        sf.save_copy(self.path, "one", 1794000000)
+        with mock.patch.object(sf.os, "link", side_effect=PermissionError("no links")):
+            b = sf.save_copy(self.path, "two", 1794000000)
+        self.assertEqual(b.name, "SKILL.md.1794000000_1")
+        self.assertEqual([p.read_text(encoding="utf-8") for p in sf.copies(self.path)], ["one", "two"])
+        self.assertEqual(sorted(p.name for p in self.dir.iterdir() if p.name.startswith(".")), [])
+
+    def test_keep_hand_edit_only_when_different(self):
+        self.assertEqual(sf.keep_hand_edit(self.path, self.orig, 10).name, "SKILL.md.10")     # the first copy
+        self.assertIsNone(sf.keep_hand_edit(self.path, self.orig, 20))
+        self.assertEqual(sf.keep_hand_edit(self.path, self.orig + "x", 30).name, "SKILL.md.30")
+        self.assertEqual(policy.load(self.path)[2], [])                  # the shop reads only SKILL.md
+
+    def test_other_files_are_not_copies(self):
+        for name in ("SKILL.md.bak", "SKILL.md.12x", "OTHER.md.12", ".SKILL.md.12"):
+            (self.dir / name).write_text("x", encoding="utf-8")
+        self.assertEqual(sf.copies(self.path), [])
+
+
 class Fmt(unittest.TestCase):
     def test_numbers(self):
         self.assertEqual([sf.fmt(v) for v in (0.8, 0.82, 0.123456, 1.0, 3, 500000, 0.1 + 0.2)],

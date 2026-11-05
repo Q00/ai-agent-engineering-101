@@ -1,8 +1,10 @@
 """One strategist run every 30 minutes: collect, brief, ask, guard, rewrite SKILL.md, record.
 
 Each run also reads the market's own rules (strategist/facts.py): the prompt carries them, and a key
-pinned to a market rule (guard.SYNCED) is set from them with source "market-rule", in the same guarded
-edit as the model's changes.
+pinned to a market rule (guard.SYNCED: the forum post gap, the surge constants) is set from them with source
+"market-rule", in the same guarded edit as the model's changes. A tunable value outside its bounds is moved to
+the nearest bound (source "bounds"). For PATCH_H hours after a new patch note on /rules the model may change
+more keys with a shorter cooldown (Config.patch_*), so it can re-derive the values a patch changed.
 
 Each applied model change-set is checked an hour later (strategist/outcome.py): the result goes to
 changes.jsonl and the model's history, a food conversion drop after buyer.cap_food or
@@ -12,8 +14,11 @@ In apply mode logs/strategist/ in the shop (strategist/visible.py) gets the live
 change table.
 
 The shop reads strategy/SKILL.md on every call, so the only thing this process changes in the
-shop is a few numbers in that file and the focus SKU list (stock.focus_skus, chosen from the ledger
-by strategist/focus.py, not by the model; written with the model's numbers in the same edit).
+shop is a few numbers in that file, the focus and trend SKU lists (stock.focus_skus, stock.trend_skus, chosen
+from the ledger by strategist/trend.py, not by the model; written with the model's numbers in the same edit)
+and the body's `## Strategist notes` (the model's own notes, which come back in its next prompt). It never
+changes code. Every text it writes is also kept as strategy/SKILL.md.<epoch seconds>, and a file that differs
+from the newest such copy at the start of a run (an edit by hand) is copied first (strategist/skillfile.py).
 Everything else it does is for the user to check later: each run leaves its brief, prompt, raw model
 answer and a Markdown report, one runs.jsonl row, one inventory.jsonl row (our stock and what came
 in, sold or left unsold since the last run), and one changes.jsonl row per rewrite. A run never raises and never retries a write: a SKILL.md
@@ -41,12 +46,13 @@ import httpx
 
 import policy
 from memory.store import append_jsonl, atomic_write_json, read_json, tail_jsonl
-from strategist import analyze, collect, decide, facts, focus, guard, outcome, publish, skillfile, visible
+from strategist import analyze, collect, decide, facts, focus, guard, outcome, publish, skillfile, trend, visible
 
 W = Path(__file__).resolve().parents[1]
 HEALTH_MAX_AGE_S = 300
 HEARTBEAT_S = 60
 MAX_HISTORY = 6
+LISTS = {"stock.focus_skus": "focus", "stock.trend_skus": "trend"}     # SKU lists: their kind in changes.jsonl
 
 
 @dataclass
@@ -60,6 +66,9 @@ class Config:
     min_confidence: float = 0.6
     max_changes: int = 2                # model changes per run: fewer keys per set, clearer cause and effect
     cooldown_h: float = 3               # a changed key can move again six runs later
+    patch_h: float = 6                  # after a new patch note on /rules, for this long:
+    patch_max_changes: int = 4          #   model changes per run
+    patch_cooldown_h: float = 1         #   cooldown
     llm_timeout: int = 300
     me: str = "psyoung82"
     log_repo: str = ""                  # strategist/publish.py: empty disables publishing
@@ -174,7 +183,8 @@ def _run(cfg, now, client=None):
     rec = {"run_id": _run_id(home, now), "ts": now, "mode": cfg.mode, "paused": paused, "status": None,
            "policy_ver_before": None, "policy_ver_after": None, "applied": [], "proposed": [], "rejected": [],
            "confidence": None, "assessment": "", "watch": [], "focus": None, "errors": [], "me": None,
-           "rules_sha": None, "alerts": [], "outcomes": [], "elapsed_ms": None}
+           "rules_sha": None, "alerts": [], "outcomes": [], "patch": None, "notes": None, "history": [],
+           "elapsed_ms": None}
     state = read_json(home / "state.json", {})
     state = state if isinstance(state, dict) else {}
     try:
@@ -199,12 +209,14 @@ def _steps(cfg, now, client, state, rec):
     # 1 the file exactly as it is on disk (not policy.load, which may fall back silently)
     text, front, body, skill_errors = skillfile.read(cfg.skill)
     in_file = front.get("policy") if isinstance(front.get("policy"), dict) else {}
-    pol = policy.fill_defaults(in_file)[0]              # what the shop runs on; only in_file keys can be written
+    pol = policy.fill_defaults(in_file)[0]              # what the shop runs on; a missing key is inserted when written
     if skill_errors:
         rec["errors"].append("skill invalid: " + "; ".join(skill_errors)[:500])
     else:
         rec["policy_ver_before"] = rec["policy_ver_after"] = skillfile.ver(text)
         _check_version(front.get("version"), state, rec)
+    if cfg.mode == "apply" and not cfg.pause_file.exists() and text:     # the first copy, or an edit by hand
+        _copy(cfg, text, now, rec, skillfile.keep_hand_edit)
 
     # 2 collect (with the market's rules), inventory moves and focus SKUs, brief
     own_client = client is None
@@ -224,39 +236,50 @@ def _steps(cfg, now, client, state, rec):
             raw["errors"] = errors
     rec["errors"] += errors
     ledger_bad = bool(raw.get("ledger_gap")) or any(str(e).startswith("ledger:") for e in errors)
+    prev_units = (state.get("inventory") or {}).get("units") if isinstance(state.get("inventory"), dict) else None
     flows, known = _inventory_flows(state, own.get("inventory"), raw.get("ledger"), now, ledger_bad)
     buckets = _ledger_buckets(state, raw, own, known, now, cfg.me)
-    focus_part = _focus(state, raw, None if skill_errors else pol, now, cfg.me, rec)
+    tables = _sku_tables(state, raw, own, known, prev_units, now, cfg.me)
+    focus_part = _focus(state, raw, None if skill_errors else pol, now, cfg.me, rec, tables, market, own)
     mf = market.get("facts") if isinstance(market.get("facts"), dict) else {}
     brief = analyze.brief(raw, own, state.get("last_brief"), pol, now, me=cfg.me, window_h=window_h,
                           flows=flows, known=known, focus=focus_part, buckets=buckets,
-                          weights={"shop": mf.get("shop_weights"), "buyer": mf.get("buyer_weights")})
+                          weights={"shop": mf.get("shop_weights"), "buyer": mf.get("buyer_weights")},
+                          tables=tables, market=market)
     rec["me"] = brief.get("me")
     atomic_write_json(home / "briefs" / f"{rid}.json", brief)
     state["last_brief"] = brief
 
-    # 3-6 the rows to guard: market-rule syncs and outcome reverts first, then the model's; one guard call,
-    # one write. The focus list is written even when the model gives nothing.
+    # 3-6 the rows to guard: market-rule syncs, bounds repairs and outcome reverts first, then the model's; one
+    # guard call, one write. The focus/trend lists and changed notes are written even when no number changes.
     if skill_errors:
         rec["status"] = "skill invalid"
     else:
         gpol = _with_focus(in_file, rec["focus"])
-        rows, alerts = facts.sync_proposals(pol, market.get("facts"))
+        rows, alerts = facts.sync_proposals(pol, market.get("facts"), market.get("supply_prices"))
+        rows += guard.bounds_rows(gpol)
         rec["alerts"] += alerts + guard.linked_alerts(pol)
         reverts, rec["outcomes"] = outcome.check(state, own.get("history"), buckets, pol, now)
         rows += reverts
         wait = outcome.waiting(state, now)
         rules_changed = any(isinstance(r, dict) and isinstance(r.get("ts"), (int, float))
                             and r["ts"] > (state.get("last_model_ts") or 0) for r in market.get("recent") or [])
+        rec["patch"] = _patch(cfg, market, now)
+        notes = None
         if reverts:
             rec["status"] = "outcome revert"            # the model sees the result next run
         elif wait and not rules_changed and not guard.linked_alerts(pol):
             rec["status"] = f"waiting for outcome of {wait}"
         else:
             state["last_model_ts"] = now
-            rows += _ask(cfg, body, gpol, brief, market, rec)
-        accepted = _guard(cfg, now, gpol, rows, state, rec)
-        _write(cfg, now, text, accepted, state, rec)
+            model_rows, notes = _ask(cfg, body, gpol, brief, market, rec)
+            rows += model_rows
+            notes = skillfile.clean_notes(notes)
+            if notes is not None and notes == skillfile.notes_of(text):
+                notes, rec["notes"] = None, "unchanged"
+        p_clear = (((tables or {}).get("p_clear") or {}).get("goods") or {}).get("h24")
+        accepted = _guard(cfg, now, gpol, rows, state, rec, p_clear)
+        _write(cfg, now, text, accepted, state, rec, notes, now + (time.monotonic() - t0))
         if any(a["source"] == "revert" for a in rec["applied"]):
             rec["status"] = "reverted"
         outcome.register(state, rid, rec["applied"], now + (time.monotonic() - t0), own.get("history"), buckets)
@@ -281,6 +304,25 @@ def _ledger_buckets(state, raw, own, known, now, me):
     state["ledger_buckets"] = collect.ledger_buckets(state.get("ledger_buckets"), raw.get("ledger"),
                                                      raw.get("catalog"), ours, now)
     return state["ledger_buckets"]
+
+
+def _sku_tables(state, raw, own, known, prev_units, now, me):
+    """This run's ledger rows folded into state["sku_tables"] (collect.sku_tables); returns collect.table_view of
+    it. A sold unit's cost comes from the last run's inventory snapshot (prev_units) or this run's inventory."""
+    url = analyze.our_url(raw.get("board"), me)
+    units = {str(u.get("unit")): u for u in (own.get("inventory") or {}).get("units") or [] if isinstance(u, dict)}
+    held = set(known) | set(units)
+    prev = prev_units if isinstance(prev_units, dict) else {}
+
+    def cost_of(unit):
+        v = prev.get(unit)
+        c = v[1] if isinstance(v, list) and len(v) > 1 else (units.get(unit) or {}).get("cost")
+        return c if analyze._num(c) else None
+
+    ours = lambda d: analyze._ours(d.get("shop"), me, url) or str(d.get("unit")) in held
+    state["sku_tables"] = collect.sku_tables(state.get("sku_tables"), raw.get("ledger"), raw.get("catalog"), ours,
+                                             me, cost_of, now)
+    return collect.table_view(state["sku_tables"], now)
 
 
 def _outcome_rows(cfg, now, rec):
@@ -340,28 +382,39 @@ def _inventory_flows(state, inv, ledger, now, ledger_bad=False):
             "gone_unsold": len(unsold), "gone_cost": round(sum(late[u][1] for u in unsold))}, set(old)
 
 
-def _focus(state, raw, pol, now, me, rec):
-    """Add this run's ledger rows to the 6 h counts and choose the focus list (strategist/focus.py).
-    rec["focus"]: old and new list, added, removed, their counts as evidence, and a status ("unchanged",
-    or after _write how the change went). Returns the brief's focus part; None without a valid policy."""
+def _focus(state, raw, pol, now, me, rec, tables=None, market=None, own=None):
+    """Choose the focus and trend lists (strategist/trend.py) from the SKU tables; focus.py still keeps the 6 h
+    supplier counts and ledger refs shown as evidence. rec["focus"]: old and new focus list, added, removed,
+    their numbers as evidence, the trend list old and new, and a status for both lists ("unchanged", or after
+    _write how the change went). Returns the brief's focus part; None without a valid policy."""
     fs = state.get("focus") if isinstance(state.get("focus"), dict) else {}
     state["focus"] = focus.update(fs, raw.get("ledger"), now, me)
+    ts = state.get("trend") if isinstance(state.get("trend"), dict) else {}
+    state["trend"] = ts
     if pol is None:
         return None
-    st = pol["stock"]
+    st, market, own = pol["stock"], market or {}, own or {}
+    ts["floor_ok_since"] = trend.floor_ok_since(ts.get("floor_ok_since"), pol, now)
     catalog = raw.get("catalog") if isinstance(raw.get("catalog"), dict) else {}
-    rows = focus.select(fs, catalog, pol, now)
-    old = list(st["focus_skus"])
-    # without a catalog every SKU would look ineligible: keep the list
-    new = focus.choose(rows, old, pol, now - fs["since"] >= focus.WINDOW_S) if catalog else old
+    rows, checks = trend.score(tables or {}, catalog, pol, now, shelf=raw.get("shelf"),
+                               units=(own.get("inventory") or {}).get("units") or (),
+                               sp=market.get("supply_prices"), surge_units=market.get("surge_units"),
+                               reviews=raw.get("top_reviews"), floor_since=ts["floor_ok_since"])
+    old, old_t = list(st["focus_skus"]), list(st["trend_skus"])   # a file without trend_skus runs on DEFAULTS []
+    covered = (tables or {}).get("covered_h", 0) * 3600 >= trend.WINDOW_S
+    # without a catalog every SKU would look ineligible: keep the lists
+    new, new_t = trend.choose(rows, old, old_t, pol, covered) if catalog else (old, old_t)
     added, removed = [s for s in new if s not in old], [s for s in old if s not in new]
+    by = {r["sku"]: r for r in rows}
+    ev = lambda s: {k: v for k, v in focus.stats(fs, s).items() if k != "sku"} | {
+        k: by[s][k] for k in ("s6", "rate6", "rate1", "cover_h", "margin", "score", "gates") if s in by}
     rec["focus"] = {"old": old, "new": new, "added": added, "removed": removed,
-                    "status": "unchanged" if new == old else None,
-                    "evidence": {s: {k: v for k, v in focus.stats(fs, s).items() if k != "sku"}
-                                 for s in added + removed}}
-    return {"current": old, "next": new, "covered_h": focus.covered_h(fs, now),
-            "candidates": [r for r in rows if r["settles_6h"] >= st["focus_min_settles"]][:analyze.FOCUS_TOP],
-            "forum_mentions": focus.mentions(raw.get("forum"))}
+                    "status": "unchanged" if new == old and new_t == old_t else None,
+                    "evidence": {s: ev(s) for s in added + removed},
+                    "trend": {"old": old_t, "new": new_t}}
+    return {"current": old, "next": new, "trend_current": old_t, "trend_next": new_t,
+            "covered_h": (tables or {}).get("covered_h"), "candidates": rows[:analyze.FOCUS_TOP],
+            "price_check": checks, "forum_mentions": focus.mentions(raw.get("forum"))}
 
 
 def _market(client, state, now, home, raw, errors):
@@ -375,44 +428,71 @@ def _market(client, state, now, home, raw, errors):
 
 
 def _with_focus(pol, fc):
-    """pol with the focus list this run will write, so the guard checks the model's numbers against it."""
+    """pol with the focus and trend lists this run will write, so the guard checks the model's numbers against them."""
     if not fc or fc["status"] is not None:
         return pol
-    return pol | {"stock": pol["stock"] | {"focus_skus": fc["new"]}}
+    return pol | {"stock": pol["stock"] | {"focus_skus": fc["new"], "trend_skus": fc["trend"]["new"]}}
+
+
+def _patch(cfg, market, now):
+    """The newest patch note (source "rules" or "rules-page" in facts' recent) of the last cfg.patch_h hours as
+    {version, title, ts}, or None. While there is one the model gets the patch limits."""
+    new = [r for r in (market or {}).get("recent") or [] if isinstance(r, dict) and r.get("source") in
+           ("rules", "rules-page") and isinstance(r.get("ts"), (int, float)) and now - r["ts"] < cfg.patch_h * 3600]
+    r = max(new, key=lambda r: r["ts"], default=None)
+    return {k: r.get(k) for k in ("version", "title", "ts")} if r else None
+
+
+def _limits(cfg, rec):
+    """(max_changes, cooldown_h) for the model's rows this run."""
+    return (cfg.patch_max_changes, cfg.patch_cooldown_h) if rec.get("patch") else (cfg.max_changes, cfg.cooldown_h)
+
+
+def _copy(cfg, text, at, rec, how):
+    """A history copy of SKILL.md (skillfile.keep_hand_edit or save_copy); its name goes to rec["history"]."""
+    try:
+        p = how(cfg.skill, text, at)
+        if p is not None:
+            rec["history"].append(p.name)
+    except OSError as e:
+        rec["errors"].append(f"history copy: {type(e).__name__}: {str(e)[:200]}")
 
 
 def _ask(cfg, body, pol, brief, market, rec):
-    """The model's proposals, each marked source "model" whatever the answer says. [] with rec["status"]
-    set when the answer gives nothing to guard."""
+    """(the model's proposals, each marked source "model" whatever the answer says; its notes or None).
+    No proposals with rec["status"] set when the answer gives nothing to guard; the notes of an unsure answer
+    still count (they are its reading of the market, not a change)."""
     rid = rec["run_id"]
     prompt = decide.build_prompt(body, pol, guard.tunable_view(pol), brief, _history(cfg.home), market,
-                                 cfg.max_changes, rec["alerts"])
+                                 _limits(cfg, rec)[0], rec["alerts"], patch=rec.get("patch"))
     _write_text(cfg.home / "prompts" / f"{rid}.txt", prompt)
     obj, raw_answer, err = decide.ask(prompt, cfg.llm_timeout)
     _write_text(cfg.home / "raw" / f"{rid}.txt", raw_answer or "")
     if err:
         rec["status"] = "llm error"
         rec["errors"].append(f"llm: {err}")
-        return []
+        return [], None
     rec.update(confidence=obj["confidence"], assessment=obj["assessment"], watch=obj["watch"])
     if obj["confidence"] < cfg.min_confidence:
         rec["status"] = "low confidence"
         why = f"confidence {obj['confidence']} < {cfg.min_confidence}"
         rec["rejected"] = [{"key": c.get("key"), "requested": c.get("value"), "why": why} for c in obj["changes"]]
-        return []
-    return [c | {"source": "model"} for c in obj["changes"]]
+        return [], obj.get("notes")
+    return [c | {"source": "model"} for c in obj["changes"]], obj.get("notes")
 
 
-def _guard(cfg, now, pol, rows, state, rec):
-    """Guard every row in one call. Returns the accepted changes; rec["status"] says why there are none."""
+def _guard(cfg, now, pol, rows, state, rec, p_clear=None):
+    """Guard every row in one call. Returns the accepted changes; rec["status"] says why there are none.
+    p_clear: the market's 24 h goods clearing price (paid/list) for the floor check."""
     # the cooldown is this home's and every other strategist's on this shop
     last_ts = state.setdefault("last_change_ts", {})
     shared = read_json(cfg.cooldown_file, {})
     for k, t in (shared.items() if isinstance(shared, dict) else ()):
         if isinstance(t, (int, float)) and not isinstance(t, bool) and t > (last_ts.get(k) or 0):
             last_ts[k] = t
-    accepted, rejected = guard.guard(rows, pol, last_ts, now, cfg.max_changes, cfg.cooldown_h,
-                                     last=_last_change(state, cfg.home), blocked=state.get("blocked"))
+    max_changes, cooldown_h = _limits(cfg, rec)
+    accepted, rejected = guard.guard(rows, pol, last_ts, now, max_changes, cooldown_h,
+                                     last=_last_change(state, cfg.home), blocked=state.get("blocked"), p_clear=p_clear)
     rec["rejected"] += rejected
     if not accepted and rec["status"] is None:
         rec["status"] = "no change"
@@ -431,19 +511,20 @@ def _last_change(state, home):
             continue
         kinds = r.get("kind") if isinstance(r.get("kind"), dict) else {}
         for k, d in r["diff"].items():
-            if k != "stock.focus_skus" and isinstance(d, list) and len(d) == 2:
+            if k not in LISTS and isinstance(d, list) and len(d) == 2:
                 lc[k] = {"ts": r.get("ts"), "old": d[0], "new": d[1], "run_id": r.get("run_id"),
                          "source": kinds.get(k, "model")}
     state["last_change"] = lc
     return lc
 
 
-def _write(cfg, now, text, accepted, state, rec):
-    """The accepted numbers and a changed focus list go into SKILL.md in one edit, in apply mode without a
-    pause file. rec["status"] follows the model's changes; the focus list's outcome is rec["focus"]["status"]."""
+def _write(cfg, now, text, accepted, state, rec, notes=None, at=None):
+    """The accepted numbers, changed focus/trend lists and changed notes go into SKILL.md in one edit, in apply
+    mode without a pause file; the new text is also kept as a history copy at `at`. rec["status"] follows the
+    model's changes; the lists' outcome is rec["focus"]["status"], the notes' rec["notes"]."""
     fc = rec["focus"] if rec["focus"] and rec["focus"]["status"] is None else None
     rec["paused"] = rec["paused"] or cfg.pause_file.exists()      # created during the model call
-    if not accepted and not fc:
+    if not accepted and not fc and notes is None:
         return
     if cfg.mode != "apply" or rec["paused"]:
         held = "paused" if rec["paused"] else "proposed"
@@ -451,20 +532,29 @@ def _write(cfg, now, text, accepted, state, rec):
             rec["status"], rec["proposed"] = held, accepted
         if fc:
             fc["status"] = held
+        if notes is not None:
+            rec["notes"] = held
         return
-    _apply(cfg, now, text, accepted, fc, state, rec)
+    _apply(cfg, now, text, accepted, fc, state, rec, notes, now if at is None else at)
     if rec["policy_ver_after"] != rec["policy_ver_before"] and isinstance(state.get("skill_version"), int):
         state["skill_version"] += 1                     # skillfile.apply bumps version by one
 
 
-def _apply(cfg, now, text, accepted, fc, state, rec):
-    changes = {a["key"]: a["new"] for a in accepted} | ({"stock.focus_skus": fc["new"]} if fc else {})
+def _apply(cfg, now, text, accepted, fc, state, rec, notes=None, at=None):
+    lists = {}
+    if fc:
+        lists = {k: (old, new) for k, old, new in (("stock.focus_skus", fc["old"], fc["new"]),
+                                                   ("stock.trend_skus", fc["trend"]["old"], fc["trend"]["new"]))
+                 if old != new}
+    changes = {a["key"]: a["new"] for a in accepted} | {k: new for k, (_, new) in lists.items()}
 
     def held_back(status, why):
         if accepted:
             rec["status"], rec["proposed"] = status, accepted
         if fc:
             fc["status"] = status
+        if notes is not None:
+            rec["notes"] = status
         rec["errors"].append(why)
 
     lock = None
@@ -473,7 +563,7 @@ def _apply(cfg, now, text, accepted, fc, state, rec):
         if lock is None:
             held_back("locked", f"another strategist is writing {cfg.skill.name}; nothing written")
             return
-        new_text = skillfile.apply(cfg.skill, text, changes)
+        new_text = skillfile.apply(cfg.skill, text, changes, notes)
     except skillfile.Conflict as e:
         held_back("conflict", f"conflict: {e}; nothing written")
         return
@@ -487,6 +577,9 @@ def _apply(cfg, now, text, accepted, fc, state, rec):
         rec["status"], rec["applied"] = "applied", accepted
     if fc:
         fc["status"] = "applied"
+    if notes is not None:
+        rec["notes"] = "applied"
+    _copy(cfg, new_text, now if at is None else at, rec, skillfile.save_copy)
     rec["policy_ver_after"] = skillfile.ver(new_text)
     last_ts, last = state.setdefault("last_change_ts", {}), _last_change(state, cfg.home)
     for a in accepted:
@@ -503,12 +596,17 @@ def _apply(cfg, now, text, accepted, fc, state, rec):
            "diff": {a["key"]: [a["old"], a["new"]] for a in accepted},
            "reason": "; ".join(f"{a['key']}: {a['reason']}" for a in accepted),
            "source": "strategist", "run_id": rec["run_id"], "kind": {a["key"]: a["source"] for a in accepted}}
-    if fc:
-        row["diff"]["stock.focus_skus"] = [fc["old"], fc["new"]]
-        row["kind"]["stock.focus_skus"] = "focus"
-        trend = f"stock.focus_skus: ledger trend, added {fc['added']}, removed {fc['removed']}"
-        row["reason"] = "; ".join(x for x in (row["reason"], trend) if x)
+    for k, (old, new) in lists.items():
+        row["diff"][k] = [old, new]
+        row["kind"][k] = LISTS[k]
+        why = f"{k}: ledger trend, added {[s for s in new if s not in old]}, removed {[s for s in old if s not in new]}"
+        row["reason"] = "; ".join(x for x in (row["reason"], why) if x)
+    if "stock.focus_skus" in lists:
         row["evidence"] = {"stock.focus_skus": fc["evidence"]}
+    if notes is not None:
+        row["notes"] = notes
+    if rec["history"]:
+        row["copy"] = rec["history"][-1]
     append_jsonl(cfg.home / "changes.jsonl", row)
 
 
@@ -571,7 +669,10 @@ def _focus_lines(rec, brief):
     for s in f["added"] + f["removed"]:
         ev = f["evidence"][s]
         out.append(f"  - {'추가' if s in f['added'] else '제외'} `{s}`: 6 h 체결 {ev['settles_6h']}, "
-                   f"공급 상점 {ev['suppliers_6h']}, ledger seq {ev['refs']}")
+                   f"공급 상점 {ev['suppliers_6h']}, 점수 {_cell(ev.get('score'))}, 게이트 {_cell(ev.get('gates'))}, "
+                   f"ledger seq {ev['refs']}")
+    t = f.get("trend") or {}
+    out.append(f"- 트렌드 목록: {', '.join(t.get('old') or []) or '(없음)'} → {', '.join(t.get('new') or []) or '(없음)'}")
     bf = brief.get("focus") or {}
     out.append(f"- 집계 기간: {_cell(bf.get('covered_h'))} h")
     if bf.get("forum_mentions"):
@@ -586,7 +687,10 @@ def _report(cfg, rec, brief):
     out = [f"# 전략 점검 {rec['run_id']}", "",
            f"- 시각: {when}", f"- 모드: {mode}", f"- 결과: **{rec['status']}**",
            f"- 정책 버전: {rec['policy_ver_before']} → {rec['policy_ver_after']}",
-           f"- 확신도: {rec['confidence']}", f"- 남은 시간: {brief.get('hours_left')} h", "",
+           f"- 확신도: {rec['confidence']}", f"- 남은 시간: {brief.get('hours_left')} h",
+           f"- 패치 대응: {_cell((rec.get('patch') or {}).get('version')) if rec.get('patch') else '아님'}",
+           f"- 전략 메모: {_cell(rec.get('notes'))}",
+           f"- SKILL.md 사본: {', '.join(rec.get('history') or []) or '(없음)'}", "",
            "## 판단", "", rec["assessment"] or "(없음)", "", "## 우리 지표"]
     out += _metrics(brief)
     out += ["", "## 적용한 변경", ""]
@@ -602,7 +706,7 @@ def _report(cfg, rec, brief):
             + ", ".join(f"{m} {_cell(v[0])} → {_cell(v[1])}" for m, v in o["metrics"].items())
             for o in rec["outcomes"]] or ["(없음)"]
     out += ["", "## 재고", ""] + _inventory_lines(brief)
-    out += ["", "## 집중 SKU (stock.focus_skus)", ""] + _focus_lines(rec, brief)
+    out += ["", "## 집중·트렌드 SKU (stock.focus_skus, stock.trend_skus)", ""] + _focus_lines(rec, brief)
     out += ["", "## 다음에 볼 것", ""] + ([f"- {_cell(w)}" for w in rec["watch"]] or ["(없음)"])
     out += ["", "## 경고 (시장 규칙, 연결 제약)", ""] + ([f"- {_cell(a)}" for a in rec["alerts"]] or ["(없음)"])
     out += ["", "## 오류", ""] + ([f"- {_cell(e)}" for e in rec["errors"]] or ["(없음)"])

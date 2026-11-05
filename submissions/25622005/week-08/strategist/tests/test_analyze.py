@@ -281,14 +281,11 @@ class BriefTest(unittest.TestCase):
         self.assertIsNone(ops["forum"]["mean_score"])
         self.assertIsNone(analyze._our_forum([], [], NOW - 3600, "psyoung82")["sample_covered_s"])
 
-    def test_demand_from_own_summary_then_market(self):
+    def test_demand_from_own_summary_only(self):
         d = self.b["demand"]
         self.assertEqual(d["source"], "own summary")
-        self.assertEqual([(r["category"], r["ratio"], r["median_price"]) for r in d["top"]],
-                         [("김치", 3.0, 9000), ("의자", 2.0, 50000)])
-        d2 = analyze.brief(raw(), {}, None, POL, NOW)["demand"]
-        self.assertEqual(d2["source"], "market demand (by skus)")
-        self.assertEqual([r["category"] for r in d2["top"]], ["의자", "김치"])
+        self.assertEqual([(r["category"], r["ratio"]) for r in d["top"]], [("김치", 3.0), ("의자", 2.0)])
+        self.assertIsNone(analyze.brief(raw(), {}, None, POL, NOW)["demand"])    # /api/demand counts SKUs: not used
 
     def test_forum_and_reviews(self):
         f, r = self.b["forum"], self.b["reviews_of_us"]
@@ -378,9 +375,29 @@ class BriefTest(unittest.TestCase):
                                                    "cost": i, "supplied_at": NOW - i, "expires_at": NOW + i}
                                                   for i in range(3000)]}
         foc = {"current": [f"G{i:08x}" for i in range(8)], "next": [f"G{i:08x}" for i in range(8)], "covered_h": 6,
-               "candidates": [{"sku": f"G{i:08x}", "settles_6h": 99, "suppliers_6h": 9, "score": 9.9, "refs": [1, 2, 3]}
+               "trend_current": [f"G{i:08x}" for i in range(8, 40)], "trend_next": [f"G{i:08x}" for i in range(8, 40)],
+               "candidates": [{"sku": f"G{i:08x}", "kind": "goods", "rate6": 12.345, "rate1": 23.456, "share": 0.123,
+                               "cover_h": 1.234, "shops": 12, "p_clear": 0.745, "f_now": 1.2345, "free_left": -123,
+                               "margin": 0.1234, "score": 123.456, "gates": ["margin", "congested", "price"]}
                               for i in range(40)],
+               "price_check": [{"sku": f"G{i:08x}", "held": 14, "s6": 99, "p_clear": 0.776, "our_floor_list": 1.087,
+                                "judged": True} for i in range(20)],
                "forum_mentions": {f"G{i:08x}": i for i in range(10)}}
+        cat = {f"G{i:08x}": [ko[:60], f"가구>{ko[:28]}{i % 40}", 900000, "goods", None] for i in range(300)}
+        big["catalog"] |= cat
+        big["leaf_deltas"] = {"h": 0.5, "n": {f"{ko[:28]}{i}": i for i in range(40)}}
+        big["top_reviews"] = {"shops": 3, "reviews": 120, "sku": {f"G{i:08x}": i for i in range(30)},
+                              "leaf": {f"{ko[:28]}{i}": i for i in range(15)}, "paid_list_median": 0.77}
+        o["inventory"]["units"] += [{"unit": f"v{i}", "sku": f"G{i:08x}", "kind": "goods", "cost": 500000,
+                                     "supplied_at": NOW - 2 * 86400} for i in range(300)]
+        tables = {"covered_h": 6, "h1": 1, "h6": 6,
+                  "sku": {f"G{i:08x}": {"s1": 9, "s6": 50, "o6": 1, "u1": 30, "ou1": 3, "pl6": 0.75, "pl_n": 50}
+                          for i in range(300)},
+                  "p_clear": {k: {"h6": 0.74, "n6": 900, "h24": 0.75, "n24": 3000} for k in ("food", "goods")},
+                  "c_kind": {"food": 0.52, "goods": 0.56},
+                  "day": {"cogs": 9e6, "rev": 9e7, "exp": 12345, "o": {f"G{i:08x}": 1 for i in range(150)}}}
+        market = {"facts": {"supply_every_min": 20}, "supply_prices": {"free": 50},
+                  "surge_units": {f"G{i:08x}": 60 + i for i in range(300)}}
         # and every new section at its largest
         o["decisions"]["seller"] += [{"ts": NOW, "kind": "quote", "why": "first reply", "inputs": {"list_price": 9}}] * 900
         o["decisions"]["buyer"] += [{"ts": NOW, "kind": "order", "inputs": {"kind": "food"}, "choice": "no_deal",
@@ -393,10 +410,11 @@ class BriefTest(unittest.TestCase):
                    "buyer": {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}}
         b = analyze.brief(big, o, {"me": b["me"], "ts": NOW - 1800}, POL, NOW,
                           flows={"in": 1, "sold": 2, "gone_unsold": 3, "gone_cost": 4}, focus=foc,
-                          buckets=buckets, weights=weights)
+                          buckets=buckets, weights=weights, tables=tables, market=market)
         self.assertLess(analyze.size(b), analyze.LIMIT)
+        self.assertTrue(b["economics"]["lines"] and b["economics"]["kinds"] and b["mix"]["leaves"])
         self.assertTrue(b["me"]["shop"] and b["delta"]["shop"] and b["inventory"]["top"])
-        self.assertEqual(b["inventory"]["units"], 3000)
+        self.assertEqual(b["inventory"]["units"], 3300)
         self.assertTrue(b["inventory"]["top"] and b["focus"]["candidates"])
         self.assertEqual(b["ops"]["forum"]["posts"], 100)
         self.assertLessEqual(len(b["ops"]["kit"]["untrusted_pay_refused_why"]), 5)
@@ -443,15 +461,92 @@ class InventoryFocusTest(unittest.TestCase):
         self.assertNotIn("focus", b)
 
     def test_focus_section(self):
-        foc = {"current": ["G1"], "next": ["G1", "G2"], "covered_h": 2.5,
-               "candidates": [{"sku": "G2", "settles_6h": 20, "suppliers_6h": 1, "score": 10.0, "refs": [5]},
-                              {"sku": "G1", "settles_6h": 12, "suppliers_6h": 2, "score": 4.0, "refs": [6]}],
+        foc = {"current": ["G1"], "next": ["G2"], "trend_current": [], "trend_next": ["G1"], "covered_h": 2.5,
+               "candidates": [{"sku": "G2", "kind": "goods", "rate6": 3.3, "rate1": 4.0, "share": 0.1, "cover_h": 1.5,
+                               "shops": 4, "p_clear": 0.74, "f_now": 1.0, "free_left": 50, "margin": 0.08,
+                               "score": 9.5, "gates": [], "s6": 20},
+                              {"sku": "G1", "kind": "food", "rate6": 2.0, "score": 4.0, "gates": ["margin"]}],
+               "price_check": [{"sku": "G2", "held": 3, "s6": 20, "p_clear": 0.74, "our_floor_list": 0.8,
+                                "judged": False}],
                "forum_mentions": {"Ga1b2c3d4": 3}}
         f = self.brief(focus=foc)["focus"]
-        self.assertEqual(f["candidates"], [{"sku": "G2", "settles_6h": 20, "suppliers_6h": 1, "score": 10.0, "held": 1},
-                                           {"sku": "G1", "settles_6h": 12, "suppliers_6h": 2, "score": 4.0, "held": 2}])
-        self.assertEqual((f["current"], f["next"], f["covered_h"], f["forum_mentions"]),
-                         (["G1"], ["G1", "G2"], 2.5, {"Ga1b2c3d4": 3}))
+        self.assertEqual(f["candidates"][0], {"sku": "G2", "kind": "goods", "list": "F", "held": 1, "rate6": 3.3,
+                                              "rate1": 4.0, "share": 0.1, "cover_h": 1.5, "shops": 4, "p_clear": 0.74,
+                                              "f_now": 1.0, "free_left": 50, "margin": 0.08, "score": 9.5, "gates": []})
+        self.assertEqual((f["candidates"][1]["list"], f["candidates"][1]["gates"], f["candidates"][1]["held"]),
+                         ("T", ["margin"], 2))
+        self.assertEqual(f["price_check"], foc["price_check"])
+        self.assertEqual((f["current"], f["next"], f["trend_current"], f["trend_next"], f["covered_h"],
+                          f["forum_mentions"]), (["G1"], ["G2"], [], ["G1"], 2.5, {"Ga1b2c3d4": 3}))
+
+
+class EconomicsMixTest(unittest.TestCase):
+    """The economics and mix sections from the SKU tables, our inventory, the kit log and the market's numbers."""
+    POL = {"stock": {"end_ts": NOW + 36000, "inventory_cap_share": 0.5, "goods_max_list": 50000},
+           "seller": {"floor_list": 0.60, "floor_cost_mult": 1.08}}
+    CAT = {"GBIG": ["bed", "가구>침대", 400000, "goods", None], "GSM": ["cup", "주방>컵", 10000, "goods", None],
+           "GF": ["rice", "식품>쌀", 20000, "food", 2000]}
+
+    DAY_H = 24
+
+    def brief(self, **kw):
+        r = raw()
+        r["catalog"] = self.CAT
+        r["leaf_deltas"] = {"h": 0.5, "n": {"침대": 6}}
+        r["top_reviews"] = {"shops": 3, "reviews": 40, "sku": {"GBIG": 9}, "leaf": {"침대": 9}, "paid_list_median": 0.77}
+        o = own()
+        o["kit"] = {"supply_bought": 48, "supply_units": 480}
+        o["inventory"] = {"balance": 20_000_000, "units": [
+            {"unit": "b1", "sku": "GBIG", "kind": "goods", "cost": 300000, "supplied_at": NOW - 3600},
+            {"unit": "b2", "sku": "GBIG", "kind": "goods", "cost": 300000, "supplied_at": NOW - 2 * 86400},
+            {"unit": "s1", "sku": "GSM", "kind": "goods", "cost": 400000, "supplied_at": NOW - 2 * 86400},
+            {"unit": "f1", "sku": "GF", "kind": "food", "cost": 0, "supplied_at": NOW - 600}]}
+        tables = {"covered_h": 6, "h1": 1, "h6": 6,
+                  "sku": {"GBIG": {"s6": 30, "o6": 3, "u1": 20}, "GF": {"s6": 12, "o6": 0, "u1": 70}},
+                  "p_clear": {"food": {"h6": 0.70, "n6": 9, "h24": 0.71, "n24": 99},
+                              "goods": {"h6": 0.75, "n6": 9, "h24": 0.74, "n24": 99}},
+                  "c_kind": {"food": None, "goods": 0.6},
+                  "day": {"cogs": 1_500_000, "rev": 2_000_000, "exp": 30000, "o": {"GBIG": 2}, "h": self.DAY_H}}
+        market = {"facts": {"supply_every_min": 20}, "supply_prices": {"free": 50}, "surge_units": {"GF": 80}}
+        return analyze.brief(r, o, None, self.POL, NOW, tables=tables, market=market, **kw)
+
+    def test_economics(self):
+        e = self.brief()["economics"]
+        self.assertEqual(e["lines"], {"lines_h": 48.0, "lines_window": 16.0, "units_line": 10.0, "skus_held": 3,
+                                      "refill_h": 0.06})
+        self.assertEqual((e["stock_cost"], e["cogs_24h"], e["rev_24h"]), (1_000_000, 1_500_000, 2_000_000))
+        self.assertEqual(e["big_ticket"], {"skus": 1, "held_cost": 600000, "budget": round(0.4 * 0.5 * 21_000_000),
+                                           "of_budget": round(600000 / 4_200_000, 3), "share_key": 0.4})
+        self.assertEqual(e["surge_free_left"], {"GF": -30, "GBIG": 30})
+        self.assertEqual(e["kinds"]["goods"], {"p_clear_6h": 0.75, "p_clear_24h": 0.74, "n_24h": 99,
+                                               "our_cost_list": 0.6, "our_floor_list": 0.648})
+        self.assertEqual(e["kinds"]["food"]["our_floor_list"], 0.6)        # max(0.60, 1.08 x 0.51)
+        # unsold goods: GSM (held 2 days, no sale in 24 h); GBIG sold, so it does not count
+        self.assertEqual(e["expand"], {"turnover_day": 1.5, "unsold_goods_share": 0.4, "spoilage_share": 0.02,
+                                       "balance": 20_000_000})
+        self.assertEqual(e["expand_ok"], {"turnover_day": True, "unsold_goods_share": False, "spoilage_share": False,
+                                          "balance": True})
+        self.assertFalse(e["expand_all_ok"])
+
+    def test_turnover_is_scaled_to_a_day_while_the_sums_span_less(self):
+        self.DAY_H = 12                                                 # 1.5M sold in 12 h of a 1M stock: 3 a day
+        self.assertEqual(self.brief()["economics"]["expand"]["turnover_day"], 3.0)
+        self.DAY_H = 2                                                  # too few hours: not given, not "broken"
+        e = self.brief()["economics"]
+        self.assertEqual((e["expand"]["turnover_day"], e["expand_ok"]["turnover_day"]), (None, None))
+
+    def test_mix(self):
+        m = self.brief()["mix"]
+        self.assertEqual(m["leaves"], [{"leaf": "침대", "rate6": 5.0, "share": 0.1, "stats_deals_h": 12.0},
+                                       {"leaf": "쌀", "rate6": 2.0, "share": 0.0, "stats_deals_h": 0.0}])
+        self.assertEqual(m["top3_reviews"], {"shops": 3, "reviews": 40, "sku": {"GBIG": 9}, "leaf": {"침대": 9},
+                                             "paid_list_median": 0.77})
+
+    def test_missing_tables_and_bad_inputs(self):
+        b = analyze.brief(raw(), own(), None, POL, NOW)
+        self.assertEqual((b["economics"], b["mix"]), (None, None))
+        b = analyze.brief(raw(), own(), None, None, NOW, tables={"sku": "x", "day": 5}, market="y")
+        json.dumps(b)
 
 
 class NewSectionsTest(unittest.TestCase):

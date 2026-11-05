@@ -10,7 +10,11 @@ whatever text the model read, can touch it.
 Each proposal row carries a source. "model" (the default) is bounded as above. "market-rule"
 may set only a SYNCED key to the market's published value (strategist/facts.py), clamped to
 policy.RANGES. "revert" (an outcome check undoing a change) skips the cooldown, the direction
-block and max_changes. No source skips LINKED or validate.
+block and max_changes. "bounds" (bounds_rows) moves a value outside its TUNABLE range to the nearest
+bound, with no step, cooldown, block or max_changes. No source skips LINKED or validate.
+A model raise of seller.floor_list above the market's 24 h clearing price for goods (p_clear, median
+paid/list) is refused. A key in policy.DEFAULTS but missing from the file acts at its DEFAULT, so its
+old value is the DEFAULT (strategist/skillfile.py inserts the line when it is written).
 """
 import copy
 import math
@@ -21,24 +25,37 @@ import policy
 # forum.min_gap_min is not here: it follows the market's post limit (SYNCED).
 TUNABLE = {
     "seller.first_ask_list": (0.70, 1.00, 0.05),
-    "seller.floor_list": (0.40, 0.80, 0.05),
-    "seller.floor_cost_mult": (1.00, 1.30, 0.05),
+    "seller.floor_list": (0.40, 0.70, 0.05),       # the market clears goods at 0.71-0.78 of list
+    "seller.floor_cost_mult": (1.00, 1.15, 0.05),
     "seller.warranty_premium": (0.05, 0.30, 0.05),
     "seller.warranty_cap_6h": (100000, 3000000, 250000),
     "seller.food_clear_uwh_factor": (1.0, 4.0, 0.5),
     "seller.goods_stale_days": (2, 10, 1),
-    "stock.inventory_cap_share": (0.15, 0.60, 0.05),
-    "stock.per_sku_qty": (1, 5, 1),
+    "stock.inventory_cap_share": (0.15, 0.70, 0.05),
+    "stock.per_sku_qty": (1, 10, 1),
     "stock.demand_window_h": (2, 24, 2),
     "stock.regular_min_stock": (0, 3, 1),
     "stock.max_lines": (3, 10, 2),
     "stock.max_qty": (5, 20, 5),
     "stock.goods_max_list": (20000, 100000, 10000),
-    "stock.cover_min": (20, 60, 5),
+    "stock.cover_min": (20, 180, 15),
     "stock.cover_safety": (1.0, 3.0, 0.25),
     "stock.focus_cover_mult": (1.0, 3.0, 0.25),
     "stock.focus_cap_share": (0.3, 0.8, 0.1),
     "stock.focus_max": (4, 12, 2),              # lo is at least the current focus list's length
+    "stock.max_hold": (20, 80, 10),
+    "stock.min_line_qty": (1, 10, 1),
+    "stock.trend_max": (0, 32, 4),              # lo is at least the current trend list's length
+    "stock.trend_share": (0.03, 0.20, 0.02),
+    "stock.min_margin_share": (0.02, 0.12, 0.01),
+    "stock.big_ticket_share": (0.10, 0.40, 0.05),
+    "stock.bigticket_probe_qty": (1, 6, 1),
+    # end of round (Patch 3.3: stock counts at cost, so 0 = off is the default)
+    "stock.clear_cost_h": (0, 72, 12),
+    "stock.clear_70_h": (0, 48, 6),
+    "stock.clear_any_h": (0, 24, 3),
+    "stock.taper_h": (0, 96, 12),
+    "stock.goods_stop_h": (0, 48, 6),
     "buyer.cap_goods_no_warranty": (0.55, 0.85, 0.05),
     "buyer.cap_goods_warranty": (0.80, 1.00, 0.04),
     "buyer.cap_food": (0.85, 1.00, 0.03),
@@ -50,7 +67,12 @@ TUNABLE = {
 }
 
 # key -> the strategist/facts.py fact it is set to, only by rows with source "market-rule"
-SYNCED = {"forum.min_gap_min": "post_gap_min"}
+# (surge_*: /api/supply-prices free, per_unit, max; facts.sync_proposals)
+SYNCED = {"forum.min_gap_min": "post_gap_min", "market.surge_free": "surge_free",
+          "market.surge_per_unit": "surge_per_unit", "market.surge_max": "surge_max"}
+# no "bounds" rows for these: the buyer works well as it is, its keys move only by the model or a revert
+NO_BOUNDS = ("buyer.",)
+MAX_LISTS = 40          # focus_max + trend_max: about 48 supply lines an hour
 
 # name -> (keys, how far the policy is past the constraint; 0 when it holds)
 LINKED = {
@@ -58,20 +80,27 @@ LINKED = {
     "so raising cap_food does nothing)":
         (("buyer.cap_food", "buyer.min_surplus_list"),
          lambda p: max(0.0, p["buyer"]["cap_food"] + p["buyer"]["min_surplus_list"] - 1)),
+    "stock.min_line_qty <= stock.max_qty (a smaller line is skipped, so a larger minimum blocks every top-up)":
+        (("stock.min_line_qty", "stock.max_qty"), lambda p: max(0, p["stock"]["min_line_qty"] - p["stock"]["max_qty"])),
+    "stock.max_qty <= stock.max_hold (a line never buys more than a SKU may hold)":
+        (("stock.max_qty", "stock.max_hold"), lambda p: max(0, p["stock"]["max_qty"] - p["stock"]["max_hold"])),
+    f"stock.focus_max + stock.trend_max <= {MAX_LISTS} (about 48 supply lines an hour)":
+        (("stock.focus_max", "stock.trend_max"),
+         lambda p: max(0, p["stock"]["focus_max"] + p["stock"]["trend_max"] - MAX_LISTS)),
 }
 EPS = 1e-9
-SOURCES = ("model", "market-rule", "revert")
+SOURCES = ("model", "market-rule", "revert", "bounds")
 
 
 def bounds(key, pol=None):
-    """(lo, hi, max_step) for a tunable key, narrowed by policy.RANGES. With pol, stock.focus_max
-    cannot go below the length of the focus list (validate would reject the whole set)."""
+    """(lo, hi, max_step) for a tunable key, narrowed by policy.RANGES. With pol, stock.focus_max and
+    stock.trend_max cannot go below the length of their list (validate would reject the whole set)."""
     lo, hi, step = TUNABLE[key]
     if key in policy.RANGES:
         rlo, rhi = policy.RANGES[key]
         lo, hi = max(lo, rlo), min(hi, rhi)
-    if key == "stock.focus_max" and pol:
-        skus = _get(pol, "stock.focus_skus")
+    if key in ("stock.focus_max", "stock.trend_max") and pol:
+        skus = _get(pol, key.replace("_max", "_skus"))
         lo = min(max(lo, len(skus) if isinstance(skus, list) else 0), hi)
     return lo, hi, step
 
@@ -88,13 +117,34 @@ def _get(pol, key):
         return None
 
 
+def value(pol, key):
+    """The key's value in pol, or its policy.DEFAULTS value when the file does not have it (the shop runs on it)."""
+    v = _get(pol, key)
+    return _get(policy.DEFAULTS, key) if v is None else v
+
+
 def tunable_view(pol):
     """The table the prompt shows: current value and limits of every tunable key."""
     rows = []
     for key in TUNABLE:
         lo, hi, step = bounds(key, pol)
-        value = _get(pol, key)
-        rows.append({"key": key, "value": value, "lo": lo, "hi": hi, "max_step": step})
+        value_ = value(pol, key)
+        rows.append({"key": key, "value": value_, "lo": lo, "hi": hi, "max_step": step})
+    return rows
+
+
+def bounds_rows(pol):
+    """A source "bounds" row for every tunable key (not NO_BOUNDS) whose value is outside its bounds: to the
+    nearest bound. E.g. a floor set under wider bounds before they were narrowed."""
+    rows = []
+    for key in TUNABLE:
+        v = value(pol, key)
+        if key.startswith(NO_BOUNDS) or not _number(v):
+            continue
+        lo, hi, _ = bounds(key, pol)
+        if not lo <= v <= hi:
+            rows.append({"key": key, "value": min(max(v, lo), hi), "source": "bounds",
+                         "reason": f"{v} outside the tunable range [{lo}, {hi}]"})
     return rows
 
 
@@ -165,11 +215,12 @@ def _blocked(blocked, key, old, new, now):
     return b.get("why") or "reverted"
 
 
-def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last=None, blocked=None):
+def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last=None, blocked=None, p_clear=None):
     """(accepted, rejected). accepted rows: key, old, new, requested, clamped, reason, source.
     rejected rows: key, requested, why. last: {key: {"new": value the strategist last wrote, ...}}, so a value
-    it wrote that is now outside the range may move back in. A validate failure rejects every accepted row,
-    except that market-rule and revert rows that pass on their own are kept."""
+    it wrote that is now outside the range may move back in. p_clear: the market's 24 h median paid/list of goods
+    (None: unknown, no floor check). A validate failure rejects every accepted row, except that market-rule,
+    revert and bounds rows that pass on their own are kept."""
     accepted, rejected, seen = [], [], set()
     last_change_ts, last = last_change_ts or {}, last if isinstance(last, dict) else {}
     for p in proposals if isinstance(proposals, list) else []:
@@ -190,6 +241,9 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
         if source != "market-rule" and (not isinstance(key, str) or key not in TUNABLE):
             reject("frozen")
             continue
+        if source == "bounds" and key.startswith(NO_BOUNDS):
+            reject("no bounds repair for this key")
+            continue
         if not _number(requested):
             reject("not a number")
             continue
@@ -201,7 +255,7 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
         if source == "model" and _number(t) and now - t < cooldown_h * 3600:
             reject("cooldown")
             continue
-        old = _get(pol, key)
+        old = value(pol, key)
         if old is None:
             reject("not in policy")
             continue
@@ -210,6 +264,13 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
             continue
         if source == "market-rule":
             new, clamped = _sync(key, requested)
+        elif source == "bounds":
+            lo, hi, _ = bounds(key, pol)
+            if lo <= old <= hi:
+                reject("inside its bounds")
+                continue
+            new = _round(key, min(max(requested, lo), hi))
+            clamped = new != requested
         else:
             lo, hi, _ = bounds(key, pol)
             mine = isinstance(last.get(key), dict) and last[key].get("new") == old
@@ -223,6 +284,9 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
         why = _blocked(blocked, key, old, new, now) if source == "model" else None
         if why:
             reject(f"blocked: {why}")
+            continue
+        if source == "model" and key == "seller.floor_list" and new > old and _number(p_clear) and new > p_clear:
+            reject(f"floor raise above the market's 24 h goods clearing price {p_clear} of list")
             continue
         if source == "model" and sum(a["source"] == "model" for a in accepted) >= max_changes:
             reject("over max_changes")
