@@ -7,7 +7,7 @@ with qty 1-20. It buys at most 10 lines per run, one supply call per 10 s, and s
 cannot pay. Outside the restock window it waits up to 90 s per line, then skips it.
 
 What to buy is the operator's decision, written to <root>/a2/restock_plan.json as {"buy": [...], "valid_until": ts}.
-This hook only checks it: a missing or expired plan, or a window that will not open within the kit's wait, prints
+This hook only checks it: a missing, expired or already bought plan, or a window that is not open yet, prints
 {"buy": []}; otherwise guard() applies the safety rules (DESIGN 10: no purchase may take the balance below the
 bankrupt line). It never prints "bankrupt": true; filing bankruptcy is the kit's own path and stays outside the kernel.
 Each run appends one trajectory row of kind "restock". Stdlib only.
@@ -149,6 +149,10 @@ def run(root, state, now=None):
         why = "expired"
     elif win == "closed":
         why = "window_closed"
+    elif win == "opens_soon":
+        # the kit does not wait for the window: its first supply call gets 429 and that line is skipped (live 11-06
+        # 06:21 and 07:21), and a bought-once plan never retries it. The window lasts 180 s, so an open run follows
+        why = "opens_soon"
     elif (c.load_json(done_path, {}) or {}).get("plan_id") == plan_id:
         why = "executed"
     else:

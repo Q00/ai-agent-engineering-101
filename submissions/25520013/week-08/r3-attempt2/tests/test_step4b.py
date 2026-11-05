@@ -338,8 +338,14 @@ def test_restock_no_plan_and_window(tmp_path):
     )
     soon = _inv(restock={"open": False, "opens_at": now + 60, "closes_at": now + 240})
     root, state = _hook_root(tmp_path / "c", plan, soon)
-    assert restock.run(root, state, now=now) == {"buy": [{"sku": "EGG1", "qty": 1}]}
-    assert _rows(root)[-1]["window"] == "opens_soon"
+    assert restock.run(root, state, now=now) == {
+        "buy": []
+    }  # the kit gets 429 before the window opens
+    assert (
+        _rows(root)[-1]["window"] == "opens_soon"
+        and _rows(root)[-1]["why"] == "opens_soon"
+    )
+    assert not os.path.exists(os.path.join(root, "a2/restock_done.json"))
     unknown = _inv(restock={})
     root, state = _hook_root(tmp_path / "d", plan, unknown)
     assert restock.run(root, state, now=now) == {"buy": []}
