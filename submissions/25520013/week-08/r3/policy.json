@@ -53,6 +53,10 @@
   "ask_quantile": "p50",
   "skip_below_market": true,
   "est_cost_frac": 0.6,
+  "star_price_cap": {
+   "A": 0.775
+  },
+  "_star_note": "v2.1 2026-11-05 (성수님 13:08 지시 1위 목표, 별점 개선): goods grade A first ask capped at 0.775 x list (policy.ask_price; never below floor_price). Our goods A reviews in the 24 h to 13:30 KST: 4.49 at 0.77-0.78 of list, 3.95 at 0.78-0.79, 3.65 at 0.80-0.81; cap 0.775 moves 276 deals, est. +0.047 mean stars for 1.0% of revenue (32만/h). B and C goods show no cliff and stay uncapped.",
   "_price_note": "v1.18 2026-11-03 21:35 (성수님 결정): first ask = the SKU's median settle (ask_quantile p50, >= 5 settles), min_margin goods 0.15 / food 0.12 -> 0.05, restock skips SKUs whose market median is under expected cost (p75 of our units' cost/list, est_cost_frac with < 4 units) + min_margin. After 21:15, 7 of 8 negotiations were cancelled at asks 2-15% over the market median. Back to p75 / 0.15 / 0.12 if profit per settle falls without more settles.",
   "restock_priority": [
    "가구/침구>가구>침대/매트리스"

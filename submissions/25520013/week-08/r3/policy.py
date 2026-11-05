@@ -121,6 +121,11 @@ def validate(pol):
     f = sp.get("max_spend_frac")                        # v1.23: per-run spend as a share of the balance
     if f is not None and (isinstance(f, bool) or not isinstance(f, (int, float)) or not 0 < f <= 1):
         raise PolicyError(f"shop.max_spend_frac={f!r} outside (0, 1]")
+    cap = sp.get("star_price_cap")                      # v2.1: goods grade -> first-ask cap as a share of list
+    if cap is not None and (not isinstance(cap, dict) or not all(
+            g in ("A", "B", "C") and not isinstance(v, bool) and isinstance(v, (int, float)) and 0.5 <= v <= 1.0
+            for g, v in cap.items())):
+        raise PolicyError(f"shop.star_price_cap={cap!r} must map grades A/B/C to shares in [0.5, 1]")
     for blk in list((pol.get("categories") or {}).values()) + [sp]:
         k = blk.get("skus_per_category")
         if k is not None and (isinstance(k, bool) or not isinstance(k, int) or not 1 <= k <= 5):
@@ -289,7 +294,9 @@ def ask_price(unit, pol, stats=None, now=None, inv=None, shelf_hours=None, relax
     """First ask: list_price * price_mult, less a discount for the grade the unit has NOW (food decays), less
     liquidate_discount for food near its date; moved down to the market's p75 settle price when stats know it.
     v1.18: shop.ask_quantile (e.g. "p50") replaces p75 when the SKU itself has >= 5 settles; the category fallback
-    stays p75 (a category median mixes SKUs priced 0.5-1.5x apart). Never below floor_price."""
+    stays p75 (a category median mixes SKUs priced 0.5-1.5x apart). Never below floor_price.
+    v2.1: shop.star_price_cap {grade: share} caps a goods ask at share x list (our goods A reviews 24 h to 11-05
+    13:30 KST: 4.49 at 0.77-0.78 of list, 3.95 at 0.78-0.79, 3.65 at 0.80-0.81)."""
     c = resolve(pol, unit.get("category"), unit.get("kind"))
     lp = int(unit.get("list_price") or unit["cost"] * 2)
     g = food_grade_now(unit, shelf_hours, now)
@@ -305,6 +312,9 @@ def ask_price(unit, pol, stats=None, now=None, inv=None, shelf_hours=None, relax
     if s and s.get("n", 0) >= 5 and s.get(q):
         p = min(p, s[q] * 1.0)
     p *= 1 - (pol.get("volume") or {}).get("relax_ask_cut", 0.0) * max(0.0, min(1.0, relax))
+    cap = (pol["shop"].get("star_price_cap") or {}).get(g) if unit.get("kind") != "food" else None
+    if cap:
+        p = min(p, lp * cap)
     return max(floor_price(unit, pol, inv, now, relax), int(round(p)))
 
 

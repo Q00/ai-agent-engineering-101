@@ -78,7 +78,40 @@ def sign(receipt, key_path="shop_key.pem"):
     return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(body))).decode())
 
 
-def find_unit(text, inv, taken=(), pol=None, now=None):
+NEED_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h|시간)(?![0-9A-Za-z])", re.I)
+NEED_MARGIN_H = 0.25          # v2.1: the settle lands minutes after the quote
+UNKNOWN_NEED_SHARE = 0.75     # v2.1: a food buyer needs 0.10/0.25/0.50/0.75 of the shelf; 0.75 covers every buyer
+
+
+def stated_need_hours(text, names=()):
+    """v2.1: shelf life the request asks for, in hours: the largest '<number> h / hour(s) / 시간' in it after SKU
+    tokens and product `names` are removed ('I need it to last 180.0 hours: ... at least 198.0 hours' -> 198.0,
+    'need: shelf life 541.0 h or more' -> 541.0; catalog G56d000c7 is named '... 48시간 구운계란 ...'). None when
+    it names no hours."""
+    t = SKU_RE.sub(" ", text or "")
+    for nm in sorted({n for n in names if n}, key=len, reverse=True):
+        t = t.replace(nm, " ")
+    hs = [float(m.group(1)) for m in NEED_RE.finditer(t)]
+    return max(hs) if hs else None
+
+
+def pick_food(food, need, shelf, now):
+    """v2.1 (24 h to 11-05 13:30 KST: 71 of our 75 two-star food reviews read 'Only N h of shelf life left; I
+    needed M h'): ship a unit that lasts the buyer's need. A stated need keeps the units with hours left >=
+    need + NEED_MARGIN_H; none -> None (no sale rather than a two-star review). An unknown need is taken as
+    UNKNOWN_NEED_SHARE x the catalog shelf_hours; when no unit lasts that long, the unit with the most hours left.
+    Among the units that last, the one that expires first (stock keeps rotating; our grade C food reviews 4.75)."""
+    left = lambda u: P.hours_left(u, now)
+    key = lambda u: (left(u), u.get("supplied_at") or 0)
+    if need is not None:
+        return min((u for u in food if left(u) >= need + NEED_MARGIN_H), key=key, default=None)
+    ok = [u for u in food if shelf(u["sku"]) and left(u) >= UNKNOWN_NEED_SHARE * shelf(u["sku"]) + NEED_MARGIN_H]
+    return min(ok, key=key) if ok else max(food, key=lambda u: (left(u), -(u.get("supplied_at") or 0)))
+
+
+def find_unit(text, inv, taken=(), pol=None, now=None, shelf=None, why=None):
+    """`why` (a dict, optional) gets need_h when food units match but none lasts the stated need."""
+    now = time.time() if now is None else now
     want = text.lower()
     units = [u for u in inv.get("units") or [] if u.get("grade") != "expired" and u["unit"] not in taken
              and (pol is None or P.sellable(u, pol, now))]
@@ -86,9 +119,14 @@ def find_unit(text, inv, taken=(), pol=None, now=None):
     named = [u for u in units if u["sku"].lower() in skus]
     fit = named or [u for u in units if P.leaf(u.get("category")).lower() in want
                     or (u.get("name") or "").lower() in want]
-    now = time.time()
-    # food: most shelf life left first is better for the buyer's accept; but expiring stock must go first.
-    # Ship the unit that expires first among those whose grade is still A/B; else the first to expire.
+    food = [u for u in fit if u.get("kind") == "food" and u.get("expires_at")]
+    if food:                                    # v2.1: food by the buyer's shelf-life need
+        need = stated_need_hours(text, [u.get("name") for u in food])
+        u = pick_food(food, need, shelf or shelf_hours, now)
+        if u is None and why is not None:
+            why["need_h"] = need
+        return u
+    # goods: ship the unit that expires first among those whose grade is A/B; else the first to expire.
     good = [u for u in fit if u.get("grade") in ("A", "B")]
     return min(good or fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
 
@@ -293,12 +331,16 @@ class Seller(AgentExecutor):
             self._bl("request", task.id, text=BL.clean(text, 200))   # v121c: masked
             self.refresh_policy()                       # v1.16: only between deals
             inv = read_json(MARKET_DIR / "inventory.json", {}) or {}
-            unit = find_unit(text, inv, {d["unit"]["unit"] for d in self.open.values()}, self.pol)
+            why = {}
+            unit = find_unit(text, inv, {d["unit"]["unit"] for d in self.open.values()}, self.pol, shelf=self.shelf,
+                             why=why)
             if unit is None:
-                self._metric("no_stock", {"request": BL.clean(text, 80)})
+                need = why.get("need_h")                # v2.1: food in stock, none lasts the stated need
+                self._metric("no_stock", dict({"request": BL.clean(text, 80)}, **why))
                 self._bl("outcome", task.id, outcome="no_stock", request=BL.clean(text, 80))
                 self._blog.pop(task.id, None)
-                await up.reject(say("Sorry, we have none of that in stock."))
+                await up.reject(say("Sorry, we have none of that in stock." if need is None
+                                    else f"Sorry, none of our units has {need:g} h of shelf life left."))
                 return
             sh = self.shelf(unit["sku"])
             relax, nset = self.volume()

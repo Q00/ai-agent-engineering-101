@@ -32,10 +32,17 @@ def _unit(kind="goods", cost=60000, **kw):
     return dict(u, **kw)
 
 
+def _uncapped():
+    """v2.1: the repo policy caps a grade-A goods ask at 0.775 x list (test_v210_stars); these pin the median rule."""
+    pol = copy.deepcopy(P.load())
+    pol["shop"].pop("star_price_cap", None)
+    return pol
+
+
 def test_ask_follows_the_skus_median():
     st = Stats(sku={"S1": {"n": 10, "p50": 80000, "p75": 90000}})
-    assert P.ask_price(_unit(), P.load(), st, now=NOW) == 80000
-    pol = copy.deepcopy(P.load())
+    assert P.ask_price(_unit(), _uncapped(), st, now=NOW) == 80000
+    pol = _uncapped()
     pol["shop"]["ask_quantile"] = "p75"
     assert P.ask_price(_unit(), pol, st, now=NOW) == 90000
 
@@ -47,7 +54,7 @@ def test_category_fallback_stays_p75():
 
 def test_few_settles_keep_the_list_based_ask():
     st = Stats(sku={"S1": {"n": 4, "p50": 70000, "p75": 75000}})
-    assert P.ask_price(_unit(), P.load(), st, now=NOW) == 90000          # list 100000 x price_mult 0.9
+    assert P.ask_price(_unit(), _uncapped(), st, now=NOW) == 90000       # list 100000 x price_mult 0.9
 
 
 def test_ask_never_below_a_floor_five_percent_over_cost():
