@@ -61,7 +61,7 @@ policy:
     min_surplus_list: 0.05
     open_list: 0.60
     max_shops: 3
-    food_margin_h: 1.0            # D7 min_hours_left = use_within_hours + this
+    food_margin_h: 0.2            # D7 min_hours_left = use_within_hours + this (settle follows payment)
     target_s: 20                  # D8
     continue_p: 0.75
     msg_timeout_s: 12
@@ -137,6 +137,8 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 ## Buyer
 
 - Expected surplus is computed on the list price of the SKU that will ship.
+- The food cap is min(`buyer.cap_food`, 1 - `buyer.min_surplus_list`); raising `cap_food` above
+  that has no effect.
 - Ask by SKU. Accept a quote at or below the cap; otherwise offer `buyer.open_list` of list,
   then the cap as final. Never mention the budget.
 - After `buyer.target_s` seconds, continue only while the estimated chance of closing is at

@@ -62,7 +62,7 @@ class MarketBuyerHookTests(unittest.TestCase):
         self.assertEqual(out["shop"], shop.url)
         self.assertEqual(out["receipt"]["price"], 36000)
         self.assertEqual(out["receipt"]["unit"], "u-9")
-        self.assertEqual(out["accept"], {"cert": True, "min_hours_left": 11.0,
+        self.assertEqual(out["accept"], {"cert": True, "min_hours_left": 10.2,
                                          "bind": {"max_price_list": 0.95, "sku": "F2", "unit": "u-9"}})
         self.assertIn(out["stars"], range(1, 6))
         self.assertNotIn("41234", json.dumps(shop.messages))
@@ -84,6 +84,18 @@ class MarketBuyerHookTests(unittest.TestCase):
         self.assertEqual(stubborn.canceled, ["t1"])
         tried = self.rows()[-1]["tried"]
         self.assertEqual([t["shop"] for t in tried], [stubborn.url, good.url])
+
+    def test_cert_false_receipt_moves_to_next_shop(self):
+        elm = FakeShop(sku="F2", first_ask=36000, floor=99999, list_price=40000, receipt_extra={"cert": False})
+        good = FakeShop(sku="F1", first_ask=27000, floor=99999, list_price=30000)
+        for s in (elm, good):
+            self.addCleanup(s.close)
+        self.write(ORDER, [self.shop_entry(elm, "F2"), self.shop_entry(good, "F1")])
+        out = self.run_hook()
+        self.assertEqual(out["shop"], good.url)
+        tried = self.rows()[-1]["tried"]
+        self.assertEqual([t["shop"] for t in tried], [elm.url, good.url])
+        self.assertIn("cert: false", tried[0]["receipt_problem"])
 
     def test_model_reads_a_quote_in_words(self):
         """D9 through EXCEPTION_HARNESS_CMD: a fake model command reads the price the rules cannot."""

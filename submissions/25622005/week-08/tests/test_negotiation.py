@@ -35,10 +35,11 @@ class FakeShop:
     completes with a signed-looking receipt; a lower offer gets the next price from `counters`."""
 
     def __init__(self, sku="G00001", first_ask=90000, floor=80000, counters=(), unit="u-1", delay=0.0,
-                 delay_from=1, data=None, receipt_unit=True, list_price=100000):
+                 delay_from=1, data=None, receipt_unit=True, list_price=100000, receipt_extra=None):
         self.sku, self.first_ask, self.floor, self.unit = sku, first_ask, floor, unit
         self.counters, self.delay, self.delay_from = list(counters), delay, delay_from
         self.data, self.receipt_unit, self.list_price = data or {}, receipt_unit, list_price
+        self.receipt_extra = receipt_extra or {}
         self.messages, self.canceled, self.tasks, self.n = [], [], {}, 0
         shop = self
 
@@ -102,6 +103,7 @@ class FakeShop:
             rec = {"shop": "fake", "item": self.sku, "price": float(offer), "task": tid, "sig_seller": "c2ln"}
             if self.receipt_unit:
                 rec["unit"] = self.unit
+            rec.update(self.receipt_extra)
             return self.task(tid, "TASK_STATE_COMPLETED", f"Deal at {offer}.", receipt=rec)
         ask = self.counters.pop(0) if self.counters else self.tasks[tid]
         self.tasks[tid] = ask

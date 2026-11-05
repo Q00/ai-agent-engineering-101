@@ -13,12 +13,15 @@ the policy (strategy/SKILL.md); the few priors below are assumptions until the m
 from statistics import median
 
 from memory import query
+from tools.pricing import FOOD_GRADE_CUTS
 
 Q_MIN_N = 30           # D6: replace the prior by the category's q upper bound from this many observations
 WARRANTY_FULL_H = 6     # goods break within 6 h of the sale, so a 6 h warranty covers every break
 REACH_LO, REACH_HI = 0.50, 0.85   # P0 prior for p_price before any quote: a cap below half of list rarely
                                   # closes, at a typical first ask (0.85 of list) it always can
 PRICE_GAP_LIST = 0.15   # D8 p_price falls linearly to 0 when the ask is this share of list above the cap
+# the most shelf life a claimed food grade can have left (agent.md 'Supply' cuts; update by hand if they change)
+GRADE_TOP = {"A": 1.0, "B": FOOD_GRADE_CUTS[0], "C": FOOD_GRADE_CUTS[1]}
 
 
 def list_price(catalog, sku):
@@ -29,8 +32,8 @@ def list_price(catalog, sku):
 def cap_share(kind, warranty_h, q_upper, pol):
     """D6 price cap as a share of the shipped SKU's list price."""
     b = pol["buyer"]
-    if kind == "food":
-        return b["cap_food"]
+    if kind == "food":                           # never a cap that leaves less than the minimum surplus
+        return min(b["cap_food"], round(1 - b["min_surplus_list"], 6))
     if warranty_h and warranty_h >= WARRANTY_FULL_H:
         return b["cap_goods_warranty"]
     if q_upper is not None:                      # measured break rate replaces the 0.70 start value
@@ -150,6 +153,15 @@ def verify_receipt(order, receipt, cand, catalog, pol, promised_unit=None, warra
         return "receipt price above the order's limit"
     if promised_unit and not receipt.get("unit"):
         return f"the shop promised unit {promised_unit} but the receipt names none"
+    shelf, need = (catalog.get(item) or {}).get("shelf_hours"), order.get("use_within_hours")
+    food_hours = order.get("kind") == "food" and isinstance(need, (int, float))    # build_accept's min_hours_left
+    if receipt.get("cert") is False and (pol["buyer"]["accept_cert"] or food_hours):   # the kit would refuse it
+        return "the receipt withholds the market certificate (cert: false), which accept asks for"
+    claim = receipt.get("claim")
+    top = GRADE_TOP.get(claim) if isinstance(claim, str) else None
+    if top and isinstance(shelf, (int, float)) and isinstance(need, (int, float)) \
+            and top * shelf <= need + pol["buyer"]["food_margin_h"]:  # grades only fall: min_hours_left must fail
+        return f"claim {claim} means under {top * shelf:g} h left, the order needs {need} h"
     V = list_price(catalog, item)
     if V is not None:                              # a SKU receipt: the cap of the SKU that ships
         c = cap(V, cand["kind"], warranty_h, cand.get("q_upper"), order.get("budget", 0), pol)

@@ -1,6 +1,7 @@
 """Buyer rules as pure functions: caps, surplus, chance of closing, candidates, accept, rating."""
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -39,6 +40,24 @@ class CapTests(unittest.TestCase):
         self.assertEqual(bp.cap(100000, "goods", 0, None, 999999, POL), 70000)
         self.assertEqual(bp.cap(100000, "goods", 6, None, 999999, POL), 94000)
         self.assertEqual(bp.cap(100000, "goods", 0, 0.10, 999999, POL), 85000)
+
+    def test_food_cap_keeps_min_surplus(self):
+        pol = json.loads(json.dumps(POL))
+        pol["buyer"]["min_surplus_list"] = 0.07
+        for cap_food, want in [(0.95, 27900), (0.98, 27900), (0.90, 27000)]:     # 0.93 unless cap_food is lower
+            with self.subTest(cap_food=cap_food):
+                pol["buyer"]["cap_food"] = cap_food
+                self.assertEqual(bp.cap(30000, "food", 0, None, 99999, pol), want)
+
+    def test_food_candidates_survive_a_raised_min_surplus(self):
+        """Regression: cap_food 0.95 with min_surplus_list 0.07 dropped every food offer."""
+        pol = json.loads(json.dumps(POL))
+        pol["buyer"]["min_surplus_list"] = 0.07
+        cs = bp.candidates(FOOD, [shop("http://a", ("F2", 1))], CATALOG, {}, pol)
+        self.assertEqual([c["cap"] for c in cs], [37200])
+        self.assertGreaterEqual(cs[0]["surplus_at_cap"], 0.07 * 40000 - 1)
+        rec = {"item": "F2", "price": 37000, "unit": "u7", "sig_seller": "x"}
+        self.assertAlmostEqual(bp.build_accept(FOOD, cs[0], rec, "u7", 0, pol)["bind"]["max_price_list"], 0.93)
 
     def test_budget_bounds_the_cap(self):
         self.assertEqual(bp.cap(100000, "food", 0, None, 40000, POL), 40000)
@@ -106,7 +125,7 @@ class AcceptAndReceiptTests(unittest.TestCase):
     def test_food_accept(self):
         rec = {"item": "F1", "price": 25000, "unit": "u7", "sig_seller": "x"}
         a = bp.build_accept(FOOD, self.food, rec, "u7", 0, POL)
-        self.assertEqual(a, {"cert": True, "min_hours_left": 11.0,
+        self.assertEqual(a, {"cert": True, "min_hours_left": 10.2,
                              "bind": {"max_price_list": 0.95, "sku": "F1", "unit": "u7"}})
 
     def test_goods_accept_with_warranty_and_no_binding(self):
@@ -128,6 +147,42 @@ class AcceptAndReceiptTests(unittest.TestCase):
         for rec, why in cases:
             with self.subTest(why=why):
                 self.assertIn(why, bp.verify_receipt(FOOD, rec, self.food, CATALOG, POL, "u7"))
+
+    def test_receipt_cert_false(self):
+        ok = {"item": "F1", "price": 25000, "unit": "u7", "sig_seller": "x"}
+        self.assertIn("cert: false", bp.verify_receipt(FOOD, dict(ok, cert=False), self.food, CATALOG, POL))
+        for rec in (ok, dict(ok, cert=True)):
+            self.assertIsNone(bp.verify_receipt(FOOD, rec, self.food, CATALOG, POL))
+        p = json.loads(json.dumps(POL))
+        p["buyer"]["accept_cert"] = False
+        goods = {"item": "G1", "price": 90000, "sig_seller": "x", "cert": False}
+        self.assertIsNone(bp.verify_receipt(GOODS, goods, self.goods, CATALOG, p, warranty_h=6))
+        no_hours = {k: v for k, v in FOOD.items() if k != "use_within_hours"}
+        self.assertIsNone(bp.verify_receipt(no_hours, dict(ok, cert=False), self.food, CATALOG, p))
+        # food min_hours_left needs the certificate's expiry: the kit refuses even without accept_cert
+        self.assertIn("cert: false", bp.verify_receipt(FOOD, dict(ok, cert=False), self.food, CATALOG, p))
+
+    def test_food_claim_must_cover_use_within(self):
+        ok = {"item": "F1", "price": 25000, "unit": "u7", "sig_seller": "x"}     # F1 shelf 720 h: C < 324, B < 576
+        long = dict(FOOD, use_within_hours=400)
+        self.assertIn("claim C", bp.verify_receipt(long, dict(ok, claim="C"), self.food, CATALOG, POL))
+        self.assertIsNone(bp.verify_receipt(long, dict(ok, claim="B"), self.food, CATALOG, POL))
+        self.assertIsNone(bp.verify_receipt(FOOD, dict(ok, claim="C"), self.food, CATALOG, POL))
+        edge = dict(FOOD, use_within_hours=323.9)                                # 324 < 323.9 + food_margin_h 0.2
+        self.assertIn("claim C", bp.verify_receipt(edge, dict(ok, claim="C"), self.food, CATALOG, POL))
+        equal = dict(FOOD, use_within_hours=323.8)                               # C means under 324 h, the kit wants 324
+        self.assertIn("claim C", bp.verify_receipt(equal, dict(ok, claim="C"), self.food, CATALOG, POL))
+        self.assertIsNone(bp.verify_receipt(FOOD, dict(ok, claim=["C"]), self.food, CATALOG, POL))
+        goods = {"item": "G1", "price": 90000, "sig_seller": "x", "claim": "C"}   # goods have no shelf life
+        order = dict(GOODS, use_within_hours=400)
+        self.assertIsNone(bp.verify_receipt(order, goods, self.goods, CATALOG, POL, warranty_h=6))
+
+    def test_grade_top_matches_the_kit_cuts(self):
+        """A sync check between our two local copies of the cuts, not a market patch detector:
+        if agent.md's 'Supply' grade cuts change, update pricing.FOOD_GRADE_CUTS and the kit by hand."""
+        src = (W / "market_kit.py").read_text(encoding="utf-8")
+        kit = tuple(float(x) for x in re.search(r"^FOOD_GRADE_CUTS = \(([\d.]+), ([\d.]+)\)", src, re.M).groups())
+        self.assertEqual((bp.GRADE_TOP["B"], bp.GRADE_TOP["C"]), kit)
 
     def test_cap_of_the_shipped_sku_not_the_asked_one(self):
         rec = {"item": "F3", "price": 25000, "sig_seller": "x"}     # F3 lists at 20000

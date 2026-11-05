@@ -295,7 +295,7 @@ class EndToEnd(unittest.TestCase):
         self.kit_sign_checks(o, out)
         self.assertEqual((receipt["item"], receipt["unit"]), ("G0000f001", "u-f1"))
         self.assertEqual(self.acp.terms[receipt["task"]]["unit"], "u-f1")
-        self.assertEqual(out["accept"]["min_hours_left"], 11)
+        self.assertEqual(out["accept"]["min_hours_left"], 10.2)
         self.assertEqual(out["accept"]["bind"]["sku"], "G0000f001")
 
         # The agreed unit sold elsewhere and the kit lost the seller's terms (e.g. it restarted): the kit's FEFO
