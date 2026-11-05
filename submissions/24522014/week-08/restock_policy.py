@@ -182,6 +182,12 @@ def main():
             observe_buyer_support(md)
         except (OSError, ValueError, TypeError):
             pass  # Forum observation must not stop inventory safety checks.
+        # Records and notifies only, at most every 5 minutes; it holds its own errors and time limit.
+        try:
+            from low_star_monitor import observe as observe_low_stars
+            observe_low_stars()
+        except Exception:
+            pass
         try:
             from leader_monitor import observe as observe_leaders
             observe_leaders(md)
