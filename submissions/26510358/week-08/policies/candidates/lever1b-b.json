@@ -1,0 +1,17 @@
+{
+  "name": "lever1b-b",
+  "description": "lever1b (b): cut_skus only, a quarter of the lever1 MA-2 cut (G0be9ed07 24 of 97, G200e39a3 25 of 100), inside the 16M STOCK_BUDGET_MAX cap.",
+  "notes": [
+    "Shadow candidate only; nothing here is read by the live shop. Not promoted to policies/active.json.",
+    "Explored at --end 1793859780 (pinned inputs and plan DB) with PYTHONHASHSEED=0 before the single gate run; see REPORT.md lever1b section.",
+    "Finding: lever1 fails because of its sofa 0.607 / mattress 0.393 shares (exploration a2: those shares plus kimchi 0.25 / bedding 0.15 gave book -12.44M, deals -351, stockouts +535). lever1b leaves sofa and mattress at the live caps. Note: twin.effective_plan_policy raises the planner's global CATEGORY_MAX_SHARE / DEEP_CATEGORY_SHARE to the top share (0.40 here); _apply_category_shares keeps other categories at the live 0.25 / 0.35.",
+    "Explored and rejected: full lever1 cut 97/100 (served -0.059), half 48/50 (book -0.74M), G0be9ed07 97 only (book -0.31M), G200e39a3 100 only (served -0.060)."
+  ],
+  "policy": {
+    "STOCK_BUDGET_MAX": 16000000,
+    "cut_skus": {
+      "G0be9ed07": 24,
+      "G200e39a3": 25
+    }
+  }
+}

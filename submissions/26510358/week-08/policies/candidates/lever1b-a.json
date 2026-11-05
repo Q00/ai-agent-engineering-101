@@ -1,0 +1,18 @@
+{
+  "name": "lever1b-a",
+  "description": "lever1b (a): kimchi / bedding category shares only, sized to cover the ~277 kimchi units the live twin sells per 6 h, inside the 16M STOCK_BUDGET_MAX cap.",
+  "notes": [
+    "Shadow candidate only; nothing here is read by the live shop. Not promoted to policies/active.json.",
+    "Explored at --end 1793859780 (pinned inputs and plan DB) with PYTHONHASHSEED=0 before the single gate run; see REPORT.md lever1b section.",
+    "Finding: lever1 fails because of its sofa 0.607 / mattress 0.393 shares (exploration a2: those shares plus kimchi 0.25 / bedding 0.15 gave book -12.44M, deals -351, stockouts +535). lever1b leaves sofa and mattress at the live caps. Note: twin.effective_plan_policy raises the planner's global CATEGORY_MAX_SHARE / DEEP_CATEGORY_SHARE to the top share (0.40 here); _apply_category_shares keeps other categories at the live 0.25 / 0.35.",
+    "Cover: live twin window sells 323 kimchi deals; ~277 units x ~22.7k unit cost = ~6.3M = 0.39 of 16M, rounded to 0.40. Bedding 148 deals, 3.35M cost, ~0.21 of 16M.",
+    "Explored and rejected: k0.15/b0.10 (book -0.62M), k0.25/b0.15 (book -0.17M), k0.30/b0.20 (book -0.07M)."
+  ],
+  "policy": {
+    "STOCK_BUDGET_MAX": 16000000,
+    "category_budget_share": {
+      "식품>김치/반찬/즉석요리>김치": 0.4,
+      "가구/침구>침구/홈데코>침구": 0.21
+    }
+  }
+}
