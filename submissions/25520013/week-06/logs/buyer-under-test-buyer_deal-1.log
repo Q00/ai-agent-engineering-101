@@ -1,0 +1,14 @@
+card: 'Kit Shop' -> http://127.0.0.1:55851/
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+harness answer #1:
+The seller is asking 130, which is above the owner's 120 budget, so I can't accept. Sellers can't go below 100, so 100 is the lowest price that could ever succeed. That leaves a 100–120 window to bargain in.
+
+I have up to 12 offers, so I can start low and raise in small steps. Opening at the floor anchors the talks as low as possible without being an impossible offer. It also gives nothing away about my 120 ceiling. Walking away now would be wrong, because the seller hasn't refused to come down.
+
+ASK: 130
+DECISION: offer 100
+read ask: 130 (model said 130, metadata None)
+move: offer 100
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+   artifact receipt: [{'seller': 'Kit Shop', 'item': 'lamp', 'price': 100.0}]
