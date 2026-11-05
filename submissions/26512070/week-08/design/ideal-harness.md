@@ -518,8 +518,10 @@ LaTeX(TikZ) 한 장. 왼쪽에서 오른쪽으로 "시장 → 역할 → 메타 
 |---|---|---|---|
 | T1 | 도구 호출 기록 | `tool.call/result`의 `keys`가 빔. 역할 이벤트에만 order, counterpart가 있음 | `Ctx`가 연결 키(task, order, unit, sku, counterpart)를 들고 `call()`이 기록에 실음(C1). 결과 요약(C2), 실패 원인 구분(C7), 도구·카드·전략 버전(C8), 잘림 표시(C9) |
 | T2 | 규칙 경로 | restock이 `tools.act`를 직접 부름(`restock.py:212`), 리뷰도 같음 | `call()`을 거침(C10) |
-| T3 | 상대 평판 | `core/reflex.py`(가게 이름 키) | 같은 함수 이름을 유지하는 어댑터 뒤에 참가자 지식(GitHub 소유자 키, 등급, 출처)을 둠. 거래 코드는 그대로 |
+| T3 | 상대 평판 | `core/reflex.py`(가게 이름 키) | (11/6 구현 중 변경) reflex는 거래 쪽의 빠른 사실 기록으로 그대로 두고, 참가자 지식(GitHub 계정 키, 등급, 표본 수)을 `me.counterpart`가 함께 돌려줌. 거래 코드는 그대로 |
 | T4 | 권한 | 없음 | `call()` 안에서 호출 역할의 능력 목록을 검사(C3). 처음에는 기록만 하고 거절하지 않음 → 하루 뒤 거절로 |
+| T6 | 비상 동작 | 없음 | restock이 `memory/bus/emergency.json`의 `restock_stop`을 읽고 멈춤 (17-4) |
+| T7 | A/B 배정 | 없음 | buyer가 주문마다 실험 팔을 받아 B면 그 실험의 `playbook.buyer` 숫자를 덮어씀, 주문 기록에 팔을 남김 |
 | T5 | 지혜 읽기 | `memory/strategy/active.json`의 playbook | 그대로. 새 지혜 저장소가 승인된 결과로 `active.json`을 만든다. 거래 코드 변경 없음 |
 
 ### 20-3. `harness/`에 새로 짜는 것
@@ -537,7 +539,9 @@ LaTeX(TikZ) 한 장. 왼쪽에서 오른쪽으로 "시장 → 역할 → 메타 
   `outer/collect`(정보 수집), `outer/board_history`, `ops/cf_page`.
 - 대체: `outer/slice`·`brief`·`audit`·`decide`·`derive`·`morning` → 메타 하네스. `outer/health` → 운영 상태 점검. `outer/benchmark` →
   `market.benchmark`. `outer/position` → `score.class`(재고 문구도 바로잡음). `tools/evaluate`(eval.*) → 역할 보고. 안 쓰인 도구 13개 삭제.
-- 옮긴 뒤로 미룸: `forum.compose`(D-13), buyer A/B 배정 연결, 잉여·별점 실험, 그림과 REPORT.
+- 옮긴 뒤로 미룸: `forum.compose`(D-13; 지금 forum이 모델을 1시간에 약 24번 부름, 예산 0), 잉여·별점 실험, 그림과 REPORT.
+- 구현 결과 (11/6 01시, `week-08-move` 브랜치): harness/ trajectory, metrics, score_class, knowledge, participant, capability,
+  experiment, wisdom, alert, rules_watch, meta, ops, run + `ops/harness.ps1`, 현황 페이지 연결. 테스트 163개.
 - 실험 후보 (11/6 00시 승인 대기 정리에서, 사용자): ① buyer goods 상한 올리기(열기 60%, 상한 82% → 85%; 브리프 11/5 10·12·14시) →
   잉여, 첫 A/B. ② 식품은 유통기한 96시간 이상만 들임(11/5 12시 B) → 별점.
 
