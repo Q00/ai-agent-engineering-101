@@ -184,7 +184,11 @@ class ShopSupervisor:
             except Exception:
                 self.market_visibility='unverified'
         expired_soon = self.provider == 'pinggy' and now - self.started >= 3300
-        alternative=self.registration_failures>=2 and self.market_visibility!='market_empty'
+        # A market validator timeout while our public card still answers does
+        # not establish a broken tunnel. Preserve the reachable address and
+        # retry registration; rotating it repeats DNS warmup during an outage.
+        alternative=(self.registration_failures>=2 and not healthy and
+                     self.market_visibility!='market_empty')
         if (expired_soon and not self.pending_registration) or self.misses >= 2 or alternative:
             # Keep the old process in the kit's cleanup list until registration succeeds.
             # A provisioning failure leaves the current tunnel untouched.

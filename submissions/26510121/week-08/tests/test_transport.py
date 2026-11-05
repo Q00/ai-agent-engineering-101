@@ -244,3 +244,19 @@ def test_registration_retry_does_not_retry_auth_or_supervisor_calls(monkeypatch,
     with pytest.raises(SystemExit):
         Market().join('shop','seochanit',object(),'https://same.example',tries=tries)
     assert len(calls)==1
+
+
+def test_repeated_market_timeouts_preserve_reachable_public_address(tmp_path):
+    attempts=[]
+    def join(*args,**kwargs):
+        attempts.append(args)
+        if len(attempts)<4:
+            raise SystemExit('market agent card timeout')
+        return {'name':'seochanit'}
+    monitor,old,new,stopped,logs=supervisor_fixture(tmp_path,join,
+        open_tunnel=lambda *a,**kw:pytest.fail('a reachable address must not churn'))
+    monitor.provider='cloudflare'
+    monitor.pending_registration=True
+    for now in [1,16,31,46]:monitor.tick(now)
+    assert len(attempts)==4 and monitor.procs[1] is old and not stopped
+    assert not monitor.pending_registration
