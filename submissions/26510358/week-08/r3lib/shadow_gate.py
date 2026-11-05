@@ -211,6 +211,26 @@ def score_effect(board, pair, hours):
 
 # ------------------------------------------------------------------------------------------- verdict
 UNSIMULATED_KEYS = ("forum",)                       # levers the twin has no model for (see forum_estimate)
+OK_VERDICTS = ("PASS", "ESTIMATED")                 # main exits 0 only when every result is one of these
+
+
+def forum_shadow(w, board, spec):
+    """Forum-only candidate (lever2-forum): the twin cannot simulate it, so run the deterministic dry run as of the
+    window end (read-only memory.sqlite, no send, no model call) and its checks. ESTIMATED if the checks pass,
+    else FAIL. The buyer score effect is an estimate (forum_lever2.estimate), never a simulation."""
+    from . import forum_lever2
+    db = getattr(w, "db_path", None) or twin.config.DB_PATH
+    dry = forum_lever2.dry_run(forum_lever2.ReadOnlyMem(db), board, w.end, spec=spec or {})
+    dry["checks"] = forum_lever2.checks(dry)
+    c = dry["checks"]
+    reasons = [] if c["ok"] else [k for k in ("schedule_ok", "unique_ok", "refs_ok") if not c[k]] + \
+        (["default -1 votes"] if c["default_downvotes"] else []) + \
+        (["votes that would not count"] if c["uncounted_votes"] else []) + (["no drafts"] if not c["posts"] else [])
+    est = dry["estimate"]
+    summary = (f"dry run {c['posts']} posts, checks ok; ESTIMATE buyer ALL {est.get('live', {}).get('buyer_all')} -> "
+               f"{est.get('candidate', {}).get('buyer_all')} ({est.get('delta_buyer_all')}) over "
+               f"{est.get('horizon_h')} h") if c["ok"] else "dry-run checks failed: " + ", ".join(reasons)
+    return dry, {"verdict": "ESTIMATED" if c["ok"] else "FAIL", "reasons": [summary]}
 
 
 def forum_estimate(board, target):
@@ -308,7 +328,11 @@ def _evaluate(w, candidates, seed, restock, board, board_path, plan_fn, seeds, c
         if unsim:
             pair["unsimulated"] = {"forum": forum_estimate(board, unsim["forum"])} if "forum" in unsim else unsim
             only_unsim = all(k in UNSIMULATED_KEYS or k == "name" for k, v in cand.items() if live.get(k) != v)
-            if only_unsim:
+            if only_unsim and "forum" in unsim:
+                dry, g = forum_shadow(w, board, unsim["forum"])
+                pair["forum_dry_run"] = dry
+                pair["gate"] = dict(g, rule=pair["gate"]["rule"])
+            elif only_unsim:
                 pair["gate"] = {"verdict": "UNSIMULATED", "reasons": [f"{', '.join(unsim)}: not modelled by the twin"],
                                 "rule": pair["gate"]["rule"]}
         na = not_applicable(live, cand, pair["restock_mode"])
@@ -366,6 +390,16 @@ def render(report):
             lines.append(f"estimated shop ALL: {s}")
         if r.get("unsimulated"):
             lines.append(f"unsimulated levers: {r['unsimulated']}")
+        fd = r.get("forum_dry_run")
+        if fd:
+            v, rb = fd["votes"], fd["rollback_baseline"]
+            lines.append(f"forum dry run (sent nothing, llm_calls {fd['llm_calls']}): checks {fd['checks']}")
+            lines.append(f"  votes on {v['posts_seen']} recent posts: +1 {v['plus']}, -1 {v['minus']}, none {v['none']}"
+                         f"; rollback baseline last {rb['hours']} h: ours {rb['ours']}, others {rb['others']},"
+                         f" would trip now {rb['would_trip_now']}")
+            lines.append(f"  ESTIMATE: {json.dumps({k: fd['estimate'].get(k) for k in ('now', 'live', 'candidate', 'delta_buyer_all', 'players_total')}, ensure_ascii=False)}")
+            if fd.get("files"):
+                lines.append(f"  files: {fd['files']}")
         g = r["gate"]
         lines.append(f"GATE: {g['verdict']} {'; '.join(g['reasons'])}"
                      f"{'  [calibration warning]' if g.get('calibration_warning') else ''}")
@@ -405,10 +439,14 @@ def main(argv=None):
     board, board_path = latest_board(a.monitor_dir)
     report = evaluate(w, cands, seed=a.seed, restock=a.restock, board=board, board_path=board_path, seeds=a.seeds,
                       calibrate=not a.no_calibration)
+    for r in report["results"]:
+        if r.get("forum_dry_run"):
+            from . import forum_lever2
+            r["forum_dry_run"]["files"] = [str(f) for f in forum_lever2.write_dry_run(r["forum_dry_run"], a.out)]
     path = write_report(report, a.out)
     print(render(report))
     print(f"\nreport: {os.path.relpath(path, WEEK) if str(path).startswith(str(WEEK)) else path}")
-    return 0 if all(r["gate"]["verdict"] == "PASS" for r in report["results"]) else 1
+    return 0 if all(r["gate"]["verdict"] in OK_VERDICTS for r in report["results"]) else 1
 
 
 if __name__ == "__main__":

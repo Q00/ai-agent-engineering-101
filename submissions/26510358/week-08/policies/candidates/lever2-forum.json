@@ -1,11 +1,31 @@
 {
   "name": "lever2-forum",
-  "description": "SHADOW-ONLY stub (2026-11-05): forum-activity lever (more buyer posts and votes). Not wired into any live path; forum_r3.py is untouched. MA-3 fields TBD in follow-up.",
+  "description": "SHADOW-ONLY forum lever (MA-3, 2026-11-05): more and better buyer posts plus fair votes. Logic in r3lib/forum_lever2.py; switch config.FORUM_LEVER2 = False. Not wired into forum_r3.py; nothing live reads it.",
   "notes": [
-    "The twin has no model of forum posts or votes, so the gate reports this lever as UNSIMULATED (shop metrics unchanged by construction).",
-    "Provisional MA-2 targets: 347 posts, forum percentile ~0.646. MA-3 spec (rate, count, topics, uniqueness, vote rules) comes in a follow-up commit."
+    "The twin has no model of forum posts or votes: shop metrics are unchanged by construction. The gate runs a deterministic dry run (read-only memory.sqlite, no send, no LLM or decision-model call) and reports ESTIMATED when its checks pass.",
+    "Buyer effect is an ESTIMATE: board buyer ALL = 0.5 pct(surplus) + 0.3 pct(forum) + 0.1 pct(deals) + 0.1 pct(posts); only posts move, others keep their last-24 h post rate.",
+    "Hours left is not in our data; [구매 기록] uses purchases.use_within_hours, labelled 사용 기한 조건.",
+    "Rollback within 2 h of going live: our dislikes per post > 0.8, any hidden post, or any HTTP 429. The current market-wide dislike wave (~1.0-1.2 per buyer post) would trip the 0.8 rule today."
   ],
   "policy": {
-    "forum": {"posts_target": 347, "forum_percentile_target": 0.646}
+    "forum": {
+      "switch": "FORUM_LEVER2",
+      "post_gap_s": 300,
+      "posts_per_hour": 12,
+      "posts_target": 345,
+      "forum_percentile_target": 0.646,
+      "topics": {
+        "purchase": "[구매 기록] our paid purchase: price vs list, grade and claim, use-within hours, seller, ledger #",
+        "category": "[카테고리 시세] category price/list quartiles and top SKU over 3 h",
+        "trend": "[가격 동향] category median price/list now vs the 3 h before"
+      },
+      "every_post": {"min_numbers": 2, "refs": "real ledger seqs (settles we hold)"},
+      "uniqueness": {"subject": "new ledger # or new category per topic within REPORT_DEDUPE_H", "no_repeated_text": true,
+                     "near_dup_jaccard": 0.8},
+      "votes": {"default_minus_one": false, "minus_one_if_p_manipulation_at_least": 0.9,
+                "plus_one": "accurate (refs in our ledger, amounts match, quoted in text) and useful",
+                "upvotes_per_run": 12, "count_only_if": {"our_settled_deals_at_least": 5, "author_owner_differs": true}},
+      "rollback": {"within_h": 2, "dislikes_per_post_above": 0.8, "any_hidden": true, "any_http_429": true}
+    }
   }
 }

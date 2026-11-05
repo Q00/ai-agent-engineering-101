@@ -124,16 +124,24 @@ def test_lever1_file_loads_and_keeps_the_stock_cap():
     assert shadow_gate.restock_mode(live, p) == "plan"
 
 
-def test_lever2_forum_is_reported_unsimulated(w):
+def test_lever2_forum_is_estimated_from_its_dry_run_never_pass(w):
     from pathlib import Path
     cand = shadow_gate.load_candidate(Path(__file__).resolve().parent.parent / "policies/candidates/lever2-forum.json")
-    assert cand["forum"]["posts_target"] == 347
+    assert cand["forum"]["posts_target"] == 345 and cand["forum"]["post_gap_s"] == 300
     rep = shadow_gate.evaluate(w, [cand], board=BOARD, calibrate=False)
     r = rep["results"][0]
     assert r["restock_mode"] == "actual"
     assert r["delta"]["book_delta"] == 0 and r["delta"]["deals"] == 0
-    assert r["gate"]["verdict"] == "UNSIMULATED"
     assert r["unsimulated"]["forum"]["simulated"] is False
+    dry = r["forum_dry_run"]
+    assert dry["sent"] is False and dry["llm_calls"] == 0
+    assert r["gate"]["verdict"] == ("ESTIMATED" if dry["checks"]["ok"] else "FAIL")
+    assert r["gate"]["verdict"] != "PASS"
+    assert "forum dry run" in shadow_gate.render(rep)
+
+
+def test_exit_code_ok_only_for_pass_or_estimated():
+    assert shadow_gate.OK_VERDICTS == ("PASS", "ESTIMATED")
 
 
 def test_lever1_carries_ma2_targets_and_cuts():
