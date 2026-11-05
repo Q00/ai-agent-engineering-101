@@ -12,7 +12,7 @@ from uuid import uuid4
 
 import httpx
 
-from buyer import BuyerError, BuyerTransport, run_autonomous
+from buyer import BuyerError, BuyerTransport, run_autonomous, seller_metadata
 from buyer_memory import load_memory, remember, RECENT_COUNT
 from shop_catalog import load_shops
 from r3_policy import buyer_accept, load_policy
@@ -154,7 +154,7 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None, order_item=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.requirements = requirements
     client.order_item = order_item
@@ -163,7 +163,9 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
     client.r3_context = decision_context
     if fast_rules:
         from buyer_fast import decision
-        client.rule_decision = lambda text: decision(text, client.budget, client.last_offer)
+        client.price_reading = price_reading
+        client.reference_relief = reference_relief
+        client.rule_decision = lambda text: decision(text, client.budget, client.last_offer, seller_metadata(client.task) if price_reading else None, price_reading)
         cached = []
         def allow_model():
             if not cached:
@@ -212,6 +214,7 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
               "signature_verification": "left_to_market_kit", "stars": stars, "review": review,
               "negotiation_outcome": negotiation, "decision_trail": client.decisions,
               "request_format": "sku_only", "receipt_format": receipt_format(receipt, item, order_item), "category_receipt_release": release,
+              "reference_relief": getattr(client, "reference_relief_taken", None),
               "refused_at_open": client.state == "TASK_STATE_REJECTED" and not client.decisions,
               "failure_reason": failure_reason(outcome, negotiation, client.decisions),
               "buyer_log_dir": str(client.log_dir)}
@@ -276,9 +279,13 @@ def main():
                          "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions, "order_item": order.get("item")}
         if support_decision.get("fast_rules"):
             from buyer_counter import load_settings
+            from buyer_fast import load_reading
             from buyer_support import model_reservation
+            import reference_relief
+            relief_token = reference_relief.active(args.order.parent, ROOT)
             trade_options.update(fast_rules=True, model_gate=lambda: model_gate(args.order.parent, order["order"], model_reservation),
-                                 over_budget_counter=load_settings(),
+                                 over_budget_counter=load_settings(), price_reading=load_reading(),
+                                 reference_relief={"order_budget": args.budget, "kind": order.get("kind"), "catalog_kind": (catalog.get(selected_item) or {}).get("kind")} if relief_token else None,
                                  catalog_list_price=(catalog.get(selected_item) or {}).get("list_price"))
         if r3 and order.get("kind") == "goods":
             trade_options["requirements"] = accept_conditions
@@ -289,6 +296,8 @@ def main():
             record["order_budget"] = args.budget
             record["category"] = order.get("category", args.item)
             record["accept_conditions"] = accept_conditions
+            if record.get("reference_relief"):
+                reference_relief.note_deal(args.order.parent, relief_token, order.get("order"), record["reference_relief"], record)
             # Certificate and food-use constraints are enforced by the kit before payment.
             result["accept"] = accept_conditions
         record["selection_reason"] = reason

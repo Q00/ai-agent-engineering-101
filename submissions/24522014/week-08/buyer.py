@@ -13,7 +13,7 @@ from uuid import uuid4
 import httpx
 
 from buyer_counter import evaluate as evaluate_counter
-from buyer_fast import classify
+from buyer_fast import classify, read_ask
 from harness import HarnessError, MODELS, parse_response, select_harness
 from model_router import last_call as last_model_call, run_model as run_harness
 from quote_terms import check_quote
@@ -187,6 +187,16 @@ def seller_message(task):
     return " ".join(part.get("text", "") for part in message.get("parts", []) if isinstance(part, dict))
 
 
+def seller_metadata(task):
+    """Structured fields of the seller's current message. Sellers write these too, so they get the same checks as text."""
+    message = task["status"].get("message") or {}
+    found = dict(message.get("metadata") or {}) if isinstance(message.get("metadata"), dict) else {}
+    for part in message.get("parts", []):
+        if isinstance(part, dict) and isinstance(part.get("metadata"), dict):
+            found.update(part["metadata"])
+    return found
+
+
 def validate_buyer_decision(decision, budget):
     parse_response(json.dumps(decision))
     if decision["action"] not in ("offer", "walk_away"):
@@ -210,6 +220,9 @@ def record_decision(client, turn, source, reason_code, decision=None, parser_rea
     route = getattr(client, "model_route", None)
     if route:
         entry.update(route)
+    how = getattr(client, "price_read", None)
+    if how:
+        entry["price_read"] = how
     client.decisions.append(entry)
     (client.log_dir / f"decision-{turn:02d}.json").write_text(
         json.dumps({**(details or {}), **entry, "decision": decision}, ensure_ascii=False, indent=2),
@@ -219,7 +232,10 @@ def record_decision(client, turn, source, reason_code, decision=None, parser_rea
 def buyer_decision(client, provider, history, turn, max_turns):
     """Ask for one decision; retry invalid JSON or budget violations once, without clamping."""
     text = seller_message(client.task)
-    _, parser_reason, clear_ask = classify(text, client.budget, getattr(client, "last_offer", None))
+    reading = getattr(client, "price_reading", None)
+    metadata = seller_metadata(client.task) if reading else None
+    client.price_read = read_ask(text, metadata, reading)[2] if reading else None
+    _, parser_reason, clear_ask = classify(text, client.budget, getattr(client, "last_offer", None), metadata, reading)
     accept = getattr(client, "accept_conditions", None)
     client.counter_check = client.model_route = None
     client.quote_check = check_quote(client.task, text, accept) if accept else None
@@ -247,6 +263,22 @@ def buyer_decision(client, provider, history, turn, max_turns):
                 client.counter_used = True
                 record_decision(client, turn, "deterministic", "rule_counter_offer", counter, parser_reason)
                 return counter
+            relief = getattr(client, "reference_relief", None)
+            if relief and not getattr(client, "reference_relief_taken", None):
+                from reference_relief import eligible, REASON, REASON_CODE
+                check = client.counter_check or {}
+                grade = (client.quote_check or {}).get("grade")
+                allowed, _ = eligible(clear_ask, cap=client.budget, list_price=getattr(client, "catalog_list_price", None), order_budget=relief["order_budget"],
+                                      grade=grade, kind=relief["kind"], catalog_kind=relief["catalog_kind"], counter_reason=check.get("reason_code"))
+                if allowed:
+                    accepted = {"action": "offer", "price": clear_ask, "reason": REASON}
+                    # Only here the deal's limit moves, and only to this ask: the offer and receipt checks then hold it to exactly this price.
+                    client.reference_relief_taken = {"ask": clear_ask, "reference_cap": client.budget, "list_price": getattr(client, "catalog_list_price", None), "grade": grade,
+                                                     "turn": turn, "counter_reason": check.get("reason_code"), "order_budget": relief["order_budget"]}
+                    client.budget = clear_ask
+                    validate_buyer_decision(accepted, client.budget)
+                    record_decision(client, turn, "deterministic", REASON_CODE, accepted, parser_reason)
+                    return accepted
     if not any(float(number) > 0 for number in re.findall(r"-?\d+(?:\.\d+)?", text)):
         record_decision(client, turn, "parser", "no_positive_number", None, parser_reason)
         raise BuyerError("Seller input-required message has no valid asking price")

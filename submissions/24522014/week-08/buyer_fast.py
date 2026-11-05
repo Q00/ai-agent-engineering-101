@@ -1,7 +1,11 @@
 """Accept only one unambiguous affordable asking price; checkout remains authoritative."""
 
+import json
+import math
+from pathlib import Path
 import re
 
+CONFIG = Path(__file__).resolve().parent / "buyer_support.json"
 OFFER_REASON = "Unambiguous current ask within coded value/quality cap; checkout will verify terms."
 
 # Only labels that name this seller's current ask. A bare "price" also fits list, past and median figures.
@@ -81,9 +85,81 @@ def parse_ask(text):
     return price, "single_ask"
 
 
-def classify(text, cap, last_offer=None):
-    """Return (decision or None, reason code, parsed price or None) for the decision log."""
+NUMBER = r"(\d[\d,.]*)"
+GROUP_A = (("my_price", re.compile(r"(?<![\w])my price\s*[:：=]?\s*" + NUMBER, re.I)),
+           ("final_price", re.compile(r"(?<![\w])(?:our|my) final price(?: for [^.:：\d]{1,60})?(?:\s+is)?\s*[:：=]?\s*" + NUMBER, re.I)))
+GROUP_B = (("lowest_price", re.compile(r"(?<![\w])(?:our|my) lowest price(?: for this unit)?\s*[:：=]?\s*" + NUMBER, re.I)),
+           ("colon_krw", re.compile(r"[:：]\s*" + NUMBER + r"\s*(?:KRW\b|won\b|원)", re.I)))
+ANY_KRW = re.compile(NUMBER + r"\s*(?:KRW\b|won\b|원)", re.I)
+# Words before a "name: 12000 KRW" that make it some other figure than this seller's ask.
+OTHER_FIGURE = NOT_CURRENT | {"elsewhere", "other", "others", "lowest", "highest", "msrp", "rrp", "retail", "compare", "comparable", "shipping", "delivery", "fee", "deposit",
+                              "warranty", "refund", "budget", "value", "worth", "cost", "savings", "save", "discount", "off", "stars", "review", "reviews", "다른", "타사", "배송", "보증", "환불", "원가"}
+OFF = {"group_a": False, "group_b": False}
+
+
+def load_reading(path=CONFIG):
+    """Which added groups are on. Anything but an explicit true is off, and a missing or unreadable setting turns both off."""
+    try:
+        section = json.loads(Path(path).read_text(encoding="utf-8")).get("price_reading")
+    except (OSError, ValueError, AttributeError):
+        return dict(OFF)
+    if not isinstance(section, dict):
+        return dict(OFF)
+    return {"group_a": section.get("group_a_structured_and_labels") is True, "group_b": section.get("group_b_krw_and_lowest") is True}
+
+
+def _clause_before(text, start):
+    return re.split(r"[.!?\n;]", text[:start])[-1].casefold()
+
+
+def _other_figure(clause):
+    words = re.findall(r"[^\W\d_]+", clause)
+    return any(word in OTHER_FIGURE for word in words) or any(word in clause for word in OTHER_FIGURE if not word.isascii())
+
+
+def structured_ask(metadata):
+    value = metadata.get("ask") if isinstance(metadata, dict) else None
+    if type(value) is float and math.isfinite(value) and value.is_integer():
+        value = int(value)
+    return value if type(value) is int and value > 0 else None
+
+
+def read_ask(text, metadata=None, reading=None):
+    """(price, code, how). The current parser always goes first; added readings run only when it found no label at all, and only with the same cautions."""
     price, code = parse_ask(text)
+    if code != "no_labeled_price" or not reading or not (reading.get("group_a") or reading.get("group_b")):
+        return price, code, None
+    found = {}
+    rules = (GROUP_A if reading.get("group_a") else ()) + (GROUP_B if reading.get("group_b") else ())
+    for how, pattern in rules:
+        for match in pattern.finditer(text):
+            if how == "colon_krw":
+                if _other_figure(_clause_before(text, match.start())):
+                    return None, "non_current_price", how
+            elif _preceding_word(text, match.start()) in NOT_CURRENT:
+                return None, "non_current_price", how
+            if not _token_is_price(match[1], text[match.end():]):
+                return None, "malformed_price", how
+            found.setdefault(int(match[1].rstrip(".,").replace(",", "")), how)
+    if reading.get("group_a"):
+        ask = structured_ask(metadata)
+        if ask is not None:
+            found.setdefault(ask, "metadata_ask")
+    if not found:
+        return None, "no_labeled_price", None
+    if len(found) != 1:
+        return None, "conflicting_prices", None
+    price, how = next(iter(found.items()))
+    if how == "colon_krw" and any(int(m[1].rstrip(".,").replace(",", "") or 0) != price for m in ANY_KRW.finditer(text) if WHOLE.fullmatch(m[1].rstrip(".,"))):
+        return None, "conflicting_prices", how
+    if _names_another_price(text, price):
+        return None, "conflicting_prices", how
+    return price, "single_ask", how
+
+
+def classify(text, cap, last_offer=None, metadata=None, reading=None):
+    """Return (decision or None, reason code, parsed price or None) for the decision log."""
+    price, code, _ = read_ask(text, metadata, reading)
     if price is None:
         return None, code, None
     if not 0 < price <= cap:
@@ -95,5 +171,5 @@ def classify(text, cap, last_offer=None):
     return {"action": "offer", "price": price, "reason": OFFER_REASON}, "rule_offer", price
 
 
-def decision(text, cap, last_offer=None):
-    return classify(text, cap, last_offer)[0]
+def decision(text, cap, last_offer=None, metadata=None, reading=None):
+    return classify(text, cap, last_offer, metadata, reading)[0]
