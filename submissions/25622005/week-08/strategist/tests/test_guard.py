@@ -199,6 +199,8 @@ class Bounds(unittest.TestCase):
         self.assertEqual(g.bounds("stock.cover_min"), (20, 180, 15))
         self.assertEqual(g.bounds("stock.per_sku_qty"), (1, 10, 1))
         self.assertEqual(g.bounds("stock.big_ticket_share"), (0.10, 0.40, 0.05))
+        self.assertEqual(g.bounds("stock.big_ticket_list"), (20000, 200000, 10000))
+        self.assertEqual(g.bounds("stock.goods_max_list"), (20000, 1000000, 50000))     # beds and sofas fit
         self.assertEqual(g.bounds("stock.bigticket_probe_qty"), (1, 6, 1))
         self.assertEqual(g.bounds("stock.max_hold"), (20, 80, 10))
         self.assertEqual(g.bounds("stock.min_line_qty"), (1, 10, 1))

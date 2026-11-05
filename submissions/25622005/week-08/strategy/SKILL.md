@@ -28,7 +28,7 @@ policy:
     per_sku_qty: 2
     short_food_max_shelf_h: 168   # D2 shorter shelf categories wait for observations
     short_food_min_uwh_obs: 10
-    goods_max_list: 50000
+    goods_max_list: 600000        # D2 skip goods categories whose median list price is above this
     supply_demand_priority: true  # L1 priority (demand + 1) / (supply + 1)
     demand_window_h: 6
     regular_min_stock: 1          # L1 keep at least this many units in a regular customer's top categories
@@ -59,7 +59,8 @@ policy:
     trend_skus: []                # the next best sellers (set by the strategist): picked like focus, ordered after it
     trend_max: 16
     trend_share: 0.08             # focus/trend SKUs cover at least this share of the market's sales rate
-    big_ticket_share: 0.40        # goods above goods_max_list: held + planned cost <= this x inventory_cap_share x funds
+    big_ticket_share: 0.40        # goods above big_ticket_list: held + planned cost <= this x inventory_cap_share x funds
+    big_ticket_list: 40000        # goods listed above this are big-ticket
     bigticket_probe_qty: 3        # a big-ticket SKU holds at most this many units until we sold 2 of it in 6 h
     min_margin_share: 0.05        # surge: buy while clearing price - this covers cost x factor x floor_cost_mult
   market:
@@ -136,14 +137,15 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 
 - Keep inventory cost within `stock.inventory_cap_share` of cash plus inventory, and cash
   above `stock.cash_floor`.
-- Open long-shelf food first, then cheap goods. Pick the SKU closest to the category's
-  median price. Fill categories in order of (demand + 1) / (supply + 1).
+- Open long-shelf food first, then goods; skip goods categories whose median list price is above
+  `stock.goods_max_list`. Pick the SKU closest to the category's median price. Fill categories
+  in order of (demand + 1) / (supply + 1).
 - `stock.focus_skus`, then `stock.trend_skus`, list the market's best sellers (chosen by the
   strategist's code from ledger settles). They are stocked even when they are not the category's
   median-price SKU, ahead of the rest, with a sales rate of at least `stock.trend_share` of the
   market's rate of the SKU. Focus SKUs get `stock.focus_cover_mult` times the cover target, within
   `stock.focus_cap_share` of the headroom.
-- Big-ticket goods (listed above `stock.goods_max_list`, only through those lists): their held
+- Big-ticket goods (listed above `stock.big_ticket_list`, beds and sofas among them): their held
   cost plus planned worst cost stays within `stock.big_ticket_share` x `stock.inventory_cap_share`
   x (cash + stock cost), and a SKU holds at most `stock.bigticket_probe_qty` units (overpriced
   units included) until we sold 2 of it in 6 hours.

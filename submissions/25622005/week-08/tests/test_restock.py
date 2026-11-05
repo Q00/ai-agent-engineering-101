@@ -4,6 +4,7 @@ import copy
 import http.server
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -22,6 +23,7 @@ import policy  # noqa: E402
 from tools import stock  # noqa: E402
 
 POL = copy.deepcopy(policy.DEFAULTS)
+POL["stock"]["goods_max_list"] = 50000          # the old D2 line: the fixtures' 침대 category (300,000) stays out
 END = POL["stock"]["end_ts"]
 NOW = END - 10 * 86400
 
@@ -384,7 +386,7 @@ class TrendAndDepthTest(unittest.TestCase):
 
 
 class BigTicketTest(unittest.TestCase):
-    """Goods listed above goods_max_list: the budget and the probe (G2, list 300,000, worst 225,000 a unit)."""
+    """Goods listed above big_ticket_list: the budget and the probe (G2, list 300,000, worst 225,000 a unit)."""
 
     RICH = 50000000                                                     # headroom 15M, focus room 7.5M
 
@@ -419,6 +421,35 @@ class BigTicketTest(unittest.TestCase):
         self.assertEqual(p["excluded"]["G2"], "big_ticket_cap")       # 290,000 held + 225,000 > 452,610
         self.assertEqual(p["big_ticket"]["held_cost"], 290000)
         self.assertEqual(buys(p), {"G1": 2})                          # G1 (40,000) is not big-ticket
+
+    def test_bed_category_is_a_pick_within_the_budget_and_the_probe(self):
+        # the shipped goods_max_list (600,000) opens a category of median 345,000; big_ticket_list stays 40,000
+        c = dict([cat("B1", "침대", 345000, "goods"), cat("B2", "침대", 900000, "goods")])
+        d = [dem("침대", 345000, "goods")]
+        pol = copy.deepcopy(policy.DEFAULTS)
+        pol["stock"]["per_sku_qty"] = 5
+        p = stock.plan_restock(inv(self.RICH), c, d, {}, pol, NOW)
+        self.assertEqual(buys(p), {"B1": 3})                           # bigticket_probe_qty 3, not per_sku_qty 5
+        self.assertEqual(p["big_ticket"], {"budget": 6000000, "held_cost": 0, "planned_worst": 776250})
+        pol["stock"]["big_ticket_share"] = 0.05                        # 0.05 x 0.3 x 50M = 750,000
+        p = stock.plan_restock(inv(self.RICH), c, d, {}, pol, NOW)
+        self.assertEqual(buys(p), {"B1": 2})                           # 2 x 258,750 = 517,500
+        pol["stock"]["big_ticket_share"] = 0.01                        # 150,000: not one unit
+        self.assertEqual(stock.plan_restock(inv(self.RICH), c, d, {}, pol, NOW)["excluded"]["B1"], "big_ticket_cap")
+        pol["stock"]["goods_max_list"] = 300000
+        p = stock.plan_restock(inv(self.RICH), c, d, {}, pol, NOW)
+        self.assertEqual((p["buy"], p["excluded"]["침대"]), ([], "D2_goods_over_max_list"))
+
+    def test_big_ticket_line_is_its_own_key(self):
+        x = dict(cat("G45", "의자", 45000, "goods")[1], sku="G45")
+        pol = focus_pol("G45", per_sku_qty=5)
+        self.assertTrue(stock.big_ticket(x, pol))                      # above big_ticket_list 40,000
+        self.assertEqual(buys(stock.plan_restock(inv(self.RICH), dict([cat("G45", "의자", 45000, "goods")]), [], {},
+                                                 pol, NOW)), {"G45": 3})
+        pol = focus_pol("G45", per_sku_qty=5, big_ticket_list=50000)
+        self.assertFalse(stock.big_ticket(x, pol))
+        self.assertEqual(buys(stock.plan_restock(inv(self.RICH), dict([cat("G45", "의자", 45000, "goods")]), [], {},
+                                                 pol, NOW)), {"G45": 5})
 
 
 class SurgeAllowanceTest(unittest.TestCase):
@@ -608,7 +639,9 @@ class HookTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.home = Path(self.tmp.name)
         (self.home / "strategy").mkdir()
-        shutil.copy(W / "strategy" / "SKILL.md", self.home / "strategy" / "SKILL.md")
+        md = (W / "strategy" / "SKILL.md").read_text(encoding="utf-8")     # with POL's D2 line, whatever the file says
+        (self.home / "strategy" / "SKILL.md").write_text(
+            re.sub(r"goods_max_list: \d+", "goods_max_list: 50000", md, count=1), encoding="utf-8")
         self.state = self.home / ".market"
         self.state.mkdir()
         (self.state / "catalog.json").write_text(json.dumps(CATALOG, ensure_ascii=False), encoding="utf-8")

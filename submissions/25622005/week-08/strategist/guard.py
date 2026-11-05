@@ -40,7 +40,7 @@ TUNABLE = {
     "stock.regular_min_stock": (0, 3, 1),
     "stock.max_lines": (3, 10, 2),
     "stock.max_qty": (5, 20, 5),
-    "stock.goods_max_list": (20000, 100000, 10000),
+    "stock.goods_max_list": (20000, 1000000, 50000),   # D2 goods categories; big-ticket is stock.big_ticket_list
     "stock.cover_min": (20, 180, 15),
     "stock.cover_safety": (1.0, 3.0, 0.25),
     "stock.focus_cover_mult": (1.0, 3.0, 0.25),
@@ -52,6 +52,7 @@ TUNABLE = {
     "stock.trend_share": (0.03, 0.20, 0.02),
     "stock.min_margin_share": (0.02, 0.12, 0.01),
     "stock.big_ticket_share": (0.10, 0.40, 0.05),
+    "stock.big_ticket_list": (20000, 200000, 10000),
     "stock.bigticket_probe_qty": (1, 6, 1),
     # end of round (Patch 3.3: stock counts at cost, so 0 = off is the default)
     "stock.clear_cost_h": (0, 72, 12),

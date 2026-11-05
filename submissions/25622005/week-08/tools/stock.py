@@ -89,9 +89,9 @@ def _kind(x):
 
 
 def big_ticket(x, pol):
-    """Goods listed above stock.goods_max_list (x: a catalog entry or a unit)."""
+    """Goods listed above stock.big_ticket_list (x: a catalog entry or a unit)."""
     lst = x.get("list_price")
-    return _kind(x) == "goods" and _finite(lst) and lst > pol["stock"]["goods_max_list"]
+    return _kind(x) == "goods" and _finite(lst) and lst > pol["stock"]["big_ticket_list"]
 
 
 def f_max(summary, kind, pol):
@@ -149,7 +149,7 @@ def plan_restock(inv, catalog, demand, summary, pol, now, planned=None):
     sales rate is at least stock.trend_share x the market's. Focus SKUs are stocked focus_cover_mult times
     deeper, and their worst cost together stays within stock.focus_cap_share of the headroom.
 
-    Big-ticket goods (listed above stock.goods_max_list): held cost + planned worst cost stay within
+    Big-ticket goods (listed above stock.big_ticket_list): held cost + planned worst cost stay within
     stock.big_ticket_share x inventory_cap_share x (cash + inventory cost), and a SKU holds at most
     stock.bigticket_probe_qty units until we sold PROBE_SALES of it in 6 h.
 

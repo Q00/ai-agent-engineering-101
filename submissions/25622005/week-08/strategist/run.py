@@ -334,6 +334,7 @@ def _migrated(cfg, now, migrations, skipped, state, rec):
         keys = set(m["changes"])
         if keys & held:
             continue
+        keys -= set(skipped.get(m["id"], {}))           # another entry's row may have set the same key
         row = {"id": m["id"], "applied": sorted(keys & applied), "skipped": skipped.get(m["id"], {}),
                "rejected": {k: refused[k] for k in sorted(keys - applied) if k in refused}}
         rec["migrations"].append(row)

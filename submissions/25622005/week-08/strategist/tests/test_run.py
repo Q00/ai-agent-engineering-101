@@ -965,7 +965,9 @@ class ReleaseTest(Base):
         release.write_text(self.orig.replace("5. Unsold stock is worth nothing at the end. Cash and turnover beat margin.",
                                              "5. Unsold stock counts at what it cost when the round ends (Patch 3.3)."),
                            encoding="utf-8")
-        for target, name, new in ((run.migrate, "MIGRATIONS", MIGRATIONS), (skillfile, "TEMPLATES", (release,))):
+        # the end-of-round entry only (the fixture's goods_max_list 50000 would also migrate: its own test)
+        mine = tuple(m for m in MIGRATIONS if m["id"] == self.ID)
+        for target, name, new in ((run.migrate, "MIGRATIONS", mine), (skillfile, "TEMPLATES", (release,))):
             patcher = mock.patch.object(target, name, new)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -1050,6 +1052,26 @@ class ReleaseTest(Base):
         self.assertNotIn("migrations", json.loads((self.home / "state.json").read_text(encoding="utf-8")))
         rec = self.run_at(NOW + 180)
         self.assertEqual((len(rec["applied"]), rec["template"], rec["migrations"][0]["id"]), (5, "applied", self.ID))
+
+    def test_big_ticket_split_moves_the_strategists_40k_once(self):
+        self.skill.write_text(self.live.replace("goods_max_list: 50000", "goods_max_list: 40000"), encoding="utf-8")
+        self.answer_with([])
+        split = ("2026-11-06-big-ticket-split-40k", "2026-11-06-big-ticket-split-50k")
+        with mock.patch.object(run.migrate, "MIGRATIONS", MIGRATIONS):
+            rec = self.run_at()
+            self.assertIn(("stock.goods_max_list", 40000, 600000, "migration"),
+                          [(a["key"], a["old"], a["new"], a["source"]) for a in rec["applied"]])
+            self.assertEqual(skillfile.read(self.skill)[1]["policy"]["stock"]["goods_max_list"], 600000)
+            # the 50k entry neither applied nor refused the key the 40k entry set
+            self.assertEqual([(m["id"], m["applied"], m["skipped"], m["rejected"]) for m in rec["migrations"]
+                              if m["id"] in split],
+                             [(split[0], ["stock.goods_max_list"], {}, {}),
+                              (split[1], [], {"stock.goods_max_list": {"live": 40000, "from": 50000}}, {})])
+            state = json.loads((self.home / "state.json").read_text(encoding="utf-8"))
+            self.assertEqual(state["migrations"], [self.ID, *split])
+            rec = self.run_at(NOW + 1800)                               # done: a later 40000 is the strategist's
+        self.assertEqual((rec["migrations"], skillfile.read(self.skill)[1]["policy"]["stock"]["goods_max_list"]),
+                         ([], 600000))
 
     def test_no_release_body_when_the_template_is_the_live_file(self):
         self.answer_with([])

@@ -483,7 +483,7 @@ def _economics(tables, own, pol, market, catalog, now):
     per hour), turnover (24 h cost of goods sold / stock cost, per day; scaled to a day while the sums span
     day_h < 24 hours, None under TURN_MIN_H), unsold goods (goods units held 24 h or more
     of SKUs we sold none of in 24 h, as a share of stock cost), spoilage (24 h expired cost / cost of goods sold),
-    the big-ticket budget (goods listed above stock.goods_max_list: held cost against stock.big_ticket_share x
+    the big-ticket budget (goods listed above stock.big_ticket_list: held cost against stock.big_ticket_share x
     inventory_cap_share x (cash + stock cost)), the free surge units left on our SKUs, p_clear per kind against our
     floor/list, and the expansion conditions. None without tables."""
     t = _dict(tables)
@@ -503,9 +503,9 @@ def _economics(tables, own, pol, market, catalog, now):
     cogs = _num(day.get("cogs")) or 0
     unsold = [u for u in units if u.get("kind") == "goods" and not o24.get(u.get("sku"))
               and now - (_num(u.get("supplied_at")) or now) >= 86400]
-    gmax = _num(st.get("goods_max_list"))
-    big = [u for u in units if u.get("kind") == "goods" and gmax is not None
-           and (_list_price(catalog, u.get("sku")) or 0) > gmax]
+    bmax = _num(st.get("big_ticket_list"))
+    big = [u for u in units if u.get("kind") == "goods" and bmax is not None
+           and (_list_price(catalog, u.get("sku")) or 0) > bmax]
     share = _num(st.get("big_ticket_share")) if "big_ticket_share" in st else 0.40
     cap = _num(st.get("inventory_cap_share"))
     budget = round(share * cap * (balance + inv_cost)) if None not in (share, cap, balance) else None

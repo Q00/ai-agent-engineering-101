@@ -38,7 +38,7 @@ DEFAULTS = {
     "stock": {
         "inventory_cap_share": 0.30, "cash_floor": 1000000, "worst_cost_share": 0.75,
         "food_shelf_hours": 720, "per_sku_qty": 2, "short_food_max_shelf_h": 168,
-        "short_food_min_uwh_obs": 10, "goods_max_list": 50000,
+        "short_food_min_uwh_obs": 10, "goods_max_list": 600000,
         "supply_demand_priority": True, "demand_window_h": 6, "regular_min_stock": 1,
         "max_lines": 10, "max_qty": 20, "max_hold": 40, "min_line_qty": 4, "require_own_card": True,
         "bankrupt_min_hours_to_end": 48, "bankrupt_recovery_threshold": 500000, "bankrupt_zero_sales_h": 12,
@@ -47,7 +47,7 @@ DEFAULTS = {
         "window_lead_s": 60, "cover_min": 25, "cover_safety": 1.5,
         "focus_skus": [], "focus_max": 8, "focus_cover_mult": 2.0, "focus_cap_share": 0.5, "focus_min_settles": 10,
         "trend_skus": [], "trend_max": 16, "trend_share": 0.08,
-        "big_ticket_share": 0.40, "bigticket_probe_qty": 3, "min_margin_share": 0.05,
+        "big_ticket_share": 0.40, "big_ticket_list": 40000, "bigticket_probe_qty": 3, "min_margin_share": 0.05,
     },
     "market": {"surge_free": 50, "surge_per_unit": 0.002, "surge_max": 1.5},
     "buyer": {
@@ -81,7 +81,8 @@ RANGES = {
     "stock.focus_min_settles": (1, 1000), "llm.exception_min_left_s": (0, 280), "llm.exception_timeout_s": (3, 60),
     "stock.max_hold": (1, 200), "stock.min_line_qty": (1, 20), "stock.trend_max": (0, 40),
     "stock.trend_share": (0.0, 0.5), "stock.big_ticket_share": (0.0, 0.40), "stock.bigticket_probe_qty": (1, 20),
-    "stock.min_margin_share": (0.0, 0.3),
+    "stock.min_margin_share": (0.0, 0.3), "stock.goods_max_list": (10000, 2000000),
+    "stock.big_ticket_list": (10000, 1000000),
     "market.surge_free": (0, 100000), "market.surge_per_unit": (0.0, 0.1), "market.surge_max": (1.0, 5.0),
 }
 

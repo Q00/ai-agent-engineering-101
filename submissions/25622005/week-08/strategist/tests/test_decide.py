@@ -193,7 +193,8 @@ class ControlPromptTest(unittest.TestCase):
 
     def test_mechanics_name_the_levers(self):
         for s in ("Book", "p_clear", "refill_h", "stock.max_hold", "stock.min_line_qty", "stock.big_ticket_share",
-                  "stock.bigticket_probe_qty", "market.surge_free", "stock.min_margin_share", "stock.trend_share",
+                  "stock.big_ticket_list", "stock.goods_max_list", "stock.bigticket_probe_qty", "market.surge_free",
+                  "stock.min_margin_share", "stock.trend_share",
                   "stock.clear_cost_h", "stock.clear_70_h", "stock.clear_any_h", "stock.taper_h", "stock.goods_stop_h",
                   "economics.expand_ok", "economics.expand_all_ok"):
             self.assertIn(s, decide.MECHANICS)

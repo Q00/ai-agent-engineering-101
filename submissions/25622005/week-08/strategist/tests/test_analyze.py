@@ -482,7 +482,8 @@ class InventoryFocusTest(unittest.TestCase):
 
 class EconomicsMixTest(unittest.TestCase):
     """The economics and mix sections from the SKU tables, our inventory, the kit log and the market's numbers."""
-    POL = {"stock": {"end_ts": NOW + 36000, "inventory_cap_share": 0.5, "goods_max_list": 50000},
+    POL = {"stock": {"end_ts": NOW + 36000, "inventory_cap_share": 0.5, "goods_max_list": 600000,
+                     "big_ticket_list": 50000},
            "seller": {"floor_list": 0.60, "floor_cost_mult": 1.08}}
     CAT = {"GBIG": ["bed", "가구>침대", 400000, "goods", None], "GSM": ["cup", "주방>컵", 10000, "goods", None],
            "GF": ["rice", "식품>쌀", 20000, "food", 2000]}
@@ -534,6 +535,11 @@ class EconomicsMixTest(unittest.TestCase):
         self.DAY_H = 2                                                  # too few hours: not given, not "broken"
         e = self.brief()["economics"]
         self.assertEqual((e["expand"]["turnover_day"], e["expand_ok"]["turnover_day"]), (None, None))
+
+    def test_big_ticket_follows_big_ticket_list_not_goods_max_list(self):
+        self.POL = dict(self.POL, stock=dict(self.POL["stock"], goods_max_list=40000, big_ticket_list=500000))
+        e = self.brief()["economics"]                                   # GBIG (400,000) is under the line
+        self.assertEqual((e["big_ticket"]["skus"], e["big_ticket"]["held_cost"]), (0, 0))
 
     def test_mix(self):
         m = self.brief()["mix"]

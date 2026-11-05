@@ -9,11 +9,20 @@ written or refused, not while a write is held back).
 """
 from strategist import guard
 
+BIG_TICKET_SPLIT = ("big-ticket goods have their own line (stock.big_ticket_list), so goods_max_list only skips goods "
+                    "categories: beds and sofas (median list 345k-568k, most of the market's revenue) open, and "
+                    "stock.big_ticket_share still caps them")
+
 MIGRATIONS = (
     {"id": "2026-11-06-patch-3.3-end-of-round",
      "reason": "Patch 3.3: unsold stock counts at cost, so no taper, goods stop at T-6 h, no below-cost clearing",
      "changes": {"stock.taper_h": (72, 0), "stock.goods_stop_h": (24, 6), "stock.clear_70_h": (24, 0),
                  "stock.clear_any_h": (6, 0)}},
+    # goods_max_list was 50,000 as shipped and 40,000 as the strategist set it: one entry per old value
+    {"id": "2026-11-06-big-ticket-split-40k", "reason": BIG_TICKET_SPLIT,
+     "changes": {"stock.goods_max_list": (40000, 600000)}},
+    {"id": "2026-11-06-big-ticket-split-50k", "reason": BIG_TICKET_SPLIT,
+     "changes": {"stock.goods_max_list": (50000, 600000)}},
 )
 
 

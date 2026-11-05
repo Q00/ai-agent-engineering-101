@@ -29,6 +29,13 @@ class Entries(unittest.TestCase):
         self.assertEqual(m["changes"], {"stock.taper_h": (72, 0), "stock.goods_stop_h": (24, 6),
                                         "stock.clear_70_h": (24, 0), "stock.clear_any_h": (6, 0)})
 
+    def test_big_ticket_split(self):
+        got = {m["id"]: m for m in migrate.MIGRATIONS if m["id"].startswith("2026-11-06-big-ticket-split")}
+        self.assertEqual({i: m["changes"] for i, m in got.items()},
+                         {"2026-11-06-big-ticket-split-40k": {"stock.goods_max_list": (40000, 600000)},
+                          "2026-11-06-big-ticket-split-50k": {"stock.goods_max_list": (50000, 600000)}})
+        self.assertTrue(all("stock.big_ticket_list" in m["reason"] for m in got.values()))
+
 
 class Rows(unittest.TestCase):
     def pol(self, **stock):
@@ -43,7 +50,21 @@ class Rows(unittest.TestCase):
                          [("stock.goods_stop_h", 6, "migration"), ("stock.clear_70_h", 0, "migration"),
                           ("stock.clear_any_h", 0, "migration")])
         self.assertTrue(rows[0]["reason"].startswith("2026-11-06-patch-3.3-end-of-round: Patch 3.3"))
-        self.assertEqual(skipped, {"2026-11-06-patch-3.3-end-of-round": {"stock.taper_h": {"live": 60, "from": 72}}})
+        self.assertEqual(skipped, {"2026-11-06-patch-3.3-end-of-round": {"stock.taper_h": {"live": 60, "from": 72}},
+                                   "2026-11-06-big-ticket-split-40k":            # already at the new default
+                                       {"stock.goods_max_list": {"live": 600000, "from": 40000}},
+                                   "2026-11-06-big-ticket-split-50k":
+                                       {"stock.goods_max_list": {"live": 600000, "from": 50000}}})
+
+    def test_goods_max_list_40k_or_50k_moves_to_600k_and_a_tuned_one_stays(self):
+        for live, other in ((40000, "50k"), (50000, "40k")):
+            rows, skipped = migrate.rows(migrate.MIGRATIONS, self.pol(goods_max_list=live))
+            self.assertEqual([(r["key"], r["value"]) for r in rows if r["key"] == "stock.goods_max_list"],
+                             [("stock.goods_max_list", 600000)])
+            self.assertEqual(skipped[f"2026-11-06-big-ticket-split-{other}"]["stock.goods_max_list"]["live"], live)
+        rows, skipped = migrate.rows(migrate.MIGRATIONS, self.pol(goods_max_list=70000))
+        self.assertNotIn("stock.goods_max_list", [r["key"] for r in rows])
+        self.assertEqual(len([i for i in skipped if i.startswith("2026-11-06-big-ticket-split")]), 2)
 
     def test_a_key_missing_from_the_file_runs_at_the_new_default(self):
         p = self.pol()

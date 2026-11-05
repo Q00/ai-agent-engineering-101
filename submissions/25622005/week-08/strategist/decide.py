@@ -65,7 +65,7 @@ Supply and depth:
   rate of the SKU; focus buys use at most stock.focus_cap_share of the D1 headroom. Goods categories whose median
   list price is above stock.goods_max_list are skipped, and a category pick the market sold none of in 48 h is
   not bought.
-- Big-ticket goods (listed above stock.goods_max_list, only through those lists) carry most of the market's
+- Big-ticket goods (listed above stock.big_ticket_list, category picks included) carry most of the market's
   revenue but tie up a lot of cost per unit: their held cost + planned worst cost stays within
   stock.big_ticket_share x stock.inventory_cap_share x (cash + stock cost) (economics.big_ticket), and a SKU holds
   at most stock.bigticket_probe_qty units (overpriced ones included) until we sold 2 of it in 6 hours.
