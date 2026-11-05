@@ -4,7 +4,7 @@ import sys
 from r3.state import ROOT
 from r3.model import api_key
 from r3.adapter import install, load_kit
-from r3.transport import open_available_tunnel, supervise
+from r3.transport import open_available_tunnel, supervise, install_registration_retry
 from r3.lifecycle import market_session
 
 if __name__ == "__main__":
@@ -21,6 +21,7 @@ if __name__ == "__main__":
     # Each child uses the verified interpreter rather than a stale global `python`.
     os.environ["PATH"] = str(ROOT / ".market" / "bin") + os.pathsep + str(__import__("pathlib").Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
     kit = install(load_kit())
+    install_registration_retry(kit)
     kit.open_tunnel = lambda port,avoid=None: open_available_tunnel(kit, port,avoid=avoid)
     kit.watchdog = lambda *args: supervise(kit, *args)
     with market_session():

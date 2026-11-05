@@ -11,6 +11,33 @@ import httpx
 from .state import ROOT, atomic_json, read_json
 
 
+def install_registration_retry(kit, attempts=4, delay=15):
+    """Keep the same ready address through transient initial card validation.
+
+    The supervisor already owns tries=1 retries. Ownership/authentication and
+    other refusals remain fatal; this retries only the market's card timeout.
+    """
+    original = kit.Market.join
+
+    def join(market, role, name, key, url=None, tries=6):
+        budget = attempts if role == 'shop' and tries != 1 else 1
+        for attempt in range(budget):
+            try:
+                return original(market, role, name, key, url, tries=tries)
+            except SystemExit as exc:
+                reason = str(exc)
+                temporary = ('join as shop failed: 400' in reason and
+                             'cannot read an agent card' in reason and
+                             'timeout' in reason.lower())
+                if not temporary or attempt + 1 == budget:
+                    raise
+                kit.log(f'[market] temporary agent-card validation timeout; keeping current address; '
+                        f'retry {attempt + 2}/{budget} in {delay} s')
+                time.sleep(delay)
+
+    kit.Market.join = join
+
+
 def open_available_tunnel(kit,port,avoid=None):
     preferred=os.environ.get('MARKET_TUNNEL_PROVIDER','pinggy')
     previous=read_json(ROOT/'.market/transport-provider.json',{})

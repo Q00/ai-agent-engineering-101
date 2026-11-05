@@ -209,3 +209,38 @@ def test_user_pinned_provider_is_respected_even_on_failover(monkeypatch,tmp_path
     monkeypatch.setattr(transport,'open_tunnel',launch)
     transport.open_available_tunnel(SimpleNamespace(log=lambda x:None),9999,avoid='cloudflare')
     assert calls==['cloudflare']
+
+
+def test_initial_card_timeout_retries_same_identity_and_address(monkeypatch):
+    attempts=[];sleeps=[]
+    class Market:
+        def join(self,*args,**kwargs):
+            attempts.append((args,kwargs))
+            if len(attempts)<3:
+                raise SystemExit('[market] join as shop failed: 400 cannot read an agent card (ConnectTimeout)')
+            return {'name':'seochanit'}
+    kit=SimpleNamespace(Market=Market,log=lambda s:None)
+    monkeypatch.setattr(transport.time,'sleep',sleeps.append)
+    transport.install_registration_retry(kit)
+    key=object()
+    assert Market().join('shop','seochanit',key,'https://same.example')=={'name':'seochanit'}
+    assert len(attempts)==3 and all(row==attempts[0] for row in attempts)
+    assert sleeps==[15,15]
+
+
+@pytest.mark.parametrize('reason,tries',[
+    ('[market] join as shop failed: 401 owner required',6),
+    ('[market] join as shop failed: 400 cannot read an agent card (TimeoutError)',1),
+])
+def test_registration_retry_does_not_retry_auth_or_supervisor_calls(monkeypatch,reason,tries):
+    calls=[]
+    class Market:
+        def join(self,*args,**kwargs):
+            calls.append(1)
+            raise SystemExit(reason)
+    kit=SimpleNamespace(Market=Market,log=lambda s:None)
+    transport.install_registration_retry(kit)
+    monkeypatch.setattr(transport.time,'sleep',lambda s:pytest.fail('must not retry'))
+    with pytest.raises(SystemExit):
+        Market().join('shop','seochanit',object(),'https://same.example',tries=tries)
+    assert len(calls)==1
