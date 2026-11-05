@@ -136,21 +136,32 @@ def test_use_ref_seqs_when_either_on():
     assert fi.use_ref_seqs(types.SimpleNamespace(FORUM_INFLUENCER=False, FORUM_LEVER2=True)) is True
 
 
-def test_hidden_signal_board_posts_lt_our_count(tmp_path):
+def test_hidden_signal_relative_to_switch_baseline(tmp_path):
     log = tmp_path / "forum.jsonl"
     log.write_text("\n".join([
         json.dumps({"post": "a", "as": "buyer"}),
         json.dumps({"post": "b", "as": "buyer"}),
         json.dumps({"vote": 1, "as": "buyer"}),
         json.dumps({"post": "c", "as": "shop"}),
-    ]), encoding="utf-8")
+    ]) + "\n", encoding="utf-8")
     board = {"buyers": [{"name": "myeonggi", "posts": 1, "forum": 0.5}]}
-    h = fi.hidden_status(board, log_path=log)
-    assert h["api_hidden_field"] == "UNOBSERVABLE"
-    assert h["our_posted_count"] == 2 and h["board_posts"] == 1
-    assert h["hidden_signal"] is True
-    board2 = {"buyers": [{"name": "myeonggi", "posts": 5, "forum": 0.5}]}
-    assert fi.hidden_status(board2, log_path=log)["hidden_signal"] is False
+    h0 = fi.hidden_status(board, log_path=log)
+    assert h0["api_hidden_field"] == "UNOBSERVABLE"
+    assert h0["our_posted_count"] == 2 and h0["board_posts"] == 1
+    assert h0["hidden_signal"] is None
+    base = {"board_posts0": 1, "our_posts0": 2}
+    h1 = fi.hidden_status(board, log_path=log, baseline=base)
+    assert h1["hidden_signal"] is False
+    assert h1["delta_board"] == 0 and h1["delta_our"] == 0
+    with log.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"post": "new", "as": "buyer"}) + "\n")
+    h2 = fi.hidden_status(board, log_path=log, baseline=base)
+    assert h2["our_posted_count"] == 3 and h2["delta_our"] == 1 and h2["delta_board"] == 0
+    assert h2["hidden_signal"] is True
+    with log.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"post": "rej", "as": "buyer", "accepted": False}) + "\n")
+    assert fi.our_posted_count(log) == 3
+
 
 
 def test_record_baseline_uses_2h_not_all_time(mem, tmp_path):
@@ -165,13 +176,19 @@ def test_record_baseline_uses_2h_not_all_time(mem, tmp_path):
         def db(self):
             return mem.db()
 
-    out = fi.record_switch_baseline(_M(), now=NOW, path=path)
+    board = {"buyers": [{"name": "myeonggi", "posts": 153}]}
+    log = tmp_path / "forum.jsonl"
+    log.write_text("\n".join(json.dumps({"post": f"p{i}", "as": "buyer"}) for i in range(154)) + "\n", encoding="utf-8")
+    out = fi.record_switch_baseline(_M(), now=NOW, path=path, board=board, log_path=log)
     assert path.exists()
     assert out["baseline_dislikes_per_post"] == 1.0
     assert out["all_time_dislikes_per_post"] is not None
-    assert "NOT all_time" in out["note"]
+    assert out["board_posts0"] == 153 and out["our_posts0"] == 154
+    assert "*_0" in out["note"] or "hidden" in out["note"]
     loaded = fi.load_baseline(path)
     assert loaded["baseline_dislikes_per_post"] == 1.0
+    assert loaded["board_posts0"] == 153
+
 
 
 def test_rollback_checker_cases(mem, tmp_path):
@@ -194,13 +211,23 @@ def test_rollback_checker_cases(mem, tmp_path):
     assert r["baselines"]["pre_switch_2h"] == 1.0
     assert r["baselines"]["all_time"] == 0.48
 
-    # hidden signal
+    # pre-existing gap at switch-on -> no hidden rollback
     log = tmp_path / "forum.jsonl"
     log.write_text(json.dumps({"post": "a", "as": "buyer"}) + "\n" + json.dumps({"post": "b", "as": "buyer"}) + "\n")
     board_h = {"buyers": [{"name": "myeonggi", "posts": 0, "forum": 0.56}]}
-    r2 = fi.check_rollback(mem, board_h, now=NOW + 120, baseline=base, log_path=log,
+    base_gap = {**base, "board_posts0": 0, "our_posts0": 2}
+    r_pre = fi.check_rollback(mem, board_h, now=NOW + 120, baseline=base_gap, log_path=log,
+                              forum_low_streak_path=tmp_path / "streak_pre.json")
+    assert not any("hidden" in x for x in r_pre["reasons"])
+    assert r_pre["measured"]["hidden"]["hidden_signal"] is False
+    # new post after switch, board stuck -> hidden rollback
+    with log.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"post": "hidden-one", "as": "buyer"}) + "\n")
+    r2 = fi.check_rollback(mem, board_h, now=NOW + 120, baseline=base_gap, log_path=log,
                            forum_low_streak_path=tmp_path / "streak2.json")
     assert any("hidden" in x for x in r2["reasons"])
+    assert r2["measured"]["hidden"]["hidden_signal"] is True
+
 
     # 429
     r3 = fi.check_rollback(mem, board, now=NOW + 120, baseline=base, http_statuses=[200, 429],

@@ -317,7 +317,12 @@ def use_ref_seqs(cfg=config):
 
 # ------------------------------------------------------------------------------------------- hidden / baseline / rollback
 def our_posted_count(log_path=None):
-    """Count buyer posts we sent, from logs/r3/forum.jsonl (read-only)."""
+    """Count buyer posts we queued, from logs/r3/forum.jsonl (read-only).
+
+    forum_r3.outbox() appends at enqueue time (MARKET_DIR/outbox.jsonl + this log). Lines have
+    keys {ts, post, refs, as} only — no accepted/rejected/http field from the API — so every
+    buyer `post` line counts. Acceptance is UNOBSERVABLE in the log.
+    """
     path = Path(log_path or (config.LOG_DIR / "forum.jsonl"))
     n = 0
     try:
@@ -327,8 +332,16 @@ def our_posted_count(log_path=None):
                     r = json.loads(line)
                 except ValueError:
                     continue
-                if r.get("post") and r.get("as") == "buyer":
-                    n += 1
+                if not (r.get("post") and r.get("as") == "buyer"):
+                    continue
+                # If a future schema adds an acceptance marker, count only accepted rows.
+                if "accepted" in r and r.get("accepted") is False:
+                    continue
+                if "ok" in r and r.get("ok") is False:
+                    continue
+                if "rejected" in r and r.get("rejected") is True:
+                    continue
+                n += 1
     except OSError:
         return None
     return n
@@ -341,27 +354,42 @@ def board_our_posts(board, me_name="myeonggi"):
     return me.get("posts")
 
 
-def hidden_status(board, log_path=None, me_name="myeonggi"):
-    """Read-only hidden check (MO 2026-11-05).
+def hidden_status(board, log_path=None, me_name="myeonggi", baseline=None):
+    """Read-only hidden check (MO 2026-11-05, relative since 2026-11-05 follow-up).
 
-    No API field/endpoint exposes post hidden status (forum.json keys have no 'hidden';
-    /api/forum timed out and /api/posts 404 for QA). Signal used: board buyer `posts` for us
-    is lower than our own posted count from forum.jsonl. API field itself is UNOBSERVABLE.
+    API hidden field/endpoint: UNOBSERVABLE. forum.jsonl has no accept marker (outbox enqueue
+    log). Absolute board_posts < our_posted_count fires on a stale board vs a newer outbox
+    line, so the live rule is relative to switch-on baselines:
+
+        hidden_signal = (board_posts - board_posts0) < (our_posts - our_posts0)
+
+    With no baseline yet, signal is None (do not roll back on a pre-existing gap).
     """
     posted = our_posted_count(log_path)
     board_n = board_our_posts(board, me_name)
+    board0 = (baseline or {}).get("board_posts0")
+    our0 = (baseline or {}).get("our_posts0")
     signal = None
-    if posted is not None and board_n is not None:
-        signal = board_n < posted
+    delta_board = delta_our = None
+    if (posted is not None and board_n is not None
+            and board0 is not None and our0 is not None):
+        delta_board = board_n - board0
+        delta_our = posted - our0
+        signal = delta_board < delta_our
     return {
         "api_hidden_field": "UNOBSERVABLE",
         "api_note": "forum.json has no hidden key; /api/forum timed out and /api/posts 404'd for QA; "
-                    "agent.md says hidden posts do not count but gives no read endpoint",
+                    "forum.jsonl is outbox enqueue (ts/post/refs/as) with no accepted field",
         "board_posts": board_n,
         "our_posted_count": posted,
+        "board_posts0": board0,
+        "our_posts0": our0,
+        "delta_board": delta_board,
+        "delta_our": delta_our,
         "hidden_signal": signal,
-        "rule": "board posts < our posted count",
+        "rule": "(board_posts - board_posts0) < (our_posts - our_posts0) since switch-on",
     }
+
 
 
 def all_time_dislikes_per_post(mem):
@@ -371,14 +399,19 @@ def all_time_dislikes_per_post(mem):
     return {"posts": r["n"], "dislikes_per_post": round(r["d"] / r["n"], 3) if r["n"] else None}
 
 
-def record_switch_baseline(mem, now=None, path=None, cfg=config):
-    """Write the 2 h pre-switch baseline (relative 1.2x rule). Also records all-time avg for the report.
-    Call this at switch-on. Does not turn the flag on."""
+def record_switch_baseline(mem, now=None, path=None, cfg=config, board=None, log_path=None):
+    """Write switch-on baselines. Does not turn the flag on.
+
+    Saves (1) 2 h pre-switch dislikes/post for the relative 1.2x rule, (2) all-time avg for the
+    report only, (3) board_posts0 + our_posts0 for the relative hidden rule.
+    """
     now = now or time.time()
     path = Path(path or baseline_path(cfg))
     path.parent.mkdir(parents=True, exist_ok=True)
     rb = dislike_baseline(mem, now)
     all_time = all_time_dislikes_per_post(mem)
+    board_n = board_our_posts(board) if board is not None else None
+    our_n = our_posted_count(log_path)
     out = {
         "switched_at": now,
         "switched_kst": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now)),
@@ -388,10 +421,14 @@ def record_switch_baseline(mem, now=None, path=None, cfg=config):
         "limit_1_2x": rb["limit"],
         "all_time_dislikes_per_post": all_time["dislikes_per_post"],
         "all_time_posts": all_time["posts"],
-        "note": "relative 1.2x uses baseline_dislikes_per_post (2 h pre-switch), NOT all_time",
+        "board_posts0": board_n,
+        "our_posts0": our_n,
+        "note": "1.2x uses baseline_dislikes_per_post (2 h); hidden uses board/our deltas vs *_0; "
+                "all_time is report-only",
     }
     path.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     return out
+
 
 
 def load_baseline(path=None, cfg=config):
@@ -464,10 +501,13 @@ def check_rollback(mem, board, *, now=None, baseline=None, http_statuses=None,
             reasons.append(f"board forum {forum_score} < {floor} twice 1h apart")
     measured["forum_low_hits"] = streak.get("hits")
 
-    hid = hidden_status(board, log_path=log_path)
+    hid = hidden_status(board, log_path=log_path, baseline=baseline)
     measured["hidden"] = hid
     if hid.get("hidden_signal") is True:
-        reasons.append("board posts < our posted count (hidden signal)")
+        reasons.append(
+            f"hidden signal: delta_board {hid.get('delta_board')} < delta_our {hid.get('delta_our')} "
+            f"(board {hid.get('board_posts')}-{hid.get('board_posts0')}, "
+            f"ours {hid.get('our_posted_count')}-{hid.get('our_posts0')})")
 
     if posted_manipulation:
         reasons.append("draft with P(manipulation) >= 0.5 was posted")
@@ -608,7 +648,7 @@ def main(argv=None):
                           "hidden": dry["hidden_status"], "sent": False}, ensure_ascii=False, indent=1))
         return 0 if dry["checks"]["ok"] else 1
     if a.cmd == "record-baseline":
-        out = record_switch_baseline(_M(), now=now)
+        out = record_switch_baseline(_M(), now=now, board=board, log_path=None)
         print(json.dumps(out, ensure_ascii=False, indent=1))
         return 0
     if a.cmd == "check-rollback":

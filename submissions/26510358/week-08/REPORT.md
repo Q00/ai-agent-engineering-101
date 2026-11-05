@@ -495,7 +495,10 @@ buyer 증거 보고 레인. `FORUM_INFLUENCER=False` 기본. True여도 이 절�
 ### 되돌리기 기준값 (둘 다 인쇄, 1.2배는 2시간만 사용)
 - 켜기 직전 2시간 글당 싫어요(1.2배 기준, 2026-11-05 17:30 KST dry-run): **1.0** (8 posts). 1.2× 한도 = 1.2.
 - 전체 기간 글당 싫어요(보고용, 기준 아님): **0.49** (153 posts).
-- 숨김 신호(같은 시각): board posts 153 < forum.jsonl buyer posts 154 → hidden_signal True. API hidden 필드 UNOBSERVABLE.
+- 숨김 신호(같은 시각): board posts 153 < forum.jsonl buyer posts 154 → **절대 비교는 True였으나 원인 조사 결과 숨김이 아님**.
+  board-20261105T1720(17:20 KST) 대비 log `ts<=board`는 153으로 일치. 154번째 줄은 17:29:26 KST outbox enqueue(보드보다 +566초).
+  `forum_r3.outbox()`는 API 수락 전에 로그에 쓰며 accepted 필드 없음. DB mine=1도 153.
+- 상대 숨김(후속): `record-baseline`이 `board_posts0`/`our_posts0` 저장. `hidden_signal = (board-board0) < (ours-ours0)`. 스위치 전 격차는 롤백하지 않음.
 - 스위치 ON 시 `python -m r3lib.forum_influencer record-baseline` → `influencer_baseline.json`(2시간 값을 기준로 저장, all_time은 함께 기록만 함).
 
 ### dry-run
