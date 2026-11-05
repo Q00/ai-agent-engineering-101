@@ -180,13 +180,27 @@ logs/monitor/board-*.json ─┘      (Window)          └─ 후보 정책 (po
 - 정책마다 book(현금 + 미판매 재고 원가), 매출, 별점(창의 실제 값 고정), 거래 수, 체결률, 방문당 이익, 재고 부족을 보고함. 순이익은 추가 필드임.
 - 가게 ALL 추정 = 0.5·pct(book) + 0.3·pct(매출) + 0.2·pct(별점)임. 최신 보드에서 계산함. 창의 차이는 24시간으로 늘림. 다른 가게는 고정함.
 - 이 식은 보드의 `all`을 53개 가게에서 평균 절대오차 0.0024로 재현함.
-- PASS 조건: Δbook ≥ 0, ΔALL ≥ 0, 체결률 하락 ≤ 0.05, 추가 재고 부족 ≤ max(2, 방문의 10%).
+- PASS 조건(모두 맞아야 함, MO 2026-11-05):
+  - Δbook ≥ 0, ΔALL ≥ 0.
+  - 체결률(`close_rate` = 거래 ÷ 협상) 하락 ≤ 0.05(`MAX_CLOSE_DROP`).
+  - 방문 체결률(`served_close_rate` = 거래 ÷ 방문, 재고 부족 방문 포함) 하락 ≤ 0.03(`MAX_SERVED_CLOSE_DROP`).
+  - 추가 재고 부족 ≤ max(2, 방문의 10%).
+- 이유: 구매자를 돌려보내는 후보는 협상 수가 줄어서 `close_rate`가 오를 수 있음. 그래도 거래는 줄어듦. `served_close_rate`는 이 경우를 잡음.
+- 보고서는 두 체결률을 모두 보여 줌.
 - 트윈이 모델링하지 못하는 손잡이(게시판 글·표)는 UNSIMULATED로 표시함. 게시판 후보는 dry run을 돌려 ESTIMATED 또는 FAIL을 받음.
 - 종료 코드는 모든 판정이 PASS 또는 ESTIMATED일 때만 0임. 그 밖은 1임.
 - 보정: live 정책의 트윈 재생을 창의 실제 결과와 비교함(거래 수, 체결률, 매출, 호가·최종가 비율, 재고 부족). 거래 수 오차가 25%를 넘으면 경고를 붙임.
 
 한계:
-- `restock_r3.plan`과 `unit_floor`는 벽시계를 읽음. `plan` 방식에는 약간의 미래 정보가 섞임.
+- 재현성(같은 `--end`, `PYTHONHASHSEED=0`이면 같은 결과):
+  - `restock_r3.plan`은 `twin.frozen_clock(틱 시각)` 안에서 돎. memory.py의 `time.time()` 되돌아보기가 틱 시각을 봄.
+  - `unit_floor`는 `now=방문 시각`을 받음. 벽시계를 읽지 않음.
+  - `--end`가 있으면 첫 실행이 입력을 `logs/shadow/`에 고정함. 다음 실행은 그 파일을 씀.
+    - `inputs-<end>.json`: 재고(`--end` 이전 마지막 monitor 스냅샷), 수요 줄, catalog 해시.
+    - `memory-<end>.sqlite`: plan용 DB 복사본(ts > end 줄은 지움). 약 320MB. gitignore임.
+  - 보드는 `--end` 이전 마지막 monitor 보드를 씀. SKU 집합은 정렬함. DB 읽기는 `ts, rowid` 순서임.
+- 남는 미래 정보: `shop_stock`, `shops`(경쟁 재고)와 `meta`(unmet, `restock_adjust` 등)는 이벤트 시각이 없음. 고정 복사본에는 `--end` 시각이 아니라 첫 실행 시각의 값이 들어감.
+- `--end`가 없으면 입력을 라이브에서 읽음. 다시 돌리면 값이 다를 수 있음.
 - 보증 floor와 식품 유통기한은 트윈에 없음.
 - 등급·보증은 관측 첫 호가에서 구한 호가 배수로 접음.
 - 대체 상품은 같은 카테고리, 정가 0.5–1.5배 안에서만 찾음.

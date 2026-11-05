@@ -210,6 +210,7 @@ class Window:
     actual: dict = field(default_factory=dict)
     demand_rows: list = field(default_factory=list)
     db_path: object = None
+    plan_db: object = None                 # pinned end-trimmed DB copy (shadow_gate.pinned_db); None = copy db_path
     notes: list = field(default_factory=list)
     end_source: str = "argument"           # "argument" (--end / end=) or "last negotiation" (resolved default)
 
@@ -376,11 +377,12 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
     deals = [v for v in visits if v.outcome == "deal" and v.final_price]
     negotiated = sum(1 for v in visits if v.offers)
     # one close-rate definition for observed and twin (QA 2026-11-05): close_rate = deals / negotiations, a
-    # negotiation = a session where the buyer made at least one offer; served_close_rate = deals / sessions
-    # (observed: every negotiations row; twin: every visit that got a unit)
+    # negotiation = a session where the buyer made at least one offer; served_close_rate = deals / visits, a visit
+    # = every buyer that came, stockouts included (MO 2026-11-05; observed: negotiations rows + stockout rows)
     actual = {"visits": len(visits), "deals": len(deals), "stockouts": len(stockouts), "negotiations": negotiated,
               "close_rate": round(len(deals) / negotiated, 4) if negotiated else None,
-              "served_close_rate": round(len(deals) / len(visits), 4) if visits else None,
+              "served_close_rate": round(len(deals) / (len(visits) + len(stockouts)), 4)
+              if visits or stockouts else None,
               "final_price_ratio": round(statistics.mean(v.final_price / v.list_price for v in deals), 4)
               if deals else None,
               "first_ask_ratio": round(statistics.mean(v.first_ask / v.list_price for v in visits if v.first_ask), 4)
@@ -813,6 +815,18 @@ def effective_plan_policy(policy):
     return p
 
 
+def plan_copy(w, dest_dir):
+    """The DB file restock_r3.plan works on, in dest_dir. With w.plan_db (a pinned copy made once by
+    shadow_gate.pinned_db) it is a byte copy of that file, so the tables without an event time (shop_stock,
+    shops, meta) are the same on every rerun. Else a fresh snapshot_db of the live DB (those tables as they are
+    now)."""
+    if w.plan_db:
+        path = Path(dest_dir) / "memory.sqlite"
+        shutil.copyfile(w.plan_db, path)
+        return path
+    return snapshot_db(w.db_path, dest_dir, end=w.end)
+
+
 class DefaultPlan:
     """restock_r3.plan over ONE private copy of the DB (Memory needs a writable file; the live DB is never opened
     for writing). The copy is made on the first tick, holds no row after w.end (no look-ahead), and is shared by
@@ -832,7 +846,7 @@ class DefaultPlan:
         if self.mem is None:
             self.dir = Path(tempfile.mkdtemp(prefix="twin-"))
             try:
-                self.mem = Memory(snapshot_db(self.w.db_path, self.dir, end=self.w.end))
+                self.mem = Memory(plan_copy(self.w, self.dir))
             except BaseException:
                 self.close()
                 raise
@@ -870,7 +884,7 @@ def _metrics(m, stock, cash, balance0, w, policy, restock, log):
         "stockouts": m["stockouts"], "stockout_requests_served": m["stockout_requests_served"],
         "deals": deals, "negotiations": m["negotiated"],
         "close_rate": round(deals / m["negotiated"], 4) if m["negotiated"] else None,      # deals / negotiations
-        "served_close_rate": round(deals / m["served"], 4) if m["served"] else None,       # deals / served
+        "served_close_rate": round(deals / m["visits"], 4) if m["visits"] else None,       # deals / visits
         "revenue": int(m["revenue"]), "deal_revenue": int(m["revenue"]), "revenue_basis": "deal",
         "cogs": int(m["cogs"]), "storage": int(m["storage"]),
         "profit": int(m["revenue"] - m["cogs"] - m["storage"]),

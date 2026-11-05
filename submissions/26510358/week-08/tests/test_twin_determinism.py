@@ -130,3 +130,86 @@ def test_gate_main_twice_gives_the_same_results(tmp_path, clock_plan, monkeypatc
     a, b = reports
     assert a["results"] == b["results"] and a["board"] == b["board"]
     assert a.get("calibration") == b.get("calibration")
+
+
+def _competitor_stock(db, qty, unmet):
+    import sqlite3
+    c = sqlite3.connect(db)
+    c.execute("INSERT OR REPLACE INTO shops(shop_url, name, mine, ts) VALUES ('http://rival', 'rival', 0, ?)", (T0 + 900,))
+    c.execute("DELETE FROM shop_stock")
+    c.execute("INSERT INTO shop_stock VALUES ('http://rival', 'rival', 'pk', 'G1', ?, ?)", (qty, T0 + 900))
+    c.execute("INSERT OR REPLACE INTO meta VALUES ('unmet:G1', ?)", (json.dumps(unmet),))
+    c.commit()
+    c.close()
+
+
+def _state(db):
+    import sqlite3
+    c = sqlite3.connect(db)
+    try:
+        return (c.execute("SELECT qty FROM shop_stock").fetchall(), c.execute("SELECT v FROM meta WHERE k='unmet:G1'").fetchall(),
+                c.execute("SELECT COUNT(*) FROM negotiations WHERE ts > ?", (float(int(T0) // 60 * 60),)).fetchone()[0])
+    finally:
+        c.close()
+
+
+def test_pinned_db_keeps_live_state_tables_from_the_first_run(tmp_path):
+    """QA rerun 2026-11-05 16:15: same --end and pinned inputs, live deals 722 -> 724. shop_stock, shops and meta
+    have no event time; snapshot_db keeps them as they are at copy time, so they moved between runs."""
+    db = _db(tmp_path)
+    end = float(int(T0) // 60 * 60)
+    _competitor_stock(db, 5, 3)
+    a, reused_a = shadow_gate.pinned_db(end, db, tmp_path / "out")
+    _competitor_stock(db, 0, 9)                     # the live market moves on
+    b, reused_b = shadow_gate.pinned_db(end, db, tmp_path / "out")
+    assert (reused_a, reused_b) == (False, True) and a == b
+    assert _state(b) == ([(5,)], [("3",)], 0)       # first-run state; no event row after end
+    assert _state(db)[:2] == ([(0,)], [("9",)])     # live DB untouched by the pin
+    assert not [p for p in (tmp_path / "out").iterdir() if p.name.startswith("twin-")]   # temp dir removed
+
+
+def test_plan_copy_uses_the_pinned_db(tmp_path):
+    db = _db(tmp_path)
+    end = float(int(T0) // 60 * 60)
+    _competitor_stock(db, 5, 3)
+    pin, _ = shadow_gate.pinned_db(end, db, tmp_path / "out")
+    _competitor_stock(db, 0, 9)
+    w = types.SimpleNamespace(plan_db=pin, db_path=db, end=end)
+    (tmp_path / "a").mkdir()
+    got = twin.plan_copy(w, tmp_path / "a")
+    assert got.read_bytes() == pin.read_bytes() and _state(got)[:2] == ([(5,)], [("3",)])
+    w.plan_db = None                                # no pin: a fresh snapshot of the live state
+    (tmp_path / "b").mkdir()
+    assert _state(twin.plan_copy(w, tmp_path / "b"))[:2] == ([(0,)], [("9",)])
+
+
+def test_gate_main_ignores_live_competitor_stock_changes(tmp_path, monkeypatch):
+    """restock_r3.plan stand-in whose line depends on competitor stock in its DB copy."""
+    import sqlite3
+    mod = types.ModuleType("restock_r3")
+
+    def plan(inv, demand_rows, mem, now=None, dry_run=False, adjust=None):
+        with mem.db() as c:
+            q = c.execute("SELECT COALESCE(SUM(qty), 0) FROM shop_stock").fetchone()[0]
+        return [{"sku": "G1", "qty": 1 + int(q) % 4}], None, None
+    mod.plan = plan
+    monkeypatch.setitem(sys.modules, "restock_r3", mod)
+    monkeypatch.setattr(market, "_CATALOG", CAT, raising=False)
+    db = _db(tmp_path)
+    end = float(int(T0) // 60 * 60)
+    mon = _monitor(tmp_path, end)
+    cand = tmp_path / "c.json"
+    cand.write_text(json.dumps({"name": "c", "policy": {"CATEGORY_MAX_SHARE": 0.4}}))
+    monkeypatch.setattr(market, "read_json", lambda name, default=None, md=None: [])
+    out = tmp_path / "out"
+    reports = []
+    for qty in (1, 2):
+        _competitor_stock(db, qty, qty)
+        shadow_gate.main(["--db", str(db), "--end", str(end), "--hours", "6", "--restock", "plan",
+                          "--candidate", str(cand), "--monitor-dir", str(mon), "--out", str(out)])
+        reports.append(json.loads(sorted(out.glob("gate-*.json"))[-1].read_text(encoding="utf-8")))
+        for p in out.glob("gate-*.json"):
+            p.unlink()
+    a, b = reports
+    assert a["results"] == b["results"]
+    assert (out / f"memory-{end:.0f}.sqlite").exists()

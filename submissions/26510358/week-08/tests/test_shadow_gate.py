@@ -86,6 +86,48 @@ def test_verdict_rule():
     assert shadow_gate.verdict(_pair(stockouts=11), {})["verdict"] == "FAIL"
 
 
+def test_served_close_rate_rule():
+    # deals / negotiations goes up, but deals / visits falls by more than 0.03: FAIL (MO 2026-11-05)
+    v = shadow_gate.verdict(_pair(close_rate=0.04, served_close_rate=-0.031), {"delta_all": 0})
+    assert v["verdict"] == "FAIL" and any("served close rate" in r for r in v["reasons"])
+    assert shadow_gate.verdict(_pair(close_rate=0.04, served_close_rate=-0.03), {})["verdict"] == "PASS"
+    assert shadow_gate.verdict(_pair(close_rate=-0.05), {})["verdict"] == "PASS"        # MAX_CLOSE_DROP stays 0.05
+    assert shadow_gate.verdict(_pair(stockouts=11, served_close_rate=0), {})["verdict"] == "FAIL"   # cap kept
+    assert "served-close-rate drop<=0.03" in v["rule"]
+
+
+def test_served_close_rate_counts_stockouts(w):
+    a = w.actual
+    assert a["served_close_rate"] == round(a["deals"] / (a["visits"] + a["stockouts"]), 4)
+    r = twin.replay(w, twin.live_policy(), seed=0)
+    assert r["visits"] == r["served"] + r["stockouts"]
+    assert r["served_close_rate"] == round(r["deals"] / r["visits"], 4)
+
+
+def test_candidate_turning_buyers_away_fails_on_served_rate():
+    live = {"deals": 100, "negotiations": 125, "visits": 200, "stockouts": 10, "book_delta": 0,
+            "close_rate": 0.8, "served_close_rate": 0.5}
+    cand = dict(live, deals=93, negotiations=110, close_rate=round(93 / 110, 4), served_close_rate=round(93 / 200, 4))
+    pair = {"live": live, "candidate": cand, "delta": shadow_gate.delta(live, cand)}
+    assert pair["delta"]["close_rate"] > 0 and pair["delta"]["served_close_rate"] < -0.03
+    assert shadow_gate.verdict(pair, {"delta_all": 0})["verdict"] == "FAIL"
+
+
+def test_lever1_still_fails_under_the_served_rule():
+    # policies/candidates/lever1.json on the pinned window (--end 1793859780, restock plan, PYTHONHASHSEED=0):
+    # twin live deals 722 / negotiations 874 / visits 1564, lever1 299 / 387 / 1564, book -12,651,971, ALL -0.1334
+    cand_policy = shadow_gate.load_candidate(shadow_gate.WEEK / "policies" / "candidates" / "lever1.json")
+    assert twin.restock_differs(twin.live_policy(), cand_policy)
+    rate = lambda d, n, v: {"deals": d, "negotiations": n, "visits": v, "close_rate": round(d / n, 4),
+                            "served_close_rate": round(d / v, 4)}
+    live = dict(rate(722, 874, 1564), book_delta=25_370_649, stockouts=231)
+    cand = dict(rate(299, 387, 1564), book_delta=12_718_678, stockouts=882)
+    pair = {"live": live, "candidate": cand, "delta": shadow_gate.delta(live, cand)}
+    v = shadow_gate.verdict(pair, {"delta_all": -0.1334})
+    assert v["verdict"] == "FAIL"
+    assert any("served close rate" in r for r in v["reasons"])
+
+
 def test_evaluate_and_report(w, tmp_path):
     rep = shadow_gate.evaluate(w, [twin.make_policy({}, name="same")], seed=0, board=BOARD, board_path="b.json")
     r = rep["results"][0]

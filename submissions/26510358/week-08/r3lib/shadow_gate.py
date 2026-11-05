@@ -19,10 +19,13 @@ not move, stars are held at the window's actual stars (the twin does not model r
 book field (= profit + stock_cost; else derived, see board_book).
 
 Verdict (documented rule): PASS when, for the candidate minus live,
-    book_delta >= 0, estimated ALL >= 0, close rate drop <= MAX_CLOSE_DROP, and extra stockouts <= MAX_EXTRA_STOCKOUTS
-(the stockout bound is max(2, 10% of live visits)). Reruns with the same --end give the same report: the board is
+    book_delta >= 0, estimated ALL >= 0, close rate drop <= MAX_CLOSE_DROP (0.05), served close rate drop <=
+    MAX_SERVED_CLOSE_DROP (0.03), and extra stockouts <= max(2, 10% of live visits)
+(close_rate = deals / negotiations; served_close_rate = deals / visits, stockouts included, MO 2026-11-05: a
+candidate that turns buyers away can raise close_rate and still lose deals). Reruns with the same --end give the same report: the board is
 the latest one at or before --end (board_at), and the inventory and demand rows are pinned in
-logs/shadow/inputs-<end>.json on the first run (pinned_inputs) and read back on later runs. A calibration warning (twin live deals off the actual deals by
+logs/shadow/inputs-<end>.json on the first run (pinned_inputs) and read back on later runs; the plan DB copy (with shop_stock, shops and meta, which have no event time) is kept as
+logs/shadow/memory-<end>.sqlite on the first run (pinned_db) and copied on later runs. A calibration warning (twin live deals off the actual deals by
 more than CALIBRATION_TOL) is reported next to the verdict: the number is less trustworthy, the rule still applies.
 """
 import argparse
@@ -31,14 +34,17 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import statistics
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 from . import config, twin
 
 MAX_CLOSE_DROP = 0.05
+MAX_SERVED_CLOSE_DROP = 0.03                # MO 2026-11-05
 CALIBRATION_TOL = 0.25
 DELTA_HORIZON_H = 24
 ALL_WEIGHTS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}
@@ -49,7 +55,8 @@ SHOWN = ("book_delta", "book_end", "deal_revenue", "stars", "deals", "negotiatio
          "served_close_rate", "profit", "profit_per_visit", "stockouts", "visits", "served", "final_price_ratio",
          "first_ask_ratio", "stock_cost_end", "supply_spend")
 CLOSE_RATE_DEF = ("close_rate = deals / negotiations (a session with >= 1 buyer offer), same for observed and twin;"
-                  " served_close_rate = deals / sessions that got a unit (observed: every negotiations row)")
+                  " served_close_rate = deals / visits, stockouts included (observed: negotiations rows +"
+                  " stockout rows)")
 REVENUE_BASIS = ("twin revenue = deal revenue (twin deal prices), compared with observed deal_revenue "
                  "(negotiations rows with outcome deal); observed settled_revenue (settles rows) is shown apart")
 
@@ -177,6 +184,25 @@ def pinned_inputs(end, monitor_dir=MONITOR_DIR, out_dir=REPORT_DIR):
     pin["path"] = str(path)
     pin["catalog_changed"] = pin.get("catalog_sha") != cat_sha
     return pin
+
+
+def pinned_db(end, db_path, out_dir=REPORT_DIR):
+    """The DB copy for restock_r3.plan, the same on every rerun for one `end`. snapshot_db removes rows with
+    ts > end, but shop_stock and shops (latest-state upserts: competitor stock) and meta (no ts: unmet demand,
+    restock_adjust, explore_spent) hold the state at copy time. The first run keeps its copy as
+    <out_dir>/memory-<end>.sqlite; later runs use that file. Returns (path, reused). The state in it is the state
+    at the first run, not at `end` (a known look-ahead)."""
+    path = Path(out_dir) / f"memory-{end:.0f}.sqlite"
+    if path.exists():
+        return path, True
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = Path(tempfile.mkdtemp(prefix="twin-", dir=path.parent))
+    try:
+        made = twin.snapshot_db(db_path or config.DB_PATH, tmp, end=end)
+        os.replace(made, path)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return path, False
 
 
 def board_book(shop):
@@ -322,12 +348,14 @@ def verdict(pair, score):
         reasons.append(f"estimated ALL down {score['delta_all']:+.4f}")
     if d.get("close_rate") is not None and d["close_rate"] < -MAX_CLOSE_DROP:
         reasons.append(f"close rate down {d['close_rate']:+.3f}")
+    if d.get("served_close_rate") is not None and d["served_close_rate"] < -MAX_SERVED_CLOSE_DROP:
+        reasons.append(f"served close rate down {d['served_close_rate']:+.3f} (allowed -{MAX_SERVED_CLOSE_DROP:.2f})")
     allowed = max(2, 0.10 * (live.get("visits") or 0))
     if d.get("stockouts", 0) > allowed:
         reasons.append(f"stockouts up {d['stockouts']:+.0f} (allowed {allowed:.0f})")
     return {"verdict": "FAIL" if reasons else "PASS", "reasons": reasons,
-            "rule": "PASS iff d.book>=0, d.ALL>=0, close-rate drop<=%.2f, extra stockouts<=max(2,10%% visits)"
-                    % MAX_CLOSE_DROP}
+            "rule": "PASS iff d.book>=0, d.ALL>=0, close-rate drop<=%.2f, served-close-rate drop<=%.2f, "
+                    "extra stockouts<=max(2,10%% visits)" % (MAX_CLOSE_DROP, MAX_SERVED_CLOSE_DROP)}
 
 
 def calibration(w, seed=0, plan_fn=None, modes=("actual", "plan")):
@@ -510,6 +538,9 @@ def main(argv=None):
         pin = pinned_inputs(a.end, a.monitor_dir, a.out)
         w = twin.load_window(a.db, hours=a.hours, end=a.end, inventory=pin["inventory"],
                              demand_rows=pin["demand_rows"], inventory_ts=pin["inventory_ts"])
+        w.plan_db, db_reused = pinned_db(a.end, w.db_path, a.out)
+        w.notes.append(f"plan DB pinned in {Path(w.plan_db).name} ({'reused' if db_reused else 'written now'};"
+                       " shop_stock, shops and meta as at its first run)")
         w.notes.append(f"inputs pinned in {os.path.relpath(pin['path'], WEEK) if pin['path'].startswith(str(WEEK)) else pin['path']}"
                        f" ({'reused' if pin['reused'] else 'written now'}; inventory from {Path(pin['inventory_source']).name})"
                        + ("; WARNING catalog changed since the pin" if pin["catalog_changed"] else ""))

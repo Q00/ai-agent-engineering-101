@@ -115,11 +115,11 @@ def test_one_close_rate_definition(w):
     a = w.actual
     assert a["visits"] == 7 and a["negotiations"] == 6 and a["deals"] == 5
     assert a["close_rate"] == pytest.approx(5 / 6, abs=1e-4)                 # deals / negotiations
-    assert a["served_close_rate"] == pytest.approx(5 / 7, abs=1e-4)          # deals / sessions
+    assert a["served_close_rate"] == pytest.approx(5 / 7, abs=1e-4)          # deals / (sessions + stockouts)
     r = twin.replay(w, twin.live_policy(), seed=0)
     assert r["negotiations"] == r["served"] - r["silent"]
     assert r["close_rate"] == pytest.approx(r["deals"] / r["negotiations"], abs=1e-4)
-    assert r["served_close_rate"] == pytest.approx(r["deals"] / r["served"], abs=1e-4)
+    assert r["served_close_rate"] == pytest.approx(r["deals"] / r["visits"], abs=1e-4)
 
 
 def test_revenue_basis_and_resolved_end_in_report(w):
