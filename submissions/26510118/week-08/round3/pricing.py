@@ -10,9 +10,14 @@ analysis memos may move them (strategy.json's price_adjust).
     floor       the unit's cost + 5%. Never below cost, except when the unit would
                 otherwise end at nothing:
                   food with under 24 h left       ask 45%, floor 25% of list
-                  unsold for over 7 days          floor 25% of list
-                  the last 24 h of the round      ask 15% of list lower, floor 25% of list
-                  the last 6 h                    floor 10% of list
+                  food unsold for over 7 days     floor 25% of list
+                  goods unsold for over 7 days    floor down to cost x (1 - 1% x days left): no
+                                                  lower than what holding it to the end costs
+                (11/5 15:40: the board ranks shops by book, cash + what the unsold units cost,
+                and goods in stock pay 1% of their cost a day. Until then the last 24 h of the
+                round cut the ask 15% of list with a floor of 25%, the last 6 h a floor of 10%,
+                and goods unsold a week a floor of 25%: each sale under cost took the
+                difference out of the book, where the unit held would have counted in full.)
     markdown    after 3 days unsold the ask drops 5% of list a day
     warranty    goods only, on request, 6 h (goods break within 6 h of the sale, so it
                 covers every breakdown): ask and floor + 5% of list for A, + 10% for B,
@@ -45,8 +50,9 @@ WARRANTY_EXTRA = {"A": 0.05, "B": 0.10, "C": 0.20}
 MARKDOWN_AFTER, MARKDOWN_STEP = 3, 0.05        # days unsold, share of list per further day
 DUD_DAYS, DUD_FLOOR = 7, 0.25
 NEAR_HOURS, NEAR_ASK, NEAR_FLOOR = 24, 0.45, 0.25
-LAST_DAY, LAST_DAY_CUT, LAST_DAY_FLOOR = 24, 0.15, 0.25
-LAST_HOURS, LAST_FLOOR = 6, 0.10
+LAST_DAY, LAST_DAY_CUT, LAST_DAY_FLOOR = 0, 0.15, 0.25        # off (24 h until 11/5 15:40): see the floor above
+LAST_HOURS, LAST_FLOOR = 0, 0.10                               # off (6 h until 11/5 15:40)
+STORAGE = 0.01           # goods in stock pay 1% of their cost a day (/agent.md)
 MAX_ROUNDS = 4           # offers before the shop closes: take one at or above the floor, else no deal
 QUICK = 0.95             # an offer this close to the ask is taken at once
 CLAIM_MARGIN = 300       # seconds a grade claim must stay true (deal to settle: 99% within 4 minutes)
@@ -221,7 +227,8 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     clearance = None
     if age > MARKDOWN_AFTER:
         start -= MARKDOWN_STEP * math.ceil(age - MARKDOWN_AFTER)
-    if age > DUD_DAYS:
+    goods = unit.get("kind") == "goods"
+    if age > DUD_DAYS and not goods:
         clearance = DUD_FLOOR
     if near_expiry(unit, now):
         start, clearance = NEAR_ASK, NEAR_FLOOR
@@ -232,13 +239,16 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         clearance = LAST_FLOOR
     if clearance is not None:
         floor = min(floor, round(lp * clearance))
+    held_down = goods and age > DUD_DAYS and clearance is None
+    if held_down:                                               # what holding it to the end would cost, no more
+        floor = min(floor, math.ceil(cost * (1 - STORAGE * max(0.0, to_end) / 24)))
     if w:
         floor += round(lp * extra[g])
-    if in_line and solo and clearance is None:
+    if in_line and solo and clearance is None and not held_down:
         hold = SOLO_FLOOR[g] + (extra[g] / 2 if w else 0)
         floor = max(floor, round(lp * (min(hold, solo_floor) if solo_floor is not None else hold)))
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
-            "at_cost": clearance is None, "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
+            "at_cost": clearance is None and not held_down, "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
             "sku_ref": sref, "nudge": nudge, "solo": bool(in_line and solo),
             "solo_floor": solo_floor if in_line and solo else None}

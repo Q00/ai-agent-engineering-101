@@ -211,14 +211,15 @@ def test_pricing():
     check("refurbished goods start at 60%", pricing.plan(goods_c, now)["ask"] == 23940, pricing.plan(goods_c, now)["ask"])
     check("3.5 days unsold: 5% of list lower", pricing.plan(dict(goods_c, supplied_at=now - 3.5 * DAY), now)["ask"] == 21945)
     p = pricing.plan(dict(goods_c, supplied_at=now - 8 * DAY), now)
-    check("8 days unsold: the floor may go to 25% of list (below cost)", (p["floor"], p["at_cost"]) == (9975, False), p)
+    check("8 days unsold goods, 5 days before the end: the floor goes under cost only by what holding it costs (5 x 1%: 13,300)",
+          (p["floor"], p["at_cost"]) == (13300, False), p)
     near = dict(food, cost=10000, expires_at=now + 10 * H)
     p = pricing.plan(near, now, catalog=CATALOG)
     check("food with 10 h left: ask 45%, floor 25% of list", (p["ask"], p["floor"]) == (9000, 5000), p)
     p = pricing.plan(dict(food, expires_at=end + 140 * H, supplied_at=end - 10 * H - 0.5 * DAY), end - 10 * H, catalog=CATALOG)
-    check("last day: ask 15% lower, floor 25% of list", (p["ask"], p["floor"]) == (12000, 5000), p)
+    check("last day: food that keeps past the end is priced as ever (it counts at cost in the book)", (p["ask"], p["floor"]) == (15000, 12600), p)
     p = pricing.plan(dict(food, expires_at=end + 140 * H, supplied_at=end - 3 * H - 0.5 * DAY), end - 3 * H, catalog=CATALOG)
-    check("last 6 h: floor 10% of list", p["floor"] == 2000, p)
+    check("last 6 h: no fire sale either", p["floor"] == 12600, p)
     goods_a = dict(goods_c, cost=26000, grade="A")
     p = pricing.plan(goods_a, now, warranty=True)
     check("warranty on grade A goods: +5% of list on ask and floor", (p["ask"], p["floor"], p["warranty_hours"]) == (31920, 29295, 6), p)
@@ -409,10 +410,10 @@ def test_restock(fake: Fake):
           _seller.priced(dear, NOW, False)["warranty_hours"] == 6 and _seller.priced(cheap, NOW, False)["warranty_hours"] is None
           and _seller.priced(cheap, NOW, True)["warranty_hours"] == 6)
     end = common.ROUND_END
-    check("...but not on clearance (unsold 8 days, or the last day), where it would lift the clearance floor; asked for, it still comes",
+    check("...but not unsold 8 days, where it would lift the lowered floor; on the last day it stays (no fire sale); asked for, it comes",
           _seller.priced(dict(dear, supplied_at=NOW - 8 * DAY), NOW, False)["warranty_hours"] is None
-          and _seller.priced(dear, end - 10 * H, False)["warranty_hours"] is None
-          and _seller.priced(dear, end - 10 * H, True)["warranty_hours"] == 6)
+          and _seller.priced(dict(dear, supplied_at=end - 11 * H), end - 10 * H, False)["warranty_hours"] == 6
+          and _seller.priced(dict(dear, supplied_at=NOW - 8 * DAY), NOW, True)["warranty_hours"] == 6)
     path = common.MARKET_DIR / "market_summary.json"
     kept = path.read_bytes() if path.exists() else None
     cells = {"A_w": {"median": 0.78, "n": 20}, "B_w": {"median": 0.72, "n": 20}, "C_w": {"median": 0.69, "n": 20}}
@@ -466,7 +467,7 @@ def test_restock(fake: Fake):
     check("...but one that sold half an hour ago is kept at 1 + its sales (3, one held: 2 more)",
           out["buy"][0] == {"sku": sofa, "qty": 2}, out["buy"][:2])
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, common.ROUND_END - 29 * H, line={sofa: 3})
-    check("no line product in the last 30 hours", all(b["sku"] != sofa for b in out["buy"]), out["buy"][:3])
+    check("line products are bought to the end (the book counts stock at cost)", any(b["sku"] == sofa for b in out["buy"]), out["buy"][:3])
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, fast, [], rules, NOW, line={})
     check("a dear product that sold is not refilled by the ordinary rule when it is not in the line",
           all(b["sku"] != sofa for b in out["buy"]), out["buy"][:3])
@@ -514,9 +515,10 @@ def test_restock(fake: Fake):
     late = [{"sku": PAKIMCHI, "ts": end - 2 * DAY - H}] * 3 + [{"sku": WATER, "ts": end - 2 * DAY - H}]
     empty_now = [u for u in shelf if u["sku"] not in (PAKIMCHI, WATER)]
     out, _ = restock.plan(inv(empty_now), CATALOG, DEMAND, {}, late, [], rules, end - 2 * DAY)
-    check("wind-down (3 days left): only products selling 2 a day are refilled", out["buy"] == [{"sku": PAKIMCHI, "qty": 3}], out)
+    check("no wind-down: 2 days before the end the shelf refills as ever, the slow seller too",
+          {b["sku"] for b in out["buy"]} >= {PAKIMCHI, WATER}, out)
     out, info = restock.plan(inv([]), CATALOG, DEMAND, {}, [], [], rules, end - 3 * H)
-    check("last 6 h: buys nothing", out["buy"] == [], info)
+    check("...and in the last 6 h it still buys", out["buy"] != [], info)
     focus = dict(rules, drop_categories=["김치"], focus_categories=["주스/코코아/생수"])
     out, _ = restock.plan(inv([u for u in shelf if u["sku"] not in (PAKIMCHI,)]), CATALOG, DEMAND, {}, [], [], focus, NOW)
     check("rules in force: a dropped category is not refilled, a focus category gets one more",

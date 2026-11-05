@@ -108,7 +108,8 @@ LINE_TRY_FIRST = 5       # line products never sold nor held (just added) go fir
                          # ordered by sales alone, one with none came after the best sellers and no run reached it
                          # (11/5 01:20: the three beds added at 01:09 were not bought; ranked as 3 sold an hour, at 01:40
                          # they tied with the best sellers, came after them on the tie, and the money ran out first)
-LINE_STOP = 30 * 3600    # no line product is bought this close to the end
+LINE_STOP = 0            # no line product is bought this close to the end: off (30 h until 11/5 15:40; the book
+                         # counts unsold units at their cost, so buying to the end loses nothing but storage)
 LINES = 10               # the kit buys at most 10 lines a run
 RUN_EVERY = 20 * 60      # seconds between the kit's runs of this hook (60 until 11/3); set it to the kit's
 SLOW = RUN_EVERY >= 600  # refills wait 10 minutes or more: keep one more unit of what sells
@@ -128,7 +129,8 @@ PRICEY_MAX = 400_000     # stage 2, categories with nothing cheaper
 MIN_SHELF = 168          # hours: food that keeps less than a week is not listed
 SECOND, SECOND_TOP = 0.7, 40
 DEAREST = 0.75           # grade A costs at most 75% of the list price
-WIND_DOWN, STOP = 3 * 86400, 6 * 3600
+WIND_DOWN, STOP = 0, 0    # off (3 days, 6 h until 11/5 15:40): only fast sellers refilled in the last 3 days, nothing
+                          # bought in the last 6 h; with the book counting stock at cost, those were sales given up
 FAST = 2                 # sales in the last day for a product to be refilled in the wind-down
 UNPAID_AFTER = 600       # seconds an agreed unit may stay in stock before the deal counts as unpaid
 WARN_AFTER, WARN_BELOW = 86400, 3
