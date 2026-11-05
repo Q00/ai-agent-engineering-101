@@ -1,0 +1,131 @@
+% R3 시도 2 구조도 (2026-11-05). xelatex architecture.tex
+\documentclass[border=12pt]{standalone}
+\usepackage{fontspec}
+\usepackage{kotex}
+\setmainfont{Apple SD Gothic Neo}
+\setmainhangulfont{Apple SD Gothic Neo}
+\setsansfont{Apple SD Gothic Neo}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,arrows.meta,backgrounds,calc}
+
+\definecolor{done}{HTML}{2E7D32}
+\definecolor{plan}{HTML}{6D6D6D}
+\definecolor{kern}{HTML}{E8EEF7}
+\definecolor{harn}{HTML}{FFF4E0}
+\definecolor{mem}{HTML}{EEF7EE}
+\definecolor{mkt}{HTML}{F3F3F3}
+\definecolor{goal}{HTML}{FDECEC}
+
+\tikzset{
+  >={Stealth[length=2.4mm]},
+  box/.style={draw, rounded corners=3pt, align=left, inner sep=5pt, font=\small, fill=white},
+  done/.style={box, draw=done, line width=1.1pt},
+  plan/.style={box, draw=plan, dashed},
+  title/.style={font=\bfseries\large},
+  group/.style={draw=#1!60!black, rounded corners=6pt, inner sep=10pt},
+  lab/.style={font=\footnotesize\itshape, fill=white, inner sep=1.5pt},
+  flow/.style={->, line width=0.9pt},
+}
+
+\begin{document}
+\begin{tikzpicture}[node distance=6mm and 6mm]
+
+% ---------------- 시장 ----------------
+\node[box, fill=mkt, text width=25cm, align=center] (market) {\textbf{시장} (market.ourolabs.ai, Round 3, 11-17 23:59 종료)\quad
+  구매자 요청(A2A)\quad 구매 명령(300초)\quad 공급 창(20분마다 3분)\quad 순위표\quad 포럼\quad 장부와 공급 가격(읽기)};
+
+% ---------------- 목표와 정보 ----------------
+\node[done, fill=goal, text width=5.2cm, below=20mm of market.south west, anchor=north west] (goal) {%
+  \textbf{목표 (사람이 정함)}\\
+  Everyone 보기 total 1위\\
+  Class 보기 student\_total은 참고\\[3pt]
+  가게 = 0.5 Book + 0.3 Revenue + 0.2 Stars\\
+  구매자 = 0.5 잉여 + 0.3 포럼 + 0.1 거래 + 0.1 글};
+\node[done, text width=5.2cm, below=of goal] (manual) {%
+  \textbf{시장 설명서} MARKET\_BRIEF.md\\
+  점수, 주문, 판매, 재고, 돈과 위험,\\ 포럼, 금지, 정보 출처 (출처 표기)};
+\node[done, text width=5.2cm, below=of manual] (brief) {%
+  \textbf{현재 상황 브리핑} kernel/brief.py\\
+  순위(Everyone, Class), 항목별 백분위와\\ 6시간 변화, 잔고와 재고, 판매 결과,\\
+  시장 24시간, 포럼 점수 흐름,\\ 모델 호출과 거절, 하네스 수정 내역\\
+  사실만, 해석과 조언 없음};
+
+% ---------------- 커널 ----------------
+\node[done, text width=3.6cm, right=14mm of goal.north east, anchor=north west, yshift=-6mm] (k1) {%
+  \textbf{시장 연결}\\ 키트 v4: A2A 판매,\\ 구매 명령, 재입고,\\ ACP 결제};
+\node[plan, text width=3.6cm, right=of k1] (k2) {%
+  \textbf{규칙 강제}\\ 주문 예산 상한\\ 시장 API 허용 목록\\ 금지 행동 (포럼 조작,\\ 두 번째 구매자 등)};
+\node[plan, text width=3.6cm, right=of k2] (k3) {%
+  \textbf{안전장치}\\ 파산 방지, 스크립트 격리\\ 버전과 되돌리기\\ 형식 검사, 편집 범위};
+\node[done, text width=3.6cm, right=of k3] (k4) {%
+  \textbf{수집과 기록}\\ 순위표, 장부, 재고 수집\\ 궤적 기록 (비밀값 가림)\\ 깨우는 신호};
+\node[done, text width=3.2cm, right=of k4] (k5) {%
+  \textbf{모델 호출}\\ gpt-6.1-terra 고정\\ codex CLI, 상한 없음\\ 거절은 기록 후\\ 모델의 스크립트로};
+\begin{scope}[on background layer]
+  \node[group=blue, fill=kern, fit=(k1)(k2)(k3)(k4)(k5), label={[title, anchor=south west]north west:고정 커널 (사람 코드, 모델이 고칠 수 없음)}] (kernel) {};
+\end{scope}
+
+% ---------------- 에이전트 ----------------
+\node[plan, text width=5.2cm, below=18mm of k1.south west, anchor=north west] (seller) {%
+  \textbf{판매자}\\ 깨어남: 구매자 요청 (약 180건/시간)\\ 가격 제시, 수락, 거절\\
+  routing.json대로 모델 호출 또는\\ 모델이 쓴 스크립트};
+\node[plan, text width=5.6cm, right=8mm of seller, fill=harn] (op) {%
+  \textbf{운영자} (메타 하네스)\\ 깨어남: 주기 점검(처음 30분, 스스로 조정),\\ 순위 급변, 목록 이탈, 파산선 접근\\
+  브리핑과 도구로 상황을 봄\\ 판매자, 구매자 하네스 수정\\ 하위 에이전트 추가와 삭제\\ 재입고 계획과 포럼 게시 판단};
+\node[plan, text width=5.2cm, right=8mm of op] (buyer) {%
+  \textbf{구매자}\\ 깨어남: 구매 명령 (300초 안)\\ 어느 가게와 얼마에\\ 거래할지 판단};
+\node[plan, text width=3.6cm, right=8mm of buyer] (restock) {%
+  \textbf{재입고 계획}\\ 운영자가 쓴 데이터\\ 커널이 60초마다 실행\\ (매번 모델을 부르지 않음)};
+
+% ---------------- 하네스 ----------------
+\node[plan, fill=harn, text width=8.6cm, below=14mm of seller.south west, anchor=north west] (harness) {%
+  \textbf{하네스 파일 (에이전트마다, 모델이 고침)}\\[2pt]
+  늘 읽힘: systemprompt.md, guardrails.md,\\ \hspace*{3.2em}LongTermMEMORY.md, tool\_guidance.md\\
+  필요할 때: sub\_agents/, skills/, scripts/\\
+  설정: memory.json (무엇을 저장, 몇 개를 찾음)\\ \hspace*{3.2em}routing.json (모델 또는 스크립트, 추론 강도)};
+
+% ---------------- 도구 ----------------
+\node[box, text width=6.6cm, right=8mm of harness] (tools) {%
+  \textbf{관찰 도구} (요약 먼저, 관찰 하나 약 4천 토큰 상한)\\[2pt]
+  \textcolor{done}{구현: board, ledger, events, shops, catalog, inventory}\\
+  \textcolor{plan}{예정: memory\_search, trajectory\_find,}\\
+  \textcolor{plan}{\hspace*{2.6em}harness\_read, harness\_write}\\
+  \textcolor{plan}{선택 도구: script\_run(지난 기록에 돌려 봄),}\\
+  \textcolor{plan}{\hspace*{2.6em}shadow(실제 요청에 다른 판의 결정 기록)}\\
+  선택 도구는 반드시 거칠 절차가 아님};
+
+% ---------------- 메모리 ----------------
+\node[plan, fill=mem, text width=6.4cm, right=8mm of tools] (memory) {%
+  \textbf{메모리 두 층}\\[2pt]
+  빠른 층: mem0 사실 저장소\\ \hspace*{1em}판매자, 구매자가 요청마다 몇 개만 찾음\\
+  깊은 층: 궤적 파일 (\textcolor{done}{기록은 구현})\\ \hspace*{1em}운영자가 도구로 직접 찾아봄\\
+  점검: LongMemEval-V2 다섯 능력으로\\ \hspace*{1em}우리 시장 질문 세트};
+
+% ---------------- 자기 수정 루프 ----------------
+\node[plan, fill=harn, text width=24.5cm, below=12mm of harness.south west, anchor=north west, align=center] (loop) {%
+  \textbf{하네스 자기 수정 (Harness² 방식을 시장에 맞게)}\quad
+  궤적과 점수를 읽음 $\rightarrow$ 근거를 적고 고침 (고치지 않기도 허용) $\rightarrow$ 필요하면 shadow, script\_run으로 확인
+  $\rightarrow$ 운영자가 직접 유지, 수정, 폐기 결정 $\rightarrow$ 형식 검사 $\rightarrow$ 버전 기록 $\rightarrow$ 수정별 효과 표와 교훈 하나를 library/에 저장};
+
+% ---------------- 화살표 ----------------
+\draw[flow] ([xshift=-25mm]market.south) -- node[lab, right] {요청, 명령} ([xshift=-25mm]market.south |- kernel.north);
+\draw[flow] ([xshift=25mm]market.south |- kernel.north) -- node[lab, right] {주기 수집} ([xshift=25mm]market.south);
+\draw[flow] (kernel.south -| seller.north) -- node[lab, right] {A2A 요청, 응답} (seller.north);
+\draw[flow] (kernel.south -| op.north) -- node[lab, right] {깨우는 신호, 모델 호출} (op.north);
+\draw[flow] (kernel.south -| buyer.north) -- node[lab, right] {구매 명령} (buyer.north);
+\draw[flow] (restock.north) -- node[lab, right] {커널이 실행} (kernel.south -| restock.north);
+\draw[flow, done] (brief.east) -- node[lab, above] {컨텍스트} (brief.east -| seller.west);
+\draw[flow, done] (goal.east) -- (goal.east -| kernel.west);
+\draw[flow] ([xshift=10mm]op.south west) -- node[lab, right] {고침} ([xshift=10mm]op.south west |- harness.north);
+\draw[flow] ([xshift=-10mm]seller.south east |- harness.north) -- node[lab, left] {읽음} ([xshift=-10mm]seller.south east);
+\draw[flow] (buyer.south -| tools.north) -- node[lab, right] {조회} (tools.north);
+\draw[flow] (restock.south -| memory.north) -- node[lab, right] {찾음, 기록} (memory.north);
+\draw[flow] (harness.south) -- node[lab, right] {점검마다} (harness.south |- loop.north);
+
+% ---------------- 범례 ----------------
+\node[done, below=8mm of loop.south west, anchor=north west, font=\footnotesize] (lg1) {구현됨 (1단계, 커밋 caa40fa)};
+\node[plan, right=6mm of lg1, font=\footnotesize] (lg2) {예정 (2단계부터, 11-12까지 실제 가게 전환)};
+\node[right=6mm of lg2, font=\footnotesize, align=left] {사람이 주는 것: 목표, 정보, 규칙\quad 모델이 정하는 것: 가격, 수락, 재고 구성, 포럼, 하네스 구조};
+
+\end{tikzpicture}
+\end{document}
