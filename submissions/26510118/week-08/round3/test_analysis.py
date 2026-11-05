@@ -1117,6 +1117,46 @@ def test_scoreboard():
         (MD / "analysis" / f).unlink(missing_ok=True)
 
 
+def test_watch():
+    print("\n[watch] what changed since 20 minutes ago")
+    import watch
+    for f in ("watch_state.json", "watch.json", "watch_log.jsonl"):
+        (MD / "analysis" / f).unlink(missing_ok=True)
+    t = NOW + 30 * H
+    texts = {"/agent.md": "rules v1\nstorage 1%", "/rules": "<p>Patch 3.3</p><p>Stock counts</p>"}
+
+    def board(alive, kiro, stars):
+        shops = [{"name": f"s{i}", "alive": i < alive, "book": 1} for i in range(40)] + [{"name": "Kiro729", "alive": True, "stars_rank": stars}]
+        players = [{"player": "A", "student": True, "student_total": 1.9}, {"player": "B", "student": True, "student_total": 1.6},
+                   {"player": "Kiro729", "student": True, "student_total": kiro}, {"player": "Out", "total": 2.0}]
+        return {"shops": shops, "players": players, "round": 3}
+    flat = lambda end, last: [{"ts": end - i * 1200 - 60 - j, "shop": "x", "item": "G0", "amount": 1}
+                              for i in range(7) for j in range(last if i == 0 else 150)]
+    log = ROOT / "kit_test.log"
+    log.write_text("", encoding="utf-8")
+    got = watch.run(t, lambda path: board(40, 1.62, 4.65), lambda path: texts[path], log, flat(t, 150))
+    check("first run: a baseline, no alerts; class place 2 of the students (the outside player left out)",
+          got["alerts"] == [] and got["facts"]["rank"]["place"] == 2 and "baseline set" in got["note"]
+          and (MD / "analysis" / "watch.json").exists(), got)
+    texts["/agent.md"] = "rules v2\nstorage 2%"
+    hh = lambda s: time.strftime("%H:%M:%S", time.gmtime(t + 1200 - s))
+    log.write_text(f"{hh(300)} [kit] no shops in the market yet, waiting\n{hh(200)} [kit] no shops in the market yet, waiting\n",
+                   encoding="utf-8")
+    got = watch.run(t + 1200, lambda path: board(20, 1.55, 4.60), lambda path: texts[path], log, flat(t + 1200, 20))
+    kinds = {a["kind"] for a in got["alerts"]}
+    check("20 min later: the rules changed (with the lines), shops alive 40 -> 20, the market's settles fell, an outage in "
+          "the kit log, our class place 2 -> 3, stars 4.65 -> 4.60",
+          kinds >= {"rules", "alive", "volume", "outage", "rank", "stars"} and "x2" in str(got["alerts"])
+          and any("storage 2%" in a["text"] for a in got["alerts"] if a["kind"] == "rules"), got["alerts"])
+    log.write_text("", encoding="utf-8")
+    got = watch.run(t + 2400, lambda path: board(20, 1.55, 4.60), lambda path: texts[path], log, flat(t + 2400, 150))
+    check("...and the next run, nothing new: quiet", got["alerts"] == [] and got["note"].startswith("quiet"), got["alerts"])
+    check("every run kept in watch_log.jsonl", len(common.read_jsonl(MD / "analysis" / "watch_log.jsonl")) == 3)
+    log.unlink()
+    for f in ("watch_state.json", "watch.json", "watch_log.jsonl"):
+        (MD / "analysis" / f).unlink(missing_ok=True)
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     try:
@@ -1129,6 +1169,7 @@ def main() -> int:
         test_linewatch()
         test_discover()
         test_scoreboard()
+        test_watch()
         test_analysts()
         test_insights()
         test_context()

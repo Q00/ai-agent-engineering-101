@@ -41,6 +41,8 @@ FILES = [
      ("settles_24h", "by_sku", "by_category", "by_shop")),
     ("analysis/wanted.json", "analysis (collect)", "restock", lambda d: [d], ("at", "categories")),
     ("analysis/rivals.json", "analysis (collect)", "market_buyer (near ties)", lambda d: [d], ("at", "shops")),
+    ("analysis/watch.json", "analysis (watch.py, every 20 min)", "a person (alerts on rule and market changes)", lambda d: [d],
+     ("at", "alerts", "facts")),
     ("analysis/bad_faith.json", "analysis (collect)", "market_buyer (bad-faith owners' shops last)", lambda d: [d], ("at", "shops")),
     ("analysis/scoreboard.json", "analysis (collect: scoreboard.py)", "linewatch (stars), integrated analysis", lambda d: [d],
      ("at", "place", "total")),

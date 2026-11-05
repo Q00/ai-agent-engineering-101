@@ -61,8 +61,9 @@ import forum
 import harness
 import journal
 import ledger
+import watch
 
-EVERY = {"collect": 1200, "linewatch": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
+EVERY = {"collect": 1200, "linewatch": 1200, "watch": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
          "votes": 1200, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
 RIVALS = 12             # the top players whose shops our buyer passes over in a near tie (market_buyer.RIVAL)
 NOTES_ALONE = False      # stand-alone notes every 5 minutes (stopped 11/5 03:20, the person's call)
@@ -352,6 +353,11 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
                         state[name] = now
                         continue
                     note = "; ".join(f"{c['sku']} cap {c['from']}->{c['to']} ({c['why']})" for c in changed)
+                elif name == "watch":                          # an observer (watch.py): logged, never in `done`
+                    got = watch.run(now, get_json or market_get, (lambda path: "") if get_json else None)
+                    log(f"[analysis] watch: {got['note']}")
+                    state[name] = now
+                    continue
                 elif name == "votes":
                     note = votes(now, state)
                 elif name in ("seller", "buyer"):
