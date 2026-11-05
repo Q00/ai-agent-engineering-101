@@ -163,7 +163,8 @@ flowchart TB
   - `MARKET_DIR=<라이브 week-08>/.market`: `memory.sqlite`(mode=ro)와 키트 json을 읽음.
   - `--monitor-dir <라이브 week-08>/logs/monitor`.
   - `--out logs/shadow`: 출력은 worktree의 `logs/shadow`(gitignore)에 씀.
-  - 같은 결과가 필요하면 라이브 `logs/shadow`의 `inputs-<end>.json`, `memory-<end>.sqlite`를 worktree `logs/shadow`로 복사함. 보고서 notes가 "reused"인지 확인함.
+  - 고정 파일은 `--pin-dir`(기본 `logs/shadow`)에 있음. `--out`과 관계없음. 같은 `--pin-dir`를 주면 같은 고정 파일을 씀.
+  - 보고서 `pin`의 경로와 sha256을 확인함. `reused`가 true여야 함.
 - 테스트: seller 테스트 5개는 `shop_key.pem`(gitignore)을 읽음. worktree에는 이 파일이 없음.
   - 테스트 전에 버리는 키를 만듦: `openssl genpkey -algorithm ed25519 -out shop_key.pem`.
   - 테스트 뒤에 바로 지움: `rm -f shop_key.pem`. 라이브 키는 복사하지 않음. 읽지 않음.
@@ -221,11 +222,23 @@ logs/monitor/board-*.json ─┘      (Window)          └─ 후보 정책 (po
 - 재현성(같은 `--end`, `PYTHONHASHSEED=0`이면 같은 결과):
   - `restock_r3.plan`은 `twin.frozen_clock(틱 시각)` 안에서 돎. memory.py의 `time.time()` 되돌아보기가 틱 시각을 봄.
   - `unit_floor`는 `now=방문 시각`을 받음. 벽시계를 읽지 않음.
-  - `--end`가 있으면 첫 실행이 입력을 `logs/shadow/`에 고정함. 다음 실행은 그 파일을 씀.
-    - `inputs-<end>.json`: 재고(`--end` 이전 마지막 monitor 스냅샷), 수요 줄, catalog 해시.
-    - `memory-<end>.sqlite`: plan용 DB 복사본(ts > end 줄은 지움). 약 320MB. gitignore임.
+  - `--end`가 있으면 gate는 `--pin-dir`(기본 `logs/shadow`)의 고정 파일을 읽음. `--out`은 보고서만 받음. 새 `--out`은 새 고정 파일을 만들지 않음(MO 2026-11-05 17:01).
+    - 고정 파일이 없으면 오류임. 종료 코드 2. 아무 파일도 쓰지 않음.
+    - `--build-pin`을 주면 없는 고정 파일을 라이브 데이터에서 한 번 만듦. 있는 파일은 덮어쓰지 않음.
+    - `inputs-<end>.json`: 재고, 수요 줄, catalog 해시, 재고 이동량(`moves`).
+      - 재고: `--end` 이전 마지막 monitor 스냅샷. 없으면 `--end` 뒤 첫 스냅샷. 없으면 라이브 `inventory.json`(만든 시각). 뒤 두 경우는 미래 정보이고 notes에 WARNING을 씀.
+      - `moves`: 스냅샷 시각과 `--end` 사이의 우리 정산과 공급(`twin.inventory_moves`). `--build-pin` 때 한 번만 라이브 DB에서 읽음. 다시 실행하면 이 값을 씀.
+      - 이유: 창 2(QA 17:20)에서 재고 시각이 "지금"이었음. 그 직전 우리 정산 2건(시각 −2.5 s, −1.6 s)이 만든 실행과 다시 쓴 실행 사이에 DB에 들어옴. 그래서 두 실행의 시작 재고가 달랐음.
+      - `moves`가 없는 옛 고정 파일은 이동량을 매번 라이브 DB에서 읽음. notes에 WARNING을 씀.
+    - `memory-<end>.sqlite`: plan용 DB 복사본. 약 320MB. gitignore임. 모든 표를 `--end`로 자름(`twin.cut_to_end`).
+    - `memory-<end>.cut.json`: 표마다 자른 상태(`cut`, `partly cut`, `not cut`)와 자르지 못한 열·키. 보고서 `pin.db.cut`에도 들어감.
+    - 보고서 `pin`: 고정 파일 경로, 전체 sha256, `reused`.
   - 보드는 `--end` 이전 마지막 monitor 보드를 씀. SKU 집합은 정렬함. DB 읽기는 `ts, rowid` 순서임.
-- 남는 미래 정보: `shop_stock`, `shops`(경쟁 재고)와 `meta`(unmet, `restock_adjust` 등)는 이벤트 시각이 없음. 고정 복사본에는 `--end` 시각이 아니라 첫 실행 시각의 값이 들어감.
+- 남는 미래 정보(`memory-<end>.cut.json`에 적음):
+  - `forum`의 likes·dislikes·score·voted·signals, `members.uses`, `purchases`의 paid·ledger·reason: 줄은 ts로 자르지만, 나중에 고친 열 값은 되돌릴 수 없음.
+  - `meta`의 카운터와 오프셋(`broken_offset`, `buyer_post_seen`, `explore_spent`, `harsh_styles`, `ledger_seq`, `payments_offset`, `report_turn`): 시각이 없음. 복사 시각의 값임.
+  - `shops`: `--end` 뒤에 동기화한 경쟁 가게 줄은 지움. 우리 가게 줄은 남기고 ts를 `--end`로 둠.
+  - `shop_stock`(경쟁 재고): 창 1과 창 2에서는 모든 줄이 ts > end였음. 그래서 0줄이 됨. 그래서 plan의 경쟁 비율 사전값이 1이 됨. 옛 고정 파일(경쟁 재고 2024줄)과 결과가 다름.
 - `--end`가 없으면 입력을 라이브에서 읽음. 다시 돌리면 값이 다를 수 있음.
 - 보증 floor와 식품 유통기한은 트윈에 없음.
 - 등급·보증은 관측 첫 호가에서 구한 호가 배수로 접음.
