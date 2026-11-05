@@ -82,6 +82,14 @@ DEAR_ORDER = 500_000      # an order whose products list at this (median) or mor
                           # failure there costs seconds, a deal tens or hundreds of thousands)
 WARRANTY_HOURS = 6
 HOLDS = 2                 # asks above our ceiling that stopped falling before we leave
+# Grades (11/5 15:40, the person's call): the market values a settled deal at the list price whatever the grade
+# (/agent.md), so a B or C under the 6-hour warranty (which covers every break) is worth what an A is. Over Round 3
+# we paid a median 0.772 of list for A, 0.715 for B and 0.70 for C, keeping 0.206, 0.237 and 0.274 of list after
+# breaks, while a shop's C costs it 0.25-0.45 and a B 0.40-0.60. Goods we want the warranty on are asked for in any
+# grade, B or C welcome; a B or C the shop offers has its own ceiling, and our ladder scales down to it.
+GRADE_CAP = {"B": 0.70, "C": 0.62}
+GRADE_WORDS = " Grade B (damaged box) or C (refurbished) suits me as well as A, priced for its grade."
+GRADE_SAID = re.compile(r"\bgrade\s*[:=]?\s*([ABC])\b", re.I)
 # 11/5 03:30 (the person's call: "a lower ceiling, and better negotiating"): 27% of our deals in 12 h paid more than
 # the item's own market (its mean paid / list over 24 h) + 5% of list, 2.48M over that line; 64 paid over 90% of list.
 # Most came from taking a shop's counter at once whenever it was under our ceiling. So:
@@ -171,6 +179,16 @@ def state(t) -> str:
 
 def said(t) -> str:
     return " ".join(p.get("text", "") for p in (t or {}).get("status", {}).get("message", {}).get("parts", []))
+
+
+def grade_of(t):
+    """The grade of the unit the shop offers: its metadata, else its words (grade X, or refurbished: C), else None."""
+    g = meta(t).get("grade")
+    if g in ("A", "B", "C"):
+        return g
+    text = said(t)
+    found = GRADE_SAID.search(text)
+    return found.group(1).upper() if found else ("C" if REFURB.search(text) else None)
 
 
 def meta(t) -> dict:
@@ -422,10 +440,13 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             first += f" It must last at least {need + MARGIN_HOURS:.0f} hours."
         if r["warranty"]:
             first += f" Please include a {WARRANTY_HOURS}-hour warranty."
+            if c["kind"] == "goods":
+                first += GRADE_WORDS
         t = await client.send(first)
         steps = ladder(rules, memory.paid_ratio(nb, c["shop"]["name"])[1])
         ceiling = r["cap"] = cap_of(c, order, steps[-1])
         prev, holds, asked_warranty, refurb, covered, split = None, 0, r["warranty"], False, False, False
+        scale = 1.0                                                 # the ladder, scaled to a B's or a C's ceiling
         for step in steps:
             if state(t) != "TASK_STATE_INPUT_REQUIRED":
                 break
@@ -463,6 +484,10 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             if refurb and not covered:
                 r["left"] = f"refurbished goods, and the shop did not confirm a {WARRANTY_HOURS}-hour warranty"
                 break
+            g = grade_of(t) if c["kind"] == "goods" else None
+            if g in GRADE_CAP and round(c["list"] * GRADE_CAP[g]) < ceiling:
+                ceiling = r["cap"] = round(c["list"] * GRADE_CAP[g])
+                scale, r["grade"] = GRADE_CAP[g] / steps[-1], g
             ask = await asked(t)
             if ask is not None:
                 r["asks"].append(ask)
@@ -472,7 +497,7 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                         r["left"] = f"the ask stayed at {ask}, above our ceiling {ceiling}"
                         break
                 prev = ask
-            offer = min(round(c["list"] * step), ceiling)
+            offer = min(round(c["list"] * step * scale), ceiling)
             meet = False
             if ask is not None and ask <= offer:
                 offer = ask                                         # it fits: take it
@@ -611,7 +636,7 @@ async def amain(a) -> dict:
                   expected=c["expected"], trust=c["trust"], odds=c.get("odds"), flags=c["flags"], poor=bool(poor), warranty=r["warranty"],
                   switched=r["switched"], asks=r["asks"], offers=r["offers"], deal=r["deal"], price=r["price"],
                   error=r["error"], left=r["left"], tries=tries, rival=c["shop"]["name"] in rivals,
-                  cap=r.get("cap"), market=c.get("market"), said=r.get("said"))
+                  cap=r.get("cap"), market=c.get("market"), said=r.get("said"), grade=r.get("grade"))
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles

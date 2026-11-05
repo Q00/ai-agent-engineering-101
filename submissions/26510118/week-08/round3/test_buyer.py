@@ -163,6 +163,21 @@ def test_terms():
     check("refurbished goods whose warranty the shop does not confirm: we ask, then leave before any offer",
           shop_.sent == ["I want to buy Bed (G1).", "Please include a 6-hour warranty.", "(cancel)"] and not r["offers"]
           and "did not confirm" in (r["left"] or ""), (shop_.sent, r["left"]))
+    check("the unit's grade: the shop's metadata, its words, or refurbished = C",
+          mb.grade_of(reply("x", {"grade": "B"})) == "B" and mb.grade_of(reply("Sofa, grade=A, cert=true. Asking 9.", {})) == "A"
+          and mb.grade_of(reply("A refurbished sofa. Asking 9.", {})) == "C" and mb.grade_of(reply("Asking 9.", {})) is None)
+    flow[:] = [reply("Sofa (G2): grade C (refurbished), with a 6-hour warranty. Asking 700000.", {"ask": 700000, "grade": "C",
+                                                                                                   "warranty_hours": 6}),
+               reply("Asking 700000.", {"ask": 700000, "warranty_hours": 6})]
+    shop_ = Shop()
+    sofa = {"shop": {"name": "K", "url": "http://k"}, "sku": "G2", "name": "Sofa", "list": 1_000_000, "kind": "goods"}
+    r = asyncio.run(mb.trade(shop_, sofa, order(1_500_000, ["G2"], "goods"), {}, {}, RULES, False))
+    offers = [int(__import__("re").findall(r"\d+", x)[0]) for x in shop_.sent[1:] if x != "(cancel)"]
+    check("dear goods: the warranty asked for, any grade welcome; a C has its own ceiling (62% of list) and the ladder "
+          "scales down to it (60% -> 39%)",
+          shop_.sent[0] == "I want to buy Sofa (G2). Please include a 6-hour warranty." + mb.GRADE_WORDS
+          and r["cap"] == 620_000 and r["grade"] == "C" and offers[0] == round(1_000_000 * 0.60 * 0.62 / 0.90)
+          and max(offers) <= 620_000, (shop_.sent, r.get("cap")))
     check("a warranty for goods listed at 100,000 or more", mb.wants_warranty(dict(goods, list=168000), {}, False, RULES))
     check("...from a shop whose goods broke on us", mb.wants_warranty(goods, {"K": {"broken": 1}}, False, RULES))
     check("...when every choice was poor", mb.wants_warranty(goods, {}, True, RULES))
