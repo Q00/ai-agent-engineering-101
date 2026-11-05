@@ -250,3 +250,29 @@ logs/monitor/board-*.json ┴─> forum_lever2.dry_run(end)
 - 싫어요·숨김에 대한 시장 반응은 모델링하지 않음.
 - 추정은 보드의 posts 백분위와 ALL 관계만 씀. 다른 buyer는 고정함.
 - forum 표에 숨김 칸이 없음. 숨김은 라이브 API에서 읽어야 함.
+
+## 인플루언서-forum (MA-4 Task 2, 2026-11-05)
+
+buyer 역할 증거 보고 레인. 스위치 `config.FORUM_INFLUENCER = False`(기본). True일 때만 동작한다.
+
+```
+forum_r3.scheduled_report ──FORUM_INFLUENCER──> forum_influencer.next_draft
+        │                                         (sku / category / purchase / grade_warn 순환)
+        │                                         금지 문구 · 길이 · refs 검증
+        └─ False ──────────────────────────────> 기존 oracle.REPORT_ORDER 경로 (그대로)
+
+forum_r3.vote ──FORUM_INFLUENCER──> should_downvote(패턴 or P≥INJECTION_P, LLM만으로는 -1 금지)
+              ──FORUM_LEVER2──────> 기존 lever2 경로
+              ──둘 다 False───────> 예전 int-only refs / LLM 라벨 경로
+Either flag → ref_seqs. LEVER2_* 상수 개수는 11 유지(INFLUENCER_* 접두사).
+```
+
+- 간격: `INFLUENCER_GAP_MIN = 10` (buyer/report). 라이브 20분은 False일 때.
+- 숨김 신호(읽기 전용, 상대): 스위치 ON 시 `board_posts0`/`our_posts0` 기록. `(board-board0) < (ours-ours0)`일 때만 숨김.
+  our 카운트는 `ts <= board_as_of - 120s`(모니터 스탬프 또는 live fetch 시각). forum.jsonl은 outbox enqueue(accepted 없음). API hidden UNOBSERVABLE.
+- 되돌리기: 신규 20글 평균 싫어요>1.0, 좋아요<5.0, 한 글 싫어요≥3, board forum<0.540이 1시간 간격 두 번,
+  board posts < 우리 글 수, P≥0.5로 올린 글, 켜기 직전 2시간 글당 싫어요의 1.2배, 숨김 신호, HTTP 429.
+- 1.2배 기준은 스위치 ON 직전 2시간 값(`influencer_baseline.json`에 `record_switch_baseline`으로 기록).
+  전체 기간 평균(~0.48)은 보고용일 뿐 기준으로 쓰지 않는다.
+- dry-run: `python forum_r3.py --dry-run` 또는 `python -m r3lib.forum_influencer dry-run`.
+  초안·투표 계획만 쓰고 전송·LLM·Decisions 호출 없음.

@@ -116,6 +116,18 @@ LEVER2_ROLLBACK_BASELINE_H = 2      # baseline = our dislikes per post in this m
 LEVER2_ROLLBACK_RATIO = 1.2         # roll back when dislikes per post after switch-on > this x baseline (relative)
 LEVER2_ROLLBACK_ON_HIDDEN = True    # roll back on any hidden post
 LEVER2_ROLLBACK_ON_429 = True       # roll back on any HTTP 429
+
+# influencer-forum (MA-4 Task 2, 2026-11-05): buyer-role evidence reporter. Default OFF.
+# Live forum_r3 reads these only when FORUM_INFLUENCER is True; with False behaviour is unchanged.
+# LEVER2_* count stays 11 — these use the INFLUENCER_ prefix.
+FORUM_INFLUENCER = False            # the switch. False = live forum behaviour as before
+INFLUENCER_GAP_MIN = 10             # buyer post gap under the flag (live FORUM_MIN_GAP_MIN = 20)
+INFLUENCER_MIN_CHARS = 150          # draft length floor
+INFLUENCER_MAX_CHARS = 500          # draft length soft ceiling (hard is FORUM_MAX_CHARS)
+INFLUENCER_ROLLBACK_AVG_DISLIKES = 1.0   # new 20 posts: avg dislikes above this -> rollback
+INFLUENCER_ROLLBACK_AVG_LIKES = 5.0      # new 20 posts: avg likes below this -> rollback
+INFLUENCER_ROLLBACK_ONE_DISLIKES = 3     # any one post with dislikes >= this -> rollback
+INFLUENCER_ROLLBACK_FORUM_FLOOR = 0.540  # board forum below this twice 1h apart -> rollback
 REACT_MAX_STEPS = 6
 REACT_BUDGET_S = 240                # one ReAct run, all steps together
 RESTOCK_REVIEW_EVERY_MIN = 30       # background ReAct review of the restock plan
