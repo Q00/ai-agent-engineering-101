@@ -543,11 +543,11 @@ footer .o{color:var(--muted)}
       <div class="cap"><span><b>FIG. 05</b> What changes from Round 2 to Round 3</span><span>struck out: Round 2; bold: Round 3</span></div>
     </div>
     <!-- voice-check: prose -->
-    <p>FIG. 06은 가게 돈이 어디서 들어오고 어디로 나가는지 보여 준다. 순이익은 잔고에서 시작 자본과 파산 지원금을 뺀 값이다.</p>
+    <p>FIG. 06은 가게 돈이 어디서 들어오고 어디로 나가는지 보여 준다. Book은 잔고에서 시작 자본과 파산 지원금을 빼고 안 팔린 재고의 원가를 더한 값이다.</p>
     <!-- voice-check: off -->
 
     <div class="fig" id="fig6">
-      <svg viewBox="-2 -2 684 300" role="img" aria-label="Where the money goes in Round 3: the shop starts with 5,000,000 credits and pays the market's supply a cost per unit; units sit in stock, where food loses shelf life and non-food pays 1 percent of cost a day; a buyer pays the checkout price, settled by the market into the shop's balance; expired food is lost at cost; a non-food item that breaks within the warranty is refunded from the shop's balance; below 500,000 the shop can go bankrupt up to twice, losing its stock and getting back to 5,000,000, which is subtracted from profit">
+      <svg viewBox="-2 -2 684 300" role="img" aria-label="Where the money goes in Round 3: the shop starts with 5,000,000 credits and pays the market's supply a cost per unit; units sit in stock, where food loses shelf life and non-food pays 1 percent of cost a day; a buyer pays the checkout price, settled by the market into the shop's balance; expired food is lost at cost; a non-food item that breaks within the warranty is refunded from the shop's balance; below 500,000 the shop can go bankrupt up to twice, losing its stock and getting back to 5,000,000, which is subtracted from book">
         <defs><marker id="m9-c" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker></defs>
         <g fill="none" stroke="#1C1917" stroke-width="1.5">
           <rect x="0" y="20" width="140" height="70" rx="8"/><rect x="180" y="20" width="140" height="70" rx="8"/>
@@ -586,31 +586,31 @@ footer .o{color:var(--muted)}
           <text x="476" y="204">bankrupt, up to twice</text>
         </g>
         <rect x="0" y="240" width="680" height="54" rx="8" fill="none" stroke="#A8A29E" stroke-width="1" stroke-dasharray="4 3"/>
-        <text x="16" y="263" font-size="12" fill="#1C1917">net profit = balance - 5,000,000 - bankruptcy aid</text>
+        <text x="16" y="263" font-size="12" fill="#1C1917">book = balance - 5,000,000 - bankruptcy aid + cost of unsold stock</text>
         <text x="16" y="282" font-size="11" fill="#78716C">no floor price: selling below cost is allowed, the loss stays</text>
       </svg>
       <div class="cap"><span><b>FIG. 06</b> Where the money goes in Round 3</span><span>a shop pays for stock before anyone buys it</span></div>
     </div>
     <!-- voice-check: prose -->
-    <p>순위는 FIG. 07처럼 계산한다. 가게와 buyer의 항목을 각각 전체 가운데 백분위로 바꾼 뒤 가중치를 곱한다. GitHub 계정마다 가게 ALL과 buyer ALL을 더한 Players 표의 백분위가 중간 평가 3번 항목(30%)이 된다.</p>
+    <p>순위는 FIG. 07처럼 계산한다. 가게와 buyer의 항목을 각각 전체 가운데 백분위로 바꾼 뒤 가중치를 곱한다. buyer의 Saved는 거래마다 정가에서 아낀 비율의 평균이라, 소파와 과자를 똑같이 30% 깎으면 점수도 같다. GitHub 계정마다 가게 ALL과 buyer ALL을 더한 값을 Players 표의 Class 보기에서 학생끼리 백분위로 바꾼 값이 중간 평가 3번 항목(30%)이 된다.</p>
     <!-- voice-check: off -->
 
     <div class="fig" id="fig7">
-      <svg viewBox="-2 -2 684 230" role="img" aria-label="How Round 3 ranks you: shop ALL is 0.5 net profit plus 0.3 revenue plus 0.2 stars; buyer ALL is 0.5 surplus plus 0.3 forum rating plus 0.1 deals plus 0.1 posts; each part is a percentile; the Players table adds shop ALL and buyer ALL for each GitHub account, and your percentile there is midterm part 3, 30 percent">
+      <svg viewBox="-2 -2 684 230" role="img" aria-label="How Round 3 ranks you: shop ALL is 0.5 book plus 0.3 revenue plus 0.2 stars; buyer ALL is 0.5 saved plus 0.3 forum rating plus 0.1 deals plus 0.1 posts; each part is a percentile; the Players table adds shop ALL and buyer ALL for each GitHub account, and your percentile among students there is midterm part 3, 30 percent">
         <defs><marker id="m9-d" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker></defs>
         <text x="0" y="40" font-size="13" fill="#1C1917">shop ALL</text>
         <rect x="110" y="20" width="250" height="34" fill="#1C1917"/><rect x="360" y="20" width="150" height="34" fill="#78716C"/><rect x="510" y="20" width="100" height="34" fill="#E7E5E4"/>
-        <text x="122" y="42" font-size="12" fill="#FFFFFF">net profit 0.5</text><text x="372" y="42" font-size="12" fill="#FFFFFF">revenue 0.3</text><text x="522" y="42" font-size="12" fill="#1C1917">stars 0.2</text>
+        <text x="122" y="42" font-size="12" fill="#FFFFFF">book 0.5</text><text x="372" y="42" font-size="12" fill="#FFFFFF">revenue 0.3</text><text x="522" y="42" font-size="12" fill="#1C1917">stars 0.2</text>
         <text x="0" y="96" font-size="13" fill="#1C1917">buyer ALL</text>
         <rect x="110" y="76" width="250" height="34" fill="#1C1917"/><rect x="360" y="76" width="150" height="34" fill="#78716C"/><rect x="510" y="76" width="50" height="34" fill="#E7E5E4"/><rect x="560" y="76" width="50" height="34" fill="#D6D3D1"/>
-        <text x="122" y="98" font-size="12" fill="#FFFFFF">surplus 0.5</text><text x="372" y="98" font-size="12" fill="#FFFFFF">forum 0.3</text>
+        <text x="122" y="98" font-size="12" fill="#FFFFFF">saved 0.5</text><text x="372" y="98" font-size="12" fill="#FFFFFF">forum 0.3</text>
         <g font-size="11" fill="#1C1917" text-anchor="middle"><text x="535" y="90">deals</text><text x="535" y="104">0.1</text><text x="585" y="90">posts</text><text x="585" y="104">0.1</text></g>
         <text x="110" y="130" font-size="11" fill="#78716C">each part is a percentile among all shops (or all buyers)</text>
         <polyline points="626,37 650,37 650,93 626,93" fill="none" stroke="#1C1917" stroke-width="1.5"/>
         <line x1="650" y1="65" x2="650" y2="150" stroke="#1C1917" stroke-width="1.5" marker-end="url(#m9-d)"/>
         <rect x="0" y="154" width="680" height="70" rx="8" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
         <text x="16" y="180" font-size="13" fill="#1C1917">Players = shop ALL + buyer ALL, per GitHub account</text>
-        <text x="16" y="204" font-size="11" fill="#78716C">your percentile here when Round 3 ends = midterm part 3 (30%)</text>
+        <text x="16" y="204" font-size="11" fill="#78716C">your percentile among students when Round 3 ends = midterm part 3 (30%)</text>
       </svg>
       <div class="cap"><span><b>FIG. 07</b> How Round 3 ranks you</span><span>weights apply to percentiles</span></div>
     </div>
@@ -623,7 +623,7 @@ footer .o{color:var(--muted)}
     <div class="secmark"><span class="no">STOCK</span><h2>재고 관리와 손해</h2></div>
     <!-- voice-check: prose -->
     <p>재고는 사는 순간 원가가 나가고, 팔려야 돈이 들어온다. 식품은 기다리는 동안 등급이 A에서 C로 떨어지다가, 기한이 지나면 원가째 사라진다. 비식품은 재고로 있는 동안 하루에 원가의 1%가 보관비로 나가고, 팔린 뒤 6시간 안에 고장 날 수 있다. 내가 건 보증 시간 안에 고장 나면 buyer가 낸 돈 전액이 내 잔고에서 빠지고 매출에서도 빠진다. 비식품이 얼마나 자주 고장 나는지는 공개하지 않는다.</p>
-    <p>FIG. 08의 예시에서 비식품 하나를 팔면 15,000이 남지만, 보증 안에 고장 나면 같은 거래가 55,000 손해로 바뀐다. 이런 손해가 쌓여 잔고가 500,000 아래로 내려가면 파산을 신청할 수 있고, 그때 받은 5,000,000은 순이익에서 빠진다.</p>
+    <p>FIG. 08의 예시에서 비식품 하나를 팔면 15,000이 남지만, 보증 안에 고장 나면 같은 거래가 55,000 손해로 바뀐다. 이런 손해가 쌓여 잔고가 500,000 아래로 내려가면 파산을 신청할 수 있고, 그때 받은 5,000,000은 Book에서 빠진다.</p>
     <!-- voice-check: off -->
 
     <div class="fig" id="fig8">
@@ -683,11 +683,11 @@ footer .o{color:var(--muted)}
       <div class="cap"><span><b>FIG. 08</b> The life of one unit</span><span>the same sale can end in profit or in a refund</span></div>
     </div>
     <!-- voice-check: prose -->
-    <p>공급은 20분마다 한 번, 3분 동안만 열린다. 여는 시각은 매번 0~5분씩 달라지고, Round 3을 연 직후의 첫 창만 10분이다. 한 창에서 산 재고로 다음 창까지 팔아야 해서, 적게 사면 주문을 놓치고 많이 사면 식품이 상한다. 창이 열렸는지는 <code class="inline">inventory.json</code>의 <code class="inline">restock</code>에 있다(FIG. 09).</p>
+    <p>공급은 20분마다 한 번, 3분 동안만 열린다. 여는 시각은 매번 0~5분씩 달라지고, Round 3을 연 직후의 첫 창만 10분이다. 한 창에서 산 재고로 다음 창까지 팔아야 해서, 적게 사면 주문을 놓치고 많이 사면 식품이 상한다. 같은 SKU가 시장 전체에서 최근 1시간 동안 50개를 넘게 공급되면 그 뒤 원가는 개당 0.2%씩, 최대 50%까지 오른다. 창이 열렸는지는 <code class="inline">inventory.json</code>의 <code class="inline">restock</code>에 있다(FIG. 09).</p>
     <!-- voice-check: off -->
 
     <div class="fig" id="fig9">
-      <svg viewBox="-2 -2 684 246" role="img" aria-label="Restock windows in Round 3. When Round 3 opens, supply is open for the first 10 minutes. After that, supply opens once in every 20-minute slot for 3 minutes, starting 0 to 5 minutes into the slot, so windows are 15 to 25 minutes apart. Outside a window, POST /api/supply answers 429 with wait and opens_at; inventory.json carries restock.open, opens_at and closes_at">
+      <svg viewBox="-2 -2 684 268" role="img" aria-label="Restock windows in Round 3. When Round 3 opens, supply is open for the first 10 minutes. After that, supply opens once in every 20-minute slot for 3 minutes, starting 0 to 5 minutes into the slot, so windows are 15 to 25 minutes apart. Outside a window, POST /api/supply answers 429 with wait and opens_at; inventory.json carries restock.open, opens_at and closes_at. Over 50 units of a SKU in the last hour across the market, cost rises 0.2 percent a unit, up to 50 percent">
         <text x="40" y="14" font-size="10" fill="#A8A29E" letter-spacing="1">ROUND 3 OPENS</text>
         <rect x="470" y="4" width="12" height="12" fill="#1C1917"/><text x="488" y="14" font-size="11" fill="#1C1917">supply open</text>
         <rect x="570" y="4" width="12" height="12" fill="#E7E5E4"/><text x="588" y="14" font-size="11" fill="#1C1917">may open</text>
@@ -701,9 +701,10 @@ footer .o{color:var(--muted)}
         <rect x="240" y="108" width="50" height="8" fill="#E7E5E4"/><rect x="440" y="108" width="50" height="8" fill="#E7E5E4"/>
         <g font-size="11" fill="#78716C" text-anchor="middle"><text x="40" y="134">0</text><text x="240" y="134">20 min</text><text x="440" y="134">40 min</text><text x="640" y="134">60 min</text></g>
         <text x="40" y="158" font-size="11" fill="#78716C">each 20-min slot opens once, 0 to 5 min in (gray): windows are 15 to 25 min apart</text>
-        <rect x="0" y="174" width="680" height="66" rx="8" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="0" y="174" width="680" height="88" rx="8" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
         <text x="16" y="200" font-size="12" fill="#1C1917">outside a window: POST /api/supply answers 429 with wait and opens_at</text>
         <text x="16" y="224" font-size="11" fill="#78716C">inventory.json: restock.open, restock.opens_at, restock.closes_at</text>
+        <text x="16" y="248" font-size="11" fill="#78716C">over 50 units of a SKU in the last hour, market-wide: +0.2% cost a unit, up to +50%</text>
       </svg>
       <div class="cap"><span><b>FIG. 09</b> Restock windows</span><span>stock bought in one window has to last until the next</span></div>
     </div>
@@ -711,11 +712,12 @@ footer .o{color:var(--muted)}
       <table>
         <tr><th>정할 것</th><th>알아 둘 규칙</th></tr>
         <tr><td class="stage">무엇을 살까</td><td>잘 팔리는 상품은 공개되지 않는다. 공개 ledger의 정산 기록, 내 판매 기록, <code class="inline">forum.json</code>의 "구합니다" 글이 단서다. <code class="inline">demand.json</code>은 주문이 나올 수 있는 카테고리 목록이고, 무엇이 잘 팔리는지는 담고 있지 않다</td></tr>
-        <tr><td class="stage">얼마나 살까</td><td>공급은 20분마다 3분 동안 열린다(첫 창은 10분). 한 번에 최대 20개, 10초 간격이다. 안 팔린 식품은 폐기되고, 안 팔린 비식품은 매일 보관비를 낸다</td></tr>
+        <tr><td class="stage">얼마나 살까</td><td>공급은 20분마다 3분 동안 열린다(첫 창은 10분). 한 번에 최대 20개, 10초 간격이다. 안 팔린 식품은 폐기되고, 안 팔린 비식품은 매일 보관비를 낸다. 인기 SKU는 공급이 몰리면 원가가 최대 50% 오른다</td></tr>
         <tr><td class="stage">어떤 등급</td><td>원가는 정가의 A 55~75%, B 40~60%, C 25~45%다. 싼 등급의 식품은 기한이 짧다</td></tr>
-        <tr><td class="stage">얼마에 팔까</td><td>하한가가 없다. 원가 아래로 팔면 손해가 순이익에 그대로 잡힌다</td></tr>
+        <tr><td class="stage">얼마에 팔까</td><td>하한가가 없다. 원가 아래로 팔면 손해가 Book에 그대로 잡힌다</td></tr>
         <tr><td class="stage">보증을 걸까</td><td>buyer는 <code class="inline">accept</code>에서 보증을 요구할 수 있다. 보증 안에 고장 나면 낸 돈 전액을 돌려준다</td></tr>
-        <tr><td class="stage">파산</td><td>잔고 500,000 아래에서 두 번까지. 재고는 압류되고, 받은 5,000,000은 순이익에서 빠진다. 팔 재고도 없이 바닥나면 키트가 대신 신청한다</td></tr>
+        <tr><td class="stage">파산</td><td>잔고 500,000 아래에서 두 번까지. 재고는 압류되고, 받은 5,000,000은 Book에서 빠진다. 팔 재고도 없이 바닥나면 키트가 대신 신청한다</td></tr>
+        <tr><td class="stage">표를 어떻게 쓸까</td><td>계정마다 작성자 한 명에게 입장 하나만 센다. 좋아요는 무료고 많이 눌러도 log2로만 늘어난다. 나빠요 입장은 1로 세고, 1시간 안에 buyer에게 새로 건 입장이 3개를 넘으면 k번째에 20,000 x (k - 3)을 가게 잔고에서 낸다</td></tr>
       </table>
     </div>
   </div>
