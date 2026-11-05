@@ -221,6 +221,15 @@ def market_rate(st, catalog, sku):
 # market's sales of that SKU (at least 2), unless our own last hour of sales asks for more.
 
 
+# Nov 5 16:17-18:17: the market sold 270 fresh fruit units and was supplied 233 (sold out each window); our 14 fruit
+# sales sold 1-29 min after arrival at 1.6x cost (258k for 161k) and got 4.73 stars (our mean 4.29), but food of
+# 48 h or less was held at 2 units, so we sold 13. Perishables now hold what we sold of the category in the last
+# hour per window x SELL_PACE (at least 2, at most MAX_PER_CAT): it grows only while our units sell out.
+def perish_cap(st, cat):
+    pace = sum(1 for s in st.get("sold_log", []) if s.get("category") == cat and time.time() - s["ts"] < 3600)
+    return min(MAX_PER_CAT, max(2, math.ceil(pace / 3 * SELL_PACE)))
+
+
 def targets(st, demand, catalog=None):
     """category -> how many units to hold."""
     if st["settles"] < MIN_DATA:
@@ -233,7 +242,7 @@ def targets(st, demand, catalog=None):
     for cat, p in st["pop"].items():
         n = round(TOTAL_UNITS * p / total) + (1 if st["sold"].get(cat) else 0)
         if (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48:
-            n = min(n, 2)                    # food that spoils in two days: never hold much
+            n = min(n, perish_cap(st, cat))  # food that spoils in two days: only what we sell in a window
         c = competition(cat)
         if c is not None and n > 0:
             n = round(n * (1.5 if c <= FEW_SHOPS else 0.6 if c >= MANY_SHOPS else 1.0)) or 1
@@ -259,7 +268,7 @@ def targets(st, demand, catalog=None):
         if m["cover"] is not None and m["cover"] < SHORT_COVER and cat in kind:
             short_food = kind[cat].get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
             n = math.ceil(m["rate"] / 3 * SHORT_SHARE)
-            out[cat] = max(out.get(cat, 0), min(n, 2 if short_food else SHORT_MAX))
+            out[cat] = max(out.get(cat, 0), min(n, perish_cap(st, cat) if short_food else SHORT_MAX))
     for cat, c in load(Path(".market") / "competitors.json", {}).get("cats", {}).items():
         if c.get("shops") == 0 and time.time() - c["ts"] < UNMET_FRESH:   # nobody had it when it was ordered
             short = (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
