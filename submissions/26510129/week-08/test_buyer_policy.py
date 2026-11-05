@@ -18,9 +18,11 @@ class PortfolioRouterTest(unittest.TestCase):
 
     def test_local_integrity_blacklists_a_shop(self):
         shops = [{"name": "bad", "reviews": []}, {"name": "fresh", "reviews": []}]
-        memory = [{"shop": "bad", "item": "lamp", "outcome": "deal", "price": 100, "honest": False}]
-        ranked = buyer_policy.rank_shops(shops, memory, "lamp")
-        self.assertEqual([shop["name"] for shop, _ in ranked], ["fresh"])
+        one = [{"shop": "bad", "item": "lamp", "outcome": "deal", "price": 100, "honest": False}]
+        ranked = buyer_policy.rank_shops(shops, one, "lamp")
+        self.assertEqual([shop["name"] for shop, _ in ranked], ["fresh", "bad"])   # one row: ranked lower, not excluded
+        two = one * 2
+        self.assertEqual([shop["name"] for shop, _ in buyer_policy.rank_shops(shops, two, "lamp")], ["fresh"])
 
     def test_concentration_cap_keeps_an_alternative(self):
         shops = [{"name": "frequent", "reviews": [{"stars": 5}]}, {"name": "other", "reviews": [{"stars": 4}]}]
