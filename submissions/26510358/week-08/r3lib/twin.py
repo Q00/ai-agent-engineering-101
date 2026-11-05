@@ -29,7 +29,10 @@ category. Restock: 'actual' replays our real supply deliveries (same for every p
 restock_r3.plan(dry_run=True, adjust=...) every SUPPLY_EVERY_S (the market opens supply every 20 min) on the
 twin's own stock and balance, with the observed fill rate.
 Determinism: every random draw comes from random.Random(f"{seed}:{key}") per visit, so two policies see the same
-buyers with the same draws (common random numbers).
+buyers with the same draws (common random numbers). Reruns with the same --end give the same numbers (QA
+2026-11-05): restock_r3.plan runs under frozen_clock(tick ts) (memory.py windows such as price_ratio,
+premium_skus and forum_demand_signals use time.time()); the inventory can be a snapshot taken at inventory_ts and
+is moved to the window with the rows between; set iteration is sorted; DB rows are read with a full ORDER BY.
 """
 import bisect
 import contextlib
@@ -230,9 +233,40 @@ def _json(text, default):
         return default
 
 
-def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, demand_rows=None):
-    """Everything the twin replays for [end - hours, end], read-only. inventory: the kit's inventory.json dict at
-    `end` (stock at the window's end); None reads $MARKET_DIR/inventory.json."""
+@contextlib.contextmanager
+def frozen_clock(ts):
+    """time.time() returns ts inside the block (this process only). restock_r3.plan and memory.py read the wall
+    clock for their look-back windows; the twin's clock is the tick time, so a rerun later gives the same plan."""
+    real = time.time
+    time.time = lambda: float(ts)
+    try:
+        yield
+    finally:
+        time.time = real
+
+
+def _moves(c, mine, names, a, b):
+    """Our sold units, settle revenue, supplied units and supply cost in (a, b], per SKU."""
+    sold, supplied, revenue, cost = {}, {}, 0, 0.0
+    if mine and b > a:
+        q = f"SELECT sku, amount FROM settles WHERE ts>? AND ts<=? AND shop IN ({','.join('?' * len(mine))})"
+        for r in c.execute(q + " ORDER BY ts, rowid", (a, b, *sorted(mine))):
+            sold[r["sku"]] = sold.get(r["sku"], 0) + 1
+            revenue += r["amount"] or 0
+    if b > a:
+        for r in c.execute("SELECT data FROM ledger WHERE kind='supply' AND ts>? AND ts<=? ORDER BY ts, rowid", (a, b)):
+            d = _json(r["data"], {})
+            if d.get("shop") in names and d.get("qty"):
+                supplied[d.get("sku")] = supplied.get(d.get("sku"), 0) + int(d["qty"])
+                cost += d.get("total") or 0
+    return sold, revenue, supplied, cost
+
+
+def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, demand_rows=None, inventory_ts=None):
+    """Everything the twin replays for [end - hours, end], read-only. inventory: the kit's inventory.json dict;
+    None reads $MARKET_DIR/inventory.json. inventory_ts: when that inventory was taken. None = at `end` (old
+    behaviour). Else the stock and balance are moved from inventory_ts to `end` with our settles and supplies in
+    between, so a pinned snapshot gives the same window on every rerun."""
     db_path = Path(db_path or config.DB_PATH)
     cat = catalog if catalog is not None else market.catalog()
     inv = inventory if inventory is not None else (market.read_json("inventory.json", {}) or {})
@@ -262,7 +296,7 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
 
         price_index = {}
         for r in c.execute("SELECT ts, sku, category, amount, list_price FROM settles WHERE ts>? AND ts<=? "
-                           "AND list_price>0 AND amount>0 ORDER BY ts", (start - PRICE_HOURS * 3600, end)):
+                           "AND list_price>0 AND amount>0 ORDER BY ts, rowid", (start - PRICE_HOURS * 3600, end)):
             ratio = r["amount"] / r["list_price"]
             for key in (("sku", r["sku"]), ("category", r["category"])):
                 if key[1]:
@@ -274,14 +308,14 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
         revenue = 0
         if mine:
             q = f"SELECT sku, amount FROM settles WHERE ts>? AND ts<=? AND shop IN ({','.join('?' * len(mine))})"
-            for r in c.execute(q, (start, end, *mine)):
+            for r in c.execute(q + " ORDER BY ts, rowid", (start, end, *sorted(mine))):
                 sold[r["sku"]] = sold.get(r["sku"], 0) + 1
                 revenue += r["amount"] or 0
 
         # supply prices drift a lot over the round (G0be9ed07 went from ~10k to ~35k a unit), so costs come
         # from recent supplies: the window itself, else the COST_LOOKBACK_H before it, else anything older
         supplies, cost_win, cost_pre, cost_old = [], {}, {}, {}
-        for r in c.execute("SELECT ts, data FROM ledger WHERE kind='supply' AND ts<=? ORDER BY ts", (end,)):
+        for r in c.execute("SELECT ts, data FROM ledger WHERE kind='supply' AND ts<=? ORDER BY ts, rowid", (end,)):
             d = _json(r["data"], {})
             if d.get("shop") not in names or not d.get("qty"):
                 continue
@@ -301,13 +335,21 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
         received = sum(q for _, _, q, _ in supplies)
 
         stockouts = [(r["ts"], r["category"], r["sku"]) for r in c.execute(
-            "SELECT ts, category, sku FROM stockouts WHERE ts>? AND ts<=? ORDER BY ts", (start, end))]
+            "SELECT ts, category, sku FROM stockouts WHERE ts>? AND ts<=? ORDER BY ts, rowid", (start, end))]
 
         stars = []
         for r in c.execute("SELECT json_extract(data, '$.shop') shop, json_extract(data, '$.stars') stars "
-                           "FROM ledger WHERE kind='result' AND ts>? AND ts<=?", (start, end)):
+                           "FROM ledger WHERE kind='result' AND ts>? AND ts<=? ORDER BY ts, rowid", (start, end)):
             if r["stars"] is not None and (r["shop"] or "").rstrip("/") in mine:
                 stars.append(r["stars"])
+        # inventory taken at inventory_ts, not at end: units_end = units_inv - sold(inv, end] + supplied(inv, end]
+        shift_sold, shift_sup, shift_cash = {}, {}, 0.0
+        if inventory_ts is not None and inventory_ts != end:
+            a, b, sign = (inventory_ts, end, 1) if inventory_ts < end else (end, inventory_ts, -1)
+            s_sold, s_rev, s_sup, s_cost = _moves(c, mine, names, a, b)
+            shift_sold = {k: sign * v for k, v in s_sold.items()}
+            shift_sup = {k: sign * v for k, v in s_sup.items()}
+            shift_cash = sign * (s_rev - s_cost)
     finally:
         c.close()
 
@@ -320,8 +362,9 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
     for _, sku, q, _ in supplies:
         supplied[sku] = supplied.get(sku, 0) + q
     start_stock = {}
-    for sku in set(end_units) | set(sold) | set(supplied):
-        n = len(end_units.get(sku, [])) + sold.get(sku, 0) - supplied.get(sku, 0)
+    for sku in sorted(set(end_units) | set(sold) | set(supplied) | set(shift_sold) | set(shift_sup)):
+        n = len(end_units.get(sku, [])) - shift_sold.get(sku, 0) + shift_sup.get(sku, 0) \
+            + sold.get(sku, 0) - supplied.get(sku, 0)
         if n <= 0:
             continue
         info = cat.get(sku) or {}
@@ -349,12 +392,15 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
               "silent_visits": sum(1 for v in visits if not v.offers)}
     w = Window(start=start, end=end, visits=visits, history=history, stockouts=stockouts, supplies=supplies,
                start_stock=start_stock, unit_cost=unit_cost, price_index=price_index, catalog=cat,
-               balance_end=float(inv.get("balance") or 0),
+               balance_end=float(inv.get("balance") or 0) + shift_cash,
                fill_rate=min(1.0, max(0.1, received / requested)) if requested else 0.6,
                stars=round(statistics.mean(stars), 3) if stars else None, star_count=len(stars), actual=actual,
                demand_rows=list(demand_rows), db_path=db_path, end_source=end_source)
     if not inv.get("units"):
         w.notes.append("no inventory snapshot: start stock rebuilt from sales and supplies only")
+    if inventory_ts is not None and inventory_ts != end:
+        w.notes.append(f"inventory taken at {inventory_ts:.0f}, moved {end - inventory_ts:+.0f} s to the window end "
+                       f"with our settles and supplies in between")
     return w
 
 
@@ -792,7 +838,8 @@ class DefaultPlan:
                 raise
             self.snapshots += 1
         scout._CACHE.clear()                       # its cache is keyed on wall time; the twin's clock jumps
-        lines, _, _ = restock_r3.plan(inv, self.w.demand_rows, self.mem, now=ts, dry_run=True, adjust=adjust)
+        with frozen_clock(ts):                     # memory.py look-backs use time.time(), not `now`
+            lines, _, _ = restock_r3.plan(inv, self.w.demand_rows, self.mem, now=ts, dry_run=True, adjust=adjust)
         return lines
 
     def close(self):

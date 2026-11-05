@@ -20,13 +20,17 @@ book field (= profit + stock_cost; else derived, see board_book).
 
 Verdict (documented rule): PASS when, for the candidate minus live,
     book_delta >= 0, estimated ALL >= 0, close rate drop <= MAX_CLOSE_DROP, and extra stockouts <= MAX_EXTRA_STOCKOUTS
-(the stockout bound is max(2, 10% of live visits)). A calibration warning (twin live deals off the actual deals by
+(the stockout bound is max(2, 10% of live visits)). Reruns with the same --end give the same report: the board is
+the latest one at or before --end (board_at), and the inventory and demand rows are pinned in
+logs/shadow/inputs-<end>.json on the first run (pinned_inputs) and read back on later runs. A calibration warning (twin live deals off the actual deals by
 more than CALIBRATION_TOL) is reported next to the verdict: the number is less trustworthy, the rule still applies.
 """
 import argparse
 import glob
+import hashlib
 import json
 import os
+import re
 import statistics
 import sys
 import time
@@ -106,6 +110,73 @@ def latest_board(monitor_dir=MONITOR_DIR):
         return None, None
     with open(files[-1], encoding="utf-8") as f:
         return json.load(f), files[-1]
+
+
+def file_stamp(path):
+    """Epoch s from a monitor file name such as board-20261105T1520.json (local time, as the monitor writes it)."""
+    m = re.search(r"-(\d{8}T\d{4})(\d{2})?\.json$", Path(path).name)
+    if not m:
+        return None
+    return time.mktime(time.strptime(m.group(1) + (m.group(2) or "00"), "%Y%m%dT%H%M%S"))
+
+
+def monitor_file_at(monitor_dir, prefix, end):
+    """The latest logs/monitor/*/<prefix>-*.json taken at or before `end`, else (None, None)."""
+    best = None
+    for p in glob.glob(str(Path(monitor_dir) / "*" / f"{prefix}-*.json")):
+        ts = file_stamp(p)
+        if ts is not None and ts <= end and (best is None or (ts, p) > best):
+            best = (ts, p)
+    return (best[1], best[0]) if best else (None, None)
+
+
+def board_at(monitor_dir=MONITOR_DIR, end=None):
+    """Board pinned to the window: the latest board at or before `end` (None = the latest board). If every board is
+    after `end`, the first one after it, so a rerun still picks the same file."""
+    if end is None:
+        return latest_board(monitor_dir)
+    path, _ = monitor_file_at(monitor_dir, "board", end)
+    if path is None:
+        later = sorted((file_stamp(p), p) for p in glob.glob(str(Path(monitor_dir) / "*" / "board-*.json"))
+                       if file_stamp(p) is not None)
+        if not later:
+            return None, None
+        path = later[0][1]
+    with open(path, encoding="utf-8") as f:
+        return json.load(f), path
+
+
+def _sha(obj):
+    return hashlib.sha256(json.dumps(obj, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()[:16]
+
+
+def pinned_inputs(end, monitor_dir=MONITOR_DIR, out_dir=REPORT_DIR):
+    """Inventory and demand rows for a window ending at `end`, the same on every rerun. The first run writes
+    <out_dir>/inputs-<end>.json: the latest logs/monitor inventory snapshot at or before `end` (inventory_ts = its
+    stamp), else the kit's live inventory.json (inventory_ts = now, a known look-ahead, noted), plus the kit's
+    demand.json as read then. Later runs read that file back. The catalog is the kit's static catalog.json; its hash
+    is stored and a change is reported."""
+    from . import market
+    path = Path(out_dir) / f"inputs-{end:.0f}.json"
+    cat_sha = _sha(market.catalog())
+    if path.exists():
+        pin = json.loads(path.read_text(encoding="utf-8"))
+        pin["reused"] = True
+    else:
+        src, ts = monitor_file_at(monitor_dir, "inventory", end)
+        if src:
+            inv = json.loads(Path(src).read_text(encoding="utf-8"))
+        else:
+            src, ts, inv = "live inventory.json", time.time(), market.read_json("inventory.json", {}) or {}
+        pin = {"end": end, "inventory_source": str(src), "inventory_ts": ts, "inventory": inv,
+               "demand_rows": market.read_json("demand.json", []) or [], "catalog_sha": cat_sha,
+               "created": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(pin, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+        pin["reused"] = False
+    pin["path"] = str(path)
+    pin["catalog_changed"] = pin.get("catalog_sha") != cat_sha
+    return pin
 
 
 def board_book(shop):
@@ -435,8 +506,17 @@ def main(argv=None):
     if not a.candidate:
         ap.error("at least one --candidate")
     cands = [load_candidate(p) for p in a.candidate]
-    w = twin.load_window(a.db, hours=a.hours, end=a.end)
-    board, board_path = latest_board(a.monitor_dir)
+    if a.end is not None:
+        pin = pinned_inputs(a.end, a.monitor_dir, a.out)
+        w = twin.load_window(a.db, hours=a.hours, end=a.end, inventory=pin["inventory"],
+                             demand_rows=pin["demand_rows"], inventory_ts=pin["inventory_ts"])
+        w.notes.append(f"inputs pinned in {os.path.relpath(pin['path'], WEEK) if pin['path'].startswith(str(WEEK)) else pin['path']}"
+                       f" ({'reused' if pin['reused'] else 'written now'}; inventory from {Path(pin['inventory_source']).name})"
+                       + ("; WARNING catalog changed since the pin" if pin["catalog_changed"] else ""))
+    else:
+        w = twin.load_window(a.db, hours=a.hours, end=a.end)
+        w.notes.append("no --end: inputs read live (inventory.json, demand.json); a rerun can differ")
+    board, board_path = board_at(a.monitor_dir, w.end if a.end is not None else None)
     report = evaluate(w, cands, seed=a.seed, restock=a.restock, board=board, board_path=board_path, seeds=a.seeds,
                       calibrate=not a.no_calibration)
     for r in report["results"]:
