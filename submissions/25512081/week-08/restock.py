@@ -166,6 +166,8 @@ def read_ledger(st, catalog):
                     if cat and amount and lp:              # what the market pays, as a share of list
                         st["sku_px"][sku] = (st["sku_px"].get(sku, []) + [round(amount / lp, 3)])[-10:]
                         st["cat_px"][cat] = (st["cat_px"].get(cat, []) + [round(amount / lp, 3)])[-30:]
+                    if sku and d.get("shop"):              # who sells this SKU, for the value line's share
+                        st["sku_shops"].setdefault(sku, {})[d["shop"]] = int(r.get("ts") or 0)
                     if cat and d.get("amount"):
                         st["rev"][cat] = st["rev"].get(cat, 0) + d["amount"]
                         st["sku_rev"][sku] = st["sku_rev"].get(sku, 0) + d["amount"]
@@ -178,6 +180,8 @@ def read_ledger(st, catalog):
                 break
     st["seq"] = seq
     st["unit_grade"] = dict(list(st["unit_grade"].items())[-5000:])
+    st["sku_shops"] = {s: v for s, v in ((s, {k: t for k, t in m.items() if time.time() - t < 7200})
+                                         for s, m in st["sku_shops"].items()) if v}
     st["recent"] = st["recent"][-600:]
     nodeal = st["pulse"][1] / st["pulse"][0] if st["pulse"][0] >= 30 else None
     tmp = Path(".market") / "pulse.tmp"
@@ -219,6 +223,11 @@ def market_rate(st, catalog, sku):
 # (48.6M) while the whole market sold ~20 an hour of it, split over 9-12 shops, and other shops supplied 27 more
 # in the same window; 75 min later we had sold 2. A value line now holds at most one window (1/3 h) of the
 # market's sales of that SKU (at least 2), unless our own last hour of sales asks for more.
+# Nov 5 23:20: that window cap still bought 20 장수돌침대 Gf6b70da8 (list 2.33M, 29.2M) while 11 shops sold the
+# market's 46 of the last hour; 50 min later we had sold 2 (our share of its 6 h of sales: 11 of 225, 5%). The cap
+# is now one window of the market's sales split over the shops that sold the SKU in the last hour.
+def sellers(st, sku):
+    return max(1, sum(1 for t in (st.get("sku_shops", {}).get(sku) or {}).values() if time.time() - t < 3600))
 
 
 # Nov 5 16:17-18:17: the market sold 270 fresh fruit units and was supplied 233 (sold out each window); our 14 fruit
@@ -260,7 +269,7 @@ def targets(st, demand, catalog=None):
             n = min(n, 2)
         elif top and n > 0:                          # at least what we sold of it last hour, per window, x SELL_PACE
             pace = sum(1 for s in st.get("sold_log", []) if s["sku"] == top and time.time() - s["ts"] < 3600)
-            n = min(n, max(2, math.ceil(market_rate(st, catalog, top) / 3)))   # one window of the whole market's sales
+            n = min(n, max(2, math.ceil(market_rate(st, catalog, top) / 3 / sellers(st, top))))   # our share of a window
             n = max(n, math.ceil(pace / 3 * SELL_PACE))
         if top and n > 0:                          # counted against units of that SKU, not of the category:
             VALUE_SKU[cat] = (top, min(n, LINE_QTY_MAX))  # six cheap stools must not stand in for leather sofas
@@ -416,7 +425,7 @@ def main():
     catalog = catalog_of(sd)
     st = load(sd / "restock_state.json", {})
     for k, v in (("pop", {}), ("sku_pop", {}), ("sold", {}), ("sold_log", []), ("settles", 0),
-                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {}), ("sold_ts", {}), ("sku_rev", {})):
+                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {}), ("sold_ts", {}), ("sku_rev", {}), ("sku_shops", {})):
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
     st["rev"] = {k: v * DECAY for k, v in st["rev"].items()}
@@ -424,6 +433,10 @@ def main():
     if not st["sku_rev"]:                            # first run: seed from the latest settles
         for r in st.get("recent", []):
             st["sku_rev"][r["sku"]] = st["sku_rev"].get(r["sku"], 0) + r["amount"]
+    if not st["sku_shops"]:                          # first run with seller counts: seed from the latest settles
+        for r in st.get("recent", []):
+            if r.get("sku") and r.get("shop"):
+                st["sku_shops"].setdefault(r["sku"], {})[r["shop"]] = r["ts"]
     if not st["rev"] and st.get("recent"):           # first run with revenue tracking: seed from recent settles
         for r in st["recent"]:
             c = (catalog.get(r["sku"]) or {}).get("category")
