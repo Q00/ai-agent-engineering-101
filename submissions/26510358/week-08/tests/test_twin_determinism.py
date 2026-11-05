@@ -101,8 +101,9 @@ def test_pinned_inputs_are_written_once_and_reused(tmp_path, monkeypatch):
     mon = _monitor(tmp_path, end)
     monkeypatch.setattr(market, "_CATALOG", CAT, raising=False)
     monkeypatch.setattr(market, "read_json", lambda name, default=None, md=None: [{"sku": "G1", "n": 1}])
-    a = shadow_gate.pinned_inputs(end, mon, tmp_path / "out", build=True)
+    a = shadow_gate.pinned_inputs(end, mon, tmp_path / "out", build=True, db_path=_db(tmp_path))
     assert not a["reused"] and len(a["inventory"]["units"]) == 4 and a["inventory_ts"] == end - 600
+    assert a["moves"]["sign"] == 1 and a["moves"]["a"] == end - 600   # the move to end is stored in the pin
     monkeypatch.setattr(market, "read_json", lambda name, default=None, md=None: [{"sku": "G2", "n": 7}])
     b = shadow_gate.pinned_inputs(end, mon, tmp_path / "out")      # reuse needs no --build-pin
     assert b["reused"] and b["demand_rows"] == a["demand_rows"] == [{"sku": "G1", "n": 1}]

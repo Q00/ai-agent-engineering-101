@@ -148,3 +148,44 @@ def test_cut_to_end_cuts_every_table_and_lists_what_it_cannot(tmp_path):
     assert rep["purchases"]["uncut_columns"] == ["paid", "ledger", "reason"]
     assert rep["settles"]["status"] == "cut"
     assert all(v["status"] in ("cut", "partly cut", "not cut") for v in rep.values())
+
+
+def _add_settle(db, ts):
+    c = sqlite3.connect(db)
+    c.execute("INSERT INTO settles(ts, sku, amount, shop, list_price, category) VALUES (?, 'G1', 84000, ?, 100000, ?)",
+              (ts, SHOP, CAT["G1"]["category"]))
+    c.commit()
+    c.close()
+
+
+def test_inventory_move_is_stored_in_the_pin_so_late_rows_do_not_change_a_rerun(tmp_path):
+    """QA window 2 (2026-11-05 17:20 KST): no inventory snapshot at or before --end, so the pin took the live
+    inventory.json (inventory_ts = now) and every run read the move (end, now] from the live DB; rows for that
+    interval still arrived, and a build run and a reuse run on one pin gave baseline 12,315,558 vs 12,316,151.
+    Now the first snapshot after --end is used and the move is stored in the inputs pin at --build-pin."""
+    db, md, mon, cand = _fixture(tmp_path)
+    for p in (mon / "day").glob("inventory-*.json"):
+        p.unlink()
+    stamp = time.strftime("%Y%m%dT%H%M", time.localtime(END + 1800))
+    (mon / "day" / f"inventory-{stamp}.json").write_text(json.dumps(
+        {"balance": 2_000_000, "units": [{"sku": "G1", "cost": 60000}] * 4}), encoding="utf-8")
+    _add_settle(db, END + 300)
+    pin = tmp_path / "pin"
+    r0, rep0 = _gate(db, md, mon, cand, tmp_path / "out0", pin, "--build-pin")
+    assert r0.returncode in (0, 1), r0.stderr
+    stored = json.loads((pin / f"inputs-{END:.0f}.json").read_text(encoding="utf-8"))
+    assert stored["inventory_source"].endswith(f"inventory-{stamp}.json")
+    assert stored["moves"]["sign"] == -1 and stored["moves"]["sold"] == {"G1": 1}
+    assert any("look-ahead" in n for n in rep0["window"]["notes"])
+    _add_settle(db, END + 600)                       # a late row inside (end, inventory_ts]
+    r1, rep1 = _gate(db, md, mon, cand, tmp_path / "out1", pin, seed="1")
+    assert r1.returncode == r0.returncode, r1.stderr
+    def strip(r):                                    # the build run says "written now", the rerun "reused"
+        r = {k: v for k, v in comparable(r).items() if k != "pin"}
+        r["window"] = {k: v for k, v in r["window"].items() if k != "notes"}
+        return r
+    assert strip(rep1) == strip(rep0)
+    assert any("move from the pin" in n for n in rep1["window"]["notes"])
+    # the old way (move read from the DB now) would see the late row
+    live = twin.inventory_moves(db, stored["inventory_ts"], END)
+    assert live["sold"] == {"G1": 2} != stored["moves"]["sold"]

@@ -140,6 +140,13 @@ def monitor_file_at(monitor_dir, prefix, end):
     return (best[1], best[0]) if best else (None, None)
 
 
+def monitor_file_after(monitor_dir, prefix, end):
+    """The first logs/monitor/*/<prefix>-*.json taken after `end`, else (None, None)."""
+    later = sorted((file_stamp(p), p) for p in glob.glob(str(Path(monitor_dir) / "*" / f"{prefix}-*.json"))
+                   if file_stamp(p) is not None and file_stamp(p) > end)
+    return (later[0][1], later[0][0]) if later else (None, None)
+
+
 def board_at(monitor_dir=MONITOR_DIR, end=None):
     """Board pinned to the window: the latest board at or before `end` (None = the latest board). If every board is
     after `end`, the first one after it, so a rerun still picks the same file."""
@@ -172,11 +179,12 @@ def file_sha256(path):
     return h.hexdigest()
 
 
-def pinned_inputs(end, monitor_dir=MONITOR_DIR, pin_dir=REPORT_DIR, build=False):
+def pinned_inputs(end, monitor_dir=MONITOR_DIR, pin_dir=REPORT_DIR, build=False, db_path=None):
     """Inventory and demand rows for a window ending at `end`, the same on every rerun. With build=True and no
     pin yet, writes <pin_dir>/inputs-<end>.json: the latest logs/monitor inventory snapshot at or before `end` (inventory_ts = its
-    stamp), else the kit's live inventory.json (inventory_ts = now, a known look-ahead, noted), plus the kit's
-    demand.json as read then. Later runs read that file back. No pin and build=False: PinMissing. The catalog is the kit's static catalog.json; its hash
+    stamp), else the first snapshot after `end` (a look-ahead, noted), else the kit's live inventory.json
+    (inventory_ts = now, a look-ahead, noted), plus the kit's demand.json as read then, plus the move from
+    inventory_ts to `end` (twin.inventory_moves, read from db_path once; a rerun does not read it again). Later runs read that file back. No pin and build=False: PinMissing. The catalog is the kit's static catalog.json; its hash
     is stored and a change is reported."""
     from . import market
     path = Path(pin_dir) / f"inputs-{end:.0f}.json"
@@ -188,12 +196,16 @@ def pinned_inputs(end, monitor_dir=MONITOR_DIR, pin_dir=REPORT_DIR, build=False)
         raise PinMissing(f"no pinned inputs {path}; pass --build-pin to write them from the live data now")
     else:
         src, ts = monitor_file_at(monitor_dir, "inventory", end)
+        if src is None:
+            src, ts = monitor_file_after(monitor_dir, "inventory", end)
         if src:
             inv = json.loads(Path(src).read_text(encoding="utf-8"))
         else:
             src, ts, inv = "live inventory.json", time.time(), market.read_json("inventory.json", {}) or {}
+        from . import twin
         pin = {"end": end, "inventory_source": str(src), "inventory_ts": ts, "inventory": inv,
                "demand_rows": market.read_json("demand.json", []) or [], "catalog_sha": cat_sha,
+               "moves": twin.inventory_moves(db_path, ts, end),
                "created": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(pin, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
@@ -582,9 +594,10 @@ def main(argv=None):
     cands = [load_candidate(p) for p in a.candidate]
     if a.end is not None:
         try:
-            pin = pinned_inputs(a.end, a.monitor_dir, a.pin_dir, build=a.build_pin)
+            pin = pinned_inputs(a.end, a.monitor_dir, a.pin_dir, build=a.build_pin, db_path=a.db)
             w = twin.load_window(a.db, hours=a.hours, end=a.end, inventory=pin["inventory"],
-                                 demand_rows=pin["demand_rows"], inventory_ts=pin["inventory_ts"])
+                                 demand_rows=pin["demand_rows"], inventory_ts=pin["inventory_ts"],
+                                 moves=pin.get("moves"))
             w.plan_db, db_reused = pinned_db(a.end, w.db_path, a.pin_dir, build=a.build_pin)
         except PinMissing as e:
             print(f"error: {e}", file=sys.stderr)
@@ -593,7 +606,12 @@ def main(argv=None):
                        " cut to --end, see pin.db.cut)")
         w.notes.append(f"inputs pinned in {Path(pin['path']).name}"
                        f" ({'reused' if pin['reused'] else 'written now'}; inventory from {Path(pin['inventory_source']).name})"
-                       + ("; WARNING catalog changed since the pin" if pin["catalog_changed"] else ""))
+                       + ("; WARNING catalog changed since the pin" if pin["catalog_changed"] else "")
+                       + ("" if "moves" in pin else "; WARNING pin built before moves were stored: the inventory"
+                          " move is read from the live DB on each run"))
+        if pin["inventory_ts"] is not None and pin["inventory_ts"] > a.end:
+            w.notes.append(f"WARNING inventory is from after --end ({pin['inventory_ts'] - a.end:+.0f} s, a look-ahead):"
+                           " start stock depends on the move back to --end")
     else:
         w = twin.load_window(a.db, hours=a.hours, end=a.end)
         w.notes.append("no --end: inputs read live (inventory.json, demand.json); a rerun can differ")

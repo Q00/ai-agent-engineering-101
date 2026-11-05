@@ -349,11 +349,32 @@ def _moves(c, mine, names, a, b):
     return sold, revenue, supplied, cost
 
 
-def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, demand_rows=None, inventory_ts=None):
+def inventory_moves(db_path, inventory_ts, end):
+    """The move from an inventory taken at inventory_ts to `end` (our settles and supplies in between), as a JSON
+    dict for the inputs pin: {"a", "b", "sign", "sold", "revenue", "supplied", "cost"}. None if no move. The gate
+    stores it at --build-pin, so a rerun never reads (a, b] from the live DB again: rows for that interval can still
+    arrive late when b is close to now (QA window 2: build and reuse runs differed)."""
+    if inventory_ts is None or inventory_ts == end:
+        return None
+    c = open_readonly(Path(db_path or config.DB_PATH))
+    try:
+        mine = {r["shop_url"] for r in c.execute("SELECT shop_url FROM shops WHERE mine=1")}
+        names = set(config.MY_NAMES) | {r["name"] for r in c.execute("SELECT name FROM shops WHERE mine=1")}
+        a, b, sign = (inventory_ts, end, 1) if inventory_ts < end else (end, inventory_ts, -1)
+        sold, rev, sup, cost = _moves(c, mine, names, a, b)
+    finally:
+        c.close()
+    return {"a": a, "b": b, "sign": sign, "sold": dict(sorted(sold.items())), "revenue": rev,
+            "supplied": dict(sorted(sup.items())), "cost": cost}
+
+
+def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, demand_rows=None, inventory_ts=None,
+                moves=None):
     """Everything the twin replays for [end - hours, end], read-only. inventory: the kit's inventory.json dict;
     None reads $MARKET_DIR/inventory.json. inventory_ts: when that inventory was taken. None = at `end` (old
     behaviour). Else the stock and balance are moved from inventory_ts to `end` with our settles and supplies in
-    between, so a pinned snapshot gives the same window on every rerun."""
+    between, so a pinned snapshot gives the same window on every rerun. moves: that move as stored in the pin
+    (inventory_moves); None reads it from the DB now."""
     db_path = Path(db_path or config.DB_PATH)
     cat = catalog if catalog is not None else market.catalog()
     inv = inventory if inventory is not None else (market.read_json("inventory.json", {}) or {})
@@ -431,7 +452,12 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
                 stars.append(r["stars"])
         # inventory taken at inventory_ts, not at end: units_end = units_inv - sold(inv, end] + supplied(inv, end]
         shift_sold, shift_sup, shift_cash = {}, {}, 0.0
-        if inventory_ts is not None and inventory_ts != end:
+        if moves is not None:
+            sign = moves["sign"]
+            shift_sold = {k: sign * v for k, v in moves["sold"].items()}
+            shift_sup = {k: sign * v for k, v in moves["supplied"].items()}
+            shift_cash = sign * (moves["revenue"] - moves["cost"])
+        elif inventory_ts is not None and inventory_ts != end:
             a, b, sign = (inventory_ts, end, 1) if inventory_ts < end else (end, inventory_ts, -1)
             s_sold, s_rev, s_sup, s_cost = _moves(c, mine, names, a, b)
             shift_sold = {k: sign * v for k, v in s_sold.items()}
@@ -488,7 +514,8 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
         w.notes.append("no inventory snapshot: start stock rebuilt from sales and supplies only")
     if inventory_ts is not None and inventory_ts != end:
         w.notes.append(f"inventory taken at {inventory_ts:.0f}, moved {end - inventory_ts:+.0f} s to the window end "
-                       f"with our settles and supplies in between")
+                       f"with our settles and supplies in between"
+                       + (" (move from the pin)" if moves is not None else " (move read from the DB now)"))
     return w
 
 
