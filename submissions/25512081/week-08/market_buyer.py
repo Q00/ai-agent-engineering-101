@@ -194,8 +194,9 @@ def record_market(order, shops, quotes):
     n = sum(1 for s in shops if s.get("offers"))
     data["cats"][cat] = {"ts": now, "shops": n, "units": sum(o.get("qty", 1) for s in shops for o in s.get("offers") or []),
                          "skus": acc[:12], "empty_seen": (prev.get("empty_seen", 0) + 1) if n == 0 else 0}
-    for q in quotes:
-        data["asks"][q["sku"]["sku"]] = (data["asks"].get(q["sku"]["sku"], []) + [[now, q["shop"]["name"], q["reply"].ask]])[-10:]
+    for q in quotes:                             # the grade too: seller_r3 undercuts only asks of an equal or better grade
+        data["asks"][q["sku"]["sku"]] = (data["asks"].get(q["sku"]["sku"], [])
+                                         + [[now, q["shop"]["name"], q["reply"].ask, q.get("grade")]])[-10:]
     tmp = f.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     tmp.replace(f)
