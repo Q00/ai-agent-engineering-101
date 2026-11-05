@@ -57,6 +57,19 @@ def is_mine(row, login):
     return login in json.dumps(probe, ensure_ascii=False).lower()
 
 
+def settle_side(data, login):
+    """Our side of a settle: "shop" (our shop sold), "buyer" (our buyer bought) or None.
+
+    The market sets own_owner on both kinds (실측 11-05: 24시간 5,286건 중 판매 2,764, 구매 2,522), so the buyer field
+    decides which side we were on.
+    """
+    if not isinstance(data, dict) or data.get("own_owner") is not True:
+        return None
+    if login and login in json.dumps(data.get("buyer"), ensure_ascii=False).lower():
+        return "buyer"
+    return "shop"
+
+
 def mask(text, secrets=()):
     """Remove keys, tokens, emails, URLs and the given literal secrets from text."""
     if not isinstance(text, str):

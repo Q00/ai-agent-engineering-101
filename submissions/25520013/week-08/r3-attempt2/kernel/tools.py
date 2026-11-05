@@ -85,7 +85,7 @@ def events(root, type="settle", hours=1.0, sku=None, ours=None, limit=20, now=No
         d = e.get("data") or {}
         if sku and d.get("sku") != sku:
             continue
-        if ours is not None and bool(d.get("own_owner")) != bool(ours):
+        if ours is not None and (c.settle_side(d, login) == "shop") != bool(ours):
             continue
         hits.append(e)
     by_sku = Counter((e.get("data") or {}).get("sku") for e in hits)

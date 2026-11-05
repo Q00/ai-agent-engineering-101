@@ -4,6 +4,10 @@
 The harness is reloaded on every call so the operator's edits apply at once. Any failure falls back to the harness's
 fallback_script once, then to the do-nothing action. Exactly one trajectory row of kind "decision" per call; it holds
 a summary and hash of the situation, never its text.
+
+When the harness memory.json has top_k > 0, a model-routed call first asks the mem0 daemon (kernel.memory) with a
+mechanical query (decision kind, SKUs, categories, hashed shop ids; no strategy) inside a ~1 s budget. A dead daemon
+only means no memories.
 """
 
 import copy
@@ -14,10 +18,12 @@ import time
 
 from kernel import common as c
 from kernel import harness as hz
-from kernel import rules, sandbox
+from kernel import memory, rules, sandbox
 from kernel.llm import ModelError, ModelRefused
 
 EFFORTS = ("low", "medium", "high")
+MEM_BUDGET_S = 1.0
+MAX_MEM_KEYS = 12
 
 
 class ParseError(ValueError):
@@ -56,8 +62,37 @@ def situation_summary(situation, text):
     }
 
 
+def memory_keys(situation, ctx):
+    """Mechanical lookup keys: SKUs and categories found in the situation, hashed urls of ctx shop ids."""
+    keys = []
+
+    def walk(x):
+        if isinstance(x, dict):
+            for k, v in x.items():
+                if k in ("sku", "category") and isinstance(v, str) and v:
+                    keys.append(v)
+                else:
+                    walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+
+    walk(situation)
+    keys += [c.hid(u) for u in (ctx.get("shop_ids") or {}).values() if u]
+    return list(dict.fromkeys(keys))[:MAX_MEM_KEYS]
+
+
 class Agent:
-    def __init__(self, name, harness_dir, terra, traj, market_brief_path, isolate=True):
+    def __init__(
+        self,
+        name,
+        harness_dir,
+        terra,
+        traj,
+        market_brief_path,
+        isolate=True,
+        mem_sock=None,
+    ):
         self.name, self.harness_dir, self.terra, self.traj = (
             name,
             harness_dir,
@@ -65,6 +100,7 @@ class Agent:
             traj,
         )
         self.market_brief_path, self.isolate = market_brief_path, isolate
+        self.mem_sock = mem_sock
 
     def _brief(self):
         try:
@@ -73,11 +109,26 @@ class Agent:
         except OSError:
             return ""
 
-    def _prompt(self, h, kind, situation_json):
+    def _memories(self, h, kind, keys):
+        k = memory.bound_top_k((h.memory_cfg or {}).get("top_k"))
+        if not k:
+            return []
+        query = c.mask(" ".join([kind] + keys), self.traj.secrets)
+        sock = self.mem_sock or memory.sock_path()
+        return memory.search(sock, self.name, query, k, timeout=MEM_BUDGET_S)
+
+    def _prompt(self, h, kind, situation_json, memories=()):
+        mem = []
+        if memories:
+            mem = [
+                "## 기억 (mem0, 관련도순)",
+                "\n".join(f"- {c.mask(m, self.traj.secrets)}" for m in memories),
+            ]
         return "\n\n".join(
             [
                 h.always_text,
                 self._brief(),
+                *mem,
                 "## 지금 할 결정",
                 kind,
                 rules.SCHEMAS.get(kind, ""),
@@ -119,6 +170,7 @@ class Agent:
     def decide(self, kind, situation, ctx):
         t0 = time.monotonic()
         errors, version, route_used, decision = [], None, "safe", None
+        keys, memories = memory_keys(situation, ctx), []
         situation_json = c.mask(
             json.dumps(situation, ensure_ascii=False, sort_keys=True), self.traj.secrets
         )
@@ -153,8 +205,9 @@ class Agent:
                         route.get("script"), kind, situation, ctx, timeout_s
                     )
                 else:
+                    memories = self._memories(h, kind, keys)
                     out = self.terra.complete(
-                        self._prompt(h, kind, situation_json),
+                        self._prompt(h, kind, situation_json, memories),
                         agent=self.name,
                         timeout_s=timeout_s,
                         effort=effort,
@@ -202,6 +255,8 @@ class Agent:
             errors=errors,
             decision=decision,
             situation_summary=situation_summary(situation, situation_json),
+            memory_keys=keys,
+            n_memories=len(memories),
         )
         return decision, {
             "route": route_used,

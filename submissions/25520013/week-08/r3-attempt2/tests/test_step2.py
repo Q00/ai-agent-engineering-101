@@ -197,7 +197,7 @@ def test_shipped_harnesses_valid():
         h = hz.load(d)
         assert (
             h.version == 1
-            and h.memory_cfg["top_k"] == 0
+            and h.memory_cfg["top_k"] == 5
             and "systemprompt.md" in h.always_text
         )
 

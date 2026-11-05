@@ -317,6 +317,7 @@ def execute(
 
 def main(argv=None):
     """Hook entry: build the situation, one buyer.plan decision, execute it, print the output line last."""
+    from kernel import memory
     from kernel.agent import Agent
     from kernel.llm import Terra
     from kernel.replay import CLI, HARNESS, MARKET_BRIEF, buyer_situation
@@ -357,6 +358,7 @@ def main(argv=None):
         Terra(traj, cli=a.cli, secrets=secrets),
         traj,
         MARKET_BRIEF,
+        mem_sock=memory.sock_path(root),
     )
     plan, _ = agent.decide(kind, situation, ctx)
     out = execute(plan, ctx, order, traj, deadline=t0 + a.deadline_s)

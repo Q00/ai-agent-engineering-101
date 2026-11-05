@@ -169,7 +169,7 @@ def section_seller(root, now):
     ]
 
 
-def section_market(root, now):
+def section_market(root, now, login=""):
     cat = c.load_json(os.path.join(root, ".market/catalog.json"), {}) or {}
     rev, n, ours = defaultdict(float), 0, 0.0
     for e in c.tail_json(
@@ -185,7 +185,7 @@ def section_market(root, now):
         a = float(d.get("amount") or 0)
         n += 1
         rev[(cat.get(d.get("sku")) or {}).get("category", "?")] += a
-        if d.get("own_owner") is True:
+        if c.settle_side(d, login) == "shop":
             ours += a
     tot = sum(rev.values())
     shops = c.load_json(os.path.join(root, ".market/shops.json"))
@@ -290,6 +290,34 @@ def section_harness(root, since_ts):
     ]
 
 
+def section_memory(root):
+    """mem0 check score per ability (a2/memcheck.json) and daemon counters, each only when present."""
+    from kernel import memcheck, memory
+
+    out = []
+    mc = c.load_json(os.path.join(root, "a2/memcheck.json"))
+    if isinstance(mc, dict) and isinstance(mc.get("abilities"), dict):
+        ab = mc["abilities"]
+        ts = mc.get("ts")
+        out.append(
+            f"[기억 점검 LME-V2{' ' + c.kst(ts) if isinstance(ts, (int, float)) else ''}] "
+            + ", ".join(
+                f"{a} {(ab.get(a) or {}).get('correct', 0)}/{(ab.get(a) or {}).get('n', 0)}"
+                for a in memcheck.ABILITIES
+            )
+        )
+    s = memory.stats(memory.sock_path(root), timeout=0.3)
+    if s:
+        n = s.get("counts") or {}
+        out.append(
+            f"[기억 서버] 검색 {n.get('search', 0)}번, 추가 요청 {n.get('add', 0)}번, 추가 완료 "
+            f"{n.get('add_done', 0)}번, 오류 {n.get('error', 0)}번, 대기열 {s.get('queue', 0)}"
+        )
+    elif out:
+        out.append("[기억 서버] 응답 없음")
+    return out or ["[기억] 점검 결과 없음, 기억 서버 응답 없음"]
+
+
 def build(root=None, now=None, last_brief_ts=None):
     root = c.data_root(root)
     now = c.now_ts() if now is None else now
@@ -325,9 +353,10 @@ def build(root=None, now=None, last_brief_ts=None):
         )
     out += section_inventory(root, now)
     out += section_seller(root, now)
-    out += section_market(root, now)
+    out += section_market(root, now, login)
     out += section_forum(root, login, snaps, now)
     out += section_calls(root, now)
+    out += section_memory(root)
     out += section_harness(
         root, last_brief_ts if last_brief_ts is not None else now - 1800
     )

@@ -14,6 +14,7 @@ import re
 import statistics
 
 from kernel import common as c
+from kernel import memory
 from kernel import rules
 from kernel.agent import Agent, parse_last_object
 from kernel.trajectory import Trajectory
@@ -196,6 +197,7 @@ def run(root, agent_name, n, out, dry=False, cli=CLI, harness_dir=None, isolate=
         traj,
         MARKET_BRIEF,
         isolate=isolate,
+        mem_sock=memory.sock_path(root),
     )
     if agent_name == "seller":
         cases = seller_cases(root, n, secrets)

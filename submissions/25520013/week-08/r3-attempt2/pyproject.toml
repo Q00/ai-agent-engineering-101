@@ -7,6 +7,18 @@ dependencies = []
 
 [dependency-groups]
 dev = ["pytest>=8"]
+# mem0 daemon only (memd/server.py), never imported by kernel/. Install on labpc with `uv sync --group memory`.
+# torch must be the CPU build (same as `pip install torch --index-url https://download.pytorch.org/whl/cpu`);
+# the pytorch-cpu index below pins it so uv never pulls the CUDA wheels.
+memory = ["mem0ai==2.2.1", "sentence-transformers", "qdrant-client", "torch"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
