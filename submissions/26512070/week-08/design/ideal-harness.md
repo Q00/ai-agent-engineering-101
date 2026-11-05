@@ -538,6 +538,8 @@ LaTeX(TikZ) 한 장. 왼쪽에서 오른쪽으로 "시장 → 역할 → 메타 
 - 대체: `outer/slice`·`brief`·`audit`·`decide`·`derive`·`morning` → 메타 하네스. `outer/health` → 운영 상태 점검. `outer/benchmark` →
   `market.benchmark`. `outer/position` → `score.class`(재고 문구도 바로잡음). `tools/evaluate`(eval.*) → 역할 보고. 안 쓰인 도구 13개 삭제.
 - 옮긴 뒤로 미룸: `forum.compose`(D-13), buyer A/B 배정 연결, 잉여·별점 실험, 그림과 REPORT.
+- 실험 후보 (11/6 00시 승인 대기 정리에서, 사용자): ① buyer goods 상한 올리기(열기 60%, 상한 82% → 85%; 브리프 11/5 10·12·14시) →
+  잉여, 첫 A/B. ② 식품은 유통기한 96시간 이상만 들임(11/5 12시 B) → 별점.
 
 ### 20-5. 옮기는 순서와 되돌리기 (11/7 낮, 단계마다 확인 후 다음)
 1. T1, T2 (registry, restock, review) → seller 재시작. 확인: 새 거래의 trajectory가 이어짐. 되돌리기: 커밋 되돌림 + seller 재시작.
