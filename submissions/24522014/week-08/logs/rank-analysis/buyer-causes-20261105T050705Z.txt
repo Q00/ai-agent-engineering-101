@@ -1,0 +1,26 @@
+records 861 since 20261105T000000
+
+== last decision step, count, share paid
+    245 paid    0  model_gate:model_quota_hour
+    162 paid    0  no_trail:selection_attempt_cooldown
+    149 paid    0  no_trail:seller_rejected
+     82 paid    0  quote_filter:quote_shelf_life_short
+     77 paid   71  deterministic:rule_offer
+     59 paid    0  quote_filter:quote_grade_unacceptable
+     45 paid   37  deterministic:rule_counter_offer
+     15 paid    0  no_trail:agent_error
+     15 paid    0  no_trail:selection_no_useful_research
+      6 paid    0  model:model_walk_away
+      3 paid    3  model:model_offer
+      2 paid    0  turn_limit:turn_limit_exceeded
+      1 paid    0  no_trail:transport_error
+
+== orders stopped by model_quota_hour: 245
+example step keys ['action', 'counter_check', 'parser_reason', 'price', 'quote_check', 'reason_code', 'source', 'turn']
+quote_check keys ['accept_grades', 'basis', 'conflicts', 'grade', 'grade_basis', 'hours_basis', 'hours_left', 'min_hours_left', 'reason_code', 'text_grade_ambiguous', 'text_hours_note']
+hours UTC [('2026-11-05T00', 43), ('2026-11-05T01', 46), ('2026-11-05T02', 41), ('2026-11-05T03', 55), ('2026-11-05T04', 49), ('2026-11-05T05', 11)]
+quote_check [('None', 245)]
+category top [('침대/매트리스', 138), ('김치', 35), ('커피/차', 12), ('소파/의자/스툴', 12), ('조리/가공 견과류', 8), ('침구', 8)]
+
+== rule path with a quote: paid share by quote/cap band (saved records)
+{}
