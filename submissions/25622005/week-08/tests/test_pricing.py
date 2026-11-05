@@ -123,11 +123,23 @@ class Overpriced(unittest.TestCase):
 class EndOfRound(unittest.TestCase):
     def test_d14_schedule(self):
         u = goods(cost=50000)
+        old = pol(stock__clear_70_h=24, stock__clear_any_h=6)              # the schedule before Patch 3.3
         cases = {49: (60000, ["D3"]), 47: (50000, ["D3", "D14"]), 23: (35000, ["D3", "D14"]), 5: (1, ["D3", "D14"])}
         for h, want in cases.items():
             now = END - h * H
-            self.assertEqual(pricing.floor_detail(goods(cost=50000, now=now), CTX, pol(), now), want, h)
-        self.assertEqual(pricing.first_ask(u, CTX, pol(), END - 5 * H), 85000)
+            self.assertEqual(pricing.floor_detail(goods(cost=50000, now=now), CTX, old, now), want, h)
+        self.assertEqual(pricing.first_ask(u, CTX, old, END - 5 * H), 85000)
+
+    def test_patch_3_3_defaults_never_sell_goods_below_cost(self):
+        # stock counts at cost when the round ends: clear_70_h 0 and clear_any_h 0 leave the cost floor to the end
+        for h in (47, 23, 5, 0.1):
+            now = END - h * H
+            self.assertEqual(pricing.floor_detail(goods(cost=50000, now=now), CTX, pol(), now), (50000, ["D3", "D14"]), h)
+        p = pol(stock__clear_cost_h=0)
+        self.assertEqual(pricing.floor_detail(goods(cost=50000, now=END - H), CTX, p, END - H), (60000, ["D3"]))
+        # food near its end still clears (D4), whatever the end-of-round keys say
+        self.assertEqual(pricing.floor(food(10, now=END - 5 * H), dict(CTX, uwh={"n": 10, "median": 24}), pol(),
+                                       END - 5 * H), 1)
 
     def test_d14_never_raises_a_lower_floor(self):
         now = END - 47 * H

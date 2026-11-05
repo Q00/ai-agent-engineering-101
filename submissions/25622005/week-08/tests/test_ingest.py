@@ -115,6 +115,8 @@ class IngestCase(unittest.TestCase):
                  row(911, "settle", {"order": "o-s2", "buyer": "buyer-01", "item": "G1", "amount": 9000,
                                      "shop": "https://psy.example"}),
                  row(912, "settle", {"order": "o-g", "buyer": "buyer-02", "item": "G2", "amount": 30000}),
+                 row(915, "supply", {"shop": "psyoung82", "sku": "G1", "qty": 10, "total": 52000, "units": []}),
+                 row(916, "supply", {"shop": "other-shop", "sku": "G1", "qty": 5, "total": 1, "units": []}),
                  row(920, "broken", {"buyer": "psyoung82", "item": "G2"}),
                  row(921, "broken", {"buyer": "buyer-02", "item": "G2"}),
                  row(922, "result", {"buyer": "buyer-01", "order": "o-s2", "shop": "https://psy.example",
@@ -160,6 +162,7 @@ class SyncTest(IngestCase):
         k = query.sku_stats(s, "G1")
         self.assertEqual(k["settled"], 2)
         self.assertGreater(k["sales_per_h"], 0)
+        self.assertEqual(k["sold_6h"], 2)                             # restock's big-ticket probe
         self.assertEqual(s["seller"]["customers"], {"buyer-01": 2})
         self.assertEqual(query.regular_categories(s), ["김치"])
         self.assertEqual(query.supply_demand(s)["김치"]["demand"], 6.0)   # 4 public settles + 2 of our orders
@@ -167,6 +170,16 @@ class SyncTest(IngestCase):
         self.assertEqual(l3["goods_ab_no_warranty"], {"created": 1, "canceled": 1})
         self.assertEqual(l3["goods_c"], {"created": 1, "dangling": 1})
         self.assertEqual(l3["all"]["completed"], 1)
+        m = s["market"]                                              # market-wide, all shops, under 1 h folded
+        self.assertEqual((m["sku_rate"], m["sku_settles_48h"]), ({"G1": 4.0, "G2": 2.0}, {"G1": 4, "G2": 2}))
+        self.assertEqual((query.market_rate(s, "G1"), query.market_rate(s, "G3")), (4.0, 0.0))
+        self.assertEqual((query.market_settles_48h(s, "G2"), query.supply_1h(s, "G1"), query.supply_1h(s, "G2")),
+                         (2, 15, 0))
+        self.assertEqual(m["p_clear"], {"food": None, "goods": None})    # under P_CLEAR_MIN_N settles
+        self.assertEqual(m["c_kind"], {"food": 0.52, "goods": None})     # only our own supply row
+        self.assertEqual((query.c_kind(s, "food"), query.c_kind(s, "goods")), (0.52, 0.61))
+        self.assertIn("e-ledger-915", ids)                            # our supply row stays an event
+        self.assertLess(query.market_covered_h(s), 1)
 
     def test_crash_before_cursor_save_then_rerun_adds_nothing_twice(self):
         ledger = self.fixtures()
@@ -192,6 +205,7 @@ class SyncTest(IngestCase):
         s = query.load_summary()
         self.assertEqual(query.shop_stats(s, SHOP_B)["attempts"], 2)
         self.assertEqual(query.category_stats(s, "의자")["q"]["n"], 2)   # market counters not doubled
+        self.assertEqual((query.market_rate(s, "G1"), query.supply_1h(s, "G1")), (4.0, 15))
 
     def test_incremental_files_and_ledger(self):
         ledger = self.fixtures()
@@ -531,6 +545,99 @@ class StateTest(unittest.TestCase):
             self.assertEqual(s["buyer"]["shops"][SHOP_B]["broken_confirmed"], 1, clock - edge)
             self.assertEqual([a["event"] for a in s["buyer"]["broken"]], ["e-ledger-920"], clock - edge)
         self.assertEqual(st["broken"], [])
+
+
+class MarketTest(unittest.TestCase):
+    """Per-SKU market folds in cursor.json["market"]: rates, 48 h counts, supply in the rolling hour, p_clear,
+    our cost/list; pruned to their windows."""
+    CAT = {"F": {"category": "a>f", "list_price": 1000, "kind": "food"},
+           "G": {"category": "a>g", "list_price": 10000, "kind": "goods"}}
+
+    def fold(self, market, rows):
+        for i, (kind, ts, data) in enumerate(rows):
+            ingest.ledger_rows({"seq": i, "ts": ts, "kind": kind, "data": data}, self.CAT, market, {"me"}, set())
+
+    def test_rates_prices_and_windows(self):
+        now = T0 + 100 * H + 1800                                     # half way into an hour
+        market = {"since": now - 72 * H}
+        rows = [("settle", now - 10 * 60, {"item": "F", "amount": 700})] * 30 \
+            + [("settle", now - 5.2 * H, {"item": "F", "amount": 900})] * 30 \
+            + [("settle", now - 7 * H, {"item": "F", "amount": 100})] * 50 \
+            + [("settle", now - 30 * H, {"item": "G", "amount": 7400})] * 4 \
+            + [("settle", now - 50 * H, {"item": "G", "amount": 1})] \
+            + [("settle", now - 60, {"item": "X", "amount": 1})] \
+            + [("supply", now - 50 * 60, {"shop": "other", "sku": "G", "qty": 20, "total": 1})] \
+            + [("supply", now - 70 * 60, {"shop": "other", "sku": "G", "qty": 9, "total": 1})] \
+            + [("supply", now - 2 * H, {"shop": "me", "sku": "F", "qty": 10, "total": 5000})] \
+            + [("supply", now - 3 * H, {"shop": "me", "sku": "F", "qty": 10, "total": 6000})] \
+            + [("supply", now - 26 * H, {"shop": "me", "sku": "G", "qty": 1, "total": 1})] \
+            + [("supply", now - 60, {"shop": "me", "sku": "G", "qty": 0, "total": 0})]
+        self.fold(market, rows)
+        ingest.prune_market(market, now)
+        m = ingest.render_market({"market": market}, now)
+        self.assertEqual(m["sku_rate"], {"F": round(60 / 5.5, 4)})    # 5 full hours + half of this one
+        self.assertEqual(m["sku_settles_48h"], {"F": 110, "G": 4})    # 50 h old pruned, X not in the catalog
+        self.assertEqual(m["supply_1h"], {"G": 20})
+        with mock.patch.object(ingest, "P_CLEAR_MIN_N", 60):
+            self.assertEqual(ingest.render_market({"market": market}, now)["p_clear"], {"food": 0.8, "goods": None})
+        self.assertEqual(m["c_kind"], {"food": 0.55, "goods": None})  # 26 h old cost pruned
+        s = {"built_at": now, "market": m}
+        self.assertEqual((query.market_rate(s, "G"), query.market_settles_48h(s, "X"), query.c_kind(s, "goods")),
+                         (0.0, 0, 0.61))
+        self.assertEqual(query.market_covered_h(s), 72.0)
+
+    def test_fresh_fold_divides_by_the_hours_folded(self):
+        now = T0 + 100 * H + 1800
+        market = {"since": now - 1800}
+        self.fold(market, [("settle", now - 60, {"item": "F", "amount": 700})] * 6)
+        self.assertEqual(ingest.render_market({"market": market}, now)["sku_rate"], {"F": 6.0})   # floor 1 h
+
+    def test_odd_rows_neither_raise_nor_poison_counters(self):
+        now = T0 + 100 * H + 1800
+        market, cat = {"since": now - 72 * H}, dict(self.CAT, B="not a dict")
+        rows = [("settle", now - 60, {"item": ["F"], "amount": 700}),          # unhashable sku
+                ("settle", now - 60, {"item": "B", "amount": 700}),            # broken catalog entry
+                ("settle", now - 60, {"item": "F", "amount": float("nan")}),   # counted, no paid/list
+                ("settle", now - 60, {"item": "F", "amount": -5000}),          # paid/list clamped to 0
+                ("supply", now - 60, {"shop": "me", "sku": {"x": 1}, "qty": 3, "total": 1}),
+                ("supply", now - 60, {"shop": "me", "sku": "F", "qty": True, "total": 1}),
+                ("supply", now - 60, {"shop": "me", "sku": "F", "qty": 2, "total": float("inf")})]
+        for i, (kind, ts, data) in enumerate(rows):
+            ingest.ledger_rows({"seq": i, "ts": ts, "kind": kind, "data": data}, cat, market, {"me"}, set())
+        ingest.ledger_rows({"seq": 99, "ts": float("nan"), "kind": "settle", "data": {"item": "X"}},
+                           cat, market, {"me"}, set())                   # NaN ts: no crash
+        self.assertEqual(market["clear_hour"]["food"][str(int((now - 60) // H))], {"0.00": 1})
+        self.assertEqual(market["sku_hour"], {"F": {str(int((now - 60) // H)): 2}})
+        self.assertNotIn("own_cost", market)                          # infinite total ignored
+        m = ingest.render_market({"market": market}, now)
+        self.assertEqual(m["supply_1h"], {"F": 2})
+        self.assertEqual(ingest.render_market({"market": dict(market, since="x")}, now)["sku_rate"], {"F": 2.0})
+
+    def test_missing_market_data_is_none(self):
+        for s in ({}, {"market": {"categories": {}}}, {"market": {"sku_rate": [1]}}):
+            self.assertIsNone(query.market_rate(s, "F"))
+            self.assertIsNone(query.market_settles_48h(s, "F"))
+            self.assertIsNone(query.supply_1h(s, "F"))
+            self.assertIsNone(query.p_clear(s, "food"))
+            self.assertEqual(query.c_kind(s, "food"), 0.51)
+            self.assertEqual(query.market_covered_h(s), 0.0)
+
+    def test_market_counters_stay_bounded(self):
+        rnd, market, size = random.Random(5), {"since": T0}, {}
+        cat = {f"S{i}": {"category": f"a>c{i % 9}", "list_price": 1000, "kind": rnd.choice(["food", "goods"])}
+               for i in range(300)}
+        skus = list(cat)
+        for hour in range(96):
+            rows = [{"seq": 0, "ts": T0 + hour * H + rnd.uniform(0, H), "kind": rnd.choice(["settle"] * 4 + ["supply"]),
+                     "data": {"item": rnd.choice(skus), "amount": rnd.randrange(500, 1500), "shop": rnd.choice(["me", "x"]),
+                              "qty": rnd.randrange(1, 20), "total": rnd.randrange(5000, 9000)}} for _ in range(400)]
+            for r in sorted(rows, key=lambda r: r["ts"]):
+                r["data"]["sku"] = r["data"]["item"]
+                ingest.ledger_rows(r, cat, market, {"me"}, set())
+            ingest.prune_market(market, T0 + (hour + 1) * H)
+            if hour + 1 in (72, 96):
+                size[hour + 1] = len(json.dumps(market))
+        self.assertLess(size[96], 1.1 * size[72], size)
 
 
 class AttributeTest(unittest.TestCase):

@@ -1,16 +1,19 @@
-"""Restock and bankruptcy rules (strategy D1, D2, D4, D10, D14, L1). Pure functions except own_card_ok.
+"""Restock and bankruptcy rules (strategy D1, D2, D4, D10, D14, L1, Patch 3.2 surge). Pure functions except
+own_card_ok.
 
 plan_restock decides which SKUs to buy and how many; the kit buys them (at most 10 lines, stopping at the
 first line the balance cannot pay). Grades and costs are drawn on arrival, so affordability uses the worst
-cost (stock.worst_cost_share x list price). Supply opens about every 20 minutes for 3 minutes, so each SKU
-is stocked to cover its expected sales until the next window (stock.cover_min x stock.cover_safety).
+cost (stock.worst_cost_share x list price x the expected surge factor). Supply opens about every 20 minutes for
+3 minutes, so each SKU is stocked to cover its expected sales until the next window (stock.cover_min x
+stock.cover_safety), held to stock.max_hold units and bought at most stock.max_qty units a line.
 """
 import collections
 import math
 
 import httpx
 
-from memory.query import category_stats, regular_categories, sku_stats, supply_demand
+from memory.query import (c_kind, category_stats, market_covered_h, market_rate, market_settles_48h, p_clear,
+                          regular_categories, sku_stats, supply_1h, supply_demand)
 from memory.store import hook_log
 from tools import pricing
 
@@ -25,6 +28,10 @@ def _units(inv):
 
 SUPPLY_GAP_S = 11                  # measured mean 10.8 s between supply calls: 10 s limit + the kit's refresh
 CLOSE_MARGIN_S = 2
+F_MAX_CAP = 1.25                   # never buy above this surge factor, whatever the margin says
+FOOD_COVER_SHELF = 0.25            # food holds at most this share of its shelf life in expected sales
+PROBE_SALES = 2                    # a big-ticket SKU leaves its probe after this many of our sales in 6 h
+NO_SALES_MIN_H = 24                # 'no_market_sales' needs the market fold to cover this many hours
 
 
 def _finite(x):
@@ -54,11 +61,20 @@ def window_closed(win, pol):
     return win["open"] is False and win["in_s"] is not None and win["in_s"] > pol["stock"]["window_lead_s"]
 
 
+def _surge_rows(inv):
+    s = (inv or {}).get("surge")
+    return [x for x in s if isinstance(x, dict) and isinstance(x.get("sku"), str)] if isinstance(s, list) else []
+
+
 def surge_factors(inv):
     """{sku: factor} from inventory.json `surge` (a list of {sku, name, units, factor}); bad rows ignored."""
-    s = (inv or {}).get("surge")
-    return {x["sku"]: float(x["factor"]) for x in s if isinstance(x, dict) and isinstance(x.get("sku"), str)
-            and _finite(x.get("factor")) and x["factor"] > 0} if isinstance(s, list) else {}
+    return {x["sku"]: float(x["factor"]) for x in _surge_rows(inv) if _finite(x.get("factor")) and x["factor"] > 0}
+
+
+def surge_units(inv):
+    """{sku: units the whole market bought in the last hour} from inventory.json `surge` (SKUs above the free
+    units only); bad rows ignored."""
+    return {x["sku"]: int(x["units"]) for x in _surge_rows(inv) if _finite(x.get("units")) and x["units"] >= 0}
 
 
 def held(inv):
@@ -67,17 +83,79 @@ def held(inv):
     return {"skus": len({u.get("sku") for u in units}), "units": len(units)}
 
 
-def plan_restock(inv, catalog, demand, summary, pol, now):
+def _kind(x):
+    k = x.get("kind")
+    return k if k in ("food", "goods") else "food" if x.get("shelf_hours") else "goods"
+
+
+def big_ticket(x, pol):
+    """Goods listed above stock.goods_max_list (x: a catalog entry or a unit)."""
+    lst = x.get("list_price")
+    return _kind(x) == "goods" and _finite(lst) and lst > pol["stock"]["goods_max_list"]
+
+
+def f_max(summary, kind, pol):
+    """Patch 3.2: the highest surge factor a unit of this kind is bought at, so that the market's clearing price
+    still covers our floor with stock.min_margin_share of list to spare:
+    (p_clear - min_margin_share) / (c_kind x floor_cost_mult), within 1.0 .. F_MAX_CAP. Without p_clear: the old
+    1 / (worst_cost_share x floor_cost_mult), within the same bounds."""
+    st, fcm = pol["stock"], pol["seller"]["floor_cost_mult"]
+    pc = p_clear(summary, kind)
+    if fcm <= 0:
+        return F_MAX_CAP
+    f = (pc - st["min_margin_share"]) / (c_kind(summary, kind) * fcm) if pc is not None else \
+        1 / (st["worst_cost_share"] * fcm)
+    return min(F_MAX_CAP, max(1.0, f))
+
+
+def surge_state(f_inv, u1h, fm, pol):
+    """({"factor": now, "u1h", "free_left", "f_max"}, units we may still buy before the factor passes fm).
+    u1h: the market's units of the SKU in the rolling hour, ours included."""
+    mk = pol["market"]
+    free, per, top = mk["surge_free"], mk["surge_per_unit"], mk["surge_max"]
+    f_now = min(top, max(f_inv, 1 + per * max(0, u1h - free)))
+    room = math.inf if per <= 0 else max(0, math.floor(free + (fm - 1) / per - u1h + 1e-9))
+    return {"factor": round(f_now, 4), "u1h": u1h, "free_left": max(0, free - u1h), "f_max": round(fm, 4)}, room
+
+
+def mean_factor(f_inv, u1h, qty, pol):
+    """The expected mean surge factor of a line of qty units (the factor rises by surge_per_unit a unit past
+    surge_free), at least the factor inventory.json shows now, at most surge_max."""
+    mk = pol["market"]
+    return min(mk["surge_max"], max(f_inv, 1 + mk["surge_per_unit"] * max(0, u1h + qty / 2 - mk["surge_free"])))
+
+
+def plan_restock(inv, catalog, demand, summary, pol, now, planned=None):
     """{"buy": [{sku, qty}], "excluded": {category leaf or sku: reason}, "worst_cost", "headroom", "rules",
-    "empty_picks": candidate SKUs with no unit in stock, "overpriced": units not counted as stock}.
+    "empty_picks": candidate SKUs with no unit in stock, "overpriced": units not counted as stock,
+    "surge": {sku: {factor, u1h, free_left, f_max}}, "big_ticket": {budget, held_cost, planned_worst}}.
+    planned: {sku: units} of our lines planned in the last hour that the summary's supply fold has not seen
+    (restock.py keeps them).
 
-    Overpriced units (pricing.overpriced: cost floor above list) neither count as stock nor make a SKU stale.
-    A supply surge raises the worst cost by its factor; a SKU whose surged worst cost would put the floor
-    above list (factor x worst_cost_share x floor_cost_mult > 1) is skipped until the surge falls.
+    Overpriced units (pricing.overpriced: cost floor above list) neither count as stock nor make a SKU stale,
+    except for big-ticket SKUs, where every unit counts. A stale goods unit (seller.goods_stale_days) blocks its
+    SKU only when the SKU is not a focus or trend SKU and the market sold none of it in 48 h (or there is no
+    market data). A category pick the market sold none of in 48 h is not bought ('no_market_sales'), once the
+    market fold covers NO_SALES_MIN_H hours.
 
-    The strategist's focus SKUs (stock.focus_skus) are candidates even when they are not the category's pick
-    or are above stock.goods_max_list; they are stocked focus_cover_mult times deeper, ordered before the
-    rest, and their worst cost together stays within stock.focus_cap_share of the headroom."""
+    Patch 3.2 surge: u1h = max(inventory.json surge units, the ingest's market supply in the last hour + our
+    planned units the ingest has not seen). inventory.json is the market's live count (ours included, SKUs above
+    the free units only), so planned units are added to the fold's count, never to it. A SKU whose factor is above
+    f_max(kind) is skipped ('surge'); a line stops where the factor would pass f_max (an in-stock SKU's line cut
+    below min_line_qty is skipped too); the worst cost uses the line's mean factor.
+
+    The strategist's focus SKUs (stock.focus_skus) and then trend SKUs (stock.trend_skus) are candidates even
+    when they are not the category's pick or are above stock.goods_max_list, ordered before the rest; their
+    sales rate is at least stock.trend_share x the market's. Focus SKUs are stocked focus_cover_mult times
+    deeper, and their worst cost together stays within stock.focus_cap_share of the headroom.
+
+    Big-ticket goods (listed above stock.goods_max_list): held cost + planned worst cost stay within
+    stock.big_ticket_share x inventory_cap_share x (cash + inventory cost), and a SKU holds at most
+    stock.bigticket_probe_qty units until we sold PROBE_SALES of it in 6 h.
+
+    The target per SKU is max(per_sku_qty, cover) within stock.max_hold (food: cover within FOOD_COVER_SHELF x
+    shelf life of sales); a top-up of a SKU in stock below min(stock.min_line_qty, target / 2) is skipped
+    ('small_topup'); a line is at most stock.max_qty units."""
     st = pol["stock"]
     units = _units(inv)
     cash = (inv or {}).get("balance") or 0
@@ -87,57 +165,87 @@ def plan_restock(inv, catalog, demand, summary, pol, now):
     hours_left = (st["end_ts"] - now) / 3600
     rules = ["D1", "D2"]
     over = [pricing.overpriced(u, pol) for u in units]
-    out = {"buy": [], "excluded": {}, "worst_cost": 0, "headroom": headroom, "rules": rules, "empty_picks": 0,
-           "overpriced": sum(over)}
-    if hours_left <= 0:
-        out["excluded"]["*"] = "D14_round_over"
-        return out
-    have = collections.Counter(u.get("sku") for u, o in zip(units, over) if not o)
-    stale = {u.get("sku") for u, o in zip(units, over) if u.get("kind") == "goods" and not o
-             and now - (u.get("supplied_at") or now) > pol["seller"]["goods_stale_days"] * 86400}
-    surge = surge_factors(inv)
-    regular = set(regular_categories(summary))
-    sd = supply_demand(summary)
-    by_cat, known = collections.defaultdict(list), {}
+    known, by_cat = {}, collections.defaultdict(list)
     for sku, x in (catalog or {}).items():
         if isinstance(x, dict) and isinstance(x.get("list_price"), (int, float)):
             known[sku] = dict(x, sku=sku)
             by_cat[x.get("category")].append(known[sku])
+    big_held = sum(u.get("cost") or 0 for u in units if big_ticket(known.get(u.get("sku")) or u, pol))
+    big_budget = st["big_ticket_share"] * st["inventory_cap_share"] * (cash + inv_cost)
+    out = {"buy": [], "excluded": {}, "worst_cost": 0, "headroom": headroom, "rules": rules, "empty_picks": 0,
+           "overpriced": sum(over), "surge": {},
+           "big_ticket": {"budget": int(big_budget), "held_cost": int(big_held), "planned_worst": 0}}
+    if hours_left <= 0:
+        out["excluded"]["*"] = "D14_round_over"
+        return out
+    have = collections.Counter(u.get("sku") for u, o in zip(units, over) if not o)
+    have_all = collections.Counter(u.get("sku") for u in units)
+    stale = {u.get("sku") for u, o in zip(units, over) if u.get("kind") == "goods" and not o
+             and now - (u.get("supplied_at") or now) > pol["seller"]["goods_stale_days"] * 86400}
+    surge, s_units, planned = surge_factors(inv), surge_units(inv), planned or {}
+    fmax = {k: f_max(summary, k, pol) for k in ("food", "goods")}
+    regular = set(regular_categories(summary))
+    sd = supply_demand(summary)
     taper = hours_left <= st["taper_h"]
-    focus = set(st["focus_skus"])
+    focus, trend = set(st["focus_skus"]), set(st["trend_skus"]) - set(st["focus_skus"])
+    long_tail_check = market_covered_h(summary) >= NO_SALES_MIN_H
     excluded, cands, seen = out["excluded"], [], set()
 
-    def consider(sku, price, leaf, tier):
-        """The per-SKU rules after the category ones: D4, the cover target, D14 taper, L1 priority."""
+    def consider(x, leaf, tier):
+        """The per-SKU rules after the category ones: D4, surge, the cover target, the big-ticket probe, D14
+        taper, small top-ups, L1 priority."""
+        sku, price, kind = x["sku"], x["list_price"], _kind(x)
         seen.add(sku)
-        if sku in stale:                                          # D4: unsold goods are not restocked
-            excluded[sku] = "D4_stale_goods"
+        is_focus, is_trend = sku in focus, sku in trend
+        if sku in stale and not (is_focus or is_trend) and not market_settles_48h(summary, sku):
+            excluded[sku] = "D4_stale_goods"                      # unsold here and nowhere else either
             return
-        f = surge.get(sku, 1.0)
-        # only a SKU that surges: a policy whose worst cost x floor_cost_mult is above 1 must not stop every SKU
-        if f > 1 and f * st["worst_cost_share"] * pol["seller"]["floor_cost_mult"] > 1:
-            excluded[sku] = "surge"                               # units bought now could not sell at list
+        f_inv = surge.get(sku, 1.0)
+        u1h = max(s_units.get(sku, 0), (supply_1h(summary, sku) or 0) + planned.get(sku, 0))
+        info, surge_room = surge_state(f_inv, u1h, fmax[kind], pol)
+        out["surge"][sku] = info
+        if info["factor"] > fmax[kind] + 1e-9:
+            excluded[sku] = "surge"                               # units bought now would not clear above the floor
             return
-        is_regular, is_focus = leaf in regular, sku in focus
+        is_regular, big = leaf in regular, big_ticket(x, pol)
         rate = sku_stats(summary, sku)["sales_per_h"]
+        if is_focus or is_trend:                                  # a share of what the market sells of it
+            rate = max(rate, st["trend_share"] * (market_rate(summary, sku) or 0.0))
         # cover the sales expected until the next supply window (focus: focus_cover_mult times that),
-        # at least per_sku_qty, at most max_qty
-        cover = rate * st["cover_min"] / 60 * st["cover_safety"] * (st["focus_cover_mult"] if is_focus else 1)
-        target = min(max(st["per_sku_qty"], math.ceil(cover)), st["max_qty"])
-        qty = target - have[sku]
+        # food at most FOOD_COVER_SHELF of its shelf life of sales; at least per_sku_qty, at most max_hold
+        want = math.ceil(rate * st["cover_min"] / 60 * st["cover_safety"] * (st["focus_cover_mult"] if is_focus else 1))
+        if kind == "food" and _finite(x.get("shelf_hours")) and x["shelf_hours"] > 0:
+            want = min(want, math.floor(rate * FOOD_COVER_SHELF * x["shelf_hours"]))
+        target = min(max(st["per_sku_qty"], want), st["max_hold"])
+        n = have_all[sku] if big else have[sku]                    # big-ticket: overpriced units count too
+        probe = big and sku_stats(summary, sku)["sold_6h"] < PROBE_SALES and n < target
+        if probe:
+            target = min(target, st["bigticket_probe_qty"])
+        qty = target - n
         if taper:                                                 # D14: what can still sell before the end
-            qty = min(qty, int(rate * hours_left * st["taper_factor"] - have[sku]))
+            qty = min(qty, int(rate * hours_left * st["taper_factor"] - n))
             if is_regular:                                        # L1: keep regular customers' categories
-                qty = max(qty, st["regular_min_stock"] - have[sku])
+                qty = max(qty, st["regular_min_stock"] - n)
         if qty <= 0:
-            excluded[sku] = "D14_taper" if taper else "stocked"
+            excluded[sku] = "D14_taper" if taper else "big_ticket_probe" if probe else "stocked"
             return
+        small = min(st["min_line_qty"], target / 2)
+        if n > 0 and qty < small:                                 # a 1-2 unit line spends a whole supply call
+            excluded[sku] = "small_topup"
+            return
+        qty = min(qty, st["max_qty"])
+        if surge_room < qty:                                      # the surge allowance cuts the line
+            if surge_room < 1 or (n > 0 and surge_room < small):  # too little left for a line
+                excluded[sku] = "surge"
+                return
+            qty = surge_room
         sdv = sd.get(leaf, {})
         prio = (sdv.get("demand", 0.0) + 1) / ((sdv.get("supply") or 0) + 1) \
             if st["supply_demand_priority"] else 1.0
-        # sold-out SKUs first: a shop without the SKU is not among the buyer's offers at all; then focus SKUs
-        cands.append(((have[sku] > 0, not is_focus, not is_regular, tier, -prio, leaf), sku,
-                      min(qty, st["max_qty"]), price * f, is_focus))
+        # sold-out SKUs first: a shop without the SKU is not among the buyer's offers at all; then focus, trend
+        cands.append({"key": (n > 0, 0 if is_focus else 1 if is_trend else 2, not is_regular, tier, -prio, leaf),
+                      "sku": sku, "qty": qty, "price": price * mean_factor(f_inv, u1h, qty, pol),
+                      "focus": is_focus, "big": big})
 
     for d in demand or []:
         leaf, median, kind = d.get("item") or _leaf(d.get("category")), d.get("median_price"), d.get("kind")
@@ -170,10 +278,14 @@ def plan_restock(inv, catalog, demand, summary, pol, now):
             excluded[leaf] = "D2_no_sku_in_band"
             continue
         pick = min(pool, key=lambda s: (abs(s["list_price"] - median), s["list_price"], s["sku"]))
-        consider(pick["sku"], pick["list_price"], leaf, tier)
+        if long_tail_check and pick["sku"] not in focus | trend and market_settles_48h(summary, pick["sku"]) == 0:
+            excluded[pick["sku"]] = "no_market_sales"            # the long tail: a supply line that sells nothing
+            continue
+        consider(pick, leaf, tier)
 
-    # focus SKUs that were not a category's pick: D2 shelf and D14 goods stop by the SKU itself, no price band
-    for sku in st["focus_skus"]:
+    # focus, then trend SKUs that were not a category's pick: D2 shelf and D14 goods stop by the SKU itself,
+    # no price band
+    for sku in list(st["focus_skus"]) + list(st["trend_skus"]):
         x = known.get(sku)
         if x is None:
             excluded[sku] = "not_in_catalog"
@@ -181,7 +293,7 @@ def plan_restock(inv, catalog, demand, summary, pol, now):
         if sku in seen:
             continue
         leaf = _leaf(x.get("category"))
-        if x.get("kind") == "food" or (x.get("kind") is None and x.get("shelf_hours")):
+        if _kind(x) == "food":
             if (x.get("shelf_hours") or 0) >= st["food_shelf_hours"]:
                 tier = 0
             elif category_stats(summary, leaf)["uwh"]["n"] >= st["short_food_min_uwh_obs"]:
@@ -194,28 +306,36 @@ def plan_restock(inv, catalog, demand, summary, pol, now):
             continue
         else:
             tier = 1
-        consider(sku, x["list_price"], leaf, tier)
+        consider(x, leaf, tier)
 
-    cands.sort(key=lambda c: c[0])
-    out["empty_picks"] = sum(1 for c in cands if not c[0][0])
-    worst, focus_worst, focus_room = 0.0, 0.0, st["focus_cap_share"] * headroom
-    for _, sku, qty, price, is_focus in cands:
+    cands.sort(key=lambda c: c["key"])
+    out["empty_picks"] = sum(1 for c in cands if not c["key"][0])
+    worst, focus_worst, big_worst = 0.0, 0.0, 0.0
+    focus_room, big_room = st["focus_cap_share"] * headroom, max(0.0, big_budget - big_held)
+    for c in cands:
+        sku = c["sku"]
         if len(out["buy"]) >= st["max_lines"]:
             excluded[sku] = "max_lines"
             continue
-        unit_worst = st["worst_cost_share"] * price               # price includes the surge factor
+        unit_worst = st["worst_cost_share"] * c["price"]           # price includes the mean surge factor
         room = headroom - worst
-        if is_focus:                                              # focus lines share at most focus_cap_share
+        if c["focus"]:                                            # focus lines share at most focus_cap_share
             room = min(room, focus_room - focus_worst)
-        qty = min(qty, int(room // unit_worst)) if unit_worst > 0 else 0
+        if c["big"]:                                              # big-ticket units within their budget
+            room = min(room, big_room - big_worst)
+        qty = min(c["qty"], int(room // unit_worst)) if unit_worst > 0 else 0
         if qty < 1:
-            excluded[sku] = "focus_cap" if is_focus and headroom - worst >= unit_worst else "D1_cap"
+            excluded[sku] = "D1_cap" if headroom - worst < unit_worst else \
+                "big_ticket_cap" if c["big"] and big_room - big_worst < unit_worst else "focus_cap"
             continue
         out["buy"].append({"sku": sku, "qty": qty})
         worst += qty * unit_worst
-        if is_focus:
+        if c["focus"]:
             focus_worst += qty * unit_worst
+        if c["big"]:
+            big_worst += qty * unit_worst
     out["worst_cost"] = int(round(worst))
+    out["big_ticket"]["planned_worst"] = int(round(big_worst))
     if st["supply_demand_priority"]:
         rules.append("L1")
     if regular:

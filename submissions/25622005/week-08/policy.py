@@ -5,7 +5,8 @@ Hooks call load() on every run and the seller calls it per request; a changed fi
 up without restarting the kit. A file that fails validation is never used: the last good
 policy (memory/policy.lastgood.json) is used instead, then DEFAULTS, and the error is logged.
 Keys missing from the file (a key added to DEFAULTS after the file was written) take the DEFAULTS
-value; this is a warning in logs/hooks/policy.log, not an error.
+value, and so does a whole section of ADDED_SECTIONS the file does not have; this is a warning in
+logs/hooks/policy.log, not an error.
 
     python policy.py check                   validate and show the effective values
     python policy.py check --reason "..."    also record the change in logs/policy-changes.jsonl
@@ -39,13 +40,16 @@ DEFAULTS = {
         "food_shelf_hours": 720, "per_sku_qty": 2, "short_food_max_shelf_h": 168,
         "short_food_min_uwh_obs": 10, "goods_max_list": 50000,
         "supply_demand_priority": True, "demand_window_h": 6, "regular_min_stock": 1,
-        "max_lines": 10, "max_qty": 20, "require_own_card": True,
+        "max_lines": 10, "max_qty": 20, "max_hold": 40, "min_line_qty": 4, "require_own_card": True,
         "bankrupt_min_hours_to_end": 48, "bankrupt_recovery_threshold": 500000, "bankrupt_zero_sales_h": 12,
-        "end_ts": 1794927540, "taper_h": 72, "taper_factor": 0.5, "goods_stop_h": 24,
-        "clear_cost_h": 48, "clear_70_h": 24, "clear_any_h": 6, "no_warranty_h": 8,
+        "end_ts": 1794927540, "taper_h": 0, "taper_factor": 0.5, "goods_stop_h": 6,
+        "clear_cost_h": 48, "clear_70_h": 0, "clear_any_h": 0, "no_warranty_h": 8,
         "window_lead_s": 60, "cover_min": 25, "cover_safety": 1.5,
         "focus_skus": [], "focus_max": 8, "focus_cover_mult": 2.0, "focus_cap_share": 0.5, "focus_min_settles": 10,
+        "trend_skus": [], "trend_max": 16, "trend_share": 0.08,
+        "big_ticket_share": 0.40, "bigticket_probe_qty": 3, "min_margin_share": 0.05,
     },
+    "market": {"surge_free": 50, "surge_per_unit": 0.002, "surge_max": 1.5},
     "buyer": {
         "cap_goods_no_warranty": 0.70, "cap_goods_warranty": 0.94, "cap_food": 0.95,
         "min_surplus_list": 0.05, "open_list": 0.60, "max_shops": 3, "food_margin_h": 0.2,
@@ -75,7 +79,14 @@ RANGES = {
     "forum.min_gap_min": (5, 1440),
     "stock.focus_max": (0, 20), "stock.focus_cover_mult": (1.0, 4.0), "stock.focus_cap_share": (0.0, 1.0),
     "stock.focus_min_settles": (1, 1000), "llm.exception_min_left_s": (0, 280), "llm.exception_timeout_s": (3, 60),
+    "stock.max_hold": (1, 200), "stock.min_line_qty": (1, 20), "stock.trend_max": (0, 40),
+    "stock.trend_share": (0.0, 0.5), "stock.big_ticket_share": (0.0, 0.40), "stock.bigticket_probe_qty": (1, 20),
+    "stock.min_margin_share": (0.0, 0.3),
+    "market.surge_free": (0, 100000), "market.surge_per_unit": (0.0, 0.1), "market.surge_max": (1.0, 5.0),
 }
+
+# Sections added to DEFAULTS after files in use were written: filled whole when the file has none.
+ADDED_SECTIONS = ("market",)
 
 
 # --- a small YAML subset: nested maps by two-space indent, scalars, flow lists of scalars
@@ -187,17 +198,19 @@ def validate(pol):
             errors.append("seller.floor_list: above seller.first_ask_list")
         if pol["buyer"]["target_s"] > pol["buyer"]["order_cap_s"]:
             errors.append("buyer.target_s: above buyer.order_cap_s")
-        focus = pol["stock"]["focus_skus"]
-        if not all(isinstance(x, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,40}", x) for x in focus):
-            errors.append("stock.focus_skus: expected SKU strings")
-        elif len(focus) > pol["stock"]["focus_max"] or len(set(focus)) != len(focus):
-            errors.append("stock.focus_skus: more than stock.focus_max, or repeated")
+        for name in ("focus", "trend"):
+            skus = pol["stock"][f"{name}_skus"]
+            if not all(isinstance(x, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,40}", x) for x in skus):
+                errors.append(f"stock.{name}_skus: expected SKU strings")
+            elif len(skus) > pol["stock"][f"{name}_max"] or len(set(skus)) != len(skus):
+                errors.append(f"stock.{name}_skus: more than stock.{name}_max, or repeated")
     return errors
 
 
 def fill_defaults(pol):
     """(copy of pol with keys missing from its sections taken from DEFAULTS, dotted keys filled).
-    A missing or empty section is not filled, and unknown keys and bad values are left for validate()."""
+    A missing or empty section is not filled (except a missing one of ADDED_SECTIONS), and unknown keys and bad
+    values are left for validate()."""
     if not isinstance(pol, dict):
         return pol, []
     out, filled = json.loads(json.dumps(pol)), []
@@ -211,6 +224,9 @@ def fill_defaults(pol):
                 walk(d[k], want, f"{path}{k}.")
     for sec, ref in DEFAULTS.items():
         if isinstance(out.get(sec), dict) and out[sec]:
+            walk(out[sec], ref, f"{sec}.")
+        elif sec in ADDED_SECTIONS and sec not in out:
+            out[sec] = {}
             walk(out[sec], ref, f"{sec}.")
     return out, filled
 

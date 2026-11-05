@@ -10,7 +10,7 @@ policy:
     food_clear_uwh_factor: 2.0    # D4 food below cost when hours left < factor x observed use_within median and grade C (shelf left < 45%)
     food_clear_min_obs: 10        # D4 below this many observations use food_clear_left_share instead
     food_clear_left_share: 0.25
-    goods_stale_days: 5           # D4 unsold goods: floor drops to cost and the SKU is not restocked
+    goods_stale_days: 5           # D4 unsold goods: floor = cost; restocked if focus/trend or the market sold it in 48 h
     warranty_on_request: true     # D5 warranty only when the buyer asks
     warranty_hours: 6
     warranty_grades: [A, B]
@@ -33,18 +33,20 @@ policy:
     demand_window_h: 6
     regular_min_stock: 1          # L1 keep at least this many units in a regular customer's top categories
     max_lines: 10
-    max_qty: 20
+    max_qty: 20                   # units per supply line (the kit's per-call limit)
+    max_hold: 40                  # units one SKU may hold (the cover target's cap)
+    min_line_qty: 4               # skip a top-up of an in-stock SKU below min(this, target / 2): lines are scarce
     require_own_card: true        # buy nothing while our own card does not answer
     bankrupt_min_hours_to_end: 48 # D10
     bankrupt_recovery_threshold: 500000
     bankrupt_zero_sales_h: 12
     end_ts: 1794927540            # D14 2026-11-17 23:59 KST
-    taper_h: 72
+    taper_h: 0                    # D14 buy only what sells before the end from T-this h (0 = off: stock counts at cost)
     taper_factor: 0.5
-    goods_stop_h: 24
-    clear_cost_h: 48              # D14 floor = cost from T-48h
-    clear_70_h: 24                # D14 floor = cost x 0.7 from T-24h
-    clear_any_h: 6                # D14 floor = 1 from T-6h
+    goods_stop_h: 6               # D14 no new goods from T-this h (0 = off)
+    clear_cost_h: 48              # D14 floor = cost from T-this h (0 = off)
+    clear_70_h: 0                 # D14 floor = cost x 0.7 from T-this h (0 = off: lowers Book)
+    clear_any_h: 0                # D14 floor = 1 from T-this h (0 = off: lowers Book)
     no_warranty_h: 8
     window_lead_s: 60             # supply opens every ~20 min for 3 min: plan only when open or opening this soon
     cover_min: 25                 # stock per SKU covers expected sales for this many minutes (until the next window)
@@ -54,6 +56,16 @@ policy:
     focus_cover_mult: 2.0         # a focus SKU's cover target x this
     focus_cap_share: 0.5          # focus buys use at most this share of the D1 headroom
     focus_min_settles: 10         # market settles in 6 h a SKU needs before it can be a focus SKU
+    trend_skus: []                # the next best sellers (set by the strategist): picked like focus, ordered after it
+    trend_max: 16
+    trend_share: 0.08             # focus/trend SKUs cover at least this share of the market's sales rate
+    big_ticket_share: 0.40        # goods above goods_max_list: held + planned cost <= this x inventory_cap_share x funds
+    bigticket_probe_qty: 3        # a big-ticket SKU holds at most this many units until we sold 2 of it in 6 h
+    min_margin_share: 0.05        # surge: buy while clearing price - this covers cost x factor x floor_cost_mult
+  market:
+    surge_free: 50                # Patch 3.2: units of a SKU the whole market buys per rolling hour at the plain price
+    surge_per_unit: 0.002         # each further unit adds this to the cost factor
+    surge_max: 1.5                # the factor's cap
   buyer:
     cap_goods_no_warranty: 0.70   # D6 price caps as a share of the shipped SKU's list price
     cap_goods_warranty: 0.94
@@ -100,7 +112,9 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 2. Keep the evidence: every decision is logged with the memory it used and this file's version.
 3. Past deals, refusals, breakages and the public ledger change the next decision.
 4. Finish one order inside the market's order interval (`buyer.target_s`).
-5. Unsold stock is worth nothing at the end. Cash and turnover beat margin.
+5. Unsold stock counts at what it cost when the round ends (Patch 3.3): Book = cash + stock at
+   cost, and Shop ALL weighs Book 0.5, revenue 0.3, stars 0.2. Sell at or above cost; below cost
+   only food that would otherwise spoil (spoiled food loses its cost).
 
 ## Shop
 
@@ -112,7 +126,9 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 - Price: first ask `seller.first_ask_list` of list, never below the floor. Accept at or above
   the midpoint between floor and first ask; between floor and midpoint counter once at the
   midpoint; below the floor offer the floor as final.
-- Below cost only for food near the end of its life and in the final hours of the round.
+- Below cost only for food near the end of its life. Stale goods (`seller.goods_stale_days`) floor
+  at cost. The end-of-round floors start `stock.clear_cost_h`, `stock.clear_70_h` and
+  `stock.clear_any_h` hours before the end (0 = off); the last two sell below cost and lower Book.
 - Warranty only when asked, only for `seller.warranty_grades`, priced with
   `seller.warranty_premium`, and never in the last `stock.no_warranty_h` hours.
 
@@ -122,17 +138,32 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
   above `stock.cash_floor`.
 - Open long-shelf food first, then cheap goods. Pick the SKU closest to the category's
   median price. Fill categories in order of (demand + 1) / (supply + 1).
-- `stock.focus_skus` lists SKUs that settle often on the public ledger relative to how many
-  shops supply them (chosen by the strategist from ledger settles; forum posts are only a hint).
-  They are stocked even when they are not the category's median-price SKU, to
-  `stock.focus_cover_mult` times the cover target, within `stock.focus_cap_share` of the headroom.
+- `stock.focus_skus`, then `stock.trend_skus`, list the market's best sellers (chosen by the
+  strategist's code from ledger settles). They are stocked even when they are not the category's
+  median-price SKU, ahead of the rest, with a sales rate of at least `stock.trend_share` of the
+  market's rate of the SKU. Focus SKUs get `stock.focus_cover_mult` times the cover target, within
+  `stock.focus_cap_share` of the headroom.
+- Big-ticket goods (listed above `stock.goods_max_list`, only through those lists): their held
+  cost plus planned worst cost stays within `stock.big_ticket_share` x `stock.inventory_cap_share`
+  x (cash + stock cost), and a SKU holds at most `stock.bigticket_probe_qty` units (overpriced
+  units included) until we sold 2 of it in 6 hours.
 - Keep stock in the categories our regular customers buy.
 - Supply opens for everyone about every 20 minutes for 3 minutes. Plan a buy only when the
   window is open or opens within `stock.window_lead_s` seconds; stock bought in one window has
   to last until the next. Each SKU holds the larger of `stock.per_sku_qty` and its expected sales
-  over `stock.cover_min` minutes times `stock.cover_safety`. Sold-out SKUs are refilled first:
-  a shop without the SKU is not shown to the buyer at all.
-- Taper buying from `stock.taper_h` hours before the end; stop goods at `stock.goods_stop_h`.
+  over `stock.cover_min` minutes times `stock.cover_safety`, at most `stock.max_hold` units (food:
+  at most a quarter of its shelf life of sales). Sold-out SKUs are refilled first: a shop without
+  the SKU is not shown to the buyer at all.
+- Supply lines, not money, limit stock: about 16 calls a window, at most `stock.max_qty` units a
+  call. A top-up of a SKU still in stock below `stock.min_line_qty` units is skipped; deeper cover
+  makes fewer, bigger lines and frees calls for more SKUs. A category pick the market sold none of
+  in 48 hours is not bought; a stale goods unit blocks its SKU only when nobody sold it in 48 hours.
+- Surge (Patch 3.2): the first `market.surge_free` units of a SKU the whole market (us included)
+  buys in a rolling hour cost the plain price, then each unit adds `market.surge_per_unit`, up to
+  `market.surge_max`. A SKU is bought only up to the factor where the market's clearing price still
+  covers cost x factor x `seller.floor_cost_mult` with `stock.min_margin_share` of list to spare.
+- Taper buying from `stock.taper_h` hours before the end; stop goods at `stock.goods_stop_h`
+  (0 = off; under Patch 3.3 buying late does not lower Book).
 
 ## Buyer
 

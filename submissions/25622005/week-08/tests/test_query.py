@@ -18,7 +18,7 @@ SUMMARY = {
                                               "bind_mismatch": 1, "broken_confirmed": 1, "broken_inferred": 2}},
               "category": {"김치": {"uwh": {"n": 4, "median": 12.5},
                                    "budget_ratio": {"n": 4, "p25": 0.9, "p50": 1.1}, "q": {"n": 40, "upper": 0.08}}}},
-    "seller": {"skus": {"G1": {"settled": 7, "last_sale_ts": 1794000000.0, "sales_per_h": 0.5}},
+    "seller": {"skus": {"G1": {"settled": 7, "last_sale_ts": 1794000000.0, "sales_per_h": 0.5, "sold_6h": 2}},
                "regular_cats": ["김치", "우유/두유"]},
     "market": {"categories": {"김치": {"demand": 3.0, "supply": None}, "침대": {"demand": 1, "supply": 4}}},
 }
@@ -34,7 +34,7 @@ class QueryTest(unittest.TestCase):
         self.assertEqual(c["budget_ratio"]["p50"], 1.1)
         self.assertEqual(c["q"], {"n": 40, "upper": 0.08})
         self.assertEqual(query.sku_stats(SUMMARY, "G1"), {"settled": 7, "last_sale_ts": 1794000000.0,
-                                                          "sales_per_h": 0.5})
+                                                          "sales_per_h": 0.5, "sold_6h": 2})
         self.assertEqual(query.regular_categories(SUMMARY), ["김치", "우유/두유"])
         self.assertEqual(query.supply_demand(SUMMARY), {"김치": {"demand": 3.0, "supply": None},
                                                         "침대": {"demand": 1.0, "supply": 4}})
@@ -47,7 +47,8 @@ class QueryTest(unittest.TestCase):
             self.assertEqual(query.category_stats(s, "x"), {"uwh": {"n": 0, "median": None},
                                                             "budget_ratio": {"n": 0, "p25": None, "p50": None},
                                                             "q": {"n": 0, "upper": None}})
-            self.assertEqual(query.sku_stats(s, "G9"), {"settled": 0, "last_sale_ts": None, "sales_per_h": 0.0})
+            self.assertEqual(query.sku_stats(s, "G9"), {"settled": 0, "last_sale_ts": None, "sales_per_h": 0.0,
+                                                        "sold_6h": 0})
             self.assertEqual(query.regular_categories(s), [])
             self.assertEqual(query.supply_demand(s), {})
 

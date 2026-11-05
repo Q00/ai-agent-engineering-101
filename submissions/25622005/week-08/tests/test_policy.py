@@ -41,6 +41,22 @@ class RangeTests(unittest.TestCase):
                 self.assertTrue(any(e.startswith(key) for e in policy.validate(p)), policy.validate(p))
 
 
+    def test_listed_skus_and_end_of_round_keys(self):
+        p = defaults()
+        self.assertEqual((p["stock"]["taper_h"], p["stock"]["clear_70_h"], p["stock"]["clear_any_h"]), (0, 0, 0))
+        for skus, want in ((["G1", "G1"], "stock.trend_skus: more than"), (["G 1"], "stock.trend_skus: expected"),
+                           ([f"G{i}" for i in range(17)], "stock.trend_skus: more than")):
+            with self.subTest(skus=skus):
+                p = defaults()
+                p["stock"]["trend_skus"] = skus
+                self.assertTrue(any(e.startswith(want) for e in policy.validate(p)), policy.validate(p))
+        p = defaults()
+        p["stock"].update(trend_skus=["G1", "G2"], focus_skus=["G1"])
+        self.assertEqual(policy.validate(p), [])
+        p["stock"]["big_ticket_share"] = 0.45                     # the user's ceiling is 40 % of inventory
+        self.assertTrue(any(e.startswith("stock.big_ticket_share") for e in policy.validate(p)))
+
+
 class FillDefaultsTests(unittest.TestCase):
     def test_fills_missing_keys_only(self):
         p = defaults()
@@ -52,6 +68,16 @@ class FillDefaultsTests(unittest.TestCase):
                          (8, 0.2, 0.9))
         self.assertNotIn("focus_max", p["stock"])                 # the input is not changed
         self.assertEqual(policy.validate(out), [])
+
+    def test_a_missing_added_section_is_filled_whole(self):
+        p = defaults()
+        del p["market"]
+        out, filled = policy.fill_defaults(p)
+        self.assertEqual(filled, ["market.surge_free", "market.surge_per_unit", "market.surge_max"])
+        self.assertEqual(out["market"], policy.DEFAULTS["market"])
+        self.assertEqual(policy.validate(out), [])
+        p["market"] = {}                                           # present but empty: still a broken file
+        self.assertEqual(policy.fill_defaults(p)[1], [])
 
     def test_validate_stays_strict(self):
         p = defaults()
@@ -110,6 +136,15 @@ class LoadTests(unittest.TestCase):
         self.assertEqual(len(self.warnings()), 2)
         self.assertIn("stock.focus_cap_share=0.6", self.warnings()[1])
         self.assertEqual(policy._read_lastgood()["policy"]["stock"]["focus_cap_share"], 0.6)
+
+    def test_a_file_without_the_market_section_loads(self):
+        text = self.skill.read_text(encoding="utf-8")
+        self.skill.write_text(re.sub(r"(?m)^  market:\n(    .*\n)+", "", text), encoding="utf-8")
+        self.assertNotIn("\n  market:\n", self.skill.read_text(encoding="utf-8"))
+        pol, _, errors = policy.load(self.skill)
+        self.assertEqual(errors, [])
+        self.assertEqual(pol["market"], {"surge_free": 50, "surge_per_unit": 0.002, "surge_max": 1.5})
+        self.assertIn("market.surge_free=50", self.warnings()[0])
 
     def test_lastgood_from_before_a_new_key_still_serves(self):
         old = defaults()

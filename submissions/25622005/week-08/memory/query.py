@@ -42,10 +42,10 @@ def category_stats(summary, category):
 
 
 def sku_stats(summary, sku):
-    """Our shop's settled sales of one SKU."""
+    """Our shop's settled sales of one SKU (sales_per_h over 24 h, sold_6h in the last 6 h)."""
     s = _d(_d(_d(_d(summary).get("seller")).get("skus")).get(sku))
     return {"settled": int(s.get("settled") or 0), "last_sale_ts": s.get("last_sale_ts"),
-            "sales_per_h": float(s.get("sales_per_h") or 0.0)}
+            "sales_per_h": float(s.get("sales_per_h") or 0.0), "sold_6h": int(s.get("sold_6h") or 0)}
 
 
 def regular_categories(summary):
@@ -62,6 +62,56 @@ def supply_demand(summary):
         out[leaf] = {"demand": float(v.get("demand") or 0.0),
                      "supply": v.get("supply") if isinstance(v.get("supply"), int) else None}
     return out
+
+
+# market-wide views (memory/ingest.render_market): None when the summary has no market data, so callers can tell
+# "no data" from "no sales"
+
+C_KIND_FALLBACK = {"food": 0.51, "goods": 0.61}              # our supply cost / list before we have own rows
+
+
+def _num(x):
+    return float(x) if isinstance(x, (int, float)) and not isinstance(x, bool) else None
+
+
+def _market(summary, key):
+    v = _d(_d(summary).get("market")).get(key)
+    return v if isinstance(v, dict) else None
+
+
+def market_rate(summary, sku):
+    """Settles per hour of one SKU across all shops over the last 6 h; 0.0 when none, None without data."""
+    r = _market(summary, "sku_rate")
+    return None if r is None else _num(r.get(sku)) or 0.0
+
+
+def market_settles_48h(summary, sku):
+    """Settles of one SKU across all shops in the last 48 h (see market_covered_h); None without data."""
+    r = _market(summary, "sku_settles_48h")
+    return None if r is None else int(_num(r.get(sku)) or 0)
+
+
+def supply_1h(summary, sku):
+    """Units of one SKU all shops (us too) bought in the last hour, as of the summary; None without data."""
+    r = _market(summary, "supply_1h")
+    return None if r is None else int(_num(r.get(sku)) or 0)
+
+
+def p_clear(summary, kind):
+    """Median paid / list price of the market's settles of a kind ('food'|'goods') over 6 h, or None."""
+    return _num((_market(summary, "p_clear") or {}).get(kind))
+
+
+def c_kind(summary, kind):
+    """Our mean supply cost / list price of a kind over 24 h, else the fallback."""
+    return _num((_market(summary, "c_kind") or {}).get(kind)) or C_KIND_FALLBACK.get(kind)
+
+
+def market_covered_h(summary):
+    """Hours the per-SKU market folds cover at the summary's build time; 0.0 without data."""
+    m = _d(_d(summary).get("market"))
+    since, built = _num(m.get("since")), _num(_d(summary).get("built_at"))
+    return round(max(0.0, built - since) / 3600, 2) if since is not None and built is not None else 0.0
 
 
 def summary_ref(kind, key):
