@@ -1,0 +1,92 @@
+{
+  "scope": "A2A transport",
+  "item": "G0829216f",
+  "budget": 7120,
+  "controller": "codex",
+  "model": "gpt-6.1-terra",
+  "task_id": "bc897227-2146-437b-9d35-028afdc908b7",
+  "state": "TASK_STATE_COMPLETED",
+  "receipt": {
+    "task": "bc897227-2146-437b-9d35-028afdc908b7",
+    "item": "G0829216f",
+    "sig_seller": "g7RQihCcQ8ROaP/0cqd1hqOPYi4TJOUdTLisXYgZ/kHmpGJWpx2bqljWQi41U3mBpmYVfRT7JZVQPmEuMc0vDw==",
+    "shop": "ddolcom",
+    "unit": "u-dba7f2f18f4c",
+    "warranty_hours": 24.0,
+    "price": 7120.0,
+    "claim": "A"
+  },
+  "decisions": [
+    {
+      "turn": 1,
+      "source": "model",
+      "reason_code": "model_offer",
+      "parser_reason": "over_budget",
+      "action": "offer",
+      "price": 6800,
+      "quote_check": {
+        "reason_code": null,
+        "basis": null,
+        "grade": "A",
+        "grade_basis": "text",
+        "hours_left": null,
+        "hours_basis": null,
+        "text_hours_note": "absent",
+        "text_grade_ambiguous": false,
+        "conflicts": [],
+        "accept_grades": [
+          "A",
+          "B"
+        ],
+        "min_hours_left": null
+      },
+      "counter_check": {
+        "reason_code": "counter_ratio_exceeded",
+        "ask": 8900,
+        "cap": 7120,
+        "list_price": 8900,
+        "offer": null,
+        "ask_per_cap": 1.25,
+        "surplus_per_list": 0.2
+      },
+      "provider": "codex",
+      "model": "gpt-6.1-terra",
+      "route_reason": "agy_disabled_in_config"
+    },
+    {
+      "turn": 2,
+      "source": "deterministic",
+      "reason_code": "rule_counter_offer",
+      "parser_reason": "over_budget",
+      "action": "offer",
+      "price": 7120,
+      "quote_check": {
+        "reason_code": null,
+        "basis": null,
+        "grade": null,
+        "grade_basis": null,
+        "hours_left": null,
+        "hours_basis": null,
+        "text_hours_note": "absent",
+        "text_grade_ambiguous": false,
+        "conflicts": [],
+        "accept_grades": [
+          "A",
+          "B"
+        ],
+        "min_hours_left": null
+      },
+      "counter_check": {
+        "reason_code": "rule_counter_offer",
+        "ask": 7606,
+        "cap": 7120,
+        "list_price": 8900,
+        "offer": 7120,
+        "ask_per_cap": 1.0683,
+        "surplus_per_list": 0.2
+      }
+    }
+  ],
+  "status": "ok",
+  "error": null
+}
