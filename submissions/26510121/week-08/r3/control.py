@@ -28,10 +28,12 @@ def audit_rules(journal, text, now=None):
 def update(journal, config=None, now=None, force=False):
     now = time.time() if now is None else now
     cfg = config or policy()
+    previous=journal.get('market_control',{})
+    interval=30 if previous.get('pause_restock') else cfg.get('market_control_interval_seconds',300)
     with journal.connect() as c:
         c.execute('BEGIN IMMEDIATE')
         row = c.execute("SELECT value FROM kv WHERE key='market_control:last_tick'").fetchone()
-        if row and not force and now-float(row[0]) < cfg.get('market_control_interval_seconds', 300):
+        if row and not force and now-float(row[0]) < interval:
             return journal.get('market_control', {})
         c.execute("INSERT OR REPLACE INTO kv VALUES('market_control:last_tick',?)", (str(now),))
     board = journal.snapshot('board.json', {})

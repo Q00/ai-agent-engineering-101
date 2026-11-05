@@ -19,6 +19,11 @@ def plan(journal, chooser=None):
                 and not inv.get('units') and inv.get('bankruptcies_left',0)>0}
     if cfg.get('market_control_enabled'):
         diagnosis = journal.get('market_control', {})
+        if diagnosis.get('pause_restock',True) or not 0<=time.time()-diagnosis.get('at',0)<900:
+            # Re-evaluate recovered startup/transport conditions inside the
+            # short supply window rather than waiting for the 5-minute tick.
+            from r3.control import update
+            diagnosis=update(journal,cfg,force=True)
         if diagnosis.get('pause_restock', True) or not 0 <= time.time()-diagnosis.get('at',0)<900:
             journal.add('restock_blocked', {'reason':'market_control_defensive_or_stale'})
             return {'buy': []}
@@ -27,6 +32,10 @@ def plan(journal, chooser=None):
     if not candidates:
         return {"buy": [], "bankrupt": inv.get("balance", 0) < inv.get("bankrupt_line", 0)
                 and not inv.get("units") and inv.get("bankruptcies_left", 0) > 0}
+    window=inv.get('restock') or {}
+    remaining=window.get('closes_at',time.time()+180)-time.time()
+    line_budget=min(cfg['restock_max_lines'],max(1,int((remaining-cfg['model_timeout_seconds']-15)/10)+1))
+    candidates=candidates[:line_budget]
     # The actor chooses among transparent portfolio variants; every line has a conservative affordability bound.
     portfolios = []
     breadth = [dict(c, qty=1, max_cost=c['max_cost']/c['qty'],

@@ -13,11 +13,25 @@ def main():
     card.raise_for_status()
     if card.json().get('name') != 'Seochanit Shop':
         raise RuntimeError('Refusing to expose an unexpected local service')
-    tunnel = pinggy.start_tunnel(forwardto=f'127.0.0.1:{args.port}', type='http',
-                                 httpsonly=True, autoreconnect=False)
+    print('PINGGY_STAGE starting',flush=True)
+    tunnel=pinggy.Tunnel()
+    tunnel.token=''
+    tunnel.force=False
+    tunnel.reverseproxy=True
+    tunnel.add_forwarding(f'127.0.0.1:{args.port}')
+    tunnel.httpsonly=True
+    tunnel.auto_reconnect=False
+    tunnel.webdebugger=False
+    # start_tunnel() waits inside native code, before our former timeout even
+    # began. The installed SDK explicitly supports a bounded asynchronous start.
+    tunnel.start(thread=True,block_until_ready=False)
     try:
         deadline = time.monotonic() + 70
+        previous=None
         while time.monotonic() < deadline:
+            if tunnel.state.name!=previous:
+                previous=tunnel.state.name
+                print('PINGGY_STAGE '+previous,flush=True)
             url = next((u for u in tunnel.urls if u.startswith('https://')), None)
             if url:
                 print('TUNNEL_URL ' + url, flush=True)

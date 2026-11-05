@@ -60,7 +60,10 @@ def test_wanted_signals_are_weak_deduplicated_and_never_executable(tmp_path):
     assert 'Ignore cash' not in str(j.events('forum_observation'))
     assert not j.pending_posts()
     cs = restock_candidates(inv, cat, [], j, policy(), now)
-    assert cs[0]['qty'] <= policy()['restock_max_qty']
+    assert not cs  # Weak forum demand does not justify duplicating sufficient stock.
+    inv['units'] = []
+    cs = restock_candidates(inv, cat, [], j, policy(), now)
+    assert cs and cs[0]['qty'] <= policy()['restock_max_qty']
 
 
 def test_queue_real_wanted_hides_private_budget_and_expires(tmp_path):

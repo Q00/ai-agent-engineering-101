@@ -102,3 +102,15 @@ def test_windows_launcher_pid_only_stops_matching_launch(tmp_path):
     request_stop(111, folder, launch_id='owned-launch')
     requested = json.loads((folder / '.market/runtime-stop.json').read_text())
     assert requested['pid'] == 222 and requested['session'] == 'child-session'
+
+
+def test_failed_runtime_retries_after_thirty_seconds_not_round_poll_interval(tmp_path):
+    launches=[]
+    def spawn(log):
+        launches.append(log);log.touch()
+        return SimpleNamespace(pid=123,poll=lambda:1,returncode=1)
+    w=Watcher(root(tmp_path),fetch=lambda:3,spawn=spawn,active=lambda r:False)
+    w.tick(1000);w.tick(1001)
+    assert w.next_check==1031
+    w.tick(1030);assert len(launches)==1
+    w.tick(1031);assert len(launches)==2

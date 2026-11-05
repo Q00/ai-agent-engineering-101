@@ -83,6 +83,7 @@ class Watcher:
             self.record('market_exited', market_exit_code=self.child.returncode,
                         both_roles_registered=False, market_pid=None)
             self.child = None
+            self.next_check=min(self.next_check,now+30)
         if self.child is not None:
             # Read only this attempt's console output, never old shared registration lines.
             with self.child_log.open('rb') as source:

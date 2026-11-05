@@ -20,6 +20,14 @@ def handle_order(kit, journal, cfg, order, agent, root, market, proxy, own_shop,
     completed=journal.get('checkout_final:'+oid)
     if completed:
         return completed
+    inflight=journal.get('checkout_inflight:'+oid)
+    if inflight and inflight.get('phase') in {'started','uncertain','settled'}:
+        # A restart must never turn a lost response into another payment.
+        response=kit.post_result(market,inflight['body'])
+        if response.status_code==200:
+            result=response.json();journal.put('checkout_final:'+oid,result)
+            return result
+        return None
     kit.log(f"[order {oid}] {order['item']}, budget {order['budget']}, round 3")
     order_path=root/'.market/order.json'
     atomic_json(order_path,{k:v for k,v in order.items() if k not in ('mandates','nonce')})
@@ -57,8 +65,11 @@ def handle_order(kit, journal, cfg, order, agent, root, market, proxy, own_shop,
         signed={k:receipt[k] for k in kit.RECEIPT_KEYS}
         body['sig_buyer']=base64.b64encode(keys['buyer'].sign(kit.canon(dict(signed,order=oid)))).decode()
         reasons=[]
+        journal.put('checkout_inflight:'+oid,{'phase':'started','at':time.time(),'body':dict(body)})
         settled=kit.acp_pay(order,url,pubkeys[url],receipt,keys['buyer'],output.get('accept'),reasons)
         body['mandate_receipt']=settled
+        phase='settled' if settled else 'prepayment_refused' if retryable_pre_payment(reasons) else 'uncertain'
+        journal.put('checkout_inflight:'+oid,{'phase':phase,'at':time.time(),'body':dict(body)})
         payment={'order':oid,'shop':url,'item':receipt['item'],'price':receipt['price'],'paid':bool(settled),
                  **({'ledger':settled.get('ledger')} if settled else {'reason':'; '.join(reasons) or 'unknown'})}
         with (journal.md/'payments.jsonl').open('a',encoding='utf-8') as stream:

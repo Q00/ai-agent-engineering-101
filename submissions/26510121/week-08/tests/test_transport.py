@@ -115,3 +115,29 @@ def test_cloudflare_does_not_inherit_pinggy_renewal_deadline(tmp_path):
     monitor.provider = 'cloudflare'
     monitor.tick(7200)
     assert monitor.procs[1] is old and not stopped
+
+
+def test_unavailable_preferred_transport_falls_back_and_tracks_provider(monkeypatch,tmp_path):
+    calls=[];process=SimpleNamespace()
+    monkeypatch.setenv('MARKET_TUNNEL_PROVIDER','pinggy')
+    monkeypatch.setattr(transport,'ROOT',tmp_path)
+    def launch(kit,port,provider):
+        calls.append(provider)
+        if provider=='pinggy':raise RuntimeError('native authentication timeout')
+        return process,'https://working.trycloudflare.com'
+    monkeypatch.setattr(transport,'open_tunnel',launch)
+    actual,url=transport.open_available_tunnel(SimpleNamespace(log=lambda x:None),9999)
+    assert calls==['pinggy','cloudflare'] and actual is process and process.r3_provider=='cloudflare'
+
+
+def test_next_restart_uses_recently_verified_transport(monkeypatch,tmp_path):
+    from r3.state import atomic_json
+    import time
+    monkeypatch.setattr(transport,'ROOT',tmp_path)
+    monkeypatch.setenv('MARKET_TUNNEL_PROVIDER','pinggy')
+    atomic_json(tmp_path/'.market/transport-provider.json',{'provider':'cloudflare','at':time.time()})
+    calls=[]
+    def launch(kit,port,provider):calls.append(provider);return SimpleNamespace(),'https://working.trycloudflare.com'
+    monkeypatch.setattr(transport,'open_tunnel',launch)
+    transport.open_available_tunnel(SimpleNamespace(log=lambda x:None),9999)
+    assert calls==['cloudflare']

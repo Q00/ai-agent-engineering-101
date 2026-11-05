@@ -161,3 +161,24 @@ def test_cheap_discovery_cannot_consume_all_supply_line_slots():
     rows=allocate_growth(candidates,{'balance':500000},{'spendable':100000},cfg,[],{'coverage_weights':weights})
     assert rows[0]['sku']=='G11' and len(rows)<=10
     assert sum(c['capital_commitment'] for c in rows)<=100000
+
+
+def test_restart_after_unknown_checkout_never_starts_another_payment(tmp_path):
+    from r3.checkout import handle_order
+    from types import SimpleNamespace
+    import httpx
+    j=Journal(tmp_path);body={'order':'o','shop':'original','receipt':{'task':'t'}}
+    j.put('checkout_inflight:o',{'phase':'started','body':body})
+    submitted=[]
+    def post(m,b):
+        submitted.append(b);return httpx.Response(200,json={'ledger':1,'verified':False})
+    kit=SimpleNamespace(post_result=post)
+    result=handle_order(kit,j,policy(),{'order':'o'},None,None,None,None,None,None)
+    assert submitted==[body] and result['ledger']==1
+
+
+def test_already_sufficient_stock_is_not_rebought_every_supply_window(tmp_path):
+    j=Journal(tmp_path);now=time.time();cat={'G1':{'kind':'goods','list_price':10000,'category':'x'}}
+    for n in range(60):j.add('public_settle',{'sku':'G1','amount':9000,'buyer':'other','shop':'p'},ts=now-n)
+    units=[{'sku':'G1','kind':'goods','cost':6000,'supplied_at':now} for _ in range(6)]
+    assert restock_candidates({'balance':5000000,'units':units},cat,[],j,policy(),now)==[]

@@ -39,6 +39,7 @@ def status(shadow=False):
         result={'checked_at':datetime.fromtimestamp(now,timezone.utc).isoformat(),
                 'policy_version':cfg['version'],'objective_revision':j.get('objective_revision'),'epoch':epoch,
                 'runtime':j.snapshot('runtime.json',{}),'health':j.snapshot('shop-health.json',{}),
+                'transport_preference':j.snapshot('transport-provider.json',{}),
                 'rules':j.get('market_rules',{}),'control':j.get('market_control',{}),
                 'strategies':{r:j.get('adaptive:'+r,{}) for r in ['shop','buyer']},'counts_since_epoch':counts,
                 'cash_capacity':cash_capacity(inv,j,cfg,now),'cash':inv.get('balance'),

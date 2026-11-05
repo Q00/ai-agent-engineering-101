@@ -312,8 +312,11 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         rate = (growth.get('arrival_rate_scenario', 0) if merchant else
                 max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0)))
         desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
+        needed=desired-count.get(sku,0)
+        if needed<=0:
+            continue
         qty = min(20, config['restock_max_qty'] - count.get(sku, 0),
-                  max(1, desired - count.get(sku, 0)), max(0, math.floor(spendable / commitment)))
+                  needed, max(0, math.floor(spendable / commitment)))
         if qty <= 0:
             continue
         # Affordability still reserves worst-case storage THROUGH THE END. The

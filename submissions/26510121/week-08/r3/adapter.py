@@ -94,13 +94,17 @@ def install(kit, journal=None, config=None):
         if cfg.get('market_control_enabled') and method=='POST' and path=='/api/supply':
             # Recheck each actual lot, not just the plan made up to minutes ago.
             import httpx
-            from .economy import cash_capacity
+            from .economy import cash_capacity,supply_open
             from .finance import supply_bound
             fresh = original_call(self, 'GET', '/api/inventory', role='shop')
             if fresh.status_code != 200:
                 return fresh
             current = fresh.json()
             atomic_json(j.md/'inventory.json', current)
+            if not supply_open(current):
+                # A stale plan must return promptly for replanning, rather
+                # than occupying the kit for 90 seconds per rejected line.
+                return httpx.Response(409,json={'error':'supply window closed; replan'})
             item=kwargs.get('json',{}); product=j.snapshot('catalog.json',{}).get(item.get('sku'))
             quantity=item.get('qty')
             diagnosis=j.get('market_control',{})

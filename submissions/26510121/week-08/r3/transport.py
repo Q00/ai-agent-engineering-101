@@ -8,7 +8,23 @@ import sys
 import threading
 import time
 import httpx
-from .state import ROOT, atomic_json
+from .state import ROOT, atomic_json, read_json
+
+
+def open_available_tunnel(kit,port):
+    preferred=os.environ.get('MARKET_TUNNEL_PROVIDER','pinggy')
+    previous=read_json(ROOT/'.market/transport-provider.json',{})
+    if previous.get('provider') in {'pinggy','cloudflare'} and 0<=time.time()-previous.get('at',0)<86400:
+        preferred=previous['provider']
+    for provider in [preferred,'cloudflare' if preferred=='pinggy' else 'pinggy']:
+        try:
+            process,url=open_tunnel(kit,port,provider)
+            process.r3_provider=provider
+            atomic_json(ROOT/'.market/transport-provider.json',{'at':time.time(),'provider':provider})
+            return process,url
+        except Exception as exc:
+            kit.log('[tunnel] '+provider+' unavailable ('+type(exc).__name__+'); trying alternative transport')
+    raise RuntimeError('Both public tunnel providers failed; watcher will retry')
 
 
 def open_tunnel(kit, port, provider=None, log_path=None, protocol='http2'):
@@ -79,7 +95,7 @@ class ShopSupervisor:
         self.kit, self.args, self.agent, self.directory = kit, args, agent, directory
         self.market, self.keys, self.procs, self.proxy = market, keys, procs, proxy
         self.sport, self.pport, self.state = sport, pport, state
-        self.provider = provider or os.environ.get('MARKET_TUNNEL_PROVIDER', 'pinggy')
+        self.provider = provider or getattr(procs[1],'r3_provider',None) or os.environ.get('MARKET_TUNNEL_PROVIDER', 'pinggy')
         self.started = time.monotonic() if now is None else now
         self.misses = 0
         self.pending_registration = False
@@ -120,6 +136,7 @@ class ShopSupervisor:
             else:
                 kit.stop(previous)
             self.procs[1] = replacement
+            self.provider=getattr(replacement,'r3_provider',self.provider)
             self.proxy.public = self.state['own_shop'] = url
             self.pending_registration = True
             self.started, self.misses = now, 0
