@@ -17,9 +17,11 @@ class Policy(unittest.TestCase):
 
     def test_food_remaining_life_discounts(self):
         catalog = {"G1": {"shelf_hours": 100}}
-        for remaining, stage, quote in ((44, 1, 101), (19, 2, 86), (9, 3, 71)):
+        cost = self.unit()["cost"]
+        for remaining, stage, quote in ((9, 1, cost), (5, 1, cost)):
             t = selling_terms(self.unit(kind="food", expires_at=remaining*3600), catalog, now=0)
-            self.assertEqual((t["discount_stage"], t["quote"]), (stage, quote))
+            self.assertEqual((t["discount_stage"], t["quote"], t["floor"]), (stage, quote, cost))
+            self.assertFalse(t["below_cost_allowed"])
 
     def test_expired_or_unknown_shelf_life(self):
         with self.assertRaises(ValueError):

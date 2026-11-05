@@ -1,6 +1,15 @@
 {
   "selling": {
     "food_remaining_ratios": [0.45, 0.20, 0.10],
+    "food_pricing_v2": {
+      "standard_from_left": 0.45,
+      "clearance_below_left": 0.10,
+      "market_bands": [
+        {"left_from": 0.25, "quote_share": 0.72, "floor_share": 0.60, "orders_served": 0.50, "public_sales": 463},
+        {"left_from": 0.10, "quote_share": 0.70, "floor_share": 0.60, "orders_served": 0.25, "public_sales": 236}
+      ],
+      "evidence": "analyze_food_pricing.py on public sales in the trial categories, 2026-11-05: quote is the band's 75th percentile of price per list price, floor its 25th. Orders need 10, 25, 50 or 75% of shelf life, about a quarter each (2,900 orders), so under 10% left no order can use the unit: 13 of 12,040 public food sales."
+    },
     "goods_age_hours": [24, 48, 72],
     "cost_multipliers": [1.0, 0.85, 0.70],
     "goods_quote_ratios": [0.90, 0.80, 0.70],

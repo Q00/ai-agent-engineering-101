@@ -14,24 +14,36 @@ def load_policy():
     return json.loads((ROOT / "r3_policy.json").read_text(encoding="utf-8"))
 
 
+def food_terms(cost, list_price, left, rule):
+    """(floor, quote, reason, clearance) for food by the share of shelf life left, or None for ordinary pricing.
+
+    Orders need 10, 25, 50 or 75% of the shelf life. While some order can still use the unit it sells near what the market
+    pays; once none can, it goes at cost. The floor is never below cost.
+    """
+    if left >= rule["standard_from_left"]:
+        return None
+    cost = max(1, math.ceil(cost))
+    if left < rule["clearance_below_left"]:
+        return cost, cost, "food_expiry_clearance", True
+    band = next(b for b in rule["market_bands"] if left >= b["left_from"])
+    floor = max(cost, math.ceil(list_price * band["floor_share"]))
+    return floor, max(floor, math.ceil(list_price * band["quote_share"])), "food_market_price", False
+
+
 def selling_terms(unit, catalog=None, now=None, signals=None, runtime=None):
     now = time.time() if now is None else now
     cost = unit["cost"]
     stage = -1
     reason = "standard"
     config = load_policy()["selling"]
+    food = None
     if unit.get("unit"):
         if unit.get("grade") == "expired" or (unit.get("expires_at") is not None and unit["expires_at"] <= now):
             raise ValueError("Inventory unit has expired")
         if unit.get("kind") == "food":
             shelf = (catalog or {}).get(unit["sku"], {}).get("shelf_hours")
             if shelf and unit.get("expires_at") is not None:
-                ratio = (unit["expires_at"] - now) / (shelf * 3600)
-                for i, limit in enumerate(config["food_remaining_ratios"]):
-                    if ratio < limit:
-                        stage = i
-                if stage >= 0:
-                    reason = "food_expiry_clearance"
+                food = food_terms(cost, unit["list_price"], (unit["expires_at"] - now) / (shelf * 3600), config["food_pricing_v2"])
         elif unit.get("kind") == "goods" and unit.get("supplied_at") is not None:
             age = max(0, now - unit["supplied_at"]) / 3600
             for i, limit in enumerate(config["goods_age_hours"]):
@@ -42,6 +54,10 @@ def selling_terms(unit, catalog=None, now=None, signals=None, runtime=None):
     floor = max(1, math.ceil(cost * (config["cost_multipliers"][stage] if stage >= 0 else 1)))
     # A clearance quote is the stage price; ordinary goods retain a price above cost.
     quote = floor if stage >= 0 else max(floor, math.ceil(unit["list_price"]))
+    if food:
+        floor, quote, reason, clearance = food
+        # Only clearance is a fixed price; a market price stays open to offers down to the floor.
+        stage = 0 if clearance else -1
     if unit.get("unit") and unit.get("kind") == "goods":
         age = max(0, now - unit.get("supplied_at", now)) / 3600
         storage = cost * 0.01 * age / 24

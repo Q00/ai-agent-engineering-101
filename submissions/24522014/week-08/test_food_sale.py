@@ -60,7 +60,7 @@ class FoodSale(Fixture):
     def test_terms_move_to_clearance_as_shelf_life_falls(self):
         catalog = {"G1": {"shelf_hours": SHELF}}
         now = time.time()
-        for left, stage in ((.5, 0), (.4, 1), (.15, 2), (.05, 3)):
+        for left, stage in ((.5, 0), (.4, 0), (.15, 0), (.05, 1)):
             with self.subTest(left=left):
                 terms = r3_policy.selling_terms({**self.food, "expires_at": now + SHELF * 3600 * left}, catalog, now=now)
                 self.assertEqual(terms["discount_stage"], stage)

@@ -18,11 +18,11 @@ def read(path, default=None):
         return default
 
 
-def report(root=ROOT, now=None):
+def report(root=ROOT, now=None, trial_id=None):
     root = Path(root)
     now = time.time() if now is None else now
     md = root / ".market"
-    state = read(md / "food-trial.json", {"planned": {}, "units": {}})
+    state = read(md / (f"food-trial-{trial_id}.json" if trial_id else "food-trial.json"), {"planned": {}, "units": {}})
     settlements = (read(md / "local-settlements.json", {}) or {}).get("records") or {}
     records = list(settlements.values()) if isinstance(settlements, dict) else settlements
     by_unit = {r.get("unit"): r for r in records if r.get("unit")}
@@ -66,8 +66,10 @@ def report(root=ROOT, now=None):
 
 
 def main():
-    argparse.ArgumentParser(description=__doc__).parse_args()
-    print(json.dumps(report(), ensure_ascii=False, indent=1))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--trial", default="v2", help="trial id; 'first' is the trial priced by the old clearance rule")
+    args = parser.parse_args()
+    print(json.dumps(report(trial_id=None if args.trial == "first" else args.trial), ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":

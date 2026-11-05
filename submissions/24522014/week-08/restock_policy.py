@@ -256,11 +256,7 @@ def main():
         own_profitable = {}
     from seller_quality import fresh as fresh_quality
     import food_trial
-    trial_settings = food_trial.load_settings()
-    trial_state = food_trial.load_state(md)
-    if trial_state is not None:
-        food_trial.observe(trial_state, inv, time.time())
-    trial_picks = food_trial.choose(trial_settings, trial_state, catalog, snapshot.get("skus", {}), inv.get("surge"), time.time())
+    trial_id, trial_state, trial_picks, trial_waiting = food_trial.for_run(md, inv, catalog, snapshot.get("skus", {}), time.time())
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
                              intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints,
                              own_profitable=own_profitable, quality=fresh_quality(md), food_trial=trial_picks)
@@ -268,10 +264,11 @@ def main():
         chosen = set(explanation.get("food_trial") or ())
         food_trial.record_plan(trial_state, trial_picks, chosen, time.time())
         # A purchase is only sent once it is on record, so the cumulative cap cannot be passed by a lost update.
-        if not food_trial.save_state(md, trial_state):
+        if not food_trial.save_state(md, trial_state, trial_id):
             buys = [b for b in buys if b["sku"] not in chosen]
             explanation["food_trial"] = []
     explanation["food_trial_picks"] = trial_picks
+    explanation["food_trial_waiting_for"] = trial_waiting
     memory["cursor"] += 1
     temporary = memory_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")

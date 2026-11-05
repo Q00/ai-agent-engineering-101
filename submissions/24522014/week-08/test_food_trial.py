@@ -11,7 +11,7 @@ import food_trial as ft
 import restock_policy as rp
 
 KIMCHI, MEAT = "식품>김치/반찬/즉석요리>김치", "식품>육류>가공/조리 육류"
-ON = {"enabled": True, "categories": {KIMCHI: 2, MEAT: 2}, "max_total_units": 4, "max_total_estimated_cost": 150000}
+ON = {"enabled": True, "trial_id": "v2", "categories": {KIMCHI: 2, MEAT: 2}, "max_total_units": 4, "max_total_estimated_cost": 150000}
 HOT = {"settles_6h": 9, "distinct_buyers": 5, "distinct_buyers_6h": 5, "median_price": 100}
 NOW = 1793800000.0
 RUNTIME = {"version": 1, "controls": {"restock_paused": False, "restock_budget_rate": 0.05}}

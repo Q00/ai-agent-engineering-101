@@ -1,14 +1,17 @@
 """A small, capped food trial: named categories only, one unit per SKU, and never a second buy until it is judged.
 
-Off unless food_trial.json says otherwise, and off if that file is missing or exceeds the approved bounds. The state file
-keeps what was planned and what arrived, so a sold unit is never bought again. A unit's grade is drawn on arrival and
-cannot be chosen; cost is estimated at the contract's worst share of list price.
+Off unless food_trial.json says otherwise, and off if that file is missing or exceeds the approved bounds. Each trial has
+its own id and state file, which keeps what was planned and what arrived, so a sold unit is never bought again and earlier
+trials stay on record. A unit's grade is drawn on arrival and cannot be chosen; cost is estimated at the contract's worst
+share of list price. Nothing is bought until the running seller reports the pricing this trial is testing: a seller still
+on older code would sell the units at cost.
 """
 
 import json
 import math
 import os
 from pathlib import Path
+import re
 import tempfile
 import time
 
@@ -17,6 +20,7 @@ OFF = {"enabled": False}
 WORST_COST_SHARE = .75
 MAX_UNITS, MAX_COST = 4, 150000
 MIN_SETTLES_6H, MIN_BUYERS = 3, 3
+REQUIRED_FEATURE = "food_pricing_v2"
 
 
 def load_settings(path=None):
@@ -31,18 +35,29 @@ def load_settings(path=None):
     if (not isinstance(categories, dict) or not categories or any(type(n) is not int or n < 1 for n in categories.values())
             or sum(categories.values()) > MAX_UNITS
             or type(value.get("max_total_units")) is not int or not 1 <= value["max_total_units"] <= MAX_UNITS
-            or type(value.get("max_total_estimated_cost")) not in (int, float) or not 0 < value["max_total_estimated_cost"] <= MAX_COST):
+            or type(value.get("max_total_estimated_cost")) not in (int, float) or not 0 < value["max_total_estimated_cost"] <= MAX_COST
+            or not isinstance(value.get("trial_id"), str) or not re.fullmatch(r"[a-z0-9]{1,20}", value["trial_id"])):
         return dict(OFF)
-    return {"enabled": True, "categories": categories, "max_total_units": value["max_total_units"], "max_total_estimated_cost": value["max_total_estimated_cost"]}
+    return {"enabled": True, "trial_id": value["trial_id"], "categories": categories, "max_total_units": value["max_total_units"], "max_total_estimated_cost": value["max_total_estimated_cost"]}
 
 
-def state_path(md):
-    return Path(md) / "food-trial.json"
+def pricing_ready(md):
+    """Whether the seller now running reports the pricing this trial tests. It rewrites this file with its own code's list."""
+    try:
+        features = json.loads((Path(md) / "strategy-consumer.json").read_text(encoding="utf-8")).get("features")
+    except (OSError, ValueError, AttributeError):
+        return False
+    return isinstance(features, list) and REQUIRED_FEATURE in features
 
 
-def load_state(md):
+def state_path(md, trial_id=None):
+    """The first trial, which had no id, keeps its original file."""
+    return Path(md) / (f"food-trial-{trial_id}.json" if trial_id else "food-trial.json")
+
+
+def load_state(md, trial_id=None):
     """A missing file is a fresh trial. A damaged one returns None, so nothing more is bought."""
-    path = state_path(md)
+    path = state_path(md, trial_id)
     if not path.exists():
         return {"planned": {}, "units": {}}
     try:
@@ -54,8 +69,8 @@ def load_state(md):
     return state
 
 
-def save_state(md, state):
-    path = state_path(md)
+def save_state(md, state, trial_id=None):
+    path = state_path(md, trial_id)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=".food-trial.", suffix=".tmp")
@@ -113,6 +128,19 @@ def choose(settings, state, catalog, intelligence, surge_rows, now):
             have += 1
             count += 1
     return picks
+
+
+def for_run(md, inventory, catalog, intelligence, now, settings=None):
+    """(trial id, state, picks, feature still waited for) for one restock run. A seller without the pricing gets no picks, but arrivals are still kept."""
+    settings = load_settings() if settings is None else settings
+    if not settings.get("enabled"):
+        return None, None, [], None
+    state = load_state(md, settings["trial_id"])
+    if state is not None:
+        observe(state, inventory, now)
+    if not pricing_ready(md):
+        return settings["trial_id"], state, [], REQUIRED_FEATURE
+    return settings["trial_id"], state, choose(settings, state, catalog, intelligence, inventory.get("surge"), now), None
 
 
 def record_plan(state, picks, bought, now):
