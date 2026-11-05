@@ -84,6 +84,9 @@ def test_core_capital_can_buy_hot_expensive_sku_without_breaching_gross_reserves
     assert cs == []  # The maximum surge draw cannot fit this SKU's capital cap.
     inv['balance']=9000000
     cs = restock_candidates(inv, cat, [], j, policy(), now)
+    assert cs == []  # v7 also caps concentration against deployable working capital.
+    inv['balance']=11000000
+    cs = restock_candidates(inv, cat, [], j, policy(), now)
     assert len(cs) == 1 and cs[0]['sku'] == 'G1'
     capacity = cash_capacity(inv, j, policy(), now)
     assert sum(c['capital_commitment'] for c in cs) <= capacity['spendable']
