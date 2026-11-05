@@ -24,6 +24,7 @@ INPUT = "TASK_STATE_INPUT_REQUIRED"
 DONE = "TASK_STATE_COMPLETED"
 MAX_MESSAGES = 5        # quote request, open offer, final offer, and up to two acceptances
 CANCEL_TIMEOUT_S = 3
+NO_SIGNED_RECEIPT = "completed without a signed receipt"    # memory/ingest.py (a copy) counts it as a failed try
 
 
 class Deadline:
@@ -200,7 +201,7 @@ def negotiate(shop_url, cand, order, deadline, pol, client=None, ver=None):
             state = (task.get("status") or {}).get("state")
             if state == DONE:
                 r["receipt"] = signed_receipt(task)
-                r["why"] = r["why"] or ("deal" if r["receipt"] else "completed without a signed receipt")
+                r["why"] = r["why"] or ("deal" if r["receipt"] else NO_SIGNED_RECEIPT)
                 break
             if state != INPUT:
                 r["why"] = f"shop ended the task: {state}"

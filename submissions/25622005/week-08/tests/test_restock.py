@@ -396,9 +396,29 @@ class HookTest(unittest.TestCase):
             self.assertTrue(self.run_hook("--state", str(self.state))["buy"])
             self.assertEqual(self.rows()[-1]["inputs"]["window"]["open"], r["open"])
 
+    def test_open_or_opening_window_skips_ingest(self):
+        now = time.time()
+        for r in ({"open": True, "opens_at": now - 30, "closes_at": now + 150},
+                  {"open": False, "opens_at": now + 30, "closes_at": now + 210}):
+            self.write_inv(dict(inv(), restock=r))
+            self.assertTrue(self.run_hook("--state", str(self.state))["buy"])
+            self.assertEqual(self.rows()[-1]["inputs"]["ingest"], {"skipped": "window"})
+            self.assertFalse((self.home / "memory" / "cursor.json").exists())
+
+    def test_closed_or_unknown_window_ingests(self):
+        now = time.time()
+        for r in ({"open": False, "opens_at": now + 600, "closes_at": now + 780},
+                  {"open": False},                          # a market patch dropped opens_at: never skip for good
+                  None):                                    # no restock key at all
+            self.write_inv(dict(inv(), **({"restock": r} if r is not None else {})))
+            self.run_hook("--state", str(self.state))
+            self.assertIn("new_events", self.rows()[-1]["inputs"]["ingest"], r)
+            self.assertTrue((self.home / "memory" / "cursor.json").exists())
+
     def test_closing_window_buys_only_what_fits(self):
         now = time.time()
-        self.write_inv(dict(inv(), restock={"open": True, "opens_at": now - 170, "closes_at": now + 15}))
+        # 20 s: two lines while closes_in_s is 14 to 24 s when the hook reads it
+        self.write_inv(dict(inv(), restock={"open": True, "opens_at": now - 170, "closes_at": now + 20}))
         out = self.run_hook("--state", str(self.state))
         self.assertEqual(len(out["buy"]), 2)
         self.assertEqual(self.rows()[-1]["inputs"]["excluded"].get("window_closing"), 2)

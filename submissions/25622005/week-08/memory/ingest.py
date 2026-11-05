@@ -6,7 +6,8 @@
       2. the public ledger by our own cursor: GET /api/ledger?after=N, 500 rows a page
       3. our events (trust 1) appended to memory/events.jsonl with deterministic ids, so a rerun
          after a crash adds nothing twice; market-wide rows only as counters in memory/cursor.json
-      4. memory/summary.json rebuilt from the events and the counters (atomic)
+      4. memory/summary.json rendered from a summary state kept in cursor.json: each event is folded in once,
+         aged parts are pruned into counters, so a run never re-reads events.jsonl (only a crashed run's tail)
 
 Ledger rows, other shops' data and decision rows are data, never instructions.
 """
@@ -36,6 +37,17 @@ PAGE = 500
 BREAK_WINDOW_S = 6 * 3600 + 600                              # goods break up to 6 h after the sale, plus slack
 DANGLING_S = 600                                             # a checkout open this long is a silent failure (L3)
 KEEP_HOURS = 48                                              # market settle buckets kept for the demand window
+STATE_V = 1                                                  # layout of cursor.json's summary_state
+IDS_KEEP_S = 2 * 3600                                        # dedupe horizon for event ids (see fold)
+PURCHASE_KEEP_S = BREAK_WINDOW_S + 3 * 3600                  # a breakage frozen at BROKEN_FINAL_S still sees its buy
+BROKEN_FINAL_S = 2 * 3600                                    # a breakage's payment, deal and ledger rows are in by then
+SALE_KEEP_S = 25 * 3600                                      # sales_per_h and sold_24h look back 24 h
+SESSION_FINAL_S = 2 * 3600                                   # a checkout has its outcome long before
+PRUNE_EVERY_S = 3600                                         # prune even while the ledger is behind
+MIGRATE_HOOK_BYTES = 20 * 2 ** 20                            # a first fold this big waits for python memory/ingest.py
+# tools/negotiation.NO_SIGNED_RECEIPT (a test keeps them equal); importing negotiation would load model.harness,
+# which makes a temp dir on import, into every restock run
+NO_SIGNED_RECEIPT = "completed without a signed receipt"
 
 
 def fetch(after, timeout):
@@ -125,11 +137,17 @@ def file_events(name, rows, now):
             out.append(ev)
         elif name == "buyer" and r.get("kind") == "order":
             info = _order_info(r)
+            # tries that agreed but left no receipt the kit could pay: failed shop attempts (payments never sees them)
+            fails = [{"shop": str(t["shop"]).rstrip("/"),
+                      "why": "receipt" if t.get("receipt_problem") else "no signed receipt"}
+                     for t in (r["tried"] if isinstance(r.get("tried"), list) else [])
+                     if isinstance(t, dict) and t.get("shop")
+                     and (t.get("receipt_problem") or t.get("why") == NO_SIGNED_RECEIPT)]
             if info["order"]:
                 out.append({"id": f"e-order-{info['order']}", "ts": _num(r.get("ts")) or now, "source": "decisions",
                             "trust": 1, "kind": "order_seen", "decision": r.get("id"),
                             **{k: v for k, v in info.items() if k != "order" and v is not None},
-                            "order": info["order"]})
+                            **({"try_fail": fails} if fails else {}), "order": info["order"]})
         elif name == "review" and r.get("kind") not in ("policy_error",):
             oid = (r.get("ref") or {}).get("order") or (r.get("inputs") or {}).get("order")
             if isinstance(oid, dict):
@@ -214,10 +232,11 @@ def ledger_rows(row, catalog, market, me, our_ledgers):
 
 
 def pull_ledger(cursor, deadline, catalog, me, our_ledgers):
-    """New ledger rows since the cursor, page by page until caught up or out of time. First run: note the newest
-    seq as round3_start_seq and backfill only the newest 500 rows (never walk earlier rounds)."""
+    """New ledger rows since the cursor, page by page until caught up or out of time: (events, pages, caught_up).
+    First run: note the newest seq as round3_start_seq and backfill only the newest 500 rows (never walk earlier
+    rounds)."""
     market = cursor.setdefault("market", {})
-    events, pages = [], 0
+    events, pages, caught_up = [], 0, False
     while time.time() < deadline - 1:
         timeout = max(1.0, min(5.0, deadline - time.time() - 0.5))
         try:
@@ -240,6 +259,7 @@ def pull_ledger(cursor, deadline, catalog, me, our_ledgers):
         elif cursor.get("ledger_seq") is None:
             cursor["ledger_seq"] = cursor.get("round3_start_seq", 0)
         if len(rows) < PAGE:
+            caught_up = True
             break
     cut = str(int(time.time() // 3600) - KEEP_HOURS)
     for leaf, b in list(market.get("cat_hour", {}).items()):
@@ -247,7 +267,7 @@ def pull_ledger(cursor, deadline, catalog, me, our_ledgers):
             del b[h]
         if not b:
             del market["cat_hour"][leaf]
-    return events, pages
+    return events, pages, caught_up
 
 
 # --- attribution and the summary
@@ -298,104 +318,222 @@ def _l3_bin(c):
     return "other"
 
 
-def build_summary(events, cursor, catalog, demand, window_h, now):
-    """The whole summary from our events and the market counters. Pure: same input, same output."""
-    by = {}
-    for e in events:
-        by.setdefault(e.get("kind"), []).append(e)
-    median_price = {_leaf(d.get("category")): d.get("median_price") for d in demand}
+# --- the summary state: fold each event once, prune aged parts into counters, render the summary
 
-    # buyer: shops
-    shops = {}
-    for p in by.get("payment", []):
-        s = shops.setdefault(p.get("shop") or "", {"attempts": 0, "paid": 0, "refused": {}, "bind_mismatch": 0,
-                                                    "broken_confirmed": 0, "broken_inferred": 0})
+def new_state():
+    """Hot parts (joins still waiting for partner rows) and frozen counters. Lives in cursor.json."""
+    return {"v": STATE_V, "offset": 0, "n": 0, "pruned_at": 0, "ids": {},
+            "shops": {}, "pay": {}, "deal": {}, "led": {}, "broken": [], "bshops": {}, "attr": [],
+            "uwh": {}, "ratio": {}, "orders": [],
+            "sales": {}, "skus": {}, "customers": {}, "last_sale": None,
+            "sess": {}, "l3": {}, "stars": []}
+
+
+def _add(d, k, n=1):
+    d[k] = d.get(k, 0) + n
+
+
+def _shop(st, shop):
+    return st["shops"].setdefault(shop, {"attempts": 0, "paid": 0, "refused": {}, "bind_mismatch": 0,
+                                         "broken_confirmed": 0, "broken_inferred": 0})
+
+
+def _medians(demand):
+    return {_leaf(d.get("category")): d.get("median_price") for d in demand}
+
+
+def fold(st, e, demand_median, now):
+    """One event into the state; False when its id was already folded. Ids are kept IDS_KEEP_S only: the same
+    id comes back minutes apart (a crashed run's tail, a reread kit file), not hours, unless a kit file is
+    replaced (read_new restarts it at 0); that case would count rows older than 2 h twice (accepted)."""
+    if not isinstance(e, dict) or not e.get("id") or e["id"] in st["ids"]:
+        return False
+    st["ids"][e["id"]] = now
+    st["n"] += 1
+    k = e.get("kind")
+    if k == "payment":
+        s = _shop(st, e.get("shop") or "")
         s["attempts"] += 1
-        if p.get("paid"):
+        if e.get("paid"):
             s["paid"] += 1
+            if e.get("order"):
+                st["pay"][e["order"]] = {"shop": e.get("shop"), "item": e.get("item"), "ts": e.get("ts")}
         else:
-            reason = str(p.get("reason") or "unknown")
-            reason = reason.removeprefix("not paying: ")     # acp_pay's accept/binding refusals (kit why[])
-            key = reason.split(":")[0].strip()[:60] or "unknown"
-            s["refused"][key] = s["refused"].get(key, 0) + 1
+            reason = str(e.get("reason") or "unknown").removeprefix("not paying: ")  # acp_pay's refusals (kit why[])
+            _add(s["refused"], reason.split(":")[0].strip()[:60] or "unknown")
             if reason.startswith("binding"):
                 s["bind_mismatch"] += 1
+    elif k == "deal" and e.get("order"):
+        st["deal"][e["order"]] = {x: e.get(x) for x in ("sku", "shop", "name", "ts")}
+    elif k == "purchase" and e.get("order"):
+        st["led"][e["order"]] = {x: e.get(x) for x in ("sku", "name", "ts")}
+    elif k == "broken":
+        st["broken"].append({"sku": e.get("sku"), "ts": e.get("ts"), "id": e["id"]})
+    elif k == "broken_file":
+        st["broken"].append({"name": e.get("name"), "ts": e.get("ts"), "id": e["id"], "file": True})
+    elif k == "order_seen":
+        for f in e.get("try_fail") or []:
+            s = _shop(st, f.get("shop") or "")
+            s["attempts"] += 1
+            _add(s["refused"], f.get("why") or "unknown")
+        leaf = _leaf(e.get("category"))
+        if leaf:
+            u, r = st["uwh"].setdefault(leaf, {}), st["ratio"].setdefault(leaf, {})
+            if e.get("uwh") is not None:
+                _add(u, repr(float(e["uwh"])))
+            ratio = e.get("budget_ratio")
+            if ratio is None and e.get("budget") and demand_median.get(leaf):
+                ratio = e["budget"] / demand_median[leaf]
+            if ratio is not None:
+                _add(r, repr(round(float(ratio), 3)))        # 3 decimals keep the counter bounded
+            st["orders"].append([leaf, e.get("ts")])
+    elif k == "acp":
+        if e.get("ev") == "complete":
+            st["sales"].setdefault(str(e.get("ledger") or e["id"]), {})["a"] = \
+                [e.get("sku"), e.get("ts"), e.get("price"), e.get("ledger")]
+        if e.get("ev") == "refuse":
+            _add(st["l3"].setdefault("all", {}), "refused")
+        else:
+            s = st["sess"].setdefault(e.get("sid") or e["id"], {"t": e.get("ts"), "evs": []})
+            if e.get("ev") == "create":
+                s["c"] = {x: e.get(x) for x in ("goods_kind", "grade", "hours_left", "warranty_h", "ts")}
+            if e.get("ev") not in s["evs"]:
+                s["evs"].append(e.get("ev"))
+    elif k == "sale":
+        st["sales"].setdefault(str(e.get("seq")), {})["l"] = [e.get("sku"), e.get("ts"), e.get("amount"),
+                                                              e.get("buyer")]
+    elif k == "rated" and e.get("stars"):
+        st["stars"] = (st["stars"] + [e["stars"]])[-50:]
+    return True
 
-    # buyer: purchases and breakage attribution
-    deals = {e["order"]: e for e in by.get("deal", []) if e.get("order")}
-    led = {e["order"]: e for e in by.get("purchase", []) if e.get("order")}
-    purchases = []
-    for p in by.get("payment", []):
-        if not p.get("paid"):
-            continue
-        dl, lg = deals.get(p["order"], {}), led.get(p["order"], {})
+
+def _sale(s):
+    """One sale, one per ledger seq: the kit's complete row (a) and the public settle row (l) are the same sale."""
+    a, l = s.get("a"), s.get("l")
+    if l is None:
+        return {"sku": a[0], "ts": a[1], "price": a[2], "buyer": None}
+    return {"sku": l[0] or (a and a[0]), "ts": (a and a[1]) or l[1], "price": l[2] or (a and a[2]), "buyer": l[3]}
+
+
+def _purchases(st, catalog):
+    out = []
+    for order, p in st["pay"].items():
+        dl, lg = st["deal"].get(order, {}), st["led"].get(order, {})
         sku = dl.get("sku") or lg.get("sku") or (p.get("item") if p.get("item") in catalog else None)
-        purchases.append({"order": p["order"], "shop": p.get("shop") or dl.get("shop"), "sku": sku,
-                          "name": dl.get("name") or lg.get("name") or (catalog.get(sku) or {}).get("name"),
-                          "ts": lg.get("ts") or dl.get("ts") or p.get("ts")})
-    broken = [{"sku": e.get("sku"), "ts": e.get("ts"), "id": e["id"]} for e in by.get("broken", [])]
-    for f in by.get("broken_file", []):
-        if not any(abs((b["ts"] or 0) - f["ts"]) <= 2 and (catalog.get(b["sku"]) or {}).get("name") == f["name"]
-                   for b in broken):
-            broken.append({"name": f["name"], "ts": f["ts"], "id": f["id"]})
-    attributions = []
-    for b in broken:
-        a = attribute_broken(b, purchases)
-        attributions.append({"event": b["id"], **a})
-        if a["status"] == "confirmed" and a["shop"] in shops:
-            shops[a["shop"]]["broken_confirmed"] += 1
-        elif a["status"] == "inferred":
-            for s in a["shops"]:
-                if s in shops:
-                    shops[s]["broken_inferred"] += 1
+        out.append({"order": order, "shop": p.get("shop") or dl.get("shop"), "sku": sku,
+                    "name": dl.get("name") or lg.get("name") or (catalog.get(sku) or {}).get("name"),
+                    "ts": lg.get("ts") or dl.get("ts") or p.get("ts")})
+    return out
 
-    # buyer: categories
-    cats = {}
-    for o in by.get("order_seen", []):
-        leaf = _leaf(o.get("category"))
-        if not leaf:
-            continue
-        c = cats.setdefault(leaf, {"uwh": [], "ratio": []})
-        if o.get("uwh") is not None:
-            c["uwh"].append(o["uwh"])
-        ratio = o.get("budget_ratio")
-        if ratio is None and o.get("budget") and median_price.get(leaf):
-            ratio = o["budget"] / median_price[leaf]
-        if ratio is not None:
-            c["ratio"].append(ratio)
+
+def _attribute(brokens, purchases, catalog):
+    """Attributions of ledger breakages and of kit rows with no ledger twin within 2 s; purchases indexed by sku
+    and by name, so the cost is not breakages x purchases."""
+    led = [b for b in brokens if not b.get("file")]
+    rows = led + [f for f in brokens if f.get("file") and not any(
+        abs((b["ts"] or 0) - (f["ts"] or 0)) <= 2 and (catalog.get(b.get("sku")) or {}).get("name") == f["name"]
+        for b in led)]
+    by_sku, by_name = {}, {}
+    for p in purchases:
+        by_sku.setdefault(p.get("sku"), []).append(p)
+        if p.get("name"):
+            by_name.setdefault(p["name"], []).append(p)
+    return [{"event": b["id"], **attribute_broken(b, by_sku.get(b["sku"], []) if b.get("sku") else
+                                                  by_name.get(b.get("name"), []))} for b in rows]
+
+
+def _count_attr(a, counts):
+    if a["status"] == "confirmed":
+        counts.setdefault(a["shop"], [0, 0])[0] += 1
+    elif a["status"] == "inferred":
+        for s in a["shops"]:
+            counts.setdefault(s, [0, 0])[1] += 1
+
+
+def _outcome(s, now):
+    evs = s["evs"]
+    return "completed" if "complete" in evs else "canceled" if "cancel" in evs else \
+           "expired" if "expire" in evs else "dangling" if now - s["c"]["ts"] > DANGLING_S else "open"
+
+
+def _count_l3(l3, s, now):
+    for b in ("all", _l3_bin(s["c"])):
+        t = l3.setdefault(b, {})
+        _add(t, "created")
+        _add(t, _outcome(s, now))
+
+
+def prune(st, catalog, now):
+    """Freeze what can no longer change into counters and drop what no render needs."""
+    # a ledger breakage stays 5 s longer than a kit row, so a kit row never outlives its ledger twin (2 s apart)
+    old = [b for b in st["broken"] if (b.get("ts") or 0) < now - BROKEN_FINAL_S - (0 if b.get("file") else 5)]
+    if old:
+        gone = {b["id"] for b in old}
+        hot = [b for b in st["broken"] if b["id"] not in gone]
+        for a in _attribute(old + [b for b in hot if not b.get("file")], _purchases(st, catalog), catalog):
+            if a["event"] in gone:
+                _count_attr(a, st["bshops"])
+                st["attr"] = (st["attr"] + [a])[-200:]
+        st["broken"] = hot
+    for name in ("pay", "deal", "led"):
+        st[name] = {o: p for o, p in st[name].items() if (p.get("ts") or 0) >= now - PURCHASE_KEEP_S}
+    for key in [k for k, s in st["sales"].items() if (_sale(s)["ts"] or 0) < now - SALE_KEEP_S]:
+        s = _sale(st["sales"].pop(key))
+        k = st["skus"].setdefault(s["sku"] or "", [0, None])
+        k[0] += 1
+        k[1] = max(k[1] or 0, s["ts"] or 0)
+        if s["buyer"]:
+            _add(st["customers"], s["buyer"])
+        st["last_sale"] = max(st["last_sale"] or 0, s["ts"] or 0)
+    for sid in [k for k, s in st["sess"].items()
+                if ((s.get("c") or {}).get("ts") or s["t"] or 0) < now - SESSION_FINAL_S]:
+        s = st["sess"].pop(sid)
+        if s.get("c"):
+            _count_l3(st["l3"], s, now)
+    st["orders"] = [o for o in st["orders"] if (o[1] or 0) >= now - KEEP_HOURS * 3600]
+    st["ids"] = {i: t for i, t in st["ids"].items() if t >= now - IDS_KEEP_S}
+    st["pruned_at"] = now
+
+
+def _values(counter):
+    return [float(v) for v, n in counter.items() for _ in range(n)]
+
+
+def render(st, cursor, catalog, window_h, now):
+    """The summary dict from the state and the market counters. Pure: the state is not changed."""
+    shops = {k: dict(v, refused=dict(v["refused"])) for k, v in st["shops"].items()}
+    counts = {k: list(v) for k, v in st["bshops"].items()}
+    hot_attr = _attribute(st["broken"], _purchases(st, catalog), catalog)
+    for a in hot_attr:
+        _count_attr(a, counts)
+    for s, (c, i) in counts.items():
+        if s in shops:
+            shops[s]["broken_confirmed"] += c
+            shops[s]["broken_inferred"] += i
+
     category = {}
-    for leaf, c in cats.items():
-        category[leaf] = {"uwh": {"n": len(c["uwh"]), "median": statistics.median(c["uwh"]) if c["uwh"] else None},
-                          "budget_ratio": {"n": len(c["ratio"]), "p25": _pct(c["ratio"], 0.25),
-                                           "p50": _pct(c["ratio"], 0.5)}}
+    for leaf in set(st["uwh"]) | set(st["ratio"]):
+        u, r = _values(st["uwh"].get(leaf, {})), _values(st["ratio"].get(leaf, {}))
+        category[leaf] = {"uwh": {"n": len(u), "median": statistics.median(u) if u else None},
+                          "budget_ratio": {"n": len(r), "p25": _pct(r, 0.25), "p50": _pct(r, 0.5)}}
     for leaf, (n, k) in cursor.get("market", {}).get("cat_goods", {}).items():
         category.setdefault(leaf, {})["q"] = {"n": n, "upper": _wilson_upper(min(k, n), n)}
 
-    # seller: sales, one per ledger seq (the kit's complete row and the public settle row are the same sale)
-    sales = {}
-    for e in by.get("acp", []):
-        if e.get("ev") == "complete":
-            key = e.get("ledger") or e["id"]
-            sales[key] = {"sku": e.get("sku"), "ts": e["ts"], "price": e.get("price"), "buyer": None}
-    for e in by.get("sale", []):
-        old = sales.get(e["seq"], {})
-        sales[e["seq"]] = {"sku": e.get("sku") or old.get("sku"), "ts": old.get("ts") or e["ts"],
-                           "price": e.get("amount") or old.get("price"), "buyer": e.get("buyer")}
     started = cursor.get("started_at") or now
     hours = min(24.0, max(1.0, (now - started) / 3600))
-    skus = {}
-    for s in sales.values():
-        k = skus.setdefault(s["sku"], {"settled": 0, "last_sale_ts": None, "recent": 0})
+    skus = {k: {"settled": v[0], "last_sale_ts": v[1], "recent": 0} for k, v in st["skus"].items()}
+    customers = dict(st["customers"])
+    hot = [_sale(s) for s in st["sales"].values()]
+    for s in hot:
+        k = skus.setdefault(s["sku"] or "", {"settled": 0, "last_sale_ts": None, "recent": 0})
         k["settled"] += 1
         k["last_sale_ts"] = max(k["last_sale_ts"] or 0, s["ts"])
         if s["ts"] >= now - 24 * 3600:
             k["recent"] += 1
+        if s["buyer"]:
+            _add(customers, s["buyer"])
     for k in skus.values():
         k["sales_per_h"] = round(k.pop("recent") / hours, 4)
-    customers = {}
-    for s in sales.values():
-        if s.get("buyer"):
-            customers[s["buyer"]] = customers.get(s["buyer"], 0) + 1
     weight = {}
     buyer_cats = cursor.get("market", {}).get("buyer_cats", {})
     for b, n in customers.items():
@@ -406,32 +544,10 @@ def build_summary(events, cursor, catalog, demand, window_h, now):
             weight[leaf] = weight.get(leaf, 0) + m
     regular = [leaf for leaf, _ in sorted(weight.items(), key=lambda kv: (-kv[1], kv[0]))][:10]
 
-    # seller: L3 checkout outcomes per session
-    sess = {}
-    for e in by.get("acp", []):
-        if e.get("ev") == "refuse":
-            sess[e["id"]] = {"refused": True}
-            continue
-        s = sess.setdefault(e.get("sid") or e["id"], {})
-        if e.get("ev") == "create":
-            s.update(create=e)
-        s.setdefault("evs", set()).add(e.get("ev"))
-    l3 = {}
-    for s in sess.values():
-        if s.get("refused"):
-            t = l3.setdefault("all", {})
-            t["refused"] = t.get("refused", 0) + 1
-            continue
-        c = s.get("create")
-        if not c:
-            continue
-        evs = s.get("evs", set())
-        outcome = "completed" if "complete" in evs else "canceled" if "cancel" in evs else \
-                  "expired" if "expire" in evs else "dangling" if now - c["ts"] > DANGLING_S else "open"
-        for b in ("all", _l3_bin(c)):
-            t = l3.setdefault(b, {})
-            t["created"] = t.get("created", 0) + 1
-            t[outcome] = t.get(outcome, 0) + 1
+    l3 = {b: dict(t) for b, t in st["l3"].items()}
+    for s in st["sess"].values():
+        if s.get("c"):
+            _count_l3(l3, s, now)
 
     # market: L1 demand = public settles + our buyer's orders in the window; supply unknown in P0
     hour_cut = int((now - window_h * 3600) // 3600)
@@ -439,27 +555,43 @@ def build_summary(events, cursor, catalog, demand, window_h, now):
     for leaf, b in cursor.get("market", {}).get("cat_hour", {}).items():
         market_cats.setdefault(leaf, {"demand": 0.0, "supply": None})["demand"] += \
             sum(n for h, n in b.items() if int(h) >= hour_cut)
-    for o in by.get("order_seen", []):
-        leaf = _leaf(o.get("category"))
-        if leaf and o["ts"] >= now - window_h * 3600:
+    for leaf, ts in st["orders"]:
+        if ts >= now - window_h * 3600:
             market_cats.setdefault(leaf, {"demand": 0.0, "supply": None})["demand"] += 1
 
-    last_sale = max((s["ts"] for s in sales.values()), default=None)
+    last_sale = max([s["ts"] for s in hot] + ([st["last_sale"]] if st["last_sale"] else []), default=None)
     return {"built_at": round(now, 3), "ledger_seq": cursor.get("ledger_seq"), "started_at": started,
-            "events": len(events),
-            "buyer": {"shops": shops, "category": category, "broken": attributions[-200:]},
+            "events": st["n"],
+            "buyer": {"shops": shops, "category": category, "broken": (st["attr"] + hot_attr)[-200:]},
             "seller": {"skus": {k: v for k, v in skus.items() if k}, "customers": customers, "regular_cats": regular,
                        "l3": l3, "last_sale_ts": last_sale,
-                       "sold_24h": sum(1 for s in sales.values() if s["ts"] >= now - 24 * 3600),
-                       "stars": [e.get("stars") for e in by.get("rated", []) if e.get("stars")][-50:]},
+                       "sold_24h": sum(1 for s in hot if s["ts"] >= now - 24 * 3600),
+                       "stars": list(st["stars"])},
             "market": {"categories": market_cats, "window_h": window_h}}
+
+
+def build_summary(events, cursor, catalog, demand, window_h, now):
+    """The whole summary from a list of events and the market counters (tests and one-off rebuilds)."""
+    st, med = new_state(), _medians(demand)
+    for e in events:
+        fold(st, e, med, now)
+    return render(st, cursor, catalog, window_h, now)
 
 
 # --- the run
 
-def sync(deadline, state=None, window_h=6):
-    """Collect new events and rebuild the summary before `deadline` (epoch s). Skips when another ingest holds
-    the lock. Returns a small stats dict for the restock decision row."""
+def _size(path):
+    try:
+        return path.stat().st_size
+    except OSError:
+        return 0
+
+
+def sync(deadline, state=None, window_h=6, migrate=False):
+    """Collect new events and render the summary before `deadline` (epoch s). Skips when another ingest holds
+    the lock, and in the hook (migrate False) when there is no summary state yet and events.jsonl is too big to
+    fold in one hook run: `python memory/ingest.py` does that once. Returns a small stats dict for the restock
+    decision row."""
     state = Path(state or MARKET)
     MEM.mkdir(parents=True, exist_ok=True)
     lock = open(LOCK, "w")
@@ -473,9 +605,17 @@ def sync(deadline, state=None, window_h=6):
         cursor = read_json(CURSOR, {}) or {}
         cursor.setdefault("started_at", now)
         cursor.setdefault("files", {})
-        old, _ = read_new(EVENTS, 0)
-        known = {e.get("id") for e in old if isinstance(e, dict)}
+        st, size = cursor.get("summary_state"), _size(EVENTS)
+        if not isinstance(st, dict) or st.get("v") != STATE_V or st.get("offset", 0) > size:
+            if size > MIGRATE_HOOK_BYTES and not migrate:
+                hook_log("ingest", f"no summary state and events.jsonl has {size} bytes: run python memory/ingest.py")
+                return {"skipped": "migration_pending"}
+            st = new_state()
         catalog = load_catalog(state)
+        med = _medians(load_demand(state))
+        rows, st["offset"] = read_new(EVENTS, st["offset"])    # all on the first run, else a crashed run's tail
+        for e in rows:
+            fold(st, e, med, now)
 
         new = []
         for name, path in kit_files(state):
@@ -483,21 +623,24 @@ def sync(deadline, state=None, window_h=6):
             new += file_events(name, rows, now)
         url = own_url()
         me = {NAME} | ({url} if url else set())
-        our_ledgers = {e.get("ledger") for e in old + new if e.get("kind") == "acp" and e.get("ev") == "complete"}
-        led, pages = pull_ledger(cursor, deadline, catalog, me, our_ledgers - {None})
+        our_ledgers = {s["a"][3] for s in st["sales"].values() if s.get("a")} | \
+                      {e.get("ledger") for e in new if e.get("kind") == "acp" and e.get("ev") == "complete"}
+        led, pages, caught_up = pull_ledger(cursor, deadline, catalog, me, our_ledgers - {None})
         new += led
 
-        added = []
+        added = 0
         for e in new:
-            if e["id"] not in known:
-                known.add(e["id"])
-                added.append(e)
-                append_jsonl(EVENTS, e)                     # events first: a rerun dedupes by id
-        atomic_write_json(CURSOR, cursor)                   # then the cursor with the market counters
-        summary = build_summary([e for e in old if isinstance(e, dict)] + added, cursor, catalog,
-                                load_demand(state), window_h, time.time())
+            if fold(st, e, med, now):
+                added += 1
+                append_jsonl(EVENTS, e)                     # events first: a rerun folds this tail once
+        st["offset"] = _size(EVENTS)
+        if caught_up or now - st["pruned_at"] > PRUNE_EVERY_S:   # a ledger backlog may still hold partner rows
+            prune(st, catalog, now)
+        cursor["summary_state"] = st
+        atomic_write_json(CURSOR, cursor)                   # then the cursor: counters and state commit together
+        summary = render(st, cursor, catalog, window_h, time.time())
         atomic_write_json(SUMMARY, summary)
-        stats = {"new_events": len(added), "events": summary["events"], "ledger_seq": cursor.get("ledger_seq"),
+        stats = {"new_events": added, "events": summary["events"], "ledger_seq": cursor.get("ledger_seq"),
                  "pages": pages, "ms": int((time.time() - now) * 1000)}
         hook_log("ingest", f"ok {stats}")
         return stats
@@ -507,4 +650,4 @@ def sync(deadline, state=None, window_h=6):
 
 if __name__ == "__main__":
     import json
-    print(json.dumps(sync(time.time() + 20)))
+    print(json.dumps(sync(time.time() + 20, migrate=True)))       # also the one-time fold of an old events.jsonl

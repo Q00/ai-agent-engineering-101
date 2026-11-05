@@ -1,6 +1,9 @@
-"""memory/ingest.py offline: fake ledger pages, kit file fixtures, crash/rerun idempotence, attribution."""
+"""memory/ingest.py offline: fake ledger pages, kit file fixtures, crash/rerun idempotence, attribution, the
+incremental summary state."""
 import json
 import os
+import random
+import subprocess
 import sys
 import tempfile
 import time
@@ -13,6 +16,7 @@ os.environ.setdefault("R3_HOME", tempfile.mkdtemp(prefix="r3-ingest-"))
 sys.path.insert(0, str(W))
 
 from memory import ingest, query, store  # noqa: E402
+from tools import negotiation  # noqa: E402
 
 NOW = time.time()
 CATALOG = {
@@ -241,6 +245,292 @@ class SyncTest(IngestCase):
         self.assertEqual(stats["pages"], 0)
         self.assertIn("network down", (self.logs / "hooks" / "ingest.log").read_text(encoding="utf-8"))
         self.assertIsNone(json.loads((self.mem / "cursor.json").read_text()).get("ledger_seq"))
+
+
+    def cursor(self):
+        return json.loads((self.mem / "cursor.json").read_text(encoding="utf-8"))
+
+    def drop_state(self):
+        cur = self.cursor()
+        del cur["summary_state"]
+        (self.mem / "cursor.json").write_text(json.dumps(cur, ensure_ascii=False), encoding="utf-8")
+
+    def test_second_sync_reads_only_new_events(self):
+        ledger = self.fixtures()
+        real, calls = ingest.read_new, []
+
+        def spy(path, offset=0):
+            calls.append((Path(path).name, offset))
+            return real(path, offset)
+
+        with mock.patch.object(ingest, "fetch", ledger):
+            ingest.sync(time.time() + 10, state=self.state)
+            first = query.load_summary()
+            with mock.patch.object(ingest, "read_new", spy):
+                ingest.sync(time.time() + 10, state=self.state)
+        offsets = [o for name, o in calls if name == "events.jsonl"]
+        self.assertEqual(len(offsets), 1)
+        self.assertEqual(offsets[0], (self.mem / "events.jsonl").stat().st_size)   # the end: nothing re-read
+        again = query.load_summary()
+        self.assertEqual({**again, "built_at": 0}, {**first, "built_at": 0})
+
+    def test_first_run_migrates_existing_events(self):
+        ledger = self.fixtures()
+        with mock.patch.object(ingest, "fetch", ledger):
+            ingest.sync(time.time() + 10, state=self.state)
+            self.drop_state()
+            (self.mem / "summary.json").unlink()
+            ingest.sync(time.time() + 10, state=self.state)
+        s = query.load_summary()
+        full = ingest.build_summary(self.events(), self.cursor(), CATALOG, DEMAND, 6, s["built_at"])
+        self.assertEqual(s, json.loads(json.dumps(full, ensure_ascii=False)))
+
+    def test_hook_leaves_a_big_first_fold_to_the_hand_run(self):
+        ledger = self.fixtures()
+        with mock.patch.object(ingest, "fetch", ledger):
+            ingest.sync(time.time() + 10, state=self.state)
+        self.drop_state()
+        with mock.patch.object(ingest, "MIGRATE_HOOK_BYTES", 10), \
+                mock.patch.object(ingest, "fetch", side_effect=AssertionError("must not fetch")):
+            self.assertEqual(ingest.sync(time.time() + 10, state=self.state), {"skipped": "migration_pending"})
+            self.assertNotIn("summary_state", self.cursor())
+            self.assertIn("run python memory/ingest.py",
+                          (self.logs / "hooks" / "ingest.log").read_text(encoding="utf-8"))
+        with mock.patch.object(ingest, "MIGRATE_HOOK_BYTES", 10), mock.patch.object(ingest, "fetch", ledger):
+            stats = ingest.sync(time.time() + 10, state=self.state, migrate=True)
+        self.assertEqual(stats["events"], len(self.events()))
+        self.assertEqual(query.shop_stats(query.load_summary(), SHOP_B)["attempts"], 2)
+
+    def test_crash_after_append_before_cursor_save(self):
+        ledger = self.fixtures()
+        with mock.patch.object(ingest, "fetch", ledger):
+            ingest.sync(time.time() + 10, state=self.state)
+        before = self.cursor()
+        self.append(self.state / "payments.jsonl", [{"order": "o-4", "shop": SHOP_B, "item": "G2",
+                                                     "price": 1, "paid": True, "ledger": 950}])
+        ledger.rows.append(row(950, "settle", {"order": "o-4", "buyer": "psyoung82", "item": "G2",
+                                               "amount": 1, "shop": SHOP_B}))
+        real = ingest.atomic_write_json
+
+        def crash_on_cursor(path, obj):
+            if Path(path).name == "cursor.json":
+                raise KeyboardInterrupt("killed")
+            return real(path, obj)
+
+        with mock.patch.object(ingest, "fetch", ledger), \
+                mock.patch.object(ingest, "atomic_write_json", crash_on_cursor):
+            with self.assertRaises(KeyboardInterrupt):
+                ingest.sync(time.time() + 10, state=self.state)
+        self.assertEqual(self.cursor(), before)                       # events appended, state not saved
+        ids = [e["id"] for e in self.events()]
+        self.assertIn("e-pay-o-4", ids)
+        with mock.patch.object(ingest, "fetch", ledger):
+            ingest.sync(time.time() + 10, state=self.state)
+            ingest.sync(time.time() + 10, state=self.state)
+        self.assertEqual([e["id"] for e in self.events()], ids)      # the tail is folded, not appended again
+        s = query.load_summary()
+        self.assertEqual(s["events"], len(ids))
+        b = query.shop_stats(s, SHOP_B)
+        self.assertEqual((b["attempts"], b["paid"]), (3, 2))
+        self.assertEqual(query.category_stats(s, "의자")["q"]["n"], 3)   # market counters not doubled
+
+    def test_no_prune_while_ledger_backlog(self):
+        ledger = self.fixtures()
+        with mock.patch.object(ingest, "fetch", ledger):
+            ingest.sync(time.time() + 10, state=self.state)
+        self.assertGreater(self.cursor()["summary_state"]["pruned_at"], 0)   # caught up: pruned
+        prune = mock.Mock()
+        with mock.patch.object(ingest, "pull_ledger", return_value=([], 1, False)), \
+                mock.patch.object(ingest, "prune", prune):
+            ingest.sync(time.time() + 10, state=self.state)
+            prune.assert_not_called()
+            cur = self.cursor()
+            cur["summary_state"]["pruned_at"] -= 2 * 3600                   # behind for over an hour: prune anyway
+            (self.mem / "cursor.json").write_text(json.dumps(cur, ensure_ascii=False), encoding="utf-8")
+            ingest.sync(time.time() + 10, state=self.state)
+            prune.assert_called_once()
+
+    def order_row(self, oid, tried):
+        return {"id": f"d-buyer-{oid}", "ts": NOW - 100, "role": "buyer", "kind": "order", "ref": {"order": oid},
+                "inputs": {"order": {"order": oid, "category": "식품>김치", "budget": 11000, "kind": "food"}},
+                "tried": tried}
+
+    def test_failed_tries_count_as_attempts(self):
+        a, b, c = "https://a.example", "https://b.example", "https://c.example"
+        self.append(self.logs / "decisions" / "buyer.jsonl", [self.order_row("o-20", [
+            {"shop": a, "why": negotiation.NO_SIGNED_RECEIPT, "receipt_problem": None},
+            {"shop": b + "/", "why": "deal", "receipt_problem": "the receipt withholds the unit"},
+            {"shop": c, "why": "deal", "receipt_problem": None}])])
+        with mock.patch.object(ingest, "fetch", FakeLedger([])):
+            ingest.sync(time.time() + 10, state=self.state)
+            self.drop_state()                                       # a full rebuild from events does not recount
+            ingest.sync(time.time() + 10, state=self.state)
+            ingest.sync(time.time() + 10, state=self.state)
+        s = query.load_summary()
+        self.assertEqual(query.shop_stats(s, a), {"attempts": 1, "paid": 0, "refused": {"no signed receipt": 1},
+                                                  "bind_mismatch": 0, "broken_confirmed": 0, "broken_inferred": 0})
+        self.assertEqual((query.shop_stats(s, b)["attempts"], query.shop_stats(s, b)["refused"]), (1, {"receipt": 1}))
+        self.assertNotIn(c, s["buyer"]["shops"])                    # a deal is counted by its payments row
+
+    def test_paid_try_is_counted_once(self):
+        c = "https://c.example"
+        self.append(self.logs / "decisions" / "buyer.jsonl", [self.order_row("o-21", [
+            {"shop": c, "why": "deal", "receipt_problem": None}])])
+        self.append(self.state / "payments.jsonl", [{"order": "o-21", "shop": c, "item": "G1", "price": 9000,
+                                                     "paid": True, "ledger": 990}])
+        with mock.patch.object(ingest, "fetch", FakeLedger([])):
+            ingest.sync(time.time() + 10, state=self.state)
+        st = query.shop_stats(query.load_summary(), c)
+        self.assertEqual((st["attempts"], st["paid"]), (1, 1))
+
+    def test_no_signed_receipt_matches_negotiation_without_importing_it(self):
+        self.assertEqual(ingest.NO_SIGNED_RECEIPT, negotiation.NO_SIGNED_RECEIPT)
+        code = ("import sys; from memory import ingest; "
+                "print(sorted(m for m in sys.modules if m.startswith(('model', 'tools'))))")
+        out = subprocess.run([sys.executable, "-c", code], cwd=W, capture_output=True, text=True, timeout=30)
+        self.assertEqual(out.stdout.strip(), "[]", out.stderr)        # model.harness makes a temp dir per import
+
+
+H = 3600.0
+T0 = 1793700000.0
+
+
+def synthetic(hours, seed=7):
+    """Our events at about 180 things an hour, shaped like the live ones: sales with complete, settle and rated
+    rows; refusals; buyer orders with payment, deal and purchase rows, some broken as ledger and kit rows."""
+    rnd = random.Random(seed)
+    shops = [f"https://s{i}.example" for i in range(8)]
+    skus = [f"X{i:03d}" for i in range(60)]
+    leaves = [f"c{i}" for i in range(10)]
+    catalog = {s: {"category": "x>" + rnd.choice(leaves), "name": "n" + s, "kind": rnd.choice(["food", "goods"])}
+               for s in skus}
+    ev, seq, t, i = [], 10 ** 6, T0, 0
+    while t < T0 + hours * H:
+        t += rnd.expovariate(1 / 20)
+        i += 1
+        r = rnd.random()
+        if r < 0.35:
+            sid, sku = f"s{i}", rnd.choice(skus)
+            seq += 1
+            ev.append({"id": f"e-acp-{sid}-create", "ts": t, "kind": "acp", "ev": "create", "sid": sid, "sku": sku,
+                       "goods_kind": catalog[sku]["kind"], "grade": rnd.choice("ABC"),
+                       "hours_left": rnd.choice([2, 50]), "warranty_h": rnd.choice([None, 6])})
+            x = rnd.random()
+            if x < 0.8:
+                ev.append({"id": f"e-acp-{sid}-complete", "ts": t + 5, "kind": "acp", "ev": "complete", "sid": sid,
+                           "sku": sku, "price": 900, "ledger": seq})
+                if rnd.random() < 0.95:
+                    ev.append({"id": f"e-ledger-{seq}", "ts": t + 6, "kind": "sale", "seq": seq, "sku": sku,
+                               "buyer": f"b{rnd.randrange(12)}", "amount": 1000})
+                    ev.append({"id": f"e-ledger-r{seq}", "ts": t + 60, "kind": "rated", "stars": rnd.randint(1, 5)})
+            elif x < 0.9:
+                ev.append({"id": f"e-acp-{sid}-cancel", "ts": t + 30, "kind": "acp", "ev": "cancel", "sid": sid})
+        elif r < 0.4:
+            ev.append({"id": f"e-acp-x{i}-refuse", "ts": t, "kind": "acp", "ev": "refuse"})
+        elif r < 0.75:
+            o, leaf, sku, shop = f"o{i}", rnd.choice(leaves), rnd.choice(skus), rnd.choice(shops)
+            ev.append({"id": f"e-order-{o}", "ts": t, "kind": "order_seen", "order": o, "category": "x>" + leaf,
+                       "uwh": rnd.choice([12, 24.0, 48]), "budget": rnd.choice([8000, 10000, 12000]),
+                       **({"budget_ratio": round(rnd.uniform(0.5, 1.5), 3)} if rnd.random() < 0.7 else {}),
+                       **({"try_fail": [{"shop": shop, "why": "receipt"}]} if rnd.random() < 0.05 else {})})
+            if rnd.random() < 0.5:
+                paid = rnd.random() < 0.8
+                ev.append({"id": f"e-pay-{o}", "ts": t + 20, "kind": "payment", "order": o, "shop": shop, "item": sku,
+                           "paid": paid, "reason": None if paid else rnd.choice(["not paying: shelf: x", "binding: y"])})
+                if paid:
+                    seq += 1
+                    ev.append({"id": f"e-deal-{o}", "ts": t + 25, "kind": "deal", "order": o, "shop": shop, "sku": sku,
+                               "name": "n" + sku})
+                    ev.append({"id": f"e-ledger-{seq}", "ts": t + 22, "kind": "purchase", "seq": seq, "order": o,
+                               "sku": sku, "shop": shop})
+                    if rnd.random() < 0.08:
+                        bt = t + rnd.uniform(60, 6 * H)
+                        seq += 1
+                        if rnd.random() < 0.6:
+                            ev.append({"id": f"e-ledger-{seq}", "ts": bt, "kind": "broken", "seq": seq, "sku": sku})
+                        if rnd.random() < 0.6:
+                            ev.append({"id": f"e-brokenfile-{int(bt)}-{sku}", "ts": bt + rnd.uniform(-1, 1),
+                                       "kind": "broken_file", "name": "n" + sku})
+        else:
+            ev.append({"id": f"e-dec-{i}", "ts": t, "kind": rnd.choice(["seller_sign", "seller_reject"])})
+    ev.sort(key=lambda e: e["ts"])
+    return ev, catalog, [{"category": "x>" + c, "median_price": 10000} for c in leaves]
+
+
+def fold_minutes(ev, catalog, demand, end, on_minute=None):
+    """Fold events as they arrive, one minute at a time, pruning every minute like the hook."""
+    st, med, j, clock = ingest.new_state(), ingest._medians(demand), 0, T0
+    while clock < end:
+        clock = min(end, clock + 60)
+        while j < len(ev) and ev[j]["ts"] <= clock - 1:
+            ingest.fold(st, ev[j], med, clock)
+            j += 1
+        ingest.prune(st, catalog, clock)
+        if on_minute:
+            on_minute(st, clock)
+    for e in ev[j:]:                                                # breakages dated after the end
+        ingest.fold(st, e, med, end)
+    return st
+
+
+class StateTest(unittest.TestCase):
+    CURSOR = {"started_at": T0, "ledger_seq": 5,
+              "market": {"cat_goods": {"c1": [5, 1]}, "buyer_cats": {"b1": {"c2": 3, "c3": 1}},
+                         "cat_hour": {"c2": {str(int((T0 + 36 * H) // H) - 1): 4}}}}
+
+    def test_incremental_matches_full_rebuild(self):
+        ev, catalog, demand = synthetic(36)
+        now = T0 + 36 * H + 120
+        full = ingest.build_summary(ev, self.CURSOR, catalog, demand, 6, now)
+        st = fold_minutes(ev, catalog, demand, now)
+        self.assertTrue(st["skus"] and st["l3"] and st["attr"] and st["bshops"])   # prune froze each part
+
+        def norm(s):
+            s = json.loads(json.dumps(s))
+            s["buyer"]["broken"].sort(key=lambda a: a["event"])
+            return s
+        self.assertLess(len(full["buyer"]["broken"]), 200)          # the [-200:] cut keeps a different tail
+        self.assertEqual(norm(ingest.render(st, self.CURSOR, catalog, 6, now)), norm(full))
+
+    def test_state_stays_bounded(self):
+        ev, catalog, demand = synthetic(72, seed=3)
+        size = {}
+
+        def measure(st, clock):
+            if clock - T0 in (48 * H, 72 * H):
+                size[clock - T0] = len(json.dumps(st))
+        fold_minutes(ev, catalog, demand, T0 + 72 * H, measure)
+        self.assertLess(size[72 * H], 1.2 * size[48 * H], size)
+
+    def test_kit_broken_rows_close_together_do_not_raise(self):
+        t = NOW - 3600
+        ev = [{"id": "e-pay-o-1", "ts": t, "kind": "payment", "order": "o-1", "shop": SHOP_B, "item": "G2",
+               "paid": True},
+              {"id": "e-pay-o-2", "ts": t, "kind": "payment", "order": "o-2", "shop": "https://shop-c.example",
+               "item": "G3", "paid": True},
+              {"id": "e-brokenfile-1", "ts": t + 600, "kind": "broken_file", "name": "의자"},
+              {"id": "e-brokenfile-2", "ts": t + 601, "kind": "broken_file", "name": "우유"}]
+        s = ingest.build_summary(ev, {}, CATALOG, DEMAND, 6, NOW)
+        self.assertEqual([(a["event"], a["status"]) for a in s["buyer"]["broken"]],
+                         [("e-brokenfile-1", "confirmed"), ("e-brokenfile-2", "confirmed")])
+        self.assertEqual(s["buyer"]["shops"][SHOP_B]["broken_confirmed"], 1)
+        self.assertEqual(s["buyer"]["shops"]["https://shop-c.example"]["broken_confirmed"], 1)
+
+    def test_kit_and_ledger_breakage_across_prune_counted_once(self):
+        t = NOW - 5 * 3600
+        st = ingest.new_state()
+        for e in ({"id": "e-pay-o-1", "ts": t, "kind": "payment", "order": "o-1", "shop": SHOP_B, "item": "G2",
+                   "paid": True},
+                  {"id": "e-ledger-920", "ts": t + 600, "kind": "broken", "seq": 920, "sku": "G2"},
+                  {"id": "e-brokenfile-x", "ts": t + 600.8, "kind": "broken_file", "name": "의자"}):
+            ingest.fold(st, e, {}, t + 700)
+        edge = t + 600 + ingest.BROKEN_FINAL_S
+        for clock in (edge + 1, edge + 3, edge + 6, edge + 60):     # kit row frozen first, then the ledger row
+            ingest.prune(st, CATALOG, clock)
+            s = ingest.render(st, {}, CATALOG, 6, clock)
+            self.assertEqual(s["buyer"]["shops"][SHOP_B]["broken_confirmed"], 1, clock - edge)
+            self.assertEqual([a["event"] for a in s["buyer"]["broken"]], ["e-ledger-920"], clock - edge)
+        self.assertEqual(st["broken"], [])
 
 
 class AttributeTest(unittest.TestCase):

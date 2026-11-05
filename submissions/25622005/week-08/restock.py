@@ -1,7 +1,8 @@
 """The kit's restock hook (every 60 s in Round 3): ingest memory, plan the buy, decide bankruptcy.
 
 Supply opens about every 20 minutes for 3 minutes; while it is closed and not opening within
-stock.window_lead_s, the hook still ingests but buys nothing.
+stock.window_lead_s, the hook still ingests but buys nothing. While it is open or about to open, the hook
+skips ingest and buys first: the closed-window runs between windows keep the summary fresh.
 
     python restock.py --state .market
 
@@ -41,11 +42,17 @@ def run(state, t0):
     if errors:
         decision("restock", "policy_error", policy_ver=ver, inputs={"errors": errors[:10]},
                  choice="fallback", why="strategy/SKILL.md failed validation; using the last good policy or defaults")
-    try:
-        ing = ingest.sync(t0 + INGEST_S, state=state, window_h=policy.get(pol, "stock.demand_window_h"))
-    except Exception as e:                                   # memory is optional for this run
-        hook_log("restock", f"ingest failed: {type(e).__name__}: {e}")
-        ing = {"error": f"{type(e).__name__}: {e}"}
+    inv0 = read_json(state / "inventory.json", {})
+    win0 = stock.supply_window(inv0 if isinstance(inv0, dict) else {}, time.time())
+    if win0["open"] is True or (win0["open"] is False and win0["in_s"] is not None
+                                and win0["in_s"] <= pol["stock"]["window_lead_s"]):
+        ing = {"skipped": "window"}                          # an unknown window (in_s None) still ingests
+    else:
+        try:
+            ing = ingest.sync(t0 + INGEST_S, state=state, window_h=policy.get(pol, "stock.demand_window_h"))
+        except Exception as e:                               # memory is optional for this run
+            hook_log("restock", f"ingest failed: {type(e).__name__}: {e}")
+            ing = {"error": f"{type(e).__name__}: {e}"}
 
     inv = read_json(state / "inventory.json", {}) or {}
     catalog = ingest.load_catalog(state)
