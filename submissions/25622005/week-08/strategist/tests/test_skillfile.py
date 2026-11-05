@@ -198,7 +198,13 @@ class MissingKeys(Base):
     """A policy.DEFAULTS key the file lacks is inserted when written: under its section, or a new section."""
 
     def test_inserted_at_the_end_of_its_section_with_the_template_comment(self):
-        new = sf.apply(self.path, self.orig, {"stock.max_hold": 50, "seller.floor_list": 0.55})
+        # a frozen template, not the repository's SKILL.md: on the N36L that file is the live one (compose mount)
+        template = self.dir / "template.md"
+        template.write_text("---\nversion: 1\npolicy:\n  stock:\n"
+                            "    max_hold: 40                  # units one SKU may hold (the cover target's cap)\n---\n",
+                            encoding="utf-8")
+        with mock.patch.object(sf, "TEMPLATES", (template, self.path)):
+            new = sf.apply(self.path, self.orig, {"stock.max_hold": 50, "seller.floor_list": 0.55})
         lines = new.splitlines()
         i = next(n for n, x in enumerate(lines) if x.startswith("    max_hold:"))
         self.assertEqual(lines[i + 1], "  buyer:")                         # after the last stock line
@@ -254,6 +260,44 @@ class Notes(Base):
         new = sf.apply(self.path, text, {}, notes="new")
         self.assertTrue(new.endswith("## Strategist notes\n\nnew\n\n## Later\n\nkept\n"), new[-80:])
         self.assertEqual(sf.notes_of(new), "new")
+
+
+class Release(Base):
+    """The body, except `## Strategist notes`, follows the SKILL.md shipped with the code."""
+    BODY = "\n# Release\n\n- Unsold stock counts at cost.\n"
+
+    def test_body_replaced_front_matter_and_notes_kept(self):
+        live = sf.set_notes(self.orig, "my reading")
+        new = sf.follow_release(live, self.BODY)
+        front = live[:live.index("\n---\n", 4) + 5]
+        self.assertEqual(new, front + self.BODY + "\n## Strategist notes\n\nmy reading\n")
+        self.assertIsNone(sf.follow_release(new, self.BODY))
+        self.assertIsNone(sf.follow_release(new, "# Release\n- Unsold   stock counts\nat cost.\n\n"))   # whitespace only
+        self.assertEqual(sf.notes_of(new), "my reading")
+        self.assertEqual(sf.follow_release(self.orig, self.BODY), front + self.BODY)        # no notes section
+
+    def test_notes_in_the_middle_move_to_the_end_and_the_template_has_none(self):
+        live = self.orig.replace("\n## Stock\n", "\n## Strategist notes\n\nmid\n\n## Stock\n", 1)
+        new = sf.follow_release(live, self.BODY)
+        self.assertTrue(new.endswith(self.BODY + "\n## Strategist notes\n\nmid\n\n"), new[-200:])
+        self.assertNotIn("## Stock", new)
+
+    def test_release_body_from_the_first_template_that_is_not_the_live_file(self):
+        other = self.dir / "release.md"
+        front = self.orig[:self.orig.index("\n---\n", 4) + 5]
+        other.write_text(sf.set_notes(front + self.BODY, "template notes are dropped"), encoding="utf-8")
+        with mock.patch.object(sf, "TEMPLATES", (self.path, self.dir / "none.md", other)):
+            self.assertEqual(sf.release_body(self.path), self.BODY + "\n")
+        with mock.patch.object(sf, "TEMPLATES", (self.path, self.dir / "none.md")):
+            self.assertIsNone(sf.release_body(self.path))
+
+    def test_apply_writes_the_body_with_the_changes_and_notes(self):
+        new = sf.apply(self.path, self.orig, {"seller.floor_list": 0.55}, notes="n", body=self.BODY)
+        self.assertEqual(self.path.read_text(encoding="utf-8"), new)
+        self.assertEqual(policy.split_skill(new)[1], self.BODY + "\n## Strategist notes\n\nn\n")
+        self.assertEqual(policy.split_skill(new)[0]["policy"]["seller"]["floor_list"], 0.55)
+        again = sf.apply(self.path, new, {}, body=self.BODY)            # the same body: only the version moves
+        self.assertEqual(policy.split_skill(again)[1], policy.split_skill(new)[1])
 
 
 class History(Base):

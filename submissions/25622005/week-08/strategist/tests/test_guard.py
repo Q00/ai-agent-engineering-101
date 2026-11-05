@@ -1,5 +1,5 @@
 """strategist/guard.py: allowlist, number checks, clamp, step, rounding, cooldown, limits, cross-validation,
-linked constraints, row sources (model, market-rule, revert), direction blocks."""
+linked constraints, row sources (model, market-rule, revert, bounds, migration, linked), direction blocks."""
 import copy
 import os
 import sys
@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import policy
 from strategist import guard as g
+from tools import buyer_policy
 
 H = 3600
 NOW = 1_800_000_000
@@ -384,6 +385,66 @@ class BoundsRepair(unittest.TestCase):
                        {"key": "buyer.open_list", "value": 0.4, "source": "bounds"}, p=pol(buyer__open_list=0.3))
         self.assertEqual(acc, [])
         self.assertEqual([r["why"] for r in rej], ["inside its bounds", "no bounds repair for this key"])
+
+
+class LinkedRepair(unittest.TestCase):
+    """buyer.cap_food comes down to 1 - buyer.min_surplus_list (source "linked"): the alert goes, the buyer's food cap
+    stays."""
+
+    def test_row_only_while_the_pair_is_broken_within_bounds(self):
+        rows = g.linked_rows(pol(buyer__cap_food=0.95, buyer__min_surplus_list=0.07))
+        self.assertEqual([(r["key"], r["value"], r["source"]) for r in rows], [("buyer.cap_food", 0.93, "linked")])
+        self.assertEqual(g.linked_rows(pol(buyer__cap_food=0.93, buyer__min_surplus_list=0.07)), [])
+        self.assertEqual(g.linked_rows(pol()), [])
+        self.assertEqual(g.linked_rows(pol(buyer__cap_food=0.95, buyer__min_surplus_list=0.2))[0]["value"], 0.85)
+        # 1 - 0.07125 has 5 decimals: the guard's 4-decimal rounding would move the buyer's food cap, so no row
+        self.assertEqual(g.linked_rows(pol(buyer__cap_food=0.95, buyer__min_surplus_list=0.07125)), [])
+
+    def test_the_buyers_food_cap_is_the_same_before_and_after(self):
+        for cap, surplus in ((0.95, 0.07), (1.0, 0.15), (0.98, 0.2), (1.2, 0.03)):
+            before = pol(buyer__cap_food=cap, buyer__min_surplus_list=surplus)
+            acc, rej = run(*g.linked_rows(before), p=before)
+            after = copy.deepcopy(before)
+            after["buyer"]["cap_food"] = acc[0]["new"]
+            with self.subTest(cap=cap, surplus=surplus):
+                self.assertEqual(rej, [])
+                self.assertEqual(buyer_policy.cap_share("food", None, None, after),
+                                 buyer_policy.cap_share("food", None, None, before))
+                self.assertLessEqual(acc[0]["new"], cap)
+
+    def test_alert_cleared_by_the_row(self):
+        p = pol(buyer__cap_food=0.95, buyer__min_surplus_list=0.07)
+        self.assertEqual(len(g.linked_alerts(p)), 1)
+        self.assertEqual(g.linked_alerts(p, g.linked_rows(p)), [])
+        self.assertEqual(p["buyer"]["cap_food"], 0.95)                   # p itself is not changed
+
+    def test_skips_cooldown_block_and_max_changes_but_only_for_cap_food(self):
+        p = pol(buyer__cap_food=0.95, buyer__min_surplus_list=0.07)
+        acc, rej = run(*g.linked_rows(p), {"key": "buyer.min_surplus_list", "value": 0.05, "source": "linked"},
+                       prop("buyer.cap_food", 0.9), p=p, last={"buyer.cap_food": NOW - 60}, max_changes=0,
+                       blocked={"buyer.cap_food": {"dir": -1, "until": NOW + H, "why": "x"}})
+        self.assertEqual([(a["old"], a["new"], a["source"]) for a in acc], [(0.95, 0.93, "linked")])
+        self.assertEqual([r["why"] for r in rej], ["no linked repair for this key", "duplicate"])
+
+
+class Migration(unittest.TestCase):
+    def test_skips_step_cooldown_block_and_max_changes_within_bounds(self):
+        p = pol(stock__taper_h=72, stock__clear_any_h=6)
+        mig = lambda k, v: {"key": k, "value": v, "source": "migration", "reason": "m"}
+        acc, rej = run(mig("stock.taper_h", 0), mig("stock.clear_any_h", 40), prop("stock.cover_min", 40), p=p,
+                       last={"stock.taper_h": NOW - 60}, max_changes=1,
+                       blocked={"stock.taper_h": {"dir": -1, "until": NOW + H, "why": "x"}})
+        self.assertEqual(rej, [])
+        self.assertEqual([(a["key"], a["old"], a["new"], a["source"], a["clamped"]) for a in acc],
+                         [("stock.taper_h", 72, 0, "migration", False), ("stock.clear_any_h", 6, 24, "migration", True),
+                          ("stock.cover_min", 25, 40, "model", False)])
+
+    def test_frozen_key_and_validate_still_apply(self):
+        acc, rej = run({"key": "stock.cash_floor", "value": 0, "source": "migration"},
+                       {"key": "stock.max_qty", "value": 5, "source": "migration"},
+                       p=pol(stock__max_qty=20, stock__min_line_qty=10))
+        self.assertEqual(acc, [])
+        self.assertEqual([r["why"][:7] for r in rej], ["frozen", "linked:"])
 
 
 class FloorCheck(unittest.TestCase):

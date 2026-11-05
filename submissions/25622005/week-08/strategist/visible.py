@@ -2,7 +2,7 @@
 
 - policy.json: the policy now on disk, its version and time, numbers and on/off switches only;
 - changes.md: the strategist's last changes, newest first: keys, old and new numbers, the kind of change
-  (model, market-rule, bounds, revert, focus, trend) and the outcome check's result.
+  (model, market-rule, bounds, migration, linked, revert, focus, trend) and the outcome check's result.
 
 Anyone with the tunnel URL can read them, so they hold numbers only: no reasons, assessments, notes, prompts,
 briefs or model answers (those stay in the strategist's home), and the focus and trend SKU lists only as counts.

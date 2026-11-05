@@ -11,7 +11,10 @@ Each proposal row carries a source. "model" (the default) is bounded as above. "
 may set only a SYNCED key to the market's published value (strategist/facts.py), clamped to
 policy.RANGES. "revert" (an outcome check undoing a change) skips the cooldown, the direction
 block and max_changes. "bounds" (bounds_rows) moves a value outside its TUNABLE range to the nearest
-bound, with no step, cooldown, block or max_changes. No source skips LINKED or validate.
+bound, with no step, cooldown, block or max_changes. "migration" (strategist/migrate.py: a default the code
+release changed) and "linked" (linked_rows: buyer.cap_food down to 1 - buyer.min_surplus_list) set a tunable
+key to their value within its bounds, also with no step, cooldown, block or max_changes. No source skips
+LINKED or validate.
 A model raise of seller.floor_list above the market's 24 h clearing price for goods (p_clear, median
 paid/list) is refused. A key in policy.DEFAULTS but missing from the file acts at its DEFAULT, so its
 old value is the DEFAULT (strategist/skillfile.py inserts the line when it is written).
@@ -89,7 +92,8 @@ LINKED = {
          lambda p: max(0, p["stock"]["focus_max"] + p["stock"]["trend_max"] - MAX_LISTS)),
 }
 EPS = 1e-9
-SOURCES = ("model", "market-rule", "revert", "bounds")
+SOURCES = ("model", "market-rule", "revert", "bounds", "migration", "linked")
+LINKED_REPAIR = ("buyer.cap_food",)     # the only key a "linked" row may set (linked_rows)
 
 
 def bounds(key, pol=None):
@@ -148,6 +152,23 @@ def bounds_rows(pol):
     return rows
 
 
+def linked_rows(pol):
+    """A source "linked" row setting buyer.cap_food to 1 - buyer.min_surplus_list (within its bounds) when their
+    sum is above 1. The buyer already caps food at min(cap_food, 1 - min_surplus_list) (tools/buyer_policy.py
+    cap_share), so its food cap stays the same; only the linked alert, which wakes the model every run, goes. None
+    when the guard's rounding would move the value (a min_surplus_list with more than 4 decimals)."""
+    cap, surplus = value(pol, "buyer.cap_food"), value(pol, "buyer.min_surplus_list")
+    if not _number(cap) or not _number(surplus) or cap + surplus - 1 <= EPS:
+        return []
+    lo, hi, _ = bounds("buyer.cap_food", pol)
+    new = min(max(round(1 - surplus, 6), lo), hi)
+    if _round("buyer.cap_food", new) != new:
+        return []
+    return [{"key": "buyer.cap_food", "value": new, "source": "linked",
+             "reason": f"cap_food {cap} + min_surplus_list {surplus} > 1: the buyer caps food at "
+                       f"{round(1 - surplus, 6)} already"}]
+
+
 def _number(v):
     """A finite int or float; an int too large for a float (OverflowError in isfinite) is not one."""
     if isinstance(v, bool) or not isinstance(v, (int, float)):
@@ -192,9 +213,13 @@ def _trial(pol, rows):
     return trial
 
 
-def linked_alerts(pol):
-    """Names of the LINKED constraints the policy breaks now."""
+def linked_alerts(pol, rows=()):
+    """Names of the LINKED constraints the policy breaks now, or once rows (proposal rows: key, value) are set."""
     out = []
+    if rows:
+        pol = copy.deepcopy(pol)
+        for r in rows:
+            _set(pol, r["key"], r["value"])
     for name, (_, excess) in LINKED.items():
         try:
             if excess(pol) > EPS:
@@ -219,8 +244,8 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
     """(accepted, rejected). accepted rows: key, old, new, requested, clamped, reason, source.
     rejected rows: key, requested, why. last: {key: {"new": value the strategist last wrote, ...}}, so a value
     it wrote that is now outside the range may move back in. p_clear: the market's 24 h median paid/list of goods
-    (None: unknown, no floor check). A validate failure rejects every accepted row, except that market-rule,
-    revert and bounds rows that pass on their own are kept."""
+    (None: unknown, no floor check). A validate failure rejects every accepted row, except that the rows of other
+    sources than "model" that pass on their own are kept."""
     accepted, rejected, seen = [], [], set()
     last_change_ts, last = last_change_ts or {}, last if isinstance(last, dict) else {}
     for p in proposals if isinstance(proposals, list) else []:
@@ -243,6 +268,9 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
             continue
         if source == "bounds" and key.startswith(NO_BOUNDS):
             reject("no bounds repair for this key")
+            continue
+        if source == "linked" and key not in LINKED_REPAIR:
+            reject("no linked repair for this key")
             continue
         if not _number(requested):
             reject("not a number")
@@ -269,6 +297,10 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
             if lo <= old <= hi:
                 reject("inside its bounds")
                 continue
+            new = _round(key, min(max(requested, lo), hi))
+            clamped = new != requested
+        elif source in ("migration", "linked"):
+            lo, hi, _ = bounds(key, pol)
             new = _round(key, min(max(requested, lo), hi))
             clamped = new != requested
         else:

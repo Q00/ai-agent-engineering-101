@@ -3,7 +3,11 @@
 Each run also reads the market's own rules (strategist/facts.py): the prompt carries them, and a key
 pinned to a market rule (guard.SYNCED: the forum post gap, the surge constants) is set from them with source
 "market-rule", in the same guarded edit as the model's changes. A tunable value outside its bounds is moved to
-the nearest bound (source "bounds"). For PATCH_H hours after a new patch note on /rules the model may change
+the nearest bound (source "bounds"). In apply mode three more repairs need no hand edit of the live file: a
+one-time migration of an old shipped default (strategist/migrate.py, source "migration"), buyer.cap_food down to
+1 - buyer.min_surplus_list when their sum is above 1 (source "linked": the buyer's food cap stays the same), and
+the body, except `## Strategist notes`, replaced by the SKILL.md shipped with the code (skillfile.release_body,
+"template" in changes.jsonl). For PATCH_H hours after a new patch note on /rules the model may change
 more keys with a shorter cooldown (Config.patch_*), so it can re-derive the values a patch changed.
 
 Each applied model change-set is checked an hour later (strategist/outcome.py): the result goes to
@@ -16,8 +20,8 @@ change table.
 The shop reads strategy/SKILL.md on every call, so the only thing this process changes in the
 shop is a few numbers in that file, the focus and trend SKU lists (stock.focus_skus, stock.trend_skus, chosen
 from the ledger by strategist/trend.py, not by the model; written with the model's numbers in the same edit)
-and the body's `## Strategist notes` (the model's own notes, which come back in its next prompt). It never
-changes code. Every text it writes is also kept as strategy/SKILL.md.<epoch seconds>, and a file that differs
+and the body's `## Strategist notes` (the model's own notes, which come back in its next prompt); the rest of the
+body only follows the SKILL.md shipped with the code. It never changes code. Every text it writes is also kept as strategy/SKILL.md.<epoch seconds>, and a file that differs
 from the newest such copy at the start of a run (an edit by hand) is copied first (strategist/skillfile.py).
 Everything else it does is for the user to check later: each run leaves its brief, prompt, raw model
 answer and a Markdown report, one runs.jsonl row, one inventory.jsonl row (our stock and what came
@@ -46,7 +50,7 @@ import httpx
 
 import policy
 from memory.store import append_jsonl, atomic_write_json, read_json, tail_jsonl
-from strategist import analyze, collect, decide, facts, focus, guard, outcome, publish, skillfile, trend, visible
+from strategist import analyze, collect, decide, facts, focus, guard, migrate, outcome, publish, skillfile, trend, visible
 
 W = Path(__file__).resolve().parents[1]
 HEALTH_MAX_AGE_S = 300
@@ -184,7 +188,7 @@ def _run(cfg, now, client=None):
            "policy_ver_before": None, "policy_ver_after": None, "applied": [], "proposed": [], "rejected": [],
            "confidence": None, "assessment": "", "watch": [], "focus": None, "errors": [], "me": None,
            "rules_sha": None, "alerts": [], "outcomes": [], "patch": None, "notes": None, "history": [],
-           "elapsed_ms": None}
+           "migrations": [], "template": None, "elapsed_ms": None}
     state = read_json(home / "state.json", {})
     state = state if isinstance(state, dict) else {}
     try:
@@ -250,17 +254,28 @@ def _steps(cfg, now, client, state, rec):
     atomic_write_json(home / "briefs" / f"{rid}.json", brief)
     state["last_brief"] = brief
 
-    # 3-6 the rows to guard: market-rule syncs, bounds repairs and outcome reverts first, then the model's; one
-    # guard call, one write. The focus/trend lists and changed notes are written even when no number changes.
+    # 3-6 the rows to guard: market-rule syncs, bounds repairs, migrations, outcome reverts and the linked repair
+    # first, then the model's; one guard call, one write. The focus/trend lists, changed notes and the release body
+    # are written even when no number changes.
     if skill_errors:
         rec["status"] = "skill invalid"
     else:
+        repair = cfg.mode == "apply" and not rec["paused"]      # migrations, linked repair, body: apply mode only
         gpol = _with_focus(in_file, rec["focus"])
         rows, alerts = facts.sync_proposals(pol, market.get("facts"), market.get("supply_prices"))
         rows += guard.bounds_rows(gpol)
-        rec["alerts"] += alerts + guard.linked_alerts(pol)
+        migrations = migrate.pending(state) if repair else []
+        mrows, skipped = migrate.rows(migrations, pol)
+        rows += mrows
         reverts, rec["outcomes"] = outcome.check(state, own.get("history"), buckets, pol, now)
         rows += reverts
+        touched = {r["key"] for r in rows}              # a revert of either key first; the next run repairs
+        linked = [] if not repair or touched & {"buyer.cap_food", "buyer.min_surplus_list"} else guard.linked_rows(pol)
+        rows += linked
+        rec["alerts"] += alerts + guard.linked_alerts(pol, linked)
+        release = _release(cfg, text) if repair else None
+        if release is not None:                         # the model reads the body the shop will have
+            body = policy.split_skill(skillfile.follow_release(text, release))[1]
         wait = outcome.waiting(state, now)
         rules_changed = any(isinstance(r, dict) and isinstance(r.get("ts"), (int, float))
                             and r["ts"] > (state.get("last_model_ts") or 0) for r in market.get("recent") or [])
@@ -268,7 +283,7 @@ def _steps(cfg, now, client, state, rec):
         notes = None
         if reverts:
             rec["status"] = "outcome revert"            # the model sees the result next run
-        elif wait and not rules_changed and not guard.linked_alerts(pol):
+        elif wait and not rules_changed and not guard.linked_alerts(pol, linked):
             rec["status"] = f"waiting for outcome of {wait}"
         else:
             state["last_model_ts"] = now
@@ -279,7 +294,8 @@ def _steps(cfg, now, client, state, rec):
                 notes, rec["notes"] = None, "unchanged"
         p_clear = (((tables or {}).get("p_clear") or {}).get("goods") or {}).get("h24")
         accepted = _guard(cfg, now, gpol, rows, state, rec, p_clear)
-        _write(cfg, now, text, accepted, state, rec, notes, now + (time.monotonic() - t0))
+        _write(cfg, now, text, accepted, state, rec, notes, now + (time.monotonic() - t0), release)
+        _migrated(cfg, now, migrations, skipped, state, rec)
         if any(a["source"] == "revert" for a in rec["applied"]):
             rec["status"] = "reverted"
         outcome.register(state, rid, rec["applied"], now + (time.monotonic() - t0), own.get("history"), buckets)
@@ -292,6 +308,40 @@ def _steps(cfg, now, client, state, rec):
         visible.write(cfg.shop_home, home, cfg.skill, now)
     except Exception as e:                              # the public copy must never fail the run
         rec["errors"].append(f"visible: {type(e).__name__}: {str(e)[:200]}")
+
+
+def _release(cfg, text):
+    """The body of the SKILL.md shipped with the code (skillfile.release_body) when the live body, without the
+    notes section and whitespace, differs from it; else None (also for an empty template body: never wipe the body)."""
+    try:
+        body = skillfile.release_body(cfg.skill)
+        return body if body and body.strip() and skillfile.follow_release(text, body) is not None else None
+    except ValueError:                                  # a template without front matter
+        return None
+
+
+def _migrated(cfg, now, migrations, skipped, state, rec):
+    """Mark the migrations done whose rows were all written or refused (none held back by a pause, a lock, a
+    conflict or a failed write), with one changes.jsonl row each: keys set, skipped (value not the old default)
+    and refused by the guard."""
+    if cfg.mode != "apply" or rec["paused"]:
+        return
+    held = {a["key"] for a in rec["proposed"] if a["source"] == "migration"}
+    applied = {a["key"] for a in rec["applied"] if a["source"] == "migration"}
+    refused = {r["key"]: r["why"] for r in rec["rejected"]}
+    done = list(state.get("migrations")) if isinstance(state.get("migrations"), list) else []
+    for m in migrations:
+        keys = set(m["changes"])
+        if keys & held:
+            continue
+        row = {"id": m["id"], "applied": sorted(keys & applied), "skipped": skipped.get(m["id"], {}),
+               "rejected": {k: refused[k] for k in sorted(keys - applied) if k in refused}}
+        rec["migrations"].append(row)
+        done.append(m["id"])
+        append_jsonl(cfg.home / "changes.jsonl", {"ts": now, "run_id": rec["run_id"], "migration": m["id"],
+                                                  "reason": m["reason"]} | {k: row[k] for k in row if k != "id"})
+    if rec["migrations"]:
+        state["migrations"] = done
 
 
 def _ledger_buckets(state, raw, own, known, now, me):
@@ -518,13 +568,14 @@ def _last_change(state, home):
     return lc
 
 
-def _write(cfg, now, text, accepted, state, rec, notes=None, at=None):
-    """The accepted numbers, changed focus/trend lists and changed notes go into SKILL.md in one edit, in apply
-    mode without a pause file; the new text is also kept as a history copy at `at`. rec["status"] follows the
-    model's changes; the lists' outcome is rec["focus"]["status"], the notes' rec["notes"]."""
+def _write(cfg, now, text, accepted, state, rec, notes=None, at=None, release=None):
+    """The accepted numbers, changed focus/trend lists, changed notes and the release body go into SKILL.md in one
+    edit, in apply mode without a pause file; the new text is also kept as a history copy at `at`. rec["status"]
+    follows the model's changes; the lists' outcome is rec["focus"]["status"], the notes' rec["notes"], the
+    body's rec["template"]."""
     fc = rec["focus"] if rec["focus"] and rec["focus"]["status"] is None else None
     rec["paused"] = rec["paused"] or cfg.pause_file.exists()      # created during the model call
-    if not accepted and not fc and notes is None:
+    if not accepted and not fc and notes is None and release is None:
         return
     if cfg.mode != "apply" or rec["paused"]:
         held = "paused" if rec["paused"] else "proposed"
@@ -534,13 +585,15 @@ def _write(cfg, now, text, accepted, state, rec, notes=None, at=None):
             fc["status"] = held
         if notes is not None:
             rec["notes"] = held
+        if release is not None:
+            rec["template"] = held
         return
-    _apply(cfg, now, text, accepted, fc, state, rec, notes, now if at is None else at)
+    _apply(cfg, now, text, accepted, fc, state, rec, notes, now if at is None else at, release)
     if rec["policy_ver_after"] != rec["policy_ver_before"] and isinstance(state.get("skill_version"), int):
         state["skill_version"] += 1                     # skillfile.apply bumps version by one
 
 
-def _apply(cfg, now, text, accepted, fc, state, rec, notes=None, at=None):
+def _apply(cfg, now, text, accepted, fc, state, rec, notes=None, at=None, release=None):
     lists = {}
     if fc:
         lists = {k: (old, new) for k, old, new in (("stock.focus_skus", fc["old"], fc["new"]),
@@ -555,6 +608,8 @@ def _apply(cfg, now, text, accepted, fc, state, rec, notes=None, at=None):
             fc["status"] = status
         if notes is not None:
             rec["notes"] = status
+        if release is not None:
+            rec["template"] = status
         rec["errors"].append(why)
 
     lock = None
@@ -563,7 +618,7 @@ def _apply(cfg, now, text, accepted, fc, state, rec, notes=None, at=None):
         if lock is None:
             held_back("locked", f"another strategist is writing {cfg.skill.name}; nothing written")
             return
-        new_text = skillfile.apply(cfg.skill, text, changes, notes)
+        new_text = skillfile.apply(cfg.skill, text, changes, notes, release)
     except skillfile.Conflict as e:
         held_back("conflict", f"conflict: {e}; nothing written")
         return
@@ -579,6 +634,8 @@ def _apply(cfg, now, text, accepted, fc, state, rec, notes=None, at=None):
         fc["status"] = "applied"
     if notes is not None:
         rec["notes"] = "applied"
+    if release is not None:
+        rec["template"] = "applied"
     _copy(cfg, new_text, now if at is None else at, rec, skillfile.save_copy)
     rec["policy_ver_after"] = skillfile.ver(new_text)
     last_ts, last = state.setdefault("last_change_ts", {}), _last_change(state, cfg.home)
@@ -605,6 +662,9 @@ def _apply(cfg, now, text, accepted, fc, state, rec, notes=None, at=None):
         row["evidence"] = {"stock.focus_skus": fc["evidence"]}
     if notes is not None:
         row["notes"] = notes
+    if release is not None:
+        row["body"] = "template"
+        row["reason"] = "; ".join(x for x in (row["reason"], "body follows release") if x)
     if rec["history"]:
         row["copy"] = rec["history"][-1]
     append_jsonl(cfg.home / "changes.jsonl", row)
@@ -681,6 +741,11 @@ def _focus_lines(rec, brief):
     return out
 
 
+def _migration_text(rec):
+    return "; ".join(f"{m['id']} 적용 {m['applied']}, 건너뜀 {sorted(m['skipped'])}, 거절 {sorted(m['rejected'])}"
+                     for m in rec.get("migrations") or []) or None
+
+
 def _report(cfg, rec, brief):
     when = time.strftime("%Y-%m-%d %H:%M %Z", time.localtime(rec["ts"]))
     mode = rec["mode"] + (" (일시정지: STRATEGIST_PAUSE)" if rec["paused"] else "")
@@ -690,6 +755,8 @@ def _report(cfg, rec, brief):
            f"- 확신도: {rec['confidence']}", f"- 남은 시간: {brief.get('hours_left')} h",
            f"- 패치 대응: {_cell((rec.get('patch') or {}).get('version')) if rec.get('patch') else '아님'}",
            f"- 전략 메모: {_cell(rec.get('notes'))}",
+           f"- 본문 (배포 템플릿): {_cell(rec.get('template'))}",
+           f"- 일회성 값 이전: {_cell(_migration_text(rec))}",
            f"- SKILL.md 사본: {', '.join(rec.get('history') or []) or '(없음)'}", "",
            "## 판단", "", rec["assessment"] or "(없음)", "", "## 우리 지표"]
     out += _metrics(brief)

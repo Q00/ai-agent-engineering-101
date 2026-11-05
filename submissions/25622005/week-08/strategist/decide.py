@@ -86,6 +86,7 @@ Supply and depth:
 - Buyer: the food cap is min(buyer.cap_food, 1 - buyer.min_surplus_list) * list price. Goods without a warranty:
   1 - measured break rate - buyer.min_surplus_list, or buyer.cap_goods_no_warranty before any measurement.
 - forum.min_gap_min spaces our buyer posts; it is set from the market's post limit automatically, not by you.
+- History sources "migration" (an old shipped default, once) and "linked" (same food cap) are code's, not yours.
 - Brief sections: ops.restock (runs, window_closed_runs, window, stock depth, empty_picks and overpriced,
   excluded reasons, surge factors, memory ingest per run: ran / window / migration_pending / error), ops.kit
   (the kit's log: supply bought and refused by status, payments and refusals, restarts, errors) and

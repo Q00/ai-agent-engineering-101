@@ -27,6 +27,8 @@ import policy  # noqa: E402
 from model import harness  # noqa: E402
 from strategist import run, skillfile  # noqa: E402
 
+MIGRATIONS = run.migrate.MIGRATIONS     # Base turns them off; ReleaseTest turns them back on
+
 # A frozen copy of strategy/SKILL.md: the image has no SKILL.md, and the values asserted here
 # must not move when the user or the strategist tunes the real file.
 REAL = Path(__file__).resolve().parent / "fixture_SKILL.md"
@@ -113,6 +115,12 @@ class Base(unittest.TestCase):
             json.dumps({"ts": NOW - 200, "event": "refuse", "reason": "below floor"}) + "\n", encoding="utf-8")
         self.answer = self.tmp / "answer.txt"
         self.harness(None)
+        # the fixture holds the old shipped end-of-round values and its own body: no migrations, and the fixture
+        # comes first as the release body (so the body stays), unless a test sets them (ReleaseTest)
+        for target, name, new in ((run.migrate, "MIGRATIONS", ()), (skillfile, "TEMPLATES", (REAL,) + skillfile.TEMPLATES)):
+            patcher = mock.patch.object(target, name, new)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def harness(self, touch):
         cmd = f"{sys.executable} {self.tmp / 'fake_harness.py'} {self.answer}" + (f" {touch}" if touch else "")
@@ -598,7 +606,7 @@ class RulesTest(Base):
         self.skill.write_text(self.orig.replace("cap_food: 0.95", "cap_food: 0.98")
                               .replace("min_surplus_list: 0.05", "min_surplus_list: 0.07"), encoding="utf-8")
         self.answer_with([{"key": "buyer.cap_food", "value": 1.0}, {"key": "buyer.min_surplus_list", "value": 0.05}])
-        rec = self.run_at()
+        rec = self.run_at(mode="propose")               # apply mode repairs it first (ReleaseTest)
         name = next(iter(run.guard.LINKED))
         self.assertIn(name, rec["alerts"])
         self.assertEqual([(r["key"], r["why"]) for r in rec["rejected"]], [("buyer.cap_food", f"linked: {name}"),
@@ -747,12 +755,15 @@ class OutcomeVisibleTest(Base):
         self.assertEqual(rec["status"], "no change")
 
     def test_a_revert_the_guard_refuses_says_why(self):
-        self.skill.write_text(self.orig.replace("cap_food: 0.95", "cap_food: 0.98"), encoding="utf-8")
+        self.skill.write_text(self.orig.replace("cap_food: 0.95", "cap_food: 0.98")
+                              .replace("min_surplus_list: 0.05", "min_surplus_list: 0.02"), encoding="utf-8")
         self.food_orders((140, 200), [(12, 50), (13, 50)])
-        self.answer_with([{"key": "buyer.cap_food", "value": 0.95}])    # repairs the linked break
+        self.answer_with([{"key": "buyer.cap_food", "value": 0.95}])
         first = self.run_at(NOW)
         self.assertEqual([(a["key"], a["new"]) for a in first["applied"]], [("buyer.cap_food", 0.95)], first)
-        rec = self.run_at(NOW + 3600)                   # back to 0.98 would break it again
+        self.skill.write_text(self.skill.read_text(encoding="utf-8").replace("min_surplus_list: 0.02",
+                                                                             "min_surplus_list: 0.05"), encoding="utf-8")
+        rec = self.run_at(NOW + 3600)                   # back to 0.98 would break the linked constraint
         self.assertEqual((rec["applied"], rec["rejected"][0]["key"]), ([], "buyer.cap_food"))
         out = [r for r in self.lines("changes.jsonl") if r.get("outcome_of")]
         self.assertTrue(out[0]["result"].startswith("revert not applied (linked: buyer.cap_food"), out[0])
@@ -926,6 +937,122 @@ class ControlTest(Base):
         self.assertIn("| stock.trend_skus +1 -2 | trend | - |", md)
         for hidden in ("secret", '"C"', "| E"):
             self.assertNotIn(hidden, md)
+
+
+class ReleaseTest(Base):
+    """No hand edit of the live file at a deploy: in apply mode the run migrates old shipped defaults once, brings
+    buyer.cap_food down to 1 - min_surplus_list, and makes the body (not the notes) follow the shipped SKILL.md."""
+    ID = "2026-11-06-patch-3.3-end-of-round"
+
+    def setUp(self):
+        super().setUp()
+        # a frozen release, not strategy/SKILL.md: on the host that runs the shop it is the live file (compose mounts
+        # it), and the image build that copies it runs these tests
+        release = self.tmp / "release_SKILL.md"
+        release.write_text(self.orig.replace("5. Unsold stock is worth nothing at the end. Cash and turnover beat margin.",
+                                             "5. Unsold stock counts at what it cost when the round ends (Patch 3.3)."),
+                           encoding="utf-8")
+        for target, name, new in ((run.migrate, "MIGRATIONS", MIGRATIONS), (skillfile, "TEMPLATES", (release,))):
+            patcher = mock.patch.object(target, name, new)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        self.live = skillfile.set_notes(self.orig.replace("min_surplus_list: 0.05", "min_surplus_list: 0.07"),
+                                        "my reading of the market")
+        self.skill.write_text(self.live, encoding="utf-8")
+
+    @staticmethod
+    def front(text):
+        return text[:text.index("\n---\n", 4) + 5].splitlines()
+
+    def test_all_three_in_one_edit_when_the_model_fails_then_nothing_twice(self):
+        self.answer_with(None, text="{not json")
+        rec = self.run_at()
+        self.assertEqual([(a["key"], a["old"], a["new"], a["source"]) for a in rec["applied"]],
+                         [("stock.taper_h", 72, 0, "migration"), ("stock.goods_stop_h", 24, 6, "migration"),
+                          ("stock.clear_70_h", 24, 0, "migration"), ("stock.clear_any_h", 6, 0, "migration"),
+                          ("buyer.cap_food", 0.95, 0.93, "linked")], rec["rejected"])
+        self.assertIn("llm: ", rec["errors"][-1])
+        new = self.skill.read_text(encoding="utf-8")
+        changed = [(a, b) for a, b in zip(self.front(self.live), self.front(new)) if a != b]
+        self.assertEqual(len(changed), 6, changed)                      # five values and the version line
+        self.assertEqual(len(self.front(new)), len(self.front(self.live)))
+        release = skillfile.release_body(self.skill)
+        self.assertIsNone(skillfile.follow_release(new, release))
+        self.assertIn("Unsold stock counts at what it cost", new)
+        self.assertNotIn("Unsold stock is worth nothing", new)
+        self.assertEqual(skillfile.notes_of(new), "my reading of the market")
+        self.assertEqual((rec["template"], rec["migrations"]),
+                         ("applied", [{"id": self.ID, "applied": ["stock.clear_70_h", "stock.clear_any_h",
+                                                                   "stock.goods_stop_h", "stock.taper_h"],
+                                       "skipped": {}, "rejected": {}}]))
+        self.assertEqual([a for a in rec["alerts"] if a.startswith("buyer.cap_food")], [])
+        diff, mig = self.lines("changes.jsonl")
+        self.assertEqual((diff["body"], diff["kind"]["buyer.cap_food"], diff["kind"]["stock.taper_h"]),
+                         ("template", "linked", "migration"))
+        self.assertTrue(diff["reason"].endswith("body follows release"))
+        self.assertEqual((mig["migration"], mig["skipped"]), (self.ID, {}))
+        state = json.loads((self.home / "state.json").read_text(encoding="utf-8"))
+        self.assertEqual(state["migrations"], [self.ID])
+        self.assertEqual(state["last_change_ts"]["stock.taper_h"], NOW)        # the cooldown starts like any row
+        self.assertEqual([c.read_text(encoding="utf-8") for c in skillfile.copies(self.skill)], [self.live, new])
+        report = (self.home / "reports" / "latest.md").read_text(encoding="utf-8")
+        self.assertIn("본문 (배포 템플릿): applied", report)
+        self.assertIn(self.ID, report)
+
+        rec = self.run_at(NOW + 1800)                                   # idempotent
+        self.assertEqual((rec["applied"], rec["template"], rec["migrations"]), ([], None, []))
+        self.assertEqual(self.skill.read_text(encoding="utf-8"), new)
+        self.assertEqual(len(skillfile.copies(self.skill)), 2)
+        self.assertEqual(len(self.lines("changes.jsonl")), 2)
+
+    def test_a_tuned_key_is_skipped_and_the_entry_runs_once(self):
+        self.skill.write_text(self.live.replace("taper_h: 72", "taper_h: 60"), encoding="utf-8")
+        self.answer_with([])
+        rec = self.run_at()
+        self.assertEqual([a["key"] for a in rec["applied"] if a["source"] == "migration"],
+                         ["stock.goods_stop_h", "stock.clear_70_h", "stock.clear_any_h"])
+        self.assertEqual(rec["migrations"][0]["skipped"], {"stock.taper_h": {"live": 60, "from": 72}})
+        self.assertEqual(self.lines("changes.jsonl")[-1]["skipped"], {"stock.taper_h": {"live": 60, "from": 72}})
+        back = self.skill.read_text(encoding="utf-8").replace("goods_stop_h: 6\n", "goods_stop_h: 24\n")
+        self.skill.write_text(back, encoding="utf-8")                   # the user sets the old value again
+        rec = self.run_at(NOW + 1800)
+        self.assertEqual((rec["applied"], rec["migrations"]), ([], []))
+        self.assertEqual(skillfile.read(self.skill)[1]["policy"]["stock"]["goods_stop_h"], 24)
+
+    def test_held_back_by_propose_pause_or_lock_then_written(self):
+        self.answer_with([])
+        rec = self.run_at(mode="propose")
+        self.assertEqual((rec["applied"], rec["proposed"], rec["template"], rec["migrations"]), ([], [], None, []))
+        self.assertIn(next(iter(run.guard.LINKED)), rec["alerts"])      # propose mode leaves the break to the model
+        (self.shop / "strategy" / "STRATEGIST_PAUSE").write_text("", encoding="utf-8")
+        rec = self.run_at(NOW + 60)
+        self.assertEqual((rec["applied"], rec["template"], rec["migrations"]), ([], None, []))
+        (self.shop / "strategy" / "STRATEGIST_PAUSE").unlink()
+        with open(self.shop / "strategy" / ".strategist.lock", "a") as f:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            rec = self.run_at(NOW + 120)
+        self.assertEqual((rec["status"], rec["template"], len(rec["proposed"]), rec["migrations"]),
+                         ("locked", "locked", 5, []))
+        self.assertEqual(self.skill.read_text(encoding="utf-8"), self.live)
+        self.assertNotIn("migrations", json.loads((self.home / "state.json").read_text(encoding="utf-8")))
+        rec = self.run_at(NOW + 180)
+        self.assertEqual((len(rec["applied"]), rec["template"], rec["migrations"][0]["id"]), (5, "applied", self.ID))
+
+    def test_no_release_body_when_the_template_is_the_live_file(self):
+        self.answer_with([])
+        with mock.patch.object(skillfile, "TEMPLATES", (self.skill,)):
+            rec = self.run_at()
+        self.assertIsNone(rec["template"])
+        self.assertEqual(policy.split_skill(self.skill.read_text(encoding="utf-8"))[1], policy.split_skill(self.live)[1])
+
+    def test_an_empty_template_body_never_wipes_the_live_body(self):
+        empty = self.tmp / "empty_SKILL.md"
+        empty.write_text(self.orig[:self.orig.index("\n---\n", 4) + 5] + "\n", encoding="utf-8")
+        self.answer_with([])
+        with mock.patch.object(skillfile, "TEMPLATES", (empty,)):
+            rec = self.run_at()
+        self.assertIsNone(rec["template"])
+        self.assertEqual(policy.split_skill(self.skill.read_text(encoding="utf-8"))[1], policy.split_skill(self.live)[1])
 
 
 class ConfigTest(unittest.TestCase):

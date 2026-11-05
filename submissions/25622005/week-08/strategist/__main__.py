@@ -4,7 +4,7 @@ python -m strategist health [--home PATH]      exit 0 while the heartbeat is fre
 Without --once it runs forever: the first run 60 s after start, then every interval (default 1800 s).
 Each run reads the shop's SKILL.md, logs and .market/inventory.json (no other .market file), and may
 rewrite tunable numbers, stock.focus_skus, stock.trend_skus and the body's `## Strategist notes` in SKILL.md
-(never code); each text it writes, and a hand edit it finds, is kept as strategy/SKILL.md.<epoch seconds>.
+(the rest of the body follows the SKILL.md shipped with the code; never code); each text it writes, and a hand edit it finds, is kept as strategy/SKILL.md.<epoch seconds>.
 Environment: SHOP_HOME, STRATEGIST_HOME, STRATEGIST_MODE, STRATEGIST_INTERVAL_S, MARKET_URL,
 STRATEGIST_HARNESS_CMD (unset: model/harness.py's HARNESS_CMD or Haiku 5.5), STRATEGIST_LOG_REPO,
 STRATEGIST_LOG_BRANCH, STRATEGIST_LOG_KEY (after each run, push the records there).

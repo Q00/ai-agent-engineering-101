@@ -11,7 +11,9 @@ sees a half-written file.
 A key in policy.DEFAULTS that the file does not have yet (added to the code after the file was written) is
 inserted at the end of its section (the section after the policy block when it is missing too), with the
 line and comment of the repository's strategy/SKILL.md when it has one. The body section `## Strategist notes`
-holds the strategist's own notes (set_notes): replaced whole, created at the end of the body.
+holds the strategist's own notes (set_notes): replaced whole, created at the end of the body. The rest of the
+body belongs to the code release: follow_release replaces it with the body of the SKILL.md shipped with the code
+(release_body), keeping the front matter and the notes section as they are.
 
 History: every text the strategist writes is also kept next to the file as SKILL.md.<epoch seconds>
 (save_copy; _1, _2, ... when the name is taken), and keep_hand_edit saves the file as it is when it differs
@@ -228,6 +230,52 @@ def set_notes(text, notes):
     return "".join(lines[:head] + block + (["\n"] if stop < len(lines) else []) + lines[stop:])
 
 
+def _notes_span(lines, end):
+    """(first, stop) line indexes of the `## Strategist notes` section after the front matter's closing line end,
+    or None."""
+    head = next((i for i in range(end + 1, len(lines)) if lines[i].rstrip("\n") == NOTES_HEAD), None)
+    if head is None:
+        return None
+    return head, next((i for i in range(head + 1, len(lines)) if re.match(r"#{1,2} ", lines[i])), len(lines))
+
+
+def _parts(text):
+    """(front matter lines with both '---' lines, body lines without the notes section, notes section lines)."""
+    lines = text.splitlines(keepends=True)
+    _, end = _front_lines(lines)
+    span = _notes_span(lines, end)
+    if span is None:
+        return lines[:end + 1], lines[end + 1:], []
+    return lines[:end + 1], lines[end + 1:span[0]] + lines[span[1]:], lines[span[0]:span[1]]
+
+
+def release_body(path):
+    """The body, without a notes section, of the first TEMPLATES file that is not path itself (in the container
+    the repository copy is the live file, so the image's /opt/agent copy), or None without one."""
+    path = Path(path)
+    for t in TEMPLATES:
+        try:
+            if t.resolve() == path.resolve() or (path.exists() and os.path.samefile(t, path)):
+                continue
+            return "".join(_parts(t.read_text(encoding="utf-8"))[1])
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def follow_release(text, body):
+    """text with its body, except the notes section, replaced by body (release_body); the front matter and the
+    notes section stay byte for byte, the notes at the end. None when they differ only in whitespace."""
+    front, mine, notes = _parts(text)
+    if "".join(mine).split() == body.split():
+        return None
+    new = body if body.endswith("\n") else body + "\n"
+    if notes:
+        notes[-1] += "" if notes[-1].endswith("\n") else "\n"
+        new += ("" if new.endswith("\n\n") else "\n") + "".join(notes)
+    return "".join(front) + new
+
+
 def _check(new_text, changes):
     front, _ = policy.split_skill(new_text)
     errors = policy.validate(policy.fill_defaults(front.get("policy"))[0])
@@ -257,14 +305,16 @@ def _atomic_write(path, text, expected_text):
             tmp.unlink()
 
 
-def apply(path, expected_text, changes, notes=None):
-    """Write changes {"seller.floor_list": 0.55, "stock.focus_skus": ["G1"], ...} (and notes, clean_notes'd, into
-    the body) into the file and return the new text. Conflict when the file is not expected_text; ValueError when
+def apply(path, expected_text, changes, notes=None, body=None):
+    """Write changes {"seller.floor_list": 0.55, "stock.focus_skus": ["G1"], ...} (and the release body, see
+    follow_release, and notes, clean_notes'd, into the body) into the file and return the new text. Conflict when the file is not expected_text; ValueError when
     the result would not validate. In both cases the file is left as it was."""
     path = Path(path)
     if path.read_text(encoding="utf-8") != expected_text:
         raise Conflict(f"{path.name} changed since it was read")
     new_text = _edit(expected_text, changes)
+    if body is not None:
+        new_text = follow_release(new_text, body) or new_text
     if notes is not None:
         new_text = set_notes(new_text, notes)
     _check(new_text, changes)
