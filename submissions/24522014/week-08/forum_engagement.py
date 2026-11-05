@@ -9,7 +9,7 @@ import time
 from uuid import uuid4
 
 from forum_demand import requests
-from forum_policy import enqueue, message_key, posting_limits
+from forum_policy import BUYER_CORRECTION, enqueue, message_key, posting_limits
 import forum_posts
 from market_state import read, write, task_file
 from r3_policy import selling_terms
@@ -127,6 +127,8 @@ def effects(md, posts, now):
 def followup(md, actions, now):
     # Only our own preserved purchase records can justify a later-fault report.
     sent = sent_messages(md)
+    enabled = posting_limits(md, now).get("buyer_posts_enabled")
+    paused = False
     for key, action in reversed(list(actions.items())):
         if action["kind"] != "buyer_report" or not 21600 <= now-action["queued_at"] <= 86400:
             continue
@@ -135,16 +137,25 @@ def followup(md, actions, now):
         record = read(md / "buyer-deals" / f"{action['ledger']}.json", {})
         if not record or record.get("ledger") != action["ledger"] or record.get("unit") != action.get("unit"):
             continue
+        correction = bool(record.get("refund_confirmed") or record.get("fault"))
+        if not correction and not enabled:
+            # Skipped here, so a no-news follow-up cannot stand in front of a correction further down the list.
+            paused = True
+            continue
         status = ("Refund settlement confirmed." if record.get("refund_confirmed") else
                   "A unit-matched breakage event was observed." if record.get("fault") else
                   "No unit-matched breakage/refund event in our available local records; continued function is unverified.")
         message = {"post": f"Follow-up to buyer settlement #{action['ledger']}: {status} Partial observation only.",
                    "refs": [action["ledger"]], "as": "buyer"}
-        outcome = enqueue(md, message, f"followup:{action['ledger']}", "buyer_followup",
+        earlier = actions.get(f"followup:{action['ledger']}")
+        if correction and earlier and "No unit-matched" not in earlier.get("message", {}).get("post", ""):
+            continue  # An older follow-up already reported this fault.
+        # A correction has its own key: it must still go out after a no-news follow-up on the same deal.
+        outcome = enqueue(md, message, f"{'correction' if correction else 'followup'}:{action['ledger']}", BUYER_CORRECTION if correction else "buyer_followup",
                           {"ledger": action["ledger"], "sku": action["sku"]}, now)
         if outcome != "already_queued":
             return outcome
-    return "none"
+    return "paused_no_correction" if paused else "none"
 
 
 def last_queued(actions, kind, **fields):

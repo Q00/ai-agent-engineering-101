@@ -9,6 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from forum_engagement import available, preview, run
+import forum_engagement
 import forum_policy
 import forum_posts
 from market_state import read, write
@@ -179,6 +180,7 @@ class Pace(Base):
         self.assertEqual(forum_policy.enqueue(self.md, {"post": "x", "as": "shop"}, "x", "stock_notice", {}, T + 24 * 3600 - T % 86400 - 1), "rate_limited")
 
     def test_buyer_limits_are_unchanged(self):
+        self.limits = {**LIMITS, "buyer_posts_enabled": True}
         self.assertEqual(forum_policy.posting_limits(self.md, T)["buyer_daily_limit"], 12)
         self.assertEqual(forum_policy.enqueue(self.md, {"post": "a", "as": "buyer"}, "a", "buyer_followup", {}, T), "queued")
         self.assertEqual(forum_policy.enqueue(self.md, {"post": "b", "as": "buyer"}, "b", "buyer_followup", {}, T + 3599), "rate_limited")
@@ -213,11 +215,99 @@ class Brake(Base):
         self.assertEqual(forum_policy.enqueue(self.md, {"post": "r", "as": "shop"}, "r", "stock_reply", {}, self.now + 3599), "rate_limited")
 
     def test_thresholds(self):
-        for rows, expected in (([dict(role="shop", likes=9, dislikes=1)] * 3, False), ([dict(role="shop", likes=0, dislikes=2)] * 2, False), ([dict(role="shop", likes=0, dislikes=1)] * 2, False),
-                               ([dict(role="buyer", likes=0, dislikes=5)] * 3, False), ([dict(role="shop", likes=3, dislikes=1)] * 3, False), ([dict(role="shop", likes=2, dislikes=1)] * 3, True)):
-            with self.subTest(rows=rows[0]):
+        one, two, buyer = dict(role="shop", likes=0, dislikes=1), dict(role="shop", likes=9, dislikes=2), dict(role="buyer", likes=0, dislikes=9)
+        for rows, expected in (([one] * 5, False), ([two] * 2 + [one] * 3, False), ([two] * 3, True), ([two] * 3 + [one] * 2, True), ([buyer] * 5, False), ([two] * 2 + [buyer] * 3, False),
+                               ([dict(role="shop", likes=0, dislikes=None)] * 5, False), ([dict(role="shop", likes=0, dislikes=3)] * 3, True)):
+            with self.subTest(rows=rows):
                 self.reactions(rows)
                 self.assertEqual(forum_policy.posting_limits(self.md, self.now)["shop_reaction_brake"], expected)
+
+    def test_off_means_the_configured_pace(self):
+        self.reactions([dict(role="shop", likes=0, dislikes=1)] * 5)
+        value = forum_policy.posting_limits(self.md, self.now)
+        self.assertEqual((value["shop_daily_limit"], value["shop_reply_interval_seconds"]), (24, 600))
+
+    def test_old_total_rule_no_longer_brakes_a_shop(self):
+        self.reactions([dict(role="shop", likes=0, dislikes=1)] * 3 + [dict(role="shop", likes=0, dislikes=2)] * 2)
+        self.assertFalse(forum_policy.posting_limits(self.md, self.now)["shop_reaction_brake"])
+
+
+class BuyerPause(Base):
+    BUYER = {"post": "x", "refs": [1], "as": "buyer"}
+
+    def outbox(self):
+        path = self.md / "outbox.jsonl"
+        return path.read_text(encoding="utf8").splitlines() if path.exists() else []
+
+    def test_blocked_unless_the_setting_is_exactly_true(self):
+        for value in ({**LIMITS}, {**LIMITS, "buyer_posts_enabled": False}, {**LIMITS, "buyer_posts_enabled": "true"}, {**LIMITS, "buyer_posts_enabled": 1}, {}, FileNotFoundError(), ValueError("broken")):
+            with self.subTest(value=value):
+                self.limits = value
+                self.assertIs(forum_policy.posting_limits(self.md, T)["buyer_posts_enabled"], False)
+                for kind in ("buyer_report", "buyer_followup"):
+                    self.assertEqual(forum_policy.enqueue(self.md, self.BUYER, f"{kind}:1", kind, {"ledger": 1}, T), "buyer_posts_paused")
+                self.assertEqual(self.outbox(), [])
+
+    def test_shipped_setting_blocks(self):
+        shipped = json.loads((forum_policy.ROOT / "forum_posting.json").read_text(encoding="utf-8"))
+        self.assertIs(shipped["buyer_posts_enabled"], False)
+        self.assertTrue(forum_policy.valid_limits(shipped))
+
+    def test_report_path_stops_at_the_policy_and_shop_posts_continue(self):
+        deal = dict(receipt={"price": 80}, settled=dict(ledger=1, sku="G1", unit="u1", value=100, grade="A"))
+        self.assertEqual(forum_policy.queue_report(self.md, deal, {"stars": 5}, T), "buyer_posts_paused")
+        self.assertEqual(forum_policy.enqueue(self.md, {"post": "s", "as": "shop"}, "s", "stock_notice", {}, T), "queued")
+        self.assertEqual(len(self.outbox()), 1)
+
+    def test_skips_are_counted_and_said_once(self):
+        with patch("sys.stderr") as stderr:
+            for index in range(3):
+                forum_policy.enqueue(self.md, self.BUYER, f"k{index}", "buyer_report", {"ledger": index}, T + index)
+        self.assertEqual("".join(str(c) for c in stderr.mock_calls).count("중단"), 1)
+        self.assertEqual(read(self.md / "forum-policy.json")["buyer_pause"]["skipped"], {"buyer_report": 3})
+        self.assertEqual(len((self.root / "logs/forum-buyer-pause.jsonl").read_text(encoding="utf8").splitlines()), 1)
+
+    def test_only_a_correction_passes_and_keeps_the_interval(self):
+        self.assertEqual(forum_policy.enqueue(self.md, self.BUYER, "correction:1", forum_policy.BUYER_CORRECTION, {"ledger": 1}, T), "queued")
+        self.assertEqual(forum_policy.enqueue(self.md, self.BUYER, "correction:2", forum_policy.BUYER_CORRECTION, {"ledger": 2}, T + 60), "rate_limited")
+
+    def posted_report(self, ledger, at, **record):
+        message = {"post": f"report {ledger}", "refs": [ledger], "as": "buyer"}
+        actions = read(self.md / "forum-actions.json", {})
+        actions[f"buyer-report:{ledger}"] = dict(kind="buyer_report", queued_at=at, role="buyer", ledger=ledger, sku="G1", unit=f"u{ledger}", message=message, message_key=forum_policy.message_key(message))
+        write(self.md / "forum-actions.json", actions)
+        with (self.md / "outbox.sent.jsonl").open("a", encoding="utf8") as stream:
+            stream.write(json.dumps({"sent": message, "status": 200}) + "\n")
+        write(self.md / "buyer-deals" / f"{ledger}.json", dict(ledger=ledger, unit=f"u{ledger}", **record))
+        return read(self.md / "forum-actions.json")
+
+    def test_no_news_followup_is_skipped_without_hiding_a_correction(self):
+        self.posted_report(1, T - 30000, fault={"at": T})
+        actions = self.posted_report(2, T - 22000)
+        self.assertEqual(forum_engagement.followup(self.md, actions, T), "queued")
+        lines = self.outbox()
+        self.assertEqual(len(lines), 1)
+        self.assertIn("settlement #1", lines[0])
+        self.assertIn("breakage", lines[0])
+        self.assertEqual(read(self.md / "forum-actions.json")["correction:1"]["kind"], forum_policy.BUYER_CORRECTION)
+
+    def test_all_no_news_is_paused_and_posts_nothing(self):
+        actions = self.posted_report(1, T - 22000)
+        self.assertEqual(forum_engagement.followup(self.md, actions, T), "paused_no_correction")
+        self.assertEqual(self.outbox(), [])
+
+    def test_a_refund_after_a_no_news_followup_still_goes_out_once(self):
+        actions = self.posted_report(1, T - 22000, refund_confirmed=True)
+        actions["followup:1"] = dict(kind="buyer_followup", queued_at=T - 500, role="buyer", message={"post": "Follow-up: No unit-matched breakage."}, message_key="x")
+        write(self.md / "forum-actions.json", actions)
+        self.assertEqual(forum_engagement.followup(self.md, actions, T), "queued")
+        self.assertIn("Refund settlement", self.outbox()[0])
+        self.assertEqual(forum_engagement.followup(self.md, read(self.md / "forum-actions.json"), T + 4000), "none")
+
+    def test_an_older_followup_that_reported_the_fault_is_not_repeated(self):
+        actions = self.posted_report(1, T - 22000, fault={"at": T})
+        actions["followup:1"] = dict(kind="buyer_followup", queued_at=T - 500, role="buyer", message={"post": "Follow-up: A unit-matched breakage event was observed."}, message_key="x")
+        self.assertEqual(forum_engagement.followup(self.md, actions, T), "none")
 
 
 def settle(seq, ts, unit_id="own", honest=True, warranty=None, item="G1", grade="A", amount=1000):

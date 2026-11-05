@@ -5,6 +5,7 @@ import json
 import hashlib
 import math
 from pathlib import Path
+import sys
 import time
 
 from market_state import read, write
@@ -13,6 +14,9 @@ ROOT = Path(__file__).resolve().parent
 EARLIER_LIMITS = {"buyer_daily_limit": 12, "buyer_report_limit": 9, "shop_daily_limit": 4, "shop_reply_interval_seconds": 3600, "min_interval_seconds": 3600,
                   "brake_dislikes": 3, "brake_dislike_ratio": .25, "minimum_report_surplus_ratio": .1}
 MARKET_SHOP_INTERVAL = 300
+# Nearly every post on the board carries one dislike, so one says nothing; a shop slows down only when several posts draw two or more.
+SHOP_BRAKE_DISLIKES, SHOP_BRAKE_POSTS = 2, 3
+BUYER_CORRECTION = "buyer_correction"  # A later breakage or refund on a deal we already reported. The one buyer post a pause allows.
 
 
 def valid_limits(value):
@@ -27,7 +31,7 @@ def valid_limits(value):
 
 
 def posting_limits(md, now):
-    """A missing or unusable settings file means the earlier, smaller limits, never a stopped hook."""
+    """A missing or unusable settings file means the earlier, smaller limits, never a stopped hook. Buyer posts run only on an explicit true."""
     try:
         value = read(ROOT / "forum_posting.json")
     except (OSError, ValueError):
@@ -40,12 +44,11 @@ def posting_limits(md, now):
     likes = sum(r.get("likes") or 0 for r in reactions)
     dislikes = sum(r.get("dislikes") or 0 for r in reactions)
     brake = len(reactions) >= 3 and dislikes >= value["brake_dislikes"] and dislikes/max(1, likes+dislikes) > value["brake_dislike_ratio"]
-    shop = [r for r in reactions if r.get("role") == "shop"]
-    shop_likes, shop_dislikes = sum(r.get("likes") or 0 for r in shop), sum(r.get("dislikes") or 0 for r in shop)
-    shop_brake = len(shop) >= 3 and shop_dislikes >= value["brake_dislikes"] and shop_dislikes/max(1, shop_likes+shop_dislikes) > value["brake_dislike_ratio"]
+    shop_brake = sum(r.get("role") == "shop" and (r.get("dislikes") or 0) >= SHOP_BRAKE_DISLIKES for r in reactions) >= SHOP_BRAKE_POSTS
     shop_limits = {"shop_daily_limit": EARLIER_LIMITS["shop_daily_limit"], "shop_reply_interval_seconds": EARLIER_LIMITS["shop_reply_interval_seconds"]} if shop_brake else {}
     return {**value, **shop_limits, "buyer_daily_limit": 4 if brake else value["buyer_daily_limit"],
-            "buyer_report_limit": 3 if brake else value["buyer_report_limit"], "reaction_brake": brake, "shop_reaction_brake": shop_brake}
+            "buyer_report_limit": 3 if brake else value["buyer_report_limit"], "reaction_brake": brake, "shop_reaction_brake": shop_brake,
+            "buyer_posts_enabled": value.get("buyer_posts_enabled") is True}
 
 
 def message_key(message):
@@ -66,12 +69,33 @@ def enqueue(md, message, key, kind, metadata=None, now=None):
         release(handle)
 
 
+def note_buyer_pause(md, state, kind, now):
+    """Count every skipped buyer post; say so only when the pause begins."""
+    pause = state.get("buyer_pause")
+    if not pause:
+        pause = {"since": now, "skipped": {}}
+        print("[포럼] buyer 글 중단: 정정 글만 허용", file=sys.stderr, flush=True)
+        path = md.parent / "logs/forum-buyer-pause.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf8") as stream:
+            stream.write(json.dumps({"at": now, "buyer_posts_enabled": False}) + "\n")
+    pause["skipped"][kind] = pause["skipped"].get(kind, 0) + 1
+    state["buyer_pause"] = pause
+    write(md / "forum-policy.json", state)
+
+
 def _enqueue(md, message, key, kind, metadata, now):
     settings = posting_limits(md, now)
     state = read(md / "forum-policy.json", {"ledger_refs": [], "last_at": 0, "day": "", "count": 0})
     actions = read(md / "forum-actions.json", {})
     if key in actions or (kind == "buyer_report" and metadata["ledger"] in state["ledger_refs"]):
         return "already_queued"
+    if message["as"] == "buyer":
+        if not settings.get("buyer_posts_enabled") and kind != BUYER_CORRECTION:
+            note_buyer_pause(md, state, kind, now)
+            return "buyer_posts_paused"
+        if settings.get("buyer_posts_enabled"):
+            state.pop("buyer_pause", None)
     day = datetime.fromtimestamp(now, timezone.utc).date().isoformat()
     role = message["as"]
     limits = state if role == "buyer" else state.get("shop", {"last_at": 0, "day": "", "count": 0})

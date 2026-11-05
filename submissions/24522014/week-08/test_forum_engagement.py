@@ -9,6 +9,7 @@ from forum_capture import capture
 from forum_monitor import observe
 from forum_demand import match_request, requests
 from forum_engagement import run, effects, available, followup
+import forum_policy
 from forum_policy import queue_report, enqueue, message_key
 from market_state import read, write, task_file
 
@@ -17,12 +18,23 @@ CONFIG = {"collection_interval_seconds": 1800, "analysis_interval_seconds": 1800
           "max_posts": 100, "retention_seconds": 86400}
 
 
+def enabled_read(path, default=None):
+    """These tests cover how buyer posts behave when they run, which only an explicit setting allows."""
+    if Path(path).name == "forum_posting.json":
+        return {**forum_policy.EARLIER_LIMITS, "shop_daily_limit": 24, "shop_reply_interval_seconds": 600, "buyer_posts_enabled": True}
+    return read(path, default)
+
+
+
 class ForumEngagementTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.md = Path(self.tmp.name) / ".market"
         self.md.mkdir()
+        settings = patch.object(forum_policy, "read", side_effect=enabled_read)
+        settings.start()
+        self.addCleanup(settings.stop)
         self.unit = dict(unit="u1", sku="G1", kind="goods", grade="A", cost=100, list_price=150,
                          supplied_at=T-60, name="침구", category="가구/침구>침구/홈데코>침구",
                          cert={"sig": "fixture", "cert": dict(unit="u1", sku="G1", kind="goods", grade="A")})

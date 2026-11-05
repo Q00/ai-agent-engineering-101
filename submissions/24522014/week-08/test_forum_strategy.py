@@ -2,12 +2,27 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
+import forum_policy
 from forum_policy import queue_report
+from market_state import read
 from market_intel import competition
 
 
+def enabled_read(path, default=None):
+    """These tests cover how buyer posts behave when they run, which only an explicit setting allows."""
+    if Path(path).name == "forum_posting.json":
+        return {**forum_policy.EARLIER_LIMITS, "shop_daily_limit": 24, "shop_reply_interval_seconds": 600, "buyer_posts_enabled": True}
+    return read(path, default)
+
+
 class ForumStrategy(unittest.TestCase):
+    def setUp(self):
+        settings = patch.object(forum_policy, "read", side_effect=enabled_read)
+        settings.start()
+        self.addCleanup(settings.stop)
+
     def deal(self, ledger):
         return {"receipt": {"price": 80}, "settled": {"ledger": ledger, "sku": "A", "value": 100, "grade": "A"}}
 
