@@ -18,6 +18,7 @@ def setup(tmp_path, monkeypatch, env_text):
     for k in ("DECISION_BACKEND", "TYPESAFE_API_KEY", "OPENAI_API_KEY", "JEV_MODEL", "OPENAI_DECISIONS_MODEL"):
         monkeypatch.delenv(k, raising=False)
     monkeypatch.setattr(config, "MARKET_DIR", tmp_path)
+    monkeypatch.setattr(config, "SHARED_ENV", tmp_path / "shared.env")   # never read the real key
     monkeypatch.setattr(config, "LOG_DIR", tmp_path / "logs")
     monkeypatch.setattr(config, "STATE_DIR", tmp_path / "r3")    # never touch the live call budget
     (tmp_path / "decision.env").write_text(env_text)
@@ -100,3 +101,11 @@ def test_priority_calls_use_the_reserve(monkeypatch):
         assert decide._spend_budget(now)
     assert not decide._spend_budget(now)                                         # ordinary calls stop short
     assert decide._spend_budget(now, priority=True)                              # the self-check still runs
+
+
+def test_shared_env_key_overrides_dead_week7_key(tmp_path, monkeypatch):
+    setup(tmp_path, monkeypatch, "DECISION_BACKEND=openai\n")
+    (tmp_path / "api-key.env").write_text("OPENAI_API_KEY=sk-old\n")
+    (tmp_path / "shared.env").write_text("OPENAI_API_KEY=sk-new\nAGENT_MODEL=other\n")
+    be = decide.backend()
+    assert be[2] == "sk-new" and "AGENT_MODEL" not in decide._env()

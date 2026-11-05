@@ -8,7 +8,7 @@ Where they are used, and where they are not:
 
 Request and answer shapes follow the open-source `jevdecision` 0.1.0 client (MIT), re-implemented on httpx
 because that package needs Python 3.11 and the course venv is 3.10. Settings come from .market/decision.env
-(gitignored), with OPENAI_API_KEY also read from .market/api-key.env. Every call is logged to
+(gitignored), with OPENAI_API_KEY also read from .market/api-key.env and submissions/<id>/.env. Every call is logged to
 logs/r3/decisions.jsonl without the key. Any failure returns None and the caller falls back.
 """
 import json
@@ -28,14 +28,17 @@ BACKENDS = {
 
 
 def _env():
+    """Later files win: .market/api-key.env (week-7 key, 401 since 2026-11-04 13:08 KST), then the shared
+    submissions/<id>/.env (OPENAI_API_KEY only), then .market/decision.env, then the process environment."""
     env = {}
-    for name in ("api-key.env", "decision.env"):
+    for path, keep in ((config.MARKET_DIR / "api-key.env", None), (config.SHARED_ENV, {"OPENAI_API_KEY"}),
+                       (config.MARKET_DIR / "decision.env", None)):
         try:
-            for line in (config.MARKET_DIR / name).read_text(encoding="utf-8").splitlines():
+            for line in path.read_text(encoding="utf-8").splitlines():
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
                     k, v = line.split("=", 1)
-                    if v.strip().strip("'\""):
+                    if v.strip().strip("'\"") and (keep is None or k.strip() in keep):
                         env[k.strip()] = v.strip().strip("'\"")
         except OSError:
             pass

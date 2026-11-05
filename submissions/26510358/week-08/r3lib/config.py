@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent              # the agent folder (w
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ROOT / ".market"))
 STATE_DIR = MARKET_DIR / "r3"                              # private runtime state (gitignored with .market/)
 DB_PATH = STATE_DIR / "memory.sqlite"
+SHARED_ENV = ROOT.parent / ".env"                         # submissions/<id>/.env (gitignored): the live OpenAI key
 LOG_DIR = ROOT / "logs" / "r3"                             # decision logs we submit as evidence
 MARKET_URL = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
 
