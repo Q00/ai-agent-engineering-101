@@ -15,6 +15,10 @@ the board's profit column is cash. Until 11/5 15:40 this used profit: 0.154 off 
 shops' stocks grew; on 11/4 22:50 the two still ranked the same. History lines before then carry profit and are
 not read for paces: a line carries "v": 2.)
 So passing one more row in a part is worth its weight / (rows - 1) whatever the part: what differs is the cost.
+The class view (Patch 3.3, 11/5): the midterm ranks students among students. The board marks a student player
+("student": true, with student_shop / student_buyer / student_total / student_pct); the same formula over the
+students' own shops and buyers gives those within 0.0005 (42 shops, 41 buyers on 11/5 17:00). The scoreboard
+works in that view whenever the board has it, and keeps our place among everyone beside it.
 
 Each line of analysis/scoreboard_history.jsonl keeps every row's parts, for the paces.
 """
@@ -128,37 +132,61 @@ def place(totals: dict, name) -> int | None:
     return 1 + sum(1 for v in totals.values() if v > totals[name]) if name in totals else None
 
 
-def update(now: float, board: dict) -> str:
-    """scoreboard.json from the board; one history line. Returns the line for the analysis log."""
+def side(x) -> dict:
+    """A player's shop or buyer as the board gives it: a row, or only its name."""
+    return x if isinstance(x, dict) else {"name": x} if isinstance(x, str) else {}
+
+
+def view(board: dict) -> tuple[list, list, list, str, str]:
+    """(shops, buyers, players, the total's key, "class" or "everyone"): the students' own shops and buyers and the
+    students when the board marks any, else every row."""
     shops, buyers = pools(board)
     players = [p for p in board.get("players") or [] if isinstance(p, dict) and p.get("player")]
+    students = [p for p in players if p.get("student")]
+    if not students:
+        return shops, buyers, players, "total", "everyone"
+    sn = {side(p.get("shop")).get("name") for p in students}
+    bn = {side(p.get("buyer")).get("name") for p in students}
+    return ([s for s in shops if s["name"] in sn], [b for b in buyers if b["name"] in bn], students,
+            "student_total", "class")
+
+
+def update(now: float, board: dict) -> str:
+    """scoreboard.json from the board (the class view when there is one); one history line (every row). Returns the
+    line for the analysis log."""
+    every_shops, every_buyers = pools(board)
+    everyone = [p for p in board.get("players") or [] if isinstance(p, dict) and p.get("player")]
+    shops, buyers, players, key, label = view(board)
     me = next((p for p in players if forum.own(p.get("player"))), None)
     my_shop = next((s for s in shops if forum.own(s["name"])), None)
     my_buyer = next((b for b in buyers if forum.own(b["name"])), None)
     folder().mkdir(parents=True, exist_ok=True)
     then = history_since(now)
     with open(folder() / "scoreboard_history.jsonl", "a", encoding="utf-8") as f:
-        f.write(json.dumps({"at": int(now), "v": VERSION, **compact(shops, buyers)}, ensure_ascii=False, separators=(",", ":")) + "\n")
+        f.write(json.dumps({"at": int(now), "v": VERSION, **compact(every_shops, every_buyers)}, ensure_ascii=False,
+                           separators=(",", ":")) + "\n")
     if not me or not players:
         return "scoreboard: our player is not on the board"
-    totals = {p["player"]: num(p, "total") for p in players}
+    totals = {p["player"]: num(p, key) for p in players}
+    all_totals = {p["player"]: num(p, "total") for p in everyone}
     ranked = sorted(totals.items(), key=lambda kv: -kv[1])
     mine = totals[me["player"]]
     above = [t for _, t in ranked if t > mine]
-    sb = {"at": int(now), "players": len(players), "place": place(totals, me["player"]), "total": mine,
+    sb = {"at": int(now), "view": label, "players": len(players), "place": place(totals, me["player"]), "total": mine,
+          "everyone": {"place": place(all_totals, me["player"]), "total": all_totals.get(me["player"]), "players": len(everyone)},
           "top": [[n, t] for n, t in ranked[:3]],
           "gap_to_3rd": round(max(0.0, ranked[min(2, len(ranked) - 1)][1] - mine), 4),
           "gap_to_next": round(min(above) - mine, 4) if above else 0.0,
           "shop": {"all": alls(shops, SHOP).get(my_shop["name"]), "rows": len(shops), "parts": parts(my_shop, shops, SHOP)} if my_shop else None,
           "buyer": {"all": alls(buyers, BUYER).get(my_buyer["name"]), "rows": len(buyers), "parts": parts(my_buyer, buyers, BUYER)} if my_buyer else None}
-    note = f"scoreboard: {sb['place']} of {len(players)}, {mine:.3f}, 3rd {ranked[min(2, len(ranked) - 1)][1]:.3f}"
+    note = (f"scoreboard ({label}): {sb['place']} of {len(players)}, {mine:.3f}, 3rd {ranked[min(2, len(ranked) - 1)][1]:.3f}"
+            + (f"; everyone {sb['everyone']['place']} of {len(everyone)}" if label == "class" else ""))
     if then:
         hours = (now - then["at"]) / 3600
         p_shops, s_pace = project(shops, SHOP, then.get("shops") or {}, hours)
         p_buyers, b_pace = project(buyers, BUYER, then.get("buyers") or {}, hours)
         s_all, b_all = alls(p_shops, SHOP), alls(p_buyers, BUYER)
         future = {}
-        side = lambda x: x if isinstance(x, dict) else {"name": x} if isinstance(x, str) else {}
         for p in players:
             sh, by = side(p.get("shop")), side(p.get("buyer"))
             future[p["player"]] = (s_all.get(sh.get("name"), num(sh, "all")) + b_all.get(by.get("name"), num(by, "all")))
@@ -201,7 +229,7 @@ def brief(sb: dict | None, side: str | None = None) -> dict | None:
     percentile and next step (all parts, or one side's)."""
     if not sb:
         return None
-    out = {k: sb.get(k) for k in ("place", "players", "total", "gap_to_3rd", "gap_to_next", "projection")}
+    out = {k: sb.get(k) for k in ("view", "place", "players", "total", "gap_to_3rd", "gap_to_next", "projection", "everyone")}
     for s in ("shop", "buyer"):
         if side in (None, s) and sb.get(s):
             out[s] = {"all": sb[s]["all"], **{k: {"value": v["value"], "pct": v["pct"], "next": v["next"][:2]}

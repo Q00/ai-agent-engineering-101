@@ -165,6 +165,10 @@ def board_snapshot(now: float, get_json) -> str:
             "leader": max(({"player": p.get("player"), "total": p.get("total")} for p in players), key=lambda x: x["total"] or 0)}
     if me_p:
         line["player"] = {"total": me_p.get("total"), "place": place(players, me_p, "total")}
+        students = [p for p in players if p.get("student")]
+        if me_p.get("student"):                                     # the midterm's rank (Patch 3.3, 11/5)
+            line["class"] = {"total": me_p.get("student_total"), "place": place(students, me_p, "student_total"),
+                             "players": len(students)}
     if me_s:
         big = [s for s in shops if (s.get("reviews") or 0) >= 100]
         line["shop"] = dict({k: me_s.get(k) for k in ("all", "deals", "revenue", "profit", "book", "stars", "reviews")},
@@ -175,7 +179,9 @@ def board_snapshot(now: float, get_json) -> str:
                              **{f"place_{k}": place(buyers, me_b, k) for k in ("all", "surplus", "deals", "forum")})
     with open(folder() / "board_history.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
-    ranked = sorted(players, key=lambda p: -(p.get("total") or 0))[:RIVALS]   # the players ahead of and around us
+    students = [p for p in players if p.get("student")]          # the class view: outside players do not rank us
+    pool, key = (students, "student_total") if students else (players, "total")
+    ranked = sorted(pool, key=lambda p: -(p.get(key) or 0))[:RIVALS]   # the players ahead of and around us
     rivals = sorted({p["shop"].get("name") for p in ranked if isinstance(p.get("shop"), dict)
                      and not forum.own(p.get("player")) and not forum.own(p["shop"].get("name"))} - {None})
     common.write_json(folder() / "rivals.json", {"at": int(now), "shops": rivals})

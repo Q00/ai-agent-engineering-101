@@ -1080,7 +1080,7 @@ def test_scoreboard():
           and sb["shop"]["parts"]["stars_rank"]["next"] == [{"need": 0.11, "gain": 0.1}] and sb["shop"]["all"] == 0.425, sb["shop"])
     check("place and gaps from the board's totals; no pace without a history line 2 h old",
           sb["place"] == 2 and sb["gap_to_next"] == 0.9 and sb["gap_to_3rd"] == 0.0 and "projection" not in sb
-          and note.startswith("scoreboard: 2 of 3"), (sb, note))
+          and note.startswith("scoreboard (everyone): 2 of 3"), (sb, note))
     note = scoreboard.update(NOW, board(260))
     sb = common.read_json(MD / "analysis" / "scoreboard.json")
     check("3 h later: our book's pace (20 an hour) against the rows above us (A: 0), and the players in 6 h; the old line (profit) unread",
@@ -1097,6 +1097,17 @@ def test_scoreboard():
         r.pop("stars_rank")
     scoreboard.update(NOW + 120, no_stars)
     check("a board without stars_rank: no stars for linewatch (not 0, which would read as bad stars)", scoreboard.stars(NOW + 180) is None)
+    cls = board(260)
+    cls["shops"].append({"name": "Out", "book": 9999, "revenue": 9999, "stars_rank": 5.0, "all": 0.0})
+    cls["buyers"].append({"name": "Out", "surplus": 999, "forum": 0.99, "deals": 99, "posts": 99})
+    cls["players"] = [dict(p, student=True, student_total=t) for p, t in zip(cls["players"], (1.9, 1.0, 0.2))] + [
+        {"player": "Out", "total": 2.5, "shop": {"name": "Out"}, "buyer": {"name": "Out"}}]
+    note = scoreboard.update(NOW + 200, cls)
+    sb = common.read_json(MD / "analysis" / "scoreboard.json")
+    check("the class view (Patch 3.3): an outside player's shop and buyer leave the pools and the ranking; our place among everyone kept",
+          sb["view"] == "class" and sb["place"] == 2 and sb["players"] == 3 and sb["everyone"]["place"] == 3
+          and sb["shop"]["rows"] == 3 and sb["buyer"]["rows"] == 2 and sb["shop"]["all"] == 0.425 and "scoreboard (class): 2 of 3" in note,
+          (sb.get("view"), sb.get("place"), sb.get("everyone"), note))
     named = board(260)
     named["players"][1].update(shop="Kiro729", buyer="Kiro729")
     scoreboard.update(NOW + 240, named)
