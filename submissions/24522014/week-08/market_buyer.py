@@ -50,19 +50,14 @@ class MarketTransport(BuyerTransport):
     last_offer = None
     raw_receipt = None
     requirements = None
-    item_name = None
 
     def open(self):
+        # SKU only: a catalog name carries category words, and shops then handed over another item of that category.
+        if not self.requirements:
+            return super().open()
         if self.task is not None:
             raise BuyerError("This buyer already has a task")
-        # The market contract's form; the SKU stays in the text so a shop matching on it still finds the item.
-        label = f"{self.item_name} ({self.item})" if self.item_name else self.item
-        if not self.requirements:
-            if not self.item_name:
-                return super().open()
-            return self._rpc("SendMessage", {"message": {"role": "ROLE_USER", "messageId": str(uuid4()),
-                             "parts": [{"text": f"I want to buy {label}"}]}})
-        text = f"I want to buy {label}. Please include a market certificate. "
+        text = f"I want to buy {self.item}. Please include a market certificate. "
         if self.requirements.get("warranty_hours"):
             text += f"I require {self.requirements['warranty_hours']} hours of warranty in the checkout. "
         else:
@@ -122,10 +117,9 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None, item_name=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
     client.requirements = requirements
-    client.item_name = item_name if isinstance(item_name, str) and item_name.strip() else None
     client.accept_conditions = accept_conditions
     client.strategy_prompt = ROOT / "prompts/buyer-r3.txt"
     client.r3_context = decision_context
@@ -170,7 +164,7 @@ def trade(shop, item, budget, *, mode="claude", transport=None, requirements=Non
               "verification": "local_receipt_consistent" if outcome == "purchased" else "not_confirmed",
               "signature_verification": "left_to_market_kit", "stars": stars, "review": review,
               "negotiation_outcome": negotiation, "decision_trail": client.decisions,
-              "request_format": "name_and_sku" if client.item_name else "sku_only",
+              "request_format": "sku_only",
               "refused_at_open": client.state == "TASK_STATE_REJECTED" and not client.decisions,
               "failure_reason": failure_reason(outcome, negotiation, client.decisions),
               "buyer_log_dir": str(client.log_dir)}
@@ -232,8 +226,7 @@ def main():
     print(f"[choose] {reason}", flush=True)
     if shop:
         trade_options = {"mode": args.mode, "decision_context": selected_evidence,
-                         "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions,
-                         "item_name": (catalog.get(selected_item) or {}).get("name")}
+                         "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions}
         if support_decision.get("fast_rules"):
             from buyer_counter import load_settings
             from buyer_support import model_reservation

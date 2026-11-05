@@ -989,28 +989,25 @@ class RequestWording(TradeFixture):
         return market.trade(shop("fixture"), "lamp", 300, transport=self.transport("asking 110."), fast_rules=True,
                             model_gate=lambda: "reserved", max_turns=3, **options)
 
-    def test_contract_form_with_catalog_name(self):
-        _, record = self.run_trade(item_name="침대 프레임")
-        self.assertEqual(self.first_text(), "I want to buy 침대 프레임 (lamp)")
-        self.assertEqual(record["request_format"], "name_and_sku")
+    def test_plain_request_names_only_the_sku(self):
+        _, record = self.run_trade()
+        self.assertEqual(self.first_text(), "I want to buy a lamp")
+        self.assertEqual(record["request_format"], "sku_only")
         self.assertEqual(record["receipt"]["item"], "lamp")
 
-    def test_certificate_and_warranty_requests_are_kept(self):
-        self.run_trade(item_name="침대", requirements={"cert": True, "warranty_hours": 6})
+    def test_certificate_and_warranty_requests_name_only_the_sku(self):
+        _, record = self.run_trade(requirements={"cert": True, "warranty_hours": 6})
         text = self.first_text()
-        self.assertTrue(text.startswith("I want to buy 침대 (lamp). Please include a market certificate."))
+        self.assertTrue(text.startswith("I want to buy lamp. Please include a market certificate."))
         self.assertIn("I require 6 hours of warranty in the checkout.", text)
+        self.assertEqual(record["request_format"], "sku_only")
         self.posts.clear()
-        self.run_trade(item_name="침대", requirements={"cert": True})
+        self.run_trade(requirements={"cert": True})
         self.assertIn("If available, please offer a 6-hour goods warranty", self.first_text())
 
-    def test_without_a_name_the_old_form_stays(self):
-        for name in (None, "", "  ", 5):
-            with self.subTest(name=name):
-                self.posts.clear()
-                _, record = self.run_trade(item_name=name)
-                self.assertEqual(self.first_text(), "I want to buy a lamp")
-                self.assertEqual(record["request_format"], "sku_only")
+    def test_the_catalog_name_can_no_longer_be_sent(self):
+        with self.assertRaises(TypeError):
+            self.run_trade(item_name="침대")
 
     def test_refused_at_open_is_only_a_first_message_refusal(self):
         def refuse(request):

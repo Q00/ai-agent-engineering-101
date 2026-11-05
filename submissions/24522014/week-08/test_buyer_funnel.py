@@ -166,6 +166,22 @@ class Funnel(unittest.TestCase):
         self.assertEqual(report["open_refusals_by_listed_qty"]["4+"], {"attempts": 1, "refused_at_open": 0})
         self.assertEqual(report["runs_skipping_refusing_shops"], {"s1": 1, "s2": 1})
 
+    def test_receipt_mismatches_are_counted_by_format_and_kind(self):
+        other = {"item": "other", "price": 100, "task": "t"}
+        self.add(trade_record("a", outcome="receipt_mismatch", agreed=100, receipt=other, task="t", shop_name="s1", request_format="name_and_sku"))
+        self.add(trade_record("b", outcome="receipt_mismatch", agreed=100, receipt=other, task="t", shop_name="s2", request_format="sku_only"))
+        self.add(trade_record("c", outcome="receipt_mismatch", agreed=90, receipt=receipt(), task="t", shop_name="s2"))
+        self.add(trade_record("d", reason="seller_rejected", shop_name="s3"))
+        found = self.report()["receipt_mismatches"]
+        self.assertEqual(found["total"], 3)
+        self.assertEqual(found["by_request_format"], {"name_and_sku": 1, "sku_only": 1, "None": 1})
+        self.assertEqual(found["by_kind"], {"item": 2, "price": 1})
+        self.assertEqual(found["by_shop"], {"s2": 2, "s1": 1})
+
+    def test_no_mismatch_reports_zero(self):
+        self.add(trade_record("a", reason="seller_rejected"))
+        self.assertEqual(self.report()["receipt_mismatches"], {"total": 0, "by_request_format": {}, "by_kind": {}, "by_shop": {}})
+
     def legacy_dir(self, name, *, outcome, turns=1, decision=None):
         directory = self.root / "logs/buyer" / name
         directory.mkdir(parents=True)

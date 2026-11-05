@@ -81,6 +81,16 @@ def payment_cause(row):
     return "payment_refused:" + re.sub(r"https?://\S+", "<url>", re.sub(r"\d[\d.,]*", "#", reason))[:80]
 
 
+def mismatch_kind(record):
+    """Same order as the receipt check: price first, then item, then task."""
+    receipt = record.get("receipt") or {}
+    if receipt.get("price") != record.get("agreed_price"):
+        return "price"
+    if receipt.get("item") != record.get("item"):
+        return "item"
+    return "task" if receipt.get("task") != record.get("task") else "unknown"
+
+
 def classify_run(root, record, payments):
     """Return (stages reached, cause or 'paid') for one hook run."""
     reached = {"orders"}
@@ -127,6 +137,7 @@ def funnel(root, since, until=None, payments_path=None):
     model_routes = Counter()
     formats, skipped_shops, qty_rows = {}, Counter(), {}
     tools_used = Counter()
+    mismatches = {"total": 0, "by_request_format": Counter(), "by_kind": Counter(), "by_shop": Counter()}
     orders, instrumented = set(), 0
     for _, record in runs:
         reached, cause = classify_run(root, record, payments)
@@ -135,6 +146,11 @@ def funnel(root, since, until=None, payments_path=None):
         if record.get("order"):
             orders.add(record["order"])
         trail = record.get("decision_trail")
+        if record.get("outcome") == "receipt_mismatch":
+            mismatches["total"] += 1
+            mismatches["by_request_format"][str(record.get("request_format"))] += 1
+            mismatches["by_kind"][mismatch_kind(record)] += 1
+            mismatches["by_shop"][str(record.get("shop_name"))] += 1
         for name in (record.get("buyer_support") or {}).get("refusal_skipped_shops") or ():
             skipped_shops[name] += 1
         if record.get("request_format"):
@@ -191,6 +207,7 @@ def funnel(root, since, until=None, payments_path=None):
             "model_routes": dict(model_routes.most_common()), "model_tools_used": dict(tools_used.most_common()),
             "open_refusals_by_request_format": formats, "open_refusals_by_listed_qty": dict(sorted(qty_rows.items())),
             "runs_skipping_refusing_shops": dict(skipped_shops.most_common()),
+            "receipt_mismatches": {key: dict(value.most_common()) if isinstance(value, Counter) else value for key, value in mismatches.items()},
             "turn_limit": {"endings": turn_limit_endings, "cancel_results": dict(cancel_results.most_common())},
             "quote_filter_by_basis": dict(filter_basis.most_common()),
             "quote_conflicts": dict(conflicts.most_common()),

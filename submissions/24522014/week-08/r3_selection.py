@@ -10,6 +10,14 @@ def positive(value):
     return type(value) in (int, float) and math.isfinite(value) and value > 0
 
 
+def wording_substitution(row):
+    """A mismatch our own name-and-SKU request invited: right price and task, another item. Still refused, not held against the shop."""
+    receipt = row.get("receipt")
+    return (row.get("outcome") == "receipt_mismatch" and row.get("request_format") == "name_and_sku" and isinstance(receipt, dict)
+            and receipt.get("item") is not None and receipt["item"] != row.get("item")
+            and receipt.get("price") == row.get("agreed_price") and receipt.get("task") == row.get("task"))
+
+
 def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=None, public_rows=None, now=None):
     now = time.time() if now is None else now
     candidates = []
@@ -23,7 +31,7 @@ def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=
                 continue
             if row.get("outcome") == "transport_error" and 0 <= age <= 3600:
                 errors += 1
-        risk = {"blocked_price_mismatch": any(r.get("outcome") == "receipt_mismatch" for r in local),
+        risk = {"blocked_price_mismatch": any(r.get("outcome") == "receipt_mismatch" and not wording_substitution(r) for r in local),
                 "recent_transport_errors": errors}
         if risk["blocked_price_mismatch"]:
             continue
