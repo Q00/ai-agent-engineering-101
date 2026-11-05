@@ -1,5 +1,13 @@
 # Alerts (newest first)
 
+- 11-05 16:53 **warn** health: seller/claude: 8 of 12 calls timed out
+- 11-05 14:21 **warn** health: 51% of agreed deals were not paid: [('N h of shelf life left,', 12), ('no certificate to show the shelf', 5)]
+- 11-05 12:31 **warn** health: seller/claude: 6 of 9 calls timed out
+- 11-05 05:59 **warn** health: 51% of agreed deals were not paid: [('N {"error":"unit u-edNaNfNf is not in', 11), ('N h of shelf life left,', 6)]
+- 11-05 05:54 **warn** health: 58% of agreed deals were not paid: [('N {"error":"unit u-edNaNfNf is not in', 11), ('N h of shelf life left,', 7)]
+- 11-05 05:49 **warn** health: 63% of agreed deals were not paid: [('N {"error":"unit u-edNaNfNf is not in', 12), ('N h of shelf life left,', 8)]
+- 11-05 05:43 **warn** health: 59% of agreed deals were not paid: [('N {"error":"unit u-edNaNfNf is not in', 13), ('N h of shelf life left,', 9)]
+- 11-05 05:38 **warn** health: 53% of agreed deals were not paid: [('N h of shelf life left,', 9), ('N {"error":"unit u-edNaNfNf is not in', 9)]
 - 11-05 00:06 **warn** health: 51% of agreed deals were not paid: [('N h of shelf life left,', 14), ('no certificate to show the shelf', 2)]
 - 11-04 17:20 **warn** health: 41% of visits found no stock; most asked [('G00327e80', 21), ('G03d0199f', 20), ('G5cd4ffbc', 5)]
 - 11-04 13:55 **warn** health: 41% of visits found no stock; most asked [('G1515d951', 20), ('G9a240832', 11), ('G7fa48eaa', 1)]

@@ -1,0 +1,76 @@
+{
+ "proposal_id": "2026-11-05T0730",
+ "slice": "2026-11-05T0730",
+ "ts": 1793831620.6254773,
+ "version_from": 81,
+ "score": "Players rank 14 of 56 (was 16 six hours ago). Next above is totato2203, gap 0.054. Shop: profit rank 6 (80.2M, 10.8M behind Kiro729), revenue rank 3 (1,067.6M), stars rank 34 (4.53, 0.02 behind kimauve). Buyer: surplus rank 27 (35.4M, 4.0M behind dragonash), forum rank 20 (gap 0.002), deals rank 27 (1,529, 17 behind nocha12), posts rank 6. Most room left (weight x (1 - percentile)): buyer surplus 0.27, stars 0.13, forum 0.12.",
+ "happened": [
+  {
+   "claim": "The shop is turning stock into cash at a profit with no losses. In the last 30 minutes it completed 99 sales, with 41.0M revenue against 34.1M cost of sales. It sold nothing below cost.",
+   "evidence": [
+    "health 30m: completed 99, revenue 40,994,929, cost_of_sales 34,093,438",
+    "eval.experiment: losses.total 0",
+    "self summary: 98 deals, 7.2M profit before losses, 0 below-cost sales, 92.45% sell-through"
+   ]
+  },
+  {
+   "claim": "Running out of stock is still the main leak on the shop side. 24 of 194 visits found no stock. G7fa48eaa is now the top missing SKU (9 asks), and its restock target is only 10 units with 1 on hand.",
+   "evidence": [
+    "health missing_skus: G7fa48eaa 9, Gbec2b68f 4, G07ec17d5 3, G9a240832 2, Gdf79cd07 1",
+    "restock buy list: G7fa48eaa 10/1, G07ec17d5 20/1, Gbec2b68f 20/1, G1831f2c0 10/0"
+   ]
+  },
+  {
+   "claim": "The buyer's gap is its mix, not how hard it haggles. Our buyer's orders are 23% goods; the top buyers' are 73-75%. Our surplus per deal is 60k against their 108k-269k. Most unpaid food orders fail the shelf-life check.",
+   "evidence": [
+    "benchmark buyer_ours goods_share 0.23, surplus_per_deal 60,169; inextro 0.75 / 155,648; psyoung82 0.74 / 268,580",
+    "health buyer unpaid_reasons: shelf life 6 of 8"
+   ]
+  },
+  {
+   "claim": "Top shops sell goods that we do not stock.",
+   "evidence": [
+    "their_best_we_lack: G75f11c19 237 sold, list 122,900; Gfb2c0249 106 sold, list 70,900; Ga7918a2e 97 sold, list 80,910"
+   ]
+  }
+ ],
+ "hypothesis": "H2: neither yet. The sample is 186 closed negotiations. Completion rate is 0.548, which passes the 0.5 bar. The experiment's own deal count reads 0 (unit_economics.seller.deals), but the slice shows about 100 deals, so the counter probably uses the wrong epoch scope. Losses are 0, far below the 500k rollback line. The direction holds; the success check cannot conclude until the deal metric is scoped right.",
+ "counterparts": "Regulars are steady on stable SKU clusters: YAHO1212 and inextro buy mattress and bedding, buyer-02 buys only food, move_76 buys mixed goods and food. New buyer lee3q bought 5 deals (2.1M) of best-sellers within an hour; we stay the friendly, guaranteed shop for it, with no special treatment. No stance changes are proposed.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "restock": {
+     "note": "Raise targets on the lines that ran out (G7fa48eaa to 20 within the food limits; G07ec17d5, Gbec2b68f, G1831f2c0 to target first). Add probes of 3 units for G75f11c19 and Gfb2c0249 if they are goods, within the 20-per-SKU, 70%-stock and 35%-food limits."
+    }
+   },
+   "targets": "shop revenue and profit (and stars through fewer empty visits)",
+   "expected": "No-stock visits fall from 24 per 30 minutes toward about 12. That is roughly 10 more sales per 30 minutes at the current margin of about 14.6k each.",
+   "risk": "Small. More cash is tied up in stock, but every line is a proven seller and the tools still enforce the limits.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {},
+   "targets": "none (control)",
+   "expected": "Keep v81 as it is so the next slice gives a clean reading of the current restock.",
+   "risk": "The stock-out leak continues on G7fa48eaa and the bed lines.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [],
+  "by": "audit",
+  "ts": 1793831628.45307
+ },
+ "decision": {
+  "choice": "A",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793831628.476922,
+  "installed": 82
+ }
+}

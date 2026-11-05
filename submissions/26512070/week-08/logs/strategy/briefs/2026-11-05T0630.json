@@ -1,0 +1,91 @@
+{
+ "proposal_id": "2026-11-05T0630",
+ "slice": "2026-11-05T0630",
+ "ts": 1793828079.5223804,
+ "version_from": 79,
+ "score": "Players rank 14 of 56 (was 15 an hour ago). The gap to the next player (totato2203) is 0.054. Shop: profit rank 7 (62.2M, 7.26M behind Kiro729), revenue rank 3, stars 4.53 at rank 34 of 52 (0.01 behind the next shop). Buyer: surplus rank 27 (36.2M, 1.50M behind dragonash), forum rank 21, deals rank 27 (28 behind), posts rank 6. The most room is in buyer surplus (0.27), shop stars (0.13) and buyer forum votes (0.13).",
+ "happened": [
+  {
+   "claim": "Epoch e79 began at 06:03 and has no settled seller deals in its own window yet. The experiment cannot be judged on e79 data: the verdict is 'neither yet', with a sample of 198 closed, a completion rate of 0.586 and losses of 0.",
+   "evidence": [
+    "eval.experiment: verdict neither yet, sample 198, completion_rate 0.5859, losses.total 0",
+    "eval.unit_economics(seller, e79): deals 0"
+   ]
+  },
+  {
+   "claim": "Over the slice, the seller is healthy per deal but loses many deals between close and completion. It closed 203 negotiations, completed 119 and settled 107, for revenue of 47.7M, profit before losses of 9.87M, a median margin of 18,464, no sales below cost and no losses.",
+   "evidence": [
+    "self summary 2026-11-05T0630: funnel.seller closed 203, completed 119, lost_by rejected 39 / canceled 45"
+   ]
+  },
+  {
+   "claim": "No-stock is still a visible leak. In the last 30 minutes, 23 of 199 visits ended in no_stock. The most-asked missing SKUs were the food items Gdf79cd07 (5 visits) and G1831f2c0 (4), then G9a240832 (3), G07ec17d5 (3), G7fa48eaa (2) and Gbec2b68f (2).",
+   "evidence": [
+    "health 30 min: seller outcomes no_stock 23, missing_skus"
+   ]
+  },
+  {
+   "claim": "Buyer: 9 of 38 checkouts were not paid. Six failed because the unit was no longer in stock at payment and three were shelf-life or certificate refusals. Separately, 3 broken units destroyed 1.24M of surplus, and only 2 of them were matched to a warranty claim.",
+   "evidence": [
+    "health buyer unpaid_reasons",
+    "self summary: surplus 789,144 vs 2,031,844 before breaks"
+   ]
+  },
+  {
+   "claim": "Counterparts: winun1127 cheated our buyer once (a receipt naming a SKU we did not order) and our buyer blocked it after 16 deals. ggari-shop and fair-furniture deal fairly but refuse food with short shelf life. Our regulars (inextro, YAHO1212, move_76) keep compounding their spend on bedding and mattresses.",
+   "evidence": [
+    "market summary 2026-11-05T0630"
+   ]
+  }
+ ],
+ "hypothesis": "H2 is not judgeable yet on e79. Across the slice, completion of 0.586 clears the 0.5 bar and losses are 0, so the slice leans toward success. Judge it again at the next brief, once e79 has settled deals.",
+ "counterparts": "Keep winun1127 blocked as a shop for our buyer; it cheated once. Our buyer should treat ggari-shop and fair-furniture as fair but shelf-life strict: offer them only food with long shelf life. Keep serving the regulars (inextro, YAHO1212, move_76, buyer-02, buzllightyear) from deep bedding stock. lee3q is new; observe it.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "playbook": {
+     "restock": {
+      "food_units": 6
+     }
+    }
+   },
+   "targets": "shop revenue/profit (deal count) and indirectly stars (fewer no-stock visits)",
+   "expected": "The three most-missed food SKUs (Gdf79cd07, G1831f2c0, G9a240832) caused 12 of the 23 no-stock visits in 30 minutes. Holding 6 units instead of 4 should turn some of those visits into sales. The 35% food share and the 72 h shelf-life minimum still bound the risk.",
+   "risk": "Small. A slightly larger food position could expire if demand drops, but these are the market's top food sellers (660, 470 and 205 sold in 6 h).",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {},
+   "targets": "measurement",
+   "expected": "Hold v79 so that e79 collects its first settled deals and the experiment can be judged cleanly.",
+   "risk": "The no-stock leak on food continues for one more slice.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "Option A, increasing food units to 6 for the most missed SKUs, directly addresses a significant 'no-stock' leak identified in the 'happened' section (12 out of 23 no-stock visits were for these food items). This aligns with the goal of increasing deal count (shop revenue/profit) and potentially stars by converting more visits into sales.",
+    "why": "The 'happened' section clearly shows that food items are a major source of 'no-stock' leaks, and the proposal to increase their stock directly tackles this. This should lead to more settled deals and higher revenue/profit, which are key components of the shop's ALL score. More deals, even small ones, contribute to the 'first deal for as many as possible' part of the user's intent."
+   },
+   {
+    "claim": "The risk analysis for Option A is sound. The recommended food items are top sellers, minimizing the risk of expiration. The existing food share and shelf-life minimum limits also mitigate risk.",
+    "why": "The 'expected' and 'risk' sections of Option A support its viability by referencing market data on top-selling food items and existing risk controls, which aligns with the overall strategy of managing risk while pursuing profit."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793828082.813129
+ },
+ "decision": {
+  "choice": "A",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793828082.8226972,
+  "installed": 80
+ }
+}

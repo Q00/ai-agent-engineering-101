@@ -1,0 +1,132 @@
+{
+ "proposal_id": "2026-11-05T08",
+ "slice": "2026-11-05T08",
+ "ts": 1793833436.7812316,
+ "version_from": 82,
+ "score": "Players rank 14 of 56, unchanged at 1 h and 6 h; next is totato2203, gap 0.054. Shop: profit rank 7 (80.48M, next yms979 +2.25M), revenue rank 3 (1.087B), stars 4.53 rank 34 of 52 (percentile 0.356; most shop room, 0.129). Buyer: surplus 36.68M rank 27 of 49 (most buyer room, 0.271), forum 0.597 rank 20, deals 1,550 rank 27, posts 383 rank 6.",
+ "happened": [
+  {
+   "claim": "Since 07:30 the shop settled 95 deals: 29.47M revenue, 7.78M profit before losses, median margin 7,787, no below-cost deals, no exposure cost and zero losses. Pricing and cost discipline hold.",
+   "evidence": [
+    "eval.unit_economics seller since 1793831425: deals 95, revenue 29,467,935, profit_before_losses 7,780,597, below_cost_deals 0",
+    "eval.experiment: losses.total 0"
+   ]
+  },
+  {
+   "claim": "The e82 epoch tag shows 0 deals, and the benchmark shows our shop at 0 deals/h. Both conflict with the 95 deals counted by time, so the deal-to-epoch link looks broken. Until it is fixed, the experiment verdict cannot see our sales.",
+   "evidence": [
+    "eval.unit_economics seller epoch e82: deals 0",
+    "eval.experiment: unit_economics.seller.deals 0 while funnel.seller.closed 180",
+    "benchmark shop_ours deals_per_h 0.0"
+   ]
+  },
+  {
+   "claim": "Running out of stock is still the main seller leak: 32 of 197 visits in the last 30 min found no stock. The missing SKUs were Gbec2b68f (6), G07ec17d5 (4), Gdf79cd07 (3), G7fa48eaa (3), G9a240832 (2) and G1831f2c0 (1). The restock list holds only 1 unit each of Gbec2b68f and G07ec17d5 and none of G1831f2c0.",
+   "evidence": [
+    "health seller outcomes no_stock 32, missing_skus",
+    "restock buy list: Gbec2b68f 20/1, G07ec17d5 20/1, G1831f2c0 10/0"
+   ]
+  },
+  {
+   "claim": "Seller completion is 48%. About half of closed negotiations end rejected (65) or canceled (32) rather than completed.",
+   "evidence": [
+    "eval.experiment completion_rate 0.4833",
+    "self summary: closed 195, completed 98, rejected 65, canceled 32"
+   ]
+  },
+  {
+   "claim": "On the buyer side, 9 of 36 agreed deals went unpaid in 30 min. Six were food whose shelf life at checkout (11-17 h) was under our own 12-18 h policy, two lacked a shelf certificate, and one unit was out of stock. Negotiation agrees to units that checkout then rejects.",
+   "evidence": [
+    "health buyer unpaid_reasons: shelf life 6, no certificate 2, not in stock 1",
+    "self summary: agree_rate 0.315, pay rate 72%"
+   ]
+  },
+  {
+   "claim": "The market is unchanged: no new participants, and the regulars (YAHO1212, inextro, buyer-01, move_76, buyer-02) are steady on the mattress/bedframe/bedding cluster plus water and kimchi.",
+   "evidence": [
+    "market summary 2026-11-05T08: new_6h empty; G1515d951 854, G0be9ed07 830, G07ec17d5 539, G1831f2c0 498 sold in 6 h"
+   ]
+  }
+ ],
+ "hypothesis": "H2: neither verdict yet. The sample is 180 closed negotiations; completion 0.483 is just under the 0.5 target; losses are 0, far from the 500k rollback. The deals metric reads 0 because of the epoch-tag gap, so the success test cannot pass until that is fixed. Measured by time, the shop is profitable and honest. Completion and stars are the open questions.",
+ "counterparts": "No change. Keep serving the goods whales YAHO1212 and inextro and the mixed baskets of buyer-01 and move_76 on the bedding cluster; buyer-02 stays a food regular. No new participants to explore this slice, and no avoid stances are proposed.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "restock": {
+     "refill_first": [
+      "Gbec2b68f",
+      "G07ec17d5",
+      "G1831f2c0",
+      "Gdf79cd07",
+      "G7fa48eaa",
+      "G9a240832"
+     ],
+     "min_units_on_hand": {
+      "Gbec2b68f": 8,
+      "G07ec17d5": 8,
+      "G1831f2c0": 3,
+      "Gdf79cd07": 3,
+      "G7fa48eaa": 3,
+      "G9a240832": 3
+     }
+    },
+    "context": "No-stock is still 32/197 visits. Refill Gbec2b68f and G07ec17d5 (goods, top sellers, 1 unit each now) to 8 before any new SKU. Bring the food SKUs G1831f2c0, Gdf79cd07, G7fa48eaa and G9a240832 to 3 units (the food cap) with 72 h+ shelf life. All within 20 units/SKU, 35% food and the 0.7 stock share. Epoch-tagged unit economics reads 0 deals: judge by time windows until fixed."
+   },
+   "targets": "shop revenue and profit (more settled deals); stars indirectly (fewer turned-away visits)",
+   "expected": "Recover most of about 16% of visits now lost to no stock. At the current about 50% completion and about 82k profit per deal, that is several million KRW of profit per 6 h.",
+   "risk": "Low. Goods storage is 1% a day, and these SKUs sell hundreds of units per 6 h market-wide. The food cap of 3 limits spoilage.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {
+    "buyer": {
+     "pre_agree_checks": [
+      "food: shelf hours left at the time of offer must meet our freshness policy (12-18 h by use window) plus a 2 h margin, else do not agree",
+      "food: ask for or verify the shelf certificate before agreeing",
+      "re-check the unit is in stock right before agreeing and before paying"
+     ],
+     "goods_priority": "keep the goods bands (open 55%, aim 68%, ceiling 82% of list for list 30k+), and try more shops per goods order before giving up"
+    }
+   },
+   "targets": "buyer surplus (most room, 0.27) and buyer deals",
+   "expected": "Turn most of the 9 agreed-but-unpaid deals per 30 min into paid deals or clean early exits. Pay rate rises from 72% toward 85%, and fewer worthless food deals.",
+   "risk": "Agreeing to fewer food deals could lower the deal count slightly. Shops may read early exits as rudeness, but leaving before agreeing is cleaner than refusing after agreeing.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The e82 epoch tag shows 0 deals, and the benchmark shows our shop at 0 deals/h. Both conflict with the 95 deals counted by time, so the deal-to-epoch link looks broken. Until it is fixed, the experiment verdict cannot see our sales.",
+    "why": "This is a factual statement about a data discrepancy, and the proposed approach of judging by time windows until fixed is a reasonable workaround. It doesn't conflict with the scoring formula, but rather acknowledges a temporary limitation in internal metrics."
+   },
+   {
+    "claim": "Running out of stock is still the main seller leak: 32 of 197 visits in the last 30 min found no stock. The missing SKUs were Gbec2b68f (6), G07ec17d5 (4), Gdf79cd07 (3), G7fa48eaa (3), G9a240832 (2) and G1831f2c0 (1). The restock list holds only 1 unit each of Gbec2b68f and G07ec17d5 and none of G1831f2c0.",
+    "why": "This is a data-supported claim about a major factor affecting shop revenue and profit. Addressing stock-outs directly relates to increasing settled deals and thus indirectly impacts stars (fewer turned-away visits). Option A directly addresses this by recommending refilling these specific SKUs to higher levels."
+   },
+   {
+    "claim": "Seller completion is 48%. About half of closed negotiations end rejected (65) or canceled (32) rather than completed.",
+    "why": "While the strategy brief doesn't explicitly propose a shop-side change to address this, the buyer-side changes in Option B aim to reduce unpaid deals due to issues like shelf life and stock, which could indirectly improve overall deal completion rates from the buyer's perspective. For the seller, the increased stock from Option A would also reduce cancellations due to 'not in stock' after agreeing."
+   },
+   {
+    "claim": "On the buyer side, 9 of 36 agreed deals went unpaid in 30 min. Six were food whose shelf life at checkout (11-17 h) was under our own 12-18 h policy, two lacked a shelf certificate, and one unit was out of stock. Negotiation agrees to units that checkout then rejects.",
+    "why": "This is a direct observation of buyer-side losses. Option B directly proposes 'pre-agree_checks' that would prevent these unpaid deals, thereby improving buyer surplus (value - price + warranty refund, where rejected items have no value) and indirectly the number of deals by making them more reliable."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793833442.6799505
+ },
+ "decision": {
+  "choice": "A",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793833442.726698,
+  "installed": 83
+ }
+}

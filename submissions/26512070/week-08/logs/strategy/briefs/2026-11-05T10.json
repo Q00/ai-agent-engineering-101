@@ -1,0 +1,117 @@
+{
+ "proposal_id": "2026-11-05T10",
+ "slice": "2026-11-05T10",
+ "ts": 1793840634.784697,
+ "version_from": 85,
+ "score": "Players rank 14/56 (6h ago: 14); gap to dragonash22 is 0.041. Shop: profit rank 7/52 (79.97M, percentile 0.894), revenue rank 3/52 (1.277B, 0.952), stars rank 33/52 (4.52, 0.375; next is 4.54). Buyer: surplus rank 27/49 (37.9M, 0.459; next is +6.19M), forum 19/49 (0.591, gap 0.002), deals 25/49 (1,679, gap 98), posts 6/49 (407, gap 2). Room left (weight x (1 - percentile)): buyer surplus 0.27, stars 0.125, forum 0.116, profit 0.053, deals 0.05.",
+ "happened": [
+  {
+   "claim": "The shop is healthy and profitable on every deal. This slice: 424 settled deals, 201.8M revenue, 40.2M margin before losses, median margin 18,584, no deals below cost, sell-through 101%, no expired food. The only loss was 87,801 storage.",
+   "evidence": [
+    "self summary 2026-11-05T10: eval.unit_economics(seller) deals=424, profit_before_losses=40,187,306",
+    "eval.losses total=87,801 storage only"
+   ]
+  },
+  {
+   "claim": "The seller's main leak is attrition, not price. Over the slice 321 of 787 closed negotiations failed (124 rejected, 197 canceled). In the last 30 min, 31 of 184 visits left at the opening, 17 left after an offer and 13 found no stock (G200e39a3 x5, G9a240832 x2).",
+   "evidence": [
+    "self summary: funnel closed=787, completed=466",
+    "health 30m: left_at_opening 31, offered_then_left 17, no_stock 13, missing_skus G200e39a3 5"
+   ]
+  },
+  {
+   "claim": "The buyer is the weak side. Only 25.7% of picked orders reach agreement, and 82.8% of agreed orders pay. Most refusals to pay are food that runs short of its use window. 9 of 124 paid deals were worthless (food past its window). Our goods share is 0.20 against 0.72-0.73 for the top buyers, and we pay for 0.65 of goods deals against their 0.72-0.80.",
+   "evidence": [
+    "self summary buyer findings",
+    "benchmark buyer_ours goods_share 0.2, paid_share_goods 0.65, surplus_per_deal 52,610 vs inextro 163,619, psyoung82 249,087"
+   ]
+  },
+  {
+   "claim": "The epoch-tagged readouts are still broken. eval.experiment gives unit_economics.seller.deals = 0, and the benchmark gives shop_ours deals_per_h = 0.0, while the time-window tools show 424 deals. Judge by time windows until this is fixed.",
+   "evidence": [
+    "eval.experiment used unit_economics.seller.deals=0, completion_rate 0.5965, closed 342",
+    "benchmark shop_ours deals_per_h 0.0"
+   ]
+  }
+ ],
+ "hypothesis": "H2 reads 'neither yet' only because the epoch-tagged deal count is 0 (a known bug). On its own conditions it holds: completion rate is 0.5965 against a 0.5 bar, the sample is 342 closed against 30 needed, and losses are 0 against a 500,000 limit. By the time windows there are 424 settled deals. The reputation part of H2 has not delivered: stars are 4.52 and the stars rank is 33/52, flat for 6 h.",
+ "counterparts": "The regulars are stable and growing, and none changed strategy. YAHO1212 went from 394 to 464 deals, buyer-01 from 313 to 379, move_76 from 287 to 359 and inextro from 315 to 342 (all goods-heavy). buyer-02 is pure food (403 to 413) and rates food that runs short 2 stars, so it remains our likely star drag. No new participants in 6 h. Stances unchanged; no avoid proposals.",
+ "options": [
+  {
+   "id": "A_buyer_goods",
+   "change": {
+    "buyer": {
+     "goods_open_share": 0.6,
+     "goods_aim_share": 0.72,
+     "goods_ceiling_share": 0.85
+    },
+    "context": "Buyer surplus is the largest room left (0.27). The top buyers win by closing many 100k+ goods at 0.67-0.80 of list. We pay for only 0.65 of our goods deals, and goods are just 20% of our orders. Close more goods even at a higher price: every goods order counts."
+   },
+   "targets": "buyer surplus (0.5 weight, percentile 0.459) and buyer deals",
+   "expected": "More of our scarce goods orders close. Each 100k+ goods deal still gives at least 15% of list as surplus, so a few dozen more deals could cover the 6.2M gap to the next buyer.",
+   "risk": "Lower surplus per goods deal. It stays within each order's budget and the honesty limits.",
+   "reversible": true
+  },
+  {
+   "id": "B_food_window",
+   "change": {
+    "buyer": {
+     "pre_agree_check": true
+    },
+    "context": "9 of 124 paid buyer deals were worthless food that ran past its use window, and most refusals to pay are shelf-life shortfalls. Check the hours left before agreeing, not at the receipt."
+   },
+   "targets": "buyer surplus (stops zero-value deals) and buyer deals (fewer agreed-then-unpaid)",
+   "expected": "The roughly 7% of worthless paid food deals turn into either declined offers or useful deals, and fewer agreed orders end unpaid.",
+   "risk": "The user dropped this check in v85, so this reverses a user decision. The check may also turn away some deals that would have been fine.",
+   "reversible": true
+  },
+  {
+   "id": "C_restock_gaps",
+   "change": {
+    "restock": {
+     "food_units": 8,
+     "food_min_shelf_hours": 72
+    },
+    "context": "No-stock fell to 13 of 184 visits. The missing SKUs are G200e39a3 kimchi (5 visits, 0 held) and G9a240832 (2). Refill both first, sized by their own sales. Keep the long-shelf food going to buyers that name no hours (buyer-02 rates food that runs short 2 stars)."
+   },
+   "targets": "shop revenue and profit (fewer lost visits), stars (fewer short-food 2-star reviews)",
+   "expected": "Recovers about 7% of visits lost to no-stock and protects stars from short food.",
+   "risk": "Small: food stays within the 35% share and storage is zero for food. This is inside the stock delegation, so it installs once the audit agrees.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A_buyer_goods",
+ "status": "open",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The shop is healthy and profitable on every deal.",
+    "why": "The brief's claim is supported by the self summary and eval.losses, showing significant profit before minor storage losses. My eval.unit_economics on seller shows zero deals because of the epoch tag bug, which the brief notes."
+   },
+   {
+    "claim": "The seller's main leak is attrition, not price.",
+    "why": "The brief's evidence of failed negotiations (rejected, canceled) and visits leaving at opening or after an offer, along with 'no stock' events, clearly points to attrition issues. Price is not mentioned as a primary reason for failure."
+   },
+   {
+    "claim": "The buyer is the weak side.",
+    "why": "The brief's evidence regarding low agreement rate, unpaid agreed orders (especially food due to use window), low goods share compared to top buyers, and lower paid share for goods strongly supports this claim. My eval.score also shows buyer surplus and deals as significant areas for improvement."
+   },
+   {
+    "claim": "The epoch-tagged readouts are still broken.",
+    "why": "My eval.unit_economics(scope='seller', epoch='e85') returned 0 deals, which aligns with the brief's claim about the broken epoch-tagged readouts. This means time window evaluations are crucial, as the brief suggests."
+   },
+   {
+    "claim": "H2 reads 'neither yet' only because the epoch-tagged deal count is 0 (a known bug). On its own conditions it holds: completion rate is 0.5965 against a 0.5 bar, the sample is 342 closed against 30 needed, and losses are 0 against a 500,000 limit.",
+    "why": "The brief correctly interprets the status of H2 given the bug. The provided completion rate and sample size meet the stated conditions for success, and losses are well within limits, confirming H2's conditions hold based on the time window data."
+   },
+   {
+    "claim": "The reputation part of H2 has not delivered: stars are 4.52 and the stars rank is 33/52, flat for 6 h.",
+    "why": "My eval.score confirms the shop's stars at 4.53 (very close to 4.52) and the stars rank is low (33/52). This indicates reputation, as measured by stars, is indeed not improving as quickly as other metrics."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793840644.569451
+ }
+}

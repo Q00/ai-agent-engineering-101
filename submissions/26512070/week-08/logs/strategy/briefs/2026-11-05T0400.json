@@ -1,0 +1,82 @@
+{
+ "proposal_id": "2026-11-05T0400",
+ "slice": "2026-11-05T0400",
+ "ts": 1793819017.4775689,
+ "version_from": 75,
+ "score": "Players rank 14/56 (was 18 an hour ago); 0.036 behind totato2203. Shop: profit rank 6/52 (57.0M, 17.4M behind yms979), revenue rank 4/52 (798.6M), stars rank 33/52 (4.54, 0.02 behind the next shop). Buyer: surplus rank 26/49 (34.05M, 1.29M behind the next buyer), forum 21/49 (0.001 behind YAHO1212), deals 28/49 (7 behind nocha12), posts 7/49. Most room by weight x (1 - percentile): buyer surplus 0.26, shop stars 0.125, buyer forum 0.129.",
+ "happened": [
+  {
+   "claim": "The shop side is clean and profitable. 85 settled deals since the last slice brought 29.52M revenue and 6.65M profit before losses, with no below-cost sales. Storage (23,435) is the only loss.",
+   "evidence": [
+    "self summary 2026-11-05T0400: 85 deals, 29.52M revenue, 6.65M profit before losses, 0 below-cost deals",
+    "eval.experiment: losses.total 0, completion_rate 0.5015, sample 323"
+   ]
+  },
+  {
+   "claim": "Shop completion sits at about 50%. In the last 30 min, 34 of 209 visits were stock-outs, led by water Gdf79cd07 (15 misses). Restock already lists Gdf79cd07 at 10 units this window.",
+   "evidence": [
+    "health seller: no_stock 34, missing_skus Gdf79cd07 15, G9a240832 6, Gb5d0dde7 5",
+    "restock buy list includes Gdf79cd07 10, G9a240832 10, Gb5d0dde7 11"
+   ]
+  },
+  {
+   "claim": "The buyer loses agreed deals at payment. 11 deals went unpaid in 30 min: 5 for shelf life under our policy, 5 because the unit was already gone, and 1 with no certificate. In each case it agreed before checking terms it would then refuse.",
+   "evidence": [
+    "health buyer: orders 88, paid 24, unpaid 11 (shelf life 5, not in stock 5, no certificate 1)",
+    "self summary: agreed 52, paid 24, pay_rate 0.667; '423.82 h left, policy asks 540.0'"
+   ]
+  },
+  {
+   "claim": "The buyer's surplus in e75 is 2.68M over 40 deals (median 10,048), with no breaks. The gap to the top buyers is still expensive goods.",
+   "evidence": [
+    "eval.unit_economics buyer e75: 40 deals, surplus 2,681,696, worthless 0, broken 0",
+    "benchmark: our surplus per deal 57,675 vs psyoung82 272,169, inextro 123,276"
+   ]
+  }
+ ],
+ "hypothesis": "H2: neither verdict yet. The sample is 323 closed negotiations (min 30). Completion is 0.5015 against the 0.5 bar, so the first success condition is just met. The second condition reads 0 for unit_economics.seller.deals in this epoch while the self analyst counts 85, so that metric looks mis-scoped. Losses are 0, far under the 500k rollback. Keep H2 running.",
+ "counterparts": "Our regulars inextro, YAHO1212, buyer-01, buyer-02 and move_76 all grew their deals this slice, with no sign of churn, so their stances stay as they are. No new participant dealt with us. lee3q is new to the market and worth a first-deal welcome when it visits. dragonash and psyoung82 have occasional 1-star outliers; we only watch them for now.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "buyer": {
+     "pre_agree_check": "before agreeing, confirm the unit's shelf life and certificate meet our buyer policy and that the unit is still in stock; if not, counter or move to the next shop instead of agreeing"
+    },
+    "context": "Our buyer agreed and then refused to pay in 6 of 11 recent cases (shelf life, missing certificate). In 5 more the unit had already sold elsewhere. Check before agreeing, and re-check stock right before paying."
+   },
+   "targets": "buyer surplus (0.5) and deals (0.1); also how other shops remember us as a buyer",
+   "expected": "The pay rate rises from about 0.67 toward 0.8. That is roughly +5 paid deals per 30 min and about +0.3M surplus an hour, enough to close the 1.29M gap to the next buyer within the night.",
+   "risk": "Low. Some orders may take longer to place. The shelf-life policy itself is unchanged, so no spoiled food gets through.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {},
+   "targets": "none (control)",
+   "expected": "Keep v75 as it is. The restock already in the window covers the water stock-outs.",
+   "risk": "The agreed-then-unpaid loss continues, and shops may come to see our buyer as one that breaks deals.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The second condition for H2 success reads 0 for unit_economics.seller.deals in this epoch while the self analyst counts 85, so that metric looks mis-scoped. Keep H2 running.",
+    "why": "The claim about 'unit_economics.seller.deals' being mis-scoped in the eval.experiment output is likely correct, as direct calls to eval.unit_economics for the seller scope and the specified timeframes (since previous slice, or up to current slice) consistently return 0 deals, despite the brief stating 85 settled deals and eval.score showing a high overall rank for shop profit and revenue. This indicates a discrepancy in how the experiment's success condition is being evaluated against the available data or how the 'epoch' parameter is being interpreted by the tool for granular time slices."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793819026.8067732
+ },
+ "decision": {
+  "choice": "A",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793819026.8456736,
+  "installed": 76
+ }
+}

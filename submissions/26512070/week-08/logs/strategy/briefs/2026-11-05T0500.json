@@ -1,0 +1,80 @@
+{
+ "proposal_id": "2026-11-05T0500",
+ "slice": "2026-11-05T0500",
+ "ts": 1793822654.535767,
+ "version_from": 76,
+ "score": "Players rank 15 of 56 (14 an hour ago), 0.008 behind thisjonghoon. Shop: profit rank 7 (56.9M, 8.1M behind the next shop), revenue rank 4 (860M), stars 4.53 at rank 33 of 52 (room 0.127). Buyer: surplus rank 27 (33.2M, room 0.27), forum rank 22 (room 0.13), deals rank 28 (1,406), posts rank 6.",
+ "happened": [
+  {
+   "claim": "The shop is profitable per deal. Since the last slice it settled 89 deals for 34.5M revenue and about 7.0M margin, with no deals below cost. Losses besides cost of sales were small: 31,310 storage, no expired food, no refunds.",
+   "evidence": [
+    "self summary 2026-11-05T0500: 89 settled, median margin 19,605",
+    "health 30 min: revenue 38.5M, cost of sales 29.8M"
+   ]
+  },
+  {
+   "claim": "The seller is losing visits for lack of stock. In 30 minutes, 37 of 209 visits ended with no stock. The missing SKUs were G8095ddd6 (12), G8ec51935 (9) and G7fa48eaa (7). The restock list buys only 2 G8095ddd6 and 7 G8ec51935.",
+   "evidence": [
+    "health seller no_stock 37, missing_skus",
+    "restock buy list now"
+   ]
+  },
+  {
+   "claim": "The buyer still loses agreed deals at payment. Of 66 agreed deals, 27 were paid. In 30 minutes there were 14 unpaid: 11 because the unit had already sold, 3 because of shelf life.",
+   "evidence": [
+    "eval.funnel buyer pay_rate 0.69",
+    "health buyer unpaid_reasons"
+   ]
+  },
+  {
+   "claim": "The regulars keep growing with no disputes: YAHO1212, inextro, buyer-02, move_76 and buzllightyear. buzllightyear added 23 deals in one slice. A new buyer, lee3q, closed 5 deals worth 2.1M.",
+   "evidence": [
+    "market summary 2026-11-05T0500"
+   ]
+  }
+ ],
+ "hypothesis": "H2: there is not enough data yet. Sample 368 closed negotiations, completion rate 0.505 (target 0.5, met), losses 0 (rollback threshold 500k, not hit). The unit_economics deals metric reads 0, which looks like a wiring issue, since 89 deals settled. Keep H2 running.",
+ "counterparts": "No change in stances. The regulars stay at regular treatment. We watch lee3q as a first-timer who is growing fast. No dishonest behaviour was seen this slice.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "playbook": {
+     "restock": {
+      "cover_windows": 3.0
+     }
+    },
+    "context": "No-stock was 37 of 209 seller visits in 30 min. Missing SKUs: G8095ddd6, G8ec51935, G7fa48eaa. Keep these best sellers deeper. Buyer: re-check the unit is in stock right before paying, and check shelf life against policy before agreeing."
+   },
+   "targets": "shop revenue and profit (fewer no-stock visits), plus buyer deals and surplus (fewer failed payments)",
+   "expected": "Deeper cover on fast sellers should cut no-stock visits. That would mean about 10-20 more settled deals per window at a margin of about 20k each.",
+   "risk": "More stock is held, and the board counts unsold stock as a loss. We stay inside the 0.7 equity cap and the 20 units-per-SKU limit.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {
+    "context": "Buyer: re-check stock right before paying, and check the shelf life against policy before agreeing. Seller and restock: unchanged."
+   },
+   "targets": "buyer deals and surplus",
+   "expected": "Fewer refusals at payment. The seller side stays as it is.",
+   "risk": "The no-stock leak on the seller side stays.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [],
+  "by": "audit",
+  "ts": 1793822657.8378
+ },
+ "decision": {
+  "choice": "A",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793822657.8612907,
+  "installed": 77
+ }
+}

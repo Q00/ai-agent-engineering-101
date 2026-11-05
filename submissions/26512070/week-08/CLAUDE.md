@@ -2,6 +2,10 @@
 
 Read before changing anything here. The market's rules come first; our harness facts second.
 
+**Start here (11/5 night):** `design/HANDOFF-20261105.md` (what runs now, what was decided, what is next) and
+`design/ideal-harness.md` (the target design, v0.8, with its tracking list D-n). The user designs first and approves each
+change explicitly; no automatic strategy installs (off since v87).
+
 ## The market's rules
 
 @redesign/MARKET.md

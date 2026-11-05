@@ -1,0 +1,75 @@
+{
+ "proposal_id": "2026-11-05T0430",
+ "slice": "2026-11-05T0430",
+ "ts": 1793820855.2160277,
+ "version_from": 76,
+ "score": "Players rank 15 of 56 (gap 0.002 to thisjonghoon, same as 1 h ago). Shop: profit rank 8 of 52 (was 6 one hour ago, 1.40M behind myeonggi), revenue rank 4 (percentile 0.933), stars 4.53, rank 33 of 52 (0.03 behind kimauve). Buyer: surplus rank 26 of 49 (34.3M, 2.17M behind the next player), forum votes rank 21, deals rank 28 (1,375 deals, 9 behind the next player), posts rank 7. The parts with the most room are buyer surplus (0.26), buyer forum votes (0.14) and shop stars (0.127).",
+ "happened": [
+  {
+   "claim": "The shop side is healthy and busy. In the last 30 minutes it had 181 visits and 90 completed deals, with revenue 41.18M against cost of sales 32.16M. It lost nothing to expired food, storage or refunds.",
+   "evidence": [
+    "health seller: visits 181, completed 90, revenue 41,181,595, cost_of_sales 32,163,591",
+    "eval.experiment: losses.total 0",
+    "self summary: 79 settled, profit_before_losses 5.91M, below_cost 0"
+   ]
+  },
+  {
+   "claim": "The shop still loses many visits before a deal: 38 rejected and 25 left at opening in 30 minutes. A few visits found no stock, mostly bottled water Gdf79cd07 (4 misses); it is already on the restock buy list.",
+   "evidence": [
+    "health seller outcomes: rejected 38, left_at_opening 25, no_stock 9",
+    "missing_skus: Gdf79cd07 x4, Gb5d0dde7 x2",
+    "restock buy list includes Gdf79cd07 and Gb5d0dde7"
+   ]
+  },
+  {
+   "claim": "The buyer is the weak link. Only 17 of 85 orders were paid. 9 were agreed but not paid: in 6 the unit had already sold elsewhere, in 2 the food did not have enough shelf life, and in 1 the certificate was missing. We still agree first and check later.",
+   "evidence": [
+    "health buyer: orders 85, paid 17, unpaid 9; reasons: unit not in stock x6, shelf life x2, no certificate x1",
+    "self summary: 160 offers picked, 53 agreed, 18 paid"
+   ]
+  },
+  {
+   "claim": "The H2 experiment has no verdict yet. Completion rate is 0.563, above the 0.5 success level. However, seller unit economics for epoch e76 shows 0 deals while the health check shows 90 completed. This looks like a data lag or an epoch-tagging problem and should be checked before the experiment is judged.",
+   "evidence": [
+    "eval.experiment: neither yet, sample 174, completion_rate 0.5632, unit_economics.seller.deals 0",
+    "eval.unit_economics seller e76: deals 0"
+   ]
+  }
+ ],
+ "hypothesis": "H2 is not decided. Losses are 0 and the completion rate of 0.563 is above the 0.5 target, but the deals condition reads 0 for e76, which is probably a counting gap rather than a real result. On the evidence so far H2 holds on the shop side; nothing calls for a rollback.",
+ "counterparts": "Our regulars grew steadily with no issues: YAHO1212 (290 to 310 deals), inextro (268 to 271), buyer-02 (374 to 377, slowing) and move_76 (182 to 194). buzllightyear jumped from 40 to 150 deals with us (3.5M to 10.8M paid), a possible new regular; its stance stays as it is for now. lee3q is new (5 deals, 2.1M), too early to classify. No disputes or refusals came from any counterpart.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "context": "Our buyer: 6 of 9 unpaid agreements in the last 30 minutes failed because the unit had sold elsewhere, plus 2 for short shelf life and 1 for a missing certificate. Before agreeing, check that the unit is in stock, its shelf life (food: enough hours for the use window) and its certificate. Re-check stock right before paying. Prefer shops holding 2 or more units of the SKU. If the unit is gone, move to the next shop at once instead of holding the order."
+   },
+   "targets": "buyer surplus (0.5 weight, rank 26) and buyer deals (rank 28, 9 deals behind the next player)",
+   "expected": "More agreed orders turn into paid ones; paid orders, now 17 of 85, should rise by several per 30 minutes, adding surplus and deal count. Nothing on the shop side changes.",
+   "risk": "Low. The extra checks make each deal slightly slower, and a few cheap offers may be lost while we check.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {},
+   "targets": "none, keep v76 as it is",
+   "expected": "The shop keeps its pace. The buyer keeps losing about a third of its agreed deals at checkout.",
+   "risk": "Buyer surplus and deals stay where they are while other buyers pull ahead.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "open",
+ "audit": {
+  "agrees": false,
+  "prefer": "A",
+  "points": [
+   {
+    "claim": "The H2 experiment's verdict cannot be trusted as the `eval.unit_economics` for seller deals in epoch e76 returns 0, contradicting the 'happened' section's claim of 90 completed deals in the last 30 minutes. This indicates a data collection or tagging issue that prevents a valid assessment of the experiment's shop-side performance.",
+    "why": "The `eval.unit_economics(scope='seller', epoch='e76')` call returned 0 deals, which directly conflicts with the strategy agent's 'happened' section stating '90 completed deals'. This means the core metric for judging the experiment's success (deals made) is unreliable, making any conclusion about H2's shop-side performance premature and potentially misleading."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793820862.9162412
+ }
+}
