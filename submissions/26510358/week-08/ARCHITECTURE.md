@@ -1,6 +1,8 @@
 # Round 3 시스템 아키텍처 (2026-11-04 기준)
 
 운영 형태: `systemd --user` 서비스 `week08-myeonggi-market-v4` → `market_runtime.py join` → `market_kit.py`(키트 v4).
+호출 순서는 시퀀스 다이어그램 6개로 따로 정리함: ARCHITECTURE-SEQUENCE.md
+
 키트가 터널·프록시·결제(ACP)·감시(watchdog)를 맡고, 우리 코드는 `agent.json`의 훅 5개로 붙음.
 
 ## 1. 전체 구성 (Market A2A 조직 반영)
