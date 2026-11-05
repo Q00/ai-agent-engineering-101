@@ -359,7 +359,7 @@ class BoundsRepair(unittest.TestCase):
     """A tunable value outside its (narrowed) bounds is moved to the nearest bound by a source "bounds" row."""
 
     def test_rows_for_the_live_floors_only(self):
-        p = pol(seller__floor_list=0.8, seller__floor_cost_mult=1.18, buyer__open_list=0.3)   # buyer: left alone
+        p = pol(seller__floor_list=0.8, seller__floor_cost_mult=1.18, buyer__open_list=0.1)   # buyer: left alone
         rows = g.bounds_rows(p)
         self.assertEqual([(r["key"], r["value"], r["source"]) for r in rows],
                          [("seller.floor_list", 0.70, "bounds"), ("seller.floor_cost_mult", 1.15, "bounds")])
@@ -382,7 +382,7 @@ class BoundsRepair(unittest.TestCase):
 
     def test_bounds_row_inside_the_bounds_or_for_a_buyer_key_rejected(self):
         acc, rej = run({"key": "seller.floor_list", "value": 0.4, "source": "bounds"},
-                       {"key": "buyer.open_list", "value": 0.4, "source": "bounds"}, p=pol(buyer__open_list=0.3))
+                       {"key": "buyer.open_list", "value": 0.2, "source": "bounds"}, p=pol(buyer__open_list=0.1))
         self.assertEqual(acc, [])
         self.assertEqual([r["why"] for r in rej], ["inside its bounds", "no bounds repair for this key"])
 

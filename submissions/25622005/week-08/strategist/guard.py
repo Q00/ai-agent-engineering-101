@@ -63,7 +63,7 @@ TUNABLE = {
     "buyer.cap_goods_warranty": (0.80, 1.00, 0.04),
     "buyer.cap_food": (0.85, 1.00, 0.03),
     "buyer.min_surplus_list": (0.0, 0.15, 0.02),
-    "buyer.open_list": (0.40, 0.80, 0.05),
+    "buyer.open_list": (0.20, 0.80, 0.05),
     "buyer.max_shops": (1, 5, 1),
     "buyer.target_s": (10, 40, 5),
     "buyer.continue_p": (0.5, 0.95, 0.05),

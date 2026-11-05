@@ -617,19 +617,19 @@ class RulesTest(Base):
 
     def test_own_value_outside_range_moves_back_using_changes_jsonl(self):
         # buyer keys get no bounds rows (the buyer is left as it is), so a hand-set one stays the user's
-        self.skill.write_text(self.orig.replace("open_list: 0.60", "open_list: 0.35"), encoding="utf-8")
+        self.skill.write_text(self.orig.replace("open_list: 0.60", "open_list: 0.15"), encoding="utf-8")
         self.answer_with([{"key": "buyer.open_list", "value": 0.9}])
         rec = self.run_at()                                             # nothing says it was ours: the user's value
         self.assertIn("manual setting", rec["rejected"][0]["why"])
         self.home = self.tmp / "home-2"                                 # a strategist from before state["last_change"]
         self.home.mkdir()
         (self.home / "changes.jsonl").write_text(json.dumps(
-            {"ts": NOW - 5 * 3600, "diff": {"buyer.open_list": [0.4, 0.35], "stock.focus_skus": [[], ["G1"]]},
+            {"ts": NOW - 5 * 3600, "diff": {"buyer.open_list": [0.2, 0.15], "stock.focus_skus": [[], ["G1"]]},
              "run_id": "old", "source": "strategist"}) + "\n", encoding="utf-8")
         rec = self.run_at(NOW + 60)
-        self.assertEqual([(a["old"], a["new"]) for a in rec["applied"]], [(0.35, 0.4)], rec["rejected"])
+        self.assertEqual([(a["old"], a["new"]) for a in rec["applied"]], [(0.15, 0.2)], rec["rejected"])
         state = json.loads((self.home / "state.json").read_text(encoding="utf-8"))
-        self.assertEqual(state["last_change"]["buyer.open_list"]["new"], 0.4)
+        self.assertEqual(state["last_change"]["buyer.open_list"]["new"], 0.2)
         self.assertNotIn("stock.focus_skus", state["last_change"])
 
     def test_guard_sees_the_focus_list_this_run_writes(self):
