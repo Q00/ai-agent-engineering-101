@@ -22,6 +22,7 @@ SETTLE_REFUSED = re.compile(r"^\d{2}:\d{2}:\d{2} \[acp\] settle refused: .+$")
 REASONS = {"stock_unavailable", "stock_reserved", "inventory_unavailable", "price_rejected", "model_error",
            "invalid_request", "negotiation_expired", "buyer_cancelled", "capacity_busy", "internal_error"}
 TERMINAL = {"receipt_issued", "rejected", "stock_unavailable", "error", "expired", "cancelled"}
+LEASE_STATUSES = ("issued", "checkout", "settling", "uncertain", "completed", "revoked")
 
 
 def number(value):
@@ -104,6 +105,50 @@ def inventory_summary(inv, holds, meta, rnd, now):
             "note": "Active negotiations live in the seller process and are not included; issued receipt holds are never released by this report."}
 
 
+def lifecycle_summary(state, holds, source, now):
+    """Read aggregate lease observations only; never instantiate the mutating store."""
+    result = {"status": "unavailable", "legacy_holds": None,
+              **{status: None for status in LEASE_STATUSES},
+              "deadline_passed_issued_or_checkout": None,
+              "note": "All retained lifecycle rows, not a round/window transaction count. "
+                      "Separate file snapshots may change during this read. A passed deadline is not proof "
+                      "that a hold was released. Settling or uncertain does not mean unpaid or failed; "
+                      "this report never expires, repairs or releases reservations."}
+    valid_id = lambda value: isinstance(value, str) and 0 < len(value) <= 256
+    holds_valid = (isinstance(holds, dict)
+                   and all(valid_id(unit) and valid_id(task) for unit, task in holds.items()))
+    if source["status"] == "missing":
+        if holds_valid:
+            result.update(status="legacy_no_lifecycle", legacy_holds=len(holds))
+        return result
+    if state is None:
+        return result
+    if (type(state.get("version")) is not int or state["version"] != 1
+            or not isinstance(state.get("leases"), dict)):
+        return {**result, "status": "invalid_lifecycle"}
+    rows = state["leases"]
+    counts = Counter({status: 0 for status in LEASE_STATUSES})
+    overdue = 0
+    for task, row in rows.items():
+        if (not valid_id(task) or not isinstance(row, dict) or not valid_id(row.get("unit"))
+                or not isinstance(row.get("status"), str) or row["status"] not in LEASE_STATUSES
+                or not number(row.get("issued_at")) or not number(row.get("deadline"))
+                or row["deadline"] < row["issued_at"]
+                or row["status"] != "revoked" and row["deadline"] == row["issued_at"]):
+            return {**result, "status": "invalid_lifecycle"}
+        counts[row["status"]] += 1
+        overdue += row["status"] in ("issued", "checkout") and row["deadline"] <= now
+    result.update(status="snapshot", **counts, deadline_passed_issued_or_checkout=overdue)
+    if holds_valid:
+        # A task/unit disagreement may be corruption or snapshots taken during
+        # an atomic-file update. Do not classify it as a legacy reservation.
+        if any(task in rows and rows[task]["unit"] != unit for unit, task in holds.items()):
+            result["status"] = "snapshot_hold_mismatch"
+        else:
+            result["legacy_holds"] = sum(task not in rows for task in holds.values())
+    return result
+
+
 def supply_schedule(inv, meta, rnd, now):
     """Display only the current kit announcement, never a guessed 20-minute clock."""
     if inv.get("round") != rnd or not -5 <= meta.get("age_seconds", -999) <= 45:
@@ -131,7 +176,7 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
     if rnd is not None and (type(rnd) is not int or rnd < 1):
         raise ValueError("round must be a positive integer")
     sources, states = {}, {}
-    for name in ("inventory", "receipt-reservations", "sales-performance", "market-evidence"):
+    for name in ("inventory", "receipt-reservations", "receipt-leases", "sales-performance", "market-evidence"):
         states[name], sources[name] = read_json(root / ".market" / f"{name}.json", now)
     inv, memory, public = (states[k] or {} for k in ("inventory", "sales-performance", "market-evidence"))
     if rnd is None:
@@ -240,6 +285,8 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
                                                                  if sources["kit_log"]["status"] == "read" else None),
                          "note": "Shop settle-refused lines are UNDATED_TAIL attempt counts, not unique tasks or current-round/window counts. Receipt without matched settlement does not prove failure."},
             "inventory": inventory_summary(inv, states["receipt-reservations"], sources["inventory"], rnd, now),
+            "receipt_lifecycle": lifecycle_summary(states["receipt-leases"], states["receipt-reservations"],
+                                                    sources["receipt-leases"], now),
             "restock": {"decisions_by_status": dict(statuses), "excluded_unknown_round": restock_unknown,
                         "schedule": supply_schedule(inv, sources["inventory"], rnd, now),
                         "note": "A plan is not proof of a completed inventory purchase; retries may create multiple decision rows."},
@@ -262,6 +309,14 @@ def format_report(report):
     lines.extend(f"  {key}: {value}" for key, value in report["terminal_reasons"].items())
     inv = report["inventory"]
     lines.append(f"Inventory: {inv['status']}; units={inv.get('units', 'unknown')}; blocked by issued receipt={inv.get('blocked_by_issued_receipt', 'unknown')}; blocked SKUs={inv.get('blocked_skus', 'unknown')}")
+    lifecycle = report.get("receipt_lifecycle")
+    if lifecycle is not None:
+        lines.append("Receipt lifecycle: " + lifecycle["status"] + "; " + "; ".join(
+            f"{key}={lifecycle[key] if lifecycle[key] is not None else 'unknown'}"
+            for key in ("legacy_holds", *LEASE_STATUSES)))
+        overdue = lifecycle["deadline_passed_issued_or_checkout"]
+        lines.append(f"Passed deadlines (issued/checkout): {overdue if overdue is not None else 'unknown'}; release is not confirmed by this read.")
+        lines.append("Lifecycle limit: " + lifecycle["note"])
     lines.append(f"Restock decision rows: {json.dumps(report['restock']['decisions_by_status'], sort_keys=True)}")
     lines.append(f"Supply window (kit announcement): {json.dumps(report['restock']['schedule'], sort_keys=True)}")
     lines.append(f"UNDATED_TAIL shop settle-refused attempts: {report['checkout']['undated_tail_settle_refusal_attempts']} (no task IDs, dates or rounds).")

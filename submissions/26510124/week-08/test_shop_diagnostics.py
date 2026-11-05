@@ -141,6 +141,82 @@ class ShopDiagnosticsTests(unittest.TestCase):
         os.utime(self.root / ".market/inventory.json", (NOW - 60, NOW - 60))
         self.assertEqual(self.report()["inventory"]["status"], "stale")
 
+    def test_lifecycle_counts_deadlines_without_mutation_or_private_output(self):
+        rows = {}
+        for index, status in enumerate(diagnostics.LEASE_STATUSES):
+            rows[f"private-task-{index}"] = {
+                "unit": f"private-unit-{index}", "status": status,
+                "issued_at": NOW - 300, "deadline": NOW - 1,
+                "receipt": {"price": 987654321, "sig_seller": "PRIVATE-SIGNATURE"},
+                "session_id": f"private-session-{index}"}
+        self.json(".market/receipt-leases.json", {"version": 1, "leases": rows})
+        self.json(".market/receipt-reservations.json", {
+            **{row["unit"]: task for task, row in rows.items()}, "legacy-unit": "legacy-task"})
+        before = {p.relative_to(self.root): (p.read_bytes(), p.stat().st_mtime_ns)
+                  for p in self.root.rglob("*") if p.is_file()}
+        report = self.report()
+        lifecycle = report["receipt_lifecycle"]
+        self.assertEqual(lifecycle["status"], "snapshot")
+        self.assertEqual(lifecycle["legacy_holds"], 1)
+        self.assertEqual({s: lifecycle[s] for s in diagnostics.LEASE_STATUSES},
+                         dict.fromkeys(diagnostics.LEASE_STATUSES, 1))
+        self.assertEqual(lifecycle["deadline_passed_issued_or_checkout"], 2)
+        self.assertIsNone(report["checkout"]["confirmed_failed_tasks"])
+        after = {p.relative_to(self.root): (p.read_bytes(), p.stat().st_mtime_ns)
+                 for p in self.root.rglob("*") if p.is_file()}
+        self.assertEqual(before, after)
+        output = json.dumps(report) + diagnostics.format_report(report)
+        for private in ("private-task", "private-unit", "private-session", "PRIVATE-SIGNATURE", "987654321"):
+            self.assertNotIn(private, output)
+        self.assertIn("release is not confirmed", output)
+        self.assertIn("Settling or uncertain does not mean unpaid or failed", output)
+
+    def test_missing_and_unreadable_lifecycle_do_not_invent_zero_pending_payments(self):
+        self.json(".market/receipt-reservations.json", {"legacy-unit": "legacy-task"})
+        lifecycle = self.report()["receipt_lifecycle"]
+        self.assertEqual(lifecycle["status"], "legacy_no_lifecycle")
+        self.assertEqual(lifecycle["legacy_holds"], 1)
+        self.assertIsNone(lifecycle["settling"])
+        self.assertIsNone(lifecycle["uncertain"])
+        path = self.root / ".market/receipt-leases.json"
+        path.write_text("{broken")
+        report = self.report()
+        self.assertEqual(report["receipt_lifecycle"]["status"], "unavailable")
+        self.assertIsNone(report["receipt_lifecycle"]["legacy_holds"])
+        self.assertEqual(report["coverage"]["sources"]["receipt-leases"]["status"], "unreadable")
+        self.json(".market/receipt-leases.json", {"version": 1, "leases": {}, "padding": "x" * 1000})
+        with patch.object(diagnostics, "MAX_BYTES", 200):
+            report = self.report()
+        self.assertEqual(report["receipt_lifecycle"]["status"], "unavailable")
+        self.assertEqual(report["coverage"]["sources"]["receipt-leases"]["status"], "oversized")
+
+    def test_lifecycle_invalid_rows_and_mismatched_holds_stay_unknown(self):
+        row = {"unit": "u1", "status": "issued", "issued_at": NOW - 10, "deadline": NOW + 290}
+        for changes in ({"status": ["issued"]}, {"deadline": float("nan")},
+                        {"deadline": NOW - 11}, {"status": "SECRET-STATUS"}):
+            self.json(".market/receipt-leases.json", {"version": 1, "leases": {"task": {**row, **changes}}})
+            report = self.report()
+            self.assertEqual(report["receipt_lifecycle"]["status"], "invalid_lifecycle")
+            self.assertIsNone(report["receipt_lifecycle"]["issued"])
+            self.assertNotIn("SECRET-STATUS", json.dumps(report))
+        self.json(".market/receipt-leases.json", {"version": 1, "leases": {"task": row}})
+        self.json(".market/receipt-reservations.json", {"other-unit": "task"})
+        lifecycle = self.report()["receipt_lifecycle"]
+        self.assertEqual(lifecycle["status"], "snapshot_hold_mismatch")
+        self.assertIsNone(lifecycle["legacy_holds"])
+        self.assertEqual(lifecycle["issued"], 1)
+        self.assertEqual(lifecycle["deadline_passed_issued_or_checkout"], 0)
+
+    def test_legacy_recovery_revocation_is_not_a_completed_or_failed_payment(self):
+        self.json(".market/receipt-leases.json", {"version": 1, "leases": {"legacy-task": {
+            "receipt": None, "unit": "u1", "issued_at": NOW, "deadline": NOW,
+            "status": "revoked", "session_id": None, "reason": "legacy_restart_recovery"}}})
+        report = self.report()
+        self.assertEqual(report["receipt_lifecycle"]["revoked"], 1)
+        self.assertEqual(report["receipt_lifecycle"]["completed"], 0)
+        self.assertEqual(report["receipt_lifecycle"]["legacy_holds"], 0)
+        self.assertIsNone(report["checkout"]["confirmed_failed_tasks"])
+
     def test_bounded_tail_corrupt_partial_and_arbitrary_text_not_emitted(self):
         self.events([self.event(str(i), "error", reason_code="model_error", detail="SECRET-TEXT") for i in range(10)])
         path = self.root / "logs/inventory-seller-events.jsonl"

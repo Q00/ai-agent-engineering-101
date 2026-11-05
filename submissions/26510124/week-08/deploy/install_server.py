@@ -272,6 +272,15 @@ def wait_ready(root, name, before, evidence):
 
 def rollback(root, backup, dropin, state):
     systemctl("stop", UNIT, check=False)
+    if (root / ".market/receipt-leases.json").exists():
+        # Plain v4 ignores our revoked-receipt registry. Restoring it would
+        # make cancelled quotes redeemable again. Keep guarded code installed
+        # and stop for repair instead of an unsafe automatic downgrade.
+        state["rollback_blocked_by_receipt_guard"] = True
+        save_state(backup, state)
+        say("Receipt guard is active: guarded source retained, service stopped. "
+            "Fix the reported startup error and redeploy; do not start the plain vendor kit.")
+        return
     restore_sources(root, backup, state)
     if state["dropin_existed"]:
         atomic_write(dropin, (backup / "previous-dropin.conf").read_bytes())
@@ -283,6 +292,26 @@ def rollback(root, backup, dropin, state):
     state["rolled_back"] = True
     save_state(backup, state)
     say("Previous source/service configuration restored. Existing keys and logs were retained.")
+
+
+def stop_for_guarded_deployment():
+    mode = systemctl("show", UNIT, "--property=KillMode", "--value").stdout.strip()
+    if mode != "control-group":
+        raise ValueError("Receipt recovery requires KillMode=control-group before stopping the old service")
+    group = systemctl("show", UNIT, "--property=ControlGroup", "--value").stdout.strip()
+    systemctl("stop", UNIT)
+    active = systemctl("is-active", UNIT, check=False).stdout.strip()
+    pid = systemctl("show", UNIT, "--property=MainPID", "--value").stdout.strip()
+    if active not in ("inactive", "failed") or pid != "0":
+        raise RuntimeError("Old market service has not fully stopped")
+    if group:
+        if not group.startswith("/") or ".." in PurePosixPath(group).parts:
+            raise ValueError("Unexpected service control-group path")
+        for base in (Path("/sys/fs/cgroup"), Path("/sys/fs/cgroup/systemd")):
+            processes = base / group.lstrip("/") / "cgroup.procs"
+            if processes.exists() and processes.read_text().strip():
+                raise RuntimeError("Old market service still has child processes")
+    return time.time()
 
 
 def deploy(archive, digest, run):
@@ -362,7 +391,9 @@ def deploy_locked(root, archive, digest, run):
     stopped = False
     try:
         stopped = True
-        systemctl("stop", UNIT)
+        stopped_at = stop_for_guarded_deployment() if "market_runtime.py" in manifest["files"] else None
+        if stopped_at is None:
+            systemctl("stop", UNIT)
         install_sources(root, stage, manifest, backup, state)
         capture([python, root / "run_round3.py", "--prepare-identity"], evidence / "identity-prepared.log", env)
         atomic_write(dropin, config.encode())
@@ -372,6 +403,14 @@ def deploy_locked(root, archive, digest, run):
         systemctl("start", UNIT)
         name = json.loads((root / "shop-adaptive.json").read_text())["name"]
         public = wait_ready(root, name, before, evidence)
+        if "recover_receipts.py" in manifest["files"]:
+            # The old cgroup is gone, a new guarded endpoint is public, and the
+            # recovery command requires fresh inventory written after startup.
+            capture([python, root / "recover_receipts.py", "--card", evidence / "acp.json",
+                     "--stopped-at", str(stopped_at), "--apply"], evidence / "receipt-recovery.log", env)
+            for line in (evidence / "receipt-recovery.log").read_text().splitlines():
+                if line.startswith("RECEIPT RECOVERY:"):
+                    say(line)
         state.update(success=True, shop_url=public, completed_at=datetime.now(timezone.utc).isoformat())
         save_state(backup, state)
         (evidence / "result.json").write_text(json.dumps({"kit": "4", "folder": str(root), "service": UNIT,
