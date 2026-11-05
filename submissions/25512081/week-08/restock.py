@@ -207,6 +207,20 @@ def track_my_sales(st, inv):
 VALUE_SKU = {}             # category -> (SKU, units of it) from the revenue budget; filled by targets()
 
 
+def market_rate(st, catalog, sku):
+    """The whole market's sales of a SKU per hour, from its decayed revenue (DECAY per ~1 min run: mean age ~3.3 h)
+    over its recent price. Reads 1.3-2x the ledger's last hour (Nov 5 10:20: Simmons LK 26 vs 15-21, Jakomo multi 4
+    120 vs 80-96), so a cap on it is loose."""
+    px = sorted(st["sku_px"].get(sku) or [DEFAULT_PX])
+    return st.get("sku_rev", {}).get(sku, 0) / (catalog[sku]["list_price"] * px[len(px) // 2]) / (1 / (1 - DECAY) / 60)
+
+
+# Nov 5 09:02: the revenue budget named the Simmons Jasmine LK bed (list 4.05M) and bought the 20-unit maximum
+# (48.6M) while the whole market sold ~20 an hour of it, split over 9-12 shops, and other shops supplied 27 more
+# in the same window; 75 min later we had sold 2. A value line now holds at most one window (1/3 h) of the
+# market's sales of that SKU (at least 2), unless our own last hour of sales asks for more.
+
+
 def targets(st, demand, catalog=None):
     """category -> how many units to hold."""
     if st["settles"] < MIN_DATA:
@@ -237,6 +251,7 @@ def targets(st, demand, catalog=None):
             n = min(n, 2)
         elif top and n > 0:                          # at least what we sold of it last hour, per window, x SELL_PACE
             pace = sum(1 for s in st.get("sold_log", []) if s["sku"] == top and time.time() - s["ts"] < 3600)
+            n = min(n, max(2, math.ceil(market_rate(st, catalog, top) / 3)))   # one window of the whole market's sales
             n = max(n, math.ceil(pace / 3 * SELL_PACE))
         if top and n > 0:                          # counted against units of that SKU, not of the category:
             VALUE_SKU[cat] = (top, min(n, LINE_QTY_MAX))  # six cheap stools must not stand in for leather sofas
