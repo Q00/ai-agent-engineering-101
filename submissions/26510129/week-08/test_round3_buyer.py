@@ -101,6 +101,25 @@ class Round3BuyerContextTest(unittest.TestCase):
         self.assertTrue(market_buyer.regulars_prompt("REGULARS: bought here before? reply 'buyer: <your market name>' and VIP -3% comes off"))
         self.assertFalse(market_buyer.regulars_prompt("lamp: asking 115. Send your offer as a number."))
 
+    def test_a_receipt_may_name_any_acceptable_sku_or_a_sku_of_the_asked_category(self):
+        catalog = {"G1": {"category": "home>bed"}, "G2": {"category": "home>bed"}, "K1": {"category": "food>kimchi"}}
+        self.assertTrue(market_buyer.receipt_names_the_order("G1", "G1"))
+        self.assertTrue(market_buyer.receipt_names_the_order("G2", "G1", acceptable={"G1", "G2"}))      # substituted SKU
+        self.assertTrue(market_buyer.receipt_names_the_order("G1", "home>bed", catalog=catalog))         # asked by category
+        self.assertTrue(market_buyer.receipt_names_the_order("G1", "bed", catalog=catalog))
+        self.assertFalse(market_buyer.receipt_names_the_order("K1", "home>bed", acceptable={"G1"}, catalog=catalog))
+        _, _, honest = market_buyer.review("home>bed", "deal", 100, {"item": "G1", "price": 100}, 90, catalog=catalog)
+        self.assertTrue(honest)
+
+    def test_one_mismatch_among_many_deals_does_not_blacklist_but_steering_does(self):
+        good = [{"shop": "big", "outcome": "deal", "honest": True}] * 50 + [{"shop": "big", "outcome": "deal", "honest": False}]
+        self.assertEqual(set(), buyer_policy.blacklisted_names(good))
+        twice = good + [{"shop": "big", "outcome": "deal", "honest": False}] * 5           # 6 of 56: over a tenth
+        self.assertEqual({"big"}, buyer_policy.blacklisted_names(twice))
+        small = [{"shop": "s", "outcome": "deal", "honest": False}] * 2 + [{"shop": "s", "outcome": "deal", "honest": True}] * 3
+        self.assertEqual({"s"}, buyer_policy.blacklisted_names(small))
+        self.assertEqual({"m"}, buyer_policy.blacklisted_names([{"shop": "m", "outcome": "walked_away", "manipulative": True}]))
+
     def test_a_shop_that_answers_nothing_four_times_is_cooled_off(self):
         mem = [{"shop": "x", "outcome": "no_stock"}] * 3 + [{"shop": "x", "outcome": "stale"}]
         self.assertTrue(market_buyer.cooling_off(mem, "x"))

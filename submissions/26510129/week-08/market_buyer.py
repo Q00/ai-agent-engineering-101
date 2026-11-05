@@ -335,11 +335,23 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
     return "walked_away", None, None, log, manip, info
 
 
-def review(item, outcome, agreed, receipt, reference, manip=False):
+def receipt_names_the_order(receipt_item, wanted, acceptable=(), catalog=None):
+    """A receipt may name the requested SKU, any of the order's acceptable SKUs, or (when I asked by category) a SKU of
+    that category (agent.md: "a receipt's item is the order's item or one of its acceptable SKUs"). 11-05 11:00: the
+    old check compared the receipt's SKU with the category name I had asked for and marked 30 honest shops dishonest,
+    which blacklisted the market's ten biggest suppliers for a day and a half (fill rate 16% against a 44% median)."""
+    got = str(receipt_item or "")
+    if got.lower() == str(wanted).lower() or got in set(acceptable or ()):
+        return True
+    category = ((catalog or {}).get(got) or {}).get("category") or ""
+    return bool(category) and (category == wanted or category.split(">")[-1] == wanted)
+
+
+def review(item, outcome, agreed, receipt, reference, manip=False, acceptable=(), catalog=None):
     """A factual code-side review; untrusted shop text is never sent to another LLM."""
     honest = outcome != "deal" or (
         isinstance(receipt, dict)
-        and str(receipt.get("item", "")).lower() == item.lower()
+        and receipt_names_the_order(receipt.get("item"), item, acceptable, catalog)
         and isinstance(receipt.get("price"), (int, float))
         and int(round(float(receipt["price"]))) == agreed
     )
@@ -504,7 +516,8 @@ def main():
         no_offer = outcome == "closed" and info.get("first_offer") is None
         if no_offer:
             outcome = "stale" if info.get("stale") else "no_stock"
-        stars, text, honest = review(wanted, outcome, agreed, receipt, reference, manip)
+        stars, text, honest = review(wanted, outcome, agreed, receipt, reference, manip,
+                                     set(order.get("acceptable") or ()), catalog)
         if outcome == "deal" and not info.get("checkout_authorized"):
             print("[guard] deal was not authorized for checkout; discarding its receipt", flush=True)
             outcome, agreed, receipt, stars, text = "rejected_checkout", None, None, 1, "Checkout exceeded the private mandate."

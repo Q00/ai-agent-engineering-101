@@ -10,6 +10,7 @@ import hashlib
 import json
 import math
 import statistics
+from collections import Counter
 
 
 DEFAULT_REFERENCE = {"lamp": 103, "chair": 184, "bookshelf": 265}
@@ -80,11 +81,21 @@ def item_reference(memory, item, recent=20, fallback=None):
 
 
 def blacklisted_names(memory):
-    return {
-        row.get("shop")
-        for row in memory
-        if row.get("shop") and (row.get("honest") is False or row.get("manipulative") is True)
-    }
+    """Shops not to visit: one steering message is enough; dishonesty (a receipt that did not match, a false grade
+    claim, goods that broke with no warranty) must be at least two rows and a tenth of the shop's deals. 11-05: one
+    mismatched row - my own category-vs-SKU bug - had blacklisted inextro (397 deals) and psyoung82 (570) for good."""
+    deals, bad, manip = Counter(), Counter(), set()
+    for row in memory:
+        shop = row.get("shop")
+        if not shop:
+            continue
+        if row.get("manipulative") is True:
+            manip.add(shop)
+        if row.get("honest") is False or (row.get("broken") and not row.get("refunded")):
+            bad[shop] += 1
+        elif row.get("outcome") == "deal":
+            deals[shop] += 1
+    return manip | {shop for shop, n in bad.items() if n >= 2 and n >= 0.1 * (n + deals[shop])}
 
 
 def _public_trust(shop):
