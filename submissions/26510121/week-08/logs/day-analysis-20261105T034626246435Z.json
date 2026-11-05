@@ -1,0 +1,5975 @@
+{
+  "window": {
+    "start": "2026-11-04T12:37:21.293560+09:00",
+    "end": "2026-11-05T12:45:44.360601+09:00",
+    "hours": 24.13974084470007
+  },
+  "snapshot_times": {
+    "board.json": "2026-11-05T12:45:44.360601+09:00",
+    "inventory.json": "2026-11-05T12:46:22.850961+09:00",
+    "shop-health.json": "2026-11-05T12:46:24.808748+09:00",
+    "runtime.json": "2026-11-04T19:52:57.939923+09:00",
+    "catalog.json": "2026-11-04T19:53:08.862067+09:00"
+  },
+  "current_strategy": {
+    "adaptive:buyer": {
+      "version": 5,
+      "patch": {},
+      "status": "stable",
+      "since": 1793789577.9439676,
+      "cooldown_until": 1793811177.9439676
+    },
+    "adaptive:shop": {
+      "version": 5,
+      "patch": {
+        "category_weights": {
+          "가구/침구>가구>침대/매트리스": 1.1
+        }
+      },
+      "status": "stable",
+      "since": 1793840819.5785916,
+      "cooldown_until": 1793862419.5785916
+    },
+    "objective_revision": "r3-demand-portfolio-rfq-v4"
+  },
+  "policy": {
+    "version": "r3-demand-portfolio-rfq-v4",
+    "actor_model": "gpt-6-luna",
+    "critic_model": "gpt-6-luna",
+    "daily_api_budget_usd": null,
+    "model_timeout_seconds": 18,
+    "critic_cash_fraction": 0.1,
+    "cash_reserve_fraction": 0.2,
+    "cash_floor": 750000,
+    "forum_post_interval_seconds": 600,
+    "supply_cycle_seconds": 1200,
+    "inventory_target_units": 30,
+    "restock_max_lines": 10,
+    "restock_max_qty": 6,
+    "max_sku_capital_fraction": 0.35,
+    "goods_warranty_by_grade": {
+      "A": 3,
+      "B": 3,
+      "C": 6
+    },
+    "quote_compare_min_budget": 100000,
+    "exploration_fraction": 0.1,
+    "max_shop_candidates": 3,
+    "max_negotiation_turns": 4,
+    "checkout_buffer_seconds": 30,
+    "unknown_goods_failure_stress": 0.3,
+    "session_ttl_seconds": 180,
+    "end_at": "2026-11-17T23:59:00+09:00",
+    "prices_usd_per_million": {
+      "gpt-6-luna": [
+        0.1,
+        0.5
+      ],
+      "gpt-6.1-terra": [
+        1.0,
+        5.0
+      ]
+    }
+  },
+  "board": {
+    "shops": {
+      "start": {
+        "name": "seochanit",
+        "owner": {
+          "login": "seochanit",
+          "avatar": "https://avatars.githubusercontent.com/u/163231240?v=4",
+          "html": "https://github.com/seochanit"
+        },
+        "house": false,
+        "joined": 1792492755,
+        "card": {
+          "name": "Seochanit Shop",
+          "description": "Inventory-backed quotes, market certificates and explicit warranty terms.",
+          "version": "3.0.0",
+          "provider": "",
+          "skills": [
+            {
+              "name": "Inventory negotiation",
+              "description": "Ask for an exact SKU, then an integer price."
+            }
+          ],
+          "url": "https://nzzkr-117-17-188-21.run.pinggy-free.link"
+        },
+        "alive": true,
+        "deals": 204,
+        "share": 0.007,
+        "visits": 714,
+        "stars": 4.79,
+        "reviews": 204,
+        "revenue": 4306893,
+        "profit": 790977,
+        "bankruptcies": 0,
+        "stars_rank": 4.75,
+        "refunds": 0,
+        "broken": 0,
+        "claims": 201,
+        "honest_claims": 201,
+        "forum": null,
+        "all": 0.485
+      },
+      "end": {
+        "name": "seochanit",
+        "owner": {
+          "login": "seochanit",
+          "avatar": "https://avatars.githubusercontent.com/u/163231240?v=4",
+          "html": "https://github.com/seochanit"
+        },
+        "house": false,
+        "joined": 1792492755,
+        "card": {
+          "name": "Seochanit Shop",
+          "description": "Inventory-backed quotes, market certificates and explicit warranty terms.",
+          "version": "3.0.0",
+          "provider": "",
+          "skills": [
+            {
+              "name": "Inventory negotiation",
+              "description": "Ask for an exact SKU, then an integer price."
+            }
+          ],
+          "url": "https://accuk-117-17-188-21.run.pinggy-free.link"
+        },
+        "alive": true,
+        "deals": 1192,
+        "share": 0.012,
+        "visits": 3490,
+        "stars": 4.81,
+        "reviews": 1175,
+        "revenue": 49430504,
+        "profit": 3547343,
+        "stock_units": 24,
+        "stock_cost": 307524,
+        "book": 3854867,
+        "bankruptcies": 0,
+        "stars_rank": 4.81,
+        "refunds": 16,
+        "broken": 20,
+        "claims": 1188,
+        "honest_claims": 1188,
+        "forum": 0.0,
+        "all": 0.547
+      },
+      "delta": {
+        "deals": 988,
+        "visits": 2776,
+        "revenue": 45123611,
+        "profit": 2756366,
+        "all": 0.062000000000000055,
+        "stars": 0.019999999999999574,
+        "refunds": 16,
+        "broken": 20
+      },
+      "matched_peers": [
+        {
+          "name": "inextro",
+          "all": 0.959,
+          "delta": {
+            "deals": 4064,
+            "visits": 6437,
+            "revenue": 2304266259,
+            "profit": 313263935
+          },
+          "stock_units": 168,
+          "stock_cost": 93874169,
+          "book": 417504645
+        },
+        {
+          "name": "dae-yangkim",
+          "all": 0.902,
+          "delta": {
+            "deals": 1365,
+            "visits": 2452,
+            "revenue": 1265718061,
+            "profit": 255764371
+          },
+          "stock_units": 39,
+          "stock_cost": 36244254,
+          "book": 349331114
+        },
+        {
+          "name": "Kiro729",
+          "all": 0.916,
+          "delta": {
+            "deals": 4844,
+            "visits": 6492,
+            "revenue": 1288803160,
+            "profit": 142202619
+          },
+          "stock_units": 225,
+          "stock_cost": 73814708,
+          "book": 220748901
+        },
+        {
+          "name": "kimauve",
+          "all": 0.792,
+          "delta": {
+            "deals": 2654,
+            "visits": 4252,
+            "revenue": 948548663,
+            "profit": 102014899
+          },
+          "stock_units": 197,
+          "stock_cost": 79831279,
+          "book": 184696791
+        },
+        {
+          "name": "yms979",
+          "all": 0.829,
+          "delta": {
+            "deals": 4484,
+            "visits": 6553,
+            "revenue": 792615775,
+            "profit": 82775967
+          },
+          "stock_units": 191,
+          "stock_cost": 20765666,
+          "book": 122945474
+        },
+        {
+          "name": "25620027",
+          "all": 0.851,
+          "delta": {
+            "deals": 2417,
+            "visits": 4291,
+            "revenue": 1086290322,
+            "profit": 79515881
+          },
+          "stock_units": 298,
+          "stock_cost": 172954131,
+          "book": 257234706
+        },
+        {
+          "name": "gom31-certified-goods",
+          "all": 0.82,
+          "delta": {
+            "deals": 3712,
+            "visits": 5136,
+            "revenue": 1363846450,
+            "profit": 77585189
+          },
+          "stock_units": 241,
+          "stock_cost": 132657750,
+          "book": 219883969
+        },
+        {
+          "name": "dragonash",
+          "all": 0.865,
+          "delta": {
+            "deals": 5842,
+            "visits": 9683,
+            "revenue": 1078248846,
+            "profit": 76524904
+          },
+          "stock_units": 909,
+          "stock_cost": 145913544,
+          "book": 247544838
+        },
+        {
+          "name": "shaun0927-lab1",
+          "all": 0.79,
+          "delta": {
+            "deals": 726,
+            "visits": 1377,
+            "revenue": 350094417,
+            "profit": 52239799
+          },
+          "stock_units": 14,
+          "stock_cost": 12837588,
+          "book": 70214409
+        },
+        {
+          "name": "lee-sungsoo",
+          "all": 0.792,
+          "delta": {
+            "deals": 2615,
+            "visits": 4199,
+            "revenue": 712308483,
+            "profit": 50607946
+          },
+          "stock_units": 144,
+          "stock_cost": 61441136,
+          "book": 119231632
+        },
+        {
+          "name": "myeonggi",
+          "all": 0.802,
+          "delta": {
+            "deals": 1816,
+            "visits": 2892,
+            "revenue": 332158325,
+            "profit": 38838375
+          },
+          "stock_units": 241,
+          "stock_cost": 23736157,
+          "book": 72811196
+        },
+        {
+          "name": "thisjonghoon",
+          "all": 0.786,
+          "delta": {
+            "deals": 2675,
+            "visits": 5997,
+            "revenue": 214237193,
+            "profit": 27329683
+          },
+          "stock_units": 305,
+          "stock_cost": 21608467,
+          "book": 57235985
+        },
+        {
+          "name": "psyoung82",
+          "all": 0.704,
+          "delta": {
+            "deals": 5785,
+            "visits": 10110,
+            "revenue": 133154095,
+            "profit": 23200563
+          },
+          "stock_units": 500,
+          "stock_cost": 14397123,
+          "book": 40608828
+        },
+        {
+          "name": "kcwarni",
+          "all": 0.555,
+          "delta": {
+            "deals": 796,
+            "visits": 1295,
+            "revenue": 103019376,
+            "profit": 20278637
+          },
+          "stock_units": 28,
+          "stock_cost": 4986970,
+          "book": 31228009
+        },
+        {
+          "name": "nocha12",
+          "all": 0.708,
+          "delta": {
+            "deals": 2560,
+            "visits": 4934,
+            "revenue": 148260022,
+            "profit": 19202546
+          },
+          "stock_units": 109,
+          "stock_cost": 13693428,
+          "book": 51718548
+        },
+        {
+          "name": "buzllightyear",
+          "all": 0.527,
+          "delta": {
+            "deals": 1564,
+            "visits": 2182,
+            "revenue": 113079186,
+            "profit": 13916572
+          },
+          "stock_units": 93,
+          "stock_cost": 6642440,
+          "book": 23610658
+        },
+        {
+          "name": "ddolcom",
+          "all": 0.667,
+          "delta": {
+            "deals": 1568,
+            "visits": 3156,
+            "revenue": 120645311,
+            "profit": 13486747
+          },
+          "stock_units": 264,
+          "stock_cost": 19761706,
+          "book": 36460773
+        },
+        {
+          "name": "jiseokkk",
+          "all": 0.708,
+          "delta": {
+            "deals": 1336,
+            "visits": 2909,
+            "revenue": 165479810,
+            "profit": 10421723
+          },
+          "stock_units": 171,
+          "stock_cost": 16287421,
+          "book": 31029731
+        },
+        {
+          "name": "bjeon01",
+          "all": 0.622,
+          "delta": {
+            "deals": 649,
+            "visits": 1550,
+            "revenue": 82785514,
+            "profit": 10391135
+          },
+          "stock_units": 82,
+          "stock_cost": 7677338,
+          "book": 17401960
+        },
+        {
+          "name": "outseop-26510122",
+          "all": 0.524,
+          "delta": {
+            "deals": 1241,
+            "visits": 2091,
+            "revenue": 77779803,
+            "profit": 9015891
+          },
+          "stock_units": 135,
+          "stock_cost": 6366095,
+          "book": 16535971
+        },
+        {
+          "name": "ggari-shop",
+          "all": 0.684,
+          "delta": {
+            "deals": 2073,
+            "visits": 3957,
+            "revenue": 181358880,
+            "profit": 8811956
+          },
+          "stock_units": 231,
+          "stock_cost": 17082629,
+          "book": 35251661
+        },
+        {
+          "name": "mjforge",
+          "all": 0.733,
+          "delta": {
+            "deals": 1231,
+            "visits": 2217,
+            "revenue": 422761919,
+            "profit": 5153693
+          },
+          "stock_units": 186,
+          "stock_cost": 65447331,
+          "book": 78782815
+        },
+        {
+          "name": "olstjr",
+          "all": 0.6,
+          "delta": {
+            "deals": 2198,
+            "visits": 5255,
+            "revenue": 72966962,
+            "profit": 4875639
+          },
+          "stock_units": 320,
+          "stock_cost": 10770934,
+          "book": 16500637
+        },
+        {
+          "name": "YAHO1212",
+          "all": 0.504,
+          "delta": {
+            "deals": 640,
+            "visits": 1772,
+            "revenue": 20984745,
+            "profit": 4218926
+          },
+          "stock_units": 114,
+          "stock_cost": 2494015,
+          "book": 14748211
+        },
+        {
+          "name": "winun1127",
+          "all": 0.592,
+          "delta": {
+            "deals": 722,
+            "visits": 1468,
+            "revenue": 52049978,
+            "profit": 2802684
+          },
+          "stock_units": 114,
+          "stock_cost": 8580409,
+          "book": 25803753
+        },
+        {
+          "name": "seochanit",
+          "all": 0.547,
+          "delta": {
+            "deals": 988,
+            "visits": 2776,
+            "revenue": 45123611,
+            "profit": 2756366
+          },
+          "stock_units": 24,
+          "stock_cost": 307524,
+          "book": 3854867
+        },
+        {
+          "name": "25512088",
+          "all": 0.355,
+          "delta": {
+            "deals": 19,
+            "visits": 621,
+            "revenue": 4835457,
+            "profit": 1692429
+          },
+          "stock_units": 15,
+          "stock_cost": 294248,
+          "book": 1378438
+        },
+        {
+          "name": "shaun0927",
+          "all": 0.506,
+          "delta": {
+            "deals": 329,
+            "visits": 834,
+            "revenue": 6241591,
+            "profit": 1300081
+          },
+          "stock_units": 5,
+          "stock_cost": 66570,
+          "book": 4327288
+        },
+        {
+          "name": "fair-furniture",
+          "all": 0.345,
+          "delta": {
+            "deals": 168,
+            "visits": 467,
+            "revenue": 2593763,
+            "profit": 566474
+          },
+          "stock_units": 1,
+          "stock_cost": 2463,
+          "book": 584789
+        },
+        {
+          "name": "Raksmey A2A Shop",
+          "all": 0.302,
+          "delta": {
+            "deals": 81,
+            "visits": 207,
+            "revenue": 2299609,
+            "profit": 338478
+          },
+          "stock_units": 16,
+          "stock_cost": 348726,
+          "book": 906056
+        },
+        {
+          "name": "chaewoonee",
+          "all": 0.567,
+          "delta": {
+            "deals": 180,
+            "visits": 1171,
+            "revenue": 4545133,
+            "profit": 16448
+          },
+          "stock_units": 62,
+          "stock_cost": 2499350,
+          "book": 14436950
+        },
+        {
+          "name": "dyishappy",
+          "all": 0.357,
+          "delta": {
+            "deals": 0,
+            "visits": 572,
+            "revenue": 0,
+            "profit": -3604
+          },
+          "stock_units": 13,
+          "stock_cost": 424599,
+          "book": 976944
+        },
+        {
+          "name": "yeonsong2",
+          "all": 0.41,
+          "delta": {
+            "deals": 195,
+            "visits": 1866,
+            "revenue": 8691612,
+            "profit": -337856
+          },
+          "stock_units": 161,
+          "stock_cost": 4859139,
+          "book": 3770888
+        }
+      ],
+      "rank": {
+        "all": {
+          "rank": 26,
+          "n": 49
+        },
+        "profit": {
+          "rank": 30,
+          "n": 49
+        },
+        "revenue": {
+          "rank": 29,
+          "n": 49
+        },
+        "book": {
+          "rank": 30,
+          "n": 49
+        },
+        "stock_cost": {
+          "rank": 41,
+          "n": 49
+        }
+      }
+    },
+    "buyers": {
+      "start": {
+        "name": "seochanit",
+        "owner": {
+          "login": "seochanit",
+          "avatar": "https://avatars.githubusercontent.com/u/163231240?v=4",
+          "html": "https://github.com/seochanit"
+        },
+        "house": false,
+        "joined": 1792492756,
+        "alive": true,
+        "orders": 2703,
+        "deals": 434,
+        "paid": 0.598,
+        "saved": 18730344,
+        "held": 0,
+        "hopeless": 0,
+        "surplus": 7157488,
+        "served": 426,
+        "forum": 0.627,
+        "posts": 66,
+        "all": 0.461
+      },
+      "end": {
+        "name": "seochanit",
+        "owner": {
+          "login": "seochanit",
+          "avatar": "https://avatars.githubusercontent.com/u/163231240?v=4",
+          "html": "https://github.com/seochanit"
+        },
+        "house": false,
+        "joined": 1792492756,
+        "alive": true,
+        "orders": 6701,
+        "deals": 3007,
+        "paid": 0.62,
+        "saved": 250562729,
+        "held": 0,
+        "hopeless": 0,
+        "surplus": 105407893,
+        "served": 2955,
+        "forum": 0.586,
+        "posts": 208,
+        "all": 0.661
+      },
+      "delta": {
+        "orders": 3998,
+        "deals": 2573,
+        "surplus": 98250405,
+        "all": 0.2,
+        "forum": -0.041000000000000036,
+        "posts": 142
+      },
+      "matched_peers": [
+        {
+          "name": "psyoung82",
+          "all": 0.896,
+          "delta": {
+            "orders": 3923,
+            "deals": 2013,
+            "surplus": 356405682
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "inextro",
+          "all": 0.944,
+          "delta": {
+            "orders": 3415,
+            "deals": 2652,
+            "surplus": 285581486
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "shaun0927-labbuyer",
+          "all": 0.829,
+          "delta": {
+            "orders": 3787,
+            "deals": 2088,
+            "surplus": 283561601
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "mjforge",
+          "all": 0.731,
+          "delta": {
+            "orders": 1951,
+            "deals": 1151,
+            "surplus": 219570190
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "yms979",
+          "all": 0.771,
+          "delta": {
+            "orders": 2726,
+            "deals": 1137,
+            "surplus": 198612362
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "myeonggi",
+          "all": 0.699,
+          "delta": {
+            "orders": 3479,
+            "deals": 2067,
+            "surplus": 182505626
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "shaun0927",
+          "all": 0.819,
+          "delta": {
+            "orders": 3782,
+            "deals": 2591,
+            "surplus": 181112137
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "kimauve",
+          "all": 0.767,
+          "delta": {
+            "orders": 3100,
+            "deals": 2393,
+            "surplus": 163156618
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "YAHO1212",
+          "all": 0.754,
+          "delta": {
+            "orders": 3480,
+            "deals": 2204,
+            "surplus": 129352988
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "Kiro729",
+          "all": 0.697,
+          "delta": {
+            "orders": 4042,
+            "deals": 2151,
+            "surplus": 118864788
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "nocha12",
+          "all": 0.588,
+          "delta": {
+            "orders": 2646,
+            "deals": 1159,
+            "surplus": 109078327
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "fair-furniture",
+          "all": 0.517,
+          "delta": {
+            "orders": 4158,
+            "deals": 2291,
+            "surplus": 106825383
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "seochanit",
+          "all": 0.661,
+          "delta": {
+            "orders": 3998,
+            "deals": 2573,
+            "surplus": 98250405
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "ddolcom",
+          "all": 0.565,
+          "delta": {
+            "orders": 3776,
+            "deals": 1029,
+            "surplus": 95908743
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "chaewoonee",
+          "all": 0.615,
+          "delta": {
+            "orders": 2488,
+            "deals": 1034,
+            "surplus": 87564824
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "yeonsong2",
+          "all": 0.481,
+          "delta": {
+            "orders": 1252,
+            "deals": 405,
+            "surplus": 69432330
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "buzllightyear",
+          "all": 0.637,
+          "delta": {
+            "orders": 3926,
+            "deals": 2212,
+            "surplus": 64629757
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "dae-yangkim",
+          "all": 0.687,
+          "delta": {
+            "orders": 3057,
+            "deals": 1885,
+            "surplus": 57010652
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "25620027",
+          "all": 0.681,
+          "delta": {
+            "orders": 4025,
+            "deals": 1577,
+            "surplus": 56743775
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "lee-sungsoo",
+          "all": 0.729,
+          "delta": {
+            "orders": 3732,
+            "deals": 2385,
+            "surplus": 54521917
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "thisjonghoon",
+          "all": 0.56,
+          "delta": {
+            "orders": 3096,
+            "deals": 2023,
+            "surplus": 49733447
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "ggari0703",
+          "all": 0.531,
+          "delta": {
+            "orders": 3544,
+            "deals": 1231,
+            "surplus": 41964812
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "outseop-26510122",
+          "all": 0.377,
+          "delta": {
+            "orders": 2413,
+            "deals": 1019,
+            "surplus": 40799664
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "gom31-certified-goods",
+          "all": 0.553,
+          "delta": {
+            "orders": 3956,
+            "deals": 1317,
+            "surplus": 40166403
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "buyer-03",
+          "all": 0.374,
+          "delta": {
+            "orders": 4093,
+            "deals": 1545,
+            "surplus": 35515254
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "dragonash",
+          "all": 0.529,
+          "delta": {
+            "orders": 3405,
+            "deals": 2110,
+            "surplus": 35401138
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "Raksmey A2A Shop",
+          "all": 0.252,
+          "delta": {
+            "orders": 4410,
+            "deals": 1249,
+            "surplus": 35086620
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "bjeon01",
+          "all": 0.572,
+          "delta": {
+            "orders": 2611,
+            "deals": 1428,
+            "surplus": 33439992
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "jiseokkk",
+          "all": 0.545,
+          "delta": {
+            "orders": 3760,
+            "deals": 637,
+            "surplus": 31098347
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "buyer-01",
+          "all": 0.431,
+          "delta": {
+            "orders": 4105,
+            "deals": 2102,
+            "surplus": 31020609
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "winun1127",
+          "all": 0.29,
+          "delta": {
+            "orders": 3430,
+            "deals": 875,
+            "surplus": 28143644
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "kcwarni",
+          "all": 0.483,
+          "delta": {
+            "orders": 4067,
+            "deals": 331,
+            "surplus": 26154212
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "olstjr",
+          "all": 0.31,
+          "delta": {
+            "orders": 3394,
+            "deals": 1088,
+            "surplus": 17710284
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "buyer-02",
+          "all": 0.379,
+          "delta": {
+            "orders": 4131,
+            "deals": 2330,
+            "surplus": 16323031
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "dyishappy",
+          "all": 0.148,
+          "delta": {
+            "orders": 643,
+            "deals": 190,
+            "surplus": 13105595
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "q00",
+          "all": 0.14,
+          "delta": {
+            "orders": 3577,
+            "deals": 765,
+            "surplus": 5025330
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "25512088",
+          "all": 0.167,
+          "delta": {
+            "orders": 3731,
+            "deals": 57,
+            "surplus": 631556
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        },
+        {
+          "name": "Jaehoonang",
+          "all": 0.062,
+          "delta": {
+            "orders": 6192,
+            "deals": 318,
+            "surplus": -576654
+          },
+          "stock_units": null,
+          "stock_cost": null,
+          "book": null
+        }
+      ],
+      "rank": {
+        "all": {
+          "rank": 15,
+          "n": 49
+        },
+        "surplus": {
+          "rank": 17,
+          "n": 49
+        },
+        "deals": {
+          "rank": 12,
+          "n": 49
+        }
+      }
+    }
+  },
+  "shop_accounting": {
+    "sales": 988,
+    "gross_sales": 48569264,
+    "refunds": 16,
+    "refund_amount": 3445653,
+    "net_revenue_recomputed": 45123611,
+    "board_revenue_residual": 0,
+    "board_deals_residual": 0,
+    "cost_known_sales": 988,
+    "sold_cost": 42058793,
+    "gross_margin_before_refunds": 6510471,
+    "below_cost_sales": 283,
+    "below_cost_loss": 969206,
+    "revenue_minus_profit_delta": 42367245,
+    "cash_start": 5790977,
+    "cash_end_at_board": 8547343
+  },
+  "shop_skus": [
+    {
+      "sku": "Gc1297f36",
+      "name": "지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 SS 슈퍼싱글 색상선택 2color",
+      "kind": "goods",
+      "n": 1,
+      "sales": 427428,
+      "cost": 435627,
+      "below_cost_n": 1,
+      "margin": -8199
+    },
+    {
+      "sku": "Gd96a6c19",
+      "name": "온밀담 포기김치 5kg/ GS단독",
+      "kind": "food",
+      "n": 2,
+      "sales": 25640,
+      "cost": 28815,
+      "below_cost_n": 1,
+      "margin": -3175
+    },
+    {
+      "sku": "G022ce883",
+      "name": "[양지촌농원] 26년산 보은건대추 1kg 26mm",
+      "kind": "food",
+      "n": 1,
+      "sales": 11940,
+      "cost": 14299,
+      "below_cost_n": 1,
+      "margin": -2359
+    },
+    {
+      "sku": "Gec53be6b",
+      "name": "[팜스] 가시완전제거 순살고등어 1.2kg(8~10팩)",
+      "kind": "food",
+      "n": 1,
+      "sales": 31663,
+      "cost": 33923,
+      "below_cost_n": 1,
+      "margin": -2260
+    },
+    {
+      "sku": "G1831f2c0",
+      "name": "켈로그 프링글스 2+2+2+1 골라담기 GS단독",
+      "kind": "food",
+      "n": 1,
+      "sales": 7352,
+      "cost": 8969,
+      "below_cost_n": 1,
+      "margin": -1617
+    },
+    {
+      "sku": "G35a6e5ca",
+      "name": "깐깐 송도순 총각김치 5kg",
+      "kind": "food",
+      "n": 1,
+      "sales": 18645,
+      "cost": 20221,
+      "below_cost_n": 1,
+      "margin": -1576
+    },
+    {
+      "sku": "Gdc598357",
+      "name": "롯데웰푸드 마가렛트 오리지널 352g x 2개",
+      "kind": "food",
+      "n": 3,
+      "sales": 20123,
+      "cost": 21445,
+      "below_cost_n": 2,
+      "margin": -1322
+    },
+    {
+      "sku": "Ge62449c9",
+      "name": "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS",
+      "kind": "goods",
+      "n": 3,
+      "sales": 170787,
+      "cost": 171670,
+      "below_cost_n": 2,
+      "margin": -883
+    },
+    {
+      "sku": "Gc511ef55",
+      "name": "단짠 고소 에이플러스콘 10봉",
+      "kind": "food",
+      "n": 1,
+      "sales": 5400,
+      "cost": 5829,
+      "below_cost_n": 1,
+      "margin": -429
+    },
+    {
+      "sku": "Gc95a6511",
+      "name": "아델라 5mm밍크극세사 차렵이불 Q (+이불가방증정)",
+      "kind": "goods",
+      "n": 1,
+      "sales": 49229,
+      "cost": 49657,
+      "below_cost_n": 1,
+      "margin": -428
+    },
+    {
+      "sku": "G44681065",
+      "name": "포미식탁 고당도 델몬트 바나나 2송이 2.6kg내외",
+      "kind": "food",
+      "n": 1,
+      "sales": 9717,
+      "cost": 10141,
+      "below_cost_n": 1,
+      "margin": -424
+    },
+    {
+      "sku": "G37da7a5c",
+      "name": "[더싱싱] 깍두기 2kg / 아삭아삭 시원한 맛",
+      "kind": "food",
+      "n": 2,
+      "sales": 10890,
+      "cost": 11305,
+      "below_cost_n": 1,
+      "margin": -415
+    },
+    {
+      "sku": "G9fdc4894",
+      "name": "[씩씩가게] 에이스 씬 에스프레소 291g",
+      "kind": "food",
+      "n": 1,
+      "sales": 2023,
+      "cost": 2410,
+      "below_cost_n": 1,
+      "margin": -387
+    },
+    {
+      "sku": "Gfeba49e6",
+      "name": "카메다 우스야끼 새우 70g",
+      "kind": "food",
+      "n": 1,
+      "sales": 1682,
+      "cost": 2046,
+      "below_cost_n": 1,
+      "margin": -364
+    },
+    {
+      "sku": "Gdc657713",
+      "name": "온밀담 깻잎김치 1kg/ GS단독",
+      "kind": "food",
+      "n": 1,
+      "sales": 7988,
+      "cost": 8329,
+      "below_cost_n": 1,
+      "margin": -341
+    },
+    {
+      "sku": "G0da069ff",
+      "name": "우리쌀로 만든 구수한 전통 가마솥 누룽지 1kg x3개",
+      "kind": "food",
+      "n": 1,
+      "sales": 9500,
+      "cost": 9817,
+      "below_cost_n": 1,
+      "margin": -317
+    },
+    {
+      "sku": "G6c17800f",
+      "name": "[씨제이] 비비고 전복내장죽420g",
+      "kind": "food",
+      "n": 1,
+      "sales": 2203,
+      "cost": 2511,
+      "below_cost_n": 1,
+      "margin": -308
+    },
+    {
+      "sku": "G2fca96b9",
+      "name": "제주 노지 감귤 중과 10kg M~L(81~120과 내외)",
+      "kind": "food",
+      "n": 1,
+      "sales": 16500,
+      "cost": 16746,
+      "below_cost_n": 1,
+      "margin": -246
+    },
+    {
+      "sku": "Gda351623",
+      "name": "오뚜기 컵누들 잔치쌀국수",
+      "kind": "food",
+      "n": 1,
+      "sales": 700,
+      "cost": 903,
+      "below_cost_n": 1,
+      "margin": -203
+    },
+    {
+      "sku": "G86138c89",
+      "name": "헬로우그린 터키산 건조 월계수 잎 90g(팩)",
+      "kind": "food",
+      "n": 1,
+      "sales": 1270,
+      "cost": 1412,
+      "below_cost_n": 1,
+      "margin": -142
+    },
+    {
+      "sku": "Gb6e54bed",
+      "name": "[씩씩가게] 알새우칩 68g",
+      "kind": "food",
+      "n": 4,
+      "sales": 2484,
+      "cost": 2296,
+      "below_cost_n": 0,
+      "margin": 188
+    },
+    {
+      "sku": "G31b4a261",
+      "name": "[해태제과] 에이스(364g)",
+      "kind": "food",
+      "n": 1,
+      "sales": 2109,
+      "cost": 1875,
+      "below_cost_n": 0,
+      "margin": 234
+    },
+    {
+      "sku": "Gdb76a607",
+      "name": "소이조이 플랜트베이스 마카다미아 레몬 1개입 고단백질 건강간식",
+      "kind": "food",
+      "n": 2,
+      "sales": 1963,
+      "cost": 1717,
+      "below_cost_n": 0,
+      "margin": 246
+    },
+    {
+      "sku": "Ge78d35d2",
+      "name": "백송식품 황태(명태)껍질 1Kg, 콜라겐 듬뿍 육수. 무침 반찬 OK",
+      "kind": "food",
+      "n": 2,
+      "sales": 14835,
+      "cost": 14571,
+      "below_cost_n": 1,
+      "margin": 264
+    },
+    {
+      "sku": "Gbea6b9f6",
+      "name": "천일식품 햄야채볶음밥 300g",
+      "kind": "food",
+      "n": 1,
+      "sales": 1287,
+      "cost": 986,
+      "below_cost_n": 0,
+      "margin": 301
+    },
+    {
+      "sku": "G28ab4af2",
+      "name": "천일식품 낙지볶음밥 300g",
+      "kind": "food",
+      "n": 1,
+      "sales": 1589,
+      "cost": 1209,
+      "below_cost_n": 0,
+      "margin": 380
+    },
+    {
+      "sku": "G1bea14ec",
+      "name": "아르토스베이커리 통밀그대로빵",
+      "kind": "food",
+      "n": 2,
+      "sales": 3166,
+      "cost": 2725,
+      "below_cost_n": 1,
+      "margin": 441
+    },
+    {
+      "sku": "G80435d53",
+      "name": "2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종",
+      "kind": "food",
+      "n": 1,
+      "sales": 15900,
+      "cost": 15395,
+      "below_cost_n": 0,
+      "margin": 505
+    },
+    {
+      "sku": "Gb55ae7dc",
+      "name": "백설매콤한닭볶음탕양념290g",
+      "kind": "food",
+      "n": 1,
+      "sales": 1908,
+      "cost": 1322,
+      "below_cost_n": 0,
+      "margin": 586
+    },
+    {
+      "sku": "Gf477b972",
+      "name": "[삼진어묵] 와사비맛 딥소스 65g",
+      "kind": "food",
+      "n": 3,
+      "sales": 3900,
+      "cost": 3205,
+      "below_cost_n": 0,
+      "margin": 695
+    },
+    {
+      "sku": "G32462704",
+      "name": "시그니쳐 프리미엄 LA갈비 선물세트 3kg(미국산,꽃갈비,678번)",
+      "kind": "food",
+      "n": 1,
+      "sales": 72935,
+      "cost": 72205,
+      "below_cost_n": 0,
+      "margin": 730
+    },
+    {
+      "sku": "G1c3cc2aa",
+      "name": "[지정일배송]GAP인증 해남 절임배추 10kg (3-5포기/국내산천일염사용)",
+      "kind": "food",
+      "n": 1,
+      "sales": 15540,
+      "cost": 14749,
+      "below_cost_n": 0,
+      "margin": 791
+    },
+    {
+      "sku": "G5454d846",
+      "name": "[40년전통] 대구10미 더 통통한 납작만두 700gx2팩 (총 1.4kg)",
+      "kind": "food",
+      "n": 1,
+      "sales": 11175,
+      "cost": 10248,
+      "below_cost_n": 0,
+      "margin": 927
+    },
+    {
+      "sku": "Gdf79cd07",
+      "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+      "kind": "food",
+      "n": 3,
+      "sales": 30420,
+      "cost": 29276,
+      "below_cost_n": 1,
+      "margin": 1144
+    },
+    {
+      "sku": "Gab156951",
+      "name": "소이조이 블루베리 1개입 고단백질 건강간식",
+      "kind": "food",
+      "n": 4,
+      "sales": 4323,
+      "cost": 3166,
+      "below_cost_n": 1,
+      "margin": 1157
+    },
+    {
+      "sku": "G7fa48eaa",
+      "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+      "kind": "food",
+      "n": 13,
+      "sales": 38365,
+      "cost": 37056,
+      "below_cost_n": 4,
+      "margin": 1309
+    },
+    {
+      "sku": "G9610222d",
+      "name": "[전라도청년] 청년선식 볶은 서리태귀리 쉐이크 300g x 1팩",
+      "kind": "food",
+      "n": 1,
+      "sales": 7000,
+      "cost": 5523,
+      "below_cost_n": 0,
+      "margin": 1477
+    },
+    {
+      "sku": "Gdaff0eba",
+      "name": "26년수확 해남 꿀 밤고구마 3kg 한입 베니하루카",
+      "kind": "food",
+      "n": 1,
+      "sales": 4125,
+      "cost": 2610,
+      "below_cost_n": 0,
+      "margin": 1515
+    },
+    {
+      "sku": "Ge3141516",
+      "name": "명랑핫도그 명랑 오리지널 쌀 떡볶이 450g, 2팩",
+      "kind": "food",
+      "n": 3,
+      "sales": 21000,
+      "cost": 19464,
+      "below_cost_n": 0,
+      "margin": 1536
+    },
+    {
+      "sku": "G07ec17d5",
+      "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+      "kind": "goods",
+      "n": 1,
+      "sales": 210000,
+      "cost": 208403,
+      "below_cost_n": 0,
+      "margin": 1597
+    },
+    {
+      "sku": "G0b0ca441",
+      "name": "[산해직송] 해남 포슬포슬 수미감자 특 5kg (130~180g 내외)",
+      "kind": "food",
+      "n": 1,
+      "sales": 8195,
+      "cost": 6474,
+      "below_cost_n": 0,
+      "margin": 1721
+    },
+    {
+      "sku": "G986fb662",
+      "name": "[본사직영] 아임에코 가벼운 샘 생수 500mL 20병",
+      "kind": "food",
+      "n": 2,
+      "sales": 7121,
+      "cost": 5099,
+      "below_cost_n": 0,
+      "margin": 2022
+    },
+    {
+      "sku": "G333ba825",
+      "name": "[안동맛자반] 순살 간고등어 반마리 140g x 10팩",
+      "kind": "food",
+      "n": 2,
+      "sales": 32307,
+      "cost": 30118,
+      "below_cost_n": 1,
+      "margin": 2189
+    },
+    {
+      "sku": "G5822b648",
+      "name": "오세득 셰프 대용량 양념 갈비찜 1kg x 2팩",
+      "kind": "food",
+      "n": 2,
+      "sales": 32978,
+      "cost": 30736,
+      "below_cost_n": 1,
+      "margin": 2242
+    },
+    {
+      "sku": "Gb45f76bc",
+      "name": "몽베스트 생수 무라벨 1Lx12병",
+      "kind": "food",
+      "n": 2,
+      "sales": 6142,
+      "cost": 3667,
+      "below_cost_n": 0,
+      "margin": 2475
+    },
+    {
+      "sku": "Gb5d0dde7",
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "kind": "goods",
+      "n": 1,
+      "sales": 761410,
+      "cost": 758866,
+      "below_cost_n": 0,
+      "margin": 2544
+    },
+    {
+      "sku": "G9a240832",
+      "name": "펩시콜라 엑스트라 피즈 245ml 15개(업소용)",
+      "kind": "food",
+      "n": 4,
+      "sales": 27215,
+      "cost": 24648,
+      "below_cost_n": 2,
+      "margin": 2567
+    },
+    {
+      "sku": "G0e64d348",
+      "name": "종가 별미김치1.2kg(PET) 7종 2개 골라담기(맛/동치미/나박/열무/배추겉절이/전라도맛)",
+      "kind": "food",
+      "n": 2,
+      "sales": 38893,
+      "cost": 35907,
+      "below_cost_n": 0,
+      "margin": 2986
+    },
+    {
+      "sku": "G03aae7ca",
+      "name": "더바른 파베초코크림떡 1box 개별포장",
+      "kind": "food",
+      "n": 2,
+      "sales": 21865,
+      "cost": 18784,
+      "below_cost_n": 1,
+      "margin": 3081
+    },
+    {
+      "sku": "Gd00cf028",
+      "name": "오코 오트 믹스 쿠키(초코,밀크,말차) 400g x 2팩(76개입) 과자 간식",
+      "kind": "food",
+      "n": 1,
+      "sales": 6441,
+      "cost": 2881,
+      "below_cost_n": 0,
+      "margin": 3560
+    },
+    {
+      "sku": "Gd1f907d6",
+      "name": "순창문옥례 우리콩 재래식 된장 2kg 밀폐용기",
+      "kind": "food",
+      "n": 4,
+      "sales": 83208,
+      "cost": 79086,
+      "below_cost_n": 2,
+      "margin": 4122
+    },
+    {
+      "sku": "G25fe9221",
+      "name": "[베드리움] 허리가 단단한 바디서포트 3단 접이식 매트리스 15CM (MS)",
+      "kind": "goods",
+      "n": 1,
+      "sales": 105579,
+      "cost": 101430,
+      "below_cost_n": 0,
+      "margin": 4149
+    },
+    {
+      "sku": "G3e2cdb81",
+      "name": "제주남원농협 산지직송 노지감귤 소과 2.5kg (실중량)",
+      "kind": "food",
+      "n": 6,
+      "sales": 32142,
+      "cost": 27917,
+      "below_cost_n": 1,
+      "margin": 4225
+    },
+    {
+      "sku": "Gac0c1622",
+      "name": "대복 맛있는 국내산 생깻잎김치 500gX2팩",
+      "kind": "food",
+      "n": 5,
+      "sales": 57141,
+      "cost": 52860,
+      "below_cost_n": 2,
+      "margin": 4281
+    },
+    {
+      "sku": "G68466053",
+      "name": "삼양 맛있는라면×5개",
+      "kind": "food",
+      "n": 2,
+      "sales": 8389,
+      "cost": 4005,
+      "below_cost_n": 0,
+      "margin": 4384
+    },
+    {
+      "sku": "Gab711763",
+      "name": "[파르페by알레르망] 리안 60수 밍크극세사 차렵이불 S/SS",
+      "kind": "goods",
+      "n": 1,
+      "sales": 42514,
+      "cost": 38020,
+      "below_cost_n": 0,
+      "margin": 4494
+    },
+    {
+      "sku": "G5f77b795",
+      "name": "[하이트] 진로토닉워터300mlx(12패트)",
+      "kind": "food",
+      "n": 2,
+      "sales": 15238,
+      "cost": 10722,
+      "below_cost_n": 1,
+      "margin": 4516
+    },
+    {
+      "sku": "G27b3d655",
+      "name": "[딜픽]안동 감홍 사과 중과 7-9과 2kg내외 정품",
+      "kind": "food",
+      "n": 8,
+      "sales": 73612,
+      "cost": 69057,
+      "below_cost_n": 2,
+      "margin": 4555
+    },
+    {
+      "sku": "G3682f6f7",
+      "name": "동원샘물 웨이크업뷰티 500ml x 60병 /생수/무라벨",
+      "kind": "food",
+      "n": 2,
+      "sales": 13749,
+      "cost": 8825,
+      "below_cost_n": 0,
+      "margin": 4924
+    },
+    {
+      "sku": "G90b0cbf4",
+      "name": "비비고 고단백 올리브 오일 생선구이 연어 스테이크 60g x10개",
+      "kind": "food",
+      "n": 2,
+      "sales": 79497,
+      "cost": 73592,
+      "below_cost_n": 1,
+      "margin": 5905
+    },
+    {
+      "sku": "Gb2392fa9",
+      "name": "햇반 현미밥 210g x18개",
+      "kind": "food",
+      "n": 3,
+      "sales": 47345,
+      "cost": 41108,
+      "below_cost_n": 1,
+      "margin": 6237
+    },
+    {
+      "sku": "G4b339056",
+      "name": "으뜸한돈 으뜸 머릿고기 편육 250gX4팩 (총1kg)",
+      "kind": "food",
+      "n": 3,
+      "sales": 34100,
+      "cost": 27666,
+      "below_cost_n": 1,
+      "margin": 6434
+    },
+    {
+      "sku": "G30604071",
+      "name": "GS단독 [베드리움] 노블아워 유로탑 매트리스(슈퍼싱글)",
+      "kind": "goods",
+      "n": 1,
+      "sales": 238463,
+      "cost": 231592,
+      "below_cost_n": 0,
+      "margin": 6871
+    },
+    {
+      "sku": "G13ff0abb",
+      "name": "26년 햇 무농약 공주 정안밤 알밤 2kg(특품) 왕밤 농가직송",
+      "kind": "food",
+      "n": 2,
+      "sales": 31500,
+      "cost": 24224,
+      "below_cost_n": 0,
+      "margin": 7276
+    },
+    {
+      "sku": "Gc085ecba",
+      "name": "영광군농협 신동진쌀 20kg 26년 햅쌀",
+      "kind": "food",
+      "n": 1,
+      "sales": 60397,
+      "cost": 52909,
+      "below_cost_n": 0,
+      "margin": 7488
+    },
+    {
+      "sku": "Gf998cd13",
+      "name": "롯데햄 의성 마늘 프랑크 70g x 10개",
+      "kind": "food",
+      "n": 4,
+      "sales": 31319,
+      "cost": 23769,
+      "below_cost_n": 1,
+      "margin": 7550
+    },
+    {
+      "sku": "G26b5e9ed",
+      "name": "포스트 에너지바 엑티브135g+밸런스150g",
+      "kind": "food",
+      "n": 6,
+      "sales": 38650,
+      "cost": 31011,
+      "below_cost_n": 1,
+      "margin": 7639
+    },
+    {
+      "sku": "G5bdaf222",
+      "name": "얼큰한 맛을 추가한 칼국수 명인맛집 강남교자 칼국수 밀키트 선택하기(4인분)/(non 인스턴트/직접 끓이고 볶은 육수와 고명/분말 스프 아님)",
+      "kind": "food",
+      "n": 1,
+      "sales": 19191,
+      "cost": 11280,
+      "below_cost_n": 0,
+      "margin": 7911
+    },
+    {
+      "sku": "G010744b7",
+      "name": "[본사직영] 바프 먼투썬 하루견과 코코넛 50봉 (20g x 50EA)",
+      "kind": "food",
+      "n": 1,
+      "sales": 23175,
+      "cost": 11761,
+      "below_cost_n": 0,
+      "margin": 11414
+    },
+    {
+      "sku": "Ge415809b",
+      "name": "2026년 국내산 햇 예천고춧가루 매운맛 5kg",
+      "kind": "food",
+      "n": 1,
+      "sales": 84240,
+      "cost": 72812,
+      "below_cost_n": 0,
+      "margin": 11428
+    },
+    {
+      "sku": "G34e0ea24",
+      "name": "비비고 진한 소고기미역국 500g x6개",
+      "kind": "food",
+      "n": 2,
+      "sales": 31986,
+      "cost": 19442,
+      "below_cost_n": 0,
+      "margin": 12544
+    },
+    {
+      "sku": "G97c76871",
+      "name": "광동 쌍화골드 100ml x 30병",
+      "kind": "food",
+      "n": 5,
+      "sales": 60060,
+      "cost": 46726,
+      "below_cost_n": 1,
+      "margin": 13334
+    },
+    {
+      "sku": "G90f1626b",
+      "name": "로버츠베리에 링곤&크랜베리 과채주스 2박스(100ml x 12팩)",
+      "kind": "food",
+      "n": 2,
+      "sales": 96005,
+      "cost": 82154,
+      "below_cost_n": 0,
+      "margin": 13851
+    },
+    {
+      "sku": "G737abfd7",
+      "name": "플로라 몬스테라 착번아웃 극세사 차렵이불 베개세트 Q",
+      "kind": "goods",
+      "n": 3,
+      "sales": 187339,
+      "cost": 172594,
+      "below_cost_n": 2,
+      "margin": 14745
+    },
+    {
+      "sku": "G200e39a3",
+      "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+      "kind": "food",
+      "n": 98,
+      "sales": 2236964,
+      "cost": 2219023,
+      "below_cost_n": 46,
+      "margin": 17941
+    },
+    {
+      "sku": "G2e3736e4",
+      "name": "비비고 돼지고기김치찌개 460g x6개",
+      "kind": "food",
+      "n": 3,
+      "sales": 56438,
+      "cost": 38281,
+      "below_cost_n": 0,
+      "margin": 18157
+    },
+    {
+      "sku": "Gfbf7f983",
+      "name": "스피드랙 W1200XD400XH900 3단 무볼트 조립식앵글선반",
+      "kind": "goods",
+      "n": 2,
+      "sales": 147936,
+      "cost": 128556,
+      "below_cost_n": 0,
+      "margin": 19380
+    },
+    {
+      "sku": "G40e27aec",
+      "name": "[지나송]로페즈 형상기억 암막커튼 대형(440x230cm)",
+      "kind": "goods",
+      "n": 1,
+      "sales": 116968,
+      "cost": 97502,
+      "below_cost_n": 0,
+      "margin": 19466
+    },
+    {
+      "sku": "G8202c6b5",
+      "name": "한국농협김치 전라도 순천 남도 총각김치 3kg",
+      "kind": "food",
+      "n": 6,
+      "sales": 111826,
+      "cost": 90378,
+      "below_cost_n": 2,
+      "margin": 21448
+    },
+    {
+      "sku": "Gfb2c0249",
+      "name": "[장길영사과] 사과 중과 10kg(33~39과)",
+      "kind": "food",
+      "n": 3,
+      "sales": 138964,
+      "cost": 116985,
+      "below_cost_n": 1,
+      "margin": 21979
+    },
+    {
+      "sku": "Gef4d3036",
+      "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+      "kind": "food",
+      "n": 14,
+      "sales": 253222,
+      "cost": 227258,
+      "below_cost_n": 4,
+      "margin": 25964
+    },
+    {
+      "sku": "G37a6297d",
+      "name": "[동원] 덴마크 리코타치즈 1kg x 3개",
+      "kind": "food",
+      "n": 3,
+      "sales": 77404,
+      "cost": 50506,
+      "below_cost_n": 0,
+      "margin": 26898
+    },
+    {
+      "sku": "G575cddb8",
+      "name": "바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS",
+      "kind": "goods",
+      "n": 8,
+      "sales": 141546,
+      "cost": 110684,
+      "below_cost_n": 1,
+      "margin": 30862
+    },
+    {
+      "sku": "G93d34e0c",
+      "name": "[이쌀이다] 26년산 햅쌀 김포 고시히카리 20kg",
+      "kind": "food",
+      "n": 2,
+      "sales": 115000,
+      "cost": 82901,
+      "below_cost_n": 0,
+      "margin": 32099
+    },
+    {
+      "sku": "Ge7edc329",
+      "name": "[헬렌스타인] 프리마로프트 바이오 비건구스 이불 Q",
+      "kind": "goods",
+      "n": 4,
+      "sales": 613497,
+      "cost": 578250,
+      "below_cost_n": 1,
+      "margin": 35247
+    },
+    {
+      "sku": "G782145bd",
+      "name": "동서가구 사커 슈퍼싱글 SS 양면 매트리스",
+      "kind": "goods",
+      "n": 6,
+      "sales": 410988,
+      "cost": 374561,
+      "below_cost_n": 2,
+      "margin": 36427
+    },
+    {
+      "sku": "Ga7918a2e",
+      "name": "[바운티풀] 엘리트코튼 호텔 침구 순면80수 이불커버 SS",
+      "kind": "goods",
+      "n": 5,
+      "sales": 290570,
+      "cost": 250601,
+      "below_cost_n": 1,
+      "margin": 39969
+    },
+    {
+      "sku": "Gd1e861c7",
+      "name": "현대의료기 5005MINISF 미니카우치 황토숯볼 흙쇼파",
+      "kind": "goods",
+      "n": 2,
+      "sales": 562590,
+      "cost": 518546,
+      "below_cost_n": 1,
+      "margin": 44044
+    },
+    {
+      "sku": "G1515d951",
+      "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+      "kind": "goods",
+      "n": 8,
+      "sales": 2513857,
+      "cost": 2460658,
+      "below_cost_n": 2,
+      "margin": 53199
+    },
+    {
+      "sku": "G1c59164b",
+      "name": "제주 옥돔(중) 10마리",
+      "kind": "food",
+      "n": 2,
+      "sales": 170059,
+      "cost": 116051,
+      "below_cost_n": 0,
+      "margin": 54008
+    },
+    {
+      "sku": "Gd6e444e1",
+      "name": "2026년 문경 햇오미자 오미자청 단골농장 오미자 당절임 10kg",
+      "kind": "food",
+      "n": 1,
+      "sales": 127160,
+      "cost": 58360,
+      "below_cost_n": 0,
+      "margin": 68800
+    },
+    {
+      "sku": "G9357d6c2",
+      "name": "지누스 얼티마 럭스S 하이브리드 매트리스 25cm Q 퀸",
+      "kind": "goods",
+      "n": 1,
+      "sales": 420000,
+      "cost": 313578,
+      "below_cost_n": 0,
+      "margin": 106422
+    },
+    {
+      "sku": "Gcedfa44f",
+      "name": "[베드리움]미니멀 수납침대SS+독립매트리스 SET",
+      "kind": "goods",
+      "n": 3,
+      "sales": 739889,
+      "cost": 624275,
+      "below_cost_n": 0,
+      "margin": 115614
+    },
+    {
+      "sku": "G5e3784e6",
+      "name": "[착불]우아미가구 윈4인 코브라스윙 갤럭시 패브릭소파",
+      "kind": "goods",
+      "n": 3,
+      "sales": 1070000,
+      "cost": 935766,
+      "below_cost_n": 1,
+      "margin": 134234
+    },
+    {
+      "sku": "G8095ddd6",
+      "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+      "kind": "goods",
+      "n": 1,
+      "sales": 681120,
+      "cost": 539988,
+      "below_cost_n": 0,
+      "margin": 141132
+    },
+    {
+      "sku": "Gbb0cbbff",
+      "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+      "kind": "goods",
+      "n": 15,
+      "sales": 999297,
+      "cost": 843577,
+      "below_cost_n": 3,
+      "margin": 155720
+    },
+    {
+      "sku": "Gf7ca73a2",
+      "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+      "kind": "food",
+      "n": 51,
+      "sales": 1664402,
+      "cost": 1507861,
+      "below_cost_n": 18,
+      "margin": 156541
+    },
+    {
+      "sku": "G05277ffe",
+      "name": "[헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q",
+      "kind": "goods",
+      "n": 1,
+      "sales": 518974,
+      "cost": 356738,
+      "below_cost_n": 0,
+      "margin": 162236
+    },
+    {
+      "sku": "G75f11c19",
+      "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+      "kind": "goods",
+      "n": 21,
+      "sales": 1787305,
+      "cost": 1620171,
+      "below_cost_n": 8,
+      "margin": 167134
+    },
+    {
+      "sku": "G6b0fd5bc",
+      "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+      "kind": "goods",
+      "n": 7,
+      "sales": 2315391,
+      "cost": 2132110,
+      "below_cost_n": 3,
+      "margin": 183281
+    },
+    {
+      "sku": "G01883718",
+      "name": "앤스티치 로타 모달 차렵이불(Q)",
+      "kind": "goods",
+      "n": 14,
+      "sales": 1194992,
+      "cost": 997497,
+      "below_cost_n": 2,
+      "margin": 197495
+    },
+    {
+      "sku": "Gea0cca52",
+      "name": "[나이스필]소라 워싱모달 차렵베개세트Q",
+      "kind": "goods",
+      "n": 3,
+      "sales": 804000,
+      "cost": 547466,
+      "below_cost_n": 0,
+      "margin": 256534
+    },
+    {
+      "sku": "G7f85e9f7",
+      "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+      "kind": "food",
+      "n": 34,
+      "sales": 1578169,
+      "cost": 1300989,
+      "below_cost_n": 7,
+      "margin": 277180
+    },
+    {
+      "sku": "G66ded25b",
+      "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+      "kind": "food",
+      "n": 213,
+      "sales": 2195630,
+      "cost": 1913825,
+      "below_cost_n": 55,
+      "margin": 281805
+    },
+    {
+      "sku": "G5cd4ffbc",
+      "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+      "kind": "goods",
+      "n": 21,
+      "sales": 2771292,
+      "cost": 2434378,
+      "below_cost_n": 6,
+      "margin": 336914
+    },
+    {
+      "sku": "G57d8dfa6",
+      "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+      "kind": "goods",
+      "n": 25,
+      "sales": 3547659,
+      "cost": 3043513,
+      "below_cost_n": 7,
+      "margin": 504146
+    },
+    {
+      "sku": "G8adbc159",
+      "name": "[자코모] 에비뉴엘 4인 오플 천연면피 소가죽 소파",
+      "kind": "goods",
+      "n": 1,
+      "sales": 1029600,
+      "cost": 492439,
+      "below_cost_n": 0,
+      "margin": 537161
+    },
+    {
+      "sku": "Gc4681038",
+      "name": "종가 총각김치 5kg",
+      "kind": "food",
+      "n": 183,
+      "sales": 6237697,
+      "cost": 5607343,
+      "below_cost_n": 54,
+      "margin": 630354
+    },
+    {
+      "sku": "G6b9db161",
+      "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+      "kind": "goods",
+      "n": 9,
+      "sales": 2905500,
+      "cost": 2240141,
+      "below_cost_n": 0,
+      "margin": 665359
+    },
+    {
+      "sku": "Gcc75125e",
+      "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+      "kind": "goods",
+      "n": 54,
+      "sales": 4291248,
+      "cost": 3552219,
+      "below_cost_n": 7,
+      "margin": 739029
+    }
+  ],
+  "shop_kinds": {
+    "food": {
+      "n": 760,
+      "sales": 16502296,
+      "cost": 14697720,
+      "below_cost_n": 232,
+      "margin": 1804576
+    },
+    "goods": {
+      "n": 228,
+      "sales": 32066968,
+      "cost": 27361073,
+      "below_cost_n": 51,
+      "margin": 4705895
+    }
+  },
+  "inventory": {
+    "balance": 8565550,
+    "units": 23,
+    "sku_count": 9,
+    "acquisition_cost": 295537,
+    "capacity": {
+      "spendable": 1402220.5465577329,
+      "refund_liability": 5449965,
+      "storage_to_end": 254.45344226720607,
+      "cash_floor": 1713110.0,
+      "remaining_days": 12.467096632396181,
+      "discharged_refund_reserve": 310729
+    },
+    "by_kind": {
+      "food": {
+        "n": 17,
+        "cost": 293496
+      },
+      "goods": {
+        "n": 6,
+        "cost": 2041
+      }
+    },
+    "skus": [
+      {
+        "sku": "Gad293c6d",
+        "name": "베터리 건전지 CR1632 3V",
+        "n": 6,
+        "cost": 2041,
+        "age_max_hours": 21.672180822491647,
+        "expiry_min_hours": null
+      },
+      {
+        "sku": "G582603b2",
+        "name": "건국 무첨가두유 32팩",
+        "n": 1,
+        "cost": 8787,
+        "age_max_hours": 0.3235697113805347,
+        "expiry_min_hours": 22.583930288619467
+      },
+      {
+        "sku": "G66ded25b",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "n": 5,
+        "cost": 43657,
+        "age_max_hours": 0.32940304471386805,
+        "expiry_min_hours": 58.31115251084169
+      },
+      {
+        "sku": "G200e39a3",
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "n": 4,
+        "cost": 85051,
+        "age_max_hours": 0.3355141558249791,
+        "expiry_min_hours": 72.74309695528613
+      },
+      {
+        "sku": "Gac0c1622",
+        "name": "대복 맛있는 국내산 생깻잎김치 500gX2팩",
+        "n": 1,
+        "cost": 8947,
+        "age_max_hours": 0.06773637804720137,
+        "expiry_min_hours": 81.10281917750835
+      },
+      {
+        "sku": "G6c17800f",
+        "name": "[씨제이] 비비고 전복내장죽420g",
+        "n": 1,
+        "cost": 1312,
+        "age_max_hours": 21.339958600269423,
+        "expiry_min_hours": 155.32920806639726
+      },
+      {
+        "sku": "Gf7ca73a2",
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "n": 3,
+        "cost": 86523,
+        "age_max_hours": 0.07995860026942359,
+        "expiry_min_hours": 262.1530969552861
+      },
+      {
+        "sku": "G7f85e9f7",
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "n": 1,
+        "cost": 46005,
+        "age_max_hours": 0.07384748915831248,
+        "expiry_min_hours": 460.67254139973056
+      },
+      {
+        "sku": "G010744b7",
+        "name": "[본사직영] 바프 먼투썬 하루견과 코코넛 50봉 (20g x 50EA)",
+        "n": 1,
+        "cost": 13214,
+        "age_max_hours": 0.06190304471386804,
+        "expiry_min_hours": 545.225874733064
+      }
+    ]
+  },
+  "book_identities": {
+    "board_profit": 3547343,
+    "board_stock_cost": 307524,
+    "board_book": 3854867,
+    "residual": 0,
+    "local_profit": 3565550,
+    "local_book": 3861087
+  },
+  "inventory_comparison": {
+    "start": "2026-11-04T18:36:29.883139+09:00",
+    "hours": 18.16471328390969,
+    "start_cash": 6247844,
+    "start_units": 12,
+    "start_stock_cost": 12485,
+    "start_book": 1260329
+  },
+  "supply_log": {
+    "n": 536,
+    "units": 1012,
+    "cost": 42366317,
+    "cash_expense_residual": 928,
+    "log_bytes_at_read": 13161301,
+    "calendar_method": "HH:MM:SS anchored to journal buyer_order IDs; midnight rollover",
+    "records": [
+      {
+        "at": "2026-11-04T12:45:25+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 22383
+      },
+      {
+        "at": "2026-11-04T12:45:30+09:00",
+        "qty": 1,
+        "name": "[딜픽]안동 감홍 사과 중과 7-9과 2kg내외 정품",
+        "cost": 8856
+      },
+      {
+        "at": "2026-11-04T12:45:40+09:00",
+        "qty": 1,
+        "name": "동원샘물 웨이크업뷰티 500ml x 60병 /생수/무라벨",
+        "cost": 5489
+      },
+      {
+        "at": "2026-11-04T12:45:50+09:00",
+        "qty": 1,
+        "name": "롯데웰푸드 마가렛트 오리지널 352g x 2개",
+        "cost": 8332
+      },
+      {
+        "at": "2026-11-04T12:46:01+09:00",
+        "qty": 1,
+        "name": "명랑핫도그 명랑 오리지널 쌀 떡볶이 450g, 2팩",
+        "cost": 8011
+      },
+      {
+        "at": "2026-11-04T12:46:25+09:00",
+        "qty": 1,
+        "name": "온밀담 포기김치 5kg/ GS단독",
+        "cost": 16709
+      },
+      {
+        "at": "2026-11-04T12:46:35+09:00",
+        "qty": 1,
+        "name": "[딜픽]안동 감홍 사과 중과 7-9과 2kg내외 정품",
+        "cost": 7501
+      },
+      {
+        "at": "2026-11-04T12:46:45+09:00",
+        "qty": 1,
+        "name": "광동 쌍화골드 100ml x 30병",
+        "cost": 6601
+      },
+      {
+        "at": "2026-11-04T12:46:56+09:00",
+        "qty": 1,
+        "name": "[해태제과] 에이스(364g)",
+        "cost": 1875
+      },
+      {
+        "at": "2026-11-04T12:47:06+09:00",
+        "qty": 1,
+        "name": "얼큰한 맛을 추가한 칼국수 명인맛집 강남교자 칼국수 밀키트 선택하기(4인분)/(non 인스턴트/직접 끓이고 볶은 육수와 고명/분말 스프 아님)",
+        "cost": 11280
+      },
+      {
+        "at": "2026-11-04T13:04:52+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 15732
+      },
+      {
+        "at": "2026-11-04T13:05:02+09:00",
+        "qty": 1,
+        "name": "[딜픽]안동 감홍 사과 중과 7-9과 2kg내외 정품",
+        "cost": 7915
+      },
+      {
+        "at": "2026-11-04T13:05:12+09:00",
+        "qty": 1,
+        "name": "광동 쌍화골드 100ml x 30병",
+        "cost": 14062
+      },
+      {
+        "at": "2026-11-04T13:05:23+09:00",
+        "qty": 1,
+        "name": "롯데웰푸드 마가렛트 오리지널 352g x 2개",
+        "cost": 5963
+      },
+      {
+        "at": "2026-11-04T13:05:39+09:00",
+        "qty": 1,
+        "name": "명랑핫도그 명랑 오리지널 쌀 떡볶이 450g, 2팩",
+        "cost": 5291
+      },
+      {
+        "at": "2026-11-04T13:05:59+09:00",
+        "qty": 1,
+        "name": "온밀담 포기김치 5kg/ GS단독",
+        "cost": 12106
+      },
+      {
+        "at": "2026-11-04T13:06:09+09:00",
+        "qty": 2,
+        "name": "[딜픽]안동 감홍 사과 중과 7-9과 2kg내외 정품",
+        "cost": 19049
+      },
+      {
+        "at": "2026-11-04T13:06:31+09:00",
+        "qty": 1,
+        "name": "광동 쌍화골드 100ml x 30병",
+        "cost": 8611
+      },
+      {
+        "at": "2026-11-04T13:06:32+09:00",
+        "qty": 1,
+        "name": "단짠 고소 에이플러스콘 10봉",
+        "cost": 5829
+      },
+      {
+        "at": "2026-11-04T13:06:42+09:00",
+        "qty": 1,
+        "name": "우리쌀로 만든 구수한 전통 가마솥 누룽지 1kg x3개",
+        "cost": 9817
+      },
+      {
+        "at": "2026-11-04T13:07:03+09:00",
+        "qty": 1,
+        "name": "온밀담 깻잎김치 1kg/ GS단독",
+        "cost": 8329
+      },
+      {
+        "at": "2026-11-04T13:07:17+09:00",
+        "qty": 1,
+        "name": "포미식탁 고당도 델몬트 바나나 2송이 2.6kg내외",
+        "cost": 10141
+      },
+      {
+        "at": "2026-11-04T13:07:25+09:00",
+        "qty": 1,
+        "name": "동원샘물 웨이크업뷰티 500ml x 60병 /생수/무라벨",
+        "cost": 3336
+      },
+      {
+        "at": "2026-11-04T13:07:40+09:00",
+        "qty": 1,
+        "name": "오코 오트 믹스 쿠키(초코,밀크,말차) 400g x 2팩(76개입) 과자 간식",
+        "cost": 2881
+      },
+      {
+        "at": "2026-11-04T13:25:06+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 14604
+      },
+      {
+        "at": "2026-11-04T13:25:16+09:00",
+        "qty": 3,
+        "name": "[딜픽]안동 감홍 사과 중과 7-9과 2kg내외 정품",
+        "cost": 25736
+      },
+      {
+        "at": "2026-11-04T13:25:26+09:00",
+        "qty": 2,
+        "name": "광동 쌍화골드 100ml x 30병",
+        "cost": 17452
+      },
+      {
+        "at": "2026-11-04T13:25:37+09:00",
+        "qty": 1,
+        "name": "롯데웰푸드 마가렛트 오리지널 352g x 2개",
+        "cost": 7150
+      },
+      {
+        "at": "2026-11-04T13:25:47+09:00",
+        "qty": 1,
+        "name": "명랑핫도그 명랑 오리지널 쌀 떡볶이 450g, 2팩",
+        "cost": 6162
+      },
+      {
+        "at": "2026-11-04T13:26:15+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+        "cost": 243051
+      },
+      {
+        "at": "2026-11-04T13:26:26+09:00",
+        "qty": 1,
+        "name": "[착불]우아미가구 윈4인 코브라스윙 갤럭시 패브릭소파",
+        "cost": 213739
+      },
+      {
+        "at": "2026-11-04T13:26:36+09:00",
+        "qty": 1,
+        "name": "[나이스필]소라 워싱모달 차렵베개세트Q",
+        "cost": 171098
+      },
+      {
+        "at": "2026-11-04T13:26:46+09:00",
+        "qty": 1,
+        "name": "현대의료기 5005MINISF 미니카우치 황토숯볼 흙쇼파",
+        "cost": 226345
+      },
+      {
+        "at": "2026-11-04T13:26:56+09:00",
+        "qty": 1,
+        "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+        "cost": 142919
+      },
+      {
+        "at": "2026-11-04T13:42:57+09:00",
+        "qty": 1,
+        "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+        "cost": 758866
+      },
+      {
+        "at": "2026-11-04T13:43:07+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+        "cost": 349411
+      },
+      {
+        "at": "2026-11-04T13:43:18+09:00",
+        "qty": 1,
+        "name": "[착불]우아미가구 윈4인 코브라스윙 갤럭시 패브릭소파",
+        "cost": 365627
+      },
+      {
+        "at": "2026-11-04T13:43:28+09:00",
+        "qty": 1,
+        "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+        "cost": 237419
+      },
+      {
+        "at": "2026-11-04T13:43:38+09:00",
+        "qty": 1,
+        "name": "현대의료기 5005MINISF 미니카우치 황토숯볼 흙쇼파",
+        "cost": 292201
+      },
+      {
+        "at": "2026-11-04T13:44:01+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+        "cost": 323448
+      },
+      {
+        "at": "2026-11-04T13:44:11+09:00",
+        "qty": 1,
+        "name": "[착불]우아미가구 윈4인 코브라스윙 갤럭시 패브릭소파",
+        "cost": 356400
+      },
+      {
+        "at": "2026-11-04T13:44:21+09:00",
+        "qty": 1,
+        "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+        "cost": 176990
+      },
+      {
+        "at": "2026-11-04T13:44:31+09:00",
+        "qty": 1,
+        "name": "[나이스필]소라 워싱모달 차렵베개세트Q",
+        "cost": 151628
+      },
+      {
+        "at": "2026-11-04T13:44:42+09:00",
+        "qty": 2,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 27938
+      },
+      {
+        "at": "2026-11-04T14:04:29+09:00",
+        "qty": 1,
+        "name": "[나이스필]소라 워싱모달 차렵베개세트Q",
+        "cost": 224740
+      },
+      {
+        "at": "2026-11-04T14:04:39+09:00",
+        "qty": 1,
+        "name": "[지나송]로페즈 형상기억 암막커튼 대형(440x230cm)",
+        "cost": 97502
+      },
+      {
+        "at": "2026-11-04T14:04:50+09:00",
+        "qty": 1,
+        "name": "동서가구 사커 슈퍼싱글 SS 양면 매트리스",
+        "cost": 68763
+      },
+      {
+        "at": "2026-11-04T14:05:00+09:00",
+        "qty": 1,
+        "name": "[더싱싱] 깍두기 2kg / 아삭아삭 시원한 맛",
+        "cost": 3988
+      },
+      {
+        "at": "2026-11-04T14:05:11+09:00",
+        "qty": 1,
+        "name": "[삼진어묵] 와사비맛 딥소스 65g",
+        "cost": 1027
+      },
+      {
+        "at": "2026-11-04T14:05:33+09:00",
+        "qty": 2,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 43116
+      },
+      {
+        "at": "2026-11-04T14:05:43+09:00",
+        "qty": 1,
+        "name": "[장길영사과] 사과 중과 10kg(33~39과)",
+        "cost": 36156
+      },
+      {
+        "at": "2026-11-04T14:05:54+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 1508
+      },
+      {
+        "at": "2026-11-04T14:06:04+09:00",
+        "qty": 1,
+        "name": "[씩씩가게] 알새우칩 68g",
+        "cost": 710
+      },
+      {
+        "at": "2026-11-04T14:24:30+09:00",
+        "qty": 1,
+        "name": "[장길영사과] 사과 중과 10kg(33~39과)",
+        "cost": 52503
+      },
+      {
+        "at": "2026-11-04T14:24:41+09:00",
+        "qty": 1,
+        "name": "한국농협김치 전라도 순천 남도 총각김치 3kg",
+        "cost": 9273
+      },
+      {
+        "at": "2026-11-04T14:24:51+09:00",
+        "qty": 1,
+        "name": "[40년전통] 대구10미 더 통통한 납작만두 700gx2팩 (총 1.4kg)",
+        "cost": 10248
+      },
+      {
+        "at": "2026-11-04T14:25:31+09:00",
+        "qty": 1,
+        "name": "제주 노지 감귤 중과 10kg M~L(81~120과 내외)",
+        "cost": 16746
+      },
+      {
+        "at": "2026-11-04T14:25:41+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 6214
+      },
+      {
+        "at": "2026-11-04T14:25:51+09:00",
+        "qty": 1,
+        "name": "오뚜기 컵누들 잔치쌀국수",
+        "cost": 903
+      },
+      {
+        "at": "2026-11-04T14:26:34+09:00",
+        "qty": 1,
+        "name": "[더싱싱] 깍두기 2kg / 아삭아삭 시원한 맛",
+        "cost": 7317
+      },
+      {
+        "at": "2026-11-04T14:26:45+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 2850
+      },
+      {
+        "at": "2026-11-04T14:26:55+09:00",
+        "qty": 1,
+        "name": "[씩씩가게] 알새우칩 68g",
+        "cost": 568
+      },
+      {
+        "at": "2026-11-04T14:42:21+09:00",
+        "qty": 1,
+        "name": "한국농협김치 전라도 순천 남도 총각김치 3kg",
+        "cost": 13815
+      },
+      {
+        "at": "2026-11-04T14:42:31+09:00",
+        "qty": 1,
+        "name": "[동원] 덴마크 리코타치즈 1kg x 3개",
+        "cost": 17912
+      },
+      {
+        "at": "2026-11-04T14:42:42+09:00",
+        "qty": 1,
+        "name": "2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종",
+        "cost": 15395
+      },
+      {
+        "at": "2026-11-04T14:43:26+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 17075
+      },
+      {
+        "at": "2026-11-04T14:43:37+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 7375
+      },
+      {
+        "at": "2026-11-04T14:43:47+09:00",
+        "qty": 1,
+        "name": "[씩씩가게] 알새우칩 68g",
+        "cost": 477
+      },
+      {
+        "at": "2026-11-04T14:44:29+09:00",
+        "qty": 1,
+        "name": "롯데햄 의성 마늘 프랑크 70g x 10개",
+        "cost": 5186
+      },
+      {
+        "at": "2026-11-04T14:44:39+09:00",
+        "qty": 1,
+        "name": "제주남원농협 산지직송 노지감귤 소과 2.5kg (실중량)",
+        "cost": 4527
+      },
+      {
+        "at": "2026-11-04T15:04:42+09:00",
+        "qty": 1,
+        "name": "한국농협김치 전라도 순천 남도 총각김치 3kg",
+        "cost": 20346
+      },
+      {
+        "at": "2026-11-04T15:04:52+09:00",
+        "qty": 1,
+        "name": "[동원] 덴마크 리코타치즈 1kg x 3개",
+        "cost": 13447
+      },
+      {
+        "at": "2026-11-04T15:05:02+09:00",
+        "qty": 1,
+        "name": "제주남원농협 산지직송 노지감귤 소과 2.5kg (실중량)",
+        "cost": 4256
+      },
+      {
+        "at": "2026-11-04T15:05:12+09:00",
+        "qty": 1,
+        "name": "[삼진어묵] 와사비맛 딥소스 65g",
+        "cost": 1266
+      },
+      {
+        "at": "2026-11-04T15:05:44+09:00",
+        "qty": 1,
+        "name": "대복 맛있는 국내산 생깻잎김치 500gX2팩",
+        "cost": 10895
+      },
+      {
+        "at": "2026-11-04T15:05:54+09:00",
+        "qty": 1,
+        "name": "[양지촌농원] 26년산 보은건대추 1kg 26mm",
+        "cost": 14299
+      },
+      {
+        "at": "2026-11-04T15:06:05+09:00",
+        "qty": 1,
+        "name": "베터리 건전지 CR1632 3V",
+        "cost": 311
+      },
+      {
+        "at": "2026-11-04T15:06:50+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 8692
+      },
+      {
+        "at": "2026-11-04T15:07:00+09:00",
+        "qty": 1,
+        "name": "롯데햄 의성 마늘 프랑크 70g x 10개",
+        "cost": 7561
+      },
+      {
+        "at": "2026-11-04T15:07:11+09:00",
+        "qty": 1,
+        "name": "베터리 건전지 CR1632 3V",
+        "cost": 326
+      },
+      {
+        "at": "2026-11-04T15:25:31+09:00",
+        "qty": 1,
+        "name": "[동원] 덴마크 리코타치즈 1kg x 3개",
+        "cost": 19147
+      },
+      {
+        "at": "2026-11-04T15:25:41+09:00",
+        "qty": 1,
+        "name": "깐깐 송도순 총각김치 5kg",
+        "cost": 20221
+      },
+      {
+        "at": "2026-11-04T15:25:51+09:00",
+        "qty": 1,
+        "name": "롯데햄 의성 마늘 프랑크 70g x 10개",
+        "cost": 3804
+      },
+      {
+        "at": "2026-11-04T15:26:01+09:00",
+        "qty": 1,
+        "name": "[씨제이] 비비고 전복내장죽420g",
+        "cost": 1312
+      },
+      {
+        "at": "2026-11-04T15:26:38+09:00",
+        "qty": 1,
+        "name": "26년 햇 무농약 공주 정안밤 알밤 2kg(특품) 왕밤 농가직송",
+        "cost": 13047
+      },
+      {
+        "at": "2026-11-04T15:26:48+09:00",
+        "qty": 1,
+        "name": "롯데햄 의성 마늘 프랑크 70g x 10개",
+        "cost": 7218
+      },
+      {
+        "at": "2026-11-04T15:26:59+09:00",
+        "qty": 1,
+        "name": "[씨제이] 비비고 전복내장죽420g",
+        "cost": 2511
+      },
+      {
+        "at": "2026-11-04T15:44:08+09:00",
+        "qty": 1,
+        "name": "한국농협김치 전라도 순천 남도 총각김치 3kg",
+        "cost": 14512
+      },
+      {
+        "at": "2026-11-04T15:44:19+09:00",
+        "qty": 1,
+        "name": "26년 햇 무농약 공주 정안밤 알밤 2kg(특품) 왕밤 농가직송",
+        "cost": 11177
+      },
+      {
+        "at": "2026-11-04T15:44:29+09:00",
+        "qty": 1,
+        "name": "헬로우그린 터키산 건조 월계수 잎 90g(팩)",
+        "cost": 1412
+      },
+      {
+        "at": "2026-11-04T15:45:09+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 9446
+      },
+      {
+        "at": "2026-11-04T15:45:19+09:00",
+        "qty": 1,
+        "name": "대복 맛있는 국내산 생깻잎김치 500gX2팩",
+        "cost": 11350
+      },
+      {
+        "at": "2026-11-04T16:03:38+09:00",
+        "qty": 1,
+        "name": "종가 별미김치1.2kg(PET) 7종 2개 골라담기(맛/동치미/나박/열무/배추겉절이/전라도맛)",
+        "cost": 18052
+      },
+      {
+        "at": "2026-11-04T16:03:47+09:00",
+        "qty": 1,
+        "name": "오세득 셰프 대용량 양념 갈비찜 1kg x 2팩",
+        "cost": 18581
+      },
+      {
+        "at": "2026-11-04T16:03:58+09:00",
+        "qty": 1,
+        "name": "제주남원농협 산지직송 노지감귤 소과 2.5kg (실중량)",
+        "cost": 6027
+      },
+      {
+        "at": "2026-11-04T16:04:08+09:00",
+        "qty": 1,
+        "name": "백설매콤한닭볶음탕양념290g",
+        "cost": 1322
+      },
+      {
+        "at": "2026-11-04T16:05:49+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 18334
+      },
+      {
+        "at": "2026-11-04T16:21:16+09:00",
+        "qty": 1,
+        "name": "한국농협김치 전라도 순천 남도 총각김치 3kg",
+        "cost": 12591
+      },
+      {
+        "at": "2026-11-04T16:21:26+09:00",
+        "qty": 1,
+        "name": "순창문옥례 우리콩 재래식 된장 2kg 밀폐용기",
+        "cost": 20552
+      },
+      {
+        "at": "2026-11-04T16:21:45+09:00",
+        "qty": 1,
+        "name": "[본사직영] 아임에코 가벼운 샘 생수 500mL 20병",
+        "cost": 2820
+      },
+      {
+        "at": "2026-11-04T16:40:48+09:00",
+        "qty": 1,
+        "name": "한국농협김치 전라도 순천 남도 총각김치 3kg",
+        "cost": 19841
+      },
+      {
+        "at": "2026-11-04T16:41:06+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 13744
+      },
+      {
+        "at": "2026-11-04T16:41:14+09:00",
+        "qty": 1,
+        "name": "소이조이 플랜트베이스 마카다미아 레몬 1개입 고단백질 건강간식",
+        "cost": 771
+      },
+      {
+        "at": "2026-11-04T16:41:57+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 16533
+      },
+      {
+        "at": "2026-11-04T17:03:03+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 24481
+      },
+      {
+        "at": "2026-11-04T17:03:13+09:00",
+        "qty": 1,
+        "name": "오세득 셰프 대용량 양념 갈비찜 1kg x 2팩",
+        "cost": 12155
+      },
+      {
+        "at": "2026-11-04T17:03:23+09:00",
+        "qty": 1,
+        "name": "펩시콜라 엑스트라 피즈 245ml 15개(업소용)",
+        "cost": 7587
+      },
+      {
+        "at": "2026-11-04T17:03:34+09:00",
+        "qty": 1,
+        "name": "소이조이 플랜트베이스 마카다미아 레몬 1개입 고단백질 건강간식",
+        "cost": 946
+      },
+      {
+        "at": "2026-11-04T17:04:15+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 11780
+      },
+      {
+        "at": "2026-11-04T17:22:34+09:00",
+        "qty": 1,
+        "name": "[장길영사과] 사과 중과 10kg(33~39과)",
+        "cost": 28326
+      },
+      {
+        "at": "2026-11-04T17:22:45+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 16866
+      },
+      {
+        "at": "2026-11-04T17:22:55+09:00",
+        "qty": 1,
+        "name": "[삼진어묵] 와사비맛 딥소스 65g",
+        "cost": 912
+      },
+      {
+        "at": "2026-11-04T17:23:06+09:00",
+        "qty": 1,
+        "name": "아르토스베이커리 통밀그대로빵",
+        "cost": 1687
+      },
+      {
+        "at": "2026-11-04T17:23:48+09:00",
+        "qty": 1,
+        "name": "종가 별미김치1.2kg(PET) 7종 2개 골라담기(맛/동치미/나박/열무/배추겉절이/전라도맛)",
+        "cost": 17855
+      },
+      {
+        "at": "2026-11-04T17:23:58+09:00",
+        "qty": 1,
+        "name": "순창문옥례 우리콩 재래식 된장 2kg 밀폐용기",
+        "cost": 13181
+      },
+      {
+        "at": "2026-11-04T19:46:02+09:00",
+        "qty": 2,
+        "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+        "cost": 558186
+      },
+      {
+        "at": "2026-11-04T19:46:12+09:00",
+        "qty": 1,
+        "name": "[자코모] 에비뉴엘 4인 오플 천연면피 소가죽 소파",
+        "cost": 492439
+      },
+      {
+        "at": "2026-11-04T19:46:23+09:00",
+        "qty": 1,
+        "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+        "cost": 208403
+      },
+      {
+        "at": "2026-11-04T19:46:33+09:00",
+        "qty": 1,
+        "name": "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS",
+        "cost": 53690
+      },
+      {
+        "at": "2026-11-04T19:46:43+09:00",
+        "qty": 1,
+        "name": "동서가구 사커 슈퍼싱글 SS 양면 매트리스",
+        "cost": 59897
+      },
+      {
+        "at": "2026-11-04T19:46:54+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 19658
+      },
+      {
+        "at": "2026-11-04T19:47:06+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 10634
+      },
+      {
+        "at": "2026-11-04T19:47:15+09:00",
+        "qty": 1,
+        "name": "[파르페by알레르망] 리안 60수 밍크극세사 차렵이불 S/SS",
+        "cost": 38020
+      },
+      {
+        "at": "2026-11-04T19:47:25+09:00",
+        "qty": 1,
+        "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+        "cost": 41747
+      },
+      {
+        "at": "2026-11-04T19:47:36+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 35909
+      },
+      {
+        "at": "2026-11-04T20:05:23+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 20931
+      },
+      {
+        "at": "2026-11-04T20:05:34+09:00",
+        "qty": 1,
+        "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+        "cost": 55308
+      },
+      {
+        "at": "2026-11-04T20:05:44+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 17237
+      },
+      {
+        "at": "2026-11-04T20:05:54+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 34657
+      },
+      {
+        "at": "2026-11-04T20:06:05+09:00",
+        "qty": 1,
+        "name": "동서가구 사커 슈퍼싱글 SS 양면 매트리스",
+        "cost": 44649
+      },
+      {
+        "at": "2026-11-04T20:06:15+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 12137
+      },
+      {
+        "at": "2026-11-04T20:06:25+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 링곤&크랜베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 40167
+      },
+      {
+        "at": "2026-11-04T20:06:36+09:00",
+        "qty": 1,
+        "name": "햇반 현미밥 210g x18개",
+        "cost": 17690
+      },
+      {
+        "at": "2026-11-04T20:06:51+09:00",
+        "qty": 1,
+        "name": "순창문옥례 우리콩 재래식 된장 2kg 밀폐용기",
+        "cost": 21083
+      },
+      {
+        "at": "2026-11-04T20:07:06+09:00",
+        "qty": 2,
+        "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+        "cost": 575986
+      },
+      {
+        "at": "2026-11-04T20:07:16+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+        "cost": 402014
+      },
+      {
+        "at": "2026-11-04T20:07:26+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 24769
+      },
+      {
+        "at": "2026-11-04T20:07:37+09:00",
+        "qty": 1,
+        "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+        "cost": 66460
+      },
+      {
+        "at": "2026-11-04T20:21:17+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+        "cost": 238456
+      },
+      {
+        "at": "2026-11-04T20:21:28+09:00",
+        "qty": 1,
+        "name": "[베드리움]미니멀 수납침대SS+독립매트리스 SET",
+        "cost": 276310
+      },
+      {
+        "at": "2026-11-04T20:21:38+09:00",
+        "qty": 2,
+        "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+        "cost": 122632
+      },
+      {
+        "at": "2026-11-04T20:21:48+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 40511
+      },
+      {
+        "at": "2026-11-04T20:21:58+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 25590
+      },
+      {
+        "at": "2026-11-04T20:22:09+09:00",
+        "qty": 1,
+        "name": "동서가구 사커 슈퍼싱글 SS 양면 매트리스",
+        "cost": 54954
+      },
+      {
+        "at": "2026-11-04T20:22:19+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 15301
+      },
+      {
+        "at": "2026-11-04T20:22:30+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 링곤&크랜베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 41987
+      },
+      {
+        "at": "2026-11-04T20:22:40+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 17700
+      },
+      {
+        "at": "2026-11-04T20:22:50+09:00",
+        "qty": 1,
+        "name": "순창문옥례 우리콩 재래식 된장 2kg 밀폐용기",
+        "cost": 24270
+      },
+      {
+        "at": "2026-11-04T20:23:10+09:00",
+        "qty": 1,
+        "name": "[베드리움]미니멀 수납침대SS+독립매트리스 SET",
+        "cost": 131030
+      },
+      {
+        "at": "2026-11-04T20:23:21+09:00",
+        "qty": 1,
+        "name": "[베드리움] 허리가 단단한 바디서포트 3단 접이식 매트리스 15CM (MS)",
+        "cost": 101430
+      },
+      {
+        "at": "2026-11-04T20:23:31+09:00",
+        "qty": 1,
+        "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+        "cost": 65947
+      },
+      {
+        "at": "2026-11-04T20:23:42+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 36189
+      },
+      {
+        "at": "2026-11-04T20:42:12+09:00",
+        "qty": 1,
+        "name": "[베드리움]미니멀 수납침대SS+독립매트리스 SET",
+        "cost": 216935
+      },
+      {
+        "at": "2026-11-04T20:42:23+09:00",
+        "qty": 3,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 99234
+      },
+      {
+        "at": "2026-11-04T20:42:34+09:00",
+        "qty": 3,
+        "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+        "cost": 178874
+      },
+      {
+        "at": "2026-11-04T20:42:45+09:00",
+        "qty": 2,
+        "name": "종가 총각김치 5kg",
+        "cost": 62121
+      },
+      {
+        "at": "2026-11-04T20:42:54+09:00",
+        "qty": 2,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 35637
+      },
+      {
+        "at": "2026-11-04T20:43:04+09:00",
+        "qty": 1,
+        "name": "켈로그 프링글스 2+2+2+1 골라담기 GS단독",
+        "cost": 8969
+      },
+      {
+        "at": "2026-11-04T20:43:15+09:00",
+        "qty": 1,
+        "name": "시그니쳐 프리미엄 LA갈비 선물세트 3kg(미국산,꽃갈비,678번)",
+        "cost": 72205
+      },
+      {
+        "at": "2026-11-04T20:43:25+09:00",
+        "qty": 1,
+        "name": "아르토스베이커리 통밀그대로빵",
+        "cost": 1038
+      },
+      {
+        "at": "2026-11-04T20:43:37+09:00",
+        "qty": 1,
+        "name": "베터리 건전지 CR1632 3V",
+        "cost": 401
+      },
+      {
+        "at": "2026-11-04T20:43:48+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 21515
+      },
+      {
+        "at": "2026-11-04T21:01:11+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 67384
+      },
+      {
+        "at": "2026-11-04T21:01:21+09:00",
+        "qty": 3,
+        "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+        "cost": 104297
+      },
+      {
+        "at": "2026-11-04T21:01:32+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 31835
+      },
+      {
+        "at": "2026-11-04T21:01:42+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 16233
+      },
+      {
+        "at": "2026-11-04T21:01:52+09:00",
+        "qty": 1,
+        "name": "펩시콜라 엑스트라 피즈 245ml 15개(업소용)",
+        "cost": 6066
+      },
+      {
+        "at": "2026-11-04T21:02:03+09:00",
+        "qty": 1,
+        "name": "영광군농협 신동진쌀 20kg 26년 햅쌀",
+        "cost": 52909
+      },
+      {
+        "at": "2026-11-04T21:02:13+09:00",
+        "qty": 1,
+        "name": "베터리 건전지 CR1632 3V",
+        "cost": 310
+      },
+      {
+        "at": "2026-11-04T21:02:23+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 21635
+      },
+      {
+        "at": "2026-11-04T21:02:34+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 3560
+      },
+      {
+        "at": "2026-11-04T21:02:54+09:00",
+        "qty": 1,
+        "name": "플로라 몬스테라 착번아웃 극세사 차렵이불 베개세트 Q",
+        "cost": 43164
+      },
+      {
+        "at": "2026-11-04T21:03:04+09:00",
+        "qty": 1,
+        "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+        "cost": 72182
+      },
+      {
+        "at": "2026-11-04T21:22:13+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 73743
+      },
+      {
+        "at": "2026-11-04T21:22:24+09:00",
+        "qty": 2,
+        "name": "숙면연구소 바른잠 11존 토퍼 매트리스 침대용 6cm Q (퀸)",
+        "cost": 136130
+      },
+      {
+        "at": "2026-11-04T21:22:34+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 38187
+      },
+      {
+        "at": "2026-11-04T21:22:44+09:00",
+        "qty": 1,
+        "name": "[팜스] 가시완전제거 순살고등어 1.2kg(8~10팩)",
+        "cost": 33923
+      },
+      {
+        "at": "2026-11-04T21:22:55+09:00",
+        "qty": 1,
+        "name": "소이조이 블루베리 1개입 고단백질 건강간식",
+        "cost": 935
+      },
+      {
+        "at": "2026-11-04T21:23:05+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 5589
+      },
+      {
+        "at": "2026-11-04T21:23:15+09:00",
+        "qty": 1,
+        "name": "[본사직영] 아임에코 가벼운 샘 생수 500mL 20병",
+        "cost": 2279
+      },
+      {
+        "at": "2026-11-04T21:23:27+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 27112
+      },
+      {
+        "at": "2026-11-04T21:23:37+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 10913
+      },
+      {
+        "at": "2026-11-04T21:23:47+09:00",
+        "qty": 1,
+        "name": "백송식품 황태(명태)껍질 1Kg, 콜라겐 듬뿍 육수. 무침 반찬 OK",
+        "cost": 6569
+      },
+      {
+        "at": "2026-11-04T21:23:58+09:00",
+        "qty": 1,
+        "name": "베터리 건전지 CR1632 3V",
+        "cost": 365
+      },
+      {
+        "at": "2026-11-04T21:24:08+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 15570
+      },
+      {
+        "at": "2026-11-04T21:41:22+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 65687
+      },
+      {
+        "at": "2026-11-04T21:41:32+09:00",
+        "qty": 1,
+        "name": "펩시콜라 엑스트라 피즈 245ml 15개(업소용)",
+        "cost": 4986
+      },
+      {
+        "at": "2026-11-04T21:41:42+09:00",
+        "qty": 1,
+        "name": "으뜸한돈 으뜸 머릿고기 편육 250gX4팩 (총1kg)",
+        "cost": 9740
+      },
+      {
+        "at": "2026-11-04T21:41:53+09:00",
+        "qty": 1,
+        "name": "천일식품 햄야채볶음밥 300g",
+        "cost": 986
+      },
+      {
+        "at": "2026-11-04T21:42:03+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 26480
+      },
+      {
+        "at": "2026-11-04T21:42:15+09:00",
+        "qty": 1,
+        "name": "제주남원농협 산지직송 노지감귤 소과 2.5kg (실중량)",
+        "cost": 4003
+      },
+      {
+        "at": "2026-11-04T21:42:25+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 25034
+      },
+      {
+        "at": "2026-11-04T21:42:35+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 10538
+      },
+      {
+        "at": "2026-11-04T21:42:47+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 2524
+      },
+      {
+        "at": "2026-11-04T21:42:56+09:00",
+        "qty": 1,
+        "name": "백송식품 황태(명태)껍질 1Kg, 콜라겐 듬뿍 육수. 무침 반찬 OK",
+        "cost": 8002
+      },
+      {
+        "at": "2026-11-04T21:43:06+09:00",
+        "qty": 1,
+        "name": "[씩씩가게] 알새우칩 68g",
+        "cost": 541
+      },
+      {
+        "at": "2026-11-04T22:04:05+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 59854
+      },
+      {
+        "at": "2026-11-04T22:04:15+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 10658
+      },
+      {
+        "at": "2026-11-04T22:04:26+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 2327
+      },
+      {
+        "at": "2026-11-04T22:04:36+09:00",
+        "qty": 1,
+        "name": "으뜸한돈 으뜸 머릿고기 편육 250gX4팩 (총1kg)",
+        "cost": 5789
+      },
+      {
+        "at": "2026-11-04T22:04:46+09:00",
+        "qty": 1,
+        "name": "몽베스트 생수 무라벨 1Lx12병",
+        "cost": 1280
+      },
+      {
+        "at": "2026-11-04T22:04:56+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 39146
+      },
+      {
+        "at": "2026-11-04T22:05:07+09:00",
+        "qty": 1,
+        "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+        "cost": 10987
+      },
+      {
+        "at": "2026-11-04T22:05:25+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 25780
+      },
+      {
+        "at": "2026-11-04T22:05:35+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 10481
+      },
+      {
+        "at": "2026-11-04T22:05:45+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 3682
+      },
+      {
+        "at": "2026-11-04T22:05:55+09:00",
+        "qty": 1,
+        "name": "포스트 에너지바 엑티브135g+밸런스150g",
+        "cost": 4759
+      },
+      {
+        "at": "2026-11-04T22:06:06+09:00",
+        "qty": 1,
+        "name": "베터리 건전지 CR1632 3V",
+        "cost": 328
+      },
+      {
+        "at": "2026-11-04T22:23:27+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 47149
+      },
+      {
+        "at": "2026-11-04T22:23:38+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 8704
+      },
+      {
+        "at": "2026-11-04T22:23:48+09:00",
+        "qty": 2,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 5997
+      },
+      {
+        "at": "2026-11-04T22:23:58+09:00",
+        "qty": 1,
+        "name": "포스트 에너지바 엑티브135g+밸런스150g",
+        "cost": 7270
+      },
+      {
+        "at": "2026-11-04T22:24:08+09:00",
+        "qty": 1,
+        "name": "[하이트] 진로토닉워터300mlx(12패트)",
+        "cost": 4105
+      },
+      {
+        "at": "2026-11-04T22:24:19+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 36980
+      },
+      {
+        "at": "2026-11-04T22:24:31+09:00",
+        "qty": 1,
+        "name": "으뜸한돈 으뜸 머릿고기 편육 250gX4팩 (총1kg)",
+        "cost": 12137
+      },
+      {
+        "at": "2026-11-04T22:24:49+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 29720
+      },
+      {
+        "at": "2026-11-04T22:24:58+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 6033
+      },
+      {
+        "at": "2026-11-04T22:25:09+09:00",
+        "qty": 1,
+        "name": "포스트 에너지바 엑티브135g+밸런스150g",
+        "cost": 4485
+      },
+      {
+        "at": "2026-11-04T22:25:19+09:00",
+        "qty": 1,
+        "name": "[씩씩가게] 에이스 씬 에스프레소 291g",
+        "cost": 2410
+      },
+      {
+        "at": "2026-11-04T22:43:04+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 47224
+      },
+      {
+        "at": "2026-11-04T22:43:13+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 24679
+      },
+      {
+        "at": "2026-11-04T22:43:23+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 3238
+      },
+      {
+        "at": "2026-11-04T22:43:34+09:00",
+        "qty": 1,
+        "name": "포스트 에너지바 엑티브135g+밸런스150g",
+        "cost": 3944
+      },
+      {
+        "at": "2026-11-04T22:43:44+09:00",
+        "qty": 1,
+        "name": "[하이트] 진로토닉워터300mlx(12패트)",
+        "cost": 6617
+      },
+      {
+        "at": "2026-11-04T22:43:54+09:00",
+        "qty": 1,
+        "name": "몽베스트 생수 무라벨 1Lx12병",
+        "cost": 2387
+      },
+      {
+        "at": "2026-11-04T22:44:06+09:00",
+        "qty": 1,
+        "name": "카메다 우스야끼 새우 70g",
+        "cost": 2046
+      },
+      {
+        "at": "2026-11-04T22:44:17+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 7331
+      },
+      {
+        "at": "2026-11-04T22:44:29+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 24677
+      },
+      {
+        "at": "2026-11-04T23:03:33+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 85478
+      },
+      {
+        "at": "2026-11-04T23:03:49+09:00",
+        "qty": 2,
+        "name": "종가 총각김치 5kg",
+        "cost": 65211
+      },
+      {
+        "at": "2026-11-04T23:04:00+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 72224
+      },
+      {
+        "at": "2026-11-04T23:04:09+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 9368
+      },
+      {
+        "at": "2026-11-04T23:04:21+09:00",
+        "qty": 1,
+        "name": "포스트 에너지바 엑티브135g+밸런스150g",
+        "cost": 5891
+      },
+      {
+        "at": "2026-11-04T23:04:30+09:00",
+        "qty": 1,
+        "name": "비비고 돼지고기김치찌개 460g x6개",
+        "cost": 16330
+      },
+      {
+        "at": "2026-11-04T23:04:46+09:00",
+        "qty": 1,
+        "name": "삼양 맛있는라면×5개",
+        "cost": 2059
+      },
+      {
+        "at": "2026-11-04T23:04:55+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 2424
+      },
+      {
+        "at": "2026-11-04T23:05:11+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 30045
+      },
+      {
+        "at": "2026-11-04T23:22:28+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 111564
+      },
+      {
+        "at": "2026-11-04T23:22:39+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인] 프리마로프트 바이오 비건구스 이불 Q",
+        "cost": 151677
+      },
+      {
+        "at": "2026-11-04T23:22:49+09:00",
+        "qty": 1,
+        "name": "플로라 몬스테라 착번아웃 극세사 차렵이불 베개세트 Q",
+        "cost": 67241
+      },
+      {
+        "at": "2026-11-04T23:22:59+09:00",
+        "qty": 3,
+        "name": "종가 총각김치 5kg",
+        "cost": 99841
+      },
+      {
+        "at": "2026-11-04T23:23:09+09:00",
+        "qty": 4,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 115677
+      },
+      {
+        "at": "2026-11-04T23:23:20+09:00",
+        "qty": 1,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 9696
+      },
+      {
+        "at": "2026-11-04T23:43:19+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+        "cost": 316077
+      },
+      {
+        "at": "2026-11-04T23:43:30+09:00",
+        "qty": 4,
+        "name": "종가 총각김치 5kg",
+        "cost": 118581
+      },
+      {
+        "at": "2026-11-04T23:43:40+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 67249
+      },
+      {
+        "at": "2026-11-04T23:43:50+09:00",
+        "qty": 2,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 12735
+      },
+      {
+        "at": "2026-11-04T23:44:18+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 116369
+      },
+      {
+        "at": "2026-11-05T00:02:50+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+        "cost": 259653
+      },
+      {
+        "at": "2026-11-05T00:03:00+09:00",
+        "qty": 5,
+        "name": "종가 총각김치 5kg",
+        "cost": 154687
+      },
+      {
+        "at": "2026-11-05T00:03:12+09:00",
+        "qty": 2,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 16781
+      },
+      {
+        "at": "2026-11-05T00:03:53+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 121909
+      },
+      {
+        "at": "2026-11-05T00:04:50+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 133364
+      },
+      {
+        "at": "2026-11-05T00:23:25+09:00",
+        "qty": 2,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 223564
+      },
+      {
+        "at": "2026-11-05T00:23:37+09:00",
+        "qty": 5,
+        "name": "종가 총각김치 5kg",
+        "cost": 165430
+      },
+      {
+        "at": "2026-11-05T00:23:47+09:00",
+        "qty": 2,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 16308
+      },
+      {
+        "at": "2026-11-05T00:24:30+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 144002
+      },
+      {
+        "at": "2026-11-05T00:24:40+09:00",
+        "qty": 1,
+        "name": "플로라 몬스테라 착번아웃 극세사 차렵이불 베개세트 Q",
+        "cost": 62189
+      },
+      {
+        "at": "2026-11-05T00:25:36+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 142502
+      },
+      {
+        "at": "2026-11-05T00:25:46+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 40875
+      },
+      {
+        "at": "2026-11-05T00:41:07+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 142745
+      },
+      {
+        "at": "2026-11-05T00:41:18+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 164056
+      },
+      {
+        "at": "2026-11-05T00:41:28+09:00",
+        "qty": 3,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 28116
+      },
+      {
+        "at": "2026-11-05T00:41:38+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 22209
+      },
+      {
+        "at": "2026-11-05T01:02:55+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 83419
+      },
+      {
+        "at": "2026-11-05T01:03:05+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 191587
+      },
+      {
+        "at": "2026-11-05T01:03:16+09:00",
+        "qty": 4,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 32169
+      },
+      {
+        "at": "2026-11-05T01:03:27+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 24382
+      },
+      {
+        "at": "2026-11-05T01:03:38+09:00",
+        "qty": 1,
+        "name": "대복 맛있는 국내산 생깻잎김치 500gX2팩",
+        "cost": 9390
+      },
+      {
+        "at": "2026-11-05T01:03:48+09:00",
+        "qty": 1,
+        "name": "비비고 돼지고기김치찌개 460g x6개",
+        "cost": 10694
+      },
+      {
+        "at": "2026-11-05T01:03:58+09:00",
+        "qty": 1,
+        "name": "비비고 고단백 올리브 오일 생선구이 연어 스테이크 60g x10개",
+        "cost": 34241
+      },
+      {
+        "at": "2026-11-05T01:04:09+09:00",
+        "qty": 1,
+        "name": "소이조이 블루베리 1개입 고단백질 건강간식",
+        "cost": 433
+      },
+      {
+        "at": "2026-11-05T01:04:20+09:00",
+        "qty": 1,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 43671
+      },
+      {
+        "at": "2026-11-05T01:20:59+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 116071
+      },
+      {
+        "at": "2026-11-05T01:21:11+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 149785
+      },
+      {
+        "at": "2026-11-05T01:21:21+09:00",
+        "qty": 2,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 19637
+      },
+      {
+        "at": "2026-11-05T01:21:31+09:00",
+        "qty": 1,
+        "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+        "cost": 10223
+      },
+      {
+        "at": "2026-11-05T01:21:41+09:00",
+        "qty": 1,
+        "name": "비비고 고단백 올리브 오일 생선구이 연어 스테이크 60g x10개",
+        "cost": 39351
+      },
+      {
+        "at": "2026-11-05T01:21:53+09:00",
+        "qty": 1,
+        "name": "포스트 에너지바 엑티브135g+밸런스150g",
+        "cost": 4662
+      },
+      {
+        "at": "2026-11-05T01:22:05+09:00",
+        "qty": 1,
+        "name": "소이조이 블루베리 1개입 고단백질 건강간식",
+        "cost": 599
+      },
+      {
+        "at": "2026-11-05T01:22:14+09:00",
+        "qty": 1,
+        "name": "삼양 맛있는라면×5개",
+        "cost": 1946
+      },
+      {
+        "at": "2026-11-05T01:22:25+09:00",
+        "qty": 1,
+        "name": "비비고 돼지고기김치찌개 460g x6개",
+        "cost": 11257
+      },
+      {
+        "at": "2026-11-05T01:22:38+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 33019
+      },
+      {
+        "at": "2026-11-05T01:42:44+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 107806
+      },
+      {
+        "at": "2026-11-05T01:42:54+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 163638
+      },
+      {
+        "at": "2026-11-05T01:43:06+09:00",
+        "qty": 5,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 41992
+      },
+      {
+        "at": "2026-11-05T01:43:15+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 18634
+      },
+      {
+        "at": "2026-11-05T01:43:54+09:00",
+        "qty": 1,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 61826
+      },
+      {
+        "at": "2026-11-05T01:44:04+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 49042
+      },
+      {
+        "at": "2026-11-05T02:00:44+09:00",
+        "qty": 2,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 280821
+      },
+      {
+        "at": "2026-11-05T02:00:55+09:00",
+        "qty": 1,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 70091
+      },
+      {
+        "at": "2026-11-05T02:01:05+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 107994
+      },
+      {
+        "at": "2026-11-05T02:01:16+09:00",
+        "qty": 5,
+        "name": "종가 총각김치 5kg",
+        "cost": 158918
+      },
+      {
+        "at": "2026-11-05T02:01:26+09:00",
+        "qty": 3,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 28006
+      },
+      {
+        "at": "2026-11-05T02:01:46+09:00",
+        "qty": 2,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 138178
+      },
+      {
+        "at": "2026-11-05T02:02:54+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 148242
+      },
+      {
+        "at": "2026-11-05T02:03:04+09:00",
+        "qty": 1,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 69948
+      },
+      {
+        "at": "2026-11-05T02:23:26+09:00",
+        "qty": 3,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 228439
+      },
+      {
+        "at": "2026-11-05T02:23:37+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 207378
+      },
+      {
+        "at": "2026-11-05T02:23:47+09:00",
+        "qty": 5,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 44587
+      },
+      {
+        "at": "2026-11-05T02:24:32+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 145018
+      },
+      {
+        "at": "2026-11-05T02:24:42+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 29786
+      },
+      {
+        "at": "2026-11-05T02:43:34+09:00",
+        "qty": 2,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 232655
+      },
+      {
+        "at": "2026-11-05T02:43:44+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 167214
+      },
+      {
+        "at": "2026-11-05T02:43:54+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 53788
+      },
+      {
+        "at": "2026-11-05T02:44:45+09:00",
+        "qty": 2,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 162451
+      },
+      {
+        "at": "2026-11-05T03:03:44+09:00",
+        "qty": 2,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 241162
+      },
+      {
+        "at": "2026-11-05T03:03:55+09:00",
+        "qty": 1,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 75911
+      },
+      {
+        "at": "2026-11-05T03:04:07+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 195994
+      },
+      {
+        "at": "2026-11-05T03:04:17+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 57186
+      },
+      {
+        "at": "2026-11-05T03:04:52+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 130284
+      },
+      {
+        "at": "2026-11-05T03:06:03+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 118142
+      },
+      {
+        "at": "2026-11-05T03:06:14+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 72278
+      },
+      {
+        "at": "2026-11-05T03:06:24+09:00",
+        "qty": 3,
+        "name": "종가 총각김치 5kg",
+        "cost": 85011
+      },
+      {
+        "at": "2026-11-05T03:25:23+09:00",
+        "qty": 3,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 364403
+      },
+      {
+        "at": "2026-11-05T03:25:34+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 167491
+      },
+      {
+        "at": "2026-11-05T03:25:45+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 53193
+      },
+      {
+        "at": "2026-11-05T03:25:55+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 30251
+      },
+      {
+        "at": "2026-11-05T03:26:29+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 106837
+      },
+      {
+        "at": "2026-11-05T03:45:06+09:00",
+        "qty": 2,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 225266
+      },
+      {
+        "at": "2026-11-05T03:45:16+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 111071
+      },
+      {
+        "at": "2026-11-05T03:45:27+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 76167
+      },
+      {
+        "at": "2026-11-05T03:45:37+09:00",
+        "qty": 5,
+        "name": "종가 총각김치 5kg",
+        "cost": 170928
+      },
+      {
+        "at": "2026-11-05T03:45:48+09:00",
+        "qty": 5,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 45030
+      },
+      {
+        "at": "2026-11-05T03:46:12+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 154414
+      },
+      {
+        "at": "2026-11-05T03:46:22+09:00",
+        "qty": 1,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 64520
+      },
+      {
+        "at": "2026-11-05T03:47:21+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 82703
+      },
+      {
+        "at": "2026-11-05T03:47:33+09:00",
+        "qty": 1,
+        "name": "앤스티치 로타 모달 차렵이불(Q)",
+        "cost": 82462
+      },
+      {
+        "at": "2026-11-05T04:01:40+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 140399
+      },
+      {
+        "at": "2026-11-05T04:01:51+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 185386
+      },
+      {
+        "at": "2026-11-05T04:02:01+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 55866
+      },
+      {
+        "at": "2026-11-05T04:02:11+09:00",
+        "qty": 1,
+        "name": "[지정일배송]GAP인증 해남 절임배추 10kg (3-5포기/국내산천일염사용)",
+        "cost": 14749
+      },
+      {
+        "at": "2026-11-05T04:02:22+09:00",
+        "qty": 1,
+        "name": "[이쌀이다] 26년산 햅쌀 김포 고시히카리 20kg",
+        "cost": 59226
+      },
+      {
+        "at": "2026-11-05T04:02:34+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 48908
+      },
+      {
+        "at": "2026-11-05T04:02:52+09:00",
+        "qty": 1,
+        "name": "스피드랙 W1200XD400XH900 3단 무볼트 조립식앵글선반",
+        "cost": 67747
+      },
+      {
+        "at": "2026-11-05T04:03:03+09:00",
+        "qty": 2,
+        "name": "종가 총각김치 5kg",
+        "cost": 69534
+      },
+      {
+        "at": "2026-11-05T04:25:23+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 146834
+      },
+      {
+        "at": "2026-11-05T04:25:34+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 201874
+      },
+      {
+        "at": "2026-11-05T04:25:45+09:00",
+        "qty": 5,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 47045
+      },
+      {
+        "at": "2026-11-05T04:25:56+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 34180
+      },
+      {
+        "at": "2026-11-05T04:26:06+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 2842
+      },
+      {
+        "at": "2026-11-05T04:26:16+09:00",
+        "qty": 1,
+        "name": "[이쌀이다] 26년산 햅쌀 김포 고시히카리 20kg",
+        "cost": 23675
+      },
+      {
+        "at": "2026-11-05T04:26:28+09:00",
+        "qty": 1,
+        "name": "[전라도청년] 청년선식 볶은 서리태귀리 쉐이크 300g x 1팩",
+        "cost": 5523
+      },
+      {
+        "at": "2026-11-05T04:26:46+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 74543
+      },
+      {
+        "at": "2026-11-05T04:43:29+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 92560
+      },
+      {
+        "at": "2026-11-05T04:43:39+09:00",
+        "qty": 1,
+        "name": "스피드랙 W1200XD400XH900 3단 무볼트 조립식앵글선반",
+        "cost": 60809
+      },
+      {
+        "at": "2026-11-05T04:43:49+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 160216
+      },
+      {
+        "at": "2026-11-05T04:44:01+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 53927
+      },
+      {
+        "at": "2026-11-05T04:44:14+09:00",
+        "qty": 2,
+        "name": "햇반 현미밥 210g x18개",
+        "cost": 23418
+      },
+      {
+        "at": "2026-11-05T04:44:22+09:00",
+        "qty": 1,
+        "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+        "cost": 8066
+      },
+      {
+        "at": "2026-11-05T04:44:36+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 68411
+      },
+      {
+        "at": "2026-11-05T05:02:46+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 127416
+      },
+      {
+        "at": "2026-11-05T05:02:57+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 68915
+      },
+      {
+        "at": "2026-11-05T05:03:07+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 212916
+      },
+      {
+        "at": "2026-11-05T05:03:17+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 59247
+      },
+      {
+        "at": "2026-11-05T05:03:27+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 39681
+      },
+      {
+        "at": "2026-11-05T05:03:38+09:00",
+        "qty": 1,
+        "name": "바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS",
+        "cost": 16198
+      },
+      {
+        "at": "2026-11-05T05:03:54+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 73382
+      },
+      {
+        "at": "2026-11-05T05:24:24+09:00",
+        "qty": 2,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 275394
+      },
+      {
+        "at": "2026-11-05T05:24:35+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 32274
+      },
+      {
+        "at": "2026-11-05T05:24:45+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 167539
+      },
+      {
+        "at": "2026-11-05T05:24:57+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 63066
+      },
+      {
+        "at": "2026-11-05T05:25:09+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 44079
+      },
+      {
+        "at": "2026-11-05T05:25:18+09:00",
+        "qty": 1,
+        "name": "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS",
+        "cost": 64051
+      },
+      {
+        "at": "2026-11-05T05:25:28+09:00",
+        "qty": 1,
+        "name": "바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS",
+        "cost": 11117
+      },
+      {
+        "at": "2026-11-05T05:25:52+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 89890
+      },
+      {
+        "at": "2026-11-05T05:26:00+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 116941
+      },
+      {
+        "at": "2026-11-05T05:45:30+09:00",
+        "qty": 3,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 236082
+      },
+      {
+        "at": "2026-11-05T05:45:43+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 143563
+      },
+      {
+        "at": "2026-11-05T05:45:51+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 62101
+      },
+      {
+        "at": "2026-11-05T05:46:01+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 46623
+      },
+      {
+        "at": "2026-11-05T05:46:13+09:00",
+        "qty": 2,
+        "name": "바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS",
+        "cost": 29291
+      },
+      {
+        "at": "2026-11-05T05:46:43+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 96586
+      },
+      {
+        "at": "2026-11-05T06:01:19+09:00",
+        "qty": 4,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 308668
+      },
+      {
+        "at": "2026-11-05T06:01:29+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 198867
+      },
+      {
+        "at": "2026-11-05T06:01:40+09:00",
+        "qty": 2,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 82405
+      },
+      {
+        "at": "2026-11-05T06:01:52+09:00",
+        "qty": 5,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 41866
+      },
+      {
+        "at": "2026-11-05T06:02:02+09:00",
+        "qty": 2,
+        "name": "바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS",
+        "cost": 30495
+      },
+      {
+        "at": "2026-11-05T06:02:31+09:00",
+        "qty": 1,
+        "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+        "cost": 107204
+      },
+      {
+        "at": "2026-11-05T06:20:45+09:00",
+        "qty": 1,
+        "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+        "cost": 347374
+      },
+      {
+        "at": "2026-11-05T06:20:55+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 192011
+      },
+      {
+        "at": "2026-11-05T06:21:05+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 60404
+      },
+      {
+        "at": "2026-11-05T06:21:17+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 22011
+      },
+      {
+        "at": "2026-11-05T06:21:26+09:00",
+        "qty": 2,
+        "name": "[바운티풀] 엘리트코튼 호텔 침구 순면80수 이불커버 SS",
+        "cost": 93359
+      },
+      {
+        "at": "2026-11-05T06:21:37+09:00",
+        "qty": 2,
+        "name": "바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS",
+        "cost": 23583
+      },
+      {
+        "at": "2026-11-05T06:21:47+09:00",
+        "qty": 1,
+        "name": "펩시콜라 엑스트라 피즈 245ml 15개(업소용)",
+        "cost": 6009
+      },
+      {
+        "at": "2026-11-05T06:21:58+09:00",
+        "qty": 1,
+        "name": "2026년 국내산 햇 예천고춧가루 매운맛 5kg",
+        "cost": 72812
+      },
+      {
+        "at": "2026-11-05T06:22:16+09:00",
+        "qty": 1,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 74110
+      },
+      {
+        "at": "2026-11-05T06:22:28+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 46633
+      },
+      {
+        "at": "2026-11-05T06:22:40+09:00",
+        "qty": 1,
+        "name": "종가 총각김치 5kg",
+        "cost": 27752
+      },
+      {
+        "at": "2026-11-05T06:22:51+09:00",
+        "qty": 1,
+        "name": "[바운티풀] 엘리트코튼 호텔 침구 순면80수 이불커버 SS",
+        "cost": 53521
+      },
+      {
+        "at": "2026-11-05T06:23:01+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 26721
+      },
+      {
+        "at": "2026-11-05T06:45:16+09:00",
+        "qty": 3,
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "cost": 286230
+      },
+      {
+        "at": "2026-11-05T06:45:25+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 179062
+      },
+      {
+        "at": "2026-11-05T06:45:35+09:00",
+        "qty": 2,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 77363
+      },
+      {
+        "at": "2026-11-05T06:45:49+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 56738
+      },
+      {
+        "at": "2026-11-05T06:45:58+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 3209
+      },
+      {
+        "at": "2026-11-05T06:46:07+09:00",
+        "qty": 1,
+        "name": "제주 옥돔(중) 10마리",
+        "cost": 50516
+      },
+      {
+        "at": "2026-11-05T06:46:20+09:00",
+        "qty": 1,
+        "name": "소이조이 블루베리 1개입 고단백질 건강간식",
+        "cost": 1199
+      },
+      {
+        "at": "2026-11-05T07:04:57+09:00",
+        "qty": 2,
+        "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+        "cost": 649234
+      },
+      {
+        "at": "2026-11-05T07:05:08+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 167603
+      },
+      {
+        "at": "2026-11-05T07:05:19+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 62630
+      },
+      {
+        "at": "2026-11-05T07:05:29+09:00",
+        "qty": 2,
+        "name": "[바운티풀] 엘리트코튼 호텔 침구 순면80수 이불커버 SS",
+        "cost": 103721
+      },
+      {
+        "at": "2026-11-05T07:05:40+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 37930
+      },
+      {
+        "at": "2026-11-05T07:05:50+09:00",
+        "qty": 2,
+        "name": "[안동맛자반] 순살 간고등어 반마리 140g x 10팩",
+        "cost": 30118
+      },
+      {
+        "at": "2026-11-05T07:06:14+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 139809
+      },
+      {
+        "at": "2026-11-05T07:06:24+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인] 프리마로프트 바이오 비건구스 이불 Q",
+        "cost": 149712
+      },
+      {
+        "at": "2026-11-05T07:23:41+09:00",
+        "qty": 1,
+        "name": "GS단독 [베드리움] 노블아워 유로탑 매트리스(슈퍼싱글)",
+        "cost": 231592
+      },
+      {
+        "at": "2026-11-05T07:23:52+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 179388
+      },
+      {
+        "at": "2026-11-05T07:24:02+09:00",
+        "qty": 3,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 104998
+      },
+      {
+        "at": "2026-11-05T07:24:14+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 54313
+      },
+      {
+        "at": "2026-11-05T07:24:23+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 17866
+      },
+      {
+        "at": "2026-11-05T07:24:34+09:00",
+        "qty": 1,
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "cost": 2895
+      },
+      {
+        "at": "2026-11-05T07:24:44+09:00",
+        "qty": 1,
+        "name": "2026년 문경 햇오미자 오미자청 단골농장 오미자 당절임 10kg",
+        "cost": 58360
+      },
+      {
+        "at": "2026-11-05T07:24:56+09:00",
+        "qty": 1,
+        "name": "26년수확 해남 꿀 밤고구마 3kg 한입 베니하루카",
+        "cost": 2610
+      },
+      {
+        "at": "2026-11-05T07:25:15+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인] 프리마로프트 바이오 비건구스 이불 Q",
+        "cost": 149897
+      },
+      {
+        "at": "2026-11-05T07:45:24+09:00",
+        "qty": 1,
+        "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+        "cost": 329878
+      },
+      {
+        "at": "2026-11-05T07:45:34+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 224399
+      },
+      {
+        "at": "2026-11-05T07:45:45+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 56620
+      },
+      {
+        "at": "2026-11-05T07:45:57+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 41823
+      },
+      {
+        "at": "2026-11-05T07:46:09+09:00",
+        "qty": 1,
+        "name": "비비고 진한 소고기미역국 500g x6개",
+        "cost": 12488
+      },
+      {
+        "at": "2026-11-05T07:46:19+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 17469
+      },
+      {
+        "at": "2026-11-05T07:46:31+09:00",
+        "qty": 2,
+        "name": "더바른 파베초코크림떡 1box 개별포장",
+        "cost": 18784
+      },
+      {
+        "at": "2026-11-05T07:46:41+09:00",
+        "qty": 1,
+        "name": "동서가구 사커 슈퍼싱글 SS 양면 매트리스",
+        "cost": 73850
+      },
+      {
+        "at": "2026-11-05T07:47:10+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인] 프리마로프트 바이오 비건구스 이불 Q",
+        "cost": 126964
+      },
+      {
+        "at": "2026-11-05T08:05:30+09:00",
+        "qty": 1,
+        "name": "지누스 얼티마 럭스S 하이브리드 매트리스 25cm Q 퀸",
+        "cost": 313578
+      },
+      {
+        "at": "2026-11-05T08:05:41+09:00",
+        "qty": 2,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 74774
+      },
+      {
+        "at": "2026-11-05T08:05:52+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 206339
+      },
+      {
+        "at": "2026-11-05T08:06:02+09:00",
+        "qty": 5,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 45970
+      },
+      {
+        "at": "2026-11-05T08:06:12+09:00",
+        "qty": 1,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 29512
+      },
+      {
+        "at": "2026-11-05T08:06:23+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 29776
+      },
+      {
+        "at": "2026-11-05T08:06:33+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 13582
+      },
+      {
+        "at": "2026-11-05T08:06:45+09:00",
+        "qty": 1,
+        "name": "아델라 5mm밍크극세사 차렵이불 Q (+이불가방증정)",
+        "cost": 49657
+      },
+      {
+        "at": "2026-11-05T08:22:10+09:00",
+        "qty": 1,
+        "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+        "cost": 211794
+      },
+      {
+        "at": "2026-11-05T08:22:22+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 62346
+      },
+      {
+        "at": "2026-11-05T08:22:31+09:00",
+        "qty": 2,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 39315
+      },
+      {
+        "at": "2026-11-05T08:22:41+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 42343
+      },
+      {
+        "at": "2026-11-05T08:22:52+09:00",
+        "qty": 6,
+        "name": "종가 총각김치 5kg",
+        "cost": 185740
+      },
+      {
+        "at": "2026-11-05T08:23:02+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 43554
+      },
+      {
+        "at": "2026-11-05T08:23:14+09:00",
+        "qty": 1,
+        "name": "천일식품 낙지볶음밥 300g",
+        "cost": 1209
+      },
+      {
+        "at": "2026-11-05T08:23:23+09:00",
+        "qty": 1,
+        "name": "제주 옥돔(중) 10마리",
+        "cost": 65535
+      },
+      {
+        "at": "2026-11-05T08:23:43+09:00",
+        "qty": 1,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 65990
+      },
+      {
+        "at": "2026-11-05T08:23:54+09:00",
+        "qty": 2,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 47225
+      },
+      {
+        "at": "2026-11-05T08:43:14+09:00",
+        "qty": 1,
+        "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+        "cost": 297022
+      },
+      {
+        "at": "2026-11-05T08:43:24+09:00",
+        "qty": 1,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 79625
+      },
+      {
+        "at": "2026-11-05T08:43:34+09:00",
+        "qty": 3,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 71494
+      },
+      {
+        "at": "2026-11-05T08:43:44+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 48665
+      },
+      {
+        "at": "2026-11-05T08:43:56+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 49219
+      },
+      {
+        "at": "2026-11-05T08:44:07+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 26622
+      },
+      {
+        "at": "2026-11-05T08:44:17+09:00",
+        "qty": 1,
+        "name": "비비고 진한 소고기미역국 500g x6개",
+        "cost": 6954
+      },
+      {
+        "at": "2026-11-05T08:44:28+09:00",
+        "qty": 1,
+        "name": "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS",
+        "cost": 53929
+      },
+      {
+        "at": "2026-11-05T08:44:38+09:00",
+        "qty": 1,
+        "name": "동서가구 사커 슈퍼싱글 SS 양면 매트리스",
+        "cost": 72448
+      },
+      {
+        "at": "2026-11-05T08:44:48+09:00",
+        "qty": 1,
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "cost": 24975
+      },
+      {
+        "at": "2026-11-05T08:45:09+09:00",
+        "qty": 1,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 31103
+      },
+      {
+        "at": "2026-11-05T08:45:19+09:00",
+        "qty": 3,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 51201
+      },
+      {
+        "at": "2026-11-05T08:45:29+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 32334
+      },
+      {
+        "at": "2026-11-05T08:45:42+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 16890
+      },
+      {
+        "at": "2026-11-05T09:03:24+09:00",
+        "qty": 1,
+        "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+        "cost": 292835
+      },
+      {
+        "at": "2026-11-05T09:03:35+09:00",
+        "qty": 1,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 81013
+      },
+      {
+        "at": "2026-11-05T09:03:45+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 152083
+      },
+      {
+        "at": "2026-11-05T09:03:58+09:00",
+        "qty": 2,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 61931
+      },
+      {
+        "at": "2026-11-05T09:04:07+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 48910
+      },
+      {
+        "at": "2026-11-05T09:04:17+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 34106
+      },
+      {
+        "at": "2026-11-05T09:04:42+09:00",
+        "qty": 1,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 75143
+      },
+      {
+        "at": "2026-11-05T09:04:54+09:00",
+        "qty": 2,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 52518
+      },
+      {
+        "at": "2026-11-05T09:22:55+09:00",
+        "qty": 1,
+        "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+        "cost": 283754
+      },
+      {
+        "at": "2026-11-05T09:23:06+09:00",
+        "qty": 3,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 205902
+      },
+      {
+        "at": "2026-11-05T09:23:16+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 135172
+      },
+      {
+        "at": "2026-11-05T09:23:27+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 46271
+      },
+      {
+        "at": "2026-11-05T09:23:51+09:00",
+        "qty": 1,
+        "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+        "cost": 286879
+      },
+      {
+        "at": "2026-11-05T09:42:54+09:00",
+        "qty": 1,
+        "name": "[베드리움]스위트에디션 Hard 매트리스(SS)",
+        "cost": 310529
+      },
+      {
+        "at": "2026-11-05T09:43:04+09:00",
+        "qty": 4,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 179318
+      },
+      {
+        "at": "2026-11-05T09:43:15+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 163620
+      },
+      {
+        "at": "2026-11-05T09:43:25+09:00",
+        "qty": 5,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 38837
+      },
+      {
+        "at": "2026-11-05T09:43:35+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 23992
+      },
+      {
+        "at": "2026-11-05T09:43:46+09:00",
+        "qty": 2,
+        "name": "제주남원농협 산지직송 노지감귤 소과 2.5kg (실중량)",
+        "cost": 9104
+      },
+      {
+        "at": "2026-11-05T09:43:57+09:00",
+        "qty": 1,
+        "name": "[산해직송] 해남 포슬포슬 수미감자 특 5kg (130~180g 내외)",
+        "cost": 6474
+      },
+      {
+        "at": "2026-11-05T09:44:12+09:00",
+        "qty": 1,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 60392
+      },
+      {
+        "at": "2026-11-05T10:05:21+09:00",
+        "qty": 2,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 138844
+      },
+      {
+        "at": "2026-11-05T10:05:31+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 131606
+      },
+      {
+        "at": "2026-11-05T10:05:43+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 87490
+      },
+      {
+        "at": "2026-11-05T10:05:53+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 52194
+      },
+      {
+        "at": "2026-11-05T10:06:05+09:00",
+        "qty": 1,
+        "name": "대복 맛있는 국내산 생깻잎김치 500gX2팩",
+        "cost": 8271
+      },
+      {
+        "at": "2026-11-05T10:06:40+09:00",
+        "qty": 2,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 147718
+      },
+      {
+        "at": "2026-11-05T10:25:16+09:00",
+        "qty": 4,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 258379
+      },
+      {
+        "at": "2026-11-05T10:25:25+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 109539
+      },
+      {
+        "at": "2026-11-05T10:25:50+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 126548
+      },
+      {
+        "at": "2026-11-05T10:25:57+09:00",
+        "qty": 3,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 81850
+      },
+      {
+        "at": "2026-11-05T10:26:08+09:00",
+        "qty": 5,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 48268
+      },
+      {
+        "at": "2026-11-05T10:26:31+09:00",
+        "qty": 1,
+        "name": "[헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q",
+        "cost": 356738
+      },
+      {
+        "at": "2026-11-05T10:26:43+09:00",
+        "qty": 1,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 26060
+      },
+      {
+        "at": "2026-11-05T10:42:03+09:00",
+        "qty": 4,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 240280
+      },
+      {
+        "at": "2026-11-05T10:42:12+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 122874
+      },
+      {
+        "at": "2026-11-05T10:42:23+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 50186
+      },
+      {
+        "at": "2026-11-05T10:43:19+09:00",
+        "qty": 2,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 126570
+      },
+      {
+        "at": "2026-11-05T10:43:31+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 24615
+      },
+      {
+        "at": "2026-11-05T10:44:27+09:00",
+        "qty": 2,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 146141
+      },
+      {
+        "at": "2026-11-05T10:44:37+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 15779
+      },
+      {
+        "at": "2026-11-05T11:04:39+09:00",
+        "qty": 4,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 237608
+      },
+      {
+        "at": "2026-11-05T11:04:51+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 165958
+      },
+      {
+        "at": "2026-11-05T11:05:00+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 53388
+      },
+      {
+        "at": "2026-11-05T11:05:13+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 26143
+      },
+      {
+        "at": "2026-11-05T11:05:59+09:00",
+        "qty": 2,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 110878
+      },
+      {
+        "at": "2026-11-05T11:22:19+09:00",
+        "qty": 5,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 328186
+      },
+      {
+        "at": "2026-11-05T11:22:29+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 131560
+      },
+      {
+        "at": "2026-11-05T11:22:42+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 46873
+      },
+      {
+        "at": "2026-11-05T11:22:54+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 25097
+      },
+      {
+        "at": "2026-11-05T11:23:24+09:00",
+        "qty": 1,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 68102
+      },
+      {
+        "at": "2026-11-05T11:43:06+09:00",
+        "qty": 6,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 416973
+      },
+      {
+        "at": "2026-11-05T11:43:17+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 134484
+      },
+      {
+        "at": "2026-11-05T11:43:27+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 45291
+      },
+      {
+        "at": "2026-11-05T11:43:39+09:00",
+        "qty": 2,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 76271
+      },
+      {
+        "at": "2026-11-05T11:43:49+09:00",
+        "qty": 4,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 35871
+      },
+      {
+        "at": "2026-11-05T11:44:08+09:00",
+        "qty": 2,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 111855
+      },
+      {
+        "at": "2026-11-05T11:44:20+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 71127
+      },
+      {
+        "at": "2026-11-05T11:44:30+09:00",
+        "qty": 2,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 65545
+      },
+      {
+        "at": "2026-11-05T12:04:17+09:00",
+        "qty": 6,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 416648
+      },
+      {
+        "at": "2026-11-05T12:04:28+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 162280
+      },
+      {
+        "at": "2026-11-05T12:04:40+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 52337
+      },
+      {
+        "at": "2026-11-05T12:25:56+09:00",
+        "qty": 1,
+        "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+        "cost": 539988
+      },
+      {
+        "at": "2026-11-05T12:26:04+09:00",
+        "qty": 3,
+        "name": "[닥스침구]아사 헤이즐 베이지[9온스] 퀼트이불 싱글",
+        "cost": 204869
+      },
+      {
+        "at": "2026-11-05T12:26:17+09:00",
+        "qty": 6,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 144349
+      },
+      {
+        "at": "2026-11-05T12:26:27+09:00",
+        "qty": 2,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 59521
+      },
+      {
+        "at": "2026-11-05T12:26:38+09:00",
+        "qty": 6,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 51801
+      },
+      {
+        "at": "2026-11-05T12:26:48+09:00",
+        "qty": 1,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 37918
+      },
+      {
+        "at": "2026-11-05T12:26:58+09:00",
+        "qty": 1,
+        "name": "건국 무첨가두유 32팩",
+        "cost": 8787
+      },
+      {
+        "at": "2026-11-05T12:27:08+09:00",
+        "qty": 1,
+        "name": "[본사직영] 바프 먼투썬 하루견과 코코넛 50봉 (20g x 50EA)",
+        "cost": 11761
+      },
+      {
+        "at": "2026-11-05T12:41:25+09:00",
+        "qty": 1,
+        "name": "지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 SS 슈퍼싱글 색상선택 2color",
+        "cost": 435627
+      },
+      {
+        "at": "2026-11-05T12:41:36+09:00",
+        "qty": 3,
+        "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+        "cost": 86523
+      },
+      {
+        "at": "2026-11-05T12:41:48+09:00",
+        "qty": 4,
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "cost": 83631
+      },
+      {
+        "at": "2026-11-05T12:41:58+09:00",
+        "qty": 2,
+        "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+        "cost": 88338
+      },
+      {
+        "at": "2026-11-05T12:42:09+09:00",
+        "qty": 5,
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "cost": 40622
+      },
+      {
+        "at": "2026-11-05T12:42:20+09:00",
+        "qty": 2,
+        "name": "대복 맛있는 국내산 생깻잎김치 500gX2팩",
+        "cost": 21901
+      },
+      {
+        "at": "2026-11-05T12:42:30+09:00",
+        "qty": 1,
+        "name": "건국 무첨가두유 32팩",
+        "cost": 11987
+      },
+      {
+        "at": "2026-11-05T12:42:42+09:00",
+        "qty": 1,
+        "name": "[본사직영] 바프 먼투썬 하루견과 코코넛 50봉 (20g x 50EA)",
+        "cost": 13214
+      },
+      {
+        "at": "2026-11-05T12:43:10+09:00",
+        "qty": 1,
+        "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+        "cost": 94371
+      }
+    ]
+  },
+  "buyer": {
+    "received_orders": 3999,
+    "paid": 2573,
+    "mature_order_cohort": {
+      "received": 3993,
+      "terminal": 3992,
+      "paid": 2568,
+      "conversion": 0.6431254695717505
+    },
+    "payment_attempts": {
+      "paid": 2573,
+      "shelf_life": 268,
+      "unit_unavailable": 184,
+      "other": 3
+    },
+    "attempt_reasons": {
+      "no_agreement": 2251,
+      "ValueError": 54,
+      "ambiguous_ask": 310,
+      "ReadTimeout": 293,
+      "certificate_unavailable": 30,
+      "receipt_integrity_failure": 61,
+      "HTTPStatusError": 37,
+      "rfq_failed": 195,
+      "quote_sku_mismatch": 12
+    },
+    "purchase_kind": {
+      "food": 1893,
+      "goods": 680
+    },
+    "last_paid": "2026-11-05T12:45:04.881283+09:00",
+    "largest_inter_purchase_gap_minutes": 3.691085163752238
+  },
+  "restock": {
+    "plans": 135,
+    "planned_lines": 561,
+    "stockouts": 1794,
+    "stockouts_sku": [
+      [
+        null,
+        1224
+      ],
+      [
+        "Gc4681038",
+        121
+      ],
+      [
+        "G66ded25b",
+        93
+      ],
+      [
+        "G200e39a3",
+        38
+      ],
+      [
+        "G5bdaf222",
+        30
+      ],
+      [
+        "G5f77b795",
+        26
+      ],
+      [
+        "G3e2cdb81",
+        21
+      ],
+      [
+        "G7fa48eaa",
+        20
+      ],
+      [
+        "Gef4d3036",
+        19
+      ],
+      [
+        "Gcc75125e",
+        19
+      ],
+      [
+        "Gdaff0eba",
+        14
+      ],
+      [
+        "G97c76871",
+        12
+      ],
+      [
+        "G6b0fd5bc",
+        12
+      ],
+      [
+        "G57d8dfa6",
+        12
+      ],
+      [
+        "Gf7ca73a2",
+        11
+      ]
+    ],
+    "current_target": 30,
+    "growth_v5_enabled": false,
+    "chosen": {
+      "diversified": 136
+    }
+  },
+  "model_usage": {
+    "calls": 13474,
+    "estimated_usd": 5.665642400000025
+  },
+  "hourly": [
+    {
+      "start": "2026-11-04T12:37:21.293560+09:00",
+      "end": "2026-11-04T13:37:21.293560+09:00",
+      "sales": 35,
+      "purchases": 86,
+      "net_sales": 1906653,
+      "below_cost_sales": 9,
+      "cash_observed": 6403275
+    },
+    {
+      "start": "2026-11-04T13:37:21.293560+09:00",
+      "end": "2026-11-04T14:37:21.293560+09:00",
+      "sales": 27,
+      "purchases": 101,
+      "net_sales": 3984348,
+      "below_cost_sales": 11,
+      "cash_observed": 6763563
+    },
+    {
+      "start": "2026-11-04T14:37:21.293560+09:00",
+      "end": "2026-11-04T15:37:21.293560+09:00",
+      "sales": 16,
+      "purchases": 110,
+      "net_sales": 194831,
+      "below_cost_sales": 3,
+      "cash_observed": 6727973
+    },
+    {
+      "start": "2026-11-04T15:37:21.293560+09:00",
+      "end": "2026-11-04T16:37:21.293560+09:00",
+      "sales": 11,
+      "purchases": 119,
+      "net_sales": 149560,
+      "below_cost_sales": 4,
+      "cash_observed": 6731357
+    },
+    {
+      "start": "2026-11-04T16:37:21.293560+09:00",
+      "end": "2026-11-04T17:37:21.293560+09:00",
+      "sales": 16,
+      "purchases": 118,
+      "net_sales": 306133,
+      "below_cost_sales": 3,
+      "cash_observed": 6850825
+    },
+    {
+      "start": "2026-11-04T17:37:21.293560+09:00",
+      "end": "2026-11-04T18:37:21.293560+09:00",
+      "sales": 4,
+      "purchases": 112,
+      "net_sales": -602981,
+      "below_cost_sales": 0,
+      "cash_observed": 6247844
+    },
+    {
+      "start": "2026-11-04T18:37:21.293560+09:00",
+      "end": "2026-11-04T19:37:21.293560+09:00",
+      "sales": 2,
+      "purchases": 112,
+      "net_sales": -335216,
+      "below_cost_sales": 1,
+      "cash_observed": 5912628
+    },
+    {
+      "start": "2026-11-04T19:37:21.293560+09:00",
+      "end": "2026-11-04T20:37:21.293560+09:00",
+      "sales": 39,
+      "purchases": 115,
+      "net_sales": 4593112,
+      "below_cost_sales": 8,
+      "cash_observed": 6461762
+    },
+    {
+      "start": "2026-11-04T20:37:21.293560+09:00",
+      "end": "2026-11-04T21:37:21.293560+09:00",
+      "sales": 35,
+      "purchases": 96,
+      "net_sales": 1617154,
+      "below_cost_sales": 14,
+      "cash_observed": 6610179
+    },
+    {
+      "start": "2026-11-04T21:37:21.293560+09:00",
+      "end": "2026-11-04T22:37:21.293560+09:00",
+      "sales": 34,
+      "purchases": 103,
+      "net_sales": 264644,
+      "below_cost_sales": 12,
+      "cash_observed": 6376241
+    },
+    {
+      "start": "2026-11-04T22:37:21.293560+09:00",
+      "end": "2026-11-04T23:37:21.293560+09:00",
+      "sales": 32,
+      "purchases": 73,
+      "net_sales": 975649,
+      "below_cost_sales": 11,
+      "cash_observed": 6385021
+    },
+    {
+      "start": "2026-11-04T23:37:21.293560+09:00",
+      "end": "2026-11-05T00:37:21.293560+09:00",
+      "sales": 35,
+      "purchases": 89,
+      "net_sales": 2181737,
+      "below_cost_sales": 13,
+      "cash_observed": 6454483
+    },
+    {
+      "start": "2026-11-05T00:37:21.293560+09:00",
+      "end": "2026-11-05T01:37:21.293560+09:00",
+      "sales": 46,
+      "purchases": 93,
+      "net_sales": 1417893,
+      "below_cost_sales": 10,
+      "cash_observed": 6698714
+    },
+    {
+      "start": "2026-11-05T01:37:21.293560+09:00",
+      "end": "2026-11-05T02:37:21.293560+09:00",
+      "sales": 50,
+      "purchases": 107,
+      "net_sales": 1414283,
+      "below_cost_sales": 14,
+      "cash_observed": 6012653
+    },
+    {
+      "start": "2026-11-05T02:37:21.293560+09:00",
+      "end": "2026-11-05T03:37:21.293560+09:00",
+      "sales": 53,
+      "purchases": 104,
+      "net_sales": 2312339,
+      "below_cost_sales": 10,
+      "cash_observed": 6010736
+    },
+    {
+      "start": "2026-11-05T03:37:21.293560+09:00",
+      "end": "2026-11-05T04:37:21.293560+09:00",
+      "sales": 57,
+      "purchases": 110,
+      "net_sales": 2569404,
+      "below_cost_sales": 11,
+      "cash_observed": 6389248
+    },
+    {
+      "start": "2026-11-05T04:37:21.293560+09:00",
+      "end": "2026-11-05T05:37:21.293560+09:00",
+      "sales": 57,
+      "purchases": 96,
+      "net_sales": 2347099,
+      "below_cost_sales": 15,
+      "cash_observed": 6806834
+    },
+    {
+      "start": "2026-11-05T05:37:21.293560+09:00",
+      "end": "2026-11-05T06:37:21.293560+09:00",
+      "sales": 65,
+      "purchases": 109,
+      "net_sales": 2747922,
+      "below_cost_sales": 19,
+      "cash_observed": 7124705
+    },
+    {
+      "start": "2026-11-05T06:37:21.293560+09:00",
+      "end": "2026-11-05T07:37:21.293560+09:00",
+      "sales": 61,
+      "purchases": 109,
+      "net_sales": 2843542,
+      "below_cost_sales": 20,
+      "cash_observed": 7171254
+    },
+    {
+      "start": "2026-11-05T07:37:21.293560+09:00",
+      "end": "2026-11-05T08:37:21.293560+09:00",
+      "sales": 59,
+      "purchases": 103,
+      "net_sales": 2570714,
+      "below_cost_sales": 24,
+      "cash_observed": 7311454
+    },
+    {
+      "start": "2026-11-05T08:37:21.293560+09:00",
+      "end": "2026-11-05T09:37:21.293560+09:00",
+      "sales": 62,
+      "purchases": 121,
+      "net_sales": 3002786,
+      "below_cost_sales": 19,
+      "cash_observed": 7695237
+    },
+    {
+      "start": "2026-11-05T09:37:21.293560+09:00",
+      "end": "2026-11-05T10:37:21.293560+09:00",
+      "sales": 56,
+      "purchases": 121,
+      "net_sales": 2539231,
+      "below_cost_sales": 18,
+      "cash_observed": 7868697
+    },
+    {
+      "start": "2026-11-05T10:37:21.293560+09:00",
+      "end": "2026-11-05T11:37:21.293560+09:00",
+      "sales": 65,
+      "purchases": 119,
+      "net_sales": 2307109,
+      "below_cost_sales": 16,
+      "cash_observed": 8255568
+    },
+    {
+      "start": "2026-11-05T11:37:21.293560+09:00",
+      "end": "2026-11-05T12:37:21.293560+09:00",
+      "sales": 60,
+      "purchases": 131,
+      "net_sales": 3008527,
+      "below_cost_sales": 14,
+      "cash_observed": 8616419
+    },
+    {
+      "start": "2026-11-05T12:37:21.293560+09:00",
+      "end": "2026-11-05T12:45:44.360601+09:00",
+      "sales": 11,
+      "purchases": 16,
+      "net_sales": 807138,
+      "below_cost_sales": 4,
+      "cash_observed": 8547343
+    }
+  ],
+  "checks": {
+    "board_book_identity": true,
+    "sales_count_matches_board": true,
+    "sales_net_revenue_matches_board": true,
+    "cost_known_for_all_sales": true
+  },
+  "limitations": [
+    "Snapshots update independently; inventory and board may differ by seconds.",
+    "24h comparison uses nearest preserved baseline; exact duration is stated.",
+    "Baseline board did not expose stock_cost/book; inventory/book comparison starts at the first preserved full inventory.",
+    "Revenue minus cash-profit change includes all supply spending; it is not profit margin.",
+    "Peer alive at both endpoints does not establish continuous uptime.",
+    "Buyer surplus can still change as recent goods break within six hours.",
+    "Public ledger ingestion delay and subsecond snapshot boundaries can leave small reconciliation residuals."
+  ],
+  "source": "logs\\day-source-20261105T034626246435Z.json"
+}
