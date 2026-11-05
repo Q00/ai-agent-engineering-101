@@ -60,11 +60,16 @@ STALL = 4 * 3600         # out (cap 0) held this long with no sale; restock.LINE
 EXIT_REST = 2 * 3600
 REENTRY_MIN = 0.70       # back in only where others still settle at this share of list or more (A costs 0.55-0.75)
 MIN_N = 20
-STARS_MIN, STARS_REST = 4.80, 2 * 3600
+STARS_MIN, STARS_REST = 4.60, 2 * 3600   # 4.80 until 11/5 09:20: one buyer (totato2203-r3) gives every shop 1 star on
+                                         # every purchase (67 of 67) and bought 18% of ours; our stars fell 4.84 -> 4.72
+                                         # and the guard cut the line's caps 35 times in 9 h for no fault of the goods
 FIND_WINDOW = 6 * 3600
-FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.76, 10
+FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.74, 12
+                         # 0.76 and 10 until 11/5 09:20: the one-hour experiment at 0.74 / 12 / 40 found two products
+                         # that sold 52 and 40 units in the next 5 h, 10.6M over cost (its own verdict, on the shop's
+                         # hourly margin, had ended it)
 FIND_CAP = 2
-LINE_MAX_SKUS = 30       # 20 until 11/5 01:00
+LINE_MAX_SKUS = 40       # 20 until 11/5 01:00, 30 until 09:20
 UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 12 * 3600, 1, 300_000, 2, 10
                          # 6 h, 2 orders, 500k, cap 1, 5 until 11/5 02:20 (the first beds sold within minutes)
 UNMET_BUDGET = 0.85      # ...and the orders' budgets cover this share of its list (a buyer can pay our ask)

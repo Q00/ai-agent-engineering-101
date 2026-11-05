@@ -568,19 +568,20 @@ def test_linewatch():
           [(c["from"], c["to"]) for c in ch] == [(4, 5)] and g["share"] == 0.9 and g["hold"] is None, (ch, g))
     check("...the book counts the cash: the same stock with 2M in cash is 30% of it",
           linewatch.guards(heavy["units"], {BEDDING: 4}, None, 2_000_000) == {"share": 0.3, "stars": None, "hold": None, "low_stars": False})
-    ch = run(t5 + 600, market(0.75, at=t5 + 600), sales=sold5, line={BEDDING: 4}, stars=4.7)
-    check("guard: our stars 4.7, under 4.80: the cap comes down one (not grown)",
-          [(c["from"], c["to"]) for c in ch] == [(5, 4)] and ch[0]["why"].startswith("our stars 4.7") and ch[0]["guards"]["stars"] == 4.7, ch)
+    check("4.7 stars is not low any more (the guard is at 4.60 since 11/5 09:20)", not linewatch.guards([], {}, 4.7)["low_stars"])
+    ch = run(t5 + 600, market(0.75, at=t5 + 600), sales=sold5, line={BEDDING: 4}, stars=4.5)
+    check("guard: our stars 4.5, under 4.60: the cap comes down one (not grown)",
+          [(c["from"], c["to"]) for c in ch] == [(5, 4)] and ch[0]["why"].startswith("our stars 4.5") and ch[0]["guards"]["stars"] == 4.5, ch)
     check("...not again within 2 hours, and still no growing",
-          run(t5 + 1200, market(0.75, at=t5 + 1200), sales=sold5, line={BEDDING: 4}, stars=4.7) == [])
-    ch = run(t5 + 600 + linewatch.STARS_REST, market(0.75, at=t5 + 600 + linewatch.STARS_REST), line={BEDDING: 4}, stars=4.75)
+          run(t5 + 1200, market(0.75, at=t5 + 1200), sales=sold5, line={BEDDING: 4}, stars=4.5) == [])
+    ch = run(t5 + 600 + linewatch.STARS_REST, market(0.75, at=t5 + 600 + linewatch.STARS_REST), line={BEDDING: 4}, stars=4.55)
     check("...and once more after 2 hours under", [(c["from"], c["to"]) for c in ch] == [(4, 3)], ch)
     check("growth goes straight to what sold in the last hour (cap 2, 7 sold: 7), not past the most units (12 sold: 10)",
           linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 7, "idle": None}, None, t)[0] == 7
           and linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 12, "idle": None}, None, t)[0] == 10)
     check("a guard also keeps an exited product out (others at 0.75, none held, the rest over)",
           linewatch.decide(0, {"median": 0.75, "sellers": 2}, {"n": 30, "median": 0.75, "sellers": 2}, {"held": 0, "sold_1h": 0, "idle": None},
-                           t, t + linewatch.EXIT_REST + 1, "our stars are 4.7 (under 4.8)") == (0, "out"))
+                           t, t + linewatch.EXIT_REST + 1, "our stars are 4.5 (under 4.6)") == (0, "out"))
     check("stars back at 4.85 and none of ours held: the guards say nothing",
           linewatch.guards([], {BEDDING: 4}, 4.85) == {"share": 0.0, "stars": 4.85, "hold": None, "low_stars": False})
     common.write_json(MD / "analysis" / "line.json", {"skus": {}})
@@ -956,13 +957,13 @@ def test_discover():
     settles = (sold("Gsofa0001", 30, 0.80, 5) + sold("Gsofa0002", 60, 0.78, 6) + sold("Gsofa0003", 90, 0.80, 14)
                + sold("Gsofa0004", 40, 0.70, 3) + sold("Gmat00001", 200, 0.80, 4) + sold("Gsofa0001", 10, 0.80, 5, at=t - 7 * 3600))
     got = linewatch.discover(settles, {}, cat, {BEDDING: 3}, {}, t)
-    check("picked: dear (500k+), 20+ settles in 6 h, 0.76+ of list, 10 sellers or fewer; best expected margin first",
+    check("picked: dear (500k+), 20+ settles in 6 h, 0.74+ of list, 12 sellers or fewer; best expected margin first",
           list(got) == ["Gsofa0001", "Gsofa0002"] and got["Gsofa0001"]["n"] == 30 and got["Gsofa0002"]["sellers"] == 6, got)
     check("...left out: 14 sellers (crowded), 0.70 of list, a 400k mattress, settles older than 6 h, our own shop's",
           linewatch.discover(sold("Gsofa0001", 30, 0.8, 5), {"s0": "Kiro729", "s1": "Kiro729", "s2": "Kiro729", "s3": "Kiro729",
                                                               "s4": "Kiro729"}, cat, {}, {}, t) == {})
     full = {f"Gx{i}": 2 for i in range(linewatch.LINE_MAX_SKUS - 1)}
-    check("only as many as leave the line at 30 products with a cap above 0 (one exited does not count)",
+    check("only as many as leave the line at 40 products with a cap above 0 (one exited does not count)",
           list(linewatch.discover(settles, {}, cat, dict(full, Gout=2), {"Gout": 0}, t)) == ["Gsofa0001"])
     bed = dict(cat, Gbed00001={"name": "bed", "category": "가구/침구>가구>침대", "list_price": 2_000_000},
                Gbed00002={"name": "bed 2", "category": "가구/침구>가구>침대", "list_price": 4_000_000},
@@ -999,10 +1000,10 @@ def test_discover():
         common.catalog = saved
     st_ = common.read_json(MD / "analysis" / "line_state.json")
     loose = dict(cat, Gsofa0005={"name": "near", "category": "가구/침구>가구>소파", "list_price": 1_000_000})
-    near = [{"seq": i, "ts": t - 3600, "item": "Gsofa0005", "amount": 750_000, "shop": f"s{i % 11}"} for i in range(30)]
-    check("an experiment's looser bar (0.74 of list, 12 sellers) admits a product the usual one does not, marked exp",
+    near = [{"seq": i, "ts": t - 3600, "item": "Gsofa0005", "amount": 730_000, "shop": f"s{i % 13}"} for i in range(30)]
+    check("an experiment's looser bar (0.72 of list, 14 sellers) admits a product the usual one does not, marked exp",
           linewatch.discover(near, {}, loose, {}, {}, t) == {}
-          and linewatch.discover(near, {}, loose, {}, {}, t, None, {"find_median": 0.74, "find_sellers": 12})["Gsofa0005"]["exp"] is True)
+          and linewatch.discover(near, {}, loose, {}, {}, t, None, {"find_median": 0.72, "find_sellers": 14})["Gsofa0005"]["exp"] is True)
     exp_path = MD / "analysis" / "experiment.json"
     common.write_json(exp_path, {"start": t - 3700, "until": t - 100, "params": {"find_median": 0.74}})
     check("...its params hold only while it runs", linewatch.experiment(t) == {} and linewatch.experiment(t - 200) == {"find_median": 0.74})
