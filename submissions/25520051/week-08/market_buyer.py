@@ -6,7 +6,7 @@ Round 3: the order names a category and its acceptable SKUs; a settled deal is w
 the food does not last use_within_hours or the goods break (minus the price, without a warranty). So:
 - the (shop, SKU) pair is picked for value: the dearest SKU the budget can buy at the market's usual price ratio,
   at a shop that has it, scored by our memory and its reviews
-- the hard maximum is min(budget, list price - 1): a deal never has negative surplus
+- the hard maximum is min(budget, MAX_RATIO of the list price): a deal never has negative surplus, and the score counts the share saved per deal
 - food: we say how many hours it must last and the kit refuses a unit with less (accept.min_hours_left, cert)
 - goods: we ask for a warranty; a receipt without one is accepted only for grades A and B (accept.grades)
 - payments.jsonl (why the kit refused to pay) and broken.jsonl (goods that broke) feed the shop memory
@@ -60,6 +60,7 @@ WARRANTY_H = 6            # goods break up to 6 h after the sale
 SCOUT = 3                 # shops asked for a first price per order
 SCOUT_WAIT = 20           # seconds; shops that have not answered by then are left out
 FIRST_COUNTER = 0.90      # share of a first ask already within reach that we offer once before accepting
+MAX_RATIO = 0.75          # most we pay, as a share of list: the buyer score became saved per deal (agent.md, Nov 6); saved 0.2391 sat at percentile 0.58 with a mean paid/list of 0.744
 BAD_REVIEW = re.compile(
     r"(overcharg|scam|fraud|cheat|fake|inject|dishonest|lied|avoid|mismatch|did ?n.t match|"
     r"higher than (the price )?(we )?agreed|receipt (said|was|price|showed)|never (sent|delivered))", re.I)
@@ -609,7 +610,7 @@ def main():
         print(f"[buyer] try {attempt + 1}: picked {shop['name']} ({shop['url']}): {why}"
               + (f"; SKU {sku['sku']} list {sku['list_price']}" if sku else ""), flush=True)
         url, card = jsonrpc_url(shop["url"])
-        hard_max = min(args.budget, sku["list_price"] - 1) if sku else args.budget    # never a negative surplus
+        hard_max = min(args.budget, int(sku["list_price"] * MAX_RATIO)) if sku else args.budget    # never a negative surplus; a dear deal lowers saved
         ref = ref_price(mem, args.item, sku["list_price"] if sku else None)
         deal = {"asks": [], "offers": [], "injection": False, "receipt": None, "task": None, "agreed": None}
         if url:
