@@ -48,6 +48,8 @@ COST = {"food": 0.50, "goods": 0.59}        # expected cost / list price of a ra
 PRICE_DEFAULT = 0.70            # settled price / list price across the market in the first hour of Round 3
 POST_EVERY = 1800
 TOP_N = 25                      # candidates the harness reads
+CODE_FIRST = 4                  # top-scoring SKUs that need stock, bought before the harness picks: it chose water and
+                                # snacks while SKUs with score 17-22k stayed at 0 units and 30M+ cash sat idle (2026-11-05)
 
 
 def decay(ts: float, now: float) -> float:
@@ -202,8 +204,18 @@ def plan(cands: list, limit: int, line_max: int, have: dict, use_harness: bool =
     cands = [c for c in cands if c["sku"] not in stale]
     by_sku = {c["sku"]: c for c in cands}
     est = lambda c, q: int(c["list"] * COST[c["kind"]] * 1.15 * q)          # cost estimate with a margin
-    picked, why = (harness_pick(cands, limit) if use_harness and cands else ([], ""))
     lines, spent = [], 0
+    for c in cands:
+        if len(lines) >= CODE_FIRST:
+            break
+        q = c["target"] - have.get(c["sku"], 0)
+        while q > 0 and (est(c, q) > line_max or spent + est(c, q) > limit):
+            q -= 1
+        if q > 0:
+            lines.append({"sku": c["sku"], "qty": q})
+            spent += est(c, q)
+    first = len(lines)
+    picked, why = (harness_pick(cands, limit - spent) if use_harness and cands else ([], ""))
     for b in picked:
         c = by_sku.get(str(b.get("sku"))) if isinstance(b, dict) else None
         if c is None or any(l["sku"] == c["sku"] for l in lines):
@@ -215,11 +227,11 @@ def plan(cands: list, limit: int, line_max: int, have: dict, use_harness: bool =
             continue
         lines.append({"sku": c["sku"], "qty": q})
         spent += est(c, q)
-    src = f"harness: {why}" if lines else "code ranking"
-    if not lines:
+    src = f"code first {first}, harness: {why}" if len(lines) > first else "code ranking"
+    if len(lines) == first:
         for c in cands:
             q = c["target"] - have.get(c["sku"], 0)
-            if q <= 0:
+            if q <= 0 or any(l["sku"] == c["sku"] for l in lines):
                 continue
             while q > 0 and (est(c, q) > line_max or spent + est(c, q) > limit):
                 q -= 1
