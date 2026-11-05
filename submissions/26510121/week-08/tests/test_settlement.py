@@ -87,7 +87,12 @@ def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch):
     acp = kit.AcpShop(shop_key, market, j.md)
     async def endpoint(request):
         return await acp.handle(request, request.url.path.strip('/'), await request.body(), url)
-    seller_app = build(port, Seller(j, key_path=keypath))
+    seller=Seller(j,key_path=keypath)
+    if os.environ.get('R3_LIVE_INTEGRATION'):
+        # Exercise the preserved critical-sale actor/critic path with real
+        # models; the ordinary numeric sale path has separate HTTP coverage.
+        seller.cfg=dict(seller.cfg,critic_cash_fraction=.0001)
+    seller_app = build(port,seller)
     app = Starlette(routes=list(seller_app.routes) + [
         Route('/.well-known/acp.json', endpoint), Route('/acp/{path:path}', endpoint, methods=['GET', 'POST'])])
     server = uvicorn.Server(uvicorn.Config(app, log_level='error'))

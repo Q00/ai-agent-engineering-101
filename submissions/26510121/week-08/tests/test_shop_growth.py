@@ -8,7 +8,7 @@ from r3.economy import restock_candidates, cash_capacity
 
 
 def config():
-    return dict(policy(), shop_growth_v5=True, inventory_target_units=80, restock_max_qty=20,
+    return dict(policy(), shop_growth_v5=True, shop_velocity_enabled=False,inventory_target_units=80, restock_max_qty=20,
                 assortment_coverage_fraction=.35)
 
 
