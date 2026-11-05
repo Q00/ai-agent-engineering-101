@@ -2,14 +2,17 @@
 
     python3 -m kernel.memfeed --root <data root> [--once] [--interval-s 300]
 
-Reads, since the byte cursors in <root>/a2/memfeed.json:
-  a2/trajectory.jsonl  kind "buyer_exec" (attempt and outcome) and kind "decision"
-  .r3/events.jsonl     settle rows we took part in: our shop's sales to seller memory, our buyer's purchases to buyer memory
-Each row becomes one short factual Korean sentence built mechanically (time, what happened, SKU, hashed shop,
-prices, result; no judgment, no lessons). Sentences go to the daemon as add(infer=True) in batches of up to
-BATCH, for the agent the fact belongs to; mem0's infer step extracts the facts. Only kinds named in that agent's
-harness memory.json "store" list are sent. The cursor moves only after every batch was accepted, so a run is
-idempotent; on the first run rows older than --since-hours are skipped. Stdlib only.
+Only what code cannot aggregate goes in (decision 2026-11-06). Reads, since the byte cursors in <root>/a2/memfeed.json,
+a2/trajectory.jsonl rows of kind:
+  reflection      the operator's effect table and lesson for a harness version: to the target agent and operator
+  version_result  one factual sentence per row (version, window, numbers): to the target agent and operator
+  harness_edit    what changed and why: to operator
+  buyer_exec      attempt and outcome rows, shop habits seen from the buyer side: to buyer
+Settle rows and raw seller/buyer decision rows are not fed: SKU prices and conversion are aggregated by kernel tools.
+Each row becomes short Korean sentences built mechanically. Sentences go to the daemon as add(infer=True) in batches
+of up to BATCH, per agent; mem0's infer step extracts the facts. Only kinds named in that agent's harness memory.json
+"store" list are sent (operator: harness/operator/memory.json, else OPERATOR_STORE). The cursor moves only after every
+batch was accepted, so a run is idempotent; on the first run rows older than --since-hours are skipped. Stdlib only.
 """
 
 import argparse
@@ -25,16 +28,37 @@ HARNESS = os.path.join(HERE, "harness")
 BATCH = 20
 MAX_PER_RUN = 200
 SOURCES = (
-    ("a2/trajectory.jsonl", (b'"buyer_exec"', b'"decision"')),
-    (".r3/events.jsonl", (b'"settle"',)),
+    (
+        "a2/trajectory.jsonl",
+        (b'"buyer_exec"', b'"reflection"', b'"version_result"', b'"harness_edit"'),
+    ),
+)
+AGENTS = ("seller", "buyer", "operator")
+OPERATOR_STORE = ("harness_edit", "reflection", "version_result")
+FIELD_CAP = 200
+METRIC_LABELS = (
+    ("requests", "요청"),
+    ("offers", "제안"),
+    ("declines", "거절"),
+    ("sales", "판매"),
+    ("conversion", "성사율"),
+    ("orders", "주문"),
+    ("deals", "거래"),
+    ("deal_rate", "거래율"),
+    ("price_to_list_median", "정가 대비 가격 중앙값"),
+    ("stars_mean", "별점 평균"),
 )
 
 
 def store_kinds(harness_dir=HARNESS):
-    """{agent: set of stored kinds} from each harness memory.json."""
+    """{agent: set of stored kinds} from each harness memory.json (operator defaults to OPERATOR_STORE)."""
     out = {}
-    for agent in ("seller", "buyer"):
-        cfg = c.load_json(os.path.join(harness_dir, agent, "memory.json"), {}) or {}
+    for agent in AGENTS:
+        path = os.path.join(harness_dir, agent, "memory.json")
+        if agent == "operator" and not os.path.exists(path):
+            out[agent] = set(OPERATOR_STORE)
+            continue
+        cfg = c.load_json(path, {}) or {}
         st = cfg.get("store") if isinstance(cfg, dict) else None
         out[agent] = (
             {x for x in st if isinstance(x, str)} if isinstance(st, list) else set()
@@ -42,37 +66,48 @@ def store_kinds(harness_dir=HARNESS):
     return out
 
 
-def _err_kind(e):
-    """'model: ModelRefused: ...' -> 'model ModelRefused'; a rule error -> 'model rule'."""
-    parts = str(e).split(": ")
-    if len(parts) >= 3 and parts[1][:1].isupper() and parts[1].isidentifier():
-        return f"{parts[0]} {parts[1]}"
-    return f"{parts[0]} rule"
+def _short(v):
+    return str(v)[:FIELD_CAP]
 
 
-def _decision_text(row):
-    d = row.get("decision") or {}
-    kind = row.get("decision_kind")
-    out = [f"{row.get('agent')} 결정 {kind}", f"경로 {row.get('route_used')}"]
-    if kind == "buyer.plan":
-        cands = d.get("candidates") or []
-        out.append(f"후보 {len(cands)}개")
-        for x in cands[:3]:
-            if isinstance(x, dict):
-                out.append(
-                    f"SKU {x.get('sku')} 최대 지불 {x.get('max_pay')} 제안 {x.get('offers')}"
-                )
-    else:
-        out.append(f"행동 {d.get('action')}")
-        for k, label in (("unit", "유닛"), ("ask", "요구가"), ("price", "가격")):
-            if d.get(k) is not None:
-                out.append(f"{label} {d[k]}")
-    if row.get("memory_keys"):
-        out.append("관련 키 " + " ".join(map(str, row["memory_keys"])))
-    errs = row.get("errors") or []
-    if errs:
-        out.append("오류 " + ", ".join(dict.fromkeys(_err_kind(e) for e in errs)))
+def _num(v):
+    return round(v, 3) if isinstance(v, float) else v
+
+
+def _reflection_text(row):
+    out = [f"운영자 회고 {row.get('target')} 하네스 판 {row.get('version')}"]
+    for e in row.get("effects") or []:
+        if not isinstance(e, dict):
+            continue
+        part = f"수정 {_short(e.get('edit'))} 효과 {e.get('effect')}"
+        if e.get("evidence"):
+            part += f" 근거 {_short(e['evidence'])}"
+        out.append(part)
+    lesson = row.get("lesson")
+    out.append(f"교훈 {_short(lesson)}" if lesson else "교훈 없음")
     return out
+
+
+def _version_text(row):
+    out = [f"{row.get('target')} 하네스 판 {row.get('version')} 성과"]
+    a, b = row.get("since_ts"), row.get("until_ts")
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        out.append(f"기간 {c.kst(a)}~{c.kst(b)}")
+    m = row.get("metrics") or {}
+    for k, label in METRIC_LABELS:
+        v = m.get(k)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            out.append(f"{label} {_num(v)}")
+    return out
+
+
+def _edit_text(row):
+    files = row.get("files") or []
+    return [
+        f"하네스 수정 {row.get('target')} 판 {row.get('version')}",
+        "파일 " + " ".join(map(str, files)) if files else "파일 없음",
+        f"이유 {_short(row.get('reason'))}",
+    ]
 
 
 def _buyer_exec_text(row):
@@ -106,49 +141,31 @@ def _buyer_exec_text(row):
     return None
 
 
-def _settle_text(data, side="shop"):
-    out = [
-        "우리 가게 판매 정산" if side == "shop" else "우리 구매자 구매 정산",
-        f"SKU {data.get('sku')}",
-        f"금액 {data.get('amount')}",
-    ]
-    other = ("buyer", "구매자") if side == "shop" else ("shop", "가게")
-    for k, label in (other, ("unit", "유닛"), ("grade", "등급")):
-        if data.get(k) not in (None, ""):
-            out.append(f"{label} {data[k]}")
-    return out
-
-
 def sentence(row, login=""):
-    """(agent, kind, sentence) for a row worth storing, else None.
+    """[(agent, kind, sentence), ...] for a row worth storing, else None.
 
-    Settle data is scrubbed (other players hashed); buyer_exec rows already carry hashed shop ids from buyer_exec,
-    so they are not hashed again. The sentence is masked last.
+    Settle and decision rows return None (aggregated by kernel tools instead). buyer_exec rows already carry hashed
+    shop ids from buyer_exec, so they are not hashed again. The sentence is masked last.
     """
     if not isinstance(row, dict):
         return None
-    ts = row.get("ts")
-    if row.get("type") == "settle":
-        data = row.get("data") or {}
-        side = c.settle_side(data, login)
-        if side is None:
-            return None
-        agent = "seller" if side == "shop" else "buyer"
-        agent, kind, parts = agent, "settle", _settle_text(c.scrub(data, login), side)
-    elif row.get("kind") == "buyer_exec":
-        agent, kind, parts = (
-            "buyer",
-            "buyer_exec",
-            _buyer_exec_text(row),
-        )
-    elif row.get("kind") == "decision" and row.get("agent") in ("seller", "buyer"):
-        agent, kind, parts = row["agent"], "decision", _decision_text(row)
+    kind = row.get("kind")
+    target = row.get("target")
+    if kind == "buyer_exec":
+        agents, parts = ("buyer",), _buyer_exec_text(row)
+    elif kind in ("reflection", "version_result") and target in AGENTS:
+        agents = tuple(dict.fromkeys((target, "operator")))
+        parts = (_reflection_text if kind == "reflection" else _version_text)(row)
+    elif kind == "harness_edit" and target in AGENTS:
+        agents, parts = ("operator",), _edit_text(row)
     else:
         return None
     if not parts:
         return None
+    ts = row.get("ts")
     when = c.kst(ts) + " " if isinstance(ts, (int, float)) else ""
-    return agent, kind, c.mask(when + ", ".join(parts) + ".", (login,))
+    text = c.mask(when + ", ".join(parts) + ".", (login,))
+    return [(a, kind, text) for a in agents]
 
 
 def read_new(path, offset, keep, limit, since_ts=None, needles=None):
@@ -201,9 +218,10 @@ def run_once(
     cur = {} if first else cur
     kinds = store_kinds(harness_dir)
     by_agent, new_cur = {}, dict(cur)
+
     def keep(row):
-        s = sentence(row, login)
-        return s if s and s[1] in kinds.get(s[0], set()) else None
+        out = [s for s in sentence(row, login) or () if s[1] in kinds.get(s[0], set())]
+        return out or None
 
     for src, needles in SOURCES:
         found, new_cur[src] = read_new(
@@ -214,8 +232,9 @@ def run_once(
             now - since_hours * 3600 if first else None,
             needles,
         )
-        for agent, _, text in found:
-            by_agent.setdefault(agent, []).append(text)
+        for item in found:
+            for agent, _, text in item:
+                by_agent.setdefault(agent, []).append(text)
     sent = batches = 0
     for agent, lines in by_agent.items():
         for i in range(0, len(lines), BATCH):

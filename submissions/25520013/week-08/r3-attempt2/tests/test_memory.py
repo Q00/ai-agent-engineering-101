@@ -246,6 +246,15 @@ def _feed_root(tmp_path):
             "errors": [],
             "memory_keys": ["BED1", "beds"],
         },
+        {
+            "ts": 1_794_000_102,
+            "agent": "operator",
+            "kind": "reflection",
+            "target": "seller",
+            "version": 3,
+            "effects": [{"edit": "요구가 낮춤", "effect": "도움", "evidence": "판매 늘어남"}],
+            "lesson": "두번째 제안에서 수락이 많음",
+        },
         {"ts": 1_794_000_103, "agent": "memory", "kind": "llm", "status": "ok"},
     ]
     ev = [
@@ -279,7 +288,7 @@ def _feed_root(tmp_path):
 
 
 def test_memfeed_sentences():
-    a, k, s = memfeed.sentence(
+    [(a, k, s)] = memfeed.sentence(
         {
             "ts": 1_794_000_100,
             "kind": "buyer_exec",
@@ -300,40 +309,31 @@ def test_memfeed_sentences():
         and "사유 no endpoint" in s
         and "결과 error" in s
     )
-    a, k, s = memfeed.sentence(
-        {
-            "ts": 1,
-            "type": "settle",
-            "data": {"sku": "BED1", "amount": 9, "own_owner": True, "buyer": "rival"},
-        },
-        LOGIN,
-    )
-    assert a == "seller" and "SKU BED1" in s and "금액 9" in s and "rival" not in s
-    assert (
-        memfeed.sentence({"type": "settle", "data": {"sku": "X", "own_owner": False}})
-        is None
-    )
-    _, _, s = memfeed.sentence(
-        {
-            "agent": "buyer",
-            "kind": "decision",
-            "decision_kind": "buyer.plan",
-            "route_used": "safe",
-            "decision": {"candidates": []},
-            "errors": ["model: ModelRefused: subscription limit"],
-        }
-    )
-    assert (
-        "후보 0개" in s and "오류 model ModelRefused" in s and "subscription" not in s
-    )
     for bad in ("—", "`"):
         assert bad not in s
+    # decision 2026-11-06: settle and raw decision rows are no longer fed
+    settle = {
+        "ts": 1,
+        "type": "settle",
+        "data": {"sku": "BED1", "amount": 9, "own_owner": True, "buyer": "rival"},
+    }
+    assert memfeed.sentence(settle, LOGIN) is None
+    assert (
+        memfeed.sentence(
+            {"agent": "buyer", "kind": "decision", "decision_kind": "buyer.plan"}
+        )
+        is None
+    )
 
 
 def test_memfeed_batches_cursor_and_store_list(tmp_path):
     r = _feed_root(tmp_path)
     h = tmp_path / "h"
-    for agent, store in (("seller", ["decision", "settle"]), ("buyer", ["buyer_exec"])):
+    for agent, store in (
+        ("seller", ["decision", "settle", "reflection"]),
+        ("buyer", ["buyer_exec"]),
+        ("operator", ["harness_edit"]),
+    ):
         (h / agent).mkdir(parents=True)
         (h / agent / "memory.json").write_text(json.dumps({"store": store, "top_k": 5}))
     calls = []
@@ -343,14 +343,16 @@ def test_memfeed_batches_cursor_and_store_list(tmp_path):
         return True
 
     out = memfeed.run_once(str(r), "/x.sock", str(h), now=1_794_000_200, add=add)
-    assert out == {"sent": 4, "batches": 2, "ok": True}
+    assert out == {"sent": 3, "batches": 2, "ok": True}
     by = {a: t for a, t, _, _ in calls}
     assert all(i is True for _, _, i, _ in calls)
     assert by["buyer"].count("\n") == 1 and "가게 h1a2b3c" in by["buyer"]
+    assert "operator" not in by  # its store list has no reflection
     assert (
-        "SKU BED1" in by["seller"]
-        and "금액 900000" in by["seller"]
-        and "요구가 900" in by["seller"]
+        "판 3" in by["seller"]
+        and "교훈 두번째 제안에서 수락이 많음" in by["seller"]
+        and "금액 900000" not in by["seller"]
+        and "요구가 900" not in by["seller"]
     )
     dump = json.dumps(calls, ensure_ascii=False)
     assert (
@@ -402,26 +404,21 @@ def test_memfeed_first_run_skips_old_rows(tmp_path):
 
 # ---------------------------------------------------------------- memcheck
 def _oracle(q):
-    return {
-        "static": "700000",
-        "dynamic": "950000",
-        "workflow": "3",
-        "gotcha": "no endpoint",
-        "premise": "모름",
-    }[q["ability"]]
+    return "모름" if q["ability"] == "premise" else str(q["truth"])
 
 
 def test_memcheck_questions_cover_five_abilities():
     qs = memcheck.build_questions_for_test()
     assert {q["ability"] for q in qs} == set(memcheck.ABILITIES)
     assert all(q["ability"] in memcheck.ABILITIES and q["question"] for q in qs)
-    by = {q["ability"]: q for q in qs}
-    assert by["static"]["truth"] == 700000 and "SOFA1" in by["static"]["question"]
-    assert by["dynamic"]["truth"] == 950000 and "BED1" in by["dynamic"]["question"]
-    assert by["workflow"]["truth"] == 3 and by["gotcha"]["truth"] == "no endpoint"
-    assert "LAMP1" not in json.dumps(qs, ensure_ascii=False)
-    fake = by["premise"]["question"].split("SKU ")[1].split("를")[0]
-    assert fake not in json.dumps([memcheck.FIXTURE_TRAJ, memcheck.FIXTURE_SETTLE])
+    by = {}
+    for q in qs:
+        by.setdefault(q["ability"], []).append(q)
+    assert {q["truth"] for q in by["static"]} == {"구매자는", "요구가가"}
+    assert [q["truth"] for q in by["dynamic"]] == [2, 0.12]
+    assert by["workflow"][0]["truth"] == 3 and by["gotcha"][0]["truth"] == "no endpoint"
+    assert all(q["check"] == "abstain" for q in by["premise"])
+    assert "판 102" in by["premise"][0]["question"]  # max fixture version 2 + 100
 
 
 def test_memcheck_scoring_with_fakes(tmp_path):
@@ -447,6 +444,8 @@ def test_memcheck_scoring_with_fakes(tmp_path):
     wrong = memcheck.run(qs, ask_memory, lambda p: '{"answer": "123"}')
     assert all(wrong[a]["correct"] == 0 for a in memcheck.ABILITIES)
     q = {"check": "number", "truth": 950000}
+    assert memcheck.score({"check": "number", "truth": 0.12, "tol": 0.01}, "12%")
+    assert not memcheck.score({"check": "number", "truth": 0.12, "tol": 0.01}, "0.2")
     assert (
         memcheck.score(q, "950,000원")
         and memcheck.score(q, "약 951000")
@@ -488,10 +487,8 @@ def test_settle_side_splits_our_sales_from_our_purchases():
     assert c.settle_side({"own_owner": True, "buyer": "rival"}, "me") == "shop"
     assert c.settle_side({"own_owner": True, "buyer": "Me"}, "me") == "buyer"
     assert c.settle_side({"own_owner": False, "buyer": "me"}, "me") is None
-    a, k, s = memfeed.sentence({"type": "settle", "ts": 0, "data": {"sku": "X", "amount": 5, "own_owner": True, "buyer": "me", "shop": "rival-shop"}}, "me")
-    assert a == "buyer" and "구매" in s and "rival-shop" not in s
-    a, k, s = memfeed.sentence({"type": "settle", "ts": 0, "data": {"sku": "X", "amount": 5, "own_owner": True, "buyer": "rival"}}, "me")
-    assert a == "seller" and "판매" in s
+    # settle rows are aggregated by kernel tools, never fed to mem0 (decision 2026-11-06)
+    assert memfeed.sentence({"type": "settle", "ts": 0, "data": {"sku": "X", "amount": 5, "own_owner": True, "buyer": "me"}}, "me") is None
 
 
 def test_client_survives_deeply_nested_reply():

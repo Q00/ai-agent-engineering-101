@@ -24,6 +24,7 @@ from kernel.llm import ModelError, ModelRefused
 EFFORTS = ("low", "medium", "high")
 MEM_BUDGET_S = 1.0
 MAX_MEM_KEYS = 12
+SWAP_RETRY_S = 0.05
 
 
 class ParseError(ValueError):
@@ -175,16 +176,20 @@ class Agent:
             json.dumps(situation, ensure_ascii=False, sort_keys=True), self.traj.secrets
         )
 
-        bad = hz.validate_dir(self.harness_dir)
-        h = None
-        if bad:
-            errors += [f"harness: {e}" for e in bad]
-        else:
+        h, bad = None, []
+        for attempt in range(2):  # versions._install swaps the dir with two renames; it is briefly absent
             try:
-                h = hz.load(self.harness_dir)
-                version = h.version
+                bad = hz.validate_dir(self.harness_dir)
+                if not bad:
+                    h = hz.load(self.harness_dir)
+                    version = h.version
             except (OSError, ValueError) as e:
-                errors.append(f"harness: {e}")
+                bad = [str(e)]
+            if h is not None or attempt:
+                break
+            time.sleep(SWAP_RETRY_S)
+        if h is None:
+            errors += [f"harness: {e}" for e in bad]
 
         if h is not None:
             route = h.routing.get(kind) or {"by": "model"}

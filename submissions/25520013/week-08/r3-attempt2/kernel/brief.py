@@ -11,6 +11,7 @@ from collections import Counter, defaultdict
 from kernel import common as c
 
 BOARD_DIRS = ("a2/board", "icrl/state/board")
+HARNESS_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "harness")
 SHOP_KEYS = (
     "book",
     "revenue",
@@ -269,6 +270,202 @@ def section_calls(root, now):
     ]
 
 
+def _list_price(cat, sku):
+    item = cat.get(sku) if isinstance(sku, str) else None
+    item = item if isinstance(item, dict) else {}
+    lp = item.get("list_price", item.get("price"))
+    return lp if isinstance(lp, (int, float)) and lp > 0 else None
+
+
+def version_windows(rows, target, now, default_hours=6.0, current=None):
+    """[{version, since_ts, until_ts, since_known}] oldest first, from harness_edit and harness_revert rows.
+
+    A version is active from its apply ts until the next edit or revert of the same target. The version before the
+    first recorded edit is read from the last decision row of that agent before it; its start is unknown, so its
+    window is the default_hours before the edit. With no edit and no decision row, `current` (the version on disk)
+    gets the last default_hours.
+    """
+    edits = sorted(
+        (r for r in rows if r.get("kind") in ("harness_edit", "harness_revert") and r.get("target") == target),
+        key=lambda r: r.get("ts") or 0,
+    )
+    dec = [r for r in rows if r.get("kind") == "decision" and r.get("agent") == target]
+    wins = []
+    for i, r in enumerate(edits):
+        until = edits[i + 1]["ts"] if i + 1 < len(edits) else now
+        wins.append({"version": r.get("version"), "since_ts": r["ts"], "until_ts": until, "since_known": True})
+    first = edits[0]["ts"] if edits else now
+    before = [r for r in dec if (r.get("ts") or 0) < first and r.get("harness_version") is not None]
+    if not before and not edits and current is not None:
+        before = [{"harness_version": current}]
+    if before:
+        wins.insert(
+            0,
+            {
+                "version": before[-1]["harness_version"],
+                "since_ts": first - default_hours * 3600,
+                "until_ts": first,
+                "since_known": False,
+            },
+        )
+    return wins
+
+
+def _se(p, n):
+    return round((p * (1 - p) / n) ** 0.5, 4) if n and 0 <= p <= 1 else None
+
+
+def version_metrics(target, rows, settles, reviews, cat, login, since, until):
+    """Numbers for one target in [since, until): seller from decision rows, our-shop settles and reviews of our shop;
+    buyer from buyer_exec outcome rows (SKU from the accepted attempt of the same order)."""
+
+    def inside(r):
+        return since <= (r.get("ts") or 0) < until
+
+    m = {}
+    if target == "seller":
+        dec = [
+            r
+            for r in rows
+            if r.get("kind") == "decision"
+            and r.get("agent") == "seller"
+            and r.get("decision_kind") == "seller.open"
+            and inside(r)
+        ]
+        acts = Counter((r.get("decision") or {}).get("action") for r in dec)
+        sold = [
+            e
+            for e in settles
+            if inside(e) and c.settle_side(e.get("data") or {}, login) == "shop"
+        ]
+        ratios = []
+        for e in sold:
+            d = e.get("data") or {}
+            lp = _list_price(cat, d.get("sku"))
+            if lp and isinstance(d.get("amount"), (int, float)):
+                ratios.append(d["amount"] / lp)
+        m = {
+            "requests": len(dec),
+            "offers": acts.get("offer", 0),
+            "declines": acts.get("decline", 0),
+            "sales": len(sold),
+        }
+        if dec:
+            m["conversion"] = round(len(sold) / len(dec), 4)
+            m["conversion_se"] = _se(len(sold) / len(dec), len(dec))
+        if ratios:
+            m["price_to_list_median"] = round(st.median(ratios), 4)
+            m["price_to_list_n"] = len(ratios)
+        stars = [
+            (e.get("data") or {}).get("stars")
+            for e in reviews
+            if inside(e) and e.get("role") == "shop"
+        ]
+        stars = [s for s in stars if isinstance(s, (int, float)) and not isinstance(s, bool)]
+        if stars:
+            m["stars_mean"] = round(st.mean(stars), 3)
+            m["stars_n"] = len(stars)
+    elif target == "buyer":
+        ex = [r for r in rows if r.get("kind") == "buyer_exec" and r.get("agent") == "buyer"]
+        sku_of = {
+            r.get("order"): r.get("sku")
+            for r in ex
+            if r.get("event") == "attempt" and r.get("result") == "accepted"
+        }
+        outs = [r for r in ex if r.get("event") == "outcome" and inside(r)]
+        deals = [r for r in outs if r.get("deal")]
+        ratios = []
+        for r in deals:
+            lp = _list_price(cat, sku_of.get(r.get("order")))
+            if lp and isinstance(r.get("price"), (int, float)):
+                ratios.append(r["price"] / lp)
+        m = {"orders": len(outs), "deals": len(deals)}
+        if outs:
+            m["deal_rate"] = round(len(deals) / len(outs), 4)
+            m["deal_rate_se"] = _se(len(deals) / len(outs), len(outs))
+        if ratios:
+            m["price_to_list_median"] = round(st.median(ratios), 4)
+            m["price_to_list_n"] = len(ratios)
+    return m
+
+
+def version_results(root, target, now, rows=None, last=2, harness_root=None):
+    """The last `last` versions of target with their window and metrics: [{version, since_ts, until_ts,
+    since_known, metrics}]."""
+    login = c.owner_login(root)
+    if rows is None:
+        rows = list(c.tail_json(os.path.join(root, "a2/trajectory.jsonl"), 50_000_000))
+    hdir = os.path.join(harness_root or HARNESS_ROOT, target, "VERSION")
+    try:
+        with open(hdir, encoding="utf-8") as f:
+            current = int(f.read().strip())
+    except (OSError, ValueError):
+        current = None
+    wins = version_windows(rows, target, now, current=current)[-last:]
+    if not wins:
+        return []
+    lo = min(w["since_ts"] for w in wins)
+    settles, reviews = [], []
+    if target == "seller":
+        settles = [
+            e
+            for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 40_000_000, b'"settle"')
+            if e.get("type") == "settle" and e.get("src") == "market" and (e.get("ts") or 0) >= lo
+        ]
+        reviews = [
+            e
+            for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 40_000_000, b'"review"')
+            if e.get("type") == "review" and (e.get("ts") or 0) >= lo
+        ]
+    cat = c.load_json(os.path.join(root, ".market/catalog.json"), {}) or {}
+    return [
+        dict(w, metrics=version_metrics(target, rows, settles, reviews, cat, login, w["since_ts"], w["until_ts"]))
+        for w in wins
+    ]
+
+
+def _num_or_dash(v):
+    return f"{v:.3f}" if isinstance(v, float) else str(v) if v is not None else "-"
+
+
+def section_versions(root, now, rows=None):
+    """Per-version numbers for seller and buyer (current and previous), n and binomial SE. Numbers only."""
+    out = []
+    for target, label in (("seller", "판매자"), ("buyer", "구매자")):
+        res = version_results(root, target, now, rows)
+        if not res:
+            out.append(f"[판별 성과 {label}] 판 기록 없음")
+            continue
+        for i, r in enumerate(reversed(res)):
+            m = r["metrics"]
+            start = c.kst(r["since_ts"]) if r["since_known"] else f"시작 불명, {c.kst(r['since_ts'])}부터만 셈"
+            end = "지금" if i == 0 else c.kst(r["until_ts"])
+            head = (
+                f"[판별 성과 {label}] {'지금' if i == 0 else '이전'} 판 {r['version']} ({start}~{end}, "
+                f"{(r['until_ts'] - r['since_ts']) / 3600:.1f}시간): "
+            )
+            if target == "seller":
+                parts = [
+                    f"요청 {m['requests']}",
+                    f"제시 {m['offers']}",
+                    f"거절 {m['declines']}",
+                    f"판매 {m['sales']}",
+                    f"성사율 {_num_or_dash(m.get('conversion'))} (SE {_num_or_dash(m.get('conversion_se'))}, n {m['requests']})",
+                    f"정가 대비 가격 중앙 {_num_or_dash(m.get('price_to_list_median'))} (n {m.get('price_to_list_n', 0)})",
+                ]
+                if "stars_mean" in m:
+                    parts.append(f"별점 평균 {m['stars_mean']:.2f} (n {m['stars_n']})")
+            else:
+                parts = [
+                    f"주문 {m['orders']}",
+                    f"거래 {m['deals']}",
+                    f"거래율 {_num_or_dash(m.get('deal_rate'))} (SE {_num_or_dash(m.get('deal_rate_se'))}, n {m['orders']})",
+                    f"정가 대비 가격 중앙 {_num_or_dash(m.get('price_to_list_median'))} (n {m.get('price_to_list_n', 0)})",
+                ]
+            out.append(head + ", ".join(parts))
+    return out
+
+
 def section_harness(root, since_ts):
     from kernel.trajectory import Trajectory
 
@@ -282,7 +479,7 @@ def section_harness(root, since_ts):
     return [
         "[지난 브리핑 이후 하네스 수정] "
         + "; ".join(
-            f"{c.kst(r['ts'], '%H:%M')} {r.get('agent')} 판 {r.get('version')} {r.get('summary', '')}"[
+            f"{c.kst(r['ts'], '%H:%M')} {r.get('target') or r.get('agent')} 판 {r.get('version')} {r.get('reason') or r.get('summary', '')}"[
                 :200
             ]
             for r in rows
@@ -327,6 +524,8 @@ def build(root=None, now=None, last_brief_ts=None):
     if not snaps:
         out += section_time(now, None)
         out.append("[순위] 순위표 스냅샷 없음")
+        out += section_versions(root, now)
+        out += section_calls(root, now)
     else:
         bts, bpath = snaps[-1]
         b = c.load_json(bpath, {}) or {}
@@ -335,6 +534,8 @@ def build(root=None, now=None, last_brief_ts=None):
         hours6 = (bts - ts6) / 3600
         out += section_time(now, bts)
         out += section_rank(b, b6, login, hours6)
+        out += section_versions(root, now)
+        out += section_calls(root, now)
         out += section_side(
             b.get("shops") or [],
             b6.get("shops") or [],
@@ -355,7 +556,6 @@ def build(root=None, now=None, last_brief_ts=None):
     out += section_seller(root, now)
     out += section_market(root, now, login)
     out += section_forum(root, login, snaps, now)
-    out += section_calls(root, now)
     out += section_memory(root)
     out += section_harness(
         root, last_brief_ts if last_brief_ts is not None else now - 1800

@@ -5,6 +5,7 @@ No tool writes to the market. Other participants are hashed; our own rows are ma
 
 import json
 import os
+import shutil
 from collections import Counter
 
 from kernel import brief as b
@@ -169,6 +170,205 @@ def inventory(root, now=None):
     return c.cap("\n".join(lines), MAX_CHARS)
 
 
+HARNESS_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "harness")
+PROBE_MAX_N = 50  # each probe case is one model call
+
+
+def _quantiles(xs):
+    xs = sorted(xs)
+    if not xs:
+        return "-"
+    q = [xs[min(len(xs) - 1, int(p * len(xs)))] for p in (0.25, 0.5, 0.75)]
+    return f"p25 {q[0]:.3f}, 중앙 {q[1]:.3f}, p75 {q[2]:.3f} (n {len(xs)})"
+
+
+def sku_stats(root, sku=None, category=None, hours=6, now=None, limit=15):
+    """Our shop per SKU over the last `hours`: sales, price/list quantiles, requests (seller.open decisions whose
+    memory_keys name the SKU or category) and sales/requests. Filter by sku or category prefix."""
+    now = c.now_ts() if now is None else now
+    since = now - float(hours) * 3600
+    login = c.owner_login(root)
+    cat = c.load_json(os.path.join(root, ".market/catalog.json"), {}) or {}
+
+    def keep(s):
+        if sku and s != sku:
+            return False
+        return not category or str((cat.get(s) or {}).get("category", "")).startswith(category)
+
+    sales, ratios, reqs = Counter(), {}, Counter()
+    for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 40_000_000, b'"settle"'):
+        d = e.get("data") or {}
+        if (
+            e.get("type") != "settle"
+            or (e.get("ts") or 0) < since
+            or c.settle_side(d, login) != "shop"
+            or not keep(d.get("sku"))
+        ):
+            continue
+        sales[d.get("sku")] += 1
+        lp = b._list_price(cat, d.get("sku"))
+        if lp and isinstance(d.get("amount"), (int, float)):
+            ratios.setdefault(d.get("sku"), []).append(d["amount"] / lp)
+    for r in c.tail_json(os.path.join(root, "a2/trajectory.jsonl"), 50_000_000, b'"seller.open"'):
+        if r.get("kind") != "decision" or r.get("agent") != "seller" or (r.get("ts") or 0) < since:
+            continue
+        for k in r.get("memory_keys") or []:
+            if k in cat and keep(k):
+                reqs[k] += 1
+    skus = sorted(set(sales) | set(reqs), key=lambda k: -(sales[k] + reqs[k]))
+    all_r = [x for v in ratios.values() for x in v]
+    n_s, n_q = sum(sales.values()), sum(reqs.values())
+    lines = [
+        f"우리 가게 SKU 집계 최근 {hours}시간{' sku=' + sku if sku else ''}{' category=' + category if category else ''}: "
+        f"판매 {n_s}, 요청 {n_q}, 판매/요청 {n_s / n_q:.3f}" if n_q else
+        f"우리 가게 SKU 집계 최근 {hours}시간: 판매 {n_s}, 요청 0",
+        f"정가 대비 판매가 전체: {_quantiles(all_r)}",
+    ]
+    for k in skus[: max(1, int(limit))]:
+        conv = f"{sales[k] / reqs[k]:.3f}" if reqs[k] else "-"
+        lines.append(
+            f"{k} {str((cat.get(k) or {}).get('name') or '')[:30]} 정가 {c.fmt(b._list_price(cat, k))}: 판매 {sales[k]}, "
+            f"요청 {reqs[k]}, 판매/요청 {conv}, 정가 대비 {_quantiles(ratios.get(k, []))}"
+        )
+    return c.cap("\n".join(lines), MAX_CHARS)
+
+
+def versions(root, harness_root=None):
+    """Harness versions per agent: apply time, reason, changed files, which is current and which is last_good."""
+    from kernel import versions as vz
+
+    st = vz.load_state(harness_root or HARNESS_ROOT)
+    lines = []
+    for agent in vz.AGENTS:
+        a = st.get(agent) or {}
+        if not a:
+            lines.append(f"{agent}: 기록 없음")
+            continue
+        lines.append(f"{agent}: 지금 판 {a.get('current')}, 마지막 정상 판 {a.get('last_good')}")
+        for h in (a.get("history") or [])[-12:]:
+            when = c.kst(h["ts"]) if isinstance(h.get("ts"), (int, float)) else "-"
+            back = f" (판 {h['restored_from']} 복원)" if h.get("restored_from") else ""
+            lines.append(
+                f"  판 {h.get('version')} {when}{back} 파일 {', '.join(h.get('files') or []) or '-'}: "
+                f"{str(h.get('reason') or '')[:200]}"
+            )
+    return c.cap("\n".join(lines), MAX_CHARS)
+
+
+def trajectory(root, kind=None, agent=None, hours=6, limit=20, contains=None, now=None):
+    """Deep-tier search of a2/trajectory.jsonl: counts by kind and agent first, then the latest `limit` matching
+    rows (each cut to 600 chars). contains is a plain substring filter on the row."""
+    now = c.now_ts() if now is None else now
+    since = now - float(hours) * 3600
+    needle = json.dumps(kind).encode() if kind else None
+    hits = []
+    for r in c.tail_json(os.path.join(root, "a2/trajectory.jsonl"), 50_000_000, needle):
+        if (r.get("ts") or 0) < since or (kind and r.get("kind") != kind) or (agent and r.get("agent") != agent):
+            continue
+        line = json.dumps(r, ensure_ascii=False)
+        if contains and contains not in line:
+            continue
+        hits.append(line)
+    by = Counter()
+    for line in hits:
+        r = json.loads(line)
+        by[(r.get("agent"), r.get("kind"))] += 1
+    lines = [
+        f"궤적 최근 {hours}시간 kind={kind} agent={agent}: {len(hits)}줄. "
+        + ", ".join(f"{a}/{k} {n}" for (a, k), n in by.most_common(12))
+    ]
+    lines += [x[:600] for x in hits[-max(0, int(limit)) :]]
+    return c.cap(c.mask("\n".join(lines), (c.owner_login(root),)), MAX_CHARS)
+
+
+def harness_read(root, target, path=None, version=None, harness_root=None):
+    """Read a harness: no path lists the files and sizes; path returns that file. version reads a library copy."""
+    from kernel import versions as vz
+
+    hr = harness_root or HARNESS_ROOT
+    if target not in vz.AGENTS:
+        return f"target은 {', '.join(vz.AGENTS)} 중 하나"
+    d = os.path.join(hr, target) if version is None else os.path.join(vz.library_dir(hr), "harnesses", target, str(int(version)))
+    if not os.path.isdir(d):
+        return f"{target} 판 {version} 없음"
+    if path is None:
+        out = []
+        for top, _, files in os.walk(d):
+            for f in sorted(files):
+                p = os.path.join(top, f)
+                out.append(f"{os.path.relpath(p, d)} {os.path.getsize(p)}바이트")
+        return c.cap(f"{target} {'지금 판' if version is None else '판 ' + str(version)}\n" + "\n".join(sorted(out)), MAX_CHARS)
+    err = vz.path_error(path) if path not in ("VERSION", "EXPERIENCE.md") else None
+    p = os.path.join(d, *str(path).split("/"))
+    if err or not os.path.isfile(p):
+        return err or f"파일 없음: {path}"
+    with open(p, encoding="utf-8") as f:
+        return c.cap(f.read(), MAX_CHARS)
+
+
+def replay_probe(root, target, version=None, files=None, harness_dir=None, n=20, harness_root=None, dry=False):
+    """Run recorded requests (seller) or the current order (buyer) through a candidate harness, no market contact.
+
+    Candidate: version (a library copy), files ({path: content or null} applied to the current harness), harness_dir
+    (only inside a2/probe/), or none (the current harness as a baseline). n is capped at 50 (one model call each).
+    Writes only under a2/probe/. Returns decision counts by action, asks vs list price, routes and error kinds.
+    """
+    import time
+
+    from kernel import harness as hz
+    from kernel import replay
+    from kernel import versions as vz
+
+    if target not in ("seller", "buyer"):
+        return "target은 seller 또는 buyer"
+    hr = harness_root or HARNESS_ROOT
+    n = max(1, min(PROBE_MAX_N, int(n)))
+    probe = os.path.join(root, "a2/probe")
+    pdir = os.path.join(probe, f"{target}-{int(time.time() * 1000)}")
+    os.makedirs(pdir, exist_ok=True)
+    if harness_dir is not None:
+        hdir = os.path.realpath(os.path.join(probe, harness_dir) if not os.path.isabs(harness_dir) else harness_dir)
+        if os.path.commonpath([hdir, os.path.realpath(probe)]) != os.path.realpath(probe):
+            return "harness_dir는 a2/probe/ 안이어야 함"
+        errs = hz.validate_dir(hdir)
+    elif version is not None:
+        src = os.path.join(vz.library_dir(hr), "harnesses", target, str(int(version)))
+        if not os.path.isdir(src):
+            return f"{target} 판 {version}이 라이브러리에 없음"
+        hdir = os.path.join(pdir, target)
+        shutil.copytree(src, hdir)
+        errs = hz.validate_dir(hdir)
+    elif files is not None:
+        hdir = os.path.join(pdir, target)
+        errs = vz.stage(os.path.join(hr, target), hdir, files, (c.owner_login(root),))
+    else:
+        hdir = os.path.join(hr, target)
+        errs = hz.validate_dir(hdir)
+    if errs:
+        return "후보 하네스 형식 오류: " + "; ".join(errs)
+    out = os.path.join(pdir, "trajectory.jsonl")
+    summary = replay.run(root, target, n, out, dry=dry, harness_dir=hdir)
+    lp = {}
+    inv = c.load_json(os.path.join(root, ".market/inventory.json"), {}) or {}
+    cat = c.load_json(os.path.join(root, ".market/catalog.json"), {}) or {}
+    for u in inv.get("units") or []:
+        if isinstance(u, dict):
+            lp[u.get("unit")] = b._list_price(cat, u.get("sku"))
+    ratios = []
+    for r in c.tail_json(out, 50_000_000, b'"decision"'):
+        d = r.get("decision") or {}
+        if d.get("action") == "offer" and lp.get(d.get("unit")) and isinstance(d.get("ask"), (int, float)):
+            ratios.append(d["ask"] / lp[d["unit"]])
+    lines = [
+        f"replay_probe {target} n {summary['n']}, 형식 통과 {summary['valid']}, 경로 {summary['routes']}",
+        f"결정 {summary['actions']}",
+        f"부른 값 / 정가: {_quantiles(ratios)}",
+        f"오류 종류 {summary['error_kinds'] or '없음'}, 지연 {summary['latency_s']}",
+        f"기록: a2/probe/{os.path.basename(pdir)}/trajectory.jsonl",
+    ]
+    return c.cap("\n".join(lines), MAX_CHARS)
+
+
 TOOLS = {
     "board": (board, ("operator",)),
     "ledger": (ledger, ("operator",)),
@@ -176,6 +376,11 @@ TOOLS = {
     "shops": (shops, ("operator", "seller", "buyer")),
     "catalog": (catalog, ("operator", "seller", "buyer")),
     "inventory": (inventory, ("operator", "seller", "buyer")),
+    "sku_stats": (sku_stats, ("operator",)),
+    "versions": (versions, ("operator",)),
+    "trajectory": (trajectory, ("operator",)),
+    "harness_read": (harness_read, ("operator",)),
+    "replay_probe": (replay_probe, ("operator",)),
 }
 
 
