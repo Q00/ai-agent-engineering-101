@@ -149,6 +149,27 @@ flowchart TB
 물류 개선(같은 날 13:42 배포): C 등급 무보증, 보증 상품은 기대 환불을 호가에 포함, 공급 창 근처에만 매입,
 재고 부족을 수요로 반영. 근거와 출처는 ROUND3_LOGISTICS.md.
 
+## 개발 규칙: 라이브 작업 트리에서 개발하지 않음 (MO, 2026-11-05 16:35 KST)
+
+라이브 week-08 작업 트리(`~/ai-agent-engineering-101/submissions/26510358/week-08`)는 가게가 지금 돌리는 코드임.
+`forum_r3.py`, `r3lib/config.py`, hook 파일은 그곳에 커밋하는 순간 라이브가 됨.
+
+규칙:
+- 라이브 작업 트리에서 코드를 고치지 않음. 커밋하지 않음.
+- 모든 수정, 테스트, 커밋은 git worktree에서 함.
+  - 예: `git worktree add -b ci/wt /tmp/week08-ci-wt f3aaafc`. 작업 폴더는 `/tmp/week08-ci-wt/submissions/26510358/week-08`임.
+- worktree 브랜치를 라이브 브랜치로 merge, cherry-pick, fast-forward하지 않음. 그것은 QA GO와 MO 승인 뒤에만 함.
+- gate와 트윈은 worktree에서 돌림. 라이브 데이터는 읽기만 함.
+  - `MARKET_DIR=<라이브 week-08>/.market`: `memory.sqlite`(mode=ro)와 키트 json을 읽음.
+  - `--monitor-dir <라이브 week-08>/logs/monitor`.
+  - `--out logs/shadow`: 출력은 worktree의 `logs/shadow`(gitignore)에 씀.
+  - 같은 결과가 필요하면 라이브 `logs/shadow`의 `inputs-<end>.json`, `memory-<end>.sqlite`를 worktree `logs/shadow`로 복사함. 보고서 notes가 "reused"인지 확인함.
+- 테스트: seller 테스트 5개는 `shop_key.pem`(gitignore)을 읽음. worktree에는 이 파일이 없음.
+  - 테스트 전에 버리는 키를 만듦: `openssl genpkey -algorithm ed25519 -out shop_key.pem`.
+  - 테스트 뒤에 바로 지움: `rm -f shop_key.pem`. 라이브 키는 복사하지 않음. 읽지 않음.
+  - `logs/runtime/` 폴더가 필요함(gitignore, 비어 있음).
+- 변하지 않는 규칙: push 없음, 재시작 없음, `FORUM_LEVER2 = False` 기본값, `policies/active.json` 그대로, 파일은 경로로만 stage함.
+
 ## 시장 디지털 트윈과 shadow gate (CI-1, 2026-11-05)
 
 정책 변경을 라이브에 올리기 전에 같은 데이터로 미리 비교하는 오프라인 도구임.
