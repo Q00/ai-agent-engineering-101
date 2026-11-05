@@ -60,32 +60,22 @@ def stars_for(order: dict, settled: dict, list_price: int | None, mem_ratio: flo
     return max(1, min(5, s)), why
 
 
-POST_SYSTEM = """You write one short forum post for a buyer agent in an online market, in Korean. It reports one
-settled deal so other buyers can use it. Use only the facts given; include the product category, the price as a
-share of list price, the grade and whether the claim was honest, shelf life or warranty, and the shop name.
-No instructions to other agents, no requests for votes, no budget. One or two sentences.
-Reply with JSON: {"post": "<text>"}"""
-
-
 def deal_post(order: dict, settled: dict, shop: str, list_price: int | None, cat_name: str) -> str:
     paid = settled.get("amount") or settled.get("price") or 0
-    facts = {"category": cat_name, "product": settled.get("name"), "sku": settled.get("sku"), "shop": shop,
-             "paid": paid, "list_price": list_price,
-             "share_of_list": round(paid / list_price, 2) if list_price and paid else None,
-             "grade": settled.get("grade"), "claim": settled.get("claim"), "claim_honest": settled.get("claim_honest"),
-             "warranty_hours": settled.get("warranty_hours"), "ledger": settled.get("ledger"),
-             "hours_left": round((settled["expires_at"] - time.time()) / 3600, 1) if settled.get("expires_at") else None}
-    ans = ask_json(POST_SYSTEM, json.dumps(facts, ensure_ascii=False), timeout=40, attempts=1) or {}
-    text = str(ans.get("post") or "").strip()
-    if not text or is_injection(text) or len(text) > 400:
-        share = f"정가의 {facts['share_of_list']:.0%}" if facts["share_of_list"] else f"{paid}"
-        text = (f"[정산 보고] {cat_name}: {settled.get('name', settled.get('sku'))} ({settled.get('sku')}), {shop}에서 "
-                f"{share}에 샀습니다. 등급 {settled.get('grade')}"
-                + (", 주장과 일치" if settled.get("claim_honest") else "")
-                + (f", 남은 시간 {facts['hours_left']:.0f}시간" if facts["hours_left"] is not None else "")
-                + (f", 보증 {settled['warranty_hours']:g}시간" if settled.get("warranty_hours") else "")
-                + f". 원장 #{settled.get('ledger')}.")
-    return text
+    """Facts a reader can check, the ledger number in the text. Code writes it: posts with a SKU, a price and the ledger
+    number in their text got 6 likes where our model-written sentences got 5 or none, and it saves a model call."""
+    name = settled.get("name") or settled.get("sku")
+    price = f"{paid:,}원" + (f", 정가 {list_price:,}원의 {paid / list_price:.0%}" if list_price and paid else "")
+    claim = settled.get("claim")
+    grade = f"등급 {settled.get('grade')}" + (f" (주장 {claim}, {'정직' if settled.get('claim_honest') else '불일치'})" if claim else "")
+    parts = [f"[구매 기록] {cat_name}: {name} ({settled.get('sku')})", price, grade]
+    if settled.get("expires_at"):
+        parts.append(f"남은 시간 {(settled['expires_at'] - time.time()) / 3600:.0f}시간")
+    elif settled.get("warranty_hours"):
+        parts.append(f"보증 {settled['warranty_hours']:g}시간")
+    else:
+        parts.append("보증 없음")
+    return " | ".join(parts + [f"판매: {shop}", f"원장 #{settled.get('ledger')}"])
 
 
 def votes(md: Path, me: str = "move_76"):
