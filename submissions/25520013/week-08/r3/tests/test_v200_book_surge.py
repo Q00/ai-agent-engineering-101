@@ -202,3 +202,30 @@ def test_action_space_ranges_pass_the_policy_validator():
             assert 1 <= e["min"] and e["max"] <= 5, e
     pol["categories"]["가구/침구>가구>침대/매트리스"] = {"stock_target": 60, "qty_per_buy": 20, "skus_per_category": 5}
     P.validate(pol)
+
+
+# --- v2.0b: our units' cost_frac already carries past surges, so the below-market check does not multiply it again
+
+
+def test_surge_cost_frac_does_not_count_the_surge_twice():
+    assert P.surge_cost_frac(0.70, "goods", 1.18) == pytest.approx(0.70)  # 0.59 x 1.18 = 0.696 < 0.70
+    assert P.surge_cost_frac(0.60, "goods", 1.3) == pytest.approx(0.767)
+    assert P.surge_cost_frac(0.60, "food", 1.3) == pytest.approx(0.65)
+    assert P.surge_cost_frac(0.62, "goods", 1.0) == 0.62
+
+
+def test_a_surged_bestseller_is_not_skipped_by_our_own_surged_cost():
+    # 10:05 labpc: G1515d951 list 423,810, p50 340,000 (0.80 of list), surge 1.18, our cost_frac 0.70
+    rows = {"G1515d951": {"n": 50, "p50": 340_000, "velocity_per_h": 20.0}}
+    units = [T._unit("G07ec17d5", BED, 279_000) for _ in range(4)]
+    for u in units:
+        u["cost"] = int(0.70 * 279_000)
+    catalog, demand, stats = T._world()
+    stats._sku["G1515d951"].update(rows["G1515d951"])
+    pol = T._pol()
+    pol["shop"].update(skip_below_market=True)
+    pol["categories"][BED].update(skus_per_category=1, min_margin=0.05, stock_target=30)
+    inv = T._inv(units)
+    inv["surge"] = [{"sku": "G1515d951", "units": 140, "factor": 1.18}]
+    buy, why = P.restock_plan(inv, demand, catalog, pol, stats, activity={}, now=T.NOW)
+    assert "G1515d951" in {b["sku"] for b in buy}, why["notes"]

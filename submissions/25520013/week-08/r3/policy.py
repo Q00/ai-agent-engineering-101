@@ -700,6 +700,16 @@ def level_fill(qty, held):
 
 
 GOODS_COST_FRAC = 0.59   # agent.md goods grade mix (A 70%, B 20%, C 10%) x mid supply cost (65%, 50%, 35% of list)
+FOOD_COST_FRAC = 0.50    # agent.md food grade mix (A 25%, B 50%, C 25%) x the same mid costs
+
+
+def surge_cost_frac(cost_frac, kind, factor):
+    """v2.0b (2026-11-05): expected cost / list of a surged SKU for the below-market check = the larger of our units'
+    cost_frac and the grade-mix mean x factor. Our units' costs already carry the surges they were bought under
+    (10:05 labpc: cost_frac 0.70 with G1515d951 at surge 1.18), so cost_frac x factor counted the surge twice and
+    skipped G1515d951 (11% of our 6 h revenue) at a p50 of 0.80 x list."""
+    base = FOOD_COST_FRAC if kind == "food" else GOODS_COST_FRAC
+    return max(cost_frac, base * factor) if factor > 1 else cost_frac
 
 
 def surge_factors(inv):
@@ -825,7 +835,8 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
             order_ = sorted(near, key=lambda t: (-rate[t[0]], -sold[t[0]], abs(t[1]["list_price"] - med), t[0]))
         if cost_frac:                                    # v1.18: SKUs the market settles under our cost + margin
             low = [t[0] for t in order_
-                   if below_market(t[0], t[1], stats, cost_frac * surge.get(t[0], 1.0), c["min_margin"])]
+                   if below_market(t[0], t[1], stats, surge_cost_frac(cost_frac, kind, surge.get(t[0], 1.0)),
+                                   c["min_margin"])]
             if low:
                 order_ = [t for t in order_ if t[0] not in low]
                 notes.append(f"{cat}: market p50 under cost {cost_frac:.2f} + margin: skip {low[:3]}")
