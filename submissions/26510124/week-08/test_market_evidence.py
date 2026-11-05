@@ -131,6 +131,30 @@ class EvidenceTests(unittest.TestCase):
         state["updated_at"] = self.now + 4000
         self.assertEqual(market.demand_profiles(state, self.now + 4000), {})
 
+    def test_shop_identity_counts_names_not_tunnel_aliases_or_unknown_urls(self):
+        state = self.state([self.row(1, shop="https://old.invalid"),
+                            self.row(2, shop="https://new.invalid/"),
+                            self.row(3, shop="https://unknown.invalid")])
+        state["market_stock"] = {"round": 3, "observed_at": self.now, "by_sku": {},
+                                 "shop_names_by_url": {"https://old.invalid": "same-shop",
+                                                       "https://new.invalid": "same-shop"}}
+        profile = market.demand_profiles(state, self.now)["G8095ddd6"]
+        self.assertEqual(profile["shops"], 3)
+        self.assertEqual(profile["named_shops"], 1)
+        self.assertEqual(profile["unidentified_shop_urls"], 1)
+        state["market_stock"]["observed_at"] -= 3601
+        self.assertEqual(market.demand_profiles(state, self.now)["G8095ddd6"]["named_shops"], 0)
+
+    def test_public_shop_map_ignores_ambiguous_urls_and_credentials(self):
+        stock = market.normalize_stock({"round": 3, "shops": [
+            {"name": "first", "url": "https://shared.invalid", "stock": {}},
+            {"name": "second", "url": "https://shared.invalid/", "stock": {}},
+            {"name": "private", "url": "https://user:password@bad.invalid", "stock": {}},
+            {"name": "valid", "url": "https://valid.invalid/shop/", "stock": {}},
+        ]}, 3, self.now)
+        self.assertEqual(stock["shop_names_by_url"], {"https://valid.invalid/shop": "valid"})
+        self.assertNotIn("password", json.dumps(stock))
+
     def test_comparables_exact_terms_exclude_false_claims_and_fingerprint_is_stable(self):
         state = self.state([self.row(i) for i in range(1, 4)] +
                            [self.row(4, amount=1, claim_honest=False),
@@ -232,6 +256,20 @@ class EvidenceTests(unittest.TestCase):
         for marker in (True, "window", self.now + 60, float("nan")):
             with self.assertRaises(ValueError):
                 market.refresh(self.root, 3, self.now, client=object(), opening_retry=marker)
+
+    def test_market_retry_clock_preserves_local_poll_timestamps_and_once_only_retry(self):
+        market_now = self.now + 776
+        with patch("market_evidence.fetch_json", return_value=[]) as fetch:
+            first = market.refresh(self.root, 3, self.now, client=object(), include_stock=False,
+                                   opening_retry=market_now, opening_retry_now=market_now)
+            again = market.refresh(self.root, 3, self.now + 1, client=object(), include_stock=False,
+                                   opening_retry=market_now, opening_retry_now=market_now + 1)
+        self.assertEqual(fetch.call_count, 1)
+        self.assertEqual(first["updated_at"], self.now)
+        self.assertEqual(first, again)
+        with self.assertRaises(ValueError):
+            market.refresh(self.root, 3, self.now + 2, client=object(),
+                           opening_retry=market_now + 100, opening_retry_now=market_now)
 
 
 if __name__ == "__main__":

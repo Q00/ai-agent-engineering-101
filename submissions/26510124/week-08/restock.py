@@ -13,9 +13,13 @@ import time
 
 from feedback import append_event, atomic_json, digest, load_json, number
 from focused_stock import configuration as focused_config, gates as focused_gates, observe_control, epoch_control
+from adaptive_stock import (configuration as adaptive_config, candidates as adaptive_candidates,
+                            prepare_control as prepare_adaptive, remaining_credit as adaptive_credit,
+                            paused_skus as adaptive_paused)
 from inventory import Inventory, read_json
 from sales_performance import sku_metrics, update as update_sales
 from market_evidence import demand_scores, demand_profiles, refresh as refresh_market
+from market_clock import schedule_now
 from opening_strategy import update as update_openings
 from shop_policy import policy_at
 from shop_horizon import phase as round_phase, purchase_window
@@ -58,7 +62,7 @@ def _skip(root, path, state, window, now, status=None):
 
 
 def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifecycle=None, horizon=None,
-         focus_control=None):
+         focus_control=None, adaptive_control=None):
     if (not number(inv.get("balance")) or not number(inv.get("start")) or inv["start"] <= 0
             or not isinstance(catalog, dict) or len(catalog) > 20000
             or not isinstance(demand, list) or len(demand) > 5000):
@@ -108,6 +112,12 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
     # that SKU while the separate lifecycle record awaits settlement evidence.
     paused |= {sku for sku, m in lifecycle_stats.items()
                if m["unresolved_cost"] > 0 or m["held_expired_cost"] > 0}
+    adaptive_rules = adaptive_config(cfg)
+    adaptive = (adaptive_candidates(inv, catalog, categories, economics, cfg, now, public, paused=paused,
+                                   allowed=adaptive_control)
+                if adaptive_rules and len(inv["units"]) < adaptive_rules["low_stock_units"]
+                and stage["allow_exploration"] else {})
+    candidates.update({sku: row["product"] for sku, row in adaptive.items()})
     windows = {sku: purchase_window(horizon, inv.get("round"), p, economics.get(sku), now)
                for sku, p in candidates.items()} if horizon is not None else {}
     tried = Counter(a["sku"] for a in attempts)
@@ -115,6 +125,8 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
     remaining = budget
 
     def stock_cap(sku):
+        if sku in adaptive:
+            return 1
         if focused:
             return min(cfg["max_units_per_sku"], focused["eligible"][sku]["cap"])
         cap = cfg["max_food_units_per_sku"] if candidates[sku]["kind"] == "food" else cfg["max_units_per_sku"]
@@ -133,7 +145,8 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         return [sku for sku, p in candidates.items()
                 if stage["allow_purchases"] and sku not in paused
                 and held[sku] + buy[sku] < stock_cap(sku)
-                and (not focused or buy[sku] < focused["eligible"][sku]["remaining_credit"])
+                and (buy[sku] < adaptive_credit((adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}))
+                     if sku in adaptive else not focused or buy[sku] < focused["eligible"][sku]["remaining_credit"])
                 and p["worst_cost"] <= remaining and exposure.reason(sku, p) is None
                 and windows.get(sku, (True, None))[0]]
 
@@ -155,13 +168,22 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
                     -int(measured), -pressure if measured else 0,
                     -evidence["buyers"] if measured else 0, focused["order"].index(sku))
         for _ in range(slots):
-            eligible = available()
+            eligible = [sku for sku in available() if sku in focused["eligible"]]
             if not eligible:
                 break
             # Fill one of each primary before adding depth. Secondary stock is
             # considered only after its own evidence/profit/capital gates pass.
             sku = min(eligible, key=focus_rank)
             add(sku, focused["eligible"][sku]["reason"])
+    if adaptive:
+        alternative_slots = min(adaptive_rules["max_units_per_run"], slots - len(choices),
+                                max(0, adaptive_rules["low_stock_units"] - len(inv["units"]) - sum(buy.values())))
+        priority = {sku: rank for rank, sku in enumerate(adaptive)}
+        for _ in range(alternative_slots):
+            eligible = [sku for sku in available() if sku in adaptive]
+            if not eligible:
+                break
+            add(min(eligible, key=priority.get), "adaptive_public_demand_pilot")
     exploration_slots = cfg["exploration_units"] if stage["allow_exploration"] and not focused else 0
     preferred_slots = max(0, slots - exploration_slots) if sales and not focused else 0
     for _ in range(preferred_slots):
@@ -201,6 +223,10 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         "bankruptcy_eligible": bankruptcy_eligible, "automatic_bankruptcy": False,
         "exposure": exposure.summary(), "horizon": stage,
         "focused_goods": focused,
+        "adaptive_goods": {"enabled": bool(adaptive_rules), "pool": {
+            sku: {**row["evidence"], "remaining_credit": adaptive_credit(
+                (adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}))}
+            for sku, row in adaptive.items()}, "max_units_per_sku": 1},
         "depth_limits": {sku: stock_cap(sku) for sku in buy},
         "horizon_exclusions": dict(Counter(reason for allowed, reason in windows.values() if not allowed)),
         "stock_observations": {"held_cost": sum(m["held_cost"] for m in lifecycle_stats.values()),
@@ -222,6 +248,18 @@ def run_once(root=ROOT, now=None):
         return {"buy": []}
     md = root / ".market"
     md.mkdir(exist_ok=True)
+
+    def market_time(rnd):
+        return schedule_now(md, rnd, local_now=clock())
+
+    def current_window(snapshot):
+        authority = market_time(snapshot["round"])
+        offset = authority.get("offset_seconds")
+        # Keep transition logging stable despite subsecond Date/RTT jitter.
+        return {**supply_window(snapshot, authority["now"]), "schedule_clock": {
+            "status": authority["status"],
+            "offset_seconds": round(offset / 60) * 60 if number(offset) else None}}
+
     with (md / "restock.lock").open("a") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -243,14 +281,14 @@ def run_once(root=ROOT, now=None):
                 or any(not number(previous.get(k)) or previous[k] < 0 for k in ("opens_at", "closes_at"))
                 or previous["closes_at"] <= previous["opens_at"]):
             raise ValueError("Invalid supply window control; refusing to reset it")
-        window = supply_window(inv, clock())
+        window = current_window(inv)
         if window["status"] != "window_open":
             focus = focused_config(cfg)
             # The existing 60-second kit hook does this lightweight preparation
             # once per announced opening. It never sleeps or polls in a loop.
             opens = window.get("opens_at")
             if (focus and window["status"] == "window_closed" and number(opens)
-                    and 0 < opens - clock() <= focus.get("prepare_before_seconds", 180)
+                    and 0 < opens - market_time(inv["round"])["now"] <= focus.get("prepare_before_seconds", 180)
                     and state.get("prepared_opening") != opens):
                 prepared = refresh_market(root, inv["round"], clock(), deadline_seconds=8)
                 state["prepared_opening"] = opens
@@ -259,6 +297,17 @@ def run_once(root=ROOT, now=None):
                     profiles.get(sku, {}).get("sales", 0) >= 1
                     and profiles.get(sku, {}).get("buyers", 0) >= 1
                     for sku in focus["primary_skus"] + focus["secondary_skus"])
+                if not state["prepared_demand_usable"] and adaptive_config(cfg):
+                    # Read already-cached files only; preparation never adds a
+                    # network request or allocates inventory/supply credits.
+                    try:
+                        cached_catalog, cached_demand = read_json(md / "catalog.json"), read_json(md / "demand.json")
+                        cached_categories = {r["category"] for r in cached_demand if isinstance(r, dict)
+                                             and isinstance(r.get("category"), str)}
+                        state["prepared_demand_usable"] = bool(adaptive_candidates(
+                            inv, cached_catalog, cached_categories, {}, cfg, clock(), prepared))
+                    except (ValueError, OSError, TypeError, KeyError):
+                        state["prepared_demand_usable"] = False
                 atomic_json(path, state)
             return _skip(root, path, state, window, clock())
         # One plan per observed opening, including server extensions of the
@@ -270,15 +319,16 @@ def run_once(root=ROOT, now=None):
             raise ValueError("Category file is stale")
         catalog, demand = read_json(md / "catalog.json"), read_json(demand_path)
         # Leave time for the kit handoff and each paced supply line.
-        remaining = window["closes_at"] - clock()
+        remaining = window["closes_at"] - market_time(inv["round"])["now"]
         retry_opening = (window["opens_at"] if state.get("prepared_opening") == window["opens_at"]
                          and state.get("prepared_demand_usable") is False else None)
         public = refresh_market(root, inv["round"], clock(),
                                 opening_retry=retry_opening,
+                                opening_retry_now=market_time(inv["round"])["now"] if retry_opening is not None else None,
                                 deadline_seconds=max(1, min(12, remaining - WINDOW_HANDOFF_SECONDS - SUPPLY_LINE_SECONDS)))
         # The network read can outlive the previous inventory snapshot.
         inv = Inventory(md).snapshot()
-        checked = supply_window(inv, clock())
+        checked = current_window(inv)
         if checked["status"] != "window_open":
             return _skip(root, path, state, checked, clock())
         if inv["round"] != state["round"] or checked["opens_at"] != window["opens_at"]:
@@ -291,6 +341,10 @@ def run_once(root=ROOT, now=None):
         focus = focused_config(cfg)
         focused_control = None
         focused_epoch = state.get("focused_reset_at")
+        lifecycle_stats = stock_metrics(lifecycle, current)
+        adaptive_rules = adaptive_config(cfg)
+        adaptive_control = None
+        adaptive_epoch = state.get("adaptive_reset_at")
         if focus:
             held = Counter(u["sku"] for u in inv["units"])
             actual_units = {u["unit"] for u in inv["units"]}
@@ -300,9 +354,21 @@ def run_once(root=ROOT, now=None):
                                and s["ledger"] > 0}
             previous_focus, focused_epoch = epoch_control(state.get("focused_supply"), focused_epoch, memory)
             focused_control = observe_control(previous_focus, memory, focus,
-                lifecycle_stats=stock_metrics(lifecycle, current), held=held,
+                lifecycle_stats=lifecycle_stats, held=held,
                 next_window=bool(previous and checked["opens_at"] > previous["opens_at"]),
                 unresolved_receipts=bool(set(reservations) - actual_units - confirmed_units))
+            if adaptive_rules:
+                prior_adaptive, adaptive_epoch = epoch_control(state.get("adaptive_supply"), adaptive_epoch, memory)
+                economics = sku_metrics(memory, current)
+                categories = {d["category"] for d in demand if isinstance(d, dict)
+                              and isinstance(d.get("category"), str)}
+                pool = (adaptive_candidates(inv, catalog, categories, economics, cfg, current, public,
+                                            paused=adaptive_paused(inv, economics, lifecycle_stats, cfg, current))
+                        if len(inv["units"]) < adaptive_rules["low_stock_units"] else {})
+                adaptive_control = prepare_adaptive(prior_adaptive, memory, pool, adaptive_rules,
+                    lifecycle_stats=lifecycle_stats, held=held,
+                    next_window=bool(previous and checked["opens_at"] > previous["opens_at"]),
+                    unresolved_receipts=bool(set(reservations) - actual_units - confirmed_units))
         try:
             update_openings(root, inv, memory, public, policy, current)
         except (ValueError, OSError, KeyError, TypeError) as exc:
@@ -317,29 +383,35 @@ def run_once(root=ROOT, now=None):
         # Reserve the official contract's ten-second spacing per supply line.
         # Counting units here is conservative: repeated SKUs collapse to fewer
         # lines, while cold-start exploration may use one line per unit.
-        line_capacity = max(0, int((checked["closes_at"] - clock() - WINDOW_HANDOFF_SECONDS) // SUPPLY_LINE_SECONDS))
+        line_capacity = max(0, int((checked["closes_at"] - market_time(inv["round"])["now"]
+                                    - WINDOW_HANDOFF_SECONDS) // SUPPLY_LINE_SECONDS))
         run_cfg = {**cfg, "max_units_per_run": min(cfg["max_units_per_run"], line_capacity)}
         decision, evidence = plan(inv, catalog, demand, memory, attempts, run_cfg, current, public,
-                                  lifecycle=lifecycle, horizon=policy["horizon"], focus_control=focused_control)
+                                  lifecycle=lifecycle, horizon=policy["horizon"], focus_control=focused_control,
+                                  adaptive_control=adaptive_control)
         latest = Inventory(md).snapshot()
-        checked = supply_window(latest, clock())
+        checked = current_window(latest)
         if checked["status"] != "window_open":
             return _skip(root, path, state, checked, clock())
         if latest["round"] != state["round"] or checked["opens_at"] != window["opens_at"]:
             return _skip(root, path, state, checked, clock(), "window_changed")
         if latest != inv:
             return _skip(root, path, state, checked, clock(), "inventory_changed")
-        if decision["buy"] and checked["closes_at"] - clock() <= WINDOW_HANDOFF_SECONDS + SUPPLY_LINE_SECONDS * len(decision["buy"]):
+        if decision["buy"] and (checked["closes_at"] - market_time(latest["round"])["now"]
+                                <= WINDOW_HANDOFF_SECONDS + SUPPLY_LINE_SECONDS * len(decision["buy"])):
             return _skip(root, path, state, checked, clock(), "window_closing")
         state["attempts"] = (attempts + [{"time": current, "sku": row["sku"], "planned_qty": row["qty"]}
                                         for row in decision["buy"]])[-500:]
         if focused_control is not None:
-            lifecycle_stats = stock_metrics(lifecycle, current)
             for row in decision["buy"]:
-                focused_control[row["sku"]]["planned_qty"] += row["qty"]
-                focused_control[row["sku"]]["observed_at_plan"] = lifecycle_stats.get(row["sku"], {}).get("observed_units", 0)
+                control = focused_control if row["sku"] in focused_control else adaptive_control
+                control[row["sku"]]["planned_qty"] += row["qty"]
+                control[row["sku"]]["observed_at_plan"] = lifecycle_stats.get(row["sku"], {}).get("observed_units", 0)
             state["focused_supply"] = focused_control
             state["focused_reset_at"] = focused_epoch
+        if adaptive_control is not None:
+            state["adaptive_supply"] = adaptive_control
+            state["adaptive_reset_at"] = adaptive_epoch
         # Persist before returning instructions to the kit. A crash may skip a
         # buy, but cannot knowingly emit the same plan a second time.
         state.update(last_run=clock(), last_window={k: checked[k] for k in ("opens_at", "closes_at")})

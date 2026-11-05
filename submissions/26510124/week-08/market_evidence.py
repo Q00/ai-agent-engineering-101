@@ -11,6 +11,7 @@ import json
 import re
 from statistics import median
 import time
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -30,13 +31,22 @@ def normalize_stock(payload, rnd, now):
     if (not isinstance(payload, dict) or payload.get("round") != rnd
             or not isinstance(payload.get("shops"), list) or len(payload["shops"]) > 2000):
         raise ValueError("Invalid public stock snapshot")
-    totals, rows_read, seen = {}, 0, set()
+    totals, rows_read, seen, identities = {}, 0, set(), {}
     for shop in payload["shops"]:
         if (not isinstance(shop, dict) or not isinstance(shop.get("stock"), dict)
                 or not isinstance(shop.get("name"), str) or not 0 < len(shop["name"]) <= 200
                 or shop["name"] in seen):
             raise ValueError("Invalid shop stock")
         seen.add(shop["name"])
+        url = shop.get("url")
+        if isinstance(url, str) and 0 < len(url) <= 500:
+            try:
+                parsed = urlsplit(url)
+                if (parsed.scheme in ("https", "http") and parsed.hostname and not parsed.username
+                        and not parsed.password and not parsed.query and not parsed.fragment):
+                    identities.setdefault(url.rstrip("/"), set()).add(shop["name"])
+            except ValueError:
+                pass
         rows_read += len(shop["stock"])
         if rows_read > 20000:
             raise ValueError("Public stock exceeds row limit")
@@ -49,6 +59,7 @@ def normalize_stock(payload, rnd, now):
                 item["units"] += qty
                 item["shops"] += 1
     snapshot = {"round": rnd, "observed_at": now, "by_sku": totals,
+                "shop_names_by_url": {url: next(iter(names)) for url, names in identities.items() if len(names) == 1},
                 "coverage": "public_advertised_stock_may_include_reservations"}
     if len(json.dumps(snapshot).encode()) > 200000:
         raise ValueError("Public stock exceeds cache budget")
@@ -131,7 +142,7 @@ def read(folder, rnd, now):
 
 
 def refresh(root, rnd, now, *, client=None, deadline_seconds=12, include_stock=True,
-            opening_retry=None):
+            opening_retry=None, opening_retry_now=None):
     """Poll with an optional, once-per-opening retry controlled by restock.
 
     Only the caller knows its focus SKUs and validated supply-window state. It
@@ -153,7 +164,10 @@ def refresh(root, rnd, now, *, client=None, deadline_seconds=12, include_stock=T
     last_retry = old_control.get("last_retry_opening") if same_round else None
     if last_retry is not None and not number(last_retry):
         raise ValueError("Invalid opening retry marker")
-    if opening_retry is not None and (not number(opening_retry) or not 0 < opening_retry <= now + 5):
+    retry_now = now if opening_retry_now is None else opening_retry_now
+    if not number(retry_now):
+        raise ValueError("Opening retry clock must be finite")
+    if opening_retry is not None and (not number(opening_retry) or not 0 < opening_retry <= retry_now + 5):
         raise ValueError("Opening retry requires an already opened window")
     retry = opening_retry is not None and (last_retry is None or opening_retry > last_retry)
     if number(last) and same_round and -5 <= now - last < POLL_INTERVAL and not retry:
@@ -324,20 +338,27 @@ def demand_profiles(state, now, window=3600):
             if summary:
                 comparables.append({"grade": grade, "warranty_hours": hours, **summary})
         first, last = min(e["ts"] for e in rows), max(e["ts"] for e in rows)
-        public_stock, ratio = None, None
+        public_stock, ratio, names = None, None, {}
         stock = state.get("market_stock")
         if (isinstance(stock, dict) and stock.get("round") == state.get("round")
                 and recent(stock.get("observed_at"), now, TTL)):
+            names = stock.get("shop_names_by_url", {})
+            if not isinstance(names, dict):
+                names = {}
             item = stock.get("by_sku", {}).get(sku)
             if (isinstance(item, dict) and type(item.get("units")) is int and item["units"] > 0
                     and type(item.get("shops")) is int and item["shops"] > 0):
                 public_stock = {**item, "observed_at": stock["observed_at"],
                                 "age_seconds": max(0, now - stock["observed_at"])}
                 ratio = len(rows) / item["units"]
+        urls = {e["shop"].rstrip("/") for e in rows}
+        known = {names[url] for url in urls if isinstance(names.get(url), str) and names[url]}
         result[sku] = {"sales": len(rows), "buyers": len(buyers),
                        "buyer_known_sales": sum(buyers.values()),
                        "max_buyer_share": max(buyers.values()) / sum(buyers.values()) if buyers else None,
                        "shops": len({e["shop"] for e in rows}),
+                       "named_shops": len(known),
+                       "unidentified_shop_urls": sum(not isinstance(names.get(url), str) or not names[url] for url in urls),
                        "median_price": int(median(e["price"] for e in rows)),
                        "first_ts": first, "last_ts": last, "age_seconds": max(0, now - last),
                        "window_seconds": window, "coverage": "sampled_observed_settlements",

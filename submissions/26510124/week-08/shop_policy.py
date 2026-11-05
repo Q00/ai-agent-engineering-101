@@ -76,6 +76,20 @@ def policy_at(root=ROOT):
         if type(n) is not int or not low <= n <= high:
             raise ValueError("Invalid restock policy: " + key)
     validate_budget(stock)
+    adaptive = stock.get("adaptive_goods")
+    if adaptive is not None:
+        if not isinstance(adaptive, dict) or type(adaptive.get("enabled")) is not bool:
+            raise ValueError("Invalid adaptive inventory policy")
+        for key, low, high in (("max_candidates", 1, 6), ("max_retained_skus", 6, 32),
+                               ("max_units_per_run", 1, 2), ("low_stock_units", 1, 4),
+                               ("minimum_public_sales", 3, 100), ("minimum_public_buyers", 2, 20),
+                               ("minimum_public_shops", 2, 20)):
+            value = adaptive.get(key)
+            if type(value) is not int or not low <= value <= high:
+                raise ValueError("Invalid adaptive inventory policy: " + key)
+        surge = adaptive.get("max_surge_factor")
+        if type(surge) not in (int, float) or not math.isfinite(surge) or not 1 <= surge <= 1.10:
+            raise ValueError("Invalid adaptive surge limit")
     focus = stock.get("focused_goods")
     if focus is not None:
         if not isinstance(focus, dict) or type(focus.get("enabled")) is not bool:
