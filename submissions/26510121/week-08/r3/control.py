@@ -81,6 +81,7 @@ def update(journal, config=None, now=None, force=False):
     feed = journal.get('public_feed_caught_up_at')
     if feed is None or not 0<=now-feed<180:reasons.append('ledger_lag_or_unverified')
     if not healthy:reasons.append('transport_unhealthy')
+    if own.get('alive') is False:reasons.append('market_shop_not_discoverable')
     if breached and now<brake_until:reasons.append('book_drawdown_cooldown')
     if inv.get('balance', 0) < cap['cash_floor']+cap['refund_liability']:reasons.append('cash_obligations')
     skus = market.get('skus', {})

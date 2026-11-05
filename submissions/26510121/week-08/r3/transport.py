@@ -11,12 +11,14 @@ import httpx
 from .state import ROOT, atomic_json, read_json
 
 
-def open_available_tunnel(kit,port):
+def open_available_tunnel(kit,port,avoid=None):
     preferred=os.environ.get('MARKET_TUNNEL_PROVIDER','pinggy')
     previous=read_json(ROOT/'.market/transport-provider.json',{})
-    if previous.get('provider') in {'pinggy','cloudflare'} and 0<=time.time()-previous.get('at',0)<86400:
+    if previous.get('provider') in {'pinggy','cloudflare','localhost'} and 0<=time.time()-previous.get('at',0)<86400:
         preferred=previous['provider']
-    for provider in [preferred,'cloudflare' if preferred=='pinggy' else 'pinggy']:
+    providers=list(dict.fromkeys([preferred,'cloudflare','localhost','pinggy']))
+    if avoid in providers:providers.remove(avoid);providers.append(avoid)
+    for provider in providers:
         try:
             process,url=open_tunnel(kit,port,provider)
             process.r3_provider=provider
@@ -24,7 +26,7 @@ def open_available_tunnel(kit,port):
             return process,url
         except Exception as exc:
             kit.log('[tunnel] '+provider+' unavailable ('+type(exc).__name__+'); trying alternative transport')
-    raise RuntimeError('Both public tunnel providers failed; watcher will retry')
+    raise RuntimeError('Public tunnel providers failed; watcher will retry')
 
 
 def open_tunnel(kit, port, provider=None, log_path=None, protocol='http2'):
@@ -42,6 +44,14 @@ def open_tunnel(kit, port, provider=None, log_path=None, protocol='http2'):
                    'tunnel', '--no-autoupdate', '--url', f'http://127.0.0.1:{port}',
                    '--protocol', protocol, '--edge-ip-version', '4']
         pattern = r'https://[a-z0-9-]+\.trycloudflare\.com'
+    elif provider == 'localhost':
+        command=[shutil.which('ssh') or 'ssh','-T','-o','BatchMode=yes','-o','IdentitiesOnly=yes',
+            '-o','IdentityAgent=none','-o','IdentityFile=none','-o','StrictHostKeyChecking=accept-new',
+            '-o','UserKnownHostsFile='+str(ROOT/'.market/ssh-known-hosts'),
+            '-o','ExitOnForwardFailure=yes','-o','ConnectTimeout=10',
+            '-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3',
+            '-R',f'80:127.0.0.1:{port}','nokey@localhost.run','--','--output','json']
+        pattern=r'https://[a-z0-9-]+\.(?:lhr\.life|localhost\.run)'
     else:
         raise ValueError('Unsupported tunnel provider')
     if log_path is None:
@@ -100,11 +110,16 @@ class ShopSupervisor:
         self.misses = 0
         self.pending_registration = False
         self.retired = None
+        self.registry_misses=0
+        self.registration_failures=0
+        self.last_registry_probe=-1000
+        self.market_visibility='unknown'
 
     def snapshot(self, status):
         atomic_json(self.directory / '.market/shop-health.json', {
             'checked_at': time.time(), 'status': status, 'url': self.proxy.public,
             'pending_registration': self.pending_registration, 'consecutive_probe_failures': self.misses,
+            'market_visibility':self.market_visibility,'registry_misses':self.registry_misses,
             'probe_interval_seconds': 15, 'renewal_seconds': 3300 if self.provider == 'pinggy' else None})
 
     def tick(self, now=None):
@@ -121,11 +136,28 @@ class ShopSupervisor:
             return
         healthy = self.procs[1].poll() is None and kit.card_ok(self.proxy.public)
         self.misses = 0 if healthy else self.misses + 1
+        # Local reachability cannot prove the market server can reach the card.
+        # A global empty registry is a market outage, not a reason for a join storm.
+        if hasattr(self.market,'c') and now-self.last_registry_probe>=30:
+            self.last_registry_probe=now
+            try:
+                response=self.market.c.get(self.market.base+'/api/shops',timeout=8)
+                if response.status_code==200:
+                    shops=response.json().get('shops',[])
+                    present=any(s.get('name')==self.args.name and s.get('url','').rstrip('/')==self.proxy.public
+                                for s in shops)
+                    self.market_visibility='present' if present else 'market_empty' if not shops else 'absent'
+                    self.registry_misses=self.registry_misses+1 if shops and not present else 0
+                    if self.registry_misses>=2:self.pending_registration=True
+            except Exception:
+                self.market_visibility='unverified'
         expired_soon = self.provider == 'pinggy' and now - self.started >= 3300
-        if (expired_soon and not self.pending_registration) or self.misses >= 2:
+        alternative=self.registration_failures>=2 and self.market_visibility!='market_empty'
+        if (expired_soon and not self.pending_registration) or self.misses >= 2 or alternative:
             # Keep the old process in the kit's cleanup list until registration succeeds.
             # A provisioning failure leaves the current tunnel untouched.
-            replacement, url = kit.open_tunnel(self.pport)
+            replacement, url = (kit.open_tunnel(self.pport,avoid=self.provider) if alternative else
+                                kit.open_tunnel(self.pport))
             if not kit.wait_card(url, 30):
                 kit.stop(replacement)
                 raise RuntimeError('Replacement tunnel failed discovery')
@@ -139,17 +171,22 @@ class ShopSupervisor:
             self.provider=getattr(replacement,'r3_provider',self.provider)
             self.proxy.public = self.state['own_shop'] = url
             self.pending_registration = True
+            self.registration_failures=0
             self.started, self.misses = now, 0
             kit.log('[tunnel] replacement ready; shop registration pending at ' + url)
-        if self.pending_registration:
+        if self.pending_registration and self.market_visibility!='market_empty':
             # A one-shot join must be retried even when the new URL is already healthy.
             try:
                 result = self.market.join('shop', self.args.name, self.keys['shop'], self.proxy.public, tries=1)
             except (Exception, SystemExit) as exc:
+                self.registration_failures+=1
                 kit.log('[market] shop registration pending; retrying in 15 s (' + type(exc).__name__ + ')')
                 self.snapshot('registration_retry')
                 return
             self.pending_registration = False
+            self.registration_failures=0
+            self.registry_misses=0
+            self.market_visibility='present'
             kit.log(f"[market] shop registered again as {result['name']} at {self.proxy.public}")
             if self.retired is not None:
                 kit.stop(self.retired)
@@ -157,7 +194,9 @@ class ShopSupervisor:
                     if self.procs[i] is self.retired:
                         self.procs.pop(i)
                 self.retired = None
-        self.snapshot('healthy' if healthy or not self.pending_registration and self.misses == 0 else 'probing')
+        self.snapshot('market_discovery_outage' if self.market_visibility=='market_empty' else
+                      'market_registration_missing' if self.market_visibility=='absent' else
+                      'healthy' if healthy or not self.pending_registration and self.misses == 0 else 'probing')
 
 
 def supervise(kit, *args):

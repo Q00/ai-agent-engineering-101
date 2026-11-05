@@ -155,3 +155,16 @@ def test_price_response_prior_does_not_assume_higher_prices_convert_equally(tmp_
             if c['action']=='counter']
     low,high=min(quotes,key=lambda c:c['price']),max(quotes,key=lambda c:c['price'])
     assert low['evidence']['quote_completion']['completion']>high['evidence']['quote_completion']['completion']
+
+
+def test_market_wide_discovery_outage_stops_procurement_before_model_or_money(tmp_path):
+    from restock import plan
+    j=Journal(tmp_path);now=time.time()
+    atomic_json(j.md/'inventory.json',{'round':3,'balance':5000000,'units':[],
+        'restock':{'open':True,'opens_at':now-1,'closes_at':now+180}})
+    atomic_json(j.md/'board.json',{'round':3,'shops':[{'name':'seochanit','alive':False}]})
+    j.put('market_control',{'at':now,'pause_restock':False})
+    class Never:
+        def choose(self,*args,**kwargs):raise AssertionError('outage cannot start procurement')
+    assert plan(j,Never())=={'buy':[]}
+    assert j.events('restock_blocked')[0]['reason']=='market_shop_not_discoverable'

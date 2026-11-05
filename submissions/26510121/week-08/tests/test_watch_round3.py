@@ -114,3 +114,15 @@ def test_failed_runtime_retries_after_thirty_seconds_not_round_poll_interval(tmp
     assert w.next_check==1031
     w.tick(1030);assert len(launches)==1
     w.tick(1031);assert len(launches)==2
+
+
+def test_market_card_timeout_chooses_a_different_startup_provider(tmp_path):
+    folder=root(tmp_path)
+    atomic_json(folder/'.market/transport-provider.json',{'provider':'cloudflare','at':1})
+    def spawn(log):
+        log.write_text('[market] join as shop failed: 400 cannot read an agent card (TimeoutError)\n')
+        return SimpleNamespace(pid=123,poll=lambda:1,returncode=1)
+    watcher=Watcher(folder,fetch=lambda:3,spawn=spawn,active=lambda r:False)
+    watcher.tick(1000);watcher.tick(1001)
+    assert json.loads((folder/'.market/transport-provider.json').read_text())['provider']=='localhost'
+    assert watcher.next_check==1031

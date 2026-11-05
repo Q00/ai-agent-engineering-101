@@ -21,7 +21,7 @@ if __name__ == "__main__":
     # Each child uses the verified interpreter rather than a stale global `python`.
     os.environ["PATH"] = str(ROOT / ".market" / "bin") + os.pathsep + str(__import__("pathlib").Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
     kit = install(load_kit())
-    kit.open_tunnel = lambda port: open_available_tunnel(kit, port)
+    kit.open_tunnel = lambda port,avoid=None: open_available_tunnel(kit, port,avoid=avoid)
     kit.watchdog = lambda *args: supervise(kit, *args)
     with market_session():
         from r3.state import Journal, policy

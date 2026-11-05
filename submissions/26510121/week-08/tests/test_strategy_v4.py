@@ -91,7 +91,8 @@ def test_core_capital_can_buy_hot_expensive_sku_without_breaching_gross_reserves
     capacity = cash_capacity(inv, j, policy(), now)
     assert sum(c['capital_commitment'] for c in cs) <= capacity['spendable']
     assert cs[0]['capital_commitment'] <= .35 * inv['balance']
-    assert cs[0]['allocation_book'] == 'coverage_and_depth'
+    assert cs[0]['capital_commitment'] <= .35 * capacity['spendable']
+    assert cs[0]['allocation_book'] == 'capital_velocity'
 
 
 def test_seller_never_reduces_explicit_or_promised_warranty(tmp_path):

@@ -12,6 +12,7 @@ from r3 import transport
 @pytest.mark.parametrize('provider,url_line', [
     ('pinggy', 'TUNNEL_URL https://synthetic.free.pinggy.net'),
     ('cloudflare', 'https://synthetic.trycloudflare.com'),
+    ('localhost', 'https://synthetic.lhr.life'),
 ])
 def test_launch_preserves_route_and_strips_credentials(tmp_path, monkeypatch, provider, url_line):
     monkeypatch.setattr(transport.httpx, 'get', lambda *a, **kw: httpx.Response(
@@ -34,9 +35,13 @@ def test_launch_preserves_route_and_strips_credentials(tmp_path, monkeypatch, pr
     assert kwargs['stdin'] == transport.subprocess.DEVNULL
     if provider == 'pinggy':
         assert command[0] == sys.executable and command[-2:] == ['--port', '9999']
-    else:
+    elif provider=='cloudflare':
         assert command[command.index('--protocol') + 1] == 'http2'
         assert command[command.index('--edge-ip-version') + 1] == '4'
+    else:
+        assert 'nokey@localhost.run' in command and 'IdentityFile=none' in command
+        assert 'StrictHostKeyChecking=accept-new' in command
+        assert '80:127.0.0.1:9999' in command
 
 
 def test_wrong_local_service_is_never_exposed(tmp_path, monkeypatch):
@@ -141,3 +146,40 @@ def test_next_restart_uses_recently_verified_transport(monkeypatch,tmp_path):
     monkeypatch.setattr(transport,'open_tunnel',launch)
     transport.open_available_tunnel(SimpleNamespace(log=lambda x:None),9999)
     assert calls==['cloudflare']
+
+
+def test_global_empty_market_does_not_trigger_rejoin_or_rotate(tmp_path):
+    monitor,old,new,stopped,logs=supervisor_fixture(tmp_path,
+        lambda *a,**kw:pytest.fail('no registration storm during a global outage'))
+    monitor.provider='cloudflare'
+    monitor.market.base='https://market.example'
+    monitor.market.c=SimpleNamespace(get=lambda *a,**k:httpx.Response(200,json={'shops':[]}))
+    monitor.tick(1);monitor.tick(31);monitor.tick(61)
+    assert not monitor.pending_registration and monitor.procs[1] is old and not stopped
+    assert monitor.market_visibility=='market_empty'
+
+
+def test_remote_missing_shop_rejoins_even_when_card_is_locally_healthy(tmp_path):
+    attempts=[]
+    monitor,old,new,stopped,logs=supervisor_fixture(tmp_path,
+        lambda *a,**kw:attempts.append(a) or {'name':'seochanit'})
+    monitor.provider='cloudflare'
+    monitor.market.base='https://market.example'
+    monitor.market.c=SimpleNamespace(get=lambda *a,**k:httpx.Response(200,json={'shops':[{'name':'peer'}]}))
+    monitor.tick(1);assert not attempts
+    monitor.tick(31)
+    assert len(attempts)==1 and monitor.procs[1] is old and not stopped
+    assert not monitor.pending_registration
+
+
+def test_pending_registration_waits_when_the_whole_registry_disappears(tmp_path):
+    calls=[]
+    def join(*a,**kw):calls.append(a);raise SystemExit('market cannot read card')
+    monitor,old,new,stopped,logs=supervisor_fixture(tmp_path,join)
+    monitor.provider='cloudflare';monitor.market.base='https://market.example'
+    rows=[{'name':'peer'}]
+    monitor.market.c=SimpleNamespace(get=lambda *a,**kw:httpx.Response(200,json={'shops':rows}))
+    monitor.tick(1);monitor.tick(31)
+    assert monitor.pending_registration and len(calls)==1
+    rows.clear();monitor.tick(61)
+    assert len(calls)==1 and monitor.procs[1] is old and not stopped

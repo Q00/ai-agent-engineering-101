@@ -18,6 +18,11 @@ def plan(journal, chooser=None):
         return {'buy':[], 'bankrupt':inv.get('balance',0)<inv.get('bankrupt_line',0)
                 and not inv.get('units') and inv.get('bankruptcies_left',0)>0}
     if cfg.get('market_control_enabled'):
+        own=next((row for row in journal.snapshot('board.json',{}).get('shops',[])
+                  if row.get('name')=='seochanit'),{})
+        if own.get('alive') is False:
+            journal.add('restock_blocked',{'reason':'market_shop_not_discoverable'})
+            return {'buy':[]}
         diagnosis = journal.get('market_control', {})
         if diagnosis.get('pause_restock',True) or not 0<=time.time()-diagnosis.get('at',0)<900:
             # Re-evaluate recovered startup/transport conditions inside the

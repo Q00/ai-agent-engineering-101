@@ -8,7 +8,7 @@ import sys
 import time
 import httpx
 from r3.lifecycle import lease, market_active, request_stop
-from r3.state import ROOT, atomic_json, policy
+from r3.state import ROOT, atomic_json, policy,read_json
 
 INTERVAL = 600
 MARKET = 'https://market.ourolabs.ai'
@@ -80,6 +80,18 @@ class Watcher:
             self.record('stopped')
             return False
         if self.child is not None and self.child.poll() is not None:
+            if self.child.returncode and self.child_log and self.child_log.exists():
+                with self.child_log.open('rb') as source:
+                    source.seek(max(0,self.child_log.stat().st_size-8192))
+                    tail=source.read().decode('utf-8',errors='replace')
+                if any(line.startswith('[market] join as shop failed:') and
+                       'cannot read an agent card' in line for line in tail.splitlines()):
+                    preference=read_json(self.root/'.market/transport-provider.json',{})
+                    previous=preference.get('provider','cloudflare')
+                    following={'cloudflare':'localhost','localhost':'pinggy','pinggy':'cloudflare'}.get(previous,'localhost')
+                    atomic_json(self.root/'.market/transport-provider.json',
+                        {'provider':following,'at':time.time(),'reason':'market_agent_card_unreachable'})
+                    self.record('market_transport_failed',previous_provider=previous,next_provider=following)
             self.record('market_exited', market_exit_code=self.child.returncode,
                         both_roles_registered=False, market_pid=None)
             self.child = None
