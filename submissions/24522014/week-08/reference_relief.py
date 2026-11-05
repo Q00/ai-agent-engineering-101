@@ -118,6 +118,37 @@ def note_deal(md, token, order, taken, record, now=None):
         print(f"[구매] 시세 상한 완화 기록 실패: {type(error).__name__}", flush=True)
 
 
+def deals_by_order(md):
+    """{order: what was noted}. Unreadable means none, so the ordinary path never depends on this file."""
+    try:
+        return {d["order"]: d for d in read(Path(md) / STATE, {}).get("deals", []) if d.get("order")}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return {}
+
+
+def public_rows_without_deals(md, rows):
+    """Public rows minus our own relief deals. A settle row's seq is the ledger number on our payment, and it also names the unit, so the match is exact.
+
+    Other buyers' deals are untouched, including any that later settle higher, which this cannot and should not tell apart.
+    """
+    deals = deals_by_order(md)
+    if not deals:
+        return rows
+    ledgers, units = set(), set()
+    from settlement_memory import payment_outcomes
+    payments = payment_outcomes(Path(md) / "payments.jsonl")
+    for order in deals:
+        payment = payments.get(order) or {}
+        if payment.get("paid") is True and type(payment.get("ledger")) is int:
+            ledgers.add(payment["ledger"])
+            unit = read(Path(md) / "buyer-deals" / f"{payment['ledger']}.json", {}).get("unit")
+            if unit:
+                units.add(unit)
+    if not ledgers:
+        return rows
+    return [r for r in rows if not (r.get("kind") == "settle" and (r.get("seq") in ledgers or (r.get("data") or {}).get("unit") in units))]
+
+
 def report(md, root=ROOT):
     """Read-only figures for this path."""
     md = Path(md)

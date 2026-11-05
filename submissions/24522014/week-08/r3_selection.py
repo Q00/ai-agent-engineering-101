@@ -57,8 +57,9 @@ def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=
                 continue
             history = [r for r in memory if r.get("verification") == "market_settled"
                        and r.get("shop_name") == shop["name"] and r.get("item") == sku
-                       and r.get("outcome") == "purchased" and positive(r.get("price"))]
+                       and r.get("outcome") == "purchased" and positive(r.get("price")) and not r.get("reference_relief")]
             # Past prices are references, never current quotes. Unknown pairs use the full cap.
+            # A deal that went above the recent-price cap is left out, or it would lift the next cap.
             reference = history[-1]["price"] if history else None
             reference_source = "own_r3_settlement" if reference is not None else "unknown"
             public = [r for r in (public_rows or []) if r.get("round") == 3 and r.get("kind") == "settle"

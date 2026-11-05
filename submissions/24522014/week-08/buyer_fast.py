@@ -88,24 +88,24 @@ def parse_ask(text):
 NUMBER = r"(\d[\d,.]*)"
 GROUP_A = (("my_price", re.compile(r"(?<![\w])my price\s*[:：=]?\s*" + NUMBER, re.I)),
            ("final_price", re.compile(r"(?<![\w])(?:our|my) final price(?: for [^.:：\d]{1,60})?(?:\s+is)?\s*[:：=]?\s*" + NUMBER, re.I)))
-GROUP_B = (("lowest_price", re.compile(r"(?<![\w])(?:our|my) lowest price(?: for this unit)?\s*[:：=]?\s*" + NUMBER, re.I)),
-           ("colon_krw", re.compile(r"[:：]\s*" + NUMBER + r"\s*(?:KRW\b|won\b|원)", re.I)))
+LOWEST_PRICE = (("lowest_price", re.compile(r"(?<![\w])(?:our|my) lowest price(?: for this unit)?\s*[:：=]?\s*" + NUMBER, re.I)),)
+COLON_KRW = (("colon_krw", re.compile(r"[:：]\s*" + NUMBER + r"\s*(?:KRW\b|won\b|원)", re.I)),)
 ANY_KRW = re.compile(NUMBER + r"\s*(?:KRW\b|won\b|원)", re.I)
 # Words before a "name: 12000 KRW" that make it some other figure than this seller's ask.
 OTHER_FIGURE = NOT_CURRENT | {"elsewhere", "other", "others", "lowest", "highest", "msrp", "rrp", "retail", "compare", "comparable", "shipping", "delivery", "fee", "deposit",
                               "warranty", "refund", "budget", "value", "worth", "cost", "savings", "save", "discount", "off", "stars", "review", "reviews", "다른", "타사", "배송", "보증", "환불", "원가"}
-OFF = {"group_a": False, "group_b": False}
+OFF = {"group_a": False, "lowest_price": False, "colon_krw": False}
 
 
 def load_reading(path=CONFIG):
-    """Which added groups are on. Anything but an explicit true is off, and a missing or unreadable setting turns both off."""
+    """Which added readings are on. Anything but an explicit true is off, and a missing or unreadable setting turns them all off."""
     try:
         section = json.loads(Path(path).read_text(encoding="utf-8")).get("price_reading")
     except (OSError, ValueError, AttributeError):
         return dict(OFF)
     if not isinstance(section, dict):
         return dict(OFF)
-    return {"group_a": section.get("group_a_structured_and_labels") is True, "group_b": section.get("group_b_krw_and_lowest") is True}
+    return {"group_a": section.get("group_a_structured_and_labels") is True, "lowest_price": section.get("group_b_lowest_price") is True, "colon_krw": section.get("group_b_colon_krw") is True}
 
 
 def _clause_before(text, start):
@@ -127,10 +127,10 @@ def structured_ask(metadata):
 def read_ask(text, metadata=None, reading=None):
     """(price, code, how). The current parser always goes first; added readings run only when it found no label at all, and only with the same cautions."""
     price, code = parse_ask(text)
-    if code != "no_labeled_price" or not reading or not (reading.get("group_a") or reading.get("group_b")):
+    if code != "no_labeled_price" or not reading or not any(reading.get(key) for key in OFF):
         return price, code, None
     found = {}
-    rules = (GROUP_A if reading.get("group_a") else ()) + (GROUP_B if reading.get("group_b") else ())
+    rules = (GROUP_A if reading.get("group_a") else ()) + (LOWEST_PRICE if reading.get("lowest_price") else ()) + (COLON_KRW if reading.get("colon_krw") else ())
     for how, pattern in rules:
         for match in pattern.finditer(text):
             if how == "colon_krw":

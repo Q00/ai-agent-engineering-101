@@ -118,6 +118,115 @@ class AutoStop(unittest.TestCase):
             self.assertEqual(rr.realized(self.root, {"o1", "o2"}), (-70, 2, 1, 0))
 
 
+class References(unittest.TestCase):
+    """A relief deal never becomes a price reference, and nothing changes when there are none."""
+
+    OLD = dict(seq=1, ts=900, round=3, kind="settle", data=dict(unit="u-old", shop="http://s", item="G", amount=100, grade="A"))
+    MINE = dict(seq=2, ts=950, round=3, kind="settle", data=dict(unit="u-mine", shop="http://s", item="G", amount=150, grade="A"))
+    SAME_UNIT = dict(seq=3, ts=951, round=3, kind="settle", data=dict(unit="u-mine", shop="http://s", item="G", amount=150, grade="A"))
+    BROKEN = dict(seq=2, ts=950, round=3, kind="broken", data=dict(unit="u-mine", shop="http://s", item="G"))
+
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.md = Path(temp.name)
+
+    def deal(self, order="o1", ledger=2, unit="u-mine", paid=True, price=150):
+        rr.note_deal(self.md, "1", order, {"ask": price}, {"shop_name": "s", "item": "G"})
+        with (self.md / "payments.jsonl").open("a", encoding="utf8") as stream:
+            stream.write(json.dumps({"order": order, "paid": paid, "ledger": ledger if paid else None, "shop": "http://s", "item": "G", "price": price}) + "\n")
+        if paid:
+            write(self.md / "buyer-deals" / f"{ledger}.json", dict(ledger=ledger, order=order, unit=unit, shop="http://s", sku="G", price=price, grade="A", purchased_at=950, warranty_hours=0))
+
+    def test_no_relief_deals_returns_the_same_rows(self):
+        rows = [self.OLD, self.MINE]
+        self.assertIs(rr.public_rows_without_deals(self.md, rows), rows)
+
+    def test_our_row_goes_by_ledger_or_unit_and_others_stay(self):
+        self.deal()
+        kept = rr.public_rows_without_deals(self.md, [self.OLD, self.MINE, self.SAME_UNIT, self.BROKEN])
+        self.assertEqual(kept, [self.OLD, self.BROKEN])
+
+    def test_an_unpaid_relief_deal_removes_nothing(self):
+        self.deal(paid=False)
+        rows = [self.OLD, self.MINE]
+        self.assertEqual(rr.public_rows_without_deals(self.md, rows), rows)
+
+    def select(self, memory, rows):
+        from r3_selection import select
+        policy = {"grades": ["A", "B"], "minimum_surplus_ratio": .05, "uninsured_discount_ratio": .2, "preferred_warranty_hours": 6}
+        offers = [{"name": "s", "url": "http://s", "offers": [{"sku": "G", "qty": 1}]}]
+        return select(offers, memory, {"G": {"list_price": 1000}}, 1000, policy=policy, portfolio=[], kind="goods", public_rows=rows, now=1000)[4][0]
+
+    def row(self, price, relief=None):
+        return {"verification": "market_settled", "shop_name": "s", "item": "G", "outcome": "purchased", "price": price, "round": 3, "url_at_time": "http://s", "reference_relief": relief}
+
+    def test_own_reference_skips_a_relief_deal(self):
+        chosen = self.select([self.row(100), self.row(150, {"ask": 150})], [])
+        self.assertEqual((chosen["past_settled_price"], chosen["reference_source"]), (100, "own_r3_settlement"))
+
+    def test_with_only_a_relief_deal_there_is_no_own_reference(self):
+        self.assertEqual(self.select([self.row(150, {"ask": 150})], [])["reference_source"], "unknown")
+
+    def test_ordinary_deals_still_set_the_reference(self):
+        for key in (None, {}):
+            chosen = self.select([self.row(100), self.row(120, key)], [])
+            self.assertEqual(chosen["past_settled_price"], 120)
+        record_without_the_field = self.row(130)
+        del record_without_the_field["reference_relief"]
+        self.assertEqual(self.select([record_without_the_field], [])["past_settled_price"], 130)
+
+    def test_prepare_passes_rows_without_our_deal(self):
+        import buyer_support
+        self.deal()
+        captured = {}
+
+        def choose(shops, memory, catalog, budget, policy, portfolio, rows, *args, **kwargs):
+            captured["rows"] = rows
+            return None, None, budget, "none", []
+        settings = {**buyer_support.config()}
+        snapshot = {"round": 3, "observed_at": 1000, "rows": [self.OLD, self.MINE]}
+        with patch.object(buyer_support, "choose", choose), patch.object(buyer_support, "context", return_value={}), patch.object(buyer_support, "config", return_value=settings):
+            buyer_support.prepare(self.md, [], [], {}, 100, {}, [], snapshot, {"order": "new", "kind": "goods"}, now=1000)
+        self.assertEqual(captured["rows"], [self.OLD])
+
+    def attempt(self, order, cap, price, ledger):
+        return {"at": 950, "order": order, "shop": "s", "url": "http://s", "sku": "G", "cap": cap, "rival_at_selection": False}
+
+    def records(self, attempts):
+        write(self.md / "buyer-support-state.json", {"schema": 1, "round": 3, "attempts": attempts})
+
+    def test_records_keep_relief_deals_marked(self):
+        import buyer_support
+        self.deal()
+        self.records([self.attempt("o1", 100, 150, 2)])
+        report = buyer_support.report(self.md)
+        self.assertEqual((report["confirmed_paid_deals"], report["reference_relief_paid_deals"], report["buyer_paid_to_other_shops"]), (1, 1, 150))
+        rows = buyer_support.research_rows(self.md, 951)
+        self.assertEqual([r["seq"] for r in rows], [2])
+        self.assertIs(rows[0]["reference_relief"], True)
+
+    def test_ordinary_records_are_unchanged(self):
+        import buyer_support
+        with (self.md / "payments.jsonl").open("a", encoding="utf8") as stream:
+            stream.write(json.dumps({"order": "n1", "paid": True, "ledger": 5, "shop": "http://s", "item": "G", "price": 90}) + "\n")
+            stream.write(json.dumps({"order": "n2", "paid": True, "ledger": 6, "shop": "http://s", "item": "G", "price": 150}) + "\n")
+        for ledger, order, price in ((5, "n1", 90), (6, "n2", 150)):
+            write(self.md / "buyer-deals" / f"{ledger}.json", dict(ledger=ledger, order=order, unit=f"u{ledger}", shop="http://s", sku="G", price=price, grade="A", purchased_at=950, warranty_hours=0))
+        self.records([self.attempt("n1", 100, 90, 5), self.attempt("n2", 100, 150, 6)])
+        report = buyer_support.report(self.md)
+        self.assertEqual((report["confirmed_paid_deals"], report["reference_relief_paid_deals"]), (1, 0))
+        rows = buyer_support.research_rows(self.md, 951)
+        self.assertEqual([r["seq"] for r in rows], [5])
+        self.assertNotIn("reference_relief", rows[0])
+
+    def test_a_noted_deal_at_another_price_is_not_let_through(self):
+        import buyer_support
+        self.deal(price=150)
+        self.assertFalse(buyer_support.within_limit(151, {"order": "o1", "cap": 100}, buyer_support.relief_deals(self.md)))
+        self.assertTrue(buyer_support.within_limit(150, {"order": "o1", "cap": 100}, buyer_support.relief_deals(self.md)))
+
+
 class Trades(TradeFixture):
     def sequence(self, replies, *, receipt_price=None, metadata=None):
         """Replies in order; an offer after the last one completes the deal at the offered price, or at receipt_price."""

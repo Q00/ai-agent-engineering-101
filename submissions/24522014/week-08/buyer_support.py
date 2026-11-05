@@ -282,7 +282,8 @@ def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, ord
     if portfolio is None:
         from buyer_portfolio import reconcile
         portfolio = reconcile(md, rows, now)
-    shop, sku, cap, reason, evidence = choose(shops, memory, catalog, budget, policy, portfolio, rows, ctx, state, settings, now, kind=order.get("kind"))
+    from reference_relief import public_rows_without_deals
+    shop, sku, cap, reason, evidence = choose(shops, memory, catalog, budget, policy, portfolio, public_rows_without_deals(md, rows), ctx, state, settings, now, kind=order.get("kind"))
     status = "no_useful_research"
     if shop:
         selected = next(e for e in evidence if e["shop"] == shop["name"] and e["sku"] == sku)
@@ -361,20 +362,31 @@ def reserve_model(md, order_id, now=None):
     return model_reservation(md, order_id, now) in MODEL_ALLOWED
 
 
+def relief_deals(md):
+    from reference_relief import deals_by_order
+    return deals_by_order(md)
+
+
+def within_limit(price, attempt, relief):
+    """Under the attempt's cap, or exactly the ask a marked relief deal accepted above it."""
+    return price <= attempt["cap"] or relief.get(attempt["order"], {}).get("ask") == price
+
+
 def report(md):
     md = Path(md)
     attempts = read(md / "buyer-support-state.json", initial())["attempts"]
     payments = payment_outcomes(md / "payments.jsonl")
+    relief = relief_deals(md)
     paid, seen = [], set()
     for attempt in attempts:
         payment = payments.get(attempt["order"], {})
         ledger = payment.get("ledger")
         if (payment.get("paid") is True and type(ledger) is int and ledger > 0 and ledger not in seen
                 and payment.get("shop") == attempt["url"] and payment.get("item") == attempt["sku"]
-                and positive(payment.get("price")) and payment["price"] <= attempt["cap"]):
+                and positive(payment.get("price")) and within_limit(payment["price"], attempt, relief)):
             seen.add(ledger)
-            paid.append({**attempt, "paid": payment["price"], "ledger": ledger})
-    return {"attempts": len(attempts), "confirmed_paid_deals": len(paid),
+            paid.append({**attempt, "paid": payment["price"], "ledger": ledger, "reference_relief": attempt["order"] in relief})
+    return {"attempts": len(attempts), "confirmed_paid_deals": len(paid), "reference_relief_paid_deals": sum(r["reference_relief"] for r in paid),
             "buyer_paid_to_other_shops": sum(r["paid"] for r in paid),
             "buyer_paid_to_profit_leaders_at_selection": sum(r["paid"] for r in paid if r["rival_at_selection"]),
             "funding": "market_order_budget_not_seller_cash",
@@ -390,6 +402,7 @@ def research_rows(md, now=None):
         raise ValueError("Research price memory must belong to Round 3")
     attempts = state["attempts"]
     payments = payment_outcomes(md / "payments.jsonl")
+    relief = relief_deals(md)
     rows = {}
     for attempt in attempts:
         payment = payments.get(attempt["order"], {})
@@ -399,7 +412,7 @@ def research_rows(md, now=None):
         deal = read(md / "buyer-deals" / f"{ledger}.json", {})
         if (deal.get("order") != attempt["order"] or deal.get("shop") != attempt["url"] or deal.get("sku") != attempt["sku"]
                 or payment.get("shop") != deal.get("shop") or payment.get("item") != deal.get("sku")
-                or payment.get("price") != deal.get("price") or not positive(deal.get("price")) or deal["price"] > attempt["cap"]
+                or payment.get("price") != deal.get("price") or not positive(deal.get("price")) or not within_limit(deal["price"], attempt, relief)
                 or deal.get("grade") not in ("A", "B") or deal.get("fault") or deal.get("refund_confirmed")
                 or not 0 <= now-deal.get("purchased_at", 0) <= 3600):
             continue
@@ -407,6 +420,8 @@ def research_rows(md, now=None):
              "origin": "local_paid_buyer_research", "time_basis": "local_post_payment_review",
              "data": {"shop": deal["shop"], "item": deal["sku"], "amount": deal["price"], "grade": deal["grade"],
                       "warranty_hours": deal.get("warranty_hours") or 0, "unit": deal.get("unit")}}
+        if attempt["order"] in relief:
+            rows[ledger]["reference_relief"] = True
     return list(rows.values())
 
 
