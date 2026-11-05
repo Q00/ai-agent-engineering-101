@@ -17,6 +17,14 @@ watch_log.jsonl). Code only, no model. An alert is:
     stars     our stars fell 0.03 or more since last time
     price     other shops' paid share of list on our line's products moved 0.05 or more from the two hours before
     surge     a line product surged 1.25x or more
+And three slower ones (11/5 18:00, the person's call: hidden changes to how the market works), each over the last
+3 hours against the 21 before (breakage: purchases 6-18 h old against all earlier), raised once when it starts:
+    taste     our buyer's orders: the category mix (overlap under 0.8), the budget over the median list (moved 0.15),
+              the orders an hour (under 0.6x or over 1.6x)
+    trend     the whole market: the paid share of list (moved 0.03 from the 24 h summary), the category mix (overlap
+              under 0.85)
+    breakage  our buyer's goods of one grade breaking at twice their rate before (5 breaks or more)
+The integrated analysis reads brief(): these facts and the alerts of its last 3 hours.
 """
 import difflib
 import hashlib
@@ -24,6 +32,7 @@ import json
 import re
 import statistics as st
 import time
+from collections import Counter
 from html import unescape
 from pathlib import Path
 
@@ -42,6 +51,92 @@ SURGE_HIGH = 1.25
 DIFF_LINES = 12
 KIT_LOG = Path(__file__).resolve().parent / "logs" / "market-kit.log"
 OUTAGE_SIGNS = ("no shops in the market yet", "buyer token refused", "[market] order failed")
+RECENT, BASE = 3 * 3600, 24 * 3600
+TASTE_OVERLAP, BUDGET_MOVE, RATE_LOW, RATE_HIGH, TASTE_MIN = 0.8, 0.15, 0.6, 1.6, 100
+TREND_PRICE_MOVE, TREND_OVERLAP, TREND_MIN = 0.03, 0.85, 500
+BREAK_FROM, BREAK_TO, BREAK_MIN, BREAK_TIMES = 18 * 3600, 6 * 3600, 5, 2.0   # goods break within 6 h of the sale
+BRIEF_HOURS = 3
+
+
+def shares(c) -> dict:
+    n = sum(c.values())
+    return {k: v / n for k, v in c.items()} if n else {}
+
+
+def overlap(a: dict, b: dict) -> float:
+    return sum(min(a.get(k, 0), b.get(k, 0)) for k in set(a) | set(b))
+
+
+def taste(orders: list, now: float) -> tuple[dict, dict]:
+    """({facts}, {flag: text}) for our buyer's orders: the last RECENT against the BASE - RECENT before."""
+    leaf = lambda o: str(o.get("category") or "?").split(">")[-1]
+    recent = [o for o in orders if (o.get("ts") or 0) >= now - RECENT and o.get("budget")]
+    base = [o for o in orders if now - BASE <= (o.get("ts") or 0) < now - RECENT and o.get("budget")]
+    if len(recent) < TASTE_MIN or len(base) < TASTE_MIN:
+        return {"orders": [len(recent), len(base)]}, {}
+    a, b = Counter(leaf(o) for o in recent), Counter(leaf(o) for o in base)
+    ov = overlap(shares(a), shares(b))
+    ratio = lambda xs: st.median([o["budget"] / o["median_list"] for o in xs if o.get("median_list")] or [0])
+    r_now, r_before = ratio(recent), ratio(base)
+    h_now, h_before = len(recent) / (RECENT / 3600), len(base) / ((BASE - RECENT) / 3600)
+    facts = {"mix_overlap": round(ov, 3), "top_now": [k for k, _ in a.most_common(4)], "budget_over_list": [round(r_now, 2), round(r_before, 2)],
+             "orders_per_h": [round(h_now), round(h_before)]}
+    flags = {}
+    if ov < TASTE_OVERLAP:
+        new = [k for k, v in shares(a).items() if v - shares(b).get(k, 0) >= 0.05]
+        flags["taste:mix"] = f"our buyer's order mix moved (overlap {ov:.2f} with the 21 h before); grown: {new[:4]}"
+    if abs(r_now - r_before) >= BUDGET_MOVE:
+        flags["taste:budget"] = f"our buyer's budgets over the median list {r_before:.2f} -> {r_now:.2f}"
+    if not RATE_LOW * h_before <= h_now <= RATE_HIGH * h_before:
+        flags["taste:rate"] = f"our buyer's orders an hour {h_before:.0f} -> {h_now:.0f}"
+    return facts, flags
+
+
+def trend(settles: list, summary: dict, catalog: dict, now: float) -> tuple[dict, dict]:
+    """The whole market over the last RECENT against the 24 h summary: the paid share of list and the category mix."""
+    recent = [s for s in settles if (s.get("ts") or 0) >= now - RECENT and (catalog.get(s.get("item")) or {}).get("list_price")]
+    cats = summary.get("by_category") or {}
+    sold = {c: v.get("sold_24h") or 0 for c, v in cats.items()}
+    if len(recent) < TREND_MIN or sum(sold.values()) < TREND_MIN:
+        return {"settles_3h": len(recent)}, {}
+    p_now = st.median((s.get("amount") or 0) / catalog[s["item"]]["list_price"] for s in recent)
+    p_day = sum((v.get("price_ratio") or 0) * sold[c] for c, v in cats.items()) / max(1, sum(sold[c] for c, v in cats.items() if v.get("price_ratio")))
+    ov = overlap(shares(Counter(catalog[s["item"]]["category"] for s in recent)), shares(Counter(sold)))
+    facts = {"paid_share": [round(p_now, 3), round(p_day, 3)], "mix_overlap": round(ov, 3), "settles_per_h": round(len(recent) / (RECENT / 3600))}
+    flags = {}
+    if abs(p_now - p_day) >= TREND_PRICE_MOVE:
+        flags["trend:price"] = f"the market's paid share of list {p_day:.3f} (24 h) -> {p_now:.3f} (3 h)"
+    if ov < TREND_OVERLAP:
+        flags["trend:mix"] = f"what the market buys moved (category overlap {ov:.2f} with the 24 h)"
+    return facts, flags
+
+
+def breakage(purchases: list, breaks: list, now: float) -> tuple[dict, dict]:
+    """Our buyer's goods by grade: bought 6-18 h ago against all earlier, the share that broke."""
+    broke = {b.get("order") for b in breaks}
+    goods = [p for p in purchases if p.get("expires_at") is None and p.get("grade") in ("A", "B", "C")]
+    facts, flags = {}, {}
+    for g in "ABC":
+        mine = [p for p in goods if p["grade"] == g]
+        recent = [p for p in mine if now - BREAK_FROM <= (p.get("settled_at") or 0) < now - BREAK_TO]
+        before = [p for p in mine if (p.get("settled_at") or 0) < now - BREAK_FROM]
+        n_now, n_before = sum(1 for p in recent if p.get("order") in broke), sum(1 for p in before if p.get("order") in broke)
+        r_now, r_before = n_now / max(1, len(recent)), n_before / max(1, len(before))
+        facts[g] = [round(r_now, 3), round(r_before, 3), len(recent)]
+        if n_now >= BREAK_MIN and len(before) >= 50 and r_now >= BREAK_TIMES * max(r_before, 0.01):
+            flags[f"breakage:{g}"] = f"grade {g} goods breaking {r_now:.1%} of {len(recent)} (bought 6-18 h ago) against {r_before:.1%} before"
+    return facts, flags
+
+
+def brief(now: float) -> dict | None:
+    """For the integrated analysis: the last watch's slow facts and the alerts of the last BRIEF_HOURS."""
+    w = common.read_json(folder() / "watch.json", None)
+    if not isinstance(w, dict):
+        return None
+    f = w.get("facts") or {}
+    rows = [r for r in common.read_jsonl(folder() / "watch_log.jsonl") if r.get("alerts") and (r.get("at") or 0) >= now - BRIEF_HOURS * 3600]
+    return {"at": w.get("at"), "taste": f.get("taste"), "market_trend": f.get("trend"), "breakage_by_grade_now_before_n": f.get("breakage"),
+            "alive": f.get("alive"), f"alerts_{BRIEF_HOURS}h": [f"{a['kind']}: {a['text'][:140]}" for r in rows for a in r["alerts"]][-8:]}
 
 
 def folder():
@@ -158,7 +253,7 @@ def run(now: float | None = None, get_json=None, get_text=None, log_path: Path =
     state["alive"] = alive
 
     if settles is None:
-        settles = common.read_jsonl(ledger.folder() / "settles.jsonl", since=now - (BEFORE + 2) * BIN)
+        settles = common.read_jsonl(ledger.folder() / "settles.jsonl", since=now - max((BEFORE + 2) * BIN, RECENT + BIN))
     end = max((s.get("ts") or 0 for s in settles), default=now)
     names = ledger.names()
     ours = lambda s: common.is_ours(names.get(s.get("shop"), s.get("shop")) or "")
@@ -171,7 +266,7 @@ def run(now: float | None = None, get_json=None, get_text=None, log_path: Path =
         say("volume", f"market settles in the last 20 min {market[-1]} against a median {m_med:.0f} before (bins {market})")
     if held and o_med >= 10 and mine[-1] < OURS_LOW * o_med:
         say("ours", f"our shop sold {mine[-1]} in the last 20 min against its median {o_med:.0f}, while the market held")
-    orders = [o for o in common.records("orders") if (o.get("ts") or 0) >= now - (BEFORE + 1) * BIN]
+    orders = [o for o in common.records("orders") if (o.get("ts") or 0) >= now - BASE]
     deals = bins(orders, now, lambda o: bool(o.get("deal")))
     d_med = st.median(deals[:-1])
     facts["buyer_deals"] = {"last_20min": deals[-1], "median_before": d_med}
@@ -215,6 +310,18 @@ def run(now: float | None = None, get_json=None, get_text=None, log_path: Path =
     if hot:
         say("surge", f"line products surged: {hot}")
     facts["surged"] = len(inv.get("surge") or [])
+
+    slow = {}
+    for name, (got, flags) in (("taste", taste(orders, now)),
+                               ("trend", trend(settles, common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {}, catalog, now)),
+                               ("breakage", breakage(common.read_jsonl(common.MARKET_DIR / "buyer" / "purchases.jsonl"),
+                                                     common.read_jsonl(common.MARKET_DIR / "buyer" / "breaks.jsonl"), now))):
+        facts[name] = got
+        slow.update(flags)
+    for key, text in slow.items():                               # raised once when it starts, again after it has cleared
+        if key not in set(state.get("flags") or []):
+            say(key.split(":")[0], text)
+    state["flags"] = sorted(slow)
 
     if first:
         alerts = []                                              # the first run only sets what later runs compare with

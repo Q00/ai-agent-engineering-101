@@ -1152,6 +1152,28 @@ def test_watch():
     got = watch.run(t + 2400, lambda path: board(20, 1.55, 4.60), lambda path: texts[path], log, flat(t + 2400, 150))
     check("...and the next run, nothing new: quiet", got["alerts"] == [] and got["note"].startswith("quiet"), got["alerts"])
     check("every run kept in watch_log.jsonl", len(common.read_jsonl(MD / "analysis" / "watch_log.jsonl")) == 3)
+    check("the integrated analysis's view: the slow facts and the alerts of the last 3 hours",
+          (lambda b: b and any(x.startswith("rules:") for x in b["alerts_3h"]) and "taste" in b)(watch.brief(t + 2400)), watch.brief(t + 2400))
+    o = lambda ts, cat, budget=1300, ml=1000: {"ts": ts, "category": cat, "budget": budget, "median_list": ml}
+    base = [o(t - 3 * H - 60 - i * 72, "가구>침대" if i % 2 else "식품>김치") for i in range(1040)]      # 50 an hour, 21 h
+    same = [o(t - i * 72, "가구>침대" if i % 2 else "식품>김치") for i in range(150)]                    # 50 an hour, 3 h
+    moved = [o(t - i * 72, "가전>세탁기", 2000) for i in range(150)]
+    f, flags = watch.taste(base + same, t)
+    check("taste: the same mix, budgets and pace raise nothing", flags == {} and f["mix_overlap"] == 1.0, (f, flags))
+    f, flags = watch.taste(base + moved, t)
+    check("...a new category, higher budgets: the mix and the budget flags", set(flags) == {"taste:mix", "taste:budget"}
+          and "세탁기" in flags["taste:mix"], flags)
+    cat = {"G1": {"list_price": 1000, "category": "가구>침대"}, "G2": {"list_price": 1000, "category": "식품>김치"}}
+    summ = {"by_category": {"가구>침대": {"sold_24h": 600, "price_ratio": 0.75}, "식품>김치": {"sold_24h": 600, "price_ratio": 0.75}}}
+    sett = lambda share, item: [{"ts": t - i * 10, "item": item if i % 2 else "G2", "amount": share * 1000} for i in range(600)]
+    check("trend: the market as the day was raises nothing", watch.trend(sett(0.75, "G1"), summ, cat, t)[1] == {})
+    check("...paying 0.70 of list where the day paid 0.75: the price flag", set(watch.trend(sett(0.70, "G1"), summ, cat, t)[1]) == {"trend:price"})
+    g = lambda i, grade, age: {"order": f"o{grade}{i}", "grade": grade, "expires_at": None, "settled_at": t - age}
+    purchases = [g(i, "A", 30 * H) for i in range(100)] + [g(100 + i, "A", 10 * H) for i in range(40)]
+    breaks = [{"order": f"oA{i}"} for i in range(2)] + [{"order": f"oA{100 + i}"} for i in range(8)]
+    f, flags = watch.breakage(purchases, breaks, t)
+    check("breakage: grade A bought 6-18 h ago breaking 20% against 2% before: flagged; B and C quiet",
+          set(flags) == {"breakage:A"} and f["A"] == [0.2, 0.02, 40], (f, flags))
     log.unlink()
     for f in ("watch_state.json", "watch.json", "watch_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)

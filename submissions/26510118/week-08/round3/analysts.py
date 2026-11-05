@@ -43,6 +43,7 @@ import notes
 import pricing
 import scoreboard
 import tools
+import watch
 
 FIELDS = {
     "seller": {"focus_categories": "categories", "drop_categories": "categories", "price_adjust": (-0.10, 0.15),
@@ -442,6 +443,8 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
     brief = context.form("integrated", now, {"set_by_person_not_yours_to_change": {k: v.get("value") for k, v in person.items()} or "(none)",
                                              "metrics_3h_now": m,                     # most needed first: a part over its
                                              "scoreboard": scoreboard.brief(scoreboard.read(now)) or "(not in yet)",
+                                             "market_watch_3h": watch.brief(now) or "(not in yet)",   # how the market works: taste,
+                                                                                                      # trend, breakage, alerts
                                              "last_decisions": decisions,             # limit drops the blocks after it
                                              "buyer_tries_3h": tries(now),
                                              "notes_by_desk_6h": notes.by_desk(book if isinstance(book, dict) else {}, now),
