@@ -55,6 +55,10 @@ Answer with ONE JSON object: {"reviews": [{"title": "<the request's title>", "ag
 "points": ["<checked claim and what you found>", ...], "counter": "<the strongest argument against>"}]}"""
 
 
+SEAT_SYSTEM = ("You work inside a trading agent's harness. You have no tools and no memory: everything you may use "
+               "is in the message. Answer in the form the message asks for, and nothing else.")
+
+
 def _json(text):
     m = re.search(r"\{.*\}", text or "", re.S)
     if not m:
@@ -152,7 +156,9 @@ def cycle(now=None, call=None, dry=False):
     own_models = call is None
     if call is None:
         from agents import model
-        call = lambda seat, prompt: model.call(seat, prompt, timeout=240)   # noqa: E731
+        # 11/6 02:2x: without a system prompt the Claude CLI runs on its own default one (memory, tools) and the
+        # analyst answered "let me check memory first" with a made-up tool call; every seat gets ours
+        call = lambda seat, prompt: model.call(seat, prompt, system=SEAT_SYSTEM, timeout=240)   # noqa: E731
     rec = {"ts": now, "night": time.localtime(now).tm_hour in NIGHT, "steps": {}}
     ctx, sizes = assemble(now)
     rec["context_chars"], rec["blocks"] = len(ctx), sizes
