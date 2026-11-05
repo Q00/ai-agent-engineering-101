@@ -12,35 +12,15 @@ tool calls join by pid; the seller serves many tasks in one process, so its tool
 T1 adds (registry.call stamps them).
 """
 import json
-import re
 import sys
 import time
 from collections import defaultdict
 
 from core import paths
+from core.causes import cause  # C7, shared with tools.registry
 from harness import out_dir
 
 ROLE_SOURCES = ("buyer", "seller", "review", "restock", "outer", "tools", "models")
-
-# C7: why a trade ended without a deal or a payment. Checked in order; the first match wins.
-CAUSES = [
-    ("limit", r"^no deal: shelf|not paying: [\d.]+ h of shelf|no shop that is not blocked|guard|refused by check"),
-    ("counterpart", r"sig_seller|cheated|no certificate|checkout refused: 409|false grade|not an SKU"),
-    ("network", r"could not reach|ReadTimeout|ConnectError|ConnectTimeout|RemoteProtocolError"),
-    ("ours", r"RuntimeError|JSONDecodeError|tool error|Traceback|KeyError|TypeError"),
-    ("negotiation", r"rejected|walked|canceled|cancelled"),
-]
-
-
-def cause(text):
-    """The failure cause of a verdict or refusal text: limit / counterpart / network / ours / negotiation, or None."""
-    if not text:
-        return None
-    for name, pat in CAUSES:
-        if re.search(pat, str(text)):
-            return name
-    return "other"
-
 
 def pid_of(ev):
     """The writing process, from event_id writer-pid-ms-seq (the writer name may itself hold dashes)."""

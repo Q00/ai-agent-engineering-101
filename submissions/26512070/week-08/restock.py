@@ -240,8 +240,12 @@ def rules_plan(ctx, now=None):
     doc = build_buy_list(ctx, now)
     plan = [{"sku": x["sku"], "qty": min(20, x["buy"])} for x in doc["lines"] if x["buy"] > 0][:10]
     if plan:
-        check.buy(ctx, plan)
-        return plan, None, doc
+        # C10 (design 16-1): the rules buy through the same call() as the model, so the plan is on the record;
+        # act.buy fits the plan to the room again (a no-op for a list built within it) and runs check.buy
+        r = call(ctx, "act.buy", {"plan": plan, "why": "rules"})
+        if not r["ok"]:
+            raise check.Refused(r["reason"], r.get("hint", ""))
+        return r["result"]["plan"], None, doc
     lacking = [x for x in doc["lines"] if x["target"] > x["have"]]
     return [], ("no_budget" if lacking else "full"), doc
 

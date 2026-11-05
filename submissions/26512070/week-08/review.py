@@ -53,6 +53,7 @@ def main():
         w.context(strategy_version=ctx.strategy.get("version"), epoch=ctx.strategy.get("epoch"),
                   card_version=card.load()[0])
         o, mr, r = deal.get("order") or {}, deal.get("settled") or {}, deal.get("receipt") or {}
+        ctx.keys = {"order": o.get("order")}                    # C1
         value = worth(ctx, deal)
         settled = dict(mr, value=value)
         w.emit("buyer.received", {"value": value, "price": r.get("price"), "grade": mr.get("grade"),
@@ -76,6 +77,10 @@ def main():
         rules = ((ctx.strategy.get("playbook") or {}).get("review") or {}).get("mode") == "rules"
         d = ({"stars": fact["stars"], "text": f"Paid {r.get('price')}; " + "; ".join(fact["reasons"]) + ".",
               "why": "rules"} if rules else None)            # 11/4: the baseline as it is, no model call
+        if d is not None:                                    # C10: the rules' review is on the record like the model's
+            rv = call(ctx, "act.review", {"stars": d["stars"], "text": d["text"], "why": "rules"})
+            if rv["ok"]:
+                d["text"] = rv["result"]["text"]
         if d is None:
             d, _ = loop.decide("review", ctx, text, deadline=time.time() + DEADLINE)
         if d is None:

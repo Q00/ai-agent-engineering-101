@@ -13,13 +13,21 @@ is deterministic and whether it changes anything. call():
 A tool reports a refusal by raising Refused(reason, hint); any other exception becomes
 {"ok": false, "reason": "tool error: ..."} so a broken tool never takes the agent down.
 """
+import hashlib
+import json
 import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from core import bus, paths, schema
-from core.events import EventWriter
+from core.causes import cause
+from core.events import JOIN_KEYS, EventWriter
+
+# C8: the version of the tool code, stamped on every call (with the strategy and card the writer already stamps)
+TOOL_VERSION = hashlib.sha1(b"".join(p.read_bytes() for p in sorted(Path(__file__).parent.glob("*.py")))).hexdigest()[:8]
+SUMMARY_MAX = 300                        # C2: how much of a result the record keeps
+SECRET_WORDS = ("key", "token", "secret", "password", "claim_code", "sig")
 
 
 class Refused(Exception):
@@ -63,6 +71,7 @@ class Ctx:
     market_dir: Path = field(default_factory=lambda: Path(os.environ.get("MARKET_DIR") or paths.root() / ".market"))
     clock: callable = time.time
     situation: dict = field(default_factory=dict)    # the decision at hand (the act.* tools act on it)
+    keys: dict = field(default_factory=dict)         # C1: the trade this call belongs to (task, order, unit, sku, ...)
     _writer: EventWriter = None
     _strategy: dict = None
 
@@ -97,16 +106,32 @@ def clip_strings(obj, sch):
     return obj
 
 
+def summary(result):
+    """C2: a short record of what a tool returned - secrets dropped, cut to SUMMARY_MAX with a mark (C9)."""
+    def clean(x):
+        if isinstance(x, dict):
+            return {k: ("<hidden>" if any(w in str(k).lower() for w in SECRET_WORDS) else clean(v))
+                    for k, v in x.items()}
+        if isinstance(x, list):
+            return [clean(v) for v in x[:20]]
+        return x
+    text = json.dumps(clean(result), ensure_ascii=False, default=str, separators=(",", ":"))
+    return text if len(text) <= SUMMARY_MAX else text[:SUMMARY_MAX - 1] + "…"
+
+
 def call(ctx: Ctx, name: str, args=None):
     args = dict(args or {})
     t = TOOLS.get(name)
+    keys = {k: v for k, v in (ctx.keys or {}).items() if k in JOIN_KEYS and v is not None}
     if t is None:
         return {"ok": False, "reason": f"unknown tool {name!r}", "hint": f"tools: {sorted(TOOLS)}"}
+    given = args
     args = clip_strings(args, t.input_schema)
     errors = schema.validate(args, t.input_schema)
     if errors:
         return {"ok": False, "reason": "bad input: " + "; ".join(errors[:3]), "hint": "see the tool's input schema"}
-    ctx.writer.emit("tool.call", {"tool": name, "args": args})
+    ctx.writer.emit("tool.call", {"tool": name, "args": args, "tool_version": TOOL_VERSION,
+                                  **({"clipped": True} if args != given else {})}, **keys)
     t0 = time.perf_counter()
     try:
         out = {"ok": True, "result": t.fn(ctx, **args)}
@@ -115,8 +140,9 @@ def call(ctx: Ctx, name: str, args=None):
     except Exception as e:  # a broken tool must not take the agent down
         out = {"ok": False, "reason": f"tool error: {type(e).__name__}: {e}", "hint": ""}
     ms = round((time.perf_counter() - t0) * 1000, 1)
-    ctx.writer.emit("tool.result", {"tool": name, "ok": out["ok"], "ms": ms,
-                                    **({} if out["ok"] else {"reason": out["reason"]})})
+    ctx.writer.emit("tool.result", {"tool": name, "ok": out["ok"], "ms": ms, "tool_version": TOOL_VERSION,
+                                    **({"summary": summary(out["result"])} if out["ok"] else
+                                       {"reason": out["reason"], "cause": cause(out["reason"])})}, **keys)
     return out
 
 

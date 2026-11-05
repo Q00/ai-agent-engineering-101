@@ -179,7 +179,7 @@ class SellerCore:
 
     def handle(self, task_id, text, deadline=None):
         """{"state": "input_required"|"completed"|"rejected", "say": str, "receipt": dict|None}"""
-        ctx = Ctx(caller="seller", clock=self.clock, _writer=self.tool_events)
+        ctx = Ctx(caller="seller", clock=self.clock, _writer=self.tool_events, keys={"task": task_id})   # C1
         strategy = ctx.strategy
         self.events.context(strategy_version=strategy.get("version"), epoch=strategy.get("epoch"),
                             card_version=cardmod.load()[0])

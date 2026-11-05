@@ -144,7 +144,7 @@ class BuyerCore:
         self.t0 = clock()
         self.events = EventWriter("buyer", source="buyer")
         self.tool_events = EventWriter("buyer", source="tools")
-        self.ctx = Ctx(caller="buyer", clock=clock, _writer=self.tool_events)
+        self.ctx = Ctx(caller="buyer", clock=clock, _writer=self.tool_events, keys={"order": order.get("order")})  # C1
 
     def deadline(self):
         return self.t0 + DEADLINE
@@ -369,6 +369,7 @@ class BuyerCore:
 
     def negotiate(self, shop, sku, kind):
         o, ctx = self.order, self.ctx
+        ctx.keys = {"order": o.get("order"), "counterpart": shop["name"], "sku": sku}   # C1: this shop's talk
         c = mf.catalog(ctx).get(sku) or {}
         hist, offers, asks = [], [], []
         try:
