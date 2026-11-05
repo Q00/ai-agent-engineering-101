@@ -476,3 +476,28 @@ PYTHONHASHSEED=0 ~/ai-agent-engineering-101/.venv/bin/python -m r3lib.shadow_gat
   - (c)는 book이 (a)와 거의 같음. 그러나 거래 −32, 방문 체결률 −0.020(허용 −0.03에 가까움), 재고 부족 +48. (a)보다 나쁨.
 - 한계: 한 창(6시간), seed 하나. 고정 DB의 `shop_stock`·`shops`·`meta`는 16:18 값임(앞 절). 비율 0.40은 planner 전역 상한도 올림(위 참고).
 - 바꾸지 않은 것: `policies/active.json`, 라이브 코드, systemd 서비스. push 없음. 재시작 없음.
+
+## 2026-11-05 인플루언서-forum (MA-4 Task 2)
+
+buyer 증거 보고 레인. `FORUM_INFLUENCER=False` 기본. True여도 이 절의 dry-run·테스트만 했고 라이브 스위치는 켜지 않음.
+
+### 무엇을 바꿨나
+- 새 모듈 `r3lib/forum_influencer.py`: 초안(sku/category/purchase/grade_warn), 금지 문구, 투표 규칙, 숨김 신호, 되돌리기, dry-run, KPI.
+- `forum_r3.py`: 플래그 True일 때만 influencer 초안·투표·10분 간격. False면 동작 불변. `--dry-run` 추가.
+- `r3lib/config.py`: `FORUM_INFLUENCER` + `INFLUENCER_*` (LEVER2_* 개수 11 유지).
+- `policies/candidates/lever2-forum.json`: vote가 스위치 뒤에 연결됐다는 설명으로 고침(게시 계획은 여전히 shadow).
+- 테스트: `tests/test_forum_influencer.py`.
+
+### 숨김
+- 읽기 전용 신호: board의 우리 posts 수 < forum.jsonl에 기록된 우리 글 수.
+- API hidden 필드/엔드포인트: UNOBSERVABLE (forum.json에 hidden 키 없음, /api/forum 타임아웃, /api/posts 404).
+
+### 되돌리기 기준값 (둘 다 인쇄, 1.2배는 2시간만 사용)
+- 켜기 직전 2시간 글당 싫어요(1.2배 기준, 2026-11-05 17:30 KST dry-run): **1.0** (8 posts). 1.2× 한도 = 1.2.
+- 전체 기간 글당 싫어요(보고용, 기준 아님): **0.49** (153 posts).
+- 숨김 신호(같은 시각): board posts 153 < forum.jsonl buyer posts 154 → hidden_signal True. API hidden 필드 UNOBSERVABLE.
+- 스위치 ON 시 `python -m r3lib.forum_influencer record-baseline` → `influencer_baseline.json`(2시간 값을 기준로 저장, all_time은 함께 기록만 함).
+
+### dry-run
+- `MARKET_DIR`을 라이브 `.market`로 두고 `python forum_r3.py --dry-run` (또는 모듈 CLI).
+- 전송 없음, LLM/Decisions 호출 0. 결과는 `logs/shadow/`.

@@ -21,7 +21,7 @@ import json
 import statistics
 import time
 
-from r3lib import config, decide, initiative, llm, market, oracle, react
+from r3lib import config, decide, forum_influencer, initiative, llm, market, oracle, react
 from r3lib.memory import Memory
 SHOP_POST_EVERY = 90 * 60
 
@@ -89,8 +89,8 @@ def ref_seqs(refs):
     """Ledger seqs of a post's refs. The forum gives refs as records {seq, found, kind, data}; older rows and
     tests may give bare ints or digit strings. Returns [] when there are no refs and None when any ref cannot be
     checked (no seq, or the market marked it found=False): such a post gets no +1.
-    vote() uses this only when FORUM_LEVER2 is True. With it False, vote() keeps the old int-only filter, so a
-    real post (refs are records) never gets a +1, as before 2026-11-05."""
+    vote() uses this when FORUM_LEVER2 or FORUM_INFLUENCER is True. With both False, vote() keeps the old
+    int-only filter, so a real post (refs are records) never gets a +1, as before 2026-11-05."""
     if isinstance(refs, str):
         try:
             refs = json.loads(refs)
@@ -114,13 +114,17 @@ def ref_seqs(refs):
 
 def vote(mem, posts, labels, p_injection=injection_probability):
     """+1 when every ref is a ledger entry we hold; -1 when the post is flagged as manipulation.
-    FORUM_LEVER2 False (default): flagged = decision model P >= INJECTION_P, else the LLM label (as before).
-    FORUM_LEVER2 True: -1 needs deterministic evidence, the decision model P >= max(INJECTION_P,
-    LEVER2_DOWNVOTE_P). A -1 that rests only on the LLM label is not sent (2026-11-05: 135 of our 158 -1 did).
-    FORUM_LEVER2 True also reads refs as records with ref_seqs and sends at most LEVER2_UPVOTES_PER_RUN +1 per
-    run; a post over the cap stays unvoted for a later run. FORUM_LEVER2 False keeps the old int-only refs
-    filter unchanged (MO option C, 2026-11-05): real refs are records, so no +1 is sent, as before."""
+
+    Flags (both default False; with both False the live path is unchanged):
+      FORUM_LEVER2 True: no -1 on the LLM label alone (needs P >= max(INJECTION_P, LEVER2_DOWNVOTE_P));
+        refs via ref_seqs; +1 capped at LEVER2_UPVOTES_PER_RUN per run.
+      FORUM_INFLUENCER True: same refs path; -1 on a deterministic DOWNVOTE_PATTERN match or P >= INJECTION_P
+        (never the LLM label alone). Pattern matches cover market impersonation, AI instructions, monopoly.
+    Either flag on => refs via ref_seqs. Both off => old int-only filter (no +1 on real record refs).
+    """
     lever2 = bool(getattr(config, "FORUM_LEVER2", False))
+    influencer = forum_influencer.influencer_on()
+    use_records = forum_influencer.use_ref_seqs()
     upvotes = 0                                        # +1 sent in this run; capped only when lever2
     notes = []                                         # written after the transaction: a second connection would lock
     with mem.db() as c:
@@ -129,7 +133,7 @@ def vote(mem, posts, labels, p_injection=injection_probability):
             row = c.execute("SELECT voted, mine FROM forum WHERE id=?", (str(p["id"]),)).fetchone()
             if not row or row["voted"] or row["mine"]:
                 continue
-            if lever2:                                  # refs are records {seq, found, ...}
+            if use_records:                             # refs are records {seq, found, ...}
                 refs = ref_seqs(p.get("refs"))
             else:                                       # old filter, unchanged: int refs only
                 refs = [r for r in p.get("refs") or [] if isinstance(r, int)]
@@ -146,12 +150,15 @@ def vote(mem, posts, labels, p_injection=injection_probability):
                 if p_inj is not None:
                     sig["p_manipulation"] = round(p_inj, 3)
                     c.execute("UPDATE forum SET signals=? WHERE id=?", (json.dumps(sig, ensure_ascii=False), str(p["id"])))
-            if lever2:                                  # no -1 on the LLM label alone
+            llm_lab = bool((labels.get(str(p["id"])) or {}).get("injection"))
+            if influencer:
+                flagged, _why = forum_influencer.should_downvote(
+                    p.get("text") or "", p_inj, llm_lab, influencer=True, lever2=lever2)
+            elif lever2:                                # no -1 on the LLM label alone
                 flagged = p_inj is not None and p_inj >= max(config.INJECTION_P,
                                                              getattr(config, "LEVER2_DOWNVOTE_P", config.INJECTION_P))
             else:
-                flagged = p_inj >= config.INJECTION_P if p_inj is not None else \
-                    bool((labels.get(str(p["id"])) or {}).get("injection"))
+                flagged = p_inj >= config.INJECTION_P if p_inj is not None else llm_lab
             if flagged:
                 value = -1
             elif refs and all(r in known for r in refs):
@@ -296,7 +303,7 @@ def useful_probability(text, mem):
 
 def proactive_buyer_post(mem, now, run=react.run):
     """One buyer post when the Horvitz gate opens. Returns the decision record (also logged)."""
-    if now - (mem.get("buyer_post_at") or 0) < config.FORUM_MIN_GAP_MIN * 60:
+    if now - (mem.get("buyer_post_at") or 0) < forum_influencer.buyer_gap_min() * 60:
         return {"decision": "wait", "why": "min gap"}
     with mem.db() as c:
         seen = [c.execute("SELECT COALESCE(MAX(seq), 0) m FROM ledger").fetchone()["m"],
@@ -351,8 +358,14 @@ def _self_check(post):
 
 
 def scheduled_report(mem, now, p_injection=_self_check):
-    """Report lane: one fact post from the oracle when the gap allows and our posts are not disliked."""
-    if now - (mem.get("buyer_post_at") or 0) < config.REPORT_GAP_MIN * 60:
+    """Report lane: one fact post from the oracle when the gap allows and our posts are not disliked.
+
+    With FORUM_INFLUENCER True: use forum_influencer drafts (sku / category / purchase / grade_warn),
+    10-min buyer gap, banned-phrase + length checks. With False: unchanged oracle REPORT_ORDER path.
+    """
+    gap_min = (forum_influencer.buyer_gap_min() if forum_influencer.influencer_on()
+               else config.REPORT_GAP_MIN)
+    if now - (mem.get("buyer_post_at") or 0) < gap_min * 60:
         return {"decision": "wait", "why": "report gap"}
     reception = mem.my_post_reception(role="buyer")
     votes = reception["likes"] + reception["dislikes"]
@@ -361,6 +374,39 @@ def scheduled_report(mem, now, p_injection=_self_check):
     sent = {k: t for k, t in (mem.get("report_subjects") or {}).items() if now - t < config.REPORT_DEDUPE_H * 3600}
     with mem.db() as c:
         seqs = {r["seq"] for r in c.execute("SELECT seq FROM ledger")}
+    if forum_influencer.influencer_on():
+        last_ours = bool(mem.get("influencer_last_our_shop_only"))
+        draft = forum_influencer.next_draft(mem, skip=sent, now=now,
+                                            turn=int(mem.get("report_turn") or 0),
+                                            last_our_shop_only=last_ours)
+        if not draft.get("kind"):
+            mem.put("report_turn", int(mem.get("report_turn") or 0) + 1)
+            return {"decision": "silent", "why": "; ".join(draft.get("tried") or []) or "no influencer draft",
+                    "lane": "influencer"}
+        text, refs = draft["text"], [r for r in draft["refs"] if r in seqs]
+        if not refs:
+            sent[draft["subject"]] = now
+            mem.put("report_subjects", sent)
+            return {"decision": "silent", "why": "influencer refs not in our ledger copy", "lane": "influencer"}
+        bad = forum_influencer.validate_draft(text, refs)
+        if bad:
+            sent[draft["subject"]] = now
+            mem.put("report_subjects", sent)
+            return {"decision": "silent", "why": f"influencer validate: {', '.join(bad)}", "lane": "influencer"}
+        p = p_injection({"id": draft["subject"], "role": "buyer", "text": text})
+        if p is not None and p >= config.REPORT_MAX_MANIPULATION:
+            sent[draft["subject"]] = now
+            mem.put("report_subjects", sent)
+            return {"decision": "silent", "why": f"self-check p_manipulation={p:.2f}", "lane": "influencer",
+                    "p_manipulation": p}
+        outbox({"post": text[:config.FORUM_MAX_CHARS], "refs": refs[:8], "as": "buyer"})
+        sent[draft["subject"]] = now
+        mem.put("report_subjects", sent)
+        mem.put("report_turn", int(mem.get("report_turn") or 0) + 1)
+        mem.put("buyer_post_at", now)
+        mem.put("influencer_last_our_shop_only", bool(draft.get("our_shop_only")))
+        return {"decision": "post", "source": f"influencer:{draft['kind']}", "subject": draft["subject"],
+                "p_manipulation": p, "lane": "influencer"}
     start = mem.get("report_turn") or 0
     order = config.REPORT_ORDER[start % len(config.REPORT_ORDER):] + config.REPORT_ORDER[:start % len(config.REPORT_ORDER)]
     tried = []
@@ -416,7 +462,40 @@ def shop_facts(mem):
             "how_to_buy": "ask for the product name or SKU, and the shelf life you need, e.g. 'need 24 h'"}
 
 
-def main():
+def dry_run_main(argv=None):
+    """Build 1 h of influencer drafts (+ vote plan summary). Sends nothing. No LLM / Decisions call."""
+    import argparse
+    import glob as _glob
+    from pathlib import Path as _Path
+    ap = argparse.ArgumentParser(description=dry_run_main.__doc__)
+    ap.add_argument("--dry-run", action="store_true", required=True)
+    ap.add_argument("--end", type=float, default=None)
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--db", default=str(config.DB_PATH))
+    a = ap.parse_args(argv)
+    now = a.end or time.time()
+    board = {}
+    files = sorted(_glob.glob(str(config.ROOT / "logs" / "monitor" / "*" / "board-*.json")))
+    if files:
+        try:
+            board = json.loads(_Path(files[-1]).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            board = {}
+    out_dir = a.out or str(config.ROOT / "logs" / "shadow")
+    dry = forum_influencer.dry_run(forum_influencer.ReadOnlyMem(a.db), board or {}, now=now, out_dir=out_dir)
+    print(json.dumps({"event": "forum_dry_run", "sent": False, "llm_calls": 0, "decisions_calls": 0,
+                      "checks": dry["checks"], "posts": len(dry["plan"]["posts"]),
+                      "baseline_2h": dry["rollback_baseline_2h"]["ours"],
+                      "all_time": dry["all_time_dislikes_per_post"],
+                      "hidden": dry["hidden_status"]}, ensure_ascii=False), flush=True)
+    return 0 if dry["checks"]["ok"] else 1
+
+
+def main(argv=None):
+    import sys
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if "--dry-run" in argv:
+        raise SystemExit(dry_run_main(argv))
     mem = Memory()
     posts = market.read_json("forum.json", []) or []
     if isinstance(posts, dict):
@@ -440,7 +519,8 @@ def main():
             outbox({"post": write_post(f, "shop"), "refs": [], "as": "shop"})
             mem.put("shop_post_at", now)
     print(json.dumps({"event": "forum_done", "new_posts": len(new), "labels": len(labels),
-                      "buyer_post": decision.get("decision")}), flush=True)
+                      "buyer_post": decision.get("decision"),
+                      "influencer": forum_influencer.influencer_on()}), flush=True)
 
 
 if __name__ == "__main__":
