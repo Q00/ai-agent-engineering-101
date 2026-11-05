@@ -4,10 +4,15 @@ Every source is optional. One failing endpoint or a missing file is recorded and
 goes on, because a brief with a hole is still better than no brief. A run stays under ~50 requests:
 the ledger is paged from a cursor kept in state (at most 40 pages, then a jump to the newest rows,
 flagged as a gap), and the 1.2 MB catalog and the demand table change rarely, so they are cached
-for 24 h. The shop's files are on a shared volume and are only read here. The kit's own log
+for 24 h. The ledger rows a run reads are the ones since the last run (raw["ledger_h"] says how many hours
+that is), and their settles are also kept in 10-minute buckets for 6 h (ledger_buckets), so an hour or
+two of market settles can be counted after the rows themselves are gone. The shop's files are on a
+shared volume and are only read here. The kit's own log
 (logs/market-kit.log: supply buys, payments, restarts, errors) is reduced to counts. Of the shop's
 .market/ folder only inventory.json is read: the other files there hold keys and the claim code.
 """
+import bisect
+import json
 import os
 import re
 from collections import Counter
@@ -21,8 +26,15 @@ PAGE = 500                  # the ledger's page size and the backfill on a first
 MAX_PAGES = 40
 CACHE_S = 24 * 3600
 ROLES = ("seller", "buyer", "restock", "review", "forum")
-TAIL_BYTES = 256 * 1024     # what memory.store.tail_jsonl reads from the end of a file
+TAIL_BYTES = 256 * 1024     # what is read from the end of a log file
 TAIL_ROWS = 3000
+# seller.jsonl grows ~1.4 MB (2,350 rows) an hour, buyer.jsonl ~0.4 MB: 2 MB covers the hour and buyer ~5 h
+TAIL_BYTES_BY_ROLE = {"seller": 2 << 20, "buyer": 2 << 20}
+TAIL_ROWS_BY_ROLE = {"seller": 6000, "buyer": 6000}
+HISTORY_ROLES = ("buyer", "forum")      # also kept for history_h hours (strategist/outcome.py)
+BUCKET_S = 600
+BUCKETS_KEEP_S = 6 * 3600
+BANDS = (20000, 50000, 100000, 200000, 500000, 1000000)    # list price band i = bisect(BANDS, list price)
 KIT_TAIL_BYTES = 1024 * 1024    # market-kit.log grows ~0.5 MB an hour
 CLOCK_SLACK_S = 120         # a kit line may be stamped a little after `now`, or out of order across threads
 OLD_RUN = 20                # consecutive kit lines before the window that end the walk back
@@ -100,10 +112,15 @@ def _page(client, after):
     return sorted(rows, key=lambda r: r["seq"])
 
 
-def _ledger(client, state, raw, errors):
+def _ledger(client, state, raw, errors, now):
     """New ledger rows since state["ledger_seq"]; advances the cursor over what was read, even on an error.
-    A page that starts past after+1 (the market trimmed old rows or ignored `after`) is a gap too."""
+    A page that starts past after+1 (the market trimmed old rows or ignored `after`) is a gap too.
+    raw["ledger_h"]: hours since the last complete read (state["ledger_ts"]), the span the rows cover;
+    None on a first read or when that time is unknown."""
     cursor, rows, gap = state.get("ledger_seq"), [], False
+    last = state.get("ledger_ts")
+    raw["ledger_h"] = (round((now - last) / 3600, 4) if cursor is not None and isinstance(last, (int, float))
+                       and not isinstance(last, bool) and now > last else None)
     try:
         if cursor is None:
             rows = _page(client, -PAGE)
@@ -120,6 +137,7 @@ def _ledger(client, state, raw, errors):
                 top = max([cursor] + [r["seq"] for r in rows])
                 gap = gap or bool(latest) and latest[0]["seq"] > top + 1
                 rows += [r for r in latest if r["seq"] > top]
+        state["ledger_ts"] = now                        # a failed read leaves the span to the next run
     except Exception as e:
         errors.append(_err("ledger", e))
     if rows:
@@ -144,7 +162,7 @@ def fetch_public(client, state, now, cache_dir=None, me=ME):
     take("board", lambda: _get(client, "/api/board", want=dict))
     take("stats", lambda: _current_round(_get(client, "/api/stats", want=dict)))
     take("trades", lambda: _get(client, "/api/trades", want=list))
-    _ledger(client, state, raw, errors)
+    _ledger(client, state, raw, errors, now)
     take("forum", lambda: _forum(_get(client, "/api/forum", {"limit": 100})))
     take("shop_reviews", lambda: _get(client, "/api/shop-reviews", {"shop": me}, list))
     take("demand", lambda: _cached("demand", now, cache_dir,
@@ -178,18 +196,37 @@ def _summary(s):
                        "stars_n": len(stars), "stars_mean": round(sum(stars) / len(stars), 2) if stars else None}}
 
 
-def _window_rows(path, since, name, truncated):
-    """Rows of the window from the file's tail. When even the oldest row read is inside the window and
-    the tail was cut (by bytes or rows), the window started earlier: name goes into truncated."""
-    rows = tail_jsonl(path, TAIL_ROWS)
-    ts = [r["ts"] for r in rows if isinstance(r, dict) and isinstance(r.get("ts"), (int, float))]
+def _tail(path, n, max_bytes):
+    """(the last n parseable rows within the file's last max_bytes, cut): cut when rows were left out."""
     try:
-        cut = os.path.getsize(path) > TAIL_BYTES or len(rows) >= TAIL_ROWS
+        with open(path, "rb") as f:
+            size = f.seek(0, os.SEEK_END)
+            f.seek(max(0, size - max_bytes))
+            lines = f.read().split(b"\n")
     except OSError:
-        cut = False
+        return [], False
+    if size > max_bytes:
+        lines = lines[1:]                               # the first line read may start mid-line
+    rows = []
+    for line in reversed(lines):
+        try:
+            rows.append(json.loads(line))
+        except ValueError:
+            continue
+        if len(rows) >= n:
+            break
+    return rows[::-1], size > max_bytes or len(rows) >= n
+
+
+def _window_rows(path, since, name, truncated, keep_since=None):
+    """Rows of the window from the file's tail (rows since keep_since when that is earlier). When even the
+    oldest row read is inside the window and the tail was cut (by bytes or rows), the window started
+    earlier: name goes into truncated."""
+    rows, cut = _tail(path, TAIL_ROWS_BY_ROLE.get(name, TAIL_ROWS), TAIL_BYTES_BY_ROLE.get(name, TAIL_BYTES))
+    ts = [r["ts"] for r in rows if isinstance(r, dict) and isinstance(r.get("ts"), (int, float))]
     if cut and ts and min(ts) >= since:
         truncated.append(name)
-    return _recent(rows, since)
+    return _recent(rows, min(since, keep_since if keep_since is not None else since))
 
 
 # --- the kit's log (logs/market-kit.log): "HH:MM:SS [tag] text", local time, no date
@@ -288,14 +325,16 @@ def _inventory(inv):
             "units": [{k: u.get(k) for k in UNIT_KEYS} for u in inv["units"] if isinstance(u, dict)]}
 
 
-def read_own(shop_home, now, window_h=1):
+def read_own(shop_home, now, window_h=1, history_h=0):
     """The shop's summary, its log rows and the kit log's counts of the last window_h hours, and its inventory
     now. Never raises; missing parts are empty (a missing or broken inventory.json: {} and own["inventory_error"]).
-    tail_jsonl reads only the last 256 KB of a file (the kit log: 1 MB), so a very busy hour is counted from
-    its newest rows; own["truncated"] then names that log, and the brief says its counts are too low."""
+    Only a file's tail is read (seller and buyer logs: 2 MB, other logs 256 KB, the kit log 1 MB), so a very
+    busy hour is counted from its newest rows; own["truncated"] then names that log, and the brief says its
+    counts are too low. own["history"]: the buyer and forum rows of the last history_h hours, as far as
+    the tail reaches (for outcome checks; never in the brief)."""
     home, since = Path(shop_home), now - window_h * 3600
     own = {"window_h": window_h, "summary": {}, "decisions": {}, "acp": [],
-           "policy_changes": [], "kit": {}, "truncated": [], "inventory": {}}
+           "policy_changes": [], "kit": {}, "truncated": [], "inventory": {}, "history": {}}
     inv = _inventory(read_json(home / ".market" / "inventory.json", None))
     if inv is None:
         own["inventory_error"] = "inventory: .market/inventory.json missing or not an inventory"
@@ -303,9 +342,13 @@ def read_own(shop_home, now, window_h=1):
         own["inventory"] = inv
     try:
         own["summary"] = _summary(read_json(home / "memory" / "summary.json", {}))
+        keep = now - history_h * 3600
         for role in ROLES:
-            own["decisions"][role] = _window_rows(home / "logs" / "decisions" / f"{role}.jsonl", since, role,
-                                                  own["truncated"])
+            rows = _window_rows(home / "logs" / "decisions" / f"{role}.jsonl", since, role, own["truncated"],
+                                keep if role in HISTORY_ROLES else None)
+            own["decisions"][role] = _recent(rows, since)
+            if role in HISTORY_ROLES:
+                own["history"][role] = rows
         own["acp"] = _window_rows(home / "logs" / "acp-sessions.jsonl", since, "acp", own["truncated"])
         own["policy_changes"] = [r for r in tail_jsonl(home / "logs" / "policy-changes.jsonl", 5) if isinstance(r, dict)]
         own["kit"] = _kit(_kit_lines(home / "logs" / "market-kit.log", now, since, own["truncated"]))
@@ -313,3 +356,50 @@ def read_own(shop_home, now, window_h=1):
         own["error"] = _err("own", e)
     return own
 
+
+# --- market settles in 10-minute buckets (state["ledger_buckets"]), for counts over more than one run
+
+def _number(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool)
+
+
+def band(list_price):
+    """The list price band index (bisect over BANDS), or None without a price."""
+    return bisect.bisect(BANDS, list_price) if _number(list_price) else None
+
+
+def ledger_buckets(lb, ledger, catalog, ours, now):
+    """lb (state["ledger_buckets"], or None) with this run's settle rows added: bucket start (str) ->
+    {settle, ours, settle.b<i>, rev.b<i>, ours.b<i>, ours_rev.b<i>}, i the list price band. Every ledger
+    row is read once (the cursor), so each settle is counted once. ours(data) -> bool. Buckets older than
+    BUCKETS_KEEP_S are dropped."""
+    lb = {k: v for k, v in (lb.items() if isinstance(lb, dict) else ()) if isinstance(v, dict)
+          and k.isdigit() and int(k) + BUCKET_S > now - BUCKETS_KEEP_S}
+    catalog = catalog if isinstance(catalog, dict) else {}
+    for r in ledger or []:
+        if not isinstance(r, dict) or r.get("kind") != "settle" or not isinstance(r.get("data"), dict):
+            continue
+        ts = r.get("ts")
+        if not _number(ts) or ts <= now - BUCKETS_KEEP_S:
+            continue
+        d = r["data"]
+        b = lb.setdefault(str(int(ts // BUCKET_S * BUCKET_S)), {})
+        mine = bool(ours(d))
+        amount = d["amount"] if _number(d.get("amount")) else 0
+        c = catalog.get(d.get("sku") or d.get("item"))
+        i = band(c[2]) if isinstance(c, list) and len(c) > 2 else None
+        for k in ("settle", "ours") if mine else ("settle",):
+            b[k] = b.get(k, 0) + 1
+        if i is not None:
+            for k, v in (("settle", 1), ("rev", amount)) + ((("ours", 1), ("ours_rev", amount)) if mine else ()):
+                b[f"{k}.b{i}"] = b.get(f"{k}.b{i}", 0) + v
+    return lb
+
+
+def bucket_total(lb, t0, t1):
+    """Counter of the buckets that lie wholly in [t0, t1)."""
+    out = Counter()
+    for k, v in (lb or {}).items():
+        if t0 <= int(k) and int(k) + BUCKET_S <= t1:
+            out.update(v)
+    return out

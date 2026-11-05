@@ -22,7 +22,8 @@ class Conflict(Exception):
 
 
 def read(path):
-    """(text, front, body, errors). errors is empty when the policy block validates."""
+    """(text, front, body, errors). errors is empty when the policy block validates once keys missing from
+    the file are filled from policy.DEFAULTS, as policy.load does for the shop."""
     try:
         text = Path(path).read_text(encoding="utf-8")
     except OSError as e:
@@ -31,7 +32,7 @@ def read(path):
         front, body = policy.split_skill(text)
     except ValueError as e:
         return text, {}, "", [f"{Path(path).name}: {e}"]
-    return text, front, body, policy.validate(front.get("policy"))
+    return text, front, body, policy.validate(policy.fill_defaults(front.get("policy"))[0])
 
 
 def ver(text):
@@ -105,7 +106,7 @@ def _edit(text, changes):
 
 def _check(new_text, changes):
     front, _ = policy.split_skill(new_text)
-    errors = policy.validate(front.get("policy"))
+    errors = policy.validate(policy.fill_defaults(front.get("policy"))[0])
     if errors:
         raise ValueError("validate: " + "; ".join(errors))
     for k, v in changes.items():

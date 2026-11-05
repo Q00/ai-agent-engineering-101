@@ -130,6 +130,52 @@ class LedgerTest(unittest.TestCase):
         self.assertTrue(errors[0].startswith("ledger: HTTPStatusError: "), errors)
         self.assertIn("board", raw)
 
+    def test_ledger_span_is_the_time_since_the_last_complete_read(self):
+        m, state = FakeMarket(1200), {}
+        raw, _ = self.fetch(m, state)
+        self.assertIsNone(raw["ledger_h"])                              # first read: the newest 500 rows
+        self.assertEqual(state["ledger_ts"], NOW)
+        state["ledger_ts"] = NOW - 1800                                 # the last run, 30 minutes ago
+        raw, _ = self.fetch(m, state)
+        self.assertEqual(raw["ledger_h"], 0.5)
+        self.assertEqual(state["ledger_ts"], NOW)
+        state["ledger_ts"] = NOW - 1800
+        m.fail["/api/ledger"] = 503
+        raw, _ = self.fetch(m, state)
+        self.assertEqual(state["ledger_ts"], NOW - 1800)                # the next run's rows start there
+
+
+class LedgerBucketTest(unittest.TestCase):
+    CAT = {"FOOD": ["kimchi", "food", 15000, "food", 720], "SOFA": ["sofa", "goods", 2320000, "goods", None]}
+
+    @staticmethod
+    def settle(sku, ts, shop="other", amount=1000, kind="settle"):
+        return {"seq": 1, "ts": ts, "kind": kind, "data": {"sku": sku, "shop": shop, "amount": amount}}
+
+    def test_counts_bands_ours_and_each_row_once(self):
+        ours = lambda d: d.get("shop") == "me"
+        rows = [self.settle("FOOD", NOW - 100, "me", 12000), self.settle("SOFA", NOW - 90, amount=2000000),
+                self.settle("NOCAT", NOW - 80), self.settle("FOOD", NOW - 70, kind="order"), "x",
+                {"kind": "settle", "ts": NOW, "data": None}]
+        lb = collect.ledger_buckets(None, rows, self.CAT, ours, NOW)
+        tot = collect.bucket_total(lb, NOW - 3600, NOW + 600)
+        self.assertEqual(tot["settle"], 3)
+        self.assertEqual(tot["ours"], 1)
+        b_food, b_sofa = collect.band(15000), collect.band(2320000)
+        self.assertEqual((b_food, b_sofa), (0, 6))
+        self.assertEqual((tot[f"ours.b{b_food}"], tot[f"ours_rev.b{b_food}"], tot[f"rev.b{b_sofa}"]), (1, 12000, 2000000))
+        lb = collect.ledger_buckets(lb, [], self.CAT, ours, NOW + 600)  # the next run reads no new rows
+        self.assertEqual(collect.bucket_total(lb, NOW - 3600, NOW + 600)["settle"], 3)
+
+    def test_old_buckets_expire_and_partial_buckets_are_left_out(self):
+        lb = collect.ledger_buckets({}, [self.settle("FOOD", NOW - 100)], self.CAT, lambda d: False, NOW)
+        start = int((NOW - 100) // 600 * 600)
+        self.assertEqual(collect.bucket_total(lb, start, start + 600)["settle"], 1)
+        self.assertEqual(collect.bucket_total(lb, start + 1, start + 600)["settle"], 0)
+        lb = collect.ledger_buckets(lb, [self.settle("FOOD", NOW - 7 * 3600)], self.CAT, lambda d: False,
+                                    NOW + 6 * 3600)
+        self.assertEqual(lb, {})
+
 
 class EndpointTest(unittest.TestCase):
     def setUp(self):
@@ -254,12 +300,36 @@ class ReadOwnTest(unittest.TestCase):
         now = time.time()
         pad = "x" * 2000
         self.write("logs/decisions/buyer.jsonl", [{"ts": now - 3000 + i, "kind": "order", "pad": pad}
-                                                  for i in range(200)])      # ~400 KB, all inside the hour
+                                                  for i in range(1200)])     # ~2.4 MB, all inside the hour
+        self.write("logs/decisions/review.jsonl", [{"ts": now - 3000 + i, "kind": "review", "pad": pad}
+                                                   for i in range(200)])     # ~400 KB: over its 256 KB tail
         self.write("logs/decisions/seller.jsonl", [{"ts": now - 7200, "kind": "quote", "pad": pad}]
                    + [{"ts": now - 60, "kind": "sign"}])                      # small: read whole
         own = collect.read_own(self.home, now, window_h=1)
-        self.assertEqual(own["truncated"], ["buyer"])
-        self.assertLess(len(own["decisions"]["buyer"]), 200)
+        self.assertEqual(own["truncated"], ["buyer", "review"])
+        self.assertLess(len(own["decisions"]["buyer"]), 1200)
+        self.assertGreater(len(own["decisions"]["buyer"]), 1000)              # 2 MB of it
+
+    def test_seller_tail_covers_an_hour_at_1_4_mb(self):
+        now = time.time()
+        rows = [{"ts": now - 3500 + i * 1.5, "kind": "quote", "pad": "x" * 520} for i in range(2350)]
+        self.write("logs/decisions/seller.jsonl", rows)                     # ~1.4 MB in the hour
+        own = collect.read_own(self.home, now, window_h=1)
+        self.assertEqual(len(own["decisions"]["seller"]), 2350)
+        self.assertEqual(own["truncated"], [])
+
+    def test_history_rows_for_buyer_and_forum_only(self):
+        now = time.time()
+        for role in ("buyer", "forum", "seller"):
+            self.write(f"logs/decisions/{role}.jsonl", [{"id": f"{role}{h}", "ts": now - h * 3600 - 60}
+                                                         for h in (4, 2, 0)])
+        own = collect.read_own(self.home, now, window_h=1, history_h=3)
+        self.assertEqual([r["id"] for r in own["decisions"]["buyer"]], ["buyer0"])
+        self.assertEqual([r["id"] for r in own["history"]["buyer"]], ["buyer2", "buyer0"])
+        self.assertEqual([r["id"] for r in own["history"]["forum"]], ["forum2", "forum0"])
+        self.assertNotIn("seller", own["history"])
+        self.assertEqual(collect.read_own(self.home, now)["history"]["buyer"], [r for r in own["history"]["buyer"]
+                                                                                if r["id"] == "buyer0"])
 
     def test_missing_or_broken_files_never_raise(self):
         own = collect.read_own(self.home / "nothing-here", time.time())

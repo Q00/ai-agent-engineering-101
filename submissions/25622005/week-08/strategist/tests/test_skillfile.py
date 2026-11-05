@@ -66,6 +66,15 @@ class Read(Base):
         self.path.write_text(self.orig.replace("floor_list: 0.60", "floor_list: 0.90"), encoding="utf-8")
         self.assertIn("seller.floor_list: above seller.first_ask_list", sf.read(self.path)[3])
 
+    def test_key_missing_from_the_file_is_filled_for_validate_only(self):
+        old = self.orig.replace("    focus_max: 8\n", "")
+        self.path.write_text(old, encoding="utf-8")
+        text, front, _, errors = sf.read(self.path)
+        self.assertEqual(errors, [])
+        self.assertNotIn("focus_max", front["policy"]["stock"])
+        new = sf.apply(self.path, old, {"stock.max_qty": 15})       # the write validates the same way
+        self.assertNotIn("focus_max:", new)
+
 
 class Apply(Base):
     CHANGES = {"seller.first_ask_list": 0.9, "stock.max_qty": 15, "buyer.cap_food": 0.98}

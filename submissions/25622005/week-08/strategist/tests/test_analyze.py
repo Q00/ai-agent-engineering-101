@@ -257,7 +257,7 @@ class BriefTest(unittest.TestCase):
         rs = ops["restock"]
         self.assertEqual((rs["runs"], rs["window_closed_runs"], rs["lines"]), (2, 1, 1))
         self.assertEqual(rs["window"], {"open": True, "in_s": -40})
-        self.assertEqual(rs["stock"], {"skus": 2, "units": 3, "empty_picks": 4})
+        self.assertEqual(rs["stock"], {"skus": 2, "units": 3, "empty_picks": 4, "overpriced": None})
         k = ops["kit"]
         self.assertEqual((k["supply_bought"], k["supply_units"], k["paid"], k["pay_refused"], k["starts"]),
                          (2, 9, 3, 3, 1))
@@ -345,7 +345,7 @@ class BriefTest(unittest.TestCase):
             self.assertIsNone(b["hours_left"])
             self.assertEqual(b["market_window"]["rows"], 0)
 
-    def test_large_input_stays_under_12_kb(self):
+    def test_large_input_stays_under_the_limit(self):
         big = raw()
         ko = "가나다라마바사아자차카타파하" * 30
         big["board"]["shops"] += [shop(f"shop{i}", 1000 - i, 50000 - i, 4.0, pitch=ko) for i in range(80)]
@@ -362,7 +362,7 @@ class BriefTest(unittest.TestCase):
         o["summary"]["market_categories"] = {ko[:40] + str(i): {"demand": i, "supply": 1} for i in range(30)}
         o["decisions"]["buyer"] += [{"ts": NOW, "kind": "order", "choice": None, "why": ko + str(i)} for i in range(50)]
         b = analyze.brief(big, o, None, POL, NOW)
-        self.assertLess(analyze.size(b), 12000)
+        self.assertLess(analyze.size(b), analyze.LIMIT)
         self.assertGreater(b["trimmed"], 0)
         self.assertTrue(b["prices"] and b["leaders"]["by_deals"] and b["me"]["shop"])
         # the kit's refusal reasons, restock lines and forum rows at their largest still fit
@@ -381,9 +381,21 @@ class BriefTest(unittest.TestCase):
                "candidates": [{"sku": f"G{i:08x}", "settles_6h": 99, "suppliers_6h": 9, "score": 9.9, "refs": [1, 2, 3]}
                               for i in range(40)],
                "forum_mentions": {f"G{i:08x}": i for i in range(10)}}
-        b = analyze.brief(big, o, None, POL, NOW, flows={"in": 1, "sold": 2, "gone_unsold": 3, "gone_cost": 4},
-                          focus=foc)
-        self.assertLess(analyze.size(b), 12000)
+        # and every new section at its largest
+        o["decisions"]["seller"] += [{"ts": NOW, "kind": "quote", "why": "first reply", "inputs": {"list_price": 9}}] * 900
+        o["decisions"]["buyer"] += [{"ts": NOW, "kind": "order", "inputs": {"kind": "food"}, "choice": "no_deal",
+                                     "tried": [{"receipt_problem": ko + str(i)}]} for i in range(40)]
+        o["decisions"]["restock"][-1]["inputs"] |= {"excluded": {ko[:20] + str(i): i for i in range(30)},
+                                                    "surge": [{"sku": f"G{i:08x}", "factor": 1.5} for i in range(20)]}
+        buckets = {str(int(NOW // 600 * 600) - 600 * j): {"settle": 9, **{f"settle.b{i}": 1 for i in range(7)},
+                                                         **{f"rev.b{i}": 10 for i in range(7)}} for j in range(6)}
+        weights = {"shop": {"book": 0.5, "revenue": 0.3, "stars": 0.2},
+                   "buyer": {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}}
+        b = analyze.brief(big, o, {"me": b["me"], "ts": NOW - 1800}, POL, NOW,
+                          flows={"in": 1, "sold": 2, "gone_unsold": 3, "gone_cost": 4}, focus=foc,
+                          buckets=buckets, weights=weights)
+        self.assertLess(analyze.size(b), analyze.LIMIT)
+        self.assertTrue(b["me"]["shop"] and b["delta"]["shop"] and b["inventory"]["top"])
         self.assertEqual(b["inventory"]["units"], 3000)
         self.assertTrue(b["inventory"]["top"] and b["focus"]["candidates"])
         self.assertEqual(b["ops"]["forum"]["posts"], 100)
@@ -440,6 +452,134 @@ class InventoryFocusTest(unittest.TestCase):
                                            {"sku": "G1", "settles_6h": 12, "suppliers_6h": 2, "score": 4.0, "held": 2}])
         self.assertEqual((f["current"], f["next"], f["covered_h"], f["forum_mentions"]),
                          (["G1"], ["G1", "G2"], 2.5, {"Ga1b2c3d4": 3}))
+
+
+class NewSectionsTest(unittest.TestCase):
+    WEIGHTS = {"shop": {"book": 0.5, "revenue": 0.3, "stars": 0.2},
+               "buyer": {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}}
+
+    def board(self):
+        b = board()
+        for s, (book, all_) in zip(b["shops"], ((300, 0.6), (900, 0.9), (100, 0.4), (200, 0.3), (50, 0.1), (999, 1))):
+            s.update(book=book, all=all_)
+        for r, (surplus, forum, posts) in zip(b["buyers"], ((50, 0.2, 9), (90, 0.5, 3), (10, 0.9, 1), (999, 1, 99))):
+            r.update(surplus=surplus, forum=forum, posts=posts, all=0.5)
+        return b
+
+    def test_score_parts_and_gain_with_weights(self):
+        r = raw()
+        r["board"] = self.board()
+        sc = analyze.brief(r, own(), None, POL, NOW, weights=self.WEIGHTS)["score"]
+        shop = sc["shop"]
+        # ranked pool: s1, s2, s3 (deals > 0, not house) and us; s4 has no deals
+        self.assertEqual(shop["pool"], 4)
+        parts = {p["f"]: p for p in shop["parts"]}
+        self.assertEqual(parts["book"]["pct"], round(2 / 3, 4))           # above s2 (100) and s3 (200)
+        self.assertEqual(parts["revenue"]["pct"], round(1 / 3, 4))        # 5000 > s3's 3000 only
+        self.assertEqual(parts["stars"]["pct"], round(2 / 3, 4))
+        self.assertEqual(parts["book"]["gain"], round(0.5 * (1 - 2 / 3), 4))
+        gains = [p["gain"] for p in shop["parts"]]
+        self.assertEqual(gains, sorted(gains, reverse=True))
+        self.assertEqual(shop["recon"], round(0.5 * 2 / 3 + 0.3 / 3 + 0.2 * 2 / 3, 4))
+        self.assertEqual(shop["all"], 0.6)
+        self.assertEqual([p["f"] for p in sc["buyer"]["parts"]][0], "forum")   # lowest pct, largest weight left
+
+    def test_score_without_weights_omits_gain(self):
+        r = raw()
+        r["board"] = self.board()
+        sc = analyze.brief(r, own(), None, POL, NOW)["score"]
+        self.assertEqual([p["f"] for p in sc["shop"]["parts"]], ["book", "revenue", "stars"])
+        self.assertTrue(all("gain" not in p and "w" not in p for p in sc["shop"]["parts"]))
+        self.assertNotIn("recon", sc["shop"])
+
+    def test_bands_from_buckets(self):
+        start = int(NOW // 600 * 600)
+        buckets = {str(start): {"settle": 4, "ours": 2, "settle.b0": 3, "rev.b0": 30000, "ours.b0": 2,
+                                "ours_rev.b0": 20000, "settle.b5": 1, "rev.b5": 600000},
+                   str(start - 7200): {"settle": 50, "settle.b0": 50, "rev.b0": 1}}       # older than the hour
+        bands = analyze.brief(raw(), own(), None, POL, NOW, buckets=buckets)["bands"]
+        self.assertEqual((bands["settles"], bands["ours"]), (4, 2))
+        self.assertEqual(bands["rows"], [
+            {"band": "<20k", "mkt_settles": 3, "mkt_rev_share": round(30000 / 630000, 4), "our_settles": 2,
+             "our_rev_share": 1.0},
+            {"band": "500k-1M", "mkt_settles": 1, "mkt_rev_share": round(600000 / 630000, 4), "our_settles": 0,
+             "our_rev_share": 0.0}])
+        self.assertIsNone(analyze.brief(raw(), own(), None, POL, NOW)["bands"])
+
+    def test_seller_section(self):
+        o = own()
+        lp = {"list_price": 10000}
+        o["decisions"]["seller"] = (
+            [{"kind": "quote", "why": "first reply: fact line", "choice": {"action": "quote"},
+              "inputs": lp | {"warranty_req": i == 0}} for i in range(4)]
+            + [{"kind": "sign", "choice": {"price": p, "warranty_hours": w}, "inputs": lp} for p, w in ((8000, 6), (9000, 0))]
+            + [{"kind": "reject", "choice": {"action": "canceled"}, "why": "buyer canceled the task"},
+               {"kind": "reject", "choice": {"action": "reject"}, "inputs": lp | {"offer": 5000}},
+               {"kind": "quote", "choice": {"action": "final"}, "why": "offer below the floor"},
+               {"kind": "quote", "choice": {"action": "repeat"}, "why": "no price in the message"},
+               {"kind": "quote", "why": "no unit in stock for this request"}, {"kind": "llm_exception", "why": "budget"}])
+        se = analyze.brief(raw(), o, None, POL, NOW)["seller"]
+        self.assertEqual(se, {"first": 4, "signed": 2, "sign_rate": 0.5, "canceled": 1, "final": 1, "rejected": 1,
+                              "no_price": 1, "no_stock": 1, "llm_exception": 1, "warranty_req": 1, "warranty_sold": 1,
+                              "sign_price_list": 0.85, "reject_offer_list": 0.5})
+
+    def test_buyer_log_by_kind_and_untrusted_receipt_problems(self):
+        o = own()
+        food = lambda choice, cands=(1,), tried=(): {"kind": "order", "inputs": {"kind": "food"}, "choice": choice,
+                                                    "candidates": list(cands), "tried": list(tried)}
+        o["decisions"]["buyer"] = [
+            food({"shop": "s"}), food("no_deal", cands=()), food("no_deal", cands=()),
+            food("no_deal", tried=[{"receipt_problem": "receipt price 13705 above the cap 11920"},
+                                   {"receipt_problem": None}, {"receipt_problem": "receipt price 99 above the cap 1 " + EVIL}]),
+            {"kind": "order", "inputs": {"kind": "goods"}, "choice": {"shop": "s"}, "candidates": [1]},
+            {"kind": "policy_error"}]
+        bl = analyze.brief(raw(), o, None, POL, NOW)["buyer_log"]
+        self.assertEqual(bl["food"], {"orders": 4, "deals": 1, "conv": 0.25, "no_candidates": 2})
+        self.assertEqual(bl["goods"], {"orders": 1, "deals": 1, "conv": 1.0, "no_candidates": 0})
+        self.assertEqual((bl["tries"], bl["receipt_problems"]), (3, 2))
+        self.assertEqual(bl["untrusted_receipt_problem_why"][0]["why"], "receipt price # above the cap #")
+        self.assertNotIn("Ignore", json.dumps({k: v for k, v in bl.items() if not k.startswith("untrusted_")}))
+
+    def test_restock_excluded_and_surge_from_the_last_planning_run(self):
+        o = own()
+        o["decisions"]["restock"] = [
+            {"ts": NOW - 300, "kind": "restock", "choice": [],
+             "inputs": {"excluded": {"surge": 2, "overpriced": 1, "window_closing": 3},
+                        "surge": [{"sku": "G1", "factor": 1.4}, {"sku": "bad sku!", "factor": 2}],
+                        "stock": {"skus": 2, "units": 3, "overpriced": 5}}},
+            {"ts": NOW - 60, "kind": "restock", "choice": [], "rules": ["stock.window_lead_s"],
+             "inputs": {"stock": {"skus": 2, "units": 3, "overpriced": 4}}}]
+        rs = analyze.brief(raw(), o, None, POL, NOW)["ops"]["restock"]
+        self.assertEqual(rs["excluded"], {"surge": 2, "overpriced": 1, "window_closing": 3})
+        self.assertEqual(rs["surge"], {"G1": 1.4, "badsku": 2})
+        self.assertEqual(rs["stock"]["overpriced"], 4)
+        self.assertNotIn("excluded", analyze.brief(raw(), own(), None, POL, NOW)["ops"]["restock"])
+
+    def test_restock_ingest_outcomes_counted(self):
+        o = own()
+        ing = [{"events": 3}, {"skipped": "window"}, {"skipped": "window"}, {"skipped": "migration_pending"},
+               {"error": "KeyError: 'sku'"}, None]
+        o["decisions"]["restock"] = [{"ts": NOW - 60 * i, "kind": "restock", "choice": [], "inputs": {"ingest": x}}
+                                     for i, x in enumerate(ing)]
+        rs = analyze.brief(raw(), o, None, POL, NOW)["ops"]["restock"]
+        self.assertEqual(rs["ingest"], {"ran": 2, "window": 2, "migration_pending": 1, "error": 1})
+
+    def test_rates_divide_by_the_ledger_span_not_the_window(self):
+        r = raw()
+        r["ledger"] += [{"seq": 40 + i, "ts": NOW - 60 * i, "kind": "settle", "data": {"shop": US, "sku": "G1"}}
+                        for i in range(3)]
+        o = own()
+        o["inventory"] = {"balance": 1, "units": [{"unit": "u1", "sku": "G1", "kind": "food", "cost": 1}]}
+        r["ledger_h"] = 0.5                                             # the rows since a run 30 minutes ago
+        b = analyze.brief(r, o, None, POL, NOW)
+        self.assertEqual(b["ledger_h"], 0.5)
+        self.assertEqual(b["inventory"]["top"][0]["sales_per_h"], 6.0)
+        r["ledger_h"] = 5                                               # longer than the window: the window
+        self.assertEqual(analyze.brief(r, o, None, POL, NOW)["ledger_h"], 1)
+        del r["ledger_h"]
+        self.assertEqual(analyze.brief(r, o, None, POL, NOW)["ledger_h"], 1)    # unknown: the window
+        r["ledger_first"] = True                                        # newest rows only: the time they span
+        self.assertEqual(analyze.brief(r, o, None, POL, NOW)["ledger_h"], round(120 / 3600, 4))
 
 
 if __name__ == "__main__":
