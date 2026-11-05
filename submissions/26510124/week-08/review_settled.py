@@ -2,12 +2,14 @@
 import argparse
 import json
 import math
+import sys
 import time
 from pathlib import Path
 
 from feedback import append_event
 from inventory import read_json
 from payment_memory import recent_jsonl
+from buyer_forum import queue_confirmed_deal
 
 ROOT = Path(__file__).resolve().parent
 
@@ -129,6 +131,13 @@ def main():
     append_event(ROOT / "logs" / "settled-deals.jsonl", {
         "order": deal["order"]["order"], "receipt": deal["receipt"], "settled": deal["settled"],
         "assessment": result, "policy_version": terms.get("version") if terms else None})
+    try:
+        queued = queue_confirmed_deal(ROOT, deal, result)
+        print("[buyer-forum] queue=" + queued["status"], file=sys.stderr)
+    except Exception as exc:
+        # A full disk or malformed spool must not discard a valid review. Do
+        # not log the exception message: it could contain private deal data.
+        print("[buyer-forum] queue_error=" + type(exc).__name__, file=sys.stderr)
     print(json.dumps({"stars": result["stars"], "review": result["review"]}, ensure_ascii=False))
 
 
