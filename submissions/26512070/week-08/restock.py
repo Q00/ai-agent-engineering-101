@@ -408,6 +408,15 @@ def main():
             w.emit("restock.plan", {"lines": 0, "refused": None, "used_model": False, "bankrupt": True})
             print(json.dumps({"buy": [], "bankrupt": True}))
             return
+        try:                                    # design 17-4: a pre-approved emergency stop (harness.ops)
+            from harness import ops
+            halt = ops.emergency().get("restock_stop")
+        except Exception:
+            halt = None
+        if halt:
+            w.emit("restock.plan", {"lines": 0, "refused": None, "used_model": False, "emergency": halt})
+            print(json.dumps({"buy": []}))
+            return
         stop = (ctx.strategy.get("restock") or {}).get("stop_after")
         if stop and t0 >= stop:
             # User 11/3: the board counts unsold stock as zero profit, so stock is sold down before the round ends
