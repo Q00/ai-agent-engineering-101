@@ -1,7 +1,8 @@
 """A2A negotiation by rule, three turns (D6) inside the order's time budget (D8).
 
-    turn 1  ask by SKU and ask for the unit in the receipt; accept a quote at or below the cap
-    turn 2  offer buyer.open_list x list price
+    turn 1  ask by SKU and ask for the unit in the receipt; a quote at or below the cap is accepted
+            at once only past the target time or when buyer.open_list x list price is not below it
+    turn 2  offer buyer.open_list x list price, also under a quote at or below the cap (haggle once)
     turn 3  offer the cap (min(cap share x list, budget)) as the final offer
     a counter at or below the cap after turn 2 or 3 is accepted by sending it back
 
@@ -197,6 +198,7 @@ def negotiate(shop_url, cand, order, deadline, pol, client=None, ver=None):
         task = send(text, meta)
         r["task"] = task.get("id")
         stage = 1                                   # 1 quote asked, 2 open offer sent, 3 final offer sent
+        first = None                                # the quote under the cap we haggled under: never pay more
         while True:
             state = (task.get("status") or {}).get("state")
             if state == DONE:
@@ -225,21 +227,28 @@ def negotiate(shop_url, cand, order, deadline, pol, client=None, ver=None):
             r["asks"].append(ask)
             if not gate(ask):
                 break
-            if ask is not None and ask <= r["cap"]:
+            low = int(pol["buyer"]["open_list"] * V)
+            limit = r["cap"] if first is None else min(r["cap"], first)
+            if ask is not None and ask <= limit:
+                if stage == 1 and low < ask and not deadline.past_target():
+                    first = ask
+                    task = offer(low)               # haggle once under the cap; the next reply decides
+                    stage = 2
+                    continue
                 if r["offers"] and r["offers"][-1] == ask:
                     r["why"] = "the shop asks for our own offer but did not complete"
                     break
                 task = offer(ask)                   # accept by sending the ask back
                 stage = 4
                 continue
-            if stage == 1 and int(pol["buyer"]["open_list"] * V) < r["cap"]:
-                task = offer(int(pol["buyer"]["open_list"] * V))
+            if stage == 1 and low < r["cap"]:
+                task = offer(low)
                 stage = 2
             elif stage in (1, 2):
-                task = offer(r["cap"])
+                task = offer(limit)
                 stage = 3
             else:
-                r["why"] = f"ask {ask} above the cap {r['cap']} after the final offer"
+                r["why"] = f"ask {ask} above the cap {limit} after the final offer"
                 break
     except Exception as e:                          # a malformed reply is the shop's failure, not the hook's
         r["why"] = f"{type(e).__name__}: {str(e)[:160]}"

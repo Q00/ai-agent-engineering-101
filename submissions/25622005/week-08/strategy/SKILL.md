@@ -170,8 +170,10 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 - Expected surplus is computed on the list price of the SKU that will ship.
 - The food cap is min(`buyer.cap_food`, 1 - `buyer.min_surplus_list`); raising `cap_food` above
   that has no effect.
-- Ask by SKU. Accept a quote at or below the cap; otherwise offer `buyer.open_list` of list,
-  then the cap as final. Never mention the budget.
+- Ask by SKU. Offer `buyer.open_list` of list first, even under a first quote at or below the
+  cap (accept that quote at once only after `buyer.target_s` or when the offer would not be
+  lower); accept a counter at or below the cap, otherwise offer the cap as final. After haggling
+  under a first quote, never pay more than that quote. Never mention the budget.
 - After `buyer.target_s` seconds, continue only while the estimated chance of closing is at
   least `buyer.continue_p`.
 - Rate shops from the settled facts. Our own errors are never the shop's fault.

@@ -108,12 +108,14 @@ class MarketBuyerHookTests(unittest.TestCase):
         self.write(ORDER, [self.shop_entry(shop, "F2")])
         out = self.run_hook(EXCEPTION_HARNESS_CMD=f"{sys.executable} {fake} --model fake-small")
         self.assertEqual(out["receipt"]["price"], 36000)
-        llm, order = self.rows()
-        self.assertEqual((llm["kind"], llm["why"], llm["model"], llm["choice"]["price"]),
-                         ("llm_exception", "ok", "fake-small", 36000))
-        self.assertEqual(llm["policy_ver"], order["policy_ver"])
-        self.assertEqual(order["tried"][0]["llm_reads"], 1)
-        self.assertNotIn("41234", llm["inputs"]["text"] + json.dumps(llm["inputs"]))
+        *llms, order = self.rows()                  # the quote, then the answer to our open offer
+        self.assertEqual(len(llms), 2)
+        for llm in llms:
+            self.assertEqual((llm["kind"], llm["why"], llm["model"], llm["choice"]["price"]),
+                             ("llm_exception", "ok", "fake-small", 36000))
+            self.assertEqual(llm["policy_ver"], order["policy_ver"])
+            self.assertNotIn("41234", llm["inputs"]["text"] + json.dumps(llm["inputs"]))
+        self.assertEqual(order["tried"][0]["llm_reads"], 2)
 
     def test_round_2_is_no_deal(self):
         self.write(dict(ORDER, round=2), [])

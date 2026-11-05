@@ -146,13 +146,55 @@ class NegotiationTests(unittest.TestCase):
         r = self.go(shop)
         self.assertEqual(r["receipt"]["price"], 65000)
         self.assertIs(type(r["receipt"]["price"]), int)
-        self.assertEqual(self.offers(shop), ["65000"])
+        self.assertEqual(self.offers(shop), ["60000", "65000"])    # one open offer, then the repeated ask
         first = shop.messages[0]
         self.assertIn("(G00001)", first["text"])
         self.assertIn("unit", first["text"])
         self.assertEqual(first["metadata"]["sku"], "G00001")
         self.assertEqual(r["unit"], "u-1")
         self.assertEqual(shop.canceled, [])
+
+    def test_quote_under_cap_haggles_once_and_takes_the_lower_counter(self):
+        shop = FakeShop(first_ask=65000, floor=99999, counters=[62000])
+        r = self.go(shop)
+        self.assertEqual(self.offers(shop), ["60000", "62000"])
+        self.assertEqual(r["receipt"]["price"], 62000)
+        self.assertEqual(r["asks"], [65000, 62000])
+
+    def test_quote_under_cap_never_pays_more_than_the_first_quote(self):
+        for counter in (68000, 75000):                    # under and above the cap 70000
+            shop = FakeShop(first_ask=65000, floor=65000, counters=[counter])
+            r = self.go(shop)
+            self.assertEqual(self.offers(shop), ["60000", "65000"], counter)
+            self.assertEqual((r["receipt"]["price"], r["asks"]), (65000, [65000, counter]))
+
+    def test_quote_under_cap_past_target_is_accepted_at_once(self):
+        shop = FakeShop(first_ask=65000, floor=99999)
+        r = self.go(shop, p=pol(target_s=1), start=time.monotonic() - 5)
+        self.assertEqual(self.offers(shop), ["65000"])
+        self.assertEqual(r["receipt"]["price"], 65000)
+
+    def test_quote_at_or_under_open_offer_is_accepted_at_once(self):
+        shop = FakeShop(first_ask=60000, floor=99999)     # open_list 0.60 x 100000 is not below the ask
+        r = self.go(shop)
+        self.assertEqual(self.offers(shop), ["60000"])
+        self.assertEqual(r["receipt"]["price"], 60000)
+
+    def test_quote_under_cap_rejected_after_open_offer_is_no_deal(self):
+        shop = FakeShop(first_ask=65000, floor=99999)
+        base = shop.handle
+
+        def handle(req):
+            task = base(req)
+            if len(shop.messages) > 1:
+                task["status"]["state"] = "TASK_STATE_REJECTED"
+            return task
+        shop.handle = handle
+        r = self.go(shop)
+        self.assertEqual(self.offers(shop), ["60000"])
+        self.assertIsNone(r["receipt"])
+        self.assertEqual(r["why"], "shop ended the task: TASK_STATE_REJECTED")
+        self.assertFalse(r["canceled"])
 
     def test_three_turns_open_then_cap(self):
         shop = FakeShop(first_ask=90000, floor=70000)
@@ -286,7 +328,8 @@ class ModelReadingTests(unittest.TestCase):
         shop = WordsShop(first_ask=65000, floor=99999)
         r = self.go(shop, {"kind": "quote", "price": 65000, "sku": None, "unit": "ua"})
         self.assertEqual(r["receipt"]["price"], 65000)
-        self.assertEqual((r["llm_reads"], r["asks"], r["unit"]), (1, [65000], None))   # unit only by rule
+        self.assertEqual((r["llm_reads"], r["asks"], r["unit"]), (2, [65000, 65000], None))   # unit only by rule
+        self.assertEqual(self.offers(shop), ["60000", "65000"])
         self.assertIn("<untrusted>\nSixty-five thousand", self.prompts[0])
         self.assertNotIn(str(ORDER["budget"]), self.prompts[0])
         self.assertNotIn("70000", self.prompts[0])                       # nor the cap
