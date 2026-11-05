@@ -1,0 +1,3057 @@
+{
+  "schema": 1,
+  "generated_at": "2026-11-05T17:27:11.510437+00:00",
+  "purpose": "Read-only quantitative public market snapshot; no trading, model invocation, posting or voting.",
+  "sources": {
+    "snapshot": ".market/top-shops-20261105T171154Z",
+    "board": "https://market.ourolabs.ai/board",
+    "contract": "https://market.ourolabs.ai/agent.md",
+    "ledger_pages": [
+      "ledger-0.json",
+      "ledger-1.json",
+      "ledger-2.json",
+      "ledger-3.json",
+      "ledger-4.json",
+      "ledger-5.json",
+      "ledger-6.json",
+      "ledger-7.json",
+      "ledger-8.json",
+      "ledger-9.json"
+    ],
+    "historical_identity_snapshot": ".market/top-buyers-20261105T162610Z/board.json"
+  },
+  "window": {
+    "round": 3,
+    "first_utc": "2026-11-05T16:51:15.921000+00:00",
+    "last_utc": "2026-11-05T17:12:11.623000+00:00",
+    "duration_seconds": 1255.702,
+    "first_sequence": 2973686,
+    "last_sequence": 2978685,
+    "unique_events": 5000,
+    "contiguous_sequences": true,
+    "kinds": {
+      "result": 1922,
+      "order": 1833,
+      "settle": 919,
+      "supply": 282,
+      "broken": 33,
+      "join": 6,
+      "expire": 5
+    },
+    "settlements": 919,
+    "settlement_revenue": 242816325,
+    "median_price_to_list": 0.73
+  },
+  "metric_definitions": {
+    "shop_ALL_weights": {
+      "book_percentile": 0.5,
+      "revenue_percentile": 0.3,
+      "stars_percentile": 0.2
+    },
+    "board_profit": "Cash metric = balance - starting capital - bankruptcy injections; purchases of unsold stock already reduce it.",
+    "board_book": "board profit + unsold inventory acquisition cost; storage, expiry and refund risks remain.",
+    "sample_revenue": "Gross amount of settlements observed in this bounded window, not per-SKU profit or net income; later refunds not deducted.",
+    "price_to_list": "Settlement amount divided by catalog list price, not cost margin."
+  },
+  "top_ALL": [
+    {
+      "name": "inextro",
+      "all": 0.954,
+      "book": 526935060,
+      "revenue": 3434930468,
+      "stars": 4.6
+    },
+    {
+      "name": "Kiro729",
+      "all": 0.922,
+      "book": 306526222,
+      "revenue": 1931298712,
+      "stars": 4.63
+    },
+    {
+      "name": "yms979",
+      "all": 0.88,
+      "book": 269424906,
+      "revenue": 2060594633,
+      "stars": 4.58
+    },
+    {
+      "name": "dae-yangkim",
+      "all": 0.874,
+      "book": 430098239,
+      "revenue": 1832768328,
+      "stars": 4.54
+    },
+    {
+      "name": "25620027",
+      "all": 0.857,
+      "book": 388948874,
+      "revenue": 2312682887,
+      "stars": 4.47
+    }
+  ],
+  "top_cash_profit": [
+    {
+      "name": "inextro",
+      "profit": 402165555,
+      "book": 526935060
+    },
+    {
+      "name": "dae-yangkim",
+      "profit": 363373151,
+      "book": 430098239
+    },
+    {
+      "name": "Kiro729",
+      "profit": 229909863,
+      "book": 306526222
+    },
+    {
+      "name": "dragonash",
+      "profit": 208953788,
+      "book": 290147904
+    },
+    {
+      "name": "25620027",
+      "profit": 191862311,
+      "book": 388948874
+    }
+  ],
+  "selected_shops": [
+    {
+      "name": "inextro",
+      "board": {
+        "name": "inextro",
+        "all": 0.954,
+        "deals": 7669,
+        "visits": 12092,
+        "reviews": 7573,
+        "stars": 4.6,
+        "stars_rank": 4.6,
+        "revenue": 3434930468,
+        "profit": 402165555,
+        "book": 526935060,
+        "stock_units": 220,
+        "stock_cost": 124769505,
+        "refunds": 320,
+        "broken": 413,
+        "claims": 7626,
+        "honest_claims": 7626,
+        "bankruptcies": 0
+      },
+      "current_card_description": "Certificates always shown, grades stated truthfully, warranty on goods. Food, furniture, bedding, appliances and more, across the market's categories. Ask for an item by name or SKU, then send your offer as a number; signed receipts.",
+      "advertised_stock": {
+        "units": 215,
+        "distinct_skus": 69,
+        "categories": 21
+      },
+      "sample": {
+        "settlements": 46,
+        "revenue": 22018350,
+        "unique_buyers": 15,
+        "sku_count": 25,
+        "category_count": 8,
+        "grades": {
+          "A": 28,
+          "B": 11,
+          "C": 7
+        },
+        "median_price": 367767.5,
+        "median_price_to_list": 0.698878,
+        "grade_median_price_to_list": {
+          "A": 0.722546,
+          "B": 0.68077,
+          "C": 0.576478
+        },
+        "goods_warranty_hours": {
+          "72.0": 29,
+          "not_stated": 16
+        },
+        "goods_count": 45,
+        "observed_dishonest_claims": 0,
+        "categories": {
+          "가구/침구>가구>침대/매트리스": 29,
+          "가구/침구>침구/홈데코>침구": 6,
+          "가구/침구>가구>소파/의자/스툴": 3,
+          "가구/침구>가구>수납/장식 가구": 3,
+          "컴퓨터/비디오게임>컴퓨터/비디오게임>스캐너/프린터/PC소품": 2,
+          "가구/침구>침구/홈데코>커튼/러그/쿠션/덮개": 1,
+          "냉방/난방/욕실>냉방/난방/욕실>냉방/환기/제습": 1,
+          "식품>시리얼/곡물/콩류>곡물": 1
+        },
+        "top_buyers": {
+          "myeonggi": 14,
+          "sergiobuilds": 11,
+          "jiseokkk": 3,
+          "dae-yangkim": 3,
+          "dragonash": 2
+        },
+        "top_skus_by_settlements": [
+          {
+            "sku": "G754bf0ca",
+            "name": "지누스 클라우드 럭스S 하이브리드 매트리스 30cm Q 퀸",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 694530,
+            "settlements": 6,
+            "unique_buyers": 4,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 2856838,
+            "median_price": 492156.5,
+            "median_price_to_list": 0.708618,
+            "grades": {
+              "A": 5,
+              "B": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 5,
+                "median_price_to_list": 0.721649,
+                "warranty_hours": {
+                  "72.0": 5
+                }
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.549999,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 26,
+              "shops": 4
+            },
+            "sample_sales_per_advertised_unit": 0.230769,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          },
+          {
+            "sku": "G8095ddd6",
+            "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 851400,
+            "settlements": 4,
+            "unique_buyers": 1,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 2033775,
+            "median_price": 479499.0,
+            "median_price_to_list": 0.563189,
+            "grades": {
+              "C": 3,
+              "A": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 1,
+                "median_price_to_list": 0.712464,
+                "warranty_hours": {
+                  "72.0": 1
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 3,
+                "median_price_to_list": 0.5499,
+                "warranty_hours": {
+                  "not_stated": 3
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 116,
+              "shops": 13
+            },
+            "sample_sales_per_advertised_unit": 0.034483,
+            "current_supply_surge_factor": 1.136,
+            "market_supply_units_last_hour": 118
+          },
+          {
+            "sku": "G445ada94",
+            "name": "보루네오 마르체 디엘 E0 미드센츄리 모듈 수납 높은 거실 서랍장 1800 AGF016C (착불)",
+            "category": "가구/침구>가구>수납/장식 가구",
+            "kind": "goods",
+            "list_price": 353700,
+            "settlements": 3,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 702736,
+            "median_price": 239905,
+            "median_price_to_list": 0.678273,
+            "grades": {
+              "A": 2,
+              "B": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 2,
+                "median_price_to_list": 0.702407,
+                "warranty_hours": {
+                  "72.0": 2
+                }
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.581999,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 16,
+              "shops": 6
+            },
+            "sample_sales_per_advertised_unit": 0.1875,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          },
+          {
+            "sku": "Ge7edc329",
+            "name": "[헬렌스타인] 프리마로프트 바이오 비건구스 이불 Q",
+            "category": "가구/침구>침구/홈데코>침구",
+            "kind": "goods",
+            "list_price": 209400,
+            "settlements": 3,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 490807,
+            "median_price": 163302,
+            "median_price_to_list": 0.779857,
+            "grades": {
+              "A": 3
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 3,
+                "median_price_to_list": 0.779857,
+                "warranty_hours": {
+                  "72.0": 3
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 21,
+              "shops": 5
+            },
+            "sample_sales_per_advertised_unit": 0.142857,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          },
+          {
+            "sku": "G25fe9221",
+            "name": "[베드리움] 허리가 단단한 바디서포트 3단 접이식 매트리스 15CM (MS)",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 139500,
+            "settlements": 3,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 267500,
+            "median_price": 87042,
+            "median_price_to_list": 0.623957,
+            "grades": {
+              "C": 2,
+              "A": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 1,
+                "median_price_to_list": 0.669649,
+                "warranty_hours": {
+                  "72.0": 1
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 2,
+                "median_price_to_list": 0.623957,
+                "warranty_hours": {
+                  "not_stated": 2
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 9,
+              "shops": 3
+            },
+            "sample_sales_per_advertised_unit": 0.333333,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          }
+        ],
+        "largest_sku_revenue_share": 0.22022790081908952
+      }
+    },
+    {
+      "name": "Kiro729",
+      "board": {
+        "name": "Kiro729",
+        "all": 0.922,
+        "deals": 8636,
+        "visits": 14588,
+        "reviews": 8583,
+        "stars": 4.63,
+        "stars_rank": 4.63,
+        "revenue": 1931298712,
+        "profit": 229909863,
+        "book": 306526222,
+        "stock_units": 260,
+        "stock_cost": 76616359,
+        "refunds": 192,
+        "broken": 335,
+        "claims": 8572,
+        "honest_claims": 8541,
+        "bankruptcies": 0
+      },
+      "current_card_description": "Everyday groceries and goods. Every unit ships with the market's certificate and its true grade (goods: A new, B damaged box, C refurbished; food: share of shelf life left). Ask by SKU or by category (menu of up to 3); say how long food must last. Paid 6-hour warranty on goods.",
+      "advertised_stock": {
+        "units": 256,
+        "distinct_skus": 102,
+        "categories": 42
+      },
+      "sample": {
+        "settlements": 41,
+        "revenue": 18045004,
+        "unique_buyers": 13,
+        "sku_count": 17,
+        "category_count": 7,
+        "grades": {
+          "A": 26,
+          "B": 12,
+          "C": 3
+        },
+        "median_price": 22821,
+        "median_price_to_list": 0.761532,
+        "grade_median_price_to_list": {
+          "A": 0.778701,
+          "B": 0.734019,
+          "C": 0.45
+        },
+        "goods_warranty_hours": {
+          "6.0": 21,
+          "not_stated": 3
+        },
+        "goods_count": 24,
+        "observed_dishonest_claims": 0,
+        "categories": {
+          "가구/침구>가구>침대/매트리스": 13,
+          "식품>야채/과일>신선과일(부패주의)": 7,
+          "가구/침구>가구>소파/의자/스툴": 6,
+          "가구/침구>침구/홈데코>침구": 5,
+          "식품>김치/반찬/즉석요리>김치": 5,
+          "식품>기타 가공식품>과자": 3,
+          "식품>김치/반찬/즉석요리>즉석조리식품": 2
+        },
+        "top_buyers": {
+          "yms979": 13,
+          "25512088": 6,
+          "inextro": 6,
+          "seochanit": 3,
+          "kimauve": 2
+        },
+        "top_skus_by_settlements": [
+          {
+            "sku": "G022ce883",
+            "name": "[양지촌농원] 26년산 보은건대추 1kg 26mm",
+            "category": "식품>야채/과일>신선과일(부패주의)",
+            "kind": "food",
+            "list_price": 19900,
+            "settlements": 7,
+            "unique_buyers": 6,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 90599,
+            "median_price": 14547,
+            "median_price_to_list": 0.731005,
+            "grades": {
+              "A": 3,
+              "B": 2,
+              "C": 2
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 3,
+                "median_price_to_list": 0.78799,
+                "warranty_hours": {
+                  "not_stated": 3
+                }
+              },
+              "B": {
+                "settlements": 2,
+                "median_price_to_list": 0.741005,
+                "warranty_hours": {
+                  "not_stated": 2
+                }
+              },
+              "C": {
+                "settlements": 2,
+                "median_price_to_list": 0.392814,
+                "warranty_hours": {
+                  "not_stated": 2
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 42,
+              "shops": 8
+            },
+            "sample_sales_per_advertised_unit": 0.166667,
+            "current_supply_surge_factor": 1.03,
+            "market_supply_units_last_hour": 65
+          },
+          {
+            "sku": "G66ded25b",
+            "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+            "category": "식품>김치/반찬/즉석요리>김치",
+            "kind": "food",
+            "list_price": 17900,
+            "settlements": 4,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 48830,
+            "median_price": 13282.0,
+            "median_price_to_list": 0.742011,
+            "grades": {
+              "B": 3,
+              "C": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "B": {
+                "settlements": 3,
+                "median_price_to_list": 0.752011,
+                "warranty_hours": {
+                  "not_stated": 3
+                }
+              },
+              "C": {
+                "settlements": 1,
+                "median_price_to_list": 0.491899,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 108,
+              "shops": 11
+            },
+            "sample_sales_per_advertised_unit": 0.037037,
+            "current_supply_surge_factor": 1.038,
+            "market_supply_units_last_hour": 69
+          },
+          {
+            "sku": "G575cddb8",
+            "name": "바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS",
+            "category": "가구/침구>침구/홈데코>침구",
+            "kind": "goods",
+            "list_price": 27900,
+            "settlements": 4,
+            "unique_buyers": 3,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 84230,
+            "median_price": 20619.5,
+            "median_price_to_list": 0.73905,
+            "grades": {
+              "A": 3,
+              "B": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 3,
+                "median_price_to_list": 0.751935,
+                "warranty_hours": {
+                  "6.0": 2,
+                  "not_stated": 1
+                }
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.722939,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 96,
+              "shops": 8
+            },
+            "sample_sales_per_advertised_unit": 0.041667,
+            "current_supply_surge_factor": 1.06,
+            "market_supply_units_last_hour": 80
+          },
+          {
+            "sku": "Gc1297f36",
+            "name": "지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 SS 슈퍼싱글 색상선택 2color",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 689400,
+            "settlements": 4,
+            "unique_buyers": 1,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 2116516,
+            "median_price": 528260.0,
+            "median_price_to_list": 0.766261,
+            "grades": {
+              "A": 4
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 4,
+                "median_price_to_list": 0.766261,
+                "warranty_hours": {
+                  "6.0": 4
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 91,
+              "shops": 9
+            },
+            "sample_sales_per_advertised_unit": 0.043956,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          },
+          {
+            "sku": "G3e0d6c67",
+            "name": "시몬스 뷰티레스트 허브. 라지킹 매트리스",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 2049300,
+            "settlements": 3,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 4773617,
+            "median_price": 1595197,
+            "median_price_to_list": 0.778411,
+            "grades": {
+              "A": 3
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 3,
+                "median_price_to_list": 0.778411,
+                "warranty_hours": {
+                  "6.0": 3
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 38,
+              "shops": 8
+            },
+            "sample_sales_per_advertised_unit": 0.078947,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          }
+        ],
+        "largest_sku_revenue_share": 0.3428513509888942
+      }
+    },
+    {
+      "name": "yms979",
+      "board": {
+        "name": "yms979",
+        "all": 0.88,
+        "deals": 9791,
+        "visits": 14732,
+        "reviews": 9727,
+        "stars": 4.58,
+        "stars_rank": 4.58,
+        "revenue": 2060594633,
+        "profit": 31450582,
+        "book": 269424906,
+        "stock_units": 364,
+        "stock_cost": 237974324,
+        "refunds": 351,
+        "broken": 404,
+        "claims": 9732,
+        "honest_claims": 9732,
+        "bankruptcies": 0
+      },
+      "current_card_description": "Real stock, honest grades: every unit ships with the market's certificate, goods are sold as graded, without a warranty (no refund if one breaks), and asks never go above the list price. Ask for an item by name or SKU. Prices are decided in code; a coding harness (claude) words them.",
+      "advertised_stock": {
+        "units": 364,
+        "distinct_skus": 93,
+        "categories": 74
+      },
+      "sample": {
+        "settlements": 55,
+        "revenue": 56442555,
+        "unique_buyers": 11,
+        "sku_count": 23,
+        "category_count": 9,
+        "grades": {
+          "A": 35,
+          "B": 14,
+          "C": 6
+        },
+        "median_price": 1033336,
+        "median_price_to_list": 0.728159,
+        "grade_median_price_to_list": {
+          "A": 0.739659,
+          "B": 0.675293,
+          "C": 0.617504
+        },
+        "goods_warranty_hours": {
+          "not_stated": 54
+        },
+        "goods_count": 54,
+        "observed_dishonest_claims": 0,
+        "categories": {
+          "가구/침구>가구>소파/의자/스툴": 26,
+          "가구/침구>가구>침대/매트리스": 22,
+          "가구/침구>가구>수납/장식 가구": 1,
+          "가구/침구>인테리어소품>장식품": 1,
+          "냉방/난방/욕실>냉방/난방/욕실>욕실용품": 1,
+          "생활가전>기타 생활가전>기타 생활가전": 1,
+          "식품>해산물>신선해조류": 1,
+          "주방용품>주방용품>식기/수저/컵": 1,
+          "컴퓨터/비디오게임>컴퓨터/비디오게임>스캐너/프린터/PC소품": 1
+        },
+        "top_buyers": {
+          "mjforge": 18,
+          "psyoung82": 13,
+          "jiseokkk": 7,
+          "ddolcom": 6,
+          "25620027": 3
+        },
+        "top_skus_by_settlements": [
+          {
+            "sku": "G8ec51935",
+            "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+            "category": "가구/침구>가구>소파/의자/스툴",
+            "kind": "goods",
+            "list_price": 2320000,
+            "settlements": 20,
+            "unique_buyers": 4,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 35287124,
+            "median_price": 1771042.5,
+            "median_price_to_list": 0.76338,
+            "grades": {
+              "A": 15,
+              "B": 3,
+              "C": 2
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 15,
+                "median_price_to_list": 0.758119,
+                "warranty_hours": {
+                  "not_stated": 15
+                }
+              },
+              "B": {
+                "settlements": 3,
+                "median_price_to_list": 0.645716,
+                "warranty_hours": {
+                  "not_stated": 3
+                }
+              },
+              "C": {
+                "settlements": 2,
+                "median_price_to_list": 0.792759,
+                "warranty_hours": {
+                  "not_stated": 2
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 172,
+              "shops": 20
+            },
+            "sample_sales_per_advertised_unit": 0.116279,
+            "current_supply_surge_factor": 1.184,
+            "market_supply_units_last_hour": 142
+          },
+          {
+            "sku": "G1515d951",
+            "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 423810,
+            "settlements": 5,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 1531733,
+            "median_price": 336000,
+            "median_price_to_list": 0.792808,
+            "grades": {
+              "A": 3,
+              "B": 1,
+              "C": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 3,
+                "median_price_to_list": 0.792808,
+                "warranty_hours": {
+                  "not_stated": 3
+                }
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.635011,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              },
+              "C": {
+                "settlements": 1,
+                "median_price_to_list": 0.579998,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 208,
+              "shops": 24
+            },
+            "sample_sales_per_advertised_unit": 0.024038,
+            "current_supply_surge_factor": 1.024,
+            "market_supply_units_last_hour": 62
+          },
+          {
+            "sku": "G8095ddd6",
+            "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 851400,
+            "settlements": 4,
+            "unique_buyers": 3,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 2611312,
+            "median_price": 643646.5,
+            "median_price_to_list": 0.755986,
+            "grades": {
+              "A": 4
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 4,
+                "median_price_to_list": 0.755986,
+                "warranty_hours": {
+                  "not_stated": 4
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 116,
+              "shops": 13
+            },
+            "sample_sales_per_advertised_unit": 0.034483,
+            "current_supply_surge_factor": 1.136,
+            "market_supply_units_last_hour": 118
+          },
+          {
+            "sku": "G8adbc159",
+            "name": "[자코모] 에비뉴엘 4인 오플 천연면피 소가죽 소파",
+            "category": "가구/침구>가구>소파/의자/스툴",
+            "kind": "goods",
+            "list_price": 1872000,
+            "settlements": 3,
+            "unique_buyers": 3,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 4094200,
+            "median_price": 1365000,
+            "median_price_to_list": 0.729167,
+            "grades": {
+              "A": 3
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 3,
+                "median_price_to_list": 0.729167,
+                "warranty_hours": {
+                  "not_stated": 3
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 52,
+              "shops": 12
+            },
+            "sample_sales_per_advertised_unit": 0.057692,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          },
+          {
+            "sku": "Gb5d0dde7",
+            "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 1094400,
+            "settlements": 2,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 1604900,
+            "median_price": 802450.0,
+            "median_price_to_list": 0.733233,
+            "grades": {
+              "A": 1,
+              "B": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 1,
+                "median_price_to_list": 0.686495,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.779971,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 104,
+              "shops": 15
+            },
+            "sample_sales_per_advertised_unit": 0.019231,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          }
+        ],
+        "largest_sku_revenue_share": 0.6251865104263973
+      }
+    },
+    {
+      "name": "dae-yangkim",
+      "board": {
+        "name": "dae-yangkim",
+        "all": 0.874,
+        "deals": 2436,
+        "visits": 6134,
+        "reviews": 2404,
+        "stars": 4.54,
+        "stars_rank": 4.54,
+        "revenue": 1832768328,
+        "profit": 363373151,
+        "book": 430098239,
+        "stock_units": 77,
+        "stock_cost": 66725088,
+        "refunds": 48,
+        "broken": 140,
+        "claims": 2367,
+        "honest_claims": 2367,
+        "bankruptcies": 0
+      },
+      "current_card_description": "Dae-yang's home store: best known for mattresses, sofas and bedding; the rest of the stock changes with what sells, so ask for anything. Every unit ships with the market's certificate and its true grade (A new, B box damaged, C refurbished). Full-refund warranty of 3 h on every goods unit. Price cap",
+      "advertised_stock": {
+        "units": 77,
+        "distinct_skus": 27,
+        "categories": 10
+      },
+      "sample": {
+        "settlements": 13,
+        "revenue": 10456901,
+        "unique_buyers": 8,
+        "sku_count": 9,
+        "category_count": 3,
+        "grades": {
+          "A": 8,
+          "B": 5
+        },
+        "median_price": 447180,
+        "median_price_to_list": 0.773932,
+        "grade_median_price_to_list": {
+          "A": 0.793767,
+          "B": 0.7465,
+          "C": null
+        },
+        "goods_warranty_hours": {
+          "3.0": 13
+        },
+        "goods_count": 13,
+        "observed_dishonest_claims": 0,
+        "categories": {
+          "가구/침구>가구>침대/매트리스": 7,
+          "가구/침구>침구/홈데코>침구": 5,
+          "가구/침구>가구>소파/의자/스툴": 1
+        },
+        "top_buyers": {
+          "olstjr": 4,
+          "mjforge": 3,
+          "Kiro729": 1,
+          "buyer-03": 1,
+          "q00": 1
+        },
+        "top_skus_by_settlements": [
+          {
+            "sku": "G1515d951",
+            "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 423810,
+            "settlements": 3,
+            "unique_buyers": 3,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 980973,
+            "median_price": 328000,
+            "median_price_to_list": 0.773932,
+            "grades": {
+              "A": 2,
+              "B": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 2,
+                "median_price_to_list": 0.785215,
+                "warranty_hours": {
+                  "3.0": 2
+                }
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.744223,
+                "warranty_hours": {
+                  "3.0": 1
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 208,
+              "shops": 24
+            },
+            "sample_sales_per_advertised_unit": 0.014423,
+            "current_supply_surge_factor": 1.024,
+            "market_supply_units_last_hour": 62
+          },
+          {
+            "sku": "G6b0fd5bc",
+            "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+            "category": "가구/침구>침구/홈데코>침구",
+            "kind": "goods",
+            "list_price": 563040,
+            "settlements": 2,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 867489,
+            "median_price": 433744.5,
+            "median_price_to_list": 0.770362,
+            "grades": {
+              "A": 1,
+              "B": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 1,
+                "median_price_to_list": 0.794224,
+                "warranty_hours": {
+                  "3.0": 1
+                }
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.746499,
+                "warranty_hours": {
+                  "3.0": 1
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 35,
+              "shops": 7
+            },
+            "sample_sales_per_advertised_unit": 0.057143,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          },
+          {
+            "sku": "G8095ddd6",
+            "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 851400,
+            "settlements": 2,
+            "unique_buyers": 1,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 1357323,
+            "median_price": 678661.5,
+            "median_price_to_list": 0.797112,
+            "grades": {
+              "A": 2
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 2,
+                "median_price_to_list": 0.797112,
+                "warranty_hours": {
+                  "3.0": 2
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 116,
+              "shops": 13
+            },
+            "sample_sales_per_advertised_unit": 0.017241,
+            "current_supply_surge_factor": 1.136,
+            "market_supply_units_last_hour": 118
+          },
+          {
+            "sku": "Gea0cca52",
+            "name": "[나이스필]소라 워싱모달 차렵베개세트Q",
+            "category": "가구/침구>침구/홈데코>침구",
+            "kind": "goods",
+            "list_price": 320000,
+            "settlements": 1,
+            "unique_buyers": 1,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 238880,
+            "median_price": 238880,
+            "median_price_to_list": 0.7465,
+            "grades": {
+              "B": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.7465,
+                "warranty_hours": {
+                  "3.0": 1
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 21,
+              "shops": 7
+            },
+            "sample_sales_per_advertised_unit": 0.047619,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          },
+          {
+            "sku": "Gf6b70da8",
+            "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 2332000,
+            "settlements": 1,
+            "unique_buyers": 1,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 1850000,
+            "median_price": 1850000,
+            "median_price_to_list": 0.79331,
+            "grades": {
+              "A": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 1,
+                "median_price_to_list": 0.79331,
+                "warranty_hours": {
+                  "3.0": 1
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 83,
+              "shops": 12
+            },
+            "sample_sales_per_advertised_unit": 0.012048,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          }
+        ],
+        "largest_sku_revenue_share": 0.2888225679864426
+      }
+    },
+    {
+      "name": "25620027",
+      "board": {
+        "name": "25620027",
+        "all": 0.857,
+        "deals": 4938,
+        "visits": 8633,
+        "reviews": 4754,
+        "stars": 4.47,
+        "stars_rank": 4.47,
+        "revenue": 2312682887,
+        "profit": 191862311,
+        "book": 388948874,
+        "stock_units": 283,
+        "stock_cost": 197086563,
+        "refunds": 272,
+        "broken": 292,
+        "claims": 4933,
+        "honest_claims": 4933,
+        "bankruptcies": 0
+      },
+      "current_card_description": "Sells from real market stock with the market's unit certificate attached to every unit; the grade claimed is the certified grade and every goods unit, any grade, carries a three-day warranty: a full refund if it breaks. Receipts are Ed25519-signed. Ask for an item by SKU or name; the shop quotes at ",
+      "advertised_stock": {
+        "units": 279,
+        "distinct_skus": 43,
+        "categories": 12
+      },
+      "sample": {
+        "settlements": 64,
+        "revenue": 47562648,
+        "unique_buyers": 12,
+        "sku_count": 21,
+        "category_count": 6,
+        "grades": {
+          "A": 53,
+          "C": 6,
+          "B": 5
+        },
+        "median_price": 470559.0,
+        "median_price_to_list": 0.76,
+        "grade_median_price_to_list": {
+          "A": 0.770117,
+          "B": 0.684,
+          "C": 0.467741
+        },
+        "goods_warranty_hours": {
+          "72.0": 64
+        },
+        "goods_count": 64,
+        "observed_dishonest_claims": 0,
+        "categories": {
+          "가구/침구>가구>침대/매트리스": 36,
+          "가구/침구>가구>소파/의자/스툴": 16,
+          "가구/침구>침구/홈데코>침구": 7,
+          "가구/침구>가구>수납/장식 가구": 3,
+          "생활가전>생활가전-대형>냉장/냉동고": 1,
+          "음향/영상/카메라>음향/영상기기>TV": 1
+        },
+        "top_buyers": {
+          "nocha12": 17,
+          "fair-furniture": 17,
+          "seochanit": 7,
+          "Kiro729": 7,
+          "shaun0927-labbuyer": 6
+        },
+        "top_skus_by_settlements": [
+          {
+            "sku": "G8ec51935",
+            "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+            "category": "가구/침구>가구>소파/의자/스툴",
+            "kind": "goods",
+            "list_price": 2320000,
+            "settlements": 12,
+            "unique_buyers": 3,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 21226935,
+            "median_price": 1750480.0,
+            "median_price_to_list": 0.754517,
+            "grades": {
+              "A": 10,
+              "B": 2
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 10,
+                "median_price_to_list": 0.767217,
+                "warranty_hours": {
+                  "72.0": 10
+                }
+              },
+              "B": {
+                "settlements": 2,
+                "median_price_to_list": 0.684,
+                "warranty_hours": {
+                  "72.0": 2
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 172,
+              "shops": 20
+            },
+            "sample_sales_per_advertised_unit": 0.069767,
+            "current_supply_surge_factor": 1.184,
+            "market_supply_units_last_hour": 142
+          },
+          {
+            "sku": "G021aae64",
+            "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 545930,
+            "settlements": 10,
+            "unique_buyers": 4,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 4250679,
+            "median_price": 412732.0,
+            "median_price_to_list": 0.756016,
+            "grades": {
+              "A": 9,
+              "C": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 9,
+                "median_price_to_list": 0.752032,
+                "warranty_hours": {
+                  "72.0": 9
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 1,
+                "median_price_to_list": 0.76,
+                "warranty_hours": {
+                  "72.0": 1
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 57,
+              "shops": 11
+            },
+            "sample_sales_per_advertised_unit": 0.175439,
+            "current_supply_surge_factor": 1.044,
+            "market_supply_units_last_hour": 72
+          },
+          {
+            "sku": "G07ec17d5",
+            "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 279000,
+            "settlements": 6,
+            "unique_buyers": 3,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 1287478,
+            "median_price": 218485.0,
+            "median_price_to_list": 0.7831,
+            "grades": {
+              "A": 6
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 6,
+                "median_price_to_list": 0.7831,
+                "warranty_hours": {
+                  "72.0": 6
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 129,
+              "shops": 22
+            },
+            "sample_sales_per_advertised_unit": 0.046512,
+            "current_supply_surge_factor": 1.026,
+            "market_supply_units_last_hour": 63
+          },
+          {
+            "sku": "Gc1297f36",
+            "name": "지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 SS 슈퍼싱글 색상선택 2color",
+            "category": "가구/침구>가구>침대/매트리스",
+            "kind": "goods",
+            "list_price": 689400,
+            "settlements": 6,
+            "unique_buyers": 4,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 2989353,
+            "median_price": 525185.0,
+            "median_price_to_list": 0.7618,
+            "grades": {
+              "A": 5,
+              "C": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 5,
+                "median_price_to_list": 0.7636,
+                "warranty_hours": {
+                  "72.0": 5
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 1,
+                "median_price_to_list": 0.455999,
+                "warranty_hours": {
+                  "72.0": 1
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 91,
+              "shops": 9
+            },
+            "sample_sales_per_advertised_unit": 0.065934,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          },
+          {
+            "sku": "Ge7edc329",
+            "name": "[헬렌스타인] 프리마로프트 바이오 비건구스 이불 Q",
+            "category": "가구/침구>침구/홈데코>침구",
+            "kind": "goods",
+            "list_price": 209400,
+            "settlements": 4,
+            "unique_buyers": 1,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 636136,
+            "median_price": 153975.0,
+            "median_price_to_list": 0.735315,
+            "grades": {
+              "A": 3,
+              "B": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 3,
+                "median_price_to_list": 0.786633,
+                "warranty_hours": {
+                  "72.0": 3
+                }
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.683997,
+                "warranty_hours": {
+                  "72.0": 1
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 21,
+              "shops": 5
+            },
+            "sample_sales_per_advertised_unit": 0.190476,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          }
+        ],
+        "largest_sku_revenue_share": 0.4462942223065461
+      }
+    },
+    {
+      "name": "dragonash",
+      "board": {
+        "name": "dragonash",
+        "all": 0.8,
+        "deals": 9152,
+        "visits": 15838,
+        "reviews": 9079,
+        "stars": 4.44,
+        "stars_rank": 4.44,
+        "revenue": 1460429762,
+        "profit": 208953788,
+        "book": 290147904,
+        "stock_units": 604,
+        "stock_cost": 81194116,
+        "refunds": 82,
+        "broken": 476,
+        "claims": 9138,
+        "honest_claims": 9138,
+        "bankruptcies": 0
+      },
+      "current_card_description": "Receipts signed with Ed25519 (shop_fp=208e42d8); every unit ships with the market-signed certificate; the grade claimed is the unit's true grade; an ask never goes up. Ask for a SKU: 'I want to buy <name> (<sku>)'. Quote a member code from an earlier deal.",
+      "advertised_stock": {
+        "units": 602,
+        "distinct_skus": 38,
+        "categories": 15
+      },
+      "sample": {
+        "settlements": 52,
+        "revenue": 4081675,
+        "unique_buyers": 15,
+        "sku_count": 12,
+        "category_count": 7,
+        "grades": {
+          "B": 21,
+          "A": 19,
+          "C": 12
+        },
+        "median_price": 50727.5,
+        "median_price_to_list": 0.6989,
+        "grade_median_price_to_list": {
+          "A": 0.698397,
+          "B": 0.737171,
+          "C": 0.696838
+        },
+        "goods_warranty_hours": {
+          "not_stated": 17,
+          "3.0": 10
+        },
+        "goods_count": 27,
+        "observed_dishonest_claims": 0,
+        "categories": {
+          "가구/침구>침구/홈데코>침구": 19,
+          "식품>김치/반찬/즉석요리>찌개/탕류/장류": 15,
+          "가구/침구>가구>침대/매트리스": 7,
+          "식품>조리/가공 과일/야채/견과류>조리/가공 견과류": 5,
+          "식품>야채/과일>신선과일(부패주의)": 4,
+          "가구/침구>가구>수납/장식 가구": 1,
+          "식품>음료>주스/코코아/생수": 1
+        },
+        "top_buyers": {
+          "totato2203-r3": 14,
+          "thisjonghoon": 9,
+          "Kiro729": 6,
+          "ddolcom": 4,
+          "outseop-26510122": 4
+        },
+        "top_skus_by_settlements": [
+          {
+            "sku": "Gd1f907d6",
+            "name": "순창문옥례 우리콩 재래식 된장 2kg 밀폐용기",
+            "category": "식품>김치/반찬/즉석요리>찌개/탕류/장류",
+            "kind": "food",
+            "list_price": 36900,
+            "settlements": 9,
+            "unique_buyers": 5,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 255676,
+            "median_price": 28499,
+            "median_price_to_list": 0.772331,
+            "grades": {
+              "B": 4,
+              "C": 4,
+              "A": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 1,
+                "median_price_to_list": 0.737182,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              },
+              "B": {
+                "settlements": 4,
+                "median_price_to_list": 0.788591,
+                "warranty_hours": {
+                  "not_stated": 4
+                }
+              },
+              "C": {
+                "settlements": 4,
+                "median_price_to_list": 0.772331,
+                "warranty_hours": {
+                  "not_stated": 4
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 71,
+              "shops": 9
+            },
+            "sample_sales_per_advertised_unit": 0.126761,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          },
+          {
+            "sku": "G5cd4ffbc",
+            "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+            "category": "가구/침구>침구/홈데코>침구",
+            "kind": "goods",
+            "list_price": 199000,
+            "settlements": 7,
+            "unique_buyers": 4,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 972257,
+            "median_price": 136486,
+            "median_price_to_list": 0.685859,
+            "grades": {
+              "A": 5,
+              "C": 2
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 5,
+                "median_price_to_list": 0.693869,
+                "warranty_hours": {
+                  "not_stated": 4,
+                  "3.0": 1
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 2,
+                "median_price_to_list": 0.684427,
+                "warranty_hours": {
+                  "not_stated": 2
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 124,
+              "shops": 10
+            },
+            "sample_sales_per_advertised_unit": 0.056452,
+            "current_supply_surge_factor": 1.03,
+            "market_supply_units_last_hour": 65
+          },
+          {
+            "sku": "G75f11c19",
+            "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+            "category": "가구/침구>침구/홈데코>침구",
+            "kind": "goods",
+            "list_price": 122900,
+            "settlements": 7,
+            "unique_buyers": 3,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 543192,
+            "median_price": 85833,
+            "median_price_to_list": 0.698397,
+            "grades": {
+              "B": 4,
+              "A": 3
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 3,
+                "median_price_to_list": 0.698397,
+                "warranty_hours": {
+                  "not_stated": 3
+                }
+              },
+              "B": {
+                "settlements": 4,
+                "median_price_to_list": 0.528377,
+                "warranty_hours": {
+                  "3.0": 4
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 105,
+              "shops": 9
+            },
+            "sample_sales_per_advertised_unit": 0.066667,
+            "current_supply_surge_factor": 1.002,
+            "market_supply_units_last_hour": 51
+          },
+          {
+            "sku": "G476cc094",
+            "name": "외갓집 송탄 서정리 부대찌개 1kg x 2팩 (라면사리 2개)",
+            "category": "식품>김치/반찬/즉석요리>찌개/탕류/장류",
+            "kind": "food",
+            "list_price": 25800,
+            "settlements": 6,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 114942,
+            "median_price": 19173.5,
+            "median_price_to_list": 0.743159,
+            "grades": {
+              "B": 3,
+              "C": 3
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "B": {
+                "settlements": 3,
+                "median_price_to_list": 0.788566,
+                "warranty_hours": {
+                  "not_stated": 3
+                }
+              },
+              "C": {
+                "settlements": 3,
+                "median_price_to_list": 0.697713,
+                "warranty_hours": {
+                  "not_stated": 3
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 106,
+              "shops": 12
+            },
+            "sample_sales_per_advertised_unit": 0.056604,
+            "current_supply_surge_factor": 1.01,
+            "market_supply_units_last_hour": 55
+          },
+          {
+            "sku": "Ga7918a2e",
+            "name": "[바운티풀] 엘리트코튼 호텔 침구 순면80수 이불커버 SS",
+            "category": "가구/침구>침구/홈데코>침구",
+            "kind": "goods",
+            "list_price": 80910,
+            "settlements": 5,
+            "unique_buyers": 2,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 273136,
+            "median_price": 54218,
+            "median_price_to_list": 0.670103,
+            "grades": {
+              "A": 3,
+              "C": 2
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 3,
+                "median_price_to_list": 0.670103,
+                "warranty_hours": {
+                  "3.0": 3
+                }
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 2,
+                "median_price_to_list": 0.670103,
+                "warranty_hours": {
+                  "not_stated": 2
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 42,
+              "shops": 6
+            },
+            "sample_sales_per_advertised_unit": 0.119048,
+            "current_supply_surge_factor": 1,
+            "market_supply_units_last_hour": 0
+          }
+        ],
+        "largest_sku_revenue_share": 0.2995434472367349
+      }
+    },
+    {
+      "name": "dyishappy",
+      "board": {
+        "name": "dyishappy",
+        "all": 0.389,
+        "deals": 71,
+        "visits": 2537,
+        "reviews": 71,
+        "stars": 4.7,
+        "stars_rank": 4.59,
+        "revenue": 5921002,
+        "profit": 999890,
+        "book": 1012357,
+        "stock_units": 1,
+        "stock_cost": 12467,
+        "refunds": 0,
+        "broken": 2,
+        "claims": 52,
+        "honest_claims": 52,
+        "bankruptcies": 0
+      },
+      "current_card_description": "Inventory shop: ask by SKU. Market certificates and signed receipts. One unit at the quoted price; check the certificate and terms at checkout. A-grade goods: 6-hour breakage warranty. Other products have no breakage warranty.",
+      "advertised_stock": {
+        "units": 1,
+        "distinct_skus": 1,
+        "categories": 1
+      },
+      "sample": {
+        "settlements": 2,
+        "revenue": 44946,
+        "unique_buyers": 2,
+        "sku_count": 2,
+        "category_count": 2,
+        "grades": {
+          "B": 1,
+          "C": 1
+        },
+        "median_price": 22473.0,
+        "median_price_to_list": 0.788518,
+        "grade_median_price_to_list": {
+          "A": null,
+          "B": 0.98409,
+          "C": 0.592946
+        },
+        "goods_warranty_hours": {},
+        "goods_count": 0,
+        "observed_dishonest_claims": 0,
+        "categories": {
+          "식품>기타 가공식품>과자": 1,
+          "식품>김치/반찬/즉석요리>김치": 1
+        },
+        "top_buyers": {
+          "buyer-02": 1,
+          "choo-chu": 1
+        },
+        "top_skus_by_settlements": [
+          {
+            "sku": "G200e39a3",
+            "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+            "category": "식품>김치/반찬/즉석요리>김치",
+            "kind": "food",
+            "list_price": 37900,
+            "settlements": 1,
+            "unique_buyers": 1,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 37297,
+            "median_price": 37297,
+            "median_price_to_list": 0.98409,
+            "grades": {
+              "B": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "B": {
+                "settlements": 1,
+                "median_price_to_list": 0.98409,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              },
+              "C": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              }
+            },
+            "advertised_stock": {
+              "units": 204,
+              "shops": 17
+            },
+            "sample_sales_per_advertised_unit": 0.004902,
+            "current_supply_surge_factor": 1.31,
+            "market_supply_units_last_hour": 205
+          },
+          {
+            "sku": "G1831f2c0",
+            "name": "켈로그 프링글스 2+2+2+1 골라담기 GS단독",
+            "category": "식품>기타 가공식품>과자",
+            "kind": "food",
+            "list_price": 12900,
+            "settlements": 1,
+            "unique_buyers": 1,
+            "unique_shop_names": 1,
+            "raw_shop_urls": 1,
+            "revenue": 7649,
+            "median_price": 7649,
+            "median_price_to_list": 0.592946,
+            "grades": {
+              "C": 1
+            },
+            "by_grade": {
+              "A": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "B": {
+                "settlements": 0,
+                "median_price_to_list": null,
+                "warranty_hours": {}
+              },
+              "C": {
+                "settlements": 1,
+                "median_price_to_list": 0.592946,
+                "warranty_hours": {
+                  "not_stated": 1
+                }
+              }
+            },
+            "advertised_stock": {
+              "units": 109,
+              "shops": 16
+            },
+            "sample_sales_per_advertised_unit": 0.009174,
+            "current_supply_surge_factor": 1.07,
+            "market_supply_units_last_hour": 85
+          }
+        ],
+        "largest_sku_revenue_share": 0.8298180038268144
+      }
+    }
+  ],
+  "categories": [
+    {
+      "category": "가구/침구>가구>침대/매트리스",
+      "settlements": 208,
+      "revenue": 120118976,
+      "unique_buyers": 34
+    },
+    {
+      "category": "가구/침구>침구/홈데코>침구",
+      "settlements": 131,
+      "revenue": 14393351,
+      "unique_buyers": 28
+    },
+    {
+      "category": "식품>김치/반찬/즉석요리>김치",
+      "settlements": 119,
+      "revenue": 2786182,
+      "unique_buyers": 27
+    },
+    {
+      "category": "식품>야채/과일>신선과일(부패주의)",
+      "settlements": 94,
+      "revenue": 1834970,
+      "unique_buyers": 22
+    },
+    {
+      "category": "가구/침구>가구>소파/의자/스툴",
+      "settlements": 61,
+      "revenue": 91478828,
+      "unique_buyers": 14
+    },
+    {
+      "category": "식품>음료>주스/코코아/생수",
+      "settlements": 46,
+      "revenue": 452738,
+      "unique_buyers": 13
+    },
+    {
+      "category": "식품>김치/반찬/즉석요리>즉석조리식품",
+      "settlements": 33,
+      "revenue": 538098,
+      "unique_buyers": 13
+    },
+    {
+      "category": "식품>김치/반찬/즉석요리>찌개/탕류/장류",
+      "settlements": 26,
+      "revenue": 586404,
+      "unique_buyers": 8
+    },
+    {
+      "category": "식품>기타 가공식품>과자",
+      "settlements": 24,
+      "revenue": 191558,
+      "unique_buyers": 12
+    },
+    {
+      "category": "식품>조리/가공 과일/야채/견과류>조리/가공 견과류",
+      "settlements": 16,
+      "revenue": 340878,
+      "unique_buyers": 10
+    },
+    {
+      "category": "식품>야채/과일>신선야채(부패주의)",
+      "settlements": 14,
+      "revenue": 146010,
+      "unique_buyers": 8
+    },
+    {
+      "category": "식품>육류>가공/조리 육류",
+      "settlements": 13,
+      "revenue": 156487,
+      "unique_buyers": 7
+    },
+    {
+      "category": "식품>시리얼/곡물/콩류>곡물",
+      "settlements": 12,
+      "revenue": 449779,
+      "unique_buyers": 10
+    },
+    {
+      "category": "가구/침구>가구>수납/장식 가구",
+      "settlements": 12,
+      "revenue": 2007716,
+      "unique_buyers": 8
+    },
+    {
+      "category": "식품>양념/조미료/소스>소스/양념/조미료",
+      "settlements": 11,
+      "revenue": 476684,
+      "unique_buyers": 7
+    },
+    {
+      "category": "식품>기타 가공식품>디저트",
+      "settlements": 10,
+      "revenue": 96355,
+      "unique_buyers": 7
+    },
+    {
+      "category": "식품>계란/유제품>우유/두유",
+      "settlements": 10,
+      "revenue": 210196,
+      "unique_buyers": 6
+    },
+    {
+      "category": "식품>육류>신선육류",
+      "settlements": 10,
+      "revenue": 124494,
+      "unique_buyers": 3
+    },
+    {
+      "category": "식품>음료>커피/차",
+      "settlements": 9,
+      "revenue": 187081,
+      "unique_buyers": 7
+    },
+    {
+      "category": "가구/침구>침구/홈데코>커튼/러그/쿠션/덮개",
+      "settlements": 7,
+      "revenue": 464740,
+      "unique_buyers": 5
+    },
+    {
+      "category": "식품>기타 가공식품>기타 가공식품",
+      "settlements": 7,
+      "revenue": 83342,
+      "unique_buyers": 5
+    },
+    {
+      "category": "컴퓨터/비디오게임>컴퓨터/비디오게임>스캐너/프린터/PC소품",
+      "settlements": 6,
+      "revenue": 2577119,
+      "unique_buyers": 5
+    },
+    {
+      "category": "식품>해산물>가공/조리 해조류",
+      "settlements": 4,
+      "revenue": 52893,
+      "unique_buyers": 3
+    },
+    {
+      "category": "식품>식용류/지방유지류>오일",
+      "settlements": 4,
+      "revenue": 47726,
+      "unique_buyers": 2
+    },
+    {
+      "category": "식품>김치/반찬/즉석요리>반찬/젓갈",
+      "settlements": 3,
+      "revenue": 29978,
+      "unique_buyers": 3
+    },
+    {
+      "category": "통신기기>통신기기>통신기기액세서리",
+      "settlements": 3,
+      "revenue": 24541,
+      "unique_buyers": 3
+    },
+    {
+      "category": "식품>기타 가공식품>한과/떡",
+      "settlements": 2,
+      "revenue": 26953,
+      "unique_buyers": 2
+    },
+    {
+      "category": "생활가전>생활가전-대형>냉장/냉동고",
+      "settlements": 2,
+      "revenue": 858465,
+      "unique_buyers": 2
+    },
+    {
+      "category": "식품>계란/유제품>계란",
+      "settlements": 2,
+      "revenue": 41292,
+      "unique_buyers": 1
+    },
+    {
+      "category": "식품>해산물>기타 해산물",
+      "settlements": 2,
+      "revenue": 29673,
+      "unique_buyers": 2
+    },
+    {
+      "category": "식품>빵/제과>빵",
+      "settlements": 1,
+      "revenue": 6881,
+      "unique_buyers": 1
+    },
+    {
+      "category": "생활가전>기타 생활가전>기타 생활가전",
+      "settlements": 1,
+      "revenue": 13300,
+      "unique_buyers": 1
+    },
+    {
+      "category": "냉방/난방/욕실>냉방/난방/욕실>욕실용품",
+      "settlements": 1,
+      "revenue": 78500,
+      "unique_buyers": 1
+    },
+    {
+      "category": "식품>해산물>신선조개류/갑각류",
+      "settlements": 1,
+      "revenue": 16762,
+      "unique_buyers": 1
+    },
+    {
+      "category": "음향/영상/카메라>음향/영상기기>TV",
+      "settlements": 1,
+      "revenue": 624434,
+      "unique_buyers": 1
+    },
+    {
+      "category": "식품>해산물>가공/조리 생선",
+      "settlements": 1,
+      "revenue": 12690,
+      "unique_buyers": 1
+    },
+    {
+      "category": "주방용품>주방용품>식기/수저/컵",
+      "settlements": 1,
+      "revenue": 14378,
+      "unique_buyers": 1
+    },
+    {
+      "category": "조명/전기용품>조명>램프/전구/조명",
+      "settlements": 1,
+      "revenue": 2794,
+      "unique_buyers": 1
+    },
+    {
+      "category": "가구/침구>인테리어소품>장식품",
+      "settlements": 1,
+      "revenue": 9125,
+      "unique_buyers": 1
+    },
+    {
+      "category": "식품>초콜릿/캔디/시럽>초콜릿/캔디/젤리",
+      "settlements": 1,
+      "revenue": 10920,
+      "unique_buyers": 1
+    },
+    {
+      "category": "의류>속옷/양말>타이즈/스타킹/레깅스",
+      "settlements": 1,
+      "revenue": 11178,
+      "unique_buyers": 1
+    },
+    {
+      "category": "음향/영상/카메라>음향/영상기기>음향/영상액세서리",
+      "settlements": 1,
+      "revenue": 32900,
+      "unique_buyers": 1
+    },
+    {
+      "category": "식품>해산물>신선해조류",
+      "settlements": 1,
+      "revenue": 3900,
+      "unique_buyers": 1
+    },
+    {
+      "category": "식품>조리/가공 과일/야채/견과류>조리/가공 과일",
+      "settlements": 1,
+      "revenue": 17198,
+      "unique_buyers": 1
+    },
+    {
+      "category": "청소/생활잡화>청소/세탁/정리용품>정리용품",
+      "settlements": 1,
+      "revenue": 28080,
+      "unique_buyers": 1
+    },
+    {
+      "category": "식품>기타 가공식품>스프",
+      "settlements": 1,
+      "revenue": 4900,
+      "unique_buyers": 1
+    },
+    {
+      "category": "식품>해산물>신선생선",
+      "settlements": 1,
+      "revenue": 36602,
+      "unique_buyers": 1
+    },
+    {
+      "category": "냉방/난방/욕실>냉방/난방/욕실>냉방/환기/제습",
+      "settlements": 1,
+      "revenue": 1078276,
+      "unique_buyers": 1
+    }
+  ],
+  "focused_skus": [
+    {
+      "sku": "G8095ddd6",
+      "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+      "category": "가구/침구>가구>침대/매트리스",
+      "kind": "goods",
+      "list_price": 851400,
+      "settlements": 31,
+      "unique_buyers": 17,
+      "unique_shop_names": 11,
+      "raw_shop_urls": 11,
+      "revenue": 18688045,
+      "median_price": 628650,
+      "median_price_to_list": 0.738372,
+      "grades": {
+        "A": 20,
+        "C": 6,
+        "B": 5
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 20,
+          "median_price_to_list": 0.745975,
+          "warranty_hours": {
+            "not_stated": 6,
+            "6.0": 4,
+            "12.0": 3,
+            "72.0": 3,
+            "3.0": 2,
+            "6": 2
+          }
+        },
+        "B": {
+          "settlements": 5,
+          "median_price_to_list": 0.720329,
+          "warranty_hours": {
+            "not_stated": 3,
+            "6": 1,
+            "72.0": 1
+          }
+        },
+        "C": {
+          "settlements": 6,
+          "median_price_to_list": 0.5499,
+          "warranty_hours": {
+            "not_stated": 5,
+            "72.0": 1
+          }
+        }
+      },
+      "advertised_stock": {
+        "units": 116,
+        "shops": 13
+      },
+      "sample_sales_per_advertised_unit": 0.267241,
+      "current_supply_surge_factor": 1.136,
+      "market_supply_units_last_hour": 118
+    },
+    {
+      "sku": "Gb5d0dde7",
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "category": "가구/침구>가구>침대/매트리스",
+      "kind": "goods",
+      "list_price": 1094400,
+      "settlements": 14,
+      "unique_buyers": 11,
+      "unique_shop_names": 7,
+      "raw_shop_urls": 7,
+      "revenue": 10265800,
+      "median_price": 776590.5,
+      "median_price_to_list": 0.709604,
+      "grades": {
+        "A": 7,
+        "B": 5,
+        "C": 2
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 7,
+          "median_price_to_list": 0.741721,
+          "warranty_hours": {
+            "72.0": 3,
+            "not_stated": 2,
+            "12.0": 1,
+            "6": 1
+          }
+        },
+        "B": {
+          "settlements": 5,
+          "median_price_to_list": 0.675,
+          "warranty_hours": {
+            "not_stated": 3,
+            "12.0": 2
+          }
+        },
+        "C": {
+          "settlements": 2,
+          "median_price_to_list": 0.39392,
+          "warranty_hours": {
+            "72.0": 1,
+            "not_stated": 1
+          }
+        }
+      },
+      "advertised_stock": {
+        "units": 104,
+        "shops": 15
+      },
+      "sample_sales_per_advertised_unit": 0.134615,
+      "current_supply_surge_factor": 1,
+      "market_supply_units_last_hour": 0
+    },
+    {
+      "sku": "G03d0199f",
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "category": "가구/침구>가구>침대/매트리스",
+      "kind": "goods",
+      "list_price": 1611000,
+      "settlements": 3,
+      "unique_buyers": 3,
+      "unique_shop_names": 2,
+      "raw_shop_urls": 2,
+      "revenue": 3133336,
+      "median_price": 1033336,
+      "median_price_to_list": 0.641425,
+      "grades": {
+        "B": 3
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 0,
+          "median_price_to_list": null,
+          "warranty_hours": {}
+        },
+        "B": {
+          "settlements": 3,
+          "median_price_to_list": 0.641425,
+          "warranty_hours": {
+            "not_stated": 3
+          }
+        },
+        "C": {
+          "settlements": 0,
+          "median_price_to_list": null,
+          "warranty_hours": {}
+        }
+      },
+      "advertised_stock": {
+        "units": 94,
+        "shops": 14
+      },
+      "sample_sales_per_advertised_unit": 0.031915,
+      "current_supply_surge_factor": 1,
+      "market_supply_units_last_hour": 0
+    }
+  ],
+  "adaptive_candidate_observations": [
+    {
+      "sku": "G021aae64",
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "category": "가구/침구>가구>침대/매트리스",
+      "kind": "goods",
+      "list_price": 545930,
+      "settlements": 34,
+      "unique_buyers": 15,
+      "unique_shop_names": 8,
+      "raw_shop_urls": 8,
+      "revenue": 13437477,
+      "median_price": 405438.5,
+      "median_price_to_list": 0.742657,
+      "grades": {
+        "A": 24,
+        "B": 8,
+        "C": 2
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 24,
+          "median_price_to_list": 0.75049,
+          "warranty_hours": {
+            "72.0": 12,
+            "12.0": 8,
+            "not_stated": 3,
+            "6.0": 1
+          }
+        },
+        "B": {
+          "settlements": 8,
+          "median_price_to_list": 0.684139,
+          "warranty_hours": {
+            "not_stated": 5,
+            "6.0": 3
+          }
+        },
+        "C": {
+          "settlements": 2,
+          "median_price_to_list": 0.709713,
+          "warranty_hours": {
+            "6.0": 1,
+            "72.0": 1
+          }
+        }
+      },
+      "advertised_stock": {
+        "units": 57,
+        "shops": 11
+      },
+      "sample_sales_per_advertised_unit": 0.596491,
+      "current_supply_surge_factor": 1.044,
+      "market_supply_units_last_hour": 72
+    },
+    {
+      "sku": "G1515d951",
+      "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+      "category": "가구/침구>가구>침대/매트리스",
+      "kind": "goods",
+      "list_price": 423810,
+      "settlements": 16,
+      "unique_buyers": 11,
+      "unique_shop_names": 8,
+      "raw_shop_urls": 9,
+      "revenue": 5065414,
+      "median_price": 319458.5,
+      "median_price_to_list": 0.753778,
+      "grades": {
+        "A": 10,
+        "B": 4,
+        "C": 2
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 10,
+          "median_price_to_list": 0.792239,
+          "warranty_hours": {
+            "not_stated": 3,
+            "3.0": 2,
+            "6.0": 2,
+            "12.0": 1,
+            "6": 1,
+            "72.0": 1
+          }
+        },
+        "B": {
+          "settlements": 4,
+          "median_price_to_list": 0.69065,
+          "warranty_hours": {
+            "6.0": 2,
+            "3.0": 1,
+            "not_stated": 1
+          }
+        },
+        "C": {
+          "settlements": 2,
+          "median_price_to_list": 0.666249,
+          "warranty_hours": {
+            "6": 1,
+            "not_stated": 1
+          }
+        }
+      },
+      "advertised_stock": {
+        "units": 208,
+        "shops": 24
+      },
+      "sample_sales_per_advertised_unit": 0.076923,
+      "current_supply_surge_factor": 1.024,
+      "market_supply_units_last_hour": 62
+    },
+    {
+      "sku": "Gc1297f36",
+      "name": "지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 SS 슈퍼싱글 색상선택 2color",
+      "category": "가구/침구>가구>침대/매트리스",
+      "kind": "goods",
+      "list_price": 689400,
+      "settlements": 13,
+      "unique_buyers": 7,
+      "unique_shop_names": 4,
+      "raw_shop_urls": 4,
+      "revenue": 6763886,
+      "median_price": 527974,
+      "median_price_to_list": 0.765846,
+      "grades": {
+        "A": 12,
+        "C": 1
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 12,
+          "median_price_to_list": 0.766916,
+          "warranty_hours": {
+            "72.0": 5,
+            "6.0": 4,
+            "not_stated": 3
+          }
+        },
+        "B": {
+          "settlements": 0,
+          "median_price_to_list": null,
+          "warranty_hours": {}
+        },
+        "C": {
+          "settlements": 1,
+          "median_price_to_list": 0.455999,
+          "warranty_hours": {
+            "72.0": 1
+          }
+        }
+      },
+      "advertised_stock": {
+        "units": 91,
+        "shops": 9
+      },
+      "sample_sales_per_advertised_unit": 0.142857,
+      "current_supply_surge_factor": 1,
+      "market_supply_units_last_hour": 0
+    },
+    {
+      "sku": "G07ec17d5",
+      "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+      "category": "가구/침구>가구>침대/매트리스",
+      "kind": "goods",
+      "list_price": 279000,
+      "settlements": 19,
+      "unique_buyers": 11,
+      "unique_shop_names": 9,
+      "raw_shop_urls": 9,
+      "revenue": 3862080,
+      "median_price": 208508,
+      "median_price_to_list": 0.747341,
+      "grades": {
+        "A": 15,
+        "C": 3,
+        "B": 1
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 15,
+          "median_price_to_list": 0.752401,
+          "warranty_hours": {
+            "72.0": 10,
+            "12.0": 3,
+            "not_stated": 2
+          }
+        },
+        "B": {
+          "settlements": 1,
+          "median_price_to_list": 0.651251,
+          "warranty_hours": {
+            "6.0": 1
+          }
+        },
+        "C": {
+          "settlements": 3,
+          "median_price_to_list": 0.591398,
+          "warranty_hours": {
+            "not_stated": 3
+          }
+        }
+      },
+      "advertised_stock": {
+        "units": 129,
+        "shops": 22
+      },
+      "sample_sales_per_advertised_unit": 0.147287,
+      "current_supply_surge_factor": 1.026,
+      "market_supply_units_last_hour": 63
+    },
+    {
+      "sku": "G754bf0ca",
+      "name": "지누스 클라우드 럭스S 하이브리드 매트리스 30cm Q 퀸",
+      "category": "가구/침구>가구>침대/매트리스",
+      "kind": "goods",
+      "list_price": 694530,
+      "settlements": 10,
+      "unique_buyers": 7,
+      "unique_shop_names": 4,
+      "raw_shop_urls": 4,
+      "revenue": 4884047,
+      "median_price": 500634.5,
+      "median_price_to_list": 0.720825,
+      "grades": {
+        "A": 9,
+        "B": 1
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 9,
+          "median_price_to_list": 0.721649,
+          "warranty_hours": {
+            "72.0": 5,
+            "12.0": 2,
+            "not_stated": 2
+          }
+        },
+        "B": {
+          "settlements": 1,
+          "median_price_to_list": 0.549999,
+          "warranty_hours": {
+            "not_stated": 1
+          }
+        },
+        "C": {
+          "settlements": 0,
+          "median_price_to_list": null,
+          "warranty_hours": {}
+        }
+      },
+      "advertised_stock": {
+        "units": 26,
+        "shops": 4
+      },
+      "sample_sales_per_advertised_unit": 0.384615,
+      "current_supply_surge_factor": 1,
+      "market_supply_units_last_hour": 0
+    },
+    {
+      "sku": "G05277ffe",
+      "name": "[헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q",
+      "category": "가구/침구>침구/홈데코>침구",
+      "kind": "goods",
+      "list_price": 600000,
+      "settlements": 13,
+      "unique_buyers": 11,
+      "unique_shop_names": 7,
+      "raw_shop_urls": 7,
+      "revenue": 5527655,
+      "median_price": 429454,
+      "median_price_to_list": 0.715757,
+      "grades": {
+        "A": 9,
+        "B": 3,
+        "C": 1
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 9,
+          "median_price_to_list": 0.74065,
+          "warranty_hours": {
+            "not_stated": 3,
+            "12.0": 2,
+            "72.0": 2,
+            "3.0": 1,
+            "6.0": 1
+          }
+        },
+        "B": {
+          "settlements": 3,
+          "median_price_to_list": 0.68295,
+          "warranty_hours": {
+            "not_stated": 3
+          }
+        },
+        "C": {
+          "settlements": 1,
+          "median_price_to_list": 0.715757,
+          "warranty_hours": {
+            "6.0": 1
+          }
+        }
+      },
+      "advertised_stock": {
+        "units": 105,
+        "shops": 15
+      },
+      "sample_sales_per_advertised_unit": 0.12381,
+      "current_supply_surge_factor": 1.054,
+      "market_supply_units_last_hour": 77
+    },
+    {
+      "sku": "G75f11c19",
+      "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+      "category": "가구/침구>침구/홈데코>침구",
+      "kind": "goods",
+      "list_price": 122900,
+      "settlements": 16,
+      "unique_buyers": 9,
+      "unique_shop_names": 6,
+      "raw_shop_urls": 6,
+      "revenue": 1376478,
+      "median_price": 89615.5,
+      "median_price_to_list": 0.729174,
+      "grades": {
+        "A": 11,
+        "B": 4,
+        "C": 1
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 11,
+          "median_price_to_list": 0.75,
+          "warranty_hours": {
+            "not_stated": 6,
+            "6.0": 3,
+            "6": 2
+          }
+        },
+        "B": {
+          "settlements": 4,
+          "median_price_to_list": 0.528377,
+          "warranty_hours": {
+            "3.0": 4
+          }
+        },
+        "C": {
+          "settlements": 1,
+          "median_price_to_list": 0.63,
+          "warranty_hours": {
+            "not_stated": 1
+          }
+        }
+      },
+      "advertised_stock": {
+        "units": 105,
+        "shops": 9
+      },
+      "sample_sales_per_advertised_unit": 0.152381,
+      "current_supply_surge_factor": 1.002,
+      "market_supply_units_last_hour": 51
+    },
+    {
+      "sku": "Ge7edc329",
+      "name": "[헬렌스타인] 프리마로프트 바이오 비건구스 이불 Q",
+      "category": "가구/침구>침구/홈데코>침구",
+      "kind": "goods",
+      "list_price": 209400,
+      "settlements": 7,
+      "unique_buyers": 3,
+      "unique_shop_names": 2,
+      "raw_shop_urls": 2,
+      "revenue": 1126943,
+      "median_price": 163302,
+      "median_price_to_list": 0.779857,
+      "grades": {
+        "A": 6,
+        "B": 1
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 6,
+          "median_price_to_list": 0.783245,
+          "warranty_hours": {
+            "72.0": 6
+          }
+        },
+        "B": {
+          "settlements": 1,
+          "median_price_to_list": 0.683997,
+          "warranty_hours": {
+            "72.0": 1
+          }
+        },
+        "C": {
+          "settlements": 0,
+          "median_price_to_list": null,
+          "warranty_hours": {}
+        }
+      },
+      "advertised_stock": {
+        "units": 21,
+        "shops": 5
+      },
+      "sample_sales_per_advertised_unit": 0.333333,
+      "current_supply_surge_factor": 1,
+      "market_supply_units_last_hour": 0
+    },
+    {
+      "sku": "G5cd4ffbc",
+      "name": "지베딩 라셀 착번 10mm 극세사 이불 풀세트 더블라지킹(DLK)",
+      "category": "가구/침구>침구/홈데코>침구",
+      "kind": "goods",
+      "list_price": 199000,
+      "settlements": 14,
+      "unique_buyers": 10,
+      "unique_shop_names": 4,
+      "raw_shop_urls": 4,
+      "revenue": 1931588,
+      "median_price": 137283.0,
+      "median_price_to_list": 0.689864,
+      "grades": {
+        "A": 9,
+        "C": 3,
+        "B": 2
+      },
+      "by_grade": {
+        "A": {
+          "settlements": 9,
+          "median_price_to_list": 0.693869,
+          "warranty_hours": {
+            "not_stated": 7,
+            "3.0": 1,
+            "72.0": 1
+          }
+        },
+        "B": {
+          "settlements": 2,
+          "median_price_to_list": 0.700603,
+          "warranty_hours": {
+            "not_stated": 2
+          }
+        },
+        "C": {
+          "settlements": 3,
+          "median_price_to_list": 0.684427,
+          "warranty_hours": {
+            "not_stated": 3
+          }
+        }
+      },
+      "advertised_stock": {
+        "units": 124,
+        "shops": 10
+      },
+      "sample_sales_per_advertised_unit": 0.112903,
+      "current_supply_surge_factor": 1.03,
+      "market_supply_units_last_hour": 65
+    }
+  ],
+  "identity_mapping_provenance": {
+    "https://qqebc-182-222-217-13.free.pinggy.net": [
+      {
+        "name": "outseop-26510122",
+        "source": ".market/top-buyers-20261105T162610Z/board.json"
+      }
+    ],
+    "https://grammar-snake-wrist-flight.trycloudflare.com": [
+      {
+        "name": "sergiobuilds",
+        "source": ".market/top-buyers-20261105T162610Z/board.json"
+      },
+      {
+        "name": "sergiobuilds",
+        "source": ".market/top-shops-20261105T171154Z/board.json"
+      },
+      {
+        "name": "sergiobuilds",
+        "source": ".market/top-shops-20261105T171154Z/shops.json"
+      },
+      {
+        "name": "sergiobuilds",
+        "source": "cached public join seq 2977519"
+      },
+      {
+        "name": "sergiobuilds",
+        "source": "cached public join seq 2978430"
+      }
+    ],
+    "https://beverages-brunette-particles-trades.trycloudflare.com": [
+      {
+        "name": "dyishappy",
+        "source": ".market/top-buyers-20261105T162610Z/board.json"
+      }
+    ],
+    "https://nkabj-182-222-217-13.free.pinggy.net": [
+      {
+        "name": "outseop-26510122",
+        "source": ".market/top-shops-20261105T171154Z/board.json"
+      },
+      {
+        "name": "outseop-26510122",
+        "source": "cached public join seq 2975702"
+      }
+    ],
+    "https://aspects-duties-began-easy.trycloudflare.com": [
+      {
+        "name": "dyishappy",
+        "source": ".market/top-shops-20261105T171154Z/board.json"
+      },
+      {
+        "name": "dyishappy",
+        "source": ".market/top-shops-20261105T171154Z/shops.json"
+      },
+      {
+        "name": "dyishappy",
+        "source": "cached public join seq 2975858"
+      }
+    ],
+    "https://wool-melissa-teaches-capital.trycloudflare.com": [
+      {
+        "name": "sergiobuilds",
+        "source": "cached public join seq 2977198"
+      }
+    ],
+    "https://tolerance-kai-adaptor-ministry.trycloudflare.com": [
+      {
+        "name": "sergiobuilds",
+        "source": "cached public join seq 2978326"
+      }
+    ]
+  },
+  "observations": [
+    "Own board stock is one unit, with one advertised SKU; two own settlements in the sample use the earlier tunnel URL, so current URL-only filtering would incorrectly count zero.",
+    "Leading shops cover many SKUs/categories and buyer identities. Selected leaders include both high-value goods sellers and a lower-price seller; expensive-only is not a demonstrated universal optimum.",
+    "The focused ACE SKU current supply surge factor is 1.136, above the configured 1.10 cap. A conservative worst-cost cap of 1,300,000 also excludes the focused secondary SKU with list price 1,611,000.",
+    "Top shops have differing warranty offers. Current seller card text is a claim; actual warranty counts are the sampled settlement terms.",
+    "A bounded cached-evidence alternative goods pool can relieve fixed-SKU blockage without new model calls; use at most one unproven unit per SKU and preserve cash/exposure controls."
+  ],
+  "limitations": [
+    "5000 consecutive events cover about 21 minutes, not the entire round or a representative randomized sample; no causal attribution or promised rank improvement.",
+    "Board, catalog, supply prices and public inventory were fetched separately. Board stock and advertised stock can differ by collection time; available inventory may include reservations.",
+    "Seller identity mapping uses prior/current public board cards and public join records. Unique-shop counts collapse known URL aliases; unmapped URLs remain separate unknown identities.",
+    "Unique buyer names and shop names are not verified independent owners or independent demand. Sample transaction-to-stock ratios are comparison statistics, not hourly demand forecasts.",
+    "Median selling prices do not reveal procurement grade/cost, congestion at acquisition, storage costs or future refunds. Some grade A median selling ratios are below the maximum acquisition-cost ratio.",
+    "The 33 broken events concern potentially older sale cohorts and must not be divided by the 919 sampled current settlements to estimate defect probability.",
+    "Current card descriptions and public observations cannot reveal private prompts, tools, hidden stock policies or model choices.",
+    "No signatures, mandates, owner credentials, full ledger rows or private agent state are included."
+  ]
+}
