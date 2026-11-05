@@ -424,7 +424,8 @@ lever1이 FAIL인 원인(탐색, 읽기 전용):
 - lever1의 소파 0.607, 매트리스 0.393 비율이 원인임.
 - 시험(a2): 그 두 비율 + 김치 0.25·침구 0.15 → book −12.44M, 거래 −351, 재고 부족 +535. FAIL.
 - 김치·침구 비율만 바꾸면 book 변화가 작음(아래 표).
-- 참고(고치지 않음): `twin.effective_plan_policy`는 planner의 전역 `CATEGORY_MAX_SHARE`·`DEEP_CATEGORY_SHARE`를 가장 큰 비율로 올림. 다른 카테고리는 `_apply_category_shares`가 라이브 값(0.25, 0.35)으로 막음.
+- 참고: `twin.effective_plan_policy`는 planner의 전역 `CATEGORY_MAX_SHARE`·`DEEP_CATEGORY_SHARE`를 가장 큰 비율로 올림.
+- 정정(2026-11-05 16:55 KST): 위 문장의 옛 내용 "다른 카테고리는 라이브 값(0.25, 0.35)으로 막음"은 틀림. `_default_share`는 저장만 되고 쓰이지 않았음. 그래서 모든 카테고리가 올린 상한을 받았음. 아래 "라이브 상한으로 다시 실행" 절을 보기.
 
 후보:
 - (a) `policies/candidates/lever1b-a.json`: 김치 0.40, 침구 0.21만. 소파·매트리스는 그대로.
@@ -476,3 +477,75 @@ PYTHONHASHSEED=0 ~/ai-agent-engineering-101/.venv/bin/python -m r3lib.shadow_gat
   - (c)는 book이 (a)와 거의 같음. 그러나 거래 −32, 방문 체결률 −0.020(허용 −0.03에 가까움), 재고 부족 +48. (a)보다 나쁨.
 - 한계: 한 창(6시간), seed 하나. 고정 DB의 `shop_stock`·`shops`·`meta`는 16:18 값임(앞 절). 비율 0.40은 planner 전역 상한도 올림(위 참고).
 - 바꾸지 않은 것: `policies/active.json`, 라이브 코드, systemd 서비스. push 없음. 재시작 없음.
+
+### 2026-11-05 lever1b (a): 라이브 상한으로 다시 실행 (MO 지시, `ci/wt` 브랜치)
+
+목표: (a)를 라이브 카테고리 상한으로 다시 시험함. 라이브 상한은 `r3lib/config.py`의 `CATEGORY_MAX_SHARE` 0.25, `DEEP_CATEGORY_SHARE` 0.35임. `policies/active.json`에는 카테고리 상한 키가 없음(`fixed_baseline`, `q_values` 비어 있음). `STOCK_BUDGET_MAX`는 라이브에서 이미 16,000,000임.
+
+트윈 수정(커밋 1a76765, 테스트 10개):
+- 새 정책 키 `category_cap_mode`를 추가함. 값은 세 개임.
+  - `raise_all`(기본값): 옛 동작임. planner 전역 상한을 가장 큰 비율로 올림. 모든 카테고리가 올린 상한을 받음. 앞 절의 모든 결과는 이 값임.
+  - `live`: 전역 상한을 올리지 않음. 라이브 가게와 같음. 비율은 카테고리를 낮추기만 함.
+  - `listed`: planner 상한을 올림. 그다음 목록에 없는 카테고리를 라이브 상한으로 다시 자름. deep 판정(시간당 시장 정산 ≥ `DEEP_CATEGORY_RATE`)은 같은 DB 복사본과 같은 시각에서 함(`DefaultPlan.deep_categories`).
+- 기본값이 `raise_all`이므로 앞 절의 숫자는 그대로 재현됨(아래 표의 첫 열).
+
+후보(`policies/candidates/`):
+- `lever1b-a-live.json`: (a) + `category_cap_mode` `live`.
+- `lever1b-a-listed.json`: (a) + `listed`. 김치·침구 상한만 올리는 변형임.
+- `lever1b-a-deep040.json`: 비율 없음. `DEEP_CATEGORY_SHARE` 0.40만. 라이브에 넣을 설정 하나와 같은 후보임.
+
+gate 실행(워크트리 `/tmp/week08-ci-wt`, 16:50–16:55 KST):
+
+```
+L=~/ai-agent-engineering-101/submissions/26510358/week-08   # 라이브 데이터, 읽기만
+MARKET_DIR=$L/.market PYTHONHASHSEED=0 ~/ai-agent-engineering-101/.venv/bin/python -m r3lib.shadow_gate \
+  --hours 6 --end 1793859780 --restock plan --monitor-dir $L/logs/monitor --out logs/shadow \
+  --candidate policies/candidates/lever1b-a.json --candidate policies/candidates/lever1b-a-live.json \
+  --candidate policies/candidates/lever1b-a-listed.json
+# 그다음 같은 명령, --no-calibration --candidate policies/candidates/lever1b-a-deep040.json
+```
+
+- 보고서: 워크트리 `logs/shadow/gate-20261105T165237.json`, `gate-20261105T165530.json`(gitignore).
+- 고정 입력과 고정 DB는 라이브 `logs/shadow`의 파일을 워크트리 `logs/shadow`로 복사함. 두 실행 모두 "reused"임. 라이브 `memory.sqlite`는 읽기만 함.
+- 창 09:23–15:23 KST. live 값: book 25,558,618, 거래 724(앞 절과 같음).
+
+| 지표 (live 대비 차이) | (a) `raise_all` (옛 결과) | (a) `live` 상한 | (a) `listed` (김치·침구만 올림) | `DEEP_CATEGORY_SHARE` 0.40만 |
+|---|---:|---:|---:|---:|
+| 판정 | **PASS** | PASS (효과 0) | **PASS** | **PASS** |
+| book 변화 | +972,722 | 0 | +972,722 | +972,722 |
+| 거래 매출 | +5,826,315 | 0 | +5,826,315 | +5,826,315 |
+| 정산 매출 (추정, 거래 매출 × 0.711) | 약 +4,142,510 | 0 | 약 +4,142,510 | 약 +4,142,510 |
+| 거래 수 | −8 (716) | 0 (724) | −8 (716) | −8 (716) |
+| 협상 수 | −5 (871) | 0 | −5 (871) | −5 (871) |
+| 체결률 (live 0.8265) | 0.8220 (−0.0045) | 0.8265 (0) | 0.8220 (−0.0045) | 0.8220 (−0.0045) |
+| 방문 체결률 (live 0.4629, 허용 −0.03) | 0.4578 (−0.0051) | 0.4629 (0) | 0.4578 (−0.0051) | 0.4578 (−0.0051) |
+| 재고 부족 (live 227, 허용 +156) | +1 | 0 | +1 | +1 |
+| 방문당 이익 (live 16,370) | +622 | 0 | +622 | +622 |
+| 최종가/정가 (live 0.7546) | +0.0010 | 0 | +0.0010 | +0.0010 |
+| 첫 호가/정가 (live 0.8255) | +0.0001 | 0 | +0.0001 | +0.0001 |
+| 공급 지출 | +4,842,123 | 0 | +4,842,123 | +4,842,123 |
+| 끝 재고 원가 | −11,292 | 0 | −11,292 | −11,292 |
+| 가게 ALL 추정 (live 0.7871) | 0.7926 (+0.0055) | 0.7871 (0) | 0.7926 (+0.0055) | 0.7926 (+0.0055) |
+
+진단(읽기 전용, 같은 고정 입력, 커밋하지 않은 스크립트):
+- plan 틱 36개 모두에서 김치와 침구는 deep임. 그래서 라이브 상한은 둘 다 0.35임.
+- `listed`와 김치 0.40만 둔 후보에서 `_apply_category_shares`가 자른 줄은 0개임. 침구 0.21은 묶이지 않음. 다른 카테고리도 라이브 상한에 닿지 않음.
+- 결론: (a)의 효과는 모두 "김치 상한 0.35 → 0.40"에서 옴.
+
+판정:
+- 라이브 상한(`live`)에서 (a)는 효과가 없음. 김치 0.40은 라이브 deep 상한 0.35를 넘을 수 없음. 침구 0.21은 묶이지 않음.
+- (a)가 효과를 내려면 상한을 올려야 함. 김치·침구만 올린 변형(`listed`)은 PASS임. 숫자는 옛 (a)와 같음.
+
+(a)를 라이브에 넣으려면 바꿀 설정(아직 바꾸지 않음, QA GO와 MO 승인 뒤에만):
+
+| 파일 | 키 | 지금 값 | 새 값 |
+|---|---|---:|---:|
+| `r3lib/config.py` (43행) | `DEEP_CATEGORY_SHARE` | 0.35 | 0.40 |
+
+- 다른 설정은 바꾸지 않음: `CATEGORY_MAX_SHARE` 0.25 그대로, `STOCK_BUDGET_MAX` 16,000,000(이미 같음), `policies/active.json` 그대로.
+- 라이브 코드에는 카테고리별 비율 키가 없음. `restock_r3.plan`은 전역 상한 두 개만 읽음. 그래서 `category_budget_share`는 라이브 설정이 아님.
+- 주의: 0.40은 김치만이 아니라 모든 deep 카테고리(시간당 시장 정산 ≥ 100)에 적용됨. 이 창에서는 김치만 상한에 닿았음. 다른 창에서는 다른 deep 카테고리도 재고를 더 살 수 있음.
+- 김치만 올리려면 `restock_r3.py`에 카테고리별 상한 코드를 넣어야 함. 그것은 라이브 동작 변경이고 이번 작업 범위 밖임. 하지 않음.
+- `r3lib/config.py`는 커밋하는 순간 라이브가 됨(MO). 되돌리기: 0.40을 0.35로 되돌리는 커밋 하나.
+- 한계: 한 창(6시간), seed 하나. 트윈 매출 편향 약 −20%. 고정 DB의 `shop_stock`·`shops`·`meta`는 16:18 값임.
+- 바꾸지 않은 것: 라이브 작업 트리, `policies/active.json`, `r3lib/config.py`, `FORUM_LEVER2`(False). merge·cherry-pick 없음. push 없음. 재시작 없음.

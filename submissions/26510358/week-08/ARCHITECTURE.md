@@ -175,6 +175,11 @@ logs/monitor/board-*.json ─┘      (Window)          └─ 후보 정책 (po
 - 재고 부족 줄은 seed로 만든 방문이 됨.
 - 재입고는 두 방식임. `actual`은 실제 공급을 다시 넣음. `plan`은 20분마다 DB 스냅샷 복사본에서 `restock_r3.plan(dry_run=True)`를 부름. 채움 비율은 관측값을 씀.
 - 후보 정책 손잡이: config 상수, `restock_adjust`, `category_budget_share`, `sku_targets`, `cut_skus`. 모두 `STOCK_BUDGET_MAX`(16M) 안에서 움직임.
+- `category_cap_mode`(2026-11-05): 비율이 planner 전역 상한보다 클 때 트윈이 하는 일을 고름.
+  - `raise_all`(기본값, 옛 동작): 전역 상한을 올림. 모든 카테고리가 올린 상한을 받음.
+  - `live`: 전역 상한을 올리지 않음. 라이브 가게와 같음.
+  - `listed`: 전역 상한을 올림. 목록에 없는 카테고리는 라이브 상한(deep 0.35, 그 밖 0.25)으로 다시 자름. 사후 필터이므로 잘린 줄의 예산은 다시 쓰지 않음.
+- 라이브 `restock_r3.plan`에는 카테고리별 비율 키가 없음. `category_budget_share`는 트윈 손잡이일 뿐임.
 - 같은 난수(`seed:visit:id`, `seed:tick:ts`)를 두 정책에 씀. 그래서 차이는 짝 비교임.
 - `r3lib/shadow_gate.py` 실행: `python -m r3lib.shadow_gate --hours 6 --candidate policies/candidates/lever1.json`.
 - 정책마다 book(현금 + 미판매 재고 원가), 매출, 별점(창의 실제 값 고정), 거래 수, 체결률, 방문당 이익, 재고 부족을 보고함. 순이익은 추가 필드임.
