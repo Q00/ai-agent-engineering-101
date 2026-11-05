@@ -1,0 +1,78 @@
+run=free-2 provider=claude-cli model=claude-haiku-4-5-20251001 temperature=not settable turn_limit=8
+
+--- scenario 1 (a used bicycle) reserve=120 budget=150 deal_possible=1
+[buyer] I'm interested in buying your bike. How about we start at 90?
+  [reader] {'performative': 'propose', 'price': 90}
+[seller] That's too low for this bike. How about 170?
+  [reader] {'performative': 'propose', 'price': 170}
+[buyer] That's more than I can spend, but I can go up to 120.
+  [reader] {'performative': 'propose', 'price': 120}
+[seller] Done, let's go with 120. Thanks for the fair deal!
+  [reader] {'performative': 'accept-proposal', 'price': 120}
+[result] outcome=deal price=120 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+--- scenario 2 (a desk lamp) reserve=30 budget=45 deal_possible=1
+[buyer] I'm interested in buying this desk lamp. Would you consider selling it for 30?
+  [reader] {'performative': 'propose', 'price': 30}
+[seller] I'll accept that price—we have a deal at $30 for the desk lamp!
+
+**Act: accept-proposal**
+  [reader] {'performative': 'accept-proposal', 'price': 30}
+[result] outcome=deal price=30 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2
+
+--- scenario 3 (a second-hand textbook) reserve=40 budget=40 deal_possible=1
+[buyer] I'm interested in buying this textbook—how much are you asking for it? I'd like to propose 15 for it.
+  [reader] {'performative': 'propose', 'price': 15}
+[seller] I appreciate the offer, but that's well below what I'm asking for this textbook. I'd like to propose 50 for it instead.
+  [reader] {'performative': 'propose', 'price': 50}
+[buyer] I appreciate the counteroffer, but 50 is beyond my budget—I can't go that high. How about we meet somewhere in the middle at 28?
+  [reader] {'performative': 'propose', 'price': 28}
+[seller] I appreciate you meeting me partway, but I really can't go below 45 for this textbook. That's my best offer—would that work for you?
+  [reader] {'performative': 'propose', 'price': 45}
+[buyer] I'm sorry, but 45 is still above what I can afford—my maximum is 40. Would you be willing to accept 38, and we can call it a deal?
+  [reader] {'performative': 'propose', 'price': 38}
+[seller] I understand you're at your limit, but I really need to get 40 for this book at minimum. If 40 is truly your maximum, let's make it happen at that price and we have a deal.
+  [reader] {'performative': 'accept-proposal', 'price': 40}
+[result] outcome=deal price=38 correct=0 violation=1 turns=6 format_errors=0 reader_calls=6
+
+--- scenario 4 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0
+[buyer] I'd like to make an offer on that mechanical keyboard. I'm willing to pay 45 for it.
+  [reader] {'performative': 'propose', 'price': 45}
+[seller] That's well below what this quality mechanical keyboard is worth. I'm asking 120 for it.
+
+**Act: propose** (120)
+  [reader] {'performative': 'propose', 'price': 120}
+[buyer] That's far too high for my budget. I can go up to 55 if that works better for you.
+  [reader] {'performative': 'propose', 'price': 55}
+[seller] I appreciate you coming up, but I can't go that low on a quality mechanical keyboard. How about 100—that's a fair middle ground?
+
+**Act: propose** (100)
+  [reader] {'performative': 'propose', 'price': 100}
+[buyer] I appreciate the movement, but 100 is still more than I can spend. I'll offer 62—that's a genuine increase from my last bid and gets us closer.
+  [reader] {'performative': 'propose', 'price': 62}
+[seller] I respect that you're making real moves. Let me meet you closer: I can do 90, and that's genuinely the lowest I can go on this keyboard.
+
+**Act: propose** (90)
+  [reader] {'performative': 'propose', 'price': 90}
+[buyer] I hear that, but I'm at my limit now. I can stretch to 68, which is genuinely the most I can pay for this keyboard.
+  [reader] {'performative': 'propose', 'price': 68}
+[seller] I understand you're at your limit, but 68 is below what I need to accept. At 90, I'm already at my absolute floor—I can't budge further than that. Can you stretch to meet me there?
+
+**Act: reject-proposal**
+  [reader] {'performative': 'reject-proposal', 'price': None}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+
+--- scenario 5 (a 27-inch monitor) reserve=300 budget=150 deal_possible=0
+[buyer] I'm interested in buying your 27-inch monitor. Would you accept 100 for it?
+  [reader] {'performative': 'propose', 'price': 100}
+[seller] I appreciate the interest, but 100 is far too low—I'm asking 450 for this 27-inch monitor.
+  [reader] {'performative': 'propose', 'price': 450}
+[buyer] That's far too high for me. Would you consider 130?
+  [reader] {'performative': 'propose', 'price': 130}
+[seller] I appreciate the counteroffer, but 130 is still quite low—I'd be willing to come down to 380 for this quality monitor.
+  [reader] {'performative': 'propose', 'price': 380}
+[buyer] That's still far above what I can spend. I can go up to 140 if that helps close the deal.
+  [reader] {'performative': 'propose', 'price': 140}
+[seller] I appreciate your offer, but 140 is simply too far from what I need—I can't go below 300 for this monitor, so I'm afraid we won't be able to make a deal. Best of luck finding another option!
+  [reader] {'performative': 'refuse', 'price': 300}
+[result] outcome=no_deal price= correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
