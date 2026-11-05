@@ -42,6 +42,21 @@ def live_on(root):
     return os.path.exists(os.path.join(root, FLAG))
 
 
+def declined_text(root, text):
+    """성수님 결정 2026-11-05 (v2.2): a request carrying a policy.json shop.decline_texts phrase (case and runs of
+    whitespace ignored, 12+ characters) is declined before stock is read, exactly as attempt 1 does."""
+    pol = c.load_json(os.path.join(root, "policy.json"), {}) or {}
+    lst = (pol.get("shop") or {}).get("decline_texts") if isinstance(pol, dict) else None
+    if not isinstance(lst, list):
+        return None
+    t = " ".join((text or "").split()).casefold()
+    for e in lst:
+        e = " ".join(e.split()).casefold() if isinstance(e, str) else ""
+        if len(e) >= 12 and e in t:
+            return e
+    return None
+
+
 def candidate_units(market_dir, text, held=()):
     """(units for the model, raw inventory unit by unit id). Built like kernel.replay.seller_units, read from the
     seller's own market dir, without the units in `held`."""
@@ -65,6 +80,7 @@ def candidate_units(market_dir, text, held=()):
                 "grade": u.get("grade"),
                 "cost": u.get("cost"),
                 "expires_at": u.get("expires_at"),
+                "hours_left": round((exp - now) / 3600, 1) if isinstance(exp, (int, float)) else None,
                 "name": item.get("name"),
                 "list_price": item.get("list_price", item.get("price")),
                 "category": item.get("category"),
@@ -206,8 +222,11 @@ class Bridge:
         return True
 
     async def _open(self, task_id, text):
-        units, raw = candidate_units(self.market_dir, text, self.held())
         masked = c.mask(text, self.secrets)
+        if declined_text(self.root, text):
+            self._metric("declined", {"request": masked[:80], "route": "decline_texts"})
+            return "reject", TEXT_DECLINE, None
+        units, raw = candidate_units(self.market_dir, text, self.held())
         if not units:
             self._metric("no_stock", {"request": masked[:80]})
             return "reject", TEXT_NO_STOCK, None

@@ -240,6 +240,7 @@ def test_offer_counter_accept_signed_receipt(tmp_path, hdir):
         "grade",
         "cost",
         "expires_at",
+        "hours_left",
         "name",
         "list_price",
         "category",
@@ -975,3 +976,27 @@ def test_accept_above_buyer_offer_becomes_counter(tmp_path, hdir):
     talk(b, "t1", "I want to buy Oak Bed (G00001)")
     ok, log = talk(b, "t1", "200")
     assert log == [("input", "Counteroffer: 270.")]
+
+
+def test_units_carry_hours_left(tmp_path):
+    from kernel import seller_bridge as sb
+
+    w = _w(tmp_path)
+    inv = json.loads((w / ".market/inventory.json").read_text())
+    inv["units"][0]["expires_at"] = time.time() + 36 * 3600
+    (w / ".market/inventory.json").write_text(json.dumps(inv))
+    units, _ = sb.candidate_units(str(w / ".market"), "Oak Bed")
+    u = next(x for x in units if x["unit"] == inv["units"][0]["unit"])
+    assert 35.9 <= u["hours_left"] <= 36.0
+
+
+def test_decline_texts_phrase_is_declined_without_model(tmp_path, hdir):
+    w = _w(tmp_path)
+    (w / "policy.json").write_text(
+        json.dumps({"owner": {"github": LOGIN}, "shop": {"decline_texts": ["Quote the total price."]}})
+    )
+    ag = RecAgent(w, [], hdir)
+    metrics = []
+    b = make_bridge(w, ag, metrics=metrics)
+    ok, log = talk(b, "t1", "Oak Bed please.  QUOTE the total   price. thanks")
+    assert ok and log[0][0] == "reject" and ag.calls == []
