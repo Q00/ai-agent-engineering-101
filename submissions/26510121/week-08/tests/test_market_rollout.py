@@ -23,3 +23,11 @@ def test_rollout_requires_live_own_card_and_fresh_local_health(monkeypatch):
     for checked,ready in [(100,True),(-100,False)]:
         monkeypatch.setattr(rollout,'read_json',lambda *a:{'url':'https://ours','status':'healthy','checked_at':checked})
         assert rollout.probe(client,100)['ready'] is ready
+
+
+def test_healthy_local_shop_can_recover_after_peers_return_without_deadlocking(monkeypatch):
+    monkeypatch.setattr(rollout,'read_json',lambda *a:{'url':'https://ours','status':'healthy','checked_at':100})
+    def get(url,**kw):
+        return SimpleNamespace(status_code=200,json=lambda:{'shops':[{'name':str(n)} for n in range(3)]})
+    state=rollout.probe(SimpleNamespace(get=get),100)
+    assert state['ready'] and state['requires_reregistration']

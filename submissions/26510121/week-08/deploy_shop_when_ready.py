@@ -28,7 +28,11 @@ def probe(client=httpx,now=None):
         shops=response.json().get('shops',[]) if response.status_code==200 else []
         own=next((r for r in shops if r.get('name')=='seochanit'),{})
         result.update(registry_status=response.status_code,shop_count=len(shops),own_listed=bool(own))
-        if len(shops)<3 or not own or own.get('url','').rstrip('/')!=url:return result
+        if len(shops)<3 or own and own.get('url','').rstrip('/')!=url:return result
+        # Missing registration is what this recovery release must repair.
+        # Requiring our old URL to be listed would deadlock after a market-side
+        # timeout while otherwise healthy peer shops are already discoverable.
+        result['requires_reregistration']=not bool(own)
         card=client.get(url+'/.well-known/agent-card.json',timeout=8,trust_env=False)
         result['card_status']=card.status_code
         result['ready']=(card.status_code==200 and health.get('status')=='healthy' and
