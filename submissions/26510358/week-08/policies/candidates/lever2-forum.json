@@ -1,0 +1,11 @@
+{
+  "name": "lever2-forum",
+  "description": "SHADOW-ONLY stub (2026-11-05): forum-activity lever (more buyer posts and votes). Not wired into any live path; forum_r3.py is untouched. MA-3 fields TBD in follow-up.",
+  "notes": [
+    "The twin has no model of forum posts or votes, so the gate reports this lever as UNSIMULATED (shop metrics unchanged by construction).",
+    "Provisional MA-2 targets: 347 posts, forum percentile ~0.646. MA-3 spec (rate, count, topics, uniqueness, vote rules) comes in a follow-up commit."
+  ],
+  "policy": {
+    "forum": {"posts_target": 347, "forum_percentile_target": 0.646}
+  }
+}
