@@ -161,6 +161,71 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(stock.plan_restock(None, None, None, None, POL, NOW)["buy"], [])
 
 
+class OverpricedAndSurgeTest(unittest.TestCase):
+    """Units whose cost floor is above list (pricing.overpriced) and inventory.json `surge`."""
+
+    @staticmethod
+    def dear(sku="G1", cost=39000, supplied=NOW - 3600):        # 39,000 x 1.08 > list 40,000
+        return dict(unit(sku, cost, "goods", supplied=supplied), list_price=CATALOG[sku]["list_price"])
+
+    def test_overpriced_units_do_not_count_as_stock(self):
+        p = stock.plan_restock(inv(units=[self.dear(), self.dear()]), CATALOG, DEMAND, {}, POL, NOW)
+        self.assertEqual(p["overpriced"], 2)
+        self.assertIn({"sku": "G1", "qty": POL["stock"]["per_sku_qty"]}, p["buy"])
+        self.assertEqual(p["empty_picks"], 4)                          # G1 counts as sold out
+        cheap = dict(self.dear(cost=20000))
+        p = stock.plan_restock(inv(units=[cheap, cheap]), CATALOG, DEMAND, {}, POL, NOW)
+        self.assertEqual((p["overpriced"], p["excluded"]["G1"]), (0, "stocked"))
+
+    def test_old_overpriced_unit_does_not_mark_the_sku_stale(self):
+        units = [self.dear(supplied=NOW - 6 * 86400), self.dear(cost=20000)]
+        p = stock.plan_restock(inv(units=units), CATALOG, DEMAND, {}, POL, NOW)
+        self.assertNotIn("G1", p["excluded"])
+        self.assertIn({"sku": "G1", "qty": 1}, p["buy"])               # the fresh unit is held, the old one is not
+        self.assertNotIn("D4", p["rules"])
+
+    def test_surge_skips_a_sku_whose_floor_would_pass_list(self):
+        def plan(factor, mult=1.08):
+            pol = copy.deepcopy(POL)
+            pol["seller"]["floor_cost_mult"] = mult
+            return stock.plan_restock(dict(inv(), surge=[{"sku": "G1", "name": "x", "units": 99, "factor": factor}]),
+                                      CATALOG, DEMAND, {}, pol, NOW)
+        self.assertEqual(plan(1.3)["excluded"]["G1"], "surge")        # 1.3 x 0.75 x 1.08 = 1.053
+        self.assertIn("G1", [b["sku"] for b in plan(1.2)["buy"]])      # 0.972
+        self.assertEqual(plan(1.2, mult=1.23)["excluded"]["G1"], "surge")   # 1.107: the cutoff follows the floor
+
+    def test_no_surge_never_skips(self):
+        pol = copy.deepcopy(POL)
+        pol["stock"]["worst_cost_share"] = 1.0                       # 1.0 x 1.08 > 1 without any surge
+        p = stock.plan_restock(dict(inv(), surge=[{"sku": "G1", "factor": 1.0}]), CATALOG, DEMAND, {}, pol, NOW)
+        self.assertNotIn("surge", p["excluded"].values())
+        self.assertIn("G1", [b["sku"] for b in p["buy"]])
+        p = stock.plan_restock(dict(inv(), surge=[{"sku": "G1", "factor": 1.01}]), CATALOG, DEMAND, {}, pol, NOW)
+        self.assertEqual(p["excluded"]["G1"], "surge")
+
+    def test_surge_raises_the_worst_cost(self):
+        pol = copy.deepcopy(POL)
+        pol["stock"]["per_sku_qty"] = 20
+        c = dict([cat("Y", "두부", 20000)])
+        p = stock.plan_restock(dict(inv(1200000), surge=[{"sku": "Y", "factor": 1.05}]), c, [dem("두부", 20000)], {},
+                               pol, NOW)
+        self.assertEqual(p["buy"], [{"sku": "Y", "qty": 12}])         # 200,000 // (15,000 x 1.05); 13 without
+        self.assertEqual(p["worst_cost"], 189000)
+
+    def test_surge_rows(self):
+        rows = [{"sku": "G1", "factor": "x"}, {"sku": "F1a", "factor": None}, "junk", {"factor": 1.5},
+                {"sku": "F3", "factor": float("nan")}, {"sku": "F2", "factor": 1.1}]
+        self.assertEqual(stock.surge_factors({"surge": rows}), {"F2": 1.1})
+        for bad in (None, {}, {"surge": {"surge": rows}}, {"surge": "x"}):
+            self.assertEqual(stock.surge_factors(bad), {})
+
+    def test_focus_sku_surging_reports_the_reason(self):
+        p = stock.plan_restock(dict(inv(), surge=[{"sku": "G2", "factor": 1.4}]), CATALOG, DEMAND, {},
+                               focus_pol("G2"), NOW)
+        self.assertEqual(p["excluded"]["G2"], "surge")
+        self.assertNotIn("G2", [b["sku"] for b in p["buy"]])
+
+
 def focus_pol(*skus, **st):
     pol = copy.deepcopy(POL)
     pol["stock"].update(focus_skus=list(skus), **st)
@@ -256,8 +321,11 @@ class WindowTest(unittest.TestCase):
 
     def test_lines_that_fit_before_the_close(self):
         fit = lambda r: stock.lines_that_fit(stock.supply_window({"restock": r}, NOW))
-        self.assertEqual(fit({"open": True, "closes_at": NOW + 150}), 15)
+        self.assertEqual(fit({"open": True, "closes_at": NOW + 150}), 14)     # (150 - 2) / 11 s a call
         self.assertEqual(fit({"open": True, "closes_at": NOW + 5}), 1)       # the first call goes out at once
+        self.assertEqual(fit({"open": True, "closes_at": NOW + 13}), 1)
+        self.assertEqual(fit({"open": True, "closes_at": NOW + 24}), 2)
+        self.assertEqual(fit({"open": True, "closes_at": NOW + 2}), 0)       # inside the close margin
         self.assertEqual(fit({"open": True, "closes_at": NOW - 1}), 0)
         self.assertIsNone(fit({"open": False, "closes_at": NOW + 150}))
         self.assertIsNone(fit({"open": True}))
@@ -368,7 +436,7 @@ class HookTest(unittest.TestCase):
         self.assertTrue(rows[-1]["memory_refs"])
         self.assertEqual(rows[-1]["inputs"]["window"], {"open": None, "opens_at": None, "closes_at": None,
                                                         "in_s": None, "closes_in_s": None})
-        self.assertEqual(rows[-1]["inputs"]["stock"], {"skus": 0, "units": 0, "empty_picks": 4})
+        self.assertEqual(rows[-1]["inputs"]["stock"], {"skus": 0, "units": 0, "empty_picks": 4, "overpriced": 0})
         self.assertTrue((self.home / "memory" / "summary.json").exists())
         self.assertTrue((self.home / "memory" / "cursor.json").exists())
 
@@ -385,7 +453,7 @@ class HookTest(unittest.TestCase):
         self.assertTrue(row["why"].startswith("supply window closed; opens in "))
         self.assertFalse(row["inputs"]["window"]["open"])
         self.assertTrue(590 <= row["inputs"]["window"]["in_s"] <= 600)
-        self.assertEqual(row["inputs"]["stock"], {"skus": 0, "units": 0, "empty_picks": 4})
+        self.assertEqual(row["inputs"]["stock"], {"skus": 0, "units": 0, "empty_picks": 4, "overpriced": 0})
         self.assertTrue((self.home / "memory" / "summary.json").exists())
 
     def test_plans_when_open_or_opening_soon(self):
@@ -434,6 +502,14 @@ class HookTest(unittest.TestCase):
         self.assertEqual(out["buy"][0]["sku"], "G2")
         self.assertEqual(self.rows()[-1]["inputs"]["focus"],
                          {"skus": 3, "planned": 1, "excluded": {"S1": "D2_short_shelf_wait", "nope": "not_in_catalog"}})
+
+    def test_surge_and_overpriced_inputs_in_the_decision(self):
+        dear = dict(unit("G1", 39000, "goods"), list_price=40000)
+        self.write_inv(dict(inv(units=[dear]), surge=[{"sku": "G1", "factor": 1.1}, {"sku": "G2", "factor": 1.1}]))
+        self.run_hook("--state", str(self.state))
+        row = self.rows()[-1]
+        self.assertEqual(row["inputs"]["surge"], {"G1": 1.1})           # G2 is neither planned nor focus
+        self.assertEqual(row["inputs"]["stock"]["overpriced"], 1)
 
     def test_bankrupt_line(self):
         self.write_inv(inv(300000))

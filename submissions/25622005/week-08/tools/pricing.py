@@ -10,6 +10,7 @@ now   unix seconds, passed in so tests can move the clock
 import math
 
 FOOD_GRADE_CUTS = (0.8, 0.45)          # share of shelf life left for food grade A, B (the market's, kit L83)
+                                       # a market patch of the cuts needs a hand update here (D4, L5 follow it)
 
 
 def hours_left(unit, now):
@@ -34,8 +35,9 @@ def hours_to_end(pol, now):
 
 
 def food_clearing(unit, ctx, pol, now):
-    """D4 food: sell below cost when hours left < factor x observed use_within median
-    (fewer than min_obs observations: when the shelf life left is below food_clear_left_share)."""
+    """D4 food: sell below cost when hours left < factor x observed use_within median and the unit is grade C
+    (shelf life left below FOOD_GRADE_CUTS[1]; no shelf_hours: the median alone); fewer than min_obs
+    observations: when the shelf life left is below food_clear_left_share."""
     if unit.get("kind") != "food":
         return False
     h = hours_left(unit, now)
@@ -43,10 +45,20 @@ def food_clearing(unit, ctx, pol, now):
         return False
     s = pol["seller"]
     uwh = (ctx or {}).get("uwh") or {}
-    if (uwh.get("n") or 0) >= s["food_clear_min_obs"] and uwh.get("median"):
-        return h < s["food_clear_uwh_factor"] * uwh["median"]
     shelf = unit.get("shelf_hours")
+    if (uwh.get("n") or 0) >= s["food_clear_min_obs"] and uwh.get("median"):
+        # near expiry only: a use-within median of half the shelf life would otherwise clear from intake
+        return h < s["food_clear_uwh_factor"] * uwh["median"] and (not shelf or h / shelf < FOOD_GRADE_CUTS[1])
     return bool(shelf) and h / shelf < s["food_clear_left_share"]
+
+
+def overpriced(unit, pol):
+    """Goods whose cost floor (cost x floor_cost_mult) is above the list price, e.g. bought during a supply
+    surge. They sell rarely, not never: quoted last, and restock does not count them as stock."""
+    lst, cost = unit.get("list_price"), unit.get("cost")
+    num = lambda x: isinstance(x, (int, float)) and not isinstance(x, bool)    # restock must not crash on a bad row
+    return (unit.get("kind") == "goods" and num(lst) and num(cost) and lst > 0
+            and cost * pol["seller"]["floor_cost_mult"] > lst)
 
 
 def goods_stale(unit, pol, now):

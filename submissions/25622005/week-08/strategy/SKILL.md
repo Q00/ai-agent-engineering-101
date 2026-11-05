@@ -7,7 +7,7 @@ policy:
     first_ask_list: 0.85          # D3 first ask = max(list x this, floor)
     floor_cost_mult: 1.08         # D3 floor = max(unit cost x this, list x floor_list)
     floor_list: 0.60
-    food_clear_uwh_factor: 2.0    # D4 food below cost when hours left < factor x observed use_within median
+    food_clear_uwh_factor: 2.0    # D4 food below cost when hours left < factor x observed use_within median and grade C (shelf left < 45%)
     food_clear_min_obs: 10        # D4 below this many observations use food_clear_left_share instead
     food_clear_left_share: 0.25
     goods_stale_days: 5           # D4 unsold goods: floor drops to cost and the SKU is not restocked

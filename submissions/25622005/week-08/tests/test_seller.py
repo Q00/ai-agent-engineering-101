@@ -218,6 +218,57 @@ class SellerA2A(unittest.TestCase):
         self.assertTrue(self.said(steps[1][0]).endswith("ask 85000"))
         self.assertNotIn("warranty_hours", self.receipt(steps[2][0]))
 
+    def test_unpaid_warranty_does_not_fill_the_cap(self):
+        skill = self.home / "strategy" / "SKILL.md"
+        skill.write_text(skill.read_text(encoding="utf-8").replace("warranty_cap_6h: 500000", "warranty_cap_6h: 150000"),
+                         encoding="utf-8")
+        os.utime(skill, ns=(time.time_ns(), time.time_ns() + 10**9))
+        self.write_inventory([self.goods("u-1"), self.goods("u-2")])
+        ask = "I want to buy Curtain (G000f6cda) with a 6 h warranty"
+        steps = self.talk((ask, "a"), ("I accept", "a"))
+        self.assertEqual((self.receipt(steps[1][0])["unit"], int(self.receipt(steps[1][0])["warranty_hours"])), ("u-1", 6))
+        (pending, _, _), = self.talk((ask, "b"))                      # u-1 may still be paid: 200,000 > 150,000
+        self.assertIn("no warranty", self.said(pending))
+        self.now += 181                                               # promise_ttl_s 180, u-1 still in stock: unpaid
+        (unpaid, _, _), = self.talk((ask, "c"))
+        self.assertIn("warranty 6 h included", self.said(unpaid))
+        self.now += 181
+        self.write_inventory([self.goods("u-2")])                     # u-1 left the inventory: paid
+        (paid, _, _), = self.talk((ask, "d"))
+        self.assertIn("no warranty", self.said(paid))
+
+    def test_restart_reads_the_warranted_unit_from_the_log(self):
+        skill = self.home / "strategy" / "SKILL.md"
+        skill.write_text(skill.read_text(encoding="utf-8").replace("warranty_cap_6h: 500000", "warranty_cap_6h: 150000"),
+                         encoding="utf-8")
+        os.utime(skill, ns=(time.time_ns(), time.time_ns() + 10**9))
+        log = self.home / "logs" / "decisions" / "seller.jsonl"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        sign = lambda **c: json.dumps({"kind": "sign", "ts": self.now - 600,
+                                       "choice": dict(warranty_hours=6, list_price=100000, **c)})
+        ask = "I want to buy Curtain (G000f6cda) with a 6 h warranty"
+        self.write_inventory([self.goods("u-1"), self.goods("u-2")])
+        log.write_text(sign(unit="u-1") + "\n", encoding="utf-8")
+        self.app = seller.build(9301, self.md, self.key_path, clock=lambda: self.now)
+        (unpaid, _, _), = self.talk((ask, "a"))                       # u-1 still held 600 s after: unpaid
+        self.assertIn("warranty 6 h included", self.said(unpaid))
+        log.write_text(sign() + "\n", encoding="utf-8")               # an old row without the unit still counts
+        self.app = seller.build(9301, self.md, self.key_path, clock=lambda: self.now)
+        (old, _, _), = self.talk((ask, "b"))
+        self.assertIn("no warranty", self.said(old))
+
+    def test_overpriced_old_unit_does_not_block_the_sku(self):
+        old = dict(self.goods("u-old", cost=98000), supplied_at=self.now - 30 * H)   # 98,000 x 1.08 > list
+        self.write_inventory([old, self.goods("u-new", cost=60000)])
+        (first, _, _), = self.talk(("I want to buy G000f6cda", "a"))
+        self.assertEqual(self.data(first)["unit"], "u-new")
+        self.now += 181
+        self.write_inventory([old])
+        (only, _, _), = self.talk(("I want to buy G000f6cda", "b"))     # rarely, not never
+        self.assertEqual(self.data(only)["unit"], "u-old")
+        inv = {"round": 3, "units": [old, self.goods("u-new", cost=60000)]}
+        self.assertEqual(seller.find_unit("G000f6cda", inv, now=self.now)["unit"], "u-old")   # no policy: oldest
+
     def test_promised_unit_is_not_sold_twice_until_the_promise_expires(self):
         first, second = self.talk(("I want to buy G000f6cda", "a"), ("I want to buy G000f6cda", "b"))
         self.assertEqual(first[0]["status"]["state"], "TASK_STATE_INPUT_REQUIRED")
@@ -410,6 +461,16 @@ class RealServer(unittest.TestCase):
             proc.terminate()
             out = proc.communicate(timeout=10)[0]
         self.assertEqual(out.decode(errors="replace"), "")
+
+
+class A2ATracing(unittest.TestCase):
+    def test_a2a_tracing_off(self):
+        """a2a's tracing wrapper logs 'Failed to detach context' tracebacks; seller.py turns it off before importing
+        a2a. A subprocess, because another test module may have imported a2a first."""
+        env = {k: v for k, v in os.environ.items() if k != "OTEL_INSTRUMENTATION_A2A_SDK_ENABLED"}
+        p = subprocess.run([sys.executable, "-B", "-c", "import seller, a2a.utils.telemetry as t; print(t.otel_enabled)"],
+                           cwd=W, env=env, capture_output=True, text=True, timeout=60)
+        self.assertEqual(p.stdout.strip(), "False", p.stderr)
 
 
 class ParseBuyerText(unittest.TestCase):

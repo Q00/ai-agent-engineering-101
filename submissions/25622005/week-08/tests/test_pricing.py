@@ -94,9 +94,30 @@ class BelowCost(unittest.TestCase):
         self.assertEqual(pricing.floor(food(19, shelf=96), ctx, pol(), NOW), 1)        # 19/96 < 0.25
         self.assertEqual(pricing.floor(food(40, shelf=96), ctx, pol(), NOW), 12000)
 
+    def test_food_clears_only_near_expiry(self):
+        ctx = dict(CTX, uwh={"n": 10, "median": 48})
+        self.assertEqual(pricing.floor_detail(food(90, shelf=96), ctx, pol(), NOW), (12000, ["D3"]))  # 90 < 96, grade A
+        self.assertEqual(pricing.floor_detail(food(44, shelf=96), ctx, pol(), NOW), (12000, ["D3"]))  # 44/96 = 0.458, B
+        self.assertEqual(pricing.floor_detail(food(43, shelf=96), ctx, pol(), NOW), (1, ["D3", "D4-food"]))  # C
+        no_shelf = dict(food(90), shelf_hours=None)                     # shelf unknown: the median rule alone
+        self.assertEqual(pricing.floor_detail(no_shelf, ctx, pol(), NOW), (1, ["D3", "D4-food"]))
+
     def test_stale_goods_floor_drops_to_cost(self):
         self.assertEqual(pricing.floor_detail(goods(cost=50000, age_h=6 * 24), CTX, pol(), NOW), (50000, ["D3", "D4-goods"]))
         self.assertEqual(pricing.floor(goods(cost=50000, age_h=4 * 24), CTX, pol(), NOW), 60000)
+
+
+class Overpriced(unittest.TestCase):
+    def test_cost_floor_above_list(self):
+        p = pol(seller__floor_cost_mult=1.23)
+        self.assertTrue(pricing.overpriced(goods(cost=98000), p))         # 98,000 x 1.23 > 100,000
+        self.assertFalse(pricing.overpriced(goods(cost=60000), p))
+        self.assertFalse(pricing.overpriced(goods(cost=85000), pol()))    # 85,000 x 1.08 < 100,000
+        self.assertTrue(pricing.overpriced(goods(cost=85000), p))         # the multiplier moves the line
+        self.assertFalse(pricing.overpriced(food(50, cost=19000), p))     # goods only
+        self.assertFalse(pricing.overpriced(goods(cost=98000, lst=0), p))
+        for bad in ({"cost": None}, {"cost": "98000"}, {"list_price": None}, {"list_price": "x"}):
+            self.assertFalse(pricing.overpriced(dict(goods(cost=98000), **bad), p))    # a bad row is not a crash
 
 
 class EndOfRound(unittest.TestCase):

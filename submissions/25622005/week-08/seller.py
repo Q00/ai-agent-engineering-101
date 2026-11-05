@@ -22,6 +22,9 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+# a2a's tracing wrapper logs 'Failed to detach context' tracebacks when a task is garbage-collected; we use
+# no tracing. Read at import time, so before any a2a import.
+os.environ.setdefault("OTEL_INSTRUMENTATION_A2A_SDK_ENABLED", "false")
 
 import uvicorn
 from cryptography.hazmat.primitives import serialization
@@ -150,11 +153,11 @@ def with_shelf(unit, catalog):
     return u
 
 
-def find_unit(text, inv, promised=(), need_hours=None, catalog=None, now=None):
+def find_unit(text, inv, promised=(), need_hours=None, catalog=None, now=None, pol=None):
     """The unit to sell for what the buyer asked: a SKU named in the text first, then a product name, then a
     category leaf. Skips expired units and units promised in other open negotiations. For food with
     need_hours, only units with at least that many hours left; of those, the one that expires first
-    (goods: the oldest)."""
+    (goods: the oldest, overpriced units last when pol is given)."""
     if (inv.get("round") or 0) < 3:
         return None
     now = time.time() if now is None else now
@@ -168,7 +171,8 @@ def find_unit(text, inv, promised=(), need_hours=None, catalog=None, now=None):
            or [u for u in units if (u.get("category") or "").split(">")[-1].lower() in want and u.get("category")])
     if need_hours is not None:
         fit = [u for u in fit if u.get("kind") != "food" or (pricing.hours_left(u, now) or 0) >= need_hours]
-    return min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
+    return min(fit, key=lambda u: (pol is not None and pricing.overpriced(u, pol),
+                                   u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
 
 
 def stock_items(inv, taken=()):
@@ -218,7 +222,7 @@ class Shop(AgentExecutor):
         self.key = None
         self.open = {}            # task -> deal
         self.promised = {}        # unit -> (task, until)
-        self.warranted = []       # (ts, list_price) of warranted receipts we signed
+        self.warranted = []       # (ts, list_price, unit) of warranted receipts we signed
         self.summary, self.summary_at = {}, 0.0
         self.catalog, self.catalog_mtime = {}, None
         self.err_ver = None
@@ -226,7 +230,7 @@ class Shop(AgentExecutor):
         for r in tail_jsonl(LOGS / "decisions" / "seller.jsonl", 2000):
             c = r.get("choice") if isinstance(r.get("choice"), dict) else {}
             if r.get("kind") == "sign" and c.get("warranty_hours") and (r.get("ts") or 0) >= cutoff:
-                self.warranted.append((r["ts"], c.get("list_price") or c.get("price") or 0))
+                self.warranted.append((r["ts"], c.get("list_price") or c.get("price") or 0, c.get("unit")))
 
     # files
     def _key(self):
@@ -254,11 +258,14 @@ class Shop(AgentExecutor):
             self.summary_at = now
         return self.summary
 
-    def _ctx(self, unit, now):
+    def _ctx(self, unit, now, inv, ttl):
+        """warranted_6h counts paid or still pending warranties: a signed unit that left the inventory was
+        paid; one still held after the promise TTL (ttl s) was not."""
         leaf = (unit.get("category") or "").split(">")[-1]
         self.warranted = [w for w in self.warranted if w[0] >= now - 6 * 3600]
+        held = {u["unit"] for u in inv.get("units") or [] if u.get("unit")}
         return {"uwh": category_uwh(self._summary(now), leaf), "category": leaf,
-                "warranted_6h": sum(w[1] for w in self.warranted)}
+                "warranted_6h": sum(w[1] for w in self.warranted if w[2] not in held or now - w[0] < ttl)}
 
     def _prune(self, now):
         self.promised = {u: v for u, v in self.promised.items() if v[1] > now}
@@ -350,14 +357,14 @@ class Shop(AgentExecutor):
             need = parse_need_hours(text, meta)
             margin = pol["seller"]["claim_food_margin_h"]
             hours = None if need is None else need + margin
-            unit = find_unit(text, inv, self._taken(task.id, now), hours, self._catalog(), now)
+            unit = find_unit(text, inv, self._taken(task.id, now), hours, self._catalog(), now, pol)
             reading = None
             if unit is None and not SKU_RE.search(text) \
-                    and find_unit(text, inv, (), None, self._catalog(), now) is None:
+                    and find_unit(text, inv, (), None, self._catalog(), now, pol) is None:
                 reading = await self._read(text, {"items": stock_items(inv, self._taken(task.id, now))},
                                            pol, ver, task.id, t0)     # D9: nothing in it the rules can match
                 if reading and reading["sku"]:
-                    unit = find_unit(reading["sku"], inv, self._taken(task.id, now), hours, self._catalog(), now)
+                    unit = find_unit(reading["sku"], inv, self._taken(task.id, now), hours, self._catalog(), now, pol)
             if unit is None:
                 why = "no unit in stock for this request" + (f" with {need + margin:g} h left" if need is not None else "")
                 await up.reject(say(f"Sorry, {why}. Ask by SKU."))
@@ -365,7 +372,7 @@ class Shop(AgentExecutor):
                              choice={"action": "reject"}, why=why)
                 return
             deal = self.open[task.id] = {"unit": unit, "need": need, "seen": now}
-            deal["ctx"] = self._ctx(unit, now)
+            deal["ctx"] = self._ctx(unit, now, inv, ttl)
             self._price(deal, pol, now, parse_warranty(text, meta))
             self.promised[unit["unit"]] = (task.id, now + ttl)
             offer = reading["price"] if reading and reading["kind"] == "offer" else \
@@ -489,7 +496,7 @@ class Shop(AgentExecutor):
         self.open.pop(task_id, None)
         self.promised[u["unit"]] = (task_id, now + pol["seller"]["promise_ttl_s"])
         if w:
-            self.warranted.append((now, u.get("list_price") or 0))
+            self.warranted.append((now, u.get("list_price") or 0, u["unit"]))
         self._decide("sign", ver, task_id, deal, t0, inputs=inputs, rules=deal["rules"],
                      choice={"price": int(price), "unit": u["unit"], "sku": u["sku"], "claim": c,
                              "warranty_hours": w["hours"] if w else 0, "list_price": u.get("list_price")},

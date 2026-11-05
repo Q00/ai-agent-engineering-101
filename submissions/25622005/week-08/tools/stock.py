@@ -12,6 +12,7 @@ import httpx
 
 from memory.query import category_stats, regular_categories, sku_stats, supply_demand
 from memory.store import hook_log
+from tools import pricing
 
 
 def _leaf(category):
@@ -22,7 +23,8 @@ def _units(inv):
     return [u for u in (inv or {}).get("units") or [] if isinstance(u, dict) and u.get("grade") != "expired"]
 
 
-SUPPLY_GAP_S = 10                  # the kit makes one supply call per ~10 s
+SUPPLY_GAP_S = 11                  # measured mean 10.8 s between supply calls: 10 s limit + the kit's refresh
+CLOSE_MARGIN_S = 2
 
 
 def _finite(x):
@@ -44,12 +46,19 @@ def lines_that_fit(win):
     """How many supply lines an open window still takes before it closes; None when unknown."""
     if win["open"] is not True or win["closes_in_s"] is None:
         return None
-    return max(0, math.ceil(win["closes_in_s"] / SUPPLY_GAP_S))
+    return max(0, math.ceil((win["closes_in_s"] - CLOSE_MARGIN_S) / SUPPLY_GAP_S))
 
 
 def window_closed(win, pol):
     """Closed and not opening within stock.window_lead_s: this run buys nothing."""
     return win["open"] is False and win["in_s"] is not None and win["in_s"] > pol["stock"]["window_lead_s"]
+
+
+def surge_factors(inv):
+    """{sku: factor} from inventory.json `surge` (a list of {sku, name, units, factor}); bad rows ignored."""
+    s = (inv or {}).get("surge")
+    return {x["sku"]: float(x["factor"]) for x in s if isinstance(x, dict) and isinstance(x.get("sku"), str)
+            and _finite(x.get("factor")) and x["factor"] > 0} if isinstance(s, list) else {}
 
 
 def held(inv):
@@ -60,7 +69,11 @@ def held(inv):
 
 def plan_restock(inv, catalog, demand, summary, pol, now):
     """{"buy": [{sku, qty}], "excluded": {category leaf or sku: reason}, "worst_cost", "headroom", "rules",
-    "empty_picks": candidate SKUs with no unit in stock}.
+    "empty_picks": candidate SKUs with no unit in stock, "overpriced": units not counted as stock}.
+
+    Overpriced units (pricing.overpriced: cost floor above list) neither count as stock nor make a SKU stale.
+    A supply surge raises the worst cost by its factor; a SKU whose surged worst cost would put the floor
+    above list (factor x worst_cost_share x floor_cost_mult > 1) is skipped until the surge falls.
 
     The strategist's focus SKUs (stock.focus_skus) are candidates even when they are not the category's pick
     or are above stock.goods_max_list; they are stocked focus_cover_mult times deeper, ordered before the
@@ -73,13 +86,16 @@ def plan_restock(inv, catalog, demand, summary, pol, now):
     headroom = int(max(0, min(st["inventory_cap_share"] * (cash + inv_cost) - inv_cost, cash - st["cash_floor"])))
     hours_left = (st["end_ts"] - now) / 3600
     rules = ["D1", "D2"]
-    out = {"buy": [], "excluded": {}, "worst_cost": 0, "headroom": headroom, "rules": rules, "empty_picks": 0}
+    over = [pricing.overpriced(u, pol) for u in units]
+    out = {"buy": [], "excluded": {}, "worst_cost": 0, "headroom": headroom, "rules": rules, "empty_picks": 0,
+           "overpriced": sum(over)}
     if hours_left <= 0:
         out["excluded"]["*"] = "D14_round_over"
         return out
-    have = collections.Counter(u.get("sku") for u in units)
-    stale = {u.get("sku") for u in units if u.get("kind") == "goods"
+    have = collections.Counter(u.get("sku") for u, o in zip(units, over) if not o)
+    stale = {u.get("sku") for u, o in zip(units, over) if u.get("kind") == "goods" and not o
              and now - (u.get("supplied_at") or now) > pol["seller"]["goods_stale_days"] * 86400}
+    surge = surge_factors(inv)
     regular = set(regular_categories(summary))
     sd = supply_demand(summary)
     by_cat, known = collections.defaultdict(list), {}
@@ -96,6 +112,11 @@ def plan_restock(inv, catalog, demand, summary, pol, now):
         seen.add(sku)
         if sku in stale:                                          # D4: unsold goods are not restocked
             excluded[sku] = "D4_stale_goods"
+            return
+        f = surge.get(sku, 1.0)
+        # only a SKU that surges: a policy whose worst cost x floor_cost_mult is above 1 must not stop every SKU
+        if f > 1 and f * st["worst_cost_share"] * pol["seller"]["floor_cost_mult"] > 1:
+            excluded[sku] = "surge"                               # units bought now could not sell at list
             return
         is_regular, is_focus = leaf in regular, sku in focus
         rate = sku_stats(summary, sku)["sales_per_h"]
@@ -116,7 +137,7 @@ def plan_restock(inv, catalog, demand, summary, pol, now):
             if st["supply_demand_priority"] else 1.0
         # sold-out SKUs first: a shop without the SKU is not among the buyer's offers at all; then focus SKUs
         cands.append(((have[sku] > 0, not is_focus, not is_regular, tier, -prio, leaf), sku,
-                      min(qty, st["max_qty"]), price, is_focus))
+                      min(qty, st["max_qty"]), price * f, is_focus))
 
     for d in demand or []:
         leaf, median, kind = d.get("item") or _leaf(d.get("category")), d.get("median_price"), d.get("kind")
@@ -182,7 +203,7 @@ def plan_restock(inv, catalog, demand, summary, pol, now):
         if len(out["buy"]) >= st["max_lines"]:
             excluded[sku] = "max_lines"
             continue
-        unit_worst = st["worst_cost_share"] * price
+        unit_worst = st["worst_cost_share"] * price               # price includes the surge factor
         room = headroom - worst
         if is_focus:                                              # focus lines share at most focus_cap_share
             room = min(room, focus_room - focus_worst)

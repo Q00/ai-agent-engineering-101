@@ -73,7 +73,7 @@ def run(state, t0):
     card_ok = not policy.get(pol, "stock.require_own_card") or stock.own_card_ok(url)
     plan = stock.plan_restock(inv, catalog, demand, summary, pol, now)
     win = stock.supply_window(inv, now)
-    held = dict(stock.held(inv), empty_picks=plan["empty_picks"])
+    held = dict(stock.held(inv), empty_picks=plan["empty_picks"], overpriced=plan["overpriced"])
     if not card_ok:
         decision("restock", "restock", policy_ver=ver,
                  inputs={"card_ok": False, "url": url, "ingest": ing, "window": win, "stock": held},
@@ -98,6 +98,7 @@ def run(state, t0):
     fskus, planned = policy.get(pol, "stock.focus_skus"), {b["sku"] for b in plan["buy"]}
     focus = {"skus": len(fskus), "planned": len(planned & set(fskus)),
              "excluded": dict([(s, plan["excluded"].get(s, "not_planned")) for s in fskus if s not in planned][:8])}
+    surge = {s: f for s, f in stock.surge_factors(inv).items() if s in planned or s in fskus}
     leaf = {sku: str((catalog.get(sku) or {}).get("category") or "").split(">")[-1] for sku in
             [b["sku"] for b in plan["buy"]]}
     refs = [summary_ref("cat", leaf[b["sku"]]) for b in plan["buy"]] + \
@@ -105,7 +106,8 @@ def run(state, t0):
     decision("restock", "restock", policy_ver=ver,
              inputs={"balance": inv.get("balance"), "units": len(inv.get("units") or []),
                      "headroom": plan["headroom"], "excluded": reasons, "ingest": ing, "card_ok": card_ok,
-                     "summary_built_at": summary.get("built_at"), "window": win, "stock": held, "focus": focus},
+                     "summary_built_at": summary.get("built_at"), "window": win, "stock": held, "focus": focus,
+                     "surge": surge},
              memory_refs=refs, rules=plan["rules"], choice=plan["buy"],
              why=f"{len(plan['buy'])} lines, worst cost {plan['worst_cost']} of headroom {plan['headroom']}",
              elapsed_ms=int((time.time() - t0) * 1000))
