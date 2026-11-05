@@ -71,7 +71,12 @@ def start_meta():
     return {"started": p.pid}
 
 
-def once(state, now):
+SHADOW_SKIP = ("collect", "forum", "benchmark", "health")   # what touches the market or the live outer's files
+
+
+def once(state, now, shadow=False):
+    """One pass. shadow: nothing that touches the market or the live outer's files (design 20-5: a trial run beside
+    the live harness, writing only under HARNESS_OUT)."""
     from harness import capability, metrics, ops, participant, rules_watch, score_class
     done = {}
 
@@ -84,6 +89,8 @@ def once(state, now):
             bus.alert("outer", "warn", f"{name}_failed", done[name])
 
     def due(name):
+        if shadow and name in SHADOW_SKIP:
+            return False
         return now - state.get(name, 0) >= EVERY[name]
 
     changed = False
@@ -95,7 +102,10 @@ def once(state, now):
         job("collect", collect_round)
     if due("forum"):
         job("forum", run_forum)
-    if due("health") or changed:
+    if shadow and now - state.get("usage", 0) >= EVERY["health"]:
+        state["usage"] = now
+        done["usage"] = ops.model_usage(now)
+    if due("health") or (changed and not shadow):
         job("health", lambda: len(ops.health(now, rules_changed=changed)["findings"]))
     if due("benchmark"):
         from outer import benchmark
@@ -121,22 +131,31 @@ def once(state, now):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true")
+    ap.add_argument("--shadow", action="store_true", help="no market, no live outer files; HARNESS_OUT must be set")
+    ap.add_argument("--minutes", type=float, default=0, help="stop after this long (0: run until stopped)")
     a = ap.parse_args()
-    st_path = paths.memory() / "harness" / "run_state.json"
+    if a.shadow and not os.environ.get("HARNESS_OUT"):
+        sys.exit("--shadow needs HARNESS_OUT (a folder outside the live memory)")
+    from harness import out_dir
+    st_path = (out_dir() if a.shadow else paths.memory() / "harness") / "run_state.json"
+    t_end = time.time() + a.minutes * 60 if a.minutes else None
     state = atomic.read_json(st_path, default=None) or {}
-    w = EventWriter("harness-run", source="outer")
+    w = EventWriter("harness-shadow" if a.shadow else "harness-run", source="outer")
     try:
         while True:
             now = time.time()
             active = atomic.read_json(paths.memory() / "strategy" / "active.json", default={}) or {}
-            bus.write_status("outer", strategy_version=active.get("version"),
-                             note=f"harness.run; last meta {state.get('meta')}, last collect {state.get('collect', 0):.0f}")
-            done = once(state, now)
-            if done:
+            if not a.shadow:
+                bus.write_status("outer", strategy_version=active.get("version"),
+                                 note=f"harness.run; last meta {state.get('meta')}, last collect {state.get('collect', 0):.0f}")
+            done = once(state, now, shadow=a.shadow)
+            if done and not a.shadow:                   # a trial run leaves no events in the live record
                 w.emit("outer.pass", {k: (v if isinstance(v, (int, float, str)) else json.dumps(v, default=str)[:200])
                                       for k, v in done.items()})
             atomic.write_json(st_path, state)
-            if a.once:
+            if done and a.shadow:
+                print(time.strftime("%H:%M:%S"), json.dumps(done, default=str, ensure_ascii=False)[:600], flush=True)
+            if a.once or (t_end and time.time() >= t_end):
                 print(json.dumps(done, default=str, ensure_ascii=False)[:3000])
                 return
             time.sleep(LOOP_SECONDS)
