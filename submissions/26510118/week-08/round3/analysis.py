@@ -70,6 +70,11 @@ JOURNAL_BOX = False      # a data note in a box at the end of each journal issue
                          # the journal as it was, no box)
 JOURNAL_MAX = 1800       # characters of an issue with its box; over it, the box is left out (the forum shows posts to ~2,000)
 JOURNAL_REFS = 6
+# A pause (11/5 16:10, the person's call): the board's forum part is the mean of our buyer posts' scores (each the Wilson
+# lower bound of its likes), and from 12:14 each issue drew 4 dislikes (0.313 against our mean of 0.58; most posts then
+# drew 1, scoring ~0.45), so each issue lowered the mean. While analysis/journal_pause.json {"at", "why", "until": a
+# time or null} holds, no issue is posted; deleting the file (or its "until" passing) resumes the journal.
+JOURNAL_PAUSE = "journal_pause.json"
 REPLY_GAP = 3600         # the forum takes ~270 posts an hour (11/3): ours stay few
 ARCHIVED = ("negotiations", "requests", "orders", "refusals", "reviews", "unmet", "unpaid", "unpaid_buys", "votes",
             "sales", "restock", "stock_flow")    # records whose readers look back 48 h at most; deals.jsonl is read by offset instead
@@ -198,7 +203,10 @@ def opening(now: float, state: dict) -> str | None:
 
 
 def journal_step(now: float, state: dict, ask=None) -> str | None:
-    """The next journal issue, posted as our buyer; None when no desk has anything new."""
+    """The next journal issue, posted as our buyer; None when no desk has anything new or while paused."""
+    pause = common.read_json(folder() / JOURNAL_PAUSE, None)
+    if isinstance(pause, dict) and (pause.get("until") is None or now < pause["until"]):
+        return None
     got = journal.next_issue(journal.gather(now), now, state.setdefault("journal_issues", {}), ask or harness.ask)
                                                                 # ("journal" in state is the step's own clock)
     if not got:

@@ -312,6 +312,15 @@ def test_journal():
         check("nothing private in any issue", not any(w in t for t, *_ in issues for w in ("원가", "마진", "budget", "cost", "margin")))
         common.write_json(ledger.folder() / "results_hourly.json", hourly)
         before = len(outbox())
+        pause = MD / "analysis" / analysis.JOURNAL_PAUSE
+        common.write_json(pause, {"at": NOW, "why": "dislikes", "until": None})
+        check("paused (analysis/journal_pause.json, no end): no issue, the issue count untouched",
+              analysis.journal_step(NOW + 3600 + 1, {}, reader(None)) is None and len(outbox()) == before)
+        common.write_json(pause, {"at": NOW, "why": "dislikes", "until": NOW + 60})
+        check("...a pause whose end has passed holds no more", analysis.journal_step(NOW + 3600 + 1, {}, reader(None)) is not None
+              and len(outbox()) == before + 1)
+        pause.unlink()
+        before = len(outbox())
         note = analysis.journal_step(NOW + 3600 + 1, {}, reader(None))
         line = outbox()[before] if len(outbox()) > before else {}
         check("the runner posts an issue as our buyer, with ledger refs", line.get("as") == "buyer"
