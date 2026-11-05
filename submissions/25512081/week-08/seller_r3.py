@@ -87,13 +87,27 @@ BIG_OVER_MARKET, BIG_MIN_SETTLES = 0.06, 5
 # (G05277ffe, list 600k) sat up to 9.2 h opening at 0.85-0.91 while the market's median was 0.78.
 
 
+# A big-ticket SKU that many shops sell opens at the market median itself, not above it (Nov 5 19:00-Nov 6 04:20
+# log, our first ask per talk): Jakomo G8ec51935 (15 shops sold it in the last hour) closed 30 of 67 talks opened
+# under 0.78 of list and 20 of 155 opened at 0.78+, and none of 11 talks after 02:50 (asks 0.80-0.86, market median
+# 0.77); Simmons Gbec2b68f (8 shops) 9 of 31 vs 1 of 17. The LG styler G7978c65e that only we sell closed 8 of 11
+# at 0.78+, so the premium stays where few shops sell the SKU (restock's sku_shops, sellers seen in the last hour).
+CROWDED_SHOPS = 8
+
+
+def crowded(sku):
+    m = (_load("restock_state.json", {}).get("sku_shops") or {}).get(sku) or {}
+    return sum(1 for t in m.values() if time.time() - t < 3600) >= CROWDED_SHOPS
+
+
 def max_share(u):
     if u["list_price"] < CHEAP_TICKET:
         return CHEAP_MAX_SHARE
     cap = BIG_MAX_SHARE if u["list_price"] >= BIG_TICKET else MAX_SHARE
     px = sorted((_load("restock_state.json", {}).get("sku_px") or {}).get(u.get("sku")) or [])
     if len(px) >= BIG_MIN_SETTLES:
-        return min(cap, px[len(px) // 2] + BIG_OVER_MARKET)
+        over = 0.0 if u["list_price"] >= BIG_TICKET and crowded(u.get("sku")) else BIG_OVER_MARKET
+        return min(cap, px[len(px) // 2] + over)
     return cap
 TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask, after haggling
 SHARE_BOUNDS = (0.55, 0.97)
