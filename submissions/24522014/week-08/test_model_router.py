@@ -275,6 +275,87 @@ class Routing(Base):
                 self.assertEqual(self.ask()["reason"], "codex")
                 self.assertEqual(len(self.calls), 1)
 
+    def finish_run(self, answer=ANSWER, final=ANSWER, index=4, closing=True, extra=(), status="SUCCESS"):
+        """The real shape of run 20261104T172538777345Z: finish reported as a tool, then the finish step at the same index."""
+        lines = [{"event": "step_update", "step_update": {"step_index": 3, "state": "DONE", "step_type": "agent_response"}},
+                 {"event": "step_update", "step_update": {"step_index": index, "state": "ACTIVE", "step_type": "tool", "tool_name": "finish",
+                                                          "tool_info": {"name": "finish", "parameters": answer}}}]
+        if closing:
+            lines.append({"event": "step_update", "step_update": {"step_index": 4, "state": "DONE", "step_type": "finish"}})
+        lines += [{"event": "step_update", "step_update": step} for step in extra]
+        lines.append({"event": "result", "result": {"status": status, "response": json.dumps(final), "structured_output": final, "usage": {"total_tokens": 1}}})
+        return "\n".join(json.dumps(line) for line in lines).encode()
+
+    def enable(self):
+        (self.root / "model_router.json").write_text(json.dumps({"agy_enabled": True, "agy_model": "gemini-4-argon-low"}), encoding="utf-8")
+
+    def test_the_closing_finish_keeps_the_answer_and_raises_no_alert(self):
+        self.enable()
+        self.outcomes = [SimpleNamespace(returncode=0, stdout=self.finish_run(), stderr=b"")]
+        self.assertEqual(self.ask(), ANSWER)
+        self.assertEqual(mr.last_call()["route_reason"], "agy_first")
+        self.assertTrue(mr.load_config(self.root)["agy_enabled"])
+        self.assertFalse((self.root / "logs/model-router-alerts.log").exists())
+
+    def test_a_finish_that_does_not_close_the_run_stays_an_unknown_tool(self):
+        other = {"action": "offer", "price": 1, "reason": "x"}
+        later = {"step_index": 5, "state": "DONE", "step_type": "agent_response"}
+        cases = {"different_answer": self.finish_run(answer=other), "no_finish_step": self.finish_run(closing=False), "steps_after_it": self.finish_run(extra=[later]),
+                 "earlier_step": self.finish_run(index=2), "failed_run": self.finish_run(status="ERROR")}
+        for name, stdout in cases.items():
+            with self.subTest(name):
+                _, tools = mr.read_stream(stdout.decode())
+                self.assertEqual(sorted(tools), ["finish"])
+                self.assertEqual(mr.serious_tools(tools), ["finish"])
+
+    def test_finish_with_another_tool_applies_the_other_tools_rule(self):
+        other = {"step_index": 3, "state": "DONE", "step_type": "tool", "tool_name": "brand_new_tool"}
+        _, tools = mr.read_stream(self.finish_run(extra=[other]).decode())
+        self.assertEqual(sorted(tools), ["brand_new_tool"])
+
+    def stored_stop(self, tools, at=1000.0):
+        (self.root / ".market").mkdir(exist_ok=True)
+        (self.root / "logs").mkdir(exist_ok=True)
+        moment = mr.datetime.fromtimestamp(at, mr.timezone.utc).isoformat()
+        (self.root / "logs/model-router-alerts.log").write_text(json.dumps({"at": moment, "role": "buyer", "tools": tools}) + "\n", encoding="utf-8")
+        (self.root / ".market/model-router.json").write_text(json.dumps({"agy_off_until": at + mr.STOP_SECONDS, "agy_off_reason": "agy_unexpected_tool"}), encoding="utf-8")
+
+    def test_a_stop_from_finish_alone_is_lifted_without_touching_the_switch(self):
+        (self.root / "model_router.json").write_text(json.dumps({"agy_enabled": False}), encoding="utf-8")
+        self.stored_stop(["finish"])
+        self.assertEqual(mr.agy_status(self.root, "buyer", 2000.0, lambda _t: dict(QUOTA)), (False, "agy_disabled_in_config"))
+        state = mr.read_state(self.root)
+        self.assertNotIn("agy_off_until", state)
+        self.assertNotIn("agy_off_reason", state)
+        self.assertFalse(mr.load_config(self.root)["agy_enabled"])
+        self.assertFalse(json.loads((self.root / "model_router.json").read_text(encoding="utf-8"))["agy_enabled"])
+        self.enable()
+        self.assertEqual(mr.agy_status(self.root, "buyer", 2000.0, lambda _t: dict(QUOTA)), (True, "ok"))
+
+    def test_a_stop_from_any_other_tool_is_kept(self):
+        for tools in (["schedule"], ["finish", "schedule"], [], None):
+            with self.subTest(tools=tools):
+                self.setUp()
+                self.enable()
+                self.stored_stop(tools)
+                self.assertEqual(mr.agy_status(self.root, "buyer", 2000.0, lambda _t: dict(QUOTA)), (False, "agy_unexpected_tool"))
+                self.assertIn("agy_off_until", mr.read_state(self.root))
+
+    def test_a_stop_without_matching_evidence_is_kept(self):
+        self.enable()
+        self.stored_stop(["finish"])
+        state = mr.read_state(self.root)
+        cases = {"other_alert_time": dict(state, agy_off_until=state["agy_off_until"] + 60), "other_reason": dict(state, agy_off_reason="agy_limit_failure")}
+        for name, stored in cases.items():
+            with self.subTest(name):
+                (self.root / ".market/model-router.json").write_text(json.dumps(stored), encoding="utf-8")
+                self.assertFalse(mr.agy_status(self.root, "buyer", 2000.0, lambda _t: dict(QUOTA))[0])
+                self.assertIn("agy_off_until", mr.read_state(self.root))
+        (self.root / "logs/model-router-alerts.log").unlink()
+        (self.root / ".market/model-router.json").write_text(json.dumps(state), encoding="utf-8")
+        self.assertFalse(mr.agy_status(self.root, "buyer", 2000.0, lambda _t: dict(QUOTA))[0])
+        self.assertIn("agy_off_until", mr.read_state(self.root))
+
     def test_tool_inputs_are_not_kept_in_metadata(self):
         self.outcomes = [SimpleNamespace(returncode=0, stdout=success(tools=[("search_web", "DONE")]), stderr=b"")]
         self.ask()

@@ -35,6 +35,7 @@ NO_TOOLS_NOTE = "\n\nDo not call any tools. Answer only from the input data abov
 FILE_TOOLS = {"read_file", "write_file", "edit_file", "run_command"}
 ACCEPTED_TOOLS = {"search_web"}
 REFUSED_STATES = {"ERROR", "ACTIVE", "PENDING"}
+STOP_SECONDS = 3650 * 86400
 DISCARDED = {"action": "walk_away", "price": None, "reason": "Model used a tool; its answer was discarded."}
 LIMIT_WORDS = ("resource_exhausted", "resource exhausted", "quota", "rate limit", "rate_limit", "usage limit", "limit reached", "too many requests",
                "429", "credits", "exhausted")
@@ -175,6 +176,7 @@ def agy_status(root=ROOT, role="buyer", now=None, reader=None):
     try:
         settings = load_config(root)
         state = read_state(root)
+        lift_finish_stop(root, role, state, now)
         if not settings["agy_enabled"]:
             usable, reason = False, "agy_disabled_in_config"
         elif type(state.get("agy_off_until")) in (int, float) and state["agy_off_until"] > now:
@@ -242,7 +244,7 @@ def classify_failure(text):
 
 def read_stream(stdout):
     """The result object and the tools the run tried, by name and state. Tool inputs are not kept."""
-    result, tools = None, {}
+    result, tools, steps = None, {}, []
     for line in stdout.splitlines():
         try:
             event = json.loads(line)
@@ -253,9 +255,59 @@ def read_stream(stdout):
         if event.get("event") == "result" and isinstance(event.get("result"), dict):
             result = event["result"]
         step = event.get("step_update")
-        if isinstance(step, dict) and step.get("step_type") == "tool" and step.get("tool_name"):
+        if isinstance(step, dict):
+            steps.append(step)
+    for step in steps:
+        if step.get("step_type") == "tool" and step.get("tool_name") and not is_closing_finish(step, steps, result):
             tools.setdefault(str(step["tool_name"]), set()).add(str(step.get("state")))
     return result, tools
+
+
+def is_closing_finish(step, steps, result):
+    """agy ends every run with a finish step, and now and then also reports it as a tool. That is the answer being handed in:
+    the last step of a successful run, carrying exactly the final answer. A finish looking any other way stays an unknown tool."""
+    index = step.get("step_index")
+    return (step.get("tool_name") == "finish" and type(index) is int and step.get("state") in ("ACTIVE", "DONE")
+            and index == max((s["step_index"] for s in steps if type(s.get("step_index")) is int))
+            and any(s.get("step_type") == "finish" and s.get("step_index") == index and s.get("state") == "DONE" for s in steps)
+            and isinstance(result, dict) and result.get("status") == "SUCCESS" and isinstance(result.get("structured_output"), dict)
+            and (step.get("tool_info") or {}).get("parameters") == result["structured_output"])
+
+
+def stopped_by_finish_alone(root, state):
+    """Whether the stored stop came from the alert that named finish and nothing else. Any other or missing evidence keeps it."""
+    until = state.get("agy_off_until")
+    if state.get("agy_off_reason") != "agy_unexpected_tool" or type(until) not in (int, float):
+        return False
+    try:
+        lines = (Path(root) / "logs/model-router-alerts.log").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return False
+    for line in lines:
+        try:
+            alert = json.loads(line)
+        except ValueError:
+            continue
+        moment = _epoch(alert.get("at")) if isinstance(alert, dict) else None
+        if moment is not None and abs(moment + STOP_SECONDS - until) < 1:
+            return alert.get("tools") == ["finish"]
+    return False
+
+
+def lift_finish_stop(root, role, state, now):
+    """Undo only the stored stop; agy_enabled in model_router.json stays the owner's switch."""
+    if not stopped_by_finish_alone(root, state):
+        return
+    state.pop("agy_off_until", None)
+    state.pop("agy_off_reason", None)
+    print(f"[model] {role}: stored agy stop lifted (finish alone caused it); agy_enabled unchanged", flush=True)
+    try:
+        path = Path(root) / "logs/model-router.log"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps({"at": datetime.fromtimestamp(now, timezone.utc).isoformat(), "role": role, "agy": "stop_lifted", "reason": "finish_alone"}) + "\n")
+    except OSError:
+        pass
 
 
 def serious_tools(tools):
@@ -281,7 +333,7 @@ def stop_agy(root, role, serious, now):
     except OSError as error:
         print(f"[model] ALERT {role}: could not write agy_enabled=false ({type(error).__name__})", flush=True)
     state = read_state(root)
-    state.update(agy_off_until=now + 3650 * 86400, agy_off_reason="agy_unexpected_tool")
+    state.update(agy_off_until=now + STOP_SECONDS, agy_off_reason="agy_unexpected_tool")
     _note(root, role, state, False, "agy_unexpected_tool", now)
     _write_state(root, state)
     print(f"[model] ALERT {role}: agy used {serious}; agy turned off, answer discarded", flush=True)
