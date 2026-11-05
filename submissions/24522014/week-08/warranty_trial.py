@@ -104,6 +104,27 @@ def assignment(md, task, unit, terms, now=None):
         release(handle)
 
 
+def refunds_in(rows):
+    """{unit: refunded amount} from public rows. The market reports refunds as `refunded` on broken rows; a refund row without an amount means None, the full price."""
+    found = {}
+    for row in rows:
+        data = row.get("data") or {}
+        unit = data.get("unit")
+        if not unit or row.get("round") != 3 or row.get("kind") not in ("broken", "refund"):
+            continue
+        amount = data.get("refunded")
+        if type(amount) in (int, float) and amount > 0:
+            found[unit] = max(amount, found.get(unit) or 0)
+        elif row.get("kind") == "refund":
+            found.setdefault(unit, None)
+    return found
+
+
+def stratum(catalog, sku):
+    """Top catalogue category. Two groups rarely sell the same SKU at this volume; margins are compared inside this wider group."""
+    return str((catalog.get(sku) or {}).get("category") or "unknown").split(">")[0]
+
+
 def evaluate(md, now=None):
     from strategy_controller import acquire, release
     md = Path(md)
@@ -111,6 +132,7 @@ def evaluate(md, now=None):
     prior = read(md / "warranty-evaluation.json", {})
     if 0 <= now-prior.get("at", -86400) < 1800:
         return prior
+    maturity = config()["maturity_seconds"]
     handle = acquire(md / "warranty-trial.lock")
     if handle is None:
         return {"status": "busy"}
@@ -118,6 +140,7 @@ def evaluate(md, now=None):
         state = read(md / "warranty-trial.json", {"assignments": {}, "paused": False})
         index = read(md / "local-settlements.json", {})
         snapshot = read(md / "market-intel.json", {})
+        catalog = read(md / "catalog.json", {})
         valid = (index.get("active_round") == 3 and index.get("r3_anchor_found") and not index.get("conflicting_ledgers")
                  and 0 <= now-index.get("collected_at", 0) <= 3600 and snapshot.get("round") == 3
                  and 0 <= now-snapshot.get("observed_at", 0) <= 3600)
@@ -128,29 +151,45 @@ def evaluate(md, now=None):
             a = state.get("assignments", {}).get(offer.get("task"), {})
             if a.get("enrolled"):
                 offers.setdefault(offer["unit"], []).append((offer, a))
-        refunds = {(r.get("data") or {}).get("unit") for r in snapshot.get("rows", []) if r.get("round") == 3 and r.get("kind") == "refund"}
+        # Public rows are a bounded recent sample, so refunds found are kept here, and the board's complete count backs them up below.
+        own_units = {r.get("unit") for r in index.get("records", {}).values()} | set(offers)
+        refunds = {**prior.get("refunds_seen", {}), **{unit: amount for unit, amount in refunds_in(snapshot.get("rows", []) if valid else []).items() if unit in own_units}}
+        official = ((snapshot.get("competition") or {}).get("own") or {}).get("shops", {}).get("refunds") if valid else None
+        official = official if type(official) in (int, float) else None
         for sale in index.get("records", {}).values() if valid else []:
             matches = [(o, a) for o, a in offers.get(sale.get("unit"), []) if o.get("price") == sale.get("amount")]
             groups_found = {a["group"] for _, a in matches}
-            if len(groups_found) != 1 or sale.get("source") != "local_acp_settled" or sale.get("round") != 3 or not 21600 <= now-sale["ts"] <= 86400:
+            if len(groups_found) != 1 or sale.get("source") != "local_acp_settled" or sale.get("round") != 3 or now-sale["ts"] < maturity or sale["amount"] <= 0:
                 continue
             a = matches[0][1]
-            # Compare only SKU strata represented in both groups below.
-            net = sale["amount"]-(sale["amount"] if sale["unit"] in refunds else 0)-a["cost"]
-            groups[a["group"]].setdefault(a["sku"], []).append(net)
+            refunded = 0
+            if sale["unit"] in refunds:
+                refunded = sale["amount"] if refunds[sale["unit"]] is None else min(refunds[sale["unit"]], sale["amount"])
+            # Margin on the price, since one category holds prices far apart. Compare only strata represented in both groups below.
+            groups[a["group"]].setdefault(stratum(catalog, a["sku"]), []).append((sale["amount"]-refunded-a["cost"])/sale["amount"])
         shared = set(groups["warranty"]) & set(groups["control"])
-        treated = [v for sku in shared for v in groups["warranty"][sku]]
-        controls = [v for sku in shared for v in groups["control"][sku]]
-        harmful_refund = any(unit in refunds and any(a.get("hours") for _, a in values) for unit, values in offers.items())
-        worse = len(treated) >= 3 and len(controls) >= 3 and sum(treated)/len(treated) < sum(controls)/len(controls)*.9
-        if harmful_refund or worse:
+        treated = [v for key in shared for v in groups["warranty"][key]]
+        controls = [v for key in shared for v in groups["control"][key]]
+        warranted_units = {unit for unit, values in offers.items() if any(a.get("hours") for _, a in values)}
+        refund_seen = bool(warranted_units & set(refunds))
+        # Only trial offers carry a warranty, and a refund needs one, so any refund on the board's complete count is ours to stop for.
+        refund_counted = bool(warranted_units) and bool(official)
+        worse = False
+        if len(treated) >= 3 and len(controls) >= 3:
+            control_mean = sum(controls)/len(controls)
+            worse = sum(treated)/len(treated) < control_mean-abs(control_mean)*.1
+        if refund_seen or refund_counted or worse:
             state["paused"] = True
             state["pause_reason"] = "observed_refund_or_matched_margin_deterioration"
+            state["pause_evidence"] = {"refund_seen": refund_seen, "refund_counted": refund_counted, "margin_worse": worse, "at": now}
             write(md / "warranty-trial.json", state)
         result = {"at": now, "status": "paused" if state.get("paused") else "collecting_mature_comparisons",
-                  "valid_sources": bool(valid), "warranty_mature_count": len(treated), "control_mature_count": len(controls),
-                  "matched_skus": sorted(shared), "model_calls": 0,
-                  "note": "Partial refund observations; no causal gain or complete failure-rate claim. Existing warranties remain honored."}
+                  "valid_sources": bool(valid), "comparison_unit": "top_category_margin_on_price", "maturity_seconds": maturity,
+                  "warranty_mature_total": sum(map(len, groups["warranty"].values())), "control_mature_total": sum(map(len, groups["control"].values())),
+                  "warranty_mature_count": len(treated), "control_mature_count": len(controls), "matched_strata": sorted(shared),
+                  "refunds_seen": refunds, "official_refunds": official, "refunds_without_a_row": max(0, (official or 0)-len(refunds)),
+                  "skipped_ledger_ranges": len(snapshot.get("skipped_seq_ranges") or []), "model_calls": 0,
+                  "note": "Partial refund observations; no causal gain or complete failure-rate claim. It can only pause the trial, never widen it. Existing warranties remain honored."}
         write(md / "warranty-evaluation.json", result)
         stamp = datetime.fromtimestamp(now, timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         write(md.parent / "logs/warranty-trial" / (stamp+"-"+uuid4().hex[:8]+".json"), result)
