@@ -42,7 +42,7 @@ class EvidenceTests(unittest.TestCase):
         with httpx.Client(transport=httpx.MockTransport(respond)) as client:
             state = market.refresh(self.root, 3, self.now, client=client)
             again = market.refresh(self.root, 3, self.now + 30, client=client)
-        self.assertEqual(calls, [-500, 500, 0, "stock"])
+        self.assertEqual(calls, [-500, "stock", 500, 0])
         self.assertEqual(state, again)
         self.assertEqual([e["seq"] for e in state["events"]], list(range(1, 1501)))
         self.assertEqual(state["sample"]["rows"], 1500)
@@ -69,14 +69,137 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(fetch.call_count, 1)
         self.assertEqual(state["sample"]["partial_error"], "deadline")
 
-    def test_stream_has_short_timeout_and_total_deadline(self):
+    def test_stream_io_wait_is_capped_by_six_seconds_and_remaining_budget(self):
         deadlines = []
         def respond(req):
             deadlines.append(req.extensions["timeout"])
             return httpx.Response(200, json=[self.row(1)])
         with httpx.Client(transport=httpx.MockTransport(respond)) as client:
             market.refresh(self.root, 3, self.now, client=client, deadline_seconds=8)
-        self.assertTrue(all(0 < value <= 2 for value in deadlines[0].values()))
+        self.assertTrue(all(0 < value <= 6 for value in deadlines[0].values()))
+
+    def test_slow_head_and_stock_succeed_before_optional_history_uses_remaining_budget(self):
+        elapsed, calls = [100.0], []
+        stock = {"round": 3, "shops": [{"name": "a", "url": "https://shop.invalid",
+                                         "stock": {"G8095ddd6": 2}}]}
+        def respond(req):
+            key = "stock" if req.url.path == "/api/shops" else int(req.url.params["after"])
+            timeout = req.extensions["timeout"]["read"]
+            calls.append((key, timeout))
+            # Simulate transport enforcement without sleeping or real HTTP.
+            delay = 3.0
+            elapsed[0] += min(delay, timeout)
+            if timeout < delay:
+                raise httpx.ReadTimeout("synthetic slow response", request=req)
+            return httpx.Response(200, json=stock if key == "stock" else
+                                  [self.row(i) for i in range(501, 1001)])
+        with patch("market_evidence.time.monotonic", side_effect=lambda: elapsed[0]), \
+                httpx.Client(transport=httpx.MockTransport(respond)) as client:
+            state = market.refresh(self.root, 3, self.now, client=client, deadline_seconds=8)
+        self.assertEqual(calls, [(-500, 6.0), ("stock", 5.0), (0, 2.0)])
+        self.assertEqual(state["sample"]["pages"], 1)
+        self.assertEqual(len(state["events"]), 500)
+        self.assertEqual(state["market_stock"]["by_sku"]["G8095ddd6"]["units"], 2)
+        self.assertEqual(state["sample"]["partial_failure"],
+                         {"error": "ReadTimeout", "phase": "ledger_older"})
+
+    def test_stock_has_priority_even_if_it_uses_the_remaining_optional_page_budget(self):
+        elapsed, calls = [0.0], []
+        def fetch(_client, url, *, deadline):
+            calls.append(url.rsplit("/", 1)[-1])
+            if "ledger" in url:
+                elapsed[0] = 5
+                return [self.row(i) for i in range(501, 1001)]
+            elapsed[0] = 8
+            return {"round": 3, "shops": []}
+        with patch("market_evidence.time.monotonic", side_effect=lambda: elapsed[0]), \
+                patch("market_evidence.fetch_json", side_effect=fetch):
+            state = market.refresh(self.root, 3, self.now, client=object(), deadline_seconds=8)
+        self.assertEqual(calls, ["ledger?after=-500", "shops"])
+        self.assertIsNotNone(state["market_stock"])
+        self.assertEqual(state["sample"]["partial_error"], "deadline")
+        self.assertEqual(len(state["events"]), 500)
+
+    def test_expired_budget_starts_no_stock_or_history_request_and_keeps_head(self):
+        elapsed = [0.0]
+        def fetch(*args, **kwargs):
+            elapsed[0] = 8
+            return [self.row(i) for i in range(501, 1001)]
+        with patch("market_evidence.time.monotonic", side_effect=lambda: elapsed[0]), \
+                patch("market_evidence.fetch_json", side_effect=fetch) as request:
+            state = market.refresh(self.root, 3, self.now, client=object(), deadline_seconds=8)
+        self.assertEqual(request.call_count, 1)
+        self.assertEqual(len(state["events"]), 500)
+        self.assertEqual(state["stock_failure"], {"error": "ValueError", "phase": "stock"})
+        self.assertEqual(state["sample"]["partial_error"], "deadline")
+
+    def test_fetch_checks_deadline_before_request_after_headers_each_chunk_and_end(self):
+        for phase in ("before_request", "headers", "chunk", "end"):
+            with self.subTest(phase=phase):
+                elapsed, started, chunks = [10.0 if phase == "before_request" else 0.0], [], []
+                class Body(httpx.SyncByteStream):
+                    def __iter__(self):
+                        chunks.append(True)
+                        if phase in ("chunk", "end"):
+                            elapsed[0] = 10
+                        if phase != "end":
+                            yield b"[]"
+                def respond(req):
+                    started.append(req)
+                    if phase == "headers":
+                        elapsed[0] = 10
+                    return httpx.Response(200, stream=Body())
+                with patch("market_evidence.time.monotonic", side_effect=lambda: elapsed[0]), \
+                        httpx.Client(transport=httpx.MockTransport(respond)) as client:
+                    with self.assertRaises(ValueError):
+                        market.fetch_json(client, "https://fixture.invalid", deadline=8)
+                self.assertEqual(len(started), int(phase != "before_request"))
+                self.assertEqual(bool(chunks), phase in ("chunk", "end"))
+
+    def test_head_timeout_returns_old_cache_without_extra_requests_or_lost_failure_phase(self):
+        old = self.state([self.row(1)])
+        atomic_json(self.root / ".market/market-evidence.json", old)
+        with patch("market_evidence.fetch_json", side_effect=httpx.ReadTimeout("PRIVATE_DETAIL")) as request:
+            state = market.refresh(self.root, 3, self.now, client=object())
+            again = market.refresh(self.root, 3, self.now + 1, client=object())
+        self.assertEqual(state, old)
+        self.assertEqual(again, old)
+        self.assertEqual(request.call_count, 1)
+        lines = (self.root / "logs/market-evidence.jsonl").read_text()
+        failure = json.loads(lines.splitlines()[-1])
+        self.assertEqual((failure["status"], failure["phase"], failure["error"]),
+                         ("unavailable", "ledger_head", "ReadTimeout"))
+        self.assertNotIn("PRIVATE_DETAIL", lines)
+
+    def test_stock_failure_retains_head_and_old_stock_while_history_is_optional(self):
+        old = self.state([self.row(1)])
+        old["market_stock"] = market.normalize_stock(
+            {"round": 3, "shops": [{"name": "old", "stock": {"G8095ddd6": 2}}]}, 3, self.now - 30)
+        atomic_json(self.root / ".market/market-evidence.json", old)
+        calls = []
+        def respond(req):
+            calls.append(req.url.path)
+            if req.url.path == "/api/shops":
+                raise httpx.ReadTimeout("secret body omitted", request=req)
+            return httpx.Response(200, json=[self.row(i) for i in range(1, 4)])
+        with httpx.Client(transport=httpx.MockTransport(respond)) as client:
+            state = market.refresh(self.root, 3, self.now, client=client)
+        self.assertEqual(calls, ["/api/ledger", "/api/shops"])
+        self.assertEqual(len(state["events"]), 3)
+        self.assertEqual(state["market_stock"]["observed_at"], self.now - 30)
+        self.assertEqual(state["stock_failure"], {"error": "ReadTimeout", "phase": "stock"})
+
+    def test_http_failure_logging_contains_only_class_status_and_safe_phase(self):
+        def respond(req):
+            return httpx.Response(503, text="PRIVATE_RESPONSE", headers={"X-Token": "PRIVATE_TOKEN"})
+        with httpx.Client(transport=httpx.MockTransport(respond)) as client:
+            self.assertIsNone(market.refresh(self.root, 3, self.now, client=client))
+        raw = (self.root / "logs/market-evidence.jsonl").read_text()
+        row = json.loads(raw.splitlines()[-1])
+        self.assertEqual((row["error"], row["phase"], row["http_status"]),
+                         ("HTTPStatusError", "ledger_head", 503))
+        self.assertNotIn("PRIVATE", raw)
+        self.assertNotIn("https://", raw)
 
     def test_empty_page_does_not_claim_reset_and_round_change_bypasses_old_slot(self):
         previous = {**self.state([self.row(900)]), "newest_seq": 900}
