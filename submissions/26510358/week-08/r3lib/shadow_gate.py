@@ -495,7 +495,7 @@ def render(report):
             lines.append(f"forum dry run (sent nothing, llm_calls {fd['llm_calls']}): checks {fd['checks']}")
             lines.append(f"  votes on {v['posts_seen']} recent posts: +1 {v['plus']}, -1 {v['minus']}, none {v['none']}"
                          f"; rollback baseline last {rb['hours']} h: ours {rb['ours']}, others {rb['others']},"
-                         f" would trip now {rb['would_trip_now']}")
+                         f" limit after switch-on {rb['ratio']} x ours = {rb['limit']}")
             lines.append(f"  ESTIMATE: {json.dumps({k: fd['estimate'].get(k) for k in ('now', 'live', 'candidate', 'delta_buyer_all', 'players_total')}, ensure_ascii=False)}")
             if fd.get("files"):
                 lines.append(f"  files: {fd['files']}")

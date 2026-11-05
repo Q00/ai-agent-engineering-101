@@ -2,6 +2,7 @@
   "name": "lever2-forum",
   "description": "SHADOW-ONLY forum lever (MA-3, 2026-11-05): more and better buyer posts plus fair votes. Logic in r3lib/forum_lever2.py; switch config.FORUM_LEVER2 = False. Not wired into forum_r3.py; nothing live reads it.",
   "notes": [
+    "Status 2026-11-05 16:35 KST (MO): the lever2 rework (006dc53) was reverted on the live week-08 branch (f3aaafc); live forum_r3.py and r3lib/config.py equal 75eb8bd. The rework lives on branch ci/wt (worktree /tmp/week08-ci-wt) pending QA GO and MO approval; it is not merged into the live branch.",
     "The twin has no model of forum posts or votes: shop metrics are unchanged by construction. The gate runs a deterministic dry run (read-only memory.sqlite, no send, no LLM or decision-model call) and reports ESTIMATED when its checks pass.",
     "Buyer effect is an ESTIMATE: board buyer ALL = 0.5 pct(surplus) + 0.3 pct(forum) + 0.1 pct(deals) + 0.1 pct(posts); only posts move, others keep their last-24 h post rate.",
     "Hours left is not in our data; [구매 기록] uses purchases.use_within_hours, labelled 사용 기한 조건.",

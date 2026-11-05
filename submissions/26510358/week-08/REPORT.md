@@ -364,6 +364,10 @@ QA 수정(이번 fix 커밋):
   - 바꾼 곳: `config.py` 상수, `policies/candidates/lever2-forum.json`, `forum_lever2.rollback_check`, `dislike_baseline`, gate 출력, 테스트.
 - QA 4번: `VOTE_MIN_SETTLED`를 `LEVER2_VOTE_MIN_SETTLED`로 이름을 바꿈.
 - `config.py`의 lever2 상수는 모두 11개임. 테스트가 이 수를 검사함.
+- 상태(16:35 KST, MO 결정): 라이브 week-08 브랜치에서 이 수정(006dc53)을 되돌림(`git revert`, f3aaafc).
+  - 라이브 `forum_r3.py`와 `r3lib/config.py`는 75eb8bd와 같음.
+  - 이 수정은 지금 worktree 브랜치 `ci/wt`(`/tmp/week08-ci-wt`)에만 있음. QA GO와 MO 승인 전에는 라이브 브랜치에 넣지 않음.
+  - 이유: 라이브 작업 트리에 커밋하면 `forum_r3.py`와 `config.py`가 바로 라이브가 됨.
 - 라이브 재시작 없음. push 없음. 스위치는 False임.
 
 ### 2026-11-05 재현성 수정과 served_close_rate 규칙 (MO·QA 지시)
