@@ -60,9 +60,13 @@ STALL = 4 * 3600         # out (cap 0) held this long with no sale; restock.LINE
 EXIT_REST = 2 * 3600
 REENTRY_MIN = 0.70       # back in only where others still settle at this share of list or more (A costs 0.55-0.75)
 MIN_N = 20
-STARS_MIN, STARS_REST = 4.60, 2 * 3600   # 4.80 until 11/5 09:20: one buyer (totato2203-r3) gives every shop 1 star on
+STARS_MIN, STARS_REST = 4.30, 2 * 3600   # 4.80 until 11/5 09:20: one buyer (totato2203-r3) gives every shop 1 star on
                                          # every purchase (67 of 67) and bought 18% of ours; our stars fell 4.84 -> 4.72
-                                         # and the guard cut the line's caps 35 times in 9 h for no fault of the goods
+                                         # and the guard cut the line's caps 35 times in 9 h for no fault of the goods.
+                                         # 4.60 until 11/5 15:00: from 12:43 shaun0927's two buyers gave us 1 star on 30 of
+                                         # 30 deals and the other top shops most of theirs (inextro 17/19, yms979 10/16),
+                                         # the rest almost none (kimauve 1/16); selling less cannot lift stars given
+                                         # whatever we sell, so the guard is left for a real fault of the goods
 FIND_WINDOW = 6 * 3600
 FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.74, 12
                          # 0.76 and 10 until 11/5 09:20: the one-hour experiment at 0.74 / 12 / 40 found two products

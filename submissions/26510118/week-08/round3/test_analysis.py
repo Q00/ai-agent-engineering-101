@@ -568,20 +568,20 @@ def test_linewatch():
           [(c["from"], c["to"]) for c in ch] == [(4, 5)] and g["share"] == 0.9 and g["hold"] is None, (ch, g))
     check("...the book counts the cash: the same stock with 2M in cash is 30% of it",
           linewatch.guards(heavy["units"], {BEDDING: 4}, None, 2_000_000) == {"share": 0.3, "stars": None, "hold": None, "low_stars": False})
-    check("4.7 stars is not low any more (the guard is at 4.60 since 11/5 09:20)", not linewatch.guards([], {}, 4.7)["low_stars"])
-    ch = run(t5 + 600, market(0.75, at=t5 + 600), sales=sold5, line={BEDDING: 4}, stars=4.5)
-    check("guard: our stars 4.5, under 4.60: the cap comes down one (not grown)",
-          [(c["from"], c["to"]) for c in ch] == [(5, 4)] and ch[0]["why"].startswith("our stars 4.5") and ch[0]["guards"]["stars"] == 4.5, ch)
+    check("4.4 stars is not low any more (the guard is at 4.30 since 11/5 15:00)", not linewatch.guards([], {}, 4.4)["low_stars"])
+    ch = run(t5 + 600, market(0.75, at=t5 + 600), sales=sold5, line={BEDDING: 4}, stars=4.2)
+    check("guard: our stars 4.2, under 4.30: the cap comes down one (not grown)",
+          [(c["from"], c["to"]) for c in ch] == [(5, 4)] and ch[0]["why"].startswith("our stars 4.2") and ch[0]["guards"]["stars"] == 4.2, ch)
     check("...not again within 2 hours, and still no growing",
-          run(t5 + 1200, market(0.75, at=t5 + 1200), sales=sold5, line={BEDDING: 4}, stars=4.5) == [])
-    ch = run(t5 + 600 + linewatch.STARS_REST, market(0.75, at=t5 + 600 + linewatch.STARS_REST), line={BEDDING: 4}, stars=4.55)
+          run(t5 + 1200, market(0.75, at=t5 + 1200), sales=sold5, line={BEDDING: 4}, stars=4.2) == [])
+    ch = run(t5 + 600 + linewatch.STARS_REST, market(0.75, at=t5 + 600 + linewatch.STARS_REST), line={BEDDING: 4}, stars=4.25)
     check("...and once more after 2 hours under", [(c["from"], c["to"]) for c in ch] == [(4, 3)], ch)
     check("growth goes straight to what sold in the last hour (cap 2, 7 sold: 7), not past the most units (12 sold: 10)",
           linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 7, "idle": None}, None, t)[0] == 7
           and linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 12, "idle": None}, None, t)[0] == 10)
     check("a guard also keeps an exited product out (others at 0.75, none held, the rest over)",
           linewatch.decide(0, {"median": 0.75, "sellers": 2}, {"n": 30, "median": 0.75, "sellers": 2}, {"held": 0, "sold_1h": 0, "idle": None},
-                           t, t + linewatch.EXIT_REST + 1, "our stars are 4.5 (under 4.6)") == (0, "out"))
+                           t, t + linewatch.EXIT_REST + 1, "our stars are 4.2 (under 4.3)") == (0, "out"))
     check("stars back at 4.85 and none of ours held: the guards say nothing",
           linewatch.guards([], {BEDDING: 4}, 4.85) == {"share": 0.0, "stars": 4.85, "hold": None, "low_stars": False})
     common.write_json(MD / "analysis" / "line.json", {"skus": {}})
