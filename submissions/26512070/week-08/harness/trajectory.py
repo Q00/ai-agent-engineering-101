@@ -20,7 +20,7 @@ from core import paths
 from core.causes import cause  # C7, shared with tools.registry
 from harness import out_dir
 
-ROLE_SOURCES = ("buyer", "seller", "review", "restock", "outer", "tools", "models")
+ROLE_SOURCES = ("buyer", "seller", "review", "restock", "forum", "outer", "tools", "models")
 
 def pid_of(ev):
     """The writing process, from event_id writer-pid-ms-seq (the writer name may itself hold dashes)."""
