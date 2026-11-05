@@ -172,6 +172,8 @@ class SellerContextTests(unittest.TestCase):
             receipt["price"] = int(receipt["price"])
             self.assertEqual(receipt["price"], 72000)
             self.assertTrue(kit.verify_seller(kit.pub_b64(key), receipt))
-            self.assertEqual(len(seen), 3)
-            self.assertEqual(seen[-1]["price_floor"], 71400)
-            self.assertEqual(seen[-1]["history"]["prior_offers"], [71000])
+            self.assertEqual(len(seen), 2)  # The pinned close outcome needs no further inference.
+            self.assertEqual(seen[-1]["negotiation"]["stage"], "negotiate")
+            event = json.loads(seller.events.read_text().splitlines()[-1])
+            self.assertEqual(event["active_floor"], 71400)
+            self.assertEqual(event["decision_source"], "closing_floor_accepted")

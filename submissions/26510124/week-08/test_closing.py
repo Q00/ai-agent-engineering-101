@@ -55,11 +55,11 @@ class ClosingTests(unittest.TestCase):
             send(client, "71000", first["id"])
             done = send(client, "72000", first["id"])
         self.receipt(done, key, 72000)
-        context = model.call_args.args[0]
-        self.assertEqual(context["sales_terms"]["price_floor"], 73500)
-        self.assertEqual(context["negotiation"]["price_floor"], 71400)
-        self.assertEqual(context["negotiation"]["stage"], "close")
+        self.assertEqual(model.call_count, 2)
+        self.assertEqual(model.call_args.args[0]["sales_terms"]["price_floor"], 73500)
         event = json.loads(seller.events.read_text().splitlines()[-1])
+        self.assertEqual((event["stage"], event["active_floor"]), ("close", 71400))
+        self.assertEqual(event["decision_source"], "closing_floor_accepted")
         self.assertEqual(event["discount_reason"], "improving_close_offer")
         self.assertEqual(event["buyer_offers"], 2)
         self.assertEqual(event["outcome"], "receipt_issued")  # not settled revenue
@@ -87,7 +87,7 @@ class ClosingTests(unittest.TestCase):
             self.assertNotIn("71400", json.dumps(final))
             done = send(client, "73500", first["id"])
         self.receipt(done, key, 73500)
-        self.assertEqual(model.call_count, 4)
+        self.assertEqual(model.call_count, 3)
         event = json.loads(seller.events.read_text().splitlines()[-1])
         self.assertEqual(event["decision_source"], "quoted_price_accepted")
         self.assertEqual(event["buyer_offers"], 4)
@@ -102,7 +102,7 @@ class ClosingTests(unittest.TestCase):
                 done = send(client, str(price), first["id"])
         self.assertEqual(done["status"]["state"], "TASK_STATE_REJECTED")
         self.assertFalse(done.get("artifacts"))
-        self.assertEqual(model.call_count, 4)
+        self.assertEqual(model.call_count, 3)
         self.assertEqual(seller.inventory.reserve("new-buyer", "G00001")["unit"], "u1")
 
     def test_agreeing_an_existing_quote_skips_model_and_keeps_exact_authorized_price(self):
@@ -208,14 +208,13 @@ class ClosingTests(unittest.TestCase):
         with patch("seller_r3.decide", side_effect=model):
             self.assertEqual(inventory_decision(enriched, 72000, [], 80000)["action"], "accept")
 
-    def test_runtime_never_signs_below_closing_floor_or_counter_above_final_floor(self):
-        for bad in ({"action": "accept", "price": 71000}, counter(72000)):
+    def test_model_first_negotiation_never_signs_below_floor_or_raises_quote(self):
+        for bad in ({"action": "accept", "price": 71000}, counter(76000)):
             seller, _ = self.seller(unit(supplied_at=time.time() - 90000))
-            with patch("seller_r3.inventory_decision", side_effect=[counter(75000), counter(74500),
-                        counter(74000), bad]), TestClient(build(DEFAULT, seller)) as client:
+            with patch("seller_r3.inventory_decision", side_effect=[counter(75000), bad]), \
+                    TestClient(build(DEFAULT, seller)) as client:
                 first = send(client, "G00001")
-                for price in (60000, 60000, 71000):
-                    done = send(client, str(price), first["id"])
+                done = send(client, "71000", first["id"])
             self.assertEqual(done["status"]["state"], "TASK_STATE_FAILED")
             self.assertFalse(done.get("artifacts"))
             self.assertFalse(seller.inventory.active)
@@ -231,4 +230,4 @@ class ClosingTests(unittest.TestCase):
             self.assertIn("73500", json.dumps(reminder))
             done = send(client, "73500", first["id"])
         self.receipt(done, key, 73500)
-        self.assertEqual(model.call_count, 4)
+        self.assertEqual(model.call_count, 3)

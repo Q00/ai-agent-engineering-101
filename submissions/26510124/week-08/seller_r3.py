@@ -246,6 +246,15 @@ class InventorySeller(Seller):
             elif deal["negotiation"]["stage"] == "final_reply":
                 choice = {"action": "reject"}
                 deal["decision_source"] = "final_offer_declined"
+            elif (deal["negotiation"]["stage"] in ("close", "final_offer")
+                  and offer >= deal["negotiation"]["price_floor"]):
+                # The pinned closing policy already requires this exact acceptance.
+                choice = {"action": "accept", "price": offer}
+                deal["decision_source"] = "closing_floor_accepted"
+            elif deal["negotiation"]["stage"] == "final_offer":
+                # A below-floor final bid must receive the active floor once.
+                choice = {"action": "counter", "price": deal["negotiation"]["price_floor"]}
+                deal["decision_source"] = "final_floor_quoted"
             else:
                 deal["decision_source"] = "haiku"
                 phase = "model"
