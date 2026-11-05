@@ -248,6 +248,12 @@ def ranked(rows):
 
 
 def _num(r, t):
+    """v2.0a (Patch 3.3, 2026-11-05): the shop 'profit' term reads the board's 'book' column (balance - start -
+    bankruptcy money + unsold stock at cost) when the row has one. On the 09:31 KST snapshot 0.5 book + 0.3 revenue
+    + 0.2 stars_rank percentiles reproduced 'all' of 52 shops within 0.0005; cash profit missed by up to 0.166."""
+    b = r.get("book")
+    if t == "profit" and isinstance(b, (int, float)) and not isinstance(b, bool):
+        t = "book"
     v = r.get(t)
     return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0.0
 

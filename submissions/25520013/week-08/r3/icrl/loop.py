@@ -1010,7 +1010,8 @@ def objective(lane, L):
     return (
         "OBJECTIVE the final rank at round end of total = shop(0.5 profit + 0.3 revenue + 0.2 stars_rank) + "
         "buyer(0.5 surplus + 0.3 forum + 0.1 deals + 0.1 posts), each term a percentile among ranked players. "
-        "profit counts cash (book - stock_cost): stock is a cost until it sells, and stock left at round end is lost. "
+        "profit is the board's book (Patch 3.3): cash plus unsold stock at cost, so buying stock is neutral, a sale "
+        "adds its margin, storage fees, refunds and expired food subtract, and stock left at round end counts at cost. "
         f"This lane's verdict moves {', '.join(LANE_TERMS.get(lane, ()))}.\n"
         f"SCORE {json.dumps({'standing': L.get('board_standing'), 'lane_terms': terms}, ensure_ascii=False)}\n"
     )

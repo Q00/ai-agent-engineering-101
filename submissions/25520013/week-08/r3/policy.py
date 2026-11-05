@@ -699,6 +699,31 @@ def level_fill(qty, held):
     return out
 
 
+GOODS_COST_FRAC = 0.59   # agent.md goods grade mix (A 70%, B 20%, C 10%) x mid supply cost (65%, 50%, 35% of list)
+
+
+def surge_factors(inv):
+    """v2.0a (Patch 3.2): inventory.json 'surge' = [{sku, name, units, factor}]: past 50 units/h market-wide a SKU
+    costs +0.2% per unit more to restock, up to +50%. -> {sku: factor} for factors above 1, capped at 1.5."""
+    out = {}
+    for s in (inv or {}).get("surge") or []:
+        f = s.get("factor") if isinstance(s, dict) else None
+        if isinstance(f, (int, float)) and not isinstance(f, bool) and f > 1 and s.get("sku"):
+            out[s["sku"]] = min(float(f), 1.5)
+    return out
+
+
+def margin_rate(sku, x, stats, factor=1.0):
+    """v2.0a (Patch 3.3: book = cash + unsold stock at cost, so a goods SKU earns its margin, not its price): won per
+    hour the market's flow of a SKU leaves over the expected supply cost = velocity_per_h (24 h decayed, other shops)
+    x max(0, p50 - 0.59 x surge factor x list). 0 when the stats have fewer than 3 settles, no p50 or no velocity."""
+    s = _stat(stats, "sku", sku) or {}
+    v, p50 = s.get("velocity_per_h") or 0, s.get("p50")
+    if not v or not p50 or (s.get("n") or 0) < 3:
+        return 0.0
+    return float(v) * max(0.0, float(p50) - GOODS_COST_FRAC * factor * float(x["list_price"]))
+
+
 def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None, now=None, taste=None):
     """Buy list for the restock hook: categories ranked by stats (velocity) when known, else by spread; keep
     stock_target units per category; never spend below balance_floor nor beyond max_spend_per_run.
@@ -711,7 +736,9 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     floor, inventory cap, max_total_units, max_unit_cost and the below-market filter are unchanged.
     v1.23: shop.max_spend_frac (optional) sets one run's cap to that share of the balance, so the per-run spend
     grows and shrinks with cash. v1.23b (성수님 2026-11-05): when it is set max_spend_per_run is not used (no
-    absolute ceiling); the icrl stock lane tunes the share (action space 0.15-0.35)."""
+    absolute ceiling); the icrl stock lane tunes the share (action space 0.15-0.35).
+    v2.0a (Patch 3.2/3.3, 2026-11-05): restock costs follow the inventory.json surge factors (cost cap, below-market
+    check, worst spend) and goods SKUs rank by market margin per hour (margin_rate) before settles."""
     sp = pol["shop"]
     bal = int(inv.get("balance") or 0)
     units = [u for u in inv.get("units") or [] if u.get("grade") != "expired"]
@@ -743,6 +770,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
 
     own_v = own_velocity(activity, catalog, pol, now)
     cost_frac = expected_cost_frac(units, sp) if sp.get("skip_below_market") else None
+    surge = surge_factors(inv)                           # v2.0a (Patch 3.2): hot SKUs cost more to restock
 
     prio = [str(x) for x in (sp.get("restock_priority") or [])]      # v1.20a: categories bought first
 
@@ -774,7 +802,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         if need <= 0:
             continue
         cands = [(sku, x) for sku, x in by_cat.get(cat, []) if x.get("list_price")
-                 and x["list_price"] * 0.75 <= sp["max_unit_cost"]
+                 and x["list_price"] * 0.75 * surge.get(sku, 1.0) <= sp["max_unit_cost"]
                  and (kind != "food" or (x.get("shelf_hours") or 0) >= c.get("min_shelf_hours", 0))]
         if not cands:
             continue
@@ -792,16 +820,20 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         near = [t for t in cands if not med or 0.5 * med <= t[1]["list_price"] <= 1.5 * med or sold[t[0]] > 0] or cands
         if kind == "food":
             order_ = sorted(near, key=lambda t: (-sold[t[0]], -(t[1].get("shelf_hours") or 0), abs(t[1]["list_price"] - med), t[0]))
-        else:
-            order_ = sorted(near, key=lambda t: (-sold[t[0]], abs(t[1]["list_price"] - med), t[0]))
+        else:                                            # v2.0a: goods by market margin per hour, then settles
+            rate = {t[0]: margin_rate(t[0], t[1], stats, surge.get(t[0], 1.0)) for t in near}
+            order_ = sorted(near, key=lambda t: (-rate[t[0]], -sold[t[0]], abs(t[1]["list_price"] - med), t[0]))
         if cost_frac:                                    # v1.18: SKUs the market settles under our cost + margin
-            low = [t[0] for t in order_ if below_market(t[0], t[1], stats, cost_frac, c["min_margin"])]
+            low = [t[0] for t in order_
+                   if below_market(t[0], t[1], stats, cost_frac * surge.get(t[0], 1.0), c["min_margin"])]
             if low:
                 order_ = [t for t in order_ if t[0] not in low]
                 notes.append(f"{cat}: market p50 under cost {cost_frac:.2f} + margin: skip {low[:3]}")
                 if not order_:
                     continue
-        if any(sold.values()):
+        if kind != "food" and any(rate.values()):        # v2.0a
+            notes.append(f"{cat}: by margin/h (만) {[(t[0], round(rate[t[0]] / 1e4)) for t in order_[:3]]}")
+        elif any(sold.values()):
             notes.append(f"{cat}: by settles {[(t[0], sold[t[0]]) for t in order_[:3]]}")
         if kind == "food":                               # v1.7 (b): no deeper than expected sell-through
             cap = food_cap(cat, order_[0][1], c, sp, stats, own_v.get(cat, 0))
@@ -835,7 +867,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     for sku, x, qty, q1 in plan:
         if len(got) >= max_lines:
             break
-        worst = int(math.ceil(x["list_price"] * 0.75)) * q1      # cost is at most 75% of list (agent.md)
+        worst = int(math.ceil(x["list_price"] * 0.75 * surge.get(sku, 1.0))) * q1   # 75% of list (agent.md) x surge
         if spent + worst > budget:
             notes.append(f"skip {sku}: worst cost {worst} over budget left {budget - spent}")
             continue
@@ -844,7 +876,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     for sku, x, qty, q1 in plan:
         if sku not in got or qty <= got[sku]:
             continue
-        unit = int(math.ceil(x["list_price"] * 0.75))
+        unit = int(math.ceil(x["list_price"] * 0.75 * surge.get(sku, 1.0)))
         add = min(qty - got[sku], max(0, (budget - spent) // unit))
         got[sku] += add
         spent += add * unit
