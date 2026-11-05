@@ -25,6 +25,8 @@ from kernel.agent import ParseError, parse_last_object
 from kernel.llm import ModelError, ModelRefused
 from kernel.trajectory import Trajectory
 
+RESTOCK_WAKE_S = 600  # a missing or expired restock plan wakes the operator at most this often
+
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HARNESS = os.path.join(HERE, "harness")
 MARKET_BRIEF = os.path.join(HERE, "MARKET_BRIEF.md")
@@ -166,6 +168,8 @@ class Operator:
             reasons.append(f"마지막 수정 또는 점검 뒤 판매 요청 {n}건")
         if ev["rank"] and st.get("last_rank") and abs(ev["rank"] - st["last_rank"]) >= s["rank_jump"]:
             reasons.append(f"Everyone 순위 {st['last_rank']}위에서 {ev['rank']}위로 바뀜")
+        if b.restock_plan_state(self.root, now)[0] != "valid" and (last is None or now - last >= RESTOCK_WAKE_S):
+            reasons.append("재입고 계획 없음 또는 만료")
         if ev["shop_missing"] and not st.get("shop_missing"):
             reasons.append("우리 가게가 가게 목록에서 빠짐")
         if ev["bankrupt_near"] and not st.get("bankrupt_near"):

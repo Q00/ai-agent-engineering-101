@@ -152,6 +152,48 @@ def section_inventory(root, now):
     ]
 
 
+def restock_plan_state(root, now):
+    """("none" | "expired" | "valid", minutes left or None) for a2/restock_plan.json."""
+    plan = c.load_json(os.path.join(root, "a2/restock_plan.json"))
+    if not isinstance(plan, dict):
+        return "none", None
+    vu = plan.get("valid_until")
+    if not isinstance(vu, (int, float)) or isinstance(vu, bool) or vu <= now:
+        return "expired", None
+    return "valid", round((vu - now) / 60)
+
+
+def section_restock(root, now):
+    """Facts about how restock runs: only the operator's plan buys stock."""
+    state, left = restock_plan_state(root, now)
+    plan = c.load_json(os.path.join(root, "a2/restock_plan.json"), {}) or {}
+    inv = c.load_json(os.path.join(root, ".market/inventory.json"), {}) or {}
+    w = inv.get("restock") or {}
+    opens = w.get("opens_at")
+    win = (
+        "열림"
+        if w.get("open")
+        else f"{round((opens - now) / 60)}분 뒤 열림"
+        if isinstance(opens, (int, float)) and not isinstance(opens, bool)
+        else "모름"
+    )
+    sold = sum(
+        1
+        for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 20_000_000, b'"accept"')
+        if m.get("hook") == "seller" and m.get("decision") == "accept" and (m.get("ts") or 0) >= now - 3600
+    )
+    head = {
+        "none": "없음",
+        "expired": "만료",
+        "valid": f"유효 ({left}분 남음, {len(plan.get('buy') or [])}줄)",
+    }[state]
+    return [
+        f"[재입고] 계획 {head} | 재고 {len(inv.get('units') or [])}개, 최근 1시간 판매 {sold}개 | 공급 창 {win}",
+        "  재입고는 done의 restock_plan(a2/restock_plan.json)으로만 실행됨. 계획이 없거나 valid_until이 지나면 "
+        "커널은 아무것도 사지 않음",
+    ]
+
+
 def section_seller(root, now):
     dec = Counter()
     for m in c.tail_json(
@@ -553,6 +595,7 @@ def build(root=None, now=None, last_brief_ts=None):
             hours6,
         )
     out += section_inventory(root, now)
+    out += section_restock(root, now)
     out += section_seller(root, now)
     out += section_market(root, now, login)
     out += section_forum(root, login, snaps, now)

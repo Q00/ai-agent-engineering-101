@@ -518,8 +518,14 @@ def _op(root, hroot, answers, dry=False):
     ), terra
 
 
+def _valid_plan(root, until):
+    with open(os.path.join(root, "a2/restock_plan.json"), "w", encoding="utf-8") as f:
+        json.dump({"buy": [], "valid_until": until}, f)
+
+
 def test_wake_conditions(root, hroot):
     o, _ = _op(root, hroot, [])
+    _valid_plan(root, NOW + 10 * 86400)
     assert o.wake_reason(NOW) == "주기 점검"
     o._save_state({"last_wake_ts": NOW, "last_rank": 5})
     assert o.wake_reason(NOW + 60) is None
@@ -779,3 +785,15 @@ def test_restock_guard_infinite_balance_buys_nothing():
     plan = {"buy": [{"sku": "S1", "qty": 3}]}
     assert restock.guard(plan, {"balance": 100, "bankrupt_line": 0}, cat)["buy"]  # finite balance does buy
     assert restock.guard(plan, inv, cat) == {"buy": []}
+
+
+def test_missing_or_expired_restock_plan_wakes_every_ten_minutes(root, hroot):
+    o, _ = _op(root, hroot, [])
+    o._save_state({"last_wake_ts": NOW, "last_rank": 5})
+    assert o.wake_reason(NOW + 60) is None  # no plan, but woke a minute ago
+    assert o.wake_reason(NOW + 600) == "재입고 계획 없음 또는 만료"
+    _valid_plan(root, NOW + 700)
+    assert o.wake_reason(NOW + 650) is None
+    assert o.wake_reason(NOW + 701) == "재입고 계획 없음 또는 만료"
+    text = "\n".join(brief.section_restock(root, NOW + 701))
+    assert "계획 만료" in text and "아무것도 사지 않음" in text
