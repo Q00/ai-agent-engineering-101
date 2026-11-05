@@ -113,6 +113,10 @@ def request(req, by="meta", now=None):
     if errors:
         raise ValueError(f"the change breaks the strategy schema: {errors[:3]}")
     rid = time.strftime("%Y%m%d-%H%M%S", time.localtime(now))
+    n = 1
+    while (_dir() / f"{rid}.json").exists():          # two requests of one cycle share the second
+        n += 1
+        rid = time.strftime("%Y%m%d-%H%M%S", time.localtime(now)) + f"-{n}"
     doc = {**req, "id": rid, "by": by, "ts": now, "status": "open", "version_from": cur.get("version"),
            "base": {".".join(p): _get(cur, p) for p, _ in _leaves(req["change"])},
            "checks": check_change(req["change"])}
