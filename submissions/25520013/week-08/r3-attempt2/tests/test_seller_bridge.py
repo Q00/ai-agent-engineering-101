@@ -886,7 +886,10 @@ def test_hook_patch_idempotent_and_refuses_other_files(tmp_path, capsys):
         new = p.read_text()
         assert (tmp_path / (f + ".bak-a2")).read_text() == orig and new.count(
             "# r3a2"
-        ) == 1
+        ) == (
+            2 if f == "restock.py" else 1
+        )  # restock also carries the '# r3a2 ingest' step
+        assert ("ingest(_st)" in new) == (f == "restock.py")
         capsys.readouterr()
         assert hook_patch.main([str(p), "--code", "/c"]) == 0
         assert (
@@ -969,7 +972,10 @@ def test_accept_above_buyer_offer_becomes_counter(tmp_path, hdir):
     w = _w(tmp_path)
     ag = RecAgent(
         w,
-        [{"action": "offer", "unit": "u1", "ask": 280}, {"action": "accept", "price": 270}],
+        [
+            {"action": "offer", "unit": "u1", "ask": 280},
+            {"action": "accept", "price": 270},
+        ],
         hdir,
     )
     b = make_bridge(w, ag, metrics=[])
@@ -993,7 +999,12 @@ def test_units_carry_hours_left(tmp_path):
 def test_decline_texts_phrase_is_declined_without_model(tmp_path, hdir):
     w = _w(tmp_path)
     (w / "policy.json").write_text(
-        json.dumps({"owner": {"github": LOGIN}, "shop": {"decline_texts": ["Quote the total price."]}})
+        json.dumps(
+            {
+                "owner": {"github": LOGIN},
+                "shop": {"decline_texts": ["Quote the total price."]},
+            }
+        )
     )
     ag = RecAgent(w, [], hdir)
     metrics = []
@@ -1007,12 +1018,26 @@ def _food_market(tmp_path, hours):
     m.mkdir()
     now = time.time()
     units = [
-        {"unit": f"u-k{i}", "sku": "Gkimchi1", "grade": "A", "cost": 100, "expires_at": now + h * 3600}
+        {
+            "unit": f"u-k{i}",
+            "sku": "Gkimchi1",
+            "grade": "A",
+            "cost": 100,
+            "expires_at": now + h * 3600,
+        }
         for i, h in enumerate(hours)
     ]
     (m / "inventory.json").write_text(json.dumps({"units": units}))
     (m / "catalog.json").write_text(
-        json.dumps({"Gkimchi1": {"name": "포기김치 10kg", "category": "식품>김치", "list_price": 300}})
+        json.dumps(
+            {
+                "Gkimchi1": {
+                    "name": "포기김치 10kg",
+                    "category": "식품>김치",
+                    "list_price": 300,
+                }
+            }
+        )
     )
     return m
 
@@ -1021,9 +1046,13 @@ def test_stated_need_drops_units_that_cannot_last(tmp_path):
     from kernel import seller_bridge as sb
 
     m = _food_market(tmp_path, [59.6, 130.0, 200.0])
-    units, _ = sb.candidate_units(str(m), "포기김치 10kg please, I need it to last 126.0 hours")
+    units, _ = sb.candidate_units(
+        str(m), "포기김치 10kg please, I need it to last 126.0 hours"
+    )
     assert sorted(u["unit"] for u in units) == ["u-k1", "u-k2"]
-    units, _ = sb.candidate_units(str(m), "포기김치 10kg please, I need it to last 250 hours")
+    units, _ = sb.candidate_units(
+        str(m), "포기김치 10kg please, I need it to last 250 hours"
+    )
     assert units == []  # nothing lasts: no_stock rather than a two-star review
     units, _ = sb.candidate_units(str(m), "포기김치 10kg please")
     assert len(units) == 3  # no stated need: the model sees every unit with hours_left
@@ -1032,8 +1061,13 @@ def test_stated_need_drops_units_that_cannot_last(tmp_path):
 def test_stated_need_ignores_hours_inside_product_names():
     from kernel import seller_bridge as sb
 
-    assert sb.stated_need_hours("48시간 구운계란 30구, last 72h", ["48시간 구운계란 30구"]) == 72.0
-    assert sb.stated_need_hours("48시간 구운계란 30구", ["48시간 구운계란 30구"]) is None
+    assert (
+        sb.stated_need_hours("48시간 구운계란 30구, last 72h", ["48시간 구운계란 30구"])
+        == 72.0
+    )
+    assert (
+        sb.stated_need_hours("48시간 구운계란 30구", ["48시간 구운계란 30구"]) is None
+    )
     assert sb.stated_need_hours("need 1,000 hours or Gab12345 at 48h,72h") == 1000.0
 
 
@@ -1045,6 +1079,9 @@ def test_unstated_need_drops_food_under_half_shelf(tmp_path):
     cat["Gkimchi1"]["shelf_hours"] = 168
     (m / "catalog.json").write_text(json.dumps(cat))
     units, _ = sb.candidate_units(str(m), "포기김치 10kg please")
-    assert sorted(u["unit"] for u in units) == ["u-k1", "u-k2"]  # 59.6 h < 84 h (half of 168) is dropped
+    assert sorted(u["unit"] for u in units) == [
+        "u-k1",
+        "u-k2",
+    ]  # 59.6 h < 84 h (half of 168) is dropped
     units, _ = sb.candidate_units(str(m), "포기김치 10kg please, it must last 24 hours")
     assert len(units) == 3  # a stated need wins: 59.6 h covers 24 h

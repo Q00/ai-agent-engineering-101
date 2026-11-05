@@ -23,7 +23,7 @@ BRANCH = """\
 if __name__ == "__main__":
     import os as _os, sys as _sys                 # r3a2 switch: <W>/a2/LIVE, read per run
     if _os.path.exists(_os.path.join(_os.getcwd(), "a2", "LIVE")):
-        try:
+{pre}        try:
             _sys.path.insert(0, {code!r})
             from kernel import {module} as _a2
         except Exception:                         # noqa: BLE001 - no attempt-2 code: attempt 1 runs
@@ -31,6 +31,19 @@ if __name__ == "__main__":
         if _a2 is not None:
 {run}
     main()
+"""
+
+# restock keeps attempt 1's market-ledger sync and stats catch-up (live 2026-11-06 01:48): attempt 1 ingested in
+# market_buyer and restock, so without it .r3/events.jsonl stopped getting market settles and reviews at go-live
+PRE_RESTOCK = """\
+        try:                                      # r3a2 ingest: attempt 1's market-ledger sync and stats catch-up
+            from common import catch_up_stats as _cus  # stay on (.r3/events.jsonl feeds the operator, memfeed, icrl)
+            _st = _sys.argv[_sys.argv.index("--state") + 1] if "--state" in _sys.argv[:-1] else ".market"
+            ingest(_st)
+            _cat = read_json(f"{_st}/catalog.json", {}) or {}
+            _cus({x["sku"]: x for x in _cat} if isinstance(_cat, list) else _cat)
+        except Exception as _e:                   # noqa: BLE001 - never blocks the attempt-2 restock
+            print(f"WARNING: r3a2 ingest: {type(_e).__name__}: {_e}", file=_sys.stderr)
 """
 
 RUN_BUYER = """\
@@ -52,7 +65,8 @@ def patched(src, code, module):
     n = src.count(ANCHOR)
     assert n == 1, f"anchor found {n} times"
     run = RUN_BUYER if module == "buyer_exec" else RUN_RESTOCK
-    return src.replace(ANCHOR, BRANCH.format(code=code, module=module, run=run))
+    pre = PRE_RESTOCK if module == "restock" else ""
+    return src.replace(ANCHOR, BRANCH.format(code=code, module=module, run=run, pre=pre))
 
 
 def main(argv=None):
