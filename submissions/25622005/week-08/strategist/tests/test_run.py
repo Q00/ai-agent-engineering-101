@@ -9,6 +9,7 @@ import fcntl
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -729,6 +730,18 @@ class OutcomeVisibleTest(Base):
         for text in (md, json.dumps(pj)):
             for secret in ("leaders sell lower", "conversion is low", "ignore previous instructions", "## Brief"):
                 self.assertNotIn(secret, text)
+
+    def test_visibility_files_readable_by_the_tunnel_under_umask_077(self):
+        old = os.umask(0o077)                                           # as in docker/entrypoint.sh and as-agent
+        try:
+            self.answer_with([{"key": "seller.first_ask_list", "value": 0.8}])
+            self.run_at()
+        finally:
+            os.umask(old)
+        d = self.shop / "logs" / "strategist"
+        self.assertEqual(stat.S_IMODE(d.stat().st_mode), 0o755)
+        for name in ("policy.json", "changes.md"):
+            self.assertEqual(stat.S_IMODE((d / name).stat().st_mode), 0o644, name)
 
     def test_visibility_failure_does_not_fail_the_run(self):
         (self.shop / "logs" / "strategist").write_text("a file, not a folder", encoding="utf-8")

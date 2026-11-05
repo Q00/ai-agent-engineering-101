@@ -20,9 +20,12 @@ LISTS = ("stock.focus_skus", "stock.trend_skus")
 
 
 def _write(path, text):
+    """Readable by the log tunnel's server (another user): the container's umask 077 would leave 700/600."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    os.chmod(path.parent, 0o755)
     tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
     tmp.write_text(text, encoding="utf-8")
+    os.chmod(tmp, 0o644)
     os.replace(tmp, path)
 
 
