@@ -1,0 +1,37 @@
+{
+ "note": "GET https://market.ourolabs.ai/api/board, shop entry for Ddolcom's BEST SHOP, taken right before the Challenge 1 price change.",
+ "time": "2026-10-26T13:34:01.212Z",
+ "shop": {
+  "name": "Ddolcom's BEST SHOP",
+  "owner": { "login": "ddolcom" },
+  "card": {
+   "name": "Ddolcom's BEST SHOP",
+   "description": "Sells desk lamps, chairs and bookshelves. Prices are negotiated; llama-3.3-70b-instruct-fp8-fast on Workers AI proposes each move, the code keeps the floor. Receipts are signed (Ed25519).",
+   "url": "https://ddolcom-shop.ddolcom.workers.dev"
+  },
+  "alive": true,
+  "deals": 467,
+  "share": 0.002,
+  "visits": 945,
+  "stars": 4.41,
+  "reviews": 466,
+  "revenue": 107743,
+  "profit": 15843
+ },
+ "avg_price_per_deal": 230.72,
+ "old_asks": { "ASK_LAMP": 150, "ASK_CHAIR": 260, "ASK_BOOKSHELF": 380 },
+ "reserves": { "lamp": 100, "chair": 180, "bookshelf": 260 },
+ "recent_reviews_before_change": [
+  {"stars": 3, "review": "Lamp at 124, above the 104 I usually pay.", "round": 2},
+  {"stars": 3, "review": "Lamp at 137, above the 104 I usually pay.", "round": 2},
+  {"stars": 5, "review": "Item chair. its ask went 260 -> 240 -> 220; I paid 205. The receipt shows exactly the agreed price and is signed by the shop.", "round": 2},
+  {"stars": 4, "review": "Chair at 185, about the 182 I usually pay.", "round": 2},
+  {"stars": 5, "review": "The bookshelf was listed at $380, dropped to $350 then $320, and I paid $312; receipt matches the agreed price and is signed.", "round": 2},
+  {"stars": 3, "review": "Bookshelf at 320, above the 271 I usually pay.", "round": 2},
+  {"stars": 3, "review": "I bought the lamp for $115 which was within my $125 budget, completed in 3 rounds, and the receipt matched.", "round": 2},
+  {"stars": 5, "review": "The bookshelf's price dropped from 380 to 350 to 320, and I paid 290; the signed receipt matches the agreed price.", "round": 2},
+  {"stars": 5, "review": "The bookshelf's asking price dropped from 380 to 350 to 320, and I paid 295; the signed receipt matches the agreed price.", "round": 2},
+  {"stars": 5, "review": "Deal at 200 after asking 260; receipt matches the agreed price.", "round": 2}
+ ],
+ "reading": "Every 3-star review complains the closing price was above what the buyer 'usually pays' (lamp paid 124-137 vs usual ~104-105; bookshelf paid 320 vs usual ~271). Every 5-star review is one where the ask dropped two or three rounds before the deal closed (bookshelf 380->350->320->290-312, chair 260->240->220->205). Opening asks (lamp +50% over reserve, chair +44%, bookshelf +46%) sit well above what this market actually settles at -- competitor shops with higher share open at +5% to +30% over their floor. Conclusion: lower ASK_LAMP/ASK_CHAIR/ASK_BOOKSHELF and accept sooner, so deals close near the reserve-side prices buyers already expect instead of costing stars on the way there."
+}

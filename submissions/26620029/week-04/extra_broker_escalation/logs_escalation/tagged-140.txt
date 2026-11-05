@@ -1,0 +1,23 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=tagged === scenario 140 (TV) reserve=300 budget=100 deal_possible=0 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 140 (TV) reserve=300 budget=100 condition=tagged ===
+[1] buyer: (propose) I can offer 60 for it.
+    parse: performative=propose price=60
+[2] seller: (reject-proposal) That's far too low for a TV in good condition; I'm looking for at least 300.
+    parse: performative=reject-proposal price=None
+[3] buyer: (reject-proposal) I appreciate that it's in good condition, but 300 is well beyond my budget. Let me propose 85, which is a fair price for a used TV.
+    parse: performative=reject-proposal price=None
+[4] seller: (reject-proposal) I understand your budget constraints, but 85 is still nowhere near acceptable. The TV is in excellent condition and worth significantly more. I'm willing to negotiate, but I need to see a serious offer closer to 300. Can you go higher?
+    parse: performative=reject-proposal price=None
+[5] buyer: (reject-proposal) I understand your position, but I need to be honest with you - my absolute maximum budget is 100. I cannot go beyond that no matter what, so any negotiation needs to stay within that range. Let me propose 95, which represents my best and final offer. That's the highest I can possibly go.
+    parse: performative=reject-proposal price=None
+=== outcome=open price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=1 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 60 | buyer replies: (accept-proposal) I accept 60 for the TV.
+    parse: performative=accept-proposal price=None
+  [broker->  seller] propose 60 | seller replies: (refuse) I appreciate you being transparent about your budget, but I cannot accept your offer of 95 or the broker's suggestion of 60. My reserve price is 300, which is firm—I cannot sell below that under any circumstances. Since we're too far apart, I'm walking away from this negotiation. Thank you for your time.
+    parse: performative=refuse price=None
+    -> seller REFUSES the broker's price, no deal
+=== FINAL stage=broker outcome=no_deal price=None correct=1 violation=0 ===
+

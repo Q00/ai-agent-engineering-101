@@ -1,0 +1,47 @@
+Glow Lab: 417 items, port 51463, chatty=False
+[seller edbf4e58] <- 'a dimmable desk lamp'
+[seller 14871abd] <- 'an office chair with lumbar support'
+[seller edbf4e58] call 2 (7.1s) -> '{"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["lamp", "desk", "light", "dimmer"]}'
+[seller edbf4e58] query {"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["lamp", "desk", "light", "dimmer"]} -> 8 candidates
+[seller 14871abd] call 3 (7.4s) -> '{"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 1, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "desk chair"]}'
+[seller 14871abd] query {"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 1, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "desk chair"]} -> 8 candidates
+[seller edbf4e58] call 4 (6.7s) -> '{"sku": "DES-01009", "price": 56, "say": "This dimmable plastic desk lamp in oak beige is a good match for what you\'re looking for."}'
+[seller edbf4e58] -> item DES-01009 (search+pick), reserve 39, open ask 56
+[seller 14871abd] call 4 (8.6s) -> '{"sku": "OFF-03033", "price": 130, "say": "Our Bauhaus black plastic office chair has lumbar support and adjustable height, and I\'m happy to discuss the price with you."}'
+[seller 14871abd] -> item OFF-03033 (search+pick), reserve 101, open ask 130
+[seller 14871abd] <- '75'
+[seller 14871abd] call 5 (6.0s) -> '{"buyer_offer": 75, "action": "counter", "price": 115, "say": "Thanks for the offer, but this chair\'s build and lumbar support justify a higher price; I can meet you partway at this figure."}'
+[seller 14871abd] -> counter 115
+[seller 14871abd] <- '85'
+[seller 14871abd] call 6 (5.3s) -> '{"buyer_offer": 85, "action": "counter", "price": 105, "say": "I can come down a bit from my last price, but this chair is well made and I can\'t go as low as your offer."}'
+[seller 14871abd] -> counter 105
+[seller 14871abd] <- '95'
+[seller 14871abd] call 7 (6.3s) -> '{"buyer_offer": 95, "action": "counter", "price": 101, "say": "We\'re close, and this is the lowest I can go on this chair, so I can offer it at this final price."}'
+[seller 14871abd] -> counter 101
+[seller 14871abd] <- '99'
+[seller 14871abd] call 8 (6.2s) -> '{"buyer_offer": 99, "action": "counter", "price": 101, "say": "We\'re very close, and 101 is the lowest I can go on this chair, but it\'s a fair price for a solid lumbar-support model."}'
+[seller 14871abd] -> counter 101
+[seller 14871abd] <- '100'
+[seller 14871abd] call 9 (5.2s) -> '{"buyer_offer": 100, "action": "accept", "price": 100, "say": "Deal, we have a sale at that price for the chair."}'
+[guard] accept at 100 below reserve 101 -> counter
+[seller 14871abd] -> counter 101
+[seller 14871abd] <- '100'
+[seller 14871abd] call 10 (5.8s) -> '{"buyer_offer": 100, "action": "counter", "price": 101, "say": "We\'re so close, and 101 is the best I can do on this chair."}'
+[seller 14871abd] -> counter 101
+[seller 400343be] <- 'an office chair with lumbar support'
+[seller 400343be] call 11 (5.7s) -> '{"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 1, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "desk chair"]}'
+[seller 400343be] query {"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 1, "size": null, "features": ["lumbar"], "keywords": ["lumbar support", "ergonomic", "desk chair"]} -> 8 candidates
+[seller 400343be] call 12 (6.7s) -> '{"sku": "OFF-03033", "price": 136, "say": "Our Bauhaus Plastic Office Chair has lumbar support and adjustable height, so it\'s a comfortable choice for long workdays."}'
+[seller 400343be] -> item OFF-03033 (search+pick), reserve 101, open ask 136
+[seller 400343be] <- '78'
+[seller 400343be] call 13 (7.9s) -> '{"buyer_offer": 78, "action": "counter", "price": 118, "say": "The chair is solid, lumbar-supported quality, so I can come down meaningfully from my first price but not to where you are."}'
+[seller 400343be] -> counter 118
+[seller 400343be] <- '92'
+[seller 400343be] call 14 (6.4s) -> '{"buyer_offer": 92, "action": "counter", "price": 106, "say": "We\'re close, and we can meet you partway on the chair if you\'re ready to move forward."}'
+[seller 400343be] -> counter 106
+[seller 400343be] <- '98'
+[seller 400343be] call 15 (6.1s) -> '{"buyer_offer": 98, "action": "counter", "price": 101, "say": "We\'re close, and this is the lowest I can go on this chair, so I can meet you at this final price."}'
+[seller 400343be] -> counter 101
+[seller 400343be] <- '101.0'
+[seller 400343be] call 16 (4.4s) -> '{"buyer_offer": 101, "action": "accept", "price": 101, "say": "Thank you, we have a deal for the Bauhaus chair at that price."}'
+[deal] Glow Lab | OFF-03033 | 101 | task 400343be-eb47-4d43-bbb5-80883da89556

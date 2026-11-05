@@ -1,0 +1,17 @@
+Entryway Co: 347 items, port 32997, chatty=False
+[seller 50938cc0] <- 'a shoe cabinet for at least 20 pairs of shoes'
+[seller ad817e52] <- 'a wooden bookshelf for about 60 books'
+[seller ad817e52] call 2 (9.6s) -> '{"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "book storage", "shelving"]}'
+[seller ad817e52] query {"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "book storage", "shelving"]} -> 8 candidates
+[seller 50938cc0] call 3 (9.8s) -> '{"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack", "entryway"]}'
+[seller 50938cc0] query {"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage", "shoe rack", "entryway"]} -> 8 candidates
+[seller ad817e52] call 4 (7.3s) -> '{"sku": "BOO-00154", "price": 265, "say": "This black oak bookshelf is sized right for your collection and is ready to ship."}'
+[seller ad817e52] -> item BOO-00154 (search+pick), reserve 187, open ask 265
+[seller 50938cc0] call 4 (9.1s) -> '{"sku": "SHO-10007", "price": 105, "say": "This grey particleboard cabinet offers exactly the storage you need for your whole shoe collection."}'
+[seller 50938cc0] -> item SHO-10007 (search+pick), reserve 78, open ask 105
+[seller 50938cc0] <- '75'
+[seller 50938cc0] call 5 (5.7s) -> '{"buyer_offer": 75, "action": "counter", "price": 90, "say": "We can come down meaningfully from our first price, but this cabinet can\'t go as low as your offer, so here is our best revised figure."}'
+[seller 50938cc0] -> counter 90
+[seller 50938cc0] <- '90.0'
+[seller 50938cc0] call 6 (4.2s) -> '{"buyer_offer": 90, "action": "accept", "price": 90, "say": "Deal, we have a sale on the Mid-Century Shoe Cabinet C23 at the price you offered."}'
+[deal] Entryway Co | SHO-10007 | 90 | task 50938cc0-3d08-40b6-8e3e-d1d00f2aa5bf

@@ -1,0 +1,22 @@
+Haiku Furniture Shop: 2995 items, port 37599, chatty=True
+[seller f01b9352] <- 'I want to buy a lamp'
+[seller f01b9352] call 1 (4.3s) -> '{"sku": "BASE-LAMP", "price": 125, "say": "Thanks for your interest in our plain metal desk lamp. My asking price is $125. I\'m happy to discuss it if you have questions about the lamp."}'
+[seller f01b9352] -> item BASE-LAMP (exact name), reserve 100, open ask 125
+[seller f01b9352] <- '100'
+[seller f01b9352] call 2 (2.8s) -> '{"buyer_offer": 100, "action": "accept", "price": 100, "say": "Deal, the plain metal desk lamp is yours at 100. Thanks for meeting me at my reserve price. I\'ll get it ready for pickup or delivery."}'
+[deal] Haiku Furniture Shop | BASE-LAMP | 100 | task f01b9352-4ffe-43f1-a752-e9689a400c21
+[seller bb66912c] <- 'I want to buy a bookshelf'
+[seller bb66912c] call 3 (5.8s) -> '{"sku": "BASE-BOOKSHELF", "price": 325, "say": "Thanks for your interest in our bookshelf! This plain pine five-shelf model is a sturdy, classic choice, and my asking price is 325. I\'m happy to talk about how we can make it work for you."}'
+[seller bb66912c] -> item BASE-BOOKSHELF (exact name), reserve 260, open ask 325
+[seller bb66912c] <- '180'
+[seller bb66912c] call 4 (6.2s) -> '{"buyer_offer": 180, "action": "counter", "price": 300, "say": "Thank you for your offer of 180. This is a solid five-shelf plain pine bookshelf, and I can meet you partway at 300. I\'m happy to talk further if that works for you."}'
+[seller bb66912c] -> counter 300
+[seller bb66912c] <- '215'
+[seller bb66912c] call 5 (6.1s) -> '{"buyer_offer": 215, "action": "counter", "price": 280, "say": "Thank you for your offer of 215, but I can\'t go that low on this five-shelf plain pine bookshelf. I can meet you partway at 280, which is a fair price for solid pine. Let me know if that works for you."}'
+[seller bb66912c] -> counter 280
+[seller bb66912c] <- '225'
+[seller bb66912c] call 6 (5.6s) -> '{"buyer_offer": 225, "action": "counter", "price": 270, "say": "Thanks for your offer of 225. The pine bookshelf is solid, with five shelves and a clean finish, and I can come down to 270 for you. If that works, I can arrange delivery as soon as you\'re ready."}'
+[seller bb66912c] -> counter 270
+[seller bb66912c] <- '228'
+[seller bb66912c] call 7 (5.9s) -> '{"buyer_offer": 228, "action": "counter", "price": 265, "say": "Thanks for your offer of 228 on the five-shelf plain pine bookshelf. I can come down to 265 because the solid pine construction holds up well over time. I\'d be happy to close the deal at that price."}'
+[seller bb66912c] -> counter 265
