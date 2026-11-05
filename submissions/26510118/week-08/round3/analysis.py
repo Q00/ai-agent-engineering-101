@@ -162,8 +162,8 @@ def board_snapshot(now: float, get_json) -> str:
         line["player"] = {"total": me_p.get("total"), "place": place(players, me_p, "total")}
     if me_s:
         big = [s for s in shops if (s.get("reviews") or 0) >= 100]
-        line["shop"] = dict({k: me_s.get(k) for k in ("all", "deals", "revenue", "profit", "stars", "reviews")},
-                            **{f"place_{k}": place(shops, me_s, k) for k in ("all", "deals", "revenue", "profit", "stars")},
+        line["shop"] = dict({k: me_s.get(k) for k in ("all", "deals", "revenue", "profit", "book", "stars", "reviews")},
+                            **{f"place_{k}": place(shops, me_s, k) for k in ("all", "deals", "revenue", "profit", "book", "stars")},
                             place_stars_100=place(big, me_s, "stars") if me_s in big else None)
     if me_b:
         line["buyer"] = dict({k: me_b.get(k) for k in ("all", "surplus", "deals", "forum", "posts")},

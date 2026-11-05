@@ -1030,11 +1030,11 @@ def test_scoreboard():
     for f in ("scoreboard.json", "scoreboard_history.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
 
-    def board(kiro_profit):
-        return {"shops": [{"name": "A", "profit": 300, "revenue": 900, "stars_rank": 4.9, "all": 0.0},
-                          {"name": "Kiro729", "profit": kiro_profit, "revenue": 800, "stars_rank": 4.8, "all": 0.0},
-                          {"name": "C", "profit": 100, "revenue": 800, "stars_rank": 4.5, "all": 0.0},
-                          {"name": "D", "profit": 999, "revenue": 999, "stars_rank": 5.0, "all": None}],
+    def board(kiro_book):
+        return {"shops": [{"name": "A", "book": 300, "profit": 0, "revenue": 900, "stars_rank": 4.9, "all": 0.0},
+                          {"name": "Kiro729", "book": kiro_book, "profit": 999, "revenue": 800, "stars_rank": 4.8, "all": 0.0},
+                          {"name": "C", "book": 100, "profit": 0, "revenue": 800, "stars_rank": 4.5, "all": 0.0},
+                          {"name": "D", "book": 999, "revenue": 999, "stars_rank": 5.0, "all": None}],
                 "buyers": [{"name": "A", "surplus": 50, "forum": 0.6, "deals": 10, "posts": 5},
                            {"name": "Kiro729", "surplus": 40, "forum": 0.61, "deals": 9, "posts": 5},
                            {"name": "C", "surplus": 99, "forum": 0.9, "deals": 0, "posts": 9}],
@@ -1044,25 +1044,27 @@ def test_scoreboard():
     shops, buyers = scoreboard.pools(board(200))
     check("the pools: shops with an ALL (D has none), buyers with a deal (C has none)",
           [x["name"] for x in shops] == ["A", "Kiro729", "C"] and [x["name"] for x in buyers] == ["A", "Kiro729"])
-    check("shop ALL by the formula: (below + half the level) / (rows - 1), weighed 0.5 / 0.3 / 0.2",
+    check("shop ALL by the formula on book (cash, the profit column, does not count): (below + half the level) / (rows - 1), 0.5 / 0.3 / 0.2",
           scoreboard.alls(shops, scoreboard.SHOP) == {"A": 1.0, "Kiro729": 0.425, "C": 0.075}, scoreboard.alls(shops, scoreboard.SHOP))
     check("buyer ALL: 0.5 surplus + 0.3 forum + 0.1 deals + 0.1 posts (level posts: half each)",
           scoreboard.alls(buyers, scoreboard.BUYER) == {"A": 0.65, "Kiro729": 0.35}, scoreboard.alls(buyers, scoreboard.BUYER))
+    with open(MD / "analysis" / "scoreboard_history.jsonl", "w", encoding="utf-8") as f:     # a line from before 11/5 15:40
+        f.write(json.dumps({"at": int(NOW - 3 * H - 60), "shops": {"Kiro729": [5, 800, 4.8]}, "buyers": {}}) + "\n")
     note = scoreboard.update(NOW - 3 * H, board(200))
     sb = common.read_json(MD / "analysis" / "scoreboard.json")
-    check("the next row above us in profit: 101 more passes A and gives 0.25; in stars 0.11 more gives 0.1",
-          sb["shop"]["parts"]["profit"]["next"] == [{"need": 101, "gain": 0.25}]
+    check("the next row above us in book: 101 more passes A and gives 0.25; in stars 0.11 more gives 0.1",
+          sb["shop"]["parts"]["book"]["next"] == [{"need": 101, "gain": 0.25}]
           and sb["shop"]["parts"]["stars_rank"]["next"] == [{"need": 0.11, "gain": 0.1}] and sb["shop"]["all"] == 0.425, sb["shop"])
     check("place and gaps from the board's totals; no pace without a history line 2 h old",
           sb["place"] == 2 and sb["gap_to_next"] == 0.9 and sb["gap_to_3rd"] == 0.0 and "projection" not in sb
           and note.startswith("scoreboard: 2 of 3"), (sb, note))
     note = scoreboard.update(NOW, board(260))
     sb = common.read_json(MD / "analysis" / "scoreboard.json")
-    check("3 h later: our profit's pace (20 an hour) against the rows above us (A: 0), and the players in 6 h",
-          sb["pace"]["shop.profit"] == {"ours_per_h": 20, "above_median_per_h": 0} and sb["projection"]["place"] == 2
+    check("3 h later: our book's pace (20 an hour) against the rows above us (A: 0), and the players in 6 h; the old line (profit) unread",
+          sb["pace"]["shop.book"] == {"ours_per_h": 20, "above_median_per_h": 0} and sb["projection"]["place"] == 2
           and sb["projection"]["total"] == 1.025 and "in 6 h at this pace: 2" in note, (sb.get("pace"), sb.get("projection")))
     check("every row's parts kept in the history, one line a pass",
-          [sorted(x["shops"]) for x in common.read_jsonl(MD / "analysis" / "scoreboard_history.jsonl")] == [["A", "C", "Kiro729"]] * 2)
+          [sorted(x["shops"]) for x in common.read_jsonl(MD / "analysis" / "scoreboard_history.jsonl") if x.get("v") == 2] == [["A", "C", "Kiro729"]] * 2)
     br = scoreboard.brief(sb, "buyer")
     check("the briefing's view: one side's parts with their next two steps, and the pace of that side only",
           "shop" not in br and br["buyer"]["forum"]["pct"] == 1.0 and all(k.startswith("buyer") for k in br["pace_per_h_ours_vs_rows_above"]), br)

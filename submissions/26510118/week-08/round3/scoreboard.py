@@ -5,12 +5,15 @@ next few rows above us in it would take and give; and where the players would st
 shop and buyer kept its pace of the last RATE_WINDOW. The integrated analysis reads it in its briefing, and
 linewatch reads our stars from it.
 
-The formula, checked against the live board on 11/4 at 22:50 KST (51 shops, 48 buyers, every ALL to 0.0000):
+The formula, checked against the live board on 11/5 at 15:30 KST (53 shops, 49 buyers, every ALL within 0.0005):
     a part's percentile = (rows below + half of the other rows level with it) / (rows - 1)
-    shop ALL  = 0.5 profit + 0.3 revenue + 0.2 stars_rank, among shops with an ALL (a deal or a purchase)
+    shop ALL  = 0.5 book + 0.3 revenue + 0.2 stars_rank, among shops with an ALL (a deal or a purchase)
     buyer ALL = 0.5 surplus + 0.3 forum + 0.1 deals + 0.1 posts, among buyers with a deal
     a player's total = its shop ALL + its buyer ALL
-(stars_rank is the board's ranking figure, not the stars it shows; the rules in /agent.md say "cash" for profit.)
+(stars_rank is the board's ranking figure. Book = cash + what the unsold units cost (/agent.md: "ALL uses book");
+the board's profit column is cash. Until 11/5 15:40 this used profit: 0.154 off the board's ALL by then, as the
+shops' stocks grew; on 11/4 22:50 the two still ranked the same. History lines before then carry profit and are
+not read for paces: a line carries "v": 2.)
 So passing one more row in a part is worth its weight / (rows - 1) whatever the part: what differs is the cost.
 
 Each line of analysis/scoreboard_history.jsonl keeps every row's parts, for the paces.
@@ -22,9 +25,9 @@ import statistics as st
 import common
 import forum
 
-SHOP = {"profit": 0.5, "revenue": 0.3, "stars_rank": 0.2}
+SHOP = {"book": 0.5, "revenue": 0.3, "stars_rank": 0.2}
 BUYER = {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
-UNIT = {"profit": 1, "revenue": 1, "surplus": 1, "deals": 1, "posts": 1, "stars_rank": 0.01, "forum": 0.001}
+UNIT = {"book": 1, "revenue": 1, "surplus": 1, "deals": 1, "posts": 1, "stars_rank": 0.01, "forum": 0.001}
 LEVEL = ("stars_rank", "forum")      # averages: no pace is projected for them
 AHEAD = 3                            # rows above us priced in each part
 RATE_WINDOW = 3 * 3600               # the pace: the change since the history line nearest this long ago
@@ -32,6 +35,7 @@ RATE_MIN = 2 * 3600                  # ...at least this long ago
 PROJECT = 6 * 3600
 NEIGHBOURS = 5                       # the rows just above us whose median pace ours is set against
 TAIL = 600_000                       # bytes of the history read back (about 3 h of lines at ~5 KB each, 20 min apart, with room)
+VERSION = 2                          # history lines on book (11/5 15:40); older ones (profit) are not read
 
 
 def folder():
@@ -100,7 +104,7 @@ def history_since(now: float) -> dict | None:
             rows.append(json.loads(line))
         except ValueError:                                  # the first line of the tail is usually cut
             continue
-    old = [r for r in rows if isinstance(r, dict) and now - (r.get("at") or 0) >= RATE_MIN]
+    old = [r for r in rows if isinstance(r, dict) and r.get("v") == VERSION and now - (r.get("at") or 0) >= RATE_MIN]
     return min(old, key=lambda r: abs(now - r["at"] - RATE_WINDOW)) if old else None
 
 
@@ -134,7 +138,7 @@ def update(now: float, board: dict) -> str:
     folder().mkdir(parents=True, exist_ok=True)
     then = history_since(now)
     with open(folder() / "scoreboard_history.jsonl", "a", encoding="utf-8") as f:
-        f.write(json.dumps({"at": int(now), **compact(shops, buyers)}, ensure_ascii=False, separators=(",", ":")) + "\n")
+        f.write(json.dumps({"at": int(now), "v": VERSION, **compact(shops, buyers)}, ensure_ascii=False, separators=(",", ":")) + "\n")
     if not me or not players:
         return "scoreboard: our player is not on the board"
     totals = {p["player"]: num(p, "total") for p in players}
