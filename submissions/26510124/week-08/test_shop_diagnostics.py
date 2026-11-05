@@ -15,6 +15,52 @@ NOW = 1800000000
 
 
 class ShopDiagnosticsTests(unittest.TestCase):
+    def test_empty_plan_is_not_a_purchase_and_invalid_legacy_plan_stays_unknown(self):
+        self.events([
+            {"time": NOW - 30, "round": 3, "status": "planned", "buy": []},
+            {"time": NOW - 20, "round": 3, "status": "planned", "buy": [{"sku": "G12345678", "qty": 1}]},
+            {"time": NOW - 15, "round": 3, "status": "planned"},
+            {"time": NOW - 10, "round": 3, "status": "planned", "buy": [{"sku": "PRIVATE", "qty": True}]},
+            {"time": NOW - 5, "round": 3, "status": "already_planned", "buy": []},
+            {"time": NOW - 5, "round": 2, "status": "planned", "buy": []},
+        ], "logs/restock-decisions.jsonl")
+        report = self.report()
+        self.assertEqual(report["restock"]["plans_by_contents"], {"empty": 1, "nonempty": 1, "unknown_or_invalid": 2})
+        output = diagnostics.format_report(report)
+        self.assertIn("not confirmed purchases", output)
+        self.assertNotIn("PRIVATE", output)
+
+    def test_expired_evidence_and_repeated_timeout_remain_visible_without_private_errors(self):
+        self.json(".market/market-evidence.json", {"schema": 1, "round": 3,
+            "updated_at": NOW - 4500, "events": [], "market_stock": {
+                "round": 3, "observed_at": NOW - 4500, "shop_names_by_url": {"PRIVATE": "PRIVATE"}}})
+        self.events([
+            {"time": NOW - seconds, "round": 3, "status": "unavailable", "error": "ReadTimeout"}
+            for seconds in (2500, 1500, 500)
+        ] + [
+            {"time": NOW - 4000, "round": 3, "status": "unavailable", "error": "ReadTimeout"},
+            {"time": NOW - 10, "round": 2, "status": "unavailable", "error": "ReadTimeout"},
+            {"time": NOW - 5, "round": 3, "status": "unavailable", "error": "PRIVATE-ERROR", "detail": "PRIVATE-TOKEN"},
+        ], "logs/market-evidence.jsonl")
+        report = self.report(hours=1)
+        evidence = report["restock"]["market_evidence"]
+        self.assertEqual(evidence["cache_status"], "stale_or_clock_changed")
+        self.assertEqual(evidence["cache_age_seconds"], 4500)
+        self.assertEqual(evidence["refresh_failures_by_error"], {"ReadTimeout": 3, "other_error": 1})
+        self.assertFalse(evidence["stock_snapshot_fresh"])
+        self.assertEqual(evidence["named_shop_urls"], 0)
+        self.assertNotIn("PRIVATE", diagnostics.format_report(report))
+
+    def test_missing_evidence_is_distinct_from_fresh_empty_sample_and_missing_identity(self):
+        self.assertEqual(self.report()["restock"]["market_evidence"]["cache_status"], "missing")
+        self.json(".market/market-evidence.json", {"schema": 1, "round": 3,
+            "updated_at": NOW, "events": [], "market_stock": {"round": 3, "observed_at": NOW}})
+        evidence = self.report()["restock"]["market_evidence"]
+        self.assertEqual(evidence["cache_status"], "fresh")
+        self.assertEqual(evidence["cached_fact_rows"], 0)
+        self.assertTrue(evidence["stock_snapshot_fresh"])
+        self.assertEqual(evidence["named_shop_urls"], 0)
+
     def test_unknown_round_restock_errors_are_visible_without_private_detail(self):
         self.events([
             {"time": NOW - 10, "status": "refused", "error": "ValueError", "detail": "PRIVATE-TOKEN"},

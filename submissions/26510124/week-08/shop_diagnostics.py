@@ -25,6 +25,9 @@ REASONS = {"stock_unavailable", "stock_reserved", "inventory_unavailable", "pric
            "invalid_request", "negotiation_expired", "buyer_cancelled", "capacity_busy", "internal_error"}
 TERMINAL = {"receipt_issued", "rejected", "stock_unavailable", "error", "expired", "cancelled"}
 LEASE_STATUSES = ("issued", "checkout", "settling", "uncertain", "completed", "revoked")
+EVIDENCE_ERRORS = {"ReadTimeout", "ConnectTimeout", "WriteTimeout", "PoolTimeout", "ConnectError",
+                   "ReadError", "RemoteProtocolError", "HTTPStatusError", "ValueError", "OSError",
+                   "JSONDecodeError"}
 
 
 def number(value):
@@ -170,6 +173,37 @@ def supply_schedule(inv, meta, rnd, now):
     return result
 
 
+def evidence_summary(state, source, polls, rnd, now, since):
+    """Report availability separately from demand; all ages use local log time."""
+    age = now - state["updated_at"] if number(state.get("updated_at")) else None
+    if source["status"] != "read":
+        status = source["status"]
+    elif state.get("round") != rnd:
+        status = "other_round"
+    elif state.get("schema") != 1 or not isinstance(state.get("events"), list) or age is None:
+        status = "invalid"
+    else:
+        status = "fresh" if -5 <= age <= 3600 else "stale_or_clock_changed"
+    failures = Counter()
+    rows = [row for row in polls if recent(row, rnd, now, since)]
+    for row in rows:
+        if row.get("status") == "unavailable":
+            error = row.get("error")
+            failures[error if isinstance(error, str) and error in EVIDENCE_ERRORS else "other_error"] += 1
+    latest = max(rows, key=lambda row: row["time"], default={})
+    stock = state.get("market_stock")
+    stock_fresh = (isinstance(stock, dict) and stock.get("round") == rnd
+                   and number(stock.get("observed_at")) and -5 <= now - stock["observed_at"] <= 3600)
+    names = stock.get("shop_names_by_url") if stock_fresh else None
+    return {"cache_status": status, "cache_age_seconds": round(age, 1) if age is not None else None,
+            "cached_fact_rows": len(state["events"]) if isinstance(state.get("events"), list) else None,
+            "stock_snapshot_fresh": stock_fresh,
+            "named_shop_urls": sum(isinstance(v, str) and bool(v) for v in names.values()) if isinstance(names, dict) else 0,
+            "refresh_failures_by_error": dict(failures),
+            "last_refresh_attempt_age_seconds": round(now - latest["time"], 1) if latest else None,
+            "note": "Missing/stale evidence is not zero market demand. Counts cover bounded local records."}
+
+
 def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
     """Return only aggregate observations; never update cache or live state."""
     root, now = Path(root), time.time() if now is None else now
@@ -193,6 +227,7 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
         since = max(resets)
     events, sources["seller_events"] = read_tail(root / "logs/inventory-seller-events.jsonl", now)
     restock, sources["restock_decisions"] = read_tail(root / "logs/restock-decisions.jsonl", now)
+    evidence_polls, sources["market_evidence_polls"] = read_tail(root / "logs/market-evidence.jsonl", now)
     kit, sources["kit_log"] = read_tail(root / "logs/market-kit.log", now, jsonl=False)
     tasks, excluded = {}, Counter()
     for row in events:
@@ -270,6 +305,7 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
         else:
             counts["open_or_missing_end"] += 1
     statuses, restock_unknown, unknown_refusals = Counter(), 0, Counter()
+    plans = Counter({"nonempty": 0, "empty": 0, "unknown_or_invalid": 0})
     for row in restock:
         if type(row.get("round")) is not int and number(row.get("time")) and since <= row["time"] <= now:
             restock_unknown += 1
@@ -288,6 +324,16 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
                                "already_planned", "cooldown", "unavailable"}:
                 status = "other_status"
             statuses[status] += 1
+            if status == "planned":
+                buy = row.get("buy")
+                if isinstance(buy, list) and not buy:
+                    plans["empty"] += 1
+                elif (isinstance(buy, list) and len(buy) <= 10 and all(isinstance(b, dict)
+                      and identifier(b.get("sku")) and type(b.get("qty")) is int
+                      and 1 <= b["qty"] <= 20 for b in buy)):
+                    plans["nonempty"] += 1
+                else:
+                    plans["unknown_or_invalid"] += 1
     return {"schema": 1, "generated_at": now, "round": rnd, "since": since, "requested_hours": hours,
             "tasks": dict(counts), "terminal_reasons": dict(reasons),
             "checkout": {"status": "UNCONFIRMED" if counts["receipt_unconfirmed"] else "no_unconfirmed_receipt_in_sample",
@@ -299,6 +345,8 @@ def build_report(root=ROOT, *, hours=24, rnd=None, now=None):
             "receipt_lifecycle": lifecycle_summary(states["receipt-leases"], states["receipt-reservations"],
                                                     sources["receipt-leases"], now),
             "restock": {"decisions_by_status": dict(statuses), "excluded_unknown_round": restock_unknown,
+                        "plans_by_contents": dict(plans),
+                        "market_evidence": evidence_summary(public, sources["market-evidence"], evidence_polls, rnd, now, since),
                         "unknown_round_refusals_by_error": dict(unknown_refusals),
                         "schedule": supply_schedule(inv, sources["inventory"], rnd, clock["now"]),
                         "clock": {key: clock.get(key) for key in ("status", "offset_seconds", "uncertainty_seconds")},
@@ -331,6 +379,8 @@ def format_report(report):
         lines.append(f"Passed deadlines (issued/checkout): {overdue if overdue is not None else 'unknown'}; release is not confirmed by this read.")
         lines.append("Lifecycle limit: " + lifecycle["note"])
     lines.append(f"Restock decision rows: {json.dumps(report['restock']['decisions_by_status'], sort_keys=True)}")
+    lines.append("Restock plans by contents (not confirmed purchases): " + json.dumps(report["restock"].get("plans_by_contents", {}), sort_keys=True))
+    lines.append("Market evidence: " + json.dumps(report["restock"].get("market_evidence", {}), sort_keys=True))
     lines.append("Restock rows without a known round: " + str(report["restock"]["excluded_unknown_round"])
                  + "; refusals by error: " + json.dumps(report["restock"].get("unknown_round_refusals_by_error", {}), sort_keys=True)
                  + " (within time window; excluded from current-round counts).")
