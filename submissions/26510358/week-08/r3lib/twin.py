@@ -139,16 +139,105 @@ def open_readonly(db_path):
     return c
 
 
-SNAPSHOT_STATE_TABLES = ("shops", "shop_stock")     # latest-state upserts: kept in the plan snapshot
+SNAPSHOT_STATE_TABLES = ("shops", "shop_stock")     # latest-state upserts: ts = last sync, not an event time
+EPOCH_RANGE = (1e9, 1e10)                           # a meta number in this range is read as a wall-clock time
 
 
-def snapshot_db(db_path, dest=None, end=None):
+def _is_epoch(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and EPOCH_RANGE[0] < v < EPOCH_RANGE[1]
+
+
+def _cut_meta(c, end):
+    """meta (k, v JSON) has no ts column. Cut what holds its own time: a dict value with a numeric "ts" (unmet_*,
+    restock_adjust) is deleted when ts > end; a number under a *_at / *_kick key (a wall-clock stamp) is deleted
+    when > end; a dict whose values are all epoch numbers (report_subjects) loses its entries > end. Every other
+    key (counters and offsets such as explore_spent, ledger_seq, payments_offset) keeps its value at copy time:
+    it cannot be cut. Returns the status dict."""
+    deleted, trimmed, kept = [], [], []
+    for k, v in c.execute("SELECT k, v FROM meta ORDER BY k").fetchall():
+        try:
+            val = json.loads(v)
+        except (TypeError, ValueError):
+            kept.append(k)
+            continue
+        if isinstance(val, dict) and _is_epoch(val.get("ts")):
+            if val["ts"] > end:
+                deleted.append(k)
+        elif _is_epoch(val) and (k.endswith("_at") or k.endswith("_kick")):
+            if val > end:
+                deleted.append(k)
+        elif isinstance(val, dict) and val and all(_is_epoch(x) for x in val.values()):
+            keep = {a: b for a, b in val.items() if b <= end}
+            if keep != val:
+                trimmed.append(k)
+                c.execute("UPDATE meta SET v=? WHERE k=?", (json.dumps(keep), k))
+        else:
+            kept.append(k)
+    c.executemany("DELETE FROM meta WHERE k=?", [(k,) for k in deleted])
+    by_prefix = {}
+    for k in deleted:
+        pre = k.split("_o-")[0] + "_*" if "_o-" in k else k
+        by_prefix[pre] = by_prefix.get(pre, 0) + 1
+    return {"status": "partly cut", "deleted_keys": dict(sorted(by_prefix.items())), "trimmed_keys": trimmed,
+            "uncut_keys": kept,
+            "why": "no ts column; keys with their own time are cut, the uncut keys are counters or offsets whose "
+                   "value at --end is not stored anywhere (value at copy time, a known look-ahead)"}
+
+
+def cut_to_end(c, end):
+    """Remove from the open copy `c` every row and value after `end`, table by table. Returns
+    {table: {"status": "cut" | "partly cut" | "not cut", ...}}: the report records what could not be cut.
+
+    - tables with a ts column: rows with ts > end are deleted ("cut"); for purchases, broken_at > end is also
+      set back to NULL. Column updates after end that leave no time (purchases paid/ledger/reason, forum
+      likes/dislikes/score/voted/signals, members uses) cannot be undone: "partly cut", listed.
+    - shop_stock: sync_shops deletes the table and writes every row again at each sync, ts = sync time. Rows with
+      ts > end are deleted ("cut"), so a copy made after the first sync after end has no competitor stock: the
+      stock at end is not stored anywhere (plan then sees 0 competitors per category).
+    - shops: identity rows, rewritten at each sync. Competitor rows with ts > end are deleted; our own rows
+      (mine=1, needed by my_shop_urls) are kept with ts set to end ("partly cut").
+    - meta: see _cut_meta.
+    - sqlite_* tables: SQLite internals (AUTOINCREMENT counters), not data, not cut."""
+    out = {}
+    tables = [r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
+    for t in tables:
+        cols = {r[1] for r in c.execute(f'PRAGMA table_info("{t}")')}
+        if t.startswith("sqlite_"):
+            out[t] = {"status": "not cut", "why": "SQLite internal table (AUTOINCREMENT counters), no data"}
+        elif t == "meta":
+            out[t] = _cut_meta(c, end)
+        elif t == "shops":
+            n = c.execute("DELETE FROM shops WHERE ts > ? AND COALESCE(mine, 0) = 0", (end,)).rowcount
+            m = c.execute("UPDATE shops SET ts = ? WHERE ts > ? AND mine = 1", (end, end)).rowcount
+            out[t] = {"status": "partly cut", "deleted": n, "own_rows_kept": m,
+                      "why": "rewritten at each sync (ts = last sync); our own identity rows are kept (ts set to "
+                             "--end) because plan needs my_shop_urls; names/owners as at copy time"}
+        elif t == "shop_stock":
+            n = c.execute("DELETE FROM shop_stock WHERE ts > ?", (end,)).rowcount
+            out[t] = {"status": "cut", "deleted": n, "rows_left": c.execute("SELECT COUNT(*) FROM shop_stock").fetchone()[0],
+                      "why": "rewritten at each sync; competitor stock at --end is not stored anywhere, so after "
+                             "the first sync past --end no rows are left (plan sees 0 competitor shops)"}
+        elif "ts" in cols:
+            n = c.execute(f'DELETE FROM "{t}" WHERE ts > ?', (end,)).rowcount
+            later = {"purchases": ["paid", "ledger", "reason"], "members": ["uses"],
+                     "forum": ["likes", "dislikes", "score", "voted", "signals"]}.get(t)
+            if t == "purchases" and "broken_at" in cols:
+                c.execute("UPDATE purchases SET broken_at = NULL WHERE broken_at > ?", (end,))
+            out[t] = {"status": "partly cut" if later else "cut", "deleted": n}
+            if later:
+                out[t]["uncut_columns"] = [x for x in later if x in cols]
+                out[t]["why"] = "rows cut by ts; later in-place updates of these columns leave no time"
+        else:
+            out[t] = {"status": "not cut", "why": "no ts column"}
+    return out
+
+
+def snapshot_db(db_path, dest=None, end=None, cut_report=None):
     """Consistent copy of the live DB (sqlite backup API from a read-only connection) for code that needs a
-    Memory object (restock_r3.plan). With `end`, every event row with ts > end is deleted from the copy (no
-    look-ahead past the window). shops and shop_stock (SNAPSHOT_STATE_TABLES) are latest-state upserts whose ts is
-    the last sync, not an event time: deleting them would drop every shop's stock, so they are kept as they are
-    (a known, small look-ahead: the latest competitor stock). Returns the copy's path; the caller deletes it (DefaultPlan does). If the copy fails, a temp
-    dir made here is removed before the error is raised."""
+    Memory object (restock_r3.plan). With `end`, cut_to_end removes every row and value after end from the copy
+    (no look-ahead past the window), and its per-table status goes into the dict `cut_report` when given. Returns
+    the copy's path; the caller deletes it (DefaultPlan does). If the copy fails, a temp dir made here is removed
+    before the error is raised."""
     made = dest is None
     dest_dir = Path(dest or tempfile.mkdtemp(prefix="twin-"))
     path = dest_dir / "memory.sqlite"
@@ -158,13 +247,10 @@ def snapshot_db(db_path, dest=None, end=None):
         try:
             src.backup(dst)
             if end is not None:
-                tables = [r[0] for r in dst.execute("SELECT name FROM sqlite_master WHERE type='table'")]
-                for t in tables:
-                    if t in SNAPSHOT_STATE_TABLES:
-                        continue
-                    if any(c[1] == "ts" for c in dst.execute(f'PRAGMA table_info("{t}")')):
-                        dst.execute(f'DELETE FROM "{t}" WHERE ts > ?', (end,))
+                rep = cut_to_end(dst, end)
                 dst.commit()
+                if cut_report is not None:
+                    cut_report.update(rep)
         finally:
             dst.close()
             src.close()
@@ -845,10 +931,9 @@ def effective_plan_policy(policy):
 
 
 def plan_copy(w, dest_dir):
-    """The DB file restock_r3.plan works on, in dest_dir. With w.plan_db (a pinned copy made once by
-    shadow_gate.pinned_db) it is a byte copy of that file, so the tables without an event time (shop_stock,
-    shops, meta) are the same on every rerun. Else a fresh snapshot_db of the live DB (those tables as they are
-    now)."""
+    """The DB file restock_r3.plan works on, in dest_dir. With w.plan_db (a pinned copy made once with
+    shadow_gate.pinned_db --build-pin) it is a byte copy of that file, so every table is the same on every rerun.
+    Else a fresh snapshot_db of the live DB, cut to w.end (the uncut parts as they are now)."""
     if w.plan_db:
         path = Path(dest_dir) / "memory.sqlite"
         shutil.copyfile(w.plan_db, path)

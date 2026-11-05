@@ -101,10 +101,10 @@ def test_pinned_inputs_are_written_once_and_reused(tmp_path, monkeypatch):
     mon = _monitor(tmp_path, end)
     monkeypatch.setattr(market, "_CATALOG", CAT, raising=False)
     monkeypatch.setattr(market, "read_json", lambda name, default=None, md=None: [{"sku": "G1", "n": 1}])
-    a = shadow_gate.pinned_inputs(end, mon, tmp_path / "out")
+    a = shadow_gate.pinned_inputs(end, mon, tmp_path / "out", build=True)
     assert not a["reused"] and len(a["inventory"]["units"]) == 4 and a["inventory_ts"] == end - 600
     monkeypatch.setattr(market, "read_json", lambda name, default=None, md=None: [{"sku": "G2", "n": 7}])
-    b = shadow_gate.pinned_inputs(end, mon, tmp_path / "out")
+    b = shadow_gate.pinned_inputs(end, mon, tmp_path / "out")      # reuse needs no --build-pin
     assert b["reused"] and b["demand_rows"] == a["demand_rows"] == [{"sku": "G1", "n": 1}]
     assert not b["catalog_changed"]
 
@@ -123,7 +123,7 @@ def test_gate_main_twice_gives_the_same_results(tmp_path, clock_plan, monkeypatc
     for wall in (1.0e9, 2.0e9):
         monkeypatch.setattr(time, "time", lambda wall=wall: wall)
         shadow_gate.main(["--db", str(db), "--end", str(end), "--hours", "6", "--restock", "plan",
-                          "--candidate", str(cand), "--monitor-dir", str(mon), "--out", str(out)])
+                          "--candidate", str(cand), "--monitor-dir", str(mon), "--out", str(out), "--pin-dir", str(out), "--build-pin"])
         reports.append(json.loads(sorted(out.glob("gate-*.json"))[-1].read_text(encoding="utf-8")))
         for p in out.glob("gate-*.json"):
             p.unlink()                              # write_report names files by wall time; keep one at a time
@@ -153,17 +153,22 @@ def _state(db):
         c.close()
 
 
-def test_pinned_db_keeps_live_state_tables_from_the_first_run(tmp_path):
+def test_pinned_db_is_built_once_and_cut_to_end(tmp_path):
     """QA rerun 2026-11-05 16:15: same --end and pinned inputs, live deals 722 -> 724. shop_stock, shops and meta
-    have no event time; snapshot_db keeps them as they are at copy time, so they moved between runs."""
+    have no event time. The pin is built once (build=True) and reused; shop_stock synced after end is cut; a meta
+    value without its own time (unmet:G1 = 3) cannot be cut and keeps its build-time value."""
     db = _db(tmp_path)
     end = float(int(T0) // 60 * 60)
     _competitor_stock(db, 5, 3)
-    a, reused_a = shadow_gate.pinned_db(end, db, tmp_path / "out")
+    with pytest.raises(shadow_gate.PinMissing):
+        shadow_gate.pinned_db(end, db, tmp_path / "out")
+    a, reused_a = shadow_gate.pinned_db(end, db, tmp_path / "out", build=True)
     _competitor_stock(db, 0, 9)                     # the live market moves on
     b, reused_b = shadow_gate.pinned_db(end, db, tmp_path / "out")
     assert (reused_a, reused_b) == (False, True) and a == b
-    assert _state(b) == ([(5,)], [("3",)], 0)       # first-run state; no event row after end
+    assert _state(b) == ([], [("3",)], 0)           # stock synced after end cut; uncuttable meta from the build
+    cut = json.loads(shadow_gate.cut_path(b).read_text(encoding="utf-8"))["tables"]
+    assert cut["shop_stock"]["status"] == "cut" and "unmet:G1" in cut["meta"]["uncut_keys"]
     assert _state(db)[:2] == ([(0,)], [("9",)])     # live DB untouched by the pin
     assert not [p for p in (tmp_path / "out").iterdir() if p.name.startswith("twin-")]   # temp dir removed
 
@@ -172,15 +177,15 @@ def test_plan_copy_uses_the_pinned_db(tmp_path):
     db = _db(tmp_path)
     end = float(int(T0) // 60 * 60)
     _competitor_stock(db, 5, 3)
-    pin, _ = shadow_gate.pinned_db(end, db, tmp_path / "out")
+    pin, _ = shadow_gate.pinned_db(end, db, tmp_path / "out", build=True)
     _competitor_stock(db, 0, 9)
     w = types.SimpleNamespace(plan_db=pin, db_path=db, end=end)
     (tmp_path / "a").mkdir()
     got = twin.plan_copy(w, tmp_path / "a")
-    assert got.read_bytes() == pin.read_bytes() and _state(got)[:2] == ([(5,)], [("3",)])
-    w.plan_db = None                                # no pin: a fresh snapshot of the live state
+    assert got.read_bytes() == pin.read_bytes() and _state(got)[:2] == ([], [("3",)])
+    w.plan_db = None                                # no pin: a fresh snapshot of the live state, cut to end
     (tmp_path / "b").mkdir()
-    assert _state(twin.plan_copy(w, tmp_path / "b"))[:2] == ([(0,)], [("9",)])
+    assert _state(twin.plan_copy(w, tmp_path / "b"))[:2] == ([], [("9",)])
 
 
 def test_gate_main_ignores_live_competitor_stock_changes(tmp_path, monkeypatch):
@@ -206,7 +211,7 @@ def test_gate_main_ignores_live_competitor_stock_changes(tmp_path, monkeypatch):
     for qty in (1, 2):
         _competitor_stock(db, qty, qty)
         shadow_gate.main(["--db", str(db), "--end", str(end), "--hours", "6", "--restock", "plan",
-                          "--candidate", str(cand), "--monitor-dir", str(mon), "--out", str(out)])
+                          "--candidate", str(cand), "--monitor-dir", str(mon), "--out", str(out), "--pin-dir", str(out), "--build-pin"])
         reports.append(json.loads(sorted(out.glob("gate-*.json"))[-1].read_text(encoding="utf-8")))
         for p in out.glob("gate-*.json"):
             p.unlink()

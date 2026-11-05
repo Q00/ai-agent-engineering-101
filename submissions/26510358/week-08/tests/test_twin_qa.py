@@ -85,9 +85,9 @@ def test_snapshot_has_no_rows_after_window_end(w, tmp_path):
     path = twin.snapshot_db(w.db_path, tmp_path / "snap", end=w.end)
     c = sqlite3.connect(path)
     try:
-        assert c.execute("SELECT COUNT(*) FROM shop_stock").fetchone()[0] == 1          # kept (documented)
+        assert c.execute("SELECT COUNT(*) FROM shop_stock").fetchone()[0] == 0          # cut too (MO 16:57)
         for (t,) in c.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
-            if t not in twin.SNAPSHOT_STATE_TABLES and any(col[1] == "ts" for col in c.execute(f'PRAGMA table_info("{t}")')):
+            if any(col[1] == "ts" for col in c.execute(f'PRAGMA table_info("{t}")')):
                 assert c.execute(f'SELECT COUNT(*) FROM "{t}" WHERE ts > ?', (w.end,)).fetchone()[0] == 0, t
         assert c.execute("SELECT COUNT(*) FROM settles").fetchone()[0] == 5          # the later row is gone
     finally:
