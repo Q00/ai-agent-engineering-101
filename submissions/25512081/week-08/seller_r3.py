@@ -214,7 +214,16 @@ def find_unit(text, taken=()):
                 ok = [u for u in fresh if match(u)]
                 return (min(ok, key=lambda u: u["expires_at"] or math.inf) if ok
                         else max(fit, key=lambda u: u["expires_at"] or 0))
-            return min(fit, key=lambda u: (u["grade"], u["supplied_at"]))
+            # a unit whose floor (cost x 1.05) is over the most it may open at (max_share) can only sell above the
+            # market, so it goes behind the others (Nov 5 10:27-12:17: 4 surge-cost grade A Zinus Q mattresses
+            # G1515d951, cost 380-464k, opened at list 423810 vs a market median 0.825; 15 deals, 3 settled, while 11
+            # B/C units of it, cost 161-353k, were never offered and sat 11-15 h)
+            cap = {}
+            for u in fit:
+                if u["sku"] not in cap:
+                    cap[u["sku"]] = u["list_price"] * max_share(u)
+            return min(fit, key=lambda u: (math.ceil(u["cost"] * (1 + FLOOR_MARGIN)) > cap[u["sku"]],
+                                           u["grade"], u["supplied_at"]))
     return None
 
 
