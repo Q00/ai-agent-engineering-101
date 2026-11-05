@@ -29,7 +29,10 @@
                 "upvotes_per_run": 12, "count_only_if": {"our_settled_deals_at_least": 5, "author_owner_differs": true}},
       "rollback": {"within_h": 2, "baseline_h_before_switch": 2, "relative_ratio": 1.2,
                    "rule": "our dislikes per post after switch-on > 1.2 x our dislikes per post in the 2 h before",
-                   "any_hidden": true, "any_http_429": true}
+                   "compare": "strictly greater: a rate equal to 1.2 x baseline does not roll back",
+                   "no_baseline": "no post of ours in the 2 h before switch-on: no dislike limit; only a hidden post or an HTTP 429 rolls back",
+                   "any_hidden": true, "any_http_429": true,
+                   "code": "r3lib/forum_lever2.py rollback_check / rollback_limit / dislike_baseline; r3lib/config.py LEVER2_ROLLBACK_H, LEVER2_ROLLBACK_BASELINE_H, LEVER2_ROLLBACK_RATIO, LEVER2_ROLLBACK_ON_HIDDEN, LEVER2_ROLLBACK_ON_429 (test_forum_lever2.test_rollback_json_matches_code)"}
     }
   }
 }
