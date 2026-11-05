@@ -11,12 +11,12 @@ from kernel import common as c
 
 MAX_MESSAGE = 600
 MAX_CANDIDATES = 6
+MAX_OFFERS = 8
 
 SAFE = {
     "seller.open": {"action": "decline", "message": "Sorry, we can't take this order."},
     "seller.respond": {"action": "reject", "message": "No deal."},
     "buyer.plan": {"candidates": []},
-    "buyer.respond": {"action": "walk"},
 }
 
 SCHEMAS = {
@@ -30,9 +30,11 @@ SCHEMAS = {
     ),
     "buyer.plan": (
         '{"candidates": [{"shop": "<상황의 shops 중 하나의 id>", "sku": "<그 가게 offers의 sku>", '
-        '"max_pay": <양의 정수, 예산 이하>}, ...]} (최대 6개, 빈 목록이면 사지 않음)'
+        '"offers": [<보낼 제안 가격, 양의 정수, 보낼 순서대로, 1~8개, 각각 max_pay 이하>], '
+        '"max_pay": <양의 정수, 예산 이하, 가게가 부른 값이 이 이하이면 커널이 바로 받음>}, ...]} '
+        ', "accept": {"cert": <true|false>, "min_hours_left": <0 이상 수>, "grades": [<"A"|"B"|"C">], "warranty_hours": <0 이상 수>}} '
+        "(후보는 최대 6개, 목록 순서대로 시도, 빈 목록이면 사지 않음. accept는 선택이며 넣은 항목만 키트가 결제 전에 확인하고 어긋나면 돈을 내지 않음)"
     ),
-    "buyer.respond": '{"action": "offer" | "accept" | "walk", "price": <양의 정수, 예산 이하, offer와 accept일 때 필수>}',
 }
 
 
@@ -127,25 +129,49 @@ def _buyer_plan(raw, ctx, errors):
         if budget is not None and max_pay > budget:
             errors.append(f"candidate {i}: max_pay above budget")
             continue
-        out.append({"shop": shop, "sku": sku, "max_pay": max_pay})
-    return {"candidates": out}
+        offers = cand.get("offers")
+        if not isinstance(offers, list) or not 1 <= len(offers) <= MAX_OFFERS:
+            errors.append(f"candidate {i}: offers must be a list of 1 to {MAX_OFFERS}")
+            continue
+        if not all(_pos_int(o) for o in offers):
+            errors.append(f"candidate {i}: every offer must be a positive int")
+            continue
+        if any(o > max_pay for o in offers):
+            errors.append(f"candidate {i}: offer above max_pay")
+            continue
+        out.append({"shop": shop, "sku": sku, "offers": list(offers), "max_pay": max_pay})
+    result = {"candidates": out}
+    if "accept" in raw:
+        acc = _accept(raw["accept"], errors)
+        if acc:
+            result["accept"] = acc
+    return result
 
 
-def _buyer_respond(raw, ctx, errors):
-    action = raw.get("action")
-    if action not in ("offer", "accept", "walk"):
-        errors.append(f"action must be offer, accept or walk, got {action!r}")
+def _accept(a, errors):
+    """Checkout conditions the kit enforces before paying (official agent.md). Shape only; values are the model's."""
+    if not isinstance(a, dict):
+        errors.append("accept must be an object")
         return {}
-    out = {"action": action}
-    if action in ("offer", "accept"):
-        budget = _budget(ctx, errors)
-        price = raw.get("price")
-        if not _pos_int(price):
-            errors.append("price must be a positive int")
-        elif budget is not None and price > budget:
-            errors.append("price above budget")
+    out = {}
+    for k, v in a.items():
+        if k == "cert":
+            if not isinstance(v, bool):
+                errors.append("accept.cert must be true or false")
+            else:
+                out[k] = v
+        elif k in ("min_hours_left", "warranty_hours"):
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0:
+                errors.append(f"accept.{k} must be a number >= 0")
+            else:
+                out[k] = v
+        elif k == "grades":
+            if not isinstance(v, list) or not v or any(g not in ("A", "B", "C") for g in v):
+                errors.append("accept.grades must be a non-empty list of A, B, C")
+            else:
+                out[k] = sorted(set(v))
         else:
-            out["price"] = price
+            errors.append(f"accept.{k} is not a known condition")
     return out
 
 
@@ -153,7 +179,6 @@ _CHECKS = {
     "seller.open": _seller_open,
     "seller.respond": _seller_respond,
     "buyer.plan": _buyer_plan,
-    "buyer.respond": _buyer_respond,
 }
 
 

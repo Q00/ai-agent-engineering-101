@@ -3,7 +3,7 @@
     python3 -m kernel.replay --root <data root> --agent seller|buyer --n 10 --out <jsonl> [--dry]
 
 Reads only the data root; writes only --out (the trajectory). --dry swaps the model for a stub that answers with the
-do-nothing decision, so the whole path runs with no model call.
+do-nothing decision (buyer: a one-candidate plan in the buyer.plan format), so the whole path runs with no model call.
 """
 
 import argparse
@@ -15,7 +15,7 @@ import statistics
 
 from kernel import common as c
 from kernel import rules
-from kernel.agent import Agent
+from kernel.agent import Agent, parse_last_object
 from kernel.trajectory import Trajectory
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -39,16 +39,20 @@ _WORD = re.compile(r"[^\W_]{2,}")
 
 
 class DryTerra:
-    """Stand-in model: answers with SAFE for the decision kind named in the prompt."""
+    """Stand-in model: answers with SAFE for the decision kind named in the prompt. For buyer.plan it answers with
+    a format-valid plan (first shop, its first SKU, one offer of 1, max_pay 1) so the plan path is exercised."""
 
     def complete(self, prompt, *, agent, timeout_s, effort="medium"):
         tail = prompt.split("## 지금 할 결정", 1)[-1]
         kind = next((k for k in rules.SAFE if k in tail), "")
-        return (
-            "```json\n"
-            + json.dumps(rules.SAFE.get(kind, {}), ensure_ascii=False)
-            + "\n```"
-        )
+        answer = rules.SAFE.get(kind, {})
+        if kind == "buyer.plan":
+            sit = parse_last_object(tail.split("## 상황", 1)[-1])
+            shop = next((s for s in sit.get("shops") or [] if s.get("offers")), None)
+            if shop:
+                cand = {"shop": shop["id"], "sku": shop["offers"][0]["sku"], "offers": [1], "max_pay": 1}
+                answer = {"candidates": [cand]}
+        return "```json\n" + json.dumps(answer, ensure_ascii=False) + "\n```"
 
 
 def _tokens(text):
@@ -113,6 +117,12 @@ def seller_cases(root, n, secrets):
 def buyer_case(root, login):
     order = c.load_json(os.path.join(root, ".market/order.json"), {}) or {}
     shops = c.load_json(os.path.join(root, ".market/shops.json"), []) or []
+    return buyer_situation(order, shops, _catalog(root), login)
+
+
+def buyer_situation(order, shops, catalog, login):
+    """(kind, situation, ctx) for one order. Our own shop is dropped; shops get short ids s1..sN (urls stay in ctx).
+    Each offer carries the catalog list price (the buyer's value of a good unit)."""
     sit_shops, ctx_shops, ids = [], [], {}
     for s in shops:
         if not isinstance(s, dict) or not s.get("url") or c.is_mine(s, login):
@@ -124,6 +134,10 @@ def buyer_case(root, login):
             for o in s.get("offers") or []
             if isinstance(o, dict)
         ]
+        for o in offers:
+            item = catalog.get(o["sku"]) if isinstance(o["sku"], str) else None
+            item = item if isinstance(item, dict) else {}
+            o["list_price"] = item.get("list_price", item.get("price"))
         sit_shops.append(
             {
                 "id": sid,

@@ -19,6 +19,10 @@ UNITS = [
 SHOPS = [{"url": "https://a.example/a2a", "offers": [{"sku": "BED1"}]}]
 
 
+def _cand(**kw):
+    return dict({"shop": SHOPS[0]["url"], "sku": "BED1", "offers": [300, 400], "max_pay": 500}, **kw)
+
+
 # ---------------------------------------------------------------- rules
 @pytest.mark.parametrize(
     "kind,raw,ctx,ok",
@@ -66,49 +70,46 @@ SHOPS = [{"url": "https://a.example/a2a", "offers": [{"sku": "BED1"}]}]
         ("seller.respond", {"action": "reject"}, {}, True),
         ("seller.respond", {"action": "counter"}, {}, False),
         ("seller.respond", {"action": "accept", "price": False}, {}, False),
+        ("buyer.plan", {"candidates": [_cand()]}, {"budget": 500, "shops": SHOPS}, True),
         (
             "buyer.plan",
-            {"candidates": [{"shop": SHOPS[0]["url"], "sku": "BED1", "max_pay": 500}]},
+            {"candidates": [_cand(offers=[400, 300, 500])]},
             {"budget": 500, "shops": SHOPS},
             True,
-        ),
+        ),  # order of offers is the model's
         ("buyer.plan", {"candidates": []}, {"budget": 500, "shops": SHOPS}, True),
         (
             "buyer.plan",
-            {"candidates": [{"shop": SHOPS[0]["url"], "sku": "BED1", "max_pay": 501}]},
+            {"candidates": [_cand(max_pay=501)]},
             {"budget": 500, "shops": SHOPS},
             False,
         ),
         (
             "buyer.plan",
-            {
-                "candidates": [
-                    {"shop": "https://z.example", "sku": "BED1", "max_pay": 5}
-                ]
-            },
+            {"candidates": [_cand(shop="https://z.example")]},
             {"budget": 500, "shops": SHOPS},
             False,
         ),
         (
             "buyer.plan",
-            {"candidates": [{"shop": SHOPS[0]["url"], "sku": "SOFA1", "max_pay": 5}]},
+            {"candidates": [_cand(sku="SOFA1")]},
             {"budget": 500, "shops": SHOPS},
             False,
         ),
+        ("buyer.plan", {"candidates": [_cand()] * 7}, {"budget": 500, "shops": SHOPS}, False),
         (
             "buyer.plan",
-            {
-                "candidates": [{"shop": SHOPS[0]["url"], "sku": "BED1", "max_pay": 5}]
-                * 7
-            },
-            {"budget": 500, "shops": SHOPS},
+            {"candidates": [_cand(offers=[300, 501])]},
+            {"budget": 600, "shops": SHOPS},
             False,
-        ),
-        ("buyer.respond", {"action": "offer", "price": 500}, {"budget": 500}, True),
-        ("buyer.respond", {"action": "accept", "price": 501}, {"budget": 500}, False),
-        ("buyer.respond", {"action": "offer", "price": True}, {"budget": 500}, False),
-        ("buyer.respond", {"action": "walk"}, {"budget": 500}, True),
-        ("buyer.respond", {"action": "haggle"}, {"budget": 500}, False),
+        ),  # offer above max_pay
+        ("buyer.plan", {"candidates": [_cand(offers=[True])]}, {"budget": 500, "shops": SHOPS}, False),
+        ("buyer.plan", {"candidates": [_cand(max_pay=True)]}, {"budget": 500, "shops": SHOPS}, False),
+        ("buyer.plan", {"candidates": [_cand(offers=[300.0])]}, {"budget": 500, "shops": SHOPS}, False),
+        ("buyer.plan", {"candidates": [_cand(offers=[])]}, {"budget": 500, "shops": SHOPS}, False),
+        ("buyer.plan", {"candidates": [_cand(offers=[1] * 9)]}, {"budget": 500, "shops": SHOPS}, False),
+        ("buyer.plan", {"candidates": [_cand(offers=None)]}, {"budget": 500, "shops": SHOPS}, False),
+        ("buyer.plan", {"candidates": [_cand(), _cand(max_pay=501)]}, {"budget": 500, "shops": SHOPS}, False),
     ],
 )
 def test_validate(kind, raw, ctx, ok):
@@ -368,7 +369,7 @@ def test_agent_script_route_and_buyer_shop_ids(tmp_path):
     (h / "scripts").mkdir()
     (h / "scripts/plan.py").write_text(
         "import json,sys\nx=json.load(sys.stdin)\n"
-        'print(json.dumps({"candidates": [{"shop": "s1", "sku": "BED1", "max_pay": x["ctx"]["budget"]}]}))\n'
+        'print(json.dumps({"candidates": [{"shop": "s1", "sku": "BED1", "offers": [1], "max_pay": x["ctx"]["budget"]}]}))\n'
     )
     (h / "routing.json").write_text(
         json.dumps({"buyer.plan": {"by": "script", "script": "plan.py"}})
@@ -378,7 +379,9 @@ def test_agent_script_route_and_buyer_shop_ids(tmp_path):
     d, meta = a.decide("buyer.plan", {"order": {}}, ctx)
     assert meta["route"] == "script"
     assert d == {
-        "candidates": [{"shop": SHOPS[0]["url"], "sku": "BED1", "max_pay": 500}]
+        "candidates": [
+            {"shop": SHOPS[0]["url"], "sku": "BED1", "offers": [1], "max_pay": 500}
+        ]
     }
 
 
@@ -486,6 +489,7 @@ def test_buyer_case_hides_urls_and_own_shop(root):
         "s1": "https://a.example/a2a"
     }
     assert ctx["budget"] == 50 and "market_pubkey" not in sit["order"]
+    assert sit["shops"][0]["offers"][0]["list_price"] == 30
 
 
 @pytest.mark.parametrize("who,n,expect", [("seller", 10, 3), ("buyer", 2, 2)])
@@ -514,6 +518,8 @@ def test_replay_dry_end_to_end(root, tmp_path, capsys, who, n, expect):
         and summary["valid"] == expect
         and summary["routes"] == {"model": expect}
     )
+    if who == "buyer":
+        assert summary["actions"] == {"candidates=1": expect}
     rows = [json.loads(x) for x in out.read_text().splitlines()]
     assert len(rows) == expect and all(r["kind"] == "decision" for r in rows)
     assert "z@q.io" not in out.read_text() and LOGIN not in out.read_text()
