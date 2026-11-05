@@ -14,7 +14,8 @@ alive() { [ -f "$P/$1.pid" ] && kill -0 "$(cat "$P/$1.pid")" 2>/dev/null; }
 launch() { # name, command...
   local n=$1; shift
   if alive "$n"; then echo "$n already running pid $(cat "$P/$n.pid")"; return; fi
-  (cd "$CODE" && setsid nohup "$@" >> "$W/a2/logs/$n.log" 2>&1 < /dev/null & echo $! > "$P/$n.pid")
+  # the child writes its own pid: setsid forks when its caller leads a process group, so $! is not the process
+  (cd "$CODE" && setsid bash -c 'echo $$ > "$0"; exec "$@"' "$P/$n.pid" "$@" >> "$W/a2/logs/$n.log" 2>&1 < /dev/null &)
   sleep 1
   alive "$n" && echo "$n started pid $(cat "$P/$n.pid")" || echo "$n FAILED to start (see a2/logs/$n.log)"
 }
