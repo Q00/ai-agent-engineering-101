@@ -334,10 +334,14 @@ def tactic_results(now, hours=24):
                 x["deals"] += 1
                 x["surplus"] += m["list_price"] - paid
                 x["shares"].append(paid / m["list_price"])
+                x["kept"] = x.get("kept", 0) + 1 - paid / m["list_price"]
     for arms in out.values():
         for x in arms.values():
             x["deal_rate"] = round(x["deals"] / x["orders"], 3) if x["orders"] else None
             x["surplus_per_order"] = round(x["surplus"] / x["orders"]) if x["orders"] else None
+            # share of list kept per order (a lost order keeps 0): free of the order-mix confound -- one big sofa in
+            # an arm swings surplus/order by 100k+, so auto_adopt decides on this (11-05)
+            x["kept_share_per_order"] = round(x.pop("kept", 0) / x["orders"], 4) if x["orders"] else None
             shares = x.pop("shares")
             x["paid_share"] = round(statistics.median(shares), 3) if shares else None
     return out
@@ -345,7 +349,7 @@ def tactic_results(now, hours=24):
 
 def auto_adopt(now=None, min_orders=40, win=1.10, lose=0.90, rate_drop=0.03):
     """The buyer unit's self-improvement loop for learned moves (HQ 11-05): a tactic on A/B is switched on for every
-    order when its arm B keeps >= 10% more surplus per order than A without losing more than 3 points of deal rate,
+    order when its arm B keeps >= 10% more of list per order than A without losing more than 3 points of deal rate,
     switched off when it keeps 10% less (or loses 5+ points of deal rate), after min_orders orders per arm. Every
     switch is logged in private/buyer_tactics.json and private/hq_decisions.md. Returns the switches made."""
     import market_buyer as mb
@@ -359,14 +363,14 @@ def auto_adopt(now=None, min_orders=40, win=1.10, lose=0.90, rate_drop=0.03):
         a, b = arms.get("A"), arms.get("B")
         if (cfg.get(name) or {}).get("mode", "ab") != "ab" or not a or not b or min(a["orders"], b["orders"]) < min_orders:
             continue
-        sa, sb = a["surplus_per_order"] or 0, b["surplus_per_order"] or 0
+        sa, sb = a["kept_share_per_order"] or 0, b["kept_share_per_order"] or 0
         if sb >= sa * win and b["deal_rate"] >= a["deal_rate"] - rate_drop:
             mode = "on"
         elif sb <= sa * lose or b["deal_rate"] < a["deal_rate"] - 0.05:
             mode = "off"
         else:
             continue
-        why = f"{name} -> {mode}: B {sb:,} vs A {sa:,} surplus/order, deal rate {b['deal_rate']} vs {a['deal_rate']}"
+        why = f"{name} -> {mode}: B {sb:.1%} vs A {sa:.1%} of list kept per order, deal rate {b['deal_rate']} vs {a['deal_rate']}"
         cfg[name] = {"mode": mode, "since": time.strftime("%m-%d %H:%M"), "why": why}
         made.append(why)
     if made:

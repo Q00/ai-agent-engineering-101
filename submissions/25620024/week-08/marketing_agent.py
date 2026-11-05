@@ -494,6 +494,13 @@ def main():
         save_guard(g)
         publish_status(g)
         print(f"[team] skipped: {why}")
+        try:                     # the code-only self-improvement loop runs every tick, model cooldown or not (11-05:
+            import mbt, buyer_team   # a 3 h usage-limit cooldown had frozen auto_adopt with a losing move on A/B)
+            mbt.analyse()
+            for w in buyer_team.auto_adopt():
+                print("[buyer self-improvement] " + w)
+        except Exception as e:
+            print(f"[self-improvement] skipped: {type(e).__name__}: {e}")
         return
     try:
         MODE["now"] = g.get("mode") or "overnight"

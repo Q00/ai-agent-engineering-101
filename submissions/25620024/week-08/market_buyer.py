@@ -881,10 +881,13 @@ def round3(a, order, shops, mem, started):
     keep, shop, offer, lp = pick["c"]
     sku = offer["sku"]
     cap, low, close_at, row = price_plan(order, pick, rows, book, adv)
-    pm, note = tactic_arm(order, "price_match"), None
+    pm, note = tactic_arm(order, "price_match2"), None
     book_low = ((book.get("prices") or {}).get(sku) or {}).get("low")
-    if pm == "B" and book_low and int(0.45 * lp) <= book_low < pick["ask"] and book_low <= cap:
-        low = int(book_low)                       # MBT TF: a price-match request took 30% off our own first ask
+    # MBT TF: a price-match request took 30% off our own first ask. v1 (09:40-11:15) set the opening TO the ledger
+    # low, which raised it whenever Enuri's target was lower: B paid 70.8% of list where used vs A 64.2% (225
+    # orders). v2 only ever lowers the opening: cite the ledger low when it is under the price we would open at.
+    if pm == "B" and book_low and int(0.45 * lp) <= book_low < low and book_low <= cap:
+        low = int(book_low)
         note = f"Price match please: {low} is the lowest settle for this item on the public ledger in the last 24 h."
     log(f"[choose] {shop['name']} {offer['name']} ({sku}): ask {pick['ask']}, list {lp}, haggle up to {cap}, "
         f"open {low}, take up to {close_at}")
@@ -952,7 +955,7 @@ def round3(a, order, shops, mem, started):
     agreed = offers[-1] if outcome == "deal" and offers else None
     remember({"ts": round(time.time(), 1), "shop": shop["name"], "item": sku, "category": order.get("item"),
               "kind": order.get("kind"), "list_price": lp, "budget": order["budget"], "rfq": rfq,
-              "warranty_ab": warranty_arm(order), "tactics": {"price_match": pm, "pm_used": bool(note)},
+              "warranty_ab": warranty_arm(order), "tactics": {"price_match2": pm, "pm_used": bool(note)},
               "enuri_first": adv["ranked"][0]["shop"] if adv else None, "enuri_target": row and row["target"],
               "enuri_walk": row and row["walk_away"], "cap": cap, "close_at": close_at,
               "first_ask": asks[0] if asks else None, "last_ask": asks[-1] if asks else None,
