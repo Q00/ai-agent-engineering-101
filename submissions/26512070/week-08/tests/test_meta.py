@@ -2,6 +2,7 @@
 dispute, night requests wait for the page, a failed seat does not stop the cycle."""
 import json
 import os
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -20,6 +21,8 @@ class MetaTest(unittest.TestCase):
         os.environ.update(HARNESS_ROOT=self.tmp.name, HARNESS_OUT=str(Path(self.tmp.name) / "out"),
                           TELEGRAM_BOT_TOKEN="", TELEGRAM_CHAT_ID="")
         atomic.write_json(Path(self.tmp.name) / "memory" / "strategy" / "active.json", strategy(10))
+        shutil.copytree(Path(__file__).resolve().parent.parent / "card", Path(self.tmp.name) / "card",
+                        ignore=shutil.ignore_patterns("strategy_v*"))     # the system card the loop reads
 
     def tearDown(self):
         for k, v in self.old.items():
@@ -34,17 +37,20 @@ class MetaTest(unittest.TestCase):
                 if analyst_fails:
                     raise RuntimeError("timeout")
                 return "buyer surplus fell"
-            if seat == "strategy":
-                return "```json\n" + json.dumps({"report": "r", "requests": [req]}) + "\n```"
+            if seat == "strategy":                    # one look-up, then the proposal (the tool loop)
+                if "your steps so far" not in prompt:
+                    return json.dumps({"thought": "check", "tool": "capability.list", "args": {"role": "buyer"}})
+                return json.dumps({"thought": "t", "tool": "meta.propose", "args": {"report": "r", "requests": [req]}})
             return json.dumps({"reviews": [{"title": req["title"], "agrees": audit_agrees, "points": ["p"],
                                             "counter": "fewer deals close"}]})
         now = 1793890000 + (hour - 1) * 3600          # 11/6 01:xx KST + hours
-        with mock.patch.object(meta, "assemble", return_value=("ctx", {})):
+        with mock.patch.object(meta, "assemble", return_value=("# the task\nctx", {})):
             return meta.cycle(now=now, call=call)
 
     def test_day_dispute(self):
         rec = self.run_cycle(hour=13, audit_agrees=False)
-        self.assertEqual(rec["steps"]["proposal"], {"ok": True, "requests": 1})
+        p = rec["steps"]["proposal"]
+        self.assertEqual((p["ok"], p["requests"], p["steps"]), (True, 1, 2))
         doc = wisdom.status(rec["requests"][0]["id"])
         self.assertEqual(doc["urgency"], "now")
         self.assertEqual(doc["dispute"]["audit"], "fewer deals close")

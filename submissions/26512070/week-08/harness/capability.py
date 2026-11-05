@@ -13,10 +13,12 @@ permitted() is what tools.registry.call checks (C3). Until ENFORCE is set it onl
 """
 import json
 import re
+from pathlib import Path
 
 from core import atomic, paths, schema
 from harness import out_dir
 
+CODE = Path(__file__).resolve().parent.parent
 ENFORCE = False          # design 20-2 T4: one day of marking first, then refusing (the user's call)
 
 # The tools each role's rules call without a model (11/4-11/5 tool records, by caller)
@@ -66,7 +68,7 @@ def numbers_read(role):
     loose = re.compile(_ALIAS + _KEY)
     keys = set()
     for f in ROLE_FILES.get(role, []):
-        p = paths.root() / f
+        p = CODE / f                                # the code, wherever the records (HARNESS_ROOT) are
         if not p.exists():
             continue
         text = p.read_text(encoding="utf-8")

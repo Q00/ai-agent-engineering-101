@@ -86,8 +86,13 @@ def samples(day, per=3):
     return out
 
 
-def assemble(now=None):
-    """The proposal context (15-1), as (text, parts) - parts keeps each block's size for the record."""
+LOOKED_UP = ("raw trajectories (samples)", "participants, as shops our buyer met (observed, 24 h)",
+             "participants, as buyers of our shop (observed, 24 h)", "format")
+
+
+def assemble(now=None, for_loop=False):
+    """The proposal context (15-1), as (text, parts) - parts keeps each block's size for the record. for_loop: the
+    proposer looks the raw trades and the participants up with its tools, so those blocks stay out."""
     now = now or time.time()
     day = time.strftime("%Y%m%d", time.localtime(now))
     rules = (atomic.read_json(rules_watch._dir() / "state.json", default=None) or {}).get("rules") or {}
@@ -133,6 +138,10 @@ def assemble(now=None):
                      "nothing is supported."),
         ("format", FORMAT),
     ]
+    if for_loop:
+        blocks = [(n, b) for n, b in blocks if n not in LOOKED_UP]
+        blocks[-1] = ("the task", blocks[-1][1] + " Look up the raw trades (trajectory.search, trajectory.get) and "
+                      "the players (participant.get) behind any claim before you end with meta.propose.")
     text = "\n\n".join(f"# {name}\n{body}" for name, body in blocks)
     return _clip(text, MAX_CHARS["proposal"]), {name: len(body) for name, body in blocks}
 
@@ -140,6 +149,7 @@ def assemble(now=None):
 def cycle(now=None, call=None, dry=False):
     """One cycle. call(seat, prompt) -> text (agents.model.call by default). Returns the cycle record."""
     now = now or time.time()
+    own_models = call is None
     if call is None:
         from agents import model
         call = lambda seat, prompt: model.call(seat, prompt, timeout=240)   # noqa: E731
@@ -156,10 +166,25 @@ def cycle(now=None, call=None, dry=False):
     except Exception as e:
         analysis = ""
         rec["steps"]["analysis"] = {"ok": False, "error": f"{type(e).__name__}: {e}"[:200]}
+    # the proposal: the strategy seat in the tool loop - it looks the records up, meta.propose checks the result (16-2)
+    from agents import loop
+    from tools.registry import Ctx
+    lctx, _ = assemble(now, for_loop=True)
+    situation = lctx + (f"\n\n# the analyst's reading (hypothesis)\n{analysis}" if analysis else "")
+    mc = None if own_models else (lambda prompt, system, timeout: call("strategy", f"{system}\n\n{prompt}"))
     try:
-        prop = _json(call("strategy", ctx + (f"\n\n# the analyst's reading (hypothesis)\n{analysis}" if analysis else "")))
-        reqs = (prop.get("requests") or [])[:MAX_REQUESTS]
-        rec["report"], rec["steps"]["proposal"] = prop.get("report"), {"ok": True, "requests": len(reqs)}
+        lc = Ctx(caller="meta")
+        try:
+            d, trace = loop.decide("meta", lc, situation, deadline=now + 1200 if own_models else None, model_call=mc)
+        finally:
+            if lc._writer is not None:
+                lc._writer.close()
+        reqs = ((d or {}).get("requests") or [])[:MAX_REQUESTS]
+        rec["report"] = (d or {}).get("report")
+        rec["steps"]["proposal"] = {"ok": d is not None, "steps": len(trace), "requests": len(reqs),
+                                    "looked_up": [t["answer"][:80] for t in trace if t.get("answer")][:8]}
+        if d is None:
+            rec["steps"]["proposal"]["last"] = (trace[-1]["observation"] if trace else "no step")[:300]
     except Exception as e:
         rec["steps"]["proposal"] = {"ok": False, "error": f"{type(e).__name__}: {e}"[:200]}
         reqs = []

@@ -18,7 +18,7 @@ import time
 
 from agents import model as models
 from core import card
-from tools import act, calc, check, evaluate, query, record, search  # noqa: F401  (registers the tools)
+from tools import act, calc, check, evaluate, harness_tools, query, record, search  # noqa: F401  (registers the tools)
 from tools.registry import TOOLS, call
 
 # HARNESS.md 3.4: what each L1 role sees (look-ups) and how it can end its turn (finals).
@@ -55,6 +55,11 @@ ROLES = {
                           "memory.profile", "me.counterpart",
                           "rec.stance", "memory.card_section"],
                  "final": ["rec.brief"], "steps": 8, "seat": "strategy", "reader": "strategist", "timeout": 240},
+    # design 16-2, 20: the meta-harness looks the raw records up itself and ends with a checked proposal
+    "meta": {"look": ["trajectory.get", "trajectory.search", "summary.hourly", "score.class", "report.metrics",
+                      "participant.get", "knowledge.get", "capability.list", "experiment.result", "wisdom.get",
+                      "approval.status", "model.usage", "market.selling", "market.sku"],
+             "final": ["meta.propose"], "steps": 8, "seat": "strategy", "reader": "strategist", "timeout": 240},
     "audit": {"look": ["eval.score", "eval.experiment", "eval.unit_economics", "eval.losses", "eval.audits",
                        "memory.summary", "memory.search", "memory.raw", "market.selling", "market.sku",
                        "memory.card_section"],
