@@ -628,7 +628,7 @@ def test_analysts():
     system, user = m.seen[0]["messages"][:2]
     check("the fixed instructions go first as a system message (what counts, the fields and what they do, a step of 0.05), "
           "the briefing as the user's",
-          system["role"] == "system" and user["role"] == "user" and "0.5 profit + 0.3 revenue" in system["content"]
+          system["role"] == "system" and user["role"] == "user" and "0.5 book (cash + what the unsold units cost" in system["content"]
           and "20 settled deals" in system["content"] and "- price_adjust: added to the first ask" in system["content"]
           and "(-0.1 to 0.15)" in system["content"] and "at most 0.05 per decision" in system["content"]
           and "[1 The business now]" in user["content"] and "[1 The business now]" not in system["content"])
@@ -707,6 +707,20 @@ def test_analysts():
     log = common.read_jsonl(MD / "analysis" / "changes.jsonl")
     check("every decision is kept with its numbers", [x["applied"] for x in log] == [False, False, False, True, True]
           and all("seller_margin" in x["metrics"] for x in log))
+    snap = {f.name: f.read_bytes() for f in (MD / "analysis").iterdir() if f.is_file()}   # this check leaves no trace
+    analysts.person_set("seller", "price_adjust", 0.03, "a person's call", t2 + 12 * H + 5)
+    t3 = t2 + 12 * H + 60
+    analysts.role_analysis("seller", Model(answer({"report": "p", "proposals": SELLER_PROPOSALS[:1]})), t3)
+    m = Model(answer({"adopt": [f"seller-{t3}-0"], "revert": ["seller.price_adjust"]}))
+    e = analysts.integrated(m, t3 + 10)
+    check("a field a person set: in force at once, shown first in the briefing, neither adopted nor reverted",
+          common.rules()["seller"]["price_adjust"] == 0.03 and e["changes"] == [] and e["reverted"] == []
+          and e["held_by_person"] == ["seller.price_adjust"] and "set_by_person_not_yours_to_change" in told(m.seen[0]), e)
+    for f in (MD / "analysis").iterdir():
+        if f.is_file() and f.name not in snap:
+            f.unlink()
+    for name, data in snap.items():
+        (MD / "analysis" / name).write_bytes(data)
     (ROOT / "strategy.json").write_text('{"phase": "explore"}', encoding="utf-8")
 
 

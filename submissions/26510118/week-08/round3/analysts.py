@@ -57,10 +57,33 @@ FOR_PERSON = 2
 OLD_WINDOW_HOURS = 12    # what a decision's metrics covered when they carry no "hours" (before 11/4 night)
 REVERT_BACK = 2          # a change from either of the last two decisions can be reverted (6 h now; was the last one, 12 h)
 CHANGE_TEXT = 140        # a change as the briefing shows it (lists of 15 names make long lines)
+# Fields a person set (11/5 15:40): analysis/person_rules.json {"role.field": {"value", "at", "why"}}. The integrated
+# analysis neither adopts a proposal for one nor reverts it, and its briefing lists them first. (On 11/5 at 09:45
+# it raised buyer.max_ratio 0.90 -> 0.95, which a person had set to 0.90 at 03:30 with nothing on record.)
+PERSON_FILE = "person_rules.json"
 
 
 def folder():
     return common.MARKET_DIR / "analysis"
+
+
+def person_rules() -> dict:
+    got = common.read_json(folder() / PERSON_FILE, {})
+    return got if isinstance(got, dict) else {}
+
+
+def person_set(role: str, field: str, value, why: str, now: float | None = None) -> dict:
+    """A person sets a field: in force at once (active_rules.json) and kept from the integrated analysis."""
+    if field not in FIELDS.get(role, {}):
+        raise ValueError(f"no field {role}.{field}")
+    now = now or time.time()
+    rules = common.read_json(folder() / "active_rules.json", {}) or {}
+    rules.setdefault(role, {})[field] = value
+    common.write_json(folder() / "active_rules.json", rules)
+    book = person_rules()
+    book[f"{role}.{field}"] = {"value": value, "at": int(now), "why": why}
+    common.write_json(folder() / PERSON_FILE, book)
+    return book
 
 
 def known(kind: str) -> set:
@@ -204,8 +227,9 @@ MARKET = """Kiro729 is one shop and one buyer in a market of AI agents (Round 3,
 Shops buy stock with credits and sell it over A2A, haggling; a buyer's order names a category, the
 acceptable products and a budget only that buyer sees, and it is worth the list price of what was
 bought if it was useful. Only settled deals count.
-What counts: the shop is ranked by 0.5 profit + 0.3 revenue + 0.2 review stars (stars come only from
-reviews of paid deals); the buyer by 0.5 surplus (the list price of a useful purchase - the price paid +
+What counts: the shop is ranked by 0.5 book (cash + what the unsold units cost: stock held is not a loss,
+a unit sold under its cost is) + 0.3 revenue + 0.2 review stars (stars come only from reviews of paid
+deals); the buyer by 0.5 surplus (the list price of a useful purchase - the price paid +
 refunds) + 0.3 forum votes on its posts + 0.1 deals + 0.1 posts it wrote.
 Each must reach 20 settled deals, so until then a change that saves a little money but loses deals is a
 bad trade.
@@ -414,7 +438,9 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
                   "reverted": [f"{x['role']}.{x['field']} back to {x['back_to']}"[:CHANGE_TEXT] for x in c.get("reverted") or []],
                   "metrics_then": dict({"hours": OLD_WINDOW_HOURS}, **(c.get("metrics") or {}))} for c in changes[-REVERT_BACK:]]
     book = common.read_json(folder() / "post_votes.json", {}) or {}
-    brief = context.form("integrated", now, {"metrics_3h_now": m,                     # most needed first: a part over its
+    person = person_rules()
+    brief = context.form("integrated", now, {"set_by_person_not_yours_to_change": {k: v.get("value") for k, v in person.items()} or "(none)",
+                                             "metrics_3h_now": m,                     # most needed first: a part over its
                                              "scoreboard": scoreboard.brief(scoreboard.read(now)) or "(not in yet)",
                                              "last_decisions": decisions,             # limit drops the blocks after it
                                              "buyer_tries_3h": tries(now),
@@ -430,12 +456,14 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
                                  room.run if room else tools.run, tools.INTEGRATED_CALLS if room else 0, chat_fn)
     decision = harness.first_json(text) or {}
     new = json.loads(json.dumps(current))
-    done, reverted = [], []
+    done, reverted, held = [], [], []
     applied_before = [x for c in changes[-REVERT_BACK:] if c.get("applied") for x in c.get("changes") or []][::-1]
     for key in decision.get("revert") or []:
         role, _, field = str(key).partition(".")
         prev = next((c for c in applied_before if c["role"] == role and c["field"] == field), None)
-        if prev and (new.get(role) or {}).get(field) == prev["to"]:    # the newest change of it, still in force
+        if f"{role}.{field}" in person:
+            held.append(f"{role}.{field}")
+        elif prev and (new.get(role) or {}).get(field) == prev["to"]:    # the newest change of it, still in force
             new[role][field] = prev["from"]
             reverted.append({"role": role, "field": field, "back_to": prev["from"]})
     by_id = {p["id"]: p for p in proposals}
@@ -443,6 +471,9 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
     for pid in decision.get("adopt") or []:
         p = by_id.get(pid)
         if not p or (p["role"], p["field"]) in taken:
+            continue
+        if f"{p['role']}.{p['field']}" in person:
+            held.append(f"{p['role']}.{p['field']}")
             continue
         taken.add((p["role"], p["field"]))
         old = new[p["role"]][p["field"]]
@@ -463,7 +494,8 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
                 f.write(json.dumps({"at": int(now), **x}, ensure_ascii=False) + "\n")
     entry = {"at": int(now), "phase": common.strategy()["phase"], "applied": focus, "model": harness.MODEL_STRONG,
              "tools": "data room (MCP)" if room else "none",
-             "decided": bool(decision), "changes": done, "reverted": reverted, "insights": kept, "for_person": asks,
+             "decided": bool(decision), "changes": done, "reverted": reverted, "held_by_person": sorted(set(held)),
+             "insights": kept, "for_person": asks,
              "note": str(decision.get("note") or ("(no answer from the model)" if not decision else ""))[:400],
              "metrics": m}
     with open(folder() / "changes.jsonl", "a", encoding="utf-8") as f:
