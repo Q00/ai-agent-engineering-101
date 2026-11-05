@@ -2,9 +2,9 @@
 import hashlib
 import json
 import time
-from datetime import datetime
 
 from buyer_policy import buying_terms
+from payment_memory import acceptance_refusal, record_time
 
 
 def shop_evidence(shop, memory):
@@ -104,44 +104,101 @@ def offer_fingerprint(shop, sku, terms, round_number):
                                      separators=(",", ":"), allow_nan=False).encode()).hexdigest()
 
 
-def reuse_failures(shops, memory, *, item, budget, config, order, catalog=None, now=None):
-    """Prefer alternatives to a recent same-SKU, same-terms no-deal.
+def compatibility_fingerprint(shop, sku, terms, round_number):
+    """Price changes do not cure a known grade or warranty incompatibility.
 
-    Only explicit no-deal outcomes qualify. Network/model failures and an
-    unconfirmed receipt are not evidence of incompatible terms or dishonesty.
-    If every offer is cooling, reconsider them rather than block all shopping.
+    Quantity is the stock change visible in the public shop contract. Individual
+    units are private, so equal quantity is not proof of equal stock; the short
+    cooldown bounds that uncertainty. Reviews and a changing order budget do
+    not erase the actual checkout evidence.
+    """
+    terms = terms if isinstance(terms, dict) else {}
+    offer = next((o for o in shop.get("offers", []) if o.get("sku") == sku), {})
+    snapshot = {"round": round_number, "sku": sku, "qty": offer.get("qty"),
+                "kind": terms.get("kind"), "accept": terms.get("accept", {})}
+    return hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False,
+                                     separators=(",", ":"), allow_nan=False).encode()).hexdigest()
+
+
+def _confirmed_refusal(record):
+    """Only the correlated local payment evidence can provide this marker."""
+    marker = record.get("policy_refusal")
+    return (record.get("result") == "payment_refused" and isinstance(marker, dict)
+            and marker == acceptance_refusal(record.get("detail"), record.get("purchase_policy")))
+
+
+def _same_acceptance(left, right):
+    return (isinstance(left, dict) and isinstance(right, dict)
+            and isinstance(left.get("accept"), dict) and left["accept"]
+            and left.get("kind") == right.get("kind") and left["accept"] == right.get("accept"))
+
+
+def reuse_failures(shops, memory, *, item, budget, config, order, catalog=None, now=None):
+    """Avoid repeated same-SKU failures without relaxing purchasing conditions.
+
+    Generic no-deal cooldowns may be retried when no alternative exists. Exact
+    local ACP grade/warranty refusals stay excluded for the bounded cooldown,
+    even then; a new stock quantity, acceptance policy or later same-policy
+    settlement permits retry. No model/network error establishes incompatibility.
     """
     now = time.time() if now is None else now
     seconds = config.get("failure_cooldown_seconds", 900)
+    if type(seconds) is not int or not 0 <= seconds <= 3600:
+        raise ValueError("Buyer failure cooldown must be between 0 and 3600 seconds")
     round_number = order.get("round", 2)
-    latest = {}
+    latest, refusals, successes = {}, {}, {}
     for row in memory:
-        if row.get("round", 2) != round_number:
+        if (not isinstance(row, dict) or type(row.get("round", 2)) is not int
+                or row.get("round", 2) != round_number or not isinstance(row.get("name"), str)
+                or not isinstance(row.get("item"), str)):
             continue
-        try:
-            stamp = datetime.fromisoformat(row["time"])
-            if stamp.tzinfo is None:
-                continue
-            timestamp = stamp.timestamp()
-        except (KeyError, TypeError, ValueError, OverflowError):
-            continue
-        if not now - seconds <= timestamp <= now:
+        timestamp = record_time(row.get("time"))
+        if timestamp is None or not now - seconds <= timestamp <= now:
             continue
         key = (row["name"], row.get("item"))
         if key not in latest or timestamp >= latest[key][0]:
             latest[key] = (timestamp, row)
-    ready, skipped = [], 0
+        if _confirmed_refusal(row) and (key not in refusals or timestamp >= refusals[key][0]):
+            refusals[key] = (timestamp, row)
+        if (row.get("result") == "settled" and type(row.get("ledger")) is int and row["ledger"] > 0
+                and (key not in successes or timestamp >= successes[key][0])):
+            successes[key] = (timestamp, row)
+    ready, compatible, skipped, incompatible = [], [], 0, {"grade": 0, "warranty": 0}
     for shop in shops:
         offers = shop.get("offers", [])
-        usable = []
+        usable, retryable = [], []
         for offer in offers or [{"sku": item}]:
             sku = offer["sku"]
-            previous = latest.get((shop["name"], sku))
+            key = (shop["name"], sku)
+            previous, refused, success = latest.get(key), refusals.get(key), successes.get(key)
+            product = catalog.get(sku) if catalog is not None else None
+            terms = None
+            if refused and seconds > 0:
+                record = refused[1]
+                old_terms = record.get("purchase_policy")
+                superseded = success and success[0] >= refused[0] and _same_acceptance(
+                    success[1].get("purchase_policy"), old_terms)
+                if not superseded:
+                    terms = buying_terms(budget, product=product, order=order, config=config)
+                    fingerprint = record.get("compatibility_fingerprint")
+                    if isinstance(fingerprint, str):
+                        unchanged = fingerprint == compatibility_fingerprint(shop, sku, terms, round_number)
+                    else:
+                        # Older logs lack a dedicated compatibility fingerprint.
+                        # Compare their original terms so today's budget alone
+                        # cannot erase the failure; changed visible evidence can.
+                        unchanged = (_same_acceptance(old_terms, terms)
+                                     and isinstance(record.get("selection_fingerprint"), str)
+                                     and record["selection_fingerprint"] == offer_fingerprint(
+                                         shop, sku, old_terms, round_number))
+                    if unchanged:
+                        incompatible[record["policy_refusal"]["kind"]] += 1
+                        continue
+            retryable.append(offer)
             cooling = False
             if (previous and previous[1].get("result") == "no_deal" and seconds > 0
                     and isinstance(previous[1].get("selection_fingerprint"), str)):
-                product = catalog.get(sku) if catalog is not None else None
-                terms = buying_terms(budget, product=product, order=order, config=config)
+                terms = terms or buying_terms(budget, product=product, order=order, config=config)
                 cooling = previous[1].get("selection_fingerprint") == offer_fingerprint(shop, sku, terms, round_number)
             if cooling:
                 skipped += 1
@@ -149,5 +206,12 @@ def reuse_failures(shops, memory, *, item, budget, config, order, catalog=None, 
                 usable.append(offer)
         if usable:
             ready.append({**shop, "offers": usable} if offers else shop)
-    return ready or shops, {"cooldown_skipped_offers": skipped if ready else 0,
-                            "all_cooling_reconsidered": bool(shops and not ready)}
+        if retryable:
+            compatible.append({**shop, "offers": retryable} if offers else shop)
+    blocked = sum(incompatible.values())
+    return ready or compatible, {"cooldown_skipped_offers": skipped if ready else 0,
+                                 "all_cooling_reconsidered": bool(compatible and not ready),
+                                 "incompatible_skipped_offers": blocked,
+                                 "incompatible_grade_offers": incompatible["grade"],
+                                 "incompatible_warranty_offers": incompatible["warranty"],
+                                 "all_incompatible": bool(blocked and not compatible)}
