@@ -41,8 +41,13 @@ ALL_WEIGHTS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}
 WEEK = Path(__file__).resolve().parent.parent
 REPORT_DIR = WEEK / "logs" / "shadow"
 MONITOR_DIR = WEEK / "logs" / "monitor"
-SHOWN = ("book_delta", "book_end", "revenue", "stars", "deals", "close_rate", "profit", "profit_per_visit",
-         "stockouts", "visits", "served", "final_price_ratio", "first_ask_ratio", "stock_cost_end", "supply_spend")
+SHOWN = ("book_delta", "book_end", "deal_revenue", "stars", "deals", "negotiations", "close_rate",
+         "served_close_rate", "profit", "profit_per_visit", "stockouts", "visits", "served", "final_price_ratio",
+         "first_ask_ratio", "stock_cost_end", "supply_spend")
+CLOSE_RATE_DEF = ("close_rate = deals / negotiations (a session with >= 1 buyer offer), same for observed and twin;"
+                  " served_close_rate = deals / sessions that got a unit (observed: every negotiations row)")
+REVENUE_BASIS = ("twin revenue = deal revenue (twin deal prices), compared with observed deal_revenue "
+                 "(negotiations rows with outcome deal); observed settled_revenue (settles rows) is shown apart")
 
 
 # ------------------------------------------------------------------------------------------- policies
@@ -248,8 +253,10 @@ def calibration(w, seed=0, plan_fn=None, modes=("actual", "plan")):
         err = (r["deals"] - a["deals"]) / a["deals"] if a.get("deals") else None
         keys = ("deals", "close_rate", "revenue", "final_price_ratio", "first_ask_ratio", "stockouts", "visits",
                 "served")
-        t = out[f"twin_{mode}"] = {k: r[k] for k in keys}
+        t = out[f"twin_{mode}"] = {k: r[k] for k in keys + ("negotiations", "served_close_rate", "deal_revenue")}
         t["deals_rel_err"] = round(err, 4) if err is not None else None
+        t["close_rate_diff"] = round(r["close_rate"] - a["close_rate"], 4) \
+            if r.get("close_rate") is not None and a.get("close_rate") is not None else None
         t["revenue_rel_err"] = round((r["revenue"] - a["deal_revenue"]) / a["deal_revenue"], 4) \
             if a.get("deal_revenue") else None
         t["ok"] = err is not None and abs(err) <= CALIBRATION_TOL
@@ -259,14 +266,36 @@ def calibration(w, seed=0, plan_fn=None, modes=("actual", "plan")):
 # ------------------------------------------------------------------------------------------- run
 def evaluate(w, candidates, seed=0, restock="auto", board=None, board_path=None, plan_fn=None, seeds=1,
              calibrate=True):
+    """All candidates on one window. Without a plan_fn, ONE twin.DefaultPlan (one DB copy, rows <= w.end) serves
+    every plan-mode replay of this run and is removed in finally, also on an exception or KeyboardInterrupt."""
+    if plan_fn is not None:
+        return _evaluate(w, candidates, seed, restock, board, board_path, plan_fn, seeds, calibrate)
+    with twin.DefaultPlan(w) as shared:
+        rep = _evaluate(w, candidates, seed, restock, board, board_path, shared, seeds, calibrate)
+        rep["plan_snapshots"] = shared.snapshots
+        return rep
+
+
+def not_applicable(live, cand, mode):
+    """A restock lever replayed in actual mode has no effect (real deliveries are replayed), so never PASS."""
+    if mode == "actual" and twin.restock_differs(live, cand):
+        return {"verdict": "NOT_APPLICABLE", "reasons": ["restock lever in restock=actual mode: real supplies are "
+                                                         "replayed, the candidate's restock change has no effect; "
+                                                         "run with --restock plan (or auto)"]}
+    return None
+
+
+def _evaluate(w, candidates, seed, restock, board, board_path, plan_fn, seeds, calibrate):
     live = twin.live_policy()
     report = {"generated": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "window": {
         "start": w.start, "end": w.end, "hours": round((w.end - w.start) / 3600, 2),
         "start_iso": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(w.start)),
         "end_iso": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(w.end)),
+        "end_source": w.end_source, "reproduce": f"--end {w.end!r} --hours {round((w.end - w.start) / 3600, 4)}",
         "visits": len(w.visits), "stockout_rows": len(w.stockouts), "supplies": len(w.supplies),
         "fill_rate": round(w.fill_rate, 3), "stars": w.stars, "star_count": w.star_count, "notes": w.notes},
-        "seed": seed, "seeds": seeds, "board": board_path, "results": []}
+        "seed": seed, "seeds": seeds, "board": board_path, "close_rate_def": CLOSE_RATE_DEF,
+        "revenue_basis": REVENUE_BASIS, "results": []}
     hours = (w.end - w.start) / 3600 or 1
     modes_used = set()
     for cand in candidates:
@@ -282,6 +311,9 @@ def evaluate(w, candidates, seed=0, restock="auto", board=None, board_path=None,
             if only_unsim:
                 pair["gate"] = {"verdict": "UNSIMULATED", "reasons": [f"{', '.join(unsim)}: not modelled by the twin"],
                                 "rule": pair["gate"]["rule"]}
+        na = not_applicable(live, cand, pair["restock_mode"])
+        if na:
+            pair["gate"] = dict(na, rule=pair["gate"]["rule"])
         pair["candidate_policy"] = {k: v for k, v in cand.items() if live.get(k) != v or k == "name"}
         report["results"].append(pair)
     if calibrate:
@@ -313,7 +345,10 @@ def render(report):
     lines = [f"window {report['window']['start_iso']} .. {report['window']['end_iso']} "
              f"({report['window']['hours']} h): {report['window']['visits']} visits, "
              f"{report['window']['stockout_rows']} stockout rows, {report['window']['supplies']} supplies, "
-             f"fill {report['window']['fill_rate']}, stars {report['window']['stars']}"]
+             f"fill {report['window']['fill_rate']}, stars {report['window']['stars']}",
+             f"end ts {report['window']['end']!r} ({report['window'].get('end_source')}); reproduce with "
+             f"{report['window'].get('reproduce')}",
+             f"{report.get('close_rate_def')}", f"revenue basis: {report.get('revenue_basis')}"]
     for r in report["results"]:
         lines.append(f"\n== live vs {r['candidate']['policy']}  (restock={r['restock_mode']}, seeds={r['seeds']})")
         lines.append(f"{'metric':<20}{'live':>16}{'candidate':>16}{'delta':>16}")
@@ -337,8 +372,10 @@ def render(report):
     c = report.get("calibration")
     if c:
         a = c["observed"]
-        lines.append(f"\ncalibration (twin live vs actual window): actual deals {a['deals']}, close "
-                     f"{a['close_rate']}, deal revenue {a['deal_revenue']:,}, final/list {a['final_price_ratio']},"
+        lines.append(f"\ncalibration (twin live vs actual window): actual deals {a['deals']}, negotiations "
+                     f"{a.get('negotiations')}, close_rate {a['close_rate']}, served_close_rate "
+                     f"{a.get('served_close_rate')}, deal revenue {a['deal_revenue']:,}, settle revenue "
+                     f"{a.get('settled_revenue', 0):,}, final/list {a['final_price_ratio']},"
                      f" first ask/list {a['first_ask_ratio']}, stockouts {a['stockouts']}")
         for m, v in c.items():
             if m != "observed":
@@ -354,7 +391,9 @@ def main(argv=None):
     ap.add_argument("--seeds", type=int, default=1, help="average over this many consecutive seeds")
     ap.add_argument("--restock", choices=("auto", "actual", "plan"), default="auto")
     ap.add_argument("--db", default=None, help="memory.sqlite (default config.DB_PATH, opened read-only)")
-    ap.add_argument("--end", type=float, default=None, help="window end (epoch s; default last negotiation)")
+    ap.add_argument("--end", type=float, default=None,
+                    help="window end (epoch s; default last negotiation). The resolved value is written to the "
+                         "report (window.end, end_source); comparison runs should pass a fixed --end")
     ap.add_argument("--monitor-dir", default=str(MONITOR_DIR))
     ap.add_argument("--out", default=str(REPORT_DIR))
     ap.add_argument("--no-calibration", action="store_true")

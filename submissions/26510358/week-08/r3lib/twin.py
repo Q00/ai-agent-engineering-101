@@ -136,18 +136,40 @@ def open_readonly(db_path):
     return c
 
 
-def snapshot_db(db_path, dest=None):
+SNAPSHOT_STATE_TABLES = ("shops", "shop_stock")     # latest-state upserts: kept in the plan snapshot
+
+
+def snapshot_db(db_path, dest=None, end=None):
     """Consistent copy of the live DB (sqlite backup API from a read-only connection) for code that needs a
-    Memory object (restock_r3.plan). Returns the copy's path; the caller deletes it."""
-    dest = Path(dest or tempfile.mkdtemp(prefix="twin-")) / "memory.sqlite"
-    src = open_readonly(db_path)
-    dst = sqlite3.connect(dest)
+    Memory object (restock_r3.plan). With `end`, every event row with ts > end is deleted from the copy (no
+    look-ahead past the window). shops and shop_stock (SNAPSHOT_STATE_TABLES) are latest-state upserts whose ts is
+    the last sync, not an event time: deleting them would drop every shop's stock, so they are kept as they are
+    (a known, small look-ahead: the latest competitor stock). Returns the copy's path; the caller deletes it (DefaultPlan does). If the copy fails, a temp
+    dir made here is removed before the error is raised."""
+    made = dest is None
+    dest_dir = Path(dest or tempfile.mkdtemp(prefix="twin-"))
+    path = dest_dir / "memory.sqlite"
     try:
-        src.backup(dst)
-    finally:
-        dst.close()
-        src.close()
-    return dest
+        src = open_readonly(db_path)
+        dst = sqlite3.connect(path)
+        try:
+            src.backup(dst)
+            if end is not None:
+                tables = [r[0] for r in dst.execute("SELECT name FROM sqlite_master WHERE type='table'")]
+                for t in tables:
+                    if t in SNAPSHOT_STATE_TABLES:
+                        continue
+                    if any(c[1] == "ts" for c in dst.execute(f'PRAGMA table_info("{t}")')):
+                        dst.execute(f'DELETE FROM "{t}" WHERE ts > ?', (end,))
+                dst.commit()
+        finally:
+            dst.close()
+            src.close()
+    except BaseException:
+        if made:
+            shutil.rmtree(dest_dir, ignore_errors=True)
+        raise
+    return path
 
 
 @dataclass
@@ -186,6 +208,7 @@ class Window:
     demand_rows: list = field(default_factory=list)
     db_path: object = None
     notes: list = field(default_factory=list)
+    end_source: str = "argument"           # "argument" (--end / end=) or "last negotiation" (resolved default)
 
     def market_ratio(self, sku, category, ts, hours=PRICE_HOURS, min_n=3):
         """memory.price_ratio at time ts: median settled price / list for the SKU, else the category."""
@@ -219,6 +242,7 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
             demand_rows = demand_rows.get("categories") or demand_rows.get("demand") or []
     c = open_readonly(db_path)
     try:
+        end_source = "argument" if end else "last negotiation"
         end = end or c.execute("SELECT MAX(ts) t FROM negotiations").fetchone()["t"] or time.time()
         start = end - hours * 3600
         mine = {r["shop_url"] for r in c.execute("SELECT shop_url FROM shops WHERE mine=1")}
@@ -307,13 +331,20 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
         start_stock[sku] = known + [base] * (n - len(known))
 
     deals = [v for v in visits if v.outcome == "deal" and v.final_price]
-    actual = {"visits": len(visits), "deals": len(deals), "stockouts": len(stockouts),
-              "close_rate": round(len(deals) / len(visits), 4) if visits else None,
+    negotiated = sum(1 for v in visits if v.offers)
+    # one close-rate definition for observed and twin (QA 2026-11-05): close_rate = deals / negotiations, a
+    # negotiation = a session where the buyer made at least one offer; served_close_rate = deals / sessions
+    # (observed: every negotiations row; twin: every visit that got a unit)
+    actual = {"visits": len(visits), "deals": len(deals), "stockouts": len(stockouts), "negotiations": negotiated,
+              "close_rate": round(len(deals) / negotiated, 4) if negotiated else None,
+              "served_close_rate": round(len(deals) / len(visits), 4) if visits else None,
               "final_price_ratio": round(statistics.mean(v.final_price / v.list_price for v in deals), 4)
               if deals else None,
               "first_ask_ratio": round(statistics.mean(v.first_ask / v.list_price for v in visits if v.first_ask), 4)
               if visits else None,
               "deal_revenue": sum(v.final_price for v in deals), "settled_revenue": revenue,
+              "revenue_basis": "deal_revenue = final prices of negotiations rows with outcome deal; "
+                               "settled_revenue = settles rows of our shop in the window",
               "settled_units": sum(sold.values()), "supplied_units": received, "requested_units": requested or 0,
               "silent_visits": sum(1 for v in visits if not v.offers)}
     w = Window(start=start, end=end, visits=visits, history=history, stockouts=stockouts, supplies=supplies,
@@ -321,7 +352,7 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
                balance_end=float(inv.get("balance") or 0),
                fill_rate=min(1.0, max(0.1, received / requested)) if requested else 0.6,
                stars=round(statistics.mean(stars), 3) if stars else None, star_count=len(stars), actual=actual,
-               demand_rows=list(demand_rows), db_path=db_path)
+               demand_rows=list(demand_rows), db_path=db_path, end_source=end_source)
     if not inv.get("units"):
         w.notes.append("no inventory snapshot: start stock rebuilt from sales and supplies only")
     return w
@@ -501,7 +532,15 @@ def _demand_events(w, seed):
 
 
 def replay(w, policy, seed=0, restock="actual", live=None, plan_fn=None, keep_visits=False):
-    """Run one policy over the window. Returns the metrics dict (see metrics keys below)."""
+    """Run one policy over the window. Returns the metrics dict (see metrics keys below). In plan mode without a
+    plan_fn, one DefaultPlan (one DB copy) serves every tick and is removed when the replay ends, also on error."""
+    if restock != "actual" and plan_fn is None:
+        with DefaultPlan(w) as own:
+            return _replay(w, policy, seed, restock, live, own, keep_visits)
+    return _replay(w, policy, seed, restock, live, plan_fn, keep_visits)
+
+
+def _replay(w, policy, seed, restock, live, plan_fn, keep_visits):
     live = live or live_policy()
     base_outcomes, sim_outcomes, base_styles = {}, {}, {}
     for h in w.history:
@@ -609,11 +648,12 @@ def replay(w, policy, seed=0, restock="actual", live=None, plan_fn=None, keep_vi
 def _restock_tick(w, policy, stock, cash, ts, seed, plan_fn, cut_state=None):
     """One supply window: restock_r3.plan on the twin's stock and cash (policy constants patched), the lines
     filled at the observed fill rate, each unit at our average cost for that SKU."""
-    if plan_fn is None:
-        plan_fn = _default_plan(w)
     adjust = expand_adjust(policy.get("restock_adjust"), w.catalog)
-    with patched(effective_plan_policy(policy)):
-        lines = plan_fn(stock.as_inventory(cash), ts, adjust, policy)
+    with contextlib.ExitStack() as stack:
+        if plan_fn is None:                        # direct callers only; replay always passes one
+            plan_fn = stack.enter_context(DefaultPlan(w))
+        with patched(effective_plan_policy(policy)):
+            lines = plan_fn(stock.as_inventory(cash), ts, adjust, policy)
     lines = _apply_cuts(lines, policy, cut_state)
     lines = _apply_sku_targets(lines, stock, cash, policy, w)
     lines = _apply_category_shares(lines, stock, cash, policy, w.catalog)
@@ -727,21 +767,49 @@ def effective_plan_policy(policy):
     return p
 
 
-def _default_plan(w):
-    """restock_r3.plan over a private copy of the DB (Memory needs a writable file; the live DB is never opened
-    for writing). Market-wide demand, prices and scout views come from the copy at the tick time."""
-    import restock_r3
-    from . import scout
-    from .memory import Memory
-    state = {}
+class DefaultPlan:
+    """restock_r3.plan over ONE private copy of the DB (Memory needs a writable file; the live DB is never opened
+    for writing). The copy is made on the first tick, holds no row after w.end (no look-ahead), and is shared by
+    every later tick and replay that uses this object. plan(dry_run=True) does not write to it. close() (or the
+    with-block) removes the temp dir, also on an exception or KeyboardInterrupt."""
 
-    def plan_fn(inv, ts, adjust, policy):
-        if "mem" not in state:
-            state["mem"] = Memory(snapshot_db(w.db_path))
+    def __init__(self, w):
+        self.w = w
+        self.mem = None
+        self.dir = None
+        self.snapshots = 0
+
+    def __call__(self, inv, ts, adjust, policy):
+        import restock_r3
+        from . import scout
+        from .memory import Memory
+        if self.mem is None:
+            self.dir = Path(tempfile.mkdtemp(prefix="twin-"))
+            try:
+                self.mem = Memory(snapshot_db(self.w.db_path, self.dir, end=self.w.end))
+            except BaseException:
+                self.close()
+                raise
+            self.snapshots += 1
         scout._CACHE.clear()                       # its cache is keyed on wall time; the twin's clock jumps
-        lines, _, _ = restock_r3.plan(inv, w.demand_rows, state["mem"], now=ts, dry_run=True, adjust=adjust)
+        lines, _, _ = restock_r3.plan(inv, self.w.demand_rows, self.mem, now=ts, dry_run=True, adjust=adjust)
         return lines
-    return plan_fn
+
+    def close(self):
+        d, self.dir, self.mem = self.dir, None, None
+        if d is not None:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+        return False
+
+
+def _default_plan(w):
+    return DefaultPlan(w)
 
 
 def _metrics(m, stock, cash, balance0, w, policy, restock, log):
@@ -753,9 +821,11 @@ def _metrics(m, stock, cash, balance0, w, policy, restock, log):
         "policy": policy.get("name"), "restock_mode": restock,
         "visits": m["visits"], "served": m["served"], "negotiated": m["negotiated"], "silent": m["silent"],
         "stockouts": m["stockouts"], "stockout_requests_served": m["stockout_requests_served"],
-        "deals": deals,
-        "close_rate": round(deals / m["served"], 4) if m["served"] else None,
-        "revenue": int(m["revenue"]), "cogs": int(m["cogs"]), "storage": int(m["storage"]),
+        "deals": deals, "negotiations": m["negotiated"],
+        "close_rate": round(deals / m["negotiated"], 4) if m["negotiated"] else None,      # deals / negotiations
+        "served_close_rate": round(deals / m["served"], 4) if m["served"] else None,       # deals / served
+        "revenue": int(m["revenue"]), "deal_revenue": int(m["revenue"]), "revenue_basis": "deal",
+        "cogs": int(m["cogs"]), "storage": int(m["storage"]),
         "profit": int(m["revenue"] - m["cogs"] - m["storage"]),
         "book_delta": int(m["revenue"] - m["cogs"] - m["storage"]),
         "book_end": int(book_end), "cash_end": int(cash - m["storage"]), "stock_cost_end": int(stock.cost()),
