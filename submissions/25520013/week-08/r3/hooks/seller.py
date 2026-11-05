@@ -82,6 +82,23 @@ NEED_RE = re.compile(r"(?<!\d)(?<!\d[.,])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\
                      re.I)                                     # v2.1a: 1,000 hours -> 1000, 48h,72h -> 72
 NEED_MARGIN_H = 0.25          # v2.1: the settle lands minutes after the quote
 UNKNOWN_NEED_SHARE = 0.75     # v2.1: a food buyer needs 0.10/0.25/0.50/0.75 of the shelf; 0.75 covers every buyer
+DECLINE_MIN_CHARS = 12        # v2.2: a shorter shop.decline_texts entry matches nothing ('the' declines no one)
+
+
+def declined_phrase(text, pol):
+    """v2.2: the shop.decline_texts entry the request carries (case and runs of whitespace ignored), else None. The
+    list lives in policy.json, so a phrase is added or dropped without a restart; anything but a list of strings of
+    12 characters or more matches nothing. One buyer's template 'Quote the total price. Require a market
+    certificate.' left 1 star on all 63 of its paid deals with us in the 24 h to 11-05 14:40."""
+    lst = (pol.get("shop") or {}).get("decline_texts")
+    if not isinstance(lst, list):
+        return None
+    t = " ".join((text or "").split()).casefold()
+    for e in lst:
+        e = " ".join(e.split()).casefold() if isinstance(e, str) else ""
+        if len(e) >= DECLINE_MIN_CHARS and e in t:
+            return e
+    return None
 
 
 def stated_need_hours(text, names=()):
@@ -335,6 +352,12 @@ class Seller(AgentExecutor):
                 self._blog[task.id] = ("unknown", "none")
             self._bl("request", task.id, text=BL.clean(text, 200))   # v121c: masked
             self.refresh_policy()                       # v1.16: only between deals
+            if declined_phrase(text, self.pol):         # v2.2: shop.decline_texts, before any stock is read
+                self._metric("declined", {"request": BL.clean(text, 80)})
+                self._bl("outcome", task.id, outcome="declined", request=BL.clean(text, 80))
+                self._blog.pop(task.id, None)
+                await up.reject(say("Sorry, we can't take this order."))
+                return
             inv = read_json(MARKET_DIR / "inventory.json", {}) or {}
             why = {}
             unit = find_unit(text, inv, {d["unit"]["unit"] for d in self.open.values()}, self.pol, shelf=self.shelf,
