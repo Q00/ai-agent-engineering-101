@@ -25,6 +25,14 @@ class SliceDecideTest(Base):
     def setUp(self):
         super().setUp()
         shutil.copytree(HERE / "card", paths.root() / "card")
+        # 11/5 18:0x: night auto-install is off in production (AUTO_HOURS empty); these tests keep the mechanism
+        # covered with the hours it had (00:00-07:59)
+        self._auto_hours = outer_slice.AUTO_HOURS
+        outer_slice.AUTO_HOURS = range(0, 8)
+
+    def tearDown(self):
+        outer_slice.AUTO_HOURS = self._auto_hours
+        super().tearDown()
 
     def answers(self, options):
         return iter([

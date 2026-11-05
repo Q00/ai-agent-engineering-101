@@ -25,7 +25,9 @@ NIGHT = range(1, 8)            # 01:00-07:59 (HARNESS.md 5)
 # User 11/3 23:2x: at night the strategy agent decides by itself every 30 minutes. A slice in these hours writes
 # options, the audit runs in the slice, and the recommended option is installed when the audit agrees and the
 # change keeps the safety terms (SAFE_KEYS); otherwise the brief waits for the user. These hours override NIGHT.
-AUTO_HOURS = range(0, 8)       # 00:00-07:59
+# User 11/5 18:0x: no automatic installs at all for now (design/ideal-harness.md R8: only an explicit approval
+# changes the strategy); briefs keep being written as proposals. Was range(0, 8), 00:00-07:59.
+AUTO_HOURS = range(0)
 AUTO_EVERY_MIN = 30
 # User 11/5 01:3x: a change must live long enough to be measured - v67 (auto, 01:33) landed 21 min after the user's
 # v66 (01:12). No install (night mode or delegation) while the active strategy is younger than HOLD_S; the slice
