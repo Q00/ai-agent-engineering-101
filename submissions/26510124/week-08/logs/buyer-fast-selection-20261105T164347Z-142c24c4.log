@@ -1,0 +1,117 @@
+Offline buyer selection checks; fixtures only, no live market/model calls
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python', '-m', 'unittest', 'test_buyer_fast_selection', 'test_buyer_selection', 'test_buyer_efficiency', 'test_round3_buyer', 'test_balanced_buyer', 'test_strict_buyer', '-v']
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_round3_buyer.py:10: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_all_incompatible_offers_and_expired_deadline_never_call_model (test_buyer_fast_selection.FastSelectionTests.test_all_incompatible_offers_and_expired_deadline_never_call_model) ... ok
+test_cache_keeps_new_shop_comparison_opportunities_and_can_be_disabled (test_buyer_fast_selection.FastSelectionTests.test_cache_keeps_new_shop_comparison_opportunities_and_can_be_disabled) ... ok
+test_changed_checkout_policy_or_price_cap_cannot_reuse_past_acceptance (test_buyer_fast_selection.FastSelectionTests.test_changed_checkout_policy_or_price_cap_cannot_reuse_past_acceptance) ... ok
+test_changed_tunnel_does_not_drop_same_shop_selection_evidence (test_buyer_fast_selection.FastSelectionTests.test_changed_tunnel_does_not_drop_same_shop_selection_evidence) ... ok
+test_current_low_rating_or_own_receipt_mismatch_disables_shortcut (test_buyer_fast_selection.FastSelectionTests.test_current_low_rating_or_own_receipt_mismatch_disables_shortcut) ... ok
+test_integrated_cache_skips_model_and_preserves_live_shop_and_sku (test_buyer_fast_selection.FastSelectionTests.test_integrated_cache_skips_model_and_preserves_live_shop_and_sku) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1619, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["new"]}
+SELECTION METHOD: {"method": "recent_settlement", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "sku": "G00001", "reason": "Recent confirmed same-SKU settlement (ledger 17) met the same checkout minimums; negotiate and verify this unit anew."}
+ok
+test_invalid_model_outputs_and_auth_errors_do_not_trigger_fallback (test_buyer_fast_selection.FastSelectionTests.test_invalid_model_outputs_and_auth_errors_do_not_trigger_fallback) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1500, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["new"]}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1500, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["new"]}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1500, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["new"]}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1500, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["new"]}
+ok
+test_model_selected_invented_sku_is_rejected (test_buyer_fast_selection.FastSelectionTests.test_model_selected_invented_sku_is_rejected) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1500, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["new"]}
+ok
+test_model_timeout_has_one_bounded_attempt_then_local_stock_selection (test_buyer_fast_selection.FastSelectionTests.test_model_timeout_has_one_bounded_attempt_then_local_stock_selection) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1500, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["new"]}
+SELECTION TIMEOUT: "Harness timed out; see fixture.log"
+SELECTION METHOD: {"method": "timeout_local_comparison", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "reason": "Selection model timed out; locally compared confirmed settlements, contract faults and bounded public reviews; purchase checks remain unchanged.", "sku": "G00001"}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1500, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["new"]}
+SELECTION TIMEOUT: "Harness deadline expired; see fixture.log"
+SELECTION METHOD: {"method": "timeout_local_comparison", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "reason": "Selection model timed out; locally compared confirmed settlements, contract faults and bounded public reviews; purchase checks remain unchanged.", "sku": "G00001"}
+ok
+test_newer_refusal_or_unknown_result_prevents_older_success_reuse (test_buyer_fast_selection.FastSelectionTests.test_newer_refusal_or_unknown_result_prevents_older_success_reuse) ... ok
+test_pending_unreviewed_wrong_ledger_and_bad_contract_are_never_cache_hits (test_buyer_fast_selection.FastSelectionTests.test_pending_unreviewed_wrong_ledger_and_bad_contract_are_never_cache_hits) ... ok
+test_recent_confirmed_tradeoff_reuses_selection_not_authorization (test_buyer_fast_selection.FastSelectionTests.test_recent_confirmed_tradeoff_reuses_selection_not_authorization) ... ok
+test_stale_future_unknown_timezone_and_other_round_never_cache (test_buyer_fast_selection.FastSelectionTests.test_stale_future_unknown_timezone_and_other_round_never_cache) ... ok
+test_timeout_fallback_uses_evidence_not_candidate_array_position (test_buyer_fast_selection.FastSelectionTests.test_timeout_fallback_uses_evidence_not_candidate_array_position) ... ok
+test_evidence_is_bounded_keeps_negative_excerpt_and_does_not_mutate (test_buyer_selection.BuyerSelectionTests.test_evidence_is_bounded_keeps_negative_excerpt_and_does_not_mutate) ... ok
+test_exploration_rotates_and_registry_order_does_not_change_it (test_buyer_selection.BuyerSelectionTests.test_exploration_rotates_and_registry_order_does_not_change_it) ... ok
+test_large_registry_calls_model_once_with_six_candidates (test_buyer_selection.BuyerSelectionTests.test_large_registry_calls_model_once_with_six_candidates) ... SELECTION CONTEXT: {"eligible_shops": 80, "candidates": 6, "context_chars": 4368, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["shop-26"]}
+SELECTION METHOD: {"method": "model", "model_timeout_seconds": 9.998897124984069}
+SHOP SELECTION: {"name": "shop-26", "sku": "G00001", "reason": "stock and review evidence"}
+ok
+test_legacy_round_and_pending_receipt_are_not_current_settlements (test_buyer_selection.BuyerSelectionTests.test_legacy_round_and_pending_receipt_are_not_current_settlements) ... ok
+test_many_bad_reviews_do_not_beat_good_evidence (test_buyer_selection.BuyerSelectionTests.test_many_bad_reviews_do_not_beat_good_evidence) ... ok
+test_model_cannot_select_outside_candidate_or_stock (test_buyer_selection.BuyerSelectionTests.test_model_cannot_select_outside_candidate_or_stock) ... SELECTION CONTEXT: {"eligible_shops": 1, "candidates": 1, "context_chars": 837, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["shop"]}
+SELECTION CONTEXT: {"eligible_shops": 1, "candidates": 1, "context_chars": 837, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "exploration": ["shop"]}
+ok
+test_receipt_mismatch_outweighs_public_five_stars (test_buyer_selection.BuyerSelectionTests.test_receipt_mismatch_outweighs_public_five_stars) ... ok
+test_zero_review_shop_keeps_one_slot_among_established_shops (test_buyer_selection.BuyerSelectionTests.test_zero_review_shop_keeps_one_slot_among_established_shops) ... ok
+test_ambiguous_price_is_preserved_as_unknown (test_buyer_efficiency.DialogueCompressionTests.test_ambiguous_price_is_preserved_as_unknown) ... ok
+test_long_messages_keep_head_and_final_quote_and_mark_omissions (test_buyer_efficiency.DialogueCompressionTests.test_long_messages_keep_head_and_final_quote_and_mark_omissions) ... ok
+test_price_trail_keeps_exact_bids_and_asks_without_duplicate_current_message (test_buyer_efficiency.DialogueCompressionTests.test_price_trail_keeps_exact_bids_and_asks_without_duplicate_current_message) ... ok
+test_short_quote_prompt_fits_small_context_budget (test_buyer_efficiency.DialogueCompressionTests.test_short_quote_prompt_fits_small_context_budget) ... ok
+test_working_poll_messages_do_not_bloat_decision_history (test_buyer_efficiency.DialogueCompressionTests.test_working_poll_messages_do_not_bloat_decision_history) ... NEGOTIATION CONTEXT: {"decision": 1, "context_chars": 151}
+BUYER DECISION: {"action": "walk_away", "reason": "price"}
+NO DEAL: {"reason": "price", "taskId": "t1"}
+ok
+test_all_cooling_reconsiders_instead_of_locking_out_every_shop (test_buyer_efficiency.FailureReuseTests.test_all_cooling_reconsiders_instead_of_locking_out_every_shop) ... ok
+test_changed_url_does_not_erase_same_shop_failure (test_buyer_efficiency.FailureReuseTests.test_changed_url_does_not_erase_same_shop_failure) ... ok
+test_disabling_cooldown_keeps_candidates (test_buyer_efficiency.FailureReuseTests.test_disabling_cooldown_keeps_candidates) ... ok
+test_expired_future_unknown_timestamps_and_other_round_do_not_block (test_buyer_efficiency.FailureReuseTests.test_expired_future_unknown_timestamps_and_other_round_do_not_block) ... ok
+test_network_errors_pending_payments_and_latest_success_are_not_no_deals (test_buyer_efficiency.FailureReuseTests.test_network_errors_pending_payments_and_latest_success_are_not_no_deals) ... ok
+test_observable_stock_review_or_effective_price_changes_allow_retry (test_buyer_efficiency.FailureReuseTests.test_observable_stock_review_or_effective_price_changes_allow_retry) ... ok
+test_other_sku_at_same_shop_remains_eligible (test_buyer_efficiency.FailureReuseTests.test_other_sku_at_same_shop_remains_eligible) ... ok
+test_recent_same_conditions_prefer_alternative_without_mutating_sources (test_buyer_efficiency.FailureReuseTests.test_recent_same_conditions_prefer_alternative_without_mutating_sources) ... ok
+test_runtime_records_comparison_data_and_next_order_reuses_it (test_buyer_efficiency.FailureReuseTests.test_runtime_records_comparison_data_and_next_order_reuses_it) ... ok
+test_round3_buyer (unittest.loader._FailedTest.test_round3_buyer) ... ERROR
+test_balanced_buyer (unittest.loader._FailedTest.test_balanced_buyer) ... ERROR
+test_strict_buyer (unittest.loader._FailedTest.test_strict_buyer) ... ERROR
+
+======================================================================
+ERROR: test_round3_buyer (unittest.loader._FailedTest.test_round3_buyer)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_round3_buyer
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_round3_buyer.py", line 17, in <module>
+    from review_settled import review
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/review_settled.py", line 12, in <module>
+    from buyer_forum import queue_confirmed_deal
+ModuleNotFoundError: No module named 'buyer_forum'
+
+
+======================================================================
+ERROR: test_balanced_buyer (unittest.loader._FailedTest.test_balanced_buyer)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_balanced_buyer
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_balanced_buyer.py", line 14, in <module>
+    from review_settled import review
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/review_settled.py", line 12, in <module>
+    from buyer_forum import queue_confirmed_deal
+ModuleNotFoundError: No module named 'buyer_forum'
+
+
+======================================================================
+ERROR: test_strict_buyer (unittest.loader._FailedTest.test_strict_buyer)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_strict_buyer
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_strict_buyer.py", line 12, in <module>
+    from review_settled import review, purchase_terms
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/review_settled.py", line 12, in <module>
+    from buyer_forum import queue_confirmed_deal
+ModuleNotFoundError: No module named 'buyer_forum'
+
+
+----------------------------------------------------------------------
+Ran 39 tests in 0.019s
+
+FAILED (errors=3)

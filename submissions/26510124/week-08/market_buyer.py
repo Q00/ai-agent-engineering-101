@@ -21,8 +21,9 @@ from harness import HarnessError, buyer_decision, decide, parse_object
 from inventory import read_json
 from payment_memory import recent_jsonl, reconcile, attach_reviews
 from buyer_policy import buying_terms, checkout_policy, load_policy, negotiation_policy
-from buyer_selection import shortlist, offer_fingerprint, reuse_failures
+from buyer_selection import shortlist, offer_fingerprint, reuse_failures, compatibility_fingerprint
 from buyer_context import compact_dialogue
+from buyer_fast_selection import recent_success_choice, timeout_choice
 
 
 VERSION_HEADERS = {"A2A-Version": "1.0"}
@@ -97,13 +98,15 @@ def acceptance(order):
 
 def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=None, catalog=None):
     order = order or {}
+    policy = policy or load_policy()
+    seed = order.get("order") or f"{item}:{int(time.time() // 900)}"
     shops, cooldown = reuse_failures(shops, memory, item=item, budget=budget,
-                                     config=policy or load_policy(), order=order, catalog=catalog)
-    candidates = shortlist(shops, memory, seed=order.get("order") or f"{item}:{int(time.time() // 900)}",
-                           limit=(policy or {}).get("selection_max_candidates", 6),
+                                     config=policy, order=order, catalog=catalog)
+    candidates = shortlist(shops, memory, seed=seed,
+                           limit=policy.get("selection_max_candidates", 6),
                            round_number=order.get("round"))
     if not candidates:
-        raise BuyerError("No candidate shops")
+        raise BuyerError("No eligible candidate shops after current-stock and recent-refusal checks")
     names = {s["name"] for s in candidates}
 
     def validate(output):
@@ -118,12 +121,35 @@ def choose_shop(shops, memory, *, item, budget, deadline, policy=None, order=Non
     remaining = deadline - time.monotonic()
     if remaining <= 0:
         raise BuyerError("Shop selection deadline exceeded")
+    timeout = policy.get("selection_timeout_seconds", 15)
+    if type(timeout) is not int or not 1 <= timeout <= 45:
+        raise BuyerError("Invalid buyer policy: selection_timeout_seconds")
     context = {"item": item, "budget": budget, "candidates": candidates, "purchase_policy": negotiation_policy(policy)}
     log("SELECTION CONTEXT", {"eligible_shops": len(shops), "candidates": len(candidates),
                               "context_chars": len(json.dumps(context, ensure_ascii=False)),
                               **cooldown,
                               "exploration": [c["name"] for c in candidates if c["selection_role"] == "exploration"]})
-    choice = decide("market_select.txt", context, validate, timeout=min(45, remaining), prefix="market-select")
+    choice = recent_success_choice(candidates, memory, budget=budget, config=policy,
+                                   order=order, catalog=catalog, seed=seed)
+    method = "recent_settlement" if choice is not None else "model"
+    if choice is None:
+        try:
+            choice = decide("market_select.txt", context, validate, timeout=min(timeout, remaining),
+                            prefix="market-select", max_attempts=1)
+        except HarnessError as exc:
+            # These prefixes are emitted by our harness, never by seller text.
+            # Invalid JSON, invented shops/SKUs and CLI/auth failures still fail.
+            if not str(exc).startswith(("Harness timed out;", "Harness deadline expired;")):
+                raise
+            if time.monotonic() >= deadline:
+                raise BuyerError("Shop selection deadline exceeded") from exc
+            choice = timeout_choice(candidates, seed=seed)
+            if choice is None:
+                raise BuyerError("No eligible candidate remains for selection") from exc
+            method = "timeout_local_comparison"
+            log("SELECTION TIMEOUT", str(exc))
+    choice = validate(json.dumps(choice, ensure_ascii=False))
+    log("SELECTION METHOD", {"method": method, "model_timeout_seconds": min(timeout, remaining)})
     log("SHOP SELECTION", choice)
     shop = next(s for s in shops if s["name"] == choice["name"])
     return {**shop, "selected_sku": choice.get("sku")}, choice["reason"]
@@ -386,6 +412,7 @@ def trade_and_record(shop, *, item, budget, memory_path, reason, seconds, client
         "order": (order or {}).get("order"), "round": (order or {}).get("round", 2),
         "purchase_policy": policy,
         "selection_fingerprint": offer_fingerprint(shop, item, policy, (order or {}).get("round", 2)),
+        "compatibility_fingerprint": compatibility_fingerprint(shop, item, policy, (order or {}).get("round", 2)),
         "observed_receipt": buyer.observed_receipt,
         "stars": stars, "review": review,
     }

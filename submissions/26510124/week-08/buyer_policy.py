@@ -18,6 +18,12 @@ def load_policy():
     limit = config.get("selection_max_candidates", 6)
     if type(limit) is not int or not 2 <= limit <= 6:
         raise ValueError("Invalid buyer policy: selection_max_candidates")
+    for key, default, minimum, maximum in (
+            ("selection_timeout_seconds", 15, 1, 45),
+            ("selection_cache_seconds", 900, 0, 3600)):
+        value = config.get(key, default)
+        if type(value) is not int or not minimum <= value <= maximum:
+            raise ValueError("Invalid buyer policy: " + key)
     cooldown = config.get("failure_cooldown_seconds", 900)
     if type(cooldown) is not int or not 0 <= cooldown <= 3600:
         raise ValueError("Invalid buyer policy: failure_cooldown_seconds")
@@ -49,7 +55,9 @@ def load_policy():
 
 def negotiation_policy(policy):
     """Rating preferences stay in local memory, outside the negotiation context."""
-    return {k: v for k, v in policy.items() if k != "review_preferences"} if policy else policy
+    local = {"review_preferences", "selection_max_candidates", "selection_timeout_seconds",
+             "selection_cache_seconds", "failure_cooldown_seconds"}
+    return {k: v for k, v in policy.items() if k not in local} if policy else policy
 
 
 def checkout_policy(order, config=None):
