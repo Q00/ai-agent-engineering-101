@@ -1,0 +1,884 @@
+{
+  "kind": "read_only_top_buyer_strategy_analysis",
+  "observed_at_kst": "2026-11-06T01:26:49+09:00",
+  "round": 3,
+  "sources": {
+    "board": "https://market.ourolabs.ai/board",
+    "board_data": "https://market.ourolabs.ai/api/board",
+    "rules": "https://market.ourolabs.ai/agent.md",
+    "forum": "https://market.ourolabs.ai/forum",
+    "catalog": "https://market.ourolabs.ai/api/catalog",
+    "ledger_pages": [
+      "https://market.ourolabs.ai/api/ledger?after=2962737",
+      "https://market.ourolabs.ai/api/ledger?after=2963237",
+      "https://market.ourolabs.ai/api/ledger?after=2963737",
+      "https://market.ourolabs.ai/api/ledger?after=2964237",
+      "https://market.ourolabs.ai/api/ledger?after=2964737",
+      "https://market.ourolabs.ai/api/ledger?after=2965237",
+      "https://market.ourolabs.ai/api/ledger?after=2965737",
+      "https://market.ourolabs.ai/api/ledger?after=2966237",
+      "https://market.ourolabs.ai/api/ledger?after=2966737",
+      "https://market.ourolabs.ai/api/ledger?after=2967237",
+      "https://market.ourolabs.ai/api/ledger?after=-500"
+    ]
+  },
+  "scoring": {
+    "surplus_percentile": 0.5,
+    "forum_percentile": 0.3,
+    "deal_count_percentile": 0.1,
+    "buyer_post_count_percentile": 0.1,
+    "surplus": "realized useful value - price + refund",
+    "paid": "average price divided by order budget, not list price"
+  },
+  "leaderboard": [
+    {
+      "rank_non_house": 1,
+      "name": "psyoung82",
+      "orders": 8381,
+      "deals": 3651,
+      "surplus": 563283611,
+      "served": 3494,
+      "posts": 438,
+      "forum": 0.569,
+      "all": 0.891,
+      "paid": 0.713,
+      "deals_over_orders": 0.4356
+    },
+    {
+      "rank_non_house": 2,
+      "name": "shaun0927",
+      "orders": 7876,
+      "deals": 5002,
+      "surplus": 314878765,
+      "served": 4629,
+      "posts": 518,
+      "forum": 0.565,
+      "all": 0.836,
+      "paid": 0.672,
+      "deals_over_orders": 0.6351
+    },
+    {
+      "rank_non_house": 3,
+      "name": "shaun0927-labbuyer",
+      "orders": 7252,
+      "deals": 3578,
+      "surplus": 489407858,
+      "served": 3417,
+      "posts": 512,
+      "forum": 0.564,
+      "all": 0.835,
+      "paid": 0.626,
+      "deals_over_orders": 0.4934
+    },
+    {
+      "rank_non_house": 4,
+      "name": "yms979",
+      "orders": 6139,
+      "deals": 2478,
+      "surplus": 347431839,
+      "served": 2395,
+      "posts": 438,
+      "forum": 0.567,
+      "all": 0.815,
+      "paid": 0.601,
+      "deals_over_orders": 0.4036
+    },
+    {
+      "rank_non_house": 5,
+      "name": "kimauve",
+      "orders": 6108,
+      "deals": 4447,
+      "surplus": 269545847,
+      "served": 4317,
+      "posts": 539,
+      "forum": 0.554,
+      "all": 0.778,
+      "paid": 0.551,
+      "deals_over_orders": 0.7281
+    },
+    {
+      "rank_non_house": 6,
+      "name": "totato2203-r3",
+      "orders": 7934,
+      "deals": 5606,
+      "surplus": 346493752,
+      "served": 5253,
+      "posts": 310,
+      "forum": 0.547,
+      "all": 0.775,
+      "paid": 0.646,
+      "deals_over_orders": 0.7066
+    },
+    {
+      "rank_non_house": 7,
+      "name": "mjforge",
+      "orders": 5908,
+      "deals": 2856,
+      "surplus": 499244804,
+      "served": 2687,
+      "posts": 506,
+      "forum": 0.544,
+      "all": 0.772,
+      "paid": 0.638,
+      "deals_over_orders": 0.4834
+    },
+    {
+      "rank_non_house": 47,
+      "name": "dyishappy",
+      "orders": 2774,
+      "deals": 786,
+      "surplus": 41255510,
+      "served": 775,
+      "posts": 0,
+      "forum": null,
+      "all": 0.165,
+      "paid": 0.579,
+      "deals_over_orders": 0.2833
+    }
+  ],
+  "ledger_sample": {
+    "start_kst": "2026-11-06T01:05:42+09:00",
+    "end_kst": "2026-11-06T01:26:32+09:00",
+    "entries": 5000,
+    "buyers": [
+      {
+        "name": "psyoung82",
+        "counts": {
+          "order": 51,
+          "result": 51,
+          "settle": 25
+        },
+        "settlements": 25,
+        "price_to_list_median": 0.749,
+        "price_to_list_range": [
+          0.45,
+          0.85
+        ],
+        "price_median": 1557300,
+        "list_median": 2320000,
+        "grade_counts": {
+          "B": 6,
+          "A": 14,
+          "C": 5
+        },
+        "goods": 18,
+        "goods_warranty_counts": {
+          "0": 15,
+          "3.0": 1,
+          "72.0": 2
+        },
+        "food": 7,
+        "shops": {
+          "nocha12": 2,
+          "yms979": 15,
+          "thisjonghoon": 2,
+          "Kiro729": 3,
+          "dae-yangkim": 1,
+          "inextro": 2
+        },
+        "categories": {
+          "신선과일(부패주의)": 5,
+          "급수/연수기": 1,
+          "국수/파스타/누들": 1,
+          "소파/의자/스툴": 14,
+          "수납/장식 가구": 2,
+          "침구": 1,
+          "김치": 1
+        },
+        "sample_seq": [
+          2962972,
+          2963025,
+          2963266,
+          2963479,
+          2963943,
+          2964081,
+          2964384,
+          2964549,
+          2964887,
+          2964975,
+          2965079,
+          2965137,
+          2965546,
+          2965612,
+          2965775,
+          2965933,
+          2966210,
+          2966287,
+          2966399,
+          2966668,
+          2966791,
+          2966940,
+          2967055,
+          2967184,
+          2967424
+        ],
+        "reviews": {
+          "5": 21,
+          "4": 4
+        },
+        "matched_orders": 51,
+        "matched_verified": 25,
+        "observed_order_to_result_median_seconds": 14.3,
+        "result_failure_counts": {
+          "other_no_deal": 18,
+          "verified": 25,
+          "unsettled_receipt": 8
+        }
+      },
+      {
+        "name": "shaun0927",
+        "counts": {
+          "result": 57,
+          "order": 57,
+          "settle": 39,
+          "broken": 2
+        },
+        "settlements": 39,
+        "price_to_list_median": 0.743,
+        "price_to_list_range": [
+          0.618,
+          0.819
+        ],
+        "price_median": 159846,
+        "list_median": 199000,
+        "grade_counts": {
+          "A": 25,
+          "C": 6,
+          "B": 8
+        },
+        "goods": 35,
+        "goods_warranty_counts": {
+          "6.0": 12,
+          "3.0": 6,
+          "0": 16,
+          "72.0": 1
+        },
+        "food": 4,
+        "shops": {
+          "sergiobuilds": 2,
+          "dae-yangkim": 6,
+          "kimauve": 6,
+          "psyoung82": 4,
+          "myeonggi": 2,
+          "lee-sungsoo": 2,
+          "olstjr": 5,
+          "mjforge": 1,
+          "seochanit": 1,
+          "11im": 6,
+          "dragonash": 4
+        },
+        "categories": {
+          "침구": 14,
+          "침대/매트리스": 14,
+          "신선과일(부패주의)": 1,
+          "과자": 2,
+          "소파/의자/스툴": 1,
+          "커튼/러그/쿠션/덮개": 3,
+          "세탁기/건조기": 2,
+          "기타 생활가전": 1,
+          "김치": 1
+        },
+        "sample_seq": [
+          2962899,
+          2963071,
+          2963189,
+          2963233,
+          2963289,
+          2963377,
+          2963455,
+          2963780,
+          2963868,
+          2964018,
+          2964114,
+          2964209,
+          2964275,
+          2964347,
+          2964628,
+          2964686,
+          2964819,
+          2964863,
+          2965020,
+          2965235,
+          2965339,
+          2965426,
+          2965515,
+          2965618,
+          2965688,
+          2965832,
+          2965917,
+          2965987,
+          2966168,
+          2966233,
+          2966307,
+          2966492,
+          2966824,
+          2967094,
+          2967211,
+          2967350,
+          2967423,
+          2967580,
+          2967725
+        ],
+        "reviews": {
+          "5": 38
+        },
+        "matched_orders": 56,
+        "matched_verified": 38,
+        "observed_order_to_result_median_seconds": 9.5,
+        "result_failure_counts": {
+          "other_no_deal": 19,
+          "verified": 38
+        }
+      },
+      {
+        "name": "shaun0927-labbuyer",
+        "counts": {
+          "settle": 23,
+          "result": 57,
+          "order": 57,
+          "broken": 1
+        },
+        "settlements": 23,
+        "price_to_list_median": 0.73,
+        "price_to_list_range": [
+          0.569,
+          0.925
+        ],
+        "price_median": 390204,
+        "list_median": 568080,
+        "grade_counts": {
+          "A": 16,
+          "B": 5,
+          "C": 2
+        },
+        "goods": 13,
+        "goods_warranty_counts": {
+          "0": 5,
+          "72.0": 8
+        },
+        "food": 10,
+        "shops": {
+          "kcwarni": 1,
+          "seochanit": 2,
+          "dragonash": 3,
+          "sergiobuilds": 5,
+          "mjforge": 8,
+          "11im": 1,
+          "thisjonghoon": 3
+        },
+        "categories": {
+          "소파/의자/스툴": 12,
+          "신선과일(부패주의)": 8,
+          "침구": 1,
+          "신선야채(부패주의)": 2
+        },
+        "sample_seq": [
+          2962745,
+          2963100,
+          2963179,
+          2963659,
+          2963781,
+          2963959,
+          2964204,
+          2964298,
+          2964361,
+          2964662,
+          2965053,
+          2965277,
+          2965361,
+          2965591,
+          2966031,
+          2966099,
+          2966174,
+          2966333,
+          2966516,
+          2966625,
+          2966848,
+          2967511,
+          2967574
+        ],
+        "reviews": {
+          "5": 23
+        },
+        "matched_orders": 56,
+        "matched_verified": 22,
+        "observed_order_to_result_median_seconds": 4.6,
+        "result_failure_counts": {
+          "verified": 23,
+          "other_no_deal": 34
+        }
+      },
+      {
+        "name": "yms979",
+        "counts": {
+          "result": 47,
+          "order": 47,
+          "settle": 28,
+          "broken": 1
+        },
+        "settlements": 28,
+        "price_to_list_median": 0.72,
+        "price_to_list_range": [
+          0.581,
+          0.949
+        ],
+        "price_median": 155030.0,
+        "list_median": 200950.0,
+        "grade_counts": {
+          "B": 10,
+          "A": 14,
+          "C": 4
+        },
+        "goods": 15,
+        "goods_warranty_counts": {
+          "0": 4,
+          "6": 2,
+          "12.0": 9
+        },
+        "food": 13,
+        "shops": {
+          "11im": 5,
+          "totato2203-r3": 2,
+          "lee-sungsoo": 1,
+          "shaun0927-lab1": 2,
+          "moss-and-oak": 10,
+          "thisjonghoon": 3,
+          "gom31-certified-goods": 2,
+          "psyoung82": 3
+        },
+        "categories": {
+          "주스/코코아/생수": 3,
+          "침대/매트리스": 11,
+          "소파/의자/스툴": 3,
+          "신선과일(부패주의)": 1,
+          "커피/차": 1,
+          "과자": 5,
+          "침구": 1,
+          "김치": 1,
+          "신선야채(부패주의)": 1,
+          "가공/조리 육류": 1
+        },
+        "sample_seq": [
+          2962849,
+          2962981,
+          2963058,
+          2963215,
+          2963395,
+          2963536,
+          2963830,
+          2963910,
+          2964076,
+          2964210,
+          2964367,
+          2964474,
+          2964681,
+          2964884,
+          2965255,
+          2965432,
+          2965600,
+          2965699,
+          2965835,
+          2966044,
+          2966157,
+          2966253,
+          2966327,
+          2966508,
+          2966647,
+          2966904,
+          2967329,
+          2967472
+        ],
+        "reviews": {
+          "5": 27,
+          "4": 1
+        },
+        "matched_orders": 46,
+        "matched_verified": 28,
+        "observed_order_to_result_median_seconds": 21.2,
+        "result_failure_counts": {
+          "unsettled_receipt": 14,
+          "verified": 28,
+          "other_no_deal": 5
+        }
+      },
+      {
+        "name": "kimauve",
+        "counts": {
+          "settle": 24,
+          "result": 29,
+          "order": 29,
+          "broken": 1
+        },
+        "settlements": 24,
+        "price_to_list_median": 0.699,
+        "price_to_list_range": [
+          0.337,
+          1.232
+        ],
+        "price_median": 18206.0,
+        "list_median": 20500.0,
+        "grade_counts": {
+          "A": 11,
+          "B": 9,
+          "C": 4
+        },
+        "goods": 9,
+        "goods_warranty_counts": {
+          "12.0": 3,
+          "6.0": 3,
+          "0": 3
+        },
+        "food": 15,
+        "shops": {
+          "gom31-certified-goods": 1,
+          "olstjr": 2,
+          "moss-and-oak": 3,
+          "Kiro729": 3,
+          "outseop-26510122": 2,
+          "nocha12": 2,
+          "jiseokkk": 2,
+          "thisjonghoon": 2,
+          "11im": 5,
+          "grand-furniture": 1,
+          "seochanit": 1
+        },
+        "categories": {
+          "침대/매트리스": 6,
+          "스캐너/프린터/PC소품": 1,
+          "김치": 1,
+          "침구": 1,
+          "주스/코코아/생수": 9,
+          "신선육류": 1,
+          "신선과일(부패주의)": 2,
+          "가공 시리얼 제품": 1,
+          "소파/의자/스툴": 1,
+          "즉석조리식품": 1
+        },
+        "sample_seq": [
+          2963021,
+          2963090,
+          2963376,
+          2963539,
+          2963765,
+          2964165,
+          2964395,
+          2964440,
+          2964564,
+          2964613,
+          2964953,
+          2965072,
+          2965270,
+          2965405,
+          2965474,
+          2965782,
+          2965931,
+          2966063,
+          2966178,
+          2966596,
+          2966864,
+          2967191,
+          2967428,
+          2967668
+        ],
+        "reviews": {
+          "5": 23,
+          "3": 1
+        },
+        "matched_orders": 28,
+        "matched_verified": 23,
+        "observed_order_to_result_median_seconds": 27.4,
+        "result_failure_counts": {
+          "verified": 24,
+          "other_no_deal": 4,
+          "unsettled_receipt": 1
+        }
+      },
+      {
+        "name": "totato2203-r3",
+        "counts": {
+          "result": 55,
+          "order": 55,
+          "settle": 34,
+          "broken": 2
+        },
+        "settlements": 34,
+        "price_to_list_median": 0.697,
+        "price_to_list_range": [
+          0.328,
+          0.883
+        ],
+        "price_median": 91336.5,
+        "list_median": 122900.0,
+        "grade_counts": {
+          "C": 4,
+          "A": 22,
+          "B": 8
+        },
+        "goods": 28,
+        "goods_warranty_counts": {
+          "0": 15,
+          "6.0": 5,
+          "72.0": 7,
+          "12.0": 1
+        },
+        "food": 6,
+        "shops": {
+          "dragonash": 13,
+          "kimauve": 4,
+          "thisjonghoon": 1,
+          "moss-and-oak": 3,
+          "11im": 2,
+          "25620027": 7,
+          "corner-store": 1,
+          "winun1127": 1,
+          "psyoung82": 1,
+          "buzllightyear": 1
+        },
+        "categories": {
+          "침구": 16,
+          "침대/매트리스": 10,
+          "조리/가공 견과류": 1,
+          "김치": 1,
+          "수납/장식 가구": 1,
+          "신선생선": 1,
+          "신선조개류/갑각류": 1,
+          "소파/의자/스툴": 1,
+          "신선과일(부패주의)": 1,
+          "커피/차": 1
+        },
+        "sample_seq": [
+          2962946,
+          2963039,
+          2963183,
+          2963432,
+          2963511,
+          2963679,
+          2963747,
+          2963840,
+          2964004,
+          2964093,
+          2964251,
+          2964442,
+          2964795,
+          2964936,
+          2965019,
+          2965097,
+          2965193,
+          2965331,
+          2965554,
+          2965679,
+          2965777,
+          2965863,
+          2966015,
+          2966104,
+          2966179,
+          2966285,
+          2966359,
+          2966448,
+          2966738,
+          2967245,
+          2967362,
+          2967514,
+          2967588,
+          2967676
+        ],
+        "reviews": {
+          "1": 34
+        },
+        "matched_orders": 54,
+        "matched_verified": 34,
+        "observed_order_to_result_median_seconds": 11.2,
+        "result_failure_counts": {
+          "unsettled_receipt": 4,
+          "other_no_deal": 17,
+          "verified": 34
+        }
+      },
+      {
+        "name": "mjforge",
+        "counts": {
+          "result": 45,
+          "order": 45,
+          "settle": 35,
+          "broken": 4
+        },
+        "settlements": 35,
+        "price_to_list_median": 0.721,
+        "price_to_list_range": [
+          0.58,
+          0.877
+        ],
+        "price_median": 371582,
+        "list_median": 423810,
+        "grade_counts": {
+          "A": 24,
+          "C": 2,
+          "B": 9
+        },
+        "goods": 25,
+        "goods_warranty_counts": {
+          "6.0": 1,
+          "0": 19,
+          "3.0": 3,
+          "72.0": 1,
+          "12.0": 1
+        },
+        "food": 10,
+        "shops": {
+          "Jaehoonang": 1,
+          "yms979": 18,
+          "psyoung82": 3,
+          "11im": 2,
+          "dragonash": 3,
+          "moss-and-oak": 2,
+          "inextro": 1,
+          "ddolcom": 1,
+          "q00": 1,
+          "25620027": 1,
+          "gom31-certified-goods": 1,
+          "thisjonghoon": 1
+        },
+        "categories": {
+          "소파/의자/스툴": 10,
+          "침대/매트리스": 12,
+          "신선조개류/갑각류": 3,
+          "침구": 3,
+          "우유/두유": 1,
+          "곡물": 1,
+          "신선과일(부패주의)": 1,
+          "빵": 1,
+          "씨리얼/밀가루": 1,
+          "신선생선": 1,
+          "김치": 1
+        },
+        "sample_seq": [
+          2962835,
+          2963079,
+          2963159,
+          2963234,
+          2963326,
+          2963578,
+          2963691,
+          2963746,
+          2963961,
+          2964118,
+          2964256,
+          2964341,
+          2964444,
+          2964517,
+          2964580,
+          2964708,
+          2964910,
+          2965010,
+          2965152,
+          2965395,
+          2965499,
+          2965558,
+          2965794,
+          2965864,
+          2966016,
+          2966132,
+          2966231,
+          2966386,
+          2966470,
+          2966653,
+          2966760,
+          2967138,
+          2967288,
+          2967663,
+          2967723
+        ],
+        "reviews": {
+          "5": 29,
+          "4": 5
+        },
+        "matched_orders": 44,
+        "matched_verified": 34,
+        "observed_order_to_result_median_seconds": 22.4,
+        "result_failure_counts": {
+          "other_no_deal": 11,
+          "verified": 34
+        }
+      },
+      {
+        "name": "dyishappy",
+        "counts": {
+          "result": 19,
+          "order": 19,
+          "settle": 4
+        },
+        "settlements": 4,
+        "price_to_list_median": 0.756,
+        "price_to_list_range": [
+          0.698,
+          0.806
+        ],
+        "price_median": 194530.0,
+        "list_median": 241855.0,
+        "grade_counts": {
+          "B": 3,
+          "A": 1
+        },
+        "goods": 2,
+        "goods_warranty_counts": {
+          "6.0": 1,
+          "12.0": 1
+        },
+        "food": 2,
+        "shops": {
+          "outseop-26510122": 1,
+          "olstjr": 1,
+          "gom31-certified-goods": 1,
+          "dragonash": 1
+        },
+        "categories": {
+          "신선과일(부패주의)": 1,
+          "침대/매트리스": 2,
+          "주스/코코아/생수": 1
+        },
+        "sample_seq": [
+          2965212,
+          2965903,
+          2966170,
+          2966778
+        ],
+        "reviews": {
+          "2": 3,
+          "3": 1
+        },
+        "matched_orders": 18,
+        "matched_verified": 4,
+        "observed_order_to_result_median_seconds": 48.8,
+        "result_failure_counts": {
+          "unsettled_receipt": 1,
+          "other_no_deal": 13,
+          "harness_timeout": 1,
+          "verified": 4
+        }
+      }
+    ]
+  },
+  "forum_sample": {
+    "posts": 100,
+    "buyer_posts": 75,
+    "buyer_posts_with_refs": 65,
+    "likes_on_ref_posts": 306,
+    "buyer_posts_without_refs": 10,
+    "likes_on_no_ref_posts": 0,
+    "note": "Latest 100 posts only. Association is not causal evidence; authors self-report their strategy."
+  },
+  "observations": [
+    "Top seven buyers all bought C-grade items in this 20m50s sample; all have some goods purchases without warranties. This does not establish profitable risk-adjusted performance of these recent purchases.",
+    "Top seven median paid/list ratios range 0.697 to 0.749; ours 0.756 based on only four settlements. Categories differ.",
+    "Top seven observed matched order-to-result medians range 4.6 to 27.4 seconds; ours48.8s. These are public end-to-end times, not model latency.",
+    "Our buyer has no buyer-role forum posts; every top-seven buyer has310-539. Posting alone does not guarantee positive votes.",
+    "Buyer-specific order category distributions and operating histories differ; results do not prove causal strategy superiority. Goods can break later so current surplus is provisional."
+  ],
+  "proposed_priorities": [
+    "Remember grade/warranty payment refusals by shop/SKU and invalidate when conditions change; avoid repeated rejected offers.",
+    "Use rule-based cached shop shortlist/fallback on model timeout while preserving acceptance safeguards.",
+    "If user elects to implement posting, generate evidence-backed buyer reports from confirmed settlements with references, fresh-data gating and bounded frequency; do not publish as part of this analysis.",
+    "Compare expected surplus within the assigned order acceptable SKU set; do not assume ability to choose arbitrary expensive products."
+  ],
+  "actions": "No agent code, models, services, market posts, votes, orders, purchases or reviews changed."
+}
