@@ -1,0 +1,41 @@
+generated 11-05 14:11:49
+
+== funnel by group (task level)
+  warranty {'assigned': 5, 'signed': 2, 'settled_same_price': 2, 'past_6h': 2, 'inside_6_to_24h_now': 2, 'no_signed_offer_unit_sold_elsewhere': 3}
+  control {'assigned': 5, 'no_signed_offer_unit_sold_elsewhere': 2, 'signed': 3, 'settled_same_price': 1, 'past_6h': 1, 'inside_6_to_24h_now': 1}
+  11-04 18:40:23 control Gea0cca52 offer None warranty None settled None
+  11-04 18:41:08 warranty Gea0cca52 offer 276000 warranty 2 settled 11-04 18:41:22
+  11-04 18:44:15 warranty G2b11f53d offer 9400 warranty 2 settled 11-04 18:44:26
+  11-04 18:46:27 control Gbb0cbbff offer 79000 warranty 0 settled 11-04 18:47:06
+  11-04 18:49:47 control Gea0cca52 offer None warranty None settled None
+  11-04 18:50:52 warranty G1a265ca2 offer None warranty None settled None
+  11-04 18:51:04 warranty Gea0cca52 offer None warranty None settled None
+  11-04 18:51:16 warranty G2b11f53d offer None warranty None settled None
+  11-04 18:52:11 control G054ff120 offer 6200 warranty 0 settled None
+  11-04 18:52:37 control Gbb0cbbff offer 61739 warranty 0 settled None
+
+== evaluate rules replayed, nothing written
+  now {'warranty_skus': ['G2b11f53d', 'Gea0cca52'], 'control_skus': ['Gbb0cbbff'], 'shared': [], 'warranty_in_window': 2, 'control_in_window': 1, 'reported_warranty': 0, 'reported_control': 0}
+  11-05 12:00 KST {'warranty_skus': ['G2b11f53d', 'Gea0cca52'], 'control_skus': ['Gbb0cbbff'], 'shared': [], 'warranty_in_window': 2, 'control_in_window': 1, 'reported_warranty': 0, 'reported_control': 0}
+  11-05 18:40 KST {'warranty_skus': ['G2b11f53d', 'Gea0cca52'], 'control_skus': ['Gbb0cbbff'], 'shared': [], 'warranty_in_window': 2, 'control_in_window': 1, 'reported_warranty': 0, 'reported_control': 0}
+  11-05 19:15 KST {'warranty_skus': [], 'control_skus': [], 'shared': [], 'warranty_in_window': 0, 'control_in_window': 0, 'reported_warranty': 0, 'reported_control': 0}
+
+== reads of evaluate against files as they stand
+  market-intel kinds [('settle', 9649), ('broken', 351)] first 11-04 22:32:04 last 11-05 13:55:31
+  sale record keys ['amount', 'grade', 'ledger', 'name', 'round', 'source', 'ts', 'unit'] (no warranty field; the group comes from the signed offer)
+  config maturity_seconds used by evaluate: False
+
+== saved public ledger sample
+  rows 142015 kinds [('result', 101436), ('settle', 39348), ('broken', 1231)]
+  our warranted settles [(2476625, '11-04 18:41:25', 'Gea0cca52', 276000, 2.0), (2477739, '11-04 18:44:28', 'G2b11f53d', 9400, 2.0)]
+  broken rows by (had warranty, refunded): {(True, True): 708, (False, False): 458, (True, False): 65}
+
+== target stock and quotes per UTC day: first pricing record of each task
+  2026-11-04 {'new_tasks': 1418, 'A_goods': 825, 'A_goods_passing_stress_floor_without_storage': 481, 'warranty_2h': 5}
+  2026-11-05 {'new_tasks': 504, 'warranty_2h': 0, 'A_goods': 335, 'A_goods_passing_stress_floor_without_storage': 257}
+  stock now [(('goods', 'A'), 12), (('goods', 'B'), 4), (('goods', 'C'), 2)]
+
+== blocked windows: strategy experiment active, from controller logs
+  logs 39 with no active experiment 11 share 0.282
+  since UTC 11-05 00:00: 10 logs, free 0
+  active started 11-05 08:09:51 phase maturing
