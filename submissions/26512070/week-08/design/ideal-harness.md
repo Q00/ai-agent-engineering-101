@@ -521,7 +521,7 @@ LaTeX(TikZ) 한 장. 왼쪽에서 오른쪽으로 "시장 → 역할 → 메타 
 | D-12 | 원장 요약 형식과 만드는 시점 | 미정 |
 | D-13 | forum 글 코드: 형식, 고르는 정산, buyer가 관리하는 방식 | 미정 |
 | D-14 | 라운드 막판: restock 중단 시점(`restock.stop_after` 11/17 12:00은 cash 기준에서 나온 것), 식품과 goods의 차이 | 나중에 (사용자: 지금은 필요 없음) |
-| D-15 | LaTeX 그림: 뼈대는 19장. LaTeX 설치(또는 온라인 컴파일)와 REPORT.md 구성은 미정 | 일부 |
+| D-15 | LaTeX 그림: 원본 `architecture.tex` 작성(11/5 19:3x, 영어). PDF 컴파일 방법(Tectonic 허용 / MiKTeX / Overleaf)은 사용자 보류. REPORT.md 구성 미정 | 일부, 컴파일 보류 |
 | D-16 | 최종 제출: push 금지 해제 시점과 절차 (마감 11/17 23:59 = PR 시각) | 미정 |
 | D-17 | 점수 방식 감시 주기와, 바뀌었을 때 알림과 재검토 표시 방법 | 미정 |
 | D-18 | 예외 처리 모델 → OpenRouter gpt-4o-mini, 3초 (18장) | 해결 (v0.7) |
