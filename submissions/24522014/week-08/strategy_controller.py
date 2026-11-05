@@ -336,7 +336,7 @@ def observation(md, now):
     if (snapshot.get("round") != 3 or inv.get("round") != 3
             or not 0 <= now-result["market_at"] <= 3600 or now-inventory_path.stat().st_mtime > 120
             or any(not finite(shop.get(k)) for k in ("deals", "visits", "revenue", "stars", "reviews"))
-            or shop.get("alive") is not True):
+            or type(shop.get("alive")) is not bool):
         return result
     stock = inv.get("units", [])
     try:
@@ -367,6 +367,10 @@ def observation(md, now):
             costs[offer["unit"]] = offer["cost"]
     from warranty_trial import liability
     reserve += liability(md, now)
+    if shop["alive"] is False:
+        # The snapshot is up to 30 minutes old, so one bad reading must not hold restock that long. This stays invalid: no experiment starts, is judged or keeps running on it.
+        result.update(shop_not_alive=True, balance=inv["balance"], reserve=reserve)
+        return result
     missing_costs = {r["unit"] for r in local["rows"] if r["unit"] not in costs}
     if missing_costs:
         # Older resident sellers did not include cost in their signed-offer metadata.
@@ -514,6 +518,11 @@ def notify(md, observation, events, state, settings):
             pass
 
 
+def restock_stays_open(obs, state):
+    """Only when alive False is the sole complaint, cash is above the reserve and no cash guard is holding."""
+    return obs.get("shop_not_alive") is True and obs["balance"] > obs["reserve"] and not state["controls"]["restock_paused"]
+
+
 def run(md, now=None, force=False):
     md = Path(md)
     md.mkdir(parents=True, exist_ok=True)
@@ -544,7 +553,7 @@ def run(md, now=None, force=False):
         published = validate(state["controls"])
         if not obs.get("valid") and settings["enabled"]:
             published = copy.deepcopy(BASE)
-            published["restock_paused"] = True
+            published["restock_paused"] = not restock_stays_open(obs, state)
         active = state.get("active")
         policy = {"schema": 1, "round": 3, "version": state["version"], "published_at": now,
                   "valid_until": now+settings["lease_seconds"], "controls": published,
