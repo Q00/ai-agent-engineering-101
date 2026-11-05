@@ -32,7 +32,14 @@ def rank_delta(now_rank, before_rank):
 
 
 def main():
-    b = market.get_json("/api/board") or {}
+    b = None
+    for wait in (0, 5, 15):                    # 2026-11-05 16:18: one empty board answer blanked the report
+        time.sleep(wait)                       #   and overwrote track-last.json with an empty snapshot
+        b = market.get_json("/api/board")
+        if isinstance(b, dict) and b.get("shops"):
+            break
+    if not (isinstance(b, dict) and b.get("shops")):
+        raise SystemExit("board unavailable (/api/board gave no shops); track-last.json left as it was")
     last = json.loads(LAST.read_text()) if LAST.exists() else {}
     prev_shops, prev_buyers, prev_players = last.get("shops", {}), last.get("buyers", {}), last.get("players", {})
     snap = {"ts": time.time(), "shops": {}, "buyers": {}, "players": {}}
