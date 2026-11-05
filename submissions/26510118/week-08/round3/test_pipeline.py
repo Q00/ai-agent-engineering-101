@@ -413,6 +413,25 @@ def test_restock(fake: Fake):
           _seller.priced(dict(dear, supplied_at=NOW - 8 * DAY), NOW, False)["warranty_hours"] is None
           and _seller.priced(dear, end - 10 * H, False)["warranty_hours"] is None
           and _seller.priced(dear, end - 10 * H, True)["warranty_hours"] == 6)
+    path = common.MARKET_DIR / "market_summary.json"
+    kept = path.read_bytes() if path.exists() else None
+    cells = {"A_w": {"median": 0.78, "n": 20}, "B_w": {"median": 0.72, "n": 20}, "C_w": {"median": 0.69, "n": 20}}
+    common.write_json(path, {"by_sku": {BED: {"others_6h": cells}}, "by_category": {}})
+    a_dear, a_ok = dict(dear, unit="u-a1", cost=290_000), dict(dear, unit="u-a2", cost=210_000)
+    b, c = dict(dear, unit="u-b", grade="B", cost=150_000), dict(dear, unit="u-c", grade="C", cost=110_000)
+    req = {"grades": [], "need_hours": None, "warranty": False}
+    check("S1 goods margin first: of an A bought dear (floor 0.93 of list, its market 0.78), a cheaper A, a B and a C, "
+          "the C (0.69 x list - cost: the most over cost) is offered",
+          _seller.pick([a_dear, a_ok, b, c], req, NOW)["unit"] == "u-c")
+    check("...a buyer who asks for grade A gets the A under its market, not the dear one listed first",
+          _seller.pick([a_dear, a_ok, b, c], dict(req, grades=["A"]), NOW)["unit"] == "u-a2")
+    check("...a dear A alone is still offered (the least over its market)", _seller.pick([a_dear], req, NOW)["unit"] == "u-a1")
+    common.write_json(path, {"by_sku": {}, "by_category": {}})
+    check("...no market known: the best grade, then the cheapest", _seller.pick([a_dear, b, a_ok, c], req, NOW)["unit"] == "u-a2")
+    if kept is None:
+        path.unlink()
+    else:
+        path.write_bytes(kept)
     old = [u for u in shelf if u["sku"] != PAKIMCHI] + [unit_row("u-near", PAKIMCHI, 9000, 10)]
     out, _ = restock.plan(inv(old), CATALOG, DEMAND, {}, [], [], rules, NOW)
     check("food with under a day left does not count: a fresh one is bought", out["buy"] == [{"sku": PAKIMCHI, "qty": 1}], out)

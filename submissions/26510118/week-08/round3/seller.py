@@ -236,8 +236,28 @@ async def read_request(text: str, units: list) -> dict:
                 grades=req["grades"] or [g for g in (got.get("grades") or []) if g in pricing.START])
 
 
+PICK_SLACK = 0.02     # a goods unit whose floor is within this share of list over its grade's market can still sell
+
+
+def market_for(u: dict, plan: dict):
+    """What the unit's grade sells for, as a share of list: the SKU's own market of the last 6 h (with or without the
+    warranty it carries), else its category's for the grade; None when neither is known."""
+    summary = market_file("market_summary.json")
+    w = bool(plan.get("warranty_hours"))
+    cells = ((summary.get("by_sku") or {}).get(u.get("sku")) or {}).get("others_6h")
+    by_grade = ((summary.get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
+    ref = pricing.sku_ref(cells, plan["grade"], w)
+    return ref if ref is not None else pricing.market_ref(by_grade, plan["grade"], w)
+
+
 def pick(units: list, req: dict, now: float):
-    """The unit of one product to offer, or None."""
+    """The unit of one product to offer, or None. Food: the freshest (the one that meets the need, the soonest to
+    expire). Goods, margin first (11/5 15:40): of the units whose floor is within PICK_SLACK of what their grade
+    sells for, the one that earns most over its cost at that price (a better grade on a tie); none: the one least
+    over its market. A goods unit's grade does not change what it is worth to a buyer (the market values a settled
+    deal at the list price), and in 24 h our goods talks closed 40% for A (margin 0.10 of list), 72% for B (0.19)
+    and 68% for C (0.32), while an A bought at a surged cost (0.81-0.84 of list) opened 40% of our talks above its
+    market and closed 15% of them. With no market known for any of them: the best grade, then the cheapest."""
     cat = catalog()
     if req["grades"]:
         units = [u for u in units if pricing.grade(u, now, cat) in req["grades"]]
@@ -247,7 +267,22 @@ def pick(units: list, req: dict, now: float):
         fit = [u for u in units if fresh(u) >= req["need_hours"] + NEED_MARGIN]
         return min(fit, key=lambda u: (fresh(u), rank(u)), default=None)
     regular = [u for u in units if not pricing.near_expiry(u, now)]
-    return max(regular, key=lambda u: (fresh(u), -rank(u)), default=None)
+    goods = [u for u in regular if u.get("kind") == "goods" and u.get("list_price")]
+    if not goods or len(goods) < len(regular):
+        return max(regular, key=lambda u: (fresh(u), -rank(u), -(u.get("cost") or 0)), default=None)
+    rows = []
+    for u in goods:
+        plan = priced(u, now, bool(req.get("warranty")))
+        ref = market_for(u, plan)
+        lp = u["list_price"]
+        rows.append((u, ref, plan["floor"] / lp - ref if ref is not None else None, ref * lp - u["cost"] if ref is not None else None))
+    known = [r for r in rows if r[1] is not None]
+    if not known:
+        return min(goods, key=lambda u: (rank(u), u.get("cost") or 0))
+    ok = [r for r in known if r[2] <= PICK_SLACK]
+    if ok:
+        return max(ok, key=lambda r: (r[3], -rank(r[0])))[0]
+    return min(known, key=lambda r: (r[2], rank(r[0])))[0]
 
 
 def walk_odds(d: dict) -> float | None:
