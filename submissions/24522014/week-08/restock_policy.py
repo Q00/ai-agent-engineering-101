@@ -188,6 +188,12 @@ def main():
             observe_low_stars()
         except Exception:
             pass
+        # Copies the rotated kit log once per generation; it records its own failures.
+        try:
+            from log_archive import observe as archive_kit_log
+            archive_kit_log()
+        except Exception:
+            pass
         try:
             from leader_monitor import observe as observe_leaders
             observe_leaders(md)
