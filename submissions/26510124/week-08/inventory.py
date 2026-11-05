@@ -2,15 +2,18 @@
 
 An issued receipt has no expiry in the kit contract. Its unit stays reserved
 across seller restarts until it disappears from inventory; it is not resold
-merely because a buyer is slow to pay. Unfinished negotiations expire instead.
+merely because a buyer is slow to pay. With MARKET_RECEIPT_GUARD=1 the guarded
+checkout enforces durable receipt leases; only those can expire safely.
 """
 import json
 import math
+import os
 import re
 import time
 from pathlib import Path
 
 from feedback import atomic_json
+from receipt_leases import LeaseError, ReceiptLeaseStore
 
 
 class StockError(ValueError):
@@ -39,8 +42,10 @@ class Inventory:
         self.folder = Path(folder)
         self.path = self.folder / "inventory.json"
         self.hold_path = self.folder / "receipt-reservations.json"
+        self.leases = ReceiptLeaseStore(self.folder) if os.environ.get("MARKET_RECEIPT_GUARD") == "1" else None
         try:
-            self.holds = read_json(self.hold_path) if self.hold_path.exists() else {}
+            self.holds = (self.leases.holds() if self.leases else
+                          read_json(self.hold_path) if self.hold_path.exists() else {})
         except (OSError, ValueError) as exc:
             raise StockError("Receipt reservations could not be read; do not discard them",
                              reason_code="inventory_unavailable") from exc
@@ -84,13 +89,19 @@ class Inventory:
             if u["unit"] in units:
                 raise StockError("Duplicate unit in inventory", reason_code="inventory_unavailable")
             units[u["unit"]] = u
-        kept = {unit: task for unit, task in self.holds.items() if unit in units}
-        if kept != self.holds:
+        if self.leases:
             try:
-                atomic_json(self.hold_path, kept)
-            except OSError as exc:
+                self.holds = self.leases.reconcile(units)
+            except LeaseError as exc:
                 raise StockError("Could not persist receipt reservations", reason_code="inventory_unavailable") from exc
-            self.holds = kept
+        else:
+            kept = {unit: task for unit, task in self.holds.items() if unit in units}
+            if kept != self.holds:
+                try:
+                    atomic_json(self.hold_path, kept)
+                except OSError as exc:
+                    raise StockError("Could not persist receipt reservations", reason_code="inventory_unavailable") from exc
+                self.holds = kept
         return {key: u for key, u in units.items() if u.get("kind") in ("food", "goods")
                 and u.get("grade") in ("A", "B", "C") and
                 (u["kind"] != "food" or
@@ -133,8 +144,17 @@ class Inventory:
             raise StockError("Reserved unit expired or left inventory")
         return u
 
-    def issue(self, task):
+    def issue(self, task, *, receipt=None):
         u = self.current(task)
+        if self.leases:
+            try:
+                self.leases.issue(task, u["unit"], receipt)
+                self.holds = self.leases.holds()
+            except LeaseError as exc:
+                raise StockError("Could not persist guarded receipt authorization",
+                                 reason_code="inventory_unavailable") from exc
+            self.release(task)
+            return u
         holds = {**self.holds, u["unit"]: task}
         # Persist BEFORE sending a receipt, so a restart cannot double-promise it.
         try:

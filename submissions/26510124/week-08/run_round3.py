@@ -94,9 +94,13 @@ def main():
         # Every hook uses the same interpreter/venv as the launcher.
         os.environ["PATH"] = str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
         name = json.loads((ROOT / "shop-adaptive.json").read_text())["name"]
-        os.execv(sys.executable, [sys.executable, str(path), "join", "--dir", str(ROOT),
-                                 "--market", "https://market.ourolabs.ai", "--name", name,
-                                 "--tunnel", "--orders", str(args.orders)])
+        try:
+            os.execv(sys.executable, [sys.executable, str(ROOT / "market_runtime.py"), "join", "--dir", str(ROOT),
+                                     "--market", "https://market.ourolabs.ai", "--name", name,
+                                     "--tunnel", "--orders", str(args.orders)])
+        finally:
+            # A successful exec inherits the lock; a failed exec must close it.
+            lock.close()
     except (OSError, ValueError) as exc:
         print(f"Not started: {exc}", file=sys.stderr)
         return 1

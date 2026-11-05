@@ -277,14 +277,15 @@ class InventorySeller(Seller):
                         receipt["claim"] = product["grade"]
                         if deal["terms"]["warranty_hours"]:
                             receipt["warranty_hours"] = deal["terms"]["warranty_hours"]
-                    self.inventory.issue(task.id)
+                    self.inventory.issue(task.id, receipt=receipt)
                     receipt_issued = True
                     self.r3.pop(task.id, None)
                     # Persistence is the commit point, even when the response
                     # connection subsequently fails. Never free this unit here.
                     self.event(task.id, "receipt_issued", product, price, deal=deal, terminal=True)
                     await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-                    await up.complete(say(f"Agreed {product['sku']} at {price}; checkout still required."))
+                    expiry_notice = " Complete checkout within 5 minutes." if self.inventory.leases else ""
+                    await up.complete(say(f"Agreed {product['sku']} at {price}; checkout still required." + expiry_notice))
                 else:
                     self.discard(task.id)
                     self.event(task.id, "rejected", product, deal=deal, reason_code="price_rejected",

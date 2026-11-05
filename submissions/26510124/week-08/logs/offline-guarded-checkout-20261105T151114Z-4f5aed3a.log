@@ -1,0 +1,36 @@
+Synthetic guarded checkout and launcher tests; no market or model calls.
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python', '-m', 'unittest', 'test_guarded_checkout', 'test_runtime', '-v']
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_inventory.py:14: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_cancel_cannot_release_stock_while_settlement_is_in_flight (test_guarded_checkout.GuardedCheckoutTests.test_cancel_cannot_release_stock_while_settlement_is_in_flight) ... 00:11:14 [acp] settled G00001 at 85000, ledger #8, unit u1 grade B
+ok
+test_cancel_revokes_and_releases_but_old_receipt_stays_denied (test_guarded_checkout.GuardedCheckoutTests.test_cancel_revokes_and_releases_but_old_receipt_stays_denied) ... ok
+test_concurrent_create_only_publishes_one_session (test_guarded_checkout.GuardedCheckoutTests.test_concurrent_create_only_publishes_one_session) ... ok
+test_confirmed_payment_is_durable_idempotent_and_log_compatible (test_guarded_checkout.GuardedCheckoutTests.test_confirmed_payment_is_durable_idempotent_and_log_compatible) ... ok
+test_disconnect_during_payment_retains_uncertain_hold (test_guarded_checkout.GuardedCheckoutTests.test_disconnect_during_payment_retains_uncertain_hold) ... ok
+test_expired_checkout_releases_upstream_picker_hold_and_denies_completion (test_guarded_checkout.GuardedCheckoutTests.test_expired_checkout_releases_upstream_picker_hold_and_denies_completion) ... ok
+test_expiry_while_inventory_request_runs_never_publishes_session (test_guarded_checkout.GuardedCheckoutTests.test_expiry_while_inventory_request_runs_never_publishes_session) ... ok
+test_invalid_payload_and_get_cannot_cancel_a_receipt (test_guarded_checkout.GuardedCheckoutTests.test_invalid_payload_and_get_cannot_cancel_a_receipt) ... ok
+test_old_signed_receipt_cannot_rebind_unreserved_stock (test_guarded_checkout.GuardedCheckoutTests.test_old_signed_receipt_cannot_rebind_unreserved_stock) ... ok
+test_payment_cannot_start_when_durable_state_write_fails (test_guarded_checkout.GuardedCheckoutTests.test_payment_cannot_start_when_durable_state_write_fails) ... ok
+test_public_guard_card_reports_runtime_without_credentials (test_guarded_checkout.GuardedCheckoutTests.test_public_guard_card_reports_runtime_without_credentials) ... ok
+test_recorded_receipt_restores_unsigned_terms_after_restart (test_guarded_checkout.GuardedCheckoutTests.test_recorded_receipt_restores_unsigned_terms_after_restart) ... ok
+test_restart_does_not_create_second_session_for_same_receipt (test_guarded_checkout.GuardedCheckoutTests.test_restart_does_not_create_second_session_for_same_receipt) ... ok
+test_timeout_or_ambiguous_refusal_retains_hold_past_deadline (test_guarded_checkout.GuardedCheckoutTests.test_timeout_or_ambiguous_refusal_retains_hold_past_deadline) ... 00:11:14 [acp] payment result unknown: ReadTimeout; hold retained
+00:11:14 [acp] settlement not confirmed: HTTP 503; hold retained
+ok
+test_join_launches_guard_wrapper_instead_of_bare_vendor (test_guarded_checkout.GuardedLauncherTests.test_join_launches_guard_wrapper_instead_of_bare_vendor) ... ok
+test_wrapper_installs_guard_before_opt_in_and_preserves_pinned_kit (test_guarded_checkout.GuardedLauncherTests.test_wrapper_installs_guard_before_opt_in_and_preserves_pinned_kit) ... ok
+test_astra_luna_runtime_requires_only_codex (test_runtime.RuntimeTests.test_astra_luna_runtime_requires_only_codex) ... ok
+test_check_reports_astra_and_advisor_cli_without_model_calls (test_runtime.RuntimeTests.test_check_reports_astra_and_advisor_cli_without_model_calls) ... ok
+test_identity_copy_preserves_existing_keys_and_never_overwrites_mismatch (test_runtime.RuntimeTests.test_identity_copy_preserves_existing_keys_and_never_overwrites_mismatch) ... ok
+test_luna_requires_codex_even_when_trading_uses_haiku (test_runtime.RuntimeTests.test_luna_requires_codex_even_when_trading_uses_haiku) ... ok
+test_missing_codex_refuses_join_before_starting_kit (test_runtime.RuntimeTests.test_missing_codex_refuses_join_before_starting_kit) ... ok
+test_missing_profile_keeps_legacy_haiku_launcher (test_runtime.RuntimeTests.test_missing_profile_keeps_legacy_haiku_launcher) ... ok
+test_missing_source_key_never_generates_an_identity (test_runtime.RuntimeTests.test_missing_source_key_never_generates_an_identity) ... ok
+test_pinned_kit_exactly_matches_upstream_blob (test_runtime.RuntimeTests.test_pinned_kit_exactly_matches_upstream_blob) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 0.176s
+
+OK
