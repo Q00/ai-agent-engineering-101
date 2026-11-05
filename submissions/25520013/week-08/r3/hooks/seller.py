@@ -78,8 +78,8 @@ def sign(receipt, key_path="shop_key.pem"):
     return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(body))).decode())
 
 
-NEED_RE = re.compile(r"(?<![\d.,])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h|시간)(?![0-9A-Za-z])",
-                     re.I)                                     # v2.1a: 1,000 hours -> 1000
+NEED_RE = re.compile(r"(?<!\d)(?<!\d[.,])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h|시간)(?![0-9A-Za-z])",
+                     re.I)                                     # v2.1a: 1,000 hours -> 1000, 48h,72h -> 72
 NEED_MARGIN_H = 0.25          # v2.1: the settle lands minutes after the quote
 UNKNOWN_NEED_SHARE = 0.75     # v2.1: a food buyer needs 0.10/0.25/0.50/0.75 of the shelf; 0.75 covers every buyer
 
@@ -95,7 +95,7 @@ def stated_need_hours(text, names=()):
     for nm in names:
         t = re.sub(re.escape(nm), " ", t, flags=re.I)
     for tok in sorted({m.group(0) for nm in names for m in NEED_RE.finditer(nm)}, key=len, reverse=True):
-        t = re.sub(r"(?<![\d.,])" + re.escape(tok) + r"(?![0-9A-Za-z])", " ", t, flags=re.I)
+        t = re.sub(r"(?<!\d)(?<!\d[.,])" + re.escape(tok) + r"(?![0-9A-Za-z])", " ", t, flags=re.I)
     hs = [float(m.group(1).replace(",", "")) for m in NEED_RE.finditer(t)]
     return max(hs) if hs else None
 

@@ -63,6 +63,16 @@ def test_thousands_separators_read_as_one_number():
     )
 
 
+def test_an_hour_number_right_after_a_period_or_comma_still_reads():
+    assert S.stated_need_hours("need: shelf life 48h,72h or more") == 72.0
+    assert S.stated_need_hours("I need 48 hours.72 hours is better") == 72.0
+    assert S.stated_need_hours("kimchi.48 hours") == 48.0
+    assert S.stated_need_hours("구운계란.48시간") == 48.0
+    assert S.stated_need_hours("구운계란.48시간", [EGG]) is None  # the name's own token
+    for torn in ("12,34 hours", "1234,5 h", "1.2.3 hours", "1,000150시간"):
+        assert S.stated_need_hours(torn) is None  # digits around a separator stay one number
+
+
 def test_a_mixed_fit_keeps_the_v120_pick():
     units = [dict(food("fC", 300), grade="C"), goods("gA", "A", 0, sku="G0000a1")]
     for text in (
