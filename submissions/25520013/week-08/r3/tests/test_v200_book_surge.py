@@ -183,3 +183,22 @@ def test_surge_counts_in_the_below_market_check():
     q, why = _plan(rows, surge=[("G03d0199f", 1.2)], **kw)
     assert "G03d0199f" not in q
     assert any("market p50 under cost" in n for n in why["notes"])
+
+
+# --- action space inside the policy validator (09:58 KST: stock_target 36 failed bounds [0, 20] and was rolled back)
+
+
+def test_action_space_ranges_pass_the_policy_validator():
+    from icrl import space as SP
+
+    pol = P.load()
+    bounds = pol["bounds"]
+    for e in SP.load():
+        key = e["path"].rsplit(".", 1)[-1]
+        if e.get("type") in ("int", "float") and key in bounds:
+            lo, hi = bounds[key]
+            assert lo <= e["min"] and e["max"] <= hi, (e["path"], e["min"], e["max"], bounds[key])
+        if key == "skus_per_category":
+            assert 1 <= e["min"] and e["max"] <= 5, e
+    pol["categories"]["가구/침구>가구>침대/매트리스"] = {"stock_target": 60, "qty_per_buy": 20, "skus_per_category": 5}
+    P.validate(pol)
