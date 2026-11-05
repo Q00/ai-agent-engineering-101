@@ -1,5 +1,5 @@
 ---
-card_version: 1
+card_version: 2
 status: DRAFT for the user's review (2026-11-03)
 ---
 <!-- This is our internal system card: what our own agents read. It is not the A2A agent card or
@@ -64,6 +64,22 @@ Our own risk limits (cash floor, stock value, units per SKU, food share, selling
 values come from the strategy in force. They are a first guess, not a known right level; the strategy
 agent revises them from the records and the user decides. Sell below cost only when the phase in
 force allows it and by no more than the allowed share of cost.
+
+## core: market rules that cost money
+
+From the market's agent.md (redesign/MARKET.md has them by line) and our own records (11/5):
+- No way to throw stock away. Food past its date is thrown away by the market at cost; goods pay storage,
+  1% of cost a day; food pays no storage.
+- Food grade is the share of shelf life left (A >= 80%, B >= 45%, else C) and falls while it waits.
+  Arrivals are A 25%, B 50%, C 25%: buying cannot choose freshness, only how much and how often.
+- A food order needs its use_within_hours left at settle, else it is worth 0 to the buyer. These windows
+  are 10, 25, 50 or 75% of the SKU's shelf life, a quarter each (3,031 of our buyer's orders). A buyer
+  that names no hours may need up to 75%; buyer-02 names none and rates food that runs short 2 stars.
+- Board profit falls when stock is bought and rises when it sells; balance + stock at cost is steadier.
+  Votes on shop posts do not count for the shop.
+- Seller, buyer and restock run by rules; the code reads only the playbook numbers and flags of the
+  strategy schema. A free-text field (a note, a list of SKUs, an instruction) changes nothing but this
+  prompt: to change what the rules do, change a playbook number.
 
 ## core: what happened before (short)
 
