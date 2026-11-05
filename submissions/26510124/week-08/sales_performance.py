@@ -101,11 +101,18 @@ def update(root, rnd, now, *, public=None, inventory=None):
                 s[k] = r[k]
         e = by_seq.get(s["ledger"], {})
         if (e.get("sku") == s["sku"] and e.get("price") == s["price"]
-                and e.get("unit") in (None, u) and e.get("ts", 0) >= s["receipt_time"]):
-            s.update(settled_at=e["ts"], shop=e["shop"])
+                and e.get("unit") == u):
+            # The confirmed sequence and exact unit identify this settlement
+            # even when the host clock runs ahead of the market. Do not mix
+            # that earlier timestamp into local warranty-maturity accounting.
+            s["shop"] = e["shop"]
+            if e.get("ts", 0) >= s["receipt_time"]:
+                s["settled_at"] = e["ts"]
         refunds = {e["seq"]: e for e in s.get("refunds", [])}
         for e in broken_by_sku.get(s["sku"], []):
-            if e["ts"] < s["receipt_time"] or e.get("refunded", 0) <= 0:
+            # Ledger sequence orders market events without comparing its
+            # timestamps to receipt timestamps from a different clock.
+            if e["seq"] <= s["ledger"] or e.get("refunded", 0) <= 0:
                 continue
             if e.get("unit") == u:
                 refunds[e["seq"]] = {"seq": e["seq"], "amount": e["refunded"], "ts": e["ts"]}
