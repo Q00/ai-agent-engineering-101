@@ -102,18 +102,15 @@ DECISION_MAX_PER_HOUR = 60          # decision-model calls per rolling hour (pri
 DECISION_RESERVE = 10               # of those, kept for priority calls (the self-check of our own posts)
 INJECTION_P = 0.9                   # downvote only when the decision model is this sure (honest report scored 0.78)
 
-# lever2-forum (MA-3, 2026-11-05): SHADOW ONLY. 11 new constants, used by r3lib/forum_lever2.py. Live code reads only
-# FORUM_LEVER2 and LEVER2_DOWNVOTE_P, in forum_r3.vote(), and only when FORUM_LEVER2 is True.
-FORUM_LEVER2 = False                # the switch. False = live forum behaviour as before;
-                                    # True: forum_r3.vote() sends no -1 on the LLM label alone
+# lever2-forum (MA-3, 2026-11-05): SHADOW ONLY. New constants; nothing live reads them yet (r3lib/forum_lever2.py).
+FORUM_LEVER2 = False                # the switch. False = live forum behaviour is exactly as before
 LEVER2_POST_GAP_S = 300             # one buyer post per 5 min (12/h, the kit maximum); live gap is FORUM_MIN_GAP_MIN
 LEVER2_NEAR_DUP = 0.8               # character 3-gram Jaccard at or above this = near-duplicate, not posted
 LEVER2_DOWNVOTE_P = 0.9             # -1 only when the cached P(manipulation) is at least this; no default -1
 LEVER2_UPVOTES_PER_RUN = 12         # at most this many +1 per run, on accurate and useful posts only
-LEVER2_VOTE_MIN_SETTLED = 5         # a vote counts only when we have this many settled deals (and owners differ)
+VOTE_MIN_SETTLED = 5                # a vote counts only when we have this many settled deals (and owners differ)
 LEVER2_ROLLBACK_H = 2               # rollback window after going live
-LEVER2_ROLLBACK_BASELINE_H = 2      # baseline = our dislikes per post in this many hours before switch-on
-LEVER2_ROLLBACK_RATIO = 1.2         # roll back when dislikes per post after switch-on > this x baseline (relative)
+LEVER2_ROLLBACK_DISLIKES_PER_POST = 0.8   # roll back when our dislikes per post in the window are above this
 LEVER2_ROLLBACK_ON_HIDDEN = True    # roll back on any hidden post
 LEVER2_ROLLBACK_ON_429 = True       # roll back on any HTTP 429
 REACT_MAX_STEPS = 6

@@ -178,47 +178,17 @@ def test_upvote_cap():
 
 
 # ------------------------------------------------------------------------------------------- rollback
-RB = types.SimpleNamespace(LEVER2_ROLLBACK_H=2, LEVER2_ROLLBACK_BASELINE_H=2, LEVER2_ROLLBACK_RATIO=1.2,
-                           LEVER2_ROLLBACK_ON_HIDDEN=True, LEVER2_ROLLBACK_ON_429=True)
-
-
-def test_rollback_rule_is_relative_to_the_pre_switch_baseline():
-    cfg, t0 = RB, NOW
-    before = [{"ts": t0 - 3600, "dislikes": 1}, {"ts": t0 - 60, "dislikes": 1}]        # baseline 1.0 -> limit 1.2
-    old = [{"ts": t0 - 3 * 3600, "dislikes": 50}]                                         # older than 2 h: ignored
-    after_ok = [{"ts": t0 + 1, "dislikes": 1}, {"ts": t0 + 2, "dislikes": 1}]            # 1.0 <= 1.2
-    r = fl.rollback_check(old + before + after_ok, [200], t0, t0 + 600, cfg)
-    assert r["rollback"] is False
-    assert r["measured"]["baseline"] == 1.0 and r["measured"]["limit"] == 1.2 and r["measured"]["dislikes_per_post"] == 1.0
-    after_bad = [{"ts": t0 + 1, "dislikes": 2}, {"ts": t0 + 2, "dislikes": 1}]           # 1.5 > 1.2
-    r = fl.rollback_check(before + after_bad, [], t0, t0 + 60, cfg)
-    assert r["rollback"] and "1.2 x baseline" in r["reasons"][0]
-    edge = [{"ts": t0 + 1, "dislikes": 6}, {"ts": t0 + 2, "dislikes": 6}] + [{"ts": t0 + 3 + i, "dislikes": 0}
-                                                                            for i in range(8)]  # 1.2: not above
-    assert not fl.rollback_check(before + edge, [], t0, t0 + 60, cfg)["rollback"]
-    # the old absolute 0.8 rule would trip on a 1.0 post-switch rate; the relative rule does not when baseline is 1.0
-    assert not fl.rollback_check(after_ok, [], t0, t0 + 60, cfg, baseline=1.0)["rollback"]
-    assert fl.rollback_check(after_ok, [], t0, t0 + 60, cfg, baseline=0.5)["rollback"]   # 1.0 > 0.6
-
-
-def test_rollback_hidden_429_window_and_no_baseline():
-    cfg, t0 = RB, NOW
+def test_rollback_rule():
+    cfg = types.SimpleNamespace(LEVER2_ROLLBACK_H=2, LEVER2_ROLLBACK_DISLIKES_PER_POST=0.8,
+                                LEVER2_ROLLBACK_ON_HIDDEN=True, LEVER2_ROLLBACK_ON_429=True)
+    t0 = NOW
+    ok = fl.rollback_check([{"ts": t0 + 1, "dislikes": 0}, {"ts": t0 + 2, "dislikes": 1}], [200], t0, t0 + 600, cfg)
+    assert ok["rollback"] is False and ok["measured"]["dislikes_per_post"] == 0.5
+    assert fl.rollback_check([{"ts": t0 + 1, "dislikes": 2}, {"ts": t0 + 2, "dislikes": 0}], [], t0, t0 + 60,
+                             cfg)["rollback"]                                          # 1.0 > 0.8
     assert fl.rollback_check([{"ts": t0 + 1, "hidden": True}], [], t0, t0 + 60, cfg)["rollback"]
     assert fl.rollback_check([], [200, 429], t0, t0 + 60, cfg)["rollback"]
     assert not fl.rollback_check([{"ts": t0 + 1, "dislikes": 9}], [429], t0, t0 + 3 * 3600, cfg)["rollback"]
-    r = fl.rollback_check([{"ts": t0 + 1, "dislikes": 9}], [200], t0, t0 + 60, cfg)    # no post before: no ratio
-    assert r["rollback"] is False and r["measured"]["baseline"] is None
-    assert fl.rollback_limit(1.0, cfg) == 1.2 and fl.rollback_limit(None, cfg) is None
-
-
-def test_config_rollback_constants():
-    assert config.LEVER2_ROLLBACK_RATIO == 1.2 and config.LEVER2_ROLLBACK_BASELINE_H == 2
-    assert config.LEVER2_ROLLBACK_H == 2 and not hasattr(config, "LEVER2_ROLLBACK_DISLIKES_PER_POST")
-    assert config.LEVER2_VOTE_MIN_SETTLED == 5 and not hasattr(config, "VOTE_MIN_SETTLED")
-    new = [k for k in dir(config) if k.startswith("LEVER2_") or k == "FORUM_LEVER2"]
-    assert len(new) == 11, new                      # the docs state this count
-    rb = json.loads((ROOT / "policies/candidates/lever2-forum.json").read_text())["policy"]["forum"]["rollback"]
-    assert rb["relative_ratio"] == 1.2 and rb["baseline_h_before_switch"] == 2 and "dislikes_per_post_above" not in rb
 
 
 # ------------------------------------------------------------------------------------------- switch
@@ -233,7 +203,6 @@ def test_default_false_changes_nothing():
     assert on["buyer_min_gap_s"] == 300 and on["downvote_p"] == 0.9
     for live in ("forum_r3.py", "shop_r3.py", "buyer_r3.py", "restock_r3.py"):     # nothing live imports it
         assert "forum_lever2" not in (ROOT / live).read_text(encoding="utf-8")
-    for live in ("shop_r3.py", "buyer_r3.py", "restock_r3.py"):     # only forum_r3.vote() reads the switch
         assert "FORUM_LEVER2" not in (ROOT / live).read_text(encoding="utf-8")
 
 

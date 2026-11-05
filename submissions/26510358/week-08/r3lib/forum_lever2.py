@@ -1,7 +1,7 @@
 """Lever2-forum candidate (MA-3, 2026-11-05): SHADOW ONLY. Nothing live imports this module.
 
-forum_r3.py does not import this module. The switch `config.FORUM_LEVER2` is False. forum_r3.vote() reads only
-the switch itself (True: no -1 on the LLM label alone); the posting and vote plan here is not wired in until QA GO. Everything here is read-only and deterministic: SQL over
+forum_r3.py is unchanged. The one-line switch `config.FORUM_LEVER2` is False, and even when it is True nothing
+calls this code until it is wired in after QA GO. Everything here is read-only and deterministic: SQL over
 memory.sqlite (mode=ro) and fixed templates. No posting, no voting, no LLM or decision-model call.
 
 What the candidate would do (policies/candidates/lever2-forum.json):
@@ -13,10 +13,9 @@ What the candidate would do (policies/candidates/lever2-forum.json):
      near-duplicate (character 3-gram Jaccard >= LEVER2_NEAR_DUP against our earlier posts).
   4. votes: no -1 by default. -1 only when the cached P(manipulation) >= LEVER2_DOWNVOTE_P. +1 on accurate,
      useful posts (every ref is in our ledger copy and the text quotes a ref's amount or SKU). Only votes that
-     count: we have >= LEVER2_VOTE_MIN_SETTLED settled deals and the author has a different GitHub owner.
-  5. rollback (relative, MO 2026-11-05): baseline = our dislikes per post in the LEVER2_ROLLBACK_BASELINE_H
-     before switch-on. Within LEVER2_ROLLBACK_H after switch-on, back to the old settings if our dislikes per
-     post > LEVER2_ROLLBACK_RATIO x baseline, any post is hidden, or any HTTP 429.
+     count: we have >= VOTE_MIN_SETTLED settled deals and the author has a different GitHub owner.
+  5. rollback: within LEVER2_ROLLBACK_H of going live, back to the old settings if dislikes per post >
+     LEVER2_ROLLBACK_DISLIKES_PER_POST, any post is hidden, or any HTTP 429.
 
 `estimate` is an ESTIMATE of the board's buyer `posts` percentile and buyer ALL under live vs candidate cadence
 (others continue at their own last-24 h post rate; surplus, deals and the vote-based forum field held fixed).
@@ -334,7 +333,7 @@ def plan_votes(posts, ledger, owners, my_owner, my_settled, cap=None, downvote_p
     why, counts}]. action in {+1, -1, None}. We skip our own owner's posts and do not vote when it would not count."""
     cap = cap if cap is not None else _cfg("LEVER2_UPVOTES_PER_RUN", 12)
     downvote_p = downvote_p if downvote_p is not None else _cfg("LEVER2_DOWNVOTE_P", 0.9)
-    min_settled = min_settled if min_settled is not None else _cfg("LEVER2_VOTE_MIN_SETTLED", 5)
+    min_settled = min_settled if min_settled is not None else _cfg("VOTE_MIN_SETTLED", 5)
     out, ups = [], 0
     for p in sorted(posts, key=lambda p: -(p.get("ts") or 0)):
         owner = owners.get(p.get("author"))
@@ -359,35 +358,17 @@ def plan_votes(posts, ledger, owners, my_owner, my_settled, cap=None, downvote_p
 
 
 # ------------------------------------------------------------------------------------------- rollback
-def dislikes_per_post(posts):
-    return sum(p.get("dislikes") or 0 for p in posts) / len(posts) if posts else None
-
-
-def rollback_limit(baseline, cfg=config):
-    """Relative rule: dislikes per post above ratio x baseline. None without a baseline (no posts before)."""
-    return None if baseline is None else round(cfg.LEVER2_ROLLBACK_RATIO * baseline, 4)
-
-
-def rollback_check(own_posts, http_statuses, switched_at, now, cfg=config, baseline=None):
-    """Rollback rule for the first LEVER2_ROLLBACK_H hours after switch-on. own_posts: our posts [{ts, dislikes,
-    hidden}], before and after the switch. baseline: our dislikes per post in the LEVER2_ROLLBACK_BASELINE_H before
-    switch-on; None = measured from own_posts. Without any post before the switch there is no baseline, and only
-    hidden posts and HTTP 429 trip. Returns {"rollback": bool, "reasons": [...], "measured": {...}}."""
+def rollback_check(own_posts, http_statuses, switched_at, now, cfg=config):
+    """Rollback rule for the first LEVER2_ROLLBACK_H hours after going live. own_posts: our posts since the switch
+    [{ts, dislikes, hidden}]. Returns {"rollback": bool, "reasons": [...], "measured": {...}}."""
     win_h = cfg.LEVER2_ROLLBACK_H
-    if baseline is None:
-        before = [p for p in own_posts
-                  if switched_at - cfg.LEVER2_ROLLBACK_BASELINE_H * 3600 <= (p.get("ts") or 0) < switched_at]
-        baseline = dislikes_per_post(before)
-    limit = rollback_limit(baseline, cfg)
     if now - switched_at > win_h * 3600:
-        return {"rollback": False, "reasons": [], "measured": {"baseline": baseline, "limit": limit},
-                "note": f"outside the first {win_h} h"}
-    ps = [p for p in own_posts if switched_at <= (p.get("ts") or 0) <= now]
-    dpp = dislikes_per_post(ps) or 0.0
+        return {"rollback": False, "reasons": [], "measured": {}, "note": f"outside the first {win_h} h"}
+    ps = [p for p in own_posts if (p.get("ts") or 0) >= switched_at]
+    dpp = sum(p.get("dislikes") or 0 for p in ps) / len(ps) if ps else 0.0
     reasons = []
-    if ps and limit is not None and dpp > limit:
-        reasons.append(f"dislikes per post {dpp:.2f} > {cfg.LEVER2_ROLLBACK_RATIO} x baseline {baseline:.3f}"
-                       f" = {limit:.3f}")
+    if ps and dpp > cfg.LEVER2_ROLLBACK_DISLIKES_PER_POST:
+        reasons.append(f"dislikes per post {dpp:.2f} > {cfg.LEVER2_ROLLBACK_DISLIKES_PER_POST}")
     hidden = sum(1 for p in ps if p.get("hidden"))
     if hidden and cfg.LEVER2_ROLLBACK_ON_HIDDEN:
         reasons.append(f"{hidden} hidden post(s)")
@@ -395,24 +376,24 @@ def rollback_check(own_posts, http_statuses, switched_at, now, cfg=config, basel
     if n429 and cfg.LEVER2_ROLLBACK_ON_429:
         reasons.append(f"{n429} HTTP 429")
     return {"rollback": bool(reasons), "reasons": reasons,
-            "measured": {"posts": len(ps), "dislikes_per_post": round(dpp, 3), "baseline": baseline, "limit": limit,
-                         "hidden": hidden, "http_429": n429}}
+            "measured": {"posts": len(ps), "dislikes_per_post": round(dpp, 3), "hidden": hidden, "http_429": n429}}
 
 
 def dislike_baseline(mem, now, hours=None):
-    """What the rollback rule would read if we switched on at `now`: dislikes per buyer post, ours (the baseline)
-    and the market's, in the LEVER2_ROLLBACK_BASELINE_H before; limit = LEVER2_ROLLBACK_RATIO x ours."""
-    hours = hours if hours is not None else _cfg("LEVER2_ROLLBACK_BASELINE_H", 2)
+    """What the rollback rule would read today: dislikes per buyer post, ours and the market's, last N h."""
+    hours = hours if hours is not None else _cfg("LEVER2_ROLLBACK_H", 2)
     with mem.db() as c:
         def q(mine):
             r = c.execute("SELECT COUNT(*) n, COALESCE(SUM(dislikes), 0) d FROM forum WHERE role='buyer' AND mine=? "
                           "AND ts>? AND ts<=?", (mine, now - hours * 3600, now)).fetchone()
             return {"posts": r["n"], "dislikes_per_post": round(r["d"] / r["n"], 3) if r["n"] else None}
-        ours = q(1)
-        return {"hours": hours, "ours": ours, "others": q(0), "ratio": _cfg("LEVER2_ROLLBACK_RATIO", 1.2),
-                "limit": rollback_limit(ours["dislikes_per_post"], config),
-                "rule": "roll back if our dislikes per post in the first LEVER2_ROLLBACK_H after switch-on > limit",
+        return {"hours": hours, "ours": q(1), "others": q(0),
+                "threshold": cfg_threshold(), "would_trip_now": (q(1)["dislikes_per_post"] or 0) > cfg_threshold(),
                 "hidden": "not stored in memory.sqlite; the live check reads it from the forum API"}
+
+
+def cfg_threshold():
+    return _cfg("LEVER2_ROLLBACK_DISLIKES_PER_POST", 0.8)
 
 
 # ------------------------------------------------------------------------------------------- estimate
@@ -563,7 +544,6 @@ def render_md(dry):
         lines.append(f"- {a['action']:+d} post {a['id']} ({a['author']}): {a['why']}")
     lines += ["", "## 롤백 기준선 (지금 데이터)", "",
               f"최근 {rb['hours']}시간 dislikes/글: 우리 {rb['ours']}, 다른 buyer {rb['others']}.", "",
-              f"지금 켜면 기준선 = 우리 값. 켠 뒤 2시간 dislikes/글이 {rb['ratio']} x 기준선 = {rb['limit']}보다 크면 되돌림.", "",
               "## buyer 지표 추정", "", "```", json.dumps(e, ensure_ascii=False, indent=1), "```", ""]
     return "\n".join(lines)
 

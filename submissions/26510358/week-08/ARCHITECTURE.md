@@ -211,8 +211,7 @@ logs/monitor/board-*.json ─┘      (Window)          └─ 후보 정책 (po
 ## lever2-forum: 게시판 후보 (MA-3, 2026-11-05)
 
 라이브에 연결하지 않은 후보임. 스위치는 `r3lib/config.py`의 `FORUM_LEVER2 = False`임.
-`forum_r3.py`는 이 모듈을 import하지 않음. 그래서 기본값에서 라이브 동작은 그대로임.
-`forum_r3.vote()`는 스위치 값만 읽음. True이면 LLM 표시만 근거인 −1을 보내지 않음. −1에는 결정 모델 P ≥ 0.9가 있어야 함.
+`forum_r3.py`는 이 모듈을 부르지 않음. 그래서 기본값에서 라이브 동작은 그대로임.
 
 ```
 memory.sqlite (mode=ro) ─┐
@@ -226,8 +225,7 @@ logs/monitor/board-*.json ┴─> forum_lever2.dry_run(end)
                  logs/shadow/forum-dryrun-<ts>.jsonl, .md (보내지 않음, LLM 0회)
 ```
 
-- `config.py`에 새 상수 11개를 더함. 기존 값과 로직은 바꾸지 않음:
-  `FORUM_LEVER2=False`, `LEVER2_POST_GAP_S=300`, `LEVER2_NEAR_DUP=0.8`, `LEVER2_DOWNVOTE_P=0.9`, `LEVER2_UPVOTES_PER_RUN=12`, `LEVER2_VOTE_MIN_SETTLED=5`, `LEVER2_ROLLBACK_H=2`, `LEVER2_ROLLBACK_BASELINE_H=2`, `LEVER2_ROLLBACK_RATIO=1.2`, `LEVER2_ROLLBACK_ON_HIDDEN`, `LEVER2_ROLLBACK_ON_429`.
+- 상수(새 것만): `LEVER2_POST_GAP_S=300`, `LEVER2_NEAR_DUP=0.8`, `LEVER2_DOWNVOTE_P=0.9`, `LEVER2_UPVOTES_PER_RUN=12`, `VOTE_MIN_SETTLED=5`, `LEVER2_ROLLBACK_H=2`, `LEVER2_ROLLBACK_DISLIKES_PER_POST=0.8`, `LEVER2_ROLLBACK_ON_HIDDEN`, `LEVER2_ROLLBACK_ON_429`.
 - 모든 읽기는 as-of 시각(`ts <= end`)까지만 봄. 미래 줄은 쓰지 않음.
 - 글 주제마다 새 ledger # 또는 새 카테고리만 씀. 예전 우리 글의 주제도 피함.
 - 표:
@@ -235,12 +233,7 @@ logs/monitor/board-*.json ┴─> forum_lever2.dry_run(end)
   - +1은 refs가 우리 원장에 있고, 금액이 같고, 본문에 인용된 쓸모 있는 글에만.
   - 우리 정산 거래 5건 미만이거나 글쓴이 owner가 우리와 같으면 표를 만들지 않음. 세어지지 않기 때문임.
   - 이미 표를 준 글, 우리 글은 건너뜀.
-- 되돌리기(상대 기준, MO 2026-11-05):
-  - 기준선 = 켜기 전 2시간의 우리 글당 싫어요.
-  - 켠 뒤 2시간 안에 우리 글당 싫어요 > 1.2 × 기준선이면 끔.
-  - 숨김 글 하나, HTTP 429 하나도 끔.
-  - 켜기 전 우리 글이 없으면 기준선이 없음. 그때는 숨김과 429만 봄.
-  - 코드: `forum_lever2.rollback_check(..., baseline=None)`, `rollback_limit(baseline)`.
+- 되돌리기(라이브 뒤 2시간 안): 글당 싫어요 > 0.8, 숨김 글, HTTP 429 중 하나.
 - 실행: `python -m r3lib.forum_lever2 --end TS [--out DIR]`. 검사가 ok면 종료 코드 0임.
 - shadow gate는 게시판만 바꾸는 후보에 이 dry run을 붙임. 판정은 ESTIMATED(검사 ok) 또는 FAIL임. PASS는 주지 않음.
 

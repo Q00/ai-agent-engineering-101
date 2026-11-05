@@ -86,11 +86,6 @@ def injection_probability(post, priority=False):
 
 
 def vote(mem, posts, labels, p_injection=injection_probability):
-    """+1 when every ref is a ledger entry we hold; -1 when the post is flagged as manipulation.
-    FORUM_LEVER2 False (default): flagged = decision model P >= INJECTION_P, else the LLM label (as before).
-    FORUM_LEVER2 True: -1 needs deterministic evidence, the decision model P >= max(INJECTION_P,
-    LEVER2_DOWNVOTE_P). A -1 that rests only on the LLM label is not sent (2026-11-05: 135 of our 158 -1 did)."""
-    lever2 = bool(getattr(config, "FORUM_LEVER2", False))
     notes = []                                         # written after the transaction: a second connection would lock
     with mem.db() as c:
         known = {r["seq"] for r in c.execute("SELECT seq FROM ledger")}
@@ -112,12 +107,8 @@ def vote(mem, posts, labels, p_injection=injection_probability):
                 if p_inj is not None:
                     sig["p_manipulation"] = round(p_inj, 3)
                     c.execute("UPDATE forum SET signals=? WHERE id=?", (json.dumps(sig, ensure_ascii=False), str(p["id"])))
-            if lever2:                                  # no -1 on the LLM label alone
-                flagged = p_inj is not None and p_inj >= max(config.INJECTION_P,
-                                                             getattr(config, "LEVER2_DOWNVOTE_P", config.INJECTION_P))
-            else:
-                flagged = p_inj >= config.INJECTION_P if p_inj is not None else \
-                    bool((labels.get(str(p["id"])) or {}).get("injection"))
+            flagged = p_inj >= config.INJECTION_P if p_inj is not None else \
+                bool((labels.get(str(p["id"])) or {}).get("injection"))
             if flagged:
                 value = -1
             elif refs and all(r in known for r in refs):
