@@ -78,7 +78,8 @@ def sign(receipt, key_path="shop_key.pem"):
     return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(body))).decode())
 
 
-NEED_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h|시간)(?![0-9A-Za-z])", re.I)
+NEED_RE = re.compile(r"(?<![\d.,])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h|시간)(?![0-9A-Za-z])",
+                     re.I)                                     # v2.1a: 1,000 hours -> 1000
 NEED_MARGIN_H = 0.25          # v2.1: the settle lands minutes after the quote
 UNKNOWN_NEED_SHARE = 0.75     # v2.1: a food buyer needs 0.10/0.25/0.50/0.75 of the shelf; 0.75 covers every buyer
 
@@ -87,11 +88,15 @@ def stated_need_hours(text, names=()):
     """v2.1: shelf life the request asks for, in hours: the largest '<number> h / hour(s) / 시간' in it after SKU
     tokens and product `names` are removed ('I need it to last 180.0 hours: ... at least 198.0 hours' -> 198.0,
     'need: shelf life 541.0 h or more' -> 541.0; catalog G56d000c7 is named '... 48시간 구운계란 ...'). None when
-    it names no hours."""
+    it names no hours. v2.1a: names and their own hour tokens come out case-insensitively, so '24h 숙성 김치' for
+    '24H 숙성 김치' and a shortened '48시간 구운계란' state no need."""
     t = SKU_RE.sub(" ", text or "")
-    for nm in sorted({n for n in names if n}, key=len, reverse=True):
-        t = t.replace(nm, " ")
-    hs = [float(m.group(1)) for m in NEED_RE.finditer(t)]
+    names = sorted({n for n in names if n}, key=len, reverse=True)
+    for nm in names:
+        t = re.sub(re.escape(nm), " ", t, flags=re.I)
+    for tok in sorted({m.group(0) for nm in names for m in NEED_RE.finditer(nm)}, key=len, reverse=True):
+        t = re.sub(r"(?<![\d.,])" + re.escape(tok) + r"(?![0-9A-Za-z])", " ", t, flags=re.I)
+    hs = [float(m.group(1).replace(",", "")) for m in NEED_RE.finditer(t)]
     return max(hs) if hs else None
 
 
@@ -120,7 +125,7 @@ def find_unit(text, inv, taken=(), pol=None, now=None, shelf=None, why=None):
     fit = named or [u for u in units if P.leaf(u.get("category")).lower() in want
                     or (u.get("name") or "").lower() in want]
     food = [u for u in fit if u.get("kind") == "food" and u.get("expires_at")]
-    if food:                                    # v2.1: food by the buyer's shelf-life need
+    if food and len(food) == len(fit):          # v2.1: food by the buyer's shelf-life need (v2.1a: food-only fits)
         need = stated_need_hours(text, [u.get("name") for u in food])
         u = pick_food(food, need, shelf or shelf_hours, now)
         if u is None and why is not None:
