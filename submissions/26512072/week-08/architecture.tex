@@ -46,8 +46,8 @@
 % ---------------- SHOP, column A: the A2A seller
 \node[code=4.9cm,anchor=north] (find) at (2.8,-2.3) {\textbf{seller\_r3.py} (A2A)\\ find the unit the buyer names
   (SKU, name) that lasts the hours the buyer asks; the one that expires first};
-\node[code=4.9cm,below=of find] (terms) {\textbf{terms} per unit: floor = cost$\times$1.08;
-  food under 24 h may go below cost; goods unsold 72 h go at cost};
+\node[code=4.9cm,below=of find] (terms) {\textbf{terms} per unit: floor = cost$\times$1.08 (food), $\times$1.2 (goods: 9\% broke);
+  food under 24 h may go below cost; unsold 6 h: market price, cost as floor};
 \node[code=4.9cm,below=of terms] (adapt) {\textbf{adapt}: opening = what this market paid in the last 3 h
   (category, grade) $+5$ points; $-5$/$+3$ from my last 20 negotiations};
 \node[model=4.9cm,below=of adapt] (sneg) {\textbf{negotiate}: counter / accept / reject\\
@@ -59,7 +59,7 @@
 % ---------------- SHOP, column B: restock and memory
 \node[code=4.3cm,anchor=north] (restock) at (9.4,-2.3) {\textbf{restock.py} (no model)\\ buys only in the supply window\\ (3 min, every 20 min)\\
   1 SKUs I sold\quad 2 the market's best sellers\\ (last 3 h, by credits; snapshot\\ every 3 h in market\_flow.json)\\ 3 categories ``wanted'' on the forum\\ 4 no settles yet: middle SKU per category\\
-  \scriptsize keep 1M cash, $\le$7M stock at cost, $\le$40\% of the balance a run};
+  \scriptsize keep 1M cash, $\le$7M stock at cost, list $\le$700k, $\le$40\% of the balance a run};
 \node[mem=3.4cm,below=7mm of restock] (msales) {market\_sales.json\\ \scriptsize ledger settle entries per SKU};
 \node[mem=3.4cm,below=5mm of msales] (sales) {sales\_memory.jsonl\\ \scriptsize my negotiations and deals};
 \draw[read] (msales) -- (restock);

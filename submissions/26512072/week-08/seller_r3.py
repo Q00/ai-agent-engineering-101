@@ -120,7 +120,7 @@ def terms(u):
         quality = GRADE_WORDS.get(u["grade"], u["grade"]) + (f", about {left:.0f} h of shelf life left" if left else "")
         base = {"A": 0.85, "B": 0.8, "C": 0.72}.get(u["grade"], 0.8)
     else:
-        floor = round(cost * 1.08)                  # goods break in about 2% of the market's deals
+        floor = round(cost * 1.2)                   # 9% of my goods broke under warranty (11-05): 12.6% of revenue
         quality = GOODS_WORDS.get(u["grade"], u["grade"]) + f", {WARRANTY_HOURS} h warranty"
         base = {"A": 0.85, "B": 0.78, "C": 0.7}.get(u["grade"], 0.8)
     ratio = market_ratio(u)                         # open a little above where this market closes, so we land near it

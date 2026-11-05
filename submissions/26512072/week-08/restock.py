@@ -36,6 +36,7 @@ CASH_FLOOR = 1_000_000
 STOCK_CAP = 7_000_000
 SPEND_SHARE = 0.40
 MAX_LINES = 10
+MAX_LIST = 700_000
 EST_COST = 0.65            # expected cost as a share of list price (A 55-75%, B 40-60%, C 25-45%)
 LEAD = 60                  # start a run this many seconds before the window opens (the kit waits for it)
 LOG = Path(os.environ.get("RESTOCK_LOG", HERE / "logs" / "restock.log"))   # tests point this elsewhere
@@ -64,10 +65,7 @@ def main():
     have = Counter(u["sku"] for u in units)
     # a unit of mine that has waited longer than a snapshot means the buyers went elsewhere: buy no more of that SKU
     stale = {u["sku"] for u in units if market_now() - (u.get("supplied_at") or market_now()) > FLOW_HOURS * 3600}
-    # a unit that waited over 6 h counts half: the seller already sells it off at cost (seller_r3.STALE_HOURS), and it
-    # must not block buying what sells now
-    stock_cost = sum((u.get("cost") or 0) * (0.5 if market_now() - (u.get("supplied_at") or market_now()) > 6 * 3600
-                                             else 1) for u in units)
+    stock_cost = sum(u.get("cost") or 0 for u in units)     # counting stale units half let stock reach 10.6M (11-05)
     budget = min(balance - CASH_FLOOR, STOCK_CAP - stock_cost, balance * SPEND_SHARE)
     if budget <= 0:
         print(json.dumps({"buy": []}))
@@ -80,7 +78,9 @@ def main():
         Counter({sku: p["n"] for sku, p in market.items() if sku in cat})
 
     keeps = lambda sku: cat[sku]["kind"] == "goods" or (cat[sku].get("shelf_hours") or 0) >= 240
-    proven = lambda sku: keeps(sku) or sku in mine or hot[sku] >= 3     # short-lived food only if it sells fast
+    # short-lived food only if it sells fast; nothing above MAX_LIST: one break under warranty refunds it all (two
+    # sofas at 1,746,960 each on 11-05), and they waited 10 h unsold
+    proven = lambda sku: (keeps(sku) or sku in mine or hot[sku] >= 3) and cat[sku]["list_price"] <= MAX_LIST
     wants = []                                              # (reason, sku, target qty), best first
     # my own sales and the market's best sellers of the last 3 hours in one ranking, by credits settled (count x list
     # price): profit and revenue scale with the price, and the top shops average 120,000-240,000 a deal against my
