@@ -184,3 +184,28 @@ def test_pending_registration_waits_when_the_whole_registry_disappears(tmp_path)
     assert monitor.pending_registration and len(calls)==1
     rows.clear();monitor.tick(61)
     assert len(calls)==1 and monitor.procs[1] is old and not stopped
+
+
+def test_replacement_allows_dns_to_become_ready_after_thirty_seconds(tmp_path):
+    waits=[]
+    def wait_card(url,seconds):
+        waits.append(seconds)
+        return seconds>=60
+    monitor,old,new,stopped,logs=supervisor_fixture(tmp_path,
+        lambda *a,**kw:{'name':'seochanit'},wait_card=wait_card)
+    monitor.tick(3300)
+    assert waits==[120] and monitor.procs[1] is new and old in stopped
+
+
+def test_user_pinned_provider_is_respected_even_on_failover(monkeypatch,tmp_path):
+    from r3.state import atomic_json
+    monkeypatch.setattr(transport,'ROOT',tmp_path)
+    atomic_json(tmp_path/'policy.json',{'tunnel_provider':'cloudflare'})
+    atomic_json(tmp_path/'.market/transport-provider.json',{'provider':'localhost','at':__import__('time').time()})
+    calls=[]
+    def launch(kit,port,provider):
+        calls.append(provider)
+        return SimpleNamespace(),'https://working.trycloudflare.com'
+    monkeypatch.setattr(transport,'open_tunnel',launch)
+    transport.open_available_tunnel(SimpleNamespace(log=lambda x:None),9999,avoid='cloudflare')
+    assert calls==['cloudflare']

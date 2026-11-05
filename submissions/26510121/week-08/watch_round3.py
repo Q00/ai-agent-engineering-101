@@ -32,7 +32,7 @@ def launch(log):
                 owner = value.strip().strip('\"\'')
     if not owner:
         raise RuntimeError('Existing owner credential is unavailable')
-    env = dict(os.environ, MARKET_OWNER=owner, MARKET_TUNNEL_PROVIDER='pinggy', PYTHONUTF8='1',
+    env = dict(os.environ, MARKET_OWNER=owner, MARKET_TUNNEL_PROVIDER=policy().get('tunnel_provider','pinggy'), PYTHONUTF8='1',
                R3_LAUNCH_ID=log.stem)
     command = [sys.executable, '-u', str(ROOT / 'run_market.py'), 'join', '--dir', str(ROOT),
                '--market', MARKET, '--name', 'seochanit', '--tunnel']
@@ -89,6 +89,8 @@ class Watcher:
                     preference=read_json(self.root/'.market/transport-provider.json',{})
                     previous=preference.get('provider','cloudflare')
                     following={'cloudflare':'localhost','localhost':'pinggy','pinggy':'cloudflare'}.get(previous,'localhost')
+                    pinned=policy(self.root).get('tunnel_provider')
+                    if pinned in {'cloudflare','localhost','pinggy'}:following=pinned
                     atomic_json(self.root/'.market/transport-provider.json',
                         {'provider':following,'at':time.time(),'reason':'market_agent_card_unreachable'})
                     self.record('market_transport_failed',previous_provider=previous,next_provider=following)

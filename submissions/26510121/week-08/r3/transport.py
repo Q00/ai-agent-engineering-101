@@ -18,6 +18,9 @@ def open_available_tunnel(kit,port,avoid=None):
         preferred=previous['provider']
     providers=list(dict.fromkeys([preferred,'cloudflare','localhost','pinggy']))
     if avoid in providers:providers.remove(avoid);providers.append(avoid)
+    pinned=read_json(ROOT/'policy.json',{}).get('tunnel_provider')
+    if pinned in {'cloudflare','localhost','pinggy'}:
+        providers=[pinned]
     for provider in providers:
         try:
             process,url=open_tunnel(kit,port,provider)
@@ -160,7 +163,10 @@ class ShopSupervisor:
             # A provisioning failure leaves the current tunnel untouched.
             replacement, url = (kit.open_tunnel(self.pport,avoid=self.provider) if alternative else
                                 kit.open_tunnel(self.pport))
-            if not kit.wait_card(url, 30):
+            # A freshly allocated Cloudflare hostname took ~60 seconds to
+            # resolve in production. Match initial startup's readiness budget;
+            # discarding it at 30 seconds creates endless hostname churn.
+            if not kit.wait_card(url, 120):
                 kit.stop(replacement)
                 raise RuntimeError('Replacement tunnel failed discovery')
             previous = self.procs[1]
