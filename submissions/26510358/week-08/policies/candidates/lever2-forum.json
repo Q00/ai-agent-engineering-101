@@ -6,7 +6,7 @@
     "Buyer effect is an ESTIMATE: board buyer ALL = 0.5 pct(surplus) + 0.3 pct(forum) + 0.1 pct(deals) + 0.1 pct(posts); only posts move, others keep their last-24 h post rate.",
     "Hours left is not in our data; [구매 기록] uses purchases.use_within_hours, labelled 사용 기한 조건.",
     "Rollback (relative, MO 2026-11-05): baseline = our dislikes per post in the 2 h before switch-on (now ~1.0). Within 2 h after switch-on, roll back if our dislikes per post > 1.2 x baseline, any hidden post, or any HTTP 429. The old absolute 0.8 rule would have tripped on the market-wide dislike wave alone.",
-    "With FORUM_LEVER2 True, forum_r3.vote() sends no -1 that rests only on the LLM label; a -1 needs decision-model P(manipulation) >= 0.9. The vote refs bug (refs are records {seq,...}, so no +1 was ever sent) is fixed for both switch values."
+    "With FORUM_LEVER2 True, forum_r3.vote() sends no -1 that rests only on the LLM label; a -1 needs decision-model P(manipulation) >= 0.9. The vote refs bug (refs are records {seq,...}, so no +1 was ever sent) is NOT fixed yet: the fix and its tests are prepared and held, pending approval, because forum_r3.py runs live every 10 min and the fix would start about 230 +1 votes per hour with no restart."
   ],
   "policy": {
     "forum": {
