@@ -101,8 +101,12 @@ def allocate_growth(candidates, inv, capacity, config, existing_units, merchant)
         if c['evidence']['exploration']: probes += cost
         coverage.update(c['evidence']['growth'].get('coverage_keys', []))
     breadth_budget = total * config.get('assortment_coverage_fraction', .35)
+    # A three-minute window admits only ten lines. Reserve line slots for
+    # meaningful book growth; cheap discovery must not consume every slot.
+    breadth_lines=max(1,config['restock_max_lines']//3)
     while True:
         feasible_lines = [c for c in candidates if feasible(c) and c['sku'] not in selected and gain(c) > 0
+                          and len(selected)<breadth_lines
                           and used + per_unit(c) <= breadth_budget]
         if not feasible_lines: break
         c = max(feasible_lines, key=lambda c: (gain(c)/max(1, per_unit(c))**.5,
@@ -126,4 +130,4 @@ def allocate_growth(candidates, inv, capacity, config, existing_units, merchant)
             allocation_book='coverage_and_depth', evidence=dict(c['evidence'],
                 new_coverage_weight=row['new_coverage_weight'], portfolio_used=used,
                 coverage_budget_scenario=breadth_budget)))
-    return result
+    return sorted(result,key=lambda c:c['expected_delta'].get('book',0),reverse=True)

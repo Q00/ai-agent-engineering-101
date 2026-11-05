@@ -31,6 +31,7 @@ def activate_revision(journal, revision, now=None):
                    {'revision': revision, 'reason': 'new candidate and objective semantics; collect fresh evidence'}, now)
     journal.put('objective_revision', revision)
     journal.put('objective_epoch', now)
+    journal.put(KEY+'last_tick',now-INTERVAL)
 
 
 def validate(role, patch):
@@ -140,11 +141,15 @@ def flow(start, end, role):
     result = {'own_per_hour': own, 'peer_median_per_hour': benchmark,
             'relative_per_hour': own - benchmark, 'matched_peers': len(peers),
             'note': 'observational board flow; traffic and category mix can confound comparisons'}
+    if a['peers'] and b['peers']:
+        result['leader_relative_per_hour']=own-(max(b['peers'].values())-max(a['peers'].values()))/hours
     if 'own_all' in a and 'own_all' in b:
         peer_all = [(b['peer_all'][name] - value) / hours for name, value in a['peer_all'].items()
                     if name in b['peer_all']]
         result['own_all_per_hour'] = (b['own_all'] - a['own_all']) / hours
         result['relative_all_per_hour'] = result['own_all_per_hour'] - (statistics.median(peer_all) if peer_all else 0)
+        if a.get('peer_all') and b.get('peer_all'):
+            result['leader_relative_all_per_hour']=result['own_all_per_hour']-(max(b['peer_all'].values())-max(a['peer_all'].values()))/hours
     return result
 
 
@@ -321,6 +326,9 @@ def update(journal, now=None):
             improved = ready and observed[relative_key] > baseline[relative_key] + \
                        .05 * max(abs(baseline[relative_key]), scale_floor) and \
                        observed[own_key] >= baseline[own_key] and own_supported
+            leader_key='leader_relative_all_per_hour' if relative_key=='relative_all_per_hour' else 'leader_relative_per_hour'
+            if improved and leader_key in observed and leader_key in baseline:
+                improved=observed[leader_key]>=baseline[leader_key]
             expired = now - trial['started_at'] >= 48 * 3600
             if shop_loss or degraded or healthy and expired and not improved:
                 action, reason = 'rollback', 'Cash loss, degraded observed flow, or trial expired without evidence of improvement'

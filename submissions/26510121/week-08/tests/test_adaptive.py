@@ -131,7 +131,7 @@ def test_shop_category_allocation_requires_own_and_public_sales_and_affects_rest
     baseline(j)
     cat = {'G1': {'category': 'x', 'list_price': 10000, 'kind': 'goods'}}
     atomic_json(j.md / 'catalog.json', cat)
-    atomic_json(j.md / 'inventory.json', {'round': 3, 'balance': 5000000, 'units': [{}] * 15})
+    atomic_json(j.md / 'inventory.json', {'round': 3, 'balance': 5000000, 'units': [{}] * 30})
     for n in range(20):
         j.add('shop_opportunity', {'task': str(n), 'strategy_version': 0}, ts=NOW - MATURITY - 100)
         if n < 10:
@@ -160,7 +160,7 @@ def test_round_reset_or_stale_board_cannot_update(tmp_path):
     assert not j.events('strategy_change')
 
 
-@pytest.mark.parametrize('stock,paid,target', [(2, 12, 30), (30, 0, 25)])
+@pytest.mark.parametrize('stock,paid,target', [(2, 12, 65), (60, 0, 55)])
 def test_inventory_target_changes_with_own_stock_and_conversion(tmp_path, stock, paid, target):
     j = Journal(tmp_path)
     baseline(j)

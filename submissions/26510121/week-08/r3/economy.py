@@ -94,6 +94,10 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
                     config.get('goods_warranty_by_grade', {}).get(unit.get('grade'), 3))
                 if unit.get('kind') == 'goods' else 0)
     stress_refund = goods_risk(journal, unit.get('grade'), warranty, config, now)['failure_upper'] if warranty else 0
+    matching=next((r for r in public.get('term_prices',[]) if r['grade']==grade(unit,catalog,now)
+                   and r['warranty_hours']==warranty and r['n']>=3),None)
+    if matching:
+        reference=.75*matching['median']+.25*own_reference
     age = max(0, (now-unit.get('supplied_at', now))/3600)
     liquidation = unit.get('kind') == 'food' and left < config.get('food_clearance_hours', 6)
     recovery_floor = (max(1, int(cost * max(.05, left/6)*.9)) if liquidation else
@@ -246,6 +250,12 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     if len(units) >= target:
         return []
     capacity = cash_capacity(inv, journal, config, now)
+    if config.get('market_control_enabled'):
+        control=journal.get('market_control',{})
+        if control.get('pause_restock'):
+            return []
+        fraction=max(0,min(1,control.get('capital_fraction',1)))
+        capacity=dict(capacity,spendable=capacity['spendable']*fraction)
     spendable = capacity['spendable']
     from .market_memory import market_book
     book = market_book(journal, catalog, now)

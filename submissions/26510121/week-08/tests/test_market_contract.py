@@ -63,7 +63,9 @@ def test_actual_a2a_server_and_buyer_interoperate(tmp_path, monkeypatch):
         assert out['receipt'] and out['receipt']['item'] == 'G111'
         assert out['receipt']['price'] <= order['budget']
         assert out['accept']['expected_sku'] == 'G111'
-        assert out['accept']['warranty_hours'] == 3
+        # With sparse unknown-risk data, a full-cover quote can be the only
+        # combination profitable for the seller and useful for the buyer.
+        assert out['accept']['warranty_hours'] == 6
         assert out['accept']['grades'] == ['A']
         assert j.events('agreement')
         task_id = out['receipt']['task']

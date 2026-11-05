@@ -63,13 +63,20 @@ def update(journal, config=None, now=None, force=False):
     fresh = 0 <= now-journal.get('board_checked_at', 0) < 300
     healthy = not health or health.get('status')=='healthy' and 0<=now-health.get('checked_at',0)<120
     drawdown = max(0, peak-current_book)
+    breached = drawdown>max(500000,abs(peak)*.15)
+    brake_until=old.get('drawdown_brake_until',0) if old.get('epoch')==epoch else 0
+    brake_drawdown=old.get('brake_drawdown',0) if old.get('epoch')==epoch else 0
+    if breached and (not brake_until or drawdown>brake_drawdown+250000):
+        brake_until=now+1800
+        brake_drawdown=drawdown
+    capital_fraction=.25 if breached and now>=brake_until else 1
     reasons=[]
     if not rules_ok:reasons.append('rules_unverified_or_changed')
     if not fresh:reasons.append('stale_board')
     feed = journal.get('public_feed_caught_up_at')
     if feed is None or not 0<=now-feed<180:reasons.append('ledger_lag_or_unverified')
     if not healthy:reasons.append('transport_unhealthy')
-    if drawdown > max(500000, abs(peak)*.15):reasons.append('book_drawdown')
+    if breached and now<brake_until:reasons.append('book_drawdown_cooldown')
     if inv.get('balance', 0) < cap['cash_floor']+cap['refund_liability']:reasons.append('cash_obligations')
     skus = market.get('skus', {})
     opportunities = sorted([dict(sku=s, **{k:r.get(k) for k in
@@ -87,8 +94,9 @@ def update(journal, config=None, now=None, force=False):
         suggestions.append({'role':'buyer','field':'buyer_food_time_seconds','direction':-1,'reason':'avoid repeated costly unsuitable food searches'})
     leaders=sorted([p for p in board.get('players',[]) if not p.get('house') and
                     type(p.get('total')) in (int,float)],key=lambda p:p['total'],reverse=True)
-    result={'at':now,'epoch':epoch,'status':'observe_and_trade' if not reasons else 'defensive',
+    result={'at':now,'epoch':epoch,'status':('defensive' if reasons else 'limited_recovery' if breached else 'observe_and_trade'),
             'book':current_book,'book_peak':peak,'book_drawdown':drawdown,
+            'drawdown_brake_until':brake_until,'brake_drawdown':brake_drawdown,'capital_fraction':capital_fraction,
             'cash_capacity':cap,'pause_restock':bool(reasons),'reasons':reasons,
             'own_all':own.get('all',0)+buyer.get('all',0),
             'leader_total':leaders[0]['total'] if leaders else None,

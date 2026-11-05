@@ -207,7 +207,11 @@ def install(kit, journal=None, config=None):
                     response=market.c.get(f'{market.base}/agent.md',timeout=5)
                     if response.status_code==200:
                         audit_rules(j,response.text)
-                control_update(j,cfg)
+                diagnosis=control_update(j,cfg)
+                if diagnosis.get('at')!=j.get('last_control_reported_at'):
+                    j.put('last_control_reported_at',diagnosis.get('at'))
+                    kit.log('[control] '+json.dumps({k:diagnosis.get(k) for k in
+                            ['status','book','leader_gap','reasons','suggestions']},ensure_ascii=False))
             except Exception as exc:
                 j.add('market_control_error', {'error_type':type(exc).__name__})
         try:

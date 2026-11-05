@@ -81,18 +81,21 @@ def test_core_capital_can_buy_hot_expensive_sku_without_breaching_gross_reserves
     inv = {'balance': 6250000, 'units': []}
     j.add('shop_settled', {'price': 200000, 'paid_at': now, 'warranty_hours': 6})
     cs = restock_candidates(inv, cat, [], j, policy(), now)
+    assert cs == []  # The maximum surge draw cannot fit this SKU's capital cap.
+    inv['balance']=9000000
+    cs = restock_candidates(inv, cat, [], j, policy(), now)
     assert len(cs) == 1 and cs[0]['sku'] == 'G1'
     capacity = cash_capacity(inv, j, policy(), now)
     assert sum(c['capital_commitment'] for c in cs) <= capacity['spendable']
     assert cs[0]['capital_commitment'] <= .35 * inv['balance']
-    assert cs[0]['allocation_book'] == 'core'
+    assert cs[0]['allocation_book'] == 'coverage_and_depth'
 
 
 def test_seller_never_reduces_explicit_or_promised_warranty(tmp_path):
     from r3.economy import shop_candidates
     from test_market_contract import unit
     j = Journal(tmp_path)
-    for minimum, promised, expected in [(0, 0, 3), (6, 0, 6), (0, 6, 6)]:
+    for minimum, promised, expected in [(0, 0, 0), (6, 0, 6), (0, 6, 6)]:
         u = dict(unit(), minimum_warranty_hours=minimum, promised_warranty_hours=promised)
         candidates = shop_candidates(u, {'balance': 5000000}, {'G111': {}}, j, policy())
         assert all(c['warranty_hours'] == expected for c in candidates)

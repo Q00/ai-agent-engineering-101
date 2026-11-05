@@ -66,6 +66,23 @@ def test_rule_or_feed_change_blocks_autonomous_capital_only(tmp_path):
     assert state['pause_restock'] and 'rules_unverified_or_changed' in state['reasons']
 
 
+def test_drawdown_automatically_reenters_bounded_recovery(tmp_path):
+    from r3.control import update,audit_rules
+    j=Journal(tmp_path);now=time.time()
+    j.put('objective_epoch',now)
+    atomic_json(j.md/'board.json',{'round':3,'shops':[{'name':'seochanit','book':1000000,'all':.5}],
+                                 'buyers':[{'name':'seochanit','all':.6}],'players':[]})
+    atomic_json(j.md/'inventory.json',{'round':3,'balance':6000000,'units':[]})
+    atomic_json(j.md/'catalog.json',{})
+    j.put('market_control',{'epoch':now,'book_peak':2000000})
+    audit_rules(j,'shops by book, revenue and stars; each further unit adds 0.2%, up to +50%',now)
+    for tick in (now,now+1801):
+        j.put('board_checked_at',tick);j.put('public_feed_caught_up_at',tick)
+        state=update(j,now=tick,force=True)
+        if tick==now:assert state['pause_restock']
+        else:assert not state['pause_restock'] and state['capital_fraction']==.25
+
+
 def test_self_buyer_is_not_external_shop_demand(tmp_path):
     from r3.merchant import context
     j=Journal(tmp_path);now=time.time();cat={'G1':{'kind':'goods','category':'x','list_price':10000}}
@@ -129,3 +146,18 @@ def test_checkout_refusal_recovers_but_uncertain_payment_never_retries(tmp_path)
         assert len(results)==1 and len(calls)==(1 if ambiguous else 2)
         assert result['verified'] is (not ambiguous)
         assert handle_order(*args)==result and len(results)==1
+
+
+def test_cheap_discovery_cannot_consume_all_supply_line_slots():
+    from r3.portfolio import allocate_growth
+    cfg=policy();candidates=[];weights={}
+    for n in range(12):
+        sku='G'+str(n);core=n==11;cost=50000 if core else 100
+        weights[sku]=1 if core else 1000
+        candidates.append({'sku':sku,'qty':1,'capital_commitment':cost,'max_cost':cost,'category':sku,
+            'score':5000 if core else 1,'rank_progress_surrogate':0,
+            'expected_delta':{'book':5000 if core else 1,'revenue':cost*1.2},
+            'evidence':{'exploration':False,'expected_holding_hours':1,'growth':{'coverage_keys':[sku]}}})
+    rows=allocate_growth(candidates,{'balance':500000},{'spendable':100000},cfg,[],{'coverage_weights':weights})
+    assert rows[0]['sku']=='G11' and len(rows)<=10
+    assert sum(c['capital_commitment'] for c in rows)<=100000

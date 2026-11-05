@@ -119,7 +119,8 @@ def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch):
             assert j.events('model_usage'), 'A numeric fallback alone is not a live-model validation'
             decisions = j.events('decision')
             assert {d['_role'] for d in decisions} == {'shop', 'buyer'}
-            assert all(d['mode'] == 'model' for d in decisions)
+            assert all(d['mode'] in {'model','single_feasible'} for d in decisions)
+            assert {d['_role'] for d in decisions if d['mode']=='model'} == {'shop','buyer'}
             print('LIVE_MODEL_USAGE', json.dumps(j.events('model_usage'), ensure_ascii=False))
     finally:
         server.should_exit = True

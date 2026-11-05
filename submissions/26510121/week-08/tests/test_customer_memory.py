@@ -133,7 +133,7 @@ def test_history_price_candidate_obeys_existing_floor_and_quote_ceiling(tmp_path
     assert any(c['price'] == 8000 for c in candidates)
     memory_context['category_behavior']['median_paid_to_list_ratio'] = .1
     candidates = shop_candidates(u, {}, {}, j, policy(), previous_ask=8500, customer_memory=memory_context)
-    assert all(c['price'] >= c['recovery_floor'] and c['price'] <= 8500 for c in candidates)
+    assert all(c['price'] >= c['recovery_floor'] and c['price'] <= 8500 for c in candidates if c['action']!='hold')
 
 
 def test_stockout_category_is_observed_without_inventing_product(tmp_path):

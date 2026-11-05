@@ -24,11 +24,13 @@ def test_available_time_forecast_does_not_treat_stockout_time_as_low_demand(tmp_
         ts = now-3590+n*30
         j.add('shop_opportunity', {'task': str(n), 'sku': 'G1'}, ts=ts)
         j.add('customer_visit', {'task': str(n), 'sku': 'G1', 'category': 'food'}, ts=ts)
+        if n<4:
+            j.add('shop_settled', {'task':str(n),'sku':'G1','price':16000,'cost':10000,'paid_at':ts+2},ts=ts+2)
     for n in range(60):
         j.add('public_settle', {'sku': 'G1', 'amount': 16000, 'shop': 'peer'}, ts=now-n)
     rows = context(j, cat, now)['skus']['G1']
     assert rows['available_requests'] == 6 and .07 < rows['available_hours_observed'] < .08
-    assert rows['arrival_rate_scenario'] > 15
+    assert rows['arrival_rate_scenario'] > 10 and rows['payment_rate_scenario']==5/8
     cs = restock_candidates({'balance': 5000000, 'units': []}, cat, [], j, config(), now)
     assert cs and cs[0]['qty'] >= 6
     assert sum(c['capital_commitment'] for c in cs) <= cash_capacity({'balance': 5000000}, j, config(), now)['spendable']

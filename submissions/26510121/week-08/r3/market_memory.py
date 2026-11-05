@@ -9,10 +9,15 @@ import time
 from collections import Counter
 
 HORIZON = 21600
+_BOOK_CACHE = {}
 
 
 def market_book(journal, catalog, now=None):
     now = time.time() if now is None else now
+    seq=journal.get('public_ledger_seq')
+    cache_key=(str(getattr(journal,'md',id(journal))),len(catalog),seq,int(now//15))
+    if seq is not None and cache_key in _BOOK_CACHE:
+        return _BOOK_CACHE[cache_key]
     grouped = {}
     for e in journal.events('public_settle', 20000):
         sku = e.get('sku') or e.get('item')
@@ -54,6 +59,9 @@ def market_book(journal, catalog, now=None):
                        'grade_prices': {g: {'n': len(ps), 'p25': sorted(ps)[int((len(ps)-1)*.25)],
                                            'p50': statistics.median(ps)} for g, ps in row['grades'].items()},
                        'note': 'observed 6h trades; availability, quality, warranty and traffic confound comparisons'}
+    if seq is not None:
+        if len(_BOOK_CACHE)>=8:_BOOK_CACHE.clear()
+        _BOOK_CACHE[cache_key]=result
     return result
 
 
