@@ -269,7 +269,7 @@ Either flag → ref_seqs. LEVER2_* 상수 개수는 11 유지(INFLUENCER_* 접�
 
 - 간격: `INFLUENCER_GAP_MIN = 10` (buyer/report). 라이브 20분은 False일 때.
 - 숨김 신호(읽기 전용, 상대): 스위치 ON 시 `board_posts0`/`our_posts0` 기록. `(board-board0) < (ours-ours0)`일 때만 숨김.
-  forum.jsonl은 outbox enqueue 로그(accepted 필드 없음). API hidden 필드 UNOBSERVABLE.
+  our 카운트는 `ts <= board_as_of - 120s`(모니터 스탬프 또는 live fetch 시각). forum.jsonl은 outbox enqueue(accepted 없음). API hidden UNOBSERVABLE.
 - 되돌리기: 신규 20글 평균 싫어요>1.0, 좋아요<5.0, 한 글 싫어요≥3, board forum<0.540이 1시간 간격 두 번,
   board posts < 우리 글 수, P≥0.5로 올린 글, 켜기 직전 2시간 글당 싫어요의 1.2배, 숨김 신호, HTTP 429.
 - 1.2배 기준은 스위치 ON 직전 2시간 값(`influencer_baseline.json`에 `record_switch_baseline`으로 기록).

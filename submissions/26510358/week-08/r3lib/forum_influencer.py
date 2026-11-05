@@ -316,14 +316,46 @@ def use_ref_seqs(cfg=config):
 
 
 # ------------------------------------------------------------------------------------------- hidden / baseline / rollback
-def our_posted_count(log_path=None):
+HIDDEN_BOARD_GRACE_S = 120  # market index lag: count log posts with ts <= board_as_of - grace
+
+
+def board_data_ts(board=None, board_path=None, fetched_at=None):
+    """Epoch when the board snapshot was taken (monitor stamp) or fetched (live /api/board)."""
+    if fetched_at is not None:
+        return float(fetched_at)
+    if board:
+        for k in ("_fetched_at", "fetched_at", "as_of", "board_ts", "ts"):
+            v = board.get(k) if isinstance(board, dict) else None
+            if v is not None and not isinstance(v, (dict, list)):
+                try:
+                    return float(v)
+                except (TypeError, ValueError):
+                    pass
+    if board_path:
+        name = Path(board_path).name
+        m = re.search(r"-(\d{8}T\d{4})(\d{2})?\.json$", name)
+        if m:
+            return time.mktime(time.strptime(m.group(1) + (m.group(2) or "00"), "%Y%m%dT%H%M%S"))
+        try:
+            from .shadow_gate import file_stamp
+            return file_stamp(board_path)
+        except Exception:
+            pass
+    return None
+
+
+def our_posted_count(log_path=None, as_of_ts=None, grace_s=None):
     """Count buyer posts we queued, from logs/r3/forum.jsonl (read-only).
 
-    forum_r3.outbox() appends at enqueue time (MARKET_DIR/outbox.jsonl + this log). Lines have
-    keys {ts, post, refs, as} only — no accepted/rejected/http field from the API — so every
-    buyer `post` line counts. Acceptance is UNOBSERVABLE in the log.
+    forum_r3.outbox() appends at enqueue time with keys {ts, post, refs, as} — no accepted field.
+    When as_of_ts is set (board snapshot stamp or live fetch time), only count lines with
+    ts <= as_of_ts - grace (default HIDDEN_BOARD_GRACE_S=120) so a post enqueued after the
+    board snapshot, or still inside the market index lag window, does not inflate delta_our.
     """
+    if grace_s is None:
+        grace_s = HIDDEN_BOARD_GRACE_S
     path = Path(log_path or (config.LOG_DIR / "forum.jsonl"))
+    cutoff = None if as_of_ts is None else float(as_of_ts) - float(grace_s)
     n = 0
     try:
         with open(path, encoding="utf-8") as f:
@@ -334,17 +366,26 @@ def our_posted_count(log_path=None):
                     continue
                 if not (r.get("post") and r.get("as") == "buyer"):
                     continue
-                # If a future schema adds an acceptance marker, count only accepted rows.
                 if "accepted" in r and r.get("accepted") is False:
                     continue
                 if "ok" in r and r.get("ok") is False:
                     continue
                 if "rejected" in r and r.get("rejected") is True:
                     continue
+                if cutoff is not None:
+                    ts = r.get("ts")
+                    if ts is None:
+                        continue
+                    try:
+                        if float(ts) > cutoff:
+                            continue
+                    except (TypeError, ValueError):
+                        continue
                 n += 1
     except OSError:
         return None
     return n
+
 
 
 def board_our_posts(board, me_name="myeonggi"):
@@ -354,18 +395,21 @@ def board_our_posts(board, me_name="myeonggi"):
     return me.get("posts")
 
 
-def hidden_status(board, log_path=None, me_name="myeonggi", baseline=None):
-    """Read-only hidden check (MO 2026-11-05, relative since 2026-11-05 follow-up).
+def hidden_status(board, log_path=None, me_name="myeonggi", baseline=None,
+                  board_path=None, fetched_at=None, grace_s=None):
+    """Read-only hidden check (relative + board-stamp grace).
 
-    API hidden field/endpoint: UNOBSERVABLE. forum.jsonl has no accept marker (outbox enqueue
-    log). Absolute board_posts < our_posted_count fires on a stale board vs a newer outbox
-    line, so the live rule is relative to switch-on baselines:
-
-        hidden_signal = (board_posts - board_posts0) < (our_posts - our_posts0)
-
-    With no baseline yet, signal is None (do not roll back on a pre-existing gap).
+    hidden_signal = (board_posts - board_posts0) < (our_posts - our_posts0)
+    where our_posts / our_posts0 count only forum.jsonl buyer posts with
+    ts <= board_as_of - HIDDEN_BOARD_GRACE_S (120). Without a board timestamp or baseline,
+    signal is None (do not roll back on lag or a pre-existing gap).
     """
-    posted = our_posted_count(log_path)
+    if grace_s is None:
+        grace_s = HIDDEN_BOARD_GRACE_S
+    as_of = board_data_ts(board, board_path=board_path, fetched_at=fetched_at)
+    cutoff = None if as_of is None else float(as_of) - float(grace_s)
+    # Require as_of so lag after the snapshot cannot inflate our side.
+    posted = our_posted_count(log_path, as_of_ts=as_of, grace_s=grace_s) if as_of is not None else None
     board_n = board_our_posts(board, me_name)
     board0 = (baseline or {}).get("board_posts0")
     our0 = (baseline or {}).get("our_posts0")
@@ -378,16 +422,19 @@ def hidden_status(board, log_path=None, me_name="myeonggi", baseline=None):
         signal = delta_board < delta_our
     return {
         "api_hidden_field": "UNOBSERVABLE",
-        "api_note": "forum.json has no hidden key; /api/forum timed out and /api/posts 404'd for QA; "
-                    "forum.jsonl is outbox enqueue (ts/post/refs/as) with no accepted field",
+        "api_note": "forum.json has no hidden key; forum.jsonl is outbox enqueue with no accepted field; "
+                    "our count uses ts <= board_as_of - 120s grace",
         "board_posts": board_n,
         "our_posted_count": posted,
         "board_posts0": board0,
         "our_posts0": our0,
+        "board_as_of": as_of,
+        "cutoff_ts": cutoff,
+        "grace_s": grace_s,
         "delta_board": delta_board,
         "delta_our": delta_our,
         "hidden_signal": signal,
-        "rule": "(board_posts - board_posts0) < (our_posts - our_posts0) since switch-on",
+        "rule": "(board - board0) < (ours_as_of - our0); ours = log ts <= board_as_of - 120s",
     }
 
 
@@ -399,19 +446,28 @@ def all_time_dislikes_per_post(mem):
     return {"posts": r["n"], "dislikes_per_post": round(r["d"] / r["n"], 3) if r["n"] else None}
 
 
-def record_switch_baseline(mem, now=None, path=None, cfg=config, board=None, log_path=None):
+def record_switch_baseline(mem, now=None, path=None, cfg=config, board=None, log_path=None,
+                           board_path=None, fetched_at=None, grace_s=None):
     """Write switch-on baselines. Does not turn the flag on.
 
-    Saves (1) 2 h pre-switch dislikes/post for the relative 1.2x rule, (2) all-time avg for the
-    report only, (3) board_posts0 + our_posts0 for the relative hidden rule.
+    Saves (1) 2 h pre-switch dislikes/post for 1.2x, (2) all-time avg for the report,
+    (3) board_posts0 + our_posts0 (our_posts0 uses board_as_of - 120s grace, same as live hidden).
     """
+    if grace_s is None:
+        grace_s = HIDDEN_BOARD_GRACE_S
     now = now or time.time()
     path = Path(path or baseline_path(cfg))
     path.parent.mkdir(parents=True, exist_ok=True)
     rb = dislike_baseline(mem, now)
     all_time = all_time_dislikes_per_post(mem)
     board_n = board_our_posts(board) if board is not None else None
-    our_n = our_posted_count(log_path)
+    as_of = board_data_ts(board, board_path=board_path, fetched_at=fetched_at)
+    if as_of is None and fetched_at is None and board is not None:
+        # live /api/board with no stamp: use recording time as fetch time
+        as_of = now
+        fetched_at = now
+    our_n = (our_posted_count(log_path, as_of_ts=as_of, grace_s=grace_s)
+             if as_of is not None else our_posted_count(log_path))
     out = {
         "switched_at": now,
         "switched_kst": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now)),
@@ -423,8 +479,10 @@ def record_switch_baseline(mem, now=None, path=None, cfg=config, board=None, log
         "all_time_posts": all_time["posts"],
         "board_posts0": board_n,
         "our_posts0": our_n,
-        "note": "1.2x uses baseline_dislikes_per_post (2 h); hidden uses board/our deltas vs *_0; "
-                "all_time is report-only",
+        "board_as_of0": as_of,
+        "grace_s": grace_s,
+        "note": "1.2x uses baseline_dislikes_per_post (2 h); hidden uses board/our deltas vs *_0 "
+                "with our count ts <= board_as_of - 120s; all_time is report-only",
     }
     path.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     return out
@@ -452,7 +510,8 @@ def recent_our_posts(mem, n=20, after_ts=None):
 
 
 def check_rollback(mem, board, *, now=None, baseline=None, http_statuses=None,
-                   posted_manipulation=None, forum_low_streak_path=None, log_path=None, cfg=config):
+                   posted_manipulation=None, forum_low_streak_path=None, log_path=None,
+                   board_path=None, fetched_at=None, cfg=config):
     """Deterministic rollback checker. Any one rule -> rollback True."""
     now = now or time.time()
     baseline = baseline if baseline is not None else load_baseline(cfg=cfg)
@@ -501,7 +560,8 @@ def check_rollback(mem, board, *, now=None, baseline=None, http_statuses=None,
             reasons.append(f"board forum {forum_score} < {floor} twice 1h apart")
     measured["forum_low_hits"] = streak.get("hits")
 
-    hid = hidden_status(board, log_path=log_path, baseline=baseline)
+    hid = hidden_status(board, log_path=log_path, baseline=baseline,
+                       board_path=board_path, fetched_at=fetched_at)
     measured["hidden"] = hid
     if hid.get("hidden_signal") is True:
         reasons.append(
@@ -556,13 +616,13 @@ def kpi_snapshot(board, mem, path=None):
 
 
 # ------------------------------------------------------------------------------------------- dry run
-def dry_run(mem, board, now=None, n=6, gap_s=600, out_dir=None):
+def dry_run(mem, board, now=None, n=6, gap_s=600, out_dir=None, board_path=None, fetched_at=None):
     """1 h of influencer slots. Builds drafts only. Sends nothing. No LLM / Decisions call."""
     now = now or time.time()
     plan = plan_slots(mem, now, n=n, gap_s=gap_s)
     rb = dislike_baseline(mem, now)
     all_time = all_time_dislikes_per_post(mem)
-    hid = hidden_status(board)
+    hid = hidden_status(board, board_path=board_path, fetched_at=fetched_at)
     checks = {
         "posts": len(plan["posts"]),
         "schedule_ok": plan["schedule_ok"],
@@ -626,14 +686,18 @@ def main(argv=None):
     now = a.end or time.time()
     mem = ReadOnlyMem(a.db)
     board = {}
+    board_path = None
     if a.board:
+        board_path = a.board
         board = json.loads(Path(a.board).read_text(encoding="utf-8"))
     else:
         try:
             from . import shadow_gate
-            board, _ = shadow_gate.latest_board()
+            board, board_path = shadow_gate.latest_board()
+            board = board or {}
         except Exception:
             board = {}
+            board_path = None
 
     class _M:
         def db(self_inner):
@@ -641,18 +705,18 @@ def main(argv=None):
 
     if a.cmd == "dry-run":
         out_dir = a.out or str(config.ROOT / "logs" / "shadow")
-        dry = dry_run(mem, board, now=now, out_dir=out_dir)
+        dry = dry_run(mem, board, now=now, out_dir=out_dir, board_path=board_path)
         print(json.dumps({"checks": dry["checks"], "posts": len(dry["plan"]["posts"]),
                           "baseline_2h": dry["rollback_baseline_2h"]["ours"],
                           "all_time": dry["all_time_dislikes_per_post"],
                           "hidden": dry["hidden_status"], "sent": False}, ensure_ascii=False, indent=1))
         return 0 if dry["checks"]["ok"] else 1
     if a.cmd == "record-baseline":
-        out = record_switch_baseline(_M(), now=now, board=board, log_path=None)
+        out = record_switch_baseline(_M(), now=now, board=board, log_path=None, board_path=board_path)
         print(json.dumps(out, ensure_ascii=False, indent=1))
         return 0
     if a.cmd == "check-rollback":
-        r = check_rollback(mem, board, now=now)
+        r = check_rollback(mem, board, now=now, board_path=board_path)
         print(json.dumps(r, ensure_ascii=False, indent=1))
         return 1 if r["rollback"] else 0
     if a.cmd == "kpi":

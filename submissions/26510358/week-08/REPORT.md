@@ -499,6 +499,7 @@ buyer 증거 보고 레인. `FORUM_INFLUENCER=False` 기본. True여도 이 절�
   board-20261105T1720(17:20 KST) 대비 log `ts<=board`는 153으로 일치. 154번째 줄은 17:29:26 KST outbox enqueue(보드보다 +566초).
   `forum_r3.outbox()`는 API 수락 전에 로그에 쓰며 accepted 필드 없음. DB mine=1도 153.
 - 상대 숨김(후속): `record-baseline`이 `board_posts0`/`our_posts0` 저장. `hidden_signal = (board-board0) < (ours-ours0)`. 스위치 전 격차는 롤백하지 않음.
+- 보드 스탬프 유예(후속): our 카운트는 `ts <= board_as_of - 120s`만 포함(스냅샷 이후 enqueue·인덱싱 지연으로 인한 거짓 숨김 방지). `our_posts0`도 동일.
 - 스위치 ON 시 `python -m r3lib.forum_influencer record-baseline` → `influencer_baseline.json`(2시간 값을 기준로 저장, all_time은 함께 기록만 함).
 
 ### dry-run
