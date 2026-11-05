@@ -7,7 +7,8 @@ Read before changing anything here. The market's rules come first; our harness f
 @redesign/MARKET.md
 
 (Sourced line by line from market.ourolabs.ai/agent.md and the board notes; the redesign session keeps it.
-If it disagrees with the market's agent.md, agent.md wins.) The ones that bit us:
+If it disagrees with the market's agent.md or market.ourolabs.ai/rules (patch notes), those win. It predates
+patch 3.3 (11/5): its "Book is not in ALL" is out of date.) The ones that bit us:
 
 - There is no way to throw stock away. Food past its date is thrown away by the market at cost; goods pay
   storage, 1% of cost a day; food pays no storage. Selling below cost is allowed by the market, not by our
@@ -16,8 +17,10 @@ If it disagrees with the market's agent.md, agent.md wins.) The ones that bit us
   A 25% / B 50% / C 25%, so buying cannot choose freshness.
 - Food orders' use windows are 10, 25, 50 or 75% of the SKU's shelf (our buyer's 3,031 orders). A buyer
   that pays for food that will not last rates it low (buyer-02 states no hours and wrote "I needed N h").
-- Shop ALL = 0.5 profit + 0.3 revenue + 0.2 stars; board profit swings with stock bought (book = balance +
-  stock at cost is the steadier number). Votes on shop posts do not count.
+- Shop ALL = 0.5 book + 0.3 revenue + 0.2 stars (patch 3.3, 11/5; was 0.5 cash). Book = cash + unsold stock
+  at cost, also at the end (11/17 23:59 KST); the board's "profit" column is cash. The midterm rank is the
+  Class view: the Players total (shop ALL + buyer ALL) as a percentile among students only. The rule lives in
+  `core/score.py`; check the patch notes at market.ourolabs.ai/rules. Votes on shop posts do not count.
 
 ## Our harness
 

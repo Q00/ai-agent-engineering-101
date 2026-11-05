@@ -18,9 +18,9 @@ from tests.test_calc_check import Base  # noqa: E402
 
 
 def board(ts, our_surplus):
-    shops = [{"name": "gom31-shop", "deals": 5, "profit": 10, "revenue": 50, "stars_rank": 4.5, "stock_cost": 7},
-             {"name": "a", "deals": 5, "profit": 20, "revenue": 40, "stars_rank": 4.8},
-             {"name": "idle", "deals": 0, "profit": 0, "revenue": 0, "stars_rank": 0}]
+    shops = [{"name": "gom31-shop", "deals": 5, "profit": 10, "book": 17, "revenue": 50, "stars_rank": 4.5, "stock_cost": 7},
+             {"name": "a", "deals": 5, "profit": 20, "book": 20, "revenue": 40, "stars_rank": 4.8},
+             {"name": "idle", "deals": 0, "profit": 0, "book": 0, "revenue": 0, "stars_rank": 0}]
     buyers = [{"name": "gom31-shop", "deals": 3, "surplus": our_surplus, "forum": 0.5, "posts": 2},
               {"name": "b", "deals": 3, "surplus": 100, "forum": 0.7, "posts": 1},
               {"name": "c", "deals": 3, "surplus": 50, "forum": 0.1, "posts": 0}]
@@ -35,8 +35,8 @@ class PositionMorningTest(Base):
         r = position.ranks(board(0, 60))
         self.assertEqual((r["players"]["rank"], r["players"]["of"], r["players"]["next"]), (2, 2, "x"))
         self.assertEqual(r["shop"]["ranked"], 2)                        # the idle shop is not ranked
-        p = r["shop"]["parts"]["profit"]
-        self.assertEqual((p["rank"], p["next"], p["gap"]), (2, "a", 10))
+        p = r["shop"]["parts"]["book"]                                  # patch 3.3: book = cash + stock at cost
+        self.assertEqual((p["rank"], p["next"], p["gap"]), (2, "a", 3))
         s = r["buyer"]["parts"]["surplus"]
         self.assertEqual((s["rank"], s["of"], s["percentile"]), (2, 3, 0.5))   # one below plus half of our own tie (core/score.py)
         self.assertEqual(r["stock_cost"], 7)

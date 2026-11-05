@@ -1,6 +1,8 @@
 """How the board scores us - one place for the rule (user 11/4 11:2x: the metric belongs in the harness).
 
-The market's agent.md: shop ALL = 0.5 profit + 0.3 revenue + 0.2 stars; buyer ALL = 0.5 surplus + 0.3 forum votes
+The market's rules (market.ourolabs.ai/rules, patch 3.3 on 11/5: book replaced cash): shop ALL = 0.5 book + 0.3 revenue +
+0.2 stars, book = balance - starting capital - bankruptcy money + what the unsold stock cost (it still counts at cost when
+the round ends; goods storage and spoiled food leave it); the board's `profit` is now cash. Before: 0.5 profit; buyer ALL = 0.5 surplus + 0.3 forum votes
 on posts written as a buyer + 0.1 deals + 0.1 posts written as a buyer (hidden posts do not count). Each part is a
 percentile among the ranked rows only: buyers with a deal, shops with a deal or a purchase. Checked against the
 public board on 11/4 11:1x: missing values count as 0 and ties count half, and stars use the board's stars_rank
@@ -8,7 +10,7 @@ public board on 11/4 11:1x: missing values count as 0 and ties count half, and s
 our buyer's surplus at the 74th percentile when the board put it at the 28th.
 """
 
-SHOP = {"profit": 0.5, "revenue": 0.3, "stars_rank": 0.2}
+SHOP = {"book": 0.5, "revenue": 0.3, "stars_rank": 0.2}
 BUYER = {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
 
 
@@ -17,7 +19,9 @@ def ranked_buyers(rows):
 
 
 def ranked_shops(rows):
-    return [r for r in rows or [] if (r.get("deals") or 0) > 0 or (r.get("profit") or 0) != 0]
+    # a shop is ranked with a deal or a purchase: a purchase moves cash (profit) or leaves stock at cost
+    return [r for r in rows or [] if (r.get("deals") or 0) > 0 or (r.get("profit") or 0) != 0
+            or (r.get("stock_cost") or 0) > 0]
 
 
 def _val(r, f):
@@ -70,12 +74,14 @@ def board_score(board, name):
 
 def text():
     """The rule in words, for prompts."""
-    return ("Board score (market agent.md, checked against the board): shop ALL = 0.5 profit + 0.3 revenue + 0.2 "
+    return ("Board score (market agent.md, checked against the board): shop ALL = 0.5 book + 0.3 revenue + 0.2 "
             "stars (stars_rank); buyer ALL = 0.5 surplus + 0.3 forum votes on buyer posts + 0.1 deals + 0.1 buyer "
             "posts. Each part is a percentile among buyers with a deal and shops with a deal or a purchase only "
             "(missing counts as 0, ties half), so it is our place against those players, not an amount. "
-            "What each part counts (agent.md, user 11/5 02:0x): profit = balance minus the starting capital, so "
-            "stock not yet sold counts as a loss (and what is left on 11/17 23:59 stays one); revenue = settled "
+            "What each part counts (agent.md, user 11/5 02:0x): book = cash (balance minus the starting "
+            "capital and bankruptcy money) + what the unsold stock cost, so buying stock does not lower it and stock left on "
+            "11/17 23:59 still counts at cost; goods storage (1%/day) and food thrown away past its date leave it "
+            "(patch 3.3, 11/5); revenue = settled "
             "prices minus refunds; stars are pulled toward 3 while reviews are few; surplus = list price of what "
             "served the order (food that lasted, goods that did not break) minus the price paid, refunds returned; "
             "forum = other agents' votes on our buyer posts; posts = posts written as a buyer (hidden ones do not "

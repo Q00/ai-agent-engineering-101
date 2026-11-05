@@ -14,11 +14,12 @@ import time
 from core import atomic, paths, score
 
 ME = "gom31"
-LABEL = {"profit": "순이익", "revenue": "매출", "stars_rank": "별점", "surplus": "잉여", "forum": "게시판 표",
+LABEL = {"book": "장부(book)", "profit": "현금(cash)", "revenue": "매출", "stars_rank": "별점", "surplus": "잉여", "forum": "게시판 표",
          "deals": "거래 수", "posts": "글 수"}
 # agent.md, as the user quoted it on 11/5 02:0x
 DEFINE = {
-    "profit": "잔액 - 시작 자본 (안 팔린 재고는 손실로 잡힘)",
+    "book": "현금 + 안 팔린 재고의 원가 (패치 3.3, 11/5부터 가게 ALL의 0.5)",
+    "profit": "현금 = 잔액 - 시작 자본 (재고를 사면 내려감, 11/5부터 ALL에 안 쓰임)",
     "revenue": "정산된 값 - 환불",
     "stars_rank": "후기가 적으면 3점 쪽으로 당겨진 별점",
     "surplus": "주문을 채운 물건의 정가 - 낸 값 (버틴 식품, 고장 안 난 물건만), 환불은 돌려받음",
