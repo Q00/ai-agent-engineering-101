@@ -61,7 +61,8 @@ class ForumEngagementTests(unittest.TestCase):
         os.utime(self.md / "forum.json", (T+1800, T+1800))
         os.utime(self.md / "inventory.json", (T+1800, T+1800))
         run(self.md, T+1800)
-        self.assertEqual(len((self.md / "outbox.jsonl").read_text(encoding="utf8").splitlines()), 1)
+        sent = [json.loads(line) for line in (self.md / "outbox.jsonl").read_text(encoding="utf8").splitlines()]
+        self.assertEqual([m.get("thread") for m in sent].count(1), 1)
 
     def test_stale_stock_and_missing_certificate_do_not_advertise(self):
         self.assertEqual(run(self.md, T+121)["status"], "stale_or_non_r3")

@@ -10,24 +10,42 @@ import time
 from market_state import read, write
 
 ROOT = Path(__file__).resolve().parent
+EARLIER_LIMITS = {"buyer_daily_limit": 12, "buyer_report_limit": 9, "shop_daily_limit": 4, "shop_reply_interval_seconds": 3600, "min_interval_seconds": 3600,
+                  "brake_dislikes": 3, "brake_dislike_ratio": .25, "minimum_report_surplus_ratio": .1}
+MARKET_SHOP_INTERVAL = 300
+
+
+def valid_limits(value):
+    try:
+        return (isinstance(value, dict) and 4 <= value["buyer_daily_limit"] <= 12 and 3 <= value["buyer_report_limit"] <= 9
+                and value["buyer_report_limit"] < value["buyer_daily_limit"] and type(value["shop_daily_limit"]) is int and 4 <= value["shop_daily_limit"] <= 24
+                and type(value["shop_reply_interval_seconds"]) is int and 600 <= value["shop_reply_interval_seconds"] <= 3600
+                and value["min_interval_seconds"] >= 3600 and value["brake_dislikes"] >= 3 and 0 < value["brake_dislike_ratio"] <= .5
+                and .1 <= value["minimum_report_surplus_ratio"] <= 1)
+    except (KeyError, TypeError):
+        return False
 
 
 def posting_limits(md, now):
-    value = read(ROOT / "forum_posting.json")
-    if (not 4 <= value["buyer_daily_limit"] <= 12 or not 3 <= value["buyer_report_limit"] <= 9
-            or value["buyer_report_limit"] >= value["buyer_daily_limit"] or value["shop_daily_limit"] != 4
-            or value["min_interval_seconds"] < 3600 or value["brake_dislikes"] < 3
-            or not 0 < value["brake_dislike_ratio"] <= .5
-            or not .1 <= value["minimum_report_surplus_ratio"] <= 1):
-        raise ValueError("Invalid bounded posting limits")
+    """A missing or unusable settings file means the earlier, smaller limits, never a stopped hook."""
+    try:
+        value = read(ROOT / "forum_posting.json")
+    except (OSError, ValueError):
+        value = None
+    if not valid_limits(value):
+        value = dict(EARLIER_LIMITS)
     forum = read(md / "forum-intel.json", {})
     reactions = forum.get("summary", {}).get("own_post_reactions", []) if (
         forum.get("status") == "ok" and 0 <= now-forum.get("observed_at", 0) <= 3600) else []
     likes = sum(r.get("likes") or 0 for r in reactions)
     dislikes = sum(r.get("dislikes") or 0 for r in reactions)
     brake = len(reactions) >= 3 and dislikes >= value["brake_dislikes"] and dislikes/max(1, likes+dislikes) > value["brake_dislike_ratio"]
-    return {**value, "buyer_daily_limit": 4 if brake else value["buyer_daily_limit"],
-            "buyer_report_limit": 3 if brake else value["buyer_report_limit"], "reaction_brake": brake}
+    shop = [r for r in reactions if r.get("role") == "shop"]
+    shop_likes, shop_dislikes = sum(r.get("likes") or 0 for r in shop), sum(r.get("dislikes") or 0 for r in shop)
+    shop_brake = len(shop) >= 3 and shop_dislikes >= value["brake_dislikes"] and shop_dislikes/max(1, shop_likes+shop_dislikes) > value["brake_dislike_ratio"]
+    shop_limits = {"shop_daily_limit": EARLIER_LIMITS["shop_daily_limit"], "shop_reply_interval_seconds": EARLIER_LIMITS["shop_reply_interval_seconds"]} if shop_brake else {}
+    return {**value, **shop_limits, "buyer_daily_limit": 4 if brake else value["buyer_daily_limit"],
+            "buyer_report_limit": 3 if brake else value["buyer_report_limit"], "reaction_brake": brake, "shop_reaction_brake": shop_brake}
 
 
 def message_key(message):
@@ -59,7 +77,16 @@ def _enqueue(md, message, key, kind, metadata, now):
     limits = state if role == "buyer" else state.get("shop", {"last_at": 0, "day": "", "count": 0})
     count = limits["count"] if limits["day"] == day else 0
     limit = settings["buyer_daily_limit"] if role == "buyer" else settings["shop_daily_limit"]
-    if count >= limit or now-limits["last_at"] < settings["min_interval_seconds"]:
+    if role == "shop":
+        # General posts wait an hour and replies less; any two shop posts stay apart by the market's own limit.
+        reply = kind == "stock_reply"
+        last_kind = limits.get("last_reply_at", 0) if reply else limits.get("last_general_at", limits["last_at"])
+        apart = settings["shop_reply_interval_seconds"] if reply else settings["min_interval_seconds"]
+        if settings.get("shop_reaction_brake"):
+            last_kind = limits["last_at"]  # Slowed down: every shop post shares one interval again, as before.
+        if count >= limit or now-last_kind < apart or now-limits["last_at"] < MARKET_SHOP_INTERVAL:
+            return "rate_limited"
+    elif count >= limit or now-limits["last_at"] < settings["min_interval_seconds"]:
         return "rate_limited"
     reports_today = sum(a["kind"] == "buyer_report" and
                         datetime.fromtimestamp(a["queued_at"], timezone.utc).date().isoformat() == day
@@ -68,6 +95,9 @@ def _enqueue(md, message, key, kind, metadata, now):
         return "rate_limited"  # Reserve buyer slots for mature follow-ups.
     with (md / "outbox.jsonl").open("a", encoding="utf8") as stream:
         stream.write(json.dumps(message, ensure_ascii=False, allow_nan=False) + "\n")
+    if role == "shop":
+        limits.setdefault("last_general_at", limits["last_at"])  # A post from before these fields counts as a general one.
+        limits["last_reply_at" if kind == "stock_reply" else "last_general_at"] = now
     limits.update(last_at=now, day=day, count=count+1)
     if role == "shop":
         state["shop"] = limits
@@ -78,7 +108,7 @@ def _enqueue(md, message, key, kind, metadata, now):
         snapshot.get("round") == 3 and 0 <= now-snapshot.get("observed_at", 0) <= 3600) else {}
     board_before = {"at": snapshot.get("observed_at"),
                     "visits": (own.get("shops") or {}).get("visits"),
-                    "forum": (own.get("buyers") or {}).get("forum")}
+                    "forum": (own.get("buyers") or {}).get("forum"), "deals": (own.get("shops") or {}).get("deals")}
     actions[key] = {"queued_at": now, "kind": kind, "role": role, "message_key": message_key(message),
                     "message": message, "board_before": board_before, **metadata}
     write(md / "forum-policy.json", state)
