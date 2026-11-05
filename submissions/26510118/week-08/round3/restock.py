@@ -129,6 +129,14 @@ PRICEY_MAX = 400_000     # stage 2, categories with nothing cheaper
 MIN_SHELF = 168          # hours: food that keeps less than a week is not listed
 SECOND, SECOND_TOP = 0.7, 40
 DEAREST = 0.75           # grade A costs at most 75% of the list price
+# The surge (11/5 15:40, /agent.md): past 50 units of a SKU bought by the whole market in an hour, each further unit
+# costs 0.2% more, up to +50%; inventory.json carries the SKUs surged now and their factor. A product is not bought
+# while its market (by_sku price_ratio, 24 h) minus its expected cost at the factor is under SURGE_MARGIN of list.
+# (11/5 15:00: the 4-seat sofa at 1.11, 105 units an hour; our A units of it cost 0.81-0.84 of list against a
+# market of 0.78, the A range being 0.55-0.75.) Expected cost: the grade mix the supply draws, at mid-range costs.
+GOODS_COST = 0.7 * 0.65 + 0.2 * 0.50 + 0.1 * 0.35     # goods: A 70%, B 20%, C 10% (0.59 of list)
+FOOD_COST = 0.25 * 0.65 + 0.5 * 0.50 + 0.25 * 0.35    # food: A 25%, B 50%, C 25% (0.50)
+SURGE_MARGIN = 0.06
 WIND_DOWN, STOP = 0, 0    # off (3 days, 6 h until 11/5 15:40): only fast sellers refilled in the last 3 days, nothing
                           # bought in the last 6 h; with the book counting stock at cost, those were sales given up
 FAST = 2                 # sales in the last day for a product to be refilled in the wind-down
@@ -395,6 +403,12 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     score = evidence(catalog, summary, orders or [], wanted or {}, now)
     gaps = sorted(((rank(s), s, t - usable[s]) for s, t in targets.items() if t > usable[s]),
                   key=lambda g: (g[0] > 0, -score(g[1]), g[0], -g[2]))       # refills, then evidence, then stage
+    surge = {s.get("sku"): float(s.get("factor") or 1.0) for s in inv.get("surge") or [] if isinstance(s, dict)}
+    ratio = lambda s: ((summary.get("by_sku") or {}).get(s) or {}).get("price_ratio")
+    thin = lambda s: surge.get(s, 1.0) > 1.0 and bool(ratio(s)) and \
+        ratio(s) - (GOODS_COST if catalog[s].get("kind") == "goods" else FOOD_COST) * surge[s] < SURGE_MARGIN
+    skipped = sorted({g[1] for g in gaps if thin(g[1])})
+    gaps = [g for g in gaps if not thin(g[1])]
     value = sum(u.get("cost", 0) for u in units)
     balance = inv.get("balance", 0)
     seen = (stocked or set()) | set(usable) | set(sold)
@@ -413,7 +427,7 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
         for _, sku, need in rows:
             if room <= 0 or len(buy) >= lines:
                 return
-            each = catalog[sku]["list_price"] * DEAREST
+            each = catalog[sku]["list_price"] * DEAREST * surge.get(sku, 1.0)
             qty = need
             while qty and (value + spend + each * qty > most or balance - spend - each * qty < RESERVE
                            or spend + each * qty > limit):
@@ -423,6 +437,8 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
                 spend += each * qty
                 room -= 1
     premium = line_gaps(line, catalog, units, sales, now)
+    skipped += [s for s, _ in premium if thin(s)]
+    premium = [(s, n) for s, n in premium if not thin(s)]
     # the premium line first, but leaving the shelf its lines, money and room under the cap, so the shelf's refills
     # always have a share of the run (review 11/4: with 40 s left it took all 4 lines; 11/5: the shelf had halved)
     take([(-1, sku, need) for sku, need in premium], min(LINE_LINES, int(lines * LINE_SHARE), max(1, lines - SHELF_LINES)),
@@ -434,7 +450,8 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
     info = {"stage1": len(one), "gate": f"{len(sales)}/{GATE}" + (" open" if gate else ""),
             "targets": len(targets), "gaps": len(gaps), "stock": int(value), "wind_down": wind_down, "lines": lines,
             "new": sum(1 for b in buy if b["sku"] not in seen), "deep": sum(1 for b in buy if b["qty"] > MAX_TARGET),
-            "line": bought_line, "line_gaps": len(premium), "cap": int(cap)}
+            "line": bought_line, "line_gaps": len(premium), "cap": int(cap),
+            "surge_skipped": skipped, "surged": len(surge)}
     return {"buy": buy}, info
 
 

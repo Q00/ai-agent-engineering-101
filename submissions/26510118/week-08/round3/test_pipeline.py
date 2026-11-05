@@ -460,6 +460,14 @@ def test_restock(fake: Fake):
     check("...never above its cap", out["buy"][0] == {"sku": sofa, "qty": 1}, out["buy"][:2])
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, [{"sku": sofa, "ts": NOW - 2 * H}] * 6, [], rules, NOW, line={sofa: 5})
     check("...and sales older than an hour do not count (6 sold 2 hours ago: one unit)", out["buy"][0] == {"sku": sofa, "qty": 1}, out["buy"][:2])
+    market = {"by_sku": {sofa: {"price_ratio": 0.78}}}
+    surged = lambda f: dict(rich(shelf), surge=[{"sku": sofa, "units": 150, "factor": f}])
+    out, info = restock.plan(surged(1.30), cat2, DEMAND, market, fast, [], rules, NOW, line={sofa: 5})
+    check("surge: at 1.30 the sofa's expected cost (0.59 x 1.30 = 0.77 of list) leaves under 6% against its market 0.78: not bought",
+          all(b["sku"] != sofa for b in out["buy"]) and info["surge_skipped"] == [sofa], (out["buy"][:2], info.get("surge_skipped")))
+    out, info = restock.plan(surged(1.10), cat2, DEMAND, market, fast, [], rules, NOW, line={sofa: 5})
+    check("...at 1.10 (0.65, 13% under its market) it is bought as ever", out["buy"][0] == {"sku": sofa, "qty": 3} and not info["surge_skipped"],
+          (out["buy"][:2], info.get("surge_skipped")))
     stale = shelf + [srow("u-s1", age=3 / 24)]
     out, _ = restock.plan(rich(stale), cat2, DEMAND, {}, fast[:1] and [{"sku": sofa, "ts": NOW - 5 * H}], [], rules, NOW, line={sofa: 3})
     check("one held 3 h with no sale (the last 5 h ago): no more units", all(b["sku"] != sofa for b in out["buy"]), out["buy"][:3])
