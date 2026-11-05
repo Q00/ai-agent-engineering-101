@@ -216,6 +216,11 @@ STRATEGY = {
                     "own_cover": {"type": "number", "minimum": 0.5, "maximum": 5},
                     "probe_units": {"type": "integer", "minimum": 0, "maximum": 5},
                     "food_cap": {"type": "integer", "minimum": 1, "maximum": 20},
+                    # 11/5 09:0x: food bought for this many windows of its own sales; only fresh units count as held
+                    "food_windows": {"type": "number", "minimum": 0.5, "maximum": 6},
+                    "food_fresh_share": {"type": "number", "minimum": 0, "maximum": 0.95},
+                    "food_old_windows": {"type": "number", "minimum": 0, "maximum": 12},
+                    "food_min": {"type": "integer", "minimum": 0, "maximum": 20},
                     # 11/4 17:2x: the expected cost as a share of list, for planning (A units cost 55-75% of list)
                     "cost_share": {"type": "number", "minimum": 0.55, "maximum": 0.75}}},
                 "seller": {"type": "object", "properties": {     # 11/4 02:5x: the seller's rules

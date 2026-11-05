@@ -58,6 +58,9 @@ def playbook(ctx):
             "units_cap": pb.get("units_cap", 12),
             "own_sales": pb.get("own_sales", False), "own_cover": pb.get("own_cover", 1.5),
             "probe_units": pb.get("probe_units", 2), "food_cap": pb.get("food_cap", 3),
+            # 11/5 09:0x: food sized by its own sales per window (None = the fixed baseline above)
+            "food_windows": pb.get("food_windows"), "food_fresh_share": pb.get("food_fresh_share", 0.5),
+            "food_old_windows": pb.get("food_old_windows", 2), "food_min": pb.get("food_min", 2),
             "cost_share": check.cost_share(ctx)[0]}
 
 
@@ -68,10 +71,14 @@ def build_buy_list(ctx, now=None):
     now = now or time.time()
     pb, lim = playbook(ctx), check._limits(ctx)
     cat = mf.catalog(ctx)
-    have = {}
+    have, fresh = {}, collections.Counter()
     for u in mf.inventory(ctx).get("units", []):
         if u.get("grade") != "expired":
             have[u["sku"]] = have.get(u["sku"], 0) + 1
+            sh = (cat.get(u["sku"]) or {}).get("shelf_hours")
+            h = mf.hours_left(u.get("expires_at"), now)
+            if u.get("kind") == "food" and sh and h is not None and h / sh >= pb["food_fresh_share"]:
+                fresh[u["sku"]] += 1
     missed = call(ctx, "me.missed", {"hours": 6})
     sell = call(ctx, "market.selling", {"hours": 6, "limit": 30})
     sell_food = call(ctx, "market.selling", {"hours": 6, "kind": "food", "limit": 30})
@@ -182,6 +189,19 @@ def build_buy_list(ctx, now=None):
             if kind == "goods":
                 probe = pb["probe_units"] if (x["have"] == 0 and n == 0) else 0
                 x["target"] = min(lim["max_units_per_sku"], max(want_units, probe))
+            elif kind == "food" and pb["food_windows"]:
+                # 11/5 09:0x (user: food fresh, goods by their own cover; old food must not pile up): food is bought
+                # for food_windows windows of its own sales (2 h = 6 windows), and only units with food_fresh_share
+                # of the shelf left count as held - so fresh units come in while old ones sell to short stated needs.
+                # A fixed 8-10 held 12-16 windows of a slow SKU (kimchi on hold). When the old units already cover
+                # food_old_windows windows, nothing more is bought; the per-SKU limit still counts every unit.
+                per = n / 6
+                x["target"] = min(lim["max_units_per_sku"], pb["food_cap"],
+                                  max(pb["food_min"], math.ceil(per * pb["food_windows"])))
+                old = x["have"] - fresh.get(x["sku"], 0)
+                x["have"], x["old"] = fresh.get(x["sku"], 0), old
+                if old > math.ceil(per * pb["food_old_windows"]):
+                    x["target"] = x["have"]          # the old units go first
             elif kind == "food":                    # food keeps its baseline and grows with demand, up to food_cap
                 x["target"] = min(lim["max_units_per_sku"], pb["food_cap"], max(x["target"], want_units))
             x["own_sold_2h"], x["missed_2h"] = own.get(x["sku"], 0), missed.get(x["sku"], 0)
