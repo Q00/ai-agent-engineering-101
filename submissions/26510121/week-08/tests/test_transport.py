@@ -20,7 +20,8 @@ def test_launch_preserves_route_and_strips_credentials(tmp_path, monkeypatch, pr
     monkeypatch.setenv('OPENAI_API_KEY', 'synthetic-test-only')
     monkeypatch.setenv('MARKET_OWNER', 'synthetic-owner')
     calls = []
-    proc = SimpleNamespace(stdout=io.StringIO(url_line + '\n'), poll=lambda: None)
+    banner = 'Manage tunnels at https://admin.localhost.run\n' if provider == 'localhost' else ''
+    proc = SimpleNamespace(stdout=io.StringIO(banner + url_line + '\n'), poll=lambda: None)
 
     def launch(command, **kwargs):
         calls.append((command, kwargs))

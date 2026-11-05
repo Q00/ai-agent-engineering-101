@@ -51,7 +51,9 @@ def open_tunnel(kit, port, provider=None, log_path=None, protocol='http2'):
             '-o','ExitOnForwardFailure=yes','-o','ConnectTimeout=10',
             '-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3',
             '-R',f'80:127.0.0.1:{port}','nokey@localhost.run','--','--output','json']
-        pattern=r'https://[a-z0-9-]+\.(?:lhr\.life|localhost\.run)'
+        # The SSH welcome banner links admin.localhost.run before the actual
+        # forwarding address. Never use that account portal as our shop URL.
+        pattern=r'https://(?!admin\.localhost\.run\b)[a-z0-9-]+\.(?:lhr\.life|localhost\.run)'
     else:
         raise ValueError('Unsupported tunnel provider')
     if log_path is None:
