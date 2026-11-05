@@ -136,6 +136,12 @@ def run(root, state, now=None):
         else 0
     )
     valid = plan.get("valid_until") if isinstance(plan, dict) else None
+    # a plan is bought once: the kit runs this every 60 s and an open window spans several runs, so without this the
+    # same plan was bought 7 times on 2026-11-06 04:40-05:03 and the balance fell from 60.5M to 0.45M
+    done_path = os.path.join(root, "a2/restock_done.json")
+    plan_id = (
+        f"{os.stat(plan_path).st_mtime_ns}:{valid}" if isinstance(plan, dict) else None
+    )
     out, cost = {"buy": []}, 0.0
     if not isinstance(plan, dict):
         why = "no_plan"
@@ -143,11 +149,18 @@ def run(root, state, now=None):
         why = "expired"
     elif win == "closed":
         why = "window_closed"
+    elif (c.load_json(done_path, {}) or {}).get("plan_id") == plan_id:
+        why = "executed"
     else:
         catalog = _catalog(c.load_json(os.path.join(state, "catalog.json"), {}))
         out = guard(plan, inv, catalog)
         cost = sum(unit_cost(x["sku"], inv, catalog) * x["qty"] for x in out["buy"])
         why = "guarded"
+        if out["buy"]:
+            tmp = done_path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump({"plan_id": plan_id, "ts": now, "buy": out["buy"]}, f)
+            os.replace(tmp, done_path)
     login = c.owner_login(root)
     Trajectory(
         os.path.join(root, "a2/trajectory.jsonl"), (login,) if login else ()

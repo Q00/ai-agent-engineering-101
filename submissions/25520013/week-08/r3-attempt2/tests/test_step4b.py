@@ -345,6 +345,36 @@ def test_restock_no_plan_and_window(tmp_path):
     assert restock.run(root, state, now=now) == {"buy": []}
 
 
+def test_restock_plan_is_bought_once(tmp_path):
+    # live 2026-11-06 04:40-05:03: one plan was bought on every 60 s run of an open window, 7 times in all
+    now = 1_794_000_000
+    plan = {"buy": [{"sku": "EGG1", "qty": 1}], "valid_until": now + 600}
+    root, state = _hook_root(tmp_path, plan)
+    assert restock.run(root, state, now=now) == {"buy": [{"sku": "EGG1", "qty": 1}]}
+    assert restock.run(root, state, now=now + 60) == {"buy": []}
+    assert restock.run(root, state, now=now + 120) == {"buy": []}
+    assert [r["why"] for r in _rows(root)] == ["guarded", "executed", "executed"]
+    # a new plan file from the operator is bought, even with the same content
+    p = os.path.join(root, "a2/restock_plan.json")
+    st = os.stat(p)
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(plan, f)
+    os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000))
+    assert restock.run(root, state, now=now + 180) == {
+        "buy": [{"sku": "EGG1", "qty": 1}]
+    }
+
+
+def test_restock_empty_guard_result_does_not_consume_plan(tmp_path):
+    now = 1_794_000_000
+    plan = {"buy": [{"sku": "EGG1", "qty": 1}], "valid_until": now + 600}
+    root, state = _hook_root(
+        tmp_path, plan, _inv(balance=500_000)
+    )  # no room above the bankrupt line
+    assert restock.run(root, state, now=now) == {"buy": []}
+    assert not os.path.exists(os.path.join(root, "a2/restock_done.json"))
+
+
 # ---------------------------------------------------------------- forum
 def _forum_root(tmp_path):
     root = tmp_path / "root"
