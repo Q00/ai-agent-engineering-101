@@ -219,7 +219,7 @@ Git 이력에는 이전 `market-kit.log` 163.73 MB blob 때문에 GitHub push가
 - `r3lib/twin.py`: 방문 재생, 협상·가격·재고 시뮬레이션.
 - `r3lib/shadow_gate.py`: live 대 후보 비교, 차이, PASS/FAIL, 보정, `logs/shadow/` JSON 보고서.
 - `policies/candidates/lever1.json`: MA-2 목표(2026-11-05). 재입고만 바꿈. 16M 상한 안임.
-- `policies/candidates/lever2-forum.json`: shadow 전용 stub임. MA-3 필드는 후속 커밋에서 채움.
+- `policies/candidates/lever2-forum.json`: MA-3 게시판 후보. 아래 lever2-forum 절 참고.
 - `policies/candidates/ask_room_009.json`: `ASK_ROOM` 0.09 예시.
 - `tests/test_twin.py`, `tests/test_shadow_gate.py`.
 
@@ -261,7 +261,7 @@ lever1 내용(MA-2):
 - 판정: **FAIL**. book 하락, ALL 하락, 체결률 하락, 재고 부족 +622(허용 156).
 - 읽기: 김치·침구 몫 0.05(각 0.8M)로는 6시간 김치 277개 수요를 받지 못함. 소파·매트리스를 늘려도 그 손실을 메우지 못함.
 - 이 결과는 트윈 추정임. 목표 수치를 바꾸기 전에 몫과 `cut_skus`를 나눠서 다시 돌릴 필요가 있음.
-- lever2-forum: **UNSIMULATED**. 가게 지표 차이는 0임. 보드의 현재 forum 값은 0.069임. 목표는 글 347개, 백분위 ~0.646임.
+- lever2-forum: 트윈으로는 시뮬레이션하지 못함. 이제 dry run으로 **ESTIMATED** 판정을 받음. 아래 lever2-forum 절 참고.
 
 보정(live 정책 트윈 대 실제 창, 같은 정의로 다시 잼):
 - 실제: 거래 710, 협상 912, 체결률 0.7785, 받은 세션 체결률 0.4897.
@@ -282,3 +282,68 @@ QA 수정(이번 fix 커밋):
 테스트: `/tmp` 개인 venv에서 `python -m pytest tests -q`. QA 테스트 9개를 더함(`tests/test_twin_qa.py`). 449 passed, 실패 0. 공유 `.venv`는 바꾸지 않음.
 보고서 파일: `logs/shadow/gate-20261105T154152.json`(gitignore).
 알려진 버그 두 개(seller ContextVar ValueError, 반복 409 "unit not in stock")는 이번에 고치지 않음.
+
+## 2026-11-05 lever2-forum (MA-3): 게시판 후보, dry run만 함
+
+### lever1은 배포하지 않음
+- lever1은 shadow gate에서 **FAIL**임. 그래서 라이브에 올리지 않음.
+- 이것은 gate가 제 일을 한 것임. 나쁜 정책을 라이브 전에 막음.
+- `PYTHONHASHSEED=0`으로 다시 잼(15:52 KST, `logs/shadow/gate-20261105T155213.json`):
+  book −14,799,543, 거래 매출 −84,039,182, 거래 732→288, 재고 부족 +753, ALL 0.7871→0.6296(−0.1575). FAIL.
+- 트윈 매출 편향: 같은 거래 기준(거래 매출 대 거래 매출)으로 약 **−20%**임(actual −19.2%, plan −19.7%). 예전에는 약 −22%였음.
+- 재현성: 해시 순서 때문에 실행마다 값이 조금 다름(twin_actual 거래 740–742). `PYTHONHASHSEED=0`이면 같은 값이 나옴. 판정은 늘 FAIL임.
+- 15:41 표와 창 방문 수(1450 → 1564)도 다름. 창 끝 전 시각의 줄이 나중에 더 쓰인 것으로 보임. 판정은 같음.
+
+### 지금 게시판 상태(실제 데이터, 읽기만)
+- 보드(15:40): 우리 buyer 글 146개, forum 0.56, buyer ALL 0.702.
+- 우리 표 158개. 모두 −1이고 +1은 0개임. 글 158개에 하나씩.
+  - 날짜별: 11-03 20, 11-04 91, 11-05 47.
+  - 대상: bright-living 123, yeonsong2 21, totato2203-r3 6, Jaehoonang 4, 그 밖의 넷 각 1.
+  - 근거: p_manipulation ≥ 0.9는 23개뿐임. 135개는 LLM 표시만 보고 찍음.
+- 우리가 받은 싫어요: buyer 글 144개, 좋아요 843, 싫어요 66, 글당 0.458. 36명 중 7위임(중앙값 0.336).
+- 싫어요 물결: 우리 싫어요 글 64개가 모두 11-05 02:37–15:11에 있음. 같은 때 남의 글도 3,173개 중 3,083개가 싫어요를 받음.
+- 글 내용으로 싫어요를 가르는 특징은 찾지 못함. 시장 전체의 물결로 보임.
+- 글 간격: 중앙값 10.7분.
+- 라이브 버그(고치지 않음): `forum_r3.vote()`는 refs를 int로 검사함. 실제 refs는 dict임. 그래서 +1이 한 번도 나가지 않음.
+
+### 후보 내용
+- 스위치: `r3lib/config.py`의 `FORUM_LEVER2 = False`. 새 상수만 더함. 기존 값과 로직은 그대로임.
+- 로직: `r3lib/forum_lever2.py`. `forum_r3.py`에는 연결하지 않음. 라이브 코드는 이 모듈을 import하지 않음.
+- 글: 5분 간격(시간당 12개). 목표 345개 이상.
+- 주제 셋:
+  - `[구매 기록]`: 결제가와 정가 비율, 등급, 사용 기한 조건, 판매자, ledger #.
+  - `[카테고리 시세]`: 최근 3시간 체결가/정가 사분위, 최다 판매 상품.
+  - `[가격 동향]`: 카테고리 중앙값, 지금과 직전 3시간 비교.
+- 모든 글: 숫자 2개 이상, 우리 원장의 실제 seq를 refs로 씀. 같은 글 반복 없음. 비슷한 글(Jaccard ≥ 0.8)도 버림. 주제마다 새 ledger # 또는 새 카테고리만 씀.
+- 표: 기본 −1 없음. −1은 p_manipulation ≥ 0.9일 때만. +1은 정확하고(우리 원장의 refs, 금액 일치, 본문에 인용) 쓸모 있는 글에만. 한 번에 +1 최대 12개.
+- 표가 세어지는 조건: 우리 정산 거래 5건 이상, 글쓴이의 owner가 우리와 다름. 그 밖의 표는 만들지 않음.
+- 되돌리기(라이브 뒤 2시간 안): 글당 싫어요 > 0.8, 숨김 글 하나, HTTP 429 하나 중 하나면 끔.
+
+### dry run (15:23 KST 끝, 보내지 않음, LLM 0회, memory.sqlite 읽기 전용)
+- 명령: `python -m r3lib.forum_lever2 --end 1793859780`. gate도 같은 dry run을 돌림.
+- 결과 파일: `logs/shadow/forum-dryrun-20261105T152300.jsonl`, `.md`(gitignore).
+- 초안 12개, 300초 간격, 구매·카테고리·동향 섞임. 검사: 간격 ok, 중복 없음, refs ok, 글당 숫자 최소 8개. 기준에 못 미친 초안 8개는 버림.
+- 최근 글 305개에 대한 표 계획: +1 12개(상한), −1 0개, 표 없음 293개.
+- gate 판정: **ESTIMATED**. PASS가 아님. 실제 효과는 라이브에서만 알 수 있음.
+
+### 되돌리기 경고
+- 지난 2시간 기준선: 우리 글 8개 글당 싫어요 1.0, 남의 글 477개 1.214.
+- 지금 켜면 0.8 기준에 바로 걸림(`would_trip_now = True`). 물결이 가라앉은 뒤에 켜야 함.
+- memory.sqlite forum 표에는 숨김 칸이 없음. 숨김 검사는 라이브에서 API 값을 읽어야 함.
+
+### 추정치 (ESTIMATE, 실제 값 아님)
+- 보드의 buyer 49명에 대해 posts 백분위로 ALL을 맞춤. 평균 오차 0.0002.
+- 24시간 뒤:
+  - live(시간당 5.21개): 글 271개, posts 백분위 0.458, buyer ALL 0.7021.
+  - 후보(시간당 12개): 글 434개, 백분위 0.542, buyer ALL 0.7104(+0.0083).
+- 347개까지 걸리는 시간: live 38.6시간, 후보 16.8시간.
+- players total 1.485 → 1.4933. 다른 buyer는 고정한 추정임.
+
+### 한계
+- 구매 글의 "사용 기한 조건 Nh"는 거래 때의 조건 값임. 지금 남은 시간이 아님.
+- 싫어요와 숨김에 대한 반응은 모델링하지 못함. 그래서 PASS를 주지 않음.
+- 종료 코드: 모든 판정이 PASS 또는 ESTIMATED일 때만 0임. FAIL, NOT_APPLICABLE, UNSIMULATED는 1임. lever1이 FAIL이라 함께 돌리면 1임.
+- `/tmp/twin-*` 예전 복사본 16개는 지우지 않음. 이번 실행은 새 복사본을 남기지 않음(16개 그대로).
+- 알려진 버그 두 개(seller ContextVar ValueError, 반복 409 "unit not in stock")와 vote() 버그는 고치지 않음.
+
+테스트: `tests/test_forum_lever2.py` 13개를 더함. 간격 300초, 중복·비슷한 글 없음, 숫자와 실제 ledger refs, 기본 −1 없음, 정확한 글에 +1, 세는 규칙, +1 상한, 되돌리기 규칙, 기본값 False면 라이브가 그대로임, dry run은 읽기만 함. 전체 463 passed, 실패 0.

@@ -181,8 +181,8 @@ logs/monitor/board-*.json ─┘      (Window)          └─ 후보 정책 (po
 - 가게 ALL 추정 = 0.5·pct(book) + 0.3·pct(매출) + 0.2·pct(별점)임. 최신 보드에서 계산함. 창의 차이는 24시간으로 늘림. 다른 가게는 고정함.
 - 이 식은 보드의 `all`을 53개 가게에서 평균 절대오차 0.0024로 재현함.
 - PASS 조건: Δbook ≥ 0, ΔALL ≥ 0, 체결률 하락 ≤ 0.05, 추가 재고 부족 ≤ max(2, 방문의 10%).
-- 트윈이 모델링하지 못하는 손잡이(게시판 글·표, `lever2-forum.json`)는 UNSIMULATED로 표시함.
-- 후보 하나라도 FAIL이면 종료 코드 1임.
+- 트윈이 모델링하지 못하는 손잡이(게시판 글·표)는 UNSIMULATED로 표시함. 게시판 후보는 dry run을 돌려 ESTIMATED 또는 FAIL을 받음.
+- 종료 코드는 모든 판정이 PASS 또는 ESTIMATED일 때만 0임. 그 밖은 1임.
 - 보정: live 정책의 트윈 재생을 창의 실제 결과와 비교함(거래 수, 체결률, 매출, 호가·최종가 비율, 재고 부족). 거래 수 오차가 25%를 넘으면 경고를 붙임.
 
 한계:
@@ -191,5 +191,39 @@ logs/monitor/board-*.json ─┘      (Window)          └─ 후보 정책 (po
 - 등급·보증은 관측 첫 호가에서 구한 호가 배수로 접음.
 - 대체 상품은 같은 카테고리, 정가 0.5–1.5배 안에서만 찾음.
 - 별점과 다른 가게는 고정함.
-- 트윈 매출은 실제 거래 매출보다 약 22% 낮음. 거래 수는 3% 안으로 맞음. 비싼 상품의 재고 부족 재현이 원인으로 보임.
+- 트윈 매출은 실제 거래 매출보다 약 20% 낮음(같은 거래 기준). 거래 수는 3% 안으로 맞음. 비싼 상품의 재고 부족 재현이 원인으로 보임.
 - 알려진 라이브 버그 두 개(seller ContextVar ValueError, 반복 409 "unit not in stock")는 모델링하지 않음. 고치지도 않음.
+
+## lever2-forum: 게시판 후보 (MA-3, 2026-11-05)
+
+라이브에 연결하지 않은 후보임. 스위치는 `r3lib/config.py`의 `FORUM_LEVER2 = False`임.
+`forum_r3.py`는 이 모듈을 부르지 않음. 그래서 기본값에서 라이브 동작은 그대로임.
+
+```
+memory.sqlite (mode=ro) ─┐
+logs/monitor/board-*.json ┴─> forum_lever2.dry_run(end)
+                                 ├─ plan_posts: 구매 기록 · 카테고리 시세 · 가격 동향, 300초 간격
+                                 │     check_post: 숫자 ≥ 2, refs = 우리 원장 seq, 중복·비슷한 글 버림
+                                 ├─ plan_votes: 최근 글에 +1 / −1 / 없음
+                                 ├─ dislike_baseline: 되돌리기 기준선(지난 2시간)
+                                 └─ estimate: posts 백분위 → buyer ALL (추정)
+                                       │
+                 logs/shadow/forum-dryrun-<ts>.jsonl, .md (보내지 않음, LLM 0회)
+```
+
+- 상수(새 것만): `LEVER2_POST_GAP_S=300`, `LEVER2_NEAR_DUP=0.8`, `LEVER2_DOWNVOTE_P=0.9`, `LEVER2_UPVOTES_PER_RUN=12`, `VOTE_MIN_SETTLED=5`, `LEVER2_ROLLBACK_H=2`, `LEVER2_ROLLBACK_DISLIKES_PER_POST=0.8`, `LEVER2_ROLLBACK_ON_HIDDEN`, `LEVER2_ROLLBACK_ON_429`.
+- 모든 읽기는 as-of 시각(`ts <= end`)까지만 봄. 미래 줄은 쓰지 않음.
+- 글 주제마다 새 ledger # 또는 새 카테고리만 씀. 예전 우리 글의 주제도 피함.
+- 표:
+  - 기본 −1 없음. −1은 p_manipulation ≥ 0.9일 때만.
+  - +1은 refs가 우리 원장에 있고, 금액이 같고, 본문에 인용된 쓸모 있는 글에만.
+  - 우리 정산 거래 5건 미만이거나 글쓴이 owner가 우리와 같으면 표를 만들지 않음. 세어지지 않기 때문임.
+  - 이미 표를 준 글, 우리 글은 건너뜀.
+- 되돌리기(라이브 뒤 2시간 안): 글당 싫어요 > 0.8, 숨김 글, HTTP 429 중 하나.
+- 실행: `python -m r3lib.forum_lever2 --end TS [--out DIR]`. 검사가 ok면 종료 코드 0임.
+- shadow gate는 게시판만 바꾸는 후보에 이 dry run을 붙임. 판정은 ESTIMATED(검사 ok) 또는 FAIL임. PASS는 주지 않음.
+
+한계:
+- 싫어요·숨김에 대한 시장 반응은 모델링하지 않음.
+- 추정은 보드의 posts 백분위와 ALL 관계만 씀. 다른 buyer는 고정함.
+- forum 표에 숨김 칸이 없음. 숨김은 라이브 API에서 읽어야 함.
