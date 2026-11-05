@@ -162,7 +162,7 @@ def cycle(now=None, call=None, dry=False):
         analysis = call("analyst", _clip(ctx.replace(FORMAT, "Answer in plain text: the 3-6 most important "
                                                              "changes since yesterday, each with its numbers."),
                                          MAX_CHARS["analysis"]))
-        rec["steps"]["analysis"] = {"ok": True, "chars": len(analysis)}
+        rec["steps"]["analysis"] = {"ok": True, "chars": len(analysis), "text": analysis[:2000]}
     except Exception as e:
         analysis = ""
         rec["steps"]["analysis"] = {"ok": False, "error": f"{type(e).__name__}: {e}"[:200]}

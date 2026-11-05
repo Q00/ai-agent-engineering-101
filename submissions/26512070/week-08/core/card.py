@@ -27,7 +27,10 @@ FRAMES = {
 
 
 def card_path() -> Path:
-    return paths.root() / "card" / "system_card.md"
+    """The card next to the code (11/6: a trial run of new code reads live records through HARNESS_ROOT, and the 02:00
+    meta cycle then read the live folder's older card); the records' copy only when the code has none."""
+    own = Path(__file__).resolve().parent.parent / "card" / "system_card.md"
+    return own if own.exists() else paths.root() / "card" / "system_card.md"
 
 
 def parse(text):
