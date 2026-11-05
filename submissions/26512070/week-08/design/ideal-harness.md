@@ -1,4 +1,6 @@
-# 이상향 하네스 설계 (초안 v0.4, 2026-11-05)
+# 이상향 하네스 설계 (초안 v0.5, 2026-11-05)
+
+v0.5: 도구(16장): 계약 보강 C1-C9, 새 도구, 설계 목적별 대조, 메타 하네스의 도구 관리, MCP 유지. 장 순서 정리(추적 목록을 맨 끝으로).
 
 v0.4: 컨텍스트 조립(15장, D-32), seller는 상대를 모른다는 전제, 투표는 forum을 코드로 바꿀 때까지 지금처럼, 점수 식 book 반영(코드와 카드 v3).
 
@@ -256,6 +258,98 @@ trajectory에 남긴다 (예: "reflex: willow-goods 서명 없음 3회 → 건�
 | 분석 | 약 2만 1천 자, 5.4초 | 2만 자 이하 (요약을 읽음) |
 | 전략 | 약 2만 9천 자, 6.3초 (느릴 때 32초) | 4만 자 이하 + 원본 조회 도구 |
 
+## 16. 도구 (v0.5, D-30)
+
+### 16-1. 계약 (`tools/registry.py`)
+지금 잘 하는 것: 입력 스키마 검사, 실행 **전** 호출 기록(W01), 거절은 사유와 대안으로, 도구 오류는 에이전트를 죽이지 않음,
+부작용·결정론 표시. 다음을 더한다:
+
+| ID | 보강 | 이유 |
+|---|---|---|
+| C1 | 호출 기록에 **trajectory ID와 연결 키**(주문, task, 유닛, SKU, 상대)를 싣는다 (지금 `keys: {}`) | R5: 거래 하나로 묶기 |
+| C2 | **결과 요약**을 기록한다 (크기 제한, 비밀값 제외) | 무엇을 정했는지가 trajectory에 남아야 한다 |
+| C3 | **권한 검사**: 호출한 역할의 능력 목록에 없는 도구는 거절 (모델 경로와 규칙 경로 모두) | R7: 능력 목록을 계약이 강제 |
+| C4 | **출력 스키마**를 두고 검사한다 | 받는 쪽(규칙, 메타 하네스)이 모양을 믿을 수 있게 |
+| C5 | **제한 시간**: 도구마다 상한, 넘으면 "우리 쪽 오류"로 기록 | 시장 API가 멈춰도 거래가 멈추지 않게 |
+| C6 | **중복 방지 키**: 부작용 있는 도구(구매, 글, 투표, 리뷰)는 같은 요청을 두 번 실행하지 않음 | 재시도 중복 |
+| C7 | **실패의 원인 구분**: 거절(한도), 우리 쪽 오류(시간 초과, 키, 재시작), 상대 행동(서명 없음, 거짓 등급, 결제 실패) | D-23, W08 EP5 |
+| C8 | **도구 버전**을 기록한다 (카드, 전략 버전과 함께) | 재현 |
+| C9 | 입력이 **잘렸으면 잘렸다고** 기록한다 | 조용한 변형 금지 |
+| C10 | **규칙 경로도 반드시 `call()`을 거친다** (지금 restock 구매와 리뷰는 건너뜀) | 기록의 빈칸 |
+
+### 16-2. 도구 목록 (있음 / 새로)
+- 있음, 유지: `me.*`(재고, 상대, 놓친 요청), `market.selling`, `market.forum`, `market.sku`, `calc.extract`(R11),
+  `calc.guess_counterpart`, `calc.fact_stars`, `check.receipt`, `check.price`, `check.buy`, `act.counter/accept/reject`(seller),
+  `act.pick/offer/finish/walk_away`(buyer), `act.buy`(restock), `act.review`, `act.vote`, `rec.*`, `memory.raw/search`.
+- 바꿈: `act.post`(모델이 씀) → `forum.compose`(buyer가 관리하는 결정론적 글, R4). `eval.*` → 역할이 직접 계산해 보고(R6).
+- 뺌 (11/4-11/5 호출 0회, 역할 목록에서): `act.skip`, `calc.margin`, `calc.surplus`, `calc.shelf_risk`, `calc.holding_cost`,
+  `check.claim`·`check.offer`(act.* 안에서 강제), `eval.audits`, `eval.proposals`, `memory.card_section`, `memory.profile`,
+  `rec.label`, `rec.stance`. 메타 하네스용으로 필요하면 그쪽 목록에만.
+- 새로:
+
+| 도구 | 하는 일 | 쓰는 쪽 |
+|---|---|---|
+| `market.rules` | 규칙 페이지(패치 노트)와 agent.md를 읽고 지난 사본과의 차이를 돌려줌 | 운영, 메타 하네스 (R1) |
+| `score.class` | Class view(학생끼리) 백분위: 계정 합계와 점수 부분별, 바로 위 계정과 거리 | 모든 역할, 메타 하네스 (R2) |
+| `market.surge` | 원가 급등 SKU와 배율 | restock |
+| `shop.record` 읽기/쓰기 | seller와 restock이 함께 쓰는 가게 기록 (판매, 놓친 요청, 구매, 평점) | seller, restock (D-20) |
+| `trajectory.get / search` | ID로 한 건, 조건으로 여러 건 (원본) | 메타 하네스, 역할 자기 평가 |
+| `summary.hourly` | 시간 단위 요약 조회 | 역할, 분석 (D-12) |
+| `participant.get / write` | GitHub 소유자를 키로 한 참가자 지식, 등급과 출처 필수 | buyer, seller, 메타 하네스 (D-9) |
+| `knowledge.get / write`, `wisdom.get` | 등급, 출처, 유효 기간, 근거 링크가 붙은 지식과 지혜 (지혜 쓰기는 승인 경로로만) | 모두 (R0) |
+| `capability.list` | 역할별 능력(코드에서 추출)과 허용 범위(지혜) | 메타 하네스, 계약 C3 (D-27) |
+| `report.submit` | 역할의 자기 평가 보고 (고정 지표, R6) | 역할 |
+| `experiment.register / assign / result` | 성공 기준을 고정한 실험 등록, 주문·방문 단위 A/B 배정, 결과 | 메타 하네스, 역할 (R12, D-34) |
+| `approval.request / status` | 명시적 승인 요청 만들기와 상태 (현황 페이지, 알림과 연결) | 메타 하네스 (R8) |
+| `ops.health / alert` | 상태 점검 결과, 등급별 알림 | 운영 (9장) |
+| `ops.emergency` | **미리 승인된 비상 동작만** 실행하고 즉시 긴급 알림 | 운영 (R9) |
+| `model.usage` | 모델 호출 수, 지연, Claude 사용량 대비 예산 | 운영, 메타 하네스 (R13) |
+| `market.benchmark` | 학생 간 벤치마크 (지금 outer 모듈을 도구로) | 메타 하네스 |
+| `page.publish` | 현황 페이지 갱신 (Cloudflare, 접근 제한) | 운영 (D-36) |
+| `tool.inspect`, `tool.propose` | 도구 사용 통계와 실패 분석, 도구 변경 제안 (16-4) | 메타 하네스 |
+
+### 16-3. 설계 목적별 대조 (모든 목적과 상황을 도구가 다루는가)
+
+| 설계 | 다루는 도구 | 빈칸 |
+|---|---|---|
+| R0 지식 분류 | `knowledge.*`, `participant.write`(등급·출처 필수) | – |
+| R1 점수 방식 감시 | `market.rules`, `score.class` | 감시 주기와 알림 기준 (D-17) |
+| R2 백분위와 거리 | `score.class` | – |
+| R3 가게 행동 | `act.counter/accept/reject`, `act.buy`, `market.surge`, `shop.record` | – |
+| R3 buyer 행동 | `act.pick/offer/finish/walk_away`, `act.review`, `forum.compose`, `act.vote` | 투표와 전략적 별점의 "기본값 꺼짐" 스위치 (D-38) |
+| R4 결정론과 예외 | 규칙 + `exec.anomaly` 기록 | 예외를 모델에 넘길 때의 크기 상한 적용 (15-5) |
+| R5 trajectory | 계약 C1, C2, C10 + `trajectory.*` | trajectory 형식 (D-2) |
+| R6 자기 평가 | `report.submit`, 역할 쪽 지표 계산 | 지표 목록 고정 (D-25) |
+| R7 능력 안의 조언, 충돌 정리 | `capability.list`, 계약 C3, `approval.request`(충돌 정리 포함) | – |
+| R8 명시적 승인 | `approval.*`, `wisdom` 쓰기는 승인 경로로만 | 승인 요청 형식 (D-5) |
+| R9 밤과 비상 | `ops.emergency` | 비상 동작 목록 (D-26) |
+| R10 한도 | `act.*` 안의 검사, `check.*` | – |
+| R11 믿을 수 없는 입력 | `calc.extract` | 실제 메시지 회귀 시험 (D-21) |
+| R12 실험 | `experiment.*` | – |
+| R13 모델 예산 | `model.usage`, `ops.alert` | 예산 숫자 (D-19) |
+| 7장 사람 (현황, 알림) | `page.publish`, `ops.alert`, `approval.*` | 페이지 내용 (D-36) |
+| 10장 데이터 | `summary.hourly`, `trajectory.*` | 요약 형식 (D-12) |
+| 경쟁자 지식, 벤치마크 | `participant.*`, `market.benchmark`, `score.class` | 필드 (D-9) |
+| 13장 하네스 성과 | `score.class`, `summary.hourly`, `model.usage`, `tool.inspect`, `experiment.result` | – |
+| 상황: 시장 규칙이 밤에 바뀜 | `market.rules` → `ops.emergency` + 긴급 알림 | – |
+| 상황: 상대가 속임, 서명 없음 | `check.receipt`, 계약 C7, `participant.write` | – |
+| 상황: 우리 쪽 오류(시간 초과, 재시작) | 계약 C5, C7, `ops.health` | – |
+| 상황: 원가 급등 | `market.surge` | restock 규칙이 급등을 반영하는 방식 |
+| 상황: 라운드 막판 | `score.class`, `shop.record` | 막판 정책 (D-14, 나중) |
+
+### 16-4. 메타 하네스의 도구 관리
+- `tool.inspect`: 도구별 호출 수, 실패와 그 원인(C7), 지연, 거절 사유 분포, 한 번도 안 쓰인 도구, 모델이 잘못 고른 사례.
+  도구 설명은 trajectory로 개선한다(W05 A5). 단, **선택 빈도를 목표로 삼지 않는다**(설명이 과장된다, W05).
+- `tool.propose`: 도구의 수정, 추가, 제거를 **제안**한다. 제안에는 바꿀 코드(초안), 이유와 근거 trajectory, 통과해야 할 테스트,
+  능력 목록 변화가 들어간다.
+- 적용 경로: 초안 → 테스트(기존 테스트 + 기록된 실제 메시지와 거래로 다시 돌려 보기) → **사람의 명시적 승인**(R8) → 배포 → 효과 측정(13장).
+- 메타 하네스가 **바꿀 수 없는 도구**: 점수 계산(`score.*`), 한도와 정직을 강제하는 부분(`check.*`, `act.*` 안의 검사), 승인 경로
+  (`approval.*`, 지혜 쓰기), 성공 기준과 지표. 판정은 루프 밖에 둔다(W02).
+
+### 16-5. MCP
+`mcp_server.py`는 유지한다 (사용자 11/5). 같은 계약의 도구가 MCP로 그대로 노출된다 (W05: 호스트, 클라이언트, 서버).
+권한 검사(C3)는 MCP 호출에도 적용한다.
+
 ## 14. 추적 목록 (빠진 디테일)
 
 | ID | 항목 | 상태 |
@@ -289,7 +383,7 @@ trajectory에 남긴다 (예: "reflex: willow-goods 서명 없음 3회 → 건�
 | D-27 | 능력(코드에서 자동 추출)과 허용 범위(지혜)의 형식 | 방향 정함 (6장) |
 | D-28 | ~~우리 시스템에 대한 지식의 등급~~ → 명시(출처: 우리 코드) | 해결 (v0.2) |
 | D-29 | 하루 승인 요청의 양, 우선순위, 묶음 | 미정 |
-| D-30 | 도구 장: 무엇을 도구로, 설명은 인터페이스(W01), 한도 강제, trajectory 기록, 능력 목록과의 관계 | 미정 (평가 항목 1) |
+| D-30 | 도구 → 16장 | 해결 (v0.5) |
 | D-31 | 모델 자리 표: 판단별 모델, 이유, 예산, 대체 순서 | 미정 (평가 항목 1) |
 | D-32 | 컨텍스트 조립 → 15장 | 해결 (v0.4) |
 | D-33 | 키트 기본형과의 비교표 (12장) | 미정 (평가 항목 2) |
@@ -300,3 +394,6 @@ trajectory에 남긴다 (예: "reflex: willow-goods 서명 없음 3회 → 건�
 | D-38 | 투표: 지금은 forum 모델이 스스로 함(11/4~11/5에 11번, 좋아요 10, 싫어요 1, 모두 counted). 설계(기본값 꺼짐, 승인 시 켬)와 다르지만 forum을 코드로 바꿀 때까지 둠 (사용자 11/5) | forum 코드화 때 |
 | D-39 | 점수 식: 코드(core/score.py)와 카드 v3를 book으로 고침(11/5 18:2x). 시장 원문 감시(R1) 자동화는 D-17 | 일부 해결 |
 | D-40 | redesign/MARKET.md(다른 세션)가 패치 3.3 이전 내용 ("Book은 ALL에 안 들어감") | 다른 세션 몫, 알림 필요 |
+| D-41 | 도구 계약 보강 C1-C10과 새 도구 구현 (16장) | 구현 대기 |
+| D-42 | 메타 하네스의 도구 제안을 테스트할 재생(replay) 환경: 기록된 메시지와 거래로 새 도구를 다시 돌려 보기 | 미정 |
+| D-43 | restock 규칙이 원가 급등을 반영하는 방식 | 미정 |
