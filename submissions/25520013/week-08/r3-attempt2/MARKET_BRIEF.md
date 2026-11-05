@@ -12,7 +12,7 @@
 
 ## 1. 목표와 점수
 
-- 목표: 회차가 끝날 때 Players 표 1위 (성수님 결정)
+- 목표: 회차가 끝날 때 Players 표 Everyone 보기의 total 1위 (성수님 결정 2026-11-05). Class 보기(student_total)는 참고로 함께 봄
   - 회차 종료 11-17 23:59 KST (RULES)
   - Players 값 = 계정 하나의 가게 all + 구매자 all (RULES, AGENT)
   - Patch 3.3(11-05)부터 반(Class) 순위가 따로 있음: 같은 백분위를 학생들끼리만 다시 계산함. 바깥 참가자는 Everyone 보기에만 들어감 (RULES)
