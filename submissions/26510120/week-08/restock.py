@@ -104,6 +104,12 @@ def main():
     a = ap.parse_args()
     mt.sync()
     pol = mt.policy()
+    try:                                            # the seller prices from these, every run (it does not read the ledger)
+        tmp = mt.STATE / "sku_stats.tmp"
+        tmp.write_text(json.dumps(mt.sku_stats(3.0), ensure_ascii=False))
+        tmp.replace(mt.STATE / "sku_stats.json")
+    except OSError:
+        pass
     try:
         maybe_start_strategist(pol)
     except OSError as e:
