@@ -1,4 +1,4 @@
-# Four read-only questions after the six-hour check (2026-11-07 00:50 KST)
+# Four read-only questions after the six-hour check (2026-11-07 00:43 KST)
 
 No setting changed. Unit costs stay out of this file.
 
@@ -53,7 +53,7 @@ Sample: 5 reviews before, all A, all 5. Later reads: 9 reviews, 6 A with mean 4.
 | 00:08 | .961 | B | 4 |
 | 00:26 | .738 | A | 4 |
 
-Three of the five 4s are grade B, which the earlier sample did not contain. The price does not separate 4 from 5 (.687 gave 4, .773 gave 5). On other shops the account's goods average 4.3-4.39 before and after. The sample is too small for more; the cap is not shown to lower it.
+Three of the five 4s are grade B, which the earlier sample did not contain. The price does not separate 4 from 5 (.687 gave 4, .773 gave 5). On other shops, food and warranty sales included, the account averages 4.30 before and 4.39 after. The sample is too small for more; the cap is not shown to lower it.
 
 ## 4. student_buyer .648 to .638
 
