@@ -209,6 +209,8 @@ def track_my_sales(st, inv):
 
 
 VALUE_SKU = {}             # category -> (SKU, units of it) from the revenue budget; filled by targets()
+BIG_TICKET = 1_000_000     # a value SKU at this list price or more holds only its value line, not the category's
+                           # unit target too (that target counts cheap units and was filled with the top SKU)
 
 
 def market_rate(st, catalog, sku):
@@ -500,6 +502,8 @@ def main():
         if cat in VALUE_SKU:                         # the revenue budget names the SKU and its units
             sku, n = VALUE_SKU[cat]
             gap = max(n - held_sku[sku], want.get(cat, 0) - held.get(cat, 0))
+            if catalog[sku]["list_price"] >= BIG_TICKET:  # Nov 6 18:00: the category's unit target (15) bought
+                gap = n - held_sku[sku]      # 9 stone beds and 4 Jakomo sofas past their value caps (4 and 6)
         else:
             gap = want[cat] - held.get(cat, 0)
             sku = pick_sku(cat, catalog, st, medians.get(cat, 0)) if gap > 0 else None
