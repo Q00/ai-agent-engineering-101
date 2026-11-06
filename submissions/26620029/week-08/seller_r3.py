@@ -209,8 +209,13 @@ def find_unit(text, taken=()):
            ((u.get("category") or "").split(">")[-1].lower() in want or (u.get("name") or "").lower() in want
             or u["sku"].lower() in want)]
     named = [u for u in fit if u["sku"].lower() in want]
+    # ddolcom (2026-11-07): a named SKU's cheapest unit first, not its oldest, so a floor above the market's price does not block the
+    # units that can sell: since 22:26 G8095ddd6 had 62 offers and 4 at or above the floor while its grade A at 0.73 of list stood first
+    # and units at 0.38 and 0.57 waited. The units of the forum clearance stay first, as the post says. Food still goes by its date
+    key = ((lambda u: (u["expires_at"] or float("inf"), not is_dead(u), u["cost"], u["supplied_at"])) if named
+           else (lambda u: (u["expires_at"] or float("inf"), u["supplied_at"])))
     fit = named or fit                                   # a SKU the buyer named comes first
-    return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
+    return min(fit, key=key, default=None)
 
 
 def offer_in(text):
