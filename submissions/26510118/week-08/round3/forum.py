@@ -9,8 +9,8 @@
                    twice. A dislike (11/6 16:00, the person's call) goes only to a post that incites (the
                    decision model, at 0.9 or more: it steers AI agents, claims an authority it lacks, or
                    calls for action against a named shop or player) or states a fact the ledger contradicts
-                   (code: a price it gives for a product against the ledger entries it cites, or a settle
-                   price no settle of the last day comes near); never to a repeat or a flood. At most
+                   (code: a settle price it gives for a product that no settle of the last day came near);
+                   never to a repeat or a flood. At most
                    DISLIKE_HOUR_MAX an hour (the market's free dislike stances) and one per author a day.
                    A like every 3 hours goes to the post the model judges most useful (concrete, checkable
                    information, not an advert), at 0.6 or more. Nothing qualifies, nothing is cast.
@@ -53,7 +53,7 @@ SKU = re.compile(r"\bG[0-9a-f]{8}\b")
 PRICE = re.compile(r"\d[\d,]*")
 SETTLE_WORDS = re.compile(r"체결|정산|낙찰|팔렸|샀|구매가|거래가|settled|paid|sold for|bought", re.I)
 FACT_BAND = (0.3, 0.98)  # a number after a SKU is a price for it when it is this share of the list price
-FACT_REF_TOL = 0.05      # a price matches a ledger entry it cites within this share
+
 FACT_RANGE_TOL, FACT_MIN_N = 0.10, 10   # a settle price said without refs: outside every settle of the day by this, 10+ settles
 LIKE_GAP = 3 * 3600      # a like at most this often (the votes step runs every 20 minutes since 11/5 03:30)
 RECENT_KEEP = 3600       # others' posts kept (analysis/forum_recent.json): forum.json shows only the newest 100, ~18 min
@@ -164,23 +164,16 @@ def settles_of(skus: set, since: float) -> list:
 
 
 def contradicted(post: dict, catalog: dict, settles: list) -> str | None:
-    """Why the ledger contradicts the post, or None: a price it gives for a product matches none of the ledger
-    entries of that product it cites (FACT_REF_TOL), or, citing none, it says the product settled at a price no
-    settle of the last day came near (FACT_RANGE_TOL, FACT_MIN_N settles or more). Every number after the SKU counts,
-    so a post setting a quote beside the settle that answers it is not wrong."""
+    """Why the ledger contradicts the post, or None: it says a product settled at a price no settle of the last day
+    came near (FACT_RANGE_TOL outside the lowest and highest, FACT_MIN_N settles or more), refs or not. Every number
+    after the SKU counts, so a post setting a quote beside the settle that answers it is not wrong; a median or a
+    quartile always lies inside the day's range. (The first rule, a price against the entries a post cites, was
+    dropped before it ran: on 11/6 16:10 it caught 4 honest price cards that gave a median beside one sample settle.)"""
     text = str(post.get("text") or "")
-    said = prices_said(text, catalog)
-    if not said:
-        return None
-    refs = {r.get("seq") if isinstance(r, dict) else r for r in post.get("refs") or []}
+    said = prices_said(text, catalog) if SETTLE_WORDS.search(text) else {}
     for sku, ps in said.items():
         rows = [r for r in settles if r.get("item") == sku]
-        cited = [r for r in rows if r.get("seq") in refs]
-        if cited:
-            if not any(abs(p - r["amount"]) <= FACT_REF_TOL * r["amount"] for p in ps for r in cited):
-                return (f"gives {sku} at {ps[0]:,} but the ledger entry it cites, #{cited[0]['seq']}, settled at "
-                        f"{int(cited[0]['amount']):,}")
-        elif not refs and SETTLE_WORDS.search(text) and len(rows) >= FACT_MIN_N:
+        if len(rows) >= FACT_MIN_N:
             lo, hi = min(r["amount"] for r in rows), max(r["amount"] for r in rows)
             if all(p < lo * (1 - FACT_RANGE_TOL) or p > hi * (1 + FACT_RANGE_TOL) for p in ps):
                 return f"says {sku} settled at {ps[0]:,}; its {len(rows)} settles of the last day ran {int(lo):,} to {int(hi):,}"

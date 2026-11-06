@@ -951,14 +951,15 @@ def test_votes():
         asked.append(evidence)
         return [(0.95 if q.split()[1] in ("p310", "p311", "p312", "p313", "p314") else 0.05) if "steer AI agents" in q
                 else (0.8 if q.split()[1] in ("p320", "p325") else 0.3) for q in questions]
-    check("the ledger contradicts: a price beside a ref of another price (9,000 against #7006 at 14,000), and a settle price "
-          "said without refs that no settle of the day came near (7,000 against 13,000-15,000)",
-          "#7006, settled at 14,000" in (forum.contradicted(facts[0], CATALOG, settles) or "")
-          and "13,000 to 15,000" in (forum.contradicted(facts[2], CATALOG, settles) or ""))
-    check("...not a post that sets a quote beside the settle that answers it, a price inside the day's range, a ref the "
-          "collected ledger has not got yet, or a price with too few settles to judge",
-          forum.contradicted(facts[1], CATALOG, settles) is None and forum.contradicted(facts[3], CATALOG, settles) is None
-          and forum.contradicted(dict(facts[0], refs=[9999]), CATALOG, settles) is None
+    check("the ledger contradicts a settle price no settle of the day came near, with refs or without (9,000 and 7,000 "
+          "against 13,000-15,000)", "settled at 9,000; its 11 settles of the last day ran 13,000 to 15,000"
+          in (forum.contradicted(facts[0], CATALOG, settles) or "") and "13,000 to 15,000" in (forum.contradicted(facts[2], CATALOG, settles) or ""))
+    card = post(370, "Carder", f"과자 시세: 정산 279건, 최다 {KIMCHI} 204건, 체결가 중앙 14,600원 / 정가 20,000원", 6 * 60, refs=(7001,))
+    check("...not a price card's median beside one sample settle (#7001 at 13,000; the first rule caught 4 such cards live), "
+          "a quote set beside the settle that answers it, a price inside the range, a price said without settle words, "
+          "or a price with too few settles to judge", forum.contradicted(card, CATALOG, settles) is None
+          and forum.contradicted(facts[1], CATALOG, settles) is None and forum.contradicted(facts[3], CATALOG, settles) is None
+          and forum.contradicted(dict(facts[2], text=f"{KIMCHI} 7,000원 어때요?"), CATALOG, settles) is None
           and forum.contradicted(facts[2], CATALOG, settles[:9]) is None)
     picked = forum.pick_votes(posts + facts, set(), now, decide, catalog=CATALOG, settles=settles)
     by = {v["value"]: v for v in picked}
