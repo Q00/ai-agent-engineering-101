@@ -176,6 +176,14 @@ class Content(Base):
         self.assertFalse(any("vote" in m for m in self.outbox()))
 
 
+class Numbers(Base):
+    def test_large_prices_are_written_in_full(self):
+        text = notes.sku_note("G9", [(1, "G9", 1784970, .2, "A", ""), (2, "G9", 2250000, .1, "A", "")], {"name": "x", "list_price": 2320000}, T)
+        self.assertNotIn("e+", text)
+        self.assertIn("list price 2320000", text)
+        self.assertIn("range 1784970 to 2250000", text)
+
+
 class Stop(Base):
     def post(self, ago, likes, dislikes, author="kcwarni", role="buyer"):
         return {"author": author, "role": role, "ts": T-ago, "likes": likes, "dislikes": dislikes}

@@ -46,8 +46,8 @@ def refs(group):
 def sku_note(sku, group, product, now):
     prices = [s[2] for s in group]
     middle = statistics.median(prices)
-    return (f"Buyer market note {checked_at(now)}: {clean(product.get('name') or sku, NAME_LIMIT)} (SKU {sku}), list price {product['list_price']:g}. Last {WINDOW_HOURS} h public settlements n={len(group)}: "
-            f"median paid {middle:g} ({(1-middle/product['list_price'])*100:.1f}% off list), range {min(prices):g} to {max(prices):g}. Grades: {grades(group)}. From a stored sample of the ledger, not all of it; later breakage not counted.")
+    return (f"Buyer market note {checked_at(now)}: {clean(product.get('name') or sku, NAME_LIMIT)} (SKU {sku}), list price {product['list_price']:.0f}. Last {WINDOW_HOURS} h public settlements n={len(group)}: "
+            f"median paid {middle:.0f} ({(1-middle/product['list_price'])*100:.1f}% off list), range {min(prices):.0f} to {max(prices):.0f}. Grades: {grades(group)}. From a stored sample of the ledger, not all of it; later breakage not counted.")
 
 
 def category_note(category, group, now):
