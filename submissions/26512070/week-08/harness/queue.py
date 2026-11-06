@@ -35,14 +35,19 @@ def add(rid, after=None, after_experiment=None, by="user"):
 
 
 def tick(now=None):
-    now = now or time.time()
+    # 11/6 22:3x: a runner's 'now' from the start of its loop was older than an experiment started meanwhile, so
+    # the experiment looked not started and top_n went in on top of food_top (one change per metric, R12) - the
+    # clock is read here, and an entry waits while its experiment, or any on its metric, is still running
+    now = max(now or 0, time.time())
     left, done = [], []
-    running = {e["id"] for e in experiment.running(now=now)}
+    live = [e for e in experiment.ledger()["experiments"].values() if e["status"] == "running" and now < e["end"]]
     for q in entries():
-        if (q.get("after") and now < q["after"]) or q.get("after_experiment") in running:
+        doc = wisdom.status(q["request"])
+        metric = ((doc or {}).get("expected") or {}).get("metric")
+        if ((q.get("after") and now < q["after"]) or any(e["id"] == q.get("after_experiment") for e in live)
+                or any(e["metric"] == metric for e in live)):
             left.append(q)
             continue
-        doc = wisdom.status(q["request"])
         if not doc or doc.get("status") not in ("open", "queued"):
             done.append((q["request"], f"skipped: {doc and doc.get('status')}"))
             continue
