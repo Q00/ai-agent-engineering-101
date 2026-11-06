@@ -117,7 +117,8 @@ FOOD_WORDS = " Please say how many hours of shelf life it has left."
 # to take the shop's answer); the "accept" arm takes it as before. Both record could_counter, so the experiment
 # compares the orders where the choice arose.
 PUSH = 0.96
-ASK_HOURS = True          # 11/6 21:30: food quoted without its shelf life is asked for it once before any offer
+ASK_HOURS = True
+ASK_BETTER = True         # 11/7: a refurbished unit without the warranty: ask once for a grade A or B before leaving          # 11/6 21:30: food quoted without its shelf life is asked for it once before any offer
 GRADE_SAID = re.compile(r"\bgrade\s*[:=]?\s*([ABC])\b", re.I)
 # 11/5 03:30 (the person's call: "a lower ceiling, and better negotiating"): 27% of our deals in 12 h paid more than
 # the item's own market (its mean paid / list over 24 h) + 5% of list, 2.48M over that line; 64 paid over 90% of list.
@@ -557,8 +558,20 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                         if state(t) != "TASK_STATE_INPUT_REQUIRED":
                             break
             covered = covered or warranty_shown(t)
+            if refurb and not covered and ASK_BETTER and not r.get("asked_better"):
+                r["asked_better"] = True                            # 11/7: an A or B before we leave (42 orders in
+                t = await client.send(                              # 3.6 h ended on a refurbished unit unwarranted)
+                    "Then please offer a grade A or B unit of this product instead.", t["id"])
+                if state(t) != "TASK_STATE_INPUT_REQUIRED":
+                    break
+                covered = covered or warranty_shown(t)
+                g2 = meta(t).get("grade") if meta(t).get("grade") in ("A", "B", "C") else \
+                    (None if REFURB.search(said(t)) else grade_of(t))  # "no A or B, only refurbished" names none
+                if g2 in ("A", "B"):
+                    refurb, r["better"], m = False, g2, meta(t)
             if refurb and not covered:
-                r["left"] = f"refurbished goods, and the shop did not confirm a {WARRANTY_HOURS}-hour warranty"
+                r["left"] = (f"refurbished goods, and the shop did not confirm a {WARRANTY_HOURS}-hour warranty"
+                             + (" nor offered a grade A or B" if r.get("asked_better") else ""))
                 break
             hours = shelf_hours(t) if c["kind"] != "goods" and need else None
             if hours is None and c["kind"] != "goods" and need and ASK_HOURS and not r.get("asked_hours"):
@@ -744,7 +757,8 @@ async def amain(a) -> dict:
                   error=r["error"], left=r["left"], tries=tries, rival=c["shop"]["name"] in rivals,
                   cap=r.get("cap"), market=c.get("market"), said=r.get("said"), grade=r.get("grade"),
                   min_share=r.get("min_share"), policy=r.get("policy"), haggle=r.get("haggle"),
-                  could_counter=r.get("could_counter"), pushed=r.get("pushed"))
+                  could_counter=r.get("could_counter"), pushed=r.get("pushed"), asked_hours=r.get("asked_hours"),
+                  asked_better=r.get("asked_better"), better=r.get("better"))
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles

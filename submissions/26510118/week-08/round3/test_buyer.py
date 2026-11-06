@@ -163,9 +163,27 @@ def test_terms():
     shop_ = Shop()
     cand = {"shop": {"name": "K", "url": "http://k"}, "sku": "G1", "name": "Bed", "list": 80000, "kind": "goods"}
     r = asyncio.run(mb.trade(shop_, cand, order(70000, ["G1"], "goods"), {}, {}, RULES, False))
-    check("refurbished goods whose warranty the shop does not confirm: we ask, then leave before any offer",
-          shop_.sent == ["I want to buy Bed (G1).", "Please include a 6-hour warranty.", "(cancel)"] and not r["offers"]
-          and "did not confirm" in (r["left"] or ""), (shop_.sent, r["left"]))
+    check("refurbished goods whose warranty the shop does not confirm: we ask, then ask once for an A or B (11/7), "
+          "then leave before any offer", shop_.sent == ["I want to buy Bed (G1).", "Please include a 6-hour warranty.",
+                                                        "Then please offer a grade A or B unit of this product instead.", "(cancel)"]
+          and not r["offers"] and "did not confirm" in (r["left"] or "") and "nor offered a grade A or B" in r["left"],
+          (shop_.sent, r["left"]))
+    flow[:] = [reply("Bed (G1): grade C (refurbished). Asking 50000.", {"ask": 50000, "grade": "C"}),
+               reply("Sorry, asking 50000.", {"ask": 50000}),
+               reply("Bed (G1): grade B (damaged box). Asking 45000.", {"ask": 45000, "grade": "B"})]
+    shop_ = Shop()
+    r = asyncio.run(mb.trade(shop_, cand, order(70000, ["G1"], "goods"), {}, {}, RULES, False))
+    check("...the shop names a grade B: the talk goes on to our offer for it", r["better"] == "B" and r["offers"]
+          and "did not confirm" not in (r["left"] or ""), (shop_.sent, r.get("left"), r["offers"]))
+    flow[:] = [reply("Bed (G1): grade C (refurbished). Asking 50000.", {"ask": 50000, "grade": "C"}),
+               reply("Sorry, asking 50000.", {"ask": 50000}),
+               reply("Sorry, no grade A or B, only refurbished. Asking 50000.", {"ask": 50000})]
+    shop_ = Shop()
+    r = asyncio.run(mb.trade(shop_, cand, order(70000, ["G1"], "goods"), {}, {}, RULES, False))
+    check("...'no grade A or B, only refurbished' names none: we leave", not r["offers"] and not r.get("better")
+          and "nor offered a grade A or B" in (r["left"] or ""), (shop_.sent, r.get("left")))
+    flow[:] = [reply("Bed (G1): grade C (refurbished). Asking 50000.", {"ask": 50000, "grade": "C"}),
+               reply("Sorry, asking 50000.", {"ask": 50000})]
     check("the unit's grade: the shop's metadata, its words, or refurbished = C",
           mb.grade_of(reply("x", {"grade": "B"})) == "B" and mb.grade_of(reply("Sofa, grade=A, cert=true. Asking 9.", {})) == "A"
           and mb.grade_of(reply("A refurbished sofa. Asking 9.", {})) == "C" and mb.grade_of(reply("Asking 9.", {})) is None)
