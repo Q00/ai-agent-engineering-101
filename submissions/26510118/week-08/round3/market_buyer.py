@@ -65,6 +65,7 @@ import httpx
 
 import buyer_memory as memory
 import common
+import experiments
 import shop_model
 import harness
 
@@ -72,7 +73,9 @@ MARGIN_HOURS = 1          # food must last this much longer than the order needs
 DEFAULT_RATIO = 0.70      # expected price as a share of the list price, with nothing better to go on
 EXPLORE = 1.05            # a shop we have not dealt with gets this edge in a tie
 PREFER = 1.2
-RIVAL = 0.95             # a top player's shop: its score this much lower (a near tie goes elsewhere)
+RIVAL = 1.0               # 0.95 until 11/6 16:40 (the person's call, 몫 사냥꾼 ④): the goods shops selling cheapest were rivals'
+                          # (lee-sungsoo 0.685, inextro 0.700, yms979 0.701 of list); what we add to their revenue is
+                          # well under 0.1% of it, what we keep counts in our saved
 MAX_TRIES, TRY_BUDGET, HARD_STOP = 3, 90, 240   # shops per order; seconds from the order's start to begin
                                                  # another; seconds after which a trade is cut short
 RIVALS_FRESH = 2 * 3600                          # analysis/rivals.json older than this is ignored
@@ -98,7 +101,18 @@ MIN_SHARE = 0.27
 BUYER_BREAK = {"A": 0.055, "B": 0.085, "C": 0.11}   # our purchases over Round 3 (11/6)
 OBJECTIVE_FRESH = 2 * 3600
 SHELF_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:of shelf life|left)", re.I)
-GRADE_WORDS = " Grade B (damaged box) or C (refurbished) suits me as well as A, priced for its grade."
+GRADE_WORDS = (" I prefer grade C (refurbished) or B (damaged box) with the warranty, priced for its grade; grade A "
+               "only if you have nothing else.")         # 11/6 16:40: a deal is worth its list price whatever the grade,
+                                                        # and in 24 h ours kept C 0.417, B 0.309, A 0.237 of list
+FOOD_WORDS = " The unit nearest its expiry that still lasts that long suits me best, priced for its grade."
+                                                        # 11/6: the food we bought had a median 50 h of shelf life more
+                                                        # than its order needed; ours kept C 0.386, B 0.320, A 0.284
+# Haggling (11/6 16:40, the person's call "몫 사냥꾼 ②"): since 11/4 an ask inside our ceiling was taken at once; when
+# we did, the ceiling stood a median 0.052 of list above it, and the shops' last concessions in our deals were a
+# median 5.6%. The "counter" arm of experiments.haggle answers such an ask once with PUSH of it (a step must be left
+# to take the shop's answer); the "accept" arm takes it as before. Both record could_counter, so the experiment
+# compares the orders where the choice arose.
+PUSH = 0.96
 GRADE_SAID = re.compile(r"\bgrade\s*[:=]?\s*([ABC])\b", re.I)
 # 11/5 03:30 (the person's call: "a lower ceiling, and better negotiating"): 27% of our deals in 12 h paid more than
 # the item's own market (its mean paid / list over 24 h) + 5% of list, 2.48M over that line; 64 paid over 90% of list.
@@ -488,7 +502,7 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
         await client.open(c["shop"]["url"])
         first = f"I want to buy {c['name']} ({c['sku']})."
         if order.get("kind") == "food" and need:
-            first += f" It must last at least {need + MARGIN_HOURS:.0f} hours."
+            first += f" It must last at least {need + MARGIN_HOURS:.0f} hours." + FOOD_WORDS
         if r["warranty"]:
             first += f" Please include a {WARRANTY_HOURS}-hour warranty."
             if c["kind"] == "goods":
@@ -499,7 +513,9 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
         ceiling = r["cap"] = cap_of(c, order, steps[-1], lam)
         prev, holds, asked_warranty, refurb, covered, split = None, 0, r["warranty"], False, False, False
         scale = 1.0                                                 # the ladder, scaled to a B's or a C's ceiling
-        for step in steps:
+        push = rules.get("haggle") == "counter"
+        r["haggle"] = rules.get("haggle")
+        for k, step in enumerate(steps):
             if state(t) != "TASK_STATE_INPUT_REQUIRED":
                 break
             m = meta(t)
@@ -566,7 +582,11 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             if ask is not None and ask <= offer:
                 offer = ask                                         # it fits: take it
             elif ask is not None and r["offers"] and ask <= ceiling:
-                if split or not c.get("market") or ask <= round(c["list"] * c["market"]):
+                could = not r.get("pushed") and k < len(steps) - 1   # a step left to take the shop's answer
+                r["could_counter"] = r.get("could_counter") or could
+                if push and could:                                  # 몫 사냥꾼 ②: once more, PUSH of its ask
+                    offer, r["pushed"] = max(r["offers"][-1], round(ask * PUSH)), True
+                elif split or not c.get("market") or ask <= round(c["list"] * c["market"]):
                     offer = ask                                     # the shop's answer, within our ceiling: take it
                 else:                                               # above the item's market: meet in the middle once
                     offer, split = max(r["offers"][-1], min(ceiling, round((r["offers"][-1] + ask) / 2))), True
@@ -670,6 +690,8 @@ async def amain(a) -> dict:
     catalog = common.catalog(md)
     summary = common.read_json(md / "market_summary.json", {}) or {}
     rules = common.rules()["buyer"]
+    rules = dict(rules, haggle=experiments.haggle_arm(order.get("order") or "", time.time(),
+                                                     common.read_json(experiments.haggle_path(), None)))
     nb = memory.load()
     memory.sync(nb)                                                 # B4: what the kit wrote since the last order
     base = {"order": order.get("order"), "category": category_of(order, catalog), "budget": a.budget, "kind": order.get("kind"),
@@ -706,7 +728,8 @@ async def amain(a) -> dict:
                   switched=r["switched"], asks=r["asks"], offers=r["offers"], deal=r["deal"], price=r["price"],
                   error=r["error"], left=r["left"], tries=tries, rival=c["shop"]["name"] in rivals,
                   cap=r.get("cap"), market=c.get("market"), said=r.get("said"), grade=r.get("grade"),
-                  min_share=r.get("min_share"), policy=r.get("policy"))
+                  min_share=r.get("min_share"), policy=r.get("policy"), haggle=r.get("haggle"),
+                  could_counter=r.get("could_counter"), pushed=r.get("pushed"))
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles

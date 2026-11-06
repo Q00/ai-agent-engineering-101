@@ -387,7 +387,7 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
                     elif name == "shop_model":
                         msg = shop_model.run(now)
                     else:
-                        msg = experiments.run(now)
+                        msg = experiments.run(now) + "; " + experiments.run_haggle(now)
                     log(f"[analysis] {name}: {msg}")
                     state[name] = now
                     continue

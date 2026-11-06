@@ -1347,6 +1347,38 @@ def test_stage2():
         else:
             rec.write_bytes(kept)
 
+    check("haggling arms: none without haggle.json; an order keeps its arm; even weights split the orders about evenly",
+          experiments.haggle_arm("o-1", t, {}) is None and experiments.haggle_arm("o-7", t, {"at": t, "weights": {"accept": 0.5, "counter": 0.5}})
+          == experiments.haggle_arm("o-7", t, {"at": t, "weights": {"accept": 0.5, "counter": 0.5}})
+          and 0.45 < [experiments.haggle_arm(f"o-{i}", t, {"at": t, "weights": {"accept": 0.5, "counter": 0.5}})
+                      for i in range(2000)].count("counter") / 2000 < 0.55)
+
+    def orders(arm, n, deals, price, could=True):
+        return [{"ts": t - 600, "haggle": arm, "could_counter": could, "list_price": 1000, "deal": i < deals,
+                 "price": price if i < deals else None} for i in range(n)]
+    rows = orders("accept", 100, 95, 650) + orders("counter", 100, 85, 610) + orders("counter", 50, 50, 500, could=False)
+    hs = experiments.haggle_score(rows, 0.27)
+    check("scored on the orders where the choice arose: accept closes 95% keeping 0.35 (0.076 a order over saved 0.27), "
+          "counter 85% keeping 0.39 (0.102): counter adds more to saved",
+          hs["accept"]["talks"] == 100 and hs["counter"]["talks"] == 100 and hs["accept"]["reward_per_talk"] == 0.076
+          and hs["counter"]["reward_per_talk"] == 0.102 and hs["counter"]["kept"] == 0.39, hs)
+    rec_o = MD / "records" / "orders.jsonl"
+    kept_o = rec_o.read_bytes() if rec_o.exists() else None
+    try:
+        with open(rec_o, "w", encoding="utf-8") as f:
+            for r in rows:
+                f.write(json.dumps(r) + "\n")
+        note = experiments.run_haggle(t)
+        h = common.read_json(experiments.haggle_path())
+        check("...100 orders each and counter ahead by 2+ standard errors: counter gets 0.8", h["best"] == "counter"
+              and h["weights"] == {"accept": 0.2, "counter": 0.8} and "best counter" in note, (h, note))
+    finally:
+        experiments.haggle_path().unlink(missing_ok=True)
+        if kept_o is None:
+            rec_o.unlink(missing_ok=True)
+        else:
+            rec_o.write_bytes(kept_o)
+
     rnd = random.Random(7)
     shops = [{"name": f"s{i}", "book": rnd.randint(0, 10**8), "revenue": rnd.randint(0, 10**8), "stars_rank": round(rnd.uniform(3, 5), 2),
               "visits": rnd.randint(0, 999), "profit": rnd.randint(-10**7, 10**8)} for i in range(40)]

@@ -447,9 +447,8 @@ def test_shop_around():
     check("a shop that ends the talk after our offer is named so in the record",
           not r["deal"] and (r["left"] or "").startswith("the shop ended the talk after our offer") and "its ask 39000" in r["left"], r["left"])
     even = mb.candidates(bed, [shop("R", BEDDING), shop("S", BEDDING)], CATALOG, {}, {}, RULES, rivals={"R"})
-    best, _ = mb.choose(even, {})
-    check("a near tie: the rival player's shop is passed over (0.95 of its score)", best["shop"]["name"] == "S",
-          {x["shop"]["name"]: round(x["score"]) for x in even})
+    check("a rival player's shop scores as any other since 11/6 16:40 (몫 사냥꾼 ④; 0.95 of its score until then)",
+          abs(even[0]["score"] - even[1]["score"]) < 1e-9, {x["shop"]["name"]: round(x["score"]) for x in even})
     cheap = mb.candidates(bed, [shop("R", BEDDING), shop("S", BEDDING)], CATALOG, {"R": {"recent": [], "ratios": [0.55]}}, {}, RULES,
                           rivals={"R"})
     best, _ = mb.choose(cheap, {"R": {"recent": [], "ratios": [0.55]}})
@@ -467,6 +466,30 @@ def test_shop_around():
     lt = mb.candidates(bed, [shop("R", BEDDING), shop("S", BEDDING)], CATALOG, {}, {}, RULES, model=thin)
     check("...with 9 talks a shop is not learned yet (10 since 11/6 13:10): both at the market's guess",
           len({x["expected"] for x in lt}) == 1, {x["shop"]["name"]: x["expected"] for x in lt})
+    cb = next(x for x in cands if x["shop"]["name"] == "B")
+    rec = lambda p: {"shop": "B", "item": BEDDING, "price": p, "task": "t1", "sig_seller": "x"}
+    pushing = [task("TASK_STATE_INPUT_REQUIRED", "Asking 34000.", ask=34000), task("TASK_STATE_INPUT_REQUIRED", "Asking 33000.", ask=33000),
+               task("TASK_STATE_INPUT_REQUIRED", "Asking 32000.", ask=32000), task("TASK_STATE_COMPLETED", "Deal", rec(32000))]
+    sh = Shops({"http://B.test": pushing})
+    r = asyncio.run(mb.trade(sh, cb, bed, CATALOG, {}, dict(RULES, haggle="counter"), False))
+    check("몫 사냥꾼 ② counter arm: an ask inside our ceiling (33,000) is answered once with 96% of it (31,680); the shop's "
+          "next ask (32,000) is taken", r["deal"] and r["price"] == 32000 and r["offers"][1] == 31680 and r["pushed"]
+          and r["could_counter"] and r["haggle"] == "counter", (r["offers"], r.get("left")))
+    taking = [task("TASK_STATE_INPUT_REQUIRED", "Asking 34000.", ask=34000), task("TASK_STATE_INPUT_REQUIRED", "Asking 33000.", ask=33000),
+              task("TASK_STATE_COMPLETED", "Deal", rec(33000))]
+    r = asyncio.run(mb.trade(Shops({"http://B.test": taking}), cb, bed, CATALOG, {}, dict(RULES, haggle="accept"), False))
+    check("...the accept arm takes 33,000 at once, and records that the choice arose",
+          r["deal"] and r["price"] == 33000 and r["offers"][1] == 33000 and r["could_counter"] and not r.get("pushed"), r["offers"])
+    r = asyncio.run(mb.trade(Shops({"http://B.test": taking}), cb, bed, CATALOG, {}, RULES, False))
+    check("...no arm (no fresh haggle.json): as before, taken at once", r["deal"] and r["price"] == 33000 and r["haggle"] is None)
+    late = [task("TASK_STATE_INPUT_REQUIRED", "Asking 39000.", ask=39000)] * 3 + [task("TASK_STATE_INPUT_REQUIRED", "Asking 35000.", ask=35000),
+            task("TASK_STATE_COMPLETED", "Deal", rec(35000))]
+    r = asyncio.run(mb.trade(Shops({"http://B.test": late}), cb, bed, CATALOG, {}, dict(RULES, haggle="counter"), False))
+    check("...on the last step there is no step left to take an answer: no counter, the ask is taken",
+          not r.get("pushed") and (r["deal"] or r["left"]), (r["offers"], r.get("left")))
+    sent = sh.sent["http://B.test"][0]
+    check("몫 사냥꾼 ③: goods are asked for as grade C or B with the warranty, A only if nothing else",
+          "I prefer grade C (refurbished) or B" in sent or "warranty" not in sent, sent)
     mb.MIN_SHARE, mb.MARKET_SLACK = saved_rules
 
 

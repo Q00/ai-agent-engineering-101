@@ -104,6 +104,69 @@ def run(now: float | None = None) -> str:
     return f"first-ask arms ({why}): {talks}"
 
 
+# The buyer's haggling experiment (11/6 16:40, 몫 사냥꾼 ②): an order's arm by a hash of its id; scored over the
+# orders where the choice arose (could_counter), each by (share of list kept - our saved now) if it closed, else 0:
+# what the order adds to saved, times deals + 100.
+HAGGLE_ARMS = ("accept", "counter")
+HAGGLE_MIN = 100
+
+
+def haggle_path():
+    return common.MARKET_DIR / "analysis" / "haggle.json"
+
+
+def haggle_arm(order_id: str, now: float | None = None, state: dict | None = None) -> str | None:
+    """"accept" or "counter" for this order, or None (accept, as before) without a fresh haggle.json."""
+    st_ = state if state is not None else common.read_json(haggle_path(), None)
+    now = now or time.time()
+    if not isinstance(st_, dict) or not st_.get("on", True) or now - (st_.get("at") or 0) > FRESH:
+        return None
+    arms = sorted((a, float(w)) for a, w in (st_.get("weights") or {}).items() if a in HAGGLE_ARMS and float(w) > 0)
+    if not arms:
+        return None
+    h = int(hashlib.sha1(("haggle:" + str(order_id)).encode()).hexdigest()[:8], 16) / 0x100000000
+    total, acc = sum(w for _, w in arms), 0.0
+    for a, w in arms:
+        acc += w / total
+        if h < acc:
+            return a
+    return arms[-1][0]
+
+
+def haggle_score(rows: list, saved: float) -> dict:
+    out = {}
+    for a in HAGGLE_ARMS:
+        rs = [r for r in rows if r.get("haggle") == a and r.get("could_counter") and r.get("list_price")]
+        vals = [(1 - r["price"] / r["list_price"] - saved) if r.get("deal") and r.get("price") else 0.0 for r in rs]
+        deals = sum(1 for r in rs if r.get("deal") and r.get("price"))
+        kept = [1 - r["price"] / r["list_price"] for r in rs if r.get("deal") and r.get("price")]
+        out[a] = {"talks": len(rs), "deals": deals, "close": round(deals / len(rs), 3) if rs else None,
+                  "kept": round(sum(kept) / len(kept), 4) if kept else None,
+                  "reward_per_talk": round(sum(vals) / len(vals), 5) if vals else None,
+                  "se": round(st.stdev(vals) / len(vals) ** 0.5, 5) if len(vals) >= 2 else None}
+    return out
+
+
+def run_haggle(now: float | None = None) -> str:
+    now = now or time.time()
+    old = common.read_json(haggle_path(), {}) or {}
+    rows = [r for r in common.records("orders") if (r.get("ts") or 0) >= now - WINDOW]
+    sb = common.read_json(common.MARKET_DIR / "analysis" / "scoreboard.json", {}) or {}
+    try:
+        saved = float(sb["buyer"]["parts"]["saved"]["value"])
+    except (KeyError, TypeError, ValueError):
+        saved = 0.27
+    stats = haggle_score(rows, saved)
+    ready = all((s["talks"] or 0) >= HAGGLE_MIN for s in stats.values())
+    best, z = leader(stats) if ready else (None, None)
+    weights = {a: (BEST if a == best else round(1 - BEST, 4)) for a in stats} if best else {a: 0.5 for a in stats}
+    common.write_json(haggle_path(), {"at": int(now), "on": old.get("on", True), "weights": weights, "best": best, "z": z,
+                                      "saved": saved, "stats": stats})
+    parts = ", ".join(f"{a}: {s['talks']} orders, close {s['close']}, kept {s['kept']}" for a, s in stats.items())
+    why = f"best {best} by {z} SE" if best else (f"even: no arm {Z} SE ahead (z {z})" if ready else f"even until {HAGGLE_MIN} each")
+    return f"haggling ({why}): {parts}"
+
+
 def brief(now: float) -> dict | None:
     e = common.read_json(path(), None)
     if not isinstance(e, dict):
