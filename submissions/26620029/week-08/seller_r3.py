@@ -13,6 +13,7 @@ import asyncio
 import base64
 import json
 import os
+import random
 import re
 import time
 from pathlib import Path
@@ -65,6 +66,10 @@ TRIAL_SHARE = 0.85
 # the market's money is. Market deals there settle near 72% of list, so the low arm of those units now opens closer to that
 TRIAL_DEAR_MIN = 1_000_000
 TRIAL_DEAR_SHARE = 0.78
+# ddolcom (trial from 2026-11-06 22:30): at 1,000,000 or more half of the opens start at 73% (arm low2), half at 78% (arm low). Most
+# buyers leave before any offer (G8ec51935: 136 opens, 28 offers) and the market settles near 70%. Judge at 50 opens each by
+# conversion x (avg paid - cost); 73% needs about 1.46 times the conversion if the paid price falls as much as the ask
+TRIAL2_SHARE = 0.73
 # ddolcom (2026-11-06, the user's instruction): one clearance only, at cost or a little above, to free the cash. These 6
 # units had sat 13-40 h and are the ones the forum post 22459 names. New units never join by age: a rule on age alone also
 # priced well-selling, cheaply drawn units near cost. Any further clearance is the user's decision after looking at this one
@@ -120,6 +125,8 @@ def trial_arm(u):
     same margin per open and 2.3 times the revenue; under that 45 of 106 against 35 of 119, more margin and revenue."""
     if is_dead(u):
         return "dead"
+    if u.get("list_price", 0) >= TRIAL_DEAR_MIN and random.random() < 0.5:
+        return "low2"
     return "low" if u.get("list_price", 0) >= TRIAL_MIN else None
 
 
@@ -128,7 +135,10 @@ def ask_price(u, offers, arm=None):
     floor = floor_price(u)
     if arm == "dead":
         return int(floor + (floor * DEAD_MARKUP - floor) * STEP ** offers)
-    share = 1 if arm != "low" else TRIAL_DEAR_SHARE if u["list_price"] >= TRIAL_DEAR_MIN else TRIAL_SHARE
+    if arm == "low2":
+        share = TRIAL2_SHARE
+    else:
+        share = 1 if arm != "low" else TRIAL_DEAR_SHARE if u["list_price"] >= TRIAL_DEAR_MIN else TRIAL_SHARE
     top = max(u["list_price"] * share, floor)
     return int(floor + (top - floor) * STEP ** offers)
 
