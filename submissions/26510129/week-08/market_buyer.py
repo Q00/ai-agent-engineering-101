@@ -50,13 +50,13 @@ def blacklisted(shops, mem):
     return [s for s in shops if s["name"] in bad]
 
 
-def fallback_choice(shops, mem, item, reference=None, explore_rate=buyer_policy.EXPLORE_RATE):
+def fallback_choice(shops, mem, item, reference=None, explore_rate=buyer_policy.EXPLORE_RATE, prefer_warranty=False):
     """The same budget-blind portfolio policy is used after an unreachable shop."""
-    return buyer_policy.choose_shop(shops, mem, item, reference, explore_rate)[0]
+    return buyer_policy.choose_shop(shops, mem, item, reference, explore_rate, prefer_warranty)[0]
 
 
-def choose(shops, item, mem, reference=None, explore_rate=buyer_policy.EXPLORE_RATE):
-    pick, features, mode, top = buyer_policy.choose_shop(shops, mem, item, reference, explore_rate)
+def choose(shops, item, mem, reference=None, explore_rate=buyer_policy.EXPLORE_RATE, prefer_warranty=False):
+    pick, features, mode, top = buyer_policy.choose_shop(shops, mem, item, reference, explore_rate, prefer_warranty)
     buyer_policy.emit("buyer_route", item=item, mode=mode, chosen=pick["name"], features=features, top=top)
     print(f"[choose] {pick['url']}: {pick['name']}. portfolio {mode}, score {features['score']}", flush=True)
     return pick
@@ -112,6 +112,7 @@ def food_unit_ok(grade, shelf_hours, need):
 
 
 NICK = os.environ.get("MARKET_NICK", "jiseokkk")   # my market name, for shops that take a few percent off for regulars
+WARRANTY_MATTERS_FROM = 300_000   # goods at or above this reference price prefer shops that give a warranty
 
 
 def scarcity(mem, category, recent=60):
@@ -452,7 +453,10 @@ def accept_constraints(order):
     if not order.get("acceptable"):
         return None
     if order.get("kind") == "food":
-        return {"cert": True, "min_hours_left": int(math.ceil(order.get("use_within_hours") or 0))}
+        # 11-06 18:00: the kit knows the unit's shelf life with or without a certificate (its refusals quote the hours
+        # left either way), and the only shop refused for "no certificate" (elm-street, 80 agreed deals) sells food
+        # whose value is the list price like anyone's. The hours check stays; the certificate flag goes.
+        return {"min_hours_left": int(math.ceil(order.get("use_within_hours") or 0))}
     return {"grades": ["A", "B"]}
 
 
@@ -483,7 +487,10 @@ def main():
     if cooled and len(cooled) < len(candidates):
         print(f"[choose] skipping {[s.get('name') for s in cooled]}: answered nothing on their last visits", flush=True)
         candidates = [s for s in candidates if s not in cooled]
-    pick = choose(candidates, category, mem, reference, params["explore_rate"])
+    # 11-06 18:00: 32 goods broke with no warranty to refund them, 12.6M lost, 9.2M of it on eight units over
+    # 500k; every break under a warranty was refunded (36 of 36). Dear goods go to shops that give one.
+    prefer_warranty = order.get("kind") == "goods" and (reference or 0) >= WARRANTY_MATTERS_FROM
+    pick = choose(candidates, category, mem, reference, params["explore_rate"], prefer_warranty)
     request = choose_request(pick, catalog, order)
     wanted = request["sku"] if request else a.item
 
@@ -537,7 +544,7 @@ def main():
             rest = [s for s in candidates if s.get("url") not in tried and s not in blacklisted(candidates, mem)]
             if not rest:
                 break
-            pick = fallback_choice(rest, mem, category, category_ref, params["explore_rate"])
+            pick = fallback_choice(rest, mem, category, category_ref, params["explore_rate"], prefer_warranty)
             request = choose_request(pick, catalog, order)
             print(f"[choose] retry with {pick['url']}: {pick['name']}. picked by portfolio policy after the last shop "
                   f"{'had no fitting stock' if no_offer else 'failed'}", flush=True)

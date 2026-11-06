@@ -64,6 +64,16 @@ class Round3InventorySellerTest(unittest.TestCase):
         self.assertEqual((917, "sought"), (sought["ask"], sought["regime"]))   # x 1.05
         self.assertEqual((847, "slow"), (slow["ask"], slow["regime"]))         # x 0.97
 
+    def test_an_underwater_unit_follows_the_market_after_six_hours(self):
+        now = time.time()
+        unit = {"sku": "SOFA", "kind": "goods", "cost": 1_740_000, "list_price": 2_320_000, "grade": "A", "expires_at": None,
+                "supplied_at": now - 8 * 3600}
+        p = {"seller_volume_share": 1.0, "seller_markup": 1.0}
+        plan = seller_r3.price_plan(unit, "t", now, params=p, market=(1_660_000.0, 50, "sku"))
+        self.assertEqual(("underwater", 1_610_200, 1_543_800), (plan["regime"], plan["ask"], plan["floor"]))   # 0.97x, 0.93x market
+        fresh = seller_r3.price_plan(dict(unit, supplied_at=now - 3600), "t", now, params=p, market=(1_660_000.0, 50, "sku"))
+        self.assertEqual(1_792_200, fresh["floor"])                                   # one hour old: cost x 1.03 still
+
     def test_receipt_options_are_truthful_and_grade_sensitive(self):
         options = seller_r3.receipt_options({"unit": "u1", "kind": "goods", "grade": "A"})
         self.assertEqual(options, {"unit": "u1", "claim": "A", "cert": True, "warranty_hours": 6})

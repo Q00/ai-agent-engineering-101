@@ -139,6 +139,11 @@ def price_plan(unit, task, now=None, params=None, market=None, pressure=None, ho
     if days > 2:
         target *= max(0.70, 1 - 0.05 * (days - 2))
     floor = cost * 1.03
+    # underwater: the market now pays less than this unit cost (11-06 18:00: sofas bought at 1.74M while the
+    # category's settles fell to 1.66M, 25 opens -> 4 deals). After six hours in stock the floor follows the market
+    # (93% of it): a few percent lost now beats storage for days and the dump at the close.
+    if market_price and unit.get("kind") == "goods" and days * 24 >= 6 and cost * 1.03 > market_price * 0.97:
+        target, floor, regime = min(target, market_price * 0.97), min(floor, market_price * 0.93), "underwater"
     hours_left = None
 
     if unit.get("kind") == "food" and unit.get("expires_at"):

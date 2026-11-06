@@ -117,6 +117,17 @@ class RestockMemoryTest(unittest.TestCase):
         pressure = restock.category_pressure(events, catalog, "2026-11-04 19:00:00")
         self.assertEqual({"home>sofa": {"opens": 6, "deals": 2, "opens_per_deal": 3.0, "close_rate": 0.333}}, pressure)
 
+    def test_a_category_whose_units_do_not_move_is_not_bought_again(self):
+        catalog = {"S1": {"category": "home>sofa", "kind": "goods", "list_price": 1_000_000}}
+        demand = [{"category": "home>sofa", "median_price": 1_000_000}]
+        stats = {"categories": {"home>sofa": {"n": 50, "median_ratio": 0.8, "revenue": 40_000_000, "median_amount": 800_000}}, "skus": {}}
+        inv = {"balance": 10_000_000, "units": [{"category": "home>sofa", "sku": "S1", "cost": 600_000, "list_price": 1_000_000}]}
+        slow = {"home>sofa": {"opens": 25, "deals": 4, "close_rate": 0.16}}
+        report = {}
+        self.assertEqual([], restock.plan(inv, catalog, demand, [], {}, stats, report, slow))
+        self.assertEqual(["sofa"], report["skipped_slow"])
+        self.assertEqual(["S1"], [b["sku"] for b in restock.plan(inv, catalog, demand, [], {}, stats, {}, {"home>sofa": {"opens": 25, "deals": 15, "close_rate": 0.6}})])
+
     def test_forum_requires_ledger_reference(self):
         forum = [{"text": "kimchi wanted", "refs": []}, {"text": "kimchi bought", "refs": [10]}]
         self.assertEqual(restock.forum_scores(forum, ["food>kimchi"])["food>kimchi"], 1)

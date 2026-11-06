@@ -103,10 +103,21 @@ def _public_trust(shop):
     return _clamp((sum(stars) / len(stars)) / 5) if stars else 0.60
 
 
-def evidence(shop, memory, item, reference=None, available=0):
+def warranty_share(memory, shop_name):
+    """Of this shop's settled goods I bought, the share that came with a warranty (any hours). None without data."""
+    rows = [r for r in memory if r.get("shop") == shop_name and r.get("settled") and r.get("warranty_hours") is not None
+            and r.get("grade") in ("A", "B", "C") and not r.get("value") == 0 and (r.get("list_price") or 0) >= 50_000]
+    if len(rows) < 3:
+        return None
+    return sum(1 for r in rows if (r.get("warranty_hours") or 0) > 0) / len(rows)
+
+
+def evidence(shop, memory, item, reference=None, available=0, prefer_warranty=False):
     """Normalized, explainable features for one shop and one item. `available` is how many units of the ordered
     category the shop lists right now: 11-05 00:30, 715 of 1,446 visits in 6 h found the listed unit already gone,
-    and a shop with five units is less likely to be empty by the time I ask than one with one."""
+    and a shop with five units is less likely to be empty by the time I ask than one with one. `prefer_warranty`
+    (dear goods) adds up to 0.15 for a shop whose goods usually come with a warranty: a break without one is the
+    whole price lost (11-06: 32 such breaks, 12.6M), with one it is refunded (36 of 36)."""
     reference = reference or item_reference(memory, item)
     # a visit that found no stock ("no_stock") or only a unit too old for the order ("stale") says nothing about how
     # the shop trades: it is not an attempt
@@ -144,13 +155,15 @@ def evidence(shop, memory, item, reference=None, available=0):
     recent_visits = sum(1 for row in recent if row.get("shop") == shop.get("name") and row.get("outcome") not in ("no_stock", "stale"))
     concentration = _clamp(recent_visits / MAX_VISITS_PER_WINDOW)
     availability = _clamp(min(available, 5) / 5)
+    warranty = warranty_share(memory, shop.get("name")) if prefer_warranty else None
     score = (0.35 * success + 0.25 * integrity + 0.20 * value + 0.20 * exploration - 0.20 * concentration
-             + 0.10 * availability)
+             + 0.10 * availability + (0.15 * warranty if warranty is not None else 0.0))
     return {
         "shop": shop.get("name"),
         "attempts": len(rows),
         "bad": len(bad),
         "available": available,
+        "warranty": round(warranty, 2) if warranty is not None else None,
         "success": round(success, 4),
         "integrity": round(integrity, 4),
         "value": round(value, 4),
@@ -167,23 +180,23 @@ def units_listed(shop):
     return sum(int(o.get("qty") or 0) for o in (shop.get("_eligible_offers") or shop.get("offers") or []))
 
 
-def rank_shops(shops, memory, item, reference=None):
+def rank_shops(shops, memory, item, reference=None, prefer_warranty=False):
     """Rank safe shops; enforce rolling concentration only when alternatives exist."""
     bad = blacklisted_names(memory)
     safe = [shop for shop in shops if shop.get("name") not in bad]
     if not safe:  # do not make a non-empty registry unusable; the auditor still checks the result
         safe = list(shops)
     reference = reference or item_reference(memory, item)
-    ranked = [(shop, evidence(shop, memory, item, reference, units_listed(shop))) for shop in safe]
+    ranked = [(shop, evidence(shop, memory, item, reference, units_listed(shop), prefer_warranty)) for shop in safe]
     under_cap = [pair for pair in ranked if pair[1]["recent_visits"] < MAX_VISITS_PER_WINDOW]
     if under_cap:
         ranked = under_cap
     return sorted(ranked, key=lambda pair: (-pair[1]["score"], pair[0].get("name", "")))
 
 
-def choose_shop(shops, memory, item, reference=None, explore_rate=EXPLORE_RATE):
+def choose_shop(shops, memory, item, reference=None, explore_rate=EXPLORE_RATE, prefer_warranty=False):
     """Deterministic exploit/explore choice, independent of the private budget. explore_rate is a tuner knob."""
-    ranked = rank_shops(shops, memory, item, reference)
+    ranked = rank_shops(shops, memory, item, reference, prefer_warranty)
     if not ranked:
         raise ValueError("no shops to choose from")
     seed = hashlib.sha256(f"{item}:{len(memory)}".encode()).digest()

@@ -181,8 +181,11 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None, pressure=
     sku_depletion = memory.get("sku_depletion") or {}
     sku_sales = stats.get("skus") or {}
     for _, category in scored:
-        share = (TOP_CATEGORY_SHARE if category in top_categories and (pressure.get(category) or {}).get("close_rate", 0) >= 0.5
-                 else CATEGORY_SHARE)
+        press = pressure.get(category) or {}
+        if press.get("opens", 0) >= 10 and press.get("close_rate", 1.0) < 0.4 and stock_category[category]:
+            report.setdefault("skipped_slow", []).append(category.split(">")[-1])   # my units there are not moving
+            continue
+        share = TOP_CATEGORY_SHARE if category in top_categories and press.get("close_rate", 0) >= 0.5 else CATEGORY_SHARE
         if cost_category[category] >= share * stock_cap:
             continue
         choices = [(sku, row) for sku, row in catalog.items() if row.get("category") == category
@@ -305,6 +308,7 @@ def main():
                                       "skus_too_dear": report.get("too_dear"), "hours_to_end": report.get("hours_to_end"),
                                       "liquidation": report.get("liquidation"),
                                       "skipped_small_margin": report.get("skipped_small_margin", []),
+                                      "skipped_slow": report.get("skipped_slow", []),
                                       "skipped_below_cost": report.get("skipped_below_cost", []), "buy": buys},
                                      ensure_ascii=False), flush=True)
     bankrupt = ((inv.get("balance") or 0) < (inv.get("bankrupt_line") or 0)

@@ -26,9 +26,22 @@ class Round3BuyerContextTest(unittest.TestCase):
         shop = {"offers": [{"sku": "cheap", "qty": 4}, {"sku": "valuable", "qty": 1}]}
         self.assertEqual(market_buyer.choose_request(shop, self.catalog)["sku"], "valuable")
 
-    def test_food_acceptance_requires_lifetime_certificate(self):
+    def test_food_acceptance_requires_the_lifetime_not_a_certificate(self):
         accept = market_buyer.accept_constraints({"acceptable": ["f"], "kind": "food", "use_within_hours": 2.2})
-        self.assertEqual(accept, {"cert": True, "min_hours_left": 3})
+        self.assertEqual(accept, {"min_hours_left": 3})
+
+    def test_dear_goods_prefer_shops_whose_goods_carry_a_warranty(self):
+        row = lambda shop, w: {"shop": shop, "item": "x", "outcome": "deal", "honest": True, "settled": True,
+                               "warranty_hours": w, "grade": "A", "list_price": 400_000, "price": 300_000, "value": 400_000}
+        memory = [row("bare", 0)] * 5 + [row("covered", 6)] * 5
+        self.assertEqual(0.0, buyer_policy.warranty_share(memory, "bare"))
+        self.assertEqual(1.0, buyer_policy.warranty_share(memory, "covered"))
+        self.assertIsNone(buyer_policy.warranty_share(memory, "unknown"))
+        shops = [{"name": "bare", "reviews": []}, {"name": "covered", "reviews": []}]
+        plain = buyer_policy.rank_shops(shops, memory, "x", 300_000)
+        dear = buyer_policy.rank_shops(shops, memory, "x", 300_000, prefer_warranty=True)
+        self.assertEqual("bare", plain[0][0]["name"])                       # alphabetical tie without the preference
+        self.assertEqual(("covered", 1.0), (dear[0][0]["name"], dear[0][1]["warranty"]))
 
     def test_goods_acceptance_rejects_grade_c_but_needs_no_certificate(self):
         accept = market_buyer.accept_constraints(self.order)
