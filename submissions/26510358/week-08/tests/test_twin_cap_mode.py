@@ -1,4 +1,4 @@
-"""twin category_cap_mode: raise_all (old default), live (never raise plan's global caps), listed (raise only
+"""twin category_cap_mode: raise_all (old default, now explicit only), live (default; never raise plan's global caps), listed (raise only
 the listed categories, the others back at the live caps)."""
 import pytest
 
@@ -25,12 +25,18 @@ class _Stock:
         self.units = units or {}
 
 
-def test_default_is_raise_all_and_live_policy_has_the_key():
+def test_default_is_live_and_live_policy_has_the_key():
     live = twin.live_policy()
-    assert live["category_cap_mode"] == "raise_all"
-    assert twin.cap_mode(policy()) == "raise_all"
+    assert live["category_cap_mode"] == "live"
+    assert twin.cap_mode(policy()) == "live"
+    assert twin.cap_mode({}) == "live"
     assert not twin.restock_differs(live, twin.make_policy({}))
-    assert twin.restock_differs(live, twin.make_policy({"category_cap_mode": "live"}))
+    assert twin.restock_differs(live, twin.make_policy({"category_cap_mode": "raise_all"}))
+    assert config.DEEP_CATEGORY_SHARE == 0.35
+
+
+def test_raise_all_still_available_explicitly():
+    assert twin.cap_mode({"category_cap_mode": "raise_all"}) == "raise_all"
 
 
 def test_unknown_mode_is_refused():
@@ -39,14 +45,15 @@ def test_unknown_mode_is_refused():
 
 
 def test_raise_all_and_listed_raise_global_caps_live_does_not():
-    for mode in (None, "raise_all", "listed"):
+    for mode in ("raise_all", "listed"):
         p = twin.effective_plan_policy(policy(mode))
         assert p["CATEGORY_MAX_SHARE"] == 0.40 and p["DEEP_CATEGORY_SHARE"] == 0.40
         assert p["_default_share"] == (config.CATEGORY_MAX_SHARE, config.DEEP_CATEGORY_SHARE)
-    p = twin.effective_plan_policy(policy("live"))
-    assert p["CATEGORY_MAX_SHARE"] == config.CATEGORY_MAX_SHARE
-    assert p["DEEP_CATEGORY_SHARE"] == config.DEEP_CATEGORY_SHARE
-    assert "_default_share" not in p
+    for mode in (None, "live"):
+        p = twin.effective_plan_policy(policy(mode))
+        assert p["CATEGORY_MAX_SHARE"] == config.CATEGORY_MAX_SHARE
+        assert p["DEEP_CATEGORY_SHARE"] == config.DEEP_CATEGORY_SHARE
+        assert "_default_share" not in p
 
 
 def test_effective_plan_policy_leaves_config_unchanged():

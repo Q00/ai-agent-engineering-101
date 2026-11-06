@@ -72,7 +72,7 @@ TWIN_KEYS = ("HOLD_FACTOR", "HOLD_MIN_DEALS")
 def live_policy():
     """The policy the shop runs now: r3lib/config.py values (read at call time, never written)."""
     p = {"name": "live", "HOLD_FACTOR": HOLD_FACTOR, "HOLD_MIN_DEALS": HOLD_MIN_DEALS,
-         "restock_adjust": {}, "category_budget_share": {}, "category_cap_mode": "raise_all",
+         "restock_adjust": {}, "category_budget_share": {}, "category_cap_mode": "live",
          "sku_targets": {}, "cut_skus": {}, "forum": {}}
     for k in PRICING_KEYS + RESTOCK_KEYS:
         p[k] = getattr(config, k)
@@ -928,13 +928,13 @@ CAP_MODES = ("raise_all", "live", "listed")
 
 def cap_mode(policy):
     """category_cap_mode: how a category_budget_share above plan's global caps is simulated.
-    raise_all (default, the mode of every result before 2026-11-05): plan's global CATEGORY_MAX_SHARE and
+    raise_all (explicit only; the default and the mode of every result before 2026-11-05 19:00 KST): plan's global CATEGORY_MAX_SHARE and
       DEEP_CATEGORY_SHARE go up to the top share for EVERY category; only the listed categories are then capped.
-    live: the global caps are never raised (what the live shop would do with r3lib/config.py unchanged); a share
+    live (default since 2026-11-05, MO rule): the global caps are never raised (what the live shop would do with r3lib/config.py unchanged); a share
       can only lower a category below the live cap.
     listed: the global caps go up for plan, then every category not in the shares is cut back to its live cap
       (see _apply_category_shares), so only the listed categories get the higher share."""
-    mode = policy.get("category_cap_mode") or "raise_all"
+    mode = policy.get("category_cap_mode") or "live"
     if mode not in CAP_MODES:
         raise ValueError(f"category_cap_mode {mode!r} not in {CAP_MODES}")
     return mode

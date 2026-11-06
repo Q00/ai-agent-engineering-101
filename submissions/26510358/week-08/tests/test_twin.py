@@ -196,7 +196,8 @@ def test_plan_mode_restocks_with_category_shares(tmp_path, cat):
         calls.append((ts, adjust, config.CATEGORY_MAX_SHARE))
         return [{"sku": "G1", "qty": 3}, {"sku": "B1", "qty": 20}]
     p = twin.make_policy({"category_budget_share": {"침구": 0.01, "소파/의자/스툴": 0.35},
-                          "restock_adjust": {"침구": 0.5}})
+                          "restock_adjust": {"침구": 0.5},
+                          "category_cap_mode": "raise_all"})  # explicit: asserts raised global share
     r = twin.replay(w, p, seed=0, restock="plan", plan_fn=plan_fn)
     assert calls and calls[0][2] == 0.35                       # plan saw the raised global share
     assert calls[0][1] == {"가구/침구>침구>이불": {"factor": 0.5}}

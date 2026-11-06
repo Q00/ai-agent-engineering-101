@@ -484,10 +484,12 @@ PYTHONHASHSEED=0 ~/ai-agent-engineering-101/.venv/bin/python -m r3lib.shadow_gat
 
 트윈 수정(커밋 1a76765, 테스트 10개):
 - 새 정책 키 `category_cap_mode`를 추가함. 값은 세 개임.
-  - `raise_all`(기본값): 옛 동작임. planner 전역 상한을 가장 큰 비율로 올림. 모든 카테고리가 올린 상한을 받음. 앞 절의 모든 결과는 이 값임.
-  - `live`: 전역 상한을 올리지 않음. 라이브 가게와 같음. 비율은 카테고리를 낮추기만 함.
+  - `raise_all`(옛 기본값, 옛 동작): planner 전역 상한을 가장 큰 비율로 올림. 모든 카테고리가 올린 상한을 받음. 앞 절의 모든 결과는 이 값임. 이제 정책에 명시할 때만 씀.
+  - `live`(기본값, 2026-11-05 MO 규칙): 전역 상한을 올리지 않음. 라이브 가게와 같음. 비율은 카테고리를 낮추기만 함. 키가 없으면 이 값을 씀.
   - `listed`: planner 상한을 올림. 그다음 목록에 없는 카테고리를 라이브 상한으로 다시 자름. deep 판정(시간당 시장 정산 ≥ `DEEP_CATEGORY_RATE`)은 같은 DB 복사본과 같은 시각에서 함(`DefaultPlan.deep_categories`).
-- 기본값이 `raise_all`이므로 앞 절의 숫자는 그대로 재현됨(아래 표의 첫 열).
+- 변경(2026-11-05, MO 규칙): 기본값은 `live`임. `raise_all`은 정책에 명시할 때만 씀. 키를 지우지 않음.
+  - `lever1b-a.json`, `lever1.json`, `lever1b-c.json`에 `"category_cap_mode": "raise_all"`을 명시함. 그래서 앞 절의 숫자는 그대로 재현됨.
+  - `DEEP_CATEGORY_SHARE`는 0.35 그대로임. `listed` 후보는 켜지 않음.
 
 후보(`policies/candidates/`):
 - `lever1b-a-live.json`: (a) + `category_cap_mode` `live`.
