@@ -186,7 +186,7 @@ class SellerGate(unittest.TestCase):
                 self.assertEqual(ft.load_settings(path), {"enabled": False})
 
     def test_shipped_file_names_a_new_trial(self):
-        self.assertEqual(ft.load_settings()["trial_id"], "v2")
+        self.assertEqual(ft.load_settings()["trial_id"], "v3")
 
 
 if __name__ == "__main__":

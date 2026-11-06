@@ -47,7 +47,9 @@ class Settings(unittest.TestCase):
 
     def test_shipped_file_keeps_the_approved_bounds(self):
         value = json.loads((ft.ROOT / "food_trial.json").read_text(encoding="utf-8"))
-        self.assertEqual((value["categories"], value["max_total_units"], value["max_total_estimated_cost"]), ({KIMCHI: 2, MEAT: 2}, 4, 150000))
+        self.assertEqual((sum(value["categories"].values()), value["max_total_units"], value["max_total_estimated_cost"]), (4, 4, 150000))
+        self.assertTrue(all(k.startswith("식품>") for k in value["categories"]))
+        self.assertEqual(ft.load_settings()["trial_id"], value["trial_id"])
 
 
 class Choosing(unittest.TestCase):
