@@ -477,9 +477,10 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                 refurb = True
                 if not asked_warranty:
                     r["warranty"] = asked_warranty = True
-                    t = await client.send(f"Please include a {WARRANTY_HOURS}-hour warranty.", t["id"])
-                    if state(t) != "TASK_STATE_INPUT_REQUIRED":
-                        break
+                    if not warranty_shown(t):                       # a quote that carries one needs no asking
+                        t = await client.send(f"Please include a {WARRANTY_HOURS}-hour warranty.", t["id"])
+                        if state(t) != "TASK_STATE_INPUT_REQUIRED":
+                            break
             covered = covered or warranty_shown(t)
             if refurb and not covered:
                 r["left"] = f"refurbished goods, and the shop did not confirm a {WARRANTY_HOURS}-hour warranty"

@@ -512,7 +512,8 @@ class Seller(AgentExecutor):
             return "this is already a clearance price"
         what = "it is top grade (A)" if p["grade"] == "A" else f"it is grade {p['grade']}"
         extra = " plus the 6-hour warranty" if p["warranty_hours"] else ""
-        return f"{what}, with its certificate, and this price is only about 5% over what this unit cost us{extra}"
+        return (f"{what}, with its certificate, and this price is only about {round(pricing.MARGIN * 100)}% over what this unit "
+                f"cost us{extra}")
 
     async def first(self, up, say, task_id: str, text: str, now: float, who: dict | None = None) -> None:
         """S2: what do they want, which unit, what to tell them."""

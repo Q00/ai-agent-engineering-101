@@ -191,8 +191,8 @@ def main() -> int:
         seller, url = start_seller()
         print("\n[1 trading] outside buyers, the kit's settlement, restock, our buyer")
         first, state, said = asyncio.run(haggle(url, KIMCHI, [12000, 14000]))
-        check("buyer 1: asked 15,000 (75% of list for grade A), 14,000 closes on the counter of 13,800",
-              first == 15000 and state == "TASK_STATE_COMPLETED" and "13800" in said, (first, said[:60]))
+        check("buyer 1: asked 15,000 (75% of list for grade A), 14,000 closes on the counter of 13,620 (floor cost + 2%)",
+              first == 15000 and state == "TASK_STATE_COMPLETED" and "13620" in said, (first, said[:60]))
         _, state, _ = asyncio.run(haggle(url, KIMCHI, [15000]))
         check("buyer 2: pays the ask", state == "TASK_STATE_COMPLETED")
         _, state, _ = asyncio.run(haggle(url, GEOT, [5000, 5000], leave=True))
@@ -202,7 +202,7 @@ def main() -> int:
         common.write_json(MD / "inventory.json", inv)
         lines, out = run("restock.py", "--state", str(MD))
         sales = common.records("sales")
-        check("restock: the two settled deals become sales", sorted(s["price"] for s in sales) == [13800, 15000], [s["price"] for s in sales])
+        check("restock: the two settled deals become sales", sorted(s["price"] for s in sales) == [13620, 15000], [s["price"] for s in sales])
         check("restock: before any analysis, no apples (48 h shelf life is under the shop's week)", APPLE not in {b["sku"] for b in out["buy"]})
         lines, out = our_order("o-apple", APPLE, None)
         unmet = common.records("unmet")

@@ -43,10 +43,25 @@ import common
 
 START = {"A": 0.75, "B": 0.70, "C": 0.60}
 ORDER = "ABC"                                  # best first
-MARGIN = 0.05
+MARGIN = 0.02           # over cost on the floor (0.05 until 11/6 12:40, Kiro 2.0: the buyer AIs now score on the share of
+                        # list they keep, and 70% of our dear talks left without an offer while the margin per sale held)
 FOOD_CUTS = (0.8, 0.45)                        # share of shelf life left for food grades A and B (the market's)
 WARRANTY_HOURS = 6
-WARRANTY_EXTRA = {"A": 0.05, "B": 0.10, "C": 0.20}
+WARRANTY_EXTRA = {"A": 0.025, "B": 0.08, "C": 0.20}   # 0.05 / 0.10 / 0.20 until 11/6 12:40: goods broke 2.6% (A),
+                                                       # 10.7% (B), 30% (C) within 6 h in 24 h, and the market paid
+                                                       # only 2.3% of list more for an A with a warranty
+BREAK = {"A": 0.026, "B": 0.107, "C": 0.30}           # the market's 24 h breakage by grade (the share refunded)
+# Kiro 2.0 (11/6 12:40): every unit whose SKU has a market of its own grade and warranty (others_6h, 10+ settles) is
+# first asked at that market + ASK_OVER (the A/C nudges, the line's "never under its own market" and the uncontested
+# SOLO asks are off). Before: 53% of our dear grade A talks had a floor above the SKU's market + 0.01 and closed 9-10%
+# (78-81% left without an offer); with the floor at or under it they closed 23-29% at three times the margin a talk.
+ANCHOR, ASK_OVER = True, 0.02
+SOLO_ON = False          # the uncontested asks and floors (SOLO_ASK, SOLO_FLOOR, learn_solo): off since 11/6 12:40
+C_WARRANTY = True        # refurbished goods are offered with the warranty only: without one, 49-80% of our agreed C deals
+                         # went unpaid (buyers' kits accept A and B only without a warranty)
+DEAD_HOURS = 3           # a goods unit held this long whose floor sits over its market + 0.01: floor at its cost (plus the
+                         # expected refund under a warranty), asked at the market; stock counts at cost in the book, so
+                         # selling at cost loses nothing and frees the line (11/6: 50 such units, 40M at cost)
 MARKDOWN_AFTER, MARKDOWN_STEP = 3, 0.05        # days unsold, share of list per further day
 DUD_DAYS, DUD_FLOOR = 7, 0.25
 NEAR_HOURS, NEAR_ASK, NEAR_FLOOR = 24, 0.45, 0.25
@@ -180,7 +195,7 @@ def respond(ask: int, floor: int, offer: int, rounds: int) -> tuple[str, int]:
 def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: float = 0.0,
          catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
          late: bool = False, dear_default: bool = False, sku_market: dict | None = None,
-         in_line: bool = False, solo: bool = False, solo_floor: float | None = None) -> dict:
+         in_line: bool = False, solo: bool = False, solo_floor: float | None = None, ask_over: float | None = None) -> dict:
     """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late, sku_ref, nudge} for one unit.
     sku_market: the SKU's others_6h; a grade A ask well above it comes down, a grade C ask well under it goes up
     (not for the premium line, in_line, nor on clearance); nudge: by how much (share of list), or None. A premium
@@ -200,7 +215,8 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     age = (now - unit.get("supplied_at", now)) / 86400
     to_end = (common.ROUND_END - now) / 3600
     clearing = age > DUD_DAYS or near_expiry(unit, now) or to_end < LAST_DAY
-    w = (bool(warranty) or (dear_default and default_warranty(unit) and not clearing)) and unit.get("kind") == "goods"
+    w = (bool(warranty) or (dear_default and default_warranty(unit) and not clearing)
+         or (C_WARRANTY and g == "C" and not clearing)) and unit.get("kind") == "goods"
     rule = START[g] + (extra[g] if w else 0)
     ref = market_ref(market, g, w)
     gap = round(ref + LIFT - rule, 6) if ref is not None else 0.0      # rounded: 0.72 - 0.75 is -0.030000000000000027
@@ -210,16 +226,20 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         ref = None
     start = rule + adjust + (LATE_LIFT if late else 0)
     sref, nudge = sku_ref(sku_market, g, w), None
-    if sref is not None and not clearing and not in_line:
+    anchored = ANCHOR and sref is not None and not clearing
+    if anchored:                                                # Kiro 2.0: the SKU's own market + ASK_OVER
+        want = sref + (ASK_OVER if ask_over is None else ask_over) + adjust
+        nudge, start = round(want - start, 4), want
+    elif sref is not None and not clearing and not in_line:
         if g == "A" and start > sref + SKU_A_OVER:
             nudge = round(sref + SKU_A_TARGET - start, 4)
         elif g == "C" and start < sref - SKU_C_UNDER:
             nudge = round(sref + SKU_C_TARGET - start, 4)
         start += nudge or 0
-    if in_line and not clearing:
+    if in_line and not clearing and not anchored:
         if sref is not None and sref > start:
             nudge, start = round(sref - start, 4), sref           # the line: at least its own market
-        if solo:
+        if solo and SOLO_ON:
             want = SOLO_ASK[g] + (extra[g] / 2 if w else 0)
             if want > start:
                 nudge, start = round((nudge or 0) + want - start, 4), want
@@ -244,11 +264,17 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
         floor = min(floor, math.ceil(cost * (1 - STORAGE * max(0.0, to_end) / 24)))
     if w:
         floor += round(lp * extra[g])
-    if in_line and solo and clearance is None and not held_down:
+    dead = (anchored and unit.get("kind") == "goods" and clearance is None and not held_down
+            and (now - unit.get("supplied_at", now)) >= DEAD_HOURS * 3600 and floor / lp > sref + 0.01)
+    if dead:                                                    # at cost (with its expected refund), asked at the market
+        floor = min(floor, math.ceil(cost / (1 - BREAK[g])) if w else math.ceil(cost))
+        start = sref
+    if in_line and solo and SOLO_ON and clearance is None and not held_down and not dead:
         hold = SOLO_FLOOR[g] + (extra[g] / 2 if w else 0)
         floor = max(floor, round(lp * (min(hold, solo_floor) if solo_floor is not None else hold)))
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
-            "at_cost": clearance is None and not held_down, "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
-            "sku_ref": sref, "nudge": nudge, "solo": bool(in_line and solo),
-            "solo_floor": solo_floor if in_line and solo else None}
+            "at_cost": clearance is None and not held_down and not dead, "dead": dead, "anchored": anchored,
+            "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
+            "sku_ref": sref, "nudge": nudge, "solo": bool(in_line and solo and SOLO_ON),
+            "solo_floor": solo_floor if in_line and solo and SOLO_ON else None}
