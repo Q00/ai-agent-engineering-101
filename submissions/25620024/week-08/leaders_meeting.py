@@ -21,7 +21,10 @@ import market_model
 
 HERE = Path(__file__).parent
 OUT = HERE / "private" / "leaders_plan.json"
-GOAL = "Reach the top 3 of the Players table by tomorrow (11-04 KST) and stay there to the end of the round."
+GOAL = ("Reach the top 3 of the Players table's Class view (students only; 11-07: 4th of 44, 1.580 vs #3 1.646) and "
+        "stay there to 11-17 23:59 KST. Rules patch 3.4: shop = 0.5 Book + 0.3 revenue + 0.2 stars; buyer = 0.5 saved "
+        "rate + 0.3 forum rating + 0.1 deals + 0.1 posts. HQ is away: decide and act yourselves, sales first, no "
+        "approvals except bankruptcy-level risks; never self-deal, inject or attack other agents.")
 
 BUYER_SCHEMA = {
     "type": "object", "additionalProperties": False,

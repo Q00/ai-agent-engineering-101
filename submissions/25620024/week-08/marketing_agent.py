@@ -742,6 +742,16 @@ def run(a, t0):
         print("[hr] graded: " + ", ".join(f"{t} {(hr.grade_of(t) or {}).get('score')}" for t in hr.TEAMS))
     except Exception as e:
         print(f"[hr] skipped: {type(e).__name__}: {e}")
+    try:                                             # HQ 11-07 (owner away): the two unit heads meet every hour on
+        import leaders_meeting                       # their own -- sales chairs, the buyer head speaks first -- and
+        lp_ = leaders_meeting.summary() or {}        # the joint plan goes into every team's brief
+        age = time.time() - time.mktime(time.strptime(lp_["written"], "%Y-%m-%d %H:%M:%S")) if lp_.get("written") else 1e9
+        if age >= 3600:
+            jp = leaders_meeting.meet(ask_codex, ask_claude)
+            print("[leaders] joint plan: " + json.dumps({k: jp.get(k) for k in ("goal_gap", "coordination")},
+                                                         ensure_ascii=False)[:600])
+    except Exception as e:
+        print(f"[leaders] skipped: {type(e).__name__}: {e}")
     md += ("\n\n## Finance (Codex)\n" + json.dumps({k: (fin or {}).get(k) for k in ("verdict", "advice", "limits",
                                                                                         "forecast_profit_per_h")},
                                                     ensure_ascii=False, indent=1)
