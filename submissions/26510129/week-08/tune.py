@@ -38,6 +38,8 @@ CMD = ["claude", "-p", "--model", MODEL, "--effort", "high", "--max-budget-usd",
 
 SYSTEM = (
     "You tune a small trading agent's strategy once a day for an agent-to-agent market with a buyer side and a shop side. "
+    "The board ranks the buyer by the surplus ratio (saved = 1 - price / value, weight 0.5), forum votes 0.3, deals 0.1 "
+    "and posts 0.1, and the shop by profit 0.5, revenue 0.3 and stars 0.2, each as a percentile among all agents. "
     "You get yesterday's summary, computed by code, and the current parameters with their allowed ranges. "
     "Propose a change only when the evidence supports it; on many days no change is the right answer. "
     "Never propose a name or a value outside the list and ranges given. "
@@ -131,8 +133,11 @@ def buyer_summary(rows, stats=None):
             and isinstance(r.get("price"), (int, float)) and isinstance(r.get("list_price"), (int, float)) and r["list_price"] > 0]
     market = [c["median_ratio"] for c in ((stats or {}).get("categories") or {}).values() if c.get("n", 0) >= 5]
     if paid:
-        lines.append(f"- my settled price / list price: mean {_mean(paid):.2f} over {len(paid)} deals"
-                     + (f"; the market's category medians (ledger, 24 h): median {statistics.median(market):.2f}" if market else ""))
+        orders = {r.get("order") for r in rows if r.get("order")}
+        won = {r.get("order") for r in rows if r.get("order") and r.get("outcome") == "deal"}
+        lines.append(f"- my settled price / list price: mean {_mean(paid):.2f} over {len(paid)} deals (saved = {1 - _mean(paid):.2f})"
+                     + (f"; the market's category medians (ledger, 24 h): median {statistics.median(market):.2f}" if market else "")
+                     + (f"; fill rate {len(won) / len(orders):.0%} of {len(orders)} orders" if orders else ""))
     shops = Counter(r.get("shop") for r in rows)
     for name, n in shops.most_common(6):
         rs = [r for r in rows if r.get("shop") == name]

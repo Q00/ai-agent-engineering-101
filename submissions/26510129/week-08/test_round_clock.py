@@ -30,9 +30,9 @@ class RoundClockTest(unittest.TestCase):
         demand = [{"category": "home>sofa", "median_price": 1_000_000}, {"category": "food>juice", "median_price": 8_000}]
         stats = {"categories": {"home>sofa": {"n": 50, "median_ratio": 0.8, "revenue": 40_000_000, "median_amount": 800_000},
                                 "food>juice": {"n": 50, "median_ratio": 0.8, "revenue": 320_000, "median_amount": 6_400}}, "skus": {}}
-        units = [{"category": "home>sofa", "sku": "S1", "cost": 600_000, "list_price": 1_000_000}] * 2 \
+        units = [{"category": "home>sofa", "sku": "S1", "cost": 600_000, "list_price": 1_000_000}] * 3 \
             + [{"category": "food>juice", "sku": "J1", "cost": 4_000, "list_price": 8_000}]
-        inv = {"balance": 5_000_000, "units": units}                      # sofas 1.2M of a 3.1M cap: over 35%, under 55%
+        inv = {"balance": 5_000_000, "units": units}                      # sofas 1.8M of a 4.1M cap: over 35%, under 55%
         closes = {"home>sofa": {"opens": 20, "deals": 12, "close_rate": 0.6}}
         self.assertEqual([], [b["sku"] for b in restock.plan(inv, catalog, demand, [], {}, stats)])
         report = {}
@@ -43,7 +43,7 @@ class RoundClockTest(unittest.TestCase):
         unit = {"sku": "G1", "kind": "goods", "cost": 1000, "list_price": 2000, "grade": "A", "expires_at": None}
         p = {"seller_volume_share": 1.0, "seller_markup": 1.0}
         normal = seller_r3.price_plan(unit, "t", params=p, market=(1500.0, 5, "sku"), hours_to_end=100)
-        self.assertEqual((1455, 1030, "even"), (normal["ask"], normal["floor"], normal["regime"]))
+        self.assertEqual((1500, 1440, "even"), (normal["ask"], normal["floor"], normal["regime"]))
         down = seller_r3.price_plan(unit, "t", params=p, market=(1500.0, 5, "sku"), hours_to_end=20)
         self.assertEqual((1425, 900, "sell-down"), (down["ask"], down["floor"], down["regime"]))
         dump = seller_r3.price_plan(unit, "t", params=p, market=(1500.0, 5, "sku"), hours_to_end=10)
@@ -55,7 +55,7 @@ class RoundClockTest(unittest.TestCase):
         unit = {"sku": "G1", "kind": "goods", "cost": 1000, "list_price": 2000, "grade": "A", "expires_at": None}
         p = {"seller_volume_share": 0.0, "seller_markup": 1.0}            # margin arm
         plan = seller_r3.price_plan(unit, "t", params=p, market=(1500.0, 5, "sku"), pressure={"opens": 20, "deals": 5, "close_rate": 0.25})
-        self.assertEqual((1411, "slow"), (plan["ask"], plan["regime"]))  # 1500 x 0.97 x 0.97, not x 1.05
+        self.assertEqual((1455, "slow"), (plan["ask"], plan["regime"]))  # 1500 x 1.00 x 0.97, not x 1.05
 
 
 if __name__ == "__main__":

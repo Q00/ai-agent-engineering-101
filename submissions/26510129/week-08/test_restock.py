@@ -74,7 +74,7 @@ class RestockMemoryTest(unittest.TestCase):
         report = {}
         self.assertEqual(["B1"], [b["sku"] for b in restock.plan(mid, catalog, demand, [], {}, stats, report)])
         self.assertFalse(report["explore"])
-        full = {"balance": 2_000_000, "units": [{"category": "c>x", "cost": 100_000}] * 25}            # 2.5M of 4.5M: over 50%
+        full = {"balance": 2_000_000, "units": [{"category": "c>x", "cost": 100_000}] * 30}            # 3.0M of 5.0M: at 60%
         self.assertEqual([], restock.plan(full, catalog, demand, [], {}, stats, report))
         self.assertLessEqual(report["stock_room"], 0)
 
@@ -105,7 +105,7 @@ class RestockMemoryTest(unittest.TestCase):
     def test_one_category_cannot_take_the_whole_stock_cap(self):
         catalog = {"S1": {"category": "home>sofa", "kind": "goods", "list_price": 1_000_000}}
         demand = [{"category": "home>sofa", "median_price": 1_000_000}]
-        inv = {"balance": 5_000_000, "units": [{"category": "home>sofa", "cost": 600_000, "sku": "S1"}] * 2}   # 1.2M of a 3.1M cap
+        inv = {"balance": 5_000_000, "units": [{"category": "home>sofa", "cost": 600_000, "sku": "S1"}] * 3}   # 1.8M of a 4.1M cap: over 35%
         self.assertEqual([], restock.plan(inv, catalog, demand, [], {}, {"categories": {"home>sofa": {"n": 5, "median_ratio": 0.8, "revenue": 4_000_000, "median_amount": 800_000}}}))
 
     def test_category_pressure_counts_opens_per_deal_over_recent_events(self):

@@ -29,9 +29,10 @@ EXPECTED_COST_RATIO = 0.60   # supply cost as a share of list price, averaged ov
 # median lot 10k) while the market's revenue was sofas at 1.7M and mattresses at 300k (the top shop: lots of 1M, 180M
 # bought in 2.3 h). The caps now scale with capital, categories are weighed by settled revenue, and the SKU is the one
 # nearest the price the category actually settles at, as long as one unit stays a small share of the balance.
-STOCK_SHARE = 0.50           # stock at cost may not exceed this share of capital (balance + stock at cost)
+STOCK_SHARE = 0.60           # stock at cost may not exceed this share of capital (balance + stock at cost);
+                             # 11-06 18:30: 80% of what was bought in 5 h had sold, the top shops hold 400M+ in stock
 EXPLORE_STOCK_SHARE = 0.10   # of capital: below this, categories with no evidence may still be tried (one lot each)
-RUN_SPEND_SHARE = 0.30       # of the balance, per run
+RUN_SPEND_SHARE = 0.40       # of the balance, per run
 UNIT_COST_SHARE = 0.20       # one unit's expected cost may not exceed this share of capital (balance + stock at cost);
                              # 11-04 17:40: at 15% of the balance a 1.63M sofa blocked the next one until it sold (2 min,
                              # 3 buyers); a refund on a break (~3% of settles) is a third of the margin in expectation
@@ -214,10 +215,9 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None, pressure=
                 continue
 
         def rank(pair):   # my own sales first (I know I can sell it), then the market's, then not in stock yet,
-            sku, row = pair                                  # then nearest the price that sells (dearest without data)
-            list_price = row.get("list_price") or 1
-            nearness = abs(math.log(list_price / sells_at)) if sells_at else -list_price
-            return (-sku_depletion.get(sku, 0), -sku_sales.get(sku, {}).get("n", 0), stock_sku[sku], nearness, sku)
+            sku, row = pair                                  # then the dearest inside the band: margin scales with price
+            return (-sku_depletion.get(sku, 0), -sku_sales.get(sku, {}).get("n", 0), stock_sku[sku],
+                    -(row.get("list_price") or 0), sku)      # (11-06: my mattresses listed at 424k, the market's at 546k)
 
         choices.sort(key=rank)
         choice = sellable_choice(choices, category, stats, skipped)

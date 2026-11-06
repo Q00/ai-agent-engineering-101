@@ -75,8 +75,8 @@ class Round3BuyerContextTest(unittest.TestCase):
 
     def test_sku_reference_follows_the_market_below_the_list_cap(self):
         stats = {"skus": {"valuable": {"n": 5, "median": 150}}, "categories": {}}
-        self.assertEqual(142, market_buyer.sku_reference("valuable", self.catalog, 999, stats))   # 150 x 0.95
-        stats["skus"]["valuable"]["median"] = 195
+        self.assertEqual(138, market_buyer.sku_reference("valuable", self.catalog, 999, stats))   # 150 x 0.92
+        stats["skus"]["valuable"]["median"] = 200
         self.assertEqual(180, market_buyer.sku_reference("valuable", self.catalog, 999, stats))   # capped at 0.9 x list
 
     def test_catalog_reference_is_discounted_median(self):
@@ -149,10 +149,10 @@ class Round3BuyerContextTest(unittest.TestCase):
         mem = [{"item": "c", "outcome": "no_stock"}] * 8 + [{"item": "c", "outcome": "deal"}] * 2
         self.assertEqual(0.8, market_buyer.scarcity(mem, "c"))
         self.assertIsNone(market_buyer.scarcity(mem[:5], "c"))
-        self.assertEqual((1.10, 0.10, "scarce"), market_buyer.regime(0.8, 0.15))
-        self.assertEqual((1.00, 0.20, "plentiful"), market_buyer.regime(0.1, 0.15))
-        self.assertEqual((1.05, 0.15, "normal"), market_buyer.regime(0.45, 0.15))
-        self.assertEqual((1.05, 0.15, "unknown"), market_buyer.regime(None, 0.15))
+        self.assertEqual((1.05, 0.10, "scarce"), market_buyer.regime(0.8, 0.15))
+        self.assertEqual((0.97, 0.20, "plentiful"), market_buyer.regime(0.1, 0.15))
+        self.assertEqual((1.00, 0.15, "normal"), market_buyer.regime(0.45, 0.15))
+        self.assertEqual((1.00, 0.15, "unknown"), market_buyer.regime(None, 0.15))
 
     def test_listed_units_raise_a_shop_a_little(self):
         memory = []

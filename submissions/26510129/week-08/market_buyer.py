@@ -143,13 +143,16 @@ def closing_gap(last_offer, ask, limit, reference, slack):
 def regime(sc, discount):
     """Bargaining posture from scarcity: scarce -> take a price up to 10% over the reference and open closer to the
     ask; plentiful -> take only the reference or better and open deeper. Returns (quick-offer slack, first-offer discount)."""
+    # 11-06 18:30: the board's buyer rank follows the surplus RATIO (saved = 1 - price / value, weight 0.5; a fit of
+    # the board gives error 0.07 with it and 0.14 with absolute surplus). Mine was 0.21 against 0.32-0.36 for the
+    # top buyers, so a price is taken without bargaining only at my reference or better.
     if sc is None:
-        return 1.05, discount, "unknown"
+        return 1.00, discount, "unknown"
     if sc >= 0.6:
-        return 1.10, round(max(0.05, discount - 0.05), 3), "scarce"
+        return 1.05, round(max(0.05, discount - 0.05), 3), "scarce"
     if sc <= 0.3:
-        return 1.00, round(min(0.25, discount + 0.05), 3), "plentiful"
-    return 1.05, discount, "normal"
+        return 0.97, round(min(0.25, discount + 0.05), 3), "plentiful"
+    return 1.00, discount, "normal"
 
 
 def regulars_prompt(text):
@@ -263,7 +266,7 @@ def negotiate(url, item, budget, reference, record="", request=None, value_cap=N
             ask = first_ask(t, value_cap)
         # after a reopen the shop has shown its floor: the next ask near it is taken rather than bargained down again
         quick, why = quick_offer(ask, stated_floor(status_text(t)), reference, guardian.limit,
-                                 max(slack, 1.10) if info.get("reopened") else slack)
+                                 max(slack, 1.05) if info.get("reopened") else slack)
         if quick is None and offers and closing_gap(offers[-1][0], ask, guardian.limit, reference, slack):
             quick, why = int(round(ask)), "the ask, within 2% of my last offer,"
         if quick is not None:
@@ -442,7 +445,7 @@ def sku_reference(sku, catalog, fallback, stats=None):
         return fallback
     cap = 0.90 * list_price
     market, _, _ = ledger.market_price(stats or {}, sku, catalog.get(sku, {}).get("category"), list_price)
-    return int(round(min(cap, market * 0.95) if market else cap))
+    return int(round(min(cap, market * 0.92) if market else cap))   # 0.92: the top buyers pay 0.65-0.68 of list
 
 
 def accept_constraints(order):

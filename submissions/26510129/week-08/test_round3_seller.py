@@ -48,7 +48,7 @@ class Round3InventorySellerTest(unittest.TestCase):
     def test_market_price_moves_the_ask_but_not_below_cost_or_above_the_cap(self):
         unit = {"sku": "GOOD-1", "kind": "goods", "cost": 700, "list_price": 1000, "grade": "A", "expires_at": None}
         plan = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"))
-        self.assertIn(plan["ask"], (873, 945))          # 0.97x on the volume arm, 1.05x on the margin arm
+        self.assertIn(plan["ask"], (900, 945))          # 1.00x on the volume arm, 1.05x on the margin arm
         self.assertEqual((900, 5, "sku"), (plan["market"], plan["market_n"], plan["market_src"]))
         self.assertEqual(721, seller_r3.price_plan(unit, "task", market=(500.0, 5, "sku"))["ask"])    # floor: cost x 1.03
         self.assertEqual(990, seller_r3.price_plan(unit, "task", market=(2000.0, 5, "sku"))["ask"])   # cap: list x 0.99
@@ -60,9 +60,10 @@ class Round3InventorySellerTest(unittest.TestCase):
         even = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p)
         sought = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 24, "opens_per_deal": 1.25, "close_rate": 0.8})
         slow = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 7, "opens_per_deal": 4.3, "close_rate": 0.23})
-        self.assertEqual((873, "even"), (even["ask"], even["regime"]))
-        self.assertEqual((917, "sought"), (sought["ask"], sought["regime"]))   # x 1.05
-        self.assertEqual((847, "slow"), (slow["ask"], slow["regime"]))         # x 0.97
+        self.assertEqual((900, "even"), (even["ask"], even["regime"]))
+        self.assertEqual((945, "sought"), (sought["ask"], sought["regime"]))   # x 1.05
+        self.assertEqual((873, "slow"), (slow["ask"], slow["regime"]))         # x 0.97
+        self.assertEqual((864, 721), (even["floor"], slow["floor"]))           # 96% of the market holds unless slow
 
     def test_an_underwater_unit_follows_the_market_after_six_hours(self):
         now = time.time()
@@ -88,7 +89,7 @@ class Round3InventorySellerTest(unittest.TestCase):
         self.assertEqual("volume", seller_r3.policy_arm(unit, "task", volume_share=1.0))
         plain = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params={"seller_volume_share": 1.0, "seller_markup": 1.0})
         marked = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params={"seller_volume_share": 1.0, "seller_markup": 1.10})
-        self.assertEqual((873, 960), (plain["ask"], marked["ask"]))        # 900 x 0.97, then x 1.10
+        self.assertEqual((900, 990), (plain["ask"], marked["ask"]))        # 900 x 1.00, then x 1.10 = 990 (the cap too)
         capped = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params={"seller_volume_share": 0.0, "seller_markup": 1.15})
         self.assertEqual(990, capped["ask"])                                # 900 x 1.05 x 1.15 = 1087 -> cap 0.99 x list
 

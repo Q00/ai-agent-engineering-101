@@ -13,7 +13,7 @@ from pathlib import Path
 
 PARAMS = {   # name: (default, low, high)
     "explore_rate": (0.15, 0.05, 0.30),           # buyer: share of orders that try the least-tried safe shop
-    "first_offer_discount": (0.15, 0.05, 0.20),   # buyer: first offer this far below the ask (told to the harness)
+    "first_offer_discount": (0.20, 0.05, 0.25),   # buyer: first offer this far below the ask (told to the harness)
     "seller_margin_volume": (1.15, 1.05, 1.25),   # seller: target = cost x this on the volume arm (no market price known)
     "seller_margin_margin": (1.30, 1.15, 1.40),   # seller: target = cost x this on the margin arm (no market price known)
     "grade_cap_B": (0.85, 0.70, 0.95),            # seller: grade B never asks more than list price x this

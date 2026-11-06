@@ -126,11 +126,14 @@ def price_plan(unit, task, now=None, params=None, market=None, pressure=None, ho
     regime = "even"
     if pressure.get("opens", 0) >= 10 and pressure.get("close_rate", 0) >= 0.6:
         regime = "sought"
-    elif pressure.get("opens", 0) >= 5 and pressure.get("close_rate", 1.0) < 0.4:
+    elif pressure.get("opens", 0) >= 20 and pressure.get("close_rate", 1.0) < 0.4:
         regime = "slow"
     market_price, market_n, market_src = market if market and market[0] else (None, 0, "none")
+    # 11-06 18:30, 287 settles of SKUs the market also sold: mine closed at 0.954 of the market's median for the
+    # same SKU (mattresses 0.955, 12 minutes to sell, 80% of the stock bought in 5 h sold). Nothing opens below
+    # the market any more, and the floor holds 96% of it unless the category is slow or the unit underwater.
     if market_price:
-        target = market_price * (0.97 if arm == "volume" or regime == "slow" else 1.05) * params["seller_markup"]
+        target = market_price * (1.00 if arm == "volume" or regime == "slow" else 1.05) * params["seller_markup"]
     target *= {"sought": 1.05, "slow": 0.97}.get(regime, 1.0)
     cap = list_price * {"A": 0.99, "B": params["grade_cap_B"], "C": 0.65}.get(unit.get("grade"), 0.85)
     target = min(target, cap)
@@ -139,6 +142,8 @@ def price_plan(unit, task, now=None, params=None, market=None, pressure=None, ho
     if days > 2:
         target *= max(0.70, 1 - 0.05 * (days - 2))
     floor = cost * 1.03
+    if market_price and regime != "slow":
+        floor = max(floor, min(market_price * 0.96, cap))   # never above what the grade is worth
     # underwater: the market now pays less than this unit cost (11-06 18:00: sofas bought at 1.74M while the
     # category's settles fell to 1.66M, 25 opens -> 4 deals). After six hours in stock the floor follows the market
     # (93% of it): a few percent lost now beats storage for days and the dump at the close.
@@ -239,7 +244,7 @@ class Seller(AgentExecutor):
             del self.open[task.id]
             return
 
-        counter = max(plan["floor"], int(round((2 * deal["ask"] + offer) / 3)))
+        counter = max(plan["floor"], int(round((3 * deal["ask"] + offer) / 4)))   # concede a quarter of the gap, not a third
         deal["ask"] = min(deal["ask"], counter)
         strategy("seller_counter", task=tid, sku=unit["sku"], offer=offer, counter=deal["ask"], round=rounds)
         await up.requires_input(say(f"Counteroffer: {deal['ask']}.", {"ask": deal["ask"], "item": unit["sku"]}))
