@@ -4,6 +4,7 @@ build(root, now) -> text. Each section reads its own source and says when the so
 shows up as a fact instead of a crash. Other participants appear only as hashed ids.
 """
 
+import json
 import os
 import time
 import statistics as st
@@ -32,6 +33,9 @@ SHOP_KEYS = (
 BUYER_KEYS = ("saved", "forum", "posts", "deals")  # Patch 3.4 (11-06): saved replaced surplus in buyer ALL
 RATE_KEYS = {"saved": 1.0}  # keys that are rates; before Patch 3.4 the board's saved column was an amount
 SELLER_DECISIONS = ("open", "accept", "cancel", "no_stock", "reject", "declined")
+FLOW_BLOCK_H = 2  # [상품군별 흐름]: three 2 h blocks, so a change since the last few hours shows next to its market
+FLOW_BLOCKS = 3
+CATEGORY_TOP = 6
 
 
 def board_snapshots(root):
@@ -331,6 +335,136 @@ def _list_price(cat, sku):
     return lp if isinstance(lp, (int, float)) and lp > 0 else None
 
 
+def _leaf(category):
+    return str(category or "?").split(">")[-1].strip() or "?"
+
+
+def _catalog(root):
+    return restock._catalog(c.load_json(os.path.join(root, ".market/catalog.json"), {}) or {})
+
+
+def seller_offers(root, cat, since):
+    """[(ts, category leaf)] of each seller open (a unit offered to a request) since `since`, from .r3/metrics.jsonl.
+    Declines carry no SKU, so per category the denominator is offers, not requests."""
+    out = []
+    for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 60_000_000, b'"open"'):
+        if m.get("hook") != "seller" or m.get("decision") != "open" or (m.get("ts") or 0) < since:
+            continue
+        o = m.get("outcome")
+        if isinstance(o, str):
+            try:
+                o = json.loads(o)
+            except ValueError:
+                o = {}
+        sku = o.get("sku") if isinstance(o, dict) else None
+        out.append((m["ts"], _leaf((cat.get(sku) or {}).get("category"))))
+    return out
+
+
+def market_settles(root, since):
+    """Every market settle since `since` (all shops, ours included)."""
+    return [
+        e
+        for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 40_000_000, b'"settle"')
+        if e.get("type") == "settle" and e.get("src") == "market" and (e.get("ts") or 0) >= since
+    ]
+
+
+def category_stats(offers, settles, cat, login, since, until):
+    """{category leaf: {offers, sales, market, our_ratio, market_ratio}} in [since, until).
+
+    offers: our seller opens; sales: our shop's settles; market: every settle of the category in the same hours. sales /
+    market is our share of what the market sold then, which the time of day and the request mix move far less than a
+    raw conversion. Ratios are median amount / list price.
+    """
+    acc = defaultdict(lambda: {"offers": 0, "sales": 0, "market": 0, "ours": [], "all": []})
+    for ts, leaf in offers:
+        if since <= ts < until:
+            acc[leaf]["offers"] += 1
+    for e in settles:
+        if not since <= (e.get("ts") or 0) < until:
+            continue
+        d = e.get("data") or {}
+        k = acc[_leaf(d.get("category") or (cat.get(d.get("sku")) or {}).get("category"))]
+        k["market"] += 1
+        lp = d.get("list_price") if isinstance(d.get("list_price"), (int, float)) else _list_price(cat, d.get("sku"))
+        a = d.get("amount")
+        r = a / lp if lp and lp > 0 and isinstance(a, (int, float)) and not isinstance(a, bool) else None
+        if r is not None:
+            k["all"].append(r)
+        if c.settle_side(d, login) == "shop":
+            k["sales"] += 1
+            if r is not None:
+                k["ours"].append(r)
+    return {
+        leaf: {
+            "offers": v["offers"],
+            "sales": v["sales"],
+            "market": v["market"],
+            "our_ratio": round(st.median(v["ours"]), 3) if v["ours"] else None,
+            "market_ratio": round(st.median(v["all"]), 3) if v["all"] else None,
+        }
+        for leaf, v in acc.items()
+    }
+
+
+def mix_adjusted(prev, cur):
+    """Sales per offer of both versions weighted by the previous version's offer mix, over categories offered in both.
+    ((p_prev, se_prev), (p_cur, se_cur), n_categories) or None. Per category the rate is capped at 1 (a settle can
+    follow an offer from the window before)."""
+    common = [k for k in prev if prev[k]["offers"] and (cur.get(k) or {}).get("offers")]
+    tot = sum(prev[k]["offers"] for k in common)
+    if not common or not tot:
+        return None
+
+    def rate(stats):
+        p = se2 = 0.0
+        for k in common:
+            w, n = prev[k]["offers"] / tot, stats[k]["offers"]
+            q = min(1.0, stats[k]["sales"] / n)
+            p += w * q
+            se2 += w * w * q * (1 - q) / n
+        return round(p, 4), round(se2**0.5, 4)
+
+    return rate(prev), rate(cur), len(common)
+
+
+def section_categories(root, now, login):
+    """Our sales per offer, our share of market settles and price/list, ours and the market's, per category in the
+    last FLOW_BLOCKS blocks of FLOW_BLOCK_H hours. Numbers only."""
+    cat = _catalog(root)
+    since = now - FLOW_BLOCKS * FLOW_BLOCK_H * 3600
+    offers, settles = seller_offers(root, cat, since), market_settles(root, since)
+    blocks = [(since + i * FLOW_BLOCK_H * 3600, since + (i + 1) * FLOW_BLOCK_H * 3600) for i in range(FLOW_BLOCKS)]
+    stats = [category_stats(offers, settles, cat, login, a, b) for a, b in blocks]
+    top = Counter()
+    for s in stats:
+        for k, v in s.items():
+            top[k] += v["offers"] + v["sales"]
+    top = [k for k, n in top.most_common() if n][:CATEGORY_TOP]
+    if not top:
+        return ["[상품군별 흐름] 우리 제시와 판매 기록 없음"]
+    empty = {"offers": 0, "sales": 0, "market": 0, "our_ratio": None, "market_ratio": None}
+
+    def arrow(xs):
+        return " → ".join(xs)
+
+    out = [
+        f"[상품군별 흐름] {c.kst(blocks[0][0], '%H:%M')}부터 {FLOW_BLOCK_H}시간씩 {FLOW_BLOCKS}칸, 오래된 칸에서 최근 칸 순. "
+        "판매/제시는 우리 가게, 시장 점유는 같은 시간 그 상품군 시장 전체 정산 중 우리 판매 비율, "
+        "체결가는 정가 대비 중앙값"
+    ]
+    for k in top:
+        cells = [s.get(k, empty) for s in stats]
+        sales = arrow(f"{x['sales']}/{x['offers']}" for x in cells)
+        share = arrow(f"{x['sales'] / x['market']:.0%}" if x["market"] else "-" for x in cells)
+        mkt = ", ".join(str(x["market"]) for x in cells)
+        ours = arrow(_num_or_dash(x["our_ratio"]) for x in cells)
+        allr = arrow(_num_or_dash(x["market_ratio"]) for x in cells)
+        out.append(f"  {k}: 판매/제시 {sales} | 시장 점유 {share} (시장 정산 {mkt}) | 체결가 우리 {ours}, 시장 {allr}")
+    return out
+
+
 def version_windows(rows, target, now, default_hours=6.0, current=None):
     """[{version, since_ts, until_ts, since_known}] oldest first, from harness_edit and harness_revert rows.
 
@@ -459,23 +593,29 @@ def version_results(root, target, now, rows=None, last=2, harness_root=None):
     if not wins:
         return []
     lo = min(w["since_ts"] for w in wins)
-    settles, reviews = [], []
+    settles, reviews, offers = [], [], []
+    cat = c.load_json(os.path.join(root, ".market/catalog.json"), {}) or {}
     if target == "seller":
-        settles = [
-            e
-            for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 40_000_000, b'"settle"')
-            if e.get("type") == "settle" and e.get("src") == "market" and (e.get("ts") or 0) >= lo
-        ]
+        settles = market_settles(root, lo)
+        offers = seller_offers(root, _catalog(root), lo)
         reviews = [
             e
             for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 40_000_000, b'"review"')
             if e.get("type") == "review" and (e.get("ts") or 0) >= lo
         ]
-    cat = c.load_json(os.path.join(root, ".market/catalog.json"), {}) or {}
-    return [
-        dict(w, metrics=version_metrics(target, rows, settles, reviews, cat, login, w["since_ts"], w["until_ts"]))
-        for w in wins
-    ]
+    out = []
+    for w in wins:
+        m = version_metrics(target, rows, settles, reviews, cat, login, w["since_ts"], w["until_ts"])
+        if target == "seller":
+            by = category_stats(offers, settles, _catalog(root), login, w["since_ts"], w["until_ts"])
+            m["by_category"] = {k: {x: v[x] for x in ("offers", "sales", "market")} for k, v in by.items()}
+            n_mkt = sum(v["market"] for v in by.values())
+            if n_mkt:
+                m["market_share"] = round(m["sales"] / n_mkt, 4)
+                m["market_share_se"] = _se(m["sales"] / n_mkt, n_mkt)
+                m["market_settles"] = n_mkt
+        out.append(dict(w, metrics=m))
+    return out
 
 
 def _num_or_dash(v):
@@ -509,6 +649,10 @@ def section_versions(root, now, rows=None):
                 ]
                 if "stars_mean" in m:
                     parts.append(f"별점 평균 {m['stars_mean']:.2f} (n {m['stars_n']})")
+                if "market_share" in m:
+                    parts.append(
+                        f"시장 점유 {m['market_share']:.1%} (SE {m['market_share_se']:.1%}, 시장 정산 {m['market_settles']})"
+                    )
             else:
                 parts = [
                     f"주문 {m['orders']}",
@@ -517,6 +661,36 @@ def section_versions(root, now, rows=None):
                     f"정가 대비 가격 중앙 {_num_or_dash(m.get('price_to_list_median'))} (n {m.get('price_to_list_n', 0)})",
                 ]
             out.append(head + ", ".join(parts))
+        if target == "seller" and len(res) >= 2:
+            out += _seller_compare(res[-2], res[-1])
+    return out
+
+
+def _seller_compare(prev, cur):
+    # previous vs current seller version with the time of day and request mix taken out as far as the data allows
+    pb, cb = prev["metrics"].get("by_category") or {}, cur["metrics"].get("by_category") or {}
+    out = [f"[판 비교 판매자] 판 {prev['version']} → 판 {cur['version']}, 시간대와 요청 구성의 영향을 덜어낸 값"]
+    mix = mix_adjusted(pb, cb)
+    if mix:
+        (p0, s0), (p1, s1), n = mix
+        out.append(
+            f"  구성 보정 판매/제시 (판 {prev['version']}의 상품군 구성으로 가중, 상품군 {n}개): "
+            f"{p0:.3f} (SE {s0:.3f}) → {p1:.3f} (SE {s1:.3f})"
+        )
+    shares = []
+    for k in sorted(set(pb) | set(cb), key=lambda k: -((pb.get(k) or {}).get("sales", 0) + (cb.get(k) or {}).get("sales", 0))):
+        a, b2 = pb.get(k) or {}, cb.get(k) or {}
+        if not (a.get("sales") or b2.get("sales")):
+            continue
+        f = lambda x: f"{x['sales'] / x['market']:.0%}" if x.get("market") else "-"
+        shares.append(f"{k} {f(a)} → {f(b2)}")
+    if shares:
+        out.append("  상품군별 시장 점유: " + ", ".join(shares[:CATEGORY_TOP]))
+    out.append(
+        "  읽는 법: 시간대나 요청 구성이 바뀌어도 상품군별 시장 점유와 구성 보정 값은 덜 흔들림. 두 값이 같은 방향으로 "
+        "SE의 2배 넘게 바뀌었으면 시간대나 구성 차이만으로는 설명하기 어려움. 시장 정산 수와 시장 체결가가 함께 "
+        "움직였으면 시장 쪽 변화임"
+    )
     return out
 
 
@@ -579,6 +753,7 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_time(now, None)
         out.append("[순위] 순위표 스냅샷 없음")
         out += section_versions(root, now)
+        out += section_categories(root, now, login)
         out += section_calls(root, now)
     else:
         bts, bpath = snaps[-1]
@@ -589,6 +764,7 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_time(now, bts)
         out += section_rank(b, b6, login, hours6)
         out += section_versions(root, now)
+        out += section_categories(root, now, login)
         out += section_calls(root, now)
         out += section_side(
             b.get("shops") or [],

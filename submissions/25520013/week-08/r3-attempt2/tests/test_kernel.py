@@ -179,3 +179,77 @@ def test_product_names_kept_shop_names_hashed(root):
     cat = tools.call("catalog", "seller", root, category="beds")
     assert "상품 1개" in cat and "BED1" in cat and "SOFA1" not in cat
     assert ev.count("우리") >= 1
+
+
+# ---------------------------------------------------------------- category flow and version comparison (11-06)
+def _category_root(tmp_path):
+    """Seller v1 until t0, v2 after. Raw sales per offer drops 0.3 -> 0.2 only because v2 got more sofa requests;
+    per category nothing changed, and the bed market doubled."""
+    r = tmp_path / "cat"
+    for d in (".market", ".r3", "a2/board", "harness/seller"):
+        (r / d).mkdir(parents=True)
+    (r / "policy.json").write_text(json.dumps({"owner": {"github": LOGIN}}))
+    (r / ".market/catalog.json").write_text(
+        json.dumps({"BED1": {"category": "가구>침대", "list_price": 1000}, "SOFA1": {"category": "가구>소파", "list_price": 500}})
+    )
+    (r / "harness/seller/VERSION").write_text("2")
+    t0 = NOW - 2 * 3600
+    traj = [
+        {"ts": t0 - 50, "agent": "seller", "kind": "decision", "decision_kind": "seller.open", "harness_version": 1, "decision": {"action": "offer"}},
+        {"ts": t0, "agent": "operator", "kind": "harness_edit", "target": "seller", "version": 2, "files": ["systemprompt.md"], "reason": "r"},
+    ]
+    metrics, events = [], []
+
+    def offers(sku, n, start):
+        metrics.extend({"hook": "seller", "decision": "open", "ts": start + i, "outcome": {"sku": sku}} for i in range(n))
+
+    def settles(sku, cat, ours, others, start, amount):
+        for i in range(ours + others):
+            mine = i < ours
+            events.append({"type": "settle", "src": "market", "ts": start + 100 + i, "data": {
+                "sku": sku, "category": cat, "amount": amount, "list_price": 1000 if sku == "BED1" else 500,
+                "own_owner": mine, "buyer": "someone-else"}})
+
+    prev, cur = t0 - 3 * 3600, t0 + 60
+    offers("BED1", 10, prev); offers("SOFA1", 10, prev)
+    settles("BED1", "가구>침대", 5, 15, prev, 700); settles("SOFA1", "가구>소파", 1, 9, prev, 400)
+    offers("BED1", 10, cur); offers("SOFA1", 30, cur)
+    settles("BED1", "가구>침대", 5, 35, cur, 700); settles("SOFA1", "가구>소파", 3, 7, cur, 400)
+    (r / "a2/trajectory.jsonl").write_text("".join(json.dumps(x, ensure_ascii=False) + "\n" for x in traj))
+    (r / ".r3/metrics.jsonl").write_text("".join(json.dumps(x) + "\n" for x in metrics))
+    (r / ".r3/events.jsonl").write_text("".join(json.dumps(x, ensure_ascii=False) + "\n" for x in events))
+    return str(r)
+
+
+def test_category_stats_and_market_share(tmp_path):
+    root = _category_root(tmp_path)
+    prev, cur = brief.version_results(root, "seller", NOW, harness_root=os.path.join(root, "harness"))
+    assert prev["metrics"]["by_category"]["침대"] == {"offers": 10, "sales": 5, "market": 20}
+    assert cur["metrics"]["by_category"]["소파"] == {"offers": 30, "sales": 3, "market": 10}
+    assert cur["metrics"]["market_share"] == pytest.approx(8 / 50)
+    assert prev["metrics"]["market_share_se"] == pytest.approx(round((0.2 * 0.8 / 30) ** 0.5, 4))
+
+
+def test_mix_adjusted_rate_removes_the_request_mix(tmp_path):
+    root = _category_root(tmp_path)
+    prev, cur = brief.version_results(root, "seller", NOW, harness_root=os.path.join(root, "harness"))
+    (p0, _), (p1, _), n = brief.mix_adjusted(prev["metrics"]["by_category"], cur["metrics"]["by_category"])
+    assert n == 2 and p0 == pytest.approx(0.3) and p1 == pytest.approx(0.3)  # raw 6/20 -> 8/40 fell, mix-adjusted did not
+    lines = brief._seller_compare(prev, cur)
+    text = "\n".join(lines)
+    assert "[판 비교 판매자] 판 1 → 판 2" in text and "0.300 (SE" in text
+    assert "침대 25% → 12%" in text and "소파 10% → 30%" in text and "읽는 법" in text
+    assert brief.mix_adjusted({}, {}) is None
+
+
+def test_category_flow_section(tmp_path):
+    root = _category_root(tmp_path)
+    lines = brief.section_categories(root, NOW, LOGIN)
+    assert lines[0].startswith("[상품군별 흐름]")
+    bed = next(x for x in lines if x.strip().startswith("침대:"))
+    assert "판매/제시" in bed and "시장 점유" in bed and "시장 정산" in bed and "체결가 우리" in bed
+    assert "0.700" in bed  # our price/list and the market's are both 700/1000
+    assert LOGIN not in "\n".join(lines) and "someone-else" not in "\n".join(lines)
+    empty = tmp_path / "empty"
+    (empty / ".market").mkdir(parents=True)
+    assert brief.section_categories(str(empty), NOW, LOGIN) == ["[상품군별 흐름] 우리 제시와 판매 기록 없음"]
