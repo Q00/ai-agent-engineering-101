@@ -72,11 +72,22 @@ def summarize(shops, memory):
                      + f", receipt differed from your last offer {differed} times")
         else:
             line += " | your trades: none"
+        if s.get("offers"):                             # Round 3: what this shop has of the ordered category
+            line += " | in stock: " + "; ".join(f"{o['name'][:40]} x{o['qty']}" for o in s["offers"][:3])
         lines.append(line)
     return "\n".join(lines)
 
 
+def pick_offer(shop):
+    """Round 3: the SKU to ask for. Temporary rule: the one this shop has most of (least likely sold out
+    by the time we ask). None before Round 3 (shops.json has no offers)."""
+    offers = shop.get("offers") or []
+    return max(offers, key=lambda o: o.get("qty") or 0) if offers else None
+
+
 def choose(shops, memory, item, budget):
+    stocked = [s for s in shops if s.get("offers")]     # Round 3: only shops that have the ordered category
+    shops = stocked or shops
     names = {s["name"]: s for s in shops}
     for _ in range(2):
         move, raw = ask_json(CHOOSE.format(item=item, budget=budget, summary=summarize(shops, memory)))
@@ -95,8 +106,9 @@ def receipt_of(t):
     return None
 
 
-def negotiate(shop_url, item, budget):
-    """Week-06 buyer loop. Returns (final task or None, transcript lines, last offer sent)."""
+def negotiate(shop_url, item, budget, ask=None):
+    """Week-06 buyer loop. Returns (final task or None, transcript lines, last offer sent).
+    ask: the first message; Round 3 asks for one SKU by name, as the market's agent.md suggests."""
     card = httpx.get(shop_url.rstrip("/") + "/.well-known/agent-card.json", timeout=10).json()
     url = card["supportedInterfaces"][0]["url"]
     print(f"card: {card['name']} -> {url}", flush=True)
@@ -117,8 +129,9 @@ def negotiate(shop_url, item, budget):
         print(f"-> {text!r}  <- {t['status']['state']} | {said}", flush=True)
         return t, said
 
-    t, said = send(f"I want to buy a {item}")
-    lines = [f"you: I want to buy a {item}", f"shop: {said}"]
+    ask = ask or f"I want to buy a {item}"
+    t, said = send(ask)
+    lines = [f"you: {ask}", f"shop: {said}"]
     offer = None
     for _ in range(MAX_OFFERS):
         if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
@@ -155,9 +168,12 @@ def main():
     memory = load_memory()
     shop, reason = choose(shops, memory, a.item, a.budget)
     print(f"[choose] {shop['url']}: {reason}", flush=True)
+    want = pick_offer(shop)
+    item = want["name"] if want else a.item             # what the negotiation prompts call the item
+    ask = f"I want to buy {want['name']} ({want['sku']})" if want else None
 
     try:
-        t, lines, offer = negotiate(shop["url"], a.item, a.budget)
+        t, lines, offer = negotiate(shop["url"], item, a.budget, ask)
         receipt = receipt_of(t) if t["status"]["state"] == "TASK_STATE_COMPLETED" else None
         result = "deal" if receipt else "no deal"
     except Exception as e:                              # unreachable shop, protocol error: still close the order
@@ -174,7 +190,7 @@ def main():
 
     with MEMORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "shop": shop["name"], "item": a.item,
-                            "budget": a.budget, "result": result, "agreed": offer, "receipt_price": receipt_price,
+                            "sku": want["sku"] if want else None, "budget": a.budget, "result": result, "agreed": offer, "receipt_price": receipt_price,
                             "stars": stars}, ensure_ascii=False) + "\n")
     print(json.dumps({"shop": shop["url"], "receipt": receipt, "stars": stars, "review": review}, ensure_ascii=False),
           flush=True)
