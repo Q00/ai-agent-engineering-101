@@ -1,0 +1,17 @@
+{
+  "name": "lever1b-a-live",
+  "description": "lever1b (a) with twin category_cap_mode \"live\": plan global caps never raised (r3lib/config.py CATEGORY_MAX_SHARE 0.25 / DEEP_CATEGORY_SHARE 0.35 as live); the kimchi 0.40 share cannot raise kimchi above the live cap, the bedding 0.21 share only lowers bedding.",
+  "notes": [
+    "Shadow candidate only; nothing here is read by the live shop. Not promoted to policies/active.json.",
+    "Same policy as lever1b-a.json plus category_cap_mode. lever1b-a.json ran in the default mode raise_all, in which EVERY category got the raised 0.40 cap (twin _default_share was never used; fixed by commit 1a76765 on branch ci/wt).",
+    "Gate: --end 1793859780 --hours 6 --restock plan, PYTHONHASHSEED=0, pinned inputs and plan DB; see REPORT.md lever1b section."
+  ],
+  "policy": {
+    "STOCK_BUDGET_MAX": 16000000,
+    "category_budget_share": {
+      "식품>김치/반찬/즉석요리>김치": 0.4,
+      "가구/침구>침구/홈데코>침구": 0.21
+    },
+    "category_cap_mode": "live"
+  }
+}

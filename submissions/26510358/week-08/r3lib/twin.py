@@ -72,8 +72,8 @@ TWIN_KEYS = ("HOLD_FACTOR", "HOLD_MIN_DEALS")
 def live_policy():
     """The policy the shop runs now: r3lib/config.py values (read at call time, never written)."""
     p = {"name": "live", "HOLD_FACTOR": HOLD_FACTOR, "HOLD_MIN_DEALS": HOLD_MIN_DEALS,
-         "restock_adjust": {}, "category_budget_share": {}, "sku_targets": {}, "cut_skus": {},
-         "forum": {}}
+         "restock_adjust": {}, "category_budget_share": {}, "category_cap_mode": "live",
+         "sku_targets": {}, "cut_skus": {}, "forum": {}}
     for k in PRICING_KEYS + RESTOCK_KEYS:
         p[k] = getattr(config, k)
     return p
@@ -95,7 +95,7 @@ def make_policy(overrides=None, name=None):
 
 
 def restock_differs(a, b):
-    keys = RESTOCK_KEYS + ("restock_adjust", "category_budget_share", "sku_targets", "cut_skus")
+    keys = RESTOCK_KEYS + ("restock_adjust", "category_budget_share", "category_cap_mode", "sku_targets", "cut_skus")
     return any(a.get(k) != b.get(k) for k in keys)
 
 
@@ -139,16 +139,105 @@ def open_readonly(db_path):
     return c
 
 
-SNAPSHOT_STATE_TABLES = ("shops", "shop_stock")     # latest-state upserts: kept in the plan snapshot
+SNAPSHOT_STATE_TABLES = ("shops", "shop_stock")     # latest-state upserts: ts = last sync, not an event time
+EPOCH_RANGE = (1e9, 1e10)                           # a meta number in this range is read as a wall-clock time
 
 
-def snapshot_db(db_path, dest=None, end=None):
+def _is_epoch(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and EPOCH_RANGE[0] < v < EPOCH_RANGE[1]
+
+
+def _cut_meta(c, end):
+    """meta (k, v JSON) has no ts column. Cut what holds its own time: a dict value with a numeric "ts" (unmet_*,
+    restock_adjust) is deleted when ts > end; a number under a *_at / *_kick key (a wall-clock stamp) is deleted
+    when > end; a dict whose values are all epoch numbers (report_subjects) loses its entries > end. Every other
+    key (counters and offsets such as explore_spent, ledger_seq, payments_offset) keeps its value at copy time:
+    it cannot be cut. Returns the status dict."""
+    deleted, trimmed, kept = [], [], []
+    for k, v in c.execute("SELECT k, v FROM meta ORDER BY k").fetchall():
+        try:
+            val = json.loads(v)
+        except (TypeError, ValueError):
+            kept.append(k)
+            continue
+        if isinstance(val, dict) and _is_epoch(val.get("ts")):
+            if val["ts"] > end:
+                deleted.append(k)
+        elif _is_epoch(val) and (k.endswith("_at") or k.endswith("_kick")):
+            if val > end:
+                deleted.append(k)
+        elif isinstance(val, dict) and val and all(_is_epoch(x) for x in val.values()):
+            keep = {a: b for a, b in val.items() if b <= end}
+            if keep != val:
+                trimmed.append(k)
+                c.execute("UPDATE meta SET v=? WHERE k=?", (json.dumps(keep), k))
+        else:
+            kept.append(k)
+    c.executemany("DELETE FROM meta WHERE k=?", [(k,) for k in deleted])
+    by_prefix = {}
+    for k in deleted:
+        pre = k.split("_o-")[0] + "_*" if "_o-" in k else k
+        by_prefix[pre] = by_prefix.get(pre, 0) + 1
+    return {"status": "partly cut", "deleted_keys": dict(sorted(by_prefix.items())), "trimmed_keys": trimmed,
+            "uncut_keys": kept,
+            "why": "no ts column; keys with their own time are cut, the uncut keys are counters or offsets whose "
+                   "value at --end is not stored anywhere (value at copy time, a known look-ahead)"}
+
+
+def cut_to_end(c, end):
+    """Remove from the open copy `c` every row and value after `end`, table by table. Returns
+    {table: {"status": "cut" | "partly cut" | "not cut", ...}}: the report records what could not be cut.
+
+    - tables with a ts column: rows with ts > end are deleted ("cut"); for purchases, broken_at > end is also
+      set back to NULL. Column updates after end that leave no time (purchases paid/ledger/reason, forum
+      likes/dislikes/score/voted/signals, members uses) cannot be undone: "partly cut", listed.
+    - shop_stock: sync_shops deletes the table and writes every row again at each sync, ts = sync time. Rows with
+      ts > end are deleted ("cut"), so a copy made after the first sync after end has no competitor stock: the
+      stock at end is not stored anywhere (plan then sees 0 competitors per category).
+    - shops: identity rows, rewritten at each sync. Competitor rows with ts > end are deleted; our own rows
+      (mine=1, needed by my_shop_urls) are kept with ts set to end ("partly cut").
+    - meta: see _cut_meta.
+    - sqlite_* tables: SQLite internals (AUTOINCREMENT counters), not data, not cut."""
+    out = {}
+    tables = [r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
+    for t in tables:
+        cols = {r[1] for r in c.execute(f'PRAGMA table_info("{t}")')}
+        if t.startswith("sqlite_"):
+            out[t] = {"status": "not cut", "why": "SQLite internal table (AUTOINCREMENT counters), no data"}
+        elif t == "meta":
+            out[t] = _cut_meta(c, end)
+        elif t == "shops":
+            n = c.execute("DELETE FROM shops WHERE ts > ? AND COALESCE(mine, 0) = 0", (end,)).rowcount
+            m = c.execute("UPDATE shops SET ts = ? WHERE ts > ? AND mine = 1", (end, end)).rowcount
+            out[t] = {"status": "partly cut", "deleted": n, "own_rows_kept": m,
+                      "why": "rewritten at each sync (ts = last sync); our own identity rows are kept (ts set to "
+                             "--end) because plan needs my_shop_urls; names/owners as at copy time"}
+        elif t == "shop_stock":
+            n = c.execute("DELETE FROM shop_stock WHERE ts > ?", (end,)).rowcount
+            out[t] = {"status": "cut", "deleted": n, "rows_left": c.execute("SELECT COUNT(*) FROM shop_stock").fetchone()[0],
+                      "why": "rewritten at each sync; competitor stock at --end is not stored anywhere, so after "
+                             "the first sync past --end no rows are left (plan sees 0 competitor shops)"}
+        elif "ts" in cols:
+            n = c.execute(f'DELETE FROM "{t}" WHERE ts > ?', (end,)).rowcount
+            later = {"purchases": ["paid", "ledger", "reason"], "members": ["uses"],
+                     "forum": ["likes", "dislikes", "score", "voted", "signals"]}.get(t)
+            if t == "purchases" and "broken_at" in cols:
+                c.execute("UPDATE purchases SET broken_at = NULL WHERE broken_at > ?", (end,))
+            out[t] = {"status": "partly cut" if later else "cut", "deleted": n}
+            if later:
+                out[t]["uncut_columns"] = [x for x in later if x in cols]
+                out[t]["why"] = "rows cut by ts; later in-place updates of these columns leave no time"
+        else:
+            out[t] = {"status": "not cut", "why": "no ts column"}
+    return out
+
+
+def snapshot_db(db_path, dest=None, end=None, cut_report=None):
     """Consistent copy of the live DB (sqlite backup API from a read-only connection) for code that needs a
-    Memory object (restock_r3.plan). With `end`, every event row with ts > end is deleted from the copy (no
-    look-ahead past the window). shops and shop_stock (SNAPSHOT_STATE_TABLES) are latest-state upserts whose ts is
-    the last sync, not an event time: deleting them would drop every shop's stock, so they are kept as they are
-    (a known, small look-ahead: the latest competitor stock). Returns the copy's path; the caller deletes it (DefaultPlan does). If the copy fails, a temp
-    dir made here is removed before the error is raised."""
+    Memory object (restock_r3.plan). With `end`, cut_to_end removes every row and value after end from the copy
+    (no look-ahead past the window), and its per-table status goes into the dict `cut_report` when given. Returns
+    the copy's path; the caller deletes it (DefaultPlan does). If the copy fails, a temp dir made here is removed
+    before the error is raised."""
     made = dest is None
     dest_dir = Path(dest or tempfile.mkdtemp(prefix="twin-"))
     path = dest_dir / "memory.sqlite"
@@ -158,13 +247,10 @@ def snapshot_db(db_path, dest=None, end=None):
         try:
             src.backup(dst)
             if end is not None:
-                tables = [r[0] for r in dst.execute("SELECT name FROM sqlite_master WHERE type='table'")]
-                for t in tables:
-                    if t in SNAPSHOT_STATE_TABLES:
-                        continue
-                    if any(c[1] == "ts" for c in dst.execute(f'PRAGMA table_info("{t}")')):
-                        dst.execute(f'DELETE FROM "{t}" WHERE ts > ?', (end,))
+                rep = cut_to_end(dst, end)
                 dst.commit()
+                if cut_report is not None:
+                    cut_report.update(rep)
         finally:
             dst.close()
             src.close()
@@ -263,11 +349,32 @@ def _moves(c, mine, names, a, b):
     return sold, revenue, supplied, cost
 
 
-def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, demand_rows=None, inventory_ts=None):
+def inventory_moves(db_path, inventory_ts, end):
+    """The move from an inventory taken at inventory_ts to `end` (our settles and supplies in between), as a JSON
+    dict for the inputs pin: {"a", "b", "sign", "sold", "revenue", "supplied", "cost"}. None if no move. The gate
+    stores it at --build-pin, so a rerun never reads (a, b] from the live DB again: rows for that interval can still
+    arrive late when b is close to now (QA window 2: build and reuse runs differed)."""
+    if inventory_ts is None or inventory_ts == end:
+        return None
+    c = open_readonly(Path(db_path or config.DB_PATH))
+    try:
+        mine = {r["shop_url"] for r in c.execute("SELECT shop_url FROM shops WHERE mine=1")}
+        names = set(config.MY_NAMES) | {r["name"] for r in c.execute("SELECT name FROM shops WHERE mine=1")}
+        a, b, sign = (inventory_ts, end, 1) if inventory_ts < end else (end, inventory_ts, -1)
+        sold, rev, sup, cost = _moves(c, mine, names, a, b)
+    finally:
+        c.close()
+    return {"a": a, "b": b, "sign": sign, "sold": dict(sorted(sold.items())), "revenue": rev,
+            "supplied": dict(sorted(sup.items())), "cost": cost}
+
+
+def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, demand_rows=None, inventory_ts=None,
+                moves=None):
     """Everything the twin replays for [end - hours, end], read-only. inventory: the kit's inventory.json dict;
     None reads $MARKET_DIR/inventory.json. inventory_ts: when that inventory was taken. None = at `end` (old
     behaviour). Else the stock and balance are moved from inventory_ts to `end` with our settles and supplies in
-    between, so a pinned snapshot gives the same window on every rerun."""
+    between, so a pinned snapshot gives the same window on every rerun. moves: that move as stored in the pin
+    (inventory_moves); None reads it from the DB now."""
     db_path = Path(db_path or config.DB_PATH)
     cat = catalog if catalog is not None else market.catalog()
     inv = inventory if inventory is not None else (market.read_json("inventory.json", {}) or {})
@@ -345,7 +452,12 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
                 stars.append(r["stars"])
         # inventory taken at inventory_ts, not at end: units_end = units_inv - sold(inv, end] + supplied(inv, end]
         shift_sold, shift_sup, shift_cash = {}, {}, 0.0
-        if inventory_ts is not None and inventory_ts != end:
+        if moves is not None:
+            sign = moves["sign"]
+            shift_sold = {k: sign * v for k, v in moves["sold"].items()}
+            shift_sup = {k: sign * v for k, v in moves["supplied"].items()}
+            shift_cash = sign * (moves["revenue"] - moves["cost"])
+        elif inventory_ts is not None and inventory_ts != end:
             a, b, sign = (inventory_ts, end, 1) if inventory_ts < end else (end, inventory_ts, -1)
             s_sold, s_rev, s_sup, s_cost = _moves(c, mine, names, a, b)
             shift_sold = {k: sign * v for k, v in s_sold.items()}
@@ -402,7 +514,8 @@ def load_window(db_path=None, hours=6, end=None, inventory=None, catalog=None, d
         w.notes.append("no inventory snapshot: start stock rebuilt from sales and supplies only")
     if inventory_ts is not None and inventory_ts != end:
         w.notes.append(f"inventory taken at {inventory_ts:.0f}, moved {end - inventory_ts:+.0f} s to the window end "
-                       f"with our settles and supplies in between")
+                       f"with our settles and supplies in between"
+                       + (" (move from the pin)" if moves is not None else " (move read from the DB now)"))
     return w
 
 
@@ -704,7 +817,10 @@ def _restock_tick(w, policy, stock, cash, ts, seed, plan_fn, cut_state=None):
             lines = plan_fn(stock.as_inventory(cash), ts, adjust, policy)
     lines = _apply_cuts(lines, policy, cut_state)
     lines = _apply_sku_targets(lines, stock, cash, policy, w)
-    lines = _apply_category_shares(lines, stock, cash, policy, w.catalog)
+    deep = None
+    if cap_mode(policy) == "listed" and hasattr(plan_fn, "deep_categories"):
+        deep = plan_fn.deep_categories(ts)
+    lines = _apply_category_shares(lines, stock, cash, policy, w.catalog, deep=deep)
     rng = random.Random(f"{seed}:tick:{int(ts)}")
     got = []
     for ln in lines:
@@ -761,13 +877,17 @@ def _apply_sku_targets(lines, stock, cash, policy, w):
     return out
 
 
-def _apply_category_shares(lines, stock, cash, policy, catalog):
+def _apply_category_shares(lines, stock, cash, policy, catalog, deep=None):
     """category_budget_share: a category's stock cost (held + bought this tick) stays under share x stock budget.
     Lets a candidate cap some categories below plan's global CATEGORY_MAX_SHARE (raising others is done by the
-    global share, see effective_plan_policy)."""
+    global share, see effective_plan_policy). In category_cap_mode "listed" with raised global caps, every
+    category NOT in the shares is held at its live cap again: DEEP_CATEGORY_SHARE if it is in `deep` (plan's
+    deep test, DefaultPlan.deep_categories), else CATEGORY_MAX_SHARE; deep=None (unknown) uses the deep share,
+    the looser of the two. This is a post-filter: budget that plan gave to a trimmed line is not re-spent."""
     shares = policy.get("category_budget_share") or {}
     if not shares:
         return lines
+    defaults = policy.get("_default_share") if cap_mode(policy) == "listed" else None
     stock_max = min(policy["STOCK_BUDGET_MAX"], max(policy["MAX_STOCK_COST"], policy["STOCK_BUDGET_SHARE"] * cash))
     held = {}
     for s, costs in stock.units.items():
@@ -778,6 +898,8 @@ def _apply_category_shares(lines, stock, cash, policy, catalog):
         info = catalog.get(ln["sku"]) or {}
         k = info.get("category")
         share = lookup_category(shares, k)
+        if share is None and defaults is not None:
+            share = defaults[1] if deep is None or k in deep else defaults[0]
         if share is None:
             out.append(ln)
             continue
@@ -801,11 +923,31 @@ def expand_adjust(adjust, catalog):
     return out
 
 
+CAP_MODES = ("raise_all", "live", "listed")
+
+
+def cap_mode(policy):
+    """category_cap_mode: how a category_budget_share above plan's global caps is simulated.
+    raise_all (explicit only; the default and the mode of every result before 2026-11-05 19:00 KST): plan's global CATEGORY_MAX_SHARE and
+      DEEP_CATEGORY_SHARE go up to the top share for EVERY category; only the listed categories are then capped.
+    live (default since 2026-11-05, MO rule): the global caps are never raised (what the live shop would do with r3lib/config.py unchanged); a share
+      can only lower a category below the live cap.
+    listed: the global caps go up for plan, then every category not in the shares is cut back to its live cap
+      (see _apply_category_shares), so only the listed categories get the higher share."""
+    mode = policy.get("category_cap_mode") or "live"
+    if mode not in CAP_MODES:
+        raise ValueError(f"category_cap_mode {mode!r} not in {CAP_MODES}")
+    return mode
+
+
 def effective_plan_policy(policy):
     """plan() has one global category cap; a candidate that gives some category a larger share raises it (both
-    CATEGORY_MAX_SHARE and DEEP_CATEGORY_SHARE) and _apply_category_shares keeps every other category at the
-    live share."""
+    CATEGORY_MAX_SHARE and DEEP_CATEGORY_SHARE), except in category_cap_mode "live". In "raise_all" every other
+    category also gets the raised cap; in "listed" _apply_category_shares cuts the others back to the live caps
+    kept in _default_share."""
     p = dict(policy)
+    if cap_mode(policy) == "live":
+        return p
     shares = dict(p.get("category_budget_share") or {})
     top = max(shares.values()) if shares else 0
     if top > p["CATEGORY_MAX_SHARE"] or top > p["DEEP_CATEGORY_SHARE"]:
@@ -816,10 +958,9 @@ def effective_plan_policy(policy):
 
 
 def plan_copy(w, dest_dir):
-    """The DB file restock_r3.plan works on, in dest_dir. With w.plan_db (a pinned copy made once by
-    shadow_gate.pinned_db) it is a byte copy of that file, so the tables without an event time (shop_stock,
-    shops, meta) are the same on every rerun. Else a fresh snapshot_db of the live DB (those tables as they are
-    now)."""
+    """The DB file restock_r3.plan works on, in dest_dir. With w.plan_db (a pinned copy made once with
+    shadow_gate.pinned_db --build-pin) it is a byte copy of that file, so every table is the same on every rerun.
+    Else a fresh snapshot_db of the live DB, cut to w.end (the uncut parts as they are now)."""
     if w.plan_db:
         path = Path(dest_dir) / "memory.sqlite"
         shutil.copyfile(w.plan_db, path)
@@ -855,6 +996,15 @@ class DefaultPlan:
         with frozen_clock(ts):                     # memory.py look-backs use time.time(), not `now`
             lines, _, _ = restock_r3.plan(inv, self.w.demand_rows, self.mem, now=ts, dry_run=True, adjust=adjust)
         return lines
+
+    def deep_categories(self, ts):
+        """Categories plan() treats as deep at ts (market settles per hour >= DEEP_CATEGORY_RATE), from the same
+        DB copy and the same clock. Only called in category_cap_mode "listed", after a plan call at ts."""
+        if self.mem is None:
+            return None
+        with frozen_clock(ts):
+            dem = self.mem.category_demand(now=ts)
+        return {k for k, d in dem.items() if (d or {}).get("rate", 0) >= config.DEEP_CATEGORY_RATE}
 
     def close(self):
         d, self.dir, self.mem = self.dir, None, None

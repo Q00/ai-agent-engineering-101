@@ -221,6 +221,28 @@ def test_config_rollback_constants():
     assert rb["relative_ratio"] == 1.2 and rb["baseline_h_before_switch"] == 2 and "dislikes_per_post_above" not in rb
 
 
+
+def test_rollback_json_matches_code():
+    """MO 2026-11-05: the final rollback rule is 1.2 x baseline. Every field of the candidate's rollback block is the
+    value the code uses, and the edge cases the JSON states are what rollback_check does."""
+    rb = json.loads((ROOT / "policies/candidates/lever2-forum.json").read_text())["policy"]["forum"]["rollback"]
+    assert rb["within_h"] == config.LEVER2_ROLLBACK_H
+    assert rb["baseline_h_before_switch"] == config.LEVER2_ROLLBACK_BASELINE_H
+    assert rb["relative_ratio"] == config.LEVER2_ROLLBACK_RATIO == 1.2 and "1.2 x" in rb["rule"]
+    assert rb["any_hidden"] is config.LEVER2_ROLLBACK_ON_HIDDEN and rb["any_http_429"] is config.LEVER2_ROLLBACK_ON_429
+    assert fl.rollback_limit(1.0, config) == 1.2
+    t0 = 1_000_000.0
+    before = [{"ts": t0 - 600, "dislikes": 1}]                                    # baseline 1.0, limit 1.2
+    at_limit = [{"ts": t0 + 60 * k, "dislikes": d} for k, d in enumerate((1, 1, 1, 1, 2), 1)]   # 6 / 5 = 1.2
+    assert not fl.rollback_check(before + at_limit, [], t0, t0 + 600, config)["rollback"]       # strictly greater
+    assert fl.rollback_check(before + at_limit + [{"ts": t0 + 400, "dislikes": 2}], [], t0, t0 + 600,
+                             config)["rollback"]                                    # 8 / 6 = 1.33 > 1.2
+    r = fl.rollback_check([{"ts": t0 + 60, "dislikes": 50}], [], t0, t0 + 600, config)   # no baseline
+    assert not r["rollback"] and r["measured"]["limit"] is None
+    assert fl.rollback_check([{"ts": t0 + 60, "hidden": True}], [], t0, t0 + 600, config)["rollback"]
+    assert fl.rollback_check([], [429], t0, t0 + 600, config)["rollback"]
+
+
 # ------------------------------------------------------------------------------------------- switch
 def test_default_false_changes_nothing():
     assert config.FORUM_LEVER2 is False

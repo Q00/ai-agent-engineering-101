@@ -23,9 +23,12 @@ Verdict (documented rule): PASS when, for the candidate minus live,
     MAX_SERVED_CLOSE_DROP (0.03), and extra stockouts <= max(2, 10% of live visits)
 (close_rate = deals / negotiations; served_close_rate = deals / visits, stockouts included, MO 2026-11-05: a
 candidate that turns buyers away can raise close_rate and still lose deals). Reruns with the same --end give the same report: the board is
-the latest one at or before --end (board_at), and the inventory and demand rows are pinned in
-logs/shadow/inputs-<end>.json on the first run (pinned_inputs) and read back on later runs; the plan DB copy (with shop_stock, shops and meta, which have no event time) is kept as
-logs/shadow/memory-<end>.sqlite on the first run (pinned_db) and copied on later runs. A calibration warning (twin live deals off the actual deals by
+the latest one at or before --end (board_at); the inventory and demand rows (<pin-dir>/inputs-<end>.json,
+pinned_inputs) and the plan DB copy cut to --end (<pin-dir>/memory-<end>.sqlite plus its cut status
+memory-<end>.cut.json, pinned_db) are pins. The pin dir is --pin-dir (default logs/shadow), not --out: a new --out
+never makes a new pin (MO 2026-11-05: QA runs with three --out dirs got three pins from a moving live DB). A missing
+pin is an error; --build-pin writes it from the live data once. The report records each pin's path and sha256
+(report["pin"]). A calibration warning (twin live deals off the actual deals by
 more than CALIBRATION_TOL) is reported next to the verdict: the number is less trustworthy, the rule still applies.
 """
 import argparse
@@ -137,6 +140,13 @@ def monitor_file_at(monitor_dir, prefix, end):
     return (best[1], best[0]) if best else (None, None)
 
 
+def monitor_file_after(monitor_dir, prefix, end):
+    """The first logs/monitor/*/<prefix>-*.json taken after `end`, else (None, None)."""
+    later = sorted((file_stamp(p), p) for p in glob.glob(str(Path(monitor_dir) / "*" / f"{prefix}-*.json"))
+                   if file_stamp(p) is not None and file_stamp(p) > end)
+    return (later[0][1], later[0][0]) if later else (None, None)
+
+
 def board_at(monitor_dir=MONITOR_DIR, end=None):
     """Board pinned to the window: the latest board at or before `end` (None = the latest board). If every board is
     after `end`, the first one after it, so a rerun still picks the same file."""
@@ -157,26 +167,45 @@ def _sha(obj):
     return hashlib.sha256(json.dumps(obj, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()[:16]
 
 
-def pinned_inputs(end, monitor_dir=MONITOR_DIR, out_dir=REPORT_DIR):
-    """Inventory and demand rows for a window ending at `end`, the same on every rerun. The first run writes
-    <out_dir>/inputs-<end>.json: the latest logs/monitor inventory snapshot at or before `end` (inventory_ts = its
-    stamp), else the kit's live inventory.json (inventory_ts = now, a known look-ahead, noted), plus the kit's
-    demand.json as read then. Later runs read that file back. The catalog is the kit's static catalog.json; its hash
+class PinMissing(Exception):
+    """A pin for --end is not in the pin dir and --build-pin was not given."""
+
+
+def file_sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()
+
+
+def pinned_inputs(end, monitor_dir=MONITOR_DIR, pin_dir=REPORT_DIR, build=False, db_path=None):
+    """Inventory and demand rows for a window ending at `end`, the same on every rerun. With build=True and no
+    pin yet, writes <pin_dir>/inputs-<end>.json: the latest logs/monitor inventory snapshot at or before `end` (inventory_ts = its
+    stamp), else the first snapshot after `end` (a look-ahead, noted), else the kit's live inventory.json
+    (inventory_ts = now, a look-ahead, noted), plus the kit's demand.json as read then, plus the move from
+    inventory_ts to `end` (twin.inventory_moves, read from db_path once; a rerun does not read it again). Later runs read that file back. No pin and build=False: PinMissing. The catalog is the kit's static catalog.json; its hash
     is stored and a change is reported."""
     from . import market
-    path = Path(out_dir) / f"inputs-{end:.0f}.json"
+    path = Path(pin_dir) / f"inputs-{end:.0f}.json"
     cat_sha = _sha(market.catalog())
     if path.exists():
         pin = json.loads(path.read_text(encoding="utf-8"))
         pin["reused"] = True
+    elif not build:
+        raise PinMissing(f"no pinned inputs {path}; pass --build-pin to write them from the live data now")
     else:
         src, ts = monitor_file_at(monitor_dir, "inventory", end)
+        if src is None:
+            src, ts = monitor_file_after(monitor_dir, "inventory", end)
         if src:
             inv = json.loads(Path(src).read_text(encoding="utf-8"))
         else:
             src, ts, inv = "live inventory.json", time.time(), market.read_json("inventory.json", {}) or {}
+        from . import twin
         pin = {"end": end, "inventory_source": str(src), "inventory_ts": ts, "inventory": inv,
                "demand_rows": market.read_json("demand.json", []) or [], "catalog_sha": cat_sha,
+               "moves": twin.inventory_moves(db_path, ts, end),
                "created": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(pin, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
@@ -186,23 +215,48 @@ def pinned_inputs(end, monitor_dir=MONITOR_DIR, out_dir=REPORT_DIR):
     return pin
 
 
-def pinned_db(end, db_path, out_dir=REPORT_DIR):
-    """The DB copy for restock_r3.plan, the same on every rerun for one `end`. snapshot_db removes rows with
-    ts > end, but shop_stock and shops (latest-state upserts: competitor stock) and meta (no ts: unmet demand,
-    restock_adjust, explore_spent) hold the state at copy time. The first run keeps its copy as
-    <out_dir>/memory-<end>.sqlite; later runs use that file. Returns (path, reused). The state in it is the state
-    at the first run, not at `end` (a known look-ahead)."""
-    path = Path(out_dir) / f"memory-{end:.0f}.sqlite"
+def cut_path(db_pin):
+    return Path(db_pin).with_suffix(".cut.json")
+
+
+def pinned_db(end, db_path, pin_dir=REPORT_DIR, build=False):
+    """The DB copy for restock_r3.plan, the same on every rerun for one `end`. With build=True and no pin yet,
+    snapshot_db copies the live DB and cuts every table to `end` (twin.cut_to_end) into
+    <pin_dir>/memory-<end>.sqlite, and the per-table cut status goes to memory-<end>.cut.json. Later runs use that
+    file. No pin and build=False: PinMissing. Returns (path, reused). The uncut parts (listed in the cut status:
+    meta counters, in-place column updates) hold the state at build time, a known look-ahead."""
+    path = Path(pin_dir) / f"memory-{end:.0f}.sqlite"
     if path.exists():
         return path, True
+    if not build:
+        raise PinMissing(f"no pinned DB {path}; pass --build-pin to copy and cut the live DB now")
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = Path(tempfile.mkdtemp(prefix="twin-", dir=path.parent))
     try:
-        made = twin.snapshot_db(db_path or config.DB_PATH, tmp, end=end)
+        cut = {}
+        made = twin.snapshot_db(db_path or config.DB_PATH, tmp, end=end, cut_report=cut)
+        cut_path(path).write_text(json.dumps({"end": end, "tables": cut}, ensure_ascii=False, indent=1,
+                                             sort_keys=True), encoding="utf-8")
         os.replace(made, path)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return path, False
+
+
+def pin_record(pin_dir, inputs_pin, db_pin, db_reused):
+    """report["pin"]: where the pins are and their sha256, and the DB cut status (None for a pin built before
+    the all-table cut, when only tables with a ts column were cut)."""
+    cp = cut_path(db_pin)
+    cut = json.loads(cp.read_text(encoding="utf-8")) if cp.exists() else None
+    return {"dir": str(Path(pin_dir).resolve()),
+            "inputs": {"path": str(Path(inputs_pin["path"]).resolve()), "sha256": file_sha256(inputs_pin["path"]),
+                       "reused": inputs_pin["reused"]},
+            "db": {"path": str(Path(db_pin).resolve()), "sha256": file_sha256(db_pin), "reused": db_reused,
+                   "cut_path": str(cp.resolve()) if cut is not None else None,
+                   "cut": cut["tables"] if cut else None,
+                   "uncut_tables": sorted(t for t, v in (cut["tables"] if cut else {}).items()
+                                          if v["status"] != "cut") if cut else
+                   "unknown: pin built before the all-table cut (shop_stock, shops, meta as at build time)"}}
 
 
 def board_book(shop):
@@ -528,28 +582,44 @@ def main(argv=None):
                     help="window end (epoch s; default last negotiation). The resolved value is written to the "
                          "report (window.end, end_source); comparison runs should pass a fixed --end")
     ap.add_argument("--monitor-dir", default=str(MONITOR_DIR))
-    ap.add_argument("--out", default=str(REPORT_DIR))
+    ap.add_argument("--out", default=str(REPORT_DIR), help="where the gate report and forum dry-run files go")
+    ap.add_argument("--pin-dir", default=str(REPORT_DIR),
+                    help="where the pins for --end are (inputs-<end>.json, memory-<end>.sqlite); independent of --out")
+    ap.add_argument("--build-pin", action="store_true",
+                    help="write a missing pin from the live data now (else a missing pin is an error)")
     ap.add_argument("--no-calibration", action="store_true")
     a = ap.parse_args(argv)
     if not a.candidate:
         ap.error("at least one --candidate")
     cands = [load_candidate(p) for p in a.candidate]
     if a.end is not None:
-        pin = pinned_inputs(a.end, a.monitor_dir, a.out)
-        w = twin.load_window(a.db, hours=a.hours, end=a.end, inventory=pin["inventory"],
-                             demand_rows=pin["demand_rows"], inventory_ts=pin["inventory_ts"])
-        w.plan_db, db_reused = pinned_db(a.end, w.db_path, a.out)
+        try:
+            pin = pinned_inputs(a.end, a.monitor_dir, a.pin_dir, build=a.build_pin, db_path=a.db)
+            w = twin.load_window(a.db, hours=a.hours, end=a.end, inventory=pin["inventory"],
+                                 demand_rows=pin["demand_rows"], inventory_ts=pin["inventory_ts"],
+                                 moves=pin.get("moves"))
+            w.plan_db, db_reused = pinned_db(a.end, w.db_path, a.pin_dir, build=a.build_pin)
+        except PinMissing as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
         w.notes.append(f"plan DB pinned in {Path(w.plan_db).name} ({'reused' if db_reused else 'written now'};"
-                       " shop_stock, shops and meta as at its first run)")
-        w.notes.append(f"inputs pinned in {os.path.relpath(pin['path'], WEEK) if pin['path'].startswith(str(WEEK)) else pin['path']}"
+                       " cut to --end, see pin.db.cut)")
+        w.notes.append(f"inputs pinned in {Path(pin['path']).name}"
                        f" ({'reused' if pin['reused'] else 'written now'}; inventory from {Path(pin['inventory_source']).name})"
-                       + ("; WARNING catalog changed since the pin" if pin["catalog_changed"] else ""))
+                       + ("; WARNING catalog changed since the pin" if pin["catalog_changed"] else "")
+                       + ("" if "moves" in pin else "; WARNING pin built before moves were stored: the inventory"
+                          " move is read from the live DB on each run"))
+        if pin["inventory_ts"] is not None and pin["inventory_ts"] > a.end:
+            w.notes.append(f"WARNING inventory is from after --end ({pin['inventory_ts'] - a.end:+.0f} s, a look-ahead):"
+                           " start stock depends on the move back to --end")
     else:
         w = twin.load_window(a.db, hours=a.hours, end=a.end)
         w.notes.append("no --end: inputs read live (inventory.json, demand.json); a rerun can differ")
     board, board_path = board_at(a.monitor_dir, w.end if a.end is not None else None)
     report = evaluate(w, cands, seed=a.seed, restock=a.restock, board=board, board_path=board_path, seeds=a.seeds,
                       calibrate=not a.no_calibration)
+    if a.end is not None:
+        report["pin"] = pin_record(a.pin_dir, pin, w.plan_db, db_reused)
     for r in report["results"]:
         if r.get("forum_dry_run"):
             from . import forum_lever2

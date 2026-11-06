@@ -424,7 +424,8 @@ lever1이 FAIL인 원인(탐색, 읽기 전용):
 - lever1의 소파 0.607, 매트리스 0.393 비율이 원인임.
 - 시험(a2): 그 두 비율 + 김치 0.25·침구 0.15 → book −12.44M, 거래 −351, 재고 부족 +535. FAIL.
 - 김치·침구 비율만 바꾸면 book 변화가 작음(아래 표).
-- 참고(고치지 않음): `twin.effective_plan_policy`는 planner의 전역 `CATEGORY_MAX_SHARE`·`DEEP_CATEGORY_SHARE`를 가장 큰 비율로 올림. 다른 카테고리는 `_apply_category_shares`가 라이브 값(0.25, 0.35)으로 막음.
+- 참고: `twin.effective_plan_policy`는 planner의 전역 `CATEGORY_MAX_SHARE`·`DEEP_CATEGORY_SHARE`를 가장 큰 비율로 올림.
+- 정정(2026-11-05 16:55 KST): 위 문장의 옛 내용 "다른 카테고리는 라이브 값(0.25, 0.35)으로 막음"은 틀림. `_default_share`는 저장만 되고 쓰이지 않았음. 그래서 모든 카테고리가 올린 상한을 받았음. 아래 "라이브 상한으로 다시 실행" 절을 보기.
 
 후보:
 - (a) `policies/candidates/lever1b-a.json`: 김치 0.40, 침구 0.21만. 소파·매트리스는 그대로.
@@ -505,3 +506,225 @@ buyer 증거 보고 레인. `FORUM_INFLUENCER=False` 기본. True여도 이 절�
 ### dry-run
 - `MARKET_DIR`을 라이브 `.market`로 두고 `python forum_r3.py --dry-run` (또는 모듈 CLI).
 - 전송 없음, LLM/Decisions 호출 0. 결과는 `logs/shadow/`.
+
+### 2026-11-05 lever1b (a): 라이브 상한으로 다시 실행 (MO 지시, `ci/wt` 브랜치)
+
+목표: (a)를 라이브 카테고리 상한으로 다시 시험함. 라이브 상한은 `r3lib/config.py`의 `CATEGORY_MAX_SHARE` 0.25, `DEEP_CATEGORY_SHARE` 0.35임. `policies/active.json`에는 카테고리 상한 키가 없음(`fixed_baseline`, `q_values` 비어 있음). `STOCK_BUDGET_MAX`는 라이브에서 이미 16,000,000임.
+
+트윈 수정(커밋 1a76765, 테스트 10개):
+- 새 정책 키 `category_cap_mode`를 추가함. 값은 세 개임.
+  - `raise_all`(옛 기본값, 옛 동작): planner 전역 상한을 가장 큰 비율로 올림. 모든 카테고리가 올린 상한을 받음. 앞 절의 모든 결과는 이 값임. 이제 정책에 명시할 때만 씀.
+  - `live`(기본값, 2026-11-05 MO 규칙): 전역 상한을 올리지 않음. 라이브 가게와 같음. 비율은 카테고리를 낮추기만 함. 키가 없으면 이 값을 씀.
+  - `listed`: planner 상한을 올림. 그다음 목록에 없는 카테고리를 라이브 상한으로 다시 자름. deep 판정(시간당 시장 정산 ≥ `DEEP_CATEGORY_RATE`)은 같은 DB 복사본과 같은 시각에서 함(`DefaultPlan.deep_categories`).
+- 변경(2026-11-05, MO 규칙): 기본값은 `live`임. `raise_all`은 정책에 명시할 때만 씀. 키를 지우지 않음.
+  - `lever1b-a.json`, `lever1.json`, `lever1b-c.json`에 `"category_cap_mode": "raise_all"`을 명시함. 그래서 앞 절의 숫자는 그대로 재현됨.
+  - `DEEP_CATEGORY_SHARE`는 0.35 그대로임. `listed` 후보는 켜지 않음.
+
+후보(`policies/candidates/`):
+- `lever1b-a-live.json`: (a) + `category_cap_mode` `live`.
+- `lever1b-a-listed.json`: (a) + `listed`. 김치·침구 상한만 올리는 변형임.
+- `lever1b-a-deep040.json`: 비율 없음. `DEEP_CATEGORY_SHARE` 0.40만. 라이브에 넣을 설정 하나와 같은 후보임.
+
+gate 실행(워크트리 `/tmp/week08-ci-wt`, 16:50–16:55 KST):
+
+```
+L=~/ai-agent-engineering-101/submissions/26510358/week-08   # 라이브 데이터, 읽기만
+MARKET_DIR=$L/.market PYTHONHASHSEED=0 ~/ai-agent-engineering-101/.venv/bin/python -m r3lib.shadow_gate \
+  --hours 6 --end 1793859780 --restock plan --monitor-dir $L/logs/monitor --out logs/shadow \
+  --candidate policies/candidates/lever1b-a.json --candidate policies/candidates/lever1b-a-live.json \
+  --candidate policies/candidates/lever1b-a-listed.json
+# 그다음 같은 명령, --no-calibration --candidate policies/candidates/lever1b-a-deep040.json
+```
+
+- 보고서: 워크트리 `logs/shadow/gate-20261105T165237.json`, `gate-20261105T165530.json`(gitignore).
+- 고정 입력과 고정 DB는 라이브 `logs/shadow`의 파일을 워크트리 `logs/shadow`로 복사함. 두 실행 모두 "reused"임. 라이브 `memory.sqlite`는 읽기만 함.
+- 창 09:23–15:23 KST. live 값: book 25,558,618, 거래 724(앞 절과 같음).
+
+| 지표 (live 대비 차이) | (a) `raise_all` (옛 결과) | (a) `live` 상한 | (a) `listed` (김치·침구만 올림) | `DEEP_CATEGORY_SHARE` 0.40만 |
+|---|---:|---:|---:|---:|
+| 판정 | **PASS** | PASS (효과 0) | **PASS** | **PASS** |
+| book 변화 | +972,722 | 0 | +972,722 | +972,722 |
+| 거래 매출 | +5,826,315 | 0 | +5,826,315 | +5,826,315 |
+| 정산 매출 (추정, 거래 매출 × 0.711) | 약 +4,142,510 | 0 | 약 +4,142,510 | 약 +4,142,510 |
+| 거래 수 | −8 (716) | 0 (724) | −8 (716) | −8 (716) |
+| 협상 수 | −5 (871) | 0 | −5 (871) | −5 (871) |
+| 체결률 (live 0.8265) | 0.8220 (−0.0045) | 0.8265 (0) | 0.8220 (−0.0045) | 0.8220 (−0.0045) |
+| 방문 체결률 (live 0.4629, 허용 −0.03) | 0.4578 (−0.0051) | 0.4629 (0) | 0.4578 (−0.0051) | 0.4578 (−0.0051) |
+| 재고 부족 (live 227, 허용 +156) | +1 | 0 | +1 | +1 |
+| 방문당 이익 (live 16,370) | +622 | 0 | +622 | +622 |
+| 최종가/정가 (live 0.7546) | +0.0010 | 0 | +0.0010 | +0.0010 |
+| 첫 호가/정가 (live 0.8255) | +0.0001 | 0 | +0.0001 | +0.0001 |
+| 공급 지출 | +4,842,123 | 0 | +4,842,123 | +4,842,123 |
+| 끝 재고 원가 | −11,292 | 0 | −11,292 | −11,292 |
+| 가게 ALL 추정 (live 0.7871) | 0.7926 (+0.0055) | 0.7871 (0) | 0.7926 (+0.0055) | 0.7926 (+0.0055) |
+
+진단(읽기 전용, 같은 고정 입력, 커밋하지 않은 스크립트):
+- plan 틱 36개 모두에서 김치와 침구는 deep임. 그래서 라이브 상한은 둘 다 0.35임.
+- `listed`와 김치 0.40만 둔 후보에서 `_apply_category_shares`가 자른 줄은 0개임. 침구 0.21은 묶이지 않음. 다른 카테고리도 라이브 상한에 닿지 않음.
+- 결론: (a)의 효과는 모두 "김치 상한 0.35 → 0.40"에서 옴.
+
+판정:
+- 라이브 상한(`live`)에서 (a)는 효과가 없음. 김치 0.40은 라이브 deep 상한 0.35를 넘을 수 없음. 침구 0.21은 묶이지 않음.
+- (a)가 효과를 내려면 상한을 올려야 함. 김치·침구만 올린 변형(`listed`)은 PASS임. 숫자는 옛 (a)와 같음.
+
+(a)를 라이브에 넣으려면 바꿀 설정(아직 바꾸지 않음, QA GO와 MO 승인 뒤에만):
+
+| 파일 | 키 | 지금 값 | 새 값 |
+|---|---|---:|---:|
+| `r3lib/config.py` (43행) | `DEEP_CATEGORY_SHARE` | 0.35 | 0.40 |
+
+- 다른 설정은 바꾸지 않음: `CATEGORY_MAX_SHARE` 0.25 그대로, `STOCK_BUDGET_MAX` 16,000,000(이미 같음), `policies/active.json` 그대로.
+- 라이브 코드에는 카테고리별 비율 키가 없음. `restock_r3.plan`은 전역 상한 두 개만 읽음. 그래서 `category_budget_share`는 라이브 설정이 아님.
+- 주의: 0.40은 김치만이 아니라 모든 deep 카테고리(시간당 시장 정산 ≥ 100)에 적용됨. 이 창에서는 김치만 상한에 닿았음. 다른 창에서는 다른 deep 카테고리도 재고를 더 살 수 있음.
+- 김치만 올리려면 `restock_r3.py`에 카테고리별 상한 코드를 넣어야 함. 그것은 라이브 동작 변경이고 이번 작업 범위 밖임. 하지 않음.
+- `r3lib/config.py`는 커밋하는 순간 라이브가 됨(MO). 되돌리기: 0.40을 0.35로 되돌리는 커밋 하나.
+- 한계: 한 창(6시간), seed 하나. 트윈 매출 편향 약 −20%. 고정 DB의 `shop_stock`·`shops`·`meta`는 16:18 값임.
+- 바꾸지 않은 것: 라이브 작업 트리, `policies/active.json`, `r3lib/config.py`, `FORUM_LEVER2`(False). merge·cherry-pick 없음. push 없음. 재시작 없음.
+
+### 2026-11-05 고정 파일 수정과 두 창의 lever1b (a) (MO 16:57–17:15 KST)
+
+#### 원인: QA 기준값이 움직인 이유
+
+- QA는 `--out`을 세 번 바꿈. 옛 코드는 `--out`마다 새 고정 파일을 라이브 DB에서 만듦. 라이브 DB는 계속 바뀜.
+- 근거(같은 `--end` 1793859780, 코드 변경 없음):
+
+| 고정 파일 | inputs sha256 | DB sha256 | `shop_stock` 줄 | live book |
+|---|---|---|---:|---:|
+| QA r1 | f0cedf… | 3940469e… | 3 | 24,237,394 |
+| QA r2 | 616e2d… | 4b9a2ca3… | 882 | 24,689,193 |
+| QA r3 | 79e0cd… | 47d310d2… | 438 | 다름 |
+| 나의 옛 `logs/shadow` | b46c41… | 2d94d105… | 2024 | 25,558,618 |
+| 새 고정 파일(모든 표를 자름) | a2f1a938… | 016b139e… | 0 | 24,237,394 |
+
+- inputs 파일은 `created`만 다름. DB는 `shop_stock`, `shops`, `meta`, `purchases` 열 값이 다름.
+- 경쟁 재고(`shop_stock`)가 기준값을 움직임. 새 고정 파일은 `shop_stock` 0줄임. 그래서 값이 `shop_stock` 3줄인 r1과 같음.
+- QA 17:15: 같은 고정 파일(`/tmp/qa-ci4/{a,b,c}`, inputs b46c4146920f, DB 2d94d1054c0c)에서 a = b = c임. 그래서 8073a21은 GO임. 앞의 NO-GO는 QA 시험 방법의 문제였음.
+
+#### 수정 (a98336d, 3c4b853, 87b682d)
+
+- 고정 파일은 `--pin-dir`(기본 `logs/shadow`)에 있음. `--out`과 관계없음.
+- 고정 파일이 없으면 종료 코드 2. `--build-pin`일 때만 만듦.
+- DB 고정 파일은 모든 표를 `--end`로 자름. 자른 상태는 `memory-<end>.cut.json`과 보고서 `pin.db.cut`에 있음.
+- 보고서 `pin`에 경로와 전체 sha256이 있음.
+- 87b682d: 재고 이동량(`moves`)을 inputs 고정 파일에 넣음. 아래 "창 2" 참조.
+- 시험:
+  - `tests/test_gate_pin.py`: 프로세스 두 개, 다른 `--out`, `PYTHONHASHSEED` 1과 2, 그 사이에 라이브 DB가 바뀜. 보고서 JSON이 같음(`generated`와 forum dry-run 경로만 다름). 고정 파일이 없으면 종료 코드 2. 모든 표를 자름.
+  - 같은 파일: 고정 파일을 만든 뒤에 이동 구간에 늦은 정산 줄을 넣어도, 다시 실행한 JSON이 같음.
+  - 전체: 515 passed.
+
+창 1 자른 상태(`memory-1793859780.cut.json`):
+
+| 상태 | 표 |
+|---|---|
+| cut | breaks(157줄 지움), ledger(13,830), negotiations(584), notes(41), restocks(55), settles(3,436), stockouts(21), shop_stock(397, 0줄 남음) |
+| partly cut | forum(498줄 지움; likes·dislikes·score·voted·signals는 못 자름), members(`uses`는 못 자름), purchases(120줄 지움; paid·ledger·reason은 못 자름), shops(64줄 지움; 우리 가게 2줄은 남김), meta(시각이 있는 키와 unmet_* 31개는 지움; `report_subjects`는 줄임; `broken_offset`, `buyer_post_seen`, `explore_spent`, `harsh_styles`, `ledger_seq`, `payments_offset`, `report_turn`은 못 자름) |
+| not cut | sqlite_sequence |
+
+결과에 주는 영향(MO 판단 필요):
+- 자른 DB는 `shop_stock`이 0줄임. 그래서 plan의 경쟁 비율 사전값이 1임. 침구가 예산을 더 받음.
+- 그래서 자른 고정 파일에서는 침구 상한 0.21이 묶임. 옛 고정 파일에서는 묶이지 않았음(앞 절의 "효과 0").
+
+#### QA 숫자와 나의 숫자가 다른 이유
+
+- QA +972,722(f3aaafc, lever1b-a PASS):
+  - f3aaafc의 트윈에는 `category_cap_mode`가 없음. 그것은 1a76765에서 들어옴.
+  - f3aaafc 트윈은 `_default_share`를 저장하지만 쓰지 않음(814행). 그래서 모든 카테고리 상한이 0.40으로 올라감(`raise_all` 버그).
+  - 그래서 QA +972,722는 옛 고정 파일의 나의 `listed`·`deep040` 값 +972,722(ec73100)와 같음. 확인함.
+- QA +0.33M(a25) 대 나의 0:
+  - QA는 움직이는 고정 파일에서 돌림. 나는 `shop_stock` 2024줄인 고정 파일에서 돌림.
+  - a25는 김치를 0.25로 묶고 상한을 올리지 않음. 자른 고정 파일에서 a25 = a-live임. 두 효과 모두 침구 묶음에서 옴.
+
+#### 창 1: 09:23–15:23 KST (`--end` 1793859780)
+
+고정 파일 `/tmp/ci-det/pin`(재고 `inventory-20261105T1520.json`, `--end` 3분 앞):
+- `inputs-1793859780.json` a2f1a93816592a4e4576c1f577a3c86b8b2dc9a490e06d58c28e2098dfb947ba
+- `memory-1793859780.sqlite` 016b139e7814221e05e7cc8ee9c03e039ff2630bbbc0f842a94f8a2089c1cbed
+- 이 고정 파일에는 `moves`가 없음(87b682d 전에 만듦). 이동 구간(15:20–15:23)은 2시간 넘게 지났고 바뀌지 않음. notes에 WARNING이 나옴.
+
+세 번 실행(`PYTHONHASHSEED` 1, 2, 3, 다른 `--out`): JSON이 같음(notes의 "written now"/"reused"만 다름). live book 24,237,394.
+
+| 후보 (live 대비) | book | 재고 부족 | 거래 매출 | 거래 | 재고 보충 | 판정 |
+|---|---:|---:|---:|---:|---:|---|
+| a-live | +1,112,378 | −326 | +5,894,413 | +196 | +157 | PASS |
+| a-listed | +508,562 | −6 | +2,956,666 | +2 | −50 | PASS |
+| a25(QA) | a-live와 같음 | | | | | PASS |
+
+a-live 이익 분해(seed 0, SKU별 마진 = 거래 매출 − 원가):
+
+| SKU | 카테고리 | 마진 변화 | 비고 |
+|---|---|---:|---|
+| G200e39a3 | 김치 | +1,003,467 | 거래 +197, 재고 부족 −328, 공급 +197, 매출 +5,497,431 |
+| Gf6b70da8 | 매트리스 | +744,053 | |
+| G8ec51935 | 소파 | +347,359 | |
+| G8adbc159 | 소파 | −328,563 | |
+| G429bd69e | 소파 | −237,298 | |
+| G04ee8423 | 소파 | −212,589 | |
+| G147ae4e7 | 수납 | −193,215 | |
+
+- 카테고리 합: 김치 +1,003,467, 매트리스 +677,989, 소파 −392,850, 수납 −193,596.
+- a-listed: 매트리스 +358,365, 소파 +217,615, 수납 −75,047(Gfbf7f983 공급 −17), 과일 −14,497, 김치 +14,259.
+- 침구(SKU 1개): 공급 live 198, 후보 159. 거래는 모두 151. 마진은 같음.
+
+구조(분리 실험 `probe_parts.py`, seed 0):
+- 김치 0.40, 0.35, 0.25를 따로 넣으면 변화 없음. 김치는 `--end`에 deep임.
+- 침구 0.21만 넣으면 a-live와 같음(25,349,772). 김치 공급 31 → 228.
+- 결론: 침구를 0.21로 묶으면 침구가 쓰던 예산이 남음. 그 예산으로 김치를 삼. 김치 재고 부족이 줄어듦.
+
+seed 민감도:
+
+| seed | live book | a-live | a-listed |
+|---|---:|---:|---:|
+| 0 | 24,237,394 | +1,112,378 | +508,562 |
+| 1 | 24,630,841 | −55,615 | +269,774 |
+| 2 | 23,272,418 | +16,470 | +721,430 |
+| 5 seed 평균(`--seeds 5 --no-calibration`) | 23,963,352 | +302,590 PASS | −155,074 FAIL(book 감소) |
+
+- 주의: a-listed는 seed 0–2에서 양수이고 5 seed 평균에서 음수임. 분해 스크립트와 `--seeds`의 seed 정의가 같은지 아직 확인하지 않음. a-live도 seed 0에서만 큼.
+
+#### 창 2: 03:00–09:00 KST (`--end` 1793836800, 창 1과 겹치지 않음)
+
+첫 고정 파일 `/tmp/ci-pin2`(남겨 둠, 쓰지 않음):
+- `--end` 이전 재고 스냅샷이 없음. 옛 코드는 라이브 `inventory.json`(17:19:20)을 씀. 이동 구간(09:00–17:19:20)을 실행마다 라이브 DB에서 읽음.
+- 고정 파일을 만든 실행과 다시 쓴 실행이 다름: live book 12,315,558 대 12,316,151, twin_actual 거래 515 대 519.
+- 원인(추정, 강한 근거): 재고 시각 직전에 우리 정산 2건(G0be9ed07 −2.5 s, G5e3784e6 −1.6 s)이 있음. 첫 실행 뒤에 DB에 들어온 것으로 봄. 지금 다시 읽으면 이동량은 같음(17:24–17:26에 세 번 읽음: 판매 707, 공급 829).
+- 수정(87b682d): `--end` 뒤 첫 스냅샷을 먼저 씀. 이동량을 `--build-pin` 때 한 번 읽어 inputs 파일에 넣음.
+
+새 고정 파일 `/tmp/week08-ci-wt/submissions/26510358/week-08/logs/shadow/pin2`(gitignore):
+- `inputs-1793836800.json` db548c83deafd256d10811d1d6248b9a39ae3facf89ede02d630b662b7a31dc1
+- `memory-1793836800.sqlite` 2f6b6db79dfa2ba42302fafcf3e7747254f913491a8616f14c8b056ed4423913
+- `memory-1793836800.cut.json` c318d35449d660a8ec5bb913f81b8c826951268f9cc0111108d2425fbce01f20
+- 재고: `inventory-20261105T1443.json`(14:43, `--end` 뒤 +20,580 s, 미래 정보). 이동량: 판매 555, 매출 123,059,523, 공급 667, 원가 114,259,960.
+- 보드: `--end` 이전 보드가 없음. 뒤 첫 보드(14:43)를 씀. 가게 ALL 추정은 믿기 어려움.
+- 자름: shop_stock 1,137줄(0줄 남음), settles 21,113, ledger 78,933, negotiations 3,482 등.
+
+세 번 실행(`PYTHONHASHSEED` 1, 2, 3, 다른 `--out`): JSON이 같음(`generated`, `reused`, notes만 다름). live book 12,353,525. twin_actual 거래 509.
+
+| 후보 (live 대비) | book | 재고 부족 | 거래 매출 | 거래 | 재고 보충 | 방문 체결률 | 판정 |
+|---|---:|---:|---:|---:|---:|---:|---|
+| a-live | +749,603 | −162 | +3,623,348 | +133 | +83 | +0.1167 | PASS |
+| a-listed | +250,795 | +34 | +87,715 | −31 | −86 | −0.0272(허용 −0.03) | PASS |
+| 5 seed 평균 a-live (live book 12,161,686) | +902,889 | −199 | +3,928,459 | +152.6 | +102 | +0.1339 | PASS |
+| 5 seed 평균 a-listed | +85,496 | +25 | −1,028,037 | −33 | −87 | −0.0290(허용 −0.03) | PASS |
+
+#### 판정 요약
+
+- 결정성: 창 1과 창 2 모두 같은 고정 파일에서 세 번 같은 JSON임.
+- a-live는 두 창 모두 seed 0에서 PASS임. 효과는 침구 묶음과 김치 공급에서 옴. seed에 민감함.
+- a-listed는 방문 체결률이 허용 한계(−0.03)에 가까움(창 2: −0.0272, 5 seed −0.0290). 창 1 5 seed 평균은 FAIL임.
+- a-live는 5 seed 평균에서 두 창 모두 PASS임(창 1 +302,590, 창 2 +902,889).
+- 라이브 변경 없음. `r3lib/config.py`, `policies/active.json`, `FORUM_LEVER2`(False) 그대로. merge·push·재시작 없음.
+
+QA 명령(워크트리, 87b682d 이상, `--build-pin` 없이):
+
+```
+cd /tmp/week08-ci-wt/submissions/26510358/week-08
+L=~/ai-agent-engineering-101/submissions/26510358/week-08
+MARKET_DIR=$L/.market PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 ~/ai-agent-engineering-101/.venv/bin/python -m r3lib.shadow_gate \
+  --hours 6 --end 1793836800 --restock plan --monitor-dir $L/logs/monitor \
+  --pin-dir /tmp/week08-ci-wt/submissions/26510358/week-08/logs/shadow/pin2 --out /tmp/qa-ci5/w2a \
+  --candidate policies/candidates/lever1b-a-live.json --candidate policies/candidates/lever1b-a-listed.json
+```
+
+- 창 1: `--end 1793859780 --pin-dir /tmp/ci-det/pin`.
+- 보고서 `pin.inputs.sha256`, `pin.db.sha256`이 위 값과 같고 `reused`가 true여야 함.
+- 87b682d 전 코드는 `moves`를 읽지 않음. 창 2에서 다른 값이 나옴.

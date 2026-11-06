@@ -151,7 +151,8 @@ def test_cli(tmp_path, monkeypatch, capsys):
     cand = tmp_path / "cand.json"
     cand.write_text(json.dumps({"name": "room09", "policy": {"ASK_ROOM": 0.09}}))
     code = shadow_gate.main(["--db", str(db), "--end", str(T0), "--candidate", str(cand),
-                             "--monitor-dir", str(tmp_path / "monitor"), "--out", str(tmp_path / "shadow")])
+                             "--monitor-dir", str(tmp_path / "monitor"), "--out", str(tmp_path / "shadow"),
+                             "--pin-dir", str(tmp_path / "pin"), "--build-pin"])
     out = capsys.readouterr().out
     assert "live vs room09" in out and "estimated shop ALL" in out and "calibration" in out
     assert code in (0, 1)
