@@ -69,7 +69,7 @@ class BuyerCoreTest(Base):
                              '{"tool": "act.offer", "args": {"price": 18000}}',
                              '{"tool": "act.finish", "args": {"accept": {"cert": true, "min_hours_left": 48}}}'], shop)
         self.assertEqual((out["shop"], out["receipt"]["price"], out["accept"]), ("http://elm", 18000,
-                                                                                  {"cert": True, "min_hours_left": 48}))
+                                                                                  {"cert": True, "min_hours_left": 48.05}))
         self.assertTrue(shop.sent[0].startswith("I want to buy"))
         kinds = [e["kind"] for e in EventReader("t", "buyer").iter_new()]
         self.assertEqual(kinds, ["buyer.order", "buyer.pick", "buyer.decision", "buyer.closed"])
@@ -151,7 +151,7 @@ class BuyerCoreTest(Base):
         finally:
             core.close()
         self.assertEqual(shop.sent[1:], ["I can pay 10454 KRW.", "I can pay 11470 KRW.", "I can pay 13900 KRW."])
-        self.assertEqual((out["receipt"]["price"], out["accept"]), (13900, {"min_hours_left": 48}))
+        self.assertEqual((out["receipt"]["price"], out["accept"]), (13900, {"min_hours_left": 48.05}))
     def test_rules_mode_tries_the_next_shop(self):
         # 11/4 03:1x: a shop that refuses at the first message no longer ends the order
         from core import atomic

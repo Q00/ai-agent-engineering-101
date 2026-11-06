@@ -70,6 +70,94 @@ def shop_prices(shops, now=None):
     return {s["name"]: fact["shops"].get((s.get("url") or "").rstrip("/")) for s in shops}
 
 
+# --- the value gate (user 11/6 22:5x: "not one wasted deal"). Saved, half of buyer ALL, is an average over deals: a
+# deal adds surplus/list, a deal that served nothing (food short of the order's hours, broken goods not refunded)
+# adds -1. A deal whose expected share is under our current average lowers it, so it is not made. Since 07:40 55 of
+# 449 deals were -1 (27 food the kit paid without checking hours, 28 broken goods without warranty) and saved fell
+# 0.264 -> 0.253, rank 11 -> 17.
+BREAK_PRIOR = {"A": 0.03, "B": 0.15, "C": 0.32}   # our own goods buys without warranty, 11/5 12:00 - 11/6 22:4x
+BREAK_PRIOR_N = 30                                # the prior weighs like this many units
+BREAK_WINDOW_H = 6.0                              # every break in two days of ledger came within 6.0 h of the sale
+BREAK_EVERY = 1800
+SAVED_FALLBACK = 0.25
+
+
+def break_rates(now=None):
+    """{grade: share of goods units sold in the market that broke}, from the last two ledger days, cached 30 min."""
+    now = now or time.time()
+    path = paths.memory() / "facts" / "break_rates.json"
+    fact = atomic.read_json(path, default=None) or {}
+    if now - fact.get("ts", 0) <= BREAK_EVERY and fact.get("rates"):
+        return fact["rates"]
+    grade, broken = {}, set()
+    for f in sorted((paths.memory() / "market").glob("ledger-*.jsonl"))[-2:]:
+        with open(f, encoding="utf-8") as fh:
+            for line in fh:
+                if '"kind": "settle"' not in line and '"kind": "broken"' not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                x = d.get("data") or {}
+                if d.get("kind") == "settle" and not x.get("expires_at") and x.get("grade") in BREAK_PRIOR:
+                    grade[x.get("unit")] = x["grade"]
+                elif d.get("kind") == "broken":
+                    broken.add(x.get("unit"))
+    n = {g: 0 for g in BREAK_PRIOR}
+    b = dict(n)
+    for u, g in grade.items():
+        n[g] += 1
+        b[g] += u in broken
+    rates = {g: round((b[g] + BREAK_PRIOR[g] * BREAK_PRIOR_N) / (n[g] + BREAK_PRIOR_N), 4) for g in BREAK_PRIOR}
+    atomic.write_json(path, {"ts": now, "rates": rates, "units": n, "broken": b})
+    return rates
+
+
+def our_saved():
+    """Our buyer's saved on the board (the last line of board-ours.jsonl), or SAVED_FALLBACK."""
+    f = paths.memory() / "market" / "board-ours.jsonl"
+    try:
+        with open(f, "rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - 20000))
+            last = fh.read().splitlines()[-1]
+        v = (json.loads(last.decode("utf-8")).get("buyer") or {}).get("saved")
+        return v if isinstance(v, (int, float)) and 0 < v < 1 else SAVED_FALLBACK
+    except (OSError, ValueError, IndexError):
+        return SAVED_FALLBACK
+
+
+def unrefunded(kind, grade, warranty_hours, rates):
+    """The chance a deal serves nothing and is not refunded (-1). Food: 0, the kit pays only a unit that shows the
+    order's hours (accept min_hours_left). Goods: the grade's break rate times the share of breaks after the warranty."""
+    if kind != "goods":
+        return 0.0
+    p = rates.get(grade) or rates["B"]
+    cover = min(1.0, (warranty_hours or 0) / BREAK_WINDOW_H)
+    return p * (1 - cover)
+
+
+def deal_value(share, kind, grade, warranty_hours, rates):
+    """Expected saved of one deal at this share of list (a refunded break counts 0)."""
+    p = (rates.get(grade) or rates["B"]) if kind == "goods" else 0.0
+    return (1 - p) * (1 - share) - unrefunded(kind, grade, warranty_hours, rates)
+
+
+def max_share(bar, kind, grade, warranty_hours, rates):
+    """The highest share of list at which deal_value is still at the bar."""
+    p = (rates.get(grade) or rates["B"]) if kind == "goods" else 0.0
+    return 1 - (bar + unrefunded(kind, grade, warranty_hours, rates)) / (1 - p)
+
+
+def assumed_grade(claim, warranty_hours):
+    """Without a warranty only grade A is paid (accept grades); with one, the claimed grade, B when none is claimed."""
+    claim = str(claim or "").upper()
+    if not warranty_hours:
+        return "A"
+    return claim if claim in BREAK_PRIOR else "B"
+
+
 PAY_RATE_MIN_N = 10             # paid + unpaid before a shop's pay rate is trusted
 
 
@@ -255,7 +343,16 @@ class BuyerCore:
                 "goods_time_budget": pb.get("goods_time_budget", 120), "food_time_budget": pb.get("food_time_budget", 20),
                 "goods_msg_timeout": pb.get("goods_msg_timeout", 20), "food_msg_timeout": pb.get("food_msg_timeout", 8),
                 "shelf_guard": pb.get("shelf_guard", False), "skip_unsigned": pb.get("skip_unsigned", False),
-                "min_pay_rate": pb.get("min_pay_rate", 0)}
+                "min_pay_rate": pb.get("min_pay_rate", 0),
+                "value_gate": pb.get("value_gate", False), "value_margin": pb.get("value_margin", 0.02)}
+
+    def bar(self):
+        """The expected saved a deal must reach: our board average plus the margin (None when the gate is off)."""
+        if not self.playbook()["value_gate"]:
+            return None
+        if getattr(self, "_bar", None) is None:
+            self._bar = our_saved() + self.playbook()["value_margin"]
+        return self._bar
 
     def rules(self):
         return self.playbook()["mode"] == "rules"
@@ -274,6 +371,8 @@ class BuyerCore:
         rf = (reflex.load().get("shops") or {})
 
         ceil_share = self.playbook()["ceiling_share"]
+        if self.bar() is not None:                  # the share no deal may pass (food bound; goods are lower still)
+            ceil_share = min(ceil_share, 1 - self.bar())
         goods = (self.order.get("kind") or "") == "goods" or any((cat.get(k) or {}).get("kind") == "goods"
                                                                   for k in (self.order.get("acceptable") or [])[:3])
 
@@ -326,6 +425,16 @@ class BuyerCore:
             return None                                    # the shop names no price: the agent reads it
         o_share, t_share = self.shares(lp, kind)
         ceil_share = max(t_share, self.playbook()["ceiling_share"])
+        if self.bar() is not None:
+            # the value gate: what the shop said so far (grade, warranty) sets the highest share worth paying
+            said = [h for h in hist if h["from"] == "shop"]
+            w = next((h["warranty_hours"] for h in reversed(said) if h.get("warranty_hours")), None)
+            g = assumed_grade(next((h["claimed_grade"] for h in reversed(said) if h.get("claimed_grade")), None), w)
+            gate = max_share(self.bar(), kind, g, w, break_rates())
+            if gate <= 0.05:
+                return {"action": "walk_away", "why": f"rules: no share is worth a deal (grade {g}, warranty {w})"}
+            ceil_share = min(ceil_share, gate)
+            o_share, t_share = min(o_share, ceil_share), min(t_share, ceil_share)
         now = o_share + (ceil_share - o_share) * min(1.0, (turn - 1) / max(1, MAX_TURNS - 2))
         bid = min(budget, round(lp * now))
         if offers:
@@ -525,6 +634,11 @@ class BuyerCore:
             self.close_events(shop, short, agreed, receipt.get("price"), c.get("list_price"), "completed")
             reflex.record_outcome(shop["name"], shop["url"], short, receipt.get("price"), agreed, o.get("order"), ctx.now())
             return {"shop": shop["url"], "receipt": None, "stars": None, "review": None}
+        gate = self.value_check(c, kind, receipt)
+        if gate:
+            self.close_events(shop, gate, agreed, receipt.get("price"), c.get("list_price"), "completed")
+            reflex.record_outcome(shop["name"], shop["url"], gate, receipt.get("price"), agreed, o.get("order"), ctx.now())
+            return {"shop": shop["url"], "receipt": None, "stars": None, "review": None}
         ctx.situation = {"budget": o["budget"], "receipt": receipt}
         text = (f"# the decision at hand\nThe shop {shop['name']} sent a receipt for {c.get('name')} ({sku}, {kind}) at "
                 f"{receipt['price']}, matching what we agreed. Claim on the receipt: {receipt.get('claim')}; warranty "
@@ -532,19 +646,17 @@ class BuyerCore:
                 f"{c.get('shelf_hours')} h"
                 + (f"; the order must be usable for {o['use_within_hours']} h" if o.get("use_within_hours") else "")
                 + ". Set what the checkout must show before the kit pays (act.finish).")
-        if self.rules():                     # goods: no conditions; food: the order's use window (v14)
-            pol = {"min_hours_left": o["use_within_hours"]} if kind == "food" and o.get("use_within_hours") else {}
-            if pol and (c.get("shelf_hours") or 0) >= 3 * o["use_within_hours"]:
-                # 11/4 03:3x: 12 of 33 unpaid deals in 30 min had no certificate to show the hours; a SKU that keeps
-                # three times the use window will not spoil in it, so the hours are not asked for
-                pol = {}
-            r = call(ctx, "act.finish", {"accept": pol, "why": "rules"})
+        required = self.required_policy(kind, receipt)
+        if self.rules():
+            # 11/4 03:3x a SKU keeping 3x the use window was paid without the hours (12 of 33 unpaid had no
+            # certificate); 11/6 22:4x that let 27 grade-C units short of the hours through since 07:40, each -1 in
+            # saved, while an unpaid deal costs nothing - the hours are always asked for now
+            r = call(ctx, "act.finish", {"accept": required, "why": "rules"})
             d = r["result"] if r["ok"] else None
         else:
             d, _ = loop.decide("buyer", ctx, text, deadline=self.deadline(), model_call=self.model_call,
                                allowed=["act.finish"] + loop.ROLES["buyer"]["look"])
-        accept = d["accept"] if d else ({"min_hours_left": o["use_within_hours"]}
-                                        if kind == "food" and o.get("use_within_hours") else {})
+        accept = dict(d["accept"] if d and isinstance(d.get("accept"), dict) else {}, **required)
         self.close_events(shop, "fair", agreed, receipt["price"], c.get("list_price"), "completed", accept=accept,
                           guard=None if d else "no valid accept policy from the model")
         reflex.record_outcome(shop["name"], shop["url"], "fair", receipt["price"], agreed, o.get("order"), ctx.now())
@@ -552,6 +664,37 @@ class BuyerCore:
         if accept:
             out["accept"] = accept
         return out
+
+    def required_policy(self, kind, receipt):
+        """What the kit must see before it pays, whatever the model set (user 11/6 22:5x: no deal may be -1).
+        Food: the order's hours (+3 min to settle). Goods without a warranty: grade A only; with one: the warranty
+        on the checkout and no grade worse than the one the value was reckoned at."""
+        o = self.order
+        if kind == "food":
+            return {"min_hours_left": round(o["use_within_hours"] + 0.05, 2)} if o.get("use_within_hours") else {}
+        if kind != "goods" or not self.playbook()["value_gate"]:
+            return {}
+        w = receipt.get("warranty_hours") or 0
+        g = assumed_grade(receipt.get("claim"), w)
+        pol = {"grades": [x for x in "ABC" if x <= g]}
+        if w:
+            pol["warranty_hours"] = w
+        return pol
+
+    def value_check(self, c, kind, receipt):
+        """'no deal: value ...' when the receipt's expected saved is under the bar, else None."""
+        lp, bar = c.get("list_price"), self.bar()
+        if bar is None or not lp or not isinstance(receipt.get("price"), (int, float)):
+            return None
+        w = receipt.get("warranty_hours") or 0
+        g = assumed_grade(receipt.get("claim"), w) if kind == "goods" else None
+        v = deal_value(receipt["price"] / lp, kind, g, w, break_rates())
+        self.events.emit("buyer.value", {"share": round(receipt["price"] / lp, 3), "grade": g, "warranty": w,
+                                         "value": round(v, 3), "bar": round(bar, 3), "kind": kind},
+                         order=self.order.get("order"))
+        if v < bar:
+            return f"no deal: value {v:.2f} under the bar {bar:.2f} (share {receipt['price'] / lp:.2f}, grade {g}, warranty {w} h)"
+        return None
 
     def shelf_short(self, c, kind, receipt):
         """'no deal: shelf ...' when the receipt's claimed grade cannot last the order's use window, else None.

@@ -257,7 +257,10 @@ STRATEGY = {
                     "shelf_guard": {"type": "boolean"},
                     # 11/5 01:4x: skip a shop whose last 3 receipts had no sig_seller (tried again after an hour)
                     "skip_unsigned": {"type": "boolean"},
-                                          "min_pay_rate": {"type": "number", "minimum": 0, "maximum": 0.9}}}}},
+                                          "min_pay_rate": {"type": "number", "minimum": 0, "maximum": 0.9},
+                    # 11/6 22:5x: no deal whose expected saved is under our board average + value_margin
+                    "value_gate": {"type": "boolean"},
+                    "value_margin": {"type": "number", "minimum": -0.1, "maximum": 0.2}}}}},
     },
 }
 
