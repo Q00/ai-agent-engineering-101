@@ -77,7 +77,7 @@ for r in after:
     states[s][1] += 1
     states[s][0] += r["status"] == "completed"
 print({k: f"{v[0]}/{v[1]}" for k, v in states.items()})
-pricing = [read(p) for p in sorted(glob.glob("logs/pricing/*.json"), key=os.path.getmtime)[-1500:] if os.path.getmtime(p) >= RESTART]
+pricing = [read(p) for p in glob.glob("logs/pricing/*.json") if os.path.getmtime(p) >= RESTART]
 print("quotes", len(pricing), collections.Counter((p.get("price_cap") or {}).get("state") for p in pricing).most_common())
 
 print("\n== grade C since restart")
@@ -90,12 +90,14 @@ by_name = {str(p.get("name")): sku for sku, p in catalog.items()}
 supplies = collections.defaultdict(list)
 with open("logs/market-kit.log", "rb") as stream:
     log = stream.read().decode("utf-8", "replace").split("\n")
-last_midnight = max(i for i, line in enumerate(log[:-1]) if line[:2] == "23" and log[i+1][:2] == "00")
-day = d.datetime.fromtimestamp(NOW, KST).replace(hour=0, minute=0, second=0, microsecond=0)
-for line in log[last_midnight+1:]:
-    m = re.match(r"(\d\d):(\d\d):(\d\d) \[supply\] (\d+) x (.+) for \d+, balance", line)
-    if m and m[5] in by_name:
-        supplies[by_name[m[5]]].append((day.replace(hour=int(m[1]), minute=int(m[2]), second=int(m[3])).timestamp(), int(m[4])))
+midnights = [i for i, line in enumerate(log[:-1]) if line[:2] == "23" and log[i+1][:2] == "00"]
+today = d.datetime.fromtimestamp(NOW, KST).replace(hour=0, minute=0, second=0, microsecond=0)
+for back, (start, end) in enumerate(((midnights[-1]+1, len(log)), (midnights[-2]+1, midnights[-1]+1))):
+    day = today-d.timedelta(days=back)
+    for line in log[start:end]:
+        m = re.match(r"(\d\d):(\d\d):(\d\d) \[supply\] (\d+) x (.+) for \d+, balance", line)
+        if m and m[5] in by_name:
+            supplies[by_name[m[5]]].append((day.replace(hour=int(m[1]), minute=int(m[2]), second=int(m[3])).timestamp(), int(m[4])))
 
 
 def depth_at(sku, at):
