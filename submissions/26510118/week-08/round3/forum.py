@@ -49,7 +49,9 @@ DISLIKES = True          # back 11/6 16:15 for incitement and broken ethics only
                          # shop's cash, Patch 3.4; until then repeats and floods were disliked too, 9 an hour, 148 of
                          # 175 a day repeats, on 34 authors)
 DISLIKE_HOUR_MAX = 3     # dislikes in any hour (the free stances), counted from records/votes.jsonl by the caller
-DISLIKE_AUTHOR_GAP = 24 * 3600   # one dislike per author in this long
+DISLIKE_AUTHOR_GAP = 24 * 3600   # the votes records looked back on (3 an hour); an author is disliked once in the
+                                 # round (analysis state "disliked", 11/6 16:40: Patch 3.5 sells extra dislike votes on one
+                                 # person, so a second dislike to the same author must never read as one)
 INCITE = re.compile(                                    # the posts worth the model's question (a dislike needs its 0.9)
     r"\byou should\b|\bmust\b|\bbuy from\b|\bchoose\b|\bavoid\b|\brecommend|boycott|\bscam|collu|manipulat|\bfake\b"
     r"|rate (it|them|\w+) (down|1)|1[- ]star|one star|\bnotice\b|\binstructor|\bprofessor|AI (buying )?agents?|AI buyers?"

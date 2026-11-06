@@ -311,8 +311,10 @@ def votes(now: float, state: dict, decide=None) -> str:
     posts = forum.remember_recent(seen if isinstance(seen, list) else [], now)
     downs = [v for v in common.records("votes") if (v.get("value") or 0) < 0 and (v.get("ts") or 0) >= now - forum.DISLIKE_AUTHOR_GAP]
     left = max(0, forum.DISLIKE_HOUR_MAX - sum(1 for v in downs if (v.get("ts") or 0) >= now - 3600))
+    ever = set(state.get("disliked") or [])              # an author once in the round (Patch 3.5 sells extra dislike votes)
     picked = forum.pick_votes(posts, voted, now, decide or harness.decide, like=now - state.get("liked_at", 0) >= forum.LIKE_GAP,
-                              dislikes_left=left, skip_authors={v.get("author") for v in downs})
+                              dislikes_left=left, skip_authors={v.get("author") for v in downs} | ever)
+    state["disliked"] = sorted(ever | {v["author"] for v in picked if v["value"] < 0 and v.get("author")})
     for v in picked:
         forum.outbox(vote=v["post"], value=v["value"], **{"as": "buyer"})
         common.record("votes", **v)

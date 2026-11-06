@@ -68,9 +68,21 @@ def pct(values: list, v) -> float:
     return (below + 0.5 * level) / (len(values) - 1)
 
 
+RAW = ":raw"             # a part the board takes as its value, not its percentile (Patch 3.5's forum rating, 0-1)
+
+
+def base(k: str) -> str:
+    return k.split(":")[0]
+
+
 def num(row: dict, k: str):
-    v = row.get(k)
-    return v if isinstance(v, (int, float)) else 0
+    v = row.get(base(k))
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
+
+
+def score_of(k: str, col: list, v) -> float:
+    """What one row's value of part k gives before its weight: the value itself for a raw part, else its percentile."""
+    return v if k.endswith(RAW) else pct(col, v)
 
 
 def pools(board: dict) -> tuple[list, list]:
@@ -82,23 +94,23 @@ def pools(board: dict) -> tuple[list, list]:
 def alls(rows: list, weights: dict) -> dict:
     """{name: ALL} for every row, by the formula."""
     cols = {k: [num(r, k) for r in rows] for k in weights}
-    return {r["name"]: round(sum(w * pct(cols[k], num(r, k)) for k, w in weights.items()), 4) for r in rows}
+    return {r["name"]: round(sum(w * score_of(k, cols[k], num(r, k)) for k, w in weights.items()), 4) for r in rows}
 
 
 def parts(me: dict, rows: list, weights: dict) -> dict:
     """For each part: our value, percentile, what it gives, and the next AHEAD rows above us in it, each as
     {need: how much more of the part, gain: what our ALL gains}."""
-    base = alls(rows, weights)[me["name"]]
+    here, base_of = alls(rows, weights)[me["name"]], base
     out = {}
     for k, w in weights.items():
         v = num(me, k)
         col = [num(r, k) for r in rows]
         steps = []
         for t in sorted({x for x in col if x > v})[:AHEAD]:
-            nv = round(t + UNIT[k], 4)
-            moved = [dict(r, **{k: nv}) if r["name"] == me["name"] else r for r in rows]
-            steps.append({"need": round(nv - v, 4), "gain": round(alls(moved, weights)[me["name"]] - base, 4)})
-        out[k] = {"value": v, "pct": round(pct(col, v), 4), "gives": round(w * pct(col, v), 4), "next": steps}
+            nv = round(t + UNIT.get(base_of(k), 1), 4)
+            moved = [dict(r, **{base_of(k): nv}) if r["name"] == me["name"] else r for r in rows]
+            steps.append({"need": round(nv - v, 4), "gain": round(alls(moved, weights)[me["name"]] - here, 4)})
+        out[k] = {"value": v, "pct": round(pct(col, v), 4), "gives": round(w * score_of(k, col, v), 4), "next": steps}
     return out
 
 
@@ -158,6 +170,9 @@ def refit(rows: list) -> dict | None:
         if len(set(p)) > 1 and p not in cols.values():         # a field level for every row, or a copy of another: no part
             cols[k] = p
             live.append(k)
+        if len(set(col)) > 1 and all(0 <= x <= 1 for x in col):  # 0-1 (a rating): its value may count as it is (3.5)
+            cols[k + RAW] = [float(x) for x in col]
+            live.append(k + RAW)
     if not live or len(rows) < 2 * len(live) + 5:
         return None
     y = [r["all"] for r in rows]
@@ -239,9 +254,9 @@ def project(rows: list, weights: dict, then: dict, hours: float) -> tuple[list, 
         if not before or hours <= 0:
             out.append(r)
             continue
-        pace = {k: (num(r, k) - before[i]) / hours for i, k in enumerate(keys) if k not in LEVEL}
+        pace = {k: (num(r, k) - before[i]) / hours for i, k in enumerate(keys) if base(k) not in LEVEL}
         paces[r["name"]] = pace
-        out.append(dict(r, **{k: num(r, k) + pace[k] * PROJECT / 3600 for k in pace}))
+        out.append(dict(r, **{base(k): num(r, k) + pace[k] * PROJECT / 3600 for k in pace}))
     return out, paces
 
 
