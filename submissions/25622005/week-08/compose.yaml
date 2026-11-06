@@ -2,13 +2,14 @@ name: week08-market
 
 services:
   market:
-    image: week08-agent:n36l
-    platform: linux/amd64
+    image: week08-agent:mac
+    platform: linux/arm64
     build:
       context: ../../..
       dockerfile: submissions/25622005/week-08/Dockerfile
       args:
         CLOUDFLARED_VERSION: "2026.10.2"
+        CLAUDE_CODE_VERSION: "${CLAUDE_CODE_VERSION:-2.1.318}"
     init: true
     restart: unless-stopped
     environment:

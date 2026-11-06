@@ -1,6 +1,7 @@
 # Build from the repository root; compose.yaml supplies that context.
-# Target: HP N36L, AMD Athlon II Neo (K10, family 16). It has SSE3 and SSE4a but no
-# SSSE3, SSE4.1, SSE4.2 or AVX, so every native part must run on baseline x86-64.
+# Target: the Mac (Docker Desktop, linux/arm64), latest Claude Code native binary.
+# The old HP N36L (AMD K10: no SSSE3, SSE4.x or AVX) still builds with
+# --platform linux/amd64 --build-arg CLAUDE_CODE_VERSION=2.1.112 (the last pure-JS cli.js).
 ARG CLOUDFLARED_VERSION=2026.10.2
 FROM cloudflare/cloudflared:${CLOUDFLARED_VERSION} AS tunnel
 FROM node:22-bookworm-slim AS node
@@ -9,9 +10,9 @@ FROM node:22-bookworm-slim AS node
 # Node.js is here only to run the Claude Code CLI: the strategist's strategy call
 # and the kit hooks' negotiation fallback (EXCEPTION_HARNESS_CMD).
 FROM python:3.12.11-slim-bookworm
-# Last npm release with the Node.js CLI; newer ones run a native binary that
-# fails with Illegal instruction on K10 (week-07 DEPLOY_NAS.md, N40L section).
-ARG CLAUDE_CODE_VERSION=2.1.112
+# Releases after 2.1.112 ship a per-platform native binary (optional dependency); needed for Opus 5.5.
+# On K10 that binary fails with Illegal instruction (week-07 DEPLOY_NAS.md, N40L section).
+ARG CLAUDE_CODE_VERSION=2.1.318
 
 # git and ssh push the strategist's records to a separate repository (strategist/publish.py); Debian builds, baseline x86-64.
 # HOME is /data/home on the persistent volume: gosu sets HOME from this passwd entry, so the
@@ -38,11 +39,9 @@ COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && node --version \
     && npm --version
-# Do not pull native sharp modules (the model calls send text only).
-# Require cli.js so changing the version cannot silently restore the native binary.
-RUN npm install --global --omit=optional "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
-    && test -f /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js \
-    && ln -sf /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js /usr/local/bin/claude \
+# Optional dependencies stay on: the native binary comes in as one (claude-code-linux-arm64).
+# npm links bin/claude for either layout (native binary or the old cli.js).
+RUN npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
     && claude --version \
     && npm cache clean --force
 
