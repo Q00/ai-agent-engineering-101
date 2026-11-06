@@ -1,0 +1,51 @@
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/test_seller_opening.py:6: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_buyer_never_returns_over_budget_or_invalid_actions (test_harness.OpeningResponseTests.test_buyer_never_returns_over_budget_or_invalid_actions) ... ok
+test_execution_failures_preserve_a_log_and_do_not_return_a_price (test_harness.OpeningResponseTests.test_execution_failures_preserve_a_log_and_do_not_return_a_price) ... ok
+test_first_recorded_response_keeps_the_models_price (test_harness.OpeningResponseTests.test_first_recorded_response_keeps_the_models_price) ... ok
+test_invalid_output_is_reasked_and_each_attempt_is_preserved (test_harness.OpeningResponseTests.test_invalid_output_is_reasked_and_each_attempt_is_preserved) ... ok
+test_invalid_prices_are_rejected_not_replaced (test_harness.OpeningResponseTests.test_invalid_prices_are_rejected_not_replaced) ... ok
+test_plain_json_for_each_reserve (test_harness.OpeningResponseTests.test_plain_json_for_each_reserve) ... ok
+test_seller_limits_apply_to_counteroffers_and_acceptance (test_harness.OpeningResponseTests.test_seller_limits_apply_to_counteroffers_and_acceptance) ... ok
+test_unusable_responses_are_rejected (test_harness.OpeningResponseTests.test_unusable_responses_are_rejected) ... ok
+test_harness_failure_becomes_failed_task_without_a_quote (test_seller_opening.SellerOpeningTests.test_harness_failure_becomes_failed_task_without_a_quote) ... ok
+test_model_quotes_become_input_required_messages (test_seller_opening.SellerOpeningTests.test_model_quotes_become_input_required_messages) ... Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_cancel_during_inference_cannot_reopen_task (test_seller.SellerCancellationTests.test_cancel_during_inference_cannot_reopen_task) ... ok
+test_model_can_counter_a_valid_offer_then_accept_later (test_seller.SellerDecisionTests.test_model_can_counter_a_valid_offer_then_accept_later) ... ok
+test_model_rejection_ends_negotiation (test_seller.SellerDecisionTests.test_model_rejection_ends_negotiation) ... ok
+test_accept_must_match_current_ask_not_the_previous_offer (test_buyer.BuyerTests.test_accept_must_match_current_ask_not_the_previous_offer) ... ok
+test_deadline_expires_without_sending_the_models_price (test_buyer.BuyerTests.test_deadline_expires_without_sending_the_models_price) ... ok
+test_harness_failure_cancels_and_is_not_replaced_with_a_rule (test_buyer.BuyerTests.test_harness_failure_cancels_and_is_not_replaced_with_a_rule) ... ok
+test_incompatible_agent_card_fails_before_starting_a_task (test_buyer.BuyerTests.test_incompatible_agent_card_fails_before_starting_a_task) ... ok
+test_model_walk_away_cancels_without_an_offer (test_buyer.BuyerTests.test_model_walk_away_cancels_without_an_offer) ... ok
+test_negotiates_one_task_with_version_header_and_authorized_receipt (test_buyer.BuyerTests.test_negotiates_one_task_with_version_header_and_authorized_receipt) ... ok
+test_over_budget_model_offer_is_never_sent (test_buyer.BuyerTests.test_over_budget_model_offer_is_never_sent) ... ok
+test_receipt_cannot_charge_a_different_even_affordable_price (test_buyer.BuyerTests.test_receipt_cannot_charge_a_different_even_affordable_price) ... ok
+test_cli_last_line_is_exact_result_even_after_progress_output (test_market_buyer.MarketBuyerTests.test_cli_last_line_is_exact_result_even_after_progress_output) ... ok
+test_empty_shop_list_fails_with_json_without_contacting_a_shop (test_market_buyer.MarketBuyerTests.test_empty_shop_list_fails_with_json_without_contacting_a_shop) ... ok
+test_evidence_is_bounded_without_forgetting_old_mismatch (test_market_buyer.MarketBuyerTests.test_evidence_is_bounded_without_forgetting_old_mismatch) ... ok
+test_large_market_reduces_batches_without_dropping_winner_evidence (test_market_buyer.MarketBuyerTests.test_large_market_reduces_batches_without_dropping_winner_evidence) ... ok
+test_mismatched_receipt_is_remembered_across_url_changes (test_market_buyer.MarketBuyerTests.test_mismatched_receipt_is_remembered_across_url_changes) ... ok
+test_over_budget_offer_never_reaches_wire_and_failure_is_remembered (test_market_buyer.MarketBuyerTests.test_over_budget_offer_never_reaches_wire_and_failure_is_remembered) ... ok
+test_receipt_preserved_with_signature_extra_fields_and_task_continuation (test_market_buyer.MarketBuyerTests.test_receipt_preserved_with_signature_extra_fields_and_task_continuation) ... ok
+test_selection_supplies_reviews_and_name_memory_to_harness (test_market_buyer.MarketBuyerTests.test_selection_supplies_reviews_and_name_memory_to_harness) ... ok
+test_walk_away_has_null_receipt_review_and_memory (test_market_buyer.MarketBuyerTests.test_walk_away_has_null_receipt_review_and_memory) ... ok
+test_wrong_item_and_task_are_rejected (test_market_buyer.MarketBuyerTests.test_wrong_item_and_task_are_rejected) ... ok
+test_a2a_receipt_is_signed_and_bound_to_task_and_price (test_receipt_signing.ReceiptTests.test_a2a_receipt_is_signed_and_bound_to_task_and_price) ... ok
+test_missing_key_fails_closed_only_in_round2_mode (test_receipt_signing.ReceiptTests.test_missing_key_fails_closed_only_in_round2_mode) ... ok
+test_noninteger_prices_are_not_silently_rounded (test_receipt_signing.ReceiptTests.test_noninteger_prices_are_not_silently_rounded) ... ok
+test_disconnected_client_cancels_upstream (test_public_market.HeartbeatTests.test_disconnected_client_cancels_upstream) ... ok
+test_empty_upstream_and_transport_error_become_json_rpc_errors (test_public_market.HeartbeatTests.test_empty_upstream_and_transport_error_become_json_rpc_errors) ... 22:50:55 [public proxy] upstream failure: JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+22:50:55 [public proxy] upstream failure: JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+22:50:55 [public proxy] upstream failure: ConnectionError: offline
+ok
+test_heartbeat_arrives_before_slow_reply_and_preserves_receipt (test_public_market.HeartbeatTests.test_heartbeat_arrives_before_slow_reply_and_preserves_receipt) ... ok
+test_owner_pitch_and_review_request_preserve_prices_and_signature (test_shop_marketing.MarketingTests.test_owner_pitch_and_review_request_preserve_prices_and_signature) ... ok
+
+----------------------------------------------------------------------
+Ran 38 tests in 0.147s
+
+OK

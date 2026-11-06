@@ -1,0 +1,18 @@
+Buyer-only snapshot: /Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111640Z-f076463b
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/run_market_buyer_checks.py", line 76, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/run_market_buyer_checks.py", line 59, in main
+    kit.buyer_tests(run, config)
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/scripts/market_test_week07.py", line 475, in buyer_tests
+    line, (rec,), urls, timed_out = run_market_buyer(sub, cfg, name, run, [{"name": "Kit Shop", "reviews": []}], sc)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/scripts/market_test_week07.py", line 425, in run_market_buyer
+    port = free_port()
+           ^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/scripts/market_test_week07.py", line 106, in free_port
+    s.bind(("127.0.0.1", 0))
+PermissionError: [Errno 1] Operation not permitted

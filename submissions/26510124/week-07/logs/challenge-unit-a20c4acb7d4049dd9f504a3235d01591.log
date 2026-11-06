@@ -1,0 +1,53 @@
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-06/test_catalog.py:12: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_accept_must_match_current_ask_not_the_previous_offer (test_buyer.BuyerTests.test_accept_must_match_current_ask_not_the_previous_offer) ... ok
+test_deadline_expires_without_sending_the_models_price (test_buyer.BuyerTests.test_deadline_expires_without_sending_the_models_price) ... ok
+test_harness_failure_cancels_and_is_not_replaced_with_a_rule (test_buyer.BuyerTests.test_harness_failure_cancels_and_is_not_replaced_with_a_rule) ... ok
+test_incompatible_agent_card_fails_before_starting_a_task (test_buyer.BuyerTests.test_incompatible_agent_card_fails_before_starting_a_task) ... ok
+test_model_walk_away_cancels_without_an_offer (test_buyer.BuyerTests.test_model_walk_away_cancels_without_an_offer) ... ok
+test_negotiates_one_task_with_version_header_and_authorized_receipt (test_buyer.BuyerTests.test_negotiates_one_task_with_version_header_and_authorized_receipt) ... ok
+test_over_budget_model_offer_is_never_sent (test_buyer.BuyerTests.test_over_budget_model_offer_is_never_sent) ... ok
+test_receipt_cannot_charge_a_different_even_affordable_price (test_buyer.BuyerTests.test_receipt_cannot_charge_a_different_even_affordable_price) ... ok
+test_cancel_during_catalog_inference_cannot_publish_a_late_quote (test_catalog.CatalogCancellationTests.test_cancel_during_catalog_inference_cannot_publish_a_late_quote) ... ok
+test_committed_catalog_is_reproducible_and_distinct (test_catalog.CatalogRetrievalTests.test_committed_catalog_is_reproducible_and_distinct) ... ok
+test_constrained_search_counts_all_matches_but_exposes_at_most_eight (test_catalog.CatalogRetrievalTests.test_constrained_search_counts_all_matches_but_exposes_at_most_eight) ... ok
+test_harness_receives_only_candidates_not_the_whole_catalog (test_catalog.CatalogRetrievalTests.test_harness_receives_only_candidates_not_the_whole_catalog) ... {"event": "catalog_search", "constraints": {"category": "lamp", "material": "metal", "max_height_cm": 55}, "total": 4000, "matched_count": 200, "candidate_count": 8, "candidate_ids": ["lamp-0251", "lamp-0252", "lamp-0253", "lamp-0254", "lamp-0255", "lamp-0256", "lamp-0257", "lamp-0258"]}
+{"event": "catalog_selection", "action": "select", "product_id": "lamp-0251", "price": 95, "reason": "Fits lighting requirement"}
+ok
+test_model_cannot_invent_item_or_violate_its_reserve (test_catalog.CatalogRetrievalTests.test_model_cannot_invent_item_or_violate_its_reserve) ... ok
+test_twenty_shop_partitions_cover_inventory_without_duplicate_stock (test_catalog.CatalogRetrievalTests.test_twenty_shop_partitions_cover_inventory_without_duplicate_stock) ... ok
+test_unknown_constraints_fail_instead_of_being_silently_ignored (test_catalog.CatalogRetrievalTests.test_unknown_constraints_fail_instead_of_being_silently_ignored) ... ok
+test_harness_failure_does_not_fabricate_a_selection_or_price (test_catalog.CatalogServerTests.test_harness_failure_does_not_fabricate_a_selection_or_price) ... ok
+test_quote_and_receipt_preserve_the_same_suitable_product_and_hide_reserve (test_catalog.CatalogServerTests.test_quote_and_receipt_preserve_the_same_suitable_product_and_hide_reserve) ... {"event": "catalog_sale", "task_id": "c0fa1f6d-326b-4d41-875d-3e857c058627", "seller": "Catalog Furniture Shop", "item": "bookshelf-0121", "product": {"id": "bookshelf-0121", "name": "Natural wood bookshelf, open, 70h x 60w cm", "description": "A natural wood bookshelf with open design, 70 cm tall and 60 cm wide. Stores up to 40 average 3-cm-thick books.", "category": "bookshelf", "material": "wood", "color": "natural", "style": "open", "height_cm": 70, "width_cm": 60, "capacity_books": 40, "upholstered": false}, "price": 150}
+ok
+test_unclear_description_keeps_task_open_until_clarified (test_catalog.CatalogServerTests.test_unclear_description_keeps_task_open_until_clarified) ... Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_buyer_never_returns_over_budget_or_invalid_actions (test_harness.OpeningResponseTests.test_buyer_never_returns_over_budget_or_invalid_actions) ... ok
+test_execution_failures_preserve_a_log_and_do_not_return_a_price (test_harness.OpeningResponseTests.test_execution_failures_preserve_a_log_and_do_not_return_a_price) ... ok
+test_first_recorded_response_keeps_the_models_price (test_harness.OpeningResponseTests.test_first_recorded_response_keeps_the_models_price) ... ok
+test_invalid_output_is_reasked_and_each_attempt_is_preserved (test_harness.OpeningResponseTests.test_invalid_output_is_reasked_and_each_attempt_is_preserved) ... ok
+test_invalid_prices_are_rejected_not_replaced (test_harness.OpeningResponseTests.test_invalid_prices_are_rejected_not_replaced) ... ok
+test_plain_json_for_each_reserve (test_harness.OpeningResponseTests.test_plain_json_for_each_reserve) ... ok
+test_seller_limits_apply_to_counteroffers_and_acceptance (test_harness.OpeningResponseTests.test_seller_limits_apply_to_counteroffers_and_acceptance) ... ok
+test_unusable_responses_are_rejected (test_harness.OpeningResponseTests.test_unusable_responses_are_rejected) ... ok
+test_cancel_during_inference_cannot_reopen_task (test_seller.SellerCancellationTests.test_cancel_during_inference_cannot_reopen_task) ... ok
+test_model_can_counter_a_valid_offer_then_accept_later (test_seller.SellerDecisionTests.test_model_can_counter_a_valid_offer_then_accept_later) ... ok
+test_model_rejection_ends_negotiation (test_seller.SellerDecisionTests.test_model_rejection_ends_negotiation) ... ok
+test_harness_failure_becomes_failed_task_without_a_quote (test_seller_opening.SellerOpeningTests.test_harness_failure_becomes_failed_task_without_a_quote) ... ok
+test_model_quotes_become_input_required_messages (test_seller_opening.SellerOpeningTests.test_model_quotes_become_input_required_messages) ... Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_one_walkaway_reports_unmet_item_without_reallocating_its_money (test_shopping.ConcurrentShoppingTests.test_one_walkaway_reports_unmet_item_without_reallocating_its_money) ... ok
+test_twenty_cards_three_concurrent_negotiations_and_summaries (test_shopping.ConcurrentShoppingTests.test_twenty_cards_three_concurrent_negotiations_and_summaries) ... ok
+test_wrong_product_cancels_before_any_price_or_negotiation_model_call (test_shopping.ConcurrentShoppingTests.test_wrong_product_cancels_before_any_price_or_negotiation_model_call) ... ok
+test_constraints_and_receipt_validate_identity_not_just_affordability (test_shopping.ContractTests.test_constraints_and_receipt_validate_identity_not_just_affordability) ... ok
+test_large_summary_is_rejected_and_recent_turns_preserve_exact_facts (test_shopping.ContractTests.test_large_summary_is_rejected_and_recent_turns_preserve_exact_facts) ... ok
+test_ledger_rejects_duplicate_purchases_without_mutating_spend (test_shopping.ContractTests.test_ledger_rejects_duplicate_purchases_without_mutating_spend) ... ok
+test_plan_rejects_duplicate_missing_unknown_and_aggregate_overspend (test_shopping.ContractTests.test_plan_rejects_duplicate_missing_unknown_and_aggregate_overspend) ... ok
+
+----------------------------------------------------------------------
+Ran 38 tests in 0.520s
+
+OK
