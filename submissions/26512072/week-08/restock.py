@@ -17,7 +17,7 @@ Round 3 showed demand is concentrated (one mattress, one kimchi, bedding and wat
 settles), so best sellers get up to 5 units (6 above 100,000), ranked by credits settled, and fast-selling food is
 kept even if short-lived. 11-04 02:20: mattresses were 54% of the market's credits over 3 hours, one queen mattress
 (list 423,810) sold 424 times against 437 supplied, and mine sold within minutes of arriving. Goods break in about 2% of the market's deals, so expensive goods are worth the warranty.
-Money: keep 1,000,000 in cash, hold at most 7,000,000 of stock at cost, spend at most 40% of the balance a run
+Money: keep 1,000,000 in cash, hold at most 4,000,000 of fresh stock (bought in the last 6 h) at cost, spend at most 40% of the balance a run
 (about two runs fit in one window).
 Food: only SKUs that keep for 10 days or more, unless the market or I sold that SKU before.
 No more of a SKU while one of my units of it has waited longer than 3 hours (profit counts the balance, not stock).
@@ -33,7 +33,7 @@ from r3lib import (FLOW_HOURS, HERE, SALES, append_jsonl, catalog, forum_wants, 
                    read_jsonl, refresh_market_sales)
 
 CASH_FLOOR = 1_000_000
-STOCK_CAP = 7_000_000
+STOCK_CAP = 4_000_000   # stock bought in the last 6 h, at cost
 SPEND_SHARE = 0.40
 MAX_LINES = 10
 MAX_LIST = 700_000
@@ -65,7 +65,10 @@ def main():
     have = Counter(u["sku"] for u in units)
     # a unit of mine that has waited longer than a snapshot means the buyers went elsewhere: buy no more of that SKU
     stale = {u["sku"] for u in units if market_now() - (u.get("supplied_at") or market_now()) > FLOW_HOURS * 3600}
-    stock_cost = sum(u.get("cost") or 0 for u in units)     # counting stale units half let stock reach 10.6M (11-05)
+    # the cap is for stock that is still selling: units unsold 6 h are already offered at cost (seller_r3.STALE_HOURS)
+    # and counting them blocked all buying for 14 h on 11-05 (7.66M stale > the 7M cap; 133 negotiations in 14 h).
+    # Expensive SKUs that sat are kept out by MAX_LIST and the stale-SKU rule instead.
+    stock_cost = sum(u.get("cost") or 0 for u in units if market_now() - (u.get("supplied_at") or market_now()) <= 6 * 3600)
     budget = min(balance - CASH_FLOOR, STOCK_CAP - stock_cost, balance * SPEND_SHARE)
     if budget <= 0:
         print(json.dumps({"buy": []}))
@@ -92,7 +95,7 @@ def main():
         if cat[sku]["list_price"] <= 100_000:
             target = min(5, max(3 if sku in mine else 1, 1 + n // 6))   # what I sold has to last to the next window
         else:
-            target = min(6, 1 + n // 40)
+            target = min(3, 1 + n // 40)        # 9% of my goods broke: no more than 3 of one expensive SKU
         why = (f"sold by me ({mine[sku]} in 3 h)" if sku in mine else
                f"sold in the market ({hot[sku]} settles in {FLOW_HOURS} h)")
         wants.append((why, sku, target))
