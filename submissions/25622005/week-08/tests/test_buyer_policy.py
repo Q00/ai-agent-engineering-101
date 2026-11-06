@@ -98,6 +98,18 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["p_reach"], cs[0]["score"]), (32000, 0.2, 1.0, 0.18))
         self.assertIn("ask est 32000", cs[0]["why"])
 
+    def test_settled_price_in_the_ledger_outranks_first_asks(self):
+        shops = [shop("http://a", ("F2", 1)), shop("http://b", ("F2", 1))]
+        book = {"market": {"price_book": {"http://a": {"sku": {"F2": {"n": 2, "med": 0.6}}},
+                                           "http://b": {"cat": {"김치": {"n": 5, "med": 0.9}}}}}}
+        cs = bp.candidates(FOOD, shops, CATALOG, book, POL, self.known("http://b", 0.70))
+        self.assertEqual([c["shop"] for c in cs], ["http://a", "http://b"])
+        self.assertEqual((cs[0]["ask_est"], cs[0]["price_src"], cs[0]["kept"]), (24000, "ledger", 0.4))
+        self.assertIn("settled est 24000", cs[0]["why"])
+        self.assertEqual((cs[1]["ask_est"], cs[1]["price_src"]), (36000, "ledger"))   # the book beats the ask
+        cs = bp.candidates(FOOD, shops, CATALOG, {}, POL, self.known("http://b", 0.70))
+        self.assertEqual((cs[0]["shop"], cs[0]["price_src"], cs[1]["price_src"]), ("http://b", "ask", None))
+
     def test_known_shop_asking_above_the_cap_ranks_below_an_unknown_one(self):
         shops = [shop("http://a", ("F2", 1)), shop("http://b", ("F2", 1))]
         cs = bp.candidates(FOOD, shops, CATALOG, {}, POL, self.known("http://a", 1.0))

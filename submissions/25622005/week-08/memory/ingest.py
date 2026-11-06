@@ -43,6 +43,8 @@ RATE_H = 6                                                   # sku_rate and p_cl
 CLEAR_KEEP_H = COST_KEEP_H = 24                              # paid/list and our cost/list buckets
 SUPPLY_BUCKET_S = 300                                        # market supply units in 5 min buckets, kept 1 h
 P_CLEAR_MIN_N = 20                                           # fewer settles of a kind in 6 h: p_clear None
+PB_KEEP_H = 24                                               # price book: each shop's settled paid/list, by SKU and
+PB_SKU_KEEP, PB_CAT_KEEP = 4, 8                              # by category leaf, the newest few sales kept 24 h
 STATE_V = 1                                                  # layout of cursor.json's summary_state
 IDS_KEEP_S = 2 * 3600                                        # dedupe horizon for event ids (see fold)
 PURCHASE_KEEP_S = BREAK_WINDOW_S + 3 * 3600                  # a breakage frozen at BROKEN_FINAL_S still sees its buy
@@ -218,6 +220,11 @@ def ledger_rows(row, catalog, market, me, our_ledgers):
             if lp and lp > 0 and amount is not None and item.get("kind") in ("food", "goods"):  # 0..2, 2 decimals: bounded
                 _add(market.setdefault("clear_hour", {}).setdefault(item["kind"], {}).setdefault(hour, {}),
                      f"{max(0.0, min(amount / lp, 2.0)):.2f}")
+                if shop:                                      # the price book: what this shop's sales kept of list
+                    share = round(max(0.0, min(amount / lp, 2.0)), 3)
+                    pb = market.setdefault("price_book", {})
+                    _pb_add(pb.setdefault("sku", {}).setdefault(shop, {}), sku, share, int(hour), PB_SKU_KEEP)
+                    _pb_add(pb.setdefault("cat", {}).setdefault(shop, {}), leaf, share, int(hour), PB_CAT_KEEP)
             if (catalog.get(sku) or {}).get("kind") == "goods":
                 g = market.setdefault("cat_goods", {}).setdefault(leaf, [0, 0])
                 g[0] += 1
@@ -255,6 +262,30 @@ def ledger_rows(row, catalog, market, me, our_ledgers):
     if d.get("buyer") == NAME or (shop and shop in me) or d.get("name") == NAME:
         return [{**base, "kind": f"ledger_{kind}", "raw": d}]       # unknown kinds that name us: keep as is
     return []
+
+
+def _pb_add(d, key, share, hour, keep):
+    """Append [share, hour] under key, keeping the newest `keep` rows."""
+    rows = d.setdefault(key, [])
+    rows.append([share, hour])
+    del rows[:-keep]
+
+
+def _pb_prune(pb, first):
+    """Drop price-book rows before hour `first`, then keys and shops left empty."""
+    for level in list(pb or {}):
+        shops = pb[level] if isinstance(pb[level], dict) else {}
+        for shop, keys in list(shops.items()):
+            for key, rows in list(keys.items() if isinstance(keys, dict) else []):
+                kept = [r for r in rows if isinstance(r, list) and len(r) == 2 and r[1] >= first]
+                if kept:
+                    keys[key] = kept
+                else:
+                    del keys[key]
+            if not keys:
+                del shops[shop]
+        if not shops:
+            del pb[level]
 
 
 def pull_ledger(cursor, deadline, catalog, me, our_ledgers):
@@ -307,6 +338,7 @@ def prune_market(market, now):
                        ("own_cost", COST_KEEP_H)):
         _cut(market.get(name), hour - keep)
     _cut(market.get("supply_5m"), int((now - 3600) // SUPPLY_BUCKET_S))
+    _pb_prune(market.get("price_book"), hour - PB_KEEP_H)
 
 
 # --- attribution and the summary
@@ -638,8 +670,18 @@ def render_market(cursor, now):
                 if int(h) >= int(now // 3600) - COST_KEEP_H + 1]
         paid, listed = sum(c[0] for c in cost), sum(c[1] for c in cost)
         c_kind[kind] = round(paid / listed, 4) if listed else None
+    book, first_pb = {}, int(now // 3600) - PB_KEEP_H
+    pb = m.get("price_book") if isinstance(m.get("price_book"), dict) else {}
+    for level in ("sku", "cat"):
+        for shop, keys in (pb.get(level) or {}).items():
+            for key, rows in (keys.items() if isinstance(keys, dict) else []):
+                vals = [r[0] for r in rows if isinstance(r, list) and len(r) == 2 and r[1] >= first_pb
+                        and isinstance(r[0], (int, float))]
+                if vals:
+                    book.setdefault(shop, {}).setdefault(level, {})[key] = \
+                        {"n": len(vals), "med": round(statistics.median(vals), 4)}
     return {"since": since, "sku_rate": rate, "sku_settles_48h": settles_48h, "supply_1h": supply,
-            "p_clear": p_clear, "c_kind": c_kind}
+            "p_clear": p_clear, "c_kind": c_kind, "price_book": book}
 
 
 def build_summary(events, cursor, catalog, demand, window_h, now):

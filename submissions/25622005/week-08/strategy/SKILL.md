@@ -180,7 +180,9 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
   and `buyer.min_kept` stays at or above the board's saved for our buyer. Walking away costs nothing in Saved.
 - The food cap is min(`buyer.cap_food`, 1 - `buyer.min_surplus_list`); raising `cap_food` above
   that has no effect.
-- Ask by SKU. Offer `buyer.open_list` of list first, even under a first quote at or below the
+- Rank shops by what their sales kept of list in the public ledger (the price book: the shop's settled
+  price of the SKU, else of the category, over 24 h), before their first asks: a settled price is firmer
+  evidence than an ask. Ask by SKU. Offer `buyer.open_list` of list first, even under a first quote at or below the
   cap (accept that quote at once only after `buyer.target_s` or when the offer would not be
   lower); accept a counter at or below the cap, otherwise offer the cap as final. After haggling
   under a first quote, never pay more than that quote. Never mention the budget.

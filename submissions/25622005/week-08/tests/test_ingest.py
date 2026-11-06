@@ -586,6 +586,32 @@ class MarketTest(unittest.TestCase):
                          (0.0, 0, 0.61))
         self.assertEqual(query.market_covered_h(s), 72.0)
 
+    def test_price_book_by_shop_sku_and_category(self):
+        now = T0 + 100 * H + 1800
+        market = {"since": now - 72 * H}
+        a, b = "https://a.example", "https://b.example/"
+        rows = [("settle", now - 60, {"item": "F", "amount": 600, "shop": a})] * 2 \
+            + [("settle", now - 60, {"item": "F", "amount": 900, "shop": a})] \
+            + [("settle", now - 2 * H, {"item": "G", "amount": 7000, "shop": a})] \
+            + [("settle", now - 30 * H, {"item": "F", "amount": 100, "shop": b})] * 3 \
+            + [("settle", now - 60, {"item": "F", "amount": 800, "shop": b})] \
+            + [("settle", now - 60, {"item": "X", "amount": 1, "shop": b})] \
+            + [("settle", now - 60, {"item": "F", "amount": 500})]              # no shop: not in the book
+        self.fold(market, rows)
+        ingest.prune_market(market, now)
+        book = ingest.render_market({"market": market}, now)["price_book"]
+        self.assertEqual(book[a]["sku"], {"F": {"n": 3, "med": 0.6}, "G": {"n": 1, "med": 0.7}})
+        self.assertEqual(book[a]["cat"], {"f": {"n": 3, "med": 0.6}, "g": {"n": 1, "med": 0.7}})
+        self.assertEqual(book["https://b.example"]["sku"], {"F": {"n": 1, "med": 0.8}})   # 30 h old pruned
+        s = {"built_at": now, "market": ingest.render_market({"market": market}, now)}
+        self.assertEqual(query.shop_price(s, a, "F", "f"), {"share": 0.6, "n": 3, "level": "sku"})
+        self.assertEqual(query.shop_price(s, a + "/", "H", "a>f"), {"share": 0.6, "n": 3, "level": "cat"})
+        self.assertIsNone(query.shop_price(s, a, "G", "g"))                   # one sale each: too few
+        self.assertIsNone(query.shop_price(s, "https://c.example", "F", "f"))
+        self.assertIsNone(query.shop_price({"market": {}}, a, "F", "f"))
+        self.fold(market, [("settle", now - 60, {"item": "F", "amount": 100, "shop": a})] * 10)
+        self.assertEqual(len(market["price_book"]["sku"][a]["F"]), ingest.PB_SKU_KEEP)      # bounded
+
     def test_fresh_fold_divides_by_the_hours_folded(self):
         now = T0 + 100 * H + 1800
         market = {"since": now - 1800}

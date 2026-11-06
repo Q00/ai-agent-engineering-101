@@ -147,8 +147,9 @@ def candidates(order, shops, catalog, summary, pol, asks=None):
     """One best SKU per shop from offers ∩ acceptable, best first, at most buyer.max_shops shops.
 
     score = kept x p_checkout x p. kept is the expected share of list kept (Patch 3.4 Saved) at the likely price:
-    the shop's estimated first ask (its ask share in asks x V, from ASK_MIN_N first asks of the kind) when below
-    the cap, else the cap. p is p_price of that estimated ask, or the P0 p_reach without one. A goods shop that
+    the shop's settled share of list from the public ledger (query.shop_price: its sales of the SKU, else of
+    the category, in 24 h) x V, else its estimated first ask (its ask share in asks x V, from ASK_MIN_N first
+    asks of the kind), when below the cap, else the cap. p is p_price of that estimated ask, or the P0 p_reach without one. A goods shop that
     granted the 6 h warranty in most first replies (w >= 0.5) is judged at the warranty cap, as negotiate()
     raises the cap when the warranty comes. Ties go to the higher list price (every food SKU of a shop keeps the
     same share)."""
@@ -177,7 +178,8 @@ def candidates(order, shops, catalog, summary, pol, asks=None):
                 continue
             e = (asks or {}).get(ask_key(url, k))
             known = _ask_entry(e) and e["n"] >= ASK_MIN_N
-            ask_est = int(e["share"] * V) if known else None
+            settled = query.shop_price(summary, url, sku, leaf)
+            ask_est = int(settled["share"] * V) if settled else int(e["share"] * V) if known else None
             wh = WARRANTY_FULL_H if known and k != "food" and e.get("w", 0) >= 0.5 else 0
             c_est = cap(V, k, wh, q_upper, budget, pol) if wh else c
             p_est = c_est if ask_est is None else min(c_est, ask_est)
@@ -187,12 +189,14 @@ def candidates(order, shops, catalog, summary, pol, asks=None):
             cand = {"shop": url, "shop_name": shop.get("name"), "sku": sku,
                     "name": offer.get("name") or catalog[sku].get("name") or sku, "V": V, "kind": k,
                     "cap": c, "q": q, "q_upper": q_upper, "surplus_at_cap": round(surplus),
-                    "ask_est": ask_est, "kept": round(kept, 4),
+                    "ask_est": ask_est, "price_src": "ledger" if settled else "ask" if known else None,
+                    "kept": round(kept, 4),
                     "p_checkout": round(pc, 4), "p_reach": round(pr, 4), "score": round(score, 4),
                     "shop_stats": stats,
                     "memory_refs": [query.summary_ref("shop", url), query.summary_ref("cat", leaf)],
                     "why": f"kept {kept:.3f} of list at {p_est} x p_checkout {pc:.2f} x "
-                           + (f"p_reach {pr:.2f}" if ask_est is None else f"p_price {pr:.2f} (ask est {ask_est}"
+                           + (f"p_reach {pr:.2f}" if ask_est is None else
+                              f"p_price {pr:.2f} ({'settled' if settled else 'ask'} est {ask_est}"
                               + (f", {wh} h warranty cap {c_est})" if wh else ")"))}
             if url not in best or (cand["score"], V) > (best[url]["score"], best[url]["V"]):
                 best[url] = cand

@@ -102,6 +102,22 @@ def p_clear(summary, kind):
     return _num((_market(summary, "p_clear") or {}).get(kind))
 
 
+def shop_price(summary, shop_url, sku, leaf, min_sku_n=2, min_cat_n=3):
+    """What one shop's settled sales kept of list over the last 24 h, from the public ledger (the price book):
+    {"share": median paid/list, "n", "level"} by SKU with at least min_sku_n sales, else by category leaf with
+    at least min_cat_n, else None. A settled price is firmer evidence than a first ask."""
+    book = _market(summary, "price_book")
+    if book is None:
+        return None
+    s = _d(book.get(str(shop_url or "").rstrip("/")))
+    for level, key, need in (("sku", sku, min_sku_n), ("cat", _leaf(leaf), min_cat_n)):
+        e = _d(_d(s.get(level)).get(key))
+        n, med = int(_num(e.get("n")) or 0), _num(e.get("med"))
+        if med is not None and n >= need:
+            return {"share": med, "n": n, "level": level}
+    return None
+
+
 def c_kind(summary, kind):
     """Our mean supply cost / list price of a kind over 24 h, else the fallback."""
     return _num((_market(summary, "c_kind") or {}).get(kind)) or C_KIND_FALLBACK.get(kind)
