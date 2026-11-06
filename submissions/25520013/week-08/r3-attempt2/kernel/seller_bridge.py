@@ -21,7 +21,7 @@ import threading
 import time
 
 from kernel import common as c
-from kernel import memory
+from kernel import memory, versions
 from kernel.agent import Agent
 from kernel.replay import CLI, HARNESS, MARKET_BRIEF, MAX_UNITS, _tokens
 from kernel.trajectory import Trajectory
@@ -228,6 +228,17 @@ class Bridge:
         """Should attempt 2 answer this request? Its own deals always; a new task only while the flag is on."""
         return task_id in self.deals or (not a1_open and live_on(self.root))
 
+    def trial(self, task_id):
+        """Arm of a new request while a side-by-side trial runs: {"ctx": routing for Agent.decide, "tag": metric
+        fields}. Both empty without a trial; the base arm is tagged too, so each trial's rows compare like with like."""
+        arm, v = versions.trial_arm(HARNESS, "seller", task_id)
+        if v is None:
+            return {"ctx": {}, "tag": {}}
+        ctx = {"arm": arm}
+        if arm == "trial":
+            ctx["harness_dir"] = versions.trial_dir(HARNESS, "seller", v)
+        return {"ctx": ctx, "tag": {"arm": arm, "trial_v": v}}
+
     def held(self):
         return set(self.a1_held()) | {
             d["unit"].get("unit") for d in self.deals.values()
@@ -294,17 +305,18 @@ class Bridge:
             self._metric("no_stock", {"request": masked[:80]})
             return "reject", TEXT_NO_STOCK, None
         pol = self.policy()
+        trial = self.trial(task_id)
         decision, meta = await self._decide(
-            "seller.open", {"request_text": masked, "units": units}, {"units": units}
+            "seller.open", {"request_text": masked, "units": units}, dict(trial["ctx"], units=units)
         )
         if decision.get("action") != "offer":
             self._metric(
-                "declined", {"request": masked[:80], "route": meta["route"]}, pol=pol
+                "declined", dict(trial["tag"], request=masked[:80], route=meta["route"]), pol=pol
             )
             return "reject", decision.get("message") or TEXT_DECLINE, None
         uid, ask = decision["unit"], decision["ask"]
         if uid in self.held():  # another deal took it while the model was thinking
-            self._metric("a2_unit_taken", {"unit": uid}, pol=pol)
+            self._metric("a2_unit_taken", dict(trial["tag"], unit=uid), pol=pol)
             return "reject", TEXT_DECLINE, None
         u = raw[uid]
         sh = self.shelf(u["sku"])
@@ -318,16 +330,18 @@ class Bridge:
             "offers": [],
             "pol": pol,
             "sh": sh,
+            "trial": trial,
         }
         self._metric(
             "open",
-            {
-                "sku": u["sku"],
-                "unit": uid,
-                "cost": u.get("cost"),
-                "ask": ask,
-                "route": meta["route"],
-            },
+            dict(
+                trial["tag"],
+                sku=u["sku"],
+                unit=uid,
+                cost=u.get("cost"),
+                ask=ask,
+                route=meta["route"],
+            ),
             pol=pol,
         )
         msg = decision.get("message") or self.opening_text(u, pol, ask, None, sh)
@@ -346,7 +360,8 @@ class Bridge:
             "buyer_text": c.mask(text, self.secrets),
             "previous_offers": list(deal["offers"]),
         }
-        decision, meta = await self._decide("seller.respond", situation, {})
+        trial = deal.get("trial") or {"ctx": {}, "tag": {}}
+        decision, meta = await self._decide("seller.respond", situation, dict(trial["ctx"]))
         if offer is not None:
             deal["offers"].append(offer)
         move, price = decision.get("action"), decision.get("price")
@@ -382,6 +397,7 @@ class Bridge:
             self._metric(
                 "accept",
                 {
+                    **trial["tag"],
                     "sku": u["sku"],
                     "unit": u["unit"],
                     "cost": u.get("cost"),
@@ -414,6 +430,7 @@ class Bridge:
         self._metric(
             "reject",
             {
+                **trial["tag"],
                 "sku": u["sku"],
                 "offer": offer,
                 "rounds": deal["rounds"],

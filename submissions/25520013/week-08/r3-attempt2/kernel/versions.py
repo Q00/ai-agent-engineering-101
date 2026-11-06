@@ -9,6 +9,7 @@ of decisions that fell back to the do-nothing action on format errors or timeout
 
 import contextlib
 import fcntl
+import hashlib
 import json
 import os
 import shutil
@@ -386,3 +387,107 @@ def check_breakage(
                 st[agent]["last_good"] = cur
                 _save_state(harness_root, st)
     return out
+
+
+# ---------------------------------------------------------------- side-by-side trial (동시 비교, 2026-11-06)
+# One harness version runs at a time, so a before/after comparison always mixes the version with the time of day and the
+# request mix (live 11-06 01-09h: the operator judged 74 of 75 effects undecidable). A trial runs a candidate next to the
+# current version at the same time: each new request goes to one arm by a hash of its task id, so both arms see the same
+# hours and the same kind of requests. The kernel only assigns and counts; starting, adopting or dropping is the
+# operator's call. One trial per agent; only the seller is wired (the buyer makes about 90 decisions an hour).
+TRIAL_AGENTS = ("seller",)
+TRIAL_SHARE = (0.1, 0.9, 0.5)  # min, max, default share of new requests sent to the candidate
+
+
+def _trial_path(harness_root):
+    return os.path.join(library_dir(harness_root), "trial.json")
+
+
+def trial_state(harness_root):
+    """{agent: {version, base, share, started_ts, reason}} of running trials."""
+    st = c.load_json(_trial_path(harness_root), {})
+    return {k: v for k, v in st.items() if isinstance(v, dict)} if isinstance(st, dict) else {}
+
+
+def trial_dir(harness_root, agent, version):
+    return _version_dir(harness_root, agent, version)
+
+
+def trial_arm(harness_root, agent, key):
+    """("trial" | "base", trial version or None) for one request. Deterministic in key, so a deal keeps its arm."""
+    t = trial_state(harness_root).get(agent)
+    if not t:
+        return "base", None
+    u = int(hashlib.sha256(f"{agent}:{t.get('version')}:{key}".encode()).hexdigest()[:8], 16) / 0x100000000
+    return ("trial" if u < float(t.get("share") or 0) else "base"), t.get("version")
+
+
+def bound_share(share):
+    lo, hi, default = TRIAL_SHARE
+    if not isinstance(share, (int, float)) or isinstance(share, bool):
+        return default
+    return max(lo, min(hi, float(share)))
+
+
+def start_trial(harness_root, agent, files, share=None, reason=None, secrets=(), now=None):
+    """Store the current version plus files as a candidate version in the library (not installed) and start the trial.
+    -> (ok, {"version", "base", "share"} or {"errors"})."""
+    now = c.now_ts() if now is None else now
+    if agent not in TRIAL_AGENTS:
+        return False, {"errors": [f"동시 비교는 {TRIAL_AGENTS}만 됨"]}
+    cur = os.path.join(harness_root, agent)
+    with _locked(harness_root):
+        if agent in trial_state(harness_root):
+            return False, {"errors": [f"{agent} 동시 비교가 이미 진행 중임. trial_end로 먼저 끝냄"]}
+        st = load_state(harness_root)
+        a = _agent_state(harness_root, st, agent, now)
+        tmp = tempfile.mkdtemp(prefix=f".{agent}-trial-", dir=harness_root)
+        try:
+            new_dir = os.path.join(tmp, agent)
+            errors = stage(cur, new_dir, files, secrets)
+            if errors:
+                return False, {"errors": errors}
+            v = _next_version(harness_root, agent, a)
+            with open(os.path.join(new_dir, "VERSION"), "w", encoding="utf-8") as f:
+                f.write(f"{v}\n")
+            errors = hz.validate_dir(new_dir)
+            if errors:
+                return False, {"errors": [f"validate: {e}" for e in errors]}
+            _store(harness_root, agent, v, new_dir)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        base = _read_version(cur)
+        t = {
+            "version": v,
+            "base": base,
+            "share": bound_share(share),
+            "started_ts": now,
+            "reason": c.mask(str(reason or ""), secrets)[:500],
+            "files": sorted(files),
+        }
+        trials = trial_state(harness_root)
+        trials[agent] = t
+        _write_atomic(_trial_path(harness_root), json.dumps(trials, ensure_ascii=False, indent=1))
+        a.setdefault("history", []).append(
+            {"version": v, "ts": now, "reason": f"동시 비교 후보: {t['reason']}"[:500], "files": t["files"], "trial": True}
+        )
+        _save_state(harness_root, st)
+        return True, {"version": v, "base": base, "share": t["share"]}
+
+
+def end_trial(harness_root, agent, adopt, reason=None, now=None):
+    """Stop the trial; with adopt, install the candidate as the new current version.
+    -> (ok, {"trial": {...}, "adopted": bool, "version"?: new current} or {"errors"})."""
+    now = c.now_ts() if now is None else now
+    with _locked(harness_root):
+        trials = trial_state(harness_root)
+        t = trials.pop(agent, None)
+        if t is None:
+            return False, {"errors": [f"{agent} 동시 비교가 진행 중이 아님"]}
+        _write_atomic(_trial_path(harness_root), json.dumps(trials, ensure_ascii=False, indent=1))
+    if not adopt:
+        return True, {"trial": t, "adopted": False}
+    ok, info = revert(harness_root, agent, t["version"], reason or f"동시 비교 후보 판 {t['version']} 채택", now)
+    if not ok:
+        return False, dict(info, trial=t)
+    return True, {"trial": t, "adopted": True, "version": info["version"]}

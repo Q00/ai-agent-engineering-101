@@ -52,12 +52,15 @@ ACTION_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나
   "reflection": [{"target": "seller|buyer|operator", "version": <판 번호>, "effects": [{"edit": "<수정 요약>", "effect": "도움|해로움|효과 없음|판단 불가", "evidence": "<근거>"}], "lesson": "<교훈 하나 또는 null>"}],
   "edits": [{"target": "seller|buyer|operator", "files": {"<상대 경로>": "<파일 전체 내용 또는 null(삭제)>"}, "reason": "<근거: 궤적의 어느 순간, 어떤 숫자>"}],
   "revert": [{"target": "seller|buyer|operator", "version": <돌아갈 판>, "reason": "<이유>"}],
+  "trial": {"target": "seller", "files": {"<상대 경로>": "<파일 전체 내용 또는 null>"}, "share": <후보로 보낼 새 요청 비율 0.1~0.9>, "reason": "<근거>"},
+  "trial_end": {"target": "seller", "adopt": <true면 후보를 지금 판으로 설치, false면 버림>, "reason": "<근거>"},
   "settings": {"interval_s": <초>, "wake_after_requests": <건수>, ...},
   "restock_plan": {"buy": [{"sku": "<SKU>", "qty": <양의 정수>}], "valid_until": <유닉스 시각>},
   "forum": [{"post": "<글>", "as": "shop|buyer"}],
   "memcheck": <true|false>,
   "note": "<이번 점검 요약>"}}
-done의 모든 항목은 선택임. 빈 done도 답임 (고치지 않음)."""
+done의 모든 항목은 선택임.
+trial은 판매자 후보 판을 지금 판과 같은 시간에 나란히 돌림: 새 판매 요청이 task id 해시로 두 판에 무작위로 나뉨. 진행 중에는 판매자 edits와 revert가 막히고, trial_end로 채택하거나 버림. 브리핑의 [동시 비교] 줄에 두 판 숫자가 나옴."""
 
 
 def bounded(settings):
@@ -307,6 +310,9 @@ class Operator:
                 continue
             target, files = e["target"], e.get("files")
             reason = c.mask(str(e.get("reason") or ""), self.secrets)[:1000]
+            if target in versions.trial_state(self.harness_root):
+                errors.append(f"{target}: 동시 비교 중에는 지금 판을 바꾸지 않음. trial_end로 먼저 끝냄")
+                continue
             closing = None
             if target in ("seller", "buyer"):
                 closing = (b.version_results(self.root, target, now, last=1, harness_root=self.harness_root) or [None])[-1]
@@ -369,6 +375,9 @@ class Operator:
             if not isinstance(r, dict) or r.get("target") not in EDIT_TARGETS:
                 continue
             reason = c.mask(str(r.get("reason") or ""), self.secrets)[:500]
+            if r["target"] in versions.trial_state(self.harness_root):
+                out.append({"target": r["target"], "ok": False, "errors": ["동시 비교 중에는 되돌리지 않음. trial_end로 먼저 끝냄"]})
+                continue
             ok, info = versions.revert(self.harness_root, r["target"], r.get("version"), reason or None, now)
             if ok:
                 self.traj.append(
@@ -381,6 +390,51 @@ class Operator:
                 )
             out.append({"target": r["target"], "ok": ok, **info})
         return out
+
+    def _trial_end(self, item, now):
+        if not isinstance(item, dict) or item.get("target") not in versions.TRIAL_AGENTS:
+            return {"ok": False, "errors": [f"trial_end.target must be one of {versions.TRIAL_AGENTS}"]}
+        target, adopt = item["target"], item.get("adopt") is True
+        reason = c.mask(str(item.get("reason") or ""), self.secrets)[:500]
+        t = versions.trial_state(self.harness_root).get(target)
+        closing = b.trial_results(self.root, now, harness_root=self.harness_root) if t else None
+        ok, info = versions.end_trial(self.harness_root, target, adopt, reason or None, now)
+        if not ok:
+            return {"ok": False, **info}
+        tr = info["trial"]
+        self.traj.append(
+            "operator", "trial_end", target=target, version=tr["version"], base=tr["base"], adopt=adopt,
+            reason=reason, metrics=(closing or {}).get("arms"),
+        )
+        if adopt:
+            base = (b.version_results(self.root, target, now, last=1, harness_root=self.harness_root) or [None])[-1]
+            if base is not None:
+                self.traj.append(
+                    "operator", "version_result", target=target, version=base["version"], since_ts=base["since_ts"],
+                    until_ts=now, metrics=base["metrics"],
+                )
+            self.traj.append(
+                "operator", "harness_edit", target=target, version=info["version"], files=tr.get("files") or [],
+                reason=f"동시 비교 채택(후보 판 {tr['version']}): {reason}"[:1000], adopted_from=tr["version"],
+            )
+        return {"ok": True, "adopted": adopt, "version": info.get("version"), "trial_version": tr["version"]}
+
+    def _trial_start(self, item, now):
+        if not isinstance(item, dict) or item.get("target") not in versions.TRIAL_AGENTS:
+            return {"ok": False, "errors": [f"trial.target must be one of {versions.TRIAL_AGENTS}"]}
+        reason = c.mask(str(item.get("reason") or ""), self.secrets)[:1000]
+        try:
+            ok, info = versions.start_trial(
+                self.harness_root, item["target"], item.get("files"), item.get("share"), reason, self.secrets, now
+            )
+        except (OSError, ValueError) as ex:
+            ok, info = False, {"errors": [type(ex).__name__]}
+        if ok:
+            self.traj.append(
+                "operator", "trial_start", target=item["target"], version=info["version"], base=info["base"],
+                share=info["share"], files=sorted(item.get("files") or {}), reason=reason,
+            )
+        return {"ok": ok, **info}
 
     def _restock(self, plan, now):
         if not isinstance(plan, dict):
@@ -440,6 +494,8 @@ class Operator:
         """Apply a done action. Edit format errors go back to the model once for one corrected try."""
         result = {"note": c.mask(str(done.get("note") or ""), self.secrets)[:500]}
         result["reflection"] = self._reflect(done.get("reflection"))
+        if "trial_end" in done:
+            result["trial_end"] = self._trial_end(done["trial_end"], now)
         result["revert"] = self._revert(done.get("revert"), now)
         applied, errors = self._apply_edits(done.get("edits"), now)
         result["edit_errors"] = errors
@@ -459,6 +515,8 @@ class Operator:
             except (ModelRefused, ModelError, ParseError) as e:
                 result["retry_errors"] = [f"retry failed: {type(e).__name__}"]
         result["edits"] = applied
+        if "trial" in done:
+            result["trial"] = self._trial_start(done["trial"], now)
         if isinstance(done.get("settings"), dict):
             cur = c.load_json(os.path.join(self.harness_root, "operator", "settings.json"), {}) or {}
             new = dict(cur, **done["settings"])

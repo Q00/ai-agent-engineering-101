@@ -11,7 +11,7 @@ import statistics as st
 from collections import Counter, defaultdict
 
 from kernel import common as c
-from kernel import restock
+from kernel import restock, versions
 
 BOARD_DIRS = ("a2/board", "icrl/state/board")
 HARNESS_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "harness")
@@ -429,6 +429,128 @@ def mix_adjusted(prev, cur):
     return rate(prev), rate(cur), len(common)
 
 
+def trial_results(root, now, harness_root=None):
+    """The running seller trial, both arms counted from .r3/metrics.jsonl rows tagged with its trial_v, or None.
+
+    A request is one of open, declined (by the model) or a2_unit_taken; a sale is an accept. Revenue and margin per
+    request average over all requests, zeros included, so their SE is the plain standard error of a mean.
+    """
+    t = versions.trial_state(harness_root or HARNESS_ROOT).get("seller")
+    if not t:
+        return None
+    cat = _catalog(root)
+    acc = {
+        a: {"requests": 0, "offers": 0, "sales": 0, "rev": [], "margin": [], "ratios": [], "cats": defaultdict(lambda: [0, 0])}
+        for a in ("base", "trial")
+    }
+    for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 60_000_000, b'"trial_v"'):
+        if m.get("hook") != "seller" or (m.get("ts") or 0) < t.get("started_ts", 0):
+            continue
+        o = m.get("outcome")
+        if isinstance(o, str):
+            try:
+                o = json.loads(o)
+            except ValueError:
+                continue
+        if not isinstance(o, dict) or o.get("trial_v") != t.get("version") or o.get("arm") not in acc:
+            continue
+        a, d = acc[o["arm"]], m.get("decision")
+        leaf = _leaf((cat.get(o.get("sku")) or {}).get("category"))
+        if d in ("open", "declined", "a2_unit_taken"):
+            a["requests"] += 1
+        if d == "open":
+            a["offers"] += 1
+            a["cats"][leaf][0] += 1
+        if d == "accept" and isinstance(o.get("price"), (int, float)):
+            p = float(o["price"])
+            a["sales"] += 1
+            a["rev"].append(p)
+            if isinstance(o.get("cost"), (int, float)):
+                a["margin"].append(p - o["cost"])
+            lp = _list_price(cat, o.get("sku"))
+            if lp:
+                a["ratios"].append(p / lp)
+            a["cats"][leaf][1] += 1
+
+    def mean_se(vals, n):
+        if not n:
+            return None, None
+        m = sum(vals) / n
+        var = sum(v * v for v in vals) / n - m * m
+        return m, (max(var, 0.0) / n) ** 0.5
+
+    arms = {}
+    for k, a in acc.items():
+        n = a["requests"]
+        rev, rev_se = mean_se(a["rev"], n)
+        mar, mar_se = mean_se(a["margin"], n)
+        arms[k] = {
+            "requests": n,
+            "offers": a["offers"],
+            "sales": a["sales"],
+            "conversion": round(a["sales"] / n, 4) if n else None,
+            "conversion_se": _se(min(1.0, a["sales"] / n), n) if n else None,
+            "revenue_per_request": rev,
+            "revenue_per_request_se": rev_se,
+            "margin_per_request": mar,
+            "margin_per_request_se": mar_se,
+            "price_to_list_median": round(st.median(a["ratios"]), 4) if a["ratios"] else None,
+            "by_category": {leaf: {"offers": x[0], "sales": x[1]} for leaf, x in a["cats"].items()},
+        }
+    return {"trial": t, "arms": arms}
+
+
+def section_trial(root, now, harness_root=None):
+    r = trial_results(root, now, harness_root)
+    if r is None:
+        return ["[동시 비교] 진행 중 없음. done의 trial로 판매자 후보 판을 지금 판과 같은 시간에 나란히 돌릴 수 있음"]
+    t, base, cand = r["trial"], r["arms"]["base"], r["arms"]["trial"]
+    hours = (now - t["started_ts"]) / 3600
+    out = [
+        f"[동시 비교 판매자] 후보 판 {t['version']} 대 지금 판 {t['base']}, {c.kst(t['started_ts'])}부터 {hours:.1f}시간, "
+        f"새 요청의 {t['share']:.0%}를 후보로 보냄. 요청을 같은 시간에 무작위로 나눴으므로 시간대와 요청 구성은 두 판에 같게 걸림",
+        f"  후보가 바꾼 파일: {', '.join(t.get('files') or []) or '-'} | 이유: {t.get('reason') or '-'}",
+    ]
+
+    def line(label, a):
+        if not a["requests"]:
+            return f"  {label}: 요청 0"
+        return (
+            f"  {label}: 요청 {a['requests']}, 제시 {a['offers']}, 판매 {a['sales']}, "
+            f"판매/요청 {a['conversion']:.3f} (SE {a['conversion_se']:.3f}), "
+            f"요청당 매출 {c.fmt(a['revenue_per_request'])} (SE {c.fmt(a['revenue_per_request_se'])}), "
+            f"요청당 이익(가격-원가) {c.fmt(a['margin_per_request'])} (SE {c.fmt(a['margin_per_request_se'])}), "
+            f"정가 대비 가격 중앙 {_num_or_dash(a['price_to_list_median'])}"
+        )
+
+    out.append(line(f"지금 판 {t['base']}", base))
+    out.append(line(f"후보 판 {t['version']}", cand))
+    if base["requests"] and cand["requests"]:
+        def diff(k, fmt):
+            d = cand[k] - base[k]
+            se = (cand[k + "_se"] ** 2 + base[k + "_se"] ** 2) ** 0.5
+            return f"{fmt(d)} (SE {fmt(se)})"
+
+        sign = lambda f: (lambda x: ("+" if x >= 0 else "") + f(x))
+        out.append(
+            "  차이(후보 - 지금): 판매/요청 " + diff("conversion", sign(lambda x: f"{x:.3f}"))
+            + ", 요청당 매출 " + diff("revenue_per_request", sign(c.fmt))
+            + ", 요청당 이익 " + diff("margin_per_request", sign(c.fmt))
+        )
+    cats = Counter()
+    for a in (base, cand):
+        for k, v in a["by_category"].items():
+            cats[k] += v["offers"]
+    if cats:
+        cell = lambda a, k: "{sales}/{offers}".format(**a["by_category"].get(k, {"offers": 0, "sales": 0}))
+        out.append(
+            "  상품군별 판매/제시 (지금, 후보): "
+            + ", ".join(f"{k} {cell(base, k)}, {cell(cand, k)}" for k, _ in cats.most_common(CATEGORY_TOP))
+        )
+    out.append("  별점은 리뷰가 거래 단위로 이어지지 않아 판별로 나누지 않음. 위 [판별 성과]의 판매와 별점은 두 판이 섞인 값임")
+    return out
+
+
 def section_categories(root, now, login):
     """Our sales per offer, our share of market settles and price/list, ours and the market's, per category in the
     last FLOW_BLOCKS blocks of FLOW_BLOCK_H hours. Numbers only."""
@@ -518,6 +640,7 @@ def version_metrics(target, rows, settles, reviews, cat, login, since, until):
             if r.get("kind") == "decision"
             and r.get("agent") == "seller"
             and r.get("decision_kind") == "seller.open"
+            and r.get("arm") != "trial"  # a side-by-side candidate's decisions belong to [동시 비교], not this version
             and inside(r)
         ]
         acts = Counter((r.get("decision") or {}).get("action") for r in dec)
@@ -753,6 +876,7 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_time(now, None)
         out.append("[순위] 순위표 스냅샷 없음")
         out += section_versions(root, now)
+        out += section_trial(root, now)
         out += section_categories(root, now, login)
         out += section_calls(root, now)
     else:
@@ -764,6 +888,7 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_time(now, bts)
         out += section_rank(b, b6, login, hours6)
         out += section_versions(root, now)
+        out += section_trial(root, now)
         out += section_categories(root, now, login)
         out += section_calls(root, now)
         out += section_side(

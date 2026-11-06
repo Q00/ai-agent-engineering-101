@@ -177,7 +177,21 @@ class Agent:
         )
 
         h, bad = None, []
-        for attempt in range(2):  # versions._install swaps the dir with two renames; it is briefly absent
+        arm = ctx.get("arm") if isinstance(ctx, dict) else None
+        trial_dir = ctx.get("harness_dir") if isinstance(ctx, dict) else None
+        if isinstance(ctx, dict) and (arm or trial_dir):  # kernel routing only; scripts and rules never see it
+            ctx = {k: v for k, v in ctx.items() if k not in ("arm", "harness_dir")}
+        if trial_dir:  # a side-by-side trial candidate: a stored library copy, never swapped while in use
+            try:
+                bad = hz.validate_dir(trial_dir)
+                if not bad:
+                    h = hz.load(trial_dir)
+                    version = h.version
+            except (OSError, ValueError) as e:
+                bad = [str(e)]
+            if h is None:  # a broken candidate must not cost the sale: the current version answers
+                errors += [f"trial harness: {e}" for e in bad]
+        for attempt in range(2 if h is None else 0):  # versions._install swaps the dir with two renames; it is briefly absent
             try:
                 bad = hz.validate_dir(self.harness_dir)
                 if not bad:
@@ -255,6 +269,7 @@ class Agent:
             "decision",
             decision_kind=kind,
             harness_version=version,
+            arm=arm,
             route_used=route_used,
             latency_s=latency,
             errors=errors,
@@ -268,4 +283,5 @@ class Agent:
             "errors": errors,
             "latency_s": latency,
             "harness_version": version,
+            "arm": arm,
         }
