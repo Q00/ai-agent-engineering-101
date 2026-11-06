@@ -12,11 +12,11 @@ from harness import (capability, experiment, knowledge, metrics, ops, participan
                      wisdom)
 from tools.registry import Refused, tool
 
-_DAY = {"type": "string", "pattern": "^\\d{8}$", "description": "YYYYMMDD, default today"}
+_DAY = {"type": "string", "pattern": "^\\d{4}-?\\d{2}-?\\d{2}$", "description": "YYYYMMDD or YYYY-MM-DD, default today"}
 
 
 def _day(day):
-    return day or time.strftime("%Y%m%d")
+    return day.replace("-", "") if day else time.strftime("%Y%m%d")    # 11/6 10:32: the model wrote 2026-11-06
 
 
 def _compact(t, steps=8):
