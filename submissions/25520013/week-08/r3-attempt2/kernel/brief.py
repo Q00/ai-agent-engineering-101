@@ -33,10 +33,12 @@ SHOP_KEYS = (
 BUYER_KEYS = ("saved", "forum", "posts", "deals")  # Patch 3.4 (11-06): saved replaced surplus in buyer ALL
 # ALL weights from MARKET_BRIEF (RULES): one rank in a column is worth about weight / (shops - 1) of that side's all.
 # Which of stars / stars_rank the formula reads is not published, so both carry the stars weight.
+# RAW_KEYS enter all as their own value, not a percentile (Patch 3.5, 11-06: buyer forum rating 0 to 1).
 ALL_WEIGHTS = {
     "가게": {"book": 0.5, "revenue": 0.3, "stars": 0.2, "stars_rank": 0.2},
     "구매자": {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1},
 }
+RAW_KEYS = {"구매자": ("forum",)}
 CLIMB_N = 3  # [가게]/[구매자]: gaps to the nearest shops above us, so a crowded column shows as small gaps
 RATE_KEYS = {"saved": 1.0}  # keys that are rates; before Patch 3.4 the board's saved column was an amount
 SELLER_DECISIONS = ("open", "accept", "cancel", "no_stock", "reject", "declined")
@@ -145,21 +147,26 @@ def section_side(rows, rows6, keys, label, login, hours6):
             f"  {k}: {c.fmt(v)} ({len(vals)}곳 중 {rk}위, 1위 {c.fmt(vals[0])}, 중앙 {c.fmt(st.median(vals))}"
             f"{rate})"
         )
-        climb = climb_line(vals, v, (ALL_WEIGHTS.get(label) or {}).get(k), label)
+        climb = climb_line(
+            vals, v, (ALL_WEIGHTS.get(label) or {}).get(k), label, raw=k in RAW_KEYS.get(label, ())
+        )
         if climb:
             out.append(climb)
     return out
 
 
-def climb_line(vals, v, weight, label):
+def climb_line(vals, v, weight, label, raw=False):
     """'    바로 위 N곳까지 차이 ...' for one board column: the gaps from our value to the nearest values above it, and
     what one rank is worth in that side's all when the column has a weight (weight / (count - 1), an estimate since
-    the board's percentile formula is not published). None when we are first."""
+    the board's percentile formula is not published). A raw column enters all as its value, so the line says what
+    +0.01 is worth instead. None when we are first."""
     above = sorted(x for x in vals if x > v)[:CLIMB_N]
     if not above:
         return None
     line = f"    바로 위 {len(above)}곳까지 차이: " + ", ".join(f"+{c.fmt(x - v)}" for x in above)
-    if weight and len(vals) > 1:
+    if weight and raw:
+        line += f"; 순위가 아니라 값 그대로 all에 들어감(Patch 3.5): 0.01 오르면 {label} all +{weight * 0.01:.4f}"
+    elif weight and len(vals) > 1:
         line += f"; 한 계단은 {label} all 약 +{weight / (len(vals) - 1):.4f} (가중치 {weight}, 추정)"
     return line
 
