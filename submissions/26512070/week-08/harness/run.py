@@ -50,10 +50,13 @@ def collect_round():
         c.close()
 
 
+META_EVERY_MIN = 30              # user 11/6 11:0x: every 30 minutes (was each even hour)
+
+
 def meta_due(now, last):
     tm = time.localtime(now)
-    sid = time.strftime("%Y-%m-%dT%H", tm)
-    return sid if tm.tm_hour % 2 == 0 and sid != last else None
+    sid = time.strftime("%Y-%m-%dT%H", tm) + f"{tm.tm_min // META_EVERY_MIN * META_EVERY_MIN:02d}"
+    return sid if sid != last else None
 
 
 def start_meta():
@@ -121,6 +124,14 @@ def once(state, now, shadow=False):
         job("market", lambda: len(market.watch(now)))
     if due("capability"):
         job("capability", lambda: str(capability.write()))
+    if not shadow:
+        from harness import fastpath
+        try:
+            settled = fastpath.settle(now)              # auto changes whose test period ended: keep or undo
+            if settled:
+                done["fastpath"] = settled
+        except Exception as e:
+            done["fastpath"] = f"failed: {type(e).__name__}: {e}"[:300]
     sid = meta_due(now, state.get("meta"))
     if sid:
         state["meta"] = sid

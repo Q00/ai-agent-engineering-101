@@ -156,6 +156,10 @@ def assemble(now=None, for_loop=False):
         ("participants, as shops our buyer met (observed, 24 h)", json.dumps(top_shops)),
         ("participants, as buyers of our shop (observed, 24 h)", json.dumps(top_buyers)),
         ("raw trajectories (samples)", json.dumps(samples(day))),
+        *([("waiting for the user's answer (do not ask again; carry on with other work - their answer is applied "
+            "when it comes, onto the strategy in force then)",
+            "\n".join(f"- {d['id']}: {d['title']} {json.dumps(d['change'])}" for d in wisdom.status()))]
+          if wisdom.status() else []),
         *([("the user's questions (answer these first in your report, with the evidence you looked up)",
             "\n".join(f"{i}. {q['q']}" for i, q in enumerate(questions(), 1)))] if questions() else []),
         ("the task", "Find the part of the class-view score with the most room you can move with one number, "
@@ -234,7 +238,9 @@ def cycle(now=None, call=None, dry=False):
             r["urgency"] = "page"                                    # R9: the morning, not the night
         try:
             doc = wisdom.request(r, by="meta", now=now)
-            rec["requests"].append({"id": doc["id"], "title": r.get("title"), "checks": doc["checks"]})
+            from harness import fastpath
+            fp = fastpath.try_apply(doc, now)              # user 11/6 11:0x: sure evidence is applied at once
+            rec["requests"].append({"id": doc["id"], "title": r.get("title"), "checks": doc["checks"], "fast": fp})
         except Exception as e:                                       # a malformed request is recorded, not sent
             rec["requests"].append({"title": r.get("title"), "refused": f"{type(e).__name__}: {e}"[:300]})
     d = out_dir() / "meta"

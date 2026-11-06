@@ -43,12 +43,12 @@ class RunTest(unittest.TestCase):
             self.assertEqual(done2, {})
             self.assertEqual(meta.call_count, 1)
 
-    def test_meta_due(self):
-        self.assertIsNotNone(run.meta_due(1793905200.0, None))            # 04:00
-        self.assertIsNone(run.meta_due(1793905200.0 + 3600, None))         # 05:00
-        sid = run.meta_due(1793905200.0, None)
-        self.assertIsNone(run.meta_due(1793905200.0 + 600, sid))           # same hour, once
-
+    def test_meta_due(self):                                                  # every 30 minutes (user 11/6)
+        t = 1793905200.0                                                      # 04:00
+        sid = run.meta_due(t, None)
+        self.assertIsNotNone(sid)
+        self.assertIsNone(run.meta_due(t + 600, sid))                         # 04:10: same slot
+        self.assertIsNotNone(run.meta_due(t + 1800, sid))                     # 04:30: next slot
 
 if __name__ == "__main__":
     unittest.main()

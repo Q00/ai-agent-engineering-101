@@ -21,7 +21,8 @@ from harness import alert
 ACTIONS = ("restock_stop", "sku_stop", "buyer_pause", "forum_stop", "models_stop")     # 17-4
 NOW_FINDINGS = ("the shop sold nothing", "the buyer paid nothing")                  # the rest are warnings
 # 17-5; strategy 2 -> 16 (user 11/6 10:3x): the meta-harness proposes in the tool loop, up to 8 calls a cycle
-BUDGET_PER_HOUR = {"seller": 30, "buyer": 30, "analyst": 12, "strategy": 16, "audit": 2, "forum": 0}
+# user 11/6 11:0x: meta every 30 min -> 2 cycles an hour: strategy up to 16 calls, analyst and audit 2 each
+BUDGET_PER_HOUR = {"seller": 30, "buyer": 30, "analyst": 12, "strategy": 24, "audit": 6, "forum": 0}
 STALE_S = 600
 
 

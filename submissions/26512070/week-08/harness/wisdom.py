@@ -122,6 +122,11 @@ def request(req, by="meta", now=None):
            "checks": check_change(req["change"])}
     atomic.write_json(_dir() / f"{rid}.json", doc)
     _log({"ts": now, "event": "request", "id": rid, "title": req["title"], "urgency": req["urgency"]})
+    for old in status():                       # an open request on the same numbers waits no longer (user 11/6)
+        if old["id"] != rid and set(old.get("base") or {}) & set(doc["base"]):
+            old.update(status="superseded", decision={"by": rid, "ts": now})
+            atomic.write_json(_dir() / f"{old['id']}.json", old)
+            _log({"ts": now, "event": "superseded", "id": old["id"], "by": rid})
     if req["urgency"] == "now":
         from harness import alert
         alert.send(f"[승인 요청] {req['title']}\n{rid} - py -m harness.wisdom show {rid}", level="now")

@@ -122,6 +122,24 @@ def result(exp_id, now=None):
     role = "buyer" if e["role"] == "buyer" else "seller"
     trs = [t for d in days for t in trajectory.build(d).values()
            if t["role"] == role and e["start"] <= t["start"] < min(now, e["end"])]
+    if e["method"] == "before_after":
+        # the fast path (harness.fastpath): the same length of time just before the change is the baseline
+        span = min(now, e["end"]) - e["start"]
+        bdays = sorted({time.strftime("%Y%m%d", time.localtime(t)) for t in (e["start"] - span, e["start"])})
+        before = [t for d in bdays for t in trajectory.build(d).values()
+                  if t["role"] == role and e["start"] - span <= t["start"] < e["start"]]
+        vb, va = _value(e["metric"], before), _value(e["metric"], trs)
+        out = {"id": exp_id, "status": e["status"], "metric": e["metric"], "before": vb, "after": va,
+               "n_before": len(before), "n_after": len(trs), "success_if": e["success_if"]}
+        if vb in (None, 0) or va is None or min(len(before), len(trs)) < 30:
+            out["verdict"] = "too few trades yet"
+            return out
+        change = (va - vb) / abs(vb)
+        want = e["success_if"]["by"] * (1 if e["success_if"]["direction"] == "up" else -1)
+        ok = change >= want if want >= 0 else change <= want
+        out["change"] = round(change, 3)
+        out["verdict"] = ("success" if ok else "no effect") if now >= e["end"] else ("on track" if ok else "not yet")
+        return out
     if e["method"] != "ab":
         return {"id": exp_id, "status": e["status"], "n": len(trs), "verdict": "needs the hourly comparison"}
     by = {"A": [t for t in trs if arm(exp_id, t["id"]) == "A"], "B": [t for t in trs if arm(exp_id, t["id"]) == "B"]}
