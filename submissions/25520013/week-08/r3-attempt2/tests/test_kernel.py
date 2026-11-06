@@ -596,6 +596,31 @@ def test_rivals_rates_from_two_snapshots_and_ours_appended():
     )
 
 
+def test_rivals_sold_lines_compare_what_shops_above_sold():
+    mk = lambda name, all_, url, **kw: dict(
+        name=name, all=all_, revenue=60e6, deals=60, book=6e6, card={"url": url}, **kw
+    )
+    shops = [mk(f"s{i}", 0.99 - i * 0.01, f"u{i}") for i in range(7)]
+    shops.append(mk("ours", 0.5, "uo", owner=LOGIN))
+    b6 = {"shops": [dict(x, revenue=0, deals=0, book=0) for x in shops]}
+    cat = {"SOFA": {"category": "가구>소파", "list_price": 1000}, "TEA": {"category": "식품>차", "list_price": 100}}
+    st = lambda url, sku, amt, grade, wh=0: {
+        "type": "settle", "src": "market", "data": {"shop": url, "sku": sku, "amount": amt, "grade": grade,
+                                                    "warranty_hours": wh},
+    }
+    settles = [st("u0", "SOFA", 700, "A", 6), st("u0", "SOFA", 800, "A"), st("u0", "TEA", 100, "B"),
+               st("uo", "TEA", 90, "C"), st("other", "SOFA", 1, "C")]
+    out = brief.section_rivals({"shops": shops}, b6, LOGIN, 6.0, settles, cat)
+    assert "우리 가게 all 순위 8/8" in out[0]
+    assert sum(1 for l in out if l.startswith("  ") and not l.startswith("    ")) == 8  # all 7 above, then ours
+    i = out.index(next(l for l in out if l.startswith(f"  {common.hid('s0')}")))
+    assert "book/매출 10%" in out[i]
+    assert out[i + 1] == ("    판 것 6시간: 거래 3, 정가 대비 중앙 80%, 정가 중앙 1,000, 등급 A 67% B 33%, "
+                          "보증 붙은 거래 33%, 상품군 소파 94%, 차 6%")
+    assert out[-1].startswith("    판 것 6시간: 거래 1, 정가 대비 중앙 90%") and out[-2].startswith("  우리:")
+    assert not any(common.hid("s1") in l for l in out[i + 2:i + 3] if l.startswith("    "))
+
+
 def test_negotiation_section_counts_ends_and_compares_with_market(tmp_path):
     r = tmp_path / "neg"
     for d in (".market", ".r3"):

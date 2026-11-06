@@ -998,22 +998,55 @@ def _seller_compare(prev, cur):
 
 COMPARE_TOP = 3  # [판 비교]: categories by market settles in the two windows
 RIVALS_TOP = 5  # [상위 가게]: the top shops by shop all, plus ours
+RIVALS_MAX = 8  # [상위 가게]: every shop above us is listed, up to this many
+RIVALS_CATS = 3  # [상위 가게]: category leaves per shop in its sold line
 NEGOTIATION_H = 6  # [협상 결과]: window
 NEGOTIATION_TOP = 4  # categories with the most offers
 NEGOTIATION_SKUS = 2  # SKUs per category, by offers
 ACCEPT_SETTLE_S = 600  # an accept counts as sold when our shop settles the same SKU within this many seconds after it
 
 
-def section_rivals(b, b6, login, hours6):
-    """[상위 가게]: per top shop (by shop all) and ours, the rate of revenue, deals and book over the last snapshot
-    gap (about 6 h) and revenue per deal in it. Other shops by hashed name. Numbers only."""
+def rival_sales(settles, cat, url):
+    """What the shop whose card url is `url` sold in `settles` (market settles carry the seller's card url as shop):
+    deals, median amount / list price, median list price, grade shares, the share sold with a warranty and the
+    category leaves by amount. None when it sold nothing."""
+    rows = [e.get("data") or {} for e in settles if url and (e.get("data") or {}).get("shop") == url]
+    if not rows:
+        return None
+    ratios, lps, amt = [], [], defaultdict(float)
+    for d in rows:
+        lp = d.get("list_price") if _is_num(d.get("list_price")) else _list_price(cat, d.get("sku"))
+        a = d.get("amount") if _is_num(d.get("amount")) else None
+        if lp and a is not None:
+            ratios.append(a / lp)
+        if lp:
+            lps.append(lp)
+        amt[_leaf(d.get("category") or (cat.get(d.get("sku")) or {}).get("category"))] += a or 0
+    grades = Counter(str(d.get("grade") or "?") for d in rows)
+    warranty = sum(1 for d in rows if _is_num(d.get("warranty_hours")) and d["warranty_hours"] > 0)
+    tot = sum(amt.values())
+    return {
+        "deals": len(rows),
+        "ratio": st.median(ratios) if ratios else None,
+        "list_price": st.median(lps) if lps else None,
+        "grades": {g: n / len(rows) for g, n in grades.items()},
+        "warranty": warranty / len(rows),
+        "cats": [(k, v / tot) for k, v in sorted(amt.items(), key=lambda kv: -kv[1])[:RIVALS_CATS]] if tot > 0 else [],
+    }
+
+
+def section_rivals(b, b6, login, hours6, settles=None, cat=None):
+    """[상위 가게]: per shop above us (at least the top RIVALS_TOP, at most RIVALS_MAX) and ours, the rate of
+    revenue, deals and book over the last snapshot gap (about 6 h), revenue per deal and book gain per revenue in it,
+    and with `settles` what each one sold (rival_sales). Other shops by hashed name. Numbers only."""
     shops = [s for s in b.get("shops") or [] if isinstance(s.get("all"), (int, float))]
     me = next((s for s in shops if c.is_mine(s, login)), None)
     if not shops or not hours6:
         return ["[상위 가게] 순위표 비교 불가 (스냅샷 부족)"]
     old = {s.get("name"): s for s in (b6 or {}).get("shops") or []}
     rank = sorted(shops, key=lambda s: -s["all"])
-    rows = rank[:RIVALS_TOP] + ([me] if me is not None and me not in rank[:RIVALS_TOP] else [])
+    top = rank[: min(RIVALS_MAX, max(RIVALS_TOP, rank.index(me) if me in rank else 0))]
+    rows = top + ([me] if me is not None and me not in top else [])
     out = [f"[상위 가게 {hours6:.0f}시간] 가게 all 순서, 각 값은 이 구간의 시간당 증가 (우리 가게 all 순위 "
            f"{rank.index(me) + 1 if me in rank else '-'}/{len(rank)})"]
     for s in rows:
@@ -1028,7 +1061,18 @@ def section_rivals(b, b6, login, hours6):
             f"  {who}: all {s['all']:.3f}, 매출 {c.fmt(d('revenue') / hours6)}/h, 거래 {deals / hours6:.0f}/h, "
             f"거래당 매출 {c.fmt(d('revenue') / deals) if deals > 0 else '-'}, book {c.fmt(d('book') / hours6)}/h, "
             f"재고 {s.get('stock_units', '-')}개, 별점 {s.get('stars', '-')}"
+            + (f", book/매출 {d('book') / d('revenue'):.0%}" if d("revenue") > 0 else "")
         )
+        sold = rival_sales(settles, cat or {}, (s.get("card") or {}).get("url")) if settles else None
+        if sold:
+            out.append(
+                f"    판 것 {hours6:.0f}시간: 거래 {sold['deals']}, 정가 대비 중앙 "
+                + (f"{sold['ratio']:.0%}" if sold["ratio"] is not None else "-")
+                + ", 정가 중앙 " + (f"{sold['list_price']:,.0f}" if sold["list_price"] else "-") + ", 등급 "
+                + " ".join(f"{g} {x:.0%}" for g, x in sorted(sold["grades"].items()))
+                + f", 보증 붙은 거래 {sold['warranty']:.0%}, 상품군 "
+                + ", ".join(f"{k} {x:.0%}" for k, x in sold["cats"])
+            )
     return out
 
 
@@ -1508,7 +1552,7 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_profit(root, now, login)
         out += section_share24(root, now, login)
         out += section_versions(root, now)
-        out += section_rivals(b, b6, login, hours6)
+        out += section_rivals(b, b6, login, hours6, market_settles(root, ts6), _catalog(root))
         out += section_trial(root, now)
         out += section_reflections(root, now)
         out += section_categories(root, now, login)
