@@ -13,6 +13,7 @@ def request_text(candidate, order):
     text = f"I want to buy {candidate['sku']}. Please quote this exact SKU, certificate, grade and warranty hours."
     if order.get('kind') == 'food':
         text += f" Food must last at least {order.get('use_within_hours', 0)} hours after payment."
+        text += ' State expires_at and the actual available unit. If none meets this shelf-life requirement, report unavailable.'
     else:
         text += ' Prefer a 6-hour warranty covering the full published break horizon; state the actual price and grade.'
     if candidate.get('avoid_units'):
@@ -37,7 +38,9 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
 
     def fetch(c):
         peer = peer_factory()
-        if enabled and hasattr(peer,'deadline'):peer.deadline=deadline
+        if enabled and hasattr(peer,'deadline'):
+            reserve=min(4,max(1,(deadline-time.time())/3)) if config.get('buyer_championship_enabled') else 0
+            peer.deadline=deadline-reserve
         try:
             peer.discover(c['shop'])
             return peer, peer.send(request_text(c, order))
@@ -57,6 +60,14 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
                 terms, ask = quote_terms(task), quote(task)
                 if terms.get('sku') not in (None, c['sku']):
                     raise ValueError('quote_sku_mismatch')
+                if config.get('buyer_championship_enabled'):
+                    from .buyer_scoring import offer_ineligible
+                    reason=offer_ineligible(terms,order,config)
+                    if reason:
+                        c['quote_failed']=True
+                        journal.add('buyer_declined_terms',{'order':order['order'],'shop':c['shop'],
+                                    'sku':c['sku'],'reason':reason,'stage':'rfq'},role='buyer')
+                        continue
                 assessment = buyer_assessment(dict(c['product'], sku=c['sku']), order, terms, journal, config)
                 q, qc, cap = assessment['failure'], assessment['covered_failure'], assessment['cap']
                 if cap<1:

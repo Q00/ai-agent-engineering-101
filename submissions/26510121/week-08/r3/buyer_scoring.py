@@ -74,3 +74,25 @@ def blocked_units(journal,shop,sku,order,now=None):
     return [r['unit'] for r in journal.get('buyer_offer_blocks',[]) if r['until']>now and
         r['shop']==shop and r['sku']==sku and (not r.get('expires_at') or
         r['expires_at']<now+order.get('use_within_hours',0)*3600+30)]
+
+
+def route_availability(journal,shop,sku,order,now=None):
+    """Recent proven refusals soften routing, never blacklist a whole seller.
+
+    A unit unsuitable for a 24h need may still serve a 1h need. Replenishment
+    can change availability, hence short memory and a strictly positive prior.
+    """
+    now=time.time() if now is None else now
+    blocks=blocked_units(journal,shop,sku,order,now)
+    return {'factor':1/(1+.6*min(3,len(blocks))), 'refused_units':len(blocks),
+            'source':'need-scoped, expiring pre-payment refusals; availability scenario'}
+
+
+def offer_ineligible(terms,order,config,now=None):
+    """Reject explicit impossible terms before another negotiation or checkout."""
+    now=time.time() if now is None else now
+    expiry=terms.get('expires_at')
+    if (order.get('kind')=='food' and type(expiry) in (int,float) and math.isfinite(expiry) and
+            expiry<now+order.get('use_within_hours',0)*3600+config.get('checkout_buffer_seconds',30)):
+        return 'shelf_life'
+    return None

@@ -11,6 +11,8 @@ def schedule(journal,config,book,catalog,now):
     recent.sort(key=lambda p:((p['value']-p['price'])/catalog[p['sku']]['list_price'],p['_ts']),reverse=True)
     drafts=[]
     for p in recent:
+        if (config.get('buyer_championship_enabled') and
+                now-journal.get('buyer_insight_sku:'+p['sku'],-100000)<1800):continue
         product=catalog[p['sku']];observed=book.get(p['sku'],{})
         w=p.get('warranty_hours') or 0
         matched=next((t for t in observed.get('term_prices',[]) if t['grade']==p.get('grade') and
@@ -23,11 +25,14 @@ def schedule(journal,config,book,catalog,now):
         quality=('결제 시 사용기한 검증 완료' if p.get('kind')=='food' else
                  '6시간 품질 결과 대기 중' if age<6 else '6시간 경과; 개별 고장·환불 기록 별도 확인')
         text=(f"[동일 조건 실결제 비교] {product.get('name',p['sku'])} ({p['sku']})\n"
-              f"내 정산가 {p['price']:,}, 정가 대비 {discount:.1%}; 등급 {p.get('grade')}, 보증 {w:g}h. "
+              f"내 정산가 {p['price']:,}, 정가 대비 할인 {discount:.1%}; 등급 {p.get('grade')}, 보증 {w:g}h. "
               f"최근 6h 같은 등급·보증 정산 {matched['n']}건의 중앙값 {matched['median']:,.0f}. "
               f"{quality}. 과거 정산이며 현재 재고·호가나 미래 품질을 보장하지 않습니다.")
         signature=identity(['price',p['ledger'],refs])
         drafts.append((signature,text,refs))
+    if config.get('buyer_championship_enabled') and bucket%3==1:
+        from .buyer_insights import alternatives
+        drafts=list(alternatives(journal,book,catalog,now))+drafts
     if bucket%3==2:
         broken={e.get('unit'):e for e in journal.events('public_broken',20000)}
         for p in journal.events('purchase',1000):
@@ -48,6 +53,9 @@ def schedule(journal,config,book,catalog,now):
         journal.queue_post({'post':text,'refs':refs,'as':'buyer','priority':6,
                             'expires_at':now+interval},'buyer-insight:'+str(bucket))
         journal.put('buyer_insight_used:'+signature,now)
+        if config.get('buyer_championship_enabled'):
+            for p in recent:
+                if p['ledger'] in refs:journal.put('buyer_insight_sku:'+p['sku'],now)
         journal.put('buyer_insight_bucket',bucket)
         journal.add('buyer_insight_queued',{'kind':'fault' if text.startswith('[확인된') else 'same_terms_price',
                                          'refs':refs,'signature':signature},role='buyer')

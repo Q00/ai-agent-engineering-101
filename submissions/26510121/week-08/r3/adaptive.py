@@ -105,6 +105,7 @@ def begin_buyer(journal, order):
         journal.put(key, selected)
         journal.add('buyer_order', {'order': order['order'], 'budget': order['budget'],
                     'kind': order.get('kind'), 'category': order.get('category'),
+                    'use_within_hours':order.get('use_within_hours',0),
                     'acceptable': (order.get('acceptable') or [])[:200],
                     'strategy_version': selected['version']}, eid='buyer-order:' + str(order['order']), role='buyer')
     return cfg, selected

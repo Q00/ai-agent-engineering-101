@@ -122,6 +122,13 @@ def update(journal, config=None, now=None, force=False):
             'buyer_payment_failures':dict(failures),'opportunities':opportunities,
             'suggestions':suggestions,'market_summary':market.get('summary',{}),
             'note':'observational diagnosis; policy trials require mature own evidence and rollback checks'}
+    if cfg.get('shop_championship_enabled') or cfg.get('buyer_championship_enabled'):
+        from .progress import observe
+        result['championship']=observe(journal,board,inv,cap,now)
+        # A shelf-life refusal is an eligibility/routing issue. Reducing all
+        # food search time because any old payment failed is not supported.
+        result['suggestions']=[s for s in result['suggestions'] if
+                              not (s['role']=='buyer' and s['field']=='buyer_food_time_seconds')]
     journal.put('market_control', result)
     journal.add('market_control', result)
     atomic_json(journal.md/'market-control.json', result)

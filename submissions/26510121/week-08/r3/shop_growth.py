@@ -30,7 +30,15 @@ def target_stock(rate, paid, config):
 def resale_terms(product,public,journal,config,now):
     """Match grade and warranty instead of taxing every goods sale as insured."""
     base=min(product['list_price'],public.get('median',.85*product['list_price']))
-    if product.get('kind')!='goods':return {'price':base,'refund_stress':0,'terms':[]}
+    if product.get('kind')!='goods':
+        if config.get('shop_championship_enabled'):
+            terms=[]
+            for grade,weight in [('A',.7),('B',.2),('C',.1)]:
+                term=next((t for t in public.get('term_prices',[]) if t.get('grade')==grade and
+                           not t.get('warranty_hours') and t.get('n',0)>=3),None)
+                terms.append({'grade':grade,'weight':weight,'price':min(product['list_price'],term['median']) if term else base})
+            return {'price':sum(r['weight']*r['price'] for r in terms),'refund_stress':0,'terms':terms}
+        return {'price':base,'refund_stress':0,'terms':[]}
     from .risk import goods_risk
     rows=[]
     for grade,weight in [('A',.7),('B',.2),('C',.1)]:
@@ -38,7 +46,11 @@ def resale_terms(product,public,journal,config,now):
         for term in public.get('term_prices',[]):
             if term.get('grade')!=grade or term.get('n',0)<3 or term.get('warranty_hours') not in (0,3,6):continue
             warranty=term['warranty_hours'];price=min(product['list_price'],term['median'])
-            refund=goods_risk(journal,grade,warranty,config,now)['failure_upper'] if warranty else 0
+            if config.get('shop_championship_enabled'):
+                from .risk import shop_refund_risk
+                refund=shop_refund_risk(journal,grade,warranty,config,now)['refund_upper']
+            else:
+                refund=goods_risk(journal,grade,warranty,config,now)['failure_upper'] if warranty else 0
             # This is an opportunity-cost scenario, not a market fee.
             liquidity=price*(warranty/6)*config.get('shop_warranty_liquidity_penalty',.02)
             choices.append({'grade':grade,'weight':weight,'price':price,'refund_stress':refund,
@@ -120,3 +132,69 @@ def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
                 capital_velocity_scenario=sum(d['book']/d['holding'] for d in deltas)/max(1,unit_cost(c)*qty))))
     return sorted(result,key=lambda c:(c['expected_delta']['book']/
         max(1/3,c['evidence']['expected_holding_hours']),c['expected_delta']['book']),reverse=True)
+
+
+def inventory_limit(config):
+    """A bounded capacity ceiling, never a requirement to buy or spend cash."""
+    base=config['inventory_target_units']
+    return max(base,min(240,config.get('shop_inventory_ceiling',180))) if config.get('shop_championship_enabled') else base
+
+
+def allocate_championship(candidates,inv,capacity,config,existing,merchant):
+    """Compare absolute progress with capital velocity on identical unit economics.
+
+    Cash is a constraint. A cheap item's ROI cannot consume the last legal call
+    when a feasible alternative makes more expected progress per holding hour.
+    The velocity portfolio remains a candidate for capital-constrained markets.
+    """
+    cfg=dict(config,inventory_target_units=inventory_limit(config))
+    velocity=allocate_velocity(candidates,inv,capacity,cfg,existing,merchant)
+    total=capacity['spendable'];held={};selected={};used=probes=0;categories={}
+    for u in existing:held[u['sku']]=held.get(u['sku'],0)+1
+    slots=max(0,cfg['inventory_target_units']-len(existing))
+    def cost(c):return c['capital_commitment']/c['qty']
+    def delta(c):return marginal(c,selected.get(c['sku'],{}).get('qty',0)+1,held.get(c['sku'],0))
+    def progress(c,d):
+        return max(0,c.get('rank_progress_surrogate') or 0)*d['book']/max(1,c['expected_delta']['book'])
+    def feasible(c):
+        q=selected.get(c['sku'],{}).get('qty',0)
+        return (slots>0 and q<c['qty'] and used+cost(c)<=total+1e-6 and
+                (c['sku'] in selected or len(selected)<min(10,cfg['restock_max_lines'])) and
+                categories.get(c['category'],0)+cost(c)<=total*.6+1e-6 and
+                (not c['evidence']['exploration'] or probes+cost(c)<=total*cfg['exploration_fraction']+1e-6) and
+                delta(c)['book']>0)
+    while True:
+        available=[c for c in candidates if feasible(c)]
+        if not available:break
+        # Marginal holding includes inventory already present, preventing the
+        # same paid arrivals from justifying unlimited depth across windows.
+        def priority(c):
+            d=delta(c)
+            return (progress(c,d)/max(1/3,d['holding']),d['book']/max(1/3,d['holding']))
+        c=max(available,key=priority);d=delta(c)
+        row=selected.setdefault(c['sku'],{'source':c,'deltas':[]});row['deltas'].append(d)
+        used+=cost(c);slots-=1;categories[c['category']]=categories.get(c['category'],0)+cost(c)
+        if c['evidence']['exploration']:probes+=cost(c)
+    absolute=[]
+    for row in selected.values():
+        c=row['source'];ds=row['deltas'];qty=len(ds);fraction=qty/c['qty']
+        absolute.append(dict(c,qty=qty,max_cost=c['max_cost']*fraction,
+            capital_commitment=c['capital_commitment']*fraction,score=sum(d['book'] for d in ds),
+            expected_delta={key:sum(d[key] for d in ds) for key in ['book','profit','revenue']},
+            allocation_book='absolute_progress',evidence=dict(c['evidence'],marginal_units=ds,portfolio_used=used)))
+    # Score using original candidate totals rather than rescaled selected rows.
+    originals={c['sku']:c for c in candidates}
+    def objective(rows):
+        rank=book=0
+        for row in rows:
+            c=originals[row['sku']]
+            for d in row['evidence']['marginal_units']:
+                rank+=progress(c,d)/max(1/3,d['holding'])
+                book+=d['book']/max(1/3,d['holding'])
+        return rank,book
+    chosen=max([velocity,absolute],key=objective)
+    evidence={'velocity':objective(velocity),'absolute':objective(absolute),
+              'inventory_ceiling':cfg['inventory_target_units'],
+              'note':'shared-economics forecast comparison, not measured lift'}
+    return sorted([dict(c,evidence=dict(c['evidence'],portfolio_comparison=evidence)) for c in chosen],
+                  key=lambda c:sum(d['book']/max(1/3,d['holding']) for d in c['evidence']['marginal_units']),reverse=True)

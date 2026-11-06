@@ -93,7 +93,11 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     warranty = (max(unit.get('minimum_warranty_hours', 0), unit.get('promised_warranty_hours') or 0,
                     config.get('goods_warranty_by_grade', {}).get(unit.get('grade'), 3))
                 if unit.get('kind') == 'goods' else 0)
-    stress_refund = goods_risk(journal, unit.get('grade'), warranty, config, now)['failure_upper'] if warranty else 0
+    if config.get('shop_championship_enabled'):
+        from .risk import shop_refund_risk
+        stress_refund=shop_refund_risk(journal,unit.get('grade'),warranty,config,now)['refund_upper']
+    else:
+        stress_refund = goods_risk(journal, unit.get('grade'), warranty, config, now)['failure_upper'] if warranty else 0
     matching=next((r for r in public.get('term_prices',[]) if r['grade']==grade(unit,catalog,now)
                    and r['warranty_hours']==warranty and r['n']>=3),None)
     if matching:
@@ -184,6 +188,10 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
             failed = [x for x in failures if x.get("shop") == shop["url"] and not x.get("success")
                       and x.get('sku') == sku and 0 <= now - x['_ts'] <= 21600
                       and x.get("kind") not in {"model_error", "local_error"}]
+            if (config or {}).get('buyer_championship_enabled'):
+                failed=[x for x in failed if x.get('kind')=='no_agreement' and
+                        (product.get('kind')!='food' or
+                         x.get('use_within_hours')==order.get('use_within_hours',0))]
             observed = book.get(sku, {})
             public_reference = observed.get('median', .8 * product['list_price'])
             estimate = sorted(x["price"] for x in own)[len(own) // 2] if own else int(public_reference)
@@ -193,6 +201,11 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
             # quote. Keep a small explicit chance of negotiating below history.
             affordability = 1 if estimate <= order['budget'] else .1
             success *= affordability
+            route={}
+            if (config or {}).get('buyer_championship_enabled'):
+                from .buyer_scoring import route_availability
+                route=route_availability(journal,shop['url'],sku,order,now)
+                success*=route['factor']
             hint = shop_hint(journal, shop['name'], sku)
             monetary=max(0,product['list_price']-estimate)
             normalized=monetary/max(1,product['list_price'])
@@ -207,6 +220,7 @@ def buyer_candidates(order, shops, catalog, journal, config=None):
                                         'public_sku_prices': observed,
                                         "forum_announcement_hint": hint, "forum_hint_is_unverified": True,
                                         'budget_feasibility_scenario': affordability,
+                                        'route_availability':route,
                                         "price_is_prior": not bool(own) and not bool(observed)}})
     return sorted(result, key=lambda x: x["score"], reverse=True)
 
@@ -264,7 +278,8 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     count = {}
     for u in units:
         count[u["sku"]] = count.get(u["sku"], 0) + 1
-    target = config["inventory_target_units"]
+    from .shop_growth import inventory_limit
+    target = inventory_limit(config)
     if len(units) >= target:
         return []
     capacity = cash_capacity(inv, journal, config, now)
@@ -363,6 +378,10 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
         # keep the published grade-mixture expectation bounds for a NEW draw.
         cost_ratio = max(cost_lower, min(.60 if p.get('kind') == 'food' else .69,
                           (sum(ratios[:20]) + 5 * prior_cost) / (len(ratios[:20]) + 5)))
+        if config.get('shop_championship_enabled'):
+            # Past sold units are selected by grade and historical surge.
+            # Their cost ratio cannot be re-taxed by today's surge factor.
+            cost_ratio=prior_cost
         cost_upper = (.60 if p.get('kind') == 'food' else .69)*factor
         cost_ratio *= factor
         price = min(p['list_price'], observed.get('median', .85 * p['list_price']))
@@ -421,4 +440,4 @@ def restock_candidates(inv, catalog, demand, journal, config, now=None):
     for c in candidates:
         c['rank_progress_surrogate'] = rank_progress(board, 'shop', 'seochanit', c['expected_delta'])
     from .portfolio import allocate
-    return allocate(candidates, inv, capacity, config, units, merchant=merchant)
+    return allocate(candidates, inv, capacity, dict(config,inventory_target_units=target), units, merchant=merchant)

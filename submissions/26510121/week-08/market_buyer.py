@@ -112,6 +112,10 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                         raise ValueError("receipt_integrity_failure")
                     # A2A protobuf numbers decode as whole-valued floats; the signature canonicalizes integer money.
                     rec = dict(receipts[0], price=int(receipts[0]["price"]))
+                    if cfg.get('buyer_championship_enabled'):
+                        from r3.buyer_scoring import offer_ineligible
+                        if offer_ineligible(rec,order,cfg):
+                            raise ValueError('known_unsuitable_shelf_life')
                     if cfg.get('buyer_patch34_enabled'):
                         from r3.buyer_scoring import blocked_units
                         if rec.get('unit') in blocked_units(journal,c['shop'],c['sku'],order):
@@ -168,6 +172,7 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 task = peer.send(str(agreed), task["id"])
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
+                                    'use_within_hours':order.get('use_within_hours',0),
                                     "kind": "no_agreement", "seconds": time.monotonic() - started}, role="buyer")
         except Exception as exc:
             if not isinstance(exc, ValueError):
@@ -175,10 +180,11 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
             reason = str(exc) if isinstance(exc, ValueError) and str(exc) in {
                 'certificate_unavailable', 'receipt_integrity_failure', 'registered_signing_key_unavailable',
                 'ambiguous_ask', 'conflicting_ask', 'conflicting_offer_terms', 'quote_sku_mismatch', 'invalid_money',
-                'known_unavailable_unit'} else None
+                'known_unavailable_unit','known_unsuitable_shelf_life'} else None
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
                                     'reason': reason,
+                                    'use_within_hours':order.get('use_within_hours',0),
                                     "kind": type(exc).__name__, "seconds": time.monotonic() - started}, role="buyer")
         finally:
             try:
