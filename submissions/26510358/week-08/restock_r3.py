@@ -32,7 +32,7 @@ from r3lib import config, market, pricing, scout
 from r3lib.memory import Memory
 from r3lib.org import client
 
-FORUM_EVERY = 10 * 60
+FORUM_EVERY = 5 * 60                 # 10 -> 5 min on 2026-11-06 with REPORT_GAP_MIN 4.5 (one buyer post per run)
 
 
 def protected_categories(mem, now=None):

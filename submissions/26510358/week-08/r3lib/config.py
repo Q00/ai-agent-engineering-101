@@ -97,7 +97,10 @@ KPI_EVERY_MIN = 30                  # ceo.kpi snapshot to logs/r3/kpi.jsonl
 # --- forum (pro-activeness, see initiative.py) -----------------------------------------------------
 FORUM_MIN_GAP_MIN = 20              # never two buyer posts closer than this (the kit allows one per 5 min)
 FORUM_MAX_CHARS = 800
-REPORT_GAP_MIN = 10                 # report lane: one fact post per forum run at most (the kit allows one per 5 min)
+REPORT_GAP_MIN = 4.5                # report lane: one fact post per forum run at most (the kit allows one per 5 min and
+                                    #   keeps a 429'd post for later). 10 -> 4.5 on 2026-11-06: top buyers post 238-265/24h
+                                    #   at like-share 0.89-0.90, we posted 119/24h at 0.889; posts are 0.1 of buyer ALL
+                                    #   (our pct 0.46). Under 5 so a run kicked a few seconds early still posts.
 REPORT_DEDUPE_H = 6                 # never report the same SKU, category or purchase twice within this
 REPORT_ORDER = ("purchase", "sku", "category")   # first-hand facts first, then market-wide numbers
 REPORT_PAUSE_DISLIKE = 0.5          # pause the lane while this share of counted votes on our posts are dislikes
