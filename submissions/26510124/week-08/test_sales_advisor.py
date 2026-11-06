@@ -33,7 +33,7 @@ class AdvisorTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root, self.now = Path(self.temp.name), time.time()
         self.review_time = self.now
-        atomic_json(self.root / "advisor-config.json", advisor.config_at())
+        atomic_json(self.root / "advisor-config.json", {**advisor.config_at(), "enabled": True})
         atomic_json(self.root / "shop-policy.json", policy_at())
         atomic_json(self.root / "shop-adaptive.json", {"name": "ours"})
         atomic_json(self.root / ".market/inventory.json", {"round": 3, "units": [unit()]})
@@ -197,7 +197,8 @@ class AdvisorTests(unittest.TestCase):
     def test_seller_pins_advice_and_keeps_price_guard(self):
         self.assertEqual(self.tick(), "published")
         key = Ed25519PrivateKey.generate()
-        with patch("seller_agent.load_shop_key", return_value=key):
+        with patch("seller_agent.load_shop_key", return_value=key), \
+                patch("seller_r3.config_at", return_value={"enabled": True}):
             seller = InventorySeller({**DEFAULT, "name": "ours", "market_dir": self.root / ".market",
                                       "advisor_enabled": True})
         seller.events = self.root / "events.jsonl"
@@ -221,6 +222,36 @@ class AdvisorTests(unittest.TestCase):
         with patch("seller_r3.decide", side_effect=check):
             self.assertEqual(inventory_decision(unit(), None, [], None, advice)["price"], 85000)
 
+    def test_disabled_seller_ignores_existing_advice_and_stale_enabled_caller(self):
+        self.assertEqual(self.tick(), "published")
+        self.assertTrue((self.root / ".market" / advisor.STRATEGY_FILE).exists())
+        key = Ed25519PrivateKey.generate()
+        with patch("seller_agent.load_shop_key", return_value=key), \
+                patch("seller_r3.config_at", return_value={"enabled": False}), \
+                patch("seller_r3.AdviceReader") as reader:
+            seller = InventorySeller({**DEFAULT, "name": "ours", "market_dir": self.root / ".market",
+                                      "advisor_enabled": True})
+        reader.assert_not_called()
+        self.assertIsNone(seller.advisor)
+        seller.events = self.root / "events.jsonl"
+        with patch("seller_r3.inventory_decision", return_value={"action": "counter", "price": 90000}) as model, \
+                TestClient(build(DEFAULT, seller)) as client:
+            send(client, "G00001")
+        self.assertIsNone(model.call_args.args[-1])
+
+    def test_disabled_manual_tick_and_cli_do_not_collect_or_call_models(self):
+        atomic_json(self.root / "advisor-config.json", {**advisor.config_at(), "enabled": False})
+        model, client = Mock(), Mock()
+        with patch("sales_advisor.collect") as collect:
+            self.assertEqual(advisor.tick(self.root, client=client, model=model, clock=lambda: self.now), "disabled")
+        collect.assert_not_called()
+        model.assert_not_called()
+        self.assertFalse((self.root / ".market" / advisor.CONTROL_FILE).exists())
+        with patch("sales_advisor.config_at", return_value={"enabled": False}), \
+                patch("sales_advisor.tick") as tick, patch("sys.argv", ["sales_advisor.py", "--once"]):
+            self.assertEqual(advisor.main(), 0)
+        tick.assert_not_called()
+
     def test_analyst_uses_one_haiku_attempt_and_short_deadline(self):
         ctx = advisor.collect(self.root, self.client, "ours", self.now)
         with patch("sales_advisor.decide", return_value=self.proposal(ctx)) as model:
@@ -230,6 +261,17 @@ class AdvisorTests(unittest.TestCase):
 
 
 class SupervisorTests(unittest.TestCase):
+    def test_disabled_advisor_never_starts_process_and_seller_still_serves(self):
+        seller, stopped = Mock(pid=111), Mock()
+        seller.poll.side_effect = [None, None, 7]
+        stop, launch = Mock(), Mock(return_value=seller)
+        stop.is_set.return_value = False
+        with patch("shop_runtime.config_at", return_value={"enabled": False}), redirect_stdout(io.StringIO()):
+            result = shop_runtime.supervise(9999, stop=stop, launch=launch, cleanup=stopped)
+        self.assertEqual(result, 7)
+        launch.assert_called_once_with("seller_r3.py", "--port", "9999")
+        stopped.assert_called_once_with([seller])
+
     def test_seller_exit_stops_analyst_and_descendants(self):
         seller, analyst, stopped = Mock(pid=111), Mock(pid=222), Mock()
         seller.poll.side_effect = [None, 7]

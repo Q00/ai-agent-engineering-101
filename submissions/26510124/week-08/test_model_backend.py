@@ -22,6 +22,7 @@ class ModelBackendTests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
         self.profile = self.root / "model-profile.json"
+        (self.root / "advisor-config.json").write_text('{"enabled":true}')
 
     def write_profile(self, trading="astra"):
         self.profile.write_text(json.dumps({"version": 1, "trading": trading, "advisor": "haiku"}))
@@ -48,6 +49,36 @@ class ModelBackendTests(unittest.TestCase):
             self.profile.write_text(json.dumps(cfg))
             with self.assertRaises(ValueError):
                 backend.load_profile(self.root)
+
+    def test_disabled_advisor_is_excluded_from_cli_auth_and_paid_preflight(self):
+        self.profile.write_text(json.dumps({"version": 1, "trading": "haiku", "advisor": "luna"}))
+        (self.root / "advisor-config.json").write_text('{"enabled":false}')
+        self.assertEqual(backend.required_executables(self.root), ("claude",))
+        output = io.StringIO()
+        with patch.object(backend, "ROOT", self.root), \
+                patch.object(backend.shutil, "which", side_effect=lambda name: "/cli/claude" if name == "claude" else None), \
+                patch.object(backend, "ensure_chatgpt") as auth, patch.object(backend, "call") as model, \
+                redirect_stdout(output):
+            self.assertEqual(backend.main(["--check"]), 0)
+            self.assertEqual(backend.main(["--preflight"]), 0)
+        auth.assert_not_called()
+        model.assert_not_called()
+        self.assertIn("advisor=disabled", output.getvalue())
+
+    def test_disabled_or_missing_advisor_cannot_reactivate_through_harness(self):
+        self.write_profile("haiku")
+        config = self.root / "advisor-config.json"
+        for configured in (True, False):
+            if configured:
+                config.write_text('{"enabled":false}')
+            else:
+                config.unlink()
+            with self.subTest(configured=configured), patch.object(harness, "ROOT", self.root), \
+                    patch.object(harness, "call_model") as model:
+                with self.assertRaises(harness.HarnessError):
+                    harness.decide("sales_advisor.txt", {}, harness.parse_object)
+                model.assert_not_called()
+                self.assertEqual(backend.for_prompt("buyer.txt", self.root), "haiku")
 
     def test_astra_command_is_readonly_ephemeral_low_and_uses_stdin(self):
         cmd = backend.command("astra", self.root, "buyer.txt")

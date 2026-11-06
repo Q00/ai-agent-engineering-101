@@ -9,7 +9,7 @@ import shutil
 import sys
 
 from receipt_signing import load_shop_key
-from model_backend import load_profile, required_executables
+from model_backend import advisor_enabled, load_profile, required_executables
 
 ROOT = Path(__file__).resolve().parent
 
@@ -62,7 +62,8 @@ def main():
         os.environ["PATH"] = os.pathsep.join([str(Path(sys.executable).parent),
                                              str(Path.home() / ".local/bin"), os.environ.get("PATH", "")])
         profile = load_profile(ROOT)
-        print(f"Model profile: shop/buyer={profile['trading']}; advisor={profile['advisor']}", flush=True)
+        active_advisor = profile["advisor"] if advisor_enabled(ROOT) else "disabled"
+        print(f"Model profile: shop/buyer={profile['trading']}; advisor={active_advisor}", flush=True)
         unavailable = []
         for executable in required_executables(ROOT):
             available = shutil.which(executable) is not None

@@ -22,10 +22,11 @@ def write_key(path):
 
 
 class RuntimeTests(unittest.TestCase):
-    def check_launcher(self, profile=None, *, join=False, missing=()):
+    def check_launcher(self, profile=None, *, join=False, missing=(), advisor_enabled=True):
         (ROOT / ".market").mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / ".market") as d:
             folder = Path(d)
+            (folder / "advisor-config.json").write_text(json.dumps({"enabled": advisor_enabled}))
             if profile is not None:
                 (folder / "model-profile.json").write_text(json.dumps(profile))
             output, errors = io.StringIO(), io.StringIO()
@@ -70,6 +71,15 @@ class RuntimeTests(unittest.TestCase):
             {"version": 1, "trading": "haiku", "advisor": "luna"}, join=True, missing=("codex",))
         self.assertEqual(result, 1)
         self.assertIn("Required model CLI not found: codex", errors)
+
+    def test_disabled_advisor_reports_disabled_and_ignores_its_unavailable_cli(self):
+        result, output, errors = self.check_launcher(
+            {"version": 1, "trading": "haiku", "advisor": "luna"},
+            advisor_enabled=False, missing=("codex",))
+        self.assertEqual(result, 0, errors)
+        self.assertIn("shop/buyer=haiku; advisor=disabled", output)
+        self.assertIn("claude CLI available: True", output)
+        self.assertNotIn("codex CLI", output)
 
     def test_missing_profile_keeps_legacy_haiku_launcher(self):
         result, output, errors = self.check_launcher(missing=("codex",))

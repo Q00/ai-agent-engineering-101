@@ -23,6 +23,7 @@ class LunaAdvisorTests(unittest.TestCase):
         temp = tempfile.TemporaryDirectory(dir=ROOT / ".market")
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
+        (self.root / "advisor-config.json").write_text('{"enabled":true}')
         self.write_profile()
         (self.root / "prompts").mkdir()
         (self.root / "prompts/sales_advisor.txt").write_text("Return evidence-grounded advice.")

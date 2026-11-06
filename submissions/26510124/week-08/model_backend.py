@@ -1,6 +1,6 @@
 """Reversible CLI profiles: Haiku or GPT models using existing CLI logins.
 
---check checks executables/auth only. --preflight probes each selected GPT model.
+--check checks executables/auth only. --preflight probes active GPT models only.
 --profile haiku|astra changes this submission's trading profile, not a service.
 --advisor-profile haiku|luna changes only the sales-strategy analyst's profile.
 """
@@ -42,14 +42,39 @@ def load_profile(root=ROOT):
 
 def required_executables(root=ROOT):
     cfg = load_profile(root)
-    profiles = (cfg["trading"], cfg["advisor"])
+    profiles = active_profiles(root, cfg)
     return (("claude",) if "haiku" in profiles else ()) + (
         ("codex",) if any(profile in CODEX_MODELS for profile in profiles) else ())
 
 
 def for_prompt(prompt_name, root=ROOT):
     cfg = load_profile(root)
+    if prompt_name == "sales_advisor.txt" and not advisor_enabled(root):
+        raise ValueError("Sales advisor is disabled")
     return cfg["advisor"] if prompt_name == "sales_advisor.txt" else cfg["trading"]
+
+
+def advisor_enabled(root=ROOT):
+    """Archived advisor profiles are inactive unless explicitly enabled.
+
+    Read only the shared enable flag here to avoid importing the advisor's
+    model harness back into its own backend. Full advisor validation stays in
+    sales_advisor.config_at when that optional process starts.
+    """
+    path = Path(root) / "advisor-config.json"
+    if not path.exists():
+        return False
+    if path.is_symlink() or path.stat().st_size > 4096:
+        raise ValueError("Invalid advisor configuration")
+    cfg = json.loads(path.read_text())
+    if not isinstance(cfg, dict) or type(cfg.get("enabled")) is not bool:
+        raise ValueError("Advisor configuration needs an explicit enabled flag")
+    return cfg["enabled"]
+
+
+def active_profiles(root=ROOT, cfg=None):
+    cfg = load_profile(root) if cfg is None else cfg
+    return (cfg["trading"], cfg["advisor"]) if advisor_enabled(root) else (cfg["trading"],)
 
 
 def environment(profile):
@@ -226,11 +251,12 @@ def main(argv=None):
             atomic_json(ROOT / "model-profile.json", cfg)
             print(f"Local profile saved: trading={cfg['trading']}, advisor={cfg['advisor']}. Deploy/restart to apply.")
             return 0
-        print(f"Model profile: trading={cfg['trading']}, advisor={cfg['advisor']}")
+        active_advisor = cfg["advisor"] if advisor_enabled(ROOT) else "disabled"
+        print(f"Model profile: trading={cfg['trading']}, advisor={active_advisor}")
         for executable in required_executables(ROOT):
             if shutil.which(executable) is None:
                 raise ValueError(f"{executable} not found in service PATH; install it before deploying")
-        selected = [profile for profile in CODEX_MODELS if profile in (cfg["trading"], cfg["advisor"])]
+        selected = [profile for profile in CODEX_MODELS if profile in active_profiles(ROOT, cfg)]
         if selected:
             if args.preflight:
                 logs = ROOT / "logs"

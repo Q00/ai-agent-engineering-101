@@ -32,7 +32,7 @@ class AdvisorForumTests(unittest.TestCase):
         self.review_time = self.now
         self.reviews = True
         self.forum_path = self.root / ".market/forum.json"
-        atomic_json(self.root / "advisor-config.json", advisor.config_at())
+        atomic_json(self.root / "advisor-config.json", {**advisor.config_at(), "enabled": True})
         atomic_json(self.root / "shop-policy.json", policy_at())
         atomic_json(self.root / "shop-adaptive.json", {"name": "ours"})
         atomic_json(self.root / ".market/inventory.json", {"round": 3, "units": [unit()]})

@@ -79,7 +79,10 @@ class InventorySeller(Seller):
         self.r3 = {}
         self.policy = cfg.get("shop_policy") or policy_at()
         self.openings = OpeningReader(self.inventory.folder)
-        self.advisor = AdviceReader(self.inventory.folder) if cfg.get("advisor_enabled") else None
+        # A retained strategy cache cannot reactivate an intentionally disabled
+        # analyst, even if a stale caller still passes advisor_enabled=True.
+        self.advisor = (AdviceReader(self.inventory.folder)
+                        if cfg.get("advisor_enabled") and config_at()["enabled"] else None)
 
     async def public_card(self, card):
         self.expire_negotiations()

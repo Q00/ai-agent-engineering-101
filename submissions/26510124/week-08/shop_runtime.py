@@ -1,7 +1,8 @@
-"""The kit starts this supervisor: seller plus one low-frequency analyst.
+"""The kit starts this supervisor: seller plus an explicitly enabled analyst.
 
-Both share the existing user-systemd service and stop together. An analyst
-failure never stops serving the shop; its restart is delayed at least 60 s.
+The current policy disables the analyst, so only the seller starts. The retained
+optional implementation shares the user-systemd service when enabled and stops
+with it; an analyst failure never stops serving the shop.
 """
 import argparse
 import os
