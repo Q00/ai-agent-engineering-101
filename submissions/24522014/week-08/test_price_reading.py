@@ -43,10 +43,10 @@ class Settings(unittest.TestCase):
         self.assertEqual(self.load('{"price_reading": {"group_b_lowest_price": true, "group_b_colon_krw": false}}'), LOWEST)
         self.assertEqual(self.load('{"price_reading": {"group_b_lowest_price": false, "group_b_colon_krw": true}}'), KRW)
 
-    def test_shipped_settings_are_off(self):
-        self.assertEqual(fast.load_reading(), fast.OFF)
+    def test_shipped_settings_are_on_after_patch_3_4(self):
+        self.assertEqual(fast.load_reading(), {"group_a": True, "lowest_price": True, "colon_krw": True})
         section = json.loads(fast.CONFIG.read_text(encoding="utf-8"))["price_reading"]
-        self.assertEqual(section, {"group_a_structured_and_labels": False, "group_b_lowest_price": False, "group_b_colon_krw": False})
+        self.assertEqual(section, {"group_a_structured_and_labels": True, "group_b_lowest_price": True, "group_b_colon_krw": True})
 
 
 class Reading(unittest.TestCase):
