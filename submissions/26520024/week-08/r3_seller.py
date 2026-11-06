@@ -127,12 +127,13 @@ def pricing(unit, policy, now, previous_ask=None, market_prices=None):
     deadline = timestamp(policy.get('trading_deadline'))
     liquidation_hours = float(policy.get('liquidation_hours', 3))
     terminal = deadline is not None and 0 < deadline - now <= liquidation_hours * 3600
-    liquidation = terminal or (left is not None and 0 < left <= liquidation_hours)
+    # Unsold goods retain their cost in Book at the deadline. Do not fire-sale them.
+    liquidation = unit['kind'] == 'food' and (terminal or (left is not None and 0 < left <= liquidation_hours))
     minimum = cost // 2 if liquidation else cost
     ceiling = max(minimum, min(listed, cost if liquidation else (cost * 110 + 99) // 100))
     if policy.get('adaptive_pricing') and not liquidation:
         storage = cost * .01 * max(0, now - unit['supplied_at']) / 86400 if unit['kind'] == 'goods' else 0
-        minimum = min(listed, math.ceil(cost + storage))
+        minimum = math.ceil(cost + storage)
         ratio = policy.get('opening_price_fraction', .9)
         if market_prices and market_prices.get('median') is not None:
             weight = min(.75, market_prices['samples'] / (market_prices['samples'] + 10))
@@ -144,7 +145,8 @@ def pricing(unit, policy, now, previous_ask=None, market_prices=None):
     if previous_ask is not None:
         minimum, ceiling = min(minimum, previous_ask), min(ceiling, previous_ask)
     return dict(minimum=minimum, ceiling=ceiling, cost=cost, list_price=listed,
-                liquidation=liquidation, market_price_floor=None)
+                liquidation=liquidation, market_price_floor=None,
+                disposal_policy='food_expiry_or_terminal' if liquidation else 'preserve_cost_basis')
 
 
 def validate_action(action, offer, previous_ask, bounds):
@@ -293,7 +295,8 @@ class Reservations:
                 if status != 'settled' and (now >= row['expires'] or row['unit'] not in live or not receipt):
                     status = 'quarantined'
                 revoked = (status == 'quarantined' and data.get('checkout_guarded') and
-                           not data.get('checkout_started') and now >= row['expires'])
+                           not data.get('checkout_started') and not data.get('checkout_session')
+                           and now >= row['expires'])
                 if revoked:
                     # The same SQLite transaction serializes against CheckoutGate.begin.
                     # Gate will reject this receipt permanently before issuing any JWT.
@@ -307,7 +310,15 @@ class Reservations:
                     reason = 'expired_unissued_checkout_revoked'
                 db.execute('UPDATE deals SET status=?,unit=?,data=? WHERE task=?',
                            (status, None if revoked else row['unit'], json.dumps(data), row['task']))
+                recovery = ('retain_sold_tombstone' if status == 'settled' else
+                            'released_unissued_promise' if revoked else
+                            'market_revocation_confirmation_required' if data.get('checkout_session') else
+                            'issuance_audit_required' if data.get('checkout_started') else
+                            'wait_for_guarded_expiry' if data.get('checkout_guarded') else
+                            'legacy_promise_audit_required')
                 rows.append(dict(task=row['task'], unit=row['unit'], sku=data.get('sku'), status=status,
+                                 recovery_action=recovery,
+                                 checkout_id=(data.get('checkout_session') or {}).get('id'),
                                  in_inventory=row['unit'] in live and not revoked, reason=reason, settlement=proof))
         report = dict(observed_at=now, signed_pending=sum(r['status'] == 'signed_pending' for r in rows),
                       quarantined=sum(r['status'] == 'quarantined' for r in rows),
@@ -317,6 +328,10 @@ class Reservations:
                       safe_unlock_available=any(r['status'] == 'revoked' for r in rows),
                       limitation='Only guarded promises with no checkout issuance can expire safely. '
                                  'Legacy receipts and issued/uncertain checkout JWTs stay blocked until settlement.')
+        report['recovery_policy'] = 'proof_only_no_force_unlock'
+        report['operator_action'] = ('Ask the market operator for server-side revocation of issued checkout IDs; '
+                                     'local cancellation or age alone cannot invalidate a signed JWT. '
+                                     'No key rotation, deletion, rebuy or bankruptcy is authorized by this report.')
         atomic_json(self.md / 'seller-stock-status.json', report)
         return report
 
@@ -334,8 +349,34 @@ class Seller(AgentExecutor):
         now = self.now()
         inventory = inventory if inventory is not None else load_inventory(self.md, now=now)
         with Memory(self.md) as memory:
+            for unit in inventory['units']:
+                memory.record('stock_unit', unit['unit'], {k: unit[k] for k in
+                    ('unit', 'sku', 'cost', 'list_price', 'supplied_at', 'kind')})
             evidence = memory.settlements_for_units(self.reservations.unsettled_units())
-        return self.reservations.reconcile(inventory, evidence, self.name, now, self.key.public_key())
+            report = self.reservations.reconcile(inventory, evidence, self.name, now, self.key.public_key())
+            ledger = {e['data']['seq']: e for e in evidence}
+            for row in report['units']:
+                if row['status'] != 'settled' or not row.get('settlement'):
+                    continue
+                seq = row['settlement']['ledger']
+                event, stock = ledger.get(seq), memory.get('stock_unit', row['unit'])
+                if not event or not stock:
+                    continue
+                unit = stock['data']
+                amount = event['data'].get('amount', event['data'].get('price'))
+                holding = max(0, event['ts'] - unit['supplied_at']) / 3600
+                storage = unit['cost'] * .01 * holding / 24 if unit['kind'] == 'goods' else 0
+                # Keep warranty exposure explicit until its refund window has passed.
+                with self.reservations.transaction() as db:
+                    deal = db.execute('SELECT data FROM deals WHERE task=?', (row['task'],)).fetchone()
+                    terms = json.loads(deal['data']).get('receipt', {}) if deal else {}
+                memory.record('seller_settlement', seq, dict(unit, price=amount, ledger=seq,
+                    storage_estimate=storage,
+                    warranty_matures_at=event['ts'] + terms.get('warranty_hours', 0) * 3600,
+                    holding_hours=holding, margin_after_storage=amount - unit['cost'] - storage,
+                    limitation='Realized sale less estimated storage; future warranty refunds not inferred.'),
+                    ts=event['ts'])
+        return report
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -424,6 +465,12 @@ class Seller(AgentExecutor):
             if token is not None and not committed:
                 self.reservations.release(task.id, token)
             emit('r3_seller_refused', task_id=task.id, reason=str(exc), kind=type(exc).__name__)
+            try:
+                with Memory(self.md) as memory:
+                    memory.record('seller_failure', task.id,
+                        dict(reason=str(exc)[:250], error=type(exc).__name__, phase='quote_or_reservation'), ts=self.now())
+            except Exception:
+                pass
             await up.reject(say('This purchase cannot be verified against current inventory and quote limits. No receipt issued.'))
 
     @staticmethod

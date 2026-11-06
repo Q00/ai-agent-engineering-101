@@ -174,6 +174,7 @@ class RestockTests(unittest.TestCase):
         self.assertEqual(plan_restock(self.md, now=NOW + 10, decide_fn=choose), {'buy': []})
 
     def test_arriving_stock_reduces_only_affected_sku_and_uses_fresh_baseline(self):
+        self.write_inventory(inventory(balance=1500))
         current = inventory(units=[unit(name='new-unit')])
         def changing(system, state, validator, purpose, deadline, **kwargs):
             if purpose == 'r3-restock':
@@ -217,10 +218,14 @@ class RestockTests(unittest.TestCase):
                                  for row in result['buy']), 90)
 
     def test_more_cash_never_increases_model_approved_qty_or_adds_skus(self):
-        self.write_inventory(inventory(balance=1500))
+        # Three proven units still fit after reserving 20% for pilots.
+        self.write_inventory(inventory(balance=2000))
         with Memory(self.md) as memory:
             for i in range(4):
                 memory.record('market_settle', str(i), {'seq': i, 'item': 'tea'}, ts=NOW - 60)
+            for i in range(2):
+                memory.record('seller_settlement', str(i), {'sku': 'tea', 'price': 36, 'list_price': 40,
+                    'holding_hours': 1, 'margin_after_storage': 6}, ts=NOW - 60)
         def limited(system, state, validator, purpose, deadline, **kwargs):
             if purpose == 'r3-restock':
                 self.assertEqual(next(row['qty'] for row in state['proposals']

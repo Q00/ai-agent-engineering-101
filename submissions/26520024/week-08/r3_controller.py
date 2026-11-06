@@ -152,6 +152,8 @@ def maintain(md=None, *, now=None, decision=None):
         fcntl.flock(lock, fcntl.LOCK_EX)
         with Memory(md) as memory:
             reconciled = memory.reconcile()
+            from r3_reputation import maintain_reputation
+            maintain_reputation(memory, md, now)
             drafts = forum_drafts(memory)
             atomic_json(md / 'forum-drafts.json', drafts)
             # Incoming reviews are claims to investigate, not orders to alter prices or retaliate.

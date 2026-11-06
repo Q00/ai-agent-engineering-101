@@ -320,7 +320,7 @@ class BuyerTests(unittest.TestCase):
 
     def test_goods_warranty_is_configurable(self):
         order = dict(self.order, kind='goods')
-        policy = acceptance(order, {'warranty_hours': 12})
+        policy = acceptance(order, {'buyer_required_warranty_hours': 12})
         self.assertEqual(policy['warranty_hours'], 12)
         self.assertEqual(policy['min_hours_left'], 0)
 

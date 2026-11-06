@@ -55,10 +55,53 @@ def buyer_estimate(memory, candidate, now=None, *, records=None):
     listed = candidate.get('list_price') or 0
     estimate = statistics.median(prices) if prices else .8 * listed
     value = listed * (1 - risk)
+    saved = (1 - risk) * (1 - estimate / listed) - risk if listed > 0 else -1
     return {'expected_value': round(value, 2), 'estimated_price': round(estimate, 2),
             'expected_surplus': round(value - estimate, 2), 'break_risk_estimate': round(risk, 4),
+            'expected_saved': round(saved, 6),
             'mature_samples': len(mature), 'inferred_breaks': failures,
-            'assumptions': '10% goods prior; name/time break links are inferred; refund assumed zero'}
+            'assumptions': '10% goods prior; name/time links inferred; food requires verified horizon; no refund credit'}
+
+
+def expected_saved(candidate, price):
+    """Patch 3.4/3.5: usable 1-price/list, unserved -1, refunded 0.
+
+    Do not credit a seller's advertised warranty before checkout verifies coverage.
+    """
+    listed = candidate.get('list_price') or 0
+    if listed <= 0:
+        return -1.
+    estimate = candidate.get('value_estimate', {})
+    risk = estimate.get('break_risk_estimate')
+    if risk is None:
+        risk = 1 - estimate.get('expected_value', listed) / listed
+    risk = min(1., max(0., risk))
+    return (1 - risk) * (1 - price / listed) - risk
+
+
+def savings_ceiling(state):
+    listed = state.get('list_price') or 0
+    estimate = state.get('value_estimate', {})
+    risk = estimate.get('break_risk_estimate')
+    if risk is None:
+        risk = 1 - estimate.get('expected_value', listed) / listed if listed else 1
+    risk = min(1., max(0., risk))
+    target = state.get('target_saved', .05)
+    price = listed * (1 - (target + risk) / (1 - risk)) if risk < 1 else 0
+    return min(state['budget'], max(0, math.floor(price + 1e-8)))
+
+
+def buyer_objective(memory, policy, now):
+    # Use a recent server observation, not a biased last-N local sample of Saved.
+    latest = memory.events('score_snapshot', limit=1)
+    buyer = latest[0]['data'].get('own', {}).get('buyer', {}) if latest else {}
+    fresh = bool(latest and 0 <= now - latest[0]['ts'] <= 900)
+    saved = buyer.get('saved') if fresh else None
+    if type(saved) not in (int, float) or not math.isfinite(saved):
+        saved = None
+    return {'target_saved': max(policy['buyer_min_saved'], saved or 0),
+            'current_saved': saved, 'basis': 'fresh_board' if saved is not None else 'policy_floor',
+            'note': 'Expected deal contribution should exceed current Saved; not a rank guarantee.'}
 
 
 def seller_fallback(state):
@@ -73,8 +116,7 @@ def seller_fallback(state):
 
 
 def buyer_fallback(state):
-    value = state.get('value_estimate', {}).get('expected_value', state.get('list_price') or 0)
-    ceiling = min(state['budget'], max(0, int(value * .95)))
+    ceiling = savings_ceiling(state)
     ask, last = state.get('current_ask'), state.get('last_offer')
     if ceiling <= 0:
         return {'action': 'walk', 'price': None, 'summary': 'No positive risk-adjusted offer remains.'}
@@ -95,7 +137,7 @@ def selection_fallback(candidates, budget):
         estimate = row.get('value_estimate', {})
         value = estimate.get('expected_value', row.get('list_price') or 0)
         price = estimate.get('estimated_price', value * .8)
-        return (value - price if price <= budget else -float('inf'), -price)
+        return (expected_saved(row, price) if price <= budget else -float('inf'), -price)
     selected = max(candidates, key=score)
     return {'shop_name': selected['shop_name'], 'sku': selected['sku'],
-            'reason': 'Deterministic estimated usable value minus price; checkout still enforces acceptance.'}
+            'reason': 'Quality-adjusted expected Saved per list-price unit; checkout enforces acceptance.'}

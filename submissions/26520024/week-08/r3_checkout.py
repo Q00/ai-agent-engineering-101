@@ -32,7 +32,22 @@ def verified_checkout(session, public_key):
 
 class CheckoutGate:
     def __init__(self, md):
+        self.md = md
         self.path = database_dir(md, write=True) / 'r3_seller.sqlite3'
+
+    def audit(self, action, task, status, session=None):
+        # Telemetry failure cannot change checkout/settlement correctness.
+        if not isinstance(task, str) or not task:
+            return
+        try:
+            from r3_memory import Memory
+            session = session or {}
+            with Memory(self.md) as memory:
+                memory.record('seller_checkout', f'{task}:{action}:{status}',
+                    dict(task=task, action=action, http_status=status,
+                         unit=session.get('unit'), checkout_id=session.get('id')))
+        except (OSError, ValueError, sqlite3.Error):
+            pass
 
     def database(self):
         if not self.path.is_file():
@@ -131,6 +146,7 @@ def guarded_shop(base):
             try:
                 stored, replay = self.gate.begin(receipt)
             except (ValueError, TypeError, sqlite3.Error):
+                self.gate.audit('create_rejected', receipt.get('task'), 409)
                 return JSONResponse({'error': 'receipt not active or checkout unresolved'}, status_code=409)
             if replay is not None:
                 if acceptable is not None and replay['line_items'][0]['id'] not in acceptable:
@@ -145,6 +161,7 @@ def guarded_shop(base):
                 self.gate.finish(stored['task'], payload)
             elif response.status_code in (400, 409) and 'checkout_jwt' not in payload:
                 self.gate.finish(stored['task'], no_checkout_issued=True)
+            self.gate.audit('create', stored['task'], response.status_code, payload)
             # Exceptions/crashes leave checkout_started set: uncertainty is not cancellation.
             return response
 
@@ -167,5 +184,8 @@ def guarded_shop(base):
                 payload = json.loads(response.body)
                 if payload.get('task') and payload.get('checkout_jwt'):
                     self.gate.finish(payload['task'], payload)
+            if path.endswith(('/complete', '/cancel')):
+                session = self.sessions.get(path.strip('/').split('/')[-2], {})
+                self.gate.audit(path.rsplit('/', 1)[-1], session.get('task'), response.status_code, session)
             return response
     return GuardedShop

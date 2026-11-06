@@ -13,6 +13,7 @@ from r3_clock import clock as time
 from r3_common import (DEFAULT_POLICY, atomic_json, load_catalog, load_inventory,
                        load_policy, read_json, require_live, state_dir)
 from r3_storage import database_dir, exclusive_lock
+from r3_scores import compare_and_predict
 
 INTERVAL = 7200
 ROW_LIMIT = 20000
@@ -20,7 +21,7 @@ TUNABLE = {'trend_half_life_seconds', 'purchase_budget_fraction',
            'opening_price_fraction', 'min_turnover_hours'}
 
 
-def summarize(events, catalog, inventory, cursor, now, started_at, capped=False):
+def summarize(events, catalog, inventory, cursor, now, started_at, capped=False, blocked_units=()):
     counts = [Counter(), Counter()]
     skus = Counter()
     ratios, shops = defaultdict(list), defaultdict(set)
@@ -72,12 +73,16 @@ def summarize(events, catalog, inventory, cursor, now, started_at, capped=False)
         n, before = counts[0][category], counts[1][category]
         rows.append({'category': category, 'recent_sales': n, 'previous_sales': before,
                      'growth': round(n / before - 1, 3) if coverage and min(n, before) >= 5 else None})
+    blocked_units = set(blocked_units)
+    blocked_cost = sum(u['cost'] for u in inventory['units'] if u['unit'] in blocked_units)
     cost = sum(u['cost'] for u in inventory['units'])
     aging = sum(u['cost'] for u in inventory['units'] if now - u['supplied_at'] >= 6 * 3600)
     expiring = sum(u['cost'] for u in inventory['units']
                    if u['kind'] == 'food' and u['expires_at'] - now <= 3 * 3600)
     held_ratios = []
     for unit in inventory['units']:
+        if unit['unit'] in blocked_units:
+            continue  # Unavailable inventory cannot demonstrate weak demand or an overpriced quote.
         cat = catalog.get(unit['sku'], {}).get('category')
         if now - unit['supplied_at'] >= INTERVAL and len(ratios[cat]) >= 10 and len(shops[cat]) >= 3:
             held_ratios.append(statistics.median(ratios[cat]))
@@ -97,7 +102,9 @@ def summarize(events, catalog, inventory, cursor, now, started_at, capped=False)
             'categories': rows, 'top_skus': skus.most_common(10), 'related_hypotheses': related,
             'evidence_refs': refs[:8], 'own_recent_counts': dict(own),
             'inventory': {'balance': inventory['balance'], 'units': len(inventory['units']),
-                          'stock_cost': cost, 'aging_cost': aging, 'expiring_food_cost': expiring},
+                          'stock_cost': cost, 'aging_cost': aging, 'expiring_food_cost': expiring,
+                          'blocked_cost': blocked_cost,
+                          'blocked_note': 'Included in capital risk, excluded from price/demand inference'},
             'held_category_price_ratio': statistics.median(held_ratios) if held_ratios else None,
             'limits': ['Observed ledger sample, not complete market demand or causal evidence.',
                        'No individual shop is blamed using unsigned reviews.',
@@ -133,9 +140,21 @@ def read_events(md, now):
     with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=5)) as db:
         db.execute('PRAGMA query_only=ON')
         rows = db.execute("SELECT kind,ts,data FROM events WHERE ts>=? AND ts<=? AND kind IN "
-                          "('market_settle','payment','negotiation','policy_fallback','shop_review') "
+                          "('market_settle','payment','negotiation','policy_fallback','shop_review',"
+                          "'seller_action','seller_failure','seller_checkout','seller_settlement') "
                           "ORDER BY ts DESC LIMIT ?", (now - 2 * INTERVAL, now, ROW_LIMIT + 1)).fetchall()
     return [{'kind': k, 'ts': ts, 'data': json.loads(data)} for k, ts, data in rows[:ROW_LIMIT]], len(rows) > ROW_LIMIT
+
+
+def blocked_stock(md, now):
+    path = database_dir(md) / 'r3_seller.sqlite3'
+    if not path.exists():
+        return set()
+    with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=5)) as db:
+        db.execute('PRAGMA query_only=ON')
+        return {row[0] for row in db.execute(
+            "SELECT unit FROM deals WHERE unit IS NOT NULL AND "
+            "(status IN ('signed_pending','quarantined') OR (status IN ('open','busy') AND expires>?))", (now,))}
 
 
 def apply_policy(md, before, baseline_raw, desired):
@@ -180,7 +199,18 @@ def review_once(md=None, now=None, apply=False):
     events, capped = read_events(md, now)
     started = previous.get('started_at', now)
     summary = summarize(events, load_catalog(md), inventory,
-                        read_json(md / 'public-cursor.json', {}), now, started, capped)
+                        read_json(md / 'public-cursor.json', {}), now, started, capped, blocked_stock(md, now))
+    board = read_json(md / 'score-latest.json', {})
+    evaluation = compare_and_predict(board, previous, now)
+    funnel = Counter(e['kind'] + ':' + str(e['data'].get('action', e['data'].get('error', 'recorded')))
+                     for e in events if e['kind'].startswith('seller_') and 0 <= now - e['ts'] < INTERVAL)
+    summary['seller_funnel'] = dict(funnel)
+    summary['own_sale_performance'] = {
+        'settled_units': sum(e['kind'] == 'seller_settlement' and 0 <= now-e['ts'] < INTERVAL for e in events),
+        'margin_after_estimated_storage': sum(e['data'].get('margin_after_storage', 0) for e in events
+            if e['kind'] == 'seller_settlement' and 0 <= now-e['ts'] < INTERVAL),
+        'limitation': 'Only linked own sales; refund adjustments live in portfolio memory. No causal baseline lift.'}
+    summary['funnel_limit'] = 'Action counts, not unique visits; inventory lock failures are not lack of demand.'
     desired, reasons = propose(summary, baseline)
     manual_edit = bool(previous) and current != previous.get('last_applied_policy')
     status = 'paused_manual_policy_edit' if manual_edit else ('ready' if desired else 'insufficient_data')
@@ -193,12 +223,15 @@ def review_once(md=None, now=None, apply=False):
     report = {'generated_at': now, 'next_due_at': now + INTERVAL, 'status': status,
               'mode': 'applied' if apply else 'read_only', 'summary': summary,
               'proposed': desired, 'changes': changes, 'reasons': reasons,
+              'score_evaluation': evaluation,
               'source_edits': False, 'network_requests': 0, 'model_calls': 0}
     if apply:
         stamp = datetime.fromtimestamp(now, timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
         atomic_json(md.parent / 'logs' / 'trend-watch' / (stamp + '.json'), report)
         state = dict(previous, started_at=started, next_due_at=now + INTERVAL,
                      baseline_policy=baseline_raw, last_status=status)
+        if evaluation.get('next_prediction'):
+            state.update(score_observation=board, score_prediction=evaluation['next_prediction'])
         if not manual_edit:
             state['last_applied_policy'] = after
         atomic_json(md / 'trend-watch-state.json', state)

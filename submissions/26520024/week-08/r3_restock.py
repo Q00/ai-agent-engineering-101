@@ -18,6 +18,7 @@ from r3_discovery import analyze, timestamp
 from r3_memory import Memory
 from r3_runtime import choose as resilient_choose
 from r3_storage import database_dir
+from r3_portfolio import select_next
 
 MAX_SURGE = 1.5
 
@@ -187,12 +188,19 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now, *, qua
     if initial and total >= 3:
         return []
     proposals, used_orders, explored_categories = [], set(), set()
+    pilot_spend = max(0, spend * min(.20, policy.get('exploration_budget_fraction', .20)))
+    has_pilots = any(candidates.get(sku, {}).get('portfolio', {}).get('scale_ready') is False
+                     for sku in hypotheses)
+    proven_spend = spend - pilot_spend if has_pilots and not initial else spend
     for sku, count in counts.items():
         if count > 0:
             used_orders.update(candidates.get(sku, {}).get('order_groups', []))
             if sku in catalog:
                 explored_categories.add(catalog[sku]['category'])
-    for sku, hypothesis in hypotheses.items():
+    remaining = dict(hypotheses)
+    while remaining:
+        sku = select_next(remaining, candidates, used_orders)
+        hypothesis = remaining.pop(sku)
         if quantity_limits is not None and sku not in quantity_limits:
             continue
         candidate, product = candidates.get(sku), catalog.get(sku)
@@ -230,8 +238,16 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now, *, qua
         qty = min(sku_cap - counts[sku], unit_cap - total, int((spend + 1e-8) / unit_cost),
                   int((capital * category_fraction - category_cost[category] + 1e-8) / unit_cost))
         # Related/eligible products remain one-unit experiments until actual sales exist.
-        if initial or not candidate.get('observed_sales'):
+        portfolio = candidate.get('portfolio')
+        pilot = portfolio is not None and not portfolio['scale_ready']
+        if portfolio and portfolio['estimated_margin'] <= 0:
+            continue
+        if initial or not candidate.get('observed_sales') or pilot:
             qty = min(qty, 1 - counts[sku])
+        if pilot and not initial:
+            qty = min(qty, int(pilot_spend / unit_cost))
+        elif not initial:
+            qty = min(qty, int((proven_spend + 1e-8) / unit_cost))
         if initial:
             qty = min(qty, 3 - total)
         if quantity_limits is not None:
@@ -240,6 +256,10 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now, *, qua
             continue
         proposals.append({'sku': sku, 'qty': qty})
         spend -= unit_cost * qty
+        if pilot:
+            pilot_spend -= unit_cost * qty
+        else:
+            proven_spend -= unit_cost * qty
         total += qty
         counts[sku] += qty
         category_cost[category] += unit_cost * qty
@@ -366,6 +386,11 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
             memory.record('restock_intent', key, {'buy': intent['buy'],
                           'snapshot_id': snapshot_id, 'analysis_version': analysis['input_version'],
                           'expires_at': check_now + ttl}, ts=check_now)
+            selected = {row['sku'] for row in intent['buy']}
+            memory.record('restock_prediction', key, {
+                'buy': intent['buy'], 'basis': 'heuristic_not_calibrated_probability',
+                'candidates': [r for r in analysis.get('current_inputs', analysis['inputs'])['candidates']
+                               if r['sku'] in selected]}, ts=check_now)
             return intent
         except Exception as exc:
             memory.record('restock_error', uuid.uuid4().hex, {'error': str(exc)[:400]}, ts=now)

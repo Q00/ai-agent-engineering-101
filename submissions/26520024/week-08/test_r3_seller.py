@@ -227,7 +227,8 @@ class InventorySellerTests(unittest.TestCase):
         terminal = seller.pricing(self.unit('goods', 'G00002'), {'trading_deadline': self.now + 3600}, self.now)
         self.assertEqual(normal['minimum'], 100)
         self.assertEqual(liquidating['minimum'], 50)
-        self.assertEqual(terminal['minimum'], 50)
+        self.assertEqual(terminal['minimum'], 100)
+        self.assertFalse(terminal['liquidation'])
         self.assertIsNone(normal['market_price_floor'])
         with self.assertRaises(ValueError):
             seller.validate_action(dict(action='accept', price=75, summary='fixture'), 75, 110, normal)

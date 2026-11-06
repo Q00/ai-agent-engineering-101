@@ -22,6 +22,8 @@ DEFAULT_POLICY = {
     'model_cooldown_seconds': 300, 'supply_margin_seconds': 20,
     'adaptive_pricing': True, 'opening_price_fraction': .9,
     'max_inventory_fraction': .6,
+    'buyer_min_saved': .05, 'buyer_required_warranty_hours': 0,
+    'exploration_budget_fraction': .20,
 }
 
 
@@ -107,6 +109,10 @@ def load_policy(md=None):
         raise ValueError('buyer limits exceed kit-compatible bound')
     if policy['warranty_hours'] > 6:
         raise ValueError('warranty policy must be between 0 and 6 hours')
+    if not 0 <= number(policy['buyer_min_saved']) < 1:
+        raise ValueError('buyer_min_saved must be in [0,1)')
+    if policy['buyer_required_warranty_hours'] > 72:
+        raise ValueError('buyer warranty requirement cannot exceed 72h')
     if policy['trading_deadline'] is not None:
         from datetime import datetime
         deadline = policy['trading_deadline']

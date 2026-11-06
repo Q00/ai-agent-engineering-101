@@ -12,7 +12,7 @@ from r3_common import atomic_json, load_catalog, load_policy, read_json, state_d
 from r3_memory import Memory
 
 
-VERSION = 1
+VERSION = 2
 HALF_LIFE = 6 * 3600
 WINDOW = 6 * 3600
 PROMPT = '''Select bounded investment hypotheses from supplied candidates for a fictional market.
@@ -22,6 +22,9 @@ each order represents one purchase, not one purchase for each acceptable substit
 Unknown demand is unknown, not poor demand. Related products are hypotheses, not proven sellers.
 Without observations, only the explicitly marked small diversified exploration is justified.
 Consider evidence strength, related-product price comparability, food expiry, and uncertainty.
+Prefer actual acceptable-order substitutes over semantic complements. portfolio is a deterministic
+estimate with partial supply coverage, not a sales guarantee. Include a small pilot when justified;
+scale only products with repeated profitable own settlements. Respect uncertainty and cash limits.
 Never fabricate sales, trends, probabilities, quality grades, or evidence. A purchase cannot choose
 a grade or its random wholesale draw. You may omit all candidates. Return only JSON:
 {"hypotheses":[{"sku":"supplied SKU","evidence_ids":["supplied ID"],"reason":"brief factual rationale"}],
@@ -86,6 +89,7 @@ def build_candidates(catalog, events, now=None, limit=24, half_life_seconds=HALF
                                      'eligible_weight': 0., 'recent_sales': 0,
                                      'previous_sales': 0, 'evidence_ids': [], 'first_observed_at': now})
     evidence = []
+    buyers = defaultdict(set)
     seen_sales, seen_orders, seen_events = set(), set(), set()
     ordered = sorted(events, key=lambda row: (row.get('kind') != 'market_settle',
                                                -(timestamp(row.get('ts')) or 0),
@@ -146,6 +150,8 @@ def build_candidates(catalog, events, now=None, limit=24, half_life_seconds=HALF
             continue
         seen_sales.update(identities)
         category = catalog[sku]['category']
+        if isinstance(data.get('buyer'), str) and data['buyer']:
+            buyers[sku].add(data['buyer'])
         cat_stats[category]['first_observed_at'] = min(cat_stats[category]['first_observed_at'], observed)
         for stats in (sku_stats[sku], cat_stats[category]):
             stats['sales'] += 1
@@ -196,6 +202,7 @@ def build_candidates(catalog, events, now=None, limit=24, half_life_seconds=HALF
                            'kind': product.get('kind'), 'list_price': price,
                            'shelf_hours': product.get('shelf_hours'), 'demand_status': status,
                            'score': round(score, 6), 'observed_sales': stats['sales'],
+                           'distinct_buyers': len(buyers[sku]),
                            'eligible_orders': stats['eligible_orders'],
                            'eligible_source': 'own_buyer_biased',
                            'related_skus': related[:8], 'order_groups': stats['order_groups'],
@@ -210,7 +217,8 @@ def build_candidates(catalog, events, now=None, limit=24, half_life_seconds=HALF
         for row in candidates:
             by_category.setdefault(row['category'], row)
         candidates = sorted(by_category.values(), key=lambda row: (row['list_price'], row['sku']))[:limit]
-    candidates = candidates[:limit]
+    from r3_portfolio import diversified
+    candidates = diversified(candidates, limit)
     referenced = {ref for row in candidates for ref in row['evidence_ids']}
     for stats in cat_stats.values():
         stats['evidence_ids'] = stats['evidence_ids'][:8]
@@ -261,8 +269,10 @@ def analyze(md, *, now=None, decide_fn=None, memory=None):
     policy = load_policy(md)
     events = [event for kind in ('market_settle', 'settlement', 'order_seen')
               for event in memory.events(kind=kind, limit=2000)]
-    inputs = build_candidates(catalog, events, now=now,
+    inputs = build_candidates(catalog, events, now=now, limit=96,
                               half_life_seconds=policy.get('trend_half_life_seconds', HALF_LIFE))
+    from r3_portfolio import enrich
+    inputs = enrich(inputs, memory, read_json(Path(md) / 'inventory.json', {}), now)
     inputs['catalog_version'] = _digest(catalog)
     ttl = max(1, min(900, float(policy.get('analysis_interval_seconds', 900))))
     cached = read_json(Path(md) / 'analysis.json', {})

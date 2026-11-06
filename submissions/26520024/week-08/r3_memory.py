@@ -317,7 +317,7 @@ class Memory:
         return [event for event in self.events(limit=500)
                 if event['kind'] in ('payment', 'settlement', 'market_settle', 'broken')][:limit]
 
-    def _consume(self, name, accept):
+    def _consume(self, name, accept, located=False):
         path = self.md / name
         try:
             stat = path.stat()
@@ -344,7 +344,7 @@ class Memory:
                         row = parse_json(raw.decode())
                         if not isinstance(row, dict):
                             raise ValueError('object required')
-                        count += bool(accept(row))
+                        count += bool(accept(row, f'{name}:{stat.st_ino}:{start}') if located else accept(row))
                     except (ValueError, UnicodeError, TypeError, KeyError):
                         self.record('parse_error', f'{name}:{stat.st_ino}:{start}', {'source': name, 'reason': 'invalid record'})
                 offset = stream.tell()
@@ -377,7 +377,7 @@ class Memory:
         for post in forum[:100]:
             if not isinstance(post, dict) or not isinstance(post.get('text'), str):
                 continue
-            data = {k: post[k] for k in ('id', 'ts', 'author', 'role', 'refs', 'score') if k in post}
+            data = {k: post[k] for k in ('id', 'ts', 'author', 'role', 'refs', 'score', 'likes', 'dislikes') if k in post}
             data.update(text=post['text'][:3000], trust='unverified_claim')
             digest = hashlib.sha256(packed(data).encode()).hexdigest()[:16]
             count += self.record('forum_claim', f'{post.get("id")}:{digest}', data)

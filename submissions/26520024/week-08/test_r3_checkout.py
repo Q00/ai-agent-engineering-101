@@ -130,7 +130,7 @@ class CheckoutTests(unittest.TestCase):
 
     def test_fallback_accepts_ask_matching_already_reached_ceiling(self):
         from r3_strategy import buyer_fallback
-        action = buyer_fallback({'budget': 100, 'value_estimate': {'expected_value': 100},
+        action = buyer_fallback({'budget': 100, 'list_price': 100, 'value_estimate': {'expected_value': 100},
                                  'last_offer': 95, 'current_ask': 95})
         self.assertEqual(action['action'], 'offer')
         self.assertEqual(action['price'], 95)
