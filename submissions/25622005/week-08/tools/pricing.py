@@ -95,9 +95,12 @@ def intro_ask(unit, ctx, pol):
 
 
 def first_ask(unit, ctx, pol, now):
-    """D3: max(list x first_ask_list, floor)."""
+    """D3: max(list x first_ask_list, floor); big-ticket goods (list above stock.big_ticket_list) use
+    first_ask_big_list, since the market clears them nearer to list x 0.7."""
     fl = floor(unit, ctx, pol, now)
-    ask = round((unit.get("list_price") or 0) * pol["seller"]["first_ask_list"])
+    lst = unit.get("list_price") or 0
+    big = unit.get("kind") == "goods" and lst > pol["stock"]["big_ticket_list"]
+    ask = round(lst * pol["seller"]["first_ask_big_list" if big else "first_ask_list"])
     if pol["seller"]["intro_price_enabled"]:
         intro = intro_ask(unit, ctx, pol)
         if intro is not None:

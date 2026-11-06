@@ -44,12 +44,12 @@ class FloorAndAsk(unittest.TestCase):
     def test_a_grade_worst_cost(self):
         u = goods(cost=75000)                                    # A-grade cost can reach 0.75 x list
         self.assertEqual(pricing.floor(u, CTX, pol(), NOW), 81000)  # 75000 x 1.08
-        self.assertEqual(pricing.first_ask(u, CTX, pol(), NOW), 85000)
+        self.assertEqual(pricing.first_ask(u, CTX, pol(stock__big_ticket_list=200000), NOW), 85000)
 
     def test_cheap_unit_floor_is_list_share(self):
         u = goods(cost=40000)
         self.assertEqual(pricing.floor_detail(u, CTX, pol(), NOW), (60000, ["D3"]))
-        self.assertEqual(pricing.first_ask(u, CTX, pol(), NOW), 85000)
+        self.assertEqual(pricing.first_ask(u, CTX, pol(stock__big_ticket_list=200000), NOW), 85000)
 
     def test_ask_never_below_floor(self):
         u = goods(cost=90000)
@@ -57,7 +57,14 @@ class FloorAndAsk(unittest.TestCase):
 
     def test_intro_price_extension_point_is_off(self):
         self.assertIsNone(pricing.intro_ask(goods(), CTX, pol()))
-        self.assertEqual(pricing.first_ask(goods(), CTX, pol(seller__intro_price_enabled=True), NOW), 85000)
+        self.assertEqual(pricing.first_ask(goods(), CTX, pol(seller__intro_price_enabled=True, stock__big_ticket_list=200000),
+                                           NOW), 85000)
+
+    def test_big_ticket_first_ask(self):
+        # goods listed above stock.big_ticket_list ask first_ask_big_list of list (default 0.78), still never below the floor
+        self.assertEqual(pricing.first_ask(goods(), CTX, pol(), NOW), 78000)
+        self.assertEqual(pricing.first_ask(goods(cost=75000), CTX, pol(), NOW), 81000)        # floor 75000 x 1.08
+        self.assertEqual(pricing.first_ask(food(50), CTX, pol(), NOW), 17000)                 # food: first_ask_list
 
 
 class Respond(unittest.TestCase):
@@ -123,7 +130,7 @@ class Overpriced(unittest.TestCase):
 class EndOfRound(unittest.TestCase):
     def test_d14_schedule(self):
         u = goods(cost=50000)
-        old = pol(stock__clear_70_h=24, stock__clear_any_h=6)              # the schedule before Patch 3.3
+        old = pol(stock__clear_70_h=24, stock__clear_any_h=6, stock__big_ticket_list=200000)   # the schedule before Patch 3.3
         cases = {49: (60000, ["D3"]), 47: (50000, ["D3", "D14"]), 23: (35000, ["D3", "D14"]), 5: (1, ["D3", "D14"])}
         for h, want in cases.items():
             now = END - h * H

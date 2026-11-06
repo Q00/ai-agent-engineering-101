@@ -53,8 +53,13 @@ class RangeTests(unittest.TestCase):
         p = defaults()
         p["stock"].update(trend_skus=["G1", "G2"], focus_skus=["G1"])
         self.assertEqual(policy.validate(p), [])
-        p["stock"]["big_ticket_share"] = 0.45                     # the user's ceiling is 40 % of inventory
+        p["stock"]["big_ticket_share"] = 0.85                     # Patch 3.3: stock counts at cost, big-ticket may be most of it
+        self.assertEqual(policy.validate(p), [])
+        p["stock"]["big_ticket_share"] = 1.05
         self.assertTrue(any(e.startswith("stock.big_ticket_share") for e in policy.validate(p)))
+        p["stock"]["big_ticket_share"] = 0.4
+        p["buyer"]["min_kept"] = 0.7                                # above RANGES (0.0, 0.6)
+        self.assertTrue(any(e.startswith("buyer.min_kept") for e in policy.validate(p)))
 
 
 class FillDefaultsTests(unittest.TestCase):

@@ -27,7 +27,7 @@ CHANGES = HOME / "logs" / "policy-changes.jsonl"
 # The schema and the last-resort fallback. Keep in step with strategy/SKILL.md.
 DEFAULTS = {
     "seller": {
-        "first_ask_list": 0.85, "floor_cost_mult": 1.08, "floor_list": 0.60,
+        "first_ask_list": 0.85, "first_ask_big_list": 0.78, "floor_cost_mult": 1.08, "floor_list": 0.60,
         "food_clear_uwh_factor": 2.0, "food_clear_min_obs": 10, "food_clear_left_share": 0.25,
         "goods_stale_days": 5,
         "warranty_on_request": True, "warranty_hours": 6, "warranty_grades": ["A", "B"],
@@ -52,7 +52,7 @@ DEFAULTS = {
     "market": {"surge_free": 50, "surge_per_unit": 0.002, "surge_max": 1.5},
     "buyer": {
         "cap_goods_no_warranty": 0.70, "cap_goods_warranty": 0.94, "cap_food": 0.95,
-        "min_surplus_list": 0.05, "open_list": 0.60, "max_shops": 3, "food_margin_h": 0.2,
+        "min_surplus_list": 0.05, "min_kept": 0.0, "open_list": 0.60, "max_shops": 3, "food_margin_h": 0.2,
         "target_s": 20, "continue_p": 0.75, "msg_timeout_s": 12, "order_cap_s": 60,
         "binding": True, "accept_cert": True,
     },
@@ -64,7 +64,8 @@ DEFAULTS = {
 
 # Bounds for values where a typo would be costly. (low, high), inclusive.
 RANGES = {
-    "seller.first_ask_list": (0.3, 1.5), "seller.floor_cost_mult": (0.0, 2.0), "seller.floor_list": (0.0, 1.5),
+    "seller.first_ask_list": (0.3, 1.5), "seller.first_ask_big_list": (0.3, 1.5),
+    "seller.floor_cost_mult": (0.0, 2.0), "seller.floor_list": (0.0, 1.5),
     "seller.warranty_hours": (0, 6), "seller.warranty_premium": (0.0, 1.0), "seller.promise_ttl_s": (10, 3600),
     "seller.warranty_cap_6h": (0, 20000000),
     "stock.inventory_cap_share": (0.0, 1.0), "stock.cash_floor": (0, 5000000), "stock.worst_cost_share": (0.25, 1.0),
@@ -72,7 +73,7 @@ RANGES = {
     "buyer.cap_goods_no_warranty": (0.0, 1.5), "buyer.cap_goods_warranty": (0.0, 1.5), "buyer.cap_food": (0.0, 1.5),
     "buyer.open_list": (0.0, 1.5), "buyer.max_shops": (1, 10), "buyer.target_s": (1, 240),
     "buyer.continue_p": (0.0, 1.0), "buyer.msg_timeout_s": (1, 120), "buyer.order_cap_s": (5, 280),
-    "buyer.food_margin_h": (0.0, 24.0), "buyer.min_surplus_list": (0.0, 0.5),
+    "buyer.food_margin_h": (0.0, 24.0), "buyer.min_surplus_list": (0.0, 0.5), "buyer.min_kept": (0.0, 0.6),
     "stock.window_lead_s": (0, 60),         # the kit retries a closed-window line 3 x 30 s, then skips it
     "stock.cover_min": (5, 240), "stock.cover_safety": (0.5, 5.0),
     "llm.planner_max_per_h": (0, 20), "llm.exception_max_per_h": (0, 60), "forum.max_per_day": (0, 288),
@@ -80,7 +81,7 @@ RANGES = {
     "stock.focus_max": (0, 20), "stock.focus_cover_mult": (1.0, 4.0), "stock.focus_cap_share": (0.0, 1.0),
     "stock.focus_min_settles": (1, 1000), "llm.exception_min_left_s": (0, 280), "llm.exception_timeout_s": (3, 60),
     "stock.max_hold": (1, 200), "stock.min_line_qty": (1, 20), "stock.trend_max": (0, 40),
-    "stock.trend_share": (0.0, 0.5), "stock.big_ticket_share": (0.0, 0.40), "stock.bigticket_probe_qty": (1, 20),
+    "stock.trend_share": (0.0, 0.5), "stock.big_ticket_share": (0.0, 1.0), "stock.bigticket_probe_qty": (1, 20),
     "stock.min_margin_share": (0.0, 0.3), "stock.goods_max_list": (10000, 2000000),
     "stock.big_ticket_list": (10000, 1000000),
     "market.surge_free": (0, 100000), "market.surge_per_unit": (0.0, 0.1), "market.surge_max": (1.0, 5.0),

@@ -55,9 +55,10 @@ Supply and depth:
   calls for more SKUs. Order: sold-out SKUs, then focus, then trend SKUs, then category picks. A shop without the
   ordered SKU in stock is left out of the buyer's offers.
 - D1 headroom = min(stock.inventory_cap_share * (cash + stock cost) - stock cost, cash - stock.cash_floor).
-  Raise stock.inventory_cap_share only while economics.expand_all_ok is true (economics.expand_ok, each true:
-  turnover >= 1.5 a day, unsold goods <= 20% of stock cost, spoilage < 1% of cost of goods sold, balance >= 10M);
-  when one is false, lower it by a step.
+  Since Patch 3.3 unsold stock counts at cost in Book, so stock.inventory_cap_share is a liquidity limit, not a
+  score limit: keep it high (0.8 and above) while economics.expand_ok's spoilage and unsold-goods checks hold and
+  cash stays above stock.cash_floor plus the warranty exposure; lower it by a step only when spoilage or stale
+  goods rise. Most of the market's revenue is big-ticket goods, so stock.big_ticket_share may be most of it.
 - Focus SKUs (stock.focus_skus) and trend SKUs (stock.trend_skus) are the market's best sellers, chosen by our code
   from the ledger (rate x momentum x scarcity, gated on margin, congestion and our price), not by you; you set only
   their number (stock.focus_max, stock.trend_max). They are bought even when they are not their category's
@@ -83,8 +84,14 @@ Supply and depth:
   floor is cost; from stock.clear_70_h it is cost x 0.7 and from stock.clear_any_h 1 credit (both lower Book while
   stock counts at cost); from stock.taper_h buying tapers to what sells before the end; from stock.goods_stop_h no
   new goods. Set them from how the market values unsold stock at the end.
-- Buyer: the food cap is min(buyer.cap_food, 1 - buyer.min_surplus_list) * list price. Goods without a warranty:
-  1 - measured break rate - buyer.min_surplus_list, or buyer.cap_goods_no_warranty before any measurement.
+- Buyer: every cap is at most (1 - max(buyer.min_surplus_list, buyer.min_kept)) * list price. The food cap is
+  min(buyer.cap_food, that); goods without a warranty min(1 - measured break rate - buyer.min_surplus_list, that),
+  or buyer.cap_goods_no_warranty before any measurement; goods with the 6 h warranty min(buyer.cap_goods_warranty,
+  that). Saved (board: buyers.saved) is the average share of list kept per deal (denominator deals + 100), so a
+  deal that keeps less than our current saved lowers it: keep buyer.min_kept at or a little above our saved, and
+  lower it only when conversion (brief: buyer deals / orders) falls under about 0.4.
+- Big-ticket goods (list above stock.big_ticket_list) are first asked at seller.first_ask_big_list x list, the
+  rest at seller.first_ask_list; the market clears big-ticket goods at about 0.67-0.72 of list.
 - forum.min_gap_min spaces our buyer posts; it is set from the market's post limit automatically, not by you.
 - History sources "migration" (an old shipped default, once) and "linked" (same food cap) are code's, not yours.
 - Brief sections: ops.restock (runs, window_closed_runs, window, stock depth, empty_picks and overpriced,

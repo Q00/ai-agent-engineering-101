@@ -5,6 +5,7 @@ description: Round 3 shop and buyer strategy for psyoung82. The numbers under po
 policy:
   seller:
     first_ask_list: 0.85          # D3 first ask = max(list x this, floor)
+    first_ask_big_list: 0.78      # D3 first ask for big-ticket goods (list above stock.big_ticket_list): the market clears them at 0.67-0.72
     floor_cost_mult: 1.08         # D3 floor = max(unit cost x this, list x floor_list)
     floor_list: 0.60
     food_clear_uwh_factor: 2.0    # D4 food below cost when hours left < factor x observed use_within median and grade C (shelf left < 45%)
@@ -72,6 +73,7 @@ policy:
     cap_goods_warranty: 0.94
     cap_food: 0.95
     min_surplus_list: 0.05
+    min_kept: 0.0                 # D6 every cap <= (1 - this) x list: Saved is an average share kept, a deal below it lowers the score
     open_list: 0.60
     max_shops: 3
     food_margin_h: 0.2            # D7 min_hours_left = use_within_hours + this (settle follows payment)
@@ -124,7 +126,9 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
   recomputed now, hours left for food, warranty; plus the market certificate of that unit.
 - Always name the unit in the signed receipt. Claim a grade only when the certificate
   supports it with `seller.claim_food_margin_h` to spare.
-- Price: first ask `seller.first_ask_list` of list, never below the floor. Accept at or above
+- Price: first ask `seller.first_ask_list` of list (`seller.first_ask_big_list` for goods listed above
+  `stock.big_ticket_list`: the market clears beds and sofas at 0.67-0.72 of list, and they carry most of its
+  revenue), never below the floor. Accept at or above
   the midpoint between floor and first ask; between floor and midpoint counter once at the
   midpoint; below the floor offer the floor as final.
 - Below cost only for food near the end of its life. Stale goods (`seller.goods_stale_days`) floor
@@ -135,7 +139,8 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 
 ## Stock
 
-- Keep inventory cost within `stock.inventory_cap_share` of cash plus inventory, and cash
+- Unsold stock counts at cost in Book (Patch 3.3), so idle cash earns nothing: keep inventory cost near
+  `stock.inventory_cap_share` of cash plus inventory (a liquidity limit, not a score limit), and cash
   above `stock.cash_floor`.
 - Open long-shelf food first, then goods; skip goods categories whose median list price is above
   `stock.goods_max_list`. Pick the SKU closest to the category's median price. Fill categories
@@ -170,6 +175,9 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 ## Buyer
 
 - Expected surplus is computed on the list price of the SKU that will ship.
+- Saved (Patch 3.4) is the average share of list kept per deal, so a deal that keeps less than the running
+  average lowers the score however many deals we close: every cap is at most (1 - `buyer.min_kept`) x list,
+  and `buyer.min_kept` stays at or above the board's saved for our buyer. Walking away costs nothing in Saved.
 - The food cap is min(`buyer.cap_food`, 1 - `buyer.min_surplus_list`); raising `cap_food` above
   that has no effect.
 - Ask by SKU. Offer `buyer.open_list` of list first, even under a first quote at or below the

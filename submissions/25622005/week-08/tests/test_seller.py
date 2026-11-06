@@ -7,6 +7,7 @@ import io
 import json
 import logging
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -60,6 +61,9 @@ class SellerA2A(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.home, True)
         (self.home / "strategy").mkdir()
         shutil.copy(W / "strategy" / "SKILL.md", self.home / "strategy" / "SKILL.md")
+        skill = self.home / "strategy" / "SKILL.md"       # the 100,000-list curtain is not big-ticket here
+        skill.write_text(re.sub(r"big_ticket_list: \d+", "big_ticket_list: 200000", skill.read_text(encoding="utf-8")),
+                         encoding="utf-8")
         logs = self.home / "logs"
         patches = [(policy, "SKILL", self.home / "strategy" / "SKILL.md"),
                    (policy, "LASTGOOD", self.home / "memory" / "policy.lastgood.json"),

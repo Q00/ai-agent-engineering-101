@@ -28,13 +28,14 @@ import policy
 # forum.min_gap_min is not here: it follows the market's post limit (SYNCED).
 TUNABLE = {
     "seller.first_ask_list": (0.70, 1.00, 0.05),
+    "seller.first_ask_big_list": (0.60, 0.95, 0.03),   # big-ticket goods clear at 0.67-0.72 of list
     "seller.floor_list": (0.40, 0.70, 0.05),       # the market clears goods at 0.71-0.78 of list
     "seller.floor_cost_mult": (1.00, 1.15, 0.05),
     "seller.warranty_premium": (0.05, 0.30, 0.05),
-    "seller.warranty_cap_6h": (100000, 3000000, 250000),
+    "seller.warranty_cap_6h": (100000, 20000000, 1000000),
     "seller.food_clear_uwh_factor": (1.0, 4.0, 0.5),
     "seller.goods_stale_days": (2, 10, 1),
-    "stock.inventory_cap_share": (0.15, 0.70, 0.05),
+    "stock.inventory_cap_share": (0.15, 0.90, 0.05),   # Patch 3.3: stock counts at cost in Book, so this is a liquidity limit
     "stock.per_sku_qty": (1, 10, 1),
     "stock.demand_window_h": (2, 24, 2),
     "stock.regular_min_stock": (0, 3, 1),
@@ -51,9 +52,9 @@ TUNABLE = {
     "stock.trend_max": (0, 32, 4),              # lo is at least the current trend list's length
     "stock.trend_share": (0.03, 0.20, 0.02),
     "stock.min_margin_share": (0.02, 0.12, 0.01),
-    "stock.big_ticket_share": (0.10, 0.40, 0.05),
+    "stock.big_ticket_share": (0.10, 0.90, 0.10),
     "stock.big_ticket_list": (20000, 200000, 10000),
-    "stock.bigticket_probe_qty": (1, 6, 1),
+    "stock.bigticket_probe_qty": (1, 10, 1),
     # end of round (Patch 3.3: stock counts at cost, so 0 = off is the default)
     "stock.clear_cost_h": (0, 72, 12),
     "stock.clear_70_h": (0, 48, 6),
@@ -64,6 +65,7 @@ TUNABLE = {
     "buyer.cap_goods_warranty": (0.80, 1.00, 0.04),
     "buyer.cap_food": (0.85, 1.00, 0.03),
     "buyer.min_surplus_list": (0.0, 0.15, 0.02),
+    "buyer.min_kept": (0.0, 0.45, 0.03),           # Patch 3.4: Saved is an average share kept; keep this at or above the board's saved
     "buyer.open_list": (0.20, 0.80, 0.05),
     "buyer.max_shops": (1, 5, 1),
     "buyer.target_s": (10, 40, 5),

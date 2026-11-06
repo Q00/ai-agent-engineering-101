@@ -34,16 +34,24 @@ def list_price(catalog, sku):
     return int(v) if isinstance(v, (int, float)) and v > 0 else None
 
 
-def cap_share(kind, warranty_h, q_upper, pol):
-    """D6 price cap as a share of the shipped SKU's list price."""
+def kept_floor(pol):
+    """The least share of list a deal must keep: max(buyer.min_surplus_list, buyer.min_kept). Saved (Patch 3.4) is
+    the average share kept, so a deal below the running average lowers the score; min_kept pins the floor there."""
     b = pol["buyer"]
-    if kind == "food":                           # never a cap that leaves less than the minimum surplus
-        return min(b["cap_food"], round(1 - b["min_surplus_list"], 6))
+    return max(b["min_surplus_list"], b.get("min_kept", 0.0))
+
+
+def cap_share(kind, warranty_h, q_upper, pol):
+    """D6 price cap as a share of the shipped SKU's list price, never above 1 - kept_floor."""
+    b = pol["buyer"]
+    top = round(1 - kept_floor(pol), 6)          # never a cap that leaves less than the minimum share kept
+    if kind == "food":
+        return min(b["cap_food"], top)
     if warranty_h and warranty_h >= WARRANTY_FULL_H:
-        return b["cap_goods_warranty"]
+        return min(b["cap_goods_warranty"], top)
     if q_upper is not None:                      # measured break rate replaces the 0.70 start value
-        return max(0.0, 1 - q_upper - b["min_surplus_list"])
-    return b["cap_goods_no_warranty"]
+        return max(0.0, min(1 - q_upper - b["min_surplus_list"], top))
+    return min(b["cap_goods_no_warranty"], top)
 
 
 def cap(V, kind, warranty_h, q_upper, budget, pol):
@@ -165,7 +173,7 @@ def candidates(order, shops, catalog, summary, pol, asks=None):
             c = cap(V, k, 0, q_upper, budget, pol)
             qk = q if k != "food" else 0.0
             surplus = expected_surplus(V, c, k, qk, 0)
-            if c <= 0 or surplus < pol["buyer"]["min_surplus_list"] * V - 1:
+            if c <= 0 or surplus < kept_floor(pol) * V - 1:
                 continue
             e = (asks or {}).get(ask_key(url, k))
             known = _ask_entry(e) and e["n"] >= ASK_MIN_N
