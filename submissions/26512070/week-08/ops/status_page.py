@@ -314,8 +314,12 @@ th{color:var(--mut);font-weight:600} ul{padding-left:18px} li{margin:2px 0} .mon
 
 def build():
     d = Data()
-    secs = [("요약", sec_summary), ("seller", sec_seller), ("buyer", sec_buyer), ("restock", sec_restock),
-            ("시장", sec_market), ("기록", sec_record)]
+    from ops import page_sections as ps          # user 11/6 13:xx: one page for everything, the strategy visible
+    wrap = lambda fn: (lambda d: f"<section class=card>{fn(d)}</section>")   # noqa: E731  (the older tabs in a card)
+    secs = [("홈", ps.sec_home), ("전략", ps.sec_strategy), ("메타", ps.sec_meta), ("seller", wrap(sec_seller)),
+            ("buyer", wrap(sec_buyer)), ("restock", wrap(sec_restock)),
+            ("시장", lambda d: ps.sec_market2(d) + wrap(sec_market)(d)), ("지식", ps.sec_knowledge),
+            ("기록", wrap(sec_record))]
     tabs = []
     for i, (label, fn) in enumerate(secs):
         try:
@@ -326,7 +330,7 @@ def build():
                     f"<div class=panel>{body}</div>")
     return ("<!doctype html><html lang=ko><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
             "<meta name=robots content='noindex,nofollow'><title>R3 현황</title>"
-            f"<style>{CSS}</style></head><body><header><h1>gom31 Round 3 현황</h1>"
+            f"<style>{ps.CSS}.note{{color:var(--mut);font-size:12px}}</style></head><body><header><h1>gom31 Round 3 현황</h1>"
             f"<p>갱신 {e(time.strftime('%Y-%m-%d %H:%M:%S'))} · 10분마다 · 전략 v{e(d.strategy.get('version'))}</p></header>"
             f"<div class=tabs>{''.join(tabs)}</div></body></html>")
 

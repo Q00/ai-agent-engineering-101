@@ -24,6 +24,10 @@ def entries():
 
 
 def add(rid, after=None, after_experiment=None, by="user"):
+    doc = wisdom.status(rid)
+    if doc and doc.get("status") == "open":       # approved already: not waiting for the user any more
+        doc["status"] = "queued"
+        atomic.write_json(wisdom._dir() / f"{rid}.json", doc)
     q = entries() + [{"request": rid, "after": after, "after_experiment": after_experiment, "by": by,
                       "added": time.time()}]
     atomic.write_json(path(), q)
@@ -39,7 +43,7 @@ def tick(now=None):
             left.append(q)
             continue
         doc = wisdom.status(q["request"])
-        if not doc or doc.get("status") != "open":
+        if not doc or doc.get("status") not in ("open", "queued"):
             done.append((q["request"], f"skipped: {doc and doc.get('status')}"))
             continue
         try:

@@ -147,7 +147,7 @@ def decide(rid, choice, note="", by="user", now=None):
     doc = status(rid)
     if doc is None:
         raise ValueError(f"no request {rid}")
-    if doc["status"] != "open":
+    if doc["status"] not in ("open", "queued"):          # queued: approved, waiting its turn (harness.queue)
         raise ValueError(f"request {rid} is {doc['status']}")
     stamp = time.strftime("%Y-%m-%d %H:%M", time.localtime(now))
     out = {"choice": choice, "note": note, "by": by, "ts": now}
