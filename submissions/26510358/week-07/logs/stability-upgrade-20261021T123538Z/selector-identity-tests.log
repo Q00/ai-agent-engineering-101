@@ -1,0 +1,18 @@
+test_validated_selection_uses_registry_name_and_rejects_url_and_price (test_selector_identity.SelectorIdentityTests) ... ERROR
+
+======================================================================
+ERROR: test_validated_selection_uses_registry_name_and_rejects_url_and_price (test_selector_identity.SelectorIdentityTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_selector_identity.py", line 33, in test_validated_selection_uses_registry_name_and_rejects_url_and_price
+    market_buyer.buy([candidate],'lamp',120,memory,RecordingTrace())
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/market_buyer.py", line 62, in buy
+    ranking=[{"name": s["name"], "score": s["score"], "personal_memory": s["personal_memory"],
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/market_buyer.py", line 62, in <listcomp>
+    ranking=[{"name": s["name"], "score": s["score"], "personal_memory": s["personal_memory"],
+KeyError: 'score'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+FAILED (errors=1)

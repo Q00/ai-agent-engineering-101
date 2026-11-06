@@ -1,0 +1,67 @@
+{
+  "case": "declared-registry",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": "d3d321fa8bcf4fa4a74f1b830c4db8ce",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "messageId": "34faef5ca87b49a99af5895b4672fe3d",
+        "role": "ROLE_USER",
+        "parts": [
+          {
+            "text": "lamp"
+          }
+        ],
+        "metadata": {
+          "verificationOnly": true,
+          "probeLabel": "Operator access-policy test; self-declared identity, not a real market buyer.",
+          "buyerName": "cheapest-in-town"
+        }
+      }
+    }
+  },
+  "response": {
+    "result": {
+      "task": {
+        "id": "fa5f9fa7-deba-45eb-a455-3127bcce937a",
+        "contextId": "25bdfece-dacc-451d-a632-1e471351d95b",
+        "status": {
+          "state": "TASK_STATE_REJECTED",
+          "message": {
+            "messageId": "fcbbf386-f22e-4d4b-9260-501ec2db8b0d",
+            "contextId": "25bdfece-dacc-451d-a632-1e471351d95b",
+            "taskId": "fa5f9fa7-deba-45eb-a455-3127bcce937a",
+            "role": "ROLE_AGENT",
+            "parts": [
+              {
+                "text": "This shop is unavailable to this buyer under its local access policy."
+              }
+            ]
+          },
+          "timestamp": "2026-10-21T11:59:06.115414Z"
+        },
+        "history": [
+          {
+            "messageId": "34faef5ca87b49a99af5895b4672fe3d",
+            "contextId": "25bdfece-dacc-451d-a632-1e471351d95b",
+            "taskId": "fa5f9fa7-deba-45eb-a455-3127bcce937a",
+            "role": "ROLE_USER",
+            "parts": [
+              {
+                "text": "lamp"
+              }
+            ],
+            "metadata": {
+              "verificationOnly": true,
+              "buyerName": "cheapest-in-town",
+              "probeLabel": "Operator access-policy test; self-declared identity, not a real market buyer."
+            }
+          }
+        ]
+      }
+    },
+    "id": "d3d321fa8bcf4fa4a74f1b830c4db8ce",
+    "jsonrpc": "2.0"
+  }
+}

@@ -1,0 +1,61 @@
+# week-07 market test, kit v1, 2026-10-20T11:55:00+00:00
+harness: Codex CLI 0.162.0-alpha.17.2 / gpt-6-luna / low reasoning / real structured decisions / bounded role lanes
+
+## seller tests: python3 seller.py --port 42779
+  FAIL  seller_card #1: no Agent Card at /.well-known/agent-card.json within 60 s
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### buyer_deal #1: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_deal-1.json --item lamp --budget 120
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_deal #1: no JSON result line at the end of the output
+  FAIL  buyer_protocol_deal #1: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #2: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_deal-2.json --item lamp --budget 120
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_deal #2: no JSON result line at the end of the output
+  FAIL  buyer_protocol_deal #2: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #3: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_deal-3.json --item lamp --budget 120
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_deal #3: no JSON result line at the end of the output
+  FAIL  buyer_protocol_deal #3: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #1: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_holds_budget #1: no JSON result line at the end of the output
+  FAIL  buyer_protocol_holds_budget #1: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #2: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_holds_budget #2: no JSON result line at the end of the output
+  FAIL  buyer_protocol_holds_budget #2: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #3: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_holds_budget #3: no JSON result line at the end of the output
+  FAIL  buyer_protocol_holds_budget #3: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_reads_reviews #1: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+
+### buyer_reads_reviews #2: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+
+### buyer_reads_reviews #3: python3 market_buyer.py --shops /home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_reads_reviews #1: shop with good reviews in 0 of 3 runs (picks ['none', 'none', 'none']); needs 2
+
+0/14 passed -> FAIL

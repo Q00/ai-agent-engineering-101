@@ -1,0 +1,420 @@
+..............F....F..F..........................................................................F{"event": "policy_loaded", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2", "policy_version": "week07-completion-v1"}
+{"event": "seller_started", "name": "TEST ONLY policy shop", "catalog_size": 3003, "policy_version": "week07-completion-v1", "price_policy": "prompt-completion-v3"}
+.E............................F.................................FEEEF....F..Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+...................{"mode": "TEST_ONLY_stub_model_actual_local_JSONRPC", "case": "cancel_before_model_return", "wire": [{"request": {"jsonrpc": "2.0", "id": "b3c84c62316a446e9ddaf4141628f3e3", "method": "SendMessage", "params": {"message": {"messageId": "506abe18a381473fad822e95fecd5250", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}, "configuration": {"returnImmediately": true}}}, "response": {"result": {"task": {"id": "a8cd3271-23bd-478e-a8c6-14411eae9d9d", "contextId": "4decc9a9-c986-4c31-b48c-2162ae1208e9", "status": {"state": "TASK_STATE_SUBMITTED"}, "history": [{"messageId": "506abe18a381473fad822e95fecd5250", "contextId": "4decc9a9-c986-4c31-b48c-2162ae1208e9", "taskId": "a8cd3271-23bd-478e-a8c6-14411eae9d9d", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}}, "id": "b3c84c62316a446e9ddaf4141628f3e3", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "a0201df70a0040e983f09a3e3714f66f", "method": "CancelTask", "params": {"id": "a8cd3271-23bd-478e-a8c6-14411eae9d9d"}}, "response": {"result": {"id": "a8cd3271-23bd-478e-a8c6-14411eae9d9d", "contextId": "4decc9a9-c986-4c31-b48c-2162ae1208e9", "status": {"state": "TASK_STATE_CANCELED", "timestamp": "2026-10-22T04:14:43.081813Z"}, "history": [{"messageId": "506abe18a381473fad822e95fecd5250", "contextId": "4decc9a9-c986-4c31-b48c-2162ae1208e9", "taskId": "a8cd3271-23bd-478e-a8c6-14411eae9d9d", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}, "id": "a0201df70a0040e983f09a3e3714f66f", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "da4252e710a94a56a50f58532649fc44", "method": "GetTask", "params": {"id": "a8cd3271-23bd-478e-a8c6-14411eae9d9d"}}, "response": {"result": {"id": "a8cd3271-23bd-478e-a8c6-14411eae9d9d", "contextId": "4decc9a9-c986-4c31-b48c-2162ae1208e9", "status": {"state": "TASK_STATE_CANCELED", "timestamp": "2026-10-22T04:14:43.081813Z"}, "history": [{"messageId": "506abe18a381473fad822e95fecd5250", "contextId": "4decc9a9-c986-4c31-b48c-2162ae1208e9", "taskId": "a8cd3271-23bd-478e-a8c6-14411eae9d9d", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}, "id": "da4252e710a94a56a50f58532649fc44", "jsonrpc": "2.0"}}], "seller_events": [{"event": "policy_loaded", "policy_sha256": "test-only-policy", "policy_version": "test-only"}, {"event": "seller_started", "name": "TEST ONLY cancellation HTTP shop", "catalog_size": 1, "policy_version": "test-only", "price_policy": "TEST_ONLY-uncapped"}, {"event": "remote_message", "task_id": "a8cd3271-23bd-478e-a8c6-14411eae9d9d", "message": "I want to buy a lamp", "flags": [], "candidates": ["lamp"], "remote_stance": null}, {"event": "sale_canceled", "task_id": "a8cd3271-23bd-478e-a8c6-14411eae9d9d"}]}
+{"mode": "TEST_ONLY_stub_model_actual_local_JSONRPC", "case": "cancel_during_receipt_publication", "wire": [{"request": {"jsonrpc": "2.0", "id": "03a03ea380a94d958355d91490894c66", "method": "SendMessage", "params": {"message": {"messageId": "3f8075ac932546c9a82b57fbdcbee79e", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}}}, "response": {"result": {"task": {"id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "status": {"state": "TASK_STATE_INPUT_REQUIRED", "message": {"messageId": "22ac266f-44e4-4165-9a92-dadfb307596f", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1, total 130 credits. Offer that total on this task. Asking price: 130"}], "metadata": {"seller": "TEST ONLY cancellation HTTP shop", "ask": 130.0, "currency": "credits", "attributes": {"material": "metal"}, "quoteId": "97b4a5d35a9d477e890a3be5543b4cdd", "description": "TEST ONLY desk lamp", "itemId": "lamp", "quantity": 1.0}}, "timestamp": "2026-10-22T04:14:43.347251Z"}, "history": [{"messageId": "3f8075ac932546c9a82b57fbdcbee79e", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}}, "id": "03a03ea380a94d958355d91490894c66", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "839ce9f98ba34049b566bd0cbc29706f", "method": "CancelTask", "params": {"id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba"}}, "response": {"error": {"code": -32002, "message": "Task finished before cancellation", "data": [{"@type": "type.googleapis.com/google.rpc.ErrorInfo", "reason": "TASK_NOT_CANCELABLE", "domain": "a2a-protocol.org", "metadata": {}}]}, "id": "839ce9f98ba34049b566bd0cbc29706f", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "e232a76883574db892c7efcd62bc73bc", "method": "SendMessage", "params": {"message": {"messageId": "7b5ad453088f4328b91e856496dc1a27", "role": "ROLE_USER", "parts": [{"text": "100"}], "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba"}}}, "response": {"result": {"task": {"id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "status": {"state": "TASK_STATE_COMPLETED", "message": {"messageId": "4f1b9cdf-6d03-4d7d-a317-fc177f5427dc", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1 accepted, total 100 credits. Signed receipt issued; market validation pending."}]}, "timestamp": "2026-10-22T04:14:43.456136Z"}, "artifacts": [{"artifactId": "cc75a43b-4d2f-47b0-b419-0af6a15008cc", "name": "receipt", "parts": [{"data": {"price": 100.0, "quoteId": "97b4a5d35a9d477e890a3be5543b4cdd", "shop": "TEST ONLY cancellation HTTP shop", "sig_seller": "M+LcmQPnQRwVCUDa7IHVHAAqpc1OQAbuQKHHUtuvk9piBUxrHIirLWEP241MFL4u70jj2wXc2f87X/I596A7Bg==", "currency": "credits", "seller": "TEST ONLY cancellation HTTP shop", "task": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "item": "lamp", "quantity": 1.0, "itemId": "lamp", "purchaseId": "72be37ce336c42c6b85ee8da4dc63381"}}]}], "history": [{"messageId": "3f8075ac932546c9a82b57fbdcbee79e", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}, {"messageId": "22ac266f-44e4-4165-9a92-dadfb307596f", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1, total 130 credits. Offer that total on this task. Asking price: 130"}], "metadata": {"seller": "TEST ONLY cancellation HTTP shop", "quantity": 1.0, "currency": "credits", "attributes": {"material": "metal"}, "quoteId": "97b4a5d35a9d477e890a3be5543b4cdd", "description": "TEST ONLY desk lamp", "itemId": "lamp", "ask": 130.0}}, {"messageId": "7b5ad453088f4328b91e856496dc1a27", "contextId": "cf9f7a3e-4212-4c74-b06c-579f7b5cb188", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_USER", "parts": [{"text": "100"}]}]}}, "id": "e232a76883574db892c7efcd62bc73bc", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "c4c4d567ff104db88503fb0a288696b2", "method": "GetTask", "params": {"id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba"}}, "response": {"result": {"id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "status": {"state": "TASK_STATE_COMPLETED", "message": {"messageId": "4f1b9cdf-6d03-4d7d-a317-fc177f5427dc", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1 accepted, total 100 credits. Signed receipt issued; market validation pending."}]}, "timestamp": "2026-10-22T04:14:43.456136Z"}, "artifacts": [{"artifactId": "cc75a43b-4d2f-47b0-b419-0af6a15008cc", "name": "receipt", "parts": [{"data": {"seller": "TEST ONLY cancellation HTTP shop", "price": 100.0, "shop": "TEST ONLY cancellation HTTP shop", "sig_seller": "M+LcmQPnQRwVCUDa7IHVHAAqpc1OQAbuQKHHUtuvk9piBUxrHIirLWEP241MFL4u70jj2wXc2f87X/I596A7Bg==", "currency": "credits", "quoteId": "97b4a5d35a9d477e890a3be5543b4cdd", "task": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "item": "lamp", "quantity": 1.0, "itemId": "lamp", "purchaseId": "72be37ce336c42c6b85ee8da4dc63381"}}]}], "history": [{"messageId": "3f8075ac932546c9a82b57fbdcbee79e", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}, {"messageId": "22ac266f-44e4-4165-9a92-dadfb307596f", "contextId": "326b04c9-650f-49b8-91c9-89d9d12ad357", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1, total 130 credits. Offer that total on this task. Asking price: 130"}], "metadata": {"seller": "TEST ONLY cancellation HTTP shop", "ask": 130.0, "currency": "credits", "attributes": {"material": "metal"}, "quoteId": "97b4a5d35a9d477e890a3be5543b4cdd", "quantity": 1.0, "itemId": "lamp", "description": "TEST ONLY desk lamp"}}, {"messageId": "7b5ad453088f4328b91e856496dc1a27", "contextId": "cf9f7a3e-4212-4c74-b06c-579f7b5cb188", "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "role": "ROLE_USER", "parts": [{"text": "100"}]}]}, "id": "c4c4d567ff104db88503fb0a288696b2", "jsonrpc": "2.0"}}], "seller_events": [{"event": "policy_loaded", "policy_sha256": "test-only-policy", "policy_version": "test-only"}, {"event": "seller_started", "name": "TEST ONLY cancellation HTTP shop", "catalog_size": 1, "policy_version": "test-only", "price_policy": "TEST_ONLY-uncapped"}, {"event": "remote_message", "task_id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "message": "I want to buy a lamp", "flags": [], "candidates": ["lamp"], "remote_stance": null}, {"event": "quote", "task_id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "metadata": {"ask": 130, "itemId": "lamp", "quoteId": "97b4a5d35a9d477e890a3be5543b4cdd", "seller": "TEST ONLY cancellation HTTP shop", "quantity": 1, "currency": "credits", "description": "TEST ONLY desk lamp", "attributes": {"material": "metal"}}}, {"event": "remote_message", "task_id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "message": "100", "flags": [], "candidates": ["lamp"], "remote_stance": null}, {"event": "sale_completed", "task_id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "receipt": {"seller": "TEST ONLY cancellation HTTP shop", "item": "lamp", "itemId": "lamp", "price": 100, "taskId": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "quantity": 1, "currency": "credits", "purchaseId": "72be37ce336c42c6b85ee8da4dc63381", "quoteId": "97b4a5d35a9d477e890a3be5543b4cdd", "shop": "TEST ONLY cancellation HTTP shop", "task": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "sig_seller": "M+LcmQPnQRwVCUDa7IHVHAAqpc1OQAbuQKHHUtuvk9piBUxrHIirLWEP241MFL4u70jj2wXc2f87X/I596A7Bg=="}, "receipt_signature_checked": true, "market_verified": false, "offer_count": 1}, {"event": "cancel_already_terminal", "task_id": "9abf3c1c-f80f-4609-9cb7-6f888dfb86ba", "state": "completed"}]}.
+{"time": "2026-10-22T04:14:43.687111+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.001}
+.{"time": "2026-10-22T04:14:43.695329+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+{"time": "2026-10-22T04:14:43.697235+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+.{"time": "2026-10-22T04:14:43.702049+00:00", "event": "upstream_error", "generation": 1, "kind": "ReadTimeout"}
+{"time": "2026-10-22T04:14:43.702130+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+.{"time": "2026-10-22T04:14:43.705691+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+{"time": "2026-10-22T04:14:43.706750+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 1}
+{"time": "2026-10-22T04:14:43.708313+00:00", "event": "request_finished", "generation": 2, "continued": false, "seconds": 0.0}
+.{"time": "2026-10-22T04:14:43.714425+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+{"time": "2026-10-22T04:14:43.714888+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.003}
+{"time": "2026-10-22T04:14:43.716018+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+.{"time": "2026-10-22T04:14:43.719220+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+{"time": "2026-10-22T04:14:43.720435+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 1}
+{"time": "2026-10-22T04:14:43.721261+00:00", "event": "request_finished", "generation": 2, "continued": false, "seconds": 0.0}
+{"time": "2026-10-22T04:14:43.722151+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-22T04:14:43.722987+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-22T04:14:43.723823+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-22T04:14:43.724657+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+.FEE.....{"event": "shopping_started", "slots": [{"key": "lamp", "item": "lamp", "budget": 120.0}, {"key": "chair", "item": "chair", "budget": 200.0}, {"key": "bookshelf", "item": "bookshelf", "budget": 280.0}], "total_budget": 600, "shop_count": 3, "policy_version": "week07-completion-v1", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2", "concurrent_workers": 2, "overall_timeout": 600.0, "negotiation_timeout": 280.0, "shared_inference_slots": 1}
+{"event": "shop_selected", "slot": "lamp", "shop_id": "shop-1", "shop_url": "http://127.0.0.1:9001", "reason": "test"}
+{"event": "slot_negotiating", "slot": "lamp", "attempt": 1, "shop_id": "shop-1", "budget": 120.0, "item": "lamp", "timeout": 280.0, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "lamp", "attempt": 1, "current_budget_ceiling": 120.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 599.9983936720528, "ledger": {"total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 2, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 280.0}}
+{"event": "shop_selected", "slot": "chair", "shop_id": "shop-1", "shop_url": "http://127.0.0.1:9001", "reason": "test"}
+{"event": "slot_attempt_finished", "result": {"status": "no_deal", "key": "lamp", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0, "purchases": {}}}
+{"event": "slot_negotiating", "slot": "chair", "attempt": 1, "shop_id": "shop-1", "budget": 200.0, "item": "chair", "timeout": 280.0, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "chair", "attempt": 1, "current_budget_ceiling": 200.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 599.998047134839, "ledger": {"total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 2, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 280.0}}
+{"event": "slot_finished", "result": {"status": "no_deal", "key": "lamp", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0, "purchases": {}}}
+{"event": "slot_attempt_finished", "result": {"status": "no_deal", "key": "chair", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0, "purchases": {}}}
+{"event": "slot_finished", "result": {"status": "no_deal", "key": "chair", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0, "purchases": {}}}
+{"event": "shop_selected", "slot": "bookshelf", "shop_id": "shop-1", "shop_url": "http://127.0.0.1:9001", "reason": "test"}
+{"event": "slot_negotiating", "slot": "bookshelf", "attempt": 1, "shop_id": "shop-1", "budget": 280.0, "item": "bookshelf", "timeout": 280.0, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "bookshelf", "attempt": 1, "current_budget_ceiling": 280.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 599.9968714169227, "ledger": {"total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 2, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 280.0}}
+{"event": "slot_attempt_finished", "result": {"status": "no_deal", "key": "bookshelf", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0, "purchases": {}}}
+{"event": "slot_finished", "result": {"status": "no_deal", "key": "bookshelf", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0, "purchases": {}}}
+{"event": "shopping_summary", "summary": {"passed": false, "all_items_bought": false, "no_duplicate_purchase": true, "within_total_budget": true, "total_budget": 600, "elapsed_seconds": 0.004, "results": [{"status": "no_deal", "key": "lamp", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, {"status": "no_deal", "key": "chair", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, {"status": "no_deal", "key": "bookshelf", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}], "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0, "purchases": {}}, "allocated_envelopes": [{"key": "lamp", "item": "lamp", "budget": 120.0}, {"key": "chair", "item": "chair", "budget": 200.0}, {"key": "bookshelf", "item": "bookshelf", "budget": 280.0}], "execution_limits": {"overall_timeout": 600.0, "negotiation_timeout": 280.0, "concurrent_workers": 2, "shared_inference_slots": 1}, "policy_version": "week07-completion-v1", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2"}}
+..{"event": "shopping_started", "slots": [{"key": "lamp", "item": "lamp", "budget": 120.0}, {"key": "chair", "item": "chair", "budget": 200.0}, {"key": "bookshelf", "item": "bookshelf", "budget": 280.0}], "total_budget": 600, "shop_count": 3, "policy_version": "week07-completion-v1", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2", "concurrent_workers": 3, "overall_timeout": 600.0, "negotiation_timeout": 280.0, "shared_inference_slots": 1}
+{"event": "shop_selected", "slot": "chair", "shop_id": "shop-2", "shop_url": "http://127.0.0.1:9002", "reason": "skill match"}
+{"event": "slot_negotiating", "slot": "chair", "attempt": 1, "shop_id": "shop-2", "budget": 200.0, "item": "chair", "timeout": 280.0, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "chair", "attempt": 1, "current_budget_ceiling": 200.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 599.9975266992114, "ledger": {"total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 3, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 280.0}}
+{"event": "shop_selected", "slot": "lamp", "shop_id": "shop-1", "shop_url": "http://127.0.0.1:9001", "reason": "skill match"}
+{"event": "shop_selected", "slot": "bookshelf", "shop_id": "shop-3", "shop_url": "http://127.0.0.1:9003", "reason": "skill match"}
+{"event": "slot_negotiating", "slot": "lamp", "attempt": 1, "shop_id": "shop-1", "budget": 120.0, "item": "lamp", "timeout": 280.0, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "lamp", "attempt": 1, "current_budget_ceiling": 120.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 599.994806072209, "ledger": {"total_budget": 600.0, "committed_total": 0.0, "reserved_total": 190.0, "available_budget": 410.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [{"key": "chair", "state": "reserved", "reserved_price": 190.0}], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 3, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 280.0}}
+{"event": "slot_negotiating", "slot": "bookshelf", "attempt": 1, "shop_id": "shop-3", "budget": 280.0, "item": "bookshelf", "timeout": 280.0, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "bookshelf", "attempt": 1, "current_budget_ceiling": 280.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 599.9944133879617, "ledger": {"total_budget": 600.0, "committed_total": 0.0, "reserved_total": 190.0, "available_budget": 410.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [{"key": "chair", "state": "reserved", "reserved_price": 190.0}], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 3, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 280.0}}
+{"event": "slot_attempt_finished", "result": {"status": "completed", "receipt": {"item": "bookshelf", "price": 270}, "key": "bookshelf", "shop_id": "shop-3", "url": "http://127.0.0.1:9003", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_attempt_finished", "result": {"status": "completed", "receipt": {"item": "chair", "price": 190}, "key": "chair", "shop_id": "shop-2", "url": "http://127.0.0.1:9002", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_attempt_finished", "result": {"status": "completed", "receipt": {"item": "lamp", "price": 110}, "key": "lamp", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_finished", "result": {"status": "completed", "receipt": {"item": "bookshelf", "price": 270}, "key": "bookshelf", "shop_id": "shop-3", "url": "http://127.0.0.1:9003", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_finished", "result": {"status": "completed", "receipt": {"item": "chair", "price": 190}, "key": "chair", "shop_id": "shop-2", "url": "http://127.0.0.1:9002", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_finished", "result": {"status": "completed", "receipt": {"item": "lamp", "price": 110}, "key": "lamp", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "shopping_summary", "summary": {"passed": true, "all_items_bought": true, "no_duplicate_purchase": true, "within_total_budget": true, "total_budget": 600, "elapsed_seconds": 0.017, "results": [{"status": "completed", "receipt": {"item": "lamp", "price": 110}, "key": "lamp", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, {"status": "completed", "receipt": {"item": "chair", "price": 190}, "key": "chair", "shop_id": "shop-2", "url": "http://127.0.0.1:9002", "attempt": 1}, {"status": "completed", "receipt": {"item": "bookshelf", "price": 270}, "key": "bookshelf", "shop_id": "shop-3", "url": "http://127.0.0.1:9003", "attempt": 1}], "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}, "allocated_envelopes": [{"key": "lamp", "item": "lamp", "budget": 120.0}, {"key": "chair", "item": "chair", "budget": 200.0}, {"key": "bookshelf", "item": "bookshelf", "budget": 280.0}], "execution_limits": {"overall_timeout": 600.0, "negotiation_timeout": 280.0, "concurrent_workers": 3, "shared_inference_slots": 1}, "policy_version": "week07-completion-v1", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2"}}
+....{"event": "budget_allocated", "entries": [{"key": "lamp", "item": "lamp", "budget": 120.0}, {"key": "chair", "item": "chair", "budget": 200.0}, {"key": "bookshelf", "item": "bookshelf", "budget": 280.0}], "total_budget": 600.0, "allocated_total": 600.0, "reason": "test-only vector allocation", "evidence_scope": "public Agent Cards; no private reserves or confirmed quotes"}
+{"event": "shopping_started", "slots": [{"key": "lamp", "item": "lamp", "budget": 120.0}, {"key": "chair", "item": "chair", "budget": 200.0}, {"key": "bookshelf", "item": "bookshelf", "budget": 280.0}], "total_budget": 600, "shop_count": 3, "policy_version": "week07-completion-v1", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2", "concurrent_workers": 3, "overall_timeout": 600.0, "negotiation_timeout": 280.0, "shared_inference_slots": 1}
+{"event": "shop_selected", "slot": "lamp", "shop_id": "shop-1", "shop_url": "http://127.0.0.1:9001", "reason": "test skill match"}
+{"event": "shop_selected", "slot": "chair", "shop_id": "shop-2", "shop_url": "http://127.0.0.1:9002", "reason": "test skill match"}
+{"event": "slot_negotiating", "slot": "lamp", "attempt": 1, "shop_id": "shop-1", "budget": 120.0, "item": "lamp", "timeout": 280.0, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "lamp", "attempt": 1, "current_budget_ceiling": 120.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 599.9978569941595, "ledger": {"total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 3, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 280.0}}
+{"event": "shop_selected", "slot": "bookshelf", "shop_id": "shop-3", "shop_url": "http://127.0.0.1:9003", "reason": "test skill match"}
+{"event": "slot_negotiating", "slot": "chair", "attempt": 1, "shop_id": "shop-2", "budget": 200.0, "item": "chair", "timeout": 280.0, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "chair", "attempt": 1, "current_budget_ceiling": 200.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 599.9972365740687, "ledger": {"total_budget": 600.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 600.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 3, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 280.0}}
+{"event": "slot_negotiating", "slot": "bookshelf", "attempt": 1, "shop_id": "shop-3", "budget": 280.0, "item": "bookshelf", "timeout": 280.0, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "bookshelf", "attempt": 1, "current_budget_ceiling": 280.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 599.9951642300002, "ledger": {"total_budget": 600.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 490.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [{"key": "lamp", "state": "reserved", "reserved_price": 110.0}], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 3, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 280.0}}
+{"event": "slot_attempt_finished", "result": {"status": "completed", "receipt": {"item": "chair", "price": 190}, "key": "chair", "shop_id": "shop-2", "url": "http://127.0.0.1:9002", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 460.0, "reserved_total": 110.0, "available_budget": 30.0, "purchases": {"purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "reserved", "committed": false, "receipt": null, "disputed_reasons": []}, "purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_finished", "result": {"status": "completed", "receipt": {"item": "chair", "price": 190}, "key": "chair", "shop_id": "shop-2", "url": "http://127.0.0.1:9002", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 460.0, "reserved_total": 110.0, "available_budget": 30.0, "purchases": {"purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "reserved", "committed": false, "receipt": null, "disputed_reasons": []}, "purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_attempt_finished", "result": {"status": "completed", "receipt": {"item": "lamp", "price": 110}, "key": "lamp", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_attempt_finished", "result": {"status": "completed", "receipt": {"item": "bookshelf", "price": 270}, "key": "bookshelf", "shop_id": "shop-3", "url": "http://127.0.0.1:9003", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_finished", "result": {"status": "completed", "receipt": {"item": "lamp", "price": 110}, "key": "lamp", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "slot_finished", "result": {"status": "completed", "receipt": {"item": "bookshelf", "price": 270}, "key": "bookshelf", "shop_id": "shop-3", "url": "http://127.0.0.1:9003", "attempt": 1}, "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}}
+{"event": "shopping_summary", "summary": {"passed": true, "all_items_bought": true, "no_duplicate_purchase": true, "within_total_budget": true, "total_budget": 600, "elapsed_seconds": 0.015, "results": [{"status": "completed", "receipt": {"item": "lamp", "price": 110}, "key": "lamp", "shop_id": "shop-1", "url": "http://127.0.0.1:9001", "attempt": 1}, {"status": "completed", "receipt": {"item": "chair", "price": 190}, "key": "chair", "shop_id": "shop-2", "url": "http://127.0.0.1:9002", "attempt": 1}, {"status": "completed", "receipt": {"item": "bookshelf", "price": 270}, "key": "bookshelf", "shop_id": "shop-3", "url": "http://127.0.0.1:9003", "attempt": 1}], "ledger": {"version": 1, "total_budget": 600.0, "committed_total": 570.0, "reserved_total": 0.0, "available_budget": 30.0, "purchases": {"purchase-lamp": {"purchase_id": "purchase-lamp", "item_key": "lamp", "expected_item": "lamp", "seller_origin": null, "expected_quote_id": null, "price": 110.0, "state": "committed", "committed": true, "receipt": {"item": "lamp", "price": 110}, "disputed_reasons": []}, "purchase-chair": {"purchase_id": "purchase-chair", "item_key": "chair", "expected_item": "chair", "seller_origin": null, "expected_quote_id": null, "price": 190.0, "state": "committed", "committed": true, "receipt": {"item": "chair", "price": 190}, "disputed_reasons": []}, "purchase-bookshelf": {"purchase_id": "purchase-bookshelf", "item_key": "bookshelf", "expected_item": "bookshelf", "seller_origin": null, "expected_quote_id": null, "price": 270.0, "state": "committed", "committed": true, "receipt": {"item": "bookshelf", "price": 270}, "disputed_reasons": []}}}, "allocated_envelopes": [{"key": "lamp", "item": "lamp", "budget": 120.0}, {"key": "chair", "item": "chair", "budget": 200.0}, {"key": "bookshelf", "item": "bookshelf", "budget": 280.0}], "execution_limits": {"overall_timeout": 600.0, "negotiation_timeout": 280.0, "concurrent_workers": 3, "shared_inference_slots": 1}, "policy_version": "week07-completion-v1", "policy_sha256": "c7aff42dc6e9ea4750d9237ea620e3b1f6dd872296a438c23f20d5889ba2fba2"}}
+..{"event": "shopping_started", "slots": [{"key": "lamp", "item": "lamp", "budget": 120.0}], "total_budget": 120, "shop_count": 1, "policy_version": "TEST_ONLY", "policy_sha256": "TEST_ONLY", "concurrent_workers": 1, "overall_timeout": 10.0, "negotiation_timeout": 280.0, "shared_inference_slots": 1}
+{"event": "slot_negotiating", "slot": "lamp", "attempt": 1, "shop_id": "shop-01", "budget": 120.0, "item": "lamp", "timeout": 9.999002716038376, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "lamp", "attempt": 1, "current_budget_ceiling": 120.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 9.998994099907577, "ledger": {"total_budget": 120.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 120.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 1, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 9.999002716038376}}
+{"event": "policy_loaded", "policy_sha256": "TEST_ONLY", "policy_version": "TEST_ONLY"}
+{"event": "quote_normalized", "task_id": "task-1", "observation": {"ask": 120.0, "item_id": "lamp", "quote_id": null, "currency": null, "quantity": null, "source": "structured", "evidence_sources": {"ask": ["message.metadata.ask"], "item_id": ["message.metadata.itemId"], "quote_id": [], "currency": [], "quantity": []}, "issues": [], "remote_message": "Current ask 120", "remote_metadata": {"ask": 120, "itemId": "lamp"}, "remote_task_metadata": {}, "remote_data": []}}
+{"event": "terminal_receipt_conflict", "state": "TASK_STATE_FAILED", "reserved": true, "artifacts": [{"parts": [{"data": {"item": "lamp", "price": 110, "purchaseId": "possibly-sold", "taskId": "task-1"}}]}]}
+{"event": "slot_attempt_finished", "result": {"status": "disputed", "state": "TASK_STATE_FAILED", "issues": ["terminal_receipt_conflict"], "key": "lamp", "shop_id": "shop-01", "url": "http://TEST-ONLY.invalid", "attempt": 1}, "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 10.0, "purchases": {"dc120c41f1e9480ca3839c460c2efd78": {"purchase_id": "dc120c41f1e9480ca3839c460c2efd78", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://TEST-ONLY.invalid", "expected_quote_id": null, "price": 110.0, "state": "disputed", "committed": false, "receipt": null, "disputed_reasons": ["terminal_receipt_conflict"]}}}}
+{"event": "slot_finished", "result": {"status": "disputed", "state": "TASK_STATE_FAILED", "issues": ["terminal_receipt_conflict"], "key": "lamp", "shop_id": "shop-01", "url": "http://TEST-ONLY.invalid", "attempt": 1}, "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 10.0, "purchases": {"dc120c41f1e9480ca3839c460c2efd78": {"purchase_id": "dc120c41f1e9480ca3839c460c2efd78", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://TEST-ONLY.invalid", "expected_quote_id": null, "price": 110.0, "state": "disputed", "committed": false, "receipt": null, "disputed_reasons": ["terminal_receipt_conflict"]}}}}
+{"event": "shopping_summary", "summary": {"passed": false, "all_items_bought": false, "no_duplicate_purchase": true, "within_total_budget": true, "total_budget": 120, "elapsed_seconds": 0.007, "results": [{"status": "disputed", "state": "TASK_STATE_FAILED", "issues": ["terminal_receipt_conflict"], "key": "lamp", "shop_id": "shop-01", "url": "http://TEST-ONLY.invalid", "attempt": 1}], "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 10.0, "purchases": {"dc120c41f1e9480ca3839c460c2efd78": {"purchase_id": "dc120c41f1e9480ca3839c460c2efd78", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://TEST-ONLY.invalid", "expected_quote_id": null, "price": 110.0, "state": "disputed", "committed": false, "receipt": null, "disputed_reasons": ["terminal_receipt_conflict"]}}}, "allocated_envelopes": [{"key": "lamp", "item": "lamp", "budget": 120.0}], "execution_limits": {"overall_timeout": 10.0, "negotiation_timeout": 280.0, "concurrent_workers": 1, "shared_inference_slots": 1}, "policy_version": "TEST_ONLY", "policy_sha256": "TEST_ONLY"}}
+{"event": "shopping_started", "slots": [{"key": "lamp", "item": "lamp", "budget": 120.0}], "total_budget": 120, "shop_count": 1, "policy_version": "TEST_ONLY", "policy_sha256": "TEST_ONLY", "concurrent_workers": 1, "overall_timeout": 10.0, "negotiation_timeout": 280.0, "shared_inference_slots": 1}
+{"event": "slot_negotiating", "slot": "lamp", "attempt": 1, "shop_id": "shop-01", "budget": 120.0, "item": "lamp", "timeout": 9.99889417923987, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "lamp", "attempt": 1, "current_budget_ceiling": 120.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 9.998883819207549, "ledger": {"total_budget": 120.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 120.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 1, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 9.99889417923987}}
+{"event": "policy_loaded", "policy_sha256": "TEST_ONLY", "policy_version": "TEST_ONLY"}
+{"event": "quote_normalized", "task_id": "task-1", "observation": {"ask": 120.0, "item_id": "lamp", "quote_id": null, "currency": null, "quantity": null, "source": "structured", "evidence_sources": {"ask": ["message.metadata.ask"], "item_id": ["message.metadata.itemId"], "quote_id": [], "currency": [], "quantity": []}, "issues": [], "remote_message": "Current ask 120", "remote_metadata": {"ask": 120, "itemId": "lamp"}, "remote_task_metadata": {}, "remote_data": []}}
+{"event": "terminal_receipt_conflict", "state": "TASK_STATE_REJECTED", "reserved": true, "artifacts": [{"parts": [{"data": {"item": "lamp", "price": 110, "purchaseId": "possibly-sold", "taskId": "task-1"}}]}]}
+{"event": "slot_attempt_finished", "result": {"status": "disputed", "state": "TASK_STATE_REJECTED", "issues": ["terminal_receipt_conflict"], "key": "lamp", "shop_id": "shop-01", "url": "http://TEST-ONLY.invalid", "attempt": 1}, "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 10.0, "purchases": {"be32a84ac16d4683a192185c9f93a3a3": {"purchase_id": "be32a84ac16d4683a192185c9f93a3a3", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://TEST-ONLY.invalid", "expected_quote_id": null, "price": 110.0, "state": "disputed", "committed": false, "receipt": null, "disputed_reasons": ["terminal_receipt_conflict"]}}}}
+{"event": "slot_finished", "result": {"status": "disputed", "state": "TASK_STATE_REJECTED", "issues": ["terminal_receipt_conflict"], "key": "lamp", "shop_id": "shop-01", "url": "http://TEST-ONLY.invalid", "attempt": 1}, "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 10.0, "purchases": {"be32a84ac16d4683a192185c9f93a3a3": {"purchase_id": "be32a84ac16d4683a192185c9f93a3a3", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://TEST-ONLY.invalid", "expected_quote_id": null, "price": 110.0, "state": "disputed", "committed": false, "receipt": null, "disputed_reasons": ["terminal_receipt_conflict"]}}}}
+{"event": "shopping_summary", "summary": {"passed": false, "all_items_bought": false, "no_duplicate_purchase": true, "within_total_budget": true, "total_budget": 120, "elapsed_seconds": 0.007, "results": [{"status": "disputed", "state": "TASK_STATE_REJECTED", "issues": ["terminal_receipt_conflict"], "key": "lamp", "shop_id": "shop-01", "url": "http://TEST-ONLY.invalid", "attempt": 1}], "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 10.0, "purchases": {"be32a84ac16d4683a192185c9f93a3a3": {"purchase_id": "be32a84ac16d4683a192185c9f93a3a3", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://TEST-ONLY.invalid", "expected_quote_id": null, "price": 110.0, "state": "disputed", "committed": false, "receipt": null, "disputed_reasons": ["terminal_receipt_conflict"]}}}, "allocated_envelopes": [{"key": "lamp", "item": "lamp", "budget": 120.0}], "execution_limits": {"overall_timeout": 10.0, "negotiation_timeout": 280.0, "concurrent_workers": 1, "shared_inference_slots": 1}, "policy_version": "TEST_ONLY", "policy_sha256": "TEST_ONLY"}}
+{"event": "shopping_started", "slots": [{"key": "lamp", "item": "lamp", "budget": 120.0}], "total_budget": 120, "shop_count": 1, "policy_version": "TEST_ONLY", "policy_sha256": "TEST_ONLY", "concurrent_workers": 1, "overall_timeout": 10.0, "negotiation_timeout": 280.0, "shared_inference_slots": 1}
+{"event": "slot_negotiating", "slot": "lamp", "attempt": 1, "shop_id": "shop-01", "budget": 120.0, "item": "lamp", "timeout": 9.998936565127224, "coordination": {"snapshot_scope": "local_ledger_before_attempt", "slot": "lamp", "attempt": 1, "current_budget_ceiling": 120.0, "budget_envelopes_fixed": true, "remaining_seconds_at_snapshot": 9.998926565051079, "ledger": {"total_budget": 120.0, "committed_total": 0.0, "reserved_total": 0.0, "available_budget": 120.0}, "slot_ledger": {"record_count": 0, "states": {}, "all_released": true}, "other_completed_purchases": [], "other_unresolved_purchases": [], "limits_note": "These are local snapshot facts, not new spending authority. The slot ceiling remains fixed; no private seller limits are known.", "purpose": "shopping_list", "parallel_workers": 1, "shared_inference_slots": 1, "per_negotiation_seconds": 280.0, "effective_negotiation_seconds": 9.998936565127224}}
+{"event": "policy_loaded", "policy_sha256": "TEST_ONLY", "policy_version": "TEST_ONLY"}
+{"event": "quote_normalized", "task_id": "task-1", "observation": {"ask": 120.0, "item_id": "lamp", "quote_id": null, "currency": null, "quantity": null, "source": "structured", "evidence_sources": {"ask": ["message.metadata.ask"], "item_id": ["message.metadata.itemId"], "quote_id": [], "currency": [], "quantity": []}, "issues": [], "remote_message": "Current ask 120", "remote_metadata": {"ask": 120, "itemId": "lamp"}, "remote_task_metadata": {}, "remote_data": []}}
+{"event": "terminal_receipt_conflict", "state": "TASK_STATE_CANCELED", "reserved": true, "artifacts": [{"parts": [{"data": {"item": "lamp", "price": 110, "purchaseId": "possibly-sold", "taskId": "task-1"}}]}]}
+{"event": "slot_attempt_finished", "result": {"status": "disputed", "state": "TASK_STATE_CANCELED", "issues": ["terminal_receipt_conflict"], "key": "lamp", "shop_id": "shop-01", "url": "http://TEST-ONLY.invalid", "attempt": 1}, "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 10.0, "purchases": {"482c4448788441f482ca6e01b4afde85": {"purchase_id": "482c4448788441f482ca6e01b4afde85", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://TEST-ONLY.invalid", "expected_quote_id": null, "price": 110.0, "state": "disputed", "committed": false, "receipt": null, "disputed_reasons": ["terminal_receipt_conflict"]}}}}
+{"event": "slot_finished", "result": {"status": "disputed", "state": "TASK_STATE_CANCELED", "issues": ["terminal_receipt_conflict"], "key": "lamp", "shop_id": "shop-01", "url": "http://TEST-ONLY.invalid", "attempt": 1}, "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 10.0, "purchases": {"482c4448788441f482ca6e01b4afde85": {"purchase_id": "482c4448788441f482ca6e01b4afde85", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://TEST-ONLY.invalid", "expected_quote_id": null, "price": 110.0, "state": "disputed", "committed": false, "receipt": null, "disputed_reasons": ["terminal_receipt_conflict"]}}}}
+{"event": "shopping_summary", "summary": {"passed": false, "all_items_bought": false, "no_duplicate_purchase": true, "within_total_budget": true, "total_budget": 120, "elapsed_seconds": 0.006, "results": [{"status": "disputed", "state": "TASK_STATE_CANCELED", "issues": ["terminal_receipt_conflict"], "key": "lamp", "shop_id": "shop-01", "url": "http://TEST-ONLY.invalid", "attempt": 1}], "ledger": {"version": 1, "total_budget": 120.0, "committed_total": 0.0, "reserved_total": 110.0, "available_budget": 10.0, "purchases": {"482c4448788441f482ca6e01b4afde85": {"purchase_id": "482c4448788441f482ca6e01b4afde85", "item_key": "lamp", "expected_item": "lamp", "seller_origin": "http://TEST-ONLY.invalid", "expected_quote_id": null, "price": 110.0, "state": "disputed", "committed": false, "receipt": null, "disputed_reasons": ["terminal_receipt_conflict"]}}}, "allocated_envelopes": [{"key": "lamp", "item": "lamp", "budget": 120.0}], "execution_limits": {"overall_timeout": 10.0, "negotiation_timeout": 280.0, "concurrent_workers": 1, "shared_inference_slots": 1}, "policy_version": "TEST_ONLY", "policy_sha256": "TEST_ONLY"}}
+.........
+======================================================================
+ERROR: test_all_harness_roles_have_explicit_instructions (test_market_week07.MarketGuards)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_market_week07.py", line 81, in test_all_harness_roles_have_explicit_instructions
+    self.assertIsInstance(system_prompt(role), str)
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/harness.py", line 136, in system_prompt
+    raise ValueError(f"Unknown negotiation role: {role!r}")
+ValueError: Unknown negotiation role: 'budget_allocator'
+
+======================================================================
+ERROR: test_enter_top_three_then_fall_back_to_fourth (test_rank_pricing.RankPricingTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_rank_pricing.py", line 43, in test_enter_top_three_then_fall_back_to_fourth
+    control = RankPricing(POLICY, RecordingTrace(), state_path=Path(directory) / "state.json",
+TypeError: RankPricing.__init__() got an unexpected keyword argument 'fetch_board'
+
+======================================================================
+ERROR: test_failed_missing_or_wrong_round_observation_preserves_saved_phase (test_rank_pricing.RankPricingTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_rank_pricing.py", line 60, in test_failed_missing_or_wrong_round_observation_preserves_saved_phase
+    control = RankPricing(POLICY, RecordingTrace(), state_path=path, fetch_board=lambda: board(2))
+TypeError: RankPricing.__init__() got an unexpected keyword argument 'fetch_board'
+
+======================================================================
+ERROR: test_poll_cache_and_deals_then_stars_sort_match_board (test_rank_pricing.RankPricingTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_rank_pricing.py", line 80, in test_poll_cache_and_deals_then_stars_sort_match_board
+    control = RankPricing(POLICY, RecordingTrace(), state_path=Path(directory) / "state.json",
+TypeError: RankPricing.__init__() got an unexpected keyword argument 'fetch_board'
+
+======================================================================
+ERROR: test_coupon_advertising_matches_actual_phase_and_full_ten_percent (test_shopfront.ShopfrontTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shopfront.py", line 36, in test_coupon_advertising_matches_actual_phase_and_full_ten_percent
+    acquisition=public_items(load_catalog(),self.quotes('acquisition'))
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shopfront.py", line 20, in quotes
+    return {'phase':phase,**policy['rank_cycle']['phases'][phase],
+KeyError: 'rank_cycle'
+
+======================================================================
+ERROR: test_public_quotes_share_seller_caps_and_do_not_expose_reserves (test_shopfront.ShopfrontTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shopfront.py", line 24, in test_public_quotes_share_seller_caps_and_do_not_expose_reserves
+    catalog=load_catalog();policy=self.quotes('acquisition')
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shopfront.py", line 20, in quotes
+    return {'phase':phase,**policy['rank_cycle']['phases'][phase],
+KeyError: 'rank_cycle'
+
+======================================================================
+FAIL: test_exploratory_purchase_uses_original_budget_and_harness_selection (test_buyer_discovery.BuyerDiscoveryTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_buyer_discovery.py", line 70, in test_exploratory_purchase_uses_original_budget_and_harness_selection
+    self.assertEqual(trade.call_args.args,('https://TEST_ALTERNATIVE.invalid','lamp',120.0))
+AssertionError: Tuples differ: ('https://TEST_PRIMARY.invalid', 'lamp', 120.0) != ('https://TEST_ALTERNATIVE.invalid', 'lamp', 120.0)
+
+First differing element 0:
+'https://TEST_PRIMARY.invalid'
+'https://TEST_ALTERNATIVE.invalid'
+
+- ('https://TEST_PRIMARY.invalid', 'lamp', 120.0)
+?                ^  ^^^^
+
++ ('https://TEST_ALTERNATIVE.invalid', 'lamp', 120.0)
+?                ^^^^ +++ ^^
+
+
+======================================================================
+FAIL: test_eighth_explicit_failure_releases_without_committing (test_buyer_round_boundary.BuyerRoundBoundaryTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_buyer_round_boundary.py", line 142, in test_eighth_explicit_failure_releases_without_committing
+    self.assertEqual(result, {"status": "no_deal", "state": "TASK_STATE_FAILED"})
+AssertionError: {'sta[40 chars]ILED', 'offer_count': 8, 'response_seconds': [[22 chars], 0]} != {'sta[40 chars]ILED'}
++ {'state': 'TASK_STATE_FAILED', 'status': 'no_deal'}
+- {'offer_count': 8,
+-  'response_seconds': [0, 0, 0, 0, 0, 0, 0, 0, 0],
+-  'state': 'TASK_STATE_FAILED',
+-  'status': 'no_deal'}
+
+======================================================================
+FAIL: test_eighth_offer_completion_commits_once_and_stops (test_buyer_round_boundary.BuyerRoundBoundaryTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_buyer_round_boundary.py", line 125, in test_eighth_offer_completion_commits_once_and_stops
+    self.assertEqual(sum(e["event"] == "purchase_completed" for e in trace.events), 1)
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_seller_hostile_text_does_not_change_reserve (test_integrations.SellerHTTPIntegrationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 347, in test_seller_hostile_text_does_not_change_reserve
+    self.assertEqual(response["status"]["state"], "TASK_STATE_INPUT_REQUIRED")
+AssertionError: 'TASK_STATE_FAILED' != 'TASK_STATE_INPUT_REQUIRED'
+- TASK_STATE_FAILED
++ TASK_STATE_INPUT_REQUIRED
+
+
+======================================================================
+FAIL: test_buyer_commits_received_completion_after_deadline_without_new_decision (test_protocol.ProtocolTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_protocol.py", line 193, in test_buyer_commits_received_completion_after_deadline_without_new_decision
+    self.assertEqual(result, {"status": "completed", "receipt": receipt})
+AssertionError: {'sta[75 chars]k-1'}, 'offer_count': 1, 'response_seconds': [[27 chars]alse} != {'sta[75 chars]k-1'}}
+- {'market_verified': False,
+-  'offer_count': 1,
+-  'receipt': {'item': 'lamp', 'price': 110, 'taskId': 'task-1'},
+? ^
+
++ {'receipt': {'item': 'lamp', 'price': 110, 'taskId': 'task-1'},
+? ^
+
+-  'response_seconds': [0, 6],
+   'status': 'completed'}
+
+======================================================================
+FAIL: test_each_task_keeps_its_phase_across_both_transitions (test_rank_pricing.ExistingQuoteTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/unittest/async_case.py", line 64, in _callTestMethod
+    self._callMaybeAsync(method)
+  File "/usr/lib/python3.10/unittest/async_case.py", line 87, in _callMaybeAsync
+    return self._asyncioTestLoop.run_until_complete(fut)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/usr/lib/python3.10/unittest/async_case.py", line 101, in _asyncioLoopRunner
+    ret = await awaitable
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_rank_pricing.py", line 121, in test_each_task_keeps_its_phase_across_both_transitions
+    self.assertEqual(shop.open[higher.id]["ask"], 120)
+AssertionError: 100 != 120
+
+======================================================================
+FAIL: test_completed_review_score_does_not_depend_on_competitor_position (test_referral_pricing.HonestReferralReviewTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_referral_pricing.py", line 151, in test_completed_review_score_does_not_depend_on_competitor_position
+    self.assertEqual(response["review"], "Bought lamp for 100 credits (budget 120); the receipt matched our agreement.")
+AssertionError: 'Agreed lamp x 1 for 100 credits; receipt [55 chars]ing.' != 'Bought lamp for 100 credits (budget 120);[31 chars]ent.'
+- Agreed lamp x 1 for 100 credits; receipt matches the agreement; market signature validation pending.
++ Bought lamp for 100 credits (budget 120); the receipt matched our agreement.
+
+
+======================================================================
+FAIL: test_code_quotes_are_frozen_no_double_discount_and_receipt_is_exact (test_referral_pricing.ReferralSellerTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/unittest/async_case.py", line 64, in _callTestMethod
+    self._callMaybeAsync(method)
+  File "/usr/lib/python3.10/unittest/async_case.py", line 87, in _callMaybeAsync
+    return self._asyncioTestLoop.run_until_complete(fut)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/usr/lib/python3.10/unittest/async_case.py", line 101, in _asyncioLoopRunner
+    ret = await awaitable
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_referral_pricing.py", line 106, in test_code_quotes_are_frozen_no_double_discount_and_receipt_is_exact
+    self.assertEqual(shop.open["standard"]["ask"], 120)
+AssertionError: 100 != 120
+
+======================================================================
+FAIL: test_higher_and_lower_successful_shops_keep_transaction_rating_without_ads (test_review_advertising.TransactionReviewTests) (name='TEST_ONLY_HIGHER')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 49, in test_higher_and_lower_successful_shops_keep_transaction_rating_without_ads
+    self.assertEqual(response["review"],
+AssertionError: 'Agreed lamp x 1 for 100 credits; receipt [55 chars]ing.' != 'Bought lamp for 100 credits (budget 120);[31 chars]ent.'
+- Agreed lamp x 1 for 100 credits; receipt matches the agreement; market signature validation pending.
++ Bought lamp for 100 credits (budget 120); the receipt matched our agreement.
+
+
+======================================================================
+FAIL: test_higher_and_lower_successful_shops_keep_transaction_rating_without_ads (test_review_advertising.TransactionReviewTests) (name='TEST_ONLY_LOWER')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 49, in test_higher_and_lower_successful_shops_keep_transaction_rating_without_ads
+    self.assertEqual(response["review"],
+AssertionError: 'Agreed lamp x 1 for 100 credits; receipt [55 chars]ing.' != 'Bought lamp for 100 credits (budget 120);[31 chars]ent.'
+- Agreed lamp x 1 for 100 credits; receipt matches the agreement; market signature validation pending.
++ Bought lamp for 100 credits (budget 120); the receipt matched our agreement.
+
+
+======================================================================
+FAIL: test_no_deal_unsigned_disputed_and_error_reviews_preserve_actual_outcome (test_review_advertising.TransactionReviewTests) (result={'status': 'completed', 'receipt': {'price': 100}}, error=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 72, in test_no_deal_unsigned_disputed_and_error_reviews_preserve_actual_outcome
+    self.assertIn("lacked a seller signature", response["review"])
+AssertionError: 'lacked a seller signature' not found in 'Agreed lamp x 1 for 100 credits; receipt lacks a seller signature; completion unresolved.'
+
+======================================================================
+FAIL: test_actual_sdk_discovery_updates_prices_without_model_or_network (test_shopfront.ShopfrontTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shopfront.py", line 54, in test_actual_sdk_discovery_updates_prices_without_model_or_network
+    self.assertEqual(second['skills'][0]['id'],'buy-lamp')
+AssertionError: 'negotiate' != 'buy-lamp'
+- negotiate
++ buy-lamp
+
+
+======================================================================
+FAIL: test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) (state='TASK_STATE_FAILED', artifacts=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_terminal_receipt_conflict.py", line 97, in test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer
+    self.assertEqual(result, {"status": "no_deal", "state": state})
+AssertionError: {'sta[33 chars]TATE_FAILED', 'offer_count': 1, 'response_seconds': [0.0, 0.0]} != {'sta[33 chars]TATE_FAILED'}
++ {'state': 'TASK_STATE_FAILED', 'status': 'no_deal'}
+- {'offer_count': 1,
+-  'response_seconds': [0.0, 0.0],
+-  'state': 'TASK_STATE_FAILED',
+-  'status': 'no_deal'}
+
+======================================================================
+FAIL: test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) (state='TASK_STATE_FAILED', artifacts=[{}])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_terminal_receipt_conflict.py", line 97, in test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer
+    self.assertEqual(result, {"status": "no_deal", "state": state})
+AssertionError: {'sta[33 chars]TATE_FAILED', 'offer_count': 1, 'response_seconds': [0.0, 0.0]} != {'sta[33 chars]TATE_FAILED'}
++ {'state': 'TASK_STATE_FAILED', 'status': 'no_deal'}
+- {'offer_count': 1,
+-  'response_seconds': [0.0, 0.0],
+-  'state': 'TASK_STATE_FAILED',
+-  'status': 'no_deal'}
+
+======================================================================
+FAIL: test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) (state='TASK_STATE_FAILED', artifacts=[{'name': 'diagnostic', 'parts': [{'data': {'code': 'declined', 'message': 'TEST ONLY no purchase'}}]}])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_terminal_receipt_conflict.py", line 97, in test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer
+    self.assertEqual(result, {"status": "no_deal", "state": state})
+AssertionError: {'sta[33 chars]TATE_FAILED', 'offer_count': 1, 'response_seconds': [0.0, 0.0]} != {'sta[33 chars]TATE_FAILED'}
++ {'state': 'TASK_STATE_FAILED', 'status': 'no_deal'}
+- {'offer_count': 1,
+-  'response_seconds': [0.0, 0.0],
+-  'state': 'TASK_STATE_FAILED',
+-  'status': 'no_deal'}
+
+======================================================================
+FAIL: test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) (state='TASK_STATE_REJECTED', artifacts=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_terminal_receipt_conflict.py", line 97, in test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer
+    self.assertEqual(result, {"status": "no_deal", "state": state})
+AssertionError: {'sta[35 chars]TE_REJECTED', 'offer_count': 1, 'response_seconds': [0.0, 0.0]} != {'sta[35 chars]TE_REJECTED'}
++ {'state': 'TASK_STATE_REJECTED', 'status': 'no_deal'}
+- {'offer_count': 1,
+-  'response_seconds': [0.0, 0.0],
+-  'state': 'TASK_STATE_REJECTED',
+-  'status': 'no_deal'}
+
+======================================================================
+FAIL: test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) (state='TASK_STATE_REJECTED', artifacts=[{}])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_terminal_receipt_conflict.py", line 97, in test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer
+    self.assertEqual(result, {"status": "no_deal", "state": state})
+AssertionError: {'sta[35 chars]TE_REJECTED', 'offer_count': 1, 'response_seconds': [0.0, 0.0]} != {'sta[35 chars]TE_REJECTED'}
++ {'state': 'TASK_STATE_REJECTED', 'status': 'no_deal'}
+- {'offer_count': 1,
+-  'response_seconds': [0.0, 0.0],
+-  'state': 'TASK_STATE_REJECTED',
+-  'status': 'no_deal'}
+
+======================================================================
+FAIL: test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) (state='TASK_STATE_REJECTED', artifacts=[{'name': 'diagnostic', 'parts': [{'data': {'code': 'declined', 'message': 'TEST ONLY no purchase'}}]}])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_terminal_receipt_conflict.py", line 97, in test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer
+    self.assertEqual(result, {"status": "no_deal", "state": state})
+AssertionError: {'sta[35 chars]TE_REJECTED', 'offer_count': 1, 'response_seconds': [0.0, 0.0]} != {'sta[35 chars]TE_REJECTED'}
++ {'state': 'TASK_STATE_REJECTED', 'status': 'no_deal'}
+- {'offer_count': 1,
+-  'response_seconds': [0.0, 0.0],
+-  'state': 'TASK_STATE_REJECTED',
+-  'status': 'no_deal'}
+
+======================================================================
+FAIL: test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) (state='TASK_STATE_CANCELED', artifacts=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_terminal_receipt_conflict.py", line 97, in test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer
+    self.assertEqual(result, {"status": "no_deal", "state": state})
+AssertionError: {'sta[35 chars]TE_CANCELED', 'offer_count': 1, 'response_seconds': [0.0, 0.0]} != {'sta[35 chars]TE_CANCELED'}
++ {'state': 'TASK_STATE_CANCELED', 'status': 'no_deal'}
+- {'offer_count': 1,
+-  'response_seconds': [0.0, 0.0],
+-  'state': 'TASK_STATE_CANCELED',
+-  'status': 'no_deal'}
+
+======================================================================
+FAIL: test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) (state='TASK_STATE_CANCELED', artifacts=[{}])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_terminal_receipt_conflict.py", line 97, in test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer
+    self.assertEqual(result, {"status": "no_deal", "state": state})
+AssertionError: {'sta[35 chars]TE_CANCELED', 'offer_count': 1, 'response_seconds': [0.0, 0.0]} != {'sta[35 chars]TE_CANCELED'}
++ {'state': 'TASK_STATE_CANCELED', 'status': 'no_deal'}
+- {'offer_count': 1,
+-  'response_seconds': [0.0, 0.0],
+-  'state': 'TASK_STATE_CANCELED',
+-  'status': 'no_deal'}
+
+======================================================================
+FAIL: test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer (test_terminal_receipt_conflict.TerminalReceiptConflictTests) (state='TASK_STATE_CANCELED', artifacts=[{'name': 'diagnostic', 'parts': [{'data': {'code': 'declined', 'message': 'TEST ONLY no purchase'}}]}])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_terminal_receipt_conflict.py", line 97, in test_plain_terminal_failure_and_diagnostic_artifacts_release_unspent_offer
+    self.assertEqual(result, {"status": "no_deal", "state": state})
+AssertionError: {'sta[35 chars]TE_CANCELED', 'offer_count': 1, 'response_seconds': [0.0, 0.0]} != {'sta[35 chars]TE_CANCELED'}
++ {'state': 'TASK_STATE_CANCELED', 'status': 'no_deal'}
+- {'offer_count': 1,
+-  'response_seconds': [0.0, 0.0],
+-  'state': 'TASK_STATE_CANCELED',
+-  'status': 'no_deal'}
+
+----------------------------------------------------------------------
+Ran 228 tests in 7.593s
+
+FAILED (failures=21, errors=6)

@@ -1,0 +1,97 @@
+test_bad_new_generation_never_replaces_current_seller (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:01.103663+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.001}
+ok
+test_card_keeps_public_origin_across_reload_and_disables_stale_cache (test_shop_service.ShopServiceTests) ... ERROR
+test_control_is_not_public_and_ambiguous_post_is_never_retried (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:01.111095+00:00", "event": "upstream_error", "generation": 1, "kind": "ReadTimeout"}
+{"time": "2026-10-21T12:38:01.111153+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+ok
+test_dead_original_generation_cannot_route_purchase_to_new_seller (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:01.113702+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+ERROR
+test_opening_in_flight_during_reload_retains_original_owner (test_shop_service.ShopServiceTests) ... ERROR
+{"time": "2026-10-21T12:38:01.121691+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.005}
+test_reload_preserves_old_task_continuations_get_cancel_and_terminal_replays (test_shop_service.ShopServiceTests) ... {"time": "2026-10-21T12:38:01.124412+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+ERROR
+
+======================================================================
+ERROR: test_card_keeps_public_origin_across_reload_and_disables_stale_cache (test_shop_service.ShopServiceTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/unittest/async_case.py", line 64, in _callTestMethod
+    self._callMaybeAsync(method)
+  File "/usr/lib/python3.10/unittest/async_case.py", line 87, in _callMaybeAsync
+    return self._asyncioTestLoop.run_until_complete(fut)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/usr/lib/python3.10/unittest/async_case.py", line 101, in _asyncioLoopRunner
+    ret = await awaitable
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shop_service.py", line 98, in test_card_keeps_public_origin_across_reload_and_disables_stale_cache
+    await self.activate_two()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shop_service.py", line 67, in activate_two
+    await self.service.reload()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/shop_service.py", line 107, in reload
+    self.record('seller_activated', generation=generation.number, pid=generation.process.pid,
+AttributeError: 'NoneType' object has no attribute 'pid'
+
+======================================================================
+ERROR: test_dead_original_generation_cannot_route_purchase_to_new_seller (test_shop_service.ShopServiceTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/unittest/async_case.py", line 64, in _callTestMethod
+    self._callMaybeAsync(method)
+  File "/usr/lib/python3.10/unittest/async_case.py", line 87, in _callMaybeAsync
+    return self._asyncioTestLoop.run_until_complete(fut)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/usr/lib/python3.10/unittest/async_case.py", line 101, in _asyncioLoopRunner
+    ret = await awaitable
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shop_service.py", line 118, in test_dead_original_generation_cannot_route_purchase_to_new_seller
+    await self.activate_two()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shop_service.py", line 67, in activate_two
+    await self.service.reload()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/shop_service.py", line 107, in reload
+    self.record('seller_activated', generation=generation.number, pid=generation.process.pid,
+AttributeError: 'NoneType' object has no attribute 'pid'
+
+======================================================================
+ERROR: test_opening_in_flight_during_reload_retains_original_owner (test_shop_service.ShopServiceTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/unittest/async_case.py", line 64, in _callTestMethod
+    self._callMaybeAsync(method)
+  File "/usr/lib/python3.10/unittest/async_case.py", line 87, in _callMaybeAsync
+    return self._asyncioTestLoop.run_until_complete(fut)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/usr/lib/python3.10/unittest/async_case.py", line 101, in _asyncioLoopRunner
+    ret = await awaitable
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shop_service.py", line 85, in test_opening_in_flight_during_reload_retains_original_owner
+    await self.activate_two()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shop_service.py", line 67, in activate_two
+    await self.service.reload()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/shop_service.py", line 107, in reload
+    self.record('seller_activated', generation=generation.number, pid=generation.process.pid,
+AttributeError: 'NoneType' object has no attribute 'pid'
+
+======================================================================
+ERROR: test_reload_preserves_old_task_continuations_get_cancel_and_terminal_replays (test_shop_service.ShopServiceTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/unittest/async_case.py", line 64, in _callTestMethod
+    self._callMaybeAsync(method)
+  File "/usr/lib/python3.10/unittest/async_case.py", line 87, in _callMaybeAsync
+    return self._asyncioTestLoop.run_until_complete(fut)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/usr/lib/python3.10/unittest/async_case.py", line 101, in _asyncioLoopRunner
+    ret = await awaitable
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shop_service.py", line 71, in test_reload_preserves_old_task_continuations_get_cancel_and_terminal_replays
+    await self.activate_two()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_shop_service.py", line 67, in activate_two
+    await self.service.reload()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/shop_service.py", line 107, in reload
+    self.record('seller_activated', generation=generation.number, pid=generation.process.pid,
+AttributeError: 'NoneType' object has no attribute 'pid'
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.030s
+
+FAILED (errors=4)

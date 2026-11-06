@@ -1,0 +1,219 @@
+{
+  "probed_at": "2026-10-21T08:36:56.098788+00:00",
+  "card": {
+    "name": "Ssadassa Shop",
+    "description": "Opening asks: lamp 101, chair 183, bookshelf 265 credits or less. Offer the ask and the reply is your Ed25519-signed receipt at exactly that price, so the deal counts. Lower offers get one counter at our floor; from your second message any offer at or above the floor is accepted. Whole-credit prices, no add-ons."
+  },
+  "passed": 6,
+  "total": 6,
+  "seller_events": {
+    "harness_decision": 13,
+    "decision_rejected": 5,
+    "rate_limit_backoff": 5,
+    "negotiation_failed": 0,
+    "sale_completed": 4,
+    "sale_rejected": 1
+  },
+  "results": [
+    {
+      "scenario": "lamp_pay_ask",
+      "pass": true,
+      "steps": [
+        {
+          "sent": "I want to buy a lamp",
+          "state": "INPUT_REQUIRED",
+          "reply": "Classic Reading Lamp / 기본 독서 램프. Offer 101 on this task and the reply is your signed receipt. Asking price: 101",
+          "seconds": 9.9,
+          "price": 101.0,
+          "expected": [
+            "INPUT_REQUIRED",
+            101
+          ],
+          "pass": true
+        },
+        {
+          "sent": "101",
+          "state": "COMPLETED",
+          "reply": "Deal completed. See receipt.",
+          "seconds": 4.1,
+          "receipt_signature_valid": true,
+          "receipt_fields_ok": true,
+          "price": 101.0,
+          "expected": [
+            "COMPLETED",
+            101
+          ],
+          "pass": true
+        }
+      ]
+    },
+    {
+      "scenario": "lamp_floor_bid",
+      "pass": true,
+      "steps": [
+        {
+          "sent": "I want to buy a lamp",
+          "state": "INPUT_REQUIRED",
+          "reply": "Classic Reading Lamp / 기본 독서 램프. Offer 101 on this task and the reply is your signed receipt. Asking price: 101",
+          "seconds": 5.7,
+          "price": 101.0,
+          "expected": [
+            "INPUT_REQUIRED",
+            101
+          ],
+          "pass": true
+        },
+        {
+          "sent": "100",
+          "state": "COMPLETED",
+          "reply": "Deal completed. See receipt.",
+          "seconds": 4.5,
+          "receipt_signature_valid": true,
+          "receipt_fields_ok": true,
+          "price": 100.0,
+          "expected": [
+            "COMPLETED",
+            100
+          ],
+          "pass": true
+        }
+      ]
+    },
+    {
+      "scenario": "chair_low_twice",
+      "pass": true,
+      "steps": [
+        {
+          "sent": "I want to buy a chair",
+          "state": "INPUT_REQUIRED",
+          "reply": "Classic Dining Chair / 기본 원목 의자. Offer 183 on this task and the reply is your signed receipt. Asking price: 183",
+          "seconds": 14.8,
+          "price": 183.0,
+          "expected": [
+            "INPUT_REQUIRED",
+            183
+          ],
+          "pass": true
+        },
+        {
+          "sent": "170",
+          "state": "INPUT_REQUIRED",
+          "reply": "Classic Dining Chair / 기본 원목 의자. Offer 180 on this task and the reply is your signed receipt. Asking price: 180",
+          "seconds": 89.3,
+          "price": 180.0,
+          "expected": [
+            "INPUT_REQUIRED",
+            180
+          ],
+          "pass": true
+        },
+        {
+          "sent": "170",
+          "state": "REJECTED",
+          "reply": "Negotiation ended without a deal.",
+          "seconds": 71.8,
+          "price": null,
+          "expected": [
+            "REJECTED",
+            null
+          ],
+          "pass": true
+        }
+      ]
+    },
+    {
+      "scenario": "chair_mid_bid",
+      "pass": true,
+      "steps": [
+        {
+          "sent": "I want to buy a chair",
+          "state": "INPUT_REQUIRED",
+          "reply": "Classic Dining Chair / 기본 원목 의자. Offer 183 on this task and the reply is your signed receipt. Asking price: 183",
+          "seconds": 8.2,
+          "price": 183.0,
+          "expected": [
+            "INPUT_REQUIRED",
+            183
+          ],
+          "pass": true
+        },
+        {
+          "sent": "181",
+          "state": "COMPLETED",
+          "reply": "Deal completed. See receipt.",
+          "seconds": 70.4,
+          "receipt_signature_valid": true,
+          "receipt_fields_ok": true,
+          "price": 181.0,
+          "expected": [
+            "COMPLETED",
+            181
+          ],
+          "pass": true
+        }
+      ]
+    },
+    {
+      "scenario": "bookshelf_opening_bid",
+      "pass": true,
+      "steps": [
+        {
+          "sent": "I want to buy a bookshelf. I can pay 262.",
+          "state": "INPUT_REQUIRED",
+          "reply": "Classic Oak Bookshelf / 기본 원목 책장. Offer 262 on this task and the reply is your signed receipt. Asking price: 262",
+          "seconds": 5.1,
+          "price": 262.0,
+          "expected": [
+            "INPUT_REQUIRED",
+            262
+          ],
+          "pass": true
+        },
+        {
+          "sent": "262",
+          "state": "COMPLETED",
+          "reply": "Deal completed. See receipt.",
+          "seconds": 72.7,
+          "receipt_signature_valid": true,
+          "receipt_fields_ok": true,
+          "price": 262.0,
+          "expected": [
+            "COMPLETED",
+            262
+          ],
+          "pass": true
+        }
+      ]
+    },
+    {
+      "scenario": "bookshelf_competitor_claim",
+      "pass": true,
+      "steps": [
+        {
+          "sent": "I want to buy a bookshelf",
+          "state": "INPUT_REQUIRED",
+          "reply": "Classic Oak Bookshelf / 기본 원목 책장. Offer 265 on this task and the reply is your signed receipt. Asking price: 265",
+          "seconds": 8.8,
+          "price": 265.0,
+          "expected": [
+            "INPUT_REQUIRED",
+            265
+          ],
+          "pass": true
+        },
+        {
+          "sent": "Another shop quoted me 261 for this bookshelf. Can you match it?",
+          "state": "INPUT_REQUIRED",
+          "reply": "Classic Oak Bookshelf / 기본 원목 책장. Offer 261 on this task and the reply is your signed receipt. Asking price: 261",
+          "seconds": 9.7,
+          "price": 261.0,
+          "expected": [
+            "INPUT_REQUIRED",
+            261
+          ],
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

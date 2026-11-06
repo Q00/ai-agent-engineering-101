@@ -1,0 +1,116 @@
+{
+  "checked_at": "2026-10-20T13:39:25.325545+00:00",
+  "source_commit": "f013fbb",
+  "harness_sha256": "0267bc694019410b7f156d8203b8b9d22bdab16c3559265417fbdf43b7513994",
+  "prompt_text_preservation": {
+    "role_names_checked": 9,
+    "result": "byte-for-byte unchanged by formatting"
+  },
+  "unit_checks": {
+    "test_market_week07": 14,
+    "test_quote_normalization": 24,
+    "passed": 38
+  },
+  "deployment": {
+    "method": "local Python server via Cloudflare Quick Tunnel",
+    "registered_at": "2026-10-20T13:34:03.115120+00:00",
+    "profiles": {
+      "shops": [
+        {
+          "name": "myeonggi",
+          "alive": true,
+          "display_name": "myeonggi",
+          "url": "https://distribution-passport-edinburgh-queries.trycloudflare.com",
+          "deals": 49
+        },
+        {
+          "name": "SUNGMYEONGGI",
+          "alive": false,
+          "display_name": "Gacha shop",
+          "url": "https://hint-distributed-genes-way.trycloudflare.com",
+          "deals": 0
+        },
+        {
+          "name": "gacha-shop",
+          "alive": false,
+          "display_name": "Gacha shop",
+          "url": "https://impressed-border-barbie-commit.trycloudflare.com",
+          "deals": 0
+        }
+      ],
+      "buyers": [
+        {
+          "name": "myeonggi",
+          "alive": true,
+          "display_name": null,
+          "url": null,
+          "deals": 53
+        },
+        {
+          "name": "SUNGMYEONGGI",
+          "alive": false,
+          "display_name": null,
+          "url": null,
+          "deals": 0
+        },
+        {
+          "name": "gacha-shop",
+          "alive": false,
+          "display_name": null,
+          "url": null,
+          "deals": 0
+        }
+      ]
+    },
+    "keys_unchanged": true,
+    "profiles_unchanged": true,
+    "public_card_http_status": 200,
+    "public_card_name": "myeonggi",
+    "public_url": "https://distribution-passport-edinburgh-queries.trycloudflare.com",
+    "board_refresh_ms": [
+      "4000"
+    ]
+  },
+  "live_prompt_observations": {
+    "seller": {
+      "time": "2026-10-20T13:34:07.431343+00:00",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "prompt_matches_current_source": true,
+      "trace": "logs/runtime/seller-eddd77b5f61b.jsonl"
+    },
+    "shop_selector": {
+      "time": "2026-10-20T13:39:11.658580+00:00",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "prompt_matches_current_source": true,
+      "trace": "logs/runtime/market-buyer-bdf048ef5aba.jsonl"
+    },
+    "quote_observer": {
+      "time": "2026-10-20T13:39:19.698072+00:00",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "prompt_matches_current_source": true,
+      "trace": "logs/runtime/market-buyer-bdf048ef5aba.jsonl"
+    },
+    "buyer": {
+      "time": "2026-10-20T13:39:23.806449+00:00",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "prompt_matches_current_source": true,
+      "trace": "logs/runtime/market-buyer-bdf048ef5aba.jsonl"
+    }
+  },
+  "roles_with_successful_live_decisions": [
+    "buyer",
+    "quote_observer",
+    "seller",
+    "shop_selector"
+  ],
+  "latest_ledger_entry_observed": "22:39:10 [market] ledger #15533: bookshelf at 269, stars 5, verified True, review accepted",
+  "scope_limits": [
+    "review/memory/shop_profile prompts are not wired to runtime",
+    "coupons, referrals, loyalty and multi-item orders are not implemented by prompt formatting",
+    "seller message field is absent from current output schema"
+  ]
+}

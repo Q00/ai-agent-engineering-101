@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "ad-outcomes",
+      "title": "리뷰 광고 게시와 우리 가게의 실제 성과",
+      "queries": [
+        {
+          "id": "published-ads",
+          "source": {
+            "label": "Agent Market 공개 원장",
+            "files": [
+              {
+                "label": "ledger-pages/*.json.gz"
+              },
+              {
+                "label": "ledger-terminal-check.json"
+              }
+            ],
+            "links": [
+              {
+                "label": "공식 보드",
+                "url": "https://market.ourolabs.ai/board"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "광고 게시 수",
+                "definition": "광고 게시 수는 Round 2에서 buyer=myeonggi이고 verified=true이며 리뷰에 Ad (my shop)이 포함된 서로 다른 시장 주문의 결과 수입니다."
+              }
+            ],
+            "filters": [
+              "Round: 2",
+              "검증된 마켓 주문 결과",
+              "Buyer: myeonggi"
+            ],
+            "caveats": [
+              "광고 게시 수는 실제 광고 노출 수나 고유 독자 수가 아닙니다.",
+              "가격·설명·주소·서버 안정성·차단 정책도 함께 바뀌었으며 통제 실험이 없습니다."
+            ]
+          },
+          "reportingPeriod": "2026-10-21 20:39:05–23:17:46 KST",
+          "columns": [
+            "shop",
+            "publications"
+          ],
+          "rows": [
+            {
+              "shop": "Fair Furniture",
+              "publications": 5
+            },
+            {
+              "shop": "dragonash",
+              "publications": 20
+            },
+            {
+              "shop": "lee-sungsoo",
+              "publications": 227
+            },
+            {
+              "shop": "mjforge",
+              "publications": 8
+            },
+            {
+              "shop": "moss-and-oak",
+              "publications": 2
+            }
+          ],
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "262 unique market orders carried advertisements; 227 / 262 = 86.6% were reviews of lee-sungsoo. No reader count or ad-attributed conversion rate is available."
+            }
+          ]
+        },
+        {
+          "id": "own-board-movement",
+          "source": {
+            "label": "Agent Market 보드 스냅샷",
+            "files": [
+              {
+                "label": "all-review-ads board-after.json"
+              },
+              {
+                "label": "review-ad-effect board.json"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "방문",
+                "definition": "방문은 공식 보드의 누적 visits 카운터이며 고유 구매자 수가 아닙니다."
+              },
+              {
+                "label": "체결",
+                "definition": "체결은 공식 보드의 Round 2 누적 deals 카운터입니다."
+              }
+            ],
+            "filters": [
+              "Shop: myeonggi",
+              "Round: 2"
+            ],
+            "caveats": [
+              "20:36 배포 전 스냅샷에는 원장과 체결 1건 차이가 있어 실제 적용 확인 후의 20:39 스냅샷부터 비교합니다.",
+              "방문 카운터 증가 39와 원장 결과 38은 별개 지표로 표시합니다."
+            ]
+          },
+          "reportingPeriod": "2026-10-21 20:39:05–23:17:46 KST",
+          "columns": [
+            "metric",
+            "before",
+            "after",
+            "change"
+          ],
+          "rows": [
+            {
+              "metric": "누적 방문",
+              "before": 1019,
+              "after": 1058,
+              "change": 39
+            },
+            {
+              "metric": "누적 체결",
+              "before": 695,
+              "after": 719,
+              "change": 24
+            },
+            {
+              "metric": "체결 순위",
+              "before": 10,
+              "after": 14,
+              "change": 4
+            }
+          ]
+        },
+        {
+          "id": "incoming-buyers",
+          "source": {
+            "label": "우리 가게 원장 거래",
+            "files": [
+              {
+                "label": "incoming-verified-evidence.json"
+              },
+              {
+                "label": "other-buyer-attempts.json"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "구매자별 체결",
+                "definition": "구매자별 체결은 분석 구간에서 우리 가게의 등록 URL에 연결된 verified=true 결과를 buyer별로 센 수입니다."
+              }
+            ],
+            "filters": [
+              "Round: 2",
+              "Shop: myeonggi"
+            ],
+            "caveats": [
+              "chanarun의 미체결 원인 설명은 해당 buyer가 보고한 내용이며 독립적으로 모든 원인을 검증한 것은 아닙니다."
+            ]
+          },
+          "reportingPeriod": "2026-10-21 20:39:05–23:17:46 KST",
+          "columns": [
+            "buyer",
+            "verified_deals",
+            "all_results"
+          ],
+          "rows": [
+            {
+              "buyer": "cheapest-in-town",
+              "verified_deals": 24,
+              "all_results": 31
+            },
+            {
+              "buyer": "chanarun",
+              "verified_deals": 0,
+              "all_results": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "attribution-limits",
+      "title": "광고 구매 전환 확인 범위와 짧은 광고의 관찰 기간",
+      "queries": [
+        {
+          "id": "code-attribution",
+          "source": {
+            "label": "판매자 trace와 운영자 확인 wire",
+            "files": [
+              {
+                "label": "referral-claim-events.json"
+              },
+              {
+                "label": "referral-public-wire.jsonl"
+              },
+              {
+                "label": "effect-summary.json"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "코드 사용 구매",
+                "definition": "코드 사용 구매는 REVIEW10 claim task ID가 검증된 시장 영수증 task와 일치한 거래입니다."
+              }
+            ],
+            "caveats": [
+              "코드 입력 6개 중 5개는 운영자의 견적·취소이고, 나머지 견적 1개는 출처를 미분류로 뒀으며 어느 것도 구매로 연결되지 않았습니다.",
+              "acquisition에서는 쿠폰을 사용할 수 없었고 리뷰 열람 추적도 없어, 코드 사용 구매가 없다는 것만으로 광고 영향이 전혀 없었다고 단정할 수 없습니다.",
+              "짧은 광고는 관찰 기간이 약 15.6분이므로 그 버전 자체의 성공 또는 실패를 확정할 수 없습니다."
+            ]
+          },
+          "columns": [
+            "metric",
+            "value"
+          ],
+          "rows": [
+            {
+              "metric": "확인된 REVIEW10 사용 체결",
+              "value": 0
+            },
+            {
+              "metric": "짧은 가격 광고 게시",
+              "value": 21
+            },
+            {
+              "metric": "짧은 광고 관찰 기간(분)",
+              "value": 15.6
+            }
+          ],
+          "reportingPeriod": "코드 로그: 분석 종료 시각까지; 짧은 광고: 2026-10-21 23:02:11–23:17:46 KST"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "observed_at": "2026-10-25T06:38:24.822770+00:00",
+  "trace": "submissions/26510358/week-07/logs/runtime/seller-f5b1f218dc0b.jsonl",
+  "events": {
+    "policy_loaded": 1,
+    "seller_started": 1,
+    "trade_stage": 6,
+    "remote_message": 2,
+    "seller_admission_priority": 2,
+    "harness_request": 2,
+    "harness_exit": 2,
+    "harness_decision": 2,
+    "quote": 1,
+    "sale_completed": 1
+  },
+  "executables": [
+    "/home/myeonggi/.codex/packages/standalone/releases/0.164.0-x86_64-unknown-linux-musl/bin/codex"
+  ],
+  "harness_exit_codes": [
+    0,
+    0
+  ],
+  "local_receipts": [
+    {
+      "task": "7d9bf40b-e79c-4f6e-9306-cc2a704953ff",
+      "item": "chair",
+      "price": 180
+    }
+  ],
+  "matched_market_results": [
+    {
+      "seq": 667364,
+      "task": "7d9bf40b-e79c-4f6e-9306-cc2a704953ff",
+      "verified": true,
+      "checks": {
+        "order_issued_to_buyer": true,
+        "one_result_per_order": true,
+        "item_matches": true,
+        "price_within_budget": true,
+        "task_not_seen": true,
+        "sig_seller_ok": true,
+        "sig_buyer_ok": true
+      },
+      "item": "chair",
+      "price": 180,
+      "local_contract_matches": true
+    }
+  ],
+  "caveat": "Organic live traffic after deployment, not a controlled effect estimate. Existing CLI recovery preceded this patch."
+}

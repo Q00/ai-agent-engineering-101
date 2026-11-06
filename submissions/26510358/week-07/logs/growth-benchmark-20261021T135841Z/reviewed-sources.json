@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "leader-comparison",
+      "title": "상위 상점과 우리 가게의 규모·가격 비교",
+      "queries": [
+        {
+          "id": "board-comparison",
+          "source": {
+            "label": "Agent Market 공식 공개 API",
+            "files": [
+              {
+                "label": "board.json"
+              },
+              {
+                "label": "ledger.json"
+              }
+            ],
+            "links": [
+              {
+                "label": "Agent Market board",
+                "url": "https://market.ourolabs.ai/board"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "방문",
+                "definition": "방문은 마켓의 visits 누적 카운터이며 고유 구매자 수가 아닙니다."
+              },
+              {
+                "label": "체결",
+                "definition": "체결은 Round 2 마켓 누적 deals 카운터입니다."
+              }
+            ],
+            "filters": [
+              "Round: 2"
+            ],
+            "caveats": [
+              "서로 다른 운영 기간의 누적 카운터로 인과적 전환율을 추정하지 않습니다.",
+              "가격은 최근 원장 500개 이벤트 중 verified=true 결과를 현재 등록 URL로 연결한 표본입니다."
+            ]
+          },
+          "reportingPeriod": "2026-10-21 22:58 KST 스냅샷의 Round 2 누적",
+          "columns": [
+            "shop",
+            "rank",
+            "visits",
+            "deals",
+            "stars"
+          ],
+          "rows": [
+            {
+              "shop": "lee-sungsoo",
+              "rank": 1,
+              "visits": 9424,
+              "deals": 7273,
+              "deal_visit_ratio": 0.7717529711375212,
+              "stars": 4.43
+            },
+            {
+              "shop": "11im",
+              "rank": 2,
+              "visits": 9755,
+              "deals": 6889,
+              "deal_visit_ratio": 0.7062019477191184,
+              "stars": 4.51
+            },
+            {
+              "shop": "myeonggi",
+              "rank": 14,
+              "visits": 1058,
+              "deals": 719,
+              "deal_visit_ratio": 0.6795841209829868,
+              "stars": 4.33
+            }
+          ]
+        },
+        {
+          "id": "verified-price-sample",
+          "source": {
+            "label": "Agent Market 공개 원장",
+            "files": [
+              {
+                "label": "ledger.json"
+              },
+              {
+                "label": "shops.json"
+              }
+            ],
+            "filters": [
+              "Round: 2",
+              "kind: result",
+              "verified: true",
+              "Shop: lee-sungsoo 또는 11im"
+            ],
+            "caveats": [
+              "이 표본은 전체 시장의 모든 거래를 포함하지 않습니다."
+            ]
+          },
+          "reportingPeriod": "원장 seq 136984–137483 (500개 이벤트)",
+          "columns": [
+            "shop",
+            "item",
+            "n",
+            "min",
+            "median",
+            "max"
+          ],
+          "rows": [
+            {
+              "shop": "11im",
+              "item": "bookshelf",
+              "n": 3,
+              "min": 261,
+              "median": 290,
+              "max": 290
+            },
+            {
+              "shop": "11im",
+              "item": "chair",
+              "n": 4,
+              "min": 195,
+              "median": 195.0,
+              "max": 195
+            },
+            {
+              "shop": "11im",
+              "item": "lamp",
+              "n": 5,
+              "min": 100,
+              "median": 100,
+              "max": 110
+            },
+            {
+              "shop": "lee-sungsoo",
+              "item": "bookshelf",
+              "n": 3,
+              "min": 260,
+              "median": 260,
+              "max": 260
+            },
+            {
+              "shop": "lee-sungsoo",
+              "item": "chair",
+              "n": 6,
+              "min": 180,
+              "median": 180.0,
+              "max": 180
+            },
+            {
+              "shop": "lee-sungsoo",
+              "item": "lamp",
+              "n": 15,
+              "min": 100,
+              "median": 100,
+              "max": 100
+            }
+          ],
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "Filter round=2, kind=result, data.verified=true. Match data.shop to registered shop URL. Group by shop and receipt.item; calculate count, min, median, max of receipt.price."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "review-concentration",
+      "title": "우리 가게 최근 리뷰 작성자 편중",
+      "queries": [
+        {
+          "id": "own-reviews",
+          "source": {
+            "label": "myeonggi 공개 리뷰",
+            "files": [
+              {
+                "label": "myeonggi-reviews.json"
+              }
+            ],
+            "links": [
+              {
+                "label": "Agent Market board",
+                "url": "https://market.ourolabs.ai/board"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "작성자별 리뷰 수",
+                "definition": "공식 API가 반환한 최근 Round 2 리뷰 40개를 author 필드로 집계한 수입니다."
+              }
+            ],
+            "filters": [
+              "Shop: myeonggi",
+              "Round: 2"
+            ],
+            "caveats": [
+              "최근 40개 표본으로 전체 리뷰 이력이나 부정행위 의도를 판정하지 않습니다."
+            ]
+          },
+          "reportingPeriod": "2026-10-21 22:58 KST에 반환된 최근 40개",
+          "columns": [
+            "buyer",
+            "reviews"
+          ],
+          "rows": [
+            {
+              "buyer": "cheapest-in-town",
+              "reviews": 38
+            },
+            {
+              "buyer": "fair-furniture",
+              "reviews": 1
+            },
+            {
+              "buyer": "JangSeongWoong",
+              "reviews": 1
+            }
+          ],
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "cheapest-in-town share = 38 / 40 = 95%. The remaining two reviews each have 5 stars; sample average = (38×3 + 2×5)/40 = 3.1."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
