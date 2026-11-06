@@ -345,10 +345,20 @@ def test_negotiation_section_counts_ends_and_compares_with_market(tmp_path):
     (r / ".r3/metrics.jsonl").write_text("".join(json.dumps(x) + "\n" for x in m))
     (r / ".r3/events.jsonl").write_text("".join(json.dumps(x) + "\n" for x in ev))
     out = brief.section_negotiation(str(r), now, LOGIN)
-    assert "침대: 제시 5, 판매 1, 우리 거절 0, 구매자가 닫음 1, 응답 없음 1, 기록 없음 2" in out[1]
+    assert "침대: 제시 5, 수락 1 중 정산 1 (100%), 우리 거절 0, 구매자가 닫음 1, 응답 없음 1, 기록 없음 2" in out[1]
+    assert "수락은 우리가 값을 받아들인 것이고 판매가 아님" in out[0]
     assert "첫 제시 뒤 바로 끝남 1" in out[1] and "우리 첫 제시가/정가 중앙 0.80" in out[1] and "구매자 마지막 제안/정가 중앙 0.50" in out[1]
-    assert "BED1: 제시 5, 우리 첫 제시가/정가 0.80, 우리 판매가/정가 0.70 (n 1), 시장 체결가/정가 0.68 (시장 체결 4, 우리 1)" in out[2]
+    assert "BED1: 제시 5, 우리 첫 제시가/정가 0.80, 우리 수락가/정가 0.70 (n 1), 시장 체결가/정가 0.68 (시장 체결 4, 우리 1)" in out[2]
     assert brief.section_negotiation(str(tmp_path / "none"), now, LOGIN)[0].endswith("제시 기록 없음")
+    # two more accepts: one settles 5 min later, one never does; one settle of ours cannot serve two accepts
+    m += [{"hook": "seller", "decision": "accept", "ts": now - 1000, "outcome": {"sku": "BED1", "price": 700}},
+          {"hook": "seller", "decision": "accept", "ts": now - 990, "outcome": {"sku": "BED1", "price": 700}}]
+    ev += [{"type": "settle", "src": "market", "ts": now - 700, "data": {"sku": "BED1", "amount": 700, "own_owner": True, "buyer": "y"}},
+           {"type": "settle", "src": "market", "ts": now - 980, "data": {"sku": "BED1", "amount": 700, "own_owner": False}}]
+    (r / ".r3/metrics.jsonl").write_text("".join(json.dumps(x) + "\n" for x in m))
+    (r / ".r3/events.jsonl").write_text("".join(json.dumps(x) + "\n" for x in ev))
+    out = brief.section_negotiation(str(r), now, LOGIN)
+    assert "침대: 제시 5, 수락 3 중 정산 2 (67%)" in out[1]
 
 
 def test_stars_section_joins_reviews_to_our_settles_and_means_per_account(tmp_path):

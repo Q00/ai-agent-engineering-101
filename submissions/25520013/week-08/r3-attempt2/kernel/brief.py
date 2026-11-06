@@ -921,6 +921,7 @@ RIVALS_TOP = 5  # [상위 가게]: the top shops by shop all, plus ours
 NEGOTIATION_H = 6  # [협상 결과]: window
 NEGOTIATION_TOP = 4  # categories with the most offers
 NEGOTIATION_SKUS = 2  # SKUs per category, by offers
+ACCEPT_SETTLE_S = 600  # an accept counts as sold when our shop settles the same SKU within this many seconds after it
 
 
 def section_rivals(b, b6, login, hours6):
@@ -1186,14 +1187,15 @@ def section_stars(root, now, login):
 
 
 def section_negotiation(root, now, login):
-    """[협상 결과]: per category with the most offers in the last NEGOTIATION_H hours, how our offers ended (sold,
-    our reject, buyer left, idle, no record) and, for the ends without a sale, the rounds and our asks against list;
+    """[협상 결과]: per category with the most offers in the last NEGOTIATION_H hours, how our offers ended (accepted,
+    and of those how many our shop settled within ACCEPT_SETTLE_S, our reject, buyer left, idle, no record) and, for the ends without a sale, the rounds and our asks against list;
     then per top SKU our first ask, our sale price and the market's settle price (all shops) against list, and our
     share of that SKU's settles. Rows before a2_deal_end existed count as no record."""
     since = now - NEGOTIATION_H * 3600
     cat = _catalog(root)
     per = defaultdict(lambda: {"open": 0, "accept": 0, "reject": 0, "cancel": 0, "idle": 0, "r0": 0, "ask0": [], "last": []})
     sku = defaultdict(lambda: {"open": 0, "ask0": [], "sold": []})
+    accepts = []  # (ts, sku, leaf): an accept is not a sale until our shop settles that SKU
     for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 60_000_000, b'"seller"'):
         if m.get("hook") != "seller" or (m.get("ts") or 0) < since:
             continue
@@ -1215,6 +1217,7 @@ def section_negotiation(root, now, login):
                 sku[o["sku"]]["ask0"].append(o["ask"] / lp)
         elif d == "accept":
             a["accept"] += 1
+            accepts.append((m.get("ts") or 0, o["sku"], leaf))
             if lp and isinstance(o.get("price"), (int, float)):
                 sku[o["sku"]]["sold"].append(o["price"] / lp)
         elif d == "reject":
@@ -1230,32 +1233,48 @@ def section_negotiation(root, now, login):
     if not top:
         return [f"[협상 결과 {NEGOTIATION_H}시간] 제시 기록 없음"]
     mk = defaultdict(lambda: {"all": [], "ours": 0, "n": 0})
+    our_settles = defaultdict(list)  # sku -> [ts] of our shop's settles
     for e in market_settles(root, since):
         dd = e.get("data") or {}
+        if c.settle_side(dd, login) == "shop" and dd.get("sku"):
+            our_settles[dd["sku"]].append(e.get("ts") or 0)
         lp = _list_price(cat, dd.get("sku"))
         if dd.get("sku") in sku and lp and isinstance(dd.get("amount"), (int, float)):
             x = mk[dd["sku"]]
             x["all"].append(dd["amount"] / lp)
             x["n"] += 1
             x["ours"] += 1 if c.settle_side(dd, login) == "shop" else 0
+    # each accept takes the first unused settle of ours for the same SKU within ACCEPT_SETTLE_S after it
+    for v in our_settles.values():
+        v.sort()
+    used, settled = defaultdict(int), Counter()
+    for ts, k, leaf in sorted(accepts):
+        v = our_settles.get(k) or []
+        while used[k] < len(v) and v[used[k]] < ts - 5:
+            used[k] += 1
+        if used[k] < len(v) and v[used[k]] <= ts + ACCEPT_SETTLE_S:
+            used[k] += 1
+            settled[leaf] += 1
     med = lambda v: f"{st.median(v):.2f}" if v else "-"
-    out = [f"[협상 결과 {NEGOTIATION_H}시간] 상품군별 우리 제시의 끝 (판매, 우리 거절, 구매자가 닫음, 응답 없음, 기록 없음). "
-           "기록 없음은 끝 기록(a2_deal_end)이 생기기 전 것이거나 시도 1이 맡은 것"]
+    out = [f"[협상 결과 {NEGOTIATION_H}시간] 상품군별 우리 제시의 끝 (수락, 우리 거절, 구매자가 닫음, 응답 없음, 기록 없음). "
+           f"수락은 우리가 값을 받아들인 것이고 판매가 아님. 판매는 수락 뒤 {ACCEPT_SETTLE_S // 60}분 안에 우리 가게에서 "
+           "같은 SKU가 정산된 수(정산). 기록 없음은 끝 기록(a2_deal_end)이 생기기 전 것이거나 시도 1이 맡은 것"]
     for leaf in top:
         a = per[leaf]
         ended = a["cancel"] + a["idle"]
         rest = a["open"] - a["accept"] - a["reject"] - ended
-        line = (f"  {leaf}: 제시 {a['open']}, 판매 {a['accept']}, 우리 거절 {a['reject']}, 구매자가 닫음 {a['cancel']}, "
-                f"응답 없음 {a['idle']}, 기록 없음 {max(0, rest)}")
+        rate = f" ({settled[leaf] / a['accept']:.0%})" if a["accept"] else ""
+        line = (f"  {leaf}: 제시 {a['open']}, 수락 {a['accept']} 중 정산 {settled[leaf]}{rate}, 우리 거절 {a['reject']}, "
+                f"구매자가 닫음 {a['cancel']}, 응답 없음 {a['idle']}, 기록 없음 {max(0, rest)}")
         if ended:
-            line += (f" | 판매 없이 끝난 {ended}건 중 첫 제시 뒤 바로 끝남 {a['r0']}, 우리 첫 제시가/정가 중앙 {med(a['ask0'])}, "
+            line += (f" | 수락 없이 끝난 {ended}건 중 첫 제시 뒤 바로 끝남 {a['r0']}, 우리 첫 제시가/정가 중앙 {med(a['ask0'])}, "
                      f"구매자 마지막 제안/정가 중앙 {med(a['last'])}")
         out.append(line)
         skus = sorted((k for k in sku if _leaf((cat.get(k) or {}).get("category")) == leaf), key=lambda k: -sku[k]["open"])
         for k in skus[:NEGOTIATION_SKUS]:
             x, y = sku[k], mk.get(k, {"all": [], "ours": 0, "n": 0})
             out.append(
-                f"    {k}: 제시 {x['open']}, 우리 첫 제시가/정가 {med(x['ask0'])}, 우리 판매가/정가 {med(x['sold'])} (n {len(x['sold'])}), "
+                f"    {k}: 제시 {x['open']}, 우리 첫 제시가/정가 {med(x['ask0'])}, 우리 수락가/정가 {med(x['sold'])} (n {len(x['sold'])}), "
                 f"시장 체결가/정가 {med(y['all'])} (시장 체결 {y['n']}, 우리 {y['ours']})"
             )
     return out
