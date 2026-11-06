@@ -6,6 +6,7 @@ import time
 
 from feedback import append_event, atomic_json, load_json, number
 from market_evidence import comparable_price
+from market_clock import schedule_now
 from sales_performance import own_price, sku_metrics
 from shop_policy import selling_terms
 from shop_horizon import clearance_bounds
@@ -44,6 +45,8 @@ def update(root, inventory, memory, public, policy, now):
     rules = policy["opening"]
     groups = memory.get("funnel", {}).get("groups", {})
     stats = sku_metrics(memory, now)
+    schedule = schedule_now(root / ".market", inventory["round"], local_now=now)
+    market_now = schedule["now"] if schedule["status"] == "synced" else None
     entries = {}
     for product in inventory["units"][:100]:
         if product.get("grade") not in ("A", "B", "C"):
@@ -62,7 +65,8 @@ def update(root, inventory, memory, public, policy, now):
         complete = group.get("completed", 0)
         tasks = group.get("tasks", [])[-100:]
         enough_new = len(set(tasks) - set(prior.get("tasks", []))) >= rules["min_new_tasks"]
-        own = own_price(memory, product, terms["warranty_hours"], inventory["round"], now)
+        own = own_price(memory, product, terms["warranty_hours"], inventory["round"], now,
+                        market_now=market_now)
         market = comparable_price(public, product, terms["warranty_hours"], now)
         pilot = pilot_reference(product, terms["warranty_hours"], rules, inventory["round"])
         reference = own or market

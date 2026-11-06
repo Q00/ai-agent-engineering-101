@@ -17,6 +17,7 @@ from market_evidence import read as read_market
 
 WINDOW = 7 * 86400
 MAX_SALES = 1000
+MARKET_FUTURE_TOLERANCE = 5
 SETTLED = re.compile(r"^\d{2}:\d{2}:\d{2} \[acp\] settled .+ at ([0-9]+), ledger #([0-9]+), unit ([A-Za-z0-9_.:-]+) grade [ABC]$")
 
 
@@ -106,6 +107,11 @@ def update(root, rnd, now, *, public=None, inventory=None):
             # even when the host clock runs ahead of the market. Do not mix
             # that earlier timestamp into local warranty-maturity accounting.
             s["shop"] = e["shop"]
+            if number(e.get("ts")) and e["ts"] > 0:
+                # Keep the raw market clock separate from local warranty and
+                # storage accounting. The exact confirmed ledger/unit match
+                # makes this usable for market-clock price recency later.
+                s["market_settled_at"] = e["ts"]
             if e.get("ts", 0) >= s["receipt_time"]:
                 s["settled_at"] = e["ts"]
         refunds = {e["seq"]: e for e in s.get("refunds", [])}
@@ -176,13 +182,14 @@ def sku_metrics(memory, now):
     return groups
 
 
-def own_price(memory, product, warranty, rnd, now):
+def own_price(memory, product, warranty, rnd, now, *, market_now=None):
     """Price actually paid to us, with exact terms and a known settlement time.
 
     `update` admits a sale only after matching its local receipt to a kit or
     ledger confirmation. A receipt or opening quote alone is not price evidence.
-    Legacy confirmations without a ledger timestamp remain useful to accounting
-    but cannot establish this recent-price window.
+    Raw market timestamps require an independently trusted market_now. Legacy
+    confirmations retain their existing local-time checks. Neither price path
+    rewrites the timestamps used by warranty/storage accounting.
     """
     if (not isinstance(memory, dict) or memory.get("schema") != 1 or memory.get("round") != rnd
             or not number(memory.get("updated_at")) or not 0 <= now - memory["updated_at"] <= 86400
@@ -193,21 +200,28 @@ def own_price(memory, product, warranty, rnd, now):
     for s in memory["sales"]:
         if (not valid_sale(s, now) or s["sku"] != product["sku"] or s.get("grade") != product["grade"]
                 or type(s.get("warranty_hours")) is not int or s["warranty_hours"] != warranty
-                or not number(s.get("settled_at")) or not 0 <= now - s["settled_at"] <= 86400
-                or s["settled_at"] < s["receipt_time"]
                 or number(reset) and s["receipt_time"] < reset
                 or s["unit"] in units or s["ledger"] in seqs
                 or s.get("ambiguous_refund") or s.get("refunds")):
             continue
-        rows.append(s)
+        if number(market_now) and number(s.get("market_settled_at")):
+            observed = s["market_settled_at"]
+            if observed <= 0 or not -MARKET_FUTURE_TOLERANCE <= market_now - observed <= 86400:
+                continue
+        else:
+            observed = s.get("settled_at")
+            if (not number(observed) or not 0 <= now - observed <= 86400
+                    or observed < s["receipt_time"]):
+                continue
+        rows.append((s, observed))
         units.add(s["unit"])
         seqs.add(s["ledger"])
     if len(rows) < 3:
         return None
-    identity = sorted((s["ledger"], s["unit"], s["price"], s["settled_at"]) for s in rows)
-    return {"price": int(median(s["price"] for s in rows)), "samples": len(rows),
+    identity = sorted((s["ledger"], s["unit"], s["price"], observed) for s, observed in rows)
+    return {"price": int(median(s["price"] for s, _ in rows)), "samples": len(rows),
             "evidence_id": hashlib.sha256(json.dumps(identity, separators=(",", ":")).encode()).hexdigest(),
-            "latest_at": max(s["settled_at"] for s in rows)}
+            "latest_at": max(observed for _, observed in rows)}
 
 
 def funnel(events, sales, rnd, now):
