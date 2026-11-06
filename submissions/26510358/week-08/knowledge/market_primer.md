@@ -50,7 +50,8 @@ comes from a single well-timed markdown, and more stages help when expiry costs 
 https://ideas.repec.org/a/taf/tprsxx/v63y2025i15p5692-5722.html (Moshtagh, Zhou & Verma 2025),
 https://edepot.wur.nl/707979 (Haijema et al.).
 Here: `unit_floor` drops to 80% of cost under 12 h left and 30% under 6 h; in the last CLEARANCE_HOURS of the round
-everything slides toward a salvage floor. Any price above zero beats throwing the unit away at cost.
+food slides toward a salvage floor and goods down to cost, never below (book counts unsold goods at cost).
+Any price above zero beats throwing food away at cost.
 Check: units in stock_on_hand with min_hours_to_expiry under 12 and no recent deal.
 
 ## 6. Lemons: hidden quality drives good sellers out

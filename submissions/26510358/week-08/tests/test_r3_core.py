@@ -107,3 +107,10 @@ def test_buyer_reads_stated_shelf_life():
     assert buyer_r3.stated_shelf_hours("감귤: asking 8700. 19 hours of shelf life left. Send your offer") == 19.0
     assert buyer_r3.stated_shelf_hours("만두, 30시간 남음") == 30.0
     assert buyer_r3.stated_shelf_hours("asking 5000") is None
+
+
+def test_goods_clearance_stops_at_cost():
+    """Book counts unsold goods at cost, so the round-end floor for goods is cost, not a salvage share of it."""
+    g = {"cost": 600_000, "list_price": 1_000_000, "kind": "goods", "grade": "A"}
+    assert pricing.unit_floor(g, hours_left_round=200) == int(600_000 * 1.08)
+    assert pricing.unit_floor(g, hours_left_round=3) == 600_000

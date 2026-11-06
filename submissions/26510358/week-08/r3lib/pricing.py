@@ -9,8 +9,8 @@ from . import config
 # ------------------------------------------------------------------------------------------- shop
 def unit_floor(u, now=None, hours_left_round=None):
     """Lowest price for one unit. Normally cost plus a margin. Lower when keeping the unit is worse than selling
-    it cheap: food close to its date (thrown away at cost) and anything still in stock near the end of the round
-    (unsold stock counts as a total loss)."""
+    it cheap: food close to its date or near the end of the round (food past its date leaves book at its cost).
+    Goods near the end of the round go down to cost, never below: book counts unsold goods at cost."""
     now = now or time.time()
     hl = config.hours_left_in_round(now) if hours_left_round is None else hours_left_round
     cost = u["cost"]
@@ -22,7 +22,12 @@ def unit_floor(u, now=None, hours_left_round=None):
         elif left < 12:
             floor = min(floor, cost * 0.8)
     if hl < config.CLEARANCE_HOURS:
-        floor = min(floor, cost * max(0.3, hl / config.CLEARANCE_HOURS))
+        if u.get("kind") == "food":
+            floor = min(floor, cost * max(0.3, hl / config.CLEARANCE_HOURS))
+        else:
+            # Book counts unsold goods at cost (/agent.md), so below cost a sale lowers book; at cost it keeps
+            # book, adds revenue and ends the storage fee. Until 2026-11-06 goods slid to 30% of cost too.
+            floor = min(floor, cost)
     return max(1, int(floor))
 
 

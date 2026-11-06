@@ -32,7 +32,7 @@ RESTOCK_LEAD_S = 60                 # emit a buy list only when supply is open o
 STOCKOUT_HOURS = 6                  # requests our shop turned away for lack of stock, counted over this window,
                                     #   are demand addressed to us: added to the category's expected sales per hour
 STOP_BUYING_HOURS = 72              # no restock in the last 72 h of the round
-CLEARANCE_HOURS = 36                # in the last 36 h, prices fall toward a salvage floor
+CLEARANCE_HOURS = 36                # in the last 36 h, food floors fall toward salvage; goods floors fall to cost
 DEMAND_HALF_LIFE_H = 8              # recent settles weigh more
 HORIZON_H = 12                      # stock for the sales we expect in the next 12 h
 MIN_FOOD_SHELF_FOR_EXPLORE = 720    # coverage only with long-life food (no expiry inside the round)
