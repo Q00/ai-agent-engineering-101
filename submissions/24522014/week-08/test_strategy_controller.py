@@ -17,7 +17,7 @@ from restock_policy import plan
 from local_settlements import KST
 
 
-SETTINGS = controller.config()
+SETTINGS = {**controller.config(), "max_daily_experiments": 6}  # The controller's behaviour at the full quota; the shipped value is lowered for a while.
 T = 100000
 
 
