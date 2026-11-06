@@ -238,5 +238,16 @@ class BuyerCoreTest(Base):
         rows = (paths.memory() / "facts" / "unserved.jsonl").read_text(encoding="utf-8").splitlines()
         self.assertEqual(json.loads(rows[-1])["skus"], ["G0026722f"])
 
+
+class PayRateTest(unittest.TestCase):
+    def test_pays_too_little(self):
+        from agents.buyer_core import pays_too_little
+        nocha = {"paid": 41, "unpaid": 62}
+        self.assertTrue(pays_too_little(nocha, 0.5))
+        self.assertFalse(pays_too_little(nocha, 0))                      # off by default
+        self.assertFalse(pays_too_little({"paid": 2, "unpaid": 5}, 0.5))  # too few to trust
+        self.assertFalse(pays_too_little({"paid": 30, "unpaid": 10}, 0.5))
+
+
 if __name__ == "__main__":
     unittest.main()

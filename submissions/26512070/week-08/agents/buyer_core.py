@@ -70,6 +70,18 @@ def shop_prices(shops, now=None):
     return {s["name"]: fact["shops"].get((s.get("url") or "").rstrip("/")) for s in shops}
 
 
+PAY_RATE_MIN_N = 10             # paid + unpaid before a shop's pay rate is trusted
+
+
+def pays_too_little(r, min_rate):
+    """11/6 10:3x: nocha12 agreed 84 times in 24 h and 50 failed at payment (409 out of stock) - shop_trouble put it
+    last, but for food it was often the only shop left, so it was picked anyway. With min_rate set (playbook
+    buyer.min_pay_rate) a shop whose agreed deals were paid less often than that is skipped, not just put last."""
+    r = r or {}
+    n = r.get("paid", 0) + r.get("unpaid", 0)
+    return bool(min_rate) and n >= PAY_RATE_MIN_N and r.get("paid", 0) / n < min_rate
+
+
 def shop_trouble(r):
     """0 fine, 1 pay trouble, 2 refuses us (11/4 02:4x: totato2203-r3, the cheapest by market share, refused 105 of
     106 orders, and the rules picked it first every time)."""
@@ -240,7 +252,8 @@ class BuyerCore:
                 "max_shops_goods": pb.get("max_shops_goods", 10), "max_shops_food": pb.get("max_shops_food", MAX_SHOPS),
                 "goods_time_budget": pb.get("goods_time_budget", 120), "food_time_budget": pb.get("food_time_budget", 20),
                 "goods_msg_timeout": pb.get("goods_msg_timeout", 20), "food_msg_timeout": pb.get("food_msg_timeout", 8),
-                "shelf_guard": pb.get("shelf_guard", False), "skip_unsigned": pb.get("skip_unsigned", False)}
+                "shelf_guard": pb.get("shelf_guard", False), "skip_unsigned": pb.get("skip_unsigned", False),
+                "min_pay_rate": pb.get("min_pay_rate", 0)}
 
     def rules(self):
         return self.playbook()["mode"] == "rules"
@@ -275,7 +288,10 @@ class BuyerCore:
             if goods:
                 e *= 1 + 0.5 * (mp.get("goods_warranty_share") or 0)
             return e
+        min_pay = self.playbook()["min_pay_rate"]
         for s in sorted(shops.values(), key=lambda s: (shop_trouble(rf.get(s["name"])), -expected(s))):
+            if pays_too_little(rf.get(s["name"]), min_pay):
+                continue
             share = min((prices.get(s["name"]) or {}).get("median_share", 0.75), ceil_share)
             fit = [k for k in s["skus"] if (cat.get(k) or {}).get("list_price")
                    and share * cat[k]["list_price"] <= self.order["budget"]]

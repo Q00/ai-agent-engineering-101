@@ -256,7 +256,8 @@ STRATEGY = {
                     # 11/4 21:1x: leave a food receipt whose claimed grade cannot last the order (design 1)
                     "shelf_guard": {"type": "boolean"},
                     # 11/5 01:4x: skip a shop whose last 3 receipts had no sig_seller (tried again after an hour)
-                    "skip_unsigned": {"type": "boolean"}}}}},
+                    "skip_unsigned": {"type": "boolean"},
+                                          "min_pay_rate": {"type": "number", "minimum": 0, "maximum": 0.9}}}}},
     },
 }
 
