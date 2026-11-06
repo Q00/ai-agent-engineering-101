@@ -28,7 +28,7 @@ CLAMP = (0.15, 0.45)     # (0.20, 0.36) until 11/6 13:10
 BAND = 0.005             # 11/6 15:40: thresholds within this of the best projected score count as tied and the highest
                          # of them is taken (saved is half the buyer's score and the others now chase it too); on 11/6
                          # the pick flipped 0.33 -> 0.15 -> 0.33 on differences of 0.0024
-ROUND_START = 1793793660          # 11/3 21:01 KST
+ROUND_START = 1793707260          # 11/3 21:01 KST (1793793660 until 11/6 17:45: a day late; a fallback only)
 
 
 def folder():
