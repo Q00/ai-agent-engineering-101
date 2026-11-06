@@ -1,3 +1,3 @@
 # Waiting for a decision
 
-(nothing)
+- 2026-11-06T08: options ['A', 'B'], recommended A -> `py -m outer.decide 2026-11-06T08 <option|reject>`

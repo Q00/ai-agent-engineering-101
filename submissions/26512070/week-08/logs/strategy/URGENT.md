@@ -1,5 +1,6 @@
 # Alerts (newest first)
 
+- 11-06 09:09 **warn** health: 52% of agreed deals were not paid: [('N {"error":"Sorry, this item is currently', 8), ('N h of shelf life left,', 4)]
 - 11-05 16:53 **warn** health: seller/claude: 8 of 12 calls timed out
 - 11-05 14:21 **warn** health: 51% of agreed deals were not paid: [('N h of shelf life left,', 12), ('no certificate to show the shelf', 5)]
 - 11-05 12:31 **warn** health: seller/claude: 6 of 9 calls timed out
