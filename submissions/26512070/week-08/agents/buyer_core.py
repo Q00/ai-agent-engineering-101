@@ -144,7 +144,14 @@ class BuyerCore:
         self.t0 = clock()
         self.events = EventWriter("buyer", source="buyer")
         self.tool_events = EventWriter("buyer", source="tools")
-        self.ctx = Ctx(caller="buyer", clock=clock, _writer=self.tool_events)
+        self.ctx = Ctx(caller="buyer", clock=clock, _writer=self.tool_events, keys={"order": order.get("order")})  # C1
+        self.arms, self.patch = {}, {}
+        try:                        # design R12, D-34: the running A/B experiments; the B arm's playbook for this order
+            from harness import experiment
+            self.arms, patch = experiment.assign("buyer", order.get("order"), clock())
+            self.patch = ((patch.get("playbook") or {}).get("buyer") or {})
+        except Exception:           # the experiment ledger must never stop an order: run as A
+            self.arms, self.patch = {}, {}
 
     def deadline(self):
         return self.t0 + DEADLINE
@@ -167,7 +174,8 @@ class BuyerCore:
         kind = o.get("kind") or next((cat[s].get("kind") for s in acceptable if s in cat), None)
         self.events.emit("buyer.order", {"category": o.get("item"), "budget": o.get("budget"), "kind": kind,
                                          "use_within_hours": o.get("use_within_hours"),
-                                         "acceptable_n": len(acceptable)}, order=o.get("order"))
+                                         "acceptable_n": len(acceptable),
+                                         **({"experiment": self.arms} if self.arms else {})}, order=o.get("order"))
         blocked = reflex.blocked()
         if self.rules() and self.playbook()["skip_unsigned"]:
             blocked = {**{n: "unsigned receipts" for n in reflex.unsigned(ctx.now())}, **blocked}
@@ -227,7 +235,7 @@ class BuyerCore:
     # --- the rules (HARNESS 14, D34; user 11/4 03:2x: benchmark myeonggi - fast, cheap, high-list goods)
 
     def playbook(self):
-        pb = ((self.ctx.strategy.get("playbook") or {}).get("buyer") or {})
+        pb = {**((self.ctx.strategy.get("playbook") or {}).get("buyer") or {}), **self.patch}   # B arm on top
         return {"mode": pb.get("mode", "agent"), "ceiling_share": pb.get("ceiling_share", 0.8),   # rules when the strategy says so
                 "max_shops_goods": pb.get("max_shops_goods", 10), "max_shops_food": pb.get("max_shops_food", MAX_SHOPS),
                 "goods_time_budget": pb.get("goods_time_budget", 120), "food_time_budget": pb.get("food_time_budget", 20),
@@ -369,6 +377,7 @@ class BuyerCore:
 
     def negotiate(self, shop, sku, kind):
         o, ctx = self.order, self.ctx
+        ctx.keys = {"order": o.get("order"), "counterpart": shop["name"], "sku": sku}   # C1: this shop's talk
         c = mf.catalog(ctx).get(sku) or {}
         hist, offers, asks = [], [], []
         try:

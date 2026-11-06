@@ -181,6 +181,15 @@ def counterpart(ctx, name, side, detail="concise"):
         part = prof.get("as_shop" if side == "shop" else "as_buyer") or {}
         out["profile"] = part if detail == "full" else {"summary": part.get("summary"),
                                                         "changed": prof.get("changed"), "updated": prof.get("updated")}
+    try:                                    # design 20-6: graded knowledge by GitHub login (harness.participant)
+        from harness import participant
+        known = participant.get(name)
+        part = known.get("as_shop" if side == "shop" else "as_buyer")
+        if part:
+            out["known"] = True
+            out["participant"] = part
+    except Exception:                       # the knowledge layer must never break a trade
+        pass
     stance = (_read(paths.memory() / "strategy" / "counterparts.json", default={}) or {}).get(name) or {}
     st = stance.get("as_shop" if side == "shop" else "as_buyer")
     if st:

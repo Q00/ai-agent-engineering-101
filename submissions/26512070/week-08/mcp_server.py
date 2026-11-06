@@ -16,7 +16,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from tools import calc, check, evaluate, query, record, search  # noqa: E402,F401  (registers the tools)
+from tools import calc, check, evaluate, harness_tools, query, record, search  # noqa: E402,F401  (registers the tools)
 from tools.registry import TOOLS, Ctx, call  # noqa: E402
 
 READ_ONLY = ("me.", "market.", "memory.", "eval.", "calc.", "check.")

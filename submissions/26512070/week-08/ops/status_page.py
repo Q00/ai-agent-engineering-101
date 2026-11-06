@@ -86,12 +86,41 @@ class Data:
         self.buy_list = jread(paths.memory() / "facts" / "buy_list.json", {}) or {}
         self.health = jread(paths.memory() / "facts" / "health.json", {}) or {}
         self.bench = jread(paths.memory() / "facts" / "benchmark.json", {}) or {}
+        self.cls = jread(paths.memory() / "harness" / "score_class.json", {}) or {}     # after the move (20-5)
 
     def name(self, sku, n=26):
         return e(((self.cat.get(sku) or {}).get("name") or sku)[:n])
 
 
+def sec_class(d):
+    """Design 17-6 tab 1 with the class view (harness.score_class), the new approvals, alerts and emergency stops."""
+    from harness import alert, ops, wisdom
+    c = d.cls
+    rows = []
+    for side, label in (("shop", "가게"), ("buyer", "buyer")):
+        for f, x in ((c.get(side) or {}).get("parts") or {}).items():
+            rows.append([label, e(f), e(x.get("rows_above", 0) + 1) + "/" + e((c.get(side) or {}).get("ranked")),
+                         e(x.get("percentile")), e(round(x["weight"] * (1 - x["percentile"]), 3)), e(x.get("next"))])
+    pend = wisdom.status()
+    emerg = ops.emergency()
+    al = [a for a in alert.recent(24, d.now) if a["level"] in ("now", "warn")][-8:][::-1]
+    return (f"<div class=kpi><div><b>{e(c.get('rank'))}</b>/{e(c.get('students'))}<small>Class view 순위 (학생)</small></div>"
+            f"<div><b>{e(c.get('percentile'))}</b><small>백분위</small></div>"
+            f"<div><b>{e(c.get('total'))}</b><small>학생 합계 (가게 {e((c.get('board') or {}).get('shop'))} + buyer "
+            f"{e((c.get('board') or {}).get('buyer'))})</small></div>"
+            f"<div><b>{e(c.get('gap_next'))}</b><small>위 {e(c.get('next'))}까지 · 3위권까지 {e(c.get('gap_top3'))}</small></div></div>"
+            + table(["쪽", "부분", "학생 순위", "백분위", "남은 여지", "바로 위"], rows)
+            + ("<h3>비상 동작 중</h3><ul>" + "".join(f"<li>{e(k)}: {e(v.get('why'))} ({e(hm(v.get('since')))})</li>"
+                                                for k, v in emerg.items()) + "</ul>" if emerg else "")
+            + "<h3>승인 대기</h3>" + ("".join(f"<pre class=mono>{e(wisdom.render(x))}</pre>" for x in pend) or "<p>없음</p>")
+            + "<h3>최근 알림 (24시간)</h3>" + ("<ul>" + "".join(
+                f"<li>{e(hm(a['ts']))} [{e(a['level'])}{'' if a['sent'] else ', 휴대폰 안 감'}] {e(a['text'][:160])}</li>"
+                for a in al) + "</ul>" if al else "<p>없음</p>"))
+
+
 def sec_summary(d):
+    if d.cls:
+        return sec_class(d)
     p, s, b = d.pos.get("players") or {}, d.pos.get("shop") or {}, d.pos.get("buyer") or {}
     rows = []
     for side, label in ((s, "가게"), (b, "buyer")):
@@ -247,9 +276,23 @@ def sec_record(d):
     drow = [[e(hm(x.get("ts"))), e(x.get("proposal_id")), e(x.get("choice")), e((x.get("note") or "")[:60])] for x in dec]
     models = (d.health.get("models") or {})
     mrow = [[e(k), e(json.dumps(v, ensure_ascii=False)[:90])] for k, v in list(models.items())[:10]] if isinstance(models, dict) else []
-    return ("<h3>전략 버전 (최근 10)</h3>" + table(["판", "승인"], hist)
+    new = jlines(paths.memory() / "harness" / "decisions.jsonl")[-8:][::-1]       # the approval path after the move
+    drow = [[e(hm(x.get("ts"))), e(x.get("id")), e(x.get("event") if x.get("event") == "request" else x.get("choice")),
+             e((x.get("title") or x.get("note") or x.get("installed") or x.get("experiment") or "")[:60])]
+            for x in new] + drow
+    try:
+        from harness import experiment, ops
+        exps = [[e(x["id"]), e(x["metric"]), e(x["status"]), e(json.dumps(experiment.result(x["id"], d.now),
+                                                                         ensure_ascii=False)[:120])]
+                for x in experiment.ledger()["experiments"].values()][-6:]
+        use = ops.model_usage(d.now)
+        mrow = [[e(k), e(f"{v['calls']}회 / 예산 {v['budget']}")] for k, v in use.items()] or mrow
+    except Exception:
+        exps = []
+    return ("<h3>실험</h3>" + (table(["실험", "지표", "상태", "결과 (코드 판정)"], exps) if exps else "<p>없음</p>")
+            + "<h3>전략 버전 (최근 10)</h3>" + table(["판", "승인"], hist)
             + "<h3>결정 기록</h3>" + table(["시각", "브리프", "선택", "메모"], drow)
-            + "<h3>모델 사용 (최근 30분)</h3>" + table(["자리", "내용"], mrow))
+            + "<h3>모델 사용 (최근 1시간)</h3>" + table(["자리", "내용"], mrow))
 
 
 CSS = """

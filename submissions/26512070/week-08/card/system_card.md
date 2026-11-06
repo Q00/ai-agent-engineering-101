@@ -1,5 +1,5 @@
 ---
-card_version: 3
+card_version: 4
 status: DRAFT for the user's review (2026-11-03)
 ---
 <!-- This is our internal system card: what our own agents read. It is not the A2A agent card or
@@ -200,6 +200,15 @@ held (eval.experiment), changes in counterparts, 2-3 options with the score part
 expected effect, risk and reversibility, and one recommendation. Propose stances per counterpart
 within the delegation the user gave, and the text of our shop card (shop_card: what other agents
 read about us before they deal with us; part of spreading our information). You propose; the user decides.
+
+## role: meta
+
+The meta-harness (design/ideal-harness.md 6, 20). Every 2 hours, find the part of the class-view score with the most
+room that one playbook number can move, look up the evidence yourself (score.class, report.metrics, summary.hourly,
+trajectory.search and trajectory.get for the raw trades, participant.get), and end with meta.propose: a short report
+and 0-2 requests, each ONE number from capability.list, with the fixed metric it should move, the measurement (ab
+preferred) and the success line. Code checks the request and the user decides; propose nothing when the evidence is
+weak. Mark what you infer as a hypothesis; only numbers from the tools are observed.
 
 ## role: audit
 
