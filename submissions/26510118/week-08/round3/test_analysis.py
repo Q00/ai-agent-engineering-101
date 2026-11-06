@@ -1411,6 +1411,16 @@ def test_stage2():
     check("...a raw part gives its weight times its value, and a step up in it gives its weight times the step",
           pr["gives"] == round(0.3 * scoreboard.num(one, "forum"), 4)
           and all(abs(x["gain"] - 0.3 * x["need"]) <= 0.0002 for x in pr["next"]) and pr["next"], pr)
+    check("one part swapped from its percentile to its value fits first (11/6 18:57: live, the refit over co-moving fields "
+          "missed 3.5 while this swap fit within 0.0005)", scoreboard.swapped(b35, scoreboard.BUYER) == w35
+          and scoreboard.swapped(buyers, scoreboard.BUYER) is None)
+    (MD / "analysis" / "formula.json").unlink(missing_ok=True)
+    try:
+        sw_, bw_, f_ = scoreboard.check_formula(t, [], b35)
+        check("...and check_formula switches the buyer weights to it (formula.json), the shop's untouched",
+              f_["changed"] and bw_ == w35 and sw_ == scoreboard.SHOP and scoreboard.weights() == (scoreboard.SHOP, w35), f_)
+    finally:
+        (MD / "analysis" / "formula.json").unlink(missing_ok=True)
     fpath = MD / "analysis" / "formula.json"
     try:
         sw, bw, f = scoreboard.check_formula(t, shops, buyers)

@@ -192,6 +192,21 @@ def refit(rows: list) -> dict | None:
     return fit if r is not None and r <= FIT_TOL else None
 
 
+def swapped(rows: list, w: dict) -> dict | None:
+    """The weights in force with one part turned from its percentile to its value or back, when that alone gives
+    every row's ALL within FIT_TOL (the best such), else None. Tried before a refit (11/6 18:57): Patch 3.5 turned the
+    forum part raw, and the refit over the board's many co-moving fields (deals, orders, paid, served) split the
+    weights between them and missed, while this one swap fit within 0.0005."""
+    best = None
+    for k in w:
+        alt = base(k) if k.endswith(RAW) else k + RAW
+        cand = {(alt if j == k else j): v for j, v in w.items()}
+        r = residual(rows, cand)
+        if r is not None and r <= FIT_TOL and (best is None or r < best[0]):
+            best = (r, cand)
+    return best[1] if best else None
+
+
 def check_formula(now: float, shops: list, buyers: list) -> tuple[dict, dict, dict]:
     """(shop weights, buyer weights, {"shop": {...}, "buyer": {...}, "changed"}): the weights in force checked against
     the board, refit and saved when they are off and a fit is found."""
@@ -201,7 +216,7 @@ def check_formula(now: float, shops: list, buyers: list) -> tuple[dict, dict, di
         r = residual(rows, w)
         row = {"residual": r, "ok": r is None or r <= FIT_TOL}
         if not row["ok"]:
-            fit = refit(rows)
+            fit = swapped(rows, w) or refit(rows)
             row["refit"] = fit
             if fit and fit != w:
                 new[side_] = fit
