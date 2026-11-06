@@ -391,12 +391,15 @@ def test_profit_section_joins_sales_to_unit_cost_and_market(tmp_path):
            "data": {"unit": "u1", "cost": 680, "why": "sold_or_seized", "category": "가구>소파"}},
           {"type": "unit_gone", "src": "inventory", "ts": now - 500,
            "data": {"unit": "u9", "cost": 50, "why": "expired", "category": "식품>과일"}},
-          sale("u1", 720, True), sale("x1", 700, False), sale("x2", 740, False)]
+          sale("u1", 720, True), sale("x1", 700, False), sale("x2", 740, False),
+          {"type": "review", "role": "shop", "ts": now - 300, "data": {"order": "o1", "stars": 4}}]
+    ev[2]["data"].update(order="o1", grade="B")
     (r / ".r3/events.jsonl").write_text("".join(json.dumps(x) + "\n" for x in ev))
     out = brief.section_profit(str(r), now, LOGIN)
     assert out[0].startswith("[이익 6시간] 우리 판매 1건") and "(5.6%)" in out[0] and "만료 폐기 원가 50" in out[0]
     assert out[1].startswith("  소파: 우리 1건") and "판매가/원가 중앙 1.06" in out[1] and "우리 몫 33.3%" in out[1]
     assert "시장 판매가/정가 중앙 0.72" in out[1]
+    assert out[2] == "    등급별: B 1건, 총이익 40 (6%), 별점 4.00 (리뷰 1)"
 
 
 def test_share24_shows_blocks_with_share_price_and_shop_count(tmp_path):

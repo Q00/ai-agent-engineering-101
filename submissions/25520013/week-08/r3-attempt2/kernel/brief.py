@@ -988,7 +988,8 @@ PROFIT_TOP = 5  # categories by our revenue
 
 def section_profit(root, now, login):
     """[이익]: our sales in the last PROFIT_H hours with the unit cost of each sold unit (inventory unit_gone, joined by
-    unit), gross profit and markup per category, next to what the whole market sold in that category and its median
+    unit), gross profit and markup per category and, per grade, gross profit and the stars of the reviews of those
+    sales (joined by order), next to what the whole market sold in that category and its median
     price/list. book = cash + unsold stock at cost (RULES), so book grows by this gross minus fees and expired stock."""
     since = now - PROFIT_H * 3600
     cat = _catalog(root)
@@ -998,6 +999,13 @@ def section_profit(root, now, login):
         if e.get("type") == "unit_gone" and (e.get("ts") or 0) >= since - 3600 and d.get("unit"):
             cost[d["unit"]] = (float(d.get("cost") or 0), d.get("why"), _leaf(d.get("category")))
     ours, mkt = defaultdict(lambda: [0, 0.0, 0.0, 0, []]), defaultdict(lambda: [0.0, []])
+    by_grade = defaultdict(lambda: defaultdict(lambda: [0, 0.0, 0.0, []]))  # leaf -> grade -> [n, rev, cost, stars]
+    stars = {}
+    for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 40_000_000, b'"review"'):
+        d = e.get("data") or {}
+        if (e.get("type") == "review" and e.get("role") == "shop" and (e.get("ts") or 0) >= since and d.get("order")
+                and isinstance(d.get("stars"), (int, float)) and not isinstance(d.get("stars"), bool)):
+            stars[d["order"]] = d["stars"]
     expired = sum(v[0] for v in cost.values() if v[1] == "expired")
     for e in market_settles(root, since):
         d = e.get("data") or {}
@@ -1019,6 +1027,12 @@ def section_profit(root, now, login):
             x[2] += u[0]
             x[3] += 1
             x[4].append(a / u[0] if u[0] else 0)
+            g = by_grade[leaf][d.get("grade") or "-"]
+            g[0] += 1
+            g[1] += a
+            g[2] += u[0]
+            if d.get("order") in stars:
+                g[3].append(stars[d["order"]])
     if not ours:
         return [f"[이익 {PROFIT_H}시간] 우리 판매 기록 없음"]
     R = sum(x[1] for x in ours.values())
@@ -1032,6 +1046,12 @@ def section_profit(root, now, login):
         out.append(f"  {leaf}: 우리 {x[0]}건, 매출 {c.fmt(x[1])}, 총이익 {c.fmt(x[1] - x[2])}, 판매가/원가 중앙 "
                    f"{st.median(x[4]) if x[4] else 0:.2f}; 시장 전체 매출 {c.fmt(m[0])}, 우리 몫 "
                    f"{x[1] / m[0] if m[0] else 0:.1%}, 시장 판매가/정가 중앙 {st.median(m[1]) if m[1] else 0:.2f}")
+        gs = by_grade.get(leaf) or {}
+        if gs:
+            out.append("    등급별: " + "; ".join(
+                f"{g} {v[0]}건, 총이익 {c.fmt(v[1] - v[2])} ({(v[1] - v[2]) / v[1] if v[1] else 0:.0%}), "
+                + (f"별점 {st.mean(v[3]):.2f} (리뷰 {len(v[3])})" if v[3] else "리뷰 없음")
+                for g, v in sorted(gs.items())))
     return out
 
 
