@@ -158,7 +158,7 @@ class Seller(AgentExecutor):
 
         deal["rounds"] += 1
         u, t = deal["unit"], deal["t"]
-        nums = [int(x.replace(",", "")) for x in re.findall(r"(?<![A-Za-z])\d[\d,]*", text)]
+        nums = [int(x.replace(",", "")) for x in re.findall(r"(?<![A-Za-z#\d])\d[\d,]*", text)]
         nums = [n for n in nums if n >= 0.05 * u["list_price"]]     # not hours, grades or parts of a SKU
         offer = nums[-1] if nums else None
         if offer is None and re.search(r"\b(accept|deal|ok|yes)\b", text.lower()):

@@ -1,5 +1,5 @@
 {
-  "harness": "starter: claude -p --model haiku (set HARNESS_CMD to use another harness)",
+  "harness": "strategist.py calls claude -p --model haiku about every 20 min; seller, buyer and restock run on code",
   "seller": {
     "cmd": "/home/mskim/miniconda3/envs/market/bin/python seller_r3.py --port {port}"
   },
@@ -7,7 +7,7 @@
     "cmd": "/home/mskim/miniconda3/envs/market/bin/python buyer.py --url {url} --item {item} --budget {budget}"
   },
   "market_buyer": {
-    "cmd": "/home/mskim/miniconda3/envs/market/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget}"
+    "cmd": "/home/mskim/miniconda3/envs/market/bin/python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"
   },
   "restock": {
     "cmd": "/home/mskim/miniconda3/envs/market/bin/python restock.py --state {state}"

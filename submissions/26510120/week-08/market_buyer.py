@@ -1,9 +1,18 @@
-"""Market buyer: the harness picks one shop from {shops}, then negotiates over A2A v1.0 as in week 6.
+"""Market buyer, Round 3 executor: code picks the shop and the SKU and negotiates; numbers come from policy.json.
 
-    python market_buyer.py --shops .market/shops.json --item lamp --budget 120
+    python market_buyer.py --shops .market/shops.json --item 김치 --budget 50000 --order .market/order.json
 
-Reviews reach the harness as a summary the code makes (count and average stars per shop),
-next to this buyer's own past trades from MEMORY. The last output line is the result for the kit.
+Week-08 change: no harness call per order. The strategist (strategist.py, a model every ~20 min) sets the policy;
+this file follows it.
+  pick      every (shop, SKU) the order can use is scored as P(paid) x expected saving. P(paid) is this buyer's own
+            record with the shop (attempts in buyer_memory.jsonl, paid deals in .market/payments.jsonl, broken goods
+            in .market/broken.jsonl); the expected saving is 1 - the SKU's market median price/list (the ledger).
+  negotiate opens at buyer_open x list and climbs to min(budget, buyer_max x list); takes the shop's ask once it
+            is under that cap and at or under the market median, or after 3 rounds. Reads the shop's first answer
+            for a grade or shelf life that the accept policy would refuse, and moves on to the next shop then.
+  accept    food: the certificate must show use_within_hours + buyer_hours_margin of shelf life; goods: grade in
+            buyer_grades_goods. The kit checks the checkout against it before paying.
+The last output line is the result for the kit.
 """
 import argparse
 import json
@@ -14,108 +23,110 @@ from pathlib import Path
 
 import httpx
 
-from harness import ask_json
+import market_tool as mt
 
-MAX_OFFERS = 8
-MEMORY = Path("buyer_memory.jsonl")   # one JSON line per trade, shops remembered by name
-
-# DECIDE: the wording of this prompt is the student's choice (how the harness picks a shop).
-CHOOSE = """You are a buying agent. Your user wants one {item}. The budget is {budget}.
-Pick one shop to negotiate with. For each shop you see a summary of its market reviews and of your own past trades with it.
-
-{summary}
-
-Answer with JSON only:
-{{"shop": "<shop name from the list>", "reason": "<one sentence>"}}"""
-
-PROMPT = """You are a buying agent. Your user wants one {item}. The budget is {budget}.
-Never offer or agree to more than {budget}. Pay as little as you can, but shops may end the negotiation after a few low offers,
-so move toward the shop's price in real steps rather than by one or two. Walking away is fine when the shop will not come down to the budget.
-
-Shop: {card}
-
-Conversation so far:
-{transcript}
-
-Decide your next move. Answer with JSON only, one of:
-{{"action": "offer", "price": <whole number>}}   send an offer (send the shop's price to accept it)
-{{"action": "walk"}}                              walk away without buying"""
-
-REVIEW = """You are a buying agent and just finished a negotiation for one {item} (budget {budget}) with the shop {shop}.
-
-Conversation:
-{transcript}
-
-Facts: result {result}; your last offer {agreed}; price on the shop's receipt {receipt_price}.
-
-Rate the shop for other buyers. Answer with JSON only:
-{{"stars": <whole number 1 to 5>, "review": "<one sentence>"}}"""
+MAX_OFFERS = 6
+DEADLINE_S = 240                       # the kit stops a buyer after 300 s
+MEMORY = Path("buyer_memory.jsonl")    # one JSON line per attempt; shops remembered by name
+MD = Path(".market")
 
 
-def load_memory():
-    if not MEMORY.exists():
+def load_jsonl(p):
+    if not p.exists():
         return []
-    return [json.loads(l) for l in MEMORY.read_text(encoding="utf-8").splitlines() if l.strip()]
+    out = []
+    for l in p.read_text(encoding="utf-8").splitlines():
+        try:
+            out.append(json.loads(l))
+        except ValueError:
+            pass
+    return out
 
 
-def summarize(shops, memory):
-    lines = []
+def shop_record(names, cat):
+    """shop name -> {tries, paid, broken} from this buyer's own files (Round 3 lines only)."""
+    rec = {}
+    for m in load_jsonl(MEMORY):
+        if "sku" in m:                                   # week-08 lines; week-07 lines have no SKU
+            rec.setdefault(m["shop"], {"tries": 0, "paid": 0, "broken": 0})["tries"] += 1
+    paid_names = {}
+    for p in load_jsonl(MD / "payments.jsonl"):
+        name = names.get(p["shop"].rstrip("/")) or p["shop"].split("/shop/")[-1]
+        if p.get("paid"):
+            rec.setdefault(name, {"tries": 0, "paid": 0, "broken": 0})["paid"] += 1
+            paid_names.setdefault((cat.get(p.get("item")) or {}).get("name"), []).append(name)
+    for b in load_jsonl(MD / "broken.jsonl"):
+        for name in paid_names.get(b.get("name"), [])[-1:]:   # the latest shop I bought that item from
+            rec[name]["broken"] += 1
+    return rec
+
+
+def candidates(shops, order, pol, stats, cat, rec):
+    out = []
     for s in shops:
-        stars = [r["stars"] for r in s.get("reviews", []) if isinstance(r.get("stars"), (int, float))]
-        line = f"- {s['name']}: {len(stars)} reviews" + (f", average {sum(stars) / len(stars):.1f} stars" if stars else "")
-        mine = [m for m in memory if m["shop"] == s["name"]]
-        if mine:
-            deals = [m for m in mine if m["result"] == "deal"]
-            differed = sum(1 for m in deals if m["receipt_price"] != m["agreed"])
-            line += (f" | your trades: {len(mine)}, deals {len(deals)}"
-                     + "".join(f", {m['item']} at {m['receipt_price']}" for m in deals[-3:])
-                     + f", receipt differed from your last offer {differed} times")
-        else:
-            line += " | your trades: none"
-        if s.get("offers"):                             # Round 3: what this shop has of the ordered category
-            line += " | in stock: " + "; ".join(f"{o['name'][:40]} x{o['qty']}" for o in s["offers"][:3])
-        lines.append(line)
-    return "\n".join(lines)
+        r = rec.get(s["name"], {"tries": 0, "paid": 0, "broken": 0})
+        p_paid = min(1.0, (r["paid"] + 1) / (r["tries"] + 2))  # Laplace: a new shop starts at 1/2
+        if r["paid"]:
+            p_paid *= max(0.2, 1 - r["broken"] / r["paid"])
+        for o in s.get("offers") or []:
+            c = cat.get(o["sku"]) or {}
+            lp = c.get("list_price")
+            if not lp:
+                continue
+            st = stats.get(o["sku"]) or {}
+            ratio = st["ratio"] if st.get("n", 0) >= 3 else 0.72
+            if lp * min(ratio, pol["buyer_max"]) > order["budget"]:
+                p = p_paid * 0.3                                # likely above the budget
+            else:
+                p = p_paid
+            out.append({"shop": s, "sku": o["sku"], "name": o["name"], "list": lp, "ratio": ratio,
+                        "score": p * (1 - ratio), "p_paid": round(p, 3), "qty": o.get("qty", 0)})
+    out.sort(key=lambda x: (-x["score"], -x["qty"]))
+    picked, seen = [], set()
+    for c in out:                                               # one SKU per shop, best first
+        if c["shop"]["name"] not in seen:
+            picked.append(c)
+            seen.add(c["shop"]["name"])
+    return picked
 
 
-def pick_offer(shop):
-    """Round 3: the SKU to ask for. Temporary rule: the one this shop has most of (least likely sold out
-    by the time we ask). None before Round 3 (shops.json has no offers)."""
-    offers = shop.get("offers") or []
-    return max(offers, key=lambda o: o.get("qty") or 0) if offers else None
+def accept_policy(order, pol):
+    if order.get("kind") == "food" and order.get("use_within_hours"):
+        return {"min_hours_left": round(order["use_within_hours"] + pol["buyer_hours_margin"], 2)}
+    if order.get("kind") == "goods":
+        return {"grades": pol["buyer_grades_goods"]}
+    return {}
 
 
-def choose(shops, memory, item, budget):
-    stocked = [s for s in shops if s.get("offers")]     # Round 3: only shops that have the ordered category
-    shops = stocked or shops
-    names = {s["name"]: s for s in shops}
-    for _ in range(2):
-        move, raw = ask_json(CHOOSE.format(item=item, budget=budget, summary=summarize(shops, memory)))
-        print(f"[harness] {raw}", flush=True)
-        if move and move.get("shop") in names:
-            return names[move["shop"]], move.get("reason", "")
-    return shops[0], "harness named no shop from the list twice, took the first one"
+def numbers(text, lp):
+    """Prices in a shop's message: numbers from 20% to 200% of the list price, in order."""
+    nums = [int(x.replace(",", "")) for x in re.findall(r"(?<![A-Za-z#\d])\d[\d,]*", text)]
+    return [n for n in nums if 0.2 * lp <= n <= 2 * lp]
 
 
-def receipt_of(t):
-    for a in (t or {}).get("artifacts", []):
-        for p in a.get("parts", []):
-            d = p.get("data")
-            if isinstance(d, dict) and isinstance(d.get("price"), (int, float)):
-                return d
+def refuses(text, accept):
+    """What in the shop's first answer the accept policy would refuse (None when nothing is said)."""
+    t = text.lower()
+    if "min_hours_left" in accept:
+        m = re.search(r"(\d+(?:\.\d+)?)\s*(?:h\b|hours?|시간)", t)
+        if m and float(m.group(1)) < accept["min_hours_left"]:
+            return f"{m.group(1)} h of shelf life, need {accept['min_hours_left']}"
+    if "grades" in accept:
+        m = re.search(r"grade[:\s]*([abc])\b|등급\s*([abc])\b", t)
+        g = m and (m.group(1) or m.group(2)).upper()
+        if g and g not in accept["grades"]:
+            return f"grade {g}"
     return None
 
 
-def negotiate(shop_url, item, budget, ask=None):
-    """Week-06 buyer loop. Returns (final task or None, transcript lines, last offer sent).
-    ask: the first message; Round 3 asks for one SKU by name, as the market's agent.md suggests."""
-    card = httpx.get(shop_url.rstrip("/") + "/.well-known/agent-card.json", timeout=10).json()
+def negotiate(c, order, pol, accept, until):
+    """One shop. Returns (outcome, receipt or None, transcript, last price sent)."""
+    card = httpx.get(c["shop"]["url"].rstrip("/") + "/.well-known/agent-card.json", timeout=10).json()
     url = card["supportedInterfaces"][0]["url"]
-    print(f"card: {card['name']} -> {url}", flush=True)
 
     def rpc(method, params):
         body = {"jsonrpc": "2.0", "id": str(uuid.uuid4())[:8], "method": method, "params": params}
-        r = httpx.post(url, json=body, headers={"A2A-Version": "1.0"}, timeout=200).json()
+        r = httpx.post(url, json=body, headers={"A2A-Version": "1.0"}, timeout=60).json()
         if "error" in r:
             raise RuntimeError(r["error"])
         return r["result"].get("task", r["result"])
@@ -126,35 +137,48 @@ def negotiate(shop_url, item, budget, ask=None):
             msg["taskId"] = task_id
         t = rpc("SendMessage", {"message": msg})
         said = " ".join(p.get("text", "") for p in t["status"].get("message", {}).get("parts", []))
-        print(f"-> {text!r}  <- {t['status']['state']} | {said}", flush=True)
+        print(f"-> {text!r}  <- {t['status']['state']} | {said[:200]}", flush=True)
         return t, said
 
-    ask = ask or f"I want to buy a {item}"
-    t, said = send(ask)
-    lines = [f"you: {ask}", f"shop: {said}"]
-    offer = None
-    for _ in range(MAX_OFFERS):
-        if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
-            break
-        move, raw = ask_json(PROMPT.format(item=item, budget=budget, card=card.get("description", ""),
-                                           transcript="\n".join(lines)))
-        print(f"[harness] {raw}", flush=True)
-        if not move or move.get("action") != "offer" or not isinstance(move.get("price"), (int, float)):
-            rpc("CancelTask", {"id": t["id"]})
-            print("walked away (CancelTask)", flush=True)
-            lines.append("you: walked away")
-            return t, lines, offer
-        offer = int(move["price"])
-        if offer > budget:                              # the harness may forget the budget; the code does not
-            print(f"[guard] offer {offer} above budget {budget} -> {budget}", flush=True)
-            offer = budget
-        t, said = send(str(offer), t["id"])
-        lines += [f"you: {offer}", f"shop: {said}"]
-    if t["status"]["state"] == "TASK_STATE_INPUT_REQUIRED":
+    lp = c["list"]
+    cap = min(order["budget"], round(lp * pol["buyer_max"]))
+    fair = round(lp * c["ratio"])
+    ask_text = f"I want to buy {c['name']} ({c['sku']})"
+    t, said = send(ask_text)
+    lines = [f"you: {ask_text}", f"shop: {said}"]
+    if t["status"]["state"] != "TASK_STATE_INPUT_REQUIRED":
+        return ("rejected" if t["status"]["state"] == "TASK_STATE_REJECTED" else "ended"), None, lines, None
+    why = refuses(said, accept)
+    if why:
         rpc("CancelTask", {"id": t["id"]})
-        print("offer limit reached (CancelTask)", flush=True)
-        lines.append("you: offer limit reached")
-    return t, lines, offer
+        return f"skipped: {why}", None, lines, None
+    ask = (numbers(said, lp) or [None])[-1]
+    sent = None
+    for k in range(MAX_OFFERS):
+        if time.time() > until:
+            break
+        if ask is not None and ask <= cap and (ask <= fair or k >= 3):
+            price = ask                                         # take the shop's price
+        else:
+            step = round(lp * pol["buyer_open"] + (cap - lp * pol["buyer_open"]) * k / (MAX_OFFERS - 1))
+            price = min(cap, step if ask is None else min(step, ask))
+        sent = int(price)
+        t, said = send(str(sent), t["id"])
+        lines += [f"you: {sent}", f"shop: {said}"]
+        state = t["status"]["state"]
+        if state == "TASK_STATE_COMPLETED":
+            for a in t.get("artifacts", []):
+                for p in a.get("parts", []):
+                    d = p.get("data")
+                    if isinstance(d, dict) and isinstance(d.get("price"), (int, float)):
+                        return "deal", d, lines, sent
+            return "completed without a receipt", None, lines, sent
+        if state != "TASK_STATE_INPUT_REQUIRED":
+            return "rejected", None, lines, sent
+        got = numbers(said, lp)
+        ask = got[-1] if got else ask
+    rpc("CancelTask", {"id": t["id"]})
+    return f"walked (shop at {ask}, cap {cap})", None, lines, sent
 
 
 def main():
@@ -162,38 +186,46 @@ def main():
     ap.add_argument("--shops", required=True)
     ap.add_argument("--item", required=True)
     ap.add_argument("--budget", type=int, required=True)
+    ap.add_argument("--order", default=str(MD / "order.json"))
     a = ap.parse_args()
+    until = time.time() + DEADLINE_S
 
     shops = json.loads(Path(a.shops).read_text(encoding="utf-8"))
-    memory = load_memory()
-    shop, reason = choose(shops, memory, a.item, a.budget)
-    print(f"[choose] {shop['url']}: {reason}", flush=True)
-    want = pick_offer(shop)
-    item = want["name"] if want else a.item             # what the negotiation prompts call the item
-    ask = f"I want to buy {want['name']} ({want['sku']})" if want else None
-
+    order = json.loads(Path(a.order).read_text(encoding="utf-8"))
+    order["budget"] = a.budget
+    pol, cat = mt.policy(), mt.catalog()
     try:
-        t, lines, offer = negotiate(shop["url"], item, a.budget, ask)
-        receipt = receipt_of(t) if t["status"]["state"] == "TASK_STATE_COMPLETED" else None
-        result = "deal" if receipt else "no deal"
-    except Exception as e:                              # unreachable shop, protocol error: still close the order
-        print(f"[error] {e!r}", flush=True)
-        lines, offer, receipt, result = [f"error: {e!r}"[:300]], None, None, "error"
+        stats = json.loads((mt.STATE / "sku_stats.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        stats = {}
+    rec = shop_record(mt.shop_names(), cat)
+    accept = accept_policy(order, pol)
+    cands = candidates(shops, order, pol, stats, cat, rec)
+    print(f"[pick] {len(cands)} shops have the order's SKUs; accept {accept}; top "
+          + ", ".join(f"{c['shop']['name']} {c['sku']} p={c['p_paid']} r={c['ratio']}" for c in cands[:3]), flush=True)
 
-    receipt_price = int(receipt["price"]) if receipt else None
-    move, raw = ask_json(REVIEW.format(item=a.item, budget=a.budget, shop=shop["name"], transcript="\n".join(lines),
-                                       result=result, agreed=offer, receipt_price=receipt_price))
-    print(f"[harness] {raw}", flush=True)
-    stars = (move or {}).get("stars")
-    stars = min(5, max(1, int(stars))) if isinstance(stars, (int, float)) else 3
-    review = str((move or {}).get("review") or f"{result} on {a.item}").strip()
-
-    with MEMORY.open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "shop": shop["name"], "item": a.item,
-                            "sku": want["sku"] if want else None, "budget": a.budget, "result": result, "agreed": offer, "receipt_price": receipt_price,
-                            "stars": stars}, ensure_ascii=False) + "\n")
-    print(json.dumps({"shop": shop["url"], "receipt": receipt, "stars": stars, "review": review}, ensure_ascii=False),
-          flush=True)
+    result = {"shop": (cands[0]["shop"]["url"] if cands else (shops[0]["url"] if shops else "")), "receipt": None,
+              "stars": 3, "review": f"no deal on {a.item}", "accept": accept}
+    for c in cands[:pol["buyer_shops_tried"]]:
+        if time.time() > until:
+            break
+        try:
+            outcome, receipt, lines, sent = negotiate(c, order, pol, accept, until)
+        except Exception as e:                                  # unreachable shop, protocol error: next shop
+            outcome, receipt, lines, sent = f"error {e!r}"[:200], None, [], None
+        print(f"[try] {c['shop']['name']} {c['sku']}: {outcome}", flush=True)
+        with MEMORY.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "order": order["order"],
+                                "shop": c["shop"]["name"], "item": a.item, "sku": c["sku"], "list": c["list"],
+                                "budget": a.budget, "result": "deal" if receipt else outcome, "agreed": sent,
+                                "receipt_price": int(receipt["price"]) if receipt else None}, ensure_ascii=False) + "\n")
+        if receipt:
+            price = int(receipt["price"])
+            result.update(shop=c["shop"]["url"], receipt=receipt,
+                          stars=5 if price <= round(c["list"] * c["ratio"]) else 4,
+                          review=f"Agreed {price} for {c['name'][:40]} ({price / c['list']:.0%} of list {c['list']}).")
+            break
+    print(json.dumps(result, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":
