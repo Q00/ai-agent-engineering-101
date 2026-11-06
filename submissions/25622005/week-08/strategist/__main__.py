@@ -6,7 +6,7 @@ Each run reads the shop's SKILL.md, logs and .market/inventory.json (no other .m
 rewrite tunable numbers, stock.focus_skus, stock.trend_skus and the body's `## Strategist notes` in SKILL.md
 (the rest of the body follows the SKILL.md shipped with the code; never code); each text it writes, and a hand edit it finds, is kept as strategy/SKILL.md.<epoch seconds>.
 Environment: SHOP_HOME, STRATEGIST_HOME, STRATEGIST_MODE, STRATEGIST_INTERVAL_S, MARKET_URL,
-STRATEGIST_HARNESS_CMD (unset: model/harness.py's HARNESS_CMD or Haiku 5.5), STRATEGIST_LOG_REPO,
+STRATEGIST_HARNESS_CMD (unset: model/harness.py's HARNESS_CMD or Sonnet 5.5), STRATEGIST_LOG_REPO,
 STRATEGIST_LOG_BRANCH, STRATEGIST_LOG_KEY (after each run, push the records there).
 """
 import argparse

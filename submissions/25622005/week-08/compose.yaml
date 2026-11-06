@@ -18,7 +18,7 @@ services:
       NAS_GID: "${NAS_GID:-1000}"
       MARKET_URL: https://market.ourolabs.ai
       # Kit hooks: model call for a negotiation the rules do not cover (llm.exception_* in SKILL.md).
-      EXCEPTION_HARNESS_CMD: 'claude -p --model claude-haiku-5-5 --tools "" --setting-sources "" --no-session-persistence'
+      EXCEPTION_HARNESS_CMD: 'claude -p --model claude-sonnet-5-5 --tools "" --setting-sources "" --no-session-persistence'
       # The strategist runs in this container, started by hand (no service of its own):
       #   podman compose exec market as-agent claude                      log in once: run /login, then exit
       #                                                                    (kept in /data/home, its cwd)

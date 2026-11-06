@@ -72,7 +72,7 @@ class ReadTests(unittest.TestCase):
                          ("llm_exception", "ok", QUOTE, "1/abc", {"task": "t1"}))
         self.assertEqual(row["inputs"]["text"], "We can do sixty-five thousand for unit u-7.")
         self.assertEqual(row["inputs"]["last_offer"], 60000)
-        self.assertEqual(row["model"], "claude-haiku-5-5")
+        self.assertEqual(row["model"], "claude-sonnet-5-5")
         self.assertIn("elapsed_ms", row)
         self.assertLessEqual(fake.timeouts[0], 20)
 
@@ -167,7 +167,7 @@ class BudgetTests(unittest.TestCase):
 
 class ModelOf(unittest.TestCase):
     def test_model_flag(self):
-        self.assertEqual(lf.model_of(harness.DEFAULT_CMD), "claude-haiku-5-5")
+        self.assertEqual(lf.model_of(harness.DEFAULT_CMD), "claude-sonnet-5-5")
         self.assertEqual(lf.model_of("claude -p --model=claude-opus-5-5"), "claude-opus-5-5")
         self.assertIsNone(lf.model_of("codex exec -"))
 
