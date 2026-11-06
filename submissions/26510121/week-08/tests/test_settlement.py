@@ -92,7 +92,7 @@ def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch,championshi
             self.buyer_paid += co['price']
             self.settlements += 1
             mr = {'shop': url, 'unit': 'u1', 'sku': 'G111', 'name': u['name'], 'grade': 'A', 'claim': 'A',
-                  'claim_honest': True, 'warranty_hours': co['warranty_hours'], 'value': 10000, 'ledger': 101}
+                  'claim_honest': True, 'warranty_hours': co.get('warranty_hours',0), 'value': 10000, 'ledger': 101}
             return httpx.Response(200, json={'mandate_receipt': mr, 'ledger': 101})
 
     market = SyntheticMarket()

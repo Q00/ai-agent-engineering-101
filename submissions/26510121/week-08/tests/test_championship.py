@@ -140,3 +140,47 @@ def test_monitor_matches_peer_rates_and_ignores_unscored_buyers(tmp_path):
     assert out['pace']['buyer']['own_per_hour']==pytest.approx(.1)
     assert out['ranks']['buyer']['population']==2
     assert out['idle_spendable_fraction']==.8
+
+
+def test_quote_learning_does_not_mix_grade_and_warranty_cohorts(tmp_path):
+    from r3.meta import quote_completion
+    j=Journal(tmp_path);now=time.time()
+    for n,(grade,warranty) in enumerate([('A',0),('A',6),('B',0)]):
+        j.add('shop_quote',{'task':str(n),'sku':'G','price':1000,'grade':grade,
+                            'warranty_hours':warranty},ts=now-600)
+        if n==0:j.add('shop_settled',{'task':str(n)},ts=now-500)
+    result=quote_completion(j,'G',1000,now,grade='A',warranty=0)
+    assert result['samples']==1 and result['paid']==1
+
+
+def test_food_failure_from_a_different_use_window_does_not_poison_routing(tmp_path):
+    from r3.economy import buyer_candidates
+    j=Journal(tmp_path);now=time.time()
+    catalog={'G':{'kind':'food','category':'snack','list_price':1000,'shelf_hours':48}}
+    for n in range(10):
+        j.add('attempt',{'order':str(n),'shop':'shop','sku':'G','kind':'no_agreement',
+                         'success':False,'use_within_hours':48},ts=now-10-n)
+    shops=[{'name':'peer','url':'shop','offers':[{'sku':'G','qty':1}]}]
+    c=buyer_candidates({'acceptable':['G'],'budget':1000,'use_within_hours':1},shops,catalog,j,cfg())[0]
+    assert c['evidence']['peer_failures']==0
+
+
+def test_rfq_drops_known_expired_terms_before_offer_selection(tmp_path):
+    from r3.quote_market import compare_quotes,close_quotes
+    j=Journal(tmp_path);now=time.time();closed=[]
+    class Peer:
+        deadline=None
+        def discover(self,url):pass
+        def send(self,text):
+            return {'id':'t','status':{'state':'TASK_STATE_INPUT_REQUIRED'},
+                    'metadata':{'ask':600,'sku':'G','grade':'B','expires_at':now+3600}}
+        def close(self):closed.append(True)
+        def cancel(self,task):pass
+    candidates=[{'id':str(n),'shop':str(n),'sku':'G','score':.4,'evidence':{},
+                 'product':{'list_price':1000,'kind':'food'}} for n in range(2)]
+    prepared,_=compare_quotes({'order':'o','kind':'food','budget':1000,'use_within_hours':24},
+                              candidates,{str(n):{'pubkey':'registered'} for n in range(2)},
+                              j,cfg(),Peer,now+18)
+    assert not candidates and len(j.events('buyer_declined_terms'))==2
+    close_quotes(prepared)
+    assert len(closed)==2
