@@ -49,8 +49,8 @@
     (title) at (NW) {Sealed-budget dual-control agent on three clocks --- Round 3 / kit v4};
   \node[anchor=north west, font=\sffamily\scriptsize, text=Ink]
     at ($(title.south west)+(0,-1mm)$)
-    {Per turn a small model proposes under a deterministic guardian; per minute code reads the ledger and restocks without an order;
-     per day a large model tunes five knobs inside fixed ranges. Budget, keys and settlement never enter a model context.};
+    {Per turn a small model proposes under a deterministic guardian, and code answers alone when the price is already right; per minute code reads the ledger,
+     restocks and posts a price note without an order; per day a large model tunes seven knobs inside fixed ranges. Budget, keys and settlement never enter a model context.};
 
   % ---------------------------------------------------------------- context boundary
   \node[memory, anchor=north west, text width=272mm, minimum height=14mm]
@@ -65,11 +65,11 @@
   \node[tool] (scout) at ($(context.south west)+(19mm,-24mm)$)
     {\textbf{Scout}\scriptsize\\acceptable SKUs\\guardian pre-filter};
   \node[tool, right=5mm of scout] (router)
-    {\textbf{Portfolio router}\scriptsize\\success $\cdot$ integrity $\cdot$ value\\explore / concentration cap};
+    {\textbf{Portfolio router}\scriptsize\\success $\cdot$ integrity $\cdot$ value $\cdot$ stock\\scarcity regime per category};
   \node[model, right=5mm of router] (negotiator)
-    {\textbf{Negotiator (Haiku)}\scriptsize\\offer history + last message\\reference, no exact budget};
+    {\textbf{Negotiator (Haiku)}\scriptsize\\offer history + last message\\code takes a right price itself};
   \node[authority, right=5mm of negotiator] (guardian)
-    {\textbf{Mandate guardian}\scriptsize\\exact budget only here\\approve / substitute / stop};
+    {\textbf{Mandate guardian}\scriptsize\\min(budget, list price)\\approve / substitute / stop};
   \draw[flow] (scout) -- (router);
   \draw[flow] (router) -- node[above, font=\sffamily\tiny]{shop, SKU} (negotiator);
   \draw[flow] (negotiator) -- node[above, font=\sffamily\tiny]{proposal} (guardian);
@@ -82,7 +82,7 @@
   \draw[flow] (audit) -- (sync);
   \node[memory, text width=118mm, minimum height=10mm, below=6mm of audit.south west, anchor=north west]
     (buyermem) {\textbf{Buyer memory} (one row per order, written back after settlement)\scriptsize\quad
-      reference price $\cdot$ per-shop record $\cdot$ blacklist $\cdot$ no-stock visits ignored};
+      per-shop record $\cdot$ scarcity $\cdot$ blacklist needs two strikes $\cdot$ no-stock visits ignored};
   \draw[data] (sync.south) -- (buyermem.north -| sync.south);
   \draw[data] (buyermem.north west) -- (scout.south);
   \draw[data] (buyermem.north) -- (router.south);
@@ -93,18 +93,18 @@
 
   % ---------------------------------------------------------------- seller
   \node[tool] (ledger) at ($(context.south east)+(-101mm,-24mm)$)
-    {\textbf{Ledger reader}\scriptsize\\newest 500 settles, 24 h\\SKU / category price};
+    {\textbf{Ledger reader}\scriptsize\\24 h cache, incremental\\revenue, price, best SKU};
   \node[tool, right=5mm of ledger] (restock)
-    {\textbf{Restock (every 60 s)}\scriptsize\\sells $\cdot$ depletion $\cdot$ forum\\skip below expected cost};
+    {\textbf{Restock (every 60 s)}\scriptsize\\revenue-weighted, price band\\caps on capital; price note};
   \node[memory, text width=24mm, minimum height=12mm, right=5mm of restock]
     (inventory) {\textbf{Inventory}\scriptsize\\unit / cost / grade\\expiry / warranty};
   \draw[flow] (ledger) -- (restock);
   \draw[flow] (restock) -- node[above, font=\sffamily\tiny]{buy plan} (inventory);
 
   \node[tool, text width=26mm, below=8mm of ledger] (pricing)
-    {\textbf{Pricing}\scriptsize\\market price $\times$ arm\\inside [cost, grade cap]};
+    {\textbf{Pricing}\scriptsize\\market $\times$ arm $\times$ regime\\inside [cost, grade cap]};
   \node[authority, right=5mm of pricing] (risk)
-    {\textbf{Spoilage guard}\scriptsize\\cost floor normally\\expiry loss-cut};
+    {\textbf{Spoilage / close guard}\scriptsize\\expiry loss-cut, storage markdown\\sell-down before the close};
   \node[authority, right=5mm of risk] (signer)
     {\textbf{Signer vault}\scriptsize\\bind SKU + unit + task\\truthful claim / cert};
   \draw[flow] (inventory.south) |- (pricing.east);
@@ -112,7 +112,7 @@
   \draw[flow] (pricing) -- (risk);
   \draw[flow] (risk) -- (signer);
   \node[memory, text width=96mm, minimum height=10mm, below=6mm of risk]
-    (sellermem) {\textbf{Seller memory}\scriptsize\quad depletion / waste snapshots $\cdot$ dated open / deal / reject events $\cdot$ ledger stats};
+    (sellermem) {\textbf{Seller memory}\scriptsize\quad depletion / waste snapshots $\cdot$ dated open / deal / reject events $\cdot$ category pressure $\cdot$ ledger stats};
   \draw[data] (sellermem.north west) -- (restock.south);
   \draw[data] (sellermem.north east) -- (signer.south);
 
@@ -125,13 +125,13 @@
     (tuner) {\textbf{Meta-harness, once a day (Opus, effort high)}\quad
       \scriptsize code summarizes the last 24 h (orders, settlements, seller events, reviews; outages marked) in about 1k characters
       $\to$ one call proposes JSON changes $\to$ code validates against fixed ranges $\to$ \texttt{strategy\_params.json}
-      $\to$ five knobs read per order: explore rate, first-offer discount, two margin arms, grade-B cap. Never budget, keys or signing.};
+      $\to$ seven knobs read per order: explore rate, first-offer discount, two margin arms, grade-B cap, arm share, markup. Never budget, keys, signing or the close.};
   \draw[data] (buyermem.south) -- node[right, font=\sffamily\tiny]{orders, settlements} (buyermem.south |- tuner.north);
   \draw[data] (sellermem.south) -- node[right, font=\sffamily\tiny]{events, reviews} (sellermem.south |- tuner.north);
   \draw[knob] ($(buyergroup.south)+(-30mm,0) |- tuner.north$)
     -- node[left, font=\sffamily\tiny, text=ModelLine]{explore rate, first-offer discount} ($(buyergroup.south)+(-30mm,0)$);
   \draw[knob] ($(sellergroup.south)+(-30mm,0) |- tuner.north$)
-    -- node[left, font=\sffamily\tiny, text=ModelLine]{margin arms, grade-B cap} ($(sellergroup.south)+(-30mm,0)$);
+    -- node[left, font=\sffamily\tiny, text=ModelLine]{margin arms, arm share, markup, grade-B cap} ($(sellergroup.south)+(-30mm,0)$);
 
   % ---------------------------------------------------------------- market / protocol layer
   \node[market, below=7mm of tuner.south west, anchor=north west]
@@ -159,6 +159,6 @@
   \node[anchor=south west, font=\sffamily\scriptsize, text=Ink]
     at ($(current page.south west)+(9mm,5mm)$)
     {Solid: execution / protocol \quad Dashed green: context or learned state \quad Dotted purple: daily knob values \quad
-     Three clocks: per turn (Haiku, $\approx$900 chars), per minute (ledger + restock, no model), per day (Opus, $\approx$1.3k tokens).};
+     Three clocks: per turn (Haiku, $\approx$900 chars, or none), per minute (ledger + restock + forum, no model), per day (Opus, $\approx$1.3k tokens). Round clock: no stock 24 h before the close, sell down after.};
 \end{tikzpicture}
 \end{document}

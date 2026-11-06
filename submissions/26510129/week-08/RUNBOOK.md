@@ -61,6 +61,17 @@ cp /tmp/bm.json .market/buyer_memory.json; cp /tmp/st.json .market/shop_trades.j
 ~/Desktop/han/agent-market/join.sh --background
 ```
 
+## 종료 (11-17 23:59) 전후 — 코드가 자동으로 함 (`round_clock.py`)
+
+- 36시간 전(11-16 12:00)부터 식품 매입 중단, 24시간 전(11-17 00:00)부터 전체 매입 중단 (`restock` 이벤트에 `liquidation`).
+- seller: 24시간 전부터 ask ≤ 시장가 −5%·바닥 원가×0.9, 12시간 전부터 ask ≤ 원가×0.9·바닥 원가×0.6, 3시간 전부터 바닥 1원 (`regime` = sell-down / dump / last-hours).
+- 종료 직후 할 일: board 스냅샷(`curl -s https://market.ourolabs.ai/api/board > logs/board-final.json`), REPORT 6절 갱신, 로그 커밋, PR.
+
+## forum
+
+- `forum_post.py`가 restock 루프에서 5분마다 카테고리 하나의 시세 글을 buyer 명의로 씀 (`[strategy] market_post` 줄). 글/표 상태는 https://market.ourolabs.ai/forum.
+- `tail -3 .market/outbox.sent.jsonl` — 보낸 글과 시장 응답(status 200이면 정상).
+
 ## 토큰
 
 - 흥정: `claude -p --model haiku`(구독), 호출당 약 860자 입력, 횟수 제한 없음, 실패 시 결정론적 fallback.
