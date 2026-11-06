@@ -88,6 +88,13 @@ for name, a, b in (("10:24-14:27", ts(10, 24), APPLY), ("14:27-now", APPLY, NOW)
     blocked = [r for r in g if depth_at(r["sku"], r["issued_at"]) >= 2]
     margins = [x["price"]-x["cost"] for r in blocked for x in done if x["sku"] == r["sku"] and x.get("grade") in ("A", "B")]
     print(name, "C cancels", len(g), "with another unit of the SKU", len(blocked), "paid A/B on those SKUs: median book per sale", round(st.median(margins)) if margins else None, "n", len(margins))
+    hours = (min(b, NOW)-a)/3600
+    worth = []
+    for r in blocked:
+        same = [x["price"]-x["cost"] for x in done if x["sku"] == r["sku"] and x.get("grade") in ("A", "B")]
+        if same:
+            worth.append(st.mean(same))
+    print("   if each blocked buyer had paid for an A or B unit instead: book/h at most", round(sum(worth)/hours), "with SKU A/B history", len(worth), "of", len(blocked), "hours", round(hours, 2))
 
 print("\n== grade of stock and of new units")
 pricing = load("logs/pricing/*.json")
