@@ -195,7 +195,7 @@ class Pace(Base):
     def test_shipped_settings(self):
         shipped = json.loads((forum_policy.ROOT / "forum_posting.json").read_text(encoding="utf-8"))
         self.assertTrue(forum_policy.valid_limits(shipped))
-        self.assertEqual((shipped["shop_daily_limit"], shipped["shop_reply_interval_seconds"], shipped["min_interval_seconds"], shipped["buyer_daily_limit"]), (24, 600, 3600, 12))
+        self.assertEqual((shipped["shop_daily_limit"], shipped["shop_reply_interval_seconds"], shipped["min_interval_seconds"], shipped["buyer_daily_limit"]), (24, 600, 3600, 144))
 
 
 class Brake(Base):
@@ -248,9 +248,9 @@ class BuyerPause(Base):
                     self.assertEqual(forum_policy.enqueue(self.md, self.BUYER, f"{kind}:1", kind, {"ledger": 1}, T), "buyer_posts_paused")
                 self.assertEqual(self.outbox(), [])
 
-    def test_shipped_setting_blocks(self):
+    def test_shipped_setting_is_valid_and_on_at_the_first_step(self):
         shipped = json.loads((forum_policy.ROOT / "forum_posting.json").read_text(encoding="utf-8"))
-        self.assertIs(shipped["buyer_posts_enabled"], False)
+        self.assertIs(shipped["buyer_posts_enabled"], True)
         self.assertTrue(forum_policy.valid_limits(shipped))
 
     def test_report_path_stops_at_the_policy_and_shop_posts_continue(self):
