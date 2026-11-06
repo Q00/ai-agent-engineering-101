@@ -59,7 +59,7 @@ ROLES = {
     "meta": {"look": ["trajectory.get", "trajectory.search", "summary.hourly", "score.class", "report.metrics",
                       "participant.get", "knowledge.get", "capability.list", "experiment.result", "wisdom.get",
                       "approval.status", "model.usage", "market.selling", "market.sku", "market.benchmark"],
-             "final": ["meta.propose"], "steps": 8, "seat": "strategy", "reader": "strategist", "timeout": 240},
+             "final": ["meta.propose"], "steps": 10, "seat": "strategy", "reader": "strategist", "timeout": 240},
     "audit": {"look": ["eval.score", "eval.experiment", "eval.unit_economics", "eval.losses", "eval.audits",
                        "memory.summary", "memory.search", "memory.raw", "market.selling", "market.sku",
                        "memory.card_section"],

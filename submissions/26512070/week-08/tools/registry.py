@@ -140,7 +140,11 @@ def call(ctx: Ctx, name: str, args=None):
     args = clip_strings(args, t.input_schema)
     errors = schema.validate(args, t.input_schema)
     if errors:
-        return {"ok": False, "reason": "bad input: " + "; ".join(errors[:3]), "hint": "see the tool's input schema"}
+        reason = "bad input: " + "; ".join(errors[:3])
+        # 11/6 11:0x: a meta proposal refused for two missing fields left no trace of what it proposed (C2)
+        ctx.writer.emit("tool.result", {"tool": name, "ok": False, "ms": 0, "tool_version": TOOL_VERSION,
+                                        "reason": reason, "cause": "ours", "args": args}, **keys)
+        return {"ok": False, "reason": reason, "hint": "see the tool's input schema"}
     denied = _denied(ctx.caller, name)
     ctx.writer.emit("tool.call", {"tool": name, "args": args, "tool_version": TOOL_VERSION,
                                   **({"clipped": True} if args != given else {}),
