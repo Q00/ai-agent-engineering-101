@@ -135,7 +135,7 @@ _REQUEST = {"type": "object", "required": list(wisdom.REQUIRED), "properties": {
       "playbook number the code reads (see capability.list), with the fixed metric it should move, how it is "
       "measured (ab preferred) and the success line. Requests go to the user; nothing is installed here.",
       {"type": "object", "required": ["report", "requests"],
-       "properties": {"report": {"type": "string", "minLength": 1, "maxLength": 2000},
+       "properties": {"report": {"type": "string", "minLength": 1, "maxLength": 6000},   # 11/6: two questions did not fit in 2000
                       "requests": {"type": "array", "maxItems": 2, "items": _REQUEST}}})
 def meta_propose(ctx, report, requests):
     if len(requests) > 2:                      # core.schema does not check maxItems
