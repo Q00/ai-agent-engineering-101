@@ -77,7 +77,9 @@ PREFER = 1.2
 RIVAL = 1.0               # 0.95 until 11/6 16:40 (the person's call, 몫 사냥꾼 ④): the goods shops selling cheapest were rivals'
                           # (lee-sungsoo 0.685, inextro 0.700, yms979 0.701 of list); what we add to their revenue is
                           # well under 0.1% of it, what we keep counts in our saved
-MAX_TRIES, TRY_BUDGET, HARD_STOP = 3, 90, 240   # shops per order; seconds from the order's start to begin
+MAX_TRIES, TRY_BUDGET, HARD_STOP = 6, 150, 240  # 3 and 90 until 11/7 02:10 (61% of orders ended without a deal, most
+                                                 # after 3 shops, with a median of 47 holding the product); shops per
+                                                 # order; seconds from the order's start to begin
                                                  # another; seconds after which a trade is cut short
 RIVALS_FRESH = 2 * 3600                          # analysis/rivals.json older than this is ignored
 LOW_STARS, MIN_REVIEWS = 2.5, 5

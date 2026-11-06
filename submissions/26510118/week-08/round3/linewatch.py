@@ -56,6 +56,10 @@ import scoreboard
 
 WINDOW = 2 * 3600
 SHRINK_DROP, EXIT_DROP = 0.03, 0.06
+MARKET_CUTS = False      # off since 11/7 02:10 (the person's call): a fall in the market's median under the baseline no
+                         # longer cuts or exits a product; our asks follow each SKU's own market and EM_EXIT decides
+                         # whether it still pays. In the 12 h before, it made 71 cuts on 11 products that sold 467 units
+                         # for 69.4M of margin, 7 of them left at a cap of 0-1
 CROWD_TIMES, CROWD_MORE = 2, 3
 GROW_SALES = 2
 STALL = 8 * 3600         # out (cap 0) held this long with no sale (4 h until 11/6: the expected margin now exits first); restock.LINE_STALL (2 h) stops buying more sooner
@@ -138,10 +142,10 @@ def decide(cap: int, base: dict | None, now_m: dict, us: dict, exit_at: float | 
         return 0, "out"
     if us["idle"] is not None and us["idle"] > STALL:
         return 0, f"held {us['idle'] / 3600:.1f} h with no sale"
-    if drop >= EXIT_DROP:
+    if MARKET_CUTS and drop >= EXIT_DROP:
         return 0, f"market median {now_m['median']:.3f} is {drop:.3f} under the baseline {base['median']:.3f}"
-    if drop >= SHRINK_DROP or crowded:
-        why = (f"market median {now_m['median']:.3f}, {drop:.3f} under the baseline" if drop >= SHRINK_DROP
+    if (MARKET_CUTS and drop >= SHRINK_DROP) or crowded:
+        why = (f"market median {now_m['median']:.3f}, {drop:.3f} under the baseline" if MARKET_CUTS and drop >= SHRINK_DROP
                else f"{now_m['sellers']} sellers in {WINDOW // 3600} h against {base.get('sellers')} at the baseline")
         return max(1, cap - 1), why
     if us["sold_1h"] >= GROW_SALES and cap < restock.LINE_MAX_UNITS:

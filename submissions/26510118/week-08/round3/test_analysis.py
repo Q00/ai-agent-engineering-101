@@ -582,6 +582,13 @@ def test_linewatch():
     check("the baseline is the same 2-hour window once it holds 20 settles (0.75, 2 sellers); line.json written by the watch",
           ch == [] and st_["base"][BEDDING]["median"] == 0.75 and st_["base"][BEDDING]["sellers"] == 2
           and common.read_json(MD / "analysis" / "line.json") == {"skus": {BEDDING: 3}, "at": int(t), "by": "linewatch"})
+    check("since 11/7 a fall in the market's median under the baseline cuts nothing (MARKET_CUTS off; the expected margin "
+          "decides): 0.71 and 0.68 against 0.75 keep the cap",
+          linewatch.decide(3, {"median": 0.75, "sellers": 2}, {"n": 30, "median": 0.71, "sellers": 2}, {"held": 0, "sold_1h": 0, "idle": None},
+                           None, t) == (3, "keep")
+          and linewatch.decide(3, {"median": 0.75, "sellers": 2}, {"n": 30, "median": 0.68, "sellers": 2}, {"held": 0, "sold_1h": 0, "idle": None},
+                               None, t) == (3, "keep"))
+    linewatch.MARKET_CUTS = True                      # the mechanics below, as they ran until 11/7 02:10
     ch = run(t + 1200, market(0.71))
     check("the market's median falls 4% of list: the cap goes down one, logged with its numbers",
           [(c["from"], c["to"]) for c in ch] == [(3, 2)] and "under the baseline" in ch[0]["why"]
@@ -652,6 +659,7 @@ def test_linewatch():
         common.catalog = saved
     for f in ("line_state.json", "line.json", "line_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
+    linewatch.MARKET_CUTS = False
 
 
 def test_analysts():
