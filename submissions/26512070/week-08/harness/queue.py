@@ -59,6 +59,10 @@ def tick(now=None):
         except ValueError as e:
             alert.send(f"[예약 실패] {doc['title']}: {e}", "now", now)
             done.append((q["request"], f"failed: {e}"))
+    # re-read before writing: an entry added while this tick ran is kept (11/6: the food_top entry vanished)
+    handled = {r for r, _ in done}
+    seen = {q["request"] for q in left} | handled
+    left += [q for q in entries() if q["request"] not in seen]
     atomic.write_json(path(), left)
     return done
 

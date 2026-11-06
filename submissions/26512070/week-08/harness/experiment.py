@@ -55,7 +55,8 @@ def approve(exp_id, by, now=None):
     now = now or time.time()
     led = ledger()
     e = led["experiments"][exp_id]
-    clash = [x["id"] for x in led["experiments"].values() if x["status"] == "running" and x["metric"] == e["metric"]]
+    clash = [x["id"] for x in led["experiments"].values()
+             if x["status"] == "running" and now < x["end"] and x["metric"] == e["metric"]]
     if clash:
         raise ValueError(f"{clash} already runs on {e['metric']}; one experiment per metric at a time")
     e.update(status="running", approved=by, start=now, end=now + e["period_h"] * 3600)
@@ -69,6 +70,21 @@ def stop(exp_id, why, now=None):
     e.update(status="stopped", stopped={"ts": now or time.time(), "why": why})
     atomic.write_json(path(), led)
     return e
+
+
+def close_ended(now=None):
+    """Running experiments past their end become 'ended' with the verdict of result() (11/6: one stayed
+    'running' 4 h after its end and blocked the next change on its metric)."""
+    now = now or time.time()
+    out = []
+    for e in list(ledger()["experiments"].values()):
+        if e["status"] == "running" and now >= e["end"]:
+            r = result(e["id"], now)
+            led = ledger()
+            led["experiments"][e["id"]].update(status="ended", verdict=r.get("verdict"), result=r)
+            atomic.write_json(path(), led)
+            out.append((e["id"], r.get("verdict")))
+    return out
 
 
 def arm(exp_id, trade_id):
@@ -117,6 +133,8 @@ def result(exp_id, now=None):
     e = ledger()["experiments"][exp_id]
     if e.get("start") is None:
         return {"id": exp_id, "status": e["status"], "verdict": "not started"}
+    if e.get("stopped"):                    # after a stop every trade runs one way: those trades are not A vs B
+        now = min(now, e["stopped"]["ts"])
     days = sorted({time.strftime("%Y%m%d", time.localtime(t)) for t in
                    range(int(e["start"]), int(min(now, e["end"])) + 86400, 86400)})
     role = "buyer" if e["role"] == "buyer" else "seller"

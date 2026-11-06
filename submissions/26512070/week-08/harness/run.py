@@ -130,6 +130,10 @@ def once(state, now, shadow=False):
             settled = fastpath.settle(now)              # auto changes whose test period ended: keep or undo
             if settled:
                 done["fastpath"] = settled
+            from harness import experiment as exp
+            ended = exp.close_ended(now)                # before the queue: an ended experiment frees its metric
+            if ended:
+                done["experiments_ended"] = ended
             from harness import queue as waiting        # approved changes whose turn came (R12: one at a time)
             started = waiting.tick(now)
             if started:
