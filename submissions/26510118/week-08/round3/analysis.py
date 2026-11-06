@@ -239,6 +239,8 @@ def journal_step(now: float, state: dict, ask=None) -> str | None:
                 text, refs, box = boxed, list(dict.fromkeys(list(refs) + list(note["refs"])))[:JOURNAL_REFS], note["key"]
                 state["notes_state"] = trial
     forum.outbox(post=text, refs=refs, **{"as": "buyer"})
+    if NOTES_ALONE:            # the issue takes this 5-minute slot (11/6 13:50): the next note waits notes.GAP from now
+        state.setdefault("notes_state", {})["last_post"] = now
     return (f"journal 제{n}호 ({desk}" + (f" + 노트 {box}" if box else "") + f") posted ({len(text)} chars, {len(refs)} refs)")
 
 
@@ -263,6 +265,12 @@ def buyer_post_waiting() -> bool:
     or in outbox.taking, the file the kit moves it to while it sends."""
     return any(x.get("post") and x.get("as") == "buyer" for name in ("outbox.jsonl", "outbox.taking")
                for x in common.read_jsonl(common.MARKET_DIR / name))
+
+
+def note_slot_free(now: float, state: dict) -> bool:
+    """The buyer's 5-minute posting slot is free: no buyer post waits to be sent and the last note or journal issue
+    went out notes.GAP ago or more (the market takes 12 buyer posts an hour)."""
+    return not buyer_post_waiting() and now - ((state.get("notes_state") or {}).get("last_post") or 0) >= notes.GAP
 
 
 def notes_step(now: float, state: dict) -> str | None:
@@ -341,6 +349,9 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
                     if note is None:
                         continue                                # stock not in yet; look again next pass
                 elif name == "journal":
+                    if NOTES_ALONE and not note_slot_free(now, state):
+                        continue                                # a note holds this slot: the issue takes the next free
+                                                                # one, in place of a note (11/6 13:50, the person's call)
                     note = journal_step(now, state)
                     if note is None:
                         log("[analysis] journal: no desk has anything new; skipped")

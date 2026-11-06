@@ -330,6 +330,37 @@ def test_journal():
         line = outbox()[before] if len(outbox()) > before else {}
         check("the runner posts an issue as our buyer, with ledger refs", line.get("as") == "buyer"
               and line.get("post", "").startswith("KIRO MARKET JOURNAL · 제1호") and note.startswith("journal 제1호"), note)
+        st3 = {"notes_state": {"last_post": NOW}}
+        analysis.journal_step(NOW + 3600 + 1, st3, reader(None))
+        check("an issue takes a note's 5-minute slot (11/6 13:50): the next note waits 5 minutes from it",
+              st3["notes_state"]["last_post"] == NOW + 3600 + 1)
+        kept_box = (MD / "outbox.jsonl").read_text(encoding="utf-8")
+        (MD / "outbox.jsonl").write_text("", encoding="utf-8")
+        try:
+            t9 = NOW + 9 * 3600
+            check("...and waits for a free slot: not within 5 minutes of a note, nor while a buyer post waits to be sent",
+                  not analysis.note_slot_free(t9, {"notes_state": {"last_post": t9 - 60}})
+                  and analysis.note_slot_free(t9, {"notes_state": {"last_post": t9 - notes.GAP}}) and analysis.note_slot_free(t9, {}))
+            forum.outbox(post="x", **{"as": "buyer"})
+            check("...(a buyer post in the outbox)", not analysis.note_slot_free(t9, {}))
+            (MD / "outbox.jsonl").write_text("", encoding="utf-8")
+            saved_step = analysis.journal_step
+            calls = []
+            analysis.journal_step = lambda now, state, ask=None: calls.append(now) or None
+            st = common.read_json(MD / "analysis" / "state.json", {}) or {}
+            common.write_json(MD / "analysis" / "state.json",          # only the journal due: no other step runs here
+                              dict({n: t9 for n in analysis.EVERY}, journal=t9 - 2 * 3600, notes_state={"last_post": t9 - 60}))
+            analysis.run_once(t9, lambda *a, **k: answer({"report": "ok", "proposals": []}), fake_ledger, fake_shops)
+            held = common.read_json(MD / "analysis" / "state.json")
+            check("the runner holds a due issue while a note has the slot, without marking the hour done",
+                  calls == [] and held["journal"] == t9 - 2 * 3600, (calls, held.get("journal")))
+            common.write_json(MD / "analysis" / "state.json", dict(held, notes_state=dict(held["notes_state"], last_post=t9 - 400)))
+            analysis.run_once(t9 + 1, lambda *a, **k: answer({"report": "ok", "proposals": []}), fake_ledger, fake_shops)
+            check("...and runs it once the slot is free", calls == [t9 + 1], calls)
+            common.write_json(MD / "analysis" / "state.json", st)
+        finally:
+            analysis.journal_step = saved_step
+            (MD / "outbox.jsonl").write_text(kept_box, encoding="utf-8")
         fake = {"text": "[Kiro 데이터 노트 · 조건별 시세] 커피/차\n· A등급: 81.1% (175건)\n근거 · 원장 #11 #12", "refs": [11, 12],
                 "key": "조건:커피/차"}
         saved_next = notes.next_note
