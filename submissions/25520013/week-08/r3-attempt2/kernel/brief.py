@@ -5,10 +5,12 @@ shows up as a fact instead of a crash. Other participants appear only as hashed 
 """
 
 import os
+import time
 import statistics as st
 from collections import Counter, defaultdict
 
 from kernel import common as c
+from kernel import restock
 
 BOARD_DIRS = ("a2/board", "icrl/state/board")
 HARNESS_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "harness")
@@ -190,10 +192,17 @@ def section_restock(root, now):
         "expired": "만료",
         "valid": f"유효 ({left}분 남음, {len(plan.get('buy') or [])}줄)",
     }[state]
+    done = c.load_json(os.path.join(root, "a2/restock_done.json"), {}) or {}
+    path = os.path.join(root, "a2/restock_plan.json")
+    if state == "valid" and done.get("plan_id") and done.get("plan_id") == restock.plan_id(path, plan):
+        when = time.strftime("%H:%M", time.localtime(done.get("ts") or now))
+        head += f", {when}에 이미 구매함 ({len(done.get('buy') or [])}줄). 이 계획으로는 다시 사지 않음"
     return [
         f"[재입고] 계획 {head} | 재고 {len(inv.get('units') or [])}개, 최근 1시간 판매 {sold}개 | 공급 창 {win}",
         "  재입고는 done의 restock_plan(a2/restock_plan.json)으로만 실행됨. 계획이 없거나 valid_until이 지나면 "
         "커널은 아무것도 사지 않음",
+        "  계획 하나는 한 번만 구매됨: 공급 창이 열린 뒤 첫 실행에서 사고 끝남. 내용이 같아도 계획을 다시 쓰면 새 계획이라 "
+        "다음 창에서 다시 삼. 이미 구매한 계획은 만료되게 두어도 됨",
     ]
 
 

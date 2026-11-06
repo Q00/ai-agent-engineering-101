@@ -122,6 +122,13 @@ def window_state(inventory, now):
     return "closed", None
 
 
+def plan_id(plan_path, plan):
+    """Identity of one written plan: rewriting the file, even with the same lines, makes a new plan."""
+    if not isinstance(plan, dict):
+        return None
+    return f"{os.stat(plan_path).st_mtime_ns}:{plan.get('valid_until')}"
+
+
 def run(root, state, now=None):
     """One hook run: returns the {"buy": [...]} to print and appends the trajectory row."""
     now = c.now_ts() if now is None else now
@@ -139,9 +146,7 @@ def run(root, state, now=None):
     # a plan is bought once: the kit runs this every 60 s and an open window spans several runs, so without this the
     # same plan was bought 7 times on 2026-11-06 04:40-05:03 and the balance fell from 60.5M to 0.45M
     done_path = os.path.join(root, "a2/restock_done.json")
-    plan_id = (
-        f"{os.stat(plan_path).st_mtime_ns}:{valid}" if isinstance(plan, dict) else None
-    )
+    pid = plan_id(plan_path, plan)
     out, cost = {"buy": []}, 0.0
     if not isinstance(plan, dict):
         why = "no_plan"
@@ -153,7 +158,7 @@ def run(root, state, now=None):
         # the kit does not wait for the window: its first supply call gets 429 and that line is skipped (live 11-06
         # 06:21 and 07:21), and a bought-once plan never retries it. The window lasts 180 s, so an open run follows
         why = "opens_soon"
-    elif (c.load_json(done_path, {}) or {}).get("plan_id") == plan_id:
+    elif (c.load_json(done_path, {}) or {}).get("plan_id") == pid:
         why = "executed"
     else:
         catalog = _catalog(c.load_json(os.path.join(state, "catalog.json"), {}))
@@ -163,7 +168,7 @@ def run(root, state, now=None):
         if out["buy"]:
             tmp = done_path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
-                json.dump({"plan_id": plan_id, "ts": now, "buy": out["buy"]}, f)
+                json.dump({"plan_id": pid, "ts": now, "buy": out["buy"]}, f)
             os.replace(tmp, done_path)
     login = c.owner_login(root)
     Trajectory(

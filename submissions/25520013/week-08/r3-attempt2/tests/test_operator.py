@@ -797,3 +797,19 @@ def test_missing_or_expired_restock_plan_wakes_every_ten_minutes(root, hroot):
     assert o.wake_reason(NOW + 701) == "재입고 계획 없음 또는 만료"
     text = "\n".join(brief.section_restock(root, NOW + 701))
     assert "계획 만료" in text and "아무것도 사지 않음" in text
+
+
+def test_restock_brief_says_when_the_plan_was_already_bought(root):
+    # live 11-06 08:09 and 09:52: the operator rewrote a bought plan to keep it "valid" and it was bought again
+    from kernel import restock
+
+    _valid_plan(root, NOW + 3600)
+    assert "이미 구매함" not in "\n".join(brief.section_restock(root, NOW))
+    path = os.path.join(root, "a2/restock_plan.json")
+    with open(os.path.join(root, "a2/restock_done.json"), "w", encoding="utf-8") as f:
+        json.dump({"plan_id": restock.plan_id(path, json.load(open(path))), "ts": NOW, "buy": [{"sku": "S", "qty": 1}]}, f)
+    text = "\n".join(brief.section_restock(root, NOW + 60))
+    assert "이미 구매함 (1줄)" in text and "다시 쓰면 새 계획" in text
+    time.sleep(0.01)
+    _valid_plan(root, NOW + 3600)  # rewritten: a new plan, not bought yet
+    assert "이미 구매함" not in "\n".join(brief.section_restock(root, NOW + 60))
