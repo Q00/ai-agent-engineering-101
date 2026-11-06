@@ -223,7 +223,9 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         "bankruptcy_eligible": bankruptcy_eligible, "automatic_bankruptcy": False,
         "exposure": exposure.summary(), "horizon": stage,
         "focused_goods": focused,
-        "adaptive_goods": {"enabled": bool(adaptive_rules), "pool": {
+        "adaptive_goods": {"enabled": bool(adaptive_rules),
+            "low_stock_units": adaptive_rules["low_stock_units"] if adaptive_rules else None,
+            "observed_stock_units": len(inv["units"]), "pool": {
             sku: {**row["evidence"], "remaining_credit": adaptive_credit(
                 (adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}))}
             for sku, row in adaptive.items()}, "max_units_per_sku": 1},

@@ -1,6 +1,7 @@
 """Evidence-based alternatives stay small, affordable and fully reconciled."""
 from copy import deepcopy
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 import tempfile
 import time
@@ -112,14 +113,88 @@ class AdaptiveStockTests(unittest.TestCase):
 
     def test_adaptive_stops_at_low_stock_target_and_during_wind_down(self):
         self.public["events"] = [e for e in self.public["events"] if e["sku"] not in (ACE, SIMMONS)]
-        self.inv["units"] = [unit(unit=f"old-{i}", sku=f"Gfffffff{i}", category="other", cost=10000) for i in range(3)]
-        self.assertEqual(sum(r["qty"] for r in self.plan()[0]["buy"]), 1)
-        self.inv["units"].append(unit(unit="old-3", sku="Gfffffff3", category="other", cost=10000))
+        for count in range(4, 8):
+            self.inv["units"] = [unit(unit=f"old-{i}", sku=f"Gfffffff{i}", category="other", cost=10000)
+                                 for i in range(count)]
+            with self.subTest(stock=count), patch("harness.decide", side_effect=AssertionError("No model")):
+                decision, evidence = self.plan(control=self.control())
+            self.assertEqual(sum(r["qty"] for r in decision["buy"]), min(2, 8 - count))
+            self.assertTrue(all(r["qty"] == 1 and r["sku"] in (ALT1, ALT2, ALT3) for r in decision["buy"]))
+            self.assertLessEqual(count + sum(r["qty"] for r in decision["buy"]), 8)
+            self.assertGreaterEqual(evidence["projected_min_balance"], 2000000)
+            self.assertEqual(evidence["adaptive_goods"]["low_stock_units"], 8)
+            self.assertEqual(evidence["adaptive_goods"]["observed_stock_units"], count)
+        self.inv["units"].append(unit(unit="old-7", sku="Gfffffff7", category="other", cost=10000))
         self.assertEqual(self.plan()[0]["buy"], [])
         self.inv["units"] = []
         horizon = {**self.policy["horizon"], "ends_at": datetime.fromtimestamp(
             self.now + 12 * 3600, timezone.utc).isoformat()}
         self.assertEqual(self.plan(horizon=horizon)[0]["buy"], [])
+
+    def test_expanded_target_does_not_buy_without_evidence_or_override_fixed_stock_policy(self):
+        self.inv["units"] = [unit(unit=f"old-{i}", sku=f"Gfffffff{i}", category="other", cost=10000)
+                             for i in range(7)]
+        decision, evidence = self.plan(control=self.control())
+        self.assertEqual([r["sku"] for r in decision["buy"]], [ACE, SIMMONS])
+        self.assertFalse(any(c["reason"] == "adaptive_public_demand_pilot" for c in evidence["choices"]))
+        # Eight is an adaptive top-up threshold; the existing overall cap and
+        # proven fixed-SKU replenishment policy remain independent.
+        self.assertEqual(self.cfg["max_stock_units"], 20)
+        self.public["events"] = []
+        with patch("harness.decide", side_effect=AssertionError("No model")):
+            self.assertEqual(self.plan()[0]["buy"], [])
+
+    def test_expanded_policy_bound_rejects_unapproved_larger_target(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / ".market") as directory:
+            root = Path(directory)
+            atomic_json(root / "shop-policy.json", self.policy)
+            self.assertEqual(policy_at(root)["restock"]["adaptive_goods"]["low_stock_units"], 8)
+            self.rules["low_stock_units"] = 9
+            atomic_json(root / "shop-policy.json", self.policy)
+            with self.assertRaisesRegex(ValueError, "adaptive inventory policy: low_stock_units"):
+                policy_at(root)
+
+    def test_successive_openings_expand_four_held_skus_to_eight_without_duplicates(self):
+        extra = ("G00000004", "G00000005", "G00000006")
+        for i, sku in enumerate(extra):
+            self.catalog[sku] = {"name": sku, "list_price": 200000, "category": "furniture", "kind": "goods"}
+            self.public["market_stock"]["by_sku"][sku] = {"units": 10, "shops": 3}
+            self.public["events"].extend(
+                {"seq": 100 + i * 10 + j, "ts": self.now - 30, "kind": "settle", "sku": sku,
+                 "buyer": f"buyer-{j}", "shop": f"https://shop-{j}.invalid", "price": 150000,
+                 "grade": "A", "warranty_hours": 6} for j in range(3))
+        self.inv["units"] = [unit(unit=f"held-{sku}", sku=sku, category="furniture", cost=100000)
+                             for sku in (ACE, SIMMONS, ALT1, ALT2)]
+        acquired = []
+        with tempfile.TemporaryDirectory(dir=ROOT / ".market") as directory:
+            root, md = Path(directory), Path(directory) / ".market"
+            atomic_json(root / "shop-policy.json", self.policy)
+            atomic_json(md / "catalog.json", self.catalog)
+            atomic_json(md / "demand.json", self.demand)
+            with patch("restock.refresh_market", return_value=self.public) as refresh, \
+                    patch("harness.decide", side_effect=AssertionError("No model")):
+                for step in range(3):
+                    current = self.now + 1200 * step
+                    self.inv["restock"] = {"open": True, "opens_at": current - 30, "closes_at": current + 150}
+                    atomic_json(md / "inventory.json", self.inv)
+                    os.utime(md / "demand.json", (current, current))
+                    before = {u["sku"] for u in self.inv["units"]}
+                    decision = restock.run_once(root, current)
+                    self.assertEqual(sum(r["qty"] for r in decision["buy"]), 2 if step < 2 else 0)
+                    for row in decision["buy"]:
+                        self.assertEqual(row["qty"], 1)
+                        self.assertNotIn(row["sku"], before)
+                        acquired.append(row["sku"])
+                        self.inv["units"].append(unit(unit=f"bought-{row['sku']}", sku=row["sku"],
+                            category="furniture", list_price=200000, cost=150000, supplied_at=current))
+                        self.inv["balance"] -= 150000
+                    self.assertLessEqual(len(self.inv["units"]), 8)
+                    self.assertGreaterEqual(self.inv["balance"], 2000000)
+                self.assertEqual(refresh.call_count, 3)  # Existing single refresh per opening, no added polling.
+            controls = load_json(md / "restock-control.json")
+            self.assertEqual(sum(r["planned_qty"] for r in controls["adaptive_supply"].values()), 4)
+        self.assertEqual(len(acquired), len(set(acquired)))
+        self.assertEqual(len({u["sku"] for u in self.inv["units"]}), 8)
 
     def test_retiring_candidate_does_not_forget_unconfirmed_purchase_or_repeat_forever(self):
         controls = self.control(pool={ALT1: {}})
