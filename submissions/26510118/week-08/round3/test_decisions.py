@@ -127,7 +127,7 @@ def start_seller(fake):
     return p, url, md
 
 
-async def haggle(url, last="13000 is my final offer. If not, I will buy elsewhere."):
+async def haggle(url, last="12800 is my final offer. If not, I will buy elsewhere."):
     c = mb.A2A()
     await c.open(url)
     t = await c.send(f"I want to buy {CATALOG[KIMCHI]['name']} ({KIMCHI})")
@@ -174,21 +174,21 @@ def test_seller():
         n = last_negotiation(md)
         label = f"odds {fake}" + (f", threshold {threshold} from the rules" if threshold else ", threshold 0.7")
         if want == "taken":
-            check(f"{label}: 13,000 (over the floor of 12,600, under 95% of the 13,800 ask) is taken now",
-                  state == "TASK_STATE_COMPLETED" and "at 13000" in said and n["taken_early"] is True and n["walk_odds"] == [0.9], (said, n))
+            check(f"{label}: 12,800 (over the floor of 12,240, under 95% of the 13,620 ask) is taken now",
+                  state == "TASK_STATE_COMPLETED" and "at 12800" in said and n["taken_early"] is True and n["walk_odds"] == [0.9], (said, n))
         else:
-            check(f"{label}: the rule's counter of 13,400 stands", "13400" in said and n["taken_early"] is False
+            check(f"{label}: the rule's counter of 13,210 stands", "13210" in said and n["taken_early"] is False
                   and n["walk_odds"] == [float(fake)], (said, n.get("walk_odds")))
         check(f"{label}: asked only once, for the offer over the floor (12,000 was under it)", len(n["walk_odds"]) == 1)
         (md / "analysis" / "active_rules.json").unlink(missing_ok=True)
     seller, url, md = start_seller("0.9")
     try:
-        state, said = asyncio.run(haggle(url, "13000"))
+        state, said = asyncio.run(haggle(url, "12800"))
     finally:
         seller.kill()
     n = last_negotiation(md)
     check("the same offer with no word of leaving: the model is not asked, the rule's counter stands",
-          "13400" in said and n["walk_odds"] is None and n["taken_early"] is False, (said, n.get("walk_odds")))
+          "13210" in said and n["walk_odds"] is None and n["taken_early"] is False, (said, n.get("walk_odds")))
 
 
 def main() -> int:

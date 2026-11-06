@@ -48,7 +48,7 @@ OURS_LOW, MARKET_HELD = 0.4, 0.7
 STARS_DROP = 0.03
 PRICE_MOVE, PRICE_N = 0.05, 30
 SURGE_HIGH = 1.25
-DIFF_LINES = 12
+DIFF_LINES = 40           # 12 until 11/6: Patch 3.4's "Surplus -> Saved" line fell outside them
 KIT_LOG = Path(__file__).resolve().parent / "logs" / "market-kit.log"
 OUTAGE_SIGNS = ("no shops in the market yet", "buyer token refused", "[market] order failed")
 RECENT, BASE = 3 * 3600, 24 * 3600
@@ -136,7 +136,8 @@ def brief(now: float) -> dict | None:
     f = w.get("facts") or {}
     rows = [r for r in common.read_jsonl(folder() / "watch_log.jsonl") if r.get("alerts") and (r.get("at") or 0) >= now - BRIEF_HOURS * 3600]
     return {"at": w.get("at"), "taste": f.get("taste"), "market_trend": f.get("trend"), "breakage_by_grade_now_before_n": f.get("breakage"),
-            "alive": f.get("alive"), f"alerts_{BRIEF_HOURS}h": [f"{a['kind']}: {a['text'][:140]}" for r in rows for a in r["alerts"]][-8:]}
+            "alive": f.get("alive"), f"alerts_{BRIEF_HOURS}h": [f"{a['kind']}: {a['text'][:1500] if a['kind'] == 'rules' else a['text'][:200]}"
+                                                            for r in rows for a in r["alerts"]][-8:]}
 
 
 def folder():
@@ -225,7 +226,8 @@ def run(now: float | None = None, get_json=None, get_text=None, log_path: Path =
     players = [p for p in board.get("players") or [] if isinstance(p, dict)]
     inv = common.market_file("inventory.json", {}) or {}
     shape = {"board": sorted(board), "shop": sorted(set().union(*[set(s) for s in shops])) if shops else [],
-             "player": sorted(set().union(*[set(p) for p in players])) if players else [], "inventory": sorted(inv)}
+             "player": sorted(set().union(*[set(p) for p in players])) if players else [], "inventory": sorted(inv),
+             "buyer": sorted(set().union(*[set(x) for x in board.get("buyers") or [] if isinstance(x, dict)]))}
     for k, v in shape.items():
         old = (state.get("shape") or {}).get(k)
         if old is not None and set(v) != set(old):

@@ -66,7 +66,10 @@ import watch
 EVERY = {"collect": 1200, "linewatch": 1200, "watch": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
          "votes": 1200, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
 RIVALS = 12             # the top players whose shops our buyer passes over in a near tie (market_buyer.RIVAL)
-NOTES_ALONE = False      # stand-alone notes every 5 minutes (stopped 11/5 03:20, the person's call)
+NOTES_ALONE = True       # stand-alone notes every 5 minutes (stopped 11/5 03:20; back 11/6 12:40, the person's call:
+                         # Patch 3.4 counts one stance per account per author, a like stance weighing 1 + log2 of the
+                         # net likes, so steady posts with ledger refs (6 likes each) lift the forum and the post count)
+SHOP_REPLIES = False     # the shop's replies to buyers' wanted posts (off 11/6: shop posts score nothing, each drew a dislike)
 JOURNAL_BOX = False      # a data note in a box at the end of each journal issue (11/5 03:20-03:30; the person:
                          # the journal as it was, no box)
 JOURNAL_MAX = 1800       # characters of an issue with its box; over it, the box is left out (the forum shows posts to ~2,000)
@@ -242,7 +245,7 @@ def replies(now: float, state: dict) -> str:
     found = forum.wanted(posts, common.market_file("demand.json", []) or [], seen)
     done = []
     for pid, cat in found[:1]:
-        if now - state.get("shop_reply", 0) >= REPLY_GAP:
+        if SHOP_REPLIES and now - state.get("shop_reply", 0) >= REPLY_GAP:
             text = forum.shop_reply(cat, common.market_file("inventory.json", {}) or {})
             if text:
                 forum.outbox(post=text, thread=pid, **{"as": "shop"})

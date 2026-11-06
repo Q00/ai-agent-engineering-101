@@ -48,7 +48,8 @@ MIN_CAT = 40             # settles of a category in a day before the gap desk wr
 REPEAT = 6 * 3600        # a topic (desk and subject) is not posted again within this
 GAP = 300                # seconds between our buyer posts
 MAX_LEN = 700
-GUARD_N, GUARD_SCORE, PAUSE = 6, 0.5, 3600
+GUARD_N, GUARD_SCORE, PAUSE = 6, 0.25, 3600   # 0.5 until 11/6: under Patch 3.4 nearly every post draws one dislike
+                                              # (0.45 with 6 likes); a pause now means many dislikes, new stances
 SCORED_AGE = 600         # a post last seen this old or older has its votes (most come within 10 minutes)
 KEEP_VOTES = 1000
 HEADER = re.compile(r"^\[Kiro 데이터 노트 · ([^\]]+)\]")

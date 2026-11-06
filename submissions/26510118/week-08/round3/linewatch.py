@@ -74,7 +74,8 @@ FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.74, 12
                          # hourly margin, had ended it)
 FIND_CAP = 2
 LINE_MAX_SKUS = 40       # 20 until 11/5 01:00, 30 until 09:20
-UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 12 * 3600, 1, 300_000, 2, 10
+UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 12 * 3600, 3, 300_000, 2, 10   # 1 order until 11/6:
+                         # overnight 48 products joined on one unmet order each; most left 4 h later unsold
                          # 6 h, 2 orders, 500k, cap 1, 5 until 11/5 02:20 (the first beds sold within minutes)
 UNMET_BUDGET = 0.85      # ...and the orders' budgets cover this share of its list (a buyer can pay our ask)
 FIND_DROP = 12 * 3600

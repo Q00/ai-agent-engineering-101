@@ -225,8 +225,12 @@ def test_tool():
 
 def test_forum():
     print("\n[forum] replies to wanted posts (as our shop; the market index and the buyer's data reply went on 11/5)")
-    st = {}
     before = len(outbox())
+    analysis.replies(NOW, {})
+    check("the shop's replies are off (11/6: shop posts score nothing, each drew a dislike): nothing posted",
+          len(outbox()) == before, outbox()[before:])
+    analysis.SHOP_REPLIES = True                                # the rules below, for when they are turned on again
+    st = {}
     analysis.replies(NOW, st)
     new = outbox()[before:]
     check("a 'wanted' post gets a stock reply as our shop, in its thread; none as our buyer",
@@ -239,6 +243,7 @@ def test_forum():
     check("after an hour: 침구, which our shop does not stock, gets no reply", len(outbox()) == before, outbox()[before:])
     check("our own post and replies in a thread are never answered; each post once",
           sorted(st["answered"]) == [101, 104] and analysis.replies(NOW + 7400, st) == "0 wanted post(s) waiting", st.get("answered"))
+    analysis.SHOP_REPLIES = False
 
 
 SELLER_PROPOSALS = [{"field": "price_adjust", "value": 0.12, "reason": "kimchi sells at 70% of list, 20 in 6 h"},
@@ -1000,6 +1005,8 @@ def test_discover():
     want = [{"ts": t - 3600, "budget": 3_600_000, "acceptable": ["Gbed00001", "Gbed00002", "Gbed00003"]},
             {"ts": t - 1800, "budget": 2_800_000, "acceptable": ["Gbed00001", "Gbed00002", "Gbed00003"]},
             {"ts": t - 13 * 3600, "budget": 5_000_000, "acceptable": ["Gbed00001"]}]
+    check("since 11/6 a product needs 3 unmet orders in 12 h to join (2 here: none)", linewatch.unmet_wanted(want, bed, {}, t) == {})
+    saved_min, linewatch.UNMET_MIN = linewatch.UNMET_MIN, 1     # the rules below at one order, as before 11/6
     check("our buyer's unmet orders: dear products (300k+) in any order of the last 12 h whose budgets cover 85% of the list "
           "(the 4M bed's median budget 3.2M does not; a 250k one is not dear; the 13 h old order does not count)",
           linewatch.unmet_wanted(want, bed, {}, t) == {"Gbed00001": {"orders": 2, "list": 2_000_000, "budget": 3_200_000}},
@@ -1007,6 +1014,7 @@ def test_discover():
     got = linewatch.discover([], {}, bed, {BEDDING: 3}, {}, t, want)
     check("...they join the line at cap 2, named as from our buyer's orders",
           {k: (v["cap"], v["source"]) for k, v in got.items()} == {"Gbed00001": (2, "our buyer's unmet orders")}, got)
+    linewatch.UNMET_MIN = saved_min
     saved = common.catalog
     common.catalog = lambda *a, **k: cat
     try:
@@ -1063,9 +1071,9 @@ def test_scoreboard():
                           {"name": "Kiro729", "book": kiro_book, "profit": 999, "revenue": 800, "stars_rank": 4.8, "all": 0.0},
                           {"name": "C", "book": 100, "profit": 0, "revenue": 800, "stars_rank": 4.5, "all": 0.0},
                           {"name": "D", "book": 999, "revenue": 999, "stars_rank": 5.0, "all": None}],
-                "buyers": [{"name": "A", "surplus": 50, "forum": 0.6, "deals": 10, "posts": 5},
-                           {"name": "Kiro729", "surplus": 40, "forum": 0.61, "deals": 9, "posts": 5},
-                           {"name": "C", "surplus": 99, "forum": 0.9, "deals": 0, "posts": 9}],
+                "buyers": [{"name": "A", "saved": 50, "forum": 0.6, "deals": 10, "posts": 5},
+                           {"name": "Kiro729", "saved": 40, "forum": 0.61, "deals": 9, "posts": 5},
+                           {"name": "C", "saved": 99, "forum": 0.9, "deals": 0, "posts": 9}],
                 "players": [{"player": "A", "total": 1.9, "shop": {"name": "A", "all": 1.0}, "buyer": {"name": "A", "all": 0.9}},
                             {"player": "Kiro729", "total": 1.0, "shop": {"name": "Kiro729"}, "buyer": {"name": "Kiro729"}},
                             {"player": "C", "total": 0.2, "shop": {"name": "C"}, "buyer": None}]}
@@ -1074,7 +1082,7 @@ def test_scoreboard():
           [x["name"] for x in shops] == ["A", "Kiro729", "C"] and [x["name"] for x in buyers] == ["A", "Kiro729"])
     check("shop ALL by the formula on book (cash, the profit column, does not count): (below + half the level) / (rows - 1), 0.5 / 0.3 / 0.2",
           scoreboard.alls(shops, scoreboard.SHOP) == {"A": 1.0, "Kiro729": 0.425, "C": 0.075}, scoreboard.alls(shops, scoreboard.SHOP))
-    check("buyer ALL: 0.5 surplus + 0.3 forum + 0.1 deals + 0.1 posts (level posts: half each)",
+    check("buyer ALL: 0.5 saved (Patch 3.4) + 0.3 forum + 0.1 deals + 0.1 posts (level posts: half each)",
           scoreboard.alls(buyers, scoreboard.BUYER) == {"A": 0.65, "Kiro729": 0.35}, scoreboard.alls(buyers, scoreboard.BUYER))
     with open(MD / "analysis" / "scoreboard_history.jsonl", "w", encoding="utf-8") as f:     # a line from before 11/5 15:40
         f.write(json.dumps({"at": int(NOW - 3 * H - 60), "shops": {"Kiro729": [5, 800, 4.8]}, "buyers": {}}) + "\n")
@@ -1092,7 +1100,7 @@ def test_scoreboard():
           sb["pace"]["shop.book"] == {"ours_per_h": 20, "above_median_per_h": 0} and sb["projection"]["place"] == 2
           and sb["projection"]["total"] == 1.025 and "in 6 h at this pace: 2" in note, (sb.get("pace"), sb.get("projection")))
     check("every row's parts kept in the history, one line a pass",
-          [sorted(x["shops"]) for x in common.read_jsonl(MD / "analysis" / "scoreboard_history.jsonl") if x.get("v") == 2] == [["A", "C", "Kiro729"]] * 2)
+          [sorted(x["shops"]) for x in common.read_jsonl(MD / "analysis" / "scoreboard_history.jsonl") if x.get("v") == scoreboard.VERSION] == [["A", "C", "Kiro729"]] * 2)
     br = scoreboard.brief(sb, "buyer")
     check("the briefing's view: one side's parts with their next two steps, and the pace of that side only",
           "shop" not in br and br["buyer"]["forum"]["pct"] == 1.0 and all(k.startswith("buyer") for k in br["pace_per_h_ours_vs_rows_above"]), br)
@@ -1104,7 +1112,7 @@ def test_scoreboard():
     check("a board without stars_rank: no stars for linewatch (not 0, which would read as bad stars)", scoreboard.stars(NOW + 180) is None)
     cls = board(260)
     cls["shops"].append({"name": "Out", "book": 9999, "revenue": 9999, "stars_rank": 5.0, "all": 0.0})
-    cls["buyers"].append({"name": "Out", "surplus": 999, "forum": 0.99, "deals": 99, "posts": 99})
+    cls["buyers"].append({"name": "Out", "saved": 999, "forum": 0.99, "deals": 99, "posts": 99})
     cls["players"] = [dict(p, student=True, student_total=t) for p, t in zip(cls["players"], (1.9, 1.0, 0.2))] + [
         {"player": "Out", "total": 2.5, "shop": {"name": "Out"}, "buyer": {"name": "Out"}}]
     note = scoreboard.update(NOW + 200, cls)

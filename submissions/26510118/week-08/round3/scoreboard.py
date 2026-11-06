@@ -30,8 +30,9 @@ import common
 import forum
 
 SHOP = {"book": 0.5, "revenue": 0.3, "stars_rank": 0.2}
-BUYER = {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
-UNIT = {"book": 1, "revenue": 1, "surplus": 1, "deals": 1, "posts": 1, "stars_rank": 0.01, "forum": 0.001}
+BUYER = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}   # surplus until Patch 3.4 (11/6 06:00): saved, the
+                                                                    # mean share of list kept per deal over deals + 100
+UNIT = {"book": 1, "revenue": 1, "surplus": 1, "saved": 0.0001, "deals": 1, "posts": 1, "stars_rank": 0.01, "forum": 0.001}
 LEVEL = ("stars_rank", "forum")      # averages: no pace is projected for them
 AHEAD = 3                            # rows above us priced in each part
 RATE_WINDOW = 3 * 3600               # the pace: the change since the history line nearest this long ago
@@ -39,7 +40,7 @@ RATE_MIN = 2 * 3600                  # ...at least this long ago
 PROJECT = 6 * 3600
 NEIGHBOURS = 5                       # the rows just above us whose median pace ours is set against
 TAIL = 600_000                       # bytes of the history read back (about 3 h of lines at ~5 KB each, 20 min apart, with room)
-VERSION = 2                          # history lines on book (11/5 15:40); older ones (profit) are not read
+VERSION = 3                          # history lines on book and saved (11/6 12:40; 2 = book with surplus, 11/5 15:40)
 
 
 def folder():
