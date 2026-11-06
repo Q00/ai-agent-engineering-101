@@ -243,7 +243,7 @@ expired food is thrown away at cost. Goods are A normal, B box damaged, C refurb
 6 hours after the sale; a warranty refunds the full price from the shop if they break within it. No
 floor price. The market's certificate proves shelf life or grade; claims are checked after the sale on
 the ledger. A buyer's accept policy {cert, min_hours_left, grades, warranty_hours} is checked by the kit
-before paying. Forum: one post per 5 minutes per side, votes unlimited. Below 500,000 a shop may go
+before paying. Forum: one post per 5 minutes per side; likes are free, the 4th new dislike in an hour costs money (patch 3.4). Below 500,000 a shop may go
 bankrupt twice (stock seized, balance back to 5,000,000, the money is subtracted from profit). A buyer
 and a shop with the same owner cannot settle with each other.
 
