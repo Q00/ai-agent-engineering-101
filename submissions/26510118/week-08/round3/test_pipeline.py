@@ -691,7 +691,7 @@ def main() -> int:
               "must last at least 49 hours" in "\n".join(log) and rec.get("unit") == "u-k1-a")
         check("S3: first ask 75% of list for grade A, deal between the floor and it",
               "Asking 15000" in "\n".join(log) and 12600 <= rec.get("price", 0) <= 15000, rec.get("price"))
-        check("B2: the buyer opened at 60% of list and took the ask once it fit", "-> '12000." in "\n".join(log))
+        check("B2: the buyer opened at 50% of list and took the ask once it fit", "-> '10000." in "\n".join(log))
         check("S4: the receipt claims the true grade", rec.get("claim") == "A", rec.get("claim"))
         co, refuse = kit_checks(fake, rec, order, inv, out["accept"])
         check("kit: checkout ships u-k1-a with its certificate and the claim", co.get("unit") == "u-k1-a" and co.get("cert")

@@ -87,13 +87,22 @@ HOLDS = 2                 # asks above our ceiling that stopped falling before w
 # we paid a median 0.772 of list for A, 0.715 for B and 0.70 for C, keeping 0.206, 0.237 and 0.274 of list after
 # breaks, while a shop's C costs it 0.25-0.45 and a B 0.40-0.60. Goods we want the warranty on are asked for in any
 # grade, B or C welcome; a B or C the shop offers has its own ceiling, and our ladder scales down to it.
-GRADE_CAP = {"B": 0.70, "C": 0.62}
+# Kiro 2.0 (11/6 12:40, the person's call): Patch 3.4 scores a buyer on saved, the average share of list kept per deal
+# (a deal that served nothing -1, refunded 0, over deals + 100); a deal keeping less than our running saved pulls it
+# down. So the ceiling keeps at least MIN_SHARE of list in expectation: food 1 - MIN_SHARE; goods under a warranty
+# (a break is refunded: 0) 1 - MIN_SHARE / (1 - p); goods without one (a break is -1) 1 - (MIN_SHARE + p) / (1 - p),
+# p our breakage by grade; and never over the SKU's market of that grade (others_6h). analysis/objective.json
+# (written by objective.py every 20 minutes from the class board) sets MIN_SHARE when it is fresh.
+MIN_SHARE = 0.27
+BUYER_BREAK = {"A": 0.055, "B": 0.085, "C": 0.11}   # our purchases over Round 3 (11/6)
+OBJECTIVE_FRESH = 2 * 3600
+SHELF_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:of shelf life|left)", re.I)
 GRADE_WORDS = " Grade B (damaged box) or C (refurbished) suits me as well as A, priced for its grade."
 GRADE_SAID = re.compile(r"\bgrade\s*[:=]?\s*([ABC])\b", re.I)
 # 11/5 03:30 (the person's call: "a lower ceiling, and better negotiating"): 27% of our deals in 12 h paid more than
 # the item's own market (its mean paid / list over 24 h) + 5% of list, 2.48M over that line; 64 paid over 90% of list.
 # Most came from taking a shop's counter at once whenever it was under our ceiling. So:
-MARKET_SLACK = 0.05       # the ceiling is also the item's market + this (when 20+ settles of it in 24 h)
+MARKET_SLACK = 0.0        # the ceiling is also the item's market + this (when 20+ settles of it in 24 h; 0.05 until 11/6)
 MARKET_SEEN = 20
 # ...a counter above the item's market but within the ceiling is met once in the middle before it is taken, and
 # every offer carries a few honest words (one number in the message, the offer: shops read the last or only number):
@@ -321,7 +330,7 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             t = memory.trust(nb, sh["name"], summary)
             if p is not None:
                 t = round((1 - ODDS_BLEND) * t + ODDS_BLEND * p, 3)
-            score = (lp - expected) * t * (EXPLORE if sh["name"] not in nb else 1) \
+            score = (1 - expected / lp) * t * (EXPLORE if sh["name"] not in nb else 1) \
                 * (PREFER if sh["name"] in (rules.get("prefer_shops") or []) else 1) \
                 * (RIVAL if sh["name"] in (rivals or set()) else 1)
             row = by_sku.get(o["sku"]) or {}
@@ -329,7 +338,8 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             out.append({"shop": sh, "sku": o["sku"], "name": o.get("name") or c.get("name"), "list": lp,
                         "kind": c.get("kind"), "expected": round(expected), "gain": round(lp - expected),
                         "trust": t, "odds": p, "score": score, "flags": flags,
-                        "market": row.get("price_ratio") if seen else None, "low": row.get("p25") if seen else None})
+                        "market": row.get("price_ratio") if seen else None, "low": row.get("p25") if seen else None,
+                        "cells": row.get("others_6h") or {}})
     return out
 
 
@@ -421,17 +431,54 @@ def ladder(rules: dict, low_paid: float | None) -> list:
     return steps
 
 
-def cap_of(c: dict, order: dict, top: float) -> int:
-    """Our ceiling: the budget, top (max_ratio) of list, and the item's market + MARKET_SLACK when it is known."""
+def min_share(now: float | None = None) -> float:
+    """The least share of list a deal must keep: analysis/objective.json's buyer_min_share when fresh, else MIN_SHARE."""
+    o = common.read_json(common.MARKET_DIR / "analysis" / "objective.json", None)
+    now = now or time.time()
+    v = o.get("buyer_min_share") if isinstance(o, dict) and now - (o.get("at") or 0) < OBJECTIVE_FRESH else None
+    return float(v) if isinstance(v, (int, float)) and 0.1 <= v <= 0.5 else MIN_SHARE
+
+
+def share_cap(kind, g, covered: bool, lam: float) -> float:
+    """The most to pay as a share of list and still keep lam in expectation (see MIN_SHARE)."""
+    if kind != "goods":
+        return 1 - lam
+    p = BUYER_BREAK.get(g or "A", BUYER_BREAK["A"])
+    return 1 - lam / (1 - p) if covered else 1 - (lam + p) / (1 - p)
+
+
+def grade_market(c: dict, g, covered: bool):
+    """The SKU's market for this grade, with a warranty or without (others_6h, 10+ settles), as a share of list."""
+    d = (c.get("cells") or {}).get((g or "A") + ("_w" if covered else "")) or {}
+    return d.get("median") if (d.get("n") or 0) >= 10 and isinstance(d.get("median"), (int, float)) else None
+
+
+def cap_of(c: dict, order: dict, top: float, lam: float | None = None) -> int:
+    """Our ceiling: the budget, top (max_ratio) of list, the item's market + MARKET_SLACK when it is known, and for food
+    the share it must keep (1 - lam; goods get theirs once the grade and the warranty are known)."""
     cap = min(order["budget"], round(c["list"] * top))
-    return min(cap, round(c["list"] * (c["market"] + MARKET_SLACK))) if c.get("market") else cap
+    if c.get("market"):
+        cap = min(cap, round(c["list"] * (c["market"] + MARKET_SLACK)))
+    if lam is not None and c.get("kind") != "goods":
+        cap = min(cap, round(c["list"] * share_cap(c.get("kind"), None, True, lam)))
+    return cap
+
+
+def shelf_hours(t):
+    """The shelf life left the shop states for the unit it offers (metadata, else words), or None."""
+    h = meta(t).get("hours_left")
+    if isinstance(h, (int, float)):
+        return float(h)
+    found = SHELF_SAID.search(said(t))
+    return float(found.group(1)) if found else None
 
 
 async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rules: dict, poor: bool,
                 others: bool = False) -> dict:
     """One negotiation. Returns the facts the order record, the notebook and the result line need."""
     r = {"deal": False, "receipt": None, "price": None, "asks": [], "offers": [], "error": None, "left": None,
-         "switched": None, "warranty": wants_warranty(c, nb, poor, rules), "said": [], "cap": None}
+         "switched": None, "warranty": wants_warranty(c, nb, poor, rules), "said": [], "cap": None,
+         "min_share": min_share()}
     need = order.get("use_within_hours")
     try:
         await client.open(c["shop"]["url"])
@@ -444,7 +491,8 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                 first += GRADE_WORDS
         t = await client.send(first)
         steps = ladder(rules, memory.paid_ratio(nb, c["shop"]["name"])[1])
-        ceiling = r["cap"] = cap_of(c, order, steps[-1])
+        lam = r["min_share"]
+        ceiling = r["cap"] = cap_of(c, order, steps[-1], lam)
         prev, holds, asked_warranty, refurb, covered, split = None, 0, r["warranty"], False, False, False
         scale = 1.0                                                 # the ladder, scaled to a B's or a C's ceiling
         for step in steps:
@@ -467,7 +515,7 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                     break
                 c = dict(c, sku=pick, name=alt.get("name"), list=alt["list_price"], kind=alt.get("kind"), market=None, low=None)
                 r["switched"] = pick
-                ceiling = r["cap"] = cap_of(c, order, steps[-1])
+                ceiling = r["cap"] = cap_of(c, order, steps[-1], lam)
                 if pick != m.get("sku"):                            # choose it from the menu
                     t = await client.send(pick, t["id"])
                     continue
@@ -485,10 +533,21 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
             if refurb and not covered:
                 r["left"] = f"refurbished goods, and the shop did not confirm a {WARRANTY_HOURS}-hour warranty"
                 break
+            hours = shelf_hours(t) if c["kind"] != "goods" and need else None
+            if hours is not None and hours < need + MARGIN_HOURS:      # our own rule: leave before any offer, and it
+                r["left"] = (f"the unit's shelf life ({hours:.0f} h) is short of the order's need "     # is not the shop's
+                             f"({need + MARGIN_HOURS:.0f} h)")                                          # failure
+                r["policy"] = True
+                break
             g = grade_of(t) if c["kind"] == "goods" else None
-            if g in GRADE_CAP and round(c["list"] * GRADE_CAP[g]) < ceiling:
-                ceiling = r["cap"] = round(c["list"] * GRADE_CAP[g])
-                scale, r["grade"] = GRADE_CAP[g] / steps[-1], g
+            if c["kind"] == "goods":                                    # Kiro 2.0: the share this grade must keep, and
+                caps = [round(c["list"] * share_cap("goods", g, covered, lam))]     # its own market
+                gm = grade_market(c, g, covered)
+                if gm is not None:
+                    caps.append(round(c["list"] * gm))
+                if min(caps) < ceiling:
+                    ceiling = r["cap"] = min(caps)
+                    scale, r["grade"] = (ceiling / c["list"]) / steps[-1], g
             ask = await asked(t)
             if ask is not None:
                 r["asks"].append(ask)
@@ -549,7 +608,11 @@ def median_list(order: dict, catalog: dict):
 
 
 def note_outcome(nb: dict, c: dict, r: dict, order: dict) -> None:
-    """One trade's result into the shop notebook (and a deal into pending, to be matched with its payment)."""
+    """One trade's result into the shop notebook (and a deal into pending, to be matched with its payment). Leaving for
+    our own rule (a shelf life short of the order's need) is no mark against the shop (11/6: 31 of 109 unpaid in 24 h
+    were our policy, which locked us out of the shops our rivals buy cheapest at)."""
+    if r.get("policy"):
+        return
     if r["error"]:
         memory.outcome(nb, c["shop"]["name"], "error", c["shop"]["url"])
     elif r.get("unsigned"):                                         # 11/4: a house shop's unsigned receipts, 131 in 24 h
@@ -637,7 +700,8 @@ async def amain(a) -> dict:
                   expected=c["expected"], trust=c["trust"], odds=c.get("odds"), flags=c["flags"], poor=bool(poor), warranty=r["warranty"],
                   switched=r["switched"], asks=r["asks"], offers=r["offers"], deal=r["deal"], price=r["price"],
                   error=r["error"], left=r["left"], tries=tries, rival=c["shop"]["name"] in rivals,
-                  cap=r.get("cap"), market=c.get("market"), said=r.get("said"), grade=r.get("grade"))
+                  cap=r.get("cap"), market=c.get("market"), said=r.get("said"), grade=r.get("grade"),
+                  min_share=r.get("min_share"), policy=r.get("policy"))
     if r["deal"]:
         review = f"Agreed {r['price']} for {c['name']} (list {c['list']}) after {len(r['offers'])} offer(s)."
         stars = 4                                                   # the review hook rewrites it once the deal settles

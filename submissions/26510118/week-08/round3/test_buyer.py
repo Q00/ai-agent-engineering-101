@@ -71,10 +71,12 @@ def test_choosing():
     cands = mb.candidates(food, [shop("C", KIMCHI, GEOTJEORI, PAKIMCHI)], CATALOG, {}, {}, RULES)
     check("expected price 70% of list with nothing better; a product over the budget's reach is dropped",
           {x["sku"]: x["expected"] for x in cands} == {KIMCHI: 14000, GEOTJEORI: 9380, PAKIMCHI: 17892}, cands and [x["expected"] for x in cands])
-    best, _ = mb.choose(cands, {})
-    check("the largest expected gain wins (파김치: 25560 - 17892)", best["sku"] == PAKIMCHI, best["sku"])
+    best, _ = mb.choose(mb.candidates(food, [shop("C", KIMCHI, GEOTJEORI, PAKIMCHI)], CATALOG, {},
+                                      {"by_sku": {KIMCHI: {"price_ratio": 0.60}}}, RULES), {})
+    check("Kiro 2.0: the largest expected share of list kept wins (김치 at 60% keeps 40%), not the largest amount",
+          best["sku"] == KIMCHI, best["sku"])
     bed = order(35000, [BEDDING, PAD], "goods")
-    best, _ = mb.choose(mb.candidates(bed, [shop("C", BEDDING, PAD)], CATALOG, {}, {}, RULES), {})
+    best, _ = mb.choose(mb.candidates(bed, [shop("C", BEDDING, PAD)], CATALOG, {}, {"by_sku": {PAD: {"price_ratio": 0.80}}}, RULES), {})
     check("a product listed above the budget is tried when its expected price fits (이불 39900 > 35000)", best["sku"] == BEDDING)
     best, _ = mb.choose(mb.candidates(bed, [shop("C", BEDDING, PAD)], CATALOG, {}, {}, dict(RULES, over_budget_try=False)), {})
     check("...and not when the rules turn that off", best["sku"] == PAD)
@@ -108,8 +110,9 @@ def test_choosing():
 
 def test_terms():
     print("\n[B2 B3] offers and quality terms")
-    check("offers 60, 70, 80, 90% of list", mb.ladder(RULES, None) == [0.6, 0.7, 0.8, 0.9], mb.ladder(RULES, None))
-    check("a lower price paid there before opens lower", mb.ladder(RULES, 0.55)[0] == 0.55)
+    check("offers 50, 63, 77, 90% of list (opening 0.50 since 11/6)", mb.ladder(RULES, None) == [0.5, 0.6333, 0.7667, 0.9],
+          mb.ladder(RULES, None))
+    check("a lower price paid there before opens lower", mb.ladder(RULES, 0.45)[0] == 0.45)
     check("the rules move the range", mb.ladder(dict(RULES, open_ratio=0.5, max_ratio=0.95), None) == [0.5, 0.65, 0.8, 0.95])
     t = lambda text, m=None: {"status": {"message": {"parts": [{"text": text}], "metadata": m or {}}}}
     check("the ask from metadata first", asyncio.run(mb.asked(t("asking 1", {"ask": 19000}))) == 19000)
@@ -173,11 +176,27 @@ def test_terms():
     sofa = {"shop": {"name": "K", "url": "http://k"}, "sku": "G2", "name": "Sofa", "list": 1_000_000, "kind": "goods"}
     r = asyncio.run(mb.trade(shop_, sofa, order(1_500_000, ["G2"], "goods"), {}, {}, RULES, False))
     offers = [int(__import__("re").findall(r"\d+", x)[0]) for x in shop_.sent[1:] if x != "(cancel)"]
-    check("dear goods: the warranty asked for, any grade welcome; a C has its own ceiling (62% of list) and the ladder "
-          "scales down to it (60% -> 39%)",
+    cap_c = round(1_000_000 * mb.share_cap("goods", "C", True, mb.MIN_SHARE))
+    check("dear goods: the warranty asked for, any grade welcome; a C under its warranty keeps 27% after its 11% breakage "
+          "(ceiling 1 - 0.27 / 0.89 = 69.7% of list), and the ladder scales down to it (50% -> 38.7%)",
           shop_.sent[0] == "I want to buy Sofa (G2). Please include a 6-hour warranty." + mb.GRADE_WORDS
-          and r["cap"] == 620_000 and r["grade"] == "C" and offers[0] == round(1_000_000 * 0.60 * 0.62 / 0.90)
-          and max(offers) <= 620_000, (shop_.sent, r.get("cap")))
+          and r["cap"] == cap_c == 696_629 and r["grade"] == "C" and offers[0] == round(1_000_000 * 0.50 * (cap_c / 1_000_000) / 0.90)
+          and max(offers) <= cap_c, (shop_.sent, r.get("cap")))
+    flow[:] = [reply("Kimchi (K1): grade A, 50 h of shelf life left, certificate attached. Asking 15000.", {"ask": 15000})]
+    shop_ = Shop()
+    kim = {"shop": {"name": "K", "url": "http://k"}, "sku": "K1", "name": "Kimchi", "list": 20000, "kind": "food"}
+    r = asyncio.run(mb.trade(shop_, kim, order(22000, ["K1"], "food", 72), {}, {}, RULES, False))
+    nb_k = {}
+    mb.note_outcome(nb_k, kim, r, order(22000, ["K1"], "food", 72))
+    check("food whose stated shelf life (50 h) is short of the need (73 h): we leave before any offer, and it is no mark "
+          "against the shop (our own rule)", r.get("policy") and "short of the order's need" in r["left"] and not r["offers"]
+          and nb_k == {}, (r.get("left"), nb_k))
+    common.write_json(common.MARKET_DIR / "analysis" / "objective.json", {"at": time.time(), "buyer_min_share": 0.31})
+    check("the share to keep comes from objective.json while it is fresh (0.31), else 0.27",
+          mb.min_share() == 0.31 and mb.min_share(time.time() + 3 * 3600) == mb.MIN_SHARE)
+    (common.MARKET_DIR / "analysis" / "objective.json").unlink()
+    check("the share a deal must keep: food 1 - 0.27; goods without a warranty pay for the break too (A: 65.6%)",
+          round(mb.share_cap("food", None, True, 0.27), 3) == 0.73 and round(mb.share_cap("goods", "A", False, 0.27), 3) == 0.656)
     check("a warranty for goods listed at 100,000 or more", mb.wants_warranty(dict(goods, list=168000), {}, False, RULES))
     check("...from a shop whose goods broke on us", mb.wants_warranty(goods, {"K": {"broken": 1}}, False, RULES))
     check("...when every choice was poor", mb.wants_warranty(goods, {}, True, RULES))
@@ -292,13 +311,15 @@ def test_notebook():
     check("turned away before any offer: noted with the shop's words", r.get("refused") and "none of that" in r["left"], r)
     ask = lambda text, n: dict(task("TASK_STATE_INPUT_REQUIRED", text), status={"state": "TASK_STATE_INPUT_REQUIRED",
                                "message": {"parts": [{"text": text}], "metadata": {"ask": n}}})
+    saved_rules = (mb.MIN_SHARE, mb.MARKET_SLACK)       # the haggling mechanics below, under the old caps (share kept 0,
+    mb.MIN_SHARE, mb.MARKET_SLACK = 0.0, 0.05           # the market + 5%); Kiro 2.0's caps are checked above
     signed = {"shop": "S", "item": BEDDING, "price": 34000, "task": "t1", "sig_seller": "x"}
     shop_ = Shop([ask("Asking 37000.", 37000), ask("Final price: 34000", 34000), task("TASK_STATE_COMPLETED", "Deal", signed)])
     r = asyncio.run(mb.trade(shop_, dict(cand, list=39900), order(40000, [BEDDING], "goods"), CATALOG, {}, RULES, False))
     check("after our first offer, an ask within our ceiling (90% of 39,900) is taken, not answered with a lower offer",
-          shop_.sent[1].startswith("23940.") and shop_.sent[2] == "34000" and r["deal"] and r["price"] == 34000, (shop_.sent, r.get("left")))
+          shop_.sent[1].startswith("19950.") and shop_.sent[2] == "34000" and r["deal"] and r["price"] == 34000, (shop_.sent, r.get("left")))
     check("...each offer of ours carries one number, the offer, then honest words; taking the shop's ask is the bare number",
-          [__import__("re").findall(r"\d[\d,]*", x) for x in shop_.sent[1:]] == [["23940"], ["34000"]]
+          [__import__("re").findall(r"\d[\d,]*", x) for x in shop_.sent[1:]] == [["19950"], ["34000"]]
           and "I pay the moment the receipt arrives." in shop_.sent[1], shop_.sent)
     nums = lambda text: __import__("re").findall(r"\d[\d,]*", text)
     mk = dict(cand, list=39900, market=0.70, low=0.62)               # the item's market 70% of list, its low end 62%
@@ -307,11 +328,11 @@ def test_notebook():
     shop_ = Shop([ask("Asking 37000.", 37000), ask("Best I can do: 29000", 29000), ask("Fine, 27500.", 27500),
                   task("TASK_STATE_COMPLETED", "Deal", dict(signed, price=27500))])
     r = asyncio.run(mb.trade(shop_, mk, order(40000, [BEDDING], "goods"), CATALOG, {}, RULES, False, others=True))
-    check("a counter above the item's market (29,000 > 27,930) is met once in the middle (26,470), then the next taken",
-          [nums(x)[0] for x in shop_.sent[1:]] == ["23940", "26470", "27500"] and r["deal"] and r["price"] == 27500
+    check("a counter above the item's market (29,000 > 27,930) is met once in the middle (24,475), then the next taken",
+          [nums(x)[0] for x in shop_.sent[1:]] == ["19950", "24475", "27500"] and r["deal"] and r["price"] == 27500
           and "Let's meet in the middle" in shop_.sent[2] and "split" in r["said"], (shop_.sent, r.get("left")))
     check("the first offer cites the ledger's low end in words (sixty-two percent), with no second number",
-          "about sixty-two percent of its list price" in shop_.sent[1] and nums(shop_.sent[1]) == ["23940"], shop_.sent[1])
+          "about sixty-two percent of its list price" in shop_.sent[1] and nums(shop_.sent[1]) == ["19950"], shop_.sent[1])
     check("...later offers say other shops stock it (true: others=True); the record keeps what was said and the cap",
           "Other shops have it in stock too" in shop_.sent[2] and r["cap"] == 29925 and "other shops" in r["said"], (shop_.sent[2], r))
     shop_ = Shop([ask("Asking 37000.", 37000)] * 6)
@@ -326,11 +347,16 @@ def test_notebook():
     check("an offer at our cap says it is final, and only that one",
           capped and all("That is my final offer." in x for x in capped)
           and not any("final" in x for x in shop_.sent[1:] if x not in capped), shop_.sent)
+    mb.MIN_SHARE, mb.MARKET_SLACK = saved_rules
+    check("Kiro 2.0: the ceiling is the item's market itself (70% of 39,900 = 27,930; + 5% until 11/6)",
+          mb.cap_of(mk, order(40000, [BEDDING], "goods"), 0.90) == 27930)
     check("words(): 62 -> sixty-two, 70 -> seventy, 9 -> nine", (mb.words(62), mb.words(70), mb.words(9)) == ("sixty-two", "seventy", "nine"))
 
 
 def test_shop_around():
     print("\n[B6] more than one shop per order, and rivals in a near tie")
+    saved_rules = (mb.MIN_SHARE, mb.MARKET_SLACK)       # the going-on mechanics, under the old caps (Kiro 2.0's caps are
+    mb.MIN_SHARE, mb.MARKET_SLACK = 0.0, 0.05           # checked in test_terms)
 
     def task(state, text, receipt=None, ask=None):
         t = {"id": "t1", "status": {"state": state, "message": {"parts": [{"text": text}], "metadata": {"ask": ask} if ask else {}}}}
@@ -425,6 +451,7 @@ def test_shop_around():
     best, _ = mb.choose(cheap, {"R": {"recent": [], "ratios": [0.55]}})
     check("...but not when the rival is clearly cheaper (55% of list paid there before)", best["shop"]["name"] == "R",
           {x["shop"]["name"]: round(x["score"]) for x in cheap})
+    mb.MIN_SHARE, mb.MARKET_SLACK = saved_rules
 
 
 def start_seller():

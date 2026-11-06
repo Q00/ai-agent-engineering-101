@@ -114,9 +114,11 @@ def sync(nb: dict) -> None:
                 e = entry(nb, deal["shop"])
                 e["ratios"] = (e["ratios"] + [round(deal["price"] / deal["list_price"], 3)])[-20:]
         else:
-            outcome(nb, deal["shop"], "unpaid", deal.get("url"))
+            policy = "policy asks" in str(p.get("reason") or "")        # the kit held to our own terms (shelf life):
+            if not policy:                                              # no mark against the shop (11/6)
+                outcome(nb, deal["shop"], "unpaid", deal.get("url"))
             common.record("unpaid_buys", order=p.get("order"), shop=deal["shop"], sku=deal.get("sku"),
-                          reason=p.get("reason"))
+                          reason=p.get("reason"), policy=policy)
     state["payments"] = len(pays)
     news = common.read_jsonl(md / "broken.jsonl")
     if news[state.get("broken", 0):]:
