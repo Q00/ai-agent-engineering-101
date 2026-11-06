@@ -37,11 +37,13 @@ from r3_policy import selling_terms
 from market_state import read, write, task_file
 from kit_runtime import OFFER_SECONDS
 from market_intel import fresh
+from price_cap import capped
 from receipt_label import receipt_item, request_form
+from sale_order import grade_c_last, order_key
 from strategy_policy import effective
 
 NAME = "kcwarni Inventory Shop"
-FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2"]
+FEATURES = ["actual_grade_receipt", "bounded_warranty_v1", "coded_seller_rules", "model_breaker", "food_pricing_v2", "price_cap_v1", "sale_order_v1", "a_grade_six_hour_v1"]
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
 PROMPT = """You are a Round 3 inventory sales agent. A buyer is negotiating for one {name}.
@@ -111,7 +113,8 @@ def find_unit(text, taken=()):
             or u["sku"].lower() in want)]
     named = [u for u in fit if u["sku"].lower() in want]
     fit = named or fit                                   # a SKU the buyer named comes first
-    return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
+    c_last = grade_c_last()
+    return min(fit, key=lambda u: order_key(u, c_last), default=None)
 
 
 def model_allowed():
@@ -220,7 +223,7 @@ class Seller(AgentExecutor):
                 deal["unit"] = u
                 catalog = json.loads((MARKET_DIR / "catalog.json").read_text(encoding="utf-8"))
             signals = fresh(MARKET_DIR).get("skus", {}).get(u["sku"], {})
-            terms = selling_terms(u, catalog, signals=signals, runtime=effective(MARKET_DIR))
+            terms = capped(selling_terms(u, catalog, signals=signals, runtime=effective(MARKET_DIR)), u)
             from warranty_trial import assignment
             coverage = deal.get("coverage")
             if coverage is None or coverage.get("enrolled"):
@@ -254,7 +257,7 @@ class Seller(AgentExecutor):
                 u = next(x for x in inventory["units"] if x["unit"] == u["unit"])
                 if u["unit"] in self.committed_units:
                     raise ValueError("Unit already committed")
-                terms = selling_terms(u, catalog, signals=signals, runtime=effective(MARKET_DIR))
+                terms = capped(selling_terms(u, catalog, signals=signals, runtime=effective(MARKET_DIR)), u)
                 if deal.get("coverage", {}).get("hours"):
                     coverage = assignment(MARKET_DIR, task.id, u, terms)
                     terms["floor"] = max(terms["floor"], coverage["floor"])
@@ -293,6 +296,7 @@ class Seller(AgentExecutor):
                        "grade": u.get("grade"), "warranty_hours": terms.get("warranty_hours", 0),
                        "warranty_trial_group": deal.get("coverage", {}).get("group"),
                        "strategy_experiment": terms.get("strategy_experiment"),
+                       "list_price": u.get("list_price"), "price_cap": terms.get("price_cap"),
                        "issued_at": time.time(), "expires_at": time.time() + OFFER_SECONDS})
                 self.committed_units.add(u["unit"])
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")

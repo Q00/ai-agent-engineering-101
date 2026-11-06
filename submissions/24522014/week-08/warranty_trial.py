@@ -48,6 +48,45 @@ def config():
     return c
 
 
+def six_hour_settings(path=None):
+    """The A-grade six-hour warranty's settings when switched on and inside its bounds; anything else is off."""
+    c = read(ROOT / "a_grade_warranty.json" if path is None else path, {})
+    try:
+        if (c.get("enabled") is not True or c["hours"] != 6 or not 0 < c["max_exposure"] <= 60000000 or not 0 < c["cash_exposure_ratio"] <= .7
+                or not 0 <= c["refund_ratio"] < .2 or c["quote_lease_seconds"] != 600):
+            return None
+    except (AttributeError, KeyError, TypeError):
+        return None
+    return c
+
+
+def six_hour(md, path, state, task, unit, terms, c, ordinary, now):
+    """Every A-grade unit, not a comparison: enrolled stays False so the trial's evaluation never counts it, and liability() still reserves it."""
+    inventory = read(md / "inventory.json", {})
+    if inventory.get("round") != 3 or not -10 <= now-(md / "inventory.json").stat().st_mtime <= 120:
+        return ordinary
+    cost = unit["cost"]
+    storage = cost * .01 * max(0, now-unit.get("supplied_at", now))/86400
+    floor = max(terms["floor"], math.floor((cost+storage)/(1-c["refund_ratio"]))+1)
+    if terms["quote"] < floor:
+        return ordinary
+    reserved = liability(md, now)
+    balance = inventory.get("balance", 0)
+    stock_storage = sum(u.get("cost", 0)*.01*7 for u in inventory.get("units", []) if u.get("kind") == "goods")
+    reserve = max(1000000, inventory.get("start", 5000000)*.2)+stock_storage
+    if (reserved+terms["quote"] > min(c["max_exposure"], balance*c["cash_exposure_ratio"])
+            or balance-reserved-terms["quote"] < reserve):
+        return ordinary
+    record = {"hours": c["hours"], "floor": floor, "enrolled": False, "group": "six_hour",
+              "day": datetime.fromtimestamp(now, timezone.utc).date().isoformat(), "unit": unit["unit"], "sku": unit["sku"],
+              "cost": cost, "quote": terms["quote"], "at": now, "expires_at": now+c["quote_lease_seconds"]}
+    entries = {k: v for k, v in state["assignments"].items() if now-v["at"] <= 7*86400}
+    entries[task] = record
+    state["assignments"] = entries
+    write(path, state)
+    return record
+
+
 def assignment(md, task, unit, terms, now=None):
     from strategy_controller import acquire, release
     md = Path(md)
@@ -65,6 +104,10 @@ def assignment(md, task, unit, terms, now=None):
                 raise ValueError("Warranty quote expired; request a new task")
             return entries[task]
         ordinary = {"hours": 0, "floor": terms["floor"], "enrolled": False}
+        six = six_hour_settings()
+        if (six and unit.get("kind") == "goods" and unit.get("grade") == "A" and unit.get("cert")
+                and not terms.get("below_cost_allowed")):
+            return six_hour(md, path, state, task, unit, terms, six, ordinary, now)
         if (not c["enabled"] or state.get("paused") or unit.get("kind") != "goods" or unit.get("grade") != "A"
                 or not unit.get("cert") or terms.get("below_cost_allowed")):
             return ordinary
