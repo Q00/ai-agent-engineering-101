@@ -55,7 +55,8 @@ def pct(values: list, v) -> float:
     return scoreboard.pct(values, v)
 
 
-def choose(ours: dict, others: list, recent: list, hours_left: float, window_h: float) -> tuple[float | None, dict]:
+def choose(ours: dict, others: list, recent: list, hours_left: float, window_h: float,
+           w_saved: float = 0.5, w_deals: float = 0.1) -> tuple[float | None, dict]:
     """(the best threshold, {t: projected 0.5 saved pct + 0.1 deals pct}). ours: {saved, deals}; others: [(saved_end,
     deals_end)]; recent: [(paid share, kept share)] over window_h hours."""
     n, s_now = ours["deals"], ours["saved"] * (ours["deals"] + 100)
@@ -69,7 +70,7 @@ def choose(ours: dict, others: list, recent: list, hours_left: float, window_h: 
         deals_end = n + add
         col_s = [x[0] for x in others] + [saved_end]
         col_d = [x[1] for x in others] + [deals_end]
-        scores[t] = round(0.5 * pct(col_s, saved_end) + 0.1 * pct(col_d, deals_end), 4)
+        scores[t] = round(w_saved * pct(col_s, saved_end) + w_deals * pct(col_d, deals_end), 4)
     best = max(scores, key=lambda t: (scores[t], -t)) if scores else None
     return best, scores
 
@@ -84,33 +85,34 @@ def run(now: float | None = None, board: dict | None = None) -> dict:
     me_b = next((b for b in buyers if common.is_ours(b.get("name") or "")), None)
     me_s = next((s for s in shops if common.is_ours(s.get("name") or "")), None)
     out = {"at": int(now), "view": label, "lambda": {}, "buyer_min_share": None, "options": {}, "basis": {}}
-    for rows, me, weights in ((shops, me_s, scoreboard.SHOP), (buyers, me_b, scoreboard.BUYER)):
+    sw, bw = scoreboard.weights()                     # the board's formula in force (refit after a patch)
+    for rows, me, weights in ((shops, me_s, sw), (buyers, me_b, bw)):
         if not me:
             continue
         for part, v in scoreboard.parts(me, rows, weights).items():
             steps = v["next"][:2]
             need, gain = sum(s["need"] for s in steps), sum(s["gain"] for s in steps)
             out["lambda"][part] = round(gain / need, 12) if need else 0.0
-    if me_b:
+    if me_b and "saved" in bw:
         bought = common.read_jsonl(common.MARKET_DIR / "buyer" / "purchases.jsonl")
         recent = shares([p for p in bought if (p.get("settled_at") or 0) >= now - WINDOW],
                         common.read_jsonl(common.MARKET_DIR / "buyer" / "breaks.jsonl"))
         hours_left = max(0.0, (common.ROUND_END - now) / 3600)
         then = scoreboard.history_since(now)
         h_then = (now - then["at"]) / 3600 if then else 0
-        idx = list(scoreboard.BUYER).index("deals")
+        idx = list(bw).index("deals") if "deals" in bw else None
         others = []
         for b in buyers:
             if b is me_b:
                 continue
-            before = ((then or {}).get("buyers") or {}).get(b["name"])
+            before = ((then or {}).get("buyers") or {}).get(b["name"]) if idx is not None else None
             pace = (scoreboard.num(b, "deals") - before[idx]) / h_then if before and h_then else \
                 scoreboard.num(b, "deals") / max(1.0, (now - ROUND_START) / 3600)
             others.append((scoreboard.num(b, "saved"), scoreboard.num(b, "deals") + max(0.0, pace) * hours_left))
         out["basis"] = {"purchases_in_window": len(recent), "hours_left": round(hours_left), "pace_from": "history" if then else "average"}
         if len(recent) >= MIN_DEALS:
             best, scores = choose({"saved": scoreboard.num(me_b, "saved"), "deals": scoreboard.num(me_b, "deals")},
-                                  others, recent, hours_left, WINDOW / 3600)
+                                  others, recent, hours_left, WINDOW / 3600, bw.get("saved", 0), bw.get("deals", 0))
             out["options"] = {str(t): s for t, s in scores.items()}
             out["buyer_min_share"] = min(CLAMP[1], max(CLAMP[0], best)) if best is not None else None
     common.write_json(folder() / "objective.json", out)

@@ -45,6 +45,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 import common
+import experiments
 import harness
 import pricing
 import restock
@@ -320,7 +321,7 @@ def market_file(name: str) -> dict:
     return _files[name][1]
 
 
-def priced(u: dict, now: float, warranty: bool) -> dict:
+def priced(u: dict, now: float, warranty: bool, arm: float | None = None) -> dict:
     """pricing.plan under the rules in force (price_adjust, warranty_extra from active_rules.json), the
     market's prices for the unit's category and grade, and where we are in the supply cycle. Dear goods
     (pricing.WARRANTY_DEFAULT_MIN) come with the warranty whether or not the buyer asked."""
@@ -338,7 +339,7 @@ def priced(u: dict, now: float, warranty: bool) -> dict:
     comp = shop_model.comp_ask(market_file("analysis/price_map.json"), u.get("sku"))    # Kiro 2.0 stage 1
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
                         extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True,
-                        sku_market=sku_market, in_line=in_line, solo=solo, solo_floor=learned, comp_ask=comp)
+                        sku_market=sku_market, in_line=in_line, solo=solo, solo_floor=learned, comp_ask=comp, ask_over=arm)
 
 
 class Seller(AgentExecutor):
@@ -363,7 +364,8 @@ class Seller(AgentExecutor):
                       solo_floor=p.get("solo_floor"),
                       asked_warranty=d["warranty"],
                       warranty=bool(p.get("warranty_hours")), how=d["how"], asks=d["asks"], offers=d["offers"],
-                      walk_odds=d.get("walk") or None, taken_early=d.get("early", False), outcome=outcome, price=price)
+                      walk_odds=d.get("walk") or None, taken_early=d.get("early", False), outcome=outcome, price=price,
+                      arm=d.get("arm"), anchored=p.get("anchored"))
         print(f"[seller] {u['sku']} {outcome}" + (f" at {price}" if price else ""), flush=True)
         if outcome != "deal" and p.get("solo"):                     # an uncontested product's floor learns from a walk
             path = common.MARKET_DIR / "records" / "solo_floors.json"
@@ -374,7 +376,7 @@ class Seller(AgentExecutor):
 
     def quote(self, d: dict, now: float) -> dict:
         """(Re)price the deal's current unit and start its asks."""
-        d["plan"] = priced(d["unit"], now, d["warranty"])
+        d["plan"] = priced(d["unit"], now, d["warranty"], d.get("arm"))
         d["asks"], d["offers"] = [d["plan"]["ask"]], []
         return d["plan"]
 
@@ -419,7 +421,7 @@ class Seller(AgentExecutor):
             self.close(task_id, "out_of_range")
             await up.reject(say(self.no_fit(d["cat"], d["budget"])))
             return
-        d["unit"], d["menu"] = menu[0], [(u, priced(u, now, d["warranty"])) for u in menu]
+        d["unit"], d["menu"] = menu[0], [(u, priced(u, now, d["warranty"], d.get("arm"))) for u in menu]
         self.quote(d, now)
         await up.requires_input(say(f"We have {len(d['menu'])} {d['cat']} option(s) for that budget: {self.menu_text(d)}", d))
 
@@ -469,7 +471,7 @@ class Seller(AgentExecutor):
             d["warranty"] = True                         # remembered for a switch to another product
             if not d["plan"].get("warranty_hours"):     # dear goods carry it already
                 before = d["plan"]
-                p = priced(d["unit"], now, True)
+                p = priced(d["unit"], now, True, d.get("arm"))
                 d["plan"] = p
                 d["asks"].append(max(p["floor"], d["asks"][-1] + p["ask"] - before["ask"]))
                 if not numbers(text):
@@ -539,7 +541,8 @@ class Seller(AgentExecutor):
         else:
             cat = None
         d = {"warranty": req["warranty"], "t": now, "how": req["how"], "menu": None, "said": [text[:300]], "cat": cat,
-             "req": {k: req[k] for k in ("need_hours", "grades")}}
+             "req": {k: req[k] for k in ("need_hours", "grades")},
+             "arm": experiments.arm(task_id, now, market_file("analysis/experiments.json"))}     # Kiro 2.0 stage 2
         budget = None
         if direct:
             d["unit"] = direct[0]
@@ -557,7 +560,7 @@ class Seller(AgentExecutor):
                               need_hours=req["need_hours"], warranty=req["warranty"], offered=[], budget=budget, **who)
                 await up.reject(say(self.no_fit(cat, budget) if budget else "Sorry, we have none of that in stock right now."))
                 return
-            d["unit"], d["menu"], d["budget"] = menu[0], [(u, priced(u, now, req["warranty"])) for u in menu], budget
+            d["unit"], d["menu"], d["budget"] = menu[0], [(u, priced(u, now, req["warranty"], d["arm"])) for u in menu], budget
         p = self.quote(d, now)
         self.open[task_id] = d
         common.record("requests", task=task_id, how=req["how"], wanted=req["wanted"], category=cat,

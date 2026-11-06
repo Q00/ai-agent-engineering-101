@@ -424,6 +424,9 @@ def test_restock(fake: Fake):
     check("...a buyer who asks for grade A gets the A under its market, not the dear one listed first",
           _seller.pick([a_dear, a_ok, b, c], dict(req, grades=["A"]), NOW)["unit"] == "u-a2")
     check("...a dear A alone is still offered (the least over its market)", _seller.pick([a_dear], req, NOW)["unit"] == "u-a1")
+    p0, p4 = _seller.priced(a_ok, NOW, False), _seller.priced(a_ok, NOW, False, 0.04)
+    check("Kiro 2.0 stage 2: a talk's arm sets its anchored first ask over the market (+0.04 against the usual +0.02: 2% of list more)",
+          p0["anchored"] and abs((p4["ask"] - p0["ask"]) - 0.02 * 344640) <= 2, (p0["ask"], p4["ask"]))
     common.write_json(path, {"by_sku": {}, "by_category": {}})
     _seller._files.pop("market_summary.json", None)
     check("...no market known: the best grade, then the cheapest", _seller.pick([a_dear, b, a_ok, c], req, NOW)["unit"] == "u-a2")
@@ -823,6 +826,8 @@ def main() -> int:
         counts = {k: len(common.records(k)) for k in streams}
         check("every step left a record", all(counts.values()), counts)
         neg = common.records("negotiations")
+        check("every negotiation records its first-ask arm (none without experiments.json) and whether it was anchored",
+              all("arm" in n and "anchored" in n for n in neg), [sorted(n)[:6] for n in neg[:2]])
         check("no negotiation sold below its floor", all(n["price"] is None or n["price"] >= n["floor"] for n in neg),
               ", ".join(f"{n['sku']} {n['outcome']} {n['price']}/{n['floor']}" for n in neg))
     finally:

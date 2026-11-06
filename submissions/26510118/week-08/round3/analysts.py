@@ -35,11 +35,13 @@ from collections import Counter
 
 import common
 import context
+import experiments
 import harness
 import insights
 import mcp_host
 import linewatch
 import notes
+import objective
 import pricing
 import scoreboard
 import tools
@@ -446,6 +448,8 @@ def integrated(chat_fn=None, now: float | None = None) -> dict:
     brief = context.form("integrated", now, {"set_by_person_not_yours_to_change": {k: v.get("value") for k, v in person.items()} or "(none)",
                                              "metrics_3h_now": m,                     # most needed first: a part over its
                                              "scoreboard": scoreboard.brief(scoreboard.read(now)) or "(not in yet)",
+                                             "objective": objective.brief(now) or "(not in yet)",      # Kiro 2.0: the buyer's
+                                             "first_ask_arms": experiments.brief(now) or "(not in yet)",  # threshold, lambda, arms
                                              "market_watch_3h": watch.brief(now) or "(not in yet)",   # how the market works: taste,
                                                                                                       # trend, breakage, alerts
                                              "last_decisions": decisions,             # limit drops the blocks after it

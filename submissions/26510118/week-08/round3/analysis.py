@@ -61,11 +61,12 @@ import forum
 import harness
 import journal
 import ledger
+import experiments
 import objective
 import shop_model
 import watch
 
-EVERY = {"collect": 1200, "linewatch": 1200, "watch": 1200, "objective": 1200, "shop_model": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
+EVERY = {"collect": 1200, "linewatch": 1200, "watch": 1200, "objective": 1200, "shop_model": 1200, "experiments": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
          "votes": 1200, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
 RIVALS = 12             # the top players whose shops our buyer passes over in a near tie (market_buyer.RIVAL)
 NOTES_ALONE = True       # stand-alone notes every 5 minutes (stopped 11/5 03:20; back 11/6 12:40, the person's call:
@@ -363,12 +364,14 @@ def run_once(now: float | None = None, chat_fn=None, get_ledger=None, get_json=N
                     log(f"[analysis] watch: {got['note']}")
                     state[name] = now
                     continue
-                elif name in ("objective", "shop_model"):        # observers too (Kiro 2.0 stage 1): never in `done`
+                elif name in ("objective", "shop_model", "experiments"):   # observers too (Kiro 2.0): never in `done`
                     if name == "objective":
                         o = objective.run(now, get_json("/api/board") if get_json else None)
                         msg = f"buyer_min_share {o.get('buyer_min_share')} ({o.get('basis')})"
-                    else:
+                    elif name == "shop_model":
                         msg = shop_model.run(now)
+                    else:
+                        msg = experiments.run(now)
                     log(f"[analysis] {name}: {msg}")
                     state[name] = now
                     continue

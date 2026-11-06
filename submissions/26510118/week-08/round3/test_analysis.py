@@ -1223,6 +1223,106 @@ def test_objective_model():
           and (MD / "analysis" / "price_map.json").exists() and "shops" in note, note)
 
 
+def test_stage2():
+    print("\n[experiments, formula] the first-ask arms and the board's formula after a patch")
+    import random
+    import experiments
+    import scoreboard
+    t = time.time()
+    check("no experiments.json (or a stale or stopped one): no arm, the seller asks at pricing.ASK_OVER",
+          experiments.arm("t1", t, {}) is None and experiments.arm("t1", t, {"at": t - 4 * 3600, "weights": {"0.0": 1}}) is None
+          and experiments.arm("t1", t, {"at": t, "on": False, "weights": {"0.0": 1}}) is None)
+    even = {"at": t, "weights": {str(a): 0.25 for a in experiments.ARMS}}
+    got = [experiments.arm(f"task-{i}", t, even) for i in range(4000)]
+    share = {a: got.count(a) / len(got) for a in experiments.ARMS}
+    check("a talk keeps its arm (a hash of its task id); even weights split the talks about evenly",
+          experiments.arm("task-7", t, even) == got[7] and all(0.22 < v < 0.28 for v in share.values()), share)
+    lean = {"at": t, "weights": {"-0.02": 0.1, "0.0": 0.1, "0.02": 0.7, "0.04": 0.1}}
+    got = [experiments.arm(f"task-{i}", t, lean) for i in range(4000)]
+    check("...the best arm at 0.7 gets about 70% of them", 0.67 < got.count(0.02) / len(got) < 0.73, got.count(0.02) / len(got))
+
+    def talks(a, n, deals, price, cost=600):
+        return [{"ts": t - 600, "arm": a, "anchored": True, "outcome": "deal" if i < deals else "walked",
+                 "price": price if i < deals else None, "cost": cost} for i in range(n)]
+    rows = talks(-0.02, 150, 120, 700) + talks(0.0, 150, 100, 720) + talks(0.02, 150, 90, 760) + talks(0.04, 150, 40, 800)
+    s = experiments.score(rows, {"book": 1.0, "revenue": 0.0})
+    check("each arm's reward per talk: -0.02 closes 80% at margin 100 (80 a talk), +0.02 60% at 160 (96): +0.02 earns most",
+          s["0.02"]["reward_per_talk"] == 96 and s["-0.02"]["reward_per_talk"] == 80 and s["0.04"]["close"] == 0.267, s)
+    check("...lambda weighs revenue too: with revenue at a tenth of book, -0.02 earns 80 + 56 = 136 a talk",
+          round(experiments.score(rows, {"book": 1.0, "revenue": 0.1})["-0.02"]["reward_per_talk"], 6) == 136)
+    rec = MD / "records" / "negotiations.jsonl"
+    kept = rec.read_bytes() if rec.exists() else None
+    obj = MD / "analysis" / "objective.json"
+    kept_obj = obj.read_bytes() if obj.exists() else None
+    common.write_json(obj, {"at": int(t), "lambda": {"book": 1.0, "revenue": 0.0}})      # the margin alone
+    rec.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with open(rec, "w", encoding="utf-8") as f:
+            for r in rows[:-1] + [dict(rows[0], anchored=False)]:
+                f.write(json.dumps(r) + "\n")
+        note = experiments.run(t)
+        e = common.read_json(experiments.path())
+        check("under 150 talks on an arm (149 anchored on +0.04): even weights", e["best"] is None
+              and set(e["weights"].values()) == {0.25} and "even" in note, (e["weights"], note))
+        with open(rec, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rows[-1]) + "\n")
+        experiments.run(t)
+        e = common.read_json(experiments.path())
+        check("...150 on each: the best arm (+0.02) gets 0.7 and every other 0.1",
+              e["best"] == "0.02" and e["weights"] == {"-0.02": 0.1, "0.0": 0.1, "0.02": 0.7, "0.04": 0.1}, e["weights"])
+    finally:
+        experiments.path().unlink(missing_ok=True)
+        obj.unlink(missing_ok=True)
+        if kept_obj is not None:
+            obj.write_bytes(kept_obj)
+        if kept is None:
+            rec.unlink(missing_ok=True)
+        else:
+            rec.write_bytes(kept)
+
+    rnd = random.Random(7)
+    shops = [{"name": f"s{i}", "book": rnd.randint(0, 10**8), "revenue": rnd.randint(0, 10**8), "stars_rank": round(rnd.uniform(3, 5), 2),
+              "visits": rnd.randint(0, 999), "profit": rnd.randint(-10**7, 10**8)} for i in range(40)]
+    buyers = [{"name": f"b{i}", "saved": round(rnd.uniform(0, 0.4), 4), "forum": round(rnd.uniform(0, 1), 3) if i % 7 else None,
+               "deals": rnd.randint(1, 900), "posts": rnd.randint(0, 99), "orders": rnd.randint(0, 999)} for i in range(40)]
+    for r in shops:
+        r["all"] = None
+    old_s = scoreboard.alls(shops, scoreboard.SHOP)
+    new_w = {"book": 0.4, "revenue": 0.4, "stars_rank": 0.2}
+    new_s = scoreboard.alls(shops, new_w)
+    for r in shops:
+        r["all"] = new_s[r["name"]]
+    b_all = scoreboard.alls(buyers, scoreboard.BUYER)
+    for r in buyers:
+        r["all"] = b_all[r["name"]]
+    check("the formula against the board: the buyers' ALL within 0.0005; the shops' (a patch moved revenue to 0.4) far off",
+          scoreboard.residual(buyers, scoreboard.BUYER) == 0.0 and scoreboard.residual(shops, scoreboard.SHOP) > 0.05,
+          (scoreboard.residual(buyers, scoreboard.BUYER), scoreboard.residual(shops, scoreboard.SHOP)))
+    check("a refit over the rows' fields (visits and profit too; forum missing on some rows) finds the board's weights",
+          scoreboard.refit(shops) == new_w and scoreboard.refit(buyers) == scoreboard.BUYER, (scoreboard.refit(shops), scoreboard.refit(buyers)))
+    fpath = MD / "analysis" / "formula.json"
+    try:
+        sw, bw, f = scoreboard.check_formula(t, shops, buyers)
+        check("check_formula: the shop weights refit and saved (formula.json), the buyer's kept; weights() reads them",
+              f["changed"] and sw == new_w and bw == scoreboard.BUYER and scoreboard.weights() == (new_w, scoreboard.BUYER)
+              and common.read_json(fpath)["was"]["shop"] == scoreboard.SHOP, f)
+        sw, bw, f = scoreboard.check_formula(t + 1200, shops, buyers)
+        check("...the next check finds them right: nothing changes", not f["changed"] and f["shop"]["ok"] and sw == new_w, f)
+        check("history lines name their parts when a refit changes them (new weights on the same parts read on as before)",
+              scoreboard.compact(shops[:1], [], {"book": 0.5, "visits": 0.5}, bw).get("k") == [["book", "visits"], list(scoreboard.BUYER)]
+              and "k" not in scoreboard.compact(shops[:1], [], sw, bw))
+        for r in shops:
+            r["mystery"] = rnd.random()
+            r["all"] = round(new_s[r["name"]] * 0.8 + 0.2 * r["mystery"] + rnd.uniform(-0.03, 0.03), 4)
+        sw, bw, f = scoreboard.check_formula(t + 2400, shops, buyers)
+        check("a change no weights over the board's fields explain: the weights stay and the check says how far off",
+              not f["changed"] and not f["shop"]["ok"] and f["shop"]["refit"] is None and sw == new_w, f)
+        fpath.write_text("{broken", encoding="utf-8")
+        check("an unreadable formula.json: the built-in weights", scoreboard.weights() == (scoreboard.SHOP, scoreboard.BUYER))
+    finally:
+        fpath.unlink(missing_ok=True)
+
+
 def test_watch():
     print("\n[watch] what changed since 20 minutes ago")
     import watch
@@ -1298,6 +1398,7 @@ def main() -> int:
         test_discover()
         test_scoreboard()
         test_objective_model()
+        test_stage2()
         test_watch()
         test_analysts()
         test_insights()

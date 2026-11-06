@@ -21,7 +21,16 @@ students' own shops and buyers gives those within 0.0005 (42 shops, 41 buyers on
 works in that view whenever the board has it, and keeps our place among everyone beside it.
 
 Each line of analysis/scoreboard_history.jsonl keeps every row's parts, for the paces.
+
+The formula check (Kiro 2.0 stage 2, 11/6; three patches in three days changed the weights or the parts): every update
+sets the formula in force against every row's ALL on the board (everyone's pools). Off by more than FIT_TOL on some
+row, the weights are refit by least squares over the numeric fields half the rows carry (percentiles as above; weights
+under half a FIT_STEP dropped, the rest rounded to FIT_STEP) and taken only if they give every row's ALL within
+FIT_TOL: analysis/formula.json {"at", "shop", "buyer", "was", "residual"} then holds the weights in force (weights()),
+the note says so, and a history line carries its parts ("k"). No fit within FIT_TOL: the weights stay and the note
+and scoreboard.json's "formula" say how far off they are (a new part the board does not show, or a new rule).
 """
+from collections import Counter
 import json
 import os
 import statistics as st
@@ -41,6 +50,9 @@ PROJECT = 6 * 3600
 NEIGHBOURS = 5                       # the rows just above us whose median pace ours is set against
 TAIL = 600_000                       # bytes of the history read back (about 3 h of lines at ~5 KB each, 20 min apart, with room)
 VERSION = 3                          # history lines on book and saved (11/6 12:40; 2 = book with surplus, 11/5 15:40)
+FIT_TOL = 0.005                      # the board's ALL against the formula's, the worst row
+FIT_STEP = 0.05                      # refit weights are rounded to this
+FIT_SKIP = {"all", "total", "student_total", "student_pct", "student_all", "pct", "rank", "place", "id"}
 
 
 def folder():
@@ -90,13 +102,116 @@ def parts(me: dict, rows: list, weights: dict) -> dict:
     return out
 
 
-def compact(shops: list, buyers: list) -> dict:
-    return {"shops": {s["name"]: [num(s, k) for k in SHOP] for s in shops},
-            "buyers": {b["name"]: [num(b, k) for k in BUYER] for b in buyers}}
+def weights() -> tuple[dict, dict]:
+    """(shop weights, buyer weights) in force: analysis/formula.json's after a refit, else SHOP and BUYER."""
+    f = common.read_json(folder() / "formula.json", None)
+    ok = lambda w: isinstance(w, dict) and w and all(isinstance(v, (int, float)) and v > 0 for v in w.values()) \
+        and 0.5 <= sum(w.values()) <= 1.5
+    if isinstance(f, dict) and ok(f.get("shop")) and ok(f.get("buyer")):
+        return dict(f["shop"]), dict(f["buyer"])
+    return dict(SHOP), dict(BUYER)
 
 
-def history_since(now: float) -> dict | None:
-    """The history line nearest RATE_WINDOW ago and at least RATE_MIN old, read from the file's tail."""
+def keys_of(sw: dict, bw: dict) -> list:
+    return [list(sw), list(bw)]
+
+
+def residual(rows: list, w: dict) -> float | None:
+    """The worst |board ALL - the formula's ALL| over the rows that carry the board's ALL (None under 5 of them)."""
+    rows = [r for r in rows if isinstance(r.get("all"), (int, float)) and not isinstance(r.get("all"), bool)]
+    if len(rows) < 5:
+        return None
+    ours = alls(rows, w)
+    return round(max(abs(r["all"] - ours[r["name"]]) for r in rows), 4)
+
+
+def fields(rows: list) -> list:
+    """The numeric fields half the rows carry (a missing one counts 0, as on the board), but its totals and ranks."""
+    seen = Counter(k for r in rows for k, v in r.items()
+                   if k not in FIT_SKIP and isinstance(v, (int, float)) and not isinstance(v, bool))
+    return sorted(k for k, n in seen.items() if n >= 0.5 * len(rows))
+
+
+def solve(a: list, y: list) -> list | None:
+    """Least squares by the normal equations (a handful of columns), or None when they are not independent."""
+    n = len(a[0])
+    m = [[sum(r[i] * r[j] for r in a) for j in range(n)] + [sum(r[i] * v for r, v in zip(a, y))] for i in range(n)]
+    for c in range(n):
+        p = max(range(c, n), key=lambda r: abs(m[r][c]))
+        if abs(m[p][c]) < 1e-9:
+            return None
+        m[c], m[p] = m[p], m[c]
+        for r in range(n):
+            if r != c:
+                f = m[r][c] / m[c][c]
+                m[r] = [x - f * z for x, z in zip(m[r], m[c])]
+    return [m[i][n] / m[i][i] for i in range(n)]
+
+
+def refit(rows: list) -> dict | None:
+    """Weights over the rows' fields that give every row's ALL within FIT_TOL, or None."""
+    rows = [r for r in rows if isinstance(r.get("all"), (int, float)) and not isinstance(r.get("all"), bool)]
+    cols, live = {}, []
+    for k in fields(rows):
+        col = [num(r, k) for r in rows]
+        p = [pct(col, num(r, k)) for r in rows]
+        if len(set(p)) > 1 and p not in cols.values():         # a field level for every row, or a copy of another: no part
+            cols[k] = p
+            live.append(k)
+    if not live or len(rows) < 2 * len(live) + 5:
+        return None
+    y = [r["all"] for r in rows]
+    while live:
+        w = solve([[cols[k][i] for k in live] for i in range(len(rows))], y)
+        if w is None:
+            return None
+        small = [k for k, x in zip(live, w) if x < FIT_STEP / 2]
+        if not small:
+            break
+        live = [k for k in live if k not in small]
+    if not live:
+        return None
+    fit = {k: round(round(x / FIT_STEP) * FIT_STEP, 4) for k, x in zip(live, w)}
+    fit = {k: v for k, v in fit.items() if v > 0}
+    r = residual(rows, fit) if fit else None
+    return fit if r is not None and r <= FIT_TOL else None
+
+
+def check_formula(now: float, shops: list, buyers: list) -> tuple[dict, dict, dict]:
+    """(shop weights, buyer weights, {"shop": {...}, "buyer": {...}, "changed"}): the weights in force checked against
+    the board, refit and saved when they are off and a fit is found."""
+    sw, bw = weights()
+    out, new = {"changed": False}, {}
+    for side_, rows, w in (("shop", shops, sw), ("buyer", buyers, bw)):
+        r = residual(rows, w)
+        row = {"residual": r, "ok": r is None or r <= FIT_TOL}
+        if not row["ok"]:
+            fit = refit(rows)
+            row["refit"] = fit
+            if fit and fit != w:
+                new[side_] = fit
+        out[side_] = row
+    if new:
+        f = {"at": int(now), "shop": new.get("shop", sw), "buyer": new.get("buyer", bw), "was": {"shop": sw, "buyer": bw},
+             "residual": {s: out[s]["residual"] for s in ("shop", "buyer")}}
+        common.write_json(folder() / "formula.json", f)
+        sw, bw, out["changed"] = f["shop"], f["buyer"], True
+    return sw, bw, out
+
+
+def compact(shops: list, buyers: list, sw: dict | None = None, bw: dict | None = None) -> dict:
+    sw, bw = sw or SHOP, bw or BUYER
+    out = {"shops": {s["name"]: [num(s, k) for k in sw] for s in shops},
+           "buyers": {b["name"]: [num(b, k) for k in bw] for b in buyers}}
+    if keys_of(sw, bw) != keys_of(SHOP, BUYER):
+        out["k"] = keys_of(sw, bw)
+    return out
+
+
+def history_since(now: float, keys: list | None = None) -> dict | None:
+    """The history line nearest RATE_WINDOW ago and at least RATE_MIN old, read from the file's tail (of the same
+    parts as `keys`, the weights in force when not given)."""
+    keys = keys or keys_of(*weights())
     path = folder() / "scoreboard_history.jsonl"
     if not path.exists():
         return None
@@ -109,7 +224,8 @@ def history_since(now: float) -> dict | None:
             rows.append(json.loads(line))
         except ValueError:                                  # the first line of the tail is usually cut
             continue
-    old = [r for r in rows if isinstance(r, dict) and r.get("v") == VERSION and now - (r.get("at") or 0) >= RATE_MIN]
+    old = [r for r in rows if isinstance(r, dict) and r.get("v") == VERSION and now - (r.get("at") or 0) >= RATE_MIN
+           and (r.get("k") or keys_of(SHOP, BUYER)) == keys]
     return min(old, key=lambda r: abs(now - r["at"] - RATE_WINDOW)) if old else None
 
 
@@ -156,15 +272,16 @@ def update(now: float, board: dict) -> str:
     """scoreboard.json from the board (the class view when there is one); one history line (every row). Returns the
     line for the analysis log."""
     every_shops, every_buyers = pools(board)
+    sw, bw, formula = check_formula(now, every_shops, every_buyers)
     everyone = [p for p in board.get("players") or [] if isinstance(p, dict) and p.get("player")]
     shops, buyers, players, key, label = view(board)
     me = next((p for p in players if forum.own(p.get("player"))), None)
     my_shop = next((s for s in shops if forum.own(s["name"])), None)
     my_buyer = next((b for b in buyers if forum.own(b["name"])), None)
     folder().mkdir(parents=True, exist_ok=True)
-    then = history_since(now)
+    then = history_since(now, keys_of(sw, bw))
     with open(folder() / "scoreboard_history.jsonl", "a", encoding="utf-8") as f:
-        f.write(json.dumps({"at": int(now), "v": VERSION, **compact(every_shops, every_buyers)}, ensure_ascii=False,
+        f.write(json.dumps({"at": int(now), "v": VERSION, **compact(every_shops, every_buyers, sw, bw)}, ensure_ascii=False,
                            separators=(",", ":")) + "\n")
     if not me or not players:
         return "scoreboard: our player is not on the board"
@@ -178,15 +295,21 @@ def update(now: float, board: dict) -> str:
           "top": [[n, t] for n, t in ranked[:3]],
           "gap_to_3rd": round(max(0.0, ranked[min(2, len(ranked) - 1)][1] - mine), 4),
           "gap_to_next": round(min(above) - mine, 4) if above else 0.0,
-          "shop": {"all": alls(shops, SHOP).get(my_shop["name"]), "rows": len(shops), "parts": parts(my_shop, shops, SHOP)} if my_shop else None,
-          "buyer": {"all": alls(buyers, BUYER).get(my_buyer["name"]), "rows": len(buyers), "parts": parts(my_buyer, buyers, BUYER)} if my_buyer else None}
+          "shop": {"all": alls(shops, sw).get(my_shop["name"]), "rows": len(shops), "parts": parts(my_shop, shops, sw)} if my_shop else None,
+          "buyer": {"all": alls(buyers, bw).get(my_buyer["name"]), "rows": len(buyers), "parts": parts(my_buyer, buyers, bw)} if my_buyer else None,
+          "formula": dict(formula, weights={"shop": sw, "buyer": bw})}
     note = (f"scoreboard ({label}): {sb['place']} of {len(players)}, {mine:.3f}, 3rd {ranked[min(2, len(ranked) - 1)][1]:.3f}"
             + (f"; everyone {sb['everyone']['place']} of {len(everyone)}" if label == "class" else ""))
+    if formula["changed"]:
+        note += f"; FORMULA CHANGED: refit to shop {sw}, buyer {bw} (formula.json)"
+    elif not (formula["shop"]["ok"] and formula["buyer"]["ok"]):
+        note += (f"; FORMULA OFF: the board's ALL differs by up to shop {formula['shop']['residual']}, buyer "
+                 f"{formula['buyer']['residual']} and no refit fits")
     if then:
         hours = (now - then["at"]) / 3600
-        p_shops, s_pace = project(shops, SHOP, then.get("shops") or {}, hours)
-        p_buyers, b_pace = project(buyers, BUYER, then.get("buyers") or {}, hours)
-        s_all, b_all = alls(p_shops, SHOP), alls(p_buyers, BUYER)
+        p_shops, s_pace = project(shops, sw, then.get("shops") or {}, hours)
+        p_buyers, b_pace = project(buyers, bw, then.get("buyers") or {}, hours)
+        s_all, b_all = alls(p_shops, sw), alls(p_buyers, bw)
         future = {}
         for p in players:
             sh, by = side(p.get("shop")), side(p.get("buyer"))
