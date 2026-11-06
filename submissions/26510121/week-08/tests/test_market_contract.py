@@ -46,6 +46,10 @@ def test_actual_a2a_server_and_buyer_interoperate(tmp_path, monkeypatch,patch34)
         atomic_json(j.md/'board.json',{'round':3,'buyers':[
             {'name':'seochanit','saved':.15,'deals':100,'forum':.5,'posts':2}]})
         j.put('market_rules',{'buyer_metric':'saved','buyer_compatible':True})
+        # This case exercises a feasible trade with established quality. With
+        # sparse 30% failure stress, the seller's insured break-even price and
+        # our Saved floor need not overlap; declining then is correct.
+        j.put('quality_risk_v4',{'at':time.time(),'grades':{'A':{'n':200,'broken':2,'within3':1}}})
     u = unit()
     atomic_json(j.md / 'inventory.json', {'round': 3, 'balance': 5000000, 'units': [u]})
     atomic_json(j.md / 'catalog.json', {'G111': {'name': u['name'], 'category': u['category'], 'list_price': 10000, 'kind': 'goods'}})
