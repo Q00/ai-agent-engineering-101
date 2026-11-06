@@ -309,7 +309,12 @@ def votes(now: float, state: dict, decide=None) -> str:
     voted = set(state.get("voted") or [])
     seen = common.market_file("forum.json", []) or []
     posts = forum.remember_recent(seen if isinstance(seen, list) else [], now)
-    picked = forum.pick_votes(posts, voted, now, decide or harness.decide, like=now - state.get("liked_at", 0) >= forum.LIKE_GAP)
+    downs = [v for v in common.records("votes") if (v.get("value") or 0) < 0 and (v.get("ts") or 0) >= now - forum.DISLIKE_AUTHOR_GAP]
+    left = max(0, forum.DISLIKE_HOUR_MAX - sum(1 for v in downs if (v.get("ts") or 0) >= now - 3600))
+    skus = {m.group(0) for p in posts if (p.get("ts") or 0) >= now - forum.VOTE_WINDOW for m in forum.SKU.finditer(str(p.get("text") or ""))}
+    picked = forum.pick_votes(posts, voted, now, decide or harness.decide, like=now - state.get("liked_at", 0) >= forum.LIKE_GAP,
+                              catalog=common.catalog(), settles=forum.settles_of(skus, now - 24 * 3600), dislikes_left=left,
+                              skip_authors={v.get("author") for v in downs})
     for v in picked:
         forum.outbox(vote=v["post"], value=v["value"], **{"as": "buyer"})
         common.record("votes", **v)
