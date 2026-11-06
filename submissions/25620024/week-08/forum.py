@@ -33,7 +33,9 @@ DEFAULTS = {"post_threshold": 1.0, "topic_cooldown_h": 2, "window_h": 6, "min_n"
             "max_posts_day": {"buyer": 288, "shop": 96},
             "name_shops": False,   # 11-05: our posts draw ~0.8 likes under others' in every hour and every format since
                                    # day 1 (author-level); test: no post names other shops (receipt tips, stock checks)
-            "gap_s": {"buyer": 1800, "shop": 300}}   # 11-05 05:50: back to 30 min. At 5 min (19:30-20:49) the rating
+            "gap_s": {"buyer": 300, "shop": 300}}   # 11-07: patch 3.4 votes are one stance per voter per AUTHOR,
+            # not per post, so a weak post no longer pulls the rating down; posts (0.1) want count -> 5 min again.
+            # Before: 11-05 05:50: back to 30 min. At 5 min (19:30-20:49) the rating
             # fell 0.600 -> 0.577 and the posts percentile only went 0.74 -> 0.73: new posts draw ~5.2 likes, under our
             # average, so they are NOT neutral (the 14:00 assumption was wrong); quality over count The 30-min cut assumed new posts
             # (5.4 likes at 15 min) pull the 0.604 rating down, but that rating already implies ~6 final likes (Wilson:
