@@ -12,7 +12,7 @@ def main():
     trace = read_json(ROOT / trace_path)
     board = json.loads(public['responses']['/api/board']['text'])
     forum = json.loads(public['responses']['/api/forum?limit=100']['text'])
-    owners = {r['name']: r.get('owner', {}).get('login') for r in board['buyers']}
+    owners = {r['name']: (r.get('owner') or {}).get('login') for r in board['buyers']}
     names = {s.get('card', {}).get('url'): s['name'] for s in board['shops']}
     events = {}
     for response in trace['responses'].values():
