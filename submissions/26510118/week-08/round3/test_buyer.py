@@ -451,6 +451,18 @@ def test_shop_around():
     best, _ = mb.choose(cheap, {"R": {"recent": [], "ratios": [0.55]}})
     check("...but not when the rival is clearly cheaper (55% of list paid there before)", best["shop"]["name"] == "R",
           {x["shop"]["name"]: round(x["score"]) for x in cheap})
+    cell = lambda paid, rate, n=20: {"goods": {"n": n, "first_ask": paid + 0.05, "concede": 0.97, "deal_rate": rate, "paid": paid,
+                                                "deals": round(n * rate)}}
+    model = {"shops": {"R": cell(0.85, 0.4), "S": cell(0.62, 0.9)}}
+    lm = mb.candidates(bed, [shop("R", BEDDING), shop("S", BEDDING)], CATALOG, {}, {}, RULES, model=model)
+    best, _ = mb.choose(lm, {})
+    check("a learned shop model (shop_model.json, 15+ talks): ranked by what each shop settled at and how often it closed (S: 0.62, 90%)",
+          best["shop"]["name"] == "S" and {x["shop"]["name"]: x["expected"] for x in lm} == {"R": 33915, "S": 24738},
+          {x["shop"]["name"]: (x["expected"], round(x["score"])) for x in lm})
+    thin = {"shops": {"R": cell(0.85, 0.4, n=10), "S": cell(0.62, 0.9, n=10)}}
+    lt = mb.candidates(bed, [shop("R", BEDDING), shop("S", BEDDING)], CATALOG, {}, {}, RULES, model=thin)
+    check("...with 10 talks a shop is not learned yet: both at the market's guess",
+          len({x["expected"] for x in lt}) == 1, {x["shop"]["name"]: x["expected"] for x in lt})
     mb.MIN_SHARE, mb.MARKET_SLACK = saved_rules
 
 

@@ -48,6 +48,7 @@ import common
 import harness
 import pricing
 import restock
+import shop_model
 
 NAME = common.SHOP_NAME              # the card's name and the receipt's shop field
 CARD_DESCRIPTION = ("Everyday groceries and goods. Every unit ships with the market's certificate and its true grade "
@@ -334,9 +335,10 @@ def priced(u: dict, now: float, warranty: bool) -> dict:
     in_line = u.get("sku") in restock.load_line(market_file("analysis/line.json"))   # restock's reading of the line
     late = pricing.late_in_cycle(market_file("inventory.json").get("restock"), now)
     learned = pricing.solo_floor_of(market_file("records/solo_floors.json"), u.get("sku"), now) if solo else None
+    comp = shop_model.comp_ask(market_file("analysis/price_map.json"), u.get("sku"))    # Kiro 2.0 stage 1
     return pricing.plan(u, now, warranty=warranty, adjust=float(r["price_adjust"] or 0), catalog=catalog(),
                         extra=r["warranty_extra"], market=by_grade, late=late, dear_default=True,
-                        sku_market=sku_market, in_line=in_line, solo=solo, solo_floor=learned)
+                        sku_market=sku_market, in_line=in_line, solo=solo, solo_floor=learned, comp_ask=comp)
 
 
 class Seller(AgentExecutor):

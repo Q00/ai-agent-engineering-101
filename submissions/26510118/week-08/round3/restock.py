@@ -102,7 +102,7 @@ LINE_LINES = 8           # line products bought in one run at most (4 until 21:4
 LINE_SHARE = 0.9         # LINE_SHARE of the run's lines nor of the balance above RESERVE (0.5 until 21:45, 0.75 until 23:40)
 LINE_PACE = 3600         # a line product is kept at 1 + what we sold of it in this long (a unit sells out within
                          # minutes, so our sales count supply as much as demand: one more than they asks for more)
-LINE_MAX_UNITS = 10      # 5 until 11/4 23:40 (the best seller sold 20 in 1.5 h at a cap of 5; others sold it 90 an hour)
+LINE_MAX_UNITS = 12      # 10 until 11/6 (Kiro 2.0: deeper stock of what sells); 5 until 11/4 23:40 (the best seller sold 20 in 1.5 h at a cap of 5; others sold it 90 an hour)
 LINE_STALL = 2 * 3600    # held this long with no sale of the product: no more units
 LINE_TRY_FIRST = 5       # line products never sold nor held (just added) go first, this many a run (3 until 11/5 02:20):
                          # ordered by sales alone, one with none came after the best sellers and no run reached it

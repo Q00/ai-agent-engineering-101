@@ -569,9 +569,11 @@ def test_linewatch():
     ch = run(back + 1200, market(0.72, at=back + 1200), sales=sold)
     check("2 of ours sold in the last hour: up one", [(c["from"], c["to"]) for c in ch] == [(1, 2)], ch)
     t5 = back + 1200 + 5 * 3600
-    held = {"units": [{"sku": BEDDING, "supplied_at": t5 - 5 * 3600}]}
+    held = {"units": [{"sku": BEDDING, "supplied_at": t5 - 9 * 3600}]}
+    check("a unit held 5 h with no sale stays in since 11/6 (STALL 8 h: the expected margin exits first)",
+          linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 1, "sold_1h": 0, "idle": 5 * 3600}, None, t5) == (2, "keep"))
     ch = run(t5, [], inv=held)
-    check("a unit held 5 h with no sale: out", [(c["from"], c["to"]) for c in ch] == [(2, 0)] and "no sale" in ch[0]["why"], ch)
+    check("...held 9 h with no sale: out", [(c["from"], c["to"]) for c in ch] == [(2, 0)] and "no sale" in ch[0]["why"], ch)
     run(t5 + 60, [], line={BEDDING: 4})
     check("a person changes the code's cap: it wins", common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 4})
     sold5 = [{"sku": BEDDING, "ts": t5 + 100}] * 2
@@ -590,9 +592,9 @@ def test_linewatch():
           run(t5 + 1200, market(0.75, at=t5 + 1200), sales=sold5, line={BEDDING: 4}, stars=4.2) == [])
     ch = run(t5 + 600 + linewatch.STARS_REST, market(0.75, at=t5 + 600 + linewatch.STARS_REST), line={BEDDING: 4}, stars=4.25)
     check("...and once more after 2 hours under", [(c["from"], c["to"]) for c in ch] == [(4, 3)], ch)
-    check("growth goes straight to what sold in the last hour (cap 2, 7 sold: 7), not past the most units (12 sold: 10)",
+    check("growth goes straight to what sold in the last hour (cap 2, 7 sold: 7), not past the most units (15 sold: 12 since 11/6)",
           linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 7, "idle": None}, None, t)[0] == 7
-          and linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 12, "idle": None}, None, t)[0] == 10)
+          and linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 15, "idle": None}, None, t)[0] == 12)
     check("a guard also keeps an exited product out (others at 0.75, none held, the rest over)",
           linewatch.decide(0, {"median": 0.75, "sellers": 2}, {"n": 30, "median": 0.75, "sellers": 2}, {"held": 0, "sold_1h": 0, "idle": None},
                            t, t + linewatch.EXIT_REST + 1, "our stars are 4.2 (under 4.3)") == (0, "out"))
@@ -990,14 +992,25 @@ def test_discover():
     settles = (sold("Gsofa0001", 30, 0.80, 5) + sold("Gsofa0002", 60, 0.78, 6) + sold("Gsofa0003", 90, 0.80, 14)
                + sold("Gsofa0004", 40, 0.70, 3) + sold("Gmat00001", 200, 0.80, 4) + sold("Gsofa0001", 10, 0.80, 5, at=t - 7 * 3600))
     got = linewatch.discover(settles, {}, cat, {BEDDING: 3}, {}, t)
-    check("picked: dear (500k+), 20+ settles in 6 h, 0.74+ of list, 12 sellers or fewer; best expected margin first",
-          list(got) == ["Gsofa0001", "Gsofa0002"] and got["Gsofa0001"]["n"] == 30 and got["Gsofa0002"]["sellers"] == 6, got)
-    check("...left out: 14 sellers (crowded), 0.70 of list, a 400k mattress, settles older than 6 h, our own shop's",
+    check("picked: dear (500k+), 20+ settles in 6 h, 0.74+ of list, any number of sellers since 11/6 (14 here); "
+          "best margin first", list(got) == ["Gsofa0003", "Gsofa0001", "Gsofa0002"] and got["Gsofa0001"]["n"] == 30
+          and got["Gsofa0002"]["sellers"] == 6 and got["Gsofa0003"]["sellers"] == 14, got)
+    em = {"Gsofa0003": 0.02, "Gsofa0001": 0.08}
+    check("...a known expected margin under 0.05 of list keeps one out (unknown: the old rules)",
+          list(linewatch.discover(settles, {}, cat, {BEDDING: 3}, {}, t, margin=em.get)) == ["Gsofa0001", "Gsofa0002"])
+    a_w = lambda m, n=20: {"by_sku": {"Gx": {"others_6h": {"A_w": {"n": n, "median": m}}}}}
+    check("expected margin: A at 0.80 (B, C taken 0.05, 0.10 under), mid costs, refunds: 0.1384; at surge 1.2: 0.0204; "
+          "A at 0.62: -0.0291; an A market of 9 settles: unknown",
+          (linewatch.expected_margin("Gx", a_w(0.80), {}), linewatch.expected_margin("Gx", a_w(0.80), {"Gx": 1.2}),
+           linewatch.expected_margin("Gx", a_w(0.62), {}), linewatch.expected_margin("Gx", a_w(0.80, 9), {})) == (0.1384, 0.0204, -0.0291, None),
+          (linewatch.expected_margin("Gx", a_w(0.80), {}), linewatch.expected_margin("Gx", a_w(0.80), {"Gx": 1.2}),
+           linewatch.expected_margin("Gx", a_w(0.62), {})))
+    check("...left out: 0.70 of list, a 400k mattress, settles older than 6 h, our own shop's",
           linewatch.discover(sold("Gsofa0001", 30, 0.8, 5), {"s0": "Kiro729", "s1": "Kiro729", "s2": "Kiro729", "s3": "Kiro729",
                                                               "s4": "Kiro729"}, cat, {}, {}, t) == {})
     full = {f"Gx{i}": 2 for i in range(linewatch.LINE_MAX_SKUS - 1)}
     check("only as many as leave the line at 40 products with a cap above 0 (one exited does not count)",
-          list(linewatch.discover(settles, {}, cat, dict(full, Gout=2), {"Gout": 0}, t)) == ["Gsofa0001"])
+          list(linewatch.discover(settles, {}, cat, dict(full, Gout=2), {"Gout": 0}, t)) == ["Gsofa0003"])
     bed = dict(cat, Gbed00001={"name": "bed", "category": "가구/침구>가구>침대", "list_price": 2_000_000},
                Gbed00002={"name": "bed 2", "category": "가구/침구>가구>침대", "list_price": 4_000_000},
                Gbed00003={"name": "cheap", "category": "가구/침구>가구>침대", "list_price": 300_000})
@@ -1023,9 +1036,10 @@ def test_discover():
         common.catalog = saved
     st_ = common.read_json(MD / "analysis" / "line_state.json")
     check("a run adds them at cap 2, logged with their numbers, into line.json for restock",
-          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 0, 2), ("Gsofa0002", 0, 2)] and "added" in ch[0]["why"]
-          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0001": 2, "Gsofa0002": 2}
-          and set(st_["found"]) == {"Gsofa0001", "Gsofa0002"}, (ch, st_.get("found")))
+          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0003", 0, 2), ("Gsofa0001", 0, 2), ("Gsofa0002", 0, 2)]
+          and "added" in ch[0]["why"]
+          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 2, "Gsofa0001": 2, "Gsofa0002": 2}
+          and set(st_["found"]) == {"Gsofa0003", "Gsofa0001", "Gsofa0002"}, (ch, st_.get("found")))
     st_["caps"]["Gsofa0002"] = 0
     st_["exit_at"]["Gsofa0002"] = int(t - linewatch.FIND_DROP - 60)
     common.write_json(MD / "analysis" / "line_state.json", st_)
@@ -1054,8 +1068,22 @@ def test_discover():
     v = linewatch.judge(t, {"Gsofa0005": {"exp": True}}, shop_sales + exp_sales[:1])
     check("...one sold is too few: it ends there", not v["kept"] and common.read_json(exp_path)["until"] == int(t), v)
     exp_path.unlink()
-    check("one out for 12 hours is let go; the other stays", set(st_["found"]) == {"Gsofa0001"} and "Gsofa0002" not in st_["caps"]
-          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0001": 2}, st_)
+    check("one out for 12 hours is let go; the others stay", set(st_["found"]) == {"Gsofa0003", "Gsofa0001"} and "Gsofa0002" not in st_["caps"]
+          and common.read_json(MD / "analysis" / "line.json")["skus"] == {BEDDING: 3, "Gsofa0003": 2, "Gsofa0001": 2}, st_)
+    summary_path = MD / "market_summary.json"
+    kept_summary = summary_path.read_bytes() if summary_path.exists() else None
+    common.write_json(summary_path, {"by_sku": {"Gsofa0001": {"others_6h": {"A_w": {"n": 20, "median": 0.62}}}}})
+    common.catalog = lambda *a, **k: cat
+    try:
+        ch = linewatch.run(t + 120, settles=[], inv={"units": []}, sales=[], line={BEDDING: 3}, stars=4.9)
+    finally:
+        common.catalog = saved
+        if kept_summary is None:
+            summary_path.unlink()
+        else:
+            summary_path.write_bytes(kept_summary)
+    check("a line product whose expected margin falls under 0.03 of list leaves (A market 0.62: -0.029), said with its number",
+          [(c["sku"], c["from"], c["to"]) for c in ch] == [("Gsofa0001", 2, 0)] and "expected margin -0.029" in ch[0]["why"], ch)
     for f in ("line_state.json", "line.json", "line_log.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
 
@@ -1128,6 +1156,71 @@ def test_scoreboard():
           common.read_json(MD / "analysis" / "scoreboard.json")["projection"]["total"] > 0.9)
     for f in ("scoreboard.json", "scoreboard_history.jsonl"):
         (MD / "analysis" / f).unlink(missing_ok=True)
+
+
+def test_objective_model():
+    print("\n[objective, shop_model] the buyer's least share and what our buyer learned of the shops")
+    import objective
+    import shop_model
+    t = time.time()
+    bought = [{"order": "p1", "list_price": 100, "price": 60}, {"order": "p2", "list_price": 100, "price": 80, "warranty_hours": 24},
+              {"order": "p3", "list_price": 100, "price": 70}, {"order": "p4", "list_price": 100, "price": 50, "value": 0}]
+    check("kept shares as Patch 3.4 counts them: 0.4; a break under a warranty 0; without one -1; nothing served -1",
+          objective.shares(bought, [{"order": "p2"}, {"order": "p3"}]) == [(0.6, 0.4), (0.8, 0.0), (0.7, -1.0), (0.5, -1.0)])
+    recent = [(0.6, 0.4)] * 60 + [(0.75, 0.25)] * 60
+    best, scores = objective.choose({"saved": 0.30, "deals": 100}, [(0.35, 300), (0.25, 150), (0.40, 400)], recent, 100, 12)
+    check("the threshold: keeping only deals at 0.73 of list or less projects saved 0.371 (2nd of 4) against 0.321 for all; "
+          "the least of the tied thresholds wins (0.27)", best == 0.27 and scores[0.27] == 0.4333 and scores[0.0] == 0.2667
+          and scores[0.36] == scores[0.27], scores)
+    board = {"shops": [{"name": "A", "book": 300, "revenue": 900, "stars_rank": 4.9, "all": 0.0},
+                       {"name": "Kiro729", "book": 200, "revenue": 800, "stars_rank": 4.8, "all": 0.0}],
+             "buyers": [{"name": "A", "saved": 0.35, "forum": 0.6, "deals": 300, "posts": 5},
+                        {"name": "Kiro729", "saved": 0.30, "forum": 0.61, "deals": 100, "posts": 5}],
+             "players": [{"player": "A", "total": 1.9}, {"player": "Kiro729", "total": 1.0}]}
+    pfile = MD / "buyer" / "purchases.jsonl"
+    kept = pfile.read_bytes() if pfile.exists() else None
+    pfile.parent.mkdir(parents=True, exist_ok=True)
+    with open(pfile, "w", encoding="utf-8") as f:
+        for i in range(4):
+            f.write(json.dumps({"order": f"q{i}", "list_price": 100, "price": 60, "settled_at": t - 3600}) + "\n")
+    try:
+        o = objective.run(t, board)
+        check("objective.json: lambda per part from the next row above (book: 101 more gives 0.5); under 200 purchases in 12 h "
+              "no threshold (the buyer keeps its own)", o["lambda"].get("book") == round(0.5 / 101, 12) and o["buyer_min_share"] is None
+              and o["basis"]["purchases_in_window"] == 4 and common.read_json(MD / "analysis" / "objective.json")["at"] == int(t), o)
+        objective.MIN_DEALS = 3
+        o = objective.run(t, board)
+        check("...with enough purchases a threshold within 0.20-0.36, and its options", o["buyer_min_share"] is not None
+              and 0.20 <= o["buyer_min_share"] <= 0.36 and len(o["options"]) == len(objective.OPTIONS), o)
+    finally:
+        objective.MIN_DEALS = 200
+        if kept is None:
+            pfile.unlink()
+        else:
+            pfile.write_bytes(kept)
+
+    def talk(shop, ask, deal=False, ts=None):
+        return {"ts": ts or t - 600, "shop": shop, "sku": "G1", "list_price": 1000, "asks": [ask, round(ask * 0.97)],
+                "deal": deal, "price": 700 if deal else None}
+    orders = ([talk("S1", 800, deal=i < 10) for i in range(15)]
+              + [dict(talk("S3", 600), tries=[{"shop": "S2", "sku": "G1", "list": 1000, "asks": [900, 880]}]) for _ in range(15)]
+              + [talk("S1", 300, ts=t - 25 * 3600)] * 5 + [talk("Kiro729", 500)] * 5)
+    shops, skus = shop_model.build(orders, t)
+    model = {"shops": shops}
+    check("the shop model: S1 closed 10 of 15 at 0.70 of list; S2 (met in tries) first asked 0.90 and never closed; "
+          "talks older than 24 h left out", shops["S1"]["goods"] == {"n": 15, "first_ask": 0.8, "concede": 0.97, "deal_rate": 0.667,
+                                                                   "paid": 0.7, "deals": 10}
+          and shops["S2"]["goods"]["deal_rate"] == 0.0 and shops["S2"]["goods"]["first_ask"] == 0.9, shops)
+    e2 = shop_model.expected(model, "S2", "goods")
+    check("expected: S1 its paid median (5+ deals) and rate; S2 its first ask after two concessions (0.86); a shop under 15 talks: none",
+          shop_model.expected(model, "S1", "goods") == (0.7, 0.667) and round(e2[0], 4) == 0.8605 and e2[1] == 0.0
+          and shop_model.expected(model, "Kiro729", "goods") is None and shop_model.expected(model, "S1", "food") is None, e2)
+    check("the price map: other shops' first asks for G1 (our own shop's left out), median over 45; comp_ask needs 5",
+          skus["G1"]["n"] == 45 and skus["G1"]["first_ask"] == 0.8 and shop_model.comp_ask({"skus": skus}, "G1") == 0.8
+          and shop_model.comp_ask({"skus": {"G1": {"n": 4, "first_ask": 0.5}}}, "G1") is None, skus)
+    note = shop_model.run(t)
+    check("run writes shop_model.json and price_map.json", (MD / "analysis" / "shop_model.json").exists()
+          and (MD / "analysis" / "price_map.json").exists() and "shops" in note, note)
 
 
 def test_watch():
@@ -1204,6 +1297,7 @@ def main() -> int:
         test_linewatch()
         test_discover()
         test_scoreboard()
+        test_objective_model()
         test_watch()
         test_analysts()
         test_insights()

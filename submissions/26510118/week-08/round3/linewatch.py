@@ -49,6 +49,7 @@ from collections import defaultdict
 
 import common
 import ledger
+import pricing
 import restock
 import scoreboard
 
@@ -56,7 +57,7 @@ WINDOW = 2 * 3600
 SHRINK_DROP, EXIT_DROP = 0.03, 0.06
 CROWD_TIMES, CROWD_MORE = 2, 3
 GROW_SALES = 2
-STALL = 4 * 3600         # out (cap 0) held this long with no sale; restock.LINE_STALL (2 h) stops buying more sooner
+STALL = 8 * 3600         # out (cap 0) held this long with no sale (4 h until 11/6: the expected margin now exits first); restock.LINE_STALL (2 h) stops buying more sooner
 EXIT_REST = 2 * 3600
 REENTRY_MIN = 0.70       # back in only where others still settle at this share of list or more (A costs 0.55-0.75)
 MIN_N = 20
@@ -68,7 +69,13 @@ STARS_MIN, STARS_REST = 4.30, 2 * 3600   # 4.80 until 11/5 09:20: one buyer (tot
                                          # the rest almost none (kimauve 1/16); selling less cannot lift stars given
                                          # whatever we sell, so the guard is left for a real fault of the goods
 FIND_WINDOW = 6 * 3600
-FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.74, 12
+FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.74, 99   # sellers 12 until 11/6: the margin decides
+# Expected margin (Kiro 2.0 stage 1, 11/6): a goods product's share of list a unit earns on average, over the supply's
+# grades (A 70%, B 20%, C 10%; mid costs 0.65, 0.50, 0.35 times the surge), sold at its grade's market with the
+# warranty (others_6h "_w" cells, 10+; a missing B or C taken 0.05 / 0.10 under A) less the refunds (pricing.BREAK).
+# A line product under EM_EXIT leaves; a new one needs EM_FIND. Unknown (no A market of its own): the old rules.
+EM_EXIT, EM_FIND = 0.03, 0.05
+SUPPLY_MIX = {"A": (0.7, 0.65), "B": (0.2, 0.50), "C": (0.1, 0.35)}
                          # 0.76 and 10 until 11/5 09:20: the one-hour experiment at 0.74 / 12 / 40 found two products
                          # that sold 52 and 40 units in the next 5 h, 10.6M over cost (its own verdict, on the shop's
                          # hourly margin, had ended it)
@@ -198,8 +205,20 @@ def judge(now: float, found: dict, sales: list) -> dict | None:
     return e["verdict"]
 
 
+def expected_margin(sku: str, summary: dict, surge: dict):
+    """The expected price - cost of one unit as a share of list (see EM_EXIT), or None without an A market."""
+    cells = ((summary.get("by_sku") or {}).get(sku) or {}).get("others_6h") or {}
+    ref = lambda g: (lambda d: d.get("median") if (d.get("n") or 0) >= 10 else None)(cells.get(g + "_w") or {})
+    a = ref("A")
+    if a is None:
+        return None
+    m = {"A": a, "B": ref("B") or a - 0.05, "C": ref("C") or a - 0.10}
+    f = surge.get(sku, 1.0)
+    return round(sum(share * (m[g] * (1 - pricing.BREAK[g]) - cost * f) for g, (share, cost) in SUPPLY_MIX.items()), 4)
+
+
 def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, now: float, unmet: list | None = None,
-             params: dict | None = None) -> dict:
+             params: dict | None = None, margin=None) -> dict:
     """{sku: {n, median, sellers, list, at}}: new products for the line from other shops' settles of the last
     FIND_WINDOW, best expected margin (settles x list x (median - COST_GUESS)) first, as many as leave the line at
     LINE_MAX_SKUS products with a cap above 0. params: an experiment's find_median, find_sellers, line_max_skus;
@@ -223,7 +242,8 @@ def discover(settles: list, names: dict, catalog: dict, line: dict, caps: dict, 
             continue
         m = st.median(a / lp for a, _ in rows)
         sellers = len({sh for _, sh in rows})
-        if m >= least and sellers <= most:
+        em = margin(sku) if margin else None
+        if m >= least and sellers <= most and (em is None or em >= EM_FIND):
             picks.append((len(rows) * lp * (m - COST_GUESS), sku, {"n": len(rows), "median": round(m, 4), "sellers": sellers, "list": lp}))
     picks.sort(key=lambda x: -x[0])
     out = {sku: dict(info, at=int(now), cap=FIND_CAP, source="market", **({"exp": True} if params else {}))
@@ -279,7 +299,10 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
         changes.append({"at": int(now), "sku": "experiment", "from": "1 h trial", "to": "5 h more" if verdict["kept"] else "ended",
                         "why": f"its {len(verdict['products'])} products sold {verdict['sold']} for {verdict['margin']:,} over cost; "
                                f"shop {verdict['rate']:,}/h against {verdict['before']:,}/h before", "market": verdict})
-    for sku, info in discover(settles, names, catalog, line, caps, now, unmet, experiment(now)).items():
+    summary = common.read_json(common.MARKET_DIR / "market_summary.json", {}) or {}
+    surge = {s.get("sku"): float(s.get("factor") or 1.0) for s in inv.get("surge") or [] if isinstance(s, dict)}
+    margin = lambda s: expected_margin(s, summary, surge)
+    for sku, info in discover(settles, names, catalog, line, caps, now, unmet, experiment(now), margin).items():
         found[sku], line[sku] = info, info["cap"]
         why = (f"added: others sold it {info['n']} times in {FIND_WINDOW // 3600} h at {info['median']:.3f} of list, {info['sellers']} sellers"
                if info["source"] == "market" else
@@ -300,6 +323,9 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
             base[sku] = {"median": now_m["median"], "sellers": now_m["sellers"], "at": int(now)}
         us = ours(sku, inv.get("units") or [], sales, now)
         new, why = decide(caps.get(sku, default), base.get(sku), now_m, us, exits.get(sku), now, g["hold"])
+        em = margin(sku)
+        if new > 0 and em is not None and em < EM_EXIT:
+            new, why = 0, f"expected margin {em:.3f} of list, under {EM_EXIT}"
         if cut and new > 1 and new >= caps.get(sku, default) and not fresh:   # one step down, not on top of a shrink
             new, why = new - 1, f"our stars {g['stars']} are under {STARS_MIN}" + ("" if why.startswith("keep") else f"; {why}")
         if new != caps.get(sku, default):

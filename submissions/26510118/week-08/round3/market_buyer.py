@@ -65,6 +65,7 @@ import httpx
 
 import buyer_memory as memory
 import common
+import shop_model
 import harness
 
 MARGIN_HOURS = 1          # food must last this much longer than the order needs
@@ -289,7 +290,7 @@ def bad_faith(names) -> set:
 
 
 def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict, rules: dict,
-               odds: dict | None = None, rivals: set | None = None, bad: set | None = None) -> list:
+               odds: dict | None = None, rivals: set | None = None, bad: set | None = None, model: dict | None = None) -> list:
     """Every (shop, SKU) worth asking for, with its expected price, gain, trust and red flags. bad: shops of owners
     who rate in bad faith, flagged so that choose() takes them only when no clean shop has the order's product."""
     by_sku, by_cat = summary.get("by_sku") or {}, summary.get("by_category") or {}
@@ -324,13 +325,16 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             lp = c["list_price"]
             ratio = avg_paid or (by_sku.get(o["sku"]) or {}).get("price_ratio") \
                 or (by_cat.get(c.get("category")) or {}).get("price_ratio") or DEFAULT_RATIO
+            learned = shop_model.expected(model or {}, sh["name"], c.get("kind") or "goods")   # Kiro 2.0 stage 1
+            if learned:
+                ratio = learned[0]
             expected = lp * min(ratio, rules.get("max_ratio", 0.9))
             if expected > budget or (lp > budget and not rules.get("over_budget_try", True)):
                 continue
             t = memory.trust(nb, sh["name"], summary)
             if p is not None:
                 t = round((1 - ODDS_BLEND) * t + ODDS_BLEND * p, 3)
-            score = (1 - expected / lp) * t * (EXPLORE if sh["name"] not in nb else 1) \
+            score = (1 - expected / lp) * t * (max(0.05, learned[1]) if learned else 1) * (EXPLORE if sh["name"] not in nb else 1) \
                 * (PREFER if sh["name"] in (rules.get("prefer_shops") or []) else 1) \
                 * (RIVAL if sh["name"] in (rivals or set()) else 1)
             row = by_sku.get(o["sku"]) or {}
@@ -676,7 +680,8 @@ async def amain(a) -> dict:
     riv = common.read_json(common.MARKET_DIR / "analysis" / "rivals.json", {}) or {}
     rivals = set(riv.get("shops") or []) if isinstance(riv, dict) and time.time() - (riv.get("at") or 0) < RIVALS_FRESH else set()
     bad = bad_faith(sh["name"] for sh in shops)
-    cands = candidates(order, shops, catalog, nb, summary, rules, odds, rivals, bad) if order.get("acceptable") else []
+    model = common.read_json(common.MARKET_DIR / "analysis" / "shop_model.json", {}) or {}
+    cands = candidates(order, shops, catalog, nb, summary, rules, odds, rivals, bad, model) if order.get("acceptable") else []
     dear = (base["median_list"] or 0) >= DEAR_ORDER
     c, poor = choose(cands, nb, dear) if cands else (None, "no shop has an acceptable product in stock")
     if c is None:

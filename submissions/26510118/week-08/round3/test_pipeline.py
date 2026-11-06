@@ -285,6 +285,11 @@ def test_pricing():
           p["ask"] == 1_760_000 and p["nudge"] == 0.105, p)
     check("...and with a market of 0.70: at 72%, not held at the rule's 77.5%",
           pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.70}})["ask"] == 1_440_000)
+    check("other shops' first asks for the SKU (price_map, 0.84) cap a grade A first ask at them - 0.5% (83.5%); none: as before",
+          pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.86}}, comp_ask=0.84)["ask"] == 1_670_000
+          and pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.86}}, comp_ask=0.95)["ask"] == 1_760_000)
+    check("...not grade B (its own market only)",
+          pricing.plan(dict(goods_b, supplied_at=now - 3600), now, sku_market={"B": {"n": 50, "median": 0.50}}, comp_ask=0.30)["ask"] == 20748)
     dead_mk = {"A_w": {"n": 20, "median": 0.60}}
     p = pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market=dead_mk)
     check("dead stock: a unit held 3 h+ whose floor (63.7%) is over its market + 1% (61%): floor at cost / (1 - 2.6%), asked at the market",
@@ -471,8 +476,8 @@ def test_restock(fake: Fake):
     check("a dear product that sold is not refilled by the ordinary rule when it is not in the line",
           all(b["sku"] != sofa for b in out["buy"]), out["buy"][:3])
     many = {s: 1 for s in cat2 if s.startswith("Gsofa")}
-    out, info = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, NOW, line=dict(many, Gbad=2, **{BED: 11}))
-    check("at most 8 line products a run (the shelf keeps 2 of the 10 lines): all 5; unknown SKUs and caps over 10 are ignored",
+    out, info = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, NOW, line=dict(many, Gbad=2, **{BED: 13}))
+    check("at most 8 line products a run (the shelf keeps 2 of the 10 lines): all 5; unknown SKUs and caps over 12 are ignored",
           info["line"] == 5 and info["line_gaps"] == 5 and all(b["sku"] != BED for b in out["buy"][:5]), (info, out["buy"][:6]))
     out, _ = restock.plan(inv(shelf, balance=3_000_000), cat2, DEMAND, {}, [], [], rules, NOW, line={sofa: 1})
     check("the balance kept (2,500,000) holds: no sofa planned at 1,500,000 with 3,000,000 in hand",

@@ -195,7 +195,8 @@ def respond(ask: int, floor: int, offer: int, rounds: int) -> tuple[str, int]:
 def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: float = 0.0,
          catalog: dict | None = None, extra: dict | None = None, market: dict | None = None,
          late: bool = False, dear_default: bool = False, sku_market: dict | None = None,
-         in_line: bool = False, solo: bool = False, solo_floor: float | None = None, ask_over: float | None = None) -> dict:
+         in_line: bool = False, solo: bool = False, solo_floor: float | None = None, ask_over: float | None = None,
+         comp_ask: float | None = None) -> dict:
     """{ask, floor, grade, hours_left, age_days, at_cost, warranty_hours, ref, late, sku_ref, nudge} for one unit.
     sku_market: the SKU's others_6h; a grade A ask well above it comes down, a grade C ask well under it goes up
     (not for the premium line, in_line, nor on clearance); nudge: by how much (share of list), or None. A premium
@@ -229,6 +230,8 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     anchored = ANCHOR and sref is not None and not clearing
     if anchored:                                                # Kiro 2.0: the SKU's own market + ASK_OVER
         want = sref + (ASK_OVER if ask_over is None else ask_over) + adjust
+        if comp_ask is not None and g == "A":                   # not over what other shops first ask (shop_model)
+            want = min(want, comp_ask - 0.005)
         nudge, start = round(want - start, 4), want
     elif sref is not None and not clearing and not in_line:
         if g == "A" and start > sref + SKU_A_OVER:
