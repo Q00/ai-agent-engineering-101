@@ -209,7 +209,7 @@ class Patch35Tests(unittest.TestCase):
             db.execute('UPDATE deals SET data=? WHERE task=?', (json.dumps(data), 'task1'))
         report = fixture.reconcile([])
         self.assertEqual(report['revoked'], 0)
-        self.assertEqual(report['units'][0]['recovery_action'], 'market_revocation_confirmation_required')
+        self.assertEqual(report['units'][0]['recovery_action'], 'hold_unresolved_checkout')
 
     def test_recovery_audit_is_read_only_and_omits_tokens(self):
         from test_r3_cash_recovery import CashRecoveryTests
@@ -221,7 +221,7 @@ class Patch35Tests(unittest.TestCase):
         before = fixture.reservations.path.read_bytes()
         report = inspect(fixture.md, fixture.now + 1000)
         self.assertEqual(report['blocked_cost'], 80)
-        self.assertEqual(report['items'][0]['action'], 'request_server_revocation_of_checkout_id')
+        self.assertEqual(report['items'][0]['action'], 'hold_unresolved_checkout')
         self.assertNotIn('checkout_jwt', json.dumps(report))
         self.assertEqual(fixture.reservations.path.read_bytes(), before)
 

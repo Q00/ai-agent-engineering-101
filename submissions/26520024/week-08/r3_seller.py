@@ -251,7 +251,7 @@ class Reservations:
                 "SELECT unit FROM deals WHERE status IN ('signed_pending','quarantined') AND unit IS NOT NULL")]
 
     def reconcile(self, inventory, events, name, now, public_key=None):
-        """A signed promise stays blocked unless a matching paid ledger proves settlement."""
+        """Reconcile paid sales and confirmed local cancellations against market inventory."""
         live = {unit['unit'] for unit in inventory['units']}
         rows = []
         by_unit = {}
@@ -264,6 +264,7 @@ class Reservations:
                 data = json.loads(row['data'])
                 receipt = data.get('receipt')
                 status, proof = row['status'], data.get('settlement')
+                valid_checkout = False
                 if status != 'settled' and isinstance(receipt, dict):
                     shops = {name}
                     claims = verified_checkout(data.get('checkout_session'), public_key)
@@ -271,6 +272,7 @@ class Reservations:
                             all(claims.get(k) == receipt.get(k) for k in ('item', 'price', 'task')) and
                             isinstance(claims.get('shop_url'), str) and claims['shop_url']):
                         shops.add(claims['shop_url'].rstrip('/'))
+                        valid_checkout = receipt.get('unit') == row['unit']
                     for event in by_unit.get(row['unit'], []):
                         evidence = event.get('data', {})
                         if (event.get('kind') != 'market_settle' or not isinstance(evidence, dict) or
@@ -297,6 +299,16 @@ class Reservations:
                 revoked = (status == 'quarantined' and data.get('checkout_guarded') and
                            not data.get('checkout_started') and not data.get('checkout_session')
                            and now >= row['expires'])
+                session = data.get('checkout_session') or {}
+                canceled = (status != 'settled' and valid_checkout and data.get('checkout_guarded')
+                            and session.get('status') == 'canceled' and row['unit'] in live
+                            and data.get('completion_state') not in ('in_flight', 'uncertain', 'confirmed'))
+                if canceled:
+                    # Match the official kit: confirmed canceled sessions no longer hold stock.
+                    # Keep the old task/session permanently closed; never claim server JWT revocation.
+                    status = 'canceled'
+                    data.update(released_unit=row['unit'], released_at=now,
+                                release_reason='confirmed_checkout_cancellation')
                 if revoked:
                     # The same SQLite transaction serializes against CheckoutGate.begin.
                     # Gate will reject this receipt permanently before issuing any JWT.
@@ -308,30 +320,34 @@ class Reservations:
                           'signed_receipt_awaiting_payment')
                 if revoked:
                     reason = 'expired_unissued_checkout_revoked'
+                elif canceled:
+                    reason = 'confirmed_checkout_cancellation'
                 db.execute('UPDATE deals SET status=?,unit=?,data=? WHERE task=?',
-                           (status, None if revoked else row['unit'], json.dumps(data), row['task']))
+                           (status, None if revoked or canceled else row['unit'], json.dumps(data), row['task']))
                 recovery = ('retain_sold_tombstone' if status == 'settled' else
                             'released_unissued_promise' if revoked else
-                            'market_revocation_confirmation_required' if data.get('checkout_session') else
+                            'released_confirmed_cancellation' if canceled else
+                            'hold_unresolved_checkout' if data.get('checkout_session') else
                             'issuance_audit_required' if data.get('checkout_started') else
                             'wait_for_guarded_expiry' if data.get('checkout_guarded') else
                             'legacy_promise_audit_required')
                 rows.append(dict(task=row['task'], unit=row['unit'], sku=data.get('sku'), status=status,
                                  recovery_action=recovery,
                                  checkout_id=(data.get('checkout_session') or {}).get('id'),
-                                 in_inventory=row['unit'] in live and not revoked, reason=reason, settlement=proof))
+                                 in_inventory=row['unit'] in live and not revoked and not canceled,
+                                 released_to_inventory=canceled, reason=reason, settlement=proof))
         report = dict(observed_at=now, signed_pending=sum(r['status'] == 'signed_pending' for r in rows),
                       quarantined=sum(r['status'] == 'quarantined' for r in rows),
                       settled=sum(r['status'] == 'settled' for r in rows),
                       blocked_in_inventory=sum(r['in_inventory'] for r in rows), units=rows,
                       revoked=sum(r['status'] == 'revoked' for r in rows),
+                      canceled_released=sum(r['status'] == 'canceled' for r in rows),
                       safe_unlock_available=any(r['status'] == 'revoked' for r in rows),
-                      limitation='Only guarded promises with no checkout issuance can expire safely. '
-                                 'Legacy receipts and issued/uncertain checkout JWTs stay blocked until settlement.')
-        report['recovery_policy'] = 'proof_only_no_force_unlock'
-        report['operator_action'] = ('Ask the market operator for server-side revocation of issued checkout IDs; '
-                                     'local cancellation or age alone cannot invalidate a signed JWT. '
-                                     'No key rotation, deletion, rebuy or bankruptcy is authorized by this report.')
+                      limitation='Confirmed local cancellations release only stock present in market inventory. '
+                                 'Unresolved payments remain blocked. Server JWT revocation is not asserted.')
+        report['recovery_policy'] = 'confirmed_cancel_with_live_inventory'
+        report['operator_action'] = ('Review only unresolved payments or unmatched legacy promises; '
+                                     'confirmed cancellations follow the official kit stock policy.')
         atomic_json(self.md / 'seller-stock-status.json', report)
         return report
 

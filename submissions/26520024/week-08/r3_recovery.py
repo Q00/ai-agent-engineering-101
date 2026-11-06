@@ -15,9 +15,9 @@ def inspect(md, now=None):
     inventory = read_json(md / 'inventory.json', {})
     units = {u['unit']: u for u in inventory.get('units', [])}
     path = database_dir(md) / 'r3_seller.sqlite3'
-    report = {'mode': 'read_only', 'policy': 'proof_only', 'items': [], 'blocked_cost': 0,
-              'next_step': 'Issued JWTs require authoritative server revocation before reuse; '
-                           'local canceled status, elapsed time and missing stock are not proof.'}
+    report = {'mode': 'read_only', 'policy': 'confirmed_cancel_with_live_inventory', 'items': [], 'blocked_cost': 0,
+              'next_step': 'Confirmed canceled checkout plus current inventory can release via seller reconciliation; '
+                           'unknown payment outcomes remain held. No server JWT revocation is asserted.'}
     if not path.exists():
         return report
     with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=5)) as db:
@@ -33,8 +33,10 @@ def inspect(md, now=None):
                 action = 'unsigned_quote_expires_via_reservation_gate'
             elif status in ('signed_pending', 'quarantined') and guarded and expires <= now:
                 action = 'safe_revoke_via_next_seller_reconciliation'
+            elif session.get('status') == 'canceled' and unit in units and data.get('completion_state') not in ('in_flight', 'uncertain', 'confirmed'):
+                action = 'verify_canceled_checkout_then_release_via_seller'
             elif session:
-                action = 'request_server_revocation_of_checkout_id'
+                action = 'hold_unresolved_checkout'
             else:
                 action = 'hold_pending_or_uncertain_promise'
             cost = units.get(unit, {}).get('cost', 0)

@@ -89,6 +89,26 @@ class CheckoutGate:
         finally:
             db.close()
 
+    def begin_completion(self, task, session_id):
+        """Persist a possible payment before contacting the market, including across crashes."""
+        db = self.database()
+        try:
+            row = db.execute('SELECT status,unit,data FROM deals WHERE task=?', (task,)).fetchone()
+            if row is None:
+                raise ValueError('Unknown checkout')
+            data = json.loads(row['data'])
+            session = data.get('checkout_session', {})
+            if (session.get('id') != session_id or session.get('status') != 'ready_for_payment'
+                    or row['status'] not in ('signed_pending', 'quarantined')
+                    or row['unit'] != session.get('unit')
+                    or data.get('completion_state') in ('in_flight', 'uncertain', 'confirmed')):
+                raise ValueError('Checkout closed or payment outcome unresolved')
+            data['completion_state'] = 'in_flight'
+            db.execute('UPDATE deals SET data=? WHERE task=?', (json.dumps(data), task))
+            db.commit()
+        finally:
+            db.close()
+
     def finish(self, task, session=None, *, no_checkout_issued=False):
         db = self.database()
         try:
@@ -103,6 +123,10 @@ class CheckoutGate:
                 if (previous.get('status') in ('canceled', 'completed') and
                         previous.get('status') != session.get('status')):
                     raise ValueError('Terminal checkout state cannot be changed')
+                if session.get('status') == 'completed':
+                    data['completion_state'] = 'confirmed'
+                elif session.get('status') == 'canceled' and data.get('completion_state') in ('in_flight', 'uncertain'):
+                    raise ValueError('Cannot cancel an unresolved payment')
                 data['checkout_session'] = session
             elif no_checkout_issued and not data.get('checkout_session'):
                 data['checkout_started'] = False
@@ -167,6 +191,10 @@ def guarded_shop(base):
 
         async def handle(self, req, path, body, public):
             parts = path.strip('/').split('/')
+            if parts[:2] == ['acp', 'checkout_sessions'] and (
+                    path != path.strip('/') or len(parts) > 4 or
+                    (len(parts) == 4 and parts[3] not in ('complete', 'cancel'))):
+                return JSONResponse({'error': 'unknown ACP path'}, status_code=404)
             if (len(parts) == 4 and parts[:2] == ['acp', 'checkout_sessions'] and
                     parts[3] in ('complete', 'cancel')):
                 if req.method != 'POST':
@@ -179,6 +207,27 @@ def guarded_shop(base):
             return await self._handle(req, path, body, public)
 
         async def _handle(self, req, path, body, public):
+            parts = path.strip('/').split('/')
+            action = parts[3] if len(parts) == 4 and parts[:2] == ['acp', 'checkout_sessions'] else None
+            session = self.sessions.get(parts[2], {}) if action in ('complete', 'cancel') else {}
+            if action in ('complete', 'cancel'):
+                try:
+                    parsed = json.loads(body or b'{}')
+                    if not isinstance(parsed, dict):
+                        raise ValueError('Expected JSON object')
+                except (ValueError, TypeError):
+                    return JSONResponse({'error': 'body is not JSON'}, status_code=400)
+            if action == 'complete' and session.get('status') == 'ready_for_payment':
+                try:
+                    self.gate.begin_completion(session['task'], session['id'])
+                except (ValueError, KeyError, sqlite3.Error):
+                    return JSONResponse({'error': 'checkout closed or payment unresolved'}, status_code=409)
+            if action == 'cancel' and session.get('status') == 'ready_for_payment':
+                try:
+                    # Persist the confirmed local cancellation before publishing it in memory.
+                    self.gate.finish(session['task'], dict(session, status='canceled'))
+                except (ValueError, KeyError, sqlite3.Error):
+                    return JSONResponse({'error': 'payment unresolved; cancellation not confirmed'}, status_code=409)
             response = await super().handle(req, path, body, public)
             if response.status_code == 200 and path.endswith(('/complete', '/cancel')):
                 payload = json.loads(response.body)

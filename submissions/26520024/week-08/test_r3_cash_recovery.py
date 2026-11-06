@@ -92,8 +92,14 @@ class CashRecoveryTests(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
         with self.assertRaises(ValueError):
             CheckoutGate(self.md).finish('task1', self.session)
-        # Local cancel does not revoke an already-issued JWT at the public settle endpoint.
-        self.assertEqual(self.reconcile([])['blocked_in_inventory'], 1)
+        # Confirmed cancellation follows the official kit's release policy. The old task stays closed.
+        report = self.reconcile([])
+        self.assertEqual(report['blocked_in_inventory'], 0)
+        self.assertEqual(report['canceled_released'], 1)
+        with self.assertRaises(ValueError):
+            CheckoutGate(self.md).begin(self.receipt, self.now + 182)
+        unit, *_ = self.reservations.begin('task2', [self.unit], {'u1'}, self.now + 182, self.now + 300)
+        self.assertEqual(unit, 'u1')
 
     def test_cancel_is_serialized_with_inflight_completion(self):
         async def exercise():
