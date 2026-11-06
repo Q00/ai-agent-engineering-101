@@ -1,0 +1,41 @@
+# week-06 lab step 4-5: haggle with the rule-based lamp shop (seller_agent.py on :9999), a2a CLI 0.3.0
+# console output copied from the terminal pane
+
+$ a2a send -a http://127.0.0.1:9999 "I want to buy a lamp"
+Task:     29af5de2-f0ec-4fb6-93ad-2b8ea266f6d8
+Context:  7c8d5a54-f652-4a43-bd7e-9ed3bb0d0b9c
+Status:   input-required (2026-10-13T10:42:38Z)
+  lamp: asking 130. Send your offer as a number.
+History:
+  [user] I want to buy a lamp
+
+Resume:     a2a send --task-id 29af5de2-f0ec-4fb6-93ad-2b8ea266f6d8 "<reply>"
+
+$ a2a send -a http://127.0.0.1:9999 --task-id 29af5de2-f0ec-4fb6-93ad-2b8ea266f6d8 80
+Task:     29af5de2-f0ec-4fb6-93ad-2b8ea266f6d8
+Context:  7c8d5a54-f652-4a43-bd7e-9ed3bb0d0b9c
+Status:   input-required (2026-10-13T10:43:04Z)
+  80 is too low. Counteroffer: 105.
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+
+Resume:     a2a send --task-id 29af5de2-f0ec-4fb6-93ad-2b8ea266f6d8 "<reply>"
+
+$ a2a send -a http://127.0.0.1:9999 --task-id 29af5de2-f0ec-4fb6-93ad-2b8ea266f6d8 100
+Task:     29af5de2-f0ec-4fb6-93ad-2b8ea266f6d8
+Context:  7c8d5a54-f652-4a43-bd7e-9ed3bb0d0b9c
+Status:   completed (2026-10-13T10:43:07Z)
+  Deal: lamp at 100.
+Artifacts:
+  [receipt] {"item":"lamp","price":100,"seller":"Lamp Shop"}
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+  [agent] 80 is too low. Counteroffer: 105.
+  [user] 100
+
+$ a2a send -a http://127.0.0.1:9999 --task-id 29af5de2-f0ec-4fb6-93ad-2b8ea266f6d8 90
+Error: failed to send message: Task 29af5de2-f0ec-4fb6-93ad-2b8ea266f6d8 is in terminal state: TASK_STATE_COMPLETED

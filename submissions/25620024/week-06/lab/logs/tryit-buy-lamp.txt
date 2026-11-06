@@ -1,0 +1,137 @@
+# week-06 lab TRY IT "램프 한 번 사 보기" -- the lecture's five commands against seller_agent.py on :9999
+# (1)-(3) and (5) copied from the terminal pane; (4) captured live with a2a task get
+
+$ a2a send -a http://127.0.0.1:9999 "I want to buy a lamp"
+Task:     671613d8-b1c6-4a42-bc12-10d0227fb93c
+Context:  a7c5fd12-5d9c-4ebc-94aa-1187e73b492d
+Status:   input-required (2026-10-13T11:13:13Z)
+  lamp: asking 130. Send your offer as a number.
+History:
+  [user] I want to buy a lamp
+
+Resume:     a2a send --task-id 671613d8-b1c6-4a42-bc12-10d0227fb93c "<reply>"
+
+$ a2a send -a http://127.0.0.1:9999 --task-id 671613d8-b1c6-4a42-bc12-10d0227fb93c 80
+Task:     671613d8-b1c6-4a42-bc12-10d0227fb93c
+Context:  a7c5fd12-5d9c-4ebc-94aa-1187e73b492d
+Status:   input-required (2026-10-13T11:13:29Z)
+  80 is too low. Counteroffer: 105.
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+
+Resume:     a2a send --task-id 671613d8-b1c6-4a42-bc12-10d0227fb93c "<reply>"
+
+$ a2a send -a http://127.0.0.1:9999 --task-id 671613d8-b1c6-4a42-bc12-10d0227fb93c 105
+Task:     671613d8-b1c6-4a42-bc12-10d0227fb93c
+Context:  a7c5fd12-5d9c-4ebc-94aa-1187e73b492d
+Status:   completed (2026-10-13T11:13:45Z)
+  Deal: lamp at 105.
+Artifacts:
+  [receipt] {"item":"lamp","price":105,"seller":"Lamp Shop"}
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+  [agent] 80 is too low. Counteroffer: 105.
+  [user] 105
+
+$ a2a task get -a http://127.0.0.1:9999 671613d8-b1c6-4a42-bc12-10d0227fb93c -o json
+{
+  "task": {
+    "id": "671613d8-b1c6-4a42-bc12-10d0227fb93c",
+    "artifacts": [
+      {
+        "artifactId": "ffc828fe-84fb-49e8-b473-13901f7ddcab",
+        "name": "receipt",
+        "parts": [
+          {
+            "data": {
+              "item": "lamp",
+              "price": 105,
+              "seller": "Lamp Shop"
+            }
+          }
+        ]
+      }
+    ],
+    "contextId": "a7c5fd12-5d9c-4ebc-94aa-1187e73b492d",
+    "history": [
+      {
+        "messageId": "01a134f7-6db5-73e0-9150-9cbea7f83b31",
+        "contextId": "a7c5fd12-5d9c-4ebc-94aa-1187e73b492d",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "671613d8-b1c6-4a42-bc12-10d0227fb93c"
+      },
+      {
+        "messageId": "64c86be0-05cf-423a-b727-141b4f40b5e5",
+        "contextId": "a7c5fd12-5d9c-4ebc-94aa-1187e73b492d",
+        "parts": [
+          {
+            "text": "lamp: asking 130. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "671613d8-b1c6-4a42-bc12-10d0227fb93c"
+      },
+      {
+        "messageId": "01a134f7-ad03-74c2-9be8-9b5fab188995",
+        "contextId": "8b0ca35c-ebfe-438e-80b2-dfe279015b65",
+        "parts": [
+          {
+            "text": "80"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "671613d8-b1c6-4a42-bc12-10d0227fb93c"
+      },
+      {
+        "messageId": "49f31177-f73c-4986-bc34-8530a6524f9b",
+        "contextId": "a7c5fd12-5d9c-4ebc-94aa-1187e73b492d",
+        "parts": [
+          {
+            "text": "80 is too low. Counteroffer: 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "671613d8-b1c6-4a42-bc12-10d0227fb93c"
+      },
+      {
+        "messageId": "01a134f7-eda9-7645-b71e-cad55174235a",
+        "contextId": "6ce53e37-72ec-4c56-b768-1969049242ef",
+        "parts": [
+          {
+            "text": "105"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "671613d8-b1c6-4a42-bc12-10d0227fb93c"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "ba9d00d8-e0cf-4ecf-8dad-ec964bfb5e2c",
+        "contextId": "a7c5fd12-5d9c-4ebc-94aa-1187e73b492d",
+        "parts": [
+          {
+            "text": "Deal: lamp at 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "671613d8-b1c6-4a42-bc12-10d0227fb93c"
+      },
+      "state": "TASK_STATE_COMPLETED",
+      "timestamp": "2026-10-13T11:13:45.904031Z"
+    }
+  }
+}
+
+$ a2a send -a http://127.0.0.1:9999 --task-id 671613d8-b1c6-4a42-bc12-10d0227fb93c 110; echo "exit code: $?"
+Error: failed to send message: Task 671613d8-b1c6-4a42-bc12-10d0227fb93c is in terminal state: TASK_STATE_COMPLETED
+exit code: 1

@@ -1,0 +1,98 @@
+{
+  "deployed": "https://harness-shop-25620024.imajason.workers.dev",
+  "started": "2026-10-18T12:37:55+00:00",
+  "card": {
+    "name": "Harness Shop, deployed (25620024)",
+    "description": "Sells desk lamps, chairs and bookshelves. Deployed on Cloudflare Workers; prices are negotiated by a Workers AI model with the reserve enforced in code.",
+    "version": "1.0.0",
+    "supportedInterfaces": [
+      {
+        "url": "https://harness-shop-25620024.imajason.workers.dev/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Name an item (lamp, chair, bookshelf), then send offers as numbers. The shop answers with a counteroffer, a receipt, or no deal. The current ask is also in message metadata as {\"ask\": N}.",
+        "tags": [
+          "shopping",
+          "negotiation"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "90"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Harness Shop, deployed (25620024)' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 150"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100, asks [150, 140, 130]"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100, asks [150, 140, 130]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100, asks [150, 140, 130]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [350, 320, 300, 280, 270, 265]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [350, 320, 300, 280, 270, 265]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [350, 320, 300, 280, 270, 265]"
+    }
+  ],
+  "passed": true
+}
