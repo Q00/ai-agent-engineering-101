@@ -1,0 +1,76 @@
+[run] study=termination number=25 block=3 slot=1 order=structured,free,tagged condition=structured provider=openai model=gpt-5.6-luna temperature=0.7 max_tokens=512 reasoning_effort=none turn_limit=8 python=3.13.15 openai=3.8.0 utc=2026-09-26T13:45:15.322646+00:00 scenarios_sha256=277c73933f164d8ce9f686838391c845fe8d6d90fc8c8bb1c50c991acbaaac05 policy_sha256=54f7b4809605a388e01dd287a971b0c6c976a7b34fab17fc599fd476bff370ec
+[scenario] id=bike item=a used bicycle reserve=120 budget=180
+[api] id=chatcmpl-ESMxOvnjiOML12ZHSmPEsg99D4x2X finish=stop input=297 output=16
+[buyer turn=1] "{\"performative\":\"propose\",\"content\":{\"price\":120}}"
+[parser] ('propose', 120)
+[api] id=chatcmpl-ESMxPalr6lnBNl9Y7QUxEbRwvnhEf finish=stop input=304 output=17
+[seller turn=2] "{\"performative\":\"accept-proposal\",\"content\":{\"price\":null}}"
+[parser] ('accept-proposal', None)
+[result] {"deal_possible": 1, "outcome": "deal", "price": 120, "correct": 1, "violation": 0, "turns": 2, "format_errors": 0, "reader_calls": 0}
+[scenario] id=textbook item=a second-hand textbook reserve=40 budget=45
+[api] id=chatcmpl-ESMxQMHxykio8hOfusZD6Vna7Juwy finish=stop input=298 output=16
+[buyer turn=1] "{\"performative\":\"propose\",\"content\":{\"price\":30}}"
+[parser] ('propose', 30)
+[api] id=chatcmpl-ESMxRR7doCMt7LQqjqUtOaHWyOgNX finish=stop input=305 output=17
+[seller turn=2] "{\"performative\":\"reject-proposal\",\"content\":{\"price\":null}}"
+[parser] ('reject-proposal', None)
+[api] id=chatcmpl-ESMxSIkR7DkEw8FP15bPFV9hEUESy finish=stop input=335 output=16
+[buyer turn=3] "{\"performative\":\"propose\",\"content\":{\"price\":35}}"
+[parser] ('propose', 35)
+[api] id=chatcmpl-ESMxTN0XsJ7fp2xbVFAftYuwuhLts finish=stop input=342 output=17
+[seller turn=4] "{\"performative\":\"reject-proposal\",\"content\":{\"price\":null}}"
+[parser] ('reject-proposal', None)
+[api] id=chatcmpl-ESMxUDcuV5xk6fgiIORUEh66SPA6k finish=stop input=372 output=16
+[buyer turn=5] "{\"performative\":\"propose\",\"content\":{\"price\":40}}"
+[parser] ('propose', 40)
+[api] id=chatcmpl-ESMxVc5JHJaS4DiILH69pjh5uby7e finish=stop input=379 output=17
+[seller turn=6] "{\"performative\":\"accept-proposal\",\"content\":{\"price\":null}}"
+[parser] ('accept-proposal', None)
+[result] {"deal_possible": 1, "outcome": "deal", "price": 40, "correct": 1, "violation": 0, "turns": 6, "format_errors": 0, "reader_calls": 0}
+[scenario] id=keyboard item=a mechanical keyboard reserve=90 budget=70
+[api] id=chatcmpl-ESMxVLIAl4NbNqIj7EbtYN6PbK5F4 finish=stop input=297 output=16
+[buyer turn=1] "{\"performative\":\"propose\",\"content\":{\"price\":45}}"
+[parser] ('propose', 45)
+[api] id=chatcmpl-ESMxWwTWfZWHh6KhoaeIsuxjaxqYu finish=stop input=304 output=17
+[seller turn=2] "{\"performative\":\"reject-proposal\",\"content\":{\"price\":null}}"
+[parser] ('reject-proposal', None)
+[api] id=chatcmpl-ESMxXOyKNG2VYhH7EkTAhhIfGIOc0 finish=stop input=334 output=16
+[buyer turn=3] "{\"performative\":\"propose\",\"content\":{\"price\":50}}"
+[parser] ('propose', 50)
+[api] id=chatcmpl-ESMxYiL5e9WQUaxughF83ofnq2sQp finish=stop input=341 output=17
+[seller turn=4] "{\"performative\":\"reject-proposal\",\"content\":{\"price\":null}}"
+[parser] ('reject-proposal', None)
+[api] id=chatcmpl-ESMxZi7vngKOhxPIuCaRSdiPlsxFQ finish=stop input=371 output=16
+[buyer turn=5] "{\"performative\":\"propose\",\"content\":{\"price\":55}}"
+[parser] ('propose', 55)
+[api] id=chatcmpl-ESMxaO2n5wpyYujJdvwbBaPjTEpsD finish=stop input=378 output=17
+[seller turn=6] "{\"performative\":\"reject-proposal\",\"content\":{\"price\":null}}"
+[parser] ('reject-proposal', None)
+[api] id=chatcmpl-ESMxbIS9PgqokMoOCafN7mqsz9JY4 finish=stop input=408 output=16
+[buyer turn=7] "{\"performative\":\"refuse\",\"content\":{\"price\":null}}"
+[parser] ('refuse', None)
+[result] {"deal_possible": 0, "outcome": "no_deal", "price": null, "correct": 1, "violation": 0, "turns": 7, "format_errors": 0, "reader_calls": 0}
+[scenario] id=laptop item=a used laptop reserve=500 budget=420
+[api] id=chatcmpl-ESMxcENdtTvslOLCoXN0hDeTF7GLo finish=stop input=297 output=16
+[buyer turn=1] "{\"performative\":\"propose\",\"content\":{\"price\":300}}"
+[parser] ('propose', 300)
+[api] id=chatcmpl-ESMxdgSGJ5wTYFOnCr3fnUtguxSw5 finish=stop input=304 output=17
+[seller turn=2] "{\"performative\":\"reject-proposal\",\"content\":{\"price\":null}}"
+[parser] ('reject-proposal', None)
+[api] id=chatcmpl-ESMxeU9QxZDI7eJRpwZ8FmCsZmoT2 finish=stop input=334 output=16
+[buyer turn=3] "{\"performative\":\"propose\",\"content\":{\"price\":340}}"
+[parser] ('propose', 340)
+[api] id=chatcmpl-ESMxeAS2k4w9Bof12OcJRu4FdOYPU finish=stop input=341 output=17
+[seller turn=4] "{\"performative\":\"reject-proposal\",\"content\":{\"price\":null}}"
+[parser] ('reject-proposal', None)
+[api] id=chatcmpl-ESMxf8UXQCZZRSew7L7bG04zqpnJv finish=stop input=371 output=16
+[buyer turn=5] "{\"performative\":\"propose\",\"content\":{\"price\":380}}"
+[parser] ('propose', 380)
+[api] id=chatcmpl-ESMxgFPvjBiEtV2y79N9a4avVaIL0 finish=stop input=378 output=15
+[seller turn=6] "{\"performative\":\"reject-proposal\",\"content\":null}"
+[parser] None
+[protocol] unreadable; message still delivered
+[api] id=chatcmpl-ESMxhZXJrkvM1bchG18VHcgiC8mZK finish=stop input=406 output=16
+[buyer turn=7] "{\"performative\":\"refuse\",\"content\":{\"price\":null}}"
+[parser] ('refuse', None)
+[result] {"deal_possible": 0, "outcome": "no_deal", "price": null, "correct": 1, "violation": 0, "turns": 7, "format_errors": 1, "reader_calls": 0}
