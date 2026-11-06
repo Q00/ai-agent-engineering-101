@@ -82,7 +82,7 @@ def warranty_ask(ask, u, warranty_hours, p_break):
 
 
 def cap_ask(ask, list_price, market_ratio, floor):
-    """Keep the first ask within ASK_MAX_OVER_MARKET of what the market pays for this SKU, after the warranty
+    """Keep the first ask within ASK_MAX_OVER_MARKET of what the market pays for this SKU at this grade, after the warranty
     price-in and scarcity premium have been added. Never below the floor; unchanged without market evidence."""
     if not market_ratio or not list_price:
         return ask

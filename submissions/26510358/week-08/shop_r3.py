@@ -183,9 +183,10 @@ class Shop(AgentExecutor):
         warranty = pricing.warranty_hours_for(u, ask, p_break)
         ask = pricing.warranty_ask(ask, u, warranty, p_break)
         floor = pricing.warranty_floor(floor, u, ask, warranty, p_break)
-        ask = pricing.cap_ask(ask, u["list_price"], ratio, floor)
+        grade_ratio, _ = self.mem.grade_price_ratio(u["sku"], u.get("grade"))
+        ask = pricing.cap_ask(ask, u["list_price"], grade_ratio, floor)
         log("terms", sku=u["sku"], grade=u.get("grade"), cost=u["cost"], list_price=u["list_price"], ask=ask,
-            floor=floor, market_ratio=ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty,
+            floor=floor, market_ratio=ratio, grade_ratio=grade_ratio, evidence=n, adjust=adj, scarcity=premium, warranty=warranty,
             p_break=round(p_break, 4))
         return ask, floor, warranty
 

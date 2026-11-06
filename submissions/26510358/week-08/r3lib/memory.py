@@ -208,6 +208,17 @@ class Memory:
                     return statistics.median(rows), len(rows)
         return None, 0
 
+    def grade_price_ratio(self, sku, grade, hours=24, min_n=8):
+        """Median settled price / list price for one SKU at one grade (A sells ~0.15 of list above C, so the
+        all-grade median misplaces an A unit's ask). (None, n) without enough evidence."""
+        if not sku or grade not in ("A", "B", "C"):
+            return None, 0
+        with self.db() as c:
+            rows = [r["amount"] / r["list_price"] for r in c.execute(
+                "SELECT amount, list_price FROM settles WHERE sku=? AND grade=? AND ts>? AND list_price>0 AND amount>0",
+                (sku, grade, time.time() - hours * 3600))]
+        return (statistics.median(rows), len(rows)) if len(rows) >= min_n else (None, len(rows))
+
     def break_rate(self, grade=None, category=None):
         """Market-wide share of settled goods that broke, by grade (Laplace-smoothed, prior 10%)."""
         q = "SELECT COUNT(*) n, SUM(CASE WHEN b.seq IS NOT NULL THEN 1 ELSE 0 END) k FROM settles s " \
