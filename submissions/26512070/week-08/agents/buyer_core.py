@@ -378,6 +378,13 @@ class BuyerCore:
     def negotiate(self, shop, sku, kind):
         o, ctx = self.order, self.ctx
         ctx.keys = {"order": o.get("order"), "counterpart": shop["name"], "sku": sku}   # C1: this shop's talk
+        try:
+            return self._negotiate(shop, sku, kind)
+        finally:                    # 11/6 09:33: the next act.pick was recorded under the last shop's name
+            ctx.keys = {"order": o.get("order")}
+
+    def _negotiate(self, shop, sku, kind):
+        o, ctx = self.order, self.ctx
         c = mf.catalog(ctx).get(sku) or {}
         hist, offers, asks = [], [], []
         try:
