@@ -36,7 +36,7 @@ class Base(unittest.TestCase):
 class CardTest(Base):
     def test_sections_and_version(self):
         v, s = card.load()
-        self.assertEqual(v, 5)                      # 11/6: core: demand, patch 3.4 (4: role meta, 3: book)
+        self.assertEqual(v, 6)                      # 11/6: other agents are designed by people (5: demand, 4: meta)
         for k in ("core: the world", "core: the goal", "core: market rules that cost money", "intent", "role: seller", "role: audit", "appendix: rules"):
             self.assertIn(k, s)
 

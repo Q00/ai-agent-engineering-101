@@ -28,6 +28,8 @@ def path():
 def grade(item):
     """The grade by rule (R14): from the source and the sample, not from the claim's author."""
     src = str(item.get("source") or "")
+    if item.get("causal"):                       # "doing A makes B" is a hypothesis until an experiment shows it (2-1)
+        return "hypothesis"
     if src.startswith(STATED_SOURCES):
         return "stated"
     sample = item.get("sample") or {}

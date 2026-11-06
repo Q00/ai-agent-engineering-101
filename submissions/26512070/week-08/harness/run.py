@@ -130,6 +130,10 @@ def once(state, now, shadow=False):
             settled = fastpath.settle(now)              # auto changes whose test period ended: keep or undo
             if settled:
                 done["fastpath"] = settled
+            from harness import queue as waiting        # approved changes whose turn came (R12: one at a time)
+            started = waiting.tick(now)
+            if started:
+                done["queue"] = started
         except Exception as e:
             done["fastpath"] = f"failed: {type(e).__name__}: {e}"[:300]
     sid = meta_due(now, state.get("meta"))
