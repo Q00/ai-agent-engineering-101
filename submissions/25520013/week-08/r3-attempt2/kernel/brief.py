@@ -523,6 +523,53 @@ def trial_results(root, now, harness_root=None):
     return {"trial": t, "arms": arms}
 
 
+HORIZON_CAP_H = 72  # [동시 비교]: a horizon past this is printed as "over 72 h" next to the hours left in the round
+
+
+def horizon_hours(d, se, hours):
+    """Hours more, at the same request rate, until a difference d with standard error se (after `hours`) would sit 2
+    SE from zero, assuming d stays put: SE shrinks as 1/sqrt(time), so the total time is hours * (2 se / |d|)^2.
+    0.0 when it already does, None when d is 0 or there is no time or SE yet."""
+    if not hours or not se or se <= 0:
+        return None
+    if not d:
+        return None
+    total = hours * (2 * se / abs(d)) ** 2
+    return max(0.0, total - hours)
+
+
+def trial_cost_lines(base, cand, hours, now):
+    """Two fact lines for the operator: what the candidate arm has gained or lost in margin against the current
+    version on the requests sent to it, and how long each difference needs to reach 2 SE at today's rate."""
+    out = []
+    d = cand["margin_per_request"] - base["margin_per_request"]
+    se = (cand["margin_per_request_se"] ** 2 + base["margin_per_request_se"] ** 2) ** 0.5
+    n = cand["requests"]
+    out.append(
+        f"  후보로 보낸 요청 {n}건에서 지금 판 대비 이익 차이 누적 약 {'+' if d >= 0 else ''}{c.fmt(d * n)} "
+        f"(SE {c.fmt(se * n)}, 요청당 차이 x 후보 요청 수, 추정)"
+    )
+    left = (c.ROUND_END - now) / 3600
+    parts = []
+    for label, dk in (("판매/요청", "conversion"), ("요청당 이익", "margin_per_request")):
+        dd = cand[dk] - base[dk]
+        ss = (cand[dk + "_se"] ** 2 + base[dk + "_se"] ** 2) ** 0.5
+        h = horizon_hours(dd, ss, hours)
+        if h is None:
+            parts.append(f"{label} 차이가 0이라 시간으로 가려지지 않음")
+        elif h == 0:
+            parts.append(f"{label} 이미 2 SE 밖")
+        elif h > HORIZON_CAP_H:
+            parts.append(f"{label} {HORIZON_CAP_H}시간 넘게 더")
+        else:
+            parts.append(f"{label} 약 {h:.1f}시간 더")
+    out.append(
+        "  지금 차이가 그대로이고 요청 속도가 같다면 2 SE에 닿기까지: " + ", ".join(parts)
+        + f" (추정, 회차 종료까지 {left:.0f}시간)"
+    )
+    return out
+
+
 def section_trial(root, now, harness_root=None):
     r = trial_results(root, now, harness_root)
     if r is None:
@@ -560,6 +607,7 @@ def section_trial(root, now, harness_root=None):
             + ", 요청당 매출 " + diff("revenue_per_request", sign(c.fmt))
             + ", 요청당 이익 " + diff("margin_per_request", sign(c.fmt))
         )
+        out += trial_cost_lines(base, cand, hours, now)
     cats = Counter()
     for a in (base, cand):
         for k, v in a["by_category"].items():
@@ -840,6 +888,45 @@ def _seller_compare(prev, cur):
     return out
 
 
+REFLECT_LOOKBACK_H = 6
+
+
+def section_reflections(root, now, rows=None):
+    """[지난 반성]: per target and version, the operator's last reflection (time and verdicts), how many reflections
+    it wrote on that version in the last REFLECT_LOOKBACK_H hours, and how many new decisions of that agent came
+    after the last one. Facts only: a version with few new decisions since its last reflection has little new
+    evidence."""
+    if rows is None:
+        rows = list(c.tail_json(os.path.join(root, "a2/trajectory.jsonl"), 50_000_000))
+    lo = now - REFLECT_LOOKBACK_H * 3600
+    last, count = {}, Counter()
+    for r in rows:
+        if r.get("kind") == "reflection" and r.get("agent") == "operator" and (r.get("ts") or 0) >= lo:
+            k = (r.get("target"), r.get("version"))
+            count[k] += 1
+            if (r.get("ts") or 0) >= (last.get(k, {}).get("ts") or 0):
+                last[k] = r
+    if not last:
+        return [f"[지난 반성] 최근 {REFLECT_LOOKBACK_H}시간 기록 없음"]
+    out = [f"[지난 반성] 최근 {REFLECT_LOOKBACK_H}시간, 판마다 마지막 반성과 그 뒤 새 결정 수"]
+    for (target, version), r in sorted(last.items(), key=lambda kv: -(kv[1].get("ts") or 0)):
+        ts = r.get("ts") or 0
+        new = sum(
+            1
+            for x in rows
+            if x.get("kind") == "decision" and x.get("agent") == target and (x.get("ts") or 0) > ts
+        )
+        verdicts = ", ".join(str(e.get("effect")) for e in r.get("effects") or [] if isinstance(e, dict)) or "-"
+        out.append(
+            f"  {target} 판 {version}: 마지막 {c.kst(ts, '%H:%M')} ({verdicts}), {REFLECT_LOOKBACK_H}시간 동안 "
+            f"{count[(target, version)]}번, 그 뒤 새 {target} 결정 {new}건"
+            if target in ("seller", "buyer")
+            else f"  {target} 판 {version}: 마지막 {c.kst(ts, '%H:%M')} ({verdicts}), "
+            f"{REFLECT_LOOKBACK_H}시간 동안 {count[(target, version)]}번"
+        )
+    return out
+
+
 def section_harness(root, since_ts):
     from kernel.trajectory import Trajectory
 
@@ -912,6 +999,7 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_rank(b, b6, login, hours6)
         out += section_versions(root, now)
         out += section_trial(root, now)
+        out += section_reflections(root, now)
         out += section_categories(root, now, login)
         out += section_calls(root, now)
         out += section_side(

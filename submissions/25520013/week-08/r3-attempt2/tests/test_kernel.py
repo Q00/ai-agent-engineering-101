@@ -269,3 +269,37 @@ def test_climb_line_absent_when_first_and_no_weight_for_unknown_column():
     assert brief.climb_line([3.0, 2.0], 3.0, 0.5, "가게") is None
     line = brief.climb_line([5.0, 3.0, 2.0], 2.0, None, "가게")
     assert line.startswith("    바로 위 2곳까지 차이: +1, +3") and "한 계단" not in line
+
+
+def test_horizon_hours_scales_with_inverse_square_of_effect():
+    # d = 1 SE after 2 h -> 2 SE needs 4x the time -> 6 h more
+    assert brief.horizon_hours(-0.5, 0.5, 2.0) == pytest.approx(6.0)
+    assert brief.horizon_hours(1.5, 0.5, 2.0) == 0.0
+    assert brief.horizon_hours(0.0, 0.5, 2.0) is None
+    assert brief.horizon_hours(0.1, 0.0, 2.0) is None
+
+
+def test_horizon_trial_cost_lines_show_cumulative_margin_and_hours():
+    arm = lambda conv, mar, n: {"requests": n, "conversion": conv, "conversion_se": 0.03, "margin_per_request": mar,
+                                "margin_per_request_se": 3000.0}
+    lines = brief.trial_cost_lines(arm(0.40, 13000.0, 260), arm(0.39, 8000.0, 240), 1.8, common.ROUND_END - 100 * 3600)
+    assert "후보로 보낸 요청 240건" in lines[0] and "-1.2M" in lines[0]  # -5,000 x 240
+    assert "요청당 이익 약" in lines[1] and "회차 종료까지 100시간" in lines[1]
+    assert "판매/요청 72시간 넘게 더" in lines[1]  # 0.01 vs SE 0.042 -> ~ 30x the time
+
+
+def test_reflect_due_section_counts_repeats_and_new_decisions():
+    now = 1_800_000_000
+    rows = [
+        {"ts": now - 600, "agent": "operator", "kind": "reflection", "target": "seller", "version": 4,
+         "effects": [{"effect": "판단 불가"}]},
+        {"ts": now - 300, "agent": "operator", "kind": "reflection", "target": "seller", "version": 4,
+         "effects": [{"effect": "판단 불가"}]},
+        {"ts": now - 400, "agent": "seller", "kind": "decision"},
+        {"ts": now - 100, "agent": "seller", "kind": "decision"},
+        {"ts": now - 50, "agent": "buyer", "kind": "decision"},
+    ]
+    out = brief.section_reflections("/nonexistent", now, rows)
+    assert out[0].startswith("[지난 반성]")
+    assert "seller 판 4: 마지막" in out[1] and "2번" in out[1] and "새 seller 결정 1건" in out[1]
+    assert brief.section_reflections("/nonexistent", now, [])[0].endswith("기록 없음")
