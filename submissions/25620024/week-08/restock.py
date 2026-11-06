@@ -288,7 +288,12 @@ def plan(md, c, t, now=None):
         fresh = time.time() - promo.PLAN.stat().st_mtime < 3 * 3600   # demand step for 3 days (model teams in usage
     except (OSError, AttributeError, NameError):              # cooldown never rewrote it); share 0.7% -> 0.2%
         fresh = False
-    if mk.get("mode") == "focus" and fresh:                   # marketing: only regulars and its picks for now
+    try:                                                      # HQ 11-07 weekend: "공격적으로 운영해" -- HQ's
+        hq_open = json.loads((Path(__file__).parent / "private" / "owner_override.json").read_text(  # no_focus wins
+            encoding="utf-8")).get("no_focus")                # over a sales-team focus plan
+    except (OSError, ValueError):
+        hq_open = False
+    if mk.get("mode") == "focus" and fresh and not hq_open:                   # marketing: only regulars and its picks for now
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"] + \
             ([f"surge skip: {sorted(skipped)}"] if skipped else []), cash, \
             {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
