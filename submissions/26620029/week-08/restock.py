@@ -57,6 +57,7 @@ FOCUS_SPEND = 0.6           # focus lines spend at most this share of the spenda
 FOCUS_MAX_LINES = 6         # focus SKUs take at most this many of a run's MAX_LINES lines
 MIN_VALUE = 0.003           # with MARKET_DATA deals seen: below this share of value, stock only what I already sold
 EARLY = 60                  # buy when the window opens within this many seconds (the kit runs us every 60 s)
+RECENT_MIN = 3000            # market deals in the last 3 h before focus SKUs follow them (about 8,000 at normal volume)
 STOCK_CAP = 0.60             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
 MEMORY = Path("restock_memory.json")
 
@@ -110,14 +111,16 @@ def focus_want(sku_share, list_price):
 def focus_lines(inv, catalog, focus_cats, cu):
     """[(sku, qty)] missing in the focus categories: sold-out SKUs first, then the SKU with the most market value."""
     balance = inv.get("balance") or 0
-    total = sum(customers.popular(cu).values())
+    recent = customers.recent_buys(cu, catalog)         # what sells now; until it has RECENT_MIN deals, all sales so far
+    use_recent = sum(sum(s.values()) for s in recent.values()) >= RECENT_MIN
+    total = sum(sum(s.values()) for s in recent.values()) if use_recent else sum(customers.popular(cu).values())
     have = {}
     for u in inv["units"]:
         if u.get("grade") != "expired":
             have[u["sku"]] = have.get(u["sku"], 0) + 1
     lines = []
     for cat in focus_cats:
-        skus = cu.get("sku_buys", {}).get(cat, {})
+        skus = recent.get(cat, {}) if use_recent else cu.get("sku_buys", {}).get(cat, {})
         fit = [s for s in skus if s in catalog and catalog[s]["list_price"] * COST_GUESS <= UNIT_SHARE * balance]
         fit.sort(key=lambda s: -skus[s] * catalog[s]["list_price"])
         for s in fit[:FOCUS_SKUS]:

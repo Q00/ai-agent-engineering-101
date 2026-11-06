@@ -11,6 +11,7 @@ State lives in the restock memory dict under "ledger" (cursor) and "customers" (
 """
 import json
 import os
+import time
 
 import httpx
 
@@ -19,6 +20,9 @@ ME = "ddolcom"                  # the market name (join --name), also the card a
 PAGES = 20                      # at most 20 x 500 ledger entries per run
 FIRST_LOOKBACK = 5000           # first run: start this many entries before the newest
 PRICE_ALPHA = 0.02              # paid/list per shop: an average over about the last 50 deals
+RECENT_HOURS = 3                # sales the restock looks at to choose focus SKUs, in buckets of RECENT_BUCKET seconds
+RECENT_BUCKET = 600
+RECENT_SEED = "recent_seed.json"    # the last hours of settled deals when "recent" starts, written once from the ledger
 
 
 def get(c, path, **params):
@@ -66,6 +70,12 @@ def update(mem, catalog, client=None):
                 cu["my_urls"].append(s["url"])
             if s.get("name") and s.get("url"):
                 cu.setdefault("url_names", {})[s["url"]] = s["name"]
+        if "recent" not in cu:
+            try:
+                with open(RECENT_SEED, encoding="utf-8") as f:
+                    cu["recent"] = json.load(f)
+            except (OSError, ValueError):
+                cu["recent"] = {}
         after = mem.get("ledger", -FIRST_LOOKBACK)
         seen = set(cu["seen"])
         for _ in range(PAGES):
@@ -81,6 +91,9 @@ def update(mem, catalog, client=None):
                 if e.get("kind") == "join" and d.get("role") == "shop" and d.get("name") and d.get("url"):
                     cu.setdefault("url_names", {})[d["url"]] = d["name"]
                 fold_price(cu, e, catalog)
+                if e.get("kind") == "settle" and d.get("sku"):
+                    b = cu["recent"].setdefault(str(int(e["ts"] // RECENT_BUCKET)), {})
+                    b[d["sku"]] = b.get(d["sku"], 0) + 1
                 deal = deal_of(e)
                 if not deal or deal[0] in seen:
                     continue
@@ -98,6 +111,8 @@ def update(mem, catalog, client=None):
             if len(rows) < 500:
                 break
         mem["ledger"] = after
+        keep = (time.time() - RECENT_HOURS * 3600) // RECENT_BUCKET
+        cu["recent"] = {k: v for k, v in cu["recent"].items() if int(k) >= keep}
         cu["seen"] = list(seen)[-5000:]                 # order ids, against a settle and a result for one deal
     except (httpx.HTTPError, ValueError, KeyError) as e:
         print(f"customers: ledger not read ({type(e).__name__})")
@@ -125,6 +140,17 @@ def sales_value(cu, catalog):
     """category -> list-price value of the market's settled deals (count x list price of each SKU bought)."""
     return {cat: sum(n * catalog[sku]["list_price"] for sku, n in skus.items() if sku in catalog)
             for cat, skus in cu.get("sku_buys", {}).items()}
+
+
+def recent_buys(cu, catalog):
+    """category -> sku -> settled deals in the whole market over the last RECENT_HOURS."""
+    out = {}
+    for bucket in cu.get("recent", {}).values():
+        for sku, n in bucket.items():
+            if sku in catalog:
+                s = out.setdefault(catalog[sku]["category"], {})
+                s[sku] = s.get(sku, 0) + n
+    return out
 
 
 def best_sku(cu, cat):
