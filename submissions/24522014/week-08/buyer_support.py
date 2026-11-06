@@ -7,6 +7,7 @@ import math
 import time
 from collections import Counter
 
+from discount_floor import expected_discount, load as load_floor
 from market_state import read, write
 from r3_selection import select, positive
 from settlement_memory import payment_outcomes
@@ -125,10 +126,10 @@ def stock_band(qty):
     return 1 if qty < 2 else 2 if qty < 4 else 3
 
 
-def prefer_listed_stock(eligible, best, rule):
+def prefer_listed_stock(eligible, best, rule, measure="estimated_surplus"):
     """The candidate to try: `best`, unless one about as good has more listed stock.
 
-    Only surplus within the tolerance can be given up, a candidate with a known fault never replaces one without, and an
+    Only `measure` within the tolerance can be given up, a candidate with a known fault never replaces one without, and an
     unknown price never replaces a known one, since its surplus is only the cap. Caps are each candidate's own.
     """
     if not isinstance(rule, dict) or rule.get("enabled") is not True:
@@ -136,13 +137,13 @@ def prefer_listed_stock(eligible, best, rule):
     tolerance = rule.get("surplus_tolerance_ratio")
     if type(tolerance) not in (int, float) or not 0 <= tolerance <= .1:
         return best
-    floor = best["estimated_surplus"] - abs(best["estimated_surplus"]) * tolerance
+    floor = best[measure] - abs(best[measure]) * tolerance
     known = positive(best["past_settled_price"])
-    near = [e for e in eligible if e["estimated_surplus"] >= floor and bool(e["attributed_faults"]) <= bool(best["attributed_faults"])
+    near = [e for e in eligible if e[measure] >= floor and bool(e["attributed_faults"]) <= bool(best["attributed_faults"])
             and (positive(e["past_settled_price"]) or not known)]
     if stock_band(best.get("listed_qty")) >= max((stock_band(e.get("listed_qty")) for e in near), default=0):
         return best
-    return min(near, key=lambda e: (-stock_band(e.get("listed_qty")), -e["estimated_surplus"], e["shop"], e["sku"]))
+    return min(near, key=lambda e: (-stock_band(e.get("listed_qty")), -e[measure], e["shop"], e["sku"]))
 
 
 def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, state, settings, now, kind="goods"):
@@ -223,9 +224,14 @@ def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, 
         eligible = kept
     if not eligible:
         return None, None, budget, "No new, relevant, value-preserving seller research opportunity.", evidence
-    best = min(eligible, key=lambda e: (bool(e["attributed_faults"]), -e["estimated_surplus"], e["shop"], e["sku"]))
+    # Saved is a rate, so a sofa and a snack at the same discount are worth the same. A past deal's grade is only a hint of this one's, the best there is before a quote.
+    floor_settings = load_floor()
+    for item in eligible:
+        condition = item["reference_condition"] or {}
+        item["expected_discount"] = round(float(expected_discount(item["estimated_surplus"]/item["catalogue_value"], kind, condition.get("grade"), bool(item["warranty_required"]), floor_settings, policy.get("grades"))), 6)
+    best = min(eligible, key=lambda e: (bool(e["attributed_faults"]), -e["expected_discount"], e["shop"], e["sku"]))
     first_choice = best
-    best = prefer_listed_stock(eligible, best, settings.get("listed_stock_preference"))
+    best = prefer_listed_stock(eligible, best, settings.get("listed_stock_preference"), "expected_discount")
     if best is not first_choice:
         best["listed_stock_preferred_over"] = {"shop": first_choice["shop"], "sku": first_choice["sku"], "listed_qty": first_choice.get("listed_qty"),
                                                "surplus_given_up": first_choice["estimated_surplus"] - best["estimated_surplus"]}

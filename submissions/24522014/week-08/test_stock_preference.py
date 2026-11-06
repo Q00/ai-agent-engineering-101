@@ -117,9 +117,10 @@ class InChoose(unittest.TestCase):
         off = {**SETTINGS, "listed_stock_preference": {"enabled": False}}
         self.assertEqual(self.choose([shop("a", 1), shop("b", 6)], settings=off)[0]["name"], "a")
 
-    def test_much_higher_value_stays_ahead_of_more_stock(self):
+    def test_a_higher_list_price_alone_no_longer_beats_more_stock(self):
+        # Saved counts the share off list. With no known price both sit at the same cap share, so the amount is no reason to prefer one.
         chosen, sku, *_ = self.choose([shop("a", 1, "G3"), shop("b", 50, "G1")])
-        self.assertEqual((chosen["name"], sku), ("a", "G3"))
+        self.assertEqual((chosen["name"], sku), ("b", "G1"))
 
     def test_a_skipped_shop_with_plenty_of_stock_is_not_preferred(self):
         chosen, _, _, _, evidence = self.choose([shop("dragonash", 500), shop("a", 1)], refusals("dragonash"))

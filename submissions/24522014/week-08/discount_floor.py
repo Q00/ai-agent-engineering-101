@@ -63,6 +63,14 @@ def ceiling(list_price, discount):
     return max(0, math.floor(Fraction(str(list_price))*(1-discount)))
 
 
+def expected_discount(discount, kind, grade, covered, settings, allowed=None):
+    """What a deal at this share off list adds to Saved on average."""
+    if kind == "food":
+        return discount
+    p = fault_rate(grade, covered, settings, allowed)
+    return (1-p)*discount if covered else (1-p)*discount-p
+
+
 def deal_limit(limit, grade, budget):
     """The limit for this turn: never above the current budget, whatever a quote says. Returns (budget, check), and check is safe to log."""
     settings = limit["settings"]

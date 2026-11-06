@@ -9,6 +9,7 @@ from unittest import mock
 
 import buyer
 from buyer_counter import load_settings
+import buyer_support
 import discount_floor as floor
 from market_buyer import ReceiptProblem, check_receipt
 from r3_selection import select
@@ -269,6 +270,32 @@ class Receipt(unittest.TestCase):
         with self.assertRaises(ReceiptProblem):
             check_receipt({"item": "G", "task": "t", "price": need+1}, item="G", budget=need, task="t", agreed_price=need+1)
         check_receipt({"item": "G", "task": "t", "price": need}, item="G", budget=need, task="t", agreed_price=need)
+
+
+class Ranking(unittest.TestCase):
+    def test_expected_discount_cases(self):
+        self.assertEqual(floor.expected_discount(.3, "food", "B", False, SETTINGS), .3)
+        self.assertAlmostEqual(floor.expected_discount(.3, "goods", "B", True, SETTINGS), .889*.3)
+        self.assertAlmostEqual(floor.expected_discount(.3, "goods", "A", False, SETTINGS), .973*.3-.027)
+        self.assertAlmostEqual(floor.expected_discount(.3, "goods", None, False, SETTINGS, ["A", "B"]), .902*.3-.098)
+
+    def test_a_cheap_item_at_a_big_discount_beats_a_costly_one_at_a_small_discount(self):
+        catalog = {"BIG": {"list_price": 1000000, "kind": "goods"}, "SMALL": {"list_price": 10000, "kind": "goods"}}
+        now = 1000000
+        def settled(seq, item, amount):
+            return {"round": 3, "kind": "settle", "seq": seq, "ts": now-60, "data": {"shop": f"https://{item}", "item": item, "amount": amount, "grade": "A", "claim_honest": True, "warranty_hours": 0}}
+        shops = [{"name": "big", "url": "https://BIG", "offers": [{"sku": "BIG", "qty": 5}]}, {"name": "small", "url": "https://SMALL", "offers": [{"sku": "SMALL", "qty": 5}]}]
+        config = {"mode": "balanced", "pair_cooldown_seconds": 300, "reference_max_age_seconds": 3600, "reference_premium_ratio": .02, "alternative_tolerance_ratio": 0, "sufficient_public_samples": 3}
+        rows = [settled(1, "BIG", 700000), settled(2, "SMALL", 5000)]
+        shop, sku, *_ = buyer_support.choose(shops, [], catalog, 2000000, POLICY, [], rows, {"targets": {}, "rival_names": set(), "rival_urls": set()}, {"attempts": []}, config, now)
+        self.assertEqual((shop["name"], sku), ("small", "SMALL"))
+
+    def test_stock_preference_compares_the_same_measure_it_was_given(self):
+        best = {"expected_discount": .3, "estimated_surplus": 1, "attributed_faults": 0, "past_settled_price": 1, "listed_qty": 1, "shop": "a", "sku": "x"}
+        other = {"expected_discount": .29, "estimated_surplus": 0, "attributed_faults": 0, "past_settled_price": 1, "listed_qty": 9, "shop": "b", "sku": "x"}
+        rule = {"enabled": True, "surplus_tolerance_ratio": .05}
+        self.assertIs(buyer_support.prefer_listed_stock([best, other], best, rule, "expected_discount"), other)
+        self.assertIs(buyer_support.prefer_listed_stock([best, other], best, rule), best)
 
 
 class Wiring(unittest.TestCase):
