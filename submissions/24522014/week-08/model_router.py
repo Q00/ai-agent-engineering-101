@@ -23,6 +23,9 @@ import harness
 from harness import HarnessError, parse_response
 import model_breaker
 
+SECRET_ENV_WORDS = ("KEY", "TOKEN", "SECRET", "PASSW", "CREDENTIAL", "CLAIM", "COOKIE", "OWNER", "AUTH")
+AGY_OWN_ENV = ("AGY_", "ANTIGRAVITY_", "GEMINI_", "GOOGLE_")
+
 ROOT = Path(__file__).resolve().parent
 DEFAULTS = {"agy_enabled": True, "agy_model": "gemini-4-argon-low", "min_remaining_percent": 15, "quota_read_interval_seconds": 300,
             "max_quota_age_seconds": 1800, "quota_read_timeout_seconds": 20, "limit_off_seconds": 3600, "service_off_seconds": 900,
@@ -149,6 +152,17 @@ def parse_quota(output, model=None):
     return usage if "weekly_remaining_percent" in usage and "five_hour_remaining_percent" in usage else None
 
 
+def agy_env(base=None, **extra):
+    """The environment for an agy process. Its prompts carry seller text and it holds a web tool, so the kit's claim code and every other secret stay out. Everything else stays, and so do agy's own sign-in variables."""
+    base = os.environ if base is None else base
+    def hidden(name):
+        upper = name.upper()
+        if upper.startswith(AGY_OWN_ENV):
+            return False
+        return upper.startswith("MARKET_") or any(word in upper for word in SECRET_ENV_WORDS)
+    return {**{name: value for name, value in base.items() if not hidden(name)}, **extra}
+
+
 def read_quota(timeout=DEFAULTS["quota_read_timeout_seconds"], agy=None, model=None):
     """Read agy's quota with its read-only command, which uses no tokens. Returns None when it cannot."""
     agy = agy or executable()
@@ -157,7 +171,7 @@ def read_quota(timeout=DEFAULTS["quota_read_timeout_seconds"], agy=None, model=N
     try:
         with tempfile.TemporaryDirectory() as work:
             done = subprocess.run([agy, "--print", "/quota", "--output-format", "json"], cwd=work, stdin=subprocess.DEVNULL,
-                                  capture_output=True, timeout=timeout)
+                                  capture_output=True, timeout=timeout, env=agy_env())
         return parse_quota(json.loads(done.stdout.decode("utf-8", "replace")), model)
     except (OSError, ValueError, subprocess.SubprocessError):
         return None
@@ -377,7 +391,7 @@ def run_agy(prompt, timeout, settings, root=ROOT, runner=None):
     logged = [part if part != prompt else "<prompt in request.txt>" for part in command]
     metadata = {"provider": "agy", "model": model, "cwd": str(work_dir), "timeout_seconds": timeout, "status": "running", "command": logged}
     started = time.monotonic()
-    env = dict(os.environ, TEMP=str(work_dir), TMP=str(work_dir))
+    env = agy_env(TEMP=str(work_dir), TMP=str(work_dir))
     try:
         try:
             done = (runner or subprocess.run)(command, cwd=work_dir, stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout, env=env)

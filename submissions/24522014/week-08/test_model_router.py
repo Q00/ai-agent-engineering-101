@@ -98,6 +98,50 @@ class Surface(unittest.TestCase):
                 mr.extract_answer(bad)
 
 
+class AgyEnvironment(Base):
+    """Names only are compared, and the values are fixtures: a failure here cannot print a real secret."""
+
+    HIDDEN = ("MARKET_OWNER", "MARKET_DIR", "market_owner", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GITHUB_TOKEN", "GH_TOKEN", "CLAUDE_CODE_MESSAGING_TOKEN", "SOME_SECRET", "DB_PASSWORD", "AWS_CREDENTIALS", "CLAIM_CODE", "SESSION_COOKIE", "PROXY_AUTH", "SSLKEYLOGFILE")
+    KEPT = ("PATH", "SYSTEMROOT", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOME", "HTTPS_PROXY", "SSL_CERT_FILE", "NODE_EXTRA_CA_CERTS", "GEMINI_API_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "AGY_TOKEN", "ANTIGRAVITY_AUTH")
+
+    def environment(self):
+        return {name: "fixture" for name in self.HIDDEN+self.KEPT}
+
+    def test_secrets_are_dropped_and_the_rest_kept(self):
+        env = mr.agy_env(self.environment())
+        self.assertEqual(sorted(set(env) & set(self.HIDDEN)), [])
+        self.assertEqual(sorted(set(env)), sorted(self.KEPT))
+
+    def test_extras_are_added_and_the_source_is_left_alone(self):
+        source = self.environment()
+        env = mr.agy_env(source, TEMP="a", TMP="b")
+        self.assertEqual((env["TEMP"], env["TMP"]), ("a", "b"))
+        self.assertEqual(source, self.environment())
+
+    def test_a_real_agy_call_gets_no_claim_code_and_keeps_its_temp(self):
+        with patch.dict(mr.os.environ, self.environment()):
+            self.ask()
+        _, kwargs = self.calls[0]
+        self.assertEqual(sorted(set(kwargs["env"]) & set(self.HIDDEN)), [])
+        self.assertEqual(kwargs["env"]["TEMP"], str(kwargs["cwd"]))
+        self.assertIn("PATH", kwargs["env"])
+
+    def test_the_quota_read_gets_no_claim_code(self):
+        seen = {}
+        def run(command, **kwargs):
+            seen.update(kwargs["env"])
+            return SimpleNamespace(stdout=b"{}", stderr=b"", returncode=0)
+        with patch.dict(mr.os.environ, self.environment()), patch.object(mr.subprocess, "run", run):
+            self.assertIsNone(mr.read_quota(1, agy="agy"))
+        self.assertTrue(seen)
+        self.assertEqual(sorted(set(seen) & set(self.HIDDEN)), [])
+
+    def test_every_process_this_module_starts_names_its_environment(self):
+        source = Path(mr.__file__).read_text(encoding="utf-8")
+        self.assertEqual(source.count("subprocess.run"), 2)
+        self.assertEqual(source.count("env=agy_env()")+source.count("env=env)"), 2)
+
+
 class Routing(Base):
     def test_agy_answers_first_and_codex_is_untouched(self):
         self.assertEqual(self.ask(), ANSWER)
