@@ -6,7 +6,8 @@
 
 Health: the measured findings of outer/health.py plus whether the parts are alive (the kit log, the inner status),
 graded now / warn; one alert per finding and hour.
-Emergency (17-4, approved in advance, at night too): restock_stop when the market rules change, forum_stop when the
+Emergency (17-4, approved in advance, at night too): restock_stop (no automatic trigger since 11/6 23:2x: a rules
+change only alerts), forum_stop when the
 forum turn keeps failing. An action is a flag in memory/bus/emergency.json that the role reads (restock.py, the
 runner's forum turn); it never changes prices or the strategy, it alerts at once, and only the user clears it.
 Model usage (R13, 17-5): calls per seat in the last hour against the budget; 80% is a warning.
@@ -103,7 +104,9 @@ def health(now=None, rules_changed=False):
             alert.send(f"[{'긴급' if level == 'now' else '경고'}] {f}", level, now)
             sent[key] = now
     if rules_changed:
-        trigger("restock_stop", "the market's rules changed: no buying until the user reads them", now)
+        # user 11/6 23:2x: a rules change no longer stops restock - patch 3.5 (forum votes) stopped all buying for
+        # 5 h unseen (the phone alert was not sent); the change is an alert, the user reads it and decides
+        alert.send("[규칙 변경] the market's rules changed: read memory/market/rules (restock keeps running)", "now", now)
     atomic.write_json(_state_path(), st)
     return {"findings": found, "emergency": emergency()}
 

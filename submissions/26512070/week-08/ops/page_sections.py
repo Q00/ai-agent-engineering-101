@@ -98,14 +98,16 @@ def sec_home(d):
     q = queue.entries()
     emerg = ops.emergency()
     al = [a for a in alert.recent(24, d.now) if a["level"] in ("now", "warn")][-10:][::-1]
-    return (card("지금 위치 (학생끼리, 순위표 Class view)", head + "".join(parts))
+    # user 11/6 23:2x: restock stood still 5 h unseen - a stop goes first, with how long it has lasted
+    stop_html = (card("비상 동작 중 (풀기: py -m harness.ops clear <이름>)", "<ul>" + "".join(
+        f"<li><b>{e(k)}</b> · {(d.now - (v.get('since') or d.now)) / 3600:.1f}시간째: {e(v.get('why'))}</li>"
+        for k, v in emerg.items()) + "</ul>", "bad") if emerg else "")
+    return (stop_html + card("지금 위치 (학생끼리, 순위표 Class view)", head + "".join(parts))
             + card(f"승인 대기 {len(pend)}건", pend_html, "warn" if pend else "")
             + card("실험", "<ul class=kn>" + "".join(exps) + "</ul>" if exps else "<p class=mute>없음</p>")
             + (card("예약 (차례가 오면 설치)", "<ul>" + "".join(
                 f"<li>{e(x['request'])} · {e(x.get('after_experiment') or hm(x.get('after')))} 뒤</li>" for x in q)
                 + "</ul>") if q else "")
-            + (card("비상 동작 중", "<ul>" + "".join(f"<li><b>{e(k)}</b>: {e(v.get('why'))}</li>" for k, v in emerg.items())
-                    + "</ul>", "bad") if emerg else "")
             + card("최근 알림 (24시간)", "<ul class=alerts>" + "".join(
                 f"<li class={e(a['level'])}><time>{e(hm(a['ts'])[6:])}</time> {e(a['text'][:180])}</li>" for a in al)
                 + "</ul>" if al else "<p class=mute>없음</p>"))
