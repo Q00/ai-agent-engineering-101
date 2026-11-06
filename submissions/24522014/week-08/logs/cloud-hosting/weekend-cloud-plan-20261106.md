@@ -138,3 +138,306 @@
 **아직 모르는 것:** 기존 OCI/C-SERVER 상태, 사용자의 GCP 체험 자격, 카드 통과, 시장 서버와 Seoul VM 간 지연, e2-medium 정확한 가격(공식 표 본문을 읽지 못함), Python 3.14 패키지가 Linux에서 그대로 설치되는지, 시장 운영자의 호스트 변경 처리, Oracle 공식 FAQ(403), agy 약관 원문, 주말과 평일의 로그량 차이.
 
 참고한 2차 자료: [Oracle free tier 커뮤니티 안내](https://guides.viren070.me/oracle), [fullmetalbrackets OCI 정리](https://fullmetalbrackets.com/blog/oci-free-tier-breakdown), [agy 설치 안내](https://pasqualepillitteri.it/en/news/3422/antigravity-cli-agy-install-migrate-gemini-cli).
+
+---
+
+# 수정판 (2026-11-06 오후): PC 끔, 규칙만, 공용 서버 조건
+
+위 1~5장 중 아래와 충돌하는 내용은 **이 수정판이 우선**한다. 모델은 규칙만으로 확정이고 agy, Codex는 올리지 않는다.
+
+## A. 수정된 결론
+
+**1순위는 여전히 Google Cloud 전용 VM이다.** 공용 서버는 아래 조건을 **모두** 만족할 때만 1순위로 올린다: 서버 관리자가 이 용도를 허용함, C2 사전 점검 통과, 사용자가 관리자의 개인키 열람 가능성을 수용함, 카드 등록을 할 수 없거나 원치 않음.
+
+| 기준 | 공용 서버 | GCP 전용 VM |
+|---|---|---|
+| 다른 사람 방해 | 안전장치로 줄일 뿐 0은 아님 | **없음** |
+| 파일 수와 디스크 | 공용 자원 위험, 이력 일부만 복사 | 전용, 전체 복사 가능 |
+| 개인키 노출 | 서버 관리자가 읽을 수 있음 | 클라우드 운영사 수준 |
+| 가입과 카드 | **불필요** | 필요 |
+| 준비 시간 | 관리자 허가 + 점검 | 가입 10~30분 [추정] |
+| 정책 | 터널 외부 공개, 24시간 상주 허용 여부 미확인 | 사용자 책임 범위 |
+
+두 경우 모두 **같은 sudo 없는 스크립트 절차**를 쓴다.
+
+## B. 규칙만 실행 증명
+
+### B1. 모델 CLI 실행 경로 전수 (최상위 `*.py`, `test_*` 제외, grep 결과)
+
+| 경로 | 실행 CLI | 언제 | 차단 |
+|---|---|---|---|
+| `model_router.read_quota:159` ← `agy_status` ← `available`, `run_model` | `agy --print /quota` | **규칙 모드에서도** seller 시작(`seller_r3.py:339`), 매 buyer gate | `agy_enabled=false` |
+| `model_router.run_agy:383` ← `run_model` | `agy --print` | 모델 결정 시 | 위와 동일 |
+| `model_breaker.read_usage:74` ← `check` ← `available`, `run_model` | **`codex app-server`** | **규칙 모드에서도** 사용량 읽을 때 | `tripped_until` 미래값 |
+| `harness.run_harness:111` ← `model_router.run_model:448,487`, `buyer.py:330`(경유), `r3_harness.ask_json` ← `seller_r3:131` | `codex exec` | 모델 결정 시. seller는 `seller_decision.json`이 `model`일 때만 | 위와 동일(`harness.py:106`, `run_model:484`) |
+| `harness.build_command:57` | `claude -p` | `provider="claude"`이면 **라우터 검사 없이 직행**(`run_model:447`). `market_buyer --mode` 기본값이 `claude`지만 `agent.json`은 `--mode codex` | `agent.json` 유지, PATH 스텁 |
+| `seller.py:179`, `buyer.py` 직접 실행, `harness.py` main | codex, claude | 구형 또는 수동. `agent.json`이 쓰지 않음 | 실행 금지 |
+| `agy_model_check.py`, `agy_safety_check.py`, `agy_tool_deny_check.py` | agy | 수동 | 실행 금지 |
+| `market_kit.py:1151` | `claude` 언급 | starter 설명 문구일 뿐 join과 무관 | 해당 없음 |
+
+**CLI 실행 코드 없음 [grep 확인]:** `restock_policy`, `review_policy`, `market_intel`, `forum_*`, `strategy_controller`, `improvement_notices`, `leader_monitor`, `low_star_monitor`, `purchase_monitor`, `warranty_trial`, `food_trial`, `buyer_support`, `monitor_shop`, `monitor_triage`. `examples/`, `profiles/`, `tools/` 안은 grep하지 않았다(`agent.json`이 실행하지 않음).
+
+### B2. 설정만으로 막을 수 있는가
+
+**시험 결과 [실측, 임시 복사본, `subprocess`를 기록용으로 대체, 가짜 CLI만 PATH에 둠, 라이브 `.market` 무접촉, Windows]:** `available()` 2회 + `run_model()` 1회의 CLI 실행 시도.
+
+| 시나리오 | 설정 | 시도 | 판정 |
+|---|---|---|---|
+| A | 기본 | **4회**(`agy`, `codex app-server`) | 실패 |
+| B | `agy_enabled=false`만 | **3회**(`codex app-server`) | 실패 |
+| C | B + `model_breaker.json enabled=false` | **1회 `codex exec`, available=True** | **반대로 모델 허용. 절대 금지** |
+| D | B + `.market/model-breaker.json`의 `tripped_until=먼 미래` | **0회** | **통과** |
+
+추가 금지: `buyer_support.json`의 `model_gate_enabled=false`(코드상 `gate_disabled`로 허용됨), `seller_decision.json`의 `model`.
+
+**결론: 코드 변경 없이 복사본의 값 두 개(D)로 호출 0회가 된다.** 여기에 2차 방어를 둔다.
+- **PATH 스텁:** `run_market.py`가 `tools/`를 PATH 앞쪽에 넣으므로, 서버의 `tools/`에 `agy`, `codex`, `claude`, `gemini` 스텁을 둔다. 스텁은 시도를 `~/market/model-call-attempts.log`에 한 줄 쓰고 exit 127. Linux 코드 경로에는 절대 경로 CLI가 없어(`harness.py:66-70`은 nt 전용, `model_router:116`은 `agy.exe`) 다른 사람의 CLI에 도달하지 않는다 [코드 확인]. **이 로그가 0줄이면 호출 0회의 증거**다.
+- 실행 환경의 `PATH`를 `venv:tools:/usr/bin:/bin`으로 고정한다.
+
+**선택적 최소 코드 변경 (제안만):** 위로 충분하므로 이번 전환에 필수는 아니다. 넣는다면 `MARKET_RULES_ONLY=1`일 때 `harness.build_command`는 `RuntimeError`, `model_router.run_model`은 `HarnessError`, `available`은 `(False, "rules_only")`, `executable`은 `None`을 첫 줄에서 반환한다. 라우터를 우회하는 `claude` 직행까지 닫힌다. PC는 환경변수가 없어 동작이 같다.
+
+**복귀 함정:** 돌려받은 `.market/model-breaker.json`을 PC에 그대로 쓰면 **PC 모델이 꺼진 채로 남는다.** 복귀 때 전환 직전 PC 원본으로 복원하고, `model_router.json`과 `tools/`는 돌려받지 않는다.
+
+### B3. 서버 시험 절차 (신원 없이)
+1. PEM 없이 복사, 스텁 배치, D 적용.
+2. 시나리오 D 시험을 복사본 안에서 재실행. Linux에서 0회 확인.
+3. 전체 단위 테스트 실행(시장 접속 여부를 먼저 확인), 스텁 로그 확인.
+4. 전환 후 30분과 2시간에 `wc -l ~/market/model-call-attempts.log`가 0인지 확인.
+
+### B4. 규칙만일 때 달라지는 주문 처리 [실측, `logs/buyer` 세션 outcome]
+
+| 구간 | 세션 | 영수증 | 규칙 경로 세션(영수증) | 모델 세션(영수증) | gate 거부 |
+|---|---|---|---|---|---|
+| 최근 24시간 중 10:43 이전 | 3,366 | 490 | 492 (488) | 22 (**2**) | 1,222 |
+| 10:43~약 11:10 (**26분, 표본 작음**) | 63 | 7 | 7 (7) | 2 (**0**) | 24 |
+
+- 규칙만으로 가면 모델 세션이 포기로 바뀐다. **영수증 감소 약 0.4%(2/490)** [추정]. 10:43 이후는 0건 감소지만 판단하기엔 표본이 적다.
+- gate 거부 약 36~38%는 이미 모델 없이 포기 중이라 달라지지 않는다.
+- 영수증은 결제 완료가 아니다(`HANDOFF.md:86`). `paid:true` 연결과 잉여 금액은 재지 않았다.
+- seller는 이미 `rules`라 변화 없음.
+
+## C. 공용 서버 계획
+
+**시작 전 필수: 서버 관리자의 허가.** 상주 프로세스, 외부 공개 터널, 개인키 보관이 정책상 되는지 사용자가 확인한다.
+
+### C1. 사전 점검 명령 (사용자가 서버에서 실행, 읽기 전용, 약 2분)
+
+비밀값과 다른 사람의 명령줄, 사용자 이름을 출력하지 않는다. 붙여 넣기 전 한 번 훑어본다.
+
+```bash
+bash <<'CHECK' 2>&1 | tee ~/market-precheck.txt
+echo "== system"; uname -m; . /etc/os-release; echo "$PRETTY_NAME"; nproc; uptime; free -m
+echo "== disk"; df -hT "$HOME" /tmp; df -i "$HOME" /tmp; quota -s 2>/dev/null | tail -n 3
+echo "== people"; echo "sessions=$(who | wc -l) users=$(who | awk '{print $1}' | sort -u | wc -l)"
+echo "== top by program (no user, no args)"; ps -eo comm=,pcpu=,pmem= | awk '{c[$1]+=$2;m[$1]+=$3} END{for(k in c) printf "%-22s cpu=%.0f mem=%.1f\n",k,c[k],m[k]}' | sort -t= -k2 -nr | head -12
+echo "== gpu"; nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total --format=csv,noheader 2>/dev/null
+echo "== load 3 samples"; for i in 1 2 3; do cut -d' ' -f1-3 /proc/loadavg; sleep 20; done; vmstat 5 3 | tail -n 3
+echo "== tools"; python3 --version; for t in curl tar git flock nice ionice crontab tmux systemd-run uv; do printf '%s=' "$t"; command -v "$t" >/dev/null && echo yes || echo no; done
+echo "== model CLIs on PATH (existence only)"; for t in agy codex claude gemini; do printf '%s=' "$t"; command -v "$t" >/dev/null && echo present || echo absent; done
+echo "== user services"; systemctl --user is-system-running 2>&1 | head -1; loginctl show-user "$USER" -p Linger 2>/dev/null; echo "crontab_lines=$(crontab -l 2>/dev/null | wc -l)"; stat -fc %T /sys/fs/cgroup; ulimit -n
+echo "== network"; curl -s -o /dev/null -m 15 -w 'market=%{http_code} %{time_total}s\n' 'https://market.ourolabs.ai/api/board'; (timeout 5 bash -c '</dev/tcp/region1.v2.argotunnel.com/7844' && echo tunnel_7844=open) || echo tunnel_7844=closed
+echo "== clock"; date -u
+CHECK
+```
+
+주의: `df`의 마운트 경로에 홈 경로가 보일 수 있다. `~/market-precheck.txt` 한 개만 쓴다.
+
+### C2. 통과 기준 (제안)
+
+공용 서버 사용량 예상: 최초 약 400 MB + 약 2만 파일(C3), 주말 신규 **1.4 GB, 27만 파일**. 회수 전 최대 약 3 GB, 60만 파일로 잡는다.
+
+| 항목 | 통과 | 불가 |
+|---|---|---|
+| 관리자 허가 | 있음 | 없음 → 공용 포기 |
+| 디스크 여유(홈) | **20 GB 이상이고 사용 후 사용률 85% 이하** | 어느 하나 미달 |
+| inode 여유 | **200만 이상이고 사용 후 사용률 80% 이하**. `IFree`가 0이나 `-`면 동적 할당이라 디스크 기준만 적용 | 미달 |
+| 사용자 할당량 | 없거나 여유 10 GB, 100만 파일 이상 | 미달 |
+| 파일시스템 | ext4, xfs 등 로컬 | **nfs, lustre, cifs는 원칙적으로 불가**: 작은 파일 부하가 전체로 퍼지고 `flock` 동작이 다를 수 있음 |
+| 메모리 | available **3 GB 이상**, 사용 후에도 전체의 20% 이상 | 미달, 또는 swap 활동(`si/so`>0) 지속 |
+| CPU | 15분 부하/코어 **0.7 미만**, 코어 4개 이상 권장 | 초과 |
+| 입출력 | `vmstat` `wa` 20% 미만 | 초과 |
+| 네트워크 | market 200, `tunnel_7844=open` | 시장 접속 불가. 7844 닫힘은 cloudflared 시험 필요 |
+| 도구 | `curl`, `tar`, `flock`, `crontab` 또는 `systemd --user` | 재시작 수단 없음 |
+| Python | 홈에 3.14 설치 가능(`uv` 등) | 불가 |
+
+모델 CLI가 `present`여도 불합격은 아니다. B2 방어로 실행되지 않는다.
+
+### C3. 공용 서버 복사 범위 [실측]
+
+`logs` 전체는 **119만 파일, 4.8 GB**다(buyer 57만, harness 38만, seller 6만, market-buyer 4.7만). **공용 디스크에 전부 올리지 않는다.** 복사: `.market`(5,439개, 81 MB), `market-kit.log*`, `market-kit-archive`, `pricing`(1.3만), `restock`(3천), 단일 파일 로그(`low-star-alerts.jsonl` 등).
+
+제외한 buyer 로그의 영향: `buyer_surplus.py:37`은 `decision_trail`이 없는 옛 기록에서만 파일을 읽고, 없으면 `UNKNOWN_PATH`다 [코드 확인]. 그러나 `strategy_controller`, `buyer_support`, `harness_usage`의 다른 읽기가 라이브 판단을 바꾸는지는 전부 추적하지 않았다. 이는 3장 조건 8의 "전체 복사"를 공용 서버에서 포기하는 데 따른 실제 단점이다. 전용 VM은 전체 복사로 이 위험이 없다.
+
+### C4. 권한과 자원 제한
+
+| 수단 | 관리자 필요? | 쓰임 |
+|---|---|---|
+| `nice -n 15`, `ionice -c 3` | 불필요 | 키트 전체에 상속 |
+| `ulimit -n 4096`, `-c 0` | 불필요 | 폭주 방지. `-u`는 사용자 전체 기준이라 쓰지 않음 |
+| `ulimit -v` | 불필요 | 가상 메모리가 커서 오탐 위험. 쓰려면 4 GB부터 시험 |
+| `systemd-run --user --scope -p MemoryMax=1500M -p CPUQuota=100%` | 불필요하나 cgroup v2 위임 필요 | **되면 최선**. 안 되면 C6로 대체 |
+| `systemctl --user` | linger가 꺼져 있으면 `loginctl enable-linger`에 허가가 필요할 수 있음 | 가능할 때만 |
+| `crontab` `@reboot`, `*/2` | 보통 불필요 | **기본 자동 재시작** |
+| 전역 패키지, 시스템 서비스, `/etc`, 공용 포트 | 필요 | **쓰지 않음** |
+
+`/etc/market/env`는 폐기한다. 모두 `~/market/` 아래에 두고 `umask 077`, `chmod 700 ~/market`. 비밀값 파일은 `~/market/secrets/env`(600).
+
+재시작 설계안(cron `*/2`가 호출, 미실행):
+
+```bash
+#!/bin/bash
+# ~/market/run.sh: a single instance under flock. Exits while YIELD or STOP exists.
+umask 077; cd ~/market/repo || exit 1
+W=submissions/24522014/week-08
+[ -e ~/market/YIELD ] || [ -e ~/market/STOP ] && exit 0
+exec 9>~/market/run.lock; flock -n 9 || exit 0
+export TZ=Asia/Seoul PATH="$PWD/$W/.venv/bin:$PWD/$W/tools:/usr/bin:/bin"
+[ -f ~/market/secrets/env ] && . ~/market/secrets/env
+ulimit -n 4096; ulimit -c 0
+setsid nice -n 15 ionice -c 3 python -X utf8 -u "$W/run_market.py" --tunnel >>~/market/supervisor.log 2>&1 &
+echo $! > ~/market/kit.pid; wait $!
+```
+
+`flock`은 이 계정 안의 2중 실행을 막는다. PC와의 중복은 여전히 절차로 막는다.
+
+### C5. 프로세스 격리 [grep 확인]
+
+- `pkill`, `killall`, `psutil` **없음**. 이름으로 종료하는 코드 없음.
+- 모든 종료는 자기 자식 PID나 그룹이다: `market_kit.py:193-203`(`start_new_session=True`로 만든 자기 그룹), `harness.py:120`, `model_breaker.py:100`. 다른 사람 프로세스에 닿지 않는다.
+- 포트: `free_port`(bind 0, OS 임시 포트), seller와 프록시 모두 **127.0.0.1**(`seller_r3.py:362`, `market_kit.py:248`). 고정 포트 점유 없음. 포트 충돌 전용 처리는 없지만 임시 포트라 재시작으로 복구된다. 같은 서버의 다른 사용자는 이 localhost 포트로 가게에 접근할 수 있다.
+- 터널은 바깥으로 나가는 연결만 쓴다. `--owner`를 명령줄에 쓰면 `ps`로 보이므로 환경변수만 쓴다.
+
+### C6. 자동 양보 설계안 (cron `*/1`, 미실행)
+
+```bash
+#!/bin/bash
+# ~/market/guard.sh: stop only our own process group when the server is short of something.
+mem=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
+disk=$(df --output=avail -m "$HOME" | tail -1); dpct=$(df --output=pcent "$HOME" | tail -1 | tr -dc 0-9)
+ipct=$(df --output=ipcent "$HOME" | tail -1 | tr -dc 0-9); ipct=${ipct:-0}
+load=$(awk -v n="$(nproc)" '{printf "%d",$1/n*100}' /proc/loadavg)
+why=""
+[ "$mem" -lt 1500 ] && why="mem=$mem"
+{ [ "$disk" -lt 10240 ] || [ "$dpct" -ge 90 ]; } && why="$why disk=$disk/$dpct%"
+[ "$ipct" -ge 90 ] && why="$why inode=$ipct%"
+[ "$load" -ge 150 ] && why="$why load=$load%"
+if [ -n "$why" ]; then
+  n=$(( $(cat ~/market/trip 2>/dev/null || echo 0) + 1 )); echo $n > ~/market/trip
+  [ $n -lt 3 ] && exit 0
+  date -u +"%FT%TZ $why" >> ~/market/YIELD
+  p=$(cat ~/market/kit.pid 2>/dev/null)
+  if [ -n "$p" ] && [ "$(stat -c %U /proc/$p 2>/dev/null)" = "$USER" ] && grep -aq run_market /proc/$p/cmdline; then
+    kill -TERM -- "-$p"
+  fi
+else echo 0 > ~/market/trip; fi
+```
+
+- 3분 연속일 때만 멈추고, PID 소유자와 명령줄을 확인한 뒤 **자기 그룹만** 종료한다.
+- `YIELD`가 있으면 `run.sh`는 재시작하지 않는다. 메모리와 부하 사유는 30분 연속 정상일 때 자동 해제하고, **디스크, inode 사유는 사람이 지울 때까지 유지**하도록 추가 구현한다. 우리 폴더 상한(하루 한 번 `du -sm`, 8 GB 초과 시 정지)도 넣는다.
+- 멈추면 시장에서 offline이 되고 D의 알림이 간다. 주말 매출을 잃지만 **다른 사람 작업이 우선**이다.
+
+### C7. 비밀값 위험
+
+공용 서버의 관리자(root)는 권한 600과 무관하게 **파일, 프로세스 메모리, 환경변수를 읽을 수 있다.**
+- **`shop_key.pem`, `buyer_key.pem`:** 시장은 "키 보유자만 재가입"이다(`market_kit.py:584`). 유출되면 누구든 kcwarni 가게와 buyer로 가입해 URL을 덮어쓰고 거래해 평판과 점수를 훼손할 수 있다. 키트가 서명해야 하므로 암호화 저장은 소용없다. 라운드 중 교체 가능 여부도 모른다.
+- **claim code:** GitHub 소유권 연결값이다. 공용 서버에는 **가능하면 올리지 않는다.** `join`은 값이 있을 때만 `owner`를 보내므로 키만으로 재가입은 코드상 가능하다. 그러나 owner 없이 재가입했을 때 시장이 소유권을 유지하는지는 **서버 쪽이라 확인 못 했다.** 전환 직후 board의 owner를 확인하고, 사라졌으면 서버를 멈추고 PC로 돌아가 원래 방식으로 재가입한다.
+- 일반 사용자는 `chmod 600`과 `umask 077`이면 못 읽는다. 복귀 때 `shred -u`로 지우지만 백업과 스냅샷에는 남을 수 있다.
+
+이 위험을 수용하지 못하면 **공용 서버는 쓰면 안 된다.**
+
+### C8. 세션 접근
+
+| 방식 | 내용 | 판단 |
+|---|---|---|
+| **사용자가 스크립트 실행** | 세션은 PC에서 스크립트를 만들어 검토받고, 사용자가 실행해 결과를 붙여 넣음. 세션에 서버 자격을 주지 않음 | **기본** |
+| 세션 SSH | 시간이 줄지만 공용 서버 안에서 AI가 명령을 실행해 사용자 요구와 어긋남 | **공용 서버에서는 쓰지 않음**. 전용 VM은 사용자 승인 시 가능 |
+
+서버 스크립트에는 모델 호출이 없어 "서버에서 AI가 동작하지 않는다"가 성립한다.
+
+## D. 무인 감시와 알림
+
+**권장: 빈 비공개 GitHub 저장소 1개 + 스케줄 워크플로.** 공개 게시판만 읽으므로 키와 코드가 들어가지 않고, 서버가 통째로 죽어도 감지한다. 실패하면 GitHub 알림(이메일, 모바일)이 온다. 이 알림 설정과 비공개 Actions 무료 시간은 이번에 문서로 재확인하지 못했으니 처음에 일부러 실패시켜 메일이 오는지 시험한다. 사용자 조작은 저장소 생성과 파일 1개, 약 3~5분이다. **week-08 포크와 무관**하다. 스케줄은 수 분 이상 늦을 수 있다.
+
+```yaml
+# .github/workflows/watch.yml
+name: market watch
+on:
+  schedule: [{cron: "*/30 * * * *"}]
+  workflow_dispatch: {}
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - run: |
+          python3 - <<'PY'
+          import json, time, urllib.request
+          for attempt in range(3):
+              try:
+                  b = json.load(urllib.request.urlopen("https://market.ourolabs.ai/api/board", timeout=30))
+                  bad = [t for t in ("shops", "buyers")
+                         if not next((r["alive"] for r in b[t] if r["name"] == "kcwarni"), False)]
+                  if not bad:
+                      print("ok"); raise SystemExit(0)
+                  print("not alive:", bad)
+              except OSError as e:
+                  print("market read failed", e)
+              time.sleep(120)
+          raise SystemExit(1)
+          PY
+```
+
+`/api/board` 기본값이 `round=3`이고 `shops`, `buyers`, `alive`를 포함함을 오늘 확인했다 [실측]. 시장 장애에도 메일이 오는 오탐은 있다. 알림을 받아도 사용자가 반드시 복구할 필요는 없다. 양보로 멈춘 것은 의도된 동작이다.
+
+**`monitor_shop.py`: 옮긴다.** 공개 게시판 읽기와 규칙 판정만 하고 모델이 없다 [확인]. 27 MB, 30분 간격이라 부담이 작고 주말 기록 공백을 막는다. 다만 사람에게 알리지 않으므로 위 워크플로를 대신하지 못한다. `run.sh`에 `--interval 1800`으로 함께 띄운다.
+
+## E. 오늘 이관 절차
+
+### 사용자가 할 일
+
+**결정:** 전용 VM(권장) 또는 공용 서버.
+
+**전용 VM**
+1. Google Cloud 체험 가입과 카드 등록(유료 전환 안 함).
+2. Compute Engine에서 Seoul `e2-medium`, Ubuntu LTS, 디스크 50 GB VM 생성. 방화벽은 SSH만.
+3. PC에서 SSH 키를 만들어 VM에 공개키 등록.
+4. C1 실행, 결과 붙여 넣기.
+5. 전환 시각에 PC 키트와 `monitor_shop` 중지, PEM 복사.
+6. 빈 비공개 GitHub 저장소에 `watch.yml` 추가, 수동 실행 1회.
+
+**공용 서버**
+1. 관리자 허가(상주, 외부 터널, 개인키 보관), C7 위험 수용 결정, claim code 처리 결정.
+2. C1 실행, 결과 붙여 넣기. C2로 판정.
+3. 이후 위 5, 6번 동일. 모든 서버 명령은 사용자가 실행.
+
+### 전환 순서
+
+사전 검증(1~2시간, 신원 없음, PC 영향 없음): 코드 복사 시험, Python과 cloudflared 설치, 스텁 배치, B3. 실패하면 PC 유지.
+
+전환(목표 중단 15분):
+1. Orchestrator가 Week08에 라이브 코드 수정 중단을 지시.
+2. **최신 코드 커밋 확인.** 첫 명령 결과가 비어 있어야 한다. 영수증 수정 포함 여부를 `git log`로 확인하고 해시를 기록.
+   ```bash
+   cd /c/Submissions/ai_agent_engineering
+   git status --porcelain -- 'submissions/24522014/week-08/*.py' 'submissions/24522014/week-08/*.json' ':!submissions/24522014/week-08/logs'
+   git log -3 --oneline -- submissions/24522014/week-08/seller_r3.py submissions/24522014/week-08/receipt_label.py; git rev-parse HEAD
+   ```
+3. 그 커밋을 보낸다. `git archive`는 추적 파일만 담으므로 PEM, `.market`, `.venv`가 들어가지 않는다(`SERVER`는 SSH 대상).
+   ```bash
+   git archive HEAD submissions/24522014/week-08 scripts ':(exclude)submissions/24522014/week-08/logs' | ssh SERVER 'mkdir -p ~/market/repo && tar -x -C ~/market/repo'
+   ```
+4. 재입고 창 밖이고 `processing` 결제가 없을 때 PC 키트를 Ctrl-C로 중지하고 프로세스가 사라졌는지 확인. `monitor_shop` 중지. `.market/model-breaker.json`, `.market/model-router.json`을 PC에 별도 보관.
+5. `.market`과 로그(전용: 전체, 공용: C3)를 `tar`로 전송. PC 쪽 `market-kit.log` 길이와 sha256 기록.
+6. 서버 복사본에만 적용: `local-settlements.json`의 `source`를 서버 경로로, `model_router.json`의 `agy_enabled=false`, `model-breaker.json`의 `tripped_until` 먼 미래.
+7. PEM을 `scp`, `chmod 600`. 필요할 때만 secrets env.
+8. PC 쪽 중지를 재확인 후 cron 등록. 확인: join, board alive, owner, 첫 `paid:true`, `settled`, 정산 records 건수 유지, 모델 시도 로그 0줄, 메모리와 부하.
+9. 약 2시간 관찰 후 PC 종료.
+
+복귀는 **`touch ~/market/STOP` 후 키트 종료 확인**으로 시작한다. 그다음 로그 회수, 해시 검사, `source` 복원, `model-breaker.json`과 `model-router.json` PC 원본 복원, PC 키트 시작 순서다. 서버의 코드와 `model_router.json`, `tools/`는 돌려받지 않는다.
+
+## F. 추가 위험과 미확인
+
+- GCP 체험 자격, 공용 서버 허가와 사양: 사용자 확인 대기.
+- 시험 D는 **Windows 임시 복사본, 라우터 함수 수준**이다. 키트 전체로 돌린 것이 아니며 Linux 확인은 B3에서 한다.
+- 주말에 세션이 없어 코드 문제가 나도 월요일까지 고치기 어렵다. 전환 후 2시간 관찰이 주요 안전망이다.
+- 위 스크립트는 **설계안이며 실행하지 않았다.** 대상 서버에서 먼저 시험한다.
