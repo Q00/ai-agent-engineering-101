@@ -73,6 +73,7 @@ class Chooser:
                        next_rank_thresholds=rank_targets(board, role),
                        numerical_recommendation=best['id'],
                        rank_note='midrank approximation plus continuous threshold progress; point forecasts, not official scores')
+        if role=='buyer':context.update(buyer_metric=current['metric'],buyer_rank_scope=board.get('buyer_rank_scope'))
         diagnosis=self.j.get('market_control',{})
         if 0<=time.time()-diagnosis.get('at',0)<900:
             context['market_state']={k:diagnosis.get(k) for k in

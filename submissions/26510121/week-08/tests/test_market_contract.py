@@ -77,7 +77,16 @@ def test_actual_a2a_server_and_buyer_interoperate(tmp_path, monkeypatch,patch34)
         assert out['accept']['expected_sku'] == 'G111'
         # With sparse unknown-risk data, a full-cover quote can be the only
         # combination profitable for the seller and useful for the buyer.
-        assert out['accept']['warranty_hours'] == 6
+        if patch34:
+            # Established quality can make a cheaper uninsured quote feasible;
+            # the exact grade and Saved cap remain binding at checkout.
+            from r3.market_memory import buyer_assessment
+            assessment=buyer_assessment({'kind':'goods','list_price':10000},order,
+                {'grade':'A','warranty_hours':out['accept']['warranty_hours']},j,cfg)
+            assert out['receipt']['price']<=assessment['cap']
+            assert j.events('buyer_saved_execution')
+        else:
+            assert out['accept']['warranty_hours'] == 6
         assert out['accept']['grades'] == ['A']
         assert j.events('agreement')
         task_id = out['receipt']['task']

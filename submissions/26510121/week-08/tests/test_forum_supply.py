@@ -2,12 +2,17 @@ import sys
 import time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from r3.state import Journal, atomic_json, policy
+from r3.state import Journal, atomic_json, policy as base_policy
 from r3.forum import ingest, signals, schedule, deliver, queue_wanted
 from r3.economy import cash_capacity, restock_candidates, supply_open, buyer_candidates
 from r3.meta import rank_gain
 from seller_r3 import Seller
 from test_market_contract import unit
+
+
+def policy():
+    # Preserve legacy forum coverage; Patch 3.4 publication has its own tests.
+    return dict(base_policy(),buyer_patch34_enabled=False)
 
 
 def fixture(tmp_path):

@@ -32,7 +32,8 @@ def status(shadow=False):
         epoch=j.get('objective_epoch',now)
         kinds=['market_control','strategy_evaluation','strategy_change','purchase','shop_settled','restock_decision',
                'supply_blocked','restock_blocked','checkout_attempt','buyer_fast_choice','market_control_error',
-               'strategy_error','merchant_context_error','forum_error','model_usage','shop_fast_execution']
+               'strategy_error','merchant_context_error','forum_error','model_usage','shop_fast_execution',
+               'buyer_saved_execution','buyer_offer_refusal','buyer_insight_queued','buyer_rules_blocked']
         counts={kind:c.execute('SELECT COUNT(*) FROM events WHERE kind=? AND ts>=? AND ts<=?',
                                (kind,epoch,now)).fetchone()[0] for kind in kinds}
         inv=j.snapshot('inventory.json',{})
@@ -41,6 +42,8 @@ def status(shadow=False):
                 'shop_strategy_revision':j.get('shop_strategy_revision'),
                 'buyer_strategy_revision':j.get('buyer_strategy_revision'),
                 'buyer_revision_epoch':j.get('buyer_revision_epoch'),
+                'buyer_patch34_enabled':cfg.get('buyer_patch34_enabled',False),
+                'buyer_expected_revision':cfg.get('buyer_strategy_revision'),
                 'shop_revision_epoch':j.get('shop_revision_epoch'),
                 'runtime':j.snapshot('runtime.json',{}),'health':j.snapshot('shop-health.json',{}),
                 'transport_preference':j.snapshot('transport-provider.json',{}),

@@ -44,7 +44,7 @@ def terms_delta(current,price,list_price,failure=0,covered=0,completion=1):
 
 
 def saved_price_cap(list_price,current,failure,covered,margin=.002):
-    target=max(0,min(.8,current['saved']+margin))
+    target=max(0,min(1,current['saved']+margin))
     if failure>=1:return 0,target
     ratio=1-(target+failure-covered)/(1-failure)
     return max(0,math.floor(list_price*ratio)),target
@@ -54,6 +54,7 @@ def remember_refusal(journal,order,shop,receipt,reasons,now=None):
     """Remember only proven pre-payment unit refusals, never transport ambiguity."""
     now=time.time() if now is None else now
     reason='; '.join(reasons)
+    if any(r.startswith(('payment failed:','payment not completed:')) for r in reasons):return
     unit=receipt.get('unit')
     if not unit:return
     expiry=None

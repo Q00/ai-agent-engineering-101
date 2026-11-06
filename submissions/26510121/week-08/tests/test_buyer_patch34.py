@@ -43,6 +43,17 @@ def test_saved_cap_accounts_for_refund_quality_and_existing_average(tmp_path):
     assert saved_price_cap(10000,s,1,0)[0]==0
 
 
+@pytest.mark.parametrize('saved',[0,.25,.85])
+@pytest.mark.parametrize('failure',[0,.05,.3,.7,1])
+def test_price_caps_hold_at_high_saved_and_quality_boundaries(saved,failure):
+    for covered in [0,failure/2,failure]:
+        cap,target=saved_price_cap(10000,{'saved':saved},failure,covered)
+        assert target>=saved
+        if cap>0:
+            assert contribution(cap,10000,failure,covered)>=target-1e-12
+            assert contribution(cap+1,10000,failure,covered)<target+1e-12
+
+
 def test_new_objective_chooses_percentage_instead_of_large_absolute_money(tmp_path,monkeypatch):
     from r3.model import Chooser
     j,cfg=fixture(tmp_path);s=state(j,cfg)
@@ -98,11 +109,12 @@ def test_peer_deadline_stops_before_network_and_bounds_each_request():
 def test_buyer_revision_preserves_shop_and_quality_records(tmp_path):
     from r3.adaptive import activate_buyer_revision
     j,cfg=fixture(tmp_path)
-    j.put('adaptive:buyer',{'version':6,'patch':{},'status':'stable'})
+    j.put('adaptive:buyer',{'version':6,'patch':{'buyer_counter_ratio':.98},'status':'stable'})
     j.put('adaptive:shop',{'version':7,'patch':{},'status':'stable'})
     j.put('quality_risk_v4',{'grades':{'A':{'n':100}}})
     activate_buyer_revision(j,'buyer-v8-test',100)
     assert j.get('adaptive:buyer')['version']==7
+    assert j.get('adaptive:buyer')['patch']=={}
     assert j.get('adaptive:shop')['version']==7
     assert j.get('quality_risk_v4')['grades']['A']['n']==100
     activate_buyer_revision(j,'buyer-v8-test',200)

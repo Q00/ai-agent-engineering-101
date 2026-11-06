@@ -19,7 +19,7 @@ def verify():
             data=response.json() if response.status_code==200 else {}
             if path.endswith('/api/board'):
                 data={'round':data.get('round'),**{k:[{f:r.get(f) for f in
-                    ['name','alive','all','deals','revenue','profit','book','stock_units','surplus']}
+                    ['name','alive','all','deals','revenue','profit','book','stock_units','surplus','saved','forum','posts','served']}
                     for r in data.get(k,[]) if r.get('name')=='seochanit'] for k in ['shops','buyers']}}
             else:data={k:data.get(k) for k in ['name','protocol']}
             return {'url':path,'status':response.status_code,'data':data}
@@ -29,6 +29,8 @@ def verify():
     board=public[2].get('data',{})
     good=good and all(board.get(k) and board[k][0].get('alive') for k in ['shops','buyers'])
     good=good and local['objective_revision']==local['policy_version'] and local['control'].get('status')=='observe_and_trade'
+    if local.get('buyer_patch34_enabled'):
+        good=good and local.get('buyer_strategy_revision')==local.get('buyer_expected_revision')
     result={'verified':bool(good),'public':public,'local':local}
     path=ROOT/'logs'/('autonomous-verified-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
     path.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')

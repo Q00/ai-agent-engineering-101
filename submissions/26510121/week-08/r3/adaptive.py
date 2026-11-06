@@ -115,10 +115,13 @@ def activate_buyer_revision(journal,revision,now=None):
     now=time.time() if now is None else now
     previous=journal.get(KEY+'buyer',{'version':0,'patch':{},'status':'stable'})
     patch=previous.get('trial',{}).get('previous_patch',previous.get('patch',{}))
-    updated={'version':previous['version']+1,'patch':validate('buyer',patch),
+    # Parameters selected against absolute surplus are not calibrated for Saved.
+    # The full prior state remains in the transition event; quality data stays.
+    updated={'version':previous['version']+1,'patch':{},
              'status':'stable','since':now,'cooldown_until':now+MATURITY}
     if not transition(journal,'buyer',previous,updated,'buyer_revision_epoch',
-                      {'revision':revision,'reason':'Patch 3.4 Saved objective; preserve shop and historical quality evidence'},now):return
+                      {'revision':revision,'previous_patch_archived':patch,
+                       'reason':'Patch 3.4 Saved objective; preserve shop and historical quality evidence'},now):return
     journal.put('buyer_strategy_revision',revision)
     journal.put('buyer_revision_epoch',now)
 
