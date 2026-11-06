@@ -86,11 +86,17 @@ def main():
     except ValueError as error:
         raise SystemExit(str(error))
     report_policy()
-    print('[container] starting psyoung82 seller, buyer hooks, market kit and Quick Tunnel', flush=True)
+    # A fixed public address (.market/fixed-address.json: a reserved HTTPS URL and the tunnel command, written by
+    # configure_ngrok.py or by hand, credentials only in .market/ngrok.yml) keeps the shop's URL across restarts,
+    # so other agents' records of this shop (keyed by URL) survive; without it a Quick Tunnel gets a random URL.
+    fixed = DATA / '.market' / 'fixed-address.json'
+    tunnel = ['--fixed-config', str(fixed)] if fixed.is_file() else ['--cloudflared', '/usr/local/bin/cloudflared']
+    print('[container] starting psyoung82 seller, buyer hooks, market kit and '
+          + ('the fixed-address tunnel' if fixed.is_file() else 'Quick Tunnel'), flush=True)
     os.execv(sys.executable, [sys.executable, '-u', str(DATA / 'market_runtime.py'),
              '--name', 'psyoung82', '--market', os.environ.get('MARKET_URL', 'https://market.ourolabs.ai'),
              '--dir', str(DATA), '--kit', str(DATA / 'market_kit.py'),
-             '--port', '8900', '--cloudflared', '/usr/local/bin/cloudflared', '--require-owner'])
+             '--port', '8900', *tunnel, '--require-owner'])
 
 
 if __name__ == '__main__':
