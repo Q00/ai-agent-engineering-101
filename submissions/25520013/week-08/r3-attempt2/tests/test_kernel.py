@@ -23,9 +23,9 @@ def _board(scale):
                _player("rival-b", 1.6, False, 0), _player("rival-c", 1.2, True, 1.1)]
     shops = [{"owner": LOGIN, "name": "LSS Shop", "all": 0.79, "book": 190e6 * scale, "revenue": 1.2e9, "stars": 4.5},
              {"owner": "rival-a", "name": "A Shop", "all": 0.9, "book": 250e6, "revenue": 2e9, "stars": 4.8}]
-    buyers = [{"owner": LOGIN, "name": "lee", "all": 0.76, "surplus": 93e6, "forum": 0.59 * scale, "posts": 481,
+    buyers = [{"owner": LOGIN, "name": "lee", "all": 0.76, "saved": 0.308 if scale == 1.0 else 182e6, "forum": 0.59 * scale, "posts": 481,
                "deals": 4450},
-              {"owner": "rival-a", "name": "rb", "all": 0.8, "surplus": 120e6, "forum": 0.7, "posts": 10, "deals": 99}]
+              {"owner": "rival-a", "name": "rb", "all": 0.8, "saved": 0.25, "forum": 0.7, "posts": 10, "deals": 99}]
     return {"players": players, "shops": shops, "buyers": buyers}
 
 
@@ -74,6 +74,10 @@ def test_brief_has_goal_ranks_and_no_identity(root):
     assert "정산 2건" in text and "우리 가게 56.2%" in text
     assert "accept 1" in text
     assert "24시간 안에 유통기한 끝 1개" in text
+    # Patch 3.4: buyer ALL scores saved (a rate); the 6 h old amount-valued saved gets no rate line
+    line = next(x for x in text.splitlines() if x.strip().startswith("saved:"))
+    assert "0.308" in line and "2곳 중 1위" in line and "시간 평균" not in line
+    assert "surplus:" not in text
     for leak in (LOGIN, "rival-a", "rival-b", "x.example"):
         assert leak not in text
 

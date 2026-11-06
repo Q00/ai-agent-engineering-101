@@ -27,7 +27,8 @@ SHOP_KEYS = (
     "visits",
     "share",
 )
-BUYER_KEYS = ("surplus", "forum", "posts", "deals")
+BUYER_KEYS = ("saved", "forum", "posts", "deals")  # Patch 3.4 (11-06): saved replaced surplus in buyer ALL
+RATE_KEYS = {"saved": 1.0}  # keys that are rates; before Patch 3.4 the board's saved column was an amount
 SELLER_DECISIONS = ("open", "accept", "cancel", "no_stock", "reject", "declined")
 
 
@@ -120,6 +121,8 @@ def section_side(rows, rows6, keys, label, login, hours6):
             continue
         rk = 1 + sum(1 for x in vals if x > v)
         v6 = me6.get(k)
+        if k in RATE_KEYS and isinstance(v6, (int, float)) and abs(v6) > RATE_KEYS[k]:
+            v6 = None  # the 6 h old snapshot still holds the old meaning
         rate = (
             f", {hours6:.0f}시간 평균 {c.fmt((v - v6) / hours6)}/h"
             if isinstance(v6, (int, float)) and hours6
