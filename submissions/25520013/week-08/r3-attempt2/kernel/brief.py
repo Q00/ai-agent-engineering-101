@@ -433,11 +433,18 @@ def category_stats(offers, settles, cat, login, since, until):
     }
 
 
+MIX_MIN_OFFERS = 5  # a category enters the mix-adjusted rate only with this many offers in both versions
+
+
 def mix_adjusted(prev, cur):
-    """Sales per offer of both versions weighted by the previous version's offer mix, over categories offered in both.
-    ((p_prev, se_prev), (p_cur, se_cur), n_categories) or None. Per category the rate is capped at 1 (a settle can
-    follow an offer from the window before)."""
-    common = [k for k in prev if prev[k]["offers"] and (cur.get(k) or {}).get("offers")]
+    """Sales per offer of both versions weighted by the previous version's offer mix, over categories with at least
+    MIX_MIN_OFFERS offers in both. ((p_prev, se_prev), (p_cur, se_cur), n_categories) or None. Per category the rate
+    is capped at 1 (a settle can follow an offer from the window before). The SE uses (sales + 1) / (offers + 2) per
+    category, so a category at 0 or 1 out of a few offers does not count as certain (11-06: 김치 1/1 and 침구 5/5 had
+    SE 0 and pushed the difference to 5.7 SE)."""
+    common = [
+        k for k in prev if prev[k]["offers"] >= MIX_MIN_OFFERS and (cur.get(k) or {}).get("offers", 0) >= MIX_MIN_OFFERS
+    ]
     tot = sum(prev[k]["offers"] for k in common)
     if not common or not tot:
         return None
@@ -447,8 +454,9 @@ def mix_adjusted(prev, cur):
         for k in common:
             w, n = prev[k]["offers"] / tot, stats[k]["offers"]
             q = min(1.0, stats[k]["sales"] / n)
+            qs = min(1.0, (stats[k]["sales"] + 1) / (n + 2))
             p += w * q
-            se2 += w * w * q * (1 - q) / n
+            se2 += w * w * qs * (1 - qs) / n
         return round(p, 4), round(se2**0.5, 4)
 
     return rate(prev), rate(cur), len(common)
@@ -878,7 +886,7 @@ def _seller_compare(prev, cur):
         (p0, s0), (p1, s1), n = mix
         se = (s0**2 + s1**2) ** 0.5
         out.append(
-            f"  구성 보정 판매/제시 (판 {prev['version']}의 상품군 구성으로 가중, 상품군 {n}개): "
+            f"  구성 보정 판매/제시 (판 {prev['version']}의 상품군 구성으로 가중, 두 판 모두 제시 {MIX_MIN_OFFERS}건 이상인 상품군 {n}개): "
             f"{p0:.3f} (SE {s0:.3f}) → {p1:.3f} (SE {s1:.3f}), 차이 {p1 - p0:+.3f}, "
             f"차이/SE {(p1 - p0) / se if se else 0:+.1f}"
         )

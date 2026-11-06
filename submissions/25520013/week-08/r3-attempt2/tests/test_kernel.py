@@ -246,6 +246,11 @@ def test_mix_adjusted_rate_removes_the_request_mix(tmp_path):
     assert "  침대: 우리 몫 25% → 12% (판매 5 → 5) | 시장 정산/시간 3 → 20, 판 가게 2 → 6곳, 시장 판매가/정가 중앙 0.70 → 0.70, 우리 0.70 → 0.70" in text
     assert "  소파: 우리 몫 10% → 30%" in text
     assert brief.mix_adjusted({}, {}) is None
+    # a category with too few offers stays out, and 0 or all sold out of a few is not treated as certain
+    few = {"a": {"offers": 20, "sales": 4}, "b": {"offers": 20, "sales": 4}}
+    assert brief.mix_adjusted(few, {"a": {"offers": 20, "sales": 4}, "b": {"offers": 1, "sales": 1}})[2] == 1
+    (_, _), (q, se), _ = brief.mix_adjusted(few, {"a": {"offers": 5, "sales": 5}, "b": {"offers": 5, "sales": 5}})
+    assert q == 1.0 and se > 0.1
 
 
 def test_category_flow_section(tmp_path):
