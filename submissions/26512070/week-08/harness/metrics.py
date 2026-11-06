@@ -19,7 +19,7 @@ SHOP_NAME = "gom31-certified-goods"
 # The metric list (17-2). Changing it needs the user's approval (R6): a role that edits its own metric puts the
 # judge inside the loop (W02).
 METRICS = {
-    "buyer": ["surplus", "orders", "settled", "success_rate", "agreed_unpaid_rate", "order_seconds_median",
+    "buyer": ["saved_share", "surplus", "orders", "settled", "success_rate", "agreed_unpaid_rate", "order_seconds_median",
               "posts", "votes_per_post"],
     "shop": ["book_change", "revenue", "margin_rate", "new_stars_mean", "no_stock_rate", "visits", "sales",
              "waste", "storage"],
@@ -30,6 +30,16 @@ METRICS = {
 def _median(xs):
     xs = sorted(xs)
     return xs[len(xs) // 2] if xs else None
+
+
+def _saved_share(paid):
+    shares = []
+    for t in paid:
+        a = t["after"]
+        if a.get("value") is None:
+            continue                               # not reviewed yet: worth unknown
+        shares.append(-1.0 if not a["value"] else (a.get("surplus") or 0) / a["value"])
+    return round(sum(shares) / len(shares), 4) if shares else None
 
 
 def _per_post(votes):
@@ -69,6 +79,9 @@ def compute(trs, evs, since, until, book=None):
     return {
         "since": since, "until": until,
         "buyer": {
+            # patch 3.4: the score is the share of list kept per deal (surplus / worth; a deal that served
+            # nothing, worth 0, counts -1); over a window without the board's +100 smoothing
+            "saved_share": _saved_share(paid),
             "surplus": sum(t["after"].get("surplus") or 0 for t in paid),
             "orders": len(b), "settled": len(paid),
             "success_rate": round(len(paid) / len(b), 3) if b else None,
@@ -154,6 +167,6 @@ if __name__ == "__main__":
         p.mkdir(parents=True, exist_ok=True)
         (p / f"{day}.json").write_text(json.dumps(h, ensure_ascii=False), encoding="utf-8")
         for k, v in h.items():
-            print(k, json.dumps({"buyer": {x: v["buyer"][x] for x in ("surplus", "settled", "success_rate")},
+            print(k, json.dumps({"buyer": {x: v["buyer"][x] for x in ("saved_share", "surplus", "settled")},
                                  "shop": {x: v["shop"][x] for x in ("book_change", "revenue", "new_stars_mean",
                                                                     "no_stock_rate")}}, ensure_ascii=False))

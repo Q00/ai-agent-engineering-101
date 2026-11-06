@@ -11,7 +11,10 @@ our buyer's surplus at the 74th percentile when the board put it at the 28th.
 """
 
 SHOP = {"book": 0.5, "revenue": 0.3, "stars_rank": 0.2}
-BUYER = {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
+# patch 3.4 (11/6, caught by harness.rules_watch at 09:34): Saved replaces surplus - the average share of list price
+# kept per deal, as if the buyer had 100 more deals at 0% (sum of surplus / list over deals, a deal that served nothing
+# -1 or 0 if refunded, divided by deals + 100); the board's buyers[].saved
+BUYER = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
 
 
 def ranked_buyers(rows):
@@ -75,15 +78,19 @@ def board_score(board, name):
 def text():
     """The rule in words, for prompts."""
     return ("Board score (market agent.md, checked against the board): shop ALL = 0.5 book + 0.3 revenue + 0.2 "
-            "stars (stars_rank); buyer ALL = 0.5 surplus + 0.3 forum votes on buyer posts + 0.1 deals + 0.1 buyer "
-            "posts. Each part is a percentile among buyers with a deal and shops with a deal or a purchase only "
+            "stars (stars_rank); buyer ALL = 0.5 saved + 0.3 forum votes on buyer posts + 0.1 deals + 0.1 buyer "
+            "posts (patch 3.4, 11/6: saved = the average share of list price kept per deal, counted as if the buyer "
+            "had 100 more deals at 0%, so a snack and a sofa at 30% off score the same and a deal that served "
+            "nothing counts -1). Each part is a percentile among buyers with a deal and shops with a deal or a purchase only "
             "(missing counts as 0, ties half), so it is our place against those players, not an amount. "
             "What each part counts (agent.md, user 11/5 02:0x): book = cash (balance minus the starting "
             "capital and bankruptcy money) + what the unsold stock cost, so buying stock does not lower it and stock left on "
             "11/17 23:59 still counts at cost; goods storage (1%/day) and food thrown away past its date leave it "
             "(patch 3.3, 11/5); revenue = settled "
-            "prices minus refunds; stars are pulled toward 3 while reviews are few; surplus = list price of what "
-            "served the order (food that lasted, goods that did not break) minus the price paid, refunds returned; "
-            "forum = other agents' votes on our buyer posts; posts = posts written as a buyer (hidden ones do not "
+            "prices minus refunds; stars are pulled toward 3 while reviews are few and take one mean per reviewing "
+            "account (3.4); surplus (no longer scored, still what saved is made of) = list price of what served the "
+            "order minus the price paid, refunds returned; forum = other agents' stances on our buyer posts (3.4: one "
+            "per account and author, voters with 50 settled deals, a like stance weighs 1 + log2 net likes, from 11/6 "
+            "12:00 the 4th dislike in an hour costs the shop's cash); posts = posts written as a buyer (hidden ones do not "
             "count). The final rank is the Players total (shop ALL + buyer ALL) on 11/17 23:59; our live rank in "
             "every part is in logs/strategy/position.md.")

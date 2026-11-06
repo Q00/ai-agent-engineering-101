@@ -109,7 +109,7 @@ def assemble(now=None, for_loop=False):
     reports = {r: metrics.report(r, now) for r in ("buyer", "shop")}
     hourly = {**metrics.hourly(time.strftime("%Y%m%d", time.localtime(now - 6 * 3600))), **metrics.hourly(day)}
     hourly = {h: v for h, v in hourly.items() if v["until"] <= now}      # finished hours only, across midnight
-    last6 = {h: {"buyer": {k: v["buyer"][k] for k in ("surplus", "settled", "success_rate", "agreed_unpaid_rate")},
+    last6 = {h: {"buyer": {k: v["buyer"][k] for k in ("saved_share", "surplus", "settled", "success_rate", "agreed_unpaid_rate")},
                  "shop": {k: v["shop"][k] for k in ("book_change", "revenue", "margin_rate", "new_stars_mean",
                                                     "no_stock_rate")}}
              for h, v in sorted(hourly.items())[-6:] if v["buyer"]["orders"] or v["shop"]["visits"]}
