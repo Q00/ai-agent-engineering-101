@@ -217,6 +217,8 @@ def restock_food_lines(root, now, inv):
     cat = _catalog(root)
     by = defaultdict(lambda: [0, 0, []])
     for u in inv.get("units") or []:
+        if not isinstance(u, dict):
+            continue
         sh = (cat.get(u.get("sku")) or {}).get("shelf_hours")
         e, s = u.get("expires_at"), u.get("supplied_at")
         if not _is_num(sh) or sh <= 0 or not _is_num(e) or e <= now:
@@ -243,14 +245,17 @@ def restock_food_lines(root, now, inv):
         )
     ns, nsk = Counter(), defaultdict(Counter)
     for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 20_000_000, b'"no_stock"'):
-        if m.get("decision") != "no_stock" or (m.get("ts") or 0) < now - 3600:
+        if m.get("decision") != "no_stock" or not _is_num(m.get("ts")) or m["ts"] < now - 3600:
             continue
-        o = m.get("outcome") or {}
+        o = m.get("outcome")
+        o = o if isinstance(o, dict) else {}
+        sku = o.get("sku") if o.get("sku") in cat else None  # SKU_RE also matches words like "Greetings"
         w = o.get("why")
-        w = "?" if w not in NOSTOCK_WHY else "none" if not o.get("matched") else w
+        # a request naming only the SKU has no name-word match (matched 0) though the SKU is in stock: keep its reason
+        w = "?" if w not in NOSTOCK_WHY else "none" if not o.get("matched") and not by.get(sku) else w
         ns[w] += 1
-        if o.get("sku"):
-            nsk[w][o["sku"]] += 1
+        if sku:
+            nsk[w][sku] += 1
     if ns:
         out.append(
             f"  최근 1시간 재고 없음 거절 {sum(ns.values())}건: "

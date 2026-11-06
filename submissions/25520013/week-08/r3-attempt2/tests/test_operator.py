@@ -813,7 +813,7 @@ def test_restock_brief_shows_food_a_request_without_need_can_get(root):
     ] + [
         {"unit": f"a{i}", "sku": "APL", "expires_at": now + h * 3600, "supplied_at": now - 3600}
         for i, h in enumerate([10, 30, 40])
-    ] + [{"unit": "b1", "sku": "BED1"}]
+    ] + [{"unit": "b1", "sku": "BED1"}, "junk"]
     pathlib.Path(root, ".market/inventory.json").write_text(json.dumps({"units": units, "balance": 1000}))
     rows = [
         {"ts": now - 60, "decision": "no_stock", "outcome": {"sku": "KIM", "why": "half_shelf", "matched": 2}},
@@ -821,6 +821,10 @@ def test_restock_brief_shows_food_a_request_without_need_can_get(root):
         {"ts": now - 40, "decision": "no_stock", "outcome": {"sku": "APL", "why": "need", "matched": 3}},
         {"ts": now - 30, "decision": "no_stock", "outcome": {"sku": "APL", "why": "half_shelf", "matched": 0}},
         {"ts": now - 20, "decision": "no_stock", "outcome": {"request": "old row"}},
+        {"ts": now - 15, "decision": "no_stock", "outcome": {"sku": "KIM", "why": "half_shelf", "matched": 0}},
+        {"ts": now - 14, "decision": "no_stock", "outcome": {"sku": "Greetings", "why": "half_shelf", "matched": 0}},
+        {"ts": now - 13, "decision": "no_stock", "outcome": "string outcome"},
+        {"ts": "bad", "decision": "no_stock", "outcome": {}},
         {"ts": now - 7200, "decision": "no_stock", "outcome": {"sku": "KIM", "why": "half_shelf", "matched": 2}},
     ]
     with open(os.path.join(root, ".r3/metrics.jsonl"), "a", encoding="utf-8") as f:
@@ -829,11 +833,11 @@ def test_restock_brief_shows_food_a_request_without_need_can_get(root):
     assert "(남은 기한이 진열기한 50% 이상)/재고" in text
     assert "APL 사과 2/3 (공급 때 65%)" in text and "KIM 포기김치 0/2 (공급 때 39%)" in text
     assert "BED1" not in text.split("식품 재고")[1].split("\n")[0]
-    assert "최근 1시간 재고 없음 거절 5건" in text
-    assert "진열기한 절반 이상인 단위 없음 2 (KIM 2)" in text
+    assert "최근 1시간 재고 없음 거절 8건" in text
+    assert "진열기한 절반 이상인 단위 없음 4 (KIM 3, APL 1)" in text
     assert "적힌 요구 시간을 넘기는 단위 없음 1 (APL 1)" in text
-    assert "팔 수 있는 재고 없음(다른 협상에 묶인 것 포함) 1 (APL 1)" in text
-    assert "사유 기록 전 1" in text
+    assert "팔 수 있는 재고 없음(다른 협상에 묶인 것 포함) 1" in text and "포함) 1 (" not in text
+    assert "사유 기록 전 2" in text and "Greetings" not in text
 
 
 def test_restock_brief_says_when_the_plan_was_already_bought(root):
