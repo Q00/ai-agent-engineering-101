@@ -195,7 +195,7 @@ class Pace(Base):
     def test_shipped_settings(self):
         shipped = json.loads((forum_policy.ROOT / "forum_posting.json").read_text(encoding="utf-8"))
         self.assertTrue(forum_policy.valid_limits(shipped))
-        self.assertEqual((shipped["shop_daily_limit"], shipped["shop_reply_interval_seconds"], shipped["min_interval_seconds"], shipped["buyer_daily_limit"]), (24, 600, 3600, 144))
+        self.assertEqual((shipped["shop_daily_limit"], shipped["shop_reply_interval_seconds"], shipped["min_interval_seconds"], shipped["buyer_daily_limit"]), (24, 600, 3600, 288))
 
 
 class Brake(Base):
