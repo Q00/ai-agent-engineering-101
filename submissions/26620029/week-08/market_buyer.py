@@ -41,7 +41,7 @@ MAX_OFFERS = 8
 # first offer was 75% of list and a deal took 2 offers. Most shops lower their ask with every offer, so open low and climb
 # slowly. The harness still decides each move; the code holds the opening, the top price and the size of a step
 OPEN_SHARE = 0.55                             # first offer as a share of list price, sent by the code
-LIMIT_SHARE = 0.80                            # never pay more than this share of list price
+LIMIT_SHARE = 0.75                            # never pay more than this share of list price
 STEP_SHARE = 0.07                             # one offer rises at most this share of list price
 PRICE_WEIGHT = 10.0                           # shop score per unit of paid/list: 0.03 cheaper is worth 0.3 stars
 PRICE_MIN_DEALS = 10                          # market deals of a shop before its prices count
