@@ -397,9 +397,9 @@ def check_breakage(
 # operator's call. One trial per agent; only the seller is wired (the buyer makes about 90 decisions an hour).
 TRIAL_AGENTS = ("seller",)
 # A trial blocks the agent's edits, so the kernel ends it without adopting after this many hours (성수님 결정 2026-11-06
-# 16시: 판 5는 2 SE까지 17~43시간이 더 필요하다고 나왔고 그동안 판매자를 고칠 수 없었음). 요청이 판마다 시간당 약 150건이라
-# 6시간이면 판마다 약 900건 (추정): 이 안에 드러나지 않는 차이는 하루를 막을 만큼 크지 않다고 봄
-TRIAL_MAX_H = 6
+# 16시: 판 5는 2 SE까지 17~43시간이 더 필요하다고 나왔고 그동안 판매자를 고칠 수 없었음; 16:30 성수님: 6시간도 길어 3시간으로).
+# 요청이 판마다 시간당 약 150건이라 3시간이면 판마다 약 450건 (추정): 판매/요청 차이 약 0.07 이상이면 2 SE 안에 드러남
+TRIAL_MAX_H = 3
 TRIAL_SHARE = (0.1, 0.9, 0.5)  # min, max, default share of new requests sent to the candidate
 
 

@@ -27,6 +27,9 @@ from kernel.replay import CLI, HARNESS, MARKET_BRIEF, MAX_UNITS, _tokens
 from kernel.trajectory import Trajectory
 
 FLAG = os.path.join("a2", "LIVE")
+# The accept metric keeps the start of the buyer's request (masked), so a sale can be traced back to the request text
+# once the ledger shows who bought (성수님 결정 2026-11-06 16시: 1점만 주는 구매자의 문구를 찾아 decline_texts로 막기)
+REQ_LOG_CHARS = 160
 HOLD_S = 120  # attempt 1's HOLD_S: an attempt-2 deal idle this long is dropped and its unit freed
 MAX_ROUNDS = 8  # attempt 1's cap: a counter at round 8 or later becomes a reject
 TEXT_DECLINE = "Sorry, we can't take this order."
@@ -346,6 +349,7 @@ class Bridge:
             "summary": summary,
             "ask": ask,
             "ask0": ask,
+            "req": masked[:REQ_LOG_CHARS],
             "rounds": 0,
             "t": self.clock(),
             "offers": [],
@@ -429,6 +433,7 @@ class Bridge:
                     "claim": receipt.get("claim"),
                     "warranty_hours": receipt.get("warranty_hours", 0),
                     "route": meta["route"],
+                    "request": deal.get("req"),
                 },
                 pol=pol,
             )

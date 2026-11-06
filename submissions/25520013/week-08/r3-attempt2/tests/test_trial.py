@@ -178,10 +178,10 @@ def test_trial_timeout_ends_without_adopting_and_brief_shows_the_cap(tmp_path, h
     o = op.Operator(root, FakeTerra([{"done": {"edits": []}}]), traj, harness_root=hroot, dry=True, spawn=lambda *a, **k: None)
     base = _current(hroot)
     ok, info = versions.start_trial(hroot, "seller", NEW_PROMPT, share=0.5, reason="시험", now=NOW)
-    assert "시간 상한 6시간 (남은 5.0시간)" in brief.section_trial(root, NOW + 3600, hroot)[0]
-    assert o.trial_timeouts(NOW + 5.9 * 3600) == [] and "seller" in versions.trial_state(hroot)
+    assert "시간 상한 3시간 (남은 2.0시간)" in brief.section_trial(root, NOW + 3600, hroot)[0]
+    assert o.trial_timeouts(NOW + 2.9 * 3600) == [] and "seller" in versions.trial_state(hroot)
     res = o.trial_timeouts(NOW + versions.TRIAL_MAX_H * 3600)
     assert res[0]["ok"] and not res[0]["adopted"] and not versions.trial_state(hroot) and _current(hroot) == base
     end = [r for r in _rows(root, "trial_end")][-1]
     assert end["adopt"] is False and "커널 시간 상한" in end["reason"]
-    assert brief.section_trial(root, NOW + 7 * 3600, hroot)[0].endswith("(시간 상한 6시간)")
+    assert brief.section_trial(root, NOW + 7 * 3600, hroot)[0].endswith("(시간 상한 3시간)")
