@@ -91,6 +91,7 @@ class ActTest(Base):
                 thread=264, **{"as": "shop"})
         self.refused("act.vote", post=7, value=1, **{"as": "shop"})
         self.ok("act.vote", post=8, value=1, **{"as": "shop"})
+        self.refused("act.vote", post=8, value=-1, **{"as": "shop"})          # patch 3.4: dislikes cost cash
         lines = [json.loads(x) for x in (self.market / "outbox.jsonl").read_text(encoding="utf-8").splitlines()]
         self.assertEqual([("post" in x, x["as"]) for x in lines], [(True, "buyer"), (True, "shop"), (False, "shop")])
         self.assertEqual(lines[1]["thread"], 264)

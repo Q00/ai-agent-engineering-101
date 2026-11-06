@@ -329,11 +329,18 @@ def post(ctx, text, refs, thread=None, fact=None, **kw):
     return {"action": "post", "as": side, "refs": refs, "fact": fact}
 
 
-@tool("act.vote", "Forum: vote on a post (1 or -1) as our shop or our buyer. Does not end the turn.",
+@tool("act.vote", "Forum: like a post (1) as our shop or our buyer; dislikes (-1) are refused (they cost money). "
+      "Does not end the turn.",
       {"type": "object", "required": ["post", "value", "as"],
        "properties": {"post": {"type": ["integer", "string"]}, "value": {"type": "integer", "enum": [1, -1]}, "as": _AS}},
       side_effect="outbox")
 def vote(ctx, post, value, **kw):
+    if value < 0:
+        # patch 3.4 (11/6): from 12:00 KST the 4th new dislike stance in an hour costs 20,000 x (k - 3) from the shop's
+        # cash, so it lowers book; one dislike stance weighs 1 however many posts it touches (user 11/6 09:4x: no
+        # dislikes - a limit enforced here, not in the prompt, R10)
+        raise Refused("dislikes are off: they cost the shop's cash from 11/6 12:00 (patch 3.4)",
+                      "like a useful post, or leave it")
     if post in (ctx.situation.get("own_posts") or []):
         raise Refused("that is our own post", "vote on other participants' posts")
     _outbox(ctx, {"vote": post, "value": value, "as": kw["as"]})
