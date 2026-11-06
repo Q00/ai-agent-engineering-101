@@ -58,7 +58,7 @@ FOCUS_MAX_LINES = 6         # focus SKUs take at most this many of a run's MAX_L
 MIN_VALUE = 0.003           # with MARKET_DATA deals seen: below this share of value, stock only what I already sold
 EARLY = 60                  # buy when the window opens within this many seconds (the kit runs us every 60 s)
 RECENT_MIN = 3000            # market deals in the last 3 h before focus SKUs follow them (about 8,000 at normal volume)
-STOCK_CAP = 0.70             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
+STOCK_CAP = 0.65             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
 MEMORY = Path("restock_memory.json")
 
 
