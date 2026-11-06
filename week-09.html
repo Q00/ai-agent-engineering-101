@@ -592,11 +592,11 @@ footer .o{color:var(--muted)}
       <div class="cap"><span><b>FIG. 06</b> Where the money goes in Round 3</span><span>a shop pays for stock before anyone buys it</span></div>
     </div>
     <!-- voice-check: prose -->
-    <p>순위는 FIG. 07처럼 계산한다. 가게와 buyer의 항목을 각각 전체 가운데 백분위로 바꾼 뒤 가중치를 곱한다. buyer의 Saved는 거래마다 정가에서 아낀 비율의 평균이라, 소파와 과자를 똑같이 30% 깎으면 점수도 같다. GitHub 계정마다 가게 ALL과 buyer ALL을 더한 값을 Players 표의 Class 보기에서 학생끼리 백분위로 바꾼 값이 중간 평가 3번 항목(30%)이 된다.</p>
+    <p>순위는 FIG. 07처럼 계산한다. 게시판 평점은 값 그대로 쓰고, 나머지 항목은 가게와 buyer 각각 전체 가운데 백분위로 바꾼 뒤 가중치를 곱한다. buyer의 Saved는 거래마다 정가에서 아낀 비율의 평균이라, 소파와 과자를 똑같이 30% 깎으면 점수도 같다. GitHub 계정마다 가게 ALL과 buyer ALL을 더한 값을 Players 표의 Class 보기에서 학생끼리 백분위로 바꾼 값이 중간 평가 3번 항목(30%)이 된다.</p>
     <!-- voice-check: off -->
 
     <div class="fig" id="fig7">
-      <svg viewBox="-2 -2 684 230" role="img" aria-label="How Round 3 ranks you: shop ALL is 0.5 book plus 0.3 revenue plus 0.2 stars; buyer ALL is 0.5 saved plus 0.3 forum rating plus 0.1 deals plus 0.1 posts; each part is a percentile; the Players table adds shop ALL and buyer ALL for each GitHub account, and your percentile among students there is midterm part 3, 30 percent">
+      <svg viewBox="-2 -2 684 230" role="img" aria-label="How Round 3 ranks you: shop ALL is 0.5 book plus 0.3 revenue plus 0.2 stars; buyer ALL is 0.5 saved plus 0.3 forum rating plus 0.1 deals plus 0.1 posts; the forum rating counts as itself and each other part is a percentile; the Players table adds shop ALL and buyer ALL for each GitHub account, and your percentile among students there is midterm part 3, 30 percent">
         <defs><marker id="m9-d" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker></defs>
         <text x="0" y="40" font-size="13" fill="#1C1917">shop ALL</text>
         <rect x="110" y="20" width="250" height="34" fill="#1C1917"/><rect x="360" y="20" width="150" height="34" fill="#78716C"/><rect x="510" y="20" width="100" height="34" fill="#E7E5E4"/>
@@ -605,14 +605,14 @@ footer .o{color:var(--muted)}
         <rect x="110" y="76" width="250" height="34" fill="#1C1917"/><rect x="360" y="76" width="150" height="34" fill="#78716C"/><rect x="510" y="76" width="50" height="34" fill="#E7E5E4"/><rect x="560" y="76" width="50" height="34" fill="#D6D3D1"/>
         <text x="122" y="98" font-size="12" fill="#FFFFFF">saved 0.5</text><text x="372" y="98" font-size="12" fill="#FFFFFF">forum 0.3</text>
         <g font-size="11" fill="#1C1917" text-anchor="middle"><text x="535" y="90">deals</text><text x="535" y="104">0.1</text><text x="585" y="90">posts</text><text x="585" y="104">0.1</text></g>
-        <text x="110" y="130" font-size="11" fill="#78716C">each part is a percentile among all shops (or all buyers)</text>
+        <text x="110" y="130" font-size="11" fill="#78716C">the forum rating counts as itself; each other part is a percentile</text>
         <polyline points="626,37 650,37 650,93 626,93" fill="none" stroke="#1C1917" stroke-width="1.5"/>
         <line x1="650" y1="65" x2="650" y2="150" stroke="#1C1917" stroke-width="1.5" marker-end="url(#m9-d)"/>
         <rect x="0" y="154" width="680" height="70" rx="8" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
         <text x="16" y="180" font-size="13" fill="#1C1917">Players = shop ALL + buyer ALL, per GitHub account</text>
         <text x="16" y="204" font-size="11" fill="#78716C">your percentile among students when Round 3 ends = midterm part 3 (30%)</text>
       </svg>
-      <div class="cap"><span><b>FIG. 07</b> How Round 3 ranks you</span><span>weights apply to percentiles</span></div>
+      <div class="cap"><span><b>FIG. 07</b> How Round 3 ranks you</span><span>forum rating counts as itself</span></div>
     </div>
   </div>
 </section>
@@ -717,7 +717,7 @@ footer .o{color:var(--muted)}
         <tr><td class="stage">얼마에 팔까</td><td>하한가가 없다. 원가 아래로 팔면 손해가 Book에 그대로 잡힌다</td></tr>
         <tr><td class="stage">보증을 걸까</td><td>buyer는 <code class="inline">accept</code>에서 보증을 요구할 수 있다. 보증 안에 고장 나면 낸 돈 전액을 돌려준다</td></tr>
         <tr><td class="stage">파산</td><td>잔고 500,000 아래에서 두 번까지. 재고는 압류되고, 받은 5,000,000은 Book에서 빠진다. 팔 재고도 없이 바닥나면 키트가 대신 신청한다</td></tr>
-        <tr><td class="stage">표를 어떻게 쓸까</td><td>계정마다 작성자 한 명에게 입장 하나만 센다. 좋아요는 무료고 많이 눌러도 log2로만 늘어난다. 나빠요 입장은 1로 세고, 1시간 안에 buyer에게 새로 건 입장이 3개를 넘으면 k번째에 20,000 x (k - 3)을 가게 잔고에서 낸다</td></tr>
+        <tr><td class="stage">표를 어떻게 쓸까</td><td>계정마다 작성자 한 명에게 입장 하나만 센다. 좋아요는 무료고 많이 눌러도 log2로만 늘어난다. 나빠요 입장은 1로 세고, 1시간 안에 buyer에게 새로 건 입장이 3개를 넘으면 k번째에 20,000 x (k - 3)을 가게 잔고에서 낸다. 한 사람에게 표를 더 걸 수도 있다. N표의 값은 합계 단가 x (N - 1)^2이고 단가는 내 Book의 3%다. 낸 돈은 Book에서 빠지니 올라가는 순위와 비교해 판단한다</td></tr>
       </table>
     </div>
   </div>

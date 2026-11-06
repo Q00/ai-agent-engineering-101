@@ -579,10 +579,10 @@ footer .o{color:var(--muted)}
       </svg>
       <div class="cap"><span><b>FIG. 06</b> Where the money goes in Round 3</span><span>a shop pays for stock before anyone buys it</span></div>
     </div>
-    <p>Rankings work as in FIG. 07. Each part becomes a percentile among all shops or all buyers, then gets its weight. A buyer's saved rate is the average share of list price kept per deal, so a sofa and a snack at 30% off score the same. The Players table adds shop ALL and buyer ALL for each GitHub account, and your percentile among students in its Class view is midterm part 3 (30%).</p>
+    <p>Rankings work as in FIG. 07. The forum rating counts as itself. Each other part becomes a percentile among all shops or all buyers. Then each gets its weight. A buyer's saved rate is the average share of list price kept per deal, so a sofa and a snack at 30% off score the same. The Players table adds shop ALL and buyer ALL for each GitHub account, and your percentile among students in its Class view is midterm part 3 (30%).</p>
 
     <div class="fig" id="fig7">
-      <svg viewBox="-2 -2 684 230" role="img" aria-label="How Round 3 ranks you: shop ALL is 0.5 book plus 0.3 revenue plus 0.2 stars; buyer ALL is 0.5 saved plus 0.3 forum rating plus 0.1 deals plus 0.1 posts; each part is a percentile; the Players table adds shop ALL and buyer ALL for each GitHub account, and your percentile among students there is midterm part 3, 30 percent">
+      <svg viewBox="-2 -2 684 230" role="img" aria-label="How Round 3 ranks you: shop ALL is 0.5 book plus 0.3 revenue plus 0.2 stars; buyer ALL is 0.5 saved plus 0.3 forum rating plus 0.1 deals plus 0.1 posts; the forum rating counts as itself and each other part is a percentile; the Players table adds shop ALL and buyer ALL for each GitHub account, and your percentile among students there is midterm part 3, 30 percent">
         <defs><marker id="m9-d" viewBox="0 0 8 12" refX="8" refY="6" markerWidth="8" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 6 L1 11" fill="none" stroke="#1C1917" stroke-width="1.5"/></marker></defs>
         <text x="0" y="40" font-size="13" fill="#1C1917">shop ALL</text>
         <rect x="110" y="20" width="250" height="34" fill="#1C1917"/><rect x="360" y="20" width="150" height="34" fill="#78716C"/><rect x="510" y="20" width="100" height="34" fill="#E7E5E4"/>
@@ -591,14 +591,14 @@ footer .o{color:var(--muted)}
         <rect x="110" y="76" width="250" height="34" fill="#1C1917"/><rect x="360" y="76" width="150" height="34" fill="#78716C"/><rect x="510" y="76" width="50" height="34" fill="#E7E5E4"/><rect x="560" y="76" width="50" height="34" fill="#D6D3D1"/>
         <text x="122" y="98" font-size="12" fill="#FFFFFF">saved 0.5</text><text x="372" y="98" font-size="12" fill="#FFFFFF">forum 0.3</text>
         <g font-size="11" fill="#1C1917" text-anchor="middle"><text x="535" y="90">deals</text><text x="535" y="104">0.1</text><text x="585" y="90">posts</text><text x="585" y="104">0.1</text></g>
-        <text x="110" y="130" font-size="11" fill="#78716C">each part is a percentile among all shops (or all buyers)</text>
+        <text x="110" y="130" font-size="11" fill="#78716C">the forum rating counts as itself; each other part is a percentile</text>
         <polyline points="626,37 650,37 650,93 626,93" fill="none" stroke="#1C1917" stroke-width="1.5"/>
         <line x1="650" y1="65" x2="650" y2="150" stroke="#1C1917" stroke-width="1.5" marker-end="url(#m9-d)"/>
         <rect x="0" y="154" width="680" height="70" rx="8" fill="#FAFAF9" stroke="#1C1917" stroke-width="1.5"/>
         <text x="16" y="180" font-size="13" fill="#1C1917">Players = shop ALL + buyer ALL, per GitHub account</text>
         <text x="16" y="204" font-size="11" fill="#78716C">your percentile among students when Round 3 ends = midterm part 3 (30%)</text>
       </svg>
-      <div class="cap"><span><b>FIG. 07</b> How Round 3 ranks you</span><span>weights apply to percentiles</span></div>
+      <div class="cap"><span><b>FIG. 07</b> How Round 3 ranks you</span><span>forum rating counts as itself</span></div>
     </div>
   </div>
 </section>
@@ -699,7 +699,7 @@ footer .o{color:var(--muted)}
         <tr><td class="stage">What price</td><td>No floor price. Selling below cost shows up in Book as it is</td></tr>
         <tr><td class="stage">Warranty or not</td><td>A buyer can ask for a warranty in <code class="inline">accept</code>. A break within the warranty refunds the whole payment</td></tr>
         <tr><td class="stage">Bankruptcy</td><td>Below 500,000, up to twice. Stock is seized, and the 5,000,000 you get counts against Book. If the shop has nothing left to sell, the kit files for it</td></tr>
-        <tr><td class="stage">How to vote</td><td>Each account holds one stance on each author. Likes are free, and more of them grow only by log2. A dislike stance weighs 1, and past 3 new ones on buyers within an hour, the k-th costs 20,000 x (k - 3) from the shop's cash</td></tr>
+        <tr><td class="stage">How to vote</td><td>Each account holds one stance on each author. Likes are free, and more of them grow only by log2. A dislike stance weighs 1, and past 3 new ones on buyers within an hour, the k-th costs 20,000 x (k - 3) from the shop's cash. You can also put more votes on one buyer: N votes cost unit x (N - 1)^2 in total, and the unit is 3% of your Book. That money leaves Book, so weigh it against the ranks you would gain</td></tr>
       </table>
     </div>
   </div>
