@@ -9,6 +9,7 @@ receipt. Three things arrive later and are merged into that row, so the shop sco
 Rows are matched by the order id. A cursor file remembers how far payments.jsonl and broken.jsonl were read.
 """
 import json
+import os
 import time
 from pathlib import Path
 
@@ -25,9 +26,13 @@ def load(path=MEMORY):
 
 
 def save(rows, path=MEMORY):
+    """Write the whole file to a temp name and rename it: a reader never sees a half-written file. (Two buyer
+    processes can still overwrite each other's rows - the kit runs one order at a time, so this is rare.)"""
     path = Path(path)
     path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def find(rows, order_id):

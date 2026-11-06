@@ -57,7 +57,8 @@ def settles(entries, now=None, hours=WINDOW_HOURS):
         ts = e.get("ts") or 0
         if not sku or not isinstance(price, (int, float)) or price <= 0 or ts < since:
             continue
-        rows.append({"sku": str(sku), "price": float(price), "shop": data.get("shop"), "buyer": data.get("buyer"), "ts": ts})
+        rows.append({"sku": str(sku), "price": float(price), "shop": data.get("shop"), "buyer": data.get("buyer"), "ts": ts,
+                     "seq": e.get("seq")})
     return rows
 
 

@@ -13,6 +13,7 @@ import time
 from collections import Counter
 from pathlib import Path
 
+import forum_post
 import ledger
 import round_clock
 
@@ -286,6 +287,13 @@ def main():
     memory = update_memory(read_json(memory_path, {}), inv.get("units") or [])
     stats = ledger.refresh(state, catalog)   # one ledger call per run; the seller reads the file this writes
     pressure = write_pressure(state, catalog)   # and this one: buyers per unit by category, for the seller's markup
+    try:
+        posted = forum_post.maybe_market_post(state, catalog)   # the pro-active half of the forum: a price note
+    except Exception as e:                                       # never let a forum problem stop the restock
+        print(f"[forum] market post failed: {type(e).__name__}: {str(e)[:100]}", flush=True)
+        posted = None
+    if posted:
+        print("[strategy] " + json.dumps({"event": "market_post", "text": posted[:120]}, ensure_ascii=False), flush=True)
     hours_to_end = round_clock.hours_left()
     report = {"pressure_categories": len(pressure), "hours_to_end": round(hours_to_end, 1)}
     buys = plan(inv, catalog, demand, forum, memory, stats, report, pressure, hours_to_end)
