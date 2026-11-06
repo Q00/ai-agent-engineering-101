@@ -1,0 +1,120 @@
+"""Policy versions stay bounded; prices derive from cost, grade, age and policy."""
+
+from __future__ import annotations
+
+import time
+from typing import TYPE_CHECKING
+
+import pytest
+from pydantic import ValidationError
+
+from r3.market_files import Unit
+from r3.policy import Policy, apply_changes, load_history, load_policy, save_policy
+from r3.pricing import claimed_grade, counter, decide, quote
+from tests.r3_stock import CURTAIN, KIMCHI, LAMP, unit
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+def test_missing_policy_is_defaults_and_saving_versions_keeps_two_previous(
+    tmp_path: Path,
+) -> None:
+    # Given: no policy file yet.
+    path = tmp_path / "r3-policy.json"
+    assert load_policy(path) == Policy()
+    # When: the manager publishes three changes.
+    v2 = save_policy(path, apply_changes(Policy(), {"seller.markup_a": 0.9}), "r1")
+    v3 = save_policy(path, apply_changes(v2, {"buyer.first_offer_ratio": 0.5}), "r2")
+    v4 = save_policy(path, apply_changes(v3, {"restock.units_per_sku": 2}), "r3")
+    # Then: the versions count up and only two previous versions are kept.
+    assert (v2.version, v3.version, v4.version) == (2, 3, 4)
+    history = load_history(path)
+    assert history.current.restock.units_per_sku == 2
+    assert [p.version for p in history.previous] == [3, 2]
+    assert load_policy(path).seller.markup_a == 0.9
+
+
+def test_changes_outside_bounds_or_unknown_fields_are_rejected() -> None:
+    # Given/When/Then: bounds come from the policy model, not the proposer.
+    with pytest.raises(ValidationError):
+        _ = apply_changes(Policy(), {"seller.markup_a": 1.5})
+    with pytest.raises(ValidationError):
+        _ = apply_changes(Policy(), {"restock.reserve_cash": -1})
+    with pytest.raises(ValueError, match="Unknown policy field"):
+        _ = apply_changes(Policy(), {"wallet.budget": 1})
+    with pytest.raises(ValueError, match="Unknown policy field"):
+        _ = apply_changes(Policy(), {"seller": 1})
+
+
+def test_quote_prices_from_cost_and_grade_and_never_below_accept_line() -> None:
+    now = time.time()
+    # The 40k lamp is a "cheap" good by default; this test prices it as a dear one.
+    policy = Policy().seller.model_copy(update={"cheap_list_price": 0})
+    a = Unit.model_validate(unit(LAMP, 1, grade="A", now=now))
+    c = Unit.model_validate(unit(LAMP, 2, grade="C", now=now))
+    qa, qc = quote(a, now, None, policy), quote(c, now, None, policy)
+    # Then: A would ask 95% of list but the owner's star cap opens it at 79%; C asks
+    # 70%; both accept at cost*(1+accept_margin).
+    assert qa.ask == round(40000 * 0.79)
+    assert qc.ask == round(40000 * 0.70)
+    assert qa.accept_at == round(a.cost * 1.15)
+    assert qc.accept_at == round(c.cost * 1.15)
+    assert qa.ask >= qa.accept_at >= qa.floor
+    # And: a counter moves toward the accept line and stops there.
+    moved = counter(qa.ask, qa.accept_at, policy)
+    assert qa.accept_at <= moved < qa.ask
+    assert counter(qa.accept_at, qa.accept_at, policy) == qa.accept_at
+
+
+def test_food_near_expiry_clears_below_cost_and_boundary_claims_are_omitted() -> None:
+    now = time.time()
+    policy = Policy().seller
+    nearly_gone = Unit.model_validate(
+        unit(KIMCHI, 1, grade="C", now=now, shelf_left_ratio=0.1)
+    )
+    cleared = quote(nearly_gone, now, 720, policy)
+    assert cleared.clearance is True
+    assert cleared.accept_at == cleared.floor < nearly_gone.cost
+    assert cleared.grade_now == "C"
+    # And: a food unit well inside A is claimed A; one about to drop carries no claim.
+    inside = Unit.model_validate(
+        unit(KIMCHI, 2, grade="A", now=now, shelf_left_ratio=0.805)
+    )
+    assert claimed_grade(inside, now, 720, policy) == "A"
+    about_to_drop = Unit.model_validate(
+        unit(KIMCHI, 3, grade="A", now=now, shelf_left_ratio=0.80003)
+    )
+    assert claimed_grade(about_to_drop, now, 720, policy) == ""
+
+
+def test_decide_accepts_counters_then_rejects_after_max_rounds() -> None:
+    policy = Policy().seller
+    assert decide(1200, 1500, 1100, 0, policy) == ("accept", 1200)
+    action, new_ask = decide(900, 1500, 1100, 1, policy)
+    assert action == "counter"
+    assert 1100 <= new_ask < 1500
+    assert decide(900, 1500, 1100, policy.max_rounds, policy) == ("reject", 0)
+    assert decide(None, 1500, 1100, 0, policy)[0] == "counter"
+
+
+def test_star_cap_never_quotes_below_the_accept_line() -> None:
+    now = time.time()
+    policy = Policy().seller
+    # A unit that cost 0.75 of list accepts at 0.8625 of list, above the 0.79 cap:
+    # the ask stays at the accept line rather than selling at a loss.
+    dear = Unit.model_validate(unit(LAMP, 3, grade="A", now=now, cost=30000))
+    quoted = quote(dear, now, None, policy)
+    assert quoted.accept_at == round(30000 * 1.15)
+    assert quoted.ask == quoted.accept_at > round(40000 * 0.79)
+
+
+def test_cheap_goods_open_at_the_lower_star_cap_and_dear_goods_at_079() -> None:
+    now = time.time()
+    policy = Policy().seller
+    # A 40k lamp (under 50k) bought at 15k: opens at 0.70 of list, not 0.79.
+    cheap = Unit.model_validate(unit(LAMP, 4, grade="A", now=now, cost=15000))
+    assert quote(cheap, now, None, policy).ask == round(40000 * 0.70)
+    # A 236,900 curtain is dear: it keeps the 0.79 cap.
+    dear = Unit.model_validate(unit(CURTAIN, 1, grade="A", now=now, cost=100000))
+    assert quote(dear, now, None, policy).ask == round(236900 * 0.79)

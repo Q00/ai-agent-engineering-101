@@ -1,0 +1,19 @@
+..FF.F                                                                   [100%]
+=================================== FAILURES ===================================
+_______ test_digest_counts_cannot_exceed_the_reviews_given_to_the_model ________
+tests/test_r3_reviews.py:54: in test_digest_counts_cannot_exceed_the_reviews_given_to_the_model
+    assert validate(
+E   TypeError: validate() got an unexpected keyword argument 'our_count'
+_____ test_digest_rejects_duplicate_themes_that_would_double_count_reviews _____
+tests/test_r3_reviews.py:65: in test_digest_rejects_duplicate_themes_that_would_double_count_reviews
+    assert validate(
+E   TypeError: validate() got an unexpected keyword argument 'our_count'
+____ test_run_digest_drops_an_assessment_with_more_complaints_than_reviews _____
+tests/test_r3_reviews.py:115: in test_run_digest_drops_an_assessment_with_more_complaints_than_reviews
+    assert "our_complaints" not in record
+E   AssertionError: assert 'our_complaints' not in {'ts': 1793689629, 'our_reviews': 1, 'our_stars': 3.0, 'leader_stars': {}, ...}
+=========================== short test summary info ============================
+FAILED tests/test_r3_reviews.py::test_digest_counts_cannot_exceed_the_reviews_given_to_the_model
+FAILED tests/test_r3_reviews.py::test_digest_rejects_duplicate_themes_that_would_double_count_reviews
+FAILED tests/test_r3_reviews.py::test_run_digest_drops_an_assessment_with_more_complaints_than_reviews
+3 failed, 3 passed in 0.19s

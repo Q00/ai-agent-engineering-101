@@ -1,0 +1,129 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile:
+#1 transferring dockerfile: 663B 0.0s done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for docker.io/library/python:3.12.11-slim
+#2 ...
+
+#3 [internal] load metadata for ghcr.io/astral-sh/uv:0.9.5
+#3 DONE 1.2s
+
+#2 [internal] load metadata for docker.io/library/python:3.12.11-slim
+#2 DONE 1.5s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [stage-1 1/7] FROM docker.io/library/python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
+#5 resolve docker.io/library/python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f 0.0s done
+#5 DONE 0.0s
+
+#6 [uv 1/1] FROM ghcr.io/astral-sh/uv:0.9.5@sha256:f459f6f73a8c4ef5d69f4e6fbbdb8af751d6fa40ec34b39a1ab469acd6e289b7
+#6 resolve ghcr.io/astral-sh/uv:0.9.5@sha256:f459f6f73a8c4ef5d69f4e6fbbdb8af751d6fa40ec34b39a1ab469acd6e289b7 0.0s done
+#6 DONE 0.0s
+
+#7 [stage-1 2/7] COPY --from=uv /uv /usr/local/bin/uv
+#7 CACHED
+
+#8 [stage-1 3/7] WORKDIR /app
+#8 DONE 0.1s
+
+#9 [internal] load build context
+#9 transferring context: 1.24MB 0.0s done
+#9 DONE 0.1s
+
+#10 [stage-1 4/7] COPY requirements-kit.lock ./
+#10 DONE 0.1s
+
+#11 [stage-1 5/7] RUN uv pip install --system --no-deps -r requirements-kit.lock     && useradd --uid 10001 --create-home app
+#11 1.504 Using Python 3.12.11 environment at: /usr/local
+#11 2.273 Resolved 54 packages in 723ms
+#11 2.342 Downloading cryptography (4.5MiB)
+#11 2.358 Downloading pygments (1.2MiB)
+#11 2.363 Downloading openai (1.7MiB)
+#11 2.369 Downloading pydantic-core (2.1MiB)
+#11 2.384 Downloading brotli (1.4MiB)
+#11 3.523  Downloading brotli
+#11 3.653  Downloading pydantic-core
+#11 4.012  Downloading pygments
+#11 4.020  Downloading cryptography
+#11 4.904  Downloading openai
+#11 4.906 Prepared 54 packages in 2.62s
+#11 5.235 Installed 54 packages in 327ms
+#11 5.238  + a2a-sdk==1.2.2
+#11 5.239  + aiologic==0.17.1
+#11 5.239  + annotated-doc==0.0.5
+#11 5.241  + annotated-types==0.8.0
+#11 5.241  + anyio==4.15.1
+#11 5.241  + backports-zstd==1.8.0
+#11 5.241  + brotli==1.2.0
+#11 5.241  + certifi==2026.7.22
+#11 5.241  + cffi==2.1.1
+#11 5.241  + charset-normalizer==3.5.2
+#11 5.241  + click==8.5.0
+#11 5.241  + cryptography==50.0.2
+#11 5.241  + culsans==0.11.0
+#11 5.241  + fastapi==0.143.0
+#11 5.241  + google-api-core==2.42.0
+#11 5.241  + google-auth==2.62.0
+#11 5.241  + googleapis-common-protos==1.75.5
+#11 5.241  + h11==0.16.0
+#11 5.241  + h2==4.4.1
+#11 5.241  + hpack==4.2.0
+#11 5.241  + httpcore==1.0.9
+#11 5.241  + httpcore2==2.15.1
+#11 5.241  + httpx==0.28.1
+#11 5.241  + httpx2==2.15.1
+#11 5.241  + hyperframe==6.1.0
+#11 5.241  + idna==3.20
+#11 5.241  + jiter==0.17.0
+#11 5.241  + json-rpc==1.15.0
+#11 5.241  + markdown-it-py==4.2.0
+#11 5.241  + mdurl==0.1.2
+#11 5.241  + openai==3.8.0
+#11 5.241  + opentelemetry-api==1.45.1
+#11 5.241  + packaging==26.3
+#11 5.241  + proto-plus==1.29.0
+#11 5.241  + protobuf==7.36.2
+#11 5.241  + pyasn1==0.6.4
+#11 5.241  + pyasn1-modules==0.4.2
+#11 5.241  + pycparser==3.11
+#11 5.241  + pydantic==2.14.1
+#11 5.241  + pydantic-core==2.50.1
+#11 5.241  + pygments==2.21.0
+#11 5.241  + requests==2.34.2
+#11 5.242  + rich==15.0.0
+#11 5.242  + shellingham==1.5.4
+#11 5.242  + sniffio==1.3.1
+#11 5.242  + sse-starlette==3.5.0
+#11 5.242  + starlette==1.9.0
+#11 5.242  + truststore==0.10.5
+#11 5.242  + typer==0.27.3
+#11 5.242  + typing-extensions==4.16.0
+#11 5.242  + typing-inspection==0.4.4
+#11 5.242  + urllib3==2.8.0
+#11 5.242  + uvicorn==0.54.0
+#11 5.242  + wrapt==2.5.0
+#11 DONE 5.6s
+
+#12 [stage-1 6/7] COPY . /app/
+#12 DONE 0.1s
+
+#13 [stage-1 7/7] RUN ln -s /data/r3/shop_key.pem /app/shop_key.pem     && ln -s /data/r3/comparison-cache /app/.market
+#13 DONE 0.2s
+
+#14 exporting to image
+#14 exporting layers
+#14 exporting layers 3.6s done
+#14 exporting manifest sha256:829a8c028bb924d81a1a1da2a5485bdab6cc46cf50a365a11ab1391bf7a5c223 0.0s done
+#14 exporting config sha256:c153d26250270b32594cd0d224cd9209adbb29d80e80e6b8bc1d41dc1ddd0ce0 0.0s done
+#14 exporting attestation manifest sha256:ed581bc132134487548e4dabf09c92df1a6e05977af9a90bc6507248d4e4ee00 0.0s done
+#14 exporting manifest list sha256:6cdb4a1977aa61260e971c109d5bc2171233c09ce7d7f01c965fc44af31a593a 0.0s done
+#14 naming to docker.io/library/ax-week08-25620027:d7ed271-prepared done
+#14 unpacking to docker.io/library/ax-week08-25620027:d7ed271-prepared
+#14 unpacking to docker.io/library/ax-week08-25620027:d7ed271-prepared 4.1s done
+#14 DONE 7.9s

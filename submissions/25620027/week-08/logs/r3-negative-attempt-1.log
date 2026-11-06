@@ -1,0 +1,80 @@
+20:11:36 [acp] settled lamp at 100, ledger #1
+20:11:36 [acp] paid 100 through http://127.0.0.1:50704/acp, settled at ledger #1
+{"flow": "our-A2A -> course-ACP/AP2 -> local-settle", "price": 100, "paid": {"order": "local-order-1", "ledger": 1}, "model_api_calls": 0, "public_market_calls": 0}
+.20:11:36 [acp] checkout total 100 is above the mandate's limit; not paying
+.20:11:37 [acp] settled lamp at 100, ledger #1
+.20:11:37 [acp] settle refused: ['amount_is_checkout_total']
+.20:11:37 [acp] settle refused: ['payee_is_this_shop']
+.20:11:38 [acp] settle refused: ['bound_to_this_checkout']
+.20:11:38 [acp] settle refused: ['bound_to_open_mandates']
+.20:11:39 [acp] settle refused: ['amount_is_checkout_total']
+.20:11:39 [acp] settle refused: ['bound_to_this_checkout']
+.20:11:39 [acp] settle refused: ['closed_mandates_types']
+.20:11:40 [acp] settle refused: ['payment_mandate_signed_by_buyer']
+.20:11:40 [acp] settle refused: ['not_expired']
+........F
+=================================== FAILURES ===================================
+______________________ test_get_cannot_cancel_a_checkout _______________________
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_r3_rejection.py", line 154, in test_get_cannot_cancel_a_checkout
+  |     anyio.run(run)
+  |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py", line 83, in run
+  |     return async_backend.run(func, args, {}, backend_options)
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2548, in run
+  |     return runner.run(wrapper())
+  |            ^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py", line 118, in run
+  |     return self._loop.run_until_complete(task)
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+  |     return future.result()
+  |            ^^^^^^^^^^^^^^^
+  |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2531, in wrapper
+  |     return await func(*args)
+  |            ^^^^^^^^^^^^^^^^^
+  |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_r3_rejection.py", line 141, in run
+  |     async with scenario(monkeypatch) as scene:
+  |                ^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/r3_scenario.py", line 90, in scenario
+  |     async with live_app(lambda _url: ledger.app()) as market:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/r3_live.py", line 49, in live_app
+  |     async with anyio.create_task_group() as tasks:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/r3_live.py", line 53, in live_app
+    |     yield url
+    |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/r3_scenario.py", line 116, in scenario
+    |     live_app(build) as shop,
+    |     ^^^^^^^^^^^^^^^
+    |   File "/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/contextlib.py", line 231, in __aexit__
+    |     await self.gen.athrow(value)
+    |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/r3_live.py", line 49, in live_app
+    |     async with anyio.create_task_group() as tasks:
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/r3_live.py", line 53, in live_app
+      |     yield url
+      |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/r3_scenario.py", line 119, in scenario
+      |     yield Scenario(shop, market, ledger, http, clock, trace)
+      |   File "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-08/submissions/25620027/week-08/tests/test_r3_rejection.py", line 149, in run
+      |     assert get.status_code == 405
+      | AssertionError: assert 404 == 405
+      |  +  where 404 = <Response [404 Not Found]>.status_code
+      +------------------------------------
+=========================== short test summary info ============================
+FAILED tests/test_r3_rejection.py::test_get_cannot_cancel_a_checkout - Assert...
+1 failed, 19 passed in 10.71s

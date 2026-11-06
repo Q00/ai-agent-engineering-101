@@ -1,0 +1,123 @@
+FFFFFFFFFFFFF                                                            [100%]
+=================================== FAILURES ===================================
+_______ test_refused_payments_cool_down_even_after_negotiated_agreements _______
+tests/test_r3_buyer_selection_regressions.py:44: in test_refused_payments_cool_down_even_after_negotiated_agreements
+    assert buyer.cooling_shops(events.failure_streaks(24), BuyerPolicy()) == {SHOP}
+E   AssertionError: assert frozenset() == {'http://shop.test'}
+E     
+E     Extra items in the right set:
+E     'http://shop.test'
+E     Use -v to get more diff
+___ test_pending_r3_agreement_does_not_clear_failures_but_paid_success_does ____
+tests/test_r3_buyer_selection_regressions.py:54: in test_pending_r3_agreement_does_not_clear_failures_but_paid_success_does
+    assert SHOP in buyer.cooling_shops(events.failure_streaks(24), BuyerPolicy())
+E   AssertionError: assert 'http://shop.test' in frozenset()
+E    +  where frozenset() = <function cooling_shops at 0x10d6b3920>({}, BuyerPolicy(first_offer_ratio=0.6, quick_accept_ratio=0.72, max_price_ratio=0.95, max_rounds=4, food_margin_hours=1.0,...ry_hours=24.0, order_seconds=18.0, late_accept_share=0.45, explore_rate=0.1, fail_streak=3, fail_cooldown_minutes=30.0))
+E    +    where <function cooling_shops at 0x10d6b3920> = buyer.cooling_shops
+E    +    and   {} = failure_streaks(24)
+E    +      where failure_streaks = <r3.events.EventLedger object at 0x10d7d5ac0>.failure_streaks
+E    +    and   BuyerPolicy(first_offer_ratio=0.6, quick_accept_ratio=0.72, max_price_ratio=0.95, max_rounds=4, food_margin_hours=1.0,...ry_hours=24.0, order_seconds=18.0, late_accept_share=0.45, explore_rate=0.1, fail_streak=3, fail_cooldown_minutes=30.0) = BuyerPolicy()
+_____________ test_suspicious_attempts_are_failures_not_successes ______________
+tests/test_r3_buyer_selection_regressions.py:65: in test_suspicious_attempts_are_failures_not_successes
+    assert SHOP in buyer.cooling_shops(events.failure_streaks(24), BuyerPolicy())
+E   AssertionError: assert 'http://shop.test' in frozenset()
+E    +  where frozenset() = <function cooling_shops at 0x10d6b3920>({}, BuyerPolicy(first_offer_ratio=0.6, quick_accept_ratio=0.72, max_price_ratio=0.95, max_rounds=4, food_margin_hours=1.0,...ry_hours=24.0, order_seconds=18.0, late_accept_share=0.45, explore_rate=0.1, fail_streak=3, fail_cooldown_minutes=30.0))
+E    +    where <function cooling_shops at 0x10d6b3920> = buyer.cooling_shops
+E    +    and   {} = failure_streaks(24)
+E    +      where failure_streaks = <r3.events.EventLedger object at 0x10d7d6600>.failure_streaks
+E    +    and   BuyerPolicy(first_offer_ratio=0.6, quick_accept_ratio=0.72, max_price_ratio=0.95, max_rounds=4, food_margin_hours=1.0,...ry_hours=24.0, order_seconds=18.0, late_accept_share=0.45, explore_rate=0.1, fail_streak=3, fail_cooldown_minutes=30.0) = BuyerPolicy()
+_________ test_price_memory_requires_our_paid_order_and_matching_shop __________
+tests/test_r3_buyer_selection_regressions.py:77: in test_price_memory_requires_our_paid_order_and_matching_shop
+    assert events.price_ratios(24) == {}
+E   AssertionError: assert {'http://shop.test': 0.8} == {}
+E     
+E     Left contains 1 more item:
+E     {'http://shop.test': 0.8}
+E     Use -v to get more diff
+_ test_exploration_excludes_penalized_shops_even_with_many_prior_payments[refused-False] _
+tests/test_r3_buyer_selection_regressions.py:109: in test_exploration_excludes_penalized_shops_even_with_many_prior_payments
+    assert {p.shop.url for p in picks if p is not None} == {
+E   AssertionError: assert {'http://a.te...p://bad.test'} == {'http://a.te...ttp://b.test'}
+E     
+E     Extra items in the left set:
+E     'http://bad.test'
+E     Use -v to get more diff
+_ test_exploration_excludes_penalized_shops_even_with_many_prior_payments[refused-True] _
+tests/test_r3_buyer_selection_regressions.py:109: in test_exploration_excludes_penalized_shops_even_with_many_prior_payments
+    assert {p.shop.url for p in picks if p is not None} == {
+E   AssertionError: assert {'http://a.te...p://bad.test'} == {'http://a.te...ttp://b.test'}
+E     
+E     Extra items in the left set:
+E     'http://bad.test'
+E     Use -v to get more diff
+_ test_exploration_excludes_penalized_shops_even_with_many_prior_payments[no_deal-False] _
+tests/test_r3_buyer_selection_regressions.py:109: in test_exploration_excludes_penalized_shops_even_with_many_prior_payments
+    assert {p.shop.url for p in picks if p is not None} == {
+E   AssertionError: assert {'http://a.te...p://bad.test'} == {'http://a.te...ttp://b.test'}
+E     
+E     Extra items in the left set:
+E     'http://bad.test'
+E     Use -v to get more diff
+_ test_exploration_excludes_penalized_shops_even_with_many_prior_payments[no_deal-True] _
+tests/test_r3_buyer_selection_regressions.py:109: in test_exploration_excludes_penalized_shops_even_with_many_prior_payments
+    assert {p.shop.url for p in picks if p is not None} == {
+E   AssertionError: assert {'http://a.te...p://bad.test'} == {'http://a.te...ttp://b.test'}
+E     
+E     Extra items in the left set:
+E     'http://bad.test'
+E     Use -v to get more diff
+_ test_exploration_excludes_penalized_shops_even_with_many_prior_payments[suspicious-False] _
+tests/test_r3_buyer_selection_regressions.py:109: in test_exploration_excludes_penalized_shops_even_with_many_prior_payments
+    assert {p.shop.url for p in picks if p is not None} == {
+E   AssertionError: assert {'http://a.te...p://bad.test'} == {'http://a.te...ttp://b.test'}
+E     
+E     Extra items in the left set:
+E     'http://bad.test'
+E     Use -v to get more diff
+_ test_exploration_excludes_penalized_shops_even_with_many_prior_payments[suspicious-True] _
+tests/test_r3_buyer_selection_regressions.py:109: in test_exploration_excludes_penalized_shops_even_with_many_prior_payments
+    assert {p.shop.url for p in picks if p is not None} == {
+E   AssertionError: assert {'http://a.te...p://bad.test'} == {'http://a.te...ttp://b.test'}
+E     
+E     Extra items in the left set:
+E     'http://bad.test'
+E     Use -v to get more diff
+_ test_exploration_excludes_penalized_shops_even_with_many_prior_payments[trust-False] _
+tests/test_r3_buyer_selection_regressions.py:109: in test_exploration_excludes_penalized_shops_even_with_many_prior_payments
+    assert {p.shop.url for p in picks if p is not None} == {
+E   AssertionError: assert {'http://a.te...p://bad.test'} == {'http://a.te...ttp://b.test'}
+E     
+E     Extra items in the left set:
+E     'http://bad.test'
+E     Use -v to get more diff
+_ test_exploration_excludes_penalized_shops_even_with_many_prior_payments[trust-True] _
+tests/test_r3_buyer_selection_regressions.py:109: in test_exploration_excludes_penalized_shops_even_with_many_prior_payments
+    assert {p.shop.url for p in picks if p is not None} == {
+E   AssertionError: assert {'http://a.te...p://bad.test'} == {'http://a.te...ttp://b.test'}
+E     
+E     Extra items in the left set:
+E     'http://bad.test'
+E     Use -v to get more diff
+______ test_round2_stock_advertisement_does_not_hide_shops_without_offers ______
+tests/test_r3_buyer_selection_regressions.py:125: in test_round2_stock_advertisement_does_not_hide_shops_without_offers
+    assert {p.shop.url for p in picks if p is not None} == {
+E   AssertionError: assert {'http://willow.test'} == {'http://good.../willow.test'}
+E     
+E     Extra items in the right set:
+E     'http://good.test'
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/test_r3_buyer_selection_regressions.py::test_refused_payments_cool_down_even_after_negotiated_agreements
+FAILED tests/test_r3_buyer_selection_regressions.py::test_pending_r3_agreement_does_not_clear_failures_but_paid_success_does
+FAILED tests/test_r3_buyer_selection_regressions.py::test_suspicious_attempts_are_failures_not_successes
+FAILED tests/test_r3_buyer_selection_regressions.py::test_price_memory_requires_our_paid_order_and_matching_shop
+FAILED tests/test_r3_buyer_selection_regressions.py::test_exploration_excludes_penalized_shops_even_with_many_prior_payments[refused-False]
+FAILED tests/test_r3_buyer_selection_regressions.py::test_exploration_excludes_penalized_shops_even_with_many_prior_payments[refused-True]
+FAILED tests/test_r3_buyer_selection_regressions.py::test_exploration_excludes_penalized_shops_even_with_many_prior_payments[no_deal-False]
+FAILED tests/test_r3_buyer_selection_regressions.py::test_exploration_excludes_penalized_shops_even_with_many_prior_payments[no_deal-True]
+FAILED tests/test_r3_buyer_selection_regressions.py::test_exploration_excludes_penalized_shops_even_with_many_prior_payments[suspicious-False]
+FAILED tests/test_r3_buyer_selection_regressions.py::test_exploration_excludes_penalized_shops_even_with_many_prior_payments[suspicious-True]
+FAILED tests/test_r3_buyer_selection_regressions.py::test_exploration_excludes_penalized_shops_even_with_many_prior_payments[trust-False]
+FAILED tests/test_r3_buyer_selection_regressions.py::test_exploration_excludes_penalized_shops_even_with_many_prior_payments[trust-True]
+FAILED tests/test_r3_buyer_selection_regressions.py::test_round2_stock_advertisement_does_not_hide_shops_without_offers
+13 failed in 0.24s

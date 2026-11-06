@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="SungjinShop: compare opening quote caps with recent observed first asks from up to five other active shops.">
+<title>SungjinShop · Negotiate with confidence</title>
+<style>
+:root{color-scheme:light dark;--bg:#f6f7fb;--panel:#fff;--text:#182339;--muted:#526078;--line:#dbe1ec;--accent:#3158cf;--soft:#eaf0ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:48px 24px 32px}header{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{font-size:12px;font-weight:750;letter-spacing:.14em;color:var(--accent)}h1{font-size:clamp(36px,6vw,64px);letter-spacing:-.045em;line-height:1.06;margin:16px 0}h2{font-size:25px;line-height:1.25;margin-top:0}h3{margin:0;font-size:22px}p{margin:12px 0}a{color:var(--accent);overflow-wrap:anywhere}code{font-size:.91em;background:var(--soft);padding:2px 6px;border-radius:5px;overflow-wrap:anywhere}.intro{max-width:690px;color:var(--muted);font-size:19px}.links{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}.button{display:inline-block;border:1px solid var(--line);padding:10px 16px;border-radius:10px;text-decoration:none;background:var(--panel);font-weight:650}.primary{background:var(--accent);color:white;border-color:var(--accent)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 0}.card,.section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}.price{font-size:32px;font-weight:750;margin:12px 0 0;line-height:1.3}.small{font-size:14px;color:var(--muted)}.section{margin:18px 0}.tag{display:inline-block;background:var(--soft);color:var(--accent);padding:5px 10px;border-radius:8px;font-weight:750}.steps{padding-left:23px}.steps li{padding:5px 0}footer{color:var(--muted);font-size:13px;margin-top:28px}strong{font-weight:750}@media(prefers-color-scheme:dark){:root{--bg:#101623;--panel:#182131;--text:#edf2fc;--muted:#b1bdd3;--line:#304057;--accent:#a5bbff;--soft:#243451}.primary{background:#395ed1;color:white;border-color:#395ed1}}@media(max-width:650px){main{padding:28px 16px}.cards{grid-template-columns:1fr;gap:12px}.card,.section{padding:20px}}
+
+.comparison-scroll{overflow-x:auto;max-width:100%;border:1px solid var(--line);border-radius:10px}.comparison-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.comparison-table{width:100%;min-width:760px;border-collapse:collapse;text-align:left;font-size:14px}.comparison-table caption{text-align:left;padding:16px;color:var(--muted)}.comparison-table th,.comparison-table td{padding:12px 16px;vertical-align:top;border-bottom:1px solid var(--line)}.comparison-table thead th{color:var(--muted);font-weight:650}.comparison-table tbody tr:last-child>*{border-bottom:0}.comparison-table th[scope=row]{max-width:210px;overflow-wrap:anywhere}.comparison-own{background:var(--soft)}.comparison-value{font-size:19px;font-weight:750;font-variant-numeric:tabular-nums}.comparison-detail{display:block;font-size:12px;font-weight:400;color:var(--muted);max-width:170px}.comparison-stale .comparison-value{color:var(--muted)}.comparison-time{min-width:170px;font-size:12px;color:var(--muted)}.comparison-meta{display:flex;gap:12px;flex-wrap:wrap;align-items:baseline}.comparison-meta p{margin:4px 0}.comparison-highlights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.comparison-highlight{padding:14px;background:var(--soft);border-radius:10px;overflow-wrap:anywhere}.comparison-highlight .comparison-detail{max-width:none}.comparison-highlight strong{display:block}.comparison-headline{font-weight:750}@media(max-width:650px){.comparison-highlights{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<header>
+<div class="eyebrow">A2A 1.0 · FURNITURE NEGOTIATION</div>
+<h1>SungjinShop</h1>
+<p class="intro" id="comparison-headline">Opening caps · comparison unavailable</p>
+<div class="comparison-highlights" id="comparison-highlights" aria-label="Opening cap comparison summary"></div>
+<div class="comparison-meta"><p id="comparison-status" role="status" aria-live="polite">Waiting for price observations. No price comparison is available yet.</p><p class="small" id="comparison-updated">Snapshot: not available</p></div>
+<p class="small">Compared with observed first asks from up to five other active shops in board order. Each figure is an opening ceiling (≤) for a new negotiation, not a fixed sale price.</p>
+<div class="links"><a class="button primary" href="/.well-known/agent-card.json">Read Agent Card</a><a class="button" href="#agent-guide">Connect your buyer</a><a class="button" href="https://github.com/SungJinho">GitHub @SungJinho</a></div>
+</header>
+<section class="section" id="price-comparison" aria-labelledby="comparison-title">
+<h2 id="comparison-title">Opening asks, side by side</h2>
+<p>Our row shows an <strong>opening quote ceiling for a new negotiation (≤)</strong>, not a fixed sale price. Other rows show observed first asks for the same basic item requests, not completed trades or a guarantee of identical quality.</p>
+
+<div class="comparison-scroll" role="region" aria-label="Opening price comparison, scroll horizontally on narrow screens" tabindex="0">
+<table class="comparison-table">
+<caption>Up to five other active shops in board order, including unavailable results. Price units are those used by the course market. Checked times use Korea Standard Time (KST).</caption>
+<thead><tr><th scope="col">Shop</th><th scope="col">Rank</th><th scope="col">Lamp</th><th scope="col">Chair</th><th scope="col">Bookshelf</th><th scope="col">Checked time</th></tr></thead>
+<tbody id="comparison-rows"><tr><td colspan="6">Observations are loading. The catalog and buyer instructions remain available on this page.</td></tr></tbody>
+</table></div>
+<p class="small">Comparisons cover only the shops with a valid observed ask for that item, not the entire market. Missing observations remain visible. After 15 minutes, observations expire and price comparisons stop.</p>
+<p class="small">The server refreshes external observations every 10 minutes. This page checks its own server every 60 seconds; opening the page does not query other shops.</p>
+<noscript><p class="small">JavaScript is off. Live comparisons are unavailable; the baseline catalog caps and buyer instructions still apply.</p></noscript>
+</section>
+<section aria-label="Basic catalog" class="cards">
+<article class="card"><h3>Lamp</h3><p class="price">Up to 110</p><p class="small">Basic lamp · baseline opening cap</p></article>
+<article class="card"><h3>Chair</h3><p class="price">Up to 198</p><p class="small">Basic chair · baseline opening cap</p></article>
+<article class="card"><h3>Bookshelf</h3><p class="price">Up to 286</p><p class="small">Basic bookshelf · baseline opening cap</p></article>
+</section>
+<p class="small">These are baseline caps. With at least three fresh peer observations, our opening ceiling stays below the second-lowest observed ask, with a premium above the lowest of at most 2% of our product minimum. A product minimum can prevent an undercut. Smaller samples retain the prior lowest-ask rule. This is a near-low-price policy, not a guarantee of the lowest price. Basic products only; descriptive variants have their own quotes. The model chooses each quote; <code>metadata.ask</code> gives the current asking price. Every actual whole-number offer at or above the product minimum settles on the first counteroffer; lower offers cannot be accepted.</p>
+<section class="section">
+<span class="tag">R2WELCOME</span><h2 style="margin-top:16px">A real concession, when negotiated</h2>
+<p>Submit a numeric counteroffer to negotiate. On the first downward seller quote, <strong>up to 5 price units of that reduction</strong> are counted as the R2WELCOME coupon, once per task. A larger negotiated reduction is allowed while preserving the product’s minimum price.</p>
+<p>A reduction is conditional, not guaranteed. If the current ask is already at the product’s minimum price, no further reduction or coupon saving is available. The coupon is part of the quoted reduction, not an additional deduction at checkout. Metadata reports <code>total_reduction</code>, its <code>coupon_discount</code> portion and <code>coupon_applied</code>. Later concessions are ordinary bargaining.</p>
+<p><strong>No review or rating is required for a discount.</strong> Please review only your actual negotiation and receipt.</p>
+<p class="small" lang="ko">첫 하향 호가의 실제 인하분 중 최대 5단위를 쿠폰으로 표시하며 더 큰 협상 인하도 가능합니다. 쿠폰은 추가 차감이 아니며 별점·후기는 할인 조건이 아닙니다.</p>
+</section>
+<section class="section" id="agent-guide">
+<h2>For buyer agents</h2>
+<p><strong>Quick checkout:</strong> send <code>offer lamp 100</code>, <code>offer chair 180</code> or <code>offer bookshelf 260</code> as your first message. These are actual purchase offers, not advertised opening asks. Other offers at or above the product minimum are accepted at their exact offered amount.</p>
+<p>After a quote, send <code>I accept</code> or <code>OK</code> to buy at that exact quote. You can also send <code>100</code>, <code>I can pay 100</code> or <code>My offer is $100.00.</code> on the same task. Whole price units only. Budget statements, conditional acceptance and prices quoted from other shops are not purchase offers.</p>
+<ol class="steps">
+<li>Fetch <a href="/.well-known/agent-card.json"><code>/.well-known/agent-card.json</code></a> and use its advertised A2A interface.</li>
+<li>Set the HTTP header <code>A2A-Version: 1.0</code>. Send an A2A <code>SendMessage</code> with the requested product, such as <code>lamp</code>.</li>
+<li>Read the seller’s quote and <code>metadata.ask</code>. Continue the same negotiation using the returned <code>taskId</code> and context identifier.</li>
+<li>Send your chosen whole-number offer as the next message text. The seller may quote, accept or reject; keep every offer within your own budget.</li>
+<li>On acceptance, retain the receipt data and verify its signature. Leave an honest review of the negotiation and receipt.</li>
+</ol>
+<p class="small">This page explains the interface; the Agent Card is the source for transport details. Coupon metadata describes actual quote events and is not an extra required request field.</p>
+</section>
+<section class="section">
+<h2>Clear prices. Verifiable receipts.</h2>
+<p>New quotes can show the current market round’s completed-trade mean and sample size. Those trade prices are a separate benchmark from other shops’ observed opening asks. Comparisons expire after 15 minutes.</p>
+<p>Within one negotiation, later seller quotes cannot increase above the current ask. An accepted offer is recorded at its exact agreed amount; coupons never alter a receipt after acceptance.</p>
+<p>Completed trades issue an <strong>Ed25519-signed receipt</strong> covering <code>shop</code>, <code>item</code>, <code>price</code> and <code>task</code>. Verify the receipt against the seller’s registered public key.</p>
+</section>
+<footer>Public endpoint: <a href="https://ax-week07.treasuresky.xyz">https://ax-week07.treasuresky.xyz</a><br>AX Week 07 · Course market demonstration · Offers and availability depend on the live seller response.</footer>
+<script type="application/json" id="shop-terms">{"name":"SungjinShop","strategy_version":"1.6.0","public_url":"https://ax-week07.treasuresky.xyz","agent_card":"/.well-known/agent-card.json","a2a_version":"1.0","basic_products":["lamp","chair","bookshelf"],"basic_opening_quote_caps":{"lamp":110,"chair":198,"bookshelf":286},"prices_are_fixed":false,"settlement_policy":"accept_first_actual_integer_offer_at_or_above_product_minimum","quote_acceptance":["I accept","OK"],"coupon":{"code":"R2WELCOME","trigger":"first downward seller quote during numeric counteroffer negotiation","maximum_coupon_portion_units":5,"larger_negotiated_reduction_allowed":true,"extra_checkout_deduction":false,"uses_per_task":1,"minimum_price_protected":true,"guaranteed":false,"rating_required":false},"quote_price_metadata":"ask","total_quote_reduction_metadata":"total_reduction","later_quotes_may_increase":false,"receipt_signature":"Ed25519","receipt_fields":["shop","item","price","task"],"review_request":"honest review of agreed price and receipt","purpose":"human and agent reference; not an A2A request payload","price_comparison":{"url":"/price-comparison.json","price_kind":"observed_initial_ask","refresh_seconds":600,"max_age_seconds":900,"scope":"up to five other active shops in board order","dynamic_ceiling":"fresh_same_round_N>=100_and_3_quotes:max(reserve,min(baseline_cap,lowest_ask+max(1,floor(reserve*0.02)),floor(trade_mean)));otherwise_previous_quote_rule","trade_stats_source":"https://market.ourolabs.ai/api/stats","trade_stats_kind":"completed_trade_price","reserve_protected":true,"guaranteed_global_lowest":false}}</script>
+<script defer src="/price-comparison.js"></script>
+</main></body></html>

@@ -1,0 +1,516 @@
+.....................................FFF.F...........................    [100%]
+=================================== FAILURES ===================================
+_ test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature[lamp-102-I want to buy a lamp. Quality and trouble-free use matter: do you provide after-sales service, a quality warranty, or a flexible refund policy?-I accept] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f40dc40>
+sku = 'lamp', ask = 102
+buyer_text = 'I want to buy a lamp. Quality and trouble-free use matter: do you provide after-sales service, a quality warranty, or a flexible refund policy?'
+assent = 'I accept'
+
+    @pytest.mark.parametrize(("sku", "ask", "buyer_text", "assent"), [
+        ("lamp", 102, SERVICE_REQUEST, "I accept"),
+        ("chair", 183, "Hello, I'd like to buy a chair, please.", "OK"),
+        ("bookshelf", 265, "I need a bookshelf", "I accept your quote"),
+    ])
+    def test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature(
+        monkeypatch: pytest.MonkeyPatch, sku: str, ask: int, buyer_text: str, assent: str,
+    ) -> None:
+        tools = scripted(
+            monkeypatch, [action("quote", ask, sku), action("accept", ask, sku)],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        key = Ed25519PrivateKey.generate()
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app("http://seller/", Harness(model, logs.append), catalog,
+                                 "Test", signer=ReceiptSigner(key))
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app), base_url="http://seller",
+                ) as client:
+                    opening = task_from(await send(client, buyer_text))
+                    assert opening.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    closed = task_from(await send(client, assent, opening.id))
+                    assert closed.status.state == TaskState.TASK_STATE_COMPLETED
+                    part = TypeAdapter(dict[str, JsonValue]).validate_python(
+                        MessageToDict(closed.artifacts[0].parts[0]),
+                    )
+                    raw = part["data"]
+                    assert isinstance(raw, dict)
+                    receipt = SignedReceipt.model_validate({
+                        **{field: raw[field] for field in
+                           ("shop", "item", "task", "sig_seller")},
+                        "price": ask,
+                    })
+                    assert raw["price"] == ask
+                    assert raw["sku"] == sku
+                    assert receipt.item == sku
+                    assert receipt.task == opening.id
+                    key.public_key().verify(
+                        base64.b64decode(receipt.sig_seller), receipt.canonical(),
+                    )
+                    final_text = closed.status.message.parts[0].text
+                    assert "Completed in 1 buyer offer(s)." in final_text
+                    assert "'I accept'" in opening.status.message.parts[0].text
+                    replay = await send(client, assent, opening.id)
+                    assert isinstance(replay, dict)
+                    assert "error" in replay
+                    assert len(tools) == 2
+                    assert tools == [["decide"], ["decide"]]
+                    assert not any("seller.search " in line for line in logs)
+                    assert sum("seller.turn_elapsed " in line for line in logs) == 2
+    
+>       anyio.run(scenario)
+
+tests/test_quick_checkout.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app("http://seller/", Harness(model, logs.append), catalog,
+                             "Test", signer=ReceiptSigner(key))
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app), base_url="http://seller",
+            ) as client:
+                opening = task_from(await send(client, buyer_text))
+                assert opening.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                closed = task_from(await send(client, assent, opening.id))
+                assert closed.status.state == TaskState.TASK_STATE_COMPLETED
+                part = TypeAdapter(dict[str, JsonValue]).validate_python(
+                    MessageToDict(closed.artifacts[0].parts[0]),
+                )
+                raw = part["data"]
+                assert isinstance(raw, dict)
+                receipt = SignedReceipt.model_validate({
+                    **{field: raw[field] for field in
+                       ("shop", "item", "task", "sig_seller")},
+                    "price": ask,
+                })
+                assert raw["price"] == ask
+                assert raw["sku"] == sku
+                assert receipt.item == sku
+                assert receipt.task == opening.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical(),
+                )
+                final_text = closed.status.message.parts[0].text
+                assert "Completed in 1 buyer offer(s)." in final_text
+                assert "'I accept'" in opening.status.message.parts[0].text
+                replay = await send(client, assent, opening.id)
+                assert isinstance(replay, dict)
+                assert "error" in replay
+>               assert len(tools) == 2
+E               AssertionError: assert 1 == 2
+E                +  where 1 = len([['decide']])
+
+tests/test_quick_checkout.py:112: AssertionError
+_ test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature[chair-183-Hello, I'd like to buy a chair, please.-OK] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f597dd0>
+sku = 'chair', ask = 183, buyer_text = "Hello, I'd like to buy a chair, please."
+assent = 'OK'
+
+    @pytest.mark.parametrize(("sku", "ask", "buyer_text", "assent"), [
+        ("lamp", 102, SERVICE_REQUEST, "I accept"),
+        ("chair", 183, "Hello, I'd like to buy a chair, please.", "OK"),
+        ("bookshelf", 265, "I need a bookshelf", "I accept your quote"),
+    ])
+    def test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature(
+        monkeypatch: pytest.MonkeyPatch, sku: str, ask: int, buyer_text: str, assent: str,
+    ) -> None:
+        tools = scripted(
+            monkeypatch, [action("quote", ask, sku), action("accept", ask, sku)],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        key = Ed25519PrivateKey.generate()
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app("http://seller/", Harness(model, logs.append), catalog,
+                                 "Test", signer=ReceiptSigner(key))
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app), base_url="http://seller",
+                ) as client:
+                    opening = task_from(await send(client, buyer_text))
+                    assert opening.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    closed = task_from(await send(client, assent, opening.id))
+                    assert closed.status.state == TaskState.TASK_STATE_COMPLETED
+                    part = TypeAdapter(dict[str, JsonValue]).validate_python(
+                        MessageToDict(closed.artifacts[0].parts[0]),
+                    )
+                    raw = part["data"]
+                    assert isinstance(raw, dict)
+                    receipt = SignedReceipt.model_validate({
+                        **{field: raw[field] for field in
+                           ("shop", "item", "task", "sig_seller")},
+                        "price": ask,
+                    })
+                    assert raw["price"] == ask
+                    assert raw["sku"] == sku
+                    assert receipt.item == sku
+                    assert receipt.task == opening.id
+                    key.public_key().verify(
+                        base64.b64decode(receipt.sig_seller), receipt.canonical(),
+                    )
+                    final_text = closed.status.message.parts[0].text
+                    assert "Completed in 1 buyer offer(s)." in final_text
+                    assert "'I accept'" in opening.status.message.parts[0].text
+                    replay = await send(client, assent, opening.id)
+                    assert isinstance(replay, dict)
+                    assert "error" in replay
+                    assert len(tools) == 2
+                    assert tools == [["decide"], ["decide"]]
+                    assert not any("seller.search " in line for line in logs)
+                    assert sum("seller.turn_elapsed " in line for line in logs) == 2
+    
+>       anyio.run(scenario)
+
+tests/test_quick_checkout.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app("http://seller/", Harness(model, logs.append), catalog,
+                             "Test", signer=ReceiptSigner(key))
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app), base_url="http://seller",
+            ) as client:
+                opening = task_from(await send(client, buyer_text))
+                assert opening.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                closed = task_from(await send(client, assent, opening.id))
+                assert closed.status.state == TaskState.TASK_STATE_COMPLETED
+                part = TypeAdapter(dict[str, JsonValue]).validate_python(
+                    MessageToDict(closed.artifacts[0].parts[0]),
+                )
+                raw = part["data"]
+                assert isinstance(raw, dict)
+                receipt = SignedReceipt.model_validate({
+                    **{field: raw[field] for field in
+                       ("shop", "item", "task", "sig_seller")},
+                    "price": ask,
+                })
+                assert raw["price"] == ask
+                assert raw["sku"] == sku
+                assert receipt.item == sku
+                assert receipt.task == opening.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical(),
+                )
+                final_text = closed.status.message.parts[0].text
+                assert "Completed in 1 buyer offer(s)." in final_text
+                assert "'I accept'" in opening.status.message.parts[0].text
+                replay = await send(client, assent, opening.id)
+                assert isinstance(replay, dict)
+                assert "error" in replay
+>               assert len(tools) == 2
+E               AssertionError: assert 1 == 2
+E                +  where 1 = len([['decide']])
+
+tests/test_quick_checkout.py:112: AssertionError
+_ test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature[bookshelf-265-I need a bookshelf-I accept your quote] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f40d310>
+sku = 'bookshelf', ask = 265, buyer_text = 'I need a bookshelf'
+assent = 'I accept your quote'
+
+    @pytest.mark.parametrize(("sku", "ask", "buyer_text", "assent"), [
+        ("lamp", 102, SERVICE_REQUEST, "I accept"),
+        ("chair", 183, "Hello, I'd like to buy a chair, please.", "OK"),
+        ("bookshelf", 265, "I need a bookshelf", "I accept your quote"),
+    ])
+    def test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature(
+        monkeypatch: pytest.MonkeyPatch, sku: str, ask: int, buyer_text: str, assent: str,
+    ) -> None:
+        tools = scripted(
+            monkeypatch, [action("quote", ask, sku), action("accept", ask, sku)],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        key = Ed25519PrivateKey.generate()
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app("http://seller/", Harness(model, logs.append), catalog,
+                                 "Test", signer=ReceiptSigner(key))
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app), base_url="http://seller",
+                ) as client:
+                    opening = task_from(await send(client, buyer_text))
+                    assert opening.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                    closed = task_from(await send(client, assent, opening.id))
+                    assert closed.status.state == TaskState.TASK_STATE_COMPLETED
+                    part = TypeAdapter(dict[str, JsonValue]).validate_python(
+                        MessageToDict(closed.artifacts[0].parts[0]),
+                    )
+                    raw = part["data"]
+                    assert isinstance(raw, dict)
+                    receipt = SignedReceipt.model_validate({
+                        **{field: raw[field] for field in
+                           ("shop", "item", "task", "sig_seller")},
+                        "price": ask,
+                    })
+                    assert raw["price"] == ask
+                    assert raw["sku"] == sku
+                    assert receipt.item == sku
+                    assert receipt.task == opening.id
+                    key.public_key().verify(
+                        base64.b64decode(receipt.sig_seller), receipt.canonical(),
+                    )
+                    final_text = closed.status.message.parts[0].text
+                    assert "Completed in 1 buyer offer(s)." in final_text
+                    assert "'I accept'" in opening.status.message.parts[0].text
+                    replay = await send(client, assent, opening.id)
+                    assert isinstance(replay, dict)
+                    assert "error" in replay
+                    assert len(tools) == 2
+                    assert tools == [["decide"], ["decide"]]
+                    assert not any("seller.search " in line for line in logs)
+                    assert sum("seller.turn_elapsed " in line for line in logs) == 2
+    
+>       anyio.run(scenario)
+
+tests/test_quick_checkout.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app("http://seller/", Harness(model, logs.append), catalog,
+                             "Test", signer=ReceiptSigner(key))
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app), base_url="http://seller",
+            ) as client:
+                opening = task_from(await send(client, buyer_text))
+                assert opening.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                closed = task_from(await send(client, assent, opening.id))
+                assert closed.status.state == TaskState.TASK_STATE_COMPLETED
+                part = TypeAdapter(dict[str, JsonValue]).validate_python(
+                    MessageToDict(closed.artifacts[0].parts[0]),
+                )
+                raw = part["data"]
+                assert isinstance(raw, dict)
+                receipt = SignedReceipt.model_validate({
+                    **{field: raw[field] for field in
+                       ("shop", "item", "task", "sig_seller")},
+                    "price": ask,
+                })
+                assert raw["price"] == ask
+                assert raw["sku"] == sku
+                assert receipt.item == sku
+                assert receipt.task == opening.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical(),
+                )
+                final_text = closed.status.message.parts[0].text
+                assert "Completed in 1 buyer offer(s)." in final_text
+                assert "'I accept'" in opening.status.message.parts[0].text
+                replay = await send(client, assent, opening.id)
+                assert isinstance(replay, dict)
+                assert "error" in replay
+>               assert len(tools) == 2
+E               AssertionError: assert 1 == 2
+E                +  where 1 = len([['decide']])
+
+tests/test_quick_checkout.py:112: AssertionError
+_ test_signed_sale_when_app_restarts_preserves_offer_and_blocks_terminal_replay _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f827f20>
+database = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-6/test_signed_sale_when_app_rest0/seller.sqlite3')
+
+    def test_signed_sale_when_app_restarts_preserves_offer_and_blocks_terminal_replay(
+        monkeypatch: pytest.MonkeyPatch, database: Path
+    ) -> None:
+        # Given: a real opening quote followed by hostile SKU/price model decisions.
+        calls = scripted(
+            monkeypatch,
+            [
+                ("search_catalog", {"query": "lamp"}),
+                action("quote", 105),
+                action("accept", 105, "chair"),
+                action("accept", 106),
+                action("accept", 105),
+            ],
+        )
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                harness = Harness(model, print)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # When: a new app accepts the existing SDK task, then a third replays it.
+                async with fresh_client(harness, signer) as second:
+                    accepted = await send(second, "105", opened.id)
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, "105", opened.id)
+                # Then: the actual offer/SKU/task are signed once and replay never calls AI.
+                completed = task_from(accepted)
+                assert completed.id == opened.id
+                assert completed.context_id == opened.context_id
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                assert len(completed.artifacts) == 1
+                raw = TypeAdapter(JsonValue).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                assert isinstance(raw, dict)
+                assert raw["price"] == 105
+                assert raw["sku"] == "lamp"
+                receipt = SignedReceipt.model_validate(
+                    {
+                        **{
+                            field: raw[field]
+                            for field in ("shop", "item", "task", "sig_seller")
+                        },
+                        "price": 105,
+                    }
+                )
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert isinstance(replay, dict)
+                assert "error" in replay
+                assert len(calls) == 5
+                assert PersistentSellerStore(database).restore() == ({}, {opened.id})
+                print(
+                    json.dumps(
+                        {"accepted": accepted, "replay": replay, "model_calls": len(calls)}
+                    )
+                )
+    
+>       anyio.run(scenario)
+
+tests/test_seller_persistence.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            harness = Harness(model, print)
+            async with fresh_client(harness, signer) as first:
+                opened = task_from(await send(first, "lamp"))
+            # When: a new app accepts the existing SDK task, then a third replays it.
+            async with fresh_client(harness, signer) as second:
+                accepted = await send(second, "105", opened.id)
+            async with fresh_client(harness, signer) as third:
+                replay = await send(third, "105", opened.id)
+            # Then: the actual offer/SKU/task are signed once and replay never calls AI.
+            completed = task_from(accepted)
+            assert completed.id == opened.id
+            assert completed.context_id == opened.context_id
+            assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+            assert len(completed.artifacts) == 1
+            raw = TypeAdapter(JsonValue).validate_json(
+                MessageToJson(completed.artifacts[0].parts[0].data)
+            )
+            assert isinstance(raw, dict)
+            assert raw["price"] == 105
+            assert raw["sku"] == "lamp"
+            receipt = SignedReceipt.model_validate(
+                {
+                    **{
+                        field: raw[field]
+                        for field in ("shop", "item", "task", "sig_seller")
+                    },
+                    "price": 105,
+                }
+            )
+            assert receipt.task == opened.id
+            key.public_key().verify(
+                base64.b64decode(receipt.sig_seller), receipt.canonical()
+            )
+            assert isinstance(replay, dict)
+            assert "error" in replay
+>           assert len(calls) == 5
+E           AssertionError: assert 2 == 5
+E            +  where 2 = len([['decide'], ['decide']])
+
+tests/test_seller_persistence.py:110: AssertionError
+----------------------------- Captured stdout call -----------------------------
+seller.summary task=be9441d2-a1ad-4bb0-b83f-9860212b55d6 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=1090 tools=1
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=be9441d2-a1ad-4bb0-b83f-9860212b55d6 candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "lamp", "name": "lamp", "description": "Basic white task lamp.", "kind": "lamp", "material": "steel", "color": "white", "height_cm": 45, "capacity": 0, "reserve": 100}, "opening_max": 110, "allowed_quote_min": 100, "allowed_quote_max": 110, "comparison": {"item": "lamp", "ceiling": 110, "baseline_ceiling": 110, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable", "pricing_policy": "baseline", "second_lowest_peer_ask": null, "market_trade_mean": null, "market_trade_count": 0, "market_round": null}, "own_price_history": {"quote_actions": 0, "accepted_sales": 0, "recent_accepted_prices": []}}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 105, "sku": "lamp", "reason": "Test"}
+seller.action task=be9441d2-a1ad-4bb0-b83f-9860212b55d6 action=quote sku=lamp price=105
+TOOL_RESULT decide {"action": "quote", "price": 105}
+seller.turn_elapsed task=be9441d2-a1ad-4bb0-b83f-9860212b55d6 seconds=0.003
+seller.summary task=be9441d2-a1ad-4bb0-b83f-9860212b55d6 selected=lamp rounds=0 offer=105 history_replayed=0
+seller.receipt task=be9441d2-a1ad-4bb0-b83f-9860212b55d6 sku=lamp price=105
+seller.action task=be9441d2-a1ad-4bb0-b83f-9860212b55d6 action=accept sku=lamp price=105
+seller.quote_execution task=be9441d2-a1ad-4bb0-b83f-9860212b55d6 model_calls=0
+seller.turn_elapsed task=be9441d2-a1ad-4bb0-b83f-9860212b55d6 seconds=0.002
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+=========================== short test summary info ============================
+FAILED tests/test_quick_checkout.py::test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature[lamp-102-I want to buy a lamp. Quality and trouble-free use matter: do you provide after-sales service, a quality warranty, or a flexible refund policy?-I accept]
+FAILED tests/test_quick_checkout.py::test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature[chair-183-Hello, I'd like to buy a chair, please.-OK]
+FAILED tests/test_quick_checkout.py::test_generic_purchase_uses_one_model_round_per_turn_and_exact_signature[bookshelf-265-I need a bookshelf-I accept your quote]
+FAILED tests/test_seller_persistence.py::test_signed_sale_when_app_restarts_preserves_offer_and_blocks_terminal_replay
+4 failed, 65 passed in 2.56s

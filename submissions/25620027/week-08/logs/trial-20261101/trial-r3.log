@@ -1,0 +1,145 @@
+== 2026-11-01T00:00:01Z trial-r3 start release=573394c8fc50
+ Container ax-week08-25620027-r3-r3-1 Recreate 
+ Container ax-week08-25620027-r3-r3-1 Recreated 
+ Container ax-week08-25620027-r3-r3-1 Starting 
+ Container ax-week08-25620027-r3-r3-1 Started 
+ax-week08-25620027-r3-r3-1	Up Less than a second
+ax-week08-25620027-tunnel	Up 3 seconds
+trial started at 20261101T000001Z UTC; backup /docker/ax-week08-25620027/trial-20261101T000001Z
+== 2026-11-01T00:51:28Z manual relaunch after join failure (trial continues)
+ Container ax-week08-25620027-r3-r3-1 Starting 
+ Container ax-week08-25620027-r3-r3-1 Started 
+ax-week08-25620027-tunnel	Up Less than a second
+ax-week08-25620027-r3-r3-1	Up Less than a second
+== 2026-11-01T00:55:18Z relaunch with tunnel kept (trial continues)
+ Container ax-week08-25620027-r3-r3-1 Starting 
+ Container ax-week08-25620027-r3-r3-1 Started 
+ax-week08-25620027-tunnel	Up 3 minutes
+ax-week08-25620027-r3-r3-1	Up Less than a second
+== 2026-11-01T02:00:01Z trial-r3 stop release=573394c8fc50
+{
+ "since_utc": "2026-11-01T00:00:08+00:00",
+ "now_utc": "2026-11-01T02:00:01+00:00",
+ "model_calls": [
+  {
+   "role": "scout",
+   "model": "claude-haiku-5-5",
+   "calls": 14,
+   "accepted": 2,
+   "avg_latency_ms": 9561,
+   "max_latency_ms": 10702,
+   "cost_usd": 0.04297
+  },
+  {
+   "role": "strategy",
+   "model": "claude-sonnet-5-5",
+   "calls": 2,
+   "accepted": 2,
+   "avg_latency_ms": 3498,
+   "max_latency_ms": 3815,
+   "cost_usd": 0.02347
+  },
+  {
+   "role": "tactical",
+   "model": "claude-haiku-5-5",
+   "calls": 8,
+   "accepted": 8,
+   "avg_latency_ms": 1482,
+   "max_latency_ms": 1742,
+   "cost_usd": 0.00223
+  }
+ ],
+ "spend_today_usd": 0.0692,
+ "spend_today_calls": 29,
+ "policy_changes": [
+  {
+   "ts": "09:00:37",
+   "actor": "claude-sonnet-5-5",
+   "layer": "strategy",
+   "field": "buyer.order_seconds",
+   "before": "18.0",
+   "after": "40",
+   "accepted": true,
+   "note": "",
+   "reason": "Buyer agreed 783 deals in 24h but paid 0 and no refusals logged; likely order window too short. Exte"
+  }
+ ],
+ "buyer_attempts": {
+  "agreed": 53,
+  "no_deal": 122
+ },
+ "seller_receipts": 0,
+ "policy": {
+  "version": 2,
+  "reason": "model: Buyer agreed 783 deals in 24h but paid 0 and no refusals logged; likely order window too short. Extend it and keep other defaults until market data appears.",
+  "strategy_version": 2,
+  "tactical": null,
+  "bands": {}
+ },
+ "picture": {
+  "by": "code",
+  "written_at": 1793498282.2137737,
+  "shops": 21,
+  "low_trust": [
+   {
+    "name": "shaun0927",
+    "trust": 0.2,
+    "flags": [
+     "injection_attempt",
+     "rating_inducement"
+    ]
+   },
+   {
+    "name": "ggari-shop",
+    "trust": 0.45,
+    "flags": []
+   },
+   {
+    "name": "bright-living",
+    "trust": 0.35,
+    "flags": [
+     "refused_our_payment"
+    ]
+   },
+   {
+    "name": "corner-store",
+    "trust": 0.45,
+    "flags": []
+   },
+   {
+    "name": "maple-home",
+    "trust": 0.05,
+    "flags": [
+     "dishonest_claims"
+    ]
+   },
+   {
+    "name": "moss-and-oak",
+    "trust": 0.4,
+    "flags": []
+   }
+  ],
+  "hot_categories": [],
+  "alerts": [],
+  "notes": "No settlements recorded yet in the market (settles_1h=0, category settlements 6h empty), so trust is based on reviews and flags only. Empty forum. Shops with 0 data and no reviews were left unlisted at default. shaun0927 flagged for injection/rating inducement; maple-home flagged for receipts exceed"
+ },
+ "kit_log": {
+  "orders": 95,
+  "verified": 28,
+  "buyer_reads": 0,
+  "seller_reads": 0,
+  "screened": 0,
+  "refused_openings": 0,
+  "paid": 0,
+  "not_paid": 0
+ }
+}
+ Container ax-week08-25620027-r3-r3-1 Recreate 
+ Container ax-week08-25620027-r3-r3-1 Recreated 
+ Container ax-week08-25620027-r3-r3-1 Starting 
+ Container ax-week08-25620027-r3-r3-1 Started 
+ax-week08-25620027-r3-r3-1	Up Less than a second
+ax-week08-25620027-tunnel	Up About an hour
+trial stopped; manager model off; policy and picture restored; results in /docker/ax-week08-25620027/trial-20261101T000001Z
+== 2026-11-01T04:10:07Z trial-r3 report release=573394c8fc50
+no trial running
