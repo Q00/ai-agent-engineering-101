@@ -164,7 +164,7 @@ def on_settled(deal: dict) -> dict | None:
     folder().mkdir(parents=True, exist_ok=True)
     with open(folder() / "purchases.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(line, ensure_ascii=False) + "\n")
-    if got.get("claim_honest") is False:
+    if common.worse_than_claimed(got):                  # goods better than claimed are no deceit (11/6 16:40)
         nb = load()
         entry(nb, shop)["false_claims"] += 1
         save(nb)

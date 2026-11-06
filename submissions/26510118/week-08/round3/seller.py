@@ -263,6 +263,8 @@ def pick(units: list, req: dict, now: float):
     cat = catalog()
     if req["grades"]:
         units = [u for u in units if pricing.grade(u, now, cat) in req["grades"]]
+    units = [u for u in units if not pricing.crossing(u, now, cat)] or units   # about to change grade: only when
+                                                                                # none else (its claim may not match)
     fresh = lambda u: pricing.hours_left(u, now) if u.get("expires_at") else float("inf")
     rank = lambda u: pricing.ORDER.index(pricing.grade(u, now, cat))
     if req["need_hours"]:

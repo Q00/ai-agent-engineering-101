@@ -229,6 +229,10 @@ def test_notebook():
     memory.sync(nb)
     memory.save(nb)
     check("a false grade claim is noted", nb["T"]["false_claims"] == 1)
+    memory.on_settled({"order": {"order": "o-t2"}, "receipt": {"item": BEDDING, "price": 27000},
+                       "settled": {"shop": "http://t", "sku": BEDDING, "name": CATALOG[BEDDING]["name"], "grade": "A",
+                                   "claim": "B", "claim_honest": False}})
+    check("...but not one the goods beat (said B, certified A: no deceit, 11/6)", memory.load()["T"]["false_claims"] == 1)
     check("a breakdown (name and time only) is matched to the purchase and its shop",
           nb["T"]["broken"] == 1 and nb["T"]["broken_no_warranty"] == 1
           and len(common.read_jsonl(md / "buyer" / "breaks.jsonl")) == 1, nb["T"])

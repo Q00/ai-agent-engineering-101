@@ -297,6 +297,17 @@ def test_pricing():
     p = pricing.plan(dict(dear_a, supplied_at=now - 3600), now, warranty=True, in_line=True, sku_market=dead_mk)
     check("...held only an hour: still at its floor (cost + 2% + 2.5%)", (p["floor"], p["dead"]) == (1_274_000, False), p)
     win = {"open": False, "opens_at": now + 300, "closes_at": now + 480}
+    shelf_h = CATALOG[KIMCHI]["shelf_hours"]
+    edge = {"sku": KIMCHI, "unit": "u-edge", "kind": "food", "cost": 12000, "list_price": 20000,
+            "expires_at": now + 0.8 * shelf_h * 3600 + 60}
+    steady = dict(edge, unit="u-steady", expires_at=now + 0.8 * shelf_h * 3600 + 3600)
+    check("a food unit a minute from losing grade A is crossing (its claim may miss the market's grade); an hour from it, not",
+          pricing.crossing(edge, now, CATALOG) and not pricing.crossing(steady, now, CATALOG))
+    import seller as _sel
+    need = {"grades": [], "need_hours": 24, "warranty": False}
+    check("the seller offers the steady unit though the other expires sooner (11/6: 7 food claims a day missed); "
+          "the crossing one only when it is the only one", _sel.pick([edge, steady], need, now)["unit"] == "u-steady"
+          and _sel.pick([edge], need, now)["unit"] == "u-edge")
     check("late in the cycle: the last 10 minutes before a window opens, not during one or long before",
           pricing.late_in_cycle(win, now) and not pricing.late_in_cycle(dict(win, opens_at=now + 900), now)
           and not pricing.late_in_cycle(dict(win, open=True), now) and not pricing.late_in_cycle(None, now))
@@ -814,6 +825,10 @@ def main() -> int:
         deal["settled"] = dict(settled, claim="A", grade="B", claim_honest=False)
         out, _ = fake.run("review.py", "--deal", str(fake.write("deal.json", deal)))
         check("false grade claim: 1 star", bool(out) and out["stars"] == 1, out and out["review"])
+        deal["settled"] = dict(settled, claim="B", grade="A", claim_honest=False)
+        out, _ = fake.run("review.py", "--deal", str(fake.write("deal.json", deal)))
+        check("goods better than claimed (said B, certified A, 11/6): no 1 star, rated by price (4) and said so",
+              bool(out) and out["stars"] == 4 and "certified A, better than claimed" in out["review"], out)
 
         test_pricing()
         test_categories()

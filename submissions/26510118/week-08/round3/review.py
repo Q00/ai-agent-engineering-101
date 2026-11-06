@@ -4,8 +4,9 @@
     {"stars": 4, "review": "Paid 16000 for ... (list 20000); grade B; ..."}
 
 Facts only, written by code: in week 7 a model asked to word reviews wrote "the
-receipt did not match" into deals that had no receipt. A false grade claim is
-1 star; otherwise the stars follow the price against the list price. The deal also
+receipt did not match" into deals that had no receipt. A false grade claim with
+goods worse than claimed is 1 star; goods better than claimed are said so and rated
+like the rest (11/6 16:40); otherwise the stars follow the price against the list price. The deal also
 goes into the buyer's purchase book and shop notebook (buyer_memory.py), where a
 breakdown hours later is matched to it.
 """
@@ -25,13 +26,16 @@ def judge(deal: dict, catalog: dict) -> dict:
     facts = [f"Paid {price} for {got.get('name') or sku}" + (f" (list {lp})" if lp else "")]
     if got.get("grade"):
         facts.append(f"grade {got['grade']}")
-    if got.get("claim"):
+    worse = common.worse_than_claimed(got)
+    if got.get("claim") and got.get("claim_honest") is False and not worse:
+        facts.append(f"the shop claimed {got['claim']}; the market certified {got.get('grade')}, better than claimed")
+    elif got.get("claim"):
         facts.append(f"the shop claimed {got['claim']}, which was " + ("true" if got.get("claim_honest") else "false"))
     if got.get("expires_at"):
         facts.append(f"{(got['expires_at'] - time.time()) / 3600:.0f} h of shelf life left")
     if got.get("warranty_hours"):
         facts.append(f"{got['warranty_hours']} h warranty")
-    if got.get("claim_honest") is False:
+    if worse:
         stars = 1
     elif lp and isinstance(price, (int, float)):
         r = price / lp

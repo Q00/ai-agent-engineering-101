@@ -33,6 +33,20 @@ SHOP_NAME = f"{SHOP_BRAND}: Groceries & Goods"
 OWN_NAMES = {"Kiro729", "Kiro729 Shop", SHOP_BRAND}  # ours, matched as parts of a name: left out of what we publish about shops
 
 
+GRADE_ORDER = "ABC"      # best first
+
+
+def worse_than_claimed(got: dict) -> bool:
+    """A settled deal whose grade claim the market found false with the goods worse than claimed (or either grade
+    unknown). A claim the goods beat (a shop that said B for an A) is no deceit (11/6 16:40)."""
+    if got.get("claim_honest") is not False:
+        return False
+    c, g = got.get("claim"), got.get("grade")
+    if c in GRADE_ORDER and g in GRADE_ORDER:
+        return GRADE_ORDER.index(g) > GRADE_ORDER.index(c)
+    return True
+
+
 def is_ours(name) -> bool:
     """A shop, buyer or player name of ours (OWN_NAMES as parts of it): forum.own and ledger.is_ours."""
     return bool(name) and any(o.lower() in str(name).lower() for o in OWN_NAMES)

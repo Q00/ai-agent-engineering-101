@@ -173,6 +173,12 @@ def claim(unit: dict, now: float, catalog: dict | None = None) -> str:
     return max(grade(unit, now, catalog), grade(unit, now + CLAIM_MARGIN, catalog), key=ORDER.index)
 
 
+def crossing(unit: dict, now: float, catalog: dict | None = None) -> bool:
+    """A food unit whose grade changes within CLAIM_MARGIN: whatever it claims may not be the grade the market
+    certifies at settle (11/6: 7 of our 1,113 food settles in a day were claimed a grade low this way)."""
+    return grade(unit, now, catalog) != grade(unit, now + CLAIM_MARGIN, catalog)
+
+
 def near_expiry(unit: dict, now: float) -> bool:
     h = hours_left(unit, now)
     return h is not None and h < NEAR_HOURS
