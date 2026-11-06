@@ -37,6 +37,7 @@ from r3_policy import selling_terms
 from market_state import read, write, task_file
 from kit_runtime import OFFER_SECONDS
 from market_intel import fresh
+from receipt_label import receipt_item, request_form
 from strategy_policy import effective
 
 NAME = "kcwarni Inventory Shop"
@@ -196,7 +197,7 @@ class Seller(AgentExecutor):
             if unit is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
-            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None,
+            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "request": text,
                                        "touched": time.time(), "lines": [f"buyer: {text}"]}
         else:
             deal["lines"].append(f"buyer: {text}")
@@ -237,7 +238,7 @@ class Seller(AgentExecutor):
         (log_dir / (uuid4().hex + ".json")).write_text(json.dumps(
             {"at": datetime.now(timezone.utc).isoformat(), "task": task.id,
              "unit": u.get("unit"), "sku": u["sku"], "cost": u["cost"],
-             "grade_observed": u.get("grade"), "expires_at": u.get("expires_at"), **terms},
+             "grade_observed": u.get("grade"), "expires_at": u.get("expires_at"), "request_form": request_form(deal.get("request"), u), **terms},
             ensure_ascii=False, indent=2), encoding="utf-8")
         if deal["ask"] is not None and deal["offer"] == deal["ask"] and deal["offer"] >= reserve:
             move, raw = {"action": "accept"}, "deterministic acceptance of the disclosed quote"
@@ -280,14 +281,14 @@ class Seller(AgentExecutor):
             action, move = "counter", {"price": deal["ask"] or u["list_price"]}
         if action == "accept":
             price = deal["offer"]
-            receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id}
+            receipt = {"shop": NAME, "item": receipt_item(deal.get("request"), u), "price": price, "task": task.id}
             if u["unit"]:
                 receipt["unit"] = u["unit"]
                 receipt.update(claim=u["grade"], cert=True, warranty_hours=terms.get("warranty_hours", 0))
             receipt = sign(receipt)
             if u.get("unit"):
                 write(task_file(MARKET_DIR, "signed-offers", task.id),
-                      {"task": task.id, "unit": u["unit"], "sku": u["sku"], "price": price,
+                      {"task": task.id, "unit": u["unit"], "sku": u["sku"], "receipt_item": receipt["item"], "request_form": request_form(deal.get("request"), u), "price": price,
                        "cost": u["cost"], "strategy_version": terms.get("strategy_version"),
                        "grade": u.get("grade"), "warranty_hours": terms.get("warranty_hours", 0),
                        "warranty_trial_group": deal.get("coverage", {}).get("group"),
