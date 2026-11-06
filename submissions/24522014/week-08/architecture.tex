@@ -73,7 +73,7 @@
 % Controller
 \node[b=11.2cm,fill=guard,minimum height=1.45cm] (ctrl) at (5.9,9.0) {\textbf{Bounded self-improvement} \texttt{strategy\_controller.py} (no model)\\
 Diagnose $\rightarrow$ one small change (price $\pm$3\%, restock rate) $\rightarrow$ wait for mature sales $\rightarrow$ keep or roll back. Cannot change code, price floors, grades or signing. Reads a leased \texttt{strategy-policy} file.};
-\node[b=6.4cm,fill=guard,minimum height=1.45cm] (fail) at (15.2,9.0) {\textbf{Failure rule learned}: one stale \texttt{alive:false} paused restock for 59 min (5 Nov). Now it only blocks experiments; cash guards still pause.};
+\node[b=6.4cm,fill=guard,minimum height=1.45cm] (fail) at (15.2,9.0) {\textbf{Failure rule learned}: stale \texttt{alive:false} readings paused restock through two supply windows (5 Nov). Now they only block experiments; cash guards still pause.};
 \draw[arrow] (memory.south -| ctrl) -- (ctrl);
 \draw[arrow] (memory.south -| fail) -- (fail);
 
