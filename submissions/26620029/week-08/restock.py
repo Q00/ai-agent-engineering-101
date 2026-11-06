@@ -49,7 +49,8 @@ LINE_SHARE = 0.1            # one line spends at most this share of the balance 
 VALUE_FOCUS = 0.05          # a goods category with this share of the market's sales value is stocked by SKU and first
 FOCUS_SKUS = 8              # SKUs kept per focus category, by value (deals x list price)
 FOCUS_QTY = [(0.02, 5), (0.005, 3)]     # (SKU's share of market deals, units to keep); below these, 2
-FOCUS_DEAR = 500_000        # list price above this: at most 2 units, however often it sells
+FOCUS_DEAR = 500_000        # list price above this: at most FOCUS_DEAR_QTY units, however often it sells
+FOCUS_DEAR_QTY = 3          # was 2 until 2026-11-06 20:23: stock 48.5% of book against the user's 60%, the best seller G24f5f979 sold out
 UNIT_SHARE = 0.25           # one unit's cost at most this share of the balance: dearer sofas come as the balance grows
 FOCUS_LINE_SHARE = 0.25     # one focus line spends at most this share of the balance
 FOCUS_SPEND = 0.6           # focus lines spend at most this share of the spendable cash per run: food still refills
@@ -103,11 +104,11 @@ def pop_qty(share):
 def focus_want(sku_share, list_price):
     """Units to keep of one focus SKU: more where it sells often, at most 2 of the dearest."""
     want = next((q for at, q in FOCUS_QTY if sku_share >= at), 2)
-    return min(want, 2) if list_price > FOCUS_DEAR else want
+    return min(want, FOCUS_DEAR_QTY) if list_price > FOCUS_DEAR else want
 
 
 def focus_lines(inv, catalog, focus_cats, cu):
-    """[(sku, qty)] missing in the focus categories, the SKU with the most market value first."""
+    """[(sku, qty)] missing in the focus categories: sold-out SKUs first, then the SKU with the most market value."""
     balance = inv.get("balance") or 0
     total = sum(customers.popular(cu).values())
     have = {}
@@ -122,8 +123,8 @@ def focus_lines(inv, catalog, focus_cats, cu):
         for s in fit[:FOCUS_SKUS]:
             missing = focus_want(skus[s] / total, catalog[s]["list_price"]) - have.get(s, 0)
             if missing > 0:
-                lines.append((-skus[s] * catalog[s]["list_price"], s, missing))
-    return [(s, qty) for _, s, qty in sorted(lines)]
+                lines.append((have.get(s, 0) > 0, -skus[s] * catalog[s]["list_price"], s, missing))
+    return [(s, qty) for _, _, s, qty in sorted(lines)]     # sold-out SKUs first: extra units must not crowd them out
 
 
 def plan(inv, catalog, demand, mem, cu=None):
