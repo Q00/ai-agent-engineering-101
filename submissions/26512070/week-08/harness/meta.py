@@ -246,6 +246,11 @@ def cycle(now=None, call=None, dry=False):
 if __name__ == "__main__":
     if sys.argv[1:2] == ["ask"]:
         print(ask(" ".join(sys.argv[2:])))
+        from harness.run import start_meta          # user 11/6 11:0x: urgent questions should not wait 2 h
+        print(start_meta())
+    elif sys.argv[1:2] == ["now"]:
+        from harness.run import start_meta
+        print(start_meta())
     elif sys.argv[1:2] == ["close"]:
         print(json.dumps(close(sys.argv[2]), ensure_ascii=False))
     elif sys.argv[1:2] == ["questions"]:
