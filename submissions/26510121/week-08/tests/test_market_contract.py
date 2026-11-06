@@ -167,7 +167,7 @@ def test_settlement_review_is_idempotent_and_honest(tmp_path):
     assert 'no grade claim' in result['review']
     from r3.forum import schedule
     j.put('board_round', 3)
-    schedule(j, policy())
+    schedule(j, dict(policy(),buyer_patch34_enabled=False))
     assert len(j.pending_posts()) == 1
 
 

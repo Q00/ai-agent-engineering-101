@@ -5,6 +5,7 @@ No peer/forum text becomes executable policy. Hard cash/checkout guards remain.
 """
 import hashlib
 import time
+import re
 from collections import Counter
 from .finance import book_row
 from .economy import cash_capacity
@@ -17,10 +18,13 @@ def audit_rules(journal, text, now=None):
                   'each further unit adds 0.2%' in text and 'up to +50%' in text)
     buyer_metric=('saved' if 'buyers by saved rate' in text and 'divided by deals + 100' in text else
                   'surplus' if 'buyers by surplus' in text else 'unknown')
+    flat=' '.join(text.split())
+    buyer_weights_ok=bool(re.search(r'buyers by .*?ALL weighs them 0\.5,\s*0\.3,\s*0\.1,\s*0\.1',flat))
+    saved_formula_ok=('divided by deals + 100' in flat and 'counts -1, or 0 if refunded' in flat)
     result = {'at': now, 'sha256': hashlib.sha256(text.encode()).hexdigest(),
               'compatible': understood, 'expected': 'book/revenue/stars; surge<=1.5',
               'source': '/agent.md','buyer_metric':buyer_metric,
-              'buyer_compatible':buyer_metric in {'saved','surplus'},
+              'buyer_compatible':buyer_weights_ok and (buyer_metric=='surplus' or buyer_metric=='saved' and saved_formula_ok),
               'forum_vote_min_deals':50 if 'at least 50 settled deals' in text else 5,
               'stance_scoring':'one stance per' in text,'dislike_costs_shop_cash':'next_dislike_fee' in text}
     previous = journal.get('market_rules', {})

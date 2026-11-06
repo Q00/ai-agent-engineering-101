@@ -137,6 +137,14 @@ def test_new_insight_is_same_terms_referenced_and_not_repeated(tmp_path):
     assert all('vote' not in p for _,p in queued)
 
 
+def test_comparison_is_not_invented_from_one_purchase(tmp_path):
+    from r3.buyer_forum import schedule
+    j,cfg=fixture(tmp_path);now=time.time()
+    j.add('purchase',{'sku':'G1','value':1000,'price':600,'ledger':11,'paid_at':now})
+    schedule(j,cfg,{}, {'G1':{'list_price':1000}},now)
+    assert not j.pending_posts()
+
+
 def test_buyer_uses_legal_five_minute_cadence_without_changing_shop(tmp_path):
     from r3.forum import deliver
     j,cfg=fixture(tmp_path);now=time.time()
@@ -159,7 +167,11 @@ def test_buyer_uses_legal_five_minute_cadence_without_changing_shop(tmp_path):
 def test_rule_audit_understands_buyer_change_separately(tmp_path):
     from r3.control import audit_rules
     j,cfg=fixture(tmp_path)
-    r=audit_rules(j,'shops by book, revenue and stars; each further unit adds 0.2%; up to +50%; '
-                  'buyers by saved rate; divided by deals + 100; at least 50 settled deals; one stance per; next_dislike_fee')
-    assert r['compatible'] and r['buyer_metric']=='saved' and r['forum_vote_min_deals']==50
+    text=('shops by book, revenue and stars; each further unit adds 0.2%; up to +50%; '
+          'buyers by saved rate; ALL weighs them 0.5, 0.3, 0.1, 0.1; divided by deals + 100; '
+          'counts -1, or 0 if refunded; at least 50 settled deals; one stance per; next_dislike_fee')
+    r=audit_rules(j,text)
+    assert r['compatible'] and r['buyer_compatible'] and r['buyer_metric']=='saved' and r['forum_vote_min_deals']==50
     assert audit_rules(j,'unrecognized buyer scoring')['buyer_compatible'] is False
+    assert audit_rules(j,text.replace('0.5, 0.3','0.6, 0.2'))['buyer_compatible'] is False
+    assert audit_rules(j,text.replace('deals + 100','deals + 50'))['buyer_compatible'] is False

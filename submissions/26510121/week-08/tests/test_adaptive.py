@@ -57,12 +57,12 @@ def test_only_bounded_strategy_fields_can_override_policy(tmp_path):
 def test_order_retry_keeps_original_strategy_version(tmp_path):
     j = Journal(tmp_path)
     order = {'order': 'one', 'budget': 1000}
-    first, _ = begin_buyer(j, order)
-    j.put(KEY + 'buyer', {'version': 1, 'patch': {'buyer_counter_ratio': .96}})
+    first, original = begin_buyer(j, order)
+    j.put(KEY + 'buyer', {'version': original['version']+1, 'patch': {'buyer_counter_ratio': .96}})
     retry, selected = begin_buyer(j, order)
     new, _ = begin_buyer(j, {'order': 'two', 'budget': 1000})
     assert first['buyer_counter_ratio'] == retry['buyer_counter_ratio'] == .92
-    assert selected['version'] == 0 and new['buyer_counter_ratio'] == .96
+    assert selected['version'] == original['version'] and new['buyer_counter_ratio'] == .96
     assert len(j.events('buyer_order')) == 2
 
 

@@ -30,7 +30,7 @@ def analyze(source):
     end=source['responses']['/api/board']['finished_at']
     keys={'shops':'name','buyers':'name','players':'player'}
     fields={'shops':['book','revenue','deals','all','stock_units','stock_cost','stars_rank','refunds'],
-            'buyers':['surplus','deals','forum','posts','all'], 'players':['total']}
+            'buyers':['saved','surplus','deals','forum','posts','all'], 'players':['total']}
     latest={role:{r[keys[role]]:r for r in board[role]} for role in keys}
     comparisons=[]
     for filename in ['autonomous-deploy-before-20261105T045909708231Z.json',
@@ -45,6 +45,8 @@ def analyze(source):
                 if name not in oldrows:continue
                 before=oldrows[name];changes={}
                 for field in fields[role]:
+                    if field=='saved' and not all(type(r.get(field)) in (int,float) and -1<=r[field]<=1
+                                                 for r in [before,current]):continue
                     if type(current.get(field)) in (int,float) and type(before.get(field)) in (int,float):
                         delta=current[field]-before[field]
                         changes[field]={'before':before[field],'after':current[field],
@@ -64,7 +66,7 @@ def analyze(source):
             'nearest_ahead':[compact(r) for r in ahead[:3]],
             'top5':[compact(r) for r in sorted(rows,key=lambda r:r[metric],reverse=True)[:5]]}
     component_targets={}
-    for role,metrics in [('shops',['book','revenue']),('buyers',['surplus','forum','deals','posts'])]:
+    for role,metrics in [('shops',['book','revenue']),('buyers',['saved','surplus','forum','deals','posts'])]:
         me=latest[role]['seochanit'];component_targets[role]={}
         for metric in metrics:
             rows=[r for r in latest[role].values() if type(r.get(metric)) in (int,float)]

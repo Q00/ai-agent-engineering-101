@@ -144,7 +144,7 @@ def test_forum_comparison_is_sourced_and_caveated(tmp_path):
     j.put('board_round', 3)
     j.add('purchase', {'sku': 'G1', 'price': 230000, 'ledger': 999, 'paid_at': now,
                        'grade': 'A', 'warranty_hours': 6})
-    schedule(j, policy(), now)
+    schedule(j, dict(policy(),buyer_patch34_enabled=False), now)
     comparison = next(p for _, p in j.pending_posts() if p['priority'] == 4)
     assert comparison['refs'][0] == 999 and len(comparison['refs']) > 1
     assert 'median=240000' in comparison['post']
