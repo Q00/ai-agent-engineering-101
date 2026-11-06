@@ -400,6 +400,9 @@ TRIAL_AGENTS = ("seller",)
 # 16시: 판 5는 2 SE까지 17~43시간이 더 필요하다고 나왔고 그동안 판매자를 고칠 수 없었음; 16:30 성수님: 6시간도 길어 3시간으로).
 # 요청이 판마다 시간당 약 150건이라 3시간이면 판마다 약 450건 (추정): 판매/요청 차이 약 0.07 이상이면 2 SE 안에 드러남
 TRIAL_MAX_H = 3
+# Off (성수님 결정 2026-11-06 17시): 3시간 비교로도 작은 차이는 판정되지 않고 그동안 판매자를 못 고쳐 대응만 늦어짐.
+# 판매자 수정은 edits로 바로 적용하고 약 1시간 뒤 판별 성과로 판단함
+TRIAL_ENABLED = False
 TRIAL_SHARE = (0.1, 0.9, 0.5)  # min, max, default share of new requests sent to the candidate
 
 

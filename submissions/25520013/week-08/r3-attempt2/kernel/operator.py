@@ -433,6 +433,8 @@ class Operator:
     def _trial_start(self, item, now):
         if not isinstance(item, dict) or item.get("target") not in versions.TRIAL_AGENTS:
             return {"ok": False, "errors": [f"trial.target must be one of {versions.TRIAL_AGENTS}"]}
+        if not versions.TRIAL_ENABLED:
+            return {"ok": False, "errors": ["동시 비교는 꺼져 있음. 판매자 수정은 edits로 바로 적용하고 약 1시간 뒤 결과로 판단함"]}
         reason = c.mask(str(item.get("reason") or ""), self.secrets)[:1000]
         try:
             ok, info = versions.start_trial(

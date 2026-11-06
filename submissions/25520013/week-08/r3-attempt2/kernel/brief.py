@@ -573,6 +573,8 @@ def trial_cost_lines(base, cand, hours, now):
 def section_trial(root, now, harness_root=None):
     r = trial_results(root, now, harness_root)
     if r is None:
+        if not versions.TRIAL_ENABLED:
+            return ["[동시 비교] 꺼짐. 판매자 수정은 edits로 바로 적용하고 약 1시간 뒤 [판별 성과]로 유지, 다시 수정, 되돌리기를 정함"]
         return [f"[동시 비교] 진행 중 없음. done의 trial로 판매자 후보 판을 지금 판과 같은 시간에 나란히 돌릴 수 있음 "
                 f"(시간 상한 {versions.TRIAL_MAX_H}시간)"]
     t, base, cand = r["trial"], r["arms"]["base"], r["arms"]["trial"]

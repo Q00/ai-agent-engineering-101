@@ -17,6 +17,12 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEW_PROMPT = {"systemprompt.md": "# 판매자 후보\n- 후보 판 지시\n"}
 
 
+@pytest.fixture(autouse=True)
+def trials_on(monkeypatch):
+    # 동시 비교는 운영에서 꺼져 있지만(versions.TRIAL_ENABLED) 장치 자체의 동작은 계속 검사함
+    monkeypatch.setattr(versions, "TRIAL_ENABLED", True)
+
+
 @pytest.fixture
 def hroot(tmp_path):
     proj = tmp_path / "proj"
@@ -185,3 +191,15 @@ def test_trial_timeout_ends_without_adopting_and_brief_shows_the_cap(tmp_path, h
     end = [r for r in _rows(root, "trial_end")][-1]
     assert end["adopt"] is False and "커널 시간 상한" in end["reason"]
     assert brief.section_trial(root, NOW + 7 * 3600, hroot)[0].endswith("(시간 상한 3시간)")
+
+
+def test_trial_off_refuses_start_and_brief_says_edits_apply_directly(tmp_path, hroot, monkeypatch):
+    monkeypatch.setattr(versions, "TRIAL_ENABLED", False)
+    root = str(tmp_path / "w")
+    os.makedirs(root)
+    traj = Trajectory(os.path.join(root, "trajectory.jsonl"))
+    o = op.Operator(root, FakeTerra([]), traj, harness_root=hroot, dry=True, spawn=lambda *a, **k: None)
+    res = o._trial_start({"target": "seller", "files": NEW_PROMPT, "share": 0.5, "reason": "시험"}, NOW)
+    assert res["ok"] is False and "꺼져 있음" in res["errors"][0]
+    assert versions.trial_state(hroot) == {}
+    assert brief.section_trial(root, NOW, hroot)[0].startswith("[동시 비교] 꺼짐")
