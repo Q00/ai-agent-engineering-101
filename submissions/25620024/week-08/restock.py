@@ -208,11 +208,16 @@ def plan(md, c, t, now=None):
     buy, why = {}, []
 
     low = low_value(c, now, t, cat)
+    skipped = set()
     # patch 3.4 (11-06): over 50 units of a SKU supplied market-wide in the last hour, its cost rises 0.2% a unit (up
     # to 50%). surge >= 15% (125+ units): not bought; >= 5% (75+): half the quantity. HQ orders are exempt.
     n1h = dict(c.execute("select sku, count(*) from supply_units where ts > ? group by sku", (now - 3600,)).fetchall())
 
-    def surge(sku):
+    live = {x.get("sku"): (x.get("factor") or 1) - 1 for x in inv.get("surge") or [] if x.get("sku")}
+
+    def surge(sku):                                           # the market's own factor (inventory.json surge) first,
+        if sku in live:                                       # our estimate from supply_units otherwise
+            return live[sku]
         return min(0.5, 0.002 * max(0, n1h.get(sku, 0) - 50))
 
     def add(sku, qty, reason, any_price=False):
@@ -222,11 +227,11 @@ def plan(md, c, t, now=None):
             return
         if sku in low:                                        # HQ 11-04: low ticket and low profit -- not stocked
             return
-        if reason != "HQ order" and surge(sku) >= 0.15:
-            if not any(w.startswith("surge skip") for w in why):
-                why.append("surge skip: " + ", ".join(f"{k} {n}" for k, n in n1h.items() if n >= 125))
+        # HQ 11-07 "상한은 올리되, 공급가가 급등한 제품은 걸러": skip at +5% or more, half at +2% (was 15% / 5%)
+        if reason != "HQ order" and surge(sku) >= t.get("surge_skip", 0.05):
+            skipped.add(sku)
             return
-        if reason != "HQ order" and surge(sku) >= 0.05:
+        if reason != "HQ order" and surge(sku) >= t.get("surge_half", 0.02):
             qty = max(1, qty // 2)
         qty = min(qty, t["max_qty"] - buy.get(sku, 0))
         if reason != "HQ order":                              # 11-07 furniture opened (max_list 4M): one line holds
@@ -284,7 +289,8 @@ def plan(md, c, t, now=None):
     except (OSError, AttributeError, NameError):              # cooldown never rewrote it); share 0.7% -> 0.2%
         fresh = False
     if mk.get("mode") == "focus" and fresh:                   # marketing: only regulars and its picks for now
-        return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"], cash, \
+        return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"] + \
+            ([f"surge skip: {sorted(skipped)}"] if skipped else []), cash, \
             {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
     # 2. demand, by market revenue per hour (rate x list): 85% of market revenue is goods listed 500k+ (11-07: 14.5B
     # of 17.0B in 24 h, our share 0.03%), so with max_skus lines per window the dear SKUs go first
@@ -315,6 +321,8 @@ def plan(md, c, t, now=None):
             r = min(pool, key=lambda r: abs(r["list_price"] - (med or r["list_price"])) - 1e6 * (r["sku"] in by_sku))
             add(r["sku"], 1, "display")
     st = {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
+    if skipped:
+        why.append(f"surge skip: {sorted(skipped)}")
     return [{"sku": k, "qty": v} for k, v in buy.items()], why, cash, st
 
 

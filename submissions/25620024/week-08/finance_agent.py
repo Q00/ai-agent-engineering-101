@@ -52,7 +52,8 @@ check. You ADVISE: the headquarters wants the sales team to decide, and you may 
 fatal (cash about to fall under 10% of the start, or losses over 15% of it); short of that a "stop" is read as
 "caution", window_spend keeps at least 0.03 and cash_floor is capped at 0.12 (HQ: 600,000). Score: shop ALL = 0.5 Book + 0.3 revenue + 0.2 stars (percentiles); Book = balance - 5,000,000 - bankruptcy aid + cost of unsold stock (patch 3.4, 11-06: stock bought is NOT lost money on the board; only its decay is).
 Cash only matters against bankruptcy (under 500,000); idle cash earns nothing, stock that sells earns its margin. From the brief:
-- verdict: ok, caution (advice must be followed) or stop (no new stock spend this hour)
+- verdict: ok, caution or stop. HQ 11-07: SALES FIRST to climb the rank -- finance DETECTS and REPORTS risks to the
+  sales team (advice, named risks with numbers), it does not block; limits are advisory and bind nothing
 - advice: 2-5 concrete points for the sales team, with numbers (margins too thin, cash tied in slow stock, a
   promotion that costs more than it brings, warranty or guarantee exposure, ...)
 - limits (binding; the code enforces them over the sales plan): min_margin over cost (0.05-0.60),
@@ -228,4 +229,12 @@ def run(ask_codex, our_shop, dry=False):
 
 
 def limits():
+    """The finance limits restock and promo apply. HQ 11-07: "재경팀, 리스크는 세일즈팀에 보고하되 감지만 하고 막지는 마"
+    -- with owner_override finance_advisory true the limits bind nothing; the verdict, advice and limits stay in
+    finance_limits.json and the sales team's brief. Bankruptcy is still guarded by restock's own cash check."""
+    try:
+        if json.loads((HERE / "private" / "owner_override.json").read_text(encoding="utf-8")).get("finance_advisory"):
+            return {}
+    except (OSError, ValueError):
+        pass
     return (load(LIMITS, {}) or {}).get("limits") or {}
