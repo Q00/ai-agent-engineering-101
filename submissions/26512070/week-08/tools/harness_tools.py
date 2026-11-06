@@ -117,6 +117,18 @@ def approval_status(ctx):
     return [{k: d.get(k) for k in ("id", "title", "urgency", "change", "ts")} for d in wisdom.status()]
 
 
+@tool("market.benchmark", "The shops with the highest share of market revenue over the last hours, and ours, from the "
+      "ledger: revenue, share, deals per hour, median price as a share of list, goods share, the mean list price of "
+      "what they sold, their top SKUs and which of those we sold none of. 'ending' looks at an earlier window.",
+      {"type": "object", "properties": {"hours": {"type": "integer", "minimum": 1, "maximum": 24},
+                                        "top": {"type": "integer", "minimum": 1, "maximum": 10},
+                                        "ending": {"type": "string", "description": "YYYY-MM-DD HH:MM, default now"}}})
+def market_benchmark(ctx, hours=6, top=5, ending=None):
+    from harness import market
+    now = time.mktime(time.strptime(ending, "%Y-%m-%d %H:%M")) if ending else ctx.now()
+    return market.benchmark(hours=hours, top=top, now=now)
+
+
 @tool("model.usage", "Model calls per seat in the last hour against the budget (design 17-5).",
       {"type": "object", "properties": {}})
 def model_usage(ctx):

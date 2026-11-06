@@ -58,7 +58,7 @@ ROLES = {
     # design 16-2, 20: the meta-harness looks the raw records up itself and ends with a checked proposal
     "meta": {"look": ["trajectory.get", "trajectory.search", "summary.hourly", "score.class", "report.metrics",
                       "participant.get", "knowledge.get", "capability.list", "experiment.result", "wisdom.get",
-                      "approval.status", "model.usage", "market.selling", "market.sku"],
+                      "approval.status", "model.usage", "market.selling", "market.sku", "market.benchmark"],
              "final": ["meta.propose"], "steps": 8, "seat": "strategy", "reader": "strategist", "timeout": 240},
     "audit": {"look": ["eval.score", "eval.experiment", "eval.unit_economics", "eval.losses", "eval.audits",
                        "memory.summary", "memory.search", "memory.raw", "market.selling", "market.sku",
