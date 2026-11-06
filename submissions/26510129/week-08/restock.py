@@ -14,6 +14,7 @@ from collections import Counter
 from pathlib import Path
 
 import ledger
+import round_clock
 
 
 MAX_LINES = 10               # the kit buys at most 10 lines per run
@@ -34,6 +35,11 @@ UNIT_COST_SHARE = 0.20       # one unit's expected cost may not exceed this shar
                              # 11-04 17:40: at 15% of the balance a 1.63M sofa blocked the next one until it sold (2 min,
                              # 3 buyers); a refund on a break (~3% of settles) is a third of the margin in expectation
 CATEGORY_SHARE = 0.35        # one category's stock at cost may not exceed this share of the stock cap
+TOP_CATEGORY_SHARE = 0.55    # ... except a top-3 revenue category whose units I close 50%+ of the time (11-05 22:40:
+                             # four sofas in stock answered 44 opens with 17 deals; the top shop keeps dozens)
+TOP_CATEGORIES = 3
+MIN_UNIT_MARGIN = 5_000      # a category whose typical unit cannot clear this much is explored once, never topped up:
+                             # 330 units of 2-5k items cost storage, spoilage and negotiations for nothing
 
 
 def read_json(path, default):
@@ -98,7 +104,7 @@ def sellable_choice(choices, category, stats, skipped):
     return None
 
 
-def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
+def plan(inv, catalog, demand, forum, memory, stats=None, report=None, pressure=None, hours_to_end=None):
     units = inv.get("units") or []
     balance = max(0, int(inv.get("balance") or 0))
     if not catalog or not demand or balance <= 0:
@@ -106,6 +112,10 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
     stats = stats or {}
     report = report if report is not None else {}
     skipped = report.setdefault("skipped_below_cost", [])
+    pressure = pressure or {}
+    if hours_to_end is not None and hours_to_end < round_clock.STOP_ALL_HOURS:
+        report["liquidation"] = f"{hours_to_end:.1f} h to the close: no more stock"   # worth nothing after the close
+        return []
     stock_cost = sum(unit.get("cost") or 0 for unit in units)
     capital = balance + stock_cost
     stock_cap = STOCK_SHARE * capital
@@ -128,6 +138,7 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
     cat_rows = stats.get("categories") or {}
     cat_rev = {cat: (row.get("revenue") or row.get("n", 0)) for cat, row in cat_rows.items()}
     richest = max(cat_rev.values(), default=0)
+    top_categories = {c for c, _ in sorted(cat_rev.items(), key=lambda kv: -kv[1])[:TOP_CATEGORIES]}
 
     def sells_at_of(category):   # the list price the category actually settles around, else its demand median
         row_ = cat_rows.get(category) or {}
@@ -169,7 +180,9 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
     sku_depletion = memory.get("sku_depletion") or {}
     sku_sales = stats.get("skus") or {}
     for _, category in scored:
-        if cost_category[category] >= CATEGORY_SHARE * stock_cap:
+        share = (TOP_CATEGORY_SHARE if category in top_categories and (pressure.get(category) or {}).get("close_rate", 0) >= 0.5
+                 else CATEGORY_SHARE)
+        if cost_category[category] >= share * stock_cap:
             continue
         choices = [(sku, row) for sku, row in catalog.items() if row.get("category") == category
                    and (row.get("list_price") or 0) * EXPECTED_COST_RATIO <= unit_cap]
@@ -177,10 +190,16 @@ def plan(inv, catalog, demand, forum, memory, stats=None, report=None):
         if not choices:
             continue
         kind = choices[0][1].get("kind")
+        if kind == "food" and hours_to_end is not None and hours_to_end < round_clock.STOP_FOOD_HOURS:
+            continue   # it would not sell before it spoils or the close
         target = FOOD_TARGET if kind == "food" else GOODS_TARGET
         sells_at = sells_at_of(category)
         comparable = comparable_of(category, sells_at)
         if comparable >= target:
+            continue
+        ratio = (cat_rows.get(category) or {}).get("median_ratio")
+        if comparable and sells_at and ratio and sells_at * (ratio - EXPECTED_COST_RATIO) < MIN_UNIT_MARGIN:
+            report.setdefault("skipped_small_margin", []).append(category.split(">")[-1])
             continue
         if sells_at:
             # an order accepts SKUs priced 0.5x-1.5x its reference (agent.md); outside that band around the price the
@@ -267,14 +286,17 @@ def main():
     memory = update_memory(read_json(memory_path, {}), inv.get("units") or [])
     stats = ledger.refresh(state, catalog)   # one ledger call per run; the seller reads the file this writes
     pressure = write_pressure(state, catalog)   # and this one: buyers per unit by category, for the seller's markup
-    report = {"pressure_categories": len(pressure)}
-    buys = plan(inv, catalog, demand, forum, memory, stats, report)
+    hours_to_end = round_clock.hours_left()
+    report = {"pressure_categories": len(pressure), "hours_to_end": round(hours_to_end, 1)}
+    buys = plan(inv, catalog, demand, forum, memory, stats, report, pressure, hours_to_end)
     memory_path.write_text(json.dumps(memory, ensure_ascii=False, indent=1), encoding="utf-8")
     print("[strategy] " + json.dumps({"event": "restock", "stock": len(inv.get("units") or []),
                                       "balance": inv.get("balance"), "ledger_settles": stats.get("settles"),
                                       "stock_cost": report.get("stock_cost"), "stock_room": report.get("stock_room"),
                                       "explore": report.get("explore"), "planned_cost": report.get("planned_cost"),
-                                      "skus_too_dear": report.get("too_dear"),
+                                      "skus_too_dear": report.get("too_dear"), "hours_to_end": report.get("hours_to_end"),
+                                      "liquidation": report.get("liquidation"),
+                                      "skipped_small_margin": report.get("skipped_small_margin", []),
                                       "skipped_below_cost": report.get("skipped_below_cost", []), "buy": buys},
                                      ensure_ascii=False), flush=True)
     bankrupt = ((inv.get("balance") or 0) < (inv.get("bankrupt_line") or 0)

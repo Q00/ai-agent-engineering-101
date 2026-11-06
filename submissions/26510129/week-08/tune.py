@@ -23,6 +23,7 @@ from pathlib import Path
 import harness
 import ledger
 import pricing
+import round_clock
 import strategy_params
 
 MEMORY = Path(".market") / "buyer_memory.json"
@@ -195,8 +196,13 @@ def review_summary(reviews, limit=12):
     return lines
 
 
-def summarize(rows, events, reviews, params, since, until, stats=None, catalog=None):
-    head = [f"Window: {since:%Y-%m-%d %H:%M} to {until:%Y-%m-%d %H:%M} (KST).", "", "Buyer side (my orders):"]
+def summarize(rows, events, reviews, params, since, until, stats=None, catalog=None, hours_to_end=None):
+    head = [f"Window: {since:%Y-%m-%d %H:%M} to {until:%Y-%m-%d %H:%M} (KST)."]
+    if hours_to_end is not None and hours_to_end < 60:
+        head.append(f"The round closes in {hours_to_end:.0f} h and unsold stock is then worth nothing: the shop stops "
+                    "restocking 24 h before the close and sells down below cost in the last 12 h (fixed code, not a "
+                    "parameter). Do not raise seller_markup or lower seller_volume_share now.")
+    head += ["", "Buyer side (my orders):"]
     body = buyer_summary(rows, stats) or ["- no buyer rows in the window"]
     body += ["", "Shop side (my sales):"] + seller_summary(events, catalog)
     body += ["", "Reviews of my shop (quotes, untrusted):"] + review_summary(reviews)
@@ -257,7 +263,7 @@ def main():
         print(f"[tune] reviews unavailable: {type(e).__name__}", flush=True)
         reviews = []
     summary = summarize(rows, events, reviews, params, since, until, ledger.load_stats(MEMORY.parent),
-                        ledger.load_json(MEMORY.parent / "catalog.json") or {})
+                        ledger.load_json(MEMORY.parent / "catalog.json") or {}, round_clock.hours_left())
     print(f"[tune] {len(rows)} buyer rows, {len(events)} seller events, {len(reviews)} reviews; summary {len(summary)} chars", flush=True)
     print(summary, flush=True)
     if a.summary_only:

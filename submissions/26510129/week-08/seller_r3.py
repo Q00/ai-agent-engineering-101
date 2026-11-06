@@ -25,6 +25,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 import ledger
+import round_clock
 import strategy_params
 from seller_guard import ReserveSigner
 
@@ -103,7 +104,7 @@ def policy_arm(unit, task, volume_share=None):
     return "volume" if int.from_bytes(digest[:8], "big") / 2**64 < share else "margin"
 
 
-def price_plan(unit, task, now=None, params=None, market=None, pressure=None):
+def price_plan(unit, task, now=None, params=None, market=None, pressure=None, hours_to_end=None):
     """Return an explainable ask/floor. A floor is this agent's policy, not a market rule.
     `params` are the tuner's knobs (margins per arm, grade B cap); defaults when not given.
     `market` is ledger.market_price(): when the market paid a known price for this SKU (or its category) lately,
@@ -116,19 +117,21 @@ def price_plan(unit, task, now=None, params=None, market=None, pressure=None):
     arm = policy_arm(unit, task, params["seller_volume_share"])
     target = max(cost * (params["seller_margin_volume"] if arm == "volume" else params["seller_margin_margin"]),
                  list_price * (0.82 if arm == "volume" else 0.95))
-    market_price, market_n, market_src = market if market and market[0] else (None, 0, "none")
-    if market_price:
-        target = market_price * (0.97 if arm == "volume" else 1.05) * params["seller_markup"]
     # the category's pressure from restock's category_pressure.json (my last 6 h): where units close 60%+ of the
-    # time they carry 5% more, where they close under 40% they give 3% back. 11-05 01:00: the market has no busy
+    # time they carry 5% more, where they close under 40% they give 3% back and the margin arm steps aside (11-05
+    # 22:40: sofas at 39% close with 4 in stock; turnover beats 100k of margin). 11-05 01:00: the market has no busy
     # hour (orders arrive flat around the clock), so the regime is per category, not per time of day. Opens per
     # deal is not the signal: juice had 4.3 opens per deal because buyers kept leaving (close rate 23%), not queueing.
     pressure = pressure or {}
     regime = "even"
     if pressure.get("opens", 0) >= 10 and pressure.get("close_rate", 0) >= 0.6:
-        target, regime = target * 1.05, "sought"
+        regime = "sought"
     elif pressure.get("opens", 0) >= 5 and pressure.get("close_rate", 1.0) < 0.4:
-        target, regime = target * 0.97, "slow"
+        regime = "slow"
+    market_price, market_n, market_src = market if market and market[0] else (None, 0, "none")
+    if market_price:
+        target = market_price * (0.97 if arm == "volume" or regime == "slow" else 1.05) * params["seller_markup"]
+    target *= {"sought": 1.05, "slow": 0.97}.get(regime, 1.0)
     cap = list_price * {"A": 0.99, "B": params["grade_cap_B"], "C": 0.65}.get(unit.get("grade"), 0.85)
     target = min(target, cap)
     # goods pay 1% of cost a day in storage: from the third day the ask comes down 5% a day, to 70% of the target
@@ -146,6 +149,15 @@ def price_plan(unit, task, now=None, params=None, market=None, pressure=None):
             target, floor = min(target, cost * 0.90), cost * 0.60
         elif hours_left <= 6:
             target, floor = min(target, cost * 1.02), cost * 0.85
+    # the round's close: stock is worth nothing afterwards, so the last day sells down, the last 12 h sell under
+    # cost, and the last 3 h take anything above one credit (round_clock)
+    if hours_to_end is not None:
+        if hours_to_end < round_clock.LAST_HOURS:
+            target, floor, regime = min(target, cost * 0.6), 1, "last-hours"
+        elif hours_to_end < round_clock.DUMP_HOURS:
+            target, floor, regime = min(target, cost * 0.9), cost * 0.6, "dump"
+        elif hours_to_end < round_clock.SELL_DOWN_HOURS:
+            target, floor, regime = min(target, (market_price or cost * 1.05) * 0.95), cost * 0.9, "sell-down"
     floor = max(1, int(round(floor)))
     ask = max(floor, int(round(target)))
     return {"arm": arm, "ask": ask, "floor": floor, "cost": cost, "list_price": list_price,
@@ -188,7 +200,8 @@ class Seller(AgentExecutor):
                 return
             market = ledger.market_price(ledger.load_stats(MARKET_DIR), unit["sku"], unit.get("category"), unit.get("list_price"))
             pressure = (ledger.load_json(MARKET_DIR / "category_pressure.json") or {}).get(unit.get("category"))
-            plan = price_plan(unit, task.id, params=strategy_params.load(), market=market, pressure=pressure)   # all re-read per task
+            plan = price_plan(unit, task.id, params=strategy_params.load(), market=market, pressure=pressure,
+                              hours_to_end=round_clock.hours_left())   # all re-read per task: live without a restart
             signer = ReserveSigner(NAME, unit["sku"], plan["floor"], task.id, SHOP_KEY)
             deal = self.open[task.id] = {"unit": unit, "plan": plan, "ask": plan["ask"], "offers": [], "signer": signer}
             strategy("seller_open", task=tid, sku=unit["sku"], grade=unit.get("grade"), **plan)
