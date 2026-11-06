@@ -253,3 +253,19 @@ def test_category_flow_section(tmp_path):
     empty = tmp_path / "empty"
     (empty / ".market").mkdir(parents=True)
     assert brief.section_categories(str(empty), NOW, LOGIN) == ["[상품군별 흐름] 우리 제시와 판매 기록 없음"]
+
+
+def test_climb_line_shows_gaps_above_and_rank_worth():
+    rows = [{"name": f"s{i}", "stars_rank": x} for i, x in enumerate([4.59, 4.38, 4.38, 4.36, 4.36, 4.36])]
+    me = {"name": "me", "owner": "me", "stars_rank": 4.35}
+    out = brief.section_side(rows + [me], [], ("stars_rank",), "가게", "me", 6)
+    climb = [l for l in out if "바로 위" in l]
+    assert len(climb) == 1
+    assert "+0.01, +0.01, +0.01" in climb[0]
+    assert "가게 all 약 +0.0333" in climb[0]  # 0.2 / (7 - 1)
+
+
+def test_climb_line_absent_when_first_and_no_weight_for_unknown_column():
+    assert brief.climb_line([3.0, 2.0], 3.0, 0.5, "가게") is None
+    line = brief.climb_line([5.0, 3.0, 2.0], 2.0, None, "가게")
+    assert line.startswith("    바로 위 2곳까지 차이: +1, +3") and "한 계단" not in line
