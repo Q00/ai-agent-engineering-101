@@ -90,6 +90,25 @@ def samples(day, per=3):
     return out
 
 
+def questions():
+    """The user's open questions for the meta-harness (memory/harness/questions.json), answered first in each report
+    until the user closes them: py -m harness.meta ask "..." / py -m harness.meta close <n>."""
+    return atomic.read_json(out_dir() / "questions.json", default=None) or []
+
+
+def ask(q, by="user", now=None):
+    qs = questions() + [{"q": q, "by": by, "since": now or time.time()}]
+    atomic.write_json(out_dir() / "questions.json", qs)
+    return len(qs)
+
+
+def close(n):
+    qs = questions()
+    done = qs.pop(int(n) - 1)
+    atomic.write_json(out_dir() / "questions.json", qs)
+    return done
+
+
 LOOKED_UP = ("raw trajectories (samples)", "participants, as shops our buyer met (observed, 24 h)",
              "participants, as buyers of our shop (observed, 24 h)", "format")
 
@@ -137,6 +156,8 @@ def assemble(now=None, for_loop=False):
         ("participants, as shops our buyer met (observed, 24 h)", json.dumps(top_shops)),
         ("participants, as buyers of our shop (observed, 24 h)", json.dumps(top_buyers)),
         ("raw trajectories (samples)", json.dumps(samples(day))),
+        *([("the user's questions (answer these first in your report, with the evidence you looked up)",
+            "\n".join(f"{i}. {q['q']}" for i, q in enumerate(questions(), 1)))] if questions() else []),
         ("the task", "Find the part of the class-view score with the most room you can move with one number, "
                      "and propose the change that the evidence supports best. Prefer ab. Say nothing new if "
                      "nothing is supported."),
@@ -223,4 +244,11 @@ def cycle(now=None, call=None, dry=False):
 
 
 if __name__ == "__main__":
-    print(json.dumps(cycle(dry="--dry" in sys.argv), ensure_ascii=False, indent=1, default=str))
+    if sys.argv[1:2] == ["ask"]:
+        print(ask(" ".join(sys.argv[2:])))
+    elif sys.argv[1:2] == ["close"]:
+        print(json.dumps(close(sys.argv[2]), ensure_ascii=False))
+    elif sys.argv[1:2] == ["questions"]:
+        print(json.dumps(questions(), ensure_ascii=False, indent=1))
+    else:
+        print(json.dumps(cycle(dry="--dry" in sys.argv), ensure_ascii=False, indent=1, default=str))
