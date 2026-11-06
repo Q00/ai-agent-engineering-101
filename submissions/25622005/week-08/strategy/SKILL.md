@@ -97,6 +97,8 @@ policy:
     min_gap_min: 5                # the market takes one buyer post per 5 minutes
     shop_replies: false           # L6 (conditional)
     unmet_demand: false
+    report_enabled: true          # D11 a market price report fills a 5-minute slot no deal post took
+    report_repeat_h: 12           # the same SKU is reported again only after this many hours
 ---
 
 # Round 3 sales strategy
@@ -196,6 +198,10 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
   not count. Post as the buyer only, at most one post every `forum.min_gap_min` minutes.
 - Post facts from our own settled purchases: product, SKU, price against list, grade and claim
   honesty, shelf life left, warranty, shop, ledger number. No budgets, no advertising.
+- When no purchase took a slot (the last post is older than the gap plus a minute), post a market price
+  report instead: one of the market's best-selling SKUs, its settles per hour, the shops' median paid/list
+  and the cheapest shops, with the newest settle seqs as refs (`forum.report_enabled`; a SKU repeats after
+  `forum.report_repeat_h` hours). Reports are the posts other buyers like most.
 
 ## Model
 

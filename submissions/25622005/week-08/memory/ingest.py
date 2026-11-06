@@ -45,6 +45,7 @@ SUPPLY_BUCKET_S = 300                                        # market supply uni
 P_CLEAR_MIN_N = 20                                           # fewer settles of a kind in 6 h: p_clear None
 PB_KEEP_H = 24                                               # price book: each shop's settled paid/list, by SKU and
 PB_SKU_KEEP, PB_CAT_KEEP = 4, 8                              # by category leaf, the newest few sales kept 24 h
+SEQ_KEEP = 3                                                 # newest settle seqs per SKU: the refs a forum report cites
 STATE_V = 1                                                  # layout of cursor.json's summary_state
 IDS_KEEP_S = 2 * 3600                                        # dedupe horizon for event ids (see fold)
 PURCHASE_KEEP_S = BREAK_WINDOW_S + 3 * 3600                  # a breakage frozen at BROKEN_FINAL_S still sees its buy
@@ -216,6 +217,10 @@ def ledger_rows(row, catalog, market, me, our_ledgers):
             bucket = market.setdefault("cat_hour", {}).setdefault(leaf, {})
             bucket[hour] = bucket.get(hour, 0) + 1
             _add(market.setdefault("sku_hour", {}).setdefault(sku, {}), hour)
+            if type(seq) is int:
+                seqs = market.setdefault("sku_seqs", {}).setdefault(sku, [])
+                seqs.append(seq)
+                del seqs[:-SEQ_KEEP]
             amount = _fin(d.get("amount"))
             if lp and lp > 0 and amount is not None and item.get("kind") in ("food", "goods"):  # 0..2, 2 decimals: bounded
                 _add(market.setdefault("clear_hour", {}).setdefault(item["kind"], {}).setdefault(hour, {}),
@@ -339,6 +344,9 @@ def prune_market(market, now):
         _cut(market.get(name), hour - keep)
     _cut(market.get("supply_5m"), int((now - 3600) // SUPPLY_BUCKET_S))
     _pb_prune(market.get("price_book"), hour - PB_KEEP_H)
+    if isinstance(market.get("sku_seqs"), dict):            # seqs live as long as the SKU's settle buckets
+        for sku in [k for k in market["sku_seqs"] if k not in (market.get("sku_hour") or {})]:
+            del market["sku_seqs"][sku]
 
 
 # --- attribution and the summary
@@ -680,8 +688,10 @@ def render_market(cursor, now):
                 if vals:
                     book.setdefault(shop, {}).setdefault(level, {})[key] = \
                         {"n": len(vals), "med": round(statistics.median(vals), 4)}
+    seqs = {k: [x for x in v if type(x) is int][-SEQ_KEEP:] for k, v in (m.get("sku_seqs") or {}).items()
+            if isinstance(v, list) and k in rate}
     return {"since": since, "sku_rate": rate, "sku_settles_48h": settles_48h, "supply_1h": supply,
-            "p_clear": p_clear, "c_kind": c_kind, "price_book": book}
+            "p_clear": p_clear, "c_kind": c_kind, "price_book": book, "sku_seqs": seqs}
 
 
 def build_summary(events, cursor, catalog, demand, window_h, now):

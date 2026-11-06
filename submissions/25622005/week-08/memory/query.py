@@ -118,6 +118,25 @@ def shop_price(summary, shop_url, sku, leaf, min_sku_n=2, min_cat_n=3):
     return None
 
 
+def sku_seqs(summary, sku):
+    """Newest public settle seqs of one SKU (at most 3), for a post's refs; [] without data."""
+    r = _market(summary, "sku_seqs")
+    v = r.get(sku) if r else None
+    return [x for x in v if type(x) is int] if isinstance(v, list) else []
+
+
+def sku_price_book(summary, sku):
+    """Every shop's settled share of list for one SKU over 24 h: {shop url: {"share", "n"}}."""
+    book = _market(summary, "price_book") or {}
+    out = {}
+    for url, levels in book.items():
+        e = _d(_d(_d(levels).get("sku")).get(sku))
+        n, med = int(_num(e.get("n")) or 0), _num(e.get("med"))
+        if med is not None and n > 0:
+            out[str(url)] = {"share": med, "n": n}
+    return out
+
+
 def c_kind(summary, kind):
     """Our mean supply cost / list price of a kind over 24 h, else the fallback."""
     return _num((_market(summary, "c_kind") or {}).get(kind)) or C_KIND_FALLBACK.get(kind)

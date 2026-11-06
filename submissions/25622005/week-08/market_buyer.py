@@ -19,6 +19,20 @@ ASKS = "shop_asks.json"             # under memory/: {"<shop url>|<kind>": {n, s
 ASK_LOCK_TRIES, ASK_LOCK_WAIT_S = 10, 0.05   # a busy record lock is skipped after this: the order must not wait
 
 
+def remember_names(shops):
+    """memory/shop_names.json: shop url -> name from every order's shops.json (forum reports name shops)."""
+    from memory.store import MEM, atomic_write_json, read_json
+    try:
+        names = read_json(MEM / "shop_names.json", {}) or {}
+        new = {str(s["url"]).rstrip("/"): str(s["name"])[:60] for s in shops or []
+               if isinstance(s, dict) and s.get("url") and s.get("name")}
+        if any(names.get(k) != v for k, v in new.items()):
+            names.update(new)
+            atomic_write_json(MEM / "shop_names.json", dict(list(names.items())[-500:]))
+    except Exception:
+        pass
+
+
 def run(args, t0):
     """The order's decision. Returns the result line."""
     import policy
@@ -33,6 +47,7 @@ def run(args, t0):
         decision("buyer", "policy_error", policy_ver=ver, choice="use " + ver, why="; ".join(errors)[:500])
     order = read_json(args.order, {}) or {}
     shops = read_json(args.shops, []) or []
+    remember_names(shops)
     catalog = read_json(Path(args.order).parent / "catalog.json", {}) or {}
     summary = query.load_summary()
     ref = {"order": order.get("order")}

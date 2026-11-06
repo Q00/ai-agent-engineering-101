@@ -59,7 +59,8 @@ DEFAULTS = {
     "llm": {"planner_enabled": False, "planner_every_min": 30, "planner_max_per_h": 4,
             "exception_enabled": True, "exception_max_per_h": 10, "exception_min_left_s": 30,
             "exception_timeout_s": 20},
-    "forum": {"enabled": True, "max_per_day": 288, "min_gap_min": 5, "shop_replies": False, "unmet_demand": False},
+    "forum": {"enabled": True, "max_per_day": 288, "min_gap_min": 5, "shop_replies": False, "unmet_demand": False,
+              "report_enabled": True, "report_repeat_h": 12},
 }
 
 # Bounds for values where a typo would be costly. (low, high), inclusive.
@@ -77,7 +78,7 @@ RANGES = {
     "stock.window_lead_s": (0, 60),         # the kit retries a closed-window line 3 x 30 s, then skips it
     "stock.cover_min": (5, 240), "stock.cover_safety": (0.5, 5.0),
     "llm.planner_max_per_h": (0, 20), "llm.exception_max_per_h": (0, 60), "forum.max_per_day": (0, 288),
-    "forum.min_gap_min": (5, 1440),
+    "forum.min_gap_min": (5, 1440), "forum.report_repeat_h": (1, 168),
     "stock.focus_max": (0, 20), "stock.focus_cover_mult": (1.0, 4.0), "stock.focus_cap_share": (0.0, 1.0),
     "stock.focus_min_settles": (1, 1000), "llm.exception_min_left_s": (0, 280), "llm.exception_timeout_s": (3, 60),
     "stock.max_hold": (1, 200), "stock.min_line_qty": (1, 20), "stock.trend_max": (0, 40),

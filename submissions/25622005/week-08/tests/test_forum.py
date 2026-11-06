@@ -160,6 +160,75 @@ class MaybePostTests(unittest.TestCase):
         self.assertEqual(self.outbox(), [])
         self.assertEqual(self.whys(), [(False, "skipped: unpaid")])
 
+SUMMARY = {"built_at": NOW, "market": {
+    "sku_rate": {"F1": 12.0, "G1": 3.5, "X9": 20.0},
+    "sku_settles_48h": {"F1": 400, "G1": 30},
+    "sku_seqs": {"F1": [3001, 3005, 3009], "G1": [4001]},
+    "price_book": {"http://a": {"sku": {"F1": {"n": 4, "med": 0.62}, "G1": {"n": 2, "med": 0.7}}},
+                   "http://b": {"sku": {"F1": {"n": 3, "med": 0.7}}},
+                   "http://c.example": {"sku": {"F1": {"n": 1, "med": 0.9}}}}}}
+
+
+class ReportTests(unittest.TestCase):
+    """Market price reports fill the slots a deal post did not take."""
+
+    def setUp(self):
+        self.home = Path(os.environ["R3_HOME"])
+        self.md = Path(tempfile.mkdtemp(prefix="r3-forum-md-"))
+        self.addCleanup(shutil.rmtree, self.md, True)
+        for p in [patch.object(forum, "MEM", self.home / "memory")]:
+            p.start()
+            self.addCleanup(p.stop)
+        (self.home / "memory").mkdir(parents=True, exist_ok=True)
+        for f in ("forum.json", "shop_names.json"):
+            (self.home / "memory" / f).unlink(missing_ok=True)
+        self.pol = json.loads(json.dumps(POL))
+
+    def outbox(self):
+        box = self.md / "outbox.jsonl"
+        return [json.loads(x) for x in box.read_text(encoding="utf-8").splitlines()] if box.exists() else []
+
+    def test_compose_report_from_the_ledger_folds(self):
+        text, refs = forum.compose_report("F1", SUMMARY, CATALOG, {"http://a": "가게 A"}, NOW)
+        self.assertEqual(refs, [3001, 3005, 3009])
+        self.assertIn("[시세] 김치 A (F1)", text)
+        self.assertIn("시간당 12.0건, 48시간 400건, 판매 가게 3곳", text)
+        self.assertIn("중앙 70% (정가 30,000원, 약 21,000원)", text)       # median of 0.62, 0.70, 0.90
+        self.assertIn("가장 싼 가게: 가게 A 62% (4건), b 70% (3건), c 90% (1건)", text)
+        self.assertIn("근거: ledger #3001, ledger #3005, ledger #3009", text)
+        self.assertIsNone(forum.compose_report("G1", SUMMARY, CATALOG, {}, NOW))   # one shop only
+        self.assertIsNone(forum.compose_report("X9", SUMMARY, CATALOG, {}, NOW))   # no price book
+
+    def test_pick_rotates_over_top_sellers_with_data(self):
+        self.assertEqual(forum.pick_report_sku(SUMMARY, {}, NOW, 12), "F1")        # X9 has no book, G1 one shop
+        self.assertIsNone(forum.pick_report_sku(SUMMARY, {"F1": NOW - 3600}, NOW, 12))
+        self.assertEqual(forum.pick_report_sku(SUMMARY, {"F1": NOW - 13 * 3600}, NOW, 12), "F1")
+        self.assertIsNone(forum.pick_report_sku({}, {}, NOW, 12))
+
+    def test_report_only_after_the_gap_plus_grace(self):
+        forum.maybe_post(self.md, FOOD, self.pol, NOW)
+        self.assertFalse(forum.maybe_report(self.md, SUMMARY, CATALOG, self.pol, NOW + 300))      # a deal may still post
+        self.assertTrue(forum.maybe_report(self.md, SUMMARY, CATALOG, self.pol, NOW + 360, policy_ver="v1"))
+        lines = self.outbox()
+        self.assertEqual(len(lines), 2)
+        self.assertEqual((lines[1]["as"], lines[1]["refs"], lines[1]["thread"]), ("buyer", [3001, 3005, 3009], None))
+        self.assertTrue(lines[1]["post"].startswith("[시세] 김치 A (F1)"))
+        state = json.loads((self.home / "memory" / "forum.json").read_text(encoding="utf-8"))
+        self.assertEqual((state["ledgers"], len(state["posts"]), list(state["reported"])), ([812], 2, ["F1"]))
+        # the report took the slot: a deal post now waits for the gap, and the same SKU is not repeated
+        self.assertFalse(forum.maybe_post(self.md, deal(FOOD, 813), self.pol, NOW + 400))
+        self.assertFalse(forum.maybe_report(self.md, SUMMARY, CATALOG, self.pol, NOW + 1000))
+        row = json.loads((self.home / "logs" / "decisions" / "forum.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual((row["choice"], row["why"]), ({"posted": False}, "skipped: no_sku"))
+
+    def test_report_switch_and_daily_cap(self):
+        self.pol["forum"]["report_enabled"] = False
+        self.assertFalse(forum.maybe_report(self.md, SUMMARY, CATALOG, self.pol, NOW))
+        self.pol["forum"]["report_enabled"] = True
+        self.pol["forum"]["max_per_day"] = 0
+        self.assertFalse(forum.maybe_report(self.md, SUMMARY, CATALOG, self.pol, NOW))
+        self.assertEqual(self.outbox(), [])
+
 
 if __name__ == "__main__":
     unittest.main()

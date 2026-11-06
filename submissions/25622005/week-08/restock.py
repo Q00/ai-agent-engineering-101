@@ -95,6 +95,11 @@ def run(state, t0):
     summary = load_summary()
     now = time.time()
     out = {"buy": []}
+    try:                                                     # D11: a report for a forum slot no deal post took
+        from tools import forum
+        forum.maybe_report(state, summary, catalog, pol, now, policy_ver=ver)
+    except Exception as e:
+        hook_log("restock", f"forum report error {type(e).__name__}: {e}")
 
     bankrupt, b_in = stock.should_bankrupt(inv, summary, pol, now)
     if isinstance(inv.get("balance"), (int, float)) and inv["balance"] < (inv.get("bankrupt_line") or 0):

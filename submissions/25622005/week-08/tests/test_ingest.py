@@ -611,6 +611,11 @@ class MarketTest(unittest.TestCase):
         self.assertIsNone(query.shop_price({"market": {}}, a, "F", "f"))
         self.fold(market, [("settle", now - 60, {"item": "F", "amount": 100, "shop": a})] * 10)
         self.assertEqual(len(market["price_book"]["sku"][a]["F"]), ingest.PB_SKU_KEEP)      # bounded
+        m = ingest.render_market({"market": market}, now)
+        self.assertEqual(len(m["sku_seqs"]["F"]), ingest.SEQ_KEEP)                      # newest settle seqs
+        self.assertEqual(query.sku_seqs({"market": m}, "F"), m["sku_seqs"]["F"])
+        self.assertEqual(query.sku_price_book({"market": m}, "F")[a]["n"], 4)
+        self.assertEqual(query.sku_seqs({}, "F"), [])
 
     def test_fresh_fold_divides_by_the_hours_folded(self):
         now = T0 + 100 * H + 1800
