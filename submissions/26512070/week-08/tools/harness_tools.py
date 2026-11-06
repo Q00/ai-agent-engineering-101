@@ -138,8 +138,8 @@ def model_usage(ctx):
 _REQUEST = {"type": "object", "required": list(wisdom.REQUIRED), "properties": {
     "title": {"type": "string", "minLength": 1, "maxLength": 120}, "urgency": {"enum": ["now", "page"]},
     "change": {"type": "object"}, "why": {"type": "string", "minLength": 1, "maxLength": 1200},
-    "expected": {"type": "object", "required": ["metric", "direction", "size"]},
-    "evaluation": {"type": "object", "required": ["method", "period_h", "success_if"]},
+    "expected": {"type": "object", "required": ["metric", "direction"]},       # size, period_h: filled when
+    "evaluation": {"type": "object", "required": ["method", "success_if"]},    # missing (11:00, 11:30 refusals)
     "risk": {"type": "string", "maxLength": 400}, "undo": {"type": "string", "maxLength": 300}}}
 
 
@@ -150,6 +150,9 @@ _REQUEST = {"type": "object", "required": list(wisdom.REQUIRED), "properties": {
        "properties": {"report": {"type": "string", "minLength": 1, "maxLength": 6000},   # 11/6: two questions did not fit in 2000
                       "requests": {"type": "array", "maxItems": 2, "items": _REQUEST}}})
 def meta_propose(ctx, report, requests):
+    for r in requests:
+        r["expected"].setdefault("size", "")
+        r["evaluation"].setdefault("period_h", 3)
     if len(requests) > 2:                      # core.schema does not check maxItems
         raise Refused(f"{len(requests)} requests; at most 2", "keep the two the evidence supports best")
     for r in requests:
