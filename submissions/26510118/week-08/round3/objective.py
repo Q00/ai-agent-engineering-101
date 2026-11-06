@@ -21,10 +21,10 @@ import time
 import common
 import scoreboard
 
-OPTIONS = (0.0, 0.20, 0.24, 0.27, 0.30, 0.33, 0.36)
+OPTIONS = (0.0, 0.15, 0.20, 0.24, 0.27, 0.30, 0.33, 0.36, 0.40, 0.45)   # 0.20-0.36 until 11/6 13:10
 WINDOW = 12 * 3600
-MIN_DEALS = 200
-CLAMP = (0.20, 0.36)
+MIN_DEALS = 100          # 200 until 11/6 13:10
+CLAMP = (0.15, 0.45)     # (0.20, 0.36) until 11/6 13:10
 ROUND_START = 1793793660          # 11/3 21:01 KST
 
 

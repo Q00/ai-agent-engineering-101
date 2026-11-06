@@ -479,8 +479,8 @@ def test_restock(fake: Fake):
     check("a dear product that sold is not refilled by the ordinary rule when it is not in the line",
           all(b["sku"] != sofa for b in out["buy"]), out["buy"][:3])
     many = {s: 1 for s in cat2 if s.startswith("Gsofa")}
-    out, info = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, NOW, line=dict(many, Gbad=2, **{BED: 13}))
-    check("at most 8 line products a run (the shelf keeps 2 of the 10 lines): all 5; unknown SKUs and caps over 12 are ignored",
+    out, info = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, NOW, line=dict(many, Gbad=2, **{BED: 17}))
+    check("at most 8 line products a run (the shelf keeps 2 of the 10 lines): all 5; unknown SKUs and caps over 16 are ignored",
           info["line"] == 5 and info["line_gaps"] == 5 and all(b["sku"] != BED for b in out["buy"][:5]), (info, out["buy"][:6]))
     out, _ = restock.plan(inv(shelf, balance=3_000_000), cat2, DEMAND, {}, [], [], rules, NOW, line={sofa: 1})
     check("the balance kept (2,500,000) holds: no sofa planned at 1,500,000 with 3,000,000 in hand",

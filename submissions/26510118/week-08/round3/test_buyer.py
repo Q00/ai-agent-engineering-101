@@ -459,9 +459,9 @@ def test_shop_around():
     check("a learned shop model (shop_model.json, 15+ talks): ranked by what each shop settled at and how often it closed (S: 0.62, 90%)",
           best["shop"]["name"] == "S" and {x["shop"]["name"]: x["expected"] for x in lm} == {"R": 33915, "S": 24738},
           {x["shop"]["name"]: (x["expected"], round(x["score"])) for x in lm})
-    thin = {"shops": {"R": cell(0.85, 0.4, n=10), "S": cell(0.62, 0.9, n=10)}}
+    thin = {"shops": {"R": cell(0.85, 0.4, n=9), "S": cell(0.62, 0.9, n=9)}}
     lt = mb.candidates(bed, [shop("R", BEDDING), shop("S", BEDDING)], CATALOG, {}, {}, RULES, model=thin)
-    check("...with 10 talks a shop is not learned yet: both at the market's guess",
+    check("...with 9 talks a shop is not learned yet (10 since 11/6 13:10): both at the market's guess",
           len({x["expected"] for x in lt}) == 1, {x["shop"]["name"]: x["expected"] for x in lt})
     mb.MIN_SHARE, mb.MARKET_SLACK = saved_rules
 

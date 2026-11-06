@@ -61,7 +61,8 @@ STALL = 8 * 3600         # out (cap 0) held this long with no sale (4 h until 11
 EXIT_REST = 2 * 3600
 REENTRY_MIN = 0.70       # back in only where others still settle at this share of list or more (A costs 0.55-0.75)
 MIN_N = 20
-STARS_MIN, STARS_REST = 4.30, 2 * 3600   # 4.80 until 11/5 09:20: one buyer (totato2203-r3) gives every shop 1 star on
+STARS_MIN, STARS_REST = 3.50, 2 * 3600   # 4.30 until 11/6 13:10 (the person's call; ours 4.36, a few bad-faith accounts
+                                         # could move it under and cut the line for no fault of the goods); 4.80 until 11/5 09:20: one buyer (totato2203-r3) gives every shop 1 star on
                                          # every purchase (67 of 67) and bought 18% of ours; our stars fell 4.84 -> 4.72
                                          # and the guard cut the line's caps 35 times in 9 h for no fault of the goods.
                                          # 4.60 until 11/5 15:00: from 12:43 shaun0927's two buyers gave us 1 star on 30 of
@@ -69,17 +70,19 @@ STARS_MIN, STARS_REST = 4.30, 2 * 3600   # 4.80 until 11/5 09:20: one buyer (tot
                                          # the rest almost none (kimauve 1/16); selling less cannot lift stars given
                                          # whatever we sell, so the guard is left for a real fault of the goods
 FIND_WINDOW = 6 * 3600
-FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 20, 0.74, 99   # sellers 12 until 11/6: the margin decides
+FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 12, 0.70, 99   # sellers 12 until 11/6: the margin decides;
+                         # 20 settles at 0.74 until 11/6 13:10 (the person's call: 281M cash idle against 74M of stock,
+                         # 12 buyers in 6 h turned away for want of stock, 59% of talks walked: breadth, not depth)
 # Expected margin (Kiro 2.0 stage 1, 11/6): a goods product's share of list a unit earns on average, over the supply's
 # grades (A 70%, B 20%, C 10%; mid costs 0.65, 0.50, 0.35 times the surge), sold at its grade's market with the
 # warranty (others_6h "_w" cells, 10+; a missing B or C taken 0.05 / 0.10 under A) less the refunds (pricing.BREAK).
 # A line product under EM_EXIT leaves; a new one needs EM_FIND. Unknown (no A market of its own): the old rules.
-EM_EXIT, EM_FIND = 0.03, 0.05
+EM_EXIT, EM_FIND = 0.02, 0.04     # 0.03, 0.05 until 11/6 13:10
 SUPPLY_MIX = {"A": (0.7, 0.65), "B": (0.2, 0.50), "C": (0.1, 0.35)}
                          # 0.76 and 10 until 11/5 09:20: the one-hour experiment at 0.74 / 12 / 40 found two products
                          # that sold 52 and 40 units in the next 5 h, 10.6M over cost (its own verdict, on the shop's
                          # hourly margin, had ended it)
-FIND_CAP = 2
+FIND_CAP = 3             # 2 until 11/6 13:10
 LINE_MAX_SKUS = 40       # 20 until 11/5 01:00, 30 until 09:20
 UNMET_WINDOW, UNMET_MIN, UNMET_LIST_MIN, UNMET_CAP, UNMET_MAX = 12 * 3600, 3, 300_000, 2, 10   # 1 order until 11/6:
                          # overnight 48 products joined on one unmet order each; most left 4 h later unsold

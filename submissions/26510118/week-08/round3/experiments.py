@@ -19,10 +19,10 @@ import time
 
 import common
 
-ARMS = (-0.02, 0.0, 0.02, 0.04)
-MIN_TALKS = 150
+ARMS = (-0.03, 0.0, 0.03, 0.06)      # (-0.02, 0, 0.02, 0.04) until 11/6 13:10 (the person's call: bolder, sooner)
+MIN_TALKS = 100                      # 150 until then
 WINDOW = 24 * 3600
-BEST, REST = 0.7, 0.1
+BEST, REST = 0.8, round(0.2 / 3, 4)   # 0.7 / 0.1 until then
 FRESH = 3 * 3600
 
 

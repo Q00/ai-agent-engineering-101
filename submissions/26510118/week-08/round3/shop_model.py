@@ -20,7 +20,7 @@ from collections import defaultdict
 import common
 
 WINDOW = 24 * 3600
-CELL_MIN, DEALS_MIN, MAP_MIN, MAP_WINDOW = 15, 5, 5, 6 * 3600
+CELL_MIN, DEALS_MIN, MAP_MIN, MAP_WINDOW = 10, 5, 5, 6 * 3600     # 15 talks a cell until 11/6 13:10
 
 
 def folder():

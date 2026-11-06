@@ -43,12 +43,15 @@ NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
 SEEN_KEEP = 12 * 3600    # others' posts that quoted a price, kept this long for the follow-up desk
 FOLLOW_WINDOW = 6 * 3600 # a purchase this soon after the post is followed up
 FOLLOW_RECENT = 3 * 3600 # our purchases this recent are looked at
-MIN_N = 30               # settles behind a figure; a cell with fewer is left out
+MIN_N = 20               # settles behind a figure; a cell with fewer is left out (30 until 11/6: more topics)
 MIN_CAT = 40             # settles of a category in a day before the gap desk writes about it
-REPEAT = 6 * 3600        # a topic (desk and subject) is not posted again within this
+REPEAT = 2 * 3600        # a topic (desk and subject) is not posted again within this (6 h until 11/6: the desks ran
+                         # out of topics and left hours under the market's 12 posts an hour)
 GAP = 300                # seconds between our buyer posts
 MAX_LEN = 700
-GUARD_N, GUARD_SCORE, PAUSE = 6, 0.25, 3600   # 0.5 until 11/6: under Patch 3.4 nearly every post draws one dislike
+GUARD_N, GUARD_SCORE, PAUSE = 6, 0.0, 3600    # off since 11/6 13:10 (the person's call: an hour paused is 12 posts lost
+                                              # for good, and a dislike stance counts once an account whatever we post);
+                                              # 0.25 until then, 0.5 until 11/6 morning: under Patch 3.4 nearly every post draws one dislike
                                               # (0.45 with 6 likes); a pause now means many dislikes, new stances
 SCORED_AGE = 600         # a post last seen this old or older has its votes (most come within 10 minutes)
 KEEP_VOTES = 1000
