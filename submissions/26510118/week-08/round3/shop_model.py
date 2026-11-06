@@ -68,10 +68,33 @@ def build(orders: list, now: float) -> tuple[dict, dict]:
     return dict(shops), skus
 
 
+SHELF_MIN = 5             # food agreements (or refusals) at a shop before its shelf-life refusal share counts
+
+
+def shelf_fails(orders: list, unpaid: list, now: float) -> dict:
+    """{shop: share of its food agreements over WINDOW our kit refused to pay for shelf life} (11/6 21:30: 34% of our
+    agreements in 2.4 h, most at shops whose food is short-lived)."""
+    agreed, failed = defaultdict(int), defaultdict(int)
+    for o in orders:
+        if (o.get("ts") or 0) >= now - WINDOW and o.get("deal") and (o.get("kind") or "food") == "food" and o.get("shop"):
+            agreed[o["shop"]] += 1
+    for u in unpaid:
+        if (u.get("ts") or 0) >= now - WINDOW and "shelf life" in str(u.get("reason")) and u.get("shop"):
+            failed[u["shop"]] += 1
+    return {s: round(failed[s] / max(agreed[s], failed[s]), 3) for s in set(agreed) | set(failed)
+            if max(agreed[s], failed[s]) >= SHELF_MIN}
+
+
+def shelf_fail(model: dict, shop: str) -> float:
+    return float(((model.get("shelf_fail") or {}).get(shop)) or 0.0)
+
+
 def run(now: float | None = None) -> str:
     now = now or time.time()
-    shops, skus = build(common.records("orders"), now)
-    common.write_json(folder() / "shop_model.json", {"at": int(now), "shops": shops})
+    orders = common.records("orders")
+    shops, skus = build(orders, now)
+    fails = shelf_fails(orders, common.records("unpaid_buys"), now)
+    common.write_json(folder() / "shop_model.json", {"at": int(now), "shops": shops, "shelf_fail": fails})
     common.write_json(folder() / "price_map.json", {"at": int(now), "skus": skus})
     ready = sum(1 for kinds in shops.values() for c in kinds.values() if c["n"] >= CELL_MIN)
     mapped = sum(1 for c in skus.values() if c["n"] >= MAP_MIN)

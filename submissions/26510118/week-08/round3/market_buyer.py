@@ -117,6 +117,7 @@ FOOD_WORDS = " Please say how many hours of shelf life it has left."
 # to take the shop's answer); the "accept" arm takes it as before. Both record could_counter, so the experiment
 # compares the orders where the choice arose.
 PUSH = 0.96
+ASK_HOURS = True          # 11/6 21:30: food quoted without its shelf life is asked for it once before any offer
 GRADE_SAID = re.compile(r"\bgrade\s*[:=]?\s*([ABC])\b", re.I)
 # 11/5 03:30 (the person's call: "a lower ceiling, and better negotiating"): 27% of our deals in 12 h paid more than
 # the item's own market (its mean paid / list over 24 h) + 5% of list, 2.48M over that line; 64 paid over 90% of list.
@@ -352,6 +353,8 @@ def candidates(order: dict, shops: list, catalog: dict, nb: dict, summary: dict,
             t = memory.trust(nb, sh["name"], summary)
             if p is not None:
                 t = round((1 - ODDS_BLEND) * t + ODDS_BLEND * p, 3)
+            if c.get("kind") == "food":                                  # 11/6 21:30: its food refused for shelf life
+                t = round(t * max(0.1, 1 - shop_model.shelf_fail(model or {}, sh["name"])), 3)
             score = (1 - expected / lp) * t * (max(0.05, learned[1]) if learned else 1) * (EXPLORE if sh["name"] not in nb else 1) \
                 * (PREFER if sh["name"] in (rules.get("prefer_shops") or []) else 1) \
                 * (RIVAL if sh["name"] in (rivals or set()) else 1)
@@ -558,6 +561,14 @@ async def trade(client: A2A, c: dict, order: dict, catalog: dict, nb: dict, rule
                 r["left"] = f"refurbished goods, and the shop did not confirm a {WARRANTY_HOURS}-hour warranty"
                 break
             hours = shelf_hours(t) if c["kind"] != "goods" and need else None
+            if hours is None and c["kind"] != "goods" and need and ASK_HOURS and not r.get("asked_hours"):
+                r["asked_hours"] = True                             # 11/6 21:30: ask before any offer (34% of our
+                t = await client.send(                              # agreements were refused at payment for it)
+                    f"How many hours of shelf life does this unit have left? It must last at least "
+                    f"{need + MARGIN_HOURS:.0f} hours.", t["id"])
+                if state(t) != "TASK_STATE_INPUT_REQUIRED":
+                    break
+                hours = shelf_hours(t)
             if hours is not None and hours < need + MARGIN_HOURS:      # our own rule: leave before any offer, and it
                 r["left"] = (f"the unit's shelf life ({hours:.0f} h) is short of the order's need "     # is not the shop's
                              f"({need + MARGIN_HOURS:.0f} h)")                                          # failure

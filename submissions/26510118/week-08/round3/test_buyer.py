@@ -493,6 +493,29 @@ def test_shop_around():
           "before an offer), and food is no longer asked for the unit nearest its expiry (31 refusals at payment in 1.9 h)",
           [mb.shelf_hours(t_(x)) for x in ("120 hours of shelf life", "90 h left", "유통기한 72시간 남음", "Asking 15000.")]
           == [120.0, 90.0, 72.0, None] and "nearest" not in mb.FOOD_WORDS and "shelf life" in mb.FOOD_WORDS)
+    kim = order(20000, [KIMCHI], "food", 48, oid="o-shelf")
+    ck = mb.candidates(kim, [shop("B", KIMCHI)], CATALOG, {}, {}, RULES)[0]
+    short = [task("TASK_STATE_INPUT_REQUIRED", "Kimchi. Asking 15000.", ask=15000),
+             task("TASK_STATE_INPUT_REQUIRED", "It has 30 hours of shelf life left. Asking 15000.", ask=15000)]
+    sh2 = Shops({"http://B.test": short})
+    r = asyncio.run(mb.trade(sh2, ck, kim, CATALOG, {}, RULES, False))
+    check("food quoted without its shelf life is asked for it once before any offer; 30 h against a need of 49: we leave, "
+          "our own rule (no mark against the shop) (11/6 21:30: 34% of agreements were refused at payment for it)",
+          r["asked_hours"] and r["policy"] and not r["offers"] and "shelf life (30 h)" in (r["left"] or "")
+          and "How many hours of shelf life" in sh2.sent["http://B.test"][1], (r.get("left"), sh2.sent["http://B.test"]))
+    enough = [task("TASK_STATE_INPUT_REQUIRED", "Kimchi. Asking 15000.", ask=15000),
+              task("TASK_STATE_INPUT_REQUIRED", "120 hours of shelf life left. Asking 14000.", ask=14000)]
+    r = asyncio.run(mb.trade(Shops({"http://B.test": enough}), ck, kim, CATALOG, {}, RULES, False))
+    check("...120 h is enough: the talk goes on to our offer", r["asked_hours"] and not r.get("policy") and r["offers"], r)
+    import shop_model as sm
+    fails = sm.shelf_fails([{"ts": time.time(), "deal": True, "kind": "food", "shop": "O"}] * 10
+                           + [{"ts": time.time(), "deal": True, "kind": "food", "shop": "Q"}] * 2,
+                           [{"ts": time.time(), "shop": "O", "reason": "not paying: 30 h of shelf life left, the policy asks for 49"}] * 4
+                           + [{"ts": time.time(), "shop": "Q", "reason": "not paying: 30 h of shelf life left"}] * 1, time.time())
+    two = mb.candidates(kim, [shop("O", KIMCHI), shop("P", KIMCHI)], CATALOG, {}, {}, RULES, model={"shelf_fail": fails})
+    check("each shop's share of food agreements refused for shelf life (5 or more to count): O 0.4; Q too few; "
+          "a food candidate's trust drops by it", fails == {"O": 0.4}
+          and {x["shop"]["name"]: x["trust"] for x in two}["O"] < {x["shop"]["name"]: x["trust"] for x in two}["P"], (fails, two and [(x["shop"]["name"], x["trust"]) for x in two]))
     check("몫 사냥꾼 ③: goods are asked for as grade C or B with the warranty, A only if nothing else",
           "I prefer grade C (refurbished) or B" in sent or "warranty" not in sent, sent)
     mb.MIN_SHARE, mb.MARKET_SLACK = saved_rules
