@@ -926,6 +926,115 @@ def section_rivals(b, b6, login, hours6):
     return out
 
 
+# [가게 목표]: 성수님 목표(2026-11-06 17시) 가게 all 0.90. The formula below reproduces the board's shop all for all
+# 58 shops within 0.0005 (11-06 16:50 snapshot): stars_rank, not stars, and a mid-rank percentile over every shop.
+SHOP_GOAL = 0.90
+SHOP_FORMULA = (("book", 0.5), ("revenue", 0.3), ("stars_rank", 0.2))
+GOAL_STEPS = 5  # ranks above us listed per column
+
+
+def _pct(vals, v):
+    """Mid-rank percentile of v among vals (v included): ties count half."""
+    if len(vals) < 2:
+        return 0.0
+    below = sum(1 for x in vals if x < v)
+    eq = sum(1 for x in vals if x == v)
+    return (below + 0.5 * (eq - 1)) / (len(vals) - 1)
+
+
+def shop_all(shops, s):
+    return sum(w * _pct([t.get(k) or 0 for t in shops], s.get(k) or 0) for k, w in SHOP_FORMULA)
+
+
+def section_shop_goal(b, b6, login, hours6):
+    """[가게 목표]: our shop all against SHOP_GOAL, the formula check against the board, and per column our rank,
+    percentile, rate over the snapshot gap and, for the next GOAL_STEPS ranks above, the gap, that shop's rate and
+    the shop all we would have there with the other columns unchanged. Numbers only."""
+    shops = [s for s in b.get("shops") or [] if isinstance(s.get("all"), (int, float))]
+    me = next((s for s in shops if c.is_mine(s, login)), None)
+    if me is None or len(shops) < 2:
+        return [f"[가게 목표 {SHOP_GOAL:.2f}] 우리 가게 행 없음"]
+    old = {s.get("name"): s for s in (b6 or {}).get("shops") or []}
+    err = max(abs(shop_all(shops, s) - s["all"]) for s in shops)
+    rank = 1 + sum(1 for s in shops if s["all"] > me["all"])
+    out = [f"[가게 목표 {SHOP_GOAL:.2f}] 우리 가게 all {me['all']:.3f} ({len(shops)}곳 중 {rank}위), 목표까지 "
+           f"{SHOP_GOAL - me['all']:+.3f}",
+           f"  공식: " + " + ".join(f"{w} {k}" for k, w in SHOP_FORMULA) + f" 백분위 ({len(shops)}곳, 동점은 중간 순위); "
+           f"순위표 all과 최대 오차 {err:.4f}"]
+    rate = lambda s, k: (((s.get(k) or 0) - ((old.get(s.get("name")) or {}).get(k) or 0)) / hours6
+                         if hours6 and s.get("name") in old else None)
+    fmt_rate = lambda r, k: "-" if r is None else (f"{r * hours6:+.2f}/{hours6:.0f}시간" if k == "stars_rank"
+                                                    else f"{c.fmt(r)}/h")
+    for k, w in SHOP_FORMULA:
+        vals = [s.get(k) or 0 for s in shops]
+        v = me.get(k) or 0
+        r = 1 + sum(1 for x in vals if x > v)
+        out.append(f"  {k}: {c.fmt(v)}, {r}위, 백분위 {_pct(vals, v):.3f}, 1위면 all {w * (1 - _pct(vals, v)):+.3f}, "
+                   f"우리 {fmt_rate(rate(me, k), k)}")
+        steps = []
+        for tv in sorted({x for x in vals if x > v})[:GOAL_STEPS]:  # one entry per value: the board rounds stars
+            at = [s for s in shops if (s.get(k) or 0) == tv]
+            gain = w * (_pct(vals, tv) - _pct(vals, v))
+            who = f"그 가게 {fmt_rate(rate(at[0], k), k)}" if len(at) == 1 else f"{len(at)}곳"
+            steps.append(f"{1 + sum(1 for x in vals if x > tv)}위 +{c.fmt(tv - v)} ({who}, all {gain:+.3f})")
+        if steps:
+            out.append("    위 가게: " + "; ".join(steps))
+    return out
+
+
+PROFIT_H = 6  # [이익]: window
+PROFIT_TOP = 5  # categories by our revenue
+
+
+def section_profit(root, now, login):
+    """[이익]: our sales in the last PROFIT_H hours with the unit cost of each sold unit (inventory unit_gone, joined by
+    unit), gross profit and markup per category, next to what the whole market sold in that category and its median
+    price/list. book = cash + unsold stock at cost (RULES), so book grows by this gross minus fees and expired stock."""
+    since = now - PROFIT_H * 3600
+    cat = _catalog(root)
+    cost = {}
+    for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 40_000_000, b'"unit_gone"'):
+        d = e.get("data") or {}
+        if e.get("type") == "unit_gone" and (e.get("ts") or 0) >= since - 3600 and d.get("unit"):
+            cost[d["unit"]] = (float(d.get("cost") or 0), d.get("why"), _leaf(d.get("category")))
+    ours, mkt = defaultdict(lambda: [0, 0.0, 0.0, 0, []]), defaultdict(lambda: [0.0, []])
+    expired = sum(v[0] for v in cost.values() if v[1] == "expired")
+    for e in market_settles(root, since):
+        d = e.get("data") or {}
+        a = float(d.get("amount") or 0)
+        leaf = _leaf((cat.get(d.get("sku")) or {}).get("category"))
+        lp = _list_price(cat, d.get("sku"))
+        mkt[leaf][0] += a
+        if lp:
+            mkt[leaf][1].append(a / lp)
+        if c.settle_side(d, login) != "shop":
+            continue
+        u = cost.get(d.get("unit"))
+        if u and leaf == "?":
+            leaf = u[2]
+        x = ours[leaf]
+        x[0] += 1
+        x[1] += a
+        if u:
+            x[2] += u[0]
+            x[3] += 1
+            x[4].append(a / u[0] if u[0] else 0)
+    if not ours:
+        return [f"[이익 {PROFIT_H}시간] 우리 판매 기록 없음"]
+    R = sum(x[1] for x in ours.values())
+    K = sum(x[2] for x in ours.values())
+    Rk = sum(x[1] for x in ours.values() if x[3] == x[0])
+    out = [f"[이익 {PROFIT_H}시간] 우리 판매 {sum(x[0] for x in ours.values())}건, 매출 {c.fmt(R)}, 판 물건 원가 {c.fmt(K)}, "
+           f"매출 총이익 {c.fmt(R - K)} ({(R - K) / R:.1%}); 원가가 이어진 판매 {sum(x[3] for x in ours.values())}건, "
+           f"만료 폐기 원가 {c.fmt(expired)}"]
+    for leaf, x in sorted(ours.items(), key=lambda kv: -kv[1][1])[:PROFIT_TOP]:
+        m = mkt.get(leaf) or [0.0, []]
+        out.append(f"  {leaf}: 우리 {x[0]}건, 매출 {c.fmt(x[1])}, 총이익 {c.fmt(x[1] - x[2])}, 판매가/원가 중앙 "
+                   f"{st.median(x[4]) if x[4] else 0:.2f}; 시장 전체 매출 {c.fmt(m[0])}, 우리 몫 "
+                   f"{x[1] / m[0] if m[0] else 0:.1%}, 시장 판매가/정가 중앙 {st.median(m[1]) if m[1] else 0:.2f}")
+    return out
+
+
 STARS_H = 6  # [별점]: window
 STARS_LOW = 3  # lowest reviewer accounts shown
 STARS_MIN_N = 3  # reviews an account needs to be listed as low
@@ -1160,6 +1269,8 @@ def build(root=None, now=None, last_brief_ts=None):
         hours6 = (bts - ts6) / 3600
         out += section_time(now, bts)
         out += section_rank(b, b6, login, hours6)
+        out += section_shop_goal(b, b6, login, hours6)
+        out += section_profit(root, now, login)
         out += section_versions(root, now)
         out += section_rivals(b, b6, login, hours6)
         out += section_trial(root, now)

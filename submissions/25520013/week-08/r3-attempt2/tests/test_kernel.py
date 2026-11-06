@@ -359,3 +359,41 @@ def test_stars_section_joins_reviews_to_our_settles_and_means_per_account(tmp_pa
     assert "A 리뷰 2, 평균 1.00; B 리뷰 1, 평균 5.00; C 리뷰 1, 평균 1.00" in out[3]
     assert "침대 리뷰 4, 평균 2.00, 2점 이하 3" in out[4]
     assert brief.section_stars(str(tmp_path / "none"), now, LOGIN)[0].endswith("리뷰 기록 없음")
+
+
+def test_shop_goal_formula_matches_board_and_lists_ranks_above():
+    def shop(name, book, rev, sr, owner="x"):
+        return {"name": name, "owner": owner, "book": book, "revenue": rev, "stars_rank": sr}
+    shops = [shop("a", 400, 40, 4.5), shop("b", 300, 30, 4.4), shop("me", 200, 20, 4.2, owner=LOGIN),
+             shop("c", 100, 10, 4.3), shop("d", 50, 5, 4.2)]
+    for s in shops:
+        s["all"] = round(brief.shop_all(shops, s), 4)
+    me = shops[2]
+    assert me["all"] == round(0.5 * 0.5 + 0.3 * 0.5 + 0.2 * 0.125, 4)  # stars_rank tie with d counts half
+    old = {"shops": [dict(s, book=s["book"] - 60) for s in shops]}
+    out = brief.section_shop_goal({"shops": shops}, old, LOGIN, 6.0)
+    assert out[0].startswith("[가게 목표 0.90] 우리 가게 all 0.425 (5곳 중 3위)") and "+0.475" in out[0]
+    assert "최대 오차 0.0000" in out[1] and "0.2 stars_rank" in out[1]
+    assert out[2].startswith("  book: 200, 3위, 백분위 0.500, 1위면 all +0.250, 우리 10/h")
+    assert "2위 +100 (그 가게 10/h, all +0.125); 1위 +200" in out[3]
+    assert out[-2].startswith("  stars_rank: 4.2, 4위, 백분위 0.125")
+
+
+def test_profit_section_joins_sales_to_unit_cost_and_market(tmp_path):
+    r = tmp_path / "p"
+    for d in (".market", ".r3"):
+        (r / d).mkdir(parents=True)
+    (r / ".market/catalog.json").write_text(json.dumps({"SOFA": {"category": "가구>소파", "list_price": 1000}}))
+    now = NOW
+    sale = lambda u, amt, mine: {"type": "settle", "src": "market", "ts": now - 600,
+                                 "data": {"sku": "SOFA", "unit": u, "amount": amt, "own_owner": mine, "buyer": "zz"}}
+    ev = [{"type": "unit_gone", "src": "inventory", "ts": now - 600,
+           "data": {"unit": "u1", "cost": 680, "why": "sold_or_seized", "category": "가구>소파"}},
+          {"type": "unit_gone", "src": "inventory", "ts": now - 500,
+           "data": {"unit": "u9", "cost": 50, "why": "expired", "category": "식품>과일"}},
+          sale("u1", 720, True), sale("x1", 700, False), sale("x2", 740, False)]
+    (r / ".r3/events.jsonl").write_text("".join(json.dumps(x) + "\n" for x in ev))
+    out = brief.section_profit(str(r), now, LOGIN)
+    assert out[0].startswith("[이익 6시간] 우리 판매 1건") and "(5.6%)" in out[0] and "만료 폐기 원가 50" in out[0]
+    assert out[1].startswith("  소파: 우리 1건") and "판매가/원가 중앙 1.06" in out[1] and "우리 몫 33.3%" in out[1]
+    assert "시장 판매가/정가 중앙 0.72" in out[1]
