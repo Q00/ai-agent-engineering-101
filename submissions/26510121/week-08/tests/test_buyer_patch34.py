@@ -75,6 +75,15 @@ def test_class_cohort_uses_one_selected_buyer_per_student(tmp_path):
     assert {r['name'] for r in eligible_rows(board,'buyer','seochanit')}=={'seochanit','peer'}
 
 
+def test_no_post_forum_null_stays_in_the_buyer_percentile_cohort():
+    from r3.meta import rank_targets
+    board={'round':3,'buyer_metric':'saved','buyers':[
+        {'name':'seochanit','deals':100,'saved':.25,'forum':.6,'posts':10},
+        {'name':'no-posts','deals':100,'saved':.2,'forum':None,'posts':0},
+        {'name':'peer','deals':100,'saved':.3,'forum':.7,'posts':20}]}
+    assert rank_targets(board,'buyer')['forum']['cohort_size']==3
+
+
 def test_refused_food_unit_can_still_serve_a_shorter_requirement(tmp_path):
     j,cfg=fixture(tmp_path);now=time.time()
     rec={'unit':'u','item':'G1'}

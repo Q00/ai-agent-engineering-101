@@ -24,6 +24,10 @@ def eligible_rows(board, role, own_name):
     if not board or board.get('round') != 3 or role not in WEIGHTS:
         return []
     rows = board.get('shops' if role == 'shop' else 'buyers', [])
+    if role=='buyer':
+        # Published no-post forum values are null. They are the zero-valued
+        # participants in the scoring cohort, not missing participants.
+        rows=[dict(r,forum=0) if 'forum' in r and r['forum'] is None else r for r in rows]
     if role=='buyer' and board.get('buyer_rank_scope')=='class':
         names={(p.get('buyer') or {}).get('name') for p in board.get('players',[]) if p.get('student')}
         if own_name in names:rows=[r for r in rows if r.get('name') in names]
