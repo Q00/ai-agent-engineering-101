@@ -80,8 +80,8 @@ def policy_at(root=ROOT):
     if adaptive is not None:
         if not isinstance(adaptive, dict) or type(adaptive.get("enabled")) is not bool:
             raise ValueError("Invalid adaptive inventory policy")
-        for key, low, high in (("max_candidates", 1, 6), ("max_retained_skus", 6, 32),
-                               ("max_units_per_run", 1, 2), ("low_stock_units", 1, 8),
+        for key, low, high in (("max_candidates", 1, 12), ("max_retained_skus", 6, 32),
+                               ("max_units_per_run", 1, 4), ("low_stock_units", 1, 12),
                                ("minimum_public_sales", 3, 100), ("minimum_public_buyers", 2, 20),
                                ("minimum_public_shops", 2, 20)):
             value = adaptive.get(key)

@@ -24,6 +24,9 @@ class FocusTests(unittest.TestCase):
         self.now = time.time()
         self.policy = policy_at()
         self.cfg = self.policy["restock"]
+        # Keep the original focused-pilot cash/depth boundary scenarios.
+        # Current higher buying limits have separate integration coverage.
+        self.cfg.update(max_units_per_run=4, max_run_cost_percent=44, max_sku_cost_percent=26)
         self.focus = self.cfg["focused_goods"]
         self.inv = {"round": 3, "balance": 5000000, "start": 5000000, "units": [], "surge": [],
                     "restock": {"open": True, "opens_at": self.now - 30, "closes_at": self.now + 150}}

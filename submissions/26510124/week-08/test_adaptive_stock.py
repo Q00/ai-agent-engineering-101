@@ -24,6 +24,10 @@ class AdaptiveStockTests(unittest.TestCase):
         self.now = time.time()
         self.policy = policy_at()
         self.cfg, self.rules = self.policy["restock"], self.policy["restock"]["adaptive_goods"]
+        # Preserve the earlier 4->6->8 diversification regressions explicitly.
+        # The current larger policy is covered in test_aggressive_restock.py.
+        self.cfg.update(max_units_per_run=4, max_run_cost_percent=44, max_sku_cost_percent=26)
+        self.rules.update(max_candidates=6, max_units_per_run=2, low_stock_units=8)
         self.inv = {"round": 3, "balance": 5000000, "start": 5000000, "units": [], "surge": [],
                     "restock": {"open": True, "opens_at": self.now - 30, "closes_at": self.now + 150}}
         self.catalog = {sku: {"name": sku, "list_price": 200000, "category": "furniture", "kind": "goods"}
@@ -149,7 +153,7 @@ class AdaptiveStockTests(unittest.TestCase):
             root = Path(directory)
             atomic_json(root / "shop-policy.json", self.policy)
             self.assertEqual(policy_at(root)["restock"]["adaptive_goods"]["low_stock_units"], 8)
-            self.rules["low_stock_units"] = 9
+            self.rules["low_stock_units"] = 13
             atomic_json(root / "shop-policy.json", self.policy)
             with self.assertRaisesRegex(ValueError, "adaptive inventory policy: low_stock_units"):
                 policy_at(root)

@@ -24,7 +24,7 @@ def configuration(cfg):
 
 
 def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=(), allowed=None):
-    """Return at most six eligible alternatives, never food or an arbitrary SKU."""
+    """Return a bounded pool of eligible alternatives, never arbitrary stock."""
     rules = configuration(cfg)
     if not rules:
         return {}
