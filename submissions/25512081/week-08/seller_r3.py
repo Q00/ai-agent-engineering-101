@@ -149,6 +149,12 @@ END_TS = 1794927540        # Tue Nov 17 23:59 KST
 ENDGAME = ((6 * 3600, 0.6, 0.25), (24 * 3600, 0.8, 0.6))
 MIN_FOOD_HOURS = 2        # never ship food with less shelf life left than this
 SOLD_HOLD = 120           # seconds a sold unit stays out of offers, until inventory.json drops it
+# A talk the buyer leaves without a reply or a cancel stayed in self.open, so its unit was never offered again
+# (Nov 6 10:24-14:17: of 1,439 talks 1,437 ended within 60 s, but 7 grade A Jakomo G8ec51935 units, cost
+# 1.75-1.88M, were each offered a few times and then never again, unsold, so the opening ask climbed unit by unit
+# from 1,838,575 to 2,065,671; the B unit (cost 1.11M) was last offered 11:56, the C unit 12:32). A talk holds its
+# unit OPEN_HOLD seconds; a late reply whose unit has gone to another talk or sold gets no deal.
+OPEN_HOLD = 300
 # A food order is worth nothing to the buyer unless the food lasts its use_within_hours (agent.md), and our seller
 # never sees the order. So: ship food that lasts what the buyer says it needs ("must last 30 hours"), else what
 # orders usually need (.market/use_within.json, the use_within_hours our own buyer saw, 80th percentile).
@@ -411,7 +417,9 @@ class Seller(AgentExecutor):
             # and on Nov 3 one unit went to two buyers a second apart, so the first buyer's checkout was refused
             now = time.time()
             self.sold = {k: t for k, t in self.sold.items() if now - t < SOLD_HOLD}
-            taken = {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]} | set(self.sold)
+            self.open = {k: d for k, d in self.open.items() if now - d.get("ts", now) < 3600}
+            taken = {d["unit"]["unit"] for d in self.open.values()
+                     if d["unit"]["unit"] and now - d.get("ts", now) < OPEN_HOLD} | set(self.sold)
             u = find_unit(text, taken)
             if u is None:
                 await up.reject(say("Sorry, none of that in stock."))
@@ -420,11 +428,20 @@ class Seller(AgentExecutor):
             # profit is half the shop's score: concede at most MAX_DISCOUNT, and never below cost
             floor = max(floor, int(ask * (1 - MAX_DISCOUNT)))
             deal = self.open[task.id] = {"unit": u, "ask": ask, "opening": ask, "floor": floor,
-                                         "warranty": warranty, "rounds": 0, "arm": arm}
+                                         "warranty": warranty, "rounds": 0, "arm": arm, "ts": now}
             await up.requires_input(say(f"{facts(u, warranty)}. Send the ask or say ok to buy. "
                                         f"Our ask: {ask}"))
             return
 
+        uid, now = deal["unit"]["unit"], time.time()
+        if uid and now - deal.get("ts", now) >= OPEN_HOLD and (
+                uid in self.sold or uid not in {u["unit"] for u in inventory().get("units", [])}
+                or any(d["unit"]["unit"] == uid and d is not deal and now - d.get("ts", now) < OPEN_HOLD
+                       for d in self.open.values())):
+            del self.open[task.id]
+            await up.reject(say("Sorry, that unit is no longer available. Ask again for a quote."))
+            return
+        deal["ts"] = now
         deal["rounds"] += 1
         ask, floor = deal["ask"], deal["floor"]
         offer = last_number(text)
