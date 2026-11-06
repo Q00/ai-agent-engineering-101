@@ -342,6 +342,7 @@ def test_units_held_by_open_deals_are_excluded(tmp_path, hdir):
         ("reject", "Sorry, we have none of that in stock.")
     ]
     assert metrics[-1][0] == "no_stock"
+    assert metrics[-1][1]["why"] == "none" and metrics[-1][1]["matched"] == 0
 
 
 def test_unit_taken_while_model_thinks(tmp_path, hdir):
@@ -1085,6 +1086,28 @@ def test_unstated_need_drops_food_under_half_shelf(tmp_path):
     ]  # 59.6 h < 84 h (half of 168) is dropped
     units, _ = sb.candidate_units(str(m), "포기김치 10kg please, it must last 24 hours")
     assert len(units) == 3  # a stated need wins: 59.6 h covers 24 h
+
+
+def test_candidate_units_says_why_nothing_is_offered(tmp_path):
+    # live 11-06 20h: kimchi arrived at 36-46% of its 168 h shelf, so requests with no stated need got no_stock
+    from kernel import seller_bridge as sb
+
+    m = _food_market(tmp_path, [59.6, 70.0])
+    cat = json.loads((m / "catalog.json").read_text())
+    cat["Gkimchi1"]["shelf_hours"] = 168
+    (m / "catalog.json").write_text(json.dumps(cat))
+    why = {}
+    assert sb.candidate_units(str(m), "포기김치 10kg please", (), why)[0] == []
+    assert why == {"matched": 2, "need_h": None, "stage": "half_shelf"}
+    why = {}
+    assert sb.candidate_units(str(m), "포기김치 10kg please, it must last 100 hours", (), why)[0] == []
+    assert why["stage"] == "need" and why["need_h"] == 100.0
+    why = {}
+    assert len(sb.candidate_units(str(m), "포기김치 10kg please, it must last 24 hours", (), why)[0]) == 2
+    assert why["stage"] == "ok"
+    why = {}
+    assert sb.candidate_units(str(m), "포기김치 10kg please", ("u-k0", "u-k1"), why)[0] == []
+    assert why["stage"] == "none" and why["matched"] == 0
 
 
 def test_deal_end_metric_on_idle_and_cancel(tmp_path, hdir):

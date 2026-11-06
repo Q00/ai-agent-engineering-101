@@ -195,6 +195,74 @@ def restock_plan_state(root, now):
     return "valid", round((vu - now) / 60)
 
 
+NOSTOCK_WHY = {
+    "none": "요청한 상품의 팔 수 있는 재고 없음(다른 협상에 묶인 것 포함)",
+    "need": "적힌 요구 시간을 넘기는 단위 없음",
+    "half_shelf": "요구 시간이 없는 요청이고 남은 기한이 진열기한 절반 이상인 단위 없음",
+}
+FOOD_TOP = 6
+
+
+def _is_num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def restock_food_lines(root, now, inv):
+    """Food facts for [재입고]: per dated SKU in stock, the units a request with no stated need can get (남은 기한이
+    진열기한 50% 이상, seller_bridge.UNSTATED_MIN_SHARE) and the median share of shelf left when supplied; then the last
+    hour's no_stock rejections by reason. Live 11-06 20h: kimchi arrived at 36-46% of its shelf, so 0 of 22 could go
+    to the requests without a stated need, and 43 of 63 no_stock rejections that hour were apples and kimchi."""
+    from kernel.seller_bridge import UNSTATED_MIN_SHARE as share
+
+    cat = _catalog(root)
+    by = defaultdict(lambda: [0, 0, []])
+    for u in inv.get("units") or []:
+        sh = (cat.get(u.get("sku")) or {}).get("shelf_hours")
+        e, s = u.get("expires_at"), u.get("supplied_at")
+        if not _is_num(sh) or sh <= 0 or not _is_num(e) or e <= now:
+            continue
+        k = by[u.get("sku")]
+        k[0] += 1
+        k[1] += (e - now) / 3600 >= share * sh
+        if _is_num(s) and e > s:
+            k[2].append((e - s) / 3600 / sh)
+    out = []
+    if by:
+        parts = [
+            f"{k} {str((cat.get(k) or {}).get('name') or '')[:10]} {v[1]}/{v[0]}"
+            + (f" (공급 때 {st.median(v[2]):.0%})" if v[2] else "")
+            for k, v in sorted(by.items(), key=lambda x: -x[1][0])[:FOOD_TOP]
+        ]
+        out.append(
+            f"  식품 재고 중 요구 시간이 없는 요청에 낼 수 있는 단위(남은 기한이 진열기한 {share:.0%} 이상)/재고, 괄호는 "
+            "공급 때 남은 기한/진열기한의 중앙: " + ", ".join(parts)
+        )
+        out.append(
+            f"  공급은 SKU와 수량만 고르고 남은 기한은 고를 수 없음. 공급 때 이미 {share:.0%} 미만인 단위는 요구 시간이 "
+            "적힌 요청에만 팔리고, 못 팔면 만료 때 원가만큼 book에서 빠짐"
+        )
+    ns, nsk = Counter(), defaultdict(Counter)
+    for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 20_000_000, b'"no_stock"'):
+        if m.get("decision") != "no_stock" or (m.get("ts") or 0) < now - 3600:
+            continue
+        o = m.get("outcome") or {}
+        w = o.get("why")
+        w = "?" if w not in NOSTOCK_WHY else "none" if not o.get("matched") else w
+        ns[w] += 1
+        if o.get("sku"):
+            nsk[w][o["sku"]] += 1
+    if ns:
+        out.append(
+            f"  최근 1시간 재고 없음 거절 {sum(ns.values())}건: "
+            + "; ".join(
+                f"{NOSTOCK_WHY.get(w, '사유 기록 전')} {n}"
+                + (" (" + ", ".join(f"{k} {x}" for k, x in nsk[w].most_common(3)) + ")" if nsk[w] else "")
+                for w, n in ns.most_common()
+            )
+        )
+    return out
+
+
 def section_restock(root, now):
     """Facts about how restock runs: only the operator's plan buys stock."""
     state, left = restock_plan_state(root, now)
@@ -230,7 +298,7 @@ def section_restock(root, now):
         "커널은 아무것도 사지 않음",
         "  계획 하나는 한 번만 구매됨: 공급 창이 열린 뒤 첫 실행에서 사고 끝남. 내용이 같아도 계획을 다시 쓰면 새 계획이라 "
         "다음 창에서 다시 삼. 이미 구매한 계획은 만료되게 두어도 됨",
-    ]
+    ] + restock_food_lines(root, now, inv)
 
 
 def section_seller(root, now):

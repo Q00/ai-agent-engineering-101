@@ -98,9 +98,12 @@ def stated_need_hours(text, names=()):
     return max(hs) if hs else None
 
 
-def candidate_units(market_dir, text, held=()):
+def candidate_units(market_dir, text, held=(), why=None):
     """(units for the model, raw inventory unit by unit id). Built like kernel.replay.seller_units, read from the
-    seller's own market dir, without the units in `held`."""
+    seller's own market dir, without the units in `held`. A dict `why` gets the facts behind the answer: "matched"
+    (units whose name or category shares a word with the request), "need_h" (the stated need or None) and "stage",
+    which for an empty answer says where the units went: "none" (no unit at all), "need" (none lasts the stated
+    need) or "half_shelf" (no stated need and none has half its shelf left)."""
     inv = c.load_json(os.path.join(market_dir, "inventory.json"), {}) or {}
     cat = c.load_json(os.path.join(market_dir, "catalog.json"), {}) or {}
     if isinstance(cat, list):
@@ -133,8 +136,10 @@ def candidate_units(market_dir, text, held=()):
         )
     want = _tokens(text)
     hit = [u for u in units if want & (_tokens(u["name"]) | _tokens(u["category"]))]
+    matched = len(hit)
     if not hit:
         hit = sorted(units, key=lambda u: len(repr(u)))
+    before = len(hit)
     need = stated_need_hours(
         text, [u["name"] for u in hit if u["hours_left"] is not None]
     )
@@ -156,6 +161,12 @@ def candidate_units(market_dir, text, held=()):
             return (u["expires_at"] - now) / 3600 >= UNSTATED_MIN_SHARE * sh
 
         hit = [u for u in hit if fresh(u)]
+    if isinstance(why, dict):
+        why.update(
+            matched=matched,
+            need_h=need,
+            stage="ok" if hit else "none" if not before else "need" if need is not None else "half_shelf",
+        )
     return hit[:MAX_UNITS], raw
 
 
@@ -323,9 +334,20 @@ class Bridge:
         if declined_text(self.root, text):
             self._metric("declined", {"request": masked[:80], "route": "decline_texts"})
             return "reject", TEXT_DECLINE, None
-        units, raw = candidate_units(self.market_dir, text, self.held())
+        why = {}
+        units, raw = candidate_units(self.market_dir, text, self.held(), why)
         if not units:
-            self._metric("no_stock", {"request": masked[:80]})
+            sku = SKU_RE.search(text or "")
+            self._metric(
+                "no_stock",
+                {
+                    "request": masked[:80],
+                    "sku": sku.group(0) if sku else None,
+                    "why": why.get("stage"),
+                    "need_h": why.get("need_h"),
+                    "matched": why.get("matched"),
+                },
+            )
             return "reject", TEXT_NO_STOCK, None
         pol = self.policy()
         trial = self.trial(task_id)
