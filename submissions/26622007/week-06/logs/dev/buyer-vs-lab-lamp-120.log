@@ -1,0 +1,10 @@
+[20:45:29] buyer card 'Lamp Shop' -> http://127.0.0.1:9200/; item lamp, budget 120
+[20:45:29] buyer -> SendMessage 'I want to buy a lamp'
+[20:45:29] buyer <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[20:45:32] buyer-harness claude -p --model haiku --json-schema(set) 3.3s -> {"action": "offer", "price": 95}
+[20:45:32] buyer -> SendMessage '95' taskId=78c29402
+[20:45:32] buyer <- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 112.
+[20:45:35] buyer-harness claude -p --model haiku --json-schema(set) 2.9s -> {"action": "offer", "price": 105}
+[20:45:35] buyer -> SendMessage '105' taskId=78c29402
+[20:45:35] buyer <- TASK_STATE_COMPLETED | Deal: lamp at 105.
+[20:45:35] buyer DEAL {"item": "lamp", "seller": "Lamp Shop", "price": 105.0}

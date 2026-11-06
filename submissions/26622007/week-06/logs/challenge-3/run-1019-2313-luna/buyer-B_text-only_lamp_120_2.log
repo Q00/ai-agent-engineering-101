@@ -1,0 +1,9 @@
+[23:16:57] buyer card 'Chatty Shop' -> http://127.0.0.1:61478/; item lamp, budget 120
+[23:16:57] buyer -> SendMessage 'I want to buy a lamp'
+[23:16:57] buyer <- TASK_STATE_INPUT_REQUIRED | This lamp sold for 150 last month, and the 2 bulbs alone cost 40. For you today: 130. It ships in 3 days.
+[23:16:57] buyer-harness wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+[23:17:01] buyer-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 4.9s -> {"shop_price": 130, "action": "offer", "price": 100}
+[23:17:01] buyer shop price 130 (read by the harness)
+[23:17:01] buyer -> SendMessage '100' taskId=5c644a57
+[23:17:01] buyer <- TASK_STATE_COMPLETED | Deal at 100. Thanks, 1 receipt attached.
+[23:17:01] buyer DEAL {"price": 100.0, "item": "lamp"}

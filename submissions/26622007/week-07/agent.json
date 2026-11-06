@@ -1,0 +1,12 @@
+{
+  "harness": "seller: Claude Code 2.1.296, claude -p --model haiku --json-schema; buyer and market_buyer: HARNESS=openrouter, openai/gpt-6-luna on OpenRouter, response_format json_schema strict (OPENROUTER_API_KEY from the environment)",
+  "seller": {
+    "cmd": "python seller.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "HARNESS=openrouter python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "HARNESS=openrouter python market_buyer.py --shops {shops} --item {item} --budget {budget}"
+  }
+}
