@@ -1247,18 +1247,26 @@ def section_negotiation(root, now, login):
     # each accept takes the first unused settle of ours for the same SKU within ACCEPT_SETTLE_S after it
     for v in our_settles.values():
         v.sort()
-    used, settled = defaultdict(int), Counter()
+    used, settled, hourly = defaultdict(int), Counter(), defaultdict(lambda: [0, 0])
     for ts, k, leaf in sorted(accepts):
         v = our_settles.get(k) or []
+        hb = hourly[time.strftime("%H", time.localtime(ts))]
+        hb[0] += 1
         while used[k] < len(v) and v[used[k]] < ts - 5:
             used[k] += 1
         if used[k] < len(v) and v[used[k]] <= ts + ACCEPT_SETTLE_S:
             used[k] += 1
             settled[leaf] += 1
+            hb[1] += 1
     med = lambda v: f"{st.median(v):.2f}" if v else "-"
     out = [f"[협상 결과 {NEGOTIATION_H}시간] 상품군별 우리 제시의 끝 (수락, 우리 거절, 구매자가 닫음, 응답 없음, 기록 없음). "
            f"수락은 우리가 값을 받아들인 것이고 판매가 아님. 판매는 수락 뒤 {ACCEPT_SETTLE_S // 60}분 안에 우리 가게에서 "
            "같은 SKU가 정산된 수(정산). 기록 없음은 끝 기록(a2_deal_end)이 생기기 전 것이거나 시도 1이 맡은 것"]
+    if hourly:
+        # the 6 h totals below mix hours; a buyer group that takes our accept and does not pay shows as a dip here
+        # (11-06 10~17시 45~60%, before and after 85~95%)
+        out.append("  시간별 수락 중 정산 (전 상품군): " + ", ".join(
+            f"{h}시 {x[1]}/{x[0]} ({x[1] / x[0]:.0%})" for h, x in sorted(hourly.items(), key=lambda kv: kv[0])))
     for leaf in top:
         a = per[leaf]
         ended = a["cancel"] + a["idle"]

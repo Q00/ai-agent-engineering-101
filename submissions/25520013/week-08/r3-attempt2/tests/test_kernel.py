@@ -345,6 +345,8 @@ def test_negotiation_section_counts_ends_and_compares_with_market(tmp_path):
     (r / ".r3/metrics.jsonl").write_text("".join(json.dumps(x) + "\n" for x in m))
     (r / ".r3/events.jsonl").write_text("".join(json.dumps(x) + "\n" for x in ev))
     out = brief.section_negotiation(str(r), now, LOGIN)
+    assert out[1].startswith("  시간별 수락 중 정산 (전 상품군): ") and "1/1 (100%)" in out[1]
+    out = out[:1] + out[2:]  # the per-category lines follow
     assert "침대: 제시 5, 수락 1 중 정산 1 (100%), 우리 거절 0, 구매자가 닫음 1, 응답 없음 1, 기록 없음 2" in out[1]
     assert "수락은 우리가 값을 받아들인 것이고 판매가 아님" in out[0]
     assert "첫 제시 뒤 바로 끝남 1" in out[1] and "우리 첫 제시가/정가 중앙 0.80" in out[1] and "구매자 마지막 제안/정가 중앙 0.50" in out[1]
@@ -358,7 +360,8 @@ def test_negotiation_section_counts_ends_and_compares_with_market(tmp_path):
     (r / ".r3/metrics.jsonl").write_text("".join(json.dumps(x) + "\n" for x in m))
     (r / ".r3/events.jsonl").write_text("".join(json.dumps(x) + "\n" for x in ev))
     out = brief.section_negotiation(str(r), now, LOGIN)
-    assert "침대: 제시 5, 수락 3 중 정산 2 (67%)" in out[1]
+    assert "침대: 제시 5, 수락 3 중 정산 2 (67%)" in out[2]
+    assert sum(int(x.split("/")[0].split()[-1]) for x in out[1].split(": ", 1)[1].split(", ")) == 2
 
 
 def test_stars_section_joins_reviews_to_our_settles_and_means_per_account(tmp_path):
