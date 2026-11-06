@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import os
+import sqlite3
 from pathlib import Path
 import sys
 from r3_clock import clock as time
@@ -16,6 +17,47 @@ from r3_common import atomic_json, load_catalog, load_inventory, load_policy, re
 from r3_discovery import analyze, timestamp
 from r3_memory import Memory
 from r3_runtime import choose as resilient_choose
+from r3_storage import database_dir
+
+MAX_SURGE = 1.5
+
+
+def surge_factors(inventory):
+    rows = inventory.get('surge')
+    if rows is None:
+        return None
+    if not isinstance(rows, list):
+        raise ValueError('Supply surge must be a list')
+    factors = {}
+    for row in rows:
+        if (not isinstance(row, dict) or not isinstance(row.get('sku'), str) or
+                isinstance(row.get('factor'), bool) or
+                not 1 <= _number(row.get('factor'), -1) <= MAX_SURGE):
+            raise ValueError('Invalid supply surge factor')
+        factors[row['sku']] = max(factors.get(row['sku'], 1), row['factor'])
+    return factors
+
+
+def wholesale_bound(product):
+    # Other shops can buy while the model runs and before the kit submits each line.
+    return math.ceil(.75 * MAX_SURGE * product['list_price'])
+
+
+def blocked_inventory(md, inventory):
+    path = database_dir(md) / 'r3_seller.sqlite3'
+    if not path.is_file():
+        return {'units': 0, 'cost': 0, 'pause': False}
+    db = sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=5)
+    try:
+        db.execute('PRAGMA query_only=ON')
+        held = {row[0] for row in db.execute("SELECT unit FROM deals WHERE status='quarantined'")}
+    finally:
+        db.close()
+    units = inventory['units']
+    cost = sum(unit['cost'] for unit in units if unit['unit'] in held)
+    stock = sum(unit['cost'] for unit in units)
+    return {'units': sum(unit['unit'] in held for unit in units), 'cost': cost,
+            'pause': bool(cost and cost * 2 >= stock)}
 
 
 def supply_window(inventory, now, margin=20):
@@ -98,6 +140,7 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now, *, qua
     """Compute all monetary and stock bounds without trusting model arithmetic."""
     if analysis.get('status') != 'ok':
         return []
+    factors = surge_factors(inventory)
     balance = max(0, _number(inventory.get('balance')))
     reserve_fraction = max(.25, min(1, _number(policy.get('reserve_cash_fraction'), .25)))
     cycle_fraction = max(0, min(.10, _number(policy.get('purchase_budget_fraction'), .10)))
@@ -126,7 +169,7 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now, *, qua
         sku, qty = row.get('sku'), row.get('qty')
         if sku not in catalog or type(qty) is not int or qty <= 0:
             continue
-        cost = .75 * catalog[sku]['list_price'] * qty
+        cost = wholesale_bound(catalog[sku]) * qty
         pending_cost += cost
         counts[sku] += qty
         total += qty
@@ -159,7 +202,7 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now, *, qua
                 or (candidate['evidence_ids'] and not hypothesis.get('evidence_ids'))):
             continue
         category = product['category']
-        unit_cost = .75 * product['list_price']
+        unit_cost = wholesale_bound(product)
         if unit_cost <= 0 or (initial and category in explored_categories):
             continue
         groups = set(candidate.get('order_groups', []))
@@ -172,8 +215,10 @@ def bounded_proposals(catalog, inventory, analysis, pending, policy, now, *, qua
         turnover = max(minimum_turnover, hours / sales) if sales >= 3 else max(24, minimum_turnover)
         if remaining_hours < turnover + liquidation:
             continue
-        storage = unit_cost * .01 * turnover / 24 if product.get('kind') == 'goods' else 0
-        if unit_cost + storage >= product['list_price']:
+        factor = MAX_SURGE if factors is None else factors.get(sku, 1)
+        quoted_cost = math.ceil(.75 * min(MAX_SURGE, factor + .002 * sku_cap) * product['list_price'])
+        storage = quoted_cost * .01 * turnover / 24 if product.get('kind') == 'goods' else 0
+        if quoted_cost + storage >= product['list_price']:
             continue
         shelf = product.get('shelf_hours')
         if product.get('kind') == 'food':
@@ -235,6 +280,11 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
             inventory = load_inventory(md, now=now, max_age=45)
             if inventory.get('round') != 3:
                 raise ValueError('Restock requires a Round 3 inventory snapshot')
+            blocked = blocked_inventory(md, inventory)
+            if blocked['pause']:
+                atomic_json(Path(md) / 'restock-status.json',
+                            dict(status='paused_blocked_inventory', observed_at=now, blocked=blocked))
+                return {'buy': []}
             window = supply_window(inventory, now, policy['supply_margin_seconds'])
             if window is None:
                 atomic_json(Path(md) / 'restock-status.json',
@@ -265,7 +315,8 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
             state = {'proposals': proposals, 'hypotheses': analysis['hypotheses'],
                      'inputs': analysis.get('current_inputs', analysis['inputs']),
                      'cash_balance': inventory['balance'], 'pending': pending,
-                     'policy': policy, 'worst_wholesale_fraction': .75}
+                     'policy': policy, 'worst_wholesale_fraction': .75 * MAX_SURGE,
+                     'observed_surge': inventory.get('surge')}
             validator = lambda result: validate_intent(result, proposals)
             intent = resilient_choose(md, decide_fn or decide, PROMPT, state, validator,
                                       'r3-restock', time.monotonic() + min(45, window['closes_at'] - now - 10),
@@ -277,6 +328,8 @@ def plan_restock(md, *, now=None, decide_fn=None, memory=None):
             check_now = now + max(0, time.monotonic() - started)
             policy, catalog = load_policy(md), load_catalog(md)
             current = load_inventory(md, now=check_now, max_age=45)
+            if blocked_inventory(md, current)['pause']:
+                return {'buy': []}
             fresh_window = supply_window(current, check_now, policy['supply_margin_seconds'])
             if fresh_window is None or fresh_window['id'] != window['id']:
                 return {'buy': []}

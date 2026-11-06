@@ -11,12 +11,12 @@ from unittest.mock import patch
 from r3_common import DEFAULT_POLICY, atomic_json, read_json
 from r3_discovery import build_candidates
 from r3_memory import Memory
-from r3_restock import _pending, _snapshot_id, bounded_proposals, main, plan_restock, validate_intent
+from r3_restock import _pending, _snapshot_id, bounded_proposals, main, plan_restock, validate_intent, wholesale_bound
 from test_r3_discovery import CATALOG, NOW, choose_all, event
 
 
 def inventory(balance=1000, units=None):
-    return {'round': 3, 'balance': balance, 'units': units or [], 'storage_per_day': 1,
+    return {'round': 3, 'balance': balance, 'units': units or [], 'storage_per_day': 1, 'surge': [],
             'restock': {'open': True, 'opens_at': NOW - 60, 'closes_at': NOW + 3600}}
 
 
@@ -52,10 +52,10 @@ class RestockTests(unittest.TestCase):
         os.utime(self.md / 'inventory.json', (now, now))
 
     def test_initial_exploration_is_three_diverse_units_under_budget(self):
-        result = bounded_proposals(CATALOG, inventory(), analysis(), [], DEFAULT_POLICY, NOW)
+        result = bounded_proposals(CATALOG, inventory(balance=1500), analysis(), [], DEFAULT_POLICY, NOW)
         self.assertEqual(sum(row['qty'] for row in result), 3)
         self.assertEqual(len({CATALOG[row['sku']]['category'] for row in result}), 3)
-        self.assertLessEqual(sum(.75 * CATALOG[row['sku']]['list_price'] * row['qty'] for row in result), 100)
+        self.assertLessEqual(sum(wholesale_bound(CATALOG[row['sku']]) * row['qty'] for row in result), 150)
         self.assertEqual(bounded_proposals(CATALOG, inventory(units=[unit(), unit('cup', 'u2'),
                                           unit('pen', 'u3')]), analysis(), [], DEFAULT_POLICY, NOW), [])
 
@@ -140,6 +140,7 @@ class RestockTests(unittest.TestCase):
         self.assertEqual(len(Memory(self.md).events(kind='restock_error')), 1)
 
     def test_fresh_snapshot_cooldown_and_commitment_ttl(self):
+        self.write_inventory(inventory(balance=1500))
         first = plan_restock(self.md, now=NOW, decide_fn=choose)
         self.assertTrue(first['buy'])
         self.write_inventory(inventory(), now=NOW + 100)
@@ -204,17 +205,19 @@ class RestockTests(unittest.TestCase):
         self.assertEqual(ledger['last_snapshot_id'], _snapshot_id(self.md, current))
 
     def test_smaller_cash_budget_partially_reduces_approved_purchases(self):
+        self.write_inventory(inventory(balance=1500))
         def spending(system, state, validator, purpose, deadline, **kwargs):
             if purpose == 'r3-restock':
                 self.assertEqual(len(state['proposals']), 3)
-                self.write_inventory(inventory(balance=600))
+                self.write_inventory(inventory(balance=900))
             return choose(system, state, validator, purpose, deadline, **kwargs)
         result = plan_restock(self.md, now=NOW, decide_fn=spending)
         self.assertEqual(sum(row['qty'] for row in result['buy']), 2)
-        self.assertLessEqual(sum(.75 * CATALOG[row['sku']]['list_price'] * row['qty']
-                                 for row in result['buy']), 60)
+        self.assertLessEqual(sum(wholesale_bound(CATALOG[row['sku']]) * row['qty']
+                                 for row in result['buy']), 90)
 
     def test_more_cash_never_increases_model_approved_qty_or_adds_skus(self):
+        self.write_inventory(inventory(balance=1500))
         with Memory(self.md) as memory:
             for i in range(4):
                 memory.record('market_settle', str(i), {'seq': i, 'item': 'tea'}, ts=NOW - 60)
@@ -231,7 +234,7 @@ class RestockTests(unittest.TestCase):
     def test_quantity_limits_do_not_reserve_budget_for_unapproved_quantities(self):
         events = [event('market_settle', str(i), {'seq': i, 'item': 'tea' if i < 4 else 'cup'})
                   for i in range(8)]
-        result = bounded_proposals(CATALOG, inventory(balance=600), analysis(events), [],
+        result = bounded_proposals(CATALOG, inventory(balance=900), analysis(events), [],
                                    DEFAULT_POLICY, NOW, quantity_limits={'tea': 1, 'cup': 1})
         self.assertEqual({row['sku']: row['qty'] for row in result}, {'tea': 1, 'cup': 1})
 

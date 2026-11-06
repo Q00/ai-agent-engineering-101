@@ -1,10 +1,33 @@
 """Durable gate before kit checkout issuance. No market calls and no key access here."""
+import asyncio
+import base64
+from collections import defaultdict
 import json
 import sqlite3
 from r3_clock import clock as time
 
 from starlette.responses import JSONResponse
+from cryptography.exceptions import InvalidSignature
 from r3_storage import database_dir
+
+
+def verified_checkout(session, public_key):
+    """Read identity only from our persisted, cryptographically verified checkout."""
+    if public_key is None or not isinstance(session, dict):
+        return None
+    try:
+        head, body, signature = session['checkout_jwt'].split('.')
+        decode = lambda value: base64.urlsafe_b64decode(value + '=' * (-len(value) % 4))
+        if json.loads(decode(head)).get('alg') != 'EdDSA':
+            return None
+        public_key.verify(decode(signature), (head + '.' + body).encode('ascii'))
+        claims = json.loads(decode(body))
+        if (not isinstance(claims, dict) or not claims.get('id') or
+                any(claims.get(k) != session.get(k) for k in ('id', 'task', 'unit'))):
+            return None
+        return claims
+    except (InvalidSignature, ValueError, TypeError, KeyError, AttributeError):
+        return None
 
 
 class CheckoutGate:
@@ -38,6 +61,8 @@ class CheckoutGate:
                 raise ValueError('Receipt is not the original guarded promise')
             # A successful checkout is replayed, never reissued, even after restart.
             if data.get('checkout_session'):
+                if data['checkout_session'].get('status') == 'canceled' or row['status'] == 'revoked':
+                    raise ValueError('Canceled checkout cannot be reopened')
                 return stored, data['checkout_session']
             if (data.get('checkout_started') or row['status'] != 'signed_pending' or
                     row['unit'] is None or row['expires'] <= now):
@@ -59,6 +84,10 @@ class CheckoutGate:
             if session is not None:
                 if session.get('unit') != data['receipt']['unit'] or session.get('task') != task:
                     raise ValueError('Kit checkout changed the promised unit or task')
+                previous = data.get('checkout_session', {})
+                if (previous.get('status') in ('canceled', 'completed') and
+                        previous.get('status') != session.get('status')):
+                    raise ValueError('Terminal checkout state cannot be changed')
                 data['checkout_session'] = session
             elif no_checkout_issued and not data.get('checkout_session'):
                 data['checkout_started'] = False
@@ -85,6 +114,7 @@ def guarded_shop(base):
         def __init__(self, key, market, md=None):
             super().__init__(key, market, md)
             self.gate = CheckoutGate(md)
+            self.session_locks = defaultdict(asyncio.Lock)
             for session in self.gate.sessions():
                 self.sessions[session['id']] = session
 
@@ -119,6 +149,19 @@ def guarded_shop(base):
             return response
 
         async def handle(self, req, path, body, public):
+            parts = path.strip('/').split('/')
+            if (len(parts) == 4 and parts[:2] == ['acp', 'checkout_sessions'] and
+                    parts[3] in ('complete', 'cancel')):
+                if req.method != 'POST':
+                    return JSONResponse({'error': 'POST required'}, status_code=405)
+                if parts[2] not in self.sessions:
+                    return JSONResponse({'error': 'no such checkout session'}, status_code=404)
+                # A cancel must not release/change a session while settle is in flight.
+                async with self.session_locks[parts[2]]:
+                    return await self._handle(req, path, body, public)
+            return await self._handle(req, path, body, public)
+
+        async def _handle(self, req, path, body, public):
             response = await super().handle(req, path, body, public)
             if response.status_code == 200 and path.endswith(('/complete', '/cancel')):
                 payload = json.loads(response.body)

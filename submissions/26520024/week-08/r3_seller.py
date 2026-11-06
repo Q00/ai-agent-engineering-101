@@ -28,6 +28,7 @@ from core import decide, emit
 from r3_common import (ROOT, effective_grade, hours_left, load_catalog, load_inventory,
                        load_policy, money, state_dir, atomic_json)
 from r3_memory import Memory
+from r3_checkout import verified_checkout
 from r3_seller_lifecycle import RequestJournal, SellerRequestBoundary
 from r3_runtime import choose as resilient_choose
 from r3_strategy import price_ratio, seller_fallback
@@ -242,20 +243,37 @@ class Reservations:
             db.execute(sql, args)
 
 
-    def reconcile(self, inventory, events, name, now):
+    def unsettled_units(self):
+        with self.transaction() as db:
+            return [row['unit'] for row in db.execute(
+                "SELECT unit FROM deals WHERE status IN ('signed_pending','quarantined') AND unit IS NOT NULL")]
+
+    def reconcile(self, inventory, events, name, now, public_key=None):
         """A signed promise stays blocked unless a matching paid ledger proves settlement."""
         live = {unit['unit'] for unit in inventory['units']}
         rows = []
+        by_unit = {}
+        for event in events:
+            evidence = event.get('data', {})
+            if isinstance(evidence, dict):
+                by_unit.setdefault(evidence.get('unit'), []).append(event)
         with self.transaction() as db:
             for row in db.execute("SELECT * FROM deals WHERE status IN ('signed_pending','quarantined','settled')"):
                 data = json.loads(row['data'])
                 receipt = data.get('receipt')
                 status, proof = row['status'], data.get('settlement')
                 if status != 'settled' and isinstance(receipt, dict):
-                    for event in events:
+                    shops = {name}
+                    claims = verified_checkout(data.get('checkout_session'), public_key)
+                    if (claims and claims.get('shop') == name and claims.get('unit') == row['unit'] and
+                            all(claims.get(k) == receipt.get(k) for k in ('item', 'price', 'task')) and
+                            isinstance(claims.get('shop_url'), str) and claims['shop_url']):
+                        shops.add(claims['shop_url'].rstrip('/'))
+                    for event in by_unit.get(row['unit'], []):
                         evidence = event.get('data', {})
                         if (event.get('kind') != 'market_settle' or not isinstance(evidence, dict) or
-                                evidence.get('source') != 'public_ledger' or evidence.get('shop') != name or
+                                evidence.get('source') != 'public_ledger' or
+                                not isinstance(evidence.get('shop'), str) or evidence['shop'].rstrip('/') not in shops or
                                 evidence.get('unit') != row['unit'] or evidence.get('item') != data['sku'] or
                                 type(evidence.get('seq')) is not int or evidence['seq'] <= 0):
                             continue
@@ -316,8 +334,8 @@ class Seller(AgentExecutor):
         now = self.now()
         inventory = inventory if inventory is not None else load_inventory(self.md, now=now)
         with Memory(self.md) as memory:
-            evidence = memory.events('market_settle', limit=10000)
-        return self.reservations.reconcile(inventory, evidence, self.name, now)
+            evidence = memory.settlements_for_units(self.reservations.unsettled_units())
+        return self.reservations.reconcile(inventory, evidence, self.name, now, self.key.public_key())
 
     async def execute(self, context, event_queue):
         task = context.current_task

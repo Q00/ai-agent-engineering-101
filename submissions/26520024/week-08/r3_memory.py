@@ -36,6 +36,8 @@ class Memory:
                 id INTEGER PRIMARY KEY, kind TEXT NOT NULL, event_key TEXT NOT NULL,
                 ts REAL NOT NULL, data TEXT NOT NULL, UNIQUE(kind,event_key));
             CREATE INDEX IF NOT EXISTS event_kind_time ON events(kind,ts);
+            CREATE INDEX IF NOT EXISTS market_settlement_unit ON events(json_extract(data,'$.unit'))
+                WHERE kind='market_settle';
             CREATE INDEX IF NOT EXISTS settlement_name_time ON events(
                 json_extract(data,'$.settled.name'),COALESCE(json_extract(data,'$.observed_at'),ts))
                 WHERE kind='settlement';
@@ -172,6 +174,18 @@ class Memory:
     def get(self, kind, key):
         row = self.db.execute('SELECT * FROM events WHERE kind=? AND event_key=?', (kind, str(key))).fetchone()
         return None if row is None else self._event(row)
+
+    def settlements_for_units(self, units):
+        """Use durable unit identities, not a global last-N market activity window."""
+        units = sorted(set(unit for unit in units if isinstance(unit, str) and unit))
+        result = []
+        for start in range(0, len(units), 250):
+            batch = units[start:start + 250]
+            rows = self.db.execute(
+                "SELECT * FROM events WHERE kind='market_settle' AND json_extract(data,'$.unit') IN (" +
+                ','.join('?' for _ in batch) + ') ORDER BY id', batch)
+            result.extend(self._event(row) for row in rows)
+        return result
 
     @staticmethod
     def prompt_event(event, role=None):
