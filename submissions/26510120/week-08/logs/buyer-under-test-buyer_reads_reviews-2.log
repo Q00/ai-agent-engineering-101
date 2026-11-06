@@ -1,0 +1,8 @@
+[harness] {"shop": "Kit Shop South", "reason": "It has a 4.7-star average across 3 reviews and a clean past trade with us (one deal at 100, within the 120 budget, with no receipt discrepancies), while Kit Shop North averages 1.3 stars and we have no trade history with it."}
+[choose] http://127.0.0.1:60769: It has a 4.7-star average across 3 reviews and a clean past trade with us (one deal at 100, within the 120 budget, with no receipt discrepancies), while Kit Shop North averages 1.3 stars and we have no trade history with it.
+card: Kit Shop South -> http://127.0.0.1:60769/
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] {"action": "offer", "price": 100}
+-> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[harness] {"stars": 4, "review": "Kit Shop South quoted 130 for the lamp, settled a deal at 100 with a matching receipt, and the negotiation was straightforward and within budget."}
+{"shop": "http://127.0.0.1:60769", "receipt": {"sig_seller": "r2O6xRaL1kuaz0LHf5TmbE4S2uowgZn9nauUCJGQU6IAHcg1kgigxKhKHQg73hEy9oh5Jo8y0BatMKLfrb8aCw==", "price": 100.0, "shop": "Kit Shop South", "item": "lamp", "task": "4d7facc1-5775-47f2-88b6-77e1df92bda9"}, "stars": 4, "review": "Kit Shop South quoted 130 for the lamp, settled a deal at 100 with a matching receipt, and the negotiation was straightforward and within budget."}

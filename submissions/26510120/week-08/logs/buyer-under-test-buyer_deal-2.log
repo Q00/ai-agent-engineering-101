@@ -1,0 +1,8 @@
+[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed, with one past trade that closed at 105, which fits the 120 budget, though the lack of market reviews means the price is unverified."}
+[choose] http://127.0.0.1:45533: It is the only shop listed, with one past trade that closed at 105, which fits the 120 budget, though the lack of market reviews means the price is unverified.
+card: Kit Shop -> http://127.0.0.1:45533/
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] {"action": "offer", "price": 100}
+-> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[harness] {"stars": 4, "review": "Kit Shop quoted 130 for the lamp, accepted my 100 offer, and honored the 100 price on the receipt, so the deal closed cleanly at the agreed amount."}
+{"shop": "http://127.0.0.1:45533", "receipt": {"sig_seller": "nyWez0Dae8EPQccayvLp+DqHluCTw1QbnPV40pdNEKPZBY03OWCSWsw2f7lLDRYJykr0sEKlNq8cOdTM0/YkDw==", "price": 100.0, "shop": "Kit Shop", "item": "lamp", "task": "11cf9864-fb46-4adf-9c55-35934fb1a705"}, "stars": 4, "review": "Kit Shop quoted 130 for the lamp, accepted my 100 offer, and honored the 100 price on the receipt, so the deal closed cleanly at the agreed amount."}

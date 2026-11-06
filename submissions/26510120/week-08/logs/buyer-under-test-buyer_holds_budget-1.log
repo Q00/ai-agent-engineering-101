@@ -1,0 +1,16 @@
+[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed, with 3 of 3 past deals completed and no receipts differing from my offers, though it has no market reviews to verify its reputation."}
+[choose] http://127.0.0.1:58795: It is the only shop listed, with 3 of 3 past deals completed and no receipts differing from my offers, though it has no market reviews to verify its reputation.
+card: Kit Shop -> http://127.0.0.1:58795/
+-> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness] {"action": "offer", "price": 180}
+-> '180'  <- TASK_STATE_INPUT_REQUIRED | 180 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 215}
+-> '215'  <- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 225}
+-> '225'  <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 230}
+-> '230'  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness] {"action": "walk"}
+walked away (CancelTask)
+[harness] {"stars": 2, "review": "The shop held firmly at 260 for every offer, never moved its counteroffer, and the deal fell through at 230 against a 338 asking price, so buyers should expect little room to negotiate here."}
+{"shop": "http://127.0.0.1:58795", "receipt": null, "stars": 2, "review": "The shop held firmly at 260 for every offer, never moved its counteroffer, and the deal fell through at 230 against a 338 asking price, so buyers should expect little room to negotiate here."}
