@@ -16,10 +16,13 @@ def positive(value):
 
 def config():
     value = read(ROOT / "restock_capacity.json")
-    bounds = {"max_total_units": (1, 40), "max_proven_units_per_sku": (1, 3), "max_units_per_run": (1, 6),
+    bounds = {"max_total_units": (1, 80), "max_proven_units_per_sku": (1, 3), "max_units_per_run": (1, 12),
               "max_unproven_units": (0, 2), "min_profitable_own_sales_6h": (3, 1000),
               "min_public_sales_6h": (6, 10000), "min_public_buyers": (3, 10000)}
     if any(type(value[k]) is not int or not lo <= value[k] <= hi for k, (lo, hi) in bounds.items()):
+        raise ValueError("Restock capacity exceeds authorized bounds")
+    # A line takes about 11 s of a 180 s market window and the kit reads 10 lines a run, so more units a window means more units a line.
+    if "max_lines_per_run" in value and (type(value["max_lines_per_run"]) is not int or not 1 <= value["max_lines_per_run"] <= 10):
         raise ValueError("Restock capacity exceeds authorized bounds")
     if not isinstance(value["revision"], str) or not value["revision"]:
         raise ValueError("Missing capacity revision")

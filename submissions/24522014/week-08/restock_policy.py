@@ -39,6 +39,9 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     own_profitable = own_profitable or {}
     quality = quality or {}
     limits = capacity_config()
+    max_lines = limits.get("max_lines_per_run", limits["max_units_per_run"])
+    surge = {row["sku"]: row["factor"] for row in inventory.get("surge") or [] if isinstance(row, dict) and row.get("sku")
+             and type(row.get("factor")) in (int, float) and math.isfinite(row["factor"]) and row["factor"] > 1}
     if inventory.get("round", 0) < 3:
         return [], {"reason": "not_round_3"}
     if (inventory.get("restock") or {}).get("open") is False:
@@ -127,7 +130,13 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
             continue
         if not proven(sku) and (exploration_slots <= 0 or len(units) + planned_units >= UNPROVEN_STOCK_CEILING):
             continue
-        worst_cost = value["list_price"] * 0.75
+        # Lines are kept for range; once they are used, only the SKUs already in the plan deepen.
+        if not planned[sku] and len(planned) >= max_lines:
+            continue
+        # A surged SKU costs more with every unit the market buys, so we hold one at most and price it at the published factor.
+        if sku in surge and (owned[sku] or planned[sku]):
+            continue
+        worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
         reference = signal(sku).get("median_price")
         if reference is not None and reference <= worst_cost * (1 + rate):
             continue

@@ -97,11 +97,85 @@ class Plan(unittest.TestCase):
         self.assertEqual(self.plan(closed, catalog, {"s1": HOT})[1]["reason"], "market_restock_window_closed")
 
 
+class Depth(Plan):
+    WIDE = dict(LIMITS, max_total_units=80, max_units_per_run=12, max_lines_per_run=6)
+
+    def test_range_comes_first_and_depth_fills_the_units_within_the_lines(self):
+        catalog = {f"s{i}": product(f"c{i}") for i in range(20)}
+        buys, why = self.plan(inventory(), catalog, {k: HOT for k in catalog}, self.WIDE)
+        self.assertEqual(len(buys), 6)
+        self.assertEqual(sum(b["qty"] for b in buys), 12)
+        self.assertTrue(all(1 <= b["qty"] <= 3 for b in buys))
+        self.assertEqual(why["planned_units"], 12)
+
+    def test_a_sku_without_bulk_evidence_stays_at_one(self):
+        thin = {"distinct_buyers": 3, "settles_6h": 3, "distinct_buyers_6h": 3, "median_price": 100}
+        catalog = {f"s{i}": product(f"c{i}") for i in range(20)}
+        buys, _ = self.plan(inventory(), catalog, {k: thin for k in catalog}, self.WIDE)
+        self.assertEqual((len(buys), sum(b["qty"] for b in buys)), (6, 6))
+
+    def test_the_total_of_80_holds(self):
+        catalog = {f"s{i}": product(f"c{i}") for i in range(20)}
+        have = [unit(f"h{i}") for i in range(78)]
+        buys, _ = self.plan(inventory(have), catalog, {k: HOT for k in catalog}, self.WIDE)
+        self.assertEqual(sum(b["qty"] for b in buys), 2)
+        buys, why = self.plan(inventory([unit(f"h{i}") for i in range(80)]), catalog, {k: HOT for k in catalog}, self.WIDE)
+        self.assertEqual((buys, why["reason"]), ([], "stock_or_cash_limit"))
+
+    def test_the_budget_still_binds_on_depth(self):
+        catalog = {f"s{i}": product(f"c{i}", price=1000000) for i in range(20)}
+        hot = dict(HOT, median_price=1000000)
+        buys, why = self.plan(inventory(balance=100000000), catalog, {k: hot for k in catalog}, self.WIDE)
+        self.assertLessEqual(sum(b["qty"] for b in buys)*750000*1.07, why["budget"]+1)
+        self.assertLessEqual(len(buys), 6)
+
+    def test_settings_without_lines_keep_a_line_for_each_unit(self):
+        catalog = {f"s{i}": product(f"c{i}") for i in range(8)}
+        buys, _ = self.plan(inventory(), catalog, {k: HOT for k in catalog})
+        self.assertEqual((len(buys), sum(b["qty"] for b in buys)), (6, 6))
+
+
+class Surge(Plan):
+    WIDE = Depth.WIDE
+
+    def surged(self, units=(), factor=1.2, **extra):
+        return dict(inventory(units, **extra), surge=[{"sku": "hot", "units": 150, "factor": factor}])
+
+    def test_a_surged_sku_is_not_deepened(self):
+        catalog = {"hot": product("c1"), "s2": product("c2")}
+        buys, _ = self.plan(self.surged(), catalog, {k: HOT for k in catalog}, self.WIDE)
+        self.assertEqual({b["sku"]: b["qty"] for b in buys}, {"hot": 1, "s2": 3})
+
+    def test_a_surged_sku_already_held_is_not_bought(self):
+        catalog = {"hot": product("c1"), "s2": product("c2")}
+        buys, _ = self.plan(self.surged([unit("hot", "c1")]), catalog, {k: HOT for k in catalog}, self.WIDE)
+        self.assertNotIn("hot", {b["sku"] for b in buys})
+
+    def test_the_market_price_must_clear_the_surged_cost(self):
+        # Worst cost 75; times 1.2 is 90. A public median of 85 clears the plain cost and not the surged one.
+        catalog = {"hot": product("c1")}
+        intel = {"hot": dict(HOT, median_price=85)}
+        self.assertEqual(self.plan(self.surged(), catalog, intel, self.WIDE)[0], [])
+        self.assertEqual(self.plan(inventory(), catalog, intel, self.WIDE)[0], [{"sku": "hot", "qty": 3}])
+
+    def test_the_budget_uses_the_surged_cost(self):
+        catalog = {"hot": product("c1", price=1000000)}
+        intel = {"hot": dict(HOT, median_price=1000000)}
+        _, why = self.plan(self.surged(), catalog, intel, self.WIDE)
+        self.assertEqual(round(why["estimated_max_cost"]), 900000)
+
+    def test_a_broken_surge_list_changes_nothing(self):
+        catalog = {"s1": product("c1")}
+        for rows in (None, "x", ["x"], [{"sku": "s1"}], [{"sku": "s1", "factor": "2"}], [{"sku": "s1", "factor": float("inf")}], [{"sku": "s1", "factor": 1}]):
+            buys, _ = self.plan(dict(inventory(), surge=rows if isinstance(rows, list) or rows is None else []), catalog, {"s1": HOT}, self.WIDE)
+            self.assertEqual(buys, [{"sku": "s1", "qty": 3}], rows)
+
+
 class Bounds(unittest.TestCase):
     def test_settings_load_and_values_past_the_bounds_are_refused(self):
         settings = restock_capacity.config()
-        self.assertEqual((settings["max_total_units"], settings["max_proven_units_per_sku"], settings["max_units_per_run"], settings["max_unproven_units"]), (40, 3, 6, 2))
-        for key, value in (("max_total_units", 41), ("max_proven_units_per_sku", 4), ("max_units_per_run", 7), ("max_unproven_units", 3)):
+        self.assertEqual((settings["max_total_units"], settings["max_proven_units_per_sku"], settings["max_units_per_run"], settings["max_lines_per_run"], settings["max_unproven_units"]), (80, 3, 12, 6, 2))
+        for key, value in (("max_total_units", 81), ("max_proven_units_per_sku", 4), ("max_units_per_run", 13), ("max_lines_per_run", 11), ("max_lines_per_run", 0), ("max_lines_per_run", "6"), ("max_unproven_units", 3)):
             with self.subTest(key=key), patch.object(restock_capacity, "read", return_value=dict(settings, **{key: value})):
                 with self.assertRaises(ValueError):
                     restock_capacity.config()

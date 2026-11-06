@@ -68,7 +68,7 @@ class AliveRestock(unittest.TestCase):
         buys, info = plan(inventory, catalog, [{"category": "g"}], {}, now=self.now+1, runtime=runtime)
         self.assertTrue(buys)
         self.assertNotEqual(info.get("reason"), "strategy_cash_or_data_guard")
-        full = {"round": 3, "balance": 5000000, "units": [{"sku": "A", "kind": "goods", "grade": "A", "cost": 1} for _ in range(40)]}
+        full = {"round": 3, "balance": 5000000, "units": [{"sku": "A", "kind": "goods", "grade": "A", "cost": 1} for _ in range(80)]}
         self.assertEqual(plan(full, catalog, [{"category": "g"}], {}, now=self.now+1, runtime=runtime)[1]["reason"], "stock_or_cash_limit")
 
     def test_alive_false_with_old_market_data_pauses(self):
