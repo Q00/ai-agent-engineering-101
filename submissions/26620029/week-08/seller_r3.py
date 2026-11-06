@@ -212,7 +212,9 @@ def find_unit(text, taken=()):
     # ddolcom (2026-11-07): a named SKU's cheapest unit first, not its oldest, so a floor above the market's price does not block the
     # units that can sell: since 22:26 G8095ddd6 had 62 offers and 4 at or above the floor while its grade A at 0.73 of list stood first
     # and units at 0.38 and 0.57 waited. The units of the forum clearance stay first, as the post says. Food still goes by its date
-    key = ((lambda u: (u["expires_at"] or float("inf"), not is_dead(u), u["cost"], u["supplied_at"])) if named
+    # Goods of grade C after A and B (02:28-03:23: 6 of 27 grade C goods receipts settled, 70 of 70 A and 21 of 21 B)
+    key = ((lambda u: (u["expires_at"] or float("inf"), not is_dead(u), is_goods(u) and u.get("grade") == "C", u["cost"],
+                       u["supplied_at"])) if named
            else (lambda u: (u["expires_at"] or float("inf"), u["supplied_at"])))
     fit = named or fit                                   # a SKU the buyer named comes first
     return min(fit, key=key, default=None)
