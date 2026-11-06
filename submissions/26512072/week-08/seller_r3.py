@@ -126,8 +126,8 @@ def terms(u):
     ratio = market_ratio(u)                         # open a little above where this market closes, so we land near it
     waited = (market_now() - (u.get("supplied_at") or market_now())) / 3600
     if waited > STALE_HOURS:                        # buyers went elsewhere: profit counts the balance, not the stock,
-        lift = 0                                    # so turn it back into cash at the market's price, cost at least
-        floor = min(floor, round(cost * (0.9 if waited > 24 else 1.0)))
+        lift = -0.10 if waited > 24 else -0.03      # so open below the market (buyers left at our first ask) and
+        floor = min(floor, round(cost * (0.9 if waited > 24 else 1.0)))   # sell down to cost, 90% after a day
     else:
         lift = 0.05
     opening = round(lp * (min(0.95, max(0.6, ratio + lift + delta)) if ratio else base + delta))

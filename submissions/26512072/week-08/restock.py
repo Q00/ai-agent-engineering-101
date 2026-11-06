@@ -17,7 +17,7 @@ Round 3 showed demand is concentrated (one mattress, one kimchi, bedding and wat
 settles), so best sellers get up to 5 units (6 above 100,000), ranked by credits settled, and fast-selling food is
 kept even if short-lived. 11-04 02:20: mattresses were 54% of the market's credits over 3 hours, one queen mattress
 (list 423,810) sold 424 times against 437 supplied, and mine sold within minutes of arriving. Goods break in about 2% of the market's deals, so expensive goods are worth the warranty.
-Money: keep 1,000,000 in cash, hold at most 4,000,000 of fresh stock (bought in the last 6 h) at cost, spend at most 40% of the balance a run
+Money: keep 1,000,000 in cash, expensive SKUs only while all stock is under 6,000,000 at cost; cheap SKUs (list <= 100,000) up to 2,500,000, 300,000 a run, spend at most 40% of the balance a run
 (about two runs fit in one window).
 Food: only SKUs that keep for 10 days or more, unless the market or I sold that SKU before.
 No more of a SKU while one of my units of it has waited longer than 3 hours (profit counts the balance, not stock).
@@ -33,7 +33,9 @@ from r3lib import (FLOW_HOURS, HERE, SALES, append_jsonl, catalog, forum_wants, 
                    read_jsonl, refresh_market_sales)
 
 CASH_FLOOR = 1_000_000
-STOCK_CAP = 4_000_000   # stock bought in the last 6 h, at cost
+STOCK_CAP = 6_000_000   # all stock at cost; expensive SKUs only below it
+CHEAP_CAP = 2_500_000   # cheap SKUs (list <= 100,000) at cost
+CHEAP_RUN = 300_000     # cheap SKUs a run
 SPEND_SHARE = 0.40
 MAX_LINES = 10
 MAX_LIST = 700_000
@@ -65,12 +67,16 @@ def main():
     have = Counter(u["sku"] for u in units)
     # a unit of mine that has waited longer than a snapshot means the buyers went elsewhere: buy no more of that SKU
     stale = {u["sku"] for u in units if market_now() - (u.get("supplied_at") or market_now()) > FLOW_HOURS * 3600}
-    # the cap is for stock that is still selling: units unsold 6 h are already offered at cost (seller_r3.STALE_HOURS)
-    # and counting them blocked all buying for 14 h on 11-05 (7.66M stale > the 7M cap; 133 negotiations in 14 h).
-    # Expensive SKUs that sat are kept out by MAX_LIST and the stale-SKU rule instead.
-    stock_cost = sum(u.get("cost") or 0 for u in units if market_now() - (u.get("supplied_at") or market_now()) <= 6 * 3600)
-    budget = min(balance - CASH_FLOOR, STOCK_CAP - stock_cost, balance * SPEND_SHARE)
-    if budget <= 0:
+    # Two budgets. Cheap SKUs (list <= 100,000) keep the shop busy and sell (237 of 277 deals on 11-06), so they get a
+    # small budget of their own. Expensive SKUs only while ALL stock is under STOCK_CAP: capping only fresh stock
+    # (11-06 01:30) let the cap refill every 6 h and stock grew from 7.66M to 16.68M in 13 h, profit fell below zero.
+    stock_cost = sum(u.get("cost") or 0 for u in units)
+    cheap = lambda sku: cat[sku]["list_price"] <= 100_000
+    cheap_cost = sum(u.get("cost") or 0 for u in units if u["sku"] in cat and cheap(u["sku"]))
+    room = balance - CASH_FLOOR
+    budgets = {True: min(room, CHEAP_CAP - cheap_cost, CHEAP_RUN),
+               False: min(room, STOCK_CAP - stock_cost, balance * SPEND_SHARE)}
+    if max(budgets.values()) <= 0:
         print(json.dumps({"buy": []}))
         return
 
@@ -112,20 +118,21 @@ def main():
             mid = min(skus, key=lambda s: abs(cat[s]["list_price"] - d["median_price"]))
             wants.append(("cold start: middle of the category", mid, 1))
 
-    buy, spend, seen = [], 0.0, set()
+    buy, spent, seen = [], {True: 0.0, False: 0.0}, set()
     for why, sku, target in wants:
         if sku in seen or sku in stale or len(buy) >= MAX_LINES:
             continue
         seen.add(sku)
         qty = target - have.get(sku, 0)
         price = cat[sku]["list_price"] * EST_COST
-        if qty <= 0 or spend + price > budget:
+        kind, budget = cheap(sku), budgets[cheap(sku)]
+        if qty <= 0 or spent[kind] + price > budget:
             continue
-        qty = min(qty, int((budget - spend) // price))
+        qty = min(qty, int((budget - spent[kind]) // price))
         if qty <= 0:
             continue
         buy.append({"sku": sku, "qty": qty})
-        spend += qty * price
+        spent[kind] += qty * price
         append_jsonl(LOG, {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "sku": sku, "name": cat[sku]["name"],
                            "qty": qty, "why": why, "est_cost": round(qty * price), "balance": balance,
                            "stock_cost": stock_cost})
