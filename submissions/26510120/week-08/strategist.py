@@ -32,6 +32,7 @@ HERE = Path(__file__).resolve().parent
 LOG = HERE / "logs" / "strategist.jsonl"
 LOCK = mt.STATE / "strategist.pid"
 MD = HERE / ".market"
+ACCEPT_SINCE = "2026-11-06 13:34 (this machine's clock)"   # market_buyer 7e0a823 went live
 
 RANGES = {
     "lookback_h": (0.5, 6), "min_sales": (2, 20), "max_unit_list": (100000, 4000000), "max_surge": (1.0, 1.3),
@@ -136,12 +137,22 @@ def context():
     for t in tries:
         k = t["result"].split(":")[0].split(" (")[0]
         outcomes[k] = outcomes.get(k, 0) + 1
+    every = load_jsonl(mt.STATE / "purchases.jsonl")           # all deals since the review hook (after ACCEPT_SINCE)
     ctx["buyer"] = {
         "attempts_2h": len(tries), "attempt_outcomes": outcomes,
         "paid_last_200": sum(1 for p in pays if p.get("paid")), "refused_reasons_last_200": reasons,
         "deals_2h": len(buys),
         "avg_saved_share": round(statistics.mean(1 - b["price"] / b["list"] for b in buys if b.get("list")), 3) if buys else None,
         "broken_reports": len(load_jsonl(MD / "broken.jsonl")),
+        "note": f"the accept policy (food shelf life, goods grades) has run since {ACCEPT_SINCE}; deals before it "
+                "had no checks, and the board's served/deals still counts them",
+        "since_accept_policy": {
+            "deals": len(every),
+            "food_deals": sum(1 for b in every if b.get("kind") == "food"),
+            "food_short_of_use_within": sum(1 for b in every if b.get("kind") == "food" and b.get("hours_left") is not None
+                                            and b.get("use_within_hours") and b["hours_left"] < b["use_within_hours"]),
+            "goods_grade_C": sum(1 for b in every if b.get("kind") == "goods" and b.get("grade") == "C"),
+        },
     }
     try:
         b = httpx.get(mt.MARKET + "/api/board", timeout=20).json()
@@ -153,7 +164,7 @@ def context():
         ctx["board"] = {
             "my_shop": {k: mine_s.get(k) for k in ("deals", "revenue", "book", "stars", "stock_units", "refunds", "all")},
             "student_shop_median": {k: med(shops, k) for k in ("deals", "revenue", "book", "stars")},
-            "my_buyer": {k: mine_b.get(k) for k in ("deals", "saved", "forum", "posts", "all")},
+            "my_buyer": {k: mine_b.get(k) for k in ("orders", "deals", "served", "saved", "forum", "posts", "all")},
             "student_buyer_median": {k: med(buyers, k) for k in ("deals", "saved", "forum", "posts")},
         }
     except (httpx.HTTPError, ValueError, KeyError) as e:
