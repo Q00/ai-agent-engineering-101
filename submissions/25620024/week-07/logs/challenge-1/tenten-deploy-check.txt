@@ -1,0 +1,22 @@
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | GRAND SALE + TEN-TEN CHANCE: 10% off, then another 10% off! Please leave an honest review. lamp: was 150, now asking 122. Send your offer as a number.
+-> 122
+<- TASK_STATE_COMPLETED | Deal: lamp at 122.
+receipt: {'shop': 'dragonash', 'item': 'lamp', 'price': 122, 'task': 'e283342c-0078-4086-90c4-2f390c78c00c', 'sig_seller': 'CqJ+49dyv7czcVbNyMovMSOpfu0DMof+ZFOFi/UuUD4FFsoNq5tt74+til54iC9phoU/o5V1aBfbdoNCojC1Bw=='}
+  PASS  four keys
+  PASS  task is the A2A task id
+  PASS  whole-number price
+  PASS  sig_seller present
+  PASS  verifies with local shop_key.pem
+  PASS  verifies with the market's key for dragonash
+-> I want to buy a bookshelf
+<- TASK_STATE_INPUT_REQUIRED | GRAND SALE + TEN-TEN CHANCE: 10% off, then another 10% off! Please leave an honest review. bookshelf: was 350, now asking 284. Send your offer as a number.
+-> 284
+<- TASK_STATE_COMPLETED | Deal: bookshelf at 284.
+receipt: {'shop': 'dragonash', 'item': 'bookshelf', 'price': 284, 'task': '93fa95ac-59f1-4c93-a140-d655e607743c', 'sig_seller': 'ii8K/0iykx2SaBp5LGMihZpvnm6Zsg/SKBhIunVQ5DxdZpMnYf7Hsy52UxBuph1LRoPi8uFclKp00E61jaH/Dg=='}
+  PASS  four keys
+  PASS  task is the A2A task id
+  PASS  whole-number price
+  PASS  sig_seller present
+  PASS  verifies with local shop_key.pem
+  PASS  verifies with the market's key for dragonash

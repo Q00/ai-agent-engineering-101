@@ -1,0 +1,111 @@
+dragonash's GRAND SALE - TEN-TEN CHANCE on http://127.0.0.1:53313  (harness: OpenRouter minimax/minimax-m3.1-flash:free, receipts signed with shop_key.pem)
+[43dae4fa] harness opening ask 150 for lamp (reserve 100)
+[43dae4fa] SALE opening ask 150 -> 122
+[43dae4fa] GUARANTEE ask 122 >= market average 108.5: 107
+[43dae4fa] offer 107 >= current ask 107: accept without asking the harness
+[43dae4fa] DEAL lamp at 107 (reserve 100)
+[ee47bf9d] harness opening ask 150 for lamp (reserve 100)
+[ee47bf9d] SALE opening ask 150 -> 122
+[ee47bf9d] GUARANTEE ask 122 >= market average 108.5: 107
+[ee47bf9d] offer 107 >= current ask 107: accept without asking the harness
+[ee47bf9d] DEAL lamp at 107 (reserve 100)
+[5a554f28] harness opening ask 140 for lamp (reserve 100)
+[5a554f28] SALE opening ask 140 -> 113
+[5a554f28] GUARANTEE ask 113 >= market average 108.5: 107
+[5a554f28] offer 107 >= current ask 107: accept without asking the harness
+[5a554f28] DEAL lamp at 107 (reserve 100)
+[8181c6c6] harness opening ask 320 for bookshelf (reserve 260)
+[8181c6c6] SALE opening ask 320 -> 259
+[8181c6c6] GUARD opening ask 259 < reserve 260: raised to 260
+[8181c6c6] offer 140 -> harness {"action": "counter", "price": 220}
+[8181c6c6] GUARD counter 220 < reserve 260: raised to 260
+[8181c6c6] offer 170 -> harness {"action": "reject", "price": 260}
+[8181c6c6] FAST CLOSE harness rejected on offer 2: counter instead
+[8181c6c6] offer 200 -> harness {"action": "counter", "price": 259}
+[8181c6c6] GUARD counter 259 < reserve 260: raised to 260
+[8181c6c6] offer 230 -> harness {"action": "counter", "price": 250}
+[8181c6c6] GUARD counter 250 < reserve 260: raised to 260
+[8181c6c6] offer 230 -> harness {"action": "counter", "price": 250}
+[8181c6c6] GUARD counter 250 < reserve 260: raised to 260
+[8181c6c6] offer 230 -> harness {"action": "reject", "price": 260}
+[8181c6c6] REJECT after 6 offers (last offer 230)
+[27d2f1a7] harness opening ask 320 for bookshelf (reserve 260)
+[27d2f1a7] SALE opening ask 320 -> 259
+[27d2f1a7] GUARD opening ask 259 < reserve 260: raised to 260
+[27d2f1a7] offer 140 -> harness {"action": "counter", "price": 240}
+[27d2f1a7] GUARD counter 240 < reserve 260: raised to 260
+[27d2f1a7] offer 170 -> harness {"action": "reject", "price": 170}
+[27d2f1a7] FAST CLOSE harness rejected on offer 2: counter instead
+[27d2f1a7] offer 200 -> harness {"action": "reject", "price": 260}
+[27d2f1a7] FAST CLOSE harness rejected on offer 3: counter instead
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1096613a0> at 0x10a873040> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-38' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1096613a0> at 0x10a872240> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-39' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+[27d2f1a7] offer 230 -> harness {"action": "reject", "price": 260}
+[27d2f1a7] FAST CLOSE harness rejected on offer 4: counter instead
+[27d2f1a7] offer 230 -> harness {"action": "reject", "price": 260}
+[27d2f1a7] FAST CLOSE harness rejected on offer 5: counter instead
+[27d2f1a7] offer 230 -> harness {"action": "reject", "price": 260}
+[27d2f1a7] REJECT after 6 offers (last offer 230)
+[67d40385] harness opening ask 320 for bookshelf (reserve 260)
+[67d40385] SALE opening ask 320 -> 259
+[67d40385] GUARD opening ask 259 < reserve 260: raised to 260
+[67d40385] offer 140 -> harness {"action": "reject", "price": 260}
+[67d40385] FAST CLOSE harness rejected on offer 1: counter instead
+[67d40385] offer 170 -> harness {"action": "counter", "price": 240}
+[67d40385] GUARD counter 240 < reserve 260: raised to 260
+[67d40385] offer 200 -> harness {"action": "reject", "price": 260}
+[67d40385] FAST CLOSE harness rejected on offer 3: counter instead
+[67d40385] offer 230 -> harness {"action": "counter", "price": 245}
+[67d40385] GUARD counter 245 < reserve 260: raised to 260
+[67d40385] offer 230 -> harness {"action": "reject", "price": 260}
+[67d40385] FAST CLOSE harness rejected on offer 5: counter instead
+[67d40385] offer 230 -> harness {"action": "reject", "price": 0}
+[67d40385] REJECT after 6 offers (last offer 230)
