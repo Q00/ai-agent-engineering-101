@@ -291,7 +291,14 @@ def run(md, now=None):
     if handle is None:
         return {"status": "busy", "model_calls": 0}
     try:
-        return _run(md, time.time() if now is None else now)
+        now = time.time() if now is None else now
+        try:
+            # Apart from the shop's ten-minute pass: this has its own interval, and a failure here must not stop the shop's posts.
+            import forum_buyer_posts
+            forum_buyer_posts.run(md, now)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print(f"[forum] buyer note deferred: {type(error).__name__}: {error}", flush=True)
+        return _run(md, now)
     finally:
         release(handle)
 

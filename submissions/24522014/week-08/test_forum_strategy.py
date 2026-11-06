@@ -24,7 +24,7 @@ class ForumStrategy(unittest.TestCase):
         self.addCleanup(settings.stop)
 
     def deal(self, ledger):
-        return {"receipt": {"price": 80}, "settled": {"ledger": ledger, "sku": "A", "value": 100, "grade": "A"}}
+        return {"receipt": {"price": 80}, "settled": {"ledger": ledger, "sku": f"S{ledger}", "value": 100, "grade": "A"}}
 
     def test_actual_ledger_and_provisional_surplus_no_votes(self):
         with tempfile.TemporaryDirectory() as tmp:

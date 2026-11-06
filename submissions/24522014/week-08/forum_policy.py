@@ -17,11 +17,16 @@ MARKET_SHOP_INTERVAL = 300
 # Nearly every post on the board carries one dislike, so one says nothing; a shop slows down only when several posts draw two or more.
 SHOP_BRAKE_DISLIKES, SHOP_BRAKE_POSTS = 2, 3
 BUYER_CORRECTION = "buyer_correction"  # A later breakage or refund on a deal we already reported. The one buyer post a pause allows.
+SKU_REPEAT = 86400
+# Patch 3.4: a buyer's forum score counts one stance per account and author. A post needs time for votes, since nearly every new one starts with a single dislike.
+BUYER_STOP_POSTS, BUYER_STOP_MIN_POSTS, BUYER_STOP_POST_AGE, BUYER_STOP_FORUM_DROP = 20, 5, 1800, .02
+OWN_LOGIN = "kcwarni"
 
 
 def valid_limits(value):
     try:
-        return (isinstance(value, dict) and 4 <= value["buyer_daily_limit"] <= 12 and 3 <= value["buyer_report_limit"] <= 9
+        interval = value.get("buyer_min_interval_seconds", 3600) if isinstance(value, dict) else None
+        return (isinstance(value, dict) and 4 <= value["buyer_daily_limit"] <= 288 and 3 <= value["buyer_report_limit"] <= 288 and type(interval) is int and MARKET_SHOP_INTERVAL <= interval <= 3600
                 and value["buyer_report_limit"] < value["buyer_daily_limit"] and type(value["shop_daily_limit"]) is int and 4 <= value["shop_daily_limit"] <= 24
                 and type(value["shop_reply_interval_seconds"]) is int and 600 <= value["shop_reply_interval_seconds"] <= 3600
                 and value["min_interval_seconds"] >= 3600 and value["brake_dislikes"] >= 3 and 0 < value["brake_dislike_ratio"] <= .5
@@ -41,14 +46,58 @@ def posting_limits(md, now):
     forum = read(md / "forum-intel.json", {})
     reactions = forum.get("summary", {}).get("own_post_reactions", []) if (
         forum.get("status") == "ok" and 0 <= now-forum.get("observed_at", 0) <= 3600) else []
-    likes = sum(r.get("likes") or 0 for r in reactions)
-    dislikes = sum(r.get("dislikes") or 0 for r in reactions)
-    brake = len(reactions) >= 3 and dislikes >= value["brake_dislikes"] and dislikes/max(1, likes+dislikes) > value["brake_dislike_ratio"]
     shop_brake = sum(r.get("role") == "shop" and (r.get("dislikes") or 0) >= SHOP_BRAKE_DISLIKES for r in reactions) >= SHOP_BRAKE_POSTS
     shop_limits = {"shop_daily_limit": EARLIER_LIMITS["shop_daily_limit"], "shop_reply_interval_seconds": EARLIER_LIMITS["shop_reply_interval_seconds"]} if shop_brake else {}
-    return {**value, **shop_limits, "buyer_daily_limit": 4 if brake else value["buyer_daily_limit"],
-            "buyer_report_limit": 3 if brake else value["buyer_report_limit"], "reaction_brake": brake, "shop_reaction_brake": shop_brake,
+    return {**value, **shop_limits, "buyer_min_interval_seconds": value.get("buyer_min_interval_seconds", 3600), "buyer_resume_token": str(value.get("buyer_resume_token", "1")), "shop_reaction_brake": shop_brake,
             "buyer_posts_enabled": value.get("buyer_posts_enabled") is True}
+
+
+def board_forum(md, now):
+    snapshot = read(md / "market-intel.json", {})
+    if snapshot.get("round") != 3 or not 0 <= now-snapshot.get("observed_at", 0) <= 3600:
+        return None
+    forum = ((snapshot.get("competition") or {}).get("own") or {}).get("buyers", {}).get("forum")
+    return forum if type(forum) in (int, float) and math.isfinite(forum) else None
+
+
+def buyer_stop_reason(md, resume, settings, now):
+    """Why buyer posts must stop since `resume`, or None. Unknown data never stops them."""
+    forum = board_forum(md, now)
+    if resume.get("forum") is not None and forum is not None and round(resume["forum"]-forum, 6) >= BUYER_STOP_FORUM_DROP:
+        return {"reason": "board_forum_fell", "forum_at_resume": resume["forum"], "forum_now": forum}
+    posts = read(md / "forum-buffer.json", {}).get("posts") or []
+    settled = sorted((p for p in posts if p.get("author") == OWN_LOGIN and p.get("role") == "buyer" and type(p.get("ts")) in (int, float) and resume["at"] <= p["ts"] <= now-BUYER_STOP_POST_AGE), key=lambda p: p["ts"])[-BUYER_STOP_POSTS:]
+    likes, dislikes = sum(p.get("likes") or 0 for p in settled), sum(p.get("dislikes") or 0 for p in settled)
+    if len(settled) >= BUYER_STOP_MIN_POSTS and dislikes >= settings["brake_dislikes"] and dislikes/max(1, likes+dislikes) > settings["brake_dislike_ratio"]:
+        return {"reason": "dislike_share", "posts": len(settled), "likes": likes, "dislikes": dislikes}
+    return None
+
+
+def buyer_stopped(md, state, settings, now):
+    """True once the stop rule has fired for this resume token. A new `buyer_resume_token` in the settings starts a new count. Says so once, in the terminal and a log."""
+    token = settings["buyer_resume_token"]
+    resume = state.get("buyer_resume")
+    changed = False
+    if not resume or resume.get("token") != token:
+        resume = state["buyer_resume"] = {"token": token, "at": now, "forum": board_forum(md, now)}
+        changed = True
+    elif resume.get("forum") is None:
+        resume["forum"] = board_forum(md, now)
+        changed = resume["forum"] is not None
+    if (state.get("buyer_stop") or {}).get("token") == token:
+        return True
+    reason = buyer_stop_reason(md, resume, settings, now)
+    if reason:
+        state["buyer_stop"] = {"token": token, "at": now, **reason}
+        changed = True
+        print(f"[포럼] buyer 글 자동 중지: {reason['reason']}", file=sys.stderr, flush=True)
+        path = md.parent / "logs/forum-buyer-stop.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf8") as stream:
+            stream.write(json.dumps({"at": now, "token": token, **reason}) + "\n")
+    if changed:
+        write(md / "forum-policy.json", state)
+    return bool(reason)
 
 
 def message_key(message):
@@ -96,6 +145,8 @@ def _enqueue(md, message, key, kind, metadata, now):
             return "buyer_posts_paused"
         if settings.get("buyer_posts_enabled"):
             state.pop("buyer_pause", None)
+            if buyer_stopped(md, state, settings, now) and kind != BUYER_CORRECTION:
+                return "buyer_posts_stopped"
     day = datetime.fromtimestamp(now, timezone.utc).date().isoformat()
     role = message["as"]
     limits = state if role == "buyer" else state.get("shop", {"last_at": 0, "day": "", "count": 0})
@@ -110,7 +161,7 @@ def _enqueue(md, message, key, kind, metadata, now):
             last_kind = limits["last_at"]  # Slowed down: every shop post shares one interval again, as before.
         if count >= limit or now-last_kind < apart or now-limits["last_at"] < MARKET_SHOP_INTERVAL:
             return "rate_limited"
-    elif count >= limit or now-limits["last_at"] < settings["min_interval_seconds"]:
+    elif count >= limit or now-limits["last_at"] < settings["buyer_min_interval_seconds"]:
         return "rate_limited"
     reports_today = sum(a["kind"] == "buyer_report" and
                         datetime.fromtimestamp(a["queued_at"], timezone.utc).date().isoformat() == day
@@ -182,6 +233,9 @@ def queue_report(md, deal, result, now=None):
     if (value-price)/value < settings["minimum_report_surplus_ratio"]:
         return "insufficient_new_value"
     md.mkdir(parents=True, exist_ok=True)
+    actions = read(md / "forum-actions.json", {})
+    if f"buyer-report:{ledger}" not in actions and any(a.get("sku") == settled["sku"] and a.get("kind") in ("buyer_market_note", "buyer_report") and 0 <= now-a.get("queued_at", -1) < SKU_REPEAT for a in actions.values()):
+        return "sku_recently_posted"
     text = (f"Buyer settlement report #{ledger}: {str(settled['sku'])[:80]}, paid {price} credits, "
             f"market value at settlement {value}, initial surplus {value-price}. "
             f"Recorded grade {settled.get('grade')}; warranty {settled.get('warranty_hours') or 0} h. "

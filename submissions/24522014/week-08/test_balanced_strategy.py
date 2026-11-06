@@ -182,12 +182,11 @@ class Files(unittest.TestCase):
                 self.assertTrue(buyer_support.reserve_model(self.md, f'{hour}-{i}', base+hour*3601))
         self.assertFalse(buyer_support.reserve_model(self.md, 'extra', base+13*3601))
 
-    def test_forum_negative_reactions_brake(self):
+    def test_old_negative_reactions_rule_no_longer_cuts_buyer_limits(self):
         write(self.md/'forum-intel.json', {'status': 'ok', 'observed_at': self.now,
               'summary': {'own_post_reactions': [{'likes': 1, 'dislikes': 1}]*3}})
         limits = forum_policy.posting_limits(self.md, self.now)
-        self.assertTrue(limits['reaction_brake'])
-        self.assertEqual((limits['buyer_daily_limit'], limits['buyer_report_limit']), (4, 3))
+        self.assertGreater(limits['buyer_daily_limit'], 4)
 
     def test_stale_forum_does_not_invent_negative_reactions(self):
         write(self.md/'forum-intel.json', {'status': 'ok', 'observed_at': self.now-3601,

@@ -179,9 +179,9 @@ class ForumEngagementTests(unittest.TestCase):
 
     def test_buyer_three_slots_reserved_for_followups(self):
         for i in range(9):
-            deal = dict(receipt={"price": 80}, settled=dict(ledger=i+1, sku="G1", value=100, grade="A"))
+            deal = dict(receipt={"price": 80}, settled=dict(ledger=i+1, sku=f"G{i+1}", value=100, grade="A"))
             self.assertEqual(queue_report(self.md, deal, {"stars": 5}, T+i*3600), "queued")
-        deal["settled"]["ledger"] = 10
+        deal["settled"].update(ledger=10, sku="G10")
         self.assertEqual(queue_report(self.md, deal, {"stars": 5}, T+32400), "rate_limited")
         self.assertEqual(enqueue(self.md, {"post": "follow-up", "refs": [1], "as": "buyer"},
                                  "followup:1", "buyer_followup", now=T+32400), "queued")
