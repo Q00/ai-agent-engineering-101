@@ -905,6 +905,10 @@ def test_votes():
         n = len(questions) // 2
         keys = list(evidence)
         return [0.95 if k == "p310" else 0.05 for k in keys] + [0.8 if k in ("p320", "p325") else 0.3 for k in keys][:n]
+    check("dislikes are off (11/6 12:00, the person's call: they cost money now): only the like is cast",
+          [v["value"] for v in forum.pick_votes(posts, set(), now, decide)] == [1])
+    asked.clear()
+    forum.DISLIKES = True                                       # the rules below, for when dislikes are turned on again
     picked = forum.pick_votes(posts, set(), now, decide)
     by = {v["value"]: v for v in picked}
     check("the decision model is asked about the last 3 hours' posts only, never our own",
@@ -944,6 +948,7 @@ def test_votes():
     analysis.votes(now + 1200, st, decide)
     check("20 minutes later: the remaining copy disliked, no second like within 3 hours",
           [(x["vote"], x["value"]) for x in outbox()[before:]] == [(302, -1)], outbox()[before:])
+    forum.DISLIKES = False
     common.write_json(MD / "forum.json", POSTS)
 
 

@@ -41,6 +41,9 @@ VOTE_ASK = 20            # newest posts of the window put to the decision model
 REPEAT_HOUR, REPEAT_COUNT, REPEAT_SAME = 3600, 2, 0.8   # 3 copies at 0.9 until 11/5 03:30 (the person: firmer)
 FLOOD_HOUR, FLOOD_POSTS = 3600, 10   # an author with this many posts in an hour floods the forum (the most is 12 a role)
 DISLIKE_MAX = 3          # dislikes in one turn (one per author): steering first, then repeats, then floods
+DISLIKES = False         # off since 11/6 12:00 (the person's call): from then an account's 4th new dislike stance in an
+                         # hour costs 20,000 x (k - 3) from its shop's cash (Patch 3.4), and a dislike stance weighs 1
+                         # however many posts it touches; we cast 9 an hour. The rules below stay for a redesign.
 LIKE_GAP = 3 * 3600      # a like at most this often (the votes step runs every 20 minutes since 11/5 03:30)
 RECENT_KEEP = 3600       # others' posts kept (analysis/forum_recent.json): forum.json shows only the newest 100, ~18 min
 STEER_MIN, USEFUL_MIN = 0.9, 0.6
@@ -139,7 +142,7 @@ def pick_votes(posts: list, voted: set, now: float, decide, like: bool = True) -
                + [(p, f"floods the forum ({FLOOD_POSTS}+ posts in an hour)", None) for p in window
                   if flood.get(p.get("author")) == p.get("id")])
     hit = set()
-    for p, why, odds in reasons:
+    for p, why, odds in reasons if DISLIKES else []:
         if len(out) >= DISLIKE_MAX:
             break
         if p.get("author") in hit:
