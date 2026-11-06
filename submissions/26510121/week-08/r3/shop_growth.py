@@ -153,12 +153,14 @@ def allocate_championship(candidates,inv,capacity,config,existing,merchant):
     for u in existing:held[u['sku']]=held.get(u['sku'],0)+1
     slots=max(0,cfg['inventory_target_units']-len(existing))
     def cost(c):return c['capital_commitment']/c['qty']
-    def delta(c):return marginal(c,selected.get(c['sku'],{}).get('qty',0)+1,held.get(c['sku'],0))
+    def selected_qty(c):return len(selected.get(c['sku'],{}).get('deltas',[]))
+    def delta(c):return marginal(c,selected_qty(c)+1,held.get(c['sku'],0))
     def progress(c,d):
-        return max(0,c.get('rank_progress_surrogate') or 0)*d['book']/max(1,c['expected_delta']['book'])
+        weight=c['evidence'].get('adaptive_category_weight',1)
+        return max(0,c.get('rank_progress_surrogate') or 0)*d['book']/max(1,c['expected_delta']['book'])*weight
     def feasible(c):
-        q=selected.get(c['sku'],{}).get('qty',0)
-        return (slots>0 and q<c['qty'] and used+cost(c)<=total+1e-6 and
+        q=selected_qty(c)
+        return (slots>0 and q<min(c['qty'],20,max(0,cfg['restock_max_qty']-held.get(c['sku'],0))) and used+cost(c)<=total+1e-6 and
                 (c['sku'] in selected or len(selected)<min(10,cfg['restock_max_lines'])) and
                 categories.get(c['category'],0)+cost(c)<=total*.6+1e-6 and
                 (not c['evidence']['exploration'] or probes+cost(c)<=total*cfg['exploration_fraction']+1e-6) and

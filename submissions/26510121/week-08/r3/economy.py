@@ -130,7 +130,8 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
         if p < recovery_floor:
             continue
         from .meta import quote_completion
-        completion = quote_completion(journal, unit["sku"], p)
+        completion = (quote_completion(journal,unit['sku'],p,now,grade(unit,catalog,now),warranty)
+                      if config.get('shop_championship_enabled') else quote_completion(journal,unit['sku'],p,now))
         if config.get('shop_velocity_enabled'):
             # A common flat conversion prior always preferred the highest
             # price. Price response is an explicit scenario, not a causal fit.

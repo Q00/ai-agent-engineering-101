@@ -31,6 +31,10 @@ def verify():
     good=good and local['objective_revision']==local['policy_version'] and local['control'].get('status')=='observe_and_trade'
     if local.get('buyer_patch34_enabled'):
         good=good and local.get('buyer_strategy_revision')==local.get('buyer_expected_revision')
+    if local.get('shop_championship_enabled'):
+        good=good and local.get('shop_strategy_revision')==local.get('shop_expected_revision')
+        progress=local.get('championship_progress',{})
+        good=good and progress.get('scope','').startswith('everyone') and bool(progress.get('next_thresholds'))
     result={'verified':bool(good),'public':public,'local':local}
     path=ROOT/'logs'/('autonomous-verified-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
     path.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')

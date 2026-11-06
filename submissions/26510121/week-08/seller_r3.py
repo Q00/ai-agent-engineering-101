@@ -156,6 +156,7 @@ class Seller(AgentExecutor):
         customer_memory.action(self.j, task.id, message_id, deal['turns'], selected, deal['strategy']['version'])
         self.j.add("shop_quote", {"task": task.id, "sku": unit["sku"], "price": price, "action": selected["action"],
                                   "strategy_version": deal['strategy']['version'],
+                                  'grade':grade(unit,cat),
                                   'warranty_hours': selected['warranty_hours']}, role="shop")
         if selected["action"] == "accept":
             customer_memory.finish(self.j, task.id, 'agreed_not_yet_paid')

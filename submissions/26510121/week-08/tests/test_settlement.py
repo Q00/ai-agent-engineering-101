@@ -11,25 +11,37 @@ import threading
 import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import httpx
+import pytest
 import uvicorn
 from starlette.applications import Starlette
 from starlette.routing import Route
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 from r3.adapter import load_kit, install
-from r3.state import Journal, atomic_json
+from r3.state import Journal, atomic_json, policy
 from seller_r3 import Seller, build
 from market_buyer import buy
 from review import review
 from test_market_contract import unit, pub
 
 
-def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch):
+@pytest.mark.parametrize('championship',[False,True])
+def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch,championship):
+    if championship:
+        cfg=dict(policy(),shop_championship_enabled=True,buyer_championship_enabled=True,
+                 buyer_patch34_enabled=True,buyer_strategy_revision='championship-synthetic')
+        for module in ['r3.adaptive','r3.adapter','seller_r3']:
+            monkeypatch.setattr(module+'.policy',lambda *a:cfg)
     if not os.environ.get('R3_LIVE_INTEGRATION'):
         monkeypatch.setenv('R3_MODEL_MODE', 'offline')
     else:
         monkeypatch.delenv('R3_MODEL_MODE', raising=False)
     j = Journal(tmp_path / '.market')
+    if championship:
+        atomic_json(j.md/'board.json',{'round':3,'buyers':[
+            {'name':'seochanit','saved':.15,'deals':100,'forum':.5,'posts':2}]})
+        j.put('market_rules',{'buyer_metric':'saved','buyer_compatible':True})
+        j.put('quality_risk_v4',{'at':time.time(),'grades':{'A':{'n':200,'broken':2,'within3':1}}})
     kit = install(load_kit(), j)
     shop_key, buyer_key, market_key = (Ed25519PrivateKey.generate() for _ in range(3))
     product = {'name': 'synthetic appliance', 'category': 'goods>appliance', 'kind': 'goods', 'list_price': 10000}
@@ -124,8 +136,8 @@ def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch):
             assert j.events('model_usage'), 'A numeric fallback alone is not a live-model validation'
             decisions = j.events('decision')
             assert {d['_role'] for d in decisions} == {'shop', 'buyer'}
-            assert all(d['mode'] in {'model','single_feasible'} for d in decisions)
-            assert {d['_role'] for d in decisions if d['mode']=='model'} == {'shop','buyer'}
+            assert all(d['mode'] in {'model','single_feasible','fast_buyer_saved'} for d in decisions)
+            assert {d['_role'] for d in decisions if d['mode']=='model'} == ({'shop'} if championship else {'shop','buyer'})
             print('LIVE_MODEL_USAGE', json.dumps(j.events('model_usage'), ensure_ascii=False))
     finally:
         server.should_exit = True

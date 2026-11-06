@@ -122,7 +122,7 @@ def activate_buyer_revision(journal,revision,now=None):
              'status':'stable','since':now,'cooldown_until':now+MATURITY}
     if not transition(journal,'buyer',previous,updated,'buyer_revision_epoch',
                       {'revision':revision,'previous_patch_archived':patch,
-                       'reason':'Patch 3.4 Saved objective; preserve shop and historical quality evidence'},now):return
+                       'reason':'buyer objective/routing revision; preserve shop and historical quality evidence'},now):return
     journal.put('buyer_strategy_revision',revision)
     journal.put('buyer_revision_epoch',now)
 

@@ -2,6 +2,7 @@
 from datetime import datetime,timezone
 import json
 import sqlite3
+import sys
 import time
 from autonomous_status import ReadJournal
 from r3.state import ROOT,read_json,policy
@@ -9,12 +10,17 @@ from r3.economy import restock_candidates
 
 
 def main():
-    cutoff=time.time();stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
-    files={name:read_json(ROOT/'.market'/name,{}) for name in
-           ['inventory.json','catalog.json','board.json','market_stock_counts.json','registry.json']}
-    cfg=policy();source={'journal_cutoff':cutoff,'local_files':files,'policy':cfg}
-    path=ROOT/'logs'/('championship-replay-source-'+stamp+'.json')
-    path.write_text(json.dumps(source,ensure_ascii=False,indent=2),encoding='utf-8')
+    stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    if len(sys.argv)>1:
+        path=ROOT/sys.argv[1];source=read_json(path)
+        cutoff=source['journal_cutoff'];files=source['local_files'];cfg=source['policy']
+    else:
+        cutoff=time.time()
+        files={name:read_json(ROOT/'.market'/name,{}) for name in
+               ['inventory.json','catalog.json','board.json','market_stock_counts.json','registry.json']}
+        cfg=policy();source={'journal_cutoff':cutoff,'local_files':files,'policy':cfg}
+        path=ROOT/'logs'/('championship-replay-source-'+stamp+'.json')
+        path.write_text(json.dumps(source,ensure_ascii=False,indent=2),encoding='utf-8')
     variants={}
     with sqlite3.connect((ROOT/'.market/r3.sqlite3').as_uri()+'?mode=ro',uri=True) as c:
         c.execute('BEGIN')
