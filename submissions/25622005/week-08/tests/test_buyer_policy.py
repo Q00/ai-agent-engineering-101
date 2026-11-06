@@ -98,6 +98,14 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["p_reach"], cs[0]["score"]), (32000, 0.2, 1.0, 0.18))
         self.assertIn("ask est 32000", cs[0]["why"])
 
+    def test_min_kept_caps_goods_without_dropping_them(self):
+        pol = json.loads(json.dumps(POL)); pol["buyer"]["min_kept"] = 0.28
+        self.assertEqual(bp.cap(100000, "goods", 0, None, 999999, pol), 70000)       # min(0.70, 0.72)
+        self.assertEqual(bp.cap(100000, "goods", 6, None, 999999, pol), 72000)       # min(0.94, 0.72)
+        self.assertEqual(bp.cap(30000, "food", 0, None, 99999, pol), 21600)          # min(0.95, 0.72)
+        cs = bp.candidates(GOODS, [shop("http://a", ("G1", 1))], CATALOG, {}, pol)
+        self.assertEqual([(c["shop"], c["cap"]) for c in cs], [("http://a", 70000)])   # q-adjusted kept < 0.28, still a candidate
+
     def test_settled_price_in_the_ledger_outranks_first_asks(self):
         shops = [shop("http://a", ("F2", 1)), shop("http://b", ("F2", 1))]
         book = {"market": {"price_book": {"http://a": {"sku": {"F2": {"n": 2, "med": 0.6}}},

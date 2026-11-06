@@ -174,7 +174,9 @@ def candidates(order, shops, catalog, summary, pol, asks=None):
             c = cap(V, k, 0, q_upper, budget, pol)
             qk = q if k != "food" else 0.0
             surplus = expected_surplus(V, c, k, qk, 0)
-            if c <= 0 or surplus < kept_floor(pol) * V - 1:
+            # the cap already keeps min_kept of list; the risk-adjusted surplus (q for goods) only has to clear the
+            # smaller min_surplus_list, or every goods order without a measured warranty would be dropped unseen
+            if c <= 0 or surplus < pol["buyer"]["min_surplus_list"] * V - 1:
                 continue
             e = (asks or {}).get(ask_key(url, k))
             known = _ask_entry(e) and e["n"] >= ASK_MIN_N
