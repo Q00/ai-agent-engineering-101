@@ -1,0 +1,62 @@
+[pricing] lamp: wave=False, fcfs=False(slots=0), repeat=False, opening_ask=100, discount=33% (reviews: 5*: Verified quality and attentive customer servi; 3*: Signed receipt matched the deal. Bookshelf at)
+[deal] Sold lamp at 100 (wave=False, fcfs=False) in 1 round(s)! Seal: mjforge 정품 인증 영수증 (Standard Verified Receipt — Wave Promo Paused)
+[pricing] lamp: wave=False, fcfs=False(slots=0), repeat=True, opening_ask=100, discount=33% (reviews: 5*: Verified quality and attentive customer servi; 3*: Signed receipt matched the deal. Bookshelf at)
+[deal] Sold lamp at 100 (wave=False, fcfs=False) in 1 round(s)! Seal: mjforge 정품 인증 영수증 (Standard Verified Receipt — Wave Promo Paused)
+[pricing] lamp: wave=False, fcfs=False(slots=0), repeat=True, opening_ask=100, discount=33% (reviews: 5*: Verified quality and attentive customer servi; 3*: Signed receipt matched the deal. Bookshelf at)
+[deal] Sold lamp at 100 (wave=False, fcfs=False) in 1 round(s)! Seal: mjforge 정품 인증 영수증 (Standard Verified Receipt — Wave Promo Paused)
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000001C329701EE0> at 0x000001C329F02580> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-37' coro=<EventQueueSource._dispatch_loop() done, defined at C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000001C329701EE0> at 0x000001C329F02400> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-38' coro=<EventQueueSource._dispatch_loop() done, defined at C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+[pricing] bookshelf: wave=True, fcfs=False(slots=0), repeat=False, opening_ask=260, discount=33% (reviews: 5*: Verified quality and attentive customer servi; 3*: Signed receipt matched the deal. Bookshelf at)
+[blacklist] Blocked stalling lowball buyer on bookshelf at offer 230.
+[pricing] bookshelf: wave=True, fcfs=False(slots=0), repeat=True, opening_ask=260, discount=33% (reviews: 4*: Signed receipt matched the deal. Bookshelf at; 5*: Fair deal: bookshelf at 268, below the 292 I )
+[blacklist] Blocked stalling lowball buyer on bookshelf at offer 230.
+[pricing] bookshelf: wave=True, fcfs=False(slots=0), repeat=True, opening_ask=260, discount=33% (reviews: 4*: Signed receipt matched the deal. Bookshelf at; 5*: Fair deal: bookshelf at 268, below the 292 I )
+[blacklist] Blocked stalling lowball buyer on bookshelf at offer 230.

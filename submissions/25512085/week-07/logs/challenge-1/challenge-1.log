@@ -1,0 +1,27 @@
+=== Challenge 1: Seller Dynamic Pricing & Adaptive Asking Prices Log ===
+Shop Name: mjforge
+Reserves: lamp=100, chair=180, bookshelf=260
+Deployment: Cloudflare Workers 24/7 (https://mjforge-shop.mjforge-worker.workers.dev)
+
+--- Dynamic Pricing Transitions & Strategy Evolution ---
+
+1. Baseline Premium Strategy (1.50x Base: lamp=150, chair=270, bookshelf=390)
+   - Initial State: Opening asks at 1.5x reserve with slow step-down ladder (1.5x -> 1.35x -> 1.20x -> 1.05x).
+   - Market Friction: Standard buyer budgets (chair 185, bookshelf 270) were below the 1.05x floor (189, 273), causing walkaways. Sales stalled at 21 deals.
+   - External Bot Shock: 11im bot spammed mechanical 3-star reviews for 17 consecutive bookshelf purchases, pulling visible recent rating down to 3.0 stars.
+
+2. Fast-Close Rating Recovery Strategy (1.02x Open -> 1.00x Reserve Immediate Accept)
+   - Price Adaptation: Lowered opening ask to 1.02x (lamp=102, chair=184, bookshelf=265), with immediate 1-turn acceptance of any offer >= reserve (100 / 180 / 260).
+   - Outcome: 38 deals closed in 15 minutes (deals: 21 -> 59, revenue: 4,952 -> 12,533). Buyers like JangSeongWoong (7 deals) and chanarun awarded consecutive 5-star ratings.
+
+3. Market Wave Detection & Dynamic Re-visit Discounting
+   - Trigger Condition: >= 3 deals within 180s OR recent review avg >= 4.1 stars.
+   - Dynamic Action:
+     - Stamps random 5%~10% re-visit coupon on receipt: "영수증 재방문시 {5~10}% 할인 쿠폰 (Wave Active)".
+     - Repeat buyers during wave receive an instant 5% discount (round(wave_ask * 0.95), floored at reserve).
+   - Wave Paused Action: When order rate drops, stops issuing coupons and pauses wave repeat discounts.
+
+4. 1-Hour Idle First-Come-First-Served (FCFS) 4-Slot Flash Mode
+   - Trigger Condition: now - last_customer_ts >= 3600 seconds (1 hour of zero customer activity).
+   - Dynamic Action: Opens 4 limited flash slots at 1.03x (lamp=103, chair=186, bookshelf=268) with no promotional noise, focused on revenue conversion. Duplicate purchase capped at max 2 per buyer.
+   - Result: High conversion of idle traffic at 268 into 5-star deals; shop deals reached 186+ and revenue reached 35,500+ credits.
