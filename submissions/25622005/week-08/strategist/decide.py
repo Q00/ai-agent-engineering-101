@@ -61,7 +61,8 @@ Supply and depth:
   matter now: lower it by a step only when one of those is false. Most of the market's revenue is big-ticket
   goods, so stock.big_ticket_share may be most of it.
 - Focus SKUs (stock.focus_skus) and trend SKUs (stock.trend_skus) are the market's best sellers, chosen by our code
-  from the ledger (rate x momentum x scarcity, gated on margin, congestion and our price), not by you; you set only
+  from the ledger (rate x momentum x scarcity x sqrt(list price / 10,000), so a 2 M sofa that settles 5 an hour
+  outranks a 20,000 kimchi that settles 50; gated on margin, congestion and our price), not by you; you set only
   their number (stock.focus_max, stock.trend_max). They are bought even when they are not their category's
   median-price SKU or are above stock.goods_max_list, at a sales rate of at least stock.trend_share x the market's
   rate of the SKU; focus buys use at most stock.focus_cap_share of the D1 headroom. Goods categories whose median

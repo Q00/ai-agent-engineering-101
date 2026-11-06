@@ -2,7 +2,9 @@
 code every run from the ledger tables (strategist/collect.py sku_tables), never by the model.
 
 Popularity is what the market settles (ledger), not what shops buy (/api/supply-prices lists shop buying).
-score = rate6 x momentum x scarcity: rate6 market settles per hour over 6 h, momentum clamp(rate1 / rate6, 0.5, 2),
+score = rate6 x value x momentum x scarcity: rate6 market settles per hour over 6 h, value sqrt(list price /
+VALUE_REF) (Shop ALL weighs Book and revenue, and both scale with the price of what sells: most of the market's
+revenue is beds and sofas, which settle far fewer units than kimchi), momentum clamp(rate1 / rate6, 0.5, 2),
 scarcity clamp(2 / cover_h, 0.5, 2) with cover_h = units on all shelves (/api/shops) / max(rate6, 0.5), 1 without
 shelf data. x BONUS when the SKU still has more than FREE_LEFT units of the market's free hourly supply left
 (Patch 3.2: the first `free` units an hour cost the plain price), x BONUS when a top-3 shop's reviews name it
@@ -33,6 +35,7 @@ CONGESTION = 1.5
 FLAG_HELD, FLAG_HELD_H, FLAG_MARKET = 3, 6, 20
 FLOOR_OK = (0.70, 1.15)                 # (seller.floor_list, seller.floor_cost_mult) at or under the guard's ceilings
 BONUS = 1.2
+VALUE_REF = 10_000                      # value = sqrt(list / VALUE_REF): a 10,000 item weighs 1, a 2.5 M sofa about 16
 FREE_LEFT = 10
 WINDOW_S = 6 * 3600
 C_FALLBACK = {"food": 0.51, "goods": 0.61}
@@ -108,7 +111,8 @@ def score(view, catalog, pol, now, shelf=None, units=(), sp=None, surge_units=No
         scarcity = 1 if cover_h is None else 2 if cover_h <= 0 else _clamp(2 / cover_h, 0.5, 2)
         u1h = max(t.get("u1", 0), (surge_units or {}).get(sku, 0) if isinstance(surge_units, dict) else 0)
         f_now, free_left = factor(u1h, sg), sg["free"] - u1h
-        sc = rate6 * momentum * scarcity * (BONUS if free_left > FREE_LEFT else 1) * (BONUS if hits.get(sku) else 1)
+        value = math.sqrt(max(lp or 0, 1) / VALUE_REF)
+        sc = rate6 * value * momentum * scarcity * (BONUS if free_left > FREE_LEFT else 1) * (BONUS if hits.get(sku) else 1)
         k = kind if kind in C_FALLBACK else "goods"
         p = t.get("pl6") if (t.get("pl_n") or 0) >= 3 else ((pc.get(k) or {}).get("h6") or (pc.get(k) or {}).get("h24"))
         margin = round(p - (ck.get(k) or C_FALLBACK[k]) * f_now * fcm, 4) if _num(p) else None
@@ -131,7 +135,7 @@ def score(view, catalog, pol, now, shelf=None, units=(), sp=None, surge_units=No
                      "share": round(t.get("o6", 0) / t["s6"], 3), "held": held.get(sku, 0), "shelf": on_shelf,
                      "shops": shelf_shops.get(sku) if shelf_units is not None else None, "cover_h": cover_h,
                      "p_clear": p, "f_now": f_now, "u1h": u1h, "u1_other": u1_other, "free_left": free_left,
-                     "margin": margin,
+                     "margin": margin, "value": round(value, 3),
                      "score": round(sc, 3), "gates": gates,
                      "focus_ok": kind != "food" or (shelf_h is not None and shelf_h >= st["food_shelf_hours"]),
                      "trend_ok": kind != "food" or (shelf_h is not None and shelf_h >= TREND_FOOD_SHELF_H)})

@@ -4,6 +4,7 @@ and supply rows of 20 ledger pages from 2026-11-05/06, shop names replaced)."""
 import copy
 import gzip
 import json
+import math
 import os
 import sys
 import tempfile
@@ -110,9 +111,11 @@ class ScoreTest(unittest.TestCase):
         by = {r["sku"]: r for r in rows}
         self.assertNotIn("GE", by)                                     # under MIN_SETTLES
         self.assertEqual((by["GA"]["rate6"], by["GA"]["rate1"], by["GA"]["cover_h"], by["GA"]["shops"]), (2.0, 2.0, 10.0, 3))
-        # GA: 2 x momentum 1 x scarcity max(0.5, 2/10) x free bonus; GB: no sale in the last hour, no shelf: 0
-        self.assertEqual(by["GA"]["score"], round(2 * 1 * 0.5 * trend.BONUS, 3))
-        self.assertEqual((by["GB"]["rate1"], by["GB"]["cover_h"], by["GB"]["score"]), (0.0, 0.0, round(2 * 0.5 * 2 * trend.BONUS, 3)))
+        # GA: 2 x value sqrt(10) x momentum 1 x scarcity max(0.5, 2/10) x free bonus; GB: no sale in the last hour, no shelf: 0
+        va, vb = math.sqrt(100000 / trend.VALUE_REF), math.sqrt(50000 / trend.VALUE_REF)
+        self.assertEqual((by["GA"]["value"], by["GB"]["value"]), (round(va, 3), round(vb, 3)))
+        self.assertEqual(by["GA"]["score"], round(2 * va * 1 * 0.5 * trend.BONUS, 3))
+        self.assertEqual((by["GB"]["rate1"], by["GB"]["cover_h"], by["GB"]["score"]), (0.0, 0.0, round(2 * vb * 0.5 * 2 * trend.BONUS, 3)))
         rows2, _ = self.rows(ledger, shelf={"units": {"GA": 20}}, reviews={"sku": {"GA": 4}})
         self.assertEqual({r["sku"]: r["score"] for r in rows2}["GA"], round(by["GA"]["score"] * trend.BONUS, 3))
         rows3, _ = self.rows(ledger)                                   # no shelf data: scarcity 1
@@ -184,7 +187,8 @@ class ChooseTest(unittest.TestCase):
         ok = {r["sku"]: (r["focus_ok"], r["trend_ok"]) for r in rows}
         self.assertEqual(ok, {"GC": (False, True), "GD": (True, True), "GF": (False, False), "GA": (True, True)})
         focus, tr = trend.choose(rows, [], [], pol(focus_max=1, trend_max=4))
-        self.assertEqual((focus, tr), (["GD"], ["GC", "GA"]))           # kimchi (168 h) only as a trend SKU
+        # value: the 100,000 sofa (10 settles) outranks the 20,000 rice (15) and the 10,000 kimchi (20); kimchi (168 h) only as a trend SKU
+        self.assertEqual((focus, tr), (["GA"], ["GD", "GC"]))
 
     def test_hysteresis_swaps_and_gates(self):
         rows = [self.row(f"S{i}", 40 - i) for i in range(20)]
@@ -219,8 +223,9 @@ class SampleTest(unittest.TestCase):
         self.assertEqual(v["c_kind"], {"food": 0.522, "goods": 0.561})    # our own supply rows
         rows, _ = trend.score(v, cat, pol(), now)
         focus, tr = trend.choose(rows, [], [], pol())
-        self.assertEqual(rows[0]["sku"], "G200e39a3")
-        self.assertIn("G1515d951", focus)                              # a mattress the plan names
+        self.assertEqual(rows[0]["sku"], "G8ec51935")                  # the 2.32 M sofa: 44 settles x sqrt(232)
+        self.assertLess([r["sku"] for r in rows].index("G200e39a3"), 10)   # kimchi, most units, now rank 7
+        self.assertIn("G1515d951", focus + tr)                         # a mattress the plan names
         self.assertTrue(set(focus).isdisjoint(tr))
         self.assertLessEqual((len(focus), len(tr)), (trend.FOCUS_SWAPS, trend.TREND_SWAPS))
 
