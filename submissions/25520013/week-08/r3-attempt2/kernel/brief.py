@@ -1078,17 +1078,25 @@ def section_shop_goal(b, b6, login, hours6):
         r = 1 + sum(1 for x in vals if x > v)
         out.append(f"  {k}: {c.fmt(v)}, {r}위, 백분위 {_pct(vals, v):.3f}, 1위면 all {w * (1 - _pct(vals, v)):+.3f}, "
                    f"우리 {fmt_rate(rate(me, k), k)}")
+        mine = rate(me, k)
         steps = []
         for tv in sorted({x for x in vals if x > v})[:GOAL_STEPS]:  # one entry per value: the board rounds stars
             at = [s for s in shops if (s.get(k) or 0) == tv]
             gain = w * (_pct(vals, tv) - _pct(vals, v))
-            who = f"그 가게 {fmt_rate(rate(at[0], k), k)}" if len(at) == 1 else f"{len(at)}곳"
-            steps.append(f"{1 + sum(1 for x in vals if x > tv)}위 +{c.fmt(tv - v)} ({who}, all {gain:+.3f})")
+            theirs = rate(at[0], k) if len(at) == 1 else None
+            who = f"그 가게 {fmt_rate(theirs, k)}" if len(at) == 1 else f"{len(at)}곳"
+            # live 11-06 23h: book 9위 was 1.3M above us but grew 2.3M/h against our 0.7M/h; the gap alone read as close
+            if theirs is None or mine is None:
+                eta = ""
+            elif mine > theirs:
+                eta = f", 지금 속도면 {(tv - v) / (mine - theirs):.1f}시간 뒤 따라잡음"
+            else:
+                eta = ", 지금 속도로는 못 따라잡음"
+            steps.append(f"{1 + sum(1 for x in vals if x > tv)}위 +{c.fmt(tv - v)} ({who}, all {gain:+.3f}{eta})")
         if steps:
             out.append("    위 가게: " + "; ".join(steps))
         # live 11-06 22h: revenue 9위 sat 348M under 8위 and 212M over 10위 (no rank to win or lose by volume) while a
         # shop 13.5M under our book grew 5.7M/h against our 0.3M/h; the brief only listed ranks above
-        mine = rate(me, k)
         below = []
         for tv in sorted({x for x in vals if x < v}, reverse=True)[:GOAL_STEPS_BELOW]:
             at = [s for s in shops if (s.get(k) or 0) == tv]

@@ -816,7 +816,7 @@ def test_shop_goal_formula_matches_board_and_lists_ranks_above():
     assert out[2].startswith(
         "  book: 200, 3위, 백분위 0.500, 1위면 all +0.250, 우리 10/h"
     )
-    assert "2위 +100 (그 가게 10/h, all +0.125); 1위 +200" in out[3]
+    assert "2위 +100 (그 가게 10/h, all +0.125, 지금 속도로는 못 따라잡음); 1위 +200" in out[3]
     assert out[-2].startswith(
         "  stars_rank: 4.2, 4위, 백분위 0.125"
     )  # tied with d: nothing below
@@ -833,6 +833,22 @@ def test_shop_goal_formula_matches_board_and_lists_ranks_above():
         "4위 -10 (그 가게 0/h"
         in out[out.index(next(l for l in out if l.startswith("  revenue"))) + 2]
     )
+
+
+def test_shop_goal_above_ranks_say_hours_to_catch_up():
+    shops = [
+        {"name": "a", "owner": "x", "book": 400, "revenue": 40, "stars_rank": 4.5},
+        {"name": "b", "owner": "x", "book": 300, "revenue": 30, "stars_rank": 4.4},
+        {"name": "me", "owner": LOGIN, "book": 200, "revenue": 20, "stars_rank": 4.2},
+    ]
+    for s in shops:
+        s["all"] = round(brief.shop_all(shops, s), 4)
+    # 6 h: we gain 120 (20/h), b gains 60 (10/h) and is 100 above: caught in 10 h; a gains 300 (50/h): never
+    old = {"shops": [dict(shops[0], book=100), dict(shops[1], book=240), dict(shops[2], book=80)]}
+    out = brief.section_shop_goal({"shops": shops}, old, LOGIN, 6.0)
+    above = next(l for l in out if l.startswith("    위 가게") and "2위 +100" in l)
+    assert "2위 +100 (그 가게 10/h, all +0.250, 지금 속도면 10.0시간 뒤 따라잡음)" in above
+    assert "1위 +200 (그 가게 50/h, all +0.500, 지금 속도로는 못 따라잡음)" in above
 
 
 def test_profit_section_joins_sales_to_unit_cost_and_market(tmp_path):
