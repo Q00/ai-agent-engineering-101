@@ -67,7 +67,7 @@ import shop_model
 import watch
 
 EVERY = {"collect": 1200, "linewatch": 1200, "watch": 1200, "objective": 1200, "shop_model": 1200, "experiments": 1200, "opening": 600, "journal": 3600, "replies": 600, "notes": notes.GAP,
-         "votes": 1200, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
+         "votes": 3 * 3600, "seller": 3 * 3600, "buyer": 3 * 3600, "integrated": 3 * 3600}
 RIVALS = 12             # the top players whose shops our buyer passes over in a near tie (market_buyer.RIVAL)
 NOTES_ALONE = True       # stand-alone notes every 5 minutes (stopped 11/5 03:20; back 11/6 12:40, the person's call:
                          # Patch 3.4 counts one stance per account per author, a like stance weighing 1 + log2 of the
@@ -311,10 +311,8 @@ def votes(now: float, state: dict, decide=None) -> str:
     posts = forum.remember_recent(seen if isinstance(seen, list) else [], now)
     downs = [v for v in common.records("votes") if (v.get("value") or 0) < 0 and (v.get("ts") or 0) >= now - forum.DISLIKE_AUTHOR_GAP]
     left = max(0, forum.DISLIKE_HOUR_MAX - sum(1 for v in downs if (v.get("ts") or 0) >= now - 3600))
-    skus = {m.group(0) for p in posts if (p.get("ts") or 0) >= now - forum.VOTE_WINDOW for m in forum.SKU.finditer(str(p.get("text") or ""))}
     picked = forum.pick_votes(posts, voted, now, decide or harness.decide, like=now - state.get("liked_at", 0) >= forum.LIKE_GAP,
-                              catalog=common.catalog(), settles=forum.settles_of(skus, now - 24 * 3600), dislikes_left=left,
-                              skip_authors={v.get("author") for v in downs})
+                              dislikes_left=left, skip_authors={v.get("author") for v in downs})
     for v in picked:
         forum.outbox(vote=v["post"], value=v["value"], **{"as": "buyer"})
         common.record("votes", **v)
