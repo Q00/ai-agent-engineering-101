@@ -130,9 +130,9 @@ class Settles(unittest.TestCase):
 
     def test_max_step(self):
         acc, _ = run(prop("seller.first_ask_list", 0.99), prop("seller.floor_list", 0.40),
-                     prop("seller.warranty_cap_6h", 900000))
+                     prop("seller.warranty_cap_6h", 2000000))
         self.assertEqual([(a["old"], a["new"], a["clamped"]) for a in acc],
-                         [(0.85, 0.9, True), (0.60, 0.55, True), (500000, 750000, True)])
+                         [(0.85, 0.9, True), (0.60, 0.55, True), (500000, 1500000, True)])   # step 1,000,000
         acc, _ = run(prop("seller.first_ask_list", 0.88))
         self.assertEqual((acc[0]["new"], acc[0]["clamped"]), (0.88, False))
 
@@ -193,15 +193,17 @@ class Bounds(unittest.TestCase):
     def test_new_and_widened_bounds(self):
         self.assertEqual(g.bounds("stock.focus_cap_share"), (0.3, 0.8, 0.1))
         self.assertEqual(g.bounds("stock.focus_max"), (4, 12, 2))
-        self.assertEqual(g.bounds("stock.inventory_cap_share"), (0.15, 0.70, 0.05))
+        self.assertEqual(g.bounds("stock.inventory_cap_share"), (0.15, 0.90, 0.05))   # Patch 3.3: a liquidity limit
         self.assertEqual(g.bounds("seller.floor_list"), (0.40, 0.70, 0.05))
         self.assertEqual(g.bounds("seller.floor_cost_mult"), (1.00, 1.15, 0.05))
         self.assertEqual(g.bounds("stock.cover_min"), (20, 180, 15))
         self.assertEqual(g.bounds("stock.per_sku_qty"), (1, 10, 1))
-        self.assertEqual(g.bounds("stock.big_ticket_share"), (0.10, 0.40, 0.05))
+        self.assertEqual(g.bounds("stock.big_ticket_share"), (0.10, 0.90, 0.10))
         self.assertEqual(g.bounds("stock.big_ticket_list"), (20000, 200000, 10000))
         self.assertEqual(g.bounds("stock.goods_max_list"), (20000, 1000000, 50000))     # beds and sofas fit
-        self.assertEqual(g.bounds("stock.bigticket_probe_qty"), (1, 6, 1))
+        self.assertEqual(g.bounds("stock.bigticket_probe_qty"), (1, 10, 1))
+        self.assertEqual(g.bounds("buyer.min_kept"), (0.0, 0.45, 0.03))
+        self.assertEqual(g.bounds("seller.first_ask_big_list"), (0.60, 0.95, 0.03))
         self.assertEqual(g.bounds("stock.max_hold"), (20, 80, 10))
         self.assertEqual(g.bounds("stock.min_line_qty"), (1, 10, 1))
         self.assertEqual(g.bounds("stock.trend_max"), (0, 32, 4))
@@ -210,7 +212,7 @@ class Bounds(unittest.TestCase):
         for key, b in (("clear_cost_h", (0, 72, 12)), ("clear_70_h", (0, 48, 6)), ("clear_any_h", (0, 24, 3)),
                        ("taper_h", (0, 96, 12)), ("goods_stop_h", (0, 48, 6))):
             self.assertEqual(g.bounds(f"stock.{key}"), b)
-        self.assertEqual(g.bounds("seller.warranty_cap_6h"), (100000, 3000000, 250000))
+        self.assertEqual(g.bounds("seller.warranty_cap_6h"), (100000, 20000000, 1000000))
         self.assertNotIn("forum.min_gap_min", g.TUNABLE)
 
     def test_focus_max_not_below_the_focus_list(self):
