@@ -250,6 +250,7 @@ class Operator:
         self._save_state(st)
         for agent in EDIT_TARGETS:
             versions.ensure_baseline(self.harness_root, agent, now)
+        self.trial_timeouts(now)
 
         loaded, errs = self._always_text()
         if loaded is None:
@@ -389,6 +390,16 @@ class Operator:
                     reason=reason,
                 )
             out.append({"target": r["target"], "ok": ok, **info})
+        return out
+
+    def trial_timeouts(self, now):
+        """End each trial older than versions.TRIAL_MAX_H without adopting it (kernel rule): the current version stays.
+        -> list of _trial_end results."""
+        out = []
+        for target, t in sorted(versions.trial_state(self.harness_root).items()):
+            if now - (t.get("started_ts") or now) >= versions.TRIAL_MAX_H * 3600:
+                reason = f"커널 시간 상한 {versions.TRIAL_MAX_H}시간: 판정 없이 끝내고 지금 판 유지"
+                out.append(self._trial_end({"target": target, "adopt": False, "reason": reason}, now))
         return out
 
     def _trial_end(self, item, now):

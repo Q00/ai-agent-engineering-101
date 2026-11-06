@@ -573,12 +573,14 @@ def trial_cost_lines(base, cand, hours, now):
 def section_trial(root, now, harness_root=None):
     r = trial_results(root, now, harness_root)
     if r is None:
-        return ["[동시 비교] 진행 중 없음. done의 trial로 판매자 후보 판을 지금 판과 같은 시간에 나란히 돌릴 수 있음"]
+        return [f"[동시 비교] 진행 중 없음. done의 trial로 판매자 후보 판을 지금 판과 같은 시간에 나란히 돌릴 수 있음 "
+                f"(시간 상한 {versions.TRIAL_MAX_H}시간)"]
     t, base, cand = r["trial"], r["arms"]["base"], r["arms"]["trial"]
     hours = (now - t["started_ts"]) / 3600
     out = [
         f"[동시 비교 판매자] 후보 판 {t['version']} 대 지금 판 {t['base']}, {c.kst(t['started_ts'])}부터 {hours:.1f}시간, "
-        f"새 요청의 {t['share']:.0%}를 후보로 보냄. 요청을 같은 시간에 무작위로 나눴으므로 시간대와 요청 구성은 두 판에 같게 걸림",
+        f"새 요청의 {t['share']:.0%}를 후보로 보냄. 요청을 같은 시간에 무작위로 나눴으므로 시간대와 요청 구성은 두 판에 같게 걸림. "
+        f"시간 상한 {versions.TRIAL_MAX_H}시간 (남은 {max(0.0, versions.TRIAL_MAX_H - hours):.1f}시간): 넘으면 커널이 판정 없이 끝내고 지금 판을 유지함",
         f"  후보가 바꾼 파일: {', '.join(t.get('files') or []) or '-'} | 이유: {t.get('reason') or '-'}",
     ]
 

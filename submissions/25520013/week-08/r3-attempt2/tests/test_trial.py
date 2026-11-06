@@ -166,3 +166,22 @@ def test_trial_operator_start_blocks_base_edits_and_adopts(tmp_path, hroot):
     assert kinds.count("trial_start") == 1 and kinds.count("trial_end") == 1 and "harness_edit" in kinds
     edit = [r for r in _rows(root, "harness_edit")][-1]
     assert edit["adopted_from"] == res["trial_end"]["trial_version"] and "동시 비교 채택" in edit["reason"]
+
+
+def test_trial_timeout_ends_without_adopting_and_brief_shows_the_cap(tmp_path, hroot):
+    root = str(tmp_path / "data")
+    for d in (".market", ".r3", "a2/board"):
+        os.makedirs(os.path.join(root, d))
+    with open(os.path.join(root, "policy.json"), "w") as f:
+        json.dump({"owner": {"github": LOGIN}}, f)
+    traj = Trajectory(os.path.join(root, "a2/trajectory.jsonl"), secrets=(LOGIN,))
+    o = op.Operator(root, FakeTerra([{"done": {"edits": []}}]), traj, harness_root=hroot, dry=True, spawn=lambda *a, **k: None)
+    base = _current(hroot)
+    ok, info = versions.start_trial(hroot, "seller", NEW_PROMPT, share=0.5, reason="시험", now=NOW)
+    assert "시간 상한 6시간 (남은 5.0시간)" in brief.section_trial(root, NOW + 3600, hroot)[0]
+    assert o.trial_timeouts(NOW + 5.9 * 3600) == [] and "seller" in versions.trial_state(hroot)
+    res = o.trial_timeouts(NOW + versions.TRIAL_MAX_H * 3600)
+    assert res[0]["ok"] and not res[0]["adopted"] and not versions.trial_state(hroot) and _current(hroot) == base
+    end = [r for r in _rows(root, "trial_end")][-1]
+    assert end["adopt"] is False and "커널 시간 상한" in end["reason"]
+    assert brief.section_trial(root, NOW + 7 * 3600, hroot)[0].endswith("(시간 상한 6시간)")
