@@ -400,7 +400,14 @@ def test_shop_goal_formula_matches_board_and_lists_ranks_above():
     assert "최대 오차 0.0000" in out[1] and "0.2 stars_rank" in out[1]
     assert out[2].startswith("  book: 200, 3위, 백분위 0.500, 1위면 all +0.250, 우리 10/h")
     assert "2위 +100 (그 가게 10/h, all +0.125); 1위 +200" in out[3]
-    assert out[-2].startswith("  stars_rank: 4.2, 4위, 백분위 0.125")
+    assert out[-2].startswith("  stars_rank: 4.2, 4위, 백분위 0.125")  # tied with d: nothing below
+    # book: c is 100 under us at 10/h like us (cannot pass); d gains 150 in 6 h (25/h) and is 150 under
+    old["shops"][4]["book"] = -100
+    out = brief.section_shop_goal({"shops": shops}, old, LOGIN, 6.0)
+    below = next(l for l in out if l.startswith("    아래 가게") and "4위 -100" in l)
+    assert below.startswith("    아래 가게 (한 곳이 우리를 넘으면 all 약 -0.125): ")
+    assert "4위 -100 (그 가게 10/h, 지금 속도로는 못 넘음); 5위 -150 (그 가게 25/h, 지금 속도면 10.0시간 뒤 우리를 넘음)" in below
+    assert "4위 -10 (그 가게 0/h" in out[out.index(next(l for l in out if l.startswith("  revenue"))) + 2]
 
 
 def test_profit_section_joins_sales_to_unit_cost_and_market(tmp_path):

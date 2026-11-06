@@ -1030,6 +1030,7 @@ def section_rivals(b, b6, login, hours6):
 SHOP_GOAL = 0.90
 SHOP_FORMULA = (("book", 0.5), ("revenue", 0.3), ("stars_rank", 0.2))
 GOAL_STEPS = 5  # ranks above us listed per column
+GOAL_STEPS_BELOW = 3  # ranks below us listed per column
 
 
 def _pct(vals, v):
@@ -1078,6 +1079,24 @@ def section_shop_goal(b, b6, login, hours6):
             steps.append(f"{1 + sum(1 for x in vals if x > tv)}위 +{c.fmt(tv - v)} ({who}, all {gain:+.3f})")
         if steps:
             out.append("    위 가게: " + "; ".join(steps))
+        # live 11-06 22h: revenue 9위 sat 348M under 8위 and 212M over 10위 (no rank to win or lose by volume) while a
+        # shop 13.5M under our book grew 5.7M/h against our 0.3M/h; the brief only listed ranks above
+        mine = rate(me, k)
+        below = []
+        for tv in sorted({x for x in vals if x < v}, reverse=True)[:GOAL_STEPS_BELOW]:
+            at = [s for s in shops if (s.get(k) or 0) == tv]
+            theirs = rate(at[0], k) if len(at) == 1 else None
+            if len(at) > 1:
+                eta = f"{len(at)}곳"
+            elif theirs is None or mine is None:
+                eta = f"그 가게 {fmt_rate(theirs, k)}"
+            elif theirs > mine:
+                eta = f"그 가게 {fmt_rate(theirs, k)}, 지금 속도면 {(v - tv) / (theirs - mine):.1f}시간 뒤 우리를 넘음"
+            else:
+                eta = f"그 가게 {fmt_rate(theirs, k)}, 지금 속도로는 못 넘음"
+            below.append(f"{1 + sum(1 for x in vals if x > tv)}위 -{c.fmt(v - tv)} ({eta})")
+        if below:
+            out.append(f"    아래 가게 (한 곳이 우리를 넘으면 all 약 -{w / (len(vals) - 1):.3f}): " + "; ".join(below))
     return out
 
 
