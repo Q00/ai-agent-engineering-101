@@ -23,6 +23,6 @@ Paid deals by price (from local records, which agree with the board: 138 against
 
 Deals of 1,000,000 and over make up most of revenue and Book, and two hours hold only 8 of them, so Book/h and revenue/h do not settle yet. Below that band, Book/h went from about 961,000 to about 1,472,000, and revenue/h from about 4.42 M to about 6.08 M.
 
-Windows since 14:44: 6, median 22 units, max 30, 8 closed refusals, no units of SKUs on the surge list held in stock at any sample. Stock read 59 units in 37 SKUs at 16:27, so the 60-unit condition of the revert rule has not started.
+Windows since 14:44: 6, median 22 units, max 30, 8 closed refusals, surge-list SKUs held in stock: none from 14:47 to 16:22, one unit at 16:27, the sample right after the 16:23 window. Stock read 59 units in 37 SKUs at 16:27, so the 60-unit condition of the revert rule has not started.
 
 Correction to the restart report: a file in `.market/checkout-events` does not mean paid. Its status can be `canceled`. Counted by status, after the restart 28 of 40 agreed sales were paid and 12 canceled; 10:24 to the restart, 237 of 271 paid and 33 canceled. Ten of the 12 are grade C, and eight come from two C units offered again and again. A and B: 2 of 29 canceled after, 4 of 219 before. No category receipt has been issued and an SKU request's receipt is unchanged by the receipt label commit, so the label cannot be the cause. The cause of the C rise is not established.
