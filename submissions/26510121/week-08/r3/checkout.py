@@ -84,6 +84,9 @@ def handle_order(kit, journal, cfg, order, agent, root, market, proxy, own_shop,
             body['stars'],body['review']=rating['stars'],rating['review']
             break
         safe=retryable_pre_payment(reasons)
+        if safe and cfg.get('buyer_patch34_enabled'):
+            from .buyer_scoring import remember_refusal
+            remember_refusal(journal,order,url,receipt,reasons)
         journal.add('checkout_attempt',{'order':oid,'shop':url,'sku':receipt['item'],
                                         'attempt':attempt+1,'safe_to_retry':safe})
         if not safe:break

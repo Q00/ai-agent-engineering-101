@@ -18,11 +18,14 @@ def buy(order, shops, journal, chooser=None, peer_factory=Peer):
     journal.add('buyer_execution', {'order': order['order'], 'strategy_version': strategy['version']},
                 eid='buyer-execution:' + order['order'], role='buyer')
     empty = {"shop": "", "receipt": None, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+    if cfg.get('buyer_patch34_enabled') and journal.get('market_rules',{}).get('buyer_compatible') is False:
+        journal.add('buyer_rules_blocked',{'order':order['order'],'reason':'unrecognized_buyer_rules'},role='buyer')
+        return empty
     if time.time() + cfg["checkout_buffer_seconds"] >= order["expires"]:
         return empty
     catalog = journal.snapshot("catalog.json", {})
     registry = journal.snapshot("registry.json", {})
-    ranked = buyer_candidates(order, shops, catalog, journal)
+    ranked = buyer_candidates(order, shops, catalog, journal,cfg)
     blocked={(e['shop'],e['sku']) for e in journal.get('checkout_exclusions:'+order['order'],[])}
     ranked=[c for c in ranked if (c['shop'],c['sku']) not in blocked]
     if not ranked:
@@ -50,12 +53,13 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
         if not ranked or time.time() >= deadline:
             break
         shortlist=ranked[:8]
-        if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled'):
+        if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled') and not cfg.get('buyer_patch34_enabled'):
             c=shortlist[0]
             journal.add('buyer_fast_choice',{'order':order['order'],'sku':c['sku'],'shop':c['shop'],
                                             'reason':'bounded low-value search; checkout remains authoritative'})
         else:
             c = chooser.choose("buyer", shortlist, {"order": order, "strategy": strategy,
+                           'buyer_execution':True,'operation':'offer_selection',
                            'forum_evidence': 'unverified discovery hint; registry and checkout remain authoritative'}, deadline=deadline,
                                critical=ranked[0]["reference_price"] > .8 * order["budget"])
         ranked = [x for x in ranked if x['id'] != c['id']]
@@ -68,6 +72,7 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
             c = ranked.pop(0)
             cached = prepared.pop(c['id'])
         peer = cached[0] if cached else peer_factory()
+        if cfg.get('buyer_patch34_enabled') and hasattr(peer,'deadline'):peer.deadline=deadline
         if not cached:
             contacted += 1
         started = time.monotonic()
@@ -107,6 +112,10 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                         raise ValueError("receipt_integrity_failure")
                     # A2A protobuf numbers decode as whole-valued floats; the signature canonicalizes integer money.
                     rec = dict(receipts[0], price=int(receipts[0]["price"]))
+                    if cfg.get('buyer_patch34_enabled'):
+                        from r3.buyer_scoring import blocked_units
+                        if rec.get('unit') in blocked_units(journal,c['shop'],c['sku'],order):
+                            raise ValueError('known_unavailable_unit')
                     if rec.get('cert') is False:
                         # The kit will reject this checkout. Try another shop while the order is still alive.
                         raise ValueError('certificate_unavailable')
@@ -141,13 +150,15 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 actions = buyer_price_actions(ask, cap, product, c['reference_price'],
                                               cfg['buyer_counter_ratio'], turn,
                                               cfg['max_negotiation_turns'], previous_offer,
-                                              stress, required_warranty >= 6, assessment['covered_failure'])
+                                              stress, required_warranty >= 6, assessment['covered_failure'],
+                                              assessment['saved_state'] if assessment['saved_state']['metric']=='saved' else None)
                 if not actions:
                     break
-                if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled'):
+                if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled') and not cfg.get('buyer_patch34_enabled'):
                     move=max(actions,key=lambda a:a['score'])
                 else:
                     move = chooser.choose("buyer", actions, {"ask": ask, "order": order, "turn": turn,
+                                           'buyer_execution':True,'operation':'price',
                                            "product": product, "strategy": strategy}, deadline=deadline)
                 agreed = move["price"]
                 previous_offer = agreed
@@ -163,7 +174,8 @@ def execute(order, journal, chooser, peer_factory, cfg, strategy, registry, rank
                 ranked = [x for x in ranked if x['shop'] != c['shop']]
             reason = str(exc) if isinstance(exc, ValueError) and str(exc) in {
                 'certificate_unavailable', 'receipt_integrity_failure', 'registered_signing_key_unavailable',
-                'ambiguous_ask', 'conflicting_ask', 'conflicting_offer_terms', 'quote_sku_mismatch', 'invalid_money'} else None
+                'ambiguous_ask', 'conflicting_ask', 'conflicting_offer_terms', 'quote_sku_mismatch', 'invalid_money',
+                'known_unavailable_unit'} else None
             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
                                     "shop": c["shop"], "sku": c["sku"], "success": False,
                                     'reason': reason,

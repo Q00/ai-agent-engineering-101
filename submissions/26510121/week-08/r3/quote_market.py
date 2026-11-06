@@ -13,12 +13,17 @@ def request_text(candidate, order):
     text = f"I want to buy {candidate['sku']}. Please quote this exact SKU, certificate, grade and warranty hours."
     if order.get('kind') == 'food':
         text += f" Food must last at least {order.get('use_within_hours', 0)} hours after payment."
+    else:
+        text += ' Prefer a 6-hour warranty covering the full published break horizon; state the actual price and grade.'
+    if candidate.get('avoid_units'):
+        text += ' Offer a different available unit, not these recently refused units: '+', '.join(candidate['avoid_units'][:4])+'.'
     return text
 
 
 def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadline):
-    if (order.get('kind') != 'goods' or order['budget'] < config.get('quote_compare_min_budget', 100000)
-            or deadline - time.time() < 45):
+    enabled=config.get('buyer_patch34_enabled')
+    if ((not enabled and (order.get('kind') != 'goods' or order['budget'] < config.get('quote_compare_min_budget', 100000)))
+            or deadline - time.time() < (10 if enabled else 45)):
         return {}, 0
     selected, seen = [], set()
     for c in ranked:
@@ -32,6 +37,7 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
 
     def fetch(c):
         peer = peer_factory()
+        if enabled and hasattr(peer,'deadline'):peer.deadline=deadline
         try:
             peer.discover(c['shop'])
             return peer, peer.send(request_text(c, order))
@@ -53,14 +59,22 @@ def compare_quotes(order, ranked, registry, journal, config, peer_factory, deadl
                     raise ValueError('quote_sku_mismatch')
                 assessment = buyer_assessment(dict(c['product'], sku=c['sku']), order, terms, journal, config)
                 q, qc, cap = assessment['failure'], assessment['covered_failure'], assessment['cap']
+                if cap<1:
+                    c['quote_failed']=True
+                    journal.add('buyer_declined_terms',{'order':order['order'],'sku':c['sku'],
+                                                       'reason':'no_safe_saved_price'},role='buyer')
+                    continue
                 feasible = ask <= cap
                 # A quote above our cap is only a low-confidence negotiation
                 # option; do not pretend the capped price is actually offered.
                 price = ask if feasible else min(cap, int(ask * .92))
                 completion = 1 if feasible else .25
+                from .buyer_scoring import contribution,terms_delta
+                current=assessment['saved_state']
                 surplus = max(0, (1-q)*c['product']['list_price'] - (1-qc)*price)
-                c['score'] = surplus * completion
-                c['expected_delta'] = {'surplus': c['score'], 'deals': completion}
+                c['score'] = ((contribution(price,c['product']['list_price'],q,qc) if current['metric']=='saved'
+                               else surplus)*completion)
+                c['expected_delta'] = terms_delta(current,price,c['product']['list_price'],q,qc,completion)
                 c['evidence']['live_quote'] = dict(assessment, ask=ask, terms=terms,
                     feasible_at_ask=feasible, above_cap_completion_is_scenario=not feasible)
                 journal.add('quote_comparison', {'order': order['order'], 'shop': c['shop'], 'sku': c['sku'],

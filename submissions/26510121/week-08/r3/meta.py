@@ -7,6 +7,13 @@ WEIGHTS = {'shop': {'book': .5, 'revenue': .3, 'stars_rank': .2},
            'buyer': {'surplus': .5, 'forum': .3, 'deals': .1, 'posts': .1}}
 
 
+def weights(board,role):
+    if role=='buyer':
+        from .buyer_scoring import metric
+        if metric(board)=='saved':return {'saved':.5,'forum':.3,'deals':.1,'posts':.1}
+    return WEIGHTS[role]
+
+
 def eligible_rows(board, role, own_name):
     """Use the published trading cohort; alive is deliberately not a filter.
 
@@ -17,6 +24,9 @@ def eligible_rows(board, role, own_name):
     if not board or board.get('round') != 3 or role not in WEIGHTS:
         return []
     rows = board.get('shops' if role == 'shop' else 'buyers', [])
+    if role=='buyer' and board.get('buyer_rank_scope')=='class':
+        names={(p.get('buyer') or {}).get('name') for p in board.get('players',[]) if p.get('student')}
+        if own_name in names:rows=[r for r in rows if r.get('name') in names]
     from .finance import book_row
     rows = [dict(r, book=book_row(r)) for r in rows] if role == 'shop' else rows
     return [r for r in rows if r.get('name') == own_name or r.get('deals', 0) > 0 or
@@ -52,7 +62,7 @@ def rank_progress(board, role, own_name, delta):
     if own is None:
         return None
     gain = 0
-    for key, weight in WEIGHTS[role].items():
+    for key, weight in weights(board,role).items():
         if not finite(own.get(key)) or not finite(delta.get(key, 0)):
             continue
         values = [r[key] for r in rows if finite(r.get(key))]
@@ -67,7 +77,7 @@ def rank_targets(board, role, own_name='seochanit'):
     if own is None:
         return {}
     result = {}
-    for key, weight in WEIGHTS[role].items():
+    for key, weight in weights(board,role).items():
         if not finite(own.get(key)):
             continue
         ahead = sorted(r[key] for r in rows if finite(r.get(key)) and r[key] > own[key])
@@ -89,9 +99,9 @@ def rank_gain(board, role, own_name, delta):
     own = next((x for x in rows if x.get("name") == own_name), None)
     if not own:
         return None
-    weights = WEIGHTS[role]
+    metric_weights = weights(board,role)
     gain = 0
-    for key, w in weights.items():
+    for key, w in metric_weights.items():
         values = [r[key] for r in rows if r.get('name') != own_name and isinstance(r.get(key), (int, float))]
         if values and isinstance(own.get(key), (int, float)):
             updated = own[key] + delta.get(key, 0)

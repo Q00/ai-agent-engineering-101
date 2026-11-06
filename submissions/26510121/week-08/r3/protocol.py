@@ -3,6 +3,7 @@ import base64
 import json
 import re
 import uuid
+import time
 from urllib.parse import urljoin, urlsplit
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -81,13 +82,20 @@ class Peer:
         self.http = httpx.Client(transport=transport, timeout=timeout, trust_env=False, follow_redirects=False,
                                  headers={"A2A-Version": "1.0"})
         self.endpoint = None
+        self.deadline = None
+
+    def budget(self):
+        if self.deadline is None:return {}
+        left=self.deadline-time.time()
+        if left<=0:raise TimeoutError('buyer_deadline')
+        return {'timeout':min(8,left)}
 
     def discover(self, base):
         base = base.rstrip("/")
         parts = urlsplit(base)
         if parts.scheme not in ("http", "https") or not parts.netloc or parts.username or parts.password:
             raise ValueError("invalid_peer_url")
-        r = self.http.get(base + "/.well-known/agent-card.json")
+        r = self.http.get(base + "/.well-known/agent-card.json",**self.budget())
         r.raise_for_status()
         card = r.json()
         iface = next((i for i in card.get("supportedInterfaces", [])
@@ -105,7 +113,7 @@ class Peer:
         if task:
             message["taskId"] = task
         r = self.http.post(self.endpoint, json={"jsonrpc": "2.0", "id": uuid.uuid4().hex,
-                                               "method": "SendMessage", "params": {"message": message}})
+                                               "method": "SendMessage", "params": {"message": message}},**self.budget())
         r.raise_for_status()
         payload = r.json()
         if "error" in payload:

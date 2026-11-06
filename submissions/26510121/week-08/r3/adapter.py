@@ -207,7 +207,7 @@ def install(kit, journal=None, config=None):
         if cfg.get('market_control_enabled'):
             try:
                 from .control import audit_rules, update as control_update
-                if time.time()-j.get('market_rules',{}).get('at',0)>3600:
+                if time.time()-j.get('market_rules',{}).get('at',0)>300:
                     response=market.c.get(f'{market.base}/agent.md',timeout=5)
                     if response.status_code==200:
                         audit_rules(j,response.text)

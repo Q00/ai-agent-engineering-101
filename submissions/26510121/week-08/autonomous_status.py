@@ -39,6 +39,8 @@ def status(shadow=False):
         result={'checked_at':datetime.fromtimestamp(now,timezone.utc).isoformat(),
                 'policy_version':cfg['version'],'objective_revision':j.get('objective_revision'),'epoch':epoch,
                 'shop_strategy_revision':j.get('shop_strategy_revision'),
+                'buyer_strategy_revision':j.get('buyer_strategy_revision'),
+                'buyer_revision_epoch':j.get('buyer_revision_epoch'),
                 'shop_revision_epoch':j.get('shop_revision_epoch'),
                 'runtime':j.snapshot('runtime.json',{}),'health':j.snapshot('shop-health.json',{}),
                 'transport_preference':j.snapshot('transport-provider.json',{}),

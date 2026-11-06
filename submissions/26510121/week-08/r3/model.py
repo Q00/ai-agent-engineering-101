@@ -45,6 +45,10 @@ class Chooser:
             raise ModelError("no_candidates")
         from .meta import rank_gain, rank_progress, rank_targets
         board = self.j.snapshot("board.json", {})
+        if role=='buyer':
+            from .buyer_scoring import state
+            current=state(self.j,self.config)
+            board=dict(board,buyer_metric=current['metric'],buyer_rank_scope=self.config.get('buyer_rank_scope','everyone'))
         checked = self.j.get('board_checked_at')
         if checked is not None and time.time() - checked > 300:
             board = {}  # A stale table cannot be a current optimization target.
@@ -79,6 +83,12 @@ class Chooser:
         bounded_restock=(context.get('operation')=='restock' and all(
             'buy' in c and 0<=c.get('capital_commitment',float('inf'))<=
                 context.get('cash_capacity',{}).get('spendable',-1) for c in candidates))
+        if (role=='buyer' and context.get('buyer_execution') and self.config.get('buyer_patch34_enabled')
+                and current['metric']=='saved'):
+            self.j.add('decision',{'decision':decision_id,'chosen':best['id'],'mode':'fast_buyer_saved'},role=role)
+            self.j.add('buyer_saved_execution',{'decision':decision_id,'chosen':best['id'],
+                'operation':context.get('operation'),'seconds':time.monotonic()-started},role=role)
+            return best
         if (role=='shop' and context.get('shop_execution') and
                 self.config.get('shop_fast_execution_enabled') and (not critical or bounded_restock)):
             self.j.add('decision',{'decision':decision_id,'chosen':best['id'],
@@ -127,6 +137,8 @@ class Chooser:
             "Shop: maximize book growth: a sale removes inventory cost, refunds reduce book and revenue; buying converts cash to inventory. "
             "Compare retaining inventory to selling; include surge cost, exposure, storage and fully reserved warranties. "
             "Buyer: useful list value minus payment plus refund, not budget minus price. "
+            "When buyer_metric is saved, optimize normalized Saved deltas: an unserved uninsured deal contributes -1, "
+            "a fully refunded deal contributes 0, and absolute expensive purchases do not get extra weight. "
             "Optimize the sum of Shop ALL and Buyer ALL using supplied expected deltas and rank progress. "
             "Compare opportunity cost of failed negotiation and idle capital; never relax hard safety limits. "
             "Do not invent demand, failure probabilities, actions, prices or successful execution. "

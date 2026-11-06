@@ -97,6 +97,9 @@ def effective(journal, role, base=None, frozen=None):
 def begin_buyer(journal, order):
     key = 'buyer_strategy:' + str(order['order'])
     frozen = journal.get(key)
+    if frozen is None:
+        cfg=policy()
+        if cfg.get('buyer_patch34_enabled'):activate_buyer_revision(journal,cfg.get('buyer_strategy_revision'))
     cfg, selected = effective(journal, 'buyer', frozen=frozen)
     if frozen is None:
         journal.put(key, selected)
@@ -105,6 +108,19 @@ def begin_buyer(journal, order):
                     'acceptable': (order.get('acceptable') or [])[:200],
                     'strategy_version': selected['version']}, eid='buyer-order:' + str(order['order']), role='buyer')
     return cfg, selected
+
+
+def activate_buyer_revision(journal,revision,now=None):
+    if not revision or journal.get('buyer_strategy_revision')==revision:return
+    now=time.time() if now is None else now
+    previous=journal.get(KEY+'buyer',{'version':0,'patch':{},'status':'stable'})
+    patch=previous.get('trial',{}).get('previous_patch',previous.get('patch',{}))
+    updated={'version':previous['version']+1,'patch':validate('buyer',patch),
+             'status':'stable','since':now,'cooldown_until':now+MATURITY}
+    if not transition(journal,'buyer',previous,updated,'buyer_revision_epoch',
+                      {'revision':revision,'reason':'Patch 3.4 Saved objective; preserve shop and historical quality evidence'},now):return
+    journal.put('buyer_strategy_revision',revision)
+    journal.put('buyer_revision_epoch',now)
 
 
 def public_context(journal, now):
@@ -128,7 +144,8 @@ def board_snapshot(journal, now):
         return None
     result = {'at': now}
     from .finance import book_row
-    for role, table, field in [('buyer', 'buyers', 'surplus'), ('shop', 'shops', 'book')]:
+    from .buyer_scoring import metric
+    for role, table, field in [('buyer', 'buyers', metric(board,journal.get('market_rules',{}))), ('shop', 'shops', 'book')]:
         source = [dict(r, book=book_row(r)) for r in board.get(table, [])] if role=='shop' else board.get(table, [])
         rows = {row.get('name'): row.get(field) for row in source
                 if type(row.get(field)) in (int, float) and math.isfinite(row[field])}
@@ -173,6 +190,7 @@ def flow(start, end, role):
 def evidence(journal, role, version, now, since=0):
     epoch = journal.get('objective_epoch', 0)
     if role=='shop':epoch=max(epoch,journal.get('shop_revision_epoch',0))
+    if role=='buyer':epoch=max(epoch,journal.get('buyer_revision_epoch',0))
     since = max(since, epoch)
     kind = 'buyer_order' if role == 'buyer' else 'shop_opportunity'
     opportunities = [e for e in journal.events(kind, 10000)

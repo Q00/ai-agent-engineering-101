@@ -135,6 +135,10 @@ def schedule(journal, config, now=None):
                                 'expires_at': min(now + 120, unit.get('expires_at') or now + 120),
                                 'inventory_unit': unit['unit'], 'priority': 3 if thread else 1},
                                'stock-announcement:' + str(bucket))
+    if config.get('buyer_patch34_enabled'):
+        from .buyer_forum import schedule as buyer_schedule
+        buyer_schedule(journal,config,book,catalog,now)
+        return
     # Paid observations have immutable ledger references; no fabricated generic filler.
     for item in journal.events('purchase', 100):
         if not 0 <= now - item.get('paid_at', item['_ts']) < HORIZON or type(item.get('ledger')) is not int:
@@ -203,12 +207,23 @@ def deliver(market, journal, config, now=None):
     interval = max(300, config.get('forum_post_interval_seconds', 600))
     blocked = set()
     pending = sorted(journal.pending_posts(), key=lambda row: -row[1].get('priority', 0))
+    if config.get('buyer_patch34_enabled'):
+        retired=[key for key,p in pending if p.get('as','buyer')=='buyer' and
+                 not key.startswith(('buyer-insight:','wanted:'))]
+        if retired:
+            with journal.connect() as connection:
+                connection.executemany("UPDATE forum SET status='retired' WHERE id=? AND status='pending'",
+                                       [(key,) for key in retired])
+            journal.add('forum_queue_retired',{'count':len(retired),'reason':'superseded by patch34 evidence policy'})
+            pending=[(key,p) for key,p in pending if key not in set(retired)]
     for key, payload in pending:
         role = payload.get('as', 'buyer')
+        role_interval=(max(300,config.get('buyer_forum_post_interval_seconds',300))
+                       if role=='buyer' and config.get('buyer_patch34_enabled') else interval)
         if payload.get('expires_at', now + 1) <= now:
             journal.sent_post(key)
             continue
-        if role not in market.token or role in blocked or now - journal.get('forum_last_sent:' + role, 0) < interval:
+        if role not in market.token or role in blocked or now - journal.get('forum_last_sent:' + role, 0) < role_interval:
             continue
         if payload.get('inventory_unit'):
             units = journal.snapshot('inventory.json', {}).get('units', [])

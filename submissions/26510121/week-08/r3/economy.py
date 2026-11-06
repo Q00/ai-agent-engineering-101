@@ -156,7 +156,10 @@ def shop_candidates(unit, inv, catalog, journal, config, *, offer=None, previous
     return result
 
 
-def buyer_candidates(order, shops, catalog, journal):
+def buyer_candidates(order, shops, catalog, journal, config=None):
+    from .buyer_scoring import state,terms_delta,blocked_units
+    from .state import policy
+    current=state(journal,config or policy())
     from .forum import shop_hint
     from .market_memory import market_book
     now = time.time()
@@ -172,6 +175,9 @@ def buyer_candidates(order, shops, catalog, journal):
             if sku not in allowed or row.get("qty", 0) < 1 or sku not in catalog:
                 continue
             product = catalog[sku]
+            if (product.get('kind')=='food' and product.get('shelf_hours') and
+                    product['shelf_hours']<order.get('use_within_hours',0)):
+                continue
             counterpart_key = registry.get(shop["url"], {}).get("pubkey")
             own = [x for x in past if 0 <= now - x.get('paid_at', x['_ts']) <= 21600 and (x.get("shop") == shop["url"] or
                    counterpart_key and x.get("shop_identity") == counterpart_key) and x.get("sku") == sku]
@@ -188,11 +194,15 @@ def buyer_candidates(order, shops, catalog, journal):
             affordability = 1 if estimate <= order['budget'] else .1
             success *= affordability
             hint = shop_hint(journal, shop['name'], sku)
+            monetary=max(0,product['list_price']-estimate)
+            normalized=monetary/max(1,product['list_price'])
+            score=success*(normalized if current['metric']=='saved' else monetary)
+            changes=terms_delta(current,estimate,product['list_price'],completion=success)
             result.append({"id": shop["name"] + ":" + sku, "shop": shop["url"], "name": shop["name"],
                            "sku": sku, "product": product, "reference_price": estimate,
-                           "score": success * max(0, product["list_price"] - estimate) * (1.03 if hint else 1),
-                           'expected_delta': {'surplus': success * max(0, product['list_price'] - estimate),
-                                              'deals': success},
+                           "score": score * (1.03 if hint else 1),
+                           'expected_delta': changes,
+                           'avoid_units':blocked_units(journal,shop['url'],sku,order),
                            "evidence": {"own_paid": len(own), "peer_failures": len(failed_orders),
                                         'public_sku_prices': observed,
                                         "forum_announcement_hint": hint, "forum_hint_is_unverified": True,

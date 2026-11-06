@@ -15,9 +15,14 @@ def audit_rules(journal, text, now=None):
     now = time.time() if now is None else now
     understood = ('shops by book, revenue and stars' in text and
                   'each further unit adds 0.2%' in text and 'up to +50%' in text)
+    buyer_metric=('saved' if 'buyers by saved rate' in text and 'divided by deals + 100' in text else
+                  'surplus' if 'buyers by surplus' in text else 'unknown')
     result = {'at': now, 'sha256': hashlib.sha256(text.encode()).hexdigest(),
               'compatible': understood, 'expected': 'book/revenue/stars; surge<=1.5',
-              'source': '/agent.md'}
+              'source': '/agent.md','buyer_metric':buyer_metric,
+              'buyer_compatible':buyer_metric in {'saved','surplus'},
+              'forum_vote_min_deals':50 if 'at least 50 settled deals' in text else 5,
+              'stance_scoring':'one stance per' in text,'dislike_costs_shop_cash':'next_dislike_fee' in text}
     previous = journal.get('market_rules', {})
     journal.put('market_rules', result)
     if previous.get('sha256') != result['sha256']:

@@ -22,6 +22,8 @@ def review(deal, journal):
             "shop_identity": journal.snapshot("registry.json", {}).get(settled["shop"], {}).get("pubkey"),
             "name": settled.get("name", product.get("name", sku)), "kind": product.get("kind", order.get("kind")),
             "price": price, "value": value, "paid_at": now, "grade": settled.get("grade"),
+            'list_price':product.get('list_price'),'expires_at':expires,
+            'initial_saved_contribution':(value-price)/product['list_price'] if value and product.get('list_price') else -1,
             "warranty_hours": warranty_hours(settled.get('warranty_hours')), "ledger": settled.get("ledger"),
             "strategy_version": journal.get('buyer_strategy:' + str(order['order']), {}).get('version', 0)}
     journal.add("purchase", item, eid="purchase:" + order["order"], role="buyer")
