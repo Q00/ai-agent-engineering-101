@@ -27,6 +27,8 @@ MAX_TURNS = 12
 KNOWN_AT = 0.5             # a guess this sure that names a confirmed customer makes the buyer "not first time"
 CANDIDATES = 5
 FIT_SPARE = 1.05           # food_fit: a unit must last the buyer's stated hours with 5% to spare
+OPEN_TTL = 900             # a talk with no message for this long is dropped and its unit freed (11/6 22:4x: 63 talks
+                           # the buyer never ended held 62 units, every unit of the six SKUs buyers asked for most)
 NEEDS_EVERY = 600          # food_review_need: the needed hours are read again from the ledger this often
 _needs = {"ts": 0, "by_sku": {}}
 
@@ -195,7 +197,11 @@ class SellerCore:
         self.events.context(strategy_version=strategy.get("version"), epoch=strategy.get("epoch"),
                             card_version=cardmod.load()[0])
         ex = call(ctx, "calc.extract", {"text": text})["result"]
+        for t in [t for t, o in self.open.items() if t != task_id and o.get("seen", 0) < self.clock() - OPEN_TTL]:
+            self.events.emit("seller.expired", {"unit": self.open.pop(t).get("unit")}, task=t)
         st = self.open.get(task_id)
+        if st is not None:
+            st["seen"] = self.clock()
         self.events.emit("seller.request", {"excerpt": ex["excerpt"], "looks_like_instruction": ex["looks_like_instruction"],
                                             "price": ex["price"], "first": st is None}, task=task_id)
         if st is None:
@@ -217,6 +223,7 @@ class SellerCore:
                                        f"less than the {self.short['need']:g} h you need.")
                 return self._close(task_id, None, "rejected", "Sorry, we have none of that in stock right now.")
             st = self.open[task_id] = {"unit": None, "candidates": cands, "ask": None, "offer": None, "turns": 0,
+                                       "seen": self.clock(),
                                        "lines": []}
             g = call(ctx, "calc.guess_counterpart", {"task": task_id, "messages": [text]})["result"]
             top = (g.get("candidates") or [None])[0]
