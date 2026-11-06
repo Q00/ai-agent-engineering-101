@@ -59,7 +59,7 @@ ANCHOR, ASK_OVER = True, 0.02
 SOLO_ON = False          # the uncontested asks and floors (SOLO_ASK, SOLO_FLOOR, learn_solo): off since 11/6 12:40
 C_WARRANTY = True        # refurbished goods are offered with the warranty only: without one, 49-80% of our agreed C deals
                          # went unpaid (buyers' kits accept A and B only without a warranty)
-DEAD_HOURS = 3           # a goods unit held this long whose floor sits over its market + 0.01: floor at its cost (plus the
+DEAD_HOURS = 2           # 3 until 11/6 15:40 (96 of 238 goods units held 3 h+); a goods unit held this long whose floor sits over its market + 0.01: floor at its cost (plus the
                          # expected refund under a warranty), asked at the market; stock counts at cost in the book, so
                          # selling at cost loses nothing and frees the line (11/6: 50 such units, 40M at cost)
 MARKDOWN_AFTER, MARKDOWN_STEP = 3, 0.05        # days unsold, share of list per further day

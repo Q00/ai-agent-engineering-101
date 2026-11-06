@@ -5,16 +5,20 @@ A unit anchored to its SKU's market (pricing.plan) is first asked at the market 
 is not something the last day can tell: the buyers' AIs changed with every patch. So each talk is given one of ARMS
 by a hash of its task id (the same talk keeps its arm; the arms mix evenly across products, grades and hours), the
 seller records the arm with the negotiation, and every 20 minutes run() scores each arm over WINDOW by its reward
-per talk, a deal's lambda_book x (price - cost) + lambda_revenue x price (objective.json's prices of one more won in
-each part; without them the margin alone). Talks are what the buyers bring and the shelf is refilled every 20
-minutes, so a talk, not a unit, is the scarce thing an arm spends.
+per talk: a deal's (price - cost + k x price) / its list price, k = lambda_revenue / lambda_book (objective.json's
+prices of one more won in each part; without them the margin alone), 0 for a talk without a deal. Talks are what the
+buyers bring and the shelf is refilled every 20 minutes, so a talk, not a unit, is the scarce thing an arm spends.
+Per list price (11/6 15:40): in won the arms were judged by which happened to get the sofas. On 11/6 15:20 -0.03 led
+in won (26,448 a talk against 17,252) and came third per list price (0.0258 against 0.0293 and 0.0386), with 58% of
+its talks on products of 500,000 or more against 48-52% on the others.
 
-Until every arm has MIN_TALKS talks the weights are even; then the best arm gets BEST and each other REST, so the
-others keep being measured (the buyers keep changing). analysis/experiments.json {"at", "on", "weights", "best",
-"stats", "lambda"}; the seller reads it while it is FRESH, else asks at pricing.ASK_OVER as before. "on": false (a
-person) stops it.
+Until every arm has MIN_TALKS talks, and until the best arm's reward is Z standard errors over the next one's, the
+weights are even; then the best gets BEST and each other REST, so the others keep being measured (the buyers keep
+changing). analysis/experiments.json {"at", "on", "weights", "best", "z", "stats", "lambda"}; the seller reads it
+while it is FRESH, else asks at pricing.ASK_OVER as before. "on": false (a person) stops it.
 """
 import hashlib
+import statistics as st
 import time
 
 import common
@@ -24,6 +28,7 @@ MIN_TALKS = 100                      # 150 until then
 WINDOW = 24 * 3600
 BEST, REST = 0.8, round(0.2 / 3, 4)   # 0.7 / 0.1 until then
 FRESH = 3 * 3600
+Z = 2.0                              # 11/6 15:40: the best arm leads by this many standard errors, or the weights stay even
 
 
 def path():
@@ -49,20 +54,36 @@ def arm(task_id: str, now: float | None = None, state: dict | None = None) -> fl
 
 
 def score(rows: list, lam: dict) -> dict:
-    """{arm: {talks, deals, close, margin_per_talk, reward_per_talk}} over the anchored talks that carry an arm."""
+    """{arm: {talks, deals, close, margin_per_talk (won), reward_per_talk (per list price), se}} over the anchored talks
+    that carry an arm and a list price."""
     lb, lr = lam.get("book"), lam.get("revenue")
-    if not lb and not lr:
-        lb, lr = 1.0, 0.0
+    k = (lr or 0) / lb if lb else 0.0
     out = {}
     for a in ARMS:
-        rs = [r for r in rows if abs(float(r["arm"]) - a) < 1e-9]
-        deals = [r for r in rs if r.get("outcome") == "deal" and r.get("price")]
-        margin = sum(r["price"] - (r.get("cost") or 0) for r in deals)
-        reward = sum(lb * (r["price"] - (r.get("cost") or 0)) + lr * r["price"] for r in deals)
-        out[str(a)] = {"talks": len(rs), "deals": len(deals), "close": round(len(deals) / len(rs), 3) if rs else None,
+        rs = [r for r in rows if abs(float(r["arm"]) - a) < 1e-9 and r.get("list_price")]
+        deal = lambda r: r.get("outcome") == "deal" and r.get("price")
+        vals = [(r["price"] - (r.get("cost") or 0) + k * r["price"]) / r["list_price"] if deal(r) else 0.0 for r in rs]
+        deals = sum(1 for r in rs if deal(r))
+        margin = sum(r["price"] - (r.get("cost") or 0) for r in rs if deal(r))
+        out[str(a)] = {"talks": len(rs), "deals": deals, "close": round(deals / len(rs), 3) if rs else None,
                        "margin_per_talk": round(margin / len(rs)) if rs else None,
-                       "reward_per_talk": reward / len(rs) if rs else None}
+                       "reward_per_talk": round(sum(vals) / len(vals), 5) if vals else None,
+                       "se": round(st.stdev(vals) / len(vals) ** 0.5, 5) if len(vals) >= 2 else None}
     return out
+
+
+def leader(stats: dict) -> tuple[str | None, float | None]:
+    """(the arm whose reward per talk leads the next by Z standard errors or more, or None; how many it leads by)."""
+    order = sorted(stats, key=lambda a: -(stats[a]["reward_per_talk"] or 0))
+    if len(order) < 2:
+        return None, None
+    b, n = stats[order[0]], stats[order[1]]
+    gap = (b["reward_per_talk"] or 0) - (n["reward_per_talk"] or 0)
+    spread = ((b["se"] or 0) ** 2 + (n["se"] or 0) ** 2) ** 0.5
+    if not spread:
+        return (order[0], None) if gap > 0 else (None, None)
+    z = round(gap / spread, 2)
+    return (order[0] if z >= Z else None), z
 
 
 def run(now: float | None = None) -> str:
@@ -73,19 +94,18 @@ def run(now: float | None = None) -> str:
     lam = (common.read_json(common.MARKET_DIR / "analysis" / "objective.json", {}) or {}).get("lambda") or {}
     stats = score(rows, lam)
     ready = all(s["talks"] >= MIN_TALKS for s in stats.values())
-    if ready:
-        best = max(stats, key=lambda a: stats[a]["reward_per_talk"])
-        weights = {a: BEST if a == best else REST for a in stats}
-    else:
-        best, weights = None, {a: round(1 / len(ARMS), 4) for a in stats}
-    common.write_json(path(), {"at": int(now), "on": old.get("on", True), "weights": weights, "best": best, "stats": stats,
-                               "lambda": {"book": lam.get("book"), "revenue": lam.get("revenue")}})
-    talks = ", ".join(f"{a}: {s['talks']} talks, close {s['close']}" for a, s in stats.items())
-    return f"first-ask arms ({'best ' + best if best else 'even until ' + str(MIN_TALKS) + ' talks each'}): {talks}"
+    best, z = leader(stats) if ready else (None, None)
+    weights = {a: BEST if a == best else REST for a in stats} if best else {a: round(1 / len(ARMS), 4) for a in stats}
+    common.write_json(path(), {"at": int(now), "on": old.get("on", True), "weights": weights, "best": best, "z": z,
+                               "stats": stats, "lambda": {"book": lam.get("book"), "revenue": lam.get("revenue")}})
+    talks = ", ".join(f"{a}: {s['talks']} talks, close {s['close']}, {s['reward_per_talk']}/talk" for a, s in stats.items())
+    why = (f"best {best} by {z} SE" if best else f"even: no arm {Z} SE ahead yet (z {z})" if ready
+           else f"even until {MIN_TALKS} talks each")
+    return f"first-ask arms ({why}): {talks}"
 
 
 def brief(now: float) -> dict | None:
     e = common.read_json(path(), None)
     if not isinstance(e, dict):
         return None
-    return {k: e.get(k) for k in ("at", "on", "best", "weights", "stats")}
+    return {k: e.get(k) for k in ("at", "on", "best", "z", "weights", "stats")}

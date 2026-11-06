@@ -25,6 +25,9 @@ OPTIONS = (0.0, 0.15, 0.20, 0.24, 0.27, 0.30, 0.33, 0.36, 0.40, 0.45)   # 0.20-0
 WINDOW = 12 * 3600
 MIN_DEALS = 100          # 200 until 11/6 13:10
 CLAMP = (0.15, 0.45)     # (0.20, 0.36) until 11/6 13:10
+BAND = 0.005             # 11/6 15:40: thresholds within this of the best projected score count as tied and the highest
+                         # of them is taken (saved is half the buyer's score and the others now chase it too); on 11/6
+                         # the pick flipped 0.33 -> 0.15 -> 0.33 on differences of 0.0024
 ROUND_START = 1793793660          # 11/3 21:01 KST
 
 
@@ -71,8 +74,10 @@ def choose(ours: dict, others: list, recent: list, hours_left: float, window_h: 
         col_s = [x[0] for x in others] + [saved_end]
         col_d = [x[1] for x in others] + [deals_end]
         scores[t] = round(w_saved * pct(col_s, saved_end) + w_deals * pct(col_d, deals_end), 4)
-    best = max(scores, key=lambda t: (scores[t], -t)) if scores else None
-    return best, scores
+    if not scores:
+        return None, scores
+    top = max(scores.values())
+    return max(t for t, s in scores.items() if s >= top - BAND), scores
 
 
 def run(now: float | None = None, board: dict | None = None) -> dict:

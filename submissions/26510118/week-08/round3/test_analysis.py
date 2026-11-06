@@ -627,9 +627,9 @@ def test_linewatch():
           run(t5 + 1200, market(0.75, at=t5 + 1200), sales=sold5, line={BEDDING: 4}, stars=3.4) == [])
     ch = run(t5 + 600 + linewatch.STARS_REST, market(0.75, at=t5 + 600 + linewatch.STARS_REST), line={BEDDING: 4}, stars=3.45)
     check("...and once more after 2 hours under", [(c["from"], c["to"]) for c in ch] == [(4, 3)], ch)
-    check("growth goes straight to what sold in the last hour (cap 2, 7 sold: 7), not past the most units (20 sold: 16 since 11/6 13:10)",
+    check("growth goes straight to what sold in the last hour (cap 2, 7 sold: 7), not past the most units (30 sold: 24 since 11/6 15:40)",
           linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 7, "idle": None}, None, t)[0] == 7
-          and linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 20, "idle": None}, None, t)[0] == 16)
+          and linewatch.decide(2, None, {"n": 0, "median": None, "sellers": 0}, {"held": 0, "sold_1h": 30, "idle": None}, None, t)[0] == 24)
     check("a guard also keeps an exited product out (others at 0.75, none held, the rest over)",
           linewatch.decide(0, {"median": 0.75, "sellers": 2}, {"n": 30, "median": 0.75, "sellers": 2}, {"held": 0, "sold_1h": 0, "idle": None},
                            t, t + linewatch.EXIT_REST + 1, "our stars are 4.2 (under 4.3)") == (0, "out"))
@@ -1025,9 +1025,9 @@ def test_discover():
         lp = cat[sku]["list_price"]
         return [{"seq": i, "ts": (at or t) - 3600, "item": sku, "amount": round(lp * ratio), "shop": f"s{i % shops}"} for i in range(n)]
     settles = (sold("Gsofa0001", 30, 0.80, 5) + sold("Gsofa0002", 60, 0.78, 6) + sold("Gsofa0003", 90, 0.80, 14)
-               + sold("Gsofa0004", 40, 0.66, 3) + sold("Gmat00001", 200, 0.80, 4) + sold("Gsofa0001", 10, 0.80, 5, at=t - 7 * 3600))
+               + sold("Gsofa0004", 40, 0.62, 3) + sold("Gmat00001", 200, 0.80, 4) + sold("Gsofa0001", 10, 0.80, 5, at=t - 7 * 3600))
     got = linewatch.discover(settles, {}, cat, {BEDDING: 3}, {}, t)
-    check("picked: dear (500k+), 12+ settles in 6 h, 0.70+ of list (20 and 0.74 until 11/6 13:10), any number of sellers (14 here); "
+    check("picked: dear (500k+), 8+ settles in 6 h, 0.66+ of list (12 and 0.70 until 11/6 15:40), any number of sellers (14 here); "
           "best margin first", list(got) == ["Gsofa0003", "Gsofa0001", "Gsofa0002"] and got["Gsofa0001"]["n"] == 30
           and got["Gsofa0002"]["sellers"] == 6 and got["Gsofa0003"]["sellers"] == 14, got)
     em = {"Gsofa0003": 0.02, "Gsofa0001": 0.08}
@@ -1040,7 +1040,7 @@ def test_discover():
            linewatch.expected_margin("Gx", a_w(0.62), {}), linewatch.expected_margin("Gx", a_w(0.80, 9), {})) == (0.1384, 0.0204, -0.0291, None),
           (linewatch.expected_margin("Gx", a_w(0.80), {}), linewatch.expected_margin("Gx", a_w(0.80), {"Gx": 1.2}),
            linewatch.expected_margin("Gx", a_w(0.62), {})))
-    check("...left out: 0.66 of list, a 400k mattress, settles older than 6 h, our own shop's",
+    check("...left out: 0.62 of list, a 400k mattress, settles older than 6 h, our own shop's",
           linewatch.discover(sold("Gsofa0001", 30, 0.8, 5), {"s0": "Kiro729", "s1": "Kiro729", "s2": "Kiro729", "s3": "Kiro729",
                                                               "s4": "Kiro729"}, cat, {}, {}, t) == {})
     full = {f"Gx{i}": 2 for i in range(linewatch.LINE_MAX_SKUS - 1)}
@@ -1085,10 +1085,10 @@ def test_discover():
         common.catalog = saved
     st_ = common.read_json(MD / "analysis" / "line_state.json")
     loose = dict(cat, Gsofa0005={"name": "near", "category": "가구/침구>가구>소파", "list_price": 1_000_000})
-    near = [{"seq": i, "ts": t - 3600, "item": "Gsofa0005", "amount": 680_000, "shop": f"s{i % 13}"} for i in range(30)]
-    check("an experiment's looser bar (0.66 of list, 14 sellers) admits a product the usual one does not, marked exp",
+    near = [{"seq": i, "ts": t - 3600, "item": "Gsofa0005", "amount": 640_000, "shop": f"s{i % 13}"} for i in range(30)]
+    check("an experiment's looser bar (0.62 of list, 14 sellers) admits a product the usual one does not, marked exp",
           linewatch.discover(near, {}, loose, {}, {}, t) == {}
-          and linewatch.discover(near, {}, loose, {}, {}, t, None, {"find_median": 0.66, "find_sellers": 14})["Gsofa0005"]["exp"] is True)
+          and linewatch.discover(near, {}, loose, {}, {}, t, None, {"find_median": 0.62, "find_sellers": 14})["Gsofa0005"]["exp"] is True)
     exp_path = MD / "analysis" / "experiment.json"
     common.write_json(exp_path, {"start": t - 3700, "until": t - 100, "params": {"find_median": 0.74}})
     check("...its params hold only while it runs", linewatch.experiment(t) == {} and linewatch.experiment(t - 200) == {"find_median": 0.74})
@@ -1205,8 +1205,14 @@ def test_objective_model():
     recent = [(0.6, 0.4)] * 60 + [(0.75, 0.25)] * 60
     best, scores = objective.choose({"saved": 0.30, "deals": 100}, [(0.35, 300), (0.25, 150), (0.40, 400)], recent, 100, 12)
     check("the threshold: keeping only deals at 0.73 of list or less projects saved 0.371 (2nd of 4) against 0.321 for all; "
-          "the least of the tied thresholds wins (0.27)", best == 0.27 and scores[0.27] == 0.4333 and scores[0.0] == 0.2667
-          and scores[0.36] == scores[0.27], scores)
+          "the highest of the tied thresholds wins (0.40; the least until 11/6 15:40)", best == 0.40 and scores[0.27] == 0.4333
+          and scores[0.0] == 0.2667 and scores[0.40] == scores[0.27], scores)
+    saved_opts, objective.OPTIONS = objective.OPTIONS, (0.0, 0.15, 0.33)
+    near_tie = [(0.6, 0.4)] * 40 + [(0.75, 0.25)] * 60 + [(0.9, 0.1)] * 30
+    b2, s2 = objective.choose({"saved": 0.30, "deals": 100}, [(0.315, 1500), (0.25, 150), (0.40, 2600)], near_tie, 100, 12)
+    objective.OPTIONS = saved_opts
+    check("...a higher threshold within 0.005 of the best counts as tied, so it is taken (no flip on a difference of 0.002)",
+          max(s2.values()) - s2[b2] <= objective.BAND and b2 == max(t for t, v in s2.items() if v >= max(s2.values()) - objective.BAND), s2)
     board = {"shops": [{"name": "A", "book": 300, "revenue": 900, "stars_rank": 4.9, "all": 0.0},
                        {"name": "Kiro729", "book": 200, "revenue": 800, "stars_rank": 4.8, "all": 0.0}],
              "buyers": [{"name": "A", "saved": 0.35, "forum": 0.6, "deals": 300, "posts": 5},
@@ -1277,15 +1283,21 @@ def test_stage2():
     got = [experiments.arm(f"task-{i}", t, lean) for i in range(4000)]
     check("...the best arm at 0.8 gets about 80% of them", 0.77 < got.count(0.03) / len(got) < 0.83, got.count(0.03) / len(got))
 
-    def talks(a, n, deals, price, cost=600):
+    def talks(a, n, deals, price, cost=600, lp=1000):
         return [{"ts": t - 600, "arm": a, "anchored": True, "outcome": "deal" if i < deals else "walked",
-                 "price": price if i < deals else None, "cost": cost} for i in range(n)]
+                 "price": price if i < deals else None, "cost": cost, "list_price": lp} for i in range(n)]
     rows = talks(-0.03, 100, 80, 700) + talks(0.0, 100, 67, 720) + talks(0.03, 100, 60, 760) + talks(0.06, 100, 27, 800)
     s = experiments.score(rows, {"book": 1.0, "revenue": 0.0})
-    check("each arm's reward per talk: -0.03 closes 80% at margin 100 (80 a talk), +0.03 60% at 160 (96): +0.03 earns most",
-          s["0.03"]["reward_per_talk"] == 96 and s["-0.03"]["reward_per_talk"] == 80 and s["0.06"]["close"] == 0.27, s)
-    check("...lambda weighs revenue too: with revenue at a tenth of book, -0.03 earns 80 + 56 = 136 a talk",
-          round(experiments.score(rows, {"book": 1.0, "revenue": 0.1})["-0.03"]["reward_per_talk"], 6) == 136)
+    check("each arm's reward per talk, per list price: -0.03 closes 80% at margin 0.10 of list (0.08 a talk), +0.03 60% at "
+          "0.16 (0.096): +0.03 earns most", s["0.03"]["reward_per_talk"] == 0.096 and s["-0.03"]["reward_per_talk"] == 0.08
+          and s["0.06"]["close"] == 0.27 and s["0.03"]["se"] > 0, s)
+    check("...lambda weighs revenue too: with revenue at a tenth of book, -0.03 earns 0.08 + 0.056 = 0.136 a talk",
+          experiments.score(rows, {"book": 1.0, "revenue": 0.1})["-0.03"]["reward_per_talk"] == 0.136)
+    sofa = talks(-0.03, 100, 40, 1_400_000, cost=1_300_000, lp=2_000_000) + talks(0.0, 100, 40, 7_000, cost=6_000, lp=10_000)
+    s = experiments.score(sofa, {"book": 1.0, "revenue": 0.0})
+    check("per list price, not won (11/6 15:40): the arm that drew the sofas (40,000 won a talk at 0.05 of list) does not beat "
+          "one at 0.10 of list on kimchi (400 won a talk)", s["-0.03"]["margin_per_talk"] == 40_000 and s["0.0"]["margin_per_talk"] == 400
+          and s["0.0"]["reward_per_talk"] == 0.04 > s["-0.03"]["reward_per_talk"] == 0.02, s)
     rec = MD / "records" / "negotiations.jsonl"
     kept = rec.read_bytes() if rec.exists() else None
     obj = MD / "analysis" / "objective.json"
@@ -1302,10 +1314,18 @@ def test_stage2():
               and set(e["weights"].values()) == {0.25} and "even" in note, (e["weights"], note))
         with open(rec, "a", encoding="utf-8") as f:
             f.write(json.dumps(rows[-1]) + "\n")
+        note = experiments.run(t)
+        e = common.read_json(experiments.path())
+        check("...100 on each, +0.03 ahead by 0.016 a talk but under 2 standard errors: still even (11/6 15:40)",
+              e["best"] is None and 1 < e["z"] < 2 and set(e["weights"].values()) == {0.25} and "no arm 2.0 SE ahead" in note, (e, note))
+        clear = talks(-0.03, 100, 80, 700) + talks(0.0, 100, 67, 720) + talks(0.03, 100, 80, 760) + talks(0.06, 100, 27, 800)
+        with open(rec, "w", encoding="utf-8") as f:
+            for r in clear:
+                f.write(json.dumps(r) + "\n")
         experiments.run(t)
         e = common.read_json(experiments.path())
-        check("...100 on each: the best arm (+0.03) gets 0.8 and every other 0.0667",
-              e["best"] == "0.03" and e["weights"] == {"-0.03": 0.0667, "0.0": 0.0667, "0.03": 0.8, "0.06": 0.0667}, e["weights"])
+        check("...+0.03 at 0.128 a talk, 2 standard errors and more over the next: it gets 0.8 and every other 0.0667",
+              e["best"] == "0.03" and e["z"] >= 2 and e["weights"] == {"-0.03": 0.0667, "0.0": 0.0667, "0.03": 0.8, "0.06": 0.0667}, e)
     finally:
         experiments.path().unlink(missing_ok=True)
         obj.unlink(missing_ok=True)

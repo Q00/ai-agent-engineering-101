@@ -70,7 +70,8 @@ STARS_MIN, STARS_REST = 3.50, 2 * 3600   # 4.30 until 11/6 13:10 (the person's c
                                          # the rest almost none (kimauve 1/16); selling less cannot lift stars given
                                          # whatever we sell, so the guard is left for a real fault of the goods
 FIND_WINDOW = 6 * 3600
-FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 12, 0.70, 99   # sellers 12 until 11/6: the margin decides;
+FIND_LIST_MIN, FIND_N, FIND_MEDIAN, FIND_SELLERS = 500_000, 8, 0.66, 99    # sellers 12 until 11/6: the margin decides;
+                         # 12 at 0.70 until 11/6 15:40 (29 of 40 line places used; the expected margin still gates);
                          # 20 settles at 0.74 until 11/6 13:10 (the person's call: 281M cash idle against 74M of stock,
                          # 12 buyers in 6 h turned away for want of stock, 59% of talks walked: breadth, not depth)
 # Expected margin (Kiro 2.0 stage 1, 11/6): a goods product's share of list a unit earns on average, over the supply's
