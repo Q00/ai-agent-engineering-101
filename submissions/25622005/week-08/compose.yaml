@@ -20,15 +20,15 @@ services:
       # Kit hooks: model call for a negotiation the rules do not cover (llm.exception_* in SKILL.md).
       EXCEPTION_HARNESS_CMD: 'claude -p --model claude-haiku-5-5 --tools "" --setting-sources "" --no-session-persistence'
       # The strategist runs in this container, started by hand (no service of its own):
-      #   docker compose exec market as-agent claude                      log in once: run /login, then exit
+      #   podman compose exec market as-agent claude                      log in once: run /login, then exit
       #                                                                    (kept in /data/home, its cwd)
-      #   docker compose exec market as-agent python -m strategist --once one run now
-      #   docker compose exec -d market as-agent sh -c 'mkdir -p /data/strategist-home && exec python -m strategist >> /data/strategist-home/console.log 2>&1'
+      #   podman compose exec market as-agent python -m strategist --once one run now
+      #   podman compose exec -d market as-agent sh -c 'mkdir -p /data/strategist-home && exec python -m strategist >> /data/strategist-home/console.log 2>&1'
       #                                                                    loop, a run every STRATEGIST_INTERVAL_S
-      #   docker compose exec market as-agent python -m strategist health
+      #   podman compose exec market as-agent python -m strategist health
       #                                                                    exit 0 if heartbeat.json (the loop, every 60 s)
       #                                                                    or state.json (a run) is under 300 s old, else 1
-      #   docker compose exec -e STRATEGIST_HARNESS_CMD='claude -p --model ...' market as-agent python -m strategist --once
+      #   podman compose exec -e STRATEGIST_HARNESS_CMD='claude -p --model ...' market as-agent python -m strategist --once
       #                                                                    one run with another model
       # exec runs as root, so as-agent drops to agent with HOME=/data/home, cwd /data, SHOP_HOME=/data
       # and STRATEGIST_HOME=/data/strategist-home. The records are there: reports/latest.md (and
@@ -39,15 +39,16 @@ services:
       STRATEGIST_MODE: "${STRATEGIST_MODE:-apply}"
       STRATEGIST_INTERVAL_S: "1800"
       # After each run, push the records to this private repository; empty disables it. The deploy
-      # key goes in .market/n36l-data/home/.ssh/ (seen as /data/home/.ssh/), never in the image.
+      # key goes in $MARKET_DATA_DIR/home/.ssh/ (seen as /data/home/.ssh/), never in the image.
       STRATEGIST_LOG_REPO: "${STRATEGIST_LOG_REPO:-}"
       STRATEGIST_LOG_BRANCH: main
       STRATEGIST_LOG_KEY: /data/home/.ssh/strategist_logs
-    # strategy/ is the repository's folder, which the strategist rewrites in place: the live SKILL.md
-    # is the tracked one, so tuned values show up in git and a new image never replaces them.
+    # On this Mac the live data (shop keys, memory, logs, Claude login in home/, the tuned
+    # strategy/SKILL.md) is /Users/psyoung82/docker/compose/term/data; set MARKET_DATA_DIR to use
+    # another folder (the N36L used ./.market/n36l-data). strategy/ lives inside it, so the repo's
+    # strategy/ is not mounted over the live, tuned SKILL.md.
     volumes:
-      - ./.market/n36l-data:/data
-      - ./strategy:/data/strategy
+      - ${MARKET_DATA_DIR:-/Users/psyoung82/docker/compose/term/data}:/data
     # cloudflared reaches the kit on localhost:8900 inside this container.
     # No host port or router port forwarding is required.
     # Time for the shop (and any exec'd strategist) to finish before SIGKILL. Stop signals reach
