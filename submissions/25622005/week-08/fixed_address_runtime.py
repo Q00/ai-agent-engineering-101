@@ -4,6 +4,10 @@ Run market_runtime.py --fixed-config .market/fixed-address.json after configurin
 an authenticated provider locally. The JSON contains public_url and a list of
 tunnel_command arguments. Keep credentials in the provider's ignored config,
 never in command arguments. This module does not reserve a hostname or log in.
+
+With "external": true the tunnel runs outside this process (docker/host_tunnel.py on the Mac keeps a
+Quick Tunnel to the published shop port and rewrites this file when its URL changes, then restarts the
+container): no tunnel_command is needed, only the kit is supervised, and failed card probes are logged.
 """
 import json
 from pathlib import Path
@@ -25,6 +29,8 @@ def load_fixed_config(path):
             or parsed.password or parsed.query or parsed.fragment
             or parsed.path not in ("", "/")):
         raise ValueError("public_url must be a fixed HTTPS origin without credentials")
+    if data.get("external") is True:
+        return url.rstrip("/"), None
     command = data.get("tunnel_command")
     if (not isinstance(command, list) or not command
             or any(not isinstance(arg, str) or not arg for arg in command)):
@@ -63,6 +69,9 @@ class FixedAddressRuntime:
         self.failed_probes = 0
 
     def tick(self, now):
+        if self.command is None:                      # external tunnel: nothing to start or restart here
+            self._tick_kit(now, external=True)
+            return
         if (self.tunnel is None or self.tunnel.poll() is not None) and now >= self.next_tunnel:
             self.tunnel = subprocess.Popen(
                 self.command, stdin=subprocess.DEVNULL, stdout=self.tunnel_output,
@@ -72,6 +81,9 @@ class FixedAddressRuntime:
             self.log(f"fixed-address tunnel started, pid {self.tunnel.pid}")
         if self.tunnel is None or self.tunnel.poll() is not None:
             return  # Keep the kit and local A2A tasks alive during reconnects.
+        self._tick_kit(now)
+
+    def _tick_kit(self, now, external=False):
         if (self.kit is None or self.kit.poll() is not None) and now >= self.next_kit:
             self.kit = subprocess.Popen(
                 self.kit_command, stdin=subprocess.DEVNULL, stdout=self.kit_output,
@@ -85,11 +97,15 @@ class FixedAddressRuntime:
             self.next_probe = now + 15
             self.failed_probes = 0 if self.probe(self.url) else self.failed_probes + 1
             if self.failed_probes >= 3:
+                self.failed_probes = 0
+                if external:
+                    self.log("public card failed three checks through the external tunnel; the host tunnel "
+                             "script restarts this container when its URL changes")
+                    return
                 self.log("public card failed three checks; reconnecting tunnel with the same URL")
                 self.stop(self.tunnel)
                 self.tunnel = None
                 self.next_tunnel = now + 5
-                self.failed_probes = 0
 
     def close(self):
         self.stop(self.kit)

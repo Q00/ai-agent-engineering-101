@@ -57,6 +57,29 @@ class FixedRuntimeTests(unittest.TestCase):
             stop.assert_not_called()
             self.assertEqual(runtime.kit_command[-1], "https://shop.example")
 
+    def test_external_tunnel_mode_supervises_only_the_kit(self):
+        with tempfile.TemporaryDirectory() as folder, patch("fixed_address_runtime.subprocess.Popen") as popen:
+            path = Path(folder) / "fixed.json"
+            path.write_text(json.dumps({"public_url": "https://abc.trycloudflare.com/", "external": True}))
+            self.assertEqual(load_fixed_config(path), ("https://abc.trycloudflare.com", None))
+            kit = Mock(pid=2)
+            kit.poll.return_value = None
+            popen.return_value = kit
+            probe, stop, logm = Mock(return_value=False), Mock(), Mock()
+            runtime = FixedAddressRuntime("https://abc.trycloudflare.com", None,
+                                          ["kit", "--public-url", "https://abc.trycloudflare.com"],
+                                          Path(folder), None, None, logm, stop, probe)
+            runtime.tick(0)
+            self.assertEqual(popen.call_count, 1)                          # the kit only, no tunnel process
+            self.assertEqual(popen.call_args[0][0][0], "kit")
+            self.assertIsNone(runtime.tunnel)
+            for t in (20, 35, 50, 65):
+                runtime.tick(t)
+            self.assertEqual(probe.call_count, 4)
+            stop.assert_not_called()                                       # three failures: logged, nothing restarted
+            self.assertTrue(any("external tunnel" in str(c) for c in logm.call_args_list))
+            self.assertEqual(popen.call_count, 1)
+
     def test_failed_health_checks_only_restart_tunnel(self):
         with tempfile.TemporaryDirectory() as folder, patch("fixed_address_runtime.subprocess.Popen") as popen:
             tunnel, kit = Mock(pid=1), Mock(pid=2)

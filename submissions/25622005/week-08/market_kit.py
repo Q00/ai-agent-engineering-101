@@ -249,7 +249,10 @@ class Proxy:
         self.client = None                 # one keep-alive client, made on uvicorn's loop
         self.acp = None                    # shop side: the kit's ACP checkout (Round 3)
         app = Starlette(routes=[Route("/{path:path}", self.handle, methods=["GET", "POST", "PUT", "DELETE"])])
-        self.server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))
+        # 25622005: KIT_BIND_HOST=0.0.0.0 lets a tunnel outside the container reach the shop port (compose publishes it
+        # on the host's 127.0.0.1 only); the default keeps the kit local as shipped.
+        self.server = uvicorn.Server(uvicorn.Config(app, host=os.environ.get("KIT_BIND_HOST", "127.0.0.1"), port=port,
+                                                    log_level="warning"))
         threading.Thread(target=self.server.run, daemon=True).start()
         for _ in range(50):
             if self.server.started:

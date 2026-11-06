@@ -17,6 +17,9 @@ services:
       NAS_UID: "${NAS_UID:-1000}"
       NAS_GID: "${NAS_GID:-1000}"
       MARKET_URL: https://market.ourolabs.ai
+      # The shop port is published to the Mac's 127.0.0.1 (ports below) so a tunnel outside the container
+      # (docker/host_tunnel.py) can serve it: a container recreate then keeps the public URL.
+      KIT_BIND_HOST: 0.0.0.0
       # Kit hooks: model call for a negotiation the rules do not cover (llm.exception_* in SKILL.md).
       EXCEPTION_HARNESS_CMD: 'claude -p --model claude-sonnet-5-5 --tools "" --setting-sources "" --no-session-persistence'
       # The strategist runs in this container, started by hand (no service of its own):
@@ -46,8 +49,12 @@ services:
     # On this Mac the live data (shop keys, memory, logs, Claude login in home/, the tuned
     # strategy/SKILL.md) is /Users/psyoung82/docker/compose/term/data. strategy/ lives inside it,
     # so the repo's strategy/ is not mounted over the live, tuned SKILL.md.
+    ports:
+      - "127.0.0.1:8900:8900"
     volumes:
       - /Users/psyoung82/docker/compose/term/data:/data
+      - /Users/psyoung82/docker/compose/term/claude:/home/node
+
     # cloudflared reaches the kit on localhost:8900 inside this container.
     # No host port or router port forwarding is required.
     # Time for the shop (and any exec'd strategist) to finish before SIGKILL. Stop signals reach

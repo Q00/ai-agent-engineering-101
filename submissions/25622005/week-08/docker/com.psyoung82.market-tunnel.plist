@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- launchd agent for docker/host_tunnel.py: install with
+       cp docker/com.psyoung82.market-tunnel.plist ~/Library/LaunchAgents/
+       launchctl load -w ~/Library/LaunchAgents/com.psyoung82.market-tunnel.plist
+     stop with launchctl unload -w ... ; logs in the data folder's logs/host-tunnel*.log -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.psyoung82.market-tunnel</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>/Users/psyoung82/workspaces/ai-agent-engineering-101/submissions/25622005/week-08/docker/host_tunnel.py</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/psyoung82/docker/compose/term/data/logs/host-tunnel.launchd.log</string>
+  <key>StandardErrorPath</key><string>/Users/psyoung82/docker/compose/term/data/logs/host-tunnel.launchd.log</string>
+</dict>
+</plist>
