@@ -1,0 +1,15 @@
+provider=LM Studio native API server=http://127.0.0.1:1234 model=qwen/qwen3.8-27b temperature=0.2 max_turns=8 condition=free run=free-S02-retry-01
+[start] scenario=S02
+[buyer] I'd like to start by offering you $50 for the headphones.
+[protocol] performative=propose price=50 parsed=True reader_calls=1
+[seller] I appreciate your offer, but I can't accept $50. Let's settle on $45 for the headphones.
+[protocol] performative=propose price=45 parsed=True reader_calls=2
+[buyer] I'm afraid $45 is too low for me to accept, so I'll stick with my original offer of $50.
+[protocol] performative=propose price=50 parsed=True reader_calls=3
+[seller] I can't accept $50, so I will have to decline your offer.
+[protocol] performative=reject-proposal price=None parsed=True reader_calls=4
+[buyer] I'm sorry to hear you can't meet at $50, but I can offer $60 as a final compromise.
+[protocol] performative=propose price=60 parsed=True reader_calls=5
+[seller] I appreciate your willingness to compromise, and I am happy to accept your offer of $60.
+[protocol] performative=accept-proposal price=None parsed=True reader_calls=6
+[episode] scenario=S02 outcome=deal price=60 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6

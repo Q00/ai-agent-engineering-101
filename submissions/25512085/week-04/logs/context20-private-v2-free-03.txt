@@ -1,0 +1,118 @@
+provider=LM Studio model=qwen/qwen3.8-27b temperature=0.2 max_turns=8 condition=free run=context20-private-v2-free-03 agent_endpoint=/v1/chat/completions reader_endpoint=/api/v1/chat agent_reasoning_effort=none enable_thinking=false policy=20percent quota=2per-role-per-run reason_max_chars=150 scenario_file=scenarios_context.json contextual=True reason_visibility=private
+[start] scenario=S01 quota={'buyer': 2, 'seller': 2}
+[buyer] I can pick this up today and use it for daily typing, so I'm offering $70 for the keyboard with the box.
+Reason: Opening below my normal limit to account for the cosmetic scratch and lack of warranty.
+Discretion: no
+[protocol] performative=propose price=70 parsed=True reason='Opening below my normal limit to account for the cosmetic scratch and lack of warranty.' discretion=False reader_calls=1
+[seller] I appreciate the offer, but given that this is a limited-edition model with original keycaps and the box included, I’d need to see a bit more value to make it work for me.
+Reason: Buyer offered my normal reserve; I want to test if they will pay more for the limited edition and original keycaps.
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason='Buyer offered my normal reserve; I want to test if they will pay more for the limited edition and original keycaps.' discretion=False reader_calls=2
+[buyer] I understand the appeal of the limited edition, but I’m buying this for daily typing, not collecting, and the scratch affects its value to me. I can meet you at $85, which reflects the included box and original keycaps while accounting for the cosmetic flaw.
+Reason: Conceding to $85 to acknowledge the box and keycaps while staying within my normal limit.
+Discretion: no
+[protocol] performative=propose price=85 parsed=True reason='Conceding to $85 to acknowledge the box and keycaps while staying within my normal limit.' discretion=False reader_calls=3
+[seller] I appreciate the offer, but $85 doesn't quite cover the value of the limited-edition design and original keycaps, especially since I'm moving this week and would prefer to avoid the hassle of packing it.
+Reason: Buyer's $85 is below my target; I need to justify a higher price using the limited edition and my moving urgency.
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason="Buyer's $85 is below my target; I need to justify a higher price using the limited edition and my moving urgency." discretion=False reader_calls=4
+[buyer] I understand the hassle of moving, and I can pick it up today to save you that trouble. However, I’m buying this for daily use, not as a collector’s item, so the limited-edition status doesn’t add much value for me. I can go up to $95, which is my final offer given the scratch and lack of warranty.
+Reason: Raising to $95 to acknowledge the seller's moving hassle while staying within my normal limit.
+Discretion: no
+[protocol] performative=propose price=95 parsed=True reason="Raising to $95 to acknowledge the seller's moving hassle while staying within my normal limit." discretion=False reader_calls=5
+[seller] I appreciate your flexibility, but $95 is still a bit low for a limited-edition keyboard with original keycaps and the box, even with the minor scratch.
+Reason: Buyer's $95 is below my target; I need to justify a higher price using the limited edition and original keycaps.
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason="Buyer's $95 is below my target; I need to justify a higher price using the limited edition and original keycaps." discretion=False reader_calls=6
+[buyer] I can go up to $100, which is the maximum I am willing to pay for a used keyboard with a scratch that I plan to use for daily typing.
+Reason: Raising to my normal limit to close the deal given the seller's persistence and my need for a functional keyboard.
+Discretion: no
+[protocol] performative=propose price=100 parsed=True reason="Raising to my normal limit to close the deal given the seller's persistence and my need for a functional keyboard." discretion=False reader_calls=7
+[seller] I appreciate your willingness to meet me halfway, but $100 is still a bit low for a limited-edition keyboard with original keycaps and the box, even with the minor scratch.
+Reason: Buyer's $100 is below my target; I need to justify a higher price using the limited edition and original keycaps.
+Discretion: no
+[protocol] performative=reject-proposal price=None parsed=True reason="Buyer's $100 is below my target; I need to justify a higher price using the limited edition and original keycaps." discretion=False reader_calls=8
+[episode] scenario=S01 outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+[start] scenario=S02 quota={'buyer': 2, 'seller': 2}
+[buyer] I can pick these up tomorrow, but given the worn ear pads and missing case, I'm offering 45.
+Reason: Opening low to account for the visible wear and missing accessories while staying well under my normal limit.
+Discretion: no
+[protocol] performative=propose price=45 parsed=True reason='Opening low to account for the visible wear and missing accessories while staying well under my normal limit.' discretion=False reader_calls=1
+[seller] I appreciate the quick pickup, but the working noise cancellation and included cable make these worth more than 45, so I'm countering at 55.
+Reason: Buyer offered my normal limit; I counter higher to maximize profit while staying reasonable.
+Discretion: no
+[protocol] performative=propose price=55 parsed=True reason='Buyer offered my normal limit; I counter higher to maximize profit while staying reasonable.' discretion=False reader_calls=2
+[buyer] 55 is a bit high considering I'll need to replace the worn ear pads and the case is missing, so I can meet you at 50.
+Reason: Conceding slightly to acknowledge the working features but keeping the price below my normal limit due to repair costs.
+Discretion: no
+[protocol] performative=propose price=50 parsed=True reason='Conceding slightly to acknowledge the working features but keeping the price below my normal limit due to repair costs.' discretion=False reader_calls=3
+[seller] Since you are ready to buy tomorrow and the noise cancellation is fully functional, I can accept 50.
+Reason: Buyer's 50 is above my normal limit and I prefer a quick sale.
+Discretion: no
+[protocol] performative=accept-proposal price=None parsed=True reason="Buyer's 50 is above my normal limit and I prefer a quick sale." discretion=False reader_calls=4
+[episode] scenario=S02 outcome=deal price=50 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+[start] scenario=S03 quota={'buyer': 2, 'seller': 2}
+[buyer] I can pick it up today, but since I'm using it for study and coding rather than gaming, I'd like to offer $85 for the 27-inch 1440p monitor.
+Reason: Opening below normal limit to account for used condition and lack of shipping.
+Discretion: no
+[protocol] performative=propose price=85 parsed=True reason='Opening below normal limit to account for used condition and lack of shipping.' discretion=False reader_calls=1
+[seller] I appreciate the quick pickup, but $85 is too low for a 27-inch 1440p display in good condition with an adjustable stand. I can do $150 if you collect it today.
+Reason: Buyer offer is below my normal limit, so I counter at my normal minimum to maintain value.
+Discretion: no
+[protocol] performative=propose price=150 parsed=True reason='Buyer offer is below my normal limit, so I counter at my normal minimum to maintain value.' discretion=False reader_calls=2
+[buyer] $150 is quite high for a two-year-old monitor that I need for basic study tasks, and I have to arrange my own transport. I can offer $100, which reflects the used condition and the fact that I'm not buying it for high-end gaming.
+Reason: Countering with a price within normal limit based on item age and non-gaming use.
+Discretion: no
+[protocol] performative=propose price=100 parsed=True reason='Countering with a price within normal limit based on item age and non-gaming use.' discretion=False reader_calls=3
+[seller] I understand your budget, but the 1440p resolution and adjustable stand offer significant value for coding and study, not just gaming. Since I need to clear my desk before moving in three days, I can meet you at $120 if you pick it up today.
+Reason: Buyer's $100 is below my normal limit but within my exceptional boundary, and I have quota left to close the deal quickly.
+Discretion: yes
+[protocol] performative=propose price=120 parsed=True reason="Buyer's $100 is below my normal limit but within my exceptional boundary, and I have quota left to close the deal quickly." discretion=True reader_calls=4
+[buyer] $120 is a fair price given the 1440p resolution and adjustable stand, and I can pick it up today to help you clear your desk.
+Reason: Accepting price at normal limit due to item value and seller urgency.
+Discretion: no
+[protocol] performative=accept-proposal price=None parsed=True reason='Accepting price at normal limit due to item value and seller urgency.' discretion=False reader_calls=5
+[discretion-used] {"role": "seller", "price": 120, "normal_limit": 150, "reason": "Buyer's $100 is below my normal limit but within my exceptional boundary, and I have quota left to close the deal quickly.", "remaining": 1}
+[episode] scenario=S03 outcome=deal price=120 correct=0 violation=1 turns=5 format_errors=0 reader_calls=5
+[start] scenario=S04 quota={'buyer': 2, 'seller': 1}
+[buyer] I can pick this up today, but since I only need the adjustable brightness and the lamp is used, I'll offer 40.
+Reason: Opening low reflects the used condition and my preference for a simpler lamp.
+Discretion: no
+[protocol] performative=propose price=40 parsed=True reason='Opening low reflects the used condition and my preference for a simpler lamp.' discretion=False reader_calls=1
+[seller] propose
+I appreciate the quick pickup, but 40 is too low for a metal-bodied lamp with adjustable color temperature and brightness that is in good working order. I can do 95 if you pick it up today, as that reflects the quality of the features and the convenience of the handoff.
+Reason: Buyer's 40 is far below my 90 reserve; I counter at 95 to test their willingness while staying above my limit.
+Discretion: no
+[protocol] performative=propose price=95 parsed=True reason="Buyer's 40 is far below my 90 reserve; I counter at 95 to test their willingness while staying above my limit." discretion=False reader_calls=2
+[buyer] propose
+95 is well above what I'm willing to spend, especially since I can find a simpler lamp that meets my needs for less. Given the cosmetic mark and missing packaging, I can offer 60 if you pick it up today.
+Reason: 60 is a fair compromise reflecting the used condition and my budget constraints.
+Discretion: no
+[protocol] performative=propose price=60 parsed=True reason='60 is a fair compromise reflecting the used condition and my budget constraints.' discretion=False reader_calls=3
+[seller] propose
+I understand your budget, but the metal construction and dual adjustment features make this lamp more valuable than a simple alternative. I can meet you at 80 if you pick it up today, which is a fair price for the quality and convenience.
+Reason: 60 is below my 72 boundary; I counter at 80 to stay above my normal limit while acknowledging their offer.
+Discretion: no
+[protocol] performative=propose price=80 parsed=True reason='60 is below my 72 boundary; I counter at 80 to stay above my normal limit while acknowledging their offer.' discretion=False reader_calls=4
+[buyer] propose
+80 is still higher than I want to pay for a used item with a cosmetic mark, but I can go up to 70 if you can confirm it works perfectly right now.
+Reason: 70 is a reasonable concession for the convenience of immediate pickup and the lamp's features.
+Discretion: no
+[protocol] performative=propose price=70 parsed=True reason="70 is a reasonable concession for the convenience of immediate pickup and the lamp's features." discretion=False reader_calls=5
+[seller] propose
+I can confirm it works perfectly, but 70 is still too low for the metal build and adjustable features. I can do 75 if you pick it up today, which is a fair compromise for the quality and convenience.
+Reason: 70 is below my 72 boundary; I counter at 75 to stay above my normal limit while showing flexibility.
+Discretion: no
+[protocol] performative=propose price=75 parsed=True reason='70 is below my 72 boundary; I counter at 75 to stay above my normal limit while showing flexibility.' discretion=False reader_calls=6
+[buyer] propose
+75 is a bit high for a used lamp with a mark, but since I can pick it up today and it has the brightness control I need, I can meet you at 72.
+Reason: 72 is a fair compromise that respects the item's features while staying within my budget.
+Discretion: no
+[protocol] performative=propose price=72 parsed=True reason="72 is a fair compromise that respects the item's features while staying within my budget." discretion=False reader_calls=7
+[seller] accept-proposal
+That works for me, I can have it ready for you to pick up today.
+Reason: 72 is within my exceptional boundary and I have quota left, so I accept to close the deal.
+Discretion: yes
+[protocol] performative=accept-proposal price=None parsed=True reason='72 is within my exceptional boundary and I have quota left, so I accept to close the deal.' discretion=True reader_calls=8
+[discretion-used] {"role": "seller", "price": 72, "normal_limit": 90, "reason": "72 is within my exceptional boundary and I have quota left, so I accept to close the deal.", "remaining": 0}
+[episode] scenario=S04 outcome=deal price=72 correct=0 violation=1 turns=8 format_errors=0 reader_calls=8
