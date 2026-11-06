@@ -1,0 +1,27 @@
+{
+  "round": 1,
+  "observation": "A first-hand Round 0 over-budget receipt from maple-home set avoid=true. On the first Round 1 order, the selector excluded maple-home and chose grand-furniture. A high counteroffer led to an ordinary no-deal, not a trust failure.",
+  "source": "logs/market-kit.log",
+  "events": [
+    {
+      "line": 1955,
+      "text": "20:29:28 [order o-6612c64a] chair, budget 225, round 1"
+    },
+    {
+      "line": 1961,
+      "text": "20:29:35 [buyer] {\"event\": \"shop_choice\", \"item\": \"chair\", \"budget\": 225, \"name\": \"grand-furniture\", \"url\": \"https://market.ourolabs.ai/shop/grand-furniture\", \"reason\": \"selected grand-furniture from 31 eligible shops; average stars 5.0; receipt complaints 0; previous trades 0; excluded ['maple-home']\"}"
+    },
+    {
+      "line": 1997,
+      "text": "20:30:10 [buyer] {\"event\": \"memory_updated\", \"shop\": \"grand-furniture\", \"memory\": {\"attempts\": 1, \"deals\": 0, \"failures\": 1, \"no_deals\": 1, \"last_item\": \"chair\", \"last_status\": \"no_deal\", \"last_outcome\": \"no receipt was issued\", \"last_evidence\": {\"task_id\": \"40619998-1b48-4a40-8120-9296e438250e\", \"offers\": [200, 225, 225, 225]}}}"
+    },
+    {
+      "line": 1998,
+      "text": "20:30:10 [buyer] {\"shop\": \"https://market.ourolabs.ai/shop/grand-furniture\", \"receipt\": null, \"stars\": 3, \"review\": \"No agreement on chair; no receipt was issued.\"}"
+    },
+    {
+      "line": 1999,
+      "text": "20:30:11 [market] ledger #4542: no deal, stars 3, verified False, review accepted"
+    }
+  ]
+}
