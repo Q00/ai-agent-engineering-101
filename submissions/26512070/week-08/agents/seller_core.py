@@ -75,6 +75,7 @@ class SellerCore:
     def __init__(self, shop_name, key, model_call=None, clock=time.time):
         self.name, self.key, self.model_call, self.clock = shop_name, key, model_call, clock
         self.open = {}
+        self.armed = set()          # visits whose experiment arms are recorded (seller.arm)
         self.events = EventWriter("seller", source="seller")
         self.tool_events = EventWriter("seller", source="tools")    # one open file for every turn's tool calls
 
@@ -181,6 +182,16 @@ class SellerCore:
         """{"state": "input_required"|"completed"|"rejected", "say": str, "receipt": dict|None}"""
         ctx = Ctx(caller="seller", clock=self.clock, _writer=self.tool_events, keys={"task": task_id})   # C1
         strategy = ctx.strategy
+        try:                        # design R12, D-34 (user 11/6 12:3x): the shop's A/B arms, by the visit (task id)
+            from harness import experiment
+            arms, patch = experiment.assign("shop", task_id, self.clock())
+            if patch:               # the B arm's numbers on top of the strategy for this visit only
+                ctx._strategy = strategy = experiment._merge(strategy, patch)
+            if arms and task_id not in self.armed:
+                self.armed.add(task_id)
+                self.events.emit("seller.arm", {"experiment": arms}, task=task_id)
+        except Exception:           # the ledger must never stop a sale: run as A
+            pass
         self.events.context(strategy_version=strategy.get("version"), epoch=strategy.get("epoch"),
                             card_version=cardmod.load()[0])
         ex = call(ctx, "calc.extract", {"text": text})["result"]

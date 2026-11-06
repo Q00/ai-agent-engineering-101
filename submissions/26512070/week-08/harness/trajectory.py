@@ -125,6 +125,8 @@ def build(day):
                               "looks_like_instruction": d.get("looks_like_instruction")}
         elif kind in ("seller.decision", "seller.missed") and task:
             _step(get(task, "seller", ev), ev, by=d.get("thought"))
+        elif kind == "seller.arm" and task:
+            get(task, "seller", ev)["experiment"] = d.get("experiment")
         elif kind == "guess.made" and task:
             get(task, "seller", ev)["counterpart"] = {"guess": d.get("top"), "sure": False}
         elif kind == "seller.closed" and task:
