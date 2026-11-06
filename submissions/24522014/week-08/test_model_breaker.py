@@ -13,6 +13,35 @@ NOW = 1793800000.0
 USAGE = {"five_hour_percent": 40, "five_hour_resets_at": NOW + 3600, "weekly_percent": 9, "weekly_resets_at": NOW + 86400}
 
 
+class ChildEnvironment(unittest.TestCase):
+    """Names only are compared, and the values are fixtures: a failure here cannot print a real secret."""
+
+    HIDDEN = ("MARKET_OWNER", "MARKET_DIR", "MARKET_LEASE_GUARD", "market_owner")
+    KEPT = ("PATH", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CODEX_HOME", "CLAUDE_CODE_OAUTH_TOKEN", "GH_TOKEN", "SOME_AUTH", "MY_MARKET_OWNER")
+
+    def environment(self):
+        return {name: "fixture" for name in self.HIDDEN+self.KEPT}
+
+    def test_only_market_names_are_dropped(self):
+        self.assertEqual(sorted(mb.without_market_env(self.environment())), sorted(self.KEPT))
+
+    def test_the_source_is_left_alone(self):
+        source = self.environment()
+        mb.without_market_env(source)
+        self.assertEqual(source, self.environment())
+
+    def test_the_usage_read_gets_no_market_names_and_keeps_the_login(self):
+        seen = {}
+        def refuse(command, **kwargs):
+            seen.update(kwargs["env"])
+            raise OSError("fixture")
+        with patch.dict(mb.os.environ, self.environment()), patch.object(mb.subprocess, "Popen", refuse):
+            self.assertIsNone(mb.read_usage(1, command=["codex", "app-server"]))
+        self.assertEqual(sorted(set(seen) & set(self.HIDDEN)), [])
+        for name in ("OPENAI_API_KEY", "CODEX_HOME", "PATH"):
+            self.assertIn(name, seen)
+
+
 class Breaker(unittest.TestCase):
     def setUp(self):
         directory = TemporaryDirectory()

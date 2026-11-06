@@ -58,6 +58,19 @@ class ModelConfig(unittest.TestCase):
         self.assertEqual(called[called.index("--model") + 1], metadata["model"])
         self.assertEqual(metadata["command"], called)
 
+    def test_a_model_cli_gets_no_market_names_and_keeps_its_login(self):
+        # Names only are compared, and the values are fixtures.
+        fixture = {"MARKET_OWNER": "fixture", "MARKET_DIR": "fixture", "OPENAI_API_KEY": "fixture", "CODEX_HOME": "fixture"}
+        for provider in ("codex", "claude"):
+            with self.subTest(provider=provider), TemporaryDirectory() as directory, patch.object(harness, "ROOT", Path(directory)), \
+                    patch.dict(harness.os.environ, fixture), patch.object(harness.model_breaker, "is_tripped", return_value=False), \
+                    patch.object(harness.shutil, "which", return_value="cli.exe"), \
+                    patch.object(harness.subprocess, "Popen", side_effect=FakeProcess) as popen, patch("sys.stderr"):
+                harness.run_harness(provider, "fixture")
+                env = popen.call_args.kwargs["env"]
+                self.assertEqual([name for name in ("MARKET_OWNER", "MARKET_DIR") if name in env], [])
+                self.assertEqual([name for name in ("OPENAI_API_KEY", "CODEX_HOME") if name not in env], [])
+
     def test_seller_adapter_names_the_same_model(self):
         self.assertEqual(r3_harness.CMD, "codex " + harness.MODELS["codex"])
 

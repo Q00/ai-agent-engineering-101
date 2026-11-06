@@ -64,6 +64,12 @@ def _write_state(root, state):
         pass  # A lost update only means reading usage again.
 
 
+def without_market_env(base=None):
+    """A model CLI's environment: only the kit's own MARKET_ variables, the claim code among them, stay out. No other name is filtered, since those may be the CLI's own sign-in."""
+    base = os.environ if base is None else base
+    return {name: value for name, value in base.items() if not name.upper().startswith("MARKET_")}
+
+
 def read_usage(timeout=DEFAULTS["read_timeout_seconds"], command=None):
     """Ask the app-server for rate limits; keep only percentages and reset times. Returns None when it cannot."""
     if command is None:
@@ -72,7 +78,7 @@ def read_usage(timeout=DEFAULTS["read_timeout_seconds"], command=None):
     process = None
     try:
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                                   text=True, encoding="utf-8")
+                                   text=True, encoding="utf-8", env=without_market_env())
         found = []
 
         def collect():

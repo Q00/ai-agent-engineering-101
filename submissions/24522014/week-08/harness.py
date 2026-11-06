@@ -109,7 +109,7 @@ def run_harness(provider, prompt, timeout=90):
         metadata["command"] = command
         with (log_dir / "stdout.txt").open("wb") as stdout, (log_dir / "stderr.txt").open("wb") as stderr:
             process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr,
-                                       cwd=work_dir, start_new_session=(os.name != "nt"))
+                                       cwd=work_dir, start_new_session=(os.name != "nt"), env=model_breaker.without_market_env())
             try:
                 process.communicate(prompt.encode("utf-8"), timeout=timeout)
             except subprocess.TimeoutExpired:
