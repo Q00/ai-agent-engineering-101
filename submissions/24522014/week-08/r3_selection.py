@@ -3,6 +3,7 @@
 import math
 import time
 from datetime import datetime
+from discount_floor import ceiling, least_required, load as load_floor
 from market_intel import settlement_price
 
 
@@ -21,6 +22,7 @@ def wording_substitution(row):
 def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=None, public_rows=None, now=None):
     now = time.time() if now is None else now
     candidates = []
+    floor_settings = load_floor()
     for shop in shops:
         local = [r for r in memory if r.get("shop_name") == shop["name"]]
         errors = 0
@@ -53,6 +55,10 @@ def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=
                 faults = sum(bool(r.get("fault")) for r in purchases)
                 discount = policy["minimum_surplus_ratio"] if protected else policy["uninsured_discount_ratio"]
                 cap = min(cap, int(value * (1-discount)))
+            cap_without_floor = cap
+            if policy:
+                # No grade is known before a quote, so this is the best case; buyer_decision lowers it once the quote is read.
+                cap = min(cap, ceiling(value, least_required(kind, protected, floor_settings, policy.get("grades"))))
             if cap < 1:
                 continue
             history = [r for r in memory if r.get("verification") == "market_settled"
@@ -72,7 +78,7 @@ def select(shops, memory, catalog, budget, *, policy=None, portfolio=None, kind=
             feasible = estimated_price <= cap
             surplus = value - estimated_price
             evidence = {"shop": shop["name"], "sku": sku, "catalogue_value": value, "listed_qty": offer.get("qty"),
-                        "negotiation_cap": cap, "past_settled_price": reference,
+                        "negotiation_cap": cap, "cap_without_floor": cap_without_floor, "past_settled_price": reference,
                         "reference_within_cap": feasible, "estimated_surplus": surplus,
                         "warranty_required": policy["preferred_warranty_hours"] if protected else 0,
                         "attributed_faults": faults,

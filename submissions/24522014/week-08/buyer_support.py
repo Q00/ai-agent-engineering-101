@@ -169,6 +169,7 @@ def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, 
         sku = item["sku"]
         if balanced and kind != "goods":
             item["negotiation_cap"] = min(item["negotiation_cap"], int(item["catalogue_value"]*(1-policy["minimum_surplus_ratio"])))
+            item["cap_without_floor"] = min(item["cap_without_floor"], int(item["catalogue_value"]*(1-policy["minimum_surplus_ratio"])))
             item["reference_within_cap"] = item["past_settled_price"] is None or item["past_settled_price"] <= item["negotiation_cap"]
             item["estimated_surplus"] = item["catalogue_value"]-(item["past_settled_price"] or item["negotiation_cap"])
         item["support_eligible"] = False
@@ -208,6 +209,7 @@ def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, 
         reference = item["past_settled_price"]
         if positive(reference):
             item["negotiation_cap"] = min(item["negotiation_cap"], math.floor(reference*(1+settings["reference_premium_ratio"])))
+            item["cap_without_floor"] = min(item["cap_without_floor"], math.floor(reference*(1+settings["reference_premium_ratio"])))
         item.update(support_eligible=True, research_relevance=ctx["targets"].get(sku, "buyer_surplus_opportunity"),
                     rival_at_selection=shop["name"].casefold() in ctx["rival_names"] or shop["url"].rstrip("/") in ctx["rival_urls"])
         eligible.append(item)

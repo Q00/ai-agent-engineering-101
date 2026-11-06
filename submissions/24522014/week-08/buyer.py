@@ -14,6 +14,7 @@ import httpx
 
 from buyer_counter import evaluate as evaluate_counter
 from buyer_fast import classify, read_ask
+from discount_floor import deal_limit
 from harness import HarnessError, MODELS, parse_response, select_harness
 from model_router import last_call as last_model_call, run_model as run_harness
 from quote_terms import check_quote
@@ -217,6 +218,9 @@ def record_decision(client, turn, source, reason_code, decision=None, parser_rea
         entry["counter_check"] = counter_check
     if cancel:
         entry["cancel"] = cancel
+    floor_check = getattr(client, "floor_check", None)
+    if floor_check:
+        entry["floor_check"] = floor_check
     route = getattr(client, "model_route", None)
     if route:
         entry.update(route)
@@ -235,10 +239,18 @@ def buyer_decision(client, provider, history, turn, max_turns):
     reading = getattr(client, "price_reading", None)
     metadata = seller_metadata(client.task) if reading else None
     client.price_read = read_ask(text, metadata, reading)[2] if reading else None
-    _, parser_reason, clear_ask = classify(text, client.budget, getattr(client, "last_offer", None), metadata, reading)
     accept = getattr(client, "accept_conditions", None)
     client.counter_check = client.model_route = None
     client.quote_check = check_quote(client.task, text, accept) if accept else None
+    limit = getattr(client, "discount_limit", None)
+    client.floor_check = None
+    if limit:
+        # Before anything reads the budget, so the rule, the counter, the model and the receipt check all see this limit.
+        client.budget, client.floor_check = deal_limit(limit, (client.quote_check or {}).get("grade"), client.budget)
+    _, parser_reason, clear_ask = classify(text, client.budget, getattr(client, "last_offer", None), metadata, reading)
+    if client.floor_check and parser_reason == "over_budget":
+        without = client.floor_check["cap_without_floor"]
+        client.floor_check.update(ask=clear_ask, refused_by_floor=client.floor_check["ceiling"] < clear_ask and (without is None or clear_ask <= without))
     if client.quote_check and client.quote_check["reason_code"]:
         reason_code = client.quote_check["reason_code"]
         skipped = {"action": "walk_away", "price": None,
@@ -254,6 +266,8 @@ def buyer_decision(client, provider, history, turn, max_turns):
             return fast
         settings = getattr(client, "over_budget_counter", None)
         if settings is not None and parser_reason == "over_budget":
+            if client.floor_check and settings.get("enabled"):
+                settings = {**settings, "min_surplus_per_list": max(settings["min_surplus_per_list"], client.floor_check["required"])}
             counter, client.counter_check = evaluate_counter(
                 clear_ask, client.budget, getattr(client, "catalog_list_price", None),
                 used=getattr(client, "counter_used", False), last_offer=getattr(client, "last_offer", None),
@@ -264,7 +278,7 @@ def buyer_decision(client, provider, history, turn, max_turns):
                 record_decision(client, turn, "deterministic", "rule_counter_offer", counter, parser_reason)
                 return counter
             relief = getattr(client, "reference_relief", None)
-            if relief and not getattr(client, "reference_relief_taken", None):
+            if relief and not getattr(client, "reference_relief_taken", None) and (not client.floor_check or clear_ask <= client.floor_check["ceiling"]):
                 from reference_relief import eligible, REASON, REASON_CODE
                 check = client.counter_check or {}
                 grade = (client.quote_check or {}).get("grade")
@@ -343,7 +357,7 @@ def buyer_decision(client, provider, history, turn, max_turns):
 
 def cancel_after_turn_limit(client, turn):
     """Close a task left open by the turn limit. A failed cancel is recorded and never replaces the result."""
-    client.quote_check = client.counter_check = None
+    client.quote_check = client.counter_check = client.floor_check = None
     outcome = {"attempted": False, "result": "skipped_has_receipt", "state": client.state, "error": None}
     if not (client.receipt or getattr(client, "raw_receipt", None)):
         outcome["attempted"] = True

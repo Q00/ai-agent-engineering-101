@@ -15,14 +15,16 @@ class Protection(unittest.TestCase):
 
     def test_unknown_warranty_requires_discount_instead_of_invented_coverage(self):
         _, _, cap, _, evidence = select([self.shop], [], self.catalog, 100, policy=self.policy, kind="goods")
-        self.assertEqual(cap, 80)
+        self.assertEqual(evidence[0]["cap_without_floor"], 80)
+        self.assertLess(cap, 80)
         self.assertEqual(evidence[0]["warranty_required"], 0)
 
     def test_observed_warranty_enables_enforced_six_hour_condition(self):
         portfolio = [{"shop": "url", "sku": "A", "warranty_hours": 6}]
         _, _, cap, _, evidence = select([self.shop], [], self.catalog, 100, policy=self.policy,
                                         portfolio=portfolio, kind="goods")
-        self.assertEqual(cap, 95)
+        self.assertEqual(evidence[0]["cap_without_floor"], 95)
+        self.assertLess(cap, 80)
         self.assertEqual(evidence[0]["warranty_required"], 6)
 
     def test_refused_warranty_does_not_recur_as_assumed_coverage(self):
@@ -30,7 +32,7 @@ class Protection(unittest.TestCase):
         memory = [{"shop_name": "s", "url_at_time": "url", "item": "A", "outcome": "payment_refused",
                    "payment_reason": "warranty too short", "timestamp": "2026-11-03T00:00:00+00:00"}]
         self.assertEqual(select([self.shop], memory, self.catalog, 100, policy=self.policy,
-                                portfolio=portfolio, kind="goods")[2], 80)
+                                portfolio=portfolio, kind="goods")[4][0]["cap_without_floor"], 80)
 
     def test_breakage_needs_unit_or_settlement_identity_and_explicit_refund(self):
         with tempfile.TemporaryDirectory() as tmp:

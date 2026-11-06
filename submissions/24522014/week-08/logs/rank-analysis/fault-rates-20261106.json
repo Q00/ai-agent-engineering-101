@@ -1,0 +1,211 @@
+{
+ "sources": {
+  "logs/star-audit/20261105/rows.jsonl": {
+   "rows": 138788,
+   "kinds": {
+    "settle": 38413,
+    "result": 99184,
+    "broken": 1191
+   },
+   "from_kst": "2026-11-03T21:04:38+09:00",
+   "to_kst": "2026-11-05T10:20:48+09:00"
+  },
+  "logs/star-audit/20261105/rows-tail.jsonl": {
+   "rows": 3227,
+   "kinds": {
+    "settle": 935,
+    "result": 2252,
+    "broken": 40
+   },
+   "from_kst": "2026-11-05T10:20:48+09:00",
+   "to_kst": "2026-11-05T10:42:07+09:00"
+  }
+ },
+ "distinct_rows": 142015,
+ "goods_settled_all": 18513,
+ "goods_settled_past_the_window": 13991,
+ "left_out_could_still_break": 4522,
+ "broken_rows": 1231,
+ "broken_rows_without_a_saved_sale": 710,
+ "longest_hours_after_sale": 5.98,
+ "cells": {
+  "A/no_warranty": {
+   "sold": 2374,
+   "broke": 28,
+   "refunded": 0,
+   "rate": 0.0118,
+   "rate_95": [
+    0.0082,
+    0.017
+   ],
+   "scaled_95": [
+    0.019,
+    0.039
+   ]
+  },
+  "A/warranty_6h_or_more": {
+   "sold": 6174,
+   "broke": 67,
+   "refunded": 67,
+   "rate": 0.0109,
+   "rate_95": [
+    0.0086,
+    0.0138
+   ],
+   "scaled_95": [
+    0.019,
+    0.031
+   ]
+  },
+  "A/warranty_under_6h": {
+   "sold": 1405,
+   "broke": 17,
+   "refunded": 9,
+   "rate": 0.0121,
+   "rate_95": [
+    0.0076,
+    0.0193
+   ]
+  },
+  "B/no_warranty": {
+   "sold": 1114,
+   "broke": 48,
+   "refunded": 0,
+   "rate": 0.0431,
+   "rate_95": [
+    0.0327,
+    0.0567
+   ],
+   "scaled_95": [
+    0.074,
+    0.128
+   ]
+  },
+  "B/warranty_6h_or_more": {
+   "sold": 1280,
+   "broke": 63,
+   "refunded": 63,
+   "rate": 0.0492,
+   "rate_95": [
+    0.0387,
+    0.0625
+   ],
+   "scaled_95": [
+    0.088,
+    0.142
+   ]
+  },
+  "B/warranty_under_6h": {
+   "sold": 356,
+   "broke": 22,
+   "refunded": 10,
+   "rate": 0.0618,
+   "rate_95": [
+    0.0412,
+    0.0918
+   ]
+  },
+  "C/no_warranty": {
+   "sold": 629,
+   "broke": 92,
+   "refunded": 0,
+   "rate": 0.1463,
+   "rate_95": [
+    0.1208,
+    0.176
+   ],
+   "scaled_95": [
+    0.274,
+    0.399
+   ]
+  },
+  "C/warranty_6h_or_more": {
+   "sold": 526,
+   "broke": 63,
+   "refunded": 63,
+   "rate": 0.1198,
+   "rate_95": [
+    0.0947,
+    0.1503
+   ],
+   "scaled_95": [
+    0.215,
+    0.34
+   ]
+  },
+  "C/warranty_under_6h": {
+   "sold": 133,
+   "broke": 20,
+   "refunded": 11,
+   "rate": 0.1504,
+   "rate_95": [
+    0.0995,
+    0.2209
+   ]
+  }
+ },
+ "matched_overall": 0.030019298120220143,
+ "board": {
+  "board_file": "logs/star-audit/20261105/board.json",
+  "shops": 81,
+  "deals_all_kinds": 89955,
+  "broken": 2878,
+  "refunds": 1659,
+  "goods_share_in_the_sample": 0.4705,
+  "goods_deals_estimated": 42323,
+  "true_rate_goods": 0.068
+ },
+ "scale": 2.265,
+ "scale_assumption": "missing broken rows do not depend on grade or warranty",
+ "rates": {
+  "matched": {
+   "no_warranty": {
+    "A": 0.0118,
+    "B": 0.0431,
+    "C": 0.1463
+   },
+   "warranty": {
+    "A": 0.0109,
+    "B": 0.0492,
+    "C": 0.1198
+   }
+  },
+  "scaled": {
+   "no_warranty": {
+    "A": 0.027,
+    "B": 0.098,
+    "C": 0.331
+   },
+   "warranty": {
+    "A": 0.025,
+    "B": 0.111,
+    "C": 0.271
+   }
+  }
+ },
+ "own_purchases_check": {
+  "goods_deals": 429,
+  "by_grade_and_warranty": {
+   "A/no_warranty": 134,
+   "A/warranty": 161,
+   "B/no_warranty": 75,
+   "B/warranty": 59
+  },
+  "own_breaks_recorded": 18,
+  "own_rate": 0.042,
+  "own_rate_95": [
+   0.0267,
+   0.0653
+  ],
+  "expected_breaks_at_scaled_rates": 21.5,
+  "expected_breaks_at_matched_rates": 9.5
+ },
+ "later_sample_broken_per_goods_sale": {
+  "file": ".market/market-intel.json",
+  "from_kst": "2026-11-05T20:30:16+09:00",
+  "to_kst": "2026-11-06T10:01:13+09:00",
+  "goods_sales": 4644,
+  "broken": 390,
+  "rate": 0.084
+ }
+}

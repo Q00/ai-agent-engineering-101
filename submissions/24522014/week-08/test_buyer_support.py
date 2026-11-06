@@ -50,7 +50,8 @@ class SupportRules(unittest.TestCase):
     def test_relevant_unknown_price_uses_existing_uninsured_discount(self):
         selected, sku, cap, _, evidence = self.choose()
         self.assertEqual(selected["name"], "other")
-        self.assertEqual(cap, 80000)
+        self.assertEqual(evidence[0]["cap_without_floor"], 80000)
+        self.assertLess(cap, 80000)
         self.assertTrue(evidence[0]["support_eligible"])
 
     def test_unrelated_and_already_observed_public_pairs_skip(self):
@@ -100,7 +101,8 @@ class SupportRules(unittest.TestCase):
         self.assertIsNone(self.choose(portfolio=portfolio)[0])
         result = self.choose(portfolio=[{**portfolio[0], "warranty_hours": 6}])
         self.assertEqual(result[4][0]["warranty_required"], 6)
-        self.assertEqual(result[2], 95000)
+        self.assertEqual(result[4][0]["cap_without_floor"], 95000)
+        self.assertLess(result[2], 80000)
         records = [{"round": 3, "shop_name": "other", "outcome": "receipt_mismatch"}]
         self.assertIsNone(self.choose(memory=records)[0])
         self.assertIsNone(self.choose(shops=[shop("kcwarni")])[0])

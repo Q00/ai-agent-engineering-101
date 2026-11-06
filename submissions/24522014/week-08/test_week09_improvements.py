@@ -57,7 +57,9 @@ class BuyerValue(unittest.TestCase):
                     patch.object(market_buyer, "trade", return_value=({"receipt": None}, {})) as trade, \
                     patch.object(market_buyer, "remember") as remember, redirect_stdout(io.StringIO()):
                 market_buyer.main()
-            self.assertEqual(trade.call_args.args[1:3], ("A", 80000))
+            self.assertEqual(trade.call_args.args[1], "A")
+            self.assertLess(trade.call_args.args[2], 80000)
+            self.assertEqual(trade.call_args.kwargs["discount_limit"]["cap_without_floor"], 80000)
             self.assertEqual(remember.call_args.args[1]["order_budget"], 200000)
 
 

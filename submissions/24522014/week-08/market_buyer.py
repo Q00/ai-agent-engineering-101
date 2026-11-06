@@ -19,6 +19,7 @@ from r3_policy import buyer_accept, load_policy
 from settlement_memory import payment_outcomes, reconcile
 from market_intel import fresh
 from buyer_support import prepare as prepare_support
+import discount_floor
 import model_router
 
 ROOT = Path(__file__).resolve().parent
@@ -154,8 +155,9 @@ def failure_reason(outcome, negotiation, decisions):
     return outcome
 
 
-def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None):
+def trade(shop, item, budget, *, mode="claude", transport=None, requirements=None, decision_context=None, max_turns=6, fast_rules=False, model_gate=None, accept_conditions=None, over_budget_counter=None, catalog_list_price=None, order_item=None, price_reading=None, reference_relief=None, discount_limit=None):
     client = MarketTransport(shop["url"], item, budget, transport=transport, timeout=180)
+    client.discount_limit = discount_limit
     client.requirements = requirements
     client.order_item = order_item
     client.accept_conditions = accept_conditions
@@ -276,7 +278,9 @@ def main():
     print(f"[choose] {reason}", flush=True)
     if shop:
         trade_options = {"mode": args.mode, "decision_context": selected_evidence,
-                         "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions, "order_item": order.get("item")}
+                         "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions, "order_item": order.get("item"),
+                         "discount_limit": {"list_price": (catalog.get(selected_item) or {}).get("list_price"), "kind": order.get("kind"), "covered": bool(selected_evidence.get("warranty_required")),
+                                            "grades": accept_conditions.get("grades"), "cap_without_floor": selected_evidence.get("cap_without_floor"), "settings": discount_floor.load()}}
         if support_decision.get("fast_rules"):
             from buyer_counter import load_settings
             from buyer_fast import load_reading
