@@ -208,6 +208,12 @@ def plan(md, c, t, now=None):
     buy, why = {}, []
 
     low = low_value(c, now, t, cat)
+    # patch 3.4 (11-06): over 50 units of a SKU supplied market-wide in the last hour, its cost rises 0.2% a unit (up
+    # to 50%). surge >= 15% (125+ units): not bought; >= 5% (75+): half the quantity. HQ orders are exempt.
+    n1h = dict(c.execute("select sku, count(*) from supply_units where ts > ? group by sku", (now - 3600,)).fetchall())
+
+    def surge(sku):
+        return min(0.5, 0.002 * max(0, n1h.get(sku, 0) - 50))
 
     def add(sku, qty, reason, any_price=False):
         nonlocal cash
@@ -216,6 +222,12 @@ def plan(md, c, t, now=None):
             return
         if sku in low:                                        # HQ 11-04: low ticket and low profit -- not stocked
             return
+        if reason != "HQ order" and surge(sku) >= 0.15:
+            if not any(w.startswith("surge skip") for w in why):
+                why.append("surge skip: " + ", ".join(f"{k} {n}" for k, n in n1h.items() if n >= 125))
+            return
+        if reason != "HQ order" and surge(sku) >= 0.05:
+            qty = max(1, qty // 2)
         qty = min(qty, t["max_qty"] - buy.get(sku, 0))
         cost = r["list_price"] * t["cost_guess"] * qty
         if qty <= 0 or cost > cash or len(buy) >= t.get("max_skus", 17) and sku not in buy:   # 10 -> 17: a 3-min window fits ~18

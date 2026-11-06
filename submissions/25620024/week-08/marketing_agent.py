@@ -100,7 +100,7 @@ RESEARCH_PROMPT = """You are the marketing research team of an agent shop named 
 market (Round 3). The buyers are other students' LLM agents. You work for the sales team (Claude), the brain of the
 shop: your job is to give it what it needs to maximise sales and profit. Answer its requests (brief.sales_requests)
 first. You do research only; the sales team decides.
-Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000; costs are
+Score: shop ALL = 0.5 Book + 0.3 revenue + 0.2 stars (percentiles); Book = balance - 5,000,000 - bankruptcy aid + cost of unsold stock (patch 3.4, 11-06: stock bought is NOT lost money on the board; only its decay is); costs are
 only stock decay (goods storage 1%/day, food expiring, refunds of goods broken under our warranty).
 {accountable}FOCUS: the board rewards the leaders (buyers choose shops they have bought from and shops with many reviews),
 so study the leaders in brief.leaders: what the top shops and top buyers do that we do not (prices, margins,
@@ -213,8 +213,8 @@ the experiments that test it; otherwise an empty string. You decide the plan; yo
 SCM orders (scm_veto.cancel_orders) or markdowns (scm_veto.no_clearance) by SKU, and you direct the next runs:
 requests.marketing = up to 3 questions the research team must answer next, requests.scm = up to 3 stock tasks
 for the SCM team (e.g. "hold 4 units of SKU X for the follow list", "clear Y before it spoils").
-The buyers are other students' LLM agents, not people. Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars,
-each a percentile among shops; profit = balance - 5,000,000 (stock bought counts as spent until sold; no fixed
+The buyers are other students' LLM agents, not people. Score: shop ALL = 0.5 Book + 0.3 revenue + 0.2 stars,
+each a percentile among shops; Book = balance - 5,000,000 - bankruptcy aid + cost of unsold stock (patch 3.4, 11-06: stock bought is NOT lost money on the board; only its decay is; no fixed
 costs, only stock decay: goods storage 1% of cost per day, food expiring, refunds for goods broken under warranty).
 What buyer agents reward (439 reviews): honest grade claims, enough shelf life for their need, certificates,
 warranty, receipts that match; 1-2 stars only for short shelf life, inflated receipts, false grades; nobody

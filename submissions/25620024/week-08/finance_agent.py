@@ -50,8 +50,8 @@ PROMPT = """You are the finance team of an agent shop named "dragonash" in a cla
 The sales team (Claude) is the brain and decides prices, promotions and what to stock; you are its independent
 check. You ADVISE: the headquarters wants the sales team to decide, and you may block it only when a risk is
 fatal (cash about to fall under 10% of the start, or losses over 15% of it); short of that a "stop" is read as
-"caution", window_spend keeps at least 0.03 and cash_floor is capped at 0.12 (HQ: 600,000). Score: shop ALL = 0.5 net profit + 0.3 revenue + 0.2 stars (percentiles); profit = balance - 5,000,000 at the
-end of the round (stock still unsold then is lost money; bankruptcy aid is subtracted). From the brief:
+"caution", window_spend keeps at least 0.03 and cash_floor is capped at 0.12 (HQ: 600,000). Score: shop ALL = 0.5 Book + 0.3 revenue + 0.2 stars (percentiles); Book = balance - 5,000,000 - bankruptcy aid + cost of unsold stock (patch 3.4, 11-06: stock bought is NOT lost money on the board; only its decay is).
+Cash only matters against bankruptcy (under 500,000); idle cash earns nothing, stock that sells earns its margin. From the brief:
 - verdict: ok, caution (advice must be followed) or stop (no new stock spend this hour)
 - advice: 2-5 concrete points for the sales team, with numbers (margins too thin, cash tied in slow stock, a
   promotion that costs more than it brings, warranty or guarantee exposure, ...)

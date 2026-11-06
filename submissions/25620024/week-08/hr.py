@@ -73,8 +73,8 @@ TARGET = 0.8      # every scored component in the top 20% of the field
 
 
 def measure(board):
-    """KPIs are the midterm's own scoring (week-08 / agent.md): Players = shop ALL + buyer ALL; shop ALL = 0.5 profit
-    + 0.3 revenue + 0.2 stars, buyer ALL = 0.5 surplus + 0.3 forum votes + 0.1 deals + 0.1 posts, each a percentile
+    """KPIs are the midterm's own scoring (week-08 / agent.md): Players = shop ALL + buyer ALL; shop ALL = 0.5 Book
+    + 0.3 revenue + 0.2 stars, buyer ALL = 0.5 saved rate + 0.3 forum rating (as itself) + 0.1 deals + 0.1 posts (patch 3.4)
     among shops with a deal (buyers with a deal), ranked at the end of the round. Each component has one owner team;
     the drivers (ticket size, hits in stock, sell-through, Enuri's losses) are diagnostics, not scored."""
     c = market_model.db()
@@ -102,12 +102,12 @@ def measure(board):
     acc = (_load(HERE / "private" / "enuri_book.json", {}) or {}).get("enuri_accountability") or {}
     return {
         "sales": [k("shop ALL percentile (Players: shop half)", pct(shops, "all", me_s))],
-        "finance": [k("profit percentile (shop ALL x0.5)", pct(shops, "profit", me_s))],
+        "finance": [k("Book percentile (shop ALL x0.5, patch 3.4)", pct(shops, "book", me_s))],
         "scm": [k("revenue percentile (shop ALL x0.3)", pct(shops, "revenue", me_s))],
         "marketing": [k("stars percentile (shop ALL x0.2)", pct(shops, "stars", me_s))],
-        "buyer": [k("surplus percentile (buyer ALL x0.5)", pct(buyers, "surplus", me_b))],
+        "buyer": [k("saved-rate percentile (buyer ALL x0.5, patch 3.4)", pct(buyers, "saved", me_b))],
         "enuri": [k("deals percentile (buyer ALL x0.1)", pct(buyers, "deals", me_b))],
-        "review": [k("forum votes percentile (buyer ALL x0.3)", pct(buyers, "forum", me_b)),       # HQ 11-04:
+        "review": [k("forum rating, as itself (buyer ALL x0.3)", (me_b or {}).get("forum") or 0),       # HQ 11-04:
                    k("posts percentile (buyer ALL x0.1)", pct(buyers, "posts", me_b))],          # the review team
         "_board": {"shop_rank": rank.get("shop_rank"), "players_rank": rank.get("players_rank"),
                    "players_percentile": pct(players, "total", me_p),

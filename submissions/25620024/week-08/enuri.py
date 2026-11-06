@@ -448,7 +448,7 @@ def advise(order, shops, b=None, t=None, cat=None):
         boost = 1.5 if shop in (b.get("frugal") or {}) else 1.0   # HQ 11-05: frugal shops first
         if shop in (trust.get("preferred") or {}):                  # and above all, shops that sold us dear goods
             boost *= 2.0                                            # at a good price with no error
-        keep = boost * max(0, lp - min(x, budget)) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
+        keep = boost * max(0, lp - min(x, budget)) / max(1, lp) * (0.5 + 0.5 * honest) * (1 - qa.get("broken", 0)) * (1 - pen.get(shop, 0))
         target = int(lp * t["r3_first_offer"])
         p, hl = (b.get("prices") or {}).get(sku) or {}, honest_low(b, sku)
         if hl:
@@ -461,7 +461,7 @@ def advise(order, shops, b=None, t=None, cat=None):
                                  target))
         target = min(target, int(0.9 * walk))
         row = {"shop": shop, "sku": sku, "url": url, "name": name, "expected_price": round(x), "list_price": lp,
-               "reach_ok": True, "keep": round(keep), "target": target, "walk_away": walk,
+               "reach_ok": True, "keep": round(keep, 4), "target": target, "walk_away": walk,
                "quality": {k: qa.get(k) for k in ("deals", "honest", "broken", "verdict")} if qa else None,
                "why": f"expect {round(x)} ({'book' if predict(b, shop, sku, kind) else 'market/prior'}), "
                       f"keep ~{round(max(0, lp - min(x, budget)))} (list - paid)" + (f", penalty {pen[shop]}" if pen.get(shop) else "")}

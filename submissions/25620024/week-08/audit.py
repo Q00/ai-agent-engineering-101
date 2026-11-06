@@ -87,6 +87,18 @@ def audit(board=None, now=None, minutes=60):
         add("buyer", "red", f"{len(neg)} deals paid above list price: negative surplus",
             sum(_paid(m) - m["list_price"] for m in neg),
             [{k: m.get(k) for k in ("shop", "list_price", "budget", "agreed")} for m in neg[:3]])
+    # patch 3.4 (11-06): the buyer score is the saved RATE (share of list kept per deal, summed / (deals + 100)); a deal
+    # keeping less than the current rate pulls it down, a deal that served nothing counts -1
+    if deals:
+        kept = [1 - _paid(m) / m["list_price"] for m in deals]
+        rate = sum(kept) / len(kept)
+        thin = [m for m, k in zip(deals, kept) if k < 0.10]
+        if len(thin) >= 3:
+            add("buyer", "yellow", f"{len(thin)} deals kept under 10% of list (hour average {rate:.1%}): each pulls the "
+                f"saved rate down", 0, [{k: m.get(k) for k in ("shop", "list_price", "agreed")} for m in thin[:3]])
+        if rate < 0.30:
+            add("buyer", "red" if rate < 0.25 else "yellow", f"saved rate this hour {rate:.1%}, under the 30% line "
+                f"(board saved ~35.8% on 11-07)", 0, {"deals": len(deals)})
     over = [m for m in deals if _paid(m) > m["budget"]]
     if over:
         add("buyer", "red", f"{len(over)} deals paid above the order budget", 0,

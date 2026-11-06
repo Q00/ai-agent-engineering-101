@@ -560,7 +560,7 @@ def candidates(shops, order, cat, prof, book=None):
             else:
                 pred = _predict(book, s["name"], o["sku"], order.get("kind"))
                 expect = min(pred or lp * ratio, budget)
-                keep = (lp - expect) * (1 - buyer_memory.defect_rate(p))
+                keep = (lp - expect) / max(1, lp) * (1 - buyer_memory.defect_rate(p))   # patch 3.4: share kept
                 if s["name"] not in best or keep > best[s["name"]][0]:
                     best[s["name"]] = (keep, s, o, lp)
     if not best:
@@ -805,7 +805,10 @@ def group_target(sku, max_age=6 * 3600):
 def pick_quote(good, order, cands):
     """The quote that leaves the most surplus, list - ask (the board's measure); an ask already within the budget
     first (one far above it rarely comes down far enough), then Enuri's rank."""
-    return max(good, key=lambda q: (q["ask"] <= order["budget"], q["c"][3] - q["ask"], -cands.index(q["c"])))
+    # patch 3.4 (11-06): the buyer score is the saved RATE -- the share of list kept per deal -- so a 30%-off snack
+    # beats a 10%-off sofa; picked on (list - ask) / list, not list - ask
+    return max(good, key=lambda q: (q["ask"] <= order["budget"], (q["c"][3] - q["ask"]) / max(1, q["c"][3]),
+                                    -cands.index(q["c"])))
 
 
 def round3(a, order, shops, mem, started):
@@ -823,7 +826,7 @@ def round3(a, order, shops, mem, started):
     log(f"[r3] order {order.get('item')} ({order.get('kind')}), budget {order['budget']}, "
         f"{len(order['acceptable'])} SKUs fit, {len(cands)} shop offers")
     for keep, s, o, lp in cands[:rfq]:
-        log(f"[r3]   {s['name']}: {o['name']} ({o['sku']}) list {lp}, expect to keep {keep:.0f}")
+        log(f"[r3]   {s['name']}: {o['name']} ({o['sku']}) list {lp}, expect to keep {keep:.1%} of list")
     if not cands:                       # remembered without a shop (profiles skip it), so Enuri can answer for it
         remember({"ts": round(time.time(), 1), "shop": "", "item": order.get("item"), "category": order.get("item"),
                   "kind": order.get("kind"), "budget": order["budget"], "acceptable": list(order["acceptable"])[:30],

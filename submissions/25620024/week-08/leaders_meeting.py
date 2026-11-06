@@ -47,8 +47,8 @@ PLAN_KEYS = ["goal_gap", "seller_actions", "buyer_actions", "coordination", "nee
 
 SALES_PROMPT = """You chair a meeting of the two unit heads of "dragonash" in a classroom agent market, called by the
 headquarters (the owner). You head the Seller unit (sales team, the brain of the shop). Goal: {goal}
-Players = shop ALL + buyer ALL; shop ALL = 0.5 profit + 0.3 revenue + 0.2 stars; buyer ALL = 0.5 surplus + 0.3 forum
-votes + 0.1 deals + 0.1 posts; each a percentile, ranked at the end of the round (11-17 23:59 KST).
+Players = shop ALL + buyer ALL; shop ALL = 0.5 Book (balance - start + unsold stock at cost) + 0.3 revenue + 0.2 stars; buyer ALL = 0.5 saved
+rate (share of list kept per deal) + 0.3 forum rating (as itself) + 0.1 deals + 0.1 posts; the others percentiles, ranked at the end of the round (11-17 23:59 KST).
 The Buyer unit head has spoken (BUYER UNIT HEAD below). Write ONE joint plan for tonight:
 - goal_gap: how far each Players component is from a top-3 total, with numbers from the brief
 - seller_actions / buyer_actions: 3-5 concrete actions each, within the teams' own levers, in priority order
