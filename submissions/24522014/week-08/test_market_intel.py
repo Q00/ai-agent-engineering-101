@@ -25,6 +25,12 @@ class PublicEvidence(unittest.TestCase):
         self.assertEqual(summarize([row], {"A": {}}, 200), {})
 
     def test_live_board_forum_metric_is_observed(self):
+        new = competition({"round": 3, "shops": [{"name": "kcwarni", "deals": 4, "book": 9, "revenue": 3, "stars_rank": 4}], "buyers": [{"name": "kcwarni", "deals": 4, "saved": .24, "surplus": 100, "forum": .4}]})
+        self.assertEqual(new["diagnostic_components"]["buyers.saved"]["weight"], .5)
+        self.assertEqual(new["diagnostic_components"]["shops.book"]["weight"], .5)
+        self.assertNotIn("buyers.surplus", new["diagnostic_components"])
+        old = competition({"round": 3, "buyers": [{"name": "kcwarni", "deals": 4, "saved": 477829557, "surplus": 100, "forum": .4}]})
+        self.assertIn("buyers.surplus", old["diagnostic_components"])
         c = competition({"round": 3, "buyers": [{"name": "kcwarni", "deals": 4, "surplus": 100, "forum": .4}]})
         self.assertEqual(c["diagnostic_components"]["buyers.forum"]["value"], .4)
 

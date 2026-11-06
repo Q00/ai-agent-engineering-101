@@ -17,6 +17,7 @@ SHOP_WEIGHTS = {"profit": .5, "revenue": .3, "stars_rank": .2}
 BUYER_WEIGHTS = {"surplus": .5, "forum": .3, "deals": .1, "posts": .1}
 KST_SESSION_START = 1793785140.0  # 2026-11-04 18:39 KST, when the balanced strategy started
 EPS = 1e-9
+SAVED_WEIGHTS = {"saved": .5, "forum": .3, "deals": .1, "posts": .1}
 BOOK_WEIGHTS = {"book": .5, "revenue": .3, "stars_rank": .2}
 
 
@@ -49,9 +50,15 @@ def shop_weights(board):
     return BOOK_WEIGHTS if any(r.get("book") is not None for r in board.get("shops", [])) else SHOP_WEIGHTS
 
 
+def buyer_weights(board):
+    """Since patch 3.4 `saved` is a share of list price and buyers score on it (the 11-06 board fits exactly). Before it, `saved` was an amount and surplus scored."""
+    saved = [r["saved"] for r in board.get("buyers", []) if type(r.get("saved")) in (int, float)]
+    return SAVED_WEIGHTS if saved and all(abs(v) <= 2 for v in saved) else BUYER_WEIGHTS
+
+
 def formula_check(board):
     report = {}
-    for group, weights in (("shops", shop_weights(board)), ("buyers", BUYER_WEIGHTS)):
+    for group, weights in (("shops", shop_weights(board)), ("buyers", buyer_weights(board))):
         rows = eligible(board, group)
         errors = [abs(computed_all(r, rows, weights) - r["all"]) for r in rows]
         report[group] = {"players": len(rows), "mean_error": round(sum(errors) / len(errors), 5), "max_error": round(max(errors), 5)}
@@ -124,7 +131,7 @@ def compare(board, own_player, rival):
     rival_shop, rival_buyer = rows_for(board, rival)
     shops, buyers = eligible(board, "shops"), eligible(board, "buyers")
     gaps = {}
-    for label, mine, theirs, rows, weights in (("shop", shop, rival_shop, shops, shop_scored), ("buyer", buyer, rival_buyer, buyers, BUYER_WEIGHTS)):
+    for label, mine, theirs, rows, weights in (("shop", shop, rival_shop, shops, shop_scored), ("buyer", buyer, rival_buyer, buyers, buyer_weights(board))):
         for key, weight in weights.items():
             values = [number(r.get(key)) for r in rows]
             own_share, their_share = percentile(number(mine.get(key)), values), percentile(number(theirs.get(key)), values)
@@ -142,7 +149,7 @@ def _ratio(top, bottom):
 
 def _buyer_ratios(row):
     return {"orders": row.get("orders"), "deals": row.get("deals"), "deals_per_order": _ratio(row.get("deals"), row.get("orders")),
-            "surplus": row.get("surplus"), "surplus_per_deal": _ratio(row.get("surplus"), row.get("deals")),
+            "saved": row.get("saved"), "surplus": row.get("surplus"), "surplus_per_deal": _ratio(row.get("surplus"), row.get("deals")),
             "posts": row.get("posts"), "forum": row.get("forum")}
 
 
@@ -185,11 +192,18 @@ def scenarios(board, own_player, third):
     for label, rate in (("market_median", medians), ("third_place", third_buyer["deals"] / third_buyer["orders"])):
         deals = round(orders * rate)
         surplus = deals * per_deal
-        points = what_if(buyer, buyers, BUYER_WEIGHTS, "surplus", surplus) + what_if(buyer, buyers, BUYER_WEIGHTS, "deals", deals)
-        table[f"buyer_conversion_{label}"] = {"deals_per_order": round(rate, 4), "deals": deals, "surplus": round(surplus),
-                                              "points": round(points, 4)}
+        buyer_scored = buyer_weights(board)
+        row = {"deals_per_order": round(rate, 4), "deals": deals, "surplus": round(surplus)}
+        if buyer_scored is SAVED_WEIGHTS:
+            # Saved = sum of shares / (deals + 100): more deals at the same share also move it.
+            share = buyer["saved"] * (buyer["deals"] + 100) / buyer["deals"]
+            row["saved"] = round(share * deals / (deals + 100), 4)
+            points = what_if(buyer, buyers, buyer_scored, "saved", row["saved"]) + what_if(buyer, buyers, buyer_scored, "deals", deals)
+        else:
+            points = what_if(buyer, buyers, buyer_scored, "surplus", surplus) + what_if(buyer, buyers, buyer_scored, "deals", deals)
+        table[f"buyer_conversion_{label}"] = {**row, "points": round(points, 4)}
     for posts in (27, 83):
-        table[f"buyer_posts_{posts}"] = {"points": round(what_if(buyer, buyers, BUYER_WEIGHTS, "posts", posts), 4)}
+        table[f"buyer_posts_{posts}"] = {"points": round(what_if(buyer, buyers, buyer_weights(board), "posts", posts), 4)}
     visits_median = median(r["visits"] for r in shops if r.get("deals"))
     rate, revenue_per, profit_per = shop["deals"] / shop["visits"], shop["revenue"] / shop["deals"], shop["profit"] / shop["deals"]
     deals = round(visits_median * rate)
@@ -282,11 +296,11 @@ def snapshot_points(path):
     shop, buyer = own.get("shops") or {}, own.get("buyers") or {}
     point = {"observed_at": data.get("observed_at"), "rank": competition.get("rank"), "players": competition.get("player_count"),
              "total": official.get("total"), "shop_all": (official.get("shop") or {}).get("all"), "buyer_all": (official.get("buyer") or {}).get("all"),
-             "values": {"profit": shop.get("profit"), "revenue": shop.get("revenue"), "stars": shop.get("stars"), "surplus": buyer.get("surplus"),
+             "values": {"profit": shop.get("profit"), "revenue": shop.get("revenue"), "stars": shop.get("stars"), "surplus": buyer.get("surplus"), "saved": buyer.get("saved"),
                         "forum": buyer.get("forum"), "deals": buyer.get("deals"), "posts": buyer.get("posts")}, "components": {}}
     parts = competition.get("diagnostic_components") or {}
-    buyers_n = (parts.get("buyers.surplus") or {}).get("observed_participants")
-    shops_n = (parts.get("shops.profit") or {}).get("observed_participants")
+    buyers_n = (parts.get("buyers.saved") or parts.get("buyers.surplus") or {}).get("observed_participants")
+    shops_n = (parts.get("shops.book") or parts.get("shops.profit") or {}).get("observed_participants")
     for name, part in parts.items():
         group_n = buyers_n if name.startswith("buyers") else shops_n
         seen = part.get("observed_participants")
@@ -311,8 +325,9 @@ def nearest(points, moment):
 def decompose(first, last):
     """Weighted percentile change per component. Component ALLs are reconstructed; the residual shows how far off."""
     rows, shop_sum, buyer_sum = {}, 0, 0
-    for name, weight in {**{f"shops.{k}": w for k, w in {"profit": .5, "revenue": .3, "stars": .2}.items()},
-                         **{f"buyers.{k}": w for k, w in BUYER_WEIGHTS.items()}}.items():
+    # Snapshots keep each component with its weight, so old and new formulas both add up; a component changing name between the two is skipped.
+    for name, weight in {**{f"shops.{k}": w for k, w in {"profit": .5, "book": .5, "revenue": .3, "stars": .2, "stars_rank": .2}.items()},
+                         **{f"buyers.{k}": w for k, w in {**BUYER_WEIGHTS, **SAVED_WEIGHTS}.items()}}.items():
         a, b = first["components"].get(name), last["components"].get(name)
         if not a or not b:
             continue
@@ -387,9 +402,9 @@ def report(root, board_path):
             "formula_check": formula_check(board),
             "own": {"rank": 1 + sum(p["total"] > own_player["total"] for p in players), "players": len(players), "total": own_player["total"],
                     "shop_all": own_player["shop"]["all"], "buyer_all": own_player["buyer"]["all"],
-                    "shop": breakdown(shop, shops, shop_weights(board)), "buyer": breakdown(buyer, buyers, BUYER_WEIGHTS)},
+                    "shop": breakdown(shop, shops, shop_weights(board)), "buyer": breakdown(buyer, buyers, buyer_weights(board))},
             "rivals": {"third": compare(board, own_player, players[2]), "tenth": compare(board, own_player, players[9])},
-            "sensitivity": {"shop": sensitivity(shop, shops, shop_weights(board)), "buyer": sensitivity(buyer, buyers, BUYER_WEIGHTS)},
+            "sensitivity": {"shop": sensitivity(shop, shops, shop_weights(board)), "buyer": sensitivity(buyer, buyers, buyer_weights(board))},
             "conversion": conversion(board, own_player, [players[0], players[2], players[9]]),
             "scenarios": scenarios(board, own_player, players[2]),
             "scenario_ranks": {name: rank_at(players, own_player["total"] + row["points"])

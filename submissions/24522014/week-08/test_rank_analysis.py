@@ -61,6 +61,21 @@ class WhatIf(unittest.TestCase):
         self.assertEqual(ra.value_for_gain(self.me, self.rows, ra.BUYER_WEIGHTS, "surplus", .2), 40)
         self.assertIsNone(ra.value_for_gain(self.rows[-1], self.rows, ra.BUYER_WEIGHTS, "surplus", .1))
 
+    def test_saved_as_a_share_scores_buyers_and_as_an_amount_does_not(self):
+        self.assertIs(ra.buyer_weights({"buyers": [{"saved": .24}, {"saved": -.1}]}), ra.SAVED_WEIGHTS)
+        self.assertIs(ra.buyer_weights({"buyers": [{"saved": 477829557}]}), ra.BUYER_WEIGHTS)
+        self.assertIs(ra.buyer_weights({"buyers": [{"surplus": 5}]}), ra.BUYER_WEIGHTS)
+
+    def test_the_saved_scenario_counts_the_hundred_in_the_divisor(self):
+        board = {"shops": [{"name": "me", "all": .1, "profit": 1, "visits": 10, "deals": 5, "revenue": 50}], "players": []}
+        board["buyers"] = [{"name": "me", "orders": 100, "deals": 100, "saved": .1, "surplus": 100, "forum": 0, "posts": 0, "all": .1},
+                           {"name": "a", "orders": 100, "deals": 300, "saved": .2, "surplus": 100, "forum": 0, "posts": 0, "all": .9}]
+        own = {"shop": {"name": "me"}, "buyer": {"name": "me"}}
+        rival = {"shop": {"name": "me"}, "buyer": {"name": "a"}}
+        table = ra.scenarios(board, own, rival)
+        self.assertEqual(table["buyer_conversion_third_place"]["deals"], 300)
+        self.assertEqual(table["buyer_conversion_third_place"]["saved"], .15)
+
     def test_conversion_separates_volume_from_value(self):
         board = {"buyers": [{"name": "me", "orders": 100, "deals": 10, "surplus": 100, "all": .1},
                             {"name": "a", "orders": 100, "deals": 50, "surplus": 1000, "all": .9},

@@ -51,6 +51,14 @@ def summarize(rows, catalog, now):
     return result
 
 
+def board_weights(board):
+    """ALL's weights for this board. Since patch 3.4 `saved` is a share of list price, where it used to be an amount, and buyers score on it; a board with `book` scores shops on it."""
+    shops = {"book": .5, "revenue": .3, "stars_rank": .2} if any(r.get("book") is not None for r in board.get("shops", [])) else {"profit": .5, "revenue": .3, "stars": .2}
+    saved = [r["saved"] for r in board.get("buyers", []) if finite(r.get("saved"))]
+    buyers = {"saved": .5, "forum": .3, "deals": .1, "posts": .1} if saved and all(abs(v) <= 2 for v in saved) else {"surplus": .5, "forum": .3, "deals": .1, "posts": .1}
+    return {"shops": shops, "buyers": buyers}
+
+
 def competition(board, login="kcwarni"):
     """Use explicit official player scores/ranks only; never guess R3 field meanings."""
     players = board.get("players") or []
@@ -66,8 +74,7 @@ def competition(board, login="kcwarni"):
     ranked = sorted(players, key=lambda r: -r[score_key]) if score_key else []
     rank = 1 + sum(r[score_key] > me[score_key] for r in players) if score_key else (me or {}).get("rank")
     components = {}
-    weights = {"shops": {"profit": .5, "revenue": .3, "stars": .2},
-               "buyers": {"surplus": .5, "forum": .3, "deals": .1, "posts": .1}}
+    weights = board_weights(board)
     if board.get("round") == 3:
         for group, fields in weights.items():
             mine_row = mine[group] or {}
