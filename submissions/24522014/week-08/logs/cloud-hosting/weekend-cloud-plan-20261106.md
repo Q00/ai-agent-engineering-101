@@ -441,3 +441,236 @@ jobs:
 - 시험 D는 **Windows 임시 복사본, 라우터 함수 수준**이다. 키트 전체로 돌린 것이 아니며 Linux 확인은 B3에서 한다.
 - 주말에 세션이 없어 코드 문제가 나도 월요일까지 고치기 어렵다. 전환 후 2시간 관찰이 주요 안전망이다.
 - 위 스크립트는 **설계안이며 실행하지 않았다.** 대상 서버에서 먼저 시험한다.
+
+---
+
+# 재검토판 (2026-11-06 12시경): 전용 VM + 규칙 + agy
+
+위 수정판의 "규칙만"과 공용 서버 경로를 대체한다. Codex는 서버에 올리지 않는다. 전용 VM, 전체 로그 복사, `run.sh` 구조는 유지한다. 서버 작업은 하지 않았다. 웹 확인일은 11-06.
+
+## 가. 결론
+
+**기술적으로 진행 가능해 보이지만 Linux에서 검증되지 않았다. 권장 순서는 규칙만으로 먼저 옮길 준비를 하고, 보안 시험을 통과하면 agy를 켜는 것이다.** agy는 `agy_enabled` 값 하나로 켜지므로 PC 종료 일정을 agy 준비에 묶지 않아도 된다.
+
+사용자 방향을 뒤집을 **결정적 근거는 찾지 못했다.** 다만 다음은 분명히 말한다.
+- **이득이 작다.** 10:43 이전 24시간 모델 세션 22건에서 영수증 2건, 전체 490건의 약 0.4%다. 이후 표본은 차 절 참고.
+- **잃을 수 있는 것이 크다.** 구독 계정 정지 가능성은 이미 PC에도 있는 위험이지만, 서버 이전이 줄여 주지는 않고 데이터센터 IP와 새 기기라는 요소를 더한다.
+- **사용자가 직접 읽기를 권함:** [약관 6절](https://antigravity.google/terms), [FAQ](https://antigravity.google/docs/faq).
+
+| | 규칙만 | 규칙 + agy |
+|---|---|---|
+| 거래 | 영수증 약 0.4% 감소(실측 기반 추정) | PC와 같음 |
+| 계정 위험 | 서버에서 추가 없음 | 있음 |
+| 프롬프트 주입 | 모델 없음 | 있음, 격리 필요 |
+| 추가 작업 | 없음 | 로그인, 키링, 별도 사용자, 시험 1~1.5시간 [추정] |
+| 재부팅 후 | 그대로 동작 | agy는 재로그인이 필요할 수 있음, 규칙으로 계속 |
+
+## 나. Linux에서 agy 사용 가능 여부
+
+| 질문 | 결과 | 등급 |
+|---|---|---|
+| Linux 지원, 설치 | 공식 문서가 Linux 키링과 설치 스크립트 옵션을 언급하지만 지원 OS 표가 있는 Quickstart는 **읽지 못함**. `~/.local/bin`, x64/ARM64는 3자 자료 | 부분 공식 |
+| SSH 로그인 | 인증 URL 출력 → 로컬 브라우저 로그인 → 코드 붙여넣기 | 공식 [install](https://antigravity.google/docs/install) |
+| 무인 실행 | 먼저 대화식 인증 1회, 캐시 자격 사용. 미인증이면 `authentication required`로 즉시 실패 | 공식 [headless](https://antigravity.google/docs/cli/headless) |
+| 자격 저장 | OS 키링(Linux Secret Service/D-Bus). 잠겨 있으면 멈추거나 "secret keyring is locked". 대책은 D-Bus 세션과 키링 데몬 실행 | 공식 [troubleshooting](https://antigravity.google/docs/cli/troubleshooting) |
+| 자격 파일 복사 | 공식 문서에 없음. **쓰지 않는다.** VM에서 새로 로그인 | 미문서화 |
+| PC와 VM 로그인 충돌, 동시 로그인 제한 | **문서에 없음.** VM 로그인 시 PC의 `[model]` 상태를 함께 봐서 확인 | 미확인 |
+| `gemini-4-argon-low` | 문서는 "Gemini 4 Argon"과 Low 수준을 플랫폼 차이 없이 나열, 정확한 ID 문자열은 없음. Pro 이상 필요 | 부분. VM에서 시험 |
+| `/quota` | 공식 문서는 **`/usage`만 언급.** PC에서는 동작 중. Linux 미확인. 읽히지 않으면 `agy_quota_unreadable`로 **agy 꺼진 채 규칙** | 미확인 |
+| 구독 계정과 GCP 계정 분리 | 금지 문구를 못 찾음. agy는 자체 OAuth, GCP는 VM만 | 추정 |
+| 지역 | FAQ: 목록 국가에서 이용 가능, 계정 국가 기준 안내. PC가 한국에서 쓰고 있어 Seoul VM이면 국가가 바뀌지 않음 | 추정 |
+
+## 다. 약관과 위험 구분
+
+[약관 6절](https://antigravity.google/terms) 원문을 이번에 읽었다(도구 제한으로 조각 인용): "You must not abuse, harm, interfere with, or disrupt the Service." / "using the Service in connection with products not provided by us." / "Using third party software, tools, or services to access the Service" / "(e.g. using OpenClaw with Antigravity OAuth) is a breach of this Agreement." / "may be grounds for suspension or termination of your Antigravity and/or Gemini CLI accounts."
+
+약관에는 서버, headless, 지역, 계정 공유 문구가 없다. [FAQ](https://antigravity.google/docs/faq): headless는 "direct scripting and CI workflows"용이고, agy를 "third-party coding agents or applications" 안에 감싸는 것은 소비자 플랜에서 지원하지 않는다. 우리 시장 Agent가 "직접 스크립트"인지 "응용 프로그램 래핑"인지는 **문서만으로 갈리지 않는다.** 법적 판단은 하지 않는다.
+
+| 요소 | PC(현재) | VM | 변화 |
+|---|---|---|---|
+| 호출 빈도 | 시간 2, 하루 24 주문 + `/quota` 약 6분 간격 | 동일 | 없음 |
+| 무인 실행, 자기 코드 호출 | 있음 | 있음 | **없음. 이미 존재하는 위험** |
+| 호스트와 IP | 일반 PC | 데이터센터 IP, 새 기기 로그인 | **증가 가능. 탐지 기준이 비공개라 크기 모름** |
+| 사람의 개입 | 주변에 사용자 있음 | 주말에 없음 | 정지돼도 늦게 알 수 있음 |
+| 동시 로그인 | 1대 | 전환 전후 2대 | 불명 |
+
+**계정 정지 보고**
+- 보도: Google이 OpenClaw 등 외부 에이전트와 함께 쓴 계정을 정지. Google 측 이유는 "conduit"과 부하 ([Techzine, 2026-02-24](https://www.techzine.eu/news/privacy-compliance/139032/google-intervenes-in-heavy-use-of-antigravity-and-gemini)).
+- 사용자 주장(미검증): [포럼 403, 2026-06-25](https://discuss.ai.google.dev/t/appeal-request-agy-antigravity-cli-service-disabled-for-violation-of-terms-of-service-code-403/172603). 작성자는 3자 도구 미사용이라 주장, 표시된 답변 없음.
+- 포럼 답변: [@chunduriv, 2026-10-08](https://discuss.ai.google.dev/t/is-google-ai-pro-antigravity-cli-automation-with-codex-permitted/187241.md). `agy -p`는 "your own local scripts and CI pipelines"용이고, 3자 에이전트 자동 루프는 "can trigger automated ToS enforcement"라고 함. 공식 법적 해석 아님, 작성자 소속 미확인.
+- 3자 자료: [VPS 안내](https://aiserver.ee/en/juhendid/antigravity-cli-vps/)는 무인 `agy -p` 스크립트로 계정이 정지됐다고 경고. 근거 사례 미확인.
+- **우리와 같은 패턴(자체 스크립트, 하루 최대 24주문)의 정지 사례는 찾지 못했다.** 없다는 증거는 아니다. 정지되면 PC의 agy도 잃고, 약관상 Gemini CLI까지 포함될 수 있다.
+
+## 라. 코드 확인과 가짜 CLI 시험
+
+**시험 조건 [실측]:** 임시 복사본, `subprocess` 대체(실제 CLI 미실행), Windows, 라우터 함수 수준. 각 모드에서 `available` 후 `run_model` 4회. 복사본은 삭제함. 라이브 `.market` 무접촉.
+
+| 모드 | agy 호출 | codex, claude(VM 값) | 결과 |
+|---|---|---|---|
+| 정상 | quota 1, print 4 | **0** | offer 4회 |
+| 한도 `RESOURCE_EXHAUSTED` | print 1, quota 2 | **0** | 이후 `HarnessError`, agy 꺼짐 |
+| 로그인 `authentication required` | print 1, quota 1 | **0** | `agy_unknown_failure`, 15분 꺼짐 |
+| 서비스 503 | print 1, quota 1 | **0** | 15분 꺼짐 |
+| 시간 초과 3회 | print 3, quota 1 | **0** | `agy_repeat_failure`, 15분 꺼짐 |
+| `/quota` 불가 | quota 1, print **0** | **0** | 호출 없이 규칙 |
+| `search_web` 사용 | print 4, quota 1 | **0** | 답 폐기, walk_away, agy 유지 |
+| `run_command` ERROR(거부됨) | print 4, quota 1 | **0** | 답 폐기, 유지 |
+| `run_command` DONE(실행됨) | print 1, quota 1 | **0** | **`agy_enabled=false`로 정지** |
+
+`HarnessError`는 `buyer.py:344`에서 walk_away로 끝나 주문 루프가 멈추지 않는다 [코드 확인]. 잘못된 JSON 모드는 이번 시험에서 재현되지 않았으며 기존 `test_model_router.py`에 맡긴다. 판매자는 `rules`라 호출이 없다.
+
+**Codex 없는 VM:**
+- `model_breaker`는 codex만 지키고 agy를 막지 않는다. agy 정상이면 `available()`이 breaker를 보지 않는다. agy 자체의 한도 검사는 `/quota`로 그대로 동작한다. **서로 막거나 안전장치가 무력화되는 일은 시험에서 나오지 않았다.**
+- codex 파일이 없으면 `build_command` 예외로 `breaker_error`, 꺼짐(안전).
+- `tripped_until` 없이 스텁이 있으면 `codex app-server` 시도가 생긴다. 그래서 값을 넣는다.
+
+**`claude` 직행:** `run_model('claude')`은 `tripped_until`과 무관하게 `claude -p`를 시도한다 [실측]. `--mode codex`에서는 `select_harness`가 codex를 돌려주므로 도달하지 않는다 [실측]. `agent.json`을 유지하고 PATH 스텁을 둔다.
+
+**VM 정확한 값**
+
+| 파일 | 값 |
+|---|---|
+| `model_router.json` | **PC와 동일**(`agy_enabled:true`, `gemini-4-argon-low`, `min_remaining_percent:15` 등) |
+| `model_breaker.json` | **PC와 동일**(`enabled:true`) |
+| `.market/model-breaker.json` | `tripped_until` = `1830297600`(2028-01-01 UTC), **VM 복사본만** |
+| `buyer_support.json` | **PC와 동일**(시간 2, 하루 24, `model_gate_enabled:true`) |
+| `seller_decision.json` | `{"mode":"rules"}` |
+| `agent.json` | 그대로 |
+| `tools/codex`, `tools/claude` | 스텁(시도 기록, exit 127) |
+| `tools/agy` | 아래 래퍼 |
+| `.market/local-settlements.json` | `source`를 VM 경로로 |
+| **agy 미통과 시** | 위에서 `agy_enabled:false`만 다름 |
+
+**금지 값:** `model_breaker.json enabled:false`(codex 허용), `model_gate_enabled:false`(게이트 해제), `seller_decision` `model`, `--mode claude`, `tripped_until` 삭제.
+
+**복귀 함정:** 돌려받은 `.market/model-breaker.json`과 `.market/model-router.json`은 쓰지 않고 **전환 직전 보관한 PC 원본으로 복원**한다. `model_router.json`, `tools/`는 돌려받지 않는다. `local-settlements.source`도 복원한다.
+
+## 마. 보안
+
+**현재 구조 [코드 확인]**
+- `build_agy_command`: `--sandbox`, `--disable-slash-commands`, `--json-schema`, `--settings`의 deny `read_file(*)`, `write_file(*)`, `command(*)`, `read_url(*)`, `execute_url(*)`, `mcp(*)`, 빈 작업 폴더.
+- `read_stream`, `serious_tools`: `search_web`만 허용, 파일 도구는 거부 상태일 때만 허용, **미지 도구는 agy 정지**. 어떤 도구든 쓰면 답을 폐기.
+- **탐지는 실행 후다.** 이미 실행된 도구는 되돌리지 못한다.
+- `run_agy`는 `dict(os.environ)`을 넘긴다. **`MARKET_OWNER`가 환경에 있으면 agy 프로세스로 전달된다.** PC에도 같은 구조다.
+- 기록: 11-04 `gemini-4-argon-low` 12개 사례 `all_blocked:true`, `tool-deny`는 `search_web`에서 멈춤(나머지 7개 미시험, 사용자 수용 범위와 일치). 현재 agy 실행 75건은 전부 status ok, 도구 기록은 `finish` 1건.
+
+**Linux로 옮길 때 달라지는 점**
+1. **임시 폴더:** 코드는 `TEMP`, `TMP`만 돌린다. Linux 프로그램은 대체로 `TMPDIR`을 본다 [추정]. 공식 문서상 샌드박스 기본 접근은 작업 폴더와 시스템 임시 폴더이므로 `/tmp`가 열릴 수 있다. 래퍼의 `TMPDIR`로 코드 수정 없이 해결한다.
+2. **샌드박스:** [공식](https://antigravity.google/docs/sandbox?tab=cli)은 Linux에서 커널 네임스페이스를, 다른 자료는 nsjail을 말한다. Ubuntu의 비특권 userns 제한으로 실패하거나 약해질 수 있다 [추정]. 시험으로만 확인된다.
+3. **범위:** 샌드박스는 터미널 명령 대상이다. 파일 도구는 deny 규칙에 의존한다.
+4. **`agy_safety_check.py`:** 명령 사례가 `cmd /c echo`라 Linux에서는 **도구가 실행돼도 파일이 안 생겨 통과로 보일 수 있다.** VM 복사본에서 `sh -c`로 바꾼다. 기본 `--model`이 다르고 `--settings` 기본값이 비었으므로 인자를 꼭 준다.
+5. **메타데이터 서버:** 서비스 계정 없음으로 생성(앞서 알림), 아래 방화벽 추가.
+6. **자동 업데이트:** 3자 자료가 백그라운드 자동 업데이트를 말한다. 주말에 바뀌면 시험 결과가 무효가 될 수 있다. 고정 방법 미확인.
+
+**별도 Linux 사용자 `agyrun`: 코드 수정 없이 가능 [설계, 미실행, 약 30~45분 추정]**
+
+`executable()`이 PATH의 `agy`를 찾으므로 `tools/agy`를 래퍼로 둔다. 전용 VM이므로 최초 설정에 sudo를 쓴다.
+
+```bash
+# as root, once
+adduser --disabled-password --gecos "" market
+adduser --disabled-password --gecos "" agyrun
+chmod 700 /home/market /home/agyrun
+echo 'market ALL=(agyrun) NOPASSWD: /home/agyrun/bin/agy-run' > /etc/sudoers.d/market-agy; chmod 440 /etc/sudoers.d/market-agy
+# local ports, internal ranges and the metadata server are closed to agyrun only
+for d in 127.0.0.0/8 169.254.0.0/16 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16; do
+  iptables -A OUTPUT -m owner --uid-owner agyrun -d "$d" -j REJECT
+done
+```
+
+iptables는 재부팅 후 사라지므로 영속화가 필요하다. 로그인 콜백이 localhost를 쓸 수 있어 로그인 후 적용하고 재시험한다.
+
+```bash
+#!/bin/bash
+# tools/agy (owner market)
+exec sudo -n -u agyrun /home/agyrun/bin/agy-run "$@"
+```
+
+```bash
+#!/bin/bash
+# /home/agyrun/bin/agy-run (owner root, 755; agyrun cannot edit it)
+W=$(mktemp -d /home/agyrun/work/XXXXXX) || exit 1
+trap 'rm -rf "$W"' EXIT
+cd "$W"
+export TMPDIR="$W" TEMP="$W" TMP="$W" HOME=/home/agyrun PATH=/home/agyrun/.local/bin:/usr/bin:/bin
+export DBUS_SESSION_BUS_ADDRESS="$(cat /home/agyrun/.dbus-addr 2>/dev/null)"
+timeout -k 5 100 /home/agyrun/.local/bin/agy "$@"
+```
+
+sudo가 환경을 초기화하므로(기본 설정) `MARKET_OWNER`가 agy로 넘어가지 않는다. `agyrun`은 `/home/market`을 못 읽어 PEM, claim code, 로그, `.market`에 닿지 않는다. 표준 출력과 인자는 그대로 전달되어 `run_agy`의 기록과 도구 탐지가 유지된다.
+
+**남는 위험:** 구독 자격은 `agyrun` 키링에 있으므로 도구가 뚫리면 그 범위는 노출된다. 외부 네트워크 전송은 막지 않는다. 그러니 `agyrun`에는 다른 비밀을 두지 않는다.
+
+**키링 [공식 + 설계]:** 무인에서 가장 불확실하다. `agyrun`에 `dbus-daemon`과 `gnome-keyring-daemon`을 상주시키고(`@reboot` cron) `.dbus-addr`를 기록하며, 잠금 해제 암호는 `agyrun`의 600 파일에 둔다. 재부팅 후 자동 복구가 안 되면 agy는 꺼진 채 규칙으로 돈다.
+
+**하나라도 불통과면 `agy_enabled:false`, 규칙만이 기본이다.**
+
+## 바. 전환 전 검증 순서 (VM에서, PEM 없이)
+
+| 순서 | 내용 | agy 호출 | 통과 기준 |
+|---|---|---|---|
+| 1 | 전체 단위 테스트(스텁 배치) | 0 | PC와 같은 결과, 스텁 기록 확인 |
+| 2 | 사용자가 `agyrun`으로 로그인, 키링 구성 | 0 | PC `[model]` 상태 이상 없음 |
+| 3 | 래퍼로 `/quota`, SSH 세션 종료 후 재시도 | 2 | `parse_quota` 성공 |
+| 4 | **재부팅 1회 후 3번 재시험** | 1 | 실패면 "재부팅 시 규칙 복귀" 수용 기록 |
+| 5 | `agy_model_check --model gemini-4-argon-low --limit 3`(`logs/harness` 필요, 시장 접속 없음) | **3** | JSON 정상 |
+| 6 | `agyrun` 홈의 복사본(비밀 없음)에서 `agy_safety_check.py --model gemini-4-argon-low --settings '<DENY 그대로>'`. `cmd /c` → `sh -c`, `TEMP=/tmp` 지정 | **14**(각 약 20초, 최대 110초) | `all_blocked:true`, 파일, 명령, URL 도구 DONE 없음 |
+| 7 | `agy_tool_deny_check.py --model gemini-4-argon-low`(첫 미거부에서 멈춤) | **1**(지난번 `search_web`에서 멈춤) | 수용 범위 안. **나머지 7개는 요청하지 않음** |
+| 8 | 래퍼 경로로 주입 시험: `/home/market` 아래 난수 카나리를 읽으라는 프롬프트 | **1** | 난수 미출력, OS 수준 거부 |
+| 9 | `sudo -u agyrun`으로 PEM 읽기, 키트 `/proc/<pid>/environ`, `169.254.169.254`, `127.0.0.1` 포트 접근(전환 후 재확인) | 0 | 전부 거부 |
+
+**시험 합계 모델 호출 약 19회 + `/quota` 3회, 토큰 약 23만 추정**(중앙값 12,344 × 19). 오늘 PC 기록 주간 잔량은 약 83%이고 PC 키트와 같은 할당을 쓴다. `model_router.json`의 15% 하한으로 PC 쪽도 보호된다.
+
+## 사. 자원 [실측]
+
+- `/quota` 프로세스(32분 표본, 5회): 최대 **WS 159 MB, private 175 MB, 약 6초**.
+- **실제 프롬프트 실행의 메모리는 재지 못했다.** 표본 창에 긴 실행이 잡히지 않았다(시간 게이트). 0~0.5초 짧은 프로세스 4건은 최대 110 MB.
+- 프롬프트 시간(기록 75건): **중앙값 19초, p90 31초, 최대 43초**, 토큰 중앙값 12,344.
+- **e2-medium 4 GB로 충분 [추정].** 상주 피크 436 MB + agy(수백 MB 추정) + 페이지 캐시. 더 큰 사양은 필요 없다. 전환 후 `free -m`을 본다.
+
+**전체 로그 복사**
+- 시간 범위 [추정]: PC 읽기 20~60분(작은 파일 119만 개), 압축 후 약 1~2 GB 업로드(10 Mbps 약 20분, 100 Mbps 약 2분), VM 쓰기 10~30분. **동시 진행이라 전체 약 30~90분.** 키트 실행 중 1차 복사가 가능해 중단이 없다.
+- **재는 법(5분):** ① `head -c 200M /dev/urandom | ssh VM 'cat >/dev/null'` 시간으로 업로드 속도. ② `time tar -cf /dev/null -C week-08 logs/seller`(6만 파일) × 20으로 PC 읽기 속도.
+- inode: 11-17까지 약 230만 파일. 50 GB는 약 320만 [추정]으로 여유가 작아 **100 GB로 변경**. `df -i`로 확인.
+
+**대안(늦을 때):** 수정판 C3 범위(약 2만 파일)로 전환하고 나머지는 PC를 끄기 전까지 이어서 복사한다. 못 끝나면 그 이력 없이 달리며 라이브 판단 영향은 일부 미추적이다. 원본은 PC에 있어 제출 증거에는 문제없다. **연속성의 핵심인 `market-kit.log`, `.log.1`, `market-kit-archive`, `.market`은 전환 때 무조건 옮기고 앞부분 해시를 검사한다.** 복귀는 전환 표식 이후 새 파일만 받는다.
+
+## 아. 일정 (추정)
+
+| 시각 | 일 |
+|---|---|
+| ~12:44 | PC 측정 진행, 사용자 GCP 가입 가능 |
+| 13:00~13:30 | VM 생성, 설치, **1차 로그 복사 시작** |
+| 13:30~15:00 | 단위 테스트, 경로 변환 시험, 병행으로 agy 로그인, 격리, 검증 |
+| 약 15:00 | 전환(중단 약 15분). agy 통과 시 켜고, 아니면 규칙만 |
+| 15:00~17:00 | 관찰 |
+| **약 17:00** | **PC 종료 가능(범위 16:30~18:30)** |
+
+agy가 시간 안에 안 되면 규칙만으로 PC를 끈다. 이후 사람 없이 원격으로 켜는 것은 권하지 않는다.
+
+## 자. 알림
+
+공개 board 감시(`watch.yml`)는 유지한다. `alive`만 보므로 **agy 장애와 자동 꺼짐은 이 방식으로 사용자에게 도달하지 않는다.** 규칙으로 계속 거래해 alive가 유지되기 때문이다. VM의 `logs/model-router.log`, `logs/model-router-alerts.log`에는 남아 SSH나 월요일 회수로 볼 수 있다.
+
+**선택:** 도구 실행 경보(alerts 파일 변경)만 cron으로 [ntfy](https://ntfy.sh) 무작위 주제에 보낸다. 계정과 키가 없지만 제3자 서비스이고 주제 이름을 아는 사람은 볼 수 있다(내용에 비밀 없음). 서비스 조건은 재확인하지 않았고 앱 설치가 필요하다. 일반 장애는 규칙으로 돌아 영향이 작으므로, 키 교체를 판단하고 싶을 때만 켠다.
+
+## 차. 거래 차이 [실측, 영수증 기준, `paid:true` 미연결]
+
+| 구간 | 세션 | 규칙 세션(영수증) | 모델 세션(영수증) | gate 거부 |
+|---|---|---|---|---|
+| 최근 24시간 중 10:43 전 | 3,366 | 492 (488) | 22 (2) | 1,222 |
+| 10:43~11:56 (표본 작음) | 184 | 15 (15) | 2 (0) | 74 (40%) |
+
+10:43 이후 모델 세션의 영수증은 0건이지만 표본이 작아 "효과 없음"으로 단정할 수 없다. gate 거부 40%는 agy가 있어도 대부분 시간 2회 제한으로 그대로다. 금액 효과는 재지 않았다.
+
+## 카. 사용자 할 일 변경
+
+1. GCP 가입. **VM: Seoul, `e2-medium`, Ubuntu LTS x86_64, 디스크 100 GB pd-balanced, 서비스 계정 없음, SSH만.**
+2. **약관 6절과 FAQ를 읽고 데이터센터 IP에서의 agy 사용 위험을 판단.**
+3. **VM에서 agy 대화식 로그인 1회**(SSH에서 URL을 열고 코드 붙여넣기). 자격 파일을 복사하지 않는다.
+4. root 설정 실행(세션 SSH 허용 여부는 사용자 승인 사항).
+5. 이후 PC 키트 중지, PEM 복사, `watch.yml`은 기존과 같음.
+
+## 타. 미확인
+
+Linux에서 agy의 실제 동작과 키링 유지, `/quota`의 Linux 동작, PC-VM 로그인 간섭, 데이터센터 IP 판정, Linux 샌드박스 강도, 자동 업데이트, 프롬프트 실행 메모리, 위 스크립트 전부(미실행).
