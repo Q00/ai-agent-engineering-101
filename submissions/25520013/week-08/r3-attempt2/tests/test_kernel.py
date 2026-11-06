@@ -338,3 +338,24 @@ def test_negotiation_section_counts_ends_and_compares_with_market(tmp_path):
     assert "첫 제시 뒤 바로 끝남 1" in out[1] and "우리 첫 제시가/정가 중앙 0.80" in out[1] and "구매자 마지막 제안/정가 중앙 0.50" in out[1]
     assert "BED1: 제시 5, 우리 첫 제시가/정가 0.80, 우리 판매가/정가 0.70 (n 1), 시장 체결가/정가 0.68 (시장 체결 4, 우리 1)" in out[2]
     assert brief.section_negotiation(str(tmp_path / "none"), now, LOGIN)[0].endswith("제시 기록 없음")
+
+
+def test_stars_section_joins_reviews_to_our_settles_and_means_per_account(tmp_path):
+    r = tmp_path / "stars"
+    for d in (".market", ".r3"):
+        (r / d).mkdir(parents=True)
+    (r / ".market/catalog.json").write_text(json.dumps({"BED1": {"category": "가구>침대", "list_price": 1000}}))
+    now = NOW
+    st_ = lambda o, buyer, grade: {"type": "settle", "src": "market", "ts": now - 600,
+                                   "data": {"order": o, "sku": "BED1", "buyer": buyer, "grade": grade, "own_owner": True}}
+    ev = [st_("o1", "x", "A"), st_("o2", "x", "A"), st_("o3", "x", "C"), st_("o4", "y", "B")]
+    ev += [{"type": "review", "role": "shop", "ts": now - 60, "data": {"order": o, "stars": s}}
+           for o, s in (("o1", 1), ("o2", 1), ("o3", 1), ("o4", 5), ("o9", 4))]
+    (r / ".r3/events.jsonl").write_text("".join(json.dumps(x) + "\n" for x in ev))
+    out = brief.section_stars(str(r), now, LOGIN)
+    assert "리뷰 5건, 평균 2.40; 판매와 이어진 4건" in out[0]
+    assert "계정별 평균의 평균 3.00 (계정 2곳" in out[1]
+    assert f"{common.hid('x')} 리뷰 3, 평균 1.00" in out[2] and common.hid("y") not in out[2]
+    assert "A 리뷰 2, 평균 1.00; B 리뷰 1, 평균 5.00; C 리뷰 1, 평균 1.00" in out[3]
+    assert "침대 리뷰 4, 평균 2.00, 2점 이하 3" in out[4]
+    assert brief.section_stars(str(tmp_path / "none"), now, LOGIN)[0].endswith("리뷰 기록 없음")

@@ -922,6 +922,55 @@ def section_rivals(b, b6, login, hours6):
     return out
 
 
+STARS_H = 6  # [별점]: window
+STARS_LOW = 3  # lowest reviewer accounts shown
+STARS_MIN_N = 3  # reviews an account needs to be listed as low
+STARS_TOP = 4  # categories with the most reviews
+
+
+def section_stars(root, now, login):
+    """[별점]: reviews of our shop in the last STARS_H hours, joined to our settles by order: the plain mean, the mean of
+    per-account means (patch 3.4 counts one mean per reviewing account), the accounts with the lowest means, and the
+    mean per grade and per category. Accounts appear as hashed ids."""
+    since = now - STARS_H * 3600
+    cat = _catalog(root)
+    rv, ours = [], {}
+    for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 40_000_000, b'"review"'):
+        if e.get("type") == "review" and e.get("role") == "shop" and (e.get("ts") or 0) >= since:
+            d = e.get("data") or {}
+            if isinstance(d.get("stars"), (int, float)) and not isinstance(d.get("stars"), bool):
+                rv.append(d)
+    if not rv:
+        return [f"[별점 {STARS_H}시간] 우리 가게 리뷰 기록 없음"]
+    for e in market_settles(root, since - 6 * 3600):
+        d = e.get("data") or {}
+        if d.get("order") and c.settle_side(d, login) == "shop":
+            ours[d["order"]] = d
+    acc, grade, leaf = defaultdict(list), defaultdict(list), defaultdict(list)
+    for d in rv:
+        s = ours.get(d.get("order"))
+        if not s:
+            continue
+        acc[c.hid(s.get("buyer"))].append(d["stars"])
+        grade[s.get("grade") or "-"].append(d["stars"])
+        leaf[_leaf(s.get("category") or (cat.get(s.get("sku")) or {}).get("category"))].append(d["stars"])
+    mean = lambda v: st.mean(v) if v else 0.0
+    linked = sum(len(v) for v in acc.values())
+    out = [f"[별점 {STARS_H}시간] 우리 가게 리뷰 {len(rv)}건, 평균 {mean([d['stars'] for d in rv]):.2f}; 판매와 이어진 {linked}건"]
+    if not acc:
+        return out
+    am = {k: mean(v) for k, v in acc.items()}
+    out.append(f"  계정별 평균의 평균 {mean(list(am.values())):.2f} (계정 {len(am)}곳; 패치 3.4 별점은 리뷰한 계정마다 평균 하나로 셈)")
+    low = sorted((k for k in am if len(acc[k]) >= STARS_MIN_N), key=lambda k: am[k])[:STARS_LOW]
+    if low:
+        out.append("  평균이 낮은 계정: " + "; ".join(f"{k} 리뷰 {len(acc[k])}, 평균 {am[k]:.2f}" for k in low))
+    out.append("  등급별: " + "; ".join(f"{g} 리뷰 {len(v)}, 평균 {mean(v):.2f}" for g, v in sorted(grade.items())))
+    top = sorted(leaf, key=lambda k: -len(leaf[k]))[:STARS_TOP]
+    out.append("  상품군별: " + "; ".join(
+        f"{k} 리뷰 {len(leaf[k])}, 평균 {mean(leaf[k]):.2f}, 2점 이하 {sum(1 for x in leaf[k] if x <= 2)}" for k in top))
+    return out
+
+
 def section_negotiation(root, now, login):
     """[협상 결과]: per category with the most offers in the last NEGOTIATION_H hours, how our offers ended (sold,
     our reject, buyer left, idle, no record) and, for the ends without a sale, the rounds and our asks against list;
@@ -1113,6 +1162,7 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_reflections(root, now)
         out += section_categories(root, now, login)
         out += section_negotiation(root, now, login)
+        out += section_stars(root, now, login)
         out += section_calls(root, now)
         out += section_side(
             b.get("shops") or [],
