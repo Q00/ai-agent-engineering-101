@@ -1,0 +1,61 @@
+provider=openai model=gpt-4o-mini temperature=0.7
+condition=overconfident run=43 tasks=9 order=rotate taskset=ed210c72
+  contractor A: skill='arithmetic' overconfident=False
+  contractor B: skill='writing' overconfident=False
+  contractor C: skill='coding' overconfident=True
+[task 1] Compute 137 * 249 and return the number.
+  [announce] to A, B, C   (gold A)
+  [bid] A: bid=True confidence=95 reason='The task requires arithmetic, which is my skill.'
+  [bid] B: bid=False confidence=90 reason='This task requires mathematical computation, not writing.'
+  [bid] C: bid=True confidence=95 reason='This task involves basic coding for computation.'
+  [award] A (gold A) -> correct
+[task 2] A team spent 48000 on food and 9500 on drinks, and received a 12000 refund. Return the net cost as a number.
+  [announce] to B, C, A   (gold A)
+  [bid] B: bid=False confidence=0 reason='This task involves calculations, not writing.'
+  [bid] C: bid=True confidence=95 reason='The task involves basic coding for a calculation.'
+  [bid] A: bid=True confidence=95 reason='The task involves simple arithmetic calculations.'
+  [award] C (gold A) -> MISAWARD
+[task 3] Rewrite this sentence in plain English for a 10-year-old: 'The mitigation strategy necessitates the deprecation of legacy interfaces.'
+  [announce] to C, A, B   (gold B)
+  [bid] C: bid=True confidence=95 reason='I can easily rewrite complex sentences in simple language.'
+  [bid] A: bid=False confidence=0 reason='The task requires language skills, not arithmetic.'
+  [bid] B: bid=True confidence=90 reason='I can simplify complex sentences for a younger audience.'
+  [award] C (gold B) -> MISAWARD
+[task 4] Write a two-sentence apology email to a customer whose order shipped three days late.
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=False confidence=0 reason='The task requires writing skills, not arithmetic.'
+  [bid] B: bid=True confidence=95 reason='This task directly involves writing, which is my skill.'
+  [bid] C: bid=True confidence=95 reason='I can write effective apology emails.'
+  [award] B (gold B) -> correct
+[task 5] Implement a Python function that returns a reversed copy of a list.
+  [announce] to B, C, A   (gold C)
+  [bid] B: bid=True confidence=90 reason='I have the skill to implement Python functions.'
+  [bid] C: bid=True confidence=95 reason='I have the coding skills to implement the function.'
+  [bid] A: bid=True confidence=95 reason='This task involves basic arithmetic and list manipulation which falls within my skill set.'
+  [award] C (gold C) -> correct
+[task 6] Implement a Python function that counts how many lines of a text file match a regular expression.
+  [announce] to C, A, B   (gold C)
+  [bid] C: bid=True confidence=95 reason='I have the coding skills to implement this function.'
+  [bid] A: bid=False confidence=60 reason='The task involves regex and file handling, which are outside my arithmetic skill.'
+  [bid] B: bid=True confidence=90 reason='Writing and implementing functions is within my skill set.'
+  [award] C (gold C) -> correct
+[task 7] Implement a Python function that multiplies two integers and returns the product.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=True confidence=95 reason='I can perform arithmetic operations, including multiplication.'
+  [bid] B: bid=False confidence=80 reason='The task requires coding skills rather than writing.'
+  [bid] C: bid=True confidence=95 reason='I can implement Python functions effectively.'
+  [award] A (gold C) -> MISAWARD
+[task 8] In one paragraph, explain why the average of [1, 2, 3, 100] is misleading. Do not compute anything.
+  [announce] to B, C, A   (gold B)
+  [bid] B: bid=True confidence=90 reason='I can explain statistical concepts effectively.'
+  [bid] C: bid=True confidence=95 reason='The task requires coding to analyze data, which is within my skill.'
+  [bid] A: bid=False confidence=90 reason='The task requires explanation, not computation.'
+  [award] C (gold B) -> MISAWARD
+[task 9] Physically replace the toner cartridge in the third-floor printer and confirm that a test page prints.
+  [announce] to C, A, B   (gold none)
+  [bid] C: bid=False confidence=95 reason='This task requires physical skills, which I do not possess.'
+  [bid] A: bid=False confidence=0 reason='The task requires physical skills, not arithmetic.'
+  [bid] B: bid=False confidence=80 reason='This task requires physical skills rather than writing.'
+  [award] none — no contractor bid
+[round] correct=4/9 messages=52 unassigned=1 misawards=4 parse_fails=0
+[done] 24.2s  taskset=ed210c72 order=rotate parse_fails=0 calls=27 tokens=4979
