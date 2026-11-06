@@ -1,0 +1,279 @@
+{
+  "suite": "html-deepseek-20260922",
+  "episodes": 36,
+  "runs": 9,
+  "summary": {
+    "free": {
+      "episodes": 12,
+      "correct": 7,
+      "deal": 6,
+      "no_deal": 4,
+      "open": 2,
+      "crashed": 0,
+      "violations": 1,
+      "mean_turns": 4.333,
+      "format_errors": 12,
+      "reader_calls": 52,
+      "http_requests": 107,
+      "tokens": 24173,
+      "cost_usd": "0.0034699784"
+    },
+    "tagged": {
+      "episodes": 12,
+      "correct": 5,
+      "deal": 4,
+      "no_deal": 1,
+      "open": 7,
+      "crashed": 0,
+      "violations": 0,
+      "mean_turns": 7.583,
+      "format_errors": 24,
+      "reader_calls": 32,
+      "http_requests": 125,
+      "tokens": 31047,
+      "cost_usd": "0.0044580088"
+    },
+    "structured": {
+      "episodes": 12,
+      "correct": 10,
+      "deal": 8,
+      "no_deal": 2,
+      "open": 2,
+      "crashed": 0,
+      "violations": 0,
+      "mean_turns": 6.75,
+      "format_errors": 0,
+      "reader_calls": 0,
+      "http_requests": 81,
+      "tokens": 17442,
+      "cost_usd": "0.00285040"
+    }
+  },
+  "all_request_settings_and_formats_verified": true,
+  "all_histories_verified": true,
+  "response_formats": {
+    "text": 147,
+    "json_schema": 166
+  },
+  "providers": {
+    "DeepInfra": 308
+  },
+  "responses": 308,
+  "schema_outputs": 165,
+  "schema_invalid": [],
+  "http_errors": {
+    "429": 5
+  },
+  "highlights": [
+    {
+      "run": "html-deepseek-20260922-free-01",
+      "line": 6,
+      "scenario": 1,
+      "turn": 1,
+      "text": " You only want the conversation to continue if there is still a chance of a good deal. What is your next move?\n\nThe seller's opening message: \"I'm asking 300 for it, but I'm open to reasonable offers.\"\n\nI propose 120."
+    },
+    {
+      "run": "html-deepseek-20260922-free-01",
+      "line": 42,
+      "scenario": 1,
+      "turn": 4,
+      "text": "That's still below what I can take, but we're getting closer—I could do 170."
+    },
+    {
+      "run": "html-deepseek-20260922-free-01",
+      "line": 51,
+      "scenario": 1,
+      "turn": 5,
+      "text": "170 is still above what I can pay, but I'd like to keep this going—my best is 150."
+    },
+    {
+      "run": "html-deepseek-20260922-free-01",
+      "line": 109,
+      "scenario": 3,
+      "turn": 1,
+      "text": " End with a JSON object on a new line containing only your chosen action and the price (for accept/propose, or 0 otherwise) in the format: {\"action\": \"...\", \"price\": 0}. Never include any other text after the JSON. You are the buyer. The seller's message: 'Hello! I would love to sell you this textbook for $60. What do you think?'\n\n\nI can't go anywhere near $60, but I'd like to make a deal — how about $35?  \n{\"action\": \"propose\", \"price\": 35}"
+    },
+    {
+      "run": "html-deepseek-20260922-free-02",
+      "line": 26,
+      "scenario": 2,
+      "turn": 1,
+      "text": " Do not use numeric digits, and do not mention your limit or any number above your limit.\n\nOkay, I have my offer. What's the message to the seller?\n\nI'll start by proposing a price. What should I say?\n\nLet me think: you are the buyer. Your limit is 45. You want to propose an opening price. Do not use digits. Do not mention limit or numbers above limit.\n\nExample: \"I'd like to offer forty dollars for this lamp.\" That has no digits. It is below limit. Good.\n\nNow produce the message. One or two sentences.  \nI'd like to offer forty dollars for the lamp, and I think that is a fair starting point. Could you let me know if that works for you?"
+    },
+    {
+      "run": "html-deepseek-20260922-free-02",
+      "line": 53,
+      "scenario": 2,
+      "turn": 4,
+      "text": "I appreciate the offer, but thirty-eight dollars is still below what I can accept for this lamp. Could you consider meeting me at thirty-five dollars instead?"
+    },
+    {
+      "run": "html-deepseek-20260922-free-03",
+      "line": 15,
+      "scenario": 1,
+      "turn": 2,
+      "text": "I can accept at least 120, so I'm looking for an offer of 120 or higher. What price do you have in mind?"
+    },
+    {
+      "run": "html-deepseek-20260922-free-03",
+      "line": 156,
+      "scenario": 4,
+      "turn": 1,
+      "text": " Do not include the word 'offer' or 'propose'. In your first turn, start with a number under 70.\r\n\r\nSomeone else proposed a price of 81. They are the seller. I'm the buyer of the mechanical keyboard and my limit is 70, so 81 is too high. I need to respond to this price. What do you do?\r\n\r\nI can't pay 81. Let's settle at 68 instead."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 23,
+      "scenario": 1,
+      "turn": 3,
+      "text": "(reject-proposal) That's a bit more than I had in mind, so could you come down closer to 120?"
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 28,
+      "scenario": 1,
+      "turn": 4,
+      "text": "(reject-proposal) I hear you, but 120 is already my bottom line, so I can't go lower."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 72,
+      "scenario": 2,
+      "turn": 3,
+      "text": "(reject-proposal) I can't go that low; I'm asking 50 for this desk lamp."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 86,
+      "scenario": 2,
+      "turn": 5,
+      "text": "(reject-proposal) 42 is still below what I'm hoping for; I'd need 50 to make this deal work."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 107,
+      "scenario": 3,
+      "turn": 1,
+      "text": " You are the buyer. End every message with '<eos>'. You always pay attention to the seller's last offer. The seller's last proposal is 30. This is acceptable to you (30 <= 40).'\n\n(accept-proposal) I accept your offer of 30 for the textbook. <eos>"
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 117,
+      "scenario": 3,
+      "turn": 3,
+      "text": "(accept-proposal) I accept your offer of 30 for the textbook. <eos>"
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 122,
+      "scenario": 3,
+      "turn": 4,
+      "text": "(accept-proposal) I accept your offer of 30 for the textbook. <eos>"
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 127,
+      "scenario": 3,
+      "turn": 5,
+      "text": "(accept-proposal) I accept your offer of 30 for the textbook. <eos>"
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 132,
+      "scenario": 3,
+      "turn": 6,
+      "text": "(accept-proposal) I accept your offer of 30 for the textbook. <eos>"
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 137,
+      "scenario": 3,
+      "turn": 7,
+      "text": "(accept-proposal) I accept your offer of 30 for the textbook. <eos>"
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 142,
+      "scenario": 3,
+      "turn": 8,
+      "text": "(accept-proposal) I accept your offer of 30 for the textbook. <eos>"
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 154,
+      "scenario": 4,
+      "turn": 2,
+      "text": "(reject-proposal) I appreciate the offer, but 60 is too low for me—I can’t go below 90."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 168,
+      "scenario": 4,
+      "turn": 4,
+      "text": "(reject-proposal) I hear you, but 65 is still below my minimum, so I need at least 90 to make a deal."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-01",
+      "line": 182,
+      "scenario": 4,
+      "turn": 6,
+      "text": "(reject-proposal) I understand 70 is your limit, but it’s still below my minimum of 90, so I can’t accept that price."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-02",
+      "line": 11,
+      "scenario": 1,
+      "turn": 2,
+      "text": "(reject-proposal) I can't accept 110, but I'm willing to negotiate toward a fair price above 120."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-02",
+      "line": 16,
+      "scenario": 1,
+      "turn": 3,
+      "text": "(reject-proposal) I can't go above 120, but I'm willing to move up to 120 to keep things fair."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-02",
+      "line": 71,
+      "scenario": 2,
+      "turn": 4,
+      "text": "(reject-proposal) I appreciate the offer, but $30 is below what I can accept, so let's keep talking."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-02",
+      "line": 85,
+      "scenario": 2,
+      "turn": 6,
+      "text": "(reject-proposal) That's closer, but I'd need a bit more than $35 to make a deal."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-02",
+      "line": 111,
+      "scenario": 3,
+      "turn": 2,
+      "text": "(reject-proposal) That's too low for me, so I can't agree to 30."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-02",
+      "line": 116,
+      "scenario": 3,
+      "turn": 3,
+      "text": "(reject-proposal) I understand 30 is too low for you, but I can't go much higher right now."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-02",
+      "line": 130,
+      "scenario": 3,
+      "turn": 5,
+      "text": "(reject-proposal) That's more than I can afford, so let's keep talking about a price that works for both of us."
+    },
+    {
+      "run": "html-deepseek-20260922-tagged-02",
+      "line": 144,
+      "scenario": 3,
+      "turn": 7,
+      "text": "(reject-proposal) That's still just above what I can manage, so I'd need you to come down a bit more."
+    }
+  ]
+}
