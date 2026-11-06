@@ -64,6 +64,7 @@ from pathlib import Path
 import httpx
 
 import buyer_memory as memory
+import breakage
 import common
 import experiments
 import shop_model
@@ -98,7 +99,9 @@ HOLDS = 2                 # asks above our ceiling that stopped falling before w
 # p our breakage by grade; and never over the SKU's market of that grade (others_6h). analysis/objective.json
 # (written by objective.py every 20 minutes from the class board) sets MIN_SHARE when it is fresh.
 MIN_SHARE = 0.27
-BUYER_BREAK = {"A": 0.055, "B": 0.085, "C": 0.11}   # our purchases over Round 3 (11/6)
+BUYER_BREAK = {"A": 0.028, "B": 0.136, "C": 0.29}   # our goods' breaks by order on the ledger, 24 h to 11/7 01:20;
+                                                    # amain() takes breakage.json's when fresh (5.5/8.5/11% until 11/7,
+                                                    # matched by product name, which missed most)
 OBJECTIVE_FRESH = 2 * 3600
 SHELF_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h(?:ours?)?\s+(?:of shelf life|left)|시간\s*(?:남|의\s*유통|이\s*남))", re.I)
 GRADE_WORDS = (" I prefer grade C (refurbished) or B (damaged box) with the warranty, priced for its grade; grade A "
@@ -717,6 +720,7 @@ async def amain(a) -> dict:
     md = Path(a.order).parent
     catalog = common.catalog(md)
     summary = common.read_json(md / "market_summary.json", {}) or {}
+    BUYER_BREAK.update(breakage.rates(common.read_json(breakage.path(), None), "ours"))   # 11/7: one table, from the ledger
     rules = common.rules()["buyer"]
     rules = dict(rules, haggle=experiments.haggle_arm(order.get("order") or "", time.time(),
                                                      common.read_json(experiments.haggle_path(), None)))

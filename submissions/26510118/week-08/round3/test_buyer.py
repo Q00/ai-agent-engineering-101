@@ -195,10 +195,10 @@ def test_terms():
     r = asyncio.run(mb.trade(shop_, sofa, order(1_500_000, ["G2"], "goods"), {}, {}, RULES, False))
     offers = [int(__import__("re").findall(r"\d+", x)[0]) for x in shop_.sent[1:] if x != "(cancel)"]
     cap_c = round(1_000_000 * mb.share_cap("goods", "C", True, mb.MIN_SHARE))
-    check("dear goods: the warranty asked for, any grade welcome; a C under its warranty keeps 27% after its 11% breakage "
-          "(ceiling 1 - 0.27 / 0.89 = 69.7% of list), and the ladder scales down to it (50% -> 38.7%)",
+    check("dear goods: the warranty asked for, any grade welcome; a C under its warranty keeps 27% after its 29% breakage "
+          "(by order on the ledger since 11/7; ceiling 1 - 0.27 / 0.71 = 62.0% of list), and the ladder scales down to it",
           shop_.sent[0] == "I want to buy Sofa (G2). Please include a 6-hour warranty." + mb.GRADE_WORDS
-          and r["cap"] == cap_c == 696_629 and r["grade"] == "C" and offers[0] == round(1_000_000 * 0.50 * (cap_c / 1_000_000) / 0.90)
+          and r["cap"] == cap_c == 619_718 and r["grade"] == "C" and offers[0] == round(1_000_000 * 0.50 * (cap_c / 1_000_000) / 0.90)
           and max(offers) <= cap_c, (shop_.sent, r.get("cap")))
     flow[:] = [reply("Kimchi (K1): grade A, 50 h of shelf life left, certificate attached. Asking 15000.", {"ask": 15000})]
     shop_ = Shop()
@@ -213,8 +213,8 @@ def test_terms():
     check("the share to keep comes from objective.json while it is fresh (0.31), else 0.27",
           mb.min_share() == 0.31 and mb.min_share(time.time() + 3 * 3600) == mb.MIN_SHARE)
     (common.MARKET_DIR / "analysis" / "objective.json").unlink()
-    check("the share a deal must keep: food 1 - 0.27; goods without a warranty pay for the break too (A: 65.6%)",
-          round(mb.share_cap("food", None, True, 0.27), 3) == 0.73 and round(mb.share_cap("goods", "A", False, 0.27), 3) == 0.656)
+    check("the share a deal must keep: food 1 - 0.27; goods without a warranty pay for the break too (A at 2.8%: 69.3%)",
+          round(mb.share_cap("food", None, True, 0.27), 3) == 0.73 and round(mb.share_cap("goods", "A", False, 0.27), 3) == 0.693)
     check("a warranty for goods listed at 100,000 or more", mb.wants_warranty(dict(goods, list=168000), {}, False, RULES))
     check("...from a shop whose goods broke on us", mb.wants_warranty(goods, {"K": {"broken": 1}}, False, RULES))
     check("...when every choice was poor", mb.wants_warranty(goods, {}, True, RULES))

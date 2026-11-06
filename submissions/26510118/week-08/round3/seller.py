@@ -44,6 +44,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+import breakage
 import common
 import experiments
 import harness
@@ -332,6 +333,7 @@ def priced(u: dict, now: float, warranty: bool, arm: float | None = None) -> dic
     by_grade = ((summary.get("by_category") or {}).get(u.get("category")) or {}).get("by_grade")
     row = (summary.get("by_sku") or {}).get(u.get("sku")) or {}
     sku_market = row.get("others_6h")
+    pricing.BREAK.update(breakage.rates(market_file("analysis/breakage.json"), "market"))   # 11/7: one table, the ledger's
     by_sku = summary.get("by_sku") or {}
     solo = bool(by_sku) and row.get("others_6h_n", 0 if not row else pricing.SOLO_OTHERS) < pricing.SOLO_OTHERS
                             # no row: nobody sold it in 24 h; a row without the count (an older summary) or no summary: not solo

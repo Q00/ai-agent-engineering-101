@@ -1045,10 +1045,10 @@ def test_discover():
     check("...a known expected margin under 0.04 of list keeps one out (unknown: the old rules)",
           list(linewatch.discover(settles, {}, cat, {BEDDING: 3}, {}, t, margin=em.get)) == ["Gsofa0001", "Gsofa0002"])
     a_w = lambda m, n=20: {"by_sku": {"Gx": {"others_6h": {"A_w": {"n": n, "median": m}}}}}
-    check("expected margin: A at 0.80 (B, C taken 0.05, 0.10 under), mid costs, refunds: 0.1384; at surge 1.2: 0.0204; "
-          "A at 0.62: -0.0291; an A market of 9 settles: unknown",
+    check("expected margin: A at 0.80 (B, C taken 0.05, 0.10 under), mid costs, refunds: 0.1378; at surge 1.2: 0.0198; "
+          "A at 0.62: -0.0295 (B breaks 11.1%, breakage.DEFAULT since 11/7); an A market of 9 settles: unknown",
           (linewatch.expected_margin("Gx", a_w(0.80), {}), linewatch.expected_margin("Gx", a_w(0.80), {"Gx": 1.2}),
-           linewatch.expected_margin("Gx", a_w(0.62), {}), linewatch.expected_margin("Gx", a_w(0.80, 9), {})) == (0.1384, 0.0204, -0.0291, None),
+           linewatch.expected_margin("Gx", a_w(0.62), {}), linewatch.expected_margin("Gx", a_w(0.80, 9), {})) == (0.1378, 0.0198, -0.0295, None),
           (linewatch.expected_margin("Gx", a_w(0.80), {}), linewatch.expected_margin("Gx", a_w(0.80), {"Gx": 1.2}),
            linewatch.expected_margin("Gx", a_w(0.62), {})))
     check("...left out: 0.62 of list, a 400k mattress, settles older than 6 h, our own shop's",
@@ -1444,6 +1444,38 @@ def test_stage2():
         fpath.unlink(missing_ok=True)
 
 
+def test_breakage():
+    print("\n[breakage] one table from the ledger for the shop and the buyer (11/7)")
+    import breakage
+    import experiments
+    t = time.time()
+    cat = dict(CATALOG, Gsofa0001={"name": "sofa", "kind": "goods", "list_price": 1_000_000, "category": "가구"})
+    settles, broken = [], []
+    for i in range(200):
+        g = "A" if i < 120 else "B" if i < 170 else "C"
+        buyer = "Kiro729" if i % 4 == 0 else "Other"
+        settles.append({"seq": i, "ts": t - 10 * 3600, "item": "Gsofa0001", "grade": g, "unit": f"u{i}", "buyer": buyer,
+                        "order": f"o{i}", "amount": 700_000})
+        if (g == "A" and i % 40 == 0) or (g == "B" and i % 9 == 0) or (g == "C" and i % 3 == 0):
+            broken.append({"seq": 1000 + i, "ts": t - 8 * 3600, "unit": f"u{i}", "order": f"o{i}", "buyer": buyer})
+    settles += [{"seq": 999, "ts": t - 2 * 3600, "item": "Gsofa0001", "grade": "C", "unit": "fresh", "buyer": "Other"},
+                {"seq": 998, "ts": t - 10 * 3600, "item": KIMCHI, "grade": "C", "unit": "food", "buyer": "Other"}]
+    table = breakage.compute(settles, broken, cat, t)
+    check("goods sold 6-24 h ago and broken, by grade: the market's and our buyer's own; food and units sold in the last 6 h "
+          "(they may still break) left out; our broken orders kept",
+          table["market_n"] == {"A": 120, "B": 50, "C": 30} and table["market"]["A"] == 0.025 and table["market"]["C"] == 0.3333
+          and table["ours_n"]["A"] == 30 and "o0" in table["our_broken_orders"] and "o1" not in table["our_broken_orders"], table)
+    r_ours, r_mkt = breakage.rates(table, "ours", t), breakage.rates(table, "market", t)
+    check("rates: our buyer's own where it bought 30+ of the grade (A), else the market's (100+), else the default; "
+          "a stale table: the default", r_ours["A"] == table["ours"]["A"] and r_mkt["A"] == 0.025
+          and r_ours["B"] == breakage.DEFAULT["B"] and breakage.rates(table, "ours", t + 4 * 3600) == breakage.DEFAULT, (r_ours, r_mkt))
+    rows = [{"ts": t, "haggle": "counter", "could_counter": True, "list_price": 1000, "deal": True, "price": 600, "order": f"h{i}"}
+            for i in range(10)]
+    check("the haggling experiment counts a broken order as 0 kept (refunded under the warranty)",
+          experiments.haggle_score(rows, 0.27, {"h0", "h1"})["counter"]["kept"] == 0.32
+          and experiments.haggle_score(rows, 0.27)["counter"]["kept"] == 0.4)
+
+
 def test_watch():
     print("\n[watch] what changed since 20 minutes ago")
     import watch
@@ -1520,6 +1552,7 @@ def main() -> int:
         test_scoreboard()
         test_objective_model()
         test_stage2()
+        test_breakage()
         test_watch()
         test_analysts()
         test_insights()

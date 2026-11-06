@@ -48,6 +48,7 @@ import statistics as st
 from collections import defaultdict
 
 import common
+import breakage
 import ledger
 import pricing
 import restock
@@ -275,6 +276,7 @@ def run(now: float, settles: list | None = None, inv: dict | None = None, sales:
     current = common.read_json(folder() / "line.json", None)
     if isinstance(current, dict) and current.get("by") != "linewatch":
         return []                                       # a person wrote it: theirs, not touched
+    pricing.BREAK.update(breakage.rates(common.read_json(breakage.path(), None), "market", now))   # 11/7: the ledger's
     if line is None:
         importlib.reload(restock)                       # restock.LINE as it is on disk now, not as the service started
         line = dict(restock.LINE)

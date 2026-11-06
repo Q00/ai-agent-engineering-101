@@ -18,6 +18,7 @@ import json
 import os
 import time
 
+import breakage
 import common
 import scoreboard
 
@@ -100,8 +101,9 @@ def run(now: float | None = None, board: dict | None = None) -> dict:
             out["lambda"][part] = round(gain / need, 12) if need else 0.0
     if me_b and "saved" in bw:
         bought = common.read_jsonl(common.MARKET_DIR / "buyer" / "purchases.jsonl")
-        recent = shares([p for p in bought if (p.get("settled_at") or 0) >= now - WINDOW],
-                        common.read_jsonl(common.MARKET_DIR / "buyer" / "breaks.jsonl"))
+        broken = common.read_jsonl(common.MARKET_DIR / "buyer" / "breaks.jsonl") + \
+            [{"order": o} for o in breakage.our_broken(common.read_json(breakage.path(), None))]   # 11/7: by order, the ledger's
+        recent = shares([p for p in bought if (p.get("settled_at") or 0) >= now - WINDOW], broken)
         hours_left = max(0.0, (common.ROUND_END - now) / 3600)
         then = scoreboard.history_since(now)
         h_then = (now - then["at"]) / 3600 if then else 0

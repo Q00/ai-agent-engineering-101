@@ -133,13 +133,15 @@ def haggle_arm(order_id: str, now: float | None = None, state: dict | None = Non
     return arms[-1][0]
 
 
-def haggle_score(rows: list, saved: float) -> dict:
-    out = {}
+def haggle_score(rows: list, saved: float, broken: set | None = None) -> dict:
+    """broken: our orders whose goods broke (refunded under the warranty: a share of 0, 11/7)."""
+    out, broken = {}, broken or set()
+    keep = lambda r: 0.0 if r.get("order") in broken else 1 - r["price"] / r["list_price"]
     for a in HAGGLE_ARMS:
         rs = [r for r in rows if r.get("haggle") == a and r.get("could_counter") and r.get("list_price")]
-        vals = [(1 - r["price"] / r["list_price"] - saved) if r.get("deal") and r.get("price") else 0.0 for r in rs]
+        vals = [(keep(r) - saved) if r.get("deal") and r.get("price") else 0.0 for r in rs]
         deals = sum(1 for r in rs if r.get("deal") and r.get("price"))
-        kept = [1 - r["price"] / r["list_price"] for r in rs if r.get("deal") and r.get("price")]
+        kept = [keep(r) for r in rs if r.get("deal") and r.get("price")]
         out[a] = {"talks": len(rs), "deals": deals, "close": round(deals / len(rs), 3) if rs else None,
                   "kept": round(sum(kept) / len(kept), 4) if kept else None,
                   "reward_per_talk": round(sum(vals) / len(vals), 5) if vals else None,
@@ -156,7 +158,8 @@ def run_haggle(now: float | None = None) -> str:
         saved = float(sb["buyer"]["parts"]["saved"]["value"])
     except (KeyError, TypeError, ValueError):
         saved = 0.27
-    stats = haggle_score(rows, saved)
+    stats = haggle_score(rows, saved, set(common.read_json(common.MARKET_DIR / "analysis" / "breakage.json", {})
+                                          .get("our_broken_orders") or []))
     ready = all((s["talks"] or 0) >= HAGGLE_MIN for s in stats.values())
     best, z = leader(stats) if ready else (None, None)
     weights = {a: (BEST if a == best else round(1 - BEST, 4)) for a in stats} if best else {a: 0.5 for a in stats}

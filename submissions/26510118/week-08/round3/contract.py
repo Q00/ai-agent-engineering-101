@@ -43,6 +43,8 @@ FILES = [
     ("analysis/rivals.json", "analysis (collect)", "market_buyer (near ties)", lambda d: [d], ("at", "shops")),
     ("analysis/watch.json", "analysis (watch.py, every 20 min)", "a person (alerts on rule and market changes)", lambda d: [d],
      ("at", "alerts", "facts")),
+    ("analysis/breakage.json", "analysis (breakage.py, every 20 min)", "market_buyer (ceilings), seller and linewatch "
+     "(pricing.BREAK), objective and the haggling experiment (our broken orders)", lambda d: [d], ("at", "market", "ours")),
     ("analysis/objective.json", "analysis (objective.py, every 20 min)", "market_buyer (min share), experiments (lambda)",
      lambda d: [d], ("at", "lambda")),
     ("analysis/shop_model.json", "analysis (shop_model.py, every 20 min)", "market_buyer (candidates)", lambda d: [d], ("at", "shops")),
