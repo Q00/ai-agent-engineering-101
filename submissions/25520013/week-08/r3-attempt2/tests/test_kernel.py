@@ -203,18 +203,18 @@ def _category_root(tmp_path):
     def offers(sku, n, start):
         metrics.extend({"hook": "seller", "decision": "open", "ts": start + i, "outcome": {"sku": sku}} for i in range(n))
 
-    def settles(sku, cat, ours, others, start, amount):
+    def settles(sku, cat, ours, others, start, amount, shops=2):
         for i in range(ours + others):
             mine = i < ours
             events.append({"type": "settle", "src": "market", "ts": start + 100 + i, "data": {
                 "sku": sku, "category": cat, "amount": amount, "list_price": 1000 if sku == "BED1" else 500,
-                "own_owner": mine, "buyer": "someone-else"}})
+                "own_owner": mine, "buyer": "someone-else", "shop": "us" if mine else f"s{i % (shops - 1)}"}})
 
     prev, cur = t0 - 3 * 3600, t0 + 60
     offers("BED1", 10, prev); offers("SOFA1", 10, prev)
     settles("BED1", "가구>침대", 5, 15, prev, 700); settles("SOFA1", "가구>소파", 1, 9, prev, 400)
     offers("BED1", 10, cur); offers("SOFA1", 30, cur)
-    settles("BED1", "가구>침대", 5, 35, cur, 700); settles("SOFA1", "가구>소파", 3, 7, cur, 400)
+    settles("BED1", "가구>침대", 5, 35, cur, 700, shops=6); settles("SOFA1", "가구>소파", 3, 7, cur, 400)
     (r / "a2/trajectory.jsonl").write_text("".join(json.dumps(x, ensure_ascii=False) + "\n" for x in traj))
     (r / ".r3/metrics.jsonl").write_text("".join(json.dumps(x) + "\n" for x in metrics))
     (r / ".r3/events.jsonl").write_text("".join(json.dumps(x, ensure_ascii=False) + "\n" for x in events))
@@ -224,8 +224,11 @@ def _category_root(tmp_path):
 def test_category_stats_and_market_share(tmp_path):
     root = _category_root(tmp_path)
     prev, cur = brief.version_results(root, "seller", NOW, harness_root=os.path.join(root, "harness"))
-    assert prev["metrics"]["by_category"]["침대"] == {"offers": 10, "sales": 5, "market": 20}
-    assert cur["metrics"]["by_category"]["소파"] == {"offers": 30, "sales": 3, "market": 10}
+    assert prev["metrics"]["by_category"]["침대"] == {
+        "offers": 10, "sales": 5, "market": 20, "shops": 2, "market_ratio": 0.7, "our_ratio": 0.7}
+    assert cur["metrics"]["by_category"]["소파"] == {
+        "offers": 30, "sales": 3, "market": 10, "shops": 2, "market_ratio": 0.8, "our_ratio": 0.8}
+    assert cur["metrics"]["by_category"]["침대"]["shops"] == 6
     assert cur["metrics"]["market_share"] == pytest.approx(8 / 50)
     assert prev["metrics"]["market_share_se"] == pytest.approx(round((0.2 * 0.8 / 30) ** 0.5, 4))
 
@@ -238,7 +241,10 @@ def test_mix_adjusted_rate_removes_the_request_mix(tmp_path):
     lines = brief._seller_compare(prev, cur)
     text = "\n".join(lines)
     assert "[판 비교 판매자] 판 1 → 판 2" in text and "0.300 (SE" in text
-    assert "침대 25% → 12%" in text and "소파 10% → 30%" in text and "읽는 법" in text
+    assert "차이 +0.000, 차이/SE +0.0" in text and "읽는 법" in text
+    # bed: share fell only because the bed market grew (2 -> 6 shops, 3 -> 20 settles an hour, same price)
+    assert "  침대: 우리 몫 25% → 12% (판매 5 → 5) | 시장 정산/시간 3 → 20, 판 가게 2 → 6곳, 시장 판매가/정가 중앙 0.70 → 0.70, 우리 0.70 → 0.70" in text
+    assert "  소파: 우리 몫 10% → 30%" in text
     assert brief.mix_adjusted({}, {}) is None
 
 

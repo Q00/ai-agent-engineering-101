@@ -400,7 +400,7 @@ def category_stats(offers, settles, cat, login, since, until):
     market is our share of what the market sold then, which the time of day and the request mix move far less than a
     raw conversion. Ratios are median amount / list price.
     """
-    acc = defaultdict(lambda: {"offers": 0, "sales": 0, "market": 0, "ours": [], "all": []})
+    acc = defaultdict(lambda: {"offers": 0, "sales": 0, "market": 0, "ours": [], "all": [], "shops": set()})
     for ts, leaf in offers:
         if since <= ts < until:
             acc[leaf]["offers"] += 1
@@ -410,6 +410,7 @@ def category_stats(offers, settles, cat, login, since, until):
         d = e.get("data") or {}
         k = acc[_leaf(d.get("category") or (cat.get(d.get("sku")) or {}).get("category"))]
         k["market"] += 1
+        k["shops"].add(str(d.get("shop")))
         lp = d.get("list_price") if isinstance(d.get("list_price"), (int, float)) else _list_price(cat, d.get("sku"))
         a = d.get("amount")
         r = a / lp if lp and lp > 0 and isinstance(a, (int, float)) and not isinstance(a, bool) else None
@@ -426,6 +427,7 @@ def category_stats(offers, settles, cat, login, since, until):
             "market": v["market"],
             "our_ratio": round(st.median(v["ours"]), 3) if v["ours"] else None,
             "market_ratio": round(st.median(v["all"]), 3) if v["all"] else None,
+            "shops": len(v["shops"]),
         }
         for leaf, v in acc.items()
     }
@@ -806,7 +808,10 @@ def version_results(root, target, now, rows=None, last=2, harness_root=None):
         m = version_metrics(target, rows, settles, reviews, cat, login, w["since_ts"], w["until_ts"])
         if target == "seller":
             by = category_stats(offers, settles, _catalog(root), login, w["since_ts"], w["until_ts"])
-            m["by_category"] = {k: {x: v[x] for x in ("offers", "sales", "market")} for k, v in by.items()}
+            m["by_category"] = {
+                k: {x: v[x] for x in ("offers", "sales", "market", "shops", "market_ratio", "our_ratio")}
+                for k, v in by.items()
+            }
             n_mkt = sum(v["market"] for v in by.values())
             if n_mkt:
                 m["market_share"] = round(m["sales"] / n_mkt, 4)
@@ -871,27 +876,39 @@ def _seller_compare(prev, cur):
     mix = mix_adjusted(pb, cb)
     if mix:
         (p0, s0), (p1, s1), n = mix
+        se = (s0**2 + s1**2) ** 0.5
         out.append(
             f"  구성 보정 판매/제시 (판 {prev['version']}의 상품군 구성으로 가중, 상품군 {n}개): "
-            f"{p0:.3f} (SE {s0:.3f}) → {p1:.3f} (SE {s1:.3f})"
+            f"{p0:.3f} (SE {s0:.3f}) → {p1:.3f} (SE {s1:.3f}), 차이 {p1 - p0:+.3f}, "
+            f"차이/SE {(p1 - p0) / se if se else 0:+.1f}"
         )
-    shares = []
-    for k in sorted(set(pb) | set(cb), key=lambda k: -((pb.get(k) or {}).get("sales", 0) + (cb.get(k) or {}).get("sales", 0))):
+    # per category, ours next to what the whole market did in the same hours, so a change on the market side (more
+    # shops selling, a lower clearing price) is not read as an effect of the version
+    hours = lambda r: max((r["until_ts"] - r["since_ts"]) / 3600, 1e-9)
+    hp, hc = hours(prev), hours(cur)
+    r2 = lambda v: f"{v:.2f}" if isinstance(v, (int, float)) else "-"
+    keys = sorted(set(pb) | set(cb), key=lambda k: -((pb.get(k) or {}).get("market", 0) + (cb.get(k) or {}).get("market", 0)))
+    rows = []
+    for k in keys[:COMPARE_TOP]:
         a, b2 = pb.get(k) or {}, cb.get(k) or {}
-        if not (a.get("sales") or b2.get("sales")):
-            continue
         f = lambda x: f"{x['sales'] / x['market']:.0%}" if x.get("market") else "-"
-        shares.append(f"{k} {f(a)} → {f(b2)}")
-    if shares:
-        out.append("  상품군별 시장 점유: " + ", ".join(shares[:CATEGORY_TOP]))
+        rows.append(
+            f"  {k}: 우리 몫 {f(a)} → {f(b2)} (판매 {a.get('sales', 0)} → {b2.get('sales', 0)}) | 시장 정산/시간 "
+            f"{a.get('market', 0) / hp:.0f} → {b2.get('market', 0) / hc:.0f}, 판 가게 {a.get('shops', 0)} → "
+            f"{b2.get('shops', 0)}곳, 시장 판매가/정가 중앙 {r2(a.get('market_ratio'))} → {r2(b2.get('market_ratio'))}, "
+            f"우리 {r2(a.get('our_ratio'))} → {r2(b2.get('our_ratio'))}"
+        )
+    if rows:
+        out.append(f"  상품군별 (시장 정산 많은 {len(rows)}개), 우리 대 같은 시간 시장 전체:")
+        out += rows
     out.append(
-        "  읽는 법: 시간대나 요청 구성이 바뀌어도 상품군별 시장 점유와 구성 보정 값은 덜 흔들림. 두 값이 같은 방향으로 "
-        "SE의 2배 넘게 바뀌었으면 시간대나 구성 차이만으로는 설명하기 어려움. 시장 정산 수와 시장 체결가가 함께 "
-        "움직였으면 시장 쪽 변화임"
+        "  읽는 법: 차이/SE가 -2와 +2 사이면 잡음과 구분되지 않음. 판 가게 수, 시장 정산/시간, 시장 판매가가 같이 "
+        "바뀌었으면 시장 쪽 변화가 섞인 것이고, 우리 몫과 우리 판매가만 바뀌었으면 판의 차이에 가까움"
     )
     return out
 
 
+COMPARE_TOP = 3  # [판 비교]: categories by market settles in the two windows
 RIVALS_TOP = 5  # [상위 가게]: the top shops by shop all, plus ours
 NEGOTIATION_H = 6  # [협상 결과]: window
 NEGOTIATION_TOP = 4  # categories with the most offers
