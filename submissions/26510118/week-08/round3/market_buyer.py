@@ -100,13 +100,17 @@ HOLDS = 2                 # asks above our ceiling that stopped falling before w
 MIN_SHARE = 0.27
 BUYER_BREAK = {"A": 0.055, "B": 0.085, "C": 0.11}   # our purchases over Round 3 (11/6)
 OBJECTIVE_FRESH = 2 * 3600
-SHELF_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:of shelf life|left)", re.I)
+SHELF_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h(?:ours?)?\s+(?:of shelf life|left)|시간\s*(?:남|의\s*유통|이\s*남))", re.I)
 GRADE_WORDS = (" I prefer grade C (refurbished) or B (damaged box) with the warranty, priced for its grade; grade A "
-               "only if you have nothing else.")         # 11/6 16:40: a deal is worth its list price whatever the grade,
+               "only if you have nothing else. Please state the grade and whether the warranty is included.")         # 11/6 16:40: a deal is worth its list price whatever the grade,
                                                         # and in 24 h ours kept C 0.417, B 0.309, A 0.237 of list
-FOOD_WORDS = " The unit nearest its expiry that still lasts that long suits me best, priced for its grade."
-                                                        # 11/6: the food we bought had a median 50 h of shelf life more
-                                                        # than its order needed; ours kept C 0.386, B 0.320, A 0.284
+FOOD_WORDS = " Please say how many hours of shelf life it has left."
+                                                        # 11/6 19:10: "the unit nearest its expiry that still lasts that
+                                                        # long" (16:40-19:10) made olstjr and choo-chu offer units far short
+                                                        # of the need (541 h asked, 220 h given): 31 shelf-life refusals at
+                                                        # payment in 1.9 h against 7 in the 4.4 h before, 23% of our
+                                                        # agreements lost. Asked to state it, a shop lets shelf_hours()
+                                                        # leave before any offer.
 # Haggling (11/6 16:40, the person's call "몫 사냥꾼 ②"): since 11/4 an ask inside our ceiling was taken at once; when
 # we did, the ceiling stood a median 0.052 of list above it, and the shops' last concessions in our deals were a
 # median 5.6%. The "counter" arm of experiments.haggle answers such an ask once with PUSH of it (a step must be left
