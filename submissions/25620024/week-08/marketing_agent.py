@@ -336,6 +336,26 @@ def brief():
 
 
 def ask_codex(text, schema_obj):
+    """Codex, and Claude in its place when Codex fails (HQ 11-07: the Codex plan hit its usage limit 11-05 01:08 and
+    every meeting -- research, SCM, finance, buyer, the unit heads -- stopped for two days, while Claude was fine)."""
+    try:
+        return _ask_codex(text, schema_obj)
+    except Exception as e:
+        print(f"[codex] failed, Claude stands in: {str(e)[:300]}")
+        raw = ask_claude(text + "\n\nAnswer with ONE JSON object only, matching this JSON schema:\n"
+                         + json.dumps(schema_obj, ensure_ascii=False))
+        json.loads(raw)
+        return raw
+
+
+def _err(stderr):
+    """The real error out of a CLI's stderr: ERROR lines first (the usage limit sat above a bubblewrap warning, and the
+    last 600 characters showed only the warning for two days)."""
+    errs = [l for l in stderr.splitlines() if re.search(r"error|limit|denied|fail", l, re.I)]
+    return (" | ".join(errs[-3:]) or stderr[-600:])[:800]
+
+
+def _ask_codex(text, schema_obj):
     with tempfile.TemporaryDirectory() as d:
         schema, out = Path(d) / "schema.json", Path(d) / "out.json"
         schema.write_text(json.dumps(schema_obj))
@@ -344,7 +364,7 @@ def ask_codex(text, schema_obj):
         r = subprocess.run(cmd, input=text, text=True, capture_output=True, timeout=900,
                            env={**os.environ, "CODEX_HOME": CODEX_HOME})
         if not out.exists():
-            raise RuntimeError(f"codex exited {r.returncode}: {r.stderr[-600:]}")
+            raise RuntimeError(f"codex exited {r.returncode}: {_err(r.stderr)}")
         return out.read_text(encoding="utf-8")
 
 
@@ -494,6 +514,13 @@ def main():
         save_guard(g)
         publish_status(g)
         print(f"[team] skipped: {why}")
+        last_ok = max((r["ts"] for r in g["runs"] if r.get("ok")), default=0)
+        if t0 - last_ok > 90 * 60 and t0 - g.get("alerted", 0) > 3 * 3600:   # 11-07: the teams were down for two
+            g["alerted"] = t0                                                # days and nobody was told
+            save_guard(g)
+            with (HERE / "private" / "hq_decisions.md").open("a", encoding="utf-8") as f:
+                f.write(f"\n## {time.strftime('%Y-%m-%d %H:%M')} ALERT: no team meeting for "
+                        f"{(t0 - last_ok) / 3600:.1f} h ({why}); code loops (restock, buyer, self-improvement) still run\n")
         try:                     # the code-only self-improvement loop runs every tick, model cooldown or not (11-05:
             import mbt, buyer_team   # a 3 h usage-limit cooldown had frozen auto_adopt with a losing move on A/B)
             mbt.analyse()
