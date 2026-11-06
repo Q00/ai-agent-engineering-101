@@ -12,6 +12,13 @@ import seller_r3
 from market_state import read, task_file, write
 
 
+class Shipped(unittest.TestCase):
+    def test_the_value_is_the_approved_one(self):
+        value = json.loads(price_cap.CONFIG.read_text(encoding="utf-8"))
+        self.assertEqual((value["ratio"], value["max_list_price"]), (.79, 1000000))
+        self.assertIs(type(value["enabled"]), bool)
+
+
 class Settings(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()

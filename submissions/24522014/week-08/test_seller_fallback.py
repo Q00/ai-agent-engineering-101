@@ -201,5 +201,18 @@ class HarnessBreaker(unittest.TestCase):
         popen.assert_not_called()
 
 
+def setUpModule():
+    # These tests fix their own prices: the shipped price cap setting must not move them.
+    import price_cap
+    global _cap_config
+    _cap_config = price_cap.CONFIG
+    price_cap.CONFIG = price_cap.CONFIG.with_name("no-such-price-cap.json")
+
+
+def tearDownModule():
+    import price_cap
+    price_cap.CONFIG = _cap_config
+
+
 if __name__ == "__main__":
     unittest.main()
