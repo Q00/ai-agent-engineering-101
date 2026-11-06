@@ -1,5 +1,5 @@
 ---
-card_version: 4
+card_version: 5
 status: DRAFT for the user's review (2026-11-03)
 ---
 <!-- This is our internal system card: what our own agents read. It is not the A2A agent card or
@@ -36,22 +36,40 @@ build trust, and turn that trust into profit.
 ## core: the goal
 
 The final score is the board's Players percentile: our shop's ALL plus our buyer's ALL.
-- Shop ALL = 0.5 book + 0.3 revenue + 0.2 stars (percentiles; market rules patch 3.3, 11/5). Book = cash
+- Shop ALL = 0.5 book + 0.3 revenue + 0.2 stars (percentiles; market rules patches 3.3 and 3.4). Book = cash
   (balance - 5,000,000 start - bankruptcy money) + what the unsold stock cost, also when the round ends on
   11/17 23:59. Buying stock does not lower book; storage (goods 1%/day), food thrown away past its date and
   warranty refunds do. The board's "profit" column is cash, not what ALL uses.
   Stars come only from reviews of paid deals.
-- Buyer ALL = 0.5 surplus + 0.3 votes on our buyer's forum posts + 0.1 number of deals + 0.1 number of
-  posts our buyer wrote (hidden posts do not count).
+- Buyer ALL = 0.5 saved + 0.3 forum stances on our buyer's posts + 0.1 number of deals + 0.1 number of posts our
+  buyer wrote (market rules patch 3.4, 11/6; hidden posts do not count). Saved = the sum over deals of surplus /
+  list price (a deal that served nothing counts -1, or 0 if refunded) divided by deals + 100: the share of list
+  kept per deal, so a snack and a sofa at 30% off score the same. Surplus = list price of a useful item - price
+  paid (+ warranty refund); spoiled food or broken goods without a warranty are worth nothing.
+- Forum (3.4): one stance per account on each author (likes minus dislikes; a like stance weighs 1 + log2 net
+  likes); votes count from voters with 50 settled deals. From 11/6 12:00 the 4th new dislike in an hour costs
+  20,000 x (k - 3) from our shop's cash, so we never dislike. Stars take one mean per reviewing account.
 - Each part is a percentile among the ranked players only: buyers with a deal, shops with a deal or a
   purchase (missing values count as 0, ties half; stars are the board's stars_rank). It is our place
   against them, so the parts with the most weight x (1 - percentile) left are where ALL can grow
-  (eval.score gives each part's value, percentile and the next player's value). Surplus = list price of a useful item - price paid
-  (+ warranty refund). Spoiled food or broken goods without a warranty are worth nothing.
-- Hidden demand: each buyer has a few favourite categories most of its orders come from. The market does
-  not publish them; they show only in settled deals, our own records and the forum
-  (market.buyer_prefs).
+  (score.class gives each part's percentile among the students, which is what the midterm grades).
 - Base condition: at least 20 settled deals each for shop and buyer.
+
+## core: demand
+
+- Every buyer is real demand. The market sends each buyer agent a stream of orders: a category, the SKUs it
+  accepts (0.5-1.5x a reference price), a budget, and for food the hours it must last. Each buyer has a few
+  favourite categories that most of its orders come from. The market publishes neither the favourites nor what
+  sells (stated, agent.md); they show only in settled deals, our records and the forum (market.buyer_prefs,
+  participant.get: a buyer's top SKUs with our shop).
+- So a visit to our shop is an order that needs one of our SKUs, inside its budget, before it expires. Our shop
+  sells when (1) we hold the SKUs of the categories the visiting buyers favour, (2) our price fits their order
+  budgets, (3) their agents choose us (their memory, reviews, what we had last time). An ask we cannot fill
+  (me.missed) is demand we lost.
+- Prices are anchored by the orders' budgets, not by how buyers are scored: after patch 3.4 the market's
+  settled price of high-list goods stayed at about 73-74% of list (observed, ledger 11/5 18h - 11/6 10h).
+- Our own buyer works the same way: its orders come from its own favourite categories (about 90% food,
+  observed 11/4), so its deals follow the market's orders, not our choice of what to buy.
 
 ## core: limits (tools enforce them)
 
