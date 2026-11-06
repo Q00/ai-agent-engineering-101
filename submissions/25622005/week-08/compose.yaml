@@ -39,16 +39,15 @@ services:
       STRATEGIST_MODE: "${STRATEGIST_MODE:-apply}"
       STRATEGIST_INTERVAL_S: "1800"
       # After each run, push the records to this private repository; empty disables it. The deploy
-      # key goes in $MARKET_DATA_DIR/home/.ssh/ (seen as /data/home/.ssh/), never in the image.
+      # key goes in the data folder's home/.ssh/ (seen as /data/home/.ssh/), never in the image.
       STRATEGIST_LOG_REPO: "${STRATEGIST_LOG_REPO:-}"
       STRATEGIST_LOG_BRANCH: main
       STRATEGIST_LOG_KEY: /data/home/.ssh/strategist_logs
     # On this Mac the live data (shop keys, memory, logs, Claude login in home/, the tuned
-    # strategy/SKILL.md) is /Users/psyoung82/docker/compose/term/data; set MARKET_DATA_DIR to use
-    # another folder (the N36L used ./.market/n36l-data). strategy/ lives inside it, so the repo's
-    # strategy/ is not mounted over the live, tuned SKILL.md.
+    # strategy/SKILL.md) is /Users/psyoung82/docker/compose/term/data. strategy/ lives inside it,
+    # so the repo's strategy/ is not mounted over the live, tuned SKILL.md.
     volumes:
-      - ${MARKET_DATA_DIR:-/Users/psyoung82/docker/compose/term/data}:/data
+      - /Users/psyoung82/docker/compose/term/data:/data
     # cloudflared reaches the kit on localhost:8900 inside this container.
     # No host port or router port forwarding is required.
     # Time for the shop (and any exec'd strategist) to finish before SIGKILL. Stop signals reach

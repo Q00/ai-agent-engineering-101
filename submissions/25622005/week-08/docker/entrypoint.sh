@@ -2,7 +2,7 @@
 set -eu
 umask 077
 
-# Match the N36L user's ownership so state can also be copied on the host.
+# Match the host user's ownership so state can also be copied on the host.
 nas_uid="${NAS_UID:-1000}"
 nas_gid="${NAS_GID:-1000}"
 for number in "$nas_uid" "$nas_gid"; do

@@ -54,7 +54,7 @@ def require_identity():
     for name in ('shop_key.pem', 'buyer_key.pem'):
         path = DATA / name
         if not path.is_file():
-            raise ValueError(f'Missing {name}: import the existing Mac key into .market/n36l-data first.')
+            raise ValueError(f'Missing {name}: put the existing key in the data folder (/data) first.')
         try:
             key = load_pem_private_key(path.read_bytes(), password=None)
         except (OSError, ValueError, TypeError):

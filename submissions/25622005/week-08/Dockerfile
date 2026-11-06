@@ -1,20 +1,17 @@
 # Build from the repository root; compose.yaml supplies that context.
-# Target: the Mac (Docker Desktop, linux/arm64), latest Claude Code native binary.
-# The old HP N36L (AMD K10: no SSSE3, SSE4.x or AVX) still builds with
-# --platform linux/amd64 --build-arg CLAUDE_CODE_VERSION=2.1.112 (the last pure-JS cli.js).
+# Target: this Mac (Podman, linux/arm64) with the latest Claude Code native binary.
 ARG CLOUDFLARED_VERSION=2026.10.2
 FROM cloudflare/cloudflared:${CLOUDFLARED_VERSION} AS tunnel
 FROM node:22-bookworm-slim AS node
 
-# Official CPython is built without -march flags; same minor version as the tested Mac .venv.
+# Same Python minor version as the tested Mac .venv.
 # Node.js is here only to run the Claude Code CLI: the strategist's strategy call
 # and the kit hooks' negotiation fallback (EXCEPTION_HARNESS_CMD).
 FROM python:3.12.11-slim-bookworm
-# Releases after 2.1.112 ship a per-platform native binary (optional dependency); needed for Opus 5.5.
-# On K10 that binary fails with Illegal instruction (week-07 DEPLOY_NAS.md, N40L section).
+# The npm package installs a per-platform native binary as an optional dependency; Opus 5.5 needs a recent release.
 ARG CLAUDE_CODE_VERSION=2.1.318
 
-# git and ssh push the strategist's records to a separate repository (strategist/publish.py); Debian builds, baseline x86-64.
+# git and ssh push the strategist's records to a separate repository (strategist/publish.py).
 # HOME is /data/home on the persistent volume: gosu sets HOME from this passwd entry, so the
 # Claude login and the publish deploy key survive new images and are shared by the kit and the strategist.
 RUN apt-get update \
@@ -27,7 +24,7 @@ ENV PYTHONUNBUFFERED=1 \
     DISABLE_AUTOUPDATER=1
 
 COPY submissions/25622005/week-08/docker/requirements.txt /opt/deploy/requirements.txt
-# Wheels only: a source build could pick up compiler flags for a newer build machine.
+# Wheels only, the exact versions the tests passed with.
 RUN pip install --no-cache-dir --root-user-action=ignore --only-binary=:all: \
         -r /opt/deploy/requirements.txt
 COPY --from=tunnel /usr/local/bin/cloudflared /usr/local/bin/cloudflared
