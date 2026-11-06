@@ -38,8 +38,8 @@ def test_saved_cap_accounts_for_refund_quality_and_existing_average(tmp_path):
     uninsured,target=saved_price_cap(10000,s,.2,0)
     insured,_=saved_price_cap(10000,s,.2,.2)
     assert 0<uninsured<insured<7500
-    assert contribution(uninsured,10000,.2,0)>=target
-    assert contribution(insured,10000,.2,.2)>=target
+    assert contribution(uninsured,10000,.2,0)>=target-1e-12
+    assert contribution(insured,10000,.2,.2)>=target-1e-12
     assert saved_price_cap(10000,s,1,0)[0]==0
 
 

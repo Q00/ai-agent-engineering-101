@@ -8,6 +8,7 @@ import threading
 import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import httpx
+import pytest
 import uvicorn
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -35,9 +36,16 @@ def receipt(key, task='t', sku='G111', price=8000):
     return rec
 
 
-def test_actual_a2a_server_and_buyer_interoperate(tmp_path, monkeypatch):
+@pytest.mark.parametrize('patch34',[False,True])
+def test_actual_a2a_server_and_buyer_interoperate(tmp_path, monkeypatch,patch34):
     monkeypatch.setenv('R3_MODEL_MODE', 'offline')
     j = Journal(tmp_path / '.market')
+    if patch34:
+        cfg=dict(policy(),buyer_patch34_enabled=True,buyer_strategy_revision='synthetic-saved-test')
+        monkeypatch.setattr('r3.adaptive.policy',lambda *a:cfg)
+        atomic_json(j.md/'board.json',{'round':3,'buyers':[
+            {'name':'seochanit','saved':.15,'deals':100,'forum':.5,'posts':2}]})
+        j.put('market_rules',{'buyer_metric':'saved','buyer_compatible':True})
     u = unit()
     atomic_json(j.md / 'inventory.json', {'round': 3, 'balance': 5000000, 'units': [u]})
     atomic_json(j.md / 'catalog.json', {'G111': {'name': u['name'], 'category': u['category'], 'list_price': 10000, 'kind': 'goods'}})
