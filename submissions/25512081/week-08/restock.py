@@ -213,6 +213,17 @@ BIG_TICKET = 1_000_000     # a value SKU at this list price or more holds only i
                            # unit target too (that target counts cheap units and was filled with the top SKU)
 
 
+# Nov 6 18:17-20:17: with the value line alone, the 9 Jakomo G8ec51935 (cost 1.71-1.97M) and 6 stone beds Gf6b70da8
+# (1.59-1.71M) we held filled their caps (6 and 4), so neither was bought for 2 h while other shops bought them at
+# a median 0.61 of list and the market sold 102 and 44 at a median 0.70; we sold 5 and 6 (16:17-18:17: 13 and 9),
+# margin 2.97M (was 9.18M). A unit whose floor (cost x 1.05) is over the market's recent price sells only to the
+# top of the market and is offered last, so it does not count against the line.
+def sellable(units, sku, catalog, st):
+    px = sorted(st["sku_px"].get(sku) or [])
+    sale = (px[len(px) // 2] if len(px) >= 3 else DEFAULT_PX) * catalog[sku]["list_price"]
+    return sum(1 for u in units if u["sku"] == sku and u["cost"] * 1.05 <= sale)
+
+
 def market_rate(st, catalog, sku):
     """The whole market's sales of a SKU per hour, from its decayed revenue (DECAY per ~1 min run: mean age ~3.3 h)
     over its recent price. Reads 1.3-2x the ledger's last hour (Nov 5 10:20: Simmons LK 26 vs 15-21, Jakomo multi 4
@@ -504,6 +515,7 @@ def main():
             gap = max(n - held_sku[sku], want.get(cat, 0) - held.get(cat, 0))
             if catalog[sku]["list_price"] >= BIG_TICKET:  # Nov 6 18:00: the category's unit target (15) bought
                 gap = n - held_sku[sku]      # 9 stone beds and 4 Jakomo sofas past their value caps (4 and 6)
+                gap = n - sellable(units, sku, catalog, st)   # units priced out of the market do not fill it
         else:
             gap = want[cat] - held.get(cat, 0)
             sku = pick_sku(cat, catalog, st, medians.get(cat, 0)) if gap > 0 else None
