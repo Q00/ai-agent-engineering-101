@@ -397,3 +397,23 @@ def test_profit_section_joins_sales_to_unit_cost_and_market(tmp_path):
     assert out[0].startswith("[이익 6시간] 우리 판매 1건") and "(5.6%)" in out[0] and "만료 폐기 원가 50" in out[0]
     assert out[1].startswith("  소파: 우리 1건") and "판매가/원가 중앙 1.06" in out[1] and "우리 몫 33.3%" in out[1]
     assert "시장 판매가/정가 중앙 0.72" in out[1]
+
+
+def test_share24_shows_blocks_with_share_price_and_shop_count(tmp_path):
+    r = tmp_path / "s"
+    for d in (".market", ".r3"):
+        (r / d).mkdir(parents=True)
+    (r / ".market/catalog.json").write_text(json.dumps({"BED": {"category": "가구>침대", "list_price": 1000},
+                                                        "TEA": {"category": "식품>차", "list_price": 10}}))
+    now = NOW
+    sale = lambda ago_h, sku, amt, mine, shop: {"type": "settle", "src": "market", "ts": now - ago_h * 3600,
+                                                "data": {"sku": sku, "amount": amt, "own_owner": mine, "buyer": "zz",
+                                                         "shop": shop}}
+    ev = [sale(23, "BED", 700, True, "us"), sale(23, "BED", 700, False, "a"), sale(1, "BED", 600, False, "a"),
+          sale(1, "BED", 700, False, "b"), sale(1, "TEA", 7, False, "a")]
+    (r / ".r3/events.jsonl").write_text("".join(json.dumps(x) + "\n" for x in ev))
+    out = brief.section_share24(str(r), now, LOGIN)
+    assert out[0].startswith("[시장 몫 24시간, 3시간 단위]") and "침대 우리 몫" in out[0] and "차 우리 몫" in out[0]
+    assert len(out) == 9
+    assert out[1].endswith("1.4e+03, 700(1건), 50.0% | 50.0%, 0.70 대 0.70, 2곳; 0.0%, - 대 -, 0곳")
+    assert out[8].endswith("1.31e+03, 0(0건), 0.0% | 0.0%, 0.65 대 -, 2곳; 0.0%, 0.70 대 -, 1곳")

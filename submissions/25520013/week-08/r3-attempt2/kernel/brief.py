@@ -1035,6 +1035,62 @@ def section_profit(root, now, login):
     return out
 
 
+SHARE_BLOCK_H = 3  # [시장 몫 24시간]: eight 3 h blocks, so a fall that began before the 6 h windows shows with its start
+SHARE_BLOCKS = 8
+SHARE_TOP = 2  # market categories by revenue shown per block
+
+
+def section_share24(root, now, login):
+    """[시장 몫 24시간]: per SHARE_BLOCK_H hour block, the market's and our revenue and our share, and for the market's
+    SHARE_TOP categories by revenue our share, the market's and our median price/list and how many shops sold them.
+    The 6 h sections cannot show when a change began; this one can. Numbers only."""
+    since = now - SHARE_BLOCK_H * SHARE_BLOCKS * 3600
+    cat = _catalog(root)
+    blk = lambda ts: SHARE_BLOCKS - 1 - int((now - ts) // (SHARE_BLOCK_H * 3600))
+    tot = defaultdict(lambda: [0.0, 0.0, 0])
+    leaf_rev = Counter()
+    per = defaultdict(lambda: defaultdict(lambda: {"m": 0.0, "u": 0.0, "mr": [], "ur": [], "shops": set()}))
+    for e in c.tail_json(os.path.join(root, ".r3/events.jsonl"), 80_000_000, b'"settle"'):
+        if e.get("type") != "settle" or e.get("src") != "market" or (e.get("ts") or 0) < since:
+            continue
+        d = e.get("data") or {}
+        i = blk(e["ts"])
+        if not 0 <= i < SHARE_BLOCKS:
+            continue
+        a = float(d.get("amount") or 0)
+        leaf = _leaf((cat.get(d.get("sku")) or {}).get("category"))
+        lp = _list_price(cat, d.get("sku"))
+        mine = c.settle_side(d, login) == "shop"
+        tot[i][0] += a
+        leaf_rev[leaf] += a
+        x = per[leaf][i]
+        x["m"] += a
+        x["shops"].add(str(d.get("shop")))
+        if lp:
+            x["mr"].append(a / lp)
+        if mine:
+            tot[i][1] += a
+            tot[i][2] += 1
+            x["u"] += a
+            if lp:
+                x["ur"].append(a / lp)
+    if not tot:
+        return ["[시장 몫 24시간] 체결 기록 없음"]
+    top = [k for k, _ in leaf_rev.most_common(SHARE_TOP) if k != "?"]
+    med = lambda v: f"{st.median(v):.2f}" if v else "-"
+    out = [f"[시장 몫 24시간, {SHARE_BLOCK_H}시간 단위] 시작 시각: 시장 매출, 우리 매출(판매 건수), 몫 | "
+           + "; ".join(f"{k} 우리 몫, 판매가/정가 중앙 시장 대 우리, 판 가게 수" for k in top)]
+    for i in range(SHARE_BLOCKS):
+        m, u, n = tot[i]
+        t0 = time.strftime("%H:%M", time.localtime(now - (SHARE_BLOCKS - i) * SHARE_BLOCK_H * 3600))
+        parts = []
+        for k in top:
+            x = per[k][i]
+            parts.append(f"{x['u'] / x['m'] if x['m'] else 0:.1%}, {med(x['mr'])} 대 {med(x['ur'])}, {len(x['shops'])}곳")
+        out.append(f"  {t0}: {c.fmt(m)}, {c.fmt(u)}({n}건), {u / m if m else 0:.1%} | " + "; ".join(parts))
+    return out
+
+
 STARS_H = 6  # [별점]: window
 STARS_LOW = 3  # lowest reviewer accounts shown
 STARS_MIN_N = 3  # reviews an account needs to be listed as low
@@ -1271,6 +1327,7 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_rank(b, b6, login, hours6)
         out += section_shop_goal(b, b6, login, hours6)
         out += section_profit(root, now, login)
+        out += section_share24(root, now, login)
         out += section_versions(root, now)
         out += section_rivals(b, b6, login, hours6)
         out += section_trial(root, now)
