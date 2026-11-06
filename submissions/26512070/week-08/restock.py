@@ -30,6 +30,7 @@ from tools import check  # noqa: E402
 from tools import market_files as mf  # noqa: E402
 from tools.registry import Ctx, call  # noqa: E402
 
+ROUND_END = time.mktime(time.strptime("2026-11-17 23:59", "%Y-%m-%d %H:%M"))   # Round 3 ends (local time, KST)
 REASK_MINUTES = 20
 LEAD = 75                  # plan this many seconds before a window opens at the latest (a model turn takes ~40 s)
 WINDOW_MINUTES = 3
@@ -87,8 +88,13 @@ def build_buy_list(ctx, now=None):
         c = cat.get(sku) or {}
         if mf.on_hold(ctx, sku, cat):
             return False
+        left_h = (ROUND_END - ctx.now()) / 3600
+        # user 11/6 10:4x (meta answer to Q2): food that spoils before the end is lost at cost, food still in date
+        # counts at cost (patch 3.3) - on the last day buy only food that outlasts the round
+        outlasts = left_h > 24 or (c.get("shelf_hours") or 0) > left_h
         return c.get("kind") == "goods" or (lim.get("food_share_max", 0) > 0 and c.get("kind") == "food"
-                                            and (c.get("shelf_hours") or 0) >= pb["food_min_shelf_hours"])
+                                            and (c.get("shelf_hours") or 0) >= pb["food_min_shelf_hours"]
+                                            and outlasts)
     for x in (missed["result"].get("skus") or []) if missed["ok"] else []:
         if keeps(x["sku"]):
             want[x["sku"]] = want.get(x["sku"], 0) + x.get("asked", 0)
