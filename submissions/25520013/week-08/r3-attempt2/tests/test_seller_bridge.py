@@ -1085,3 +1085,32 @@ def test_unstated_need_drops_food_under_half_shelf(tmp_path):
     ]  # 59.6 h < 84 h (half of 168) is dropped
     units, _ = sb.candidate_units(str(m), "포기김치 10kg please, it must last 24 hours")
     assert len(units) == 3  # a stated need wins: 59.6 h covers 24 h
+
+
+def test_deal_end_metric_on_idle_and_cancel(tmp_path, hdir):
+    w = _w(tmp_path)
+    now = [1000.0]
+    ag = RecAgent(
+        w,
+        [
+            {"action": "offer", "unit": "u1", "ask": 300},
+            {"action": "counter", "price": 280},
+            {"action": "offer", "unit": "u2", "ask": 310},
+        ],
+        hdir,
+    )
+    metrics = []
+    b = make_bridge(w, ag, metrics=metrics, clock=lambda: now[0])
+    talk(b, "t1", "Oak Bed")
+    talk(b, "t1", "I offer 200")
+    now[0] += sb.HOLD_S + 1
+    talk(b, "t2", "Oak Bed")
+    ends = [o for d, o in metrics if d == "a2_deal_end"]
+    assert len(ends) == 1 and ends[0]["why"] == "idle"
+    assert ends[0]["ask0"] == 300 and ends[0]["ask"] == 280 and ends[0]["last_offer"] == 200 and ends[0]["rounds"] == 1
+    sb._BRIDGE = b
+    sb.cancel("t2")
+    ends = [o for d, o in metrics if d == "a2_deal_end"]
+    assert len(ends) == 2 and ends[1]["why"] == "cancel" and ends[1]["ask0"] == 310 and ends[1]["last_offer"] is None
+    sb.cancel("t2")  # already gone: no second row
+    assert len([1 for d, _ in metrics if d == "a2_deal_end"]) == 2

@@ -303,3 +303,38 @@ def test_reflect_due_section_counts_repeats_and_new_decisions():
     assert out[0].startswith("[지난 반성]")
     assert "seller 판 4: 마지막" in out[1] and "2번" in out[1] and "새 seller 결정 1건" in out[1]
     assert brief.section_reflections("/nonexistent", now, [])[0].endswith("기록 없음")
+
+
+def test_rivals_rates_from_two_snapshots_and_ours_appended():
+    mk = lambda name, all_, rev, deals, book, **kw: dict(name=name, all=all_, revenue=rev, deals=deals, book=book, **kw)
+    b6 = {"shops": [mk("A", 0.9, 0, 0, 0), mk("B", 0.8, 0, 0, 0), mk("ours", 0.5, 0, 0, 0, owner=LOGIN)]}
+    b = {"shops": [mk("A", 0.95, 600e6, 600, 60e6), mk("B", 0.85, 120e6, 600, 12e6),
+                   mk("ours", 0.6, 60e6, 300, 6e6, owner=LOGIN, stock_units=10, stars=4.5)]}
+    out = brief.section_rivals(b, b6, LOGIN, 6.0)
+    assert "우리 가게 all 순위 3/3" in out[0]
+    a = next(l for l in out if common.hid("A") in l)
+    assert "매출 100.0M/h" in a and "거래 100/h" in a and "거래당 매출 1.0M" in a and "book 10.0M/h" in a
+    assert out[-1].startswith("  우리:") and "거래당 매출 200000" not in out[-1] and "거래 50/h" in out[-1]
+    assert brief.section_rivals(b, {}, LOGIN, 0)[0].startswith("[상위 가게] 순위표 비교 불가")
+
+
+def test_negotiation_section_counts_ends_and_compares_with_market(tmp_path):
+    r = tmp_path / "neg"
+    for d in (".market", ".r3"):
+        (r / d).mkdir(parents=True)
+    (r / ".market/catalog.json").write_text(json.dumps({"BED1": {"category": "가구>침대", "list_price": 1000}}))
+    now = NOW
+    m = [{"hook": "seller", "decision": "open", "ts": now - 100 - i, "outcome": {"sku": "BED1", "ask": 800}} for i in range(5)]
+    m += [{"hook": "seller", "decision": "accept", "ts": now - 50, "outcome": {"sku": "BED1", "price": 700}}]
+    m += [{"hook": "seller", "decision": "a2_deal_end", "ts": now - 40, "outcome": {"sku": "BED1", "why": "cancel", "ask0": 800, "rounds": 0}},
+          {"hook": "seller", "decision": "a2_deal_end", "ts": now - 30, "outcome": {"sku": "BED1", "why": "idle", "ask0": 800, "last_offer": 500, "rounds": 2}}]
+    m += [{"hook": "seller", "decision": "open", "ts": now - 9 * 3600, "outcome": {"sku": "BED1", "ask": 900}}]  # outside window
+    ev = [{"type": "settle", "src": "market", "ts": now - 60, "data": {"sku": "BED1", "amount": a, "own_owner": False}} for a in (600, 650, 700)]
+    ev += [{"type": "settle", "src": "market", "ts": now - 50, "data": {"sku": "BED1", "amount": 700, "own_owner": True, "buyer": "x"}}]
+    (r / ".r3/metrics.jsonl").write_text("".join(json.dumps(x) + "\n" for x in m))
+    (r / ".r3/events.jsonl").write_text("".join(json.dumps(x) + "\n" for x in ev))
+    out = brief.section_negotiation(str(r), now, LOGIN)
+    assert "침대: 제시 5, 판매 1, 우리 거절 0, 구매자가 닫음 1, 응답 없음 1, 기록 없음 2" in out[1]
+    assert "첫 제시 뒤 바로 끝남 1" in out[1] and "우리 첫 제시가/정가 중앙 0.80" in out[1] and "구매자 마지막 제안/정가 중앙 0.50" in out[1]
+    assert "BED1: 제시 5, 우리 첫 제시가/정가 0.80, 우리 판매가/정가 0.70 (n 1), 시장 체결가/정가 0.68 (시장 체결 4, 우리 1)" in out[2]
+    assert brief.section_negotiation(str(tmp_path / "none"), now, LOGIN)[0].endswith("제시 기록 없음")

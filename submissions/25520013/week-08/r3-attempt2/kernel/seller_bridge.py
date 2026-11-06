@@ -244,6 +244,26 @@ class Bridge:
             d["unit"].get("unit") for d in self.deals.values()
         }
 
+    def end(self, task_id, deal, why):
+        """One a2_deal_end metric for a deal that ended without accept or our reject: why is "cancel" (the buyer
+        closed the task) or "idle" (no message for HOLD_S). Carries the SKU, our first and last ask, the buyer's last
+        offer and the rounds, so the briefing can show where buyers leave."""
+        u = deal.get("unit") or {}
+        offers = deal.get("offers") or []
+        self._metric(
+            "a2_deal_end",
+            dict(
+                (deal.get("trial") or {}).get("tag") or {},
+                sku=u.get("sku"),
+                why=why,
+                ask0=deal.get("ask0", deal.get("ask")),
+                ask=deal.get("ask"),
+                last_offer=offers[-1] if offers else None,
+                rounds=deal.get("rounds", 0),
+            ),
+            pol=deal.get("pol"),
+        )
+
     async def _decide(self, kind, situation, ctx):
         return await asyncio.to_thread(self.agent().decide, kind, situation, ctx)
 
@@ -259,7 +279,7 @@ class Bridge:
         for tid in [
             k for k, d in self.deals.items() if now - d["t"] > HOLD_S and k != task_id
         ]:
-            del self.deals[tid]
+            self.end(tid, self.deals.pop(tid), "idle")
         deal = self.deals.get(task_id)
         if deal is None:
             try:
@@ -325,6 +345,7 @@ class Bridge:
             "unit": u,
             "summary": summary,
             "ask": ask,
+            "ask0": ask,
             "rounds": 0,
             "t": self.clock(),
             "offers": [],
@@ -445,7 +466,9 @@ class Bridge:
 def cancel(task_id):
     """The buyer left (A2A CancelTask): free the unit an attempt-2 deal held."""
     if _BRIDGE is not None:
-        _BRIDGE.deals.pop(task_id, None)
+        deal = _BRIDGE.deals.pop(task_id, None)
+        if deal is not None:
+            _BRIDGE.end(task_id, deal, "cancel")
 
 
 def bridge(root, market_dir, **helpers):

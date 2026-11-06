@@ -888,6 +888,116 @@ def _seller_compare(prev, cur):
     return out
 
 
+RIVALS_TOP = 5  # [상위 가게]: the top shops by shop all, plus ours
+NEGOTIATION_H = 6  # [협상 결과]: window
+NEGOTIATION_TOP = 4  # categories with the most offers
+NEGOTIATION_SKUS = 2  # SKUs per category, by offers
+
+
+def section_rivals(b, b6, login, hours6):
+    """[상위 가게]: per top shop (by shop all) and ours, the rate of revenue, deals and book over the last snapshot
+    gap (about 6 h) and revenue per deal in it. Other shops by hashed name. Numbers only."""
+    shops = [s for s in b.get("shops") or [] if isinstance(s.get("all"), (int, float))]
+    me = next((s for s in shops if c.is_mine(s, login)), None)
+    if not shops or not hours6:
+        return ["[상위 가게] 순위표 비교 불가 (스냅샷 부족)"]
+    old = {s.get("name"): s for s in (b6 or {}).get("shops") or []}
+    rank = sorted(shops, key=lambda s: -s["all"])
+    rows = rank[:RIVALS_TOP] + ([me] if me is not None and me not in rank[:RIVALS_TOP] else [])
+    out = [f"[상위 가게 {hours6:.0f}시간] 가게 all 순서, 각 값은 이 구간의 시간당 증가 (우리 가게 all 순위 "
+           f"{rank.index(me) + 1 if me in rank else '-'}/{len(rank)})"]
+    for s in rows:
+        o = old.get(s.get("name"))
+        who = "우리" if s is me else c.hid(s.get("name"))
+        if not o:
+            out.append(f"  {who}: all {s['all']:.3f}, {hours6:.0f}시간 전 기록 없음")
+            continue
+        d = lambda k: ((s.get(k) or 0) - (o.get(k) or 0))
+        deals = d("deals")
+        out.append(
+            f"  {who}: all {s['all']:.3f}, 매출 {c.fmt(d('revenue') / hours6)}/h, 거래 {deals / hours6:.0f}/h, "
+            f"거래당 매출 {c.fmt(d('revenue') / deals) if deals > 0 else '-'}, book {c.fmt(d('book') / hours6)}/h, "
+            f"재고 {s.get('stock_units', '-')}개, 별점 {s.get('stars', '-')}"
+        )
+    return out
+
+
+def section_negotiation(root, now, login):
+    """[협상 결과]: per category with the most offers in the last NEGOTIATION_H hours, how our offers ended (sold,
+    our reject, buyer left, idle, no record) and, for the ends without a sale, the rounds and our asks against list;
+    then per top SKU our first ask, our sale price and the market's settle price (all shops) against list, and our
+    share of that SKU's settles. Rows before a2_deal_end existed count as no record."""
+    since = now - NEGOTIATION_H * 3600
+    cat = _catalog(root)
+    per = defaultdict(lambda: {"open": 0, "accept": 0, "reject": 0, "cancel": 0, "idle": 0, "r0": 0, "ask0": [], "last": []})
+    sku = defaultdict(lambda: {"open": 0, "ask0": [], "sold": []})
+    for m in c.tail_json(os.path.join(root, ".r3/metrics.jsonl"), 60_000_000, b'"seller"'):
+        if m.get("hook") != "seller" or (m.get("ts") or 0) < since:
+            continue
+        o = m.get("outcome")
+        if isinstance(o, str):
+            try:
+                o = json.loads(o)
+            except ValueError:
+                continue
+        if not isinstance(o, dict) or not o.get("sku"):
+            continue
+        leaf = _leaf((cat.get(o["sku"]) or {}).get("category"))
+        lp = _list_price(cat, o["sku"])
+        d, a = m.get("decision"), per[leaf]
+        if d == "open":
+            a["open"] += 1
+            sku[o["sku"]]["open"] += 1
+            if lp and isinstance(o.get("ask"), (int, float)):
+                sku[o["sku"]]["ask0"].append(o["ask"] / lp)
+        elif d == "accept":
+            a["accept"] += 1
+            if lp and isinstance(o.get("price"), (int, float)):
+                sku[o["sku"]]["sold"].append(o["price"] / lp)
+        elif d == "reject":
+            a["reject"] += 1
+        elif d == "a2_deal_end" and o.get("why") in ("cancel", "idle"):
+            a[o["why"]] += 1
+            a["r0"] += 1 if not o.get("rounds") else 0
+            if lp and isinstance(o.get("ask0"), (int, float)):
+                a["ask0"].append(o["ask0"] / lp)
+            if lp and isinstance(o.get("last_offer"), (int, float)):
+                a["last"].append(o["last_offer"] / lp)
+    top = sorted((k for k in per if per[k]["open"]), key=lambda k: -per[k]["open"])[:NEGOTIATION_TOP]
+    if not top:
+        return [f"[협상 결과 {NEGOTIATION_H}시간] 제시 기록 없음"]
+    mk = defaultdict(lambda: {"all": [], "ours": 0, "n": 0})
+    for e in market_settles(root, since):
+        dd = e.get("data") or {}
+        lp = _list_price(cat, dd.get("sku"))
+        if dd.get("sku") in sku and lp and isinstance(dd.get("amount"), (int, float)):
+            x = mk[dd["sku"]]
+            x["all"].append(dd["amount"] / lp)
+            x["n"] += 1
+            x["ours"] += 1 if c.settle_side(dd, login) == "shop" else 0
+    med = lambda v: f"{st.median(v):.2f}" if v else "-"
+    out = [f"[협상 결과 {NEGOTIATION_H}시간] 상품군별 우리 제시의 끝 (판매, 우리 거절, 구매자가 닫음, 응답 없음, 기록 없음). "
+           "기록 없음은 끝 기록(a2_deal_end)이 생기기 전 것이거나 시도 1이 맡은 것"]
+    for leaf in top:
+        a = per[leaf]
+        ended = a["cancel"] + a["idle"]
+        rest = a["open"] - a["accept"] - a["reject"] - ended
+        line = (f"  {leaf}: 제시 {a['open']}, 판매 {a['accept']}, 우리 거절 {a['reject']}, 구매자가 닫음 {a['cancel']}, "
+                f"응답 없음 {a['idle']}, 기록 없음 {max(0, rest)}")
+        if ended:
+            line += (f" | 판매 없이 끝난 {ended}건 중 첫 제시 뒤 바로 끝남 {a['r0']}, 우리 첫 제시가/정가 중앙 {med(a['ask0'])}, "
+                     f"구매자 마지막 제안/정가 중앙 {med(a['last'])}")
+        out.append(line)
+        skus = sorted((k for k in sku if _leaf((cat.get(k) or {}).get("category")) == leaf), key=lambda k: -sku[k]["open"])
+        for k in skus[:NEGOTIATION_SKUS]:
+            x, y = sku[k], mk.get(k, {"all": [], "ours": 0, "n": 0})
+            out.append(
+                f"    {k}: 제시 {x['open']}, 우리 첫 제시가/정가 {med(x['ask0'])}, 우리 판매가/정가 {med(x['sold'])} (n {len(x['sold'])}), "
+                f"시장 체결가/정가 {med(y['all'])} (시장 체결 {y['n']}, 우리 {y['ours']})"
+            )
+    return out
+
+
 REFLECT_LOOKBACK_H = 6
 
 
@@ -998,9 +1108,11 @@ def build(root=None, now=None, last_brief_ts=None):
         out += section_time(now, bts)
         out += section_rank(b, b6, login, hours6)
         out += section_versions(root, now)
+        out += section_rivals(b, b6, login, hours6)
         out += section_trial(root, now)
         out += section_reflections(root, now)
         out += section_categories(root, now, login)
+        out += section_negotiation(root, now, login)
         out += section_calls(root, now)
         out += section_side(
             b.get("shops") or [],
