@@ -38,7 +38,8 @@ NEAR_EXPIRY = [(0.20, 0.80), (0.45, 0.90)]  # (shelf life left below this share,
 # ddolcom: goods break within 6 h of a sale, so 24 h covers every break. 87600 (10 years) failed the market's
 # claim_and_warranty_well_formed check: 9 goods deals agreed on 2026-11-03 never settled; 24 h is the most any
 # settle in the ledger carried, and a buyer policy asking for up to 24 h still pays
-WARRANTY_HOURS = 24
+# 2026-11-06: 72 h, as most top shops now settle with. 533 breaks in 5.66 h of ledger all came within 5.97 h, so it costs nothing
+WARRANTY_HOURS = 72
 # ddolcom: every goods unit carries the warranty at no extra charge. The +20% premium with a 'no warranty' opt-out
 # is gone (2026-11-03): no top-8 shop charges for a warranty, and they saw only 1-2 breaks each in Round 3
 # no digits in this line: a buyer took the "20" of an earlier "+20%" for our first ask
