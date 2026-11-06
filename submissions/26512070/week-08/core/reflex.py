@@ -80,6 +80,8 @@ def read_payments(market_dir, now=None):
         else:
             s["unpaid"] += 1
             s["last_refusal"] = {"ts": now or time.time(), "order": p.get("order"), "reason": p.get("reason")}
+            if "is not in stock" in str(p.get("reason")) and p.get("item"):
+                s.setdefault("stock_refused", {})[p["item"]] = now or time.time()
     r["payments_offset"] = r.get("payments_offset", 0) + done
     r["updated"] = now or time.time()
     atomic.write_json(path(), r)
@@ -89,6 +91,18 @@ def read_payments(market_dir, now=None):
 def blocked():
     """{shop name: why} for every blocked shop."""
     return {n: s["blocked"] for n, s in load()["shops"].items() if s.get("blocked")}
+
+
+STOCK_RETRY = 2 * 3600   # a SKU a shop agreed on but could not ship is not asked of that shop again for this long
+
+
+def stock_refused(now=None):
+    """{(shop name, sku)} the shop agreed on and then had no unit for at checkout (11/6 20:xx: 52-61% of agreed
+    deals unpaid, one unit refused 59 times - psyoung82 and others keep offering a unit they sold; the pay rate
+    over all history still let them through)."""
+    now = now or time.time()
+    return {(n, k) for n, s in load()["shops"].items() for k, t in (s.get("stock_refused") or {}).items()
+            if now - t < STOCK_RETRY}
 
 
 UNSIGNED_RETRY = 3600     # a skipped shop is tried again after this long (it may have fixed its signing)

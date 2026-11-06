@@ -192,8 +192,10 @@ class BuyerCore:
         if self.rules() and self.playbook()["skip_unsigned"]:
             blocked = {**{n: "unsigned receipts" for n in reflex.unsigned(ctx.now())}, **blocked}
         shops = {}
+        no_unit = reflex.stock_refused(ctx.now())
         for s in self.shops_in:
-            skus = [x["sku"] for x in s.get("offers") or [] if x.get("qty") and (not acceptable or x["sku"] in acceptable)]
+            skus = [x["sku"] for x in s.get("offers") or [] if x.get("qty") and (not acceptable or x["sku"] in acceptable)
+                    and (s["name"], x["sku"]) not in no_unit]
             if skus and s["name"] not in blocked:
                 shops[s["name"]] = dict(s, skus=skus)
         if not shops:
