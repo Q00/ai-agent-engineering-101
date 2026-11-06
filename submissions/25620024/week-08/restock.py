@@ -89,12 +89,13 @@ def pace(c, inv, now=None):
     cover = stock / cogs if cogs else float("inf")
     st = load(PACE.parent, PACE.name, {})
     was = bool(st.get("calm"))
-    if cover > PACE_OVER_H:
-        st["over_since"] = st.get("over_since") or now
-        if now - st["over_since"] >= PACE_HOLD_S:
-            st["calm"] = True
-    elif cover <= PACE_OK_H and (inv.get("balance") or 0) >= PACE_CASH_OK:
-        st["over_since"], st["calm"] = None, False            # aggressive again only with the cash back (17:05)
+    # Round 3 patch 3.4 (11-06): the shop score is Book = balance - start - aid + cost of unsold stock, so stock bought
+    # is no longer a loss on the board; only cash can hurt (bankruptcy). Calm now means cash under PACE_CASH_OK only.
+    # The cover rule had held the shop calm since 11-05 on 64.7M of slow stock while 252M sat idle (11-07).
+    if (inv.get("balance") or 0) < PACE_CASH_OK:
+        st["over_since"], st["calm"] = st.get("over_since") or now, True
+    else:
+        st["over_since"], st["calm"] = None, False
     st.update(cover_h=round(cover, 2) if cover != float("inf") else None, stock_cost=round(stock),
               cogs_1h=round(cogs), at=time.strftime("%m-%d %H:%M"))
     if bool(st.get("calm")) != was:
@@ -264,7 +265,11 @@ def plan(md, c, t, now=None):
     except Exception as e:
         why.append(f"scm plan not read: {type(e).__name__}")
     cash = min(cash, general)                                 # the rest of the run keeps the general cap
-    if mk.get("mode") == "focus":                             # marketing: only regulars and its picks for now
+    try:                                                      # 11-07: a focus plan from 11-04 15:52 had cut the
+        fresh = time.time() - promo.PLAN.stat().st_mtime < 3 * 3600   # demand step for 3 days (model teams in usage
+    except (OSError, AttributeError, NameError):              # cooldown never rewrote it); share 0.7% -> 0.2%
+        fresh = False
+    if mk.get("mode") == "focus" and fresh:                   # marketing: only regulars and its picks for now
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"], cash, \
             {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
     for sku, rate in sorted(by_sku.items(), key=lambda kv: -kv[1]):   # 2. demand
