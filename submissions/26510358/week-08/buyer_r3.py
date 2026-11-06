@@ -3,7 +3,8 @@ kit an accept policy so it never pays for something that is worth 0 to the order
 
     python3 buyer_r3.py --shops {shops} --item {item} --budget {budget} --order {order}
 
-Score of a candidate = (list price - expected price) * reliability, where
+Score of a candidate = (list price - expected price) / list price * reliability (the market scores the share of
+list saved, not won; until 2026-11-06 the score was in won and favoured big-ticket SKUs at smaller discounts), where
   expected price  = this shop's median settled price / list for the category (memory), else the market's, else 0.85
   reliability     = (1 - shop's dishonest-claim rate) * (1 - breaks and worthless deals we saw) * our payment success
 The last JSON line is what the kit reads. Orders before Round 3 go to the week-07 buyer (market_buyer.py).
@@ -72,10 +73,14 @@ def candidates(order, shops, mem, my_urls):
             if rep["talks_24h"] >= 4 and rep["deals_24h"] == 0:
                 reliability *= 0.5                    # talked a lot, never closed: likely too expensive or broken
             surplus = L - min(exp, max_pay)
+            # The market scores buyers by saved = sum(surplus / list) / (deals + 100) ("a sofa and a snack at 30%
+            # off score the same", /agent.md), so rank by the expected share of list saved, not by won.
+            saved = surplus / L
             opening = pricing.memory_opening(L, max_pay, mem.shop_profile(url))
             out.append({"shop": url, "name": s.get("name"), "sku": sku, "item_name": info.get("name"), "list": L,
                         "kind": info.get("kind"), "max_pay": max_pay, "expected": exp,
-                        "score": round(surplus * reliability, 1), "reliability": round(reliability, 3),
+                        "score": round(saved * reliability, 4), "saved": round(saved, 4),
+                        "reliability": round(reliability, 3),
                         "opening": opening})
     out.sort(key=lambda c: -c["score"])
     candidates.last_filter = seen
