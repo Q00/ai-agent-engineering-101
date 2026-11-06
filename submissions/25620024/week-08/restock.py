@@ -229,6 +229,8 @@ def plan(md, c, t, now=None):
         if reason != "HQ order" and surge(sku) >= 0.05:
             qty = max(1, qty // 2)
         qty = min(qty, t["max_qty"] - buy.get(sku, 0))
+        if reason != "HQ order":                              # 11-07 furniture opened (max_list 4M): one line holds
+            qty = min(qty, max(1, int(t.get("max_line_value", 8e6) // (r["list_price"] * t["cost_guess"]))))  # <= 8M
         cost = r["list_price"] * t["cost_guess"] * qty
         if qty <= 0 or cost > cash or len(buy) >= t.get("max_skus", 17) and sku not in buy:   # 10 -> 17: a 3-min window fits ~18
                                                                                          # supply calls 10 s apart (week 09)
@@ -284,7 +286,9 @@ def plan(md, c, t, now=None):
     if mk.get("mode") == "focus" and fresh:                   # marketing: only regulars and its picks for now
         return [{"sku": k, "qty": v} for k, v in buy.items()], why + ["marketing focus mode"], cash, \
             {"window": wid, "spent": spent + sum(cat[k]["list_price"] * t["cost_guess"] * v for k, v in buy.items())}
-    for sku, rate in sorted(by_sku.items(), key=lambda kv: -kv[1]):   # 2. demand
+    # 2. demand, by market revenue per hour (rate x list): 85% of market revenue is goods listed 500k+ (11-07: 14.5B
+    # of 17.0B in 24 h, our share 0.03%), so with max_skus lines per window the dear SKUs go first
+    for sku, rate in sorted(by_sku.items(), key=lambda kv: -kv[1] * (cat.get(kv[0]) or {}).get("list_price", 0)):
         r = cat.get(sku)
         if not r:
             continue

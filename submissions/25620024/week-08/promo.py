@@ -163,6 +163,9 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             arm, price, why = o["price_share"], lp * o["price_share"], why + [f"experiment price_share {o['price_share']}"]
         if "undercut" in o:
             follow = o["undercut"]
+    if follow is None and lp >= t.get("big_follow_list", 500000):
+        follow = t.get("big_follow", 0.02)    # 11-07: furniture sells at ~0.70-0.74 of list market-wide; our arms (0.80+)
+                                              # would never sell the dear SKUs restock now buys -- follow their median
     if follow is not None:
         follow = min(follow, t.get("max_undercut", 0.05))      # finance caps how far under the median we go
     median = None
