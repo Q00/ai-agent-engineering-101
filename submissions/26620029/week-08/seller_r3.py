@@ -69,7 +69,10 @@ TRIAL_DEAR_SHARE = 0.78
 # ddolcom (trial from 2026-11-06 22:30): at 1,000,000 or more half of the opens start at 73% (arm low2), half at 78% (arm low). Most
 # buyers leave before any offer (G8ec51935: 136 opens, 28 offers) and the market settles near 70%. Judge at 50 opens each by
 # conversion x (avg paid - cost); 73% needs about 1.46 times the conversion if the paid price falls as much as the ask
+# Ended 2026-11-07 01:23: 73% had 8 deals of 91 opens at 0.687, 78% had 12 of 106 at 0.694, so about 0.83% against 1.14% of list per
+# open at a cost of 0.593. The sample is small, but lower asks did not sell more. TRIAL2_RATE 0 keeps every open at 78%
 TRIAL2_SHARE = 0.73
+TRIAL2_RATE = 0.0
 # ddolcom (2026-11-06, the user's instruction): one clearance only, at cost or a little above, to free the cash. These 6
 # units had sat 13-40 h and are the ones the forum post 22459 names. New units never join by age: a rule on age alone also
 # priced well-selling, cheaply drawn units near cost. Any further clearance is the user's decision after looking at this one
@@ -125,7 +128,7 @@ def trial_arm(u):
     same margin per open and 2.3 times the revenue; under that 45 of 106 against 35 of 119, more margin and revenue."""
     if is_dead(u):
         return "dead"
-    if u.get("list_price", 0) >= TRIAL_DEAR_MIN and random.random() < 0.5:
+    if u.get("list_price", 0) >= TRIAL_DEAR_MIN and random.random() < TRIAL2_RATE:
         return "low2"
     return "low" if u.get("list_price", 0) >= TRIAL_MIN else None
 
