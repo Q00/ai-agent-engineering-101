@@ -1,0 +1,22 @@
+request: a small bedside table in pale wood
+budget: 200
+
+[buyer] shopping for a small bedside table in pale wood, budget 200, at http://127.0.0.1:51773
+[buyer] card: 'Kiro Furniture' via JSONRPC http://127.0.0.1:51773/
+[buyer] skills: ['negotiate']
+[buyer] -> 'I want to buy a a small bedside table in pale wood'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | The Rustic Oak Nightstand is 179
+[buyer] ask 179 budget 200 round 1: harness '140' -> 140
+[buyer] -> '140' taskId=8ab026df
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 140. The Rustic Oak Nightstand is 163
+[buyer] ask 163 budget 200 round 2: harness '150' -> 150
+[buyer] -> '150' taskId=8ab026df
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 150. The Rustic Oak Nightstand is 156
+[buyer] ask 156 budget 200 round 3: harness '153' -> 153
+[buyer] -> '153' taskId=8ab026df
+[buyer] <- TASK_STATE_INPUT_REQUIRED | I can do better than 153. The Rustic Oak Nightstand is 154
+[buyer] last round and 154 fits 200; taking it
+[buyer] -> '154' taskId=8ab026df
+[buyer] <- TASK_STATE_COMPLETED | Deal: Rustic Oak Nightstand at 154.
+[buyer] bought a small bedside table in pale wood at 154.0
+[harness] 3 call(s), 0 failed, 12s total
