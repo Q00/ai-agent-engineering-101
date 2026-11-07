@@ -88,6 +88,17 @@ class Supervisor:
         if handle:handle.close()
         self.children.pop(role,None);self._persist()
 
+    def replace_role(self,role,health_check,timeout=15):
+        """Drain and replace exactly one role, reverting on failed health proof."""
+        if role not in self.commands:raise ValueError('unknown role')
+        self.control.checkpoint(role,{'command_version':'supervisor-v1'},
+            {'reason':'pre_replace','pid':self.children.get(role,(None,None))[0].pid if role in self.children else None})
+        self.stop_role(role,timeout);candidate=self.start_role(role)
+        healthy=bool(health_check(candidate.pid))
+        self.emit(role,'canary_health_passed' if healthy else 'canary_health_failed',pid=candidate.pid)
+        if not healthy:self.stop_role(role,timeout)
+        return healthy
+
     def run(self):
         lock=(self.dir/'supervisor.lock').open('a')
         try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)

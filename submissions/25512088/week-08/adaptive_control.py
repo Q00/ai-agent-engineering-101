@@ -29,6 +29,14 @@ MUTATION_EDGES = {
     "PRESERVED": {"RECONCILING"},
 }
 
+DEPLOYMENT_EDGES = {
+    "DRAFT": {"VALIDATED", "QUARANTINED"},
+    "VALIDATED": {"SHADOW", "QUARANTINED"},
+    "SHADOW": {"CANARY", "QUARANTINED"},
+    "CANARY": {"ACTIVE", "ROLLED_BACK"},
+    "ACTIVE": {"ROLLED_BACK"},
+}
+
 
 def _safe(value, key=""):
     """Return log-safe JSON data; raw external instructions never enter here."""
@@ -98,6 +106,14 @@ class Control:
         CREATE TABLE IF NOT EXISTS forum_publications(
           id INTEGER PRIMARY KEY, publication_id TEXT UNIQUE, role TEXT, ts REAL,
           normalized_hash TEXT, tokens TEXT, refs TEXT, status TEXT, reason TEXT);
+        CREATE TABLE IF NOT EXISTS deployments(
+          deployment_id TEXT PRIMARY KEY, candidate_commit TEXT, role TEXT,
+          state TEXT, live_impact INTEGER, rollback_target TEXT, created REAL,
+          updated REAL, parameter_hash TEXT, body TEXT);
+        CREATE TABLE IF NOT EXISTS validation_runs(
+          id INTEGER PRIMARY KEY, validation_id TEXT UNIQUE, deployment_id TEXT,
+          check_name TEXT, started REAL, finished REAL, exit_code INTEGER,
+          timed_out INTEGER, evidence TEXT);
         CREATE TRIGGER IF NOT EXISTS runtime_events_no_update
           BEFORE UPDATE ON runtime_events BEGIN SELECT RAISE(ABORT,'append-only'); END;
         CREATE TRIGGER IF NOT EXISTS runtime_events_no_delete
@@ -247,6 +263,41 @@ class Control:
         self.event(role,'forum_publication_'+status.lower(),{
             'publication_id':publication_id,'refs_count':len(refs),'reason':reason},publication_id)
         return reason is None,publication_id,reason
+
+    def create_deployment(self,candidate_commit,role,parameters=None,rollback_target=None):
+        if role not in {'buyer','shop'}:raise ValueError('role must be buyer or shop')
+        deployment_id=str(uuid.uuid4());now=time.time()
+        params=json.dumps(_safe(parameters or {}),sort_keys=True,separators=(',',':'))
+        with self.db:
+            self.db.execute('INSERT INTO deployments VALUES(?,?,?,?,?,?,?,?,?,?)',(
+                deployment_id,str(candidate_commit)[:64],role,'DRAFT',0,rollback_target,
+                now,now,hashlib.sha256(params.encode()).hexdigest(),params))
+        self.transition('deployment',deployment_id,None,'DRAFT','candidate_created',{
+            'deployment_id':deployment_id,'live_impact':False,'rollback_target':rollback_target})
+        return deployment_id
+
+    def deployment_state(self,deployment_id):
+        row=self.db.execute('SELECT state FROM deployments WHERE deployment_id=?',(deployment_id,)).fetchone()
+        return row[0] if row else None
+
+    def move_deployment(self,deployment_id,new,reason,body=None):
+        old=self.deployment_state(deployment_id)
+        if new not in DEPLOYMENT_EDGES.get(old,set()):
+            raise ValueError(f'illegal deployment transition {old}->{new}')
+        live=old in {'CANARY','ACTIVE'} or new in {'CANARY','ACTIVE','ROLLED_BACK'}
+        payload={'deployment_id':deployment_id,'live_impact':live,**(body or {})}
+        with self.db:
+            self.db.execute('UPDATE deployments SET state=?,live_impact=?,updated=?,body=? WHERE deployment_id=?',(
+                new,int(live),time.time(),json.dumps(_safe(payload),ensure_ascii=False),deployment_id))
+        self.transition('deployment',deployment_id,old,new,reason,payload)
+
+    def validation(self,deployment_id,check_name,started,finished,exit_code,timed_out=False,evidence=None):
+        validation_id=str(uuid.uuid4())
+        with self.db:
+            self.db.execute('INSERT INTO validation_runs VALUES(?,?,?,?,?,?,?,?,?)',(
+                None,validation_id,deployment_id,check_name,started,finished,int(exit_code),
+                int(timed_out),json.dumps(_safe(evidence or {}),ensure_ascii=False)))
+        return validation_id
 
     def close(self):
         self.db.close()

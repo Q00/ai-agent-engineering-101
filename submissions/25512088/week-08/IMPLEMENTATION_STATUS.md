@@ -9,7 +9,7 @@ This file tracks implementation against `adaptive_pipeline.seed.yaml`.
 - [x] Experiment statistics and promotion lifecycle
 - [x] Forum trust/publication controls
 - [x] Background supervisor start/stop/status/watch
-- [ ] Role drain, checkpoint, canary and rollback
+- [x] Role drain, checkpoint, canary and rollback
 - [ ] Windows start/recovery scripts
 - [ ] Rank milestones, velocity and leader-defense controller
 - [ ] Full Seed acceptance test suite
