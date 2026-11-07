@@ -65,17 +65,21 @@ constraints:
   저하가 상대 2% 이내일 때만 ACTIVE로 승격한다.
 - 실험 단위는 Buyer order_id, Seller 견적 task_id, 조달 SKU×공급창 cohort, 보증 성숙 정산, Forum 게시물이며
   동일 멱등성 키와 재시도는 새 표본으로 세지 않는다.
-- Buyer cluster는 SKU 또는 표본 부족 시 category, Seller·보증·조달 cluster는 SKU, Forum cluster는
-  주제×6시간 구간이며 cluster 동일 가중치를 적용하고 독립 cluster가 5개 미만이면 성공 판정을 금지한다.
+- Buyer cluster granularity는 실험 시작 직전 24시간 baseline에서 고유 주문 5개 이상인 SKU가 5개 이상이면 SKU, 아니면
+  category로 고정하고 실험 중 변경하지 않는다. Seller·보증·조달 cluster는 SKU, Forum cluster는 주제×6시간 구간이며
+  cluster 동일 가중치를 적용하고 독립 cluster가 5개 미만이면 성공 판정을 금지한다.
 - 각 실험은 시작 전에 primary metric을 정확히 하나 선언하고 나머지 지표는 guardrail로 취급한다. 한 번의 배포 결정에서
   2개 이상의 독립 experiment_id를 동시에 채택 판정하는 경우 그 집합을 multiplicity family로 기록하고 family의 primary
   metric p-value에 Holm-Bonferroni 보정을 적용한다. 한 실험 안에는 복수 primary metric을 허용하지 않는다.
 - 효과는 cluster 동일 가중치로 계산한다. Saved·이익·rating·전환율처럼 증가가 좋은 지표는 treatment-control,
   오류율·p95 지연·폐기율·30일 초과 미판매율처럼 감소가 좋은 지표는 control-treatment로 부호를 변환해 양수일 때만 개선으로
   해석한다. %p δ는 절대차, 상대 δ는 대조군 분모의 상대차를 사용하며 분모가 0이거나 표본이 0이면 INSUFFICIENT_DATA다.
-- experiment_id+metric_version 고정 seed, 정렬된 cluster와 10,000회 bootstrap을 사용한다. 양측 97.5% percentile
-  구간은 1.25·98.75 percentile이고 empirical one-sided p는 (1+bootstrap effect≤0 횟수)/10,001로 계산하며
-  seed·정렬·계산 버전을 기록한다.
+- bootstrap_v1 seed는 NFC 정규화한 `experiment_id`, U+001F, `metric_version`의 UTF-8 SHA-256 처음 8바이트를
+  unsigned big-endian uint64로 변환한다. PRNG는 seed를 넣은 PCG64이고 cluster ID UTF-8 byte 순으로 정렬한다.
+  treatment와 control arm에서 관측 cluster 수만큼 각각 독립적으로 복원추출하고 cluster 내부 unit 평균 뒤 cluster 동일 가중
+  arm 평균 차이를 10,000회 계산한다. 양측 97.5% 구간은 Hyndman-Fan type 7 linear interpolation의 1.25·98.75
+  percentile이고 empirical one-sided p는 (1+bootstrap effect≤0 횟수)/10,001이다. seed·PCG64 state version·정렬·계산
+  버전을 기록한다.
 - 한 배포 결정의 multiplicity family에서 m개 experiment primary metric을 동시에 판정할 때 p 오름차순 r번째를
   0.025/(m-r+1)과 비교하는 Holm-Bonferroni step-down을 적용한다. 첫 실패와 그 뒤 순위는 모두 실패이며 family 구성원은
   보정 전 p≤0.025만으로 통과할 수 없다. family 밖 단일 실험만 p≤0.025를 직접 사용한다.
@@ -88,7 +92,9 @@ constraints:
   통과이면 ADOPTED, 하나라도 미달이면 REJECTED다.
   누적 2배 이후 추가 관찰로 판정을 뒤집지 않는다.
 - 최소 표본은 Buyer 신규 주문 50개와 1시간, Seller 가격·상품 실험 유효견적 30건·정산 5건·공급창 2회, 보증 확대 SKU별 무환불
-  성숙정산 5건, Forum 게시물 6개와 6시간이다.
+  성숙정산 5건, Forum 게시물 6개와 6시간이다. 조달은 고유 SKU×공급창 unit 10개, SKU cluster 5개, 공급창 2회,
+  최초 입고 후 12시간을 모두 충족한다. 조달 누적 2배는 처음부터 unit 20개, 동일 또는 추가 SKU cluster 합계 5개 이상,
+  공급창 4회, 24시간을 모두 충족한 시점이며 동일 SKU×공급창 재시도는 새 unit이 아니다.
 - Safety Kernel 위반, 중복거래, 미확정 결제 재시도, 현금바닥 침범은 live_impact=false인 DRAFT·VALIDATED·SHADOW에서는
   즉시 QUARANTINED, live_impact=true인 CANARY·ACTIVE 또는 RUNNING·EXPANDING·ADOPTED에서는 즉시 ROLLED_BACK 처리한다.
 - 회당 파라미터 변경은 ±10%, 확률/logit 변경은 회당 ±0.05이고 최종 범위는 0.05~0.95이며 동일 파라미터는 이전 실험 종료 전
@@ -197,6 +203,13 @@ constraints:
   30분 동안 다음 마일스톤 격차가 감소하지 않거나 예상 도달시각이 기한 뒤면 검증된 후보 중 예상 점수효과/비용이 가장 높은 역할의
   실험·배포 우선순위를 올리고 성공한 확대 단계마다 hard envelope 안에서 자본 노출 상한을 최대 10%p씩 높인다. 역할별 primary
   실험은 동시에 하나만 허용하고 표본·통계·Safety 기준은 완화하지 않는다.
+- rank_controller_v1의 W시간 점수 속도는 window 끝의 최신 score와 시작 경계 이후 최초 score 차이를 실제 경과시간 hours로
+  나눈 값이며 30분 창은 최소 24분, 2시간 창은 최소 96분 coverage가 없으면 INSUFFICIENT_DATA다. 목표 rank cutoff의 gap은
+  `max(0, cutoff_score-our_score+1e-12)`, closing_rate는 `our_rate-cutoff_rate`이고 closing_rate≤0 또는 coverage 부족이면
+  ETA는 infinity, 아니면 observed_at+gap/closing_rate hours다.
+- 후보의 예상 점수효과/비용은 최근 24시간 내 완료된 동일 역할 experiment의 official score formula로 변환한 primary effect
+  97.5% CI 하한을 `max(1, incremental cash spent+fees+incremental inventory cost)` 원으로 나눈 값이다. 분자 증거가 없으면
+  INSUFFICIENT_DATA로 최하위, 동률이면 CI 하한 내림차순, 비용 오름차순, experiment_id UTF-8 byte 오름차순으로 결정한다.
 - 공식 board에서 60초 이상 연속 3회 단독 1위가 확인되면 leader_baseline에 ACTIVE commit·parameter set·ADOPTED
   전략·재고정책·financial snapshot을 checkpoint하고 ATTACK에서 DEFEND로 영구 전환한다. 이후 일반 공격 모드로 복귀하지 않는다.
 - DEFEND에서는 기존 ADOPTED 전략과 정상 거래·조달을 유지하고 새 상품군·새 보증 단계·leader_baseline 대비 10% 초과 가격 변경·비검증 Forum 성장 실험을
@@ -234,14 +247,14 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_rank_velocity_controller.py
   expected_artifacts:
   - tests/test_rank_velocity_controller.py
-  output_assertion: exit code 0이며 가짜 시계의 격차 축소·정체·기한 지연·연속 1위·격차 0.02 경계·time_to_loss 6시간 경계·30분 감소·속도 50% 급상승·1위 상실 fixture에서 ATTACK/DEFEND, leader_baseline, 허용 대응, 10% 변경 상한과 공격 복귀 0건을 assert한다.
+  output_assertion: exit code 0이며 24/30분·96/120분 coverage, closing rate 양수·0·음수, ETA infinity, 24시간 effect/cost 0분모·증거없음·동률 fixture에서 rank_controller_v1 수치와 결정적 순서를 assert한다. 연속 1위·격차 0.02·time_to_loss 6시간·30분 감소·속도 50% 급상승·1위 상실 fixture에서는 ATTACK/DEFEND, leader_baseline, 허용 대응과 공격 복귀 0건을 assert한다.
 - description: 자동 실험은 고정 80:20 배정, 역할별 block, 지정 unit·cluster, 최소 표본과 독립 cluster 5개,
     primary metric 정확히 1개를 사용하며 재시작 후에도 unit 배정이 바뀌지 않는다. 안정성 변경은 별도 10% canary 계약을 사용한다.
   semantic_ac_key: ac_56877f39254126d2
   verify_command: python -m unittest -v tests/test_experiment_policy.py
   expected_artifacts:
   - tests/test_experiment_policy.py
-  output_assertion: exit code 0이며 NFC canonical JSON·SHA-256 첫 8바이트 mod 100 경계 fixture를 새 Python 프로세스 3개에서 실행해 동일 digest·0~79 treatment·80~99 control을 assert하고 빈 ID를 거부하며 안정성 변경은 고유 correlation 300개·cluster 6개·1시간·10% canary를 모두 충족한다.
+  output_assertion: exit code 0이며 NFC canonical JSON·SHA-256 첫 8바이트 mod 100 fixture를 새 Python 프로세스 3개에서 실행해 0~79 treatment·80~99 control과 동일 arm을 assert한다. Buyer 24시간 baseline의 SKU 5개×5주문 경계, 조달 최초 10 unit·5 SKU·2창·12시간과 누적 20 unit·5 SKU·4창·24시간, 안정성 300 correlation·6 cluster·1시간·10% canary 경계도 assert한다.
 - description: normalized effect, 고정 seed 10,000회 bootstrap, 양측 97.5% 구간, empirical p, 동시 판정
     family의 Holm α=0.025, 최소 표본 PASS/FUTILITY/INCONCLUSIVE, 누적 2배 ADOPTED/REJECTED와 adoption_threshold가
     결정적으로 적용되며 통계 guardrail은 최소·2배 판정 시점에만 사용된다.
@@ -249,7 +262,7 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_statistical_decision.py
   expected_artifacts:
   - tests/test_statistical_decision.py
-  output_assertion: exit code 0이며 증가·감소 지표, 0 분모, family 크기 1·2·5, Holm 첫 실패, 경계 p·CI, 최소 표본 세 분기와 누적 2배 최종 fixture를 3회 실행해 우회 통과 0건, INCONCLUSIVE RUNNING→ADOPTED 제한 전이, hard-envelope 시작 독립성과 기준 미달 확대·채택 0건을 assert한다.
+  output_assertion: exit code 0이며 bootstrap_v1 SHA-256 uint64 seed, PCG64, arm별 cluster 복원추출, type-7 percentile을 고정 fixture로 3회 재현한다. 증가·감소 지표, family 크기 1·2·5, Holm 첫 실패, 최소 표본 세 분기와 누적 2배 최종 fixture에서 우회 통과 0건, 제한 전이와 기준 미달 확대·채택 0건을 assert한다.
 - description: 공식 입력은 지정 주기·우선순위와 연결 5초·전체 15초·2 MiB·schema 한도를 적용하며 malformed·partial·oversized
     응답은 마지막 검증 snapshot을 대체하지 못하고 hard stale 또는 ledger gap 동안 관련 mutation이 차단된다.
   semantic_ac_key: ac_29588938f691a941
@@ -277,7 +290,7 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_forum_publication.py
   expected_artifacts:
   - tests/test_forum_publication.py
-  output_assertion: exit code 0이며 일일·5분·24시간 경계, NFKC hash·Jaccard 0.80, rating 직전/대조 6시간 기준선·0.01 하락, 무증거 주장, 사건 재게시와 정정 fixture에서 허용 게시만 생성되고 Buyer 자기 shop 광고와 비공식 사기 명명은 0건임을 assert한다.
+  output_assertion: exit code 0이며 일일·5분·24시간 경계, NFKC hash·Jaccard 0.80, rating 직전/대조 6시간 기준선·0.01 하락, 무증거 주장, 사건 재게시와 정정 fixture에서 forum_publication 행의 counter·digest·predecessor·refs·baseline·ACTIVE/STOPPED가 정확하고 Buyer 자기 shop 광고와 비공식 사기 명명은 0건임을 assert한다.
 - description: 중단되거나 응답이 불명확한 mutation은 영구 checkpoint와 멱등성 키를 보존한 UNCERTAIN 상태에서 재제출되지
     않고 30초 간격·10분·최대 20회 reconciliation 후 CONFIRMED, SAFE_TO_RETRY 또는 PRESERVED로 결정된다.
     PRESERVED는 새 공식 증거가 있을 때만 RECONCILING으로 복귀하며 재시작과 반복 중단에도 같은 키로 중복 제출되지 않는다.
@@ -309,7 +322,7 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_deployment_pipeline.py
   expected_artifacts:
   - tests/test_deployment_pipeline.py
-  output_assertion: exit code 0이며 각 배포 단계 강제중단, 5분·30분 timeout, canary 실패 fixture를 3회 실행해 DRAFT·VALIDATED·SHADOW는 QUARANTINED와 ACTIVE 불변, CANARY·ACTIVE는 ROLLED_BACK과 실제 PID·commit·parameter 복귀, orphan 0개, procurement/PRESERVED 불변을 assert한다.
+  output_assertion: exit code 0이며 syntax·전체 unittest·diff·migration·Safety·secret·allowlist 각각의 실패, SHADOW POST 0건과 5분 또는 Buyer 50/Seller 30 입력, Buyer CANARY 20주문+10분, Seller CANARY 10견적+1공급창, 90초 alive+commit, 역할 동시교체 0건을 assert한다. 각 단계 강제중단과 5분·30분 timeout을 3회 실행해 pre-live QUARANTINED·ACTIVE 불변, live ROLLED_BACK·실제 PID/commit/parameter 복귀, orphan 0개와 procurement/PRESERVED 불변도 assert한다.
 - description: validation·deployment·watch 성공 이벤트는 실제 validation_run, supervisor 소유 PID, board alive와 실행
     commit 일치 및 recovery checkpoint 검증이 모두 끝난 뒤에만 기록된다.
   semantic_ac_key: ac_runtime_truthfulness
@@ -401,6 +414,11 @@ ontology_schema:
   - name: forum_signal
     type: object
     description: 작성자·역할·투표·refs 구조 필드, 교차검증 상태, 독립 작성자 추세, 전환 및 격리된 비신뢰 원문
+    required: true
+  - name: forum_publication
+    type: object
+    description: post·event ID, 역할, 게시 UTC·KST, 정규화 digest, 최대 Jaccard와 predecessor, 일일·간격 counter,
+      공식 refs, correction predecessor, 직전·대조 6시간 rating baseline, 전환·dislike와 ACTIVE·STOPPED 판정
     required: true
   - name: state_transition
     type: object
@@ -502,12 +520,15 @@ exit_conditions:
 - name: 성과 미달 폐기
   description: 최대 관찰 표본에서도 성공 기준을 충족하지 못한 실험이나 확대 표본에서 효과가 유지되지 않은 전략을 종료한다.
   criteria: 실험이 REJECTED 또는 ROLLED_BACK이고 기존 전략이 유지된다.
-- name: 자본 보존 종료
-  description: 안전한 복구가 불가능하거나 추가 진행이 파산 한도를 넘길 위험이 있으면 자동 확대와 신규 위험 노출을 종료한다.
-  criteria: 복구 핵심 검사가 3회 연속 실패하거나 공식 파산 1회 뒤 projected state가 공식 bankruptcy predicate 또는 현금 하한을 위반하면 신규 위험 mutation이 차단되고 현금·미정산 부채·재고 상태가 checkpoint에 보존된다.
+- name: 복구 불가능 보존 종료
+  description: recovery checkpoint·hash, SQLite integrity, ACTIVE commit 또는 Safety 검사가 같은 복구에서 3회 연속 실패하면 모든 신규 mutation을 종료한다.
+  criteria: 주문·가격·재고·게시를 포함한 신규 mutation이 모두 차단되고 reconciliation만 실행되며 현금·미정산 부채·재고·PRESERVED 상태가 checkpoint에 보존된다.
+- name: 파산 한도 자본 보존 종료
+  description: 공식 파산 1회 뒤 두 번째 파산을 유발할 projected-risk mutation만 종료한다.
+  criteria: projected state가 공식 bankruptcy predicate 또는 500,000+미정산 부채 현금 하한을 위반하는 mutation은 차단되고 그 밖의 hard-envelope 내 기존 운영은 허용된다.
 metadata:
   seed_id: seed_45ef0f10a27e
-  version: 1.5.0
+  version: 1.6.0
   created_at: '2026-11-07T16:38:43.255953Z'
   ambiguity_score: 0.0645
   gate_forced: false
