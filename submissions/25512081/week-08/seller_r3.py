@@ -148,6 +148,7 @@ CYCLE = 20 * 60
 END_TS = 1794927540        # Tue Nov 17 23:59 KST
 ENDGAME = ((6 * 3600, 0.6, 0.25), (24 * 3600, 0.8, 0.6))
 MIN_FOOD_HOURS = 2        # never ship food with less shelf life left than this
+FOOD_PAYMENT_BUFFER = 1 / 60  # one minute for checkout; rechecked before signing
 SOLD_HOLD = 120           # seconds a sold unit stays out of offers, until inventory.json drops it
 # A talk the buyer leaves without a reply or a cancel stayed in self.open, so its unit was never offered again
 # (Nov 6 10:24-14:17: of 1,439 talks 1,437 ended within 60 s, but 7 grade A Jakomo G8ec51935 units, cost
@@ -158,7 +159,8 @@ OPEN_HOLD = 300
 # A food order is worth nothing to the buyer unless the food lasts its use_within_hours (agent.md), and our seller
 # never sees the order. So: ship food that lasts what the buyer says it needs ("must last 30 hours"), else what
 # orders usually need (.market/use_within.json, the use_within_hours our own buyer saw, 80th percentile).
-NEED = re.compile(r"(?i)\blast(?:s|ing)?\D{0,15}?(\d{1,4})\s*h")
+NEED = re.compile(r"(?i)\b(?:last(?:s|ing)?\D{0,15}?|use(?:d)?\s+within\s+)(\d{1,4}(?:\.\d+)?)\s*h(?:ours?)?\b"
+                  r"|\buse_within_hours\s*[:=]\s*(\d{1,4}(?:\.\d+)?)\b")
 DEFAULT_NEED = 24
 ACCEPT = re.compile(r"\b(ok|okay|yes|deal|accept|accepted|agree|agreed|take it|buy it|sold)\b", re.I)
 
@@ -191,7 +193,7 @@ def hours_left(u):
 def need_hours(text):
     """Hours the buyer says the food must last, or None when it does not say."""
     m = NEED.search(text or "")
-    return int(m.group(1)) if m else None
+    return float(next(g for g in m.groups() if g is not None)) if m else None
 
 
 # Orders ask food to last 0.5 or 0.75 of the SKU's catalog shelf_hours (G00c60e91 coffee, shelf 720: 360 or 540).
@@ -224,8 +226,10 @@ def find_unit(text, taken=()):
     need = lambda u: max(MIN_FOOD_HOURS, said if said is not None else default_need(u["sku"]))
     units = [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken
              and (u["kind"] != "food" or (hours_left(u) or 0) >= MIN_FOOD_HOURS)]
-    # food that lasts the need, expiring first; if none does, the freshest one (its hours are in the reply)
-    fresh = [u for u in units if u["kind"] != "food" or (hours_left(u) or 0) >= need(u)]
+    # With no stated need, prefer the inferred usual need. An explicit requirement
+    # is a hard constraint, including time for payment; never substitute a shorter unit.
+    fresh = [u for u in units if u["kind"] != "food" or
+             (hours_left(u) or 0) >= need(u) + FOOD_PAYMENT_BUFFER]
     for match in (lambda u: u["sku"].lower() in want,
                   lambda u: (u.get("name") or "").lower() in want,
                   lambda u: (u.get("category") or "").split(">")[-1].lower() in want):
@@ -233,6 +237,9 @@ def find_unit(text, taken=()):
         if fit:
             if fit[0]["kind"] == "food":
                 ok = [u for u in fresh if match(u)]
+                if not ok and said is not None:
+                    log(f"[quality] no matching food lasts the requested {said:g}h plus checkout buffer")
+                    return None
                 return (min(ok, key=lambda u: u["expires_at"] or math.inf) if ok
                         else max(fit, key=lambda u: u["expires_at"] or 0))
             # a unit whose floor (cost x 1.05) is over the most it may open at (max_share) can only sell above the
@@ -428,7 +435,8 @@ class Seller(AgentExecutor):
             # profit is half the shop's score: concede at most MAX_DISCOUNT, and never below cost
             floor = max(floor, int(ask * (1 - MAX_DISCOUNT)))
             deal = self.open[task.id] = {"unit": u, "ask": ask, "opening": ask, "floor": floor,
-                                         "warranty": warranty, "rounds": 0, "arm": arm, "ts": now}
+                                         "warranty": warranty, "rounds": 0, "arm": arm, "ts": now,
+                                         "food_need": need_hours(text)}
             await up.requires_input(say(f"{facts(u, warranty)}. Send the ask or say ok to buy. "
                                         f"Our ask: {ask}"))
             return
@@ -442,6 +450,8 @@ class Seller(AgentExecutor):
             await up.reject(say("Sorry, that unit is no longer available. Ask again for a quote."))
             return
         deal["ts"] = now
+        if deal["unit"]["kind"] == "food" and need_hours(text) is not None:
+            deal["food_need"] = max(deal.get("food_need") or 0, need_hours(text))
         deal["rounds"] += 1
         ask, floor = deal["ask"], deal["floor"]
         offer = last_number(text)
@@ -468,6 +478,14 @@ class Seller(AgentExecutor):
 
     async def _close(self, task, up, say, deal, price):
         u = deal["unit"]
+        if u["kind"] == "food":
+            required = max(MIN_FOOD_HOURS, deal.get("food_need") or 0) + FOOD_PAYMENT_BUFFER
+            if (hours_left(u) or 0) < required:
+                self.open.pop(task.id, None)
+                log(f"[quality] refusing {u['sku']}: shelf life no longer meets {required:g}h at signing")
+                await up.reject(say("The remaining shelf life cannot meet your requirement through checkout. "
+                                    "Please request another quote."))
+                return
         receipt = {"shop": NAME, "item": u["sku"], "price": int(price), "task": task.id}
         if u["unit"]:
             # a food unit's grade drops while it waits and the claim is judged at checkout or settle, so a claim
