@@ -128,6 +128,14 @@ class PortfolioTests(unittest.TestCase):
         self.assertFalse(any(row['sku']=='s4' and row.get('inflow_evidence') for row in rows))
         self.assertIsNone(portfolio.inflow_anchor(rows, [volume, volume, scarcity, scarcity]))
 
+    def test_market_watch_keeps_volume_beyond_the_displayed_opportunities(self):
+        from seller_meta import market_watch_rows
+        shown = {'sku': 'displayed', 'public_settles': 1, 'sample_mean_paid': 5_000}
+        ledger = [dict(kind='settle', data={'item': 'outside', 'amount': 8_000+i*1_000})
+                  for i in range(5)]
+        self.assertEqual(market_watch_rows([shown], ledger), [
+            shown, {'sku': 'outside', 'public_settles': 5, 'sample_mean_paid': 10_000}])
+
     def test_epsilon_draw_is_persistent_not_redrawn_per_poll_or_restart(self):
         model = Mock(side_effect=approve)
         first = self.run_portfolio(model=model)  # seed1 => .134 < .30

@@ -14,7 +14,7 @@ from procurement_cost import ceiling
 from seller_meta_policy import DEFAULT,BOUNDS,FOCUS,active,validate,upgrade,POLICY_VERSION
 from market_scoring import VERSION,BOOK_CONTRACT,book_metrics
 from capital_policy import WINDOW_MAX_UNITS
-from inventory_portfolio import MIN_VARIETY
+from inventory_portfolio import MIN_VARIETY, INFLOW_MIN_PUBLIC_DEALS
 from stock_policy import GROWTH_COVERAGE_HOURS
 from inventory_observation import MAX_SNAPSHOT_GAP
 from supply_reconciliation import pending_quantity,reserved_quantity
@@ -59,6 +59,27 @@ def public_competition():
         raise ValueError('unexpected public stock format')
     return Counter(sku for shop in shops if shop.get('name') != 'outseop-26510122'
                    for sku,qty in shop['stock'].items() if type(qty) is int and qty>0)
+
+
+def market_watch_rows(opportunities, public):
+    """Keep volume candidates outside the bounded revenue/volume review display."""
+    rows = {row['sku']:row for row in opportunities}
+    paid_counts = Counter()
+    amounts = Counter()
+    for event in public:
+        if event.get('kind') != 'settle':
+            continue
+        item = event.get('data') or {}
+        sku = item.get('sku',item.get('item'))
+        amount = item.get('amount')
+        if isinstance(sku,str) and type(amount) is int and amount>0:
+            paid_counts[sku]+=1
+            amounts[sku]+=amount
+    for sku,count in paid_counts.most_common(100):
+        if count<INFLOW_MIN_PUBLIC_DEALS:
+            break
+        rows.setdefault(sku,{'sku':sku,'public_settles':count,'sample_mean_paid':round(amounts[sku]/count)})
+    return list(rows.values())
 
 class InventoryUnavailable(ValueError):
     def __init__(self,reason,age=None):
@@ -270,7 +291,8 @@ def review(runtime,*,model=decide_json,now=None,public=None,shadow=False):
             'note':'Rebase observed outcomes after the operator changes the capital policy; do not attribute historical results to the new capacity.'}
         record('meta_snapshot',path=runtime/'logs/seller-meta-events.jsonl',snapshot=data)
         if not shadow:
-            watch={'at':now,'source':'public ledger sample','window':data['market_sample'],'rows':data['market_opportunities']}
+            watch={'at':now,'source':'public ledger sample','window':data['market_sample'],
+                   'rows':market_watch_rows(data['market_opportunities'],sample)}
             if public is None:
                 try:
                     competition=public_competition()
