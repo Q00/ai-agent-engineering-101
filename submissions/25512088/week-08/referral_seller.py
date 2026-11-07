@@ -33,6 +33,7 @@ from market_intel import Intel
 from shop_copy import SHOP_DESCRIPTION, SHOP_DISPLAY_NAME
 from growth_offers import offers
 from procurement_campaign import settings
+from adaptive_control import Control
 
 STATE = Path(os.environ.get('MARKET_DIR', '.market'))
 
@@ -89,6 +90,7 @@ class Seller(AgentExecutor):
         cred = credentials(text)
         program = Program(STATE)
         intel = Intel(STATE)
+        control = Control(STATE)
         try:
             if program.get('growth_started_at') is None:
                 program.put('growth_started_at',time.time())
@@ -142,6 +144,11 @@ class Seller(AgentExecutor):
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
                     return
                 deal = dict(unit=unit, quote=q, credentials=cred, until=time.time()+120)
+                arm,digest=control.assign('seller-quote-v1',str(task.id))
+                control.event('seller','quote_created',{
+                    'task':task.id,'sku':unit['sku'],'price':q['price'],'cost':unit['cost'],
+                    'kind':unit.get('kind'),'warranty_hours':q.get('warranty_hours',0),
+                    'arm':arm,'assignment_digest':digest},task.id)
                 program.growth_event(task.id,'quote')
                 if cred['ref']:program.growth_event(task.id,'ref_inquiry')
                 if q['referrer']:program.growth_event(task.id,'ref_quote')
@@ -172,9 +179,20 @@ class Seller(AgentExecutor):
                     if claim not in ('A', 'B', 'C'):
                         await up.reject(say('Grade could not be verified. No receipt issued.'))
                         return
+                    mutation_id,created=control.prepare_mutation('seller','inventory_reservation',
+                        'seller-sale-v1:'+str(task.id),{
+                            'task':task.id,'unit':unit['unit'],'sku':unit['sku'],'price':q['price']})
+                    if not created:
+                        self.open.pop(task.id,None)
+                        control.event('seller','duplicate_reservation_blocked',{
+                            'task':task.id,'state':control.mutation_state(mutation_id)},task.id)
+                        await up.reject(say('This sale is already recorded or awaiting reconciliation.'))
+                        return
+                    control.move_mutation(mutation_id,'SUBMITTED','local reservation starting')
                     try:
                         secret = program.accept(task.id, unit['unit'], unit['sku'], unit['cost'], q, inventory=inv)
                     except (ValueError, sqlite3.IntegrityError):
+                        control.move_mutation(mutation_id,'REJECTED','reservation refused')
                         self.open.pop(task.id, None)
                         await up.reject(say('Stock or benefit already reserved. Please request a new quote.'))
                         return
@@ -182,6 +200,8 @@ class Seller(AgentExecutor):
                                task=task.id, unit=unit['unit'], cert=True,warranty_hours=q.get('warranty_hours',0))
                     terms['claim'] = claim
                     receipt = sign(terms)
+                    control.move_mutation(mutation_id,'CONFIRMED','signed receipt created',{
+                        'task':task.id,'sku':unit['sku'],'price':q['price']})
                     await up.add_artifact(parts=[new_data_part(receipt)], name='receipt')
                     private = (f' Private provisional member key: {secret}. Save privately; never post it. '
                                'After payment use SHARE member=<key> for current product referral offers.') if secret else ''
@@ -193,6 +213,9 @@ class Seller(AgentExecutor):
                            'kind':unit.get('kind'),'warranty_hours':q.get('warranty_hours',0)}
                     intel.decision('seller_signed',event)
                     intel.evolution('seller','signed',event,correlation=task.id)
+                    control.event('seller','sale_signed',dict(event,task=task.id),task.id)
+                    control.checkpoint('seller',{'quote_policy':'seller-quote-v1'},
+                                       {'task':task.id,'sku':unit['sku'],'mutation_id':mutation_id})
                     await up.complete(say(f"Agreed at {q['price']}. Membership activates only after market settlement."+public+private))
                     self.open.pop(task.id, None)
                     return
@@ -210,6 +233,7 @@ class Seller(AgentExecutor):
                     program.db.execute('INSERT OR REPLACE INTO quote_holds VALUES(?,?,?)',(tid,hold['unit']['unit'],hold['until']))
             program.close()
             intel.close()
+            control.close()
 
     async def cancel(self, context, event_queue):
         task = context.current_task
@@ -225,6 +249,10 @@ class Seller(AgentExecutor):
 def build(port, publish=True):
     @asynccontextmanager
     async def lifespan(app):
+        startup_control=Control(STATE)
+        startup_control.event('seller','role_started',{'pid':os.getpid(),'publish':bool(publish)})
+        startup_control.checkpoint('seller',{'seller_version':'1.2.0'},{'pid':os.getpid()})
+        startup_control.close()
         # The campaign lock prevents duplicate workers; spend stays in SQLite.
         procurement_log = None
         procurement = None

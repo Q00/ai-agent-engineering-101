@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import sqlite3
 import tempfile
 import time
 import unittest
@@ -68,6 +69,11 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(program.db.execute('SELECT COUNT(*) FROM sales WHERE ledger IS NULL').fetchone()[0], 1)
                     self.assertEqual(program.db.execute('SELECT COUNT(*) FROM members WHERE active=1').fetchone()[0], 0)
                     program.close()
+                    with sqlite3.connect(state/'adaptive.sqlite3') as adaptive:
+                        self.assertEqual(adaptive.execute(
+                            "SELECT state FROM mutations WHERE role='seller'").fetchone()[0],'CONFIRMED')
+                        self.assertEqual(adaptive.execute(
+                            "SELECT COUNT(*) FROM runtime_events WHERE kind='sale_signed'").fetchone()[0],1)
 
     async def test_goods_negotiation_pins_warranty_and_reserves_refund_cash(self):
         with tempfile.TemporaryDirectory() as tmp:
