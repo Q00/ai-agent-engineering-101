@@ -40,6 +40,12 @@ PATTERNS = {
     "storage_pct_day": (r"cost (\d+(?:\.\d+)?)% of their cost per day in storage", float, 0, 10),
     "vote_min_deals": (r"at least (\d+) settled deals", int, 0, 100),
 }
+# name -> regex on the normalised text; the fact is True when the sentence is there, None (and an alert) when not:
+# the capital posture depends on them (decide.MECHANICS), so a reworded rule must wake the model, not pass as before
+PRESENCE = {
+    "book_counts_stock_at_cost": r"[Bb]ook = cash \+ what the unsold units cost",
+    "stock_pays_storage": r"[Gg]oods in stock (?:still )?(?:pay|cost) .{0,40}storage",
+}
 POST_LIMIT = r"one post per (?:[^.;)]|\.(?=\d))*"   # every number in it must agree (shop and buyer)
 POST_GAP = (1, 60)
 WEIGHTS = r"{side} by (.{{1,200}}?)\(ALL weighs them ([0-9.,\s]+(?:and\s+[0-9.]+)?)"
@@ -89,7 +95,8 @@ def _weights(t, side):
 
 
 def parse(sec):
-    """(facts, alerts): {name: value or None} for PATTERNS, post_gap_min, shop_weights and buyer_weights."""
+    """(facts, alerts): {name: value or None} for PATTERNS, PRESENCE (True when the sentence is there),
+    post_gap_min, shop_weights and buyer_weights."""
     t = " ".join((sec or "").split())
     facts, alerts = {}, []
     for name, (rx, cast, lo, hi) in PATTERNS.items():
@@ -99,6 +106,8 @@ def parse(sec):
             alerts.append(f"rules: {name} {v} is outside the plausible {lo}-{hi}, not used")
             v = None
         facts[name] = v
+    for name, rx in PRESENCE.items():
+        facts[name] = True if re.search(rx, t) else None
     m = re.search(POST_LIMIT, t)
     # bare numbers too: 'per 5 minutes for the shop and 10 for the buyer' must not read as 5
     gaps = sorted({float(x) for x in re.findall(r"\d+(?:\.\d+)?", m.group(0))}) if m else []

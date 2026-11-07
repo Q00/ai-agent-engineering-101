@@ -28,7 +28,7 @@ H = 3600
 PRICES = {"window_s": 3600, "free": 50, "per_unit": 0.002, "max": 1.5,
           "surge": [{"sku": f"G{i:02d}", "name": "이름", "units": 100 - i, "factor": 1.1} for i in range(12)]}
 TODAY = {"supply_every_min": 20, "supply_open_min": 3, "break_window_h": 6, "storage_pct_day": 1.0,
-         "vote_min_deals": 5, "post_gap_min": 5, "shop_weights": {"book": 0.5, "revenue": 0.3, "stars": 0.2},
+         "vote_min_deals": 5, "book_counts_stock_at_cost": True, "stock_pays_storage": True, "post_gap_min": 5, "shop_weights": {"book": 0.5, "revenue": 0.3, "stars": 0.2},
          "buyer_weights": {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}}
 
 
@@ -42,6 +42,14 @@ class Parse(unittest.TestCase):
         sec, found = facts.section(FIXTURE, 3)
         self.assertTrue(found)
         self.assertEqual(facts.parse(sec), (TODAY, []))
+
+    def test_a_reworded_stock_valuation_is_unknown_with_an_alert_never_assumed(self):
+        sec = facts.section(FIXTURE, 3)[0].replace("Book = cash + what the unsold units cost",
+                                                   "Book = cash + half of what the unsold units cost")
+        got, alerts = facts.parse(sec)
+        self.assertIsNone(got["book_counts_stock_at_cost"])
+        self.assertTrue(got["stock_pays_storage"])
+        self.assertEqual(alerts, ["rules: book_counts_stock_at_cost not found (the market text changed?)"])
 
     def test_section_picks_the_round_and_skips_the_setup_steps(self):
         sec, found = facts.section(DOC, 3)

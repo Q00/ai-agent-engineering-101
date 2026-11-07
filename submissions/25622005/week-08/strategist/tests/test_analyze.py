@@ -508,7 +508,8 @@ class EconomicsMixTest(unittest.TestCase):
                               "goods": {"h6": 0.75, "n6": 9, "h24": 0.74, "n24": 99}},
                   "c_kind": {"food": None, "goods": 0.6},
                   "day": {"cogs": 1_500_000, "rev": 2_000_000, "exp": 30000, "o": {"GBIG": 2}, "h": self.DAY_H}}
-        market = {"facts": {"supply_every_min": 20}, "supply_prices": {"free": 50}, "surge_units": {"GF": 80}}
+        market = getattr(self, "MARKET", None) or {"facts": {"supply_every_min": 20}, "supply_prices": {"free": 50},
+                                                    "surge_units": {"GF": 80}}
         return analyze.brief(r, o, None, self.POL, NOW, tables=tables, market=market, **kw)
 
     def test_economics(self):
@@ -528,6 +529,54 @@ class EconomicsMixTest(unittest.TestCase):
         self.assertEqual(e["expand_ok"], {"turnover_day": True, "unsold_goods_share": False, "spoilage_share": False,
                                           "balance": True})
         self.assertFalse(e["expand_all_ok"])
+
+    def test_capital_posture(self):
+        self.MARKET = {"facts": {"supply_every_min": 20, "storage_pct_day": 1.0, "book_counts_stock_at_cost": True},
+                       "supply_prices": {"free": 50}, "surge_units": {}}
+        e = self.brief()["economics"]
+        c = e["capital"]
+        # D1 headroom: min(0.5 x 21M - 1M, 20M - 0) = 9.5M; big budget 4.2M - 600k held
+        self.assertEqual((c["cash"], c["stock_cost"], c["goods_cost"], c["headroom"], c["big_ticket_free"]),
+                         (20_000_000, 1_000_000, 1_000_000, 9_500_000, 3_600_000))
+        self.assertEqual((c["storage_pct_day"], c["storage_cost_day"], c["margin_24h"], c["carry_day"]),
+                         (1.0, 10000, round(500000 / 1500000, 3), 0.01))
+        self.assertEqual(c["hold_vs_margin"], round(0.01 / (0.333 * 24 / 24), 2))      # far under 1: holding is cheap
+        self.assertTrue(c["stock_at_cost"])
+        # without the storage fact nothing is guessed
+        self.MARKET = None
+        c = self.brief()["economics"]["capital"]
+        self.assertEqual((c["storage_cost_day"], c["carry_day"], c["hold_vs_margin"], c["stock_at_cost"]), (None,) * 4)
+
+    def test_stockouts(self):
+        e = self.brief()["economics"]
+        s = e["stockouts"]
+        # GBIG sold 3 in 6 h but 2 units are held: not sold out; held 2 days at 2 a day = 24 h cover: not slow
+        self.assertEqual((s["big_skus_sold_6h"], s["sold_out"], s["sold_out_share"], s["winners_sold_out"]), (1, 0, 0.0, []))
+        self.assertEqual((s["slow_lines"], s["slow_cost"]), ([], 0))
+
+    def test_a_sold_out_winner_and_a_slow_line(self):
+        r = raw()
+        r["catalog"] = self.CAT
+        o = own()
+        o["kit"] = {"supply_bought": 48, "supply_units": 480}
+        o["acp"] = [{"ts": NOW - 100, "event": "create", "sku": "GBIG"}, {"ts": NOW - 90, "event": "complete", "sku": "GBIG"},
+                    {"ts": NOW - 50, "event": "create", "sku": "GBIG"}, {"ts": NOW - 40, "event": "refuse", "sku": "GBIG"}]
+        o["inventory"] = {"balance": 20_000_000, "units": [
+            {"unit": "b1", "sku": "GBIG", "kind": "goods", "cost": 300000, "supplied_at": NOW - 3600},
+            {"unit": "s1", "sku": "GSM", "kind": "goods", "cost": 400000, "supplied_at": NOW - 2 * 86400},
+            {"unit": "s2", "sku": "GSM", "kind": "goods", "cost": 400000, "supplied_at": NOW - 2 * 86400},
+            {"unit": "s3", "sku": "GSM", "kind": "goods", "cost": 400000, "supplied_at": NOW - 2 * 86400}]}
+        tables = {"covered_h": 6, "h1": 1, "h6": 6, "sku": {"GBIG": {"s6": 30, "o6": 3, "u1": 20}},
+                  "p_clear": {"food": {}, "goods": {"h6": 0.75, "n6": 9, "h24": 0.74, "n24": 99}},
+                  "c_kind": {"food": None, "goods": 0.6},
+                  "day": {"cogs": 1_500_000, "rev": 2_000_000, "exp": 0, "o": {"GBIG": 2}, "h": 24}}
+        pol = dict(self.POL, stock=dict(self.POL["stock"], big_ticket_list=5000))     # GSM (10,000) is big-ticket too
+        s = analyze.brief(r, o, None, pol, NOW, tables=tables, market={"facts": {}})["economics"]["stockouts"]
+        self.assertEqual((s["big_skus_sold_6h"], s["sold_out"], s["sold_out_share"]), (1, 1, 1.0))
+        self.assertEqual(s["winners_sold_out"], [{"sku": "GBIG", "list": 400000, "held": 1, "o6": 3, "s6": 30,
+                                                  "sessions": {"create": 2, "complete": 1}}])
+        self.assertEqual(s["slow_lines"], [{"sku": "GSM", "held": 3, "cost": 1_200_000, "sold_24h": 0, "cover_h": None}])
+        self.assertEqual(s["slow_cost"], 1_200_000)
 
     def test_turnover_is_scaled_to_a_day_while_the_sums_span_less(self):
         self.DAY_H = 12                                                 # 1.5M sold in 12 h of a 1M stock: 3 a day

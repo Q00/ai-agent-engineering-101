@@ -89,7 +89,8 @@ class PromptTest(unittest.TestCase):
             self.assertNotIn(s, decide.MECHANICS)
         for s in ("stock.cover_min", "stock.cover_safety", "stock.focus_cap_share", "stock.inventory_cap_share",
                   "min(buyer.cap_food, 1 - buyer.min_surplus_list)", "forum.min_gap_min", "ops.restock", "ops.kit",
-                  "ops.forum"):
+                  "ops.forum", "economics.capital", "stockouts.winners_sold_out", "seller.stale_floor_cost_mult",
+                  "book_counts_stock_at_cost"):
             self.assertIn(s, decide.MECHANICS)
         p = _prompt()
         for name in guard.LINKED:

@@ -40,6 +40,9 @@ FOOD_RISK_H = 24            # food with fewer hours left is at risk
 FOCUS_TOP = 12
 LEAF_TOP = 8
 FREE_TOP = 8
+STOCKOUT_TOP = 6            # big-ticket SKUs that sell and are (nearly) sold out
+SLOW_TOP = 5                # big-ticket SKUs whose units sit
+SLOW_COVER_H = 48           # held / our daily rate above this many hours is a slow line
 C_FALLBACK = {"food": 0.51, "goods": 0.61}
 # plan 11-06 section 3(d): grow stock only while these hold
 EXPAND = {"turnover_day": 1.5, "unsold_goods_share": 0.20, "spoilage_share": 0.01, "balance": 10_000_000}
@@ -485,7 +488,13 @@ def _economics(tables, own, pol, market, catalog, now):
     of SKUs we sold none of in 24 h, as a share of stock cost), spoilage (24 h expired cost / cost of goods sold),
     the big-ticket budget (goods listed above stock.big_ticket_list: held cost against stock.big_ticket_share x
     inventory_cap_share x (cash + stock cost)), the free surge units left on our SKUs, p_clear per kind against our
-    floor/list, and the expansion conditions. None without tables."""
+    floor/list, and the expansion conditions. None without tables.
+    capital: the D1 headroom as restock computes it, what is left of the big-ticket budget, the storage cost a day
+    (market fact storage_pct_day) and the carry (storage a day / 24 h margin at the goods p_clear): what one more
+    unit of stock costs against what it earns. stockouts: big-ticket SKUs we sold in 6 h (o6) and hold at most one
+    unit of (their ACP sessions in the window: created, completed), with the market's 6 h settles (s6); demand they
+    carried that our shelf cannot serve (sold_out_share: of the big-ticket SKUs we sold, the share sold out); and
+    slow lines (held cost whose cover at our 24 h rate is over SLOW_COVER_H hours, or that sold none)."""
     t = _dict(tables)
     if not t:
         return None
@@ -528,6 +537,8 @@ def _economics(tables, own, pol, market, catalog, now):
                     "n_24h": _num(_dict(pc.get(k)).get("n24")), "our_cost_list": c,
                     "our_floor_list": round(max(fl, fcm * (c or C_FALLBACK[k])), 3) if fl is not None and fcm else None}
     cond = {"turnover_day": turnover, "unsold_goods_share": unsold_share, "spoilage_share": spoil, "balance": balance}
+    capital = _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, cogs, _num(day.get("rev")))
+    stockouts = _stockouts(units, big, rows, o24, day_h, _rows(own.get("acp")), catalog)
     ok = {k: (v >= EXPAND[k] if k in ("turnover_day", "balance") else v <= EXPAND[k] if k == "unsold_goods_share"
               else v < EXPAND[k]) if v is not None else None for k, v in cond.items()}
     return {"covered_h": _num(t.get("covered_h")),
@@ -538,7 +549,69 @@ def _economics(tables, own, pol, market, catalog, now):
             "big_ticket": {"skus": len({u.get("sku") for u in big}), "held_cost": cost(big), "budget": budget,
                            "of_budget": round(cost(big) / budget, 3) if budget else None, "share_key": share},
             "surge_free_left": {_name(s): v for s, v in left[:FREE_TOP]},
-            "kinds": kinds, "expand": cond, "expand_ok": ok, "expand_all_ok": all(v is True for v in ok.values())}
+            "kinds": kinds, "expand": cond, "expand_ok": ok, "expand_all_ok": all(v is True for v in ok.values()),
+            "capital": capital, "stockouts": stockouts}
+
+
+def _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, cogs, rev):
+    """See _economics. headroom = min(cap x (cash + stock) - stock, cash - cash_floor), as restock's D1; margin_24h =
+    (revenue - cost of goods sold) / cost of goods sold over the 24 h sums; carry_day = storage a day / stock cost;
+    hold_vs_margin = carry_day x 24 / (margin_24h / (day_h / 24)): above 1 a day of holding costs more than selling
+    earns, so clearing stale goods below cost pays (None without the numbers)."""
+    cap, floor_ = _num(st.get("inventory_cap_share")), _num(st.get("cash_floor"))
+    cost = lambda us: round(sum(_num(u.get("cost")) or 0 for u in us))
+    goods = cost([u for u in units if u.get("kind") == "goods"])
+    pct = _num(_dict(_dict(market).get("facts")).get("storage_pct_day"))
+    storage = round(goods * pct / 100) if pct is not None else None
+    headroom = (round(max(0, min(cap * (balance + inv_cost) - inv_cost, balance - (floor_ or 0))))
+                if None not in (cap, balance) else None)
+    margin = round((rev - cogs) / cogs, 3) if cogs and rev is not None else None
+    carry = round(storage / inv_cost, 4) if storage is not None and inv_cost else None
+    hold = (round(carry / (margin * 24 / day_h), 2) if carry is not None and margin and margin > 0 and day_h
+            else None)
+    return {"cash": balance, "stock_cost": inv_cost, "goods_cost": goods, "cash_floor": floor_, "headroom": headroom,
+            "big_ticket_free": round(budget - cost(big)) if budget is not None else None,
+            "storage_pct_day": pct, "storage_cost_day": storage, "margin_24h": margin, "carry_day": carry,
+            "hold_vs_margin": hold, "stock_at_cost": _dict(_dict(market).get("facts")).get("book_counts_stock_at_cost")}
+
+
+def _stockouts(units, big, rows, o24, day_h, acp, catalog):
+    """See _economics. rows: table_view's sku table (s6 market settles, o6 ours); acp: the window's ACP session rows
+    (event create/complete per sku)."""
+    held = Counter(u.get("sku") for u in big)
+    cost = Counter()
+    for u in big:
+        cost[u.get("sku")] += _num(u.get("cost")) or 0
+    big_skus = set(held) | {s for s, r in rows.items() if (_num(_dict(r).get("o6")) or 0) > 0 and isinstance(s, str)
+                            and (_list_price(catalog, s) or 0) > 0 and s not in held}
+    sess = {}
+    for r in acp:
+        s, ev = r.get("sku"), r.get("event")
+        if isinstance(s, str) and ev in ("create", "complete"):
+            sess.setdefault(s, Counter())[ev] += 1
+    sold = [s for s in big_skus if (_num(_dict(rows.get(s)).get("o6")) or 0) > 0]
+    out = []
+    for s in sold:
+        if held[s] > 1:
+            continue
+        r, lp = _dict(rows.get(s)), _list_price(catalog, s)
+        out.append({"sku": _name(s), "list": lp, "held": held[s], "o6": _num(r.get("o6")), "s6": _num(r.get("s6")),
+                    "sessions": {k: sess.get(s, Counter())[k] for k in ("create", "complete")}})
+    out.sort(key=lambda x: -((x["o6"] or 0) * (x["list"] or 0)))
+    rate_d = lambda s: (o24.get(s) or 0) / day_h * 24 if day_h else None
+    slow = []
+    for s, n in held.items():
+        if n < 2:
+            continue
+        rd = rate_d(s)
+        cover = round(n / rd * 24, 1) if rd else None
+        if cover is None or cover > SLOW_COVER_H:
+            slow.append({"sku": _name(s), "held": n, "cost": round(cost[s]), "sold_24h": o24.get(s) or 0, "cover_h": cover})
+    slow.sort(key=lambda x: -x["cost"])
+    return {"big_skus_sold_6h": len(sold), "sold_out": len(out),
+            "sold_out_share": round(len(out) / len(sold), 2) if sold else None,
+            "winners_sold_out": out[:STOCKOUT_TOP], "slow_lines": slow[:SLOW_TOP],
+            "slow_cost": round(sum(x["cost"] for x in slow))}
 
 
 def _list_price(catalog, sku):

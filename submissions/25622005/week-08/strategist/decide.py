@@ -72,6 +72,23 @@ Supply and depth:
   revenue but tie up a lot of cost per unit: their held cost + planned worst cost stays within
   stock.big_ticket_share x stock.inventory_cap_share x (cash + stock cost) (economics.big_ticket), and a SKU holds
   at most stock.bigticket_probe_qty units (overpriced ones included) until we sold 2 of it in 6 hours.
+- Capital posture (economics.capital, economics.stockouts; market facts book_counts_stock_at_cost, stock_pays_storage,
+  storage_pct_day). While Book counts unsold stock at cost, holding stock costs only storage
+  (capital.storage_cost_day, carry_day) against a 24 h margin of capital.margin_24h: capital.hold_vs_margin under 1
+  means stock is nearly free to hold and the binding limits are liquidity (capital.headroom, big_ticket_free) and
+  demand. Then big-ticket SKUs that sell and are sold out (stockouts.winners_sold_out: held 0-1, o6 our 6 h sales,
+  s6 the market's, sessions created vs completed) are lost revenue and Book: with a sold_out_share above about 0.3
+  or any winner with s6 well above o6, widen the budget in this order, each a step a run: stock.big_ticket_share,
+  stock.inventory_cap_share (while cash stays above cash_floor plus the warranty exposure), stock.trend_share (our
+  own rate understates demand while we are sold out; the market's rate x trend_share sets the floor of the cover
+  target), stock.bigticket_probe_qty, stock.focus_cover_mult. Slow lines (stockouts.slow_lines: held units whose
+  cover at our 24 h rate is over 48 h) tie up the big-ticket budget without a loss; they are the first to go when
+  the budget binds (the strategist's focus choice drops them; a lower stock.max_hold caps them).
+  When a rule change ends that (a patch note that values unsold stock below cost, raises storage, charges holding
+  or changes the end-of-round valuation: hold_vs_margin at or above 1, or stock_at_cost no longer true), reverse
+  the order: stock.inventory_cap_share and stock.big_ticket_share down, seller.goods_stale_days down and
+  seller.stale_floor_cost_mult below 1 (stale goods then floor at cost x that: a clearance), stock.max_hold down,
+  and the end-of-round hours (stock.clear_cost_h, clear_70_h, clear_any_h, taper_h) up to what the valuation says.
 - Surge: the first market.surge_free units of a SKU that the whole market (us included) buys in a rolling hour
   cost the plain price, each further unit adds market.surge_per_unit to the cost factor, up to market.surge_max
   (these three follow /api/supply-prices automatically, not you). A SKU is bought only while its factor is at most
