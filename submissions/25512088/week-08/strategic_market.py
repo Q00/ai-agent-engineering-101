@@ -30,7 +30,10 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
     valid=[]
     for raw in trades:
         row=dict(raw);product=catalog.get(row.get('sku'),{})
-        if product.get('kind')!='goods' or row.get('warranty')!=6 or not row.get('honest'):continue
+        kind=product.get('kind')
+        condition_ok=(kind=='food' and isinstance(row.get('hours'),(int,float)) and row['hours']>2) or \
+                     (kind=='goods' and row.get('warranty',0)>=6)
+        if kind not in ('goods','food') or not condition_ok or not row.get('honest'):continue
         # A recent purchase is activity evidence even if the board has already
         # marked that buyer offline. Missing buyer identity is never invented.
         if row.get('ts',0)>=now-21600:valid.append(row)
@@ -52,11 +55,11 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
     # observed buyers or our own concrete inquiry/stockout signal.
     signaled_categories=set(own_signals.get('category_6h',{}))|set(category)
     for sku,p in catalog.items():
-        if p.get('kind')=='goods' and p.get('category') in signaled_categories:candidates.add(sku)
+        if p.get('kind') in ('goods','food') and p.get('category') in signaled_categories:candidates.add(sku)
     rows=[]
     for sku in candidates:
         product=catalog.get(sku,{})
-        if product.get('kind')!='goods' or not product.get('list_price'):continue
+        if product.get('kind') not in ('goods','food') or not product.get('list_price'):continue
         observed=exact.get(sku,[]);cat=product.get('category');cat_rows=category.get(cat,[])
         one_hour=[r for r in observed if r.get('ts',0)>=now-3600]
         buyers_1h={r.get('buyer') for r in one_hour if r.get('buyer')}
@@ -80,12 +83,13 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
             # 15% is a conservative unmeasured warranty hazard prior.  Benefit,
             # capital and referral reserves stay explicit; missing trade price
             # is treated as an unsold unit rather than fabricated demand.
-            net=typical*.85*.95-cost*1.09-2000 if typical else -cost
+            hazard=.10 if product.get('kind')=='food' else .15
+            net=typical*(1-hazard)*.95-cost*1.09-2000 if typical else -cost
             expected+=arrival*net
             scenarios.append(dict(grade=grade,arrival_probability=arrival,
                 acquisition_cost_range=[cost_lo,cost_hi],samples=len(prices),median_6h=typical,
-                mean_cost=cost,net_estimate=net,hazard_probability=.15,
-                hazard_basis='conservative-unmeasured; replace with matured warranty cohorts'))
+                mean_cost=cost,net_estimate=net,hazard_probability=hazard,
+                hazard_basis='conservative-unmeasured; replace with matured cohorts'))
         evidence=(len(one_hour)*2+len(observed)+len(active_6h)*1.5+
                   min(inquiries,10)*.35+min(rejected,10)*.5+min(len(category_buyers),10)*.25)
         competition=same_units.get(sku,0)+substitute_units*.35
@@ -165,7 +169,7 @@ def snapshot(state,catalog,opens_at,market):
 
 
 def owned_targets(state, now=None):
-    """Only actually held strategic non-food; stale inventory closes the buyer gate."""
+    """Only actually held strategic stock; stale inventory closes the promotion gate."""
     now=time.time() if now is None else now
     root=Path(state);path=root/'inventory.json'
     if not path.exists() or now-path.stat().st_mtime>120:return set()
@@ -181,12 +185,11 @@ def owned_targets(state, now=None):
     if ref.exists():
         with sqlite3.connect('file:'+str(ref.resolve())+'?mode=ro',uri=True) as db:
             reserved={r[0] for r in db.execute('SELECT unit FROM sales')}
-    return {u['sku'] for u in inv.get('units',[]) if u.get('kind')=='goods'
+    return {u['sku'] for u in inv.get('units',[]) if u.get('kind') in ('goods','food')
             and u.get('grade') in ('A','B','C') and u['sku'] in targets and u['unit'] not in reserved}
 
 
 def restrict_order(order,state):
     result=dict(order)
     result['acceptable']=sorted(set(order.get('acceptable',[])) & owned_targets(state))
-    if order.get('kind')=='food':result['acceptable']=[]
     return result

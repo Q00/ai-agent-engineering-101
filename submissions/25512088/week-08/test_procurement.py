@@ -1,6 +1,6 @@
 import unittest
 from network_reads import retry_read
-from procurement_campaign import choose,allocation_plan,supply_result,own_registration,retry_join
+from procurement_campaign import choose,allocation_plan,capital_available,supply_result,own_registration,retry_join
 class PurchaseTests(unittest.TestCase):
  def setUp(self):
   self.p={'budget':2500000,'cash_floor':500000,'priority':['a','b','c','d']}
@@ -30,6 +30,14 @@ class PurchaseTests(unittest.TestCase):
   plan=allocation_plan(ranked,{'units':[{'sku':'a'}]},900000)
   self.assertEqual(plan[0]['sku'],'a');self.assertGreater(plan[0]['qty'],4)
   self.assertNotIn('b',[r['sku'] for r in plan])
+ def test_capital_scales_with_balance_but_preserves_floor_liabilities_and_slots(self):
+  policy={'cash_floor':500000,'max_inventory_share':.7}
+  low={'balance':5000000,'bankrupt_line':500000,'units':[{'cost':1000000}]}
+  high={'balance':11000000,'bankrupt_line':500000,'units':[{'cost':1000000}]}
+  self.assertGreater(capital_available(policy,high,300000),capital_available(policy,low,300000))
+  ranked=[dict(sku='a',expected_net=1,score=1,upper_cost=100,sales_1h=20,sales_6h=20,
+               own_stockouts_6h=0,own_inquiries_6h=0,estimated_sale_likelihood=1)]
+  self.assertEqual(allocation_plan(ranked,{'units':[]},10000,available_slots=2)[0]['qty'],2)
  def test_unknown_or_invalid_supply_result_stops_for_reconciliation(self):
   self.assertEqual(supply_result(503,{},100),('uncertain',None))
   self.assertEqual(supply_result(200,{'total':101},100),('reconcile',None))

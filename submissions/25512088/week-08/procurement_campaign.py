@@ -12,6 +12,15 @@ def settings():return json.loads((ROOT/'procurement_policy.json').read_text())
 def reserve_cash(inv,exposure=0):
     return max(settings()['cash_floor'],inv.get('bankrupt_line',500000))+exposure
 
+def capital_available(policy,inv,exposure=0,pending=0):
+    """Scale deployable capital with wealth while preserving cash and liabilities."""
+    inventory_cost=sum(u.get('cost',0) for u in inv.get('units',[]))
+    capital=max(0,inv.get('balance',0))+inventory_cost
+    inventory_ceiling=math.floor(capital*policy.get('max_inventory_share',.7))
+    liquid=max(0,inv.get('balance',0)-reserve_cash(inv,exposure)-pending)
+    capacity=max(0,inventory_ceiling-inventory_cost-pending)
+    return max(0,min(liquid,capacity))
+
 def choose(policy,catalog,spent,reserved,balance,exposure,turn,blocked=()):
     # spent is current inventory principal, not lifetime procurement spend.
     remaining=min(policy['budget']-spent-reserved,balance-policy['cash_floor']-exposure)
@@ -23,7 +32,7 @@ def choose(policy,catalog,spent,reserved,balance,exposure,turn,blocked=()):
         if upper<=remaining:return sku,upper
     return None
 
-def allocation_plan(ranked, inventory, available, blocked=()):
+def allocation_plan(ranked, inventory, available, blocked=(), available_slots=None):
     """Allocate by sell-through, holdings, next-window need and contribution.
 
     There is no fixed four-SKU loop or unit cap. Quantity is bounded by the
@@ -40,13 +49,14 @@ def allocation_plan(ranked, inventory, available, blocked=()):
         need=max(0,math.ceil(forecast)-holding.get(row['sku'],0))
         if need<=0:continue
         choices.append((-(row.get('score',0)*row['expected_net']/max(1,row['upper_cost'])),row['sku'],need,row))
-    plan=[]
+    plan=[];slots=(250-len(inventory.get('units',[]))) if available_slots is None else available_slots
     for _,sku,need,row in sorted(choices):
-        qty=min(need,int(available//row['upper_cost']))
+        qty=min(need,int(available//row['upper_cost']),max(0,slots))
         if qty<=0:continue
         plan.append({'sku':sku,'qty':qty,'upper_unit_cost':row['upper_cost'],
                      'capital':qty*row['upper_cost'],'evidence':row})
         available-=qty*row['upper_cost']
+        slots-=qty
     return plan
 
 def supply_result(status, body, upper):
@@ -88,7 +98,7 @@ def main():
     retry_join(lambda:market.join('shop','25512088',key,me['url']),report=log)
     catalog=json.loads((state/'catalog.json').read_text());blocked=set();window=None
     def log(**data):print(json.dumps(dict(ts=time.time(),**data),ensure_ascii=False),flush=True)
-    log(event='started',campaign=policy['campaign'],budget=policy['budget'])
+    log(event='started',campaign=policy['campaign'],capital_policy=policy['budget_basis'])
     while True:
         rows=db.execute('SELECT * FROM purchases WHERE campaign=?',(policy['campaign'],)).fetchall()
         spent=sum(r['cost'] or 0 for r in rows if r['status']=='paid');pending=sum(r['upper_cost'] for r in rows if r['status'] in ('sent','uncertain'))
@@ -122,12 +132,13 @@ def main():
         if not ranked:
             log(event='no_qualified_top10');time.sleep(20);continue
         ranked=[r for r in ranked if r.get('expected_net',0)>0]
-        available=max(0,min(policy['budget']-inventory_cost-pending,
-                            inv['balance']-policy['cash_floor']-exposure))
-        plan=allocation_plan(ranked,inv,available,blocked)
+        available=capital_available(policy,inv,exposure,pending)
+        slots=max(0,policy.get('max_exposed_units',250)-len(inv.get('units',[])))
+        plan=allocation_plan(ranked,inv,available,blocked,slots)
         if not plan:
             if blocked:time.sleep(10);continue
-            log(event='budget_wait',lifetime_spent=spent,inventory_cost=inventory_cost,remaining=policy['budget']-inventory_cost,protected_liabilities=exposure)
+            log(event='evidence_or_capacity_wait',lifetime_spent=spent,inventory_cost=inventory_cost,
+                deployable_capital=available,available_slots=slots,protected_liabilities=exposure)
             time.sleep(60);continue
         if not restock.get('open'):
             log(event='waiting_supply',opens_at=restock.get('opens_at'),spent=spent)
