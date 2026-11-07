@@ -3,6 +3,16 @@
 Windows의 WSL Ubuntu와 독립 Ubuntu 모두 Ubuntu 터미널에서 실행합니다.
 Windows에서 WSL을 종료하거나 PC가 절전/종료되면 에이전트도 중단됩니다.
 
+Windows 로그인 시 supervisor 복구 등록은 관리자 권한이 아닌 본인 PowerShell에서 다음처럼 관리합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\windows_market_recovery.ps1 install
+powershell -ExecutionPolicy Bypass -File .\windows_market_recovery.ps1 status
+powershell -ExecutionPolicy Bypass -File .\windows_market_recovery.ps1 remove
+```
+
+동일한 작업 이름에 예상과 다른 명령이 이미 있으면 덮어쓰거나 삭제하지 않고 `conflict`로 중단합니다.
+
 ## 설치
 
 ```bash
