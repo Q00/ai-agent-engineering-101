@@ -84,6 +84,27 @@ def passes(u, need, now=None):
     return True
 
 
+_REFUSED = {"t": 0, "units": set()}
+REFUSED_RE = re.compile(r"checkout refused: unit (u-[0-9a-f]+) is not in stock for this order")
+
+
+def refused_units(now=None):
+    """Units the kit refused at checkout lately (11-07: a checkout a buyer opened and never paid holds its unit in the
+    kit, and we kept offering that same apple -- the first to expire -- 27 times). Read from the kit log, every 60 s."""
+    now = now or time.time()
+    if now - _REFUSED["t"] > 60:
+        try:
+            with open(Path(__file__).parent / "logs" / "market-kit.log", "rb") as f:
+                f.seek(0, 2)
+                f.seek(max(0, f.tell() - 3_000_000))
+                tail = f.read().decode("utf-8", "replace")
+            _REFUSED["units"] = set(REFUSED_RE.findall(tail))
+        except OSError:
+            pass
+        _REFUSED["t"] = now
+    return _REFUSED["units"]
+
+
 def find_unit(text, taken=(), need=None):
     """The in-stock unit for what the buyer asked (SKU first, then name or category) that expires first, among
     units that pass what the buyer said it needs. If the asked SKU has none that pass (or none at all), the clerk
@@ -103,7 +124,9 @@ def find_unit(text, taken=(), need=None):
     units = inv.get("units", [])
     need = need or {}
     m = SKU_RE.search(text)
-    fit = [u for u in units if u.get("grade") != "expired" and u["unit"] not in taken and passes(u, need)]
+    stuck = refused_units()
+    fit = [u for u in units if u.get("grade") != "expired" and u["unit"] not in taken and u["unit"] not in stuck
+           and passes(u, need)]
     named = [u for u in fit if m and u["sku"] == m.group(1)]
     substitute = None    # no same-category substitutes: a buyer's kit reads another SKU as a forged receipt
     # (1-star "SCAM" review, 2026-11-04); a named SKU is sold only as itself
@@ -376,7 +399,10 @@ class Shop(AgentExecutor):
         task = context.current_task
         deal = self.open.pop(task.id, None)
         if deal:
-            promo.record(self.c, task.id, deal["unit"], deal["q"], None, "miss")
+            try:                                  # a locked database must not stop the cancel (11-07)
+                promo.record(self.c, task.id, deal["unit"], deal["q"], None, "miss")
+            except Exception as e:
+                print(f"[shop] cancel record skipped: {type(e).__name__}: {e}", flush=True)
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 

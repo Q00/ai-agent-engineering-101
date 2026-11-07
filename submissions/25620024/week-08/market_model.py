@@ -46,7 +46,11 @@ create index if not exists settles_cat on settles(category);
 
 def db():
     DB.parent.mkdir(parents=True, exist_ok=True)
-    c = sqlite3.connect(DB, timeout=10)
+    c = sqlite3.connect(DB, timeout=30)
+    try:                       # 11-07: shop, buyers, restock and the teams all write here; "database is locked" broke
+        c.execute("pragma journal_mode=wal")   # shop cancels (26 tracebacks) and team runs -- WAL lets readers
+    except sqlite3.OperationalError:            # run beside the one writer
+        pass
     c.executescript(SCHEMA)
     return c
 

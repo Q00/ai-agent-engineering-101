@@ -420,7 +420,7 @@ def gate(raw, cat):
             notes.append(f"unknown exclusive SKU dropped: {x.get('sku')}")
     plan["exclusive_skus"] = ex
     fo = {}
-    for x in (p.get("follow_skus") or [])[:15]:
+    for x in (p.get("follow_skus") or [])[:40]:    # 15 -> 40 (11-07): the team re-added 4 SKUs past the 15th, dropped
         if x.get("sku") in cat:
             fo[x["sku"]] = round(clamp(x.get("undercut", 0.02), 0.01, 0.05), 3)
     plan["follow_skus"] = fo
