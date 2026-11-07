@@ -19,9 +19,9 @@ enough to mark the end-to-end pipeline complete.
 
 ## B. Candidate generation isolation
 
-- [~] A single durable evolution lock prevents concurrent code-generation cycles.
-- [~] The daemon invokes pinned Ouroboros with a generated target-role Seed.
-- [~] Candidate edits occur only in a detached temporary Git worktree.
+- [x] A single durable evolution lock prevents concurrent code-generation cycles.
+- [x] The daemon invokes pinned Ouroboros with a generated target-role Seed.
+- [x] Candidate edits occur only in a detached temporary Git worktree.
 - [~] Candidate generation has a 30-minute hard timeout with process-group TERM/KILL cleanup.
 - [~] A crash/restart resumes from durable cycle state without launching a duplicate candidate.
 
@@ -45,12 +45,12 @@ enough to mark the end-to-end pipeline complete.
 ## E. Continuous operation proof
 
 - [ ] Unit tests for trigger, isolation, restart request, validation, deployment and rollback all pass.
-- [ ] Evolution is owned by the background supervisor and survives observer/terminal closure.
+- [x] Evolution is owned by the background supervisor and survives observer/terminal closure.
 - [x] A harmless fake candidate completes the full CREATED→VALIDATED→CANARY→ACTIVE path.
 - [x] A deliberately failing fake candidate completes the full CREATED→VALIDATED→CANARY→ROLLED_BACK path.
-- [ ] The first real evidence-triggered cycle starts automatically without a manual command.
-- [ ] Windows logon recovery restores supervisor plus evolution daemon as a single-owner process tree.
-- [ ] Morning report compares official baseline/current rank, score and gaps and identifies the deployed commit/cycle or the exact no-deploy reason.
+- [x] The first real evidence-triggered cycle starts automatically without a manual command.
+- [x] Windows logon recovery restores supervisor plus evolution daemon as a single-owner process tree.
+- [x] Morning report compares official baseline/current rank, score and gaps and identifies the deployed commit/cycle or the exact no-deploy reason.
 
 The pipeline is complete only when every item in section E is checked and no
 `[~]` remains in sections A-D.

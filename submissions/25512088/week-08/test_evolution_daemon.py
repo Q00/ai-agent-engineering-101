@@ -60,7 +60,7 @@ class EvolutionDaemonTests(unittest.TestCase):
     def test_fake_candidate_active_and_rollback_paths(self):
         class FakeEvolution(Evolution):
             pass_canary=True
-            def build(self,*args):return self.dir,self.dir,None
+            def build(self,*args):return self.dir,[self.dir],None
             def candidate_patch(self,*args):return True,[],['submissions/25512088/week-08/buyer_r3.py'],b'patch'
             def validate_candidate(self,*args):return True
             def deploy(self,*args):return True,'candidate-commit',None

@@ -228,15 +228,24 @@ metadata:
         worktree=Path(tempfile.mkdtemp(prefix=f'market-evolve-{cycle_id[:8]}-'))
         shutil.rmtree(worktree)
         code,out=self.runner(['git','worktree','add','--detach',str(worktree),base],REPO,60)
-        if code:return None,worktree,'worktree_add'
+        if code:return None,[worktree],'worktree_add'
+        before=self.registered_worktrees()
         seed=self.seed(cycle_id,role,evidence,worktree)
         command=[str(UV),'tool','uvx','--isolated','--python','>=3.12','--from',OUROBOROS_VERSION,
             'ouroboros','run','workflow',str(seed),'--project-dir',str(worktree),'--runtime','codex',
             '--sequential','--auto-evaluate','--auto-evolve']
         code,out=self.runner(command,worktree,BUILD_TIMEOUT)
         (HERE/'logs'/f'evolution-{cycle_id}.log').write_bytes(out)
-        if code:return None,worktree,'ouroboros_failed'
-        return worktree/PREFIX,worktree,None
+        after=self.registered_worktrees();nested=sorted(after-before,key=lambda p:len(str(p)),reverse=True)
+        generated=nested[0] if nested else worktree
+        cleanup=nested+[worktree]
+        if code:return None,cleanup,'ouroboros_failed'
+        return generated/PREFIX,cleanup,None
+
+    def registered_worktrees(self):
+        code,out=self.runner(['git','worktree','list','--porcelain'],REPO,60)
+        if code:return set()
+        return {Path(line.decode().split(' ',1)[1]) for line in out.splitlines() if line.startswith(b'worktree ')}
 
     def candidate_patch(self,candidate_root,worktree,role,base):
         self.runner(['git','add','-A','--',str(PREFIX)],worktree,60)
@@ -324,10 +333,10 @@ metadata:
         if not trigger:return None
         role=self.choose_role(evidence);cycle_id='ev-'+uuid.uuid4().hex[:16]
         base=self.runner(['git','rev-parse','HEAD'],REPO,30)[1].decode().strip();self._cycle(cycle_id,trigger,role,evidence,base)
-        candidate,worktree,error=self.build(cycle_id,role,evidence,base)
+        candidate,worktrees,error=self.build(cycle_id,role,evidence,base)
         try:
             if error:self._state(cycle_id,'QUARANTINED',error);return cycle_id
-            ok,reasons,paths,patch=self.candidate_patch(candidate,worktree,role,base)
+            ok,reasons,paths,patch=self.candidate_patch(candidate,candidate.parents[2],role,base)
             if not ok or not self.validate_candidate(candidate):
                 self._state(cycle_id,'QUARANTINED','candidate_validation_failed',{'reasons':reasons});return cycle_id
             self._state(cycle_id,'VALIDATED','all_candidate_checks_passed',{'paths':paths})
@@ -344,7 +353,8 @@ metadata:
                     'canary_failed' if restarted else 'rollback_failed',body)
             return cycle_id
         finally:
-            if worktree and worktree.exists():self.runner(['git','worktree','remove','--force',str(worktree)],REPO,60)
+            for worktree in worktrees or ():
+                if worktree.exists():self.runner(['git','worktree','remove','--force',str(worktree)],REPO,60)
 
     def loop(self,once=False):
         lock=(self.dir/'evolution.lock').open('a')
