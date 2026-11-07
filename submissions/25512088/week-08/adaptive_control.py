@@ -202,6 +202,36 @@ class Control:
                             (time.time(),time.time(),mutation_id))
         return self.db.execute("SELECT checks FROM mutations WHERE mutation_id=?",(mutation_id,)).fetchone()[0]
 
+    def reconcile_mutation(self,mutation_id,verdict,official_reference=None,now=None):
+        """Advance an uncertain mutation without ever resubmitting it."""
+        now=time.time() if now is None else now
+        row=self.db.execute('SELECT state,checks,last_check FROM mutations WHERE mutation_id=?',
+                            (mutation_id,)).fetchone()
+        if not row:raise KeyError(mutation_id)
+        if row['state']=='PRESERVED':
+            if not official_reference:return 'PRESERVED'
+            self.move_mutation(mutation_id,'RECONCILING','new official evidence',
+                {'official_reference':official_reference})
+        elif row['state']=='UNCERTAIN':
+            self.move_mutation(mutation_id,'RECONCILING','reconciliation started')
+        elif row['state']!='RECONCILING':
+            raise ValueError('mutation is not reconcilable')
+        row=self.db.execute('SELECT checks,last_check FROM mutations WHERE mutation_id=?',(mutation_id,)).fetchone()
+        if row['last_check'] is not None and now-row['last_check']<30:return 'WAIT'
+        checks=row['checks']+1
+        with self.db:
+            self.db.execute('UPDATE mutations SET checks=?,last_check=?,updated=? WHERE mutation_id=?',
+                            (checks,now,now,mutation_id))
+        evidence={'official_reference':official_reference,'check':checks}
+        if verdict=='confirmed':
+            self.move_mutation(mutation_id,'CONFIRMED','official confirmation',evidence)
+        elif verdict=='rejected':
+            self.move_mutation(mutation_id,'SAFE_TO_RETRY','official rejection',evidence)
+        elif verdict=='unknown' and checks>=20:
+            self.move_mutation(mutation_id,'PRESERVED','reconciliation exhausted',evidence)
+        elif verdict!='unknown':raise ValueError('invalid verdict')
+        return self.mutation_state(mutation_id)
+
     def unresolved(self, role=None):
         q="SELECT * FROM mutations WHERE state IN ('SUBMITTED','UNCERTAIN','RECONCILING','PRESERVED')"
         args=()

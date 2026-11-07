@@ -47,5 +47,17 @@ class AdaptiveControlTests(unittest.TestCase):
             self.assertTrue(cp)
             c.close()
 
+    def test_reconciliation_spacing_limit_and_official_reopen(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            c=Control(tmp);mutation,_=c.prepare_mutation('buyer','offer','reconcile')
+            c.move_mutation(mutation,'SUBMITTED','sent');c.move_mutation(mutation,'UNCERTAIN','timeout')
+            self.assertEqual(c.reconcile_mutation(mutation,'unknown',now=100),'RECONCILING')
+            self.assertEqual(c.reconcile_mutation(mutation,'unknown',now=101),'WAIT')
+            for index in range(1,20):c.reconcile_mutation(mutation,'unknown',now=100+index*30)
+            self.assertEqual(c.mutation_state(mutation),'PRESERVED')
+            self.assertEqual(c.reconcile_mutation(mutation,'unknown',now=1000),'PRESERVED')
+            self.assertEqual(c.reconcile_mutation(mutation,'confirmed','ledger:42',now=1000),'CONFIRMED')
+            c.close()
+
 
 if __name__ == "__main__":unittest.main()
