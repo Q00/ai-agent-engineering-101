@@ -45,6 +45,9 @@ PATTERNS = {
 PRESENCE = {
     "book_counts_stock_at_cost": r"[Bb]ook = cash \+ what the unsold units cost",
     "stock_pays_storage": r"[Gg]oods in stock (?:still )?(?:pay|cost) .{0,40}storage",
+    # Patch 3.4: strategist/objective.py (score_twin) runs only while this is the Saved rule
+    "saved_is_kept_share_over_deals_plus_100":
+        r"Saved, the part that scores, is the sum over deals of surplus / list price.{0,120}divided by deals \+ 100",
 }
 POST_LIMIT = r"one post per (?:[^.;)]|\.(?=\d))*"   # every number in it must agree (shop and buyer)
 POST_GAP = (1, 60)

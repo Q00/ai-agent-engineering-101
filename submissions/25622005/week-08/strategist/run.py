@@ -50,7 +50,7 @@ import httpx
 
 import policy
 from memory.store import append_jsonl, atomic_write_json, read_json, tail_jsonl
-from strategist import analyze, collect, decide, facts, focus, guard, migrate, outcome, publish, skillfile, trend, visible
+from strategist import analyze, collect, decide, facts, focus, guard, migrate, objective, outcome, publish, skillfile, trend, visible
 
 W = Path(__file__).resolve().parents[1]
 HEALTH_MAX_AGE_S = 300
@@ -188,7 +188,7 @@ def _run(cfg, now, client=None):
            "policy_ver_before": None, "policy_ver_after": None, "applied": [], "proposed": [], "rejected": [],
            "confidence": None, "assessment": "", "watch": [], "focus": None, "errors": [], "me": None,
            "rules_sha": None, "alerts": [], "outcomes": [], "patch": None, "notes": None, "history": [],
-           "migrations": [], "template": None, "elapsed_ms": None}
+           "migrations": [], "template": None, "objective": None, "elapsed_ms": None}
     state = read_json(home / "state.json", {})
     state = state if isinstance(state, dict) else {}
     try:
@@ -272,7 +272,11 @@ def _steps(cfg, now, client, state, rec):
         touched = {r["key"] for r in rows}              # a revert of either key first; the next run repairs
         linked = [] if not repair or touched & {"buyer.cap_food", "buyer.min_surplus_list"} else guard.linked_rows(pol)
         rows += linked
-        rec["alerts"] += alerts + guard.linked_alerts(pol, linked)
+        orows, oalerts, rec["objective"] = ([], [], None) if not repair or objective.KEY in touched else \
+            objective.rows(brief, (raw.get("board") or {}).get("buyers") if isinstance(raw.get("board"), dict) else [],
+                           pol, mf, cfg.me)
+        rows += orows
+        rec["alerts"] += alerts + guard.linked_alerts(pol, linked) + oalerts
         release = _release(cfg, text) if repair else None
         if release is not None:                         # the model reads the body the shop will have
             body = policy.split_skill(skillfile.follow_release(text, release))[1]

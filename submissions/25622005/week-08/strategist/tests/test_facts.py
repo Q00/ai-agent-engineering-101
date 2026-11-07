@@ -1,6 +1,6 @@
 """strategist/facts.py offline: the Round section, parsed facts with plausibility, fetch with cache fallback,
 24 h rule diffs, the /rules patch notes, supply prices and the market-rule sync rows. fixture_agent.md is the
-Round 3 section of the market's /agent.md on 2026-11-05; fixture_rules.html is the market's /rules page on
+Round 3 section of the market's /agent.md on 2026-11-05 (plus the Patch 3.4 Saved sentence of 2026-11-07); fixture_rules.html is the market's /rules page on
 2026-11-06 (three patch articles: 3.3 latest, 3.2, 3.0)."""
 import copy
 import os
@@ -28,7 +28,8 @@ H = 3600
 PRICES = {"window_s": 3600, "free": 50, "per_unit": 0.002, "max": 1.5,
           "surge": [{"sku": f"G{i:02d}", "name": "이름", "units": 100 - i, "factor": 1.1} for i in range(12)]}
 TODAY = {"supply_every_min": 20, "supply_open_min": 3, "break_window_h": 6, "storage_pct_day": 1.0,
-         "vote_min_deals": 5, "book_counts_stock_at_cost": True, "stock_pays_storage": True, "post_gap_min": 5, "shop_weights": {"book": 0.5, "revenue": 0.3, "stars": 0.2},
+         "vote_min_deals": 5, "book_counts_stock_at_cost": True, "stock_pays_storage": True,
+         "saved_is_kept_share_over_deals_plus_100": True, "post_gap_min": 5, "shop_weights": {"book": 0.5, "revenue": 0.3, "stars": 0.2},
          "buyer_weights": {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}}
 
 

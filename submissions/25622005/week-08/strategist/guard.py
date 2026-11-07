@@ -13,7 +13,8 @@ policy.RANGES. "revert" (an outcome check undoing a change) skips the cooldown, 
 block and max_changes. "bounds" (bounds_rows) moves a value outside its TUNABLE range to the nearest
 bound, with no step, cooldown, block or max_changes. "migration" (strategist/migrate.py: a default the code
 release changed) and "linked" (linked_rows: buyer.cap_food down to 1 - buyer.min_surplus_list) set a tunable
-key to their value within its bounds, also with no step, cooldown, block or max_changes. No source skips
+key to their value within its bounds, also with no step, cooldown, block or max_changes. "objective"
+(strategist/objective.py, score_twin) sets buyer.min_kept the same way, stepped by that module. No source skips
 LINKED or validate.
 A model raise of seller.floor_list above the market's 24 h clearing price for goods (p_clear, median
 paid/list) is refused. A key in policy.DEFAULTS but missing from the file acts at its DEFAULT, so its
@@ -96,7 +97,8 @@ LINKED = {
          lambda p: max(0, p["stock"]["focus_max"] + p["stock"]["trend_max"] - MAX_LISTS)),
 }
 EPS = 1e-9
-SOURCES = ("model", "market-rule", "revert", "bounds", "migration", "linked")
+SOURCES = ("model", "market-rule", "revert", "bounds", "migration", "linked", "objective")
+OBJECTIVE_KEYS = ("buyer.min_kept",)    # the only keys a source "objective" row (strategist/objective.py) may set
 LINKED_REPAIR = ("buyer.cap_food",)     # the only key a "linked" row may set (linked_rows)
 
 
@@ -276,6 +278,9 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
         if source == "linked" and key not in LINKED_REPAIR:
             reject("no linked repair for this key")
             continue
+        if source == "objective" and key not in OBJECTIVE_KEYS:
+            reject("not an objective key")
+            continue
         if not _number(requested):
             reject("not a number")
             continue
@@ -303,7 +308,7 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
                 continue
             new = _round(key, min(max(requested, lo), hi))
             clamped = new != requested
-        elif source in ("migration", "linked"):
+        elif source in ("migration", "linked", "objective"):
             lo, hi, _ = bounds(key, pol)
             new = _round(key, min(max(requested, lo), hi))
             clamped = new != requested

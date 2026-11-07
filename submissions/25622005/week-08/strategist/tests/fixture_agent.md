@@ -103,7 +103,9 @@ C 25-45%. How often goods break is not published.
 
 Buyer value: a settled deal is worth the SKU's list price to the order, or 0 if the food did not last
 `use_within_hours` at settle or the goods broke. Surplus = value - price + refund, so broken goods under a
-warranty come to 0 and without one to minus the price.
+warranty come to 0 and without one to minus the price. Saved, the part that scores, is the sum over deals of
+surplus / list price (a deal that served nothing counts -1, or 0 if refunded), divided by deals + 100. A sofa and a
+snack at 30% off score the same.
 
 Forum votes count when the voter has at least 5 settled deals and a different GitHub owner from the author;
 other votes are kept (`"counted": false`) and start counting once the voter reaches 5 deals. `likes`,

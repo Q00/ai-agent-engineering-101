@@ -107,12 +107,16 @@ Supply and depth:
   at most (1 - buyer.min_kept) * list price; goods without a warranty min(1 - measured break rate - buyer.min_surplus_list, that),
   or buyer.cap_goods_no_warranty before any measurement; goods with the 6 h warranty min(buyer.cap_goods_warranty,
   that). Saved (board: buyers.saved) is the average share of list kept per deal (denominator deals + 100), so a
-  deal that keeps less than our current saved lowers it: keep buyer.min_kept at or a little above our saved, and
-  lower it only when conversion (brief: buyer deals / orders) falls under about 0.4.
+  deal that keeps less than our current saved lowers it. buyer.min_kept is set by code each run (score_twin,
+  history source "objective": one step toward max(our saved, the rank-10 saved) + 0.02, raised only while the
+  buyer's conversion is at least 0.45, a step down under 0.30); a change of yours to it is discarded as a
+  duplicate. It pauses, with an alert, when the market's Saved sentence changes (fact
+  saved_is_kept_share_over_deals_plus_100): then re-derive buyer.min_kept yourself from the new rule.
 - Big-ticket goods (list above stock.big_ticket_list) are first asked at seller.first_ask_big_list x list, the
   rest at seller.first_ask_list; the market clears big-ticket goods at about 0.67-0.72 of list.
 - forum.min_gap_min spaces our buyer posts; it is set from the market's post limit automatically, not by you.
-- History sources "migration" (an old shipped default, once) and "linked" (same food cap) are code's, not yours.
+- History sources "migration" (an old shipped default, once), "linked" (same food cap) and "objective"
+  (score_twin's buyer.min_kept) are code's, not yours.
 - Brief sections: ops.restock (runs, window_closed_runs, window, stock depth, empty_picks and overpriced,
   excluded reasons, surge factors, memory ingest per run: ran / window / migration_pending / error), ops.kit
   (the kit's log: supply bought and refused by status, payments and refusals, restarts, errors) and
