@@ -81,7 +81,7 @@ def policy_at(root=ROOT):
         if not isinstance(adaptive, dict) or type(adaptive.get("enabled")) is not bool:
             raise ValueError("Invalid adaptive inventory policy")
         for key, low, high in (("max_candidates", 1, 12), ("max_retained_skus", 6, 32),
-                               ("max_units_per_run", 1, 4), ("low_stock_units", 1, 12),
+                               ("max_units_per_run", 1, 8), ("low_stock_units", 1, 20),
                                ("minimum_public_sales", 3, 100), ("minimum_public_buyers", 2, 20),
                                ("minimum_public_shops", 2, 20)):
             value = adaptive.get(key)
@@ -93,6 +93,16 @@ def policy_at(root=ROOT):
         depth = adaptive.get("proven_max_units_per_sku", 1)
         if type(depth) is not int or not 1 <= depth <= min(2, stock["max_units_per_sku"]):
             raise ValueError("Invalid adaptive inventory policy: proven_max_units_per_sku")
+        replenishment = adaptive.get("replenishment", {"enabled": False})
+        if not isinstance(replenishment, dict) or type(replenishment.get("enabled")) is not bool:
+            raise ValueError("Invalid adaptive replenishment policy")
+        for key, low, high in (("lookback_seconds", 3600, 3600), ("cover_seconds", 1200, 2400),
+                               ("max_units_per_sku", depth, 4),
+                               ("distinct_skus_before_depth", 1, 4), ("food_priority_units", 0, 1)):
+            if replenishment["enabled"] or key in replenishment:
+                value = replenishment.get(key)
+                if type(value) is not int or not low <= value <= high:
+                    raise ValueError("Invalid adaptive replenishment policy: " + key)
         turnover = adaptive.get("turnover_goods", {"enabled": False})
         if not isinstance(turnover, dict) or type(turnover.get("enabled")) is not bool:
             raise ValueError("Invalid affordable goods policy")

@@ -30,6 +30,11 @@ class YmsRestockTests(unittest.TestCase):
         self.policy = policy_at()
         self.cfg = self.policy["restock"]
         self.rules = self.cfg["adaptive_goods"]
+        # Preserve the first YMS slot policy. New coverage has separate tests.
+        self.cfg["max_units_per_sku"] = 2
+        self.rules.update(max_units_per_run=4, low_stock_units=12)
+        self.rules["replenishment"] = {"enabled": False}
+        self.rules["food_pilots"]["max_units_per_run"] = 1
         self.inv = {"round": 3, "start": 5000000, "balance": 5000000,
                     "injected": 0, "units": [], "surge": [], "restock": {
                         "open": True, "opens_at": self.now - 30, "closes_at": self.now + 150}}

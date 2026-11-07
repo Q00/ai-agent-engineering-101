@@ -123,6 +123,10 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
     tried = Counter(a["sku"] for a in attempts)
     buy, choices = Counter(), []
     remaining = budget
+    replenishment = (adaptive_rules or {}).get("replenishment", {})
+    coverage_enabled = replenishment.get("enabled") is True
+    food_rules = (adaptive_rules or {}).get("food_pilots", {})
+    food_limit = food_rules.get("max_units_per_run", 0) if food_rules.get("enabled") else 0
 
     def stock_cap(sku):
         if sku in adaptive:
@@ -141,15 +145,42 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         cap = min(cap, 2 if proven and m.get("pending", 0) else 3 if proven else 1)
         return cap
 
+    def blockers(sku):
+        """Use the same limits for every allocation pass and its diagnostics."""
+        p, reasons = candidates[sku], []
+        if not stage["allow_purchases"]:
+            reasons.append("round_purchases_stopped")
+        if sku in paused:
+            reasons.append("paused_stock_or_economics")
+        if len(choices) >= slots:
+            reasons.append("total_unit_limit")
+        if held[sku] + buy[sku] >= stock_cap(sku):
+            reasons.append("sku_depth_limit")
+        if sku in adaptive:
+            credit = adaptive_credit((adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}),
+                                     capacity=stock_cap(sku))
+            if buy[sku] >= credit:
+                reasons.append("unconfirmed_supply_capacity")
+            if sum(buy[s] for s in adaptive) >= adaptive_rules["max_units_per_run"]:
+                reasons.append("adaptive_unit_limit")
+            if len(inv["units"]) + len(choices) >= adaptive_rules["low_stock_units"]:
+                reasons.append("adaptive_stock_target")
+            if p["kind"] == "food" and sum(buy[s] for s in adaptive
+                                          if candidates[s]["kind"] == "food") >= food_limit:
+                reasons.append("food_unit_limit")
+        elif focused and buy[sku] >= focused["eligible"][sku]["remaining_credit"]:
+            reasons.append("unconfirmed_supply_capacity")
+        if p["worst_cost"] > remaining:
+            reasons.append("cash_reserve")
+        cost_reason = exposure.reason(sku, p)
+        if cost_reason:
+            reasons.append(cost_reason)
+        if not windows.get(sku, (True, None))[0]:
+            reasons.append("insufficient_round_sell_time")
+        return reasons
+
     def available():
-        return [sku for sku, p in candidates.items()
-                if stage["allow_purchases"] and sku not in paused
-                and held[sku] + buy[sku] < stock_cap(sku)
-                and (buy[sku] < adaptive_credit((adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}),
-                                               capacity=stock_cap(sku))
-                     if sku in adaptive else not focused or buy[sku] < focused["eligible"][sku]["remaining_credit"])
-                and p["worst_cost"] <= remaining and exposure.reason(sku, p) is None
-                and windows.get(sku, (True, None))[0]]
+        return [sku for sku in candidates if not blockers(sku)]
 
     def add(sku, reason):
         nonlocal remaining
@@ -177,6 +208,15 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
             sku = min(eligible, key=lambda s: (categories_held[candidates[s]["category"]], priority[s]))
             add(sku, "adaptive_affordable_turnover")
 
+    if adaptive and coverage_enabled:
+        # A small eligible food allocation must not depend on every proven
+        # bedding position already being filled. It shares all existing caps.
+        for _ in range(replenishment["food_priority_units"]):
+            eligible = [sku for sku in available() if sku in adaptive and candidates[sku]["kind"] == "food"]
+            if not eligible:
+                break
+            add(eligible[0], "adaptive_food_demand_pilot")
+
     if focused:
         def focus_rank(sku):
             evidence = focused["evidence"][sku]
@@ -198,14 +238,15 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         alternative_slots = min(max(0, adaptive_rules["max_units_per_run"] - early_units), slots - len(choices),
                                 max(0, adaptive_rules["low_stock_units"] - len(inv["units"]) - sum(buy.values())))
         priority = {sku: rank for rank, sku in enumerate(adaptive)}
-        food_rules = adaptive_rules.get("food_pilots", {})
-        food_limit = food_rules.get("max_units_per_run", 0) if food_rules.get("enabled") else 0
-        food_bought = 0
         for _ in range(alternative_slots):
-            eligible = [sku for sku in available() if sku in adaptive
-                        and (candidates[sku]["kind"] != "food" or food_bought < food_limit)]
+            eligible = [sku for sku in available() if sku in adaptive]
             if not eligible:
                 break
+            diverse = False
+            if coverage_enabled and sum(buy[s] > 0 for s in adaptive) < replenishment["distinct_skus_before_depth"]:
+                first_units = [s for s in eligible if buy[s] == 0]
+                if first_units:
+                    eligible, diverse = first_units, True
             def mix_rank(s):
                 food = candidates[s]["kind"] == "food"
                 # Affordable goods already received distinct priority slots.
@@ -213,12 +254,17 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
                 # ordinary pilots fill unused slots. Keep legacy food-first
                 # behavior when the optional turnover policy is disabled.
                 tier = (0 if stock_cap(s) > 1 else 1 if food else 2) if turnover_enabled else int(not food)
+                if coverage_enabled:
+                    # Compare current activity only after proven profitability.
+                    # Ratios balance coverage across SKUs; they are not forecasts
+                    # of guaranteed sales or margins. Breadth is a soft target.
+                    return (tier, 0 if diverse else (held[s] + buy[s]) / stock_cap(s),
+                            -adaptive[s]["evidence"]["sampled_turnover_value"], priority[s])
                 return tier, priority[s]
             sku = min(eligible, key=mix_rank)
             food = candidates[sku]["kind"] == "food"
             add(sku, "adaptive_food_demand_pilot" if food else
                 "adaptive_proven_replenishment" if stock_cap(sku) > 1 else "adaptive_public_demand_pilot")
-            food_bought += int(food)
     exploration_slots = cfg["exploration_units"] if stage["allow_exploration"] and not focused else 0
     preferred_slots = max(0, slots - exploration_slots) if sales and not focused else 0
     for _ in range(preferred_slots):
@@ -249,6 +295,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
               "cash_floor_hold" if budget == 0 else "planned" if choices else "no_eligible_stock")
     bankruptcy_eligible = (number(inv.get("bankrupt_line")) and inv["balance"] < inv["bankrupt_line"]
                            and type(inv.get("bankruptcies_left")) is int and inv["bankruptcies_left"] > 0)
+    allocation_blocks = {sku: reasons for sku in candidates if (reasons := blockers(sku))}
     return {"buy": [{"sku": sku, "qty": qty} for sku, qty in buy.items()]}, {
         "cash_floor": reserve, "balance_observed": inv["balance"], "budgeted_cost": budget - remaining,
         "projected_min_balance": math.floor(inv["balance"]) - (budget - remaining),
@@ -259,19 +306,31 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         "exposure": exposure.summary(), "horizon": stage,
         "focused_goods": focused,
         "adaptive_goods": {"enabled": bool(adaptive_rules),
+            "max_units_per_run": adaptive_rules["max_units_per_run"] if adaptive_rules else None,
             "low_stock_units": adaptive_rules["low_stock_units"] if adaptive_rules else None,
             "observed_stock_units": len(inv["units"]), "pool": {
             sku: {**row["evidence"], "remaining_credit": adaptive_credit(
                 (adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}), capacity=stock_cap(sku))}
             for sku, row in adaptive.items()},
-            "max_units_per_sku": adaptive_rules.get("proven_max_units_per_sku", 1) if adaptive_rules else 1,
+            "max_units_per_sku": (min(cfg["max_units_per_sku"], replenishment["max_units_per_sku"])
+                                  if coverage_enabled else
+                                  adaptive_rules.get("proven_max_units_per_sku", 1) if adaptive_rules else 1),
+            "baseline_units_per_sku": adaptive_rules.get("proven_max_units_per_sku", 1) if adaptive_rules else 1,
             "pilot_units_per_sku": 1,
+            "replenishment": {"enabled": coverage_enabled,
+                "distinct_skus_planned": sum(buy[s] > 0 for s in adaptive),
+                "distinct_skus_before_depth": replenishment.get("distinct_skus_before_depth")},
             "turnover_goods": {"enabled": turnover_enabled,
                 "priority_units_planned": sum(c["reason"] == "adaptive_affordable_turnover" for c in choices),
                 "max_list_price": turnover.get("max_list_price") if turnover_enabled else None},
             "food_max_units_per_run": (adaptive_rules.get("food_pilots", {}).get("max_units_per_run", 0)
                                        if adaptive_rules and adaptive_rules.get("food_pilots", {}).get("enabled") else 0)},
         "depth_limits": {sku: stock_cap(sku) for sku in buy},
+        "allocation": {"candidate_count": len(candidates), "planned_units": len(choices),
+                       "unit_limit": slots, "unused_units": max(0, slots - len(choices)),
+                       "blocked_reason_counts": dict(Counter(r for reasons in allocation_blocks.values() for r in reasons)),
+                       "blocked_candidates": dict(list(allocation_blocks.items())[:20]),
+                       "blocked_candidates_truncated": len(allocation_blocks) > 20},
         "horizon_exclusions": dict(Counter(reason for allowed, reason in windows.values() if not allowed)),
         "stock_observations": {"held_cost": sum(m["held_cost"] for m in lifecycle_stats.values()),
                                "unresolved_cost": sum(m["unresolved_cost"] for m in lifecycle_stats.values()),

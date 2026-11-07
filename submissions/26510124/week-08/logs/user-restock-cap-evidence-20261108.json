@@ -1,0 +1,60 @@
+{
+  "source": "User-provided server restock-decisions.jsonl excerpt in this conversation",
+  "recorded_utc": "2026-11-07T19:48:50.380513+00:00",
+  "selection": "Relevant fields only; not the complete original log or a live server read",
+  "observed": {
+    "time": 1794081361.9647005,
+    "round": 3,
+    "status": "planned",
+    "window_unit_cap": 8,
+    "buy": [
+      {
+        "sku": "G5cd4ffbc",
+        "qty": 2
+      },
+      {
+        "sku": "G07ec17d5",
+        "qty": 2
+      }
+    ],
+    "cash_floor": 2000000,
+    "balance_observed": 20635724,
+    "budgeted_cost": 1075504,
+    "projected_min_balance": 19560220,
+    "own_settled_sample": 420,
+    "observed_stock_units": 1,
+    "adaptive_candidates": 12,
+    "adaptive_max_units_per_sku": 2,
+    "focused_excluded": {
+      "G8095ddd6": "insufficient_fresh_public_demand",
+      "Gb5d0dde7": "own_cost_unknown_or_refund_observed",
+      "G03d0199f": "own_mature_profit_not_positive"
+    },
+    "eligible_unselected_examples": {
+      "G85a1a856": {
+        "kind": "goods",
+        "own_mature": 30,
+        "own_net_estimate": 2227295,
+        "remaining_credit": 2
+      },
+      "G114aefb6": {
+        "kind": "food",
+        "sales": 6,
+        "buyers": 3,
+        "named_shops": 2,
+        "catalog_shelf_hours": 720,
+        "remaining_credit": 1
+      },
+      "G1831f2c0": {
+        "kind": "food",
+        "sales": 31,
+        "buyers": 12,
+        "named_shops": 9,
+        "catalog_shelf_hours": 720,
+        "remaining_credit": 1
+      }
+    },
+    "next_status": "already_planned"
+  },
+  "diagnosis": "Deployed adaptive allowance of four units consumed by two proven SKUs. Total eight-unit cap and cash reserve had room. Candidate sample is not a guarantee of future eligibility or successful delivery."
+}

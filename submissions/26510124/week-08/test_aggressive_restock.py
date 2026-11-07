@@ -29,6 +29,9 @@ class AggressiveRestockTests(unittest.TestCase):
         self.policy = policy_at()
         self.cfg = self.policy["restock"]
         # Isolate the Nov 6 cost-limit experiment from the later YMS slot ordering.
+        self.cfg["max_units_per_sku"] = 2
+        self.cfg["adaptive_goods"].update(max_units_per_run=4, low_stock_units=12)
+        self.cfg["adaptive_goods"]["replenishment"] = {"enabled": False}
         self.cfg["adaptive_goods"]["turnover_goods"] = {"enabled": False}
         self.inv = {"round": 3, "balance": 10248601, "start": 5000000,
                     "units": [], "surge": [], "restock": {
