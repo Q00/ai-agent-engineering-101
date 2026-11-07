@@ -13,4 +13,4 @@ This file tracks implementation against `adaptive_pipeline.seed.yaml`.
 - [x] Windows start/recovery scripts
 - [x] Rank milestones, velocity and leader-defense controller
 - [ ] Full Seed acceptance test suite
-- [ ] Foreground-to-supervisor operational handoff
+- [x] Foreground-to-supervisor operational handoff
