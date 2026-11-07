@@ -302,8 +302,8 @@ class NegotiationTests(unittest.TestCase):
         shop = FakeShop(first_ask=90000, floor=65000)                       # 0: the open offer, then the cap
         r = self.go(shop, p=pol(step_list=0.0, open_list=0.2))
         self.assertEqual((r["receipt"]["price"], r["offers"]), (70000, [20000, 70000]))
-        shop = FakeShop(first_ask=90000, floor=65000)                       # past the target: no step
-        r = self.go(shop, p=pol(step_list=0.1, open_list=0.2, target_s=1), start=time.monotonic() - 5)
+        shop = FakeShop(first_ask=75000, floor=65000)                       # past the target: no step
+        r = self.go(shop, p=pol(step_list=0.1, open_list=0.2, target_s=1, continue_p=0.5), start=time.monotonic() - 5)
         self.assertEqual((r["receipt"]["price"], r["offers"]), (70000, [20000, 70000]))
 
     def test_warranty_offer_raises_goods_cap(self):
