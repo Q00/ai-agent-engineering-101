@@ -126,6 +126,9 @@ def validate(pol):
             g in ("A", "B", "C") and not isinstance(v, bool) and isinstance(v, (int, float)) and 0.5 <= v <= 1.0
             for g, v in cap.items())):
         raise PolicyError(f"shop.star_price_cap={cap!r} must map grades A/B/C to shares in [0.5, 1]")
+    mf = sp.get("market_floor_frac")                    # v2.7: A/B goods floor as a share of the SKU market price
+    if mf is not None and (isinstance(mf, bool) or not isinstance(mf, (int, float)) or not 0.5 <= mf <= 1.0):
+        raise PolicyError(f"shop.market_floor_frac={mf!r} outside [0.5, 1]")
     for blk in list((pol.get("categories") or {}).values()) + [sp]:
         k = blk.get("skus_per_category")
         if k is not None and (isinstance(k, bool) or not isinstance(k, int) or not 1 <= k <= 5):
@@ -249,6 +252,24 @@ def endgame_floor(unit, pol, inv=None, now=None, relax=0.0):
     return min(floor_price(unit, pol, inv, now, relax), max(cost + 1, math.ceil(cost * (1 + max(0.0, float(m))))))
 
 
+def market_floor(unit, pol, stats, ask=None):
+    """v2.7: lowest price for an A/B goods unit = shop.market_floor_frac x the SKU's market settle price
+    (shop.ask_quantile, >= 5 settles), never above the ask. None when the key is unset, for food and grade C, or
+    when the SKU has too few settles. 24 h to 11-07 20:00 KST: 103 of 326 goods sales went below 0.9 x the same
+    SKU and grade's market median, 66 of them after 3+ rounds (the endgame took the cost floor); the gap to 0.9 x
+    market was 4.9M. One curtain SKU: asks 0.75-0.76 of list = market 0.75, sold 0.55-0.66 after 4-5 rounds."""
+    sp = pol.get("shop") or {}
+    frac = sp.get("market_floor_frac")
+    if not frac or unit.get("kind") == "food" or unit.get("grade") not in ("A", "B"):
+        return None
+    s = _stat(stats, "sku", unit.get("sku"))
+    q = sp.get("ask_quantile") or "p75"
+    if not s or s.get("n", 0) < 5 or not s.get(q):
+        return None
+    m = int(math.ceil(s[q] * float(frac)))
+    return m if ask is None else min(m, int(ask))
+
+
 def food_grade_now(unit, catalog_shelf_hours=None, now=None, safety=0.0):
     """Food grade at this moment from shelf life left (A >= 80%, B >= 45%). With `safety`, a unit within that
     share of a cut is graded down. None when it cannot be known (no shelf_hours in the catalog or the unit, or no
@@ -318,7 +339,8 @@ def ask_price(unit, pol, stats=None, now=None, inv=None, shelf_hours=None, relax
     return max(floor_price(unit, pol, inv, now, relax), int(round(p)))
 
 
-def respond(unit, pol, ask, offer, rounds, inv=None, now=None, relax=0.0, prev_offer=None, history=None):
+def respond(unit, pol, ask, offer, rounds, inv=None, now=None, relax=0.0, prev_offer=None, history=None,
+            market=None):
     """Seller move on a buyer's offer: ("accept", price) | ("counter", price) | ("reject", None).
     relax (min-volume guard) lowers the floor margin and doubles the concession at r = 1; never below cost.
     `history`: the buyer's earlier offers in this negotiation, oldest first (prev_offer = history[-1] if not given).
@@ -328,9 +350,13 @@ def respond(unit, pol, ask, offer, rounds, inv=None, now=None, relax=0.0, prev_o
           has hit its cap (a capped linear ramp; our own buyer walks instead of repeating its cap), or
       (c) the seller would otherwise reject (past max_rounds, not rising or patience_rounds used up).
     A buyer still raising at its usual pace is countered at the normal floor (past max_rounds up to patience_rounds),
-    so a buyer whose cap reaches the floor pays the floor."""
+    so a buyer whose cap reaches the floor pays the floor.
+    `market` (v2.7, market_floor): when set, neither the floor nor the endgame floor goes below it (not when
+    liquidating or relaxing for volume)."""
     c = resolve(pol, unit.get("category"), unit.get("kind"))
     floor = floor_price(unit, pol, inv, now, relax)
+    if market is not None and relax <= 0 and not liquidating(inv, pol):
+        floor = max(floor, int(market))
     hist = [int(x) for x in (history or []) if x is not None]
     if prev_offer is None and hist:
         prev_offer = hist[-1]
@@ -340,6 +366,8 @@ def respond(unit, pol, ask, offer, rounds, inv=None, now=None, relax=0.0, prev_o
     if offer is not None and offer >= nxt:
         return "accept", guard_price(unit, int(offer))
     hard = endgame_floor(unit, pol, inv, now, relax)
+    if hard is not None and hard < floor and market is not None and relax <= 0 and not liquidating(inv, pol):
+        hard = max(hard, int(market))                   # v2.7: the endgame stops at the market floor too
     late = hard is not None and offer is not None and offer >= hard and rounds >= c.get("endgame_round", c["max_rounds"])
     stalled = offer is not None and prev_offer is not None and offer <= prev_offer
     shrank = offer is not None and len(hist) >= 2 and prev_offer == hist[-1] and offer - hist[-1] < hist[-1] - hist[-2]

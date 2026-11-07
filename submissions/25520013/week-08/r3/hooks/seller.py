@@ -383,8 +383,9 @@ class Seller(AgentExecutor):
         pol = deal.get("pol") or self.pol                # v1.16: the policy the deal was opened with
         try:
             hist = deal.get("offers") or []             # v1.6: the buyer's earlier offers (patience, stall, cap)
+            mk = P.market_floor(u, pol, deal.get("stats"), deal["ask"])   # v2.7: shop.market_floor_frac
             move, price = P.respond(u, pol, deal["ask"], offer, deal["rounds"], deal["inv"], relax=deal["relax"],
-                                    prev_offer=hist[-1] if hist else None, history=list(hist))
+                                    prev_offer=hist[-1] if hist else None, history=list(hist), market=mk)
             if move == "accept":
                 price = P.guard_price(u, price)                 # hard guard: strictly above cost, int only
             return move, price
