@@ -10,6 +10,7 @@ A receipt above what we agreed never goes out: the kit pays any signed receipt w
 cheating receipt is passed on as null and the shop is blocked (reflex).
 """
 import json
+import re
 import time
 import uuid
 
@@ -151,12 +152,16 @@ def max_share(bar, kind, grade, warranty_hours, rates):
 
 
 def assumed_grade(claim, warranty_hours):
-    """Without a warranty only grade A is paid (accept grades); with one, the claimed grade, B when none is claimed."""
+    """The grade a deal's value is reckoned at. A claimed grade counts as it is (11/7 11:xx: a goods receipt claiming
+    C without a warranty was reckoned as A, agreed, and then refused by the kit's grade-A policy - 43 of 250 recent
+    agreed deals; the order was lost). Unclaimed: A without a warranty (the kit pays only A), B with one."""
     claim = str(claim or "").upper()
-    if not warranty_hours:
-        return "A"
-    return claim if claim in BREAK_PRIOR else "B"
+    if claim in BREAK_PRIOR:
+        return claim
+    return "B" if warranty_hours else "A"
 
+
+NO_STOCK = re.compile(r"\b(none|no|not|out)\b[^.]{0,30}\bin stock|out of stock|sold out|재고\s*(가\s*)?(없|부족|소진)", re.I)
 
 PAY_RATE_MIN_N = 10             # paid + unpaid before a shop's pay rate is trusted
 
@@ -574,6 +579,10 @@ class BuyerCore:
             a.cancel()
         if receipt is None:
             outcome = outcome or {"TASK_STATE_REJECTED": "rejected", "TASK_STATE_CANCELED": "canceled"}.get(state, "failed")
+            said = next((h.get("excerpt") or "" for h in reversed(hist) if h["from"] == "shop"), "")
+            if NO_STOCK.search(said):
+                reflex.record_stock_miss(shop["name"], sku, ctx.now())
+                outcome = "no stock"
             return self.finish_none(shop, f"no deal ({outcome})", shop_obj=shop, agreed=None, list_price=c.get("list_price"))
         return self.check_and_finish(shop, sku, c, kind, receipt, offers, hist)
 

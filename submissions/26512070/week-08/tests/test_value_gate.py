@@ -10,8 +10,19 @@ class ValueGate(unittest.TestCase):
     def test_food_value_is_the_share_kept(self):
         self.assertAlmostEqual(b.deal_value(0.7, "food", None, 0, RATES), 0.3)
 
+    def test_claimed_grade_counts_as_it_is(self):
+        self.assertEqual(b.assumed_grade("C", 0), "C")           # 11/7: was reckoned as A and refused at payment
+        self.assertEqual(b.assumed_grade(None, 0), "A")
+        self.assertLess(b.deal_value(0.6, "goods", b.assumed_grade("C", 0), 0, RATES), 0.27)
+
+    def test_no_stock_replies(self):
+        for t in ("Sorry, we have none of that in stock.", "Sorry, none of that in stock right now.", "Out of stock",
+                  "재고가 없습니다"):
+            self.assertTrue(b.NO_STOCK.search(t), t)
+        for t in ("No deal.", "We have plenty in stock at 5000", "재고 있습니다"):
+            self.assertFalse(b.NO_STOCK.search(t), t)
+
     def test_no_warranty_pays_grade_a_only(self):
-        self.assertEqual(b.assumed_grade("C", 0), "A")
         self.assertEqual(b.assumed_grade("C", 6), "C")
         self.assertEqual(b.assumed_grade(None, 6), "B")
 

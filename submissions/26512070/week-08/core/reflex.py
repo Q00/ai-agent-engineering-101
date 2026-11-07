@@ -96,13 +96,27 @@ def blocked():
 STOCK_RETRY = 2 * 3600   # a SKU a shop agreed on but could not ship is not asked of that shop again for this long
 
 
+STOCK_MISS_RETRY = 30 * 60   # a shop that said it has none of a SKU it lists is not asked for it again this long
+
+
+def record_stock_miss(shop_name, sku, now=None):
+    """11/7 11:xx: ~300 of the food orders in 3 h ended with 'Sorry, we have none of that in stock' at a shop whose
+    listing showed the SKU (the listing is stale); the pair is skipped for STOCK_MISS_RETRY."""
+    r = load()
+    _shop(r, shop_name).setdefault("stock_missed", {})[sku] = now or time.time()
+    atomic.write_json(path(), r)
+
+
 def stock_refused(now=None):
     """{(shop name, sku)} the shop agreed on and then had no unit for at checkout (11/6 20:xx: 52-61% of agreed
     deals unpaid, one unit refused 59 times - psyoung82 and others keep offering a unit they sold; the pay rate
     over all history still let them through)."""
     now = now or time.time()
-    return {(n, k) for n, s in load()["shops"].items() for k, t in (s.get("stock_refused") or {}).items()
-            if now - t < STOCK_RETRY}
+    out = set()
+    for n, s in load()["shops"].items():
+        out |= {(n, k) for k, t in (s.get("stock_refused") or {}).items() if now - t < STOCK_RETRY}
+        out |= {(n, k) for k, t in (s.get("stock_missed") or {}).items() if now - t < STOCK_MISS_RETRY}
+    return out
 
 
 UNSIGNED_RETRY = 3600     # a skipped shop is tried again after this long (it may have fixed its signing)
