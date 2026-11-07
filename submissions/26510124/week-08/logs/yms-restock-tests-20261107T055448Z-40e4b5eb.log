@@ -1,0 +1,29 @@
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_inventory.py:14: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_absent_affordable_demand_leaves_valid_focus_capacity_available (test_yms_restock.YmsRestockTests.test_absent_affordable_demand_leaves_valid_focus_capacity_available) ... ok
+test_affordable_priority_preserves_sku_category_and_run_cost_bounds (test_yms_restock.YmsRestockTests.test_affordable_priority_preserves_sku_category_and_run_cost_bounds) ... ok
+test_food_one_unit_limit_is_shared_across_two_eligible_food_skus (test_yms_restock.YmsRestockTests.test_food_one_unit_limit_is_shared_across_two_eligible_food_skus) ... ok
+test_held_depth_and_unknown_supply_cannot_be_bypassed_by_priority (test_yms_restock.YmsRestockTests.test_held_depth_and_unknown_supply_cannot_be_bypassed_by_priority) ... ok
+test_low_cash_still_buys_an_affordable_unit_without_using_reserve (test_yms_restock.YmsRestockTests.test_low_cash_still_buys_an_affordable_unit_without_using_reserve) ... ok
+test_missing_stale_or_nondiverse_evidence_cannot_force_priority_or_expensive_fallback (test_yms_restock.YmsRestockTests.test_missing_stale_or_nondiverse_evidence_cannot_force_priority_or_expensive_fallback) ... ok
+test_one_proven_affordable_sku_does_not_take_both_distinct_priority_slots (test_yms_restock.YmsRestockTests.test_one_proven_affordable_sku_does_not_take_both_distinct_priority_slots) ... ok
+test_policy_reserves_two_affordable_distinct_goods_before_focused_beds (test_yms_restock.YmsRestockTests.test_policy_reserves_two_affordable_distinct_goods_before_focused_beds) ... ok
+test_priority_and_later_adaptive_slots_share_twelve_unit_stock_target (test_yms_restock.YmsRestockTests.test_priority_and_later_adaptive_slots_share_twelve_unit_stock_target) ... ok
+test_remaining_capacity_prefers_proven_goods_before_one_food_pilot (test_yms_restock.YmsRestockTests.test_remaining_capacity_prefers_proven_goods_before_one_food_pilot) ... ok
+test_repeated_open_window_does_not_reset_priority_or_purchase_credits (test_yms_restock.YmsRestockTests.test_repeated_open_window_does_not_reset_priority_or_purchase_credits) ... FAIL
+test_three_proven_primaries_can_take_only_six_remaining_global_slots (test_yms_restock.YmsRestockTests.test_three_proven_primaries_can_take_only_six_remaining_global_slots) ... ok
+test_turnover_policy_rejects_unsupported_values (test_yms_restock.YmsRestockTests.test_turnover_policy_rejects_unsupported_values) ... ok
+
+======================================================================
+FAIL: test_repeated_open_window_does_not_reset_priority_or_purchase_credits (test_yms_restock.YmsRestockTests.test_repeated_open_window_does_not_reset_priority_or_purchase_credits)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_yms_restock.py", line 242, in test_repeated_open_window_does_not_reset_priority_or_purchase_credits
+    self.assertEqual(load_json(md / "restock-control.json"), controls)
+AssertionError: {'rou[1741 chars]5922}, 'last_skip': {'status': 'already_planne[129 chars]ne}}} != {'rou[1741 chars]5922}}
+Diff is 3957 characters long. Set self.maxDiff to None to see it.
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.037s
+
+FAILED (failures=1)

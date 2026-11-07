@@ -93,6 +93,15 @@ def policy_at(root=ROOT):
         depth = adaptive.get("proven_max_units_per_sku", 1)
         if type(depth) is not int or not 1 <= depth <= min(2, stock["max_units_per_sku"]):
             raise ValueError("Invalid adaptive inventory policy: proven_max_units_per_sku")
+        turnover = adaptive.get("turnover_goods", {"enabled": False})
+        if not isinstance(turnover, dict) or type(turnover.get("enabled")) is not bool:
+            raise ValueError("Invalid affordable goods policy")
+        for key, low, high in (("max_candidates", 1, 4), ("priority_units_per_run", 1, 2),
+                               ("max_list_price", 1, 300000)):
+            if turnover["enabled"] or key in turnover:
+                value = turnover.get(key)
+                if type(value) is not int or not low <= value <= high:
+                    raise ValueError("Invalid affordable goods policy: " + key)
         food = adaptive.get("food_pilots", {"enabled": False})
         if not isinstance(food, dict) or type(food.get("enabled")) is not bool:
             raise ValueError("Invalid adaptive food policy")

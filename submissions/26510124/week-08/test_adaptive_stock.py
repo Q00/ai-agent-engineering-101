@@ -24,6 +24,8 @@ class AdaptiveStockTests(unittest.TestCase):
         self.now = time.time()
         self.policy = policy_at()
         self.cfg, self.rules = self.policy["restock"], self.policy["restock"]["adaptive_goods"]
+        # Earlier focus-first experiments; YMS turnover priority has separate integration tests.
+        self.rules["turnover_goods"] = {"enabled": False}
         # Preserve the earlier 4->6->8 diversification regressions explicitly.
         # The current larger policy is covered in test_aggressive_restock.py.
         self.cfg.update(max_units_per_run=4, max_run_cost_percent=44, max_sku_cost_percent=26)

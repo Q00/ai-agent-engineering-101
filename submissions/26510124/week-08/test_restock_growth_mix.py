@@ -23,6 +23,9 @@ class RestockGrowthMixTests(unittest.TestCase):
         self.now = time.time()
         self.policy = policy_at()
         self.cfg = self.policy["restock"]
+        # Preserve the earlier Lee-inspired mix; test_yms_restock covers current priority.
+        self.cfg["adaptive_goods"]["turnover_goods"] = {"enabled": False}
+        self.cfg["adaptive_goods"]["food_pilots"].update(max_candidates=4, max_units_per_run=2)
         self.inv = {"round": 3, "balance": 11695754, "start": 5000000, "injected": 0,
                     "units": [], "surge": [], "restock": {
                         "open": True, "opens_at": self.now - 30, "closes_at": self.now + 150}}
@@ -61,7 +64,7 @@ class RestockGrowthMixTests(unittest.TestCase):
     def quantity(self, decision, kind):
         return sum(row["qty"] for row in decision["buy"] if self.catalog[row["sku"]]["kind"] == kind)
 
-    def test_actual_policy_plans_two_food_pilots_inside_four_adaptive_units(self):
+    def test_earlier_mix_plans_two_food_pilots_inside_four_adaptive_units(self):
         self.assertTrue(self.cfg["reinvestment"]["enabled"])
         self.assertEqual(self.cfg["adaptive_goods"]["proven_max_units_per_sku"], 2)
         self.assertEqual(self.cfg["adaptive_goods"]["food_pilots"]["max_units_per_run"], 2)

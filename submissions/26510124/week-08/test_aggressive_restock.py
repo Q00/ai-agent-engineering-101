@@ -28,6 +28,8 @@ class AggressiveRestockTests(unittest.TestCase):
         self.now = time.time()
         self.policy = policy_at()
         self.cfg = self.policy["restock"]
+        # Isolate the Nov 6 cost-limit experiment from the later YMS slot ordering.
+        self.cfg["adaptive_goods"]["turnover_goods"] = {"enabled": False}
         self.inv = {"round": 3, "balance": 10248601, "start": 5000000,
                     "units": [], "surge": [], "restock": {
                         "open": True, "opens_at": self.now - 30, "closes_at": self.now + 150}}

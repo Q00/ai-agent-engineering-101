@@ -160,6 +160,23 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         categories_held[p["category"]] += 1
         choices.append({"sku": sku, "reason": reason, "budgeted_cost": p["worst_cost"]})
 
+    turnover = adaptive_rules.get("turnover_goods", {}) if adaptive_rules else {}
+    turnover_enabled = turnover.get("enabled") is True
+    if adaptive and turnover_enabled:
+        priority = {sku: rank for rank, sku in enumerate(adaptive)}
+        priority_slots = min(turnover["priority_units_per_run"], adaptive_rules["max_units_per_run"], slots,
+                             max(0, adaptive_rules["low_stock_units"] - len(inv["units"])))
+        for _ in range(priority_slots):
+            eligible = [sku for sku in available() if sku in adaptive
+                        and adaptive[sku].get("turnover_candidate") and buy[sku] == 0]
+            if not eligible:
+                break
+            # Reserve room before expensive focused goods consume the budget.
+            # Category breadth is a preference, never a requirement that would
+            # exclude several independently demanded bedding products.
+            sku = min(eligible, key=lambda s: (categories_held[candidates[s]["category"]], priority[s]))
+            add(sku, "adaptive_affordable_turnover")
+
     if focused:
         def focus_rank(sku):
             evidence = focused["evidence"][sku]
@@ -168,7 +185,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
             return (int(focused["eligible"][sku]["secondary"]), held[sku] + buy[sku],
                     -int(measured), -pressure if measured else 0,
                     -evidence["buyers"] if measured else 0, focused["order"].index(sku))
-        for _ in range(slots):
+        for _ in range(slots - len(choices)):
             eligible = [sku for sku in available() if sku in focused["eligible"]]
             if not eligible:
                 break
@@ -177,7 +194,8 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
             sku = min(eligible, key=focus_rank)
             add(sku, focused["eligible"][sku]["reason"])
     if adaptive:
-        alternative_slots = min(adaptive_rules["max_units_per_run"], slots - len(choices),
+        early_units = sum(buy[sku] for sku in adaptive)
+        alternative_slots = min(max(0, adaptive_rules["max_units_per_run"] - early_units), slots - len(choices),
                                 max(0, adaptive_rules["low_stock_units"] - len(inv["units"]) - sum(buy.values())))
         priority = {sku: rank for rank, sku in enumerate(adaptive)}
         food_rules = adaptive_rules.get("food_pilots", {})
@@ -188,10 +206,15 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
                         and (candidates[sku]["kind"] != "food" or food_bought < food_limit)]
             if not eligible:
                 break
-            # A bounded low-price food allocation adds categories without
-            # allowing high-ticket ranking to consume every alternative slot.
-            # Food still needs fresh diverse settlements and all cost gates.
-            sku = min(eligible, key=lambda s: (candidates[s]["kind"] != "food", priority[s]))
+            def mix_rank(s):
+                food = candidates[s]["kind"] == "food"
+                # Affordable goods already received distinct priority slots.
+                # Next replenish proven goods, then the small food allocation;
+                # ordinary pilots fill unused slots. Keep legacy food-first
+                # behavior when the optional turnover policy is disabled.
+                tier = (0 if stock_cap(s) > 1 else 1 if food else 2) if turnover_enabled else int(not food)
+                return tier, priority[s]
+            sku = min(eligible, key=mix_rank)
             food = candidates[sku]["kind"] == "food"
             add(sku, "adaptive_food_demand_pilot" if food else
                 "adaptive_proven_replenishment" if stock_cap(sku) > 1 else "adaptive_public_demand_pilot")
@@ -243,6 +266,9 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
             for sku, row in adaptive.items()},
             "max_units_per_sku": adaptive_rules.get("proven_max_units_per_sku", 1) if adaptive_rules else 1,
             "pilot_units_per_sku": 1,
+            "turnover_goods": {"enabled": turnover_enabled,
+                "priority_units_planned": sum(c["reason"] == "adaptive_affordable_turnover" for c in choices),
+                "max_list_price": turnover.get("max_list_price") if turnover_enabled else None},
             "food_max_units_per_run": (adaptive_rules.get("food_pilots", {}).get("max_units_per_run", 0)
                                        if adaptive_rules and adaptive_rules.get("food_pilots", {}).get("enabled") else 0)},
         "depth_limits": {sku: stock_cap(sku) for sku in buy},
