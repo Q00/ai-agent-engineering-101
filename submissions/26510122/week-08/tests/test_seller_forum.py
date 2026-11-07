@@ -134,6 +134,42 @@ class ShopForumTests(unittest.TestCase):
                              {50: [options[1]]})
             self.assertEqual(forum.reply_quote_options(evidence, forum.MIDPRICE_REPLY_DAILY_CAP), {})
 
+    def test_targeted_quotes_use_verified_recent_settlements_and_separate_limits(self):
+        history = []
+        for ledger, buyer, price, source, age in [
+            (1, 'eligible', 2_000, 'market_verified_result', 120),
+            (2, 'eligible', 29_999, 'market_verified_result', 60),
+            (3, 'eligible', 40_000, 'market_verified_result', 86_401),
+            (4, 'mixed', 12_000, 'market_verified_result', 120),
+            (5, 'mixed', 30_000, 'market_verified_result', 60),
+            (6, 'unverified', 2_000, 'claimed', 120),
+            (7, 'unverified', 2_000, 'claimed', 60),
+            (8, 'duplicate', 2_000, 'market_verified_result', 120),
+        ]:
+            task = f't{ledger}'
+            sale = dict(event='settled', task_id=task, ledger=ledger, at=self.now-age, price=price)
+            history += [dict(event='buyer_link', task_id=task, buyer_name=buyer, source=source), sale, sale]
+        buyers = forum.counterparty_memory.recent_low_price_buyers(history, self.now, forum.MIDPRICE_MIN)
+        self.assertEqual(buyers, {'eligible'})
+        unit = {'unit': 'free', 'sku': 's1', 'kind': 'goods', 'grade': 'B', 'expires_at': None}
+        quote = {'unit': 'free', 'valid_until': self.now+60, 'warranty_hours': 6}
+        options = [quote | {'price': 25_000}, quote | {'price': 70_000}]
+        request = {'matching_skus': ['s1'], 'requirements': {'budget_max': 80_000}}
+        evidence = {'available_units': [unit], 'featured_capacity_left': 1, 'quoted_units': [],
+                    'requests': [request | {'id': 1, 'author': 'eligible'}, request | {'id': 2, 'author': 'mixed'}],
+                    'low_price_buyers': buyers, 'at': self.now, 'market_dir': self.root/'.market'}
+        targets = forum.upsell_threads(evidence, [])
+        self.assertEqual(set(targets), {1})
+        with patch.object(forum.seller_featured, 'proposals', return_value=options):
+            self.assertEqual(forum.reply_quote_options(evidence, forum.MIDPRICE_REPLY_DAILY_CAP, targets),
+                             {1: [options[1]]})
+            evidence['requests'][0]['requirements'] = {'budget_max': 26_000}
+            self.assertEqual(forum.reply_quote_options(evidence, forum.MIDPRICE_REPLY_DAILY_CAP, targets), {})
+            self.assertEqual(forum.reply_quote_options(evidence, 0, targets)[1], [options[0]])
+        self.assertEqual(forum.upsell_threads(evidence, [{'upsell_recipient': targets[1]}]), {})
+        self.assertEqual(forum.upsell_threads(evidence, [{'upsell_recipient': 'first'}, {'upsell_recipient': 'second'}]), {})
+        self.assertNotIn('low_price_buyers', forum.editorial_facts(evidence))
+
     def test_short_lived_coffee_is_not_offered_for_360_hour_request(self):
         self.assertEqual(self.coffee_request(164)['requests'], [])
 

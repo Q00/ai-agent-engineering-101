@@ -12,6 +12,7 @@ from pathlib import Path
 import statistics
 import threading
 import time
+from collections import defaultdict
 
 import httpx
 
@@ -23,6 +24,32 @@ CACHE=Path('state/counterparty-ledger.json')
 POLL_SECONDS=20
 WINDOW_DAYS=14
 _LOCK=threading.Lock()
+
+
+def recent_low_price_buyers(history, now, threshold):
+    """Buyers with at least two verified paid sales, all below the threshold in 24h."""
+    identities = defaultdict(set)
+    for event in history:
+        name = event.get('buyer_name')
+        if (event.get('event') == 'buyer_link' and event.get('source') == 'market_verified_result'
+                and event.get('task_id') and isinstance(name, str) and name):
+            identities[event['task_id']].add(name)
+    prices = defaultdict(list)
+    seen = set()
+    for event in history:
+        if event.get('event') != 'settled':
+            continue
+        ledger = event.get('ledger')
+        value = event.get('at')
+        at = value if type(value) in (int, float) else epoch(value)
+        paid = event.get('price')
+        names = identities.get(event.get('task_id'), ())
+        if (ledger is None or ledger in seen or at is None or not 0 <= now-at < 86400
+                or type(paid) is not int or paid <= 0 or len(names) != 1):
+            continue
+        seen.add(ledger)
+        prices[next(iter(names))].append(paid)
+    return {name for name, paid in prices.items() if len(paid) >= 2 and max(paid) < threshold}
 
 
 def load_cache(path=CACHE):
