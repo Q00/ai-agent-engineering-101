@@ -452,6 +452,18 @@ def main():
             w.emit("restock.plan", {"lines": 0, "refused": None, "used_model": False, "rules": True, "window": win})
             print(json.dumps({"buy": []}))
             return
+        if win == "open":
+            # user 11/7 10:4x: method 'alternate' - this window's arm per running experiment; a B window buys under
+            # the B playbook (harness.experiment.assign_window), and the plan records the arms
+            try:
+                from harness import experiment
+                arms, patch = experiment.assign_window(minute, t0)
+                if arms:
+                    ctx._strategy = experiment._merge(ctx.strategy, patch)
+                    w.emit("restock.arm", {"experiment": arms, "window": minute})
+            except Exception as e:                   # the ledger must never stop a restock: buy as A
+                w.emit("exec.anomaly", {"role": "restock", "kind": "experiment_arm", "then": "arm A",
+                                        "situation": {"error": f"{type(e).__name__}: {e}"[:200]}})
         if playbook(ctx)["mode"] == "rules":
             # HARNESS 14: buy the list at once, once per window; the agent only when the list gives nothing
             plan, why, doc = rules_plan(ctx, t0)

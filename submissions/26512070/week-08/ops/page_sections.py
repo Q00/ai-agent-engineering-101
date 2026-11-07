@@ -91,6 +91,9 @@ def sec_home(d):
         if x["method"] == "ab":
             val = (f"A {e((r.get('A') or {}).get('value'))} (n {e((r.get('A') or {}).get('n'))}) · "
                    f"B {e((r.get('B') or {}).get('value'))} (n {e((r.get('B') or {}).get('n'))})")
+        elif x["method"] == "alternate":          # restock windows in turn: the value is per window for sums
+            val = " · ".join(f"{a} {e((r.get(a) or {}).get('value'))} (창 {e((r.get(a) or {}).get('windows'))}, "
+                             f"n {e((r.get(a) or {}).get('n'))})" for a in ("A", "B")) + " · 창마다 번갈아"
         else:
             val = f"전 {e(r.get('before'))} → 후 {e(r.get('after'))}"
         exps.append(f"<li><b>{e(x['why'][:90])}</b><small>{e(METRIC.get(x['metric'], x['metric']))}: {val} · "

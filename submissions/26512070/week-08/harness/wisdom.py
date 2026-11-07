@@ -141,6 +141,29 @@ def status(rid=None):
     return sorted((d for d in docs if d.get("status") == "open"), key=lambda d: (d["urgency"] != "now", -d["ts"]))
 
 
+def success_line(doc):
+    """{"direction", "by"} for experiment.register. A proposal that wrote its line as text ('B >= 1.15x A', 'up
+    15%') gets the number read from it, else the expected size; the direction is the expected one. The text stays
+    in the request (11/6: three proposals wrote text and the register refused them)."""
+    import re
+    si = (doc.get("evaluation") or {}).get("success_if")
+    if isinstance(si, dict) and si.get("direction") in ("up", "down") and isinstance(si.get("by"), (int, float)):
+        return si
+    ex = doc.get("expected") or {}
+    direction = ex.get("direction") if ex.get("direction") in ("up", "down") else "up"
+    by = ex.get("by") if isinstance(ex.get("by"), (int, float)) else None
+    text = str(si or "")
+    m = re.search(r"(\d+(?:\.\d+)?)\s*x(?![a-z])", text)
+    if m and float(m.group(1)) > 1:
+        by = float(m.group(1)) - 1
+    m = re.search(r"(\d+(?:\.\d+)?)\s*%", text)
+    if by is None and m:
+        by = float(m.group(1)) / 100
+    if by is None:
+        raise ValueError(f"no success number in {text!r} or expected.by; revise the request with one")
+    return {"direction": direction, "by": round(by, 4)}
+
+
 def decide(rid, choice, note="", by="user", now=None):
     """The user's answer. approve: install the patch on the strategy in force (or start the experiment)."""
     now = now or time.time()
@@ -158,10 +181,11 @@ def decide(rid, choice, note="", by="user", now=None):
         if moved:
             raise ValueError(f"changed since the request (was, now): {moved}; ask again on the current numbers")
         ev = doc["evaluation"]
-        if ev.get("method") == "ab":
+        if ev.get("method") in ("ab", "alternate"):
+            # alternate (user 11/7 10:4x): restock windows A, B in turn, built in harness.experiment.assign_window
             exp_id = f"x{rid}"
-            experiment.register(exp_id, doc["change"], doc["expected"]["metric"], ev["success_if"],
-                                ev["period_h"], "ab", why=doc["title"], now=now)
+            experiment.register(exp_id, doc["change"], doc["expected"]["metric"], success_line(doc),
+                                ev.get("period_h") or 3, ev["method"], why=doc["title"], now=now)
             experiment.approve(exp_id, f"{by} {stamp}: request {rid}", now=now)
             out["experiment"] = exp_id
         else:

@@ -113,6 +113,64 @@ def assign(role, trade_id, now=None):
     return arms, patch
 
 
+MIN_WINDOWS = 3              # an alternate verdict needs this many windows in each arm
+WINDOW_GAP_MIN = 2           # restock calls within this many minutes of a window's start are the same window
+
+
+def assign_window(minute, now=None):
+    """experiment.assign for restock (method 'alternate', user 11/7 10:4x): each supply window gets one arm, A and B
+    in turn, recorded in the ledger as {minute, arm}; ({exp_id: arm}, the B arms' playbook patch) for this window.
+    The window runs from its start to the next window's start and its sales count for that arm (result)."""
+    now = now or time.time()
+    arms, patch = {}, {}
+    if minute is None:
+        return arms, patch
+    led = ledger()
+    changed = False
+    for e in led["experiments"].values():
+        if e["method"] != "alternate" or e["status"] != "running" or not (e["start"] <= now < e["end"]):
+            continue
+        wins = e.setdefault("windows", [])
+        w = next((w for w in wins if abs(w["minute"] - minute) <= WINDOW_GAP_MIN), None)
+        if w is None:
+            w = {"minute": minute, "arm": "B" if (wins and wins[-1]["arm"] == "A") else "A", "ts": now}
+            wins.append(w)
+            changed = True
+        arms[e["id"]] = w["arm"]
+        if w["arm"] == "B":
+            patch = _merge(patch, e["change"])
+    if changed:
+        atomic.write_json(path(), led)
+    return arms, patch
+
+
+# summed over a period, so an arm is compared per window; the rest are rates over the arm's trades
+SUM_METRICS = {"revenue", "book_change", "visits", "sales", "storage", "waste", "surplus", "orders", "settled",
+               "posts", "model_calls", "anomalies", "tool_failures", "tool_failures_ours"}
+
+
+def _alternate(e, now):
+    """Per arm: the metric over the windows it had (a window = its start to the next window's start, the last one
+    to min(now, end)); a summed metric is the mean per window."""
+    wins = sorted(e.get("windows") or [], key=lambda w: w["minute"])
+    stop = min(now, e["end"], (e.get("stopped") or {}).get("ts") or now)
+    spans = [(w["arm"], w["minute"] * 60, (wins[i + 1]["minute"] * 60 if i + 1 < len(wins) else stop))
+             for i, w in enumerate(wins)]
+    spans = [(a, s, min(t, stop)) for a, s, t in spans if s < stop]
+    role = "buyer" if e["role"] == "buyer" else "seller"
+    days = sorted({time.strftime("%Y%m%d", time.localtime(t)) for _, s, u in spans for t in (s, u)})
+    trs = [t for d in days for t in trajectory.build(d).values() if t["role"] == role]
+    out = {}
+    for arm in ("A", "B"):
+        mine = [(s, u) for a, s, u in spans if a == arm]
+        pick = [t for t in trs if any(s <= t["start"] < u for s, u in mine)]
+        v = _value(e["metric"], pick)
+        if v is not None and e["metric"] in SUM_METRICS and mine:
+            v = round(v / len(mine), 1)
+        out[arm] = {"value": v, "n": len(pick), "windows": len(mine)}
+    return out
+
+
 def _merge(a, b):
     out = dict(a)
     for k, v in b.items():
@@ -158,8 +216,22 @@ def result(exp_id, now=None):
         out["change"] = round(change, 3)
         out["verdict"] = ("success" if ok else "no effect") if now >= e["end"] else ("on track" if ok else "not yet")
         return out
+    if e["method"] == "alternate":
+        arms = _alternate(e, now)
+        out = {"id": exp_id, "status": e["status"], "metric": e["metric"], "A": arms["A"], "B": arms["B"],
+               "success_if": e["success_if"]}
+        va, vb = arms["A"]["value"], arms["B"]["value"]
+        if va in (None, 0) or vb is None or min(arms["A"]["windows"], arms["B"]["windows"]) < MIN_WINDOWS:
+            out["verdict"] = "too few windows yet"
+            return out
+        change = (vb - va) / abs(va)
+        want = e["success_if"]["by"] * (1 if e["success_if"]["direction"] == "up" else -1)
+        ok = change >= want if want >= 0 else change <= want
+        out["change"] = round(change, 3)
+        out["verdict"] = ("success" if ok else "no effect") if now >= e["end"] else ("on track" if ok else "not yet")
+        return out
     if e["method"] != "ab":
-        return {"id": exp_id, "status": e["status"], "n": len(trs), "verdict": "needs the hourly comparison"}
+        return {"id": exp_id, "status": e["status"], "n": len(trs), "verdict": "unknown method"}
     by = {"A": [t for t in trs if arm(exp_id, t["id"]) == "A"], "B": [t for t in trs if arm(exp_id, t["id"]) == "B"]}
     va, vb = _value(e["metric"], by["A"]), _value(e["metric"], by["B"])
     out = {"id": exp_id, "status": e["status"], "metric": e["metric"], "A": {"value": va, "n": len(by["A"])},
