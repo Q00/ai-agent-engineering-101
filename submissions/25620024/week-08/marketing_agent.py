@@ -810,9 +810,21 @@ def run(a, t0):
     (OUT / "latest.md").write_text(md, encoding="utf-8")
     try:
         REPORTS.mkdir(parents=True, exist_ok=True)
-        (REPORTS / f"{stamp}.md").write_text(md, encoding="utf-8")
-    except OSError as e:
-        print(f"[marketing] report not copied to Drive: {e}")
+        # HQ 11-07: Drive keeps the latest minutes and one summary per day, not a file per meeting (119 by 11-07);
+        # every full meeting record stays on the VPS in private/marketing/<stamp>.json and latest.md
+        (REPORTS / "latest.md").write_text(md, encoding="utf-8")
+        day = REPORTS / f"daily-{time.strftime('%m%d')}.md"
+        me_ = (b.get("our_shop") or {}) if isinstance(b, dict) else {}
+        line = (f"\n## {time.strftime('%H:%M')} | shop ALL {me_.get('all')} | revenue {me_.get('revenue')} | "
+                f"levers moved: {', '.join(moved) if moved else '-'}\n"
+                f"{(plan.get('rationale') or '')[:400]}\n")
+        if not day.exists():
+            day.write_text(f"# Team meetings {time.strftime('%Y-%m-%d')} (one block per meeting; full minutes on "
+                           f"the VPS in private/marketing/)\n", encoding="utf-8")
+        with day.open("a", encoding="utf-8") as f:
+            f.write(line)
+    except Exception as e:                            # the Drive copy never stops a meeting
+        print(f"[marketing] report not copied to Drive: {type(e).__name__}: {e}")
     promo.PLAN.write_text(json.dumps({k: v for k, v in plan.items() if k not in ("bugs", "forum_posts")},
                                      ensure_ascii=False, indent=1), encoding="utf-8")
     if history:                                     # the last plan's outcome, judged now
