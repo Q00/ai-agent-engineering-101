@@ -292,7 +292,10 @@ class Shop(AgentExecutor):
                     q = dict(q, price=at_cost, least=at_cost, floor=at_cost, why=q["why"] + f"; at cost for {big}")
                     credit = None
             deal = self.open[task.id] = {"unit": u, "q": q, "ask": q["price"], "turns": 0, "code": code, "vip": vip,
-                                         "talk": 0, "credit": credit, "warranty_asked": need["warranty"]}
+                                         "talk": 0, "credit": credit, "warranty_asked": need["warranty"],
+                                         # a buyer that asked by category (no SKU) gets the category on its receipt
+                                         "asked_cat": None if SKU_RE.search(text) else
+                                         ((u.get("category") or "").split(">")[-1] or None)}
             sub = f"substitute for {u['substitute_for']} (same category, in stock) | " if u.get("substitute_for") else ""
             log(f"{task.id[:8]} {u['sku']} cost {u['cost']} -> ask {q['price']} least {q['least']} ({q['why']})"
                 + (f" VIP {vip}" if vip else "") + (f" substitute for {u['substitute_for']}" if sub else ""))
@@ -331,7 +334,10 @@ class Shop(AgentExecutor):
                 return
         if offer is not None and offer >= q["least"]:
             price = min(offer, deal["ask"])
-            receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id}
+            # 11-07: q00 orders by category ("김치") and gave every shop whose receipt named a SKU a 1-star "SCAM.
+            # Ordered X, receipt names G..." (us 4 times; Nocha, naming the category, got 5 stars 591 times). The kit
+            # accepts a category item (fits: the unit's category leaf), and the unit is still named below.
+            receipt = {"shop": NAME, "item": deal.get("asked_cat") or u["sku"], "price": price, "task": task.id}
             if u["unit"]:
                 receipt.update(unit=u["unit"], claim=u.get("grade"))
             w = q.get("warranty_goods_h", promo.theta()["warranty_goods_h"])   # an experiment may set it per SKU
