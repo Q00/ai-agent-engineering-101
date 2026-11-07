@@ -117,8 +117,8 @@ def focus_lines(inv, catalog, focus_cats, cu):
     shops = customers.recent_shop_counts(cu)
     total = sum(sum(s.values()) for s in recent.values()) if use_recent else sum(customers.popular(cu).values())
     have = {}
-    for u in inv["units"]:
-        if u.get("grade") != "expired":
+    for u in inv["units"]:          # grade C goods do not count: buyers that refuse C would find only C and walk
+        if u.get("grade") != "expired" and not (u.get("kind") == "goods" and u.get("grade") == "C"):
             have[u["sku"]] = have.get(u["sku"], 0) + 1
     lines = []
     for cat in focus_cats:
