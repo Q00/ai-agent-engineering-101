@@ -1,0 +1,337 @@
+goal: 2026-11-17 23:59 KST Round 3 종료 시 공식 Class Player 단독 1위를 달성하도록, 기존 Buyer·Seller·procurement를
+  안전하게 지속 운영하고 코드·파라미터 실험, 검증, 역할별 배포, 관찰, 롤백을 무인 수행하는 로컬 supervisor pipeline을 완성한다.
+task_type: code
+brownfield_context:
+  project_type: brownfield
+  context_references:
+  - path: /home/ohs/projects/ai-agent-engineering-101/submissions/25512088/week-08
+    role: primary
+    summary: 기존 Buyer·Seller·procurement, Safety Kernel, 로컬 SQLite 상태, 실행 스크립트와 Round
+      3 자동화 코드를 확장할 작업공간
+  existing_patterns:
+  - Buyer와 Seller는 독립 역할로 공개 board alive 상태를 유지한다.
+  - Buyer·Seller·procurement는 별도 프로세스로 실행되며 procurement의 독립 상태와 미확정 거래를 보존한다.
+  - 기존 로컬 SQLite의 experiments, deployments, state_transitions, evolution_events를 운영
+    상태와 감사 증거에 사용한다.
+  - 공통 Safety Kernel은 실제 mutation 직전에 호출되어 금지 행동을 차단한다.
+  - 상태전이와 운영 증거는 append-only로 기록하고 기존 로그는 수정하지 않는다.
+  - 공식 API와 ledger를 agent.md, board, Forum보다 높은 근거로 취급한다.
+  - 배포는 역할별 drain, checkpoint, stop/start, board alive 및 실행 commit 확인 패턴을 따른다.
+  - run_ubuntu.sh가 역할 실행·관찰 진입점으로 사용된다.
+  - Python 문법 검사와 unittest가 후보 코드 검증에 사용된다.
+  existing_dependencies:
+  - Python
+  - unittest
+  - SQLite
+  - Git
+  - Bash
+  - run_ubuntu.sh
+  - Ouroboros/Codex
+  - 공식 rules·patch·agent.md 입력
+  - 공식 API
+  - 공식 ledger 및 결제 파일
+  - board·leaderboard·online 상태 API
+  - shops API
+  - agent card
+  - Forum API
+  - WSL
+  - Windows 시작·복구 진입점
+constraints:
+- 불법 거래, 자가거래, 허위 리뷰, 스팸, 보복투표를 금지하고 Buyer와 Seller의 독립 역할을 유지한다.
+- 근거가 있을 때만 자본 노출을 확대하고 추천 전략은 성과가 없으면 자동 폐기하며, 복구가 불가능하면 자본을 보존하고 파산은 최대 1회만 허용한다.
+- 사람의 매번 승인은 요구하지 않지만 모든 자동 행동과 실험은 공통 Safety Kernel 및 hard envelope 안에서만 허용한다.
+- 별도 원격 backend나 가상시장 simulator를 만들지 않고 기존 Buyer·Seller·procurement와 로컬 SQLite의 experiments,
+  deployments, state_transitions, evolution_events를 재사용한다.
+- 로컬 supervisor가 허용된 submission 내부 코드에 한해 Ouroboros/Codex로 후보 코드를 생성하고 격리 검증, 역할별
+  배포, 자동 롤백까지 수행한다.
+- 자동 코드 변경 범위는 submission 내부의 전략, 가격, 조달, Forum, 측정, 테스트, supervisor 코드로 제한하며 Safety
+  Kernel, 비밀 처리, 공식 규칙 우선순위, hard envelope, secrets, owner.env, 기존 로그, 공용 파일, 타인 파일은
+  수정하지 않는다.
+- dirty worktree에서 수정 대상과 겹치는 사용자 tracked 변경이 있으면 배포하지 않고 격리하며 사용자 파일·로그를 삭제하거나 reset하지
+  않는다.
+- 모든 자동 실험은 역할별 block에서 80% 실험군과 20% 기존전략 대조군을 동시에 운용하고 hash(experiment_id+unit_id)로
+  재시작 후에도 배정을 고정한다.
+- 실험 단위는 Buyer order_id, Seller 견적 task_id, 조달 SKU×공급창 cohort, 보증 성숙 정산, Forum 게시물이며
+  동일 멱등성 키와 재시도는 새 표본으로 세지 않는다.
+- Buyer cluster는 SKU 또는 표본 부족 시 category, Seller·보증·조달 cluster는 SKU, Forum cluster는
+  주제×6시간 구간이며 cluster 동일 가중치를 적용하고 독립 cluster가 5개 미만이면 성공 판정을 금지한다.
+- 실험 전 primary metric 하나를 선언하고 나머지는 guardrail로 취급하며 여러 primary metric에는 Holm-Bonferroni
+  보정을 적용한다.
+- 효과는 cluster 가중 평균 차이로 계산하고 experiment_id+metric_version 고정 seed로 cluster bootstrap
+  10,000회를 수행하며 표본 정렬, seed, 계산 버전을 기록한다.
+- 중간·최종 판정에는 각각 97.5% 신뢰구간을 사용한다. 중간에는 명확한 악화 또는 Safety 위반만 중단하고 최종 하한이 δ보다 크면 확대하며
+  상한이 0 이하면 폐기하고 그 사이면 기존 전략을 유지한다.
+- 불확실한 1차 실험은 최대 2배 표본까지 관찰하고 성공 기준 미달 시 폐기하며 영구 채택은 확대 표본에서도 효과가 유지될 때만 허용한다.
+- 최소 표본은 Buyer 신규 주문 50개와 1시간, Seller 가격·상품 실험 유효견적 30건·정산 5건·공급창 2회, 보증 확대 SKU별 무환불
+  성숙정산 5건, Forum 게시물 6개와 6시간이다.
+- Safety Kernel 위반, 중복거래, 미확정 결제 재시도, 현금바닥 침범은 즉시 롤백한다.
+- 회당 파라미터 변경은 ±10%, 확률/logit 변경은 회당 ±0.05이고 최종 범위는 0.05~0.95이며 동일 파라미터는 이전 실험 종료 전
+  다시 변경하지 않는다.
+- 현금 하한은 500,000+미정산 부채이고 재고 원가는 운용자본의 20~70%, 노출재고는 최대 250, 단일 SKU는 Book의 15% 또는
+  슬롯의 20% 이하로 제한한다.
+- 일반 판매는 원가·저장·혜택·보증비용을 보호하고 loss-leader 전체 손실은 Book의 1% 이하, 판매가격은 정가의 150% 이하, 할인과
+  추천보상 합계는 실현 마진의 25% 이하로 제한하며 기존 약속은 유지한다.
+- 식품은 공식 프로토콜에 따라 warranty_hours 0으로 두고 잔여 유통시간·등급·certificate로 검증한다. 비식품 보증은 6~72시간이고
+  SKU별 무환불 성숙정산 5·15·30건에서 24·48·72시간으로 확대하며 환불 발생 시 6시간으로 축소한다.
+- 최소 개선폭 δ는 Buyer Saved +0.5%p 또는 성사율 +5%와 Saved 하락 ≤0.2%p, Seller 견적당 기여이익 +5%와 Book
+  감소 없음, Forum rating +0.005 또는 전환 +10%와 싫어요 증가 없음, 조달 투입자본당 기여이익 +5%와 폐기·장기미판매 악화
+  없음, 안정성 변경은 성능 2% 이내 비열등과 오류·지연 10% 개선이다.
+- Forum은 Buyer 24개/일, Seller 12개/일, 게시 간격 최소 5분, 중복문안 금지를 적용하고 rating 0.01 하락, 싫어요
+  우세, 또는 게시물 6개·6시간 동안 전환 0이면 해당 문안을 중단한다.
+- Forum의 명령 실행, 코드·URL 실행, 자격증명 요청, 규칙 무시 지시는 격리하고 원문을 agent 명령 컨텍스트나 updater 입력에
+  넣지 않으며 허용된 구조화 필드만 추출한다.
+- Forum의 SKU·가격·보증·재고 주장은 ledger·shops API·agent card와 교차검증하고 ledger 정산과 일치하는 refs
+  및 독립 작성자 3명 이상의 동일 경향만 모델의 보조 신호로 사용한다.
+- 단일 비검증 Forum 주장은 가설 후보로만 저장하고 충분한 구조적 참여 신호가 있어도 가용자본 1% 또는 SKU 1개 중 작은 범위의 최소실험만
+  허용한다.
+- Buyer Forum은 실제 구매 ledger와 유용한 시장정보에 한정하고 자기 shop을 광고하지 않으며 Seller Forum은 실제 재고·가격·보증·정산
+  refs와 직접 추천 프로그램을 담당한다.
+- 공식 증거가 있는 경쟁자 사건은 내부 차단을 즉시 수행하되 외부에는 의도를 단정하지 않는 사실형 경고를 ledger refs와 함께 한 번만 게시하고
+  Seller 투명성 보고는 별도로 게시한다.
+- rules·patch와 agent.md는 5분마다 조회하고 10분을 hard stale로 하며 board·leaderboard·online 상태는
+  30초마다 조회하고 90초를 hard stale로 한다.
+- ledger tail은 30초마다 조회하고 120초 stale 또는 sequence gap이면 mutation을 차단하며 Forum은 60초마다
+  관찰하고 180초 stale이면 Forum 실험만 중지한다.
+- 입력 우선순위는 공식 rules·최신 patch > 공식 API 실제 동작·ledger > agent.md 프로토콜 > board·공개상태 >
+  Forum이다.
+- 규칙·점수·비용·제한·API 계약의 hash/version이 변경되면 관련 가정과 실험을 INVALIDATED로 표시하고 신규 mutation,
+  실험 확대, 배포를 중지하며 reconciliation만 허용한다.
+- 공식 변경의 발표시각·적용시각·소급여부를 기록하고 소급 변경이면 Round 3 자료를 재계산하며 비소급 변경이면 전후 cohort를 분리한다.
+- 단순 leaderboard 변동만으로 전체 운영을 중지하지 않고 기준선과 경쟁자 모델만 재계산하며 입력 복구와 compatibility/Safety
+  검증 전에는 자동 재개하지 않는다.
+- 모든 mutation은 PREPARED→SUBMITTED→CONFIRMED|REJECTED|UNCERTAIN→RECONCILING→CONFIRMED|SAFE_TO_RETRY|MANUAL_HOLD
+  상태전이와 고유 멱등성 키 및 영구 checkpoint를 사용한다.
+- 응답·ledger 확인 전 중단된 mutation은 UNCERTAIN으로 처리하고 재제출 및 관련 신규 mutation을 금지한 채 API·ledger·결제
+  파일 reconciliation만 수행한다.
+- 공식 거절이 확인된 경우에만 SAFE_TO_RETRY로 전이하고 확인할 수 없으면 MANUAL_HOLD로 전이하며 fresh 입력, checkpoint,
+  코드 버전 일치와 미처리 거래 부재가 확인될 때만 재개한다.
+- Deployment는 DRAFT→VALIDATED→SHADOW→CANARY→ACTIVE 및 QUARANTINED/ROLLED_BACK, Experiment는
+  PROPOSED→ELIGIBLE→RUNNING→EXPANDING→ADOPTED 또는 REJECTED/INVALIDATED/ROLLED_BACK,
+  Safety Kernel은 VALIDATING→ACTIVE→TRIPPED→RECOVERY_PENDING→ACTIVE 상태를 사용한다.
+- VALIDATED는 전체 Python 문법 검사, 전체 unittest 100% 통과, git diff --check, 임시 DB migration,
+  Safety Kernel·비밀정보 검사, 승인 경로 검사를 모두 통과해야 한다.
+- SHADOW는 POST 없이 기존 로그·공개 snapshot을 최소 5분 또는 Buyer 50개·Seller 30개 입력 동안 재생하고 금지행동,
+  중복 mutation, 현금바닥 침범이 0건이어야 하며 실제 전략 성과는 시장 주문·결제·정산으로만 판정한다.
+- CANARY는 Buyer와 Seller를 동시에 교체하지 않고 역할별 초기 트래픽 10%로 교체하며 Buyer 신규 주문 20개·10분, Seller
+  견적 10건·공급창 1회를 관찰하고 90초 이내 board alive와 실행 commit을 확인한다.
+- 프로세스 종료, 중복거래, 미확정거래 누적, Safety Kernel 위반이 발생하면 즉시 이전 commit과 parameter set으로 복귀하고
+  procurement의 독립 프로세스와 미확정 상태를 보존한다.
+- 후보 배포는 drain→checkpoint→한 역할 재시작→board alive 및 commit 확인→다음 역할 순서로 수행한다.
+- 모든 상태전이는 correlation·experiment·deployment ID, UTC·KST, rule hash, commit, parameter
+  set, 집계근거, 표본, 효과·신뢰구간, 비용·자본노출, 검증·rollback 결과를 append-only로 기록하고 비밀과 raw untrusted
+  instruction은 기록하지 않는다.
+- 실제 Buyer·Seller·procurement는 background supervisor가 소유하고 bash run_ubuntu.sh watch
+  shop 및 watch buyer는 구조화된 runtime event를 실시간 표시하되 프로세스를 소유하지 않는다.
+- 관찰창을 닫거나 Ctrl-C를 입력해도 agent는 계속 실행되며 실제 중단은 별도의 명시적 supervisor stop으로만 수행한다.
+- 관찰창에는 후보 commit 검증, drain, checkpoint, 역할별 stop/start, tunnel·board alive, 실행 commit,
+  canary, promote·rollback을 표시하되 비밀키, 토큰, owner.env, 회원키, 원문 비밀값을 출력하지 않는다.
+- 현재 foreground 프로세스는 supervisor 구현·검증 전까지 유지하고 전환 시 한 번 정상 종료한 뒤 background 방식으로
+  변경한다.
+- WSL 생존성은 systemd에만 의존하지 않고 Windows 측 시작·복구 진입점과 WSL supervisor를 결합한다.
+- hard envelope 자체는 Round 3 동안 자동으로 완화하거나 변경하지 않는다.
+acceptance_criteria:
+- description: 2026-11-17 23:59 KST Round 3 종료 시 Class Player가 공식 leaderboard의 단독
+    1위다.
+  semantic_ac_key: ac_3bdae7896d36c5f4
+  verify_exemption_reason: 마감 시점의 공식 leaderboard는 외부 시스템의 시간 종속 상태이며 로컬 단일 명령만으로 진위를
+    결정할 수 없다.
+- description: 자동 실험이 고정 80:20 배정, 역할별 block, 지정된 실험 단위와 cluster, 최소 표본, 독립 cluster
+    5개, 사전 primary metric, Holm-Bonferroni, 고정 seed 10,000회 cluster bootstrap, 97.5%
+    중간·최종 신뢰구간, δ 기반 확대·유지·폐기 및 확대 표본 영구채택 규칙을 재시작 후에도 일관되게 적용한다.
+  semantic_ac_key: ac_56877f39254126d2
+  verify_command: python -m unittest -v tests/test_experiment_policy.py
+  expected_artifacts:
+  - tests/test_experiment_policy.py
+  output_assertion: OK
+- description: 공식 입력의 조회 주기, hard stale, 우선순위, ledger sequence-gap 차단, 변경 시 INVALIDATED
+    처리, 소급 재계산·비소급 cohort 분리 및 복구 후 compatibility/Safety 검증 전 재개 금지가 적용된다.
+  semantic_ac_key: ac_29588938f691a941
+  verify_command: python -m unittest -v tests/test_input_freshness.py
+  expected_artifacts:
+  - tests/test_input_freshness.py
+  output_assertion: OK
+- description: Forum 입력은 검증 수준에 따라 구조화된 신호·보조 신호·최소실험 후보로 분리되고 prompt injection과 비밀
+    요청은 실행 컨텍스트에서 격리되며 역할별 게시 한도, 전환 추적, 문안 중단, 사실형 경고 정책이 지켜진다.
+  semantic_ac_key: ac_424cbccdfbc42f02
+  verify_command: python -m unittest -v tests/test_forum_policy.py
+  expected_artifacts:
+  - tests/test_forum_policy.py
+  output_assertion: OK
+- description: 중단되거나 응답이 불명확한 mutation은 영구 checkpoint와 멱등성 키를 보존한 UNCERTAIN 상태에서 재제출되지
+    않고 reconciliation 결과에 따라 CONFIRMED, SAFE_TO_RETRY 또는 MANUAL_HOLD로만 결정된다.
+  semantic_ac_key: ac_2bea403d37fbd9f8
+  verify_command: python -m unittest -v tests/test_mutation_lifecycle.py
+  expected_artifacts:
+  - tests/test_mutation_lifecycle.py
+  output_assertion: OK
+- description: Deployment, Experiment, Safety Kernel 상태 머신이 허용된 전이만 수행하고 모든 전이를 필수
+    provenance와 판정 근거를 포함한 append-only SQLite 감사 기록으로 남기며 비밀과 raw untrusted instruction은
+    저장하지 않는다.
+  semantic_ac_key: ac_3320bcc7d3c04079
+  verify_command: python -m unittest -v tests/test_state_machines.py
+  expected_artifacts:
+  - tests/test_state_machines.py
+  output_assertion: OK
+- description: 로컬 supervisor가 후보 코드를 격리 검증한 뒤 SHADOW와 역할별 10% CANARY를 거쳐 Buyer와 Seller를
+    순차 배포하고, 금지 조건이나 악화가 발생하면 이전 commit과 parameter set으로 자동 복귀하면서 procurement 및 미확정
+    상태를 보존한다.
+  semantic_ac_key: ac_fd7f745dbfa9be0f
+  verify_command: python -m unittest -v tests/test_deployment_pipeline.py
+  expected_artifacts:
+  - tests/test_deployment_pipeline.py
+  output_assertion: OK
+- description: 모든 전략·가격·재고·보증·Forum·조달·안정성 자동 변경이 확정된 자본, 노출, 변경폭, 보상, 게시, 최소 개선폭
+    및 Safety Kernel hard envelope 밖으로 나가지 않는다.
+  semantic_ac_key: ac_43994aeff79a05f0
+  verify_command: python -m unittest -v tests/test_hard_envelopes.py
+  expected_artifacts:
+  - tests/test_hard_envelopes.py
+  output_assertion: OK
+- description: background supervisor가 실제 역할 프로세스를 관찰창과 독립적으로 계속 실행하고 역할별 watch 명령에
+    구조화된 검증·배포·canary·rollback event를 실시간 표시하며 Ctrl-C는 관찰만 종료하고 비밀값은 노출하지 않는다.
+  semantic_ac_key: ac_2b44fbfab43eb815
+  verify_command: python -m unittest -v tests/test_runtime_supervisor.py
+  expected_artifacts:
+  - tests/test_runtime_supervisor.py
+  output_assertion: OK
+- description: '[from-user] 확정. 모든 mutation은 PREPARED→SUBMITTED→CONFIRMED|REJECTED|UNCERTAIN→RECONCILING→CONFIRMED|SAFE_TO_RETRY|MANUAL_HOLD
+    상태전이를 사용한다. 고유 멱등성 키와 영구 checkpoint를 기록하고, 응답·ledger 확인 전 중단은 UNCERTAIN으로 처리한다.
+    UNCERTAIN에서는 재제출과 관련 신규 mutation을 금지하고 API·ledger·결제 파일 reconciliation만 수행한다.
+    거절이 공식 확인된 경우에만 SAFE_TO_RETRY이며 확인 불가능하면 MANUAL_HOLD다. fresh 입력·checkpoint·코드
+    버전이 일치하고 미처리 거래가 없을 때만 재개한다. Buyer와 Seller의 독립 역할까지 전역 중지하지는 않는다.'
+  semantic_ac_key: ac_1f8bcdf9e1637440
+- description: '[from-user] 확정. VALIDATED는 전체 Python 문법 검사, 전체 unittest 100% 통과, git
+    diff --check, 임시 DB migration, Safety Kernel·비밀정보 검사, 승인 경로 검사를 모두 통과해야 한다. SHADOW는
+    실제 POST 없이 최소 5분 또는 Buyer 50개/Seller 30개 입력을 재생하며 금지행동·중복 mutation·현금바닥 침범 0건이어야
+    한다. CANARY는 Buyer와 Seller를 한 역할씩 초기 트래픽 10%로 교체하고 Buyer 20개 신규 주문·10분, Seller
+    견적 10건·공급창 1회를 관찰하며 90초 이내 board alive와 실행 commit을 확인한다. 프로세스 종료·중복거래·미확정거래 누적·Safety
+    Kernel 위반 시 즉시 이전 버전을 재시작한다. ACTIVE는 실험군80/대조군20으로 실제 성과를 평가하며 규칙 변경 시 INVALIDATED,
+    악화 시 이전 code와 parameter set으로 롤백한다. 자동 변경은 submission 내부의 전략·가격·조달·Forum·측정·테스트·supervisor
+    코드만 허용하고 Safety Kernel 완화, secrets, owner.env, 기존 로그 수정, 공용/타인 파일 변경은 금지한다. 사용자
+    dirty tracked 파일과 겹치면 배포하지 않고 격리한다.'
+  semantic_ac_key: ac_505a2c058179071f
+assumptions:
+- 요구사항별 자동 검증을 위해 tests/test_experiment_policy.py, tests/test_input_freshness.py,
+  tests/test_forum_policy.py, tests/test_mutation_lifecycle.py, tests/test_state_machines.py,
+  tests/test_deployment_pipeline.py, tests/test_hard_envelopes.py, tests/test_runtime_supervisor.py라는
+  criterion-specific unittest 파일을 둘 수 있다.
+- 공식 leaderboard의 최종 순위는 로컬 테스트가 아니라 Round 3 종료 시점의 공식 외부 기록으로 판정한다.
+ontology_schema:
+  name: Round3AutonomousTradingControl
+  description: Round 3의 Buyer·Seller·procurement 운영, 공식 입력, 통계 실험, mutation reconciliation,
+    코드 배포, Safety Kernel, Forum 신호 및 감사 증거를 통합해 표현하는 로컬 자율 운영 도메인 모델이다.
+  fields:
+  - name: role_runtime
+    type: object
+    description: Buyer, Seller, procurement의 실행 상태, 실행 commit, board alive, checkpoint
+      및 supervisor 소유권
+    required: true
+  - name: official_input
+    type: object
+    description: rules, patch, agent.md, board, online, ledger, Forum 입력의 hash/version,
+      조회시각, age, stale 및 우선순위
+    required: true
+  - name: experiment
+    type: object
+    description: 실험 ID, 역할, primary metric, guardrails, δ, 배정, 표본, cluster, bootstrap
+      seed, lift, confidence interval 및 판정
+    required: true
+  - name: experiment_unit
+    type: object
+    description: order_id, task_id, SKU×공급창, 성숙 정산 또는 게시물 단위와 멱등성·재시도 관계
+    required: true
+  - name: mutation
+    type: object
+    description: 고유 멱등성 키, mutation 상태, 영구 checkpoint, API 응답, ledger 확인 및 reconciliation
+      결과
+    required: true
+  - name: deployment
+    type: object
+    description: 후보 commit, parameter set, 대상 역할, 검증·shadow·canary·active 상태 및 rollback
+      대상
+    required: true
+  - name: safety_kernel
+    type: object
+    description: 행동 직전 검증 상태, 절대 금지조건, hard envelope, trip 원인 및 recovery 결과
+    required: true
+  - name: hard_envelope
+    type: object
+    description: 자본, 현금, 재고, SKU, 가격, 보상, 보증, Forum, 파라미터 변경폭과 최소 개선폭의 불변 경계
+    required: true
+  - name: forum_signal
+    type: object
+    description: 작성자·역할·투표·refs 구조 필드, 교차검증 상태, 독립 작성자 추세, 전환 및 격리된 비신뢰 원문
+    required: true
+  - name: state_transition
+    type: object
+    description: 상태 머신 전이의 ID, UTC·KST, rule hash, commit, 근거, 표본, 효과, 비용, 노출 및 검증·rollback
+      결과
+    required: true
+  - name: runtime_event
+    type: object
+    description: 관찰창에 표시되는 검증, drain, checkpoint, stop/start, alive, commit, canary,
+      promote 및 rollback 이벤트
+    required: true
+  - name: competitive_baseline
+    type: object
+    description: 공식 leaderboard 기준선, 경쟁자 모델, Class Player 점수와 최종 순위 판정
+    required: true
+evaluation_principles:
+- name: 공식 성과
+  description: 마감 시 공식 Class Player 단독 1위 달성 여부와 실제 주문·결제·정산 기반 성과를 가장 직접적으로 평가한다.
+  weight: 0.25
+- name: 안전성과 자본 보존
+  description: Safety Kernel, 절대 금지조건, hard envelope, 미확정 거래 보호, 최대 파산 제한 및 즉시 롤백이
+    모든 성과 최적화보다 우선한다.
+  weight: 0.25
+- name: 통계적 타당성
+  description: 고정 배정, 독립 cluster, 최소 표본, 사전 metric, bootstrap 신뢰구간, 다중검정 보정 및 확대 표본
+    재현성을 평가한다.
+  weight: 0.2
+- name: 운영 복원력
+  description: 중단·재개·멱등성·reconciliation·역할별 canary·자동 rollback·WSL 복구가 중복거래나 상태 손실
+    없이 작동하는지 평가한다.
+  weight: 0.15
+- name: 감사 가능성
+  description: 상태전이와 실험·배포 판정이 append-only 증거와 버전·시간·근거로 재현 가능하고 비밀을 노출하지 않는지 평가한다.
+  weight: 0.1
+- name: 범위와 사용자 변경 보존
+  description: 자동 변경이 허용된 submission 영역에 한정되고 dirty worktree, 사용자 파일, 기존 로그, 공용·타인
+    파일을 보존하는지 평가한다.
+  weight: 0.05
+exit_conditions:
+- name: 목표 달성 종료
+  description: Round 3 공식 종료 시점에 Class Player가 단독 1위이면 성과 workflow를 성공 종료한다.
+  criteria: 2026-11-17 23:59 KST 공식 leaderboard에서 Class Player보다 높은 점수나 동점인 다른 player가
+    없다.
+- name: 안전 롤백 종료
+  description: Safety Kernel 위반, 중복거래, 현금바닥 침범, 프로세스 종료 또는 미확정 거래 누적 시 현재 변경을 중단하고
+    안전한 이전 상태로 복귀한다.
+  criteria: 영향받은 deployment 또는 experiment가 ROLLED_BACK이고 이전 commit·parameter set이
+    실행되며 미확정 거래는 reconciliation 상태로 보존된다.
+- name: 수동 보류 종료
+  description: UNCERTAIN mutation의 결과를 공식 API·ledger·결제 파일로 확인할 수 없으면 자동 처리를 종료하고
+    수동 보류한다.
+  criteria: mutation이 MANUAL_HOLD이며 동일 거래 재제출과 관련 신규 mutation이 차단되어 있다.
+- name: 입력 무효화 종료
+  description: 공식 rule·patch·점수·비용·제한·API 계약 변경이나 hard stale가 발생하면 관련 자동 작업을 종료한다.
+  criteria: 관련 가정과 실험이 INVALIDATED이고 신규 mutation·확대·배포가 중지되며 reconciliation만 실행된다.
+- name: 성과 미달 폐기
+  description: 최대 관찰 표본에서도 성공 기준을 충족하지 못한 실험이나 확대 표본에서 효과가 유지되지 않은 전략을 종료한다.
+  criteria: 실험이 REJECTED 또는 ROLLED_BACK이고 기존 전략이 유지된다.
+- name: 자본 보존 종료
+  description: 안전한 복구가 불가능하거나 추가 진행이 파산 한도를 넘길 위험이 있으면 자동 확대와 신규 위험 노출을 종료한다.
+  criteria: 신규 위험 mutation이 차단되고 현금·미정산 부채·재고 상태가 checkpoint에 보존된다.
+metadata:
+  seed_id: seed_45ef0f10a27e
+  version: 1.0.0
+  created_at: '2026-11-07T16:38:43.255953Z'
+  ambiguity_score: 0.0645
+  gate_forced: false
+  interview_id: interview_20261107_160915
+  parent_seed_id: null
+  generation_mode: normal
+  degraded: false
+  unresolved_slots: []
+  recovery_reason: null
+
