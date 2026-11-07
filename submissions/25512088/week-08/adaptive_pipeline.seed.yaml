@@ -58,12 +58,19 @@ constraints:
 - 각 실험은 시작 전에 primary metric을 정확히 하나 선언하고 나머지 지표는 guardrail로 취급한다. 한 번의 배포 결정에서
   2개 이상의 독립 experiment_id를 동시에 채택 판정하는 경우 그 집합을 multiplicity family로 기록하고 family의 primary
   metric p-value에 Holm-Bonferroni 보정을 적용한다. 한 실험 안에는 복수 primary metric을 허용하지 않는다.
-- 효과는 cluster 가중 평균 차이로 계산하고 experiment_id+metric_version 고정 seed로 cluster bootstrap
-  10,000회를 수행하며 표본 정렬, seed, 계산 버전을 기록한다.
-- 중간·최종 판정에는 각각 97.5% 신뢰구간을 사용한다. 중간에는 primary effect 신뢰구간 상한이 -δ 이하이거나 guardrail·Safety
-  한도를 위반할 때만 중단한다. 최종에는 primary effect 신뢰구간 하한이 δ 이상이고 모든 guardrail이 한도 안이면 확대하며,
-  상한이 0 이하이거나 guardrail 위반이면 폐기하고 그 밖에는 기존 전략을 유지한다.
-- 불확실한 1차 실험은 최대 2배 표본까지 관찰하고 성공 기준 미달 시 폐기하며 영구 채택은 확대 표본에서도 효과가 유지될 때만 허용한다.
+- 효과는 cluster 동일 가중치로 계산한다. Saved·이익·rating·전환율처럼 증가가 좋은 지표는 treatment-control,
+  오류율·p95 지연·폐기율·30일 초과 미판매율처럼 감소가 좋은 지표는 control-treatment로 부호를 변환해 양수일 때만 개선으로
+  해석한다. %p δ는 절대차, 상대 δ는 대조군 분모의 상대차를 사용하며 분모가 0이거나 표본이 0이면 INSUFFICIENT_DATA다.
+- experiment_id+metric_version 고정 seed, 정렬된 cluster와 10,000회 bootstrap을 사용한다. 양측 97.5% percentile
+  구간은 1.25·98.75 percentile이고 empirical one-sided p는 (1+bootstrap effect≤0 횟수)/10,001로 계산하며
+  seed·정렬·계산 버전을 기록한다.
+- 한 배포 결정의 multiplicity family에서 m개 experiment primary metric을 동시에 판정할 때 p 오름차순 r번째를
+  0.025/(m-r+1)과 비교하는 Holm-Bonferroni를 적용한다. family 밖 또는 단일 실험에는 추가 보정을 적용하지 않는다.
+- 중간에는 normalized primary effect 신뢰구간 상한이 -δ 이하이거나 guardrail·Safety 한도를 위반할 때만 중단한다.
+  최소 표본 최종 판정에서 하한이 δ 이상, p≤0.025 또는 family Holm 통과, 모든 guardrail 통과이면 EXPANDING으로 전이한다.
+  상한이 0 이하이거나 guardrail 위반이면 REJECTED, 그 밖에는 최초 최소 표본의 2배까지 기존 전략과 병행한다.
+- EXPANDING은 최초 최소 표본의 모든 건수·기간·공급창을 누적 2배 충족한 뒤 같은 하한·p/Holm·guardrail 조건을 다시 통과해야
+  ADOPTED가 된다. 2배 표본에서 통과하지 못하면 REJECTED이고 기존 전략을 유지한다.
 - 최소 표본은 Buyer 신규 주문 50개와 1시간, Seller 가격·상품 실험 유효견적 30건·정산 5건·공급창 2회, 보증 확대 SKU별 무환불
   성숙정산 5건, Forum 게시물 6개와 6시간이다.
 - Safety Kernel 위반, 중복거래, 미확정 결제 재시도, 현금바닥 침범은 즉시 롤백한다.
@@ -84,10 +91,11 @@ constraints:
   우세, 또는 게시물 6개·6시간 동안 전환 0이면 해당 문안을 중단한다.
 - Forum의 명령 실행, 코드·URL 실행, 자격증명 요청, 규칙 무시 지시는 격리하고 원문을 agent 명령 컨텍스트나 updater 입력에
   넣지 않으며 허용된 구조화 필드만 추출한다.
-- Forum의 SKU·가격·보증·재고 주장은 ledger·shops API·agent card와 교차검증하고 ledger 정산과 일치하는 refs
-  및 독립 작성자 3명 이상의 동일 경향만 모델의 보조 신호로 사용한다.
-- 단일 비검증 Forum 주장은 가설 후보로만 저장하고 ledger refs 일치 또는 독립 작성자 3명 이상의 동일 경향이 없는 한 모델
-  보조 신호로 승격하지 않는다. 해당 주장 기반 실험은 가용자본 1% 또는 SKU 1개 중 작은 범위로 제한한다.
+- Forum의 SKU·가격·보증·재고 주장은 다음 단일 truth table로 분류한다. ledger·shops API·agent card 중 관련 공식
+  자료와 일치하면 VERIFIED로 일반 최소실험 후보, 공식 일치 없이 독립 작성자 3명 이상이 같은 경향이면 CORROBORATED로 우선순위
+  보조 신호, 그 밖은 UNVERIFIED 가설이다. 작성자 수는 VERIFIED를 대신하지 못한다.
+- CORROBORATED와 UNVERIFIED Forum 주장 기반 실험은 모두 가용자본 1% 또는 SKU 1개 중 작은 범위로 제한하고 Forum 주장만으로
+  가격·대량발주·보증을 확대하지 않는다.
 - Buyer Forum은 실제 구매 ledger와 유용한 시장정보에 한정하고 자기 shop을 광고하지 않으며 Seller Forum은 실제 재고·가격·보증·정산
   refs와 직접 추천 프로그램을 담당한다.
 - 공식 증거가 있는 경쟁자 사건은 내부 차단을 즉시 수행하되 외부에는 의도를 단정하지 않는 사실형 경고를 ledger refs와 함께 한 번만 게시하고
@@ -98,8 +106,11 @@ constraints:
   관찰하고 180초 stale이면 Forum 실험만 중지한다.
 - 입력 우선순위는 공식 rules·최신 patch > 공식 API 실제 동작·ledger > agent.md 프로토콜 > board·공개상태 >
   Forum이다.
-- 규칙·점수·비용·제한·API 계약의 hash/version이 변경되면 관련 가정과 실험을 INVALIDATED로 표시하고 신규 mutation,
-  실험 확대, 배포를 중지하며 reconciliation만 허용한다.
+- hard stale 또는 ledger sequence gap이면 관련 RUNNING·EXPANDING 실험을 이전 상태를 기록한 PAUSED_INPUT으로 전이하고
+  신규 mutation·실험 확대·배포를 중지하되 reconciliation은 계속한다. fresh 입력의 sequence·schema·rule hash가 기존과
+  일치하면 PAUSED_INPUT에서 기록된 RUNNING 또는 EXPANDING으로 복귀한다.
+- 규칙·점수·비용·제한·API 계약의 hash/version이 실제로 변경된 경우에만 관련 가정과 실험을 INVALIDATED로 표시한다.
+  INVALIDATED는 자동 재개하지 않고 새 규칙 hash와 새 experiment_id로 다시 평가한다.
 - 공식 변경의 발표시각·적용시각·소급여부를 기록하고 소급 변경이면 Round 3 자료를 재계산하며 비소급 변경이면 전후 cohort를 분리한다.
 - 단순 leaderboard 변동만으로 전체 운영을 중지하지 않고 기준선과 경쟁자 모델만 재계산하며 입력 복구와 compatibility/Safety
   검증 전에는 자동 재개하지 않는다.
@@ -113,7 +124,8 @@ constraints:
   보내지 않으며 새 공식 증거가 도착하면 RECONCILING으로 복귀한다. fresh 입력, checkpoint와 코드 버전 일치가 확인된 해당
   거래만 재개하고 관련 없는 Buyer·Seller·procurement 운영은 계속한다.
 - Deployment는 DRAFT→VALIDATED→SHADOW→CANARY→ACTIVE 및 QUARANTINED/ROLLED_BACK, Experiment는
-  PROPOSED→ELIGIBLE→RUNNING→EXPANDING→ADOPTED 또는 REJECTED/INVALIDATED/ROLLED_BACK,
+  PROPOSED→ELIGIBLE→RUNNING→PAUSED_INPUT→RUNNING 또는 RUNNING→EXPANDING→PAUSED_INPUT→EXPANDING→ADOPTED 및
+  REJECTED/INVALIDATED/ROLLED_BACK,
   Safety Kernel은 VALIDATING→ACTIVE→TRIPPED→RECOVERY_PENDING→ACTIVE 상태를 사용한다.
 - VALIDATED는 전체 Python 문법 검사, 전체 unittest 100% 통과, git diff --check, 임시 DB migration,
   Safety Kernel·비밀정보 검사와 submission 내부 허용 경로 allowlist 검사를 모두 통과해야 한다.
@@ -149,30 +161,48 @@ acceptance_criteria:
   semantic_ac_key: ac_3bdae7896d36c5f4
   verify_exemption_reason: 마감 시점의 공식 leaderboard는 외부 시스템의 시간 종속 상태이며 로컬 단일 명령만으로 진위를
     결정할 수 없다.
-- description: 자동 실험이 고정 80:20 배정, 역할별 block, 지정된 실험 단위와 cluster, 최소 표본, 독립 cluster
-    5개, 실험별 primary metric 정확히 1개, 동시 채택 experiment family에 한정한 Holm-Bonferroni, 고정 seed
-    10,000회 cluster bootstrap, 97.5% 중간·최종 신뢰구간, δ 기반 확대·유지·폐기 및 확대 표본 영구채택 규칙을
-    재시작 후에도 동일한 배정과 판정으로 적용한다.
+- description: 자동 실험은 고정 80:20 배정, 역할별 block, 지정 unit·cluster, 최소 표본과 독립 cluster 5개,
+    primary metric 정확히 1개를 사용하며 재시작 후에도 unit 배정이 바뀌지 않는다.
   semantic_ac_key: ac_56877f39254126d2
   verify_command: python -m unittest -v tests/test_experiment_policy.py
   expected_artifacts:
   - tests/test_experiment_policy.py
-  output_assertion: exit code 0이며 테스트가 고정 fixture를 두 번 실행해 unit 배정, bootstrap 결과, family 보정과 판정이 byte-for-byte 동일함을 assert한다.
-- description: 공식 입력의 조회 주기, hard stale, 우선순위, ledger sequence-gap 차단, 변경 시 INVALIDATED
-    처리, 소급 재계산·비소급 cohort 분리 및 복구 후 compatibility/Safety 검증 전 재개 금지가 적용된다. 연결 5초·전체
-    15초·2 MiB 한도와 schema 검증에 실패한 빈·부분·비JSON·과대 입력은 마지막 검증 snapshot을 대체하지 못한다.
+  output_assertion: exit code 0이며 고정 fixture를 3회 실행해 unit 배정과 SQLite experiment_unit 행이 byte-for-byte 동일하고 primary metric이 1개가 아닌 입력은 모두 거부됨을 assert한다.
+- description: normalized effect, 고정 seed 10,000회 bootstrap, 양측 97.5% 구간, empirical p, 동시 판정
+    family의 Holm α=0.025, 최소 표본 EXPANDING과 2배 표본 ADOPTED 판정이 결정적으로 적용된다.
+  semantic_ac_key: ac_statistical_decision
+  verify_command: python -m unittest -v tests/test_statistical_decision.py
+  expected_artifacts:
+  - tests/test_statistical_decision.py
+  output_assertion: exit code 0이며 증가·감소 지표, 0 분모, family 크기 1·2·5, 경계 p·CI, 최소·2배 표본 fixture를 3회 실행해 effect·CI·p·Holm·상태전이가 동일함을 assert한다.
+- description: 공식 입력은 지정 주기·우선순위와 연결 5초·전체 15초·2 MiB·schema 한도를 적용하며 malformed·partial·oversized
+    응답은 마지막 검증 snapshot을 대체하지 못하고 hard stale 또는 ledger gap 동안 관련 mutation이 차단된다.
   semantic_ac_key: ac_29588938f691a941
   verify_command: python -m unittest -v tests/test_input_freshness.py
   expected_artifacts:
   - tests/test_input_freshness.py
-  output_assertion: exit code 0이며 가짜 시계와 offline fixture로 정상·stale·sequence gap·규칙 변경·malformed·oversized 입력을 재현해 저장된 snapshot hash와 mutation 차단 상태를 직접 assert한다.
-- description: Forum 입력은 검증 수준에 따라 구조화된 신호·보조 신호·최소실험 후보로 분리되고 prompt injection과 비밀
-    요청은 실행 컨텍스트에서 격리되며 역할별 게시 한도, 전환 추적, 문안 중단, 사실형 경고 정책이 지켜진다.
+  output_assertion: exit code 0이며 가짜 시계와 offline fixture로 정상·timeout·stale·gap·malformed·partial·oversized 입력을 3회 재현해 snapshot hash, failure metadata와 mutation 차단 상태를 assert한다.
+- description: 일시적 stale·ledger gap은 관련 실험을 PAUSED_INPUT으로 만들고 동일 hash의 fresh 입력 복구 시 이전 상태로
+    재개하지만, 공식 계약 hash/version 변경은 INVALIDATED와 새 experiment_id를 만들며 소급 재계산 또는 전후 cohort 분리를 수행한다.
+  semantic_ac_key: ac_official_change_lifecycle
+  verify_command: python -m unittest -v tests/test_official_change_lifecycle.py
+  expected_artifacts:
+  - tests/test_official_change_lifecycle.py
+  output_assertion: exit code 0이며 temporary stale, same-hash recovery, retroactive change, prospective change fixture에서 상태전이와 official_change/evidence_cohort SQLite 행을 assert한다.
+- description: Forum 주장은 공식 자료 일치 VERIFIED, 독립 작성자 3명 이상 CORROBORATED, 나머지 UNVERIFIED의 단일 truth
+    table로 분류되고 비공식 주장은 1% 자본 또는 SKU 1개 한도를 넘지 않으며 prompt injection·비밀 요청 원문은 실행 컨텍스트에 없다.
   semantic_ac_key: ac_424cbccdfbc42f02
   verify_command: python -m unittest -v tests/test_forum_policy.py
   expected_artifacts:
   - tests/test_forum_policy.py
-  output_assertion: exit code 0이며 테스트가 격리 저장소의 신뢰등급, 게시 rate counter, 중단 판정과 실행 컨텍스트에 raw Forum 문장이 없음을 직접 assert한다.
+  output_assertion: exit code 0이며 공식 일치 여부와 독립 작성자 수 1·2·3의 전체 truth table, 1%·1 SKU 경계와 악성 원문 fixture에서 신뢰등급·노출·실행 컨텍스트를 assert한다.
+- description: Buyer·Seller 게시가 역할별 일일·간격·중복문안 한도와 전환 중단 기준을 지키며 경쟁자 사건은 공식 증거가 있을
+    때만 의도를 단정하지 않고 refs를 포함해 사건당 한 번 게시하며 정정 이력을 보존한다.
+  semantic_ac_key: ac_forum_publication
+  verify_command: python -m unittest -v tests/test_forum_publication.py
+  expected_artifacts:
+  - tests/test_forum_publication.py
+  output_assertion: exit code 0이며 한도 경계, 중복문안, 무증거 주장, 동일 사건 재게시와 정정 fixture에서 허용 게시만 생성되고 Buyer 자기 shop 광고와 비공식 사기 명명은 0건임을 assert한다.
 - description: 중단되거나 응답이 불명확한 mutation은 영구 checkpoint와 멱등성 키를 보존한 UNCERTAIN 상태에서 재제출되지
     않고 30초 간격·10분·최대 20회 reconciliation 후 CONFIRMED, SAFE_TO_RETRY 또는 PRESERVED로 결정된다.
     PRESERVED는 새 공식 증거가 있을 때만 RECONCILING으로 복귀하며 재시작과 반복 중단에도 같은 키로 중복 제출되지 않는다.
@@ -180,7 +210,7 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_mutation_lifecycle.py
   expected_artifacts:
   - tests/test_mutation_lifecycle.py
-  output_assertion: exit code 0이며 테스트가 실제 임시 SQLite 행과 fake API 호출 횟수를 검사해 허용 전이만 존재하고 동일 키 POST가 최대 1회이며 checkpoint와 PRESERVED 행이 두 차례 재시작 후에도 동일함을 assert한다.
+  output_assertion: exit code 0이며 임시 SQLite와 fake API에서 각 단계 강제중단을 3회 반복해 불법 전이 0건, 동일 키 POST 최대 1회, 정확히 20회 확인, checkpoint와 PRESERVED 행 지속성을 assert한다.
 - description: Deployment, Experiment, Safety Kernel 상태 머신이 허용된 전이만 수행하고 모든 전이를 필수
     provenance와 판정 근거를 포함한 append-only SQLite 감사 기록으로 남기며 비밀과 raw untrusted instruction은
     저장하지 않는다.
@@ -188,7 +218,14 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_state_machines.py
   expected_artifacts:
   - tests/test_state_machines.py
-  output_assertion: exit code 0이며 테스트가 임시 SQLite를 직접 열어 불법 전이 0건, 필수 provenance 누락 0건, 기존 행 UPDATE/DELETE 0건과 비밀·raw instruction 저장 0건을 assert한다.
+  output_assertion: exit code 0이며 임시 SQLite를 직접 열어 불법 전이·필수 provenance 누락·기존 행 UPDATE/DELETE·secret pattern·raw instruction이 각각 0건임을 assert한다.
+- description: 후보 생성·배포는 submission 내부 allowlist에만 쓰고 Safety Kernel·hard envelope·owner.env·기존 로그·공용·타인
+    파일을 수정하지 않으며 후보 변경과 겹치는 사용자 tracked 변경이 있으면 worktree_guard가 QUARANTINED로 만든다.
+  semantic_ac_key: ac_worktree_scope_guard
+  verify_command: python -m unittest -v tests/test_worktree_guard.py
+  expected_artifacts:
+  - tests/test_worktree_guard.py
+  output_assertion: exit code 0이며 clean, unrelated dirty, overlapping dirty, symlink escape, forbidden file, existing log fixture에서 허용 외 content hash 변화 0건, 사용자 변경 손실 0건, 겹침 배포 0건과 worktree_guard 행을 assert한다.
 - description: 로컬 supervisor가 후보 코드를 격리 검증한 뒤 SHADOW와 역할별 10% CANARY를 거쳐 Buyer와 Seller를
     순차 배포한다. 검증 명령 5분·전체 업데이트 30분 timeout과 process-group 정리를 적용하며 canary 중 금지 조건이 발생하면
     실제 실행 파일·프로세스·commit·parameter set을 직전 ACTIVE recovery checkpoint로 복귀시키고 procurement 및 PRESERVED
@@ -197,7 +234,14 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_deployment_pipeline.py
   expected_artifacts:
   - tests/test_deployment_pipeline.py
-  output_assertion: exit code 0이며 격리된 실제 자식 프로세스와 임시 Git/SQLite fixture에서 PID 소유권, timeout 후 자식 0개, board fixture의 alive+commit, 롤백 대상 commit·parameter set, procurement 연속성과 변경되지 않은 PRESERVED 행을 직접 assert한다.
+  output_assertion: exit code 0이며 각 배포 단계 강제중단, 5분·30분 timeout, canary 실패 fixture를 3회 실행해 orphan 자식 0개, 역할 동시교체 0건, 실제 PID·commit·parameter rollback, procurement cursor와 PRESERVED 행 불변을 assert한다.
+- description: validation·deployment·watch 성공 이벤트는 실제 validation_run, supervisor 소유 PID, board alive와 실행
+    commit 일치 및 recovery checkpoint 검증이 모두 끝난 뒤에만 기록된다.
+  semantic_ac_key: ac_runtime_truthfulness
+  verify_command: python -m unittest -v tests/test_runtime_truthfulness.py
+  expected_artifacts:
+  - tests/test_runtime_truthfulness.py
+  output_assertion: exit code 0이며 validation 실패, PID 불일치, board offline, commit 불일치, rollback 불일치에서는 성공 이벤트 0건이고 모두 일치한 fixture에서만 1건임을 assert한다.
 - description: 모든 전략·가격·재고·보증·Forum·조달·안정성 자동 변경이 확정된 자본, 노출, 변경폭, 보상, 게시, 최소 개선폭
     및 Safety Kernel hard envelope 밖으로 나가지 않는다. 최소실험 시작에는 hard envelope만 적용하고, δ와 guardrail은
     확대·채택에만 적용한다.
@@ -205,7 +249,7 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_hard_envelopes.py
   expected_artifacts:
   - tests/test_hard_envelopes.py
-  output_assertion: exit code 0이며 경계값 전후 financial_snapshot을 임시 SQLite에서 읽어 안전한 최소실험 허용, 한도 초과 차단, δ 미달 확대 거부와 현금·부채·재고 계산값을 직접 assert한다.
+  output_assertion: exit code 0이며 가격·재고·SKU·현금·부채·보증·보상·게시·loss-leader·확률/logit 각 경계의 아래·같음·위 fixture에서 한도 내 mutation만 허용되고 financial_snapshot, δ 미달 확대 거부와 Safety 판정을 assert한다.
 - description: background supervisor가 실제 역할 프로세스를 관찰창과 독립적으로 계속 실행하고 역할별 watch 명령에
     구조화된 검증·배포·canary·rollback event를 실시간 표시한다. 관찰창 Ctrl-C와 supervisor 강제 중단·재시작을 각각
     두 번 수행해도 역할 PID 소유권, recovery checkpoint, 미확정 거래와 조달 상태가 유지되고 비밀값은 노출되지 않는다.
@@ -213,19 +257,16 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_runtime_supervisor.py
   expected_artifacts:
   - tests/test_runtime_supervisor.py
-  output_assertion: exit code 0이며 테스트가 watch 종료 뒤 역할 PID 생존, supervisor 재시작 뒤 새 PID의 소유권과 동일 recovery checkpoint, procurement/PRESERVED 상태 연속성 및 observer 출력의 secret pattern 0건을 직접 assert한다.
+  output_assertion: exit code 0이며 watch Ctrl-C와 supervisor 강제중단·재시작을 각각 3회 반복해 watch 종료 뒤 역할 PID 생존, 재시작 뒤 단일 소유 PID, 동일 procurement cursor·PRESERVED 행과 secret pattern 0건을 assert한다.
 - description: Windows 시작·복구 진입점의 install·status·remove가 동일 고정 task name과 예상 WSL command를 사용해
     반복 실행에도 task를 하나만 유지하고, 동명의 불일치 task는 덮어쓰지 않으며 remove는 해당 예상 task만 제거한다.
   semantic_ac_key: ac_windows_recovery_registration
   verify_command: python -m unittest -v tests/test_windows_recovery.py
   expected_artifacts:
   - tests/test_windows_recovery.py
-  output_assertion: exit code 0이며 mock schtasks fixture에서 install 2회 후 예상 task 1개, 불일치 task 변경 0건, status의 경로·command 일치, remove 2회 후 예상 task 0개를 직접 assert한다.
+  output_assertion: exit code 0이며 mock schtasks fixture에서 install 3회 후 예상 task 1개, 불일치 task 변경 0건, status 경로·command 일치, remove 3회 후 예상 task 0개를 assert한다.
 assumptions:
-- 요구사항별 자동 검증을 위해 tests/test_experiment_policy.py, tests/test_input_freshness.py,
-  tests/test_forum_policy.py, tests/test_mutation_lifecycle.py, tests/test_state_machines.py,
-  tests/test_deployment_pipeline.py, tests/test_hard_envelopes.py, tests/test_runtime_supervisor.py라는
-  criterion-specific unittest 파일을 둘 수 있다.
+- acceptance_criteria의 각 verify_command에 명시된 criterion-specific unittest 파일을 submission 내부 tests/에 둘 수 있다.
 - 공식 leaderboard의 최종 순위는 로컬 테스트가 아니라 Round 3 종료 시점의 공식 외부 기록으로 판정한다.
 ontology_schema:
   name: Round3AutonomousTradingControl
@@ -299,6 +340,26 @@ ontology_schema:
     type: object
     description: 역할별 ACTIVE commit·parameter set·PID 소유정보, mutation·procurement cursor, SQLite durable 위치와 복구 검증 결과
     required: true
+  - name: windows_recovery_registration
+    type: object
+    description: 고정 scheduled-task 이름, WSL command, submission 경로, 설치·조회·제거 상태와 충돌 검사 결과
+    required: true
+  - name: worktree_guard
+    type: object
+    description: 후보 변경 경로, 사용자 tracked 변경 경로, 겹침·symlink escape·allowlist 검사와 격리 판정
+    required: true
+  - name: multiplicity_family
+    type: object
+    description: 동일 배포 결정에서 함께 판정한 experiment ID, primary metric p 순위, Holm 임계값과 통과 여부
+    required: true
+  - name: official_change
+    type: object
+    description: 공식 계약의 이전·새 hash/version, 발표·적용 시각, 소급 여부, PAUSED_INPUT 또는 INVALIDATED 판정
+    required: true
+  - name: evidence_cohort
+    type: object
+    description: 공식 변경 전후 rule hash, 시간 범위, experiment unit 집합, 소급 재계산 또는 비소급 분리 결과
+    required: true
   - name: competitive_baseline
     type: object
     description: 공식 leaderboard 기준선, 경쟁자 모델, Class Player 점수와 최종 순위 판정
@@ -340,9 +401,10 @@ exit_conditions:
   description: UNCERTAIN mutation의 결과를 30초 간격·10분·최대 20회 확인해도 결정할 수 없으면 해당 거래의 새 요청을
     중단하고 이후 공식 증거를 기다리며 보존한다.
   criteria: mutation이 PRESERVED이고 동일 거래 재제출이 차단되어 있으며 관련 없는 역할 운영은 계속된다.
-- name: 입력 무효화 종료
-  description: 공식 rule·patch·점수·비용·제한·API 계약 변경이나 hard stale가 발생하면 관련 자동 작업을 종료한다.
-  criteria: 관련 가정과 실험이 INVALIDATED이고 신규 mutation·확대·배포가 중지되며 reconciliation만 실행된다.
+- name: 입력 일시정지 또는 무효화
+  description: hard stale·ledger gap은 관련 실험을 PAUSED_INPUT으로 일시정지하고, 공식 계약 hash/version 변경만
+    INVALIDATED로 영구 무효화한다.
+  criteria: PAUSED_INPUT은 동일 hash의 fresh 입력에서 이전 상태로 복귀하고 INVALIDATED는 새 experiment_id 없이는 재개되지 않는다.
 - name: 성과 미달 폐기
   description: 최대 관찰 표본에서도 성공 기준을 충족하지 못한 실험이나 확대 표본에서 효과가 유지되지 않은 전략을 종료한다.
   criteria: 실험이 REJECTED 또는 ROLLED_BACK이고 기존 전략이 유지된다.
@@ -351,7 +413,7 @@ exit_conditions:
   criteria: 신규 위험 mutation이 차단되고 현금·미정산 부채·재고 상태가 checkpoint에 보존된다.
 metadata:
   seed_id: seed_45ef0f10a27e
-  version: 1.1.0
+  version: 1.2.0
   created_at: '2026-11-07T16:38:43.255953Z'
   ambiguity_score: 0.0645
   gate_forced: false
