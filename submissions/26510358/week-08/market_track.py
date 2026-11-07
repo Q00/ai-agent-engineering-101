@@ -47,36 +47,41 @@ def main():
     since = time.strftime("%H:%M", time.gmtime(last["ts"] + 9 * 3600)) if last else None
     print(f"# Market tracking {t}" + (f"  (changes since {since})" if since else ""))
 
-    shops = sorted([s for s in b.get("shops") or [] if s.get("deals")], key=lambda s: -(s.get("profit") or 0))
+    # Shop ALL takes Book (balance - start + unsold stock at cost, patch 3.3), not the board's cash "profit", so rank
+    # and change are by book; profit stays as a column.
+    book = lambda s: s.get("book") if s.get("book") is not None else s.get("profit")
+    shops = sorted([s for s in b.get("shops") or [] if s.get("deals")], key=lambda s: -(book(s) or 0))
     for i, s in enumerate(shops, 1):
-        snap["shops"][s["name"]] = {"rank": i, "profit": s.get("profit"), "revenue": s.get("revenue"),
+        snap["shops"][s["name"]] = {"rank": i, "book": book(s), "profit": s.get("profit"), "revenue": s.get("revenue"),
                                     "deals": s.get("deals")}
-    print("\n## Richest shops (net profit)")
-    print(f"{'#':>3}  {'shop':22}{'profit':>9}{'change':>9}{'revenue':>10}{'deals':>7}{'stars':>6}{'ALL':>6}")
+    print("\n## Richest shops (book = net profit + stock at cost; Shop ALL uses book)")
+    print(f"{'#':>3}  {'shop':22}{'book':>9}{'change':>9}{'profit':>9}{'stock':>9}{'revenue':>10}{'deals':>7}{'stars':>6}{'ALL':>6}")
     rows = shops[:10] + [s for s in shops[10:] if s["name"] in config.MY_NAMES]
     for s in rows:
         i = snap["shops"][s["name"]]["rank"]
         p = prev_shops.get(s["name"])
-        print(f"{i:>3}{mine(s['name'])} {s['name'][:22]:22}{M(s.get('profit'))}{delta(snap['shops'][s['name']], p, 'profit'):>9}"
-              f"{M(s.get('revenue'))}{s.get('deals'):>7}{s.get('stars'):>6}{s.get('all'):>6} "
-              f"{rank_delta(i, (p or {}).get('rank'))}")
+        print(f"{i:>3}{mine(s['name'])} {s['name'][:22]:22}{M(book(s))}{delta(snap['shops'][s['name']], p, 'book'):>9}"
+              f"{M(s.get('profit'))}{M(s.get('stock_cost'))}{M(s.get('revenue'))}{s.get('deals'):>7}{s.get('stars'):>6}"
+              f"{s.get('all'):>6} {rank_delta(i, (p or {}).get('rank'))}")
 
     print("\n## Deepest in the red")
-    for s in sorted(shops, key=lambda s: s.get("profit") or 0)[:6]:
-        print(f"     {s['name'][:22]:22}{M(s.get('profit'))}{M(s.get('revenue'))}{s.get('deals'):>7}{s.get('stars'):>6}"
+    for s in sorted(shops, key=lambda s: book(s) or 0)[:6]:
+        print(f"     {s['name'][:22]:22}{M(book(s))}{M(s.get('revenue'))}{s.get('deals'):>7}{s.get('stars'):>6}"
               f"  bankruptcies {s.get('bankruptcies')}")
 
     buyers = sorted([x for x in b.get("buyers") or [] if x.get("deals")], key=lambda x: -(x.get("surplus") or 0))
     for i, x in enumerate(buyers, 1):
         snap["buyers"][x["name"]] = {"rank": i, "surplus": x.get("surplus"), "posts": x.get("posts")}
-    print("\n## Sharpest buyers (surplus)")
-    print(f"{'#':>3}  {'buyer':22}{'surplus':>9}{'change':>9}{'deals':>7}{'paid':>6}{'posts':>6}{'forum':>6}{'ALL':>6}")
+    saved_rank = {x["name"]: i for i, x in enumerate(sorted(buyers, key=lambda x: -(x.get("saved") or 0)), 1)}
+    # Buyer ALL = 0.5 saved (percentile) + 0.3 forum rating as itself (patch 3.5) + 0.1 deals + 0.1 posts
+    print("\n## Sharpest buyers (surplus; Buyer ALL scores saved, so its rank is shown too)")
+    print(f"{'#':>3}  {'buyer':22}{'surplus':>9}{'change':>9}{'saved':>7}{'s#':>4}{'deals':>7}{'paid':>6}{'posts':>6}{'forum':>6}{'ALL':>6}")
     rows = buyers[:8] + [x for x in buyers[8:] if x["name"] in config.MY_NAMES]
     for x in rows:
         i = snap["buyers"][x["name"]]["rank"]
         p = prev_buyers.get(x["name"])
         print(f"{i:>3}{mine(x['name'])} {x['name'][:22]:22}{M(x.get('surplus'))}{delta(snap['buyers'][x['name']], p, 'surplus'):>9}"
-              f"{x.get('deals'):>7}{x.get('paid'):>6}{x.get('posts'):>6}{x.get('forum'):>6}{x.get('all'):>6} "
+              f"{x.get('saved') or 0:>7.3f}{saved_rank[x['name']]:>4}{x.get('deals'):>7}{x.get('paid'):>6}{x.get('posts'):>6}{x.get('forum'):>6}{x.get('all'):>6} "
               f"{rank_delta(i, (p or {}).get('rank'))}")
 
     players = b.get("players") or []
