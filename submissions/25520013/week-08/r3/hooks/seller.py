@@ -136,8 +136,20 @@ def pick_food(food, need, shelf, now):
     return min(ok, key=key) if ok else max(food, key=lambda u: (left(u), -(u.get("supplied_at") or 0)))
 
 
-def find_unit(text, inv, taken=(), pol=None, now=None, shelf=None, why=None):
-    """`why` (a dict, optional) gets need_h when food units match but none lasts the stated need."""
+def sells_at_market(u, pol, stats, inv=None, now=None):
+    """v2.6: True unless the SKU's market settle price (shop.ask_quantile, >= 5 settles) is below this unit's floor.
+    11-07 19:30 KST: 33 of our 57 bed A units cost 0.75-0.85 of list, floor above the bed market median 0.72; the
+    oldest-first pick offered them 109 times in an hour while cheaper units of the same SKU waited. Unknown -> True."""
+    s = P._stat(stats, "sku", u.get("sku"))
+    q = (pol.get("shop") or {}).get("ask_quantile") or "p75"
+    if not s or s.get("n", 0) < 5 or not s.get(q):
+        return True
+    return P.floor_price(u, pol, inv, now) <= s[q]
+
+
+def find_unit(text, inv, taken=(), pol=None, now=None, shelf=None, why=None, stats=None):
+    """`why` (a dict, optional) gets need_h when food units match but none lasts the stated need.
+    `stats` (v2.6, optional): goods units whose floor is above the SKU's market price go last."""
     now = time.time() if now is None else now
     want = text.lower()
     units = [u for u in inv.get("units") or [] if u.get("grade") != "expired" and u["unit"] not in taken
@@ -155,7 +167,10 @@ def find_unit(text, inv, taken=(), pol=None, now=None, shelf=None, why=None):
         return u
     # goods: ship the unit that expires first among those whose grade is A/B; else the first to expire.
     good = [u for u in fit if u.get("grade") in ("A", "B")]
-    return min(good or fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
+    pool = good or fit
+    if stats is not None and pol is not None:   # v2.6: a unit the market price can reach first
+        pool = [u for u in pool if sells_at_market(u, pol, stats, inv, now)] or pool
+    return min(pool, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
 
 
 def refused_units(path=None, now=None, hold_s=REFUSED_HOLD_S, tail=KIT_TAIL_BYTES):
@@ -421,8 +436,9 @@ class Seller(AgentExecutor):
                 return
             inv = read_json(MARKET_DIR / "inventory.json", {}) or {}
             why = {}
+            st = self.stats()                           # v2.6: before the pick (sells_at_market)
             unit = find_unit(text, inv, self.held(now), self.pol, shelf=self.shelf,
-                             why=why)
+                             why=why, stats=st)
             if unit is None:
                 need = why.get("need_h")                # v2.1: food in stock, none lasts the stated need
                 self._metric("no_stock", dict({"request": BL.clean(text, 80)}, **why))
@@ -433,7 +449,6 @@ class Seller(AgentExecutor):
                 return
             sh = self.shelf(unit["sku"])
             relax, nset = self.volume()
-            st = self.stats()
             ask = P.ask_price(unit, self.pol, stats=st, inv=inv, shelf_hours=sh, relax=relax)
             deal = self.open[task.id] = {"unit": unit, "ask": ask, "rounds": 0, "t": time.time(), "inv": inv, "sh": sh, "text": text,
                                          "relax": relax, "stats": st, "pol": self.pol}
