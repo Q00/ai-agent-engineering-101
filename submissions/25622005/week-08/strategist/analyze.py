@@ -50,6 +50,9 @@ C_FALLBACK = {"food": 0.51, "goods": 0.61}
 EXPAND = {"turnover_day": 1.5, "unsold_goods_share": 0.20, "spoilage_share": 0.01, "balance": 10_000_000}
 TURN_MIN_H = 3              # hours of our 24 h sums before turnover per day is given
 SCORE_F = {"shop": ("book", "revenue", "stars"), "buyer": ("saved", "forum", "deals", "posts")}   # Patch 3.4: saved
+PEER_TOP = 5                # buyers listed in saved.peers (the best saved among those with PEER_MIN_DEALS deals)
+PEER_MIN_DEALS = 1000       # a peer must have closed this many deals: a kept share proven at volume
+SAVED_TARGETS = (0.40, 0.45)   # kept-per-deal values the saved projection is shown for, besides the current one
 BAND_NAMES = ("<20k", "20k-50k", "50k-100k", "100k-200k", "200k-500k", "500k-1M", ">=1M")
 
 
@@ -809,6 +812,57 @@ def _buyer_log(rows):
     return out
 
 
+def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h):
+    """The buyer's Saved, taken apart (Saved = sum over deals of surplus / list, a deal that served nothing -1
+    or 0 when refunded, over deals + 100). unserved: the board's deals - served, each a -1, and the drag they
+    put on saved. kept_per_deal: 1 - the board's paid (our mean price / list). window: this window's deals, the
+    goods deals among them and how many carried the full 6 h warranty, the deal rate. projection: the deals
+    left at that rate, the weight of the history in the final saved, and the final saved if every deal left kept
+    the share named (as_now: the current kept with the current unserved share going on; the SAVED_TARGETS with
+    breaks refunded). peers: the PEER_TOP best saved among the other buyers with PEER_MIN_DEALS deals, with their paid.
+    policy: the buyer keys that set the share kept."""
+    deals, served, saved, paid = (_num(_dict(me_b).get(k)) for k in ("deals", "served", "saved", "paid"))
+    out = {"policy": {k: _dict(_dict(pol).get("buyer")).get(k) for k in ("min_kept", "break_penalty", "step_list",
+                                                                             "cap_goods_no_warranty")}}
+    if deals is None or saved is None:
+        return out
+    unserved = max(0, int(deals - served)) if served is not None else None
+    out["unserved"] = {"n": unserved, "share": _ratio(unserved, deals),
+                       "saved_drag": _r(unserved / (deals + 100)) if unserved is not None else None}
+    kept = round(1 - paid, 4) if paid is not None else None
+    out["kept_per_deal"] = kept
+    orders = [r for r in _rows(rows) if r.get("kind") == "order"]
+    won = [r for r in orders if isinstance(r.get("choice"), dict)]
+    goods = [r for r in won if _dict(r.get("inputs")).get("kind") == "goods"]
+    warranted = sum(1 for r in goods if (_num(r["choice"].get("warranty_h")) or 0) >= 6)
+    rate = len(won) / window_h if window_h else None
+    out["window"] = {"deals": len(won), "goods_deals": len(goods), "goods_warranted": warranted,
+                     "deals_per_h": _r(rate, 1)}
+    if hours_left is not None and rate:
+        left = rate * hours_left
+        hist = deals + 100
+        proj = {"deals_left_est": int(left), "history_weight": _r(hist / (hist + left))}
+        ends = {}
+        if kept is not None and unserved is not None:
+            share = unserved / deals if deals else 0
+            ends["as_now"] = _r((saved * hist + left * (kept * (1 - share) - share)) / (hist + left))
+        for k in SAVED_TARGETS:
+            ends[f"kept_{k}"] = _r((saved * hist + left * k) / (hist + left))
+        proj["saved_end"] = ends
+        out["projection"] = proj
+    peers = []
+    for r in _rows(buyers):
+        d = _num(r.get("deals")) or 0
+        if r is me_row or r.get("house") or d < PEER_MIN_DEALS or _num(r.get("saved")) is None:
+            continue
+        pd = _num(r.get("paid"))
+        peers.append({"saved": _r(r["saved"]), "paid": _r(pd), "kept": round(1 - pd, 4) if pd is not None else None,
+                      "deals": int(d), "forum": _r(_num(r.get("forum")))})
+    peers.sort(key=lambda x: -x["saved"])
+    out["peers"] = peers[:PEER_TOP]
+    return out
+
+
 # --- size
 
 def size(b):
@@ -888,6 +942,7 @@ def brief(raw, own, prev, pol, now, me=ME, window_h=1, flows=None, known=(), foc
     dec = _dict(own.get("decisions"))
     b["seller"] = _seller(_rows(dec.get("seller")))
     b["buyer_log"] = _buyer_log(_rows(dec.get("buyer")))
+    b["saved"] = _saved(buyers, _find(buyers, me), b["me"].get("buyer"), _rows(dec.get("buyer")), pol, b["hours_left"], window_h)
     b["forum"] = _forum(raw.get("forum"), since)
     b["reviews_of_us"] = _reviews(raw.get("shop_reviews"))
     b["inventory"] = _inventory(own.get("inventory"), ledger, url, me, pol, now, ledger_h, flows, known)

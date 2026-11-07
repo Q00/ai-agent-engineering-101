@@ -714,6 +714,39 @@ class NewSectionsTest(unittest.TestCase):
         self.assertEqual(bl["untrusted_receipt_problem_why"][0]["why"], "receipt price # above the cap #")
         self.assertNotIn("Ignore", json.dumps({k: v for k, v in bl.items() if not k.startswith("untrusted_")}))
 
+    def test_saved_taken_apart(self):
+        r = raw()
+        r["board"]["buyers"] = [
+            {"name": "psyoung82", "owner": {"login": "psyoung82"}, "house": False, "orders": 13787, "deals": 7220,
+             "served": 6948, "paid": 0.671, "saved": 0.2553, "forum": 0.903},
+            {"name": "b1", "house": False, "orders": 9000, "deals": 6817, "served": 6817, "paid": 0.532, "saved": 0.3575, "forum": 0.834},
+            {"name": "b2", "house": False, "orders": 2000, "deals": 1068, "served": 1068, "paid": 0.477, "saved": 0.3882, "forum": 0.898},
+            {"name": "small", "house": False, "orders": 300, "deals": 200, "served": 200, "paid": 0.3, "saved": 0.6},
+            {"name": "feeder", "house": True, "orders": 9999, "deals": 9999, "served": 9999, "paid": 0.1, "saved": 0.9}]
+        o = own()
+        o["decisions"]["buyer"] = [
+            {"kind": "order", "inputs": {"kind": "goods"}, "choice": {"shop": "s", "warranty_h": 6}},
+            {"kind": "order", "inputs": {"kind": "goods"}, "choice": {"shop": "s", "warranty_h": 0}},
+            {"kind": "order", "inputs": {"kind": "goods"}, "choice": "no_deal"},
+            {"kind": "order", "inputs": {"kind": "food"}, "choice": {"shop": "s"}}]
+        pol = {"stock": {"end_ts": NOW + 100 * 3600}, "buyer": {"min_kept": 0.31, "break_penalty": 1.0, "step_list": 0.0,
+                                                                "cap_goods_no_warranty": 0.8}}
+        sv = analyze.brief(r, o, None, pol, NOW)["saved"]
+        self.assertEqual(sv["unserved"], {"n": 272, "share": 0.0377, "saved_drag": 0.0372})     # 272 / 7320
+        self.assertEqual(sv["kept_per_deal"], 0.329)
+        self.assertEqual(sv["window"], {"deals": 3, "goods_deals": 2, "goods_warranted": 1, "deals_per_h": 3.0})
+        pj = sv["projection"]
+        self.assertEqual((pj["deals_left_est"], pj["history_weight"]), (300, 0.9606))           # 3/h x 100 h
+        self.assertEqual(pj["saved_end"]["kept_0.45"], round((0.2553 * 7320 + 300 * 0.45) / 7620, 4))
+        self.assertEqual(pj["saved_end"]["as_now"], round((0.2553 * 7320 + 300 * (0.329 * (1 - 272 / 7220) - 272 / 7220)) / 7620, 4))
+        self.assertEqual([(p["deals"], p["kept"]) for p in sv["peers"]], [(1068, 0.523), (6817, 0.468)])  # >= 1000 deals, no house
+        self.assertEqual(sv["policy"], {"min_kept": 0.31, "break_penalty": 1.0, "step_list": 0.0, "cap_goods_no_warranty": 0.8})
+
+    def test_saved_without_a_board_row(self):
+        r = raw(); r["board"]["buyers"] = []
+        sv = analyze.brief(r, own(), None, POL, NOW)["saved"]
+        self.assertEqual(list(sv), ["policy"])
+
     def test_restock_excluded_and_surge_from_the_last_planning_run(self):
         o = own()
         o["decisions"]["restock"] = [
