@@ -18,7 +18,7 @@ import time
 ROOT = Path(__file__).resolve().parent
 OFF = {"enabled": False}
 WORST_COST_SHARE = .75
-MAX_UNITS, MAX_COST = 4, 150000
+MAX_UNITS, MAX_COST = 12, 250000
 MIN_SETTLES_6H, MIN_BUYERS = 3, 3
 REQUIRED_FEATURE = "food_pricing_v2"
 

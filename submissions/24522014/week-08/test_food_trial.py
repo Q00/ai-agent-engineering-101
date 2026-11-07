@@ -12,6 +12,8 @@ import restock_policy as rp
 
 KIMCHI, MEAT = "식품>김치/반찬/즉석요리>김치", "식품>육류>가공/조리 육류"
 ON = {"enabled": True, "trial_id": "v2", "categories": {KIMCHI: 2, MEAT: 2}, "max_total_units": 4, "max_total_estimated_cost": 150000}
+PLAN_B = {KIMCHI: 4, "식품>김치/반찬/즉석요리>즉석조리식품": 2, "식품>김치/반찬/즉석요리>찌개/탕류/장류": 2, "식품>기타 가공식품>과자": 2, "식품>음료>주스/코코아/생수": 2}
+SHIPPED = {**PLAN_B, KIMCHI: 2}
 HOT = {"settles_6h": 9, "distinct_buyers": 5, "distinct_buyers_6h": 5, "median_price": 100}
 NOW = 1793800000.0
 RUNTIME = {"version": 1, "controls": {"restock_paused": False, "restock_budget_rate": 0.05}}
@@ -40,14 +42,18 @@ class Settings(unittest.TestCase):
 
     def test_missing_broken_or_excessive_settings_stay_off(self):
         for content in (None, "{broken", "[]", "{}", json.dumps({**ON, "enabled": False}), json.dumps({**ON, "enabled": "true"}),
-                        json.dumps({**ON, "max_total_units": 5}), json.dumps({**ON, "max_total_estimated_cost": 150001}),
-                        json.dumps({**ON, "categories": {KIMCHI: 5}}), json.dumps({**ON, "categories": {}}), json.dumps({"enabled": True})):
+                        json.dumps({**ON, "max_total_units": 13}), json.dumps({**ON, "max_total_estimated_cost": 250001}),
+                        json.dumps({**ON, "categories": {KIMCHI: 13}}), json.dumps({**ON, "categories": {}}), json.dumps({"enabled": True})):
             with self.subTest(content=content):
                 self.assertEqual(self.load(content), {"enabled": False})
 
+    def test_the_approved_limits_are_accepted(self):
+        value = {**ON, "categories": PLAN_B, "max_total_units": 12, "max_total_estimated_cost": 250000}
+        self.assertEqual(self.load(json.dumps(value)), value)
+
     def test_shipped_file_keeps_the_approved_bounds(self):
         value = json.loads((ft.ROOT / "food_trial.json").read_text(encoding="utf-8"))
-        self.assertEqual((sum(value["categories"].values()), value["max_total_units"], value["max_total_estimated_cost"]), (4, 4, 150000))
+        self.assertEqual((value["categories"], value["max_total_units"], value["max_total_estimated_cost"]), (SHIPPED, 10, 250000))
         self.assertTrue(all(k.startswith("식품>") for k in value["categories"]))
         self.assertEqual(ft.load_settings()["trial_id"], value["trial_id"])
 
@@ -105,6 +111,16 @@ class Choosing(unittest.TestCase):
         state["planned"] = {"x": {"category": MEAT, "estimated_cost": 149000}}
         self.assertEqual(ft.choose(ON, state, {"small": food(price=20000)}, {"small": HOT}, [], NOW), [])
 
+    def test_budget_used_early_leaves_the_last_category_out_for_good(self):
+        """Plan B's order decides who is cut: the last category gets nothing, then or on a later run."""
+        settings = {**ON, "categories": PLAN_B, "max_total_units": 12, "max_total_estimated_cost": 250000}
+        catalog = {f"{c}{i}": food(category, price=40000) for c, category in zip("abcde", PLAN_B) for i in range(4)}
+        picks = ft.choose(settings, fresh(), catalog, {k: HOT for k in catalog}, [], NOW)
+        self.assertEqual(len(picks), 8)
+        self.assertFalse({p["category"] for p in picks} & {"식품>음료>주스/코코아/생수"})
+        state = ft.record_plan(fresh(), picks, {p["sku"] for p in picks}, NOW)
+        self.assertEqual(ft.choose(settings, state, catalog, {k: HOT for k in catalog}, [], NOW), [])
+
     def test_off_or_damaged_state_buys_nothing(self):
         catalog, intel = {"k": food()}, {"k": HOT}
         self.assertEqual(ft.choose({"enabled": False}, fresh(), catalog, intel, [], NOW), [])
@@ -151,6 +167,36 @@ class PlanWiring(unittest.TestCase):
         buys, why = self.plan(self.inv(balance=2000000), catalog, {"f": HOT}, [{"sku": "f", "estimated_cost": 750000}])
         self.assertEqual(buys, [])
         self.assertLess(why["budget"], 750000)
+
+    def test_twelve_picks_fill_a_run_and_goods_get_no_line(self):
+        """Today's limits: 12 units a run in 6 lines. Food comes first and is not held to the line limit."""
+        limits = {**LIMITS, "max_total_units": 80, "max_units_per_run": 12, "max_lines_per_run": 6}
+        catalog = {f"f{i}": food() for i in range(12)}
+        catalog["g"] = {"kind": "goods", "category": "c", "list_price": 100}
+        picks = [{"sku": f"f{i}", "estimated_cost": 15000} for i in range(12)]
+        buys, why = self.plan(self.inv(), catalog, {k: HOT for k in catalog}, picks, limits)
+        self.assertEqual(len(buys), 12)
+        self.assertEqual(len(why["food_trial"]), 12)
+        self.assertNotIn("g", {b["sku"] for b in buys})
+
+    def test_seven_picks_use_every_line_so_goods_get_none(self):
+        limits = {**LIMITS, "max_total_units": 80, "max_units_per_run": 12, "max_lines_per_run": 6}
+        catalog = {f"f{i}": food() for i in range(7)}
+        catalog["g"] = {"kind": "goods", "category": "c", "list_price": 100}
+        buys, _ = self.plan(self.inv(), catalog, {k: HOT for k in catalog}, [{"sku": f"f{i}", "estimated_cost": 15000} for i in range(7)], limits)
+        self.assertEqual({b["sku"] for b in buys}, {f"f{i}" for i in range(7)})
+
+    def test_lines_past_the_kits_ten_are_recorded_but_never_sent(self):
+        """The kit sends buy[:10] (scripts/market_kit.py:900). What it drops stays planned, so it is not tried again and the trial ends two short."""
+        limits = {**LIMITS, "max_total_units": 80, "max_units_per_run": 12, "max_lines_per_run": 6}
+        settings = {**ON, "categories": {KIMCHI: 12}, "max_total_units": 12, "max_total_estimated_cost": 250000}
+        catalog = {f"f{i}": food(price=10000) for i in range(12)}
+        intel = {k: HOT for k in catalog}
+        picks = ft.choose(settings, fresh(), catalog, intel, [], NOW)
+        buys, why = self.plan(self.inv(), catalog, intel, picks, limits)
+        state = ft.record_plan(fresh(), picks, set(why["food_trial"]), NOW)
+        self.assertEqual((len(buys), len(buys[:10]), len(state["planned"])), (12, 10, 12))
+        self.assertEqual(ft.choose(settings, state, catalog, intel, [], NOW), [])
 
     def test_closed_window_buys_no_food(self):
         catalog = {"f": food()}
