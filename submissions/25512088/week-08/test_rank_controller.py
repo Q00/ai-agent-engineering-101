@@ -54,5 +54,17 @@ class RankControllerTests(unittest.TestCase):
             with self.assertRaises(ValueError):r.observe(bad,1)
             r.close()
 
+    def test_current_class_player_schema_uses_student_total(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r=RankController(tmp)
+            current={'round':3,'players':[
+                {'player':'rival','student':True,'student_total':1.5,'owner':{'login':'rival'}},
+                {'player':'morethanwhatiwant','student':True,'student_total':1.0,
+                 'owner':{'login':'morethanwhatiwant'},'shop':{'name':'25512088'}},
+                {'player':'house','student':False,'student_total':9.0,'owner':{'login':'house'}}]}
+            result=r.observe(current,1_000_000)
+            self.assertEqual(result['rank'],2);self.assertEqual(result['our_score'],1.0)
+            r.close()
+
 
 if __name__=='__main__':unittest.main()
