@@ -65,6 +65,8 @@ policy:
     trend_share: 0.08             # focus/trend SKUs cover at least this share of the market's sales rate
     big_ticket_share: 0.40        # goods above big_ticket_list: held + planned cost <= this x inventory_cap_share x funds
     big_ticket_list: 40000        # goods listed above this are big-ticket
+    demand_model: true            # cover target from memory/demand: our in-stock rate or share x market rate, by the hour of day
+    demand_share_max: 0.5         # the share of the market's rate the demand model may claim for one SKU
     bigticket_probe_qty: 3        # a big-ticket SKU holds at most this many units until we sold 2 of it in 6 h
     min_margin_share: 0.05        # surge: buy while clearing price - this covers cost x factor x floor_cost_mult
   market:

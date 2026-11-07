@@ -541,6 +541,7 @@ def _economics(tables, own, pol, market, catalog, now):
     cond = {"turnover_day": turnover, "unsold_goods_share": unsold_share, "spoilage_share": spoil, "balance": balance}
     capital = _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, cogs, _num(day.get("rev")))
     breakage = _breakage(own, units, catalog)
+    dem = _demand(own, st, now)
     stockouts = _stockouts(big, rows, o24, day_h, _rows(own.get("acp")), catalog, bmax)
     ok = {k: (v >= EXPAND[k] if k in ("turnover_day", "balance") else v <= EXPAND[k] if k == "unsold_goods_share"
               else v < EXPAND[k]) if v is not None else None for k, v in cond.items()}
@@ -553,7 +554,21 @@ def _economics(tables, own, pol, market, catalog, now):
                            "of_budget": round(cost(big) / budget, 3) if budget else None, "share_key": share},
             "surge_free_left": {_name(s): v for s, v in left[:FREE_TOP]},
             "kinds": kinds, "expand": cond, "expand_ok": ok, "expand_all_ok": all(v is True for v in ok.values()),
-            "capital": capital, "stockouts": stockouts, "breakage": breakage}
+            "capital": capital, "stockouts": stockouts, "breakage": breakage, "demand": dem}
+
+
+def _demand(own, st, now):
+    """The demand model's hour-of-day profile (market settles per hour of day), the factor for the coming cover
+    window and the peak hours; None without a profile."""
+    from memory import demand as dm
+    p = _dict(_dict(own.get("summary")).get("hour_profile"))
+    if not p:
+        return None
+    summary = {"market": {"hour_profile": p}}
+    peak = sorted(p.items(), key=lambda kv: -(_num(kv[1]) or 0))[:4]
+    return {"factor_now": dm.hour_factor(summary, now, (_num(st.get("cover_min")) or 90) / 60),
+            "peak_hours": [h for h, _ in peak], "profile": {h: _num(v) for h, v in sorted(p.items())},
+            "on": bool(st.get("demand_model")), "share_max": _num(st.get("demand_share_max"))}
 
 
 def _breakage(own, units, catalog):

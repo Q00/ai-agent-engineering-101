@@ -14,6 +14,7 @@ import httpx
 
 from memory.query import (c_kind, category_stats, market_covered_h, market_rate, market_settles_48h, p_clear,
                           regular_categories, sku_stats, supply_1h, supply_demand)
+from memory import demand as demand_model
 from memory.store import hook_log
 from tools import pricing
 
@@ -125,12 +126,14 @@ def mean_factor(f_inv, u1h, qty, pol):
     return min(mk["surge_max"], max(f_inv, 1 + mk["surge_per_unit"] * max(0, u1h + qty / 2 - mk["surge_free"])))
 
 
-def plan_restock(inv, catalog, demand, summary, pol, now, planned=None):
+def plan_restock(inv, catalog, demand, summary, pol, now, planned=None, instock=None):
     """{"buy": [{sku, qty}], "excluded": {category leaf or sku: reason}, "worst_cost", "headroom", "rules",
     "empty_picks": candidate SKUs with no unit in stock, "overpriced": units not counted as stock,
     "surge": {sku: {factor, u1h, free_left, f_max}}, "big_ticket": {budget, held_cost, planned_worst}}.
     planned: {sku: units} of our lines planned in the last hour that the summary's supply fold has not seen
-    (restock.py keeps them).
+    (restock.py keeps them). instock: memory/instock.json (restock.py's shelf history) for the demand model
+    (memory/demand.forecast: our in-stock rate or share x market rate, by the hour of day) when
+    stock.demand_model is on; its reading per SKU is in out["demand"].
 
     Overpriced units (pricing.overpriced: cost floor above list) neither count as stock nor make a SKU stale,
     except for big-ticket SKUs, where every unit counts. A stale goods unit (seller.goods_stale_days) blocks its
@@ -174,7 +177,7 @@ def plan_restock(inv, catalog, demand, summary, pol, now, planned=None):
     big_budget = st["big_ticket_share"] * st["inventory_cap_share"] * (cash + inv_cost)
     out = {"buy": [], "excluded": {}, "worst_cost": 0, "headroom": headroom, "rules": rules, "empty_picks": 0,
            "overpriced": sum(over), "surge": {},
-           "big_ticket": {"budget": int(big_budget), "held_cost": int(big_held), "planned_worst": 0}}
+           "big_ticket": {"budget": int(big_budget), "held_cost": int(big_held), "planned_worst": 0}, "demand": {}}
     if hours_left <= 0:
         out["excluded"]["*"] = "D14_round_over"
         return out
@@ -211,6 +214,12 @@ def plan_restock(inv, catalog, demand, summary, pol, now, planned=None):
         rate = sku_stats(summary, sku)["sales_per_h"]
         if is_focus or is_trend:                                  # a share of what the market sells of it
             rate = max(rate, st["trend_share"] * (market_rate(summary, sku) or 0.0))
+        if st.get("demand_model"):                                # memory/demand: in-stock rate, share, hour of day
+            f = demand_model.forecast(summary, instock, sku, now, st["cover_min"] / 60, pol)
+            if f["rate"] is not None:
+                out["demand"][sku] = {"rate": f["rate"], "src": f["src"], "factor": f["factor"], "share": f["share"],
+                                      "instock_h": f["instock_h"], "sold": f["sold"], "plain": round(rate, 4)}
+                rate = max(rate, f["rate"])
         # cover the sales expected until the next supply window (focus: focus_cover_mult times that),
         # food at most FOOD_COVER_SHELF of its shelf life of sales; at least per_sku_qty, at most max_hold
         want = math.ceil(rate * st["cover_min"] / 60 * st["cover_safety"] * (st["focus_cover_mult"] if is_focus else 1))

@@ -48,6 +48,7 @@ DEFAULTS = {
         "focus_skus": [], "focus_max": 8, "focus_cover_mult": 2.0, "focus_cap_share": 0.5, "focus_min_settles": 10,
         "trend_skus": [], "trend_max": 16, "trend_share": 0.08,
         "big_ticket_share": 0.40, "big_ticket_list": 40000, "bigticket_probe_qty": 3, "min_margin_share": 0.05,
+        "demand_model": True, "demand_share_max": 0.5,
     },
     "market": {"surge_free": 50, "surge_per_unit": 0.002, "surge_max": 1.5},
     "buyer": {
@@ -83,6 +84,7 @@ RANGES = {
     "stock.focus_min_settles": (1, 1000), "llm.exception_min_left_s": (0, 280), "llm.exception_timeout_s": (3, 60),
     "stock.max_hold": (1, 200), "stock.min_line_qty": (1, 20), "stock.trend_max": (0, 40),
     "stock.trend_share": (0.0, 0.5), "stock.big_ticket_share": (0.0, 1.0), "stock.bigticket_probe_qty": (1, 20),
+    "stock.demand_share_max": (0.05, 1.0),
     "stock.min_margin_share": (0.0, 0.3), "stock.goods_max_list": (10000, 2000000),
     "stock.big_ticket_list": (10000, 1000000),
     "market.surge_free": (0, 100000), "market.surge_per_unit": (0.0, 0.1), "market.surge_max": (1.0, 5.0),

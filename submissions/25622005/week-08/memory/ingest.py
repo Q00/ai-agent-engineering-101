@@ -219,6 +219,8 @@ def ledger_rows(row, catalog, market, me, our_ledgers):
             bucket = market.setdefault("cat_hour", {}).setdefault(leaf, {})
             bucket[hour] = bucket.get(hour, 0) + 1
             _add(market.setdefault("sku_hour", {}).setdefault(sku, {}), hour)
+            if ours_shop:                                           # memory/demand: our rate while in stock
+                _add(market.setdefault("own_sku_hour", {}).setdefault(sku, {}), hour)
             if type(seq) is int:
                 seqs = market.setdefault("sku_seqs", {}).setdefault(sku, [])
                 seqs.append(seq)
@@ -382,8 +384,8 @@ def prune_market(market, now):
         cut = now - BREAK_WINDOW_S
         for u in [u for u, v in units.items() if not (isinstance(v, list) and len(v) == 4 and v[3] >= cut)]:
             del units[u]
-    for name, keep in (("cat_hour", KEEP_HOURS), ("sku_hour", KEEP_HOURS), ("clear_hour", CLEAR_KEEP_H),
-                       ("own_cost", COST_KEEP_H)):
+    for name, keep in (("cat_hour", KEEP_HOURS), ("sku_hour", KEEP_HOURS), ("own_sku_hour", KEEP_HOURS),
+                       ("clear_hour", CLEAR_KEEP_H), ("own_cost", COST_KEEP_H)):
         _cut(market.get(name), hour - keep)
     _cut(market.get("supply_5m"), int((now - 3600) // SUPPLY_BUCKET_S))
     _pb_prune(market.get("price_book"), hour - PB_KEEP_H)
@@ -706,6 +708,20 @@ def render_market(cursor, now):
             if (n := sum(x for h, x in b.items() if int(h) >= first))}
     h48 = int(now // 3600) - 47
     settles_48h = {k: n for k, b in sku_hour.items() if (n := sum(x for h, x in b.items() if int(h) >= h48))}
+    # memory/demand: our settles per hour (24 h), the market's for the same SKUs, and the hour-of-day profile
+    h24 = int(now // 3600) - 23
+    own_hour = {k: {h: n for h, n in b.items() if int(h) >= h24} for k, b in m.get("own_sku_hour", {}).items()}
+    own_hour = {k: b for k, b in own_hour.items() if b}
+    sku_hour_24 = {k: {h: n for h, n in sku_hour.get(k, {}).items() if int(h) >= h24} for k in own_hour}
+    per_hour = {}
+    for b in sku_hour.values():
+        for h, n in b.items():
+            if int(h) < int(now // 3600):                           # full hours only
+                per_hour[h] = per_hour.get(h, 0) + n
+    by_hod = {}
+    for h, n in per_hour.items():
+        by_hod.setdefault(time.strftime("%H", time.localtime(int(h) * 3600)), []).append(n)
+    hour_profile = {k: round(sum(v) / len(v), 1) for k, v in by_hod.items()}
     s5 = int((now - 3600) // SUPPLY_BUCKET_S)                     # up to 65 min: counts a bit high, not low
     supply = {k: n for k, b in m.get("supply_5m", {}).items() if (n := sum(x for t, x in b.items() if int(t) >= s5))}
     p_clear, c_kind = {}, {}
@@ -735,7 +751,8 @@ def render_market(cursor, now):
             if isinstance(v, list) and k in rate}
     return {"since": since, "sku_rate": rate, "sku_settles_48h": settles_48h, "supply_1h": supply,
             "p_clear": p_clear, "c_kind": c_kind, "price_book": book, "sku_seqs": seqs,
-            "breakage": render_breakage(m.get("brk"))}
+            "breakage": render_breakage(m.get("brk")), "own_sku_hour": own_hour, "sku_hour_24": sku_hour_24,
+            "hour_profile": hour_profile}
 
 
 def build_summary(events, cursor, catalog, demand, window_h, now):

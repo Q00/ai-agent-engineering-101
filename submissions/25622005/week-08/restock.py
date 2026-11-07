@@ -67,10 +67,11 @@ def record_planned(path, buy, now):
 
 def run(state, t0):
     import policy
+    from memory import demand as demand_model
     from memory import ingest
     from memory.decisions import decision
     from memory.query import load_summary, summary_ref, supply_1h
-    from memory.store import MEM, hook_log, read_json
+    from memory.store import MEM, atomic_write_json, hook_log, read_json
     from tools import stock
 
     pol, ver, errors = policy.load()
@@ -95,6 +96,12 @@ def run(state, t0):
     summary = load_summary()
     now = time.time()
     out = {"buy": []}
+    instock = None
+    try:                                                     # the shelf history behind the demand model
+        instock = demand_model.tick_instock(read_json(MEM / "instock.json", None), inv, now)
+        atomic_write_json(MEM / "instock.json", instock)
+    except Exception as e:
+        hook_log("restock", f"instock tick error {type(e).__name__}: {e}")
     try:                                                     # D11: a report for a forum slot no deal post took
         from tools import forum
         forum.maybe_report(state, summary, catalog, pol, now, policy_ver=ver)
@@ -116,7 +123,7 @@ def run(state, t0):
     built = summary.get("built_at")
     since = built - PLANNED_LAG_S if supply_1h(summary, "") is not None and stock._finite(built) else None
     plan = stock.plan_restock(inv, catalog, demand, summary, pol, now,
-                              planned=planned_units(planned_path, now, since))
+                              planned=planned_units(planned_path, now, since), instock=instock)
     win = stock.supply_window(inv, now)
     held = dict(stock.held(inv), empty_picks=plan["empty_picks"], overpriced=plan["overpriced"])
     if not card_ok:
