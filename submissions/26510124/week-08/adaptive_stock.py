@@ -50,7 +50,9 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
     profiles = demand_profiles(public, now)
     food_rules = rules.get("food_pilots", {})
     food_enabled = isinstance(food_rules, dict) and food_rules.get("enabled") is True
-    ranked, food_ranked = [], []
+    turnover_rules = rules.get("turnover_goods", {})
+    turnover_enabled = isinstance(turnover_rules, dict) and turnover_rules.get("enabled") is True
+    ranked, food_ranked, turnover_ranked = [], [], []
     for sku, profile in profiles.items():
         if sku in excluded or allowed is not None and sku not in allowed:
             continue
@@ -104,7 +106,9 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
         # deciding which pilot to try; all money/stock caps are applied later.
         rank = (-int(proven(own, cfg["min_mature_sales"])), -int(measured), -activity, -diversity, -quality_price,
                 -min(profile["named_shops"], 10), product["list_price"], sku)
-        row = {"product": costed, "evidence": evidence, "cap": cap}
+        turnover = bool(turnover_enabled and not is_food and product["list_price"] <= turnover_rules["max_list_price"])
+        evidence["turnover_candidate"] = turnover
+        row = {"product": costed, "evidence": evidence, "cap": cap, "turnover_candidate": turnover}
         if is_food:
             evidence.update(catalog_shelf_hours=product["shelf_hours"],
                             shelf_life_basis="catalog duration; remaining expiry must be checked after delivery")
@@ -116,8 +120,25 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
             food_ranked.append((rank, sku, row))
         else:
             ranked.append((rank, sku, row))
+            if turnover:
+                # Reserve room for affordable demand before turnover value
+                # can let many high-ticket products crowd out this whole set.
+                # A sampled ratio is not a forecast, and every safety gate
+                # above remains identical to the ordinary goods candidate.
+                turnover_rank = (-int(proven(own, cfg["min_mature_sales"])), -profile["buyers"],
+                                 -int(measured), -pressure if measured else 0,
+                                 -profile["sales"], product["list_price"], sku)
+                turnover_ranked.append((turnover_rank, sku, row))
     food_slots = min(len(food_ranked), food_rules["max_candidates"], rules["max_candidates"]) if food_enabled else 0
-    selected = sorted(ranked)[:rules["max_candidates"] - food_slots] + sorted(food_ranked)[:food_slots]
+    if turnover_enabled:
+        affordable = sorted(turnover_ranked)[:min(turnover_rules["max_candidates"], rules["max_candidates"])]
+        chosen = {sku for _, sku, _ in affordable}
+        food_slots = min(food_slots, rules["max_candidates"] - len(affordable))
+        generic_slots = rules["max_candidates"] - len(affordable) - food_slots
+        generic = [row for row in sorted(ranked) if row[1] not in chosen][:generic_slots]
+        selected = affordable + generic + sorted(food_ranked)[:food_slots]
+    else:
+        selected = sorted(ranked)[:rules["max_candidates"] - food_slots] + sorted(food_ranked)[:food_slots]
     return {sku: data for _, sku, data in selected}
 
 
