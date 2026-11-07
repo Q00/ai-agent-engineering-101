@@ -10,6 +10,7 @@ import time
 import httpx
 
 from adaptive_control import Control
+from rank_controller import RankController
 
 
 LIMIT = 2 * 1024 * 1024
@@ -47,11 +48,16 @@ class Monitor:
             body={'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw)}
         previous=self.control.db.execute('SELECT content_hash FROM input_snapshots WHERE source=?',(name,)).fetchone()
         digest=self.control.save_input(name,body,schema_ok=True)
+        rank_result=None
+        if name=='board':
+            rank_result=RankController(self.state,self.control).observe(body,board_hash=digest)
         changed=bool(previous and previous[0]!=digest)
         if changed:
             self.control.event('monitor','official_input_changed',{
                 'source':name,'old_hash':previous[0],'new_hash':digest,'action':'invalidate_related_experiments'})
-        return {'source':name,'hash':digest,'changed':changed,'max_age':max_age}
+        result={'source':name,'hash':digest,'changed':changed,'max_age':max_age}
+        if rank_result is not None:result['rank']=rank_result
+        return result
 
     def poll(self):
         results=[]
