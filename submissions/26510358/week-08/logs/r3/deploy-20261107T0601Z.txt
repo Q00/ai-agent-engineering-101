@@ -1,0 +1,12 @@
+deploy commit c019344 (ASK_MAX_OVER_MARKET 0.04)
+only the seller reads it; restart the seller
+2026-11-07T06:01:36Z
+SIGTERM seller 2546131
+--- after restart
+2026-11-07T06:02:26Z
+1934237 Sat Nov  7 15:01:39 2026 /bin/bash -c source /home/myeonggi/.claude/shell-snapshots/snapshot-bash-1794011992056-q66clh.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'which'; \builtin unset -f -- 'which'; } >/dev/null 2>&1 || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'L=logs/r3/deploy-20261107T0601Z.txt; for i in $(seq 1 40); do N=$(pgrep -f "^python3 shop_r3.py"); [ -n "$N" ] && grep -q '"'"'"terms"'"'"' <(tail -50 logs/market-kit.log | grep -A100 shop_started) && break; sleep 5; done; { echo "--- after restart"; date -u +%FT%TZ; ps -eo pid,lstart,args | grep "shop_r3[.]py"; grep "shop_started" logs/market-kit.log | tail -1; grep '"'"'"terms"'"'"' logs/market-kit.log | tail -1 | cut -c1-400; } >> $L; cat $L' < /dev/null && pwd -P >| /tmp/claude-d63c-cwd
+1938123 Sat Nov  7 15:02:14 2026 /bin/sh -c python3 shop_r3.py --port 45413
+1938125 Sat Nov  7 15:02:14 2026 python3 shop_r3.py --port 45413
+1939756 Sat Nov  7 15:02:25 2026 /bin/bash -c source /home/myeonggi/.claude/shell-snapshots/snapshot-bash-1794011992056-q66clh.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'which'; \builtin unset -f -- 'which'; } >/dev/null 2>&1 || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'L=logs/r3/deploy-20261107T0601Z.txt; for i in $(seq 1 40); do N=$(pgrep -f "^python3 shop_r3.py"); [ -n "$N" ] && grep -q '"'"'"terms"'"'"' <(tail -50 logs/market-kit.log | grep -A100 shop_started) && break; sleep 5; done; { echo "--- after restart"; date -u +%FT%TZ; ps -eo pid,lstart,args | grep "shop_r3[.]py"; grep "shop_started" logs/market-kit.log | tail -1; grep '"'"'"terms"'"'"' logs/market-kit.log | tail -1 | cut -c1-400; } >> $L; cat $L' < /dev/null && pwd -P >| /tmp/claude-d63c-cwd
+15:02:15 [seller] {"event": "shop_started", "ts": 1794031335.4, "name": "Ssadassa Shop", "port": 45413}
+15:02:23 [seller] {"event": "terms", "ts": 1794031344.0, "sku": "G8ec51935", "grade": "A", "cost": 1644584, "list_price": 2320000, "ask": 1831136, "floor": 1831136, "market_ratio": 0.7629446120689655, "grade_ratio": 0.7267051724137932, "evidence": 5588, "adjust": -0.08, "scarcity": 0.0, "warranty": 6, "p_break": 0.0287}
