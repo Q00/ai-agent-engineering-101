@@ -16,6 +16,7 @@ next unread line. Delivery is at least once. A reader that stops after handling 
 but before commit() sees it again, so whatever a reader writes is keyed by event_id
 (HARNESS.md 2.2, S2).
 """
+import itertools
 import json
 import os
 import time
@@ -24,6 +25,11 @@ from pathlib import Path
 from core import atomic, paths, schema
 
 JOIN_KEYS = tuple(schema.KEYS["properties"])
+
+
+# one sequence for the whole process (11/7: per-writer counters made equal event_ids when two writers of the same
+# name - the role's events and its tool calls - wrote in the same millisecond, and index.events dropped one as a repeat)
+_SEQ = itertools.count(1)
 
 
 class EventWriter:
@@ -46,7 +52,7 @@ class EventWriter:
         if unknown:
             raise ValueError(f"unknown join keys {sorted(unknown)}; use {list(JOIN_KEYS)}")
         ts = time.time()
-        self.seq += 1
+        self.seq = next(_SEQ)
         ev = {"schema_version": schema.SCHEMA_VERSION,
               "event_id": f"{self.writer}-{self.pid}-{int(ts * 1000)}-{self.seq:06d}",
               "ts": ts, "writer": self.writer, "source": self.source, "kind": kind, **self.ctx,
