@@ -21,6 +21,20 @@ SAVED_WEIGHTS = {"saved": .5, "forum": .3, "deals": .1, "posts": .1}
 BOOK_WEIGHTS = {"book": .5, "revenue": .3, "stars_rank": .2}
 
 
+class Weights(dict):
+    """Weights whose `raw` fields count as their own value instead of a percentile."""
+
+    def __init__(self, values, raw=()):
+        super().__init__(values)
+        self.raw = frozenset(raw)
+
+
+# Patch 3.5 (lecture notes 11-06 15:53 KST): the forum rating counts as itself, the rest stay percentiles.
+# The official buyer ALL in our snapshots fits the old rule at 17:53:31 KST and the new one from 18:23:33.
+FORUM_VALUE_WEIGHTS = Weights(SAVED_WEIGHTS, raw=("forum",))
+FORUM_VALUE_SINCE = 1793957013.0  # 2026-11-06 18:23:33 KST, the first snapshot that fits patch 3.5
+
+
 def login_of(row):
     owner = row.get("owner")
     return owner.get("login") if isinstance(owner, dict) else owner or row.get("player")
@@ -37,12 +51,21 @@ def percentile(value, values):
     return (below + .5 * (tied - 1)) / max(len(values) - 1, 1)
 
 
+def scored(weights, key, value, values):
+    """What one part adds before its weight: the value itself for a raw field, else its percentile."""
+    return value if key in getattr(weights, "raw", ()) else percentile(value, values)
+
+
 def eligible(board, group):
     return [r for r in board[group] if r.get("all") is not None]
 
 
 def computed_all(row, rows, weights):
-    return sum(w * percentile(number(row.get(k)), [number(r.get(k)) for r in rows]) for k, w in weights.items())
+    return sum(w * scored(weights, k, number(row.get(k)), [number(r.get(k)) for r in rows]) for k, w in weights.items())
+
+
+def max_error(rows, weights):
+    return max((abs(computed_all(r, rows, weights) - r["all"]) for r in rows), default=0)
 
 
 def shop_weights(board):
@@ -51,9 +74,16 @@ def shop_weights(board):
 
 
 def buyer_weights(board):
-    """Since patch 3.4 `saved` is a share of list price and buyers score on it (the 11-06 board fits exactly). Before it, `saved` was an amount and surplus scored."""
+    """Since patch 3.4 `saved` is a share of list price and buyers score on it. Before it, `saved` was an amount and surplus scored.
+    Patch 3.5 keeps saved and counts the forum rating as itself. A board carries no time, so one with official scores gets the rule
+    that reproduces them (saved boards fit one rule to .0005 and the other by .17 or worse); one without gets the rule in force now."""
     saved = [r["saved"] for r in board.get("buyers", []) if type(r.get("saved")) in (int, float)]
-    return SAVED_WEIGHTS if saved and all(abs(v) <= 2 for v in saved) else BUYER_WEIGHTS
+    if not (saved and all(abs(v) <= 2 for v in saved)):
+        return BUYER_WEIGHTS
+    rows = eligible(board, "buyers")
+    if not rows:
+        return FORUM_VALUE_WEIGHTS
+    return min((FORUM_VALUE_WEIGHTS, SAVED_WEIGHTS), key=lambda weights: max_error(rows, weights))
 
 
 def formula_check(board):
@@ -61,7 +91,9 @@ def formula_check(board):
     for group, weights in (("shops", shop_weights(board)), ("buyers", buyer_weights(board))):
         rows = eligible(board, group)
         errors = [abs(computed_all(r, rows, weights) - r["all"]) for r in rows]
-        report[group] = {"players": len(rows), "mean_error": round(sum(errors) / len(errors), 5), "max_error": round(max(errors), 5)}
+        report[group] = {"players": len(rows), "mean_error": round(sum(errors) / len(errors), 5) if errors else None, "max_error": round(max(errors), 5) if errors else None}
+        if group == "buyers":
+            report[group]["rule"] = "forum_value" if weights is FORUM_VALUE_WEIGHTS else "forum_percentile" if weights is SAVED_WEIGHTS else "surplus"
     return report
 
 
@@ -76,8 +108,8 @@ def breakdown(row, rows, weights):
     result = {}
     for key, weight in weights.items():
         values = [number(r.get(key)) for r in rows]
-        share = percentile(number(row.get(key)), values)
-        result[key] = {"value": row.get(key), "percentile": round(share, 4), "weight": weight,
+        share = scored(weights, key, number(row.get(key)), values)
+        result[key] = {"value": row.get(key), "percentile": round(share, 4), "weight": weight, "scored_as": "value" if key in getattr(weights, "raw", ()) else "percentile",
                        "points": round(weight * share, 4), "points_left": round(weight * (1 - share), 4),
                        "rank": 1 + sum(v > number(row.get(key)) for v in values), "of": len(values)}
     return result
@@ -86,14 +118,18 @@ def breakdown(row, rows, weights):
 def what_if(row, rows, weights, key, value):
     """Points gained if only this value moved, every rival held still."""
     others = [number(r.get(key)) for r in rows if r is not row]
-    before = percentile(number(row.get(key)), others + [number(row.get(key))])
-    after = percentile(value, others + [value])
+    before = scored(weights, key, number(row.get(key)), others + [number(row.get(key))])
+    after = scored(weights, key, value, others + [value])
     return weights[key] * (after - before)
 
 
 def value_for_gain(row, rows, weights, key, gain):
     """Smallest rival value to reach to gain this many points, holding rivals still; None if out of reach."""
     mine = number(row.get(key))
+    if key in getattr(weights, "raw", ()):
+        # A rating that counts as itself needs no rival to pass; a forum rating cannot exceed 1.
+        target = round(mine + gain / weights[key], 4)
+        return target if target <= 1 else None
     for target in sorted({number(r.get(key)) for r in rows if number(r.get(key)) > mine}):
         if what_if(row, rows, weights, key, target) >= gain - EPS:
             return target
@@ -117,7 +153,7 @@ def sensitivity(row, rows, weights, step=.05):
         mine = number(row.get(key))
         target = value_for_gain(row, rows, weights, key, step)
         ladder = sorted({v for v in values if v > mine})
-        table[key] = {"distribution": distribution(values), "points_per_rank": round(weights[key] / (len(values) - 1), 4),
+        table[key] = {"distribution": distribution(values), "points_per_rank": None if key in getattr(weights, "raw", ()) else round(weights[key] / (len(values) - 1), 4),
                       f"value_for_plus_{step}": target,
                       f"increase_for_plus_{step}": round(target - mine, 4) if target is not None else None,
                       f"ratio_for_plus_{step}": round(target / mine, 3) if target is not None and mine else None,
@@ -134,7 +170,7 @@ def compare(board, own_player, rival):
     for label, mine, theirs, rows, weights in (("shop", shop, rival_shop, shops, shop_scored), ("buyer", buyer, rival_buyer, buyers, buyer_weights(board))):
         for key, weight in weights.items():
             values = [number(r.get(key)) for r in rows]
-            own_share, their_share = percentile(number(mine.get(key)), values), percentile(number(theirs.get(key)), values)
+            own_share, their_share = scored(weights, key, number(mine.get(key)), values), scored(weights, key, number(theirs.get(key)), values)
             gaps[f"{label}.{key}"] = {"own_value": mine.get(key), "rival_value": theirs.get(key),
                                       "own_percentile": round(own_share, 3), "rival_percentile": round(their_share, 3),
                                       "points_gap": round(weight * (their_share - own_share), 4),
@@ -194,7 +230,7 @@ def scenarios(board, own_player, third):
         surplus = deals * per_deal
         buyer_scored = buyer_weights(board)
         row = {"deals_per_order": round(rate, 4), "deals": deals, "surplus": round(surplus)}
-        if buyer_scored is SAVED_WEIGHTS:
+        if "saved" in buyer_scored:
             # Saved = sum of shares / (deals + 100): more deals at the same share also move it.
             share = buyer["saved"] * (buyer["deals"] + 100) / buyer["deals"]
             row["saved"] = round(share * deals / (deals + 100), 4)
@@ -308,8 +344,11 @@ def snapshot_points(path):
             continue
         below = part["ahead_of_percent"] * seen / 100 + (group_n - seen)
         share = (below + .5 * ((part.get("tied") or 1) - 1)) / max(group_n - 1, 1)
-        point["components"][name] = {"weight": part.get("weight"), "percentile": round(share, 4), "below": round(below, 1), "n": group_n,
-                                     "value": part.get("value")}
+        # Older snapshots carry no scored_as; on a saved-share board the forum rating counts as itself from the switch on.
+        as_value = part.get("scored_as") == "value" or (part.get("scored_as") is None and name == "buyers.forum" and "buyers.saved" in parts
+                                                         and (data.get("observed_at") or 0) >= FORUM_VALUE_SINCE and type(part.get("value")) in (int, float))
+        point["components"][name] = {"weight": part.get("weight"), "percentile": round(part["value"] if as_value else share, 4), "below": round(below, 1), "n": group_n,
+                                     "value": part.get("value"), "scored_as": "value" if as_value else "percentile"}
     return point
 
 
@@ -330,6 +369,10 @@ def decompose(first, last):
                          **{f"buyers.{k}": w for k, w in {**BUYER_WEIGHTS, **SAVED_WEIGHTS}.items()}}.items():
         a, b = first["components"].get(name), last["components"].get(name)
         if not a or not b:
+            continue
+        if a.get("scored_as", "percentile") != b.get("scored_as", "percentile"):
+            # A part scored as a percentile on one side and as itself on the other cannot be differenced; the residual carries it.
+            rows[name] = {"points": None, "scored_as": [a.get("scored_as"), b.get("scored_as")], "value_from": a["value"], "value_to": b["value"], "driver": "scoring_rule_changed"}
             continue
         points = weight * (b["percentile"] - a["percentile"])
         value_change = None

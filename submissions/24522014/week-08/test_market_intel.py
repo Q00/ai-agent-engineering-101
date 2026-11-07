@@ -29,8 +29,12 @@ class PublicEvidence(unittest.TestCase):
         self.assertEqual(new["diagnostic_components"]["buyers.saved"]["weight"], .5)
         self.assertEqual(new["diagnostic_components"]["shops.book"]["weight"], .5)
         self.assertNotIn("buyers.surplus", new["diagnostic_components"])
+        # Patch 3.5: on a share board the forum rating counts as itself; before patch 3.4 it was a percentile.
+        self.assertEqual(new["diagnostic_components"]["buyers.forum"]["scored_as"], "value")
+        self.assertEqual(new["diagnostic_components"]["shops.book"]["scored_as"], "percentile")
         old = competition({"round": 3, "buyers": [{"name": "kcwarni", "deals": 4, "saved": 477829557, "surplus": 100, "forum": .4}]})
         self.assertIn("buyers.surplus", old["diagnostic_components"])
+        self.assertEqual(old["diagnostic_components"]["buyers.forum"]["scored_as"], "percentile")
         c = competition({"round": 3, "buyers": [{"name": "kcwarni", "deals": 4, "surplus": 100, "forum": .4}]})
         self.assertEqual(c["diagnostic_components"]["buyers.forum"]["value"], .4)
 

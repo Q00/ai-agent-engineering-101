@@ -30,12 +30,30 @@ class Formula(unittest.TestCase):
         self.assertIs(ra.shop_weights({"shops": [{"profit": 1, "book": 2}]}), ra.BOOK_WEIGHTS)
 
     def test_saved_boards_reproduce_the_official_scores(self):
+        """Every saved board, before and after patch 3.5, not only the newest."""
         boards = sorted(glob.glob(str(ra.ROOT / "logs/rank-analysis/board-*.json")))
         if not boards:
             self.skipTest("no saved board")
-        result = ra.formula_check(json.loads(Path(boards[-1]).read_text(encoding="utf-8")))
-        self.assertLess(result["buyers"]["max_error"], .001)
-        self.assertLess(result["shops"]["max_error"], .001)
+        for path in boards:
+            with self.subTest(board=Path(path).name):
+                result = ra.formula_check(json.loads(Path(path).read_text(encoding="utf-8")))
+                self.assertLess(result["buyers"]["max_error"], .001)
+                self.assertLess(result["shops"]["max_error"], .001)
+
+    def test_a_board_after_patch_35_counts_the_forum_rating_as_itself(self):
+        rows = [{"name": n, "saved": s, "forum": f, "deals": k, "posts": k} for n, s, f, k in (("a", .1, .9, 1), ("b", .2, .2, 2), ("c", .3, .5, 3))]
+        def board(raw):
+            for r in rows:
+                parts = {k: ra.percentile(r[k], [x[k] for x in rows]) for k in ("saved", "deals", "posts")}
+                parts["forum"] = r["forum"] if raw else ra.percentile(r["forum"], [x["forum"] for x in rows])
+                r["all"] = round(.5*parts["saved"] + .3*parts["forum"] + .1*parts["deals"] + .1*parts["posts"], 3)
+            return {"buyers": [dict(r) for r in rows], "shops": []}
+        new, old = board(True), board(False)
+        self.assertIs(ra.buyer_weights(new), ra.FORUM_VALUE_WEIGHTS)
+        self.assertIs(ra.buyer_weights(old), ra.SAVED_WEIGHTS)
+        self.assertEqual(ra.formula_check(new)["buyers"]["rule"], "forum_value")
+        self.assertLess(ra.formula_check(new)["buyers"]["max_error"], .001)
+        self.assertEqual(ra.formula_check(old)["buyers"]["rule"], "forum_percentile")
 
 
 class WhatIf(unittest.TestCase):
@@ -62,9 +80,21 @@ class WhatIf(unittest.TestCase):
         self.assertIsNone(ra.value_for_gain(self.rows[-1], self.rows, ra.BUYER_WEIGHTS, "surplus", .1))
 
     def test_saved_as_a_share_scores_buyers_and_as_an_amount_does_not(self):
-        self.assertIs(ra.buyer_weights({"buyers": [{"saved": .24}, {"saved": -.1}]}), ra.SAVED_WEIGHTS)
+        # Without official scores to match, a share board gets the rule in force now, patch 3.5.
+        self.assertIs(ra.buyer_weights({"buyers": [{"saved": .24}, {"saved": -.1}]}), ra.FORUM_VALUE_WEIGHTS)
         self.assertIs(ra.buyer_weights({"buyers": [{"saved": 477829557}]}), ra.BUYER_WEIGHTS)
         self.assertIs(ra.buyer_weights({"buyers": [{"surplus": 5}]}), ra.BUYER_WEIGHTS)
+
+    def test_a_forum_value_moves_points_by_its_own_change(self):
+        rows = [dict(r, saved=r["surplus"]) for r in self.rows]
+        me = rows[0]
+        self.assertAlmostEqual(ra.what_if(me, rows, ra.FORUM_VALUE_WEIGHTS, "forum", .3), .3 * (.3 - .1))
+        self.assertAlmostEqual(ra.value_for_gain(me, rows, ra.FORUM_VALUE_WEIGHTS, "forum", .03), .2)
+        self.assertIsNone(ra.value_for_gain(me, rows, ra.FORUM_VALUE_WEIGHTS, "forum", .5))
+        part = ra.breakdown(me, rows, ra.FORUM_VALUE_WEIGHTS)["forum"]
+        self.assertEqual((part["scored_as"], part["points"]), ("value", .03))
+        self.assertEqual(ra.breakdown(me, rows, ra.FORUM_VALUE_WEIGHTS)["saved"]["scored_as"], "percentile")
+        self.assertIsNone(ra.sensitivity(me, rows, ra.FORUM_VALUE_WEIGHTS)["forum"]["points_per_rank"])
 
     def test_the_saved_scenario_counts_the_hundred_in_the_divisor(self):
         board = {"shops": [{"name": "me", "all": .1, "profit": 1, "visits": 10, "deals": 5, "revenue": 50}], "players": []}
@@ -141,6 +171,22 @@ class History(unittest.TestCase):
             self.snapshot(root, "b", 200, .9, 10, 30)
             first, last = ra.history(root)
         self.assertEqual(ra.decompose(first, last)["components"]["buyers.surplus"]["driver"], "own_value_fell")
+
+    def test_forum_counts_as_its_value_in_snapshots_after_the_switch(self):
+        with TemporaryDirectory() as root:
+            self.snapshot(root, "a", ra.FORUM_VALUE_SINCE - 60, 1.0, 20, 50)
+            self.snapshot(root, "b", ra.FORUM_VALUE_SINCE + 60, 1.0, 20, 50)
+            for name in ("a", "b"):
+                path = Path(root) / f"logs/market-intel/{name}.json"
+                data = json.loads(path.read_text(encoding="utf-8"))
+                data["competition"]["diagnostic_components"]["buyers.saved"] = data["competition"]["diagnostic_components"].pop("buyers.surplus")
+                path.write_text(json.dumps(data), encoding="utf-8")
+            first, last = ra.history(root)
+            self.assertEqual(first["components"]["buyers.forum"]["scored_as"], "percentile")
+            self.assertEqual((last["components"]["buyers.forum"]["scored_as"], last["components"]["buyers.forum"]["percentile"]), ("value", .5))
+            result = ra.decompose(first, last)
+        self.assertEqual(result["components"]["buyers.forum"]["driver"], "scoring_rule_changed")
+        self.assertEqual(result["components"]["buyers.forum"]["points"], None)
 
     def test_missing_forum_participants_count_below_us(self):
         with TemporaryDirectory() as root:

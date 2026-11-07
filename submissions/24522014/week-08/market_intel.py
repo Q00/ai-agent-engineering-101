@@ -82,7 +82,9 @@ def competition(board, login="kcwarni"):
             for field, weight in fields.items():
                 values = [r[field] for r in eligible if finite(r.get(field))]
                 value = mine_row.get(field)
-                components[f"{group}.{field}"] = {"weight": weight, "value": value,
+                # Patch 3.5: on a saved-share board the forum rating counts as itself; the other parts stay percentiles.
+                raw = group == "buyers" and field == "forum" and "saved" in fields
+                components[f"{group}.{field}"] = {"weight": weight, "value": value, "scored_as": "value" if raw else "percentile",
                     "observed_participants": len(values),
                     "ahead_of_percent": 100*sum(v < value for v in values)/len(values)
                         if finite(value) and values else None,
