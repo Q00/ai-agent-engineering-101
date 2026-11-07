@@ -1,6 +1,9 @@
-"""Model call wrapper: gpt-6.1-terra through the labpc codex CLI, fixed model, no call cap (성수님 결정 2026-11-05).
+"""Model call wrapper: Claude Haiku through the labpc Claude Code CLI, fixed model, no call cap.
 
-One completion per call: prompt on stdin, answer on stdout, empty temp dir as cwd, codex's own tools off. The tool
+Was gpt-6.1-terra through the codex CLI (성수님 결정 2026-11-05) until the codex subscription ran out on 11-07 07시
+(reset 11-11 17:36); 성수님 decided 11-07 to switch the model to Haiku.
+
+One completion per call: prompt on stdin, answer on stdout, empty temp dir as cwd, the CLI's own tools off. The tool
 loop for agents is run by the kernel, not by codex. Every call is written to the trajectory (status, latency, sizes;
 never the prompt text). A subscription-limit refusal raises ModelRefused so the caller can fall back to the model's
 own script and the briefing can count it.
@@ -15,39 +18,25 @@ import time
 
 from kernel import common as c
 
-MODEL = "gpt-6.1-terra"
+MODEL = "claude-haiku-5-5"
 EFFORTS = ("low", "medium", "high")
 ALLOWED_CLI = (
-    "/home/sungsoo/.local/bin/codex",
-)  # labpc, codex-cli 0.164.0 (실측 11-05)
+    "/home/sungsoo/.local/bin/claude",
+)  # labpc, Claude Code 2.1.305 (실측 11-07)
+# print mode, no tools, no saved session, no skills or MCP servers, only project settings (the temp cwd has none)
 FIXED_ARGS = (
-    "--ephemeral",
-    "--skip-git-repo-check",
-    "--sandbox",
-    "read-only",
-    "--ignore-user-config",
+    "-p",
+    "--output-format",
+    "text",
+    "--tools",
+    "",
+    "--no-session-persistence",
+    "--disable-slash-commands",
+    "--strict-mcp-config",
+    "--setting-sources",
+    "project",
 )
-TOOL_OFF = (
-    "shell_tool",
-    "unified_exec",
-    "shell_snapshot",
-    "apps",
-    "plugins",
-    "remote_plugin",
-    "browser_use",
-    "browser_use_external",
-    "in_app_browser",
-    "computer_use",
-    "view_image",
-    "skill_search",
-)
-TOOL_OFF_ARGS = tuple(a for f in TOOL_OFF for a in ("--disable", f)) + (
-    "-c",
-    "shell_environment_policy.inherit=none",
-    "-c",
-    'web_search="disabled"',
-)
-QUOTA_RX = re.compile(r"(?i)rate.?limit|usage.?limit|quota|too many requests|\b429\b")
+QUOTA_RX = re.compile(r"(?i)rate.?limit|usage.?limit|quota|too many requests|\b429\b|hit your limit|limit reached")
 AUTH_RX = re.compile(r"(?i)unauthori[sz]ed|\b401\b|\b403\b|log ?in again|auth")
 
 
@@ -76,7 +65,7 @@ def resolve_cli(cli, allowed=ALLOWED_CLI):
 
 def child_env():
     env = {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"}
-    for k in ("HOME", "CODEX_HOME"):
+    for k in ("HOME", "CLAUDE_CONFIG_DIR"):
         if os.environ.get(k):
             env[k] = os.environ[k]
     return env
@@ -85,19 +74,8 @@ def child_env():
 def build_cmd(exe, cwd, effort):
     if effort not in EFFORTS:
         raise ModelError(f"effort must be one of {EFFORTS}")
-    return [
-        exe,
-        "exec",
-        *FIXED_ARGS,
-        "-C",
-        str(cwd),
-        *TOOL_OFF_ARGS,
-        "-m",
-        MODEL,
-        "-c",
-        f"model_reasoning_effort={effort}",
-        "-",
-    ]
+    # cwd is passed to the runner, not on the command line
+    return [exe, *FIXED_ARGS, "--model", MODEL, "--effort", effort]
 
 
 class Terra:
