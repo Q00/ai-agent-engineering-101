@@ -538,7 +538,7 @@ def _economics(tables, own, pol, market, catalog, now):
                     "our_floor_list": round(max(fl, fcm * (c or C_FALLBACK[k])), 3) if fl is not None and fcm else None}
     cond = {"turnover_day": turnover, "unsold_goods_share": unsold_share, "spoilage_share": spoil, "balance": balance}
     capital = _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, cogs, _num(day.get("rev")))
-    stockouts = _stockouts(units, big, rows, o24, day_h, _rows(own.get("acp")), catalog)
+    stockouts = _stockouts(big, rows, o24, day_h, _rows(own.get("acp")), catalog, bmax)
     ok = {k: (v >= EXPAND[k] if k in ("turnover_day", "balance") else v <= EXPAND[k] if k == "unsold_goods_share"
               else v < EXPAND[k]) if v is not None else None for k, v in cond.items()}
     return {"covered_h": _num(t.get("covered_h")),
@@ -575,15 +575,17 @@ def _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, co
             "hold_vs_margin": hold, "stock_at_cost": _dict(_dict(market).get("facts")).get("book_counts_stock_at_cost")}
 
 
-def _stockouts(units, big, rows, o24, day_h, acp, catalog):
-    """See _economics. rows: table_view's sku table (s6 market settles, o6 ours); acp: the window's ACP session rows
-    (event create/complete per sku)."""
+def _stockouts(big, rows, o24, day_h, acp, catalog, bmax):
+    """See _economics. big: our big-ticket units; rows: table_view's sku table (s6 market settles, o6 ours); acp: the
+    window's ACP session rows (event create/complete per sku); bmax: stock.big_ticket_list, so a sold-out SKU we no
+    longer hold counts only when the catalog lists it as goods above that line."""
     held = Counter(u.get("sku") for u in big)
     cost = Counter()
     for u in big:
         cost[u.get("sku")] += _num(u.get("cost")) or 0
     big_skus = set(held) | {s for s, r in rows.items() if (_num(_dict(r).get("o6")) or 0) > 0 and isinstance(s, str)
-                            and (_list_price(catalog, s) or 0) > 0 and s not in held}
+                            and bmax is not None and (_list_price(catalog, s) or 0) > bmax
+                            and _kind_of(catalog, s) == "goods" and s not in held}
     sess = {}
     for r in acp:
         s, ev = r.get("sku"), r.get("event")
@@ -617,6 +619,11 @@ def _stockouts(units, big, rows, o24, day_h, acp, catalog):
 def _list_price(catalog, sku):
     c = catalog.get(sku) if isinstance(sku, str) else None
     return _num(c[2]) if isinstance(c, list) and len(c) > 2 else None
+
+
+def _kind_of(catalog, sku):
+    c = catalog.get(sku) if isinstance(sku, str) else None
+    return c[3] if isinstance(c, list) and len(c) > 3 and isinstance(c[3], str) else None
 
 
 def _mix(tables, raw, catalog):

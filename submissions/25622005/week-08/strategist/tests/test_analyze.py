@@ -566,7 +566,9 @@ class EconomicsMixTest(unittest.TestCase):
             {"unit": "s1", "sku": "GSM", "kind": "goods", "cost": 400000, "supplied_at": NOW - 2 * 86400},
             {"unit": "s2", "sku": "GSM", "kind": "goods", "cost": 400000, "supplied_at": NOW - 2 * 86400},
             {"unit": "s3", "sku": "GSM", "kind": "goods", "cost": 400000, "supplied_at": NOW - 2 * 86400}]}
-        tables = {"covered_h": 6, "h1": 1, "h6": 6, "sku": {"GBIG": {"s6": 30, "o6": 3, "u1": 20}},
+        r["catalog"] = dict(self.CAT, GCHEAP=["pen", "문구>펜", 3000, "goods", None])
+        tables = {"covered_h": 6, "h1": 1, "h6": 6,              # GCHEAP (under the line) and GF (food) sold out too
+                  "sku": {"GBIG": {"s6": 30, "o6": 3, "u1": 20}, "GCHEAP": {"s6": 9, "o6": 4}, "GF": {"s6": 50, "o6": 40}},
                   "p_clear": {"food": {}, "goods": {"h6": 0.75, "n6": 9, "h24": 0.74, "n24": 99}},
                   "c_kind": {"food": None, "goods": 0.6},
                   "day": {"cogs": 1_500_000, "rev": 2_000_000, "exp": 0, "o": {"GBIG": 2}, "h": 24}}
