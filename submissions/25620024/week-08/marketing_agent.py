@@ -58,7 +58,8 @@ LIMITS = {"overnight_min": 29, "normal_min": 118, "max_runs_day": 60,   # 11-07:
     # 01:08, back 11-07 05:47); the code loops (restock, buyer, self-improvement) still run every 10 min
           "limit_cooldown_h": 3, "fail_cooldown_h": 1,
           "normal_when_all": 2.0}   # HQ 11-04: no rest, all night (ALL never reaches 2)             # HQ 11-04: rest only near the top (0.6 put the team to sleep at rank 18)
-TEAM_GAP = {"overnight": 29 * 60, "normal": 55 * 60}     # HQ 11-04: every meeting (10 min)   # how often SCM, finance and the buyer team meet
+TEAM_GAP = {"overnight": 29 * 60, "normal": 55 * 60}
+SLOW_GAP = 59 * 60          # SCM (Codex) and finance (Claude, advisory) meet hourly     # HQ 11-04: every meeting (10 min)   # how often SCM, finance and the buyer team meet
 MODE = {"now": "overnight"}
 LIMIT_RE = re.compile(r"usage limit|rate.?limit|quota|429|too many requests|limit reached|exceeded", re.I)
 REPORTS = Path(os.environ.get("TEAM_REPORTS", "/mnt/gdrive-imajason-kimdaehakwon/week08-reports"))
@@ -338,17 +339,93 @@ def brief():
     }
 
 
-def ask_codex(text, schema_obj):
-    """Codex, and Claude in its place when Codex fails (HQ 11-07: the Codex plan hit its usage limit 11-05 01:08 and
-    every meeting -- research, SCM, finance, buyer, the unit heads -- stopped for two days, while Claude was fine)."""
+# HQ 11-07 "codex 배치와 claude 배치가 부조화스럽다. 사용량을 고려해서 다시 정리해": each role has a first model, the
+# other stands in only while the first is blocked. Before: Codex ran research, SCM, finance, buyer and the buyer head
+# (4-5 calls a meeting), Claude only sales and the chair -- so Codex hit its plan limit and Claude then did everything.
+MODEL_FOR = {"research": "codex", "scm": "codex", "buyer": "codex", "leaders_buyer": "codex",
+             "sales": "claude", "finance": "claude", "leaders_chair": "claude"}
+BLOCK = HERE / "private" / "model_block.json"
+TRY_AGAIN_RE = re.compile(r"try again (?:at|in)\s+([^.\n]+)", re.I)
+
+
+def _blocked(model):
     try:
-        return _ask_codex(text, schema_obj)
-    except Exception as e:
-        print(f"[codex] failed, Claude stands in: {str(e)[:300]}")
-        raw = ask_claude(text + "\n\nAnswer with ONE JSON object only, matching this JSON schema:\n"
-                         + json.dumps(schema_obj, ensure_ascii=False))
-        json.loads(raw)
-        return raw
+        return time.time() < json.loads(BLOCK.read_text(encoding="utf-8")).get(model, 0)
+    except (OSError, ValueError):
+        return False
+
+
+def _block(model, msg):
+    """Remember a usage limit until its reset time ("try again at 8:25 AM"), else for an hour, so later calls go
+    straight to the other model instead of failing first."""
+    until = time.time() + 3600
+    m = TRY_AGAIN_RE.search(msg or "")
+    if m:
+        for fmt in ("%I:%M %p", "%b %dth, %Y %I:%M %p", "%b %dst, %Y %I:%M %p", "%b %dnd, %Y %I:%M %p", "%b %drd, %Y %I:%M %p"):
+            try:
+                t = time.strptime(m.group(1).strip(), fmt)
+                if fmt == "%I:%M %p":
+                    now = time.localtime()
+                    cand = time.mktime((now.tm_year, now.tm_mon, now.tm_mday, t.tm_hour, t.tm_min, 0, 0, 0, -1))
+                    until = cand if cand > time.time() else cand + 86400
+                else:
+                    until = time.mktime(t)
+                break
+            except ValueError:
+                continue
+    try:
+        d = json.loads(BLOCK.read_text(encoding="utf-8")) if BLOCK.exists() else {}
+        d[model] = until
+        BLOCK.write_text(json.dumps(d), encoding="utf-8")
+    except (OSError, ValueError):
+        pass
+    print(f"[{model}] blocked until {time.strftime('%m-%d %H:%M', time.localtime(until))}")
+
+
+def _log_usage(model, role, text, t0, ok, tokens=None):
+    try:
+        with (HERE / "private" / "model_usage.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": time.time(), "model": model, "role": role, "prompt_chars": len(text),
+                                "tokens": tokens, "secs": round(time.time() - t0), "ok": ok}) + "\n")
+    except OSError:
+        pass
+
+
+def _claude_json(text, schema_obj, role):
+    raw = ask_claude(text + "\n\nAnswer with ONE JSON object only, matching this JSON schema:\n"
+                     + json.dumps(schema_obj, ensure_ascii=False), role=role)
+    json.loads(raw)
+    return raw
+
+
+def ask(role, text, schema_obj=None):
+    """The model call for a role: its first model unless that one is blocked, the other one in its place."""
+    first = MODEL_FOR.get(role, "codex")
+    order = [first, "claude" if first == "codex" else "codex"]
+    if _blocked(first) and not _blocked(order[1]):
+        order = order[::-1]
+    err = None
+    for model in order:
+        try:
+            if model == "codex":
+                return _ask_codex(text, schema_obj, role)
+            return _claude_json(text, schema_obj, role) if schema_obj is not None else ask_claude(text, role=role)
+        except Exception as e:
+            err = e
+            if LIMIT_RE.search(str(e)):
+                _block(model, str(e))
+            print(f"[{model}] {role} failed, {'trying the other model' if model == order[0] else 'giving up'}: {str(e)[:200]}")
+    raise err
+
+
+def ask_codex(text, schema_obj):          # kept for callers that pass a runner; routes by the caller's role
+    return ask(_role_of_caller(), text, schema_obj)
+
+
+def _role_of_caller():
+    f = sys._getframe(2).f_code.co_filename.split("/")[-1]
+    return {"scm_agent.py": "scm", "finance_agent.py": "finance", "buyer_team.py": "buyer",
+            "leaders_meeting.py": "leaders_buyer"}.get(f, "research")
 
 
 def _err(stderr):
@@ -359,36 +436,33 @@ def _err(stderr):
     return (" | ".join(errs[-3:]) or stderr[-600:])[:800]
 
 
-def _ask_codex(text, schema_obj):
+def _ask_codex(text, schema_obj, role="?"):
     with tempfile.TemporaryDirectory() as d:
         schema, out = Path(d) / "schema.json", Path(d) / "out.json"
         schema.write_text(json.dumps(schema_obj))
         # -C an empty folder (11-07): with -C HERE a read-only Codex agent could browse the whole submission
         # (enuri_book.json alone is 850 KB) on the owner's ChatGPT plan; the brief in the prompt is all it needs
-        cmd = [CODEX, "exec", "--skip-git-repo-check", "--ephemeral", "-s", "read-only", "-C", d,
-               "--output-schema", str(schema), "-o", str(out), "-"]
+        cmd = [CODEX, "exec", "--skip-git-repo-check", "--ephemeral", "-s", "read-only", "-C", d] + \
+            (["--output-schema", str(schema)] if schema_obj is not None else []) + ["-o", str(out), "-"]
         t0 = time.time()
         r = subprocess.run(cmd, input=text, text=True, capture_output=True, timeout=900,
                            env={**os.environ, "CODEX_HOME": CODEX_HOME})
         m = re.search(r"tokens used\s*\n?\s*([\d,]+)", r.stderr or "")
-        try:                                            # what each Codex call costs the owner's plan (11-07)
-            with (HERE / "private" / "model_usage.jsonl").open("a", encoding="utf-8") as f:
-                f.write(json.dumps({"ts": time.time(), "model": "codex", "prompt_chars": len(text),
-                                    "tokens": int(m.group(1).replace(",", "")) if m else None,
-                                    "secs": round(time.time() - t0), "ok": out.exists(),
-                                    "caller": (sys._getframe(2).f_code.co_filename.split("/")[-1])}) + "\n")
-        except Exception:
-            pass
+        _log_usage("codex", role, text, t0, out.exists(), int(m.group(1).replace(",", "")) if m else None)
         if not out.exists():
             raise RuntimeError(f"codex exited {r.returncode}: {_err(r.stderr)}")
         return out.read_text(encoding="utf-8")
 
 
-def ask_claude(text):
-    """The seller team: Claude Code headless (claude -p) with its own config dir, no tools needed."""
-    r = subprocess.run([CLAUDE, "-p", "--output-format", "text"], input=text, text=True, capture_output=True,
-                       timeout=900, cwd=str(HERE), env={**os.environ, "CLAUDE_CONFIG_DIR": CLAUDE_CONFIG})
+def ask_claude(text, role="sales"):
+    """Claude Code headless (claude -p) with its own config dir, run in an empty folder (11-07: in the submission
+    folder it could read files; the brief in the prompt is all it needs)."""
+    t0 = time.time()
+    with tempfile.TemporaryDirectory() as d:
+        r = subprocess.run([CLAUDE, "-p", "--output-format", "text"], input=text, text=True, capture_output=True,
+                           timeout=900, cwd=d, env={**os.environ, "CLAUDE_CONFIG_DIR": CLAUDE_CONFIG})
     m = re.search(r"\{.*\}", r.stdout, re.S)
+    _log_usage("claude", role, text, t0, bool(m))
     if not m:
         raise RuntimeError(f"claude gave no JSON (exit {r.returncode}): {r.stdout[-400:]} {r.stderr[-400:]}")
     return m.group(0)
@@ -705,7 +779,7 @@ def run(a, t0):
         import scm_agent
         last = max((json.loads(x)["metrics"]["ts"] for x in scm_agent.HISTORY.read_text(encoding="utf-8").splitlines()
                     if x.strip()), default=0) if scm_agent.HISTORY.exists() else 0
-        if time.time() - last >= TEAM_GAP[MODE["now"]]:
+        if time.time() - last >= SLOW_GAP:             # SCM and finance hourly (11-07 model budget)
             scm, _ = scm_agent.run(ask_codex, dry=a.dry)
             print(f"[scm] {len(scm['orders'])} orders, {len(scm['clearance'])} markdowns, alerts {scm['alerts'][:2]}")
     except Exception as e:
@@ -715,7 +789,7 @@ def run(a, t0):
         import finance_agent
         last = max((json.loads(x)["snapshot"]["ts"] for x in finance_agent.HISTORY.read_text(encoding="utf-8").splitlines()
                     if x.strip()), default=0) if finance_agent.HISTORY.exists() else 0
-        if time.time() - last >= TEAM_GAP[MODE["now"]]:
+        if time.time() - last >= SLOW_GAP:
             fin, _ = finance_agent.run(ask_codex, b["our_shop"], dry=a.dry)
             print(f"[finance] {fin['verdict']}: {fin['limits']}, forecast {fin['forecast_profit_per_h']}/h")
         else:
@@ -743,7 +817,7 @@ def run(a, t0):
         directives = DIRECTIVES.read_text(encoding="utf-8")
     except OSError:
         directives = "(none)"
-    raw = ask_claude(PROMPT + json.dumps(b, ensure_ascii=False) + "\n\nMARKETING RESEARCH (Codex):\n"
+    raw = ask("sales", PROMPT + json.dumps(b, ensure_ascii=False) + "\n\nMARKETING RESEARCH (Codex):\n"
                      + json.dumps(research, ensure_ascii=False)
                      + "\n\nSCM TEAM PLAN (Codex owns stock; its orders and clearance run unless you have a strong "
                        "reason: then say so in rationale and adjust restock picks):\n"

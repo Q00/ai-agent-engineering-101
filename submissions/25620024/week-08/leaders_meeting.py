@@ -93,7 +93,7 @@ def meet(ask_codex, ask_claude, goal=None):
     GOAL = goal or GOAL
     b = brief()
     buyer = json.loads(ask_codex(BUYER_PROMPT.format(goal=GOAL) + json.dumps(b, ensure_ascii=False), BUYER_SCHEMA))
-    raw = ask_claude(SALES_PROMPT.format(goal=GOAL, keys=", ".join(PLAN_KEYS)) + json.dumps(b, ensure_ascii=False)
+    raw = __import__("marketing_agent").ask("leaders_chair", SALES_PROMPT.format(goal=GOAL, keys=", ".join(PLAN_KEYS)) + json.dumps(b, ensure_ascii=False)
                      + "\n\nBUYER UNIT HEAD:\n" + json.dumps(buyer, ensure_ascii=False))
     p = json.loads(raw)
     plan = {k: p.get(k) for k in PLAN_KEYS}
