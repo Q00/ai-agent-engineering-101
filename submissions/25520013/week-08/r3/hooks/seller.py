@@ -187,6 +187,25 @@ def refused_units(path=None, now=None, hold_s=REFUSED_HOLD_S, tail=KIT_TAIL_BYTE
     return out
 
 
+WARRANTY_RE = re.compile(r"warrant|보증", re.I)
+
+
+def warranty_on_request(text, unit, pol, stats, price, floor):
+    """v2.4 (2026-11-07, stars): goods warranty hours when the request mentions a warranty and the price still
+    clears the floor after the expected refunds (price x (1 - fail rate) >= floor); else 0. Policy warranty_hours
+    turns a warranty on only when warranty_uplift beats the fail rate, so beds and sofas (fail 6.7 to 6.8% in 72 h)
+    went out without one, and one buyer whose requests ask about warranties marked them down 2 stars each ("No
+    warranty, so 2 stars off"; its 11-07 12시 bed deals averaged 2.9). Hours and fail rate as in
+    policy.warranty_hours."""
+    if unit.get("kind") != "goods" or not WARRANTY_RE.search(text or ""):
+        return 0
+    c = P.resolve(pol, unit.get("category"), "goods")
+    hours = min(int((c.get("warranty_hours") or {}).get(unit.get("grade"), 0)), int(c.get("max_warranty_hours", 6)))
+    s = P._stat(stats, "category", unit.get("category"))
+    fail = s["fail_rate"] if s and s.get("n", 0) >= 10 and s.get("fail_rate") is not None else c.get("prior_fail_rate", 0.05)
+    return hours if hours > 0 and price * (1 - fail) >= floor else 0
+
+
 CARD_DESCRIPTION = "Signed receipts with certificate; grades never overstated. Ask by item or SKU."
 SKILL_DESCRIPTION = "Ask for an item by name or SKU, then send a whole-number price."
 
@@ -416,7 +435,7 @@ class Seller(AgentExecutor):
             relax, nset = self.volume()
             st = self.stats()
             ask = P.ask_price(unit, self.pol, stats=st, inv=inv, shelf_hours=sh, relax=relax)
-            deal = self.open[task.id] = {"unit": unit, "ask": ask, "rounds": 0, "t": time.time(), "inv": inv, "sh": sh,
+            deal = self.open[task.id] = {"unit": unit, "ask": ask, "rounds": 0, "t": time.time(), "inv": inv, "sh": sh, "text": text,
                                          "relax": relax, "stats": st, "pol": self.pol}
             self._metric("open", {"sku": unit["sku"], "unit": unit["unit"], "cost": unit["cost"], "ask": ask,
                                   "floor": P.floor_price(unit, self.pol, inv, relax=relax), "relax": relax,
@@ -439,8 +458,13 @@ class Seller(AgentExecutor):
         if offer is not None:
             deal.setdefault("offers", []).append(offer)  # v1.5/v1.6: next respond's prev_offer/history (pinned by tests_lead/test_v16_wiring.py)
         if move == "accept":
-            receipt = dict({"shop": NAME, "item": u["sku"], "price": price, "task": task.id},
-                           **P.receipt_terms(u, deal.get("pol") or self.pol, stats=deal.get("stats"), price=price, shelf_hours=deal["sh"]))
+            terms = P.receipt_terms(u, deal.get("pol") or self.pol, stats=deal.get("stats"), price=price, shelf_hours=deal["sh"])
+            if not terms.get("warranty_hours"):         # v2.4: warranty when the request asks about one
+                w = warranty_on_request(deal.get("text"), u, deal.get("pol") or self.pol, deal.get("stats"), price,
+                                        P.floor_price(u, deal.get("pol") or self.pol, deal["inv"], relax=deal["relax"]))
+                if w:
+                    terms["warranty_hours"] = w
+            receipt = dict({"shop": NAME, "item": u["sku"], "price": price, "task": task.id}, **terms)
             receipt = sign(receipt)
             self.accepted[u["unit"]] = time.time()
             try:                                        # v1.3: cost layer for this unit before its sale is ingested
