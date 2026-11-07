@@ -35,7 +35,9 @@ from r3lib import config, market, pricing, scout
 from r3lib.memory import Memory
 
 LEGACY = {"lamp": (100, 130), "chair": (180, 234), "bookshelf": (260, 338)}   # reserve, first ask (Round 0-2)
-OPEN_TTL = 15 * 60
+OPEN_TTL = 3 * 60   # an open negotiation holds its unit this long (15 min until 2026-11-07: 467 deals in 24 h all closed
+                    #   within 97 s, p99 47 s, while 28 of 35 SKU requests turned away in 6 h were for a SKU quoted
+                    #   to a buyer under 10 min earlier, i.e. held by a negotiation the buyer had walked away from)
 SKU_RE = re.compile(r"\b([A-Z][0-9a-f]{6,}|[A-Z]\d{4,})\b")
 CODE_RE = re.compile(re.escape(config.LOYALTY_PREFIX) + r"[0-9a-f]{8}\b", re.I)
 
