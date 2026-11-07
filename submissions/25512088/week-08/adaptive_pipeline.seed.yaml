@@ -234,7 +234,7 @@ acceptance_criteria:
   output_assertion: exit code 0이며 round=3의 종료 직전 마지막·종료 이후 최초 schema-valid 공식 snapshot, endpoint·공식/수신 UTC·KST·원본 SHA-256·rule hash·우리/2위 점수·격차가 존재하고 Player 식별자 2개가 일치하며 우리 ALL이 모든 타인보다 엄격히 크다.
 - description: 공식 Class Player 순위가 2026-11-10 23:59 KST Top 10, 11-13 23:59 Top 5,
     11-15 23:59 Top 3, 11-16 23:59 단독 1위 마일스톤을 각각 기한 내 달성한다.
-  semantic_ac_key: ac_rank_milestones
+  semantic_ac_key: ac_215514900ceecbec
   verify_command: python scripts/verify_rank_milestones.py --student-id 25512088 --owner morethanwhatiwant
   expected_artifacts:
   - .market/evidence/rank-milestones.jsonl
@@ -243,7 +243,7 @@ acceptance_criteria:
     30분간 감소하지 않거나 마일스톤 지연이 예상되면 통계·Safety 기준을 완화하지 않은 채 검증 후보의 점수효과/비용 순서로 우선순위와
     자본 노출 상한을 단계당 최대 10%p 높인다. 연속 3회·60초 단독 1위 뒤에는 leader_baseline 고정 DEFEND로 영구 전환해
     수치 위험 경보에 허용된 대응만 수행한다.
-  semantic_ac_key: ac_rank_velocity_controller
+  semantic_ac_key: ac_cf646a9988fe0941
   verify_command: python -m unittest -v tests/test_rank_velocity_controller.py
   expected_artifacts:
   - tests/test_rank_velocity_controller.py
@@ -258,7 +258,7 @@ acceptance_criteria:
 - description: normalized effect, 고정 seed 10,000회 bootstrap, 양측 97.5% 구간, empirical p, 동시 판정
     family의 Holm α=0.025, 최소 표본 PASS/FUTILITY/INCONCLUSIVE, 누적 2배 ADOPTED/REJECTED와 adoption_threshold가
     결정적으로 적용되며 통계 guardrail은 최소·2배 판정 시점에만 사용된다.
-  semantic_ac_key: ac_statistical_decision
+  semantic_ac_key: ac_6f869dd47a19dde0
   verify_command: python -m unittest -v tests/test_statistical_decision.py
   expected_artifacts:
   - tests/test_statistical_decision.py
@@ -272,7 +272,7 @@ acceptance_criteria:
   output_assertion: exit code 0이며 가짜 시계와 offline fixture로 정상·timeout·stale·gap·malformed·partial·oversized 입력을 3회 재현해 snapshot hash, failure metadata와 mutation 차단 상태를 assert한다.
 - description: 일시적 stale·ledger gap은 관련 실험을 PAUSED_INPUT으로 만들고 동일 hash의 fresh 입력 복구 시 이전 상태로
     재개하지만, 공식 계약 hash/version 변경은 INVALIDATED와 새 experiment_id를 만들며 소급 재계산 또는 전후 cohort 분리를 수행한다.
-  semantic_ac_key: ac_official_change_lifecycle
+  semantic_ac_key: ac_e325d4fc6f992f26
   verify_command: python -m unittest -v tests/test_official_change_lifecycle.py
   expected_artifacts:
   - tests/test_official_change_lifecycle.py
@@ -286,7 +286,7 @@ acceptance_criteria:
   output_assertion: exit code 0이며 공식 일치 여부, 정규화 subject·claim type·direction·6시간 bucket, 독립 작성자 수 1·2·3과 owner/refs 복제의 truth table, 1%·1 SKU 경계와 악성 원문 fixture에서 신뢰등급·노출·실행 컨텍스트를 assert한다.
 - description: Buyer·Seller 게시가 역할별 일일·간격·중복문안 한도와 전환 중단 기준을 지키며 경쟁자 사건은 공식 증거가 있을
     때만 의도를 단정하지 않고 refs를 포함해 사건당 한 번 게시하며 정정 이력을 보존한다.
-  semantic_ac_key: ac_forum_publication
+  semantic_ac_key: ac_5672ede991c64fc8
   verify_command: python -m unittest -v tests/test_forum_publication.py
   expected_artifacts:
   - tests/test_forum_publication.py
@@ -309,7 +309,7 @@ acceptance_criteria:
   output_assertion: exit code 0이며 열거된 Deployment·Experiment·Safety·Mutation edge에서 생성한 fixture만 허용되고, pre-live 실패는 QUARANTINED·live 실패는 ROLLED_BACK이며 공통 필드·machine별 ID·live_impact·append-only를 assert하고 secret/raw instruction은 0건이다.
 - description: 후보 생성·배포는 submission 내부 allowlist에만 쓰고 Safety Kernel·hard envelope·owner.env·기존 로그·공용·타인
     파일을 수정하지 않으며 후보 변경과 겹치는 사용자 tracked 변경이 있으면 worktree_guard가 QUARANTINED로 만든다.
-  semantic_ac_key: ac_worktree_scope_guard
+  semantic_ac_key: ac_f25be06359a62089
   verify_command: python -m unittest -v tests/test_worktree_guard.py
   expected_artifacts:
   - tests/test_worktree_guard.py
@@ -325,7 +325,7 @@ acceptance_criteria:
   output_assertion: exit code 0이며 syntax·전체 unittest·diff·migration·Safety·secret·allowlist 각각의 실패, SHADOW POST 0건과 5분 또는 Buyer 50/Seller 30 입력, Buyer CANARY 20주문+10분, Seller CANARY 10견적+1공급창, 90초 alive+commit, 역할 동시교체 0건을 assert한다. 각 단계 강제중단과 5분·30분 timeout을 3회 실행해 pre-live QUARANTINED·ACTIVE 불변, live ROLLED_BACK·실제 PID/commit/parameter 복귀, orphan 0개와 procurement/PRESERVED 불변도 assert한다.
 - description: validation·deployment·watch 성공 이벤트는 실제 validation_run, supervisor 소유 PID, board alive와 실행
     commit 일치 및 recovery checkpoint 검증이 모두 끝난 뒤에만 기록된다.
-  semantic_ac_key: ac_runtime_truthfulness
+  semantic_ac_key: ac_90efeba78a942d2c
   verify_command: python -m unittest -v tests/test_runtime_truthfulness.py
   expected_artifacts:
   - tests/test_runtime_truthfulness.py
@@ -339,7 +339,7 @@ acceptance_criteria:
   output_assertion: exit code 0이며 가격·재고·SKU·현금·부채·보증·보상·게시·loss-leader·확률/logit 각 경계의 아래·같음·위 fixture에서 한도 내 mutation만 허용되고 financial_snapshot과 Safety 판정을 assert하며 δ·통계 guardrail은 시작 허용에 사용되지 않는다.
 - description: 파산은 공식 bankruptcy 또는 forced-reset 사건만 계산해 최대 1회이며, 복구 핵심 검사가 3회 연속 실패하면
     신규 mutation을 차단하고 reconciliation과 durable 상태 보존만 계속한다.
-  semantic_ac_key: ac_bankruptcy_recovery_guard
+  semantic_ac_key: ac_05c6db1cd2ba30b8
   verify_command: python -m unittest -v tests/test_bankruptcy_recovery_guard.py
   expected_artifacts:
   - tests/test_bankruptcy_recovery_guard.py
@@ -354,7 +354,7 @@ acceptance_criteria:
   output_assertion: exit code 0이며 watch Ctrl-C와 supervisor 강제중단·재시작을 각각 3회 반복해 watch 종료 뒤 역할 PID 생존, 재시작 뒤 단일 소유 PID, 동일 procurement cursor·PRESERVED 행과 secret pattern 0건을 assert한다.
 - description: Windows 시작·복구 진입점의 install·status·remove가 동일 고정 task name과 예상 WSL command를 사용해
     반복 실행에도 task를 하나만 유지하고, 동명의 불일치 task는 덮어쓰지 않으며 remove는 해당 예상 task만 제거한다.
-  semantic_ac_key: ac_windows_recovery_registration
+  semantic_ac_key: ac_e4e219dc57ab66a5
   verify_command: python -m unittest -v tests/test_windows_recovery.py
   expected_artifacts:
   - tests/test_windows_recovery.py
