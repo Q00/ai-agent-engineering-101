@@ -188,7 +188,7 @@ def _run(cfg, now, client=None):
            "policy_ver_before": None, "policy_ver_after": None, "applied": [], "proposed": [], "rejected": [],
            "confidence": None, "assessment": "", "watch": [], "focus": None, "errors": [], "me": None,
            "rules_sha": None, "alerts": [], "outcomes": [], "patch": None, "notes": None, "history": [],
-           "migrations": [], "template": None, "objective": None, "elapsed_ms": None}
+           "migrations": [], "template": None, "objective": None, "tool_calls": [], "elapsed_ms": None}
     state = read_json(home / "state.json", {})
     state = state if isinstance(state, dict) else {}
     try:
@@ -518,16 +518,22 @@ def _ask(cfg, body, pol, brief, market, rec):
     No proposals with rec["status"] set when the answer gives nothing to guard; the notes of an unsure answer
     still count (they are its reading of the market, not a change)."""
     rid = rec["run_id"]
+    try:
+        tools = decide.tools_setup(cfg.home, cfg.shop_home, cfg.market_url, cfg.me)
+    except OSError as e:                                # no tools this run rather than no run
+        tools = None
+        rec["errors"].append(f"tools: {type(e).__name__}: {str(e)[:120]}")
     prompt = decide.build_prompt(body, pol, guard.tunable_view(pol), brief, _history(cfg.home), market,
-                                 _limits(cfg, rec)[0], rec["alerts"], patch=rec.get("patch"))
+                                 _limits(cfg, rec)[0], rec["alerts"], patch=rec.get("patch"), tools=bool(tools))
     _write_text(cfg.home / "prompts" / f"{rid}.txt", prompt)
-    obj, raw_answer, err = decide.ask(prompt, cfg.llm_timeout)
+    obj, raw_answer, err = decide.ask(prompt, cfg.llm_timeout, tools=tools)
     _write_text(cfg.home / "raw" / f"{rid}.txt", raw_answer or "")
     if err:
         rec["status"] = "llm error"
         rec["errors"].append(f"llm: {err}")
         return [], None
-    rec.update(confidence=obj["confidence"], assessment=obj["assessment"], watch=obj["watch"])
+    rec.update(confidence=obj["confidence"], assessment=obj["assessment"], watch=obj["watch"],
+               tool_calls=obj.get("tool_calls") or [])
     if obj["confidence"] < cfg.min_confidence:
         rec["status"] = "low confidence"
         why = f"confidence {obj['confidence']} < {cfg.min_confidence}"

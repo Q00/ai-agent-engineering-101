@@ -243,7 +243,7 @@ class ParseTest(unittest.TestCase):
     def test_missing_fields_default(self):
         obj, err = decide.parse("{}")
         self.assertIsNone(err)
-        self.assertEqual(obj, {"assessment": "", "changes": [], "watch": [], "notes": None, "confidence": 0.0})
+        self.assertEqual(obj, {"assessment": "", "changes": [], "watch": [], "notes": None, "tool_calls": [], "confidence": 0.0})
         obj, err = decide.parse('{"changes": [{"key": "buyer.max_shops", "value": 4}], "confidence": 0.9}')
         self.assertIsNone(err)
         self.assertEqual(obj["changes"][0], {"key": "buyer.max_shops", "value": 4, "reason": "", "evidence": []})
