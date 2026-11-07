@@ -10,6 +10,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import sqlite3
 import time
 import unicodedata
@@ -94,6 +95,9 @@ class Control:
         CREATE TABLE IF NOT EXISTS recovery_checkpoints(
           id INTEGER PRIMARY KEY, checkpoint_id TEXT UNIQUE, ts REAL, role TEXT,
           commit_id TEXT, parameter_hash TEXT, body TEXT);
+        CREATE TABLE IF NOT EXISTS forum_publications(
+          id INTEGER PRIMARY KEY, publication_id TEXT UNIQUE, role TEXT, ts REAL,
+          normalized_hash TEXT, tokens TEXT, refs TEXT, status TEXT, reason TEXT);
         CREATE TRIGGER IF NOT EXISTS runtime_events_no_update
           BEFORE UPDATE ON runtime_events BEGIN SELECT RAISE(ABORT,'append-only'); END;
         CREATE TRIGGER IF NOT EXISTS runtime_events_no_delete
@@ -207,6 +211,49 @@ class Control:
         self.event(role,"checkpoint",{"checkpoint_id":checkpoint_id},checkpoint_id)
         return checkpoint_id
 
+    @staticmethod
+    def normalize_publication(text):
+        text=unicodedata.normalize('NFKC',str(text)).casefold()
+        text=re.sub(r'(?<=\d),(?=\d)','',text)
+        text=' '.join(part for part in text.split() if not part.startswith(('http://','https://')))
+        normalized=' '.join(''.join(ch if ch.isalnum() else ' ' for ch in text).split())
+        return normalized,set(normalized.split())
+
+    def allow_publication(self,role,text,refs=(),now=None):
+        now=time.time() if now is None else now
+        refs=list(refs)
+        normalized,tokens=self.normalize_publication(text)
+        token_hashes={hashlib.sha256(token.encode()).hexdigest() for token in tokens}
+        digest=hashlib.sha256(normalized.encode()).hexdigest()
+        limits={'buyer':24,'shop':12};limit=limits.get(role,0)
+        rows=self.db.execute('SELECT * FROM forum_publications WHERE role=? AND ts>? AND status=?',
+                             (role,now-86400,'ACTIVE')).fetchall()
+        reason=None
+        if not normalized:reason='empty'
+        elif not limit:reason='role'
+        elif len(rows)>=limit:reason='daily_limit'
+        elif rows and now-max(r['ts'] for r in rows)<300:reason='interval'
+        else:
+            for row in rows:
+                old=set(json.loads(row['tokens']));union=token_hashes|old
+                similarity=len(token_hashes&old)/len(union) if union else 1
+                if row['normalized_hash']==digest or similarity>=.80:
+                    reason='duplicate';break
+        status='ACTIVE' if reason is None else 'STOPPED';publication_id=str(uuid.uuid4())
+        with self.db:
+            self.db.execute('INSERT INTO forum_publications VALUES(?,?,?,?,?,?,?,?,?)',(
+                None,publication_id,role,now,digest,json.dumps(sorted(token_hashes)),
+                json.dumps(_safe(refs)),status,reason))
+        self.event(role,'forum_publication_'+status.lower(),{
+            'publication_id':publication_id,'refs_count':len(refs),'reason':reason},publication_id)
+        return reason is None,publication_id,reason
+
     def close(self):
         self.db.close()
+
+
+def classify_forum_claim(official_match, independent_authors):
+    if official_match:return 'VERIFIED'
+    if independent_authors>=3:return 'CORROBORATED'
+    return 'UNVERIFIED'
 

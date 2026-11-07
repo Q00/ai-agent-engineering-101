@@ -9,6 +9,7 @@ from market_intel import read_json, WINDOW
 from referral_program import Program
 from seller_strategy import sale_quote
 from shop_copy import stock_ad, paid_post
+from adaptive_control import Control
 
 
 def latest_paid_post(intel):
@@ -82,6 +83,10 @@ def queue_update(intel):
             if paid:
                 text,purchase_ledger=paid;refs=[purchase_ledger]
         if not text:return False
+        guard=Control(state)
+        try:allowed,_,_=guard.allow_publication('buyer',text,refs,now)
+        finally:guard.close()
+        if not allowed:return False
         folder=state/'buyer-forum';folder.mkdir(exist_ok=True)
         # Timestamp before append favors losing one post over duplicate flooding.
         intel.put('buyer_post_at',now);intel.put('posts_today',intel.get('posts_today',0)+1)

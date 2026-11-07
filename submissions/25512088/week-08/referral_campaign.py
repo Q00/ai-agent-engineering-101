@@ -14,6 +14,7 @@ from urllib.request import urlopen
 from network_reads import retry_read
 from cryptography.hazmat.primitives import serialization
 from referral_program import Program
+from adaptive_control import Control
 
 
 def fetch(base, path):
@@ -95,6 +96,14 @@ def queue_post(program, state, inventory, now=None):
     day=int(now//86400);count=program.get('post_count_'+str(day),0)
     if count >= program.p['forum_max_posts'] or now-program.get('last_post', 0) < program.p['forum_interval_seconds']:
         return False
+    refs=[r[0] for r in program.db.execute(
+        'SELECT ledger FROM sales WHERE ledger IS NOT NULL AND refunded=0 ORDER BY ledger DESC LIMIT 2')]
+    text=campaign_text(program,dict(inventory,units=available))
+    guard=Control(state)
+    try:
+        allowed,_,_=guard.allow_publication('shop',text,refs,now)
+    finally:guard.close()
+    if not allowed:return False
     # This DB transaction is a process lock. Mark before append: a crash may lose
     # one ad, but cannot cause an endless retry/duplicate-post loop.
     with program.db:
@@ -105,9 +114,7 @@ def queue_post(program, state, inventory, now=None):
             return False
         for k, v in [('last_post', now), ('post_count_'+str(day), count+1)]:
             program.db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)', (k, json.dumps(v)))
-    refs=[r[0] for r in program.db.execute(
-        'SELECT ledger FROM sales WHERE ledger IS NOT NULL AND refunded=0 ORDER BY ledger DESC LIMIT 2')]
-    row = {'as': 'shop', 'post': campaign_text(program, dict(inventory,units=available)), 'refs': refs}
+    row = {'as': 'shop', 'post': text, 'refs': refs}
     fd = os.open(Path(state) / 'outbox.jsonl', os.O_CREAT | os.O_WRONLY | os.O_APPEND, 0o600)
     try:
         os.write(fd, (json.dumps(row, ensure_ascii=False)+'\n').encode())
