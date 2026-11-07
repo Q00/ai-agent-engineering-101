@@ -31,8 +31,9 @@ def demand_hints(posts, catalog, now):
     return {sku: min(2, len(authors)) for sku, authors in hints.items()}
 
 
-def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None):
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None, median_bypass=None):
     now = time.time() if now is None else now
+    median_bypass = set(median_bypass or ())
     hints = hints or {}
     intelligence = intelligence or {}
     leader_hints = leader_hints or {}
@@ -115,6 +116,7 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
     # The capped food trial goes first so goods cannot use up its places. Ordinary food stays out below.
     run_room = min(limits["max_units_per_run"], limits["max_total_units"] - len(units))
     trial_skus = []
+    bypassed = []
     for pick in food_trial or ():
         carrying = 0  # Food pays no storage; the contract charges goods only.
         if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] + carrying > budget:
@@ -139,7 +141,13 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
         reference = signal(sku).get("median_price")
         if reference is not None and reference <= worst_cost * (1 + rate):
-            continue
+            # Proposal 2: our own 24 h confirmed, profitable sales stand in for the sampled median. A surged SKU costs more than
+            # those sales did, so it keeps the test.
+            if sku not in median_bypass or sku in surge:
+                continue
+            blocked_by_median = True
+        else:
+            blocked_by_median = False
         carrying_cost = worst_cost * rate * 7
         qty = min(sku_limit(sku)-owned[sku]-planned[sku], limits["max_units_per_run"]-planned_units,
                   limits["max_total_units"]-len(units)-planned_units)
@@ -150,6 +158,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
         if qty <= 0:
             continue
         planned[sku] += qty
+        if blocked_by_median and sku not in bypassed:
+            bypassed.append(sku)
         estimated += worst_cost * qty
         storage_reserve += carrying_cost * qty
         planned_units += qty
@@ -171,6 +181,8 @@ def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, i
                   "forum_hints": hints,
                   "leader_hints": leader_hints,
                   "food_trial": trial_skus,
+                  "median_bypass_skus": sorted(median_bypass),
+                  "median_bypass_used": bypassed,
                   "food_supply": "deferred outside the capped trial: no guaranteed shelf life or supported sales-window estimate"}
 
 
@@ -278,9 +290,11 @@ def main():
     from seller_quality import fresh as fresh_quality
     import food_trial
     trial_id, trial_state, trial_picks, trial_waiting = food_trial.for_run(md, inv, catalog, snapshot.get("skus", {}), time.time())
+    import median_bypass
+    bypass = median_bypass.for_run(md, time.time())
     buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
                              intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints,
-                             own_profitable=own_profitable, quality=fresh_quality(md), food_trial=trial_picks)
+                             own_profitable=own_profitable, quality=fresh_quality(md), food_trial=trial_picks, median_bypass=bypass)
     if trial_state is not None:
         chosen = set(explanation.get("food_trial") or ())
         food_trial.record_plan(trial_state, trial_picks, chosen, time.time())
