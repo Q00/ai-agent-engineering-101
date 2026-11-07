@@ -88,6 +88,7 @@ SHORT_MAX = 15
 SHORT_SHARE = 0.25
 PLANNER_EVERY = 60 * 60    # opus with tools: the costliest call; the code baseline restocks every minute between
 LESSONS_EVERY = 6 * 3600   # lessons.py: failures of the last day -> rules the manager and the buyer read
+METRICS_EVERY = 5 * 60    # read-only ledger/reviewer diagnostics; no model calls
 PLAN_FRESH = 90 * 60       # plan lines older than this are dropped
 END_TS = 1794927540        # Round 3 ends Tue Nov 17 23:59 KST
 ENDGAME = 24 * 3600        # the last day buys nothing: stock left at the end is cost already paid, so it is sold off
@@ -492,6 +493,11 @@ def main():
         subprocess.Popen([sys.executable, "lessons.py"], start_new_session=True,
                          stdout=open(sd / "lessons.out", "a"), stderr=subprocess.STDOUT)
         log("lessons.py started in the background")
+    if inv.get("round", 0) >= 3 and time.time() - st.get("metrics_ts", 0) > METRICS_EVERY:
+        st["metrics_ts"] = time.time()
+        subprocess.Popen([sys.executable, "shop_metrics.py", "--pages", "24"], start_new_session=True,
+                         stdout=open("logs/shop-metrics-collector.log", "a"), stderr=subprocess.STDOUT)
+        log("shop_metrics.py started in the background (no model calls)")
     try:
         forum.shop_turn(inv, log)
     except Exception as e:
