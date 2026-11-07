@@ -1,4 +1,4 @@
-"""Haiku inventory seller with pinned grade floors, guarantees and bounded advice."""
+"""Inventory seller with pinned grade floors, guarantees and bounded advice."""
 import argparse
 import asyncio
 import json
@@ -259,7 +259,7 @@ class InventorySeller(Seller):
                 choice = {"action": "counter", "price": deal["negotiation"]["price_floor"]}
                 deal["decision_source"] = "final_floor_quoted"
             else:
-                deal["decision_source"] = "haiku"
+                deal["decision_source"] = "model"  # Exact profile/model is recorded by the harness.
                 phase = "model"
                 choice = await self.infer(inventory_decision,
                                           {**product, "sales_terms": deal["terms"],

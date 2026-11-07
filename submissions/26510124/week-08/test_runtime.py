@@ -81,6 +81,16 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn("claude CLI available: True", output)
         self.assertNotIn("codex CLI", output)
 
+    def test_opus_check_reports_exact_pinned_model_and_disabled_advisor(self):
+        result, output, errors = self.check_launcher(
+            {"version": 1, "trading": "opus5.5", "advisor": "haiku"},
+            advisor_enabled=False, missing=("codex",))
+        self.assertEqual(result, 0, errors)
+        self.assertIn("shop/buyer=opus5.5; advisor=disabled", output)
+        self.assertIn("claude-opus-5-5; effort=low; fallback disabled", output)
+        self.assertIn("claude CLI available: True", output)
+        self.assertNotIn("codex CLI", output)
+
     def test_missing_profile_keeps_legacy_haiku_launcher(self):
         result, output, errors = self.check_launcher(missing=("codex",))
         self.assertEqual(result, 0, errors)

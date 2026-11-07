@@ -1,7 +1,7 @@
-"""Reversible CLI profiles: Haiku or GPT models using existing CLI logins.
+"""Reversible CLI profiles using existing Claude/Codex logins.
 
---check checks executables/auth only. --preflight probes active GPT models only.
---profile haiku|astra changes this submission's trading profile, not a service.
+--check makes no model call. --preflight probes active Opus/GPT models.
+--profile opus5.5|haiku|astra changes the trading profile, not a service.
 --advisor-profile haiku|luna changes only the sales-strategy analyst's profile.
 """
 import argparse
@@ -18,6 +18,7 @@ import uuid
 
 ROOT = Path(__file__).resolve().parent
 CODEX_MODELS = {"astra": "gpt-6-astra", "luna": "gpt-6-luna"}
+CLAUDE_MODELS = {"haiku": "haiku", "opus5.5": "claude-opus-5-5"}
 CLAUDE_COMMAND = ["claude", "-p", "--model", "haiku", "--tools", "",
                   "--setting-sources", "", "--no-session-persistence",
                   "--strict-mcp-config", "--disable-slash-commands"]
@@ -35,15 +36,15 @@ def load_profile(root=ROOT):
     cfg = json.loads(path.read_text())
     if (not isinstance(cfg, dict) or set(cfg) != {"version", "trading", "advisor"}
             or type(cfg["version"]) is not int or cfg["version"] != 1
-            or cfg["trading"] not in ("astra", "haiku") or cfg["advisor"] not in ("luna", "haiku")):
-        raise ValueError("Expected trading astra/haiku and advisor luna/haiku")
+            or cfg["trading"] not in ("astra", *CLAUDE_MODELS) or cfg["advisor"] not in ("luna", "haiku")):
+        raise ValueError("Expected trading opus5.5/astra/haiku and advisor luna/haiku")
     return cfg
 
 
 def required_executables(root=ROOT):
     cfg = load_profile(root)
     profiles = active_profiles(root, cfg)
-    return (("claude",) if "haiku" in profiles else ()) + (
+    return (("claude",) if any(profile in CLAUDE_MODELS for profile in profiles) else ()) + (
         ("codex",) if any(profile in CODEX_MODELS for profile in profiles) else ())
 
 
@@ -151,8 +152,15 @@ def schema_for(prompt_name):
 
 
 def command(profile, folder, prompt_name):
-    if profile == "haiku":
-        return list(CLAUDE_COMMAND)
+    if profile in CLAUDE_MODELS:
+        args = list(CLAUDE_COMMAND)
+        args[args.index("--model") + 1] = CLAUDE_MODELS[profile]
+        if profile == "opus5.5":
+            # Pin the requested model rather than the floating 'opus' alias.
+            # JSON is the CLI result envelope, not --json-schema, which can
+            # require an additional structured-output tool/model turn.
+            args.extend(["--effort", "low", "--output-format", "json"])
+        return args
     if profile not in CODEX_MODELS:
         raise ValueError("Unknown model profile")
     folder = Path(folder)
@@ -175,6 +183,28 @@ def command(profile, folder, prompt_name):
 def answer(profile, result, folder):
     if profile == "haiku":
         return result.stdout
+    if profile == "opus5.5":
+        if not isinstance(result.stdout, str) or len(result.stdout.encode()) > 65536:
+            raise ValueError("Claude did not produce a bounded JSON result")
+        try:
+            output = json.loads(result.stdout)
+        except json.JSONDecodeError as exc:
+            raise ValueError("Claude emitted an invalid JSON result") from exc
+        if (not isinstance(output, dict) or output.get("type") != "result"
+                or output.get("subtype") != "success" or output.get("is_error") is not False
+                or type(output.get("num_turns")) is not int or output["num_turns"] != 1
+                or output.get("permission_denials") != [] or output.get("deferred_tool_use") is not None):
+            raise ValueError("Claude did not complete one successful tool-free decision")
+        model, usage = CLAUDE_MODELS[profile], output.get("modelUsage")
+        if (not isinstance(usage, dict) or set(usage) != {model}
+                or not isinstance(usage[model], dict)
+                or type(usage[model].get("outputTokens")) is not int or usage[model]["outputTokens"] <= 0
+                or usage[model].get("canonicalModel", model) != model):
+            raise ValueError("Claude result did not verify the exact requested claude-opus-5-5 model; no fallback")
+        text = output.get("result")
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("Claude returned no decision text")
+        return text
     # --json is a lifecycle stream, not the answer. Unexpected tools or failed
     # turns are rejected, even if a plausible final decision was also written.
     complete = False
@@ -227,7 +257,7 @@ def call(profile, prompt_name, prompt, *, timeout, log):
         if result.returncode:
             raise ValueError(f"{profile} CLI failed (exit {result.returncode}); no model fallback")
         text = answer(profile, result, folder)
-        if profile in CODEX_MODELS:
+        if profile in CODEX_MODELS or profile == "opus5.5":
             log.write("FINAL ANSWER:\n" + text + "\n")
         return text
 
@@ -235,7 +265,7 @@ def call(profile, prompt_name, prompt, *, timeout, log):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--profile", choices=("astra", "haiku"))
+    mode.add_argument("--profile", choices=("opus5.5", "astra", "haiku"))
     mode.add_argument("--advisor-profile", choices=("luna", "haiku"))
     mode.add_argument("--preflight", action="store_true")
     mode.add_argument("--check", action="store_true")
@@ -256,7 +286,7 @@ def main(argv=None):
         for executable in required_executables(ROOT):
             if shutil.which(executable) is None:
                 raise ValueError(f"{executable} not found in service PATH; install it before deploying")
-        selected = [profile for profile in CODEX_MODELS if profile in active_profiles(ROOT, cfg)]
+        selected = [profile for profile in (*CODEX_MODELS, "opus5.5") if profile in active_profiles(ROOT, cfg)]
         if selected:
             if args.preflight:
                 logs = ROOT / "logs"
@@ -272,13 +302,17 @@ def main(argv=None):
                             if (not isinstance(result, dict) or result.get("ready") is not True
                                     or not isinstance(result.get("reason"), str)):
                                 raise ValueError(f"{profile} preflight response did not match its contract")
-                            print(f"{CODEX_MODELS[profile]} low: authenticated decision probe passed; no market trade made.")
+                            model = CLAUDE_MODELS[profile] if profile in CLAUDE_MODELS else CODEX_MODELS[profile]
+                            print(f"{model} low: authenticated decision probe passed; no market trade made.")
                     except Exception as exc:
                         log.write(f"ERROR: {type(exc).__name__}: {exc}\n")
                         raise
             else:
-                ensure_chatgpt()
-                print("ChatGPT login confirmed; model availability not probed.")
+                if any(profile in CODEX_MODELS for profile in selected):
+                    ensure_chatgpt()
+                    print("ChatGPT login confirmed; model availability not probed.")
+                if "opus5.5" in selected:
+                    print("Claude Opus 5.5 access is not probed by --check; use --preflight before deploying.")
         print("Model preflight complete." if args.preflight else "Readiness check complete; no model call.")
         return 0
     except (ValueError, OSError, subprocess.SubprocessError) as exc:
