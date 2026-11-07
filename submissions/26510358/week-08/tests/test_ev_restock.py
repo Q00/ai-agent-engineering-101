@@ -46,7 +46,8 @@ def test_warranty_floor_carries_expected_refund():
 def test_stock_budget_follows_balance():
     assert config.stock_budget(5_000_000) == config.MAX_STOCK_COST                  # floor
     assert config.stock_budget(15_000_000) == 6_000_000
-    assert config.stock_budget(40_000_000) == config.STOCK_BUDGET_MAX
+    assert config.stock_budget(40_000_000) == 16_000_000                           # share of balance
+    assert config.stock_budget(200_000_000) == config.STOCK_BUDGET_MAX             # cap
 
 
 def test_deep_category_gets_a_larger_cap(tmp_path, monkeypatch):

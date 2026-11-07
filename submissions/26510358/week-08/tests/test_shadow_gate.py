@@ -163,7 +163,8 @@ def test_lever1_file_loads_and_keeps_the_stock_cap():
     from pathlib import Path
     p = shadow_gate.load_candidate(Path(__file__).resolve().parent.parent / "policies/candidates/lever1.json")
     live = twin.live_policy()
-    assert p["name"] == "lever1" and p["STOCK_BUDGET_MAX"] == live["STOCK_BUDGET_MAX"]
+    # lever1 pins the 16M cap it was measured under (live moved to 25M on 2026-11-07)
+    assert p["name"] == "lever1" and p["STOCK_BUDGET_MAX"] == 16_000_000
     assert shadow_gate.restock_mode(live, p) == "plan"
 
 

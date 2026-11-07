@@ -22,7 +22,10 @@ START_CAPITAL = 5_000_000
 CASH_RESERVE = 1_200_000            # never let a restock take the balance below this
 MAX_STOCK_COST = 3_000_000          # stock budget floor, and the base of the coverage (explore) budget
 STOCK_BUDGET_SHARE = 0.40           # stock on hand may cost up to this share of the balance (2026-11-04: balance
-STOCK_BUDGET_MAX = 16_000_000       #   15.8M held 1.6M of stock while mattress EV said 20 units and the cap said 3)
+STOCK_BUDGET_MAX = 25_000_000       #   15.8M held 1.6M of stock while mattress EV said 20 units and the cap said 3)
+                                    # 16M -> 25M 2026-11-07: every supply window 07:05-09:28 KST ended at 15.5-16.0M,
+                                    #   mattress/sofa turned away 9.2/2.7 req/h, balance 161M idle, furniture margin
+                                    #   16-17% over cost; our market share fell 3% -> 1.2% while profit/h fell 3.5M -> 1.5M
                                     # 8M -> 16M 2026-11-05: stock sat at the 8M cap from 11-04 18:00 with balance 57M,
                                     #   sofa turned away 8-15 req/h; 12 h market 7.75B, our share 1.4%, top shops buy 450-880M
 EXPLORE_SHARE = 0.25                # share of MAX_STOCK_COST for coverage of categories with no evidence yet
@@ -49,8 +52,9 @@ FOOD_LEFTOVER_RISK = 0.15           # same for long-life food that does not sell
 # --- shop: premium pilot (2026-11-04): goods listed at 800k+ sell 36/h across only 9 shops at 0.80 of list,
 #     we sold none. A separate small budget, so a slow pilot cannot starve the main stock.
 PREMIUM_MIN_LIST = 800_000          # a goods SKU at or above this list price is premium
-PREMIUM_BUDGET = 8_000_000          # worst-case cost of premium stock on hand, outside the normal stock budget
-PREMIUM_MAX_UNITS = 10              # premium units on hand at most (2.5M/3 until 2026-11-05: 98 sold in 24 h, 0 held)
+PREMIUM_BUDGET = 12_000_000         # worst-case cost of premium stock on hand, outside the normal stock budget
+                                    #   (8M/10 until 2026-11-07: 695 premium lines skipped at the budget, 7.5-8.0M held)
+PREMIUM_MAX_UNITS = 15              # premium units on hand at most (2.5M/3 until 2026-11-05: 98 sold in 24 h, 0 held)
 PREMIUM_HOURS = 12                  # market sales window for picking premium SKUs
 PREMIUM_MIN_SOLD = 10               # a premium SKU needs this many market sales in the window
 
