@@ -18,6 +18,12 @@ CAUTIOUS_DAILY_LIMIT = 96
 MAINTENANCE_INTERVAL = 1800
 MAINTENANCE_DAILY_LIMIT = 48
 TARGET_POST_PERCENTILE = .90
+STRATEGY_REVIEW_SECONDS = 24 * 3600
+FORUM_THEMES = {
+    'warranty':'보증 가격',
+    'shelf_life':'유통기한 값',
+    'concentration':'판매처 집중도',
+}
 
 
 def publication_policy(board, name, negative_feedback=False, now=None, intel=None):
@@ -74,7 +80,9 @@ def warranty_premium_post(intel,catalog,now):
         groups.setdefault((row['sku'],row['grade']),{0:[],1:[]})[int(row['warranty']>0)].append(row)
     choices=[(len(v[0])+len(v[1]),k,v) for k,v in groups.items() if len(v[0])>=3 and len(v[1])>=3]
     if not choices:return None
-    _,(sku,grade),parts=max(choices);plain=int(median([r['price'] for r in parts[0]]));covered=int(median([r['price'] for r in parts[1]]))
+    choices.sort(reverse=True,key=lambda row:row[0]);cursor=intel.get('buyer_warranty_topic_cursor',0)
+    _,(sku,grade),parts=choices[cursor%len(choices)];intel.put('buyer_warranty_topic_cursor',cursor+1)
+    plain=int(median([r['price'] for r in parts[0]]));covered=int(median([r['price'] for r in parts[1]]))
     premium=round((covered/plain-1)*100) if plain else 0;refs=[r['seq'] for r in parts[0][:2]+parts[1][:2]]
     text=(f"[시장 인사이트 · 보증 가격] 신기한 점입니다. {_name(catalog,sku)} [{sku}] {grade}등급의 최근 6시간 정산에서\n"
           f"무보증 {len(parts[0])}건 중앙 {plain:,}원 vs 보증 포함 {len(parts[1])}건 중앙 {covered:,}원: 관측 프리미엄 {premium:+d}%.\n"
@@ -89,7 +97,9 @@ def shelf_life_post(intel,catalog,now):
         if catalog.get(row['sku'],{}).get('kind')=='food':groups.setdefault((row['sku'],row['grade']),[]).append(row)
     choices=[(len(v),k,v) for k,v in groups.items() if len(v)>=8]
     if not choices:return None
-    _,(sku,grade),sample=max(choices);cut=median([r['hours'] for r in sample])
+    choices.sort(reverse=True,key=lambda row:row[0]);cursor=intel.get('buyer_shelf_topic_cursor',0)
+    _,(sku,grade),sample=choices[cursor%len(choices)];intel.put('buyer_shelf_topic_cursor',cursor+1)
+    cut=median([r['hours'] for r in sample])
     short=[r for r in sample if r['hours']<=cut];long=[r for r in sample if r['hours']>cut]
     if len(short)<3 or len(long)<3:return None
     short_price=int(median([r['price'] for r in short]));long_price=int(median([r['price'] for r in long]));premium=round((long_price/short_price-1)*100) if short_price else 0
@@ -111,24 +121,68 @@ def concentration_post(intel,catalog,now):
             largest=max(sum(r['shop']==shop for r in sample) for shop in shops)
             choices.append((largest/len(sample),len(sample),sku,sample,len(shops)))
     if not choices:return None
-    share,n,sku,sample,shop_count=max(choices);prices=sorted(r['price'] for r in sample);refs=[r['seq'] for r in sample[:3]]
+    choices.sort(reverse=True);cursor=intel.get('buyer_concentration_topic_cursor',0)
+    share,n,sku,sample,shop_count=choices[cursor%len(choices)];intel.put('buyer_concentration_topic_cursor',cursor+1)
+    prices=sorted(r['price'] for r in sample);refs=[r['seq'] for r in sample[:3]]
     text=(f"[시장 구조 · 판매처 집중도] 신기한 점입니다. {_name(catalog,sku)} [{sku}]는 최근 6시간 {n}건이 {shop_count}개 판매처에서 정산됐지만, "
           f"가장 큰 한 곳의 비중이 {share*100:.0f}%였습니다. 가격 범위 {prices[0]:,}~{prices[-1]:,}원, 중앙 {int(median(prices)):,}원.\n"
           "거래가 한곳에 몰린 상품은 대표 시세가 특정 판매처 정책에 좌우될 수 있습니다. 여러 견적을 비교하는 데 도움이 되었으면 합니다.")
     return text,refs
 
 
-def forum_gap_post(intel):
-    """Publish useful statistics absent from recent high-volume forum themes."""
-    now=time.time();catalog=read_json(intel.root/'catalog.json',{});forum=intel.source('forum',[]) or []
+def forum_topic_counts(intel,own_name):
+    forum=intel.source('forum',[]) or []
     if isinstance(forum,dict):forum=forum.get('posts',[])
-    text=' '.join(str(p.get('text','')) for p in forum if p.get('role')=='buyer')
-    candidates=[(text.count('보증 가격'),warranty_premium_post),
-                (text.count('유통기한 값'),shelf_life_post),
-                (text.count('판매처 집중도'),concentration_post)]
-    for _,builder in sorted(candidates,key=lambda item:item[0]):
-        result=builder(intel,catalog,now)
-        if result:return result
+    text=' '.join(str(p.get('text','')) for p in forum
+                  if p.get('role')=='buyer' and p.get('author')!=own_name)
+    return {theme:text.count(marker) for theme,marker in FORUM_THEMES.items()}
+
+
+def forum_strategy(intel,buyer,own_name,now=None):
+    """Review every 24 h; keep a working, uncontested theme unchanged."""
+    now=time.time() if now is None else now;counts=forum_topic_counts(intel,own_name)
+    state=intel.get('buyer_forum_strategy') or {}
+    if not state:
+        theme=min(counts,key=lambda key:(counts[key],key))
+        state={'theme':theme,'started':now,'forum':buyer.get('forum',0),
+               'all':buyer.get('all',0),'competitor_mentions':counts[theme],'reviews':0}
+        intel.put('buyer_forum_strategy',state);return theme
+    if now-state.get('started',0)<STRATEGY_REVIEW_SECONDS:return state['theme']
+    forum_now=buyer.get('forum') if isinstance(buyer.get('forum'),(int,float)) else 0
+    all_now=buyer.get('all') if isinstance(buyer.get('all'),(int,float)) else 0
+    theme=state.get('theme','warranty');responded=counts.get(theme,0)>=state.get('competitor_mentions',0)+3
+    working=forum_now>=state.get('forum',forum_now) and all_now>=state.get('all',all_now)
+    decision='KEEP' if working and not responded else 'ROTATE'
+    if decision=='ROTATE':
+        alternatives=[key for key in counts if key!=theme]
+        theme=min(alternatives,key=lambda key:(counts[key],key)) if alternatives else theme
+    next_state={'theme':theme,'started':now,'forum':forum_now,'all':all_now,
+                'competitor_mentions':counts.get(theme,0),'reviews':state.get('reviews',0)+1,
+                'last_decision':decision,'previous_theme':state.get('theme')}
+    intel.put('buyer_forum_strategy',next_state)
+    intel.decision('buyer_forum_strategy',{'decision':decision,'theme':theme,
+        'previous_theme':state.get('theme'),'competitor_response':responded,
+        'forum_non_decreasing':forum_now>=state.get('forum',forum_now),
+        'all_non_decreasing':all_now>=state.get('all',all_now)})
+    return theme
+
+
+def forum_gap_post(intel,buyer,own_name):
+    """Publish the selected missing statistic without strategy churn inside 24 h."""
+    now=time.time();catalog=read_json(intel.root/'catalog.json',{})
+    builders={'warranty':warranty_premium_post,'shelf_life':shelf_life_post,
+              'concentration':concentration_post}
+    selected=forum_strategy(intel,buyer,own_name,now)
+    order=[selected]+[theme for theme in builders if theme!=selected]
+    for theme in order:
+        result=builders[theme](intel,catalog,now)
+        if result:
+            if theme!=selected:
+                state=intel.get('buyer_forum_strategy',{});state.update(theme=theme,started=now,
+                    competitor_mentions=forum_topic_counts(intel,own_name).get(theme,0),
+                    previous_theme=selected,last_decision='ROTATE_NO_SAMPLE')
+                intel.put('buyer_forum_strategy',state)
+            return result
     return None
 
 
@@ -154,7 +208,7 @@ def queue_update(intel):
         research=True
         refs=[];text='';purchase_ledger=None
         post_kind='purchase'
-        digest=forum_gap_post(intel) if intel.get('posts_today',0)%3==1 else None
+        digest=forum_gap_post(intel,buyer,name) if intel.get('posts_today',0)%3==1 else None
         if digest:
             text,refs=digest;post_kind='forum_gap_analysis'
         paid=None if text else latest_paid_post(intel)

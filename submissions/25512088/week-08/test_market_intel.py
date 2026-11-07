@@ -8,7 +8,7 @@ import httpx
 from market_intel import Intel,BUYER_SCORE_WEIGHTS
 from seller_strategy import sale_quote,restock_plan,cost_floor,protected_floor
 from referral_program import Program
-from buyer_publicist import queue_update,publication_policy
+from buyer_publicist import queue_update,publication_policy,forum_strategy,STRATEGY_REVIEW_SECONDS
 from buyer_r3 import Buyer
 from buyer_memory import Memory
 
@@ -129,5 +129,19 @@ class IntelligenceTests(unittest.TestCase):
         self.assertEqual(publication_policy(board,'25512088')[:2],(900,96))
         board['buyers'][0].update(forum=.9,posts=300)
         self.assertEqual(publication_policy(board,'25512088')[:2],(1800,48))
+
+    def test_forum_strategy_reviews_daily_but_keeps_winner_without_response(self):
+        buyer={'forum':.88,'all':.76};theme=forum_strategy(self.i,buyer,'25512088',now=1000)
+        same=forum_strategy(self.i,{'forum':.89,'all':.77},'25512088',
+                            now=1000+STRATEGY_REVIEW_SECONDS+1)
+        self.assertEqual(same,theme)
+        state=self.i.get('buyer_forum_strategy');self.assertEqual(state['last_decision'],'KEEP')
+        forum=[{'role':'buyer','author':f'rival-{n}','text':f"{__import__('buyer_publicist').FORUM_THEMES[theme]} 분석"}
+               for n in range(3)]
+        self.i.save_source('forum',forum)
+        changed=forum_strategy(self.i,{'forum':.89,'all':.77},'25512088',
+                               now=state['started']+STRATEGY_REVIEW_SECONDS+1)
+        self.assertNotEqual(changed,theme)
+        self.assertEqual(self.i.get('buyer_forum_strategy')['last_decision'],'ROTATE')
 
 if __name__=='__main__':unittest.main()
