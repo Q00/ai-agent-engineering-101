@@ -260,7 +260,9 @@ STRATEGY = {
                                           "min_pay_rate": {"type": "number", "minimum": 0, "maximum": 0.9},
                     # 11/6 22:5x: no deal whose expected saved is under our board average + value_margin
                     "value_gate": {"type": "boolean"},
-                    "value_margin": {"type": "number", "minimum": -0.1, "maximum": 0.2}}}}},
+                    "value_margin": {"type": "number", "minimum": -0.1, "maximum": 0.2},
+                    # 11/7 11:xx: skip a shop+SKU the kit refused to pay for this many hours (0 = only 'not in stock')
+                    "pay_refused_skip_h": {"type": "number", "minimum": 0, "maximum": 24}}}}},
     },
 }
 

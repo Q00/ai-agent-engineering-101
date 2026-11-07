@@ -286,6 +286,8 @@ class BuyerCore:
             blocked = {**{n: "unsigned receipts" for n in reflex.unsigned(ctx.now())}, **blocked}
         shops = {}
         no_unit = reflex.stock_refused(ctx.now())
+        if self.playbook()["pay_refused_skip_h"]:
+            no_unit |= reflex.pay_refused(self.playbook()["pay_refused_skip_h"], ctx.now())
         for s in self.shops_in:
             skus = [x["sku"] for x in s.get("offers") or [] if x.get("qty") and (not acceptable or x["sku"] in acceptable)
                     and (s["name"], x["sku"]) not in no_unit]
@@ -349,7 +351,8 @@ class BuyerCore:
                 "goods_msg_timeout": pb.get("goods_msg_timeout", 20), "food_msg_timeout": pb.get("food_msg_timeout", 8),
                 "shelf_guard": pb.get("shelf_guard", False), "skip_unsigned": pb.get("skip_unsigned", False),
                 "min_pay_rate": pb.get("min_pay_rate", 0),
-                "value_gate": pb.get("value_gate", False), "value_margin": pb.get("value_margin", 0.02)}
+                "value_gate": pb.get("value_gate", False), "value_margin": pb.get("value_margin", 0.02),
+                "pay_refused_skip_h": pb.get("pay_refused_skip_h", 0)}
 
     def bar(self):
         """The expected saved a deal must reach: our board average plus the margin (None when the gate is off)."""

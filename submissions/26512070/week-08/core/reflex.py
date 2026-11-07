@@ -80,6 +80,8 @@ def read_payments(market_dir, now=None):
         else:
             s["unpaid"] += 1
             s["last_refusal"] = {"ts": now or time.time(), "order": p.get("order"), "reason": p.get("reason")}
+            if p.get("item"):                     # every refusal, by SKU (buyer.pay_refused_skip_h reads it)
+                s.setdefault("pay_refused", {})[p["item"]] = now or time.time()
             if "is not in stock" in str(p.get("reason")) and p.get("item"):
                 s.setdefault("stock_refused", {})[p["item"]] = now or time.time()
     r["payments_offset"] = r.get("payments_offset", 0) + done
@@ -94,6 +96,15 @@ def blocked():
 
 
 STOCK_RETRY = 2 * 3600   # a SKU a shop agreed on but could not ship is not asked of that shop again for this long
+
+
+def pay_refused(hours, now=None):
+    """{(shop name, sku)} whose agreed deal the kit refused to pay within the last `hours` (any reason: food hours
+    short, grade under the policy, no certificate). 11/7 11:xx: 103 of 250 agreed deals were refused and each lost its
+    order - the buyer exits before the kit pays, so it learns only for the next order."""
+    now = now or time.time()
+    return {(n, k) for n, s in load()["shops"].items() for k, t in (s.get("pay_refused") or {}).items()
+            if now - t < hours * 3600}
 
 
 STOCK_MISS_RETRY = 30 * 60   # a shop that said it has none of a SKU it lists is not asked for it again this long
