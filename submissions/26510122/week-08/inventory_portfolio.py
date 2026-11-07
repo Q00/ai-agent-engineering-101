@@ -26,7 +26,7 @@ from inventory_observation import timestamp, unserved_exact_stockouts
 from market_memory import record
 from replenishment_plan import MAX_CATEGORY_STOCK, inventory_risk, product_signature, save
 from supply_reconciliation import reconcile, pending_quantity, partial_from_closed_window, reserved_quantity
-from stock_policy import replenishment_candidates, PROVEN_STOCK
+from stock_policy import replenishment_candidates, PROVEN_STOCK, MIDPRICE_MAX
 from capital_policy import (MAX_UNIT_COST, GROWTH_WINDOW_BUDGET, GROWTH_EXPLORATION_BUDGET,
                             operating_policy, target_inventory_cost, WINDOW_MAX_UNITS)
 
@@ -40,7 +40,7 @@ WINDOW_BUDGET = GROWTH_WINDOW_BUDGET
 ROLLING_BUDGET = GROWTH_EXPLORATION_BUDGET
 MAX_MAINTAINED_SKUS = 8
 STOCKOUT_TRIAL_CANDIDATES = 3
-POLICY_VERSION = 21
+POLICY_VERSION = 22
 GROWTH_SPEND_SHARE = .50
 DAY = 86400
 READY = Path('state/procurement-ready.json')
@@ -321,7 +321,13 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                                 'budget_or_capacity_limited':qty<option['qty']})
         winner['target_options'] = bounded
     winners = [r for r in winners if r['target_options']]
-    rows = (candidates(catalog, inventory, history, now, {i['sku'] for i in recent} | set(pending_stocks), rng, max_cost=exploration_budget)
+    # Keep one high-cost unit from consuming the window while affordable
+    # repeat midprice sellers still have forecast-backed stock deficits.
+    midprice_focus = any(r.get('midprice_priority') and r['cost_ceiling_per_unit'] <= MIDPRICE_MAX for r in winners)
+    if midprice_focus:
+        winners = [r for r in winners if r['cost_ceiling_per_unit'] <= MIDPRICE_MAX]
+    exploration_unit_ceiling = min(exploration_budget, MIDPRICE_MAX) if midprice_focus else exploration_budget
+    rows = (candidates(catalog, inventory, history, now, {i['sku'] for i in recent} | set(pending_stocks), rng, max_cost=exploration_unit_ceiling)
             if choice['mode'] == 'explore' and operating['allow_new_skus'] else [])
     maintained_skus = {r['sku'] for r in winners}
     rows = [r for r in rows if r['cost_ceiling'] <= exploration_budget and r['sku'] not in maintained_skus]
@@ -398,6 +404,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                   'note':'Pre-open approval only; no funds reserved until fresh execution checks. '
                          'Forecast protection includes the upcoming window and its next replenishment opportunity.'},
               'spend_guidance': {'target_krw':spend_target, 'share':GROWTH_SPEND_SHARE if spend_target is not None else None,
+                  'midprice_window_unit_cost_ceiling_krw': MIDPRICE_MAX if midprice_focus else None,
                   'definition':'Growth target is half the smaller of safe cash after buffers/pending and current window capacity. '
                                'Compare estimated_spend_krw at observed surge against this soft target; risk limits use cost ceilings. '
                                'Use sales, exposure, eligible missed demand and holding/expiry risk. '
@@ -600,6 +607,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
         allocation_behavior={'review_required':review_required,
             'offered_proven_skus':sum(not w['second_trial'] for w in winners),
             'selected_proven_skus':sum(not r['second_trial'] for r in restock_orders),
+            'midprice_window_unit_cost_ceiling_krw': MIDPRICE_MAX if midprice_focus else None,
             'buffered_proven_skus':sum(not r['second_trial'] and (r.get('coverage_hours') or 0)>=1 for r in restock_orders),
             'omitted_proven_skus':[w['sku'] for w in winners if not w['second_trial'] and w['sku'] not in {r['sku'] for r in restock_orders}],
             'novel_skus':len(skus)},

@@ -86,6 +86,29 @@ class PortfolioTests(unittest.TestCase):
             ('s8', {'unserved_exact_tasks_12h': 4, 'quantity': 1}),
         ])
 
+    def test_midprice_deficit_keeps_costly_units_out_of_that_window(self):
+        now = 1000
+        products = catalog()
+        products['s0']['list_price'] = 90_000
+        products['s2']['list_price'] = 900_000
+        products['s4']['list_price'] = 800_000
+        inv = inventory(0)
+        history = []
+        for sku, paid, cost in [('s0', 70_000, 50_000), ('s2', 700_000, 500_000)]:
+            for index in range(2):
+                unit = f'{sku}-sold-{index}'
+                history += [
+                    {'event': 'receipt_signed', 'at': now-100, 'unit': unit, 'cost': cost},
+                    {'event': 'settled', 'at': now-80, 'unit': unit, 'sku': sku, 'ledger': unit, 'price': paid},
+                ]
+        model = Mock(return_value={'action': 'hold', 'reason': 'fixture'})
+        portfolio.run(inv, products, history, now, model=model, refresh=lambda: (inv, now, True),
+                      rng=random.Random(1), state_path=self.path)
+        prompt = model.call_args.args[1]
+        self.assertEqual(prompt['spend_guidance']['midprice_window_unit_cost_ceiling_krw'], 300_000)
+        self.assertEqual([row['sku'] for row in prompt['replenishment_candidates']], ['s0'])
+        self.assertTrue(all(row['cost_ceiling'] <= 300_000 for row in prompt['candidates']))
+
     def test_epsilon_draw_is_persistent_not_redrawn_per_poll_or_restart(self):
         model = Mock(side_effect=approve)
         first = self.run_portfolio(model=model)  # seed1 => .134 < .30
