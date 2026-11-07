@@ -3,12 +3,14 @@ import json
 import os
 import sqlite3
 import time
+import uuid
 from pathlib import Path
 from statistics import median
 import httpx
 
 WINDOW = 6 * 3600
-BUYER_SCORE_WEIGHTS={'surplus':.50,'forum':.30,'deals':.10,'posts':.10}
+BUYER_SCORE_WEIGHTS={'saved':.50,'forum':.30,'deals':.10,'posts':.10}
+SHOP_SCORE_WEIGHTS={'book':.50,'revenue':.30,'stars':.20}
 
 
 def read_json(path, default):
@@ -35,6 +37,9 @@ class Intel:
         CREATE TABLE IF NOT EXISTS observations(id INTEGER PRIMARY KEY, ts REAL, shop TEXT,
           sku TEXT, grade TEXT, hours REAL, warranty REAL, price INTEGER, kind TEXT);
         CREATE TABLE IF NOT EXISTS decisions(id INTEGER PRIMARY KEY, ts REAL, role TEXT, body TEXT);
+        CREATE TABLE IF NOT EXISTS evolution_events(
+          id INTEGER PRIMARY KEY, ts REAL, correlation TEXT, role TEXT,
+          phase TEXT, rule_version TEXT, body TEXT);
         ''')
         columns={r[1] for r in self.db.execute('PRAGMA table_info(trades)')}
         if 'buyer' not in columns:
@@ -153,6 +158,15 @@ class Intel:
         with self.db:
             self.db.execute('INSERT INTO decisions(ts,role,body) VALUES(?,?,?)',(time.time(),role,json.dumps(body)))
 
+    def evolution(self, role, phase, body, correlation=None, rule_version='round3-patch3.5'):
+        """Append a bounded structured event. Callers must pass summaries, never raw prompts/secrets."""
+        correlation=correlation or str(uuid.uuid4())
+        with self.db:
+            self.db.execute('''INSERT INTO evolution_events
+                (ts,correlation,role,phase,rule_version,body) VALUES(?,?,?,?,?,?)''',
+                (time.time(),correlation,role,phase,rule_version,json.dumps(body,ensure_ascii=False)))
+        return correlation
+
     def write_report(self):
         board=self.source('board',{}) or {}
         p=read_json(Path(__file__).with_name('referral_policy.json'),{})
@@ -167,11 +181,15 @@ class Intel:
                 'top_observed_skus':[dict(r) for r in self.db.execute('SELECT sku,COUNT(*) sales,COUNT(DISTINCT shop) shops FROM trades WHERE ts>? GROUP BY sku ORDER BY sales DESC LIMIT 10',(time.time()-WINDOW,))],
                 'recent_buyer_observations':[dict(r) for r in self.db.execute('SELECT sku,kind,COUNT(*) n FROM observations WHERE ts>? GROUP BY sku,kind',(time.time()-3600,))],
                 'seller_funnel':[dict(r) for r in self.db.execute('SELECT role,COUNT(*) n FROM decisions WHERE ts>? GROUP BY role',(time.time()-3600,))],
+                'evolution_counts':[dict(r) for r in self.db.execute(
+                    'SELECT role,phase,COUNT(*) n FROM evolution_events WHERE ts>? GROUP BY role,phase',
+                    (time.time()-86400,))],
                 'coverage':'Observed ledger sample, not complete market history. Forum text is unverified.'}
         report['buyer_score_weights']=BUYER_SCORE_WEIGHTS
+        report['shop_score_weights']=SHOP_SCORE_WEIGHTS
         report['buyer_score_rule_status']='configured from live Round-3 rule; endpoint reachability recorded separately'
         deficits=[]
-        for role,fields in [('shops',('profit','revenue','stars')),('buyers',('surplus','forum','deals','posts'))]:
+        for role,fields in [('shops',('book','revenue','stars')),('buyers',('saved','forum','deals','posts'))]:
             for me in mine[role]:
                 for field in fields:
                     values=[r[field] for r in board.get(role,[]) if isinstance(r.get(field),(int,float))]

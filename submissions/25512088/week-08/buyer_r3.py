@@ -418,6 +418,12 @@ def main():
                     out=dict(shop='',receipt=None,stars=3,review='Market ownership unavailable; no purchase attempted')
                 else:
                     out=Buyer(order,memory,client,json.loads((Path(args.state)/'catalog.json').read_text()),intel).run(shops)
+        intel.evolution('buyer','result',{
+            'order':order.get('order'),'kind':order.get('kind'),
+            'acceptable_skus':len(order.get('acceptable',[])),
+            'outcome':'receipt' if out.get('receipt') else 'no_receipt',
+            'reason':out.get('review','')[:160]
+        },correlation=str(order.get('order') or uuid.uuid4()))
         print(json.dumps(out,ensure_ascii=False),flush=True)
     finally:
         memory.close()

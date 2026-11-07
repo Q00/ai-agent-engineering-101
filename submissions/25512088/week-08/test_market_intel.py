@@ -72,7 +72,7 @@ class IntelligenceTests(unittest.TestCase):
         before=self.i.reliability('url');self.i.observe('url','x','unavailable')
         self.assertLess(self.i.reliability('url'),before)
     def test_live_buyer_score_policy_weights_include_forum_and_posts(self):
-        self.assertEqual(BUYER_SCORE_WEIGHTS,{'surplus':.50,'forum':.30,'deals':.10,'posts':.10})
+        self.assertEqual(BUYER_SCORE_WEIGHTS,{'saved':.50,'forum':.30,'deals':.10,'posts':.10})
     def test_offline_refresh_preserves_data(self):
         self.i.ingest(self.rows());self.i.put('cursor',4)
         with httpx.Client(transport=httpx.MockTransport(lambda r:httpx.Response(503))) as client:
