@@ -59,6 +59,8 @@ ANCHOR, ASK_OVER = True, 0.02
 SOLO_ON = False          # the uncontested asks and floors (SOLO_ASK, SOLO_FLOOR, learn_solo): off since 11/6 12:40
 C_WARRANTY = True        # refurbished goods are offered with the warranty only: without one, 49-80% of our agreed C deals
                          # went unpaid (buyers' kits accept A and B only without a warranty)
+STUCK_HOURS, MAX_LOSS = 6, 0.05   # 11/7 12:50: still over its market at cost after this long: at the market, never
+                                  # more than MAX_LOSS under cost (27 dear units, 23.1M at cost, sat over their market)
 DEAD_HOURS = 2           # 3 until 11/6 15:40 (96 of 238 goods units held 3 h+); a goods unit held this long whose floor sits over its market + 0.01: floor at its cost (plus the
                          # expected refund under a warranty), asked at the market; stock counts at cost in the book, so
                          # selling at cost loses nothing and frees the line (11/6: 50 such units, 40M at cost)
@@ -278,12 +280,16 @@ def plan(unit: dict, now: float | None = None, warranty: bool = False, adjust: f
     if dead:                                                    # at cost (with its expected refund), asked at the market
         floor = min(floor, math.ceil(cost / (1 - BREAK[g])) if w else math.ceil(cost))
         start = sref
+    stuck = (dead and (now - unit.get("supplied_at", now)) >= STUCK_HOURS * 3600 and floor / lp > sref + 0.005)
+    if stuck:                                                   # 11/7: still over its market at cost: at the market,
+        floor = max(round(lp * sref), math.ceil(cost * (1 - MAX_LOSS)))   # at most MAX_LOSS under its cost
+        start = sref
     if in_line and solo and SOLO_ON and clearance is None and not held_down and not dead:
         hold = SOLO_FLOOR[g] + (extra[g] / 2 if w else 0)
         floor = max(floor, round(lp * (min(hold, solo_floor) if solo_floor is not None else hold)))
     ask = max(floor, round(lp * start))
     return {"ask": ask, "floor": floor, "grade": g, "hours_left": hours_left(unit, now), "age_days": age,
-            "at_cost": clearance is None and not held_down and not dead, "dead": dead, "anchored": anchored,
+            "at_cost": clearance is None and not held_down and not dead, "dead": dead, "stuck": stuck, "anchored": anchored,
             "warranty_hours": WARRANTY_HOURS if w else None, "ref": ref, "late": late,
             "sku_ref": sref, "nudge": nudge, "solo": bool(in_line and solo and SOLO_ON),
             "solo_floor": solo_floor if in_line and solo and SOLO_ON else None}

@@ -100,6 +100,8 @@ LINE = {                 # the premium line: SKU -> the most units held (11/4 ev
 LINE_LINES = 8           # line products bought in one run at most (4 until 21:45, 7 until 23:40, 9 until 11/5 01:00, when
                          # the shelf's SHELF_LINES made 8 of the kit's 10 the most anyway), and never more than
 LINE_SHARE = 0.9         # LINE_SHARE of the run's lines nor of the balance above RESERVE (0.5 until 21:45, 0.75 until 23:40)
+LINE_SELLABLE_MIN = 2    # 11/7 12:50: units it can sell kept on hand at least (see sellable())
+SELLABLE_SLACK = 0.005
 LINE_PACE = 3600         # a line product is kept at 1 + what we sold of it in this long (a unit sells out within
                          # minutes, so our sales count supply as much as demand: one more than they asks for more)
 LINE_MAX_UNITS = 24      # 16 until 11/6 15:40 (5 line products sat at 16 selling 5-8 an hour), 12 until 11/6 13:10, 10 until 11/6 (Kiro 2.0: deeper stock of what sells); 5 until 11/4 23:40 (the best seller sold 20 in 1.5 h at a cap of 5; others sold it 90 an hour)
@@ -307,7 +309,25 @@ def load_line(data) -> dict:
     return LINE
 
 
-def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: float) -> list:
+def sellable(u: dict, summary: dict | None, extra: dict | None = None) -> bool:
+    """A goods unit whose floor (cost + MARGIN, its grade's warranty extra) is not over the SKU's market of that grade
+    (others_6h, with the warranty, 10+ settles); food, or no market known: True. (11/7: units costing over 72% of list
+    closed 6% of our talks on dear goods.)"""
+    lp = u.get("list_price") or 0
+    if u.get("kind") != "goods" or not lp:
+        return True
+    g = u.get("grade") if u.get("grade") in ("A", "B", "C") else "A"
+    cells = (((summary or {}).get("by_sku") or {}).get(u.get("sku")) or {}).get("others_6h") or {}
+    d = cells.get(g + "_w") or cells.get(g) or {}
+    m = d.get("median") if (d.get("n") or 0) >= 10 and isinstance(d.get("median"), (int, float)) else None
+    if m is None:
+        return True
+    floor = (u.get("cost") or 0) / lp * (1 + pricing.MARGIN) + (extra or pricing.WARRANTY_EXTRA).get(g, 0)
+    return floor <= m + SELLABLE_SLACK
+
+
+def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: float, summary: dict | None = None,
+              extra: dict | None = None) -> list:
     """[(sku, units to buy)] for the premium line: 1 + our sales of it in the last LINE_PACE seconds (one unit to
     start), up to the product's cap; nothing more for one held LINE_STALL seconds with no sale, nor near the end.
     (Until 21:45 on 11/4 the pace over 3 hours covered two cycles: 3 sold in half an hour still meant one unit.)"""
@@ -315,6 +335,7 @@ def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: f
             if s in catalog and isinstance(n, int) and not isinstance(n, bool) and 0 < n <= LINE_MAX_UNITS}
     if not line or common.ROUND_END - now <= LINE_STOP:
         return []
+    units = [u for u in units if u.get("sku") not in line or sellable(u, summary, extra)]   # 11/7: what it can sell
     held = Counter(u["sku"] for u in units if u.get("sku") in line)
     recent = Counter(s["sku"] for s in sales if s.get("sku") in line and s.get("ts", 0) >= now - LINE_PACE)
     alive = {}                                           # the last sale of it, or the arrival of the oldest unit held
@@ -329,7 +350,7 @@ def line_gaps(line: dict | None, catalog: dict, units: list, sales: list, now: f
     for sku, most in line.items():
         if held[sku] and now - alive.get(sku, now) > LINE_STALL:
             continue
-        target = min(most, 1 + recent[sku])
+        target = min(most, max(LINE_SELLABLE_MIN, 1 + recent[sku]))
         if target > held[sku]:
             out.append((sku, target - held[sku]))
     new = [g for g in out if g[0] not in alive]
@@ -436,7 +457,7 @@ def plan(inv: dict, catalog: dict, demand: list, summary: dict, sales: list, ref
                 buy.append({"sku": sku, "qty": qty})
                 spend += each * qty
                 room -= 1
-    premium = line_gaps(line, catalog, units, sales, now)
+    premium = line_gaps(line, catalog, units, sales, now, summary, rules.get("warranty_extra"))
     skipped += [s for s, _ in premium if thin(s)]
     premium = [(s, n) for s, n in premium if not thin(s)]
     # the premium line first, but leaving the shelf its lines, money and room under the cap, so the shelf's refills

@@ -291,9 +291,13 @@ def test_pricing():
     check("...not grade B (its own market only)",
           pricing.plan(dict(goods_b, supplied_at=now - 3600), now, sku_market={"B": {"n": 50, "median": 0.50}}, comp_ask=0.30)["ask"] == 20748)
     dead_mk = {"A_w": {"n": 20, "median": 0.60}}
+    p = pricing.plan(dict(dear_a, supplied_at=now - 3 * 3600), now, warranty=True, in_line=True, sku_market=dead_mk)
+    check("dead stock: a unit held 3 h whose floor (63.7%) is over its market + 1% (61%): floor at cost / (1 - 2.6%), asked at the market",
+          (p["floor"], p["ask"], p["dead"], p["stuck"], p["at_cost"]) == (1_232_033, 1_232_033, True, False, False), p)
     p = pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market=dead_mk)
-    check("dead stock: a unit held 3 h+ whose floor (63.7%) is over its market + 1% (61%): floor at cost / (1 - 2.6%), asked at the market",
-          (p["floor"], p["ask"], p["dead"], p["at_cost"]) == (1_232_033, 1_232_033, True, False), p)
+    check("...held 6 h+ and still over its market at cost (11/7): at the market (60%), never more than 5% under its cost (57%)",
+          (p["floor"], p["ask"], p["stuck"]) == (1_200_000, 1_200_000, True)
+          and pricing.plan(dear_a, now, warranty=True, in_line=True, sku_market={"A_w": {"n": 20, "median": 0.50}})["floor"] == 1_140_000, p)
     p = pricing.plan(dict(dear_a, supplied_at=now - 3600), now, warranty=True, in_line=True, sku_market=dead_mk)
     check("...held only an hour: still at its floor (cost + 2% + 2.5%)", (p["floor"], p["dead"]) == (1_274_000, False), p)
     win = {"open": False, "opens_at": now + 300, "closes_at": now + 480}
@@ -461,7 +465,8 @@ def test_restock(fake: Fake):
     srow = lambda u, age=0.1: dict(unit_row(u, BED, 1_200_000, age=age), sku=sofa, list_price=2_000_000)
     rich = lambda units: inv(units, balance=20_000_000)
     out, info = restock.plan(rich(shelf), cat2, DEMAND, {}, [], [], rules, NOW, line={sofa: 3})
-    check("premium line: one unit to start, bought before the shelf's other lines", out["buy"][:1] == [{"sku": sofa, "qty": 1}]
+    check("premium line: two units to start (11/7: two it can sell on hand), bought before the shelf's other lines",
+          out["buy"][:1] == [{"sku": sofa, "qty": 2}]
           and info["line"] == 1, out["buy"][:3])
     fast = [{"sku": sofa, "ts": NOW - 0.5 * H}] * 2                         # 2 sold in the last hour: 1 + 2 held
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, fast, [], rules, NOW, line={sofa: 5})
@@ -469,7 +474,14 @@ def test_restock(fake: Fake):
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, fast, [], rules, NOW, line={sofa: 1})
     check("...never above its cap", out["buy"][0] == {"sku": sofa, "qty": 1}, out["buy"][:2])
     out, _ = restock.plan(rich(shelf), cat2, DEMAND, {}, [{"sku": sofa, "ts": NOW - 2 * H}] * 6, [], rules, NOW, line={sofa: 5})
-    check("...and sales older than an hour do not count (6 sold 2 hours ago: one unit)", out["buy"][0] == {"sku": sofa, "qty": 1}, out["buy"][:2])
+    check("...and sales older than an hour do not count (6 sold 2 hours ago: two units, the least on hand)",
+          out["buy"][0] == {"sku": sofa, "qty": 2}, out["buy"][:2])
+    mk = {"by_sku": {sofa: {"others_6h": {"A_w": {"n": 20, "median": 0.70}}}}}
+    pricey = [dict(srow(f"u-p{i}"), grade="A", cost=1_480_000, kind="goods") for i in range(3)]       # 0.74 of list
+    check("units it cannot sell (cost 74% of list: floor 78% over its market 70%) count for nothing on the line (11/7)",
+          not restock.sellable(pricey[0], mk) and restock.sellable(dict(pricey[0], cost=1_200_000), mk)
+          and restock.line_gaps({sofa: 5}, cat2, pricey, [], NOW, mk) == [(sofa, 2)]
+          and restock.line_gaps({sofa: 5}, cat2, pricey, [], NOW) == [], restock.line_gaps({sofa: 5}, cat2, pricey, [], NOW, mk))
     market = {"by_sku": {sofa: {"price_ratio": 0.78}}}
     surged = lambda f: dict(rich(shelf), surge=[{"sku": sofa, "units": 150, "factor": f}])
     out, info = restock.plan(surged(1.30), cat2, DEMAND, market, fast, [], rules, NOW, line={sofa: 5})
