@@ -23,6 +23,7 @@ PRICE_ALPHA = 0.02              # paid/list per shop: an average over about the 
 RECENT_HOURS = 3                # sales the restock looks at to choose focus SKUs, in buckets of RECENT_BUCKET seconds
 RECENT_BUCKET = 600
 RECENT_SEED = "recent_seed.json"    # the last hours of settled deals when "recent" starts, written once from the ledger
+SHOPS_SEED = "recent_shops_seed.json"   # the same for "recent_shops": bucket -> sku -> names of the shops that sold it
 
 
 def get(c, path, **params):
@@ -76,6 +77,12 @@ def update(mem, catalog, client=None):
                     cu["recent"] = json.load(f)
             except (OSError, ValueError):
                 cu["recent"] = {}
+        if "recent_shops" not in cu:
+            try:
+                with open(SHOPS_SEED, encoding="utf-8") as f:
+                    cu["recent_shops"] = json.load(f)
+            except (OSError, ValueError):
+                cu["recent_shops"] = {}
         after = mem.get("ledger", -FIRST_LOOKBACK)
         seen = set(cu["seen"])
         for _ in range(PAGES):
@@ -94,6 +101,10 @@ def update(mem, catalog, client=None):
                 if e.get("kind") == "settle" and d.get("sku"):
                     b = cu["recent"].setdefault(str(int(e["ts"] // RECENT_BUCKET)), {})
                     b[d["sku"]] = b.get(d["sku"], 0) + 1
+                    who = cu["recent_shops"].setdefault(str(int(e["ts"] // RECENT_BUCKET)), {}).setdefault(d["sku"], [])
+                    name = cu.get("url_names", {}).get(d.get("shop"), d.get("shop"))
+                    if name not in who:
+                        who.append(name)
                 deal = deal_of(e)
                 if not deal or deal[0] in seen:
                     continue
@@ -113,6 +124,7 @@ def update(mem, catalog, client=None):
         mem["ledger"] = after
         keep = (time.time() - RECENT_HOURS * 3600) // RECENT_BUCKET
         cu["recent"] = {k: v for k, v in cu["recent"].items() if int(k) >= keep}
+        cu["recent_shops"] = {k: v for k, v in cu["recent_shops"].items() if int(k) >= keep}
         cu["seen"] = list(seen)[-5000:]                 # order ids, against a settle and a result for one deal
     except (httpx.HTTPError, ValueError, KeyError) as e:
         print(f"customers: ledger not read ({type(e).__name__})")
@@ -151,6 +163,16 @@ def recent_buys(cu, catalog):
                 s = out.setdefault(catalog[sku]["category"], {})
                 s[sku] = s.get(sku, 0) + n
     return out
+
+
+def recent_shop_counts(cu):
+    """sku -> how many other shops settled it over the last RECENT_HOURS. A tunnel restart can count one shop twice if its
+    new URL is not yet in url_names; my own URLs are left out by name and by my_urls."""
+    shops = {}
+    for bucket in cu.get("recent_shops", {}).values():
+        for sku, names in bucket.items():
+            shops.setdefault(sku, set()).update(n for n in names if n != ME and n not in cu.get("my_urls", []))
+    return {sku: len(names) for sku, names in shops.items()}
 
 
 def best_sku(cu, cat):

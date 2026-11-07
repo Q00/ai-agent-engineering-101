@@ -57,6 +57,7 @@ FOCUS_SPEND = 0.6           # focus lines spend at most this share of the spenda
 FOCUS_MAX_LINES = 6         # focus SKUs take at most this many of a run's MAX_LINES lines
 MIN_VALUE = 0.003           # with MARKET_DATA deals seen: below this share of value, stock only what I already sold
 EARLY = 60                  # buy when the window opens within this many seconds (the kit runs us every 60 s)
+MIN_SHOPS = 3                # the user's choice (2026-11-07): a focus SKU above FOCUS_DEAR must have sold at this many other shops in the last 3 h
 RECENT_MIN = 3000            # market deals in the last 3 h before focus SKUs follow them (about 8,000 at normal volume)
 STOCK_CAP = 0.65             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
 MEMORY = Path("restock_memory.json")
@@ -113,6 +114,7 @@ def focus_lines(inv, catalog, focus_cats, cu):
     balance = inv.get("balance") or 0
     recent = customers.recent_buys(cu, catalog)         # what sells now; until it has RECENT_MIN deals, all sales so far
     use_recent = sum(sum(s.values()) for s in recent.values()) >= RECENT_MIN
+    shops = customers.recent_shop_counts(cu)
     total = sum(sum(s.values()) for s in recent.values()) if use_recent else sum(customers.popular(cu).values())
     have = {}
     for u in inv["units"]:
@@ -121,7 +123,8 @@ def focus_lines(inv, catalog, focus_cats, cu):
     lines = []
     for cat in focus_cats:
         skus = recent.get(cat, {}) if use_recent else cu.get("sku_buys", {}).get(cat, {})
-        fit = [s for s in skus if s in catalog and catalog[s]["list_price"] * COST_GUESS <= UNIT_SHARE * balance]
+        fit = [s for s in skus if s in catalog and catalog[s]["list_price"] * COST_GUESS <= UNIT_SHARE * balance
+               and (not use_recent or catalog[s]["list_price"] <= FOCUS_DEAR or shops.get(s, 0) >= MIN_SHOPS)]
         fit.sort(key=lambda s: -skus[s] * catalog[s]["list_price"])
         for s in fit[:FOCUS_SKUS]:
             missing = focus_want(skus[s] / total, catalog[s]["list_price"]) - have.get(s, 0)
