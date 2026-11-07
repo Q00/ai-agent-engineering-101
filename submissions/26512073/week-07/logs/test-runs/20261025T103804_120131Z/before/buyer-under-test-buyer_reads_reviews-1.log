@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\market_buyer.py", line 93, in <module>
+    market_buy(args.shops, args.item, args.budget, args.memory)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\market_buyer.py", line 54, in market_buy
+    shop = choose_shop(shops, memory, item, budget)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\market_buyer.py", line 43, in choose_shop
+    decision = call_harness(prompt, timeout=45)
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 49, in call_harness
+    answer, delay = _run_attempt(command, prompt, remaining, log, attempt, deadline)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\harness.py", line 84, in _run_attempt
+    raise RuntimeError(f"Harness exited {result.returncode}; see {log}")
+RuntimeError: Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\harness_20261025T103351_597471Z_attempt1.txt

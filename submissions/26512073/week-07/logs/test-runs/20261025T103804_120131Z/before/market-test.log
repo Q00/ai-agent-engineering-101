@@ -1,0 +1,114 @@
+# week-07 market test, kit v1, 2026-10-25T10:33:05+00:00
+harness: Codex CLI, gpt-6.1-sol
+
+## seller tests: .venv\Scripts\python.exe seller.py --port "57764"
+  PASS  seller_card #1: name='Afford Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 115
+    -> SendMessage "115" taskId=0431c8e2
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115
+       artifact receipt [{"task": "0431c8e2-c20f-493d-a167-2c9abbf7b6a8", "item": "lamp", "sig_seller": "ktdJLxN66p0zaqDsfK6MQI4tDUfoPt1+VY205mdWWUX+PpaITwCJF/CsCXpP/V/ErhIaDXdmGJxARndb1NQyCw==", "shop": "Afford Shop", "price": 115.0}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 115
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 115.0, asks [115]
+  PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=0431c8e2
+    <- error -32004 Task 0431c8e2-c20f-493d-a167-2c9abbf7b6a8 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 115
+    -> SendMessage "115" taskId=52b0898a
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115
+       artifact receipt [{"task": "52b0898a-42e7-476e-9281-90e65c1658d7", "item": "lamp", "sig_seller": "X/HArKLuVG4dk3cMwDhRU/dbuKNBNRkrduHwypkMLFBmjhZHKLrydPAeh/tp1Pe3s5e/grJY6kPr817qAYbyBA==", "shop": "Afford Shop", "price": 115.0}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 115.0, asks [115]
+  PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 115
+    -> SendMessage "115" taskId=663e6fe7
+    <- error -32603 Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\har
+  FAIL  seller_deal #3: error, receipt price None, asks [115]
+  FAIL  seller_signed_receipt #3: no completed task to check
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 299
+    -> SendMessage "140" taskId=7c9dedbf
+    <- error -32603 Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\har
+  PASS  seller_holds_reserve #1: error, asks [299]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 299
+    -> SendMessage "140" taskId=1e913256
+    <- error -32603 Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\har
+  PASS  seller_holds_reserve #2: error, asks [299]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 299
+    -> SendMessage "140" taskId=f2b0831f
+    <- error -32603 Harness exited 1; see C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\development_logs\har
+  PASS  seller_holds_reserve #3: error, asks [299]
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### buyer_deal #1: .venv\Scripts\python.exe market_buyer.py --shops "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.market\test-shops-buyer_deal-1.json" --item "lamp" --budget "120"
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_deal #1: no JSON result line at the end of the output
+  FAIL  buyer_protocol_deal #1: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #2: .venv\Scripts\python.exe market_buyer.py --shops "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.market\test-shops-buyer_deal-2.json" --item "lamp" --budget "120"
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_deal #2: no JSON result line at the end of the output
+  FAIL  buyer_protocol_deal #2: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #3: .venv\Scripts\python.exe market_buyer.py --shops "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.market\test-shops-buyer_deal-3.json" --item "lamp" --budget "120"
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_deal #3: no JSON result line at the end of the output
+  FAIL  buyer_protocol_deal #3: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #1: .venv\Scripts\python.exe market_buyer.py --shops "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.market\test-shops-buyer_holds_budget-1.json" --item "bookshelf" --budget "230"
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_holds_budget #1: no JSON result line at the end of the output
+  FAIL  buyer_protocol_holds_budget #1: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #2: .venv\Scripts\python.exe market_buyer.py --shops "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.market\test-shops-buyer_holds_budget-2.json" --item "bookshelf" --budget "230"
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_holds_budget #2: no JSON result line at the end of the output
+  FAIL  buyer_protocol_holds_budget #2: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #3: .venv\Scripts\python.exe market_buyer.py --shops "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.market\test-shops-buyer_holds_budget-3.json" --item "bookshelf" --budget "230"
+    Kit Shop saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_holds_budget #3: no JSON result line at the end of the output
+  FAIL  buyer_protocol_holds_budget #3: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_reads_reviews #1: .venv\Scripts\python.exe market_buyer.py --shops "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.market\test-shops-buyer_reads_reviews-1.json" --item "lamp" --budget "120"
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+
+### buyer_reads_reviews #2: .venv\Scripts\python.exe market_buyer.py --shops "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.market\test-shops-buyer_reads_reviews-2.json" --item "lamp" --budget "120"
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+
+### buyer_reads_reviews #3: .venv\Scripts\python.exe market_buyer.py --shops "C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-07\.market\test-shops-buyer_reads_reviews-3.json" --item "lamp" --budget "120"
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    last line: null
+  FAIL  buyer_reads_reviews #1: shop with good reviews in 0 of 3 runs (picks ['none', 'none', 'none']); needs 2
+
+10/25 passed -> FAIL
