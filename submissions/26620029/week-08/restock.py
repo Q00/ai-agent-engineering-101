@@ -26,7 +26,7 @@ from pathlib import Path
 
 import customers
 
-CASH_FLOOR = 1_000_000      # never spend below this (bankruptcy line 500,000, and room to refill what sells);
+CASH_FLOOR = 40_000_000      # never spend below this (bankruptcy line 500,000, and room to refill what sells);
                             # was 1,500,000 until the shop stocked mattresses deep, which do not rot
 MAX_LIST = 300_000          # skip categories whose median list price is above this: one unsold unit costs too much
 MIN_SHELF_HOURS = 48        # food that lasts a day spoils before most buyers ask for it
@@ -47,10 +47,10 @@ LINE_SHARE = 0.1            # one line spends at most this share of the balance 
 # bedding 12%. Category counts kept us on one SKU: 5 unsold SS mattresses (G07ec17d5) stopped any purchase of the
 # market's best seller G1515d951 (2,698 deals, about 73,000 margin a unit), which we never stocked
 VALUE_FOCUS = 0.05          # a goods category with this share of the market's sales value is stocked by SKU and first
-FOCUS_SKUS = 10              # SKUs kept per focus category, by value (deals x list price)
+FOCUS_SKUS = 15              # SKUs kept per focus category, by value (deals x list price)
 FOCUS_QTY = [(0.02, 5), (0.005, 3)]     # (SKU's share of market deals, units to keep); below these, 2
 FOCUS_DEAR = 500_000        # list price above this: at most FOCUS_DEAR_QTY units, however often it sells
-FOCUS_DEAR_QTY = 3          # was 2 until 2026-11-06 20:23: stock 48.5% of book against the user's 60%, the best seller G24f5f979 sold out
+FOCUS_DEAR_QTY = 5          # was 2 until 2026-11-06 20:23: stock 48.5% of book against the user's 60%, the best seller G24f5f979 sold out
 UNIT_SHARE = 0.25           # one unit's cost at most this share of the balance: dearer sofas come as the balance grows
 FOCUS_LINE_SHARE = 0.25     # one focus line spends at most this share of the balance
 FOCUS_SPEND = 0.6           # focus lines spend at most this share of the spendable cash per run: food still refills
@@ -59,7 +59,7 @@ MIN_VALUE = 0.003           # with MARKET_DATA deals seen: below this share of v
 EARLY = 60                  # buy when the window opens within this many seconds (the kit runs us every 60 s)
 MIN_SHOPS = 3                # the user's choice (2026-11-07): a focus SKU above FOCUS_DEAR must have sold at this many other shops in the last 3 h
 RECENT_MIN = 3000            # market deals in the last 3 h before focus SKUs follow them (about 8,000 at normal volume)
-STOCK_CAP = 0.65             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
+STOCK_CAP = 0.70             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
 MEMORY = Path("restock_memory.json")
 
 

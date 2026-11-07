@@ -82,6 +82,12 @@ TRIAL2_RATE = 0.0
 DEAD_UNITS = frozenset({"u-1bd898b1ae6e", "u-5ad60d23f58b", "u-eacff6b41009",
                         "u-ce3724b8836a", "u-c933d766e8aa", "u-aa2c398a88db"})
 DEAD_MARKUP = 1.02
+# ddolcom (2026-11-07 21:30, the user's instruction): from now on any goods unit of DEAD_MIN_LIST or more, unsold DEAD_AGE_HOURS
+# after it arrived, whose cost is at or above what the market pays for its grade (DEAD_GRADE_SHARE of list, 11-06/07 ledger),
+# opens at cost + 2%. The floor stays the cost: nothing goes below it
+DEAD_AGE_HOURS = 12
+DEAD_MIN_LIST = 100_000
+DEAD_GRADE_SHARE = {"A": 0.70, "B": 0.65, "C": 0.60}
 # ddolcom (2026-11-06, the user's instruction): this one unit may go below its cost of 1,650,854. Its cost was above the market's
 # recent grade A average of 1,603,868 and it had not sold in 14 h. Named units only: any other is the user's decision
 BELOW_COST_FLOOR = {"u-aa2c398a88db": 1_600_000}
@@ -122,8 +128,13 @@ def floor_price(u):
 
 
 def is_dead(u):
-    """One of the units in the one clearance (DEAD_UNITS)."""
-    return u.get("unit") in DEAD_UNITS
+    """A named clearance unit, or old goods whose cost is at or above the market price of their grade."""
+    if u.get("unit") in DEAD_UNITS:
+        return True
+    lp = u.get("list_price") or 0
+    return (is_goods(u) and lp >= DEAD_MIN_LIST and u.get("grade") in DEAD_GRADE_SHARE
+            and time.time() - (u.get("supplied_at") or time.time()) >= DEAD_AGE_HOURS * 3600
+            and u.get("cost", 0) >= DEAD_GRADE_SHARE[u["grade"]] * lp)
 
 
 def trial_arm(u):
