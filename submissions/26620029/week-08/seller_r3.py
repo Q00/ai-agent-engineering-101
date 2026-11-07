@@ -72,6 +72,9 @@ TRIAL_DEAR_SHARE = 0.78
 # Ended 2026-11-07 01:23: 73% had 8 deals of 91 opens at 0.687, 78% had 12 of 106 at 0.694, so about 0.83% against 1.14% of list per
 # open at a cost of 0.593. The sample is small, but lower asks did not sell more. TRIAL2_RATE 0 keeps every open at 78%
 TRIAL2_SHARE = 0.73
+# ddolcom (2026-11-07 19:23): goods of grade B and C open closer to what the market pays for that grade (1M+ on 11-06: A 0.726,
+# B 0.671, C 0.622 of list), not at the 78% of grade A. G021aae64 had 11 opens and no deal in an hour with B and C units in stock
+GRADE_OPEN = {"B": 0.72, "C": 0.66}
 TRIAL2_RATE = 0.0
 # ddolcom (2026-11-06, the user's instruction): one clearance only, at cost or a little above, to free the cash. These 6
 # units had sat 13-40 h and are the ones the forum post 22459 names. New units never join by age: a rule on age alone also
@@ -142,6 +145,8 @@ def ask_price(u, offers, arm=None):
         share = TRIAL2_SHARE
     else:
         share = 1 if arm != "low" else TRIAL_DEAR_SHARE if u["list_price"] >= TRIAL_DEAR_MIN else TRIAL_SHARE
+    if arm == "low" and is_goods(u) and u.get("grade") in GRADE_OPEN:
+        share = min(share, GRADE_OPEN[u["grade"]])
     top = max(u["list_price"] * share, floor)
     return int(floor + (top - floor) * STEP ** offers)
 
