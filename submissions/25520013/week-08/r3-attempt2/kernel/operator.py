@@ -20,7 +20,7 @@ import time
 from kernel import brief as b
 from kernel import common as c
 from kernel import harness as hz
-from kernel import tools, versions
+from kernel import policy_edit, tools, versions
 from kernel.agent import ParseError, parse_last_object
 from kernel.llm import ModelError, ModelRefused
 from kernel.trajectory import Trajectory
@@ -30,7 +30,7 @@ RESTOCK_WAKE_S = 600  # a missing or expired restock plan wakes the operator at 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HARNESS = os.path.join(HERE, "harness")
 MARKET_BRIEF = os.path.join(HERE, "MARKET_BRIEF.md")
-CLI = "/home/sungsoo/.local/bin/codex"
+CLI = "/home/sungsoo/.local/bin/claude"  # 11-07: Haiku through Claude Code (kernel/llm.py)
 POLL_S = 60
 BRIEF_CHARS = 24_000  # about 6k tokens (DESIGN 8, estimate)
 OBS_TOTAL_CHARS = 120_000  # about 30k tokens of observations per wake (DESIGN 8, estimate)
@@ -56,6 +56,7 @@ ACTION_SCHEMA = """한 단계에 JSON 객체 하나로만 답함. 둘 중 하나
   "trial_end": {"target": "seller", "adopt": <true면 후보를 지금 판으로 설치, false면 버림>, "reason": "<근거>"},
   "settings": {"interval_s": <초>, "wake_after_requests": <건수>, ...},
   "restock_plan": {"buy": [{"sku": "<SKU>", "qty": <양의 정수>}], "valid_until": <유닉스 시각>},
+  "policy": [{"section": "defaults.food|defaults.goods|<상품군 전체 경로>", "key": "<policy 도구의 편집 가능 키>", "value": <수>, "reason": "<근거: 어떤 숫자>"}],
   "forum": [{"post": "<글>", "as": "shop|buyer"}],
   "memcheck": <true|false>,
   "note": "<이번 점검 요약>"}}
@@ -171,7 +172,9 @@ class Operator:
             reasons.append(f"마지막 수정 또는 점검 뒤 판매 요청 {n}건")
         if ev["rank"] and st.get("last_rank") and abs(ev["rank"] - st["last_rank"]) >= s["rank_jump"]:
             reasons.append(f"Everyone 순위 {st['last_rank']}위에서 {ev['rank']}위로 바뀜")
-        if b.restock_plan_state(self.root, now)[0] != "valid" and (last is None or now - last >= RESTOCK_WAKE_S):
+        if self.live() and b.restock_plan_state(self.root, now)[0] != "valid" and (
+            last is None or now - last >= RESTOCK_WAKE_S
+        ):
             reasons.append("재입고 계획 없음 또는 만료")
         if ev["shop_missing"] and not st.get("shop_missing"):
             reasons.append("우리 가게가 가게 목록에서 빠짐")
@@ -183,6 +186,21 @@ class Operator:
                 st[k] = False
             self._save_state(st)
         return ", ".join(reasons) or None
+
+    def live(self):
+        """True while <root>/a2/LIVE exists: attempt 2 decides sales; otherwise attempt 1's rules do."""
+        return os.path.exists(os.path.join(self.root, "a2", "LIVE"))
+
+    def _mode_text(self):
+        if self.live():
+            return "LIVE 켜짐: 시도 2의 판매자, 구매자, 재입고 계획이 가게를 운영함. done.policy는 쓰지 않음"
+        return (
+            "LIVE 꺼짐 (11-07 11시 성수님 결정, Codex 구독 한도 소진): 판매, 구매, 재입고는 시도 1의 규칙이 policy.json 값을 읽어 "
+            "결정함. 판매자와 구매자 지침 수정(edits의 seller, buyer), trial, restock_plan은 가게에 반영되지 않아 커널이 받지 않음. "
+            "네가 규칙을 바꾸는 길은 done.policy 하나임: policy 도구로 지금 값을 보고, 키 하나씩 허용 폭 안에서 고치고, "
+            "근거 숫자를 reason에 적음. 고친 뒤에는 브리핑의 정산, 매출, 이익, 별점으로 효과를 보고 유지하거나 되돌림(되돌리기도 같은 policy 항목). "
+            "자기 지침(edits의 operator)과 메모는 지금처럼 고칠 수 있음"
+        )
 
     # ------------------------------------------------------------ tool loop
     def _always_text(self):
@@ -264,6 +282,8 @@ class Operator:
                 self._market_brief(),
                 "## 브리핑 (커널이 모은 사실, 해석 없음)",
                 brief,
+                "## 지금 운영 방식",
+                self._mode_text(),
                 "## 깨운 이유",
                 reason,
                 "## 도구 (운영자)",
@@ -503,10 +523,41 @@ class Operator:
         self.traj.append("operator", "memcheck", status="started")
         return {"started": True}
 
+    def _drop_unused(self, done, result):
+        """LIVE off: attempt 2's seller and buyer harness, trials and restock plans do not reach the shop."""
+        done = dict(done)
+        dropped = []
+        edits = done.get("edits")
+        if isinstance(edits, list):
+            keep = [e for e in edits if not (isinstance(e, dict) and e.get("target") in ("seller", "buyer"))]
+            if len(keep) != len(edits):
+                dropped.append(f"edits seller/buyer {len(edits) - len(keep)}개")
+            done["edits"] = keep
+        for k in ("trial", "trial_end", "restock_plan", "revert"):
+            if k in done and (k != "revert" or any(
+                isinstance(r, dict) and r.get("target") in ("seller", "buyer") for r in done.get("revert") or []
+            )):
+                if k == "revert":
+                    done["revert"] = [r for r in done["revert"] if not (isinstance(r, dict) and r.get("target") in ("seller", "buyer"))]
+                else:
+                    done.pop(k)
+                dropped.append(k)
+        if dropped:
+            result["not_applied_live_off"] = dropped
+        return done
+
+    def _policy(self, items, now):
+        if self.live():
+            return [{"ok": False, "error": "LIVE 켜짐: policy는 시도 1 규칙이 운영할 때만 고침"}]
+        cats = {v.get("category") for v in b._catalog(self.root).values() if isinstance(v, dict) and v.get("category")}
+        return policy_edit.apply(self.root, items, self.traj, now, categories=cats)
+
     def finish(self, done, prompt, route, now):
         """Apply a done action. Edit format errors go back to the model once for one corrected try."""
         result = {"note": c.mask(str(done.get("note") or ""), self.secrets)[:500]}
         result["reflection"] = self._reflect(done.get("reflection"))
+        if not self.live():
+            done = self._drop_unused(done, result)
         if "trial_end" in done:
             result["trial_end"] = self._trial_end(done["trial_end"], now)
         result["revert"] = self._revert(done.get("revert"), now)
@@ -551,6 +602,8 @@ class Operator:
             result["restock_plan"] = self._restock(done["restock_plan"], now)
         if "forum" in done:
             result["forum"] = self._forum(done["forum"])
+        if "policy" in done:
+            result["policy"] = self._policy(done["policy"], now)
         if done.get("memcheck") is True:
             result["memcheck"] = self._memcheck()
         return result

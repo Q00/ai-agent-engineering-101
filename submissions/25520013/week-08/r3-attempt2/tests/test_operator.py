@@ -57,6 +57,7 @@ def root(tmp_path):
     (r / ".market").mkdir(parents=True)
     (r / ".r3").mkdir()
     (r / "a2/board").mkdir(parents=True)
+    (r / "a2/LIVE").write_text("")  # these tests run attempt 2 live; the LIVE-off path is in test_policy_edit.py
     (r / "policy.json").write_text(json.dumps({"owner": {"github": LOGIN}}))
     (r / ".market/catalog.json").write_text(
         json.dumps(
