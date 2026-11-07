@@ -10,6 +10,29 @@ import seller_r3
 
 
 class ReservationExpiryTests(unittest.TestCase):
+    def test_short_idle_applies_only_to_unanswered_first_quotes_after_restore(self):
+        with tempfile.TemporaryDirectory() as directory:
+            previous = Path.cwd()
+            os.chdir(directory)
+            try:
+                seller = seller_r3.Seller()
+                created = time.time()
+                for task, waiting, idle in [('initial', True, 90), ('engaged', False, 300), ('legacy', None, 300)]:
+                    deal = {'unit': {'unit': task, 'sku': 'G1'}, 'opened_at': created, 'last_activity_at': created}
+                    if waiting is not None:
+                        deal['waiting_for_first_reply'] = waiting
+                    self.assertTrue(seller.state.save_deal(task, deal, idle=idle))
+                with seller.state.connect() as db:
+                    deadlines = dict(db.execute('SELECT task, until FROM leases'))
+                self.assertEqual(deadlines, {'initial': created+90, 'engaged': created+300, 'legacy': created+300})
+                seller.open = seller.state.restore_deals()
+                seller.expire_negotiations(seller.open['initial']['last_activity']+91)
+                self.assertEqual(set(seller.open), {'engaged', 'legacy'})
+                with seller.state.connect() as db:
+                    self.assertEqual({row[0] for row in db.execute('SELECT task FROM leases')}, {'engaged', 'legacy'})
+            finally:
+                os.chdir(previous)
+
     def test_abandoned_reservation_releases_unit_but_receipt_hold_remains(self):
         with tempfile.TemporaryDirectory() as directory:
             previous=Path.cwd();os.chdir(directory)

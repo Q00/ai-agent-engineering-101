@@ -34,6 +34,19 @@ class AdaptiveForecastTests(unittest.TestCase):
         sales_only = [r for r in history(2) if r['event']=='settled']
         self.assertFalse(sales_evidence('s1',sales_only,1000)['maintenance_eligible'])
 
+    def test_goods_with_positive_raw_spread_but_negative_stress_contribution_are_not_proven(self):
+        rows = history(2)
+        for event in rows:
+            if event['event'] == 'receipt_signed':
+                event['cost'] = 7_300
+                event['supplied_at'] = 500
+        result = sales_evidence('s1', rows, 1000, kind='goods')
+        self.assertEqual(result['confirmed_positive_spread_sales_12h'], 2)
+        self.assertEqual(result['positive_contribution_sales_12h'], 0)
+        self.assertLess(result['contribution_after_holding_refund_scenario_12h'], 0)
+        self.assertFalse(result['maintenance_eligible'])
+        self.assertTrue(sales_evidence('s1', rows, 1000, kind='food')['maintenance_eligible'])
+
     def test_later_supply_increases_demand_to_cover(self):
         near = {'units':[], 'restock':{'open':False,'opens_at':1100,'closes_at':1280}}
         later = {'units':[], 'restock':{'open':False,'opens_at':2800,'closes_at':2980}}

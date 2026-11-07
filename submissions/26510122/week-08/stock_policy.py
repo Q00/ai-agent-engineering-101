@@ -7,6 +7,7 @@ from inventory_observation import timestamp, evidence, demand_outcomes, conversi
 from newsvendor_tool import poisson_pmf, recommend_quantity
 from capital_policy import MAX_UNIT_COST, operating_policy, target_inventory_cost
 from market_scoring import continuation
+from seller_warranty import economics, hours
 
 PROVEN_STOCK = 20  # safety ceiling, never a desired inventory target
 NEW_STOCK = 2
@@ -20,23 +21,39 @@ PURCHASE_LEAD_SECONDS = 60
 GROWTH_COVERAGE_HOURS={'goods':(2.,6.),'food':(1.,2.)}
 
 
-def sales_evidence(sku, history, now):
-    costs = {e['unit']: e['cost'] for e in history if e.get('event') == 'receipt_signed'
-             and e.get('unit') and type(e.get('cost')) in (int, float) and e['cost'] > 0}
+def sales_evidence(sku, history, now, *, kind=None):
+    receipts = {e['unit']: e for e in history if e.get('event') == 'receipt_signed'
+                and e.get('unit') and type(e.get('cost')) in (int, float) and e['cost'] > 0}
     settled = {e['ledger']: e for e in history if e.get('event') == 'settled' and e.get('sku') == sku
                and e.get('ledger') is not None and (timestamp(e.get('at')) or 0) >= now-12*3600
                and (timestamp(e.get('at')) or math.inf) <= now}
-    positive = [e for e in settled.values() if e.get('unit') in costs and e.get('price', 0) > costs[e['unit']]]
+    matched = [e for e in settled.values() if e.get('unit') in receipts and type(e.get('price')) in (int, float)]
+    positive = [e for e in matched if e['price'] > receipts[e['unit']]['cost']]
     midprice = [e for e in positive if MIDPRICE_MIN <= e['price'] <= MIDPRICE_MAX]
     recent = [e for e in positive if timestamp(e['at']) >= now-3600]
-    spread = sum(e['price']-costs[e['unit']] for e in settled.values() if e.get('unit') in costs)
-    proven = len(positive) >= MIN_POSITIVE_SALES and spread > 0
+    spread = sum(e['price']-receipts[e['unit']]['cost'] for e in matched)
+    contributions = []
+    for sale in matched:
+        receipt = receipts[sale['unit']]
+        unit = {'kind': kind or ('goods' if receipt.get('warranty_hours') else None),
+                'cost': receipt['cost'], 'supplied_at': timestamp(receipt.get('supplied_at'))}
+        charges = economics(unit, sale['price'], now=timestamp(sale['at']), warranty_hours=hours(unit))
+        contribution = sale['price']-receipt['cost']-charges['estimated_accrued_holding']-charges['refund_allowance']
+        contributions.append((sale['price'], contribution))
+    net_scenario = sum(value for _, value in contributions)
+    positive_contributions = sum(value>0 for _,value in contributions)
+    proven = positive_contributions >= MIN_POSITIVE_SALES and net_scenario > 0
     return {'confirmed_positive_spread_sales_12h': len(positive), 'confirmed_positive_spread_sales_1h': len(recent),
             'midprice_positive_sales_12h': len(midprice),
+            'positive_contribution_sales_12h': positive_contributions,
+            'midprice_contribution_sales_12h': sum(MIDPRICE_MIN <= price <= MIDPRICE_MAX and value>0
+                                                  for price,value in contributions),
+            'contribution_after_holding_refund_scenario_12h': round(net_scenario, 2),
             'spread_before_holding_refunds_12h': spread, 'proven': proven,
             'settled_sales_12h':len(settled), 'maintenance_eligible':proven, 'positive_sales_threshold_12h':MIN_POSITIVE_SALES,
             'stock_limit': PROVEN_STOCK if proven else NEW_STOCK,
-            'caution': 'Shop settlements are selected observations; positive acquisition spread excludes holding and refunds.'}
+            'caution': 'Contribution deducts estimated accrued goods storage and a goods refund stress allowance. '
+                       'It does not identify actual refunds or spoiled unsold inventory.'}
 
 
 def protection_hours(inventory, now):
@@ -189,13 +206,13 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
         p = catalog.get(sku)
         if sku in blocked or not isinstance(p, dict) or p.get('kind') not in ('food', 'goods'):
             continue
-        signal = sales_evidence(sku, history, now)
+        signal = sales_evidence(sku, history, now, kind=p['kind'])
         price = p.get('list_price')
         reserved = pending.get(sku, 0)
         projected = stocks[sku] + reserved
         second_trial = (operating['allow_new_skus'] and not projected and sku not in trialed
                         and signal['settled_sales_12h'] == 1
-                        and signal['confirmed_positive_spread_sales_12h'] == 1
+                        and signal['positive_contribution_sales_12h'] == 1
                         and len({e.get('ledger') for e in history if e.get('event') == 'settled'
                                  and e.get('sku') == sku and e.get('ledger') is not None}) == 1)
         if ((not signal['proven'] and not second_trial) or projected >= PROVEN_STOCK or type(price) is not int
@@ -228,17 +245,17 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
         options.sort(key=lambda option:option['qty'])
         rows.append({'sku': sku, 'name': p.get('name', sku), 'kind': p['kind'], 'category': p.get('category'),
                      'midprice_priority': (operating['phase'] == 'growth' and
-                                           signal['midprice_positive_sales_12h'] >= MIN_POSITIVE_SALES),
+                                           signal['midprice_contribution_sales_12h'] >= MIN_POSITIVE_SALES),
                      'currently_stocked': stocks[sku], 'pending_stock':reserved,
                      'second_trial':second_trial, 'evidence': signal, 'target_options': options,
                      'cost_ceiling_per_unit': acquisition_ceiling(p), 'forecast':forecast,
                      'budget_scope':'replenishment: shared window and cash/risk limits; NOT rolling novel-exploration budget',
-                     'assumption':('One additional unit after exactly one positive-spread settlement; not proven maintenance.'
+                     'assumption':('One additional unit after exactly one positive-contribution settlement; not proven maintenance.'
                                    if second_trial else 'Each target/quantity is forecast-derived; the model approves a candidate or holds.')})
     rows.sort(key=lambda r: (not r['midprice_priority'],
                              -(r['target_options'][-1]['qty']/max(1,r['currently_stocked'])),
                              -r['evidence']['confirmed_positive_spread_sales_1h'],
-                             -r['evidence']['spread_before_holding_refunds_12h'], r['sku']))
+                             -r['evidence']['contribution_after_holding_refund_scenario_12h'], r['sku']))
     proven = [r for r in rows if not r['second_trial']]
     trials = [r for r in rows if r['second_trial']]
     trial_rows = trials[:2]
@@ -246,7 +263,7 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
 
 
 def policy_view(sku, product, inventory, history, now):
-    signal = sales_evidence(sku,history,now)
+    signal = sales_evidence(sku,history,now,kind=product.get('kind') if product else None)
     if signal['maintenance_eligible']:
         forecast = demand_forecast(sku,product,inventory,history,now)
         return {**signal,'stock_limit':forecast['maximum_approval_target'],'forecast':forecast}

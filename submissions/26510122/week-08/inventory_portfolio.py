@@ -40,7 +40,7 @@ WINDOW_BUDGET = GROWTH_WINDOW_BUDGET
 ROLLING_BUDGET = GROWTH_EXPLORATION_BUDGET
 MAX_MAINTAINED_SKUS = 8
 STOCKOUT_TRIAL_CANDIDATES = 3
-POLICY_VERSION = 22
+POLICY_VERSION = 23
 GROWTH_SPEND_SHARE = .50
 DAY = 86400
 READY = Path('state/procurement-ready.json')
@@ -409,7 +409,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                                'Compare estimated_spend_krw at observed surge against this soft target; risk limits use cost ceilings. '
                                'Use sales, exposure, eligible missed demand and holding/expiry risk. '
                                'In growth, first cover forecast deficits on midprice_priority replenishment SKUs '
-                               '(at least two actual 30,000–300,000 KRW positive-spread sales in 12h). Prefer '
+                               '(at least two actual 30,000–300,000 KRW sales with positive contribution in 12h). Prefer '
                                'several proven SKUs and compatible current purchase requests when feasible. '
                                'Allocate most discretionary replenishment spend there when eligible deficits justify it; '
                                'use existing forecast options, caps and margins. If skipping an affordable midprice '
@@ -461,7 +461,9 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
               'If omitting an offered second trial, name its SKU and a concrete risk in reason; '
               'being unproven by itself is not a reason, because this is how the second observation is obtained. '
               'A second trial is never automatically repeated. '
-              'Maintenance eligibility is based on confirmed positive-spread sales, not just the hottest SKU. '
+              'Maintenance eligibility requires positive paid contribution after estimated holding and the goods '
+              'refund stress allowance. Compare that contribution across SKUs; sales volume alone is insufficient. '
+              'The refund allowance is a scenario, not an observed refund rate or a Book attribution. '
               'Slow sellers may need only 1-2 units, and fast sellers can require more than six. '
               'Cover affordable maintenance deficits across eligible SKUs, not only the single fastest seller, '
               'then use remaining shared resources for exploration. '
@@ -542,6 +544,8 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                                   'forecast_mean':option.get('forecast_mean'),
                                   'forum_request_ids':(winner.get('forum_intent') or {}).get('request_ids',[]),
                                   'demand_basis':{'sales_rate_per_hour':winner['forecast']['sales_rate_per_hour'],
+                                      'contribution_after_holding_refund_scenario_12h':
+                                          winner['evidence'].get('contribution_after_holding_refund_scenario_12h'),
                                       'conversion_probability':winner['forecast']['stockout_conversion']['probability'],
                                       'windows':{key:{k:view[k] for k in ('settlements','eligible_lost_stockouts',
                                           'expected_lost_sales','in_stock_exposure_hours','snapshot_coverage_hours')}

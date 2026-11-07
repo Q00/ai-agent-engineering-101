@@ -52,6 +52,7 @@ SELLER_DESCRIPTION = (
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}  # pre-Round-3 compatibility
 HOLD_SECONDS = 600
+FIRST_QUOTE_IDLE_SECONDS = 90
 NEGOTIATION_IDLE_SECONDS = 300
 NEGOTIATION_MAX_SECONDS = 900
 
@@ -128,10 +129,13 @@ class Seller(AgentExecutor):
         for task_id,deal in list(self.open.items()):
             last=deal.get('last_activity',now)
             opened=deal.get('opened_monotonic',last)
-            if now-last>=NEGOTIATION_IDLE_SECONDS or now-opened>=NEGOTIATION_MAX_SECONDS:
+            waiting = deal.get('waiting_for_first_reply', False)
+            idle = FIRST_QUOTE_IDLE_SECONDS if waiting else NEGOTIATION_IDLE_SECONDS
+            if now-last>=idle or now-opened>=NEGOTIATION_MAX_SECONDS:
                 del self.open[task_id]
                 self.state.close_deal(task_id)
                 record('negotiation_expired',task_id=task_id,sku=deal['unit']['sku'],unit=deal['unit']['unit'],
+                       waiting_for_first_reply=waiting,
                        role='seller',episode_id=f'seller:{task_id}',decision_id=deal.get('last_decision_id'),
                        reason='negotiation reservation timed out; payment outcome unknown')
 
@@ -214,6 +218,7 @@ class Seller(AgentExecutor):
         if deal is not None:
             deal['last_activity'] = time.monotonic()
             deal['last_activity_at'] = time.time()
+            deal['waiting_for_first_reply'] = False
             deal['requirements'] = seller_requirements.update(deal.get('requirements', seller_requirements.initial('')), message)
             if not self.state.save_deal(task.id, deal, create=False):
                 self.open.pop(task.id, None)
@@ -379,13 +384,14 @@ class Seller(AgentExecutor):
             self.open[task.id] = deal = {
                 "unit": unit, "ask": ask, "history": [], "opened_at": time.time(),
                 'opened_monotonic':time.monotonic(),'last_activity':time.monotonic(),
+                'waiting_for_first_reply':True,
                 'buyer_identity':identity,'buyer_price_evidence':profiles_by_unit[unit['unit']],
                 'last_activity_at':time.time(), 'requirements':requirements,
                 'warranty_hours':warranty_hours,'warranty_price_floor':warranty['price_floor'],
                 'last_decision_id':audit.links().get('decision_id'),
             }
             if promotion: deal['promotion'] = promotion
-            if not self.state.save_deal(task.id, deal):
+            if not self.state.save_deal(task.id, deal, idle=FIRST_QUOTE_IDLE_SECONDS):
                 del self.open[task.id]
                 await reject('That unit was reserved by another purchase. Please try again.','reservation_conflict')
                 return

@@ -93,6 +93,12 @@ class PersistenceTests(unittest.TestCase):
         async def flow():
             async with self.client() as c:
                 first = await self.send(c, 'I want F1. It must last 84 hours, grade A or B.')
+            state = SellerState()
+            deal = state.restore_deals()[first['id']]
+            self.assertTrue(deal['waiting_for_first_reply'])
+            with state.connect() as db:
+                until = db.execute('SELECT until FROM leases WHERE task=?', (first['id'],)).fetchone()[0]
+            self.assertAlmostEqual(until-deal['last_activity_at'], seller_r3.FIRST_QUOTE_IDLE_SECONDS)
             async with self.client() as c:
                 last = await self.send(c, '800', first['id'])
                 self.assertEqual(last['status']['state'], 'TASK_STATE_COMPLETED')
