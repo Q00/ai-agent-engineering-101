@@ -252,11 +252,19 @@ def _boom(*a, **k):
     raise RuntimeError("injected log failure")
 
 
+def _v230_off(m):
+    """v2.3 skips a unit just sold and units refused at checkout; this stub inventory never drops a sold unit,
+    so the v1.20ab equivalence is checked with both off (v2.3 has its own tests in test_v230_held_units.py)."""
+    m.ACCEPT_HOLD_S = -1
+    m.KIT_LOG = R3 / "tests" / "no-such-kit.log"
+    return m
+
+
 @pytest.mark.parametrize("seed", range(40))
 def test_decisions_identical_to_v120ab_seller(tmp_path, monkeypatch, pol, seed):
     monkeypatch.setenv("R3_BUYER_LOG", str(tmp_path / "b.jsonl"))
     old = run(load_seller(OLD, f"seller_ref_{seed}"), seed, pol)
-    new = run(load_seller(R3 / "hooks" / "seller.py", f"seller_new_{seed}"), seed, pol)
+    new = run(_v230_off(load_seller(R3 / "hooks" / "seller.py", f"seller_new_{seed}")), seed, pol)
     assert old == new
     assert rows(tmp_path / "b.jsonl")
 
@@ -270,7 +278,7 @@ def test_decisions_identical_when_log_raises(tmp_path, monkeypatch, pol, seed, w
         monkeypatch.setattr(BL, "write", _boom)
     if what in ("buyer_ref", "both"):
         monkeypatch.setattr(BL, "buyer_ref", _boom)
-    new = run(load_seller(R3 / "hooks" / "seller.py", f"seller_new_x_{seed}_{what}"), seed, pol)
+    new = run(_v230_off(load_seller(R3 / "hooks" / "seller.py", f"seller_new_x_{seed}_{what}")), seed, pol)
     assert old == new
 
 

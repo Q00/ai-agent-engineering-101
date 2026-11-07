@@ -64,6 +64,11 @@ if NAME != ENV_NAME:                       # ledger/volume (same process) see bo
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 SKU_RE = re.compile(r"\b(G[0-9A-Za-z]{5,})\b")
 HOLD_S = 120               # a unit promised in an open negotiation is held this long, then freed (buyers walk away)
+ACCEPT_HOLD_S = 600        # v2.3: a unit just sold is not offered again while its buyer checks out
+REFUSED_HOLD_S = 6 * 3600  # v2.3: a unit the kit refused at checkout is held by an unpaid session; skip it this long
+KIT_LOG = Path(os.environ.get("R3_KIT_LOG", "logs/market-kit.log"))
+KIT_TAIL_BYTES = 1_000_000
+REFUSED_RE = re.compile(r"^(\d\d):(\d\d):(\d\d) \[acp\] checkout refused: unit (u-[0-9a-f]+) is not in stock")
 TICK_S = float(os.environ.get("R3_STATS_TICK_S", "15"))   # background refresh/checkpoint check; 0 = off
 
 
@@ -153,6 +158,35 @@ def find_unit(text, inv, taken=(), pol=None, now=None, shelf=None, why=None):
     return min(good or fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0), default=None)
 
 
+def refused_units(path=None, now=None, hold_s=REFUSED_HOLD_S, tail=KIT_TAIL_BYTES):
+    """v2.3: units the kit refused at checkout ("unit X is not in stock for this order") in the last hold_s, read
+    from the tail of the kit log. The kit keeps a unit out of a new checkout while an earlier session on it waits
+    for payment (market_kit.py pick_unit `held`), and keeps sessions until 500 newer ones exist, so a unit whose
+    buyer walked away is refused for hours (24 h to 11-07 12:30 KST: 305 refusals on 25 units, one unit 81 times
+    over 6.3 h). Log lines carry the local time of day only: a time later than now is from the day before."""
+    now = time.time() if now is None else now
+    try:
+        with open(KIT_LOG if path is None else path, "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - tail))
+            data = f.read().decode("utf-8", "replace")
+    except OSError:
+        return set()
+    lt = time.localtime(now)
+    day0 = now - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec)
+    out = set()
+    for line in data.splitlines():
+        m = REFUSED_RE.match(line)
+        if not m:
+            continue
+        t = day0 + int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3])
+        if t > now + 60:
+            t -= 86400
+        if now - t <= hold_s:
+            out.add(m[4])
+    return out
+
+
 CARD_DESCRIPTION = "Signed receipts with certificate; grades never overstated. Ask by item or SKU."
 SKILL_DESCRIPTION = "Ask for an item by name or SKU, then send a whole-number price."
 
@@ -196,12 +230,20 @@ class Seller(AgentExecutor):
         self._pw = (P.PolicyWatcher(pol=self.pol) if pol is None and os.environ.get("R3_POLICY_RELOAD", "1") != "0"
                     else None)
         self.open = {}
+        self.accepted = {}                              # v2.3: unit -> time we signed its receipt
         self._shelf = {}
         self._vol = (0.0, 0.0, 0)
         self._R, self._rerr, self._rt, self.checkpoints = None, None, 0.0, 0
         self._lock = threading.Lock()                   # Resident is used by A2A calls and the tick thread
         self._ticker = None
         self._blog = {}                                 # v1.20 logging only: task id -> (buyer_ref, source)
+
+    def held(self, now):
+        """v2.3: units not to offer now: in an open negotiation, sold in the last ACCEPT_HOLD_S (two buyers on one
+        unit, the second checkout refused: 19 units in 24 h), or refused at checkout in the last REFUSED_HOLD_S."""
+        for k in [k for k, t in self.accepted.items() if now - t > ACCEPT_HOLD_S]:
+            del self.accepted[k]
+        return {d["unit"]["unit"] for d in self.open.values()} | set(self.accepted) | refused_units(now=now)
 
     def _bl(self, event, tid, **kw):
         """v1.20 logging only; never raises, never changes a decision."""
@@ -360,7 +402,7 @@ class Seller(AgentExecutor):
                 return
             inv = read_json(MARKET_DIR / "inventory.json", {}) or {}
             why = {}
-            unit = find_unit(text, inv, {d["unit"]["unit"] for d in self.open.values()}, self.pol, shelf=self.shelf,
+            unit = find_unit(text, inv, self.held(now), self.pol, shelf=self.shelf,
                              why=why)
             if unit is None:
                 need = why.get("need_h")                # v2.1: food in stock, none lasts the stated need
@@ -400,6 +442,7 @@ class Seller(AgentExecutor):
             receipt = dict({"shop": NAME, "item": u["sku"], "price": price, "task": task.id},
                            **P.receipt_terms(u, deal.get("pol") or self.pol, stats=deal.get("stats"), price=price, shelf_hours=deal["sh"]))
             receipt = sign(receipt)
+            self.accepted[u["unit"]] = time.time()
             try:                                        # v1.3: cost layer for this unit before its sale is ingested
                 with Ledger() as L:
                     L.first_seen_unit(u)
