@@ -72,7 +72,7 @@ def campaign_text(program, inventory):
     p=program.p;lines=[f"[{p['shop_name']} · 실제 재고 / 시장 인증서]"]
     held=program.reserved_units()
     for u in inventory.get('units',[]):
-        if u.get('unit') in held or (settings().get('goods_only') and u.get('kind')!='goods'):continue
+        if u.get('unit') in held:continue
         try:q=sale_quote(u,{},program)
         except (KeyError,ValueError):continue
         condition=f"보증 {q['warranty_hours']}h" if q.get('warranty_hours') else '식품 남은 기한 문의'
@@ -86,13 +86,13 @@ def campaign_text(program, inventory):
 def queue_post(program, state, inventory, now=None):
     now = time.time() if now is None else now
     held=program.reserved_units()
-    available = [u for u in inventory.get('units', []) if u.get('unit') not in held and (not settings().get('goods_only') or u.get('kind')=='goods') and u.get('grade') != 'expired'
+    available = [u for u in inventory.get('units', []) if u.get('unit') not in held and u.get('grade') != 'expired'
                  and (not u.get('expires_at') or u['expires_at'] > now)]
     if inventory.get('round', 0) < 3 or not available or not program.live(now):
         return False
     if program.db.execute('SELECT COUNT(*) FROM members WHERE founder=1').fetchone()[0] >= program.p['founder_limit']:
         return False
-    count = program.get('post_count', 0)
+    day=int(now//86400);count=program.get('post_count_'+str(day),0)
     if count >= program.p['forum_max_posts'] or now-program.get('last_post', 0) < program.p['forum_interval_seconds']:
         return False
     # This DB transaction is a process lock. Mark before append: a crash may lose
@@ -100,12 +100,14 @@ def queue_post(program, state, inventory, now=None):
     with program.db:
         program.db.execute('BEGIN IMMEDIATE')
         last = program.get('last_post', 0)
-        count = program.get('post_count', 0)
+        count = program.get('post_count_'+str(day), 0)
         if now-last < program.p['forum_interval_seconds'] or count >= program.p['forum_max_posts']:
             return False
-        for k, v in [('last_post', now), ('post_count', count+1)]:
+        for k, v in [('last_post', now), ('post_count_'+str(day), count+1)]:
             program.db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)', (k, json.dumps(v)))
-    row = {'as': 'shop', 'post': campaign_text(program, dict(inventory,units=available)), 'refs': []}
+    refs=[r[0] for r in program.db.execute(
+        'SELECT ledger FROM sales WHERE ledger IS NOT NULL AND refunded=0 ORDER BY ledger DESC LIMIT 2')]
+    row = {'as': 'shop', 'post': campaign_text(program, dict(inventory,units=available)), 'refs': refs}
     fd = os.open(Path(state) / 'outbox.jsonl', os.O_CREAT | os.O_WRONLY | os.O_APPEND, 0o600)
     try:
         os.write(fd, (json.dumps(row, ensure_ascii=False)+'\n').encode())

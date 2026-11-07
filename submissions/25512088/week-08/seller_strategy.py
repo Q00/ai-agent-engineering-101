@@ -19,8 +19,19 @@ def cost_floor(cost, policy):
     return max(math.ceil((cost+reserve)/(1-founder)), cost+math.ceil(reserve/(1-acquisition)))
 
 
-def warranty_hours(unit):
-    return 6 if unit.get('kind')=='goods' else 0
+def warranty_hours(unit, program=None):
+    """Expand warranty only after settled, non-refunded cohorts mature."""
+    if unit.get('kind')!='goods':return 0
+    if program is None:return 6
+    settled=program.db.execute(
+        'SELECT COUNT(*) FROM sales WHERE sku=? AND ledger IS NOT NULL',(unit.get('sku'),)).fetchone()[0]
+    refunded=program.db.execute(
+        'SELECT COUNT(*) FROM sales WHERE sku=? AND ledger IS NOT NULL AND refunded=1',(unit.get('sku'),)).fetchone()[0]
+    if refunded:return 6
+    if settled>=30:return 72
+    if settled>=15:return 48
+    if settled>=5:return 24
+    return 6
 
 
 def protected_floor(unit, policy):
@@ -47,7 +58,7 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
         q=program.quote(lo,unit['cost'],token=token,ref=ref)
     else:
         q=program.quote(max(floor,(current['base']+floor)//2),unit['cost'],token=token,ref=ref)
-    q['warranty_hours']=warranty_hours(unit)
+    q['warranty_hours']=warranty_hours(unit,program)
     if q['price']*(.85 if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
         return current
     return q if q['price']<current['price'] else current
@@ -56,7 +67,8 @@ def negotiate(unit, current, offered, catalog, program, token='', ref=''):
 def sale_quote(unit, catalog, program, intel=None, token='', ref=''):
     base=public_price(unit,catalog)  # Also validates expiry and grade.
     hours=(unit['expires_at']-time.time())/3600 if unit.get('expires_at') else None
-    comp=intel.comparable(unit['sku'],unit['grade'],hours,warranty_hours(unit)) if intel else {'count':0,'median':None}
+    warranty=warranty_hours(unit,program)
+    comp=intel.comparable(unit['sku'],unit['grade'],hours,warranty) if intel else {'count':0,'median':None}
     if comp['median']:
         base=math.ceil(comp['median']*.99)
     adjustment=1.0;competitors=0;substitutes=0;sold=0;quotes=0
@@ -86,7 +98,7 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref=''):
             base=math.ceil(base*adjustment)
     floor=protected_floor(unit,program.p)
     q=program.quote(max(base,floor),unit['cost'],token=token,ref=ref)
-    q['warranty_hours']=warranty_hours(unit)
+    q['warranty_hours']=warranty
     if q['price']*(.85 if q['warranty_hours'] else 1)-q['reward'] < unit['cost']+math.ceil(unit['cost']*.09):
         raise ValueError('Net margin guard rejected quote')
     if intel:
@@ -94,6 +106,7 @@ def sale_quote(unit, catalog, program, intel=None, token='', ref=''):
                        'reward':q['reward'],'floor':floor,'comparable':comp,'market_adjustment':adjustment,
                        'same_competitor_units':competitors,'substitute_competitor_units':substitutes,
                        'quotes_6h':quotes,'sales_6h':sold,
+                       'warranty_hours':warranty,
                        'source':'settlement_median' if comp['median'] else 'grade_formula_cost_protected'})
     return q
 
@@ -127,7 +140,7 @@ def graded_demand(sku, product, intel, now):
 def restock_plan(inv,catalog,intel,now=None):
     now=time.time() if now is None else now
     if settings().get('external_campaign'):
-        return {'buy':[], 'reason':'authorized_goods_campaign_worker', 'budget':settings()['budget']}
+        return {'buy':[], 'reason':'authorized_adaptive_campaign_worker'}
     if inv.get('round')!=3 or not inv.get('restock',{}).get('open'):
         return {'buy':[], 'reason':'supply_closed'}
     stock=inv.get('units',[])
@@ -141,7 +154,8 @@ def restock_plan(inv,catalog,intel,now=None):
                 exposure=conn.execute('SELECT COALESCE(SUM(w.amount),0) FROM warranties w JOIN sales s ON s.task=w.task WHERE s.refunded=0 AND (s.settled IS NULL OR s.settled>?)',(now-21600,)).fetchone()[0]
     reserve+=exposure
     inventory_cost=sum(u.get('cost',0) for u in stock)
-    budget=max(0,min(settings().get('budget',2500000)-inventory_cost,inv.get('balance',0)-reserve))
+    from procurement_campaign import capital_available
+    budget=capital_available(settings(),inv,exposure)
     if not budget:return {'buy':[],'reason':'inventory_or_cash_limit'}
     if now-intel.get('ledger_through',0)>900:
         return {'buy':[],'reason':'market_evidence_stale'}

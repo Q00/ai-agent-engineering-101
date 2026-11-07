@@ -14,7 +14,7 @@ def offers(state, program, intel, ref='', limit=3):
     catalog=json.loads(cp.read_text()) if cp.exists() else {}
     reserved=program.reserved_units(); ranked=[]
     for u in inv.get('units',[]):
-        if u['unit'] in reserved or (settings().get('goods_only') and u.get('kind')!='goods'):continue
+        if u['unit'] in reserved:continue
         try:q=sale_quote(u,catalog,program,intel,ref=ref)
         except ValueError:continue
         hours=(u['expires_at']-time.time())/3600 if u.get('expires_at') else None

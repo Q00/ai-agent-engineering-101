@@ -129,7 +129,7 @@ class Seller(AgentExecutor):
             deal = self.open.get(task.id)
             if not deal:
                 reserved = program.reserved_units() | {v['unit']['unit'] for v in self.open.values()}
-                eligible=[u for u in inv['units'] if not settings().get('goods_only') or u.get('kind')=='goods']
+                eligible=list(inv['units'])
                 unit = select_unit(text, eligible, reserved)
                 if not unit:
                     intel.decision('seller_no_stock',dict(task=task.id,**stock_miss(text,inv['units'],reserved,catalog)))
@@ -189,7 +189,10 @@ class Seller(AgentExecutor):
                     public=(f' Public referral code: {code} (activates after settlement). '
                             f'Friend sends: I want to buy {unit["sku"]} ref={code}. '
                             'Stock and price must be reconfirmed. Direct referrals only; no review or forum post required for referrals.')
-                    intel.decision('seller_signed',{'sku':unit['sku'],'price':q['price'],'cost':unit['cost']})
+                    event={'sku':unit['sku'],'price':q['price'],'cost':unit['cost'],
+                           'kind':unit.get('kind'),'warranty_hours':q.get('warranty_hours',0)}
+                    intel.decision('seller_signed',event)
+                    intel.evolution('seller','signed',event,correlation=task.id)
                     await up.complete(say(f"Agreed at {q['price']}. Membership activates only after market settlement."+public+private))
                     self.open.pop(task.id, None)
                     return
@@ -252,7 +255,7 @@ def build(port, publish=True):
         version='1.2.0', default_input_modes=['text/plain'], default_output_modes=['application/json','text/plain'],
         capabilities=AgentCapabilities(streaming=False), supported_interfaces=[AgentInterface(
             protocol_binding='JSONRPC', url=f'http://127.0.0.1:{port}/', protocol_version='1.0')],
-        skills=[AgentSkill(id='shop', name='Check stock and buy', description='Ask by SKU; reply with a numeric offer on the same task. Returns actual grade, cert=true, warranty_hours=6 and a signed receipt.',
+        skills=[AgentSkill(id='shop', name='Check stock and buy', description='Ask by SKU; reply with a numeric offer on the same task. Returns actual grade, cert=true, applicable shelf-life or evidence-scaled warranty, and a signed receipt.',
                            tags=['shopping','stock','price'], examples=['I want to buy <SKU>', 'PROGRAM'])])
     handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
     return Starlette(routes=create_agent_card_routes(card)+create_jsonrpc_routes(handler, '/'), lifespan=lifespan)

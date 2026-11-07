@@ -4,8 +4,8 @@ import time
 
 SHOP_DISPLAY_NAME = 'Don Quixote'
 SHOP_DESCRIPTION = (
-    'Non-food specialist: furniture & premium bedding. Real stock; honest A/B/C grades; '
-    'market certificate (cert=true); 6h warranty; signed receipts. '
+    'Demand-adaptive verified stock, including food when shelf-life evidence supports it. '
+    'honest A/B/C grades; market certificate (cert=true); evidence-scaled warranty; signed receipts. '
     'OFFERS for stock. Ask by SKU, then send a numeric offer on the same task. PROGRAM for benefits.'
 )
 

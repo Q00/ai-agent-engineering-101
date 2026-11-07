@@ -14,7 +14,7 @@ class CopyTests(unittest.TestCase):
         self.assertIn('12%↓',s)
         self.assertIn('46h',s)
         self.assertNotIn('%↓',price_line(u,{'price':11000},1000))
-        self.assertIn('6h warranty',SHOP_DESCRIPTION)
+        self.assertIn('evidence-scaled warranty',SHOP_DESCRIPTION)
         self.assertLess(len(SHOP_DESCRIPTION), 320)
         self.assertIn('honest A/B/C', SHOP_DESCRIPTION)
     def test_only_paid_evidence_and_no_duplicate_purchase_post(self):

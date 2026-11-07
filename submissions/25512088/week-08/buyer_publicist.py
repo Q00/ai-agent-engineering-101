@@ -62,7 +62,7 @@ def queue_update(intel):
             if not own.get('alive') or not path.exists() or now-path.stat().st_mtime>90:return False
             cat=read_json(state/'catalog.json',{});reserved=program.reserved_units();offers=[]
             for u in inv.get('units',[]):
-                if u['unit'] in reserved or (settings().get('goods_only') and u.get('kind')!='goods'):continue
+                if u['unit'] in reserved:continue
                 try:q=sale_quote(u,cat,program,intel)
                 except ValueError:continue
                 hours=(u['expires_at']-now)/3600 if u.get('expires_at') else None
