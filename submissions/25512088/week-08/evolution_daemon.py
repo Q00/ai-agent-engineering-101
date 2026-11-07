@@ -95,7 +95,7 @@ class Evolution:
 
     def trigger(self,evidence,now=None):
         now=self.clock() if now is None else now
-        last=self.control.db.execute('SELECT created,evidence_hash FROM evolution_cycles ORDER BY created DESC LIMIT 1').fetchone()
+        last=self.control.db.execute('SELECT created,evidence_hash,state,base_commit FROM evolution_cycles ORDER BY created DESC LIMIT 1').fetchone()
         rules=(evidence['official_inputs'].get('rules') or {}).get('hash')
         previous_rules=self.control.db.execute(
             "SELECT body FROM runtime_events WHERE role='evolution' AND kind='cycle_started' ORDER BY id DESC LIMIT 1").fetchone()
@@ -103,6 +103,9 @@ class Evolution:
             try:changed=json.loads(previous_rules[0]).get('rules_hash')!=rules
             except (ValueError,TypeError):changed=False
             if changed:return 'official_rule_changed'
+        if last and last['state'] in {'QUARANTINED','ROLLBACK_FAILED'}:
+            current=self.runner(['git','rev-parse','HEAD'],REPO,30)[1].decode().strip()
+            if current and current!=last['base_commit']:return 'implementation_updated'
         if evidence['event_counts_30m'].get('role_exited',0):return 'runtime_failure'
         if not last:return 'scheduled_review'
         if last and now-last['created']<INTERVAL:return None
@@ -155,9 +158,70 @@ class Evolution:
         self.control.transition('evolution',cycle_id,old,new,reason,body or {},cycle_id)
 
     def seed(self,cycle_id,role,evidence,project_dir):
-        tests='test_buyer_r3.py test_buyer_adaptive.py' if role=='buyer' else 'test_referral_seller.py test_procurement.py test_rollout.py'
+        role_tests=(['test_buyer_r3.py','test_buyer_adaptive.py'] if role=='buyer' else
+            ['test_referral_seller.py','test_procurement.py','test_rollout.py'])
+        tests=' && '.join(f'python {PREFIX}/{name}' for name in role_tests)
+        full_tests=f"python -m unittest discover -s {PREFIX} -p 'test_*.py' -q"
         allowed=sorted(ROLE_FILES[role]|ALWAYS_ALLOWED|{f'test_{role}.py'})
-        body=f'''version: 1\ngoal: Improve the Round 3 {role} using only bounded structured evidence while preserving every safety invariant.\nproject_dir: {project_dir}\nconstraints:\n  - Modify only submissions/25512088/week-08 and only the target role.\n  - Never read owner.env, pem files, secrets, or raw forum/log text.\n  - Never execute market mutations; implementation and tests only.\n  - Preserve idempotency, cash floor, inventory limit 250, no self-trade and fail-closed recovery.\n  - Allowed strategy files: {', '.join(allowed)}\nevidence: {json.dumps(evidence,sort_keys=True)}\nacceptance_criteria:\n  - description: Target-role behavior is evidence-driven, bounded, logged, and backward compatible.\n    verify_command: python -m unittest -q {tests}\n  - description: The complete local regression suite passes.\n    verify_command: python -m unittest discover -q\n'''
+        constraints=[
+            'Modify only submissions/25512088/week-08 and only the target role.',
+            'Never read owner.env, pem files, secrets, or raw forum/log text.',
+            'Never execute market mutations; implementation and tests only.',
+            'Preserve idempotency, cash floor, inventory limit 250, no self-trade and fail-closed recovery.',
+            'Allowed strategy files: '+', '.join(allowed),
+        ]
+        constraint_yaml='\n'.join('- '+json.dumps(value,ensure_ascii=False) for value in constraints)
+        evidence_json=json.dumps(evidence,sort_keys=True,separators=(',',':'))
+        behavior_key='ac_'+hashlib.sha256(f'{role}:behavior'.encode()).hexdigest()[:16]
+        regression_key='ac_'+hashlib.sha256(f'{role}:regression'.encode()).hexdigest()[:16]
+        body=f'''goal: Improve the Round 3 {role} using bounded structured evidence while preserving every safety invariant.
+task_type: code
+project_dir: {project_dir}
+constraints:
+{constraint_yaml}
+evidence: {json.dumps(evidence_json)}
+acceptance_criteria:
+- description: Target-role behavior is evidence-driven, bounded, logged, and backward compatible.
+  semantic_ac_key: {behavior_key}
+  verify_command: {json.dumps(tests)}
+  expected_artifacts:
+  - submissions/25512088/week-08
+- description: The complete local regression suite passes without weakening safety checks.
+  semantic_ac_key: {regression_key}
+  verify_command: {json.dumps(full_tests)}
+  expected_artifacts:
+  - submissions/25512088/week-08
+ontology_schema:
+  name: Round3{role.title()}Evolution
+  description: Bounded evidence, candidate code, validation, canary and rollback for one market role.
+  fields:
+  - name: evidence_snapshot
+    type: object
+    description: Official hashes, rank gap and bounded event counts used for the decision.
+    required: true
+  - name: candidate_change
+    type: object
+    description: Target role paths, validation result, commit and rollback evidence.
+    required: true
+evaluation_principles:
+- name: safety
+  description: Existing safety and idempotency invariants have priority over score improvement.
+  weight: 0.6
+- name: measured_improvement
+  description: Prefer changes supported by official score and runtime evidence.
+  weight: 0.4
+metadata:
+  seed_id: {cycle_id}
+  version: 1.0.0
+  created_at: '2026-11-08T00:00:00Z'
+  ambiguity_score: 0.0
+  gate_forced: false
+  parent_seed_id: null
+  generation_mode: normal
+  degraded: false
+  unresolved_slots: []
+  recovery_reason: null
+'''
         path=self.dir/f'{cycle_id}.seed.yaml';path.write_text(body);return path
 
     def build(self,cycle_id,role,evidence,base):
