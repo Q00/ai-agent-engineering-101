@@ -400,6 +400,16 @@ def last_number(text):
     return int(nums[-1].replace(",", "")) if nums else None
 
 
+def receipt_item(text, unit):
+    """Keep a category order's item name, while the explicit unit still fixes the
+    shipped SKU. Round 3 accepts either the ordered category or an acceptable SKU.
+    A named SKU/product always wins; do not silently substitute a different product."""
+    want = text.lower()
+    category = (unit.get("category") or "").split(">")[-1]
+    named = unit["sku"].lower() in want or (unit.get("name") or "").lower() in want
+    return category if category and category.lower() in want and not named else unit["sku"]
+
+
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}   # task id -> {"unit", "ask", "floor", "warranty", "rounds"}
@@ -436,7 +446,7 @@ class Seller(AgentExecutor):
             floor = max(floor, int(ask * (1 - MAX_DISCOUNT)))
             deal = self.open[task.id] = {"unit": u, "ask": ask, "opening": ask, "floor": floor,
                                          "warranty": warranty, "rounds": 0, "arm": arm, "ts": now,
-                                         "food_need": need_hours(text)}
+                                         "food_need": need_hours(text), "receipt_item": receipt_item(text, u)}
             await up.requires_input(say(f"{facts(u, warranty)}. Send the ask or say ok to buy. "
                                         f"Our ask: {ask}"))
             return
@@ -486,7 +496,7 @@ class Seller(AgentExecutor):
                 await up.reject(say("The remaining shelf life cannot meet your requirement through checkout. "
                                     "Please request another quote."))
                 return
-        receipt = {"shop": NAME, "item": u["sku"], "price": int(price), "task": task.id}
+        receipt = {"shop": NAME, "item": deal.get("receipt_item", u["sku"]), "price": int(price), "task": task.id}
         if u["unit"]:
             # a food unit's grade drops while it waits and the claim is judged at checkout or settle, so a claim
             # read from a 10 s old inventory can turn false: food carries only the market's certificate
