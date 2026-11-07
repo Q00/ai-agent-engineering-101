@@ -81,6 +81,62 @@ def model_usage(now=None):
                 "share": round(c / BUDGET_PER_HOUR[s], 2) if BUDGET_PER_HOUR.get(s) else None} for s, c in n.items()}
 
 
+QUIET_S = 600       # no buyer at our seller this long -> probe the shop's public address (user 11/7 13:3x)
+
+
+def _kit_tail(nbytes=400_000):
+    kit = paths.root() / "logs" / "market-kit.log"
+    try:
+        with open(kit, "rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - nbytes))
+            return fh.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return []
+
+
+def shop_reach(now=None, probe=None):
+    """(level, finding) or None. 11/7 12:58-13:30 the tunnel stopped answering: the seller was alive and reachable
+    locally, but no buyer came in for 32 min until the kit noticed. When the kit log shows no seller turn for
+    QUIET_S, the public address the shop last registered is asked for its agent card."""
+    import re
+    import urllib.request
+    now = now or time.time()
+    lines = _kit_tail()
+    url, last = None, None
+    for line in lines:
+        m = re.search(r"shop registered (?:again )?as \S+ at (https://\S+)|\[tunnel\] (https://\S+?),? waiting", line)
+        if m:
+            url = m.group(1) or m.group(2)
+        if " [seller] [seller] " in line[:30] or line[9:27] == "[seller] [seller] ":
+            last = line[:8]
+    if last is None:
+        return None
+    t = time.localtime(now)
+    h, mi, se = (int(x) for x in last.split(":"))
+    ts = time.mktime((t.tm_year, t.tm_mon, t.tm_mday, h, mi, se, 0, 0, -1))
+    if ts > now + 60:
+        ts -= 86400                                      # the last turn was before midnight
+    quiet = now - ts
+    if quiet < QUIET_S:
+        return None
+    ok = False
+    if url:
+        try:
+            if probe is not None:
+                ok = probe(url)
+            else:
+                with urllib.request.urlopen(url.rstrip("/") + "/.well-known/agent-card.json", timeout=10) as r:
+                    ok = r.status == 200
+        except Exception:
+            ok = False
+    mins = int(quiet // 60)
+    if not ok:
+        return ("now", f"shop unreachable: {url or 'no public address in the kit log'} does not answer and no buyer "
+                       f"reached the seller for {mins} min (tunnel down? the kit reopens it when it notices)")
+    return ("warn", f"no buyer at the seller for {mins} min, though {url} answers")
+
+
 def health(now=None, rules_changed=False):
     """ops.health: findings with their level; alerts once per finding and hour; emergency actions when due."""
     now = now or time.time()
@@ -93,6 +149,12 @@ def health(now=None, rules_changed=False):
     inner = paths.bus() / "status" / "inner.json"
     if inner.exists() and now - inner.stat().st_mtime > STALE_S:
         found.append(("now", f"the inner runtime's status is {int((now - inner.stat().st_mtime) // 60)} min old"))
+    try:
+        reach = shop_reach(now)
+        if reach:
+            found.append(reach)
+    except Exception as e:                          # a probe never stops the health pass
+        found.append(("warn", f"shop reach check failed: {type(e).__name__}: {e}"[:200]))
     for seat, u in model_usage(now).items():
         if u["share"] is not None and u["share"] >= 0.8:
             found.append(("warn", f"model seat {seat}: {u['calls']} calls in 1 h, {u['share']:.0%} of the budget"))

@@ -31,6 +31,21 @@ class OpsTest(unittest.TestCase):
         self.assertEqual(ops.clear("restock_stop", now=20)["why"], "rules changed")
         self.assertFalse(ops.stopped("restock_stop"))
 
+    def test_shop_reach_probes_after_quiet(self):
+        # 11/7 12:58-13:30: the tunnel was down, the seller alive, no buyer came in for 32 min
+        import time
+        log = Path(self.tmp.name) / "logs" / "market-kit.log"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        log.write_text("12:00:00 [market] shop registered again as us at https://a.example\n"
+                       "12:58:31 [seller] [seller] 529ce441 completed: Deal at 100 KRW.\n", encoding="utf-8")
+        t = time.localtime()
+        at = lambda h, m: time.mktime((t.tm_year, t.tm_mon, t.tm_mday, h, m, 0, 0, 0, -1))
+        self.assertIsNone(ops.shop_reach(at(13, 5), probe=lambda u: False))           # 6 min: not yet
+        lvl, text = ops.shop_reach(at(13, 20), probe=lambda u: False)
+        self.assertEqual(lvl, "now")
+        self.assertIn("https://a.example", text)
+        self.assertEqual(ops.shop_reach(at(13, 20), probe=lambda u: True)[0], "warn")
+
 
 if __name__ == "__main__":
     unittest.main()
