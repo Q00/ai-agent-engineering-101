@@ -8,9 +8,9 @@ Three corrections to the plain "our sales per hour over 24 h":
   2. market share: our settles / the market's settles of the SKU in the hours we were in stock (market.sku_hour_24),
      times the market's current rate: the same number from the other side, for SKUs the market moves faster than
      our shelf shows; the share is capped at stock.demand_share_max;
-  3. the hour of day: the market settles 2.2x more at 03-09 h than at 11-23 h (market.hour_profile, mean settles
-     per hour of day over the folded buckets), so the rate for the coming cover window is scaled by the profile
-     of those hours against the day's mean.
+  3. the hour of day: market.hour_profile (mean settles per hour of day over the folded full hours) scales the
+     rate for the coming cover window by those hours against the day's mean; on 2026-11-07 the market was flat
+     within about 10%, so the factor mostly stays near 1, but a market with a daily cycle would show here.
 forecast() returns the higher of (1) and (2), scaled by (3), or None when neither has enough data (then the
 planner keeps its old rate). Everything here is read-only except tick_instock, which writes memory/instock.json.
 """

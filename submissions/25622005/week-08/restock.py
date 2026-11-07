@@ -166,7 +166,8 @@ def run(state, t0):
                      "headroom": plan["headroom"], "excluded": reasons, "ingest": ing, "card_ok": card_ok,
                      "summary_built_at": summary.get("built_at"), "window": win, "stock": held,
                      "focus": lists["focus"], "trend": lists["trend"], "surge": surge,
-                     "big_ticket": plan["big_ticket"]},
+                     "big_ticket": plan["big_ticket"],
+                     "demand": {s: v for s, v in plan.get("demand", {}).items() if s in planned}},
              memory_refs=refs, rules=plan["rules"], choice=plan["buy"],
              why=f"{len(plan['buy'])} lines, worst cost {plan['worst_cost']} of headroom {plan['headroom']}",
              elapsed_ms=int((time.time() - t0) * 1000))
