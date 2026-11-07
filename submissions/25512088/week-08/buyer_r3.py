@@ -19,6 +19,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
 from buyer_memory import Memory
 from market_intel import Intel
+from adaptive_control import Control
 
 
 def task_state(task):
@@ -193,10 +194,11 @@ def signed_receipt(task, shop, sku, maximum, task_id, failures=None):
 
 
 class Buyer:
-    def __init__(self, order, memory, client, catalog, intel=None):
+    def __init__(self, order, memory, client, catalog, intel=None, control=None):
         self.o, self.m, self.c, self.catalog = order, memory, client, catalog
         self.sessions = []
         self.intel = intel
+        self.control = control
         self.deadline = min(time.time()+85, order['expires']-3)
 
     def result(self, session=None, receipt=None, reason='No acceptable deal'):
@@ -234,6 +236,30 @@ class Buyer:
                       asking(content),{'state':task_state(task),'text':content[:4000]})
         return task
 
+    def send_offer(self, session, amount):
+        """Submit one idempotent offer and preserve unknown outcomes."""
+        if self.control is None:
+            return self.send(session,str(amount))
+        key=':'.join(map(str,('buyer-offer-v1',self.o['order'],session['shop']['url'],
+                             session['sku'],session.get('task'),amount)))
+        mutation_id,created=self.control.prepare_mutation('buyer','offer',key,{
+            'order':self.o['order'],'shop':session['shop']['name'],'sku':session['sku'],'amount':amount})
+        if not created:
+            state=self.control.mutation_state(mutation_id)
+            if state!='SAFE_TO_RETRY':
+                self.control.event('buyer','duplicate_offer_blocked',{'mutation_id':mutation_id,'state':state},self.o['order'])
+                raise RuntimeError('offer already attempted; reconciliation required')
+            self.control.move_mutation(mutation_id,'PREPARED','official retry allowed')
+        self.control.move_mutation(mutation_id,'SUBMITTED','network request starting')
+        try:
+            task=self.send(session,str(amount))
+        except Exception as exc:
+            self.control.move_mutation(mutation_id,'UNCERTAIN','response unavailable',{'error':type(exc).__name__})
+            raise
+        self.control.move_mutation(mutation_id,'CONFIRMED','seller response received',{
+            'task_state':task_state(task)})
+        return task
+
     def completed(self,s):
         self.m.defer_rival(s['shop']['url'],s['sku'],'receipt_pending',pending=self.o['order'])
         failures=[]
@@ -249,7 +275,8 @@ class Buyer:
     def open_session(self, shop, offer):
         # Each worker owns its SQLite connection; only network discovery is parallel.
         memory=Memory(self.m.root)
-        worker=Buyer(self.o,memory,self.c,self.catalog)
+        control=Control(self.m.root) if self.control is not None else None
+        worker=Buyer(self.o,memory,self.c,self.catalog,control=control)
         worker.deadline=self.deadline
         sku=offer['sku']; product=self.catalog[sku]
         session=dict(shop=shop,sku=sku,cap=limit(self.o,product),deal_estimate=memory.deal_estimate(shop['url']))
@@ -268,12 +295,19 @@ class Buyer:
             session['error']='network';session['error_type']=type(exc).__name__
         except Exception as exc:
             session['error']='protocol';session['error_type']=type(exc).__name__
-        finally:memory.close()
+        finally:
+            memory.close()
+            if control is not None:control.close()
         return session
 
     def run(self, shops):
         quotes=[]
         try:
+            if self.control is not None:
+                arm,digest=self.control.assign('buyer-market-selection-v1',str(self.o['order']))
+                self.control.event('buyer','order_started',{
+                    'order':self.o['order'],'kind':self.o.get('kind'),'acceptable':len(self.o.get('acceptable',[])),
+                    'budget':self.o.get('budget'),'arm':arm,'assignment_digest':digest})
             picks=candidates(self.o,shops,self.catalog,self.m,self.intel)
             offered_skus={offer['sku'] for _,offer in picks}
             missing=sorted(set(self.o['acceptable'])-offered_skus)
@@ -332,10 +366,13 @@ class Buyer:
                     self.m.record(self.o['order'],s['shop']['url'],s['sku'],s.get('task'),'offer',amount)
                     self.m.state(self.o['order'],'offer_in_flight')
                     print('OFFER',s['shop']['name'],s['sku'],amount,flush=True)
-                    try:task=self.send(s,str(amount))
+                    try:task=self.send_offer(s,amount)
                     except Exception:
                         self.m.defer_rival(s['shop']['url'],s['sku'],'offer_unknown',pending=self.o['order'])
                         self.m.state(self.o['order'],'uncertain')
+                        if self.control is not None:
+                            self.control.event('buyer','order_preserved',{
+                                'order':self.o['order'],'shop':s['shop']['name'],'sku':s['sku']},self.o['order'])
                         return self.result(s,reason='Offer outcome unknown; no second purchase attempted')
                     if task_state(task).endswith('COMPLETED'):
                         s['cap']=min(s['cap'],amount);return self.completed(s)
@@ -388,6 +425,7 @@ def main():
     order=execution_order(original_order)
     memory=Memory(args.state)
     intel=Intel(args.state)
+    control=Control(args.state)
     try:
         memory.sync()
         from rival_feedback import refresh_feedback
@@ -403,6 +441,7 @@ def main():
                 # keys from the market, never accept a key supplied by the seller.
                 registry=client.get(args.market.rstrip('/')+'/api/shops',timeout=8)
                 registry.raise_for_status()
+                control.save_input('shops',registry.json())
                 keys={(s['url'],s['name']):s['pubkey'] for s in registry.json()['shops']}
                 shops=json.loads(Path(args.shops).read_text())
                 shops=[dict(s,pubkey=keys[(s['url'],s['name'])]) for s in shops if (s['url'],s['name']) in keys]
@@ -412,22 +451,29 @@ def main():
                 try:
                     response=client.get(args.market.rstrip('/')+'/api/board',timeout=8)
                     response.raise_for_status()
+                    control.save_input('board',response.json())
                     shops=verified_other_shops(shops,response.json(),own_shop_identity()[0])
                 except (httpx.HTTPError, ValueError, TypeError, KeyError):
                     memory.state(order['order'],'ownership_unverified')
                     out=dict(shop='',receipt=None,stars=3,review='Market ownership unavailable; no purchase attempted')
                 else:
-                    out=Buyer(order,memory,client,json.loads((Path(args.state)/'catalog.json').read_text()),intel).run(shops)
+                    out=Buyer(order,memory,client,json.loads((Path(args.state)/'catalog.json').read_text()),intel,control).run(shops)
         intel.evolution('buyer','result',{
             'order':order.get('order'),'kind':order.get('kind'),
             'acceptable_skus':len(order.get('acceptable',[])),
             'outcome':'receipt' if out.get('receipt') else 'no_receipt',
             'reason':out.get('review','')[:160]
         },correlation=str(order.get('order') or uuid.uuid4()))
+        control.event('buyer','order_result',{
+            'order':order.get('order'),'receipt':bool(out.get('receipt')),
+            'reason':out.get('review','')[:160]},str(order.get('order') or uuid.uuid4()))
+        control.checkpoint('buyer',{'policy':'buyer-market-selection-v1'},
+                           {'order':order.get('order'),'state':'receipt' if out.get('receipt') else 'no_receipt'})
         print(json.dumps(out,ensure_ascii=False),flush=True)
     finally:
         memory.close()
         intel.close()
+        control.close()
 
 
 if __name__=='__main__':
