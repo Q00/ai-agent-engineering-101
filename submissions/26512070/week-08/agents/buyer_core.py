@@ -163,6 +163,8 @@ def assumed_grade(claim, warranty_hours):
 
 NO_STOCK = re.compile(r"\b(none|no|not|out)\b[^.]{0,30}\bin stock|out of stock|sold out|재고\s*(가\s*)?(없|부족|소진)", re.I)
 
+SHARE_KEYS = ("big_list", "open_share", "target_share", "food_open_share", "food_target_share")
+
 PAY_RATE_MIN_N = 10             # paid + unpaid before a shop's pay rate is trusted
 
 
@@ -365,9 +367,16 @@ class BuyerCore:
     def rules(self):
         return self.playbook()["mode"] == "rules"
 
+    def share_cfg(self):
+        """The negotiation shares and big_list: playbook.buyer (B arm on top) over the old strategy.buyer (11/7 11:xx:
+        moved into the playbook so the harness sees them in capability and can test them; strategy.buyer stays a
+        fallback for older strategies)."""
+        pb = {**((self.ctx.strategy.get("playbook") or {}).get("buyer") or {}), **getattr(self, "patch", {})}
+        return {**(self.ctx.strategy.get("buyer") or {}), **{k: pb[k] for k in SHARE_KEYS if k in pb}}
+
     def shares(self, lp, kind):
-        """(open, target) shares of list for this order, from strategy.buyer (v14)."""
-        b = self.ctx.strategy.get("buyer") or {}
+        """(open, target) shares of list for this order (v14)."""
+        b = self.share_cfg()
         if kind == "goods" and b.get("big_list") is not None and lp >= b["big_list"]:
             return b.get("open_share", 0.4), b.get("target_share", 0.5)
         return b.get("food_open_share", 0.45), b.get("food_target_share", 0.6)
@@ -593,7 +602,7 @@ class BuyerCore:
     def big_goods_line(self, c, kind):
         """User 11/3 22:3x: surplus (list price - paid) is half of buyer ALL, and the top buyers make it on goods with a
         high list price bought near half of it. For such an order the strategy gives a target share of list."""
-        b = (self.ctx.strategy.get("buyer") or {})
+        b = self.share_cfg()
         lp = c.get("list_price") or 0
         if kind == "goods" and b.get("big_list") is not None and lp >= b["big_list"]:
             t, o = b.get("target_share", 0.55), b.get("open_share", 0.45)

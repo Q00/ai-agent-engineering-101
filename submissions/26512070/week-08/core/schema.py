@@ -262,7 +262,13 @@ STRATEGY = {
                     "value_gate": {"type": "boolean"},
                     "value_margin": {"type": "number", "minimum": -0.1, "maximum": 0.2},
                     # 11/7 11:xx: skip a shop+SKU the kit refused to pay for this many hours (0 = only 'not in stock')
-                    "pay_refused_skip_h": {"type": "number", "minimum": 0, "maximum": 24}}}}},
+                    "pay_refused_skip_h": {"type": "number", "minimum": 0, "maximum": 24},
+                    # 11/7 11:xx: the negotiation shares, moved here from strategy.buyer (that stays a fallback)
+                    "big_list": {"type": "number", "minimum": 0},
+                    "open_share": {"type": "number", "minimum": 0, "maximum": 1},
+                    "target_share": {"type": "number", "minimum": 0, "maximum": 1},
+                    "food_open_share": {"type": "number", "minimum": 0, "maximum": 1},
+                    "food_target_share": {"type": "number", "minimum": 0, "maximum": 1}}}}},
     },
 }
 

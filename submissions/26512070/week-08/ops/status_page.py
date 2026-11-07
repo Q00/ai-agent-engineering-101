@@ -185,8 +185,8 @@ def sec_seller(d):
 
 
 def sec_buyer(d):
-    b = d.strategy.get("buyer") or {}
     pb = (d.strategy.get("playbook") or {}).get("buyer") or {}
+    b = {**(d.strategy.get("buyer") or {}), **pb}          # 11/7: the shares moved into playbook.buyer
     ev = raw("buyer", {"buyer.order", "buyer.closed"}, d.now - 3 * 3600)
     start, kind, last = {}, {}, {}
     for x in ev:
