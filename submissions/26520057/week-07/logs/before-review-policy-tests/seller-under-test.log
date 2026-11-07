@@ -1,0 +1,76 @@
+[rule] lamp | offer 100, ask 125, floor 100 -> counter 100
+[rule] lamp | offer 100, ask 100, floor 100 -> accept
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1027e5a80> at 0x102f75540> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-47' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x1027e5a80> at 0x102f75180> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-48' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/yudana/Library/CloudStorage/GoogleDrive-dana020405@gmail.com/내 드라이브/Seoultech_dana/Class/26-02/AX-Application/ai-agent-engineering-101-dnyou/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[rule] lamp | offer 100, ask 125, floor 100 -> counter 100
+[rule] lamp | offer 100, ask 100, floor 100 -> accept
+[rule] lamp | offer 100, ask 125, floor 100 -> counter 100
+[rule] lamp | offer 100, ask 100, floor 100 -> accept
+[rule] bookshelf | offer 140, ask 293, floor 260 -> counter 260
+[rule] bookshelf | offer 170, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 200, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 140, ask 293, floor 260 -> counter 260
+[rule] bookshelf | offer 170, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 200, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 140, ask 293, floor 260 -> counter 260
+[rule] bookshelf | offer 170, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 200, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
+[rule] bookshelf | offer 230, ask 260, floor 260 -> counter 260
