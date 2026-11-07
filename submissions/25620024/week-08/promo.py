@@ -163,8 +163,8 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
             arm, price, why = o["price_share"], lp * o["price_share"], why + [f"experiment price_share {o['price_share']}"]
         if "undercut" in o:
             follow = o["undercut"]
-    if follow is None and lp >= t.get("big_follow_list", 500000):
-        follow = t.get("big_follow", 0.02)    # 11-07: furniture sells at ~0.70-0.74 of list market-wide; our arms (0.80+)
+    if lp >= t.get("big_follow_list", 500000):  # 11-07: HQ big_follow is the least undercut on furniture, even for SKUs
+        follow = max(follow or 0, t.get("big_follow", 0.02))   # the sales plan follows at 2%    # 11-07: furniture sells at ~0.70-0.74 of list market-wide; our arms (0.80+)
                                               # would never sell the dear SKUs restock now buys -- follow their median
     if follow is not None:
         follow = min(follow, t.get("max_undercut", 0.05))      # finance caps how far under the median we go
@@ -214,7 +214,10 @@ def quote(c, unit, code=None, me=None, now=None, stock_n=1, vip=False):
     if any(w.startswith(("shelf", "in stock", "scm clear")) or " in stock" in w for w in why) and "clear_floor_margin" in t:
         floor = int(cost * (1 + min(t["min_margin"], t["clear_floor_margin"]))) + 1   # clearing may go lower
     if follow and median:
-        floor = min(floor, int(cost * (1 + t["follow_margin"])) + 1)
+        fm = t["follow_margin"]
+        if lp >= t.get("big_follow_list", 500000):   # 11-07: Book counts unsold stock at cost, so a dear unit whose cost
+            fm = min(fm, t.get("big_follow_margin", 0.03))   # sits above the market median sells near cost: Book
+        floor = min(floor, int(cost * (1 + fm)) + 1)          # keeps +3%, revenue (0.3) gets the whole price
     price = max(int(price), floor)
     least = max(int(price * (1 - t["haggle_room"])), floor)
     return {"price": price, "least": least, "arm": arm if isinstance(arm, str) else f"{arm:.2f}", "floor": floor,
