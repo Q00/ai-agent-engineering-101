@@ -95,7 +95,7 @@ class Evolution:
 
     def trigger(self,evidence,now=None):
         now=self.clock() if now is None else now
-        last=self.control.db.execute('SELECT created,evidence_hash,state,base_commit FROM evolution_cycles ORDER BY created DESC LIMIT 1').fetchone()
+        last=self.control.db.execute('SELECT cycle_id,created,evidence_hash,state,base_commit FROM evolution_cycles ORDER BY created DESC LIMIT 1').fetchone()
         rules=(evidence['official_inputs'].get('rules') or {}).get('hash')
         previous_rules=self.control.db.execute(
             "SELECT body FROM runtime_events WHERE role='evolution' AND kind='cycle_started' ORDER BY id DESC LIMIT 1").fetchone()
@@ -103,6 +103,11 @@ class Evolution:
             try:changed=json.loads(previous_rules[0]).get('rules_hash')!=rules
             except (ValueError,TypeError):changed=False
             if changed:return 'official_rule_changed'
+        if last and last['state']=='QUARANTINED':
+            transition=self.control.db.execute(
+                "SELECT reason FROM state_transitions WHERE machine='evolution' AND entity_id=? ORDER BY id DESC LIMIT 1",
+                (last['cycle_id'],)).fetchone()
+            if transition and transition[0]=='interrupted_before_live_completion':return 'interrupted_retry'
         if last and last['state'] in {'QUARANTINED','ROLLBACK_FAILED'}:
             current=self.runner(['git','rev-parse','HEAD'],REPO,30)[1].decode().strip()
             if current and current!=last['base_commit']:return 'implementation_updated'

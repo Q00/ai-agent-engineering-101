@@ -49,6 +49,13 @@ class EvolutionDaemonTests(unittest.TestCase):
             self.assertIn(str(Path(tmp)/'candidate'),seed)
             e.control.close()
 
+    def test_interrupted_pre_live_cycle_retries_without_waiting(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e=self.make(tmp);ev=e.evidence();e._cycle('interrupted','scheduled_review','shop',ev,'abc')
+            e._state('interrupted','QUARANTINED','interrupted_before_live_completion')
+            self.assertEqual(e.trigger(ev,10_001),'interrupted_retry')
+            e.control.close()
+
     def test_morning_report_compares_official_rank_baseline(self):
         with tempfile.TemporaryDirectory() as tmp:
             e=self.make(tmp);e.ensure_baseline()
