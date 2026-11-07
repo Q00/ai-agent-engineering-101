@@ -40,7 +40,7 @@ WINDOW_BUDGET = GROWTH_WINDOW_BUDGET
 ROLLING_BUDGET = GROWTH_EXPLORATION_BUDGET
 MAX_MAINTAINED_SKUS = 8
 STOCKOUT_TRIAL_CANDIDATES = 3
-POLICY_VERSION = 20
+POLICY_VERSION = 21
 GROWTH_SPEND_SHARE = .50
 DAY = 86400
 READY = Path('state/procurement-ready.json')
@@ -401,7 +401,12 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
                   'definition':'Growth target is half the smaller of safe cash after buffers/pending and current window capacity. '
                                'Compare estimated_spend_krw at observed surge against this soft target; risk limits use cost ceilings. '
                                'Use sales, exposure, eligible missed demand and holding/expiry risk. '
-                               'Consider evidenced mid/upper-price SKUs when their margin and demand justify the spend. '
+                               'In growth, first cover forecast deficits on midprice_priority replenishment SKUs '
+                               '(at least two actual 30,000–300,000 KRW positive-spread sales in 12h). Prefer '
+                               'several proven SKUs and compatible current purchase requests when feasible. '
+                               'Allocate most discretionary replenishment spend there when eligible deficits justify it; '
+                               'use existing forecast options, caps and margins. If skipping an affordable midprice '
+                               'deficit, explain the concrete constraint in reason. Keep room for required exploration. '
                                'If the feasible forecast-backed basket falls short, name the binding limitation in reason. '
                                'Do not spend to fill the target or infer a sale from a forum post.'},
               'candidates': rows, 'maximum_new_skus': new_slots, 'cost_ceiling_budget': budget,
@@ -523,6 +528,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
             if option is None or any(o['sku']==item['sku'] for o in restock_orders) or item['sku'] in skus:
                 raise ValueError('invalid or duplicated replenishment target')
             restock_orders.append({'sku':item['sku'], 'qty':option['qty'],
+                                  'midprice_priority':winner.get('midprice_priority', False),
                                   'target_stock':option['target_stock'],
                                   'forecast_scenario':option['scenario'],
                                   'coverage_hours':option.get('coverage_hours'),
@@ -588,7 +594,7 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
         row.setdefault('forum_request_ids',(row.get('forum_intent') or {}).get('request_ids',[]))
     record('portfolio_approval',window=key,planning_at=now,spend_target_krw=spend_target,
         estimated_spend_krw=sum(r['qty']*unit_costs[r['sku']] for r in desired),approved_lines=[
-        {k:r.get(k) for k in ('sku','kind','qty','target_stock','cost_ceiling','second_trial',
+        {k:r.get(k) for k in ('sku','kind','qty','target_stock','cost_ceiling','second_trial','midprice_priority',
                              'forecast_scenario','coverage_hours','forecast_mean','demand_basis','forum_request_ids','stockout_trial')} for r in desired],
         model_choice=answer,allocation_review=answer.get('strategy_review'),
         allocation_behavior={'review_required':review_required,

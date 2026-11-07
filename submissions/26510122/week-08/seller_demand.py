@@ -36,6 +36,8 @@ def connect(path):
 
 def constraints(body):
     result=initial(body)
+    if re.search(r'인증서(?:가|를)?\s*(?:있는|포함|필수|필요)', body):
+        result['cert_required'] = True
     grade=re.search(r'([ABC](?:\s*[/,]\s*[ABC])*)\s*(?:등급|급)',body)
     if grade:result['grades']=sorted(set(re.findall('[ABC]',grade.group(1))))
     for match in re.finditer(r'(\d+(?:\.\d+)?)\s*(시간|일|days?|hours?)',body,re.I):
@@ -58,6 +60,11 @@ def matches(body,catalog):
     if exact:return [{'sku':s,'basis':'exact_sku_or_unique_full_name'} for s in exact]
     short=[sku for sku,p in catalog.items() if 2<=len(p.get('name',''))<6 and re.search(r'(?<!\w)'+re.escape(p['name'])+r'(?=$|\W)',body)]
     if len(short)==1:return [{'sku':short[0],'basis':'unique_short_full_name'}]
+    # A category request is ONE intent with alternative SKUs, not many orders.
+    return category_matches(body,catalog)[:12]
+
+
+def category_matches(body,catalog):
     results=[]
     for sku,p in catalog.items():
         if re.search(r'반려|강아지|고양이|애견',p.get('name','')) and not re.search(r'반려|강아지|고양이|애견',body):continue
@@ -69,8 +76,7 @@ def matches(body,catalog):
             if len(term)<2 or term in GENERIC:continue
             if re.search(r'(?<!\w)'+re.escape(term)+r'(?=$|\W|(?:을|를|이|가|은|는|도|와|과)(?:\s|$))',body,re.I):valid.append(term)
         if valid:results.append({'sku':sku,'basis':'category_alternatives','matched_term':max(valid,key=len)})
-    # A category request is ONE intent with alternative SKUs, not many orders.
-    return sorted(results,key=lambda r:(catalog[r['sku']].get('list_price') or 0,r['sku']))[:12]
+    return sorted(results,key=lambda r:(catalog[r['sku']].get('list_price') or 0,r['sku']))
 
 
 def ingest(runtime,catalog,now):

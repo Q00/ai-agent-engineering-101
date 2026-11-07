@@ -15,7 +15,8 @@ def comparison_baskets(winners,rows,*,anchor,minimum,minimum_categories,slots,un
         if categories.get(row['category'],0)+sum(r['category']==row['category'] for r in witness)>=24:continue
         witness.append(row);seen.add(row['category'])
     if len(witness)<minimum or len(seen)<minimum_categories or sum(r['cost_ceiling'] for r in witness)>min(budget,novel_budget):return []
-    ranked=sorted(winners,key=lambda r:(r['second_trial'],-r['forecast']['sales_rate_per_hour'],r['sku']))
+    ranked=sorted(winners,key=lambda r:(r['second_trial'],not r.get('midprice_priority'),
+                                      -r['forecast']['sales_rate_per_hour'],r['sku']))
     results=[];fingerprints=set()
     for name,new_count,fraction,goods_h,food_h in (
         ('broad',8,.65,0.,0.),('balanced',4,.35,2.,1.),('depth',2,.15,6.,2.)):

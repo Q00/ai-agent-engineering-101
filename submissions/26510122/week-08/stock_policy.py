@@ -12,6 +12,8 @@ PROVEN_STOCK = 20  # safety ceiling, never a desired inventory target
 NEW_STOCK = 2
 MAINTENANCE_CATEGORY_LIMIT = 24
 MIN_POSITIVE_SALES = 2
+MIDPRICE_MIN = 30_000
+MIDPRICE_MAX = 300_000
 SUPPLY_CYCLE_SECONDS = 20*60
 SUPPLY_JITTER_BUFFER_SECONDS = 120
 PURCHASE_LEAD_SECONDS = 60
@@ -25,10 +27,12 @@ def sales_evidence(sku, history, now):
                and e.get('ledger') is not None and (timestamp(e.get('at')) or 0) >= now-12*3600
                and (timestamp(e.get('at')) or math.inf) <= now}
     positive = [e for e in settled.values() if e.get('unit') in costs and e.get('price', 0) > costs[e['unit']]]
+    midprice = [e for e in positive if MIDPRICE_MIN <= e['price'] <= MIDPRICE_MAX]
     recent = [e for e in positive if timestamp(e['at']) >= now-3600]
     spread = sum(e['price']-costs[e['unit']] for e in settled.values() if e.get('unit') in costs)
     proven = len(positive) >= MIN_POSITIVE_SALES and spread > 0
     return {'confirmed_positive_spread_sales_12h': len(positive), 'confirmed_positive_spread_sales_1h': len(recent),
+            'midprice_positive_sales_12h': len(midprice),
             'spread_before_holding_refunds_12h': spread, 'proven': proven,
             'settled_sales_12h':len(settled), 'maintenance_eligible':proven, 'positive_sales_threshold_12h':MIN_POSITIVE_SALES,
             'stock_limit': PROVEN_STOCK if proven else NEW_STOCK,
@@ -171,7 +175,8 @@ def demand_forecast(sku, product, inventory, history, now, *, outcomes=None):
 
 
 def replenishment_candidates(catalog, inventory, history, now, blocked=(), trialed=(), pending=None):
-    if not operating_policy(now)['allow_replenishment']: return []
+    operating = operating_policy(now)
+    if not operating['allow_replenishment']: return []
     units = [u for u in inventory.get('units', []) if u.get('grade') in ('A', 'B', 'C')
              and (u.get('expires_at') is None or u['expires_at'] > now)]
     stocks = Counter(u['sku'] for u in units)
@@ -188,7 +193,7 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
         price = p.get('list_price')
         reserved = pending.get(sku, 0)
         projected = stocks[sku] + reserved
-        second_trial = (operating_policy(now)['allow_new_skus'] and not projected and sku not in trialed
+        second_trial = (operating['allow_new_skus'] and not projected and sku not in trialed
                         and signal['settled_sales_12h'] == 1
                         and signal['confirmed_positive_spread_sales_12h'] == 1
                         and len({e.get('ledger') for e in history if e.get('event') == 'settled'
@@ -222,13 +227,16 @@ def replenishment_candidates(catalog, inventory, history, now, blocked=(), trial
             continue
         options.sort(key=lambda option:option['qty'])
         rows.append({'sku': sku, 'name': p.get('name', sku), 'kind': p['kind'], 'category': p.get('category'),
+                     'midprice_priority': (operating['phase'] == 'growth' and
+                                           signal['midprice_positive_sales_12h'] >= MIN_POSITIVE_SALES),
                      'currently_stocked': stocks[sku], 'pending_stock':reserved,
                      'second_trial':second_trial, 'evidence': signal, 'target_options': options,
                      'cost_ceiling_per_unit': acquisition_ceiling(p), 'forecast':forecast,
                      'budget_scope':'replenishment: shared window and cash/risk limits; NOT rolling novel-exploration budget',
                      'assumption':('One additional unit after exactly one positive-spread settlement; not proven maintenance.'
                                    if second_trial else 'Each target/quantity is forecast-derived; the model approves a candidate or holds.')})
-    rows.sort(key=lambda r: (-(r['target_options'][-1]['qty']/max(1,r['currently_stocked'])),
+    rows.sort(key=lambda r: (not r['midprice_priority'],
+                             -(r['target_options'][-1]['qty']/max(1,r['currently_stocked'])),
                              -r['evidence']['confirmed_positive_spread_sales_1h'],
                              -r['evidence']['spread_before_holding_refunds_12h'], r['sku']))
     proven = [r for r in rows if not r['second_trial']]

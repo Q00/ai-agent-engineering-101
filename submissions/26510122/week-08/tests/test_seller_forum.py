@@ -5,6 +5,7 @@ import sqlite3
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 import seller_forum as forum
 
@@ -101,6 +102,37 @@ class ShopForumTests(unittest.TestCase):
         self.assertEqual(evidence['requests'][0]['matching_skus'], ['s1'])
         decision = self.copy | {'campaign': 'reply', 'thread_id': 50}
         forum.validate(decision, evidence, [], self.now)
+
+    def test_category_reply_considers_stock_outside_sourcing_shortlist(self):
+        self.units[0].update(name='접이식 매트리스', category='가구>침대/매트리스',
+                             kind='goods', expires_at=None, cert='test')
+        product = self.units[0] | {'list_price': 100_000}
+        catalog = {f'cheap-{i}': product | {'name': f'other {i}', 'list_price': i + 1}
+                   for i in range(12)}
+        catalog['s1'] = product
+        (self.root/'.market/catalog.json').write_text(json.dumps(catalog))
+        (self.root/'.market/inventory.json').write_text(json.dumps({'round': 3, 'units': self.units}))
+        os.utime(self.root/'.market/inventory.json', (self.now, self.now))
+        (self.root/'.market/forum.json').write_text(json.dumps([
+            dict(id=50, role='buyer', ts=self.now, text='침대/매트리스 구합니다. 인증서가 있는 B등급 필요합니다.')
+        ]))
+        request = self.evidence()['requests'][0]
+        self.assertNotIn('s1', {match['sku'] for match in request['catalog_matches']})
+        self.assertEqual(request['matching_skus'], ['s1'])
+        self.assertTrue(request['requirements']['cert_required'])
+
+    def test_extended_reply_slots_only_accept_midprice_quotes(self):
+        unit = {'unit': 'free', 'sku': 's1', 'kind': 'goods', 'grade': 'B', 'expires_at': None}
+        quote = {'unit': 'free', 'valid_until': self.now + 60, 'warranty_hours': 6}
+        options = [quote | {'price': 25_000}, quote | {'price': 80_000}]
+        evidence = {'available_units': [unit], 'featured_capacity_left': 1, 'quoted_units': [],
+                    'requests': [{'id': 50, 'matching_skus': ['s1'],
+                                  'requirements': {'budget_max': 90_000}}],
+                    'at': self.now, 'market_dir': self.root/'.market'}
+        with patch.object(forum.seller_featured, 'proposals', return_value=options):
+            self.assertEqual(forum.reply_quote_options(evidence, forum.REPLY_QUOTE_DAILY_CAP),
+                             {50: [options[1]]})
+            self.assertEqual(forum.reply_quote_options(evidence, forum.MIDPRICE_REPLY_DAILY_CAP), {})
 
     def test_short_lived_coffee_is_not_offered_for_360_hour_request(self):
         self.assertEqual(self.coffee_request(164)['requests'], [])
