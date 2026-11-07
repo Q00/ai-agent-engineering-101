@@ -163,6 +163,22 @@ def assumed_grade(claim, warranty_hours):
 
 NO_STOCK = re.compile(r"\b(none|no|not|out)\b[^.]{0,30}\bin stock|out of stock|sold out|재고\s*(가\s*)?(없|부족|소진)", re.I)
 
+def refill_by(ctx):
+    """When a shop that had none can have restocked: the close of the next supply window (inventory.json restock: one
+    schedule for every shop, about 20 min apart, 3 min open; a window open now counts as already used). None when
+    unknown (then reflex.STOCK_MISS_FALLBACK)."""
+    try:
+        r = (mf.inventory(ctx) or {}).get("restock") or {}
+    except Exception:
+        return None
+    if r.get("open") and r.get("closes_at"):
+        # a shop out of a SKU while the window is open has mostly bought already this window: the next one
+        return r["closes_at"] + reflex.STOCK_MISS_FALLBACK
+    if r.get("opens_at"):
+        return r["opens_at"] + 180
+    return None
+
+
 SHARE_KEYS = ("big_list", "open_share", "target_share", "food_open_share", "food_target_share")
 
 PAY_RATE_MIN_N = 10             # paid + unpaid before a shop's pay rate is trusted
@@ -594,7 +610,7 @@ class BuyerCore:
             said = next((h.get("excerpt") or "" for h in reversed(hist) if h["from"] == "shop"), "")
             self.last_said = said[:160]                 # on buyer.closed: what the shop said last (data, marked)
             if NO_STOCK.search(said):
-                reflex.record_stock_miss(shop["name"], sku, ctx.now())
+                reflex.record_stock_miss(shop["name"], sku, ctx.now(), refill_by(ctx))
                 outcome = "no stock"
             return self.finish_none(shop, f"no deal ({outcome})", shop_obj=shop, agreed=None, list_price=c.get("list_price"))
         return self.check_and_finish(shop, sku, c, kind, receipt, offers, hist)

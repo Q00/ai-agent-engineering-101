@@ -107,14 +107,16 @@ def pay_refused(hours, now=None):
             if now - t < hours * 3600}
 
 
-STOCK_MISS_RETRY = 30 * 60   # a shop that said it has none of a SKU it lists is not asked for it again this long
+STOCK_MISS_FALLBACK = 20 * 60   # supply opens for every shop once every 20 minutes (agent.md; measured 16-23 min)
 
 
-def record_stock_miss(shop_name, sku, now=None):
+def record_stock_miss(shop_name, sku, now=None, until=None):
     """11/7 11:xx: ~300 of the food orders in 3 h ended with 'Sorry, we have none of that in stock' at a shop whose
-    listing showed the SKU (the listing is stale); the pair is skipped for STOCK_MISS_RETRY."""
+    listing showed the SKU (the listing is stale). The pair is skipped until the shop can have restocked: the end
+    of the next supply window (user 11/7 12:0x: the windows are the refill cycle), else STOCK_MISS_FALLBACK."""
+    now = now or time.time()
     r = load()
-    _shop(r, shop_name).setdefault("stock_missed", {})[sku] = now or time.time()
+    _shop(r, shop_name).setdefault("stock_missed_until", {})[sku] = until or now + STOCK_MISS_FALLBACK
     atomic.write_json(path(), r)
 
 
@@ -126,7 +128,7 @@ def stock_refused(now=None):
     out = set()
     for n, s in load()["shops"].items():
         out |= {(n, k) for k, t in (s.get("stock_refused") or {}).items() if now - t < STOCK_RETRY}
-        out |= {(n, k) for k, t in (s.get("stock_missed") or {}).items() if now - t < STOCK_MISS_RETRY}
+        out |= {(n, k) for k, t in (s.get("stock_missed_until") or {}).items() if now < t}
     return out
 
 
