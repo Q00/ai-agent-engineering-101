@@ -1,5 +1,6 @@
-goal: 2026-11-17 23:59 KST Round 3 종료 시 공식 Class Player 단독 1위를 달성하도록, 기존 Buyer·Seller·procurement를
-  안전하게 지속 운영하고 코드·파라미터 실험, 검증, 역할별 배포, 관찰, 롤백을 무인 수행하는 로컬 supervisor pipeline을 완성한다.
+goal: 공식 Class Player 단독 1위에 가능한 한 빨리 도달해 2026-11-17 23:59 KST Round 3 종료까지 방어하도록,
+  기존 Buyer·Seller·procurement를 안전하게 지속 운영하고 코드·파라미터 실험, 검증, 역할별 배포, 관찰, 롤백을 무인 수행하는
+  로컬 supervisor pipeline을 완성한다.
 task_type: code
 brownfield_context:
   project_type: brownfield
@@ -49,8 +50,12 @@ constraints:
   수정하지 않는다.
 - dirty worktree에서 수정 대상과 겹치는 사용자 tracked 변경이 있으면 배포하지 않고 격리하며 사용자 파일·로그를 삭제하거나 reset하지
   않는다.
-- 모든 자동 실험은 역할별 block에서 80% 실험군과 20% 기존전략 대조군을 동시에 운용하고 hash(experiment_id+unit_id)로
+- 가격·상품·조달·Forum 전략 실험은 역할별 block에서 80% 실험군과 20% 기존전략 대조군을 동시에 운용하고 hash(experiment_id+unit_id)로
   재시작 후에도 배정을 고정한다.
+- 오류율·p95 지연·재시작을 바꾸는 안정성 변경은 80:20 전략 실험의 예외로 두고 Deployment 10% CANARY와 90% 기존
+  ACTIVE로 검증한다. unit은 고유 request/task correlation ID, cluster는 10분 구간이고 동일 correlation 재시도는 새
+  표본이 아니다. 고유 unit 300개·cluster 6개·1시간을 모두 충족하고 오류율 또는 p95가 상대 10% 이상 개선되며 처리 성공률
+  저하가 상대 2% 이내일 때만 ACTIVE로 승격한다.
 - 실험 단위는 Buyer order_id, Seller 견적 task_id, 조달 SKU×공급창 cohort, 보증 성숙 정산, Forum 게시물이며
   동일 멱등성 키와 재시도는 새 표본으로 세지 않는다.
 - Buyer cluster는 SKU 또는 표본 부족 시 category, Seller·보증·조달 cluster는 SKU, Forum cluster는
@@ -120,13 +125,20 @@ constraints:
 - 응답·ledger 확인 전 중단된 mutation은 UNCERTAIN으로 처리하고 재제출 및 관련 신규 mutation을 금지한 채 API·ledger·결제
   파일 reconciliation만 수행한다.
 - UNCERTAIN 거래는 30초마다 공식 API·ledger·결제 파일을 확인해 10분 동안 최대 20회 reconciliation한다. 미실행 또는 공식
-  거절이 확인된 경우에만 SAFE_TO_RETRY로 전이하고 확인할 수 없으면 PRESERVED로 전이한다. PRESERVED에는 새 결제 요청을
-  보내지 않으며 새 공식 증거가 도착하면 RECONCILING으로 복귀한다. fresh 입력, checkpoint와 코드 버전 일치가 확인된 해당
-  거래만 재개하고 관련 없는 Buyer·Seller·procurement 운영은 계속한다.
-- Deployment는 DRAFT→VALIDATED→SHADOW→CANARY→ACTIVE 및 QUARANTINED/ROLLED_BACK, Experiment는
-  PROPOSED→ELIGIBLE→RUNNING→PAUSED_INPUT→RUNNING 또는 RUNNING→EXPANDING→PAUSED_INPUT→EXPANDING→ADOPTED 및
-  REJECTED/INVALIDATED/ROLLED_BACK,
-  Safety Kernel은 VALIDATING→ACTIVE→TRIPPED→RECOVERY_PENDING→ACTIVE 상태를 사용한다.
+  거절이 확인되면 즉시 SAFE_TO_RETRY, 성공이 확인되면 즉시 CONFIRMED로 전이하고 남은 확인을 실행하지 않는다. 20회까지
+  결론이 없을 때만 PRESERVED로 전이한다. PRESERVED에는 새 결제 요청을 보내지 않으며 새 공식 증거가 도착하면 RECONCILING으로
+  복귀한다. fresh 입력, checkpoint와 코드 버전 일치가 확인된 해당 거래만 재개하고 관련 없는 Buyer·Seller·procurement
+  운영은 계속한다.
+- Deployment 허용 전이는 DRAFT→VALIDATED|QUARANTINED, VALIDATED→SHADOW|QUARANTINED,
+  SHADOW→CANARY|QUARANTINED, CANARY→ACTIVE|ROLLED_BACK|QUARANTINED, ACTIVE→ROLLED_BACK뿐이다.
+- Experiment 허용 전이는 PROPOSED→ELIGIBLE|REJECTED|INVALIDATED, ELIGIBLE→RUNNING|REJECTED|INVALIDATED,
+  RUNNING→PAUSED_INPUT|EXPANDING|REJECTED|INVALIDATED|ROLLED_BACK,
+  PAUSED_INPUT(resume_state=RUNNING)→RUNNING|INVALIDATED|ROLLED_BACK,
+  PAUSED_INPUT(resume_state=EXPANDING)→EXPANDING|INVALIDATED|ROLLED_BACK,
+  EXPANDING→PAUSED_INPUT|ADOPTED|REJECTED|INVALIDATED|ROLLED_BACK,
+  ADOPTED→INVALIDATED|ROLLED_BACK뿐이다.
+- Safety Kernel 허용 전이는 VALIDATING→ACTIVE|TRIPPED, ACTIVE→TRIPPED, TRIPPED→RECOVERY_PENDING,
+  RECOVERY_PENDING→ACTIVE|TRIPPED뿐이다. 모든 상태 머신은 열거되지 않은 전이를 거부하고 append-only로 기록한다.
 - VALIDATED는 전체 Python 문법 검사, 전체 unittest 100% 통과, git diff --check, 임시 DB migration,
   Safety Kernel·비밀정보 검사와 submission 내부 허용 경로 allowlist 검사를 모두 통과해야 한다.
 - SHADOW는 POST 없이 기존 로그·공개 snapshot을 최소 5분 또는 Buyer 50개·Seller 30개 입력 동안 재생하고 금지행동,
@@ -136,9 +148,11 @@ constraints:
 - canary 대상 프로세스 종료, 중복거래 1건, canary에서 신규 UNCERTAIN 1건, 현금 하한 침범 또는 Safety Kernel 위반
   1건이 발생하면 즉시 이전 commit과 parameter set으로 복귀하고 procurement의 독립 프로세스와 기존 PRESERVED 상태를 보존한다.
 - 후보 배포는 drain→checkpoint→한 역할 재시작→board alive 및 commit 확인→다음 역할 순서로 수행한다.
-- 모든 상태전이는 correlation·experiment·deployment ID, UTC·KST, rule hash, commit, parameter
-  set, 집계근거, 표본, 효과·신뢰구간, 비용·자본노출, 검증·rollback 결과를 append-only로 기록하고 비밀과 raw untrusted
-  instruction은 기록하지 않는다.
+- 모든 상태전이의 공통 필수값은 transition ID, machine type, 이전·다음 상태, UTC·KST, rule hash, commit,
+  원인과 correlation ID다. experiment_id는 Experiment, deployment_id는 Deployment, mutation_id·멱등성 키는
+  Mutation, safety_event_id는 Safety 전이에만 필수이며 관련 없는 ID는 null로 두고 가짜 ID를 생성하지 않는다. 해당되는
+  parameter set, 집계근거, 표본, 효과·신뢰구간, 비용·자본노출, 검증·rollback 결과를 append-only로 기록하고 비밀과 raw
+  untrusted instruction은 기록하지 않는다.
 - 실제 Buyer·Seller·procurement는 background supervisor가 소유하고 bash run_ubuntu.sh watch
   shop 및 watch buyer는 구조화된 runtime event를 실시간 표시하되 프로세스를 소유하지 않는다.
 - 관찰창을 닫거나 Ctrl-C를 입력해도 agent는 계속 실행되며 실제 중단은 별도의 명시적 supervisor stop으로만 수행한다.
@@ -155,19 +169,47 @@ constraints:
 - 검증 명령은 5분, 전체 후보 업데이트 작업은 30분을 hard timeout으로 하며 초과 시 해당 process group을 TERM 후 10초 뒤 KILL하고
   후보를 QUARANTINED로 표시하며 현재 ACTIVE 버전을 유지한다.
 - hard envelope 자체는 Round 3 동안 자동으로 완화하거나 변경하지 않는다.
+- 순위 최적화는 안전·합법 제약 다음 우선순위로 단독 1위 최초 도달 시각을 최소화하고, 도달 뒤에는 종료까지 단독 1위 유지 가능성을
+  최대화한다. 마일스톤은 2026-11-10 23:59 KST Top 10, 11-13 23:59 Top 5, 11-15 23:59 Top 3,
+  11-16 23:59 단독 1위다.
+- board를 30초마다 관찰해 우리와 1·3·5·10위의 점수·격차, 최근 30분·2시간 점수 속도와 선형 도달 예상시각을 기록한다.
+  30분 동안 다음 마일스톤 격차가 감소하지 않거나 예상 도달시각이 기한 뒤면 검증된 후보 중 예상 점수효과/비용이 가장 높은 역할의
+  실험·배포 우선순위를 올리고 성공한 확대 단계마다 hard envelope 안에서 자본 노출 상한을 최대 10%p씩 높인다. 역할별 primary
+  실험은 동시에 하나만 허용하고 표본·통계·Safety 기준은 완화하지 않는다.
+- 최종 순위 증거는 공식 /api/board와 leaderboard의 round=3 schema-valid 응답만 사용한다. 공식 finalized 표시가 있으면
+  2026-11-17 23:59:00 KST 이후 최초 finalized snapshot, 표시가 없으면 그 시각 이후 최초 snapshot을 선택하며 server
+  timestamp, 없으면 HTTP Date와 수신시각 순으로 시각을 판정한다. 종료 직전 마지막 snapshot도 함께 보존하고 학생번호 25512088와
+  owner morethanwhatiwant가 모두 일치하며 우리 Player ALL이 다른 모든 값보다 엄격히 클 때만 단독 1위다.
 acceptance_criteria:
 - description: 2026-11-17 23:59 KST Round 3 종료 시 Class Player가 공식 leaderboard의 단독
-    1위다.
+    1위이며, 종료 전 공식 순위 snapshot과 조기 순위 마일스톤이 재검증 가능한 증거로 보존된다.
   semantic_ac_key: ac_3bdae7896d36c5f4
-  verify_exemption_reason: 마감 시점의 공식 leaderboard는 외부 시스템의 시간 종속 상태이며 로컬 단일 명령만으로 진위를
-    결정할 수 없다.
+  verify_command: python scripts/verify_rank_evidence.py --student-id 25512088 --owner morethanwhatiwant --deadline 2026-11-17T23:59:00+09:00
+  expected_artifacts:
+  - .market/evidence/final-rank.json
+  output_assertion: exit code 0이며 round=3의 종료 직전 마지막·종료 이후 최초 schema-valid 공식 snapshot, endpoint·공식/수신 UTC·KST·원본 SHA-256·rule hash·우리/2위 점수·격차가 존재하고 Player 식별자 2개가 일치하며 우리 ALL이 모든 타인보다 엄격히 크다.
+- description: 공식 Class Player 순위가 2026-11-10 23:59 KST Top 10, 11-13 23:59 Top 5,
+    11-15 23:59 Top 3, 11-16 23:59 단독 1위 마일스톤을 각각 기한 내 달성한다.
+  semantic_ac_key: ac_rank_milestones
+  verify_command: python scripts/verify_rank_milestones.py --student-id 25512088 --owner morethanwhatiwant
+  expected_artifacts:
+  - .market/evidence/rank-milestones.jsonl
+  output_assertion: exit code 0이며 각 기한 이전의 schema-valid 공식 snapshot hash·시각·순위·점수·격차가 있고 식별자가 일치하며 단독 1위는 동점이 아니다.
+- description: 순위 controller가 30초마다 1·3·5·10위 격차와 30분·2시간 점수 속도·예상 도달시각을 기록하고, 격차가
+    30분간 감소하지 않거나 마일스톤 지연이 예상되면 통계·Safety 기준을 완화하지 않은 채 검증 후보의 점수효과/비용 순서로 우선순위와
+    자본 노출 상한을 단계당 최대 10%p 높이며 단독 1위 뒤에는 방어 모드로 전환한다.
+  semantic_ac_key: ac_rank_velocity_controller
+  verify_command: python -m unittest -v tests/test_rank_velocity_controller.py
+  expected_artifacts:
+  - tests/test_rank_velocity_controller.py
+  output_assertion: exit code 0이며 가짜 시계의 격차 축소·정체·기한 지연·단독 1위 fixture에서 계산값, 후보 순서, 10%p 상한, 역할별 동시 primary 1개, 기준 불변과 공격/방어 전환을 assert한다.
 - description: 자동 실험은 고정 80:20 배정, 역할별 block, 지정 unit·cluster, 최소 표본과 독립 cluster 5개,
-    primary metric 정확히 1개를 사용하며 재시작 후에도 unit 배정이 바뀌지 않는다.
+    primary metric 정확히 1개를 사용하며 재시작 후에도 unit 배정이 바뀌지 않는다. 안정성 변경은 별도 10% canary 계약을 사용한다.
   semantic_ac_key: ac_56877f39254126d2
   verify_command: python -m unittest -v tests/test_experiment_policy.py
   expected_artifacts:
   - tests/test_experiment_policy.py
-  output_assertion: exit code 0이며 고정 fixture를 3회 실행해 unit 배정과 SQLite experiment_unit 행이 byte-for-byte 동일하고 primary metric이 1개가 아닌 입력은 모두 거부됨을 assert한다.
+  output_assertion: exit code 0이며 고정 fixture를 3회 실행해 전략 unit 배정과 SQLite 행이 동일하고 primary metric이 1개가 아닌 입력은 거부되며 안정성 변경은 고유 correlation 300개·10분 cluster 6개·1시간·10% canary를 모두 충족해야 함을 assert한다.
 - description: normalized effect, 고정 seed 10,000회 bootstrap, 양측 97.5% 구간, empirical p, 동시 판정
     family의 Holm α=0.025, 최소 표본 EXPANDING과 2배 표본 ADOPTED 판정이 결정적으로 적용된다.
   semantic_ac_key: ac_statistical_decision
@@ -210,7 +252,7 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_mutation_lifecycle.py
   expected_artifacts:
   - tests/test_mutation_lifecycle.py
-  output_assertion: exit code 0이며 임시 SQLite와 fake API에서 각 단계 강제중단을 3회 반복해 불법 전이 0건, 동일 키 POST 최대 1회, 정확히 20회 확인, checkpoint와 PRESERVED 행 지속성을 assert한다.
+  output_assertion: exit code 0이며 임시 SQLite와 fake API에서 조기 성공은 첫 공식 확인, 조기 거절은 N번째 공식 확인에서 종료되고 끝까지 미결인 경우만 정확히 20회 뒤 PRESERVED이며, 각 단계 강제중단 3회에도 동일 키 POST 최대 1회와 상태 지속성을 assert한다.
 - description: Deployment, Experiment, Safety Kernel 상태 머신이 허용된 전이만 수행하고 모든 전이를 필수
     provenance와 판정 근거를 포함한 append-only SQLite 감사 기록으로 남기며 비밀과 raw untrusted instruction은
     저장하지 않는다.
@@ -218,7 +260,7 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_state_machines.py
   expected_artifacts:
   - tests/test_state_machines.py
-  output_assertion: exit code 0이며 임시 SQLite를 직접 열어 불법 전이·필수 provenance 누락·기존 행 UPDATE/DELETE·secret pattern·raw instruction이 각각 0건임을 assert한다.
+  output_assertion: exit code 0이며 열거된 Deployment·Experiment·Safety·Mutation edge에서 생성한 fixture가 허용되고 그 밖의 edge는 모두 거부되며, 공통 필드와 machine별 조건부 ID, append-only, secret/raw instruction 0건을 assert한다.
 - description: 후보 생성·배포는 submission 내부 allowlist에만 쓰고 Safety Kernel·hard envelope·owner.env·기존 로그·공용·타인
     파일을 수정하지 않으며 후보 변경과 겹치는 사용자 tracked 변경이 있으면 worktree_guard가 QUARANTINED로 만든다.
   semantic_ac_key: ac_worktree_scope_guard
@@ -242,17 +284,23 @@ acceptance_criteria:
   expected_artifacts:
   - tests/test_runtime_truthfulness.py
   output_assertion: exit code 0이며 validation 실패, PID 불일치, board offline, commit 불일치, rollback 불일치에서는 성공 이벤트 0건이고 모두 일치한 fixture에서만 1건임을 assert한다.
-- description: 모든 전략·가격·재고·보증·Forum·조달·안정성 자동 변경이 확정된 자본, 노출, 변경폭, 보상, 게시, 최소 개선폭
-    및 Safety Kernel hard envelope 밖으로 나가지 않는다. 최소실험 시작에는 hard envelope만 적용하고, δ와 guardrail은
-    확대·채택에만 적용한다.
+- description: 모든 전략·가격·재고·보증·Forum·조달 자동 변경이 확정된 자본, 노출, 변경폭, 보상, 게시 및 Safety Kernel
+    hard envelope 밖으로 나가지 않는다. δ·guardrail·표본·통계는 별도 adoption_threshold로 확대·채택에만 적용한다.
   semantic_ac_key: ac_43994aeff79a05f0
   verify_command: python -m unittest -v tests/test_hard_envelopes.py
   expected_artifacts:
   - tests/test_hard_envelopes.py
-  output_assertion: exit code 0이며 가격·재고·SKU·현금·부채·보증·보상·게시·loss-leader·확률/logit 각 경계의 아래·같음·위 fixture에서 한도 내 mutation만 허용되고 financial_snapshot, δ 미달 확대 거부와 Safety 판정을 assert한다.
+  output_assertion: exit code 0이며 가격·재고·SKU·현금·부채·보증·보상·게시·loss-leader·확률/logit 각 경계의 아래·같음·위 fixture에서 한도 내 mutation만 허용되고 financial_snapshot과 Safety 판정을 assert하며 δ는 시작 허용에 사용되지 않는다.
+- description: adoption_threshold가 역할별 δ·guardrail·최소/2배 표본·CI·p/Holm 결과를 보존하고 기준 미달 실험의 EXPANDING·ADOPTED
+    전이를 거부하되 hard envelope를 통과한 최소실험 시작을 막지 않는다.
+  semantic_ac_key: ac_adoption_threshold
+  verify_command: python -m unittest -v tests/test_adoption_threshold.py
+  expected_artifacts:
+  - tests/test_adoption_threshold.py
+  output_assertion: exit code 0이며 시작·확대·채택 경계 fixture에서 hard envelope와 adoption_threshold가 독립 판정되고 기준 미달 확대·채택은 0건임을 assert한다.
 - description: background supervisor가 실제 역할 프로세스를 관찰창과 독립적으로 계속 실행하고 역할별 watch 명령에
     구조화된 검증·배포·canary·rollback event를 실시간 표시한다. 관찰창 Ctrl-C와 supervisor 강제 중단·재시작을 각각
-    두 번 수행해도 역할 PID 소유권, recovery checkpoint, 미확정 거래와 조달 상태가 유지되고 비밀값은 노출되지 않는다.
+    세 번 수행해도 역할 PID 소유권, recovery checkpoint, 미확정 거래와 조달 상태가 유지되고 비밀값은 노출되지 않는다.
   semantic_ac_key: ac_2b44fbfab43eb815
   verify_command: python -m unittest -v tests/test_runtime_supervisor.py
   expected_artifacts:
@@ -308,7 +356,11 @@ ontology_schema:
     required: true
   - name: hard_envelope
     type: object
-    description: 자본, 현금, 재고, SKU, 가격, 보상, 보증, Forum, 파라미터 변경폭과 최소 개선폭의 불변 경계
+    description: 최소실험 시작 전 검사하는 자본, 현금, 재고, SKU, 가격, 보상, 보증, Forum, 파라미터 변경폭의 불변 안전 경계
+    required: true
+  - name: adoption_threshold
+    type: object
+    description: 확대·채택에만 적용하는 역할별 primary δ, guardrail, 최소·2배 표본, CI, p/Holm과 판정 결과
     required: true
   - name: forum_signal
     type: object
@@ -316,8 +368,8 @@ ontology_schema:
     required: true
   - name: state_transition
     type: object
-    description: 상태 머신 전이의 ID, UTC·KST, rule hash, commit, 근거, 표본, 효과, 비용, 노출 및 검증·rollback
-      결과
+    description: 공통 transition·machine·correlation ID, 이전·다음 상태, UTC·KST, rule hash, commit, 원인과
+      machine별 조건부 experiment·deployment·mutation·safety ID 및 해당되는 표본·효과·비용·검증·rollback 결과
     required: true
   - name: runtime_event
     type: object
@@ -362,7 +414,11 @@ ontology_schema:
     required: true
   - name: competitive_baseline
     type: object
-    description: 공식 leaderboard 기준선, 경쟁자 모델, Class Player 점수와 최종 순위 판정
+    description: 공식 leaderboard endpoint·시각·원본 hash·rule hash, 학생·owner 식별자, 경쟁자 점수, 격차, 마일스톤과 최종 단독 순위 판정
+    required: true
+  - name: rank_forecast
+    type: object
+    description: 30초 관찰시각, 1·3·5·10위 점수·격차, 30분·2시간 속도, 선형 도달 예상시각, 공격 단계와 후보 점수효과/비용 순서
     required: true
 evaluation_principles:
 - name: 공식 성과
@@ -389,9 +445,8 @@ evaluation_principles:
   weight: 0.05
 exit_conditions:
 - name: 목표 달성 종료
-  description: Round 3 공식 종료 시점에 Class Player가 단독 1위이면 성과 workflow를 성공 종료한다.
-  criteria: 2026-11-17 23:59 KST 공식 leaderboard에서 Class Player보다 높은 점수나 동점인 다른 player가
-    없다.
+  description: 가능한 한 빨리 Class Player 단독 1위에 도달한 뒤 Round 3 공식 종료까지 유지하면 성과 workflow를 성공 종료한다.
+  criteria: 조기 마일스톤 증거가 보존되고 2026-11-17 23:59 KST 종료 이후 최초 공식 snapshot에서 우리 Player ALL보다 높은 점수나 동점인 다른 player가 없다.
 - name: 안전 롤백 종료
   description: Safety Kernel 위반, 중복거래, 현금바닥 침범, 프로세스 종료 또는 미확정 거래 누적 시 현재 변경을 중단하고
     안전한 이전 상태로 복귀한다.
@@ -413,7 +468,7 @@ exit_conditions:
   criteria: 신규 위험 mutation이 차단되고 현금·미정산 부채·재고 상태가 checkpoint에 보존된다.
 metadata:
   seed_id: seed_45ef0f10a27e
-  version: 1.2.0
+  version: 1.3.0
   created_at: '2026-11-07T16:38:43.255953Z'
   ambiguity_score: 0.0645
   gate_forced: false
