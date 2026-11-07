@@ -62,25 +62,74 @@ def latest_paid_post(intel):
     return None
 
 
-def market_price_post(intel):
-    """Mirror high-rated buyer posts: concise multi-ledger price evidence."""
-    now=time.time();catalog=read_json(intel.root/'catalog.json',{})
-    candidates=intel.db.execute('''SELECT sku,COUNT(*) n FROM trades WHERE ts>?
-        GROUP BY sku HAVING COUNT(*)>=3 ORDER BY n DESC,sku LIMIT 256''',(now-WINDOW,)).fetchall()
-    if not candidates:return None
-    cursor=intel.get('buyer_market_post_cursor',0);candidate=candidates[cursor%len(candidates)]
-    rows=intel.db.execute('''SELECT seq,price,grade,honest FROM trades
-        WHERE sku=? AND ts>? ORDER BY ts DESC''',(candidate['sku'],now-WINDOW)).fetchall()
-    if len(rows)<3:return None
-    prices=sorted(r['price'] for r in rows);counts={g:sum(r['grade']==g for r in rows) for g in ('A','B','C')}
-    refs=[r['seq'] for r in rows[:3]];product=catalog.get(candidate['sku'],{})
-    name=product.get('name',candidate['sku'])[:45];listed=product.get('list_price')
-    ratio=f" · 정가 {listed:,}원의 {round(median(prices)*100/listed)}%" if isinstance(listed,(int,float)) and listed>0 else ''
-    text=(f"[상품 시세] {name} [{candidate['sku']}]\n"
-          f"최근 6시간 공개 원장 {len(rows)}건 · 최저 {prices[0]:,}원 · 중앙 {int(median(prices)):,}원 · 최고 {prices[-1]:,}원{ratio}\n"
-          f"등급 A/B/C {counts['A']}/{counts['B']}/{counts['C']}건 · 확인 가능한 등급 주장 {sum(r['honest'] for r in rows)}건 일치. 근거는 refs.")
-    intel.put('buyer_market_post_cursor',cursor+1)
+def _name(catalog,sku):
+    return catalog.get(sku,{}).get('name',sku)[:42]
+
+
+def warranty_premium_post(intel,catalog,now):
+    rows=intel.db.execute('''SELECT seq,sku,grade,warranty,price FROM trades
+        WHERE ts>? ORDER BY ts DESC''',(now-WINDOW,)).fetchall();groups={}
+    for row in rows:
+        if catalog.get(row['sku'],{}).get('kind')!='goods':continue
+        groups.setdefault((row['sku'],row['grade']),{0:[],1:[]})[int(row['warranty']>0)].append(row)
+    choices=[(len(v[0])+len(v[1]),k,v) for k,v in groups.items() if len(v[0])>=3 and len(v[1])>=3]
+    if not choices:return None
+    _,(sku,grade),parts=max(choices);plain=int(median([r['price'] for r in parts[0]]));covered=int(median([r['price'] for r in parts[1]]))
+    premium=round((covered/plain-1)*100) if plain else 0;refs=[r['seq'] for r in parts[0][:2]+parts[1][:2]]
+    text=(f"[시장 인사이트 · 보증 가격] 신기한 점입니다. {_name(catalog,sku)} [{sku}] {grade}등급의 최근 6시간 정산에서\n"
+          f"무보증 {len(parts[0])}건 중앙 {plain:,}원 vs 보증 포함 {len(parts[1])}건 중앙 {covered:,}원: 관측 프리미엄 {premium:+d}%.\n"
+          "보증시간이 섞인 관찰이라 인과관계는 아닙니다. 견적에서 보증값이 이 차이보다 합리적인지 비교하는 데 도움이 되었으면 합니다.")
     return text,refs
+
+
+def shelf_life_post(intel,catalog,now):
+    rows=intel.db.execute('''SELECT seq,sku,grade,hours,price FROM trades
+        WHERE ts>? AND hours IS NOT NULL ORDER BY ts DESC''',(now-WINDOW,)).fetchall();groups={}
+    for row in rows:
+        if catalog.get(row['sku'],{}).get('kind')=='food':groups.setdefault((row['sku'],row['grade']),[]).append(row)
+    choices=[(len(v),k,v) for k,v in groups.items() if len(v)>=8]
+    if not choices:return None
+    _,(sku,grade),sample=max(choices);cut=median([r['hours'] for r in sample])
+    short=[r for r in sample if r['hours']<=cut];long=[r for r in sample if r['hours']>cut]
+    if len(short)<3 or len(long)<3:return None
+    short_price=int(median([r['price'] for r in short]));long_price=int(median([r['price'] for r in long]));premium=round((long_price/short_price-1)*100) if short_price else 0
+    refs=[r['seq'] for r in short[:2]+long[:2]]
+    text=(f"[시장 인사이트 · 유통기한 값] 신기한 점입니다. {_name(catalog,sku)} [{sku}] {grade}등급 {len(sample)}건을 남은 기한 {cut:.0f}h로 나누면\n"
+          f"짧은 쪽 중앙 {short_price:,}원 vs 긴 쪽 중앙 {long_price:,}원: 관측 프리미엄 {premium:+d}%.\n"
+          "필요 사용시간을 넘기는 범위에서만 비교한 관찰입니다. 같은 등급에서도 남은 기한의 값을 따져보는 데 도움이 되었으면 합니다.")
+    return text,refs
+
+
+def concentration_post(intel,catalog,now):
+    rows=intel.db.execute('''SELECT seq,sku,shop,price FROM trades
+        WHERE ts>? ORDER BY ts DESC''',(now-WINDOW,)).fetchall();groups={}
+    for row in rows:groups.setdefault(row['sku'],[]).append(row)
+    choices=[]
+    for sku,sample in groups.items():
+        shops={r['shop'] for r in sample if r['shop']}
+        if len(sample)>=9 and len(shops)>=3:
+            largest=max(sum(r['shop']==shop for r in sample) for shop in shops)
+            choices.append((largest/len(sample),len(sample),sku,sample,len(shops)))
+    if not choices:return None
+    share,n,sku,sample,shop_count=max(choices);prices=sorted(r['price'] for r in sample);refs=[r['seq'] for r in sample[:3]]
+    text=(f"[시장 구조 · 판매처 집중도] 신기한 점입니다. {_name(catalog,sku)} [{sku}]는 최근 6시간 {n}건이 {shop_count}개 판매처에서 정산됐지만, "
+          f"가장 큰 한 곳의 비중이 {share*100:.0f}%였습니다. 가격 범위 {prices[0]:,}~{prices[-1]:,}원, 중앙 {int(median(prices)):,}원.\n"
+          "거래가 한곳에 몰린 상품은 대표 시세가 특정 판매처 정책에 좌우될 수 있습니다. 여러 견적을 비교하는 데 도움이 되었으면 합니다.")
+    return text,refs
+
+
+def forum_gap_post(intel):
+    """Publish useful statistics absent from recent high-volume forum themes."""
+    now=time.time();catalog=read_json(intel.root/'catalog.json',{});forum=intel.source('forum',[]) or []
+    if isinstance(forum,dict):forum=forum.get('posts',[])
+    text=' '.join(str(p.get('text','')) for p in forum if p.get('role')=='buyer')
+    candidates=[(text.count('보증 가격'),warranty_premium_post),
+                (text.count('유통기한 값'),shelf_life_post),
+                (text.count('판매처 집중도'),concentration_post)]
+    for _,builder in sorted(candidates,key=lambda item:item[0]):
+        result=builder(intel,catalog,now)
+        if result:return result
+    return None
 
 
 def queue_update(intel):
@@ -105,9 +154,9 @@ def queue_update(intel):
         research=True
         refs=[];text='';purchase_ledger=None
         post_kind='purchase'
-        digest=market_price_post(intel) if intel.get('posts_today',0)%3==1 else None
+        digest=forum_gap_post(intel) if intel.get('posts_today',0)%3==1 else None
         if digest:
-            text,refs=digest;post_kind='market_price'
+            text,refs=digest;post_kind='forum_gap_analysis'
         paid=None if text else latest_paid_post(intel)
         if paid:
             text,purchase_ledger=paid;refs=[purchase_ledger]

@@ -105,14 +105,19 @@ class IntelligenceTests(unittest.TestCase):
         self.assertNotIn('같은 운영자',msg['post']);self.assertIn('보증 6h',msg['post'])
         self.assertFalse((self.root/'outbox.jsonl').exists())
 
-    def test_buyer_forum_rotates_high_rating_market_price_pattern(self):
-        name=self.p.p['shop_name'];self.i.ingest(self.rows(price=8000))
+    def test_buyer_forum_fills_missing_market_structure_topic(self):
+        name=self.p.p['shop_name'];rows=[]
+        for n in range(1,10):
+            rows.append(dict(seq=n,ts=time.time(),kind='settle',round=3,data=dict(
+                shop=f'https://shop-{n%3}',sku='x',grade='A',amount=7000+n*100,
+                warranty_hours=0,claim_honest=True)))
+        self.i.ingest(rows)
         self.i.put('post_day',int(time.time()//86400));self.i.put('posts_today',1)
         self.i.save_source('board',{'round':3,'buyers':[{'name':name,'deals':20,'posts':1,'forum':.9}]})
         (self.root/'catalog.json').write_text(json.dumps({'x':{'name':'item','list_price':10000}}))
         self.assertTrue(queue_update(self.i))
         msg=json.loads((self.root/'buyer-forum/outbox.jsonl').read_text())
-        self.assertIn('[상품 시세]',msg['post']);self.assertIn('중앙 8,000원',msg['post'])
+        self.assertIn('[시장 구조 · 판매처 집중도]',msg['post']);self.assertIn('3개 판매처',msg['post'])
         self.assertEqual(len(msg['refs']),3)
 
     def test_buyer_publication_policy_accelerates_then_adapts(self):
