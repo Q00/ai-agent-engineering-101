@@ -127,6 +127,21 @@ class IngestCase(unittest.TestCase):
 
 
 class SyncTest(IngestCase):
+    def test_hour_profile_and_own_hours_in_render_market(self):
+        now = 1_794_013_200.0                                          # 10:00 local on this machine
+        h = int(now // 3600)
+        market = {"since": (h - 30) * 3600 + 600,                      # the fold began 10 min into hour h-30
+                  "sku_hour": {"G1": {str(h - 30): 5, str(h - 29): 50, str(h - 6): 40, str(h - 1): 10, str(h): 3}},
+                  "own_sku_hour": {"G1": {str(h - 25): 2, str(h - 1): 4}}}
+        m = ingest.render_market({"market": market}, now)
+        hod = lambda k: time.strftime("%H", time.localtime(k * 3600))
+        self.assertNotIn(hod(h - 30), m["hour_profile"])              # partial first hour left out
+        self.assertEqual(m["hour_profile"][hod(h - 29)], 50.0)
+        self.assertEqual(m["hour_profile"][hod(h - 1)], 10.0)
+        self.assertEqual(m["hour_profile"][hod(h - 6)], 40.0)
+        self.assertEqual(m["own_sku_hour"], {"G1": {str(h - 1): 4}})   # 24 h window
+        self.assertEqual(m["sku_hour_24"], {"G1": {str(h - 6): 40, str(h - 1): 10, str(h): 3}})
+
     def test_breakage_joins_broken_rows_to_settled_units_by_sku_and_grade(self):
         with mock.patch.object(ingest, "fetch", self.fixtures()):
             ingest.sync(time.time() + 10, state=self.state)

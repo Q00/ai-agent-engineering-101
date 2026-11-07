@@ -714,9 +714,10 @@ def render_market(cursor, now):
     own_hour = {k: b for k, b in own_hour.items() if b}
     sku_hour_24 = {k: {h: n for h, n in sku_hour.get(k, {}).items() if int(h) >= h24} for k in own_hour}
     per_hour = {}
+    first_full = int(since // 3600) + (1 if since % 3600 else 0)    # the fold's first partial hour is left out
     for b in sku_hour.values():
         for h, n in b.items():
-            if int(h) < int(now // 3600):                           # full hours only
+            if first_full <= int(h) < int(now // 3600):             # full hours only
                 per_hour[h] = per_hour.get(h, 0) + n
     by_hod = {}
     for h, n in per_hour.items():
