@@ -3,6 +3,7 @@
     turn 1  ask by SKU and ask for the unit in the receipt; a quote at or below the cap is accepted
             at once only past the target time or when buyer.open_list x list price is not below it
     turn 2  offer buyer.open_list x list price, also under a quote at or below the cap (haggle once)
+            with buyer.step_list above 0 and time before the target: then buyer.step_list x list under the cap
     turn 3  offer the cap (min(cap share x list, budget)) as the final offer
     a counter at or below the cap after turn 2 or 3 is accepted by sending it back
 
@@ -197,7 +198,7 @@ def negotiate(shop_url, cand, order, deadline, pol, client=None, ver=None):
         text, meta = first_message(cand, order)
         task = send(text, meta)
         r["task"] = task.get("id")
-        stage = 1                                   # 1 quote asked, 2 open offer sent, 3 final offer sent
+        stage = 1                                   # 1 quote asked, 2 open offer sent, 2.5 step offer, 3 final offer
         first = None                                # the quote under the cap we haggled under: never pay more
         while True:
             state = (task.get("status") or {}).get("state")
@@ -249,10 +250,14 @@ def negotiate(shop_url, cand, order, deadline, pol, client=None, ver=None):
                 task = offer(ask)                   # accept by sending the ask back
                 stage = 4
                 continue
+            step = int(pol["buyer"].get("step_list", 0) * V)
             if stage == 1 and low < r["cap"]:
                 task = offer(low)
                 stage = 2
-            elif stage in (1, 2):
+            elif stage == 2 and step > 0 and limit - step > low and not deadline.past_target():
+                task = offer(limit - step)          # one step under the cap: a shop whose floor is lower takes it
+                stage = 2.5
+            elif stage in (1, 2, 2.5):
                 task = offer(limit)
                 stage = 3
             else:

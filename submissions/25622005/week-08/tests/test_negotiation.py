@@ -291,6 +291,21 @@ class NegotiationTests(unittest.TestCase):
         r = self.go(shop, c=c)                                     # min(1 - 0.03 - 0.05, 1 - 0.08 / 0.97) x 100000
         self.assertEqual((r["grade"], r["cap"], r["receipt"]["price"]), ("A", 91752, 60000))
 
+    def test_step_list_offers_once_under_the_cap_before_the_final_offer(self):
+        shop = FakeShop(first_ask=90000, floor=58000)                       # cap 70000: the floor is under the step
+        r = self.go(shop, p=pol(step_list=0.1, open_list=0.2))
+        self.assertEqual([m["text"] for m in shop.messages][1:], ["20000", "60000"])
+        self.assertEqual((r["receipt"]["price"], r["offers"]), (60000, [20000, 60000]))
+        shop = FakeShop(first_ask=90000, floor=65000)                       # the floor is above the step: the cap
+        r = self.go(shop, p=pol(step_list=0.1, open_list=0.2))
+        self.assertEqual((r["receipt"]["price"], r["offers"]), (70000, [20000, 60000, 70000]))
+        shop = FakeShop(first_ask=90000, floor=65000)                       # 0: the open offer, then the cap
+        r = self.go(shop, p=pol(step_list=0.0, open_list=0.2))
+        self.assertEqual((r["receipt"]["price"], r["offers"]), (70000, [20000, 70000]))
+        shop = FakeShop(first_ask=90000, floor=65000)                       # past the target: no step
+        r = self.go(shop, p=pol(step_list=0.1, open_list=0.2, target_s=1), start=time.monotonic() - 5)
+        self.assertEqual((r["receipt"]["price"], r["offers"]), (70000, [20000, 70000]))
+
     def test_warranty_offer_raises_goods_cap(self):
         shop = FakeShop(first_ask=90000, floor=99999, data={"warranty_hours": 6})
         r = self.go(shop)
