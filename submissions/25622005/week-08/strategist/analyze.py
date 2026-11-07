@@ -541,7 +541,7 @@ def _economics(tables, own, pol, market, catalog, now):
     cond = {"turnover_day": turnover, "unsold_goods_share": unsold_share, "spoilage_share": spoil, "balance": balance}
     capital = _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, cogs, _num(day.get("rev")))
     breakage = _breakage(own, units, catalog)
-    dem = _demand(own, st, now)
+    dem = _demand_model(own, st, now)
     stockouts = _stockouts(big, rows, o24, day_h, _rows(own.get("acp")), catalog, bmax)
     ok = {k: (v >= EXPAND[k] if k in ("turnover_day", "balance") else v <= EXPAND[k] if k == "unsold_goods_share"
               else v < EXPAND[k]) if v is not None else None for k, v in cond.items()}
@@ -557,7 +557,7 @@ def _economics(tables, own, pol, market, catalog, now):
             "capital": capital, "stockouts": stockouts, "breakage": breakage, "demand": dem}
 
 
-def _demand(own, st, now):
+def _demand_model(own, st, now):
     """The demand model's hour-of-day profile (market settles per hour of day), the factor for the coming cover
     window and the peak hours; None without a profile."""
     from memory import demand as dm
