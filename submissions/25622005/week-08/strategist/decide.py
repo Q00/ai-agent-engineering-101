@@ -107,6 +107,14 @@ Supply and depth:
   and held_risk, our shelf's riskiest lines), so a sturdy sofa is warranted cheaply and a fragile line dearly;
   without data the premium is seller.warranty_premium alone. The buyer prices the same table into its goods cap
   (1 - q_upper - min_surplus_list) and expected surplus, re-capping when the shop's quote names the grade.
+  A warranted unit that breaks within the hours is refunded in full from our balance (the deal leaves revenue,
+  the stars stay), so a warranty's expected cost is q x price and its premium is the fee for carrying that.
+  Buyers score under the same Saved rule (a broken unit without a warranty is a -1 deal), so some ask for one
+  and cap their price by the break rate without it. The brief's seller.warranty shows the window: goods_asked,
+  offered, refused by cause (grade: outside seller.warranty_grades; cap_6h: the sum of warranted sales of the
+  last 6 h would pass seller.warranty_cap_6h, inferred as the only cause left; near_end; declined), sold, and
+  sign_rate by asked x offered (asked_offered vs asked_refused is what the warranty is worth to the sale, against
+  q x price). Levers: seller.warranty_cap_6h, warranty_premium / premium_floor / q_mult; warranty_grades is fixed.
 - Surge: the first market.surge_free units of a SKU that the whole market (us included) buys in a rolling hour
   cost the plain price, each further unit adds market.surge_per_unit to the cost factor, up to market.surge_max
   (these three follow /api/supply-prices automatically, not you). A SKU is bought only while its factor is at most
@@ -129,7 +137,11 @@ Supply and depth:
   refunded, so a warranted break costs nothing) and break_penalty 1.0 prices that in (0 turns it off). The brief's
   saved.unserved shows what the -1 deals cost so far and saved.window how many goods deals carried the warranty.
   A grade whose cap comes out at 0 (fragile, no warranty) is not bought. buyer.step_list above 0 adds one offer
-  step_list * list under the cap before the final offer (0: the open offer, then the cap).
+  step_list * list under the cap before the final offer (0: the open offer, then the cap): a shop whose floor is
+  under the cap then closes there instead of at the cap, at the cost of one more turn against buyer.target_s.
+  The brief's saved.closing shows the evidence: at_cap_share (deals paid at the cap, where a floor under it was
+  never probed) against under_cap, price_over_cap, the winning try's turns and elapsed_s, and among the failed
+  tries near_share (last ask within 10% of the cap: what a slightly lower min_kept would close, at a lower kept).
   Saved (board: buyers.saved) is the average share of list kept per deal (denominator deals + 100), so a deal
   that keeps less than our current saved lowers it, and the deals still to come outnumber the history (brief
   saved.projection: history_weight, and the final saved at the current kept and at 0.40 / 0.45): the share kept
@@ -152,8 +164,9 @@ Supply and depth:
   the newest 100 forum posts only, see sample_covered_s, while "posted" counts every post we queued).
   ledger_h is the hours the ledger rows cover (per-hour rates divide by it); score lists our ranking parts
   (pct is approximate; gain = w * (1 - pct) when the rules give weights); bands are the last hour's settles by
-  list-price band, market vs ours; seller and buyer_log count our own decision logs; saved takes the buyer's
-  Saved apart (unserved, kept_per_deal, window, projection, peers, policy); focus lists the candidate
+  list-price band, market vs ours; seller (with warranty: asked, offered, refused by cause, sign rate by asked x
+  offered) and buyer_log count our own decision logs; saved takes the buyer's Saved apart (unserved,
+  kept_per_deal, window, closing, projection, peers, policy); focus lists the candidate
   SKUs with their gates and price_check; economics has the line budget, turnover, big-ticket budget, surge
   allowance, p_clear and the expansion conditions; mix has the market's category leaves. A History row's outcome
   is the check one hour after that change: only buyer.cap_food and buyer.min_surplus_list are reverted

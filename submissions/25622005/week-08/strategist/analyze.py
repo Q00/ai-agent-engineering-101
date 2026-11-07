@@ -52,7 +52,9 @@ TURN_MIN_H = 3              # hours of our 24 h sums before turnover per day is 
 SCORE_F = {"shop": ("book", "revenue", "stars"), "buyer": ("saved", "forum", "deals", "posts")}   # Patch 3.4: saved
 PEER_TOP = 5                # buyers listed in saved.peers (the best saved among those with PEER_MIN_DEALS deals)
 PEER_MIN_DEALS = 1000       # a peer must have closed this many deals: a kept share proven at volume
-SAVED_TARGETS = (0.40, 0.45)   # kept-per-deal values the saved projection is shown for, besides the current one
+SAVED_TARGETS = (0.40, 0.45)
+# SAVED_TARGETS: kept-per-deal values the saved projection is shown for, besides the current one
+NEAR_CAP = 0.10                 # a failed try whose last ask is within this of the cap
 BAND_NAMES = ("<20k", "20k-50k", "50k-100k", "100k-200k", "200k-500k", "500k-1M", ">=1M")
 
 
@@ -770,9 +772,9 @@ def _bands(buckets, now):
             "rows": [r for r in rows if r["mkt_settles"] or r["our_settles"]]}
 
 
-def _seller(rows):
+def _seller(rows, pol=None):
     """Our seller's window: tasks answered, signed (and the rate), how the rest ended, warranty asked and sold,
-    and the median price/list of signs and offer/list of the offers we rejected."""
+    the median price/list of signs and offer/list of the offers we rejected, and warranty (see _warranty)."""
     act = lambda r: _dict(r.get("choice")).get("action")
     why = lambda r: str(r.get("why") or "")
     inp = lambda r: _dict(r.get("inputs"))
@@ -790,7 +792,60 @@ def _seller(rows):
             "warranty_req": sum(1 for r in first if inp(r).get("warranty_req")),
             "warranty_sold": sum(1 for r in signs if (_num(_dict(r.get("choice")).get("warranty_hours")) or 0) > 0),
             "sign_price_list": per_list(signs, lambda r: _dict(r.get("choice")).get("price")),
-            "reject_offer_list": per_list(rejects, lambda r: inp(r).get("offer"))}
+            "reject_offer_list": per_list(rejects, lambda r: inp(r).get("offer")),
+            "warranty": _warranty(first, signs, pol)}
+
+
+def _warranty(first, signs, pol):
+    """The warranty (D5) in this window, from the seller log's first replies and signs (joined by task).
+    goods_asked: goods first replies where the buyer asked for a warranty; offered: those that got one; refused
+    names why the rest did not: grade (not in seller.warranty_grades), near_end (inside stock.no_warranty_h) and
+    cap_6h, the only cause left once the others are ruled out (the sum
+    of warranted sales in the last 6 h is not logged, so this one is inferred). food_asked: food never carries a
+    warranty. sign_rate: goods signs / first replies by whether the buyer asked and whether we offered, so the
+    worth of a warranty to a sale is read off the two asked rows. break_q_upper: the median breakage upper
+    bound per grade among the goods asked. premium_mult: the median price multiplier of the offers."""
+    s, st = _dict(_dict(pol).get("seller")), _dict(_dict(pol).get("stock"))
+    grades, end_h = s.get("warranty_grades") or ("A", "B"), _num(st.get("no_warranty_h")) or 0
+    inp = lambda r: _dict(r.get("inputs"))
+    goods = [r for r in first if inp(r).get("kind") == "goods"]
+    asked = [r for r in goods if inp(r).get("warranty_req")]
+    offered = [r for r in asked if (_num(inp(r).get("warranty_hours")) or 0) > 0]
+    refused = Counter()
+    for r in asked:
+        i = inp(r)
+        if (_num(i.get("warranty_hours")) or 0) > 0:
+            continue
+        if i.get("grade_now") not in grades:
+            refused["grade"] += 1
+        elif _num(i.get("hours_to_end")) is not None and i["hours_to_end"] <= end_h:
+            refused["near_end"] += 1
+        else:
+            refused["cap_6h"] += 1
+    tasks = {_dict(r.get("ref")).get("task"): r for r in goods if _dict(r.get("ref")).get("task")}
+    signed = Counter()
+    for r in signs:
+        f = tasks.get(_dict(r.get("ref")).get("task"))
+        if f is not None:
+            i = inp(f)
+            signed[(bool(i.get("warranty_req")), (_num(i.get("warranty_hours")) or 0) > 0)] += 1
+    firsts = Counter((bool(inp(r).get("warranty_req")), (_num(inp(r).get("warranty_hours")) or 0) > 0) for r in goods)
+    rate = {f"asked_{'offered' if o else 'refused'}" if a else f"unasked_{'offered' if o else 'plain'}":
+            {"first": firsts[(a, o)], "signed": signed[(a, o)], "rate": _ratio(signed[(a, o)], firsts[(a, o)])}
+            for a in (True, False) for o in (True, False) if firsts[(a, o)]}
+    bq = {}
+    for g in ("A", "B", "C"):
+        ups = [_num(_dict(inp(r).get("break_q")).get("upper")) for r in asked if inp(r).get("grade_now") == g]
+        ups = [u for u in ups if u is not None]
+        if ups:
+            bq[g] = _r(_median(ups))
+    return {"goods_asked": len(asked), "offered": len(offered), "refused": dict(refused),
+            "food_asked": sum(1 for r in first if inp(r).get("kind") == "food" and inp(r).get("warranty_req")),
+            "sold": sum(1 for r in signs if (_num(_dict(r.get("choice")).get("warranty_hours")) or 0) > 0),
+            "sign_rate": rate, "break_q_upper": bq,
+            "premium_mult": _r(_median([_num(inp(r).get("warranty_mult")) for r in offered if _num(inp(r).get("warranty_mult"))])),
+            "policy": {k: s.get(k) for k in ("warranty_on_request", "warranty_grades", "warranty_cap_6h",
+                                              "warranty_premium", "warranty_premium_floor", "warranty_q_mult")}}
 
 
 def _buyer_log(rows):
@@ -824,6 +879,9 @@ def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h):
     deals, served, saved, paid = (_num(_dict(me_b).get(k)) for k in ("deals", "served", "saved", "paid"))
     out = {"policy": {k: _dict(_dict(pol).get("buyer")).get(k) for k in ("min_kept", "break_penalty", "step_list",
                                                                              "cap_goods_no_warranty")}}
+    orders = [r for r in _rows(rows) if r.get("kind") == "order"]
+    won = [r for r in orders if isinstance(r.get("choice"), dict)]
+    out["closing"] = _closing(orders, won, pol)
     if deals is None or saved is None:
         return out
     unserved = max(0, int(deals - served)) if served is not None else None
@@ -831,8 +889,6 @@ def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h):
                        "saved_drag": _r(unserved / (deals + 100)) if unserved is not None else None}
     kept = round(1 - paid, 4) if paid is not None else None
     out["kept_per_deal"] = kept
-    orders = [r for r in _rows(rows) if r.get("kind") == "order"]
-    won = [r for r in orders if isinstance(r.get("choice"), dict)]
     goods = [r for r in won if _dict(r.get("inputs")).get("kind") == "goods"]
     warranted = sum(1 for r in goods if (_num(r["choice"].get("warranty_h")) or 0) >= 6)
     rate = len(won) / window_h if window_h else None
@@ -861,6 +917,44 @@ def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h):
     peers.sort(key=lambda x: -x["saved"])
     out["peers"] = peers[:PEER_TOP]
     return out
+
+
+def _closing(orders, won, pol):
+    """How the window's deals closed against our cap and how the failed tries ended, the evidence for
+    buyer.step_list and buyer.min_kept. at_cap: deals paid at the cap (we never learned the shop's floor; a step
+    offer under the cap is the way to), under_cap: closed below it, price_over_cap: the median paid / cap, turns
+    and elapsed_s: the medians of the winning try, against buyer.target_s (the step costs one more turn).
+    failed_tries: tries that ended on an ask above the cap, near_cap those whose last ask was within
+    NEAR_CAP of the cap (deals a slightly lower min_kept would have closed)."""
+    b = _dict(_dict(pol).get("buyer"))
+    at = under = 0
+    ratios, turns, secs = [], [], []
+    for r in won:
+        ch, cap = r["choice"], _num(r["choice"].get("cap"))
+        price = _num(ch.get("price"))
+        if not cap or not price:
+            continue
+        at += price >= cap
+        under += price < cap
+        ratios.append(round(price / cap, 4))
+        for t in _rows(r.get("tried")):
+            if t.get("shop") == ch.get("shop"):
+                turns.append(_num(t.get("turns")))
+                secs.append(_num(t.get("elapsed")))
+    failed = near = 0
+    for r in orders:
+        for t in _rows(r.get("tried")):
+            cap, asks = _num(t.get("cap")), t.get("asks") if isinstance(t.get("asks"), list) else []
+            if not cap or "above the cap" not in str(t.get("why") or ""):
+                continue
+            failed += 1
+            last = asks[-1] if asks else None
+            last = _num(last.get("price")) if isinstance(last, dict) else _num(last)
+            near += bool(last and last <= cap * (1 + NEAR_CAP))
+    return {"at_cap": at, "under_cap": under, "at_cap_share": _ratio(at, at + under), "price_over_cap": _median(ratios),
+            "turns": _median([t for t in turns if t is not None]), "elapsed_s": _r(_median([x for x in secs if x is not None]), 1),
+            "target_s": b.get("target_s"), "step_list": b.get("step_list"),
+            "failed_tries": failed, "near_cap": near, "near_share": _ratio(near, failed)}
 
 
 # --- size
@@ -940,7 +1034,7 @@ def brief(raw, own, prev, pol, now, me=ME, window_h=1, flows=None, known=(), foc
     b["demand"] = _demand(own.get("summary"))
     b["ops"] = _ops(own, raw.get("forum"), since, me)
     dec = _dict(own.get("decisions"))
-    b["seller"] = _seller(_rows(dec.get("seller")))
+    b["seller"] = _seller(_rows(dec.get("seller")), pol)
     b["buyer_log"] = _buyer_log(_rows(dec.get("buyer")))
     b["saved"] = _saved(buyers, _find(buyers, me), b["me"].get("buyer"), _rows(dec.get("buyer")), pol, b["hours_left"], window_h)
     b["forum"] = _forum(raw.get("forum"), since)

@@ -693,9 +693,38 @@ class NewSectionsTest(unittest.TestCase):
                {"kind": "quote", "choice": {"action": "repeat"}, "why": "no price in the message"},
                {"kind": "quote", "why": "no unit in stock for this request"}, {"kind": "llm_exception", "why": "budget"}])
         se = analyze.brief(raw(), o, None, POL, NOW)["seller"]
+        se.pop("warranty")
         self.assertEqual(se, {"first": 4, "signed": 2, "sign_rate": 0.5, "canceled": 1, "final": 1, "rejected": 1,
                               "no_price": 1, "no_stock": 1, "llm_exception": 1, "warranty_req": 1, "warranty_sold": 1,
                               "sign_price_list": 0.85, "reject_offer_list": 0.5})
+
+    def test_seller_warranty_asked_offered_refused_and_the_sign_rate_by_both(self):
+        o = own()
+        g = lambda t, grade, req, wh=None, mult=None, end=243.0: {
+            "kind": "quote", "why": "first reply: fact line", "ref": {"task": t}, "choice": {"action": "quote"},
+            "inputs": {"kind": "goods", "grade_now": grade, "warranty_req": req, "warranty_hours": wh, "warranty_mult": mult,
+                       "hours_to_end": end, "list_price": 100000, "break_q": {"upper": {"A": 0.05, "B": 0.08, "C": 0.3}[grade]}}}
+        sign = lambda t, wh: {"kind": "sign", "ref": {"task": t}, "choice": {"price": 70000, "warranty_hours": wh}, "inputs": {"list_price": 100000}}
+        o["decisions"]["seller"] = [
+            g("a1", "A", 6.0, 6, 1.075), g("a2", "A", 6.0, 6, 1.1), g("a3", "A", True),          # asked: 2 offered, a3 the cap
+            g("c1", "C", 6.0), g("c2", "C", 6.0),                                                # grade C: refused
+            g("b1", "B", False), g("b2", "B", 6.0, end=5.0),                                     # declined (not an ask), near the end
+            g("u1", "A", None, 6, 1.05), g("u2", "A", None), g("u3", "A", None),                 # not asked
+            {"kind": "quote", "why": "first reply: fact line", "ref": {"task": "f1"}, "choice": {"action": "quote"},
+             "inputs": {"kind": "food", "warranty_req": 6.0, "list_price": 10000}},
+            sign("a1", 6), sign("c1", 0), sign("u2", 0), sign("zz", 0)]
+        pol = {"seller": {"warranty_on_request": False, "warranty_grades": ["A", "B"], "warranty_cap_6h": 10000000,
+                          "warranty_premium": 0.06, "warranty_premium_floor": 0.02, "warranty_q_mult": 1.5},
+               "stock": {"no_warranty_h": 8, "end_ts": NOW + 243 * 3600}}
+        w = analyze.brief(raw(), o, None, pol, NOW)["seller"]["warranty"]
+        self.assertEqual((w["goods_asked"], w["offered"], w["food_asked"], w["sold"]), (6, 2, 1, 1))
+        self.assertEqual(w["refused"], {"cap_6h": 1, "grade": 2, "near_end": 1})
+        self.assertEqual(w["sign_rate"], {"asked_offered": {"first": 2, "signed": 1, "rate": 0.5},
+                                          "asked_refused": {"first": 4, "signed": 1, "rate": 0.25},
+                                          "unasked_offered": {"first": 1, "signed": 0, "rate": 0.0},
+                                          "unasked_plain": {"first": 3, "signed": 1, "rate": 0.3333}})
+        self.assertEqual((w["break_q_upper"], w["premium_mult"]), ({"A": 0.05, "B": 0.08, "C": 0.3}, 1.087))   # median of 1.075, 1.1 rounded half-even
+        self.assertEqual(w["policy"]["warranty_cap_6h"], 10000000)
 
     def test_buyer_log_by_kind_and_untrusted_receipt_problems(self):
         o = own()
@@ -735,6 +764,9 @@ class NewSectionsTest(unittest.TestCase):
         self.assertEqual(sv["unserved"], {"n": 272, "share": 0.0377, "saved_drag": 0.0372})     # 272 / 7320
         self.assertEqual(sv["kept_per_deal"], 0.329)
         self.assertEqual(sv["window"], {"deals": 3, "goods_deals": 2, "goods_warranted": 1, "deals_per_h": 3.0})
+        self.assertEqual(sv["closing"], {"at_cap": 0, "under_cap": 0, "at_cap_share": None, "price_over_cap": None, "turns": None,
+                                         "elapsed_s": None, "target_s": None, "step_list": 0.0, "failed_tries": 0, "near_cap": 0,
+                                         "near_share": None})
         pj = sv["projection"]
         self.assertEqual((pj["deals_left_est"], pj["history_weight"]), (300, 0.9606))           # 3/h x 100 h
         self.assertEqual(pj["saved_end"]["kept_0.45"], round((0.2553 * 7320 + 300 * 0.45) / 7620, 4))
@@ -742,10 +774,27 @@ class NewSectionsTest(unittest.TestCase):
         self.assertEqual([(p["deals"], p["kept"]) for p in sv["peers"]], [(1068, 0.523), (6817, 0.468)])  # >= 1000 deals, no house
         self.assertEqual(sv["policy"], {"min_kept": 0.31, "break_penalty": 1.0, "step_list": 0.0, "cap_goods_no_warranty": 0.8})
 
+    def test_closing_at_the_cap_or_under_it_and_the_failed_tries_near_the_cap(self):
+        o = own()
+        deal = lambda price, cap, shop="s1", turns=3, el=0.5: {
+            "kind": "order", "inputs": {"kind": "food"}, "choice": {"shop": shop, "price": price, "cap": cap, "V": 10000},
+            "tried": [{"shop": "s0", "cap": cap, "asks": [9000, 8500], "why": "ask 8500 above the cap %d after the final offer" % cap},
+                      {"shop": shop, "cap": cap, "asks": [price], "turns": turns, "elapsed": el, "why": "deal"}]}
+        o["decisions"]["buyer"] = [
+            deal(7000, 7000), deal(7000, 7000, turns=2, el=0.4), deal(6500, 7000, turns=4, el=0.9),
+            {"kind": "order", "inputs": {"kind": "goods"}, "choice": "no_deal",
+             "tried": [{"shop": "s2", "cap": 5000, "asks": [{"price": 5400}], "why": "ask 5400 above the cap 5000 after the final offer"},
+                       {"shop": "s3", "cap": 5000, "asks": [9000], "why": "past 25 s and P 0.1 < 0.55"}]}]
+        pol = {"stock": {"end_ts": NOW + 100 * 3600}, "buyer": {"min_kept": 0.31, "step_list": 0.05, "target_s": 25}}
+        c = analyze.brief(raw(), o, None, pol, NOW)["saved"]["closing"]
+        self.assertEqual((c["at_cap"], c["under_cap"], c["at_cap_share"], c["price_over_cap"]), (2, 1, 0.6667, 1.0))
+        self.assertEqual((c["turns"], c["elapsed_s"], c["target_s"], c["step_list"]), (3, 0.5, 25, 0.05))
+        self.assertEqual((c["failed_tries"], c["near_cap"], c["near_share"]), (4, 1, 0.25))   # three s0 asks at 1.21 x, s2 at 1.08 x
+
     def test_saved_without_a_board_row(self):
         r = raw(); r["board"]["buyers"] = []
         sv = analyze.brief(r, own(), None, POL, NOW)["saved"]
-        self.assertEqual(list(sv), ["policy"])
+        self.assertEqual(list(sv), ["policy", "closing"])
 
     def test_restock_excluded_and_surge_from_the_last_planning_run(self):
         o = own()
