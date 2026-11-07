@@ -1,0 +1,4 @@
+1. No token: HTTP 401, WWW-Authenticate: 'Bearer realm="negotiation-market", error="invalid_token"', body={"error": "missing or invalid bearer token"}
+2. Party token on another negotiation: HTTP 200, {"jsonrpc":"2.0","id":2,"result":{"content":[{"text":"Error executing tool get_negotiation: token is bound to a different negotiation, not '1b9e59cf8ba5'","type":"text"}],"isError":true}}
+3. Move out of turn: HTTP 200, {"jsonrpc":"2.0","id":3,"result":{"content":[{"text":"Error executing tool propose: not your turn (it is the buyer's turn)","type":"text"}],"isError":true}}
+4. Move outside the token's limit (server condition): HTTP 200, {"jsonrpc":"2.0","id":6,"result":{"content":[{"text":"Error executing tool accept_proposal: refused: accepting 130 is outside your authorized limit (budget=110)","type":"text"}],"isError":true}}

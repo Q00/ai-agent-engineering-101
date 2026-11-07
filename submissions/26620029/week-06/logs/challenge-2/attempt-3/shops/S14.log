@@ -1,0 +1,17 @@
+Soft Ground: 285 items, port 45509, chatty=False
+[seller f6ce2187] <- 'a rug about 140 by 200 cm'
+[seller 1562bbca] <- 'a dimmable desk lamp'
+[seller f6ce2187] call 2 (8.7s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "140x200", "140 x 200 cm", "area rug"]}'
+[seller f6ce2187] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "140x200", "140 x 200 cm", "area rug"]} -> 8 candidates
+[seller 1562bbca] call 3 (9.7s) -> '{"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["desk", "lamp", "dimmable", "led", "table lamp"]}'
+[seller 1562bbca] query {"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["desk", "lamp", "dimmable", "led", "table lamp"]} -> 8 candidates
+[seller f6ce2187] call 4 (6.4s) -> '{"sku": "RUG-09097", "price": 150, "say": "This synthetic rug matches your size, is machine washable, and comes in a soft oak beige."}'
+[seller f6ce2187] -> item RUG-09097 (search+pick), reserve 112, open ask 150
+[seller 1562bbca] call 4 (7.7s) -> '{"sku": "DES-01114", "price": 46, "say": "This dimmable plastic desk lamp is a solid, versatile choice, and I can be flexible on the price."}'
+[seller 1562bbca] -> item DES-01114 (search+pick), reserve 37, open ask 46
+[seller 1562bbca] <- '34'
+[seller 1562bbca] call 5 (6.1s) -> '{"buyer_offer": 34, "action": "counter", "price": 40, "say": "I can come down a fair amount from my list price, but I can\'t go as low as your offer, so here is my best revised price."}'
+[seller 1562bbca] -> counter 40
+[seller 1562bbca] <- '40.0'
+[seller 1562bbca] call 6 (4.3s) -> '{"buyer_offer": 40, "action": "accept", "price": 40, "say": "Deal, the Industrial Plastic Desk Lamp E91 is yours at your offer."}'
+[deal] Soft Ground | DES-01114 | 40 | task 1562bbca-fea4-4b84-9adc-1e40403762ac
