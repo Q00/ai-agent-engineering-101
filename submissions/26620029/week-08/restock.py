@@ -207,6 +207,10 @@ def plan(inv, catalog, demand, mem, cu=None):
         cost = sku["list_price"] * COST_GUESS * qty
         if cost > spend:
             continue
+        if sku["list_price"] > DEAR and cost > room:    # STOCK_CAP holds here too: a TV was still bought with stock over the cap
+            continue
+        if sku["list_price"] > DEAR:
+            room -= cost
         spend -= cost
         buy.append({"sku": sku["sku"], "qty": qty})
     return buy
