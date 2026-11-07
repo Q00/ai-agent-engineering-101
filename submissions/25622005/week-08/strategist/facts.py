@@ -23,7 +23,7 @@ from pathlib import Path
 
 RULES_PATH = "/agent.md"
 MAX_DOC = 200_000
-SECTION_MAX = 12_000
+SECTION_MAX = 16_000          # the Round 3 section passed 12,000 on 2026-11-07 (Patch 3.5 vote rules)
 DIFF_MAX = 2_500
 KEEP_DIFFS_H = 24
 KEEP_DIFFS = 10
@@ -49,8 +49,10 @@ PRESENCE = {
 POST_LIMIT = r"one post per (?:[^.;)]|\.(?=\d))*"   # every number in it must agree (shop and buyer)
 POST_GAP = (1, 60)
 WEIGHTS = r"{side} by (.{{1,200}}?)\(ALL weighs them ([0-9.,\s]+(?:and\s+[0-9.]+)?)"
-FIELD_WORDS = (("surplus", "surplus"), ("vote", "forum"), ("star", "stars"), ("book", "book"),
-               ("revenue", "revenue"), ("deal", "deals"), ("post", "posts"))   # first match wins
+FIELD_WORDS = (("surplus", "surplus"), ("saved", "saved"), ("vote", "forum"), ("forum", "forum"), ("star", "stars"),
+               ("book", "book"), ("revenue", "revenue"), ("deal", "deals"), ("post", "posts"))   # first match wins
+# Patch 3.4 renamed the buyer's surplus part to "saved rate" and words the forum part as "forum stances on its posts",
+# so "saved" and "forum" come before "post"
 SKU = re.compile(r"[A-Za-z0-9_-]{1,40}")
 
 

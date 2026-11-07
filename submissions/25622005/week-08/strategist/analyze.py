@@ -47,7 +47,7 @@ C_FALLBACK = {"food": 0.51, "goods": 0.61}
 # plan 11-06 section 3(d): grow stock only while these hold
 EXPAND = {"turnover_day": 1.5, "unsold_goods_share": 0.20, "spoilage_share": 0.01, "balance": 10_000_000}
 TURN_MIN_H = 3              # hours of our 24 h sums before turnover per day is given
-SCORE_F = {"shop": ("book", "revenue", "stars"), "buyer": ("surplus", "forum", "deals", "posts")}
+SCORE_F = {"shop": ("book", "revenue", "stars"), "buyer": ("saved", "forum", "deals", "posts")}   # Patch 3.4: saved
 BAND_NAMES = ("<20k", "20k-50k", "50k-100k", "100k-200k", "200k-500k", "500k-1M", ">=1M")
 
 

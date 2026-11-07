@@ -43,6 +43,11 @@ class Parse(unittest.TestCase):
         self.assertTrue(found)
         self.assertEqual(facts.parse(sec), (TODAY, []))
 
+    def test_patch_34_buyer_ranking_wording(self):
+        t = ("buyers by saved rate (below), forum stances on its posts written as a buyer, deals, and the number of posts "
+             "it wrote as a buyer (ALL weighs them 0.5, 0.3, 0.1, 0.1; hidden posts do not count).")
+        self.assertEqual(facts._weights(t, "buyers"), {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1})
+
     def test_a_reworded_stock_valuation_is_unknown_with_an_alert_never_assumed(self):
         sec = facts.section(FIXTURE, 3)[0].replace("Book = cash + what the unsold units cost",
                                                    "Book = cash + half of what the unsold units cost")
@@ -223,7 +228,7 @@ class Collect(Market, unittest.TestCase):
             self.assertTrue(errors[0].startswith("rules: ValueError"), errors)
 
     def test_a_cut_section_is_an_alert(self):
-        self.doc = DOC + "\n" + "more rules. " * 200
+        self.doc = DOC + "\n" + "more rules. " * (facts.SECTION_MAX // 12 + 1)
         m, _ = self.collect()
         self.assertEqual(len(m["section"]), facts.SECTION_MAX)
         self.assertEqual(m["alerts"], [f"rules: the section is cut at {facts.SECTION_MAX} characters, the rest is not shown"])
