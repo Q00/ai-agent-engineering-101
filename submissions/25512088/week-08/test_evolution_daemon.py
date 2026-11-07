@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import time
 import unittest
 
 from evolution_daemon import Evolution, INTERVAL
@@ -62,6 +63,15 @@ class EvolutionDaemonTests(unittest.TestCase):
             e.write_performance_report(e.evidence())
             report=json.loads((Path(tmp)/'.market/evolution/morning-report.json').read_text())
             self.assertEqual(report['baseline']['rank'],2);self.assertFalse(report['improved'])
+            e.control.close()
+
+    def test_role_score_and_conversion_metric_are_structured(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            e=self.make(tmp)
+            self.assertEqual(e.current_role_score('shop'),.2)
+            e.control.event('seller','quote_created',{},'q1');e.control.event('seller','sale_signed',{},'q1')
+            now=time.time();metric=e.role_metric('shop',now-10,now+10)
+            self.assertEqual(metric,{'attempts':1,'successes':1,'rate':1.0})
             e.control.close()
 
     def test_fake_candidate_active_and_rollback_paths(self):

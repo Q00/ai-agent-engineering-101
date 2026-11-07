@@ -81,6 +81,14 @@ class Evolution:
             (now-1800,)).fetchall())
         inputs={r['source']:{'hash':r['content_hash'],'fetched':r['fetched'],'schema_ok':bool(r['schema_ok'])}
             for r in self.control.db.execute("SELECT source,fetched,content_hash,schema_ok FROM input_snapshots WHERE source IN ('rules','agent','board','shops')")}
+        role_scores={'shop':None,'buyer':None}
+        board_row=self.control.db.execute("SELECT body FROM input_snapshots WHERE source='board'").fetchone()
+        if board_row:
+            try:
+                players=json.loads(board_row[0]).get('players',[])
+                ours=next(p for p in players if (p.get('owner') or {}).get('login')=='morethanwhatiwant')
+                role_scores={'shop':(ours.get('shop') or {}).get('all'),'buyer':(ours.get('buyer') or {}).get('all')}
+            except (ValueError,TypeError,StopIteration):pass
         latest=ranks[-1] if ranks else None;old=None
         if latest:
             old=next((row for row in ranks if latest['observed']-row['observed']>=1440),None)
@@ -91,7 +99,8 @@ class Evolution:
             cuts=json.loads(old['cutoffs']);old_gap=max(0,float(cuts.get('10',old['top_score']))-old['our_score'])
         return {'observed_at':now,'rank':latest['our_rank'] if latest else None,
             'score':latest['our_score'] if latest else None,'top10_gap':gap,
-            'top10_gap_24m_ago':old_gap,'event_counts_30m':events,'official_inputs':inputs}
+            'top10_gap_24m_ago':old_gap,'role_scores':role_scores,
+            'event_counts_30m':events,'official_inputs':inputs}
 
     def trigger(self,evidence,now=None):
         now=self.clock() if now is None else now
@@ -313,6 +322,9 @@ metadata:
 
     def canary(self,cycle_id,role,commit,started=None):
         started=self.clock() if started is None else started
+        cycle=self.control.db.execute('SELECT body FROM evolution_cycles WHERE cycle_id=?',(cycle_id,)).fetchone()
+        try:baseline_score=json.loads(cycle[0]).get('role_scores',{}).get(role) if cycle else None
+        except (ValueError,TypeError):baseline_score=None
         minimum=20 if role=='buyer' else 10;kind='order_result' if role=='buyer' else 'quote_created'
         deadline=started+CANARY_TIMEOUT
         while self.clock()<deadline:
@@ -329,9 +341,43 @@ metadata:
                 except (OSError,ValueError,TypeError):supply_window=False
             if uncertain or exits:return False,{'samples':samples,'uncertain':uncertain,'exits':exits}
             if samples>=minimum and elapsed>=600 and supply_window:
-                return True,{'samples':samples,'elapsed':elapsed,'supply_window':supply_window}
+                current_score=self.current_role_score(role)
+                before=self.role_metric(role,started-min(elapsed,1800),started)
+                after=self.role_metric(role,started,self.clock())
+                score_gain=(baseline_score is not None and current_score is not None and current_score>baseline_score+1e-12)
+                rate_gain=(after['successes']>0 and after['rate']>before['rate']+1e-12)
+                if score_gain or rate_gain:
+                    return True,{'samples':samples,'elapsed':elapsed,'supply_window':supply_window,
+                        'baseline_score':baseline_score,'current_score':current_score,
+                        'baseline_rate':before['rate'],'canary_rate':after['rate'],
+                        'improvement_basis':'official_score' if score_gain else 'conversion_rate'}
             time.sleep(30)
-        return False,{'reason':'canary_timeout'}
+        return False,{'reason':'no_measured_improvement_before_timeout','baseline_score':baseline_score,
+            'current_score':self.current_role_score(role)}
+
+    def current_role_score(self,role):
+        row=self.control.db.execute("SELECT body FROM input_snapshots WHERE source='board'").fetchone()
+        if not row:return None
+        try:
+            players=json.loads(row[0]).get('players',[])
+            ours=next(p for p in players if (p.get('owner') or {}).get('login')=='morethanwhatiwant')
+            value=(ours.get(role) or {}).get('all')
+            return float(value) if isinstance(value,(int,float)) else None
+        except (ValueError,TypeError,StopIteration):return None
+
+    def role_metric(self,role,start,end):
+        if role=='buyer':
+            rows=self.control.db.execute("SELECT body FROM runtime_events WHERE role='buyer' AND kind='order_result' AND ts>=? AND ts<?",
+                (start,end)).fetchall();attempts=len(rows);successes=0
+            for row in rows:
+                try:successes+=int(json.loads(row[0]).get('receipt') is True)
+                except (ValueError,TypeError):pass
+        else:
+            attempts=self.control.db.execute("SELECT COUNT(*) FROM runtime_events WHERE role='seller' AND kind='quote_created' AND ts>=? AND ts<?",
+                (start,end)).fetchone()[0]
+            successes=self.control.db.execute("SELECT COUNT(*) FROM runtime_events WHERE role='seller' AND kind='sale_signed' AND ts>=? AND ts<?",
+                (start,end)).fetchone()[0]
+        return {'attempts':attempts,'successes':successes,'rate':successes/attempts if attempts else 0.0}
 
     def cycle(self,trigger=None):
         evidence=self.evidence();self.ensure_baseline();self.write_performance_report(evidence);trigger=trigger or self.trigger(evidence)
