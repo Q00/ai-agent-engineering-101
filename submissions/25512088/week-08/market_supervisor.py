@@ -40,12 +40,15 @@ class Supervisor:
     def __init__(self, root=ROOT, commands=None):
         self.root=Path(root);self.state=self.root/'.market';self.dir=self.state/'supervisor'
         self.events=self.dir/'runtime-events.jsonl';self.pids=self.dir/'pids.json'
+        self.requests=self.dir/'requests';self.results=self.dir/'results'
         self.dir.mkdir(parents=True,exist_ok=True);(self.root/'logs').mkdir(exist_ok=True)
+        self.requests.mkdir(exist_ok=True);self.results.mkdir(exist_ok=True)
         runner=str(self.root/'run_ubuntu.sh')
         self.commands=commands or {
             'monitor':['bash',runner,'monitor'],
             'shop':['bash',runner,'shop'],'buyer':['bash',runner,'buyer'],
-            'procurement':['bash',runner,'procurement']}
+            'procurement':['bash',runner,'procurement'],
+            'evolution':['bash',runner,'evolution']}
         self.children={};self.logs={};self.stop_requested=False;self.control=Control(self.state)
 
     def emit(self, role, event, **body):
@@ -99,6 +102,25 @@ class Supervisor:
         if not healthy:self.stop_role(role,timeout)
         return healthy
 
+    def handle_requests(self):
+        """Process atomic, allowlisted role restart requests from evolution."""
+        for path in sorted(self.requests.glob('*.json')):
+            try:
+                request=json.loads(path.read_text())
+                request_id=path.stem;role=request.get('role')
+                if request.get('action')!='restart' or role not in {'buyer','shop','procurement','monitor'}:
+                    raise ValueError('invalid supervisor request')
+                healthy=self.replace_role(role,lambda pid:_alive(pid))
+                result={'request_id':request_id,'role':role,'healthy':healthy,
+                    'pid':self.children.get(role,(None,None))[0].pid if role in self.children else None,
+                    'finished':time.time()}
+                self.emit(role,'requested_restart_completed',correlation=request_id,healthy=healthy)
+            except Exception as exc:
+                result={'request_id':path.stem,'healthy':False,'error':type(exc).__name__,'finished':time.time()}
+                self.emit('supervisor','requested_restart_failed',correlation=path.stem,error=type(exc).__name__)
+            _atomic_json(self.results/f'{path.stem}.json',result)
+            path.unlink(missing_ok=True)
+
     def run(self):
         lock=(self.dir/'supervisor.lock').open('a')
         try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
@@ -108,8 +130,9 @@ class Supervisor:
         PIDFILE.parent.mkdir(parents=True,exist_ok=True);PIDFILE.write_text(str(os.getpid())+'\n')
         self.emit('supervisor','supervisor_started',pid=os.getpid())
         try:
-            for role in ('monitor','shop','buyer','procurement'):self.start_role(role)
+            for role in ('monitor','shop','buyer','procurement','evolution'):self.start_role(role)
             while not self.stop_requested:
+                self.handle_requests()
                 for role,(process,started) in list(self.children.items()):
                     code=process.poll()
                     if code is None:continue
