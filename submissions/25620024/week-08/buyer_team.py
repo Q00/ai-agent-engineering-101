@@ -234,9 +234,9 @@ def accountability(me, top, summ):
     lead = top[0] if top else {}
     rank = next((x["rank"] for x in top if x["name"] == NAME), None)
     acc = summ.get("enuri_accountability") or {}
-    return {"you_answer_for": "headquarters holds the buyer team responsible if our absolute surplus falls further "
-                              "behind the leading buyers, and the Enuri team for every missed opportunity and wrong "
-                              "purchase (in money)",
+    return {"you_answer_for": "headquarters holds the buyer team responsible if our saved-rate percentile (share of "
+                              "list kept per deal, patch 3.4) or deals fall, and the Enuri team for every missed "
+                              "opportunity and wrong purchase",
             "now": {"our_surplus": me.get("surplus"), "leader": lead.get("name"), "leader_surplus": lead.get("surplus"),
                     "surplus_share_of_leader": round(me["surplus"] / lead["surplus"], 3)
                     if me.get("surplus") and lead.get("surplus") else None,

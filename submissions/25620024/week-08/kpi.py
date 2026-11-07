@@ -20,7 +20,7 @@ MD = HERE / ".market"
 BOARD = "https://market.ourolabs.ai/api/board"
 NAME, OWNER = "dragonash", "dragonash22"
 WHO = {"scm": "our revenue percentile falls (shop ALL x0.3): no stock of what sells means no revenue",
-       "finance": "our profit percentile falls (shop ALL x0.5): profit at the end of the round, stock left unsold is lost",
+       "finance": "our Book percentile falls (shop ALL x0.5): balance - start + unsold stock at cost (patch 3.4); detect and report risks to sales, do not block",
        "marketing": "our stars percentile falls (shop ALL x0.2): reviews of paid deals",
        "sales": "our shop ALL percentile falls (half of the Players score that is 30% of the midterm)"}
 

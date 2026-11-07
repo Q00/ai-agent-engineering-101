@@ -29,6 +29,7 @@ import argparse
 import json
 import os
 import re
+import sys
 import subprocess
 import tempfile
 import time
@@ -52,10 +53,12 @@ GUARD = HERE / "private" / "team_guard.json"
 #   overnight (until the shop is back on its feet): every 30 min; normal: every 2 h
 #   a usage/rate-limit error from Codex or Claude: cool down 3 h; 3 failures in a row: 1 h; at most 40 runs a day;
 #   headquarters can pause it by setting "paused": true
-LIMITS = {"overnight_min": 9, "normal_min": 118, "max_runs_day": 150,   # HQ 11-04: every 10 min
+LIMITS = {"overnight_min": 29, "normal_min": 118, "max_runs_day": 60,   # 11-07: 10 min -> 30 min. Every 10 min the
+    # model teams (4 Codex calls of ~75k-char briefs) used up the owner's Codex plan in about a day (limit hit 11-05
+    # 01:08, back 11-07 05:47); the code loops (restock, buyer, self-improvement) still run every 10 min
           "limit_cooldown_h": 3, "fail_cooldown_h": 1,
           "normal_when_all": 2.0}   # HQ 11-04: no rest, all night (ALL never reaches 2)             # HQ 11-04: rest only near the top (0.6 put the team to sleep at rank 18)
-TEAM_GAP = {"overnight": 9 * 60, "normal": 55 * 60}     # HQ 11-04: every meeting (10 min)   # how often SCM, finance and the buyer team meet
+TEAM_GAP = {"overnight": 29 * 60, "normal": 55 * 60}     # HQ 11-04: every meeting (10 min)   # how often SCM, finance and the buyer team meet
 MODE = {"now": "overnight"}
 LIMIT_RE = re.compile(r"usage limit|rate.?limit|quota|429|too many requests|limit reached|exceeded", re.I)
 REPORTS = Path(os.environ.get("TEAM_REPORTS", "/mnt/gdrive-imajason-kimdaehakwon/week08-reports"))
@@ -351,7 +354,8 @@ def ask_codex(text, schema_obj):
 def _err(stderr):
     """The real error out of a CLI's stderr: ERROR lines first (the usage limit sat above a bubblewrap warning, and the
     last 600 characters showed only the warning for two days)."""
-    errs = [l for l in stderr.splitlines() if re.search(r"error|limit|denied|fail", l, re.I)]
+    errs = [l for l in stderr.splitlines() if l.startswith("ERROR")] or \
+        [l for l in stderr.splitlines() if len(l) < 400 and re.search(r"error|limit|denied|fail", l, re.I)]
     return (" | ".join(errs[-3:]) or stderr[-600:])[:800]
 
 
@@ -359,10 +363,22 @@ def _ask_codex(text, schema_obj):
     with tempfile.TemporaryDirectory() as d:
         schema, out = Path(d) / "schema.json", Path(d) / "out.json"
         schema.write_text(json.dumps(schema_obj))
-        cmd = [CODEX, "exec", "--skip-git-repo-check", "--ephemeral", "-s", "read-only", "-C", str(HERE),
+        # -C an empty folder (11-07): with -C HERE a read-only Codex agent could browse the whole submission
+        # (enuri_book.json alone is 850 KB) on the owner's ChatGPT plan; the brief in the prompt is all it needs
+        cmd = [CODEX, "exec", "--skip-git-repo-check", "--ephemeral", "-s", "read-only", "-C", d,
                "--output-schema", str(schema), "-o", str(out), "-"]
+        t0 = time.time()
         r = subprocess.run(cmd, input=text, text=True, capture_output=True, timeout=900,
                            env={**os.environ, "CODEX_HOME": CODEX_HOME})
+        m = re.search(r"tokens used\s*\n?\s*([\d,]+)", r.stderr or "")
+        try:                                            # what each Codex call costs the owner's plan (11-07)
+            with (HERE / "private" / "model_usage.jsonl").open("a", encoding="utf-8") as f:
+                f.write(json.dumps({"ts": time.time(), "model": "codex", "prompt_chars": len(text),
+                                    "tokens": int(m.group(1).replace(",", "")) if m else None,
+                                    "secs": round(time.time() - t0), "ok": out.exists(),
+                                    "caller": (sys._getframe(2).f_code.co_filename.split("/")[-1])}) + "\n")
+        except Exception:
+            pass
         if not out.exists():
             raise RuntimeError(f"codex exited {r.returncode}: {_err(r.stderr)}")
         return out.read_text(encoding="utf-8")
