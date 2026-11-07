@@ -71,7 +71,9 @@ TUNABLE = {
     "buyer.cap_goods_warranty": (0.80, 1.00, 0.04),
     "buyer.cap_food": (0.85, 1.00, 0.03),
     "buyer.min_surplus_list": (0.0, 0.15, 0.02),
-    "buyer.min_kept": (0.0, 0.45, 0.03),           # Patch 3.4: Saved is an average share kept; keep this at or above the board's saved
+    "buyer.min_kept": (0.0, 0.50, 0.03),           # Patch 3.4: Saved is an average share kept; keep this at or above the board's saved
+    "buyer.break_penalty": (0.0, 1.0, 0.25),       # what an uncovered break costs in the goods cap (Saved: -1 a deal that served nothing)
+    "buyer.step_list": (0.0, 0.15, 0.05),          # an offer this share of list under the cap before the final one (0: none)
     "buyer.open_list": (0.20, 0.80, 0.05),
     "buyer.max_shops": (1, 5, 1),
     "buyer.target_s": (10, 40, 5),

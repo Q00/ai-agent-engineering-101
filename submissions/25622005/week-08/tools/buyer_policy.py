@@ -2,7 +2,8 @@
 
     candidates     offers ∩ acceptable, ranked by share of list kept x chance of closing
     fold_ask       add a shop's first ask / list to our record of what each shop asks (memory/shop_asks.json)
-    cap            the highest price worth paying for one SKU (D6)
+    cap            the highest price worth paying for one SKU (D6); break_top prices an uncovered break at
+                   buyer.break_penalty (Saved counts a deal that served nothing as -1)
     p_success      chance of closing = p_price x p_checkout (D8, P0 form)
     verify_receipt does a signed receipt fit the order and what was agreed
     build_accept   the accept terms the kit checks before paying (D7, D12)
@@ -41,14 +42,33 @@ def kept_floor(pol):
     return max(b["min_surplus_list"], b.get("min_kept", 0.0))
 
 
+def break_top(kind, warranty_h, q_upper, pol):
+    """The most of list a goods deal may cost when a break counts buyer.break_penalty against Saved (the market's
+    rule: a deal that served nothing counts -1, 0 when refunded, so a warranted break costs nothing). With q the
+    break chance the warranty leaves uncovered (q_upper, or q_prior before a measurement, times the part of the
+    6 h not covered), the expected share kept is (1 - q)(1 - s) - q * penalty; keeping it at the kept floor
+    gives s <= 1 - (floor + q * penalty) / (1 - q). 1.0 for food, a full warranty or penalty 0 (the old caps)."""
+    b = pol["buyer"]
+    pen = b.get("break_penalty", 0.0)
+    if kind == "food" or (warranty_h and warranty_h >= WARRANTY_FULL_H) or not pen or pen <= 0:
+        return 1.0
+    q = q_upper if q_upper is not None else q_prior(pol)
+    q = min(1.0, max(0.0, q)) * (1 - min(1.0, (warranty_h or 0) / WARRANTY_FULL_H))
+    if q >= 1:
+        return 0.0
+    return round(max(0.0, 1 - (kept_floor(pol) + q * pen) / (1 - q)), 6)
+
+
 def cap_share(kind, warranty_h, q_upper, pol):
-    """D6 price cap as a share of the shipped SKU's list price, never above 1 - kept_floor."""
+    """D6 price cap as a share of the shipped SKU's list price, never above 1 - kept_floor, and for goods
+    without the full warranty never above break_top (the break chance priced at buyer.break_penalty)."""
     b = pol["buyer"]
     top = round(1 - kept_floor(pol), 6)          # never a cap that leaves less than the minimum share kept
     if kind == "food":
         return min(b["cap_food"], top)
     if warranty_h and warranty_h >= WARRANTY_FULL_H:
         return min(b["cap_goods_warranty"], top)
+    top = min(top, break_top(kind, warranty_h, q_upper, pol))
     if q_upper is not None:                      # measured break rate replaces the 0.70 start value
         return max(0.0, min(1 - q_upper - b["min_surplus_list"], top))
     return min(b["cap_goods_no_warranty"], top)

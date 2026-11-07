@@ -74,7 +74,7 @@ class RowsTest(unittest.TestCase):
 
     def test_target_stays_inside_the_guard_bounds(self):
         rows, _, st = objective.rows(brief(saved=0.60), buyers(), pol(0.42), FACTS, ME)
-        self.assertEqual((st["target"], rows[0]["value"]), (0.45, 0.45))
+        self.assertEqual((st["target"], rows[0]["value"]), (0.5, 0.45))
 
     def test_paused_without_the_saved_rule_sentence(self):
         for facts in ({}, {objective.RULE_FACT: None}):
@@ -111,7 +111,7 @@ class GuardTest(unittest.TestCase):
 
     def test_objective_value_is_clamped_to_the_bounds(self):
         acc, _ = guard.guard([{"key": "buyer.min_kept", "value": 0.9, "source": "objective"}], pol(0.28), {}, 1.0)
-        self.assertEqual(acc[0]["new"], 0.45)
+        self.assertEqual(acc[0]["new"], 0.5)
 
 
 if __name__ == "__main__":

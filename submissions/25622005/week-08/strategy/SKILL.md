@@ -89,6 +89,8 @@ policy:
     order_cap_s: 60
     binding: true                 # D12 pre-payment binding check in the kit copy
     accept_cert: true
+    break_penalty: 1.0            # a goods deal without the full warranty is capped so that a break, which Saved counts as -1, is priced in (0: off)
+    step_list: 0.0                # an offer this share of list under the cap before the final offer (0: open offer, then the cap)
   llm:
     planner_enabled: false        # D9 (P2)
     planner_every_min: 30

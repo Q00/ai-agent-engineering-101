@@ -55,7 +55,7 @@ DEFAULTS = {
         "cap_goods_no_warranty": 0.70, "cap_goods_warranty": 0.94, "cap_food": 0.95,
         "min_surplus_list": 0.05, "min_kept": 0.0, "open_list": 0.60, "max_shops": 3, "food_margin_h": 0.2,
         "target_s": 20, "continue_p": 0.75, "msg_timeout_s": 12, "order_cap_s": 60,
-        "binding": True, "accept_cert": True,
+        "binding": True, "accept_cert": True, "break_penalty": 1.0, "step_list": 0.0,
     },
     "llm": {"planner_enabled": False, "planner_every_min": 30, "planner_max_per_h": 4,
             "exception_enabled": True, "exception_max_per_h": 10, "exception_min_left_s": 30,
@@ -74,6 +74,7 @@ RANGES = {
     "stock.per_sku_qty": (1, 20), "stock.max_lines": (0, 10), "stock.max_qty": (1, 20),
     "buyer.cap_goods_no_warranty": (0.0, 1.5), "buyer.cap_goods_warranty": (0.0, 1.5), "buyer.cap_food": (0.0, 1.5),
     "buyer.open_list": (0.0, 1.5), "buyer.max_shops": (1, 10), "buyer.target_s": (1, 240),
+    "buyer.break_penalty": (0.0, 1.0), "buyer.step_list": (0.0, 0.3),
     "buyer.continue_p": (0.0, 1.0), "buyer.msg_timeout_s": (1, 120), "buyer.order_cap_s": (5, 280),
     "buyer.food_margin_h": (0.0, 24.0), "buyer.min_surplus_list": (0.0, 0.5), "buyer.min_kept": (0.0, 0.6),
     "stock.window_lead_s": (0, 60),         # the kit retries a closed-window line 3 x 30 s, then skips it

@@ -273,17 +273,23 @@ class NegotiationTests(unittest.TestCase):
         self.assertEqual(shop.messages[0]["metadata"]["use_within_hours"], 6)
 
     def test_quoted_grade_recaps_the_deal_from_the_breakage_table(self):
-        # a C unit with a 0.5 breakage upper bound: cap 1 - 0.5 - min_surplus (0.05 default) = 0.45 x 100000
+        # a C unit with a 0.5 breakage upper bound and no warranty: a break counts -1 (buyer.break_penalty), so
+        # no price keeps the floor (1 - (0.05 + 0.5) / 0.5 < 0): cap 0 and the shop is left at once
         shop = FakeShop(first_ask=60000, floor=60000, data={"grade": "C"})
         c = cand(shop) | {"q_grade": {"C": {"q": 0.3, "upper": 0.5, "n": 10, "level": "sku"}}}
         r = self.go(shop, c=c)
-        self.assertEqual((r["grade"], r["cap"]), ("C", 45000))
+        self.assertEqual((r["grade"], r["cap"]), ("C", 0))
         self.assertIsNone(r["receipt"])
+        self.assertIn("cap 0", r["why"])
+        self.assertEqual(len(shop.messages), 1)                                  # no offer of 0
+        p = pol(break_penalty=0)                                                 # the old cap: 1 - 0.5 - 0.05
+        r = self.go(shop, c=cand(shop) | {"q_grade": {"C": {"q": 0.3, "upper": 0.5, "n": 10, "level": "sku"}}}, p=p)
+        self.assertEqual((r["grade"], r["cap"]), ("C", 45000))
         self.assertIn("above the cap", r["why"])
         shop = FakeShop(first_ask=60000, floor=60000, data={"grade": "A"})     # A: a sturdy grade lifts the cap
         c = cand(shop) | {"q_grade": {"A": {"q": 0.01, "upper": 0.03, "n": 50, "level": "sku"}}}
-        r = self.go(shop, c=c)                                                   # 1 - 0.03 - 0.05 = 0.92 x 100000
-        self.assertEqual((r["grade"], r["cap"], r["receipt"]["price"]), ("A", 92000, 60000))
+        r = self.go(shop, c=c)                                     # min(1 - 0.03 - 0.05, 1 - 0.08 / 0.97) x 100000
+        self.assertEqual((r["grade"], r["cap"], r["receipt"]["price"]), ("A", 91752, 60000))
 
     def test_warranty_offer_raises_goods_cap(self):
         shop = FakeShop(first_ask=90000, floor=99999, data={"warranty_hours": 6})

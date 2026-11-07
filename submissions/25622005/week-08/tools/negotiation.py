@@ -220,6 +220,9 @@ def negotiate(shop_url, cand, order, deadline, pol, client=None, ver=None):
             if kind != "food" and w and w > r["warranty_h"]:   # a warranty offer raises the cap (D6)
                 r["warranty_h"] = w
                 r["cap"] = bp.cap(V, kind, w, cand.get("q_upper"), budget, pol)
+            if r["cap"] <= 0:                           # no price keeps the floor (break_top): nothing to offer
+                r["why"] = f"cap 0 for grade {r.get('grade')} with a {r['warranty_h']} h warranty"
+                break
             hours = data.get("hours_left")
             need = order.get("use_within_hours")
             if kind == "food" and isinstance(hours, (int, float)) and isinstance(need, (int, float)) \

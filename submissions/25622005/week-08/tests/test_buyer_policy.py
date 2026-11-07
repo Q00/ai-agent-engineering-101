@@ -38,9 +38,24 @@ def shop(url, *offers, name=None):
 class CapTests(unittest.TestCase):
     def test_d6_shares(self):
         self.assertEqual(bp.cap(30000, "food", 0, None, 99999, POL), 28500)
-        self.assertEqual(bp.cap(100000, "goods", 0, None, 999999, POL), 70000)
+        self.assertEqual(bp.cap(100000, "goods", 0, None, 999999, POL), 60000)  # break_top: 1 - (0.05 + 0.25) / 0.75
         self.assertEqual(bp.cap(100000, "goods", 6, None, 999999, POL), 94000)
-        self.assertEqual(bp.cap(100000, "goods", 0, 0.10, 999999, POL), 85000)
+        self.assertEqual(bp.cap(100000, "goods", 0, 0.10, 999999, POL), 83333)  # 1 - (0.05 + 0.10) / 0.90 < 0.85
+
+    def test_break_penalty_prices_an_uncovered_break_into_the_goods_cap(self):
+        """Saved counts a deal that served nothing as -1: the cap keeps the expected share kept at the floor."""
+        pol = json.loads(json.dumps(POL)); pol["buyer"]["min_kept"] = 0.31; pol["buyer"]["cap_goods_no_warranty"] = 0.80
+        self.assertEqual(bp.cap(30000, "food", 0, 0.5, 99999, pol), 20700)                 # food: no breaks
+        self.assertEqual(bp.cap(100000, "goods", 6, 0.40, 999999, pol), 69000)             # full warranty: min_kept only
+        self.assertEqual(bp.cap(100000, "goods", 0, 0.022, 999999, pol), 66053)            # A grade: 1 - 0.332 / 0.978
+        self.assertEqual(bp.cap(100000, "goods", 0, 0.40, 999999, pol), 0)                 # C grade: 1 - 0.71 / 0.60 < 0
+        self.assertEqual(bp.cap(100000, "goods", 0, None, 999999, pol), 45882)             # unmeasured: q_prior 0.15
+        self.assertEqual(bp.cap(100000, "goods", 3, 0.40, 999999, pol), 36250)             # half covered: q 0.20
+        pol["buyer"]["break_penalty"] = 0.5
+        self.assertEqual(bp.cap(100000, "goods", 0, 0.022, 999999, pol), 67177)            # 1 - 0.321 / 0.978
+        pol["buyer"]["break_penalty"] = 0.0
+        self.assertEqual(bp.cap(100000, "goods", 0, 0.40, 999999, pol), 54999)             # off: the old 1 - q - min_surplus
+        self.assertEqual(bp.cap(100000, "goods", 0, None, 999999, pol), 69000)             # off: min(0.80, 0.69)
 
     def test_food_cap_keeps_min_surplus(self):
         pol = json.loads(json.dumps(POL))
@@ -114,6 +129,8 @@ class CandidateTests(unittest.TestCase):
 
     def test_min_kept_caps_goods_without_dropping_them(self):
         pol = json.loads(json.dumps(POL)); pol["buyer"]["min_kept"] = 0.28
+        self.assertEqual(bp.cap(100000, "goods", 0, None, 999999, pol), 29333)       # break_top 1 - (0.28 + 0.25) / 0.75
+        pol["buyer"]["break_penalty"] = 0
         self.assertEqual(bp.cap(100000, "goods", 0, None, 999999, pol), 70000)       # min(0.70, 0.72)
         self.assertEqual(bp.cap(100000, "goods", 6, None, 999999, pol), 72000)       # min(0.94, 0.72)
         self.assertEqual(bp.cap(30000, "food", 0, None, 99999, pol), 21600)          # min(0.95, 0.72)
@@ -155,9 +172,9 @@ class CandidateTests(unittest.TestCase):
         shops = [shop("http://a", ("G1", 1)), shop("http://b", ("G1", 1))]
         cs = bp.candidates(GOODS, shops, CATALOG, {}, POL, self.known("http://b", 0.85, kind="goods", w=0.75))
         self.assertEqual([c["shop"] for c in cs], ["http://b", "http://a"])
-        self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["p_reach"], cs[0]["cap"]), (85000, 0.1125, 1.0, 70000))
+        self.assertEqual((cs[0]["ask_est"], cs[0]["kept"], cs[0]["p_reach"], cs[0]["cap"]), (85000, 0.1125, 1.0, 60000))
         self.assertIn("6 h warranty cap 94000", cs[0]["why"])
-        self.assertEqual((cs[1]["kept"], cs[1]["p_reach"]), (0.05, 0.5714))             # unknown: 0.75 - 0.70
+        self.assertEqual((cs[1]["kept"], cs[1]["p_reach"]), (0.15, 0.2857))             # unknown: (1 - q) - 0.60; 0.60 - 0.50
         cs = bp.candidates(GOODS, shops, CATALOG, {}, POL, self.known("http://b", 0.85, kind="goods", w=0.25))
         self.assertEqual([c["shop"] for c in cs], ["http://a", "http://b"])             # no warranty: 0.85 > 0.70
         self.assertEqual(cs[1]["p_reach"], 0.0)
@@ -179,15 +196,15 @@ class CandidateTests(unittest.TestCase):
                "q": {"n": 40, "upper": 0.10}}
         with patch.object(bp.query, "category_stats", return_value=cat):
             c = bp.candidates(GOODS, [shop("http://a", ("G1", 1))], CATALOG, {}, POL)[0]
-        self.assertEqual(c["cap"], 85000)
+        self.assertEqual(c["cap"], 83333)                                           # 1 - (0.05 + 0.10) / 0.90
         c = bp.candidates(GOODS, [shop("http://a", ("G1", 1))], CATALOG, {}, POL)[0]
-        self.assertEqual((c["cap"], c["q"]), (70000, bp.q_prior(POL)))
+        self.assertEqual((c["cap"], c["q"]), (60000, bp.q_prior(POL)))
 
     def test_q_prior_follows_the_policy_cap(self):
         pol = json.loads(json.dumps(POL))
         pol["buyer"]["cap_goods_no_warranty"] = 0.75     # a raised D6 cap must not drop every goods offer
         c = bp.candidates(GOODS, [shop("http://a", ("G1", 1))], CATALOG, {}, pol)
-        self.assertEqual([x["cap"] for x in c], [75000])
+        self.assertEqual([x["cap"] for x in c], [68750])                            # q_prior 0.20: 1 - 0.25 / 0.80
 
     def test_reference_list(self):
         self.assertEqual(bp.reference_list(FOOD, CATALOG), 30000)
@@ -256,7 +273,7 @@ class AcceptAndReceiptTests(unittest.TestCase):
 
     def test_category_receipt_binds_by_list_share_only(self):
         a = bp.build_accept(GOODS, self.goods, {"item": "침대", "price": 60000}, None, 0, POL)
-        self.assertEqual(a["bind"], {"max_price_list": 0.70})
+        self.assertEqual(a["bind"], {"max_price_list": 0.6})                        # break_top under the defaults
 
     def test_verify_receipt(self):
         ok = {"item": "F1", "price": 25000, "unit": "u7", "sig_seller": "x"}
