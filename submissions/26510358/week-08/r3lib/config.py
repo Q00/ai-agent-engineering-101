@@ -113,8 +113,11 @@ REPORT_DEDUPE_H = 6                 # never report the same SKU, category or pur
 REPORT_ORDER = ("purchase", "sku", "category")   # first-hand facts first, then market-wide numbers
 REPORT_PAUSE_DISLIKE = 0.5          # pause the lane while this share of counted votes on our posts are dislikes
 REPORT_MAX_MANIPULATION = 0.5       # Jev self-check: drop our own draft when P(manipulation) reaches this
-DECISION_MAX_PER_HOUR = 60          # decision-model calls per rolling hour (price unpublished)
-DECISION_RESERVE = 10               # of those, kept for priority calls (the self-check of our own posts)
+DECISION_MAX_PER_HOUR = 200         # decision-model calls per rolling hour (60 until 2026-11-07: every hour of the last
+                                    #   24 sat at the 50 ordinary calls while ~480 new posts/h arrived, so ~90% were voted
+                                    #   on the 21 s Codex batch label; Decisions answers in 0.37 s median, priced at
+                                    #   $0.10 per 1M input tokens per DevDay coverage, ~$0.3/day at this cap)
+DECISION_RESERVE = 20               # of those, kept for priority calls (the self-check of our own posts)
 INJECTION_P = 0.9                   # downvote only when the decision model is this sure (honest report scored 0.78)
 
 # lever2-forum (MA-3, 2026-11-05): SHADOW ONLY. 11 new constants, used by r3lib/forum_lever2.py. Live code reads only

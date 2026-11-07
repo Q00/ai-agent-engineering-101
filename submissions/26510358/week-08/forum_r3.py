@@ -501,8 +501,8 @@ def main(argv=None):
     if isinstance(posts, dict):
         posts = posts.get("posts") or []
     new = [p for p in mem.upsert_forum(posts) if p.get("author") not in config.MY_NAMES]
-    labels = classify(mem, new) if new else {}
-    vote(mem, new, labels)
+    # Our post goes out before the slow part of the run (Codex classify ~21 s, then the votes): it used to wait
+    # behind them, so posts came 5.5 min apart (median, 2026-11-07) against the market's 5 min limit.
     now = time.time()
     decision = proactive_buyer_post(mem, now)
     if decision.get("decision") != "post":
@@ -513,6 +513,8 @@ def main(argv=None):
                                ensure_ascii=False) + "\n")
         if report.get("decision") == "post":
             decision = report
+    labels = classify(mem, new) if new else {}
+    vote(mem, new, labels)
     if now - (mem.get("shop_post_at") or 0) > SHOP_POST_EVERY:
         f = shop_facts(mem)
         if f:
