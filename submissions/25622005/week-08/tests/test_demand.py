@@ -113,6 +113,14 @@ class PlannerTest(unittest.TestCase):
         self.assertEqual(p["demand"], {})
         self.assertEqual(next(b for b in p["buy"] if b["sku"] == "F1a")["qty"], RPOL["stock"]["per_sku_qty"])
 
+    def test_the_analysts_multiplier_scales_the_rate(self):
+        from tests.test_restock import CATALOG, DEMAND, POL as RPOL, inv, NOW as RNOW
+        s = {"seller": {"skus": {"F1a": {"settled": 2, "sales_per_h": 1.0, "sold_6h": 0}}}, "market": {}}
+        p = stock.plan_restock(inv(), CATALOG, DEMAND, s, RPOL, RNOW, analyst={"F1a": 2.0, "F2": 0.5})
+        self.assertEqual(p["demand"]["F1a"], {"plain": 1.0, "analyst": 2.0})
+        want = __import__("math").ceil(2.0 * RPOL["stock"]["cover_min"] / 60 * RPOL["stock"]["cover_safety"])
+        self.assertEqual(next(b for b in p["buy"] if b["sku"] == "F1a")["qty"], min(want, RPOL["stock"]["max_qty"]))
+
 
 if __name__ == "__main__":
     unittest.main()

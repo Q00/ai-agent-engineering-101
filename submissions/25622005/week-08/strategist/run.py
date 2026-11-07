@@ -50,7 +50,7 @@ import httpx
 
 import policy
 from memory.store import append_jsonl, atomic_write_json, read_json, tail_jsonl
-from strategist import analyze, collect, decide, facts, focus, guard, migrate, objective, outcome, publish, skillfile, trend, visible
+from strategist import analyst, analyze, collect, decide, facts, focus, guard, migrate, objective, outcome, publish, skillfile, trend, visible
 
 W = Path(__file__).resolve().parents[1]
 HEALTH_MAX_AGE_S = 300
@@ -188,7 +188,7 @@ def _run(cfg, now, client=None):
            "policy_ver_before": None, "policy_ver_after": None, "applied": [], "proposed": [], "rejected": [],
            "confidence": None, "assessment": "", "watch": [], "focus": None, "errors": [], "me": None,
            "rules_sha": None, "alerts": [], "outcomes": [], "patch": None, "notes": None, "history": [],
-           "migrations": [], "template": None, "objective": None, "tool_calls": [], "elapsed_ms": None}
+           "migrations": [], "template": None, "objective": None, "tool_calls": [], "analyst": None, "elapsed_ms": None}
     state = read_json(home / "state.json", {})
     state = state if isinstance(state, dict) else {}
     try:
@@ -253,6 +253,15 @@ def _steps(cfg, now, client, state, rec):
     rec["me"] = brief.get("me")
     atomic_write_json(home / "briefs" / f"{rid}.json", brief)
     state["last_brief"] = brief
+    # 2b the demand analyst: a second model call that writes memory/demand_forecast.json (apply mode only)
+    try:
+        tools = decide.tools_setup(home, cfg.shop_home, cfg.market_url, cfg.me)
+    except OSError:
+        tools = None
+    rec["analyst"] = analyst.run(cfg, now, rec, focus_part, own, None if skill_errors else pol, raw.get("catalog"),
+                                 raw.get("forum"), (brief.get("economics") or {}).get("capital")
+                                 if isinstance(brief.get("economics"), dict) else None, market, tools=tools,
+                                 write=cfg.mode == "apply" and not rec["paused"] and not skill_errors)
 
     # 3-6 the rows to guard: market-rule syncs, bounds repairs, migrations, outcome reverts and the linked repair
     # first, then the model's; one guard call, one write. The focus/trend lists, changed notes and the release body

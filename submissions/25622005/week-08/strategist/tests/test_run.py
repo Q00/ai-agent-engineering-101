@@ -117,6 +117,9 @@ class Base(unittest.TestCase):
             json.dumps({"ts": NOW - 200, "event": "refuse", "reason": "below floor"}) + "\n", encoding="utf-8")
         self.answer = self.tmp / "answer.txt"
         self.harness(None)
+        env = mock.patch.dict(os.environ, {"ANALYST_ENABLED": "0"})       # the demand analyst has its own test
+        env.start()
+        self.addCleanup(env.stop)
         # the fixture holds the old shipped end-of-round values and its own body: no migrations, and the fixture
         # comes first as the release body (so the body stays), unless a test sets them (ReleaseTest)
         for target, name, new in ((run.migrate, "MIGRATIONS", ()), (skillfile, "TEMPLATES", (REAL,) + skillfile.TEMPLATES)):
@@ -152,6 +155,23 @@ class Base(unittest.TestCase):
 
 
 class ApplyTest(Base):
+    def test_demand_analyst_runs_and_writes_its_forecast(self):
+        self.answer_with([], text=json.dumps({"assessment": "flat", "changes": [], "confidence": 0.7,
+                                              "multipliers": [{"sku": "G1", "mult": 1.5, "reason": "s1 jumps"}]}))
+        with mock.patch.dict(os.environ, {"ANALYST_ENABLED": "1"}):
+            rec = self.run_at()
+        a = rec["analyst"]
+        self.assertEqual(a["status"], "1 multipliers written", a)
+        fc = json.loads((self.shop / "memory" / "demand_forecast.json").read_text(encoding="utf-8"))
+        self.assertEqual((fc["mult"], fc["run_id"]), ({"G1": 1.5}, rec["run_id"]))
+        self.assertTrue((self.home / "analyst" / f"{rec['run_id']}.prompt.txt").is_file())
+        prompt = (self.home / "analyst" / f"{rec['run_id']}.prompt.txt").read_text(encoding="utf-8")
+        self.assertIn("You are the demand analyst", prompt)
+        self.assertIn("## Tools", prompt)
+        with mock.patch.dict(os.environ, {"ANALYST_ENABLED": "1"}):
+            rec = self.run_at(NOW + 3600, mode="propose")
+        self.assertIn("not written", rec["analyst"]["status"])
+
     def test_market_tools_are_configured_and_offered_in_the_prompt(self):
         rec = self.run_at()
         cfg = json.loads((self.home / "mcp.json").read_text(encoding="utf-8"))["mcpServers"]["market"]

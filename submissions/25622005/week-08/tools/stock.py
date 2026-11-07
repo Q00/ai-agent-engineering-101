@@ -126,14 +126,15 @@ def mean_factor(f_inv, u1h, qty, pol):
     return min(mk["surge_max"], max(f_inv, 1 + mk["surge_per_unit"] * max(0, u1h + qty / 2 - mk["surge_free"])))
 
 
-def plan_restock(inv, catalog, demand, summary, pol, now, planned=None, instock=None):
+def plan_restock(inv, catalog, demand, summary, pol, now, planned=None, instock=None, analyst=None):
     """{"buy": [{sku, qty}], "excluded": {category leaf or sku: reason}, "worst_cost", "headroom", "rules",
     "empty_picks": candidate SKUs with no unit in stock, "overpriced": units not counted as stock,
     "surge": {sku: {factor, u1h, free_left, f_max}}, "big_ticket": {budget, held_cost, planned_worst}}.
     planned: {sku: units} of our lines planned in the last hour that the summary's supply fold has not seen
     (restock.py keeps them). instock: memory/instock.json (restock.py's shelf history) for the demand model
     (memory/demand.forecast: our in-stock rate or share x market rate, by the hour of day) when
-    stock.demand_model is on; its reading per SKU is in out["demand"].
+    stock.demand_model is on; its reading per SKU is in out["demand"]. analyst: {sku: multiplier} from the demand
+    analyst's fresh forecast (memory/demand.load_forecast), applied to the SKU's rate after the demand model.
 
     Overpriced units (pricing.overpriced: cost floor above list) neither count as stock nor make a SKU stale,
     except for big-ticket SKUs, where every unit counts. A stale goods unit (seller.goods_stale_days) blocks its
@@ -220,6 +221,10 @@ def plan_restock(inv, catalog, demand, summary, pol, now, planned=None, instock=
                 out["demand"][sku] = {"rate": f["rate"], "src": f["src"], "factor": f["factor"], "share": f["share"],
                                       "instock_h": f["instock_h"], "sold": f["sold"], "plain": round(rate, 4)}
                 rate = max(rate, f["rate"])
+        mult = (analyst or {}).get(sku)                           # the demand analyst's multiplier (strategist/analyst.py)
+        if isinstance(mult, (int, float)) and mult > 0 and rate > 0:
+            out["demand"].setdefault(sku, {"plain": round(rate, 4)})["analyst"] = mult
+            rate *= mult
         # cover the sales expected until the next supply window (focus: focus_cover_mult times that),
         # food at most FOOD_COVER_SHELF of its shelf life of sales; at least per_sku_qty, at most max_hold
         want = math.ceil(rate * st["cover_min"] / 60 * st["cover_safety"] * (st["focus_cover_mult"] if is_focus else 1))

@@ -24,6 +24,7 @@ FACTOR_BOUNDS = (0.5, 2.0)
 TICK_MAX_S = 300             # a gap between restock runs longer than this counts as this
 KEEP_H = 48
 LOOKBACK_H = 24
+FORECAST_BOUNDS = (0.5, 2.0)   # the analyst's multipliers (strategist/analyst.MULT_BOUNDS)
 
 
 def _d(x):
@@ -59,6 +60,25 @@ def tick_instock(data, inv, now, keep_h=KEEP_H):
         del st["hours"][h]
     st["last"] = now
     return st
+
+
+# --- the analyst's multipliers (strategist/analyst.py writes memory/demand_forecast.json)
+
+def load_forecast(data, now, pol):
+    """{sku: multiplier} from the analyst's file while it is fresh (ts + ttl_s after now), each within
+    FORECAST_BOUNDS and at most stock.analyst_mult_max; {} otherwise."""
+    d = _d(data)
+    ts, ttl = _num(d.get("ts")), _num(d.get("ttl_s"))
+    if ts is None or ttl is None or now > ts + ttl or now < ts - 60:
+        return {}
+    cap = _num(_d(_d(pol).get("stock")).get("analyst_mult_max"))
+    cap = cap if cap is not None else FORECAST_BOUNDS[1]
+    out = {}
+    for sku, m in _d(d.get("mult")).items():
+        m = _num(m)
+        if isinstance(sku, str) and m is not None and FORECAST_BOUNDS[0] <= m <= FORECAST_BOUNDS[1]:
+            out[sku] = round(min(m, cap), 3)
+    return out
 
 
 # --- the three estimates

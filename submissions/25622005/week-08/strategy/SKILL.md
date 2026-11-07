@@ -67,6 +67,7 @@ policy:
     big_ticket_list: 40000        # goods listed above this are big-ticket
     demand_model: true            # cover target from memory/demand: our in-stock rate or share x market rate, by the hour of day
     demand_share_max: 0.5         # the share of the market's rate the demand model may claim for one SKU
+    analyst_mult_max: 2.0         # the demand analyst's multipliers (memory/demand_forecast.json) are capped here; 1.0 neutralises it
     bigticket_probe_qty: 3        # a big-ticket SKU holds at most this many units until we sold 2 of it in 6 h
     min_margin_share: 0.05        # surge: buy while clearing price - this covers cost x factor x floor_cost_mult
   market:

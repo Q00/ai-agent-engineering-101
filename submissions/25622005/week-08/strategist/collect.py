@@ -461,7 +461,11 @@ def read_own(shop_home, now, window_h=1, history_h=0):
     else:
         own["inventory"] = inv
     try:
-        own["summary"] = _summary(read_json(home / "memory" / "summary.json", {}))
+        full = read_json(home / "memory" / "summary.json", {})
+        own["summary"] = _summary(full)
+        own["summary_full"] = full if isinstance(full, dict) else {}      # strategist/analyst.py (never in the brief)
+        own["instock"] = read_json(home / "memory" / "instock.json", {})
+        own["forecast"] = read_json(home / "memory" / "demand_forecast.json", {})
         keep = now - history_h * 3600
         for role in ROLES:
             rows = _window_rows(home / "logs" / "decisions" / f"{role}.jsonl", since, role, own["truncated"],

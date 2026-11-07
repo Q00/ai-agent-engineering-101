@@ -58,7 +58,10 @@ Supply and depth:
   plain 24 h rate and the demand model's (our rate over the hours the SKU was on our shelf, or our share of the
   market's settles while in stock, capped at stock.demand_share_max, x the market's rate), scaled by the market's
   hour-of-day profile for the coming window (economics.demand: factor_now, peak_hours, profile; the factor stays
-  near 1 while the market's hours are alike, as they were on 11-07, within about 10%), at most stock.max_hold units, food at most a quarter of its shelf
+  near 1 while the market's hours are alike, as they were on 11-07, within about 10%); the demand analyst (a
+  second model call each run, strategist/analyst.py) multiplies a SKU's rate by 0.5-2.0 from what the brief and
+  the tools show (economics.demand.analyst: its fresh multipliers), capped at stock.analyst_mult_max, which at
+  1.0 switches it off: lower it when its multipliers keep buying units that do not sell, at most stock.max_hold units, food at most a quarter of its shelf
   life of sales. A top-up of a SKU still in stock below min(stock.min_line_qty, target / 2) is skipped
   ("small_topup"): deeper cover (cover_min, max_hold) and a larger min_line_qty make fewer, bigger lines and free
   calls for more SKUs. Order: sold-out SKUs, then focus, then trend SKUs, then category picks. A shop without the

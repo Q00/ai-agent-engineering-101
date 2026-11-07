@@ -562,13 +562,19 @@ def _demand_model(own, st, now):
     window and the peak hours; None without a profile."""
     from memory import demand as dm
     p = _dict(_dict(own.get("summary")).get("hour_profile"))
-    if not p:
+    if not p and not own.get("forecast"):
         return None
     summary = {"market": {"hour_profile": p}}
     peak = sorted(p.items(), key=lambda kv: -(_num(kv[1]) or 0))[:4]
+    fc = _dict(own.get("forecast"))
+    mult = dm.load_forecast(fc, now, {"stock": st})
+    analyst = {"fresh": bool(mult), "n": len(mult), "age_min": round((now - (_num(fc.get("ts")) or now)) / 60) if fc else None,
+               "top": [{"sku": _name(s), "mult": m, "why": _clip(_dict(fc.get("why")).get(s), 120)}
+                       for s, m in sorted(mult.items(), key=lambda kv: -abs(kv[1] - 1))[:5]],
+               "mult_max": _num(st.get("analyst_mult_max"))}
     return {"factor_now": dm.hour_factor(summary, now, (_num(st.get("cover_min")) or 90) / 60),
             "peak_hours": [h for h, _ in peak], "profile": {h: _num(v) for h, v in sorted(p.items())},
-            "on": bool(st.get("demand_model")), "share_max": _num(st.get("demand_share_max"))}
+            "on": bool(st.get("demand_model")), "share_max": _num(st.get("demand_share_max")), "analyst": analyst}
 
 
 def _breakage(own, units, catalog):

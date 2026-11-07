@@ -122,8 +122,9 @@ def run(state, t0):
     # our lines the summary's supply fold has not seen; without a fold, all of the last hour
     built = summary.get("built_at")
     since = built - PLANNED_LAG_S if supply_1h(summary, "") is not None and stock._finite(built) else None
+    analyst = demand_model.load_forecast(read_json(MEM / "demand_forecast.json", None), now, pol)
     plan = stock.plan_restock(inv, catalog, demand, summary, pol, now,
-                              planned=planned_units(planned_path, now, since), instock=instock)
+                              planned=planned_units(planned_path, now, since), instock=instock, analyst=analyst)
     win = stock.supply_window(inv, now)
     held = dict(stock.held(inv), empty_picks=plan["empty_picks"], overpriced=plan["overpriced"])
     if not card_ok:

@@ -60,6 +60,7 @@ TUNABLE = {
     "stock.big_ticket_list": (20000, 200000, 10000),
     "stock.bigticket_probe_qty": (1, 10, 1),
     "stock.demand_share_max": (0.10, 0.80, 0.10),    # memory/demand: cap on our share of a SKU's market rate
+    "stock.analyst_mult_max": (1.0, 2.0, 0.25),      # strategist/analyst.py: 1.0 switches its multipliers off
     # end of round (Patch 3.3: stock counts at cost, so 0 = off is the default)
     "stock.clear_cost_h": (0, 72, 12),
     "stock.clear_70_h": (0, 48, 6),
