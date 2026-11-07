@@ -122,12 +122,22 @@ Supply and depth:
   stock counts at cost); from stock.taper_h buying tapers to what sells before the end; from stock.goods_stop_h no
   new goods. Set them from how the market values unsold stock at the end.
 - Buyer: the food cap is min(buyer.cap_food, 1 - buyer.min_surplus_list) * list price, and every cap (food too) is
-  at most (1 - buyer.min_kept) * list price; goods without a warranty min(1 - measured break rate - buyer.min_surplus_list, that),
-  or buyer.cap_goods_no_warranty before any measurement; goods with the 6 h warranty min(buyer.cap_goods_warranty,
-  that). Saved (board: buyers.saved) is the average share of list kept per deal (denominator deals + 100), so a
-  deal that keeps less than our current saved lowers it. buyer.min_kept is set by code each run (score_twin,
-  history source "objective": one step toward max(our saved, the rank-10 saved) + 0.02, raised only while the
-  buyer's conversion is at least 0.45, a step down under 0.30); a change of yours to it is discarded as a
+  at most (1 - buyer.min_kept) * list price; goods with the 6 h warranty min(buyer.cap_goods_warranty, that); goods
+  without it min(1 - measured break rate - buyer.min_surplus_list, or buyer.cap_goods_no_warranty before any
+  measurement, that) and never above 1 - (buyer.min_kept + q * buyer.break_penalty) / (1 - q), q the grade's break
+  upper bound (the part the warranty leaves uncovered): Saved counts a deal that served nothing as -1 (0 when
+  refunded, so a warranted break costs nothing) and break_penalty 1.0 prices that in (0 turns it off). The brief's
+  saved.unserved shows what the -1 deals cost so far and saved.window how many goods deals carried the warranty.
+  A grade whose cap comes out at 0 (fragile, no warranty) is not bought. buyer.step_list above 0 adds one offer
+  step_list * list under the cap before the final offer (0: the open offer, then the cap).
+  Saved (board: buyers.saved) is the average share of list kept per deal (denominator deals + 100), so a deal
+  that keeps less than our current saved lowers it, and the deals still to come outnumber the history (brief
+  saved.projection: history_weight, and the final saved at the current kept and at 0.40 / 0.45): the share kept
+  on new deals decides the final saved, while deals weigh 0.1 and sit near their ceiling. saved.peers lists the
+  best saved among the other buyers with 1000+ deals with their paid (1 - paid is the share they keep per deal).
+  buyer.min_kept is set by code each run (score_twin, history source "objective": one step toward the larger of
+  max(our saved, the rank-3 saved) + 0.02 and the rank-3 kept share among those peers, raised only while the
+  buyer's window conversion is at least 0.30, a step down under 0.20); a change of yours to it is discarded as a
   duplicate. It pauses, with an alert, when the market's Saved sentence changes (fact
   saved_is_kept_share_over_deals_plus_100): then re-derive buyer.min_kept yourself from the new rule.
 - Big-ticket goods (list above stock.big_ticket_list) are first asked at seller.first_ask_big_list x list, the
@@ -142,7 +152,8 @@ Supply and depth:
   the newest 100 forum posts only, see sample_covered_s, while "posted" counts every post we queued).
   ledger_h is the hours the ledger rows cover (per-hour rates divide by it); score lists our ranking parts
   (pct is approximate; gain = w * (1 - pct) when the rules give weights); bands are the last hour's settles by
-  list-price band, market vs ours; seller and buyer_log count our own decision logs; focus lists the candidate
+  list-price band, market vs ours; seller and buyer_log count our own decision logs; saved takes the buyer's
+  Saved apart (unserved, kept_per_deal, window, projection, peers, policy); focus lists the candidate
   SKUs with their gates and price_check; economics has the line budget, turnover, big-ticket budget, surge
   allowance, p_clear and the expansion conditions; mix has the market's category leaves. A History row's outcome
   is the check one hour after that change: only buyer.cap_food and buyer.min_surplus_list are reverted
