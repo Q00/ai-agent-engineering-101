@@ -77,12 +77,38 @@ BIG_TICKET, BIG_MAX_SHARE = 1_000_000, 0.86
 # 0.80 4.34, 0.85 4.07, 0.90 3.82, 0.95 2.72; 120 of our 261 reviews were at 0.85+), while a 20k sale at 0.95
 # instead of 0.80 earns 3k. Stars are 0.2 of shop ALL and ours sat at the 0.32 percentile (4.58 vs 4.72 at 0.75).
 CHEAP_TICKET, CHEAP_MAX_SHARE = 100_000, 0.80
+# 0.86 fits SKUs the market buys at ~0.80, not cheaper ones (Nov 5 02:20): we bought 20 hotel bed sets (G03d0199f,
+# list 1.61M, 19.4M) at 01:43 and opened them at 0.86 while the market paid a median 0.72 (ledger 1.48 h, 48.7 sold
+# and 63.5 supplied per hour); 35 min later 1 sold, 18 held. A big-ticket SKU now opens at most its recent market
+# median (restock's last 10 settles, at least 5) plus BIG_OVER_MARKET; the Jakomo sofa and Simmons bed (0.80) keep 0.86.
+BIG_OVER_MARKET, BIG_MIN_SETTLES = 0.06, 5
+# The same median rule now holds for mid-priced goods (list 100k-1M, cap stays MAX_SHARE) (Nov 5 04:31-06:17):
+# our 19 reviews of them averaged 3.42 stars (0.85 of list 4.75 on 4, 0.90-1.0 3.21 on 14), and 20 goose duvets
+# (G05277ffe, list 600k) sat up to 9.2 h opening at 0.85-0.91 while the market's median was 0.78.
+
+
+# A big-ticket SKU that many shops sell opens at the market median itself, not above it (Nov 5 19:00-Nov 6 04:20
+# log, our first ask per talk): Jakomo G8ec51935 (15 shops sold it in the last hour) closed 30 of 67 talks opened
+# under 0.78 of list and 20 of 155 opened at 0.78+, and none of 11 talks after 02:50 (asks 0.80-0.86, market median
+# 0.77); Simmons Gbec2b68f (8 shops) 9 of 31 vs 1 of 17. The LG styler G7978c65e that only we sell closed 8 of 11
+# at 0.78+, so the premium stays where few shops sell the SKU (restock's sku_shops, sellers seen in the last hour).
+CROWDED_SHOPS = 8
+
+
+def crowded(sku):
+    m = (_load("restock_state.json", {}).get("sku_shops") or {}).get(sku) or {}
+    return sum(1 for t in m.values() if time.time() - t < 3600) >= CROWDED_SHOPS
 
 
 def max_share(u):
-    if u["list_price"] >= BIG_TICKET:
-        return BIG_MAX_SHARE
-    return CHEAP_MAX_SHARE if u["list_price"] < CHEAP_TICKET else MAX_SHARE
+    if u["list_price"] < CHEAP_TICKET:
+        return CHEAP_MAX_SHARE
+    cap = BIG_MAX_SHARE if u["list_price"] >= BIG_TICKET else MAX_SHARE
+    px = sorted((_load("restock_state.json", {}).get("sku_px") or {}).get(u.get("sku")) or [])
+    if len(px) >= BIG_MIN_SETTLES:
+        over = 0.0 if u["list_price"] >= BIG_TICKET and crowded(u.get("sku")) else BIG_OVER_MARKET
+        return min(cap, px[len(px) // 2] + over)
+    return cap
 TYPICAL_CLOSE = 0.95      # a deal closes at about this share of the opening ask, after haggling
 SHARE_BOUNDS = (0.55, 0.97)
 CLEARANCE_HOURS = 12      # food this close to its date opens 20% lower and may go below cost: unsold, it is a full loss
@@ -100,6 +126,7 @@ UNDERCUT, COMP_FRESH = 0.98, 6 * 3600
 # buyer read e.g. "Ed25519" as an ask of 25519 for 0.1-0.4M mattresses (competitors.json Nov 5 00:20: of 1,850
 # asks, 93 under 0.15 of list and 17 more under 0.4); since Nov 4 11:00, 138 of our openings were cut toward cost.
 RIVAL_MIN = 0.4
+GRADE_RANK = {"A": 0, "B": 1, "C": 2}
 SHORT_MARKET = 0.4        # no undercutting while this share of the market's orders ends without a deal
 # Scarcity: when much of the market's demand goes unmet (pulse.json, the no-deal share of recent results that
 # restock.py reads off the ledger) or no other shop held the category when our buyer last saw it, buyers have
@@ -122,6 +149,12 @@ END_TS = 1794927540        # Tue Nov 17 23:59 KST
 ENDGAME = ((6 * 3600, 0.6, 0.25), (24 * 3600, 0.8, 0.6))
 MIN_FOOD_HOURS = 2        # never ship food with less shelf life left than this
 SOLD_HOLD = 120           # seconds a sold unit stays out of offers, until inventory.json drops it
+# A talk the buyer leaves without a reply or a cancel stayed in self.open, so its unit was never offered again
+# (Nov 6 10:24-14:17: of 1,439 talks 1,437 ended within 60 s, but 7 grade A Jakomo G8ec51935 units, cost
+# 1.75-1.88M, were each offered a few times and then never again, unsold, so the opening ask climbed unit by unit
+# from 1,838,575 to 2,065,671; the B unit (cost 1.11M) was last offered 11:56, the C unit 12:32). A talk holds its
+# unit OPEN_HOLD seconds; a late reply whose unit has gone to another talk or sold gets no deal.
+OPEN_HOLD = 300
 # A food order is worth nothing to the buyer unless the food lasts its use_within_hours (agent.md), and our seller
 # never sees the order. So: ship food that lasts what the buyer says it needs ("must last 30 hours"), else what
 # orders usually need (.market/use_within.json, the use_within_hours our own buyer saw, 80th percentile).
@@ -156,9 +189,24 @@ def hours_left(u):
 
 
 def need_hours(text):
+    """Hours the buyer says the food must last, or None when it does not say."""
     m = NEED.search(text or "")
-    if m:
-        return int(m.group(1))
+    return int(m.group(1)) if m else None
+
+
+# Orders ask food to last 0.5 or 0.75 of the SKU's catalog shelf_hours (G00c60e91 coffee, shelf 720: 360 or 540).
+# Buyers that do not say so rate a shorter unit 2 stars ("Only 410 h of shelf life left; I needed 540 h").
+NEED_SHARE = 0.75
+_SHELF = {}
+
+
+def default_need(sku):
+    if not _SHELF:
+        cat = _load("catalog.json", [])
+        _SHELF.update({x["sku"]: x.get("shelf_hours") for x in (cat if isinstance(cat, list) else cat.values())})
+        _SHELF.setdefault("", None)
+    if _SHELF.get(sku):
+        return NEED_SHARE * _SHELF[sku]
     seen = sorted(_load("use_within.json", []))
     return seen[int(len(seen) * 0.8)] if len(seen) >= 5 else DEFAULT_NEED
 
@@ -172,11 +220,12 @@ def find_unit(text, taken=()):
         item = next((k for k in RESERVE if k in want), None)
         return item and {"sku": item, "name": item, "list_price": RESERVE[item], "cost": RESERVE[item],
                          "kind": "goods", "grade": "A", "unit": None, "expires_at": None, "cert": False}
-    need = max(MIN_FOOD_HOURS, need_hours(text))
+    said = need_hours(text)
+    need = lambda u: max(MIN_FOOD_HOURS, said if said is not None else default_need(u["sku"]))
     units = [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken
              and (u["kind"] != "food" or (hours_left(u) or 0) >= MIN_FOOD_HOURS)]
     # food that lasts the need, expiring first; if none does, the freshest one (its hours are in the reply)
-    fresh = [u for u in units if u["kind"] != "food" or (hours_left(u) or 0) >= need]
+    fresh = [u for u in units if u["kind"] != "food" or (hours_left(u) or 0) >= need(u)]
     for match in (lambda u: u["sku"].lower() in want,
                   lambda u: (u.get("name") or "").lower() in want,
                   lambda u: (u.get("category") or "").split(">")[-1].lower() in want):
@@ -186,7 +235,20 @@ def find_unit(text, taken=()):
                 ok = [u for u in fresh if match(u)]
                 return (min(ok, key=lambda u: u["expires_at"] or math.inf) if ok
                         else max(fit, key=lambda u: u["expires_at"] or 0))
-            return min(fit, key=lambda u: (u["grade"], u["supplied_at"]))
+            # a unit whose floor (cost x 1.05) is over the most it may open at (max_share) can only sell above the
+            # market, so it goes behind the others (Nov 5 10:27-12:17: 4 surge-cost grade A Zinus Q mattresses
+            # G1515d951, cost 380-464k, opened at list 423810 vs a market median 0.825; 15 deals, 3 settled, while 11
+            # B/C units of it, cost 161-353k, were never offered and sat 11-15 h).
+            # Among such units the cheapest one goes first (Nov 6 09:10-10:17: 9 grade A Jakomo G8ec51935 at cost
+            # 1.78-1.97M; the oldest, cost 1,967,305, opened every talk at its floor 2,065,671 and none sold, while
+            # the market sold 57 grade A at a median 1,847,880, 24 of them at or over our cheapest unit's floor
+            # 1,870,531 and 5 at or over 2,065,671)
+            cap = {}
+            for u in fit:
+                if u["sku"] not in cap:
+                    cap[u["sku"]] = u["list_price"] * max_share(u)
+            over = lambda u: math.ceil(u["cost"] * (1 + FLOOR_MARGIN)) > cap[u["sku"]]
+            return min(fit, key=lambda u: (over(u), u["grade"], u["cost"] if over(u) else u["supplied_at"]))
     return None
 
 
@@ -259,11 +321,15 @@ def terms(u):
         log(f"[bandit] {u['category'].split('>')[-1]}: opening with arm {arm} (sampled deal chance {theta:.2f})")
         share *= arm
     ask = max(floor, int(round(u["list_price"] * min(max(share, 0 if end else SHARE_BOUNDS[0]), max_share(u)), -1)))
-    rival = rival_ask(u["sku"], u["list_price"])
+    rival = rival_ask(u["sku"], u["list_price"], u.get("grade") if u["kind"] == "goods" else "C")
     short = (_load("pulse.json", {}).get("nodeal") or 0) >= SHORT_MARKET
     if rival and rival * UNDERCUT < ask and not short:     # in a short market a buyer takes what it finds
         log(f"[rival] {u['sku']}: lowest competitor ask {rival}, opening at {max(floor, int(rival * UNDERCUT))} not {ask}")
         ask = max(floor, int(rival * UNDERCUT))
+    # never ask above list: the market settles at most list, so a surge-cost unit (cost x 1.05 > list) that opened at
+    # 469545 on a 423810 mattress closed at 423810 and got 1 star for "Agreed 469545, receipt says 423810"
+    ask = min(ask, u["list_price"])
+    floor = min(floor, ask)
     warranty = warranty_for(u)
     return ask, floor, warranty, arm
 
@@ -287,9 +353,15 @@ def scarcity(category):
     return f
 
 
-def rival_ask(sku, list_price=0):
-    asks = [a for ts, shop, a in _load("competitors.json", {}).get("asks", {}).get(sku, [])
-            if time.time() - ts < COMP_FRESH and shop != NAME and a and a >= RIVAL_MIN * list_price]
+def rival_ask(sku, list_price=0, grade="C"):
+    """Lowest fresh rival ask for the SKU among units of our unit's grade or better. Grade C asks set the opening of
+    our grade A units until Nov 6 08:20: myeonggi's C at 1,484,267 (Nov 6 01:43) and Kiro729's C at 1,707,520
+    cut 18 grade A and 5 grade B Jakomo openings by 3.67M in total (04:35-08:17). Asks recorded without a grade
+    (before this change, or the shop named none) count as C."""
+    mine = GRADE_RANK.get(grade, 2)
+    asks = [e[2] for e in _load("competitors.json", {}).get("asks", {}).get(sku, [])
+            if time.time() - e[0] < COMP_FRESH and e[1] != NAME and e[2] and e[2] >= RIVAL_MIN * list_price
+            and GRADE_RANK.get(e[3] if len(e) > 3 else None, 2) <= mine]
     return min(asks) if asks else None
 
 
@@ -345,7 +417,9 @@ class Seller(AgentExecutor):
             # and on Nov 3 one unit went to two buyers a second apart, so the first buyer's checkout was refused
             now = time.time()
             self.sold = {k: t for k, t in self.sold.items() if now - t < SOLD_HOLD}
-            taken = {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]} | set(self.sold)
+            self.open = {k: d for k, d in self.open.items() if now - d.get("ts", now) < 3600}
+            taken = {d["unit"]["unit"] for d in self.open.values()
+                     if d["unit"]["unit"] and now - d.get("ts", now) < OPEN_HOLD} | set(self.sold)
             u = find_unit(text, taken)
             if u is None:
                 await up.reject(say("Sorry, none of that in stock."))
@@ -354,11 +428,20 @@ class Seller(AgentExecutor):
             # profit is half the shop's score: concede at most MAX_DISCOUNT, and never below cost
             floor = max(floor, int(ask * (1 - MAX_DISCOUNT)))
             deal = self.open[task.id] = {"unit": u, "ask": ask, "opening": ask, "floor": floor,
-                                         "warranty": warranty, "rounds": 0, "arm": arm}
+                                         "warranty": warranty, "rounds": 0, "arm": arm, "ts": now}
             await up.requires_input(say(f"{facts(u, warranty)}. Send the ask or say ok to buy. "
                                         f"Our ask: {ask}"))
             return
 
+        uid, now = deal["unit"]["unit"], time.time()
+        if uid and now - deal.get("ts", now) >= OPEN_HOLD and (
+                uid in self.sold or uid not in {u["unit"] for u in inventory().get("units", [])}
+                or any(d["unit"]["unit"] == uid and d is not deal and now - d.get("ts", now) < OPEN_HOLD
+                       for d in self.open.values())):
+            del self.open[task.id]
+            await up.reject(say("Sorry, that unit is no longer available. Ask again for a quote."))
+            return
+        deal["ts"] = now
         deal["rounds"] += 1
         ask, floor = deal["ask"], deal["floor"]
         offer = last_number(text)

@@ -58,7 +58,8 @@ VALUE_BUDGET = 7_000_000   # 4.5M until Nov 4 14:00; since 17:00 the floor of th
 # Nov 4 17:00: every big-ticket line sold within minutes at ~30% margin (Q mattresses 38 sold, 253k -> 361k;
 # sofas 1.2-1.4M -> 1.9-2.0M) while 7.5M of our 16.5M cash sat idle under the 9M cap. Profit grows with the money
 # turning over, so the caps follow total assets (cash + stock at cost), and grow as we do.
-STOCK_SHARE = 0.90        # 0.70 / 0.55 for 40 min: the leader (inextro) puts ~27-30M into 20 units of one
+STOCK_SHARE = 0.55        # 0.75 until Nov 5 22:20 (big-ticket units bought 20:23-21:24: 37% of cost sold within 40 min,
+                          # under the 40% step-down rule); 0.90 until Nov 5 10:20 (09:02-09:23: ~25%); 0.70 / 0.55 for 40 min before that: the leader (inextro) puts ~27-30M into 20 units of one
 VALUE_SHARE = 0.70        # 2.32M sofa every window (236M of supply in 1.5 h) and sells ~65 an hour at 0.80 of list
 LINE_QTY_MAX = 20         # the most any shop bought in one line (inextro and yms979 buy 20 at a time)
 SELL_PACE = 2.0           # Nov 4 16:17-18:17: our 8-10 Jakomo sofas a window sold out in ~12 min (13 deals 18:03-18:15),
@@ -165,6 +166,8 @@ def read_ledger(st, catalog):
                     if cat and amount and lp:              # what the market pays, as a share of list
                         st["sku_px"][sku] = (st["sku_px"].get(sku, []) + [round(amount / lp, 3)])[-10:]
                         st["cat_px"][cat] = (st["cat_px"].get(cat, []) + [round(amount / lp, 3)])[-30:]
+                    if sku and d.get("shop"):              # who sells this SKU, for the value line's share
+                        st["sku_shops"].setdefault(sku, {})[d["shop"]] = int(r.get("ts") or 0)
                     if cat and d.get("amount"):
                         st["rev"][cat] = st["rev"].get(cat, 0) + d["amount"]
                         st["sku_rev"][sku] = st["sku_rev"].get(sku, 0) + d["amount"]
@@ -177,6 +180,8 @@ def read_ledger(st, catalog):
                 break
     st["seq"] = seq
     st["unit_grade"] = dict(list(st["unit_grade"].items())[-5000:])
+    st["sku_shops"] = {s: v for s, v in ((s, {k: t for k, t in m.items() if time.time() - t < 7200})
+                                         for s, m in st["sku_shops"].items()) if v}
     st["recent"] = st["recent"][-600:]
     nodeal = st["pulse"][1] / st["pulse"][0] if st["pulse"][0] >= 30 else None
     tmp = Path(".market") / "pulse.tmp"
@@ -204,6 +209,47 @@ def track_my_sales(st, inv):
 
 
 VALUE_SKU = {}             # category -> (SKU, units of it) from the revenue budget; filled by targets()
+BIG_TICKET = 1_000_000     # a value SKU at this list price or more holds only its value line, not the category's
+                           # unit target too (that target counts cheap units and was filled with the top SKU)
+
+
+# Nov 6 18:17-20:17: with the value line alone, the 9 Jakomo G8ec51935 (cost 1.71-1.97M) and 6 stone beds Gf6b70da8
+# (1.59-1.71M) we held filled their caps (6 and 4), so neither was bought for 2 h while other shops bought them at
+# a median 0.61 of list and the market sold 102 and 44 at a median 0.70; we sold 5 and 6 (16:17-18:17: 13 and 9),
+# margin 2.97M (was 9.18M). A unit whose floor (cost x 1.05) is over the market's recent price sells only to the
+# top of the market and is offered last, so it does not count against the line.
+def sellable(units, sku, catalog, st):
+    px = sorted(st["sku_px"].get(sku) or [])
+    sale = (px[len(px) // 2] if len(px) >= 3 else DEFAULT_PX) * catalog[sku]["list_price"]
+    return sum(1 for u in units if u["sku"] == sku and u["cost"] * 1.05 <= sale)
+
+
+def market_rate(st, catalog, sku):
+    """The whole market's sales of a SKU per hour, from its decayed revenue (DECAY per ~1 min run: mean age ~3.3 h)
+    over its recent price. Reads 1.3-2x the ledger's last hour (Nov 5 10:20: Simmons LK 26 vs 15-21, Jakomo multi 4
+    120 vs 80-96), so a cap on it is loose."""
+    px = sorted(st["sku_px"].get(sku) or [DEFAULT_PX])
+    return st.get("sku_rev", {}).get(sku, 0) / (catalog[sku]["list_price"] * px[len(px) // 2]) / (1 / (1 - DECAY) / 60)
+
+
+# Nov 5 09:02: the revenue budget named the Simmons Jasmine LK bed (list 4.05M) and bought the 20-unit maximum
+# (48.6M) while the whole market sold ~20 an hour of it, split over 9-12 shops, and other shops supplied 27 more
+# in the same window; 75 min later we had sold 2. A value line now holds at most one window (1/3 h) of the
+# market's sales of that SKU (at least 2), unless our own last hour of sales asks for more.
+# Nov 5 23:20: that window cap still bought 20 장수돌침대 Gf6b70da8 (list 2.33M, 29.2M) while 11 shops sold the
+# market's 46 of the last hour; 50 min later we had sold 2 (our share of its 6 h of sales: 11 of 225, 5%). The cap
+# is now one window of the market's sales split over the shops that sold the SKU in the last hour.
+def sellers(st, sku):
+    return max(1, sum(1 for t in (st.get("sku_shops", {}).get(sku) or {}).values() if time.time() - t < 3600))
+
+
+# Nov 5 16:17-18:17: the market sold 270 fresh fruit units and was supplied 233 (sold out each window); our 14 fruit
+# sales sold 1-29 min after arrival at 1.6x cost (258k for 161k) and got 4.73 stars (our mean 4.29), but food of
+# 48 h or less was held at 2 units, so we sold 13. Perishables now hold what we sold of the category in the last
+# hour per window x SELL_PACE (at least 2, at most MAX_PER_CAT): it grows only while our units sell out.
+def perish_cap(st, cat):
+    pace = sum(1 for s in st.get("sold_log", []) if s.get("category") == cat and time.time() - s["ts"] < 3600)
+    return min(MAX_PER_CAT, max(2, math.ceil(pace / 3 * SELL_PACE)))
 
 
 def targets(st, demand, catalog=None):
@@ -218,7 +264,7 @@ def targets(st, demand, catalog=None):
     for cat, p in st["pop"].items():
         n = round(TOTAL_UNITS * p / total) + (1 if st["sold"].get(cat) else 0)
         if (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48:
-            n = min(n, 2)                    # food that spoils in two days: never hold much
+            n = min(n, perish_cap(st, cat))  # food that spoils in two days: only what we sell in a window
         c = competition(cat)
         if c is not None and n > 0:
             n = round(n * (1.5 if c <= FEW_SHOPS else 0.6 if c >= MANY_SHOPS else 1.0)) or 1
@@ -236,6 +282,7 @@ def targets(st, demand, catalog=None):
             n = min(n, 2)
         elif top and n > 0:                          # at least what we sold of it last hour, per window, x SELL_PACE
             pace = sum(1 for s in st.get("sold_log", []) if s["sku"] == top and time.time() - s["ts"] < 3600)
+            n = min(n, max(2, math.ceil(market_rate(st, catalog, top) / 3 / sellers(st, top))))   # our share of a window
             n = max(n, math.ceil(pace / 3 * SELL_PACE))
         if top and n > 0:                          # counted against units of that SKU, not of the category:
             VALUE_SKU[cat] = (top, min(n, LINE_QTY_MAX))  # six cheap stools must not stand in for leather sofas
@@ -243,7 +290,7 @@ def targets(st, demand, catalog=None):
         if m["cover"] is not None and m["cover"] < SHORT_COVER and cat in kind:
             short_food = kind[cat].get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
             n = math.ceil(m["rate"] / 3 * SHORT_SHARE)
-            out[cat] = max(out.get(cat, 0), min(n, 2 if short_food else SHORT_MAX))
+            out[cat] = max(out.get(cat, 0), min(n, perish_cap(st, cat) if short_food else SHORT_MAX))
     for cat, c in load(Path(".market") / "competitors.json", {}).get("cats", {}).items():
         if c.get("shops") == 0 and time.time() - c["ts"] < UNMET_FRESH:   # nobody had it when it was ordered
             short = (kind.get(cat) or {}).get("shelf_hours") and kind[cat]["shelf_hours"] <= 48
@@ -391,7 +438,7 @@ def main():
     catalog = catalog_of(sd)
     st = load(sd / "restock_state.json", {})
     for k, v in (("pop", {}), ("sku_pop", {}), ("sold", {}), ("sold_log", []), ("settles", 0),
-                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {}), ("sold_ts", {}), ("sku_rev", {})):
+                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {}), ("sold_ts", {}), ("sku_rev", {}), ("sku_shops", {})):
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
     st["rev"] = {k: v * DECAY for k, v in st["rev"].items()}
@@ -399,6 +446,10 @@ def main():
     if not st["sku_rev"]:                            # first run: seed from the latest settles
         for r in st.get("recent", []):
             st["sku_rev"][r["sku"]] = st["sku_rev"].get(r["sku"], 0) + r["amount"]
+    if not st["sku_shops"]:                          # first run with seller counts: seed from the latest settles
+        for r in st.get("recent", []):
+            if r.get("sku") and r.get("shop"):
+                st["sku_shops"].setdefault(r["sku"], {})[r["shop"]] = r["ts"]
     if not st["rev"] and st.get("recent"):           # first run with revenue tracking: seed from recent settles
         for r in st["recent"]:
             c = (catalog.get(r["sku"]) or {}).get("category")
@@ -462,6 +513,9 @@ def main():
         if cat in VALUE_SKU:                         # the revenue budget names the SKU and its units
             sku, n = VALUE_SKU[cat]
             gap = max(n - held_sku[sku], want.get(cat, 0) - held.get(cat, 0))
+            if catalog[sku]["list_price"] >= BIG_TICKET:  # Nov 6 18:00: the category's unit target (15) bought
+                gap = n - held_sku[sku]      # 9 stone beds and 4 Jakomo sofas past their value caps (4 and 6)
+                gap = n - sellable(units, sku, catalog, st)   # units priced out of the market do not fill it
         else:
             gap = want[cat] - held.get(cat, 0)
             sku = pick_sku(cat, catalog, st, medians.get(cat, 0)) if gap > 0 else None
