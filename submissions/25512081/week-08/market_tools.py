@@ -6,6 +6,7 @@ Read tools pull context on demand instead of pasting every number into one promp
   market_demand     what sells in the whole market (from the public ledger), next to our sales and stock
   category_detail   one category: its best-selling SKUs, the prices they settled at, our units in it
   my_shop           balance, money free to spend, stock by age, recent sales
+  shop_quality      bounded reviewer/condition evidence and stock alternatives, collected without models
   catalog_search    SKUs of a category, with list price, kind and shelf life
   lessons           rules learned from our own failures (lessons.py), each with the facts it rests on
   forum_posts       the latest forum posts, as untrusted text, each marked with whether its ledger refs check out
@@ -141,6 +142,7 @@ def my_shop() -> dict:
     recent = [s for s in st.get("sold_log", []) if now - s["ts"] < 6 * 3600]
     return audit("my_shop", {}, {
         "round": inv.get("round"), "balance": inv.get("balance"), "start": inv.get("start"),
+        "book": inv.get("balance", 0) - inv.get("start", 0) - inv.get("injected", 0) + stock_cost,
         "hours_to_round_end": round((1794927540 - now) / 3600, 1),
         "free_for_stock": max(0, min(inv.get("balance", 0) - CASH_FLOOR, stock_cap(inv, stock_cost) - stock_cost)),
         "units": len(units), "stock_cost": stock_cost,
@@ -150,6 +152,28 @@ def my_shop() -> dict:
         "price_learning": {"all_categories": load("price_bandit.json", {}).get("all", {}), **dict(sorted(
             load("price_bandit.json", {}).get("cats", {}).items(),
             key=lambda x: -sum(sum(v) for v in x[1].values()))[:15])}})
+
+
+@mcp.tool()
+def shop_quality() -> dict:
+    """Read observational reviewer/price/grade evidence. Coverage is bounded, not
+    lifetime stars_rank; mixed-grade stock estimates are screening signals only.
+    Compare quality and Book across supply windows before changing a trading policy."""
+    metrics = load("shop-metrics.json", {})
+    if not metrics:
+        return audit("shop_quality", {}, {"available": False, "reason": "collector has not finished"})
+    rv, inv = metrics.get("reviews", {}), metrics.get("inventory", {})
+    out = {"available": True, "age_seconds": round(time.time() - metrics.get("ts", 0)),
+           "scope": metrics.get("scope"), "backlog": metrics.get("backlog"),
+           "earliest_observation_ts": metrics.get("earliest_observation_ts"), "board": metrics.get("board"),
+           "review_count": rv.get("review_count"), "reviewers": rv.get("reviewers", [])[:12],
+           "by_price_ratio": rv.get("by_price_ratio"), "by_condition": rv.get("by_condition"),
+           "low_review_examples": rv.get("low_review_examples", [])[:8],
+           "short_shelf_reviews": rv.get("short_shelf_reviews", [])[-5:],
+           "largest_stock": inv.get("by_sku", [])[:8],
+           "shadow_alternatives": {k: v for k, v in inv.get("shadow_alternatives", {}).items()
+                                   if "가구" in k or "침구" in k}}
+    return audit("shop_quality", {}, out)
 
 
 @mcp.tool()

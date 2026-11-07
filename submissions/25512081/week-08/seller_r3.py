@@ -143,10 +143,10 @@ GLUT_CUT = -0.05
 # alternatives, and keep some for then instead of selling all of it cheap in the first minutes.
 CYCLE_PREMIUM = 0.08
 CYCLE = 20 * 60
-# The last day of the round: stock left at the end is cost already paid, so selling it at any price raises the
-# final balance. Opening share and floor fall in two steps (share factor, floor as a share of cost).
+# Unsold inventory contributes cost to Book. The deadline alone does not justify
+# selling goods below cost; only genuinely expiring food has a clearance policy.
 END_TS = 1794927540        # Tue Nov 17 23:59 KST
-ENDGAME = ((6 * 3600, 0.6, 0.25), (24 * 3600, 0.8, 0.6))
+ENDGAME = ()
 MIN_FOOD_HOURS = 2        # never ship food with less shelf life left than this
 FOOD_PAYMENT_BUFFER = 1 / 60  # one minute for checkout; rechecked before signing
 SOLD_HOLD = 120           # seconds a sold unit stays out of offers, until inventory.json drops it

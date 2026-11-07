@@ -91,7 +91,6 @@ LESSONS_EVERY = 6 * 3600   # lessons.py: failures of the last day -> rules the m
 METRICS_EVERY = 5 * 60    # read-only ledger/reviewer diagnostics; no model calls
 PLAN_FRESH = 90 * 60       # plan lines older than this are dropped
 END_TS = 1794927540        # Round 3 ends Tue Nov 17 23:59 KST
-ENDGAME = 24 * 3600        # the last day buys nothing: stock left at the end is cost already paid, so it is sold off
 # Our buyer sees every competitor's stock of the categories it is ordered (.market/competitors.json): a category
 # few shops hold gets more of our stock, one many shops hold gets less.
 FEW_SHOPS, MANY_SHOPS = 1, 5
@@ -473,10 +472,10 @@ def main():
     room = min(cash, STOCK_CAP - stock_cost)
     medians = {d["category"]: d["median_price"] for d in demand}
     want = targets(st, demand, catalog)
-    endgame = time.time() > END_TS - ENDGAME
+    endgame = time.time() >= END_TS
     if endgame:
         want, room = {}, 0
-        log("last day of the round: no new stock, the seller is selling off")
+        log("round ended: no new stock")
     win = inv.get("restock") or {}
     opens_in = (win.get("opens_at") or 0) - time.time()
     closed = bool(win) and not win.get("open") and opens_in > WINDOW_LEAD
