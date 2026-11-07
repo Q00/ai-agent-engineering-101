@@ -135,7 +135,7 @@ class SyncTest(IngestCase):
                   "own_sku_hour": {"G1": {str(h - 25): 2, str(h - 1): 4}}}
         m = ingest.render_market({"market": market}, now)
         hod = lambda k: time.strftime("%H", time.localtime(k * 3600))
-        self.assertNotIn(hod(h - 30), m["hour_profile"])              # partial first hour left out
+        self.assertEqual(m["hour_profile"][hod(h - 30)], 40.0)         # the partial first hour (5) is left out: h-6 alone
         self.assertEqual(m["hour_profile"][hod(h - 29)], 50.0)
         self.assertEqual(m["hour_profile"][hod(h - 1)], 10.0)
         self.assertEqual(m["hour_profile"][hod(h - 6)], 40.0)
