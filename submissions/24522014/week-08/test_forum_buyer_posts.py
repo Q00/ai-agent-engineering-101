@@ -98,6 +98,41 @@ class Limits(Base):
         self.assertEqual(self.enqueue("a5", start+4*600), "rate_limited")
 
 
+class OutboxGuard(Base):
+    """We never vote: a line that carries a vote key, or has no post text, is refused before the outbox and logged."""
+
+    def outbox(self):
+        path = self.md / "outbox.jsonl"
+        return path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+
+    def refused(self):
+        path = self.root / "logs/forum-outbox-refused.jsonl"
+        return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
+
+    def test_vote_lines_never_reach_the_outbox(self):
+        for i, message in enumerate(({"vote": "p1", "value": -3, "as": "buyer"}, {"vote": "p1", "value": 1, "as": "shop"},
+                                     {"post": "fine words", "vote": "p1", "value": -1, "as": "buyer"})):
+            with self.subTest(message=message):
+                self.assertEqual(forum_policy.enqueue(self.md, message, f"v{i}", "buyer_followup", {}, T+i*3600), "refused_not_a_post")
+        self.assertEqual(self.outbox(), [])
+        self.assertEqual([r["has_vote"] for r in self.refused()], [True, True, True])
+        # The log names the fields only: no vote value or post text is kept.
+        self.assertTrue(all(set(r) == {"at", "key", "kind", "fields", "has_vote"} for r in self.refused()))
+        self.assertNotIn("-3", json.dumps(self.refused()))
+
+    def test_lines_without_post_text_are_refused(self):
+        for i, message in enumerate(({"as": "buyer"}, {"post": "", "as": "buyer"}, {"post": "   ", "as": "buyer"}, {"post": 5, "as": "buyer"})):
+            with self.subTest(message=message):
+                self.assertEqual(forum_policy.enqueue(self.md, message, f"e{i}", "buyer_followup", {}, T+i*3600), "refused_not_a_post")
+        self.assertEqual(self.outbox(), [])
+        self.assertEqual(len(self.refused()), 4)
+
+    def test_a_refused_line_uses_no_slot_and_a_post_still_goes(self):
+        self.assertEqual(forum_policy.enqueue(self.md, {"vote": "p1", "value": -2, "as": "buyer"}, "v", "buyer_followup", {}, T), "refused_not_a_post")
+        self.assertEqual(self.enqueue("a", T+1), "queued")
+        self.assertEqual([json.loads(line)["post"] for line in self.outbox()], ["a"])
+
+
 class Content(Base):
     def posted(self):
         return notes.run(self.md, T), self.outbox()

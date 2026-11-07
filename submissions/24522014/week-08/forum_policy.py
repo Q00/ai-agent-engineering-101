@@ -133,6 +133,22 @@ def note_buyer_pause(md, state, kind, now):
     write(md / "forum-policy.json", state)
 
 
+def is_post(message):
+    """We never vote (patch 3.5 made dislikes cost Book): only a line with post text and no vote key may reach the kit."""
+    return isinstance(message, dict) and "vote" not in message and isinstance(message.get("post"), str) and bool(message["post"].strip())
+
+
+def refuse_line(md, message, key, kind, now):
+    """Log a refused line without its text or vote value, and use no posting slot."""
+    path = md.parent / "logs/forum-outbox-refused.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    keys = sorted(message) if isinstance(message, dict) else [type(message).__name__]
+    with path.open("a", encoding="utf8") as stream:
+        stream.write(json.dumps({"at": now, "key": key, "kind": kind, "fields": keys, "has_vote": isinstance(message, dict) and "vote" in message}) + "\n")
+    print(f"[forum] outbox line refused: not a post ({kind})", file=sys.stderr, flush=True)
+    return "refused_not_a_post"
+
+
 def _enqueue(md, message, key, kind, metadata, now):
     settings = posting_limits(md, now)
     state = read(md / "forum-policy.json", {"ledger_refs": [], "last_at": 0, "day": "", "count": 0})
@@ -168,6 +184,8 @@ def _enqueue(md, message, key, kind, metadata, now):
                         for a in actions.values())
     if kind == "buyer_report" and reports_today >= settings["buyer_report_limit"]:
         return "rate_limited"  # Reserve buyer slots for mature follow-ups.
+    if not is_post(message):
+        return refuse_line(md, message, key, kind, now)
     with (md / "outbox.jsonl").open("a", encoding="utf8") as stream:
         stream.write(json.dumps(message, ensure_ascii=False, allow_nan=False) + "\n")
     if role == "shop":
