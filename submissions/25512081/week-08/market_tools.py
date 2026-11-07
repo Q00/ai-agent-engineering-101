@@ -166,6 +166,7 @@ def shop_quality() -> dict:
     out = {"available": True, "age_seconds": round(time.time() - metrics.get("ts", 0)),
            "scope": metrics.get("scope"), "backlog": metrics.get("backlog"),
            "earliest_observation_ts": metrics.get("earliest_observation_ts"), "board": metrics.get("board"),
+           "windows": metrics.get("windows", {}),
            "review_count": rv.get("review_count"), "reviewers": rv.get("reviewers", [])[:12],
            "by_price_ratio": rv.get("by_price_ratio"), "by_condition": rv.get("by_condition"),
            "low_review_examples": rv.get("low_review_examples", [])[:8],

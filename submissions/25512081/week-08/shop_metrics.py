@@ -148,6 +148,31 @@ def stock_report(inv, catalog, state, now):
                                     for cat, rs in candidates.items()}}
 
 
+def observation_windows(path, board, events, catalog, owners, now):
+    snapshots = []
+    if path.exists():
+        for line in path.open(encoding="utf-8"):
+            try:
+                snapshots.append(json.loads(line))
+            except ValueError:
+                continue
+    windows = {}
+    for label, seconds in (("40m", 2400), ("2h", 7200)):
+        previous = [s for s in snapshots if s.get("ts", now) <= now - seconds]
+        base = max(previous, key=lambda s: s["ts"]) if previous else None
+        start = base["ts"] if base else now - seconds
+        recent = {seq: r for seq, r in events.items() if r["ts"] >= start}
+        rv = summarize(recent, catalog, owners)
+        windows[label] = {"baseline_ready": base is not None,
+                          "minutes": round((now - start) / 60, 1),
+                          "book_change": board.get("book", 0) - base.get("book", 0) if base else None,
+                          "revenue_change": board.get("revenue", 0) - base.get("revenue", 0) if base else None,
+                          "deals_change": board.get("deals", 0) - base.get("deals", 0) if base else None,
+                          "reviews": rv["review_count"], "observed_account_mean": rv["observed_account_mean"],
+                          "short_shelf_complaints": len(rv["short_shelf_reviews"])}
+    return windows
+
+
 def run(folder, pages, name):
     md, logs = folder / ".market", folder / "logs"
     md.mkdir(exist_ok=True)
@@ -222,6 +247,8 @@ def run(folder, pages, name):
                   "reviews": summarize(events, catalog, owners),
                   "inventory": stock_report(load(md / "inventory.json", {}), catalog,
                                              load(md / "restock_state.json", {}), now)}
+        report["windows"] = observation_windows(logs / "shop-metrics-snapshots.jsonl", report["board"],
+                                                 events, catalog, owners, now)
         save(md / "shop-metrics.json", report)
         append(logs / "shop-metrics-snapshots.jsonl", [{"ts": now, "ledger_seq": seq, **report["board"],
                                                        "observed_reviews": report["reviews"]["review_count"],
