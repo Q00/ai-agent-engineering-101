@@ -251,8 +251,7 @@ def test_terra_ok_quota_timeout(tmp_path):
 
     m = llm.Terra(traj, cli=cli, allowed=(cli,), runner=ok, secrets=(LOGIN,))
     assert m.complete(f"hello {LOGIN}", agent="seller", timeout_s=5) == "answer"
-    assert seen["cmd"][seen["cmd"].index("--model") + 1] == llm.MODEL == "claude-haiku-5-5"
-    assert seen["cmd"][seen["cmd"].index("--tools") + 1] == ""
+    assert seen["cmd"][seen["cmd"].index("-m") + 1] == "gpt-6.1-terra"
     assert LOGIN not in seen["input"]
     m.runner = lambda cmd, **kw: _Out(1, "", "Error: 429 Too Many Requests")
     with pytest.raises(llm.ModelRefused):

@@ -22,7 +22,7 @@ from kernel.trajectory import Trajectory
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MARKET_BRIEF = os.path.join(HERE, "MARKET_BRIEF.md")
 HARNESS = os.path.join(HERE, "harness")
-CLI = "/home/sungsoo/.local/bin/claude"  # 11-07: Haiku through Claude Code (kernel/llm.py)
+CLI = "/home/sungsoo/.local/bin/codex"  # 11-07 오후: codex 한도 초기화로 gpt-6.1-terra 복귀 (kernel/llm.py)
 MAX_UNITS = 20
 MAX_REVIEWS = 10
 ORDER_KEYS = (
