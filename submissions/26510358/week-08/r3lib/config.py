@@ -71,10 +71,14 @@ START_ASK_RATIO = 0.90              # first ask as a share of list price, before
 ASK_ROOM = 0.07                     # first ask = market ratio + this (0.05 until 2026-11-04: our asks sat ~5 pts under
                                     #   the market; profit per visit 0.052 at ask 0.70-0.75 vs 0.072 at 0.75-0.80)
                                     # 0.09 -> 0.07 2026-11-05: 2 h close rate under 0.5 for ~9 h overnight (low 0.26)
-ASK_MAX_OVER_MARKET = 0.12          # final first ask (after scarcity, grade, warranty price-in) <= same-grade SKU market
+ASK_MAX_OVER_MARKET = 0.04          # final first ask (after scarcity, grade, warranty price-in) <= same-grade SKU market
                                     #   ratio + this. 2026-11-06, 24 h of our negotiations by grade: furniture A profit per
                                     #   negotiation flat 33-39k from +0.00 to +0.12, 18k at +0.16, 13k at +0.20; other A
                                     #   peaks at +0.04. First try (be31c04) capped the all-grade ratio + 0.10, about A +0.02.
+                                    # 0.12 -> 0.04 2026-11-07: after patch 3.4 (buyers score on share of list saved) the
+                                    #   curve moved. 30 h of terms->deal, list >= 300k, ask minus same-grade market:
+                                    #   +0.00 close 0.34 / 35k profit per quote, +0.04 0.26 / 41k, +0.08 0.14 / 19k,
+                                    #   +0.12 0.08 / 8k (last 12 h: 38k, 50k, 14k, 8k); 1,100 of 1,840 quotes sat >= +0.08
 MIN_MARGIN = 0.08                   # normal floor: cost * (1 + MIN_MARGIN)
 GRADE_FACTOR = {"food": {"A": 1.0, "B": 0.95, "C": 0.82}, "goods": {"A": 1.0, "B": 0.90, "C": 0.75}}
 WARRANTY_HOURS = 6                  # goods break up to 6 h after the sale (agent.md)
