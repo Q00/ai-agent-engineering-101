@@ -8,7 +8,7 @@ This file tracks implementation against `adaptive_pipeline.seed.yaml`.
 - [ ] Official-input freshness and rule invalidation controller
 - [ ] Experiment statistics and promotion lifecycle
 - [ ] Forum trust/publication controls
-- [ ] Background supervisor start/stop/status/watch
+- [x] Background supervisor start/stop/status/watch
 - [ ] Role drain, checkpoint, canary and rollback
 - [ ] Windows start/recovery scripts
 - [ ] Rank milestones, velocity and leader-defense controller

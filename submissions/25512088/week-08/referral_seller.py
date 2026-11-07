@@ -256,7 +256,7 @@ def build(port, publish=True):
         # The campaign lock prevents duplicate workers; spend stays in SQLite.
         procurement_log = None
         procurement = None
-        if settings().get('external_campaign'):
+        if settings().get('external_campaign') and os.environ.get('MARKET_SUPERVISED')!='1':
             root = Path(__file__).resolve().parent
             procurement_log = (root/'logs/procurement-worker-20261104.log').open('a')
             procurement = subprocess.Popen([sys.executable, str(root/'procurement_campaign.py'), '--state', str(STATE.resolve())], cwd=root, stdin=subprocess.DEVNULL, stdout=procurement_log, stderr=subprocess.STDOUT, start_new_session=True)
