@@ -114,6 +114,8 @@ class Control:
           id INTEGER PRIMARY KEY, validation_id TEXT UNIQUE, deployment_id TEXT,
           check_name TEXT, started REAL, finished REAL, exit_code INTEGER,
           timed_out INTEGER, evidence TEXT);
+        CREATE TABLE IF NOT EXISTS safety_state(
+          key TEXT PRIMARY KEY, value TEXT, updated REAL);
         CREATE TRIGGER IF NOT EXISTS runtime_events_no_update
           BEFORE UPDATE ON runtime_events BEGIN SELECT RAISE(ABORT,'append-only'); END;
         CREATE TRIGGER IF NOT EXISTS runtime_events_no_delete
@@ -161,6 +163,11 @@ class Control:
         return arm, digest
 
     def prepare_mutation(self, role, kind, idempotency_key, body=None):
+        gate=self.db.execute("SELECT value FROM safety_state WHERE key='mutation_gate'").fetchone()
+        gate_value=json.loads(gate[0]) if gate else None
+        if gate_value=='PRESERVE_ONLY':
+            self.event(role,'mutation_blocked',{'kind':kind,'reason':'safety_preserve_only'},idempotency_key)
+            raise PermissionError('new mutations disabled; reconciliation only')
         mutation_id = str(uuid.uuid4())
         now = time.time()
         try:
