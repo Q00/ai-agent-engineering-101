@@ -43,6 +43,7 @@ class Supervisor:
         self.dir.mkdir(parents=True,exist_ok=True);(self.root/'logs').mkdir(exist_ok=True)
         runner=str(self.root/'run_ubuntu.sh')
         self.commands=commands or {
+            'monitor':['bash',runner,'monitor'],
             'shop':['bash',runner,'shop'],'buyer':['bash',runner,'buyer'],
             'procurement':['bash',runner,'procurement']}
         self.children={};self.logs={};self.stop_requested=False;self.control=Control(self.state)
@@ -96,7 +97,7 @@ class Supervisor:
         PIDFILE.parent.mkdir(parents=True,exist_ok=True);PIDFILE.write_text(str(os.getpid())+'\n')
         self.emit('supervisor','supervisor_started',pid=os.getpid())
         try:
-            for role in ('shop','buyer','procurement'):self.start_role(role)
+            for role in ('monitor','shop','buyer','procurement'):self.start_role(role)
             while not self.stop_requested:
                 for role,(process,started) in list(self.children.items()):
                     code=process.poll()

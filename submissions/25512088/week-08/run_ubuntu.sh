@@ -6,7 +6,7 @@ role="${1:-}"
 case "$role" in
   shop) flags=(--shop-only --tunnel) ;;
   buyer) flags=(--buyer-only) ;;
-  procurement|supervisor|watch) flags=() ;;
+  procurement|monitor|supervisor|watch) flags=() ;;
   *) echo "Usage: bash run_ubuntu.sh shop|buyer|procurement|supervisor [start|status|stop]|watch [shop|buyer|procurement|all]" >&2; exit 2 ;;
 esac
 for file in shop_key.pem buyer_key.pem .market/owner.env; do
@@ -27,5 +27,9 @@ fi
 if [[ "$role" == procurement ]]; then
   cd "$HERE"
   exec python procurement_campaign.py --state .market
+fi
+if [[ "$role" == monitor ]]; then
+  cd "$HERE"
+  exec python market_policy.py --state .market
 fi
 exec python "$HERE/market_runtime.py" join --dir "$HERE" --market https://market.ourolabs.ai --name 25512088 "${flags[@]}"

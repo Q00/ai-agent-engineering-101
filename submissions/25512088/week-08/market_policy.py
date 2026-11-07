@@ -1,0 +1,85 @@
+"""Read-only official input monitor. Forum text is never executed or forwarded."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import time
+
+import httpx
+
+from adaptive_control import Control
+
+
+LIMIT = 2 * 1024 * 1024
+SOURCES = {
+    'rules': ('/rules', 600, 'text'),
+    'agent': ('/agent.md', 600, 'text'),
+    'board': ('/api/board', 90, 'json'),
+    'shops': ('/api/shops', 90, 'json'),
+}
+
+
+class Monitor:
+    def __init__(self,state='.market',market='https://market.ourolabs.ai',client=None):
+        self.state=Path(state);self.market=market.rstrip('/');self.control=Control(self.state)
+        self.client=client or httpx.Client(timeout=httpx.Timeout(15,connect=5),follow_redirects=False)
+        self.owns_client=client is None
+
+    @staticmethod
+    def _bounded(response):
+        raw=response.content
+        if len(raw)>LIMIT:raise ValueError('response_too_large')
+        return raw
+
+    def fetch(self,name):
+        path,max_age,kind=SOURCES[name]
+        response=self.client.get(self.market+path,headers={'Accept':'application/json,text/plain'})
+        response.raise_for_status();raw=self._bounded(response)
+        if kind=='json':
+            body=response.json()
+            if not isinstance(body,(dict,list)):raise ValueError('schema')
+            if name=='board' and (not isinstance(body,dict) or 'round' not in body):raise ValueError('board_schema')
+        else:
+            body=raw.decode('utf-8')
+            if not body.strip():raise ValueError('empty')
+            body={'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw)}
+        previous=self.control.db.execute('SELECT content_hash FROM input_snapshots WHERE source=?',(name,)).fetchone()
+        digest=self.control.save_input(name,body,schema_ok=True)
+        changed=bool(previous and previous[0]!=digest)
+        if changed:
+            self.control.event('monitor','official_input_changed',{
+                'source':name,'old_hash':previous[0],'new_hash':digest,'action':'invalidate_related_experiments'})
+        return {'source':name,'hash':digest,'changed':changed,'max_age':max_age}
+
+    def poll(self):
+        results=[]
+        for name in SOURCES:
+            try:results.append(self.fetch(name))
+            except Exception as exc:
+                self.control.event('monitor','official_input_error',{
+                    'source':name,'error':type(exc).__name__,'raw_body_stored':False})
+                results.append({'source':name,'error':type(exc).__name__})
+        status={name:self.control.input_fresh(name,max_age) for name,(_,max_age,_) in SOURCES.items()}
+        self.control.event('monitor','freshness_snapshot',status)
+        return {'results':results,'fresh':status,'mutations_allowed':all(status.values())}
+
+    def close(self):
+        if self.owns_client:self.client.close()
+        self.control.close()
+
+
+def main():
+    ap=argparse.ArgumentParser();ap.add_argument('--state',default='.market');ap.add_argument('--market',default='https://market.ourolabs.ai')
+    ap.add_argument('--once',action='store_true');args=ap.parse_args()
+    monitor=Monitor(args.state,args.market)
+    try:
+        while True:
+            print(json.dumps(monitor.poll(),ensure_ascii=False),flush=True)
+            if args.once:return
+            time.sleep(30)
+    finally:monitor.close()
+
+
+if __name__=='__main__':main()
