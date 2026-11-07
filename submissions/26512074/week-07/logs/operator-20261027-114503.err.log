@@ -1,0 +1,10 @@
+Exception in thread Thread-3 (<lambda>):
+Traceback (most recent call last):
+  File "C:\Users\108\anaconda3\Lib\threading.py", line 1073, in _bootstrap_inner
+    self.run()
+  File "C:\Users\108\anaconda3\Lib\threading.py", line 1010, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\AX\ai-agent-engineering-101\scripts\market_kit.py", line 287, in <lambda>
+    threading.Thread(target=lambda: [None for _ in proc.stdout], daemon=True).start()
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeDecodeError: 'cp949' codec can't decode byte 0xec in position 79: illegal multibyte sequence
