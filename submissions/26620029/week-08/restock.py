@@ -26,7 +26,7 @@ from pathlib import Path
 
 import customers
 
-CASH_FLOOR = 40_000_000      # never spend below this (bankruptcy line 500,000, and room to refill what sells);
+CASH_FLOOR = 1_000_000      # never spend below this (bankruptcy line 500,000, and room to refill what sells);
                             # was 1,500,000 until the shop stocked mattresses deep, which do not rot
 MAX_LIST = 300_000          # skip categories whose median list price is above this: one unsold unit costs too much
 MIN_SHELF_HOURS = 48        # food that lasts a day spoils before most buyers ask for it
@@ -59,7 +59,7 @@ MIN_VALUE = 0.003           # with MARKET_DATA deals seen: below this share of v
 EARLY = 60                  # buy when the window opens within this many seconds (the kit runs us every 60 s)
 MIN_SHOPS = 3                # the user's choice (2026-11-07): a focus SKU above FOCUS_DEAR must have sold at this many other shops in the last 3 h
 RECENT_MIN = 3000            # market deals in the last 3 h before focus SKUs follow them (about 8,000 at normal volume)
-STOCK_CAP = 0.70             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
+STOCK_CAP = 0.80             # the user's choice (2026-11-06): focus lines stop when stock cost, at COST_GUESS for new lines, passes this share of the book
 MEMORY = Path("restock_memory.json")
 
 
