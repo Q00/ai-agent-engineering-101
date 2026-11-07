@@ -109,7 +109,7 @@ class AdaptiveGrowthMixTests(unittest.TestCase):
         self.assertEqual(remaining_credit({**row, "planned_qty": 4}, 2), 0)
         self.assertEqual(remaining_credit({**row, "settled_qty": 100}, 2), 2)
         self.assertEqual(remaining_credit({**row, "retry_credit": 1}, 2), 2)
-        for capacity in (True, False, 0, 3, 2.0, "2"):
+        for capacity in (True, False, 0, 5, 2.0, "2"):
             with self.subTest(capacity=capacity), self.assertRaises(ValueError):
                 remaining_credit(row, capacity)
         controls = {"G00000001": deepcopy(row)}

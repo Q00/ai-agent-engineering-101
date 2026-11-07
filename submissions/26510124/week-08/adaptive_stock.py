@@ -23,15 +23,47 @@ def configuration(cfg):
             and focus.get("enabled") is True else None)
 
 
-def depth_cap(metric, cfg, kind="goods"):
-    """Only proven goods can grow beyond one unit; food remains a pilot."""
+def depth_evidence(metric, cfg, kind="goods"):
+    """Recent confirmed demand can deepen already proven goods, never pilots."""
+    rules = configuration(cfg) or {}
+    growth = rules.get("replenishment", {})
+    enabled = isinstance(growth, dict) and growth.get("enabled") is True
+    count = metric.get("recent_own_confirmed_1h")
+    window = metric.get("recent_own_window_seconds")
+    basis = metric.get("recent_own_time_basis")
+    evidence = {"recent_own_confirmed_1h": count if type(count) is int and count >= 0 else 0,
+                "recent_own_window_seconds": window,
+                "recent_own_time_basis": basis,
+                "coverage_seconds": growth.get("cover_seconds") if enabled else None,
+                "coverage_units": None, "depth_cap": 1, "depth_reason": "unproven_pilot"}
     if kind != "goods":
-        return 1
-    maximum = (configuration(cfg) or {}).get("proven_max_units_per_sku", 1)
+        return {**evidence, "depth_reason": "food_pilot"}
+    maximum = rules.get("proven_max_units_per_sku", 1)
     if type(maximum) is not int or not 1 <= maximum <= 2:
         raise ValueError("Invalid adaptive proven depth")
-    return (min(maximum, cfg["max_units_per_sku"], 2)
-            if proven(metric, cfg["min_mature_sales"]) else 1)
+    if not proven(metric, cfg["min_mature_sales"]):
+        return evidence
+    baseline = min(maximum, cfg["max_units_per_sku"], 2)
+    evidence.update(depth_cap=baseline, depth_reason="proven_baseline")
+    if not enabled:
+        return evidence
+    lookback, cover, ceiling = (growth.get(k) for k in
+                               ("lookback_seconds", "cover_seconds", "max_units_per_sku"))
+    if (type(lookback) is not int or lookback != 3600 or type(cover) is not int or cover <= 0
+            or type(ceiling) is not int or not 1 <= ceiling <= 4):
+        raise ValueError("Invalid adaptive replenishment coverage")
+    if (type(count) is not int or count <= 0 or type(window) is not int
+            or window != lookback or basis != "local_receipt_time"):
+        return {**evidence, "depth_reason": "proven_without_recent_demand"}
+    coverage = (count * cover + lookback - 1) // lookback
+    cap = min(cfg["max_units_per_sku"], ceiling, 4, max(baseline, coverage))
+    evidence.update(coverage_units=coverage, depth_cap=cap,
+                    depth_reason="recent_own_demand_coverage" if cap > baseline else "proven_baseline")
+    return evidence
+
+
+def depth_cap(metric, cfg, kind="goods"):
+    return depth_evidence(metric, cfg, kind)["depth_cap"]
 
 
 def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=(), allowed=None):
@@ -76,7 +108,8 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
         if (own.get("unknown", 0) or own.get("refunded", 0)
                 or own.get("mature", 0) and own.get("net_estimate", 0) <= 0):
             continue
-        cap = depth_cap(own, cfg, product["kind"])
+        depth = depth_evidence(own, cfg, product["kind"])
+        cap = depth["depth_cap"]
         if held[sku] >= cap:
             continue
         costed = {**product, "worst_cost": worst_cost(product["list_price"])}
@@ -91,7 +124,7 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
         comparable = next((p for p in profile["comparables"]
                            if p["grade"] == "A" and p["warranty_hours"] == 6), None)
         quality_price = (comparable["price"] / product["list_price"] if comparable else 0)
-        evidence = {"kind": product["kind"], "depth_cap": cap,
+        evidence = {"kind": product["kind"], **depth,
                     "own_mature": own.get("mature", 0), "own_net_estimate": own.get("net_estimate", 0),
                     "sales": profile["sales"], "buyers": profile["buyers"],
                     "named_shops": profile["named_shops"], "observed_shop_urls": profile["shops"],
@@ -143,7 +176,7 @@ def candidates(inv, catalog, categories, economics, cfg, now, public, *, paused=
 
 
 def remaining_credit(row, capacity=1):
-    if type(capacity) is not int or not 1 <= capacity <= 2:
+    if type(capacity) is not int or not 1 <= capacity <= 4:
         raise ValueError("Invalid adaptive credit capacity")
     return max(0, capacity - max(0, row["planned_qty"] - row["settled_qty"] - row.get("retry_credit", 0)))
 

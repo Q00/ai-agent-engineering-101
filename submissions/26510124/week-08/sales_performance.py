@@ -18,6 +18,7 @@ from market_evidence import read as read_market
 WINDOW = 7 * 86400
 MAX_SALES = 1000
 MARKET_FUTURE_TOLERANCE = 5
+RECENT_OWN_SECONDS = 3600
 SETTLED = re.compile(r"^\d{2}:\d{2}:\d{2} \[acp\] settled .+ at ([0-9]+), ledger #([0-9]+), unit ([A-Za-z0-9_.:-]+) grade [ABC]$")
 
 
@@ -159,7 +160,42 @@ def economics(sale, now):
             "time_basis": "ledger" if "settled_at" in sale else "observation_upper_bound"}
 
 
+def recent_own_counts(memory, now):
+    """Count unique confirmed units by their original local receipt time.
+
+    A confirmation discovered late is not new demand. Neither observed_at nor
+    a raw market-clock timestamp may move a sale into this window. Conflicting
+    ledger/unit identities and inconsistent duplicate rows provide no credit.
+    """
+    records, units, ledgers = {}, {}, {}
+    for sale in memory.get("sales", []):
+        if (not isinstance(sale, dict) or type(sale.get("ledger")) is not int
+                or sale["ledger"] <= 0 or not isinstance(sale.get("unit"), str)
+                or not sale["unit"]):
+            continue
+        seq, unit = sale["ledger"], sale["unit"]
+        records.setdefault((seq, unit), []).append(sale)
+        units.setdefault(unit, set()).add(seq)
+        ledgers.setdefault(seq, set()).add(unit)
+    reset = memory.get("reset_at")
+    counts = Counter()
+    for (seq, unit), rows in records.items():
+        if len(units[unit]) != 1 or len(ledgers[seq]) != 1:
+            continue
+        if not all(valid_sale(s, now) and 0 <= now - s["receipt_time"] <= RECENT_OWN_SECONDS
+                   and (not number(reset) or s["receipt_time"] >= reset)
+                   and ("settled_at" not in s or number(s["settled_at"])
+                        and s["receipt_time"] <= s["settled_at"] <= now)
+                   for s in rows):
+            continue
+        if len({(s["sku"], s["category"], s["price"], s["receipt_time"]) for s in rows}) != 1:
+            continue
+        counts[rows[0]["sku"]] += 1
+    return counts
+
+
 def sku_metrics(memory, now):
+    recent = recent_own_counts(memory, now)
     groups = {}
     for s in memory.get("sales", []):
         g = groups.setdefault(s["sku"], {"settled": 0, "mature": 0, "pending": 0, "unknown": 0,
@@ -179,6 +215,9 @@ def sku_metrics(memory, now):
     for g in groups.values():
         g["speed_score"] /= max(1, g["mature"])
         g["mean_hours"] = g.pop("hours_sum") / max(1, g["mature"])
+    for sku, g in groups.items():
+        g.update(recent_own_confirmed_1h=recent[sku], recent_own_window_seconds=RECENT_OWN_SECONDS,
+                 recent_own_time_basis="local_receipt_time")
     return groups
 
 
