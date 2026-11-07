@@ -1092,6 +1092,9 @@ def review_for(deal, broken_names=()):
     if s.get("name") and s.get("name") in broken_names:
         stars -= 2
         why.append("broke")
+        if not s.get("warranty_hours"):  # v2.5: this item broke on us before and the shop gave no warranty
+            stars -= 1
+            why.append("no warranty")
     stars = max(1, min(5, stars))
     text = f"{s.get('name') or s.get('sku')}: grade {s.get('grade')}, claim {'honest' if s.get('claim_honest') is not False else 'not honest'}"
     if why:
