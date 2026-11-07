@@ -40,6 +40,11 @@ brownfield_context:
 constraints:
 - 불법 거래, 자가거래, 허위 리뷰, 스팸, 보복투표를 금지하고 Buyer와 Seller의 독립 역할을 유지한다.
 - hard envelope를 통과한 소규모 실험은 허용하되 자본 노출 확대와 영구 채택은 이 Seed의 최소 표본·신뢰구간·효과 기준을 통과한 경우에만 허용한다. 기준 미달 추천 전략은 자동 폐기하고 안전한 복구가 불가능하면 자본을 보존하며 파산은 최대 1회만 허용한다.
+- 파산은 공식 API·ledger의 bankruptcy 또는 forced-reset 사건만 1회로 계산하고 낮은 현금만으로 추정하지 않는다. 공식 파산
+  1회 뒤에는 mutation 전 projected state가 공식 bankruptcy predicate를 만족하거나 현금을 500,000+미정산 부채 아래로
+  낮추는 신규 위험 노출을 차단한다.
+- 안전한 복구 불가능은 recovery checkpoint 누락·hash 불일치, SQLite integrity 실패, ACTIVE commit 부재 또는 Safety
+  Kernel 검증 실패 중 하나가 같은 복구에서 3회 연속 발생한 상태다. 이때 신규 mutation을 차단하고 reconciliation과 상태 보존만 수행한다.
 - 사람의 매번 승인은 요구하지 않지만 모든 자동 행동과 실험은 공통 Safety Kernel 및 hard envelope 안에서만 허용한다.
 - 별도 원격 backend나 가상시장 simulator를 만들지 않고 기존 Buyer·Seller·procurement와 로컬 SQLite의 experiments,
   deployments, state_transitions, evolution_events를 재사용한다.
@@ -70,12 +75,16 @@ constraints:
   구간은 1.25·98.75 percentile이고 empirical one-sided p는 (1+bootstrap effect≤0 횟수)/10,001로 계산하며
   seed·정렬·계산 버전을 기록한다.
 - 한 배포 결정의 multiplicity family에서 m개 experiment primary metric을 동시에 판정할 때 p 오름차순 r번째를
-  0.025/(m-r+1)과 비교하는 Holm-Bonferroni를 적용한다. family 밖 또는 단일 실험에는 추가 보정을 적용하지 않는다.
+  0.025/(m-r+1)과 비교하는 Holm-Bonferroni step-down을 적용한다. 첫 실패와 그 뒤 순위는 모두 실패이며 family 구성원은
+  보정 전 p≤0.025만으로 통과할 수 없다. family 밖 단일 실험만 p≤0.025를 직접 사용한다.
 - 중간에는 normalized primary effect 신뢰구간 상한이 -δ 이하이거나 guardrail·Safety 한도를 위반할 때만 중단한다.
-  최소 표본 최종 판정에서 하한이 δ 이상, p≤0.025 또는 family Holm 통과, 모든 guardrail 통과이면 EXPANDING으로 전이한다.
-  상한이 0 이하이거나 guardrail 위반이면 REJECTED, 그 밖에는 최초 최소 표본의 2배까지 기존 전략과 병행한다.
-- EXPANDING은 최초 최소 표본의 모든 건수·기간·공급창을 누적 2배 충족한 뒤 같은 하한·p/Holm·guardrail 조건을 다시 통과해야
-  ADOPTED가 된다. 2배 표본에서 통과하지 못하면 REJECTED이고 기존 전략을 유지한다.
+  최소 표본에서 CI 하한≥δ, `(family_id가 null이고 p≤0.025) 또는 (family_id가 null이 아니고 holm_pass=true)`, 모든
+  guardrail 통과이면 PASS로 EXPANDING 전이한다.
+  CI 상한≤0 또는 guardrail 위반이면 FUTILITY로 REJECTED, 그 밖은 INCONCLUSIVE로 RUNNING을 유지한다.
+- PASS와 INCONCLUSIVE 모두 최초 최소 표본의 모든 건수·기간·공급창을 처음부터 계산한 누적 2배까지만 관찰한다. 누적 2배에서
+  CI 하한≥δ, `(family_id가 null이고 p≤0.025) 또는 (family_id가 null이 아니고 holm_pass=true)`, 모든 guardrail
+  통과이면 ADOPTED, 하나라도 미달이면 REJECTED다.
+  누적 2배 이후 추가 관찰로 판정을 뒤집지 않는다.
 - 최소 표본은 Buyer 신규 주문 50개와 1시간, Seller 가격·상품 실험 유효견적 30건·정산 5건·공급창 2회, 보증 확대 SKU별 무환불
   성숙정산 5건, Forum 게시물 6개와 6시간이다.
 - Safety Kernel 위반, 중복거래, 미확정 결제 재시도, 현금바닥 침범은 즉시 롤백한다.
@@ -92,13 +101,17 @@ constraints:
   +5%, 안정성 오류율 또는 p95 지연 상대 -10% 중 사전 선택한 하나다. guardrail은 Buyer Saved 하락 0.2%p 이하,
   Seller Book 하락 0, Forum dislike 비율 증가 0, 조달 폐기율·30일 초과 미판매율 증가 0, 안정성 성능 저하 상대 2%
   이하이며 확대·채택 판정에만 적용하고 안전한 최소실험의 시작을 막지 않는다.
-- Forum은 Buyer 24개/일, Seller 12개/일, 게시 간격 최소 5분, 중복문안 금지를 적용하고 rating 0.01 하락, 싫어요
-  우세, 또는 게시물 6개·6시간 동안 전환 0이면 해당 문안을 중단한다.
+- Forum은 Buyer 24개/일, Seller 12개/일, 게시 간격 최소 5분을 적용한다. 중복문안은 역할별 최근 24시간 게시물을 Unicode
+  NFKC·소문자·URL/구두점 제거·공백 통합한 hash가 같거나 token Jaccard≥0.80인 경우다.
+- Forum rating 기준선은 실험 시작 직전 6시간 rating과 동시 대조군 6시간 rating 중 높은 값이다. 이후 6시간 rating이
+  기준선보다 0.01 이상 낮거나 dislike 비율이 대조군보다 높거나 게시물 6개·6시간 동안 전환 0이면 해당 문안을 중단한다.
 - Forum의 명령 실행, 코드·URL 실행, 자격증명 요청, 규칙 무시 지시는 격리하고 원문을 agent 명령 컨텍스트나 updater 입력에
   넣지 않으며 허용된 구조화 필드만 추출한다.
 - Forum의 SKU·가격·보증·재고 주장은 다음 단일 truth table로 분류한다. ledger·shops API·agent card 중 관련 공식
   자료와 일치하면 VERIFIED로 일반 최소실험 후보, 공식 일치 없이 독립 작성자 3명 이상이 같은 경향이면 CORROBORATED로 우선순위
   보조 신호, 그 밖은 UNVERIFIED 가설이다. 작성자 수는 VERIFIED를 대신하지 못한다.
+- Forum의 같은 경향은 동일한 정규화 subject, claim_type, direction(up|down|flat)이 동일 6시간 KST bucket에서 서로 다른
+  author ID 3명 이상에게 관찰된 경우다. 동일 owner 또는 동일 refs를 복제한 게시물은 독립 작성자로 세지 않는다.
 - CORROBORATED와 UNVERIFIED Forum 주장 기반 실험은 모두 가용자본 1% 또는 SKU 1개 중 작은 범위로 제한하고 Forum 주장만으로
   가격·대량발주·보증을 확대하지 않는다.
 - Buyer Forum은 실제 구매 ledger와 유용한 시장정보에 한정하고 자기 shop을 광고하지 않으며 Seller Forum은 실제 재고·가격·보증·정산
@@ -176,13 +189,23 @@ constraints:
   30분 동안 다음 마일스톤 격차가 감소하지 않거나 예상 도달시각이 기한 뒤면 검증된 후보 중 예상 점수효과/비용이 가장 높은 역할의
   실험·배포 우선순위를 올리고 성공한 확대 단계마다 hard envelope 안에서 자본 노출 상한을 최대 10%p씩 높인다. 역할별 primary
   실험은 동시에 하나만 허용하고 표본·통계·Safety 기준은 완화하지 않는다.
+- 공식 board에서 60초 이상 연속 3회 단독 1위가 확인되면 leader_baseline에 ACTIVE commit·parameter set·ADOPTED
+  전략·재고정책·financial snapshot을 checkpoint하고 ATTACK에서 DEFEND로 영구 전환한다. 이후 일반 공격 모드로 복귀하지 않는다.
+- DEFEND에서는 기존 ADOPTED 전략과 정상 거래·조달을 유지하고 새 상품군·새 보증 단계·leader_baseline 대비 10% 초과 가격 변경·비검증 Forum 성장 실험을
+  중지한다. 변경은 위험 대응 목적, 역할별 동시 1개, leader_baseline 대비 최대 10%, rollback 가능한 canary로 제한한다.
+- DEFEND 위험 경보는 lead margin<0.02 Player ALL, 최근 30분·2시간 중 더 짧은 time_to_loss<6시간, 30분 연속
+  lead margin 감소, 단독 1위 상실, Book·Saved·현금·별점·환불·폐기·오류 guardrail 위반, 공식 규칙 변경 또는 2위의 최근
+  30분 점수 속도가 직전 2시간 속도보다 50% 이상 높고 우리 30분 속도도 초과한 경우 중 하나다. time_to_loss는
+  lead_margin/max(0, 2위 속도-우리 속도)이고 분모 0이면 무한대다.
+- DEFEND 경보에는 최근 변경 rollback, 미검증 노출 축소, 현금·재고 회수, ADOPTED 전략 범위의 대응, online·주문·결제 복구만
+  허용한다. 1위를 잃어도 leader_baseline과 기존 ADOPTED 전략만으로 회복하고 신규 고위험 전략을 자동 도입하지 않는다.
 - 최종 순위 증거는 공식 /api/board와 leaderboard의 round=3 schema-valid 응답만 사용한다. 공식 finalized 표시가 있으면
   2026-11-17 23:59:00 KST 이후 최초 finalized snapshot, 표시가 없으면 그 시각 이후 최초 snapshot을 선택하며 server
   timestamp, 없으면 HTTP Date와 수신시각 순으로 시각을 판정한다. 종료 직전 마지막 snapshot도 함께 보존하고 학생번호 25512088와
   owner morethanwhatiwant가 모두 일치하며 우리 Player ALL이 다른 모든 값보다 엄격히 클 때만 단독 1위다.
 acceptance_criteria:
 - description: 2026-11-17 23:59 KST Round 3 종료 시 Class Player가 공식 leaderboard의 단독
-    1위이며, 종료 전 공식 순위 snapshot과 조기 순위 마일스톤이 재검증 가능한 증거로 보존된다.
+    1위이며 종료 경계의 공식 snapshot이 재검증 가능한 증거로 보존된다.
   semantic_ac_key: ac_3bdae7896d36c5f4
   verify_command: python scripts/verify_rank_evidence.py --student-id 25512088 --owner morethanwhatiwant --deadline 2026-11-17T23:59:00+09:00
   expected_artifacts:
@@ -197,12 +220,13 @@ acceptance_criteria:
   output_assertion: exit code 0이며 각 기한 이전의 schema-valid 공식 snapshot hash·시각·순위·점수·격차가 있고 식별자가 일치하며 단독 1위는 동점이 아니다.
 - description: 순위 controller가 30초마다 1·3·5·10위 격차와 30분·2시간 점수 속도·예상 도달시각을 기록하고, 격차가
     30분간 감소하지 않거나 마일스톤 지연이 예상되면 통계·Safety 기준을 완화하지 않은 채 검증 후보의 점수효과/비용 순서로 우선순위와
-    자본 노출 상한을 단계당 최대 10%p 높이며 단독 1위 뒤에는 방어 모드로 전환한다.
+    자본 노출 상한을 단계당 최대 10%p 높인다. 연속 3회·60초 단독 1위 뒤에는 leader_baseline 고정 DEFEND로 영구 전환해
+    수치 위험 경보에 허용된 대응만 수행한다.
   semantic_ac_key: ac_rank_velocity_controller
   verify_command: python -m unittest -v tests/test_rank_velocity_controller.py
   expected_artifacts:
   - tests/test_rank_velocity_controller.py
-  output_assertion: exit code 0이며 가짜 시계의 격차 축소·정체·기한 지연·단독 1위 fixture에서 계산값, 후보 순서, 10%p 상한, 역할별 동시 primary 1개, 기준 불변과 공격/방어 전환을 assert한다.
+  output_assertion: exit code 0이며 가짜 시계의 격차 축소·정체·기한 지연·연속 1위·격차 0.02 경계·time_to_loss 6시간 경계·30분 감소·속도 50% 급상승·1위 상실 fixture에서 ATTACK/DEFEND, leader_baseline, 허용 대응, 10% 변경 상한과 공격 복귀 0건을 assert한다.
 - description: 자동 실험은 고정 80:20 배정, 역할별 block, 지정 unit·cluster, 최소 표본과 독립 cluster 5개,
     primary metric 정확히 1개를 사용하며 재시작 후에도 unit 배정이 바뀌지 않는다. 안정성 변경은 별도 10% canary 계약을 사용한다.
   semantic_ac_key: ac_56877f39254126d2
@@ -216,7 +240,7 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_statistical_decision.py
   expected_artifacts:
   - tests/test_statistical_decision.py
-  output_assertion: exit code 0이며 증가·감소 지표, 0 분모, family 크기 1·2·5, 경계 p·CI, 최소·2배 표본 fixture를 3회 실행해 effect·CI·p·Holm·상태전이가 동일함을 assert한다.
+  output_assertion: exit code 0이며 증가·감소 지표, 0 분모, family 크기 1·2·5, Holm 첫 실패, 경계 p·CI, 최소 표본 PASS/FUTILITY/INCONCLUSIVE와 누적 2배 최종 fixture를 3회 실행해 우회 통과 0건과 동일 상태전이를 assert한다.
 - description: 공식 입력은 지정 주기·우선순위와 연결 5초·전체 15초·2 MiB·schema 한도를 적용하며 malformed·partial·oversized
     응답은 마지막 검증 snapshot을 대체하지 못하고 hard stale 또는 ledger gap 동안 관련 mutation이 차단된다.
   semantic_ac_key: ac_29588938f691a941
@@ -237,14 +261,14 @@ acceptance_criteria:
   verify_command: python -m unittest -v tests/test_forum_policy.py
   expected_artifacts:
   - tests/test_forum_policy.py
-  output_assertion: exit code 0이며 공식 일치 여부와 독립 작성자 수 1·2·3의 전체 truth table, 1%·1 SKU 경계와 악성 원문 fixture에서 신뢰등급·노출·실행 컨텍스트를 assert한다.
+  output_assertion: exit code 0이며 공식 일치 여부, 정규화 subject·claim type·direction·6시간 bucket, 독립 작성자 수 1·2·3과 owner/refs 복제의 truth table, 1%·1 SKU 경계와 악성 원문 fixture에서 신뢰등급·노출·실행 컨텍스트를 assert한다.
 - description: Buyer·Seller 게시가 역할별 일일·간격·중복문안 한도와 전환 중단 기준을 지키며 경쟁자 사건은 공식 증거가 있을
     때만 의도를 단정하지 않고 refs를 포함해 사건당 한 번 게시하며 정정 이력을 보존한다.
   semantic_ac_key: ac_forum_publication
   verify_command: python -m unittest -v tests/test_forum_publication.py
   expected_artifacts:
   - tests/test_forum_publication.py
-  output_assertion: exit code 0이며 한도 경계, 중복문안, 무증거 주장, 동일 사건 재게시와 정정 fixture에서 허용 게시만 생성되고 Buyer 자기 shop 광고와 비공식 사기 명명은 0건임을 assert한다.
+  output_assertion: exit code 0이며 일일·5분·24시간 경계, NFKC hash·Jaccard 0.80, rating 직전/대조 6시간 기준선·0.01 하락, 무증거 주장, 사건 재게시와 정정 fixture에서 허용 게시만 생성되고 Buyer 자기 shop 광고와 비공식 사기 명명은 0건임을 assert한다.
 - description: 중단되거나 응답이 불명확한 mutation은 영구 checkpoint와 멱등성 키를 보존한 UNCERTAIN 상태에서 재제출되지
     않고 30초 간격·10분·최대 20회 reconciliation 후 CONFIRMED, SAFE_TO_RETRY 또는 PRESERVED로 결정된다.
     PRESERVED는 새 공식 증거가 있을 때만 RECONCILING으로 복귀하며 재시작과 반복 중단에도 같은 키로 중복 제출되지 않는다.
@@ -298,6 +322,13 @@ acceptance_criteria:
   expected_artifacts:
   - tests/test_adoption_threshold.py
   output_assertion: exit code 0이며 시작·확대·채택 경계 fixture에서 hard envelope와 adoption_threshold가 독립 판정되고 기준 미달 확대·채택은 0건임을 assert한다.
+- description: 파산은 공식 bankruptcy 또는 forced-reset 사건만 계산해 최대 1회이며, 복구 핵심 검사가 3회 연속 실패하면
+    신규 mutation을 차단하고 reconciliation과 durable 상태 보존만 계속한다.
+  semantic_ac_key: ac_bankruptcy_recovery_guard
+  verify_command: python -m unittest -v tests/test_bankruptcy_recovery_guard.py
+  expected_artifacts:
+  - tests/test_bankruptcy_recovery_guard.py
+  output_assertion: exit code 0이며 저현금·공식 파산 1회·두 번째 위험 노출, checkpoint/hash/SQLite/commit/Safety 실패 1·2·3회 fixture에서 bankruptcy_event 수, mutation 허용과 recovery 상태가 정확함을 assert한다.
 - description: background supervisor가 실제 역할 프로세스를 관찰창과 독립적으로 계속 실행하고 역할별 watch 명령에
     구조화된 검증·배포·canary·rollback event를 실시간 표시한다. 관찰창 Ctrl-C와 supervisor 강제 중단·재시작을 각각
     세 번 수행해도 역할 PID 소유권, recovery checkpoint, 미확정 거래와 조달 상태가 유지되고 비밀값은 노출되지 않는다.
@@ -357,6 +388,10 @@ ontology_schema:
   - name: hard_envelope
     type: object
     description: 최소실험 시작 전 검사하는 자본, 현금, 재고, SKU, 가격, 보상, 보증, Forum, 파라미터 변경폭의 불변 안전 경계
+    required: true
+  - name: bankruptcy_event
+    type: object
+    description: 공식 API·ledger bankruptcy 또는 forced-reset event ID, 시각, 원본 reference, 누적 횟수와 이후 위험 차단 판정
     required: true
   - name: adoption_threshold
     type: object
@@ -420,6 +455,10 @@ ontology_schema:
     type: object
     description: 30초 관찰시각, 1·3·5·10위 점수·격차, 30분·2시간 속도, 선형 도달 예상시각, 공격 단계와 후보 점수효과/비용 순서
     required: true
+  - name: leader_defense
+    type: object
+    description: ATTACK·DEFEND mode, 3회·60초 진입 증거, leader baseline, lead margin, catchup rate, time to loss, 위험 원인, 변경·노출 상한과 대응 결과
+    required: true
 evaluation_principles:
 - name: 공식 성과
   description: 마감 시 공식 Class Player 단독 1위 달성 여부와 실제 주문·결제·정산 기반 성과를 가장 직접적으로 평가한다.
@@ -465,10 +504,10 @@ exit_conditions:
   criteria: 실험이 REJECTED 또는 ROLLED_BACK이고 기존 전략이 유지된다.
 - name: 자본 보존 종료
   description: 안전한 복구가 불가능하거나 추가 진행이 파산 한도를 넘길 위험이 있으면 자동 확대와 신규 위험 노출을 종료한다.
-  criteria: 신규 위험 mutation이 차단되고 현금·미정산 부채·재고 상태가 checkpoint에 보존된다.
+  criteria: 복구 핵심 검사가 3회 연속 실패하거나 공식 파산 1회 뒤 projected state가 공식 bankruptcy predicate 또는 현금 하한을 위반하면 신규 위험 mutation이 차단되고 현금·미정산 부채·재고 상태가 checkpoint에 보존된다.
 metadata:
   seed_id: seed_45ef0f10a27e
-  version: 1.3.0
+  version: 1.4.0
   created_at: '2026-11-07T16:38:43.255953Z'
   ambiguity_score: 0.0645
   gate_forced: false
