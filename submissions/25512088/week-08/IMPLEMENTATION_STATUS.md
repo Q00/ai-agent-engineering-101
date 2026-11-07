@@ -6,7 +6,7 @@ This file tracks implementation against `adaptive_pipeline.seed.yaml`.
 - [x] Buyer structured decisions, idempotent offers and recovery checkpoints
 - [x] Seller structured quotes, safety snapshots and recovery checkpoints
 - [x] Official-input freshness and rule invalidation controller
-- [ ] Experiment statistics and promotion lifecycle
+- [x] Experiment statistics and promotion lifecycle
 - [ ] Forum trust/publication controls
 - [x] Background supervisor start/stop/status/watch
 - [ ] Role drain, checkpoint, canary and rollback
