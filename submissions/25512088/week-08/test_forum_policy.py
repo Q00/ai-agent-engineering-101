@@ -22,5 +22,15 @@ class ForumPolicyTests(unittest.TestCase):
             self.assertNotIn('검증된 가격',c.db.execute('SELECT tokens FROM forum_publications').fetchone()[0])
             c.close()
 
+    def test_buyer_rolling_limit_is_aggressive_but_below_official_maximum(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            c=Control(tmp)
+            for n in range(270):
+                ok,_,reason=c.allow_publication('buyer',f'고유 시장 정보 {n}',[n],now=1000+n*301)
+                self.assertTrue(ok,reason)
+            ok,_,reason=c.allow_publication('buyer','한도 초과 정보',[999],now=1000+270*301)
+            self.assertFalse(ok);self.assertEqual(reason,'daily_limit')
+            c.close()
+
 
 if __name__=='__main__':unittest.main()

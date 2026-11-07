@@ -8,7 +8,7 @@ import httpx
 from market_intel import Intel,BUYER_SCORE_WEIGHTS
 from seller_strategy import sale_quote,restock_plan,cost_floor,protected_floor
 from referral_program import Program
-from buyer_publicist import queue_update
+from buyer_publicist import queue_update,publication_policy
 from buyer_r3 import Buyer
 from buyer_memory import Memory
 
@@ -90,13 +90,29 @@ class IntelligenceTests(unittest.TestCase):
         dispatch_outbox(lambda m,p:seen.append(p),SimpleNamespace(token={'shop':'secret'}),self.root)
         self.assertEqual(seen,[self.root])
 
-    def test_buyer_ad_has_actual_price_role_and_rate_limit(self):
+    def test_buyer_forum_uses_paid_evidence_role_and_rate_limit(self):
         name=self.p.p['shop_name']
-        self.i.save_source('board',{'round':3,'shops':[{'name':name,'alive':True}],'buyers':[]})
-        (self.root/'inventory.json').write_text(json.dumps({'units':[self.u]}))
+        self.i.save_source('board',{'round':3,'buyers':[{'name':name,'deals':20,'posts':0,'forum':.9}]})
+        (self.root/'catalog.json').write_text(json.dumps({'x':{'name':'item','list_price':10000}}))
+        memory=Memory(self.root)
+        with memory.db:
+            memory.db.execute('INSERT INTO payments VALUES(?,?,?,?,?,?,?)',('o1','other-shop','x',7000,1,77,None))
+            memory.db.execute('INSERT INTO outcomes VALUES(?,?)',('o1',json.dumps({'name':'item','grade':'A','claim_honest':True,'warranty_hours':6})))
+        memory.db.close()
         self.assertTrue(queue_update(self.i));self.assertFalse(queue_update(self.i))
         msg=json.loads((self.root/'buyer-forum/outbox.jsonl').read_text())
-        self.assertEqual(msg['as'],'buyer');self.assertIn('같은 운영자',msg['post']);self.assertIn('보증 6h',msg['post'])
+        self.assertEqual(msg['as'],'buyer');self.assertIn('실제 구매 기록',msg['post']);self.assertEqual(msg['refs'],[77])
+        self.assertNotIn('같은 운영자',msg['post']);self.assertIn('보증 6h',msg['post'])
         self.assertFalse((self.root/'outbox.jsonl').exists())
+
+    def test_buyer_publication_policy_accelerates_then_adapts(self):
+        board={'buyers':[{'name':'25512088','deals':10,'posts':10,'forum':.881},
+                         {'name':'rival-a','deals':10,'posts':100,'forum':.9},
+                         {'name':'rival-b','deals':10,'posts':200,'forum':.9}]}
+        self.assertEqual(publication_policy(board,'25512088')[:2],(310,270))
+        board['buyers'][0]['forum']=.82
+        self.assertEqual(publication_policy(board,'25512088')[:2],(900,96))
+        board['buyers'][0].update(forum=.9,posts=300)
+        self.assertEqual(publication_policy(board,'25512088')[:2],(1800,48))
 
 if __name__=='__main__':unittest.main()

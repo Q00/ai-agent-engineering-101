@@ -1,5 +1,4 @@
-from procurement_campaign import settings
-"""Buyer posts evidence summaries or clearly disclosed own-shop offers."""
+"""Evidence-first buyer forum publisher with score-aware pacing."""
 import json
 import os
 import sqlite3
@@ -7,9 +6,43 @@ import time
 from pathlib import Path
 from market_intel import read_json, WINDOW
 from referral_program import Program
-from seller_strategy import sale_quote
-from shop_copy import stock_ad, paid_post
+from shop_copy import paid_post
 from adaptive_control import Control
+
+
+AGGRESSIVE_INTERVAL = 310       # official limit is one buyer post per 300 seconds
+AGGRESSIVE_DAILY_LIMIT = 270    # below the theoretical 288/day maximum
+CAUTIOUS_INTERVAL = 900
+CAUTIOUS_DAILY_LIMIT = 96
+MAINTENANCE_INTERVAL = 1800
+MAINTENANCE_DAILY_LIMIT = 48
+TARGET_POST_PERCENTILE = .90
+
+
+def publication_policy(board, name, negative_feedback=False, now=None, intel=None):
+    """Return interval/rolling-limit from official score evidence, never forum text."""
+    now=time.time() if now is None else now
+    eligible=[r for r in board.get('buyers',[]) if (r.get('deals') or 0)>0]
+    buyer=next((r for r in eligible if r.get('name')==name),{})
+    if not buyer:return CAUTIOUS_INTERVAL,CAUTIOUS_DAILY_LIMIT,0.0
+    posts=buyer.get('posts') or 0
+    percentile=sum((r.get('posts') or 0)<=posts for r in eligible)/len(eligible) if eligible else 0.0
+    forum=buyer.get('forum')
+    forum=float(forum) if isinstance(forum,(int,float)) else 0.0
+    cooldown=bool(intel and intel.get('buyer_forum_cooldown_until',0)>now)
+    if intel:
+        baseline=intel.get('buyer_forum_rating_baseline')
+        if not baseline:
+            intel.put('buyer_forum_rating_baseline',{'at':now,'score':forum})
+        elif now-baseline.get('at',0)>=21600:
+            if forum<baseline.get('score',forum)-.01:
+                intel.put('buyer_forum_cooldown_until',now+21600);cooldown=True
+            intel.put('buyer_forum_rating_baseline',{'at':now,'score':forum})
+    if percentile>=TARGET_POST_PERCENTILE:
+        return MAINTENANCE_INTERVAL,MAINTENANCE_DAILY_LIMIT,percentile
+    if negative_feedback or cooldown or forum<.84:
+        return CAUTIOUS_INTERVAL,CAUTIOUS_DAILY_LIMIT,percentile
+    return AGGRESSIVE_INTERVAL,AGGRESSIVE_DAILY_LIMIT,percentile
 
 
 def latest_paid_post(intel):
@@ -18,7 +51,7 @@ def latest_paid_post(intel):
     posted=set(intel.get('posted_purchase_ledgers',[]))
     catalog=read_json(intel.root/'catalog.json',{})
     with sqlite3.connect(str(path),timeout=2) as db:
-        rows=db.execute('SELECT p.sku,p.price,p.ledger,o.details FROM payments p JOIN outcomes o ON o.order_id=p.order_id WHERE p.paid=1 AND p.ledger IS NOT NULL ORDER BY p.ledger DESC LIMIT 30').fetchall()
+        rows=db.execute('SELECT p.sku,p.price,p.ledger,o.details FROM payments p JOIN outcomes o ON o.order_id=p.order_id WHERE p.paid=1 AND p.ledger IS NOT NULL ORDER BY p.ledger DESC LIMIT 6000').fetchall()
     for sku,price,ledger,body in rows:
         if ledger in posted:continue
         outcome=json.loads(body);product=catalog.get(sku,{})
@@ -30,58 +63,35 @@ def latest_paid_post(intel):
 
 def queue_update(intel):
     now=time.time();state=intel.root
-    if now-intel.get('buyer_post_at',0)<600:return False
     day=int(now//86400)
     if intel.get('post_day')!=day:
         intel.put('post_day',day);intel.put('posts_today',0)
-    if intel.get('posts_today',0)>=12:return False
     board=intel.source('board',{}) or {}
     if board.get('round')!=3:return False
     program=Program(state)
     try:
         name=program.p['shop_name'];rows=board.get('buyers',[])
         buyer=next((r for r in rows if r.get('name')==name),{})
-        # If engagement is weak, prefer verifiable market information over another ad.
         posts=intel.source('forum',[]) or []
         if isinstance(posts,dict):posts=posts.get('posts',[])
         mine=[r for r in posts if r.get('author')==name and r.get('role')=='buyer']
         negative=sum(r.get('dislikes',0)-r.get('likes',0) for r in mine)>0
-        research=negative or not program.live(now) or intel.get('posts_today',0)%2==1
+        interval,daily_limit,post_percentile=publication_policy(board,name,negative,now,intel)
+        if now-intel.get('buyer_post_at',0)<interval:return False
+        if intel.get('posts_today',0)>=daily_limit:return False
+        # Buyer posts are independent purchase evidence, never promotion for our shop.
+        research=True
         refs=[];text='';purchase_ledger=None
-        if research:
+        paid=latest_paid_post(intel)
+        if paid:
+            text,purchase_ledger=paid;refs=[purchase_ledger]
+        else:
             row=intel.db.execute('SELECT sku,grade,COUNT(*) n,MIN(price) lo,MAX(price) hi,MAX(seq) seq FROM trades WHERE ts>? GROUP BY sku,grade HAVING COUNT(*)>=3 ORDER BY n DESC LIMIT 1',(now-WINDOW,)).fetchone()
             if row:
                 text=(f"[시장 관찰] {row['sku']} {row['grade']}등급: 관측된 최근 6시간 정산 {row['n']}건, "
                       f"{row['lo']:,}~{row['hi']:,}원. 유통기한·보증이 달라 직접 최저가 비교는 아닙니다. "
                       '식품은 필요한 보관시간, 비식품은 보증을 확인하세요.')
                 refs=[row['seq']]
-        else:
-            path=state/'inventory.json'
-            inv=read_json(path,{})
-            shops=board.get('shops',[])
-            own=next((r for r in shops if r.get('name')==name),{})
-            if not own.get('alive') or not path.exists() or now-path.stat().st_mtime>90:return False
-            cat=read_json(state/'catalog.json',{});reserved=program.reserved_units();offers=[]
-            for u in inv.get('units',[]):
-                if u['unit'] in reserved:continue
-                try:q=sale_quote(u,cat,program,intel)
-                except ValueError:continue
-                hours=(u['expires_at']-now)/3600 if u.get('expires_at') else None
-                count=intel.comparable(u['sku'],u['grade'],hours,q.get('warranty_hours',0))['count']
-                offers.append((q['price']/u['list_price'],u,q,count))
-            if offers:
-                # Rotate distinct products instead of repeatedly advertising the cheapest unit.
-                previous=set(intel.get('last_ad_skus',[]));selected=[];seen=set()
-                for _,u,q,_ in sorted(offers,key=lambda o:(-o[3],o[1]['sku'] in previous,o[0])):
-                    if u['sku'] in seen:continue
-                    selected.append((u,q));seen.add(u['sku'])
-                    if len(selected)==2:break
-                text=stock_ad(name,selected,now)
-                intel.put('last_ad_skus',list(seen))
-        if research:
-            paid=latest_paid_post(intel)
-            if paid:
-                text,purchase_ledger=paid;refs=[purchase_ledger]
         if not text:return False
         guard=Control(state)
         try:allowed,_,_=guard.allow_publication('buyer',text,refs,now)
@@ -94,7 +104,9 @@ def queue_update(intel):
         try:os.write(fd,(json.dumps({'as':'buyer','post':text,'refs':refs},ensure_ascii=False)+'\n').encode())
         finally:os.close(fd)
         if purchase_ledger:
-            intel.put('posted_purchase_ledgers',(intel.get('posted_purchase_ledgers',[])+[purchase_ledger])[-200:])
-        intel.decision('buyer_forum',{'research':research,'negative_feedback':negative,'buyer_deals':buyer.get('deals'),'refs':refs})
+            intel.put('posted_purchase_ledgers',(intel.get('posted_purchase_ledgers',[])+[purchase_ledger])[-6000:])
+        intel.decision('buyer_forum',{'research':research,'negative_feedback':negative,
+            'buyer_deals':buyer.get('deals'),'refs':refs,'interval':interval,
+            'daily_limit':daily_limit,'post_percentile':round(post_percentile,4)})
         return True
     finally:program.close()
