@@ -24,7 +24,7 @@ with contextlib.redirect_stdout(buf):
 out = json.loads(buf.getvalue().strip().splitlines()[-1])
 buy = {b["sku"]: b["qty"] for b in out["buy"]}
 assert set(buy) <= set(cat) and "ZZ" not in buy, buy
-assert buy.get("G1", 0) == 7 - 1, buy          # int(20000*0.08/225)=7 affordable, minus the one in stock
+assert buy.get("G1", 0) == 6 - 1, buy          # min(6 per SKU, int(20000*0.08/225)=7), minus the one in stock
 assert "F1" not in buy and buy.get("G2") == 2, buy   # milk: 24 h shelf -> never; desk: int(1600/675) = 2 units
 assert "bankrupt" not in out
 assert (md / "outbox.jsonl").exists() and json.loads((md / "outbox.jsonl").read_text())["as"] == "shop"
@@ -67,9 +67,9 @@ assert seller.find_unit("I want to buy kimchi (F9)")["unit"] == "b"             
 assert seller.find_unit("I want to buy kimchi (F9), minimum 100 hours shelf life")["unit"] == "a"
 assert seller.find_unit("kimchi (F9)", taken={"a", "b"})["unit"] == "c"
 sl = seller.Seller()
-sl.open = {"fresh": {"unit": {"unit": "a"}, "t": now - 60}, "stale": {"unit": {"unit": "b"}, "t": now - 900},
+sl.open = {"fresh": {"unit": {"unit": "a"}, "t": now - 60}, "stale": {"unit": {"unit": "b"}, "t": now - 300},
            "r2": {"unit": {"unit": None}, "t": now}}
-assert sl.held() == {"a"}, sl.held()                                                    # silent 15 min -> released
+assert sl.held() == {"a"}, sl.held()                                                    # silent 5 min -> released
 print("ok: find_unit + held")
 
 # ---- acp_buyer: tools built from the kit's acp.json shape, against a mock shop (no market, no LLM)

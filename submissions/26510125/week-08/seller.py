@@ -87,9 +87,9 @@ class Seller(AgentExecutor):
         self.open = {}  # task id -> {"unit", "ask", "offer", "lines", "t": last message time}
 
     def held(self):
-        """Units promised in negotiations that answered within the last 10 minutes. A buyer that stops answering
-        never cancels; without the cutoff its unit stayed promised forever (10 of 17 "no unit" visits had stock)."""
-        return {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"] and time.time() - d["t"] < 600}
+        """Units promised in negotiations that answered within the last 3 minutes. A buyer that stops answering
+        never cancels; without the cutoff its unit stayed promised forever (237 "no unit" visits/day had stock)."""
+        return {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"] and time.time() - d["t"] < 180}
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -137,7 +137,7 @@ class Seller(AgentExecutor):
                 receipt["claim"] = u.get("grade")          # honest: the ledger shows claim_honest afterwards
                 receipt["cert"] = True
                 if u.get("kind") == "goods":
-                    receipt["warranty_hours"] = {"A": 6, "B": 3}.get(u.get("grade"), 0)
+                    receipt["warranty_hours"] = {"A": 6, "B": 6}.get(u.get("grade"), 0)   # agent.md's example policy asks 6 h; B at 3 h was refused
             receipt = sign(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             print(f"[deal] {u['sku']} grade {u.get('grade')} at {price} (cost {u['cost']})", flush=True)

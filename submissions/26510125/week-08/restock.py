@@ -2,7 +2,7 @@
 
 The kit's default buys random SKUs when stock is low. This one reads demand from the market's ledger
 (what actually settled, market-wide, newest 500 entries) and buys the SKUs that sell, within the balance.
-Rules: keep stock under 120 units (storage is 1 %/day of cost), spend at most 5 % of the balance per SKU,
+Rules: keep stock under 200 A/B units (storage is 1 %/day of cost), spend at most 5 % of the balance per SKU,
 food only with >= 10 days of shelf life (buyers refuse grade C, and food gets there fast), file for bankruptcy only
 when below the line with nothing left to sell. Also posts a shop notice to the forum at most every 60 min.
 """
@@ -11,7 +11,7 @@ from pathlib import Path
 
 from market_price import settled
 
-MAX_UNITS, PER_SKU_SHARE, TOP = 120, 0.08, 15
+MAX_UNITS, PER_SKU_SHARE, TOP = 200, 0.08, 30   # breadth: more SKUs in stock = more orders routed here
 
 
 def load(p):
@@ -47,7 +47,7 @@ def main():
             if room <= 0:
                 break
             unit_cost = cat[sku]["list_price"] * 0.75                      # worst-case cost share
-            qty = min(8, room, int(balance * PER_SKU_SHARE / unit_cost)) - have[sku]
+            qty = min(6, room, int(balance * PER_SKU_SHARE / unit_cost)) - have[sku]
             if qty >= 1:
                 out["buy"].append({"sku": sku, "qty": qty}); room -= qty
         print(f"[restock] balance {balance} units {len(units)} hot={len(hot)} -> buy {out['buy']}", flush=True)
