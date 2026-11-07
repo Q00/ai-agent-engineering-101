@@ -133,6 +133,62 @@ def hourly(day):
     return out
 
 
+# 11/7 11:xx (user: what goes wrong between the harness and the buyer): the buyer's failures by cause, the kit's
+# payment refusals by cause, and the deals that served nothing (-1 in saved) were not in any report - they were
+# found only by reading tool logs and the ledger by hand
+WHY_NO_DEAL = (("fair", "deal"), ("no stock", "shop had none"), ("value", "under our value bar"),
+               ("shelf", "shelf too short (claim)"), ("could not reach", "shop unreachable"),
+               ("timeout", "shop too slow"), ("failed", "shop too slow"), ("no shop", "no shop lists it"),
+               ("rejected", "shop refused"), ("walked", "we walked (price)"), ("expired", "order time ran out"),
+               ("cheated", "receipt over what we agreed"))
+WHY_UNPAID = (("shelf life", "food hours short"), ("grade", "grade below policy"), ("not in stock", "unit gone"),
+              ("certificate", "no certificate"), ("warranty", "warranty short"))
+
+
+def _label(text, table):
+    t = (text or "").lower()
+    return next((lab for key, lab in table if key in t), "other")
+
+
+def buyer_detail(trs, since, until):
+    """Why our buyer's orders ended without a deal, why agreed deals were not paid, and the deals that served
+    nothing on the ledger (goods broken without a refund, by when they broke; food settled with fewer hours than
+    the order's use window) - each of those is -1 in saved (agent.md)."""
+    from collections import Counter
+    days = sorted({time.strftime("%Y%m%d", time.localtime(t)) for t in (since, until - 1)})
+    closed, need = Counter(), {}
+    for d in days:
+        last = {}
+        for e in trajectory.read_day(d):
+            if e["kind"] == "buyer.order":
+                need[(e.get("keys") or {}).get("order")] = e["data"].get("use_within_hours")
+            elif e["kind"] == "buyer.closed" and since <= e["ts"] < until:
+                last[(e.get("keys") or {}).get("order")] = e["data"].get("verdict")
+        closed.update(_label(v, WHY_NO_DEAL) for v in last.values())     # each order by how it ended
+    unpaid = Counter(_label(t["result"].get("pay_reason"), WHY_UNPAID) for t in trs
+                     if t["role"] == "buyer" and since <= t["start"] < until and t["result"].get("paid") is False)
+    broken = short = 0
+    for d in days:
+        f = paths.memory() / "market" / f"ledger-{d}.jsonl"
+        if not f.exists():
+            continue
+        with open(f, encoding="utf-8") as fh:
+            for line in fh:
+                if SHOP_NAME not in line or ('"kind": "broken"' not in line and '"kind": "settle"' not in line):
+                    continue
+                x = json.loads(line)
+                if not since <= x["ts"] < until or (x["data"].get("buyer") != SHOP_NAME):
+                    continue
+                if x["kind"] == "broken" and not x["data"].get("refunded"):
+                    broken += 1
+                elif x["kind"] == "settle" and x["data"].get("expires_at"):
+                    h = need.get(x["data"].get("order"))
+                    if h and (x["data"]["expires_at"] - x["ts"]) / 3600 < h:
+                        short += 1
+    return {"orders_ended": dict(closed.most_common()), "unpaid_why": dict(unpaid.most_common()),
+            "unfilled": broken + short, "broken_unrefunded": broken, "food_short": short}
+
+
 def report(role, now=None):
     """report.submit (R6): the role's fixed metrics over the last 1 h and 24 h. Written, never edited."""
     now = now or time.time()
@@ -149,6 +205,11 @@ def report(role, now=None):
         old = [k for k in keys if k <= _hour(now - span)]
         change = books[keys[-1]] - books[old[-1]] if keys and old else None
         rep[label] = compute(trs, evs, now - span, now, book=change)[side]
+        if side == "buyer":
+            try:
+                rep[label]["detail"] = buyer_detail(trs, now - span, now)
+            except Exception as e:                  # a report never fails for its detail
+                rep[label]["detail"] = {"error": f"{type(e).__name__}: {e}"[:200]}
     d = out_dir() / "reports"
     d.mkdir(parents=True, exist_ok=True)
     (d / f"{side}-{time.strftime('%Y%m%d-%H%M', time.localtime(now))}.json").write_text(

@@ -580,6 +580,7 @@ class BuyerCore:
         if receipt is None:
             outcome = outcome or {"TASK_STATE_REJECTED": "rejected", "TASK_STATE_CANCELED": "canceled"}.get(state, "failed")
             said = next((h.get("excerpt") or "" for h in reversed(hist) if h["from"] == "shop"), "")
+            self.last_said = said[:160]                 # on buyer.closed: what the shop said last (data, marked)
             if NO_STOCK.search(said):
                 reflex.record_stock_miss(shop["name"], sku, ctx.now())
                 outcome = "no stock"
@@ -725,8 +726,10 @@ class BuyerCore:
         return {"shop": shop_obj["url"] if shop_obj else "", "receipt": None, "stars": None, "review": None}
 
     def close_events(self, shop, verdict, agreed, receipt_price, list_price, outcome, accept=None, guard=None):
+        said, self.last_said = getattr(self, "last_said", None), None
         self.events.emit("buyer.closed", {"outcome": outcome, "agreed": agreed, "receipt_price": receipt_price,
-                                          "verdict": verdict, "list_price": list_price, "accept": accept, "guard": guard},
+                                          "verdict": verdict, "list_price": list_price, "accept": accept, "guard": guard,
+                                          **({"shop_said": said} if said else {})},
                          order=self.order.get("order"), **({"counterpart": shop["name"]} if shop else {}))
 
 
