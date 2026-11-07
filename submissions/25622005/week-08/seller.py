@@ -202,6 +202,15 @@ def category_uwh(summary, leaf):
         return {"n": 0, "median": None}
 
 
+def unit_break_q(summary, unit, leaf):
+    """memory/query.break_q for the unit's SKU and grade, or None (a summary without the table, or an error)."""
+    q = _query()
+    try:
+        return q.break_q(summary, unit.get("sku"), unit.get("grade"), leaf)
+    except Exception:
+        return None
+
+
 def summary_ref(kind, key):
     q = _query()
     try:
@@ -264,7 +273,8 @@ class Shop(AgentExecutor):
         leaf = (unit.get("category") or "").split(">")[-1]
         self.warranted = [w for w in self.warranted if w[0] >= now - 6 * 3600]
         held = {u["unit"] for u in inv.get("units") or [] if u.get("unit")}
-        return {"uwh": category_uwh(self._summary(now), leaf), "category": leaf,
+        summary = self._summary(now)
+        return {"uwh": category_uwh(summary, leaf), "category": leaf, "break_q": unit_break_q(summary, unit, leaf),
                 "warranted_6h": sum(w[1] for w in self.warranted if w[2] not in held or now - w[0] < ttl)}
 
     def _prune(self, now):
@@ -331,6 +341,7 @@ class Shop(AgentExecutor):
                 "grade_now": pricing.grade_now(u, now), "hours_left": _round(pricing.hours_left(u, now)),
                 "need_hours": deal.get("need"), "warranty_req": deal.get("wreq"),
                 "warranty_hours": (deal.get("warranty") or {}).get("hours"),
+                "warranty_mult": (deal.get("warranty") or {}).get("price_mult"), "break_q": deal["ctx"].get("break_q"),
                 "uwh": deal["ctx"]["uwh"], "hours_to_end": _round(pricing.hours_to_end(pol, now))}
 
     async def _handle(self, context, task, up, t0):

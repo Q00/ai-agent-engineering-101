@@ -18,6 +18,8 @@ policy:
     warranty_grades: [A, B]
     warranty_premium: 0.15
     warranty_cap_6h: 500000       # D5 sum of warranted sales in the last 6 h
+    warranty_premium_floor: 0.02  # D5 premium = clamp(unit's breakage upper bound x warranty_q_mult, this, warranty_premium)
+    warranty_q_mult: 1.5          # D5 safety on the measured breakage (memory: market.breakage, SKU x grade); without data the premium is warranty_premium
     fact_block: true              # L5 first reply carries the fact line and the market certificate
     claim_food_margin_h: 1.0      # L5 claim a food grade only with this much margin to the next grade cut
     promise_ttl_s: 180            # a unit promised in an open negotiation is held this long

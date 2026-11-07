@@ -131,7 +131,10 @@ def respond(state, offer, pol):
 
 def warranty_terms(unit, requested_h, ctx, pol, now):
     """D5: {"hours", "price_mult"} or None. Only when asked (warranty_on_request), goods of warranty_grades,
-    not in the last no_warranty_h hours, and while warranted sales of the last 6 h stay within the cap."""
+    not in the last no_warranty_h hours, and while warranted sales of the last 6 h stay within the cap.
+    The premium is the unit's measured breakage (ctx["break_q"]["upper"], the market's SKU x grade rate) x
+    seller.warranty_q_mult, at least seller.warranty_premium_floor and at most seller.warranty_premium, which
+    alone applies without data."""
     s, st = pol["seller"], pol["stock"]
     if requested_h is False or (not requested_h and s["warranty_on_request"]):
         return None
@@ -146,7 +149,10 @@ def warranty_terms(unit, requested_h, ctx, pol, now):
         hours = min(requested_h, hours)
     if hours <= 0:
         return None
-    return {"hours": int(hours) if float(hours).is_integer() else hours, "price_mult": 1 + s["warranty_premium"]}
+    premium, bq = s["warranty_premium"], (ctx or {}).get("break_q")
+    if isinstance(bq, dict) and isinstance(bq.get("upper"), (int, float)):    # memory/query.break_q of the unit
+        premium = min(premium, max(s["warranty_premium_floor"], bq["upper"] * s["warranty_q_mult"]))
+    return {"hours": int(hours) if float(hours).is_integer() else hours, "price_mult": round(1 + premium, 4)}
 
 
 def claim(unit, now, pol):

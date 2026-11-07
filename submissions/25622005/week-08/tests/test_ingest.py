@@ -110,21 +110,42 @@ class IngestCase(unittest.TestCase):
         rows += [row(900, "settle", {"order": "o-a", "buyer": "buyer-01", "item": "G1", "amount": 9500}),
                  row(901, "settle", {"order": "o-b", "buyer": "buyer-01", "item": "G1", "amount": 9400}),
                  row(905, "settle", {"order": "o-1", "buyer": "psyoung82", "item": "G2", "amount": 30000,
-                                     "name": "의자", "shop": SHOP_B}),
+                                     "name": "의자", "shop": SHOP_B, "unit": "u3", "grade": "C"}),
                  row(910, "settle", {"order": "o-s1", "buyer": "buyer-01", "item": "G1", "amount": 9000}),
                  row(911, "settle", {"order": "o-s2", "buyer": "buyer-01", "item": "G1", "amount": 9000,
                                      "shop": "https://psy.example"}),
-                 row(912, "settle", {"order": "o-g", "buyer": "buyer-02", "item": "G2", "amount": 30000}),
+                 row(912, "settle", {"order": "o-g", "buyer": "buyer-02", "item": "G2", "amount": 30000,
+                                     "unit": "u9", "grade": "A"}),
                  row(915, "supply", {"shop": "psyoung82", "sku": "G1", "qty": 10, "total": 52000, "units": []}),
                  row(916, "supply", {"shop": "other-shop", "sku": "G1", "qty": 5, "total": 1, "units": []}),
-                 row(920, "broken", {"buyer": "psyoung82", "item": "G2"}),
-                 row(921, "broken", {"buyer": "buyer-02", "item": "G2"}),
+                 row(919, "broken", {"buyer": "buyer-03", "item": "G2", "unit": "u-unknown"}),   # no settle seen: not joined
+                 row(920, "broken", {"buyer": "psyoung82", "item": "G2", "unit": "u3"}),
+                 row(921, "broken", {"buyer": "buyer-02", "item": "G2", "unit": "u9"}),
                  row(922, "result", {"buyer": "buyer-01", "order": "o-s2", "shop": "https://psy.example",
                                      "stars": 5, "verified": True})]
         return FakeLedger(rows)
 
 
 class SyncTest(IngestCase):
+    def test_breakage_joins_broken_rows_to_settled_units_by_sku_and_grade(self):
+        with mock.patch.object(ingest, "fetch", self.fixtures()):
+            ingest.sync(time.time() + 10, state=self.state)
+        b = query.load_summary()["market"]["breakage"]
+        self.assertEqual({g: (v["n"], v["k"], v["q"]) for g, v in b["grade"].items()}, {"C": (1, 1, 1.0), "A": (1, 1, 1.0)})
+        self.assertEqual(b["cat"]["의자"]["C"]["n"], 1)
+        self.assertEqual(b["sku"], {})                                   # under BRK_MIN_N sales per row
+        s = query.load_summary()
+        self.assertEqual(query.break_q(s, "G2", "C", "의자", min_n=1)["level"], "cat")   # the SKU row needs BRK_MIN_N sales
+        self.assertEqual(query.break_q(s, "G9", "C", "의자", min_n=1)["level"], "cat")
+        self.assertEqual(query.break_q(s, "G9", "A", "없음", min_n=1)["level"], "grade")
+        self.assertIsNone(query.break_q(s, "G2", "B", "의자", min_n=1))
+        self.assertIsNone(query.break_q(s, "G2", "C", "의자"))            # the default min_n
+        self.assertEqual(ingest.render_breakage({"sku": {"G1": {"A": [10, 1]}}, "grade": {"A": [10, 1]}})["sku"]["G1"]["A"],
+                         {"n": 10, "k": 1, "q": 0.1, "upper": ingest._wilson_upper(1, 10)})
+        m = {"brk_units": {"u-old": ["G1", "x", "A", 0], "u-new": ["G1", "x", "A", 10**9]}}
+        ingest.prune_market(m, 10**9)
+        self.assertEqual(list(m["brk_units"]), ["u-new"])
+
     def test_first_run_backfills_only_the_newest_500(self):
         ledger = self.fixtures()
         with mock.patch.object(ingest, "fetch", ledger):

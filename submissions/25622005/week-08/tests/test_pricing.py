@@ -163,6 +163,10 @@ class Warranty(unittest.TestCase):
     def test_only_on_request_for_a_and_b_goods(self):
         p = pol()
         self.assertEqual(pricing.warranty_terms(goods(grade="A"), True, CTX, p, NOW), {"hours": 6, "price_mult": 1.15})
+        bq = lambda upper: dict(CTX, break_q={"q": upper / 2, "upper": upper, "n": 20, "level": "sku"})
+        self.assertEqual(pricing.warranty_terms(goods(grade="A"), True, bq(0.04), p, NOW)["price_mult"], 1.06)   # 0.04 x 1.5
+        self.assertEqual(pricing.warranty_terms(goods(grade="A"), True, bq(0.20), p, NOW)["price_mult"], 1.15)   # capped
+        self.assertEqual(pricing.warranty_terms(goods(grade="A"), True, bq(0.005), p, NOW)["price_mult"], 1.02)  # the floor
         self.assertEqual(pricing.warranty_terms(goods(grade="B"), 3, CTX, p, NOW)["hours"], 3)
         self.assertEqual(pricing.warranty_terms(goods(grade="B"), 12, CTX, p, NOW)["hours"], 6)
         self.assertIsNone(pricing.warranty_terms(goods(grade="C"), True, CTX, p, NOW))

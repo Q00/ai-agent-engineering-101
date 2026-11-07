@@ -44,7 +44,9 @@ CLEAR_KEEP_H = COST_KEEP_H = 24                              # paid/list and our
 SUPPLY_BUCKET_S = 300                                        # market supply units in 5 min buckets, kept 1 h
 P_CLEAR_MIN_N = 20                                           # fewer settles of a kind in 6 h: p_clear None
 PB_KEEP_H = 24                                               # price book: each shop's settled paid/list, by SKU and
-PB_SKU_KEEP, PB_CAT_KEEP = 4, 8                              # by category leaf, the newest few sales kept 24 h
+PB_SKU_KEEP, PB_CAT_KEEP = 4, 8
+GRADES = ("A", "B", "C")
+BRK_MIN_N = 5                                                # a SKU x grade breakage row needs this many sales to render                              # by category leaf, the newest few sales kept 24 h
 SEQ_KEEP = 3                                                 # newest settle seqs per SKU: the refs a forum report cites
 STATE_V = 1                                                  # layout of cursor.json's summary_state
 IDS_KEEP_S = 2 * 3600                                        # dedupe horizon for event ids (see fold)
@@ -233,6 +235,10 @@ def ledger_rows(row, catalog, market, me, our_ledgers):
             if (catalog.get(sku) or {}).get("kind") == "goods":
                 g = market.setdefault("cat_goods", {}).setdefault(leaf, [0, 0])
                 g[0] += 1
+                unit, grade = d.get("unit"), d.get("grade")
+                if isinstance(unit, str) and grade in GRADES:        # the breakage join: a broken row names the unit
+                    market.setdefault("brk_units", {})[unit] = [sku, leaf, grade, int(ts)]
+                    _brk_add(market, sku, leaf, grade, 0)
             if d.get("buyer"):
                 bc = market.setdefault("buyer_cats", {}).setdefault(d["buyer"], {})
                 bc[leaf] = bc.get(leaf, 0) + 1
@@ -244,6 +250,9 @@ def ledger_rows(row, catalog, market, me, our_ledgers):
             return [{**base, "kind": "purchase", "sku": sku, "category": leaf, "shop": shop, **fields}]
         return []
     if kind == "broken":
+        bu = (market.get("brk_units") or {}).get(d.get("unit")) if isinstance(d.get("unit"), str) else None
+        if isinstance(bu, list) and len(bu) == 4:
+            _brk_add(market, bu[0], bu[1], bu[2], 1)
         if leaf and (catalog.get(sku) or {}).get("kind") == "goods":
             g = market.setdefault("cat_goods", {}).setdefault(leaf, [0, 0])
             g[1] += 1
@@ -337,8 +346,42 @@ def _cut(groups, first):
             del groups[key]
 
 
+def _brk_add(market, sku, leaf, grade, i):
+    """market["brk"] = {"sku": {sku: {grade: [sold, broken]}}, "cat": {leaf: {grade: [..]}}, "grade": {grade: [..]}}:
+    the market's goods sales (i = 0) and breakages within 6 h of the sale (i = 1), joined by unit (brk_units)."""
+    b = market.setdefault("brk", {})
+    for level, key in (("sku", sku), ("cat", leaf)):
+        if key:
+            b.setdefault(level, {}).setdefault(key, {}).setdefault(grade, [0, 0])[i] += 1
+    b.setdefault("grade", {}).setdefault(grade, [0, 0])[i] += 1
+
+
+def _brk_cell(nk):
+    n, k = nk
+    return {"n": n, "k": k, "q": round(k / n, 4), "upper": _wilson_upper(min(k, n), n)}
+
+
+def render_breakage(b):
+    """{"grade": {grade: {n, k, q, upper}}, "cat": {leaf: {grade: ...}}, "sku": {sku: {grade: ...}}} (SKU rows with
+    at least BRK_MIN_N sales); q = broken / sold, upper its one-sided 95% Wilson bound."""
+    b = b if isinstance(b, dict) else {}
+    ok = lambda v: isinstance(v, list) and len(v) == 2 and v[0] > 0
+    out = {"grade": {g: _brk_cell(v) for g, v in (b.get("grade") or {}).items() if ok(v)}, "cat": {}, "sku": {}}
+    for level, min_n in (("cat", 1), ("sku", BRK_MIN_N)):
+        for key, grades in (b.get(level) or {}).items():
+            rows = {g: _brk_cell(v) for g, v in (grades or {}).items() if ok(v) and v[0] >= min_n}
+            if rows:
+                out[level][key] = rows
+    return out
+
+
 def prune_market(market, now):
     hour = int(now // 3600)
+    units = market.get("brk_units")
+    if isinstance(units, dict):                             # a sold unit can break for BREAK_WINDOW_S
+        cut = now - BREAK_WINDOW_S
+        for u in [u for u, v in units.items() if not (isinstance(v, list) and len(v) == 4 and v[3] >= cut)]:
+            del units[u]
     for name, keep in (("cat_hour", KEEP_HOURS), ("sku_hour", KEEP_HOURS), ("clear_hour", CLEAR_KEEP_H),
                        ("own_cost", COST_KEEP_H)):
         _cut(market.get(name), hour - keep)
@@ -691,7 +734,8 @@ def render_market(cursor, now):
     seqs = {k: [x for x in v if type(x) is int][-SEQ_KEEP:] for k, v in (m.get("sku_seqs") or {}).items()
             if isinstance(v, list) and k in rate}
     return {"since": since, "sku_rate": rate, "sku_settles_48h": settles_48h, "supply_1h": supply,
-            "p_clear": p_clear, "c_kind": c_kind, "price_book": book, "sku_seqs": seqs}
+            "p_clear": p_clear, "c_kind": c_kind, "price_book": book, "sku_seqs": seqs,
+            "breakage": render_breakage(m.get("brk"))}
 
 
 def build_summary(events, cursor, catalog, demand, window_h, now):

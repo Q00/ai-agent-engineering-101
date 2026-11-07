@@ -43,6 +43,8 @@ FREE_TOP = 8
 STOCKOUT_TOP = 6            # big-ticket SKUs that sell and are (nearly) sold out
 SLOW_TOP = 5                # big-ticket SKUs whose units sit
 SLOW_COVER_H = 48           # held / our daily rate above this many hours is a slow line
+BRK_MIN_N = 5               # breakage rows with fewer sales are not rated (memory/query.BRK_MIN_N)
+BRK_TOP = 5
 C_FALLBACK = {"food": 0.51, "goods": 0.61}
 # plan 11-06 section 3(d): grow stock only while these hold
 EXPAND = {"turnover_day": 1.5, "unsold_goods_share": 0.20, "spoilage_share": 0.01, "balance": 10_000_000}
@@ -538,6 +540,7 @@ def _economics(tables, own, pol, market, catalog, now):
                     "our_floor_list": round(max(fl, fcm * (c or C_FALLBACK[k])), 3) if fl is not None and fcm else None}
     cond = {"turnover_day": turnover, "unsold_goods_share": unsold_share, "spoilage_share": spoil, "balance": balance}
     capital = _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, cogs, _num(day.get("rev")))
+    breakage = _breakage(own, units, catalog)
     stockouts = _stockouts(big, rows, o24, day_h, _rows(own.get("acp")), catalog, bmax)
     ok = {k: (v >= EXPAND[k] if k in ("turnover_day", "balance") else v <= EXPAND[k] if k == "unsold_goods_share"
               else v < EXPAND[k]) if v is not None else None for k, v in cond.items()}
@@ -550,7 +553,39 @@ def _economics(tables, own, pol, market, catalog, now):
                            "of_budget": round(cost(big) / budget, 3) if budget else None, "share_key": share},
             "surge_free_left": {_name(s): v for s, v in left[:FREE_TOP]},
             "kinds": kinds, "expand": cond, "expand_ok": ok, "expand_all_ok": all(v is True for v in ok.values()),
-            "capital": capital, "stockouts": stockouts}
+            "capital": capital, "stockouts": stockouts, "breakage": breakage}
+
+
+def _breakage(own, units, catalog):
+    """The market's goods breakage per grade (memory: market.breakage, broken within 6 h / sold, joined by unit)
+    and the risk in our shelf: held goods units by SKU x grade with the table's upper bound (SKU row, else
+    category, else grade), the top BRK_TOP by held x upper, and the expected breaks of the shelf."""
+    b = _dict(_dict(own.get("summary")).get("market_breakage"))
+    cell = lambda v: {k: _num(_dict(v).get(k)) for k in ("n", "k", "q", "upper")}
+    grade = {g: cell(v) for g, v in _dict(b.get("grade")).items() if isinstance(v, dict)}
+
+    def look(sku, g):
+        c = catalog.get(sku) if isinstance(sku, str) else None
+        leaf = str(c[1]).split(">")[-1] if isinstance(c, list) and len(c) > 1 and c[1] else None
+        for level, key in (("sku", sku), ("cat", leaf), ("grade", None)):
+            t = _dict(b.get(level))
+            row = _dict(t.get(g)) if key is None else _dict(_dict(t.get(key)).get(g))
+            if (_num(row.get("n")) or 0) >= BRK_MIN_N and _num(row.get("upper")) is not None:
+                return row, level
+        return None, None
+
+    held = Counter((u.get("sku"), u.get("grade")) for u in units if u.get("kind") == "goods" and u.get("grade") in ("A", "B", "C"))
+    rows, expected = [], 0.0
+    for (sku, g), n in held.items():
+        row, level = look(sku, g)
+        if row is None:
+            continue
+        expected += n * (_num(row.get("q")) or 0)
+        rows.append({"sku": _name(sku), "grade": g, "held": n, "q": _num(row.get("q")), "upper": _num(row.get("upper")),
+                     "n": _num(row.get("n")), "level": level})
+    rows.sort(key=lambda r: -(r["held"] * (r["upper"] or 0)))
+    return {"grade": grade, "held_risk": rows[:BRK_TOP], "held_expected_breaks": round(expected, 1),
+            "held_goods_rated": sum(r["held"] for r in rows), "held_goods": sum(held.values())}
 
 
 def _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, cogs, rev):

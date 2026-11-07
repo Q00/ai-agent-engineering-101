@@ -100,8 +100,13 @@ def q_prior(pol):
     return max(0.0, 1 - b["cap_goods_no_warranty"] - b["min_surplus_list"])
 
 
-def goods_q(summary, leaf, pol):
-    """(q for expected surplus, q_upper for the cap or None while there are too few observations)."""
+def goods_q(summary, leaf, pol, sku=None, grade=None):
+    """(q for expected surplus, q_upper for the cap or None while there are too few observations). With a grade,
+    the market's breakage table for the SKU x grade (query.break_q: SKU, then category, then grade) comes first."""
+    if grade is not None:
+        bq = query.break_q(summary, sku, grade, leaf)
+        if bq:
+            return bq["q"], bq["upper"]
     q = query.category_stats(summary, leaf).get("q") or {}
     if q.get("n", 0) >= Q_MIN_N and q.get("upper") is not None:
         return q["upper"], q["upper"]
@@ -188,9 +193,10 @@ def candidates(order, shops, catalog, summary, pol, asks=None):
             kept = expected_surplus(V, p_est, k, qk, wh) / V
             pr = p_reach(c, V) if ask_est is None else p_price(ask_est, c_est, V)
             score = kept * pc * pr
+            q_grade = {} if k == "food" else {g: r for g in ("A", "B", "C") if (r := query.break_q(summary, sku, g, leaf))}
             cand = {"shop": url, "shop_name": shop.get("name"), "sku": sku,
                     "name": offer.get("name") or catalog[sku].get("name") or sku, "V": V, "kind": k,
-                    "cap": c, "q": q, "q_upper": q_upper, "surplus_at_cap": round(surplus),
+                    "cap": c, "q": q, "q_upper": q_upper, "q_grade": q_grade, "surplus_at_cap": round(surplus),
                     "ask_est": ask_est, "price_src": "ledger" if settled else "ask" if known else None,
                     "kept": round(kept, 4),
                     "p_checkout": round(pc, 4), "p_reach": round(pr, 4), "score": round(score, 4),

@@ -1,4 +1,5 @@
 """Buyer rules as pure functions: caps, surplus, chance of closing, candidates, accept, rating."""
+import copy
 import json
 import os
 import re
@@ -74,6 +75,19 @@ class CapTests(unittest.TestCase):
         bad = bp.p_success({"attempts": 10, "paid": 1}, 77500, 70000, 100000)
         self.assertEqual((bad["p_price"], bad["p_checkout"], bad["p"]), (0.5, 0.5, 0.25))
         self.assertEqual(bp.p_success({}, 90000, 70000, 100000)["p"], 0.0)
+
+
+class BreakageTests(unittest.TestCase):
+    SUMMARY = {"market": {"breakage": {"sku": {"G1": {"C": {"n": 10, "k": 4, "q": 0.4, "upper": 0.6}}},
+                                       "cat": {"침대": {"B": {"n": 8, "k": 1, "q": 0.125, "upper": 0.3}}},
+                                       "grade": {"A": {"n": 100, "k": 2, "q": 0.02, "upper": 0.05}}}}}
+
+    def test_goods_q_prefers_the_sku_grade_row_then_category_then_grade(self):
+        p = copy.deepcopy(policy.DEFAULTS)
+        self.assertEqual(bp.goods_q(self.SUMMARY, "침대", p, "G1", "C"), (0.4, 0.6))
+        self.assertEqual(bp.goods_q(self.SUMMARY, "침대", p, "G1", "B"), (0.125, 0.3))
+        self.assertEqual(bp.goods_q(self.SUMMARY, "침대", p, "G1", "A"), (0.02, 0.05))
+        self.assertEqual(bp.goods_q(self.SUMMARY, "침대", p, "G1", None), (bp.q_prior(p), None))   # no grade yet: the category q
 
 
 class CandidateTests(unittest.TestCase):

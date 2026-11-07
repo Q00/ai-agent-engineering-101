@@ -89,6 +89,12 @@ Supply and depth:
   the order: stock.inventory_cap_share and stock.big_ticket_share down, seller.goods_stale_days down and
   seller.stale_floor_cost_mult below 1 (stale goods then floor at cost x that: a clearance), stock.max_hold down,
   and the end-of-round hours (stock.clear_cost_h, clear_70_h, clear_any_h, taper_h) up to what the valuation says.
+- Warranty (D5): the 6 h warranty's price multiplier is 1 + clamp(q_upper x seller.warranty_q_mult,
+  seller.warranty_premium_floor, seller.warranty_premium), q_upper the market's breakage upper bound for the unit's
+  SKU x grade (broken within 6 h / sold, joined by unit in the public ledger; economics.breakage: the grade table
+  and held_risk, our shelf's riskiest lines), so a sturdy sofa is warranted cheaply and a fragile line dearly;
+  without data the premium is seller.warranty_premium alone. The buyer prices the same table into its goods cap
+  (1 - q_upper - min_surplus_list) and expected surplus, re-capping when the shop's quote names the grade.
 - Surge: the first market.surge_free units of a SKU that the whole market (us included) buys in a rolling hour
   cost the plain price, each further unit adds market.surge_per_unit to the cost factor, up to market.surge_max
   (these three follow /api/supply-prices automatically, not you). A SKU is bought only while its factor is at most

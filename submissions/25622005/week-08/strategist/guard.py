@@ -33,6 +33,8 @@ TUNABLE = {
     "seller.floor_list": (0.40, 0.70, 0.05),       # the market clears goods at 0.71-0.78 of list
     "seller.floor_cost_mult": (1.00, 1.15, 0.05),
     "seller.warranty_premium": (0.05, 0.30, 0.05),
+    "seller.warranty_premium_floor": (0.0, 0.10, 0.01),   # breakage-priced warranty: the floor of the premium
+    "seller.warranty_q_mult": (1.0, 3.0, 0.25),           # safety on the measured breakage upper bound
     "seller.warranty_cap_6h": (100000, 20000000, 1000000),
     "seller.food_clear_uwh_factor": (1.0, 4.0, 0.5),
     "seller.goods_stale_days": (2, 10, 1),

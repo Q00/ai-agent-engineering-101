@@ -309,6 +309,7 @@ def _summary(s):
     stars = [x for x in seller.get("stars") or [] if isinstance(x, (int, float)) and not isinstance(x, bool)]
     return {"built_at": s.get("built_at"),
             "market_categories": {k: {"demand": v.get("demand"), "supply": v.get("supply")} for k, v in top},
+            "market_breakage": market.get("breakage") if isinstance(market.get("breakage"), dict) else {},
             "seller": {"sold_24h": seller.get("sold_24h"), "last_sale_ts": seller.get("last_sale_ts"),
                        "l3": seller.get("l3"), "regular_cats": list(seller.get("regular_cats") or [])[:10],
                        "stars_n": len(stars), "stars_mean": round(sum(stars) / len(stars), 2) if stars else None}}

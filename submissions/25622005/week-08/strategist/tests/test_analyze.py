@@ -530,6 +530,28 @@ class EconomicsMixTest(unittest.TestCase):
                                           "balance": True})
         self.assertFalse(e["expand_all_ok"])
 
+    def test_breakage_in_the_brief(self):
+        o = own()
+        o["kit"] = {"supply_bought": 48, "supply_units": 480}
+        o["summary"] = {"market_breakage": {"grade": {"A": {"n": 100, "k": 2, "q": 0.02, "upper": 0.05}},
+                                            "cat": {"침대": {"B": {"n": 8, "k": 2, "q": 0.25, "upper": 0.5}}},
+                                            "sku": {"GBIG": {"A": {"n": 20, "k": 4, "q": 0.2, "upper": 0.35}}}}}
+        o["inventory"] = {"balance": 20_000_000, "units": [
+            {"unit": "b1", "sku": "GBIG", "kind": "goods", "grade": "A", "cost": 300000, "supplied_at": NOW - 3600},
+            {"unit": "b2", "sku": "GBIG", "kind": "goods", "grade": "A", "cost": 300000, "supplied_at": NOW - 3600},
+            {"unit": "b3", "sku": "GBIG", "kind": "goods", "grade": "B", "cost": 300000, "supplied_at": NOW - 3600},
+            {"unit": "s1", "sku": "GSM", "kind": "goods", "grade": "C", "cost": 400000, "supplied_at": NOW - 3600},
+            {"unit": "f1", "sku": "GF", "kind": "food", "grade": "A", "cost": 0, "supplied_at": NOW - 600}]}
+        r = raw()
+        r["catalog"] = self.CAT
+        tables = {"covered_h": 6, "h1": 1, "h6": 6, "sku": {}, "p_clear": {"food": {}, "goods": {}}, "c_kind": {},
+                  "day": {"cogs": 0, "rev": 0, "exp": 0, "o": {}, "h": 24}}
+        b = analyze.brief(r, o, None, self.POL, NOW, tables=tables, market={"facts": {}})["economics"]["breakage"]
+        self.assertEqual(b["grade"], {"A": {"n": 100, "k": 2, "q": 0.02, "upper": 0.05}})
+        self.assertEqual(b["held_risk"], [{"sku": "GBIG", "grade": "A", "held": 2, "q": 0.2, "upper": 0.35, "n": 20, "level": "sku"},
+                                          {"sku": "GBIG", "grade": "B", "held": 1, "q": 0.25, "upper": 0.5, "n": 8, "level": "cat"}])
+        self.assertEqual((b["held_expected_breaks"], b["held_goods_rated"], b["held_goods"]), (0.7, 3, 4))   # 2 x 0.2 + 0.25; GSM C: no row
+
     def test_capital_posture(self):
         self.MARKET = {"facts": {"supply_every_min": 20, "storage_pct_day": 1.0, "book_counts_stock_at_cost": True},
                        "supply_prices": {"free": 50}, "surge_units": {}}

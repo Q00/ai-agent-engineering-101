@@ -211,6 +211,11 @@ def negotiate(shop_url, cand, order, deadline, pol, client=None, ver=None):
             data = quote_data(task)
             if data.get("unit"):
                 r["unit"] = data["unit"]
+            g = data.get("grade")                       # the breakage of this grade re-caps the deal (D6)
+            if kind != "food" and isinstance(g, str) and g in (cand.get("q_grade") or {}) and r.get("grade") != g:
+                r["grade"], bq = g, cand["q_grade"][g]
+                cand["q"], cand["q_upper"] = bq["q"], bq["upper"]
+                r["cap"] = bp.cap(V, kind, r["warranty_h"], cand["q_upper"], budget, pol)
             w = _whole(data.get("warranty_hours"))
             if kind != "food" and w and w > r["warranty_h"]:   # a warranty offer raises the cap (D6)
                 r["warranty_h"] = w

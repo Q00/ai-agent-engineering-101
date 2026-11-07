@@ -79,6 +79,24 @@ def _market(summary, key):
     return v if isinstance(v, dict) else None
 
 
+BRK_MIN_N = 5
+
+
+def break_q(summary, sku, grade, leaf=None, min_n=BRK_MIN_N):
+    """The market's goods breakage for a unit as {"q", "upper", "n", "level"}: its SKU x grade row with at least
+    min_n sales, else its category x grade, else the grade alone; None without a grade or enough data."""
+    b = _market(summary, "breakage")
+    if b is None or grade not in ("A", "B", "C"):
+        return None
+    for level, key in (("sku", sku), ("cat", _leaf(leaf) if leaf else None), ("grade", None)):
+        t = _d(b.get(level))
+        row = _d(t.get(grade)) if key is None else _d(_d(t.get(key)).get(grade))
+        n, upper = row.get("n"), _num(row.get("upper"))
+        if isinstance(n, int) and n >= min_n and upper is not None:
+            return {"q": float(_num(row.get("q")) or 0.0), "upper": upper, "n": n, "level": level}
+    return None
+
+
 def market_rate(summary, sku):
     """Settles per hour of one SKU across all shops over the last 6 h; 0.0 when none, None without data."""
     r = _market(summary, "sku_rate")
