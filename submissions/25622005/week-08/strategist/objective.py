@@ -4,10 +4,13 @@ Saved (the market's rule, checked each run as the presence fact saved_is_kept_sh
 sum over deals of surplus / list, divided by deals + 100: a mean share kept per deal. A deal that keeps less than
 the current mean lowers it, so buyer.min_kept (the kept floor every buyer cap respects, tools/buyer_policy.py)
 should sit above the board's saved. This module reads our saved and the saved of the ASPIRE_RANK-th buyer from
-the board, sets the target max(ours, theirs) + MARGIN, and moves buyer.min_kept toward it one guard step a run,
-raising only while the buyer's conversion (window orders -> deals; the board's cumulative one under MIN_ORDERS)
-is at least CONV_RAISE and lowering a step (never under the target) when it falls under CONV_LOWER: deals weigh
-0.1 of buyer ALL and saved 0.5, so a few lost deals are worth a higher mean. The rows carry source "objective";
+the board, sets the target max(ours, theirs) + MARGIN, or the share kept per deal (1 - paid) of the ASPIRE_RANK-th
+best payer among buyers with PEER_MIN_DEALS deals when that is higher (a kept share proven at volume: saved is a
+mean over the whole round and understates what the best buyers keep now), and moves buyer.min_kept toward it one
+guard step a run, raising only while the buyer's conversion (window orders -> deals; the board's cumulative one
+under MIN_ORDERS) is at least CONV_RAISE and lowering a step (never under the target) when it falls under
+CONV_LOWER: deals weigh 0.1 of buyer ALL and saved 0.5, and the deals still to come outnumber the history, so
+lost deals are worth a higher mean. The rows carry source "objective";
 guard.py applies them within the key's bounds without cooldown or max_changes. When the Saved sentence is not the
 one this layer was built on (the fact is None), it proposes nothing and alerts the model, which then holds the key.
 """
@@ -16,9 +19,11 @@ import math
 KEY = "buyer.min_kept"
 RULE_FACT = "saved_is_kept_share_over_deals_plus_100"
 MARGIN = 0.02               # target = max(our saved, the aspiration) + this
-ASPIRE_RANK = 10            # the saved of this rank among ranked buyers (deals > 0, not house) is the aspiration
-CONV_RAISE = 0.45           # window conversion at or above: a raise is allowed
-CONV_LOWER = 0.30           # under: one step down (never under the target)
+ASPIRE_RANK = 3             # the saved of this rank among ranked buyers (deals > 0, not house) is the aspiration,
+                            # and the kept share of this rank among the volume peers (peer_kept)
+PEER_MIN_DEALS = 1000       # a peer's kept share counts from this many deals (strategist/analyze.PEER_MIN_DEALS)
+CONV_RAISE = 0.30           # window conversion at or above: a raise is allowed
+CONV_LOWER = 0.20           # under: one step down (never under the target)
 MIN_ORDERS = 20             # window orders for the window conversion; fewer: the board's cumulative one
 GRID = 0.01                 # the target is rounded up to this
 
@@ -45,6 +50,24 @@ def aspiration(buyers, me, rank=ASPIRE_RANK):
     return vals[rank - 1] if len(vals) >= rank else None
 
 
+def _ours(r, me):
+    return r.get("name") == me or _d(r.get("owner")).get("login") == me
+
+
+def peer_kept(buyers, me, rank=ASPIRE_RANK, min_deals=PEER_MIN_DEALS):
+    """The share of list kept per deal (1 - the board's paid) of the rank-th best payer among the other buyers
+    with min_deals deals (house rows left out), or None under rank such buyers."""
+    vals = []
+    for r in buyers if isinstance(buyers, list) else []:
+        if not isinstance(r, dict) or r.get("house") or _ours(r, me) or (_num(r.get("deals")) or 0) < min_deals:
+            continue
+        pd = _num(r.get("paid"))
+        if pd is not None:
+            vals.append(round(1 - pd, 4))
+    vals.sort(reverse=True)
+    return vals[rank - 1] if len(vals) >= rank else None
+
+
 def conversion(brief):
     """(conversion, source): the window's buyer_log orders -> deals over MIN_ORDERS, else the board's."""
     bl = _d(_d(brief).get("buyer_log"))
@@ -64,30 +87,32 @@ def status(brief, buyers, pol, facts, me):
     lo, hi, step = guard.bounds(KEY, pol)
     cur = guard.value(pol, KEY)
     conv, src = conversion(brief)
-    asp = aspiration(buyers, me)
-    out = {"saved": saved, "aspire": asp, "target": None, "conv": conv, "conv_src": src, "current": cur,
-           "lo": lo, "hi": hi, "step": step, "action": "hold", "why": ""}
+    asp, pk = aspiration(buyers, me), peer_kept(buyers, me)
+    out = {"saved": saved, "aspire": asp, "peer_kept": pk, "target": None, "conv": conv, "conv_src": src,
+           "current": cur, "lo": lo, "hi": hi, "step": step, "action": "hold", "why": ""}
     if _d(facts).get(RULE_FACT) is not True:
         out.update(action="paused", why="the market's Saved sentence is not the one score_twin was built on")
         return out
     if saved is None or not isinstance(cur, (int, float)):
         out.update(why="no saved on the board or no current value")
         return out
-    base = max(saved, asp if asp is not None else saved)
-    target = min(max(math.ceil((base + MARGIN) / GRID - 1e-9) * GRID, lo), hi)
+    base = max(saved, asp if asp is not None else saved) + MARGIN
+    if pk is not None:
+        base = max(base, pk)
+    target = min(max(math.ceil(base / GRID - 1e-9) * GRID, lo), hi)
     out["target"] = round(target, 4)
+    basis = f"saved {saved}, rank-{ASPIRE_RANK} saved {asp}, rank-{ASPIRE_RANK} peer kept {pk}"
     if cur < target - 1e-9:
         if conv is None or conv >= CONV_RAISE:
             out.update(action="raise", value=round(min(cur + step, target), 4),
-                       why=f"min_kept {cur} under target {out['target']} (saved {saved}, rank-{ASPIRE_RANK} saved {asp}), "
-                           f"conversion {conv} ({src})")
+                       why=f"min_kept {cur} under target {out['target']} ({basis}), conversion {conv} ({src})")
         else:
             out["why"] = f"under target {out['target']} but conversion {conv} ({src}) under {CONV_RAISE}: held"
     elif cur > target + step - 1e-9 and conv is not None and conv < CONV_LOWER:
         out.update(action="lower", value=round(max(cur - step, target), 4),
                    why=f"conversion {conv} ({src}) under {CONV_LOWER} with min_kept {cur} a step over target {out['target']}")
     else:
-        out["why"] = f"min_kept {cur} at target {out['target']} (saved {saved}, rank-{ASPIRE_RANK} saved {asp})"
+        out["why"] = f"min_kept {cur} at target {out['target']} ({basis})"
     return out
 
 

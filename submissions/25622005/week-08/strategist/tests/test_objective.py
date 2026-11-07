@@ -36,7 +36,7 @@ def pol(min_kept=0.28):
 class AspirationTest(unittest.TestCase):
     def test_rank_among_ranked_buyers_house_and_idle_left_out(self):
         rows = buyers(*[round(0.40 - 0.01 * i, 2) for i in range(12)])   # 0.40, 0.39, ... 0.29
-        self.assertEqual(objective.aspiration(rows, ME), 0.31)         # rank 10
+        self.assertEqual(objective.aspiration(rows, ME), 0.38)         # rank 3
         self.assertIsNone(objective.aspiration(buyers(0.3, 0.2), ME))
         self.assertIsNone(objective.aspiration(None, ME))
 
@@ -49,7 +49,7 @@ class AspirationTest(unittest.TestCase):
 class RowsTest(unittest.TestCase):
     def test_raises_one_step_toward_the_aspiration_plus_margin(self):
         rows, alerts, st = objective.rows(brief(), buyers(*[round(0.40 - 0.01 * i, 2) for i in range(12)]), pol(0.28), FACTS, ME)
-        self.assertEqual(st["target"], 0.33)                           # rank-10 saved 0.31 + 0.02
+        self.assertEqual(st["target"], 0.40)                           # rank-3 saved 0.38 + 0.02
         self.assertEqual((st["action"], alerts), ("raise", []))
         self.assertEqual([(r["key"], r["value"], r["source"]) for r in rows], [("buyer.min_kept", 0.31, "objective")])
         self.assertIn("score_twin raise", rows[0]["reason"])
@@ -65,12 +65,27 @@ class RowsTest(unittest.TestCase):
         self.assertEqual((rows[0]["value"], st["action"]), (0.32, "raise"))
 
     def test_low_conversion_blocks_a_raise_and_lower_still_lower_lowers_a_step(self):
-        rows, _, st = objective.rows(brief(food=(50, 15), goods=(50, 25)), buyers(0.4, 0.39), pol(0.28), FACTS, ME)
-        self.assertEqual((st["conv"], st["action"], rows), (0.4, "hold", []))
-        rows, _, st = objective.rows(brief(food=(50, 10), goods=(50, 15)), buyers(), pol(0.34), FACTS, ME)   # target 0.27
-        self.assertEqual((st["conv"], st["action"], rows[0]["value"]), (0.25, "lower", 0.31))
-        rows, _, st = objective.rows(brief(food=(50, 10), goods=(50, 15)), buyers(), pol(0.29), FACTS, ME)   # within a step of the target
+        rows, _, st = objective.rows(brief(food=(50, 10), goods=(50, 15)), buyers(0.4, 0.39, 0.38), pol(0.28), FACTS, ME)
+        self.assertEqual((st["conv"], st["action"], rows), (0.25, "hold", []))
+        rows, _, st = objective.rows(brief(food=(50, 15), goods=(50, 25)), buyers(0.4, 0.39, 0.38), pol(0.28), FACTS, ME)
+        self.assertEqual((st["conv"], st["action"], rows[0]["value"]), (0.4, "raise", 0.31))   # 0.30 is enough
+        rows, _, st = objective.rows(brief(food=(50, 5), goods=(50, 12)), buyers(), pol(0.34), FACTS, ME)   # target 0.27
+        self.assertEqual((st["conv"], st["action"], rows[0]["value"]), (0.17, "lower", 0.31))
+        rows, _, st = objective.rows(brief(food=(50, 5), goods=(50, 12)), buyers(), pol(0.29), FACTS, ME)   # within a step of the target
         self.assertEqual((st["action"], rows), ("hold", []))
+
+    def test_the_volume_peers_kept_share_lifts_the_target(self):
+        rows = buyers(0.3882, 0.3575, 0.3569, 0.3223) + [
+            {"name": "p1", "deals": 1068, "paid": 0.477, "saved": 0.3882}, {"name": "p2", "deals": 6817, "paid": 0.532, "saved": 0.3575},
+            {"name": "p3", "deals": 5970, "paid": 0.561, "saved": 0.3217}, {"name": "p4", "deals": 2255, "paid": 0.583, "saved": 0.3569},
+            {"name": "thin", "deals": 500, "paid": 0.30, "saved": 0.6},
+            {"name": ME, "deals": 7220, "paid": 0.671, "saved": 0.2553}]
+        self.assertEqual(objective.peer_kept(rows, ME), 0.439)                   # 0.523, 0.468, 0.439: not thin, not ours
+        self.assertIsNone(objective.peer_kept(buyers(0.4, 0.3), ME))             # no paid, 100 deals
+        out, _, st = objective.rows(brief(saved=0.2553), rows, pol(0.31), FACTS, ME)
+        self.assertEqual((st["aspire"], st["peer_kept"], st["target"]), (0.3882, 0.439, 0.44))   # over 0.3882 + 0.02
+        self.assertEqual((st["action"], out[0]["value"]), ("raise", 0.34))
+        self.assertIn("peer kept 0.439", out[0]["reason"])
 
     def test_target_stays_inside_the_guard_bounds(self):
         rows, _, st = objective.rows(brief(saved=0.60), buyers(), pol(0.42), FACTS, ME)
