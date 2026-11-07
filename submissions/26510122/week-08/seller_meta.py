@@ -50,6 +50,16 @@ def public_sample():
         rows.extend(batch)
     return rows
 
+
+def public_competition():
+    """Count other shops with live stock, without storing owners or cards."""
+    with urllib.request.urlopen('https://market.ourolabs.ai/api/shops',timeout=4) as response:
+        shops = json.load(response)['shops']
+    if not shops or any(not isinstance(shop.get('stock'), dict) for shop in shops):
+        raise ValueError('unexpected public stock format')
+    return Counter(sku for shop in shops if shop.get('name') != 'outseop-26510122'
+                   for sku,qty in shop['stock'].items() if type(qty) is int and qty>0)
+
 class InventoryUnavailable(ValueError):
     def __init__(self,reason,age=None):
         super().__init__(reason)
@@ -259,7 +269,16 @@ def review(runtime,*,model=decide_json,now=None,public=None,shadow=False):
         data['capital_policy_transition']={'rebased':capital_transition,'current_version':POLICY_VERSION,
             'note':'Rebase observed outcomes after the operator changes the capital policy; do not attribute historical results to the new capacity.'}
         record('meta_snapshot',path=runtime/'logs/seller-meta-events.jsonl',snapshot=data)
-        if not shadow:save(runtime/'state/seller-meta-market.json',{'at':now,'source':'public ledger sample','window':data['market_sample'],'rows':data['market_opportunities']})
+        if not shadow:
+            watch={'at':now,'source':'public ledger sample','window':data['market_sample'],'rows':data['market_opportunities']}
+            if public is None:
+                try:
+                    competition=public_competition()
+                    watch['competition_at']=time.time()
+                    watch['rows']=[{**row,'competing_shops':competition[row['sku']]} for row in watch['rows']]
+                except (OSError,ValueError,KeyError,TypeError,AttributeError):
+                    pass
+            save(runtime/'state/seller-meta-market.json',watch)
         decision=model('seller meta policy reviewer',{
             'instruction':'Review whether the operating policy blocks valuable market opportunities. '
             'Inspect allocation_behavior for repeated near-window targets, omitted proven sellers and '

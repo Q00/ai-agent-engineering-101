@@ -109,6 +109,25 @@ class PortfolioTests(unittest.TestCase):
         self.assertEqual([row['sku'] for row in prompt['replenishment_candidates']], ['s0'])
         self.assertTrue(all(row['cost_ceiling'] <= 300_000 for row in prompt['candidates']))
 
+    def test_inflow_trials_alternate_on_public_volume_and_competition_with_margin(self):
+        now = 50_000
+        watch = Path('state/seller-meta-market.json')
+        watch.parent.mkdir()
+        watch.write_text(json.dumps({'at': now-20, 'competition_at': now-10, 'rows': [
+            {'sku': 's0', 'public_settles': 12, 'sample_mean_paid': 9_500, 'competing_shops': 12},
+            {'sku': 's2', 'public_settles': 6, 'sample_mean_paid': 9_500, 'competing_shops': 2},
+            {'sku': 's4', 'public_settles': 40, 'sample_mean_paid': 1_000, 'competing_shops': 1},
+        ]}))
+        rows = portfolio.candidates(catalog(), inventory(0), [], now, set(), random.Random(1))
+        volume = portfolio.inflow_anchor(rows, [])
+        self.assertEqual((volume['sku'], volume['inflow_trial']['lane']), ('s0', 'market_volume'))
+        rows = portfolio.candidates(catalog(), inventory(0), [], now, {'s0'}, random.Random(1))
+        scarcity = portfolio.inflow_anchor(rows, [volume])
+        self.assertEqual((scarcity['sku'], scarcity['inflow_trial']['lane']), ('s2', 'limited_competition'))
+        self.assertEqual(scarcity['inflow_trial']['quantity'], 1)
+        self.assertFalse(any(row['sku']=='s4' and row.get('inflow_evidence') for row in rows))
+        self.assertIsNone(portfolio.inflow_anchor(rows, [volume, volume, scarcity, scarcity]))
+
     def test_epsilon_draw_is_persistent_not_redrawn_per_poll_or_restart(self):
         model = Mock(side_effect=approve)
         first = self.run_portfolio(model=model)  # seed1 => .134 < .30

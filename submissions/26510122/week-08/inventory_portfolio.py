@@ -29,6 +29,7 @@ from supply_reconciliation import reconcile, pending_quantity, partial_from_clos
 from stock_policy import replenishment_candidates, PROVEN_STOCK, MIDPRICE_MAX
 from capital_policy import (MAX_UNIT_COST, GROWTH_WINDOW_BUDGET, GROWTH_EXPLORATION_BUDGET,
                             operating_policy, target_inventory_cost, WINDOW_MAX_UNITS)
+from seller_warranty import REFUND_SHARE
 
 STATE = Path('state/inventory-portfolio.json')
 EPSILON = .30
@@ -40,9 +41,12 @@ WINDOW_BUDGET = GROWTH_WINDOW_BUDGET
 ROLLING_BUDGET = GROWTH_EXPLORATION_BUDGET
 MAX_MAINTAINED_SKUS = 8
 STOCKOUT_TRIAL_CANDIDATES = 3
-POLICY_VERSION = 23
+POLICY_VERSION = 24
 GROWTH_SPEND_SHARE = .50
 DAY = 86400
+INFLOW_MIN_PUBLIC_DEALS = 5
+INFLOW_MAX_COMPETITORS = 6
+INFLOW_DAILY_PER_LANE = 2
 READY = Path('state/procurement-ready.json')
 PREPARE_LEAD_SECONDS = 240
 MAX_APPROVAL_AGE_SECONDS = 600
@@ -51,6 +55,27 @@ MAX_APPROVAL_AGE_SECONDS = 600
 def live_units(inventory, now):
     return [u for u in inventory.get('units', []) if u.get('grade') in ('A', 'B', 'C')
             and (u.get('expires_at') is None or u['expires_at'] > now)]
+
+
+def inflow_options(rows):
+    eligible = [row for row in rows if row.get('inflow_evidence')]
+    popular = sorted(eligible, key=lambda row: (-row['public_settlements_sample'],row['cost_ceiling'],row['sku']))
+    scarce = [row for row in eligible if type(row['inflow_evidence']['competing_shops']) is int
+              and row['inflow_evidence']['competing_shops'] <= INFLOW_MAX_COMPETITORS]
+    scarce.sort(key=lambda row: (-row['public_settlements_sample']/max(1,row['inflow_evidence']['competing_shops']),
+                                 row['cost_ceiling'],row['sku']))
+    return {'market_volume':popular,'limited_competition':scarce}
+
+
+def inflow_anchor(rows, recent):
+    lanes = inflow_options(rows)
+    counts = Counter((intent.get('inflow_trial') or {}).get('lane') for intent in recent)
+    for lane in sorted(lanes,key=lambda name: counts[name]):
+        if lanes[lane] and counts[lane]<INFLOW_DAILY_PER_LANE:
+            row=lanes[lane][0]
+            row['inflow_trial']={'lane':lane,'quantity':1,**row['inflow_evidence']}
+            return row
+    return None
 
 
 def candidates(catalog, inventory, history, now, excluded, rng, max_cost=MAX_UNIT_COST):
@@ -95,16 +120,28 @@ def candidates(catalog, inventory, history, now, excluded, rng, max_cost=MAX_UNI
             'storage_per_day_at_cost_ceiling': round(ceiling * .01, 2) if kind == 'goods' else 0,
             'signature': product_signature(p)})
     market={}
+    competition_fresh=False
     try:
         watch=json.loads(Path('state/seller-meta-market.json').read_text())
         if 0<=now-watch['at']<=3600:
             market={r['sku']:r for r in watch['rows']}
+            competition_fresh=0<=now-watch.get('competition_at',0)<=3600
     except (OSError,ValueError,KeyError,TypeError):pass
+    surge={r['sku']:r.get('factor',1) for r in inventory.get('surge',[]) if isinstance(r,dict) and r.get('sku')}
     for group in groups.values():
         for row in group:
             signal=market.get(row['sku'],{})
             row['public_settlements_sample']=signal.get('public_settles',0)
             row['public_revenue_sample']=signal.get('public_settles',0)*signal.get('sample_mean_paid',row['list_price'])
+            if row['public_settlements_sample'] >= INFLOW_MIN_PUBLIC_DEALS and row['cost_ceiling'] <= MIDPRICE_MAX:
+                paid=signal.get('sample_mean_paid',row['list_price'])
+                cost=estimate_unit_cost(catalog[row['sku']],surge.get(row['sku'],1))
+                proceeds=paid*(1-REFUND_SHARE if row['kind']=='goods' else 1)
+                if proceeds>cost*1.05:
+                    row['inflow_evidence']={'public_settles':row['public_settlements_sample'],
+                        'sample_mean_paid':paid,'estimated_cost':cost,
+                        'competing_shops':signal.get('competing_shops') if competition_fresh else None,
+                        'caution':'Short public sample and grade/cost estimate. Verify visits and actual sale contribution after arrival.'}
     all_rows = [r for group in groups.values() for r in group]
     missed = unserved_exact_stockouts(history, now)
     stockout_trials = sorted((r for r in all_rows if missed.get(r['sku'], 0) >= 2),
@@ -128,7 +165,8 @@ def candidates(catalog, inventory, history, now, excluded, rng, max_cost=MAX_UNI
                             or r['forum_intent'] or r['public_settlements_sample'] >= 2)),
                           key=lambda r: (-r['confirmed_settlements_12h'], -r['public_revenue_sample'],
                                          -r['observed_requests_12h'], r['sku']))[:6]
-    rows = {r['sku']: r for r in stockout_trials + value_backed + backed + market_backed}
+    inflow = [row for lane in inflow_options(all_rows).values() for row in lane[:3]]
+    rows = {r['sku']: r for r in stockout_trials + inflow + value_backed + backed + market_backed}
     for i in range(max((len(v) for v in keys.values()), default=0)):
         for kind in ('food', 'goods'):
             if i < len(keys[kind]):
@@ -345,11 +383,16 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
     # it may still hold the whole purchase for a concrete risk.
     if not new_slots:
         rows = []
+    projected_categories=Counter(u.get('category') for u in units)
+    for sku,qty in pending_stocks.items():projected_categories[catalog.get(sku,{}).get('category')]+=qty
     novel = [r for r in rows if not r['observed_requests_12h'] and not r['confirmed_settlements_12h'] and not r['forum_intent']]
     anchor_groups = defaultdict(list)
     for row in novel or rows:
         anchor_groups[row['category']].append(row)
-    anchor = rng.choice(anchor_groups[rng.choice(list(anchor_groups))]) if rows else None
+    anchor = (inflow_anchor([r for r in rows if projected_categories[r['category']] < MAX_CATEGORY_STOCK], recent)
+              if operating['phase']=='growth' else None)
+    if anchor is None and rows:
+        anchor = rng.choice(anchor_groups[rng.choice(list(anchor_groups))])
     minimum, new_slots, minimum_categories = basket_limits(rows, anchor, new_slots, exploration_budget) if rows else (0, 0, 0)
     # Replenishment and exploration share one spend/slot approval. The model
     # can choose fewer new items to leave room for an evidenced seller.
@@ -367,8 +410,6 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
         'minimum_new_skus':minimum,'minimum_categories':minimum_categories,
         'instruction':'Follow effective mode and recovery flags. Recovery overrides draw >= epsilon. '
                       'Choose at least the feasible novel floor on buy, or hold for a concrete risk.'}
-    projected_categories=Counter(u.get('category') for u in units)
-    for sku,qty in pending_stocks.items():projected_categories[catalog.get(sku,{}).get('category')]+=qty
     alternatives=comparison_baskets(winners,rows,anchor=anchor['sku'] if anchor else None,
         minimum=minimum,minimum_categories=minimum_categories,slots=slots,units=unit_room,
         budget=budget,novel_budget=exploration_budget,stocks=Counter(u.get('sku') for u in units),
@@ -425,8 +466,8 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
               'minimum_new_skus_if_buy': minimum, 'minimum_categories_if_buy': minimum_categories,
               'target_stocked_variety': MIN_VARIETY, 'risk_capacity': risk,
               'exploration_anchor_sku': anchor['sku'] if anchor else None,
-              'anchor_policy': 'One random category and SKU among candidates without recent evidence '
-                               '(all candidates if none are unknown). If exploring, include it. '
+              'anchor_policy': 'When a feasible inflow trial is tagged, include its one evidenced SKU as the anchor. '
+                               'Otherwise use the randomly selected anchor. If exploring, include it. '
                                'Maintenance-only is allowed only when the exploration contract requires zero new SKUs.',
               'rolling_24h_cost_ceiling_budget': rolling_budget, 'reserved_24h': reserved,
               'operating_policy':operating,'target_inventory_acquisition_cost':target_inventory_cost(inventory,now),
@@ -606,7 +647,8 @@ def _run(inventory, catalog, history, now, model, refresh, rng, path,prepare_onl
     record('portfolio_approval',window=key,planning_at=now,spend_target_krw=spend_target,
         estimated_spend_krw=sum(r['qty']*unit_costs[r['sku']] for r in desired),approved_lines=[
         {k:r.get(k) for k in ('sku','kind','qty','target_stock','cost_ceiling','second_trial','midprice_priority',
-                             'forecast_scenario','coverage_hours','forecast_mean','demand_basis','forum_request_ids','stockout_trial')} for r in desired],
+                             'forecast_scenario','coverage_hours','forecast_mean','demand_basis','forum_request_ids',
+                             'stockout_trial','inflow_trial')} for r in desired],
         model_choice=answer,allocation_review=answer.get('strategy_review'),
         allocation_behavior={'review_required':review_required,
             'offered_proven_skus':sum(not w['second_trial'] for w in winners),
@@ -699,6 +741,7 @@ def _emit_approved(state,path,desired,answer,window,key,operating,now,slots,budg
                                 'second_trial':bool(row.get('second_trial')),
                                 'forum_request_ids':row.get('forum_request_ids',[]),
                                 **({'stockout_trial': row['stockout_trial']} if row.get('stockout_trial') else {}),
+                                **({'inflow_trial': row['inflow_trial']} if row.get('inflow_trial') else {}),
                                 **audit.links(),'intent_id':f"{audit.links()['decision_id']}:{sku}"})
     save(path, state)  # all reservations precede externally executed supply calls
     log_execution(execution,at,execution_supply_lines=room,time_limited_supply_lines=time_slots,
