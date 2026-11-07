@@ -4,6 +4,7 @@ import os
 import sqlite3
 import time
 from pathlib import Path
+from statistics import median
 from market_intel import read_json, WINDOW
 from referral_program import Program
 from shop_copy import paid_post
@@ -61,6 +62,27 @@ def latest_paid_post(intel):
     return None
 
 
+def market_price_post(intel):
+    """Mirror high-rated buyer posts: concise multi-ledger price evidence."""
+    now=time.time();catalog=read_json(intel.root/'catalog.json',{})
+    candidates=intel.db.execute('''SELECT sku,COUNT(*) n FROM trades WHERE ts>?
+        GROUP BY sku HAVING COUNT(*)>=3 ORDER BY n DESC,sku LIMIT 256''',(now-WINDOW,)).fetchall()
+    if not candidates:return None
+    cursor=intel.get('buyer_market_post_cursor',0);candidate=candidates[cursor%len(candidates)]
+    rows=intel.db.execute('''SELECT seq,price,grade,honest FROM trades
+        WHERE sku=? AND ts>? ORDER BY ts DESC''',(candidate['sku'],now-WINDOW)).fetchall()
+    if len(rows)<3:return None
+    prices=sorted(r['price'] for r in rows);counts={g:sum(r['grade']==g for r in rows) for g in ('A','B','C')}
+    refs=[r['seq'] for r in rows[:3]];product=catalog.get(candidate['sku'],{})
+    name=product.get('name',candidate['sku'])[:45];listed=product.get('list_price')
+    ratio=f" · 정가 {listed:,}원의 {round(median(prices)*100/listed)}%" if isinstance(listed,(int,float)) and listed>0 else ''
+    text=(f"[상품 시세] {name} [{candidate['sku']}]\n"
+          f"최근 6시간 공개 원장 {len(rows)}건 · 최저 {prices[0]:,}원 · 중앙 {int(median(prices)):,}원 · 최고 {prices[-1]:,}원{ratio}\n"
+          f"등급 A/B/C {counts['A']}/{counts['B']}/{counts['C']}건 · 확인 가능한 등급 주장 {sum(r['honest'] for r in rows)}건 일치. 근거는 refs.")
+    intel.put('buyer_market_post_cursor',cursor+1)
+    return text,refs
+
+
 def queue_update(intel):
     now=time.time();state=intel.root
     day=int(now//86400)
@@ -82,10 +104,14 @@ def queue_update(intel):
         # Buyer posts are independent purchase evidence, never promotion for our shop.
         research=True
         refs=[];text='';purchase_ledger=None
-        paid=latest_paid_post(intel)
+        post_kind='purchase'
+        digest=market_price_post(intel) if intel.get('posts_today',0)%3==1 else None
+        if digest:
+            text,refs=digest;post_kind='market_price'
+        paid=None if text else latest_paid_post(intel)
         if paid:
             text,purchase_ledger=paid;refs=[purchase_ledger]
-        else:
+        elif not text:
             row=intel.db.execute('SELECT sku,grade,COUNT(*) n,MIN(price) lo,MAX(price) hi,MAX(seq) seq FROM trades WHERE ts>? GROUP BY sku,grade HAVING COUNT(*)>=3 ORDER BY n DESC LIMIT 1',(now-WINDOW,)).fetchone()
             if row:
                 text=(f"[시장 관찰] {row['sku']} {row['grade']}등급: 관측된 최근 6시간 정산 {row['n']}건, "
@@ -107,6 +133,7 @@ def queue_update(intel):
             intel.put('posted_purchase_ledgers',(intel.get('posted_purchase_ledgers',[])+[purchase_ledger])[-6000:])
         intel.decision('buyer_forum',{'research':research,'negative_feedback':negative,
             'buyer_deals':buyer.get('deals'),'refs':refs,'interval':interval,
-            'daily_limit':daily_limit,'post_percentile':round(post_percentile,4)})
+            'daily_limit':daily_limit,'post_percentile':round(post_percentile,4),
+            'post_kind':post_kind})
         return True
     finally:program.close()
