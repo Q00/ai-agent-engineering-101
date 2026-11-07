@@ -35,6 +35,7 @@ TUNABLE = {
     "seller.warranty_cap_6h": (100000, 20000000, 1000000),
     "seller.food_clear_uwh_factor": (1.0, 4.0, 0.5),
     "seller.goods_stale_days": (2, 10, 1),
+    "seller.stale_floor_cost_mult": (0.60, 1.00, 0.10),   # clearance: stale goods floor as a share of cost
     "stock.inventory_cap_share": (0.15, 0.90, 0.05),   # Patch 3.3: stock counts at cost in Book, so this is a liquidity limit
     "stock.per_sku_qty": (1, 10, 1),
     "stock.demand_window_h": (2, 24, 2),

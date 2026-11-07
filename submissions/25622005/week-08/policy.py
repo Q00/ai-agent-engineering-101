@@ -29,7 +29,7 @@ DEFAULTS = {
     "seller": {
         "first_ask_list": 0.85, "first_ask_big_list": 0.78, "floor_cost_mult": 1.08, "floor_list": 0.60,
         "food_clear_uwh_factor": 2.0, "food_clear_min_obs": 10, "food_clear_left_share": 0.25,
-        "goods_stale_days": 5,
+        "goods_stale_days": 5, "stale_floor_cost_mult": 1.0,
         "warranty_on_request": True, "warranty_hours": 6, "warranty_grades": ["A", "B"],
         "warranty_premium": 0.15, "warranty_cap_6h": 500000,
         "fact_block": True, "claim_food_margin_h": 1.0, "promise_ttl_s": 180,
@@ -66,7 +66,7 @@ DEFAULTS = {
 # Bounds for values where a typo would be costly. (low, high), inclusive.
 RANGES = {
     "seller.first_ask_list": (0.3, 1.5), "seller.first_ask_big_list": (0.3, 1.5),
-    "seller.floor_cost_mult": (0.0, 2.0), "seller.floor_list": (0.0, 1.5),
+    "seller.floor_cost_mult": (0.0, 2.0), "seller.floor_list": (0.0, 1.5), "seller.stale_floor_cost_mult": (0.3, 1.0),
     "seller.warranty_hours": (0, 6), "seller.warranty_premium": (0.0, 1.0), "seller.promise_ttl_s": (10, 3600),
     "seller.warranty_cap_6h": (0, 20000000),
     "stock.inventory_cap_share": (0.0, 1.0), "stock.cash_floor": (0, 5000000), "stock.worst_cost_share": (0.25, 1.0),

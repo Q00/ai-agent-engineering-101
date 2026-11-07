@@ -69,7 +69,8 @@ def goods_stale(unit, pol, now):
 
 def floor_detail(unit, ctx, pol, now):
     """(lowest price we accept, rules applied).
-    D3 max(cost x floor_cost_mult, list x floor_list); D4 food near its end -> 1, stale goods -> cost;
+    D3 max(cost x floor_cost_mult, list x floor_list); D4 food near its end -> 1, stale goods -> cost x
+    seller.stale_floor_cost_mult (1.0 = cost; below 1 clears goods that cost more to hold than they earn);
     D14 from T-clear_cost_h cost, from T-clear_70_h cost x 0.7, from T-clear_any_h 1 (the lower one wins)."""
     s, st = pol["seller"], pol["stock"]
     cost, lst = unit.get("cost") or 0, unit.get("list_price") or 0
@@ -77,7 +78,7 @@ def floor_detail(unit, ctx, pol, now):
     if food_clearing(unit, ctx, pol, now):
         price, rules = 1, rules + ["D4-food"]
     elif goods_stale(unit, pol, now):
-        price, rules = cost, rules + ["D4-goods"]
+        price, rules = cost * s["stale_floor_cost_mult"], rules + ["D4-goods"]
     h = hours_to_end(pol, now)
     end = 1 if h <= st["clear_any_h"] else cost * 0.7 if h <= st["clear_70_h"] else cost if h <= st["clear_cost_h"] else None
     if end is not None and end < price:

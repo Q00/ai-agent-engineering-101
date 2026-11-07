@@ -111,6 +111,11 @@ class BelowCost(unittest.TestCase):
 
     def test_stale_goods_floor_drops_to_cost(self):
         self.assertEqual(pricing.floor_detail(goods(cost=50000, age_h=6 * 24), CTX, pol(), NOW), (50000, ["D3", "D4-goods"]))
+
+    def test_stale_goods_clear_below_cost_only_by_stale_floor_cost_mult(self):
+        p = pol(seller__stale_floor_cost_mult=0.8)
+        self.assertEqual(pricing.floor_detail(goods(cost=50000, age_h=6 * 24), CTX, p, NOW), (40000, ["D3", "D4-goods"]))
+        self.assertEqual(pricing.floor_detail(goods(cost=50000, age_h=6), CTX, p, NOW)[1], ["D3"])   # not stale yet
         self.assertEqual(pricing.floor(goods(cost=50000, age_h=4 * 24), CTX, pol(), NOW), 60000)
 
 

@@ -11,7 +11,8 @@ policy:
     food_clear_uwh_factor: 2.0    # D4 food below cost when hours left < factor x observed use_within median and grade C (shelf left < 45%)
     food_clear_min_obs: 10        # D4 below this many observations use food_clear_left_share instead
     food_clear_left_share: 0.25
-    goods_stale_days: 5           # D4 unsold goods: floor = cost; restocked if focus/trend or the market sold it in 48 h
+    goods_stale_days: 5           # D4 unsold goods: floor = cost x stale_floor_cost_mult; restocked if focus/trend or the market sold it in 48 h
+    stale_floor_cost_mult: 1.0    # D4 stale goods floor as a share of cost: 1.0 while Book counts stock at cost; below 1 only when holding costs more than the margin
     warranty_on_request: true     # D5 warranty only when the buyer asks
     warranty_hours: 6
     warranty_grades: [A, B]
@@ -134,7 +135,9 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
   the midpoint between floor and first ask; between floor and midpoint counter once at the
   midpoint; below the floor offer the floor as final.
 - Below cost only for food near the end of its life. Stale goods (`seller.goods_stale_days`) floor
-  at cost. The end-of-round floors start `stock.clear_cost_h`, `stock.clear_70_h` and
+  at cost x `seller.stale_floor_cost_mult` (1.0 while the market counts unsold stock at cost in Book, so
+  holding costs only storage; the strategist lowers it when a rule change makes holding dearer than the
+  margin). The end-of-round floors start `stock.clear_cost_h`, `stock.clear_70_h` and
   `stock.clear_any_h` hours before the end (0 = off); the last two sell below cost and lower Book.
 - Warranty only when asked, only for `seller.warranty_grades`, priced with
   `seller.warranty_premium`, and never in the last `stock.no_warranty_h` hours.
