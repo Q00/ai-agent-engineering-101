@@ -115,7 +115,7 @@ def choose(shops, item, budget, mine, k=1):
         "in one sentence."),
         {"type": "object", "properties": {
             "shops": {"type": "array", "items": {"type": "string", "enum": names}},
-            "reason": {"type": "string"}}, "required": ["shops", "reason"]}, log=log, model=harness.FAST, role="choose")
+            "reason": {"type": "string"}}, "required": ["shops", "reason"]}, log=log, model=harness.CHEAP, role="choose")
     picked = [n for i, n in enumerate(ans["shops"]) if n in names and n not in ans["shops"][:i]][:k]
     return [next(s for s in pool if s["name"] == n) for n in picked] or pool[:1], ans["reason"]
 
