@@ -126,7 +126,7 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
 
     def stock_cap(sku):
         if sku in adaptive:
-            return 1
+            return min(cfg["max_units_per_sku"], adaptive[sku]["cap"])
         if focused:
             return min(cfg["max_units_per_sku"], focused["eligible"][sku]["cap"])
         cap = cfg["max_food_units_per_sku"] if candidates[sku]["kind"] == "food" else cfg["max_units_per_sku"]
@@ -145,7 +145,8 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         return [sku for sku, p in candidates.items()
                 if stage["allow_purchases"] and sku not in paused
                 and held[sku] + buy[sku] < stock_cap(sku)
-                and (buy[sku] < adaptive_credit((adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}))
+                and (buy[sku] < adaptive_credit((adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}),
+                                               capacity=stock_cap(sku))
                      if sku in adaptive else not focused or buy[sku] < focused["eligible"][sku]["remaining_credit"])
                 and p["worst_cost"] <= remaining and exposure.reason(sku, p) is None
                 and windows.get(sku, (True, None))[0]]
@@ -179,11 +180,22 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
         alternative_slots = min(adaptive_rules["max_units_per_run"], slots - len(choices),
                                 max(0, adaptive_rules["low_stock_units"] - len(inv["units"]) - sum(buy.values())))
         priority = {sku: rank for rank, sku in enumerate(adaptive)}
+        food_rules = adaptive_rules.get("food_pilots", {})
+        food_limit = food_rules.get("max_units_per_run", 0) if food_rules.get("enabled") else 0
+        food_bought = 0
         for _ in range(alternative_slots):
-            eligible = [sku for sku in available() if sku in adaptive]
+            eligible = [sku for sku in available() if sku in adaptive
+                        and (candidates[sku]["kind"] != "food" or food_bought < food_limit)]
             if not eligible:
                 break
-            add(min(eligible, key=priority.get), "adaptive_public_demand_pilot")
+            # A bounded low-price food allocation adds categories without
+            # allowing high-ticket ranking to consume every alternative slot.
+            # Food still needs fresh diverse settlements and all cost gates.
+            sku = min(eligible, key=lambda s: (candidates[s]["kind"] != "food", priority[s]))
+            food = candidates[sku]["kind"] == "food"
+            add(sku, "adaptive_food_demand_pilot" if food else
+                "adaptive_proven_replenishment" if stock_cap(sku) > 1 else "adaptive_public_demand_pilot")
+            food_bought += int(food)
     exploration_slots = cfg["exploration_units"] if stage["allow_exploration"] and not focused else 0
     preferred_slots = max(0, slots - exploration_slots) if sales and not focused else 0
     for _ in range(preferred_slots):
@@ -227,8 +239,12 @@ def plan(inv, catalog, demand, memory, attempts, cfg, now, public=None, *, lifec
             "low_stock_units": adaptive_rules["low_stock_units"] if adaptive_rules else None,
             "observed_stock_units": len(inv["units"]), "pool": {
             sku: {**row["evidence"], "remaining_credit": adaptive_credit(
-                (adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}))}
-            for sku, row in adaptive.items()}, "max_units_per_sku": 1},
+                (adaptive_control or {}).get(sku, {"planned_qty": 0, "settled_qty": 0}), capacity=stock_cap(sku))}
+            for sku, row in adaptive.items()},
+            "max_units_per_sku": adaptive_rules.get("proven_max_units_per_sku", 1) if adaptive_rules else 1,
+            "pilot_units_per_sku": 1,
+            "food_max_units_per_run": (adaptive_rules.get("food_pilots", {}).get("max_units_per_run", 0)
+                                       if adaptive_rules and adaptive_rules.get("food_pilots", {}).get("enabled") else 0)},
         "depth_limits": {sku: stock_cap(sku) for sku in buy},
         "horizon_exclusions": dict(Counter(reason for allowed, reason in windows.values() if not allowed)),
         "stock_observations": {"held_cost": sum(m["held_cost"] for m in lifecycle_stats.values()),

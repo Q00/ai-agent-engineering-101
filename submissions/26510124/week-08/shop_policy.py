@@ -90,6 +90,19 @@ def policy_at(root=ROOT):
         surge = adaptive.get("max_surge_factor")
         if type(surge) not in (int, float) or not math.isfinite(surge) or not 1 <= surge <= 1.10:
             raise ValueError("Invalid adaptive surge limit")
+        depth = adaptive.get("proven_max_units_per_sku", 1)
+        if type(depth) is not int or not 1 <= depth <= min(2, stock["max_units_per_sku"]):
+            raise ValueError("Invalid adaptive inventory policy: proven_max_units_per_sku")
+        food = adaptive.get("food_pilots", {"enabled": False})
+        if not isinstance(food, dict) or type(food.get("enabled")) is not bool:
+            raise ValueError("Invalid adaptive food policy")
+        for key, low, high in (("max_candidates", 1, 4), ("max_units_per_run", 1, 2),
+                               ("max_list_price", 1, 100000), ("min_shelf_hours", 72, 8760),
+                               ("minimum_public_sales", 5, 100), ("minimum_public_buyers", 3, 20)):
+            if food["enabled"] or key in food:
+                value = food.get(key)
+                if type(value) is not int or not low <= value <= high:
+                    raise ValueError("Invalid adaptive food policy: " + key)
     focus = stock.get("focused_goods")
     if focus is not None:
         if not isinstance(focus, dict) or type(focus.get("enabled")) is not bool:
