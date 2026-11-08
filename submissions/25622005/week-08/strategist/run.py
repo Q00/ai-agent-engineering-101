@@ -562,7 +562,8 @@ def _guard(cfg, now, pol, rows, state, rec, p_clear=None):
             last_ts[k] = t
     max_changes, cooldown_h = _limits(cfg, rec)
     accepted, rejected = guard.guard(rows, pol, last_ts, now, max_changes, cooldown_h,
-                                     last=_last_change(state, cfg.home), blocked=state.get("blocked"), p_clear=p_clear)
+                                     last=_last_change(state, cfg.home), blocked=state.get("blocked"), p_clear=p_clear,
+                                     patch=bool(rec.get("patch")))
     rec["rejected"] += rejected
     if not accepted and rec["status"] is None:
         rec["status"] = "no change"

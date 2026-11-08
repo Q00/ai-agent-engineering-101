@@ -136,6 +136,20 @@ class Settles(unittest.TestCase):
         acc, _ = run(prop("seller.first_ask_list", 0.88))
         self.assertEqual((acc[0]["new"], acc[0]["clamped"]), (0.88, False))
 
+    def test_a_patch_note_widens_the_step_of_the_stock_posture_keys(self):
+        p = pol(stock__inventory_cap_share=0.90, stock__big_ticket_share=0.90)
+        acc, _ = run(prop("stock.inventory_cap_share", 0.50), prop("stock.big_ticket_share", 0.40),
+                     prop("seller.first_ask_list", 0.60), prop("seller.warranty_cap_6h", 5000000), p=p, max_changes=4)
+        self.assertEqual([(a["key"], a["new"]) for a in acc], [("stock.inventory_cap_share", 0.85), ("stock.big_ticket_share", 0.8),
+                                                                ("seller.first_ask_list", 0.8), ("seller.warranty_cap_6h", 1500000)])
+        acc, _ = run(prop("stock.inventory_cap_share", 0.50), prop("stock.big_ticket_share", 0.40),
+                     prop("seller.first_ask_list", 0.60), prop("seller.warranty_cap_6h", 5000000), p=p, max_changes=4, patch=True)
+        self.assertEqual([(a["key"], a["new"], a["clamped"]) for a in acc],
+                         [("stock.inventory_cap_share", 0.75, True), ("stock.big_ticket_share", 0.6, True),   # 3 steps
+                          ("seller.first_ask_list", 0.7, True),                                               # 3 x 0.05
+                          ("seller.warranty_cap_6h", 1500000, True)])                                         # not a stock posture key
+        self.assertTrue(all(k in g.TUNABLE for k in g.PATCH_WIDE))
+
     def test_int_keys_are_rounded_to_int(self):
         acc, _ = run(prop("stock.per_sku_qty", 2.6), prop("buyer.target_s", 23.4), prop("stock.demand_window_h", 7.9))
         self.assertEqual([a["new"] for a in acc], [3, 23, 8])

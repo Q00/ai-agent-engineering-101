@@ -104,6 +104,12 @@ LINKED = {
 }
 EPS = 1e-9
 SOURCES = ("model", "market-rule", "revert", "bounds", "migration", "linked", "objective")
+# a patch note (run.Config.patch_h) widens these keys' max_step by PATCH_STEP_MULT: the stock posture has to move
+# in hours when a rule makes holding stock dear, and each run at the old values is a day of storage on the shelf
+PATCH_WIDE = ("stock.inventory_cap_share", "stock.big_ticket_share", "stock.max_hold", "stock.trend_share",
+              "seller.goods_stale_days", "seller.stale_floor_cost_mult", "seller.floor_list",
+              "seller.first_ask_list", "seller.first_ask_big_list")
+PATCH_STEP_MULT = 3
 OBJECTIVE_KEYS = ("buyer.min_kept",)    # the only keys a source "objective" row (strategist/objective.py) may set
 LINKED_REPAIR = ("buyer.cap_food",)     # the only key a "linked" row may set (linked_rows)
 
@@ -191,9 +197,10 @@ def _number(v):
         return False
 
 
-def _settle(key, old, requested, pol=None):
-    """(new value, clamped) after range, step and rounding."""
+def _settle(key, old, requested, pol=None, step_mult=1):
+    """(new value, clamped) after range, step (x step_mult) and rounding."""
     lo, hi, step = bounds(key, pol)
+    step *= step_mult
     v = min(max(requested, lo), hi)
     v = min(max(v, old - step), old + step)
     return _round(key, v), v != requested
@@ -252,8 +259,10 @@ def _blocked(blocked, key, old, new, now):
     return b.get("why") or "reverted"
 
 
-def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last=None, blocked=None, p_clear=None):
-    """(accepted, rejected). accepted rows: key, old, new, requested, clamped, reason, source.
+def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last=None, blocked=None, p_clear=None,
+          patch=False):
+    """(accepted, rejected). accepted rows: key, old, new, requested, clamped, reason, source. patch: a patch
+    note is recent (run.py), so a model row on a PATCH_WIDE key may step PATCH_STEP_MULT x its max_step.
     rejected rows: key, requested, why. last: {key: {"new": value the strategist last wrote, ...}}, so a value
     it wrote that is now outside the range may move back in. p_clear: the market's 24 h median paid/list of goods
     (None: unknown, no floor check). A validate failure rejects every accepted row, except that the rows of other
@@ -324,7 +333,8 @@ def guard(proposals, pol, last_change_ts, now, max_changes=3, cooldown_h=3, last
             if not lo <= old <= hi and not mine:    # set by hand outside the tunable range: leave it to the user
                 reject(f"current value {old} outside tunable range [{lo}, {hi}]: manual setting")
                 continue
-            new, clamped = _settle(key, old, requested, pol)   # one of ours outside: clamping moves it back in
+            new, clamped = _settle(key, old, requested, pol,     # one of ours outside: clamping moves it back in
+                                   PATCH_STEP_MULT if patch and key in PATCH_WIDE else 1)
         if new == old:
             reject("no change")
             continue
