@@ -795,10 +795,8 @@ def main() -> int:
               said(t[1]))
         t = run(["I want to buy a 김치", "17000"])
         rec = next((p["data"] for a in t[-1].get("artifacts") or [] for p in a.get("parts") or [] if "data" in p), {})
-        check("a category offer over the ask (at or under the list price) is taken at the offer, the price the buyer pays",
-              meta(t[0]).get("ask") < 17000 and rec.get("price") == 17000, (meta(t[0]).get("ask"), rec))
-        check("the negotiation records a sale at the buyer's offer",
-              any(n.get("at_offer") and n.get("price") == 17000 for n in common.records("negotiations")))
+        check("a category offer over the ask sells at our ask (tried at the offer 11/8 19:55-22:15: 1 of 48 paid)",
+              meta(t[0]).get("ask") < 17000 and rec.get("price") == meta(t[0]).get("ask"), (meta(t[0]).get("ask"), rec))
         t = run([f"I want to buy {CATALOG[KIMCHI]['name']} ({KIMCHI})", "19500"])
         rec = next((p["data"] for a in t[-1].get("artifacts") or [] for p in a.get("parts") or [] if "data" in p), {})
         check("a SKU offer over the ask still sells at our ask", rec.get("price") == meta(t[0]).get("ask") < 19500,
