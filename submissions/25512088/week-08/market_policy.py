@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+from html.parser import HTMLParser
 import json
 from pathlib import Path
+import re
 import time
 
 import httpx
@@ -20,6 +22,36 @@ SOURCES = {
     'board': ('/api/board', 90, 'json'),
     'shops': ('/api/shops', 90, 'json'),
 }
+
+
+class _Text(HTMLParser):
+    """Turn official HTML into text; the result is never executed or prompted raw."""
+    def __init__(self):
+        super().__init__();self.parts=[]
+    def handle_data(self,data):
+        if data.strip():self.parts.append(data.strip())
+
+
+def official_facts(name, raw):
+    """Extract an allowlisted, bounded rule summary without forwarding page prose."""
+    digest=hashlib.sha256(raw).hexdigest()
+    if name!='rules':return {'sha256':digest,'bytes':len(raw)}
+    parser=_Text();parser.feed(raw.decode('utf-8','replace'))
+    text=' '.join(parser.parts);facts={'sha256':digest,'bytes':len(raw)}
+    latest=re.search(r'Patch\s+([0-9]+(?:\.[0-9]+)?)\s+([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})',text)
+    round_match=re.search(r'now playing Round\s+(\d+)',text,re.I)
+    if latest:facts['latest_patch']={'version':latest.group(1),'announced':latest.group(2)}
+    if round_match:facts['round']=int(round_match.group(1))
+    formulas={}
+    for label in ('Shop ALL','Buyer ALL'):
+        match=re.search(re.escape(label)+r'\s*=\s*([^\.]{1,240})\.',text,re.I)
+        if match:
+            # Only metric names, numbers, spaces and arithmetic punctuation survive.
+            value=re.sub(r'[^A-Za-z0-9 .+*%_-]','',match.group(1)).strip()
+            formulas[label.lower().replace(' ','_')]=value[:240]
+    if formulas:facts['score_formulas']=formulas
+    facts['retroactive_round3']='Applies to all of Round 3' in text
+    return facts
 
 
 class Monitor:
@@ -43,9 +75,8 @@ class Monitor:
             if not isinstance(body,(dict,list)):raise ValueError('schema')
             if name=='board' and (not isinstance(body,dict) or 'round' not in body):raise ValueError('board_schema')
         else:
-            body=raw.decode('utf-8')
-            if not body.strip():raise ValueError('empty')
-            body={'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw)}
+            if not raw.strip():raise ValueError('empty')
+            body=official_facts(name,raw)
         previous=self.control.db.execute('SELECT content_hash FROM input_snapshots WHERE source=?',(name,)).fetchone()
         digest=self.control.save_input(name,body,schema_ok=True)
         rank_result=None
