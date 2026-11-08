@@ -37,6 +37,12 @@
     "max_ask_per_cap": 1.18,
     "min_surplus_per_list": 0.1
   },
+  "retry_other_shop": {
+    "enabled": false,
+    "min_order_seconds_left": 180,
+    "max_elapsed_seconds": 150,
+    "note": "One retry at another shop for an order the first shop lost, inside our run, to a quote with short shelf life or an unacceptable grade, or to a refusal at the first message. Refusals by the kit at payment come after our run returns and are never retried. Missing, broken or not true means off."
+  },
   "discount_floor": {
     "floor": 0.3,
     "fault_rates": {

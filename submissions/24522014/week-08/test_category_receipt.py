@@ -158,7 +158,9 @@ class Consequences(unittest.TestCase):
 class MainPassesTheOrderItem(unittest.TestCase):
     def test_wiring(self):
         import inspect
-        self.assertIn('"order_item": order.get("item")', inspect.getsource(market.main))
+        # Since the retry at another shop (11-08), main trades through trade_attempt, once or twice.
+        self.assertIn('"order_item": order.get("item")', inspect.getsource(market.trade_attempt))
+        self.assertIn('trade_attempt(args, order, catalog, pick)', inspect.getsource(market.main))
 
 
 if __name__ == "__main__":

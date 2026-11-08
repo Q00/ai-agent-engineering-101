@@ -18,7 +18,7 @@ from shop_catalog import load_shops
 from r3_policy import buyer_accept, load_policy
 from settlement_memory import payment_outcomes, reconcile
 from market_intel import fresh
-from buyer_support import prepare as prepare_support
+from buyer_support import prepare as prepare_support, retry_settings, should_retry
 import discount_floor
 import model_router
 
@@ -231,7 +231,60 @@ def model_gate(market_dir, order_id, reservation):
     return reservation(market_dir, order_id) if allowed else f"model_breaker_{reason}"
 
 
+def select_attempt(md, shops, memory, catalog, budget, snapshot, order, retry_of=None):
+    """Choose a shop for one attempt; each attempt starts from the order's own accept conditions."""
+    accept_conditions = buyer_accept(order)
+    shop, selected_item, trade_budget, reason, evidence, support_decision = prepare_support(
+        md, shops, memory, catalog, budget, load_policy()["buying"], None, snapshot, order, retry_of=retry_of)
+    selected_evidence = next((e for e in evidence if shop and e["shop"] == shop["name"] and e["sku"] == selected_item), {})
+    if selected_evidence.get("warranty_required"):
+        accept_conditions["warranty_hours"] = selected_evidence["warranty_required"]
+    return {"shop": shop, "item": selected_item, "budget": trade_budget, "reason": reason, "evidence": evidence,
+            "decision": support_decision, "selected": selected_evidence, "accept": accept_conditions}
+
+
+def trade_attempt(args, order, catalog, pick):
+    shop, selected_item, accept_conditions, selected_evidence, support_decision = pick["shop"], pick["item"], pick["accept"], pick["selected"], pick["decision"]
+    trade_options = {"mode": args.mode, "decision_context": selected_evidence,
+                     "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions, "order_item": order.get("item"),
+                     "discount_limit": {"list_price": (catalog.get(selected_item) or {}).get("list_price"), "kind": order.get("kind"), "covered": bool(selected_evidence.get("warranty_required")),
+                                        "grades": accept_conditions.get("grades"), "cap_without_floor": selected_evidence.get("cap_without_floor"), "settings": discount_floor.load()}}
+    relief_token = None
+    if support_decision.get("fast_rules"):
+        from buyer_counter import load_settings
+        from buyer_fast import load_reading
+        from buyer_support import model_reservation
+        import reference_relief
+        relief_token = reference_relief.active(args.order.parent, ROOT)
+        # One model reservation per order: a retry finds it taken and stays on the rules.
+        trade_options.update(fast_rules=True, model_gate=lambda: model_gate(args.order.parent, order["order"], model_reservation),
+                             over_budget_counter=load_settings(), price_reading=load_reading(),
+                             reference_relief={"order_budget": args.budget, "kind": order.get("kind"), "catalog_kind": (catalog.get(selected_item) or {}).get("kind")} if relief_token else None,
+                             catalog_list_price=(catalog.get(selected_item) or {}).get("list_price"))
+    if order.get("kind") == "goods":
+        trade_options["requirements"] = accept_conditions
+    result, record = trade(shop, selected_item, pick["budget"], **trade_options)
+    record["round"] = 3
+    record["order"] = order.get("order")
+    record["order_budget"] = args.budget
+    record["category"] = order.get("category", args.item)
+    record["accept_conditions"] = accept_conditions
+    if record.get("reference_relief"):
+        import reference_relief
+        reference_relief.note_deal(args.order.parent, relief_token, order.get("order"), record["reference_relief"], record)
+    # Certificate and food-use constraints are enforced by the kit before payment.
+    result["accept"] = accept_conditions
+    record["selection_reason"] = pick["reason"]
+    # Observation only: what the public stock said at selection, to compare with what the shop then answered.
+    offers = shop.get("offers") or []
+    record["selected_offer_qty"] = next((o.get("qty") for o in offers if o.get("sku") == selected_item), None)
+    record["selected_shop_offer_units"] = sum(o.get("qty", 0) for o in offers if type(o.get("qty")) in (int, float))
+    remember(args.memory, record)
+    return result, record
+
+
 def main():
+    started = time.monotonic()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--shops", type=Path, required=True)
     parser.add_argument("--item", required=True)
@@ -255,63 +308,44 @@ def main():
         if args.memory == ROOT / ".market/buyer-memory.jsonl":
             args.memory = ROOT / ".market/r3-buyer-memory.jsonl"
         memory = [r for r in load_memory(args.memory) if r.get("round") == 3]
-        accept_conditions = None
-        if r3:
-            if order.get("item") != args.item or order.get("budget") != args.budget:
-                raise ValueError("Order and command arguments disagree")
-            accept_conditions = buyer_accept(order)
-            memory = reconcile(memory, payment_outcomes(args.order.parent / "payments.jsonl"))
-            shops = [dict(s, offers=[o for o in s.get("offers", [])
-                                    if o.get("sku") in acceptable and o.get("qty", 0) > 0]) for s in shops]
-            shops = [s for s in shops if s["offers"]]
-            catalog_path = args.order.parent / "catalog.json"
-            catalog = json.loads(catalog_path.read_text(encoding="utf-8")) if catalog_path.exists() else {}
-            snapshot = fresh(args.order.parent)
-            shop, selected_item, trade_budget, reason, evidence, support_decision = prepare_support(
-                args.order.parent, shops, memory, catalog, args.budget, load_policy()["buying"],
-                None, snapshot, order)
-            selected_evidence = next((e for e in evidence if shop and e["shop"] == shop["name"] and e["sku"] == selected_item), {})
-            if selected_evidence.get("warranty_required"):
-                accept_conditions["warranty_hours"] = selected_evidence["warranty_required"]
+        if order.get("item") != args.item or order.get("budget") != args.budget:
+            raise ValueError("Order and command arguments disagree")
+        memory = reconcile(memory, payment_outcomes(args.order.parent / "payments.jsonl"))
+        shops = [dict(s, offers=[o for o in s.get("offers", [])
+                                if o.get("sku") in acceptable and o.get("qty", 0) > 0]) for s in shops]
+        shops = [s for s in shops if s["offers"]]
+        catalog_path = args.order.parent / "catalog.json"
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8")) if catalog_path.exists() else {}
+        snapshot = fresh(args.order.parent)
+        pick = select_attempt(args.order.parent, shops, memory, catalog, args.budget, snapshot, order)
     except (OSError, ValueError) as error:
         parser.exit(1, f"Cannot load selection inputs: {error}\n")
+    reason, evidence, support_decision = pick["reason"], pick["evidence"], pick["decision"]
     print(f"[choose] {reason}", flush=True)
-    if shop:
-        trade_options = {"mode": args.mode, "decision_context": selected_evidence,
-                         "max_turns": support_decision["max_turns"], "accept_conditions": accept_conditions, "order_item": order.get("item"),
-                         "discount_limit": {"list_price": (catalog.get(selected_item) or {}).get("list_price"), "kind": order.get("kind"), "covered": bool(selected_evidence.get("warranty_required")),
-                                            "grades": accept_conditions.get("grades"), "cap_without_floor": selected_evidence.get("cap_without_floor"), "settings": discount_floor.load()}}
-        if support_decision.get("fast_rules"):
-            from buyer_counter import load_settings
-            from buyer_fast import load_reading
-            from buyer_support import model_reservation
-            import reference_relief
-            relief_token = reference_relief.active(args.order.parent, ROOT)
-            trade_options.update(fast_rules=True, model_gate=lambda: model_gate(args.order.parent, order["order"], model_reservation),
-                                 over_budget_counter=load_settings(), price_reading=load_reading(),
-                                 reference_relief={"order_budget": args.budget, "kind": order.get("kind"), "catalog_kind": (catalog.get(selected_item) or {}).get("kind")} if relief_token else None,
-                                 catalog_list_price=(catalog.get(selected_item) or {}).get("list_price"))
-        if r3 and order.get("kind") == "goods":
-            trade_options["requirements"] = accept_conditions
-        result, record = trade(shop, selected_item, trade_budget, **trade_options)
-        if r3:
-            record["round"] = 3
-            record["order"] = order.get("order")
-            record["order_budget"] = args.budget
-            record["category"] = order.get("category", args.item)
-            record["accept_conditions"] = accept_conditions
-            if record.get("reference_relief"):
-                reference_relief.note_deal(args.order.parent, relief_token, order.get("order"), record["reference_relief"], record)
-            # Certificate and food-use constraints are enforced by the kit before payment.
-            result["accept"] = accept_conditions
-        record["selection_reason"] = reason
-        # Observation only: what the public stock said at selection, to compare with what the shop then answered.
-        offers = shop.get("offers") or []
-        record["selected_offer_qty"] = next((o.get("qty") for o in offers if o.get("sku") == selected_item), None)
-        record["selected_shop_offer_units"] = sum(o.get("qty", 0) for o in offers if type(o.get("qty")) in (int, float))
-        remember(args.memory, record)
+    first = None
+    if pick["shop"]:
+        result, record = trade_attempt(args, order, catalog, pick)
+        # At most one retry, at another shop, for a failure seen inside this run. A refusal by the kit at payment comes after
+        # this run prints its one result, and the kit then closes the order, so it is out of reach here.
+        retry_reason, retry_status = should_retry(record, order, time.monotonic() - started, time.time(), retry_settings())
+        if retry_reason:
+            first_shop = pick["shop"]["name"]
+            try:
+                # The first try joins the memory, so refusal_skip and the other rules see it.
+                second = select_attempt(args.order.parent, shops, memory + [record], catalog, args.budget, snapshot, order, retry_of=first_shop)
+            except (OSError, ValueError) as error:
+                second, retry_status = None, f"retry_selection_error_{type(error).__name__}"
+            if second and second["shop"]:
+                print(f"[choose] retry after {retry_reason} at {first_shop}: {second['reason']}", flush=True)
+                record["buyer_support"] = support_decision
+                first = {"record": record, "result": result}
+                result, record = trade_attempt(args, order, catalog, second)
+                reason, evidence, support_decision = second["reason"], second["evidence"], second["decision"]
+            elif second:
+                retry_status = "retry_" + str(second["decision"].get("status", "unknown"))
+        record["retry"] = {"status": retry_status, "reason": retry_reason, **({"of": first["record"]["shop_name"]} if first else {})}
     else:
-        if r3 and not shops:
+        if not shops:
             reason = "No registered shop offers an acceptable in-stock SKU."
         result = {"shop": "", "receipt": None, "stars": 3, "review": reason}
         record = {"outcome": "research_skipped", "order": order.get("order"), "selection_reason": reason,
@@ -321,7 +355,7 @@ def main():
     log_dir.mkdir(parents=True, exist_ok=True)
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid4().hex[:8]
     (log_dir / f"{run_id}.json").write_text(
-        json.dumps({"record": record, "selection_evidence": evidence, "result": result},
+        json.dumps({"record": record, "selection_evidence": evidence, "result": result, **({"first_attempt": first} if first else {})},
                    ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False, allow_nan=False), flush=True)
 

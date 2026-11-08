@@ -47,7 +47,9 @@ def initial():
     return {"schema": 1, "round": 3, "attempts": []}
 
 
-def availability(state, order_id, settings, now):
+def availability(state, order_id, settings, now, retry_of=None):
+    """One attempt per order, or two when the second is the retry at another shop that names the first.
+    The interval spaces orders, so it does not apply to the retry of the order just tried; the daily limit counts both."""
     if state.get("schema") != 1 or state.get("round") != 3:
         raise ValueError("Buyer support state must be R3 schema 1")
     if not settings["enabled"]:
@@ -55,14 +57,56 @@ def availability(state, order_id, settings, now):
     if not isinstance(order_id, str) or not order_id:
         return "missing_order_identity"
     attempts = state["attempts"]
-    if any(r["order"] == order_id for r in attempts):
+    mine = [r for r in attempts if r["order"] == order_id]
+    if retry_of is None:
+        if mine:
+            return "duplicate_order"
+    elif not (isinstance(retry_of, str) and len(mine) == 1 and mine[0]["shop"].casefold() == retry_of.casefold() and not mine[0].get("retry_of")):
         return "duplicate_order"
     day = datetime.fromtimestamp(now, timezone.utc).date()
     if sum(datetime.fromtimestamp(r["at"], timezone.utc).date() == day for r in attempts) >= settings["max_attempts_per_utc_day"]:
         return "daily_attempt_limit"
-    if attempts and now-max(r["at"] for r in attempts) < settings["min_attempt_interval_seconds"]:
+    if retry_of is None and attempts and now-max(r["at"] for r in attempts) < settings["min_attempt_interval_seconds"]:
         return "attempt_cooldown"
     return "available"
+
+
+# Failures our own run sees before it returns, so another shop can still be tried for the same order. A grade or shelf life the
+# kit refuses at payment comes after our run has printed its one result; the kit then closes the order, so those are never retried.
+RETRY_REASONS = ("quote_shelf_life_short", "quote_grade_unacceptable")
+
+
+def retry_settings(path=None):
+    """{"min_order_seconds_left", "max_elapsed_seconds"} when buyer_support.json turns the retry on; None when off, missing or broken."""
+    try:
+        section = json.loads(Path(ROOT / "buyer_support.json" if path is None else path).read_text(encoding="utf-8")).get("retry_other_shop")
+    except (OSError, ValueError, AttributeError):
+        return None
+    if not isinstance(section, dict) or section.get("enabled") is not True:
+        return None
+    left, elapsed = section.get("min_order_seconds_left"), section.get("max_elapsed_seconds")
+    number = lambda v: type(v) in (int, float) and math.isfinite(v)
+    # The kit stops a buyer at 300 s and an order lives 600 s.
+    if not (number(left) and 60 <= left <= 600 and number(elapsed) and 1 <= elapsed <= 250):
+        return None
+    return {"min_order_seconds_left": left, "max_elapsed_seconds": elapsed}
+
+
+def should_retry(record, order, elapsed, now, settings):
+    """(reason, status): the reason when the first attempt may be retried at another shop, else None and why not."""
+    if settings is None:
+        return None, "off"
+    if record.get("outcome") == "purchased" or record.get("receipt"):
+        return None, "not_retryable"
+    reason = "refused_at_open" if record.get("refused_at_open") is True else record.get("failure_reason") if record.get("failure_reason") in RETRY_REASONS else None
+    if reason is None:
+        return None, "not_retryable"
+    expires = order.get("expires")
+    if type(expires) not in (int, float) or expires - now < settings["min_order_seconds_left"]:
+        return None, "order_closing"
+    if elapsed > settings["max_elapsed_seconds"]:
+        return None, "elapsed"
+    return reason, "retry"
 
 
 def context(md, catalog, settings, now):
@@ -250,7 +294,7 @@ def choose(shops, memory, catalog, budget, policy, portfolio, public_rows, ctx, 
     return by_name[best["shop"]], best["sku"], best["negotiation_cap"], reason, evidence
 
 
-def reserve(md, order_id, shop, sku, cap, rival, settings, now):
+def reserve(md, order_id, shop, sku, cap, rival, settings, now, retry_of=None):
     from strategy_controller import acquire, release
     handle = acquire(md / "buyer-support.lock")
     if handle is None:
@@ -258,7 +302,7 @@ def reserve(md, order_id, shop, sku, cap, rival, settings, now):
     try:
         path = md / "buyer-support-state.json"
         state = read(path, initial())
-        status = availability(state, order_id, settings, now)
+        status = availability(state, order_id, settings, now, retry_of)
         if status != "available":
             return status
         if any(r["shop"].casefold() == shop["name"].casefold() and r["sku"] == sku
@@ -266,23 +310,25 @@ def reserve(md, order_id, shop, sku, cap, rival, settings, now):
             return "pair_attempt_cooldown"
         state["attempts"] = [r for r in state["attempts"] if 0 <= now-r["at"] <= 7*86400][-4999:]
         state["attempts"].append({"at": now, "order": order_id, "shop": shop["name"], "url": shop["url"],
-                                   "sku": sku, "cap": cap, "rival_at_selection": rival})
+                                   "sku": sku, "cap": cap, "rival_at_selection": rival, **({"retry_of": retry_of} if retry_of else {})})
         write(path, state)
         return "reserved"
     finally:
         release(handle)
 
 
-def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, order, now=None):
+def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, order, now=None, retry_of=None):
     md = Path(md)
     now = time.time() if now is None else now
     settings = config()
+    if retry_of is not None:
+        shops = [s for s in shops if str(s.get("name", "")).casefold() != retry_of.casefold()]
     state = read(md / "buyer-support-state.json", initial())
-    status = availability(state, order.get("order"), settings, now)
+    status = availability(state, order.get("order"), settings, now, retry_of)
     balanced = settings.get("mode") == "balanced"
     if status != "available" or (not balanced and order.get("kind") != "goods"):
         status = status if status != "available" else "no_relevant_goods_order"
-        return None, None, budget, status, [], {"status": status, "model_calls": 0}
+        return None, None, budget, status, [], {"status": status, "model_calls": 0, "retry_of": retry_of}
     ctx = context(md, catalog, settings, now)
     if not balanced and not set(order.get("acceptable") or []) & ctx["targets"].keys():
         return None, None, budget, "no_relevant_seller_sku", [], {"status": "no_relevant_seller_sku", "model_calls": 0}
@@ -295,14 +341,14 @@ def prepare(md, shops, memory, catalog, budget, policy, portfolio, snapshot, ord
     status = "no_useful_research"
     if shop:
         selected = next(e for e in evidence if e["shop"] == shop["name"] and e["sku"] == sku)
-        status = reserve(md, order.get("order"), shop, sku, cap, selected["rival_at_selection"], settings, now)
+        status = reserve(md, order.get("order"), shop, sku, cap, selected["rival_at_selection"], settings, now, retry_of)
         if status != "reserved":
             shop, sku, reason = None, None, status
     return shop, sku, cap, reason, evidence, {"status": status, "purpose": "balanced_player_score" if balanced else "seller_profit_support",
                "fast_rules": balanced,
                "refusal_skipped_shops": sorted({e["shop"] for e in evidence if e.get("support_skip_reason") == "recent_open_refusals"}),
                "listed_stock_preferred_over": next((e["listed_stock_preferred_over"] for e in evidence if e.get("listed_stock_preferred_over")), None),
-               "max_turns": settings["max_turns"], "funding": "market_order_budget_not_seller_cash"}
+               "max_turns": settings["max_turns"], "funding": "market_order_budget_not_seller_cash", "retry_of": retry_of}
 
 
 def model_gate_enabled():
