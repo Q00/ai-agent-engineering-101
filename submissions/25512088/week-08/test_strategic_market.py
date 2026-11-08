@@ -31,6 +31,8 @@ class StrategyTests(unittest.TestCase):
   rows=rank_products(cat,trades,[dict(name='rival',url='r',offers=[dict(sku='y',qty=4)])],alive_buyers={'alive'},now=now)
   x=next(r for r in rows if r['sku']=='x')
   self.assertEqual(x['distinct_buyers_1h'],2);self.assertEqual(x['alive_recent_buyers_6h'],1)
+  self.assertEqual(x['active_preference_buyers'],1)
+  self.assertEqual(x['preference_repeat_signals'],2)
   self.assertEqual(x['competitor_substitute_units'],4)
   self.assertEqual(x['exact_grade_warranty_trades'],3)
  def test_high_price_is_not_gate_and_negative_net_is_not_forced(self):

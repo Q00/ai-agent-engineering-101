@@ -68,12 +68,17 @@ def sync(program, urls):
     return False  # Backlog remains: never mature using wall-clock time alone.
 
 
-def campaign_text(program, inventory):
+def campaign_text(program, inventory, rotation=0):
     from seller_strategy import sale_quote
     p=program.p;lines=[f"[{p['shop_name']} · 실제 재고 / 시장 인증서]"]
-    held=program.reserved_units()
+    held=program.reserved_units();seen=set();candidates=[]
     for u in inventory.get('units',[]):
         if u.get('unit') in held:continue
+        if u.get('sku') in seen:continue
+        seen.add(u.get('sku'));candidates.append(u)
+    if candidates:
+        offset=(rotation*2)%len(candidates);candidates=candidates[offset:]+candidates[:offset]
+    for u in candidates:
         try:q=sale_quote(u,{},program)
         except (KeyError,ValueError):continue
         condition=f"보증 {q['warranty_hours']}h" if q.get('warranty_hours') else '식품 남은 기한 문의'
@@ -98,7 +103,14 @@ def queue_post(program, state, inventory, now=None):
         return False
     refs=[r[0] for r in program.db.execute(
         'SELECT ledger FROM sales WHERE ledger IS NOT NULL AND refunded=0 ORDER BY ledger DESC LIMIT 2')]
-    text=campaign_text(program,dict(inventory,units=available))
+    strategy={}
+    try:strategy=json.loads((Path(state)/'strategy.json').read_text())
+    except (OSError,ValueError):pass
+    order={r.get('sku'):n for n,r in enumerate(strategy.get('top10',[]))}
+    quantities={}
+    for unit in available:quantities[unit.get('sku')]=quantities.get(unit.get('sku'),0)+1
+    available.sort(key=lambda u:(order.get(u.get('sku'),10**6),-quantities.get(u.get('sku'),0),u.get('sku','')))
+    text=campaign_text(program,dict(inventory,units=available),rotation=count)
     guard=Control(state)
     try:
         allowed,_,_=guard.allow_publication('shop',text,refs,now)

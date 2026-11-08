@@ -69,6 +69,13 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         inquiries=own_signals.get('sku_6h',{}).get(sku,0)+local_demand.get(sku,0)
         rejected=own_signals.get('stockout_6h',{}).get(sku,0)
         category_buyers={r.get('buyer') for r in cat_rows if r.get('buyer')}
+        preference_counts={}
+        for r in cat_rows:
+            buyer=r.get('buyer')
+            if buyer and (not alive_buyers or buyer in alive_buyers):
+                preference_counts[buyer]=preference_counts.get(buyer,0)+1
+        active_preference_buyers=set(preference_counts)
+        preference_repeat_signals=sum(min(3,n) for n in preference_counts.values())
         if not observed and not inquiries and not rejected and len(category_buyers)<2:continue
         substitute_units=0;substitute_vendors=set();substitute_skus=set()
         lo,hi=product['list_price']*.5,product['list_price']*1.5
@@ -92,7 +99,8 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
                 mean_cost=cost,net_estimate=net,hazard_probability=hazard,
                 hazard_basis='food-conservative' if product.get('kind')=='food' else hazard_basis))
         evidence=(len(one_hour)*2+len(observed)+len(active_6h)*1.5+
-                  min(inquiries,10)*.35+min(rejected,10)*.5+min(len(category_buyers),10)*.25)
+                  min(inquiries,10)*.35+min(rejected,10)*.5+min(len(category_buyers),10)*.25+
+                  min(len(active_preference_buyers),20)*1.5+min(preference_repeat_signals,30)*.25)
         competition=same_units.get(sku,0)+substitute_units*.35
         likelihood=min(.95,evidence/(evidence+4+competition*.15)) if evidence else 0
         contribution=max(0,expected)
@@ -100,6 +108,8 @@ def rank_products(catalog, trades, shops, own_name='25512088', local_demand=None
         rows.append(dict(version=3,sku=sku,name=product.get('name',sku),category=cat,
             sales_1h=len(one_hour),sales_6h=len(observed),distinct_buyers_1h=len(buyers_1h),
             distinct_buyers_6h=len(buyers_6h),alive_recent_buyers_6h=len(active_6h),
+            active_preference_buyers=len(active_preference_buyers),
+            preference_repeat_signals=preference_repeat_signals,
             buyer_identity_coverage=sum(bool(r.get('buyer')) for r in observed),
             own_order_mentions_6h=local_demand.get(sku,0),own_inquiries_6h=inquiries,
             own_stockouts_6h=rejected,own_orders_bias='personal evidence only; not purchasing obligations',
