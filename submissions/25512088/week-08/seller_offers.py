@@ -15,7 +15,8 @@ def offers(state, program, intel, ref='', limit=3):
     reserved=program.reserved_units(); ranked=[]
     for u in inv.get('units',[]):
         if u['unit'] in reserved:continue
-        try:q=sale_quote(u,catalog,program,intel,ref=ref)
+        # Stock previews are not buyer inquiries or conversion trials.
+        try:q=sale_quote(u,catalog,program,intel,ref=ref,record=False)
         except ValueError:continue
         hours=(u['expires_at']-time.time())/3600 if u.get('expires_at') else None
         count=intel.comparable(u['sku'],u['grade'],hours,q.get('warranty_hours',0))['count']
