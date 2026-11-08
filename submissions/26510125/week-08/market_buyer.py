@@ -203,10 +203,11 @@ def refused_shops(md: Path):
 
 
 def pick_sku(shop: dict, order: dict, catalog: dict, broken: set):
-    """The acceptable SKU this shop stocks with the highest list value within budget; no SKU -> plain item."""
+    """The acceptable SKU this shop stocks with the highest list price that can land within budget at the market's
+    ~75 % of list (patch 3.4: Saved sums the discount RATIO per deal, so a pricier SKU bought under budget scores more)."""
     offers = [o for o in shop.get("offers") or [] if o.get("qty", 0) > 0 and o["name"] not in broken]
     offers = offers or list(shop.get("offers") or [])
-    afford = [o for o in offers if catalog.get(o["sku"], {}).get("list_price", 0) <= order["budget"]]
+    afford = [o for o in offers if catalog.get(o["sku"], {}).get("list_price", 0) * 0.75 <= order["budget"]]
     best = max(afford or offers, key=lambda o: catalog.get(o["sku"], {}).get("list_price", 0), default=None)
     return best
 
@@ -237,9 +238,8 @@ def vote_forum(md: Path, mem: dict, limit=3):
         if post.get("id") in voted or n >= limit:
             continue
         value = None
-        if any(w in text for w in MANIPULATION):
-            value = -1
-        elif post.get("role") == "buyer" and any(l in text for l in liars) and any(w in text for w in ("false", "lied", "claimed", "dishonest")):
+        # patch 3.5: dislikes beyond 3 an hour cost the shop 20,000 x (k-3) and earn the buyer nothing, so no dislikes
+        if post.get("role") == "buyer" and any(l in text for l in liars) and any(w in text for w in ("false", "lied", "claimed", "dishonest")):
             value = 1
         if value:
             with (md / "outbox.jsonl").open("a", encoding="utf-8") as f:

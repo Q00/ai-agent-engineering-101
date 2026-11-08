@@ -32,7 +32,8 @@ assert (md / "outbox.jsonl").exists() and json.loads((md / "outbox.jsonl").read_
 # market_buyer Round 3 helpers
 order = {"order": "o1", "item": "lamp", "category": "goods>home", "budget": 400, "acceptable": ["G1", "G2"], "kind": "goods"}
 shop = {"name": "s", "url": "http://x", "offers": [{"sku": "G1", "name": "lamp", "qty": 2}, {"sku": "G2", "name": "desk", "qty": 1}]}
-assert mb.pick_sku(shop, order, cat, set())["sku"] == "G1"            # desk is above budget
+assert mb.pick_sku(shop, order, cat, set())["sku"] == "G1"            # desk: 900*0.75 > 400
+assert mb.pick_sku(shop, dict(order, budget=700), cat, set())["sku"] == "G2"   # 675 <= 700: aim high, pay market
 assert mb.pick_sku(shop, dict(order, budget=1000), cat, set())["sku"] == "G2"
 assert mb.pick_sku(shop, dict(order, budget=1000), cat, {"desk"})["sku"] == "G1"   # broke on me before
 assert mb.accept_policy(order) == {"cert": True, "grades": ["A", "B"]}
@@ -137,5 +138,5 @@ mem = {"shops": {"Liar Shop": {"trades": [{"dishonest": True}]}}}
 before = sum(1 for l in (md / "outbox.jsonl").read_text().splitlines() if '"vote"' in l)
 mb.vote_forum(md, mem); mb.vote_forum(md, mem)
 votes = [json.loads(l) for l in (md / "outbox.jsonl").read_text().splitlines() if '"vote"' in l][before:]
-assert [(v["vote"], v["value"]) for v in votes] == [(1, -1), (2, 1)] and mem["voted"] == [1, 2], votes
+assert [(v["vote"], v["value"]) for v in votes] == [(2, 1)] and mem["voted"] == [2], votes   # likes only
 print("ok: forum votes")
