@@ -287,8 +287,9 @@ def needed_hours(text: str) -> float | None:
 
 def find_unit(text: str, taken: set, need_hours: float | None) -> tuple[dict | None, list]:
     """(unit, other SKUs in the same category we have). A SKU the buyer named comes first, then a product name,
-    then a category. Food: the unit that expires first among those that last the hours the buyer needs (first
-    expired, first out, so less is thrown away). Goods: the oldest unit (storage is paid per day)."""
+    then a category. Food: none under 10% shelf life left; the unit that expires first among those that last the
+    hours the buyer named, or the freshest when none were named. Goods: the A/B unit with the lowest floor per
+    list price, C only when no A/B unit fits."""
     cat = catalog(MARKET_DIR)
     grades = wanted_grades(text)
     units = [u for u in stock(MARKET_DIR) if u["unit"] not in taken
@@ -311,7 +312,27 @@ def find_unit(text: str, taken: set, need_hours: float | None) -> tuple[dict | N
         fit = [u for u in fit if u["kind"] != "food" or (hours_left(u) or 0) >= need_hours + 0.5]
         if not fit:
             return None, []
-    u = min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0))
+    # Food under 10% of its shelf life left earns low reviews and is about to leave the book anyway: no sale.
+    def share_left(u):
+        s = food_grade(u, (cat.get(u["sku"]) or {}).get("shelf_hours"))[1]
+        return 1.0 if s is None else s
+    fresh = [u for u in fit if u["kind"] != "food" or share_left(u) >= 0.10]
+    if not fresh:
+        return None, []
+    fit = fresh
+    if fit[0]["kind"] == "goods":
+        # Lowest floor first, A/B before C: on 2026-11-07 00-03h goods quotes with floor/list under .55 closed 77%,
+        # .74-.78 closed 5.6%, while the oldest-first front unit averaged cost/list .646 against .484 for the
+        # cheapest unit of the same SKU. C only when no A/B unit fits.
+        k = knobs()
+        ab = [u for u in fit if u.get("grade") in ("A", "B")] or fit
+        u = min(ab, key=lambda u: (u["cost"] * (1 + age_margin(k["margin"].get(u.get("grade") or "B", 0.08), u))
+                                   / u["list_price"], u.get("supplied_at") or 0))
+    elif need_hours:
+        u = min(fit, key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0))
+    else:
+        # No hours named: the freshest unit, so the shelf life the buyer finds on arrival does not draw a low review.
+        u = max(fit, key=lambda u: (u.get("expires_at") or 0, u.get("supplied_at") or 0))
     others = sorted({x["sku"] for x in units if leaf(x.get("category")) == leaf(u.get("category"))} - {u["sku"]})
     return u, others
 
