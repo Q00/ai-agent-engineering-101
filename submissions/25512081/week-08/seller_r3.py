@@ -100,9 +100,15 @@ def crowded(sku):
     return sum(1 for t in m.values() if time.time() - t < 3600) >= CROWDED_SHOPS
 
 
+# Grade C food opens at most CHEAP_C_SHARE (Nov 8): since Patch 3.4 stars are one mean per reviewing account
+# (stars_rank 4.32, 28th percentile; p50 4.35, p90 4.43), and since Nov 7 23:00 our reviews by condition were
+# food A 4.85, food B 4.73, food C 4.32 (196 reviews, 18 low), the only group under 4.6.
+CHEAP_C_SHARE = 0.70
+
+
 def max_share(u):
     if u["list_price"] < CHEAP_TICKET:
-        return CHEAP_MAX_SHARE
+        return CHEAP_C_SHARE if u.get("grade") == "C" and u.get("kind") == "food" else CHEAP_MAX_SHARE
     cap = BIG_MAX_SHARE if u["list_price"] >= BIG_TICKET else MAX_SHARE
     px = sorted((_load("restock_state.json", {}).get("sku_px") or {}).get(u.get("sku")) or [])
     if len(px) >= BIG_MIN_SETTLES:
