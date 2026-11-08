@@ -96,23 +96,15 @@ class Seller(AgentExecutor):
         try:
             if program.get('growth_started_at') is None:
                 program.put('growth_started_at',time.time())
-            if text.strip().upper()=='OFFERS' or text.upper().startswith('SHARE '):
-                sharing=text.upper().startswith('SHARE ')
-                member=program.member(cred['member']) if sharing else None
-                if sharing and not member:
-                    await up.complete(say('SHARE requires your private member key after settlement. Never publish that key.'))
-                    return
-                program.growth_event(task.id,'share' if member else 'offers')
-                await up.complete(say(json.dumps(offers(STATE,program,intel,ref=member['code'] if member else ''),ensure_ascii=False)))
+            if text.strip().upper()=='OFFERS':
+                program.growth_event(task.id,'offers')
+                await up.complete(say(json.dumps(offers(STATE,program,intel,ref=''),ensure_ascii=False)))
+                return
+            if text.upper().startswith('SHARE '):
+                await up.complete(say('The referral campaign has ended. Use OFFERS for current stock.'))
                 return
             if text.strip().upper() == 'PROGRAM':
-                p = program.p
-                await up.complete(say(
-                    f"창립 단골 {p['founder_limit']}명: 결제+리뷰(별점 무관)+거래번호 refs를 첨부한 buyer 포럼 후기. "
-                    f"사후 확인 후 {p['ends_at']}까지 일반 견적에서 {p['founder_percent']}% 할인. "
-                    "리뷰/포럼 참여 혜택임을 후기에서 밝혀주세요. 구매 후 받은 비공개 키로 STATUS member=<key>. "
-                    "공개 추천 코드는 구매문의에 ref=<code>. 직접 추천 보상만 지급하며 중복 할인 없음. "
-                    "회원키는 소지자에게 혜택을 주는 비공개 키이므로 공유하지 마세요."))
+                await up.complete(say('The referral campaign has ended. Existing active member promises remain valid until their original expiry; no new memberships or referral rewards are issued.'))
                 return
             if text.upper().startswith('STATUS '):
                 await up.complete(say(json.dumps(program.status(cred['member']), ensure_ascii=False)))
@@ -144,7 +136,7 @@ class Seller(AgentExecutor):
                     await up.reject(say('No matching stock available. Alternatives: '+json.dumps(available,ensure_ascii=False)))
                     return
                 try:
-                    q = sale_quote(unit, catalog, program, intel, token=cred['member'], ref=cred['ref'])
+                    q = sale_quote(unit, catalog, program, intel, token=cred['member'], ref='')
                 except ValueError:
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
                     return
@@ -155,8 +147,6 @@ class Seller(AgentExecutor):
                     'kind':unit.get('kind'),'warranty_hours':q.get('warranty_hours',0),
                     'arm':arm,'assignment_digest':digest},task.id)
                 program.growth_event(task.id,'quote')
-                if cred['ref']:program.growth_event(task.id,'ref_inquiry')
-                if q['referrer']:program.growth_event(task.id,'ref_quote')
                 self.open[task.id] = deal
             else:
                 unit = next((u for u in inv['units'] if u['unit'] == deal['unit']['unit']), None)
@@ -171,14 +161,14 @@ class Seller(AgentExecutor):
                     if unit:
                         deal['unit']=unit
                         deal['quote']=sale_quote(unit,catalog,program,intel,
-                            token=deal['credentials']['member'],ref=deal['credentials']['ref'])
+                            token=deal['credentials']['member'],ref='')
                 if not unit or unit.get('grade') == 'expired' or (unit.get('expires_at') and unit['expires_at'] <= time.time()):
                     self.open.pop(task.id, None)
                     await up.reject(say('The quoted stock is no longer available.'))
                     return
                 try:
                     latest = sale_quote(unit, catalog, program, intel,
-                                        token=deal['credentials']['member'], ref=deal['credentials']['ref'])
+                                        token=deal['credentials']['member'], ref='')
                 except ValueError:
                     self.open.pop(task.id, None)
                     await up.reject(say('Cannot verify this stock grade or expiry.'))
@@ -189,7 +179,7 @@ class Seller(AgentExecutor):
                 match = re.fullmatch(r'\s*(?:offer\s*[=:]?\s*)?(\d+)\s*', text, flags=re.I)
                 if match and int(match.group(1)) < deal['quote']['price']:
                     deal['quote']=negotiate(unit,deal['quote'],int(match.group(1)),catalog,program,
-                        token=deal['credentials']['member'],ref=deal['credentials']['ref'])
+                        token=deal['credentials']['member'],ref='')
                 if match and int(match.group(1)) >= deal['quote']['price']:
                     q = deal['quote']
                     claim = receipt_grade(unit, catalog)
@@ -207,7 +197,8 @@ class Seller(AgentExecutor):
                         return
                     control.move_mutation(mutation_id,'SUBMITTED','local reservation starting')
                     try:
-                        secret = program.accept(task.id, unit['unit'], unit['sku'], unit['cost'], q, inventory=inv)
+                        program.accept(task.id, unit['unit'], unit['sku'], unit['cost'], q,
+                                       inventory=inv, enroll=False)
                     except (ValueError, sqlite3.IntegrityError):
                         control.move_mutation(mutation_id,'REJECTED','reservation refused')
                         self.open.pop(task.id, None)
@@ -220,12 +211,6 @@ class Seller(AgentExecutor):
                     control.move_mutation(mutation_id,'CONFIRMED','signed receipt created',{
                         'task':task.id,'sku':unit['sku'],'price':q['price']})
                     await up.add_artifact(parts=[new_data_part(receipt)], name='receipt')
-                    private = (f' Private provisional member key: {secret}. Save privately; never post it. '
-                               'After payment use SHARE member=<key> for current product referral offers.') if secret else ''
-                    code=program.purchase_code(task.id)
-                    public=(f' Public referral code: {code} (activates after settlement). '
-                            f'Friend sends: I want to buy {unit["sku"]} ref={code}. '
-                            'Stock and price must be reconfirmed. Direct referrals only; no review or forum post required for referrals.')
                     event={'sku':unit['sku'],'price':q['price'],'cost':unit['cost'],
                            'kind':unit.get('kind'),'warranty_hours':q.get('warranty_hours',0)}
                     intel.decision('seller_signed',event)
@@ -233,7 +218,7 @@ class Seller(AgentExecutor):
                     control.event('seller','sale_signed',dict(event,task=task.id),task.id)
                     control.checkpoint('seller',{'quote_policy':'seller-quote-v1'},
                                        {'task':task.id,'sku':unit['sku'],'mutation_id':mutation_id})
-                    await up.complete(say(f"Agreed at {q['price']}. Membership activates only after market settlement."+public+private))
+                    await up.complete(say(f"Agreed at {q['price']}. Signed receipt issued; stock and payment are reconciled by the market."))
                     self.open.pop(task.id, None)
                     return
             q = deal['quote']

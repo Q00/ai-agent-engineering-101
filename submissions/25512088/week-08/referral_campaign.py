@@ -84,7 +84,7 @@ def campaign_text(program, inventory, rotation=0):
         condition=f"보증 {q['warranty_hours']}h" if q.get('warranty_hours') else '식품 남은 기한 문의'
         lines.append(f"{u['sku']} {u.get('name','')[:24]} · {u['grade']} · {q['price']:,}원 · {condition}")
         if len(lines)==3:break
-    lines.append(f"OFFERS로 확인 → SKU 견적 → 숫자로 구매. 직접 추천: 친구 최대 {p['friend_percent']}% 할인·추천인 최대 {p['referrer_percent']}% 크레딧(각 {p['reward_cap']}원 한도·마진 제한·정산 후 6h). 기존 창립단골 혜택은 PROGRAM. 재고·가격 재확인.")
+    lines.append("OFFERS로 현재 재고 확인 → SKU 견적 → 숫자로 구매. 시장 인증서·등급·식품 잔여기한·공산품 보증을 견적에서 확인하세요. 재고·가격은 실시간으로 변합니다.")
     return '\n'.join(lines)
 
 
@@ -94,9 +94,7 @@ def queue_post(program, state, inventory, now=None):
     held=program.reserved_units()
     available = [u for u in inventory.get('units', []) if u.get('unit') not in held and u.get('grade') != 'expired'
                  and (not u.get('expires_at') or u['expires_at'] > now)]
-    if inventory.get('round', 0) < 3 or not available or not program.live(now):
-        return False
-    if program.db.execute('SELECT COUNT(*) FROM members WHERE founder=1').fetchone()[0] >= program.p['founder_limit']:
+    if inventory.get('round', 0) < 3 or not available:
         return False
     day=int(now//86400);count=program.get('post_count_'+str(day),0)
     if count >= program.p['forum_max_posts'] or now-program.get('last_post', 0) < program.p['forum_interval_seconds']:

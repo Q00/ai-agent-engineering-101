@@ -106,7 +106,7 @@ class Program:
                 result.update(price=base-use, spent=use, benefit='credit')
         return result
 
-    def accept(self, task, unit, sku, cost, q, inventory=None):
+    def accept(self, task, unit, sku, cost, q, inventory=None, enroll=True):
         """Reserve stock/credit durably before signing. Unknown payment keeps reservation.
 
         Returns a provisional bearer credential only for a newly enrolled customer.
@@ -130,7 +130,7 @@ class Program:
                                        (mid,)).fetchone()[0]
                 if credit-held < q['spent']:
                     raise ValueError('Credit is already reserved; request a fresh quote')
-            if not mid:
+            if not mid and enroll:
                 mid, secret = secrets.token_hex(12), secrets.token_urlsafe(32)
                 self.db.execute('INSERT INTO members(id,secret_hash,code) VALUES(?,?,?)',
                                 (mid, hashlib.sha256(secret.encode()).hexdigest(), 'REF-'+secrets.token_hex(6).upper()))
@@ -156,17 +156,18 @@ class Program:
             if not s or s['ledger'] is not None or d.get('amount') != s['amount'] or d.get('item') != s['sku']:
                 return False
             existing = self.db.execute('SELECT id FROM members WHERE buyer=? AND active=1', (d['buyer'],)).fetchone()
-            member = self.db.execute('SELECT * FROM members WHERE id=?', (s['member'],)).fetchone()
+            member = self.db.execute('SELECT * FROM members WHERE id=?', (s['member'],)).fetchone() if s['member'] else None
             # A transferable bearer token cannot prove an account identity. A token
             # used by another account loses eligibility for further member rewards.
-            mismatch = member['buyer'] and member['buyer'] != d['buyer']
-            duplicate = existing is not None and existing['id'] != s['member']
+            mismatch = bool(member and member['buyer'] and member['buyer'] != d['buyer'])
+            duplicate = bool(member and existing is not None and existing['id'] != s['member'])
             parent = self.db.execute('SELECT buyer FROM members WHERE id=?', (s['referrer'],)).fetchone()
             invalid = existing is not None or mismatch or (parent and parent['buyer'] == d['buyer'])
             self.db.execute('UPDATE sales SET ledger=?,buyer=?,settled=?,reward=? WHERE task=?',
                             (row['seq'], d['buyer'], row['ts'], 0 if invalid else s['reward'], s['task']))
-            self.db.execute('UPDATE members SET active=?,buyer=COALESCE(buyer,?),credit=credit-? WHERE id=?',
-                            (0 if mismatch or duplicate else 1, d['buyer'], s['spent'], s['member']))
+            if member:
+                self.db.execute('UPDATE members SET active=?,buyer=COALESCE(buyer,?),credit=credit-? WHERE id=?',
+                                (0 if mismatch or duplicate else 1, d['buyer'], s['spent'], s['member']))
         return True
 
     def review(self, row, shop_urls):

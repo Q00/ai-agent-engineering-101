@@ -33,7 +33,7 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(missing['categories'],['food'])
         self.assertEqual(missing['reason'],'unavailable_or_unmatched')
 
-    async def test_a2a_quote_signed_artifact_and_private_enrollment(self):
+    async def test_a2a_quote_signed_artifact_without_new_referral_enrollment(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = Path(tmp)
             (state/'inventory.json').write_text(json.dumps({'round':3, 'balance':5000000, 'start':5000000, 'units': [dict(
@@ -65,16 +65,16 @@ class SellerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIn('sig_seller', artifacts)
                     self.assertIn('"claim": "A"',artifacts)
                     self.assertNotIn('member', artifacts)
-                    self.assertIn('Private provisional member key', json.dumps(result))
-                    self.assertIn('Public referral code: REF-',json.dumps(result))
-                    self.assertIn('SHARE member=',json.dumps(result))
+                    self.assertNotIn('Private provisional member key', json.dumps(result))
+                    self.assertNotIn('Public referral code: REF-',json.dumps(result))
                     discovery=await send('OFFERS')
                     self.assertIn('COMPLETED',discovery['status']['state'])
                     self.assertNotIn('Private provisional',json.dumps(discovery))
-                    rejected=await send('SHARE member=invalid')
-                    self.assertIn('requires your private member key',json.dumps(rejected))
+                    retired=await send('SHARE member=invalid')
+                    self.assertIn('campaign has ended',json.dumps(retired))
                     program = Program(state)
                     self.assertEqual(program.db.execute('SELECT COUNT(*) FROM sales WHERE ledger IS NULL').fetchone()[0], 1)
+                    self.assertEqual(program.db.execute('SELECT COUNT(*) FROM members').fetchone()[0], 0)
                     self.assertEqual(program.db.execute('SELECT COUNT(*) FROM members WHERE active=1').fetchone()[0], 0)
                     program.close()
                     with sqlite3.connect(state/'adaptive.sqlite3') as adaptive:

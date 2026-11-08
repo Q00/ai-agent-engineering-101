@@ -109,6 +109,14 @@ class ReferralTests(unittest.TestCase):
         code = self.program.status(a)['referral_code']
         self.assertFalse(self.program.status(code)['active'])
 
+    def test_sunset_sale_records_without_creating_member(self):
+        q=self.program.quote(10000,8000)
+        self.assertIsNone(self.program.accept('sunset','sunset-unit','sku',8000,q,enroll=False))
+        self.assertEqual(self.program.db.execute('SELECT COUNT(*) FROM members').fetchone()[0],0)
+        row=dict(seq=999,ts=1000,kind='settle',round=3,
+                 data=dict(shop='https://ours',buyer='new',unit='sunset-unit',item='sku',amount=10000))
+        self.assertTrue(self.program.settle(row,['https://ours']))
+
     def test_small_margin_caps_acquisition_and_no_discount_after_end(self):
         a, _, _ = self.buy('A')
         q = self.program.quote(10000, 9900, ref=self.program.status(a)['referral_code'])
