@@ -136,17 +136,23 @@ class BuyerForumTests(unittest.TestCase):
         self.assertEqual(len(body["refs"]), 3)
         self.assertLess(len(body["text"]), 1000)
 
-    def test_fifteen_minute_cadence_and_no_repeated_identical_summary(self):
+    def test_ten_minute_cadence_requires_new_transaction_and_novel_summary(self):
         self.queue(100)
         self.assertEqual(self.drain()["status"], "sent")
         self.queue(101, now=NOW + 1)
         snapshot = (self.md / "buyer-forum-spool.json").read_bytes()
-        self.assertEqual(self.drain(NOW + 899)["status"], "throttled")
+        self.assertEqual(self.drain(NOW + 599)["status"], "throttled")
         self.assertEqual((self.md / "buyer-forum-spool.json").read_bytes(), snapshot)
-        self.assertEqual(self.drain(NOW + 900)["status"], "unchanged")
+        self.assertEqual(self.drain(NOW + 600)["status"], "unchanged")
         self.assertEqual(len(self.market.calls), 1)
-        self.queue(102, now=NOW + 900, price=65000)
-        self.assertEqual(self.drain(NOW + 900)["status"], "sent")
+        self.queue(102, now=NOW + 600, price=65000)
+        self.assertEqual(self.drain(NOW + 600)["status"], "sent")
+        self.assertEqual(len(self.market.calls), 2)
+        self.assertEqual(self.market.calls[-1][3]["json"]["refs"], [102])
+        self.assertEqual(self.drain(NOW + 1199)["status"], "throttled")
+        self.assertEqual(self.drain(NOW + 1200)["status"], "empty")
+        self.assertEqual(self.queue(102, now=NOW + 1200, price=64000)["status"], "duplicate")
+        self.assertEqual(self.drain(NOW + 1200)["status"], "empty")
         self.assertEqual(len(self.market.calls), 2)
 
     def test_shop_token_never_substitutes_for_missing_buyer_token(self):
@@ -162,6 +168,7 @@ class BuyerForumTests(unittest.TestCase):
         self.assertEqual(self.drain(), {"status": "rate_limited", "retry_at": NOW + 1800})
         before = deepcopy(self.market.calls[0][3]["json"])
         self.queue(101, now=NOW + 10, price=61000)
+        self.assertEqual(self.drain(NOW + 600)["status"], "throttled")
         self.assertEqual(self.drain(NOW + 1799)["status"], "throttled")
         self.market.response = httpx.Response(200, json={"id": 78})
         self.assertEqual(self.drain(NOW + 1800)["status"], "sent")
