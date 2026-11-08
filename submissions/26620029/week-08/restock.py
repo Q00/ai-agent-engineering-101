@@ -47,6 +47,7 @@ LINE_SHARE = 0.1            # one line spends at most this share of the balance 
 # bedding 12%. Category counts kept us on one SKU: 5 unsold SS mattresses (G07ec17d5) stopped any purchase of the
 # market's best seller G1515d951 (2,698 deals, about 73,000 margin a unit), which we never stocked
 VALUE_FOCUS = 0.05          # a goods category with this share of the market's sales value is stocked by SKU and first
+C_STOP = 3                   # a focus SKU with this many grade C goods in stock is not restocked (see focus_lines)
 FOCUS_SKUS = 20              # SKUs kept per focus category, by value (deals x list price)
 # Claude (2026-11-08 22:23, hourly check): 15 -> 20. Stock fell from 0.69 of book (17:23) to 0.50 with 116M in cash once grade C
 # counted half; the 80% cap (user's instruction) no longer binds, so more SKUs is what lets the stock grow
@@ -128,6 +129,10 @@ def focus_lines(inv, catalog, focus_cats, cu):
             have[u["sku"]] = have.get(u["sku"], 0) + 1
     # Claude (2026-11-08 17:23, hourly check): with C not counted at all C piled up (137 units, 48.5M, e.g. G1515d951 C 10 A 3);
     # over 3 h on 1M+ goods I sold 2 C of the market's 60 even at 0.60 of list. Two C units now count as one held unit
+    # ddolcom (2026-11-09 07:40, the user's instruction "C에 대해 1번부터"): the supply gives a random grade (POST /api/supply takes
+    # only sku and qty) and the kit's default buyer accepts only A and B, so every new buy of a SKU full of C brings more C.
+    # A SKU holding C_STOP or more grade C goods gets no new units until its C sells (Gf6b70da8 C 5 A 1, G03d0199f C 5 A 1)
+    c_full = {s for s, n in c_have.items() if n >= C_STOP}
     for s, n in c_have.items():
         have[s] = have.get(s, 0) + n // 2
     lines = []
@@ -137,6 +142,8 @@ def focus_lines(inv, catalog, focus_cats, cu):
                and (not use_recent or catalog[s]["list_price"] <= FOCUS_DEAR or shops.get(s, 0) >= MIN_SHOPS)]
         fit.sort(key=lambda s: -skus[s] * catalog[s]["list_price"])
         for s in fit[:FOCUS_SKUS]:
+            if s in c_full:
+                continue
             missing = focus_want(skus[s] / total, catalog[s]["list_price"]) - have.get(s, 0)
             if missing > 0:
                 lines.append((have.get(s, 0) > 0, -skus[s] * catalog[s]["list_price"], s, missing))
