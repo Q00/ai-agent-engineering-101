@@ -1,11 +1,65 @@
 # Round 3 판매자와 거래 근거 기반 재고·가격 조정
 
-2026-11-08 현재: `agent.json` → `shop_runtime.py`는 판매자 `seller_r3.py`를 실행한다.
+2026-11-09 현재 로컬 설정: `agent.json` → `shop_runtime.py`는 판매자 `seller_r3.py`를 실행한다.
 사용자 요청으로 별도 전략 분석자 `sales_advisor.py`는 비활성화했다.
-판매자와 구매자 `market_buyer.py`는 **Opus 5.5 (`claude-opus-5-5`), effort `low`**를 사용한다.
+판매자와 구매자 `market_buyer.py`의 모델은 **GPT-6.1 Sol (`gpt-6.1-sol`), effort `low`**다.
+실제 서버 적용은 아래 로그인과 배포가 성공해야 완료된다.
 `restock.py`는 공식 키트의 재입고 hook으로 실행되며 추가 모델 호출 없이 매입 계획을 낸다.
 아래에 보존한 Round 2의 lamp/chair/bookshelf 가격표는 Round 3에 적용하지 않는다.
 날짜별 이전 절은 당시 실험 기록이며, 모델·수량·비용 설정은 아래 최신 절이 우선한다.
+
+## GPT-6.1 Sol 전환 (2026-11-09)
+
+Claude 사용량 문제로 거래 프로필을 `opus5.5`에서 `sol`로 변경했다.
+shop 협상·buyer 협상·가게 선택 모두 정확한 모델 ID `gpt-6.1-sol`과 추론 `low`를 쓴다.
+분석자 설정의 `haiku` 값은 비활성 상태로 보관되며, Claude 설치나 로그인은 요구하지 않는다.
+가격·품질·보증·결제 검증, 협상 횟수·시간 제한과 프롬프트는 변경하지 않았다.
+추가 전략 분석 모델 호출도 없다. 기존 CLI 연결은 임시 작업 폴더에서 도구 없이
+JSON 결정을 받아 애플리케이션에서 검증한다. 오류 시 다른 모델로 자동 전환하지 않는다.
+
+[공식 모델 안내](https://learn.chatgpt.com/docs/models)와
+[GPT-6 마이그레이션 안내](https://developers.openai.com/api/docs/guides/latest-model/gpt-6-astra)
+기준으로 선택한 모델과 `low`를 고정했다. 실제 협상 품질·속도·사용량은 서버 적용 후
+측정해야 하며, 오프라인 검사가 시장 성과나 계정의 모델 권한을 입증하지 않는다.
+
+사용자 제공 서버 검사 결과는 `codex-cli 0.166.0`, `Not logged in`이었다.
+이후 사용자가 기기 코드 인증을 수행하고 `Logged in using ChatGPT`를 확인했다고 알렸다.
+아직 이 기록만으로 모델 응답이나 배포 성공이 확인된 것은 아니다.
+맥의 레포 터미널에서 아래 명령으로 **에이전트를 실행하는 서버 사용자**에 로그인한다.
+브라우저 인증은 사용자가 직접 완료하며 일회용 코드를 채팅·로그·저장소에 남기지 않는다.
+기기 코드 로그인이 비활성인 경우 ChatGPT 보안 설정 또는 워크스페이스 관리자 설정에서
+허용해야 한다. [공식 로그인 안내](https://learn.chatgpt.com/docs/auth)
+
+```bash
+ssh -t daintI 'export PATH="$HOME/.local/bin:$PATH"; codex login --device-auth && codex login status'
+```
+
+`Logged in using ChatGPT`를 확인한 뒤 맥의 레포 터미널에서 배포한다.
+
+```bash
+python3 submissions/26510124/week-08/deploy/deploy_v4.py
+```
+
+배포는 기존 서비스를 중지하기 전에 **Sol 사전 응답 검사 1회**를 수행한다.
+이 호출은 ChatGPT 구독 사용량을 사용하며 시장 주문이나 결제를 만들지 않는다.
+Codex 옵션·로그인·모델 권한 검사 실패 시 기존 서비스와 프로필을 그대로 둔다.
+기존 `week07-market.service` 이름으로 week-08을 실행하며 시작 로그에는
+`Pinned trading model: gpt-6.1-sol; effort=low; fallback disabled`가 표시된다. 서버 적용 후 확인:
+
+```bash
+ssh daintI 'journalctl --user -u week07-market.service --since "5 minutes ago" --no-pager | grep -F "Pinned trading model:"'
+```
+
+모델 검사 세부 결과는 새 배포 디렉터리의 `model-preflight.log`에 남는다.
+일반 `model_backend.py --check`는 설치·로그인만 확인하고 모델 호출은 하지 않는다.
+로그인 방식은 ChatGPT 구독이며 API 키 방식은 이 연결에서 허용하지 않는다.
+거래 재개는 새 모델 로그와 함께 `buyer_diagnostics.py`, `shop_diagnostics.py`의
+실제 확정 정산 증가로 확인한다. 보드 online 표시만으로 모델 응답 성공을 판단하지 않는다.
+
+검증: 전체 **704개 오프라인 테스트 통과**
+(`logs/offline-20261108T170349Z-59f977fc.log`). Sol 세 역할의 모델·추론·JSON 출력,
+API 키 로그인 거부, 모델 오류 시 재시도/대체 모델 금지, 비활성 분석자 제외,
+배포 실패 시 기존 서비스 보존을 검사했다. 실제 Sol 호출은 서버 배포의 사전 검사에서 한다.
 
 ## 식품 구매 범위·가격 기억과 협상 종료 진단 (2026-11-08 17:38 KST)
 

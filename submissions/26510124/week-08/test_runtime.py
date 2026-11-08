@@ -47,6 +47,7 @@ class RuntimeTests(unittest.TestCase):
         result, output, errors = self.check_launcher({"version": 1, "trading": "astra", "advisor": "haiku"})
         self.assertEqual(result, 0, errors)
         self.assertIn("shop/buyer=astra; advisor=haiku", output)
+        self.assertIn("gpt-6-astra; effort=low; fallback disabled", output)
         self.assertIn("codex CLI available: True", output)
         self.assertIn("claude CLI available: True", output)
         self.assertIn("No model calls", output)
@@ -96,6 +97,17 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(result, 0, errors)
         self.assertIn("shop/buyer=haiku; advisor=haiku", output)
         self.assertNotIn("codex CLI", output)
+
+    def test_sol_check_reports_exact_model_without_requiring_disabled_advisor_cli(self):
+        result, output, errors = self.check_launcher(
+            {"version": 1, "trading": "sol", "advisor": "haiku"},
+            advisor_enabled=False, missing=("claude",))
+        self.assertEqual(result, 0, errors)
+        self.assertIn("shop/buyer=sol; advisor=disabled", output)
+        self.assertIn("gpt-6.1-sol; effort=low; fallback disabled", output)
+        self.assertIn("codex CLI available: True", output)
+        self.assertNotIn("claude CLI", output)
+        self.assertIn("No model calls", output)
 
     def test_pinned_kit_exactly_matches_upstream_blob(self):
         self.assertTrue(verify_kit().is_file())

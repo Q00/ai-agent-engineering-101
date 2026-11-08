@@ -9,7 +9,7 @@ import shutil
 import sys
 
 from receipt_signing import load_shop_key
-from model_backend import CLAUDE_MODELS, advisor_enabled, load_profile, required_executables
+from model_backend import CLAUDE_MODELS, CODEX_MODELS, advisor_enabled, load_profile, required_executables
 
 ROOT = Path(__file__).resolve().parent
 
@@ -66,6 +66,8 @@ def main():
         print(f"Model profile: shop/buyer={profile['trading']}; advisor={active_advisor}", flush=True)
         if profile["trading"] == "opus5.5":
             print(f"Pinned trading model: {CLAUDE_MODELS['opus5.5']}; effort=low; fallback disabled", flush=True)
+        elif profile["trading"] in CODEX_MODELS:
+            print(f"Pinned trading model: {CODEX_MODELS[profile['trading']]}; effort=low; fallback disabled", flush=True)
         unavailable = []
         for executable in required_executables(ROOT):
             available = shutil.which(executable) is not None

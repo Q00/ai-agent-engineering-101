@@ -1,7 +1,7 @@
 """Reversible CLI profiles using existing Claude/Codex logins.
 
 --check makes no model call. --preflight probes active Opus/GPT models.
---profile opus5.5|haiku|astra changes the trading profile, not a service.
+--profile sol|opus5.5|haiku|astra changes the trading profile, not a service.
 --advisor-profile haiku|luna changes only the sales-strategy analyst's profile.
 """
 import argparse
@@ -17,7 +17,7 @@ import time
 import uuid
 
 ROOT = Path(__file__).resolve().parent
-CODEX_MODELS = {"astra": "gpt-6-astra", "luna": "gpt-6-luna"}
+CODEX_MODELS = {"sol": "gpt-6.1-sol", "astra": "gpt-6-astra", "luna": "gpt-6-luna"}
 CLAUDE_MODELS = {"haiku": "haiku", "opus5.5": "claude-opus-5-5"}
 CLAUDE_COMMAND = ["claude", "-p", "--model", "haiku", "--tools", "",
                   "--setting-sources", "", "--no-session-persistence",
@@ -36,8 +36,8 @@ def load_profile(root=ROOT):
     cfg = json.loads(path.read_text())
     if (not isinstance(cfg, dict) or set(cfg) != {"version", "trading", "advisor"}
             or type(cfg["version"]) is not int or cfg["version"] != 1
-            or cfg["trading"] not in ("astra", *CLAUDE_MODELS) or cfg["advisor"] not in ("luna", "haiku")):
-        raise ValueError("Expected trading opus5.5/astra/haiku and advisor luna/haiku")
+            or cfg["trading"] not in ("sol", "astra", *CLAUDE_MODELS) or cfg["advisor"] not in ("luna", "haiku")):
+        raise ValueError("Expected trading sol/opus5.5/astra/haiku and advisor luna/haiku")
     return cfg
 
 
@@ -265,7 +265,7 @@ def call(profile, prompt_name, prompt, *, timeout, log):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--profile", choices=("opus5.5", "astra", "haiku"))
+    mode.add_argument("--profile", choices=("sol", "opus5.5", "astra", "haiku"))
     mode.add_argument("--advisor-profile", choices=("luna", "haiku"))
     mode.add_argument("--preflight", action="store_true")
     mode.add_argument("--check", action="store_true")
