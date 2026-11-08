@@ -21,6 +21,7 @@ its latest reviews (and, in Round 3, the SKUs it has that fit the order). This b
 """
 import argparse
 import json
+import os
 import random
 import re
 import sys
@@ -97,12 +98,22 @@ def summary(shop, mine):
             f"my trades: {seen or 'none'}{r3}")
 
 
+# Nov 8: the buyer takes one order at a time, and the model's shortlist took 13-17 s of an average 35 s order
+# (overseer 1108-1017), while quotes from up to SHORTLIST shops at once then decide the deal anyway. It also stopped
+# the buyer for 23.5 h when the subscription's weekly limit ran out (Nov 7 07:31 - Nov 8 06:59). So the shortlist
+# is ranked in code by default; CHOOSER=model brings the model back.
+CHOOSER = os.environ.get("CHOOSER", "code")
+
+
 def choose(shops, item, budget, mine, k=1):
     """The model ranks the shops it trusts; returns up to k of them, best first, and its reason."""
     cheats = {m["shop"] for m in mine if m.get("honest") is False} | memory.avoid()
     pool = [s for s in shops if s["name"] not in cheats] or shops
     if len(pool) <= k:
         return pool, "every shop in the list I have not caught cheating"
+    if CHOOSER == "code":
+        return sorted(pool, key=lambda s: budget_share(s, mine) * (1 + memory.stock_fail(s["name"])))[:k], \
+            "code: lowest past share of budget, x units gone at checkout"
     names = [s["name"] for s in pool]
     learned = lessons.rules("buyer")[:5]
     # the rules are model-written from records that hold shop names other agents chose: data, not system prompt
