@@ -27,7 +27,7 @@ class Settings(unittest.TestCase):
     def test_shipped_section_is_well_formed(self):
         section = json.loads(ab.CONFIG.read_text(encoding="utf-8"))["first_message_conditions"]
         self.assertIs(type(section["enabled"]), bool)
-        self.assertEqual((section["share"], section["salt"]), (0.5, "fm1"))
+        self.assertEqual((section["share"], section["salt"]), (0.8, "fm1"))
         loaded = ab.load()
         self.assertEqual(loaded["enabled"], section["enabled"])
 
@@ -62,6 +62,13 @@ class Arm(unittest.TestCase):
     def test_share_sets_the_split(self):
         arms = [ab.arm(f"o-{i:012x}", {**ON, "share": 0.2}) for i in range(4000)]
         self.assertTrue(0.17 < arms.count("conditions") / len(arms) < 0.23)
+
+    def test_raising_the_share_keeps_every_conditions_order(self):
+        ids = [f"o-{i:012x}" for i in range(4000)]
+        before = [ab.arm(o, ON) for o in ids]
+        after = [ab.arm(o, {**ON, "share": 0.8}) for o in ids]
+        self.assertTrue(all(a == "conditions" for b, a in zip(before, after) if b == "conditions"))
+        self.assertTrue(0.77 < after.count("conditions") / len(after) < 0.83)
 
 
 class Wording(unittest.TestCase):
