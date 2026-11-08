@@ -3,7 +3,7 @@
 The kit's default buys random SKUs when stock is low. This one reads demand from the market's ledger
 (what actually settled, market-wide, newest 500 entries) and buys the SKUs with the most settled revenue, within the
 balance, skipping SKUs whose supply price has surged.
-Rules: keep stock under 200 A/B units (storage is 1 %/day of cost), spend at most 5 % of the balance per SKU,
+Rules: keep stock under 400 A/B units (storage is 1 %/day of cost), spend at most 5 % of the balance per SKU,
 food only with >= 10 days of shelf life (buyers refuse grade C, and food gets there fast), file for bankruptcy only
 when below the line with nothing left to sell. Also posts a shop notice to the forum at most every 60 min.
 """
@@ -12,7 +12,7 @@ from pathlib import Path
 
 from market_price import settled
 
-MAX_UNITS, PER_SKU_SHARE, TOP = 200, 0.08, 30   # breadth: more SKUs in stock = more orders routed here
+MAX_UNITS, PER_SKU_SHARE, TOP = 400, 0.08, 30   # goods do not decay and Book counts stock at cost: idle cash earns nothing
 
 
 def load(p):
