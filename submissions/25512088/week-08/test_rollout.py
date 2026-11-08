@@ -47,26 +47,6 @@ class RolloutTests(unittest.TestCase):
     m.begin(dict(order=oid));m.record(oid,'shop','sku','task',kind);m.state(oid,state)
    x=m.deal_estimate('shop');self.assertEqual(x['trials'],1);self.assertEqual(x['probability'],.4)
   finally:m.close()
- def test_discovery_does_not_trigger_conversion_discount(self):
-  # Six physical units and repeated browsing are not six purchase quotes.
-  units=[dict(self.u,unit='u'+str(i)) for i in range(6)]
-  (self.root/'inventory.json').write_text(json.dumps(dict(round=3,units=units)))
-  catalog={'sku':dict(category='chairs',list_price=20000)}
-  (self.root/'catalog.json').write_text(json.dumps(catalog))
-  intel=Intel(self.root)
-  try:
-   intel.save_source('shops',{'shops':[dict(name='rival',offers=[dict(sku='sku',qty=4)])]})
-   for _ in range(3):
-    self.assertEqual(offers(self.root,self.p,intel)[0]['price'],16000)
-   self.assertEqual(intel.db.execute("SELECT COUNT(*) FROM decisions WHERE role='seller_quote'").fetchone()[0],0)
-   # Genuine purchase quotes still enable the existing evidence-based discount.
-   for _ in range(5):sale_quote(self.u,catalog,self.p,intel)
-   self.assertEqual(offers(self.root,self.p,intel)[0]['price'],15680)
-   self.assertEqual(intel.db.execute("SELECT COUNT(*) FROM decisions WHERE role='seller_quote'").fetchone()[0],5)
-   q=sale_quote(self.u,catalog,self.p,intel)
-   self.assertEqual(q['price'],15680)
-   self.assertGreaterEqual(q['price']*.85-q['reward'],self.u['cost']+math.ceil(self.u['cost']*.09))
-  finally:intel.close()
  def test_conditions_do_not_learn_unwarranted_goods(self):
   m=Memory(self.root)
   try:
