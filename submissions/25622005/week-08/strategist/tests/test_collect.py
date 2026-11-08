@@ -315,6 +315,17 @@ class ReadOwnTest(unittest.TestCase):
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text("".join(json.dumps(r) + "\n" for r in rows) + '{"truncated', encoding="utf-8")
 
+    def test_warranted_signs_of_the_last_6_h_signed_and_paid(self):
+        now = time.time()
+        sign = lambda age, unit, lp, wh=6: {"ts": now - age, "kind": "sign", "choice": {"price": 1, "unit": unit, "list_price": lp, "warranty_hours": wh}}
+        self.write("logs/decisions/seller.jsonl", [sign(7 * 3600, "u-old", 5_000_000), sign(3600, "u-gone", 3_000_000),
+                                                   sign(600, "u-held", 4_000_000), sign(60, "u-plain", 9_000_000, 0),
+                                                   {"ts": now - 30, "kind": "quote", "choice": {"action": "quote"}}])
+        (self.home / ".market").mkdir(parents=True)
+        (self.home / ".market" / "inventory.json").write_text(json.dumps({"balance": 1, "units": [{"unit": "u-held", "sku": "G1"}]}))
+        w = collect.read_own(self.home, now)["warranted_6h"]
+        self.assertEqual(w, {"h": 6, "n": 2, "sum_list_signed": 7_000_000, "sum_list_paid": 3_000_000, "truncated": False})
+
     def test_window_filter_and_summary_parts(self):
         now = time.time()
         self.write("logs/decisions/seller.jsonl", [{"id": "old", "ts": now - 7200, "kind": "quote"},
@@ -332,6 +343,7 @@ class ReadOwnTest(unittest.TestCase):
              "seller": {"sold_24h": 4, "stars": [5, 4, None], "regular_cats": list("abcdefghijkl"),
                         "skus": {"big": "x" * 1000}}}))
         own = collect.read_own(self.home, now, window_h=1)
+        self.assertEqual(own["warranted_6h"], {"h": 6, "n": 0, "sum_list_signed": 0, "sum_list_paid": 0, "truncated": False})
         self.assertEqual([r["id"] for r in own["decisions"]["seller"]], ["new"])
         self.assertEqual([r["id"] for r in own["decisions"]["buyer"]], ["b"])
         self.assertEqual(own["decisions"]["restock"], [])

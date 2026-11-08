@@ -37,6 +37,8 @@ TAIL_ROWS = 3000
 TAIL_BYTES_BY_ROLE = {"seller": 2 << 20, "buyer": 2 << 20}
 TAIL_ROWS_BY_ROLE = {"seller": 6000, "buyer": 6000}
 HISTORY_ROLES = ("buyer", "forum")      # also kept for history_h hours (strategist/outcome.py)
+WARRANTED_H = 6                          # the seller's warranty cap window (seller.warranty_cap_6h)
+WARRANTED_TAIL_BYTES = 12 << 20          # seller.jsonl at ~1.4 MB an hour: 12 MB covers the 6 h
 BUCKET_S = 600
 BUCKETS_KEEP_S = 6 * 3600
 BANDS = (20000, 50000, 100000, 200000, 500000, 1000000)    # list price band i = bisect(BANDS, list price)
@@ -338,6 +340,32 @@ def _tail(path, n, max_bytes):
     return rows[::-1], size > max_bytes or len(rows) >= n
 
 
+def _warranted(path, now, inv):
+    """The seller's warranted signs of the last WARRANTED_H hours, from the log's tail: n, sum_list_signed (their
+    list prices, what seller.warranty_cap_6h is compared with) and sum_list_paid (those whose unit has left the
+    inventory, so the sale went through; the seller itself also counts the ones still inside the promise TTL).
+    truncated when the tail did not reach back WARRANTED_H hours."""
+    rows, cut = _tail(path, 10 ** 6, WARRANTED_TAIL_BYTES)
+    since = now - WARRANTED_H * 3600
+    held = {u.get("unit") for u in (inv.get("units") or []) if isinstance(u, dict)} if isinstance(inv, dict) else set()
+    n = signed = paid = 0
+    for r in rows:
+        if not isinstance(r, dict) or r.get("kind") != "sign" or not isinstance(r.get("ts"), (int, float)) or r["ts"] < since:
+            continue
+        c = r.get("choice") if isinstance(r.get("choice"), dict) else {}
+        if not isinstance(c.get("warranty_hours"), (int, float)) or c["warranty_hours"] <= 0:
+            continue
+        lp = c.get("list_price") if isinstance(c.get("list_price"), (int, float)) else c.get("price")
+        lp = lp if isinstance(lp, (int, float)) else 0
+        n += 1
+        signed += lp
+        if c.get("unit") not in held:
+            paid += lp
+    first = min((r["ts"] for r in rows if isinstance(r, dict) and isinstance(r.get("ts"), (int, float))), default=None)
+    return {"h": WARRANTED_H, "n": n, "sum_list_signed": signed, "sum_list_paid": paid,
+            "truncated": bool(cut and (first is None or first > since))}
+
+
 def _window_rows(path, since, name, truncated, keep_since=None):
     """Rows of the window from the file's tail (rows since keep_since when that is earlier). When even the
     oldest row read is inside the window and the tail was cut (by bytes or rows), the window started
@@ -453,7 +481,7 @@ def read_own(shop_home, now, window_h=1, history_h=0):
     counts are too low. own["history"]: the buyer and forum rows of the last history_h hours, as far as
     the tail reaches (for outcome checks; never in the brief)."""
     home, since = Path(shop_home), now - window_h * 3600
-    own = {"window_h": window_h, "summary": {}, "decisions": {}, "acp": [],
+    own = {"window_h": window_h, "summary": {}, "decisions": {}, "acp": [], "warranted_6h": {},
            "policy_changes": [], "kit": {}, "truncated": [], "inventory": {}, "history": {}}
     inv = _inventory(read_json(home / ".market" / "inventory.json", None))
     if inv is None:
@@ -473,6 +501,7 @@ def read_own(shop_home, now, window_h=1, history_h=0):
             own["decisions"][role] = _recent(rows, since)
             if role in HISTORY_ROLES:
                 own["history"][role] = rows
+        own["warranted_6h"] = _warranted(home / "logs" / "decisions" / "seller.jsonl", now, own["inventory"])
         own["acp"] = _window_rows(home / "logs" / "acp-sessions.jsonl", since, "acp", own["truncated"])
         own["policy_changes"] = [r for r in tail_jsonl(home / "logs" / "policy-changes.jsonl", 5) if isinstance(r, dict)]
         own["kit"] = _kit(_kit_lines(home / "logs" / "market-kit.log", now, since, own["truncated"]))

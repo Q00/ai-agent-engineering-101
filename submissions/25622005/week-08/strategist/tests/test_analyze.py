@@ -716,7 +716,10 @@ class NewSectionsTest(unittest.TestCase):
         pol = {"seller": {"warranty_on_request": False, "warranty_grades": ["A", "B"], "warranty_cap_6h": 10000000,
                           "warranty_premium": 0.06, "warranty_premium_floor": 0.02, "warranty_q_mult": 1.5},
                "stock": {"no_warranty_h": 8, "end_ts": NOW + 243 * 3600}}
+        o["warranted_6h"] = {"h": 6, "n": 30, "sum_list_signed": 13345120, "sum_list_paid": 11000000, "truncated": False}
         w = analyze.brief(raw(), o, None, pol, NOW)["seller"]["warranty"]
+        self.assertEqual(w["warranted_6h"], {"h": 6, "n": 30, "sum_list_signed": 13345120, "sum_list_paid": 11000000,
+                                             "truncated": False, "cap": 10000000, "over_cap": True})
         self.assertEqual((w["goods_asked"], w["offered"], w["food_asked"], w["sold"]), (6, 2, 1, 1))
         self.assertEqual(w["refused"], {"cap_6h": 1, "grade": 2, "near_end": 1})
         self.assertEqual(w["sign_rate"], {"asked_offered": {"first": 2, "signed": 1, "rate": 0.5},

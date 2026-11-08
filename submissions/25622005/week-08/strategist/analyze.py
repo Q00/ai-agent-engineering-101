@@ -772,7 +772,7 @@ def _bands(buckets, now):
             "rows": [r for r in rows if r["mkt_settles"] or r["our_settles"]]}
 
 
-def _seller(rows, pol=None):
+def _seller(rows, pol=None, warranted=None):
     """Our seller's window: tasks answered, signed (and the rate), how the rest ended, warranty asked and sold,
     the median price/list of signs and offer/list of the offers we rejected, and warranty (see _warranty)."""
     act = lambda r: _dict(r.get("choice")).get("action")
@@ -793,15 +793,16 @@ def _seller(rows, pol=None):
             "warranty_sold": sum(1 for r in signs if (_num(_dict(r.get("choice")).get("warranty_hours")) or 0) > 0),
             "sign_price_list": per_list(signs, lambda r: _dict(r.get("choice")).get("price")),
             "reject_offer_list": per_list(rejects, lambda r: inp(r).get("offer")),
-            "warranty": _warranty(first, signs, pol)}
+            "warranty": _warranty(first, signs, pol, warranted)}
 
 
-def _warranty(first, signs, pol):
+def _warranty(first, signs, pol, warranted=None):
     """The warranty (D5) in this window, from the seller log's first replies and signs (joined by task).
     goods_asked: goods first replies where the buyer asked for a warranty; offered: those that got one; refused
     names why the rest did not: grade (not in seller.warranty_grades), near_end (inside stock.no_warranty_h) and
-    cap_6h, the only cause left once the others are ruled out (the sum
-    of warranted sales in the last 6 h is not logged, so this one is inferred). food_asked: food never carries a
+    cap_6h, the only cause left once the others are ruled out; warranted_6h (collect._warranted: the warranted
+    signs of the last 6 h, their list prices signed and paid, over_cap when the paid sum has reached
+    seller.warranty_cap_6h) is the number that confirms it. food_asked: food never carries a
     warranty. sign_rate: goods signs / first replies by whether the buyer asked and whether we offered, so the
     worth of a warranty to a sale is read off the two asked rows. break_q_upper: the median breakage upper
     bound per grade among the goods asked. premium_mult: the median price multiplier of the offers."""
@@ -839,7 +840,12 @@ def _warranty(first, signs, pol):
         ups = [u for u in ups if u is not None]
         if ups:
             bq[g] = _r(_median(ups))
-    return {"goods_asked": len(asked), "offered": len(offered), "refused": dict(refused),
+    w6 = dict(_dict(warranted))
+    cap = _num(s.get("warranty_cap_6h"))
+    if w6 and cap is not None:
+        w6["cap"] = cap
+        w6["over_cap"] = (_num(w6.get("sum_list_paid")) or 0) >= cap
+    return {"goods_asked": len(asked), "offered": len(offered), "refused": dict(refused), "warranted_6h": w6,
             "food_asked": sum(1 for r in first if inp(r).get("kind") == "food" and inp(r).get("warranty_req")),
             "sold": sum(1 for r in signs if (_num(_dict(r.get("choice")).get("warranty_hours")) or 0) > 0),
             "sign_rate": rate, "break_q_upper": bq,
@@ -1034,7 +1040,7 @@ def brief(raw, own, prev, pol, now, me=ME, window_h=1, flows=None, known=(), foc
     b["demand"] = _demand(own.get("summary"))
     b["ops"] = _ops(own, raw.get("forum"), since, me)
     dec = _dict(own.get("decisions"))
-    b["seller"] = _seller(_rows(dec.get("seller")), pol)
+    b["seller"] = _seller(_rows(dec.get("seller")), pol, own.get("warranted_6h"))
     b["buyer_log"] = _buyer_log(_rows(dec.get("buyer")))
     b["saved"] = _saved(buyers, _find(buyers, me), b["me"].get("buyer"), _rows(dec.get("buyer")), pol, b["hours_left"], window_h)
     b["forum"] = _forum(raw.get("forum"), since)

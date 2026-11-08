@@ -112,7 +112,8 @@ Supply and depth:
   Buyers score under the same Saved rule (a broken unit without a warranty is a -1 deal), so some ask for one
   and cap their price by the break rate without it. The brief's seller.warranty shows the window: goods_asked,
   offered, refused by cause (grade: outside seller.warranty_grades; cap_6h: the sum of warranted sales of the
-  last 6 h would pass seller.warranty_cap_6h, inferred as the only cause left; near_end; declined), sold, and
+  last 6 h would pass seller.warranty_cap_6h, the only cause left, and warranted_6h gives that sum, signed and
+  paid, with over_cap; near_end), sold, and
   sign_rate by asked x offered (asked_offered vs asked_refused is what the warranty is worth to the sale, against
   q x price). Levers: seller.warranty_cap_6h, warranty_premium / premium_floor / q_mult; warranty_grades is fixed.
 - Surge: the first market.surge_free units of a SKU that the whole market (us included) buys in a rolling hour
