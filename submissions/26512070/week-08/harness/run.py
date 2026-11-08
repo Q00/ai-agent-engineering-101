@@ -125,8 +125,12 @@ def once(state, now, shadow=False):
     if due("capability"):
         job("capability", lambda: str(capability.write()))
     if not shadow:
-        from harness import fastpath
+        from harness import autopilot, fastpath
         try:
+            if autopilot.on():                          # user 11/8: tests ended at this slot are decided first
+                decided = autopilot.settle(now)
+                if decided:
+                    done["autopilot"] = decided
             settled = fastpath.settle(now)              # auto changes whose test period ended: keep or undo
             if settled:
                 done["fastpath"] = settled

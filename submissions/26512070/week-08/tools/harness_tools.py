@@ -145,14 +145,16 @@ _REQUEST = {"type": "object", "required": list(wisdom.REQUIRED), "properties": {
 
 @tool("meta.propose", "End the meta-harness turn: a short report and 0-2 approval requests, each changing ONE "
       "playbook number the code reads (see capability.list), with the fixed metric it should move, how it is "
-      "measured (ab preferred) and the success line. Requests go to the user; nothing is installed here.",
+      "measured (ab preferred) and the success line. With autopilot on, code starts them at once as 30-minute "
+      "tests; otherwise they go to the user. Nothing is installed here.",
       {"type": "object", "required": ["report", "requests"],
        "properties": {"report": {"type": "string", "minLength": 1, "maxLength": 6000},   # 11/6: two questions did not fit in 2000
                       "requests": {"type": "array", "maxItems": 2, "items": _REQUEST}}})
 def meta_propose(ctx, report, requests):
+    from harness import autopilot
     for r in requests:
         r["expected"].setdefault("size", "")
-        r["evaluation"].setdefault("period_h", 3)
+        r["evaluation"].setdefault("period_h", 0.5 if autopilot.on() else 3)   # user 11/8: 30-minute tests
     if len(requests) > 2:                      # core.schema does not check maxItems
         raise Refused(f"{len(requests)} requests; at most 2", "keep the two the evidence supports best")
     for r in requests:

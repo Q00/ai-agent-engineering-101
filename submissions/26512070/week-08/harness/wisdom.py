@@ -127,7 +127,8 @@ def request(req, by="meta", now=None):
             old.update(status="superseded", decision={"by": rid, "ts": now})
             atomic.write_json(_dir() / f"{old['id']}.json", old)
             _log({"ts": now, "event": "superseded", "id": old["id"], "by": rid})
-    if req["urgency"] == "now":
+    from harness import autopilot
+    if req["urgency"] == "now" and not autopilot.on():     # autopilot decides at once and sends its own line
         from harness import alert
         alert.send(f"[승인 요청] {req['title']}\n{rid} - py -m harness.wisdom show {rid}", level="now")
     return doc
