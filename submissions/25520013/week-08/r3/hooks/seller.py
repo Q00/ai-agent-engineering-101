@@ -229,13 +229,16 @@ def opening_text(unit, pol, ask, stats=None, shelf_hours=None, now=None):
     """v1.8: the first reply states exactly what the receipt would claim at this moment (P.receipt_terms: the grade,
     or none when a food grade cut is within claim_window_s or the grade is unknown), shelf life for food, and the
     ask as the last number of the text (readers of the last number, like our offer_in, get the price). The
-    certificate is on the card (every receipt has cert); no warranty words (receipt_terms decides it per price)."""
+    certificate is on the card (every receipt has cert). v2.9: the warranty hours receipt_terms gives at the ask are
+    stated too (warranty_hours compares fail x price with uplift x price, so the price does not change the answer)."""
     t = P.receipt_terms(unit, pol, stats=stats, price=ask, now=now, shelf_hours=shelf_hours)
     g = t.get("claim")
     gtxt = f"grade {g}" if g in ("A", "B", "C") else "grade not stated"
     h = P.hours_left(unit, now)
     life = f", {int(h)} h shelf life left" if unit.get("kind") == "food" and h is not None else ""
-    return f"{unit['name']} ({unit['sku']}), {gtxt}{life}: asking {ask}. Offer a whole number."
+    w = t.get("warranty_hours")
+    wtxt = f", {w} h warranty" if w else ""
+    return f"{unit['name']} ({unit['sku']}), {gtxt}{life}{wtxt}: asking {ask}. Offer a whole number."
 
 
 def offer_in(text):
